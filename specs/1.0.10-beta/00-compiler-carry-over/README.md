@@ -237,8 +237,9 @@ uses it), a `jsonStringify` that omits the defaults so no parser snapshot moves,
       by `tests/language/run/module_var.bp`; a `val` stays `const` / an immutable global; **no**
       commonJS/wasm cell re-recorded (none writes a module `var`)
 - [ ] unknown member → located error naming `ProcessDict`, `Ets`, `PersistentTerm`; unknown argument →
-      names `keyed`; `keyed` on a scalar or a `List<T>` → "needs a keyed container"; a `reject/` cell
-      per diagnostic handed to the suite
+      names `keyed`; `keyed` on a scalar or a `List<T>` → "needs a keyed container" (`8146d2b6`); a
+      `reject/` cell per diagnostic **in** the suite (`3cd77667`: five `beam_memory_*` plus the two
+      `val_assign_*` of decision 38, with `run/module_var` and `test/beam_memory_noop` beside them)
 - [x] the formatter round-trips `#[@BeamMemory.Ets(keyed = true)] var d: Dict<string, i32> = …` —
       `assertLossless` in `src/format/tests/declarations.zig` (`8146d2b6`, decision 48's arm)
 - [x] the migration count — **not** in `8146d2b6`'s message; carried by `37342d95`'s and by 17's step 0

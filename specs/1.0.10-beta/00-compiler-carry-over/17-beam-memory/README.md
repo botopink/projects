@@ -46,7 +46,10 @@ matching site in `beam_asm.zig` ([`03`](../03-beam/README.md) / [`13`](../13-mod
 [`07`](../07-review-backlog/README.md))
 
 **Does not touch:** `docs.md` ([`08`](../08-hygiene/README.md) — this front supplies the text) ·
-`tests/language/**` ([`12`](../12-language-tests/README.md) — this front specifies the cells) ·
+`tests/language/**` ([`12`](../12-language-tests/README.md) — this front specifies the cells; **amended
+by step 7:** 12's steps were absorbed into [C-16](../README.md#c-16--the-language-suites-residual-cells)
+and landed, so the nine cells steps 1–3 made runnable were written into the suite here, one file
+each, editing nothing of 12's) ·
 `libs/std/**` — **including the new `libs/std/src/beam.bp` of step 3b** — and
 `repository/{emilia,rakun}/**` ([`09`](../09-ecosystem-residuals/README.md); steps 3b and 8 are
 *specification*, not edit) · `src/format.zig`
@@ -492,12 +495,49 @@ paragraphs, which describe C-10's emission and must not be published before it.
 
 ### Step 7 — The language cells
 
-Specified here, written by [`12-language-tests`](../12-language-tests/README.md).
+Specified here; the cells that can run were written into `tests/language/` in this front
+(`3cd77667`), because [`12-language-tests`](../12-language-tests/README.md) was absorbed into
+[C-16](../README.md#c-16--the-language-suites-residual-cells) and the suite's one-file-per-cell layout
+means nothing of anyone else's is edited. The cells that cannot run yet — the three modes on the two
+BEAM targets, and step 4's three refusals — are **specified below for C-10**, which is the step that
+gives them something to run against.
 
 **Acceptance:**
-- [ ] One `test/` cell per mode per BEAM target, plus one for a bare `var` on all four
-- [ ] One `reject/` cell per diagnostic of steps 1, 3 and 4
-- [ ] Every cell that runs on erlang or beam has a RUN LOG produced by running it
+- [x] ~~One `test/` cell per mode per BEAM target, plus~~ one for a bare `var` on all four:
+      `run/module_var` (the Problem program written `var`: `2` on commonJS and wasm; on erlang and
+      beam an `expected-failures.txt` row against C-10 each, carrying the measured emission — an
+      unbound `Hits`, and a dropped write printing `0` at exit 0) and `test/beam_memory_noop`
+      (decision 43's other half: off the BEAM the annotation is a no-op, and each of its five tests
+      **writes and reads back** through the binding, because a read alone passes on a backend that
+      dropped the write — erlang listed against C-10 for the same reason). **The per-mode BEAM cells
+      are C-10's**, each with `.targets` = `erlang beam`:
+      `test/beam_memory_process_dict` — a `#[@BeamMemory.ProcessDict] var` written in the test
+      process reads the declaration's value from a process `erlang.spawn`ed after the write (the
+      scope is the process; `erlang.spawn` is `libs/std/src/erlang.bp:143`) ·
+      `run/beam_memory_ets` + `.out` = `15` — decision 39's fixture: five spawned processes × three
+      `hits = hits + 1` on a `#[@BeamMemory.Ets] var hits: i32 = 0;`, joined, then `@print(hits)`;
+      it reads `15` only with the registered owner, `3` and `0` without ·
+      `run/beam_memory_ets_keyed` — two processes writing **different** keys of a
+      `#[@BeamMemory.Ets(keyed = true)] var counts: Dict<string, i32>` 20 000 times each print
+      `20000 20000` (the `keyed = false` twin is the measurement, `19994 20000`, and is not a cell —
+      a test that fails by chance is not a test) ·
+      `run/beam_memory_persistent_term` — `#[@BeamMemory.PersistentTerm] var version: i32 = 101;`
+      read from a spawned process prints `101`, the value put at load
+- [x] One `reject/` cell per diagnostic of steps 1 and 3 — `val_assign_local`, `val_assign_module`
+      (decision 38), `beam_memory_unknown_member`, `beam_memory_unknown_argument`,
+      `beam_memory_keyed_scalar`, `beam_memory_keyed_list` (decision 51), `beam_memory_on_val` —
+      each `.expect` the checker's line and its `L:C`. ~~and 4~~ **C-10's three, named here so the
+      suite gets them in the commit their refusals are born in:** `reject/beam_memory_pt_write` (a
+      `PersistentTerm` var assigned after load; hint `#[@BeamMemory.Ets(keyed = true)]`),
+      `reject/beam_memory_ets_bump_non_integer` (`+=` on an `f64` under `Ets`, decision 40's 5(b)
+      diagnostic) and `reject/beam_memory_ets_initialiser` (an `Ets` initialiser that is neither a
+      literal nor `isComptimeExpr()` — `fn registry() -> i32 { @print("side effect"); return 7; }`)
+- [x] ~~Every cell that runs on erlang or beam has a RUN LOG produced by running it~~ — a language
+      cell carries no RUN LOG (that is `snapshots/`'s vocabulary); what holds is that **every cell
+      was run before it was written down**: 14 passed and 2 expected failures on
+      commonJS/erlang/wasm, 1 expected failure on beam, and each erlang/beam row of
+      `expected-failures.txt` quotes the emission it saw, not a guess. The C-10 cells above inherit
+      the rule: their `.out` is what `erl` printed
 
 ### Step 8 — The payoff, specified for `09-ecosystem-residuals`
 
