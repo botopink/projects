@@ -154,11 +154,11 @@ the closed-scope refusals (`use`/`await` in a `#[@generator] loop` inside a `#[@
 expression (a `while` is `void`).
 
 **Acceptance:**
-- [ ] a `reject/` cell per refusal, each naming what the message names; `test/` cells for
+- [x] a `reject/` cell per refusal, each naming what the message names; `test/` cells for
       `var i = #[@generator] loop { … }; for (i) { x -> … }` typed `@Generator<i32>`, for a
       `#[@futureGenerator] loop` awaiting in a plain `fn` body and consumed by a `#[@future]` body's
       `for await`, and for the nearest-scope rule with a labelled `yield :out`
-- [ ] `for (1..4)` and `for (1...4)` answer `1 2 3` and `1 2 3 4` on four targets
+- [x] `for (1..4)` and `for (1...4)` answer `1 2 3` and `1 2 3 4` on four targets
 
 ### Step 3 — the four backends
 
@@ -169,12 +169,12 @@ accumulator and the `[v]` of `break v` deleted from all four (C-06's decision-55
 cells deleted with them.
 
 **Acceptance:**
-- [ ] `run/loop_*.bp` and `test/loop_collection.bp::§10` re-specified to decision 105 — `break v`
+- [x] `run/loop_*.bp` and `test/loop_collection.bp::§10` re-specified to decision 105 — `break v`
       in a plain `fn` is a `reject/` cell, the generator forms are `run/` cells — and green on four
       targets by running, no `expected-failures.txt` line
-- [ ] a `#[@generator] loop` capturing a `var` runs on erlang and beam with the state carried across
+- [x] a `#[@generator] loop` capturing a `var` runs on erlang and beam with the state carried across
       `next` — the `dobros` example above prints `2 4 … 18 20`
-- [ ] no collection form lowers under the old keyword in `codegen/**`; snapshots re-recorded and
+- [x] no collection form lowers under the old keyword in `codegen/**`; snapshots re-recorded and
       classified
 
 ### Step 4 — docs, cells, and the library sweep
@@ -192,9 +192,9 @@ pointers bumped.
 
 - [ ] `scripts/gate.sh --cold` green at every commit; `zig build test-language` green on four targets
       with the new and re-specified cells
-- [ ] `botopink format --check` green on the trees that are canonical, with the new keywords printed
+- [x] `botopink format --check` green on the trees that are canonical, with the new keywords printed
       back
-- [ ] `AGENTS.md` of `src/lexer/`, `src/parser/`, `src/comptime/`, `src/codegen/`, `src/format/`,
+- [x] `AGENTS.md` of `src/lexer/`, `src/parser/`, `src/comptime/`, `src/codegen/`, `src/format/`,
       `tests/language/` in the same commit
 - [ ] Commit on `fix/loops`; no push, no merge — landing is the maintainer's step
 
