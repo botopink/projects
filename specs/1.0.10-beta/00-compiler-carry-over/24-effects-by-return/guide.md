@@ -261,7 +261,7 @@ its own body — with `catch`, `case`, `notFound()` or an error screen.
 
 ```bp
 // jhonstart — the type that carries the context tree
-pub type ElementBase();
+pub type ElementBase {}
 pub type Element(tag: string, attrs: Array<#(string, string)>, children: Array<Element>)
     implement @Context<ElementBase>;
 
@@ -333,7 +333,7 @@ pub fn Badge(label: string) -> Element {
 
 ```bp
 // rakun — the owner of the request context
-pub type RequestBase();
+pub type RequestBase {}
 pub type RequestScope(…) implement @Context<RequestBase>;
 
 pub fn requestId() -> @Component<RequestBase, string> { … }
