@@ -45,7 +45,7 @@ Two submodules — front 95's cut survives the audit. The candidates it was test
 | `emilia-container` | 58 | **merge** (language constraint) | Same: one section plus three top-level variants on `Token` |
 | `emilia-compose` | 59 | **merge**; keep as `compose.bp` | Functions over `Token[]` and `Variant`, nothing core reads back. It is the one file that *could* leave core later with no surface change; splitting one file into a package is the "one file each" anti-pattern front 95 names |
 | `emilia-utilities-<domain>` (layout, typography, …) | 33 · 35–47 | **drop** | A sub-dispatcher takes `Token.<Section>` and is called from `tokenToSheet`'s exhaustive `case` in core. Moving it out makes core depend on the domain package and the domain package on core's `Token` — a cycle for each of fourteen packages |
-| `emilia-jhonstart` | 48 | **drop** — evaluated because dependency direction would have justified it, dropped because the direction does not exist | Front 48's source is jhonstart-free: `styled(tokens, th) -> #("class", string)`, `styledWith`, `className`, `mergeClass`, `assertAsciiBody` (`attributes.bp`) and `cls`/`clsWith` (`html_hook.bp`) return tuples and strings; the one jhonstart file (`repository/jhonstart/src/html_attrs.bp`) imports only `element` and a test asserts the string `emilia` is absent from `repository/jhonstart/src/`. Only `integration_test.bp` renders a page. A package that holds tests and no source is not a package; `jhonstart` is a **dev-dependency** of core instead. **The trigger that makes it one:** the day jhonstart ships a handler registry that emilia must *import* to register itself (a `[name]={expr}` handler registry — not built, because `html.bp` is frozen), the bridge moves to `modules/emilia-jhonstart/` and core's dev-dependency on jhonstart goes away |
+| `emilia-jhonstart` | 48 | **drop** — evaluated because dependency direction would have justified it, dropped because the direction does not exist. The one package that knows both is jhonstart's `jhonstart-emilia` bridge (decision 113, front 30), which adapts `flush()` to jhonstart's render plugin and lives in jhonstart's workspace, not here | Front 48's source is jhonstart-free: `styled(tokens, th) -> #("class", string)`, `styledWith`, `className`, `mergeClass`, `assertAsciiBody` (`attributes.bp`) and `cls`/`clsWith` (`html_hook.bp`) return tuples and strings; the one jhonstart file (`repository/jhonstart/src/html_attrs.bp`) imports only `element` and a test asserts the string `emilia` is absent from `repository/jhonstart/src/`. Only `integration_test.bp` renders a page. A package that holds tests and no source is not a package; `jhonstart` is a **dev-dependency** of core instead. **The trigger that makes it one:** the day jhonstart ships a handler registry that emilia must *import* to register itself (a `[name]={expr}` handler registry — not built, because `html.bp` is frozen), the bridge moves to `modules/emilia-jhonstart/` and core's dev-dependency on jhonstart goes away |
 
 Tailwind's own shape is the tie-breaker everywhere a call was close: one package (`tailwindcss`),
 with `theme.css`, `preflight.css` and `utilities.css` as files inside it, imported into named
@@ -224,7 +224,7 @@ by `attributes.bp`, which nothing else imports but `html_hook.bp`.
 files are the byte-equality gate between the two: one snapshot, two targets, one result.
 
 Front 48's output is the one thing both halves of an application read: the class attribute is
-written by the server render (rakun [23](../03-rakun/23-rakun-ssr-pipeline/README.md), erlang) and
+written by the server render (jhonstart [30](../04-jhonstart/30-jhonstart-streaming/README.md), erlang) and
 recomputed by the client bundle (onze [68](../06-onze/68-onze-client-bundle/README.md), js). Contract
 4's shared fixture asserts the same literal on both.
 
@@ -300,13 +300,14 @@ commit. A front that finds a helper missing files it against 56, not into `emili
 |---|---|---|---|
 | jhonstart | 48 (this track) | `styled(tokens, th)` returns the `#("class", …)` pair a builder's `attrs` array takes; `cls(tokens, th)` returns the string a pre-bound `[class]={…}` hole in the `html """…"""` DSL takes (a hole may not contain a space — `html.bp:109` splits the tag body on `" "`). `repository/jhonstart/src/html_attrs.bp` (`classAttr`, `withAttrs`, `attrValue`) is the one cross-repo file. The value carried is `mergeClass(static, emilia(tokens, th))` per contract 4 | none at package level: jhonstart never imports emilia; emilia imports jhonstart only in a test |
 | jhonstart | [94](../04-jhonstart/94-jhonstart-element-surface/README.md) | the element constructors' `attrs` array that the slot writes into; attribute array order is class identity (contract 4 clause 5) | read-only |
-| onze | [69](../06-onze/69-onze-styling-pipeline/README.md) | `flushWith(o)` called once per server render; the document inserted into `<head>`; the client bundle never calls `flush()` (contract 6a) | `onze` → `emilia` |
+| jhonstart | [30](../04-jhonstart/30-jhonstart-streaming/README.md) | the `jhonstart-emilia` bridge (a member of jhonstart's workspace) implements jhonstart's `RenderPlugin` over `flush()` / `flushWith(o)`: the head's `<style>` once, each streamed boundary's `<style>` inside its fill, nothing left at `close`; the client bundle never calls `flush()` (contract 6a, decision 113). The bridge's test asserts the contract 4 literal on the render side | `jhonstart-emilia` → `emilia`; emilia imports nobody |
+| onze | [69](../06-onze/69-onze-styling-pipeline/README.md) | registers the bridge's plugin at boot (front 49's line); the stylesheet records of the manifest | `onze` → `jhonstart-emilia` |
 | onze | [68](../06-onze/68-onze-client-bundle/README.md) | the hydration entry recomputes `emilia(tokens)` and asserts the contract 4 literal | `onze` → `emilia` |
-| rakun | [23](../03-rakun/23-rakun-ssr-pipeline/README.md) | the SSR test asserts the same contract 4 literal the integration fixture pins | `rakun` → `emilia` (test) |
 
-Front 48's README names 23 and 68 as the two consumers of the shared literal; 94 and 69 are the
-surfaces it writes into and is collected by. The core package is what all four depend on, and it
-never grows a runtime import of `jhonstart`.
+The two consumers of the shared literal are the render side (the `jhonstart-emilia` bridge test,
+front 30) and front 68; 94 and the bridge are the surfaces it writes into and is collected by. The
+core package is what all of them depend on, and it never grows a runtime import of `jhonstart`,
+`rakun` or `onze` — emilia imports nobody (decision 113).
 
 ## `repository/emilia/examples/**`
 
