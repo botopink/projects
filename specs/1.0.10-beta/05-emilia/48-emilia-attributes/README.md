@@ -43,6 +43,8 @@ tests all five.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `emilia(tokens: Token[]) -> string` returns `"e_" + hashHex(rules)` where
   `rules = tokensToCss(tokens)` — `emilia.bp:46-51`. This is already a pure function of the token
   list.

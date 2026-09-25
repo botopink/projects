@@ -85,6 +85,8 @@ collide with the effect marker `#[@future]` (`repository/emilia/src/emilia.bp:62
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `repository/rakun/modules/rakun-validation/src/root.bp` — docblock and a TODO comment. No code.
 - `repository/rakun/src/http.bp:30-43` — `Request`'s four accessors, all `-> string`, all `""` when absent. The file's own comment says this is deliberate so handlers do not deal in optionals.
 - `repository/rakun/src/decorators.bp` — no `#[valid]`, no constraint markers, and frozen.

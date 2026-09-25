@@ -44,6 +44,8 @@ and it has an `x` and a `y` form (`§ 6.15`) that emilia has no spelling for.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 | What | Where | State |
 |---|---|---|
 | `Flex { Row, Col, Wrap, NoWrap }` | `tokens.bp:195-198` | 4 of the 7 direction/wrap values |

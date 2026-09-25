@@ -48,6 +48,8 @@ wrong bundle. One derivation, stamped once, read everywhere.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `repository/onze/` does not exist; this front creates `modules/onze-release/` inside it.
 - Nothing in the workspace produces a deployable artifact. There is no `rel/`, no `.rel` file, no
   `sys.config`, no `vm.args` and no Dockerfile anywhere under `repository/`.

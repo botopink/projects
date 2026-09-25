@@ -68,6 +68,8 @@ One seam, here, is the point.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 | Piece | Where | State |
 |---|---|---|
 | Scan registry | `rkScannedNames`/`rkScannedCount` (`runtime.bp:22-26`) | exists; `beans` reads it |

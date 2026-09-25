@@ -39,6 +39,8 @@ SVG→PNG — so this front splits there too and is explicit about which half le
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `repository/onze/` does not exist; this front creates `modules/onze-og/` inside it.
 - Nothing in the workspace emits SVG, measures text, or spawns a rendering process.
   `grep -rn "svg" repository/*/src/` returns nothing.

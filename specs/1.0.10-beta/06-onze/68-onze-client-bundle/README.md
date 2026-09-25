@@ -67,6 +67,8 @@ in a file served to the public.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `repository/onze/` does not exist. Front 49 creates it; `modules/onze-bundler/` is created by
   this front inside it.
 - Nothing in the workspace computes a module graph. The compiler resolves imports to compile them

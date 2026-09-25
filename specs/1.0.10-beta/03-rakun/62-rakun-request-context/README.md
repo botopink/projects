@@ -53,6 +53,8 @@ handlers. This front is that mechanism, and it is the only front that builds it.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `repository/rakun/src/http.bp:30-43` — `behavior Request`. Four accessors, all returning plain
   `string` (`""` when absent, never `?string`), reachable only from a dispatched handler.
 - `repository/rakun/src/runtime.bp:56-66` — `rkSetProp`/`rkProp`/`rkPropInt`. Global, process-wide

@@ -510,7 +510,7 @@ a text pass.
 The *Current state* tables: ≈ 885 matches in `compiler-core/src`, ≈ 160 in `libs`, ≈ 930 in
 snapshots (the doubled `{beam,wat}` tree of decision 85 doubles the codegen share), 3 libraries at
 this pin (jhonstart, rakun, emilia; onze and the bundled libraries as they gain code), and the
-examples of 61 spec fronts. Every snapshot movement is a rename, an `async function` on commonJS where a body did
+examples of 60 library fronts and `02-packaging`. Every snapshot movement is a rename, an `async function` on commonJS where a body did
 not await, a RUN LOG changed by running (a JS Promise resolving with `Error`; a `for` no longer
 propagating), or a new cell.
 

@@ -27,6 +27,8 @@ list is part of the deliverable rather than an apology.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `repository/rakun/modules/` holds no `rakun-ws`. The directory this front owns does not exist.
 - There is no XML anything in the workspace: no parser, no serializer, no schema reader.
   `libs/std/src/root.bp:13-36` lists twenty-four modules and none of them is XML.

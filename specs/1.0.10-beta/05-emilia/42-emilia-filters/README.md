@@ -30,6 +30,8 @@ instead of the element. Fifteen rows of the reference become two mirrored sectio
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - No `Filter`, no `Backdrop`, no `filter:` or `backdrop-filter:` string anywhere in
   `repository/emilia/src/`.
 - `tokensToCss` joins each token's declaration with `;` — `emilia.bp:103`. Two tokens that emit the

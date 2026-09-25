@@ -53,6 +53,8 @@ owes front 22 a shape it can wrap things in, not a second file convention.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `element.bp:55-67` — `renderToString`, synchronous, one pass, no seam, no escaping, void tags
   closed.
 - `repository/rakun/src/ssr.bp` — the escaping walker, the composition order, the document, the

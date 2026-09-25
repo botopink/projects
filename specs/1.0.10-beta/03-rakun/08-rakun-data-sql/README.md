@@ -39,6 +39,8 @@ repository surface, so this front decides it once and front 09 follows.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 | Piece | Where | State |
 |---|---|---|
 | `#[repository]` | `decorators.bp:84-100` | a stereotype alias for `#[service]`; frozen |

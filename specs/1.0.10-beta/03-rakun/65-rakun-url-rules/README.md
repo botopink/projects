@@ -54,6 +54,8 @@ table and matches within it. The rules that run *before* a route is matched belo
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `repository/rakun/modules/rakun-web/src/root.bp` — a docblock and a TODO comment. Front 07 will add
   `middleware.bp`, `cors.bp`, `error.bp`, `filter.bp` and `convention.bp`; `src/rules/` is empty and
   this front creates it.

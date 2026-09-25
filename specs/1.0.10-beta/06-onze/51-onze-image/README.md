@@ -45,6 +45,8 @@ through the builder API today.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `repository/onze/src/image.bp` does not exist; `repository/onze/` does not exist until front 49.
 - `repository/jhonstart/src/element.bp` is **frozen** for this milestone (`fronts.md`, track C). It
   provides `text, fragment, div, span, p, h1, ul, li` and no `img`. What it does provide is the
