@@ -470,17 +470,25 @@ re-measure before it is sized.
 
 ### Step 6 — The diagnostics and the documentation text
 
-This front writes no `docs.md`; it supplies the text to [`08-hygiene`](../08-hygiene/README.md).
+This front writes no `docs.md`; it supplies the text to [`08-hygiene`](../08-hygiene/README.md) —
+[`docs-text.md`](./docs-text.md) beside this file, in two parts: what is true at `4fe1747e` (the
+`val` rule, the module `var`, the validated annotation — can go in now) and the three mode
+paragraphs, which describe C-10's emission and must not be published before it.
 
 **Acceptance:**
-- [ ] One paragraph per mode, each carrying the sentence the measurement forces:
+- [x] One paragraph per mode, each carrying the sentence the measurement forces:
       `Ets` is cache and counting memory, not where the truth lives · under `keyed = false` a `Dict`
       is stored as **one** value and concurrent writes to different keys are lost (with the 19 994 /
-      20 000 figure) · a `PersistentTerm` var is re-seeded on every code reload
-- [ ] The `keyed`-on-a-`Dict` warning of question 42, **if** the warning channel exists — measured:
-      `grep -rn warning src/comptime/*.zig` → 0, which
-      [`decisions-pending.md`](../../../1.0.5-beta/decisions-pending.md) already records as a defect with no owner. If
-      it does not exist, the sentence goes to `docs.md` and this box is struck with that reason
+      20 000 figure) · a `PersistentTerm` var is re-seeded on every code reload —
+      [`docs-text.md`](./docs-text.md) part 2, plus the one sentence both parts share (off the BEAM
+      all three read as the bare `var`)
+- ~~The `keyed`-on-a-`Dict` warning of question 42, **if** the warning channel exists~~ **struck:**
+      [decision 42](../../../1.0.5-beta/decisions-taken.md#42-a-dict-under-ets-with-keyed-unwritten-keeps-the-default-with-no-warning)
+      answered **(b), no warning** — replacing the whole container is a thing authors legitimately
+      want — and its note after decision 57 says the answer does not move once a channel exists (at
+      `4fe1747e` it still does not: `grep -rln warning src/comptime/*.zig` → 0). The behaviour and the
+      5 061× / 19 994-of-20 000 figures are the `Ets` paragraph's, where the default is documented,
+      and nowhere else
 
 ### Step 7 — The language cells
 
