@@ -403,6 +403,31 @@ Repro: `repository/jhonstart/repro/local-binding-leaks-to-later-decls/` — twel
 - [ ] cells for both, each proved able to fail by planting the pre-fix behaviour, and the bare one
       asserted on **both** rows, since today it fails differently on each
 
+### Step 14 — decision 112: DSL hygiene (each name resolves in the scope of whoever wrote it)
+
+[Decision 112](../../decisions-taken.md) (maintainer, 2026-09-26). A DSL's `e.build(…)` text has two
+authors, and today the whole built text resolves in the **consumer's** scope: a private helper the
+library writes (`double(` … `)`) is `unbound variable 'double'`, an alias the consumer wrote
+(`area as surface`) is unbound the same way, and a consumer that declares its own `double` has it
+**silently captured** (21 instead of 40).
+
+- Text the library writes in `e.build` resolves in the **library's** module, private names included,
+  and carries that declaration's identity `<lib>@<path>@@<Decl>` (decision 109).
+- Text from `e.text()` resolves at the **call site** — the consumer's imports, aliases (decision 110)
+  and locals.
+- `e.lookup(name)` resolves at the call site and returns the **declaration's identity, never the
+  alias** (`e.lookup("surface")` → `shapesdsl@shapesdsl@@area`).
+
+`e.build` already receives the two parts separately; the compiler marks each span with its author and
+the DSL author writes nothing extra. The `@Expr`/`@ExprCustom` surface does not change.
+
+**Acceptance**
+- [ ] the three rows of decision 112's table print 40 — private helper, consumer alias, consumer's own
+      `double` not captured; the three `run/` cells are front 12's ([`../12-language-tests/README.md`](../12-language-tests/README.md) step 4, item 5)
+- [ ] `e.lookup("surface")` answers `area`'s identity, and hover / go-to-definition / the `CustomNode`
+      point at `area`
+- [ ] no `reject/` cell (the decision adds none)
+
 ## Acceptance — the `expected-failures.txt` lines this front deletes
 
 `repository/botopink-lang/tests/language/expected-failures.txt`, at `c2dd780`. **31 of 54.** A line
@@ -544,9 +569,11 @@ they were found probing `c2dd780` for this front and are not in that document ye
 Front 15 made two forms parse that nothing types. Neither is a new AST variant, by the argument `is`
 already used, so the work is inference-side only.
 
-1. **`adder(3)(4)` reaches inference as a call whose `callee` is empty**, and it answers
-   `unbound variable ''`. When a call's callee is itself an expression the node carries it in
-   `calleeExpr`; type that, then apply. The parser guarantees exactly one of the two is set.
+1. **Landed** — `adder(3)(4)` types: `inferCallExpr` infers the `calleeExpr` and applies it (a `fn`
+   taking the written arguments; the call's type is its return). `test/curried_call.bp` compiles; its
+   two lines are C-09's backend half (commonJS emits `(4)`, erlang `''(4)`). A leading-dot head
+   (`.Circle(radius: 1)`, front 15's steps 3–5 row 1) is the variant constructor of the position's
+   expected enum, spliced in as `Shape.Circle(…)`, and a located refusal with no expected enum.
 
 2. **`xs[0]` types as `void`.** The index is the builtin call `ast.index_builtin_name` (`"[]"`) over
    `(receiver, index)` — `ast.zig:1681-1703` states the contract. Inference has to type it **by the
