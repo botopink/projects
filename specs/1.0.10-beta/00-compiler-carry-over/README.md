@@ -388,10 +388,10 @@ in `libs/std/src/builtins.d.bp:116` (01 step 11 / 08).
 - [ ] `{ -> 42 }` / `calcular(fator: 2) { a, b -> a + b }` as a trailing lambda parse; the three
       `examples/jhonstart-app` files format; `arrow_when_empty` gone from `format.zig`
 - [ ] `builtins.d.bp` formats (`await` resolved as a method name or renamed, the choice recorded)
-- [ ] `botopink format --check` in a project directory walks nested `botopink.json` trees and every
+- [x] `botopink format --check` in a project directory walks nested `botopink.json` trees and every
       `.d.bp`; `tests/language/reject/**` skipped by the directory's name, no configuration;
       `src/format/AGENTS.md:111` corrected
-- [ ] a gate stage calls it — `scripts/gate.sh`, the hook, CI — and the 27 directories are green or
+- [x] a gate stage calls it — `scripts/gate.sh`, the hook, CI — and the 27 directories are green or
       each red is a row somewhere
 - [ ] the three `tests/language/modules/*` cells formatted (C-16's row)
 
@@ -415,9 +415,9 @@ own stack, `groupMeasured`, the method-chain construct, 137 lines of tests, and 
 form already in `format/AGENTS.md` — i.e. both planned commits in one tree. `todo.md` unticked.
 **Depends on:** nothing; 09 reformats after each construct.
 **Acceptance:**
-- [ ] commit 1: the six trees (nested example projects included) byte-identical before and after;
+- [x] commit 1: the six trees (nested example projects included) byte-identical before and after;
       `format --check` answers exactly what it answered; tests for the predicate on a hand-built group
-- [ ] commit 2: a chain that fits is one line (what follows on the line counted — 80 stays, 81
+- [x] commit 2: a chain that fits is one line (what follows on the line counted — 80 stays, 81
       breaks); one that does not puts every call on its own line, `+4`, never aligned under the
       receiver; a hand-broken chain that fits is joined; `assertFormat`/`assertIdempotent`/`assertLossless`
       cases; the per-tree movement measured against the 44 predicted; the other eight constructs pinned

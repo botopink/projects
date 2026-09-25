@@ -391,6 +391,49 @@ something to print.
 
 ---
 
+## G7 — a trailing comment on an array or tuple element
+
+### The loss
+
+Found by [`09-ecosystem-residuals`](../09-ecosystem-residuals/README.md)' probe row (d), at the pinned
+sibling commit: `erika/examples/erika-linq/src/main.bp:111-113` writes one comment per element, on the
+element's own line (`Box(label: "sq", w: 4, h: 4),   // w == h, h > 2`). `botopink format` moves each
+one to the line **below**, where it reads as the **next** element's — the same false re-attachment G2
+was for a record field, and idempotent, so `format --check` is green over it. Reproduced at compiler
+`f58fd392` on the minimal input:
+
+```
+val boxes = [          →   val boxes = [
+    1, // one                  1,
+    2, // two                  // one
+    3,                         2,
+];                             // two
+                               3,
+                           ];
+```
+
+### The mechanism
+
+The array and tuple literals collect comments into one flat `comments` list plus `commentsPerElem`
+(the count **before** each element, then the trailing ones) — `ast.zig:786-802`, filled by the two
+literal loops in `parser/exprs.zig` (`:1398-1436` tuple, `:1462-1530` array). A comment token read
+after an element's `,` is counted as the next element's leading comment; neither the comment's line nor
+a same-line flag reaches the AST, so the printer cannot tell `1, // one` from `1,` / `// one`. This is
+G2's mechanism on a different node, and the fix has G2's shape.
+
+### The cost
+
+An additive optional on the two literals — `trailingPerElem: []const ?[]const u8 = &.{}` (one slot per
+element, filled only when the comment token is on the same line as the element's last token), omitted by
+`jsonStringify` when empty so no parser snapshot moves — and the same-line test after
+`this.match(.comma)` in both loops. The printer half is this front's and is small: `elem, // c` in the
+open form, which a trailing comment already forces. **The parser half is not this front's**:
+`parser/exprs.zig`'s literal loops are [`15-language-surface`](../15-language-surface/README.md)'s file,
+and the carve-out this front holds is `parser/decls.zig`'s member sites only. Handed to 15; the printer
+lands after it.
+
+---
+
 ## What no gap explains
 
 The body-brace expansion in the same probe —
