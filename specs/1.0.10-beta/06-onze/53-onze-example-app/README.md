@@ -34,8 +34,8 @@ values it can take at build time. Five fronts, one value, and each of them has i
 passes against its own idea of the shape. Nothing checks that the five ideas are the same idea.
 
 **Ordering.** `emilia(tokens)` registers a class and `flush()` clears the sheet. jhonstart's render
-(front 30) streams, and calls the `jhonstart-emilia` plugin front 49 registers for the head and for
-each chunk. Front 52 wants its preload links before any other style. Each of those is
+(front 30) streams, and awaits the `jhonstart-emilia` plugin front 49 registers for the head, for
+each chunk and for the payload's `s` key (decision 114). Front 52 wants its preload links before any other style. Each of those is
 testable alone and the composition is not, because the composition only exists once something renders
 a real document with fonts, styles, a streamed chunk and a late-arriving component in it.
 
@@ -285,7 +285,8 @@ example from what is still **assumed**, because only the second column is a risk
 |---|---|
 | 07 · 65 | `import {Filter, Chain, Next, middleware, matcher} from "rakun-web";` · `#[middleware] #[matcher("/dashboard/:path*")] pub fn middleware(req: Request, chain: Chain) -> Response` · `Next.redirect` / `Next.rewrite` / `chain.next(req)` · `rkSetReplyHeader`, `rkChainNext`, `rkTestRequest`, `rkTestRequestAuthed`, `rkReplyHeaderValue` |
 | 12 | `import {cachePolicy, cacheThrough, cacheLife, CacheScope} from "rakun-cache";` · `import {cache} from "rakun-cache";` for `cache.revalidateTag`, `cache.revalidatePath`, `cache.revalidatedPaths()` · **loaders are blocking, not `@Future`** |
-| 22 | `import {page, layout, PageContext, LayoutProps} from "rakun";` · `#[page("blog/[slug]")]` / `#[layout("blog")]`, argument = app-relative directory · `route.params.lookup(k).unwrapOr("")` (a `Dict`) · `PageContext(pathname, pattern, params, query, rest)` · `LayoutProps.children` · registry cells `rkAppRegisterPage`, `rkAppRegisterLayout`, `rkAppRegisterHandler`, `rkAppTable` must be imported by any module carrying a decorated declaration |
+| 30 | `import {page, layout, PageContext, LayoutProps} from "jhonstart";` · `#[page("blog/[slug]")]` / `#[layout("blog")]`, argument = app-relative directory, segment grammar front 22's · `route.params.lookup(k).unwrapOr("")` (a `Dict`) · `PageContext(pathname, pattern, params, query, rest)` · `LayoutProps.children` · the decorators fill jhonstart's UI registry; onze's boot copies each record into rakun's route table and hands rakun one `PageRenderer` per page (decision 114) |
+| 22 · 23 | no call surface in the app — rakun's route table and `page(pattern, render: PageRenderer)` over `ChunkWriter` are reached by onze's boot only; `rkAppRegisterHandler` is imported by any module carrying a front 25 route handler |
 | 24 | `import {serverAction, FormData, ActionResult} from "rakun";` · `#[serverAction] #[@future] fn(form: FormData) -> @Future<ActionResult>` · `form.field(name)` · `ActionResult.invalid(field, message)` / `ActionResult.done()` · `result.state.lookup(field)` |
 | 25 | `import {getRoute, postRoute, HandlerResponse, bodyJson} from "rakun";` · `#[getRoute("api/posts")] #[@future] fn(req: Request) -> @Future<HandlerResponse>` · `HandlerResponse.json/created/notFound/badRequest/unsupportedMedia/withStatus` + `.withHeader` |
 | 27 | `import {Link, linkProps, withPrefetch, withClass} from "jhonstart";` · `Link(linkProps("/blog"), [children])` |
@@ -305,14 +306,14 @@ example from what is still **assumed**, because only the second column is a risk
 
 | Front | Assumed shape | Why it is still open |
 |---|---|---|
-| 22 | `LayoutProps(children: leaf)` is constructible with one named field | Front 22's examples only ever *read* `props.children`; nothing constructs a `LayoutProps`, so the field list is unverified and three of this front's tests construct one |
+| 30 | `LayoutProps(children: leaf)` is constructible with one named field | `LayoutProps` is jhonstart front 30's record (decision 114); no example there constructs one, so the field list is unverified and three of this front's tests construct one |
 | 51 · 52 | `Image(props, cfg, publicDir)`, `googleFont(family, opts) -> @Future<Font>`, `fontHead(fonts) -> string` | These are fronts 51 and 52's own shapes, defined in this milestone by the same author; nothing external has confirmed them |
-| 30 | emilia's block reaches the head and each streamed chunk through the `jhonstart-emilia` plugin that front 49 registers (decision 113) | This front's layout produces the head string and hands it over; it does not call the plugin, so the seam is cited rather than exercised |
+| 30 | emilia's block reaches the head and each streamed chunk, and the payload's `s` key, through the asynchronous `jhonstart-emilia` plugin that front 49 registers (decisions 113, 114) | This front's layout produces the head string and hands it over; it does not call the plugin, so the seam is cited rather than exercised |
 | 12 | `cache.revalidatedPaths()` is a test seam available to an app's own tests | Front 12's example uses it, but it is described there as a seam rather than public surface |
 | 94 | how a void element (`input`, `img`) renders | Front 94 owns `elements.bp` and is settling it; this app's `input` assertions and front 51's `Image` both depend on the answer |
 
 Four rows that were open when this front was drafted have since been settled by their owners — the
-route-handler decorator (`#[getRoute]`), the form binding (`data-jh-a` + `__onze_action`), the
+route-handler decorator (`#[getRoute]`), the form binding (`data-jh-a` + the action field), the
 streaming marker (ordinal `data-jh-h`) and the element-surface front number (94). This front's
 examples were already written against the settled form in all four cases; the reasoning is kept under
 *Contradictions*.
@@ -350,7 +351,10 @@ registration. Front 25 owns `route_handler.bp`, so `#[getRoute]` wins and front 
 This app's `app/api/posts/route.bp` already uses `#[getRoute]` / `#[postRoute]`.
 
 **Two form bindings. — RESOLVED.** `contracts.md § 3` and front 24 agree: `data-jh-a="<id>"` plus a
-hidden `__onze_action` field, the action addressed by an HMAC'd id and never by its name. Front 67's
+hidden action field, the action addressed by an HMAC'd id and never by its name. The field's name
+(and the scripted header's) is passed by onze to both sides — `actionField` / `actionHeader` to
+jhonstart, `rakun.actions.field` / `rakun.actions.header` to rakun — and is `__bp_action` /
+`X-Bp-Action` by onze's default (decision 114). Front 67's
 example had asserted `data-jh-form="createPost"` and `action="/_onze/action/createPost"` — the
 function's own name in both the attribute and the URL, which is exactly what front 24 tests the absence
 of. Front 67 now follows `contracts.md`, and this app's form assertions were already written against it.
@@ -366,8 +370,10 @@ element-surface front of track C (number allocated from 54 up)" without naming i
 `94-jhonstart-element-surface`, owning `repository/jhonstart/src/elements.bp`, and those eight fronts
 have been substituted the way this front's examples were.
 
-**Registration is front 22's.** `#[page("…")]` / `#[layout("…")]` plus `rkAppRegisterPage` /
-`rkAppRegisterLayout`; front 49 defers to them, and nothing in this app calls an onze registry.
+**Registration is jhonstart's and rakun's, wired by onze.** `#[page("…")]` / `#[layout("…")]` are
+jhonstart front 30's and fill its UI registry; onze's boot (front 49) copies the records into rakun's
+route table and hands rakun one `PageRenderer` per page through `page(pattern, render)` (decision
+114). Nothing in this app calls an onze registry.
 
 **Wave 0 for front 49 is too early for its integration layer.** `fronts.md` puts front 49 in wave 0,
 blocked by nothing, but the wiring it was chartered to deliver reads fronts 22, 23 and 69. Front 49 now

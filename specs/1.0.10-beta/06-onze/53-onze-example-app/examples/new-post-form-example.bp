@@ -26,8 +26,7 @@ import {form, input, label, button, section} from "jhonstart";  // provided by f
 import {ActionState, actionState, parseActionState} from "jhonstart";       // front 67
 import {FormBinding, formAction, formAttrs, useActionState} from "jhonstart";  // front 67
 import {styled, Token} from "emilia";                           // front 48
-import {layout, page, LayoutProps, PageContext} from "rakun";   // front 22
-import {rkAppRegisterLayout, rkAppRegisterPage} from "rakun";
+import {layout, page, LayoutProps, PageContext} from "jhonstart";   // front 30
 import {cookies} from "rakun";                                  // front 62
 import {redirect} from "rakun";                                 // front 63
 import {collections.Dict} from "std";
@@ -138,7 +137,7 @@ test "the empty form carries what an un-hydrated browser needs to submit it" {
     assert markup.contains("method=\"post\"");
     assert markup.contains("enctype=\"application/x-www-form-urlencoded\"");
     assert markup.contains("data-jh-a=\"a_");
-    assert markup.contains("name=\"__onze_action\"");
+    assert markup.contains("name=\"__bp_action\"");   // onze's default `actionField` (decision 114)
 }
 
 test "the action is named by its id and never by its function name" {

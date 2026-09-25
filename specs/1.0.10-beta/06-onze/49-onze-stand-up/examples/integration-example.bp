@@ -2,13 +2,13 @@
 //
 // Demonstrates: what an onze app's entry module looks like, and — more to the
 // point — how little of it is onze's. The page and the layout are written in
-// front 22's vocabulary (`#[page]`, `#[layout]`, `PageContext`, `LayoutProps`),
+// jhonstart front 30's vocabulary (`#[page]`, `#[layout]`, `PageContext`, `LayoutProps`),
 // the class comes from front 48's `styled`, and onze contributes exactly two
 // things: the config value, and `Onze.run` turning it into a listener.
 //
-// An earlier draft of this front proposed `PageProps`, `Params`, `registerPage`
-// and `renderDocument`. All four are deleted: fronts 22, 23 and 69 own them, and
-// a second name for a value in the same stack is a translation layer.
+// onze proposes no `PageProps`, `Params`, `registerPage` or `renderDocument`:
+// jhonstart front 30 and rakun fronts 22 and 23 own them, and a second name for
+// a value in the same stack is a translation layer.
 //
 // Upstream: https://nextjs.org/docs/app/getting-started/layouts-and-pages
 //           https://nextjs.org/docs/app/api-reference/config/next-config-js
@@ -19,8 +19,7 @@
 
 import {Element, div, h1, p, text, renderToString} from "jhonstart";
 import {styled, Token} from "emilia";                          // front 48
-import {page, layout, PageContext, LayoutProps} from "rakun";  // front 22
-import {rkAppRegisterPage, rkAppRegisterLayout} from "rakun";  // front 22 registry cells
+import {page, layout, PageContext, LayoutProps} from "jhonstart";  // front 30
 import {Onze, OnzeConfig, defaultConfig, withPort} from "onze";
 import {collections.Dict} from "std";
 
@@ -32,7 +31,8 @@ fn titleTokens() -> Token[] {
     return [.Text.Size.X2xl, .Text.Bold];
 }
 
-// app/layout.bp — front 22 registers it at the root of the route table. The
+// app/layout.bp — jhonstart front 30's decorator registers it at the root, and
+// onze copies the record into rakun's route table at boot. The
 // decorator argument is the app-relative directory, and front 50's scan fails
 // the build when it disagrees with where the file actually is.
 #[layout("")]
@@ -69,7 +69,7 @@ fn postRoute(slug: string) -> PageContext {
     );
 }
 
-test "a page reads its dynamic segment out of front 22's PageContext" {
+test "a page reads its dynamic segment out of jhonstart's PageContext" {
     val markup = renderToString(await blogPostPage(postRoute("hello-world")));
     assert markup.contains("Post: hello-world");
     assert markup.contains("class=\"e_");

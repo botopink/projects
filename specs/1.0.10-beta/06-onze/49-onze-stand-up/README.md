@@ -6,9 +6,13 @@ joins rakun's server to jhonstart's tree to emilia's stylesheet until this front
 **Target:** both — the config value and the route registry are read by the BEAM server half and by the
 JS build half; the render seam runs on erlang, the registry it reads is built by the js half
 **Wave:** 5 — after jhonstart front 30, whose render and bridge the boot wires (decision 113)
-**Depends on:** 30 (jhonstart's render: `app`, `RenderPlugin`, `RenderHooks`, and the
-`jhonstart-emilia` bridge member whose `plugin()` the boot registers) · 23 (the page dispatch the
-boot hands the render function to) · 22 (the matcher the boot hands jhonstart's router as `match`)
+**Depends on:** 30 (jhonstart's render: `app`, `renderStream`, `RenderPlugin`, `RenderHooks`, the UI
+registry the `#[page]` / `#[layout]` decorators fill, and the `jhonstart-emilia` bridge member whose
+`plugin()` the boot registers) · 28 (`RequestData`, built here from rakun's `Request`) · 23
+(`ChunkWriter`, `PageRenderer` and `page(pattern, render)`, the registry the boot hands one renderer
+per page) · 22 (rakun's route table, and the `rakun-routing` matcher the client entry hands
+jhonstart's router as `match`) · 24 and 05 (the action wire names the boot sets in rakun's
+configuration)
 **Owns:** `botopink.json`, `src/root.bp`, `src/types.bp`, `src/config.bp`, `src/integration.bp`,
 `test/config_test.bp`, `test/types_test.bp`
 **Does not touch:** `repository/jhonstart/**` (the render, `RenderHooks`, `RenderPlugin` and the
@@ -73,7 +77,8 @@ three libraries do not share, and the one package that imports all of them (deci
 onze ──► jhonstart-emilia ──► jhonstart   (the plugin contract only)
   │                      └──► emilia
   ├────► jhonstart
-  └────► rakun
+  ├────► rakun
+  └────► rakun-routing       (the pure matcher, on the server and in the client entry)
 ```
 
 jhonstart and rakun never import each other, and emilia imports nobody; every value that crosses
@@ -87,15 +92,17 @@ adapter. Everything else in track E stands on those five and on the other fronts
 ### The three seams, and who actually owns each of them
 
 **onze does not own a page registry, a props vocabulary, a renderer or a head-insertion point.**
-rakun front 22 owns the route table, jhonstart front 30 owns the render and its plugin point, and
+rakun front 22 owns the route table (its matcher in `rakun-routing`) and front 23 the opaque page
+registry, jhonstart front 30 owns the render, its plugin point and the UI conventions, and
 onze's job is to be the package where they meet and the project-level configuration they read.
 
 **Seam 1 — how a project's `app/` tree reaches front 22's route table.**
 
 Not at comptime. `@Decl` carries no source location (`language-gaps.md`), so a decorator cannot learn
-which file it annotates, and a decorator body runs in a minimal eval prelude with no `fs`. Front 22's
-answer is an explicit argument: `#[page("blog/[slug]")]`, `#[layout("blog")]`, `#[getRoute("api/posts")]`,
-where the argument is the app-relative directory. Front 50's CLI generates the `pub mod` lines from the
+which file it annotates, and a decorator body runs in a minimal eval prelude with no `fs`. The answer
+is an explicit argument: `#[page("blog/[slug]")]`, `#[layout("blog")]` (jhonstart front 30's UI
+decorators), `#[getRoute("api/posts")]` (rakun front 25's), where the argument is the app-relative
+directory and the segment grammar is front 22's, in `rakun-routing`. Front 50's CLI generates the `pub mod` lines from the
 tree and **fails the scan when a file's location and its decorator argument disagree** — that check is
 the whole of the file-system convention, and it lives in the CLI because nothing else can see a
 directory.
@@ -108,19 +115,41 @@ says to scan, so `app/` and `src/app/` are the same mechanism with a different s
 rakun serves and jhonstart renders; neither names the other, so onze hands each one what it needs
 from the other (decision 113):
 
-- to **rakun**, the page-render function: rakun matches the route (front 22), opens the request scope
-  (front 62), calls the function onze handed it and writes the chunks it returns (front 23);
-- to **jhonstart's render** (front 30), the segment chain rakun matched — layouts, templates and
-  boundaries mapped from front 22's `RouteEntry` onto jhonstart's own segment record — and the
-  payload's rakun-side values as strings: the route table `t`, the actions `a` and the build id `b`;
-- to **jhonstart's router** (front 26), the `match` function — front 22's matcher — so the router
-  keeps no matcher and no table parser of its own;
+- to **rakun's route table** (front 22), the UI records: the `#[page]`, `#[layout]`, `#[template]`
+  and `#[defaultView]` decorators are jhonstart front 30's and fill jhonstart's UI registry; the boot
+  reads that registry and registers each record in rakun's table, so the table the server matches
+  and the payload's `t` stay one table (contract 1, decision 114);
+- to **rakun**, one opaque `PageRenderer` per page pattern (front 23, decision 114): rakun matches the
+  route, opens the request scope (front 62), calls the renderer with its `Request` and a
+  `ChunkWriter`, and closes the response when the renderer's future resolves. rakun knows no HTML:
+
+  ```bp
+  // onze/src/integration.bp — `site` is jhonstart's `App`, `page` the jhonstart page for `route`
+  rakun.page(route, fn(req, out) {
+      return site.renderStream(page(req), requestData(req), fn(chunk) { return out.write(chunk); });
+  });
+  ```
+
+- to **jhonstart's render** (front 30), inside that renderer: the `PageInput` — the segment chain
+  (layouts, templates and boundaries from jhonstart's UI registry, keyed by front 22's layout chain
+  for the matched pattern) and the payload's rakun-side values as strings: the route table `t`, the
+  actions `a` and the build id `b`; the `RequestData` (front 28) that `requestData(req)` builds from
+  rakun's `Request`, which is what jhonstart's `request()`, `headers()` and `cookies()` read; and a
+  `fn(string) -> @Future<void>` writer over rakun's `ChunkWriter`. jhonstart never sees the
+  `ChunkWriter`;
+- to **jhonstart's router** (front 26), the `match` function — `rakun-routing`'s `matchPath` over the
+  payload's table, handed in by the generated client entry (front 68) — so the router keeps no
+  matcher and no table parser of its own;
+- to **both sides of a server action**, the wire names (decision 114): the boot sets rakun's
+  `rakun.actions.field` / `rakun.actions.header` (fronts 05 and 24) and passes the same two values to
+  jhonstart's form binding as `actionField` / `actionHeader` (front 67). onze's defaults are
+  `__bp_action` and `X-Bp-Action`; neither library spells a name;
 - back to **rakun**, the not-found outcome: a page that raises jhonstart's own not-found signal is
   answered by rakun with 404, and onze is the one that translates the signal into the status.
 
 The vocabulary — `PageContext(pathname, pattern, params, query, rest)`, `LayoutProps.children` — is
-front 22's, and onze does not restate it as `PageProps`/`Params`: a second name for every value in
-the stack is a translation layer and a class of bugs.
+jhonstart front 30's, and onze does not restate it as `PageProps`/`Params`: a second name for every
+value in the stack is a translation layer and a class of bugs.
 
 **Seam 3 — how emilia's classes reach the HTML.**
 
@@ -128,7 +157,9 @@ the stack is a translation layer and a class of bugs.
 serialises the sheet **and clears it** (`emilia.bp:53-56`). The moments at which it is flushed —
 once into the head after the shell, once per streamed boundary inside that boundary's fill
 `<template>`, and nothing left at the end — are jhonstart's: front 30 declares the `RenderPlugin`
-point and calls it, and the `jhonstart-emilia` bridge adapts `flush()` to it. onze's part is one line
+point, whose methods are asynchronous, and awaits it; the `jhonstart-emilia` bridge awaits emilia's
+`#[@future] flush()` in `head` and `chunk`, and its `payload()` returns `#("s", <the classes it
+flushed>)`, which jhonstart writes as the payload's `s` key (decision 114). onze's part is one line
 at boot, registering the bridge:
 
 ```bp
@@ -261,7 +292,7 @@ pub fn withDev(base: OnzeConfig, dev: bool) -> OnzeConfig { … }
 
 ### Step 3 — `types.bp`
 
-What is left after fronts 22 and 23 own the render vocabulary: the project-level values, and nothing
+What is left after jhonstart front 30 and rakun fronts 22 and 23 own the render and routing vocabulary: the project-level values, and nothing
 that duplicates a rakun or jhonstart type.
 
 ```bp
@@ -273,7 +304,7 @@ pub type OnzeProject(
 
 pub type AppFile(
     authoredPath: string,    // "app/blog/[slug]/page.bp" — what an error message names
-    segment: string,         // "blog/[slug]"  — the decorator argument front 22 expects
+    segment: string,         // "blog/[slug]"  — the decorator argument, front 22's segment grammar
     kind: string,            // "page" | "layout" | "template" | "default" | "loading"
                              // | "error" | "not-found" | "route"
 )
@@ -322,12 +353,20 @@ because an app author reads onze's docs and not rakun's internals.
 - [ ] `integration.bp` is the only file in onze that imports jhonstart, rakun and
       `jhonstart-emilia` together (decision 113): it builds `app(plugins: [emiliaPlugin()])`, fills
       jhonstart's `RenderHooks.headExtra` / `bodyExtra` with front 68's tags (empty while 68 does
-      not exist), hands rakun the page-render function and jhonstart's router the `match` function,
-      and translates jhonstart's not-found signal into rakun's 404. Any other onze file reaching for
+      not exist), registers jhonstart's UI records in rakun's table and hands rakun one
+      `PageRenderer` per page through `page(pattern, render)`, builds `RequestData` from rakun's
+      `Request`, sets `rakun.actions.field` / `rakun.actions.header` and passes the same values to
+      jhonstart as `actionField` / `actionHeader`, and translates jhonstart's not-found signal into
+      rakun's 404. Any other onze file reaching for
       the seam means the seam is in the wrong place, and the front says so under *Blocked* rather
       than adding a second wiring point
 - [ ] Nothing under `repository/onze/src/` calls emilia's `flush()`, and no onze file defines a style
       sink — the flush moments are jhonstart front 30's and the adaptation is the bridge's
+- [ ] The renderer handed to rakun writes every chunk through `out.write` and resolves only after the
+      last one; with the action-name keys removed from the boot, rakun refuses to start its action
+      dispatcher naming the key — onze sets them, no library defaults them
+- [ ] `__bp_action` and `X-Bp-Action` appear in onze's defaults and nowhere under `repository/rakun/`
+      or `repository/jhonstart/`
 
 ### Step 5 — What this front deliberately does not build
 
@@ -336,8 +375,8 @@ Written down so the question is answered before it is asked.
 | Not built | Why it is not here |
 |---|---|
 | `reexports.bp` | A consumer writes `import {div, text} from "jhonstart";` because that is where `div` lives. A re-export layer buys one shorter import line for a second name for every symbol in three libraries |
-| `PageProps` / `LayoutProps` / `Params` | Front 22 delivers `PageContext` and `LayoutProps`, and `params` is a `std` `Dict` read with `lookup(k).unwrapOr("")`. A second vocabulary is a translation layer and a class of bugs |
-| `registerPage` / `registerLayout` / `registerAction` | Front 22's `#[page]` / `#[layout]` decorators and `rkAppRegisterPage` / `rkAppRegisterLayout` do this, and front 50's CLI generates the `pub mod` lines that make the decorated modules load |
+| `PageProps` / `LayoutProps` / `Params` | jhonstart front 30 delivers `PageContext` and `LayoutProps`, and `params` is a `std` `Dict` read with `lookup(k).unwrapOr("")`. A second vocabulary is a translation layer and a class of bugs |
+| `registerPage` / `registerLayout` / `registerAction` | jhonstart front 30's `#[page]` / `#[layout]` decorators fill jhonstart's UI registry, the boot copies it into rakun's table and `page(pattern, render)`, front 24's `#[serverAction]` registers actions, and front 50's CLI generates the `pub mod` lines that make the decorated modules load |
 | `renderDocument` | jhonstart front 30 owns the document and the moments the render plugin is called, because only the render knows whether the response is streaming |
 | `ActionResponse<S>(state, success, message)` | Front 24's `ActionResult` is the action envelope |
 | `RouteSegmentConfig(dynamic, revalidate)` | Front 60's `SegmentConfig(dynamic, dynamicParams, revalidate, fetchCache)` |
@@ -421,8 +460,8 @@ caller passes one.
   value: defaults, immutable overrides, and the origin string the CLI prints and `Link` prefetches
   against.
 - [`examples/integration-example.bp`](./examples/integration-example.bp) — the boot adapter, and a
-  page and layout written in front 22's vocabulary rather than in a second one: `#[page]`, `#[layout]`,
-  `PageContext`, `LayoutProps`, and emilia's class arriving through front 48's `styled`.
+  page and layout written in jhonstart front 30's vocabulary rather than in a second one: `#[page]`,
+  `#[layout]`, `PageContext`, `LayoutProps`, and emilia's class arriving through front 48's `styled`.
 - [`examples/alias-and-env-example.bp`](./examples/alias-and-env-example.bp) — the import alias map
   resolving a deep app import, and the `ONZE_PUBLIC_` predicate refusing a server secret.
 

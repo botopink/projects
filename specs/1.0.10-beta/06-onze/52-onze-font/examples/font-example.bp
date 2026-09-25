@@ -24,8 +24,7 @@ import {
     localFont,
     fontHead,
 } from "onze";
-import {layout, LayoutProps} from "rakun";                      // front 22
-import {rkAppRegisterLayout} from "rakun";
+import {layout, LayoutProps} from "jhonstart";                      // front 30
 
 // Body text: Inter, two weights, latin only, swap, with the metric-adjusted
 // fallback on. `variable: ""` means "give me a class, not a custom property".
@@ -66,7 +65,7 @@ pub fn brandFont() -> @Future<Font> {
 // separate value, because it has to be composed after the tree is built (that is
 // when emilia's classes exist), and front 69 owns where in the head it goes.
 //
-// Front 22's layouts are synchronous, so the font class is named as a constant:
+// jhonstart front 30's layouts are synchronous, so the font class is named as a constant:
 // front 52 resolves the family at BUILD time and the class name is a pure
 // function of family and build id.
 val siteFont = "onze-font-inter";

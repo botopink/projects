@@ -18,8 +18,7 @@
 import {Element, div, h1, p, text, renderToString} from "jhonstart";
 import {article, h2, timeTag} from "jhonstart";             // provided by front 94
 import {styled, Token} from "emilia";                       // front 48
-import {page, PageContext} from "rakun";                    // front 22
-import {rkAppRegisterPage} from "rakun";
+import {page, PageContext} from "jhonstart";                    // front 30
 import {notFound} from "rakun";                             // front 63
 import {
     registerSegmentConfig,
