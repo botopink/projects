@@ -127,7 +127,7 @@ is what makes it portable instead of ported.
 | `ast.ValDecl` fields | 7; **no `mutable`, no `annotations`** (`ast.zig:1891-1909`) |
 | `ast.Stmt.Kind.localBind` | **has `mutable: bool`** (`ast.zig:563`) and `commonJS.zig:2366` already reads it |
 | purity analysis in `src/comptime/**` | **none** — `EffectKind` (`ast.zig:2014`) is `result\|future\|generator\|iterator\|asyncGenerator\|context`, the declared return wrappers |
-| erlang forms available | `erl_ast.Form` (`:252-266`) = `module\|exports\|import\|no_auto_import\|function\|comment\|blank` — **no attribute form**, so no `-on_load` |
+| erlang forms available | `erl_ast.Form` = `module\|exports\|import\|no_auto_import\|on_load\|function\|comment\|blank` — `on_load` added by step 4 |
 | erlang expressions available | `erl_ast.Expr` (`:18-74`) already has `case_`, `try_catch`, remote `call`, `atom`, `tuple` — the guarded-init shape needs no new node |
 | wasm mutability | `wat_ast` already has `mutable: bool` (`wat/wat_ast.zig:216`); `emitGlobalVal` (`wat.zig:2104`) sets it on 3 of 5 paths. The two that do not are `:2112` and `:2134` — the two that break |
 | JS mutability | `js_ast.Decl.Kw` (`js/js_ast.zig:324-334`) has `const_` and `let_`; `kw = .let_` appears **nowhere in production codegen** — only in `js_emitter.zig:712`, a test |
@@ -400,20 +400,27 @@ recompiling the compiler, which is the property `erlang.zig:184-260`'s comment c
 table.
 
 **Acceptance:**
-- [ ] `import { beam } from "std"` resolves and each declaration is reachable on `erlang` and `beam`
-- [ ] On `commonJS` and `wasm` the module reds `std-unsupported-on-target` — the existing gate, not a
+- [x] `import { beam } from "std"` resolves and each declaration is reachable on `erlang` and `beam`
+      — erlang since C-03's erlang half; beam since step 5 wired the wrapper for a plain
+      `module:symbol` target (`beam_asm.zig` `hostWrapperRef` / `emitHostWrapper`)
+- [x] On `commonJS` and `wasm` the module reds `std-unsupported-on-target` — the existing gate, not a
       new one. **Note the tension to settle with the maintainer:** the design says the *annotation* is
       a **no-op** off the BEAM, while the std module is a **hard error** there. Both are defensible;
       they must not be decided separately
 - [ ] The guarded-init and the owner shapes are byte-compared against the Erlang programs step 0
-      measured, and re-run under `erl`
-- [ ] **Not** a `.zig` line: if layer 1 needs one, that is the finding, and it goes back to question 43
+      measured, and re-run under `erl`. **Re-run, not byte-compared:** the shapes are layer 2's, not
+      template text in `beam.bp` — the module's own header says "which process then owns the table
+      is layer 2's", and the ten primitives cannot express a `receive` or a registered process — so
+      they are emitted by `erlang.zig` (`etsOwnerForms`) and `beam_asm.zig` (`emitEtsHelpers`) and
+      run under `erl` by step 4's and step 5's fixtures; step 0's hand-written programs were not kept,
+      so there is nothing to byte-compare against
+- [x] **Not** a `.zig` line: layer 1 is still the ten `declare fn`s; the only edit to `beam.bp` is its
+      header's sentence about the beam wrapper
 
 ### Step 4 — erlang: three modes, and the owner question answered first
 
-**Blocked on [`13-module-identity`](../13-module-identity/README.md)** — it owns `erlang.zig` wholesale
-for its second and third halves — and on **question 39**, because the answer decides whether the
-emitter writes a process.
+**Landed** after [`13-module-identity`](../13-module-identity/README.md)'s halves 2–3 (decision 109's
+atoms) and with **question 39** answered (a) — the emitter writes the owner process.
 
 **If question 43 answers (b)**, most of what follows is *calls into `std/beam`* rather than shapes
 built in Zig, and this step shrinks to the read/write lowering. The shapes below are what has to
@@ -434,29 +441,44 @@ is a 0-arity function"* — which re-evaluates the initialiser on **every read**
 | `Ets` | the `whereis`-guarded `case` + `try ets:new` of the design, plus whatever question 39 answers | **none exists** — measured |
 
 **Acceptance:**
-- [ ] For each mode, one fixture whose emitted `.erl` is compiled with `erlc` and run with `erl`, and
-      whose RUN LOG is the value the program actually printed
-- [ ] `PersistentTerm`: a `var` written after load is a located error, with the hint naming
-      `#[@BeamMemory.Ets(keyed = true)]`. Second reason, measured: `-on_load` **re-runs on every code
+- [x] For each mode, one fixture whose emitted `.erl` is compiled with `erlc` and run with `erl`, and
+      whose RUN LOG is the value the program actually printed — `codegen/tests/beam_memory.zig`
+      (`assertErlangRunLog`), each across processes `std/async`'s `allOf` spawns: `ProcessDict`
+      `[3, 3, 3, 3, 3]` then `0`, `Ets` `15`, a whole-value `Ets` write read back as `[38]`,
+      `PersistentTerm` `[101, 101]`. The reads and writes are remote calls into `std@beam`
+      (decision 43's layer 2; `erlang.zig` names no ETS function), which `expandStdImports` pulls into
+      an erlang/beam build of a module declaring a `var`; storage is named `'<module atom>@@<var>'`
+- [x] `PersistentTerm`: a `var` written after load is a located error, with the hint naming
+      `#[@BeamMemory.Ets(keyed = true)]` for a `Dict` and `#[@BeamMemory.Ets]` for anything else
+      (`keyed` on a scalar is decision 51's error, so the literal hint would send the author into it);
+      refused on every target (`infer.zig` `refuseMemoryWrite`), `reject/beam_memory_pt_write`. Second reason, measured: `-on_load` **re-runs on every code
       reload**, so a runtime write is erased by the next hot reload (`999` → `101` after
       `code:load_file/1`)
-- [ ] `Ets`: the five-request test of question 39 is a fixture, and it reads **15**, not `3` and `0`
-- [ ] `+=` lowers to `ets:update_counter` for `i32`/`i64` and is **refused** for every other type
-      (question 40), with `hits = hits + 1` recognised as the same form
-- [ ] The initialiser rule is `ast.Expr.isComptimeExpr()` (`ast.zig:218`) plus the literal path — **not
-      purity**, which is not decidable: `EffectKind` (`ast.zig:2014`) is the declared return wrappers,
-      and `fn registry() -> i32 { @print("side effect"); return 7; }` used as a module initialiser
-      passes `check` today
-- [ ] No use of `ets:update_counter`'s `{Pos, Incr, Threshold, SetValue}` form. It works (measured:
+- [x] `Ets`: the five-request test of question 39 is a fixture, and it reads **15**, not `3` and `0` —
+      the codegen fixture and `run/beam_memory_ets`. The owner (`'__bp_ets_owner'/2`) wins `etsNew`
+      with `named_table` under a `try`, seeds, registers under the table's name and parks in
+      `timer:sleep(infinity)`; the guard answers only once the owner is registered, so "registered"
+      also means "seeded", and a dead owner's table is re-created and re-seeded by the next caller
+- [x] `+=` lowers to `ets:update_counter` for `i32`/`i64` and is **refused** for every other type
+      (question 40), with `hits = hits + 1` recognised as the same form (`hits = n + hits` and
+      `hits = hits - n` too — `ast.classifyMemoryWrite`, shared by the checker and both emitters). Any
+      other write that reads the var is §5(b)'s refusal (`reject/beam_memory_ets_recompose`), except
+      on a `Dict`, whose read-modify-write is decision 42's documented `keyed = false` behaviour
+- [x] The initialiser rule is `ast.Expr.isComptimeExpr()` plus the literal path (`ast.isMemorySeed`:
+      number, string, `null`, `true`/`false`, a negation, an array or tuple of them) — **not purity**;
+      `reject/beam_memory_ets_initialiser` refuses `registry()`. **Finding:** no `Dict` can satisfy
+      it — there is no `Dict` literal and `comptime dict.empty()` does not fold (`'call' is a runtime
+      identifier`) — so an `Ets` `Dict`, keyed or not, cannot be declared until one of the two exists
+- [x] No use of `ets:update_counter`'s `{Pos, Incr, Threshold, SetValue}` form. It works (measured:
       `2147483647 + 1` → `-2147483648`) and it would make `Ets` diverge from the erlang backend's own
       `i32`, which does not wrap: `var n: i32 = 2147483647; n = n + 1;` prints `2147483648` on erlang
       **and** on node, and `-2147483648` on wasm. That divergence is pre-existing and not this front's
 
 ### Step 5 — beam: the same three modes in assembly
 
-**Blocked on [`03-beam`](../03-beam/README.md) closing and on
-[`13-module-identity`](../13-module-identity/README.md)**, which owns `beam_asm.zig` wholesale for
-steps 7–20.
+**Landed** after [`13-module-identity`](../13-module-identity/README.md). It needed decision 64's beam
+half for the calls into `std@beam`, and wired it for the plain `module:symbol` form only (C-03's
+template bullet stays open).
 
 Measured: the beam target lowers a module `val` to the **same** 0-arity function
 (`{function, seeded, 0, 5}` → `{call, 0, {f, 3}}`) and opens the file with `{attributes, []}.`, so the
@@ -466,10 +488,17 @@ Measured: the beam target lowers a module `val` to the **same** 0-arity function
 re-measure before it is sized.
 
 **Acceptance:**
-- [ ] Each mode's beam fixture is byte-compared against the erlang fixture's *behaviour*, not its
-      text: same program, same printed value, run under `erl`
-- [ ] `{attributes, [{on_load, [{'__bp_load', 0}]}]}` emitted for a module carrying a
-      `PersistentTerm` var, and the `.S` loads
+- [x] Each mode's beam fixture is byte-compared against the erlang fixture's *behaviour*, not its
+      text: same program, same printed value, run under `erl` — `run/beam_memory_{process_dict,ets,persistent_term}`
+      and `run/module_var` carry one `.out` for both targets (`.targets` = `erlang beam`) and pass
+      on both; the codegen snapshot harness does not run a multi-module erlang/beam program, so the
+      behaviour is pinned by the language cells rather than a snapshot. The storage logic is fixed
+      per-module helpers written instruction by instruction (`'__bp_pd_set'/2`, `'__bp_ets'/2`,
+      `'__bp_ets_wait'/3`, `'__bp_ets_owner'/2`, `'__bp_ets_add'/3`, `'__bp_ets_set'/3`); a write
+      site stages its operands and calls one
+- [x] `{attributes, [{on_load, [{'__bp_load', 0}]}]}` emitted for a module carrying a
+      `PersistentTerm` var, and the `.S` loads (`beamEmitter.writeOnLoadAttributes`;
+      `run/beam_memory_persistent_term` on beam)
 
 ### Step 6 — The diagnostics and the documentation text
 
@@ -522,7 +551,13 @@ gives them something to run against.
       `20000 20000` (the `keyed = false` twin is the measurement, `19994 20000`, and is not a cell —
       a test that fails by chance is not a test) ·
       `run/beam_memory_persistent_term` — `#[@BeamMemory.PersistentTerm] var version: i32 = 101;`
-      read from a spawned process prints `101`, the value put at load
+      read from a spawned process prints `101`, the value put at load.
+      **Written by step 4** as `run/` cells with `.targets` = `erlang beam` — a `test/` cell cannot be
+      narrowed to a target, so `test/beam_memory_process_dict` is `run/beam_memory_process_dict`
+      (`main` writes `5`, a spawned process reads `0`: `[0]` then `5`); `run/beam_memory_ets` prints `5`
+      then `15`; `run/beam_memory_persistent_term` `[101]` then `101`. **Not written:**
+      `run/beam_memory_ets_keyed` — `keyed = true` has no row-per-key lowering and is refused on
+      erlang and beam, and no `Dict` satisfies the `Ets` seed rule (step 4's finding)
 - [x] One `reject/` cell per diagnostic of steps 1 and 3 — `val_assign_local`, `val_assign_module`
       (decision 38), `beam_memory_unknown_member`, `beam_memory_unknown_argument`,
       `beam_memory_keyed_scalar`, `beam_memory_keyed_list` (decision 51), `beam_memory_on_val` —
@@ -531,7 +566,10 @@ gives them something to run against.
       `PersistentTerm` var assigned after load; hint `#[@BeamMemory.Ets(keyed = true)]`),
       `reject/beam_memory_ets_bump_non_integer` (`+=` on an `f64` under `Ets`, decision 40's 5(b)
       diagnostic) and `reject/beam_memory_ets_initialiser` (an `Ets` initialiser that is neither a
-      literal nor `isComptimeExpr()` — `fn registry() -> i32 { @print("side effect"); return 7; }`)
+      literal nor `isComptimeExpr()` — `fn registry() -> i32 { @print("side effect"); return 7; }`) —
+      **written by step 4**, with a fourth, `reject/beam_memory_ets_recompose` (`hits = hits * 2 + 1`,
+      §5(b)); `test/beam_memory_noop` no longer writes its `PersistentTerm` var nor carries the keyed
+      `Dict`, both refused now
 - [x] ~~Every cell that runs on erlang or beam has a RUN LOG produced by running it~~ — a language
       cell carries no RUN LOG (that is `snapshots/`'s vocabulary); what holds is that **every cell
       was run before it was written down**: 14 passed and 2 expected failures on
