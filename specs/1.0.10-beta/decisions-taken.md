@@ -29,7 +29,7 @@ what was left, now `00-compiler-carry-over`'s order),
 | [74](#74-resultvoid-string-is-real-and-a-propagated-error-fails-the-test) | `@Result<void, string>` and `try` in a test body | Real `void` result; a propagated `error` is FAIL |
 | [75](#75-a-workspaces-manifest-npm-style-declares-a-librarys-members) | How `test-libs` and the loader see `modules/**` and `examples/**` | (C) a `workspaces` array in the umbrella `botopink.json`; `{ "workspace": true }` is the only sibling dependency; every refusal structural |
 | [76](#76-dependencies-is-the-object-form-only) | `dependencies` shape | Object form only; the string form is a located error |
-| [77](#77-renderhooks-keeps-the-dependency-direction) | onze's inverted seams | `RenderHooks` in rakun, filled by `Onze.run`; `islandAttr` in jhonstart; waves from the dependency lines |
+| [77](#77-renderhooks-keeps-the-dependency-direction) | onze's inverted seams | `RenderHooks` in rakun, filled by `Onze.run`; `islandAttr` in jhonstart; waves from the dependency lines — **amended by 113** |
 | [78](#78-the-readme-is-the-contract) | Two jhonstart signatures disagree | The README wins: `renderHead -> string`, `parseActionState(envelope)` |
 | [79](#79-the-old-onze-repository-is-tagged-archived-and-re-pointed) | The old `onze` repository | Tag `mocking-lib-final`, archive remotely, re-point the submodule |
 | [80](#80-fulltheme-in-emiliabp-owned-by-56) | Who composes the theme | `fullTheme()` in `emilia.bp`, owned by front 56, one `extend` per front |
@@ -50,6 +50,7 @@ what was left, now `00-compiler-carry-over`'s order),
 | [107](#107-import-a-dotted-path-and-a-braced-group-are-one-tree-and-only-the-leaf-enters-scope) | Import grammar | `import {a: {b: {c}}, x.y.z, e.t.r*}` — dotted path and braced group are one tree; only the leaf enters scope; `*` / `as` on the leaf; no `from` = the package root |
 | [108](#108-getcontex--getcontext) | `getContex` | Renamed `getContext` (99-a) |
 | [109](#109-the-declaration-boundary-in-a-module-atom-is--and-the-declaration-keeps-its-case) | How is a per-declaration BEAM module named? | `<path>@@<Decl>` — `@@` is the boundary, the path stays lowercase, the declaration keeps its case (`pond@@PatoNada` for `val PatoNada = implement …`); A2's `__t__`/`__b__` qualifiers leave |
+| [113](#113-the-libraries-split-by-concern-emilia-is-css-jhonstart-is-html-rakun-is-the-service-on-erlang-onze-wires-them) | Which library owns what, and who may import whom? | emilia CSS · jhonstart HTML · rakun the service, erlang first · onze wires them; jhonstart ⇄ rakun never import each other; the render and `RenderHooks` move to jhonstart; `ElementView` leaves; markers `data-jh-*`; globals `__bp<N>` from a registry; emilia enters through `jhonstart-emilia`; answers 94, 100, 101; amends 77 |
 
 ## 68. One milestone, the 1.0.9 numbers kept, the drafts deleted
 
@@ -151,6 +152,8 @@ One spelling detail: the pin is the existing `branch | tag | rev` (exactly one),
 islandAttr, …)`; `Onze.run` fills it; `islandAttr` is defined in jhonstart. The three 1.0.9 seams that
 reached from rakun/jhonstart into onze are removed, and the onze waves are re-stated from the
 `Depends on` lines (`49 → 68 → 69 → 52 → 51 → 70 → 71 → 50 → 53`). Amends the `Owns:` lines of 23 and 29.
+
+**Amended by [113](#113-the-libraries-split-by-concern-emilia-is-css-jhonstart-is-html-rakun-is-the-service-on-erlang-onze-wires-them):** `RenderHooks` moves to jhonstart with the render, and `islandAttr` leaves it.
 
 ## 78. The README is the contract
 
@@ -969,3 +972,163 @@ text (`declaration-qualifier.md`), which now describes this spelling.
 Implements: front 13 — the one renderer per backend (`erlang.zig`, `beam_asm.zig`, the commonJS
 and wasm identity string), the decoder, the snapshot re-record, `src/codegen/AGENTS.md`.
 
+## 113. The libraries split by concern: emilia is CSS, jhonstart is HTML, rakun is the service on erlang, onze wires them
+
+**Decided 2026-09-25 by the maintainer**, in his words: *"deveria ser assim emilia lida com css ---
+jhonstart com o render de html --- rakun com o serviço --- onze é todas essas libs trabalhando
+juntas"*, and for the one that settles most of what follows: *"quem deve ser responsável pelo html é
+o jhonstart, ele é uma dependência do onze"*. Measured against the specs, the rule did not hold in
+eight places; each is answered below, and questions 94, 100 and 101 close with it.
+
+| Library | Owns | Does not know |
+|---|---|---|
+| **emilia** | CSS: rules, class names, `flush()` | HTML, streaming, HTTP, jhonstart, rakun, onze — it imports nobody |
+| **jhonstart** | HTML rendering: elements, the walker and its escaping, islands, streaming (hole/fill), links, hydration, the client router, and the **render-plugin point** emilia enters through | HTTP, rakun, onze — and emilia, except through the plugin contract, never by name |
+| **rakun** | the service, **on erlang (BEAM) first**: HTTP, the route table, actions, route handlers, request/cookies/headers, writing the response (in chunks too) | how the HTML is built, CSS, emilia, jhonstart, onze |
+| **onze** | the three together: app boot, bundler, manifest, the generated client entry; registers emilia in jhonstart and wires jhonstart to rakun | — it is the one package that imports all three |
+
+```
+onze ──► jhonstart-emilia ──► jhonstart   (the plugin contract only)
+  │                      └──► emilia
+  ├────► jhonstart
+  └────► rakun
+```
+
+An arrow is an import. **jhonstart and rakun never import each other** (*"jhonstart e rakun chamando
+um ao outro isso não deve ocorrer"*): every link between them goes through onze, which takes a value
+from one and hands it to the other — as a parameter, a record of functions, or a line of the
+generated entry. **emilia enters jhonstart as a plugin, through a bridge** (*"emilia entra como um
+plugin no jhonstart"*; *"ter um jhonstart-emilia que configura o emilia para trabalhar com o
+jhonstart"*): jhonstart declares the plugin point and calls it at the right moments, the
+`jhonstart-emilia` package adapts emilia to it, onze only registers the plugin at boot, and emilia
+knows nobody.
+
+```bp
+// onze, at boot — the only package that names jhonstart and rakun together
+val site = jhonstart.app(plugins: [jhonstartEmilia.plugin()]);  // CSS enters through the bridge
+
+rakun.page(route, { req ->
+    site.renderStream(page(req))                                  // jhonstart builds the HTML
+});                                                               // rakun writes the chunks
+```
+
+The eight consequences:
+
+1. **The HTML render moves from rakun to jhonstart.** The walker that turns an element tree into
+   markup, its escaping, the composition of the segment chain, the document and the payload writer
+   leave rakun front 23's `rakun/src/ssr.bp` for `jhonstart/src/render.bp`. rakun keeps the route →
+   calls the function onze handed it → writes the chunks, with the request scope and the status.
+   `RenderHooks` moves with the render and becomes jhonstart's render-plugin point (item 7); its
+   `islandAttr` field leaves, because the package that writes the islands is now the one that
+   defines their marker. Amends decision 77.
+2. **`ElementView<El>` is deleted from the specs** — question 100. With no walker in rakun there is
+   no foreign tree to walk and nothing to adapt; jhonstart walks its own `Element`. No `targets`
+   array widens on its account, and no front carries the adapter.
+3. **jhonstart and rakun never import each other.** jhonstart's router receives the route table,
+   or a `match` function, from onze; front 26's Definition of done reads "the router has no
+   matcher and no table parser of its own; it receives `match` from onze". `notFound` in a
+   jhonstart page is jhonstart's own signal, which onze translates into rakun's 404 — no jhonstart
+   example writes `import {notFound} from "rakun"`.
+4. **An HTML marker carries the prefix of the package that writes it.** Every marker jhonstart
+   writes is `data-jh-*`: `data-jh-i` (island), `data-jh-s` (server slot), `data-jh-h` / `data-jh-f`
+   (hole and fill), `data-jh-l` with `data-jh-prefetch` / `data-jh-replace` / `data-jh-scroll`
+   (link), `data-jh-e` / `data-jh-reset` (error boundary), `data-jh-on-click`, `data-jh-a` /
+   `data-jh-sf` (forms), and the render's own `data-jh-root` / `data-jh-t` / `data-jh-n`. Only a
+   marker onze itself writes keeps `data-onze-*`; the registry in `contracts.md § 2` records, per
+   marker, the front and the package that write it.
+5. **The CSS of a streamed chunk goes inside its fill** — question 94. jhonstart, rendering a
+   boundary, asks the render plugin for that boundary's CSS and writes it inside the fill's
+   `<template>`, with no marker of its own:
+
+   ```html
+   <template data-jh-f="h1"><style>.e_1a2b3c{…}</style>…the boundary's markup…</template><script>__bp1("h1")</script>
+   ```
+
+   The CSS is identified by the fill it sits in, and `data-jh-s` is only the server slot. "CSS
+   before the markup, never an unstyled paint" holds by construction: the template's content reaches
+   the document when the fill inserts style and markup together. onze takes no part in that moment;
+   it only registered the plugin.
+6. **A browser global exists only where the HTML names it by text, and its name is generated** —
+   question 101. Two values qualify: the payload variable and the fill function the fill's
+   `<script>` calls. Each gets an indexed alias `__bp<N>` from a globals registry jhonstart keeps
+   (*"esse caso deveria ter um index que é incrementado como alias para não ter esse conflito"*);
+   `N` counts up in registration order, and that order is the declaration order in jhonstart, so
+   the server build and the client build agree. The render that writes the HTML and the client that
+   reads it take the name from the same registry (`globals.payload`, `globals.fill`) and cannot
+   diverge; no name is written by hand, so none collides with another script on the page. Link and
+   form mount are not globals: they are ordinary imports, `linkMount` and `formMount`. No
+   hand-written `__jh*` / `__onze*` global remains — `__onze`, `__onzeFill`, `__jhLinkMount` /
+   `__onzeLinkMount` and `__jhFormMount` leave. A host cell (`declare fn` bound by
+   `#[@External.…]`) is a module function, not a global, and keeps the `__jh` prefix of its owner.
+
+   ```html
+   <script>window.__bp0 = {…payload…}</script>
+   <template data-jh-f="h1">…</template><script>__bp1("h1")</script>
+   ```
+
+   ```bp
+   // generated by onze build — no `__` name written by hand
+   import {readPayload, hydrateIsland, registerFill, linkMount, formMount, globals} from "jhonstart";
+
+   pub fn main() {
+       val payload = readPayload(globals.payload);   // "__bp0"
+       registerFill(globals.fill, payload.h);        // "__bp1"
+       linkMount();
+       formMount();
+   }
+   ```
+
+7. **emilia plugs into jhonstart through the bridge package `jhonstart-emilia`**, a member of
+   jhonstart's workspace at `repository/jhonstart/modules/jhonstart-emilia` (as `rakun-web` is of
+   rakun's), versioned with the contract it implements. jhonstart declares the point; the bridge is
+   the only package that knows both; emilia does not change:
+
+   ```bp
+   // jhonstart/src/plugin.bp — jhonstart knows the contract only
+   pub behavior RenderPlugin {
+       fn head(self: Self) -> string;                   // once, after the shell
+       fn chunk(self: Self, holeId: string) -> string;  // per boundary, before its markup
+       fn close(self: Self) -> @Result<void, string>;   // at the end: nothing may be left
+   }
+
+   // jhonstart-emilia/src/root.bp — the bridge
+   import {RenderPlugin} from "jhonstart";
+   import {flush} from "emilia";
+   pub fn plugin() -> RenderPlugin { … }               // head and chunk call flush()
+
+   // onze, at boot
+   import {app} from "jhonstart";
+   import {plugin as emiliaPlugin} from "jhonstart-emilia";
+   val site = app(plugins: [emiliaPlugin()]);
+   ```
+
+   The maintainer's sketch writes `pub interface`, `Result<(), string>` and a default import
+   (`import jhonstartEmilia from "jhonstart-emilia"`); the spelling above is botopink's —
+   `behavior` with `self: Self`, decision 74's `@Result<void, string>`, and decision 107's braced
+   import with `as` — not a change of meaning. The two sketches at the top of this decision keep
+   the maintainer's `jhonstart.app(…)` / `jhonstartEmilia.plugin()` shape as illustration. Front 69's four sink functions — `openSink`, `collectHead`, `collectChunk`, `closeSink`
+   — leave onze. Their ordering rules ("`head` once", "CSS before the markup", "nothing left at
+   `close`") become jhonstart's, because jhonstart is the caller; the adaptation to `flush()` is the
+   bridge's.
+8. **rakun targets erlang** (*"o rakun targets deve ser o erlang principalmente"*). The core member
+   `modules/rakun` becomes `"target": "erlang"`, `"targets": ["erlang"]`; `runtime.mjs` and the node
+   server leave when rakun front 04 closes — no second runtime with the same semantics to keep.
+   `rakun-validation` stays `["erlang", "commonJS"]`, because the same validation runs in the
+   client's form and that is a real client/server boundary; `rakun-test` follows the packages it
+   tests (erlang); the workspace root becomes `["erlang", "commonJS"]` only to admit that exception.
+   erlang comes first in every list and is the default target of `botopink run` / `test` in rakun.
+   This also retires question 100's cost of "widening rakun's `targets` to erlang": it is rakun's
+   normal state.
+
+What it does **not** change: the payload's key table, the action-id scheme and envelope (contract
+3), the class-name scheme (contract 4), the request context (contract 5), the navigation-signal
+wire forms (contract 5b), emilia's API. The HTML moves between packages; the bytes each contract
+fixes do not, beyond the marker and global names of items 4–6.
+
+Bears on: decision 77 (amended — `RenderHooks` is jhonstart's, `islandAttr` leaves it); questions
+94, 100 and 101 (answered by items 5, 2 and 6); `contracts.md` §§ 1, 2, 6 and 6a; rakun fronts 04,
+22, 23 and 24; jhonstart fronts 26–31, 67 and 94; onze fronts 49, 53, 68 and 69; each track's
+`modules.md` and `test-snap.md`.
+Implements: jhonstart front 30 (`render.bp`, `plugin.bp`, `globals.bp`, the marker and global
+spellings, and the `jhonstart-emilia` member); rakun fronts 04 and 23 (the erlang core and the
+render leaving `ssr.bp`); onze fronts 49, 68 and 69 (the wiring, the entry, the plugin registration).
