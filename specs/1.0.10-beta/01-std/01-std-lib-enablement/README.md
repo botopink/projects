@@ -498,12 +498,12 @@ same again with `ssl:` in place of `gen_tcp:` and a `(catch ssl:start())` prelud
 start `http.bp:54` already uses for `inets`.
 
 **Acceptance:**
-- [ ] on erlang, a test binds an ephemeral port, connects to itself, sends 11 bytes, receives the same 11 bytes, and closes both ends
-- [ ] `net.accept` with a 50 ms timeout and no pending connection answers `Error("timeout")` rather than blocking the test
-- [ ] `net.connect("127.0.0.1", <closed port>, 200)` answers an `Error` naming the refusal
-- [ ] on commonJS, every `net` function answers `Error("std/io/net: server-only")` — asserted, not assumed
-- [ ] `net.peer` of an accepted socket answers the loopback address
-- [ ] the TLS path completes a handshake against a self-signed fixture cert and round-trips a payload
+- [x] on erlang, a test binds an ephemeral port, connects to itself, sends 11 bytes, receives the same 11 bytes, and closes both ends
+- [x] `net.accept` with a 50 ms timeout and no pending connection answers `Error("timeout")` rather than blocking the test
+- [x] `net.connect("127.0.0.1", <closed port>, 200)` answers an `Error` naming the refusal
+- [x] on commonJS, every `net` function answers `Error("std/io/net: server-only")` — asserted, not assumed
+- [x] `net.peer` of an accepted socket answers the loopback address
+- [x] the TLS path completes a handshake against a self-signed fixture cert and round-trips a payload
 
 ### Step 10 — export lines
 
