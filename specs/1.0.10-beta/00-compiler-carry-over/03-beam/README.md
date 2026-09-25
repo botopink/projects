@@ -382,3 +382,28 @@ The suite records the index expression's owner cells as `03 handover 15`, becaus
 "one lowering in each of fronts 02–05" and this front has no numbered step for it. Worth giving it a
 number when the step is planned.
 
+
+---
+
+## Handed over by `12-language-tests` (2026-09-25, `f58fd392`) — six beam cells nobody ran
+
+beam is outside `run.sh`'s `--target all`, so a `run/` or `modules/` cell another front adds is
+measured on commonJS, erlang and wasm and never on beam unless somebody runs `--target beam` by
+hand. Front 12 did, at `f58fd392`: **79 passed / 19 expected / 6 failed**, every failure unlisted.
+Each is listed now in `expected-failures.txt` with the assembled program's answer quoted; the
+owner cells are this front's, and four of them say `03 (no step; …)` because no numbered row here
+names the defect. Worth a number when the step is planned.
+
+| Cell | beam answers | Owed | Owner cell |
+|---|---|---|---|
+| `modules/export_name_collision` | `{undef, [{two, parse, [<<"x">>], []}, …]}` at boot, exit 1 — `main` imports `one`'s `parse/1` and the call goes to `two` | `1` | `03 (no step; the export index on beam)` — `ead0b645` said beam "got the import walk and the export fault"; the emitted call says otherwise |
+| `modules/field_name_collision` | `Hit(rest: ["a", "b"], entry: "e")` / `0`, exit 0 — the read off the optional binder answers the whole record | `2` / `0` | `03 (no step; the record_fields half of ead0b645 on beam)` |
+| `modules/type_name_collision` | `net`'s `Outcome` answers the whole record for `.tag`, on the second and fourth lines, exit 0 | `net-tag` there | `03 (no step; the type_owner_path half of ead0b645 on beam)` |
+| `modules/method_name_collision` | `{{unresolved_method, toArray, 1}, …}` at boot, exit 1 | `3` / `2` / `4` | **`03 step 4`** — a method on a type from another module, this README's own row |
+| `run/labelled_arguments.bp` | `205` on the fifth line, exit 0 — the enum variant's labelled payload zipped positionally, erlang's shape | `502` | `03 (no step; an enum variant's labelled payload)` — erlang's twin line is `02-erlang (no step; …)` |
+| `run/effect_method.bp` | `error: compilation failed` / `ConditionLoopValueUnsupported`, no location | the cell runs on erlang | **`03 step 3 (D6)`** — the row's own wording |
+
+The four `ead0b645` halves are one defect seen three ways — the cross-module name index reached
+`beam_asm.zig` only as far as the import walk — and the fix erlang landed in `fcc0244b`,
+`51a27b97` and `ead0b645` is the model. `@todo` on beam still passes `run/todo_aborts.bp` for the
+wrong reason (`{undef, main:notReady/0}`, the function is not emitted), reported in `status.md`.

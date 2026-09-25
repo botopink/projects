@@ -144,16 +144,19 @@ decision [`08-hygiene`](../08-hygiene/README.md) D3 raises; its implementation s
 grammar, [`01-checker`](../01-checker/README.md)'s.
 
 **Acceptance:**
-- [ ] Every line's owner cell names a 1.0.5-beta front and, where the front has numbered rows, one of
-      them
-- [ ] The 21 `01 step 6` lines are split 12 / 5 / 4 across
+- [x] Every line's owner cell names a 1.0.5-beta front and, where the front has numbered rows, one of
+      them — landed at `7ab6a55` before this wave (§ Landed — 2026-09-18); at `f58fd392` the file's
+      1.0.5 spellings resolve against the carried copies under `00-compiler-carry-over/<front>/`,
+      same step numbers, and `AGENTS.md` says so
+- [x] The 21 `01 step 6` lines are split 12 / 5 / 4 across
       [`02-erlang`](../02-erlang/README.md), [`04-js`](../04-js/README.md),
-      [`05-wasm`](../05-wasm/README.md) — by the target in column 1, not by guess
-- [ ] `reject/external_lowercase_target.bp` names a real row, or the cell is deleted with the decision
-      that deleted it written in `AGENTS.md`
-- [ ] `zig build test-language` still reads 205 passed, 54 expected failures, 0 failed — repointing an
-      owner changes no result
-- [ ] `AGENTS.md`'s owner-row rule names the 1.0.5-beta fronts
+      [`05-wasm`](../05-wasm/README.md) — by the target in column 1, not by guess (`7ab6a55`)
+- [x] `reject/external_lowercase_target.bp` names a real row, or the cell is deleted with the decision
+      that deleted it written in `AGENTS.md` — neither: `e37186b` made the cell pass and deleted its line
+- [x] `zig build test-language` still reads 205 passed, 54 expected failures, 0 failed — repointing an
+      owner changes no result (true at `7ab6a55`; the suite is 553 / 42 / 0 at `f58fd392`)
+- [x] `AGENTS.md`'s owner-row rule names the 1.0.5-beta fronts — and, since 2026-09-25, where their
+      steps now live
 
 ### Step 2 — re-classify after each landing, and route the identity rows
 
@@ -170,10 +173,15 @@ front's.
 
 **Acceptance:**
 - [ ] After each landing: the suite run, `0 failed`, and every surviving line's reason re-derived from
-      the actual output, quoted in the line
-- [ ] No line names a front that has closed
-- [ ] The lines that survive [`01-checker`](../01-checker/README.md) with a run-time reason name
-      [`13-module-identity`](../13-module-identity/README.md)
+      the actual output, quoted in the line — **continuous**; done at `f58fd392` on 2026-09-25 for
+      the beam column, where six unlisted failures were found and listed with the assembled
+      program's answer quoted (§ Landed — 2026-09-25)
+- [x] No line names a front that has closed — `13 step …` is gone from the file (C-01 halves 2–3
+      deleted or re-derived every one), and the 1.0.5 step spellings resolve against their carried
+      copies in this milestone's tree (`AGENTS.md` § expected-failures.txt)
+- [x] The lines that survive [`01-checker`](../01-checker/README.md) with a run-time reason name
+      [`13-module-identity`](../13-module-identity/README.md) — none survive: at `f58fd392` no line
+      names 13, and no `type_identity_*` cell carries a line on any target
 
 ### Step 3 — the beam answer, acted on
 
@@ -189,13 +197,17 @@ If it does not: `AGENTS.md`'s target table is corrected — "the artifact execut
 this.
 
 **Acceptance:**
-- [ ] `tests/language/AGENTS.md`'s target table states the measured behaviour of all four targets,
-      with the commands
-- [ ] If beam is added: every `run/` and `modules/` cell has a beam result, each pass or expected
-      failure, and the new expected failures name [`03-beam`](../03-beam/README.md)
+- [x] `tests/language/AGENTS.md`'s target table states the measured behaviour of all four targets,
+      with the commands (`eeff1e1`; re-read at `f58fd392`)
+- [x] If beam is added: every `run/` and `modules/` cell has a beam result, each pass or expected
+      failure, and the new expected failures name [`03-beam`](../03-beam/README.md) — beam is added
+      as an opt-in target (`run.sh --target beam`, `exec_run`'s three-step path); **at `f58fd392` six
+      `run/`+`modules/` cells had a beam result nobody had looked at** (79 / 19 / 6 failed), listed
+      on 2026-09-25 against `03 step 3 (D6)`, `03 step 4` and `03 (no step; …)` → 79 / 25 / 0
 - [ ] If beam is added: `erlc` is already a gate dependency (stage 5, `beam_export_audit.sh`) — no new
       tool in the gate, verified by running `scripts/gate.sh --cold` on a machine without anything
-      installed beyond what it needed before
+      installed beyond what it needed before — **open**, and moot until beam joins `--target all`,
+      which is 13's closing step (`run.sh` § beam)
 
 ### Step 4 — the cells that are missing
 
@@ -222,28 +234,42 @@ Write them, one commit per capability group, each run on every target it declare
    expected failures against it.
 
 **Acceptance:**
-- [ ] `zig build test-language` green, with the new cells, on every target each declares
-- [ ] Every added `expected-failures.txt` line names an existing 1.0.5-beta row
-- [ ] Anything with no owner is reported here and to the maintainer, not listed against an invented row
-- [ ] `AGENTS.md`'s "what cannot be tested from botopink at all" list loses the entries step 4 covers,
-      and each remaining entry keeps its reason
+- [x] `zig build test-language` green, with the new cells, on every target each declares — 4.1 at
+      `7b96ce7` (`type_identity_*`), 4.2–4.4 at `259916e1` / `ca477dec` (C-16: `modules/local_dependency`,
+      `run/panic_aborts` + `run/todo_aborts`, `run/external_erlang_only`); verified on disk and by
+      running at `f58fd392`, 2026-09-25: 553 / 42 / 0 on commonJS+erlang+wasm, and all four cells
+      pass on beam as well
+- [x] Every added `expected-failures.txt` line names an existing 1.0.5-beta row — or a carry-over item
+      (`C-02`, `C-03`, `C-18`), the second spelling `AGENTS.md` documents
+- [x] Anything with no owner is reported here and to the maintainer, not listed against an invented row
+      — `@todo` on beam passing for the wrong reason (`{undef, main:notReady/0}`) is in `status.md`
+      and `AGENTS.md` § Notes, unlisted
+- [x] `AGENTS.md`'s "what cannot be tested from botopink at all" list loses the entries step 4 covers,
+      and each remaining entry keeps its reason — only `@typeInfo` / `@makeRecord` / `partial` /
+      `omit` / `pick` remain, with the reason
 
 ### Step 5 — `AGENTS.md` matches the suite
 
 **Acceptance:**
-- [ ] The coverage table's cell counts equal what is on disk, per directory, with the command that
-      counted them
-- [ ] The classification line quotes the current run (`zig build test-language`) and the commit it was
-      run at
-- [ ] The "shapes that do not parse" list is re-derived: the entries that now parse — `Pattern { body }`
-      arms and §5.3b are listed there as `06 N22` — are struck or moved
+- [x] The coverage table's cell counts equal what is on disk, per directory, with the command that
+      counted them — the recount block at `f58fd392` (2026-09-25): 56 / 52 / 48 / 9, 165 cells, and
+      the 31 since C-04's block named one by one
+- [x] The classification line quotes the current run (`zig build test-language`) and the commit it was
+      run at — the runner's own tally line and 553 / 42 / 0, 79 / 25 / 0 on beam, at `f58fd392`
+- [x] The "shapes that do not parse" list is re-derived: the entries that now parse — `Pattern { body }`
+      arms and §5.3b are listed there as `06 N22` — are struck or moved (`7bfecf7`); re-measured
+      2026-09-25: the module-level `var` row moved too (it parses and checks; `17-beam-memory`'s
+      semantics, no cell), and decision 29's `;` row still holds (`3:3`)
 
 ## Gate
 
-- [ ] `scripts/gate.sh --cold` green in this front's worktree
-- [ ] `zig build test-language` green on every target the suite declares
-- [ ] `tests/language/AGENTS.md` updated in the same commit as any cell or owner-row change
-- [ ] Commit on `fix/language-tests`; no push, no merge — landing is the maintainer's step
+- [ ] `scripts/gate.sh --cold` green in this front's worktree — the pre-commit gate ran green on
+      every commit; `--cold` not run separately
+- [x] `zig build test-language` green on every target the suite declares — 553 / 42 / 0 and, on
+      `--target beam`, 79 / 25 / 0 at `f58fd392`
+- [x] `tests/language/AGENTS.md` updated in the same commit as any cell or owner-row change
+- [x] Commit on `fix/language-tests`; no push, no merge — landing is the maintainer's step — the
+      branch is `front/12-language-tests` in this milestone (meta and compiler alike)
 
 ## Blast radius
 
@@ -433,3 +459,58 @@ at all. Three backends, three wrong answers; the cell is owed once `01 step 4` l
 `d["k"]` (needs `from "std"`, whose own rows would hide the index reason) and `s[1]` (decision 30
 leaves a string element's type and printed form open).
 
+---
+
+## Landed — 2026-09-25 (`front/12-language-tests`, compiler `f58fd392`)
+
+**C-16's "unverified whether 4.2–4.4 exist" is answered: they exist, and they are green.** Verified
+on disk and by running, not by reading the specs:
+
+| Step | Cell | Result at `f58fd392` |
+|---|---|---|
+| 4.2 | `modules/local_dependency` — `deps/shapesdsl/` with `pub default mod shapesdsl;`, `pub default fn … -> @ExprCustom<T>` returning `e.custom(ast, code)`, `shapes.d.bp` through `files`; the consumer expands `shapesdsl "4, 5"` at compile time | pass ×4 (commonJS, erlang, wasm, beam) |
+| 4.3 | `run/panic_aborts.bp`, `run/todo_aborts.bp` — `.exit` = `nonzero` | pass ×4 each (beam's `@todo` for the wrong reason, § below) |
+| 4.4 | `run/external_erlang_only.bp` — `.commonJS.expect`, `.wasm.expect` | pass ×4 (refused where the sidecars say, runs on erlang and beam) |
+| tally | `run.sh`'s first line is recounted from the file; the header carries no number | yes |
+| 63–66 | `run/index_*` (63), `run/std_erlang_node` (64), a sentence for 65 (the formatter has no program to run), the three `modules/*` cells of 66 formatted | yes |
+
+```
+$ tests/language/run.sh                 # commonJS, erlang, wasm
+language tests: 553 passed, 42 expected failures, 0 failed
+$ tests/language/run.sh --target beam   # BEFORE this front's commit
+language tests: 79 passed, 19 expected failures, 6 failed
+$ tests/language/run.sh --target beam   # after
+language tests: 79 passed, 25 expected failures, 0 failed
+```
+
+**The finding: beam was red by six cells and nobody knew**, because beam is outside `--target all`
+and no gate runs it. Every one is a cell another front added since C-04's recount and measured on
+three targets: the four `modules/*_name_collision` cells (`ead0b645`'s message says beam got the
+import walk and the export fault, not the `record_fields` / `type_owner_path` / method halves, and
+that the cells "carry no `expected-failures.txt` line, because `--target all` excludes beam"),
+`run/labelled_arguments.bp` (erlang's enum-variant shape, `205` for `502`) and
+`run/effect_method.bp` (`ConditionLoopValueUnsupported`, unlocated — `03 step 3` D6's own wording).
+Listed with the assembled program's answer quoted, against `03 step 3 (D6)`, `03 step 4` and four
+`03 (no step; …)` cells; handed to [`03-beam`](../03-beam/README.md) as a table at its end. The
+three-target run did not move: 42 exercised lines before and after, checked by (target, key).
+
+**Recounted at `f58fd392`:** 165 cells (56 `test/`, 52 `run/`, 48 `reject/`, 9 `modules/`), +31
+since C-04's block, every one named in `AGENTS.md`'s new block; `expected-failures.txt` 55 → 61
+lines. Two `AGENTS.md` rows re-measured: a module-level `var` **parses and checks** now (it did not
+at `aab5489`; `17-beam-memory`'s, and no cell asserts its semantics), and decision 29's `;` after a
+block-shaped statement still reds at the next statement.
+
+**Deliberately not done, and why:**
+
+- The 1.0.5-beta owner spellings (`01 step 4`, `02 step 7`, `04 step 2`, `05 step 2`, `01 handover
+  15`, `03 handover 01`, …) are not repointed to `C-NN` rows. The file is shared and delete-only,
+  twenty-odd fronts are in flight against it, and every one of those steps is carried under
+  `00-compiler-carry-over/<front>/README.md` with the same number — so the row exists in this
+  milestone's tree and `AGENTS.md`'s owner-row rule now says where. A wholesale rewrite would
+  collide with every deletion in flight for no change of meaning.
+- `reject/loop_while.bp` asserts `while` is refused ("use `loop (`"); decision 105 makes `while` a
+  keyword. The cell is [`22-loops`](../22-loops/README.md)'s to rewrite in the landing that makes
+  it parse — no loop cell was touched here, by the wave's rule.
+- beam stays outside `--target all` (13's closing step). The six lines are the cost of that
+  scheduling, paid late; the next front that adds a `run/` or `modules/` cell should run
+  `--target beam` once by hand.
