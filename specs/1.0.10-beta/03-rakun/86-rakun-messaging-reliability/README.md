@@ -33,6 +33,8 @@ policy. This front is that policy, expressed as values a test can check without 
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `repository/rakun/modules/rakun-messaging/src/root.bp` — a four-line docblock and the comment
   *"Module contents will be added by the respective fronts."* No code, no `pub mod` line.
 - `repository/rakun/modules/rakun-messaging/botopink.json` — `"targets": ["commonJS", "erlang"]` (the

@@ -45,6 +45,8 @@ jhonstart. onze's only part in it is front 49 registering the bridge at boot.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `repository/onze/` does not exist; `modules/onze-assets/` is created by this front inside it.
 - Nothing in the workspace reads or serves a `.css` file. `grep -rn "text/css" repository/` is empty.
 

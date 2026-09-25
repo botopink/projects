@@ -100,6 +100,8 @@ rolling deploy loses the requests in flight at every instance, every time.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 | Piece | Where | State |
 |---|---|---|
 | Request path | `runtime.mjs:188-196`; front 04's `dispatch_http/5` | match, call, write — no hook of its own |

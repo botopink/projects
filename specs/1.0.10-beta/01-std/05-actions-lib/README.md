@@ -58,6 +58,8 @@ shape is fixed, not the names a deployment chooses.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 Measured 2026-09-25 on `repository/botopink-lang` `52843fd5`, `repository/rakun` `a8ba8bd`,
 `repository/jhonstart` `8e8dbe2`.
 

@@ -52,6 +52,8 @@ reliable way to build four things that do not fit together.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `repository/onze/` does not exist. The five libraries in the workspace are `emilia`, `erika`,
   `jhonstart`, `onze` (the mocking library — unrelated, and the name collision is worth noting) and
   `rakun`, plus `libs/std`.

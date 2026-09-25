@@ -41,6 +41,8 @@ emits declarations and a font is a file.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `repository/onze/src/font.bp` does not exist; `repository/onze/` does not exist until front 49.
 - `repository/emilia/src/tokens.bp:59-70` — `Font { Sans, Serif, Mono }` plus
   `Font.Weight { Light, Normal, Medium, Bold, Black }`. These map to generic CSS stacks. This front

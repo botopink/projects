@@ -54,6 +54,8 @@ fraction of a percent of requests.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `repository/rakun/src/http.bp:50-73` — `Response.ok/json/created/withStatus/notFound/badRequest`.
   `notFound()` builds a `Response`; it does not unwind anything. The file is frozen.
 - `repository/rakun/src/runtime.bp:91-104` — `rkDispatch`/`rkDispatchHttp` return a `Response`. An

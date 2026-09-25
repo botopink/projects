@@ -54,6 +54,8 @@ checked against the real tree by the CLI (front 50), so a developer still only m
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `repository/rakun/src/decorators.bp:217-244` — the five route-mapping decorators, all method-level,
   all taking a full path string. No file-convention decorator exists.
 - `repository/rakun/src/runtime.bp:76-104` — `rkRegisterRoute` / `rkDispatch` / `rkDispatchHttp`. A

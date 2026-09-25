@@ -42,6 +42,8 @@ import `// provided by front 94`. `element.bp` stays frozen.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `repository/jhonstart/src/element.bp:10-53` — eight constructors, none of them a form control.
   `element.bp:3-8` — `Element(tag, value, children, attrs)`; the `attrs` slot exists, so a form
   element needs no compiler or `element.bp` change once a constructor exists.

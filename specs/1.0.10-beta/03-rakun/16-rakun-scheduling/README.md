@@ -25,6 +25,8 @@ each with the arguments it actually needs.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `repository/rakun/modules/rakun-scheduling/src/root.bp` — docblock and `// Module contents will be added by the respective fronts.`
 - `libs/std/src/time.bp:56,80,92` — `nowMillis()`, `monotonicMillis()` and `formatIso8601(epochMillis)` all exist today. The scheduler needs both clocks and has both; front 01 ships them as `io.clock` (`now`, `monotonic`, `formatIso8601` — decision 106).
 - `repository/rakun/src/runtime.bp` — no timer seam of any kind. The only periodic thing in rakun is the HTTP server's accept loop, which front 04 owns.

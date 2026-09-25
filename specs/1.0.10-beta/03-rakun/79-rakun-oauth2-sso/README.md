@@ -36,6 +36,8 @@ already, with nothing in botopink that reaches it.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 | Piece | Where it is today |
 |---|---|
 | `modules/rakun-security/` | `botopink.json` plus `src/root.bp`, whose entire body is the comment *"Module contents will be added by the respective fronts."* |

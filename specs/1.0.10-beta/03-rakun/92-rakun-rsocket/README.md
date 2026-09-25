@@ -26,6 +26,8 @@ architecture: on BEAM the four models are four shapes of process, not four types
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `repository/rakun/modules/` holds no `rakun-rsocket`. The directory this front owns does not exist.
 - `repository/rakun/modules/rakun-web/src/root.bp` — a stub; front 20 lands the WebSocket upgrade
   this front's second transport stands on.

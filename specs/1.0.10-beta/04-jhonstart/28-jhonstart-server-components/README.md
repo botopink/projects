@@ -37,6 +37,8 @@ leaves every page inventing it.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `src/server.d.bp` — `behavior Request` with three bodyless methods (`:19-23`), `request()` behind
   `#[@External.Node("jhonstart/runtime", "request")]` (`:25-26`). Node-only, which a server front
   may not carry.

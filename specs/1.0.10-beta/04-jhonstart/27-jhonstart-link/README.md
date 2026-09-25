@@ -30,6 +30,8 @@ a host stub that returns an `Element`.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `src/router.d.bp:27-28` — the one-line `declare fn Link`, Node-only, gated.
 - `src/element.bp:3-8` — `Element` with `attrs`; `:55-67` — `renderToString` renders them.
 - `src/element.bp:10-12` — `bracketPair(name, value) -> #(string, string)`, the pair constructor.
