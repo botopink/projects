@@ -529,13 +529,13 @@ chosen rule, `RESERVED` (the OTP module names, frozen as a source list), and
 (`wat.zig:211` compares an import segment and is not a naming site).
 
 **Acceptance:**
-- [ ] `grep -rn 'lastIndexOfScalar(u8, module_name' src/codegen/` returns nothing
-- [ ] `zig build test` green; the 303 `-module(main).` snapshots are **byte-identical**
-- [ ] A unit test on `erlAtom` covering: single segment, two segments, three segments, a reserved
+- [x] `grep -rn 'lastIndexOfScalar(u8, module_name' src/codegen/` returns nothing
+- [x] `zig build test` green; the 303 `-module(main).` snapshots are **byte-identical**
+- [x] A unit test on `erlAtom` covering: single segment, two segments, three segments, a reserved
       name, a segment with a character outside `[a-z0-9_]`, a segment containing `__`
       ([E21](./atom-evidence.md#e21--__-has-to-be-reserved)), and a name that would exceed 250 bytes
-- [ ] `erlDeclAtom(alloc, id, kind, decl, ?hash)` with a `Kind` enum — `kind` is never a free string
-- [ ] **A collision check over the rendered atoms** in `crossModule.build` (`crossModule.zig:86`):
+- [x] `erlDeclAtom(alloc, id, kind, decl, ?hash)` with a `Kind` enum — `kind` is never a free string
+- [x] **A collision check over the rendered atoms** in `crossModule.build` (`crossModule.zig:86`):
       a duplicate atom, a `RESERVED` hit or a name over 250 bytes is a located diagnostic, not a
       silent winner — this is the check whose absence is the whole front
       ([`declaration-qualifier.md` § 4](./declaration-qualifier.md#4-__-is-reserved-and-what-that-costs))
@@ -549,11 +549,13 @@ target is the path (`commonJS.zig:1858-1870`) and flattening them breaks every m
 program ([`js-modules.md` § 2](./js-modules.md#2-what-the-erlang-decision-implies-here)).
 
 **Acceptance:**
-- [ ] `botopink build --target erlang` on `examples/modules` writes one flat directory; every
-      `.erl` basename equals its `-module` atom
-- [ ] `erlc -o ebin out/erl/*.erl` compiles every module with no overwrite
-- [ ] `botopink build --target commonJS` output tree is byte-identical to before this front
-- [ ] `botopink clean` still removes everything (`cli/clean.zig:8`)
+- [x] `botopink build --target erlang` on `examples/modules` writes one flat directory; every
+      `.erl` basename equals its `-module` atom — re-run 2026-09-25: `out/erl/{geometry,main,
+      shapes,shapes@circle,shapes@helpers}.erl`, five of five equal
+- [x] `erlc -o ebin out/erl/*.erl` compiles every module with no overwrite (five `.beam`)
+- [x] `botopink build --target commonJS` output tree is byte-identical to before this front —
+      still `out/<module path>.js` (`out/shapes/circle.js`), `outputStem` answers the path there
+- [x] `botopink clean` still removes everything (`cli/clean.zig:8`) — `out/` and `.botopinkbuild/`
 
 ### Step 3 — the snapshot harness and the audit script
 
@@ -565,8 +567,12 @@ stripping, and note that `erlc +from_asm` prints a name-mismatch error but **exi
 ([E17](./atom-evidence.md#e17)), so the check cannot read the exit code alone.
 
 **Acceptance:**
-- [ ] `scripts/beam_export_audit.sh` at 295/295
-- [ ] A harness test: two aux modules with the same atom fail loudly instead of overwriting
+- [x] `scripts/beam_export_audit.sh` at 295/295 — **453/453** at `4fe1747e` (policy 3's units
+      assemble too)
+- [x] A harness test: two aux modules with the same atom fail loudly instead of overwriting — one
+      per backend in `runtime.zig`, and writing it found the refusal reading a freed key (`seen`
+      kept the atom slice the loop freed per iteration): the erlang check segfaulted and the beam
+      check compared garbage. Fixed with the test
 
 ### Step 4 — the tests that prove the collision is gone
 
@@ -574,12 +580,17 @@ The collisions being fixed are latent: no gate cell today runs two libraries in 
 nothing currently red turns green. Add the cells that can see it.
 
 **Acceptance:**
-- [ ] A fixture with `models/user.bp` and `services/user.bp`, both called from `main`, executing
-      correctly on erlang and beam (today it cannot exist)
-- [ ] A fixture importing `libs/std`'s `math` and calling an OTP `math` function in the same
-      program — proves the shadow is gone (E15 is the failure it pins)
-- [ ] A library cell that builds `libs/std` and one sibling library into one erlang output
-      directory with no filename collision
+- [x] A fixture with `models/user.bp` and `services/user.bp`, both called from `main`, executing
+      correctly on erlang and beam (today it cannot exist) —
+      `import_two_modules_whose_files_share_a_basename` (`tests/features.zig`), RUN LOG
+      `models/user` / `services/user` on both
+- [x] A fixture importing `libs/std`'s `math` and calling an OTP `math` function in the same
+      program — proves the shadow is gone (E15 is the failure it pins) — `std_package.zig`
+      "a std math import and the OTP math module in one program"
+- [x] A library cell that builds `libs/std` and one sibling library into one erlang output
+      directory with no filename collision — every erlang cell of `zig build test-libs` is one:
+      `botopink test --target erlang` writes the library, its `std` dependency and every type unit
+      flat into one test output, named by atom (`test_cmd.zig`); 38 passed at `4fe1747e`
 
 ### Step 5 — comptime modules into the same shape
 
@@ -595,12 +606,20 @@ Touches two literals plus two test assertions (`codegen/tests/comptime_module.zi
 (`grep -rl 'template_[0-9a-f]\{16\}' snapshots` → 0).
 
 **Acceptance:**
-- [ ] `zig build test` green with `snapshots/comptime/**` byte-identical
+- [x] `zig build test` green with `snapshots/comptime/**` byte-identical
 - [ ] A template evaluation's module atom names its file and its template:
-      `jhonstart@html__tpl__html__<hash>`, not `template_<hash>`
-- [ ] Re-evaluating an identical body still yields the identical atom (content-addressing intact)
-- [ ] The decoder of [`declaration-qualifier.md` § 5](./declaration-qualifier.md#5-it-decodes-back)
-      as a test, so reversibility is pinned
+      `jhonstart@html__tpl__html__<hash>`, not `template_<hash>` — **half**: the atom names the
+      template (`bp@comptime__tpl__html__<hash>`, `erlDeclAtom(comptime_owner, .tpl, …)`) but not
+      the file, because the owning module's path does not reach `buildModule`: the evaluator is
+      handed the `FnDecl` and the template registry of `src/comptime.zig` records no owner, so
+      threading it needs `env.TemplateEvalCtx` in `src/comptime/env.zig` and `src/comptime.zig`
+      — **01's, beyond this front's carve-out** (`template_eval.zig`, `comptime_owner`'s comment)
+- [x] Re-evaluating an identical body still yields the identical atom (content-addressing intact)
+      — the Wyhash of the generated code is the hash segment, unchanged (`template_eval.zig` test
+      at `buildModule`)
+- [x] The decoder of [`declaration-qualifier.md` § 5](./declaration-qualifier.md#5-it-decodes-back)
+      as a test, so reversibility is pinned — `crossModule.decodeAtom`, "every shape round-trips
+      to its origin" and "what erlDeclAtom wrote is what decodeAtom reads back"
 
 ### Step 6 — the residuals this front will not take
 
@@ -618,8 +637,10 @@ Record, do not fix:
   long-lived process; irrelevant for a one-shot build. Not this front's, but found by it.
 
 **Acceptance:**
-- [ ] Each residual is a row in [`../fronts.md` § Unowned items](../../../1.0.5-beta/fronts.md#unowned-items) or in a
-      named front, with its file and its finder
+- [x] Each residual is a row in [`../fronts.md` § Unowned items](../../../1.0.5-beta/fronts.md#unowned-items) or in a
+      named front, with its file and its finder — [C-25](../README.md#c-25--the-unowned-residuals)
+      holds both (the bare-name `CrossModule.exports` collision, the comptime server's purge and
+      scratch), each with its file
 
 ### Half 2 — policy 3 (steps 7–13)
 
