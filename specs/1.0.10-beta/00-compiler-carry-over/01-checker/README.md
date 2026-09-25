@@ -239,7 +239,7 @@ Each reproduces; sites and probes in [`residual-rows.md`](./residual-rows.md).
 | R6 | **No lowering is recorded for a method on an associated fn's result** (1.0.4 N15) | `Array.range(0, 3).map(…)` checks, and erlang falls back to `'__bp_prim_map'` run-time dispatch — the codegen half is [`02-erlang`](../02-erlang/README.md) |
 | R7 | **Decision 2 is not enforced** (1.0.4 N6): a valueless block in value position and a non-`unit` fn that falls off its end both check | `fn f() -> i32 { val x = 1; }` → `Checked`. This is what makes the four backends' block-as-value lowerings dead code; each backend deletes its own |
 | R8 | **Landed.** `val n = 5; val x: n = 7;` is `'n' is a value, not a type`, located; `val T = i32;` / `val U = T;` are types (`Env.typeValueNames`); function-typed and declaration bindings (imports, std's `Array`) keep resolving. The real `type` kind of A1 is not built | cells: `comptime/tests/infer_errors.zig` `type position: …` |
-| R9 | Three N25 diagnostics: `@Result<…>` without `#[@result]` is reported as a return-type mismatch at the `return`; `val assert Ok(n) = f() catch 0` is accepted and fails at run time; `two_effect_markers`' caret points at the body's `{` | `reject/wrapper_without_annotation.bp`, `reject/val_assert_after_catch.bp`, `reject/two_effect_markers.bp` |
+| R9 | **Landed.** Each of the three N25 cells is refused for its own reason with the caret on the offending token: the return type (`@Result needs #[@result]`), the `catch` (`AssertPattern.catchLoc`), the second annotation's `#`; their lines left `expected-failures.txt` | `reject/wrapper_without_annotation.bp`, `reject/val_assert_after_catch.bp`, `reject/two_effect_markers.bp` |
 
 **Does not reproduce — do not carry:**
 

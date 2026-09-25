@@ -122,6 +122,8 @@ half-done and is cheap here.
 is that check not reaching the `f() catch 0` shape, where the trailing `catch` binds to the assert
 under the grammar and `fatal` is what tells the forms apart.
 
+**Landed** (compiler `912467b8`): all three cells pass; one snapshot re-recorded (`comptime/errors/a_result_return_without_result`, caret moved to the return type).
+
 **Acceptance:** the three cells are rejected for their own reason, each with a caret on the offending
 token, and their lines leave `expected-failures.txt`.
 
