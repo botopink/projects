@@ -8,13 +8,13 @@
 // That is not a style choice: `@Future` is eager on the BEAM
 // (`libs/std/src/http.bp:16-18`), so a boundary holding a future would hold a
 // result that had already been computed before the shell was written, and
-// nothing would stream. Front 23 spawns the thunk through front 02 and flushes
-// each chunk as its process reports.
+// nothing would stream. The render (`renderStream`) spawns the thunk through front 02 and hands
+// each chunk to the writer onze passed in (over rakun's ChunkWriter) as its process reports.
 //
 // The hole and fill markers are `contracts.md § 2`'s, not this front's:
-// `<div data-onze-h="h1">fallback</div>` in the shell, then
-// `<template data-onze-f="h1">…</template><script>__onzeFill("h1")</script>`.
-// Front 23 assigns the ordinal; this file passes one in so the assertions are
+// `<div data-jh-h="h1">fallback</div>` in the shell, then
+// `<template data-jh-f="h1">…</template><script>__bp1("h1")</script>`.
+// The render assigns the ordinal; this file passes one in so the assertions are
 // literals.
 //
 // Upstream:
@@ -87,12 +87,12 @@ pub fn BlogPage(ordinal: i32) -> Element {
 
 test "the shell carries the fallback and no post" {
     val html = shellHtml(BlogPage(1));
-    assert html.contains("data-onze-h=\"h1\"");
+    assert html.contains("data-jh-h=\"h1\"");
     assert html.contains("Loading posts…");
     assert html.contains("class=\"posts\"") == false;
 }
 
-test "the hole id is the ordinal front 23 assigned" {
+test "the hole id is the ordinal the render assigned" {
     assert holeId(0) == "h0";
     assert holeId(1) == "h1";
     assert holeId(12) == "h12";
@@ -100,9 +100,9 @@ test "the hole id is the ordinal front 23 assigned" {
 
 test "a fill is a template plus the call that applies it" {
     val c = Chunk(id: "h1", html: "<ul class=\"posts\"></ul>");
-    assert fillHtml(c) ==
-        "<template data-onze-f=\"h1\"><ul class=\"posts\"></ul></template>"
-        + "<script>__onzeFill(\"h1\")</script>";
+    assert fillHtml(c, "") ==
+        "<template data-jh-f=\"h1\"><ul class=\"posts\"></ul></template>"
+        + "<script>__bp1(\"h1\")</script>";
 }
 
 test "resolving a boundary renders its child, not its fallback" {

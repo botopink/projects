@@ -87,7 +87,7 @@ work that was already specified, measured and half-built.
 **Origin:** 13-module-identity halves 2 and 3 — steps 8–13 (policy 3, spelled out in
 [`13-module-identity/policy-3-module-per-type.md`](./13-module-identity/policy-3-module-per-type.md) §9)
 and steps 14–19 (the atom inside the value); decisions 21 (T2, the tagged tuple), 22 (13 designs the
-boxed value for every backend, wasm included), 23 (`__b__` reserved, nothing emitted), 5 (on JS the
+boxed value for every backend, wasm included), 23 (a behavior emits nothing), 5 (on JS the
 prototype *is* the identity, so half 3 has nothing to do there beyond step 19's unit variant).
 **Priority:** critical — every `is`, union `case` and per-type print on erlang and beam has nothing to
 test until a value knows its declaration; today two records with the same fields are `==` on erlang.
@@ -108,7 +108,7 @@ running. 142 new atoms ecosystem-wide; +0.372 ns per `call_ext`.
       `recordMethodAtom`, `record_method_collisions`, `isRecordMethodCollision`, `interfaceAssocAtom`
       **deleted, not bypassed** (steps 9–10)
 - [ ] a behavior consumed by three modules has exactly one emitted copy; `libs/std` green on erlang and
-      beam (step 10); an imported type's method links to `<path>__t__<decl>` and executes (step 11);
+      beam (step 10); an imported type's method links to `<package>@<path>@@<Decl>` (decision 109) and executes (step 11);
       `beam_export_audit.sh` green at its new total (step 12)
 - [ ] the 188 classified: which gained a module, which local call became `call_ext`, which RUN LOG
       changed — none should (step 13)
@@ -227,17 +227,24 @@ uses it), a `jsonStringify` that omits the defaults so no parser snapshot moves,
 `.mutable` on wasm; 3 parser + 2 format + 9 infer tests. `todo.md` has every box unticked.
 **Depends on:** nothing.
 **Acceptance:**
-- [ ] `var hits: i32 = 0;` and `#[@BeamMemory.Ets] var …` parse; `val x = 0; x = 1;` is a located error
-      naming `var`, in a `fn` and at module level; `expectError` cases; **no snapshot re-records**
-- [ ] a module `var` prints `2` on node and under wasmtime — *run, not read*; a `val` stays `const` /
-      an immutable global; the re-recorded commonJS/wasm cells classified
+- [x] `var hits: i32 = 0;` and `#[@BeamMemory.Ets] var …` parse; `val x = 0; x = 1;` is a located error
+      naming `var`, in a `fn` and at module level (`8146d2b6`); `expectError` cases (`37342d95`, which
+      also moved the annotated-shorthand refusal onto the annotation); **two** parser snapshot
+      re-records, not none — `external_keyword_argument_form` and
+      `qualified_enum_variant_with_inline_true_flag` gained the `labels` array the parser now keeps
+      (17's step 1 row)
+- [x] a module `var` prints `2` on node and under wasmtime — run at `4fe1747e` (17's step 0) and pinned
+      by `tests/language/run/module_var.bp`; a `val` stays `const` / an immutable global; **no**
+      commonJS/wasm cell re-recorded (none writes a module `var`)
 - [ ] unknown member → located error naming `ProcessDict`, `Ets`, `PersistentTerm`; unknown argument →
-      names `keyed`; `keyed` on a scalar or a `List<T>` → "needs a keyed container"; a `reject/` cell
-      per diagnostic handed to the suite
-- [ ] the formatter round-trips `#[@BeamMemory.Ets(keyed = true)] var d: Dict<string, i32> = …` —
-      `assertLossless`
-- [ ] the migration count in the commit message; `AGENTS.md` of `src/parser/`, `src/comptime/`,
-      `src/format/`, `src/codegen/` in the same commit; gate green
+      names `keyed`; `keyed` on a scalar or a `List<T>` → "needs a keyed container" (`8146d2b6`); a
+      `reject/` cell per diagnostic **in** the suite (`3cd77667`: five `beam_memory_*` plus the two
+      `val_assign_*` of decision 38, with `run/module_var` and `test/beam_memory_noop` beside them)
+- [x] the formatter round-trips `#[@BeamMemory.Ets(keyed = true)] var d: Dict<string, i32> = …` —
+      `assertLossless` in `src/format/tests/declarations.zig` (`8146d2b6`, decision 48's arm)
+- [x] the migration count — **not** in `8146d2b6`'s message; carried by `37342d95`'s and by 17's step 0
+      row (447 bare-name assignments over 212 files, 447 to a `var`, 0 to a `val`); `AGENTS.md` of
+      `src/parser/`, `src/comptime/`, `src/format/`, `src/codegen/` in `8146d2b6`; gate green at both
 
 ## C-06 — Decision 53 at run time
 
@@ -289,7 +296,7 @@ model fix); 04 step 2 D2/D3 and 05 step 2 D1–D3, which no commit names. F2–F
 
 **Origin:** 01 step 10 — the five parser gaps that live in `parser/{decls,exprs,patterns}.zig` by named
 site: `if (a && b)` (only the `prec.equality` site in an `if` condition widens), `_` as an `if` binder,
-`assert e is P;` (decision 11: delete the form and its three tests), unnamed variant payloads
+`assert e is P;` (deleted with its three tests), `<Pattern> as <name>` (decision 11: delete the form and its three tests), unnamed variant payloads
 (decision 12: a located diagnostic naming the field form); and decision 54's spelling — `case x { null
 { … } v { … } }` — which **does not parse** ("a parser row as well as a checker one"), with `.Some(v)` /
 `.None` on a `?T` becoming a located error.
@@ -538,9 +545,12 @@ share one generic-parameter renderer and print `type Name<G>(…)`, `behavior Na
 { … }`; the snapshot re-recorded.
 **Depends on:** nothing.
 **Acceptance:**
-- [ ] `grep -rn 'record {' modules/language-server/snapshots/lsp/` returns nothing
-- [ ] hover, completion, signature help and inlay hints print the 1.0.3 surface for `type`/`behavior`
-- [ ] gate green; `AGENTS.md` of `src/comptime/` in the same commit; 07's row struck
+- [x] `grep -rn 'record {' modules/language-server/snapshots/lsp/` returns nothing
+- [x] hover, completion, signature help and inlay hints print the 1.0.3 surface for `type`/`behavior`
+      — one LSP snapshot each, read (11's Landed — 2026-09-25); signature help over a `type`
+      constructor was **null**, `engine.recordCtorSignature` answers it
+- [x] gate green; `AGENTS.md` of `src/comptime/` in the same commit; 07's row struck — the builders
+      landed as `f952bfc6` without their `AGENTS.md` lines; `front/11-tooling` carries them
 
 ## C-20 — The comptime module reaches the node as BEAM assembly
 

@@ -5,7 +5,7 @@
 // `onze dev` serves. Both modules are shown here; in the scaffold they are
 // `app/layout.bp` and `app/page.bp`.
 //
-// The scaffold is written in front 22's vocabulary, not in one of onze's:
+// The scaffold is written in jhonstart front 30's vocabulary, not in one of onze's:
 // `#[layout("")]`, `#[page("")]`, `LayoutProps`, `PageContext`. The decorator
 // argument is the app-relative directory, and the check that it matches the
 // file's real location is this front's (see the README, *Generate*).
@@ -19,16 +19,15 @@
 
 import {Element, div, h1, p, text, renderToString} from "jhonstart";
 import {styled, Token} from "emilia";                          // front 48
-import {page, layout, PageContext, LayoutProps} from "rakun";  // front 22
-import {rkAppRegisterPage, rkAppRegisterLayout} from "rakun";  // front 22 registry cells
+import {page, layout, PageContext, LayoutProps} from "jhonstart";  // front 30
 import {collections.Dict} from "std";
 
 // ── app/layout.bp ────────────────────────────────────────────────────────────
 //
 // The root layout returns the BODY subtree. The `<!DOCTYPE html><html><head>…`
-// shell belongs to front 23, and the moment the head is written belongs to front
-// 69 — the head has to be composed after the tree is built, because that is when
-// emilia's classes exist to flush.
+// shell belongs to jhonstart's render (front 30), and so does the moment the head
+// is written — the head has to be composed after the tree is built, because that
+// is when emilia's classes exist to flush (through the jhonstart-emilia plugin).
 
 fn shellTokens() -> Token[] {
     return [.Font.Sans, .Bg.White, .Color.Gray.900];
@@ -41,8 +40,8 @@ pub fn rootLayout(props: LayoutProps) -> Element {
 
 // ── app/page.bp ──────────────────────────────────────────────────────────────
 //
-// Every page is `#[@future]`: front 22's registry pins one shape so front 23's
-// pipeline has one shape to drive. A page that needs no data awaits nothing and
+// Every page is `#[@future]`: jhonstart front 30's UI registry pins one shape so the render
+// onze hands to rakun has one shape to drive. A page that needs no data awaits nothing and
 // costs nothing.
 
 fn titleTokens() -> Token[] {

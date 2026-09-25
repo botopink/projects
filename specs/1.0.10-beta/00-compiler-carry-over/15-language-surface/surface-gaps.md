@@ -22,35 +22,38 @@ live.
 **D** = **defect** (a document promises the form and the compiler contradicts it). **?** =
 **decision** (the language may simply not want it; recording the absence is the whole work).
 
+The three tables below carry two measurements: the diagnostic at `c2dd780`, when the rows were
+found, and what the compiler says at `4fe1747e` plus the front's steps 3 and 4b (`front/15-language-surface`).
+
 ### Decided absent — the message is the work
 
-| Form | Written at | Diagnostic | | Owner |
+| Form | Written at | Diagnostic at `c2dd780` | | Now |
 |---|---|---|---|---|
-| `x ?? 0` | — | `Unexpected token` | ? | **15**, step 3 — a named diagnostic (decision 14) |
-| `var n = 0;` at module level | — | `Unexpected token` at `var` | ? | **C-05** — decision 28: it parses |
-| a bare `if`, `loop` or `case` with no `;` before the next statement | — | `Unexpected token` at the next statement | ? | **C-13** — decision 29 (c) |
+| `x ?? 0` | — | `Unexpected token` | ? | **parses** — decision 28 reversed decision 14 (R8) |
+| `var n = 0;` at module level | — | `Unexpected token` at `var` | ? | **parses** — C-05 landed |
+| a bare `if`, `loop` or `case` with no `;` before the next statement | — | `Unexpected token` at the next statement | ? | still the catch-all at the next statement — **C-13** (decisions 29 and 60) |
 
 ### A defect with a named deciding line
 
-| Form | Written at | Diagnostic | | Owner |
+| Form | Written at | Diagnostic at `c2dd780` | | Now |
 |---|---|---|---|---|
-| `#(x: 1, y: 2)` — labeled tuple **construction** | `MIGRATION.md:299` classifies it as a *checker* gap ("parses today and is simply accepted") | `There must be a 'val' or 'var' to bind a variable to a value` — a parser refusal, with an unrelated message | **D** | **15** for the message; the form is **01**'s §6 |
-| `#[mark(-20)]` — a negative literal as a decorator argument | rakun front 07's ordering band | `this token cannot appear here · unexpected `20`` — the caret on the digits | **D** | **15**, step 4b |
+| `#(x: 1, y: 2)` — labeled tuple **construction** | `MIGRATION.md:299` classifies it as a *checker* gap ("parses today and is simply accepted") | `There must be a 'val' or 'var' to bind a variable to a value` — a parser refusal, with an unrelated message | **D** | `error[tuple-literal-label]` at the label (step 3); the form is **01**'s §6 |
+| `#[mark(-20)]` — a negative literal as a decorator argument | rakun front 07's ordering band | `this token cannot appear here · unexpected `20`` — the caret on the digits | **D** | **parses** — one argument, `"-20"`, and the decorator receives the number (step 4b) |
 
 ### Plausibly deliberate, listed so the absence is on the record — 10
 
-| Form | Written at | Diagnostic | | Owner |
+| Form | Written at | Diagnostic at `c2dd780` | | Now |
 |---|---|---|---|---|
-| `Box<i32>(value: 1).get()` — explicit type arguments at a **constructor call** | `decision-8:60-64` (`>` followed by `(` is a type-argument list) | `There must be a 'val' or 'var'…` | **D** | **01**, §1.3 — the parser half is 15's if 01 wants it |
-| `.Circle(radius: 1.0)` — a leading-dot variant in **expression** position | only the **pattern** position is written (`MIGRATION.md:193`) | `Unexpected token` at the `(` | ? | **15**, step 3 |
-| a `fn` inside an enum **section** body | `decision-8:313` says so in as many words | `Unexpected token` at `fn` | ? | **01**, step 4 |
-| `[..a, 3]` / `[...a, 3]` — array spread in an expression | not written; `[first, ..rest]` **patterns** are | `Unexpected token` | ? | **15**, step 3 |
-| `implement A for P { … }` at top level | not written — `type P(…) implement A` is the form | `Unexpected token` at `for` | ? | **15**, step 3 |
-| a standalone `extend P { … }` | not written; the keyword appears only in a diagnostic | `An \`implement\`/\`extend\` block must be named` | ? | **15**, step 3 — **unverified** whether any spelling of a standalone `extend` exists |
-| `1 << 2`, `a & b`, `a ^ b` — bitwise operators | not written | `unexpected character` / `Unexpected token` | ? | **15**, step 3 (`language-gaps.md`'s first row) |
-| `'a'` — a character literal | not written | `unexpected character` | ? | **15**, step 3 |
-| `c ? 1 : 2` — a ternary | not written | `Unexpected token` | ? | **15**, step 3 |
-| a nested `fn` inside a fn body | not written | `Unexpected token` | ? | **15**, step 3 |
+| `Box<i32>(value: 1).get()` — explicit type arguments at a **constructor call** | `decision-8:60-64` (`>` followed by `(` is a type-argument list) | `There must be a 'val' or 'var'…` | **D** | unchanged — **01**, §1.3: the document writes the form, so it is not an absence to name |
+| `.Circle(radius: 1.0)` — a leading-dot variant in **expression** position | only the **pattern** position is written (`MIGRATION.md:193`) | `Unexpected token` at the `(` | ? | **parses**; the checker answers `unbound variable ''` at the `(` — **01** |
+| a `fn` inside an enum **section** body | `decision-8:313` says so in as many words | `Unexpected token` at `fn` | ? | unchanged — **01**, step 4 |
+| `[..a, 3]` / `[...a, 3]` — array spread in an expression | not written; `[first, ..rest]` **patterns** are | `Unexpected token` | ? | `error[list-spread-not-last]` at the element after the spread / `error[list-spread-dot-dot-dot]` at the dots (step 3); `[1, ..a]` and `[..a]` parse |
+| `implement A for P { … }` at top level | not written — `type P(…) implement A` is the form | `Unexpected token` at `for` | ? | `error[implement-clause-for]` at the `for` when the line above is a **bodyless** `type P(…)` — the type took `implement A` as its clause; after any other declaration it was already `anonymous-impl-extend` at the `implement` |
+| a standalone `extend P { … }` | not written; the keyword appears only in a diagnostic | `An \`implement\`/\`extend\` block must be named` | ? | **verified**: `anonymous-impl-extend` at the `extend`, and `pub extend` the same — nothing to add |
+| `1 << 2`, `a & b`, `a ^ b` — bitwise operators | not written | `unexpected character` / `Unexpected token` | ? | `error[bitwise-operator-absent]` at the operator, `>>` included (step 3); `&` and `^` are tokens now, not lexer stops |
+| `'a'` — a character literal | not written | `unexpected character` | ? | `error[char-literal-absent]` at the literal (step 3) |
+| `c ? 1 : 2` — a ternary | not written | `Unexpected token` | ? | `error[ternary-absent]` at the `?` (step 3) |
+| a nested `fn` inside a fn body | not written | `Unexpected token` | ? | `error[nested-fn-decl]` at the `fn` (step 3) |
 
 ---
 
@@ -108,8 +111,10 @@ Correcting it is `08-hygiene`'s; this front hands it over rather than editing `d
 
 ## One diagnostic for forty-eight kinds of wrong
 
-`ParseErrorType` has 48 variants and `print.zig` renders a named, located message for 47; every form
-in (b) hits the 48th, `unexpectedToken`. A reader cannot tell a form the language decided against
+`ParseErrorType` had 48 variants and `print.zig` rendered a named, located message for 47; every form
+in (b) hit the 48th, `unexpectedToken`. A reader could not tell a form the language decided against
 from one nobody has written yet, which is how `??`, module-level `var` and `a[0]` went unfiled.
 Step 3 of the [README](./README.md) is the half that stops the next seven from being found by
-accident.
+accident: every row of (b) that is a decision has its own kind now, raised once at the site every
+spelling reaches (`src/parser/AGENTS.md` § *A decided-against form is refused by name*), and the
+three that never reached the parser — `&`, `^`, `'a'` stopped the **lexer** — are tokens it refuses.

@@ -1,11 +1,12 @@
 // Front 53 — onze example app · examples/app-layout-example.bp
 // App file: app/layout.bp
 //
-// Demonstrates: the root layout. `#[layout("")]` (front 22) registers it at the
-// root of the route table; `props.children` is the subtree the router already
-// built. It returns the BODY subtree only — the document shell and the moment
-// the head is written belong to front 69's style sink, which is the one place
-// that knows whether the response is streaming.
+// Demonstrates: the root layout. `#[layout("")]` (jhonstart front 30) registers
+// it at the root, and onze copies the record into rakun's route table;
+// `props.children` is the subtree the router already built. It returns the BODY
+// subtree only — the document shell and the moment the head is written belong
+// to jhonstart front 30's render, the one place that knows whether the response
+// is streaming.
 //
 // Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/layout
 //           https://nextjs.org/docs/app/getting-started/fonts
@@ -24,8 +25,7 @@ import {Link, linkProps, withClass} from "jhonstart";          // front 27
 // front 48 — `styled(tokens)` is `#("class", emilia(tokens))`; `styledWith`
 // puts a static class first and the emilia class second, one ASCII space.
 import {styled, styledWith, Token} from "emilia";
-import {layout, LayoutProps} from "rakun";                     // front 22
-import {rkAppRegisterLayout} from "rakun";                     // front 22 registry cell
+import {layout, LayoutProps} from "jhonstart";                     // front 30
 // front 52 — self-hosted fonts with a metric-adjusted fallback
 import {Font, GoogleFontOptions, googleFont, fontHead} from "onze";
 
@@ -68,11 +68,11 @@ fn siteNav() -> Element {
     ], attrs: [styled(navTokens())]);
 }
 
-// front 22 — `#[layout("")]` is the root layout: the one segment every request
+// front 30 — `#[layout("")]` is the root layout: the one segment every request
 // passes through. The decorator argument is the app-relative directory, and
 // front 50's scan fails the build when it disagrees with the file's location.
 //
-// Front 22's layouts are synchronous (`LayoutProps -> Element`), so the font
+// jhonstart front 30's layouts are synchronous (`LayoutProps -> Element`), so the font
 // cannot be awaited here. It does not need to be: front 52 resolves the family
 // at BUILD time and its class name is a pure function of family and build id,
 // so the layout names it as a constant and `documentHead` below produces the

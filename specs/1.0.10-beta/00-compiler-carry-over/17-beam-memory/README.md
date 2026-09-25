@@ -46,7 +46,10 @@ matching site in `beam_asm.zig` ([`03`](../03-beam/README.md) / [`13`](../13-mod
 [`07`](../07-review-backlog/README.md))
 
 **Does not touch:** `docs.md` ([`08`](../08-hygiene/README.md) — this front supplies the text) ·
-`tests/language/**` ([`12`](../12-language-tests/README.md) — this front specifies the cells) ·
+`tests/language/**` ([`12`](../12-language-tests/README.md) — this front specifies the cells; **amended
+by step 7:** 12's steps were absorbed into [C-16](../README.md#c-16--the-language-suites-residual-cells)
+and landed, so the nine cells steps 1–3 made runnable were written into the suite here, one file
+each, editing nothing of 12's) ·
 `libs/std/**` — **including the new `libs/std/src/beam.bp` of step 3b** — and
 `repository/{emilia,rakun}/**` ([`09`](../09-ecosystem-residuals/README.md); steps 3b and 8 are
 *specification*, not edit) · `src/format.zig`
@@ -259,19 +262,42 @@ declares `var`, zero to a `val` (decision 38); and step 3 validates the **three*
 `ProcessDict`, `Ets`, `PersistentTerm` — plus the argument names, which is decision 41 and matches what
 this README already answered: the explicit `ProcessDict` is the default said out loud.
 
-### Step 0 — Re-run every measurement at this front's HEAD, and open the five questions
+### Step 0 — Re-run every measurement at this front's HEAD
 
 Nothing is edited. The probe harness is one scratch project per form (`botopink new`, one `src/main.bp`,
 `botopink check` / `build --target …`), plus three hand-written Erlang modules compiled with `erlc`
-and run with `erl -noshell`.
+and run with `erl -noshell`. Re-run at `botopink-lang` `4fe1747e` (OTP 29, node v25, wasmtime 45),
+after steps 1–3 had landed — so the first row measures what step 1 changed, not the original defect.
 
 **Acceptance:**
-- [ ] The three broken emissions of [Problem](#problem) reproduce at HEAD, each with its exact
-      first diagnostic line and the emitted line that produced it
-- [ ] Questions **38–43** are opened in [`decisions-pending.md`](../../../1.0.5-beta/decisions-pending.md) in the
-      Measured / Options / Recommendation / Blocks shape, numbered from 38 as that file requires
-- [ ] The 96-line rakun count and the emilia reading are re-derived at the libraries' current
-      submodule pointers, with the function ranges named — not carried from this README
+- [x] The [Problem](#problem) program no longer reaches a backend: `botopink check` **and**
+      `botopink build --target <each of the three>` red at the assignment
+      (`` error: `hits` is a `val` and cannot be assigned`` at `src/main.bp:2:17`, exit 1, nothing
+      emitted). What still reproduces is the same program written `var` on the two BEAM targets
+      (step 4's): erlang emits `hits() -> 0.` and `Hits = (Hits + 1).` (`out/erl/main.erl:9`,
+      `variable 'Hits' is unbound`, the module does not compile); beam emits
+      `%% assign to unknown variable: hits` (`out/beam/main.S:22`), assembles, and prints **`0`** at
+      exit 0 — the write is dropped silently. commonJS (`let hits = 0;`) and wasm
+      (`(global $hits (mut i32) (i32.const 0))`) print `2`
+- [x] Questions **38–43** were opened and are **taken** (`decisions-taken.md` 38–43, plus 48–51 and
+      57); nothing is opened here
+- [x] The 96-line rakun count and the emilia reading are re-derived at the pinned submodule
+      commits (rakun `10c63974`, emilia `9c19e22`), function ranges named — in
+      [`rakun-migration.md`](./rakun-migration.md) (step 8). Two things moved since `bef762b`: rakun's
+      `runtime.mjs` is now `modules/rakun/src/runtime.mjs` (still 231 lines, the five ranges
+      unchanged) **and has an 850-line erlang twin**, `modules/rakun/src/sidecars/rakun_runtime.erl`,
+      whose six named public ETS tables are owned by a supervised `rakun_registry` `gen_server` —
+      rakun built decision 39's owner by hand; emilia's cell moved to `modules/emilia/src/emilia.bp:53-55`
+      (`register`: `get` + `lists:keystore` + `put`) and `:58-60` (`drainRules`: `erase`)
+- [x] The migration count step 1 owed its commit message and did not carry: at `4fe1747e`, over
+      `libs/std`, `examples/**` and the five libraries at their pins (212 `.bp` files), **447**
+      assignments to a bare name, **all 447** to a name the same file declares `var`, **0** to a `val`
+      (decision 38 counted 82 of 82 at `1379659`; the suite grew, the answer did not)
+- [x] Step 3b's reach, measured: on erlang `out/erl/std@beam.erl` exports the ten primitives and
+      every one answers under `erl` (`etsGet` 41, `etsBump` 42, `ptGet` 7, `pdGet` 1); on **beam**
+      `out/beam/std@beam.S` is written but `std@erlang:self()` is `undef` — the beam wrapper
+      predicate is unwired (C-03's beam half). On commonJS and wasm the import reds
+      `std-unsupported-on-target: std/beam.pdGet has no `@external` for target 'node'|'wasm'`
 
 ### Step 1 — `var` parses at module level, and `val` starts meaning what it reads as
 
@@ -287,15 +313,24 @@ Two changes that must land together, because either alone is worse than neither.
    [`01-checker`](../01-checker/README.md), named and granted or this step does not open.**
 
 **Acceptance:**
-- [ ] `var hits: i32 = 0;` at module level parses; `#[@BeamMemory.Ets] var hits: i32 = 0;` parses
-- [ ] `val x: i32 = 0; x = 1;` is a located error naming `var`, in a `fn` body **and** at module level
-- [ ] The migration cost is counted the way decision 37 counted its own: `grep` for assignments to a
-      `val` over `libs/std`, `examples/**` and the five libraries, with the number in the commit
-      message. **Unmeasured today** — decision 37 found 0 field assignments; this is a different query
-- [ ] `expectError(src, kind, line, col)` cases in `src/parser/tests/**` (carve-out of
-      [`07`](../07-review-backlog/README.md))
-- [ ] `scripts/gate.sh --cold` green, and **no snapshot re-records**: every program this step changes
-      the meaning of is a program that does not compile today
+- [x] `var hits: i32 = 0;` at module level parses; `#[@BeamMemory.Ets] var hits: i32 = 0;` parses
+      (`parser/decls.zig` `parseValDecl` → `ValDecl.mutable`; the annotation branch of the top-level
+      dispatch lands `#[…]` on `ValDecl.annotations`, plain form only — an annotated shorthand is
+      `unexpectedToken` **at the annotation**)
+- [x] `val x: i32 = 0; x = 1;` is a located error, in a `fn` body **and** at module level —
+      `` `x` is a `val` and cannot be assigned`` at the assignment, hint `` Declare it `var x = …` ``
+      (`infer.zig` `refuseValAssign`, beside decision 37's record-field rule)
+- [x] The migration cost is counted the way decision 37 counted its own — **not** in the landing
+      commit's message (`8146d2b6` carries no number) but in step 0's row above and in the step-1
+      follow-up commit: 447 bare-name assignments over 212 files, 447 to a `var`, 0 to a `val`
+- [x] `expectError(src, kind, line, col)` cases in `src/parser/tests/surface.zig`: an annotated
+      `val` shorthand is `unexpectedToken` at `1:1` in both spellings; `var` reads no shorthand
+- [x] Gate green at the landing (`2788be9f`, cold) and at the follow-up. **Two snapshot re-records,
+      not none**, both in `snapshots/parser/`: `external_keyword_argument_form` and
+      `qualified_enum_variant_with_inline_true_flag` each gained a `labels` array, because the
+      parser now keeps the label written before an annotation argument (`keyed = true`,
+      `inline = true`) that it used to drop — a dump of a field that did not exist, not a program
+      whose meaning changed
 
 ### Step 2 — commonJS and wasm carry a module `var`, before any BEAM decision is taken
 
@@ -309,13 +344,15 @@ becomes coherent on two targets while the BEAM questions are still open.
   (`wat/wat_ast.zig:216`); three of the five paths already set it.
 
 **Acceptance:**
-- [ ] The [Problem](#problem) program, rewritten with `var`, prints `2` on node and `2` under
-      `wasmtime` — the value verified by running it, not read off the emitted code
-- [ ] `val` at module level still emits `const` / an immutable global — step 1's rule is what makes
-      that safe
-- [ ] Re-recorded snapshots in `snapshots/codegen/commonJS/**` and `snapshots/codegen/wasm/**` are
-      classified one by one; a `var` appearing in a cell is a cell step 1 just made legal
-- [ ] Carve-outs from [`04`](../04-js/README.md) and [`05`](../05-wasm/README.md), one function each
+- [x] The [Problem](#problem) program, rewritten with `var`, prints `2` on node and `2` under
+      `wasmtime` — run at `4fe1747e` (step 0) and pinned by `tests/language/run/module_var.bp`
+- [x] `val` at module level still emits `const` / an immutable global — the emitters read
+      `ValDecl.mutable` and nothing else changed for a `val`
+- [x] **No** codegen snapshot re-recorded: the landing touched `snapshots/parser/` only (two cells,
+      step 1's row). No program in `snapshots/codegen/{commonJS,wasm}/**` writes a module `var`
+- [x] Carve-outs from [`04`](../04-js/README.md) and [`05`](../05-wasm/README.md), one function
+      each: `commonJS.zig` `buildValDecl` (`let` for a `var`), `wat.zig` `emitGlobalVal` (`.mutable`
+      on the folded-numeric and `numberLit` paths)
 
 ### Step 3 — The annotation is validated, or it is worse than nothing
 
@@ -332,12 +369,20 @@ annotation does not fail, it **moves where the state lives**, and step 4's measu
 positionally. Nothing in the grammar changes; the validation is a lookup.
 
 **Acceptance:**
-- [ ] `#[@BeamMemory.<anything else>]` is a located error naming the three members
-- [ ] An unknown argument name under a known member is a located error naming `keyed`
-- [ ] `keyed` on anything but a `Dict` is a located error — there is no key (decision 51: scalars **and**
-      `List<T>`)
-- [ ] A `reject/` cell per diagnostic, specified here and handed to
-      [`12-language-tests`](../12-language-tests/README.md)
+- [x] `#[@BeamMemory.<anything else>]` is a located error naming the three members
+      (`infer.zig` `validateMemoryAnnotations`; the diagnostic texts are decision 41's verbatim)
+- [x] An unknown argument name under a known member is a located error naming `keyed`; a value
+      other than `true`/`false` is its own error
+- [x] `keyed` on anything but a `Dict` is a located error naming the type — `an `i32``,
+      `a `string[]`` (decision 51: scalars **and** `List<T>`); `#[@BeamMemory.…]` on a `val` is
+      refused with the `var` spelling as the hint
+- [x] A `reject/` cell per diagnostic — written into the suite (step 7), not only specified:
+      `beam_memory_unknown_member`, `beam_memory_unknown_argument`, `beam_memory_keyed_scalar`,
+      `beam_memory_keyed_list`, `beam_memory_on_val`
+- [ ] **Not this front's, recorded so it is not mistaken for closed:** an unknown *family* still
+      passes — `#[@TotallyMadeUp.Nonsense(whatever = 42)]` on a `var` checks clean at `4fe1747e`,
+      exactly as on a `fn`. Only the `BeamMemory.` prefix is validated. Decision 15 assigns the
+      annotation grammar to [`01`](../01-checker/README.md)
 
 ### Step 3b — `std/beam`: the host primitives leave the core
 
@@ -428,45 +473,99 @@ re-measure before it is sized.
 
 ### Step 6 — The diagnostics and the documentation text
 
-This front writes no `docs.md`; it supplies the text to [`08-hygiene`](../08-hygiene/README.md).
+This front writes no `docs.md`; it supplies the text to [`08-hygiene`](../08-hygiene/README.md) —
+[`docs-text.md`](./docs-text.md) beside this file, in two parts: what is true at `4fe1747e` (the
+`val` rule, the module `var`, the validated annotation — can go in now) and the three mode
+paragraphs, which describe C-10's emission and must not be published before it.
 
 **Acceptance:**
-- [ ] One paragraph per mode, each carrying the sentence the measurement forces:
+- [x] One paragraph per mode, each carrying the sentence the measurement forces:
       `Ets` is cache and counting memory, not where the truth lives · under `keyed = false` a `Dict`
       is stored as **one** value and concurrent writes to different keys are lost (with the 19 994 /
-      20 000 figure) · a `PersistentTerm` var is re-seeded on every code reload
-- [ ] The `keyed`-on-a-`Dict` warning of question 42, **if** the warning channel exists — measured:
-      `grep -rn warning src/comptime/*.zig` → 0, which
-      [`decisions-pending.md`](../../../1.0.5-beta/decisions-pending.md) already records as a defect with no owner. If
-      it does not exist, the sentence goes to `docs.md` and this box is struck with that reason
+      20 000 figure) · a `PersistentTerm` var is re-seeded on every code reload —
+      [`docs-text.md`](./docs-text.md) part 2, plus the one sentence both parts share (off the BEAM
+      all three read as the bare `var`)
+- ~~The `keyed`-on-a-`Dict` warning of question 42, **if** the warning channel exists~~ **struck:**
+      [decision 42](../../../1.0.5-beta/decisions-taken.md#42-a-dict-under-ets-with-keyed-unwritten-keeps-the-default-with-no-warning)
+      answered **(b), no warning** — replacing the whole container is a thing authors legitimately
+      want — and its note after decision 57 says the answer does not move once a channel exists (at
+      `4fe1747e` it still does not: `grep -rln warning src/comptime/*.zig` → 0). The behaviour and the
+      5 061× / 19 994-of-20 000 figures are the `Ets` paragraph's, where the default is documented,
+      and nowhere else
 
 ### Step 7 — The language cells
 
-Specified here, written by [`12-language-tests`](../12-language-tests/README.md).
+Specified here; the cells that can run were written into `tests/language/` in this front
+(`3cd77667`), because [`12-language-tests`](../12-language-tests/README.md) was absorbed into
+[C-16](../README.md#c-16--the-language-suites-residual-cells) and the suite's one-file-per-cell layout
+means nothing of anyone else's is edited. The cells that cannot run yet — the three modes on the two
+BEAM targets, and step 4's three refusals — are **specified below for C-10**, which is the step that
+gives them something to run against.
 
 **Acceptance:**
-- [ ] One `test/` cell per mode per BEAM target, plus one for a bare `var` on all four
-- [ ] One `reject/` cell per diagnostic of steps 1, 3 and 4
-- [ ] Every cell that runs on erlang or beam has a RUN LOG produced by running it
+- [x] ~~One `test/` cell per mode per BEAM target, plus~~ one for a bare `var` on all four:
+      `run/module_var` (the Problem program written `var`: `2` on commonJS and wasm; on erlang and
+      beam an `expected-failures.txt` row against C-10 each, carrying the measured emission — an
+      unbound `Hits`, and a dropped write printing `0` at exit 0) and `test/beam_memory_noop`
+      (decision 43's other half: off the BEAM the annotation is a no-op, and each of its five tests
+      **writes and reads back** through the binding, because a read alone passes on a backend that
+      dropped the write — erlang listed against C-10 for the same reason). **The per-mode BEAM cells
+      are C-10's**, each with `.targets` = `erlang beam`:
+      `test/beam_memory_process_dict` — a `#[@BeamMemory.ProcessDict] var` written in the test
+      process reads the declaration's value from a process `erlang.spawn`ed after the write (the
+      scope is the process; `erlang.spawn` is `libs/std/src/erlang.bp:143`) ·
+      `run/beam_memory_ets` + `.out` = `15` — decision 39's fixture: five spawned processes × three
+      `hits = hits + 1` on a `#[@BeamMemory.Ets] var hits: i32 = 0;`, joined, then `@print(hits)`;
+      it reads `15` only with the registered owner, `3` and `0` without ·
+      `run/beam_memory_ets_keyed` — two processes writing **different** keys of a
+      `#[@BeamMemory.Ets(keyed = true)] var counts: Dict<string, i32>` 20 000 times each print
+      `20000 20000` (the `keyed = false` twin is the measurement, `19994 20000`, and is not a cell —
+      a test that fails by chance is not a test) ·
+      `run/beam_memory_persistent_term` — `#[@BeamMemory.PersistentTerm] var version: i32 = 101;`
+      read from a spawned process prints `101`, the value put at load
+- [x] One `reject/` cell per diagnostic of steps 1 and 3 — `val_assign_local`, `val_assign_module`
+      (decision 38), `beam_memory_unknown_member`, `beam_memory_unknown_argument`,
+      `beam_memory_keyed_scalar`, `beam_memory_keyed_list` (decision 51), `beam_memory_on_val` —
+      each `.expect` the checker's line and its `L:C`. ~~and 4~~ **C-10's three, named here so the
+      suite gets them in the commit their refusals are born in:** `reject/beam_memory_pt_write` (a
+      `PersistentTerm` var assigned after load; hint `#[@BeamMemory.Ets(keyed = true)]`),
+      `reject/beam_memory_ets_bump_non_integer` (`+=` on an `f64` under `Ets`, decision 40's 5(b)
+      diagnostic) and `reject/beam_memory_ets_initialiser` (an `Ets` initialiser that is neither a
+      literal nor `isComptimeExpr()` — `fn registry() -> i32 { @print("side effect"); return 7; }`)
+- [x] ~~Every cell that runs on erlang or beam has a RUN LOG produced by running it~~ — a language
+      cell carries no RUN LOG (that is `snapshots/`'s vocabulary); what holds is that **every cell
+      was run before it was written down**: 14 passed and 2 expected failures on
+      commonJS/erlang/wasm, 1 expected failure on beam, and each erlang/beam row of
+      `expected-failures.txt` quotes the emission it saw, not a guess. The C-10 cells above inherit
+      the rule: their `.out` is what `erl` printed
 
 ### Step 8 — The payoff, specified for `09-ecosystem-residuals`
 
-This front does not edit a library. It writes the migration and hands it over.
+This front does not edit a library. It writes the migration and hands it over —
+[`rakun-migration.md`](./rakun-migration.md) beside this file, re-derived at the pins of this
+worktree (rakun `10c63974`, emilia `9c19e22`) rather than carried from `bef762b`.
 
 **Acceptance:**
-- [ ] **rakun**: the mode per registry and the line ranges that go
-      (`runtime.mjs:16-32`, `:33-63`, `:64-79`, `:80-98`, `:107-123` = 96 lines) and the 13 of 16
-      `@External.Node` declarations in `runtime.bp` that go with them — handed to
-      [`09`](../09-ecosystem-residuals/README.md) and registered against
-      [decision 17](../../../1.0.5-beta/decisions-taken.md#17-rakuns-erlang-story)
-- [ ] **emilia** is the validation case for `ProcessDict`, not an entry of this front:
-      `emilia/src/emilia.bp:23-25` (`get` + `lists:keystore` + `put`) and `:27-30` (`erase`) are a
-      read-modify-write and a reset over one key, `'__emilia_sheet'`, whose scope is per-process **on
-      purpose** (`emilia.bp:3-8`). `erase` is **not** a blocker: both readers guard
-      `case … of undefined -> []; X__ -> X__ end`, so absent and `[]` are indistinguishable and
-      `sheet = []` reproduces it. The blocker is that the value is a host list of 2-tuples with
-      `keystore` upsert semantics, which needs an ordered dict in `libs/std` — decision 17's half,
-      not this one's
+- [x] **rakun**: the mode per registry and the line ranges that go — now
+      `modules/rakun/src/runtime.mjs:16-32`, `:33-63`, `:64-79`, `:80-98`, `:107-108` + `:113-123`
+      (**still 96 of 231 lines**), the 13 of 16 `@External.Node` declarations of
+      `modules/rakun/src/runtime.bp` that go with them (`rkDispatch`, `rkDispatchHttp`, `rkServe`
+      stay), **and** the erlang twin that did not exist at `bef762b`: `sidecars/rakun_runtime.erl`
+      (850 lines), whose five registry sections (`:171-297`) and the `rakun_registry` `gen_server`
+      that owns their tables — decision 39's owner, built by hand — go with them. The one caveat is
+      `singletons`: its erlang half is `ets:insert_new` (the loser discards its instance) and the
+      design's `Dict` lowering is an overwriting `ets:insert`; the file names three answers and
+      recommends the third (an `insertNew` form lowered to `ets:insert_new`, the shape decision 40
+      gave `+=`). Handed to [`09`](../09-ecosystem-residuals/README.md) — whose rakun half is now the [`03-rakun`](../../03-rakun/README.md) track — and
+      registered against [decision 17](../../../1.0.5-beta/decisions-taken.md#17-rakuns-erlang-story)
+- [x] **emilia** is the validation case for `ProcessDict`, not an entry of this front — the cell
+      moved to `modules/emilia/src/emilia.bp:53-55` (`register`: `get` + `lists:keystore` + `put`)
+      and `:58-60` (`drainRules`: `erase`), a read-modify-write and a reset over one key,
+      `'__emilia_sheet'`, whose scope is per-process **on purpose** (`:18-23`). `erase` is **not** a
+      blocker: the reader guards `case … of undefined -> []; X__ -> X__ end`, so absent and `[]` are
+      indistinguishable and `sheet = []` reproduces it. The blocker is that the value is a host list
+      of 2-tuples with `keystore` upsert semantics, which needs an ordered dict in `libs/std` —
+      decision 17's half, not this one's
 
 ---
 

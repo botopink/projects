@@ -8,14 +8,20 @@ trigger it
 **Target:** erlang (server)
 **Wave:** 6
 **Depends on:** 22 (the route table, to validate a redirect target), 23 (the render pipeline that
-unwinds), 62 (the request frame the outcome is recorded on)
+unwinds), 62 (the request frame the outcome is recorded on), `01-std/04-routing-lib` Step 7 (the
+vocabulary this front imports — `NavKind`, `NavOutcome`, the four `nav:` reasons and the `n` wire
+form, decision 116)
 **Owns:** `repository/rakun/src/navigation.bp`,
 `repository/rakun/src/sidecars/rakun_navigation.erl`,
 `repository/rakun/test/navigation_test.bp`, and one `pub mod` line in `repository/rakun/src/root.bp`
 **Does not touch:** `repository/rakun/src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`,
 `src/runtime.mjs` — frozen for the milestone; `src/file_router.bp` (front 22) and `src/ssr.bp`
-(front 23) are read-only here; the client-side decoder is front 26's file, not this one's
-**Reference:** `NEXTJS-DOCS.md § 14. Tratamento de Erros` (Not Found), `§ 23. Autenticação` (Layout com
+(front 23) are read-only here; the signal vocabulary and both codecs are the bundled library
+`routing`'s (`libs/routing/src/navigation.bp`, `01-std/04-routing-lib` Step 7), imported here and by
+jhonstart fronts 26, 30 and 31
+**Reference:** [decision 116](../../decisions-taken.md#116-code-two-libraries-both-run-is-neutral-routing-gains-navigation-and-param-actions-and-validation-are-bundled-libraries-std-writes-json)
+rule 1 (the vocabulary is `routing`'s; the throw, the capture and the checks stay here) ·
+`NEXTJS-DOCS.md § 14. Tratamento de Erros` (Not Found), `§ 23. Autenticação` (Layout com
 autenticação), `§ 26. Referência de Funções` (Navegação), `§ 10. Mutação de Dados` ·
 <https://nextjs.org/docs/app/api-reference/functions/not-found> ·
 <https://nextjs.org/docs/app/api-reference/functions/redirect> ·
@@ -69,16 +75,18 @@ the response so the client router navigates without a document reload.
 ### How it maps onto botopink
 
 **A signal is a host-level throw, not a returned sentinel.** `rakun_navigation:signal/1` calls
-`erlang:throw(Reason)` where `Reason` is a **string beginning `jhonstart:`** — the exact spellings are
-in *Step 7* below. The render supervisor — front 23's pipeline, front 24's action dispatcher, front
-25's handler wrapper — brackets the body with a catch that recognizes that prefix and re-raises
+`erlang:throw(Reason)` where `Reason` is a **string beginning `nav:`**, built by `routing`'s
+`signalReason` — the exact spellings are in *Step 7* below. The render supervisor — front 23's
+pipeline, front 24's action dispatcher, front 25's handler wrapper — brackets the body with a catch that recognizes that prefix and re-raises
 anything else unchanged.
 
 The reason is a prefixed string rather than a tagged tuple for one concrete reason: **front 31's error
 boundaries live in jhonstart, and jhonstart does not import rakun.** A boundary has to be able to tell
 a navigation signal from an error it should render, and it has to do that without a dependency on this
-package. A literal prefix both sides can match on a plain string is the cheapest arrangement that does
-not create that dependency, and it is fixed by [`contracts.md` § 5b](../../contracts.md).
+package. A plain string with a neutral prefix, whose vocabulary is the bundled library `routing`
+(`navigation`: `signalReason`, `signalFromReason`, `isSignalReason`, `signalPrefixes`), is what both
+sides import — rakun here, jhonstart in fronts 30 and 31 — and neither names the other (decision 116,
+[`contracts.md` § 5b](../../contracts.md)).
 
 Choosing a throw over a returned sentinel is the whole design, and it buys three things a sentinel
 cannot. It composes through nested calls without changing one signature. It composes through
@@ -103,7 +111,7 @@ pub fn captureSignals<T>(body: fn() -> T, fallback: T) -> T
 pub fn takeSignal() -> NavOutcome
 ```
 
-`captureSignals` runs `body`. If it raises a nav tuple, the outcome is written onto the request frame
+`captureSignals` runs `body`. If it raises a navigation reason (`isSignalReason`), the outcome is written onto the request frame
 (front 62) and `fallback` is returned; anything else is re-raised. `takeSignal()` reads the outcome
 and clears it — a signal is consumed once, by whoever is composing the response, so a nested
 `captureSignals` cannot hide one from its parent.
@@ -120,13 +128,13 @@ by every consumer. One value out, one frame read, no positional access.
 | Raised from | Becomes |
 |---|---|
 | a layout or a page, before the first byte | status 404 and the nearest `not-found.bp` for `NotFound`; status 307/308 with `Location` for a redirect |
-| a layout or a page, after the first byte is flushed | the status is already on the wire and cannot change: the pipeline appends an in-stream navigation instruction to the payload and closes the stream. This case is tested, not documented. |
+| a layout or a page, after the first byte is flushed | the status is already on the wire and cannot change. The render that raised it is jhonstart's, and jhonstart's render writes the signal as markup its client executes (`data-jh-g`, decision 115 rule 2); rakun appends nothing, and the response closes with status 200. This case is tested, not documented. |
 | a route handler | the same status codes, with no boundary rendering — a handler has no `not-found.bp` |
 | a server action | a field in front 24's result envelope, consumed by front 26's client router |
 
 ### The action encoding
 
-One wire field, defined here so the two sides cannot disagree:
+One wire field, defined by `routing`'s `navigation` module so the two sides run one codec:
 
 ```
 ""            no signal
@@ -140,10 +148,10 @@ pub fn signalToWire(out: NavOutcome) -> string
 pub fn signalFromWire(wire: string) -> NavOutcome
 ```
 
-Both functions are pure botopink and both are tested here. `signalToWire` is what front 24 puts in the
-envelope; `signalFromWire` is what front 26 calls in the browser. This front compiles only for erlang
-— the browser copy is front 26's file — so the shared artifact is the format and the round-trip test,
-which is why the format is four lines long and carries no JSON.
+Both functions are `routing`'s, pure botopink compiled for erlang and commonJS and tested there
+(`01-std/04-routing-lib` Step 7). `signalToWire` is what front 24 puts in the envelope (through the
+bundled library `actions`); `signalFromWire` is what front 26 calls in the browser. There is one
+implementation, imported by both sides — no copy to keep in step.
 
 ### Redirect-target validation
 
@@ -158,8 +166,9 @@ the property unset, only relative destinations are legal. There is no flag that 
 ### Target
 
 erlang. The signal, the capture, the boundary selection and the status codes all run while a request
-is in flight. The one artifact that crosses is the four-line wire format above, and this front ships
-only the server half of it; front 26 owns the browser half and cites this section for the grammar.
+is in flight. What crosses to the browser — the reasons and the four-line wire format — is the
+bundled library `routing`'s, compiled for both targets; this front imports it and ships no codec of
+its own.
 
 **The sidecar module atom is `rakun_navigation`**, not `navigation`: `shipErlSidecars` skips a
 qualifier whose atom matches a module this build emitted
@@ -170,18 +179,10 @@ qualifier whose atom matches a module this build emitted
 
 ### Step 1 — The signal
 
-```bp
-pub type NavKind {
-    None,
-    NotFound,
-    Redirect,
-}
+`NavKind` and `NavOutcome` are imported from `routing` (`navigation`), not declared here:
 
-pub type NavOutcome(
-    kind: NavKind,
-    location: string,
-    status: i32,
-)
+```bp
+import {navigation: {NavKind, NavOutcome, signalReason}} from "routing";
 
 pub fn notFound() -> i32
 pub fn redirect(location: string) -> i32
@@ -215,7 +216,7 @@ pub fn peekSignal() -> NavOutcome
 **Acceptance:**
 - [ ] `captureSignals({ -> notFound(); }, 0)` answers `0` and `takeSignal().kind` is `NavKind.NotFound`.
 - [ ] `captureSignals({ -> 7; }, 0)` answers `7` and `takeSignal().kind` is `NavKind.None`.
-- [ ] An exception that is not a nav tuple passes through `captureSignals` unchanged, with its
+- [ ] An exception that is not a navigation reason passes through `captureSignals` unchanged, with its
       original reason.
 - [ ] `takeSignal()` clears: a second call answers `NavKind.None`. `peekSignal()` does not clear.
 - [ ] A nested `captureSignals` inside a captured body does not hide the signal from the outer one —
@@ -227,8 +228,8 @@ pub fn peekSignal() -> NavOutcome
 
 ### Step 3 — Signals through `await`
 
-A page is `#[@future] fn(route: PageContext) -> @Future<Element>` (front 22), and a server component
-awaits others. On erlang `@Future` lowers eagerly, so the signal is raised during the awaited call and
+A page renderer is `fn(req: Request, out: ChunkWriter) -> @Future<void>` (front 23), and whatever
+it calls — a jhonstart server component, in an onze application — awaits others. On erlang `@Future` lowers eagerly, so the signal is raised during the awaited call and
 propagates as a plain throw.
 
 **Acceptance:**
@@ -261,42 +262,42 @@ pub fn boundaryFor(out: NavOutcome, table: RouteEntry[], pattern: string) -> ?Ro
 **Acceptance:**
 - [ ] A signal raised before the first flush sets the status.
 - [ ] A signal raised after the first flush does **not** change the status — the response is already
-      200 — and instead appends the wire form of the outcome to the stream, which front 26's router
-      consumes as a client-side navigation.
-- [ ] The test asserts both the unchanged status and the appended instruction, in one run, because
-      asserting only one of them is how this bug ships.
+      200 — and rakun writes nothing for it: the markup that carries it (`data-jh-g`) is written by
+      jhonstart's render (front 30, decision 115 rule 2), and this front's dispatch closes the
+      response normally when the renderer's future resolves.
+- [ ] The test drives a renderer that writes one chunk and then raises, and asserts in one run that
+      the status stays 200, that no byte after the renderer's own chunks is written by rakun, and that
+      the response is closed — asserting only one of them is how this bug ships.
 
 ### Step 6 — The action wire format
 
-```bp
-pub fn signalToWire(out: NavOutcome) -> string
-pub fn signalFromWire(wire: string) -> NavOutcome
-```
+`signalToWire` / `signalFromWire` are `routing`'s (`01-std/04-routing-lib` Step 7), where the round
+trip, the `""` for `None`, the tolerant `garbage → None` and the `R|307|/a|b` remainder rule are
+asserted on both targets. This front asserts that it uses them.
 
 **Acceptance:**
-- [ ] `signalFromWire(signalToWire(out))` equals `out` field by field for all four cases — never with
-      `==` on a record containing an array, and there is no array here for exactly that reason.
-- [ ] `signalToWire(NavOutcome(kind: NavKind.None, ...))` answers `""`.
-- [ ] `signalFromWire("garbage")` answers `NavKind.None` rather than raising: a malformed field
-      arriving from the network is a client that must not be able to crash a render.
-- [ ] `signalFromWire("R|307|/a|b")` answers a location of `/a|b` — the destination is the remainder
-      of the line, not the third field, so a `|` in a path round-trips.
+- [ ] `signalToWire(takeSignal())` after `captureSignals` around a `redirect("/blog")` answers
+      `R|307|/blog`, and after `notFound()` answers `N` — the literals of `routing`'s table.
+- [ ] `grep -n "fn signalToWire\|fn signalFromWire" repository/rakun/modules/rakun/src/navigation.bp`
+      is empty — the codec is imported, not re-declared.
 
 ### Step 7 — The signal-prefix list
 
-This front owns the list. Front 31 matches it, front 23 catches it, and nothing else in the milestone
-may add a spelling to it.
+The list is `routing`'s (`navigation.signalPrefixes`, decision 116). This front raises the reasons
+through `signalReason` and recognises them in `captureSignals` through `isSignalReason`; front 31
+matches the same function and front 23's dispatch catches what it raises. Nothing in the milestone
+spells a reason by hand.
 
-**The rule a boundary implements, in one sentence:** any raised reason that is a string beginning
-`jhonstart:` is a navigation signal — re-raise it unchanged, never render it, never log it as an
+**The rule a boundary implements, in one sentence:** any raised reason for which `isSignalReason`
+answers true is a navigation signal — re-raise it unchanged, never render it, never log it as an
 error, never put it in an `error.digest`.
 
 | Raised by | Reason, literally | Status | Boundary behaviour |
 |---|---|---|---|
-| `notFound()` | `jhonstart:not-found` | 404 | re-raise; front 23 selects `not-found.bp` |
-| `redirect(loc)` | `jhonstart:redirect:<loc>` | 307 | re-raise |
-| `permanentRedirect(loc)` | `jhonstart:permanent-redirect:<loc>` | 308 | re-raise |
-| `redirectWithStatus(loc, 303)` | `jhonstart:see-other:<loc>` | 303 | re-raise |
+| `notFound()` | `nav:not-found` | 404 | re-raise; front 23 selects `not-found.bp` |
+| `redirect(loc)` | `nav:redirect:<loc>` | 307 | re-raise |
+| `permanentRedirect(loc)` | `nav:permanent-redirect:<loc>` | 308 | re-raise |
+| `redirectWithStatus(loc, 303)` | `nav:see-other:<loc>` | 303 | re-raise |
 
 `<loc>` is the remainder of the string after the third `:`, so a destination containing `:` needs no
 escaping. There is no fifth spelling and no numeric status in the reason — the status is a property of
@@ -305,44 +306,21 @@ would have to parse.
 
 **This is not the action wire format**, and the two must not be conflated. The prefix list above is
 what crosses a stack frame inside one BEAM process; the four-line format of *Step 6* is what crosses
-to the browser in front 24's envelope. Two transports, two artifacts, one source of truth: `takeSignal`
-reads a frame written from the prefix string, and `signalToWire` reads that same `NavOutcome`. The test
-below is what keeps them from drifting.
-
-```bp
-pub fn signalReason(out: NavOutcome) -> string
-pub fn signalFromReason(reason: string) -> NavOutcome
-pub fn isSignalReason(reason: string) -> bool
-pub fn signalPrefixes() -> string[]
-```
-
-`signalPrefixes()` answers the four literals with their `<loc>` placeholders stripped —
-`["jhonstart:not-found", "jhonstart:redirect:", "jhonstart:permanent-redirect:",
-"jhonstart:see-other:"]` — so front 31's test can assert against this function rather than against a
-copy of the table.
+to the browser in front 24's envelope. Two transports, two artifacts, one module: both are
+`routing`'s `navigation`, where the round trip of each and their case-for-case agreement are asserted
+on both targets (`01-std/04-routing-lib` Step 7). `takeSignal` reads a frame written from the reason,
+and `signalToWire` reads that same `NavOutcome`.
 
 **Acceptance:**
-- [ ] `signalReason` answers each of the four literals exactly, asserted as literal strings.
-- [ ] `signalFromReason(signalReason(out))` equals `out` field by field for all four cases, and for a
-      location containing `:` and `/`.
-- [ ] `signalReason(signalFromReason(r)) == r` for each of the four literals — the round trip is
-      asserted in both directions, because only one direction is what lets a spelling drift.
-- [ ] **The list and the wire format agree:** for each of the four cases,
-      `signalToWire(signalFromReason(reason))` equals the *Step 6* literal for that case. This is the
-      one test that ties the two artifacts together and it names both literals inline.
-- [ ] `signalPrefixes()` has exactly four entries, and every entry is a prefix of some
-      `signalReason(...)` output — asserted by construction, so adding a fifth verb without adding its
-      prefix fails.
-- [ ] `isSignalReason("jhonstart:not-found")` is true; `isSignalReason("jhonstart:")` is **false** —
-      the bare prefix is not a signal, and treating it as one would swallow an error whose message
-      happens to start that way.
-- [ ] `isSignalReason("boom")` is false, and `captureSignals` re-raises it unchanged with its original
-      reason.
-- [ ] `signalFromReason("jhonstart:teleport:/x")` raises, naming the unknown verb: an unrecognized
-      `jhonstart:` reason is a version skew between rakun and jhonstart, and silently rendering it as
-      an error is how that skew stays invisible.
-- [ ] Front 31's boundary test asserts the same four literals through `signalPrefixes()`, and this
-      front's *Definition of done* requires that it does.
+- [ ] `redirect("/login")` raises exactly `signalReason(NavOutcome(kind: NavKind.Redirect, location:
+      "/login", status: 307))` — `nav:redirect:/login` — asserted as a literal caught at the host
+      boundary, and likewise `nav:not-found`, `nav:permanent-redirect:/new`, `nav:see-other:/done`.
+- [ ] `captureSignals` recognises a reason through `routing`'s `isSignalReason` and nothing else:
+      `nav:` alone and `boom` are re-raised unchanged with their original reason.
+- [ ] `captureSignals` around a raised `nav:teleport:/x` re-raises the error `signalFromReason` gives
+      for an unknown verb — a version skew stays loud.
+- [ ] `grep -rn '"jhonstart:\|fn signalReason\|fn signalPrefixes\|fn isSignalReason'
+      repository/rakun/modules/rakun/src` is empty — the vocabulary is imported, not spelled.
 
 ## Examples
 
@@ -360,7 +338,7 @@ copy of the table.
 | There is no bottom/never type, so a function that cannot return still has to declare a return type, and every call site binds a value that is never produced | `val _gone = redirect("/login");` in both examples | declare `-> i32` and bind to an ignored `val` | a `never` return type, so `redirect(...)` is a statement and unreachable code after it is a compile error |
 
 Two gaps front 01 already recorded apply and are cited rather than re-filed: there is no array
-destructuring in a binding, so `signalFromWire` splits and indexes with `.at(i)`; and a std module
+destructuring in a binding, so `routing`'s `signalFromWire` splits and indexes with `.at(i)`; and a std module
 cannot call another std module, which is why this front takes the route table as a parameter rather
 than reaching front 22 through a façade.
 
@@ -369,34 +347,33 @@ than reaching front 22 through a façade.
 `repository/rakun/test/navigation_test.bp`, run by `botopink test --target erlang` from
 `repository/rakun/`, and by `zig build test-libs -- --target erlang --lib rakun` in the ecosystem gate.
 
-erlang only. The wire format's browser half lives in front 26 and is tested there against the same
-four strings, which are written out in *Step 6* of this README so the two test files assert the same
-literals rather than two derivations of them. That split is deliberate: this front declares no
-`@External.Node` cell, so it has no commonJS row, and a format shared by two fronts is safer pinned to
-literals in one README than to a shared implementation neither owns.
+erlang only. The reasons and the wire format are `routing`'s and are tested there on erlang and
+commonJS (`libs/routing/test/navigation_test.bp`); this front declares no `@External.Node` cell, so it
+has no commonJS row, and it asserts that what it raises and captures is `routing`'s vocabulary.
 
 What the tests assert, by step: that a signal does not return and carries the right status; that
 capture records and clears exactly once, re-raises non-signals, and is not defeated by `try … catch`
 or by nesting; that a signal crosses `await`; that status, `Location` and boundary selection are
-derived correctly; that a post-flush signal degrades instead of lying about the status; that the wire
-format round-trips, including a destination containing `|`; and that the four signal-prefix literals
-round-trip in both directions and agree with the wire format case for case.
+derived correctly; that a post-flush signal leaves the status and the stream to jhonstart's render;
+and that each verb raises `routing`'s reason literal.
 
-The prefix list is the one artifact this front shares with a different repository. Front 31's test
-asserts it through `signalPrefixes()` and this front's test asserts the literals — two files, one
-source, and a fifth verb added without a prefix reds both.
+The vocabulary is the one artifact this front shares with a different repository, and it is not
+this front's: `routing` owns it, and front 31's boundary and this front's capture both call
+`isSignalReason`.
 
 ## Definition of done
 
 - `src/navigation.bp` compiles with no `@External.Node` cell.
 - `src/sidecars/rakun_navigation.erl` compiles under `erlc` with `-Werror`, and its atom does not
   collide with a module rakun emits.
-- The four-line wire format, the four signal-prefix literals and the redirect-validation rule are
-  written down here once and cited by fronts 23, 24, 25, 26, 31 and 64 rather than re-derived.
-- Front 31's boundary test asserts the prefix list through `signalPrefixes()` rather than through a
-  copy of it, and a fifth verb added here without a prefix fails that test.
+- The redirect-validation rule is written down here once and cited by fronts 23, 24, 25 and 64; the
+  four-line wire format and the four `nav:` reasons are `routing`'s (`01-std/04-routing-lib` Step 7)
+  and this front imports them.
+- No reason is spelled by hand under `repository/rakun/`: the raise goes through `signalReason` and
+  the capture through `isSignalReason`.
 - An open redirect is impossible without an explicit host allow-list, and there is no property that
   turns the check off.
-- `repository/rakun/AGENTS.md` names `navigation.bp`, the nav tuple and the wire format.
+- `repository/rakun/AGENTS.md` names `navigation.bp` and that its vocabulary is imported from
+  `routing`.
 - The front's tests are green on its assigned target — here, erlang.
 

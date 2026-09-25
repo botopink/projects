@@ -4,7 +4,7 @@
 **Priority:** critical — `#[value("key")]` reads a table that nothing fills; an application cannot change environment without changing source
 **Target:** erlang (server)
 **Wave:** 1
-**Depends on:** 01
+**Depends on:** 01 · `01-std/07-std-json-writers` (`json.unquote` for the `.json` reader's string tokens) · `01-std/06-validation-lib` (the validator the boot runs)
 **Owns:** `src/config.bp`, `src/profiles.bp`, `src/sidecars/rakun_config.erl` · `test/config_test.bp`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen · `src/runtime.bp` and `src/sidecars/rakun_runtime.erl` belong to front 04
 **Reference:** `03-recursos-principais.md § Configuracao Externa` · `03-recursos-principais.md § Profiles` · <https://docs.spring.io/spring-boot/reference/features/external-config.html> · <https://docs.spring.io/spring-boot/reference/features/profiles.html>
@@ -88,7 +88,11 @@ The sidecar reads three:
 
 - **`.properties`** — `key=value`, `#`/`!` comments, `\` continuations. Twenty lines of Erlang.
 - **`.json`** — OTP 27's `json:decode/1`, then flattened to dot keys. Arrays become indexed keys
-  (`spring.profiles.include[0]`), matching Spring's own relaxed list binding.
+  (`spring.profiles.include[0]`), matching Spring's own relaxed list binding. The landed reader is a
+  hand scanner in botopink (`modules/rakun/src/config.bp`); its string reader
+  (`config.bp:394-433`, `jsonString` / `jsonUnquote` / `unescape`, which misreads `\b`, `\f`, `\/`
+  and `\u`) is deleted for std (decision 116): the document is checked with `json.parse` first, and
+  each string token is read with `json.unquote` (`01-std/07-std-json-writers`).
 - **`.yaml` / `.yml`** — a **subset** decoder in the sidecar: block mappings, block sequences, plain
   and quoted scalars, `#` comments, `---` document separators. Anchors, aliases, flow style,
   multi-line scalar blocks and tags are **refused with a located error naming the line**, not
@@ -200,9 +204,10 @@ expected forms — never a zero.
 
 ### Validation at boot
 
-Front 14 owns constraints. Front 05 owns the *moment*: after binding and before the first component is
-constructed, every `#[configurationProperties]` record marked `#[validated]` is run through front 14's
-validator, and a violation halts the boot with the full report — key, value, constraint, and the file
+The constraints are the bundled library `validation` (decision 116; front 14's landed member moved).
+Front 05 owns the *moment*: after binding and before the first component is constructed, every
+`#[configurationProperties]` record marked `#[validated]` (imported `from "validation"`) is run through
+its emitted `validate<TypeName>`, the refusal text is front 14's `config_check.bp`, and a violation halts the boot with the full report — key, value, constraint, and the file
 the value came from. "Refuse to start" is the requirement; a bound-but-invalid configuration reaching
 a request is the failure this prevents.
 
@@ -360,8 +365,9 @@ pre-existing `runtime.mjs`, and a second Node file here would be new Node surfac
 
 - **72-rakun-auto-configuration** reads the profile set and the property table to decide conditional
   registration. Front 05 does not own `#[profile]`, `#[conditionalOnProperty]` or any other condition.
-- **14-rakun-validation** owns the constraints; front 05 owns running them at boot and refusing to
-  start.
+- **14-rakun-validation** owns the refusal text (`config_check.bp`) and the message source; the
+  constraints are the bundled library `validation` (decision 116). Front 05 owns running them at boot
+  and refusing to start.
 - **11-rakun-actuator** serves `configprops` and `env` by reading this front's binding registry;
   **76** owns the sanitization policy over it.
 - **88-rakun-cli** owns `rakun config-catalogue`.
@@ -387,6 +393,7 @@ here only so the reasoning survives:
 - [ ] `src/config.bp` and `src/profiles.bp` exist; `src/sidecars/rakun_config.erl` compiles under `erlc`
 - [ ] All eight sources resolve in the documented order, each with its own test
 - [ ] `.properties`, `.json` and the documented YAML subset all load; an unsupported YAML construct is a located error
+- [ ] a `.json` value holding `\u0041`, `\b` and `\/` loads as `A`, U+0008 and `/`; a malformed document is refused by `json.parse` naming the file; `grep -n "fn jsonString\|fn jsonUnquote" src/config.bp` is empty
 - [ ] `#[configurationProperties]` binds nested records, `Duration` and `DataSize`
 - [ ] A missing non-optional location, an unresolvable placeholder, a placeholder cycle, a profile-group cycle and an unparsable typed value each fail the boot with a message naming the input
 - [ ] `#[validated]` configuration refuses the boot on a violation

@@ -52,7 +52,7 @@ pub type LikeProps(
     likes: i32,
 )
 
-// front 29 — the interactive component. `data-onze-on-click` names a handler the
+// front 29 — the interactive component. `data-jh-on-click` names a handler the
 // client runtime binds after hydration; there is no JavaScript string in this
 // file, which is what keeps the component testable as markup.
 #[client]
@@ -69,7 +69,7 @@ fn likeButtonMarkup(slug: string, likes: i32) -> Element {
         text(likes.toString() + " likes", attrs: []),
     ], attrs: [
         #("class", likeClass),
-        #("data-onze-on-click", "LikeButton:like"),
+        #("data-jh-on-click", "LikeButton:like"),
         #("data-onze-post", slug),
         #("data-onze-api", apiBase),
     ]);
@@ -111,7 +111,7 @@ test "the button carries the emilia class its literal token list produced" {
 
 test "the handler is named, not inlined — no JavaScript in the markup" {
     val markup = renderToString(likeButtonMarkup("hello-world", 0));
-    assert markup.contains("data-onze-on-click=\"LikeButton:like\"");
+    assert markup.contains("data-jh-on-click=\"LikeButton:like\"");
     assert markup.contains("<script") == false;
     assert markup.contains("onclick=") == false;
 }
@@ -125,7 +125,7 @@ test "the island carries the id; the component name and props go in the payload"
 
 test "the mount point names the island and nothing else" {
     val markup = renderToString(postRow("i0", samplePost()));
-    assert markup.contains("data-onze-i=\"i0\"");
+    assert markup.contains("data-jh-i=\"i0\"");
     assert markup.contains("LikeProps") == false;
 }
 

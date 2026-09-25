@@ -3,18 +3,22 @@
 **Track:** B rakun
 **Priority:** critical — a page that can only be read is half an application; this is the only path by
 which a browser changes server state, and it is the path an attacker will try first
-**Target:** both — boundary. The action body runs on BEAM; the form that calls it is HTML the browser
-submits; the id that names the action and the envelope that carries the result cross between them
+**Target:** erlang (server). The action body, the id, the checks and the envelope are BEAM code; the
+form that calls it is HTML jhonstart front 67 writes with the id onze hands it, and the envelope is
+what crosses back (decision 113)
 **Wave:** 7
-**Depends on:** 23 (payload, render pipeline), 22 (route table), 06 (scopes), 62 (request context —
-`cookies()`, `after()`), 12 (`revalidatePath`/`revalidateTag`), 63 (`redirect`), 01 (constant-time compare, percent-encoding), 03
-(build id), 14 (constraint mirroring), 67 (the browser half), 94 (`form`/`input`/`button`)
-**Owns:** `repository/rakun/src/actions.bp`, `repository/rakun/src/actions.mjs`,
-`repository/rakun/src/sidecars/rakun_actions.erl`, `repository/rakun/test/actions_test.bp`
-**Does not touch:** `repository/rakun/src/http.bp`, `src/decorators.bp`, `src/bootstrap.bp`,
-`src/runtime.mjs` (frozen), `repository/jhonstart/src/element.bp` (frozen),
-`repository/jhonstart/src/elements.bp` (front 94's), and the files owned by 22 · 23 · 25
-**Reference:** `NEXTJS-DOCS.md § 10. Mutação de Dados`, `§ 27. Diretivas` ·
+**Depends on:** 23 (the page dispatch the re-render goes through), 22 (route table), 06 (scopes), 62
+(request context — `cookies()`, `after()`), 12 (`revalidatePath`/`revalidateTag`), 63 (`redirect`),
+01 (constant-time compare, percent-encoding), 03 (build id), `01-std/06-validation-lib` (constraint
+mirroring), `01-std/05-actions-lib` (the envelope, the `state` grammar, the JSON-RPC body and the
+`refresh` value — decision 116); jhonstart 67 writes the form, reached through onze only
+**Owns:** `repository/rakun/src/actions.bp`, `repository/rakun/src/sidecars/rakun_actions.erl`,
+`repository/rakun/test/actions_test.bp`
+**Does not touch:** `repository/rakun/src/http.bp`, `src/decorators.bp`, `src/bootstrap.bp`
+(frozen), the files owned by 22 · 23 · 25, and every file outside `repository/rakun/` — this front
+builds no element and imports nothing from `jhonstart` (decision 113)
+**Reference:** [decision 116](../../decisions-taken.md#116-code-two-libraries-both-run-is-neutral-routing-gains-navigation-and-param-actions-and-validation-are-bundled-libraries-std-writes-json)
+rule 2 (the action protocol is the bundled library `actions`) · `NEXTJS-DOCS.md § 10. Mutação de Dados`, `§ 27. Diretivas` ·
 <https://nextjs.org/docs/app/getting-started/updating-data> ·
 <https://nextjs.org/docs/app/api-reference/directives/use-server>
 
@@ -51,9 +55,6 @@ the rejection is a 403, and there is no setting that turns it off.
   host cell, not in botopink.
 - `repository/rakun/src/http.bp:45-73` — `Response` carries no headers, so no `Set-Cookie`, which is
   what a session-writing action needs. Frozen; see *Blocked*.
-- `repository/jhonstart/src/element.bp:10-53` — eight constructors, none of them `form`, `input`,
-  `button` or `label`. The file is frozen; front 94 adds those in
-  `repository/jhonstart/src/elements.bp`, and this front imports them rather than growing its own.
 - `libs/std/src/crypto.bp:38` — `hmacSha256(key, data) -> string` already exists, so the id
   derivation needs no new primitive. What does not exist is a constant-time compare; front 01 adds it.
 - `libs/std/src/querystring.bp` exists; percent-encoding of a form body does not, and front 01 adds
@@ -118,51 +119,55 @@ evaluator emits only the decorator into the eval script (`repository/rakun/src/d
 so `crypto.hmacSha256` is unreachable from inside it. Deriving the id at module load is not a workaround, it is the
 only place all three inputs exist at once.
 
-**The form.** `form`, `input` and `button` are **front 94's** (`repository/jhonstart/src/elements.bp`);
-this front builds none of its own and imports them. What it adds is the binding — the one function
-that turns an action name into a form that names it correctly:
+**The form is not this front's.** rakun builds no HTML (decision 113). The markup that binds a form
+to an action — `method="post"`, the current pathname in `action`, the `data-jh-a` marker and the
+hidden action field — is written by jhonstart front 67 (`formAttrs`, `hiddenActionField`).
+This front owns what that markup carries: the id, derived here and nowhere else. onze asks this
+front for the id of a registered action and hands it to the form; jhonstart never names rakun, and
+rakun never names an element:
 
 ```bp
-pub fn actionForm(action: string, children: Children, attrs: Array<#(string, string)>) -> Element
+pub fn actionIdOf(action: string) -> string   // the registered action's id; unknown name raises
 ```
 
-`actionForm` resolves the action's id, emits the hidden `__onze_action` field and the `data-onze-a`
-attribute, and composes front 94's `form` around the caller's children. Fields and buttons are
-written with front 94's constructors directly; there is no `textField`/`submitButton` wrapper here,
-because a wrapper over someone else's element surface is a second surface to keep in step.
-
-`actionForm` renders:
-
 ```html
-<form method="post" action="/blog" data-onze-a="a_9f2c1b7e">
-  <input type="hidden" name="__onze_action" value="a_9f2c1b7e">
+<form method="post" action="/blog" data-jh-a="a_9f2c1b7e">
+  <input type="hidden" name="__bp_action" value="a_9f2c1b7e">
   …fields…
 </form>
 ```
 
-Void elements render correctly because front 23's walker knows the void set; jhonstart's
-`renderToString` would emit `<input></input>`, which is one more reason nothing in this front calls it.
+**The wire names are configuration onze sets.** The hidden field's name and the scripted path's
+header name are a text contract between jhonstart's form and this dispatcher, and neither library
+spells them (decision 114). This front reads both from its configuration (front 05):
+`rakun.actions.field` and `rakun.actions.header`. onze sets them at boot and passes the same two
+values to jhonstart front 67 as `actionField` / `actionHeader`; onze's defaults are `__bp_action`
+and `X-Bp-Action`, which is what the examples and fixtures below use. With either key unset this
+front refuses to start the dispatcher, naming the key — there is no default in rakun, so a
+mismatched pair cannot happen silently. Below, *the field* and *the header* mean those two
+configured names.
 
 **The phase word.** Before the action body runs, this front calls front 62's
 `setPhase(RequestPhase.Action)`. It is the same word front 12's `rkCachePhase()` reads to decide
 whether a revalidation is legal, so **without it every `revalidatePath` from an action raises** —
 front 12 rejects a revalidation issued during `Render`. Setting `Action` is also what makes
 `cookies().set(...)` legal inside an action, which it is not inside a render (`contracts.md § 5`).
-The phase is restored before front 23 re-renders, so the re-render runs as `Render` and a
+The phase is restored before front 23's dispatch re-renders, so the re-render runs as `Render` and a
 `cookies().set(...)` from it still raises.
 
 **Two dispatch paths, one authorization path.**
 
 | | Progressive (no JS) | Scripted (front 67) |
 |---|---|---|
-| transport | `POST` to the current pathname, `application/x-www-form-urlencoded` | `POST` to the same pathname, `Accept: application/onze-action` |
-| names the action | the `__onze_action` field | the `X-Onze-Action` header, falling back to the field |
+| transport | `POST` to the current pathname, `application/x-www-form-urlencoded` | `POST` to the same pathname carrying the header (`rakun.actions.header`) — its presence is what marks the scripted path; rakun spells no media type |
+| names the action | the field (`rakun.actions.field`) | the header (`rakun.actions.header`), falling back to the field |
 | the server answers with | a full document, or a 303 to the redirect target | the action result envelope, JSON |
 | runs | CSRF check, size check, decode, resolve, invoke, revalidate | the same six steps, same code |
 
 The scripted path is the JSON-RPC entry point for calling an action from an event handler
-(`§ 10. Invocando via event handlers`): the body is `{"v":1,"id":"a_…","args":["…","…"]}` and the
-answer is the same envelope. It differs from the form path in encoding only. Sharing the authorization
+(`§ 10. Invocando via event handlers`): the body is `{"v":1,"id":"a_…","args":["…","…"]}`, read with
+the bundled library `actions`' `parseRpcBody` (jhonstart front 67 writes it with `writeRpcBody`), and
+the answer is the same envelope. It differs from the form path in encoding only. Sharing the authorization
 path is not an optimization; a second entry point with its own checks is how the check gets skipped.
 
 **CSRF, and why there is no setting.** Before the body is read: if the request carries an `Origin`
@@ -177,12 +182,14 @@ that rewrites `Host` fixes its proxy.
 marshals through `string`, so a multipart body would arrive as lossy UTF-8. A 415 is the honest
 answer; see *Language gaps*.
 
-**Body size.** Default 1 MiB, raisable through front 05 (`onze.actions.bodyLimit`) and not
-lowerable below 4 KiB. Enforced *while reading*, in `src/sidecars/rakun_actions.erl`, by counting bytes as they arrive
+**Body size.** Default 1 MiB, raisable through front 05's `rakun.actions.bodyLimit` — a rakun key,
+which onze writes at boot like the two wire names (decision 115) — and not lowerable below 4 KiB. Enforced *while reading*, in `src/sidecars/rakun_actions.erl`, by counting bytes as they arrive
 and closing the connection at the limit — not by reading the body and then measuring it, which is the
 version that lets a 2 GB upload exhaust the node before the check runs.
 
-**The result envelope.** The one thing the scripted path returns:
+**The result envelope.** The one thing the scripted path returns, written by the bundled library
+`actions`' `writeEnvelope` (`01-std/05-actions-lib`) — this front builds an `ActionEnvelope` and
+writes no JSON itself:
 
 ```json
 {"v":1,"ok":true,"state":"message=","revalidated":["/blog"],"redirect":"","payload":""}
@@ -196,12 +203,13 @@ version that lets a 2 GB upload exhaust the node before the check runs.
 | `revalidated` | the paths and tags the action invalidated, echoed so the client can drop its own caches |
 | `redirect` | the plain `Location` target, derived from `n` for the progressive path's 303, or `""` |
 | `n` | the navigation signal from front 63 in its wire form (`contracts.md § 5b`): `""` no signal · `"N"` notFound · `"R\|307\|/login"` redirect · `"R\|308\|/new"` permanentRedirect. `location` is the remainder of the line, so a `\|` in a path round-trips |
-| `payload` | a fresh front-23 payload for the current route when the action requested a refresh, or `""` |
+| `payload` | a fresh payload (contract 2, rendered by jhonstart front 30 through front 23's dispatch) for the current route when the action requested a refresh, or `""` |
 
-`state` is querystring-encoded for the same reason front 23's params are: both halves must read it
-with the same botopink code and `std/json` has no structured walker. `n` is produced by front 63's
-`signalToWire` and read by its `signalFromWire`; `redirect` is derived from it and never set
-independently, so there is one source of truth for where the browser goes next. An `ok: false`
+`state` is querystring-encoded because `std/json` has no structured walker; its grammar (`message`,
+`f.<name>`) and its encoder `writeState` are `actions`', the same code jhonstart front 67 reads it
+with. `n` is `routing`'s `signalToWire` of front 63's outcome; `redirect` is derived from it inside
+`writeEnvelope`, which takes no `redirect` parameter, so there is one source of truth for where the
+browser goes next. An `ok: false`
 envelope is **data handled by front 67**, never caught by a front-31 boundary — only a raised POST
 reaches a boundary.
 
@@ -212,7 +220,8 @@ user gets back is built from the invalidated-and-refilled cache rather than from
 mutation just made stale. The ordering is the whole point and it is tested.
 
 **`router.refresh()`.** Front 26 owns the client call; this front owns the endpoint. A POST with
-`X-Onze-Action: refresh` and no action id re-renders the current route through front 23 and returns
+the header set to `actions`' `refreshValue()` (`refresh`) and no action id re-renders the current route through the page renderer
+front 23 dispatches and returns
 an envelope whose `payload` is the new payload and whose `state` is empty. The client re-reconciles
 without a document load. It runs the CSRF check like every other POST.
 
@@ -261,7 +270,6 @@ nothing. `ActionResult.state` is a `Dict` in botopink and is querystring-encoded
 pub fn actionId(module: string, name: string, buildId: string) -> string
 
 #[@External.Erlang("rakun_actions", "register")]
-#[@External.Node("./actions.mjs", "register")]
 pub declare fn rkRegisterAction(
     name: string,
     run: fn(form: FormData) -> @Future<ActionResult>,
@@ -274,21 +282,25 @@ pub declare fn rkRegisterAction(
 - [ ] The id is 26 characters, `a_` plus 24 hex, and contains no character that needs escaping in an
       HTML attribute.
 - [ ] Two functions with the same name in different modules get different ids.
-- [ ] The function's name alone does not resolve: POSTing `__onze_action=createPost` is a 404.
+- [ ] The function's name alone does not resolve: POSTing `__bp_action=createPost` (the field
+      configured as `__bp_action`) is a 404.
+- [ ] With `rakun.actions.field` or `rakun.actions.header` unset, the dispatcher refuses to start and
+      the message names the missing key; no name is spelled in `src/actions.bp`, checked by grep for
+      `__bp_action`, `X-Bp-Action`, `__onze`, `X-Onze` and `onze-action` in the gate.
+- [ ] With the field configured as `__x`, a POST carrying `__x=<id>` dispatches and one carrying
+      `__bp_action=<id>` does not — the configured name is the only one read.
 
-### Step 3 — The form
+### Step 3 — The id a form carries
 
 **Acceptance:**
-- [ ] `actionForm` emits `method="post"`, the current pathname as `action`, `data-onze-a` carrying
-      the id, and the hidden `__onze_action` field carrying the same id.
-- [ ] `form`, `input` and `button` come from front 94; this front declares no element constructor,
-      checked by grep in its own gate.
-- [ ] The form renders through front 23's walker: `<input>` has no closing tag and a field value
-      containing `"` is escaped.
-- [ ] The rendered form is submittable with scripting disabled — the progressive path is tested by
-      driving the raw POST, not by assuming it.
-- [ ] `actionForm` refuses an id that is not registered, at render time, with the function name in the
-      message. A form pointing at nothing is a bug that should not reach a browser.
+- [ ] `actionIdOf("createPost")` returns the same id `actionId` derives for the registered function,
+      and that id dispatches when POSTed under the configured field.
+- [ ] `actionIdOf` of a name that is not registered raises with the function name in the message — a
+      form pointing at nothing is a bug that should not reach a browser.
+- [ ] This front declares no element constructor and imports nothing from `jhonstart`, checked by
+      grep in its own gate; the form markup is jhonstart front 67's.
+- [ ] The progressive path is tested by driving the raw POST a scripting-disabled browser would send
+      (`__bp_action=<id>&…` with the field configured as `__bp_action`), not by rendering a form.
 
 ### Step 4 — Dispatch, and the checks that come before it
 
@@ -311,7 +323,8 @@ pub fn dispatchAction(
       check. Asserted by the absence of the key in front 05's schema, which is a test, not a promise.
 - [ ] A body over the limit is refused at the limit: the connection is closed after at most
       `limit + 8 KiB` bytes have been read, measured in `src/sidecars/rakun_actions.erl`'s own suite.
-- [ ] The limit defaults to 1 MiB, can be raised by config, and cannot be set below 4 KiB.
+- [ ] The limit defaults to 1 MiB, can be raised by `rakun.actions.bodyLimit`, and cannot be set below
+      4 KiB; `grep -rn '"onze\.' repository/rakun` is empty.
 - [ ] An unknown id gives 404 with an empty body — not a message naming known ids.
 - [ ] The id from the request is compared against the registry with front 01's constant-time compare.
 - [ ] `Content-Type: multipart/form-data` gives 415. botopink has no byte type — every host cell
@@ -337,8 +350,11 @@ pub fn dispatchAction(
       and `n: "R|307|/blog"` in the envelope on the scripted path, from one raise (front 63).
       `redirect` is derived from `n`, never set on its own.
 - [ ] `notFound()` inside an action gives `n: "N"` and status 404 on the progressive path.
-- [ ] A redirect target containing a `|` round-trips through `signalToWire`/`signalFromWire`.
-- [ ] The envelope names `v: 1` first.
+- [ ] A redirect target containing a `|` reaches the envelope's `n` unchanged (the codec is
+      `routing`'s and its round trip is asserted there).
+- [ ] The envelope is `actions`' `writeEnvelope` of the `ActionEnvelope` this front builds, and its
+      `state` is `writeState` of the action's result: `grep -n 'json\.\|"{\\"v' src/actions.bp` finds no
+      JSON written by hand. The key order (`v` first) and the literals are asserted in `libs/actions`.
 
 ### Step 6 — The JSON-RPC entry point and `router.refresh()`
 
@@ -347,21 +363,24 @@ pub fn dispatchAction(
       produces the same `state`.
 - [ ] The RPC path runs the same CSRF and size checks — asserted by the same test bodies, parameterised
       over the two encodings, so the paths cannot drift.
-- [ ] An RPC body with an unknown `v` is a 400.
-- [ ] `X-Onze-Action: refresh` returns an envelope whose `payload` parses as a front-23 payload with
-      the current pathname, and whose `state` is empty.
+- [ ] An RPC body `actions`' `parseRpcBody` refuses (an unknown `v`, no `id`, `args` not an array of
+      strings, text that is not JSON) is a 400.
+- [ ] The header set to `refreshValue()` (`X-Bp-Action: refresh` with the header configured as
+      `X-Bp-Action`) returns an envelope whose `payload` parses as a contract-2 payload with the
+      current pathname, and whose `state` is empty.
 
 ## Examples
 
-- [`examples/form-action-example.bp`](./examples/form-action-example.bp) — a form whose submission
-  mutates and revalidates: the action, the form that calls it, the validation failure that comes back
-  as state, and the assertion that the invalidation happened before the re-render.
+- [`examples/form-action-example.bp`](./examples/form-action-example.bp) — an action whose submission
+  mutates and revalidates: the action, the id a form carries, the raw POST a scripting-disabled
+  browser sends, the validation failure that comes back as state, and the assertion that the
+  invalidation happened before the re-render. The form that calls it is jhonstart's, wired by onze —
+  onze front 53's `new-post-form-example.bp`.
 
 ## Language gaps
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| Declared parameter defaults are never applied | every `attrs:` in the example, and the reason `actionForm` takes all three arguments | pass every argument explicitly | apply declared defaults at call sites |
 | A `#[@future]` fn cannot `await` inside a closure, and `@Future<T>` lowers eagerly on erlang (both stated in full in front 23) | validating N fields with an async check | build `Array<fn() -> @Future<T>>` and await front 02's `async.all` once | see front 23 |
 | No byte or binary type — every host cell marshals through `string` | reading a `multipart/form-data` body, whose parts are bytes | the body reaches botopink as a UTF-8 `string`, so this front supports `application/x-www-form-urlencoded` and the JSON-RPC encoding only, and rejects `multipart/form-data` with 415 rather than corrupting it silently | a `bytes` type, or `@External` cells that can marshal a binary |
 | `@Decl` carries no source location (stated in full in front 22) | the module half of the action id has to be supplied by the registration cell rather than read off the declaration | the host cell knows the module it was loaded from | `decl.source() -> Source` |
@@ -369,8 +388,8 @@ pub fn dispatchAction(
 ## Blocked
 
 - `repository/rakun/src/http.bp` is frozen and `Response` has no header list, so an action cannot set
-  a cookie through it. Cookie writes go through front 62's queue, which front 23 applies when it
-  builds the `RenderedPage`. When `http.bp` unfreezes, that queue should become a header list on
+  a cookie through it. Cookie writes go through front 62's queue, which front 23's dispatch applies
+  before the first chunk is written. When `http.bp` unfreezes, that queue should become a header list on
   `Response`.
 - The body-size limit is enforced in `src/sidecars/rakun_actions.erl` rather than in botopink,
   because `Request.body()`
@@ -378,15 +397,17 @@ pub fn dispatchAction(
 
 ## Test plan
 
-`repository/rakun/test/actions_test.bp`. The decorator, id derivation, dispatch, CSRF, size limit,
-revalidation ordering and redirect run on `botopink test --target erlang`. The envelope reader and the
-form serializer run on `botopink test --target commonJS` against the same fixture strings. The exit
-gate names 24 as a boundary front, so both rows are required.
+`repository/rakun/test/actions_test.bp`, on `botopink test --target erlang`: the decorator, id
+derivation, `actionIdOf`, dispatch, CSRF, size limit, revalidation ordering and redirect. The
+envelope, the `state` grammar and the RPC body are the bundled library `actions`' and their literals
+are asserted once, there, on both targets (`01-std/05-actions-lib`); jhonstart front 67 reads them
+with the same code, so no `state` or envelope literal is pinned in this front's tests.
 
-The round-trip test is the one that matters: the erlang row renders a form and writes the markup to a
-fixture; the commonJS row parses the markup, extracts the id, builds the POST body the browser would
-send, and the erlang row dispatches it. Testing the two halves separately would pass with an id the
-two sides spell differently, which is the exact failure this front exists to prevent.
+The round trip that matters — the id `actionIdOf` returns, stamped into front 67's form by onze,
+POSTed back and dispatched here — crosses all three packages, so it is asserted where all three meet:
+onze's example app (front 53). Inside this front the same property is asserted without markup: the
+id `actionIdOf` returns is the one that dispatches, and a hand-built POST body carrying it runs the
+action.
 
 CSRF and size-limit behaviour that cannot be expressed as a runtime `assert` — the byte count at which
 the connection closes — lives in `src/sidecars/rakun_actions.erl`'s own suite, invoked from the same test file.
@@ -396,7 +417,7 @@ the connection closes — lives in `src/sidecars/rakun_actions.erl`'s own suite,
 - One registration path for both spellings of the directive, proven by comparing records.
 - One authorization path for both encodings, proven by parameterising the same tests.
 - No configuration key exists that weakens the `Origin`/`Host` check, and a test asserts its absence.
-- The envelope key table above is final for the milestone and is cited by fronts 63, 67 and 68 rather
-  than re-derived.
+- The envelope key table above is final for the milestone and is implemented once, by the bundled
+  library `actions`, which this front and front 67 import; fronts 63 and 68 cite it.
 - `repository/rakun/AGENTS.md` names `actions.bp`, the id derivation and the envelope version.
-- The front's tests are green on its assigned target — here, on both.
+- The front's tests are green on its assigned target — erlang.

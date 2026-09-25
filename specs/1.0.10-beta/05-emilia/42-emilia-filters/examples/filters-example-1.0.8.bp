@@ -17,7 +17,6 @@
 //       https://tailwindcss.com/docs/backdrop-filter-brightness
 
 import { emilia, flush, Token } from "emilia";
-import { div, renderToString } from "jhonstart";
 
 // Filter blur
 val blurTokens: Token[] = [
@@ -178,8 +177,6 @@ val glassTokens: Token[] = [
 ];
 val glassStyles = emilia(glassTokens);
 
-val page = div([], []);
-
 #[@future]
 fn main() -> @Future<void> {
     @print("=== F08: Filters Example ===");
@@ -200,7 +197,6 @@ fn main() -> @Future<void> {
     @print("Backdrop Saturate: " + backdropSaturateStyles);
     @print("Backdrop Sepia: " + backdropSepiaStyles);
     @print("Glass: " + glassStyles);
-    @print(renderToString(page));
     @print(await flush());
 }
 

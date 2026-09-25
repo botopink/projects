@@ -11,7 +11,7 @@
 // package — the `html """…"""` template DSL (`src/html.bp:94`) — and one package
 // cannot export the name twice.
 //
-// TARGET: both. Front 23 renders this on BEAM; front 68 rebuilds the body
+// TARGET: both. Front 30 renders this on BEAM; front 68 rebuilds the body
 // subtree in the browser. The shell itself is server-only in practice, but it is
 // ordinary `Element` construction and compiles to either target unchanged.
 //
@@ -60,8 +60,8 @@ pub fn documentShell(
 }
 
 // The doctype is not an element and cannot be one: an `Element` always renders
-// as a tag pair, so `<!doctype html>` is a string prefix. Front 23's pipeline
-// prepends it at the same place (`23-rakun-ssr-pipeline/README.md:165`); a
+// as a tag pair, so `<!doctype html>` is a string prefix. Front 30's pipeline
+// prepends it at the same place (`30-jhonstart-streaming/README.md` § *The escaping walker*); a
 // caller that renders a shell on its own does it here.
 pub fn document(
     lang: string,
@@ -119,9 +119,9 @@ test "the root error document owns its whole document and shows only the digest"
 // `<link rel="stylesheet" href="/app.css"></link>`. The assertions above use
 // `contains` on the opening tag, which is true under both renderers; the
 // assertion below is the one that pins today's wrong answer, and it is the one
-// that changes when `element.bp` is unfrozen. Front 23's `renderNode` consults
+// that changes when `element.bp` is unfrozen. Front 30's `renderNode` consults
 // `isVoidTag` and emits neither closing tag. See the front's `## Blocked`.
-test "the frozen renderer still closes a void element — front 23's does not" {
+test "the frozen renderer still closes a void element — front 30's does not" {
     val markup = renderToString(documentHead("Blog", "/app.css"));
     assert markup.contains("</meta>");
     assert markup.contains("</link>");

@@ -27,7 +27,6 @@
 //       https://tailwindcss.com/docs/hyphens
 
 import { emilia, flush, Token } from "emilia";
-import { div, p, renderToString } from "jhonstart";
 
 // Font family
 val fontFamilyTokens: Token[] = [
@@ -261,10 +260,6 @@ val underlineOffsetTokens: Token[] = [
 ];
 val underlineOffsetStyles = emilia(underlineOffsetTokens);
 
-val page = div([
-    p([], []),
-], []);
-
 #[@future]
 fn main() -> @Future<void> {
     @print("=== F04: Typography Example ===");
@@ -287,7 +282,6 @@ fn main() -> @Future<void> {
     @print("Whitespace: " + whitespaceStyles);
     @print("Break: " + breakStyles);
     @print("Hyphens: " + hyphensStyles);
-    @print(renderToString(page));
     @print(await flush());
 }
 

@@ -218,8 +218,9 @@ The classification rules, all from `NEXTJS-DOCS.md § 3`:
 
 ### Step 4 — `generate`: the module tree, and the check
 
-Front 22 registers a route from a **decorator argument** — `#[page("blog/[slug]")]`, `#[layout("blog")]`,
-`#[getRoute("api/posts")]` — because `@Decl` carries no source location and a decorator cannot read the
+A route is registered from a **decorator argument** — `#[page("blog/[slug]")]`, `#[layout("blog")]`
+(jhonstart front 30's UI decorators, copied into rakun's table by onze's boot), `#[getRoute("api/posts")]`
+(rakun front 25's), all read with front 22's segment grammar — because `@Decl` carries no source location and a decorator cannot read the
 file it annotates (`language-gaps.md`). That splits the file-system convention in two: the argument,
 which the developer writes, and the module actually compiled, which the tree decides. This step owns
 the second half and the check that stops the two drifting.

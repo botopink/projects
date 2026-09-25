@@ -65,6 +65,7 @@ installs, so no snapshot ever contains a wall-clock value.
 | `rakun-websocket` | `assertWebSocket(loc, source, frames: string[])` | `upgrade <status>`; then `< <frame>` / `> <frame>` in order; `close <code>` |
 | `rakun-app` | `assertRouteTree(loc, tree: string[], paths: string[])` | table `P\|L\|R\|N <pattern> layouts=[…] kind=static\|dynamic\|catch-all\|optional`; blank; `<path> -> <pattern> {params}` or `-> 404` |
 | `rakun-app` | `assertSsr(loc, tree, request)` | `status`, `headers` sorted, then `html:` block, then `payload:` block |
+| `rakun-app` | `assertPageDispatch(loc, source, request)` | `status`, `headers` sorted, `chunks <n>`, each chunk the `PageRenderer` wrote through its `ChunkWriter` on its own line, `closed <n>` — front 23's dispatch with no markup (decision 114) |
 | `rakun-app` | `assertAction(loc, source, form: string)` | `action <name>`, `result <value>`, `revalidate [tags]`, `redirect <status> <loc>` when any |
 | `rakun-app` | `assertHandler(loc, source, request)` | `<status>` line, headers sorted, `chunks <n>`, then body |
 | `rakun-app` | `assertStaticGen(loc, tree, source)` | per route `<pattern> static\|dynamic because <reason> params=[…] revalidate=<n\|never>` |
@@ -81,7 +82,7 @@ installs, so no snapshot ever contains a wall-clock value.
 | `rakun-security` | `assertSecurity(loc, source, requests)` | per request `<METHOD> <path> [<principal>] -> <status> <decision>` where decision is `anonymous\|authenticated\|denied <rule>\|granted <rule>` |
 | `rakun-security` | `assertOAuth(loc, config: string[], step: string)` | `authorize <url>` with sorted query keys, or `token <ok\|err>`, `principal <name> authorities=[…]` |
 | `rakun-session` | `assertSession(loc, source, requests)` | per request `<METHOD> <path> -> <status> session=<new\|same\|none> set-cookie=<attrs>` |
-| `rakun-validation` | `assertValidation(loc, source, input: string)` | `valid` or `invalid`, then `<field>: <constraint> <message>` sorted by field |
+| `validation` (bundled — its own `test/`, decision 116) | `assertValidation(loc, source, input: string)` | `valid` or `invalid`, then `<field>: <constraint> <message>` sorted by field |
 | `rakun-cache` | `assertCache(loc, source, calls)` | per call `<fn>(<args>) -> <hit\|miss\|evict\|revalidate> key=<k> [tags]` |
 | `rakun-client` | `assertClient(loc, source, exchanges: string[])` | per exchange `<METHOD> <url> -> <status>` then the request headers sorted, `retry <n>` when any |
 | `rakun-actuator-api` | `assertRegistry(loc, source)` | `health <name>`, `info <name>`, `endpoint <id> [<ops>]` sorted |
@@ -2129,7 +2130,7 @@ probe listener public -> ok
 
 ## 22-rakun-file-routing — `rakun-app`
 
-**Test file:** `modules/rakun-app/test/file_router_test.bp` · **Snapshots:** `modules/rakun-app/test/__snapshots__/route/` · **Target:** both — boundary (the matcher runs on BEAM and, rebuilt from payload `t`, in the browser; one snapshot, two runs) · **Pins:** Step 1 group/slot/private classification, Step 2 `#[layout("")]` root, Step 3 registration order, Step 4 static-over-dynamic precedence + catch-all refuses zero + optional catch-all zero/many + layout-only pattern not public + `layoutChain` root-first, Step 5 `_` dir skipped, `N` kind letter
+**Test file:** `modules/rakun-app/test/file_router_test.bp` · **Snapshots:** `modules/rakun-app/test/__snapshots__/route/` · **Target:** erlang for the registry and the scan; the matcher these rows exercise is the bundled library `routing`'s (decision 115), whose own `libs/routing/test/match_test.bp` runs the same precedence cases on erlang and commonJS — the table rebuilt from payload `t` in the browser · **Pins:** Step 1 group/slot/private classification, Step 2 `#[layout("")]` root, Step 3 registration order, Step 4 static-over-dynamic precedence + catch-all refuses zero + optional catch-all zero/many + layout-only pattern not public + `layoutChain` root-first, Step 5 `_` dir skipped, `N` kind letter
 
 > helper gap: `assertRouteTree` renders no verb column, so the `R` row's verb is pinned in 25's `handler` suite; the table letters are `P|L|R|N` only, so `template.bp`/`default.bp` (`T`/`D`) trees are pinned in 23 (`ssr`) and 61 (`slots`).
 
@@ -2341,9 +2342,15 @@ P /blog/[slug] layouts=[/,/blog] kind=dynamic
 
 ## 23-rakun-ssr-pipeline — `rakun-app`
 
-**Test file:** `modules/rakun-app/test/ssr_test.bp` · **Snapshots:** `modules/rakun-app/test/__snapshots__/ssr/` · **Target:** both — boundary (render, escaping and document are erlang; the payload block is what the commonJS row parses and re-serialises against the same file) · **Pins:** Step 1 `Content-Type: text/html; charset=utf-8` on every page, Step 2 six-convention nesting + root outermost/page innermost + no empty wrapper without `template.bp` + `data-onze-t="<pattern>#<nav>"` + `selected` depth 0/1/2, Step 3 text and attribute escaping, Step 4 `v` first = `1` + `t` verbatim + payload escaping leaves no `<`, Step 6 404 renders the nearest `not-found` boundary
+> These cases render markup, and the render is jhonstart front 30's (decision 113): when front 23's
+> Step 5 removes the walker, the document and the payload from `ssr.bp`, this section moves to
+> [`../04-jhonstart/test-snap.md`](../04-jhonstart/test-snap.md) under front 30, the combined page is
+> onze's fixture, and what stays here is the dispatch — status, phase, and the chunks a stub
+> `PageRenderer` writes through its `ChunkWriter`, on the socket verbatim (decision 114).
 
-> helper gap: `assertSsr` takes a tree, not a source, so the convention files render as the helper's stubs: layout → `<div data-onze-seg="<pattern>"><span>layout <depth></span>…</div>`, template → `<div data-onze-t="<pattern>#<nav>">…</div>` (`nav` = 1 in a fresh scratch context), error → `<div data-onze-e="<pattern>">…</div>`, loading → `<div data-onze-h="h1">…</div>` (resolved before the shell flush, so `h` stays `[]`), not-found → `<div data-onze-n="<pattern>">…</div>` as a boundary and `<span>not-found <pattern></span>` as the 404 body, page → `<main>page <pattern>[ <params qs>]</main>`. The payload block renders `key: <json value>` in the key order of § *The payload*; the `__onze` script's JSON is elided as `{…}` in the html block because the payload block is where it is rendered. Build id from the test seed is `build-0001`. `d: true` (route.query / cookies()) needs a source and is pinned in 60's `static` suite; the streaming chunk protocol (`renderStreaming`, `h`, fills) has no helper.
+**Test file:** `modules/rakun-app/test/ssr_test.bp` · **Snapshots:** `modules/rakun-app/test/__snapshots__/ssr/` · **Target:** both — boundary (render, escaping and document are erlang; the payload block is what the commonJS row parses and re-serialises against the same file) · **Pins:** Step 1 `Content-Type: text/html; charset=utf-8` on every page, Step 2 six-convention nesting + root outermost/page innermost + no empty wrapper without `template.bp` + `data-jh-t="<pattern>#<nav>"` + `selected` depth 0/1/2, Step 3 text and attribute escaping, Step 4 `v` first = `1` + `t` verbatim + payload escaping leaves no `<`, Step 6 404 renders the nearest `not-found` boundary
+
+> helper gap: `assertSsr` takes a tree, not a source, so the convention files render as the helper's stubs: layout → `<div data-jh-seg="<pattern>"><span>layout <depth></span>…</div>`, template → `<div data-jh-t="<pattern>#<nav>">…</div>` (`nav` = 1 in a fresh scratch context), error → `<div data-jh-e="<pattern>">…</div>`, loading → `<div data-jh-h="h1">…</div>` (resolved before the shell flush, so `h` stays `[]`), not-found → `<div data-jh-n="<pattern>">…</div>` as a boundary and `<span>not-found <pattern></span>` as the 404 body, page → `<main>page <pattern>[ <params qs>]</main>`. The payload block renders `key: <json value>` in the key order of § *The payload*; the payload script's value (`window.__bp0 = …`) is elided as `{…}` in the html block because the payload block is where it is rendered. Build id from the test seed is `build-0001`. `d: true` (route.query / cookies()) needs a source and is pinned in 60's `static` suite; the streaming chunk protocol (`renderStreaming`, `h`, fills) has no helper.
 
 ### `ssr: a static page renders inside the root layout`
 
@@ -2360,7 +2367,7 @@ test "ssr: a static page renders inside the root layout" {
 status 200
 content-type: text/html; charset=utf-8
 html:
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-onze-root=""><div data-onze-seg="/"><span>layout 0</span><main>page /</main></div></div><script id="__onze" type="application/json">{…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-jh-root=""><div data-jh-seg="/"><span>layout 0</span><main>page /</main></div></div><script>window.__bp0 = {…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
 payload:
 v: 1
 b: "build-0001"
@@ -2393,7 +2400,7 @@ test "ssr: layouts nest root-first and the page is innermost" {
 status 200
 content-type: text/html; charset=utf-8
 html:
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-onze-root=""><div data-onze-seg="/"><span>layout 0</span><div data-onze-seg="/blog"><span>layout 1</span><main>page /blog/[slug] slug=hello</main></div></div></div><script id="__onze" type="application/json">{…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-jh-root=""><div data-jh-seg="/"><span>layout 0</span><div data-jh-seg="/blog"><span>layout 1</span><main>page /blog/[slug] slug=hello</main></div></div></div><script>window.__bp0 = {…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
 payload:
 v: 1
 b: "build-0001"
@@ -2426,7 +2433,7 @@ test "ssr: one segment holding all six conventions nests layout template error l
 status 200
 content-type: text/html; charset=utf-8
 html:
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-onze-root=""><div data-onze-seg="/"><span>layout 0</span><div data-onze-t="/#1"><div data-onze-e="/"><div data-onze-h="h1"><div data-onze-n="/"><main>page /</main></div></div></div></div></div></div><script id="__onze" type="application/json">{…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-jh-root=""><div data-jh-seg="/"><span>layout 0</span><div data-jh-t="/#1"><div data-jh-e="/"><div data-jh-h="h1"><div data-jh-n="/"><main>page /</main></div></div></div></div></div></div><script>window.__bp0 = {…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
 payload:
 v: 1
 b: "build-0001"
@@ -2459,7 +2466,7 @@ test "ssr: a segment without a template contributes no wrapper" {
 status 200
 content-type: text/html; charset=utf-8
 html:
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-onze-root=""><div data-onze-seg="/"><span>layout 0</span><div data-onze-t="/#1"><div data-onze-seg="/blog"><span>layout 1</span><main>page /blog</main></div></div></div></div><script id="__onze" type="application/json">{…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-jh-root=""><div data-jh-seg="/"><span>layout 0</span><div data-jh-t="/#1"><div data-jh-seg="/blog"><span>layout 1</span><main>page /blog</main></div></div></div></div><script>window.__bp0 = {…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
 payload:
 v: 1
 b: "build-0001"
@@ -2492,7 +2499,7 @@ test "ssr: an unmatched url answers 404 with the root not-found boundary" {
 status 404
 content-type: text/html; charset=utf-8
 html:
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-onze-root=""><div data-onze-seg="/"><span>layout 0</span><span>not-found /</span></div></div><script id="__onze" type="application/json">{…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-jh-root=""><div data-jh-seg="/"><span>layout 0</span><span>not-found /</span></div></div><script>window.__bp0 = {…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
 payload:
 v: 1
 b: "build-0001"
@@ -2525,7 +2532,7 @@ test "ssr: a nested not-found boundary wins over the root one" {
 status 404
 content-type: text/html; charset=utf-8
 html:
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-onze-root=""><div data-onze-seg="/"><span>layout 0</span><div data-onze-seg="/blog"><span>layout 1</span><span>not-found /blog</span></div></div></div><script id="__onze" type="application/json">{…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-jh-root=""><div data-jh-seg="/"><span>layout 0</span><div data-jh-seg="/blog"><span>layout 1</span><span>not-found /blog</span></div></div></div><script>window.__bp0 = {…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
 payload:
 v: 1
 b: "build-0001"
@@ -2558,7 +2565,7 @@ test "ssr: a param from the url is escaped on the way into the document" {
 status 200
 content-type: text/html; charset=utf-8
 html:
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-onze-root=""><div data-onze-seg="/"><span>layout 0</span><main>page /blog/[slug] slug=&lt;script&gt;alert(1)&lt;/script&gt;</main></div></div><script id="__onze" type="application/json">{…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-jh-root=""><div data-jh-seg="/"><span>layout 0</span><main>page /blog/[slug] slug=&lt;script&gt;alert(1)&lt;/script&gt;</main></div></div><script>window.__bp0 = {…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
 payload:
 v: 1
 b: "build-0001"
@@ -2591,7 +2598,7 @@ test "ssr: a query that tries to close the script block is escaped in the payloa
 status 200
 content-type: text/html; charset=utf-8
 html:
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-onze-root=""><div data-onze-seg="/"><span>layout 0</span><main>page /</main></div></div><script id="__onze" type="application/json">{…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-jh-root=""><div data-jh-seg="/"><span>layout 0</span><main>page /</main></div></div><script>window.__bp0 = {…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
 payload:
 v: 1
 b: "build-0001"
@@ -2624,7 +2631,7 @@ test "ssr: a three-deep layout chain receives depths 0 1 2" {
 status 200
 content-type: text/html; charset=utf-8
 html:
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-onze-root=""><div data-onze-seg="/"><span>layout 0</span><div data-onze-seg="/docs"><span>layout 1</span><div data-onze-seg="/docs/[[...slug]]"><span>layout 2</span><main>page /docs/[[...slug]] slug=routing%2Fdynamic</main></div></div></div></div><script id="__onze" type="application/json">{…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-jh-root=""><div data-jh-seg="/"><span>layout 0</span><div data-jh-seg="/docs"><span>layout 1</span><div data-jh-seg="/docs/[[...slug]]"><span>layout 2</span><main>page /docs/[[...slug]] slug=routing%2Fdynamic</main></div></div></div></div><script>window.__bp0 = {…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
 payload:
 v: 1
 b: "build-0001"
@@ -2644,7 +2651,7 @@ z: ""
 
 ## 24-rakun-server-actions — `rakun-app`
 
-**Test file:** `modules/rakun-app/test/actions_test.bp` · **Snapshots:** `modules/rakun-app/test/__snapshots__/action/` · **Target:** both — boundary (decorator, id, CSRF, size, dispatch, revalidation and redirect are erlang; the envelope/form reader is commonJS over the same fixture) · **Pins:** Step 1 both spellings produce the same record + an unmarked `pub fn` is 404 not 500, Step 2 the name alone does not resolve, Step 4 `Origin`≠`Host` → 403 before the body + no `Origin` → 403 + `multipart/form-data` → 415 + unknown id → 404 empty, Step 5 `ok: true` with state + throw → `ok: false` and 200 + `revalidatePath` echoed + `redirect` → 303 progressive + `v: 1` first
+**Test file:** `modules/rakun-app/test/actions_test.bp` · **Snapshots:** `modules/rakun-app/test/__snapshots__/action/` · **Target:** erlang (decorator, id, `actionIdOf`, CSRF, size, dispatch, revalidation and redirect; the form and the envelope reader are jhonstart front 67's, tested there over the same fixture — decision 113) · **Pins:** Step 1 both spellings produce the same record + an unmarked `pub fn` is 404 not 500, Step 2 the name alone does not resolve, Step 4 `Origin`≠`Host` → 403 before the body + no `Origin` → 403 + `multipart/form-data` → 415 + unknown id → 404 empty, Step 5 `ok: true` with state + throw → `ok: false` and 200 + `revalidatePath` echoed + `redirect` → 303 progressive + `v: 1` first
 
 > helper gap: the `form` argument's shape is not in the table; these cases write it as `<name>[ <header>: <v>]* | <urlencoded body>`, mirroring `request`. `result <value>` renders the envelope as `ok <state qs>` / `err <state qs>` and a refused dispatch as `refused <status>`; `revalidate […]` is always written, `redirect` only when a signal was raised. `notFound()` inside an action is pinned in 63's `navigation` suite, whose helper has a `status` line.
 
@@ -3121,7 +3128,7 @@ row 2
 
 ## 60-rakun-static-generation — `rakun-app`
 
-**Test file:** `modules/rakun-app/test/static_gen_test.bp` · **Snapshots:** `modules/rakun-app/test/__snapshots__/static/` · **Target:** both — boundary (decision, enumeration and config inheritance are erlang; the route-kind blob these rows are joined on is the commonJS half, read from payload `k`) · **Pins:** Step 1 default config `Auto`/`dynamicParams: true`/`revalidate: -1` + `configFor` inherits `revalidate` from `/blog` + `revalidate: 0` normalized to `ForceDynamic`, Step 2 rules 1–5 in order (`ForceDynamic` wins over `generateStaticParams`, `ForceStatic` + dynamic read stays static naming the conflict, dynamic pattern without params is dynamic, `isDynamic()` reason recorded, `reason == ""` only by rule 5) + `dynamicParams: false` with no rows is static, Step 3 `expandParams` for `[slug]`, `[...slug]`, `[[...slug]]`, Step 4 one static entry + one `skippedDynamic` with the reason
+**Test file:** `modules/rakun-app/test/static_gen_test.bp` · **Snapshots:** `modules/rakun-app/test/__snapshots__/static/` · **Target:** erlang (decision, enumeration and config inheritance; the route-kind blob these rows are joined on is `routing`'s codec, round-tripped on both targets in `libs/routing/test/route_kinds_test.bp`) · **Pins:** Step 1 default config `Auto`/`dynamicParams: true`/`revalidate: -1` + `configFor` inherits `revalidate` from `/blog` + `revalidate: 0` normalized to `ForceDynamic`, Step 2 rules 1–5 in order (`ForceDynamic` wins over `generateStaticParams`, `ForceStatic` + dynamic read stays static naming the conflict, dynamic pattern without params is dynamic, `isDynamic()` reason recorded, `reason == ""` only by rule 5) + `dynamicParams: false` with no rows is static, Step 3 `expandParams` for `[slug]`, `[...slug]`, `[[...slug]]`, Step 4 one static entry + one `skippedDynamic` with the reason
 
 > helper gap: `reason` is `""` exactly when the kind is `Static` by rule 5 (Step 2); the row renders that as `because -` so no line carries a double space. `revalidate=` is the value `configFor` answers, `never` for `-1`.
 
@@ -3131,18 +3138,13 @@ row 2
 test "static: a page that reads nothing is static" {
     try assertStaticGen(@src(),
         ["app/layout.bp", "app/page.bp", "app/about/page.bp"],
-        \\ import {page, PageContext, rkAppRegisterPage} from "rakun";
-        \\ import {Element, p, text} from "jhonstart";
-        \\ #[page("")]
-        \\ #[@future]
-        \\ pub fn homePage(route: PageContext) -> @Future<Element> {
-        \\     return p([text("home", attrs: [])], attrs: []);
-        \\ }
-        \\ #[page("about")]
-        \\ #[@future]
-        \\ pub fn aboutPage(route: PageContext) -> @Future<Element> {
-        \\     return p([text("about", attrs: [])], attrs: []);
-        \\ }
+        \\ import {page, ChunkWriter, Request} from "rakun";
+        \\ val _homePage = page("", fn(req: Request, out: ChunkWriter) {
+        \\     return out.write("home");
+        \\ });
+        \\ val _aboutPage = page("about", fn(req: Request, out: ChunkWriter) {
+        \\     return out.write("about");
+        \\ });
         );
 }
 ```
@@ -3159,19 +3161,14 @@ test "static: a page that reads nothing is static" {
 test "static: reading the query marks the route dynamic" {
     try assertStaticGen(@src(),
         ["app/layout.bp", "app/page.bp", "app/search/page.bp"],
-        \\ import {page, PageContext, rkAppRegisterPage} from "rakun";
-        \\ import {Element, p, text} from "jhonstart";
-        \\ #[page("")]
-        \\ #[@future]
-        \\ pub fn homePage(route: PageContext) -> @Future<Element> {
-        \\     return p([text("home", attrs: [])], attrs: []);
-        \\ }
-        \\ #[page("search")]
-        \\ #[@future]
-        \\ pub fn searchPage(route: PageContext) -> @Future<Element> {
-        \\     val term = route.query.lookup("q").unwrapOr("");
-        \\     return p([text("Results for " + term, attrs: [])], attrs: []);
-        \\ }
+        \\ import {page, ChunkWriter, Request} from "rakun";
+        \\ val _homePage = page("", fn(req: Request, out: ChunkWriter) {
+        \\     return out.write("home");
+        \\ });
+        \\ val _searchPage = page("search", fn(req: Request, out: ChunkWriter) {
+        \\     val term = req.query("q");
+        \\     return out.write("Results for " + term);
+        \\ });
         );
 }
 ```
@@ -3188,14 +3185,11 @@ test "static: reading the query marks the route dynamic" {
 test "static: reading cookies marks the route dynamic" {
     try assertStaticGen(@src(),
         ["app/layout.bp", "app/dashboard/page.bp"],
-        \\ import {page, PageContext, cookies, rkAppRegisterPage} from "rakun";
-        \\ import {Element, p, text} from "jhonstart";
-        \\ #[page("dashboard")]
-        \\ #[@future]
-        \\ pub fn dashboardPage(route: PageContext) -> @Future<Element> {
+        \\ import {page, ChunkWriter, Request, cookies} from "rakun";
+        \\ val _dashboardPage = page("dashboard", fn(req: Request, out: ChunkWriter) {
         \\     val session = cookies().get("session").unwrapOr("");
-        \\     return p([text("signed in as " + session, attrs: [])], attrs: []);
-        \\ }
+        \\     return out.write("signed in as " + session);
+        \\ });
         );
 }
 ```
@@ -3211,14 +3205,11 @@ test "static: reading cookies marks the route dynamic" {
 test "static: a dynamic segment without generateStaticParams is dynamic" {
     try assertStaticGen(@src(),
         ["app/layout.bp", "app/blog/[slug]/page.bp"],
-        \\ import {page, PageContext, rkAppRegisterPage} from "rakun";
-        \\ import {Element, p, text} from "jhonstart";
-        \\ #[page("blog/[slug]")]
-        \\ #[@future]
-        \\ pub fn blogPostPage(route: PageContext) -> @Future<Element> {
-        \\     val slug = route.params.lookup("slug").unwrapOr("");
-        \\     return p([text(slug, attrs: [])], attrs: []);
-        \\ }
+        \\ import {page, ChunkWriter, Request} from "rakun";
+        \\ val _blogPostPage = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
+        \\     val slug = req.param("slug");
+        \\     return out.write(slug);
+        \\ });
         );
 }
 ```
@@ -3234,9 +3225,8 @@ test "static: a dynamic segment without generateStaticParams is dynamic" {
 test "static: generateStaticParams enumerates the paths to prerender" {
     try assertStaticGen(@src(),
         ["app/layout.bp", "app/blog/[slug]/page.bp", "app/shop/[...slug]/page.bp", "app/docs/[[...slug]]/page.bp"],
-        \\ import {page, PageContext, rkAppRegisterPage} from "rakun";
+        \\ import {page, ChunkWriter, Request} from "rakun";
         \\ import {registerSegmentConfig, registerStaticParams, SegmentConfig, DynamicMode, FetchCache, StaticParams, ParamBinding} from "rakun";
-        \\ import {Element, p, text} from "jhonstart";
         \\ val _blogConfig = registerSegmentConfig("blog/[slug]", SegmentConfig(
         \\     dynamic: DynamicMode.Auto,
         \\     dynamicParams: true,
@@ -3264,22 +3254,16 @@ test "static: generateStaticParams enumerates the paths to prerender" {
         \\     ];
         \\ }
         \\ val _docsParams = registerStaticParams("docs/[[...slug]]", docsStaticParams);
-        \\ #[page("blog/[slug]")]
-        \\ #[@future]
-        \\ pub fn blogPostPage(route: PageContext) -> @Future<Element> {
-        \\     val slug = route.params.lookup("slug").unwrapOr("");
-        \\     return p([text(slug, attrs: [])], attrs: []);
-        \\ }
-        \\ #[page("shop/[...slug]")]
-        \\ #[@future]
-        \\ pub fn shopPage(route: PageContext) -> @Future<Element> {
-        \\     return p([text(route.rest.join("/"), attrs: [])], attrs: []);
-        \\ }
-        \\ #[page("docs/[[...slug]]")]
-        \\ #[@future]
-        \\ pub fn docsPage(route: PageContext) -> @Future<Element> {
-        \\     return p([text(route.rest.join("/"), attrs: [])], attrs: []);
-        \\ }
+        \\ val _blogPostPage = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
+        \\     val slug = req.param("slug");
+        \\     return out.write(slug);
+        \\ });
+        \\ val _shopPage = page("shop/[...slug]", fn(req: Request, out: ChunkWriter) {
+        \\     return out.write(req.param("slug"));
+        \\ });
+        \\ val _docsPage = page("docs/[[...slug]]", fn(req: Request, out: ChunkWriter) {
+        \\     return out.write(req.param("slug"));
+        \\ });
         );
 }
 ```
@@ -3297,9 +3281,8 @@ test "static: generateStaticParams enumerates the paths to prerender" {
 test "static: forceDynamic wins over generateStaticParams" {
     try assertStaticGen(@src(),
         ["app/layout.bp", "app/blog/[slug]/page.bp"],
-        \\ import {page, PageContext, rkAppRegisterPage} from "rakun";
+        \\ import {page, ChunkWriter, Request} from "rakun";
         \\ import {registerSegmentConfig, registerStaticParams, SegmentConfig, DynamicMode, FetchCache, StaticParams, ParamBinding} from "rakun";
-        \\ import {Element, p, text} from "jhonstart";
         \\ val _blogConfig = registerSegmentConfig("blog/[slug]", SegmentConfig(
         \\     dynamic: DynamicMode.ForceDynamic,
         \\     dynamicParams: true,
@@ -3311,12 +3294,10 @@ test "static: forceDynamic wins over generateStaticParams" {
         \\     return [StaticParams(bindings: [ParamBinding(name: "slug", value: "hello")])];
         \\ }
         \\ val _blogParams = registerStaticParams("blog/[slug]", blogStaticParams);
-        \\ #[page("blog/[slug]")]
-        \\ #[@future]
-        \\ pub fn blogPostPage(route: PageContext) -> @Future<Element> {
-        \\     val slug = route.params.lookup("slug").unwrapOr("");
-        \\     return p([text(slug, attrs: [])], attrs: []);
-        \\ }
+        \\ val _blogPostPage = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
+        \\     val slug = req.param("slug");
+        \\     return out.write(slug);
+        \\ });
         );
 }
 ```
@@ -3332,21 +3313,18 @@ test "static: forceDynamic wins over generateStaticParams" {
 test "static: forceStatic with a dynamic read stays static and names the conflict" {
     try assertStaticGen(@src(),
         ["app/layout.bp", "app/dashboard/page.bp"],
-        \\ import {page, PageContext, cookies, rkAppRegisterPage} from "rakun";
+        \\ import {page, ChunkWriter, Request, cookies} from "rakun";
         \\ import {registerSegmentConfig, SegmentConfig, DynamicMode, FetchCache} from "rakun";
-        \\ import {Element, p, text} from "jhonstart";
         \\ val _dashConfig = registerSegmentConfig("dashboard", SegmentConfig(
         \\     dynamic: DynamicMode.ForceStatic,
         \\     dynamicParams: true,
         \\     revalidate: -1,
         \\     fetchCache: FetchCache.Auto,
         \\ ));
-        \\ #[page("dashboard")]
-        \\ #[@future]
-        \\ pub fn dashboardPage(route: PageContext) -> @Future<Element> {
+        \\ val _dashboardPage = page("dashboard", fn(req: Request, out: ChunkWriter) {
         \\     val session = cookies().get("session").unwrapOr("");
-        \\     return p([text("signed in as " + session, attrs: [])], attrs: []);
-        \\ }
+        \\     return out.write("signed in as " + session);
+        \\ });
         );
 }
 ```
@@ -3362,20 +3340,17 @@ test "static: forceStatic with a dynamic read stays static and names the conflic
 test "static: revalidate zero is normalized to forceDynamic" {
     try assertStaticGen(@src(),
         ["app/layout.bp", "app/now/page.bp"],
-        \\ import {page, PageContext, rkAppRegisterPage} from "rakun";
+        \\ import {page, ChunkWriter, Request} from "rakun";
         \\ import {registerSegmentConfig, SegmentConfig, DynamicMode, FetchCache} from "rakun";
-        \\ import {Element, p, text} from "jhonstart";
         \\ val _nowConfig = registerSegmentConfig("now", SegmentConfig(
         \\     dynamic: DynamicMode.Auto,
         \\     dynamicParams: true,
         \\     revalidate: 0,
         \\     fetchCache: FetchCache.Auto,
         \\ ));
-        \\ #[page("now")]
-        \\ #[@future]
-        \\ pub fn nowPage(route: PageContext) -> @Future<Element> {
-        \\     return p([text("now", attrs: [])], attrs: []);
-        \\ }
+        \\ val _nowPage = page("now", fn(req: Request, out: ChunkWriter) {
+        \\     return out.write("now");
+        \\ });
         );
 }
 ```
@@ -3391,9 +3366,8 @@ test "static: revalidate zero is normalized to forceDynamic" {
 test "static: a segment inherits revalidate from its layout" {
     try assertStaticGen(@src(),
         ["app/layout.bp", "app/blog/layout.bp", "app/blog/page.bp", "app/blog/[slug]/page.bp"],
-        \\ import {page, PageContext, rkAppRegisterPage} from "rakun";
+        \\ import {page, ChunkWriter, Request} from "rakun";
         \\ import {registerSegmentConfig, registerStaticParams, SegmentConfig, DynamicMode, FetchCache, StaticParams, ParamBinding} from "rakun";
-        \\ import {Element, p, text} from "jhonstart";
         \\ val _blogConfig = registerSegmentConfig("blog", SegmentConfig(
         \\     dynamic: DynamicMode.Auto,
         \\     dynamicParams: true,
@@ -3405,17 +3379,13 @@ test "static: a segment inherits revalidate from its layout" {
         \\     return [StaticParams(bindings: [ParamBinding(name: "slug", value: "hello")])];
         \\ }
         \\ val _blogParams = registerStaticParams("blog/[slug]", blogStaticParams);
-        \\ #[page("blog")]
-        \\ #[@future]
-        \\ pub fn blogIndexPage(route: PageContext) -> @Future<Element> {
-        \\     return p([text("blog", attrs: [])], attrs: []);
-        \\ }
-        \\ #[page("blog/[slug]")]
-        \\ #[@future]
-        \\ pub fn blogPostPage(route: PageContext) -> @Future<Element> {
-        \\     val slug = route.params.lookup("slug").unwrapOr("");
-        \\     return p([text(slug, attrs: [])], attrs: []);
-        \\ }
+        \\ val _blogIndexPage = page("blog", fn(req: Request, out: ChunkWriter) {
+        \\     return out.write("blog");
+        \\ });
+        \\ val _blogPostPage = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
+        \\     val slug = req.param("slug");
+        \\     return out.write(slug);
+        \\ });
         );
 }
 ```
@@ -3432,21 +3402,18 @@ test "static: a segment inherits revalidate from its layout" {
 test "static: dynamicParams false with no rows is static and enumerates nothing" {
     try assertStaticGen(@src(),
         ["app/layout.bp", "app/blog/[slug]/page.bp"],
-        \\ import {page, PageContext, rkAppRegisterPage} from "rakun";
+        \\ import {page, ChunkWriter, Request} from "rakun";
         \\ import {registerSegmentConfig, SegmentConfig, DynamicMode, FetchCache} from "rakun";
-        \\ import {Element, p, text} from "jhonstart";
         \\ val _blogConfig = registerSegmentConfig("blog/[slug]", SegmentConfig(
         \\     dynamic: DynamicMode.Auto,
         \\     dynamicParams: false,
         \\     revalidate: -1,
         \\     fetchCache: FetchCache.Auto,
         \\ ));
-        \\ #[page("blog/[slug]")]
-        \\ #[@future]
-        \\ pub fn blogPostPage(route: PageContext) -> @Future<Element> {
-        \\     val slug = route.params.lookup("slug").unwrapOr("");
-        \\     return p([text(slug, attrs: [])], attrs: []);
-        \\ }
+        \\ val _blogPostPage = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
+        \\     val slug = req.param("slug");
+        \\     return out.write(slug);
+        \\ });
         );
 }
 ```
@@ -3458,7 +3425,7 @@ test "static: dynamicParams false with no rows is static and enumerates nothing"
 
 ## 61-rakun-parallel-intercepting-routes — `rakun-app`
 
-**Test file:** `modules/rakun-app/test/route_slots_test.bp` · **Snapshots:** `modules/rakun-app/test/__snapshots__/slots/` · **Target:** both — boundary (slot enumeration, per-slot matching, `default` fallback and the header gate are erlang; the marker parser/resolver and the `slot|pattern|state` codec are the commonJS half) · **Pins:** Step 1 `Matched` with params + hard-unmatched → `Defaulted`/`Empty` + soft-unmatched → `Unchanged` + two slots match independently in one call, Step 2 the hard-reload case end to end, Step 3 `(.)`/`(..)(..)` resolution + `(marketing)` is not an interception, Step 4 `soft: true` answers the intercepting entry and `soft: false` answers `null` for the same URL (the round trip in one snapshot)
+**Test file:** `modules/rakun-app/test/route_slots_test.bp` · **Snapshots:** `modules/rakun-app/test/__snapshots__/slots/` · **Target:** erlang (slot enumeration, per-slot matching, `default` fallback, the header gate and the marker parser/resolver; the `slot|pattern|state` codec is `routing`'s, round-tripped on both targets in `libs/routing/test/slot_states_test.bp`) · **Pins:** Step 1 `Matched` with params + hard-unmatched → `Defaulted`/`Empty` + soft-unmatched → `Unchanged` + two slots match independently in one call, Step 2 the hard-reload case end to end, Step 3 `(.)`/`(..)(..)` resolution + `(marketing)` is not an interception, Step 4 `soft: true` answers the intercepting entry and `soft: false` answers `null` for the same URL (the round trip in one snapshot)
 
 > helper gap: `assertSlots` renders `matched|default` only; `SlotState.Unchanged` and `SlotState.Empty` (Step 1) render as `unchanged` / `empty`. A hard request has no `from` and is written `- -> <to>`; a `from` pattern means the navigation carried `x-rakun-nav: soft`. One line per navigation, every slot of the layout on it in declaration order, then `intercept=`.
 
@@ -3582,18 +3549,15 @@ test "slots: a route group is not an interception" {
 ```bp
 test "navigation: notFound from a page unwinds to 404" {
     try assertNavigation(@src(),
-        \\ import {notFound, page, PageContext, rkAppRegisterPage} from "rakun";
-        \\ import {Element, p, text} from "jhonstart";
-        \\ #[page("blog/[slug]")]
-        \\ #[@future]
-        \\ pub fn blogPostPage(route: PageContext) -> @Future<Element> {
-        \\     val slug = route.params.lookup("slug").unwrapOr("");
+        \\ import {notFound, page, ChunkWriter, Request} from "rakun";
+        \\ val _blogPostPage = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
+        \\     val slug = req.param("slug");
         \\     val missing = slug != "hello";
         \\     if (missing) {
         \\         val _gone = notFound();
         \\     };
-        \\     return p([text(slug, attrs: [])], attrs: []);
-        \\ }
+        \\     return out.write(slug);
+        \\ });
         , "GET /blog/nope");
 }
 ```
@@ -3605,36 +3569,27 @@ status 404
 location -
 ```
 
-### `navigation: redirect from a layout is 307 with location`
+### `navigation: redirect from a page is 307 with location`
 
 ```bp
-test "navigation: redirect from a layout is 307 with location" {
+test "navigation: redirect from a page is 307 with location" {
     try assertNavigation(@src(),
-        \\ import {redirect, cookies, layout, page, LayoutProps, PageContext, rkAppRegisterPage, rkAppRegisterLayout} from "rakun";
-        \\ import {Element, div, p, text} from "jhonstart";
-        \\ #[layout("dashboard")]
-        \\ pub fn dashboardLayout(props: LayoutProps) -> Element {
+        \\ import {redirect, cookies, page, ChunkWriter, Request} from "rakun";
+        \\ val _dashboardPage = page("dashboard", fn(req: Request, out: ChunkWriter) {
         \\     val session = cookies().get("session").unwrapOr("");
         \\     if (session == "") {
         \\         val _gone = redirect("/login");
         \\     };
-        \\     return div([props.children], attrs: []);
-        \\ }
-        \\ #[page("dashboard")]
-        \\ #[@future]
-        \\ pub fn dashboardPage(route: PageContext) -> @Future<Element> {
-        \\     return p([text("overview", attrs: [])], attrs: []);
-        \\ }
-        \\ #[page("login")]
-        \\ #[@future]
-        \\ pub fn loginPage(route: PageContext) -> @Future<Element> {
-        \\     return p([text("login", attrs: [])], attrs: []);
-        \\ }
+        \\     return out.write("overview");
+        \\ });
+        \\ val _loginPage = page("login", fn(req: Request, out: ChunkWriter) {
+        \\     return out.write("login");
+        \\ });
         , "GET /dashboard");
 }
 ```
 
-`modules/rakun-app/test/__snapshots__/navigation/redirect-from-a-layout-is-307-with-location.snap`
+`modules/rakun-app/test/__snapshots__/navigation/redirect-from-a-page-is-307-with-location.snap`
 ```
 signal redirect
 status 307
@@ -3646,19 +3601,14 @@ location /login
 ```bp
 test "navigation: permanentRedirect is 308" {
     try assertNavigation(@src(),
-        \\ import {permanentRedirect, page, PageContext, rkAppRegisterPage} from "rakun";
-        \\ import {Element, p, text} from "jhonstart";
-        \\ #[page("old")]
-        \\ #[@future]
-        \\ pub fn oldPage(route: PageContext) -> @Future<Element> {
+        \\ import {permanentRedirect, page, ChunkWriter, Request} from "rakun";
+        \\ val _oldPage = page("old", fn(req: Request, out: ChunkWriter) {
         \\     val _moved = permanentRedirect("/new");
-        \\     return p([text("old", attrs: [])], attrs: []);
-        \\ }
-        \\ #[page("new")]
-        \\ #[@future]
-        \\ pub fn newPage(route: PageContext) -> @Future<Element> {
-        \\     return p([text("new", attrs: [])], attrs: []);
-        \\ }
+        \\     return out.write("old");
+        \\ });
+        \\ val _newPage = page("new", fn(req: Request, out: ChunkWriter) {
+        \\     return out.write("new");
+        \\ });
         , "GET /old");
 }
 ```
@@ -3675,20 +3625,17 @@ location /new
 ```bp
 test "navigation: a signal inside try catch is not caught" {
     try assertNavigation(@src(),
-        \\ import {notFound, page, PageContext, rkAppRegisterPage} from "rakun";
-        \\ import {Element, p, text} from "jhonstart";
+        \\ import {notFound, page, ChunkWriter, Request} from "rakun";
         \\ #[@result]
         \\ fn loadPost(slug: string) -> @Result<string, string> {
         \\     val _gone = notFound();
         \\     return "unreachable";
         \\ }
-        \\ #[page("blog/[slug]")]
-        \\ #[@future]
-        \\ pub fn blogPostPage(route: PageContext) -> @Future<Element> {
-        \\     val slug = route.params.lookup("slug").unwrapOr("");
+        \\ val _blogPostPage = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
+        \\     val slug = req.param("slug");
         \\     val title = try loadPost(slug) catch "fallback";
-        \\     return p([text(title, attrs: [])], attrs: []);
-        \\ }
+        \\     return out.write(title);
+        \\ });
         , "GET /blog/hello");
 }
 ```
@@ -3705,8 +3652,7 @@ location -
 ```bp
 test "navigation: a signal crosses two levels of await" {
     try assertNavigation(@src(),
-        \\ import {redirect, page, PageContext, rkAppRegisterPage} from "rakun";
-        \\ import {Element, p, text} from "jhonstart";
+        \\ import {redirect, page, ChunkWriter, Request} from "rakun";
         \\ #[@future]
         \\ fn inner() -> @Future<string> {
         \\     val _gone = redirect("/login");
@@ -3717,17 +3663,13 @@ test "navigation: a signal crosses two levels of await" {
         \\     val v = await inner();
         \\     return v + "!";
         \\ }
-        \\ #[page("account")]
-        \\ #[@future]
-        \\ pub fn accountPage(route: PageContext) -> @Future<Element> {
+        \\ val _accountPage = page("account", fn(req: Request, out: ChunkWriter) {
         \\     val v = await outer();
-        \\     return p([text(v, attrs: [])], attrs: []);
-        \\ }
-        \\ #[page("login")]
-        \\ #[@future]
-        \\ pub fn loginPage(route: PageContext) -> @Future<Element> {
-        \\     return p([text("login", attrs: [])], attrs: []);
-        \\ }
+        \\     return out.write(v);
+        \\ });
+        \\ val _loginPage = page("login", fn(req: Request, out: ChunkWriter) {
+        \\     return out.write("login");
+        \\ });
         , "GET /account");
 }
 ```
@@ -3744,9 +3686,8 @@ location /login
 ```bp
 test "navigation: redirect inside an action is 303 on the progressive path" {
     try assertNavigation(@src(),
-        \\ import {redirect, serverAction, FormData, ActionResult, rkRegisterAction, page, PageContext, rkAppRegisterPage} from "rakun";
+        \\ import {redirect, serverAction, FormData, ActionResult, rkRegisterAction, page, ChunkWriter, Request} from "rakun";
         \\ import {cache} from "rakun-cache";
-        \\ import {Element, p, text} from "jhonstart";
         \\ #[serverAction]
         \\ #[@future]
         \\ pub fn createPost(form: FormData) -> @Future<ActionResult> {
@@ -3754,12 +3695,10 @@ test "navigation: redirect inside an action is 303 on the progressive path" {
         \\     val _navigated = redirect("/blog");
         \\     return ActionResult.done();
         \\ }
-        \\ #[page("blog")]
-        \\ #[@future]
-        \\ pub fn blogIndexPage(route: PageContext) -> @Future<Element> {
-        \\     return p([text("blog", attrs: [])], attrs: []);
-        \\ }
-        , "POST /blog/new Origin: https://app.example Host: app.example | __onze_action=createPost&title=x");
+        \\ val _blogIndexPage = page("blog", fn(req: Request, out: ChunkWriter) {
+        \\     return out.write("blog");
+        \\ });
+        , "POST /blog/new Origin: https://app.example Host: app.example | __bp_action=createPost&title=x");
 }
 ```
 
@@ -3782,7 +3721,7 @@ test "navigation: notFound inside an action is 404 on the progressive path" {
         \\     val _gone = notFound();
         \\     return ActionResult.done();
         \\ }
-        , "POST /blog/9 Origin: https://app.example Host: app.example | __onze_action=deletePost&id=9");
+        , "POST /blog/9 Origin: https://app.example Host: app.example | __bp_action=deletePost&id=9");
 }
 ```
 
@@ -5177,9 +5116,12 @@ POST /api/public/ping [ana] -> 200 granted /api/public/:path* permitAll
 GET /api/public/health [-] -> 200 granted /api/public/:path* permitAll
 ```
 
-## 14-rakun-validation — `rakun-validation`
+## 14-rakun-validation — the bundled `validation`
 
-**Test file:** `modules/rakun-validation/test/constraints_test.bp` · **Snapshots:** `modules/rakun-validation/test/__snapshots__/validation/` · **Target:** both — boundary: the emitted `validate<TypeName>` is plain botopink and every case below runs on erlang and commonJS against the same `.snap` (this is the parity test of README § *Test plan*); the `bind*` accumulator (Step 4) is erlang-only and stays in `binding_test.bp` · **Pins:** Step 1 a field failing two constraints produces two violations; Step 2 `#[validated]` emits `validate<TypeName>`, all constraints on a field run in declaration order; Step 3 same input → same report on both targets; Step 5 `#[constraint("cpf")]` through the SPI, `rakun.validation.messages.<code>` override, `{min}`/`{max}` substituted and an unknown placeholder survives; the true and false case of every marker in the table
+The cases below moved with the library to `libs/validation` (`01-std/06-validation-lib`, decision
+116); rakun keeps only `config_check_test.bp` (front 14 Step 7).
+
+**Test file:** `repository/botopink-lang/libs/validation/test/constraints_test.bp` · **Snapshots:** `repository/botopink-lang/libs/validation/test/__snapshots__/validation/` · **Target:** both — boundary: the emitted `validate<TypeName>` is plain botopink and every case below runs on erlang and commonJS against the same `.snap` (this is the parity test of README § *Test plan*); the `bind*` accumulator (Step 4) is erlang-only and stays in `binding_test.bp` · **Pins:** Step 1 a field failing two constraints produces two violations; Step 2 `#[validated]` emits `validate<TypeName>`, all constraints on a field run in declaration order; Step 3 same input → same report on both targets; Step 5 `#[constraint("cpf")]` through the SPI, `rakun.validation.messages.<code>` override, `{min}`/`{max}` substituted and an unknown placeholder survives; the true and false case of every marker in the table
 
 Input is `field=value&…`, one value per field of the single `#[validated]` type in the source. Built-in default templates are the README's codes; their wording is open (name per README § *Message interpolation*).
 
@@ -5188,8 +5130,8 @@ Input is `field=value&…`, one value per field of the single `#[validated]` typ
 ```bp
 test "validation: a record satisfying every constraint is valid" {
     try assertValidation(@src(),
-        \\ import {validated, notBlank, sizeBetween, email, minValue, maxValue, pattern} from "rakun-validation";
-        \\ import {Violation, ValidationReport, checkNotBlank, checkSizeBetween, checkEmail, checkRange, checkPattern} from "rakun-validation";
+        \\ import {validated, notBlank, sizeBetween, email, minValue, maxValue, pattern} from "validation";
+        \\ import {Violation, ValidationReport, checkNotBlank, checkSizeBetween, checkEmail, checkRange, checkPattern} from "validation";
         \\
         \\ #[validated]
         \\ pub type CreateUserRequest(
@@ -5212,7 +5154,7 @@ test "validation: a record satisfying every constraint is valid" {
 }
 ```
 
-`modules/rakun-validation/test/__snapshots__/validation/a-record-satisfying-every-constraint-is-valid.snap`
+`repository/botopink-lang/libs/validation/test/__snapshots__/validation/a-record-satisfying-every-constraint-is-valid.snap`
 ```
 valid
 ```
@@ -5229,7 +5171,7 @@ test "validation: every failing constraint on one field is reported in declarati
 }
 ```
 
-`modules/rakun-validation/test/__snapshots__/validation/every-failing-constraint-on-one-field-is-reported-in-declaration-order.snap`
+`repository/botopink-lang/libs/validation/test/__snapshots__/validation/every-failing-constraint-on-one-field-is-reported-in-declaration-order.snap`
 ```
 invalid
 name: notBlank name must not be blank
@@ -5248,7 +5190,7 @@ test "validation: every failing field is reported at once sorted by field" {
 }
 ```
 
-`modules/rakun-validation/test/__snapshots__/validation/every-failing-field-is-reported-at-once-sorted-by-field.snap`
+`repository/botopink-lang/libs/validation/test/__snapshots__/validation/every-failing-field-is-reported-at-once-sorted-by-field.snap`
 ```
 invalid
 age: minValue age must be at least 18
@@ -5262,8 +5204,8 @@ postalCode: pattern postalCode must match ^[0-9]{5}-[0-9]{3}$
 ```bp
 test "validation: numeric sign and bound markers" {
     try assertValidation(@src(),
-        \\ import {validated, positive, positiveOrZero, maxValue, notEmpty} from "rakun-validation";
-        \\ import {Violation, ValidationReport, checkRange, checkNotEmpty} from "rakun-validation";
+        \\ import {validated, positive, positiveOrZero, maxValue, notEmpty} from "validation";
+        \\ import {Violation, ValidationReport, checkRange, checkNotEmpty} from "validation";
         \\
         \\ #[validated]
         \\ pub type StockLine(
@@ -5283,7 +5225,7 @@ test "validation: numeric sign and bound markers" {
 }
 ```
 
-`modules/rakun-validation/test/__snapshots__/validation/numeric-sign-and-bound-markers.snap`
+`repository/botopink-lang/libs/validation/test/__snapshots__/validation/numeric-sign-and-bound-markers.snap`
 ```
 invalid
 age: maxValue age must be at most 120
@@ -5297,8 +5239,8 @@ stock: positiveOrZero stock must be greater than or equal to 0
 ```bp
 test "validation: a registered constraint is reached through the spi" {
     try assertValidation(@src(),
-        \\ import {validated, notBlank, constraint} from "rakun-validation";
-        \\ import {Constraint, Violation, ValidationReport, registerConstraint, checkNotBlank, checkRegistered} from "rakun-validation";
+        \\ import {validated, notBlank, constraint} from "validation";
+        \\ import {Constraint, Violation, ValidationReport, registerConstraint, checkNotBlank, checkRegistered} from "validation";
         \\
         \\ pub type CpfConstraint {
         \\     pub fn code(self: Self) -> string {
@@ -5334,7 +5276,7 @@ test "validation: a registered constraint is reached through the spi" {
 }
 ```
 
-`modules/rakun-validation/test/__snapshots__/validation/a-registered-constraint-is-reached-through-the-spi.snap`
+`repository/botopink-lang/libs/validation/test/__snapshots__/validation/a-registered-constraint-is-reached-through-the-spi.snap`
 ```
 invalid
 document: cpf document must not be a repeated-digit CPF
@@ -5345,11 +5287,13 @@ document: cpf document must not be a repeated-digit CPF
 ```bp
 test "validation: a configured template overrides the default and substitutes min and max leaving an unknown placeholder verbatim" {
     try assertValidation(@src(),
-        \\ import {rkSetProp} from "rakun";
-        \\ import {validated, sizeBetween} from "rakun-validation";
-        \\ import {Violation, ValidationReport, checkSizeBetween} from "rakun-validation";
+        \\ import {validated, sizeBetween, MessageSource, setMessageSource} from "validation";
+        \\ import {Violation, ValidationReport, checkSizeBetween} from "validation";
         \\
-        \\ val _template = rkSetProp("rakun.validation.messages.sizeBetween", "{field} needs {min}-{max} chars, not {limit}");
+        \\ val _template = setMessageSource(MessageSource(
+        \\     locale: { -> "" },
+        \\     template: { key -> if (key == "sizeBetween") "{field} needs {min}-{max} chars, not {limit}" else "" },
+        \\ ));
         \\
         \\ #[validated]
         \\ pub type Handle(
@@ -5360,7 +5304,7 @@ test "validation: a configured template overrides the default and substitutes mi
 }
 ```
 
-`modules/rakun-validation/test/__snapshots__/validation/a-configured-template-overrides-the-default-and-substitutes-min-and-max-leaving-an-unknown-placeholder-verbatim.snap`
+`repository/botopink-lang/libs/validation/test/__snapshots__/validation/a-configured-template-overrides-the-default-and-substitutes-min-and-max-leaving-an-unknown-placeholder-verbatim.snap`
 ```
 invalid
 nick: sizeBetween nick needs 2-8 chars, not {limit}
@@ -5661,7 +5605,7 @@ upgrade 400
 
 ## 65-rakun-url-rules — `rakun-web`
 
-**Test file:** `modules/rakun-web/test/rules/apply_test.bp` · **Snapshots:** `modules/rakun-web/test/rules/__snapshots__/rules/` · **Target:** both — boundary: the rule engine (`applyRules`) is erlang; `canonicalize`/`clientHref` and the redirect blob carry no host cell and the basePath case below is the one that runs on both targets against the same `.snap` · **Pins:** Step 1 the three matcher forms, one segment means one segment, literal dot escaped, § 20's lookahead example; Step 2 basePath strip, trailing slash, a path outside the base path untouched, single percent-decode; Step 3 308/307, capture interpolation percent-encoded, first match wins, self-redirect refused; Step 4 internal rewrite continues at the target, `isExternal` protocol-relative, unlisted origin refused, a rewrite never feeds the redirect table; Step 6 the five-step order
+**Test file:** `modules/rakun-web/test/rules/apply_test.bp` · **Snapshots:** `modules/rakun-web/test/rules/__snapshots__/rules/` · **Target:** erlang for the rule engine (`applyRules`); `canonicalize`/`clientHref` and the redirect blob are the bundled library `routing`'s (decision 115), and the basePath case below is the one that also runs on commonJS against the same `.snap` · **Pins:** Step 1 the three matcher forms, one segment means one segment, literal dot escaped, § 20's lookahead example; Step 2 basePath strip, trailing slash, a path outside the base path untouched, single percent-decode; Step 3 308/307, capture interpolation percent-encoded, first match wins, self-redirect refused; Step 4 internal rewrite continues at the target, `isExternal` protocol-relative, unlisted origin refused, a rewrite never feeds the redirect table; Step 6 the five-step order
 
 Rule lines are `redirect|<source>|<destination>|<permanent 0/1>` (README § *Redirects* blob), `rewrite|<source>|<destination>`, `matcher|<source>`, and `basePath=…` / `trailingSlash=…` for `UrlRules` fields (name per README § Step 2). A matcher hit renders `match`.
 
@@ -5743,7 +5687,7 @@ test "rules: the negative lookahead example from section 20" {
 
 ### `rules: basePath is stripped trailing slash normalized and decoding happens once`
 
-Boundary case — runs on erlang and commonJS against this one file.
+Boundary case — the `canonicalize` half is `routing`'s and runs on erlang and commonJS against this one file.
 
 ```bp
 test "rules: basePath is stripped trailing slash normalized and decoding happens once" {
@@ -9603,17 +9547,17 @@ brings [rakun, rakun-logging]
 autoconfig [RakunCoreAutoConfiguration]
 ```
 
-### `starter: rakun-starter-web resolves web validation and the base starter in one pass`
+### `starter: rakun-starter-web resolves web and the base starter in one pass`
 
 ```bp
-test "starter: rakun-starter-web resolves web validation and the base starter in one pass" {
+test "starter: rakun-starter-web resolves web and the base starter in one pass" {
     try assertStarter(@src(), "rakun-starter-web");
 }
 ```
 
-`repository/rakun/starters/test/__snapshots__/starter/rakun-starter-web-resolves-web-validation-and-the-base-starter-in-one-pass.snap`
+`repository/rakun/starters/test/__snapshots__/starter/rakun-starter-web-resolves-web-and-the-base-starter-in-one-pass.snap`
 ```
-brings [rakun, rakun-logging, rakun-validation, rakun-web]
+brings [rakun, rakun-logging, rakun-web]
 autoconfig [RakunCoreAutoConfiguration, RakunValidationAutoConfiguration, RakunWebAutoConfiguration]
 ```
 

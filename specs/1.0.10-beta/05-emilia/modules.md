@@ -31,7 +31,7 @@ Two submodules — front 95's cut survives the audit. The candidates it was test
 
 | Submodule | Holds | Target | Depends on |
 |---|---|---|---|
-| **`emilia`** (core) | the `Token` enum, theme, spacing, the rule model and renderer, the variant table, the sixteen utility dispatchers, preflight, escape hatches, container queries, compose, the attribute slot (`styled`, `cls`, `mergeClass`) | comptime — compiled and tested on **both** `commonJS` and `erlang`; a string that differs by backend is a defect | `std`; dev-only: `emilia-test`, `jhonstart` (the integration test renders a page) |
+| **`emilia`** (core) | the `Token` enum, theme, spacing, the rule model and renderer, the variant table, the sixteen utility dispatchers, preflight, escape hatches, container queries, compose, the attribute slot (`styled`, `cls`, `mergeClass`) | comptime — compiled and tested on **both** `commonJS` and `erlang`; a string that differs by backend is a defect | `std`; dev-only: `emilia-test` — no other library, dev-dependency included (decision 114) |
 | **`emilia-test`** | `assert<Subject>(loc, …) -> @Result<void, string>` snapshot helpers over compiled CSS and over the style AST | same as core — the `.snap` files are shared by both targets, which is how byte-equality across backends is enforced | `emilia`, `std` (`testing.asserts`, `testing.snapshots`) |
 
 ## The candidates, each with its verdict
@@ -45,7 +45,7 @@ Two submodules — front 95's cut survives the audit. The candidates it was test
 | `emilia-container` | 58 | **merge** (language constraint) | Same: one section plus three top-level variants on `Token` |
 | `emilia-compose` | 59 | **merge**; keep as `compose.bp` | Functions over `Token[]` and `Variant`, nothing core reads back. It is the one file that *could* leave core later with no surface change; splitting one file into a package is the "one file each" anti-pattern front 95 names |
 | `emilia-utilities-<domain>` (layout, typography, …) | 33 · 35–47 | **drop** | A sub-dispatcher takes `Token.<Section>` and is called from `tokenToSheet`'s exhaustive `case` in core. Moving it out makes core depend on the domain package and the domain package on core's `Token` — a cycle for each of fourteen packages |
-| `emilia-jhonstart` | 48 | **drop** — evaluated because dependency direction would have justified it, dropped because the direction does not exist | Front 48's source is jhonstart-free: `styled(tokens, th) -> #("class", string)`, `styledWith`, `className`, `mergeClass`, `assertAsciiBody` (`attributes.bp`) and `cls`/`clsWith` (`html_hook.bp`) return tuples and strings; the one jhonstart file (`repository/jhonstart/src/html_attrs.bp`) imports only `element` and a test asserts the string `emilia` is absent from `repository/jhonstart/src/`. Only `integration_test.bp` renders a page. A package that holds tests and no source is not a package; `jhonstart` is a **dev-dependency** of core instead. **The trigger that makes it one:** the day jhonstart ships a handler registry that emilia must *import* to register itself (a `[name]={expr}` handler registry — not built, because `html.bp` is frozen), the bridge moves to `modules/emilia-jhonstart/` and core's dev-dependency on jhonstart goes away |
+| an emilia-side HTML adapter | 48 | **drop** — evaluated because dependency direction would have justified it, dropped because the direction does not exist. The one package that knows both is jhonstart's `jhonstart-emilia` bridge (decisions 113 and 114, jhonstart front 30), which adapts `flush()` to jhonstart's render plugin and lives in jhonstart's workspace, not here | Front 48's source is jhonstart-free: `styled(tokens, th) -> #("class", string)`, `styledWith`, `className`, `mergeClass`, `assertAsciiBody` (`attributes.bp`) and `cls`/`clsWith` (`html_hook.bp`) return tuples and strings; the one file front 48 writes in jhonstart's tree (`repository/jhonstart/src/html_attrs.bp`) imports only `element`. Every emilia test asserts class names and CSS strings and renders no HTML; the rendered round trip is the bridge's test. emilia carries no dependency on jhonstart, dev-dependency included (decision 114) |
 
 Tailwind's own shape is the tie-breaker everywhere a call was close: one package (`tailwindcss`),
 with `theme.css`, `preflight.css` and `utilities.css` as files inside it, imported into named
@@ -110,7 +110,7 @@ repository/emilia/
 ├── AGENTS.md
 ├── modules/
 │   ├── emilia/                          core
-│   │   ├── botopink.json                {"name":"emilia","targets":["commonJS","erlang"],"src":"src/","files":[…],"devDependencies":["emilia-test","jhonstart"]}
+│   │   ├── botopink.json                {"name":"emilia","targets":["commonJS","erlang"],"src":"src/","files":[…],"devDependencies":["emilia-test"]}
 │   │   ├── src/
 │   │   │   ├── root.bp                  pub mod … lines, `pub default mod emilia`
 │   │   │   ├── tokens.bp                the one `Token` enum                         (33–47 · 57 · 58, banners)
@@ -143,7 +143,6 @@ repository/emilia/
 │   │   │       └── svg_a11y.bp          svg, a11y                                     (47)
 │   │   └── test/
 │   │       ├── <front>_test.bp          one per front (see ownership table)
-│   │       ├── integration_test.bp      48 — renders through jhonstart (dev-dependency)
 │   │       └── __snapshots__/<suite>/<slug>.snap
 │   └── emilia-test/
 │       ├── botopink.json                {"name":"emilia-test","dependencies":["emilia","std"]}
@@ -159,7 +158,8 @@ as `tokens.bp` / `output.bp` + the cells in `emilia.bp` / `emilia.bp`. The host 
 (`repository/emilia/src/root.bp:9-22`). `output.bp` declares no externals and is pure.
 
 The one file outside the repo: `repository/jhonstart/src/html_attrs.bp` (`classAttr`, `withAttrs`,
-`attrValue`), owned by front 48, importing only jhonstart's `element`.
+`attrValue`), owned by front 48, importing only jhonstart's `element` — jhonstart code that emilia
+never imports.
 
 ### `botopink.json`, workspace and core
 
@@ -179,7 +179,7 @@ The one file outside the repo: `repository/jhonstart/src/html_attrs.bp` (`classA
             "utilities/grid.bp", "utilities/typography.bp", "utilities/backgrounds.bp", "utilities/borders.bp",
             "utilities/effects.bp", "utilities/filters.bp", "utilities/tables.bp", "utilities/transitions.bp",
             "utilities/transforms.bp", "utilities/interactivity.bp", "utilities/svg_a11y.bp"],
-  "devDependencies": ["emilia-test", "jhonstart"]
+  "devDependencies": ["emilia-test"]
 }
 ```
 
@@ -193,11 +193,12 @@ in front-number order.
               std ────────────────────────────┐
                │                              │
                ▼                              ▼
-            emilia  ◄──── emilia-test      jhonstart ◄── (dev-only) emilia/test/integration_test.bp
-           (core)                             ▲
-             ▲  ▲                             │
-             │  └── onze 69 (flushWith)        └── jhonstart 94 (element surface: the attrs array the slot writes into)
-             └───── onze 68 (contract 4 literal)
+            emilia  ◄──── emilia-test
+           (core)
+             ▲  ▲
+             │  ├── jhonstart-emilia (flush/flushWith; its test renders a page and asserts the contract 4 literal)
+             │  └── onze 69 (flushWith)
+             └───── onze 68 (styleRule at build time; contract 4 literal)
 
 Inside core, by file (arrows = imports):
   tokens.bp ◄── utilities/*.bp ◄── emilia.bp ──► output.bp ──► theme.bp ◄── spacing.bp
@@ -224,7 +225,7 @@ by `attributes.bp`, which nothing else imports but `html_hook.bp`.
 files are the byte-equality gate between the two: one snapshot, two targets, one result.
 
 Front 48's output is the one thing both halves of an application read: the class attribute is
-written by the server render (rakun [23](../03-rakun/23-rakun-ssr-pipeline/README.md), erlang) and
+written by the server render (jhonstart [30](../04-jhonstart/30-jhonstart-streaming/README.md), erlang) and
 recomputed by the client bundle (onze [68](../06-onze/68-onze-client-bundle/README.md), js). Contract
 4's shared fixture asserts the same literal on both.
 
@@ -251,9 +252,10 @@ What it does not do: refusals. A `Variant` with two `&`, an `extend` with an unk
 `Arb` carrying a codec separator — these are build failures, not values a test can read. They are
 recorded in the test file as notes and carried into the compiler's suite, as every front says.
 
-`emilia-test` imports `testing.asserts` and `testing.snapshots` and nothing from `jhonstart`. Front 48's
-rendered-HTML checks compare `renderToString` output with `testing.asserts.equal` in
-`modules/emilia/test/integration_test.bp`.
+`emilia-test` imports `testing.asserts` and `testing.snapshots` and nothing from another library.
+Front 48's contract-4 checks assert class names, attribute arrays and CSS strings in
+`modules/emilia/test/attributes_test.bp`; the rendered-HTML round trip is the `jhonstart-emilia`
+bridge's test (jhonstart front 30).
 
 ## Front → directory ownership
 
@@ -283,30 +285,32 @@ a block to them.
 | 57 escape-hatches | `emilia` | `src/arbitrary.bp`, `test/arbitrary_test.bp` | `tokens.bp` (six top-level variants); `emilia.bp` arm block (six arms); `root.bp` + `botopink.json` |
 | 58 container-queries | `emilia` | `src/container.bp`, `test/container_test.bp` | `tokens.bp` (`Container` + three top-level variants); `emilia.bp` arm block (four arms); `root.bp` + `botopink.json` |
 | 59 custom-utilities-and-variants | `emilia` | `src/compose.bp`, `test/compose_test.bp` | `root.bp` + `botopink.json` lines |
-| 48 attributes | `emilia` | `src/attributes.bp`, `src/html_hook.bp`, `test/attributes_test.bp`, `test/integration_test.bp`; plus `repository/jhonstart/src/html_attrs.bp` (the cross-repo file) | `root.bp` + `botopink.json` lines (two modules; `devDependencies` gains `jhonstart`); none in `tokens.bp` / `emilia.bp` |
+| 48 attributes | `emilia` | `src/attributes.bp`, `src/html_hook.bp`, `test/attributes_test.bp`; plus `repository/jhonstart/src/html_attrs.bp` (the cross-repo file, emilia-unaware) | `root.bp` + `botopink.json` lines (two modules); none in `tokens.bp` / `emilia.bp` |
 
 `emilia-test` has no front of its own. Front 56 owns the renderer and therefore the helpers that
 render, and lands them in the same wave so that 33/34/35 write snapshot tests from their first
 commit. A front that finds a helper missing files it against 56, not into `emilia-test` itself.
 
-**Contract 4 path amendment.** [Contract 4](../contracts.md) clause 4 names `mergeClass` at
-`emilia/src/attributes.bp` and the shared fixture at `emilia/test/integration_test.bp`. Under
-`modules/` those are `modules/emilia/src/attributes.bp` and `modules/emilia/test/integration_test.bp`
-— the same function and the same fixture, moved with the package.
+**Contract 4 paths.** [Contract 4](../contracts.md) names `mergeClass` at
+`modules/emilia/src/attributes.bp` and the emilia-side shared fixture at
+`modules/emilia/test/attributes_test.bp`, which renders no HTML (decision 114).
 
 ## Relation to `jhonstart` and `onze`
 
 | Neighbour | Front | What crosses | Direction |
 |---|---|---|---|
-| jhonstart | 48 (this track) | `styled(tokens, th)` returns the `#("class", …)` pair a builder's `attrs` array takes; `cls(tokens, th)` returns the string a pre-bound `[class]={…}` hole in the `html """…"""` DSL takes (a hole may not contain a space — `html.bp:109` splits the tag body on `" "`). `repository/jhonstart/src/html_attrs.bp` (`classAttr`, `withAttrs`, `attrValue`) is the one cross-repo file. The value carried is `mergeClass(static, emilia(tokens, th))` per contract 4 | none at package level: jhonstart never imports emilia; emilia imports jhonstart only in a test |
+| jhonstart | 48 (this track) | `styled(tokens, th)` returns the `#("class", …)` pair a builder's `attrs` array takes; `cls(tokens, th)` returns the string a pre-bound `[class]={…}` hole in the `html """…"""` DSL takes (a hole may not contain a space — `html.bp:109` splits the tag body on `" "`). `repository/jhonstart/src/html_attrs.bp` (`classAttr`, `withAttrs`, `attrValue`) is the one cross-repo file. The value carried is `mergeClass(static, emilia(tokens, th))` per contract 4 | none at package level: jhonstart never imports emilia, and emilia imports jhonstart nowhere, tests and examples included |
 | jhonstart | [94](../04-jhonstart/94-jhonstart-element-surface/README.md) | the element constructors' `attrs` array that the slot writes into; attribute array order is class identity (contract 4 clause 5) | read-only |
-| onze | [69](../06-onze/69-onze-styling-pipeline/README.md) | `flushWith(o)` called once per server render; the document inserted into `<head>`; the client bundle never calls `flush()` (contract 6a) | `onze` → `emilia` |
-| onze | [68](../06-onze/68-onze-client-bundle/README.md) | the hydration entry recomputes `emilia(tokens)` and asserts the contract 4 literal | `onze` → `emilia` |
-| rakun | [23](../03-rakun/23-rakun-ssr-pipeline/README.md) | the SSR test asserts the same contract 4 literal the integration fixture pins | `rakun` → `emilia` (test) |
+| jhonstart | [30](../04-jhonstart/30-jhonstart-streaming/README.md) | the `jhonstart-emilia` bridge (a member of jhonstart's workspace) implements jhonstart's asynchronous `RenderPlugin` by awaiting `#[@future] flush()` / `flushWith(o)`: the head's `<style>` once, each streamed boundary's `<style>` inside its fill, nothing left at `close`, and `payload()` answering `#("s", <the class names it flushed>)` for the payload's `s` key; the client bundle never calls `flush()` (contract 6a, decisions 113 and 114). The bridge's test asserts the contract 4 literal on the render side — it is the test that renders a page with emilia's classes | `jhonstart-emilia` → `emilia`; emilia imports nobody |
+| onze | [69](../06-onze/69-onze-styling-pipeline/README.md) | registers the bridge's plugin at boot (front 49's line); the stylesheet records of the manifest | `onze` → `jhonstart-emilia` |
+| onze | [68](../06-onze/68-onze-client-bundle/README.md) | at build time the bundler calls `styleRule(tokens, th)` (front 56) for every client `emilia(...)` call to fill its `styleMap`, and asserts the contract 4 literal; onze imports emilia directly — it is the package that knows every library (decisions 113, 116) — and never reaches emilia's rules through the bridge | `onze` → `emilia` |
 
-Front 48's README names 23 and 68 as the two consumers of the shared literal; 94 and 69 are the
-surfaces it writes into and is collected by. The core package is what all four depend on, and it
-never grows a runtime import of `jhonstart`.
+The two consumers of the shared literal are the render side (the `jhonstart-emilia` bridge test,
+front 30) and front 68; 94 and the bridge are the surfaces it writes into and is collected by. The
+core package is what all of them depend on, and it never grows an import of `jhonstart`,
+`rakun` or `onze`, dev-only included — emilia imports no library but std (decisions 113 and 114); its
+class-name hash is std's `content_hash.contentHash` (decision 116), the same function onze 68's
+parity check runs, so contract 4 compares one implementation compiled for two targets.
 
 ## `repository/emilia/examples/**`
 
@@ -316,7 +320,7 @@ under the examples gate (`runExamplesGate`), and its snapshot map is in
 
 | Example | Exercises | Depends on |
 |---|---|---|
-| `emilia-card` (exists; migrated to the 1.0.10 surface) | one card: palette, spacing, hover/md, `flush()` document | `emilia`, `jhonstart` |
+| `emilia-card` (exists; migrated to the 1.0.10 surface) | one card: palette, spacing, hover/md, the class names and the `flush()` sheet asserted as strings | `emilia` |
 | `theme-brand` | 54 + 33: a brand theme extending the default, a cleared colour namespace, `flushWith(withTheme(…))`, `themeValue` readback | `emilia` |
 | `dashboard-layout` | 35 · 36 · 37 · 58: grid template, spans, gap, sizing, sticky header, container queries on a card | `emilia` |
 | `typography-article` | 38 · 55 · 34: prose sizes with `--text-*--line-height`, decoration, `line-clamp`, `first-letter`, preflight via `withBase` | `emilia` |
@@ -324,6 +328,8 @@ under the examples gate (`runExamplesGate`), and its snapshot map is in
 | `dark-mode-nav` | 34 · 54: `Dark` under the three `DarkMode` strategies, breakpoint ladder, group-hover | `emilia` |
 | `media-gallery` | 39 · 42 · 47 · 36 · 43: gradients, object-fit, filters and backdrop, svg fill/stroke, a captioned table | `emilia` |
 | `arbitrary-and-compose` | 57 · 59: arbitrary values/properties/variants, a named utility in `components`, `apply`, a custom variant | `emilia` |
-| `jhonstart-attributes` | 48: `styled` on a builder and `cls` in a `[class]={…}` hole on one rendered page, the contract 4 literal | `emilia`, `jhonstart` |
+| `class-attributes` | 48: `styled` / `styledWith` as attribute data, `cls` for a `[class]={…}` hole, `mergeClass`, the contract 4 literal and the flushed sheet selecting it | `emilia` |
 
-Nine projects, every front reached by at least one, `jhonstart` pulled by exactly two.
+Nine projects, every front reached by at least one, each depending on `emilia` only (decision 114).
+A page that renders emilia's classes into HTML is an onze example
+([front 53](../06-onze/53-onze-example-app/README.md)).

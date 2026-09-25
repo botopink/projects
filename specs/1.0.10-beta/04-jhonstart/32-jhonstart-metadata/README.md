@@ -21,7 +21,7 @@ sits in has already set one.
 The absence is not only "no `<title>`". Metadata is the only part of a page whose value is composed
 down the layout chain: a root layout sets the site name and the Twitter card type, a section layout
 sets the section, and the page sets its own title, and the result is one merged object
-(`NEXTJS-DOCS.md § 18`). Nothing in jhonstart composes anything down a chain today; front 23 nests
+(`NEXTJS-DOCS.md § 18`). Nothing in jhonstart composes anything down a chain today; front 30 nests
 layouts for *rendering*, but metadata is not markup and does not nest — it merges, with a rule per
 field kind.
 
@@ -52,7 +52,7 @@ Upstream gives a segment two ways to declare metadata: a static `export const me
 
 jhonstart's static form is `pub fn metadata() -> Metadata`, not `pub val metadata: Metadata`. Two
 reasons, and the first is enough: a `pub val` of a user record type is not exercised anywhere in the
-tree, and a spec should not be the first place a construct is tried. The second is that front 23
+tree, and a spec should not be the first place a construct is tried. The second is that front 30
 resolves a segment's metadata by name, and resolving one name that is always a zero-argument call is
 one code path instead of two.
 
@@ -61,7 +61,7 @@ pub fn metadata() -> Metadata                                  // static
 #[@future] pub fn generateMetadata(params, parent) -> @Future<Metadata>   // dynamic
 ```
 
-A segment may export either. Exporting both is a front-23 error, not a silent precedence rule.
+A segment may export either. Exporting both is a front-30 render error, not a silent precedence rule.
 
 ### The record, and the absence convention
 
@@ -113,11 +113,11 @@ metadata are byte-identical (which is what makes an ETag over the page worth any
 ```
 
 Every value goes through front 01: `escape.html` for element text, `escape.attribute` for attribute
-values. A field that is `""` emits no tag — not an empty one. Front 23 splices the returned string
+values. A field that is `""` emits no tag — not an empty one. Front 30 splices the returned string
 into the document; this front does not build a document and does not know what one looks like.
 
-The head is markup, not payload. The `__onze` script's own escaping rule — `<`, `>`, `&`, U+2028 and
-U+2029, so that `</script` is unrepresentable — is `contracts.md § 2` and front 23's; it does not
+The head is markup, not payload. The payload script's own escaping rule — `<`, `>`, `&`, U+2028 and
+U+2029, so that `</script` is unrepresentable — is `contracts.md § 2` and front 30's; it does not
 apply here and this front must not reimplement it. The two escapings are different problems and
 using the wrong one is how a `<title>` ends up with `&amp;lt;` in it.
 
@@ -143,6 +143,12 @@ a content type, and for the OG image a rendered PNG. All four are **front 66**'s
 owes front 66 is the `openGraph.images` list, so that a page pointing at `/og/hello.png` and a file
 route serving `/og/hello.png` agree; the path convention is written down once, in front 66's README,
 and cited here.
+
+The markup for those file routes is this front's, not front 66's (decision 116): rakun resolves the
+icons and images of a pattern as data (`iconsFor`, `imagesFor` — URL, kind, size, content type) and
+builds no HTML; onze copies them into the segment's `Metadata` (`icons`, `openGraph.images`) before
+the render, and `renderHead` writes the `<link>` and `<meta>` tags with its own escaping. jhonstart
+names no rakun type — the records reach it as `Metadata` fields.
 
 ## Steps
 
@@ -257,9 +263,9 @@ pub fn applyTemplate(template: string, title: string) -> string {
 
 ### Step 5 — The export contract, written down
 
-`repository/jhonstart/docs.md` gains the contract front 23 resolves against:
+`repository/jhonstart/docs.md` gains the contract front 30 resolves against:
 
-| Segment export | Kind | Front 23 does |
+| Segment export | Kind | Front 30 does |
 |---|---|---|
 | `metadata()` | static | calls it, merges onto the parent's |
 | `generateMetadata(params, parent)` | `#[@future]` | awaits it, merges onto the parent's |
@@ -267,7 +273,7 @@ pub fn applyTemplate(template: string, title: string) -> string {
 | `viewport()` / `generateViewport(params)` | as above | merged independently of `Metadata` |
 
 **Acceptance:**
-- [ ] the table is in `repository/jhonstart/docs.md` and front 23's README cites it
+- [ ] the table is in `repository/jhonstart/docs.md` and front 30's README cites it
 - [ ] the merge rule table from *Mechanism* is in the same place
 - [ ] `pub mod metadata;` and the `metadata.bp` `files` entry are handed to front 94, which owns
       `src/root.bp` and the `files` list; this front edits neither

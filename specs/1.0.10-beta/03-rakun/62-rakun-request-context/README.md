@@ -161,7 +161,10 @@ front therefore queues fully-serialized `Set-Cookie` values on the frame and han
 `endRequest()`; the dispatcher appends each one to the response as a separate header line. Cookie
 serialization (`Path`, `Domain`, `Max-Age`, `HttpOnly`, `Secure`, `SameSite`, and the percent-encoding
 of the value through front 01's `encoding.percentEncode`) is pure botopink in `request_context.bp`, so
-it is unit-testable without a socket.
+it is unit-testable without a socket. The landed private codec (`request_context.bp:507-610`,
+`percentEncode` / `hexValue` / `percentDecode`) is deleted when front 01 lands: std's `encoding`
+(`percentEncode`, `percentDecode`, `formParse`, `formStringify`) is the one percent and form codec,
+used by rakun here and by jhonstart's router on the other side of the same payload (decision 116).
 
 ### Draft mode
 
@@ -442,6 +445,8 @@ val setCookies = endRequest();
       asserted by a second request on the same process seeing a clean frame.
 - [ ] The `Set-Cookie` blob splits on `\n` into whole header values, and a cookie value containing a
       newline is impossible because `serializeCookie` percent-encodes it.
+- [ ] `grep -n "fn percentEncode\|fn percentDecode\|fn hexValue" src/request_context.bp` is empty —
+      the codec is std's `encoding`.
 - [ ] Fronts 23, 24, 25 and 07 each call `beginRequest` with the phase their table row names; the
       assertion lives in this front's test as a table of phase-to-permission, so those fronts inherit
       it rather than restating it.

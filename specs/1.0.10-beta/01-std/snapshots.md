@@ -171,7 +171,7 @@ The same shape for every track:
 | D emilia | `emilia-test` | `assertCss(loc, tokens)` · `assertUtility(loc, tokens)` · `assertSheet(loc, sheet)` (front 56) | `css` · `utility` · `sheet` | the rule text · `.<class>{<rule>}` · the encoded sheet |
 | C jhonstart | `jhonstart-test` | `assertHtml(loc, element)` | `html` | `renderToString(element)` |
 | B rakun | `rakun-test` | `assertRoute(loc, table)` · `assertResponse(loc, response)` | `route` · `response` | the `kind\|pattern\|slot\|verb` lines (contract 1) · status line + headers + body |
-| E onze | `onze-test` | `assertManifest(loc, m)` · `assertPayload(loc, p)` | `manifest` · `payload` | `formatManifest(m)` (contract 6) · the `__onze` JSON |
+| E onze | `onze-test` | `assertManifest(loc, m)` · `assertPayload(loc, p)` | `manifest` · `payload` | `formatManifest(m)` (contract 6) · the payload JSON (contract 2, `globals.payload`) |
 | the compiler, written in botopink | — | `assertJsSingle(loc, source)` | `js` | the JavaScript the source lowers to — the `.bp` twin of `codegen/tests/helpers.zig:389` |
 
 A helper never calls `readFile`/`writeFile` itself and never computes a path itself. If it needs a

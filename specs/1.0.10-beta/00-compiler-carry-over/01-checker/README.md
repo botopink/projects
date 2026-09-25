@@ -232,14 +232,14 @@ Each reproduces; sites and probes in [`residual-rows.md`](./residual-rows.md).
 | # | Row | Probe at `c2dd780` |
 |---|---|---|
 | R1 | **A `type` declaration's constructor binding is named `record { … }`** — and its three siblings name `struct {`, `enum {` and `interface `, surfaces front 12 deleted. `infer.zig:1832` `buildRecordDeclName`, `:1859` `buildStructDeclName`, `:1891` `buildInterfaceDeclName`, `:1936` `buildEnumDeclName` | read at `c2dd780`; hover and completion print a surface that no longer parses |
-| R2 | **Importing a type requires importing its whole type closure** — a field's type and a method signature's types must each be named in the `from` clause | `import { User, makeUser } from "users";` where `User(role: Role)` → `unknown type 'Role'`, at the `makeUser` token; adding `Role` checks |
+| R2 | **Landed.** `import { User, makeUser }` with `User(role: Role)` checks and runs without naming `Role`: the import registers the types the declaration mentions (fields, variant fields, method signatures, transitively) as types only — `Role(…)` still needs `Role` in the clause. The caret half has no probe left (the probe no longer reds) | cell: `tests/language/modules/import_type_closure` |
 | R3 | **`#[@external(node, "…")]` in lower case passes `check` and binds no host**, silently. Only `External.<Target>` matches `FnDecl.isExternal` | `#[@external(node, "Math.abs($0)")] declare fn absVal(x: i32) -> i32;` → `Checked` |
-| R4 | **A record field typed by a behavior rejects an implementing record** (1.0.4 N7) | `type Holder(h: Handler)` with `H implement Handler` → `expected Handler, got H` |
-| R5 | **A pattern in binding position binds nothing** (1.0.4 N11 / JS-4) | `val Circle(r) = s;` → `unbound variable 'r'` |
-| R6 | **No lowering is recorded for a method on an associated fn's result** (1.0.4 N15) | `Array.range(0, 3).map(…)` checks, and erlang falls back to `'__bp_prim_map'` run-time dispatch — the codegen half is [`02-erlang`](../02-erlang/README.md) |
+| R4 | **Landed.** A behavior-typed parameter or constructor field accepts an implementer, directly or through `extends` (`unifyArgument`); a non-implementer reds at the value | cells: `comptime/tests/infer_errors.zig` `behavior-typed field …` |
+| R5 | **Landed.** `val Circle(r) = s;` binds `r` typed when the pattern cannot fail (one-variant `type`, record constructor, spread-only list); a refutable one is `refutable-val-pattern` at the binding, naming `val assert` and `case` | cells: `comptime/tests/infer_errors.zig` `val destructure: …` |
+| R6 | **Landed.** `Array.range(0, 3)` resolves through its behavior's name and types `array<i32>`, so `.map` records its lowering; erlang emits `lists:map(…, array_range(0, 3))` and prints `[2, 3, 4]` — no `'__bp_prim_map'` | cell: `comptime/tests/infer_errors.zig` `associated fn: …` |
 | R7 | **Decision 2 is not enforced** (1.0.4 N6): a valueless block in value position and a non-`unit` fn that falls off its end both check | `fn f() -> i32 { val x = 1; }` → `Checked`. This is what makes the four backends' block-as-value lowerings dead code; each backend deletes its own |
-| R8 | **`type` as a value is still any binding** (types-as-values A1; C10 left the bindings arm) | `val n = 5; val x: n = 7;` → `Checked` |
-| R9 | Three N25 diagnostics: `@Result<…>` without `#[@result]` is reported as a return-type mismatch at the `return`; `val assert Ok(n) = f() catch 0` is accepted and fails at run time; `two_effect_markers`' caret points at the body's `{` | `reject/wrapper_without_annotation.bp`, `reject/val_assert_after_catch.bp`, `reject/two_effect_markers.bp` |
+| R8 | **Landed.** `val n = 5; val x: n = 7;` is `'n' is a value, not a type`, located; `val T = i32;` / `val U = T;` are types (`Env.typeValueNames`); function-typed and declaration bindings (imports, std's `Array`) keep resolving. The real `type` kind of A1 is not built | cells: `comptime/tests/infer_errors.zig` `type position: …` |
+| R9 | **Landed.** Each of the three N25 cells is refused for its own reason with the caret on the offending token: the return type (`@Result needs #[@result]`), the `catch` (`AssertPattern.catchLoc`), the second annotation's `#`; their lines left `expected-failures.txt` | `reject/wrapper_without_annotation.bp`, `reject/val_assert_after_catch.bp`, `reject/two_effect_markers.bp` |
 
 **Does not reproduce — do not carry:**
 
@@ -291,14 +291,14 @@ maintainer's and is listed in [Decisions the maintainer owes](#decisions-the-mai
 | `if (a && b)` / `if (a \|\| b)` | `Unexpected token` at `&&` | `parser/exprs.zig` `prec.equality` → `prec.lowest` **at the `if` condition only**; the other eleven `prec.equality` sites stay | few — `if` parser snapshots. Needed by step 3's narrowing through `&&` |
 | `_` as an `if` binder | `Unexpected token` at `_` | also accept `.underscore` before `->`, `binding = null` | none |
 | `assert <expr> is <Pattern>` | `is-variant-binding` at the `(` | a statement form binding into the **enclosing** scope; needs step 4's pattern typing | few parser + new checker work |
-| `<Pattern> as <name>` | `Unexpected token` at `as` | a `Pattern.bound` variant — reaches all four backends' pattern lowerings | many. **Recommend: delete the three tests** |
+| `<Pattern> as <name>` | `Unexpected token` at `as` | a `Pattern.bound` variant — reaches all four backends' pattern lowerings | **Decided (decision 11): not part of the language** — the three tests and their snapshots are deleted |
 | unnamed variant payload (declaration half) | — | optional field names + a reflected surface | many. **Recommend: drop; keep `name: Type`.** The pattern half (`.Some(#(a, b))`) **landed** with `dff3446` |
 
 **Acceptance:**
-- [ ] `if (a && b)` and `if (a || b)` parse; every other `prec.equality` call site is unchanged
-- [ ] `if (x) { _ -> … }` parses with `binding = null`
-- [ ] `assert e is P;` either parses and binds into the enclosing scope, or its three tests are deleted and the decision recorded
-- [ ] `<Pattern> as <name>` and the unnamed-payload declaration are implemented or their tests deleted, each with the decision recorded in [`residual-rows.md`](./residual-rows.md)
+- [x] `if (a && b)` and `if (a || b)` parse; every other `prec.equality` call site is unchanged
+- [x] `if (x) { _ -> … }` parses with `binding = null`
+- [x] `assert e is P;` either parses and binds into the enclosing scope, or its three tests are deleted and the decision recorded
+- [x] `<Pattern> as <name>` and the unnamed-payload declaration are implemented or their tests deleted, each with the decision recorded in [`residual-rows.md`](./residual-rows.md)
 
 ### Step 11 — decision 8 in the sources (`libs/std`, `examples`)
 
@@ -403,6 +403,31 @@ Repro: `repository/jhonstart/repro/local-binding-leaks-to-later-decls/` — twel
 - [ ] cells for both, each proved able to fail by planting the pre-fix behaviour, and the bare one
       asserted on **both** rows, since today it fails differently on each
 
+### Step 14 — decision 112: DSL hygiene (each name resolves in the scope of whoever wrote it)
+
+[Decision 112](../../decisions-taken.md) (maintainer, 2026-09-26). A DSL's `e.build(…)` text has two
+authors, and today the whole built text resolves in the **consumer's** scope: a private helper the
+library writes (`double(` … `)`) is `unbound variable 'double'`, an alias the consumer wrote
+(`area as surface`) is unbound the same way, and a consumer that declares its own `double` has it
+**silently captured** (21 instead of 40).
+
+- Text the library writes in `e.build` resolves in the **library's** module, private names included,
+  and carries that declaration's identity `<lib>@<path>@@<Decl>` (decision 109).
+- Text from `e.text()` resolves at the **call site** — the consumer's imports, aliases (decision 110)
+  and locals.
+- `e.lookup(name)` resolves at the call site and returns the **declaration's identity, never the
+  alias** (`e.lookup("surface")` → `shapesdsl@shapesdsl@@area`).
+
+`e.build` already receives the two parts separately; the compiler marks each span with its author and
+the DSL author writes nothing extra. The `@Expr`/`@ExprCustom` surface does not change.
+
+**Acceptance**
+- [ ] the three rows of decision 112's table print 40 — private helper, consumer alias, consumer's own
+      `double` not captured; the three `run/` cells are front 12's ([`../12-language-tests/README.md`](../12-language-tests/README.md) step 4, item 5)
+- [ ] `e.lookup("surface")` answers `area`'s identity, and hover / go-to-definition / the `CustomNode`
+      point at `area`
+- [ ] no `reject/` cell (the decision adds none)
+
 ## Acceptance — the `expected-failures.txt` lines this front deletes
 
 `repository/botopink-lang/tests/language/expected-failures.txt`, at `c2dd780`. **31 of 54.** A line
@@ -480,7 +505,7 @@ they were found probing `c2dd780` for this front and are not in that document ye
 | # | Decision | Measured context |
 |---|---|---|
 | D1 (= #1) | **Settled by decision 103: `#[@futureGenerator]` → `@FutureGenerator<T, E>`.** Neither `AsyncGenerator` (decision 8 §9's table) nor `AsyncIterator` (the compiler's `EffectKind.returnWrapper`, `libs/std/src/builtins.d.bp`'s `behavior AsyncIterator<T, E, C>`, the docs) survives; the rename lands with [`21-effect-chain`](../21-effect-chain/README.md) | `grep -rn AsyncIterator --include=*.zig --include=*.bp --include=*.md` → **69** hits; `AsyncGenerator` → **1** (decision 8 itself). Renaming crosses `libs/std`, the user docs and the compiler; `3e7cd62` enforced the spelling that exists and recorded the discrepancy in `comptime/AGENTS.md` |
-| D2 (= #11) | **`<Pattern> as <name>`: implement or delete the three tests** (`comptime/tests/variants.zig:291`, `:309`, `:328`) | the parser half is local; the consumer half is a new `ast.Pattern` variant in four backend lowerings this front does not own. No library uses the form |
+| D2 (= #11) | **Decided: `<Pattern> as <name>` is not part of the language.** The three tests in `comptime/tests/variants.zig` and their snapshots are deleted | the parser half is local; the consumer half is a new `ast.Pattern` variant in four backend lowerings this front does not own. No library uses the form |
 | D3 (= #12) | **Unnamed variant payloads: drop or implement.** The pattern half landed with `dff3446`; the declaration half remains | it changes the reflected `TypeInfo`/`EnumVariant` surface as well as four backends |
 | D4 (**new**) | **`is` with a payload pattern.** The parser refuses `x is Some(v)` with a located `is-variant-binding`; §4.2 lists the form | decide whether `is` carries a pattern or the refusal stands and `case` is the only reader |
 | D5 (**new**) | **Mismatched `case` arms: a union or an error?** §3.2 says the union, and step 2 makes one implementable. Two fixture slugs were named for the union answer | all 32 `case`-as-value blocks in the six libraries are type-homogeneous, so either answer costs zero migration |
@@ -544,9 +569,11 @@ they were found probing `c2dd780` for this front and are not in that document ye
 Front 15 made two forms parse that nothing types. Neither is a new AST variant, by the argument `is`
 already used, so the work is inference-side only.
 
-1. **`adder(3)(4)` reaches inference as a call whose `callee` is empty**, and it answers
-   `unbound variable ''`. When a call's callee is itself an expression the node carries it in
-   `calleeExpr`; type that, then apply. The parser guarantees exactly one of the two is set.
+1. **Landed** — `adder(3)(4)` types: `inferCallExpr` infers the `calleeExpr` and applies it (a `fn`
+   taking the written arguments; the call's type is its return). `test/curried_call.bp` compiles; its
+   two lines are C-09's backend half (commonJS emits `(4)`, erlang `''(4)`). A leading-dot head
+   (`.Circle(radius: 1)`, front 15's steps 3–5 row 1) is the variant constructor of the position's
+   expected enum, spliced in as `Shape.Circle(…)`, and a located refusal with no expected enum.
 
 2. **`xs[0]` types as `void`.** The index is the builtin call `ast.index_builtin_name` (`"[]"`) over
    `(receiver, index)` — `ast.zig:1681-1703` states the contract. Inference has to type it **by the
@@ -565,6 +592,24 @@ because a brace-arm is neither typed nor lowered. That is the same defect as the
 filed here.
 
 ---
+
+## Handed over by `15-language-surface` steps 3–5 (`front/15-language-surface`)
+
+Three rows of [`surface-gaps.md`](../15-language-surface/surface-gaps.md) are the checker's, measured
+again at `4fe1747e`:
+
+1. **`.Circle(radius: 1)` in expression position parses** — it did not at `c2dd780` — and reds
+   `unbound variable ''` at the `(`: a leading-dot variant with a payload call, in a position whose
+   expected type is a `val`'s annotation. This is the same empty-name diagnostic `status.md` already
+   lists for the typed array literal (`[.EffectShadowRaw("…")]`); the parser's node is a `dotIdent`
+   head with a call link, and whatever the answer is, a message quoting an empty name is not it.
+2. **`#(x: 1, y: 2)` — the labeled tuple construction** — is now refused by the parser as
+   `tuple-literal-label`, at the label, instead of `novalBinding` at the value. The form itself is
+   §6's and yours: when it parses, delete the refusal in `parseTupleLitExpr` (one `if`) and its R10
+   case, and the labels ride the tuple type. Until then `#(1, 2)` and `.0`/`.1` is what compiles.
+3. **`Box<i32>(value: 1).get()`** — explicit type arguments at a constructor call — still reds
+   `novalBinding` at `value`. 15 did not name it: `decision-8:60-64` writes the form, so it is a gap
+   (§1.3) rather than a decision, and naming it would record an absence the document contradicts.
 
 ## Handed over by `11-tooling`
 

@@ -22,7 +22,7 @@ import {Link, linkProps} from "jhonstart";              // front 27
 // front 31 — the boundary surface
 import {ErrorInfo, ErrorBoundary, catchError, renderBoundaryChecked, isSignal} from "jhonstart";
 import {styled, Token} from "emilia";                   // front 48
-import {notFound} from "rakun";                         // front 63
+import {notFound} from "jhonstart";                     // front 31 — a page's signals are jhonstart's (decision 115)
 // app-local
 import {Post, findPost, missingPost} from "@/lib.db";
 
@@ -51,7 +51,7 @@ pub fn errorFallback(info: ErrorInfo) -> Element {
     return section([
         h2([text("Something went wrong", attrs: [])], attrs: []),
         p([text("Reference " + info.digest, attrs: [])], attrs: [#("class", "digest")]),
-        button([text("Try again", attrs: [])], attrs: [#("data-onze-on-click", "error:reset")]),
+        button([text("Try again", attrs: [])], attrs: [#("data-jh-on-click", "error:reset")]),
     ], attrs: [styled(panelTokens())]);
 }
 
@@ -89,7 +89,7 @@ pub fn postBoundary(slug: string) -> ErrorBoundary {
 
 #[@result]
 fn signallingPanel() -> @Result<Element, string> {
-    throw "jhonstart:not-found";
+    throw "nav:not-found";
 }
 
 #[@result]
@@ -102,8 +102,8 @@ fn boundaryOver(child: fn() -> @Result<Element, string>) -> ErrorBoundary {
 }
 
 test "a navigation signal is recognised as a signal, an error is not" {
-    assert isSignal("jhonstart:not-found");
-    assert isSignal("jhonstart:redirect:/login");
+    assert isSignal("nav:not-found");
+    assert isSignal("nav:redirect:/login");
     assert isSignal("the content directory is unreadable") == false;
 }
 

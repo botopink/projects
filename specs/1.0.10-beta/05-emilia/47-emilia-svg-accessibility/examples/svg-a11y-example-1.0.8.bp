@@ -8,7 +8,6 @@
 //       https://tailwindcss.com/docs/forced-color-adjust
 
 import { emilia, flush, Token } from "emilia";
-import { div, renderToString } from "jhonstart";
 
 // SVG Fill
 val svgFillTokens: Token[] = [
@@ -77,8 +76,6 @@ val accessibleTokens: Token[] = [
 ];
 val accessibleStyles = emilia(accessibleTokens);
 
-val page = div([], []);
-
 #[@future]
 fn main() -> @Future<void> {
     @print("=== F13: SVG & Accessibility Example ===");
@@ -90,7 +87,6 @@ fn main() -> @Future<void> {
     @print("Forced Color: " + forcedColorStyles);
     @print("Icon: " + iconStyles);
     @print("Accessible: " + accessibleStyles);
-    @print(renderToString(page));
     @print(await flush());
 }
 

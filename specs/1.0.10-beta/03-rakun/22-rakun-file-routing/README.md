@@ -3,14 +3,20 @@
 **Track:** B rakun
 **Priority:** critical — without a route table there is no route to render, no route to prefetch, and no
 place to hang a server action; fronts 23, 24, 25, 27, 60, 61 and 66 all read what this front writes
-**Target:** both — boundary. The route table is matched on BEAM and prefetched in the browser, and it
-is the same matcher compiled twice
+**Target:** erlang. The registry, the scan and the host cells are erlang (`rakun-app`); the pure
+matcher — segment grammar, the route table's wire, `matchPath`, `layoutChain` — is the bundled
+library `routing` (`libs/routing`, erlang and commonJS, front `01-std/04-routing-lib`), which rakun
+imports and the browser imports too, so both match with the same code (decision 115)
 **Wave:** 2
-**Depends on:** 01 (the directory walk — `path` is already complete), 05 (`appDir` as a config value)
-**Owns:** `repository/rakun/src/file_router.bp`, `repository/rakun/src/file_router.mjs`,
+**Depends on:** 01 (the directory walk — `path` is already complete), 05 (`rakun.appDir` as a config
+value), `01-std/04-routing-lib` (the matcher, Steps 1, 3 and 4's code and tests)
+**Owns:** `repository/rakun/src/file_router.bp` (the registry cells and the scan entry),
 `repository/rakun/src/sidecars/rakun_file_router.erl`, `repository/rakun/test/file_router_test.bp`
 **Does not touch:** `repository/rakun/src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`,
-`src/runtime.mjs` (frozen for the milestone), and the files owned by 23 · 24 · 25
+`src/runtime.mjs` (frozen for the milestone), and the files owned by 23 · 24 · 25; the UI
+conventions — `#[page]`, `#[layout]`, `#[template]`, `#[defaultView]`, `PageContext`, `LayoutProps`
+and the per-route parameter accessors — are jhonstart
+[front 30](../../04-jhonstart/30-jhonstart-streaming/README.md)'s (decision 114)
 **Reference:** `NEXTJS-DOCS.md § 3. Estrutura do Projeto`, `§ 4. App Router — Fundamentos`,
 `§ 6. Rotas Dinâmicas`, `§ 21. Rotas Paralelas e Interceptadas` ·
 <https://nextjs.org/docs/app/getting-started/project-structure> ·
@@ -54,13 +60,16 @@ checked against the real tree by the CLI (front 50), so a developer still only m
   flat `verb + path -> handler` registry; no segment list, no layouts, no params beyond `:name`.
 - `repository/rakun/src/http.bp:35-43` — the `Request` behavior. `param`/`query`/`header`/`body` all
   return `string`, `""` when absent.
-- `repository/jhonstart/src/router.d.bp:18-28` — `Router`/`useRouter`/`Link` are declaration-only and
-  gated; the client half of routing does not exist either (front 26 · 27).
+- jhonstart's router (front 26) keeps no matcher and no table parser of its own: it imports
+  `matchPath` and `parseTable` from the bundled library `routing` (decision 115), as rakun does.
 - `libs/std/src/path.bp:24-179` — `split`, `join`, `basename`, `dirname`, `normalize`, `relative`,
   `resolve` all exist today; `path` is a complete posix calculator and this front needs nothing added
   to it. What std does not have is a **directory walk**, which the scan in step 5 needs; front 01
   closes that.
-- `repository/rakun/src/file_router.bp` does not exist.
+- The matcher exists today inside rakun's core member, beside the registry and the scan:
+  `repository/rakun/modules/rakun/src/file_router.bp:49-479` (grammar, wire, matcher) with its tests
+  at `modules/rakun/test/file_router_test.bp:62-332`. `01-std/04-routing-lib` Step 3 moves that range
+  into `libs/routing`; Step 7 below deletes it here.
 
 ## Mechanism
 
@@ -76,47 +85,37 @@ and `[dynamic]` / `[...catchAll]` / `[[...optionalCatchAll]]` capture instead of
 
 ### How it maps onto botopink
 
-**One decorator per file convention, taking the app-relative directory of the file it sits in.**
+**The route table is rakun's; what a UI convention file declares is jhonstart's.** rakun routes and
+answers; it names no `Element` (decisions 113, 114). Each file convention reaches the table as one
+record, registered by whoever owns the function behind it:
 
-| File in `app/` | Decorator | Signature the registry pins |
+| File in `app/` | Declared by | What rakun's registry holds |
 |---|---|---|
-| `layout.bp` | `#[layout(seg)]` | `fn(props: LayoutProps) -> Element` |
-| `template.bp` | `#[template(seg)]` | `fn(props: LayoutProps) -> Element` |
-| `page.bp` | `#[page(seg)]` | `#[@future] fn(route: PageContext) -> @Future<Element>` |
-| `default.bp` | `#[defaultView(seg)]` | `fn(props: LayoutProps) -> Element` |
-| `route.bp` | front 25's verb decorators | `#[@future] fn(req: Request) -> @Future<HandlerResponse>` |
+| `layout.bp` | jhonstart front 30's `#[layout(seg)]` | an `L` record, registered by onze at boot |
+| `template.bp` | jhonstart front 30's `#[template(seg)]` | a `T` record, registered by onze at boot |
+| `page.bp` | jhonstart front 30's `#[page(seg)]` | a `P` record and one opaque `PageRenderer` (front 23), handed in by onze through `page(pattern, render)` |
+| `default.bp` | jhonstart front 30's `#[defaultView(seg)]` | a `D` record, registered by onze at boot |
+| `loading.bp` · `error.bp` · `not-found.bp` | jhonstart fronts 30 · 31 | an `S` · `E` · `N` record, registered by onze at boot |
+| `route.bp` | front 25's verb decorators | an `R` record and the handler, `#[@future] fn(req: Request) -> @Future<HandlerResponse>` |
 
-`default` is a reserved keyword (`modules/compiler-core/src/lexer.zig:721-767`), so the `default.bp`
-marker is spelled `#[defaultView]`. That is the only name in the set that does not match its file.
-
-Each decorator body does three things, in the order rakun's own component markers do them
-(`decorators.bp:48-64`): it `@emit`s the registration, it `@emit`s the per-route param accessor, and
-then it enforces placement with `decl.fail`. The emitted registration is the rakun idiom exactly —
-a module-level `val` calling a host cell, so it runs at module load:
-
-```bp
-val __rkPage_blogPostPage = rkAppRegisterPage("blog/[slug]", blogPostPage);
-```
+The UI decorators, `PageContext`, `LayoutProps` and the per-route parameter accessors are jhonstart
+front 30's: they fill jhonstart's UI registry, and onze copies that registry into this front's table
+at boot, so the table the server matches and the payload's `t` are one table (contract 1). A page's
+renderer is opaque here — `fn(req: Request, out: ChunkWriter) -> @Future<void>` (front 23); rakun
+calls it and never looks inside.
 
 The registry lives in the host because botopink has no top-level mutable state — the same reason
-rakun's scan registry and router live in `runtime.mjs` (`repository/rakun/src/runtime.bp:1-11`).
-This front's registry is separate from `rkRegisterRoute`'s: `src/sidecars/rakun_file_router.erl` is
-the BEAM one and is what serves requests, `file_router.mjs` is the browser one and holds only the
-table. The sidecar's filename is not cosmetic: `shipErlSidecars` skips any atom matching a module this
+rakun's scan registry lives in a host file (`repository/rakun/src/runtime.bp:1-11`). This front's
+registry is separate from `rkRegisterRoute`'s, and it is `src/sidecars/rakun_file_router.erl`, on
+BEAM. The sidecar's filename is not cosmetic: `shipErlSidecars` skips any atom matching a module this
 build emitted (`libs.zig:596`), and rakun emits `rakun/file_router`, so a sidecar named
 `src/file_router.erl` is silently not shipped. Every erlang sidecar in this track is
 `src/sidecars/rakun_<name>.erl`.
 
-**Three restrictions shape the decorator bodies, and none of them is negotiable.** A decorator body
-cannot call sibling functions — the evaluator emits only the decorator function into the eval script
-(`decorators.bp:44-46`), which is why rakun copy-pastes its field-injection block six times. So the
-segment parser is inlined in each of the four bodies rather than shared. A `//` comment anywhere in
-the body breaks the flattened emit, so every body is comment-free and the prose lives above the
-`pub fn`. And nothing optional works in a comptime body — no `.at(i)`, no `?T` — so the bodies use
-`split` / `forEach` / `push` / `join` / `indexOf` / `length` only.
-
-**The `appDir` is configuration, not a literal.** `rkProp("onze.appDir")` (front 05) resolves to
-`app` or `src/app`; the decorator argument is relative to it, so moving the tree between the two
+**The `appDir` is configuration, not a literal.** `rkProp("rakun.appDir")` (front 05) resolves to
+`app` or `src/app`, `app` when unset; onze writes the key at boot (decision 115) and rakun reads no
+`onze.` key (`modules/rakun/src/file_router.bp:795` reads `onze.appDir` and is renamed by Step 5).
+The decorator argument is relative to it, so moving the tree between the two
 layouts changes one config line and no source. The host-side scan reads `appDir` to verify that every
 registered segment corresponds to a real directory and that every directory holding a convention file
 registered something — a check the CLI runs, not the server.
@@ -135,31 +134,36 @@ one record per line, `\n`-separated, in registration order. `kind` is one letter
 
 | Letter | Convention | Registered by |
 |---|---|---|
-| `L` | `layout.bp` | this front |
-| `T` | `template.bp` | this front |
-| `P` | `page.bp` | this front |
-| `D` | `default.bp` | this front |
+| `L` | `layout.bp` | onze, from jhonstart's UI registry |
+| `T` | `template.bp` | onze, from jhonstart's UI registry |
+| `P` | `page.bp` | onze, through front 23's `page(pattern, render)` |
+| `D` | `default.bp` | onze, from jhonstart's UI registry |
 | `R` | `route.bp` | front 25 |
-| `S` | `loading.bp` | front 30 |
-| `E` | `error.bp` | front 31 |
-| `N` | `not-found.bp` | front 31 |
+| `S` | `loading.bp` | onze, from jhonstart's UI registry (front 30) |
+| `E` | `error.bp` | onze, from jhonstart's UI registry (front 31) |
+| `N` | `not-found.bp` | onze, from jhonstart's UI registry (front 31) |
 
 `pattern` is the URL pattern with groups and slots removed and the bracket spelling preserved
 (`/blog/[slug]`, `/shop/[...slug]`, `/docs/[[...slug]]`). `slot` is `""` for the children slot and the
 slot name for an `@slot` entry. `verb` is `""` for UI entries and the HTTP method for an `R` entry.
 Neither `|` nor a newline may appear in a segment name, and the scan fails if one does.
 
-The server reads the table from its own registry. The client reads it out of the `"t"` field of front
-23's payload and rebuilds it with `parseTable`, which is the same botopink function the server uses.
-`matchPath` is likewise one function compiled to both targets. That is what makes this a boundary
-front: if the two sides can disagree about which route a URL is, every fix downstream is a guess.
+The server reads the table from its own registry. **The matcher is the bundled library
+`routing`** (`libs/routing`, `["erlang", "commonJS"]`, decision 115): the segment grammar,
+`RouteEntry`, `parseTable` / `writeTable`, `matchPath` and `layoutChain`, pure, with no HTTP, no host
+cell and no registry. `rakun-app` imports it on erlang; jhonstart's router (front 26) imports it on
+commonJS and parses the payload's `t` field itself. `routing` is neutral like std, so neither import
+is an edge between jhonstart and rakun (decision 113). That is why the matcher is one library: if
+the two sides can disagree about which route a URL is, every fix downstream is a guess. This front
+specifies the grammar, the wire and the matcher (Steps 1, 3, 4); `01-std/04-routing-lib` owns the
+code and runs these steps' acceptance on both targets.
 
 ## Steps
 
 ### Step 1 — Segment grammar
 
 `parseSegment` classifies one folder name. It is pure, total, and the only place the bracket and
-parenthesis spellings are decoded.
+parenthesis spellings are decoded. It lives in `routing`'s `segment` module (Step 7).
 
 ```bp
 pub type SegmentKind {
@@ -198,58 +202,20 @@ pub fn slotOf(segments: Segment[]) -> string
       not appear on a registered path at all.
 - [ ] A segment name containing `|` or a newline fails with a message naming the segment.
 
-### Step 2 — The four decorators
+### Step 2 — The registry: table records and opaque page renderers
+
+rakun's registry takes what onze hands it and names no type of jhonstart's. Three host cells, each
+generic over the function it stores where it stores one — the trick `rkRegisterRoute<Req>` uses to
+stay typed without naming the caller's types (`repository/rakun/src/runtime.bp:70-81`):
 
 ```bp
-pub fn layout(comptime decl: @Decl, seg: string)
-pub fn template(comptime decl: @Decl, seg: string)
-pub fn page(comptime decl: @Decl, seg: string)
-pub fn defaultView(comptime decl: @Decl, seg: string)
-```
-
-Each `@emit`s its registration and then enforces placement. Placement checking is limited to what a
-`@Decl` handle actually carries for a top-level function — `kind`, `name`, `returnType`, `annotations`
-(`libs/std/src/builtins.d.bp:455-477`); there is no parameter list on a `DeclKind.Fn` handle, so the
-parameter contract is enforced by the type of the registration cell instead, which is stricter and
-needs no reflection:
-
-```bp
-pub type PageContext(
-    pathname: string,
-    pattern: string,
-    params: Dict<string, string>,
-    query: Dict<string, string>,
-    rest: string[],
-)
-
-pub type LayoutProps(
-    route: PageContext,
-    children: Element,
-    slots: Dict<string, Element>,
-)
+#[@External.Erlang("rakun_file_router", "register_entry")]
+pub declare fn rkAppRegisterEntry(kind: string, pattern: string, slot: string) -> i32;
 
 #[@External.Erlang("rakun_file_router", "register_page")]
-#[@External.Node("./file_router.mjs", "registerPage")]
-pub declare fn rkAppRegisterPage(
-    seg: string,
-    render: fn(route: PageContext) -> @Future<Element>,
-) -> i32;
-```
+pub declare fn rkAppRegisterPage<R>(pattern: string, render: R) -> i32;
 
-`LayoutProps` is one record rather than three parameters because declared parameter defaults are
-never applied: a layout that uses no slot would otherwise still have to spell out an empty `slots:`
-argument at every call site the registry generates. One uniform arity is the only shape that survives
-the gap.
-
-Front 25's `route.bp` handlers register through the same registry, into the same table, as `R`
-records. The cell they use is declared here and is generic over the response type — the same trick
-`rkRegisterRoute<Req>` uses to stay typed without naming the caller's types
-(`repository/rakun/src/runtime.bp:70-81`) — so this front never has to know what a `HandlerResponse`
-is and front 25 never has to declare a host cell:
-
-```bp
 #[@External.Erlang("rakun_file_router", "register_handler")]
-#[@External.Node("./file_router.mjs", "registerHandler")]
 pub declare fn rkAppRegisterHandler<Res>(
     verb: string,
     seg: string,
@@ -257,17 +223,23 @@ pub declare fn rkAppRegisterHandler<Res>(
 ) -> i32;
 ```
 
+`rkAppRegisterEntry` is how onze copies jhonstart's UI records (`L`, `T`, `D`, `S`, `E`, `N`) into
+the table. `rkAppRegisterPage` is what front 23's `page(pattern, render: PageRenderer)` calls: it adds
+the `P` record and keeps the renderer for the dispatch; this front never calls the renderer.
+`rkAppRegisterHandler` is front 25's: `route.bp` handlers register through the same registry, into
+the same table, as `R` records, so this front never has to know what a `HandlerResponse` is and
+front 25 never has to declare a host cell.
+
 **Acceptance:**
-- [ ] `#[page("blog")]` on a `#[@future] fn(route: PageContext) -> @Future<Element>` compiles and
-      registers one `P` entry at `/blog`.
-- [ ] `#[page("blog")]` on a type fails with `#[page] must annotate a function`.
-- [ ] `#[page("blog")]` on a function returning `Element` rather than `@Future<Element>` fails,
-      naming the required return type — every page is async so the pipeline has one shape to drive.
-- [ ] `#[page()]` and `#[page(1)]` are rejected by the automatic argument check
-      (`decorators.bp:13-15`), with no code in this front.
-- [ ] `#[layout("")]` registers the root layout at `/`.
-- [ ] A decorator body contains no `//` comment and calls no sibling function — checked by the file
-      compiling at all, which is the only check that matters here.
+- [ ] `rkAppRegisterEntry("L", "blog", "")` adds the record `L|/blog||`; a `kind` outside the eight
+      letters fails naming the letter.
+- [ ] `rkAppRegisterPage("blog/[slug]", r)` adds `P|/blog/[slug]||` and the dispatch (front 23) finds
+      `r` for a request matching that pattern.
+- [ ] Registering two renderers for one pattern fails at registration, naming the pattern — the
+      table never holds two pages for one URL.
+- [ ] `rkAppRegisterEntry("L", "", "")` registers the root layout at `/`.
+- [ ] `grep -rn "Element\|LayoutProps\|jhonstart" modules/rakun-app/src` is empty — the registry
+      names no UI type (decision 114).
 
 ### Step 3 — The route table and its wire format
 
@@ -279,11 +251,12 @@ pub type RouteEntry(
     verb: string,
 )
 
+// routing — the `table` module
 pub fn parseTable(wire: string) -> RouteEntry[]
 pub fn writeTable(entries: RouteEntry[]) -> string
 
+// rakun-app — the server's own table, as a wire string
 #[@External.Erlang("rakun_file_router", "table")]
-#[@External.Node("./file_router.mjs", "table")]
 pub declare fn rkAppTable() -> string;
 ```
 
@@ -292,12 +265,13 @@ pub declare fn rkAppTable() -> string;
       kinds — compared field by field, never with `==` on the arrays, which is reference equality
       (`docs.md`, gotcha: `==` on arrays lowers to `===`).
 - [ ] `writeTable` emits records in registration order and terminates no line with a trailing `|`.
-- [ ] The same assertion runs green on `--target erlang` and on `--target commonJS`. A wire format
-      only one target can read is the bug this front exists to prevent.
+- [ ] The same assertion, in `routing`'s `test/table_test.bp`, runs green on `--target erlang` and on
+      `--target commonJS`. A wire format only one target can read is the bug this front exists to
+      prevent.
 
 ### Step 4 — The matcher
 
-One function, both targets, one precedence order.
+One function, both targets, one precedence order — in `routing`'s `match` module (Step 7).
 
 ```bp
 pub type RouteMatch(
@@ -325,13 +299,13 @@ entry is matched separately against the same URL by front 61.
       is public only when a page or a handler claims it (`§ 3. Convenções de nomenclatura`).
 - [ ] `layoutChain(table, "/blog/[slug]")` returns the `L` entries for `/`, `/blog`, `/blog/[slug]`
       in root-first order, and skips group segments' patterns because they are not in the pattern.
-- [ ] Every assertion above is run twice, once per target, from the same test file.
+- [ ] Every assertion above is run twice, once per target, from `routing`'s `test/match_test.bp`.
 
 ### Step 5 — Scan-time conflicts
 
-The scan is the CLI-side half (`src/sidecars/rakun_file_router.erl` for the server's own startup
-check, `file_router.mjs` for `onze dev`). It reads `appDir` from front 05, walks the tree, and fails loudly rather than
-serving something surprising.
+The scan is `src/sidecars/rakun_file_router.erl`: the server's own startup check, and the check
+front 50's CLI runs. It reads `rakun.appDir` from front 05, walks the tree, and fails loudly rather
+than serving something surprising.
 
 **Acceptance:**
 - [ ] A segment holding both `page.bp` and `route.bp` fails the scan with a message naming the
@@ -343,64 +317,81 @@ serving something surprising.
 - [ ] A registered segment with no corresponding directory under `appDir` fails the scan, naming the
       segment and the function that registered it. This is the check that keeps the decorator
       argument honest.
-- [ ] The scan runs with `appDir` set to `app` and to `src/app` and produces the same table.
+- [ ] The scan runs with `rakun.appDir` set to `app` and to `src/app` and produces the same table;
+      unset, it scans `app`. `grep -rn '"onze\.' repository/rakun` is empty — rakun reads no
+      `onze.` key (decision 115).
 - [ ] A `middleware.bp` at the **project root** — beside `botopink.json`, not under `appDir` — is
       discovered by the same scan that discovers `appDir`, with no `pub mod` line naming it, and is
       handed to front 07. The discovery is this front's; what runs in it is front 07's. A project
       with no root `middleware.bp` scans clean and registers nothing, which is the common case and
       therefore the case that must not warn.
 
-### Step 6 — Per-route parameter accessors, emitted at comptime
+### Step 6 — The UI conventions leave `rakun-app`
 
-The `PageProps<'/route'>` equivalent from `§ 5. Props das páginas e layouts`. The decorator already
-has the segment string; it walks it for bracket segments and emits one accessor per decorated page,
-returning a labelled tuple whose labels come from the variable names (`docs.md:204-211`):
-
-```bp
-pub fn blogPostPageParams(route: PageContext) -> #(slug: string) {
-    val slug = route.params.lookup("slug").unwrapOr("");
-    return #(slug);
-}
-```
-
-A catch-all emits `val slug = route.rest;` and types the field `string[]`. A route with no dynamic
-segment emits `-> #()`.
+The four UI decorators, `PageContext`, `LayoutProps`, the Element-typed `rkAppRegisterPage` and the
+emitted `<page>Params(route)` accessors are jhonstart front 30's (decision 114). This front removes
+its copies once jhonstart front 30 has them, and keeps Step 2's registry.
 
 **Acceptance:**
-- [ ] `#[page("blog/[slug]")] pub fn blogPostPage(...)` makes `blogPostPageParams` available in the
-      same module, with a `slug: string` field.
-- [ ] `#[page("shop/[...slug]")]` emits an accessor whose field is `string[]`.
-- [ ] `#[page("about")]` emits an accessor returning `#()`.
-- [ ] The test that asserts this runs under `botopink test`, not `botopink check` — `check` skips
-      decorator invocation and reports every `@emit`ted name as unbound (a known gotcha, not a bug in
-      this front).
+- [ ] `modules/rakun-app/src/file_router.bp` declares none of `layout`, `template`, `page`,
+      `defaultView` (as decorators), `PageContext`, `LayoutProps`, and no `@emit` of a parameter
+      accessor.
+- [ ] `test/file_router_test.bp` registers pages through `rkAppRegisterPage` with a renderer that
+      writes plain text through a `ChunkWriter` (front 23) — no `Element` in the file.
+
+### Step 7 — rakun imports `routing`
+
+The matcher is not rakun's: it is the bundled library `routing` (decision 115), written by
+`01-std/04-routing-lib` from this front's Steps 1, 3 and 4 — the code at
+`modules/rakun/src/file_router.bp:49-479` moved there, with its tests. This step switches rakun to
+it and deletes rakun's copy. rakun lists no dependency for it: `routing` is bundled with the compiler
+and resolves like `std`.
+
+```bp
+// rakun-app — file_router.bp
+import {segment.parsePath, segment.patternOf, table.RouteEntry, table.parseTable,
+        table.writeTable, match.matchPath, match.layoutChain} from "routing";
+```
+
+**Acceptance:**
+- [ ] `rakun-app`'s `file_router.bp` imports `parsePath`, `patternOf`, `RouteEntry`, `parseTable`,
+      `writeTable`, `matchPath` and `layoutChain` from `"routing"` and defines none of them.
+- [ ] `file_router_test.bp` keeps only the registry, the scan and the dispatch tests; the grammar,
+      wire and matcher tests are `routing`'s.
+- [ ] No `botopink.json` under `repository/rakun/` lists `routing` in `dependencies`, and no member
+      named `rakun-routing` exists.
+- [ ] `repository/rakun/AGENTS.md` names `routing` as the library the matcher comes from.
 
 ## Examples
 
-- [`examples/app-tree-example.bp`](./examples/app-tree-example.bp) — a realistic `app/` tree in the
-  header comment, then the `layout.bp` and `page.bp` bodies that populate it: a root layout, a blog
-  layout, a home page, a dynamic post page and a route-group page.
-- [`examples/route-table-example.bp`](./examples/route-table-example.bp) — the boundary artifact: the
-  wire format, `parseTable`, and `matchPath` asserted over static, dynamic, catch-all, optional
-  catch-all, group and slot segments.
+- [`examples/route-table-example.bp`](./examples/route-table-example.bp) — the shared artifact: the
+  wire format, `parseTable`, and `matchPath` from `routing`, asserted over static, dynamic,
+  catch-all, optional catch-all, group and slot segments.
+- [`examples/page-registry-example.bp`](./examples/page-registry-example.bp) — the registry: table
+  records registered the way onze registers them, and one opaque renderer per page pattern writing
+  plain text.
+
+An `app/` tree with layouts and pages is jhonstart's and onze's together, so it is onze front 53's
+example ([`app-tree-example.bp`](../../06-onze/53-onze-example-app/examples/app-tree-example.bp)).
 
 ## Language gaps
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| `@Decl` carries no source location, so a decorator cannot learn which file it annotates — the defining premise of file-system routing is unreachable | every `#[page(...)]` / `#[layout(...)]` in both examples | the app-relative directory is an explicit decorator argument, generated and verified against the real tree by the CLI (front 50) | `decl.source() -> Source` — the `Source` record already exists and `@Expr` already returns it (`libs/std/src/builtins.d.bp:357-362`) |
-| Declared parameter defaults are never applied | every `attrs:` in `app-tree-example.bp` | pass every argument explicitly, `attrs:` included | apply a declared default at the call site when the argument is omitted |
+| `@Decl` carries no source location, so a decorator cannot learn which file it annotates — the defining premise of file-system routing is unreachable | the app-relative directory every UI decorator (jhonstart front 30) and front 25's verb decorators take | the directory is an explicit decorator argument, generated and verified against the real tree by the CLI (front 50) and by this front's scan | `decl.source() -> Source` — the `Source` record already exists and `@Expr` already returns it (`libs/std/src/builtins.d.bp:357-362`) |
 
 ## Test plan
 
-`repository/rakun/test/file_router_test.bp`, run by `botopink test --target erlang` and
-`botopink test --target commonJS` from `repository/rakun/`, and by `zig build test-libs --  --lib rakun`
-in the ecosystem gate. This front is a boundary front, so **both rows must be green** — the exit gate
-in `fronts.md` names 22 as one of the three fronts required on both targets.
+`repository/rakun/test/file_router_test.bp` on `--target erlang`, by `zig build test-libs -- --lib
+rakun` in the ecosystem gate. The grammar, wire and matcher assertions of Steps 1, 3 and 4 run in
+`libs/routing/test/` on `--target erlang` and `--target commonJS` (`01-std/04-routing-lib`); **both
+rows of the `routing` cell must be green** before this front's Step 7 lands — the matcher is what
+the server and the browser share. The registry and the scan are erlang.
 
-What the tests assert, grouped as the steps above: segment classification for all seven kinds; the
-four decorators' placement failures; `parseTable` ∘ `writeTable` round-trip on all eight record kinds;
-`matchPath` precedence and capture; `layoutChain` order; and the emitted parameter accessors.
+What the tests assert, grouped as the steps above: segment classification for all seven kinds;
+`parseTable` ∘ `writeTable` round-trip on all eight record kinds; `matchPath` precedence and capture;
+`layoutChain` order (all in `routing`); the registry's records and the one-renderer-per-pattern
+refusal; and the absence of any UI type in `rakun-app`.
 
 Scan-time conflicts (page + route in one segment, two matching root layouts, a registered segment
 with no directory) are compile/startup failures and cannot be written as a runtime `assert`; they go
@@ -409,11 +400,14 @@ specified. That split follows the precedent in `repository/rakun/test/di_test.bp
 
 ## Definition of done
 
-- `src/file_router.bp` compiles with no `@External.Node`-only path: every host cell declares both an
-  `@External.Erlang` and an `@External.Node` target, because both sides run the table.
-- `src/sidecars/rakun_file_router.erl` and `file_router.mjs` implement the same registry protocol,
-  and the round-trip test proves it rather than asserting it.
+- rakun imports the segment grammar, the wire, `matchPath` and `layoutChain` from the bundled
+  library `routing` and defines none of them.
+- `src/file_router.bp` declares its host cells for erlang only; `src/sidecars/rakun_file_router.erl`
+  implements the registry, and the round-trip test proves the table it serves parses back.
+- The registry holds table records and opaque renderers; no UI decorator, `PageContext`,
+  `LayoutProps` or `Element` remains in `rakun-app` (decision 114).
 - The eight `kind` letters, the four-field record and the precedence order are written down here and
   cited by fronts 23, 25, 27, 60, 61 and 66 rather than re-derived.
-- `repository/rakun/AGENTS.md` names `file_router.bp` and the wire format.
-- The front's tests are green on its assigned target — here, on both.
+- `repository/rakun/AGENTS.md` names `routing`, `file_router.bp` and the wire format.
+- `routing`'s tests are green on both rows; `file_router_test.bp` on erlang.
+- `appDir` is read from `rakun.appDir`.

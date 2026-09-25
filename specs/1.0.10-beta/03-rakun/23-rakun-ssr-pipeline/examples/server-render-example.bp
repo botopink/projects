@@ -1,164 +1,95 @@
-// Front 23 — rakun SSR pipeline.
+// Front 23 — rakun SSR pipeline: the page dispatch.
 //
-// A page that loads its data on the server and renders to HTML there. Everything
-// in this file except the last two tests runs on BEAM: `loadPost`, `loadComment`,
-// the page function and the escaping walker are server code. The only thing that
-// reaches the browser is the markup and the payload the last test inspects.
+// rakun matches the route, opens the request scope with the `Render` phase set,
+// calls the renderer registered for the matched pattern with the request and a
+// `ChunkWriter`, and closes the response when the renderer's future resolves.
+// It builds no HTML and imports nothing from jhonstart, emilia or onze
+// (decisions 113, 114): in an application the renderer is registered by onze
+// and its chunks are rendered by jhonstart front 30. Here a renderer that writes
+// plain text stands in for it, so every assertion is about dispatch, scope,
+// status and bytes — never about markup.
 //
 // Upstream:
 //   https://nextjs.org/docs/app/getting-started/layouts-and-pages
-//   https://nextjs.org/docs/app/getting-started/server-and-client-components
 //   https://nextjs.org/docs/app/api-reference/file-conventions/loading
+
+// `ChunkWriter`, `PageRenderer`, `page` and `servePage` are this front's;
+// `notFound` is front 63's; `requestPhase` and `RequestPhase` are front 62's;
+// `Request` is front 04's; `fakeGet` is front 19's request double.
+import {ChunkWriter, PageRenderer, page, servePage} from "rakun";
+import {notFound} from "rakun";
+import {requestPhase, RequestPhase, Request} from "rakun";
+import {fakeGet} from "rakun-test";
+
+// ---- a recording ChunkWriter -------------------------------------------------------
 //
-// LANGUAGE GAP: a `#[@future]` fn cannot `await` inside a `loop` or a `.map`
-// closure, so `commentList` collects thunks and awaits them once through front
-// 02's `async.all`. With per-closure effect context it would be a plain
-// `ids.map({ id -> await loadComment(id) })`.
-// LANGUAGE GAP: `@Future<T>` lowers eagerly on erlang, so the type carries no
-// concurrency on the server target; the thunk list below is the shape that does.
-// LANGUAGE GAP: declared parameter defaults are never applied, so every element
-// constructor below passes `attrs:` explicitly.
+// The socket stand-in: it records what the dispatch wrote and how many times it
+// closed the response.
 
-import {Element, bracketPair, div, h1, p, ul, li, text} from "jhonstart";
-// `page` + `PageContext` come from front 22; `renderNode`, `raw`, `Payload` and
-// `writePayload` are this front's surface.
-import {page, PageContext, rkAppRegisterPage} from "rakun";
-import {renderNode, raw, Payload, writePayload} from "rakun";
-import {collections.Dict} from "std";
-// `async.all` is front 02; `escape.html` / `escape.attribute`, which `renderNode`
-// calls, are new in front 01.
-import {async} from "std";
+var written: string[] = [];
+var closes: i32 = 0;
 
-type Post(
-    title: string,
-    body: string,
-)
+fn recorder() -> ChunkWriter {
+    written = [];
+    closes = 0;
+    return ChunkWriter(
+        write: fn(chunk: string) { written.push(chunk); },
+        close: fn() { closes = closes + 1; },
+    );
+}
 
-// ---- server-only loaders ------------------------------------------------------
+// ---- the stand-in renderers ----------------------------------------------------------
 //
-// These run on BEAM inside the request scope opened by front 62. A loader is an
-// ordinary `#[@future]` fn; nothing marks it "server" because nothing else can
-// reach it — the client bundle is built from the `'use client'` graph only
-// (front 68).
+// The first records the phase it ran under and writes three fixed chunks: the
+// shell, one fill, the tail. rakun never looks inside them.
+
+var phaseSeen: string = "";
 
 #[@future]
-fn loadPost(slug: string) -> @Future<Post> {
-    return Post(
-        title: "Hello, <world> & good morning",
-        body: "This paragraph was rendered by the BEAM, not by a browser.",
-    );
+fn stubRender(req: Request, out: ChunkWriter) -> @Future<void> {
+    phaseSeen = if (requestPhase() == RequestPhase.Render) { "render" } else { "other" };
+    await out.write("<shell " + req.param("slug") + ">");
+    await out.write("<fill h1>");
+    await out.write("<tail>");
 }
 
 #[@future]
-fn loadComment(id: string) -> @Future<string> {
-    return "comment " + id;
+fn missingRender(req: Request, out: ChunkWriter) -> @Future<void> {
+    val _gone = notFound();
+    await out.write("never written");
 }
 
-// Sibling server components resolve concurrently. The loop builds UNSTARTED
-// thunks, never futures: `@Future<T>` lowers eagerly on erlang
-// (`libs/std/src/http.bp:16-18`), so an already-started future has already run
-// and gathering a list of them is sequential at full latency. Concurrency on the
-// server comes from front 02 spawning a BEAM process per thunk.
-#[@future]
-fn commentList(ids: string[]) -> @Future<Element> {
-    var tasks: Array<fn() -> @Future<string>> = [];
-    for (ids) { id ->
-        tasks.push({ -> loadComment(id) });
-    };
-    val bodies = await async.all(tasks);
-    val items = bodies.map({ b -> li([text(b, attrs: [])], attrs: []) });
-    return ul(items, attrs: [bracketPair("data-onze-seg", "comments")]);
+val _post = page("blog/[slug]", stubRender);
+val _gone = page("gone", missingRender);
+
+// ---- what the dispatch does ------------------------------------------------------------
+
+test "a matched page is written as the chunks the renderer wrote" {
+    val status = await servePage(fakeGet("/blog/hello"), recorder());
+    assert status == 200;
+    assert written.join("|") == "<shell hello>|<fill h1>|<tail>";
 }
 
-// ---- app/blog/[slug]/page.bp --------------------------------------------------
-
-#[page("blog/[slug]")]
-#[@future]
-pub fn postPage(route: PageContext) -> @Future<Element> {
-    // `postPageParams` is emitted by `#[page]` from its own segment argument
-    // (front 22, step 6). Visible under `botopink test` and `botopink build`;
-    // `botopink check` skips decorator invocation and reports it unbound.
-    val params = postPageParams(route);
-    val post = await loadPost(params.slug);
-    val comments = await commentList(["1", "2"]);
-    return div([
-        h1([text(post.title, attrs: [])], attrs: []),
-        p([text(post.body, attrs: [])], attrs: []),
-        comments,
-    ], attrs: [bracketPair("data-onze-seg", "post")]);
+test "the dispatch closes the response once, after the renderer resolves" {
+    val _status = await servePage(fakeGet("/blog/hello"), recorder());
+    assert closes == 1;
 }
 
-fn routeFor(slug: string) -> PageContext {
-    return PageContext(
-        pathname: "/blog/" + slug,
-        pattern: "/blog/[slug]",
-        params: Dict.empty().insert("slug", slug),
-        query: Dict.empty(),
-        rest: [],
-    );
+test "the renderer runs under the Render phase" {
+    val _status = await servePage(fakeGet("/blog/hello"), recorder());
+    assert phaseSeen == "render";
 }
 
-// ---- what the server actually writes ------------------------------------------
-
-test "the page renders the data its loader fetched on the server" {
-    val el = await postPage(routeFor("hello"));
-    val markup = renderNode(el);
-    assert markup.contains("rendered by the BEAM");
-    assert markup.contains("<li>comment 1</li>");
-    assert markup.contains("<li>comment 2</li>");
+test "a url with no page answers 404 without rendering" {
+    phaseSeen = "";
+    val status = await servePage(fakeGet("/nowhere"), recorder());
+    assert status == 404;
+    assert phaseSeen == "";
+    assert written.length == 0;
 }
 
-test "text is escaped on the way into the document" {
-    val el = await postPage(routeFor("hello"));
-    val markup = renderNode(el);
-    assert markup.contains("&lt;world&gt; &amp; good morning");
-    assert markup.contains("<world>") == false;
-}
-
-test "a script tag in page data cannot become a script tag in the page" {
-    val hostile = h1([text("<script>alert(1)</script>", attrs: [])], attrs: []);
-    val markup = renderNode(hostile);
-    assert markup == "<h1>&lt;script&gt;alert(1)&lt;/script&gt;</h1>";
-}
-
-test "attribute values are escaped as well as text" {
-    val el = div([text("x", attrs: [])], attrs: [bracketPair("data-title", "a \" b")]);
-    val markup = renderNode(el);
-    assert markup.contains("&quot;");
-    assert markup.contains("=\"a \" b\"") == false;
-}
-
-test "raw is the one documented way past the escaper" {
-    assert renderNode(raw("<b>ok</b>")) == "<b>ok</b>";
-}
-
-// ---- the payload the client reconnects to -------------------------------------
-
-fn samplePayload(query: string) -> Payload {
-    return Payload(
-        build: "b_4f9c2a17",
-        pathname: "/blog/hello",
-        pattern: "/blog/[slug]",
-        params: "slug=hello",
-        query: query,
-        table: "L|/||\nP|/||\nL|/blog||\nP|/blog/[slug]||",
-        islands: [],
-        actions: [],
-        styles: "e_1a2b3c",
-        holes: [],
-        dynamic: false,
-    );
-}
-
-test "the payload names its version first and carries the route table verbatim" {
-    val json = writePayload(samplePayload(""));
-    assert json.startsWith("{\"v\":1");
-    assert json.contains("slug=hello");
-    assert json.contains("P|/blog/[slug]||");
-}
-
-test "a payload cannot close the script block that carries it" {
-    val json = writePayload(samplePayload("q=</script><script>alert(1)</script>"));
-    assert json.contains("</script>") == false;
-    assert json.contains("\\u003c");
+test "a not-found raised before the first write answers 404" {
+    val status = await servePage(fakeGet("/gone"), recorder());
+    assert status == 404;
+    assert written.length == 0;
 }

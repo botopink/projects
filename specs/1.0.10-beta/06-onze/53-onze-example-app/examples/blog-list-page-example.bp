@@ -17,8 +17,7 @@ import {Element, div, h1, ul, li, span, text, renderToString} from "jhonstart";
 import {section} from "jhonstart";                        // provided by front 94
 import {Boundary, Suspense, boundaryId, shellHtml} from "jhonstart";   // front 30
 import {styled, Token} from "emilia";                     // front 48
-import {page, layout, PageContext, LayoutProps} from "rakun";          // front 22
-import {rkAppRegisterPage, rkAppRegisterLayout} from "rakun";
+import {page, layout, PageContext, LayoutProps} from "jhonstart";          // front 30
 import {collections.Dict} from "std";
 // app-local
 import {Post, listPosts} from "@/lib.db";
@@ -43,7 +42,8 @@ pub fn blogLayout(props: LayoutProps) -> Element {
 }
 
 // front 30 — `app/blog/loading.bp`. One export, no arguments, no boundary name;
-// front 22 discovers the file and front 23 builds the boundary around the page.
+// front 22 discovers the file and jhonstart's render (front 30) builds the
+// boundary around the page.
 pub fn Loading() -> Element {
     return div([
         span([text("Loading the blog…", attrs: [])], attrs: [#("class", "skeleton-line")]),
@@ -64,12 +64,12 @@ pub fn blogIndexPage(route: PageContext) -> @Future<Element> {
     return ul(items, attrs: [styled(listTokens())]);
 }
 
-// front 30 — what front 23 builds around the two files above. The page becomes
+// front 30 — what jhonstart's render builds around the two files above. The page becomes
 // an unstarted thunk; nothing runs when the boundary is constructed.
 //
 // `boundaryId` names the boundary for front 30's own bookkeeping. It is NOT the
-// wire id: `contracts.md § 2` pins a streaming hole as `<div data-onze-h="h0">`
-// with ORDINAL ids assigned by front 23 in shell order, never route-derived —
+// wire id: `contracts.md § 2` pins a streaming hole as `<div data-jh-h="h0">`
+// with ORDINAL ids assigned by jhonstart's render in shell order, never route-derived —
 // so the assertions below look for the ordinal marker, not for "blog.page".
 pub fn blogBoundary(route: PageContext) -> Boundary {
     return Boundary(
@@ -104,7 +104,7 @@ test "the list renders one card per post" {
 
 test "the shell shows the loading UI and not the list" {
     val html = shellHtml(blogShell(blogRoute()));
-    assert html.contains("data-onze-h=\"h0\"");
+    assert html.contains("data-jh-h=\"h0\"");
     assert html.contains("Loading the blog…");
     assert html.contains("<article") == false;
 }

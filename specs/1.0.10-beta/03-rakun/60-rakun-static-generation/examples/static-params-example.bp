@@ -3,7 +3,9 @@
 // What this demonstrates: a blog whose post pages are prerendered from an
 // enumerated slug list and refreshed hourly, next to a search page that stays
 // dynamic because it reads the query. Both run on the BEAM; the difference is
-// decided after a trial render, not declared.
+// decided after a trial render, not declared. The pages are opaque renderers
+// writing plain text (front 23); a page rendered by jhonstart through the same
+// seam is onze front 53's example.
 //
 // Upstream:
 //   https://nextjs.org/docs/app/api-reference/functions/generate-static-params
@@ -19,8 +21,7 @@ import {
     StaticParams,
     ParamBinding,
 } from "rakun";
-import {page, PageContext} from "rakun";  // provided by front 22
-import {Element, div, h1, p, ul, li, text} from "jhonstart";
+import {page, ChunkWriter, Request} from "rakun";  // provided by fronts 23 and 04
 
 pub type Post(
     slug: string,
@@ -64,32 +65,19 @@ val _blogParams = registerStaticParams("blog/[slug]", blogStaticParams);
 
 // SERVER — the page. It touches nothing request-specific, so the trial render
 // leaves `isDynamic()` false and the output is stored as a prerendered entry.
-#[page("blog/[slug]")]
-#[@future]
-pub fn blogPostPage(route: PageContext) -> @Future<Element> {
-    val slug = route.params.lookup("slug").unwrapOr("");
-    val post = findPost(slug);
-    return div([
-        h1([text(post.title, attrs: [])], attrs: []),
-        p([text("/blog/" + post.slug, attrs: [])], attrs: []),
-    ], attrs: []);
-}
+val _blogPage = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
+    val post = findPost(req.param("slug"));
+    return out.write(post.title + " — /blog/" + post.slug);
+});
 
 // ── the route that stays dynamic ────────────────────────────────────────────
 
 // SERVER — reading the query marks this render dynamic (front 62), so rule 4 of
 // the decision applies and nothing is prerendered. No configuration says so;
 // the trial render discovers it and the build report names `searchParams`.
-#[page("search")]
-#[@future]
-pub fn searchPage(route: PageContext) -> @Future<Element> {
-    val term = route.searchParams.lookup("q").unwrapOr("");
+val _searchPage = page("search", fn(req: Request, out: ChunkWriter) {
+    val term = req.query("q");
     val hits = allPosts().filter({ post -> post.title.contains(term) });
-    val rows = hits.map({ post ->
-        li([text(post.title, attrs: [])], attrs: []);
-    });
-    return div([
-        h1([text("Results for " + term, attrs: [])], attrs: []),
-        ul(rows, attrs: []),
-    ], attrs: []);
-}
+    val titles = hits.map({ post -> post.title });
+    return out.write("Results for " + term + ": " + titles.join(", "));
+});

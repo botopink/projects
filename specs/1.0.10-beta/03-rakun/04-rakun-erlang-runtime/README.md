@@ -5,8 +5,8 @@
 **Target:** erlang (server)
 **Wave:** 1
 **Depends on:** 01
-**Owns:** `src/sidecars/rakun_runtime.erl`, `src/runtime.bp` (`#[@external(erlang)]` block only), `src/root.bp`, `botopink.json` · `test/erlang_runtime_test.bp`
-**Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — the four files frozen for the milestone
+**Owns:** `src/sidecars/rakun_runtime.erl`, `src/runtime.bp` (the `#[@external(erlang)]` block, and the removal of every `#[@External.Node]` form in Step 10), the deletion of `src/runtime.mjs` (Step 10), `src/root.bp`, `botopink.json` (the core's `target` / `targets`) · `test/erlang_runtime_test.bp`
+**Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp` — frozen for the milestone
 **Reference:** `02-desenvolvendo-com-spring-boot.md § Beans e Injecao de Dependencias` · `03-recursos-principais.md § SpringApplication` · `04-web.md § Container Servlet Embutido` · <https://docs.spring.io/spring-boot/reference/using/spring-beans-and-dependency-injection.html> · <https://docs.spring.io/spring-boot/reference/features/spring-application.html> · <https://docs.spring.io/spring-boot/reference/web/servlet.html>
 
 ---
@@ -23,7 +23,8 @@ Erlang/BEAM equivalent is a recorded follow-up." This is that follow-up.
 The consequence is not "rakun is slower on BEAM". It is that a `botopink test --target erlang` run of
 rakun dies at the first `rkScan/1` call with `undefined function`, so of rakun's five test files only
 `http.bp`'s in-file test — which touches no host cell (`src/http.bp:80-86`) — can pass. rakun's own
-manifest admits the situation: `botopink.json` declares `"targets": ["commonJS"]`. Every front in
+manifest admits the situation: `botopink.json` declares `"targets": ["commonJS"]`, where decision 113
+puts `["erlang"]`. Every front in
 track B that claims to run on the server is, today, unfalsifiable: its tests cannot execute on the
 target the milestone assigns it.
 
@@ -418,14 +419,23 @@ fallback.
 - [ ] With `rakun.server.transport=cowboy` and no `rakun_cowboy` module present, startup fails with a message naming the missing module — it does not silently fall back
 - [ ] With `rakun.server.transport=nonsense`, startup fails naming the value
 
-### Step 10 — Manifest and the ecosystem gate
+### Step 10 — erlang is rakun's target, and the node runtime leaves
 
-`botopink.json` gains `"erlang"` to `targets`. `scripts/known-red-libs.txt` loses rakun's erlang cell.
+rakun is the service and the service runs on BEAM (decision 113): one runtime, not two with the same
+semantics to keep. The core member becomes erlang-only, and `runtime.mjs` with the node server leaves
+the tree once the erlang row carries everything it carried. `scripts/known-red-libs.txt` loses
+rakun's erlang cell.
 
 **Acceptance:**
-- [ ] `repository/rakun/botopink.json` reads `"targets": ["commonJS", "erlang"]`
+- [ ] `modules/rakun/botopink.json` (the core) reads `"target": "erlang"` and `"targets": ["erlang"]`
+- [ ] the workspace root `repository/rakun/botopink.json` and every member read `"targets":
+      ["erlang"]` — what both sides run is a bundled library, not a rakun member: the matcher and the
+      navigation vocabulary are `routing`, the action protocol `actions`, validation `validation`
+      (decisions 115, 116); erlang is the default target of `botopink run` / `botopink test` there
+- [ ] `src/runtime.mjs` is deleted, and no `#[@External.Node]` form remains in the core
+      (`rtk proxy grep -rn 'External.Node' repository/rakun/src` is empty)
+- [ ] the five pre-existing test files pass on `--target erlang` with no source change
 - [ ] `botopink test --target erlang` is green from a cold cache in `repository/rakun/`
-- [ ] `botopink test --target commonJS` is still green — every existing test file passes unchanged on both rows
 - [ ] `zig build test-libs -- --target erlang --lib rakun` is green
 - [ ] rakun's erlang cell is not listed in `scripts/known-red-libs.txt` (a listed cell that passes fails the run)
 
@@ -462,10 +472,10 @@ concurrent resolution of one singleton from two processes, the reply-header accu
 when a handler raises, the boot options, the failure table, and the round-trip shape of `Response`
 through a host call.
 
-Because this front is erlang-only, its own tests do not run on the commonJS row. That is not a
-coverage hole: the commonJS behaviour it mirrors is already asserted by the five existing files, and
-the acceptance criteria above are written as "byte-identical to the commonJS row" wherever a
-difference would be invisible otherwise.
+This front is erlang-only, and so is the core once Step 10 closes. Until then the five existing
+files still run on the commonJS row, and the acceptance criteria above are written as
+"byte-identical to the commonJS row" wherever a difference would be invisible otherwise; after Step
+10 the erlang row is the only one.
 
 ## Adjacent fronts
 
@@ -502,8 +512,9 @@ Recorded here because `fronts.md` must stay true; this front does not edit it.
       existing cells plus `set_reply_header/2`, `reply_headers_json/0`, `boot/1` and `add_failure/3`
 - [ ] Every cell in `src/runtime.bp` carries an `@External.Erlang` form; no cell in this front is
       Node-only, and no *new* cell carries a Node form at all
-- [ ] `repository/rakun/botopink.json` lists `erlang` in `targets`, and `src/root.bp` plus the manifest
-      are claimed by this front under the append-only, front-number-order rule
+- [ ] the core member declares `"target": "erlang"`, `"targets": ["erlang"]`; `src/runtime.mjs` and
+      every `#[@External.Node]` form are gone from the core (decision 113); `src/root.bp` plus the
+      manifest are claimed by this front under the append-only, front-number-order rule
 - [ ] The five pre-existing test files pass on `--target erlang` with no source change
 - [ ] rakun's erlang cell is removed from `scripts/known-red-libs.txt`
 - [ ] `repository/rakun/AGENTS.md` documents the host module, its OTP shape, the sidecar path and the

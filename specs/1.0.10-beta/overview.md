@@ -22,12 +22,12 @@ their 1.0.9 numbers (identifiers, never reassigned — `03-rakun/23-rakun-ssr-pi
 | Front | Priority | What |
 |---|---|---|
 | [`00-compiler-carry-over/`](./00-compiler-carry-over/README.md) | critical (two items pulled ahead), the rest beside | The open half of 1.0.5-beta as 25 prioritised items C-01…C-25: the type's identity in the value and one BEAM module per type (C-01), the index as a method call (C-02), the host-bound std wrapper (C-03), trailing defaults, module-level `var`, the run-time tails of decision 8, the parser gaps, the formatter's width, the optional `;` … Each item carries its 1.0.5 deep dives. Six fronts sit inside it beyond the carry-over: [`18-comptime-runtimes`](./00-compiler-carry-over/18-comptime-runtimes/README.md) (C-26 — `.beam` emitted directly, a WAT comptime runtime on wasm3, snapshots per runtime, the compiler on wasm in the browser), [`19-use-activation`](./00-compiler-carry-over/19-use-activation/README.md) (C-27 — the `use` construct hooks and components are written with), [`20-builtins-surface`](./00-compiler-carry-over/20-builtins-surface/README.md) (C-28 — `builtins.d.bp` agreeing with itself and the effect chain of decision 95), and the three surface fronts of decisions 102–108: [`21-effect-chain`](./00-compiler-carry-over/21-effect-chain/README.md) (C-29 — `@Context<Base>` is only the owner marker; `#[@use]` with `@Use<C, T>` / `@Component<T>` is the one grant of `use`; the generators are `@Generator<T>` · `@ResultGenerator<T, E>` · `@FutureGenerator<T, E>` over one `YieldStep`; `getContext`), [`22-loops`](./00-compiler-carry-over/22-loops/README.md) (C-30 — `loop` / `while (…)` / `for (…) { x -> }` / `for await`, `#[@generator] loop { … }` as a generator expression, `yield` / `break v` only in a generator scope) and [`23-std-purity`](./00-compiler-carry-over/23-std-purity/README.md) (C-31 — std as a pure root · `io/` · `testing/`, and the import tree `import {a: {b: {c}}, x.y.z, e.t.r*}`). They run 21 → 22 → 23, one at a time; 23 after `01-std`'s fronts 01/02/03 merge |
-| [`01-std/`](./01-std/README.md) | **critical — blocks everything** | `@src()` in the compiler → `import {asserts} from "std"` (`isTrue`, `isFalse`, `equals`, `notEquals`, `isNil`, `isNotNil`, `isOk`, `isError`, `contains`, `throws`, and the rest of the inventory) → the `std/snapshots` engine (`__snapshots__/<suite>/<slug>.snap`, `.new` on mismatch, no update flag) → the old `onze` mocking library retired into `std/asserts` → the orchestrator takes the name `onze` → the three std enablement fronts of 1.0.9 (01–03) |
+| [`01-std/`](./01-std/README.md) | **critical — blocks everything** | `@src()` in the compiler → `import {asserts} from "std"` (`isTrue`, `isFalse`, `equals`, `notEquals`, `isNil`, `isNotNil`, `isOk`, `isError`, `contains`, `throws`, and the rest of the inventory) → the `std/snapshots` engine (`__snapshots__/<suite>/<slug>.snap`, `.new` on mismatch, no update flag) → the old `onze` mocking library retired into `std/asserts` → the orchestrator takes the name `onze` → the three std enablement fronts of 1.0.9 (01–03) → the bundled `routing` library (`04-routing-lib`, decision 115): the route matcher, the routing wires, the navigation vocabulary and the `:param` grammar server and browser share → the bundled `actions` and `validation` libraries (`05-actions-lib`, `06-validation-lib`, decision 116): the server-action protocol, and validation moved out of rakun → std writes JSON (`07-std-json-writers`: `json.quote` and the writers, `escape.scriptJson`) |
 | [`02-packaging/`](./02-packaging/README.md) | high — lands alongside each library's first front | `repository/<lib>/modules/<lib>/`, `modules/<lib>-test/`, `modules/<lib>-<domain>/`, `examples/<project>/`; the manifest shapes the compiler actually parses; how `test-libs` discovers them; the dependency direction; front 95 carried beside it. Each library refines the cut in its own `modules.md` |
-| [`03-rakun/`](./03-rakun/README.md) | per front — see its README | 51 fronts (04–25 · 60–66 · 72–93): Spring Boot 4 parity plus the server half of Next.js. `modules.md` reconciles the 13 submodules already scaffolded under `repository/rakun/modules/` with the reference cut; `test-snap.md` / `test-snap-examples.md` are the preventive snapshot maps |
-| [`04-jhonstart/`](./04-jhonstart/README.md) | per front | 9 fronts (26–32 · 67 · 94): the React half of Next.js — router, link, server components, client directive, streaming, error boundaries, metadata, forms, the element surface |
+| [`03-rakun/`](./03-rakun/README.md) | per front — see its README | 51 fronts (04–25 · 60–66 · 72–93): Spring Boot 4 parity plus the server half of Next.js, on erlang (decision 113) — rakun serves; it builds no HTML. `modules.md` reconciles the 13 submodules already scaffolded under `repository/rakun/modules/` with the reference cut; `test-snap.md` / `test-snap-examples.md` are the preventive snapshot maps |
+| [`04-jhonstart/`](./04-jhonstart/README.md) | per front | 9 fronts (26–32 · 67 · 94): the React half of Next.js — router, link, server components, client directive, the render and streaming (with the `jhonstart-emilia` bridge), error boundaries, metadata, forms, the element surface. jhonstart writes all the HTML (decision 113) |
 | [`05-emilia/`](./05-emilia/README.md) | per front — may start on day one | 22 fronts (33–48 · 54–59): Tailwind CSS v4 parity — theme and cascade first, then the utility catalogue, modifiers, preflight, escape hatches, container queries, custom utilities, the attribute slot. `reference-coverage.md` is the Tailwind walk 1.0.8 never wrote; `tailwind-mapping.md` is carried |
-| [`06-onze/`](./06-onze/README.md) | per front | 9 fronts (49–53 · 68–71): the orchestrator drafted as `onze13` — stand-up, CLI, image, font, the client bundle, the styling pipeline, image response, release packaging, and the example app that proves the whole stack |
+| [`06-onze/`](./06-onze/README.md) | per front | 9 fronts (49–53 · 68–71): the orchestrator drafted as `onze13` — stand-up, CLI, image, font, the client bundle, the styling pipeline, image response, release packaging, and the example app that proves the whole stack. onze is the one package that imports jhonstart, rakun and the `jhonstart-emilia` bridge together (decision 113) |
 
 Top-level documents: [`fronts.md`](./fronts.md) (ownership, the conflict matrix, the waves, the exit
 gate) · [`contracts.md`](./contracts.md) (the cross-library contracts, now with contract 7 — the
@@ -40,7 +40,10 @@ BEAM and why) · [`unification.md`](./unification.md) (old path → new path, fr
 ```
 wave 0    01-std ───────────────────────────────────────────┐
           @src() · asserts · snapshots · old onze retired ·  │
-          onze13 → onze · std enablement 01/02/03            │
+          onze13 → onze · std enablement 01/02/03 ·          │
+          the bundled routing library (01-std/04) ·          │
+          bundled actions and validation (05, 06) ·          │
+          json.quote and the writers (07)                    │
                                                              │
           00: C-01 module identity ──── pulled ahead ────────┤   (every erlang cell re-runs after it)
           00: @src() (01-std's carve-out into the compiler) ─┤   (contract 7: no snapshot test without it)
@@ -96,8 +99,16 @@ pointing at the `00` item that owns it, and works around it.
 - **The most restrictive behaviour, and no configuration that bypasses it** (1.0.5 decision 67).
   A snapshot mismatch fails; nothing updates it but a person renaming the `.new` file. An unresolved
   import fails `check` and `build`. There is no flag.
+- **The libraries split by concern** (decision 113): emilia is CSS, jhonstart is HTML, rakun is the
+  service on erlang, onze wires them. jhonstart and rakun never import each other; emilia imports
+  nobody and enters jhonstart through the `jhonstart-emilia` bridge; onze is the one package that
+  imports jhonstart, rakun and the bridge together.
 - **The compiler knows none of the libraries** (1.0.9). Only `00-compiler-carry-over` touches
-  `repository/botopink-lang/modules/**`; `@src()` is its one named carve-out for `01-std`.
+  `repository/botopink-lang/modules/**`; `01-std` has two named carve-outs — `@src()`, and the
+  bundled-package registry that makes `from "routing"` resolve like `from "std"`
+  (`01-std/04-routing-lib`, decision 115), which also carries `actions` and `validation` (decision
+  116). A bundled library is neutral like std: rakun and jhonstart both import it, and that is not
+  an edge between them.
 - **One repo per front; target is assigned, not chosen; reuse std; additive only** — 1.0.9's rules,
   carried in `fronts.md` with their named exceptions.
 - **Examples are code, not prose.** Every front carries `examples/*.bp` that compile against the

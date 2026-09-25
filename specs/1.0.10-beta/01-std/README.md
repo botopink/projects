@@ -63,6 +63,9 @@ Verified by reading the trees at HEAD `b5ceb203` (meta) on 2026-09-20.
 | [`examples/asserts-unit-example.bp`](./examples/asserts-unit-example.bp) | Example 1 — `std/testing/asserts` alone |
 | [`examples/emilia-test-submodule-example.bp`](./examples/emilia-test-submodule-example.bp) · [`examples/emilia-test-consumer-example.bp`](./examples/emilia-test-consumer-example.bp) | Example 2 — an `emilia-test` submodule and the test file that consumes it with `@src()` |
 | [`01-std-lib-enablement/`](./01-std-lib-enablement/README.md) · [`02-std-async-primitives/`](./02-std-async-primitives/README.md) · [`03-std-content-hash/`](./03-std-content-hash/README.md) | step 6 — the three std sub-fronts |
+| [`04-routing-lib/`](./04-routing-lib/README.md) | step 8 — the second bundled library, `libs/routing` (decision 115): the route matcher, the `k` / `z` / URL-rule codecs, the navigation vocabulary and the `:param` grammar (decision 116) rakun and jhonstart both import |
+| [`05-actions-lib/`](./05-actions-lib/README.md) · [`06-validation-lib/`](./06-validation-lib/README.md) | step 9 — the bundled libraries `libs/actions` (the server-action envelope, `state` grammar, JSON-RPC body, `refresh`) and `libs/validation` (rakun-validation moved, its message lookup injected) — decision 116 |
+| [`07-std-json-writers/`](./07-std-json-writers/README.md) | step 10 — std writes JSON: `json.quote` / `unquote` / `array` / `object` and `escape.scriptJson` (decision 116) |
 
 ## Order
 
@@ -82,6 +85,16 @@ Verified by reading the trees at HEAD `b5ceb203` (meta) on 2026-09-20.
    │
 7  00-compiler-carry-over/23-std-purity — the tree of modules.md: io/, testing/, the merges,
    the root-does-not-import-io check, the import grammar (decisions 106, 107)
+
+8  04-routing-lib — libs/routing beside libs/std (decision 115): the library and its tests from
+   step 2 on, beside steps 3–7; its compiler bundling after step 7
+
+9  05-actions-lib · 06-validation-lib — libs/actions and libs/validation (decision 116): the
+   libraries from step 2 on (actions after 01's encoding, 10 and 8's navigation); each bundled by
+   adding its name to step 8's registry
+
+10 07-std-json-writers — json.quote and the writers from step 2 on; escape.scriptJson after 01's
+   escape.bp; both outside the window in which step 7 holds libs/std/src/**
 ```
 
 Step 1 is first because it is what the other steps verify with: `asserts.bp`'s own inline tests are
@@ -205,9 +218,52 @@ root-does-not-import-`io/` check, and lands the import grammar of decision 107.
 - [ ] every `from "std"` line in `repository/{rakun,jhonstart,emilia,erika,onze}` is rewritten per `modules.md` § *Old → new*; `zig build test-libs` green
 - [ ] every std inline test is green at its new path on commonJS and erlang
 
+### Step 8 — `04-routing-lib`: the bundled `routing` library
+
+`libs/routing/` beside `libs/std/` (decision 115): the route matcher ported from rakun's
+`file_router.bp`, the `k` and `z` blob codecs and the URL rules, pure and compiled for erlang and
+commonJS, and the compiler's std registry generalised into a bundled-package registry so
+`from "routing"` resolves as `from "std"` does. Specified in
+[`04-routing-lib/README.md`](./04-routing-lib/README.md). Its library steps need only step 2
+(`testing.asserts`); its bundling step opens after step 7, because it rewrites the registry
+`23-std-purity` rewrites.
+
+**Acceptance:**
+- [ ] the sub-front's own *Gate* holds
+- [ ] rakun front 22 and jhonstart front 26 import the matcher from `"routing"`, and no copy of it
+      remains under `repository/`
+
+### Step 9 — `05-actions-lib` and `06-validation-lib`: two more bundled libraries
+
+Decision 116 rules 2 and 5. `libs/actions/` holds the server-action protocol both sides read and
+write — the `state` grammar and `ActionState`, the v1 envelope, the JSON-RPC body, the `refresh`
+value — with no wire name built in; rakun front 24 and jhonstart front 67 import it. `libs/validation/`
+is rakun front 14's `modules/rakun-validation` moved: its message lookup is handed in
+(`setMessageSource`), it imports std only, and rakun, onze and application code import it by name.
+Each is bundled by adding its name to step 8's registry. Specified in
+[`05-actions-lib/README.md`](./05-actions-lib/README.md) and
+[`06-validation-lib/README.md`](./06-validation-lib/README.md).
+
+**Acceptance:**
+- [ ] each sub-front's own *Gate* holds
+- [ ] `grep -rn "rakun-validation" repository/ --include=*.bp --include=botopink.json` is empty, and
+      no action-envelope or `state` literal is asserted under `repository/rakun/` or
+      `repository/jhonstart/`
+
+### Step 10 — `07-std-json-writers`: std writes JSON
+
+Decision 116 rules 3 and 8: `json.quote` (every control character escaped), `json.unquote`,
+`json.array`, `json.object`, and `escape.scriptJson`. Specified in
+[`07-std-json-writers/README.md`](./07-std-json-writers/README.md). A front of its own rather than
+steps in `01-std-lib-enablement`, whose ownership lines list `json.bp` as not touched and whose
+branch runs in parallel; `scriptJson` is one function appended to 01's `escape.bp` after it lands.
+
+**Acceptance:**
+- [ ] the sub-front's own *Gate* holds
+
 ## Gate
 
-- [ ] `zig build test` from a **cold** runtime cache, green, in the compiler worktree (steps 1, 7)
+- [ ] `zig build test` from a **cold** runtime cache, green, in the compiler worktree (steps 1, 7, 8)
 - [ ] `botopink test` and `botopink test --target erlang` green in `libs/std` (steps 2–4, 6, 7)
 - [ ] `zig build test-libs` green — std, emilia, jhonstart, rakun, erika, and the new `onze`
 - [ ] the compiler's `snapshots/codegen/{commonJS,erlang,beam,wasm}/` are byte-identical for every pre-existing fixture — `@src()` is additive
@@ -224,6 +280,9 @@ root-does-not-import-`io/` check, and lands the import grammar of decision 107.
 | this front, step 5 | `.gitmodules`, `repository/onze` | `06-onze/49-onze-stand-up` — 49 creates the repository; this step swaps the submodule pointer. 49 cannot land before this step; this step cannot complete before 49's repository exists |
 | `02`, `03` | `async.bp`, the content-hash half of `hash.bp` | none |
 | `01-std-lib-enablement` | `io/net.bp`, `escape.bp`, the hmac half of `hash.bp`, the codec half of `encoding.bp`, additions to six existing modules, `root.bp`, `io/mod.bp` | none once ordered |
+| `04-routing-lib` | `libs/routing/**`; by carve-out, the bundled-package registry in `build.zig` and the `"std"` package checks in compiler-core, the CLI resolver and the LSP (named in its README) | `00 · 23-std-purity` on `build.zig`'s registry and `emitUse` — resolved by order: its Step 2 opens after 23 lands; nothing on `libs/std/**` |
+| `05-actions-lib` · `06-validation-lib` | `libs/actions/**`, `libs/validation/**`; one name each in the bundled-package list | `04-routing-lib` on that list — resolved by order: each adds its name after 04's Step 2; nothing on `libs/std/**` |
+| `07-std-json-writers` | four functions at the foot of `json.bp`; `scriptJson` appended to `escape.bp` | `01-std-lib-enablement` on `escape.bp` — resolved by order: 07 appends after 01 lands; `00 · 23-std-purity` — 07 lands before 23 opens or after it lands |
 | `00-compiler-carry-over/23-std-purity` | every path under `libs/std/src/` (the move), `root.bp`, `build.zig` `stdPkgFilesFromRoot`, `parser/decls.zig`, `project_graph.zig`, `emitUse` ×4 | runs after steps 2–6 and after `.tasks/std-async` has merged; nothing else in track A edits std after it |
 
 Tracks B–E consume `@src()`, `testing.asserts` and `testing.snapshots` and write their `-test`

@@ -11,7 +11,6 @@
 //       https://tailwindcss.com/docs/outline-offset
 
 import { emilia, flush, Token } from "emilia";
-import { div, renderToString } from "jhonstart";
 
 // Border width
 val borderWidthTokens: Token[] = [
@@ -144,8 +143,6 @@ val outlineOffsetTokens: Token[] = [
 ];
 val outlineOffsetStyles = emilia(outlineOffsetTokens);
 
-val page = div([], []);
-
 #[@future]
 fn main() -> @Future<void> {
     @print("=== F06: Borders Example ===");
@@ -162,7 +159,6 @@ fn main() -> @Future<void> {
     @print("Outline Style: " + outlineStyleStyles);
     @print("Outline Color: " + outlineColorStyles);
     @print("Outline Offset: " + outlineOffsetStyles);
-    @print(renderToString(page));
     @print(await flush());
 }
 

@@ -8,8 +8,8 @@
 
 import {Rakun, App, Request, Response} from "rakun";
 import {service, restController, route, postMapping, valid} from "rakun";
-import {notNull, notEmpty, notBlank, size, min, max, email, pattern, positive, positiveOrZero, past, future} from "rakun-validation";
-import {Validator, Violation} from "rakun-validation";
+import {notNull, notEmpty, notBlank, size, min, max, email, pattern, positive, positiveOrZero, past, future} from "validation";
+import {Validator, Violation} from "validation";
 
 // ── Domain Models with Validation ───────────────────────────────────────────
 pub type CreateUserRequest(

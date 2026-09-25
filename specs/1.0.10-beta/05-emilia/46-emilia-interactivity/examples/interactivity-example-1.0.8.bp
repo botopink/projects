@@ -24,7 +24,6 @@
 //       https://tailwindcss.com/docs/color-scheme
 
 import { emilia, flush, Token } from "emilia";
-import { div, renderToString } from "jhonstart";
 
 // Cursor
 val cursorTokens: Token[] = [
@@ -231,8 +230,6 @@ val scrollPaddingTokens: Token[] = [
 ];
 val scrollPaddingStyles = emilia(scrollPaddingTokens);
 
-val page = div([], []);
-
 #[@future]
 fn main() -> @Future<void> {
     @print("=== F12: Interactivity Example ===");
@@ -256,7 +253,6 @@ fn main() -> @Future<void> {
     @print("Color Scheme: " + colorSchemeStyles);
     @print("Scroll Margin: " + scrollMarginStyles);
     @print("Scroll Padding: " + scrollPaddingStyles);
-    @print(renderToString(page));
     @print(await flush());
 }
 

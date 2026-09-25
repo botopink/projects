@@ -9,7 +9,6 @@
 //       https://tailwindcss.com/docs/animation
 
 import { emilia, flush, Token } from "emilia";
-import { div, renderToString } from "jhonstart";
 
 // Transition property
 val transitionPropTokens: Token[] = [
@@ -91,8 +90,6 @@ val spinnerTokens: Token[] = [
 ];
 val spinnerStyles = emilia(spinnerTokens);
 
-val page = div([], []);
-
 #[@future]
 fn main() -> @Future<void> {
     @print("=== F10: Transitions & Animation Example ===");
@@ -104,7 +101,6 @@ fn main() -> @Future<void> {
     @print("Animate: " + animateStyles);
     @print("Button: " + buttonStyles);
     @print("Spinner: " + spinnerStyles);
-    @print(renderToString(page));
     @print(await flush());
 }
 

@@ -32,6 +32,7 @@ language server this milestone.
 | **Why** | an import binds the names in its `from` clause; a typedef reached only through an imported declaration's *field* or *method signature* is never registered, and C10's two-pass registration (which landed) registers the module's own typedefs, not a dependency's transitive ones |
 | **Correct** | importing a type registers the closure of the types its declaration mentions — field types and method signature types, transitively — without binding their constructors unless they are named |
 | **Probe** | `src/users.bp`: `pub type Role(name: string)`, `pub type User(role: Role) { pub fn roleName(self: Self) -> string {…} }`, `pub fn makeUser() -> User`. `src/main.bp`: `pub mod users; import { User, makeUser } from "users";` → `error: unknown type 'Role' --> src/main.bp:2:21` (the caret sits on `makeUser`). Adding `Role` to the clause checks |
+| **Landed** | `registerImportedTypeClosure` (`comptime/infer.zig`), called from `comptime.zig`'s import loop before the imported declaration is registered. Constructors of the closure are not bound |
 | **Acceptance** | the probe checks without naming `Role`; naming it still checks; a type genuinely absent from the module still reds, at the annotation |
 
 Two sub-defects in one probe: the rule itself, and the caret, which points at the wrong element of
@@ -55,6 +56,7 @@ the import list. Fix both.
 | **Why** | behaviors are types only at the method-table level; a field annotated with a behavior has never accepted an implementer |
 | **Correct** | a value whose type implements the behavior (following the behavior's `extends` chain) unifies with the behavior-typed field; one that does not reds at the value |
 | **Probe** | `behavior Handler { fn run(self: Self) -> i32; }`, `type H(id: i32) implement Handler { … }`, `type Holder(h: Handler)`, `Holder(h: H(id: 1))` → `type mismatch: expected Handler, got H` at `4:35` |
+| **Landed** | `unifyArgument` / `behaviorReaches` in `comptime/infer.zig` — every call-argument and constructor-field site; the `return` coercion follows `extends` too |
 | **Acceptance** | the probe checks; a non-implementing record in the same position reds at the value |
 
 `typeAnswersMember`, added by C9 (`75a6906`), already walks an `implement`ed behavior and its
@@ -68,6 +70,7 @@ the import list. Fix both.
 | **Why** | `bindPatternNamesForSubject` is called for a `case` arm and (since `d2b468d`) for a `val assert`, but not for a plain destructuring bind |
 | **Correct** | the same walk, with the same typing, and the same refusal when the pattern cannot fail-safely cover the subject |
 | **Probe** | `val s = Shape.Circle(r: 2); val Circle(r) = s; @print(r);` → `unbound variable 'r'` at `2:71` |
+| **Landed** | `bindDestructPattern` in `comptime/infer.zig`. Decided failure behaviour: the bare form checks only where the pattern is irrefutable over the subject's type (one-variant `type`, record constructor, spread-only list); otherwise `refutable-val-pattern` at the binding |
 | **Acceptance** | `val Circle(r) = s;` binds `r: i32`; `val s: string = r;` after it reds. The commonJS lowering that follows is [`../04-js/pattern-binding.md`](../04-js/pattern-binding.md) |
 
 ## R6 — no lowering is recorded for a method on an associated fn's result
@@ -78,6 +81,7 @@ the import list. Fix both.
 | **Why** | associated-fn calls resolve through a different path from instance calls, and it stores no result type for the receiver of the next `.` |
 | **Correct** | the associated fn's declared return type becomes the receiver's type, and the method resolves against it, recording the lowering the backends read |
 | **Probe** | `@print(Array.range(0, 3).map({ x -> x + 1 }));` → `Checked`, and the emitted erlang is `'__bp_prim_map'(array:range(0, 3), fun(X) -> …)` — a run-time dispatch helper with an `erlang:error({bp_unsupported_method, …})` tail |
+| **Landed** | the guard in front of the associated-fn path let only unbound receiver names through, and std binds `Array`; a behavior's own non-`val` name now reaches `Array.range`. The `array:range/2` half is gone too: the call emits the local `array_range/2` |
 | **Acceptance** | the probe records a lowering; no emitted erlang carries `'__bp_prim_map'` for it. The erlang half (and the separate `array:range/2` defect the same probe exposes) is [`../02-erlang/`](../02-erlang/README.md) |
 
 ## R7 — decision 2 is not enforced
@@ -98,6 +102,7 @@ the import list. Fix both.
 | **Why** | the bindings arm is load-bearing for imported records/enums, where the import binds a constructor value while the typedef stays in the defining module |
 | **Correct** | types-as-values **A1**: a real `type` kind in `comptime/types.zig`. `val T = i32` is a type value; `val n = 5; val x: n = 7` reds; the constructor carve-out becomes a property of the `type` kind rather than of any binding |
 | **Probe** | `val n = 5; val x: n = 7;` → `Checked` (while `val T = i32; val x: T = "s";` correctly reds) |
+| **Landed (narrow)** | `Env.resolveTypeName`'s bindings arm accepts a function-typed binding, a declaration's own binding, a primitive and a `val` recorded in `Env.typeValueNames`; any other binding is refused. A1's `type` kind itself is not built — the arm is narrowed, not deleted |
 | **Acceptance** | `val n = 5; val x: n = 7;` reds; `val T = i32; val x: T = 1;` checks; every existing import of a type still checks |
 
 A2–A5 of types-as-values (`#[@code]`, `@typeInfo` as a value, a comptime eval loop, std type
@@ -119,6 +124,8 @@ half-done and is cheap here.
 is that check not reaching the `f() catch 0` shape, where the trailing `catch` binds to the assert
 under the grammar and `fatal` is what tells the forms apart.
 
+**Landed** (compiler `912467b8`): all three cells pass; one snapshot re-recorded (`comptime/errors/a_result_return_without_result`, caret moved to the return type).
+
 **Acceptance:** the three cells are rejected for their own reason, each with a caret on the offending
 token, and their lines leave `expected-failures.txt`.
 
@@ -134,7 +141,7 @@ Five gaps, all probed at `c2dd780`. The pattern half of the nested-payload gap p
 | `if (a && b)` / `if (a \|\| b)` | `Unexpected token` at `&&` | `parser/exprs.zig` — the `if` condition parses at `prec.equality` | `prec.lowest`, **at that call site only** | few. Safe because the condition is parenthesised by the grammar; `if ((a && b))` already parses and checks |
 | `_` as an `if` binder | `Unexpected token` at `_` | the binder lookahead accepts `.identifier` before `->` only | also accept `.underscore`, `binding = null` | none — no AST change |
 | `assert <expr> is <Pattern>` | `is-variant-binding` at the `(`, since `3b491e3` | no production | a statement form binding into the **enclosing** scope | few parser + new checker work. Needs step 4's pattern typing. The three skips it closes are `comptime/tests/narrowing.zig:213`, `:230` and `codegen/tests/narrowing.zig:83` |
-| `<Pattern> as <name>` | `Unexpected token` at `as` | `parser/patterns.zig` | a `Pattern.bound` variant | **many** — every pattern consumer, including four backend lowerings this front does not own. **Recommend: delete `comptime/tests/variants.zig:291`, `:309`, `:328`** (decision D2) |
+| `<Pattern> as <name>` | `Unexpected token` at `as` | `parser/patterns.zig` | a `Pattern.bound` variant | **many** — every pattern consumer, including four backend lowerings this front does not own. **Decided (decision 11): the form is not part of the language**; the three `comptime/tests/variants.zig` tests are deleted |
 | unnamed variant payload, **declaration half** | — | `parser/decls.zig`, the variant field list | optional field names with positional fallbacks | **many** — four backends and the reflected `TypeInfo`/`EnumVariant` surface. **Recommend: drop; `name: Type` is the convention** (decision D3) |
 
 **What must not be widened.** There are eleven other `prec.equality` call sites and none of them is
@@ -161,5 +168,5 @@ Closed. Each was probed at `c2dd780`.
 | **`while` in `libs/std`** | `grep -rn while libs/std examples --include=*.bp` | 5 hits, **all comments** | front 12 step 3 / the `loop (condition)` landing |
 | **erlang's `MissingExternalTarget` with no location** | a `declare fn` annotated for one backend, compiled for another | `error: 'absVal' has no '#[@External.<Target>(…)]' for the erlang backend --> src/main.bp:5:12` with a caret | C13's located half (`7b1db40`) |
 | **an imported host-backed `declare fn` has nothing to call on erlang** | `pub mod host; import { up } from "host";` with `#[@External.Erlang(…)] pub declare fn up(s: string)` | `out/host.erl` exports `up/1`; `out/main.erl` calls `host:up/1`; `erlc host.erl main.erl` + `erl` prints `AB` | `063e16b`. The `botopink run --target erlang` failure on the same program is a **CLI** defect, not a codegen one — see [`../02-erlang/README.md`](../02-erlang/README.md#not-this-fronts--reassign) |
-| **decision 11 — `assert e is P;`** | nothing in `libs/std`, the five libraries, the language suite or the examples writes it; the whole population was three `DOCUMENTED SKIP`s pinning a parse error | **deleted**, with the refusal pinned by `tests/language/reject/assert_is_pattern.bp` (`is-variant-binding` at `16:28`, green by running). The argument, recorded as C-08 asks: the skips claimed the form is promised in `docs.md`, and `docs.md` already lists `assert x is Some(n)` under *deliberately absent*; `val assert <Pattern> = <expr>;` (decision 8 §9) already binds a pattern's names into the enclosing scope and is fatal on mismatch, so implementing it would be a second spelling for one meaning (decision 67); `is` answers a `bool` and tests a type, and making `assert` a hole in that rule reopens exactly what `is-variant-binding` was added to refuse; and the alternative costs a new statement form, pattern typing and four backend lowerings for zero callers | C-08 (`561727e8`) |
-
+| **`assert e is P;`** (C-08's row; the decision record numbers no question for it — decision 11 is the `as` form below) | nothing in `libs/std`, the five libraries, the language suite or the examples writes it; the whole population was three `DOCUMENTED SKIP`s pinning a parse error | **deleted**, with the refusal pinned by `tests/language/reject/assert_is_pattern.bp` (`is-variant-binding` at `16:28`, green by running). The argument, recorded as C-08 asks: the skips claimed the form is promised in `docs.md`, and `docs.md` already lists `assert x is Some(n)` under *deliberately absent*; `val assert <Pattern> = <expr>;` (decision 8 §9) already binds a pattern's names into the enclosing scope and is fatal on mismatch, so implementing it would be a second spelling for one meaning (decision 67); `is` answers a `bool` and tests a type, and making `assert` a hole in that rule reopens exactly what `is-variant-binding` was added to refuse; and the alternative costs a new statement form, pattern typing and four backend lowerings for zero callers | C-08 (`561727e8`) |
+| **decision 11 — `<Pattern> as <name>`** | `comptime/tests/variants.zig` held three `DOCUMENTED SKIP`s (`pattern: assign pattern in enum`, `type_unification_does_not_allow_different_variants_to_be_treated_as_safe`, `pattern: assign pattern in record`) whose only claim was that the form does not parse | **deleted**, with their three `snapshots/comptime/ast/` files; nothing in `libs/std`, the five libraries, the language suite, the examples or `docs.md` writes it, and decision 8 does not ask for it. The negative intent of the second test (two arms of different variant types must not unify) is a claim about arm typing, which step 4's `caseArmTypesAgree` pins without the `as` form | C-08 (front/01-checker step 10 close-out) |

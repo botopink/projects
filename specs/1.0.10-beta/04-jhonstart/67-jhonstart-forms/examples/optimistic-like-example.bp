@@ -67,14 +67,14 @@ fn LikeWidget(serverCount: i32) -> @Component<Element> {
     // `likeWidget` takes an `i32`. Upstream: `const [shown, push] = useOptimistic(...)`.
     val #(shown, push) = use optimistic(serverCount, addLike);
     val status = use formStatus();
-    return likeWidget(formAction("likePost"), shown, status);
+    return likeWidget(formAction("a_likePost", "/blog/hello", "__bp_action"), shown, status);
 }
 
 // ── tests ────────────────────────────────────────────────────────────────────
 
 test "no prediction is the identity — the server pass shows the server's count" {
     assert applyOptimistic(12, [], addLike) == 12;
-    val markup = renderToString(likeWidget(formAction("likePost"), 12, FormStatus(pending: false, actionId: "", method: "post")));
+    val markup = renderToString(likeWidget(formAction("a_likePost", "/blog/hello", "__bp_action"), 12, FormStatus(pending: false, actionId: "", method: "post")));
     assert markup.contains(">12 likes<");
     assert markup.contains("disabled") == false;
 }

@@ -152,11 +152,11 @@ ship again: either `npm test` compares against the lexer when a botopink-lang ch
 CI runs `compiler-check` on every push and the README says so.
 
 **Acceptance:**
-- [ ] `npm run compiler-check -- --lang <botopink-lang> --bin <botopink>` reports `0 failure(s)`
-- [ ] `unknown` is highlighted by a keyword rule in `syntaxes/botopink.tmLanguage.json` — checked by
+- [x] `npm run compiler-check -- --lang <botopink-lang> --bin <botopink>` reports `0 failure(s)`
+- [x] `unknown` is highlighted by a keyword rule in `syntaxes/botopink.tmLanguage.json` — checked by
       the existing `grammar: every lexer keyword is highlighted by some keyword rule` test, which reads
       the regenerated file
-- [ ] A keyword added to the lexer and not to the extension fails a CI job, not only a local run with
+- [x] A keyword added to the lexer and not to the extension fails a CI job, not only a local run with
       the right flag — asserted by making the check part of a workflow step and naming it in
       `vscode-extension/AGENTS.md`
 
@@ -165,12 +165,12 @@ CI runs `compiler-check` on every push and the README says so.
 Flip the snippet body to `Pattern { body }` arms and update its fixture.
 
 **Acceptance:**
-- [ ] `snippets.json`'s `Case expression` body is the `Pattern { body }` form with a `_ { … }` arm
-- [ ] `scripts/snippetFixtures.ts` fills it, and `npm run compiler-check` compiles the filled snippet
+- [x] `snippets.json`'s `Case expression` body is the `Pattern { body }` form with a `_ { … }` arm
+- [x] `scripts/snippetFixtures.ts` fills it, and `npm run compiler-check` compiles the filled snippet
       (`0 failure(s)`)
-- [ ] The `case` arm shape is in the grammar fixture, so a regression in `botopink.tmLanguage.json`
+- [x] The `case` arm shape is in the grammar fixture, so a regression in `botopink.tmLanguage.json`
       reds `npm test`
-- [ ] `vscode-extension/CHANGELOG.md` and `AGENTS.md` record the flip and the commit that unblocked it
+- [x] `vscode-extension/CHANGELOG.md` and `AGENTS.md` record the flip and the commit that unblocked it
       (`botopink-lang` `d0c27f6`)
 
 ### Step 3 — `loadSrcTree` reports what it cannot read (R5)
@@ -179,14 +179,14 @@ Replace `project_graph.zig:347`'s `catch continue` with the `Problem` shape `84e
 the file itself.
 
 **Acceptance:**
-- [ ] A project whose `src/x.bp` is unreadable (mode `000`) publishes a diagnostic naming that file,
+- [x] A project whose `src/x.bp` is unreadable (mode `000`) publishes a diagnostic naming that file,
       not a diagnostic on whatever imported it
-- [ ] `grep -n 'catch continue' modules/language-server/src/project_graph.zig` returns nothing but the
+- [x] `grep -n 'catch continue' modules/language-server/src/project_graph.zig` returns nothing but the
       comment at `:67`, which is updated to say all three closed
-- [ ] An LSP unit test in `modules/language-server/src/tests/**` — **that directory is
+- [x] An LSP unit test in `modules/language-server/src/tests/**` — **that directory is
       [`07-review-backlog`](../07-review-backlog/README.md)'s**; add the test as a named carve-out, or
       hand it over
-- [ ] The row is struck from [`10-cli-residuals`](../../../1.0.5-beta/10-cli-residuals/README.md)'s step 4 table
+- [x] The row is struck from [`10-cli-residuals`](../../../1.0.5-beta/10-cli-residuals/README.md)'s step 4 table
 
 ### Step 4 — `SymbolKind.Method` for a type's methods (R2)
 
@@ -204,14 +204,14 @@ Options for re-homing `test "…"`:
 **Recommended: C**, with A as the fallback if a test block can ever be nested.
 
 **Acceptance:**
-- [ ] `engine.zig:924`, `:948` and `:976` emit `proto.SymbolKind.Method`
-- [ ] The VS Code Test Explorer lists **only** `test "…"` blocks — driven, not read: open a file with a
+- [x] `engine.zig:924`, `:948` and `:976` emit `proto.SymbolKind.Method`
+- [x] The VS Code Test Explorer lists **only** `test "…"` blocks — driven, not read: open a file with a
       `type` that has methods and a `test` block and count the entries
-- [ ] `isTestSymbolNode` no longer reads `kind === SYMBOL_KIND_METHOD` alone
-- [ ] The 13 `symbols_*` LSP snapshots re-recorded and classified in the commit message (5 of them
+- [x] `isTestSymbolNode` no longer reads `kind === SYMBOL_KIND_METHOD` alone
+- [x] The 13 `symbols_*` LSP snapshots re-recorded and classified in the commit message (5 of them
       currently contain `Function`)
-- [ ] `npm test` (37) and `npm run compiler-check` green; `zig build test` green
-- [ ] Both repositories' commits land in the same sweep, with the meta submodule pointers bumped
+- [x] `npm test` (37) and `npm run compiler-check` green; `zig build test` green
+- [x] Both repositories' commits land in the same sweep, with the meta submodule pointers bumped
       together
 
 ### Step 5 — re-record after the type name is fixed (R4)
@@ -219,20 +219,20 @@ Options for re-homing `test "…"`:
 After [`01-checker`](../01-checker/README.md) renames `buildRecordDeclName` and its two siblings.
 
 **Acceptance:**
-- [ ] `grep -rn 'record {' modules/language-server/snapshots/lsp/` returns nothing
-- [ ] Hover, completion, signature help and inlay hints all print the 1.0.3 surface for a `type`, a
+- [x] `grep -rn 'record {' modules/language-server/snapshots/lsp/` returns nothing
+- [x] Hover, completion, signature help and inlay hints all print the 1.0.3 surface for a `type`, a
       `behavior` and an `enum` — one snapshot each, verified by reading the rendered text
-- [ ] The row is struck from [`07-review-backlog`](../07-review-backlog/README.md)'s step 3 table
+- [x] The row is struck from [`07-review-backlog`](../07-review-backlog/README.md)'s step 3 table
 
 ## Gate
 
-- [ ] `scripts/gate.sh --cold` green in the `botopink-lang` worktree
-- [ ] `vscode-extension`: `npm test` (37) **and** `npm run compiler-check -- --lang … --bin …` green —
+- [x] `scripts/gate.sh --cold` green in the `botopink-lang` worktree
+- [x] `vscode-extension`: `npm test` (37) **and** `npm run compiler-check -- --lang … --bin …` green —
       the second is the one that is red today
-- [ ] `AGENTS.md` of every directory touched, updated in the same commit
+- [x] `AGENTS.md` of every directory touched, updated in the same commit
       (`modules/language-server/AGENTS.md`, `src/AGENTS.md`; `vscode-extension/AGENTS.md`,
       `CHANGELOG.md`)
-- [ ] Branch `fix/tooling` in `botopink-lang`, `fix/tooling` in `vscode-extension`; no push, no merge,
+- [x] Branch `fix/tooling` in `botopink-lang`, `fix/tooling` in `vscode-extension`; no push, no merge,
       no submodule bump
 
 ## Blast radius
@@ -278,7 +278,7 @@ After [`01-checker`](../01-checker/README.md) renames `buildRecordDeclName` and 
 **Ownership table:**
 
 ```markdown
-| **11** [`tooling`](./README.md) | `modules/language-server/**` except `src/tests/**` (07's) · `repository/vscode-extension/**`; its meta submodule pointer | `modules/language-server/snapshots/lsp/` (114) | not started — steps 1–3, 5 ready; step 4 needs a decision, step 5 after 01 |
+| **11** [`tooling`](./README.md) | `modules/language-server/**` except `src/tests/**` (07's) · `repository/vscode-extension/**`; its meta submodule pointer | `modules/language-server/snapshots/lsp/` (125) | landed — steps 1–5 |
 ```
 
 **Conflict notes** (against the other thirteen fronts):
@@ -298,7 +298,7 @@ After [`01-checker`](../01-checker/README.md) renames `buildRecordDeclName` and 
 **Front-table row (`overview.md`):**
 
 ```markdown
-| [`11-tooling`](./README.md) | medium | not started | The residuals 1.0.4-beta's tooling front could not reach: the extension's `compiler-check` is red because its pinned keyword list predates `unknown`; a type's methods are still `SymbolKind.Function` because the Test Explorer reads every `Method` symbol as a `test "…"` block, which is one change across two repositories; the `case` snippet still teaches the arrow arms whose replacement now parses and runs; and `loadSrcTree`'s third `catch continue`, which drops an unreadable source file from the project graph with no diagnostic |
+| [`11-tooling`](./README.md) | medium | landed | The residuals 1.0.4-beta's tooling front could not reach: the extension's `compiler-check` is red because its pinned keyword list predates `unknown`; a type's methods are still `SymbolKind.Function` because the Test Explorer reads every `Method` symbol as a `test "…"` block, which is one change across two repositories; the `case` snippet still teaches the arrow arms whose replacement now parses and runs; and `loadSrcTree`'s third `catch continue`, which drops an unreadable source file from the project graph with no diagnostic |
 ```
 
 ---
@@ -351,3 +351,33 @@ no source declaration to render from.
 **Closed elsewhere:** [`10-cli-residuals`](../../../1.0.5-beta/10-cli-residuals/README.md)'s step-4 row about
 `project_graph.zig:347` is closed by `ae6476c`.
 
+
+---
+
+## Landed — 2026-09-25
+
+**Step 5 was landed as C-19 by `botopink-lang` `f952bfc6`** (the `.tasks/tooling` worktree, committed
+as-is: the three builders share `appendGenericParamsStr` and print `type Name<G>(…)`,
+`type Name<G> { … }`, `behavior Name<G> { … }`; `completion_decorator_record.snap.md:17` re-recorded).
+What that commit left owed, landed on `front/11-tooling`: the `AGENTS.md` lines (`src/comptime/`,
+`language-server/src/`, `language-server/src/tests/`), and the acceptance's "one snapshot each" read
+against the text — hover already had `hover_type_record`, `hover_type_enum`, `hover_behavior`;
+completion gains `completion_type_enum_detail` (`type Shape { Circle(radius: f64), Square }`) and
+`completion_behavior_detail`; inlay hints gain `inlay_hints_val_record` (`: Point`) and
+`inlay_hints_val_enum` (`: Shape`); signature help gains `sig_type_constructor`. The last one measured a
+gap rather than a spelling: `signatureHelp` answered only a `.func` binding, and a constructor's binding
+is a `named` type, so `Point(` had **no** signature at all. `engine.recordCtorSignature` now reads the
+field list from the declaration in the document — `Point(x: i32, y: i32) -> Point`, one label per
+field as the source spells it. `completion_behavior_detail` measured a second gap: `buildInterfaceDeclName`
+dropped every method's return type and generics (`fn map(self: Self<T>);`); it now prints
+`fn map(self: Self<T>) -> Self<T>;`. The new tests sit under the `front 11 carve-out` banner in 07's
+directory, the mechanism `tests/AGENTS.md` already names.
+
+Re-verified at `f58fd392` and again on `0795e2eb` (the compiler commit is `e4baa820`), not trusted: lexer and `test/lexerKeywords.json` agree (38 keywords);
+`npm run compiler-check` passes; `npm test` reads 43 = 42 pass + 1 skipped (the pin test skips without
+`BOTOPINK_LANG`); `project_graph.zig` has no `catch continue`; `engine.zig` emits `Method` at its
+three method sites; `grep -rn 'record {' snapshots/lsp/` is empty. Corrections to this README's numbers:
+the LSP snapshot directory holds **125** files, not 114; the branch is `front/11-tooling`, not
+`fix/tooling`; and the `vscode-extension` submodule stays at `dd46d1f`, **not initialised in this
+worktree** — its `botopink.json` would be scanned twice by `zig build test-libs` (once here, once in
+the main checkout), so its gate ran from a scratch copy against this worktree's `botopink`.

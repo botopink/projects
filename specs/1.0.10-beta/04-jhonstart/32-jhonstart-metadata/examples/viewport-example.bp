@@ -47,7 +47,7 @@ pub fn generateViewport(params: Array<#(string, string)>) -> @Future<Viewport> {
     return readerViewport(request());
 }
 
-// What front 23 does for this route.
+// What front 30 does for this route.
 pub fn resolvedViewport(req: RequestData) -> Viewport {
     return mergeViewport(rootViewport(), readerViewport(req));
 }

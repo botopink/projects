@@ -4,8 +4,8 @@
 //
 // A client provider wraps the whole server-rendered tree (§ 7, *Pattern: Context
 // Provider*). The provider is client code; its children are not. So the markup
-// carries an island (`<div data-onze-i="i0">`, `contracts.md § 2`) with a
-// `data-onze-s` subtree inside it, and the browser ADOPTS that subtree rather
+// carries an island (`<div data-jh-i="i0">`, `contracts.md § 2`) with a
+// `data-jh-s` subtree inside it, and the browser ADOPTS that subtree rather
 // than re-rendering it — it cannot re-render it, because rendering it needed
 // the server's data.
 //
@@ -66,8 +66,8 @@ pub fn RootLayout(theme: string, page: Element) -> Element {
 test "the layout nests a server slot inside the island" {
     val page = Dashboard("Ana", 4);
     val markup = renderToString(RootLayout("dark", page));
-    assert markup.contains("data-onze-i=\"i0\"");
-    assert markup.contains("data-onze-s=\"1\"");
+    assert markup.contains("data-jh-i=\"i0\"");
+    assert markup.contains("data-jh-s=\"1\"");
     assert markup.contains("<h1>Hello, Ana</h1>");
     assert markup.contains("ThemeProvider") == false;
 }
@@ -80,7 +80,7 @@ test "the provider's props travel in the payload row, not in the markup" {
 
 test "the server slot wraps the page and nothing else" {
     val markup = renderToString(serverSlot([Dashboard("Bob", 0)]));
-    assert markup.contains("<div data-onze-s=\"1\"><section class=\"dashboard\">");
+    assert markup.contains("<div data-jh-s=\"1\"><section class=\"dashboard\">");
     assert markup.contains("0 tickets open");
 }
 

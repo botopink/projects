@@ -12,7 +12,6 @@
 //       https://tailwindcss.com/docs/aspect-ratio
 
 import { emilia, flush, Token } from "emilia";
-import { div, p, renderToString } from "jhonstart";
 
 // Display utilities
 val displayTokens: Token[] = [
@@ -169,10 +168,6 @@ val insetTokens: Token[] = [
 ];
 val insetStyles = emilia(insetTokens);
 
-val page = div([
-    p([], []),
-], []);
-
 #[@future]
 fn main() -> @Future<void> {
     @print("=== F01: Layout Example ===");
@@ -190,7 +185,6 @@ fn main() -> @Future<void> {
     @print("Box: " + boxStyles);
     @print("Visibility: " + visibilityStyles);
     @print("Inset: " + insetStyles);
-    @print(renderToString(page));
     @print(await flush());
 }
 

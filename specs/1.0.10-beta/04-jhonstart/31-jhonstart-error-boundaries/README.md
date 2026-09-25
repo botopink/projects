@@ -5,7 +5,7 @@
 **Target:** erlang (server)
 **Boundary:** the server catches render errors and emits a fallback plus a digest; the browser catches runtime and transition errors and shows the same fallback. The `ErrorInfo` shape and the digest are defined here and read by front 29's `hydrate()` and by front 17's logger. This front carries no browser cell.
 **Wave:** 5
-**Depends on:** 28 · 03 (content hash) · 94 (`htmlTag`/`body` builders for `global-error.bp`) · 17 (logging, read-only) · 24 (action envelope, read-only) · 63 (navigation signals, read-only)
+**Depends on:** 28 · 03 (content hash) · 94 (`htmlTag`/`body` builders for `global-error.bp`) · 17 (logging, read-only) · 24 (action envelope, read-only) · `01-std/04-routing-lib` Step 7 (`navigation.signalReason`, `isSignalReason`, `signalPrefixes` — the `nav:` reasons of `contracts.md § 5b`, decision 116) · 63 (the server half of the same signals, read-only — never an import)
 **Owns:** `repository/jhonstart/src/error_boundary.bp`, `repository/jhonstart/test/error_boundary_test.bp`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (26), `src/link.bp` (27), `src/server.bp` (28), `src/client.bp` (29), `src/suspense.bp`/`src/streaming.bp` (30), `src/root.bp` and `botopink.json` (front 94)
 **Reference:** `NEXTJS-DOCS.md § 14. Tratamento de Erros` · `§ 3. Estrutura do Projeto` · https://nextjs.org/docs/app/getting-started/error-handling · https://nextjs.org/docs/app/api-reference/file-conventions/error · https://nextjs.org/docs/app/api-reference/file-conventions/not-found
@@ -35,9 +35,16 @@ string }`). jhonstart has neither the digest nor the logging it correlates with.
   (`libs/std/src/builtins.d.bp:24-27`); there is no `Err` and no `.unwrap()`.
 - a stable content hash for the digest is front 03's `contentHash`, in std's `hash` module
   (decision 106), not a private hash here.
-- `notFound()`, `redirect()`, `permanentRedirect()`, `forbidden()` and `unauthorized()` are **front
-  63**'s navigation signals. This front does not define them; it defines what happens to the render
-  when one is raised.
+- `notFound()`, `redirect()`, `permanentRedirect()`, `forbidden()` and `unauthorized()` are
+  **front 63**'s navigation signals, raised by rakun code (handlers, actions). A jhonstart page
+  cannot import them — jhonstart and rakun never import each other (decision 113) — so the two a
+  page needs, `notFound()` and `redirect(url)`, are declared here as jhonstart's own signals,
+  raising the same `nav:not-found` and `nav:redirect:<url>` reasons (decision 115), built with the
+  bundled library `routing`'s `navigation.signalReason` (decision 116) — the vocabulary rakun
+  front 63 imports too.
+  Before the render's first chunk onze translates them into rakun's 404 and 307; after it, front
+  30's render writes them as markup jhonstart's client executes, and the status stays 200. For
+  every signal this front defines what happens to the render when one is raised.
 - `html` and `body` are not among the eight element builders (`element.bp:10-53`), which
   `global-error.bp` needs — see *Mechanism*.
 
@@ -98,12 +105,21 @@ A fallback that wants to show the message anyway can, on a development build, by
 
 ### Navigation signals are not errors
 
-Front 63 raises `notFound()`, `redirect()` and the rest. They travel the same `@Result` channel as a
-real error, so this front has to tell them apart and must not render a fallback for a redirect. The
-discriminator is front 63's signal prefix, checked by `isSignal(message)`; a boundary re-throws a
-signal rather than catching it, so it reaches front 23 which turns it into a 404 or a 307.
-`not-found.bp` is rendered by front 23 when it sees front 63's not-found signal, using the boundary
-type defined here — this front owns the type, not the dispatch.
+A jhonstart page signals "not found" and "go elsewhere" with **jhonstart's own** `notFound()` and
+`redirect(url)`, declared in this front's `error_boundary.bp`; they raise the `nav:not-found`
+and `nav:redirect:<url>` reasons of `contracts.md § 5b` — spelled by `routing`'s
+`navigation.signalReason`, never by a literal here (decision 116) — and import nothing from rakun
+(decisions 113 and 115). A page, layout or template imports `notFound`, `redirect` and `cookies`
+(front 28's reader) from `"jhonstart"` only. rakun's front 63 raises the same reasons from handlers
+and actions, which are rakun's code. Signals travel the same `@Result`
+channel as a real error, so this front has to tell them apart and must not render a fallback for a
+redirect. The discriminator is `routing`'s `navigation.isSignalReason(message)` — the bare prefix
+`nav:` and an unknown verb are not signals; a boundary
+re-throws a signal rather than catching it, so it leaves front 30's render: before the first chunk
+as the render's outcome, which onze translates into rakun's 404 or 307; after it, as markup front
+30 writes into the stream (`data-jh-g`, status 200 — decision 115). `not-found.bp` is rendered by front 30's render
+when it sees the not-found signal, using the boundary type defined here — this front owns the type,
+not the dispatch.
 
 ### The three file conventions
 
@@ -127,23 +143,23 @@ spelled **`htmlTag`**, not `html`: `html` is already the markup DSL template fun
 package (`html.bp:94`), and a second `html` in a consumer's flat import would shadow it. Front 94 is wave 0, so the
 dependency costs nothing in ordering — `global-error.bp` is writable as soon as this front starts.
 
-Front 22 discovers the files; front 23 builds the boundaries. This front defines the record and the
+Front 22 discovers the files (onze hands the result to jhonstart); front 30's render builds the boundaries. This front defines the record and the
 render, and nothing about file discovery.
 
 ### The js half — front 29 and front 68
 
 Three rules, and all three are contract, not code in this repository:
 
-1. A `[data-onze-e="ID"]` element is the catch target. A client component that throws
+1. A `[data-jh-e="ID"]` element is the catch target. A client component that throws
    during render is replaced by the nearest enclosing one's fallback, rendered from the same
    `ErrorInfo` shape.
 2. **Event-handler errors are not caught.** `NEXTJS-DOCS.md § 14`, *Erros em event handlers*, is
    explicit: error boundaries do not capture them, and the handler must `try`/`catch` itself. In
    jhonstart this is structural rather than a rule to remember — a handler is a
-   `data-onze-on-click` attribute naming a handler, so it is not inside the boundary's `@Result`
+   `data-jh-on-click` attribute naming a handler, so it is not inside the boundary's `@Result`
    channel at all, and there is nothing for `renderBoundary` to branch on.
 3. **`startTransition` errors are caught.** The same section names the exception. Front 68's runtime
-   wraps a transition and routes a failure to the nearest `data-onze-e`, with a digest
+   wraps a transition and routes a failure to the nearest `data-jh-e`, with a digest
    computed the same way.
 
 ### A failing server action is not a render error
@@ -163,7 +179,7 @@ states it so that neither side assumes the other is catching.
 ### `reset` / `retry`
 
 Upstream's `reset()` re-renders the failed subtree. jhonstart's fallback emits
-`data-onze-reset="ID"`; front 29's `hydrate()` binds it, and the action it performs is front
+`data-jh-reset="ID"`; front 29's `hydrate()` binds it, and the action it performs is front
 26's `refresh()` — re-request the route's payload and re-reconcile. On the server a reset is not
 available at all (there is nothing to re-render into), so the fallback's reset affordance is inert
 in the first HTML and becomes live at hydration. The README says so rather than emitting a button
@@ -213,12 +229,12 @@ pub fn wrap(id: string, tree: Element) -> Element {
         tag: "div",
         value: "",
         children: [tree],
-        attrs: [#("data-onze-e", id)],
+        attrs: [#("data-jh-e", id)],
     );
 }
 ```
 
-`data-onze-e` and `data-onze-reset` are this front's two additions to the `data-onze-` marker family
+`data-jh-e` and `data-jh-reset` are this front's two additions to the `data-jh-` marker family
 (`contracts.md § 2`), registered there rather than invented locally.
 
 ```bp
@@ -243,14 +259,24 @@ pub fn renderBoundary(b: ErrorBoundary) -> Element {
 ### Step 3 — Signals pass through
 
 ```bp
+import {navigation: {NavKind, NavOutcome, signalReason, isSignalReason}} from "routing";
+
 pub fn isSignal(message: string) -> bool {
-    return message.startsWith("jhonstart:");
+    return isSignalReason(message);
 }
+
+pub fn notFound() -> string {                    // the caller writes `throw notFound();`
+    return signalReason(NavOutcome(kind: NavKind.NotFound, location: "", status: 404));
+}
+
+pub fn redirect(url: string) -> string {         // the caller writes `throw redirect("/login");`
+    return signalReason(NavOutcome(kind: NavKind.Redirect, location: url, status: 307));
+}                                                // 307 before the first chunk (onze → rakun)
 ```
 
 `renderBoundary` re-raises a signal instead of catching it. Because `renderBoundary` is not itself
 `#[@result]`, the re-raise is done by the caller: `renderBoundary` returns the tree, and
-`renderBoundaryChecked` is the `#[@result]` wrapper front 23 calls.
+`renderBoundaryChecked` is the `#[@result]` wrapper front 30 calls.
 
 ```bp
 #[@result]
@@ -264,11 +290,18 @@ pub fn renderBoundaryChecked(b: ErrorBoundary) -> @Result<Element, string> {
 ```
 
 **Acceptance:**
-- [ ] a child failing with `"jhonstart:not-found"` is not caught — the boundary's result is `Error`
+- [ ] a child failing with `"nav:not-found"` is not caught — the boundary's result is `Error`
       with the same message
 - [ ] a child failing with an ordinary message is caught and yields `Ok` of the fallback
-- [ ] `isSignal` recognises every prefix front 63 defines, and front 63's README lists them
-- [ ] the prefix string appears in exactly one place in this file
+- [ ] `isSignal` recognises every entry of `routing`'s `signalPrefixes()` — the test iterates that
+      function, not a copy of the list — and answers `false` for `"nav:"` and `"boom"`
+- [ ] no `"nav:` or `"jhonstart:` literal appears in `error_boundary.bp`; the reasons come from
+      `routing`'s `navigation`
+- [ ] `notFound()` is `pub`, returns `"nav:not-found"` (the reason in `contracts.md § 5b`),
+      and nothing under `repository/jhonstart/` imports `rakun` — checked by grep in the gate
+- [ ] `redirect("/login")` is `pub`, returns `"nav:redirect:/login"`, passes through
+      `renderBoundaryChecked` uncaught, and a target containing `:` is kept whole
+      (`redirect("/a:b")` → `"nav:redirect:/a:b"`)
 
 ### Step 4 — `catchError`, the functional form
 
@@ -293,7 +326,7 @@ that it reads like the upstream one at the call site, not that it does anything 
 ### Step 5 — The three file conventions, written down
 
 `repository/jhonstart/docs.md` gains the three-row table from *Mechanism* plus the three browser
-rules. Front 22 cites the table for discovery; front 23 cites it for wrapping; front 29 cites the
+rules. Front 22 cites the table for discovery; front 30 cites it for wrapping; front 29 cites the
 browser rules.
 
 **Acceptance:**
@@ -332,11 +365,11 @@ Assertions:
 2. The fallback's `ErrorInfo` has an empty `message` and a non-empty `digest`.
 3. `infoFor` and `serverInfoFor` agree on the digest and disagree on the message.
 4. A signal message passes through `renderBoundaryChecked` uncaught; an ordinary message does not.
-5. **Event-handler errors are not caught** — a child that renders a `data-onze-on-click` attribute
+5. **Event-handler errors are not caught** — a child that renders a `data-jh-on-click` attribute
    renders `Ok`, the boundary's fallback is not involved, and the handler name survives into the
    markup. The assertion is that the handler is outside the `@Result` channel by construction.
 6. **`startTransition` errors are caught** — the boundary's wrapper carries
-   `data-onze-e="ID"`, which is the anchor front 68's runtime routes a transition failure
+   `data-jh-e="ID"`, which is the anchor front 68's runtime routes a transition failure
    to. The assertion is on the anchor's presence and its id; the routing itself is front 68's test.
 7. The thunk is called exactly once, proved by a thunk that appends to a module-level marker.
 
@@ -351,9 +384,12 @@ contract is untested and the milestone should treat it as a red rather than as d
       language has — and a test proves a throwing child does not reach the output
 - [ ] no client-visible `ErrorInfo` ever carries a message; a test asserts it
 - [ ] the digest is front 03's hash and correlates with front 17's log line
-- [ ] front 63's signals pass through, and the prefix is agreed with front 63
+- [ ] every signal passes through, recognised by `routing`'s `isSignalReason` — the one vocabulary
+      rakun front 63 also imports (decision 116); the test asserts through `signalPrefixes()`
+- [ ] `notFound` and `redirect` are jhonstart's, and every page example in the milestone imports
+      them (and `cookies`) from `"jhonstart"` (decision 115)
 - [ ] the event-handler and `startTransition` semantics each have a test
-- [ ] `data-onze-e` and `data-onze-reset` are registered in `contracts.md § 2`
+- [ ] `data-jh-e` and `data-jh-reset` are registered in `contracts.md § 2`
 - [ ] an action envelope with `ok: false` is documented as data, not as something a boundary catches,
       and front 67's README agrees
 - [ ] `global-error.bp` renders its own document root with front 94's `htmlTag` and `body`, and a

@@ -2,7 +2,7 @@
 //
 // A documentation sidebar that marks the section the reader is in.
 //
-// This is a SERVER-rendered component: front 22 matches the URL, front 23 fills
+// This is a SERVER-rendered component: onze matches the URL with front 22's matcher, front 30's render fills
 // the route snapshot before the render starts, and `pathname` /
 // `selectedLayoutSegment` read it. The same code re-renders in the browser
 // after a client navigation, from a snapshot the client rebuilt from

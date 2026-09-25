@@ -44,19 +44,25 @@
 >
 > **Name collision, for whoever reads this next.** Front 05 declares a placement-only `#[validated]`
 > in `modules/rakun/src/config.bp`. This front's is a different decorator in a different package; an
-> application must import `validated` from `rakun-validation` and **must not import both names into
-> one module**. Importing front 05's leaves `validate<TypeName>` undefined and the red lands at the
+> application must import `validated` from `validation` (the bundled library, decision 116 — the
+> landed member was `rakun-validation`) and **must not import both names into one module**. Importing front 05's leaves `validate<TypeName>` undefined and the red lands at the
 > **call site as an unbound variable**, nowhere near the annotation. Whether front 05's should be
 > deleted once this landed is an open question for `03-rakun`.
 
 **Track:** B rakun
 **Priority:** medium — it is the only front that both halves of the stack run, and front 05 cannot refuse a bad configuration at boot without it
-**Target:** both — boundary
+**Target:** erlang. The library itself — both targets — is the bundled `libs/validation`
+(`01-std/06-validation-lib`, decision 116); what stays in rakun is the boot refusal and the message
+source rakun hands the library, both server code
 **Wave:** 3
-**Depends on:** 01 (`regex`), 05 (config, and the boot-time contract below), 06 (context)
-**Owns:** `modules/rakun-validation/src/**`, `modules/rakun-validation/test/**`
+**Depends on:** 01 (`regex`), 05 (config, and the boot-time contract below), 06 (context),
+`01-std/06-validation-lib` (the library, for Step 7)
+**Owns:** landed as `modules/rakun-validation/src/**` and `test/**`, which Step 7 deletes; from Step 7
+on, `modules/rakun/src/config_check.bp` (`boot.bp` moved), `modules/rakun/test/config_check_test.bp`
+(`config_test.bp` moved) and the `setMessageSource` call at rakun's boot
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone
-**Reference:** `07-io.md § Validacao` · https://docs.spring.io/spring-boot/reference/io/validation.html
+**Reference:** [decision 116](../../decisions-taken.md#116-code-two-libraries-both-run-is-neutral-routing-gains-navigation-and-param-actions-and-validation-are-bundled-libraries-std-writes-json)
+rule 5 (validation is a bundled library; the member leaves rakun) · `07-io.md § Validacao` · https://docs.spring.io/spring-boot/reference/io/validation.html
 
 ---
 
@@ -87,6 +93,14 @@ collide with the effect marker `#[@future]` (`repository/emilia/src/emilia.bp:62
 - Nothing in the tree validates configuration. `rkProp`/`rkPropInt` return a value or a default; a misconfigured application starts and fails later, at the first request that touches the bad key.
 
 ## Mechanism
+
+**Where it lives.** Everything below from *Why this front is a boundary front* to *The violation report
+on the wire* is the library's behaviour, landed in `modules/rakun-validation` and moved unchanged —
+but for the injected message source and std's JSON writer — to the bundled library `validation`
+(`libs/validation`, `01-std/06-validation-lib`, decision 116). The member imported `rkProp` from
+rakun's core (`messages.bp:22`), which is erlang-only since decision 113, so a browser build could not
+reach it. rakun keeps the boot refusal (`config_check.bp`) and hands the library its message source;
+applications, rakun and onze `import {…} from "validation"`.
 
 ### Why this front is a boundary front
 
@@ -163,11 +177,16 @@ body. A registered constraint is reached from a field with `#[constraint("cpf")]
 
 ### Message interpolation
 
-Every violation carries a `code` and a message built from a template. Templates resolve in order:
+Every violation carries a `code` and a message built from a template. The library resolves it from
+the `MessageSource` it is handed (`setMessageSource`, `01-std/06-validation-lib`); rakun sets one at
+boot over its own keys (`locale` reads `rakun.validation.locale`, `template(key)` reads
+`rakun.validation.messages.<key>`), so for a rakun application templates resolve in order:
 
 1. `rakun.validation.messages.<locale>.<code>` (front 05)
 2. `rakun.validation.messages.<code>`
 3. the built-in default for that code
+
+The library spells no `rakun.` key; with no source set, the built-in default answers.
 
 Placeholders are `{field}`, `{value}` and the constraint's own parameters — `{min}`, `{max}`, `{regex}`
 — substituted by name. A template naming a placeholder the constraint does not have is left as written
@@ -309,6 +328,25 @@ pub fn constraintsOfCreateUserRequest() -> string
 - [ ] A valid configuration adds no measurable startup cost beyond one pass over the record's fields.
 - [ ] Front 05 calls `validate<TypeName>` by name and nothing else; changing that name breaks the build, not a test.
 
+### Step 7 — The member leaves rakun
+
+After `01-std/06-validation-lib` Steps 1–4. rakun keeps what names rakun and nothing else.
+
+**Acceptance:**
+- [ ] `modules/rakun-validation/` is deleted, with its `botopink.json`, `validation_host.mjs` and
+      `src/sidecars/rakun_validation.erl`; rakun's workspace `botopink.json`, `modules/README.md`,
+      `AGENTS.md` and `docs.md` name the bundled `validation` instead
+- [ ] `boot.bp` is `modules/rakun/src/config_check.bp` (`propertyKey`, `violationLine`,
+      `configProblem`, `refuseInvalidConfig`), importing `ValidationReport` / `Violation` from
+      `"validation"`; `config_test.bp`'s six tests are `modules/rakun/test/config_check_test.bp`, green
+      on erlang
+- [ ] rakun's boot calls `setMessageSource(MessageSource(locale: …, template: …))` over
+      `rakun.validation.locale` and `rakun.validation.messages.*` before the first component, and a
+      test setting `rakun.validation.messages.sizeBetween` sees it in a violation's message
+- [ ] rakun's workspace root and every member are `"targets": ["erlang"]` — no rakun package is on
+      commonJS
+- [ ] `grep -rn "rakun-validation" repository/rakun --include=*.bp --include=botopink.json` is empty
+
 ## Examples
 
 - [`examples/request-validation-example.bp`](./examples/request-validation-example.bp) — a controller that binds path and query values, validates a request record, and returns one problem document for every failure at once.
@@ -323,8 +361,10 @@ pub fn constraintsOfCreateUserRequest() -> string
 
 ## Test plan
 
-`modules/rakun-validation/test/` on **both** targets, since this is a boundary front:
-`zig build test-libs -- --lib rakun` runs the erlang and commonJS cells, and both must be green.
+Landed as `modules/rakun-validation/test/` on both targets. Step 7 moves the six files below that do
+not name rakun to `libs/validation/test/` (`01-std/06-validation-lib` Step 2, both targets, their
+`rkSetProp` lines replaced by a test `MessageSource`); `config_test.bp` becomes rakun's
+`modules/rakun/test/config_check_test.bp`, erlang only.
 
 | File | Target | Asserts |
 |---|---|---|
@@ -345,7 +385,8 @@ agreeing is the deliverable.
 - **Method-level validation** (`@Validated` on a service, constraints on parameters — `07-io.md § Validacao de Metodos`) — it needs interception of an arbitrary method call, which is the same gap front 12 records. Explicit `validate…` calls cover it until that gap closes.
 - **Group and sequence validation** (`@GroupSequence`) — no consumer in this milestone.
 - **Cross-field constraints** (`@AssertTrue` on a derived getter) — expressible today as a registered constraint over a serialized pair; a first-class form waits for a consumer.
-- **The client-side evaluator's packaging** — front 68 ships the bundle; this front ships the function it bundles.
+- **The client-side evaluator's packaging** — front 68 ships the bundle; the bundled library
+  `validation` ships the function it bundles.
 
 ## Definition of done
 
@@ -355,5 +396,7 @@ agreeing is the deliverable.
 - The SPI admits an application constraint with no edit to this module.
 - No decorator in this module is named `#[future]`.
 - Every `// LANGUAGE GAP:` marker in the examples appears in the table above.
-- `repository/rakun/AGENTS.md` and `modules/README.md` record the module's surface in the same commit.
-- The front's tests are green on both of its assigned targets.
+- `repository/rakun/AGENTS.md` and `modules/README.md` name the bundled `validation` library and
+  `config_check.bp`, and no `rakun-validation` member exists (Step 7).
+- `config_check_test.bp` is green on erlang; the library's tests are green on both targets in
+  `libs/validation`.

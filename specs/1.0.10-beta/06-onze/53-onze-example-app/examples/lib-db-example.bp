@@ -10,7 +10,7 @@
 // Front 12's cache is synchronous, and deliberately: on the BEAM a render is a
 // process, so a loader does not have to return a future to be concurrent. That
 // is why nothing in this file is `#[@future]` — the futures in this app are in
-// the pages, where front 23's pipeline puts them.
+// the pages, where jhonstart's render (front 30) awaits them.
 //
 // Upstream: https://nextjs.org/docs/app/getting-started/fetching-data
 //           https://nextjs.org/docs/app/api-reference/directives/use-cache

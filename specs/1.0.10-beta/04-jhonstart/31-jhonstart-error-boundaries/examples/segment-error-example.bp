@@ -35,7 +35,7 @@ pub fn ErrorPage(info: ErrorInfo) -> Element {
         p([text("Nothing else on this page is affected.", attrs: [])], attrs: []),
         p([text("Reference " + info.digest, attrs: [])], attrs: [#("class", "digest")]),
         button([text("Try again", attrs: [])], attrs: [
-            #("data-onze-reset", "dashboard.metrics"),
+            #("data-jh-reset", "dashboard.metrics"),
         ]),
     ], attrs: [#("class", "error")]);
 }
@@ -85,7 +85,7 @@ fn healthyPanel() -> @Result<Element, string> {
 #[@result]
 fn panelWithHandler() -> @Result<Element, string> {
     return button([text("Retry now", attrs: [])], attrs: [
-        #("data-onze-on-click", "Metrics:retry"),
+        #("data-jh-on-click", "Metrics:retry"),
     ]);
 }
 
@@ -104,7 +104,7 @@ test "a failing panel renders the fallback and leaks nothing" {
 
 test "a healthy panel renders inside the boundary wrapper" {
     val markup = renderToString(renderBoundary(boundaryOver(healthyPanel)));
-    assert markup.contains("data-onze-e=\"dashboard.metrics\"");
+    assert markup.contains("data-jh-e=\"dashboard.metrics\"");
     assert markup.contains("42 requests/s");
     assert markup.contains("The metrics are unavailable") == false;
 }
@@ -119,11 +119,11 @@ test "the digest the reader sees is the one the server logged" {
 
 test "an event handler is outside the boundary's catch channel" {
     val markup = renderToString(renderBoundary(boundaryOver(panelWithHandler)));
-    assert markup.contains("data-onze-on-click=\"Metrics:retry\"");
+    assert markup.contains("data-jh-on-click=\"Metrics:retry\"");
     assert markup.contains("The metrics are unavailable") == false;
 }
 
 test "the boundary anchors itself so a transition failure can find it" {
     val markup = renderToString(renderBoundary(boundaryOver(healthyPanel)));
-    assert markup.contains("data-onze-e=\"dashboard.metrics\"");
+    assert markup.contains("data-jh-e=\"dashboard.metrics\"");
 }

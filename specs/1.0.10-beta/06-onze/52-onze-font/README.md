@@ -10,8 +10,9 @@ the metric-adjusted fallback, and emitting the `<link rel="preload">` tags into 
 swaps to the real face when it arrives, and the swap moves nothing
 **Wave:** 8
 **Depends on:** 49 (config, `outDir`, `publicDir`), 01 (`process` spawner for the fetch and the
-metrics probe, `path`), 03 (content hash for the self-hosted filename), 69 (the head seam the CSS is
-inserted through, and the asset manifest the files are listed in)
+metrics probe, `path`), 03 (content hash for the self-hosted filename), 69 (the asset manifest the files are listed in and
+`public/` serving) — the CSS reaches the head through jhonstart's `RenderHooks.headExtra`, which
+front 49 fills
 **Owns:** `src/font.bp`, `test/font_test.bp`
 **Does not touch:** `repository/onze/src/config.bp` · `types.bp` · `integration.bp` · `root.bp`
 (F49 — except the one `pub mod font;` export line, handed to F49), `src/image.bp` (F51),
@@ -127,9 +128,12 @@ closed, comptime-walked surface, and a font family discovered at build time cann
 An app writes `attrs: [#("class", inter.className)]`, or asks for `variable` and references
 `var(--font-inter)` from its own CSS, exactly as `NEXTJS-DOCS.md § 17`'s *Uso com CSS* does.
 
-`css` and `preload` are inserted into the document head by front 69's seam — the same one that carries
-emilia's `flush()` output. The order matters and front 69 owns it: preload links first, then font CSS,
-then the component styles, so the font request starts before the style that will use it is parsed.
+`css` and `preload` reach the document head through jhonstart's `RenderHooks.headExtra`, which front
+49 fills at boot; emilia's block reaches the same head through the `jhonstart-emilia` render plugin
+(decision 113). The order matters: preload links first, then font CSS, then the component styles, so
+the font request starts before the style that will use it is parsed. Within `fontHead` the first two
+are this front's; placing the `headExtra` markup ahead of the plugin's `head()` block is jhonstart's
+render's (front 30).
 
 `style` is the `font-family` declaration as a plain string, for a `style` attribute when a class is
 not applicable (an email template, an SVG `<text>` for front 70); `font_test.bp` asserts it. Variable
@@ -235,7 +239,7 @@ blocks so two components asking for the same family emit one.
 **Acceptance:**
 - [ ] Preload links precede all font CSS in the output
 - [ ] Two `Font` values for the same family and weight produce one `@font-face`
-- [ ] The output is a string front 69 can insert without re-parsing it
+- [ ] The output is a string `headExtra` can carry without re-parsing it
 
 ## Examples
 

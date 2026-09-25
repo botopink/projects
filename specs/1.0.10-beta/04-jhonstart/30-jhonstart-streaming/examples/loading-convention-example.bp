@@ -3,10 +3,10 @@
 // The `loading.bp` convention, from both sides.
 //
 // A developer writes ONE function in `app/blog/loading.bp` and never names a
-// boundary. Front 22 discovers the file; front 23 builds the `Boundary` around
+// boundary. Front 22 discovers the file; the render (`compose`) builds the `Boundary` around
 // the segment's page with `Loading()` as its fallback and the page as its
 // unstarted child. This file shows the developer's half and then the wrapping
-// front 23 performs, so the contract is readable in one place.
+// the render (`compose`) performs, so the contract is readable in one place.
 //
 // Upstream:
 //   https://nextjs.org/docs/app/api-reference/file-conventions/loading
@@ -16,7 +16,7 @@ import { Element, div, span, text, renderToString } from "jhonstart";
 import { Boundary, Suspense, holeId } from "jhonstart";
 import { shellHtml } from "jhonstart";
 
-// The hole marker and the `h<n>` id spelling are `contracts.md § 2`'s; front 23
+// The hole marker and the `h<n>` id spelling are `contracts.md § 2`'s; the render (`compose`)
 // assigns the ordinal in shell render order, and front 22 discovers
 // `loading.bp` as a kind-`S` row of the route table (`contracts.md § 1`).
 
@@ -40,7 +40,7 @@ pub fn Page(params: Array<#(string, string)>) -> @Component<Element> {
     ], attrs: [#("class", "blog")]);
 }
 
-// ── what front 23 builds around them ────────────────────────────────────────
+// ── what the render (`compose`) builds around them ────────────────────────────────────────
 
 // The wrapping is mechanical: the segment path gives the id, `loading.bp`'s
 // export gives the fallback, and the page becomes a thunk. Nothing runs here.
@@ -64,7 +64,7 @@ pub fn segmentShell(ordinal: i32, params: Array<#(string, string)>) -> Element {
 
 test "the segment shell shows the loading UI and not the page" {
     val html = shellHtml(segmentShell(1, []));
-    assert html.contains("data-onze-h=\"h1\"");
+    assert html.contains("data-jh-h=\"h1\"");
     assert html.contains("Loading the blog…");
     assert html.contains("the real blog") == false;
 }

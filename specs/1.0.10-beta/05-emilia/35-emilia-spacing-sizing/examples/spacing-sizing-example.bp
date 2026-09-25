@@ -12,7 +12,6 @@
 //       https://tailwindcss.com/docs/max-height
 
 import { emilia, flush, Token } from "emilia";
-import { div, renderToString } from "jhonstart";
 
 // Padding — full scale
 val padAllTokens: Token[] = [
@@ -210,8 +209,6 @@ val logicalTokens: Token[] = [
 ];
 val logicalStyles = emilia(logicalTokens);
 
-val page = div([], []);
-
 #[@future]
 fn main() -> @Future<void> {
     @print("=== F03: Spacing & Sizing Example ===");
@@ -227,7 +224,6 @@ fn main() -> @Future<void> {
     @print("Min Height: " + minHeightStyles);
     @print("Max Height: " + maxHeightStyles);
     @print("Logical: " + logicalStyles);
-    @print(renderToString(page));
     @print(await flush());
 }
 

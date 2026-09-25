@@ -7,7 +7,6 @@
 //       https://tailwindcss.com/docs/border-color
 
 import { emilia, flush, Token } from "emilia";
-import { div, p, renderToString } from "jhonstart";
 
 // Red palette — all 11 tones
 val redTokens: Token[] = [
@@ -260,10 +259,6 @@ val borderColorTokens: Token[] = [
 ];
 val borderColorStyles = emilia(borderColorTokens);
 
-val page = div([
-    p([], []),
-], []);
-
 #[@future]
 fn main() -> @Future<void> {
     @print("=== F14: Color Palette Example ===");
@@ -294,7 +289,6 @@ fn main() -> @Future<void> {
     @print("Bg Blue: " + bgBlueStyles);
     @print("Bg Special: " + bgSpecialStyles);
     @print("Border Color: " + borderColorStyles);
-    @print(renderToString(page));
     @print(await flush());
 }
 

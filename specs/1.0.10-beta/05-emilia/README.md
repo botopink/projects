@@ -9,7 +9,7 @@ whose output both halves of an app read.
 
 | File | Holds |
 |---|---|
-| [`modules.md`](./modules.md) | the package cut — `emilia` · `emilia-test` (the domain candidates and `emilia-jhonstart` evaluated and dropped), the `tokens.bp` resolution, ownership, examples |
+| [`modules.md`](./modules.md) | the package cut — `emilia` · `emilia-test` (the domain candidates and an emilia-side HTML adapter evaluated and dropped), the `tokens.bp` resolution, ownership, examples |
 | [`reference-coverage.md`](./reference-coverage.md) | the Tailwind v4 walk against the 22 fronts; ordering and the shared-file rule |
 | [`unification.md`](./unification.md) | what no front owns yet, or two fronts state differently |
 | [`tailwind-mapping.md`](./tailwind-mapping.md) | the utility → token mapping |
@@ -46,7 +46,7 @@ Fronts on one level may run in parallel; the two shared files are fenced per
 | 46 | [emilia-interactivity](./46-emilia-interactivity/README.md) | medium | 3 | `emilia` (`utilities/interactivity.bp`) | 33 |
 | 47 | [emilia-svg-accessibility](./47-emilia-svg-accessibility/README.md) | low | 3 | `emilia` (`utilities/svg_a11y.bp`) | 33 |
 | 59 | [emilia-custom-utilities-and-variants](./59-emilia-custom-utilities-and-variants/README.md) | medium-high | 3 | `emilia` (`compose.bp`) | 34 · 56 |
-| 48 | [emilia-attributes](./48-emilia-attributes/README.md) | high | 3 | `emilia` (`attributes.bp`, `html_hook.bp`; `jhonstart` dev-only for the integration test) + `repository/jhonstart/src/html_attrs.bp` | [26](../04-jhonstart/26-jhonstart-router/README.md) · 33–47 (the slot is token-agnostic; the tokens are what it carries) |
+| 48 | [emilia-attributes](./48-emilia-attributes/README.md) | high | 3 | `emilia` (`attributes.bp`, `html_hook.bp`, `test/attributes_test.bp`) + `repository/jhonstart/src/html_attrs.bp` (emilia-unaware) | [26](../04-jhonstart/26-jhonstart-router/README.md) · 33–47 (the slot is token-agnostic; the tokens are what it carries) |
 
 Why 54 and 56 are first: 54 *because four copies of the spacing ladder already
 exist in `emilia.bp` and have already drifted; every front admitted after it would add a fifth*;
@@ -56,8 +56,14 @@ exist in `emilia.bp` and have already drifted; every front admitted after it wou
 0/1, 54 lands before 56: `Options.theme` is a `Theme` and `defaultOptions()` calls `defaultTheme()`.
 
 Track D needs nothing from tracks A, B, C or E to start: no socket, no clock, no filesystem. Its
-only contacts are outbound — front 48 into jhonstart, and onze [69](../06-onze/69-onze-styling-pipeline/README.md)
-/ [68](../06-onze/68-onze-client-bundle/README.md) reading `flushWith` and the contract 4 literal.
+only contacts are outbound — front 48's `html_attrs.bp`, written into jhonstart's tree and
+emilia-unaware; the `jhonstart-emilia` bridge (jhonstart
+[30](../04-jhonstart/30-jhonstart-streaming/README.md)) reading `flush` / `flushWith`, whose test is
+where a rendered page and emilia's class meet; and onze
+[68](../06-onze/68-onze-client-bundle/README.md) reading the contract 4 literal. emilia imports
+nobody and carries no dependency, dev-dependency included, on another library: every emilia example
+and test produces CSS and asserts the string, and an example that renders styled HTML is an onze
+example (decisions 113 and 114).
 
 ## Dependency graph
 
@@ -80,7 +86,7 @@ L3    │  │  └───── 38 typography      37 grid ◄── 54 · 56
                                                                            │
 L3   48 attributes ◄── jhonstart 26 (router gate) · the tokens of 33–47 ◄──┘
 
-Outbound:  48 ──► jhonstart (html_attrs.bp)      56 ──► onze 69 (flushWith)   48 ──► onze 68 (class literal)
+Outbound:  48 ──► html_attrs.bp in jhonstart's tree (emilia-unaware)      56 ──► jhonstart-emilia (flush/flushWith)   48 ──► onze 68 (class literal)
 ```
 
 ## Numbering
