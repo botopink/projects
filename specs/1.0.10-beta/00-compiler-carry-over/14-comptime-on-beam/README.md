@@ -179,10 +179,11 @@ was not touched at all** — zero edits, better than the carve-out allowed.
 
 ### Step 3 is not attempted, and the reason is measured
 
-- `beam_asm.zig` is **6 401 lines** with **0** occurrences of `ComptimeModule`, `'__bp_len'`,
-  `'__bp_json'` or `'__bp_prim_'`. An untyped mode would cross ~80 type-directed sites
-  (`string_locals` 22, `isStringExpr` 16, `numKind` 15, primitive dispatch 14, `num_locals` 11,
-  `record_fields` 10, `instance_lowerings` 5).
+- `beam_asm.zig` is **8 422 lines** at `4fe1747e` with **0** occurrences of `ComptimeModule`,
+  `'__bp_len'` or `'__bp_json'`; its 5 `'__bp_prim_'` hits are the typed backend's own run-time
+  dispatch shim for an untyped receiver (`:4941`), not a comptime path. An untyped mode crosses
+  ~80 type-directed sites (at `bef762b`: `string_locals` 22, `isStringExpr` 16, `numKind` 15,
+  primitive dispatch 14, `num_locals` 11, `record_fields` 10, `instance_lowerings` 5).
 - **The typed beam backend already fails the case the untyped mode exists to serve**:
   `"a b".split(" ").map({ x -> x.toUpper() })` with `--target beam` assembles and dies at run time
   with `{unresolved_method, toUpper, 1}`, while the same straight-line typed code runs. In a comptime
@@ -195,6 +196,35 @@ was not touched at all** — zero edits, better than the carve-out allowed.
 **And the value shrank, measured against the post-step-2 build**: erika's 47.7 ms of `compile:file` is
 now paid **once per build**, not 18 times, so step 3 would save ≈ 39 ms of a 645 ms build — ≈ 6 %,
 which is the front's own ≈ 5.6 % estimate, now confirmed rather than projected.
+
+**Re-measured at `4fe1747e` (2026-09-25)** — OTP 29, the same machine, minimum of 3 builds,
+10 repetitions per module in the node:
+
+| | at `bef762b` | at `4fe1747e` |
+|---|---:|---:|
+| `erika-linq` build, `--target commonJS` | 645 ms | **551 ms** |
+| `.erl` modules the build leaves | 1 | **1** (656 lines; 10 540 B `.beam`) |
+| `compile:file` + `code:load_binary`, once per build | 47.7 + 1.3 ms | **54.6 + 2.5 ms** |
+| the same module as `.S` (`erlc -S`), `compile:file(…, [from_asm])` | — | **13.6 ms** (4.05×); `load_binary` 2.3 ms either way |
+| **what step 3 saves** | ≈ 39 ms of 645 ms (≈ 6 %) | **≈ 41 ms of 551 ms (≈ 7.5 %)** |
+| generated N=200: build · modules · ms/eval · `compile:file` | 2 172 ms · 1 · 9.4 · 3.8 ms | **1 322 ms · 1 · 5.6 · 5.9 ms** |
+
+The number sits in the deferral's own band, and the step is no longer this front's to take:
+[`../18-comptime-runtimes/`](../18-comptime-runtimes/README.md) **owns** the untyped lowering mode
+of `beam_asm.zig` (its step 1b — *"C-20 is absorbed. Its body is step 1b verbatim"*),
+`src/comptime/runtime/**` and `scripts/comptime_bench.sh`, and goes past `.S` + `erlc +from_asm`
+to `.beam` bytes over cmd 4 (its steps 1a and 1c, landed). Step 3 stays deferred here; its
+acceptance lines are carried by 18's step 1.
+
+**How the number is taken.** The generated-project rows are the script unchanged
+(`scripts/comptime_bench.sh --n 0,1,10,50,200 --repeat 3 --reps 10`). `erika-linq`'s `erika`
+dependency is `"workspace": true` at HEAD, and the script's `--project` copy carries `path:`
+dependencies only, so the copy leaves its workspace and the build refuses (`"erika": { "workspace":
+true } but botopink.json is not a member of any workspace`). The whole `repository/erika`
+workspace is copied into the scratch tree and the member built there, `BOTOPINK_LIB_ROOTS` pointing
+at the worktree's `repository/`; the in-node split is the script's own `bp_comptime_bench` harness
+over the module that build leaves. The `--project` fix — copy the workspace root of a
+`workspace: true` member — belongs to 18's script.
 
 ### Also reported, not done
 
@@ -408,10 +438,10 @@ evaluations, and the in-node `compile:file` / `code:load_binary` / `main()` spli
 the build left behind.
 
 **Acceptance:**
-- [ ] `scripts/comptime_bench.sh` (or a `modules/compiler-core` test) reproduces
+- [x] `scripts/comptime_bench.sh` (or a `modules/compiler-core` test) reproduces
       [E1](./evidence.md#e1--the-comptime-path-costs-25-ms-per-evaluation-linearly) and
       [E2](./evidence.md#e2) on the runner's machine, writing nothing inside a repository
-- [ ] Its N=0 / N=200 rows are recorded in this README as the **before** line, re-measured, not
+- [x] Its N=0 / N=200 rows are recorded in this README as the **before** line, re-measured, not
       copied
 
 ### Step 1 — the fixed host functions become a resident prelude
@@ -423,13 +453,13 @@ remotely.
 
 **Acceptance:**
 - [ ] `compile:file` of the smallest generated module: **8.47 ms → ≤ 1.5 ms** (step 0's script)
-- [ ] All **48** `----- COMPTIME REPLY` snapshot sections **byte-identical**; the 48
+- [x] All **48** `----- COMPTIME REPLY` snapshot sections **byte-identical** (33 after 06's re-layout); the 48
       `----- COMPTIME ERLANG` sections shrink to the body plus `main/0`, each diff classified in the
       commit message
 - [ ] The located "no primitive type and no host function provides `.foo(…)`" diagnostic still
       fires — the negative fixture that today fails `erl_lint` with `{undefined_function, {ref,1}}`
       still produces the compiler's message, not `erl_lint`'s
-- [ ] `zig build test` green from a cold cache; `zig build test-libs` green
+- [x] `zig build test` green from a cold cache; `zig build test-libs` green
 
 ### Step 2 — the capture becomes an argument; one module per declaration
 
@@ -442,17 +472,17 @@ answer the module atom*) and cmd 3 (*call `Mod:main(Term)`*); **cmd 1 stays** as
 the existing regression tests (`persistent_erl.zig:445-485`).
 
 **Acceptance:**
-- [ ] `erika/examples/erika-linq` erl-side: **960 ms → ≤ 60 ms**, measured with step 0's script
+- [x] `erika/examples/erika-linq` erl-side: **960 ms → ≤ 60 ms**, measured with step 0's script (49.0 ms at `bef762b`; 57.1 ms at `4fe1747e`)
 - [ ] The generated N-call-site project's slope: **≈ 25 ms → ≤ 1 ms per evaluation**; N=200 build
       **5 255 ms → ≤ 600 ms**
-- [ ] `.botopinkbuild/tmp/template/` holds **one** `.erl` per template declaration after a build of
+- [x] `.botopinkbuild/tmp/template/` holds **one** `.erl` per template declaration after a build of
       `erika-linq`, not 18
-- [ ] All 48 `COMPTIME REPLY` sections byte-identical
+- [x] All 48 `COMPTIME REPLY` sections byte-identical (33 after 06's re-layout)
 - [ ] A fixture for each shape that must survive the term round trip: a holed template
       (`${…}` parts), an `@ExprCustom` return with its reference tree, a decorator whose `@Decl`
       handle carries fields, methods, variants and annotations
-- [ ] `botopink clean` removes `tmp/template` and `tmp/decorator` (`cli/clean.zig`)
-- [ ] `zig build test` green from a cold cache; `test-libs` green
+- [x] `botopink clean` removes `tmp/template` and `tmp/decorator` (`cli/clean.zig`) — it removes `.botopinkbuild/` whole, nothing to change
+- [x] `zig build test` green from a cold cache; `test-libs` green
 
 ### Step 3 — the module reaches the node as BEAM assembly — **deferred** (after [`../03-beam/`](../03-beam/README.md) closes, and after the maintainer answers)
 
@@ -481,22 +511,22 @@ falls back instead of failing. The fallback rate is the step's progress metric.
 [`history.md`](./history.md). Recorded so the next reader does not re-derive them.
 
 **Acceptance:**
-- [ ] No row of this front proposes either; the reasons are cited, not restated
+- [x] No row of this front proposes either; the reasons are cited, not restated
 
 ## Gate
 
-- [ ] `scripts/gate.sh --cold` green in this front's worktree (zig build · cold `zig build test` ·
+- [x] `scripts/gate.sh --cold` green in this front's worktree (zig build · cold `zig build test` ·
       `test-bpmp` · beam export audit · `test-cli` · `test-libs` · `test-language`)
-- [ ] The **48** `----- COMPTIME REPLY` sections byte-identical at every step — the reply is the
+- [x] The **48** `----- COMPTIME REPLY` sections byte-identical at every step — the reply is the
       assertion; the listing is not
-- [ ] The 56 `----- COMPTIME VALUES` snapshots untouched (`comptime/eval.zig` is not this front's)
-- [ ] Every re-recorded `COMPTIME ERLANG` listing classified in the commit message (shrink /
+- [x] The 56 `----- COMPTIME VALUES` snapshots untouched (`comptime/eval.zig` is not this front's) — 47 after 06's re-layout, none moved by this front
+- [x] Every re-recorded `COMPTIME ERLANG` listing classified in the commit message (shrink /
       rename / lowering change), never bulk-accepted
-- [ ] Each step's number re-measured with step 0's script and written into this README
-- [ ] `AGENTS.md` updated in the same commit for `src/comptime/`, `src/comptime/runtime/`,
+- [x] Each step's number re-measured with step 0's script and written into this README
+- [x] `AGENTS.md` updated in the same commit for `src/comptime/`, `src/comptime/runtime/`,
       `src/codegen/` and `src/codegen/beam/`; `meta:architecture.md`'s "O que roda onde" table names
       the new shape (it currently says a module is generated and executed per evaluation)
-- [ ] Commit on `fix/comptime-on-beam-<step>`; no push, no merge
+- [x] Commit on `fix/comptime-on-beam-<step>`; no push, no merge (landed on `fix/comptimebeam`, four commits)
 
 ## Blast radius
 
