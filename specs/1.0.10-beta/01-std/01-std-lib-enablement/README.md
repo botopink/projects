@@ -239,11 +239,11 @@ pub fn jsString(s: string) -> string {
 ```
 
 **Acceptance:**
-- [ ] `escape.html("<a href=\"x\">&")` answers `&lt;a href=\"x\"&gt;&amp;` — the `&` is escaped once, not twice
-- [ ] `escape.unescapeHtml(escape.html(s)) == s` for the five entities, on both targets
-- [ ] `escape.attribute` escapes both quote characters and delegates the other three to `html`
-- [ ] `escape.jsString("</script>")` contains no literal `</script>` substring
-- [ ] the module declares no `#[@External.*]` cell and no `import`
+- [x] `escape.html("<a href=\"x\">&")` answers `&lt;a href=\"x\"&gt;&amp;` — the `&` is escaped once, not twice
+- [x] `escape.unescapeHtml(escape.html(s)) == s` for the five entities, on both targets
+- [x] `escape.attribute` escapes both quote characters and delegates the other three to `html`
+- [x] `escape.jsString("</script>")` contains no literal `</script>` substring
+- [x] the module declares no `#[@External.*]` cell and no `import`
 
 ### Step 2 — `path.bp` and `io/fs.bp` additions
 
@@ -281,11 +281,11 @@ pub declare fn glob(pattern: string, root: string) -> @Result<string[], string>;
 ```
 
 **Acceptance:**
-- [ ] `path.isInside("/app", "/app/blog/page.bp")` is true; `path.isInside("/app", "/app/../etc/passwd")` is false
-- [ ] `path.withoutExtension("page.bp")` answers `page`; `path.withoutExtension("noext")` answers `noext`
-- [ ] `fs.walk` on a fixture tree answers the same *set* of relative paths on both targets (order is not asserted — `filelib:fold_files` and `readdirSync` do not agree on it)
-- [ ] `fs.glob("**/page.bp", root)` finds a nested `page.bp` on both targets
-- [ ] the nine existing `path` functions and the existing `fs` functions are byte-unchanged; `path.bp` still declares no `#[@External.*]` cell
+- [x] `path.isInside("/app", "/app/blog/page.bp")` is true; `path.isInside("/app", "/app/../etc/passwd")` is false
+- [x] `path.withoutExtension("page.bp")` answers `page`; `path.withoutExtension("noext")` answers `noext`
+- [x] `fs.walk` on a fixture tree answers the same *set* of relative paths on both targets (order is not asserted — `filelib:fold_files` and `readdirSync` do not agree on it)
+- [x] `fs.glob("**/page.bp", root)` finds a nested `page.bp` on both targets
+- [x] the nine existing `path` functions and the existing `fs` functions are byte-unchanged; `path.bp` still declares no `#[@External.*]` cell
 
 ### Step 3 — `encoding.bp`
 
