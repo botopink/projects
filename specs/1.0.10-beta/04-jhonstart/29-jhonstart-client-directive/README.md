@@ -34,6 +34,8 @@ of what annotation processing already gives: a `@Decl`-first comptime function a
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - No boundary mechanism of any kind in `repository/jhonstart/src/`. `root.bp:15-17` declares three
   modules; none of them is `client`.
 - `hooks.bp:30-60` — five hooks with SSR-only bodies, no marker distinguishing them from a server

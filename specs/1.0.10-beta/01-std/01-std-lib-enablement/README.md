@@ -32,6 +32,8 @@ strings is a timing side channel on both backends.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 Verified by reading `repository/botopink-lang/libs/std/src/` in full.
 
 - **Twenty-four importable modules**, declared one `pub mod` per line in `src/root.bp:13-36`:

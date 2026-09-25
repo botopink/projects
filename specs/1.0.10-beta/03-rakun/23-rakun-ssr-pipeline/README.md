@@ -45,6 +45,8 @@ else about them. A navigation signal raised by a page is jhonstart's to turn int
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `repository/rakun/src/http.bp:45-78` — `Response` has `status` and `body` and nothing else. No
   headers, no streaming body, no cookie jar.
 - `repository/rakun/src/ssr.bp` exists and carries the render as well as the dispatch: the escaping

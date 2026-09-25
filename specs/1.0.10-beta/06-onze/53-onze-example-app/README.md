@@ -49,6 +49,8 @@ milestone's acceptance script: walk the app file by file, and each file names th
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `repository/onze/examples/blog/` does not exist; `repository/onze/` does not exist until
   front 49.
 - `repository/jhonstart/examples/` and `repository/rakun/examples/` exist as per-library demos. None

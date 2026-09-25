@@ -32,6 +32,8 @@ have had to hand-roll it.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - No metadata of any kind in `repository/jhonstart/src/`. `root.bp:15-17` declares three modules.
 - `element.bp:10-53` — eight builders, none of them a head tag.
 - `libs/std/src/` has nineteen modules and **no escaping**. `escape.html` and `escape.attribute` are

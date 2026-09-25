@@ -32,6 +32,8 @@ memory.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - No `Svg`, no `A11y`, and no `fill`, `stroke`, `stroke-width`, `sr-only` or `forced-color-adjust`
   string anywhere in `repository/emilia/src/`.
 - `Color.Hex(value: string)` — `tokens.bp:115` — is the working precedent for a leaf carrying a

@@ -30,6 +30,8 @@ token, no modifier behaviour, and it can land any time after wave 0 without wait
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - No `Table` section; no `border-collapse`, `border-spacing`, `table-layout` or `caption-side`
   string anywhere in `repository/emilia/src/`.
 - `Pad` and `Margin` — `tokens.bp:140-183` — carry the scale `{1, 2, 4, 8, 16}` and `{1, 2, 4, 8}`,

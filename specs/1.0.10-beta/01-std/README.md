@@ -35,6 +35,8 @@ Three further facts make this the blocking front rather than a documentation gap
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 Verified by reading the trees at HEAD `b5ceb203` (meta) on 2026-09-20.
 
 | Piece | State | Evidence |

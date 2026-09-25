@@ -52,6 +52,8 @@ needs the route tree — which front 22 has and front 32 does not.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `repository/rakun/src/file_router.bp` (front 22) — the `kind|pattern|slot|verb` table of
   [`contracts.md` § 1](../../contracts.md), with `R` reserved for route handlers. Its *Definition of done*
   names front 66 as a consumer. Nothing registers a synthetic route today.

@@ -35,6 +35,8 @@ tasks**, not started futures.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - **`src/async.bp` exists** on `std/02-async-primitives` (505 lines): both surfaces, the two
   instruments (`delay`, `failed`), `timeout`, the public reader `errorText` (the `Error` side of a
   settled element — `@Result` has no builtin for it, and a caller that can see *that* a widget failed

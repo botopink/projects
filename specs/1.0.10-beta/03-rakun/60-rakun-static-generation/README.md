@@ -52,6 +52,8 @@ does nothing is worse than one that is missing.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `repository/rakun/src/file_router.bp` (front 22) — the route table: a line-oriented
   `kind|pattern|slot|verb` blob, `parseTable`, `matchPath`, `layoutChain`. No route kind, no
   revalidation deadline, no per-segment configuration.

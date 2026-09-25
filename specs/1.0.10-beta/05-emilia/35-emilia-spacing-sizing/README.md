@@ -33,6 +33,8 @@ kind. A component cannot be given a width today.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 | What | Where | State |
 |---|---|---|
 | `Pad { X{1,2,4,8,16}, Y{1,2,4,8}, All{1,2,4,8,16} }` | `tokens.bp:140-161` | 3 directions, no `0` |

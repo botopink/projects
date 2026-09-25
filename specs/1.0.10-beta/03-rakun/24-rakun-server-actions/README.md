@@ -49,6 +49,8 @@ the rejection is a 403, and there is no setting that turns it off.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `repository/rakun/src/decorators.bp:222-244` — five route-mapping decorators, method-level, no
   function-level marker of any kind and no `'use server'` equivalent.
 - `repository/rakun/src/http.bp:35-43` — `Request.body()` returns the whole body as one `string`.

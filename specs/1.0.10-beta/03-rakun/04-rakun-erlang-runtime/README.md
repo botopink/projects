@@ -36,6 +36,8 @@ them rather than emulating a single-threaded runtime on top of them.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 | Piece | Where it lives today | Erlang counterpart today |
 |---|---|---|
 | Component scan (`rkScan`/`rkScannedNames`/`rkScannedCount`) | `runtime.mjs:20-31`, a module-level array | none |

@@ -31,6 +31,8 @@ sub-dispatcher in this front that returns a `Sheet` rather than a declaration st
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - No `Transition`, no `Animate`, no `transition`, `animation`, `duration` or `ease` string anywhere
   in `repository/emilia/src/`.
 - Six modifiers exist and all of them are instantaneous — `tokens.bp:264-269`,

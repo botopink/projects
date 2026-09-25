@@ -33,6 +33,8 @@ adds new surface, and this one also fixes shipped output.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `Token.Effect` exists with exactly two sub-sections — `tokens.bp:248-262`.
 - `effectTokenToCss` exists and routes to `shadowToCss` / `opacityToCss` — `emilia.bp:356-362`.
 - `shadowToCss` emits invalid CSS — `emilia.bp:364-372`.

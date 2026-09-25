@@ -42,10 +42,10 @@ what was left, now `00-compiler-carry-over`'s order),
 | [87](#87-the-boundary-directives-stay-library-decorators--use-never-leaves-a-function-body) | Boundary directives | (a) `#[client]` / `#[server]` / `#[cache]` stay library decorators; `use` is never a module-level directive |
 | [88](#88-use-lowers-transparently-and-a-component-is-context-fn---element) | `use` lowering on commonJS | (a) transparent on every backend; **amended:** a component is `#[@Context] fn … -> Element` and `Element` implements the context behavior |
 | [89](#89-future-is-unwrapped-for-the-context-owner) | `use` in `-> @Future<Element>` | (a) unwrap `@Future<T>`; `request()` is `-> @Context<Element, Request>` — **revoked by 104** |
-| [102](#102-contextbase-is-the-context-owner-marker-only-use-answers-usec-t-or-componentt) | What is `@Context`, and what does a `use` body return? | `@Context<Base>` is the owner marker only (`Element implement @Context<ElementBase>`); `#[@use]` returns `@Use<C, T>` or `@Component<T>` (≡ `@Use<B, T>`); the bare `-> Element` form leaves |
-| [103](#103-a-generators-prefix-is-the-level-it-extends-generatort--resultgeneratort-e--futuregeneratort-e) | Generator names, channels, and question 97 | `@Generator<T>` (infallible, 97-b) · `@ResultGenerator<T, E>` · `@FutureGenerator<T, E>`; `YieldStep` the one step; `Iterator`, `Iterable`, `IteratorStep`, `Yield`, `C`, `R` leave |
-| [104](#104-only-use-grants-use--decisions-89-and-90-revoked) | Who grants `use`? | Only `#[@use]`; **revokes 89 and 90**; nothing unwrapped; `inContextFn == annotated`; 91 moot, 92 (b), 93 (a); commonJS `async function` for every `#[@use]` |
-| [105](#105-three-loop-keywords-and-generator-loop-is-a-generator-scope) | Loops | `loop` / `while (…)` / `for (…) { x -> }`; `#[@generator] loop { … }` is a generator scope worth its wrapper; `yield v` emits, `break v` emits and ends, only there; a plain fn's loops are statements |
+| [102](#102-contextbase-is-the-context-owner-marker-only-use-answers-usec-t-or-componentt) | What is `@Context`, and what does a `use` body return? | `@Context<Base>` is the owner marker only (`Element implement @Context<ElementBase>`); `#[@use]` returns `@Use<C, T>` or `@Component<T>` (≡ `@Use<B, T>`); the bare `-> Element` form leaves — **superseded in part by 118, 120 and 121** |
+| [103](#103-a-generators-prefix-is-the-level-it-extends-generatort--resultgeneratort-e--futuregeneratort-e) | Generator names, channels, and question 97 | `@Generator<T>` (infallible, 97-b) · `@ResultGenerator<T, E>` · `@FutureGenerator<T, E>`; `YieldStep` the one step; `Iterator`, `Iterable`, `IteratorStep`, `Yield`, `C`, `R` leave — **superseded in part by 118, 121, 122 and 123** |
+| [104](#104-only-use-grants-use--decisions-89-and-90-revoked) | Who grants `use`? | Only `#[@use]`; **revokes 89 and 90**; nothing unwrapped; `inContextFn == annotated`; 91 moot, 92 (b), 93 (a); commonJS `async function` for every `#[@use]` — **superseded in part by 118, 120 and 121** |
+| [105](#105-three-loop-keywords-and-generator-loop-is-a-generator-scope) | Loops | `loop` / `while (…)` / `for (…) { x -> }`; `#[@generator] loop { … }` is a generator scope worth its wrapper; `yield v` emits, `break v` emits and ends, only there; a plain fn's loops are statements — **superseded in part by 118, 122, 123 and 125** |
 | [106](#106-std-in-three-categories-a-pure-root-io-and-testing) | The shape of std | Pure root · `io/` · `testing/`; a root module imports nothing from `io/`; merge only where the name wins (`collections`, `hash`, `encoding`); 71 amended in path only |
 | [107](#107-import-a-dotted-path-and-a-braced-group-are-one-tree-and-only-the-leaf-enters-scope) | Import grammar | `import {a: {b: {c}}, x.y.z, e.t.r*}` — dotted path and braced group are one tree; only the leaf enters scope; `*` / `as` on the leaf; no `from` = the package root |
 | [108](#108-getcontex--getcontext) | `getContex` | Renamed `getContext` (99-a) |
@@ -54,10 +54,20 @@ what was left, now `00-compiler-carry-over`'s order),
 | [111](#111-collections-functions-are-scoped-to-the-type-they-build) | `empty` / `fromList` collide in `collections.bp` | Type-scoped: `Dict.empty()`, `Set.fromList(xs)`, `Queue.empty()`; the one exception to 106's "moves paths, not function names" |
 | [112](#112-dsl-hygiene-each-name-resolves-in-the-scope-of-whoever-wrote-it) | In which scope does DSL-generated code resolve names? | Hygiene (5-a): text the lib writes in `e.build` resolves in the lib's module, text from `e.text()` at the call site; `e.lookup(name)` resolves at the call site and returns the declaration's identity, never the alias |
 | [113](#113-the-libraries-split-by-concern-emilia-is-css-jhonstart-is-html-rakun-is-the-service-on-erlang-onze-wires-them) | Which library owns what, and who may import whom? | emilia CSS · jhonstart HTML · rakun the service, erlang first · onze wires them; jhonstart ⇄ rakun never import each other; the render and `RenderHooks` move to jhonstart; `ElementView` leaves; markers `data-jh-*`; globals `__bp<N>` from a registry; emilia enters through `jhonstart-emilia`; answers 94, 100, 101; amends 77 — **amended by 115, 116 and 117** |
-| [114](#114-the-seams-decision-113-left-open-rakun-routing-an-async-renderplugin-with-a-payload-rakuns-opaque-page-renderer-examples-in-onze-action-names-and-the-request-handed-in-by-onze) | The eight seams 113 left open | (a) on all eight: `rakun-routing` (`["erlang", "commonJS"]`) holds the pure matcher; `RenderPlugin` is asynchronous and gains `payload` (emilia's bridge fills `s`); rakun holds an opaque `PageRenderer` per route over `ChunkWriter`; `LayoutProps` and the UI conventions are jhonstart's; combining examples live in onze; onze passes the action wire names (default `__bp_action` / `X-Bp-Action`) and the `RequestData`; amends 113 — **amended by 115, 116 and 117** |
+| [114](#114-the-seams-decision-113-left-open-rakun-routing-an-async-renderplugin-with-a-payload-rakuns-opaque-page-renderer-examples-in-onze-action-names-and-the-request-handed-in-by-onze) | The eight seams 113 left open | (a) on all eight: `rakun-routing` (`["erlang", "commonJS"]`) holds the pure matcher; `RenderPlugin` is asynchronous and gains `payload` (emilia's bridge fills `s`); rakun holds an opaque `PageRenderer` per route over `ChunkWriter`; `LayoutProps` and the UI conventions are jhonstart's; combining examples live in onze; onze passes the action wire names (default `__bp_action` / `X-Bp-Action`) and the `RequestData`; amends 113 — **amended by 115, 116 and 117** — **superseded in part by 120** |
 | [115](#115-routing-is-a-bundled-library-a-signal-after-the-first-chunk-is-markup-jhonstart-gains-redirect-rakuns-keys-are-rakun) | The five points 114 left open | (a) on the four: the bundled library `routing` (`libs/routing`, erlang + commonJS, pure) holds the matcher and the `k` / `z` / URL-rule codecs, and rakun and jhonstart import it directly — `rakun-routing` and onze's `match` leave; after the first chunk `notFound` / `redirect` are markup jhonstart's client executes, status 200; jhonstart gains `redirect(url)` and pages import signals and `cookies` from jhonstart; rakun reads `rakun.*` keys only (`rakun.actions.bodyLimit`, `rakun.appDir`); 114's invented names stay; amends 113 and 114 — **amended by 116 and 117** |
 | [116](#116-code-two-libraries-both-run-is-neutral-routing-gains-navigation-and-param-actions-and-validation-are-bundled-libraries-std-writes-json) | Nine more pieces two libraries both run | (a) on eight, (b) on validation: `routing` gains `navigation` (the signal vocabulary, neutral `nav:` reasons, the `n` codec) and `pattern` (the `:param` grammar); bundled libraries `actions` (the action envelope, `state` grammar, JSON-RPC body, `refresh`) and `validation` (rakun-validation moved, message lookup injected — rakun has no commonJS member left); std gains `json.quote` / `unquote` / `array` / `object` and `escape.scriptJson`, and `encoding` / `contentHash` replace every private copy; onze configures front 82's static server; amends 113, 114 and 115 — **amended by 117** |
-| [117](#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only) | Nine points 113–116 left: who handles a page signal, the late-signal global, the layout form, the action `redirect`, the body limit, front 07, reading JSON, sidecars, rakun's targets | (a) on eight, (b) on front 07: jhonstart handles `redirect` / `notFound` itself over a generic `Response(status, header, write, close)`, server and client-only (`clientApp`) alike, and checks the target (`matchPath`, `allowedRedirects`); onze only adapts rakun's response, whose `ChunkWriter` gains `setStatus` / `setHeader`; rakun keeps `redirect` for actions only; `globals.signal` → `__bp2`; `#[layout]` / `#[page]` / `#[template]` require `#[@use] … -> @Component<Element>`; `OnzeConfig.actionsBodyLimit` (1 MiB); front 07 folded into `01-std-lib-enablement`; std `Json` + `json.decode`; bundled libraries `.bp` only; every rakun manifest `["erlang"]`; amends 113–116 |
+| [117](#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only) | Nine points 113–116 left: who handles a page signal, the late-signal global, the layout form, the action `redirect`, the body limit, front 07, reading JSON, sidecars, rakun's targets | (a) on eight, (b) on front 07: jhonstart handles `redirect` / `notFound` itself over a generic `Response(status, header, write, close)`, server and client-only (`clientApp`) alike, and checks the target (`matchPath`, `allowedRedirects`); onze only adapts rakun's response, whose `ChunkWriter` gains `setStatus` / `setHeader`; rakun keeps `redirect` for actions only; `globals.signal` → `__bp2`; `#[layout]` / `#[page]` / `#[template]` require `#[@use] … -> @Component<Element>`; `OnzeConfig.actionsBodyLimit` (1 MiB); front 07 folded into `01-std-lib-enablement`; std `Json` + `json.decode`; bundled libraries `.bp` only; every rakun manifest `["erlang"]`; amends 113–116 — **superseded in part by 118, 120 and 121** |
+| [118](#118-the-return-type-is-the-annotation) | How does a function gain an effect? | By writing the wrapper literally as its return (`@Result`, `@Task`, `@Use`, `@Component`, `@Iterator`, `@Stream`); an alias does not activate; the six effect annotations leave; one return, one effect (R5 by construction); `use` only under `@Use` / `@Component` — supersedes parts of 95, 98, 102–105 and 117 |
+| [119](#119-what-return-does-in-an-effect-body) | What does `return` do in an effect body? | `T` is wrapped through every layer; a value of any layer passes through the outer ones; an ambiguous nested wrapper asks for `Ok(…)` (`effect-return-ambiguous-nesting`) |
+| [120](#120-taskt-replaces-futuret-e-a-task-never-fails) | `@Future<T, E>`? | Replaced by `@Task<T>`, which never fails; `await` answers the value (a `@Result` when there is one), `try await` propagates; the chain is `@Use ⊃ @Task`, `@Result` leaves it; commonJS `async function` for every `@Task` / `@Use` / `@Component` return |
+| [121](#121-only-result-fails) | Which wrappers fail? | Only `@Result`; `throw` / `try` are legal wherever a layer of the return is a `@Result`; a component handles its errors in its body |
+| [122](#122-iteratort-and-streamt-over-yieldstept-for-does-no-implicit-try) | The generators | `@Iterator<T>` (was `@Generator`) and `@Stream<T>` over `YieldStep<T> { Yield, Done }`; `@ResultGenerator` / `@FutureGenerator` leave; a `@Result` item fails per item; `for` does no implicit `try` and iterates any `@Iterator` in any body |
+| [123](#123-iterator-or-factory-a-body-that-yields-is-an-iterator) | An `@Iterator` return with no `yield`? | A factory — an ordinary function returning an iterator; mixing `yield` and `return <iterator>` is `iter-mixed-yield-return` |
+| [124](#124-the-async-block-is-a-closed-expression-worth-taskt) | A Task inside a function | `async { … }`: a closed block worth `@Task<T>` (`@Task<@Result<U, E>>` when it throws or tries); `return` leaves the block; `async` is contextual |
+| [125](#125-iter-and-stream-prefix-a-loop-and-make-it-an-iterator-or-a-stream) | An iterator inside a function | `iter` / `stream` before `loop` / `while` / `for`: a closed expression worth `@Iterator` / `@Stream`, the item `@Result` inferred from `throw` / `try`; replaces `#[@X] loop` |
+| [126](#126-a-host-function-returning-taskresultt-e-turns-a-rejection-into-errore) | A host function that can fail | `#[@External…] … -> @Task<@Result<T, E>>` turns a rejection / `{error, …}` into `Error(e)`; `-> @Task<T>` makes a rejection a fatal host failure |
+| [127](#127-no-coexistence-the-old-annotations-and-wrappers-are-errors-with-a-fix-it-and-a-codemod) | A compatibility window for the old forms? | None (decision 67): `effect-annotation-removed`, `effect-type-removed`, `iterator-error-param-removed`, each with a fix-it, and the codemod `botopink migrate effects` |
 
 ## 68. One milestone, the 1.0.9 numbers kept, the drafts deleted
 
@@ -359,6 +369,8 @@ Implements: the `implement` clauses in `libs/std/src/builtins.d.bp`, the `try`/`
 legality checks in `comptime/infer.zig`, and their refusals — a body that writes a capability above
 its level is refused, located, with no flag (decision 67).
 
+**Superseded in part by [118](#118-the-return-type-is-the-annotation), [120](#120-taskt-replaces-futuret-e-a-task-never-fails), [121](#121-only-result-fails) and [122](#122-iteratort-and-streamt-over-yieldstept-for-does-no-implicit-try) (2026-09-26):** the return grants the capabilities, not an annotation (118); the chain is `@Use ⊃ @Task`, with `@Stream ⊃ @Task`, and `@Result` is outside it (120); only `@Result` fails — "every effect can fail" no longer holds (121); the generator rows are `@Iterator<T>` / `@Stream<T>` (122). What stays: the chain grants downwards, never upwards; `use` and `yield` stay exclusive to their wrappers.
+
 ## 96. One `ContextBase` per function, and `Element` carries its base
 
 **Decided 2026-09-21 by the maintainer.** In his words: *"todos da mesma função deve usar o mesmo
@@ -435,6 +447,8 @@ carve-out from its "touches no `codegen/**`" rule.
 **`AsyncIterator` is not re-declared as a protocol** and no `AsyncIterable` is added: nothing needs
 them, and unused surface is surface that drifts (decision 67's spirit). Implements: front 20 step 1 (F2).
 
+**Superseded in part by [118](#118-the-return-type-is-the-annotation), [120](#120-taskt-replaces-futuret-e-a-task-never-fails), [122](#122-iteratort-and-streamt-over-yieldstept-for-does-no-implicit-try) and [124](#124-the-async-block-is-a-closed-expression-worth-taskt) (2026-09-26):** the one word for suspension is `Task` (`@Task<T>`, never failing), not `Future`; `#[@futureGenerator]` / `@FutureGenerator` leave for `@Stream<T>` — the runner-up this decision rejected; § 1's annotation ↔ wrapper pairing is moot because the annotations leave; `async` returns as the block keyword `async { }` only. What stays: no JavaScript names in botopink source, the TypeScript mapping as the one place they appear.
+
 ## 102. `@Context<Base>` is the context-owner marker only; `#[@use]` answers `@Use<C, T>` or `@Component<T>`
 
 **Decided 2026-09-24 by the maintainer.** `@Context` stops being an effect wrapper and keeps one
@@ -493,6 +507,8 @@ Implements: `libs/std/src/builtins.d.bp` (`Context<Base>`, `Use<C, T>`, `Compone
 the `codegen/typescript.zig` and `codegen/wat.zig` name mappings (decision 98's carve-out), and
 jhonstart's `element.bp` plus its annotated bodies and wrappers — the `effect-chain` task
 (front 21). The `04-jhonstart/**` specs already spell the new surface.
+
+**Superseded in part by [118](#118-the-return-type-is-the-annotation), [120](#120-taskt-replaces-futuret-e-a-task-never-fails) and [121](#121-only-result-fails) (2026-09-26):** the annotation `#[@use]` leaves — `-> @Use<C, T>` / `-> @Component<T>` is itself the grant (118); `Use<C, T>` extends `Task`, not `Future` (120); a hook or component `throw`s / `try`s only when its `T` is a `@Result` (121). What stays: `@Context<Base>` as the owner marker only, the two wrappers, `@Component<T>` ≡ `@Use<B, T>`, the bare `-> Element` form leaving.
 
 ## 103. A generator's prefix is the level it extends: `@Generator<T>` · `@ResultGenerator<T, E>` · `@FutureGenerator<T, E>`
 
@@ -572,6 +588,8 @@ Implements: `libs/std/src/builtins.d.bp` (the behaviors above; `Iterator`, `Iter
 requires the level), the `codegen/typescript.zig` and `codegen/wat.zig` name mappings — the
 `effect-chain` task, its first step.
 
+**Superseded in part by [118](#118-the-return-type-is-the-annotation), [121](#121-only-result-fails), [122](#122-iteratort-and-streamt-over-yieldstept-for-does-no-implicit-try) and [123](#123-iterator-or-factory-a-body-that-yields-is-an-iterator) (2026-09-26):** the three generators become `@Iterator<T>` and `@Stream<T>` over `YieldStep<T> { Yield(value: T), Done }` — `@ResultGenerator`, `@FutureGenerator` and the `Error` step leave, a failing item is an `@Result` item (122); the consumer table goes: `for` does no implicit `try` and iterates any `@Iterator` in any body (122); the annotations leave (118); a function returning `@Iterator` without `yield` is a factory (123). What stays: 97 (b) as `@Iterator<T>` infallible, `break v` as an item, `Iterable` / `C` / `R` gone.
+
 ## 104. Only `#[@use]` grants `use` — decisions 89 and 90 revoked
 
 **Decided 2026-09-24 by the maintainer.** Decision 90 let `#[@future] fn Page() -> @Future<Element>`
@@ -623,6 +641,8 @@ the case R5 could not; front 28's `request()` and every `04-jhonstart` server co
 Implements: `comptime/infer.zig` (`contextInfoFromReturn` without unwrap; `annotated == inContextFn`;
 the RC5 hint), `codegen/commonJS.zig` (`fnKeyword`: `.use` → `async function`) — the `effect-chain`
 task, in the same step as decision 102 (the two are not separable once the bare form is gone).
+
+**Superseded in part by [118](#118-the-return-type-is-the-annotation), [120](#120-taskt-replaces-futuret-e-a-task-never-fails) and [121](#121-only-result-fails) (2026-09-26):** `use` is granted by a `@Use` / `@Component` return, not by `#[@use]` (118); `@Component ⊃ @Use ⊃ @Task` (120), and commonJS's `async function` keys on a `@Task` / `@Use` / `@Component` return; the chain case keeps `use` and `await`, not `try` (121). What stays: rules 2–5, one flag (`inContextFn == annotated`, now set by the return), and the revocation of 89 and 90.
 
 ## 105. Three loop keywords, and `#[@generator] loop` is a generator scope
 
@@ -721,6 +741,8 @@ in rakun, jhonstart and the specs (a mechanical rewrite to `for (xs) { x -> }`; 
 Implements: `lexer.zig`, `parser/exprs.zig`, `comptime/infer.zig` and the four codegens (`while` /
 `for`; `#[@generator] loop` as a lazy generator expression; `yield` / `break v` gated by generator
 scope; labels), `docs.md` — the `loops` task, after `effect-chain`.
+
+**Superseded in part by [118](#118-the-return-type-is-the-annotation), [122](#122-iteratort-and-streamt-over-yieldstept-for-does-no-implicit-try), [123](#123-iterator-or-factory-a-body-that-yields-is-an-iterator) and [125](#125-iter-and-stream-prefix-a-loop-and-make-it-an-iterator-or-a-stream) (2026-09-26):** `#[@generator] loop` / `#[@resultGenerator] loop` / `#[@futureGenerator] loop` become `iter` / `stream` before any of `loop`, `while`, `for` (125); `for await` iterates a `@Stream`, and `for` over a fallible iterator is no implicit `try` (122); a generator scope is a function returning `@Iterator` / `@Stream` that yields (118, 123). What stays: the three keywords, statements `void`, ranges, parentheses, labels, the nearest-scope rule, the closed body.
 
 ## 106. std in three categories: a pure root, `io/` and `testing/`
 
@@ -1434,6 +1456,8 @@ jhonstart import directly; onze no longer hands `match` to the router. Item 7's
 
 **Amended by [117](#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only):** item 5's `ChunkWriter` gains `setStatus` / `setHeader` (legal before the first `write` only) and a renderer may close it; a navigation reason raised out of a page renderer is an error, not a status. Item 8's `renderStream` takes a jhonstart `Response` in place of the `write` function and answers no reason.
 
+**Superseded in part by [120](#120-taskt-replaces-futuret-e-a-task-never-fails) (2026-09-26):** items 2, 3, 5 and 8 respelled — `@Future<X>` is `@Task<X>` in `RenderPlugin`, `ChunkWriter`, `PageRenderer` and `renderStream`, and `#[@future]` leaves `renderStream` and emilia's `flush()`.
+
 ## 115. Routing is a bundled library, a signal after the first chunk is markup, jhonstart gains `redirect`, rakun's keys are `rakun.*`
 
 **Decided 2026-09-26 by the maintainer**, on the recommended option (a) of the four points decision
@@ -1909,3 +1933,648 @@ refusal), 26 (`clientApp`, the client half of the signals) and 31 (the not-found
 (page signals leave), 24 (`redirect` into `n`) and 05 (`json.decode`); onze fronts 49 (the
 `Response` adapter, `actionsBodyLimit`, `allowedRedirects`) and 53 (every page, layout and template
 a component).
+
+**Superseded in part by [118](#118-the-return-type-is-the-annotation), [120](#120-taskt-replaces-futuret-e-a-task-never-fails) and [121](#121-only-result-fails) (2026-09-26):** item 3's markers require `-> @Component<Element>` with no `#[@use]` (118); item 1's `Response`, `ChunkWriter` and boot closure are `@Task<void>`, `renderStream` loses `#[@future]` (120); item 1's page handles a failed load in its body (`try await loadPost(…) catch null`), and "a failed render is the future's error" has no home until `renderStream`'s `@Result` is decided (121 — front 24 step E7).
+
+## 118. The return type is the annotation
+
+**Decided 2026-09-26 by the maintainer** (D-A of the effect revision), in his words: *"Não existe
+anotação: o retorno é a anotação."* An ordinary function may not fail, wait, use hooks or produce a
+sequence. It gains one of those capabilities by writing the effect wrapper, literally, as its return
+type, and by nothing else:
+
+| Return | The body may write |
+|---|---|
+| `T` | only `try … catch` (the error is handled on the spot) |
+| `@Result<T, E>` | `throw` · `try` |
+| `@Task<T>` | `await` |
+| `@Use<C, T>` or `@Component<T>` | `use` · `await` |
+| `@Iterator<T>` | `yield` · `break v` |
+| `@Stream<T>` | `yield` · `break v` · `await` |
+
+`throw` and `try` are also legal in `@Task`, `@Use`, `@Iterator` and `@Stream` when the value (or the
+item) is a `@Result<U, E>` — decision 121.
+
+```bp
+pub fn parsePort(s: string) -> @Result<i32, ParseError> {
+    if (s == "") { throw ParseError.Empty; };
+    val n = try toInt(s);                 // if toInt fails, the error propagates from here
+    if (n > 65535) { throw ParseError.TooBig(value: n); };
+    return n;                              // becomes Ok(n)
+}
+```
+
+The rules:
+
+1. **The wrapper must be written in the return.** `-> @Task<User>` activates the effect; an alias
+   (`type Job<T> = @Task<T>`) does **not** — whoever reads the signature has to see the `@`. The
+   alias is resolved to type the function, never to activate the effect; a capability used under an
+   aliased return is `effect-wrapper-behind-alias`. An alias on a function that uses no capability
+   (it only passes a value along) is legal.
+
+   ```bp
+   pub type Parser<T> = @Result<T, ParseError>;
+   fn porAlias(s: string) -> Parser<i32> {
+       throw ParseError.Empty;       // ✗ effect-wrapper-behind-alias: write `@Result<i32, ParseError>`
+   }                                 //   in the return to activate the effect
+   ```
+
+2. **The capabilities form a chain, and each level grants everything below it:**
+
+   ```
+   @Component<T>  ≡  @Use<B, T>
+        @Use<C, T>  ⊃  @Task<T>        use · await
+        @Stream<T>  ⊃  @Task + yield   yield · await
+        @Iterator<T>                   yield
+   ```
+
+   So a hook may `await`, and a stream may `await`. `@Result` is not a level of the chain
+   (decision 120); `throw` / `try` follow the fallible channel (decision 121).
+3. **The chain grants downwards only.** `use` exists only under a `@Use` / `@Component` return;
+   `yield` only in iterators and streams; `await` neither under a `@Result` return nor in an
+   `@Iterator`; `throw` / `try` only where the return carries a `@Result`. Writing a capability the
+   return does not grant is a located compile error, with no flag to switch it off (decision 67).
+4. **One function, one effect, by construction.** A function has one return, so it has one effect;
+   R5 (one effect annotation per fn, `effect-duplicate-annotation`) is no longer a rule — it is what
+   a single return means.
+5. **The annotations leave.** `#[@result]`, `#[@future]`, `#[@use]`, `#[@generator]`,
+   `#[@resultGenerator]` and `#[@futureGenerator]` are no longer part of the language; writing one is
+   `effect-annotation-removed` with a fix-it (decision 127). `#[page]`, `#[layout]` and `#[template]`
+   stay: they are library attributes — metadata, not effects.
+6. **`use` is legal only under `-> @Use<…>` or `-> @Component<…>`.** Everything decisions 96 and 104
+   say about the body's base holds, read off the return instead of an annotation: one base per
+   function, the refusal at the second `use` naming both; a component is called (`Counter()`), never
+   `use`d; hooks compose; the compiler knows no library's base.
+
+   ```bp
+   fn Page() -> @Task<Element> {
+       use cookies();                // ✗ use-without-context-effect: `use` requires a
+   }                                 //   @Use<…> or @Component<…> return
+
+   fn Misturado() -> @Component<Element> {
+       val a = use state(0);         // base ElementBase
+       val t = use tenant();         // ✗ two bases in one function (ElementBase and RequestBase) —
+   }                                 //   located at the second `use`, naming both
+
+   fn Errado() -> @Component<Element> {
+       return use Counter();         // ✗ a component is called (`Counter()`); `use` is for hooks
+   }
+
+   fn foraDoCorpo() {
+       val f = fn() { use state(0); };   // ✗ `use` does not leave the body of the function whose
+   }                                     //   return is @Use
+   ```
+
+   A function that only builds HTML and activates no hook is not a component — it returns `Element`
+   (`pub fn Badge(label: string) -> Element`).
+
+**Supersedes:**
+- **95** — the annotation column of its table and the rule "the annotation grants every capability
+  at or below its level": the *return* grants them. The paragraph "R5 stands — one effect annotation
+  per fn" is replaced by rule 4. The chain itself is re-cut by 120 and the failure rule by 121.
+- **98 § 1** — the annotation ↔ wrapper name pairing is moot: there are no annotations to pair.
+- **102** — the annotation `#[@use]` and "One annotation for both"; the example becomes
+  `fn counter() -> @Use<ElementBase, i32>` / `fn Page() -> @Component<Element>`. What stays:
+  `@Context<Base>` as the owner marker only, `@Use<C, T>`, `@Component<T>` ≡ `@Use<B, T>`,
+  `effect-wrapper-mismatch` for `@Component<X>` with `X` owning no context, and the bare
+  `-> Element` form leaving (a component that activates a hook and returns `-> Element` is refused).
+  "R5 stands" and "`@Future` / `#[@future]`, `@Result` / `#[@result]` and decision 98 are untouched"
+  no longer hold.
+- **103** — the annotation column (`#[@generator]`, `#[@resultGenerator]`, `#[@futureGenerator]`)
+  and "What it does not change: the annotation names"; `Grid`'s `iter` is
+  `fn iter(self: Self) -> @Iterator<i32>`.
+- **104** — the title rule "only `#[@use]` grants `use`" becomes "only a `@Use` / `@Component`
+  return grants `use`"; `FnContext.annotated` / `env.inContextFn` are set by that return, not by an
+  annotation; "R5 — one effect annotation per fn" is replaced by rule 4. Its rules 2–5, the
+  revocation of 89 and 90, and questions 91–93's closures stand; rule 6 is restated by 120.
+- **105** — `#[@X] loop` as the loop's annotated form (replaced by 125) and "a generator scope is an
+  annotated `fn`": it is a function whose return is `@Iterator` / `@Stream` and that yields
+  (decision 123).
+- **117 item 3** — `#[layout]` / `#[page]` / `#[template]` require `-> @Component<Element>` (no
+  `#[@use]`); the refusal names the return form, not the annotation.
+- **113, 115, 116** — not superseded: none of the three writes an effect annotation or wrapper.
+
+Bears on: 120–127, which state the rest of the revision; decision 88's component form (already
+restated by 102); decision 96 (unchanged, read off the return).
+Implements: front [`24-effects-by-return`](./00-compiler-carry-over/24-effects-by-return/README.md)
+steps E2 (the annotations parsed only to be refused) and E3 (effect mode read from the syntactic
+return; `effect-wrapper-behind-alias`).
+
+## 119. What `return` does in an effect body
+
+**Decided 2026-09-26 by the maintainer** (D-B). In a function whose return is an effect wrapper:
+
+- `return v` with `v: T` **wraps** — `Ok(v)`, a resolved Task, … — through **every** layer: with
+  `-> @Task<@Result<U, E>>`, `return v` with `v: U` is a Task holding `Ok(v)`;
+- `return w` with `w` already of a layer's type **passes through** the layers outside it: `return r`
+  with `r: @Result<U, E>` is a Task holding `r`; `return t` with `t` of the whole type passes as is;
+- a nested wrapper where the value fits two layers (`-> @Result<@Result<i32, E>, E>`) is
+  `effect-return-ambiguous-nesting`, asking for an explicit `Ok(…)`.
+
+```bp
+fn primeiroOk(a: @Result<i32, E>, b: @Result<i32, E>) -> @Result<i32, E> {
+    case (a) {
+        .Ok(_) -> return a;               // passes through: already @Result<i32, E>
+        .Error(_) -> return b;
+    }
+}
+```
+
+Inside `async { }`, `return` leaves the block, not the enclosing function (decision 124).
+
+**Supersedes:** **95**'s reliance on `builtins.d.bp`'s `Future` auto-wrap (`return t` →
+`Future.resolved(t)`, `throw e` → `Future.rejected(e)`): wrapping is now this rule over every
+layer, and `throw` never rejects a Task (decision 120).
+Bears on: 121 (a `throw` in `@Task<@Result<…>>` lands in the value).
+Implements: front 24 step E3.3.
+
+## 120. `@Task<T>` replaces `@Future<T, E>`; a Task never fails
+
+**Decided 2026-09-26 by the maintainer** (D-C). `@Task<T>` is "a value that has not arrived yet";
+`await` unwraps it. A Task **never fails**: when the operation can go wrong, the value is a
+`@Result`, and `await` hands over that `@Result`. To propagate the error, combine with `try`.
+
+```bp
+import {http} from "std";
+
+pub type User(id: i32, name: string);
+
+pub fn fetchUser(id: i32) -> @Task<@Result<User, string>> {
+    val res = try await http.get("https://api.exemplo.com/users/" + id.toString());
+    if (res.status == 404) { throw "user " + id.toString() + " does not exist"; };
+    val body = try json.decode(res.body);            // throw/try legal: the value is @Result
+    return userFromJson(body);                       // a Task holding Ok(…)
+}
+
+pub fn delayed(ms: i32) -> @Task<void> {             // a Task that cannot fail: await, no try
+    await timer.sleep(ms);
+}
+```
+
+**`await` and `try` are separate.** `await t` waits; `try r` propagates. With
+`t: @Task<@Result<U, E>>`:
+
+| Written | Answers | Legal where |
+|---|---|---|
+| `await t` | `@Result<U, E>` | an await channel |
+| `try await t` | `U` (the error propagates) | an await channel **and** a `@Result` in the return |
+| `try await t catch x` | `U` (or `x`) | an await channel |
+
+`try await x` parses as `try (await x)`. `await` types `@Task<X>` → `X` and propagates nothing.
+`await` without an await channel (a `@Task`, `@Use`, `@Component` or `@Stream` return, an
+`async { }` block or a `stream` loop) is `effect-await-without-task`; a function with no await
+channel consumes a Task through the Task's own functions (`.map`, `.then` …).
+
+**The chain is `@Use ⊃ @Task`, and `@Result` leaves it.** `@Use<C, T>` and `@Component<T>` extend
+`@Task`; `@Stream` is a `@Task` that also yields. So every hook and every component may `await`.
+
+**Backends.** commonJS: every function returning `@Task`, `@Use` or `@Component` is an
+`async function`, whether or not it awaits (decision 104 rule 6, kept), and its caller `await`s
+it; a `throw` in a `@Task<@Result<…>>` body **does not reject the Promise** — it resolves with the
+`Error` value. erlang, beam and wasm: the Task is eager and `await` is the identity.
+
+**Supersedes:**
+- **95** — the chain `@Context ⊃ @Future ⊃ @Result` and the rule "every effectful body can fail, so
+  every wrapper implements `@Result`": the chain is `@Use ⊃ @Task` (`@Stream ⊃ @Task`), with
+  `@Result` outside it (failure: 121). The `@Future<T, E = any>` error channel it relied on
+  (`builtins.d.bp:140`) is removed.
+- **98** — "one word for suspension: `Future`". The word is `Task`, and `@Future` leaves (with its
+  `E`). The TypeScript mapping reads `@Task` → `Promise`. 98's sentence that `Async` leaves the
+  vocabulary entirely no longer holds for the block keyword `async { }` (decision 124); no wrapper is
+  named `Async`.
+- **102** — `pub behavior Use<C, T> extends Future` becomes `extends Task`; "`map` on a
+  `@Future<T, E>` answers `@Future<R, E>`" becomes `@Task<R>`.
+- **104** — "`@Component ⊃ @Future`" becomes `@Component ⊃ @Use ⊃ @Task`; rule 6's commonJS
+  `async function` now keys on the return (`@Task` / `@Use` / `@Component`), and its "their `@Future`
+  is eager" reads `@Task`. The refused example is `fn Page() -> @Task<Element> { use pathname(); }`.
+- **114** — items 2, 3, 5 and 8 respelled: `RenderPlugin`'s `head` / `chunk` / `payload` return
+  `@Task<…>`, `close` returns `@Task<@Result<void, string>>`; `ChunkWriter`'s `write` / `close` and
+  `PageRenderer` return `@Task<void>`; `renderStream` is `fn … -> @Task<…>` with no `#[@future]`;
+  the bridge awaits emilia's `flush()`, whose annotation leaves.
+- **117** — item 1's `Response.write` / `close` and rakun's `ChunkWriter` are `-> @Task<void>`;
+  `renderStream` loses `#[@future]`; the onze boot closure is `fn(req, out) -> @Task<void>`.
+  Item 1's "a failed render is the future's error" has no home under this decision (a Task does not
+  fail) — see the note under 121.
+
+Bears on: `01-std/02-std-async-primitives` (every signature is `@Task`, E7 of front 24); 121.
+Implements: front 24 steps E1 (`@Task<T>` in `builtins.d.bp`), E3.4, E4 (`for await`'s channel) and
+E5.
+
+## 121. Only `@Result` fails
+
+**Decided 2026-09-26 by the maintainer** (D-D), in his words: *"Só `@Result` falha."* `@Task`,
+`@Use`, `@Iterator` and `@Stream` never fail. When something can fail, the failure goes **inside the
+value**: `@Task<@Result<T, E>>`, `@Iterator<@Result<T, E>>`. `throw` and `try` are legal whenever
+there is a `@Result` in **some layer** of the return — `@Result<…>`, `@Task<@Result<…>>`,
+`@Use<C, @Result<…>>`, `@Iterator<@Result<…>>`, `@Stream<@Result<…>>` — and the receiver decides
+what to do with the error. The checker computes two independent things from the return: the level
+(`use` / `await` / `yield`) and whether a `@Result` is present; `throw` / `try` depend only on the
+second. Without one they are `effect-try-without-fallible-channel`.
+
+Three ways to consume a `@Result`, of which only the second needs the channel:
+
+```bp
+fn portOrDefault(s: string) -> i32 {                     // 1) try … catch — any function
+    return try parsePort(s) catch 8080;
+}
+
+fn loadConfig(text: string) -> @Result<Config, ParseError> {   // 2) try alone — propagates
+    val port = try parsePort(text);
+    return Config(port: port);
+}
+
+fn describe(s: string) -> string {                       // 3) case — both outcomes
+    case (parsePort(s)) {
+        .Ok(p) -> return "port " + p.toString();
+        .Error(.Empty) -> return "empty";
+        .Error(.NotANumber(text: t)) -> return "not a number: " + t;
+        .Error(.TooBig(value: v)) -> return "too big: " + v.toString();
+    }
+}
+
+fn mustParse() {                                         // val assert — fatal if it does not match
+    val assert Ok(p) = parsePort("443");
+    @print(p);
+}
+```
+
+**A component handles its errors in its body.** `@Component<Element>` returns `Element`, not a
+`@Result`, so a component catches, `case`s, calls `notFound()` or renders an error screen; a hook
+propagates only when its `T` is a `@Result`:
+
+```bp
+#[page]
+pub fn PostPage(ctx: PageContext) -> @Component<Element> {
+    val post = try await loadPost(ctx.param("id")) catch null;
+    if (post == null) { notFound(); };
+    if (post.movedTo != "") { redirect("/posts/" + post.movedTo); };
+    return div([h1([text(post.title)]), Counter()]);   // a component is CALLED, not `use`d
+}
+
+pub fn tenant() -> @Use<RequestBase, @Result<Tenant, string>> {
+    val id = use requestId();                // same base: ok
+    return try await tenants.byRequest(id);  // try legal: T is @Result
+}
+
+fn Propaga() -> @Component<Element> {
+    val u = try await fetchUser(1);          // ✗ effect-try-without-fallible-channel: Element is not
+}                                            //   a @Result; use `catch`, `case` or `notFound()`
+```
+
+A type error that uses a `@Result` where a `U` is expected carries a hint: suggest `try await`
+when the value came from an `await`, `try r` when it came from a `for` item, and point at the
+`try` / `throw` that made an inferred value a `@Result` (decisions 124, 125).
+
+**Supersedes:**
+- **95** — "every effect can fail" (the title's second half), and the rows granting `try` to
+  `#[@context]`, `#[@futureGenerator]`, `#[@future]` and `#[@iterator]` bodies by level.
+- **102** — `@Use`'s and `@Component`'s inherited `try` (through `Future ⊃ Result`): they `throw` /
+  `try` only when `T` is a `@Result`.
+- **103** — the refusal text `` `@Generator` has no error channel; use `@ResultGenerator<T, E>` ``:
+  the refusal is `effect-try-without-fallible-channel`, pointing at `@Iterator<@Result<T, E>>`.
+- **104** — the chain case "a server component that `await`s and `use`s" keeps `await` and `use`,
+  not `try`.
+- **117** — item 1's page `val post = await loadPost(…)`, which relied on the page propagating a
+  failed load, is `try await loadPost(…) catch null` (the guide's spelling); item 3's layouts and
+  templates likewise handle their errors in the body. **Not decided here:** item 1 says a failed
+  render (the target check, a plugin's `close`) "is the future's error"; a Task has no error, so
+  `renderStream`'s return must carry a `@Result` — which `E`, and whether `Response.write` /
+  `ChunkWriter.write` stay infallible `@Task<void>`, is front 24 step E7's question for the
+  maintainer.
+
+Bears on: 120, 122 (the item as the carrier of failure).
+Implements: front 24 step E3.2 and E3.9.
+
+## 122. `@Iterator<T>` and `@Stream<T>` over `YieldStep<T>`; `for` does no implicit `try`
+
+**Decided 2026-09-26 by the maintainer** (D-E). An iterator produces a sequence on demand (lazy):
+each `next` runs the body up to the next `yield`. A stream is the same, asynchronous: finding out
+whether there is a next item may need to wait (paging, a socket, a file).
+
+```
+@Iterator<T>    synchronous    yield · break v
+@Stream<T>      asynchronous   yield · break v · await
+```
+
+`@Generator` is renamed `@Iterator<T>`; `@ResultGenerator` and `@FutureGenerator` leave; `@Stream<T>`
+enters. Both use one step, which loses the `E` and the `Error` variant:
+
+```bp
+pub type YieldStep<T> { Yield(value: T), Done }
+```
+
+Inside an iterator or a stream: `yield v` emits `v` and **continues**; `break v` emits `v` and
+**ends** (≡ `yield v; break;`); a bare `break` outside any inner loop ends without emitting.
+
+```bp
+pub fn fibonacci(limit: i32) -> @Iterator<i64> {
+    var a: i64 = 0;
+    var b: i64 = 1;
+    var i = 0;
+    while (i < limit) {
+        yield a;
+        val t = a + b; a = b; b = t;
+        i = i + 1;
+    };
+}
+
+fn main() {
+    for (fibonacci(10)) { n -> @println(n); };     // legal in a plain function
+}
+```
+
+**Items that can fail — `@Iterator<@Result<T, E>>`.** The iterator does not fail; **each item** may
+be an error. With an item `@Result<U, E>`: `yield v` with `v: U` emits `Ok(v)`, with
+`v: @Result<U, E>` emits it as is; `throw e` emits `Error(e)` and ends (≡ `break Error(e)`); a `try x`
+that fails emits `Error(e)` and ends. In a `@Stream<@Result<…>>` a failing `try await` does the same.
+
+```bp
+pub fn parseLines(text: string) -> @Iterator<@Result<i32, ParseError>> {
+    for (text.split("\n")) { line ->
+        if (line == "") { continue; };
+        yield try parsePort(line);        // failed → emits Error(e) and ends
+    };
+}
+```
+
+**The consumer receives the `@Result` and decides. `for` does no implicit `try`**, and iterating any
+`@Iterator` is legal in any function:
+
+```bp
+fn sumPorts(text: string) -> @Result<i32, ParseError> {  // stop at the first error: explicit try
+    var total = 0;
+    for (parseLines(text)) { r -> total = total + try r; };
+    return total;
+}
+
+fn printPorts(text: string) {                             // carry on after an error: case
+    for (parseLines(text)) { r ->
+        case (r) {
+            .Ok(p) -> @println(p);
+            .Error(e) -> @println("error: " + e.toString());
+        }
+    };
+}
+```
+
+**Streams are iterated with `for await`**, which needs an await channel (a `@Task`, `@Use`,
+`@Component` or `@Stream` return, an `async { }` block, or a `stream` loop):
+
+```bp
+pub fn pages(url: string) -> @Stream<@Result<Array<User>, string>> {
+    var next = url;
+    while (next != "") {
+        val res = try await http.get(next);       // failed → emits Error(e) and ends
+        val body = try json.decode(res.body);
+        yield usersFrom(body);                    // emits Ok(…)
+        next = nextLink(body);
+    };
+}
+
+fn countUsers() -> @Task<@Result<i32, string>> {
+    var n = 0;
+    for await (pages("https://api.exemplo.com/users")) { batch ->
+        n = n + (try batch).length;
+    };
+    return n;
+}
+```
+
+**No `Iterable`.** A type that wants to be iterated exposes an ordinary method answering an iterator
+(`fn iter(self: Self) -> @Iterator<i32>`), called as `for (g.iter())`.
+
+The refusals: `throw` / `try` with an item that is not a `@Result` is
+`effect-try-without-fallible-channel`; `await` in an `@Iterator` is `iter-await` (use `@Stream`);
+`@Iterator<T, E>` is `iterator-error-param-removed` (use `@Iterator<@Result<T, E>>`).
+
+```bp
+fn h() -> @Iterator<User> {
+    yield await fetchUser(1);   // ✗ iter-await: `await` does not exist in @Iterator; use @Stream
+}
+
+fn velho() -> @Iterator<i32, ParseError> { … }
+                                // ✗ iterator-error-param-removed: use
+                                //   @Iterator<@Result<i32, ParseError>>
+```
+
+**Backends.** commonJS: an `@Iterator` that yields is a `function*`, a `@Stream` an
+`async function*`; a failing `throw` / `try` on an `@Result` item is `yield {Error: e}; return;`.
+erlang, beam and wasm: today's `@Generator` / `@FutureGenerator` representations, renamed; a failing
+item emits `Error(e)` and ends.
+
+**Supersedes:**
+- **95** — the `#[@iterator]` / `@Iterator<T, E, C>`, `#[@futureGenerator]` and `#[@generator]` rows,
+  and "`yield` stays exclusive to the three generator wrappers": it is exclusive to `@Iterator` and
+  `@Stream` (and the loops of 125).
+- **98** — `@FutureGenerator` and the argument rejecting `@Stream` because an IO type would want the
+  name: the maintainer chose `@Stream`. Measured for front 24 step E1: no `Stream` or `Task` type in
+  `libs/std/src/*.bp` at compiler `feat` `0beaa1f9`; the specs' only "stream" is rakun front 89's
+  prose. The TypeScript mapping reads `@Iterator` → `IterableIterator`, `@Stream` → `AsyncGenerator`.
+- **103** — the three wrappers and their table; `YieldStep<T, E = void>` with `Error(error: E)`;
+  and the consumer's table (a `for` over a fallible generator is an implicit `try` / `await` that
+  needs the level). Question 97's answer (b) — the plain iterator is infallible — stands as
+  `@Iterator<T>`; `break v` as an item, `Iterable` leaving and the `C` / `R` channels leaving stand.
+- **105** — `for await` iterates a `@Stream` (not a `@FutureGenerator`); the sentence "`for` over a
+  fallible generator follows decision 103: an implicit `try` / `await` that requires the level";
+  and the "surfaces only at the consumer, where `for` requires it" of the annotated loop.
+
+Bears on: 123, 125; `docs.md` § generators.
+Implements: front 24 steps E1 (`@Iterator<T>`, `@Stream<T>`, `YieldStep<T>`), E3.8, E4 and E5.
+
+## 123. Iterator or factory: a body that yields is an iterator
+
+**Decided 2026-09-26 by the maintainer** (D-F). A function whose return is `@Iterator` or `@Stream`
+**is an iterator if its body has `yield` or `break v`** — searched in the function's own scope,
+entering neither closures nor inner `iter` / `stream` loops. Without them it is an ordinary function
+that **returns** a ready iterator (a factory). Mixing `yield` with `return <iterator>` in one body is
+`iter-mixed-yield-return`.
+
+```bp
+fn pares(xs: i32[]) -> @Iterator<i32> {                 // iterator: has yield
+    for (xs) { x -> if (x % 2 == 0) { yield x; }; };
+}
+
+fn paresDe(xs: i32[]) -> @Iterator<i32> {               // factory: returns an iterator
+    return iter for (xs) { x -> if (x % 2 == 0) { yield x; }; };
+}
+
+fn k(xs: i32[]) -> @Iterator<i32> {
+    yield 0;
+    return xs.iter();           // ✗ iter-mixed-yield-return: iterator (yield) and factory
+}                               //   (return) in the same body
+```
+
+A factory lowers as a plain function on every backend.
+
+**Supersedes:** **103** / **105** — "a generator scope is a `#[@generator]` / `#[@resultGenerator]`
+/ `#[@futureGenerator]` body — of a `fn` or of a `loop`": the function's half is this rule.
+Implements: front 24 steps E3.5 and E5.
+
+## 124. The `async` block is a closed expression worth `@Task<T>`
+
+**Decided 2026-09-26 by the maintainer** (D-G). `async { … }` creates a `@Task` without declaring a
+function. It is legal in **any** function, a plain one included: the block awaits nothing outside
+itself, it **creates** the Task.
+
+```bp
+fn dispara() -> @Task<@Result<Array<User>, string>> {
+    return async.allOf([
+        async { return try await fetchUser(1); },              // @Task<@Result<User, string>>
+        async { return (try await fetchUser(2)).withRole("admin"); },
+    ]);
+}
+
+val tique = async { await timer.sleep(100); return 1; };       // @Task<i32>
+```
+
+The rules:
+
+- `return v` **leaves the block** with `v`, not the enclosing function — the block behaves as a
+  closure called in place;
+- it is **closed**: its body starts a new capability context; inside a function returning `@Use`, an
+  `async { }` may not `use`;
+- `T` comes from the `return`s. If the body has `throw` or `try`, the value becomes `@Result<U, E>`
+  on its own, `E` from those `throw` / `try`. Two different error types are
+  `gen-infer-conflicting-errors`, suggesting an annotation: `val x: @Task<@Result<User, string>> =
+  async { … };`
+- `break :outer` / `continue :outer` crossing the block's border are refused.
+
+`async` is a **contextual** word: it is a keyword only immediately before `{`. `import {async} from
+"std"` and `async.allOf(…)` keep meaning the std module.
+
+**Backends.** commonJS: `(async () => { … })()`. erlang, beam and wasm: the block runs in place.
+
+**Supersedes:** **98**'s "`Async` leaves the vocabulary entirely" — for the block keyword only; there
+is still no `@Async` wrapper.
+Bears on: 119 (`return` inside the block), 121 (the hint pointing at the `try` that made the value a
+`@Result`).
+Implements: front 24 steps E2 (the `AsyncBlock` node), E3.6–E3.7 and E5.
+
+## 125. `iter` and `stream` prefix a loop and make it an iterator or a stream
+
+**Decided 2026-09-26 by the maintainer** (D-H). Alone, `loop`, `while` and `for` are statements
+(`void`, decision 105). With `iter` or `stream` in front, any of the three becomes an **expression**
+worth the iterator or the stream:
+
+| Form | Worth |
+|---|---|
+| `iter loop` · `iter while` · `iter for` | `@Iterator<T>` |
+| `stream loop` · `stream while` · `stream for` · `stream for await` | `@Stream<T>` |
+
+```bp
+fn main() {
+    val numeros = iter loop {                // @Iterator<i32>
+        val n = readNumber();
+        if (n < 0) { break n; };             // emits n and ends
+        yield n * 2;                         // emits and continues
+    };
+    for (numeros) { x -> @println(x); };
+
+    val contagem = iter while (i > 0) { yield i; i = i - 1; };
+
+    val pares = iter for ([1, 2, 3, 4]) { x -> if (x % 2 == 0) { yield x; }; };
+
+    // the item becomes @Result on its own when the body has throw/try:
+    val lidos = iter loop { yield try parsePort(readLine()); };
+                                             // @Iterator<@Result<i32, ParseError>>
+    val remotos = stream for (ids) { id -> yield try await fetchUser(id); };
+                                             // @Stream<@Result<User, string>>
+    val ticks = stream loop { await timer.sleep(1000); yield now(); };
+                                             // @Stream<Instant>
+
+    @println(soma(iter for (xs) { x -> yield x * x; }));   // as an argument
+}
+```
+
+The rules:
+
+- `iter` and `stream` are **contextual**: keywords only immediately before `loop`, `while` or `for`.
+  `g.iter()`, `val stream = …` and `http.stream(…)` stay legal;
+- the prefixed loop **is** the iterator: `break` and `break v` in it end the sequence;
+- it is **closed**: its body has only the iterator's / stream's capabilities, never the enclosing
+  function's — inside a function returning `@Use`, an `iter loop` may neither `use` nor `await`;
+- `await` only in `stream`; in `iter` it is `iter-await`, suggesting `stream`;
+- the item becomes `@Result<U, E>` when the body has `throw` / `try`. To pin the type, annotate the
+  `val` — `val xs: @Iterator<i32> = iter loop { … }` — and a `try` in the body is then a located
+  error. Two different error types in the body are `gen-infer-conflicting-errors`, asking for the
+  annotation;
+- `yield` inside an **unprefixed** `for` / `while` / `loop` feeds the nearest generator scope;
+  `yield :label v` and `break :label v` choose another;
+- `break :outer` / `continue :outer` crossing the border of an `iter` / `stream` loop are refused,
+  as leaving a closure;
+- `yield` and `break v` exist only in a generator scope (a function returning `@Iterator` /
+  `@Stream` that yields, or an `iter` / `stream` loop). To collect in a plain function, use
+  `xs.map(…)` / `filter(…)` or a `var`:
+
+  ```bp
+  fn dobro(xs: i32[]) -> i32[] {
+      for (xs) { x -> yield x * 2; };   // ✗ `yield` outside a generator scope
+  }
+  ```
+
+**Backends.** commonJS: `iter …` is `(function* () { … })()`, `stream …` is
+`(async function* () { … })()`. erlang, beam and wasm: the function's lowering, inline.
+
+**Supersedes:** **105** — `#[@generator] loop` / `#[@resultGenerator] loop` / `#[@futureGenerator]
+loop` and the whole bullet list under "`#[@generator] loop` — the loop as a generator": the
+expression's type (now `@Iterator` / `@Stream`, the `@Result` item inferred), "Only `loop` takes the
+annotation" (all three forms take the prefix; `#[@generator] loop { for (xs) { … }; break; }` is
+`iter for (xs) { … }`), and "a `#[@resultGenerator] loop` may `try` / `throw` … without the enclosing
+fn having the level". What stays: the three keywords, statements `void`, ranges, parentheses,
+labels, the nearest-scope rule, the closed body, the refused `break :outer` across the border, and
+the desugaring to a local parameterless iterator called in place (with erlang/beam's mutable
+capture).
+Bears on: 122 (the item), 123 (a factory returns `iter for …`).
+Implements: front 24 steps E2 (the `GenLoop { kind, loop }` node in expression position), E3.6–E3.7
+and E5.
+
+## 126. A host function returning `@Task<@Result<T, E>>` turns a rejection into `Error(e)`
+
+**Decided 2026-09-26 by the maintainer** (D-I). A `#[@External.<Target>(…)]` function declared
+`-> @Task<@Result<T, E>>` converts a rejected Promise (Node) or an `{error, …}` answer (Erlang) into
+`Error(e)`. Declared `-> @Task<T>`, a rejection is a fatal host failure — that form is for a host
+that guarantees it does not fail.
+
+```bp
+#[@External.Node("./helpers.mjs", "parse"),
+  @External.Erlang("helpers", "parse")]
+pub declare fn parse(input: string) -> i32;
+```
+
+| | commonJS | erlang / beam / wasm |
+|---|---|---|
+| `-> @Task<@Result<…>>` | `try { await p } catch (e) { return {Error: …} }` | `{error, R}` → `Error(R)` |
+| `-> @Task<T>` | `await p`; a rejection is a fatal failure | as today |
+
+Only the `External.<Target>` form exists (`#[@external]` in lowercase is an error); `inline = true`
+(on `External.Erlang` / `External.Beam` only) keeps the backend's hand-written shape; the bundled
+libraries' native code is inline templates only (decision 117 item 8, unchanged).
+
+**Supersedes:** none of 95, 98, 102–105, 113–117 — it states the host boundary under decisions
+120 and 121.
+Implements: front 24 step E5 (the two host rows) and its host cells.
+
+## 127. No coexistence: the old annotations and wrappers are errors with a fix-it and a codemod
+
+**Decided 2026-09-26 by the maintainer** (D-J). The six effect annotations, `@Future`, `@Generator`,
+`@ResultGenerator`, `@FutureGenerator` and `@Iterator<T, E>` become compile errors with a suggested
+correction and a codemod, `botopink migrate effects`. There is **no compatibility mode** — no release
+accepting the old forms with a warning, and no flag — because this is a beta and because of
+[decision 67](../1.0.5-beta/decisions-taken.md#67-the-most-restrictive-behaviour-and-no-configuration-that-bypasses-it).
+The migration plan's alternative (one version accepting the old forms with a warning, an error in
+the next) is rejected; the codemod covers the mechanical part, and marks the rest for review with
+`// TODO(migrate-effects)`.
+
+| Written | Diagnostic | Fix-it |
+|---|---|---|
+| `#[@result]` · `#[@future]` · `#[@use]` · `#[@generator]` · `#[@resultGenerator]` · `#[@futureGenerator]` | `effect-annotation-removed` | remove the annotation (on a loop: `iter` / `stream`) |
+| `@Future` · `@Generator` · `@ResultGenerator` · `@FutureGenerator` | `effect-type-removed` | the new name (`@Future<T, E>` → `@Task<@Result<T, E>>`) |
+| `@Iterator<T, E>` | `iterator-error-param-removed` | `@Iterator<@Result<T, E>>` |
+
+The old names that had already left stay gone: `#[@context]` / `@Context<B, R>` as an effect,
+`#[@iterator]` / `#[@asyncGenerator]` / `@AsyncIterator`, `Iterable`, `IteratorStep`, `Yield<T, R>`,
+`loop (xs) { x -> }` / `loop (cond)` / `loop await`.
+
+**Supersedes:** nothing in 95–117 beyond what 118–126 state; it fixes how the change lands.
+Bears on: every library front whose examples spell the old annotations (listed in front 24's README).
+Implements: front 24 steps E2 (the three diagnostics) and E6 (the codemod).

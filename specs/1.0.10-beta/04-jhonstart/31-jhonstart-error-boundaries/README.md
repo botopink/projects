@@ -29,6 +29,8 @@ string }`). jhonstart has neither the digest nor the logging it correlates with.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - No error handling anywhere in `repository/jhonstart/src/`. `root.bp:15-17` declares three modules.
 - `#[@result] fn … -> @Result<D, E>` with `throw`/`try`/`case` is landed and documented
   (`docs.md:513-524`). `@Result` variants are `Ok(result: R)` and `Error(error: E)`

@@ -30,6 +30,8 @@ that forwards a user-supplied URL today would happily fetch `http://169.254.169.
 
 ## Current state
 
+Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
+
 - `libs/std/src/http.bp:55` — `pub declare fn fetch(url: string) -> @Future<Response>`; GET only, no headers, no timeout. `http.bp:71` — `fetchStatus`. That is the entire outbound surface in the ecosystem.
 - `libs/std/src/http.bp:25-29` — the file's own docblock states BEAM and wasm are out of scope and a caller on those backends fails with a missing-external diagnostic.
 - `repository/rakun/modules/rakun-client/src/root.bp` — docblock plus `// Module contents will be added by the respective fronts.`
