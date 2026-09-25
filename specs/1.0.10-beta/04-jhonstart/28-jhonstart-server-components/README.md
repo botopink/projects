@@ -4,7 +4,7 @@
 **Priority:** critical — this is the front the whole server/client split exists for; without it every component is a client component and the BEAM render has nothing to render
 **Target:** erlang (server)
 **Wave:** 4
-**Depends on:** 26 · 01 (escaping) · 30 (payload envelope, read-only) · 62 (request context, read-only) · 94 (element builders used by the examples)
+**Depends on:** 26 · 01 (escaping) · 30 (payload envelope, read-only; its `render` / `renderStream` receive the `RequestData` and enter it) · 94 (element builders used by the examples) — and no rakun module: the request reaches jhonstart as a `RequestData` onze builds from rakun's `Request` and hands to the render (decision 114, item 8)
 **Owns:** `repository/jhonstart/src/server.bp` (promoted from `server.d.bp`), `repository/jhonstart/test/server_test.bp`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (front 26), `src/link.bp` (front 27), `src/client.bp` (front 29), `src/root.bp` and `botopink.json` (front 94)
 **Reference:** `NEXTJS-DOCS.md § 7. Server e Client Components` · `§ 9. Busca de Dados (Fetching)` · `§ 26. Referência de Funções` · https://nextjs.org/docs/app/getting-started/server-and-client-components · https://nextjs.org/docs/app/getting-started/fetching-data
@@ -22,7 +22,8 @@ server components exist to fix.
 `src/server.d.bp` is where the answer was supposed to live and it is 26 lines of declaration. Its
 header lists three blockers (`server.d.bp:9-17`): `request()` is host-bound, "the async SSR data
 layer … is gated on the effect-await surface", and `Http` is "a phantom `@Context` base (no
-members)". The first has a producer now — front 62 owns request scope on the BEAM. The second is
+members)". The first has a producer now — onze hands every render the request as a `RequestData`
+(decision 114), and the render is what `request()` reads. The second is
 closed: `#[@future] fn … -> @Future<T>` with `await` is landed and in production use
 (`repository/emilia/src/emilia.bp:62-65`). The third never worked and this front drops it; see
 *Language gaps*.
@@ -104,14 +105,20 @@ laziness; it is the ecosystem's decided shape — rakun's `Request` does exactly
 (`repository/rakun/src/http.bp:30-34`). An optional would force `.unwrapOr` at every call site in
 every page, and `?T` handling is the single most common place the old spec examples went wrong.
 
-### 3. Request scope comes from front 62, not from here
+### 3. The request is handed in by onze, through the render
 
-`cookies()`, `headers()`, `after()`, `connection()`, `draftMode()` and per-request memoization are
-**front 62**'s (`rakun-request-context`). This front does not declare a parallel set. `server.bp`
-owns the seam: front 62's dispatcher calls `fillRequest` once per request, and the six cells read
-jhonstart's own `jhonstart_server` module (Step 2). The encoding is the same `k=v&k=v` string front
-26 uses, decoded by front 26's `decodePairs`. If the encoding changes, this file changes and nothing
-else in jhonstart does — which is the point of keeping it to six `declare fn` lines.
+onze builds a `RequestData` from rakun's `Request` and passes it to front 30's
+`render` / `renderStream(input, req, write)` (decision 114, item 8). The render enters it through
+`enterRequest(req)` before the tree is built and leaves it when the render ends; `request()`,
+`headers()` and `cookies()` read the value the render entered, from jhonstart's own
+`jhonstart_server` module (Step 2). No rakun code calls into jhonstart and no jhonstart cell names a
+rakun module — the two share nothing at run time. The stored encoding is the same `k=v&k=v` string
+front 26 uses, decoded by front 26's `decodePairs`; if it changes, this file changes and nothing else
+in jhonstart does.
+
+`after()`, `connection()`, `draftMode()` and per-request memoization stay **front 62**'s
+(`rakun-request-context`): an application that needs them imports rakun itself. This front neither
+re-declares nor calls them.
 
 ### 4. The loader convention
 
@@ -191,18 +198,16 @@ duplicated key.
 ### Step 2 — Binding the request context
 
 The six cells are **dual-target against jhonstart's own** `jhonstart_server` erlang module and
-`./server_runtime.mjs` sidecar — front 26's precedent — with `fillRequest` as the single `pub`
-writer that front 62's dispatcher calls once per request. That keeps the seam where `02-packaging`
-puts it: the app names the framework, never the reverse. If front 62 would rather own the module
-atom, it is one line per accessor in `server.bp`.
+`./server_runtime.mjs` sidecar — front 26's precedent — with `enterRequest(req: RequestData)` as the
+single writer and `leaveRequest()` as its pair, both called only by front 30's render, once per
+render, with the `RequestData` onze handed it. That keeps the seam where `02-packaging` puts it: the
+app names the framework, never the reverse.
 
 An erlang-only cell is not writable here. A `#[@External.Erlang(…)]` cell with no `#[@External.Node]`
 sibling reds the **commonJS compile** at the wrapper's call site (`` `__jhMethod` has no
 `#[@External.<Target>(…)]` for the node backend ``) even though nothing on that row calls it — the
 refusal is right under decision 67, and whether it can be owed by the **reachable call** rather than
-by the declaration's presence is a compiler row in `status.md`. And a cell bound to
-`rakun_request_context` would resolve on erlang and then die `{error, undef}`: rakun's module is not
-jhonstart's to load.
+by the declaration's presence is a compiler row in `status.md`.
 
 The pair decoder is **front 26's `decodePairs`**, not `std/querystring`: `querystring.bp:22` emits a
 bare `slice/3` it never defines, `erlc` refuses the module and the runner skips it silently on the
@@ -217,6 +222,10 @@ declare fn __jhMethod() -> string;
 
 // … `__jhPath`, `__jhParams`, `__jhQuery`, `__jhHeaders`, `__jhCookies`, each dual-target
 //    on the same two modules, `-> string`
+
+// the writer pair, called only by front 30's render with the `req` onze handed it
+pub fn enterRequest(req: RequestData) -> i32
+pub fn leaveRequest() -> i32
 
 pub fn request() -> RequestData {
     return RequestData(
@@ -247,10 +256,13 @@ RequestData>`, activated as `use request()` inside a `#[@use] fn … -> @Compone
 - [ ] every cell is dual-target — `#[@External.Erlang("jhonstart_server", …)]` with its
       `#[@External.Node]` twin in `./server_runtime.mjs`; there is no erlang-only cell in the file,
       and the member compiles on both rows
-- [ ] `fillRequest` is the only `pub` writer, and front 62's dispatcher calls it once per request
-- [ ] `cookies()` and `headers()` are the only two re-exported shortcuts; `after`, `connection`,
-      `draftMode` and memoization are called from front 62 directly and are not re-declared here
-- [ ] `request()` over a context filled by `fillRequest` reconstructs the six fields
+- [ ] `enterRequest` is the only writer and `leaveRequest` its pair; outside `server.bp` and front
+      30's `render.bp` nothing calls either (grep in the gate)
+- [ ] `cookies()` and `headers()` are the only two shortcuts; `after`, `connection`, `draftMode` and
+      memoization are front 62's, not re-declared here and not called from jhonstart
+- [ ] `request()` after `enterRequest(req)` reconstructs the six fields of `req`
+- [ ] no cell in `server.bp` names a rakun module, and `grep -rn rakun modules/jhonstart/src` is
+      empty
 
 ### Step 3 — The server-component convention
 
@@ -339,7 +351,7 @@ along.
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| `#[@use]`, `@Component` and `@Use` are not in the compiler yet, so `use request()` cannot be written | `request()`, `cookies()`, `headers()` in `server.bp` | plain functions over the filled request context, called without `use` | **decided, unwritten** (decision 104; [`19-use-activation`](../../00-compiler-carry-over/19-use-activation/README.md) step 2): `#[@use] fn Page() -> @Component<Element>` writes `use request()` and awaits its loaders under the one annotation, and `request()` is re-declared `#[@use] fn request() -> @Use<ElementBase, RequestData>` |
+| `#[@use]`, `@Component` and `@Use` are not in the compiler yet, so `use request()` cannot be written | `request()`, `cookies()`, `headers()` in `server.bp` | plain functions over the request the render entered, called without `use` | **decided, unwritten** (decision 104; [`19-use-activation`](../../00-compiler-carry-over/19-use-activation/README.md) step 2): `#[@use] fn Page() -> @Component<Element>` writes `use request()` and awaits its loaders under the one annotation, and `request()` is re-declared `#[@use] fn request() -> @Use<ElementBase, RequestData>` |
 | Declared parameter defaults are never applied | every `Element` builder call in both examples spells `attrs: []`, inner `text(…)` included | write every argument | apply the declared default when an argument is omitted |
 | `xs[0]` silently drops the index on the beam backend (`tests/language/expected-failures.txt`) | reading the first row of a loader's result | `.at(0).unwrapOr(default)` | make the index expression lower correctly on beam, or reject it there |
 
@@ -354,7 +366,7 @@ Assertions:
 1. `RequestData` construction and each of the four accessors, present and absent.
 2. Each accessor over an empty list, a single pair, and a duplicated key — `pairValue` itself is
    front 26's and is tested there, not re-tested here.
-3. `request()` over a context filled by `fillRequest`: six strings in, the record out.
+3. `request()` after `enterRequest(req)`: the record in, the same record out.
 4. A `#[@use]` component that awaits a stub loader and renders — `await` works directly in a
    `test` block, so this runs without a host render loop.
 5. A component with two sequential awaits at statement level.
@@ -369,8 +381,8 @@ erlang, and makes every other assertion construct its `RequestData` explicitly.
       to front 94
 - [ ] `RequestData`, four accessors, `request`, `cookies`, `headers` all `pub` and tested
 - [ ] every cell is dual-target; no erlang-only cell in the file
-- [ ] `fillRequest` and the `k=v&k=v` encoding are agreed with front 62 and written down in
-      `repository/jhonstart/docs.md`
+- [ ] `enterRequest` / `leaveRequest`, their one caller (front 30's render) and the `k=v&k=v`
+      encoding are written down in `repository/jhonstart/docs.md`
 - [ ] the `Http` phantom base and the `Request` behavior are gone, and `AGENTS.md` says why
 - [ ] every untrusted value in an example passes through front 01's `escape.html` /
       `escape.attribute`; this front hand-rolls no escaping

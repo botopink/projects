@@ -34,7 +34,8 @@ All in `modules/jhonstart-test/src/`. Every helper serialises and calls `snapsho
 | `assertClientBundleEntry(loc, islands: Array<Island>)` (`assert_island.bp`) | `--- payload i` then one `<id> <component> <props>` line per island (the `islandEntry` tuple, space-joined); `--- markup` then `renderToString(clientMount(island, []))` per island |
 | `assertStream(loc, chunks: Array<string>)` (`assert_stream.bp`) | for each chunk `--- chunk <n>` (`--- chunk 0 (shell)` for the first) followed by the chunk |
 | `assertDocument(loc, doc: string)` (`assert_render.bp`) | the document split one tag per line after `<body>`; the payload script's JSON one key per line |
-| `renderStreamCollect(a: App, input: PageInput) -> @Future<Array<string>>` (`harness.bp`) | `renderStream` with a `write` that appends to an array — the chunks in the order `write` received them |
+| `renderStreamCollect(a: App, input: PageInput, req: RequestData) -> @Future<Array<string>>` (`harness.bp`) | `renderStream` with a `write` (`fn(string) -> @Future<void>`) that appends to an array — the chunks in the order `write` received them |
+| `fixtureRequest(path) -> RequestData` (`harness.bp`) | a `GET` `RequestData` for `path` with no params, query, headers or cookies — the value onze would build from rakun's `Request` |
 | `fixturePageOver(path, shell: Element, child: fn() -> @Component<Element>) -> PageInput` (`harness.bp`) | a `PageInput` over one root segment whose page is `shell` with one boundary over `child`, build id `build-0001` |
 | `renderToStream(shell: Element, boundaries: Array<Boundary>) -> @Future<Array<string>>` (`harness.bp`) | `[shellHtml(shell)] ++ [fillHtml(await resolve(b), "") …]` in **declaration** order, no plugin — the harness has no scheduler; completion order is front 30's `render_test.bp` |
 | `assertErrorBoundary(loc, b: ErrorBoundary)` (`assert_error_boundary.bp`) | `renderBoundaryChecked(b)`: `outcome: ok` + newline + markup, or `outcome: error <message>` |
@@ -583,7 +584,7 @@ test "ssr: a page with no comments still renders its heading" {
 <article><h1>Solo</h1><section><h2>Comments</h2><ul></ul></section></article>
 ```
 
-Not snapshotted: `request()` over the six `jhonstart_server` cells (`fillRequest` beside the test; `assertRequest` over its result reproduces the first snapshot above once it is filled with the same six strings), and the compile-error case for a missing `#[@use]` (compiler suite).
+Not snapshotted: `request()` over the six `jhonstart_server` cells (`enterRequest` beside the test; `assertRequest` over its result reproduces the first snapshot above once it is filled with the same six strings), and the compile-error case for a missing `#[@use]` (compiler suite).
 
 ---
 
@@ -877,26 +878,29 @@ decision 113 — each asserts the document through `assertDocument` over `render
 | `render: a param from the url is escaped on the way into the document` | `&lt;script&gt;` in the body, the escaped `m` in the payload |
 | `render: a three-deep layout chain receives depths 0 1 2` | `selected` per layout |
 | `render: fills are handed over in completion order` | two boundaries resolving in reverse order reach `write` as `h2` then `h1` |
-| `render: plugins are called head once, chunk per boundary, close last` | a recording plugin's call log: `head`, `chunk h1`, `chunk h2`, `close` |
+| `render: plugins are called head once, chunk per boundary, close, then payload` | a recording plugin's call log: `head`, `chunk h1`, `chunk h2`, `close`, `payload` |
+| `render: a plugin key the render owns fails` | a plugin returning `#("t", …)` fails the render naming `t`; two plugins returning `s` fail it naming both |
 
 ---
 
 ## 30 · bridge — `modules/jhonstart-emilia/test/bridge_test.bp`
 
-The `jhonstart-emilia` member: emilia's `flush()` adapted to `RenderPlugin` (decision 113). The
-only test file in the repository that imports both jhonstart and emilia.
+The `jhonstart-emilia` member: emilia's `#[@future] flush()` adapted to the asynchronous
+`RenderPlugin`, and the payload's `s` contributed through `payload` (decisions 113 and 114). The only
+test file in the repository that imports both jhonstart and emilia — emilia's integration test is
+this file (decision 114, item 6), and so are emilia front 48's rendered cells (builders and `html` DSL round trip with an emilia class slot, `withAttrs` / `attrValue`, static-first class order).
 
 ```bp
 import { Element, div, text } from "jhonstart";
 import { app, render, renderStream, holeId } from "jhonstart";
 import { plugin } from "jhonstart-emilia";
 import { emilia } from "emilia";
-import { assertStream, renderStreamCollect, fixturePageOver } from "jhonstart-test";
+import { assertStream, renderStreamCollect, fixturePageOver, fixtureRequest } from "jhonstart-test";
 
 // The page is built here, not in `jhonstart-test`: only this member may import emilia.
 // Its outer `div` carries `emilia([.Pad.All.4])`; its one boundary's `ul` carries `emilia([.Border.Width.1])`.
 test "bridge: a streamed boundary carries its style first, inside the fill" {
-    val chunks = await renderStreamCollect(app([plugin()]), fixturePageOver("/blog", styledShell(), styledList));
+    val chunks = await renderStreamCollect(app([plugin()]), fixturePageOver("/blog", styledShell(), styledList), fixtureRequest("/blog"));
     try assertStream(@src(), chunks);
 }
 ```
@@ -907,17 +911,18 @@ test "bridge: a streamed boundary carries its style first, inside the fill" {
 --- chunk 1
 <template data-jh-f="h1"><style>.e_6c2d90{border-width:1px}</style><ul class="e_6c2d90"><li>one</li></ul></template><script>__bp1("h1")</script>
 --- chunk 2
-<script>window.__bp0 = {…}</script></body></html>
+<script>window.__bp0 = {…,"s":["e_3f9a1c","e_6c2d90"]}</script></body></html>
 ```
 
 | Case | Asserts |
 |---|---|
 | `bridge: head is called once` | one `<style>` in `<head>` for a non-streamed page |
+| `bridge: payload carries s` | the payload's `s` lists exactly the classes of the document's `<style>` blocks, in flush order; a page with no emilia class writes `"s":[]` |
 | `bridge: close refuses a leftover sheet` | a class registered after the last `chunk` makes `close` answer `Error`, and the render fails |
-| `bridge: the contract-4 class literal` | the fixed token list of `contracts.md § 4` renders the same literal hex class `emilia/modules/emilia/test/integration_test.bp` asserts — jhonstart core cannot import emilia, so this is where the rendered document and emilia's class meet |
+| `bridge: the contract-4 class literal` | the fixed token list of `contracts.md § 4` renders the same literal hex class emilia's `modules/emilia/test/attributes_test.bp` asserts without HTML — jhonstart core cannot import emilia, so this is where the rendered document and emilia's class meet |
 
 The class names in the snapshot above are placeholders until front 56 fixes the body being hashed;
-`renderStreamCollect` is the harness helper that passes a collecting `write` to `renderStream`.
+`renderStreamCollect` is the harness helper that passes a collecting `write` (`fn(string) -> @Future<void>`) and a `RequestData` to `renderStream`.
 
 ---
 
@@ -1297,10 +1302,10 @@ test "form: binding attributes and the hidden action field" {
     try assertForm(@src(), createPostForm(formAction(actionId, "/blog/new"), actionState(""), false));
 }
 ```
-`modules/jhonstart-forms/test/__snapshots__/form/binding-attributes-and-the-hidden-action-field.snap` — `contracts.md § 3`'s markup: `method`, `action` (the current pathname), `data-jh-a`, then the hidden `__onze_action`; this is the un-hydrated POST
+`modules/jhonstart-forms/test/__snapshots__/form/binding-attributes-and-the-hidden-action-field.snap` — `contracts.md § 3`'s markup: `method`, `action` (the current pathname), `data-jh-a`, then the hidden `__bp_action`; this is the un-hydrated POST
 ```
 <form method="post" action="/blog/new" data-jh-a="a_9f31c0d7a4b2e5081c6fa3d2">
-<input type="hidden" name="__onze_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
+<input type="hidden" name="__bp_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
 </input>
 <label for="title">Title</label>
 <input id="title" name="title" required="required">
@@ -1318,7 +1323,7 @@ test "form: a field message lands beside its field" {
 `__snapshots__/form/a-field-message-lands-beside-its-field.snap` — an `ok: false` envelope re-renders the form in place; no boundary, no lost input
 ```
 <form method="post" action="/blog/new" data-jh-a="a_9f31c0d7a4b2e5081c6fa3d2">
-<input type="hidden" name="__onze_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
+<input type="hidden" name="__bp_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
 </input>
 <label for="title">Title</label>
 <input id="title" name="title" required="required">
@@ -1336,7 +1341,7 @@ test "form: an in-flight submit disables and renames the button" {
 `__snapshots__/form/an-in-flight-submit-disables-and-renames-the-button.snap`
 ```
 <form method="post" action="/blog/new" data-jh-a="a_9f31c0d7a4b2e5081c6fa3d2">
-<input type="hidden" name="__onze_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
+<input type="hidden" name="__bp_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
 </input>
 <label for="title">Title</label>
 <input id="title" name="title" required="required">

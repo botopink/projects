@@ -1,13 +1,12 @@
-// app/blog/[slug]/not-found.bp
+// app/blog/[slug]/not-found.bp — jhonstart only (decision 114, item 6): the
+// styled version of this file, with an emilia class, is an onze example.
 import {Element, div, h2, p, text} from "jhonstart";
 import {Link} from "jhonstart";
-import {emilia, Token} from "emilia";
 
 pub fn NotFound() -> Element {
-    val containerClass = emilia([.Pad.All.8, .Text.Center]);
     return div([
         h2([text("Post not found", attrs: [])], attrs: []),
         p([text("The post you are looking for does not exist.", attrs: [])], attrs: []),
         Link("/blog", [text("Back to the blog", attrs: [])]),
-    ], attrs: [#("class", containerClass)]);
+    ], attrs: [#("class", "not-found")]);
 }

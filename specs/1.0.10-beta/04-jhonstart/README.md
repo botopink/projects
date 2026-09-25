@@ -2,7 +2,7 @@
 
 **Track:** C — jhonstart · **Repo:** `repository/jhonstart` · **Reference:** Next.js docs (`/home/ericfillipe/develop/nextjs/NEXTJS-DOCS.md`), the React half — the HTML render, App Router hooks, `<Link>`, Server/Client Components, streaming, error boundaries, metadata, forms, `'use client'` — plus the `html """…"""` DSL and the element surface that half renders through.
 
-**jhonstart writes the HTML** (decision 113): the render, its escaping, the document, the payload, islands, streaming, links, hydration and the client router are this track's, and emilia's CSS enters through the render-plugin point and the `jhonstart-emilia` bridge member. jhonstart and rakun never import each other; onze is the only package that names both.
+**jhonstart writes the HTML** (decision 113): the render, its escaping, the document, the payload, islands, streaming, links, hydration, the client router and the UI file conventions (`#[page]`, `#[layout]`, `PageContext`, `LayoutProps` — decision 114) are this track's, and emilia's CSS enters through the render-plugin point and the `jhonstart-emilia` bridge member. jhonstart and rakun never import each other; onze is the only package that names both.
 
 Front numbers are stable identifiers: `26` is `26-jhonstart-router` here and everywhere else. New work gets a new number, never a renumbering.
 
@@ -20,16 +20,16 @@ Ordered by the level each front occupies in the dependency graph; *(ro)* = read-
 | # | Front | Priority | Wave (milestone) | Submodule | Depends on (track C) | Depends on (other tracks) | Gate |
 |---|---|---|---|---|---|---|---|
 | **94** | [`94-jhonstart-element-surface`](./94-jhonstart-element-surface/README.md) | critical | 0 | `jhonstart` | — | — | both |
-| **26** | [`26-jhonstart-router`](./26-jhonstart-router/README.md) | critical | 1 | `jhonstart` | 94 (examples) | 01 std · 22 rakun file-routing (`match`, handed in by onze) *(ro)* | erlang |
-| **28** | [`28-jhonstart-server-components`](./28-jhonstart-server-components/README.md) | critical | 2 | `jhonstart` | 26 (`pairValue`) · 94 (examples) | 01 std (`escape`) · 62 rakun request-context *(ro)* | erlang |
+| **26** | [`26-jhonstart-router`](./26-jhonstart-router/README.md) | critical | 1 | `jhonstart` | 94 (examples) | 01 std · 22 rakun file-routing (`match` from `rakun-routing`, handed in by onze) *(ro)* | erlang |
+| **28** | [`28-jhonstart-server-components`](./28-jhonstart-server-components/README.md) | critical | 2 | `jhonstart` | 26 (`pairValue`) · 94 (examples) | 01 std (`escape`) · 30 (the render enters the `RequestData` onze hands it) | erlang |
 | **27** | [`27-jhonstart-link`](./27-jhonstart-link/README.md) | critical | 2 | `jhonstart-link` | 26 · 94 (examples) | 60 rakun static-generation *(ro)* · 68 onze client-bundle *(ro)* | commonJS |
 | **29** | [`29-jhonstart-client-directive`](./29-jhonstart-client-directive/README.md) | high | 3 | `jhonstart` | 28 · 94 (examples) | 68 *(soft — enforces the boundary)* | commonJS |
 | **30** | [`30-jhonstart-streaming`](./30-jhonstart-streaming/README.md) — render and streaming | high | 4 | `jhonstart` · `jhonstart-emilia` | 28 · 29 · 31 · 32 · 94 | 01 std (`escape`) · 02 std async (spawn/gather over thunks) · emilia `flush()` (bridge only) | both |
 | **31** | [`31-jhonstart-error-boundaries`](./31-jhonstart-error-boundaries/README.md) | high | 3 | `jhonstart` | 28 · 94 (`htmlTag`/`body`) | 03 std content-hash · 17 rakun logging *(ro)* · 24 *(ro)* · 63 rakun navigation-signals *(ro)* | erlang |
 | **32** | [`32-jhonstart-metadata`](./32-jhonstart-metadata/README.md) | medium | 3 | `jhonstart` | 28 · 26 (`pairValue`) | 01 std (`escape`) · 66 rakun metadata-file-routes *(ro)* | erlang |
-| **67** | [`67-jhonstart-forms`](./67-jhonstart-forms/README.md) | high | 7 | `jhonstart-forms` | 29 · 94 · 26 (`push`) · 27 (prefetch) · 31 *(ro)* | 24 rakun server-actions (envelope) · 14 rakun validation *(ro)* · 63 *(ro)* · 01 std (percent encoding) | commonJS |
+| **67** | [`67-jhonstart-forms`](./67-jhonstart-forms/README.md) | high | 7 | `jhonstart-forms` | 29 · 94 · 26 (`push`) · 27 (prefetch) · 31 *(ro)* | 24 rakun server-actions (envelope; wire names handed in by onze) · 14 rakun validation *(ro)* · 63 *(ro)* · 01 std (percent encoding) | commonJS |
 
-Cross-track fronts that deliver **into** this repo or consume it: 48 emilia-attributes (owns `modules/jhonstart-html/src/html_attrs.bp`; depends on 26); 23 rakun-ssr-pipeline (writes the chunks front 30's render produces, through onze — it imports nothing from jhonstart); 24 rakun-server-actions (owns the action id and envelope that 67's form carries, through onze); 49 onze-stand-up (registers the `jhonstart-emilia` plugin and wires jhonstart to rakun); 68 onze-client-bundle (generated entry calls 29's `hydrate()`, 27's `linkMount()`, 67's `formMount()`); 53 onze-example-app (the browser-in-the-loop proof).
+Cross-track fronts that deliver **into** this repo or consume it: 48 emilia-attributes (owns `modules/jhonstart-html/src/html_attrs.bp`; depends on 26); 23 rakun-ssr-pipeline (writes the chunks front 30's render produces, through onze — it imports nothing from jhonstart); 24 rakun-server-actions (owns the action id and envelope that 67's form carries, through onze, with the wire names onze passes both sides); 49 onze-stand-up (registers the `jhonstart-emilia` plugin, registers one rakun `PageRenderer` per page over front 30's `renderStream`, and wires jhonstart to rakun); 68 onze-client-bundle (generated entry calls 29's `hydrate()`, 27's `linkMount()`, 67's `formMount()`); 53 onze-example-app (the browser-in-the-loop proof).
 
 ## 2 · Critical path
 
@@ -70,7 +70,7 @@ Cross-track fronts that deliver **into** this repo or consume it: 48 emilia-attr
                               optimistic, <Form>)
 
    48 emilia-attributes ──► html_attrs.bp (jhonstart-html)
-   30 ──► jhonstart-emilia (bridge: RenderPlugin over emilia's flush())
+   30 ──► jhonstart-emilia (bridge: RenderPlugin over emilia's flush(); payload `s`)
    rakun and onze are not in this graph: onze imports jhonstart, rakun imports neither way
 ```
 

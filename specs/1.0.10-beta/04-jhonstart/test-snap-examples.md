@@ -437,7 +437,7 @@ test "forms: create post ---- empty" {
 `__snapshots__/forms/create-post-empty.snap`
 ```
 <form method="post" action="/blog/new" data-jh-a="a_9f31c0d7a4b2e5081c6fa3d2">
-<input type="hidden" name="__onze_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
+<input type="hidden" name="__bp_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
 </input>
 <label for="title">Title</label>
 <input id="title" name="title" required="required">
@@ -458,7 +458,7 @@ test "forms: create post ---- returned message beside the title" {
 `__snapshots__/forms/create-post-returned-message-beside-the-title.snap`
 ```
 <form method="post" action="/blog/new" data-jh-a="a_9f31c0d7a4b2e5081c6fa3d2">
-<input type="hidden" name="__onze_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
+<input type="hidden" name="__bp_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
 </input>
 <label for="title">Title</label>
 <input id="title" name="title" required="required">
@@ -493,7 +493,7 @@ test "forms: like widget ---- server pass shows the server's count" {
 `__snapshots__/forms/like-widget-server-pass-shows-the-server-s-count.snap`
 ```
 <form method="post" action="/blog/hello" data-jh-a="a_9f31c0d7a4b2e5081c6fa3d2">
-<input type="hidden" name="__onze_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
+<input type="hidden" name="__bp_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
 </input>
 <span class="count">41</span>
 <button type="submit">♥</button>
@@ -510,7 +510,7 @@ test "forms: like widget ---- optimistic count with a busy nested button" {
 `__snapshots__/forms/like-widget-optimistic-count-with-a-busy-nested-button.snap` — the nested button reads its own form's status; the count is the fold, not the server's
 ```
 <form method="post" action="/blog/hello" data-jh-a="a_9f31c0d7a4b2e5081c6fa3d2">
-<input type="hidden" name="__onze_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
+<input type="hidden" name="__bp_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
 </input>
 <span class="count">43</span>
 <button type="submit" disabled="disabled">♥</button>

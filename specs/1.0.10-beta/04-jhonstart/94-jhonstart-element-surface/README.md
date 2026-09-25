@@ -367,7 +367,7 @@ test "a tag from the element surface resolves inside an html template" {
 
 | File | Demonstrates |
 |---|---|
-| [`examples/form-example.bp`](./examples/form-example.bp) | A form bound to a server action through `form`, `label`, `input`, `select`, `option` and `button`, matching front 24's binding from `contracts.md § 3` — `data-jh-a` on the form, a hidden `__onze_action` field. Every call spells `attrs:`. |
+| [`examples/form-example.bp`](./examples/form-example.bp) | A form bound to a server action through `form`, `label`, `input`, `select`, `option` and `button`, matching front 24's binding from `contracts.md § 3` — `data-jh-a` on the form, a hidden field named by the `actionField` onze passes (`__bp_action`, decision 114). Every call spells `attrs:`. |
 | [`examples/document-shell-example.bp`](./examples/document-shell-example.bp) | The `htmlTag`/`head`/`body` shell front 31's `global-error.bp` needs, with `title`, `meta` and `link`, and the doctype prefix that is a string because it is not an element. |
 
 ## Language gaps
