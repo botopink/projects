@@ -37,7 +37,8 @@ changes. Today there is no way to opt out.
 ## Current state
 
 - `pub fn emilia(tokens: Token[]) -> string` (`emilia.bp:46-51`) is the only registration path and it
-  always names its output `"e_" + hashHex(rules)`. There is no second entry point and no parameter
+  always names its output `"e_" + contentHash(rules)` (std's `content_hash.contentHash`, which
+  replaced emilia's private `hashHex` — decision 116, front 56). There is no second entry point and no parameter
   that changes the name.
 - There is no composition helper anywhere. `tokensToCss` (`emilia.bp:102-104`) folds a list; nothing
   builds one.

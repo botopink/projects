@@ -11,8 +11,10 @@ registry the `#[page]` / `#[layout]` decorators fill, and the `jhonstart-emilia`
 `plugin()` the boot registers) · 28 (`RequestData`, built here from rakun's `Request`) · 23
 (`ChunkWriter`, `PageRenderer` and `page(pattern, render)`, the registry the boot hands one renderer
 per page) · 22 (rakun's route table and `rakun.appDir`) · 05 (the configuration the boot writes
-`rakun.appDir`, `rakun.actions.field`, `rakun.actions.header` and `rakun.actions.bodyLimit` into —
-fronts 22 and 24 read them later and are not dependencies of the boot)
+`rakun.appDir`, `rakun.actions.field`, `rakun.actions.header`, `rakun.actions.bodyLimit` and
+`rakun.i18n.excludedPrefixes` into — fronts 22, 24 and 64 read them later and are not dependencies
+of the boot) · 82 (rakun-web's `registerStaticRoot`, which the boot calls with front 69's
+`staticRoots` — decision 116)
 **Owns:** `botopink.json`, `src/root.bp`, `src/types.bp`, `src/config.bp`, `src/integration.bp`,
 `test/config_test.bp`, `test/types_test.bp`
 **Does not touch:** `repository/jhonstart/**` (the render, `RenderHooks`, `RenderPlugin` and the
@@ -144,11 +146,17 @@ from the other (decision 113):
   jhonstart's form binding as `actionField` / `actionHeader` (front 67). onze's defaults are
   `__bp_action` and `X-Bp-Action`; neither library spells a name. The same boot writes
   `rakun.actions.bodyLimit` from `OnzeConfig.actionsBodyLimit` and `rakun.appDir` from
-  `OnzeConfig.appDir` — every key rakun reads is a `rakun.*` key (decision 115);
+  `OnzeConfig.appDir` — every key rakun reads is a `rakun.*` key (decision 115) — and
+  `rakun.i18n.excludedPrefixes` with onze's asset prefix `/_onze`, so rakun's locale redirect skips
+  onze's URLs without rakun spelling them (decision 116);
+- to **rakun-web's static-file server** (front 82), the two roots front 69's `staticRoots(publicDir,
+  outDir, buildId)` returns, each registered with `registerStaticRoot`; onze serves no file itself
+  (decision 116 rule 6);
 - back to **rakun**, the navigation outcome: a page that raises jhonstart's `notFound()` or
   `redirect(url)` (front 31) before the render's first chunk leaves `renderStream` with the signal's
-  reason, and onze translates it into rakun's `notFound()` (404) or `redirect(url)` (307) inside the
-  renderer, before anything is written. A signal raised after the first chunk never reaches onze:
+  reason — one of the bundled library `routing`'s `nav:` reasons (decision 116) — and onze reads it
+  with `routing`'s `signalFromReason` and calls rakun's `notFound()` (404) or `redirect(url)` (307)
+  inside the renderer, before anything is written. A signal raised after the first chunk never reaches onze:
   jhonstart's render writes it as markup and the status stays 200 (front 30, decision 115).
 
 The vocabulary — `PageContext(pathname, pattern, params, query, rest)`, `LayoutProps.children` — is
@@ -362,9 +370,11 @@ because an app author reads onze's docs and not rakun's internals.
       not exist), registers jhonstart's UI records in rakun's table and hands rakun one
       `PageRenderer` per page through `page(pattern, render)`, builds `RequestData` from rakun's
       `Request`, sets `rakun.actions.field` / `rakun.actions.header` and passes the same values to
-      jhonstart as `actionField` / `actionHeader`, sets `rakun.appDir` and `rakun.actions.bodyLimit`
-      from `OnzeConfig`, and translates jhonstart's `notFound` / `redirect` outcome into rakun's 404 /
-      307. It imports nothing from `routing` and hands jhonstart no matcher. Any other onze file reaching for
+      jhonstart as `actionField` / `actionHeader`, sets `rakun.appDir`, `rakun.actions.bodyLimit` and
+      `rakun.i18n.excludedPrefixes` from `OnzeConfig`, registers front 69's two static roots with
+      rakun-web front 82, and translates jhonstart's `notFound` / `redirect` outcome (a `nav:`
+      reason, read with `routing`'s `signalFromReason`) into rakun's 404 / 307. It imports no matcher
+      from `routing` and hands jhonstart none. Any other onze file reaching for
       the seam means the seam is in the wrong place, and the front says so under *Blocked* rather
       than adding a second wiring point
 - [ ] Nothing under `repository/onze/src/` calls emilia's `flush()`, and no onze file defines a style

@@ -17,7 +17,7 @@
 // Reference: TAILWIND_CSS_DOCS.md § 3. Core Concepts
 //
 // THE CONTRACT THIS FILE DEMONSTRATES:
-//   class = "e_" + djb2hex(encodeSheet(tokensToSheet(tokens, theme)))
+//   class = "e_" + contentHash(encodeSheet(tokensToSheet(tokens, theme)))   // std content_hash, a djb2 fold
 //   - a pure function of the token list, in author order, and the theme
 //   - nothing else enters the hash
 //   - a static class merges BEFORE the emilia class, one ASCII space

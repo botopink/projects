@@ -26,7 +26,9 @@
 
 import {Element, div, h1, p, fragment, text, renderToString} from "jhonstart";
 import {form, input, label, button, section} from "jhonstart";  // provided by front 94
-import {ActionState, actionState, parseActionState} from "jhonstart";       // front 67
+import {actionState} from "jhonstart";                                      // front 67
+import {state.ActionState, state.writeState} from "actions";                 // bundled (decision 116)
+import {envelope.ActionEnvelope, envelope.writeEnvelope, envelope.parseActionState} from "actions";
 import {FormBinding, formAction, formAttrs, useActionState} from "jhonstart";  // front 67
 import {styled, Token} from "emilia";                           // front 48
 import {layout, page, LayoutProps, PageContext} from "jhonstart";   // front 30
@@ -155,7 +157,10 @@ test "the action is named by its id and never by its function name" {
 }
 
 test "a field message from the action lands beside its own field" {
-    val envelope = "ok=0&message=Title%20too%20short&redirect=&f.title=Too%20short";
+    // the envelope rakun front 24 writes, built with the same library jhonstart reads it with
+    val envelope = writeEnvelope(ActionEnvelope(ok: false,
+        state: writeState("Title too short", [#("title", "Too short")]),
+        revalidated: [], n: "", payload: ""));
     val state = parseActionState(envelope);
     val markup = renderToString(newPostForm(formAction(createPostId, "/dashboard/posts/new", actionField), state, false));
     assert markup.contains("<p class=\"field-error\">Too short</p>");

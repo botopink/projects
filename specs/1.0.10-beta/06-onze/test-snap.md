@@ -89,7 +89,7 @@ pub fn assertScriptPlan(loc: SourceLocation, decls: ScriptDecl[]) -> @Result<voi
 pub fn assertHead(loc: SourceLocation, links: Array<#(string, string)>, render: fn() -> Element) -> @Result<void, string>
 pub fn assertStyleModule(loc: SourceLocation, path: string, css: string) -> @Result<void, string>
 pub fn assertStylesheet(loc: SourceLocation, globalCss: string, modules: Array<#(string, string)>) -> @Result<void, string>
-pub fn assertAsset(loc: SourceLocation, publicDir: string, urls: string[]) -> @Result<void, string>
+pub fn assertStaticRoots(loc: SourceLocation, publicDir: string, outDir: string, buildId: string) -> @Result<void, string>
 pub fn assertImage(loc: SourceLocation, props: ImageProps, cfg: ImageConfig) -> @Result<void, string>
 pub fn assertImageSource(loc: SourceLocation, cfg: ImageConfig, srcs: string[]) -> @Result<void, string>
 pub fn assertImageHandler(loc: SourceLocation, cfg: ImageConfig, queries: string[]) -> @Result<void, string>
@@ -1048,47 +1048,25 @@ Y|styles|/_onze/static/b7f2a1/app.2b91cc.css|2b91cc|94
 ### `assets_test.bp`
 
 ```bp
-import {assertAsset} from "onze-test";
+import {assertStaticRoots} from "onze-test";
 
-test "assets: resolution ---- public, static prefix, and every 404" {
-    try assertAsset(@src(), "public", [
-        "/favicon.ico",
-        "/images/hero.jpg",
-        "/_onze/static/b7f2a1/app.2b91cc.css",
-        "/_onze/static/b7f2a1/shared.41ab08.js",
-        "/../secrets.env",
-        "/%2e%2e/secrets.env",
-        "/etc/passwd",
-        "/content/posts/hello.md",
-        "/app/page.bp",
-        "/src/main.bp",
-        "/.onze/client-manifest.txt",
-        "/upload.html.bin",
-    ]);
+test "assets: roots ---- the two roots handed to rakun-web front 82" {
+    try assertStaticRoots(@src(), "public", ".onze", "b7f2a1");
 }
 ```
 
-`modules/onze-assets/test/__snapshots__/assets/resolution-public-static-prefix-and-every-404.snap`
+`modules/onze-assets/test/__snapshots__/assets/roots-the-two-roots-handed-to-rakun-web-front-82.snap`
 
 ```
-servedPrefixes(b7f2a1) = /, /_onze/static/b7f2a1/   (2)
-/favicon.ico                              200  image/x-icon               public, max-age=0, must-revalidate      etag  public/favicon.ico
-/images/hero.jpg                          200  image/jpeg                 public, max-age=0, must-revalidate      etag  public/images/hero.jpg
-/_onze/static/b7f2a1/app.2b91cc.css       200  text/css                   public, max-age=31536000, immutable     etag  .onze/static/b7f2a1/app.2b91cc.css
-/_onze/static/b7f2a1/shared.41ab08.js     200  text/javascript            public, max-age=31536000, immutable     etag  .onze/static/b7f2a1/shared.41ab08.js
-/../secrets.env                           404  -                          -                                       -     (empty)
-/%2e%2e/secrets.env                       404  -                          -                                       -     (empty)
-/etc/passwd                               404  -                          -                                       -     (empty)
-/content/posts/hello.md                   404  -                          -                                       -     (empty)
-/app/page.bp                              404  -                          -                                       -     (empty)
-/src/main.bp                              404  -                          -                                       -     (empty)
-/.onze/client-manifest.txt                404  -                          -                                       -     (empty)
-/upload.html.bin                          200  application/octet-stream   public, max-age=0, must-revalidate      etag  public/upload.html.bin
-== If-None-Match matches /favicon.ico
-304, no body
+staticRoots(public, .onze, b7f2a1) = 2
+/_onze/static/b7f2a1/**   -> .onze/static/b7f2a1/   immutable=1  cacheSeconds=31536000
+/**                       -> public                 immutable=0  cacheSeconds=0
 == every config field set adversarially
-same 12 rows
+same 2 rows
 ```
+
+Resolution, content types, `304` and the traversal refusals are rakun-web front 82's snapshots
+(decision 116 rule 6); onze declares the roots and asserts nothing about serving them.
 
 ---
 
@@ -1574,7 +1552,7 @@ error: static export refused — route /blog/:slug (app/blog/[slug]/page.bp) can
 | 49 | 20 | defaults, copies, `origin`, `AppFile` rows, alias longest-first, alias escape, prefix + case | `botopink build` in the package, `test-libs` cell, `Onze.run` starts a listener (E2E) |
 | 50 | 38 | staging table, conflict, collision, banner + sorting, decorator check, scaffold + flags + refusal, build tree + stable id, dev table, info | editing a file re-renders without restart (E2E), `PORT`/`-p` precedence (E2E), SIGTERM forwarding (71's drain) |
 | 68 | 45 | roots, shared, cycle, all three refusals + adversarial config, chunk plan + rebuild, manifest round trip/version/unknown kind/pipe, tag order, entry + mismatch errors + mount order, four strategies + refusals | `moduleIdOf` backslash stability, hash parity of emilia rule bodies (numeric, `assert`) |
-| 69 | 16 | scoped names + set equality + undefined class, cascade + fingerprint + `Y` round trip, resolution table + two prefixes + 304 + adversarial config + content types | preprocessor hook (`process.run` doubles, `assert`) |
+| 69 | 16 | scoped names + set equality + undefined class, cascade + fingerprint + `Y` round trip, the two static roots + adversarial config (serving is rakun-web 82's) | preprocessor hook (`process.run` doubles, `assert`) |
 | 51 | 23 | markup lazy/priority/fill, allowlist matrix, `hostname:"*"`, handler hit/400/refuse, single encoder invocation | prop validation reds (`quality`, `blur` without URL, `fill` + size, `priority` + lazy) — `assert`; timeout kill (`assert`, slow double) |
 | 52 | 20 | faces per weight, no Google host, `display`, `subsets`, `variable`, preload, unknown family, four descriptors, identity, head order + dedup | `localFont` copy + escape + missing file (`assert` over a temp dir); probe-absent degradation log |
 | 70 | 28 | supported/unsupported/malformed, row/gap/padding/wrap/`maxLines`, header/escape/gradient/attributes/determinism, `requireRasterizer` outcomes + no fallback | metrics sidecar parse, `advanceOf` `.notdef`, 2 % agreement (needs a rasterizer; skipped with reason) |

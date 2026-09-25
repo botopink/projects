@@ -5,7 +5,7 @@
 **Target:** comptime
 **Wave:** 1 — immediately after 54, which is wave 0. Fronts 33, 34 and 35 are wave 2 and all three consume the `Sheet`/`Variant` interface defined here.
 **Depends on:** 54 (the `Theme` that `Options` carries and the `themeCss`/`keyframeCss` strings the theme layer is built from)
-**Owns:** `repository/emilia/src/output.bp`; the host-cell and public-entry half of `repository/emilia/src/emilia.bp` (`register`, `flushSheet`, `hashHex`, `emilia`, `flush`, `tokenToCss`, `tokensToCss`), fenced under a banner naming this front; `repository/emilia/test/output_test.bp`, `repository/emilia/test/cascade_test.bp`; the `pub mod output;` line in `src/root.bp` and its entry in `botopink.json`
+**Owns:** `repository/emilia/src/output.bp`; the host-cell and public-entry half of `repository/emilia/src/emilia.bp` (`register`, `flushSheet`, `emilia`, `emiliaWith`, `styleRule`, `flush`, `tokenToCss`, `tokensToCss`; the class-name hash is std's `content_hash.contentHash`, and deleting emilia's `hashHex` duplicate is this front's — decision 116), fenced under a banner naming this front; `repository/emilia/test/output_test.bp`, `repository/emilia/test/cascade_test.bp`; the `pub mod output;` line in `src/root.bp` and its entry in `botopink.json`
 **Does not touch:** any `Token` section in `src/tokens.bp`, and any per-section sub-dispatcher in `src/emilia.bp` — those belong to fronts 33–47, 57 and 58
 **Reference:** `TAILWIND_CSS_DOCS.md § 3.1 Conflitos de Estilo`, `§ 3.2 Referência Completa de Variantes`, `§ 3.5 Animações Customizadas`, `§ 3.7 CSS Customizado com @layer`, `§ 20.1 @import "tailwindcss"` · https://tailwindcss.com/docs/styling-with-utility-classes
 
@@ -50,6 +50,10 @@ fine; nothing tests it, which is the actual problem.
   with `";"`.
 - `pub fn emilia(tokens: Token[]) -> string` — `emilia.bp:46-51`. Folds to a string, hashes it with
   `hashHex`, registers `name -> body`, returns `"e_" + hex`.
+- `declare fn hashHex(s: string) -> string` — `emilia.bp:80`, a private host cell whose two templates
+  are byte-identical to std's `content_hash.contentHash` (`libs/std/src/content_hash.bp:34-37`, whose
+  own header records the duplicate). Decision 116 deletes it: the class name is
+  `"e_" + contentHash(…)`, and every hex a fixture pins is unchanged, because the fold is the same.
 - `declare fn register(name: string, body: string) -> void` — `emilia.bp:23-25`. A `Map` on
   `globalThis` in commonJS, a keyed list in the Erlang process dictionary.
 - `declare fn flushSheet() -> @Future<string>` — `emilia.bp:28-30`. **Builds the `<style>` string
@@ -152,7 +156,9 @@ different inputs.
 `"e_" + djb2hex(tokensToCss(tokens))` — the djb2 fold, the seed, the multiplier, the mask, and the
 five clauses front 48 tests. Everything in that contract survives this front except the *name of the
 function whose output is folded*: `tokensToCss` becomes `encodeSheet(tokensToSheet(tokens, th))`,
-because a `Sheet` is what a token list now produces. The properties the contract actually rests on
+because a `Sheet` is what a token list now produces. The fold itself is std's `content_hash.contentHash`
+(decision 116) — the same djb2 templates emilia's `hashHex` carried, so no literal moves on that
+account. The properties the contract actually rests on
 are unchanged and this front keeps them:
 
 - still a pure function of the token list, with nothing else entering the hash;
@@ -336,7 +342,10 @@ either the rule or `o.important` says so.
 ### Step 7 — the public entry points
 
 ```bp
-pub fn emiliaWith(tokens: Token[], th: Theme) -> string
+import {content_hash} from "std";
+
+pub fn styleRule(tokens: Token[], th: Theme) -> #(string, string)   // (class name, encoded body), registers nothing
+pub fn emiliaWith(tokens: Token[], th: Theme) -> string              // styleRule, then register
 pub fn emilia(tokens: Token[]) -> string
 #[@future] pub fn flushWith(o: Options) -> @Future<string>
 #[@future] pub fn flush() -> @Future<string>
@@ -344,6 +353,12 @@ pub fn emilia(tokens: Token[]) -> string
 
 `emilia(tokens)` is `emiliaWith(tokens, defaultTheme())` and `flush()` is
 `flushWith(defaultOptions())`. Both keep the signatures they have today, so no consumer changes.
+
+`styleRule` is the pure half of `emiliaWith`: `"e_" + content_hash.contentHash(encodeSheet(
+tokensToSheet(tokens, th)))` and the encoded body, with no host cell touched. It is the function onze
+front 68 calls at build time to fill its `styleMap` (decision 116 rule 7): onze imports emilia
+directly, and the `jhonstart-emilia` bridge stays the render plugin only. `hashHex` is deleted; the
+class name comes from std.
 
 **What does change is the emitted CSS for modifiers**, and this front owns that break. The document
 for `[.Bg.Black, Token.Hover([.Bg.White])]` goes from
@@ -365,6 +380,10 @@ token surface they use is unchanged.
 **Acceptance:**
 - [ ] `emilia(tokens)` still returns `"e_" + hex` and still collapses two identical token lists to
       one class.
+- [ ] `styleRule(tokens, th)._0 == emiliaWith(tokens, th)` for the contract-4 fixture, and
+      `styleRule` leaves the sheet cell empty (a following `flush()` has no `@layer utilities` body).
+- [ ] `grep -n "hashHex" repository/emilia/modules/emilia/src` is empty; the class name is computed
+      with std's `content_hash.contentHash`, and the contract-4 fixture's hex is unchanged by the switch.
 - [ ] `flush()` still clears the cell; two consecutive flushes give two independent documents and
       the second has no `@layer utilities` body.
 - [ ] Every rewritten test in `emilia.bp` names the section of `§ 3.2` its expected selector comes

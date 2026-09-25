@@ -47,7 +47,9 @@ tests all five.
   `rules = tokensToCss(tokens)` — `emilia.bp:46-51`. This is already a pure function of the token
   list.
 - `hashHex` is a djb2 fold, seeded 5381, multiplier 33, masked to 32 bits, rendered lowercase hex,
-  declared for both `node` and `Erlang` — `emilia.bp:38-42`. The file's own comment at `:32-37` says
+  declared for both `node` and `Erlang` — `emilia.bp:38-42`. Its templates are byte-identical to
+  std's `content_hash.contentHash`, and decision 116 deletes it for that function (front 56 owns the
+  switch); the fold, and so every hex below, is unchanged. The file's own comment at `:32-37` says
   the two agree "for ASCII rule bodies (astral characters are one codepoint in erlang, two UTF-16
   units in JS)". That sentence is the hydration contract, and nothing enforces it today.
 - `tokensToCss` is `tokens.map(tokenToCss).filter(!= "").join(";")` — `emilia.bp:103`. Order-
@@ -75,8 +77,8 @@ tests all five.
 
 This front owns contract `§ 4`, and the wording below is that contract.
 
-> **A jhonstart element's emilia class is `e_<hex>`, where `<hex>` is the lowercase hexadecimal
-> djb2-33 fold (seed 5381, masked to 32 bits) of `encodeSheet(tokensToSheet(tokens, theme))`, and
+> **A jhonstart element's emilia class is `e_<hex>`, where `<hex>` is std's
+> `content_hash.contentHash` — the lowercase hexadecimal djb2-33 fold (seed 5381, masked to 32 bits) — of `encodeSheet(tokensToSheet(tokens, theme))`, and
 > `tokens` is the element's token list in author order. Nothing else enters the hash. When a static
 > class is also present, the `class` attribute value is `<static> + " " + <emilia class>` — static
 > first, one ASCII space, no de-duplication, no sorting.**
