@@ -20,7 +20,7 @@ Ordered by the level each front occupies in the dependency graph; *(ro)* = read-
 | # | Front | Priority | Wave (milestone) | Submodule | Depends on (track C) | Depends on (other tracks) | Gate |
 |---|---|---|---|---|---|---|---|
 | **94** | [`94-jhonstart-element-surface`](./94-jhonstart-element-surface/README.md) | critical | 0 | `jhonstart` | — | — | both |
-| **26** | [`26-jhonstart-router`](./26-jhonstart-router/README.md) | critical | 1 | `jhonstart` | 94 (examples) | 01 std · 22 rakun file-routing (`match` from `rakun-routing`, handed in by onze) *(ro)* | erlang |
+| **26** | [`26-jhonstart-router`](./26-jhonstart-router/README.md) | critical | 1 | `jhonstart` | 94 (examples) | 01 std · std `04-routing-lib` (`matchPath` / `parseTable`, imported from the bundled `routing`) · 22 rakun file-routing (the format) *(ro)* | erlang |
 | **28** | [`28-jhonstart-server-components`](./28-jhonstart-server-components/README.md) | critical | 2 | `jhonstart` | 26 (`pairValue`) · 94 (examples) | 01 std (`escape`) · 30 (the render enters the `RequestData` onze hands it) | erlang |
 | **27** | [`27-jhonstart-link`](./27-jhonstart-link/README.md) | critical | 2 | `jhonstart-link` | 26 · 94 (examples) | 60 rakun static-generation *(ro)* · 68 onze client-bundle *(ro)* | commonJS |
 | **29** | [`29-jhonstart-client-directive`](./29-jhonstart-client-directive/README.md) | high | 3 | `jhonstart` | 28 · 94 (examples) | 68 *(soft — enforces the boundary)* | commonJS |
