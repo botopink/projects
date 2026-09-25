@@ -4,8 +4,8 @@
 // Demonstrates: the dynamic segment, where five fronts meet on one value. Front
 // 22 extracts `slug` into `route.params`; front 28 reads it in a server
 // component; front 32 reads it again in `generateMetadata`; front 60 calls
-// `blogStaticParams` at build time to learn every value it can take; front 63
-// turns a miss into a 404. If those five disagree about the shape, this file is
+// `blogStaticParams` at build time to learn every value it can take; front 31's
+// `notFound()` turns a miss into a 404, answered by jhonstart's render itself. If those five disagree about the shape, this file is
 // where it shows.
 //
 // Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/dynamic-routes
@@ -19,7 +19,7 @@ import {Element, div, h1, p, text, renderToString} from "jhonstart";
 import {article, h2, timeTag} from "jhonstart";             // provided by front 94
 import {styled, Token} from "emilia";                       // front 48
 import {page, PageContext} from "jhonstart";                    // front 30
-import {notFound} from "jhonstart";                         // front 31 — a page's signals are jhonstart's (decision 115)
+import {notFound} from "jhonstart";                         // front 31 — a page's signals are jhonstart's (decisions 115, 117)
 import {
     registerSegmentConfig,
     registerStaticParams,
@@ -70,16 +70,17 @@ val _postParams = registerStaticParams("blog/[slug]", blogStaticParams);
 
 // front 22 — the segment reaches the page through `route.params`, a `Dict`, so
 // it is read with `lookup(...).unwrapOr(...)` and never with `get`.
-// front 28 — a server component: `#[@future] … -> @Future<Element>`.
+// front 28 — a server component: `#[@use] … -> @Component<Element>` (decision 117).
 #[page("blog/[slug]")]
-#[@future]
-pub fn blogPostPage(route: PageContext) -> @Future<Element> {
+#[@use]
+pub fn blogPostPage(route: PageContext) -> @Component<Element> {
     val slug = route.params.lookup("slug").unwrapOr("");
     val found = findPost(slug);
 
     // front 31 — jhonstart's `notFound()` is thrown and unwinds to the nearest
     // not-found.bp boundary, which for this route is `app/blog/[slug]/not-found.bp`;
-    // raised before the first chunk, onze turns it into rakun's 404 (decision 115).
+    // raised before the first chunk, jhonstart's render answers 404 with that
+    // boundary as the document (decision 117) — onze takes no part.
     //
     // LANGUAGE GAP: botopink has no bottom type, so the caller is still obliged
     // to produce a value after the `if` — hence the `missingPost` default on the

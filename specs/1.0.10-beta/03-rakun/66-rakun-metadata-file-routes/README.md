@@ -9,7 +9,7 @@ is why folding them into front 32 would be wrong
 **Wave:** 6
 **Depends on:** 22 (registering synthetic routes into the table), 32 (the metadata model whose `<link>`
 and `<meta>` tags it builds from this front's data — soft, a citation), 62 (the request frame a dynamic sitemap reads from), 03 (the
-content hash that fingerprints an image URL), `01-std/07-std-json-writers` (the manifest JSON), 01 (`path.walk`, `path.glob`, `escape.attribute`,
+content hash that fingerprints an image URL), `01-std/01-std-lib-enablement` (the manifest JSON), 01 (`path.walk`, `path.glob`, `escape.attribute`,
 `encoding.percentEncode`). Optional: 60 (prerendering these routes), 70 (dynamic OG image bodies) —
 neither blocks this front, and both are named where they attach
 **Owns:** `repository/rakun/src/metadata_routes.bp`,
@@ -96,9 +96,9 @@ val _icon = registerIconFile(IconKind.Icon, "", "icon.png", "image/png", "512x51
 
 **Rendering is pure botopink.** XML, `robots.txt` and the manifest JSON are built by functions that
 take a record and answer a string, with no host cell between them. That makes the output byte-testable
-against a literal, which is the only way to be sure a crawler will accept it — and `std/json` has no
-structured value (`libs/std/src/json.bp:9-16`), so the manifest is written with std's JSON writers
-(`json.quote`, `json.array`, `json.object` — `01-std/07-std-json-writers`, decision 116) rather than a
+against a literal, which is the only way to be sure a crawler will accept it — so the manifest is
+written with std's JSON writers
+(`json.quote`, `json.array`, `json.object` — `01-std/01-std-lib-enablement`, decisions 116 and 117) rather than a
 private escaper. Every interpolated XML value goes through `escape.attribute` or `escape.html` (front
 01): a post title containing `&` in a sitemap is malformed XML, and a title containing `"` or U+0001
 in a manifest is malformed JSON unless `json.quote` wrote it.

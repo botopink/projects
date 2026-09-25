@@ -71,7 +71,8 @@ pub fn brandFont() -> @Future<Font> {
 val siteFont = "onze-font-inter";
 
 #[layout("")]
-pub fn RootLayout(props: LayoutProps) -> Element {
+#[@use]
+pub fn RootLayout(props: LayoutProps) -> @Component<Element> {
     return div([props.children], attrs: [#("class", siteFont)]);
 }
 
@@ -110,7 +111,7 @@ test "preload links come before the font CSS, so the request starts first" {
 
 test "the layout applies the body font by class, and the head carries the faces" {
     val leaf = text("hello", attrs: []);
-    val markup = renderToString(RootLayout(LayoutProps(children: leaf)));
+    val markup = renderToString(await RootLayout(LayoutProps(children: leaf)));
     assert markup.contains("class=\"onze-font-");
 
     val head = await documentHead();

@@ -405,7 +405,6 @@ the OTP version from the runtime, and it prints the **resolved** config — the 
 |---|---|---|---|
 | Declared parameter defaults are never applied | every `jhonstart` call in both examples spells `attrs:` | pass every argument explicitly | apply the declared default at the call site (ground truth §2.24) |
 | No assignment to a `self` field | the dev watcher's previous-mtime table is rebuilt each pass instead of updated in place | rebuild the value | mutable record fields |
-| `#[@future]` is required on any fn returning `@Future<T>` | `RootLayout` in `scaffold-example.bp` | write the marker | infer the effect from the return type |
 
 None of the CLI's own mechanisms need a language change: a build-time walker, a text generator and a
 process spawner are all ordinary botopink.

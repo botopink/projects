@@ -1,14 +1,14 @@
 # Front 63 — Rakun Navigation Signals
 
 **Track:** B rakun
-**Priority:** high — a server component cannot say "not this page" today, so every `[slug]` route that
-can miss has no 404 path, `§ 23`'s layout auth guard cannot redirect, and front 24's own showcase
-(`revalidatePath` then `redirect`) does not compile; front 31 renders `not-found.bp` and nothing can
-trigger it
+**Priority:** high — server code nested inside a route handler or a server action cannot say "not
+found" or "go elsewhere" today, and front 24's own showcase (`revalidatePath` then `redirect`) does
+not compile
 **Target:** erlang (server)
 **Wave:** 6
-**Depends on:** 22 (the route table, to validate a redirect target), 23 (the render pipeline that
-unwinds), 62 (the request frame the outcome is recorded on), `01-std/04-routing-lib` Step 7 (the
+**Depends on:** 22 (the route table, to validate a redirect target), 62 (the request frame the
+outcome is recorded on) — fronts 24 and 25, whose action dispatcher and handler wrapper capture, depend
+on this front, `01-std/04-routing-lib` Step 7 (the
 vocabulary this front imports — `NavKind`, `NavOutcome`, the four `nav:` reasons and the `n` wire
 form, decision 116)
 **Owns:** `repository/rakun/src/navigation.bp`,
@@ -21,6 +21,8 @@ form, decision 116)
 jhonstart fronts 26, 30 and 31
 **Reference:** [decision 116](../../decisions-taken.md#116-code-two-libraries-both-run-is-neutral-routing-gains-navigation-and-param-actions-and-validation-are-bundled-libraries-std-writes-json)
 rule 1 (the vocabulary is `routing`'s; the throw, the capture and the checks stay here) ·
+[decision 117](../../decisions-taken.md#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only) rules 1 and 4 (a page's signals are jhonstart's; rakun's serve server actions and
+route handlers) ·
 `NEXTJS-DOCS.md § 14. Tratamento de Erros` (Not Found), `§ 23. Autenticação` (Layout com
 autenticação), `§ 26. Referência de Funções` (Navegação), `§ 10. Mutação de Dados` ·
 <https://nextjs.org/docs/app/api-reference/functions/not-found> ·
@@ -31,23 +33,24 @@ autenticação), `§ 26. Referência de Funções` (Navegação), `§ 10. Mutaç
 
 ## Problem
 
-Three functions are missing and the same thing is missing from all three: a way for code nested
-arbitrarily deep inside a render to stop the render and replace its outcome. `notFound()` is what a
-`[slug]` page calls when the slug matches nothing. `redirect(path)` is what `§ 23`'s dashboard layout
-calls when there is no session, and what `§ 10`'s create-post action calls after the write. Neither
-exists, and neither can be written by a consumer, because a return value cannot travel out of a
-layout that a pipeline three frames up is composing.
+Four functions are missing and the same thing is missing from all of them: a way for server code
+nested arbitrarily deep inside a route handler or a server action to stop it and replace its outcome.
+`notFound()` is what a `[slug]` handler calls when the slug matches nothing; `redirect(path)` is what
+`§ 10`'s create-post action calls after the write. Neither exists, and neither can be written by a
+consumer, because a return value cannot travel out of a `#[service]` that a dispatcher three frames
+up is composing.
+
+A **page**, a layout and a template are not this front's: they are jhonstart's components, and
+jhonstart's `notFound` / `redirect` (front 31) are turned into a 404 or a 307 by jhonstart's own
+render, before or after the first chunk, on the server and in a client-only app alike (decision 117
+rule 1). rakun has no page-level signal.
 
 Today rakun's only shape for "a different response" is a handler returning `Response.notFound()`
-(`repository/rakun/src/http.bp:64-66`). That works for a dispatched handler and works nowhere else:
-a layout returns `Element`, a page returns `@Future<Element>`, and a `#[service]` that discovers the
-record is gone returns whatever its own signature says. Threading an "or a redirect" variant through
-every one of those signatures is the design this front exists to avoid — it would put a `case` at
-every call site in an application for a branch that fires on a fraction of a percent of requests.
-
-Front 31 is the other half of the damage. It renders `not-found.bp` at the right boundary and there is
-no way to reach that boundary, so its central test would have to fake the condition it is supposed to
-catch.
+(`repository/rakun/src/http.bp:64-66`). That works at the handler's own frame and nowhere below it:
+a `#[service]` that discovers the record is gone returns whatever its own signature says. Threading
+an "or a redirect" variant through every one of those signatures is the design this front exists to
+avoid — it would put a `case` at every call site in an application for a branch that fires on a
+fraction of a percent of requests.
 
 ## Current state
 
@@ -70,15 +73,18 @@ catch.
 `notFound()` unwinds to the nearest `not-found` boundary and sets status 404 (`§ 14`).
 `redirect(path)` answers 307 and `permanentRedirect(path)` answers 308 (`§ 26`). Both are legal from a
 layout, a page, a route handler and a server action; from an action the redirect is carried back in
-the response so the client router navigates without a document reload.
+the response so the client router navigates without a document reload. In botopink the layout and
+page half is jhonstart's (decision 117); this front is the route-handler and server-action half.
 
 ### How it maps onto botopink
 
 **A signal is a host-level throw, not a returned sentinel.** `rakun_navigation:signal/1` calls
 `erlang:throw(Reason)` where `Reason` is a **string beginning `nav:`**, built by `routing`'s
-`signalReason` — the exact spellings are in *Step 7* below. The render supervisor — front 23's
-pipeline, front 24's action dispatcher, front 25's handler wrapper — brackets the body with a catch that recognizes that prefix and re-raises
-anything else unchanged.
+`signalReason` — the exact spellings are in *Step 7* below. The two supervisors — front 24's action
+dispatcher and front 25's handler wrapper — bracket the body with a catch that recognizes that prefix
+and re-raises anything else unchanged. Front 23's page dispatch has no such catch: a `nav:` reason
+out of a page renderer is a failed render (500), because page signals are jhonstart's (decision 117
+rule 1).
 
 The reason is a prefixed string rather than a tagged tuple for one concrete reason: **front 31's error
 boundaries live in jhonstart, and jhonstart does not import rakun.** A boundary has to be able to tell
@@ -117,8 +123,8 @@ and clears it — a signal is consumed once, by whoever is composing the respons
 `captureSignals` cannot hide one from its parent.
 
 It is generic over the body's type for the same reason `rkSingleton<T>` is
-(`repository/rakun/src/runtime.bp:47`): the pipeline composes `Element`, `@Future<Element>` and
-`Response` bodies and should not stringify any of them. Note that it returns `T` rather than a
+(`repository/rakun/src/runtime.bp:47`): the dispatchers compose `HandlerResponse`, `ActionResult` and
+`@Future` of either, and should not stringify any of them. Note that it returns `T` rather than a
 `#(T, NavOutcome)` tuple deliberately — tuple labels are lost through generic instantiation
 (`repository/jhonstart/src/hooks.bp:75-77`), so a two-field return would have to be read positionally
 by every consumer. One value out, one frame read, no positional access.
@@ -127,10 +133,9 @@ by every consumer. One value out, one frame read, no positional access.
 
 | Raised from | Becomes |
 |---|---|
-| a layout or a page, before the first byte | status 404 and the nearest `not-found.bp` for `NotFound`; status 307/308 with `Location` for a redirect |
-| a layout or a page, after the first byte is flushed | the status is already on the wire and cannot change. The render that raised it is jhonstart's, and jhonstart's render writes the signal as markup its client executes (`data-jh-g`, decision 115 rule 2); rakun appends nothing, and the response closes with status 200. This case is tested, not documented. |
-| a route handler | the same status codes, with no boundary rendering — a handler has no `not-found.bp` |
-| a server action | a field in front 24's result envelope, consumed by front 26's client router |
+| a route handler | status 404 for `NotFound`; 307 / 308 / 303 with `Location` for a redirect — no boundary rendering, a handler has no `not-found.bp` |
+| a server action | the `n` field of front 24's result envelope, written with `routing`'s `signalToWire` and read by jhonstart's client (decision 117 rule 4); on the progressive path, a 303 to the target or a 404 |
+| a page renderer (front 23) | not a signal: the request fails with 500. A page's `notFound` / `redirect` are jhonstart's, and jhonstart's render writes their status through the `ChunkWriter`'s `setStatus` / `setHeader` itself, before or after the first chunk (decision 117 rule 1) |
 
 ### The action encoding
 
@@ -165,7 +170,7 @@ the property unset, only relative destinations are legal. There is no flag that 
 
 ### Target
 
-erlang. The signal, the capture, the boundary selection and the status codes all run while a request
+erlang. The signal, the capture and the status codes all run while a request
 is in flight. What crosses to the browser — the reasons and the four-line wire format — is the
 bundled library `routing`'s, compiled for both targets; this front imports it and ships no codec of
 its own.
@@ -228,9 +233,9 @@ pub fn peekSignal() -> NavOutcome
 
 ### Step 3 — Signals through `await`
 
-A page renderer is `fn(req: Request, out: ChunkWriter) -> @Future<void>` (front 23), and whatever
-it calls — a jhonstart server component, in an onze application — awaits others. On erlang `@Future` lowers eagerly, so the signal is raised during the awaited call and
-propagates as a plain throw.
+A route handler is `#[@future] fn(req: Request) -> @Future<HandlerResponse>` (front 25) and an action
+answers `@Future<ActionResult>` (front 24); whatever they call awaits others. On erlang `@Future`
+lowers eagerly, so the signal is raised during the awaited call and propagates as a plain throw.
 
 **Acceptance:**
 - [ ] `captureSignals` around a body that `await`s a `#[@future]` function which calls `notFound()`
@@ -244,30 +249,25 @@ propagates as a plain throw.
 ```bp
 pub fn statusFor(out: NavOutcome) -> i32
 pub fn locationHeaderFor(out: NavOutcome) -> ?string
-pub fn boundaryFor(out: NavOutcome, table: RouteEntry[], pattern: string) -> ?RouteEntry
 ```
 
-`boundaryFor` walks front 22's table for the nearest `N` entry at or above `pattern`, which is the
-`not-found.bp` front 31 renders.
+These compose a route handler's response and the progressive path of an action. Choosing a page's
+not-found boundary is jhonstart's render's (front 31, decision 117), so this front has no boundary
+lookup.
 
 **Acceptance:**
-- [ ] `statusFor` answers 404, 307, 308 and 200 for the four cases.
+- [ ] `statusFor` answers 404, 307, 308, 303 and 200 for the five cases.
 - [ ] `locationHeaderFor` answers `null` for `NotFound` and the destination for a redirect.
-- [ ] `boundaryFor` on `/blog/[slug]` finds `not-found.bp` registered at `/blog` before the one at `/`.
-- [ ] `boundaryFor` with no `N` entry anywhere answers `null`, and the pipeline's documented behaviour
-      for that case is a bare 404 body — stated here so front 31 does not have to guess.
+- [ ] `grep -n "fn boundaryFor" repository/rakun/modules/rakun/src/navigation.bp` is empty.
 
-### Step 5 — The streaming case
+### Step 5 — A page renderer is not a signal source
 
 **Acceptance:**
-- [ ] A signal raised before the first flush sets the status.
-- [ ] A signal raised after the first flush does **not** change the status — the response is already
-      200 — and rakun writes nothing for it: the markup that carries it (`data-jh-g`) is written by
-      jhonstart's render (front 30, decision 115 rule 2), and this front's dispatch closes the
-      response normally when the renderer's future resolves.
-- [ ] The test drives a renderer that writes one chunk and then raises, and asserts in one run that
-      the status stays 200, that no byte after the renderer's own chunks is written by rakun, and that
-      the response is closed — asserting only one of them is how this bug ships.
+- [ ] A page renderer (front 23) that raises `notFound()` before its first write is answered 500 as a
+      failed render, not 404; one that raises after its first write fails the request with the status
+      already on the wire unchanged. Page signals are jhonstart's (decision 117 rule 1).
+- [ ] The same `notFound()` inside a route handler answers 404 and inside an action answers `n: "N"` —
+      the test runs the three in one suite so the distinction is asserted, not assumed.
 
 ### Step 6 — The action wire format
 
@@ -294,7 +294,7 @@ error, never put it in an `error.digest`.
 
 | Raised by | Reason, literally | Status | Boundary behaviour |
 |---|---|---|---|
-| `notFound()` | `nav:not-found` | 404 | re-raise; front 23 selects `not-found.bp` |
+| `notFound()` | `nav:not-found` | 404 | re-raise; the supervisor that owns the call answers it — jhonstart's render for a page (front 30, decision 117), front 24 or 25 for rakun's |
 | `redirect(loc)` | `nav:redirect:<loc>` | 307 | re-raise |
 | `permanentRedirect(loc)` | `nav:permanent-redirect:<loc>` | 308 | re-raise |
 | `redirectWithStatus(loc, 303)` | `nav:see-other:<loc>` | 303 | re-raise |
@@ -325,11 +325,13 @@ and `signalToWire` reads that same `NavOutcome`.
 ## Examples
 
 - [`examples/navigation-signals-example.bp`](./examples/navigation-signals-example.bp) — the two
-  canonical uses side by side: a `[slug]` page that calls `notFound()` when the post is missing
-  (`§ 14`), and a dashboard layout that calls `redirect("/login")` when there is no session (`§ 23`).
+  canonical uses on route handlers (front 25): a `[slug]` handler that calls `notFound()` when the
+  post is missing, and an account handler that calls `redirect("/login")` when there is no session.
+  The page and layout forms (`§ 14`, `§ 23`) are jhonstart's — front 31's and onze front 53's
+  examples.
 - [`examples/action-redirect-example.bp`](./examples/action-redirect-example.bp) — `§ 10`'s own
-  pattern: a server action that writes, revalidates through front 12, and redirects, with the outcome
-  travelling back in the action envelope rather than as an HTTP 307.
+  pattern: a server action that writes, revalidates through front 12, and redirects with rakun's
+  `redirect`, the outcome travelling back in the action envelope rather than as an HTTP 307.
 
 ## Language gaps
 
@@ -353,9 +355,9 @@ has no commonJS row, and it asserts that what it raises and captures is `routing
 
 What the tests assert, by step: that a signal does not return and carries the right status; that
 capture records and clears exactly once, re-raises non-signals, and is not defeated by `try … catch`
-or by nesting; that a signal crosses `await`; that status, `Location` and boundary selection are
-derived correctly; that a post-flush signal leaves the status and the stream to jhonstart's render;
-and that each verb raises `routing`'s reason literal.
+or by nesting; that a signal crosses `await`; that status and `Location` are derived correctly; that
+a page renderer's raise is a failed render and not a status; and that each verb raises `routing`'s
+reason literal.
 
 The vocabulary is the one artifact this front shares with a different repository, and it is not
 this front's: `routing` owns it, and front 31's boundary and this front's capture both call
@@ -366,7 +368,8 @@ this front's: `routing` owns it, and front 31's boundary and this front's captur
 - `src/navigation.bp` compiles with no `@External.Node` cell.
 - `src/sidecars/rakun_navigation.erl` compiles under `erlc` with `-Werror`, and its atom does not
   collide with a module rakun emits.
-- The redirect-validation rule is written down here once and cited by fronts 23, 24, 25 and 64; the
+- The redirect-validation rule for rakun's `redirect` is written down here once and cited by fronts
+  24, 25 and 64 (a page's redirect target is checked by jhonstart, decision 117); the
   four-line wire format and the four `nav:` reasons are `routing`'s (`01-std/04-routing-lib` Step 7)
   and this front imports them.
 - No reason is spelled by hand under `repository/rakun/`: the raise goes through `signalReason` and

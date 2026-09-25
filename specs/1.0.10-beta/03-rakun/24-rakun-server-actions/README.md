@@ -17,7 +17,8 @@ mirroring), `01-std/05-actions-lib` (the envelope, the `state` grammar, the JSON
 **Does not touch:** `repository/rakun/src/http.bp`, `src/decorators.bp`, `src/bootstrap.bp`
 (frozen), the files owned by 22 · 23 · 25, and every file outside `repository/rakun/` — this front
 builds no element and imports nothing from `jhonstart` (decision 113)
-**Reference:** [decision 116](../../decisions-taken.md#116-code-two-libraries-both-run-is-neutral-routing-gains-navigation-and-param-actions-and-validation-are-bundled-libraries-std-writes-json)
+**Reference:** [decision 116](../../decisions-taken.md#116-code-two-libraries-both-run-is-neutral-routing-gains-navigation-and-param-actions-and-validation-are-bundled-libraries-std-writes-json) ·
+[decision 117](../../decisions-taken.md#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only) rules 4 and 5 (an action's `redirect` is rakun's; `OnzeConfig.actionsBodyLimit`)
 rule 2 (the action protocol is the bundled library `actions`) · `NEXTJS-DOCS.md § 10. Mutação de Dados`, `§ 27. Diretivas` ·
 <https://nextjs.org/docs/app/getting-started/updating-data> ·
 <https://nextjs.org/docs/app/api-reference/directives/use-server>
@@ -182,8 +183,9 @@ that rewrites `Host` fixes its proxy.
 marshals through `string`, so a multipart body would arrive as lossy UTF-8. A 415 is the honest
 answer; see *Language gaps*.
 
-**Body size.** Default 1 MiB, raisable through front 05's `rakun.actions.bodyLimit` — a rakun key,
-which onze writes at boot like the two wire names (decision 115) — and not lowerable below 4 KiB. Enforced *while reading*, in `src/sidecars/rakun_actions.erl`, by counting bytes as they arrive
+**Body size.** Default 1 MiB (1048576 bytes), raisable through front 05's `rakun.actions.bodyLimit` —
+a rakun key, which onze writes at boot from `OnzeConfig.actionsBodyLimit` (default 1048576) like the
+two wire names (decisions 115 and 117) — and not lowerable below 4 KiB. Enforced *while reading*, in `src/sidecars/rakun_actions.erl`, by counting bytes as they arrive
 and closing the connection at the limit — not by reading the body and then measuring it, which is the
 version that lets a 2 GB upload exhaust the node before the check runs.
 
@@ -205,11 +207,31 @@ writes no JSON itself:
 | `n` | the navigation signal from front 63 in its wire form (`contracts.md § 5b`): `""` no signal · `"N"` notFound · `"R\|307\|/login"` redirect · `"R\|308\|/new"` permanentRedirect. `location` is the remainder of the line, so a `\|` in a path round-trips |
 | `payload` | a fresh payload (contract 2, rendered by jhonstart front 30 through front 23's dispatch) for the current route when the action requested a refresh, or `""` |
 
-`state` is querystring-encoded because `std/json` has no structured walker; its grammar (`message`,
+`state` is querystring-encoded — contract 3 fixes that grammar (`message`,
 `f.<name>`) and its encoder `writeState` are `actions`', the same code jhonstart front 67 reads it
 with. `n` is `routing`'s `signalToWire` of front 63's outcome; `redirect` is derived from it inside
 `writeEnvelope`, which takes no `redirect` parameter, so there is one source of truth for where the
-browser goes next. An `ok: false`
+browser goes next.
+
+**An action's `redirect` is rakun's** (decision 117 rule 4). An action runs inside this front's
+pipeline, with no render and no jhonstart `Response`; it imports `redirect` (and `notFound`) from
+`"rakun"` (front 63), and the dispatcher writes the outcome into the envelope's `n` with `routing`'s
+`signalToWire`. jhonstart's client reads `n` with `signalFromWire` and navigates. Page `redirect` is
+jhonstart's; neither side imports the other.
+
+```bp
+import {serverAction, FormData, ActionResult, redirect} from "rakun";
+
+#[serverAction]
+#[@future]
+pub fn createPost(form: FormData) -> @Future<ActionResult> {
+    val id = await savePost(form.field("title"), form.field("body"));
+    val _gone = redirect("/posts/" + id);     // raises; n: "R|307|/posts/<id>"
+    return ActionResult.done();
+}
+```
+
+An `ok: false`
 envelope is **data handled by front 67**, never caught by a front-31 boundary — only a raised POST
 reaches a boundary.
 
@@ -323,7 +345,7 @@ pub fn dispatchAction(
       check. Asserted by the absence of the key in front 05's schema, which is a test, not a promise.
 - [ ] A body over the limit is refused at the limit: the connection is closed after at most
       `limit + 8 KiB` bytes have been read, measured in `src/sidecars/rakun_actions.erl`'s own suite.
-- [ ] The limit defaults to 1 MiB, can be raised by `rakun.actions.bodyLimit`, and cannot be set below
+- [ ] The limit defaults to 1 MiB (1048576), can be raised by `rakun.actions.bodyLimit`, and cannot be set below
       4 KiB; `grep -rn '"onze\.' repository/rakun` is empty.
 - [ ] An unknown id gives 404 with an empty body — not a message naming known ids.
 - [ ] The id from the request is compared against the registry with front 01's constant-time compare.

@@ -8,15 +8,16 @@ is named `01-std/05-actions-lib`.
 **Priority:** high — a server action is written by rakun on erlang and read by jhonstart in the
 browser; until this library exists the two sides can only agree by pinning the same literal twice,
 and rakun front 24 and jhonstart front 67 have nothing to import
-**Target:** both — erlang and commonJS, every module. The library keeps no state and ships no
-sidecar; the two places it reads JSON are inline `#[@External]` templates on each target, the way
-std's `json` reads it
+**Target:** both — erlang and commonJS, every module. The library keeps no state and ships `.bp`
+files only (decision 117 rule 8); it reads JSON with std's `json.decode` and declares no
+`#[@External]` cell
 **Wave:** 0 — the library beside `01-std`'s steps, after `01-std-lib-enablement` Step 3
-(`encoding`), `07-std-json-writers` Step 1 (`json.quote` and the writers) and `04-routing-lib`
+(`encoding`), `01-std-lib-enablement` Steps 11 and 13 (`json.quote`, the writers and `json.decode`) and `04-routing-lib`
 Step 7 (`navigation`); before rakun 24 and jhonstart 67 (waves 6–7)
 **Depends on:** `01-std` step 2 (`testing.asserts`) · `01-std/01-std-lib-enablement` Step 3
 (`encoding.percentEncode` / `percentDecode` / `formParse` / `formStringify`) ·
-`01-std/07-std-json-writers` (`json.quote`, `json.array`, `json.object`) · `01-std/04-routing-lib`
+`01-std/01-std-lib-enablement` Steps 11 and 13 (`json.quote`, `json.array`, `json.object`,
+`json.decode`) · `01-std/04-routing-lib`
 Step 7 (`navigation.signalToWire` / `signalFromWire`) and Step 2 (the bundled-package registry this
 front adds one name to, which opens after `00 · 23-std-purity`). Steps 1–5 do not wait on Step 2 of
 `04-routing-lib`: the library is compiled and tested from its own directory until Step 6 bundles it
@@ -67,8 +68,8 @@ Measured 2026-09-25 on `repository/botopink-lang` `52843fd5`, `repository/rakun`
 | The `state` grammar | specified in front 67, encoded by 24, pinned by a literal in both | 67 *The envelope …* (`message`, `f.<name>`; the fixture `message=Title%20must%20be%20at%20least%203%20characters&f.title=Too%20short`) |
 | The JSON-RPC body | specified by 24 (reader), no writer anywhere | 24 *Two dispatch paths* and Step 6; no front says who writes it in the browser |
 | The `refresh` header value | specified by 24, sent by 26 | 24 *`router.refresh()`*; jhonstart front 26 `refresh()` |
-| JSON reading in botopink | none — `std/json` validates and re-stringifies | `libs/std/src/json.bp:36` (`parse -> @Result<string, string>`), `:45` (`stringify`) |
-| JSON writing | four private copies in rakun, none escaping every control character | `modules/rakun/src/ssr.bp:641-676` (`jsonString`, `jsonStrings`, `jsonPairs`, `jsonTriples`); std's replacement is `07-std-json-writers` |
+| JSON reading in botopink | none yet — `std/json` validates and re-stringifies; `json.decode` is `01-std-lib-enablement` Step 13 | `libs/std/src/json.bp:36` (`parse -> @Result<string, string>`), `:45` (`stringify`) |
+| JSON writing | four private copies in rakun, none escaping every control character | `modules/rakun/src/ssr.bp:641-676` (`jsonString`, `jsonStrings`, `jsonPairs`, `jsonTriples`); std's replacement is `01-std-lib-enablement` Step 11 |
 | Form encoding | escape-naive in std today | `libs/std/src/querystring.bp:35,48` (`parse`, `stringify` — no percent codec); `encoding` is `01-std-lib-enablement` Step 3 |
 | The `n` codec | specified in rakun 63, moving to `routing` | `04-routing-lib` Step 7 |
 | Bundled packages | `std`, and `routing` once `04-routing-lib` Step 2 lands | `04-routing-lib` *Mechanism* — the list is one constant in `build.zig` |
@@ -99,8 +100,7 @@ pub fn parseState(state: string) -> #(string, Array<#(string, string)>)   // (me
 pub type ActionEnvelope(ok: bool, state: string, revalidated: Array<string>,
                         n: string, payload: string)
 pub fn writeEnvelope(e: ActionEnvelope) -> string          // JSON, `v` first, `redirect` from `n`
-#[@result] pub fn flattenEnvelope(json: string) -> @Result<string, string>   // JSON → flat form
-pub fn readEnvelope(flat: string) -> ActionEnvelope
+#[@result] pub fn readEnvelope(json: string) -> @Result<ActionEnvelope, string>
 pub fn parseActionState(envelope: string) -> ActionState    // decision 78's name, over the JSON
 
 // rpc
@@ -112,20 +112,13 @@ pub fn writeRpcBody(call: RpcCall) -> string               // {"v":1,"id":…,"a
 pub fn refreshValue() -> string                             // "refresh"
 ```
 
-**Writing JSON** is std's (`json.quote`, `json.array`, `json.object`, `07-std-json-writers`), so the
-envelope escapes every control character. **Reading JSON** needs a walker botopink does not have, so
-the two readers are inline templates on each target — `JSON.parse` on node, `json:decode` on erlang
-(OTP 28, the floor decision 86 pins) — which turn the JSON into the flat querystring form and hand
-it to botopink code that is the same on both targets:
-
-```
-v=1&ok=1&state=<pct>&revalidated=<pct: "\n"-joined>&redirect=<pct>&n=<pct>&payload=<pct>
-```
-
-`readEnvelope` parses that form with std's `encoding.formParse`; a missing key reads as its empty
-value and an unknown key is ignored, and `v` other than `1` is an `Error` in `flattenEnvelope`
-(decision 67 — a version the reader does not know is refused, not guessed). The flat form is this
-library's internal shape between the template and the reader, and no consumer writes it.
+**Writing JSON** is std's (`json.quote`, `json.array`, `json.object`, `01-std-lib-enablement`
+Step 11), so the envelope escapes every control character. **Reading JSON** is std's too:
+`readEnvelope` and `parseRpcBody` read the text with `json.decode` (`01-std-lib-enablement` Step 13,
+decision 117 rule 7) and walk the `Json` it answers — the same botopink code on both targets, with
+no per-target template. A missing key reads as its empty value and an unknown key is ignored; `v`
+other than `1`, text that is not JSON, and a known key of the wrong JSON kind are an `Error` (decision
+67 — a version the reader does not know is refused, not guessed).
 
 `redirect` is derived from `n` inside `writeEnvelope` (`signalFromWire(n).location` for a redirect,
 `""` otherwise) and is never a parameter, so the envelope cannot carry a `redirect` that disagrees
@@ -143,7 +136,7 @@ libs/actions/
 ├── AGENTS.md
 ├── src/root.bp       pub mod state; pub mod envelope; pub mod rpc; pub mod refresh;
 ├── src/state.bp      ActionState, newActionState, writeState, parseState
-├── src/envelope.bp   ActionEnvelope, writeEnvelope, flattenEnvelope, readEnvelope, parseActionState
+├── src/envelope.bp   ActionEnvelope, writeEnvelope, readEnvelope, parseActionState
 ├── src/rpc.bp        RpcCall, writeRpcBody, parseRpcBody
 ├── src/refresh.bp    refreshValue
 └── test/             state_test.bp · envelope_test.bp · rpc_test.bp
@@ -161,7 +154,9 @@ libs/actions/
       with erlang first, and lists every `src/*.bp` in `files`
 - [ ] `grep -rn "rakun\|jhonstart\|onze\|emilia\|__bp_action\|X-Bp-Action" libs/actions/src` is
       empty — no library name and no wire name
-- [ ] no file under `libs/actions/` is a sidecar (`*.erl`, `*.mjs`)
+- [ ] no file under `libs/actions/` is a sidecar (`*.erl`, `*.mjs`), and no `src/*.bp` declares an
+      `#[@External]` cell — the library reads and writes JSON through std (decision 117 rules 7
+      and 8)
 
 ### Step 2 — `state`: the `state` grammar and `ActionState`
 
@@ -192,10 +187,11 @@ is ignored; values are percent-encoded with `encoding.formStringify`.
 - [ ] with `n: "R|307|/login"` the envelope carries `"redirect":"/login"`; with `n: "N"` it carries
       `"redirect":""` — `redirect` has no parameter of its own
 - [ ] a `state` or `payload` containing `"`, `\`, a newline and U+0001 produces JSON that std's
-      `json.parse` accepts — the control-character case the private copies got wrong
-- [ ] `readEnvelope(flattenEnvelope(writeEnvelope(e)))` equals `e` field by field, for an `ok: false`
+      `json.decode` accepts — the control-character case the private copies got wrong
+- [ ] `readEnvelope(writeEnvelope(e))` is `Ok(e)` field by field, for an `ok: false`
       envelope, one with each `n` form, and one whose `revalidated` holds three entries
-- [ ] `flattenEnvelope` of `{"v":2,…}` and of text that is not JSON answer an `Error`
+- [ ] `readEnvelope` of `{"v":2,…}`, of text that is not JSON and of `{"v":1,"ok":"yes",…}` answer
+      an `Error`
 - [ ] `parseActionState(writeEnvelope(e))` fills `ok` and `redirectTo` from the envelope's own keys,
       never from `state` — a `state` carrying an `ok` key is ignored
 
@@ -258,7 +254,7 @@ Each consumer switches in its own front; this front is not done until both have:
 `libs/actions/test/*.bp`, suite `actions:`, run by `botopink test --target erlang` and `--target
 commonJS` from `libs/actions/` and by `zig build test-libs`. Deterministic — no clock, no network.
 The tests assert the `state` grammar and its literal, the envelope literal and its key order,
-`redirect` derived from `n`, the control-character case, the flat-form round trip, the refusals of an
+`redirect` derived from `n`, the control-character case, the envelope round trip, the refusals of an
 unknown `v` and of text that is not JSON, and the RPC body both ways. The bundling (Step 6) is tested
 in the compiler's own suite beside `04-routing-lib`'s bundled-package test.
 
@@ -283,6 +279,9 @@ in the compiler's own suite beside `04-routing-lib`'s bundled-package test.
 - **Why a library of its own and not a `routing` module.** The maintainer chose `libs/actions`
   (decision 116 rule 2). Its consumers are a different pair of fronts (24 and 67, not 22 and 26), it
   depends on `routing` and not the reverse, and it changes when the action protocol changes.
-- **Why the JSON readers are templates.** std has no structured JSON value (the reason `state` is a
-  querystring and contract 1 is not JSON). The templates are two expressions, one per target, whose
-  output is the flat form; everything after them is shared botopink.
+- **Why the JSON readers are std's `json.decode`.** [decision 117](../../decisions-taken.md#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only) rules 7 and 8: a
+  bundled library ships `.bp` files only and keeps target-native code to inline templates, and std's
+  structured reader keeps member order and refuses a duplicate key identically on both targets,
+  which `JSON.parse` and OTP's `json:decode` do not. If something this library needs cannot be
+  expressed in `.bp` or an inline template, the front stops and raises it in
+  `decisions-pending.md` rather than adding a sidecar.

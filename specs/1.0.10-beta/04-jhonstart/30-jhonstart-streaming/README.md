@@ -5,10 +5,10 @@
 **Target:** both — boundary. The render, the escaping, the document, the payload writer and the chunk production are erlang; the fill function and the payload reader (`render.mjs`) are js; the payload format and the globals registry are the contract between them
 **Boundary:** the server produces the shell, the fills and the payload; the browser consumes them. Every marker and global the HTML carries is written here or by another jhonstart front: `data-jh-*` markers (`contracts.md § 2`) and the three `__bp<N>` globals of this front's registry (decisions 113 and 115)
 **Wave:** 5
-**Depends on:** 28 (`RequestData`, `enterRequest` / `leaveRequest`) · 29 (`islandAttr`, `islandEntry`) · 31 (`renderBoundaryChecked`) · 32 (`renderHead`, `mergeMetadata`) · 02 (spawn/gather over unstarted tasks) · 01 (`escape.html` / `escape.attribute`) · `01-std/07-std-json-writers` (`json.quote` / `json.array` / `json.object`, `escape.scriptJson`) · 94 (`isVoidTag`, `isRawTextTag`, element builders) · `01-std/04-routing-lib` (`matchPath` for the late-redirect check, Step 7's `navigation.isSignalReason` / `signalFromReason` for the late signal, `parsePath` / `parseTable` for Step 10's round trip) — and no rakun, onze or emilia module: onze hands in the route data, the request, the chunk writer and the plugins (decisions 113 and 114); `routing` is the compiler-bundled library jhonstart imports directly (decision 115)
-**Owns:** `repository/jhonstart/modules/jhonstart/src/render.bp` (the escaping walker, `compose`, the document, `Payload` and its writer — contract 2 — the island and hole ordinals, `render`/`renderStream`, the `RenderHooks` record and `app`), `repository/jhonstart/modules/jhonstart/src/plugin.bp` (`RenderPlugin` and the order it is called in), `repository/jhonstart/modules/jhonstart/src/globals.bp` (the globals registry, `readPayload`, `registerFill`), `repository/jhonstart/modules/jhonstart/src/routes.bp` (the UI file conventions — `#[page]`, `#[layout]`, `#[template]`, `#[defaultView]`, `PageContext`, `LayoutProps`, the per-route parameter accessors and the UI registry, decision 114) with its sidecars `src/sidecars/jhonstart_routes.erl` and `src/routes.mjs`, `repository/jhonstart/modules/jhonstart/src/render.mjs` (the browser fill function and payload reader), `repository/jhonstart/modules/jhonstart/src/streaming.bp`, `repository/jhonstart/modules/jhonstart/src/suspense.bp`, their tests (`test/render_test.bp`, `test/streaming_test.bp`, `test/routes_test.bp`), and the bridge member `repository/jhonstart/modules/jhonstart-emilia/**`
+**Depends on:** 28 (`RequestData`, `enterRequest` / `leaveRequest`) · 29 (`islandAttr`, `islandEntry`) · 31 (`renderBoundaryChecked`) · 32 (`renderHead`, `mergeMetadata`) · 02 (spawn/gather over unstarted tasks) · 01 (`escape.html` / `escape.attribute`) · `01-std/01-std-lib-enablement` (`json.quote` / `json.array` / `json.object`, `escape.scriptJson`, `json.decode` for the payload reader — decision 117 rule 7) · 94 (`isVoidTag`, `isRawTextTag`, element builders) · `01-std/04-routing-lib` (`matchPath` for the redirect-target check, Step 7's `navigation.isSignalReason` / `signalFromReason` for the late signal, `parsePath` / `parseTable` for Step 10's round trip) — and no rakun, onze or emilia module: onze hands in the route data, the request, the `Response` adapted over rakun's response and the plugins (decisions 113, 114 and 117); `routing` is the compiler-bundled library jhonstart imports directly (decision 115)
+**Owns:** `repository/jhonstart/modules/jhonstart/src/render.bp` (the escaping walker, `compose`, the document, `Payload` and its writer — contract 2 — the island and hole ordinals, `Response`, `render`/`renderStream`, the navigation-signal translation and the redirect-target check, the `RenderHooks` record and `app`), `repository/jhonstart/modules/jhonstart/src/plugin.bp` (`RenderPlugin` and the order it is called in), `repository/jhonstart/modules/jhonstart/src/globals.bp` (the globals registry, `readPayload`, `registerFill`, `registerSignal`), `repository/jhonstart/modules/jhonstart/src/routes.bp` (the UI file conventions — `#[page]`, `#[layout]`, `#[template]`, `#[defaultView]`, `PageContext`, `LayoutProps`, the per-route parameter accessors and the UI registry, decision 114) with its sidecars `src/sidecars/jhonstart_routes.erl` and `src/routes.mjs`, `repository/jhonstart/modules/jhonstart/src/render.mjs` (the browser fill function and payload reader), `repository/jhonstart/modules/jhonstart/src/streaming.bp`, `repository/jhonstart/modules/jhonstart/src/suspense.bp`, their tests (`test/render_test.bp`, `test/streaming_test.bp`, `test/routes_test.bp`), and the bridge member `repository/jhonstart/modules/jhonstart-emilia/**`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (26), `src/link.bp` (27), `src/server.bp` (28), `src/client.bp` (29), `src/error_boundary.bp` (31), `src/metadata.bp` (32), `src/root.bp` and `botopink.json` (front 94); `repository/emilia/**` (emilia does not change — decision 113), `repository/rakun/**`, `repository/onze/**`
-**Reference:** `NEXTJS-DOCS.md § 13. Streaming` · `§ 3. Convenções de nomenclatura` · `§ 5. Layouts e Páginas` · `§ 7. Server e Client Components` · `§ 4. Hierarquia de renderização` · https://nextjs.org/docs/app/guides/streaming · https://nextjs.org/docs/app/api-reference/file-conventions/loading · [decision 113](../../decisions-taken.md#113-the-libraries-split-by-concern-emilia-is-css-jhonstart-is-html-rakun-is-the-service-on-erlang-onze-wires-them) · [decision 114](../../decisions-taken.md#114-the-seams-decision-113-left-open-rakun-routing-an-async-renderplugin-with-a-payload-rakuns-opaque-page-renderer-examples-in-onze-action-names-and-the-request-handed-in-by-onze) · [decision 115](../../decisions-taken.md#115-routing-is-a-bundled-library-a-signal-after-the-first-chunk-is-markup-jhonstart-gains-redirect-rakuns-keys-are-rakun)
+**Reference:** `NEXTJS-DOCS.md § 13. Streaming` · `§ 3. Convenções de nomenclatura` · `§ 5. Layouts e Páginas` · `§ 7. Server e Client Components` · `§ 4. Hierarquia de renderização` · https://nextjs.org/docs/app/guides/streaming · https://nextjs.org/docs/app/api-reference/file-conventions/loading · [decision 113](../../decisions-taken.md#113-the-libraries-split-by-concern-emilia-is-css-jhonstart-is-html-rakun-is-the-service-on-erlang-onze-wires-them) · [decision 114](../../decisions-taken.md#114-the-seams-decision-113-left-open-rakun-routing-an-async-renderplugin-with-a-payload-rakuns-opaque-page-renderer-examples-in-onze-action-names-and-the-request-handed-in-by-onze) · [decision 115](../../decisions-taken.md#115-routing-is-a-bundled-library-a-signal-after-the-first-chunk-is-markup-jhonstart-gains-redirect-rakuns-keys-are-rakun) · [decision 117](../../decisions-taken.md#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only)
 
 ---
 
@@ -21,8 +21,9 @@ void tags (`<input></input>`). `element.bp` is frozen for the milestone, so the 
 document shell and the payload the browser reconnects to are a new file in this package —
 decision 113 puts the whole HTML render in jhonstart: *"quem deve ser responsável pelo html é o
 jhonstart"*. rakun (front 23) routes, opens the request scope, calls the opaque `PageRenderer` onze
-registered for the route and writes the chunks; it builds no markup and names no page, layout or
-`Element` (decision 114). The UI file conventions — `#[page]`, `#[layout]`, `#[template]`,
+registered for the route and puts on the socket what the render writes through its response; it
+builds no markup, names no page, layout or `Element` (decision 114) and knows no page signal —
+`notFound` and `redirect` in a page are turned into a status here (decision 117). The UI file conventions — `#[page]`, `#[layout]`, `#[template]`,
 `#[defaultView]`, `PageContext`, `LayoutProps` and the per-route parameter accessors — are this
 front's for the same reason: they are typed over `Element`. The render that `repository/rakun/src/ssr.bp` carries today —
 `renderNode`, `raw`, `compose`, `document`, `Payload`, `RenderHooks` — is the code this front
@@ -87,13 +88,15 @@ The pipeline, end to end, on BEAM. Everything that builds markup is this file; t
 rakun   match the request (`routing`'s matchPath), open front 62's request scope, setPhase(Render),
         call the PageRenderer onze registered for the route with (Request, ChunkWriter)
 onze    turn the match into a `PageInput` (route data + jhonstart `Segment`s), rakun's `Request` into a
-        `RequestData`, and `out.write` into a `fn(string) -> @Future<void>` writer
+        `RequestData`, and rakun's `ChunkWriter` into a jhonstart `Response` (status, header, write, close)
 30      enterRequest(req)             front 28's request() / headers() / cookies() read it
 30      compose(chain, page)          layout > template > error > loading > not-found > page
-30      renderNode(tree)              escaping walker, void-aware
+30      renderNode(tree)              escaping walker, void-aware; a navigation signal becomes a status
+                                      before the first chunk, markup after it (*Navigation signals*)
 30      plugins: head / chunk / close the CSS moments, then payload (`plugin.bp`), each awaited
-30      document(head, body, payload) the bytes, as an ordered chunk list
-rakun   write each chunk as it is produced
+30      document(head, body, payload) the bytes, as an ordered chunk list, each through res.write
+30      res.close()                   once, on every path
+rakun   put each chunk on the socket as it is written
 ```
 
 **Escaping is the render, not a step before it.** `renderNode` re-implements the walk of
@@ -145,7 +148,7 @@ contribution through `RenderPlugin.payload` (decision 114, item 2), written unde
 gives, like any plugin key. `m`, `q` and island props are percent-encoded with std's
 `encoding.formStringify` (decision 116 rule 4). **Writing and escaping the payload are std's**
 (decision 116 rules 3 and 8): the JSON is built with `json.quote`, `json.array` and `json.object`
-(`01-std/07-std-json-writers`, which escape every control character), and the finished text passes
+(`01-std/01-std-lib-enablement`, which escape every control character), and the finished text passes
 through `escape.scriptJson` — `<`, `>` and `&` as `\u003c`, `\u003e`, `\u0026`, U+2028/U+2029 as
 `\u2028`/`\u2029` — so `</script` is unrepresentable inside the block. The render keeps no JSON
 writer and no escaper of its own; rakun's `jsonString` family (`ssr.bp:641-676`) is not ported.
@@ -166,14 +169,16 @@ pub type RenderHooks(
 pub fn defaultHooks() -> RenderHooks
 pub fn setHooks(h: RenderHooks) -> void
 
-pub type App(plugins: Array<RenderPlugin>)
-pub fn app(plugins: Array<RenderPlugin>) -> App
+pub type App(plugins: Array<RenderPlugin>, allowedRedirects: string[])
+pub fn app(plugins: Array<RenderPlugin>, allowedRedirects: string[] = []) -> App
 ```
 
 The four style-sink fields of rakun's `ssr.bp` record are replaced by the plugin list, and `islandAttr`
 leaves: the render that writes the island is jhonstart's, and it calls front 29's function directly.
-onze fills `RenderHooks` and calls `app(plugins: [...])` at boot; this file names neither onze nor
-any plugin.
+onze fills `RenderHooks` and calls `app(plugins: [...], allowedRedirects: [...])` at boot (the list
+is the application's `OnzeConfig.allowedRedirects`, decision 117); this file names neither onze nor
+any plugin. `allowedRedirects` is the one list of absolute redirect targets the render accepts
+(*Navigation signals*); empty, every absolute target is refused.
 
 ### The render plugin — `plugin.bp`
 
@@ -223,7 +228,7 @@ them. A render with no plugin writes no `<style>` and no plugin key.
 
 Only three values exist in `window`, because the HTML names them by text: the payload variable,
 the fill function a fill's `<script>` calls, and the signal function a late navigation signal's
-`<script>` calls (decision 115, *Late signals* below). Each gets an indexed alias `__bp<N>` from this
+`<script>` calls (decisions 115 and 117, *Navigation signals* below). Each gets an indexed alias `__bp<N>` from this
 registry, `N` counting up in **declaration order in this file**, so the server build and the client
 build agree without exchanging anything:
 
@@ -242,11 +247,14 @@ position.
 
 `render.bp` writes `window.<globals.payload> = …` and `<script><globals.fill>("h1")</script>`;
 `render.mjs` defines the fill function under `globals.fill` and `readPayload(name)` /
-`registerFill(name, holes)` read the same names, and `registerSignal(name)` defines the signal
-function under `globals.signal`. No global is written by hand anywhere in the
+`registerFill(name, holes)` read the same names, and `registerSignal(name, allowedRedirects)` defines
+the signal function under `globals.signal`, checking a redirect against the same list `app(…)`
+received on the server (decision 117). No global is written by hand anywhere in the
 milestone, and link and form mount are ordinary imports (`linkMount`, `formMount` — fronts 27 and
-67). `readPayload` and `registerFill` are `#[@External.Node]` cells called only by onze's generated
-client entry; nothing on the erlang row calls them.
+67). `registerFill` and `registerSignal` are `#[@External.Node]` cells, and `readPayload(name)` is
+`.bp` over one: the cell answers the payload script's JSON text and `readPayload` decodes it with
+std's `json.decode` (decision 117 rule 7), so the payload has one reader and no hand slicing. All
+three are called only by onze's generated client entry; nothing on the erlang row calls them.
 
 ### What makes it actually stream
 
@@ -262,8 +270,8 @@ and `@Component ⊃ @Future`, so `await b.child()` is legal in a `#[@future]` bo
 flush is driven by the completion of **spawned work**, one BEAM process per boundary, gathered by
 index. Front 02 owns spawning and gathering, and its surface takes exactly
 that shape: `Array<fn() -> @Future<T>>`. `renderStream` spawns the boundaries, hands the shell to
-the writer onze passed in (over rakun's `ChunkWriter`) immediately, and hands each fill to it as its
-process reports.
+`res.write` (the `Response` onze built over rakun's `ChunkWriter`) immediately, and hands each fill
+to it as its process reports.
 
 The division of labour follows from it:
 
@@ -271,7 +279,7 @@ The division of labour follows from it:
 |---|---|
 | this front | defines `Boundary` (a thunk, not a future), the placeholder markup and `Chunk`; `renderStream` produces the shell, then each completion's fill (with its plugin CSS), in completion order |
 | front 02 | spawns the thunks and reports completions by index |
-| rakun (front 23), through onze | writes each chunk it is handed (`ChunkWriter.write`), and closes the response when the `PageRenderer`'s future resolves |
+| rakun (front 23), through onze | puts each chunk `res.write` hands it on the socket (`ChunkWriter.write`) and applies the status and headers `res.status` / `res.header` set before it; the render calls `res.close()` |
 | `render.mjs` / onze front 68's entry | adopts each fill in the browser |
 
 `renderStream` never awaits a list: `resolve(b)` awaits **one** boundary, inside each spawned
@@ -315,8 +323,7 @@ The list of holes still open when the shell flushes is the payload's `h` key, wr
 front's render from its own boundaries.
 
 **Ordering is this front's; writing is rakun's.** `renderStream` produces the shell, then one fill
-per boundary in **completion** order, and hands each to the writer onze passed in, awaiting each
-write; it never holds a completed fill back. rakun decides nothing about the markup.
+per boundary in **completion** order, and hands each to `res.write`, awaiting each write; it never holds a completed fill back. rakun decides nothing about the markup.
 
 ### The js half — `render.mjs`, called from onze front 68's entry
 
@@ -331,44 +338,78 @@ The browser half is three rules, implemented by the fill function `render.mjs` r
 3. Adoption happens before hydration of anything inside the chunk, so a client component inside a
    streamed subtree starts once, not twice.
 
-4. A late signal (*Late signals* below) runs the function registered under `globals.signal`: for
-   `data-jh-g="redirect"` it calls `location.replace` with the `data-jh-to` target; for
-   `data-jh-g="not-found"` it replaces the contents of `[data-jh-root]` with the template's
-   contents, then removes the template. Any later fill is dropped (rule 2).
+4. A late signal (*Navigation signals* below) runs the function registered under `globals.signal`
+   (`__bp2`, decision 117 rule 2), which acts as front 26's client-only router does: for
+   `data-jh-g="redirect"` a relative `data-jh-to` is a client navigation (`history.replaceState`,
+   no reload) and a listed absolute one is `location.replace`; for `data-jh-g="not-found"` it
+   replaces the contents of `[data-jh-root]` with the template's contents, then removes the
+   template. Any later fill is dropped (rule 2).
 
 `render.mjs` implements it; front 68's generated entry calls `registerFill(globals.fill, payload.h)`
-and `registerSignal(globals.signal)` before any island hydrates. `streaming.bp` and `render.bp` carry **no** `#[@External.Node]` cell;
+and `registerSignal(globals.signal, allowedRedirects: …)` before any island hydrates. `streaming.bp` and `render.bp` carry **no** `#[@External.Node]` cell;
 the browser cells are `globals.bp`'s three, called only from the entry.
 
-### Late signals — after the first chunk, a signal is markup
+### Navigation signals — jhonstart turns them into a status or markup
 
-A navigation signal (`notFound`, `redirect` — front 31's) that leaves the render **before** its first
-`write` is the render's outcome: `renderStream` answers the reason, writes nothing, and onze turns it
-into rakun's 404 or 307. Once a chunk has been written the status and the headers are gone, so a
-signal raised later — by a boundary resolving after the shell — is handled here, as Next.js does
-(decision 115): the render writes the signal as its last chunk, writes no further fill, closes its
-plugins and ends; the response closes normally with status **200**, and `renderStream` answers `""`.
+A navigation signal — `notFound()` or `redirect(to)`, front 31's, raised by a page, a layout, a
+template or a boundary — is handled entirely here, and the same page behaves the same way with a
+server and in a client-only app (front 26's `clientApp`) (decision 117 rule 1). onze has no `case`
+on a signal and rakun knows no page signal: the render writes to a generic response and translates
+the signal itself.
+
+```bp
+// src/render.bp
+pub type Response(
+    status: fn(code: i32) -> void,                 // before the first write only
+    header: fn(name: string, value: string) -> void, // before the first write only
+    write:  fn(chunk: string) -> @Future<void>,
+    close:  fn() -> @Future<void>,
+);
+```
+
+`status` or `header` called after the first `write` fails the render, naming the call (decision
+67). onze builds the `Response` over rakun's `ChunkWriter` (`setStatus`, `setHeader`, `write`,
+`close`, rakun front 23); jhonstart never sees the `ChunkWriter`.
+
+| A signal raised | The render writes |
+|---|---|
+| `redirect(to)` before the first chunk | `res.status(307)`, `res.header("location", to)`, `res.close()` — no body |
+| `notFound()` before the first chunk | `res.status(404)`, a whole document whose body is the nearest `not-found` boundary of the segment that raised it (front 31), `res.close()` |
+| either, after the first chunk | the late-signal markup below as the last chunk, no further fill, `res.close()`; the status stays 200 |
+
+The layout renders before the page (`compose`'s order), so a signal a layout raises before the first
+chunk means the page never runs. `res.close()` is called once on every path — a normal render, a
+signal before or after the first chunk, a failed render.
+
+**After the first chunk, a signal is markup** (decision 115 rule 2), as Next.js does: the status
+and the headers are gone, so the render writes the signal into the stream for its own client:
 
 ```html
 <template data-jh-g="redirect" data-jh-to="/login"></template><script>__bp2()</script>
 <template data-jh-g="not-found">…the nearest not-found boundary's markup…</template><script>__bp2()</script>
 ```
 
-`data-jh-to` is written through `escape.attribute`; the not-found markup is the nearest `not-found`
-boundary of the segment that raised it, rendered by the same walker, with its plugin CSS first inside
-the template as a fill's is (`contracts.md § 6a`). A redirect's target is checked **before** it is
-written, because rakun's checks (`contracts.md § 5b`) cannot run once the stream has started: a
-relative target is written only when `routing`'s `matchPath` finds it in the table the render was
-handed (`PageInput.table`), and an absolute target fails the render — logged as a render error, the
-stream closed — with no option that writes it anyway (decision 67). The client half is rule 4 of
-*The js half*.
+`__bp2` is `globals.signal`, the third registry global (decision 117 rule 2). `data-jh-to` is written
+through `escape.attribute`; the not-found markup is the nearest `not-found` boundary of the segment
+that raised it, rendered by the same walker, with its plugin CSS first inside the template as a
+fill's is (`contracts.md § 6a`). The client half is rule 4 of *The js half*.
 
-**This front owns the late signal** — no other package can see it: rakun has already written the
-status, and onze only sees the outcome `renderStream` answers. The render recognises a raised reason
-with `routing`'s `navigation.isSignalReason` and reads it with `signalFromReason` (decision 116 rule
-1) — the `nav:` reasons of `contracts.md § 5b`, which front 31's `notFound` / `redirect` raise —
-and anything that is not a signal reason is an error for the nearest error boundary, as before. It
-keeps no reason table of its own. Step 12 is the step.
+**The redirect target is checked here**, because jhonstart writes the 307 and the late markup
+(decision 117 rule 1). The check is the same before and after the first chunk:
+
+- a **relative** target is accepted when `routing`'s `matchPath` finds it in the table the render
+  was handed (`PageInput.table`);
+- an **absolute** target is accepted only when it is listed in `app(allowedRedirects: [...])`; with
+  the list empty (its default) every absolute target is refused;
+- anything else fails the render — logged as a render error, the response closed, no `location`
+  header and no signal markup written — with no option that writes it anyway (decision 67).
+
+**This front owns the translation** — no other package sees a page signal. The render recognises a
+raised reason with `routing`'s `navigation.isSignalReason` and reads it with `signalFromReason`
+(decision 116 rule 1) — the `nav:` reasons of `contracts.md § 5b`, which front 31's `notFound` /
+`redirect` raise — and anything that is not a signal reason is an error for the nearest error
+boundary, as before. It keeps no reason table of its own. Step 8 owns the translation before the
+first chunk, Step 12 after it.
 
 ### Hole ids
 
@@ -390,7 +431,7 @@ that survived a navigation would be a hole whose fill belongs to the previous pa
 ### `loading.bp`
 
 A segment's `loading.bp` exports `pub fn Loading() -> Element` — it activates nothing, so it carries
-no annotation (decision 104). Front 22 discovers the file (kind `S`
+no annotation (decision 104); it is not one of the three markers of decision 117 rule 3. Front 22 discovers the file (kind `S`
 in the route table, `contracts.md § 1`) and onze hands it to jhonstart inside the segment chain;
 `compose` builds
 `Boundary(id: holeId(n), fallback: Loading(), child: { -> Page(params) })` around the segment's page,
@@ -589,7 +630,10 @@ pub behavior RenderPlugin {
       — the render and the client read the same names
 - [ ] `render.mjs`'s fill function, registered under `globals.fill`, is idempotent: calling it twice
       for one id leaves the DOM unchanged; a fill for an absent hole is dropped
-- [ ] `readPayload(globals.payload)` returns the object the render assigned
+- [ ] `readPayload(globals.payload)` returns the payload the render assigned, decoded with std's
+      `json.decode` (decision 117 rule 7) — `render.mjs`'s cell hands over only the payload
+      script's JSON text (the text after `window.<globals.payload> = `); a text `json.decode`
+      refuses is an `Error`, never a partial payload
 - [ ] no `__onze*` or hand-written `__jh*` global is referenced by any HTML this front writes
 
 ### Step 8 — `RenderHooks`, `app`, `render` and `renderStream`
@@ -599,20 +643,33 @@ pub type PageInput(build: string, pathname: string, pattern: string, params: str
                    table: string, actions: Array<#(string, string)>, chain: Array<Segment>,
                    page: fn() -> @Component<Element>)
 
-#[@future] pub fn render(self: App, input: PageInput, req: RequestData) -> @Future<string>
-#[@future] pub fn renderStream(self: App, input: PageInput, req: RequestData,
-                               write: fn(string) -> @Future<void>) -> @Future<string>
+#[@future] pub fn render(self: App, input: PageInput, req: RequestData, res: Response) -> @Future<void>
+#[@future] pub fn renderStream(self: App, input: PageInput, req: RequestData, res: Response) -> @Future<void>
 ```
 
-onze calls them as `site.renderStream(input, req, fn(chunk) { return out.write(chunk); })` inside the
-`PageRenderer` it registers with rakun (decision 114, item 5): `write` is a plain function over
-rakun's `ChunkWriter`, and jhonstart never sees the `ChunkWriter`. `req` is the `RequestData` onze
-built from rakun's `Request` (item 8); the render enters it through front 28's `enterRequest` before
-the tree is built and leaves it at the end. `renderStream` awaits `write` for the shell and then for
-each fill as its boundary completes. Both answer the render's outcome — `""`, or the
-navigation-signal reason (`contracts.md § 5b`) a boundary re-raised **before the first `write`**,
-which onze translates into rakun's status (404 for `notFound`, 307 for `redirect`). A signal raised
-after the first `write` is written as markup (*Late signals*) and the outcome is `""`.
+onze calls `renderStream` inside the `PageRenderer` it registers with rakun (decision 114, item 5),
+handing it a `Response` built over rakun's `ChunkWriter` (decision 117 rule 1):
+
+```bp
+// onze, at boot — not jhonstart code
+rakun.page(pattern, fn(req: Request, out: ChunkWriter) -> @Future<void> {
+    return site.renderStream(input(req), requestData(req), Response(
+        status: fn(c) { out.setStatus(c); },
+        header: fn(n, v) { out.setHeader(n, v); },
+        write:  fn(chunk) { return out.write(chunk); },
+        close:  fn() { return out.close(); },
+    ));
+});
+```
+
+`req` is the `RequestData` onze built from rakun's `Request` (item 8); the render enters it through
+front 28's `enterRequest` before the tree is built and leaves it at the end. `renderStream` awaits
+`res.write` for the shell and then for each fill as its boundary completes. `render` is the
+non-streaming form: it resolves every boundary before it writes anything and hands the whole
+document to `res.write` once, so every signal it meets is before the first chunk. Both answer no
+reason: they resolve when the response is closed, and a failed render — a refused redirect target,
+a plugin's `close` answering `Error`, `status` / `header` after the first write — is the future's
+error. The signal translation is *Navigation signals* above.
 
 **Acceptance:**
 - [ ] a page with one boundary produces at least three `write` calls, the first ending inside
@@ -630,9 +687,21 @@ after the first `write` is written as markup (*Late signals*) and the outcome is
       already-started `@Future` values is kept as the regression case
 - [ ] `defaultHooks()` renders a working document with no `<script src>`; replacing one field leaves
       the other at its default
-- [ ] a page raising jhonstart's `notFound()` (front 31) answers the outcome `nav:not-found`
-      and renders the nearest `not-found` boundary; `redirect("/login")` raised before the first
-      `write` answers `nav:redirect:/login` and calls `write` zero times
+- [ ] a page raising jhonstart's `notFound()` (front 31) before the first chunk makes the render
+      call `res.status(404)` and write a document whose body is the nearest `not-found` boundary,
+      then `res.close()` once — asserted by a recording `Response`
+- [ ] `redirect("/login")` raised before the first chunk, with `/login` in `PageInput.table`, calls
+      `res.status(307)`, `res.header("location", "/login")`, `res.close()`, and `res.write` zero
+      times
+- [ ] a layout whose `use cookies()` finds no session and raises `redirect("/login")` produces the
+      same 307, and the page's function is never called (a marker the page appends stays empty)
+- [ ] `redirect("/nowhere")` (not in the table) and `redirect("https://evil.example")` with
+      `allowedRedirects` empty fail the render before the first chunk: no status, no `location`,
+      the future's error names the target; `redirect("https://accounts.example/")` with that
+      target listed in `app(allowedRedirects: [...])` is a 307 to it
+- [ ] `res.status` or `res.header` after the first `write` fails the render, naming the call
+- [ ] `res.close()` is called exactly once on every path; a normal render answers `Ok` and a
+      failed render answers the future's error — neither answers a reason string
 - [ ] a signal raised after the first `write` is Step 12's, not this step's
 
 ### Step 9 — The `jhonstart-emilia` bridge
@@ -701,10 +770,30 @@ them. One decorator per file, taking the app-relative directory of the file it s
 
 | File in `app/` | Decorator | Signature the registry pins |
 |---|---|---|
-| `layout.bp` | `#[layout(seg)]` | `fn(props: LayoutProps) -> Element` |
-| `template.bp` | `#[template(seg)]` | `fn(props: LayoutProps) -> Element` |
-| `page.bp` | `#[page(seg)]` | `#[@future] fn(route: PageContext) -> @Future<Element>` |
+| `layout.bp` | `#[layout(seg)]` | `#[@use] fn(props: LayoutProps) -> @Component<Element>` |
+| `template.bp` | `#[template(seg)]` | `#[@use] fn(props: LayoutProps) -> @Component<Element>` |
+| `page.bp` | `#[page(seg)]` | `#[@use] fn(route: PageContext) -> @Component<Element>` |
 | `default.bp` | `#[defaultView(seg)]` | `fn(props: LayoutProps) -> Element` |
+
+A layout, a template and a page are components (decision 117 rule 3, over decision 102): each may
+`await` and `use` hooks — `use cookies()` and the other request hooks of front 28 read the
+`RequestData` the render was handed (decision 114 item 8) — and each may raise a navigation signal,
+which *Navigation signals* handles the same way wherever it was raised. A function under
+`#[layout]`, `#[template]` or `#[page]` without `#[@use]` and `-> @Component<Element>` is a compile
+error the marker raises, naming the function and the form it needs; there is no plain-layout form
+(decision 67):
+
+```bp
+import {redirect, cookies, pairValue, Element, LayoutProps, div} from "jhonstart";
+
+#[layout("dashboard")]
+#[@use]
+pub fn DashboardLayout(props: LayoutProps) -> @Component<Element> {
+    val jar = use cookies();                                     // front 28, over the RequestData
+    if (pairValue(jar, "session") == "") { redirect("/login"); } // before the first chunk: a 307
+    return div([Sidebar(), props.children], attrs: []);
+}
+```
 
 `default` is a reserved keyword, so the `default.bp` marker is spelled `#[defaultView]`. `route.bp`
 is not a UI convention: its handlers are rakun front 25's. `loading.bp`, `error.bp` and
@@ -733,8 +822,9 @@ pub fn defaultView(comptime decl: @Decl, seg: string)
 
 #[@External.Erlang("jhonstart_routes", "register_page")]
 #[@External.Node("./routes.mjs", "registerPage")]
-pub declare fn jhRegisterPage(seg: string, render: fn(route: PageContext) -> @Future<Element>) -> i32;
-// … `jhRegisterLayout`, `jhRegisterTemplate`, `jhRegisterDefault`, the same shape over `LayoutProps`
+pub declare fn jhRegisterPage(seg: string, render: fn(route: PageContext) -> @Component<Element>) -> i32;
+// … `jhRegisterLayout`, `jhRegisterTemplate` the same shape over `LayoutProps`;
+// `jhRegisterDefault` over `fn(props: LayoutProps) -> Element`
 
 pub fn uiTable() -> string   // this registry's records as contract-1 lines (`L`, `T`, `P`, `D`, `S`, `E`, `N`)
 ```
@@ -772,10 +862,12 @@ builds the `PageInput` from this registry and calls `renderStream`. Nothing in t
 or onze.
 
 **Acceptance:**
-- [ ] `#[page("blog")]` on a `#[@future] fn(route: PageContext) -> @Future<Element>` compiles and
+- [ ] `#[page("blog")]` on a `#[@use] fn(route: PageContext) -> @Component<Element>` compiles and
       puts one `P|/blog||` record in `uiTable()`
-- [ ] `#[page("blog")]` on a type fails with `#[page] must annotate a function`; on a function
-      returning `Element` rather than `@Future<Element>` it fails naming the required return type
+- [ ] `#[page("blog")]` on a type fails with `#[page] must annotate a function`; `#[page]`,
+      `#[layout]` and `#[template]` on a function without `#[@use]`, or returning `Element` /
+      `@Future<Element>` rather than `@Component<Element>`, fail at compile time naming the function
+      and `#[@use] fn … -> @Component<Element>` (decision 117 rule 3)
 - [ ] `#[layout("")]` registers the root layout at `/`; `#[layout("(marketing)")]` contributes no
       segment to the pattern
 - [ ] `#[page("blog/[slug]")] pub fn blogPostPage(...)` makes `blogPostPageParams` available in the
@@ -807,9 +899,9 @@ manifest's `workspaces` by this front, in its own commit.
 - [ ] `repository/jhonstart/AGENTS.md` names `render.bp`, the payload version, the plugin order,
       the globals registry and the UI conventions of `routes.bp`, in the same commit
 
-### Step 12 — Late signals: a signal after the first chunk (decision 115 rule 2)
+### Step 12 — Late signals: a signal after the first chunk (decisions 115 rule 2 and 117)
 
-The owner of *Late signals* above. `streaming.bp` wraps each boundary's resolution: a raised reason
+The after-the-first-chunk half of *Navigation signals* above. `streaming.bp` wraps each boundary's resolution: a raised reason
 for which `navigation.isSignalReason` holds is read with `navigation.signalFromReason` and, once the
 shell has been written, turned into the last chunk; a reason that is not a signal goes to the
 nearest error boundary unchanged.
@@ -818,22 +910,25 @@ nearest error boundary unchanged.
 - [ ] a boundary raising `notFound()` after the shell was written produces a last chunk
       `<template data-jh-g="not-found">…</template><script>__bp2()</script>` carrying that
       boundary's nearest not-found markup (plugin CSS first inside the template), writes no later
-      fill, closes the plugins, and `renderStream` answers `""`
+      fill, closes the plugins, and calls `res.close()` once
 - [ ] a boundary raising `redirect("/blog")` after the shell, with `/blog` found by `routing`'s
       `matchPath` in `PageInput.table`, produces
       `<template data-jh-g="redirect" data-jh-to="/blog"></template><script>__bp2()</script>` and
-      the outcome `""`; `data-jh-to` goes through `escape.attribute`
-- [ ] `redirect("/nowhere")` (not in the table) and `redirect("https://evil.example")` (absolute)
-      after the shell fail the render and write no signal markup — no option writes them anyway
-      (decision 67)
-- [ ] the status the caller observes is 200 in every late case: the render hands `write` no status
-      and answers no reason once a chunk is out — asserted by a recording writer
+      `data-jh-to` goes through `escape.attribute`; an absolute target listed in
+      `app(allowedRedirects: [...])` is written the same way
+- [ ] `redirect("/nowhere")` (not in the table) and `redirect("https://evil.example")` (absolute,
+      not listed) after the shell fail the render and write no signal markup — no option writes
+      them anyway (decision 67)
+- [ ] the status the caller observes is 200 in every late case: the render calls `res.status` /
+      `res.header` never once a chunk is out — asserted by a recording `Response`
 - [ ] the signal script's name comes from `globals.signal` (`__bp2`), never a literal
 - [ ] `render.bp` and `streaming.bp` spell no `nav:` or `jhonstart:` literal and define no
       `signalFromReason`: `grep -rn '"nav:\|"jhonstart:' modules/jhonstart/src/{render,streaming}.bp`
       is empty
-- [ ] `render.mjs`'s signal function, on `redirect`, calls `location.replace(data-jh-to)`; on
-      `not-found`, replaces `[data-jh-root]`'s content with the template's and drops any later fill
+- [ ] `render.mjs`'s signal function, on `redirect`, navigates to `data-jh-to` through front 26's
+      client router (`history.replaceState`, no reload) for a relative target and with
+      `location.replace` for a listed absolute one; on `not-found`, replaces `[data-jh-root]`'s
+      content with the template's and drops any later fill
 
 ## Examples
 
@@ -874,9 +969,14 @@ is the assertion that catches the eager-`@Future` mistake.
 - [ ] the payload key table of `contracts.md § 2` is this front's, and the fronts that cite it
       (24, 26, 27, 29, 60, 61, 63, 68) cite `contracts.md`, not a re-derivation
 - [ ] every marker the render writes is `data-jh-*` and every global comes from `globals.bp`
-- [ ] a signal after the first chunk is markup with status 200, and a late redirect is checked
-      against the table before it is written (decision 115) — Step 12, reading the `nav:` reasons
-      with `routing`'s `navigation` (decision 116)
+- [ ] a navigation signal is translated here and nowhere else (decision 117): before the first
+      chunk a 307 + `location` or a 404 with the not-found document through `Response`, after it
+      markup with status 200 — Steps 8 and 12, reading the `nav:` reasons with `routing`'s
+      `navigation` (decision 116)
+- [ ] every redirect target is checked before anything is written: relative through `matchPath` on
+      `PageInput.table`, absolute only when listed in `allowedRedirects` (decision 117)
+- [ ] `#[layout]`, `#[template]` and `#[page]` accept only `#[@use] fn … -> @Component<Element>`
+      (decision 117 rule 3)
 - [ ] the payload is written with std's `json` writers and `escape.scriptJson`; `render.bp` has no
       JSON escaper of its own (decision 116)
 - [ ] `RenderHooks` carries `headExtra` and `bodyExtra` only; the style moments and the plugin

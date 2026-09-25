@@ -7,8 +7,8 @@
 // only way to abort a render. So a boundary that caught everything would turn
 // every missing post into "something went wrong" and every redirect into a
 // fallback page. `renderBoundaryChecked` re-raises anything `isSignal`
-// recognises; it leaves front 30's render as an outcome, and onze turns it into
-// rakun's 404 or 307.
+// recognises; front 30's render turns it into a 404 (the not-found document) or
+// a 307 before its first chunk, and into markup after it (decision 117).
 //
 // `notFound()` is jhonstart's own (front 31, `error_boundary.bp`): it builds the
 // `nav:not-found` signal string of `contracts.md § 5b` with the bundled library
@@ -28,8 +28,8 @@ import { notFound } from "jhonstart";
 // `section` and `h2` come from front 94 (jhonstart-element-surface). `Link`/`linkProps` are front 27's; `notFound` is
 // front 31's and builds the signal string — the caller writes the `throw`.
 //
-// The page names only jhonstart. onze, which depends on both jhonstart and
-// rakun, translates the not-found outcome into rakun's 404.
+// The page names only jhonstart, and jhonstart alone handles the signal: onze
+// only adapts rakun's response to jhonstart's `Response`.
 
 // ── what the developer writes: app/blog/[slug]/not-found.bp ─────────────────
 

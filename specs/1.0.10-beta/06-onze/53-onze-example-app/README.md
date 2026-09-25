@@ -103,9 +103,9 @@ names the front to look at.
 | `app/blog/[slug]/not-found.bp` | 31 · 63 | The signal from the page lands in *this* boundary, not the root one |
 | `app/blog/[slug]/opengraph-image.bp` | 66 · 70 · 32 · 52 | `image/svg+xml`, so the gate needs no rasterizer; `generateMetadata`'s `openGraph.images` points at it |
 | `app/(marketing)/about/page.bp` | 22 | The route group contributes no URL segment: the page serves at `/about`, not `/(marketing)/about` |
-| `app/dashboard/layout.bp` | 62 · 63 | The layout reads the session cookie and redirects — an auth gate above the page, which is the pattern `NEXTJS-DOCS.md § 23` describes |
-| `app/dashboard/page.bp` | 62 · 63 | Lists the author's posts and links to `posts/new`; the route the middleware redirect lands on when the cookie is present |
-| `app/dashboard/posts/new/page.bp` | 24 · 67 | A form bound to a server action: pending state, a returned validation message rendered beside the field, and a redirect on success |
+| `app/dashboard/layout.bp` | 28 · 31 | The layout reads the session cookie with `use cookies()` and raises jhonstart's `redirect("/login")` — the one auth gate inside the render, above every `/dashboard/*` page, which is the pattern `NEXTJS-DOCS.md § 23` describes; the layout renders before the page, so a page under it never runs without a session (decision 117) |
+| `app/dashboard/page.bp` | 62 · 28 | Lists the author's posts and links to `posts/new`; it does not check the session again |
+| `app/dashboard/posts/new/page.bp` | 24 · 67 | A form bound to a server action: pending state, a returned validation message rendered beside the field, and a redirect on success; no session check of its own — the dashboard layout is the gate |
 | `app/api/posts/route.bp` | 25 · 62 | `GET /api/posts` returns JSON; `POST` reads the body and the `Authorization` header |
 | `app/globals.css` | 69 | One fingerprinted `<link>` in the head, before the module CSS |
 
@@ -122,7 +122,7 @@ names the front to look at.
 | File | Fronts | Proves |
 |---|---|---|
 | `lib/db.bp` | 01 (`path`) · std `io.fs` · 12 | The store: list, read, write, every read through front 12's `"posts"` tag. Blocking, not `@Future` — on the BEAM a render is a process |
-| `lib/actions.bp` | 24 · 12 · 63 | The mutation: write the file, `cache.revalidateTag("posts")`, `redirect("/blog/<slug>")` — and the list page shows the new post on the next request, which is the whole point of the tag |
+| `lib/actions.bp` | 24 · 12 · 63 | The mutation: write the file, `cache.revalidateTag("posts")`, rakun's `redirect("/blog/<slug>")` — encoded into the `actions` envelope's `n` for a scripted submit (decision 117) — and the list page shows the new post on the next request, which is the whole point of the tag |
 | `lib/auth.bp` | 62 · 10 | `sessionOf(cookies) -> ?Session`, read by `middleware.bp` and `app/dashboard/layout.bp`, so the cookie name is spelled once |
 
 Also committed: `public/images/hero.jpg` (the hero on `app/page.bp`) and `public/favicon.ico`, so
@@ -217,6 +217,10 @@ stands on.
 **Acceptance:**
 - [ ] `/dashboard` with no session cookie redirects to `/login` from the middleware, before the layout
       runs
+- [ ] The layout is the gate inside the render: rendering `/dashboard/posts/new` in process with a
+      `RequestData` that carries no session cookie answers 307 with `location: /login` through the
+      `Response`, writes no chunk, and never invokes `newPostPage` — the redirect comes from
+      `app/dashboard/layout.bp`, and no page under `/dashboard` checks the session (decision 117)
 - [ ] `/dashboard` with a session cookie renders
 - [ ] Submitting the new-post form with an empty title re-renders the form with the message beside the
       field and creates nothing
@@ -286,7 +290,7 @@ example from what is still **assumed**, because only the second column is a risk
 |---|---|
 | 07 · 65 | `import {Filter, Chain, Next, middleware, matcher} from "rakun-web";` · `#[middleware] #[matcher("/dashboard/:path*")] pub fn middleware(req: Request, chain: Chain) -> Response` · `Next.redirect` / `Next.rewrite` / `chain.next(req)` · `rkSetReplyHeader`, `rkChainNext`, `rkTestRequest`, `rkTestRequestAuthed`, `rkReplyHeaderValue` |
 | 12 | `import {cachePolicy, cacheThrough, cacheLife, CacheScope} from "rakun-cache";` · `import {cache} from "rakun-cache";` for `cache.revalidateTag`, `cache.revalidatePath`, `cache.revalidatedPaths()` · **loaders are blocking, not `@Future`** |
-| 30 | `import {page, layout, PageContext, LayoutProps} from "jhonstart";` · `#[page("blog/[slug]")]` / `#[layout("blog")]`, argument = app-relative directory, segment grammar front 22's · `route.params.lookup(k).unwrapOr("")` (a `Dict`) · `PageContext(pathname, pattern, params, query, rest)` · `LayoutProps.children` · the decorators fill jhonstart's UI registry; onze's boot copies each record into rakun's route table and hands rakun one `PageRenderer` per page (decision 114) |
+| 30 | `import {page, layout, PageContext, LayoutProps} from "jhonstart";` · `#[page("blog/[slug]")]` / `#[layout("blog")]`, argument = app-relative directory, segment grammar front 22's · every page, layout and template is `#[@use] pub fn … -> @Component<Element>`, and the marker refuses any other form at compile time (decision 117) · `route.params.lookup(k).unwrapOr("")` (a `Dict`) · `PageContext(pathname, pattern, params, query, rest)` · `LayoutProps.children` · the decorators fill jhonstart's UI registry; onze's boot copies each record into rakun's route table and hands rakun one `PageRenderer` per page (decision 114) |
 | 22 · 23 | no call surface in the app — rakun's route table and `page(pattern, render: PageRenderer)` over `ChunkWriter` are reached by onze's boot only; `rkAppRegisterHandler` is imported by any module carrying a front 25 route handler |
 | 24 | `import {serverAction, FormData, ActionResult} from "rakun";` · `#[serverAction] #[@future] fn(form: FormData) -> @Future<ActionResult>` · `form.field(name)` · `ActionResult.invalid(field, message)` / `ActionResult.done()` · `result.state.lookup(field)` |
 | 25 | `import {getRoute, postRoute, HandlerResponse, bodyJson} from "rakun";` · `#[getRoute("api/posts")] #[@future] fn(req: Request) -> @Future<HandlerResponse>` · `HandlerResponse.json/created/notFound/badRequest/unsupportedMedia/withStatus` + `.withHeader` |
@@ -297,8 +301,8 @@ example from what is still **assumed**, because only the second column is a risk
 | 32 | `Metadata(title, titleTemplate, description, openGraph, twitter, icons)` · `OpenGraph(title, description, url, ogType, siteName, images)` · `TwitterCard(card, title, description, images)` · `Icons(icon, apple)` · `mergeMetadata`, `pairValue` · `generateMetadata(params: Array<#(string, string)>) -> @Future<Metadata>` |
 | 48 | `import {styled, styledWith, withAttrs, Token} from "emilia";` · `styled(t) == #("class", emilia(t))` · `styledWith(base, t)` is static-first, one ASCII space · token lists live in named functions because token order is class identity |
 | 60 | `import {registerSegmentConfig, registerStaticParams, SegmentConfig, DynamicMode, FetchCache, StaticParams, ParamBinding} from "rakun";` · `SegmentConfig(dynamic, dynamicParams, revalidate, fetchCache)` · `StaticParams(bindings: [ParamBinding(name, value)])` |
-| 62 | in an action or a handler (rakun's code): `import {cookies, headers, after, CookieAttrs} from "rakun";` · `cookies().get(name) -> ?string` · a cookie write is legal there and raises from a render. **In a page, layout or template** the reader is jhonstart's: `import {cookies, pairValue} from "jhonstart";` · `pairValue(cookies(), name) -> string` (front 28 over the `RequestData` onze hands in — decisions 114, 115) |
-| 63 · 31 | **in a page, layout or template**: `import {notFound, redirect} from "jhonstart";` (front 31, decision 115) · both are thrown — `throw notFound();`, `throw redirect("/login");` — from a fallible body (a `#[@future]` page, a `#[@result]` helper); a layout (`-> Element`) cannot throw. Before the first chunk onze turns them into rakun's 404 / 307; after it they are markup, status 200. In an action or a handler: `import {notFound, redirect} from "rakun";` — both diverge and are called as `val _gone = redirect(…);` |
+| 62 | in an action or a handler (rakun's code): `import {cookies, headers, after, CookieAttrs} from "rakun";` · `cookies().get(name) -> ?string` · a cookie write is legal there and raises from a render. **In a page, layout or template** the reader is jhonstart's: `import {cookies, pairValue} from "jhonstart";` · `val jar = use cookies();` · `pairValue(jar, name) -> string` (front 28 over the `RequestData` onze hands in — decisions 114, 115, 117) |
+| 63 · 31 | **in a page, layout or template**: `import {notFound, redirect} from "jhonstart";` (front 31, decision 115) · both are thrown — `throw notFound();`, `throw redirect("/login");` — from a page, layout or template (each a `#[@use] … -> @Component<Element>`) or a `#[@result]` helper. jhonstart handles them itself (decision 117): before the first chunk its render answers 404 with the nearest not-found boundary or 307 with `location`, after it they are markup, status 200; onze takes no part. In an action: `import {redirect} from "rakun";` — rakun's `redirect`, written into the envelope's `n`; in a handler: `import {notFound, redirect} from "rakun";` — both diverge and are called as `val _gone = redirect(…);` |
 | 67 | `import {actionState, FormBinding, formAction, formAttrs, useActionState} from "jhonstart";` · `import {state.ActionState, envelope.parseActionState} from "actions";` — the action protocol is the bundled library `actions` (`01-std/05-actions-lib`, decision 116) · `use useActionState(name, initial)` inside a `#[@use] fn … -> @Component<Element>` (decision 104) read POSITIONALLY (`s.0` state, `s.1` binding, `s.2` pending) · `state.fieldError(name)` |
 | 68 | no call surface — the bundle is produced from front 29's markers; the env prefix is `ONZE_PUBLIC_`, matching front 49 |
 | 94 | `import {nav, header, main, section, article, h2, form, input, label, button, timeTag} from "jhonstart";` — `repository/jhonstart/src/elements.bp` |

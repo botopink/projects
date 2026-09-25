@@ -36,7 +36,8 @@ it in the router, front 27 in `Link`; `repository/onze/**`
 (the library, its contents, `from "routing"` resolving like `from "std"`) ·
 [decision 116](../../decisions-taken.md#116-code-two-libraries-both-run-is-neutral-routing-gains-navigation-and-param-actions-and-validation-are-bundled-libraries-std-writes-json)
 rules 1 and 9 (the `navigation` and `pattern` modules; the bundled list gains `actions` and
-`validation`) · decision 109 (module
+`validation`) · [decision 117](../../decisions-taken.md#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only) rule 8 (a bundled library ships `.bp` files
+only) · decision 109 (module
 atoms) · decision 113 (jhonstart and rakun never import each other) · `contracts.md § 1` (the route
 table) · rakun fronts [22](../../03-rakun/22-rakun-file-routing/README.md) Steps 1, 3, 4,
 [60](../../03-rakun/60-rakun-static-generation/README.md) Step 6,
@@ -97,7 +98,7 @@ Measured 2026-09-25 on `repository/botopink-lang` `ac5f5703` and `repository/rak
 | Need | std today | For `routing` |
 |---|---|---|
 | A package directory | `libs/std/` with `botopink.json`, `src/root.bp`, `AGENTS.md` | `libs/routing/`, same shape (Step 1) |
-| Embedding | `stdPkgFilesFromRoot` walks `libs/std/src/root.bp`; one generated table | the walk takes the package directory; the generated table carries one row per module of **every** bundled package, keyed `<package>/<module>` (`routing/match`). The bundled list is a constant in `build.zig` — `std`, `routing`, `actions`, `validation` (decision 116) — and nowhere else; `01-std/05-actions-lib` and `01-std/06-validation-lib` add their names to it and change nothing else in the mechanism |
+| Embedding | `stdPkgFilesFromRoot` walks `libs/std/src/root.bp`; one generated table | the walk takes the package directory and embeds `.bp` files only — no bundled library carries an `.erl` / `.mjs` sidecar under `libs/`, and target-native code is an inline `#[@External]` template (decision 117 rule 8); the generated table carries one row per module of **every** bundled package, keyed `<package>/<module>` (`routing/match`). The bundled list is a constant in `build.zig` — `std`, `routing`, `actions`, `validation` (decision 116) — and nowhere else; `01-std/05-actions-lib` and `01-std/06-validation-lib` add their names to it and change nothing else in the mechanism |
 | `from "<pkg>"` resolution | `expandStdImports` matches the literal `"std"` | matches any name that owns a row in the table; a module is prepended with `srcPath` `src/<mod>.bp` inside its own package, as std's are (decision 73) |
 | Checker, codegens, LSP | the `"std"` literal at the sites listed above | a `isBundledPackage(name)` read from the generated table replaces each literal; commonJS requires `<prefix><pkg>/<mod>.js`; erlang/BEAM atoms come from the module path through the cross-module index, so `routing/match` renders `routing@match` and a type `routing@match@@RouteMatch` (decision 109) with no new code there |
 | std-only rules | root purity, no dispatch inside std, the BIF table, synthesised imports | unchanged, still keyed on `std/` — `routing` is ordinary code to the checker |
@@ -149,7 +150,9 @@ from Step 2).
 - [ ] `libs/routing/botopink.json` reads `"name": "routing"`, `"targets": ["erlang", "commonJS"]`
       with erlang first, and lists every `src/*.bp` in `files`
 - [ ] `grep -rn "External\|declare fn\|rakun\|jhonstart\|onze\|emilia" libs/routing/src` is empty —
-      no host cell, no library name
+      no host cell, no library name; no `*.erl` or `*.mjs` file under `libs/routing/` (decision 117
+      rule 8 — a piece that cannot be written in `.bp` stops the front and goes to
+      `decisions-pending.md`)
 - [ ] `zig build test-libs -- --lib routing` lists the two cells `routing · erlang` and
       `routing · commonJS` and no other target
 - [ ] `libs/AGENTS.md`'s tree and packages table name `routing/`

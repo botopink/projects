@@ -34,17 +34,20 @@ fn titleTokens() -> Token[] {
 // app/layout.bp — jhonstart front 30's decorator registers it at the root, and
 // onze copies the record into rakun's route table at boot. The
 // decorator argument is the app-relative directory, and front 50's scan fails
-// the build when it disagrees with where the file actually is.
+// the build when it disagrees with where the file actually is. A layout is a
+// component (decision 117): `#[@use] … -> @Component<Element>`, or the marker
+// refuses it at compile time.
 #[layout("")]
-pub fn rootLayout(props: LayoutProps) -> Element {
+#[@use]
+pub fn rootLayout(props: LayoutProps) -> @Component<Element> {
     return div([props.children], attrs: [styled(shellTokens())]);
 }
 
 // app/blog/[slug]/page.bp — the param arrives in `route.params`, a std `Dict`,
 // read with `lookup(k).unwrapOr(...)`. onze does not wrap it.
 #[page("blog/[slug]")]
-#[@future]
-pub fn blogPostPage(route: PageContext) -> @Future<Element> {
+#[@use]
+pub fn blogPostPage(route: PageContext) -> @Component<Element> {
     val slug = route.params.lookup("slug").unwrapOr("");
     return div([
         h1([text("Post: " + slug, attrs: [])], attrs: [styled(titleTokens())]),
@@ -88,7 +91,7 @@ test "an absent param reads as empty, never as an error" {
 
 test "the layout wraps the router's subtree and styles it through front 48" {
     val leaf = text("inner", attrs: []);
-    val markup = renderToString(rootLayout(LayoutProps(children: leaf)));
+    val markup = renderToString(await rootLayout(LayoutProps(children: leaf)));
     assert markup.startsWith("<div class=\"e_");
     assert markup.contains("inner");
 }

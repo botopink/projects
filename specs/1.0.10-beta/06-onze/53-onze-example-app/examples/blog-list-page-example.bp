@@ -34,7 +34,8 @@ fn listTokens() -> Token[] {
 // front 22 — `app/blog/layout.bp`. Wraps /blog and everything under it, and is
 // NOT re-rendered when the client navigates between two routes that share it.
 #[layout("blog")]
-pub fn blogLayout(props: LayoutProps) -> Element {
+#[@use]
+pub fn blogLayout(props: LayoutProps) -> @Component<Element> {
     return section([
         h1([text("All posts", attrs: [])], attrs: [styled(titleTokens())]),
         props.children,
@@ -57,8 +58,8 @@ pub fn Loading() -> Element {
 // front 12 — `listPosts` reads through the `"posts"` tag, which is exactly what
 // `lib/actions.bp` expires after a write.
 #[page("blog")]
-#[@future]
-pub fn blogIndexPage(route: PageContext) -> @Future<Element> {
+#[@use]
+pub fn blogIndexPage(route: PageContext) -> @Component<Element> {
     val posts = listPosts();
     val items = posts.map({ p -> li([PostCard(p)], attrs: []) });
     return ul(items, attrs: [styled(listTokens())]);
@@ -116,7 +117,7 @@ test "building the boundary does not render the page" {
 
 test "the segment layout wraps the router's subtree, not the page fn" {
     val leaf = text("inner", attrs: []);
-    val markup = renderToString(blogLayout(LayoutProps(children: leaf)));
+    val markup = renderToString(await blogLayout(LayoutProps(children: leaf)));
     assert markup.contains("<section");
     assert markup.contains("All posts");
     assert markup.contains("inner");

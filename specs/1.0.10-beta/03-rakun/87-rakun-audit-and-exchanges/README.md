@@ -43,8 +43,10 @@ metrics; the metrics front counts and times; neither answers *who* or *what was 
   frozen, so the recorder reads it and adds nothing to it.
 - `libs/std/src/time.bp:56` — `time.nowMillis() -> i64` and `time.formatIso8601(epochMillis)` exist today (`clock.nowMillis` and `clock.formatIso8601` under `io.clock`, decision 106)
   today; this front needs no new clock primitive.
-- `libs/std/src/json.bp:9-16,36` — `json.parse` is `string -> @Result<string, string>` with no
-  structured walker. That single fact shapes the event model below.
+- `libs/std/src/json.bp:9-16,36` — `json.parse` is `string -> @Result<string, string>`; the
+  structured reader `json.decode -> @Result<Json, string>` is `01-std/01-std-lib-enablement`'s
+  (decision 117). A blob would still have to be decoded on every read to be filtered, which shapes
+  the event model below.
 
 ## Mechanism
 
@@ -52,9 +54,8 @@ Two recorders, one shape: a bounded in-memory ring with an optional durable arm 
 behavior, and an endpoint over each.
 
 **An audit event is pairs, not a JSON blob.** Spring's `AuditEvent` carries a `Map<String, Object>`.
-The obvious translation is a JSON string, and it is the wrong one: `json.parse` returns a string, so
-a stored blob can be written and rendered but never filtered, and "show me the failures for this
-client address" would have to grep. The data is therefore `Array<#(string, string)>` — queryable by
+The obvious translation is a JSON string, and it is the wrong one: a stored blob has to be decoded
+before every filter, so "show me the failures for this client address" would decode the whole ring. The data is therefore `Array<#(string, string)>` — queryable by
 key, rendered to JSON at the endpoint, and lossless for the values audit events actually carry
 (remote address, request path, denial reason, session id). A value that is genuinely structured is
 stored as several pairs with dotted keys rather than as one escaped blob.

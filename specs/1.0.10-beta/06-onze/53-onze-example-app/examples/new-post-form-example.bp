@@ -4,13 +4,15 @@
 // Demonstrates: the write path's browser half, and the auth gate above it.
 //
 //   - front 28: the dashboard layout reads the session cookie with jhonstart's
-//     `cookies()`, over the `RequestData` onze built from rakun's request (front
+//     `use cookies()`, over the `RequestData` onze built from rakun's request (front
 //     62's frame). Reading it marks the render dynamic, so front 60 will not
 //     prerender the route, and `dynamicReason()` answers "cookies" in the build report.
 //   - front 31: no session means jhonstart's `redirect("/login")`, thrown from the
-//     PAGE before the first chunk, which onze turns into rakun's 307 (decision
-//     115). The page throws, not the layout: a layout is `fn(props) -> Element`
-//     (front 30) and has no failure channel; a `#[@future]` page does.
+//     LAYOUT. A layout is a component (`#[@use] … -> @Component<Element>`,
+//     decision 117) and renders before the page, so the signal leaves before the
+//     first chunk: jhonstart's render answers 307 with `location: /login` itself
+//     and the page never runs. The check is written once, here; no page under
+//     /dashboard repeats it, and onze takes no part.
 //   - front 24: the form is bound to a server action by id, never by name.
 //   - front 67: `useActionState` supplies the returned message, the field it
 //     belongs to, and the pending flag. During the server pass `pending` is
@@ -33,7 +35,7 @@ import {FormBinding, formAction, formAttrs, useActionState} from "jhonstart";  /
 import {styled, Token} from "emilia";                           // front 48
 import {layout, page, LayoutProps, PageContext} from "jhonstart";   // front 30
 import {cookies, pairValue} from "jhonstart";                   // front 28 · front 26
-import {redirect} from "jhonstart";                             // front 31 (decision 115)
+import {redirect} from "jhonstart";                             // front 31 (decisions 115, 117)
 import {collections.Dict} from "std";
 
 // The action id is front 24's (contract 3) and the field name is the one onze configures
@@ -49,15 +51,20 @@ fn fieldTokens() -> Token[] {
     return [.Layout.Block, .Margin.Y.2];
 }
 
-// ── app/dashboard/layout.bp — SERVER (front 62 + front 63) ──────────────────
+// ── app/dashboard/layout.bp — SERVER (front 28 + front 31) ──────────────────
 //
 // The layout is not dispatched by the router, so nobody hands it a `Request`; it
 // reads the cookie out of the `RequestData` the render entered (front 28). A cookie WRITE
 // here would raise — the render phase forbids it, and front 62 checks rather
 // than documents.
 #[layout("dashboard")]
-pub fn dashboardLayout(props: LayoutProps) -> Element {
-    val session = pairValue(cookies(), "session");
+#[@use]
+pub fn dashboardLayout(props: LayoutProps) -> @Component<Element> {
+    val jar = use cookies();
+    val session = pairValue(jar, "session");
+    if (session == "") {
+        throw redirect("/login");
+    };
     return section([
         p([text("signed in as " + session, attrs: [])], attrs: []),
         props.children,
@@ -121,11 +128,8 @@ fn NewPostForm() -> @Component<Element> {
 // ── app/dashboard/posts/new/page.bp — SERVER renders what the CLIENT submits ─
 
 #[page("dashboard/posts/new")]
-#[@future]
-pub fn newPostPage(route: PageContext) -> @Future<Element> {
-    if (pairValue(cookies(), "session") == "") {
-        throw redirect("/login");
-    };
+#[@use]
+pub fn newPostPage(route: PageContext) -> @Component<Element> {
     return div([
         h1([text("New post", attrs: [])], attrs: []),
         newPostForm(formAction(createPostId, "/dashboard/posts/new", actionField), actionState(""), false),

@@ -595,3 +595,183 @@ What each module's tests assert:
 - `libs/std/AGENTS.md`'s tree listing is updated in the same commit as the files it describes.
 - Every `// LANGUAGE GAP:` marker in this front's examples appears in the table above.
 - The front's tests are green on its assigned target — here, both.
+
+---
+
+## Steps 11–14 — std reads and writes JSON
+
+Decision 116 rules 3 and 8 and [decision 117](../../decisions-taken.md#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only)
+rules 6 and 7. These four steps are self-contained: they carry their own ownership, dependencies and
+gate, and the header lines above describe Steps 1–10.
+
+**Owns:** the functions added at the foot of `repository/botopink-lang/libs/std/src/json.bp`
+(`quote`, `unquote`, `array`, `object`, the `Json` type and `decode`) and their inline tests · the one
+function `scriptJson` appended to `libs/std/src/escape.bp` below Step 1's four, and its inline tests
+· the `json` and `escape` rows of `libs/std/AGENTS.md` (the added names only). The *Does not touch*
+line's `json.bp` covers `parse` and `stringify`, which these steps leave as they are.
+**Depends on:** `01-std` step 2 (`testing.asserts`) · Step 1 (for Step 12 only — it creates
+`escape.bp`). Steps 11 and 13 land beside `01-std`'s own steps; Step 12 after Step 1. All of them
+land either **before** `00 · 23-std-purity` opens or **after** it lands, never while it holds
+`libs/std/src/**`; `json.bp` and `escape.bp` stay at the root of decision 106's tree, so their path
+is the same on both sides of the move.
+**Does not touch:** `root.bp` (`json` and `escape` are exported by Step 10); every consumer — rakun
+fronts 05, 07 and 23, `05-actions-lib`, `06-validation-lib` and jhonstart front 30 switch to these
+functions in their own fronts.
+**Reference:** [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259) (§ 7: a JSON string must escape
+`"`, `\` and U+0000–U+001F; § 4: object member names *should* be unique) ·
+[HTML § 4.12.1.3](https://html.spec.whatwg.org/multipage/scripting.html#restrictions-for-contents-of-script-elements)
+(what may not appear inside `<script>`)
+
+### Problem
+
+std reads JSON only to validate it (`json.parse` and `json.stringify` both answer a re-serialised
+`string`, `libs/std/src/json.bp:36,45`) and writes none. Every library that answers JSON therefore
+wrote its own string escaper, and none escapes what RFC 8259 requires; every library that reads
+JSON slices it by hand:
+
+| Copy | Does | Evidence |
+|---|---|---|
+| rakun `jsonString` (+ `jsonStrings`, `jsonPairs`, `jsonTriples`) | escapes `\` `"` `\n` `\r` `\t` only | `modules/rakun/src/ssr.bp:641-676` |
+| rakun-validation `jsonEscape` | escapes `\` `"` `\n` `\r` `\t` only | `modules/rakun-validation/src/report.bp:80` |
+| rakun-web `jsonEscape` | escapes `"` `\` `\n` `\r` `\t` only | `modules/rakun-web/src/error.bp:131` |
+| rakun config's hand scanner | reads `\n` `\t` `\r`, any other escaped char as itself — `\b`, `\f`, `\/`, `\u` misread | `modules/rakun/src/config.bp:394-433` |
+
+A U+0001 in a user's input, echoed into any of those bodies, produces text a JSON parser rejects. A
+JSON value placed inside `<script>` needs one more escape none of them has: `</script>` ends the
+element, and U+2028 / U+2029 end a JavaScript line in older engines — neither `escape.html`
+(entities, wrong inside a script) nor `escape.jsString` (a JS string literal, not JSON text) is it.
+And the three readers — rakun's configuration (front 05), the action envelope and RPC body
+(`05-actions-lib`) and jhonstart's payload (front 30) — each need a JSON *value*, which std does not
+have.
+
+### Mechanism
+
+```bp
+// json — added
+pub fn quote(s: string) -> string                          // a JSON string literal, quotes included
+#[@result] pub fn unquote(literal: string) -> @Result<string, string>   // its inverse
+pub fn array(items: Array<string>) -> string               // items already encoded
+pub fn object(fields: Array<#(string, string)>) -> string  // keys quoted here, values already encoded
+
+pub type Json { Null, Bool(bool), Num(f64), Str(string), Arr(Array<Json>), Obj(Array<#(string, Json)>) }
+#[@result] pub fn decode(s: string) -> @Result<Json, string>
+
+// escape — added
+pub fn scriptJson(json: string) -> string                  // JSON text, safe inside <script>
+```
+
+`quote` escapes `"` as `\"`, `\` as `\\`, U+0008 / U+000C / U+000A / U+000D / U+0009 as `\b` `\f`
+`\n` `\r` `\t`, every other code point below U+0020 as `\u00xx` (lowercase hex), and nothing else —
+non-ASCII text passes through as UTF-8, as RFC 8259 allows. It may be written in botopink or as an
+inline template per target (`JSON.stringify` on node, `json:encode` on erlang, OTP 28); either way
+the acceptance literals below are the same on both targets, and a template whose output differs from
+them on one target is replaced, not documented. `unquote` reads one string literal and refuses
+anything else (a bare word, a number, a missing quote) with an `Error`.
+
+`array` and `object` do no escaping of values: a value is the output of `quote`, a number's text,
+`true` / `false` / `null`, or another writer's output. `object` quotes its keys with `quote` and keeps
+the given order — the envelope's `v` first (contract 3) and the payload's key order (contract 2) are
+the caller's order.
+
+`decode` reads one RFC 8259 document into a `Json` and answers an `Error` naming the byte offset for
+anything that is not exactly one. It is **written in botopink**, not as a per-target template:
+`JSON.parse` reorders integer-like keys and keeps the last of two duplicates, and OTP's
+`json:decode` answers a map, so neither can keep member order or refuse a duplicate, and the two
+targets would disagree. The reader is the most restrictive one RFC 8259 admits (decision 67):
+`Obj` keeps members in document order; a duplicate member name in one object is an `Error`, not a
+last-wins; text after the value other than whitespace is an `Error`; a number follows the RFC
+grammar exactly (`01`, `+1`, `.5`, `1.`, `NaN`, `Infinity` are refused) and is an `f64`, and one that
+overflows `f64` is an `Error`; `\u` escapes are decoded, a surrogate pair into its code point, and an
+unpaired surrogate is an `Error`; a raw control character below U+0020 inside a string is an `Error`.
+The rakun configuration reader (front 05), `actions`' envelope and RPC readers (`05-actions-lib`) and
+jhonstart's payload reader (front 30) read through `decode`; none of them validates with `json.parse`
+and then slices string tokens with `json.unquote` by hand.
+
+`scriptJson` takes JSON text and replaces `&` with `&`, `<` with `<`, `>` with `>`,
+U+2028 with ` ` and U+2029 with ` `. In JSON those characters can only occur inside a
+string, where each `\u` form is a valid escape, so the output is the same JSON value — `decode` of it
+equals `decode` of the input — and it contains no `</script`, no `<!--` and no line terminator a
+script parser would see.
+
+### Step 11 — `json.quote`, `json.unquote`, `json.array`, `json.object`
+
+**Acceptance:**
+- [ ] `json.quote("a\"b\\c")` answers `"a\"b\\c"` (as text: quote, `a`, `\"`, `b`, `\\`, `c`, quote)
+- [ ] `json.quote` of a string holding U+0001, U+0008, U+000C, U+001F, a newline and a tab answers
+      `"\u0001\b\f\u001f\n\t"`, identical on erlang and commonJS
+- [ ] `json.quote("ação")` answers `"ação"` — non-ASCII is not escaped
+- [ ] for every string `s` in the test table, `json.parse(json.quote(s))` is `Ok` and
+      `json.unquote(json.quote(s))` is `Ok(s)`
+- [ ] `json.unquote("abc")`, `json.unquote("\"abc")` and `json.unquote("1")` answer an `Error`
+- [ ] `json.array([json.quote("a"), "1", "true"])` answers `["a",1,true]`; `json.array([])` answers `[]`
+- [ ] `json.object([#("v", "1"), #("ok", "true"), #("s", json.quote("x"))])` answers
+      `{"v":1,"ok":true,"s":"x"}` — order kept, keys quoted; `json.object([])` answers `{}`
+- [ ] a key containing `"` is quoted by `object`: `json.object([#("a\"b", "1")])` parses
+
+### Step 12 — `escape.scriptJson`
+
+After Step 1 has created `escape.bp`; one function and its tests appended below Step 1's four.
+
+**Acceptance:**
+- [ ] `escape.scriptJson(json.object([#("h", json.quote("</script><!--&"))]))` contains no `<`, `>`
+      or `&`, and `json.decode` of it equals `json.decode` of the input
+- [ ] U+2028 and U+2029 inside a string come out as ` ` and ` `
+- [ ] JSON text with none of the five characters comes out unchanged
+- [ ] the function declares no `#[@External]` cell
+
+### Step 13 — `Json` and `json.decode`
+
+**Acceptance:**
+- [ ] `json.decode("{\"rakun\":{\"actions\":{\"bodyLimit\":5242880},\"appDir\":\"app\"}}")` answers
+      `Ok(Obj([#("rakun", Obj([#("actions", Obj([#("bodyLimit", Num(5242880.0))])), #("appDir", Str("app"))]))]))`
+      — members in document order, on both targets
+- [ ] `json.decode("{\"b\":1,\"a\":2,\"1\":3}")` keeps the order `b`, `a`, `1` on commonJS as on erlang
+- [ ] `json.decode("{\"a\":1,\"a\":2}")` answers an `Error` naming the duplicate `a`
+- [ ] `json.decode("[1,2] x")`, `json.decode("")`, `json.decode("1 2")` answer an `Error`
+- [ ] `json.decode("\"\\u0041\\u00e7\\ud83d\\ude00\\b\\f\\/\"")` answers `Ok(Str("Aç😀` + U+0008 +
+      U+000C + `/"))`; `"\\ud83d"` alone (an unpaired surrogate) answers an `Error`
+- [ ] a raw U+0001 inside a string literal answers an `Error`; `"\\u0001"` answers `Ok(Str(U+0001))`
+- [ ] `01`, `+1`, `.5`, `1.`, `NaN`, `Infinity` and `1e400` each answer an `Error`; `-0.5e2` answers
+      `Ok(Num(-50.0))`; `true`, `false`, `null` answer `Bool(true)`, `Bool(false)`, `Null`
+- [ ] for every string `s` in Step 11's table, `json.decode(json.quote(s))` is `Ok(Str(s))`, and for
+      the envelope, RPC-body and payload literals of contracts 2 and 3, `decode` answers the same
+      `Json` on both targets
+- [ ] `decode` declares no `#[@External]` cell
+
+### Step 14 — The copies are deletable
+
+These steps delete nothing outside std; they are done when each consumer front can. Each switch is
+that front's step:
+
+| Copy | Replaced by | Front |
+|---|---|---|
+| `ssr.bp:641-676` (`jsonString` …) | `json.quote`, `json.array`, `json.object` — in jhonstart's payload writer | jhonstart 30 (the writer leaves rakun, decision 113) |
+| jhonstart's `payloadEscape` | `escape.scriptJson` | jhonstart 30 |
+| jhonstart's payload reader | `json.decode` | jhonstart 30 |
+| `rakun-validation/src/report.bp:80` | `json.quote` | `06-validation-lib` |
+| `rakun-web/src/error.bp:131` | `json.quote`, `json.object` | rakun 07 |
+| `config.bp:394-433` (the hand scanner) | `json.decode` | rakun 05 |
+| the action envelope and RPC body | `json.quote`, `json.array`, `json.object` to write; `json.decode` to read | `05-actions-lib` |
+
+**Acceptance:**
+- [ ] `grep -rn "fn jsonString\|fn jsonEscape\|fn jsonStrings\|fn jsonPairs\|fn jsonTriples\|fn payloadEscape" --include=*.bp repository/`
+      is empty once the fronts in the table have landed — asserted in this milestone's exit gate,
+      not by this front
+
+### Test plan (Steps 11–14)
+
+Inline `test` blocks at the foot of `json.bp` and `escape.bp`, as every std test (`fronts.md` § *std
+tests are inline*), run by `botopink test` and `botopink test --target erlang` in `libs/std`. Every
+expected text is a literal; the round-trip table covers the empty string, every code point below
+U+0020, `"`, `\`, `/`, U+2028, U+2029 and a four-byte UTF-8 character. The `decode` table is asserted
+cell for cell on both targets.
+
+### Gate (Steps 11–14)
+
+- [ ] `botopink test` green in `libs/std` on commonJS and erlang
+- [ ] `libs/std/AGENTS.md`'s `json` and `escape` rows list the added names
+- [ ] no `root.bp` line changed by these steps
+
+Additive: four functions, one type and one reader in `json.bp`, one function in `escape.bp`; no
+existing function changes. The consumers' switches — and the invalid JSON they stop emitting — are
+their fronts'.

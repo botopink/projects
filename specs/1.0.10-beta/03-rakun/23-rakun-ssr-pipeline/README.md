@@ -38,8 +38,10 @@ slow boundary does not hold the shell, and a URL with no page has to answer 404.
 What it does **not** do is build the markup. Under decision 113 HTML is jhonstart's: the walker, the
 escaping, the layout composition, the document and the payload live in jhonstart front 30. rakun and
 jhonstart never import each other, so the two meet through onze, which hands this front one opaque
-renderer per page pattern (decision 114). The renderer writes its chunks through the `ChunkWriter`
-rakun gives it; rakun writes them to the socket and knows nothing else about them.
+renderer per page pattern (decision 114). The renderer sets the status and headers and writes its
+chunks through the `ChunkWriter` rakun gives it; rakun writes them to the socket and knows nothing
+else about them. A navigation signal raised by a page is jhonstart's to turn into a status
+([decision 117](../../decisions-taken.md#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only) rule 1); rakun has no page-level `notFound` / `redirect`.
 
 ## Current state
 
@@ -64,8 +66,8 @@ request
   -> 22  matchPath(table, pathname)            `routing`; the entry + params + rest; no entry -> 404
   -> 22  the renderer registered for the matched pattern
   -> 62  request scope opens, setPhase(Render)   headers, cookies, memo cache
-  -> 23  render(req, out)                       the renderer onze registered: it writes through `out`
-  -> 23  out.close() when the renderer's future resolves
+  -> 23  render(req, out)                       the renderer onze registered: status, headers, chunks through `out`
+  -> 23  out.close() when the renderer's future resolves, unless the renderer closed it
   -> 62  previous phase restored, scope closed
 ```
 
@@ -73,7 +75,8 @@ request
 imports what fills them (decision 114):
 
 ```bp
-pub type ChunkWriter(write: fn(string) -> @Future<void>, close: fn() -> @Future<void>);
+pub type ChunkWriter(setStatus: fn(code: i32) -> void, setHeader: fn(name: string, value: string) -> void,
+                     write: fn(string) -> @Future<void>, close: fn() -> @Future<void>);
 pub type PageRenderer = fn(req: Request, out: ChunkWriter) -> @Future<void>;
 
 pub fn page(pattern: string, render: PageRenderer) -> i32     // front 22's rkAppRegisterPage
@@ -82,26 +85,35 @@ pub fn servePage(req: Request, out: ChunkWriter) -> @Future<i32>   // the status
 ```
 
 onze registers one renderer per page pattern at boot; inside it jhonstart renders the page (front 30)
-and hands each chunk to a `fn(string) -> @Future<void>` writer onze builds over `out.write`:
+into jhonstart's `Response`, which onze builds over `out` field by field (decision 117 rule 1):
 
 ```bp
 // onze, at boot — not rakun code
-rakun.page(route, fn(req, out) {
-    return site.renderStream(page(req), requestData(req), fn(chunk) { return out.write(chunk); });
+rakun.page(route, fn(req: Request, out: ChunkWriter) -> @Future<void> {
+    return ui.renderStream(input(req), requestData(req), Response(
+        status: fn(c) { out.setStatus(c); },
+        header: fn(n, v) { out.setHeader(n, v); },
+        write:  fn(chunk) { return out.write(chunk); },
+        close:  fn() { return out.close(); },
+    ));
 });
 ```
 
 rakun sees strings. `out.write` puts a chunk on the socket as it is handed over — shell first, then
 one fill per resolved boundary, then the tail, in the order jhonstart produced them — and this front
-writes them without reading them. When the renderer's future resolves the dispatch calls
-`out.close()`; the renderer never closes the response itself.
+writes them without reading them. A renderer may close the response itself — jhonstart does, on
+every path; when the renderer's future resolves with the response still open, the dispatch calls
+`out.close()`. Any call on `out` after `close` fails the request, naming the call.
 
-**Status.** A page is `200` with `Content-Type: text/html; charset=utf-8`, sent with the first chunk.
-A URL that matches no page is this front's 404, answered before any renderer runs. A renderer that
-raises one of front 63's navigation signals before its first `out.write` is answered with that
-signal's status (404, 307, 308, 303); that is how onze translates jhonstart's own not-found into
-rakun's 404 — it raises front 63's `notFound()` inside the renderer (decision 113). rakun names no
-jhonstart signal.
+**Status.** A page is `200` with `Content-Type: text/html; charset=utf-8` unless the renderer said
+otherwise: `out.setStatus(code)` and `out.setHeader(name, value)` are legal before the first
+`out.write` only, and a call after it fails the request, naming `ChunkWriter.setStatus` or
+`ChunkWriter.setHeader` (decision 67). Status and headers go out with the first chunk, or with
+`close` when nothing was written — which is how jhonstart answers a 307 with `location` and no body.
+A URL that matches no page is this front's 404, answered before any renderer runs. A navigation
+reason raised out of a page renderer is **not** translated into a status: page signals are
+jhonstart's (decision 117 rule 1), so the raise is an error of that request and answers 500, like
+any other failure of the renderer. rakun names no jhonstart signal.
 
 **The phase word.** The dispatch calls front 62's `setPhase(RequestPhase.Render)` before the renderer
 runs and restores the previous phase when its future resolves. That is not bookkeeping: it is the
@@ -121,8 +133,8 @@ nothing in rakun serialises a payload.
 ### Step 1 — `ChunkWriter`, `PageRenderer` and `page`
 
 **Acceptance:**
-- [ ] `ChunkWriter` and `PageRenderer` are declared exactly as above; neither names a jhonstart,
-      emilia or onze type.
+- [ ] `ChunkWriter` (its four fields) and `PageRenderer` are declared exactly as above; neither
+      names a jhonstart, emilia or onze type.
 - [ ] `page(pattern, render)` registers the renderer through front 22's `rkAppRegisterPage`; a second
       `page` for one pattern fails at registration, naming the pattern.
 - [ ] The dispatch never builds a chunk: every byte of a page body on the socket came through
@@ -132,16 +144,21 @@ nothing in rakun serialises a payload.
 
 **Acceptance:**
 - [ ] A URL with no matching page answers 404 without calling any renderer.
-- [ ] A renderer that raises front 63's `notFound()` before its first `out.write` is answered 404;
-      `redirect(loc)` is answered 307 with `Location: loc`.
+- [ ] A renderer that calls `out.setStatus(307)` and `out.setHeader("location", "/login")` and closes
+      without writing is answered 307 with `Location: /login` and an empty body; one that calls
+      `out.setStatus(404)` and writes a body is answered 404 with that body.
+- [ ] `out.setStatus` or `out.setHeader` after the first `out.write` fails the request, naming the
+      call; the status already on the wire does not change.
+- [ ] A renderer that raises a `nav:` reason (front 63's `notFound()`, say) is answered 500 as a
+      failed render, not 404 — a page signal is jhonstart's (decision 117 rule 1).
 - [ ] The whole call runs inside one request scope from front 62, with `setPhase(RequestPhase.Render)`
       entered before the renderer and the previous phase restored after its future resolves. A
       `cookies().set(...)` from inside the renderer raises, per the phase table in `contracts.md § 5`.
 - [ ] A read of the request's query from the renderer calls `markDynamic("searchParams")`; front
       60's prerenderer with `strict` set then raises instead of marking, which is how a static export
       fails the build.
-- [ ] `out.close()` is called once, by the dispatch, after the renderer's future resolves — a renderer
-      that calls it itself fails the request, naming `ChunkWriter.close`.
+- [ ] The response is closed exactly once: by the renderer, or by the dispatch when the renderer's
+      future resolves with it still open. Any `out` call after `close` fails the request, naming it.
 
 ### Step 3 — Writing the chunks
 
@@ -150,7 +167,8 @@ nothing in rakun serialises a payload.
       renderer writing a fixed list asserts the bytes on the socket.
 - [ ] The first chunk reaches the socket before the last one is written when the renderer streams —
       asserted over `rakun_ssr.erl` with a renderer that delays its second `out.write`.
-- [ ] `Content-Type: text/html; charset=utf-8` and status 200 go out with the first chunk.
+- [ ] `Content-Type: text/html; charset=utf-8` and status 200 go out with the first chunk when the
+      renderer set neither; a header the renderer set replaces the default by name.
 
 ### Step 4 — The route data the renderer reads
 
@@ -174,7 +192,7 @@ table and escaping, the island and hole ordinals, the fill protocol and their ac
       `repository/rakun/src/`, once jhonstart front 30 lands them.
 - [ ] `ssr.bp:641-676`'s JSON helpers are gone with no replacement in rakun: jhonstart's payload
       writer uses std's `json.quote` / `json.array` / `json.object` and `escape.scriptJson`
-      (`01-std/07-std-json-writers`, decision 116); `grep -rn "fn jsonString" repository/rakun` is
+      (`01-std/01-std-lib-enablement`, decisions 116 and 117); `grep -rn "fn jsonString" repository/rakun` is
       empty.
 - [ ] `repository/rakun/src/ssr.mjs` is deleted; the fill function and the payload reader are
       jhonstart's (`render.mjs`).
@@ -189,7 +207,8 @@ table and escaping, the island and hole ordinals, the fill protocol and their ac
 
 - [`examples/server-render-example.bp`](./examples/server-render-example.bp) — a page dispatch with a
   renderer that writes plain text through the `ChunkWriter`: the route is matched, the phase is set,
-  the chunks are written verbatim and the response closed once, and an unmatched URL answers 404. No
+  the chunks are written verbatim and the response closed once, a renderer sets its own 404 or 307,
+  a late `setStatus` and a raised `nav:` reason fail the request, and an unmatched URL answers 404. No
   HTML is built in rakun. A page rendered by jhonstart through this seam is onze front 53's example.
 
 ## Language gaps
@@ -215,7 +234,8 @@ where they are built, in jhonstart front 30.
 ## Definition of done
 
 - The dispatch is one function, `servePage`, and a page's renderer reaches it only through
-  `page(pattern, render)`; the renderer's type is `PageRenderer` over `ChunkWriter` (decision 114).
+  `page(pattern, render)`; the renderer's type is `PageRenderer` over `ChunkWriter` (decisions 114
+  and 117).
 - `repository/rakun/src/` builds no HTML and imports nothing from `jhonstart`, `emilia` or `onze`;
   the greps of Step 5 are part of the gate.
 - `repository/rakun/AGENTS.md` names `ssr.bp`, the dispatch and the chunk writer.

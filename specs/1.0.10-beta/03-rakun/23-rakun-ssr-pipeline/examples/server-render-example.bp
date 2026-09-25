@@ -2,7 +2,10 @@
 //
 // rakun matches the route, opens the request scope with the `Render` phase set,
 // calls the renderer registered for the matched pattern with the request and a
-// `ChunkWriter`, and closes the response when the renderer's future resolves.
+// `ChunkWriter`, and closes the response when the renderer's future resolves
+// with it still open. The renderer sets its own status and headers before its
+// first write; a navigation signal raised by a page is jhonstart's to answer
+// (decision 117), so here it fails the request.
 // It builds no HTML and imports nothing from jhonstart, emilia or onze
 // (decisions 113, 114): in an application the renderer is registered by onze
 // and its chunks are rendered by jhonstart front 30. Here a renderer that writes
@@ -14,7 +17,8 @@
 //   https://nextjs.org/docs/app/api-reference/file-conventions/loading
 
 // `ChunkWriter`, `PageRenderer`, `page` and `servePage` are this front's;
-// `notFound` is front 63's; `requestPhase` and `RequestPhase` are front 62's;
+// `notFound` is front 63's (a route handler's and an action's, never a page's);
+// `requestPhase` and `RequestPhase` are front 62's;
 // `Request` is front 04's; `fakeGet` is front 19's request double.
 import {ChunkWriter, PageRenderer, page, servePage} from "rakun";
 import {notFound} from "rakun";
@@ -28,11 +32,17 @@ import {fakeGet} from "rakun-test";
 
 var written: string[] = [];
 var closes: i32 = 0;
+var statusSet: i32 = 0;
+var headersSet: string[] = [];
 
 fn recorder() -> ChunkWriter {
     written = [];
     closes = 0;
+    statusSet = 0;
+    headersSet = [];
     return ChunkWriter(
+        setStatus: fn(code: i32) { statusSet = code; },
+        setHeader: fn(name: string, value: string) { headersSet.push(name + ": " + value); },
         write: fn(chunk: string) { written.push(chunk); },
         close: fn() { closes = closes + 1; },
     );
@@ -53,14 +63,41 @@ fn stubRender(req: Request, out: ChunkWriter) -> @Future<void> {
     await out.write("<tail>");
 }
 
+// A renderer answers a missing record with its own status, before its first
+// write — the shape jhonstart's render uses for a not-found page.
 #[@future]
 fn missingRender(req: Request, out: ChunkWriter) -> @Future<void> {
+    out.setStatus(404);
+    await out.write("no such page");
+}
+
+// A renderer that redirects: status and `location`, no body, closed by itself.
+#[@future]
+fn movedRender(req: Request, out: ChunkWriter) -> @Future<void> {
+    out.setStatus(307);
+    out.setHeader("location", "/blog/hello");
+    await out.close();
+}
+
+// A status after the first chunk is too late: the request fails.
+#[@future]
+fn lateStatusRender(req: Request, out: ChunkWriter) -> @Future<void> {
+    await out.write("<shell>");
+    out.setStatus(404);
+}
+
+// A page renderer raising a navigation reason is a failed render, not a 404.
+#[@future]
+fn signallingRender(req: Request, out: ChunkWriter) -> @Future<void> {
     val _gone = notFound();
     await out.write("never written");
 }
 
 val _post = page("blog/[slug]", stubRender);
 val _gone = page("gone", missingRender);
+val _moved = page("moved", movedRender);
+val _late = page("late", lateStatusRender);
+val _signal = page("signal", signallingRender);
 
 // ---- what the dispatch does ------------------------------------------------------------
 
@@ -72,6 +109,11 @@ test "a matched page is written as the chunks the renderer wrote" {
 
 test "the dispatch closes the response once, after the renderer resolves" {
     val _status = await servePage(fakeGet("/blog/hello"), recorder());
+    assert closes == 1;
+}
+
+test "a renderer that closes the response itself is not closed again" {
+    val _status = await servePage(fakeGet("/moved"), recorder());
     assert closes == 1;
 }
 
@@ -88,8 +130,27 @@ test "a url with no page answers 404 without rendering" {
     assert written.length == 0;
 }
 
-test "a not-found raised before the first write answers 404" {
+test "a renderer's own 404 goes out with its body" {
     val status = await servePage(fakeGet("/gone"), recorder());
     assert status == 404;
+    assert written.join("|") == "no such page";
+}
+
+test "a renderer's 307 goes out with its location and no body" {
+    val status = await servePage(fakeGet("/moved"), recorder());
+    assert status == 307;
+    assert headersSet.join("|") == "location: /blog/hello";
+    assert written.length == 0;
+}
+
+test "a status set after the first write fails the request" {
+    val status = await servePage(fakeGet("/late"), recorder());
+    assert status == 200;
+    assert statusSet == 0;
+}
+
+test "a navigation reason out of a page renderer is a failed render" {
+    val status = await servePage(fakeGet("/signal"), recorder());
+    assert status == 500;
     assert written.length == 0;
 }
