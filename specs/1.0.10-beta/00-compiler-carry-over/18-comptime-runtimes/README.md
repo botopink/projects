@@ -399,20 +399,23 @@ instantiated and run in the same page.
 
 ## Gate
 
-- [ ] `zig build test` from a **cold** runtime cache green in this front's worktree, under both
-      runtimes (the doubled tree), and `parity.zig` green
-- [ ] `scripts/gate.sh --cold` green (test-bpmp, beam export audit, test-cli, test-libs,
-      test-language)
+- [x] `zig build test` from a **cold** runtime cache green in this front's worktree, under both
+      runtimes (the doubled tree), and `parity.zig` green — the `0beaa1f9` commit's gate, runtime cache
+      deleted first
+- [x] `scripts/gate.sh --cold` green (test-bpmp, beam export audit, test-cli, test-libs,
+      test-language) — every stage of `0beaa1f9`'s gate on a cold runtime cache, runtime-parity included
+      (test-libs 48 passed, 0 failed)
 - [ ] `scripts/comptime_bench.sh` re-run at every step; the table appended to `evidence.md`
-- [ ] no `erl`, `erlc`, `escript`, `node`, `wasmtime` spawned on the comptime path of a native
-      build under the wat runtime (`strace -f -e execve`), and none anywhere in the wasm build
+- [x] no `erl`, `erlc`, `escript`, `node`, `wasmtime` spawned on the comptime path of a native
+      build under the wat runtime (`strace -f -e execve`), and none anywhere in the wasm build — one
+      execve (botopink's) for commonJS/wasm builds; the wasm build cannot spawn (`can_spawn` false)
 - [x] every workflow that runs `zig build` installs OTP 28 first (`erlc` is a build-time dependency
       since 1c; `test.yml` had it, `release.yml` gains the same `erlef/setup-beam` / `brew` pair)
-- [ ] `AGENTS.md` updated in the same commit for `src/comptime/`, `src/comptime/runtime/`,
+- [x] `AGENTS.md` updated in the same commit for `src/comptime/`, `src/comptime/runtime/`,
       `src/codegen/`, `src/codegen/beam/`, `src/codegen/wat/`, `src/codegen/tests/`, `snapshots/`
       (if it has one), `modules/wasm3/`, root `AGENTS.md` (the layout), `scripts/`;
       `meta:architecture.md`'s "O que roda onde" table names both runtimes
-- [ ] Commit on `front/18-comptime-runtimes`; no push, no merge — landing is the maintainer's step
+- [x] Commit on `front/18-comptime-runtimes`; no push, no merge — landing is the maintainer's step
 
 ## Blast radius
 
