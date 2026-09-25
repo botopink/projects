@@ -41,8 +41,6 @@ emits declarations and a font is a file.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `repository/onze/src/font.bp` does not exist; `repository/onze/` does not exist until front 49.
 - `repository/emilia/src/tokens.bp:59-70` — `Font { Sans, Serif, Mono }` plus
   `Font.Weight { Light, Normal, Medium, Bold, Black }`. These map to generic CSS stacks. This front
@@ -50,7 +48,7 @@ Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([
   the way `next/font` applies one, and emilia's `Font` section keeps meaning "a generic stack".
 - `libs/std/src/fs.bp` reads and writes text, not bytes (`fs.bp:33`, `:42`). A `.woff2` file never
   passes through botopink — see *Mechanism*.
-- `libs/std/src/http.bp:55` declares `fetch(url) -> @Future<Response>`; front 01's process spawner is
+- `libs/std/src/http.bp:55` declares `fetch(url) -> @Task<Response>`; front 01's process spawner is
   what actually pulls the font files, for the reason below.
 
 ## Mechanism
@@ -157,8 +155,7 @@ pub type GoogleFontOptions(
     adjustFontFallback: bool,
 )
 
-#[@future]
-pub fn googleFont(family: string, opts: GoogleFontOptions) -> @Future<Font>
+pub fn googleFont(family: string, opts: GoogleFontOptions) -> @Task<Font>
 ```
 
 **Acceptance:**
@@ -217,8 +214,7 @@ pub type LocalFontOptions(
     adjustFontFallback: bool,
 )
 
-#[@future]
-pub fn localFont(family: string, opts: LocalFontOptions) -> @Future<Font>
+pub fn localFont(family: string, opts: LocalFontOptions) -> @Task<Font>
 ```
 
 **Acceptance:**
@@ -255,7 +251,7 @@ blocks so two components asking for the same family emit one.
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
 | Declared parameter defaults are never applied | `GoogleFontOptions` has eight fields and every call writes all eight; `defaultGoogleFontOptions` exists only for that | a `default*` constructor plus `with*` copies | apply the declared default at the call site (ground truth §2.24) |
-| `#[@future]` is required on any fn returning `@Future<T>` | `googleFont` and `localFont` (a layout that awaits them is `#[@use] … -> @Component<Element>`, decision 117) | write the marker | infer the effect from the return type |
+| The effect annotation is required beside any `@Task<T>` return until front 24 lands decision 118 | `googleFont` and `localFont` (a layout that awaits them is `fn … -> @Component<ElementBase, Element>`, decision 117) | write the marker | infer the effect from the return type |
 | No assignment to a `self` field | option records are copied, never mutated | return a new record | mutable record fields |
 
 ## Test plan

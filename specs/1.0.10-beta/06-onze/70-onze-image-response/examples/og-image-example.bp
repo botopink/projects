@@ -55,8 +55,7 @@ fn card(title: string, author: string) -> Element {
     ], attrs: [#("style", frame)]);
 }
 
-#[@future]
-pub fn image(ctx: RouteContext) -> @Future<ImageResponse> {
+pub fn image(ctx: RouteContext) -> @Task<ImageResponse> {
     val slug = ctx.params.param("slug");
     val post = await loadPost(slug);
     return imageResponse(card(post._0, post._1), size);
@@ -64,8 +63,7 @@ pub fn image(ctx: RouteContext) -> @Future<ImageResponse> {
 
 // Stand-in for the app's own loader — a real one reaches a database through
 // front 08. Kept here so the example is a file that compiles.
-#[@future]
-fn loadPost(slug: string) -> @Future<#(string, string)> {
+fn loadPost(slug: string) -> @Task<#(string, string)> {
     return #("Hydration is a contract, not a hope", "ana");
 }
 

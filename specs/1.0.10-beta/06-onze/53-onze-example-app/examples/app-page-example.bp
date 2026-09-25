@@ -49,8 +49,7 @@ val _homeConfig = registerSegmentConfig("", SegmentConfig(
 // front 22 — `/`. The page touches nothing request-specific, so front 60's trial
 // render leaves it static; reading `route.query` here would opt it out.
 #[page("")]
-#[@use]
-pub fn homePage(route: PageContext) -> @Component<Element> {
+pub fn homePage(route: PageContext) -> @Component<ElementBase, Element> {
     val cfg = defaultImageConfig();
     // front 51 — above the fold, so eager and high priority. The declared width
     // and height reserve the box before the bytes arrive.

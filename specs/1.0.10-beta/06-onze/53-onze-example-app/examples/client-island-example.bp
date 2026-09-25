@@ -56,8 +56,7 @@ pub type LikeProps(
 // client runtime binds after hydration; there is no JavaScript string in this
 // file, which is what keeps the component testable as markup.
 #[client]
-#[@use]
-pub fn LikeButton(props: LikeProps) -> @Component<Element> {
+pub fn LikeButton(props: LikeProps) -> @Component<ElementBase, Element> {
     val c = use state(props.likes);
     return likeButtonMarkup(props.postSlug, c.value);
 }

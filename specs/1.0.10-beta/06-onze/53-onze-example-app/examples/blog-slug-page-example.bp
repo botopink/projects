@@ -59,8 +59,7 @@ val _postConfig = registerSegmentConfig("blog/[slug]", SegmentConfig(
 
 // front 60 — called once, at build time. Each row binds every dynamic segment
 // of the pattern; a row that misses one fails the build.
-#[@future]
-pub fn blogStaticParams() -> @Future<StaticParams[]> {
+pub fn blogStaticParams() -> @Task<StaticParams[]> {
     return listPosts().map({ post ->
         StaticParams(bindings: [ParamBinding(name: "slug", value: post.slug)]);
     });
@@ -70,14 +69,14 @@ val _postParams = registerStaticParams("blog/[slug]", blogStaticParams);
 
 // front 22 — the segment reaches the page through `route.params`, a `Dict`, so
 // it is read with `lookup(...).unwrapOr(...)` and never with `get`.
-// front 28 — a server component: `#[@use] … -> @Component<Element>` (decision 117).
+// front 28 — a server component: `fn … -> @Component<ElementBase, Element>` (decision 117).
 #[page("blog/[slug]")]
-#[@use]
-pub fn blogPostPage(route: PageContext) -> @Component<Element> {
+pub fn blogPostPage(route: PageContext) -> @Component<ElementBase, Element> {
     val slug = route.params.lookup("slug").unwrapOr("");
     val found = findPost(slug);
 
-    // front 31 — jhonstart's `notFound()` is thrown and unwinds to the nearest
+    // front 31 — jhonstart's `notFound()` is called (a component cannot `throw`,
+    // decision 121) and unwinds to the nearest
     // not-found.bp boundary, which for this route is `app/blog/[slug]/not-found.bp`;
     // raised before the first chunk, jhonstart's render answers 404 with that
     // boundary as the document (decision 117) — onze takes no part.
@@ -87,7 +86,7 @@ pub fn blogPostPage(route: PageContext) -> @Component<Element> {
     // next line, which is unreachable. With a `never` return the body would end
     // at `val post = found.first();`.
     if (found.isEmpty()) {
-        throw notFound();
+        notFound();
     };
     val post = found.first().unwrapOr(missingPost(slug));
 
@@ -102,8 +101,7 @@ pub fn blogPostPage(route: PageContext) -> @Component<Element> {
 // front 32's own `mergeMetadata`. It reads the same params the page reads, and
 // front 62's request-scoped memoization is what stops the post being loaded
 // twice per request.
-#[@future]
-pub fn generateMetadata(params: Array<#(string, string)>) -> @Future<Metadata> {
+pub fn generateMetadata(params: Array<#(string, string)>) -> @Task<Metadata> {
     val slug = pairValue(params, "slug");
     val found = findPost(slug);
     val post = found.first().unwrapOr(missingPost(slug));

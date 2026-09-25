@@ -39,13 +39,11 @@ The route that does exist is not this front's. When emilia's sheet is flushed in
 once into the head after the shell, once per streamed boundary inside that boundary's fill
 `<template>`, nothing left at the end — is decided by the package that writes the HTML: jhonstart
 front 30 declares the asynchronous `RenderPlugin` point and awaits it, and the `jhonstart-emilia`
-bridge awaits emilia's `#[@future] flush()` in `head` and `chunk` and returns the flushed class names
+bridge awaits emilia's `@Task`-returning `flush()` in `head` and `chunk` and returns the flushed class names
 from `payload()` as the payload's `s` key (decisions 113, 114). Next's `useServerInsertedHTML` is that seam, and it lives in
 jhonstart. onze's only part in it is front 49 registering the bridge at boot.
 
 ## Current state
-
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
 
 - `repository/onze/` does not exist; `modules/onze-assets/` is created by this front inside it.
 - Nothing in the workspace reads or serves a `.css` file. `grep -rn "text/css" repository/` is empty.
@@ -133,7 +131,7 @@ rakun file spells `_onze`.
 
 ### The preprocessor hook
 
-`§ 15` *Sass* is an npm tool. It stays one: `preprocess(config, inputPath) -> @Future<string>` runs
+`§ 15` *Sass* is an npm tool. It stays one: `preprocess(config, inputPath) -> @Task<string>` runs
 the command named in the config through front 01's `process.run` and takes its stdout. If no command
 is configured the file is used as-is. A configured command that is missing fails the build naming the
 command — not a silent fallback, because a silent fallback ships unprocessed source as CSS.
@@ -201,8 +199,7 @@ those are front 82's (decision 116 rule 6).
 ### Step 4 — The preprocessor hook
 
 ```bp
-#[@future]
-pub fn preprocess(command: string, inputPath: string) -> @Future<string>
+pub fn preprocess(command: string, inputPath: string) -> @Task<string>
 ```
 
 **Acceptance:**

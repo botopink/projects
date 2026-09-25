@@ -52,8 +52,7 @@ import {collections.Dict} from "std";
 // is the subtree the router already rendered: the next layout down, or the page.
 
 #[layout("")]
-#[@use]
-pub fn rootLayout(props: LayoutProps) -> @Component<Element> {
+pub fn rootLayout(props: LayoutProps) -> @Component<ElementBase, Element> {
     val header = div([h1([text("onze", attrs: [])], attrs: [])], attrs: [
         bracketPair("data-jh-chrome", "header"),
     ]);
@@ -67,26 +66,23 @@ pub fn rootLayout(props: LayoutProps) -> @Component<Element> {
 // `layout.bp` and `template.bp`, and jhonstart front 30 owns the distinction.
 
 #[layout("blog")]
-#[@use]
-pub fn blogLayout(props: LayoutProps) -> @Component<Element> {
+pub fn blogLayout(props: LayoutProps) -> @Component<ElementBase, Element> {
     val crumb = p([text("Blog", attrs: [])], attrs: []);
     return div([crumb, props.children], attrs: [bracketPair("data-jh-seg", "blog")]);
 }
 
 // ---- app/page.bp — the home page ----------------------------------------------
 //
-// Every page, layout and template is `#[@use] … -> @Component<Element>`
+// Every page, layout and template is `fn … -> @Component<ElementBase, Element>`
 // (decision 117): jhonstart's registry pins one shape, and the marker refuses any
 // other at compile time. A page that needs no data awaits nothing and costs nothing.
 
-#[@future]
-fn recentSlugs() -> @Future<string[]> {
+fn recentSlugs() -> @Task<string[]> {
     return ["hello-world", "beam-renders-the-server"];
 }
 
 #[page("")]
-#[@use]
-pub fn homePage(route: PageContext) -> @Component<Element> {
+pub fn homePage(route: PageContext) -> @Component<ElementBase, Element> {
     val slugs = await recentSlugs();
     val items = slugs.map({ s -> li([text(s, attrs: [])], attrs: []) });
     return div([
@@ -98,8 +94,7 @@ pub fn homePage(route: PageContext) -> @Component<Element> {
 // ---- app/blog/page.bp — the blog index ----------------------------------------
 
 #[page("blog")]
-#[@use]
-pub fn blogIndexPage(route: PageContext) -> @Component<Element> {
+pub fn blogIndexPage(route: PageContext) -> @Component<ElementBase, Element> {
     val slugs = await recentSlugs();
     val items = slugs.map({ s -> li([text(s, attrs: [])], attrs: []) });
     return ul(items, attrs: [bracketPair("data-jh-list", "posts")]);
@@ -112,14 +107,12 @@ pub fn blogIndexPage(route: PageContext) -> @Component<Element> {
 // visible under `botopink test` and `botopink build`; `botopink check` skips
 // decorator invocation and will report it unbound.
 
-#[@future]
-fn postBody(slug: string) -> @Future<string> {
+fn postBody(slug: string) -> @Task<string> {
     return "The body of " + slug + ", loaded on the server.";
 }
 
 #[page("blog/[slug]")]
-#[@use]
-pub fn blogPostPage(route: PageContext) -> @Component<Element> {
+pub fn blogPostPage(route: PageContext) -> @Component<ElementBase, Element> {
     val params = blogPostPageParams(route);
     val body = await postBody(params.slug);
     return div([
@@ -135,8 +128,7 @@ pub fn blogPostPage(route: PageContext) -> @Component<Element> {
 // `§ 5. Multiple Root Layouts` is expressed.
 
 #[page("(marketing)/about")]
-#[@use]
-pub fn aboutPage(route: PageContext) -> @Component<Element> {
+pub fn aboutPage(route: PageContext) -> @Component<ElementBase, Element> {
     return div([
         h1([text("About", attrs: [])], attrs: []),
         p([text("Rendered on BEAM, like every page in this tree.", attrs: [])], attrs: []),

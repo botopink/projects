@@ -48,8 +48,6 @@ wrong bundle. One derivation, stamped once, read everywhere.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `repository/onze/` does not exist; this front creates `modules/onze-release/` inside it.
 - Nothing in the workspace produces a deployable artifact. There is no `rel/`, no `.rel` file, no
   `sys.config`, no `vm.args` and no Dockerfile anywhere under `repository/`.
@@ -221,8 +219,7 @@ pub fn relFileText(spec: ReleaseSpec) -> string
 pub fn sysConfigText(spec: ReleaseSpec, defaults: Array<#(string, string)>) -> string
 pub fn vmArgsText(spec: ReleaseSpec) -> string
 
-#[@future]
-pub fn assembleRelease(spec: ReleaseSpec) -> @Future<string>
+pub fn assembleRelease(spec: ReleaseSpec) -> @Task<string>
 ```
 
 **Acceptance:**
@@ -239,8 +236,7 @@ pub fn assembleRelease(spec: ReleaseSpec) -> @Future<string>
 ### Step 3 — Packaging the asset tree
 
 ```bp
-#[@future]
-pub fn packageAssets(spec: ReleaseSpec, manifestPath: string, publicDir: string) -> @Future<Array<string>>
+pub fn packageAssets(spec: ReleaseSpec, manifestPath: string, publicDir: string) -> @Task<Array<string>>
 pub fn scanForSecrets(assetTree: Array<#(string, string)>, secrets: Array<string>) -> Array<string>
 ```
 
@@ -286,8 +282,7 @@ pub fn bootScriptText(spec: ReleaseSpec) -> string
 ```bp
 pub type DrainReport(renders: i32, afterTasks: i32, timedOut: bool)
 
-#[@future]
-pub fn shutdown(drainTimeoutMs: i32) -> @Future<DrainReport>
+pub fn shutdown(drainTimeoutMs: i32) -> @Task<DrainReport>
 pub fn readinessChecks(spec: ReleaseSpec) -> Array<string>
 pub fn shutdownOrder() -> Array<string>
 ```
@@ -307,8 +302,7 @@ described by a comment above a function that could be edited out of agreement wi
 ### Step 7 — Static export
 
 ```bp
-#[@future]
-pub fn staticExport(spec: ReleaseSpec, prerendered: Array<#(string, string)>) -> @Future<Array<string>>
+pub fn staticExport(spec: ReleaseSpec, prerendered: Array<#(string, string)>) -> @Task<Array<string>>
 ```
 
 **Acceptance:**

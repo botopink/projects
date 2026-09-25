@@ -35,19 +35,17 @@ fn titleTokens() -> Token[] {
 // onze copies the record into rakun's route table at boot. The
 // decorator argument is the app-relative directory, and front 50's scan fails
 // the build when it disagrees with where the file actually is. A layout is a
-// component (decision 117): `#[@use] … -> @Component<Element>`, or the marker
+// component (decision 117): `fn … -> @Component<ElementBase, Element>`, or the marker
 // refuses it at compile time.
 #[layout("")]
-#[@use]
-pub fn rootLayout(props: LayoutProps) -> @Component<Element> {
+pub fn rootLayout(props: LayoutProps) -> @Component<ElementBase, Element> {
     return div([props.children], attrs: [styled(shellTokens())]);
 }
 
 // app/blog/[slug]/page.bp — the param arrives in `route.params`, a std `Dict`,
 // read with `lookup(k).unwrapOr(...)`. onze does not wrap it.
 #[page("blog/[slug]")]
-#[@use]
-pub fn blogPostPage(route: PageContext) -> @Component<Element> {
+pub fn blogPostPage(route: PageContext) -> @Component<ElementBase, Element> {
     val slug = route.params.lookup("slug").unwrapOr("");
     return div([
         h1([text("Post: " + slug, attrs: [])], attrs: [styled(titleTokens())]),
