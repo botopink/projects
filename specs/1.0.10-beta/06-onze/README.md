@@ -23,8 +23,8 @@ and is therefore ready one wave before 70, which waits on 52.
 | # | Front | Priority | Wave | Submodule | Depends on (track E) | Depends on (other tracks) |
 |---|---|---|---|---|---|---|
 | 1 | [`49-onze-stand-up`](./49-onze-stand-up/README.md) | **critical** | 0 | `modules/onze/` | — | std [`01`](../01-std/) (`io.env`, `path`) |
-| 2 | [`68-onze-client-bundle`](./68-onze-client-bundle/README.md) | **critical** | 6 | `modules/onze-bundler/` | 49 | jhonstart [`29`](../04-jhonstart/29-jhonstart-client-directive/README.md) · [`27`](../04-jhonstart/27-jhonstart-link/README.md) · rakun [`23`](../03-rakun/23-rakun-ssr-pipeline/README.md) · [`22`](../03-rakun/22-rakun-file-routing/README.md) · [`20`](../03-rakun/20-rakun-websocket/README.md) · emilia [`48`](../05-emilia/48-emilia-attributes/README.md) · [`56`](../05-emilia/56-emilia-cascade-and-output/README.md) · std 01 · 03 |
-| 3 | [`69-onze-styling-pipeline`](./69-onze-styling-pipeline/README.md) | medium | 7 | `modules/onze-assets/` | 49 · 68 (the `Y` records) | rakun [`23`](../03-rakun/23-rakun-ssr-pipeline/README.md) · jhonstart [`30`](../04-jhonstart/30-jhonstart-streaming/README.md) · emilia [`48`](../05-emilia/48-emilia-attributes/README.md) · [`56`](../05-emilia/56-emilia-cascade-and-output/README.md) · std 01 · 03 |
+| 2 | [`68-onze-client-bundle`](./68-onze-client-bundle/README.md) | **critical** | 6 | `modules/onze-bundler/` | 49 | jhonstart [`29`](../04-jhonstart/29-jhonstart-client-directive/README.md) · [`27`](../04-jhonstart/27-jhonstart-link/README.md) · [`30`](../04-jhonstart/30-jhonstart-streaming/README.md) · rakun [`22`](../03-rakun/22-rakun-file-routing/README.md) · [`20`](../03-rakun/20-rakun-websocket/README.md) · emilia [`48`](../05-emilia/48-emilia-attributes/README.md) · [`56`](../05-emilia/56-emilia-cascade-and-output/README.md) · std 01 · 03 |
+| 3 | [`69-onze-styling-pipeline`](./69-onze-styling-pipeline/README.md) | medium | 7 | `modules/onze-assets/` | 49 · 68 (the `Y` records) | std 01 · 03 |
 | 4 | [`52-onze-font`](./52-onze-font/README.md) | low | 8 | `modules/onze-assets/` | 49 · 69 (head seam, asset manifest) | std 01 · 03 |
 | 5 | [`51-onze-image`](./51-onze-image/README.md) | low | 8 | `modules/onze-assets/` | 49 · 69 (`public/`, asset manifest) | rakun [`25`](../03-rakun/25-rakun-route-handlers/README.md) · [`12`](../03-rakun/12-rakun-cache/README.md) · std 01 · 03 |
 | 6 | [`70-onze-image-response`](./70-onze-image-response/README.md) | low | 9 | `modules/onze-og/` | 49 · 52 (metrics sidecar) | rakun [`66`](../03-rakun/66-rakun-metadata-file-routes/README.md) · [`12`](../03-rakun/12-rakun-cache/README.md) · jhonstart [`32`](../04-jhonstart/32-jhonstart-metadata/README.md) · std 01 · 03 |
@@ -49,10 +49,10 @@ headers are left as written.
                             │
         ┌───────────────────┤
         ▼                   ▼
- 68-onze-client-bundle   (jhonstart 29 · 27 · rakun 23 · 20 · emilia 48 · 56)
+ 68-onze-client-bundle   (jhonstart 29 · 27 · 30 · rakun 22 · 20 · emilia 48 · 56)
         │
         ▼
- 69-onze-styling-pipeline  ◄── rakun 23 · jhonstart 30 · emilia 48 · 56
+ 69-onze-styling-pipeline
         │
         ├──────────────┬───────────────────┐
         ▼              ▼                   ▼
@@ -69,12 +69,14 @@ headers are left as written.
                53-onze-example-app  ◄── everything
 ```
 
-Cross-track edges point **into** onze only (decision 77) — no front-23 call into 69's sink or 68's
-`headScriptTags`/`scriptTags`, no front-29 sharing of 68's `islandAttr`: rakun's front 23 declares
-`RenderHooks(headExtra, bodyExtra, islandAttr, openSink, collectHead, collectChunk, closeSink)`
-with working defaults, `Onze.run` fills it at boot from 68 and 69, and `islandAttr` is defined in
-jhonstart (front 29) and imported by 68's entry generator. The per-seam record is in
-[`modules.md`](./modules.md); the graph above is the one that follows from it.
+Cross-track edges point **into** onze only, and onze is the one package that imports jhonstart,
+rakun and the `jhonstart-emilia` bridge together (decision 113). jhonstart and rakun never import
+each other: rakun serves (route → the page-render function onze hands it → chunks), jhonstart renders
+(front 30 owns the render, `RenderHooks(headExtra, bodyExtra)` and the `RenderPlugin` point), and
+onze wires them at boot — the bridge plugin registered with `app(plugins: [emiliaPlugin()])`, 68's
+`headScriptTags`/`scriptTags` handed over as `headExtra`/`bodyExtra`, front 22's matcher handed to
+jhonstart's router. No onze front defines a style sink: the flush moments are jhonstart's. The
+per-seam record is in [`modules.md`](./modules.md); the graph above is the one that follows from it.
 
 ## Numbering
 

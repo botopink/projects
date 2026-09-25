@@ -20,8 +20,8 @@
 import { ChunkRef, ClientBundleManifest } from "onze-bundler";
 import { parseManifest, formatManifest, chunkFor, scriptTags } from "onze-bundler";
 
-// The payload script (`<script id="__onze">`) is front 23's and is placed last in
-// `<body>`, before these tags — `contracts.md § 2`. This front emits the bundle
+// The payload script (`<script>window.__bp0 = …</script>`) is jhonstart's render's
+// (front 30) and is placed last in `<body>`, before these tags — `contracts.md § 2`. This front emits the bundle
 // tags that follow it and nothing else.
 
 // One route's worth of a real manifest: a shared chunk, one route chunk, the
@@ -106,9 +106,9 @@ test "bundle tags come out in the documented order, entry last" {
     assert tags.contains("defer");
 }
 
-test "the payload tag is front 23's and this front never formats one" {
+test "the payload tag is jhonstart's render's and this front never formats one" {
     val tags = scriptTags(sampleManifest(), "/blog/[slug]");
-    assert tags.contains("__onze") == false;
+    assert tags.contains("window.__bp") == false;
     assert tags.contains("application/json") == false;
 }
 

@@ -9,7 +9,8 @@ JS build half; the render seam runs on erlang, the registry it reads is built by
 **Depends on:** none
 **Owns:** `botopink.json`, `src/root.bp`, `src/types.bp`, `src/config.bp`, `src/integration.bp`,
 `test/config_test.bp`, `test/types_test.bp`
-**Does not touch:** `repository/jhonstart/src/**`, `repository/rakun/src/**`,
+**Does not touch:** `repository/jhonstart/**` (the render, `RenderHooks`, `RenderPlugin` and the
+`jhonstart-emilia` bridge are jhonstart front 30's), `repository/rakun/src/**`,
 `repository/emilia/src/**`, `libs/std/src/**`, `repository/onze/src/image.bp` (F51),
 `repository/onze/src/font.bp` (F52), `repository/onze/modules/onze-cli/**` (F50),
 `repository/onze/examples/blog/**` (F53)
@@ -64,19 +65,28 @@ reliable way to build four things that do not fit together.
 Next.js is a router, a renderer and a build tool sharing one project convention. onze is the same
 three things, except the router is rakun, the renderer is jhonstart, the stylesheet is emilia, and the
 build tool is front 50. onze itself is **the joint** — five files that agree on the vocabulary the
-three libraries do not share.
+three libraries do not share, and the one package that imports all of them (decision 113):
 
-What onze actually contributes, once fronts 22, 23, 48 and 69 exist, is small and worth stating
+```
+onze ──► jhonstart-emilia ──► jhonstart   (the plugin contract only)
+  │                      └──► emilia
+  ├────► jhonstart
+  └────► rakun
+```
+
+jhonstart and rakun never import each other, and emilia imports nobody; every value that crosses
+between jhonstart and rakun is handed across by onze.
+
+What onze actually contributes, once fronts 22, 23, 30, 48 and 69 exist, is small and worth stating
 plainly: one config record (`OnzeConfig`), one import-alias map, one
 environment-variable rule, one project-file vocabulary the CLI and front 22 both read, and one boot
 adapter. Everything else in track E stands on those five and on the other fronts' own surfaces.
 
 ### The three seams, and who actually owns each of them
 
-This front was drafted before fronts 22, 23 and 69 landed and has been rewritten against them. The
-correction matters, so it is stated rather than quietly applied: **onze does not own a page registry,
-a props vocabulary or a head-insertion point.** Fronts 22, 23 and 69 own those, and onze's job is to
-be the package they meet in and the project-level configuration they read.
+**onze does not own a page registry, a props vocabulary, a renderer or a head-insertion point.**
+rakun front 22 owns the route table, jhonstart front 30 owns the render and its plugin point, and
+onze's job is to be the package where they meet and the project-level configuration they read.
 
 **Seam 1 — how a project's `app/` tree reaches front 22's route table.**
 
@@ -91,24 +101,44 @@ directory.
 onze's contribution to this seam is one config value: `appDir`. Front 22 scans what `OnzeConfig`
 says to scan, so `app/` and `src/app/` are the same mechanism with a different string.
 
-**Seam 2 — how front 23's pipeline gets a jhonstart tree.**
+**Seam 2 — how a matched route becomes HTML, and the HTML reaches the wire.**
 
-It does not go through onze at all. `#[page]` registers a `PageContext -> @Future<Element>`;
-`#[layout]` registers a `LayoutProps -> Element`; front 23 composes them and calls `renderNode`. The
-vocabulary — `PageContext(pathname, pattern, params, query, rest)`, `LayoutProps.children` — is front
-22's, and onze restating it as `PageProps`/`Params` would have produced a second name for every
-value in the stack. An earlier draft of this front did exactly that; it is deleted.
+rakun serves and jhonstart renders; neither names the other, so onze hands each one what it needs
+from the other (decision 113):
+
+- to **rakun**, the page-render function: rakun matches the route (front 22), opens the request scope
+  (front 62), calls the function onze handed it and writes the chunks it returns (front 23);
+- to **jhonstart's render** (front 30), the segment chain rakun matched — layouts, templates and
+  boundaries mapped from front 22's `RouteEntry` onto jhonstart's own segment record — and the
+  payload's rakun-side values as strings: the route table `t`, the actions `a` and the build id `b`;
+- to **jhonstart's router** (front 26), the `match` function — front 22's matcher — so the router
+  keeps no matcher and no table parser of its own;
+- back to **rakun**, the not-found outcome: a page that raises jhonstart's own not-found signal is
+  answered by rakun with 404, and onze is the one that translates the signal into the status.
+
+The vocabulary — `PageContext(pathname, pattern, params, query, rest)`, `LayoutProps.children` — is
+front 22's, and onze does not restate it as `PageProps`/`Params`: a second name for every value in
+the stack is a translation layer and a class of bugs.
 
 **Seam 3 — how emilia's classes reach the HTML.**
 
 `emilia(tokens)` registers a rule on a process-local sheet and returns a class name; `flush()`
-serialises the sheet **and clears it** (`emilia.bp:53-56`). So the order is build-the-tree, then flush,
-then serialise — and flushing before the tree is built yields `<style></style>`. Front 69
-(`onze-styling-pipeline`) owns the point in front 23's pipeline where that happens, through
-`openSink` / `collectHead` / `collectChunk` / `closeSink`, because only it knows whether the response
-is streaming and therefore whether a late chunk needs its own block. Front 23 does not call them:
-they are fields of the `RenderHooks` record front 23 declares, and `Onze.run` — this front's
-`integration.bp` — is what installs 69's implementation into it at boot (decision 77).
+serialises the sheet **and clears it** (`emilia.bp:53-56`). The moments at which it is flushed —
+once into the head after the shell, once per streamed boundary inside that boundary's fill
+`<template>`, and nothing left at the end — are jhonstart's: front 30 declares the `RenderPlugin`
+point and calls it, and the `jhonstart-emilia` bridge adapts `flush()` to it. onze's part is one line
+at boot, registering the bridge:
+
+```bp
+import {app} from "jhonstart";
+import {plugin as emiliaPlugin} from "jhonstart-emilia";
+
+val site = app(plugins: [emiliaPlugin()]);
+```
+
+The same boot fills the two tag fields jhonstart's `RenderHooks` keeps — `headExtra` and
+`bodyExtra` — with front 68's `headScriptTags` / `scriptTags`. No seam installs a style sink: onze
+carries none.
 
 Front 48 owns the attribute end: `styled(tokens)` is `#("class", emilia(tokens))` and
 `styledWith(base, tokens)` merges a static class first, one ASCII space, no sorting
@@ -263,7 +293,8 @@ documents agree.
 
 ### Step 4 — `integration.bp`
 
-The boot adapter, and nothing else. `OnzeConfig` becomes rakun's `App` and the server starts; the
+The boot adapter, and nothing else. `OnzeConfig` becomes rakun's `App`, the jhonstart app is built
+with the emilia bridge registered, the wiring of seam 2 is handed across, and the server starts; the
 route table is already populated by the `#[page]`/`#[layout]` decorators in the app's own modules by
 the time this runs.
 
@@ -275,8 +306,9 @@ pub type Onze {
 }
 ```
 
-That is the entire seam, and its smallness is the finding: once fronts 22, 23, 48 and 69 exist, joining
-them needs a port number and a base path. A front that proposed more than this was proposing to
+That is the core of the seam, and its smallness is the finding: once fronts 22, 23, 30, 48 and 69
+exist, joining them needs a port number, a base path, and the hand-offs of seams 2 and 3 — each a
+value passed from one library to the other, never a definition of onze's own. A front that proposed more than this was proposing to
 duplicate one of them.
 
 `integration.bp` also carries the package's `docs.md`-facing description of the three seams above,
@@ -285,10 +317,15 @@ because an app author reads onze's docs and not rakun's internals.
 **Acceptance:**
 - [ ] `Onze.run(defaultConfig())` starts a listener on 3000 and answers `/` from the app's `#[page("")]`
 - [ ] `basePath: "/docs"` is passed through to `App` unchanged; onze does not reimplement prefixing
-- [ ] `integration.bp` is the only file in onze that touches front 23's `RenderHooks`: it installs
-      `defaultHooks()` while 68 and 69 do not exist and is where their values are wired in when they
-      do (decision 77). Any other onze file reaching for the seam means the seam is in the wrong
-      place, and the front says so under *Blocked* rather than adding a second wiring point
+- [ ] `integration.bp` is the only file in onze that imports jhonstart, rakun and
+      `jhonstart-emilia` together (decision 113): it builds `app(plugins: [emiliaPlugin()])`, fills
+      jhonstart's `RenderHooks.headExtra` / `bodyExtra` with front 68's tags (empty while 68 does
+      not exist), hands rakun the page-render function and jhonstart's router the `match` function,
+      and translates jhonstart's not-found signal into rakun's 404. Any other onze file reaching for
+      the seam means the seam is in the wrong place, and the front says so under *Blocked* rather
+      than adding a second wiring point
+- [ ] Nothing under `repository/onze/src/` calls emilia's `flush()`, and no onze file defines a style
+      sink — the flush moments are jhonstart front 30's and the adaptation is the bridge's
 
 ### Step 5 — What this front deliberately does not build
 
@@ -299,7 +336,7 @@ Written down so the question is answered before it is asked.
 | `reexports.bp` | A consumer writes `import {div, text} from "jhonstart";` because that is where `div` lives. A re-export layer buys one shorter import line for a second name for every symbol in three libraries |
 | `PageProps` / `LayoutProps` / `Params` | Front 22 delivers `PageContext` and `LayoutProps`, and `params` is a `std` `Dict` read with `lookup(k).unwrapOr("")`. A second vocabulary is a translation layer and a class of bugs |
 | `registerPage` / `registerLayout` / `registerAction` | Front 22's `#[page]` / `#[layout]` decorators and `rkAppRegisterPage` / `rkAppRegisterLayout` do this, and front 50's CLI generates the `pub mod` lines that make the decorated modules load |
-| `renderDocument` | Front 69 owns the head-insertion point, because only it knows whether the response is streaming |
+| `renderDocument` | jhonstart front 30 owns the document and the moments the render plugin is called, because only the render knows whether the response is streaming |
 | `ActionResponse<S>(state, success, message)` | Front 24's `ActionResult` is the action envelope |
 | `RouteSegmentConfig(dynamic, revalidate)` | Front 60's `SegmentConfig(dynamic, dynamicParams, revalidate, fetchCache)` |
 
@@ -416,7 +453,7 @@ live with the examples.
 ## Definition of done
 
 - [ ] `repository/onze/` exists with `botopink.json`, `src/root.bp`, `src/config.bp`,
-      `src/types.bp`, `src/integration.bp` (render half), `AGENTS.md`, `README.md`, `docs.md`
+      `src/types.bp`, `src/integration.bp` (the wiring), `AGENTS.md`, `README.md`, `docs.md`
 - [ ] `.github/workflows/test.yml` runs `botopink test --target commonJS` and `--target erlang`
 - [ ] `onze` appears as a cell in `zig build test-libs` on both targets
 - [ ] The four seams are documented in `docs.md` with the same precision as the *Mechanism* section
