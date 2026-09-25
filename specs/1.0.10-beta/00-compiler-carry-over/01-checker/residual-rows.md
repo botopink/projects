@@ -55,6 +55,7 @@ the import list. Fix both.
 | **Why** | behaviors are types only at the method-table level; a field annotated with a behavior has never accepted an implementer |
 | **Correct** | a value whose type implements the behavior (following the behavior's `extends` chain) unifies with the behavior-typed field; one that does not reds at the value |
 | **Probe** | `behavior Handler { fn run(self: Self) -> i32; }`, `type H(id: i32) implement Handler { … }`, `type Holder(h: Handler)`, `Holder(h: H(id: 1))` → `type mismatch: expected Handler, got H` at `4:35` |
+| **Landed** | `unifyArgument` / `behaviorReaches` in `comptime/infer.zig` — every call-argument and constructor-field site; the `return` coercion follows `extends` too |
 | **Acceptance** | the probe checks; a non-implementing record in the same position reds at the value |
 
 `typeAnswersMember`, added by C9 (`75a6906`), already walks an `implement`ed behavior and its
