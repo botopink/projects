@@ -240,7 +240,7 @@ val snapTypesPaired: Token[] = [
 // A horizontal carousel that snaps each slide to the start of the viewport, a
 // drag handle that grabs, and an overlay that is visible and non-interactive.
 //
-// `flush()` is `#[@future]`, so the caller must be `#[@future]` too and must
+// `flush()` returns a `@Task<string>`, so the caller must return a `@Task` too (or be a `test`) and must
 // `await` it.
 
 fn carouselTrackTokens() -> Token[] {
@@ -299,8 +299,7 @@ fn scrollbarTokens() -> Token[] {
     return bar;
 }
 
-#[@future]
-pub fn renderCarousel() -> @Future<string> {
+pub fn renderCarousel() -> @Task<string> {
     val trackCls = emilia(carouselTrackTokens());
     val slideCls = emilia(carouselSlideTokens());
     val handleCls = emilia(dragHandleTokens());

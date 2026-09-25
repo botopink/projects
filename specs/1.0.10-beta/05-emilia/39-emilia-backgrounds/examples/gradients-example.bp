@@ -78,8 +78,7 @@ fn namedStops() -> Token[] {
 // the background to the glyphs and making the text transparent, and a button
 // whose gradient flips direction on hover.
 
-#[@future]
-pub fn callToAction(heading: string, body: string, action: string) -> @Future<string> {
+pub fn callToAction(heading: string, body: string, action: string) -> @Task<string> {
     val panel: Token[] = [
         .Gradient.To.Br,
         .Gradient.From.Indigo.600,

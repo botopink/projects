@@ -31,8 +31,6 @@ Tailwind markup and there is no token that expresses it.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 | What | Where | State |
 |---|---|---|
 | `Color { Red, Blue, Green, Gray, White, Black, Hex(value) }` | `tokens.bp:72-116` | 4 families; Red/Blue/Gray carry `100..900`, Green carries `100,300,500,700,900` |

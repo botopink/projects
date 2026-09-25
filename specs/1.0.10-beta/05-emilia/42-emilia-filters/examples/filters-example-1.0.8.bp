@@ -177,8 +177,7 @@ val glassTokens: Token[] = [
 ];
 val glassStyles = emilia(glassTokens);
 
-#[@future]
-fn main() -> @Future<void> {
+fn main() -> @Task<void> {
     @print("=== F08: Filters Example ===");
     @print("Blur: " + blurStyles);
     @print("Brightness: " + brightnessStyles);

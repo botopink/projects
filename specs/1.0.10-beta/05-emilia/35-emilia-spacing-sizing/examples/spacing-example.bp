@@ -109,8 +109,7 @@ fn childSpacing() -> Token[] {
 // A comment thread: a padded card, a stack whose children are spaced by
 // `Space.Y`, and an avatar pulled up out of the card by a negative margin.
 
-#[@future]
-pub fn commentThread(author: string, body: string) -> @Future<string> {
+pub fn commentThread(author: string, body: string) -> @Task<string> {
     val card: Token[] = [
         .Pad.X.6,
         .Pad.Y.5,

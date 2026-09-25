@@ -122,8 +122,7 @@ fn divideDressing() -> Token[] {
 // rather than by a border on every row, and a text field whose focus indicator
 // is an offset outline plus a ring that survives alongside the panel's shadow.
 
-#[@future]
-pub fn settingsPanel(label: string, rowA: string, rowB: string) -> @Future<string> {
+pub fn settingsPanel(label: string, rowA: string, rowB: string) -> @Task<string> {
     val list: Token[] = [
         .Divide.Y.1,
         .Divide.Color.Slate.200,

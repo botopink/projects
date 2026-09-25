@@ -186,8 +186,7 @@ fn directionStates() -> Token[] {
 // hover and focus-visible states on the links, and a first/last rule that trims
 // the outer padding.
 
-#[@future]
-pub fn navBar(primary: string, secondary: string) -> @Future<string> {
+pub fn navBar(primary: string, secondary: string) -> @Task<string> {
     val darkSurface: Token[] = [.Bg.Color.Slate.900, .Color.Slate.100];
     val rowFromMd: Token[] = [.Flex.Row];
     val hiddenUnderSm: Token[] = [.Layout.Hidden];

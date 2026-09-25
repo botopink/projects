@@ -64,8 +64,7 @@ val tableTokens: Token[] = [
 ];
 val tableStyles = emilia(tableTokens);
 
-#[@future]
-fn main() -> @Future<void> {
+fn main() -> @Task<void> {
     @print("=== F09: Tables Example ===");
     @print("Border Collapse: " + borderCollapseStyles);
     @print("Border Spacing: " + borderSpacingStyles);

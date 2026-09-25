@@ -44,8 +44,6 @@ fine; nothing tests it, which is the actual problem.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `fn tokenToCss(t: Token) -> string` — `emilia.bp:73`. Sixteen arms, ten of them section
   sub-dispatchers, six of them modifier wraps producing nested blocks.
 - `fn tokensToCss(tokens: Token[]) -> string` — `emilia.bp:102-104`. Maps, filters empties, joins
@@ -58,7 +56,7 @@ Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([
   `"e_" + contentHash(…)`, and every hex a fixture pins is unchanged, because the fold is the same.
 - `declare fn register(name: string, body: string) -> void` — `emilia.bp:23-25`. A `Map` on
   `globalThis` in commonJS, a keyed list in the Erlang process dictionary.
-- `declare fn flushSheet() -> @Future<string>` — `emilia.bp:28-30`. **Builds the `<style>` string
+- `declare fn flushSheet() -> @Task<string>` — `emilia.bp:28-30`. **Builds the `<style>` string
   inside the host cell**, in JS and in Erlang independently: `"<style>" + entries.map(e => "." + k + "{" + v + "}") + "</style>"`.
   All document assembly is in the two `#[@External]` templates, where botopink cannot reach it.
 - The six modifier at-rules are literal and wrong against `§ 3.2`: `@media(min-width:768px)` where
@@ -288,8 +286,7 @@ payloads. `flushSheet()` stays as it is so nothing that depends on it breaks mid
 cell returns the raw store instead of a rendered document:
 
 ```bp
-#[@future]
-declare fn drainRules() -> @Future<string>;
+declare fn drainRules() -> @Task<string>;
 ```
 
 It returns the registered entries as `name + "\t" + payload` records joined by `"\n"`, in insertion
@@ -349,8 +346,8 @@ import {content_hash} from "std";
 pub fn styleRule(tokens: Token[], th: Theme) -> #(string, string)   // (class name, encoded body), registers nothing
 pub fn emiliaWith(tokens: Token[], th: Theme) -> string              // styleRule, then register
 pub fn emilia(tokens: Token[]) -> string
-#[@future] pub fn flushWith(o: Options) -> @Future<string>
-#[@future] pub fn flush() -> @Future<string>
+pub fn flushWith(o: Options) -> @Task<string>
+pub fn flush() -> @Task<string>
 ```
 
 `emilia(tokens)` is `emiliaWith(tokens, defaultTheme())` and `flush()` is

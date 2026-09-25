@@ -115,7 +115,7 @@ val forcedColors: Token[] = [
 // The icon turns red under the pointer, which is the realistic use of a `fill`
 // or `stroke` token under a modifier.
 //
-// `flush()` is `#[@future]`, so the caller must be `#[@future]` too and must
+// `flush()` returns a `@Task<string>`, so the caller must return a `@Task` too (or be a `test`) and must
 // `await` it.
 
 fn closeIconTokens() -> Token[] {
@@ -145,8 +145,7 @@ fn srLabelTokens() -> Token[] {
     return label;
 }
 
-#[@future]
-pub fn renderCloseButton() -> @Future<string> {
+pub fn renderCloseButton() -> @Task<string> {
     val buttonCls = emilia(closeButtonTokens());
     val iconCls = emilia(closeIconTokens());
     val labelCls = emilia(srLabelTokens());

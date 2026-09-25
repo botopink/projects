@@ -143,8 +143,7 @@ val outlineOffsetTokens: Token[] = [
 ];
 val outlineOffsetStyles = emilia(outlineOffsetTokens);
 
-#[@future]
-fn main() -> @Future<void> {
+fn main() -> @Task<void> {
     @print("=== F06: Borders Example ===");
     @print("Border Width: " + borderWidthStyles);
     @print("Border Style: " + borderStyleStyles);

@@ -106,8 +106,7 @@ fn imageValues() -> Token[] {
 // are not cropped, fixed on wide screens for a parallax effect and released to
 // `scroll` under a reduced-motion preference.
 
-#[@future]
-pub fn heroPanel(heading: string, kicker: string) -> @Future<string> {
+pub fn heroPanel(heading: string, kicker: string) -> @Task<string> {
     val fixedFromLg: Token[] = [.Bg.Attachment.Fixed];
     val releaseMotion: Token[] = [.Bg.Attachment.Scroll];
 

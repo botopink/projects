@@ -30,8 +30,6 @@ exist — and that is precisely what this front delivers.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 | What | Where | State |
 |---|---|---|
 | `Layout { Block, InlineBlock, Inline, Hidden, Flex, Grid }` | `tokens.bp:185-192` | six display values, flat |

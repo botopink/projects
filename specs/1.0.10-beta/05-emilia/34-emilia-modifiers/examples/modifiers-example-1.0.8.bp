@@ -215,8 +215,7 @@ val combinedTokens: Token[] = [
 ];
 val combinedStyles = emilia(combinedTokens);
 
-#[@future]
-fn main() -> @Future<void> {
+fn main() -> @Task<void> {
     @print("=== F15: Modifiers Example ===");
     @print("Sm: " + smStyles);
     @print("X2xl: " + x2xlStyles);

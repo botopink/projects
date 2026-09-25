@@ -168,8 +168,7 @@ val insetTokens: Token[] = [
 ];
 val insetStyles = emilia(insetTokens);
 
-#[@future]
-fn main() -> @Future<void> {
+fn main() -> @Task<void> {
     @print("=== F01: Layout Example ===");
     @print("Display: " + displayStyles);
     @print("Position: " + positionStyles);

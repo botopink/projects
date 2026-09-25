@@ -116,8 +116,7 @@ fn compactTableTokens() -> Token[] {
     return compact;
 }
 
-#[@future]
-pub fn renderLedger() -> @Future<string> {
+pub fn renderLedger() -> @Task<string> {
     val ledgerCls = emilia(ledgerTableTokens());
     val compactCls = emilia(compactTableTokens());
     val styles = await flush();

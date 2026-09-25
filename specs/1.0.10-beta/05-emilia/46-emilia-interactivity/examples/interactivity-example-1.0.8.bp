@@ -230,8 +230,7 @@ val scrollPaddingTokens: Token[] = [
 ];
 val scrollPaddingStyles = emilia(scrollPaddingTokens);
 
-#[@future]
-fn main() -> @Future<void> {
+fn main() -> @Task<void> {
     @print("=== F12: Interactivity Example ===");
     @print("Cursor: " + cursorStyles);
     @print("Pointer Events: " + pointerEventsStyles);

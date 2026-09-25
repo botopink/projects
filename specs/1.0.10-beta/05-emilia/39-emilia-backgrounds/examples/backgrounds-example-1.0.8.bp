@@ -102,8 +102,7 @@ val gradientTokens: Token[] = [
 ];
 val gradientStyles = emilia(gradientTokens);
 
-#[@future]
-fn main() -> @Future<void> {
+fn main() -> @Task<void> {
     @print("=== F05: Backgrounds Example ===");
     @print("Bg Attachment: " + bgAttachStyles);
     @print("Bg Clip: " + bgClipStyles);

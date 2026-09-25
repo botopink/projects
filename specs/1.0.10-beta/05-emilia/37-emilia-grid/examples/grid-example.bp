@@ -122,8 +122,7 @@ fn gapValues() -> Token[] {
 // panel takes the full width until `lg`, then two thirds of it; the sidebar
 // takes the rest and its rows size to content.
 
-#[@future]
-pub fn dashboard(chart: string, aside: string, footer: string) -> @Future<string> {
+pub fn dashboard(chart: string, aside: string, footer: string) -> @Task<string> {
     val sixFromMd: Token[] = [.Grid.Cols.6];
     val twelveFromLg: Token[] = [.Grid.Cols.12];
 

@@ -687,7 +687,6 @@ test "both routes carry the same class" {
     equal(styledWith("card", cardTokens(), th)._1, mergeClass("card", c));
 }
 
-#[@future]
 test "the flushed sheet selects the card class" {
     val c = cls(cardTokens(), fullTheme());
     val sheet = await flush();

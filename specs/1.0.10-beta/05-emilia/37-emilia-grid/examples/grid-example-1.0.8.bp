@@ -240,8 +240,7 @@ val gridAlignTokens: Token[] = [
 ];
 val gridAlignStyles = emilia(gridAlignTokens);
 
-#[@future]
-fn main() -> @Future<void> {
+fn main() -> @Task<void> {
     @print("=== F02: Grid Example ===");
     @print("Grid Cols: " + gridColsStyles);
     @print("Grid Col: " + gridColStyles);

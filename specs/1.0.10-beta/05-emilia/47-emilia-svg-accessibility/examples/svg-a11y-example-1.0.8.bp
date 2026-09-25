@@ -76,8 +76,7 @@ val accessibleTokens: Token[] = [
 ];
 val accessibleStyles = emilia(accessibleTokens);
 
-#[@future]
-fn main() -> @Future<void> {
+fn main() -> @Task<void> {
     @print("=== F13: SVG & Accessibility Example ===");
     @print("SVG Fill: " + svgFillStyles);
     @print("SVG Stroke: " + svgStrokeStyles);

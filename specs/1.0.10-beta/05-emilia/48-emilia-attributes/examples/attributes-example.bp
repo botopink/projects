@@ -125,13 +125,12 @@ fn attrOf(attrs: Array<#(string, string)>, name: string) -> string {
 
 // ── the page's CSS ───────────────────────────────────────────────────────────
 //
-// `flush()` is `#[@future]`, so the caller must be `#[@future]` too and must
+// `flush()` returns a `@Task<string>`, so the caller must return a `@Task` too (or be a `test`) and must
 // `await` it. The sheet it returns is what the server ships in <style>; the
 // client does the same `emilia()` calls during hydration, gets the same class
 // names, and never flushes.
 
-#[@future]
-pub fn cardSheet() -> @Future<string> {
+pub fn cardSheet() -> @Task<string> {
     val th = defaultTheme();
     val card = className(cardTokens(), th);
     val title = className(cardTitleTokens(), th);
@@ -139,8 +138,7 @@ pub fn cardSheet() -> @Future<string> {
     return sheet;
 }
 
-#[@future]
-fn main() -> @Future<void> {
+fn main() -> @Task<void> {
     val th = defaultTheme();
     @print("card attrs class: " + attrOf(cardAttrs(th), "class"));
     @print("legacy card class: " + legacyCardAttr(th)._1);
@@ -185,7 +183,6 @@ test "attributes: order is identity" {
     assert className(a, th) != className(b, th);
 }
 
-#[@future]
 test "attributes: the flushed sheet selects the card class" {
     val th = defaultTheme();
     val card = className(cardTokens(), th);

@@ -120,8 +120,7 @@ fn namedColours() -> Token[] {
 // A price badge: dark surface, light text, an accent line and a muted caption.
 // Four colour tokens, one class, one flush.
 
-#[@future]
-pub fn priceBadge(amount: string, note: string) -> @Future<string> {
+pub fn priceBadge(amount: string, note: string) -> @Task<string> {
     val shell: Token[] = [
         .Bg.Color.Slate.900,
         .Color.Slate.50,
