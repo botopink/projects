@@ -243,6 +243,22 @@ renamed or the shape was already removed by the 1.0.4 wasm landing.
 **Acceptance:** either the dead lowering is found and deleted, with `snapshots/codegen/wasm/`
 byte-identical apart from it, or this row is struck with the evidence that no such lowering exists.
 
+### Step 9 — the `?T` carrier rows left open by `fix/wasm-optional`
+
+The `?T` carrier on wasm answers the eight shapes `fix/wasm-optional` measured (`es.at(0)?.key.length()`,
+the narrowed `if (x != null)` reads, `rows[1][0]`, the loop element binder, `@print` of an absent
+`?string`), with `run/optional_record_carrier.bp` as the cell and three `expected-failures.txt`
+lines gone. Four rows stay open, re-measured on that branch:
+
+| Shape | wasm | commonJS / erlang | Where it lives |
+|---|---|---|---|
+| **Self-recursion has no tail calls.** `fn count(n: i32, acc: i32) -> i32 { if (n == 0) { return acc; } else { return count(n - 1, acc + 1); } }` | `count(10000, 0)` answers `10000`; `count(100000, 0)` traps `wasm trap: call stack exhausted`, exit 134 | `100000` and `1000000` on both | `wat.zig` — a self-call in tail position lowers to `call`, never to a `br` back to the function's own loop head (or `return_call`, which needs the tail-call proposal enabled in wasmtime). A step of its own |
+| **`es.map({ e -> e.key })` is not a string array.** `val ks = es.map({ e -> e.key }); @print(ks.at(0)?.length());` over `Entry[]` | `276` (a heap address), exit 0 | commonJS: `TypeError: ks.at(...)?.length is not a function`, exit 1 · erlang: `3` | `elemKindOf`'s `map` arm asks `isStringExpr` of the lambda's tail while the parameter's record type is not yet bound (`local_types` for `e` is registered only inside `lowerArrayHof`), so the result is `.i32` and `ks.at(0)` is read as a boxed `?i32`. Needs the element binding held while that question is asked. Not wasm's alone — the commonJS `.length` property/call rename misfires on the same line; [`04-js`](../04-js/README.md) owns that half |
+| **A `?.` chain loses the receiver type for a second method.** `@print(es.at(1)?.key.length().toString());` | trap `unreachable ;; unresolved call: toString/0`, exit 134 | `2` on both | `wat.zig` — the first method after `?.` (`length`) resolves through the optional carrier, the next one starts from a call result whose type nothing recorded; `run/optional_record_carrier.bp`'s header names it as left out |
+| **beam: `modules/field_name_collision`, `modules/method_name_collision`** | — | beam fails both | Pre-existing; belongs with [`03-beam`](../03-beam/README.md)'s rows, listed here because the wasm notes carried them |
+
+**Acceptance:** one `run/` cell per row on four targets, green by running; the beam row moves to 03.
+
 ## Dependencies
 
 | This front's step | Needs from [`01-checker`](../01-checker/README.md) |
