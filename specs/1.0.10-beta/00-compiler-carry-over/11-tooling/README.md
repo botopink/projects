@@ -235,6 +235,33 @@ After [`01-checker`](../01-checker/README.md) renames `buildRecordDeclName` and 
 - [x] Branch `fix/tooling` in `botopink-lang`, `fix/tooling` in `vscode-extension`; no push, no merge,
       no submodule bump
 
+## The gate's speed
+
+Current state of `scripts/gate.sh`'s cost, and why. The stages stay one ordered run that stops at
+the first failure; nothing is skipped, softened or cached across runs. Time is saved inside the
+stages, by doing the same work once and on every CPU (`botopink-lang/scripts/AGENTS.md` § Where the
+gate's time goes).
+
+| Piece | Commit | What it does | Measured |
+|---|---|---|---|
+| test-libs worker pool | `c16691d7` | `botopink-lib-test` runs cells on `--jobs` workers (one per CPU, bounded by `MemAvailable / 768 MiB`, a cell admitted only while `procs_running` ≤ CPUs) and emits them in discovery order from the captured output — byte for byte what `--jobs 1` prints | full matrix `--jobs 1` 357 s → pooled 86–91 s |
+| sidecar lookup once | `b4cd1fbe` | `shipErlSidecars` resolves each library's owner and probes each (owner, qualifier) pair once per run; every OTP qualifier used to re-scan every library root | `emilia-backgrounds` erlang 49.8 s → 11.7 s |
+| `.erl` compiled once | `e2608ebb` | `botopink test --target erlang` compiles every `.erl` of the run once (`precompileErlang`); the test loader loads that `.beam` and compiles from source only a module with none, so a dead sibling is refused as before | `libs/std` erlang 22.0 s → 8.3 s |
+
+Whole warm gate on the maintainer's 16-CPU machine, other gates running alongside: **1151 s → 173–337 s**
+(`test-libs` 1038 s → 70–230 s). Cold gate (`--cold`): 348 s after, `zig build test` 188 s of it.
+CPU-seconds of the library matrix do not drop with the pool; the erlang pieces remove work.
+
+Equivalence, per piece: fixture libraries with a red test, a type error, a test-less compile error, a
+broken erlang host sidecar (the dead-module refusal), a missing dependency and a green one print
+byte-identical JSON and text output with the same exit codes, directly and through
+`scripts/test-libs.sh`; the full library matrix's JSONL is identical to `feat`'s modulo `duration_ms`;
+`test_tooling.sh` pins `--jobs 4` = `--jobs 1`.
+
+Measured and not kept: `test-language` at one job per CPU (no wall-clock change under shared load,
+~30 % more CPU); a shared compiled std across cells (std compiles in ~0.7 s); a parallel
+`check-docs.sh` (8 s stage).
+
 ## Blast radius
 
 - **Step 1** changes one JSON file and, if the check moves into CI, one workflow. It turns a red gate
