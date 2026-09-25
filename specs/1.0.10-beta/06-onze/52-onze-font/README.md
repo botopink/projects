@@ -253,7 +253,7 @@ blocks so two components asking for the same family emit one.
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
 | Declared parameter defaults are never applied | `GoogleFontOptions` has eight fields and every call writes all eight; `defaultGoogleFontOptions` exists only for that | a `default*` constructor plus `with*` copies | apply the declared default at the call site (ground truth §2.24) |
-| `#[@future]` is required on any fn returning `@Future<T>` | `googleFont`, `localFont`, and the layout that awaits them | write the marker | infer the effect from the return type |
+| `#[@future]` is required on any fn returning `@Future<T>` | `googleFont` and `localFont` (a layout that awaits them is `#[@use] … -> @Component<Element>`, decision 117) | write the marker | infer the effect from the return type |
 | No assignment to a `self` field | option records are copied, never mutated | return a new record | mutable record fields |
 
 ## Test plan

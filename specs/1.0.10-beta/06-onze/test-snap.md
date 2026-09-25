@@ -28,11 +28,11 @@ snapshots; the fixture is frozen so the literals are stable):
 == onze.json
 { "name": "fixture", "port": 3000 }
 == app/layout.bp
-#[layout("")] pub fn rootLayout(props: LayoutProps) -> Element { … siteNav() … }
+#[layout("")] #[@use] pub fn rootLayout(props: LayoutProps) -> @Component<Element> { … siteNav() … }
 == app/page.bp
-#[page("")] pub fn home(route: PageContext) -> Element { … }
+#[page("")] #[@use] pub fn home(route: PageContext) -> @Component<Element> { … }
 == app/blog/[slug]/page.bp
-#[page("blog/[slug]")] #[@future] pub fn post(route: PageContext) -> @Future<Element> { … LikeButton … }
+#[page("blog/[slug]")] #[@use] pub fn post(route: PageContext) -> @Component<Element> { … LikeButton … }
 == app/blog/[slug]/loading.bp
 pub fn Loading() -> Element { … }
 == app/globals.css
@@ -405,7 +405,7 @@ test "generate: check ---- decorator argument disagrees with the directory" {
         \\ == app/blog/[slug]/page.bp
         \\ #[page("posts/[slug]")]
         \\ == app/about/page.bp
-        \\ pub fn about(route: PageContext) -> Element { … }
+        \\ #[@use] pub fn about(route: PageContext) -> @Component<Element> { … }
         \\ == app/page.bp
         \\ #[page("")]
     );
@@ -608,7 +608,7 @@ test "graph: roots ---- one client island below a server page" {
     try assertGraph(@src(),
         \\ == app/page.bp
         \\ import { Card } from "@/components.card";
-        \\ #[page("")] pub fn home(route: PageContext) -> Element { … }
+        \\ #[page("")] #[@use] pub fn home(route: PageContext) -> @Component<Element> { … }
         \\ == components/card.bp
         \\ #[client]
         \\ import { plural } from "@/lib.format";
@@ -651,7 +651,7 @@ test "graph: cycle ---- terminates and lists each module once" {
     try assertGraph(@src(),
         \\ == app/page.bp
         \\ import { A } from "@/components.a";
-        \\ #[page("")] pub fn home(route: PageContext) -> Element { … }
+        \\ #[page("")] #[@use] pub fn home(route: PageContext) -> @Component<Element> { … }
         \\ == components/a.bp
         \\ #[client]
         \\ import { b } from "@/components.b";
@@ -684,7 +684,7 @@ test "refusal: server-only ---- the chain from the root" {
     try assertRefusal(@src(),
         \\ == app/page.bp
         \\ import { Status } from "@/components.status";
-        \\ #[page("")] pub fn home(route: PageContext) -> Element { … }
+        \\ #[page("")] #[@use] pub fn home(route: PageContext) -> @Component<Element> { … }
         \\ == components/status.bp
         \\ #[client]
         \\ import { fmt } from "@/lib.format";
@@ -712,7 +712,7 @@ test "refusal: env ---- every row of the environment table" {
     try assertRefusal(@src(),
         \\ == app/page.bp
         \\ import { Widget } from "@/components.widget";
-        \\ #[page("")] pub fn home(route: PageContext) -> Element { … }
+        \\ #[page("")] #[@use] pub fn home(route: PageContext) -> @Component<Element> { … }
         \\ == components/widget.bp
         \\ #[client]
         \\ import { io.env } from "std";
@@ -746,7 +746,7 @@ test "refusal: adversarial config ---- no setting relaxes anything" {
     try assertRefusal(@src(),
         \\ == app/page.bp
         \\ import { Widget } from "@/components.widget";
-        \\ #[page("")] pub fn home(route: PageContext) -> Element { … }
+        \\ #[page("")] #[@use] pub fn home(route: PageContext) -> @Component<Element> { … }
         \\ == components/widget.bp
         \\ #[client]
         \\ import { io.env } from "std";
@@ -772,7 +772,7 @@ test "refusal: emilia ---- non-literal tokens, a client flush, a hash split" {
     try assertRefusal(@src(),
         \\ == app/page.bp
         \\ import { Badge } from "@/components.badge";
-        \\ #[page("")] pub fn home(route: PageContext) -> Element { … }
+        \\ #[page("")] #[@use] pub fn home(route: PageContext) -> @Component<Element> { … }
         \\ == components/badge.bp
         \\ #[client]
         \\ import { emilia, flush, Token } from "emilia";
@@ -829,7 +829,7 @@ test "manifest: text ---- one client island" {
     try assertManifest(@src(),
         \\ == app/page.bp
         \\ import { LikeButton } from "@/components.like_button";
-        \\ #[page("")] pub fn home(route: PageContext) -> Element { … }
+        \\ #[page("")] #[@use] pub fn home(route: PageContext) -> @Component<Element> { … }
         \\ == components/like_button.bp
         \\ #[client]
         \\ import { io.env } from "std";
@@ -922,7 +922,7 @@ import {LikeButton} from "components.like_button";
 pub fn main() {
     val payload = readPayload(globals.payload);
     registerFill(globals.fill, payload.h);
-    registerSignal(globals.signal);
+    registerSignal(globals.signal, allowedRedirects: []);
     val islands = payload.i;
     for (islands) { island ->
         val el = document.query("[data-jh-i=\"" + island.id + "\"]");

@@ -6,11 +6,11 @@ joins rakun's server to jhonstart's tree to emilia's stylesheet until this front
 **Target:** both — the config value and the route registry are read by the BEAM server half and by the
 JS build half; the render seam runs on erlang, the registry it reads is built by the js half
 **Wave:** 5 — after jhonstart front 30, whose render and bridge the boot wires (decision 113)
-**Depends on:** 30 (jhonstart's render: `app`, `renderStream`, `RenderPlugin`, `RenderHooks`, the UI
+**Depends on:** 30 (jhonstart's render: `app`, `renderStream`, `Response`, `RenderPlugin`, `RenderHooks`, the UI
 registry the `#[page]` / `#[layout]` decorators fill, and the `jhonstart-emilia` bridge member whose
 `plugin()` the boot registers) · 28 (`RequestData`, built here from rakun's `Request`) · 23
-(`ChunkWriter`, `PageRenderer` and `page(pattern, render)`, the registry the boot hands one renderer
-per page) · 22 (rakun's route table and `rakun.appDir`) · 05 (the configuration the boot writes
+(`ChunkWriter` with `setStatus` / `setHeader`, `PageRenderer` and `page(pattern, render)`, the
+registry the boot hands one renderer per page) · 22 (rakun's route table and `rakun.appDir`) · 05 (the configuration the boot writes
 `rakun.appDir`, `rakun.actions.field`, `rakun.actions.header`, `rakun.actions.bodyLimit` and
 `rakun.i18n.exclude` into — fronts 22, 24 and 64 read them later and are not dependencies
 of the boot) · 82 (rakun-web's `registerStaticRoot`, which the boot calls with front 69's
@@ -125,12 +125,19 @@ from the other (decision 113):
   and the payload's `t` stay one table (contract 1, decision 114);
 - to **rakun**, one opaque `PageRenderer` per page pattern (front 23, decision 114): rakun matches the
   route, opens the request scope (front 62), calls the renderer with its `Request` and a
-  `ChunkWriter`, and closes the response when the renderer's future resolves. rakun knows no HTML:
+  `ChunkWriter`, and closes the response if the renderer's future resolves with it still open.
+  rakun knows no HTML. The renderer is an adapter and nothing more: it wraps rakun's `ChunkWriter`
+  in jhonstart's `Response` (decision 117) and hands it to the render:
 
   ```bp
-  // onze/src/integration.bp — `site` is jhonstart's `App`, `page` the jhonstart page for `route`
-  rakun.page(route, fn(req, out) {
-      return site.renderStream(page(req), requestData(req), fn(chunk) { return out.write(chunk); });
+  // onze/src/integration.bp — `site` is jhonstart's `App`, `input` the jhonstart page input for `route`
+  rakun.page(route, fn(req: Request, out: ChunkWriter) -> @Future<void> {
+      return site.renderStream(input(req), requestData(req), Response(
+          status: fn(c) { out.setStatus(c); },
+          header: fn(n, v) { out.setHeader(n, v); },
+          write:  fn(chunk) { return out.write(chunk); },
+          close:  fn() { return out.close(); },
+      ));
   });
   ```
 
@@ -139,25 +146,32 @@ from the other (decision 113):
   for the matched pattern) and the payload's rakun-side values as strings: the route table `t`, the
   actions `a` and the build id `b`; the `RequestData` (front 28) that `requestData(req)` builds from
   rakun's `Request`, which is what jhonstart's `request()`, `headers()` and `cookies()` read; and a
-  `fn(string) -> @Future<void>` writer over rakun's `ChunkWriter`. jhonstart never sees the
-  `ChunkWriter`;
+  jhonstart `Response` over rakun's `ChunkWriter`. jhonstart never sees the `ChunkWriter`, and rakun
+  never sees the `Response`;
 - to **both sides of a server action**, the wire names (decision 114): the boot sets rakun's
   `rakun.actions.field` / `rakun.actions.header` (fronts 05 and 24) and passes the same two values to
   jhonstart's form binding as `actionField` / `actionHeader` (front 67). onze's defaults are
   `__bp_action` and `X-Bp-Action`; neither library spells a name. The same boot writes
-  `rakun.actions.bodyLimit` from `OnzeConfig.actionsBodyLimit` and `rakun.appDir` from
+  `rakun.actions.bodyLimit` from `OnzeConfig.actionsBodyLimit` (default 1048576, decision 117) and
+  `rakun.appDir` from
   `OnzeConfig.appDir` — every key rakun reads is a `rakun.*` key (decision 115) — and
   `rakun.i18n.exclude` with onze's asset prefix `/_onze` appended, so rakun's locale redirect skips
   onze's URLs without rakun spelling them (decision 116);
 - to **rakun-web's static-file server** (front 82), the two roots front 69's `staticRoots(publicDir,
   outDir, buildId)` returns, each registered with `registerStaticRoot`; onze serves no file itself
   (decision 116 rule 6);
-- back to **rakun**, the navigation outcome: a page that raises jhonstart's `notFound()` or
-  `redirect(url)` (front 31) before the render's first chunk leaves `renderStream` with the signal's
-  reason — one of the bundled library `routing`'s `nav:` reasons (decision 116) — and onze reads it
-  with `routing`'s `signalFromReason` and calls rakun's `notFound()` (404) or `redirect(url)` (307)
-  inside the renderer, before anything is written. A signal raised after the first chunk never reaches onze:
-  jhonstart's render writes it as markup and the status stays 200 (front 30, decision 115).
+- to **jhonstart's `app`**, the redirect allow-list: `OnzeConfig.allowedRedirects` (default empty)
+  is passed as `app(allowedRedirects: …)`, and front 68's generated entry hands the same list to the
+  browser (decision 117).
+
+**Navigation signals never reach onze.** A page, layout or template that raises jhonstart's
+`notFound()` or `redirect(url)` (front 31) is handled entirely inside jhonstart's render (decision
+117): before the first chunk the render itself calls `res.status(307)` / `res.header("location", …)`
+or `res.status(404)` and the not-found boundary through the `Response` onze built, and after it the
+render writes the late-signal markup (front 30). jhonstart also checks the redirect target — a
+relative one against the route table, an absolute one against `allowedRedirects`. onze has no `case`
+on a signal, reads no `nav:` reason and calls none of rakun's signals; `renderStream` answers no
+outcome for it to read.
 
 The vocabulary — `PageContext(pathname, pattern, params, query, rest)`, `LayoutProps.children` — is
 jhonstart front 30's, and onze does not restate it as `PageProps`/`Params`: a second name for every
@@ -283,7 +297,8 @@ pub type OnzeConfig(
     publicDir: string,
     outDir: string,
     dev: bool,
-    actionsBodyLimit: i32,   // bytes; written into rakun.actions.bodyLimit at boot
+    actionsBodyLimit: i32,           // bytes; written into rakun.actions.bodyLimit at boot
+    allowedRedirects: Array<string>, // absolute redirect targets jhonstart accepts; handed to app(…)
 ) {
     pub fn origin(self: Self) -> string {
         return "http://localhost:" + self.port.toString();
@@ -297,8 +312,8 @@ pub fn withDev(base: OnzeConfig, dev: bool) -> OnzeConfig { … }
 
 **Acceptance:**
 - [ ] `defaultConfig()` returns `port: 3000`, `basePath: ""`, `appDir: "app"`, `publicDir: "public"`,
-      `outDir: ".onze"`, `dev: false`, `actionsBodyLimit: 1048576` (rakun front 24's 1 MiB default)
-      — the values the CLI's scaffold writes into `onze.json`
+      `outDir: ".onze"`, `dev: false`, `actionsBodyLimit: 1048576` (rakun front 24's 1 MiB default,
+      decision 117), `allowedRedirects: []` — the values the CLI's scaffold writes into `onze.json`
 - [ ] `withPort(defaultConfig(), 4000).appDir == defaultConfig().appDir` — the copy carries every
       other field
 - [ ] `withPort(defaultConfig(), 4000).origin() == "http://localhost:4000"`
@@ -365,22 +380,25 @@ because an app author reads onze's docs and not rakun's internals.
 - [ ] `Onze.run(defaultConfig())` starts a listener on 3000 and answers `/` from the app's `#[page("")]`
 - [ ] `basePath: "/docs"` is passed through to `App` unchanged; onze does not reimplement prefixing
 - [ ] `integration.bp` is the only file in onze that imports jhonstart, rakun and
-      `jhonstart-emilia` together (decision 113): it builds `app(plugins: [emiliaPlugin()])`, fills
+      `jhonstart-emilia` together (decision 113): it builds `app(plugins: [emiliaPlugin()],
+      allowedRedirects: config.allowedRedirects)`, fills
       jhonstart's `RenderHooks.headExtra` / `bodyExtra` with front 68's tags (empty while 68 does
       not exist), registers jhonstart's UI records in rakun's table and hands rakun one
       `PageRenderer` per page through `page(pattern, render)`, builds `RequestData` from rakun's
       `Request`, sets `rakun.actions.field` / `rakun.actions.header` and passes the same values to
       jhonstart as `actionField` / `actionHeader`, sets `rakun.appDir`, `rakun.actions.bodyLimit` and
       `rakun.i18n.exclude` from `OnzeConfig`, registers front 69's two static roots with
-      rakun-web front 82, and translates jhonstart's `notFound` / `redirect` outcome (a `nav:`
-      reason, read with `routing`'s `signalFromReason`) into rakun's 404 / 307. It imports no matcher
-      from `routing` and hands jhonstart none. Any other onze file reaching for
+      rakun-web front 82, and wraps rakun's `ChunkWriter` in jhonstart's `Response` (decision 117).
+      It has no `case` on a navigation signal, imports nothing from `routing` and hands jhonstart
+      no matcher. Any other onze file reaching for
       the seam means the seam is in the wrong place, and the front says so under *Blocked* rather
       than adding a second wiring point
 - [ ] Nothing under `repository/onze/src/` calls emilia's `flush()`, and no onze file defines a style
       sink — the flush moments are jhonstart front 30's and the adaptation is the bridge's
-- [ ] The renderer handed to rakun writes every chunk through `out.write` and resolves only after the
-      last one; with the action-name keys removed from the boot, rakun refuses to start its action
+- [ ] The renderer handed to rakun maps `Response.status` / `header` / `write` / `close` onto
+      `out.setStatus` / `setHeader` / `write` / `close` one to one and resolves when jhonstart's
+      render does; a page whose layout calls `redirect("/login")` answers 307 with
+      `location: /login` without onze code on the path; with the action-name keys removed from the boot, rakun refuses to start its action
       dispatcher naming the key — onze sets them, no library defaults them
 - [ ] `__bp_action` and `X-Bp-Action` appear in onze's defaults and nowhere under `repository/rakun/`
       or `repository/jhonstart/`

@@ -26,6 +26,7 @@ pub fn blogConfig() -> OnzeConfig {
         outDir: ".onze",
         dev: false,
         actionsBodyLimit: 1048576,
+        allowedRedirects: [],
     );
 }
 
@@ -45,6 +46,7 @@ test "defaultConfig supplies every field onze.json may omit" {
     assert c.outDir == ".onze";
     assert c.dev == false;
     assert c.actionsBodyLimit == 1048576;
+    assert c.allowedRedirects.length() == 0;
 }
 
 test "an override copies every other field" {

@@ -24,7 +24,7 @@
 
 import {serverAction, FormData, ActionResult} from "rakun";     // front 24
 import {rkRegisterAction} from "rakun";                         // front 24 registry cell
-import {redirect} from "rakun";                                 // front 63
+import {redirect} from "rakun";                                 // front 63 — an action's redirect is rakun's (decision 117)
 import {cache} from "rakun-cache";                              // front 12
 import {collections.Dict} from "std";
 // app-local
@@ -70,10 +70,13 @@ pub fn createPost(form: FormData) -> @Future<ActionResult> {
     cache.revalidateTag("posts");
     cache.revalidatePath("/blog");
 
-    // front 63 — the redirect is raised, not returned. From a form POST it
-    // becomes a 307; from a scripted submit it becomes the `redirect` field of
-    // the result envelope and front 67's client router performs it without a
-    // document load. One signal, two encodings, tested as a round trip.
+    // front 63 — the redirect is raised, not returned, and it is rakun's: an
+    // action runs in rakun's pipeline, with no render and no jhonstart
+    // `Response` (decision 117). From a form POST it becomes a 303; from a
+    // scripted submit rakun writes it into the `actions` envelope's `n` with
+    // `routing`'s `signalToWire` (`R|303|/blog/<slug>`), and jhonstart's client
+    // reads `n` with `signalFromWire` and navigates without a document load.
+    // One signal, two encodings, tested as a round trip.
     val _gone = redirect("/blog/" + slug);
     return ActionResult.done();
 }

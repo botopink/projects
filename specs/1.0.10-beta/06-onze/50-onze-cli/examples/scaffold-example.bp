@@ -34,15 +34,16 @@ fn shellTokens() -> Token[] {
 }
 
 #[layout("")]
-pub fn rootLayout(props: LayoutProps) -> Element {
+#[@use]
+pub fn rootLayout(props: LayoutProps) -> @Component<Element> {
     return div([props.children], attrs: [styled(shellTokens())]);
 }
 
 // ── app/page.bp ──────────────────────────────────────────────────────────────
 //
-// Every page is `#[@future]`: jhonstart front 30's UI registry pins one shape so the render
-// onze hands to rakun has one shape to drive. A page that needs no data awaits nothing and
-// costs nothing.
+// Every page, layout and template is `#[@use] … -> @Component<Element>` (decision 117):
+// jhonstart front 30's UI registry pins one shape and the marker refuses any other at
+// compile time. A page that needs no data awaits nothing and costs nothing.
 
 fn titleTokens() -> Token[] {
     return [.Text.Size.X3xl, .Text.Bold];
@@ -53,8 +54,8 @@ fn leadTokens() -> Token[] {
 }
 
 #[page("")]
-#[@future]
-pub fn homePage(route: PageContext) -> @Future<Element> {
+#[@use]
+pub fn homePage(route: PageContext) -> @Component<Element> {
     return div([
         h1([text("onze", attrs: [])], attrs: [styled(titleTokens())]),
         p([text("Edit app/page.bp and reload.", attrs: [])], attrs: [styled(leadTokens())]),
@@ -73,7 +74,7 @@ fn homeRoute() -> PageContext {
 
 test "the scaffold renders with no data, which is why create can verify it" {
     val page = await homePage(homeRoute());
-    val body = rootLayout(LayoutProps(children: page));
+    val body = await rootLayout(LayoutProps(children: page));
     val markup = renderToString(body);
     assert markup.startsWith("<div class=\"e_");
     assert markup.contains("<h1");
