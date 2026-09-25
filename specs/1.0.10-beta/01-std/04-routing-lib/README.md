@@ -12,7 +12,8 @@ fronts 60, 61 and 65 cannot be read in the browser until this library exists
 **Target:** both — erlang and commonJS, every module. The library is pure: no HTTP, no state, no
 host cell, so there is no half that runs on one target only
 **Wave:** 0 — beside `01-std`'s own steps; Steps 1–3 before rakun 22 and jhonstart 26 (waves 1–2),
-Steps 4–6 before rakun 60, 61 and 65
+Steps 4–6 before rakun 60, 61 and 65, Step 7 (`navigation`) before rakun 63 and jhonstart 26, 30 and
+31, Step 8 (`pattern`) before rakun 07's matcher switches
 **Depends on:** `01-std` step 2 (`testing.asserts`, which its tests are written with) ·
 `01-std/01-std-lib-enablement` step 3 (`encoding.percentDecode`, for Step 6 only) ·
 `00 · 23-std-purity` for Step 2 — the bundled-library registry generalises the std registry that
@@ -21,7 +22,7 @@ Step 2 opens after 23 lands. Steps 1 and 3–6 do not wait on it: the library is
 from its own directory as an ordinary package until Step 2 bundles it
 **Owns:** `repository/botopink-lang/libs/routing/**` (`botopink.json`, `AGENTS.md`, `src/root.bp`,
 `src/segment.bp`, `src/table.bp`, `src/match.bp`, `src/route_kinds.bp`, `src/slot_states.bp`,
-`src/url_rules.bp`, `test/**`) · the `routing` row of `repository/botopink-lang/libs/AGENTS.md` ·
+`src/url_rules.bp`, `src/navigation.bp`, `src/pattern.bp`, `test/**`) · the `routing` row of `repository/botopink-lang/libs/AGENTS.md` ·
 **by named carve-out from `00`** (Step 2 — recorded in `fronts.md` § *Conflict rules* beside `@src()`'s): the
 bundled-library registry in `build.zig`, the `"std"` package checks named in *Mechanism* in
 `modules/compiler-core/src/{comptime.zig, comptime/infer.zig, codegen/commonJS.zig,
@@ -32,12 +33,18 @@ codegen/erlang.zig, codegen/beam_asm.zig}`, `modules/compiler-cli/src/cli/resolv
 copy, fronts 60, 61 and 65 import the codecs from it; `repository/jhonstart/**` — front 26 imports
 it in the router, front 27 in `Link`; `repository/onze/**`
 **Reference:** [decision 115](../../decisions-taken.md#115-routing-is-a-bundled-library-a-signal-after-the-first-chunk-is-markup-jhonstart-gains-redirect-rakuns-keys-are-rakun)
-(the library, its contents, `from "routing"` resolving like `from "std"`) · decision 109 (module
+(the library, its contents, `from "routing"` resolving like `from "std"`) ·
+[decision 116](../../decisions-taken.md#116-code-two-libraries-both-run-is-neutral-routing-gains-navigation-and-param-actions-and-validation-are-bundled-libraries-std-writes-json)
+rules 1 and 9 (the `navigation` and `pattern` modules; the bundled list gains `actions` and
+`validation`) · decision 109 (module
 atoms) · decision 113 (jhonstart and rakun never import each other) · `contracts.md § 1` (the route
 table) · rakun fronts [22](../../03-rakun/22-rakun-file-routing/README.md) Steps 1, 3, 4,
 [60](../../03-rakun/60-rakun-static-generation/README.md) Step 6,
 [61](../../03-rakun/61-rakun-parallel-intercepting-routes/README.md) Step 5,
-[65](../../03-rakun/65-rakun-url-rules/README.md) Steps 2–3 (the formats this library implements)
+[65](../../03-rakun/65-rakun-url-rules/README.md) Steps 2–3,
+[63](../../03-rakun/63-rakun-navigation-signals/README.md) Steps 6–7 (the formats this library
+implements) · rakun front [07](../../03-rakun/07-rakun-middleware/README.md)'s matcher (the `:param`
+grammar)
 
 ---
 
@@ -53,7 +60,12 @@ package hands the matcher to another as a value.
 
 Today there is no such library. The matcher exists, but inside rakun's core module, beside the
 registry host cells and the `app/` scan, and it imports rakun's own `config` and `runtime` modules;
-the three codecs exist only as specifications. And the compiler has exactly one bundled package:
+the three codecs exist only as specifications. Two more pieces of routing text are written twice
+today (decision 116): the navigation-signal vocabulary — the raised reasons, and the `n` wire form an
+action envelope carries — is specified in rakun front 63 with "the browser copy" left to jhonstart
+front 26, and rakun-web runs two private `:param` path grammars beside the file-convention one
+(`modules/rakun-web/src/middleware.bp:60-110`, `modules/rakun-web/src/filter.bp:545-565`). And the
+compiler has exactly one bundled package:
 `from "std"` is special-cased at a dozen sites, and `from "<anything else>"` is a declared
 dependency found on disk.
 
@@ -75,6 +87,8 @@ Measured 2026-09-25 on `repository/botopink-lang` `ac5f5703` and `repository/rak
 | `test-libs` | discovers every `libs/*/botopink.json` | `modules/lib-test-runner/src/discovery.zig:76-100` (the same roots); `scripts/test-libs.sh:8`; CI `.github/workflows/test.yml:187` — so `libs/routing` becomes a `routing` cell with no runner change |
 | bpmp | knows nothing of std | no `libs/` or `"std"` reference under `modules/bpmp/src/`; std ships inside the compiler binary, so a bundled library needs nothing from bpmp. `02-packaging` § the dependency rules: "`std` is never listed — it is embedded" |
 | The lib-agnostic gate | compiler-core may name `std` and no library | `build.zig:232-245` (`! grep -riIE 'rakun\|jhonstart\|erika' modules/compiler-core/src`) |
+| The navigation vocabulary | specified in rakun front 63 (Steps 1, 6, 7) with the prefix `jhonstart:`; not written | no `navigation.bp` under `repository/rakun/`; the reasons become `nav:` (decision 116 rule 1) |
+| The `:param` grammar | two private copies in rakun-web | `middleware.bp:60-110` (`checkMatcher`, `matcherMatches` — literal, `:param`, trailing `:param*`, everything else refused by name) · `filter.bp:545-565` (`routeMatches`, `segments` — literal and `:param`, equal lengths) |
 
 ## Mechanism
 
@@ -83,7 +97,7 @@ Measured 2026-09-25 on `repository/botopink-lang` `ac5f5703` and `repository/rak
 | Need | std today | For `routing` |
 |---|---|---|
 | A package directory | `libs/std/` with `botopink.json`, `src/root.bp`, `AGENTS.md` | `libs/routing/`, same shape (Step 1) |
-| Embedding | `stdPkgFilesFromRoot` walks `libs/std/src/root.bp`; one generated table | the walk takes the package directory; the generated table carries one row per module of **every** bundled package, keyed `<package>/<module>` (`routing/match`). The bundled list is a constant in `build.zig` — `std`, `routing` — and nowhere else |
+| Embedding | `stdPkgFilesFromRoot` walks `libs/std/src/root.bp`; one generated table | the walk takes the package directory; the generated table carries one row per module of **every** bundled package, keyed `<package>/<module>` (`routing/match`). The bundled list is a constant in `build.zig` — `std`, `routing`, `actions`, `validation` (decision 116) — and nowhere else; `01-std/05-actions-lib` and `01-std/06-validation-lib` add their names to it and change nothing else in the mechanism |
 | `from "<pkg>"` resolution | `expandStdImports` matches the literal `"std"` | matches any name that owns a row in the table; a module is prepended with `srcPath` `src/<mod>.bp` inside its own package, as std's are (decision 73) |
 | Checker, codegens, LSP | the `"std"` literal at the sites listed above | a `isBundledPackage(name)` read from the generated table replaces each literal; commonJS requires `<prefix><pkg>/<mod>.js`; erlang/BEAM atoms come from the module path through the cross-module index, so `routing/match` renders `routing@match` and a type `routing@match@@RouteMatch` (decision 109) with no new code there |
 | std-only rules | root purity, no dispatch inside std, the BIF table, synthesised imports | unchanged, still keyed on `std/` — `routing` is ordinary code to the checker |
@@ -94,15 +108,17 @@ Measured 2026-09-25 on `repository/botopink-lang` `ac5f5703` and `repository/rak
 
 The library itself is the matcher of rakun's `file_router.bp`, cut at the line decision 114 drew
 (the UI records are jhonstart's) and freed of its three rakun imports, plus the three codecs rakun
-fronts 60, 61 and 65 specify. Its module tree:
+fronts 60, 61 and 65 specify, plus the navigation vocabulary front 63 specifies and the `:param`
+grammar rakun-web runs (decision 116). Its module tree:
 
 ```
 libs/routing/
 ├── botopink.json        "name": "routing", "target": "erlang", "targets": ["erlang", "commonJS"],
-│                        "src": "src/", "entry": "root.bp", "files": [the seven modules]
+│                        "src": "src/", "entry": "root.bp", "files": [the nine modules]
 ├── AGENTS.md
 ├── src/root.bp          pub mod segment; pub mod table; pub mod match;
 │                        pub mod route_kinds; pub mod slot_states; pub mod url_rules;
+│                        pub mod navigation; pub mod pattern;
 ├── src/segment.bp       SegmentKind, Segment, parseSegment, parsePath, patternOf, slotOf, pathProblem
 ├── src/table.bp         RouteEntry, parseTable, writeTable, kindLabel
 ├── src/match.bp         RouteMatch, matchPath, layoutChain, paramOf, splitPath
@@ -110,8 +126,12 @@ libs/routing/
 ├── src/slot_states.bp   SlotState, parseSlotStates, writeSlotStates              (the `z` blob)
 ├── src/url_rules.bp     PathRules, canonicalize, clientHref,
 │                        RedirectRule, parseRedirectTable, writeRedirectTable
+├── src/navigation.bp    NavKind, NavOutcome, signalReason, signalFromReason, isSignalReason,
+│                        signalPrefixes, signalToWire, signalFromWire
+├── src/pattern.bp       PatternSegment, parsePattern, matchPattern, patternProblem   (`:param`)
 └── test/                segment_test.bp · table_test.bp · match_test.bp ·
-                         route_kinds_test.bp · slot_states_test.bp · url_rules_test.bp
+                         route_kinds_test.bp · slot_states_test.bp · url_rules_test.bp ·
+                         navigation_test.bp · pattern_test.bp
 ```
 
 It imports `std` and nothing else. Consumers write `import {match.matchPath, table.parseTable} from
@@ -121,7 +141,7 @@ It imports `std` and nothing else. Consumers write `import {match.matchPath, tab
 
 ### Step 1 — Scaffold `libs/routing`
 
-`botopink.json`, `AGENTS.md`, `src/root.bp` declaring the six modules, and the `routing` row of
+`botopink.json`, `AGENTS.md`, `src/root.bp` declaring the eight modules, and the `routing` row of
 `libs/AGENTS.md` (*Provides*: the route matcher and the routing wires; *Embedded in compiler?*: yes,
 from Step 2).
 
@@ -235,7 +255,73 @@ pub fn parseRedirectTable(wire: string) -> Array<RedirectRule>
 `test/url_rules_test.bp` on both targets — including the twenty-path inverse and the
 `/a%252Fb` → `/a%2Fb` single decode.
 
-### Step 7 — Both targets, in the gate
+### Step 7 — The navigation vocabulary: `navigation.bp`
+
+Rakun front 63's Steps 1, 6 and 7, the part more than one package reads (decision 116 rule 1): the
+outcome record, the four raised reasons with the neutral prefix `nav:`, and the `n` wire form. The
+throw, the capture, the redirect checks and the response composition stay in rakun front 63.
+
+```bp
+pub type NavKind { None, NotFound, Redirect }
+pub type NavOutcome(kind: NavKind, location: string, status: i32)
+
+pub fn signalReason(out: NavOutcome) -> string
+pub fn signalFromReason(reason: string) -> NavOutcome
+pub fn isSignalReason(reason: string) -> bool
+pub fn signalPrefixes() -> string[]
+pub fn signalToWire(out: NavOutcome) -> string
+pub fn signalFromWire(wire: string) -> NavOutcome
+```
+
+| `NavOutcome` | `signalReason` | `signalToWire` |
+|---|---|---|
+| `None` | — (not a signal) | `""` |
+| `NotFound`, 404 | `nav:not-found` | `N` |
+| `Redirect`, 307, `/login` | `nav:redirect:/login` | `R\|307\|/login` |
+| `Redirect`, 308, `/new` | `nav:permanent-redirect:/new` | `R\|308\|/new` |
+| `Redirect`, 303, `/done` | `nav:see-other:/done` | `R\|303\|/done` |
+
+**Acceptance:** front 63 Step 6's and Step 7's lines, from `test/navigation_test.bp` on both targets,
+with the `nav:` spellings —
+- [ ] `signalReason` answers each of the four reasons as a literal; `signalFromReason(signalReason(o))`
+      equals `o` field by field, and `signalReason(signalFromReason(r)) == r` for each literal,
+      including a location containing `:` and `/`
+- [ ] `signalFromWire(signalToWire(o))` equals `o` for every row; `signalToWire` of `None` is `""`;
+      `signalFromWire("garbage")` is `None`; `signalFromWire("R|307|/a|b")` has location `/a|b`
+- [ ] for each row, `signalToWire(signalFromReason(reason))` equals the table's wire literal — the
+      test that ties the two artefacts together
+- [ ] `signalPrefixes()` is exactly `["nav:not-found", "nav:redirect:", "nav:permanent-redirect:",
+      "nav:see-other:"]`; `isSignalReason("nav:")` and `isSignalReason("boom")` are false
+- [ ] `signalFromReason("nav:teleport:/x")` raises, naming the verb
+- [ ] `grep -rn "jhonstart:\|rakun:" libs/routing/src/navigation.bp` is empty
+
+### Step 8 — The `:param` grammar: `pattern.bp`
+
+rakun-web's two matchers, merged into one (decision 116 rule 9): a literal segment, `:param`, and a
+trailing `:param*`; any other form — a glob, a character class, a group, `?`, `{` — is refused by
+name with `patternProblem`, as `middleware.bp:62-90` refuses it today. A pattern and a path match
+when every literal is equal and every `:param` captures one segment; `:param*` captures the rest,
+including nothing.
+
+```bp
+pub type PatternSegment { Literal(text: string), Param(name: string), Rest(name: string) }
+pub fn parsePattern(pattern: string) -> @Result<Array<PatternSegment>, string>
+pub fn matchPattern(pattern: Array<PatternSegment>, path: string) -> ?Array<#(string, string)>
+pub fn patternProblem(pattern: string, segment: string) -> string
+```
+
+**Acceptance:**
+- [ ] every assertion of `modules/rakun-web/test/middleware_test.bp` on `matcherMatches` /
+      `checkMatcher` and of the CORS preflight's `routeMatches` has a line here, green on both
+      targets with the same literals
+- [ ] `/api/:id` matches `/api/7` with `[#("id", "7")]` and not `/api/7/x`; `/files/:rest*` matches
+      `/files` and `/files/a/b` (`rest` = `a/b`)
+- [ ] `parsePattern("/a/*.js")`, `"/a/[x]"`, `"/a/(x)"`, `"/a/x?"` and `"/a/{x}"` answer an `Error`
+      whose text is `patternProblem`'s; `:param*` anywhere but last is an `Error`
+- [ ] `grep -rn "fn matcherMatches\|fn routeMatches\|fn checkMatcher" --include=*.bp repository/`
+      is empty once rakun front 07 switches (Step 10)
+
+### Step 9 — Both targets, in the gate
 
 **Acceptance:**
 - [ ] `botopink test --target erlang` and `botopink test --target commonJS` from `libs/routing/` are
@@ -245,9 +331,9 @@ pub fn parseRedirectTable(wire: string) -> Array<RedirectRule>
 - [ ] `libs/routing` is in `scripts/format-check.sh`'s `TREES`, and `botopink format --check` is green
       on it
 
-### Step 8 — rakun and jhonstart import it
+### Step 10 — rakun and jhonstart import it
 
-Not this front's files — each consumer switches in its own front, after Steps 3–6 land — but this
+Not this front's files — each consumer switches in its own front, after Steps 3–8 land — but this
 front is not done until both have:
 
 | Consumer | Front | What it imports |
@@ -258,10 +344,18 @@ front is not done until both have:
 | rakun-web URL rules | 65 | `url_rules` |
 | jhonstart router | 26 | `table.parseTable`, `match.matchPath` — the table from the payload's `t` |
 | jhonstart `Link` | 27 | `route_kinds.routeKindOf`, `slot_states.parseSlotStates`, `url_rules.clientHref` |
+| rakun navigation (throw, capture, checks) | 63 | `navigation` — the outcome, the reasons, the wire; front 63 keeps only the server half |
+| rakun actions (the envelope's `n`) | 24 | `navigation.signalToWire`, through `libs/actions` (decision 116) |
+| rakun-web matchers | 07 | `pattern` — and deletes `middleware.bp`'s and `filter.bp`'s grammars |
+| jhonstart router (an envelope's `n`) | 26 | `navigation.signalFromWire` |
+| jhonstart render (a late signal) | 30 | `navigation.signalFromReason` |
+| jhonstart boundaries, `notFound` / `redirect` | 31 | `navigation.signalReason`, `isSignalReason`, `signalPrefixes` |
 
 **Acceptance:**
-- [ ] `grep -rn "fn matchPath\|fn parseTable\|fn parseKinds\|fn parseSlotStates\|fn canonicalize"
+- [ ] `grep -rn "fn matchPath\|fn parseTable\|fn parseKinds\|fn parseSlotStates\|fn canonicalize\|fn signalFromWire\|fn signalReason\|fn matchPattern"
       --include=*.bp repository/` finds only `repository/botopink-lang/libs/routing/src/`
+- [ ] `grep -rn '"jhonstart:' --include=*.bp repository/` is empty — no reason carries a framework's
+      name
 - [ ] no `botopink.json` under `repository/` lists `routing` in `dependencies`
 - [ ] `grep -rn "rakun-routing" repository/` is empty
 
@@ -276,7 +370,8 @@ The tests assert: segment classification for all seven kinds and the private-fol
 refusals; the wire round trip on all eight record kinds with no trailing `|`; match precedence,
 capture, the optional catch-all, the layout chain and "a layout alone is not public"; the three
 blob round trips and their tolerant defaults (`Dynamic`, `Empty`); `canonicalize`/`clientHref` as
-inverses and the single decode.
+inverses and the single decode; the four `nav:` reasons and the `n` wire form round-tripping both
+ways and agreeing case for case; the `:param` grammar's matches, captures and refusals.
 
 ## Gate
 
@@ -296,6 +391,8 @@ inverses and the single decode.
 - **rakun:** `file_router.bp` loses some 430 lines to an import (front 22 Step 7); the 26 moved tests leave
   `file_router_test.bp`.
 - **jhonstart:** gains its first import of a package other than std (front 26); nothing of rakun's.
+  The `nav:` reasons replace the `jhonstart:` ones in fronts 30 and 31 (decision 116).
+- **rakun-web:** the two `:param` matchers become calls into `pattern` (front 07).
 - **onze:** the client entry stops building `match` (front 68).
 
 ## Notes
@@ -304,9 +401,12 @@ inverses and the single decode.
   `repository/botopink-lang/libs` (decision 115). A library in that directory that were *not*
   embedded would resolve only inside the meta workspace (`libs.zig:63-78`) — an installed compiler
   would not find it — so bundling is what makes `from "routing"` mean the same thing everywhere.
-- **Why one front owns all six modules.** Fronts 60, 61 and 65 specify their formats and own their
-  server halves; the files that implement the formats sit in one package with one owner, so its
+- **Why one front owns all eight modules.** Fronts 60, 61, 63 and 65 specify their formats and own
+  their server halves, and rakun-web's `:param` matchers become callers (front 07); the files that implement the formats sit in one package with one owner, so its
   `root.bp`, manifest and test layout have no appenders.
 - **Not in this front.** Removing rakun's copy (front 22), the router's switch (front 26), the late
   signal markup that uses `matchPath` to check a redirect target in jhonstart's render (front 30,
-  decision 115 rule 2).
+  decision 115 rule 2), the throw and capture that raise and catch the `nav:` reasons (rakun 63,
+  jhonstart 31). The action protocol and validation are bundled libraries of their own
+  (`05-actions-lib`, `06-validation-lib`), not modules here: each is read by a different pair of
+  consumers and has its own reason to change.
