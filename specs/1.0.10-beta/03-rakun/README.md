@@ -49,7 +49,7 @@ half depends on 06, and a citation of 11 is read as one or the other). Ties brea
 | 08 | [`08-rakun-data-sql`](./08-rakun-data-sql/README.md) | high | 2 · 3 | 3 | `rakun-data` | 06 | — |
 | 11 | [`11-rakun-actuator`](./11-rakun-actuator/README.md) | medium | 2 · 1/3 | 1 (API) · 3 (host) | `rakun-actuator-api` · `rakun-actuator` | — (API) · 06 (host) | — |
 | 13 | [`13-rakun-http-clients`](./13-rakun-http-clients/README.md) | medium | 2 · 3 | 3 | `rakun-client` | 05 · 06 · 12 (soft) | std 01 |
-| 14 | [`14-rakun-validation`](./14-rakun-validation/README.md) | medium | 2 · 3 | 3 | `rakun-validation` | 05 · 06 | std 01 |
+| 14 | [`14-rakun-validation`](./14-rakun-validation/README.md) | medium | 2 · 3 | 3 | core (`config_check.bp`); the library is the bundled `validation` | 05 · 06 | std 01 · `01-std/06-validation-lib` |
 | 15 | [`15-rakun-messaging`](./15-rakun-messaging/README.md) | medium | 2 · 3 | 3 | `rakun-messaging` | 05 · 06 · 11 (API) | std 01 |
 | 19 | [`19-rakun-test-utilities`](./19-rakun-test-utilities/README.md) | low (blocking as a dependency) | 2 · 3 | 3 | `rakun-test` | 04 · 06 | `#[mock]` is `rakun-test`'s ([`../02-packaging/README.md § 3`](../02-packaging/README.md)) |
 | 21 | [`21-rakun-hateoas`](./21-rakun-hateoas/README.md) | low | 2 · 3 | 3 | `rakun-hateoas` | 06 · 22 (ro) | — |
@@ -189,13 +189,13 @@ edge reaches `jhonstart`, `emilia` or `onze` (decision 113) — is in [`modules.
 |---|---|
 | 04–13 · 15–21 · 25 · 62–64 · 66 · 72–93 | **erlang** — runs while a request is in flight, or at build/dev time on the server box |
 | 22 · 23 · 24 · 60 · 61 · 65 | **erlang** — the route table, the page dispatch, the chunk writer and every handler run on BEAM |
-| 14 | **erlang, commonJS — boundary**: the constraints the server enforces are the ones the client's form mirrors (decision 113) |
+| 14 | **erlang** — the boot refusal and the message source; the constraints the client's form mirrors are the bundled library `validation`, erlang and commonJS (decision 116) |
 
 erlang comes first in every `targets` list and is the default target of `botopink run` / `botopink
-test` in rakun; the workspace root declares `["erlang", "commonJS"]` only to admit
-`rakun-validation`. The matcher and the codecs of the routing wires the browser reads are not
-rakun's: they are the bundled library `routing` (`libs/routing`, erlang and commonJS, decision 115),
-which rakun imports.
+test` in rakun, and no rakun package declares commonJS — the workspace root is `["erlang"]`. What
+both sides run is not rakun's: the matcher, the routing wires and the navigation vocabulary are the
+bundled library `routing` (decisions 115, 116), the server-action protocol is `actions`, and
+validation is `validation` (decision 116) — bundled libraries rakun imports.
 
 ## Rules
 

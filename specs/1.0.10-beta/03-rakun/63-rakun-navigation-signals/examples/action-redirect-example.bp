@@ -4,14 +4,16 @@
 // revalidates, and then redirects. The redirect raised here does not become an
 // HTTP 307: the action dispatcher catches it and puts the wire form into the
 // action envelope, and front 26's client router performs the navigation without
-// a document reload. Server code; the browser half is front 26's file.
+// a document reload. Server code; the wire form (`signalToWire`) is the bundled
+// library `routing`'s (`navigation`, decision 116), which the browser reads too.
 //
 // Upstream:
 //   https://nextjs.org/docs/app/getting-started/updating-data
 //   https://nextjs.org/docs/app/api-reference/functions/redirect
 //   https://nextjs.org/docs/app/api-reference/functions/revalidatePath
 
-import {redirect, signalToWire, takeSignal} from "rakun";
+import {redirect, takeSignal} from "rakun";
+import {navigation.signalToWire} from "routing";     // 01-std/04-routing-lib
 import {action} from "rakun";                  // provided by front 24
 import {revalidatePath} from "rakun-cache";    // provided by front 12
 import {cookies} from "rakun";                 // provided by front 62

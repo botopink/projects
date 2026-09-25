@@ -144,6 +144,12 @@ owes front 66 is the `openGraph.images` list, so that a page pointing at `/og/he
 route serving `/og/hello.png` agree; the path convention is written down once, in front 66's README,
 and cited here.
 
+The markup for those file routes is this front's, not front 66's (decision 116): rakun resolves the
+icons and images of a pattern as data (`iconsFor`, `imagesFor` — URL, kind, size, content type) and
+builds no HTML; onze copies them into the segment's `Metadata` (`icons`, `openGraph.images`) before
+the render, and `renderHead` writes the `<link>` and `<meta>` tags with its own escaping. jhonstart
+names no rakun type — the records reach it as `Metadata` fields.
+
 ## Steps
 
 ### Step 1 — The records and `emptyMetadata`

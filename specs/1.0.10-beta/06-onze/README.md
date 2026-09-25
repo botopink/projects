@@ -78,7 +78,7 @@ at boot — the bridge plugin registered with `app(plugins: [emiliaPlugin()])`, 
 copied into rakun's table with one renderer per page, `RequestData` built from rakun's `Request`,
 the action wire names (`__bp_action` / `X-Bp-Action` by default) set on both sides, every rakun key
 it needs written as `rakun.*` (`rakun.appDir`, `rakun.actions.bodyLimit` — decision 115;
-`rakun.i18n.excludedPrefixes` — decision 116), front 69's two static roots registered with rakun-web
+`rakun.i18n.exclude` — decision 116), front 69's two static roots registered with rakun-web
 front 82's server, 68's
 `headScriptTags`/`scriptTags` handed over as `headExtra`/`bodyExtra`, and jhonstart's `notFound` /
 `redirect` outcome turned into rakun's 404 / 307 before the first chunk. The route matcher is not

@@ -12,7 +12,7 @@ registry the `#[page]` / `#[layout]` decorators fill, and the `jhonstart-emilia`
 (`ChunkWriter`, `PageRenderer` and `page(pattern, render)`, the registry the boot hands one renderer
 per page) · 22 (rakun's route table and `rakun.appDir`) · 05 (the configuration the boot writes
 `rakun.appDir`, `rakun.actions.field`, `rakun.actions.header`, `rakun.actions.bodyLimit` and
-`rakun.i18n.excludedPrefixes` into — fronts 22, 24 and 64 read them later and are not dependencies
+`rakun.i18n.exclude` into — fronts 22, 24 and 64 read them later and are not dependencies
 of the boot) · 82 (rakun-web's `registerStaticRoot`, which the boot calls with front 69's
 `staticRoots` — decision 116)
 **Owns:** `botopink.json`, `src/root.bp`, `src/types.bp`, `src/config.bp`, `src/integration.bp`,
@@ -147,7 +147,7 @@ from the other (decision 113):
   `__bp_action` and `X-Bp-Action`; neither library spells a name. The same boot writes
   `rakun.actions.bodyLimit` from `OnzeConfig.actionsBodyLimit` and `rakun.appDir` from
   `OnzeConfig.appDir` — every key rakun reads is a `rakun.*` key (decision 115) — and
-  `rakun.i18n.excludedPrefixes` with onze's asset prefix `/_onze`, so rakun's locale redirect skips
+  `rakun.i18n.exclude` with onze's asset prefix `/_onze` appended, so rakun's locale redirect skips
   onze's URLs without rakun spelling them (decision 116);
 - to **rakun-web's static-file server** (front 82), the two roots front 69's `staticRoots(publicDir,
   outDir, buildId)` returns, each registered with `registerStaticRoot`; onze serves no file itself
@@ -371,7 +371,7 @@ because an app author reads onze's docs and not rakun's internals.
       `PageRenderer` per page through `page(pattern, render)`, builds `RequestData` from rakun's
       `Request`, sets `rakun.actions.field` / `rakun.actions.header` and passes the same values to
       jhonstart as `actionField` / `actionHeader`, sets `rakun.appDir`, `rakun.actions.bodyLimit` and
-      `rakun.i18n.excludedPrefixes` from `OnzeConfig`, registers front 69's two static roots with
+      `rakun.i18n.exclude` from `OnzeConfig`, registers front 69's two static roots with
       rakun-web front 82, and translates jhonstart's `notFound` / `redirect` outcome (a `nav:`
       reason, read with `routing`'s `signalFromReason`) into rakun's 404 / 307. It imports no matcher
       from `routing` and hands jhonstart none. Any other onze file reaching for

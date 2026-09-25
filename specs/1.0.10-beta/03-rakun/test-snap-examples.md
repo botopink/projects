@@ -374,7 +374,7 @@ boot context AvailabilityChanged(ReadinessAcceptingTraffic)
 
 ## `examples/rest-service`
 
-**Fronts:** 05 · 06 · 07 · 08 · 11 · 14 · 17 · 19 · 72 · 77 · 78 · **Depends on:** `rakun`, `rakun-web`, `rakun-data`, `rakun-validation`, `rakun-logging`, `rakun-actuator`, `rakun-test` (via `rakun-starter-web`, `rakun-starter-data-sql`, `rakun-starter-actuator`, `rakun-starter-test`) · **Tests:** `examples/rest-service/test/rest-service_test.bp` · **Snapshots:** `examples/rest-service/test/__snapshots__/rest-service/` · **Target:** erlang
+**Fronts:** 05 · 06 · 07 · 08 · 11 · 14 · 17 · 19 · 72 · 77 · 78 · **Depends on:** `rakun`, `rakun-web`, `rakun-data`, the bundled `validation`, `rakun-logging`, `rakun-actuator`, `rakun-test` (via `rakun-starter-web`, `rakun-starter-data-sql`, `rakun-starter-actuator`, `rakun-starter-test`) · **Tests:** `examples/rest-service/test/rest-service_test.bp` · **Snapshots:** `examples/rest-service/test/__snapshots__/rest-service/` · **Target:** erlang
 
 > helper gap: front 19 has no helper of its own — its contract (the `rkScanSource` scratch context and `MockMvc.standalone()` dispatch with no socket) is what every case in this file runs through; the `assertContext`/`assertQuery` cases run with the manifest's auto-configuration applied (72), which is how `SqlTemplate` resolves without a `#[configuration]` in the project.
 
@@ -748,8 +748,8 @@ refused V2__create_orders.sql checksum 00000000000000000000000000000000000000000
 test "rest-service: a new user is refused field by field" {
     try assertValidation(@src(),
         \\ import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
-        \\ import {validated, notBlank, sizeBetween, email, minValue, maxValue, pattern} from "rakun-validation";
-        \\ import {Violation, ValidationReport, checkNotBlank, checkSizeBetween, checkEmail, checkRange, checkPattern} from "rakun-validation";
+        \\ import {validated, notBlank, sizeBetween, email, minValue, maxValue, pattern} from "validation";
+        \\ import {Violation, ValidationReport, checkNotBlank, checkSizeBetween, checkEmail, checkRange, checkPattern} from "validation";
         \\
         \\ #[validated]
         \\ pub type CreateUserRequest(
@@ -3423,7 +3423,7 @@ test "release-kit: the web starter brings web, validation and logging in one res
 
 `examples/release-kit/test/__snapshots__/release-kit/the-web-starter-brings-web-validation-and-logging-in-one-resolution-pass.snap`
 ```
-brings [rakun, rakun-logging, rakun-starter, rakun-validation, rakun-web]
+brings [rakun, rakun-logging, rakun-starter, rakun-web]
 autoconfig [RakunCoreAutoConfiguration, RakunWebAutoConfiguration]
 ```
 

@@ -54,10 +54,10 @@
 **Priority:** high — every cross-cutting concern in track B enters here; without a chain, security, metrics, compression, error shape and API versioning each need their own hook into a frozen dispatcher
 **Target:** erlang (server)
 **Wave:** 3
-**Depends on:** 06 · **76 (soft)** — front 07 lands without it; see *Graceful shutdown and draining*
+**Depends on:** 06 · `01-std/04-routing-lib` Step 8 (the `:param` grammar, `pattern`) · `01-std/07-std-json-writers` (the problem-detail body) · **76 (soft)** — front 07 lands without it; see *Graceful shutdown and draining*
 **Owns:** `modules/rakun-web/src/middleware.bp`, `cors.bp`, `error.bp`, `filter.bp`, `convention.bp` · `modules/rakun-web/test/middleware_test.bp`, `cors_test.bp`, `error_test.bp`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen · `modules/rakun-web/src/websocket/**`, which is front 20's · `modules/rakun-web/src/rules/**`, which is front 65's
-**Reference:** `04-web.md § Aplicacoes Servlet (Spring MVC)` — Tratamento de Erros, CORS, API Versioning, Container Servlet Embutido · `04-web.md § Graceful Shutdown` · `NEXTJS-DOCS.md § 20. Middleware e Proxy` · <https://docs.spring.io/spring-boot/reference/web/servlet.html> · <https://nextjs.org/docs/app/building-your-application/routing/middleware> · <https://www.rfc-editor.org/rfc/rfc9457>
+**Reference:** decision 116 rules 3 and 9 (std writes the JSON; `routing` owns the `:param` grammar) · `04-web.md § Aplicacoes Servlet (Spring MVC)` — Tratamento de Erros, CORS, API Versioning, Container Servlet Embutido · `04-web.md § Graceful Shutdown` · `NEXTJS-DOCS.md § 20. Middleware e Proxy` · <https://docs.spring.io/spring-boot/reference/web/servlet.html> · <https://nextjs.org/docs/app/building-your-application/routing/middleware> · <https://www.rfc-editor.org/rfc/rfc9457>
 
 ---
 
@@ -187,10 +187,14 @@ The decorator does the registration. The *file name* is a convention front 22's 
 compiles `middleware.bp` whether or not it is named in a `pub mod` line — but the registration path is
 the decorator, so there is one mechanism and the file convention is a discovery rule on top of it.
 
-`#[matcher(...)]` restricts the entry to matching paths. **The matcher grammar is front 65's**
-(`/:path*`, globs, the negative-lookahead form from §20's own example), compiled once at startup.
-Front 07 executes what front 65 compiles; it defines no pattern syntax of its own, and the two
-READMEs say so in the same words.
+`#[matcher(...)]` restricts the entry to matching paths. **The `:param` grammar is the bundled library
+`routing`'s** (`pattern`: `parsePattern`, `matchPattern`, `patternProblem` — `01-std/04-routing-lib`
+Step 8, decision 116): a literal segment, `:param` and a trailing `:param*`, anything else refused by
+name, parsed once at startup. The landed matcher (`modules/rakun-web/src/middleware.bp:60-110`,
+`checkMatcher` / `matcherMatches`) and the CORS preflight's `routeMatches`
+(`modules/rakun-web/src/filter.bp:545-565`) are the two copies that grammar replaces; both become
+calls into `pattern` and are deleted. Globs and the negative-lookahead form of §20's example stay
+front 65's rule engine, which front 07 executes; front 07 defines no pattern syntax of its own.
 
 ### `Next`, and why the sentinel is status 0
 
@@ -299,7 +303,10 @@ than pretending otherwise.
 
 The error entry sits at order −100 with a `try`/`catch` around `chain.next(req)`:
 
-- a tagged raise → the matching handler's `ProblemDetail`, serialized as `application/problem+json`;
+- a tagged raise → the matching handler's `ProblemDetail`, serialized as `application/problem+json`
+  with std's `json.quote` / `json.object` (decision 116 — the landed private `jsonEscape`,
+  `modules/rakun-web/src/error.bp:131`, escapes no control character but `\n` `\r` `\t` and is
+  deleted);
 - an untagged raise → a 500 problem detail carrying a correlation digest, with the full reason logged
   under that digest (front 17) and **never** in the body;
 - a handler-returned `Response` → passed through untouched unless
@@ -433,6 +440,7 @@ Create the module (`botopink.json` with `"target": "erlang"`, `src/root.bp`), th
 - [ ] `Next.pass()` and `chain.next(req)` produce identical responses for the same request
 - [ ] The status-0 sentinel never appears on the wire under any of the above
 - [ ] `#[matcher("/dashboard/:path*")]` restricts the entry; a non-matching path skips it entirely
+- [ ] the matcher and the CORS preflight both go through `routing`'s `matchPattern`; `grep -rn "fn matcherMatches\|fn routeMatches\|fn checkMatcher" modules/rakun-web/src` is empty
 - [ ] Two `#[middleware]` functions in one build fail at boot naming both — there is one middleware entry point
 
 ### Step 3b — `withHeader`
@@ -464,6 +472,7 @@ Create the module (`botopink.json` with `"target": "erlang"`, `src/root.bp`), th
 **Acceptance:**
 - [ ] `raiseProblem("order.not-found", "no order 42")` with a matching `#[exceptionHandler]` answers that handler's `ProblemDetail`
 - [ ] The response content type is `application/problem+json`
+- [ ] A `detail` carrying U+0001 and a `"` yields a body std's `json.parse` accepts; `grep -n "fn jsonEscape" modules/rakun-web/src/error.bp` is empty
 - [ ] An unmatched raise answers 500 with `about:blank`, a digest, and no reason text in the body
 - [ ] The digest appears in the log line for the same request
 - [ ] Two advice types both contribute; a tag registered twice fails at boot naming both
@@ -586,8 +595,8 @@ convention has no client half — front 27's `Link` prefetch reads the route tab
   a list of lines because `withHeader` replaces by name.
 - **20-rakun-websocket** owns `modules/rakun-web/src/websocket/**` and adds no chain entry — an
   upgrade leaves the HTTP chain before the handler.
-- **14-rakun-validation** supplies the violation report that the problem-detail entry renders as a
-  422.
+- The bundled library `validation` (`01-std/06-validation-lib`, formerly front 14's
+  `rakun-validation`) supplies the violation report that the problem-detail entry renders as a 422.
 
 ## Contradictions with fronts.md
 

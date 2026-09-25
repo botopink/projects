@@ -114,7 +114,8 @@ val _manifest = registerManifest(manifest);
 // SERVER — the icon family. In a real project front 50's CLI generates these
 // three lines from the files it finds under appDir; they are written out here so
 // the shape is visible. Each is served with a content hash in the query and a
-// one-year cache header, and each also becomes a <link> tag through front 32.
+// one-year cache header, and each is also an IconRef record `iconsFor` answers,
+// which front 32 writes as a <link> tag — rakun writes no markup.
 val _favicon = registerIconFile(IconKind.Favicon, "", "favicon.ico", "image/x-icon", "");
 val _icon = registerIconFile(IconKind.Icon, "", "icon.png", "image/png", "512x512");
 val _apple = registerIconFile(IconKind.AppleIcon, "", "apple-icon.png", "image/png", "180x180");

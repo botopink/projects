@@ -82,7 +82,7 @@ installs, so no snapshot ever contains a wall-clock value.
 | `rakun-security` | `assertSecurity(loc, source, requests)` | per request `<METHOD> <path> [<principal>] -> <status> <decision>` where decision is `anonymous\|authenticated\|denied <rule>\|granted <rule>` |
 | `rakun-security` | `assertOAuth(loc, config: string[], step: string)` | `authorize <url>` with sorted query keys, or `token <ok\|err>`, `principal <name> authorities=[…]` |
 | `rakun-session` | `assertSession(loc, source, requests)` | per request `<METHOD> <path> -> <status> session=<new\|same\|none> set-cookie=<attrs>` |
-| `rakun-validation` | `assertValidation(loc, source, input: string)` | `valid` or `invalid`, then `<field>: <constraint> <message>` sorted by field |
+| `validation` (bundled — its own `test/`, decision 116) | `assertValidation(loc, source, input: string)` | `valid` or `invalid`, then `<field>: <constraint> <message>` sorted by field |
 | `rakun-cache` | `assertCache(loc, source, calls)` | per call `<fn>(<args>) -> <hit\|miss\|evict\|revalidate> key=<k> [tags]` |
 | `rakun-client` | `assertClient(loc, source, exchanges: string[])` | per exchange `<METHOD> <url> -> <status>` then the request headers sorted, `retry <n>` when any |
 | `rakun-actuator-api` | `assertRegistry(loc, source)` | `health <name>`, `info <name>`, `endpoint <id> [<ops>]` sorted |
@@ -5116,9 +5116,12 @@ POST /api/public/ping [ana] -> 200 granted /api/public/:path* permitAll
 GET /api/public/health [-] -> 200 granted /api/public/:path* permitAll
 ```
 
-## 14-rakun-validation — `rakun-validation`
+## 14-rakun-validation — the bundled `validation`
 
-**Test file:** `modules/rakun-validation/test/constraints_test.bp` · **Snapshots:** `modules/rakun-validation/test/__snapshots__/validation/` · **Target:** both — boundary: the emitted `validate<TypeName>` is plain botopink and every case below runs on erlang and commonJS against the same `.snap` (this is the parity test of README § *Test plan*); the `bind*` accumulator (Step 4) is erlang-only and stays in `binding_test.bp` · **Pins:** Step 1 a field failing two constraints produces two violations; Step 2 `#[validated]` emits `validate<TypeName>`, all constraints on a field run in declaration order; Step 3 same input → same report on both targets; Step 5 `#[constraint("cpf")]` through the SPI, `rakun.validation.messages.<code>` override, `{min}`/`{max}` substituted and an unknown placeholder survives; the true and false case of every marker in the table
+The cases below moved with the library to `libs/validation` (`01-std/06-validation-lib`, decision
+116); rakun keeps only `config_check_test.bp` (front 14 Step 7).
+
+**Test file:** `repository/botopink-lang/libs/validation/test/constraints_test.bp` · **Snapshots:** `repository/botopink-lang/libs/validation/test/__snapshots__/validation/` · **Target:** both — boundary: the emitted `validate<TypeName>` is plain botopink and every case below runs on erlang and commonJS against the same `.snap` (this is the parity test of README § *Test plan*); the `bind*` accumulator (Step 4) is erlang-only and stays in `binding_test.bp` · **Pins:** Step 1 a field failing two constraints produces two violations; Step 2 `#[validated]` emits `validate<TypeName>`, all constraints on a field run in declaration order; Step 3 same input → same report on both targets; Step 5 `#[constraint("cpf")]` through the SPI, `rakun.validation.messages.<code>` override, `{min}`/`{max}` substituted and an unknown placeholder survives; the true and false case of every marker in the table
 
 Input is `field=value&…`, one value per field of the single `#[validated]` type in the source. Built-in default templates are the README's codes; their wording is open (name per README § *Message interpolation*).
 
@@ -5127,8 +5130,8 @@ Input is `field=value&…`, one value per field of the single `#[validated]` typ
 ```bp
 test "validation: a record satisfying every constraint is valid" {
     try assertValidation(@src(),
-        \\ import {validated, notBlank, sizeBetween, email, minValue, maxValue, pattern} from "rakun-validation";
-        \\ import {Violation, ValidationReport, checkNotBlank, checkSizeBetween, checkEmail, checkRange, checkPattern} from "rakun-validation";
+        \\ import {validated, notBlank, sizeBetween, email, minValue, maxValue, pattern} from "validation";
+        \\ import {Violation, ValidationReport, checkNotBlank, checkSizeBetween, checkEmail, checkRange, checkPattern} from "validation";
         \\
         \\ #[validated]
         \\ pub type CreateUserRequest(
@@ -5151,7 +5154,7 @@ test "validation: a record satisfying every constraint is valid" {
 }
 ```
 
-`modules/rakun-validation/test/__snapshots__/validation/a-record-satisfying-every-constraint-is-valid.snap`
+`repository/botopink-lang/libs/validation/test/__snapshots__/validation/a-record-satisfying-every-constraint-is-valid.snap`
 ```
 valid
 ```
@@ -5168,7 +5171,7 @@ test "validation: every failing constraint on one field is reported in declarati
 }
 ```
 
-`modules/rakun-validation/test/__snapshots__/validation/every-failing-constraint-on-one-field-is-reported-in-declaration-order.snap`
+`repository/botopink-lang/libs/validation/test/__snapshots__/validation/every-failing-constraint-on-one-field-is-reported-in-declaration-order.snap`
 ```
 invalid
 name: notBlank name must not be blank
@@ -5187,7 +5190,7 @@ test "validation: every failing field is reported at once sorted by field" {
 }
 ```
 
-`modules/rakun-validation/test/__snapshots__/validation/every-failing-field-is-reported-at-once-sorted-by-field.snap`
+`repository/botopink-lang/libs/validation/test/__snapshots__/validation/every-failing-field-is-reported-at-once-sorted-by-field.snap`
 ```
 invalid
 age: minValue age must be at least 18
@@ -5201,8 +5204,8 @@ postalCode: pattern postalCode must match ^[0-9]{5}-[0-9]{3}$
 ```bp
 test "validation: numeric sign and bound markers" {
     try assertValidation(@src(),
-        \\ import {validated, positive, positiveOrZero, maxValue, notEmpty} from "rakun-validation";
-        \\ import {Violation, ValidationReport, checkRange, checkNotEmpty} from "rakun-validation";
+        \\ import {validated, positive, positiveOrZero, maxValue, notEmpty} from "validation";
+        \\ import {Violation, ValidationReport, checkRange, checkNotEmpty} from "validation";
         \\
         \\ #[validated]
         \\ pub type StockLine(
@@ -5222,7 +5225,7 @@ test "validation: numeric sign and bound markers" {
 }
 ```
 
-`modules/rakun-validation/test/__snapshots__/validation/numeric-sign-and-bound-markers.snap`
+`repository/botopink-lang/libs/validation/test/__snapshots__/validation/numeric-sign-and-bound-markers.snap`
 ```
 invalid
 age: maxValue age must be at most 120
@@ -5236,8 +5239,8 @@ stock: positiveOrZero stock must be greater than or equal to 0
 ```bp
 test "validation: a registered constraint is reached through the spi" {
     try assertValidation(@src(),
-        \\ import {validated, notBlank, constraint} from "rakun-validation";
-        \\ import {Constraint, Violation, ValidationReport, registerConstraint, checkNotBlank, checkRegistered} from "rakun-validation";
+        \\ import {validated, notBlank, constraint} from "validation";
+        \\ import {Constraint, Violation, ValidationReport, registerConstraint, checkNotBlank, checkRegistered} from "validation";
         \\
         \\ pub type CpfConstraint {
         \\     pub fn code(self: Self) -> string {
@@ -5273,7 +5276,7 @@ test "validation: a registered constraint is reached through the spi" {
 }
 ```
 
-`modules/rakun-validation/test/__snapshots__/validation/a-registered-constraint-is-reached-through-the-spi.snap`
+`repository/botopink-lang/libs/validation/test/__snapshots__/validation/a-registered-constraint-is-reached-through-the-spi.snap`
 ```
 invalid
 document: cpf document must not be a repeated-digit CPF
@@ -5284,11 +5287,13 @@ document: cpf document must not be a repeated-digit CPF
 ```bp
 test "validation: a configured template overrides the default and substitutes min and max leaving an unknown placeholder verbatim" {
     try assertValidation(@src(),
-        \\ import {rkSetProp} from "rakun";
-        \\ import {validated, sizeBetween} from "rakun-validation";
-        \\ import {Violation, ValidationReport, checkSizeBetween} from "rakun-validation";
+        \\ import {validated, sizeBetween, MessageSource, setMessageSource} from "validation";
+        \\ import {Violation, ValidationReport, checkSizeBetween} from "validation";
         \\
-        \\ val _template = rkSetProp("rakun.validation.messages.sizeBetween", "{field} needs {min}-{max} chars, not {limit}");
+        \\ val _template = setMessageSource(MessageSource(
+        \\     locale: { -> "" },
+        \\     template: { key -> if (key == "sizeBetween") "{field} needs {min}-{max} chars, not {limit}" else "" },
+        \\ ));
         \\
         \\ #[validated]
         \\ pub type Handle(
@@ -5299,7 +5304,7 @@ test "validation: a configured template overrides the default and substitutes mi
 }
 ```
 
-`modules/rakun-validation/test/__snapshots__/validation/a-configured-template-overrides-the-default-and-substitutes-min-and-max-leaving-an-unknown-placeholder-verbatim.snap`
+`repository/botopink-lang/libs/validation/test/__snapshots__/validation/a-configured-template-overrides-the-default-and-substitutes-min-and-max-leaving-an-unknown-placeholder-verbatim.snap`
 ```
 invalid
 nick: sizeBetween nick needs 2-8 chars, not {limit}
@@ -9542,17 +9547,17 @@ brings [rakun, rakun-logging]
 autoconfig [RakunCoreAutoConfiguration]
 ```
 
-### `starter: rakun-starter-web resolves web validation and the base starter in one pass`
+### `starter: rakun-starter-web resolves web and the base starter in one pass`
 
 ```bp
-test "starter: rakun-starter-web resolves web validation and the base starter in one pass" {
+test "starter: rakun-starter-web resolves web and the base starter in one pass" {
     try assertStarter(@src(), "rakun-starter-web");
 }
 ```
 
-`repository/rakun/starters/test/__snapshots__/starter/rakun-starter-web-resolves-web-validation-and-the-base-starter-in-one-pass.snap`
+`repository/rakun/starters/test/__snapshots__/starter/rakun-starter-web-resolves-web-and-the-base-starter-in-one-pass.snap`
 ```
-brings [rakun, rakun-logging, rakun-validation, rakun-web]
+brings [rakun, rakun-logging, rakun-web]
 autoconfig [RakunCoreAutoConfiguration, RakunValidationAutoConfiguration, RakunWebAutoConfiguration]
 ```
 

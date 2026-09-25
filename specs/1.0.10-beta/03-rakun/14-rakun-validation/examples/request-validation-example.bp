@@ -1,4 +1,4 @@
-// Front 14 — rakun-validation · example 1 of 2
+// Front 14 — validation (the bundled `libs/validation`, decision 116) · example 1 of 2
 //
 // A controller that binds path and query values, validates a request record, and
 // answers with ONE problem document listing every failure — not the first one.
@@ -17,9 +17,9 @@ import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
 // Provided by front 14. #[validated] splices `validateCreateUserRequest` and
 // `constraintsOfCreateUserRequest` into THIS module, and their bodies call the
 // constraint helpers, so those must resolve here too.
-import {validated, notBlank, notEmpty, sizeBetween, email, minValue, maxValue, pattern} from "rakun-validation";
-import {Violation, ValidationReport, checkNotBlank, checkSizeBetween, checkEmail, checkRange, checkPattern} from "rakun-validation";
-import {bindInt, bindRequired, bindingReport} from "rakun-validation";
+import {validated, notBlank, notEmpty, sizeBetween, email, minValue, maxValue, pattern} from "validation";
+import {Violation, ValidationReport, checkNotBlank, checkSizeBetween, checkEmail, checkRange, checkPattern} from "validation";
+import {bindInt, bindRequired, bindingReport} from "validation";
 
 // ── the request record ──────────────────────────────────────────────────────
 //
