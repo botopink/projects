@@ -322,3 +322,47 @@ Same day, later: `formatter`, `tooling`, `wasm` committed as-is, merged `--no-ff
 `beammem` (compile error in `infer.zig:2870`, `comptime.types` has no `typeToString`), `ecosystem`
 (8 snapshot mismatches) and `identity` (7 mismatches, all `codegen/erlang/external_*`) left in place
 with their changes staged and uncommitted because their pre-commit hooks failed.
+
+## E-15 — step 0 re-run (2026-09-25, compiler `9515a2d4`, worktree `.tasks/18-comptime-runtimes`)
+
+The E-6 / E-8 / E-9 commands re-run as written above; the suite timed once. Host load average ≈ 14
+(about twenty agents building on the machine), so the time is an upper bound.
+
+**E-6 — snapshot counts, drift:**
+
+```
+snapshots/codegen/beam/ 341   commonJS/ 344   erlang/ 344   errors/ 4 (dirs, 3 files each)   wasm/ 341
+find snapshots/codegen -type f | wc -l            → 1382        (was 1346: +36, new cells since 09-20)
+du -sb: beam 2380475  commonJS 572310  erlang 550752  errors 3280  wasm 1421934   (Σ 4 928 751)
+snapshots/comptime: ast 203 files, errors 151, templates 1   (was 202 / 137 / 1)
+COMPTIME REPLY per target (beam commonJS erlang wasm)   → 7 7 7 7   (unchanged)
+COMPTIME REPLY anywhere under snapshots/                → 33        (unchanged)
+COMPTIME ERLANG under snapshots/comptime                → 5         (unchanged; 33 anywhere)
+COMPTIME VALUES under codegen/beam                      → 11        (unchanged)
+RUN LOG under codegen/beam / codegen/wasm               → 330 / 321 (was 324 / 324)
+```
+
+Step 4's "2 × 1 346" becomes **2 × 1 382** at this HEAD, and moves again with every new cell.
+
+**E-8 — `wat.zig` (7 750 lines):** `TypedExpr` uses 0; `ast.Expr`/`ExprOf(.untyped)` uses **66**
+(was 65); `(import ` sites 2 (the emitter and its test, unchanged); `HelperGroup` members **43**
+(was 42: `str_at` since); `note`/`noteF`/`emitC(zero`/`emitCf(.drop` sites 23 = the **22** carriers +
+`noteF`'s own body (unchanged); `closure` 27, `Dict` 6, `json` 0 (unchanged).
+
+**E-9 — the on-disk comptime modules.** The 183 of 09-20 were a stale accumulation; after one gate run
+at this HEAD `modules/compiler-core/.botopinkbuild/tmp/{template,decorator}/` holds **29**:
+
+```
+maps:get 17   maps: 17   lists:map|foldl|foreach|filter 8   lists: 20   string: 2   binary:|byte_size 1
+fun( 8   case  18   '__bp_prim_ 3   '__bp_add' 29   '__bp_len' 29   json: 29
+io_lib|integer_to_binary|float_to_binary 3   unicode: 0   iolist_to_binary|list_to_binary 3
+erlang: 18   try 29   <<" 29   #{ 29   throw( 0
+lookup(|parts(|source(|context(|bindings(|ref( 5   custom( 1   build( 8   emit( 6
+spawn 0   receive 0   ets 0
+```
+
+Same closed set as 09-20, in the same proportions; still no `spawn`/`receive`/`ets`/`unicode:`.
+
+**E-12 — suite wall time.** `rm -rf modules/compiler-core/.botopinkbuild/runtime-cache; time zig build
+test` (warm zig cache, cold runtime cache): **2 m 42 s real** (3 m 10 s user, 1 m 06 s sys), exit 0.
+This is the number step 4's doubled harness is compared against (expected ≈ 1.5×).

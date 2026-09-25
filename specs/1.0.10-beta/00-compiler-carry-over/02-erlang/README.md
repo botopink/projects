@@ -235,6 +235,19 @@ outside the deleted shape is a bug found); `src/codegen/AGENTS.md` records the d
 twins are each their own front's: beam's `make_fun3` (12 sites), commonJS's IIFE (27 `(() =>` sites),
 wasm's `;; lambda`.
 
+### Step 10 — the prelude memo in `emitErlangModule` (handed over by 14, still open for 18)
+
+Every `emitComptimeModule` call re-parses the embedded `primitives.bp` and `erlang_bifs.d.bp`
+preludes (`collectPrimErlangDispatch`, `loadAutoImportedBifsFromPrelude`) — **16.1 ms of every
+`buildModule`**, measured by front 14 over 20 calls; see *Handed over by `14-comptime-on-beam`*
+below. It keeps front 14 step 2's per-evaluation budget (≤ 1 ms/eval, N=200 build ≤ 600 ms) unmet at
+9.4 ms/eval, and front 18 cannot close it from its `ComptimeModule` carve-out: the parse lives in the
+shared body of `emitErlangModule`. Front 18 records it as a remaining row of its step 1 (2026-09-25).
+
+**Acceptance:** the two prelude tables are built once per process (or per `Emitter` owner) and
+reused; `scripts/comptime_bench.sh --n 0,10,200` shows the ms/eval column drop by the parse's share
+(front 14's estimate: about half of the 9.4 ms); `snapshots/codegen/erlang/` byte-identical.
+
 ## Dependencies
 
 This front shares **no source file and no snapshot directory** with

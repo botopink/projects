@@ -9,10 +9,12 @@ das pastas citadas; o trabalho pendente está em [`specs/1.0.5-beta/`](specs/1.0
 | Código comptime | Onde |
 |---|---|
 | `val x = comptime …` | Dobrado em Zig por `comptime/eval.zig` (literais, aritmética inteira, `@TypeOf`, valor de `break`). Nenhum runtime. Snapshots mostram a seção `COMPTIME VALUES` (`ct_N = literal`). |
-| Corpos de decorator (`comptime/decorator_eval.zig`) | Módulo Erlang gerado por `erlang.emitComptimeModule`, executado no `erl` persistente — **um módulo por declaração, não por avaliação**. |
+| Corpos de decorator (`comptime/decorator_eval.zig`) | Módulo Erlang gerado por `erlang.emitComptimeModule` — **um módulo por declaração, não por avaliação** — executado no runtime do alvo (decisão 84, `comptime/runtime/runtime.zig`): alvo `erlang`/`beam` (ou nenhum alvo, como no LSP) no **runtime BEAM** — o `erl` persistente; alvo `commonJS`/`wasm` no **runtime wat** — o mesmo texto Erlang lido de volta, baixado a wasm, ligado à biblioteca de termos embutida (`wat/rt.zig`) e executado no wasm3 dentro do processo do compilador, sem spawn. No build do navegador o executor do runtime wat é o motor da página (`bp_host`). |
 | Corpos de template (`comptime/template_eval.zig`) | Idem. |
 
-Não há runtime Node, wasm3 ou WAT para comptime.
+Os dois runtimes rodam o mesmo programa; a igualdade das respostas é verificada em todo fixture
+(`runtime.parity`) e registrada na árvore dobrada `snapshots/codegen/{beam,wat}/`, auditada par a par
+(`snap_audit.sh --mode=runtime-parity`). Não há runtime Node para comptime.
 
 **Duas coisas mudaram em 2026-09-18** (frente `14-comptime-on-beam`, passos 1 e 2), e a tabela acima
 já as reflete:
