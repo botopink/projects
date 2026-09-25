@@ -59,7 +59,7 @@ rakun gives it; rakun writes them to the socket and knows nothing else about the
 
 ```
 request
-  -> 22  matchPath(table, pathname)            rakun-routing; the entry + params + rest; no entry -> 404
+  -> 22  matchPath(table, pathname)            `routing`; the entry + params + rest; no entry -> 404
   -> 22  the renderer registered for the matched pattern
   -> 62  request scope opens, setPhase(Render)   headers, cookies, memo cache
   -> 23  render(req, out)                       the renderer onze registered: it writes through `out`

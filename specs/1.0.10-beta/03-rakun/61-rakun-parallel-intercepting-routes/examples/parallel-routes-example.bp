@@ -30,8 +30,8 @@
 //   https://nextjs.org/docs/app/api-reference/file-conventions/default
 
 import {rkAppRegisterEntry, rkAppTable} from "rakun";                     // front 22
-import {parseTable} from "rakun-routing";                                  // front 22
-import {resolveSlots, SlotState, writeSlotStates} from "rakun";           // this front
+import {table.parseTable, slot_states: {SlotState, writeSlotStates}} from "routing";  // bundled (decision 115)
+import {resolveSlots, slotStateLines} from "rakun";                       // this front
 
 fn install() -> void {
     rkAppRegisterEntry("L", "dashboard", "");
@@ -58,5 +58,5 @@ test "a hard request for /dashboard matches analytics and defaults team" {
 test "a soft navigation leaves the unmatched slot unchanged" {
     install();
     val rs = resolveSlots(parseTable(rkAppTable()), "/dashboard", "/dashboard/settings", true);
-    assert writeSlotStates(rs).contains("analytics|/dashboard|U");
+    assert writeSlotStates(slotStateLines(rs)).contains("analytics|/dashboard|U");
 }

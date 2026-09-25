@@ -179,8 +179,8 @@ that rewrites `Host` fixes its proxy.
 marshals through `string`, so a multipart body would arrive as lossy UTF-8. A 415 is the honest
 answer; see *Language gaps*.
 
-**Body size.** Default 1 MiB, raisable through front 05 (`onze.actions.bodyLimit`) and not
-lowerable below 4 KiB. Enforced *while reading*, in `src/sidecars/rakun_actions.erl`, by counting bytes as they arrive
+**Body size.** Default 1 MiB, raisable through front 05's `rakun.actions.bodyLimit` — a rakun key,
+which onze writes at boot like the two wire names (decision 115) — and not lowerable below 4 KiB. Enforced *while reading*, in `src/sidecars/rakun_actions.erl`, by counting bytes as they arrive
 and closing the connection at the limit — not by reading the body and then measuring it, which is the
 version that lets a 2 GB upload exhaust the node before the check runs.
 
@@ -317,7 +317,8 @@ pub fn dispatchAction(
       check. Asserted by the absence of the key in front 05's schema, which is a test, not a promise.
 - [ ] A body over the limit is refused at the limit: the connection is closed after at most
       `limit + 8 KiB` bytes have been read, measured in `src/sidecars/rakun_actions.erl`'s own suite.
-- [ ] The limit defaults to 1 MiB, can be raised by config, and cannot be set below 4 KiB.
+- [ ] The limit defaults to 1 MiB, can be raised by `rakun.actions.bodyLimit`, and cannot be set below
+      4 KiB; `grep -rn '"onze\.' repository/rakun` is empty.
 - [ ] An unknown id gives 404 with an empty body — not a message naming known ids.
 - [ ] The id from the request is compared against the registry with front 01's constant-time compare.
 - [ ] `Content-Type: multipart/form-data` gives 415. botopink has no byte type — every host cell

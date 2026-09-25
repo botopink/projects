@@ -1,12 +1,12 @@
-// Front 22 — rakun file routing: the boundary artifact.
+// Front 22 — rakun file routing: the shared artifact.
 //
 // The route table is the one thing this front produces that BOTH targets read.
 // The server matches a request against it on BEAM; the browser rebuilds it from
 // the payload's "t" field and matches `Link` targets against it to decide what to
-// prefetch. `parseTable` and `matchPath` below live in the boundary member
-// `rakun-routing` (decision 114), compiled twice — once to BEAM, once to
-// commonJS — so the two sides cannot disagree about what a URL means. onze's
-// client entry hands `matchPath` to jhonstart's router as `match`.
+// prefetch. `parseTable` and `matchPath` below live in the compiler-bundled
+// library `routing` (decision 115), compiled twice — once to BEAM, once to
+// commonJS — so the two sides cannot disagree about what a URL means. rakun
+// and jhonstart's router both import it; it names neither.
 //
 // Upstream:
 //   https://nextjs.org/docs/app/api-reference/file-conventions/dynamic-routes
@@ -28,7 +28,7 @@
 // a bare lower-case name is a located error (`use _ {`), so a `case` over a `?T`
 // cannot bind the matched value.
 
-import {parseTable, writeTable, matchPath, layoutChain, parseSegment, SegmentKind} from "rakun-routing";
+import {table: {parseTable, writeTable}, match: {matchPath, layoutChain}, segment: {parseSegment, SegmentKind}} from "routing";
 
 // The table a small blog produces. Written out by hand here; at runtime it comes
 // from `rkAppTable()` on the server and from the payload's "t" field in the browser.

@@ -24,7 +24,7 @@
 
 import {rkAppRegisterEntry, rkAppTable} from "rakun";      // this front
 import {page, ChunkWriter, Request} from "rakun";          // front 23 · front 04
-import {parseTable, matchPath} from "rakun-routing";       // this front, the boundary member
+import {table.parseTable, match.matchPath} from "routing"; // bundled (decision 115)
 
 fn text(body: string) -> fn(Request, ChunkWriter) -> @Future<void> {
     return fn(req: Request, out: ChunkWriter) { return out.write(body); };
@@ -57,7 +57,7 @@ test "a group segment is absent from every pattern it encloses" {
     assert rkAppTable().contains("(marketing)") == false;
 }
 
-test "the table the server serves is the table rakun-routing matches" {
+test "the table the server serves is the table routing matches" {
     install();
     var pattern = "";
     if (matchPath(parseTable(rkAppTable()), "/blog/hello")) { m -> pattern = m.entry.pattern; };

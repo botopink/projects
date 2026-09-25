@@ -13,7 +13,7 @@
 //   https://nextjs.org/docs/app/api-reference/config/next-config-js/basePath
 //   https://nextjs.org/docs/app/api-reference/config/next-config-js/trailingSlash
 
-import {PathRules, canonicalize, clientHref} from "rakun-routing";  // front 65's boundary half
+import {url_rules: {PathRules, canonicalize, clientHref}} from "routing";  // front 65's boundary half, bundled (decision 115)
 
 fn docsRules() -> PathRules {
     return PathRules(basePath: "/docs", trailingSlash: false);
