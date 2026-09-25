@@ -12,7 +12,7 @@ emits); `start` drives only the erlang half, since by then the js half is a dire
 generated manifest registers into), 26 · 48 (per the wave table), 68 (the client bundle `build`
 drives), 71 (the release `start` runs), 60 (the prerender pass `build` invokes)
 **Owns:** `modules/onze-cli/src/**`, `modules/onze-cli/test/**`
-**Does not touch:** `repository/onze/src/**` (F49 · F51 · F52), `repository/onze/examples/blog/**`
+**Does not touch:** `repository/onze/modules/onze/**` (F49), `repository/onze/modules/onze-assets/**` (F51 · F52 · F69), `repository/onze/examples/blog/**`
 (F53), `repository/onze/modules/onze-bundler/**` (F68),
 `repository/onze/modules/onze-release/**` (F71), every other repository
 **Reference:** `NEXTJS-DOCS.md § 29. CLI`, `§ 2. Instalação e Configuração`,

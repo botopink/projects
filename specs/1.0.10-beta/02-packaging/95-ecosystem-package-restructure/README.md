@@ -351,6 +351,15 @@ In `libs/std/src/`:
 - [ ] `asserts.includes([1, 2, 3], 2)` is true; `asserts.includes([1, 2, 3], 4)` panics
 - [ ] `libs/std/AGENTS.md` reflects the new functions
 
+> **Superseded at HEAD.** `01-std` landed the module as `libs/std/src/asserts.bp` (flat, reached as
+> `import {asserts} from "std"`; the `testing/` path waits on decision 106's layout) with the surface of
+> [`../../01-std/asserts-api.md`](../../01-std/asserts-api.md), which is the authority: every helper
+> answers `@Result<void, string>` instead of `bool`/panic, and the names differ (`isTrue`, `equals`,
+> `deepEquals`, `isEmpty`, `lengthIs`, `isError`, `throwsWith`, …). `positive`/`negative`, `isOkAnd`,
+> `throwsType`, `typeOf` and the four lifecycle hooks are *not shipped* there, by that document's
+> § Migration table. The boxes above are left open because they name the withdrawn surface; nothing
+> of this step is front 95's to do.
+
 ### Step 2 — Create the `onze` package structure (rename from `onze13` plan)
 
 The planned Track E repository is created as `repository/onze/` — the old mocking library
@@ -395,6 +404,14 @@ front number is unchanged; only the directory paths in their ownership tables up
 - [ ] `zig build test-libs` from the meta repo does not red on the empty modules
 - [ ] The old `onze` mocking library is archived, not deleted — `repository/_archived/onze-mock/`
 
+> **Contradicted by decision 79, and blocked.** The old library is tagged `mocking-lib-final` and
+> archived **on its remote**; nothing is vendored under `repository/_archived/`
+> ([`../../01-std/onze-migration.md`](../../01-std/onze-migration.md) § *Removing the repository*). The
+> `repository/onze` submodule entry is re-pointed at the orchestrator's repository, which does not exist
+> yet; that waits on the maintainer's tag-and-archive (`status.md`, `01-std` step 5). The member list is
+> [`../../06-onze/modules.md`](../../06-onze/modules.md)'s (`onze-og`, `onze-release` beside the five
+> above), and the skeletons are `02-packaging` step 2's once the directory is free.
+
 ### Step 3 — Create the `jhonstart` package structure
 
 Convert the flat `repository/jhonstart/src/` into `modules/`:
@@ -427,11 +444,23 @@ repository/jhonstart/
 ```
 
 **Acceptance:**
-- [ ] `import { Element } from "jhonstart";` still resolves — the core re-exports it
-- [ ] `import { html } from "jhonstart-html";` resolves
-- [ ] `import { ... } from "jhonstart-test";` resolves (empty for now, filled by fronts 26–32)
-- [ ] `zig build test-libs` green — existing `html_test.bp` passes in its new location
-- [ ] `repository/jhonstart/AGENTS.md` reflects the new tree
+- [x] `import { Element } from "jhonstart";` still resolves — the core re-exports it
+- [x] `import { html } from "jhonstart-html";` resolves
+- [x] `import { ... } from "jhonstart-test";` resolves (empty for now, filled by fronts 26–32)
+- [x] `zig build test-libs` green — existing `html_test.bp` passes in its new location (runner over the two branches: 54 passed, 0 failed; `jhonstart`, `jhonstart-html`, `jhonstart-test`, `jhonstart-markup` ✓ on both rows — the main checkout's gate sees it once the library branches merge)
+- [x] `repository/jhonstart/AGENTS.md` reflects the new tree
+
+> **As landed.** The picture above predates the workspace migration (`02-packaging` step 2): the core
+> was already `modules/jhonstart/` with its own `src/root.bp` (`element`, `hooks`, `router`,
+> `elements`, `server`, `link`, `reconcile`, `client` — `router.d.bp`/`server.d.bp` are promoted to
+> `.bp`). What this step did: `html.bp` moved to `modules/jhonstart-html/` (its one edit is
+> `import {Element} from "jhonstart"`), and **both** DSL suites went with it — `html_test.bp` *and*
+> front 94's `elements_test.bp` — because the core cannot depend on the DSL member, so neither can stay
+> in `modules/jhonstart/test/` as the tree above says (`04-jhonstart/modules.md` § 1.4 agrees). The
+> constructors stay in core (front 94; `modules.md` § 2 "keep, narrowed"). The example
+> `examples/jhonstart-html/` was renamed `examples/jhonstart-markup/`: a member name is unique in the
+> workspace and the DSL member takes it. `jhonstart-link`, `-forms` and `-emilia` (decision 113) are
+> their fronts' (`modules.md` § 1).
 
 ### Step 4 — Create the `emilia` package structure
 
@@ -456,10 +485,14 @@ repository/emilia/
 ```
 
 **Acceptance:**
-- [ ] `import { Token } from "emilia";` still resolves
-- [ ] `import { ... } from "emilia-test";` resolves (empty for now, filled by fronts 33–48)
-- [ ] `zig build test-libs` green
-- [ ] `repository/emilia/AGENTS.md` reflects the new tree
+- [x] `import { Token } from "emilia";` still resolves
+- [x] `import { ... } from "emilia-test";` resolves (empty for now, filled by fronts 33–48)
+- [x] `zig build test-libs` green (same run: `emilia-test` ✓ on both rows)
+- [x] `repository/emilia/AGENTS.md` reflects the new tree
+
+> **As landed.** The core member `modules/emilia/` (with `theme.bp`, `spacing.bp`, `output.bp` beside
+> `tokens.bp`/`emilia.bp`) was already the `02-packaging` step 2 migration; this step added
+> `modules/emilia-test/`. emilia depends on no library, dev-dependency included (decision 114).
 
 ### Step 5 — Confirm the `rakun` package structure
 
@@ -485,10 +518,18 @@ repository/rakun/
 ```
 
 **Acceptance:**
-- [ ] `import { ... } from "rakun";` resolves through the new core submodule
+- [x] `import { ... } from "rakun";` resolves through the new core submodule
 - [ ] All thirteen existing submodules are byte-unchanged
 - [ ] `zig build test-libs` green
-- [ ] `repository/rakun/AGENTS.md` reflects the layout
+- [x] `repository/rakun/AGENTS.md` reflects the layout
+
+> **Done on feat by the rakun workspace migration (`02-packaging` step 2), not here.** The core
+> `modules/rakun/` holds the code that was `rakun/src/` (there is no `src/` left to "re-export from").
+> "Byte-unchanged" contradicts `02-packaging` § 11 move 3 — every member manifest had to trade
+> `{ "path": "../../" }` for `{ "workspace": true }` and gain `files`. Decisions 113–116 change the
+> member list further, and not in this front: `rakun-validation` leaves for the bundled library
+> `validation` (decision 116, rakun front 14), and the core becomes `["erlang"]` (113 item 8, rakun
+> front 04). `test-libs` green over rakun is the known-red ledger's, owned by those fronts.
 
 ### Step 6 — Update overview.md and fronts.md
 
@@ -498,9 +539,20 @@ paths.
 
 **Acceptance:**
 - [ ] `overview.md` Track E header reads `Track E — onze (49–53 · 68–71)`
-- [ ] `fronts.md` ownership table rows for F49–F53, F68–F71 reference `repository/onze/modules/`
+- [x] `fronts.md` ownership table rows for F49–F53, F68–F71 reference `repository/onze/modules/`
 - [ ] No remaining `onze13` string in `overview.md` or `fronts.md`
-- [ ] Each Track E front README's **Owns:** line is updated
+- [x] Each Track E front README's **Owns:** line is updated
+
+> **Against HEAD.** `overview.md` has no "Track E" header: tracks are rows of its directory table, and
+> the `06-onze/` row names `onze` (the draft name only through `unification.md`). `fronts.md` § *Track E
+> — onze (`repository/onze/`, recreated)* writes its rows relative to that repository
+> (`modules/onze/…`, `modules/onze-assets/…`), which is what the second box asks. Four `onze13`
+> strings stay on purpose — `overview.md` wave 0 and § *What this milestone delivers* item 1,
+> `fronts.md` blocking order and the `01-std` ownership row — because each names the rename itself,
+> which is `01-std` step 5 and still open; `01-std` step 5's own acceptance and `02-packaging` § 10
+> except exactly those lines. The **Owns** / **Does not touch** lines of 49, 50, 51, 52 and 68 now
+> read the member paths of `06-onze/modules.md` (51 and 52 hand their `pub mod` lines to 69, not 49);
+> 53 and 69–71 already did.
 
 ### Step 7 — Deprecate the old `onze` mocking library
 
@@ -516,8 +568,14 @@ banner:
 
 **Acceptance:**
 - [ ] The archive directory exists with the banner
-- [ ] No active `botopink.json` in any live package references `"onze"` as a dependency for mocking
+- [x] No active `botopink.json` in any live package references `"onze"` as a dependency for mocking
 - [ ] `deferred.md` records the mocking host runtime as a source for the `-test` submodules
+
+> **Superseded by decisions 71 and 79.** The mocking runtime is not deferred and not per `-test`
+> submodule: it is `std/mocks` (decision 71, landed with the old library's state as
+> `globalThis.__bp_mocks`), and `deferred.md` says so ("The mocking surface is not deferred"). There is
+> no archive directory (decision 79: tagged and archived on the remote); the banner belongs in the old
+> repository's README at tagging time, the maintainer's step.
 
 ## Examples
 
@@ -602,3 +660,11 @@ directory moves and `botopink.json` edits, not behaviour changes. The risk profi
 - Every `AGENTS.md` in a touched directory reflects the new tree in the same commit.
 - `zig build test-libs` is green after each step.
 - Both examples compile and demonstrate the patterns.
+
+> **Against decisions 71, 79 and 113–116.** `onze` has seven members in `../../06-onze/modules.md`
+> (`onze-og`, `onze-release` beside the five), not five; nothing is archived under
+> `repository/_archived/` (79); rakun ends with thirteen members, not fourteen — the core arrives and
+> `rakun-validation` leaves for the bundled `validation` (116); jhonstart's final cut is six members
+> (`04-jhonstart/modules.md` § 2, with the `jhonstart-emilia` bridge of 113), of which this front made
+> `jhonstart-html` and `jhonstart-test`. The `-test` members re-export nothing from std
+> (`../README.md` § 5), unlike *Mechanism* § 5's sketch.

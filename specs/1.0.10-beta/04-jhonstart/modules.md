@@ -7,10 +7,11 @@
 Fronts 94, 26, 28 and 27 have landed. Three facts about the tree that the cut below has to be read
 against:
 
-- **(a) The submodule split has not happened.** `repository/jhonstart/` has exactly **one** member,
-  `modules/jhonstart/`. `html.bp` — which § 6 assigns to `jhonstart-html` — is in core, and so are
-  front 27's `link.bp` and `reconcile.bp`. The cut below is a plan, not a description; whoever
-  performs it does so as its own front, and until then every front reads "core".
+- **(a) The submodule split is partial.** Front 95 cut `modules/jhonstart-html/` (`html.bp`, with
+  `test/html_test.bp` and `test/elements_test.bp`) and created `modules/jhonstart-test/` empty.
+  Front 27's `link.bp` and `reconcile.bp` are still in core; `jhonstart-link`, `jhonstart-forms` and
+  `jhonstart-emilia` do not exist yet. The rest of the cut below is a plan, not a description;
+  whoever performs it does so as its own front, and until then those fronts read "core".
 - **(b) § 4's `jhonstart-link` row is unsettled.** A member cannot declare `["commonJS", "erlang"]`
   *and* carry four `#[@External.Node]` cells that anything on the erlang row calls: a foreign cell
   that is **called** reds the other target's compile at the caller's body (`` `__cellStatus` has no
@@ -237,7 +238,7 @@ Tests: each front's `test/<name>_test.bp` moves with its source into the same su
 
 ## 8 · `repository/jhonstart/examples/**`
 
-Existing: `jhonstart-counter/`, `jhonstart-html/`, `jhonstart-todo/` (v0, pure client, stay as-is); `jhonstart-app/` (gated/aspirational, superseded by `blog-ssr` below and removed when it lands). New projects, one per consumer shape, each with `botopink.json`, `src/`, `test/` and its own `__snapshots__/`:
+Existing: `jhonstart-counter/`, `jhonstart-markup/` (was `jhonstart-html/`, renamed by front 95 because the DSL member took the name), `jhonstart-todo/` (v0, pure client, stay as-is); `jhonstart-app/` (gated/aspirational, superseded by `blog-ssr` below and removed when it lands). New projects, one per consumer shape, each with `botopink.json`, `src/`, `test/` and its own `__snapshots__/`:
 
 | Project | Shape | Fronts exercised | Depends on | Target |
 |---|---|---|---|---|

@@ -26,7 +26,7 @@ entry imports nothing from the bundled library `routing`: jhonstart's router and
 themselves (decision 115), the navigation vocabulary included (`routing`'s `navigation`, decision
 116) — the entry keeps no copy of it. Build-time rule evaluation calls emilia's `styleRule` (emilia
 front 56) directly and the hash-parity check calls std's `content_hash.contentHash` (decision 116)
-**Does not touch:** `repository/onze/src/**` (front 49), `repository/onze/modules/onze-cli/**`
+**Does not touch:** `repository/onze/modules/onze/**` (front 49), `repository/onze/modules/onze-cli/**`
 (front 50), `repository/onze/modules/onze-assets/**` (front 69), `repository/jhonstart/src/**`,
 `repository/rakun/src/**`, `repository/emilia/src/**`
 **Reference:** `NEXTJS-DOCS.md § 7. Server e Client Components` (Regras fundamentais · Protegendo
