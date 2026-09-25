@@ -80,6 +80,7 @@ the import list. Fix both.
 | **Why** | associated-fn calls resolve through a different path from instance calls, and it stores no result type for the receiver of the next `.` |
 | **Correct** | the associated fn's declared return type becomes the receiver's type, and the method resolves against it, recording the lowering the backends read |
 | **Probe** | `@print(Array.range(0, 3).map({ x -> x + 1 }));` → `Checked`, and the emitted erlang is `'__bp_prim_map'(array:range(0, 3), fun(X) -> …)` — a run-time dispatch helper with an `erlang:error({bp_unsupported_method, …})` tail |
+| **Landed** | the guard in front of the associated-fn path let only unbound receiver names through, and std binds `Array`; a behavior's own non-`val` name now reaches `Array.range`. The `array:range/2` half is gone too: the call emits the local `array_range/2` |
 | **Acceptance** | the probe records a lowering; no emitted erlang carries `'__bp_prim_map'` for it. The erlang half (and the separate `array:range/2` defect the same probe exposes) is [`../02-erlang/`](../02-erlang/README.md) |
 
 ## R7 — decision 2 is not enforced
