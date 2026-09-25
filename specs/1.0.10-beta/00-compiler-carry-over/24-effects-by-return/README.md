@@ -2,10 +2,10 @@
 
 **Track:** compiler (carry-over item **C-32**)
 **Priority:** critical — every effectful body in the compiler, std and the five libraries is written
-against six annotations and a `@Future<T, E>` that can fail; decisions 118–127 replace both, with no
+against six annotations and a `@Future<T, E>` that can fail; decisions 118–128 replace both, with no
 compatibility window (decision 127), so nothing effectful compiles against the new surface until
 this front lands, and every library front's examples are written in the old one.
-**Depends on:** decisions [118–127](../../decisions-taken.md#118-the-return-type-is-the-annotation)
+**Depends on:** decisions [118–128](../../decisions-taken.md#118-the-return-type-is-the-annotation)
 (registered) · [`21-effect-chain`](../21-effect-chain/README.md) merged into `feat` or closed — which
 one is the maintainer's call (Notes, open point 1) · [`22-loops`](../22-loops/README.md) (landed on
 `feat`). Runs alone among the surface fronts: it rewrites the same files as 21, 22 and 23.
@@ -51,14 +51,15 @@ wrapper (`-> @Future<T, E>`), with R1/R2 refusing any disagreement between the t
 a second annotation. And the chain says every effect can fail — `@Future<T, E = any>` extends
 `@Result` (`libs/std/src/builtins.d.bp:140`), so `await x` propagates the error, every hook may
 `throw` and a `for` over a fallible generator is an implicit `try` that needs the level of the body
-that iterates. Decisions 118–127 change all of it:
+that iterates. Decisions 118–128 change all of it:
 
 | Today | After |
 |---|---|
 | `#[@X]` annotation + `@X` wrapper in the return | the wrapper in the return only (118) |
 | `@Future<T, E>` (may fail) | `@Task<T>` (never fails); failure is `@Task<@Result<T, E>>` (120) |
 | `await x` propagates the error | `await x` answers the `@Result`; `try await x` propagates (120) |
-| `@Use` ⊃ `@Future` ⊃ `@Result` (every hook may `throw`) | `@Use` ⊃ `@Task`; `throw` / `try` only when `T` is a `@Result` (121) |
+| `@Use` ⊃ `@Future` ⊃ `@Result` (every hook may `throw`) | `@Component` ⊃ `@Task`; `throw` / `try` only when `T` is a `@Result` (121) |
+| `@Use<C, T>` (hook) and `@Component<T>` ≡ `@Use<B, T>` (component) | one wrapper, `@Component<C, T>`, for both (128) |
 | `@Generator<T>` | `@Iterator<T>` (122) |
 | `@ResultGenerator<T, E>` | `@Iterator<@Result<T, E>>` (122) |
 | `@FutureGenerator<T, E>` | `@Stream<@Result<T, E>>` (or `@Stream<T>`) (122) |
@@ -109,12 +110,13 @@ under a `make_ref()` key in the process dictionary; beam a y-slot accumulator; w
 
 **What is reused, per the migration plan (§ 1).** From 21 and 22, independent of the syntax:
 the `use` ⊃ `await` check; the one-base check of `use` (`validateUseBase`, `comptime/infer.zig:10002`);
-`@Context<Base>` as the owner marker and `@Use<C, T>` / `@Component<T>`; one flag for the `use`
-gate; commonJS `async function` for every `use` body; the generator scopes and the nearest-scope
+`@Context<Base>` as the owner marker and the two context wrappers, merged into `@Component<C, T>`
+(decision 128); one flag for the `use` gate; commonJS `async function` for every `use` body; the generator scopes and the nearest-scope
 rule; `yield :label`; `break v` as an item; the refusal of `break :outer` across a closed border;
 the four backends' lowering of an annotated loop (re-keyed from `generator: ?EffectKind` to
 `GenLoop.kind`). **What stops:** renaming towards `@ResultGenerator`, `@FutureGenerator` and the
-`#[@resultGenerator]` / `#[@futureGenerator]` / `#[@use]` annotations; treating `@Future` as part of
+`#[@resultGenerator]` / `#[@futureGenerator]` / `#[@use]` annotations; `@Use` and the
+`@Component<T>` ≡ `@Use<B, T>` sugar (one wrapper, 128); treating `@Future` as part of
 the failure chain (`@Future ⊃ @Result`). 21's and 22's cells move to § *Cells* below, re-spelled.
 
 **Blast radius of the old spellings** (matches, `feat` `0beaa1f9`; 21's branch has already moved
@@ -154,14 +156,14 @@ onze (recreated) and erika carry none of the annotations at this pin.
 ## Mechanism
 
 **The effect is read from the syntactic return.** At the declaration, the checker looks at the
-return type *as written*: if it is one of `@Result`, `@Task`, `@Use`, `@Component`, `@Iterator`,
+return type *as written*: if it is one of `@Result`, `@Task`, `@Component`, `@Iterator`,
 `@Stream`, the body enters that level. An alias is resolved to type the function, never to activate
 (`effect-wrapper-behind-alias`). `EffectKind` stays the one list, keyed by wrapper instead of
-annotation — one value per wrapper family (`result`, `task`, `use` over `{Use, Component}`,
+annotation — one value per wrapper family (`result`, `task`, `component`,
 `iterator`, `stream` is the natural cut; E1/E3 settle it).
 
 **Two independent answers from the return.** The *level* (`use` / `await` / `yield`, from the
-outermost wrapper and the chain `@Component ≡ @Use ⊃ @Task`, `@Stream ⊃ @Task`, `@Iterator`) and the
+outermost wrapper and the chain `@Component ⊃ @Task`, `@Stream ⊃ @Task`, `@Iterator`) and the
 *fallible channel* (is there a `@Result` in any layer?). `throw` / `try` read only the second;
 `effect_chain.zig`'s `grants(eff, .try_)` becomes a function of the return, not of the level.
 
@@ -172,8 +174,7 @@ pub behavior Context<Base> { }
 
 pub type Result<R, E> { … }                              // unchanged; the one fallible wrapper
 pub behavior Task<T>                                    { fn map<R>(self: Self, f: fn(value: T) -> R) -> Task<R>; … }
-pub behavior Use<C, T> extends Task                     { }
-pub behavior Component<T> extends Use                   { }
+pub behavior Component<C, T> extends Task               { }
 
 pub type YieldStep<T> { Yield(value: T), Done }
 pub behavior Iterator<T>                                { fn next(self: Self) -> YieldStep<T>; }
@@ -190,7 +191,7 @@ and `Context<B, R>` are gone, not aliased (decision 127).
 | Construct | commonJS | erlang / beam / wasm |
 |---|---|---|
 | `@Result` return | as today | as today |
-| `@Task` / `@Use` / `@Component` return | `async function` (104 kept) | eager Task, `await` = identity |
+| `@Task` / `@Component` return | `async function` (104 kept) | eager Task, `await` = identity |
 | `throw` in `@Task<@Result<…>>` | `return {Error: e}` — does **not** reject the Promise | answers `Error(e)` |
 | `async { }` | `(async () => { … })()` | runs the block in place |
 | `@Iterator` with `yield` | `function*` | today's `@Generator` representation, renamed |
@@ -217,13 +218,13 @@ the plan's; the merge order is § *Merge order*.
 `@Future<T, E>` → `@Task<T>`, with `.map`, `.then` and the like carrying no error parameter;
 `@Generator` → `@Iterator`; `@Stream<T>` created; `@ResultGenerator` and `@FutureGenerator` removed;
 `YieldStep<T, E = void>` → `YieldStep<T>` without `Error`. `effect_chain.zig`'s clauses become
-`Use ⊃ Task`, `Component ⊃ Use`, `Stream ⊃ Task`; `yielding_wrappers` = `{Iterator, Stream}`; the
+`Component ⊃ Task`, `Stream ⊃ Task`; `yielding_wrappers` = `{Iterator, Stream}`; the
 drift test reads the new file both ways. Before renaming, check that std does not already use
 `Stream` or `Task` for something else (a byte stream, a job queue) — measured on `0beaa1f9`: it does
 not; re-measure at the step's base, and rename the std side first if it now does.
 
 **Acceptance:**
-- [ ] `builtins.d.bp` is the shape under *Mechanism*; `grep -rnE 'Future|Generator|IteratorStep|Iterable|Yield<' libs/std/src/builtins.d.bp` finds nothing
+- [ ] `builtins.d.bp` is the shape under *Mechanism*; `grep -rnE 'Future|Generator|IteratorStep|Iterable|Yield<|Use<' libs/std/src/builtins.d.bp` finds nothing
 - [ ] the prelude compiles on all backends (commonJS, erlang, beam, wasm) and no old symbol is exported
 - [ ] the `effect_chain.zig` drift test green with the new clauses; `comptime/AGENTS.md` and `libs/std/AGENTS.md` in the same commit
 
@@ -235,8 +236,8 @@ three words are contextual — outside those positions they stay identifiers; `t
 `try (await x)` (already so, `parser/exprs.zig:122` — pin it with a test); the six annotations
 `#[@result]`, `#[@future]`, `#[@use]`, `#[@generator]`, `#[@resultGenerator]`, `#[@futureGenerator]`
 are recognised only to raise `effect-annotation-removed` with a fix-it pointing at the span (on a
-`loop`: `iter` / `stream`); `@Future`, `@Generator`, `@ResultGenerator`, `@FutureGenerator` in a type
-raise `effect-type-removed`, and `@Iterator<T, E>` `iterator-error-param-removed`. The `format.zig`
+`loop`: `iter` / `stream`); `@Future`, `@Generator`, `@ResultGenerator`, `@FutureGenerator`, `@Use` in a
+type raise `effect-type-removed`, and `@Iterator<T, E>` `iterator-error-param-removed`. The `format.zig`
 arms print the three prefixes back.
 
 **Acceptance:**
@@ -277,8 +278,8 @@ arms print the three prefixes back.
 ### Step E4 — consumption (`for` / `for await`)
 
 `for` over `@Iterator<X>` hands over `X` (a `@Result` when `X` is one); the implicit `try` that
-existed for `@ResultGenerator` is removed; `for await` requires an await channel — a `@Task` / `@Use`
-/ `@Component` return, an `async { }` block or a `stream`.
+existed for `@ResultGenerator` is removed; `for await` requires an await channel — a `@Task` /
+`@Component` return, an `async { }` block or a `stream`.
 
 **Acceptance:**
 - [ ] `for` with `try r` propagates, `for` with `case` continues (`run/iterator_result_items.bp`)
@@ -329,7 +330,7 @@ compiler commit.
 **Acceptance:**
 - [ ] `std/async` and `std/http` signatures closed and green **before** the codemod runs on the libraries (§ *Merge order*, 5)
 - [ ] `zig build test-libs` green on every row at its pre-sweep counts; `known-red-libs.txt` back to its header
-- [ ] `grep -rnE '#\[@(result|future|use|generator|resultGenerator|futureGenerator)\]|@Future<|@(Result|Future)?Generator<' repository/{jhonstart,rakun,emilia,onze,erika} libs/` finds nothing
+- [ ] `grep -rnE '#\[@(result|future|use|generator|resultGenerator|futureGenerator)\]|@(Future|Use)<|@(Result|Future)?Generator<' repository/{jhonstart,rakun,emilia,onze,erika} libs/` finds nothing
 - [ ] the meta submodule pointers bumped in the same sweep
 
 ### Step E8 — documentation
@@ -342,7 +343,7 @@ new codes added to the diagnostics reference (`comptime/diagnostics.zig`'s table
 
 **Acceptance:**
 - [ ] `scripts/check-docs.sh` green; every `docs.md` fence compiles
-- [ ] `grep -rnE '#\[@(result|future|use|generator|resultGenerator|futureGenerator)\]|@Future<|@ResultGenerator|@FutureGenerator' specs/1.0.10-beta --include=*.md --include=*.bp` finds only `decisions-taken.md` (the record)
+- [ ] `grep -rnE '#\[@(result|future|use|generator|resultGenerator|futureGenerator)\]|@(Future|Use)<|@ResultGenerator|@FutureGenerator' specs/1.0.10-beta --include=*.md --include=*.bp` finds only `decisions-taken.md` (the record)
 - [ ] no front README keeps the "pre-118 effect annotations" line
 
 ## Diagnostics
@@ -353,14 +354,14 @@ Names marked \* are new; the others exist and only change their text.
 |---|---|---|
 | `effect-try-without-fallible-channel` | `throw` / `try` with no `@Result` in any layer of the return | use `try … catch`, or put `@Result` in the return |
 | `effect-await-without-task` \* | `await` without an await channel (today's `effect-await-without-future`, renamed) | change the return to `@Task`, or use `async { }` |
-| `use-without-context-effect` | `use` without a `@Use` / `@Component` return | change the return |
+| `use-without-context-effect` | `use` without a `@Component` return | change the return |
 | `effect-wrapper-behind-alias` \* | a capability used under an aliased return | write the wrapper literally |
 | `effect-return-ambiguous-nesting` \* | a `return` that fits two layers | explicit `Ok(…)` |
 | `iter-await` \* | `await` in an `@Iterator` or an `iter …` loop | use `@Stream` / `stream …` |
 | `iter-mixed-yield-return` \* | `yield` and `return <iterator>` in one body | pick one |
 | `gen-infer-conflicting-errors` \* | two `E`s in the body of `async { }` / `iter` / `stream` | annotate the `val` |
 | `effect-annotation-removed` \* | `#[@result]`, `#[@future]`, `#[@use]`, `#[@generator]`, `#[@resultGenerator]`, `#[@futureGenerator]` | remove the annotation (on a loop: `iter` / `stream`) |
-| `effect-type-removed` \* | `@Future`, `@Generator`, `@ResultGenerator`, `@FutureGenerator` | the new name |
+| `effect-type-removed` \* | `@Future`, `@Generator`, `@ResultGenerator`, `@FutureGenerator`, `@Use` | the new name (`@Use<C, T>` → `@Component<C, T>`) |
 | `iterator-error-param-removed` \* | `@Iterator<T, E>` | `@Iterator<@Result<T, E>>` |
 
 Codes that exist today and that the plan's table does not name — `effect-throw-without-fallible-channel`,
@@ -390,16 +391,16 @@ generator and loop cells are re-spelled into these.
 - [ ] ✓ JS run: a `throw` in `@Task<@Result<…>>` resolves the Promise with `Error`, does not reject
 
 **Chain and `use`**
-- [ ] ✓ `@Use<C, T>` with `use` + `await`
-- [ ] ✓ `@Use<C, @Result<T, E>>` with `try await`
-- [ ] ✗ `try` in `@Component<Element>`
-- [ ] ✗ `await` under `@Result`; `use` under `@Task`; two bases in one `@Use`
+- [ ] ✓ `@Component<C, T>` with `use` + `await`, as a hook (any `T`) and as a component (`T: @Context<C>`)
+- [ ] ✓ `@Component<C, @Result<T, E>>` with `try await`
+- [ ] ✗ `try` in `@Component<ElementBase, Element>`
+- [ ] ✗ `await` under `@Result`; `use` under `@Task`; two bases in one `@Component`; `use` of a component (its `T` owns the context)
 
 **`async { }`**
 - [ ] ✓ in a plain function, passed to `async.allOf`
 - [ ] ✓ without `throw` / `try` → `@Task<T>`; with → `@Task<@Result<U, E>>`
 - [ ] ✓ `return` leaves the block, not the function
-- [ ] ✗ `use` inside `async { }` in a `@Use` function (closure)
+- [ ] ✗ `use` inside `async { }` in a `@Component` function (closure)
 - [ ] ✗ `gen-infer-conflicting-errors`
 
 **Iterators**
@@ -428,6 +429,7 @@ generator and loop cells are re-spelled into these.
 **Migration**
 - [ ] ✗ each old annotation gives `effect-annotation-removed` with the right fix-it
 - [ ] ✗ `@Future<…>` gives `effect-type-removed` suggesting `@Task<@Result<…>>`
+- [ ] ✗ `@Use<C, T>` gives `effect-type-removed` suggesting `@Component<C, T>`; `@Component<T>` (one argument) is a type-arity error
 - [ ] the codemod snapshot over a file with every pattern of § *Codemod* (E6)
 
 ## Codemod
@@ -447,9 +449,11 @@ generator and loop cells are re-spelled into these.
 | `#[@futureGenerator] loop { … }` | `stream loop { … }` |
 | `#[@X] loop { for (xs) { … }; break; }` | `iter for (xs) { … }` (when the `for` is the only statement before the `break`) |
 | `YieldStep<T, E>` | `YieldStep<T>` |
+| `@Use<C, T>` | `@Component<C, T>` |
+| `@Component<T>` | `@Component<B, T>`, `B` read from `T implement @Context<B>` (the checker's types, like `try await`) |
 
 **Needs review (marked `// TODO(migrate-effects)`):**
-- `await` in a hook or component whose `T` is not a `@Result` (e.g. `@Component<Element>`): the
+- `await` in a hook or component whose `T` is not a `@Result` (e.g. `@Component<ElementBase, Element>`): the
   error used to propagate and now has nowhere to go; the codemod does not choose between `catch`,
   `case` and `notFound()`;
 - `throw` in a hook / component whose `T` is not a `@Result`: decide whether the hook returns a
@@ -469,7 +473,7 @@ a text pass.
 
 ## Merge order
 
-1. Decisions 118–127 approved and registered (done: `decisions-taken.md`)
+1. Decisions 118–128 approved and registered (done: `decisions-taken.md`)
 2. E1 + E2 (prelude and parser, with the old-syntax errors)
 3. E3 + E4 (checking and consumption), with the § *Cells* suite
 4. E5 (backends), with the run and interop cells
@@ -520,15 +524,15 @@ propagating), or a new cell.
 that meets it is reached, with the Measured / Options / Recommendation / Blocks shape:
 
 1. **Front 21's branch.** Its four steps sit on `front/21-effect-chain`, unmerged, and implement
-   names 118–127 remove (`@ResultGenerator`, `@FutureGenerator`, `#[@resultGenerator]`,
+   names 118–128 remove (`@ResultGenerator`, `@FutureGenerator`, `#[@resultGenerator]`,
    `#[@futureGenerator]`, `#[@use]`, `Use ⊃ Future`). Whether 21 merges into `feat` first (this front
    then renames from 21's surface) or closes unmerged (this front starts from `feat`'s pre-102 names
    and cherry-picks what § 1 of the plan reuses) is not stated.
 2. **The existing codes the plan's table does not name.** `effect-throw-without-fallible-channel`
    (the guide's examples use `effect-try-without-fallible-channel` for a `throw` too — merged or
    kept?); `effect-missing-annotation`, `effect-duplicate-annotation`, `effect-missing-wrapper` (no
-   annotation left to miss or duplicate); `effect-wrapper-mismatch` (kept for `@Component<X>` with
-   `X` owning no context?); `for-over-fallible-generator` (the rule it enforces is deleted, E3.8);
+   annotation left to miss or duplicate); `effect-wrapper-mismatch` (its last use, `@Component<X>` with
+   `X` owning no context, leaves with 128 — deleted or kept for another mismatch?); `for-over-fallible-generator` (the rule it enforces is deleted, E3.8);
    `yield-without-generator` and `generator-loop-closed-scope` (the guide gives the refusals no
    code). The guide's refusals for a component `use`d, `use` in a closure, `break :outer` out of
    `async { }`, and `#[layout] … -> Element` carry no code either.
@@ -553,5 +557,5 @@ that meets it is reached, with the Measured / Options / Recommendation / Blocks 
    in `iter for :outer (xs)` versus `iter :outer for (xs)` is not written.
 
 **The two source documents** — the maintainer's guide and migration plan, written in Portuguese —
-are carried here in English: the language rules in decisions 118–127 and [`guide.md`](./guide.md),
+are carried here in English: the language rules in decisions 118–128 and [`guide.md`](./guide.md),
 the plan in this README.

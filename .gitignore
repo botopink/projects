@@ -22,3 +22,4 @@ format.o
 /.tasks/
 /.serena/
 erl_crash.dump
+tmp

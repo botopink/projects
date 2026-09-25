@@ -1,7 +1,7 @@
 # The effects of botopink — the return decides, `async { }`, `iter` and `stream`
 
 The maintainer's guide to the language **as decided** by the effect revision of 1.0.10-beta
-(decisions [118–127](../../decisions-taken.md#118-the-return-type-is-the-annotation)), in English.
+(decisions [118–128](../../decisions-taken.md#118-the-return-type-is-the-annotation)), in English.
 It replaces the annotations `#[@result]`, `#[@future]`, `#[@use]`, `#[@generator]`,
 `#[@resultGenerator]` and `#[@futureGenerator]` of decisions 95, 98, 102–105 and 113–117, and
 exchanges `@Future<T, E>` for `@Task<T>`. Front 24's step E8 turns this text into `docs.md`
@@ -22,11 +22,11 @@ annotation.
 | `T` | only `try … catch` (handles the error on the spot) |
 | `@Result<T, E>` | `throw` · `try` |
 | `@Task<T>` | `await` |
-| `@Use<C, T>` or `@Component<T>` | `use` · `await` |
+| `@Component<C, T>` | `use` · `await` |
 | `@Iterator<T>` | `yield` · `break v` |
 | `@Stream<T>` | `yield` · `break v` · `await` |
 
-In `@Task`, `@Use`, `@Iterator` and `@Stream`, **`throw` and `try` are also legal when the value (or
+In `@Task`, `@Component`, `@Iterator` and `@Stream`, **`throw` and `try` are also legal when the value (or
 the item) is a `@Result<U, E>`** — for example `@Task<@Result<User, string>>`.
 
 Blocks and loops have no signature, so they take a prefix:
@@ -45,18 +45,17 @@ The rules that make it all work:
 2. **The capabilities form a chain**, and each level grants everything below it:
 
 ```
-   @Component<T>  ≡  @Use<B, T>
-        @Use<C, T>  ⊃  @Task<T>        use · await
-        @Stream<T>  ⊃  @Task + yield   yield · await
-        @Iterator<T>                   yield
+   @Component<C, T>  ⊃  @Task<T>        use · await
+   @Stream<T>        ⊃  @Task + yield   yield · await
+   @Iterator<T>                         yield
 ```
 
-   That is why a hook may `await`, and a stream may `await`.
-3. **Only `@Result` fails.** `@Task`, `@Use`, `@Iterator` and `@Stream` never fail. When something
+   That is why a hook or a component may `await`, and a stream may `await`.
+3. **Only `@Result` fails.** `@Task`, `@Component`, `@Iterator` and `@Stream` never fail. When something
    can fail, the failure goes **inside the value**: `@Task<@Result<T, E>>`,
    `@Iterator<@Result<T, E>>`. The body then gains `throw` and `try`, and the receiver decides what
    to do with the error.
-4. **The chain only grants downwards.** `use` exists only with a `@Use` / `@Component` return;
+4. **The chain only grants downwards.** `use` exists only with a `@Component` return;
    `yield` only in iterators and streams; `await` neither with a `@Result` return nor in an
    `@Iterator`; `throw` / `try` only when there is a `@Result` in the return. Writing a capability
    the return does not grant is a located **compile error**, with no flag to switch it off
@@ -113,7 +112,7 @@ fn portOrDefault(s: string) -> i32 {
 }
 
 // 2) try alone — propagates the error; needs a @Result in the return
-//    (@Result<…>, @Task<@Result<…>>, @Use<C, @Result<…>>, …)
+//    (@Result<…>, @Task<@Result<…>>, @Component<C, @Result<…>>, …)
 fn loadConfig(text: string) -> @Result<Config, ParseError> {
     val port = try parsePort(text);
     return Config(port: port);
@@ -225,7 +224,7 @@ Rules of the block:
 
 - `return v` **leaves the block** with `v`, not the surrounding function (the block behaves like a
   closure called in place);
-- it is **closed**: inside a function with a `@Use` return, an `async { }` cannot `use`;
+- it is **closed**: inside a function with a `@Component` return, an `async { }` cannot `use`;
 - `T` comes from the `return`s. If the body has `throw` or `try`, the value becomes `@Result<U, E>`
   on its own, with `E` coming from those `throw` / `try`. Two different error types → a compile
   error suggesting an annotation: `val x: @Task<@Result<User, string>> = async { … };`
@@ -242,18 +241,19 @@ returns `@Task` too, or the value is handled with the `@Task`'s own functions (`
 
 ---
 
-## 4. Hooks and components — `-> @Use<C, T>` and `-> @Component<T>`
+## 4. Hooks and components — `-> @Component<C, T>`
 
-Only these two returns grant `use`.
+Only this return grants `use`. `C` is the "base" of the context the `use`s anchor at
+(`ElementBase` in jhonstart, `RequestBase` in rakun — the name is the library's, the compiler knows
+neither); `T` is what the function returns. One wrapper serves both shapes, and `T` tells them apart:
 
-- **`@Use<C, T>`** — a **hook**: returns any `T`, and `C` is the "base" of the context the `use`s
-  anchor at (`ElementBase` in jhonstart, `RequestBase` in rakun — the name is the library's, the
-  compiler knows neither).
-- **`@Component<T>`** — a **component**: returns the context owner (e.g. `Element`).
-  `@Component<Element>` ≡ `@Use<ElementBase, Element>`; the base is read from `T`'s
-  `implement @Context<…>`, so it is not repeated.
+- a **hook** returns any `T` — `@Component<ElementBase, State<T>>`;
+- a **component** returns the context owner, a `T` that `implement`s `@Context<C>` —
+  `@Component<ElementBase, Element>`.
 
-Since `@Use ⊃ @Task`, **every hook and every component may `await`.** `throw` and `try` follow the
+The base is always written, for hooks and components alike; it is never read off `T`.
+
+Since `@Component ⊃ @Task`, **every hook and every component may `await`.** `throw` and `try` follow the
 general rule: legal if `T` is a `@Result`. A component returns `Element`, so it handles errors in
 its own body — with `catch`, `case`, `notFound()` or an error screen.
 
@@ -268,10 +268,10 @@ pub type Element(tag: string, attrs: Array<#(string, string)>, children: Array<E
 // a state hook
 pub type State<T>(get: fn() -> T, set: fn(T) -> void);
 
-pub fn state<T>(initial: T) -> @Use<ElementBase, State<T>> { … }
+pub fn state<T>(initial: T) -> @Component<ElementBase, State<T>> { … }
 
 // a hook reading the request (decision 114, item 8: onze hands the RequestData to the render)
-pub fn cookies() -> @Use<ElementBase, CookieJar> { … }
+pub fn cookies() -> @Component<ElementBase, CookieJar> { … }
 ```
 
 ### 4.2 The application's hooks compose other hooks
@@ -279,36 +279,36 @@ pub fn cookies() -> @Use<ElementBase, CookieJar> { … }
 ```bp
 import {state, State} from "jhonstart";
 
-pub fn counter(start: i32) -> @Use<ElementBase, #(i32, fn() -> void)> {
+pub fn counter(start: i32) -> @Component<ElementBase, #(i32, fn() -> void)> {
     val s = use state(start);
     return #(s.get(), fn() { s.set(s.get() + 1); });
 }
 
-pub fn currentUser() -> @Use<ElementBase, ?User> {
+pub fn currentUser() -> @Component<ElementBase, ?User> {
     val jar = use cookies();
     val id = jar.get("uid");
     if (id == null) { return null; };
-    return try await fetchUser(int.parseOrZero(id)) catch null;   // await is legal (Use ⊃ Task)
+    return try await fetchUser(int.parseOrZero(id)) catch null;   // await is legal (Component ⊃ Task)
 }
 ```
 
 ### 4.3 Components: page, layout and ordinary components
 
-Page, layout and template **are components** (decision 117): `-> @Component<Element>`.
+Page, layout and template **are components** (decision 117): `-> @Component<ElementBase, Element>`.
 `#[page]`, `#[layout]` and `#[template]` stay attributes — they are metadata, not effects.
 
 ```bp
 import {div, h1, p, button, text, redirect, notFound, Element, PageContext, LayoutProps} from "jhonstart";
 
 // an ordinary component
-pub fn Counter() -> @Component<Element> {
+pub fn Counter() -> @Component<ElementBase, Element> {
     val (n, inc) = use counter(0);
     return div([p([text("Clicks: " + n.toString())]), button(onClick: inc, children: [text("+1")])]);
 }
 
 // layout: checks the session ONCE for the whole /dashboard/* area
 #[layout]
-pub fn DashboardLayout(props: LayoutProps) -> @Component<Element> {
+pub fn DashboardLayout(props: LayoutProps) -> @Component<ElementBase, Element> {
     val user = use currentUser();
     if (user == null) { redirect("/login"); };          // a signal: becomes 307 (or a client navigation)
     return div([Sidebar(user: user), props.children]);
@@ -316,7 +316,7 @@ pub fn DashboardLayout(props: LayoutProps) -> @Component<Element> {
 
 // page: await + signals; the error is handled here (the component does not propagate)
 #[page]
-pub fn PostPage(ctx: PageContext) -> @Component<Element> {
+pub fn PostPage(ctx: PageContext) -> @Component<ElementBase, Element> {
     val post = try await loadPost(ctx.param("id")) catch null;
     if (post == null) { notFound(); };
     if (post.movedTo != "") { redirect("/posts/" + post.movedTo); };
@@ -336,9 +336,9 @@ pub fn Badge(label: string) -> Element {
 pub type RequestBase();
 pub type RequestScope(…) implement @Context<RequestBase>;
 
-pub fn requestId() -> @Use<RequestBase, string> { … }
+pub fn requestId() -> @Component<RequestBase, string> { … }
 
-pub fn tenant() -> @Use<RequestBase, @Result<Tenant, string>> {
+pub fn tenant() -> @Component<RequestBase, @Result<Tenant, string>> {
     val id = use requestId();                // same base: ok
     return try await tenants.byRequest(id);  // try is legal: T is @Result
 }
@@ -349,31 +349,31 @@ pub fn tenant() -> @Use<RequestBase, @Result<Tenant, string>> {
 ```bp
 fn Page() -> @Task<Element> {
     use cookies();                // ✗ use-without-context-effect: `use` requires a
-}                                 //   @Use<…> or @Component<…> return
+}                                 //   @Component<…> return
 
-fn Misturado() -> @Component<Element> {
+fn Misturado() -> @Component<ElementBase, Element> {
     val a = use state(0);         // base ElementBase
     val t = use tenant();         // ✗ two bases in one function (ElementBase and RequestBase) —
 }                                 //   the error points at the second `use` and names both
 
-fn Errado() -> @Component<Element> {
-    return use Counter();         // ✗ a component is called (`Counter()`); `use` is for hooks only
+fn Errado() -> @Component<ElementBase, Element> {
+    return use Counter();         // ✗ a component (its T owns the context) is called (`Counter()`); `use` is for hooks only
 }
 
-fn Propaga() -> @Component<Element> {
+fn Propaga() -> @Component<ElementBase, Element> {
     val u = try await fetchUser(1);   // ✗ effect-try-without-fallible-channel: Element is not a
 }                                     //   @Result; use `catch`, `case` or `notFound()`
 
 fn foraDoCorpo() {
-    val f = fn() { use state(0); };   // ✗ `use` does not leave the body of the function with the @Use return
+    val f = fn() { use state(0); };   // ✗ `use` does not leave the body of the function with the @Component return
 }
 
 #[layout]
 pub fn OldLayout(props: LayoutProps) -> Element { … }   // ✗ decision 117: #[layout] requires
-                                                        //   a @Component<Element> return
+                                                        //   a @Component<ElementBase, Element> return
 ```
 
-**Per backend:** on commonJS, every function with a `@Use` / `@Component` return becomes an
+**Per backend:** on commonJS, every function with a `@Component` return becomes an
 `async function` (decision 104), even without `await`; the caller `await`s. `use f(x)` compiles to
 the call `f(x)` — `use` is a type check, not a run-time cost.
 
@@ -633,7 +633,7 @@ Rules of the `iter` and `stream` loops:
   `while` or `for`. `g.iter()`, `val stream = …` and `http.stream(…)` stay legal;
 - the prefixed loop **is** the iterator: `break` and `break v` in it end the sequence;
 - it is **closed**: the body has only the iterator's / stream's own capabilities, not those of the
-  surrounding function (inside a `@Use` function, an `iter loop` can neither `use` nor `await`);
+  surrounding function (inside a `@Component` function, an `iter loop` can neither `use` nor `await`);
 - `await` only in `stream`; in `iter` it is an error suggesting "use `stream`";
 - the item becomes `@Result<U, E>` when the body has `throw` / `try`. To pin the type, annotate the
   `val`: `val xs: @Iterator<i32> = iter loop { … }` — then a `try` in the body is a located error.
@@ -653,9 +653,9 @@ Rules of the `iter` and `stream` loops:
 Decisions 116–117:
 
 ```bp
-// page / layout / template (jhonstart) — always -> @Component<Element>
+// page / layout / template (jhonstart) — always -> @Component<ElementBase, Element>
 #[page]
-pub fn Post(ctx: PageContext) -> @Component<Element> {
+pub fn Post(ctx: PageContext) -> @Component<ElementBase, Element> {
     val post = try await loadPost(ctx.param("id")) catch null;
     if (post == null) { notFound(); };
     if (post.movedTo != "") { redirect("/posts/" + post.movedTo); };
@@ -722,8 +722,8 @@ shape. In the bundled libraries (`routing`, `actions`, `validation`) native code
 | an asynchronous function | `fn f() -> @Task<T>` | `await f()` (with an await channel) |
 | an asynchronous function that can fail | `fn f() -> @Task<@Result<T, E>>` | `try await f()` · `try await f() catch x` · `case (await f())` |
 | a Task in the middle of a function | `async { … }` | pass it along, `.map`, `async.allOf` |
-| a hook | `fn h() -> @Use<Base, T>` | `use h()` (in `@Use` / `@Component`, same base) |
-| a component / page / layout | `fn C() -> @Component<Element>` (+ `#[page]` / `#[layout]`) | `C()` (an ordinary call) |
+| a hook | `fn h() -> @Component<Base, T>` | `use h()` (in `@Component`, same base) |
+| a component / page / layout | `fn C() -> @Component<ElementBase, Element>` (+ `#[page]` / `#[layout]`) | `C()` (an ordinary call) |
 | a sequence | `fn g() -> @Iterator<T>` | `for (g()) { x -> }` in any function |
 | a sequence of items that fail | `fn g() -> @Iterator<@Result<T, E>>` | `for` + `try r` or `case` |
 | an asynchronous sequence | `fn g() -> @Stream<T>` | `for await` with an await channel |
@@ -738,7 +738,8 @@ shape. In the bundled libraries (`routing`, `actions`, `validation`) native code
 | `#[@result] fn f() -> @Result<T, E>` | `fn f() -> @Result<T, E>` |
 | `#[@future] fn f() -> @Future<T, E>` | `fn f() -> @Task<@Result<T, E>>` (and `await x` → `try await x`) |
 | `@Future<T>` with no error | `@Task<T>` |
-| `#[@use] fn f() -> @Use<C, T>` / `@Component<T>` | `fn f() -> @Use<C, T>` / `@Component<T>` (`throw` / `try` only if `T` is `@Result`) |
+| `#[@use] fn f() -> @Use<C, T>` | `fn f() -> @Component<C, T>` (`throw` / `try` only if `T` is `@Result`) |
+| `#[@use] fn f() -> @Component<T>` | `fn f() -> @Component<B, T>`, `B` from `T implement @Context<B>` |
 | `#[@generator]` + `@Generator<T>` | `@Iterator<T>` |
 | `#[@resultGenerator]` + `@ResultGenerator<T, E>` | `@Iterator<@Result<T, E>>` (`for` no longer does an implicit `try`) |
 | `#[@futureGenerator]` + `@FutureGenerator<T, E>` | `@Stream<@Result<T, E>>` |
@@ -747,8 +748,8 @@ shape. In the bundled libraries (`routing`, `actions`, `validation`) native code
 | `#[@futureGenerator] loop { … }` | `stream loop { … }` |
 | `YieldStep<T, E>` with `Error(error: E)` | `YieldStep<T>` = `{ Yield(value: T), Done }` |
 | `@Iterator<T, E>` (the `#[@iterator]` era's name) | `@Iterator<@Result<T, E>>` |
-| `#[@context]` / `@Context<B, R>` as an effect | `-> @Use<…>` / `@Component<…>` |
+| `#[@context]` / `@Context<B, R>` as an effect | `-> @Component<…>` |
 | `#[@iterator]` / `#[@asyncGenerator]` / `@AsyncIterator` | `@Iterator<@Result<…>>` / `@Stream<@Result<…>>` |
 | `Iterable`, `IteratorStep`, `Yield<T, R>` | `YieldStep<T>` |
 | `loop (xs) { x -> }` · `loop (cond)` · `loop await` | `for (xs) { x -> }` · `while (cond)` · `for await` |
-| `-> Element` on a component that uses a hook | `-> @Component<Element>` |
+| `-> Element` on a component that uses a hook | `-> @Component<ElementBase, Element>` |

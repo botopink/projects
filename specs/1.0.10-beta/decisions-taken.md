@@ -58,9 +58,9 @@ what was left, now `00-compiler-carry-over`'s order),
 | [115](#115-routing-is-a-bundled-library-a-signal-after-the-first-chunk-is-markup-jhonstart-gains-redirect-rakuns-keys-are-rakun) | The five points 114 left open | (a) on the four: the bundled library `routing` (`libs/routing`, erlang + commonJS, pure) holds the matcher and the `k` / `z` / URL-rule codecs, and rakun and jhonstart import it directly — `rakun-routing` and onze's `match` leave; after the first chunk `notFound` / `redirect` are markup jhonstart's client executes, status 200; jhonstart gains `redirect(url)` and pages import signals and `cookies` from jhonstart; rakun reads `rakun.*` keys only (`rakun.actions.bodyLimit`, `rakun.appDir`); 114's invented names stay; amends 113 and 114 — **amended by 116 and 117** |
 | [116](#116-code-two-libraries-both-run-is-neutral-routing-gains-navigation-and-param-actions-and-validation-are-bundled-libraries-std-writes-json) | Nine more pieces two libraries both run | (a) on eight, (b) on validation: `routing` gains `navigation` (the signal vocabulary, neutral `nav:` reasons, the `n` codec) and `pattern` (the `:param` grammar); bundled libraries `actions` (the action envelope, `state` grammar, JSON-RPC body, `refresh`) and `validation` (rakun-validation moved, message lookup injected — rakun has no commonJS member left); std gains `json.quote` / `unquote` / `array` / `object` and `escape.scriptJson`, and `encoding` / `contentHash` replace every private copy; onze configures front 82's static server; amends 113, 114 and 115 — **amended by 117** |
 | [117](#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only) | Nine points 113–116 left: who handles a page signal, the late-signal global, the layout form, the action `redirect`, the body limit, front 07, reading JSON, sidecars, rakun's targets | (a) on eight, (b) on front 07: jhonstart handles `redirect` / `notFound` itself over a generic `Response(status, header, write, close)`, server and client-only (`clientApp`) alike, and checks the target (`matchPath`, `allowedRedirects`); onze only adapts rakun's response, whose `ChunkWriter` gains `setStatus` / `setHeader`; rakun keeps `redirect` for actions only; `globals.signal` → `__bp2`; `#[layout]` / `#[page]` / `#[template]` require `#[@use] … -> @Component<Element>`; `OnzeConfig.actionsBodyLimit` (1 MiB); front 07 folded into `01-std-lib-enablement`; std `Json` + `json.decode`; bundled libraries `.bp` only; every rakun manifest `["erlang"]`; amends 113–116 — **superseded in part by 118, 120 and 121** |
-| [118](#118-the-return-type-is-the-annotation) | How does a function gain an effect? | By writing the wrapper literally as its return (`@Result`, `@Task`, `@Use`, `@Component`, `@Iterator`, `@Stream`); an alias does not activate; the six effect annotations leave; one return, one effect (R5 by construction); `use` only under `@Use` / `@Component` — supersedes parts of 95, 98, 102–105 and 117 |
+| [118](#118-the-return-type-is-the-annotation) | How does a function gain an effect? | By writing the wrapper literally as its return (`@Result`, `@Task`, `@Use`, `@Component`, `@Iterator`, `@Stream`); an alias does not activate; the six effect annotations leave; one return, one effect (R5 by construction); `use` only under `@Use` / `@Component` — supersedes parts of 95, 98, 102–105 and 117 — **amended by 128** |
 | [119](#119-what-return-does-in-an-effect-body) | What does `return` do in an effect body? | `T` is wrapped through every layer; a value of any layer passes through the outer ones; an ambiguous nested wrapper asks for `Ok(…)` (`effect-return-ambiguous-nesting`) |
-| [120](#120-taskt-replaces-futuret-e-a-task-never-fails) | `@Future<T, E>`? | Replaced by `@Task<T>`, which never fails; `await` answers the value (a `@Result` when there is one), `try await` propagates; the chain is `@Use ⊃ @Task`, `@Result` leaves it; commonJS `async function` for every `@Task` / `@Use` / `@Component` return |
+| [120](#120-taskt-replaces-futuret-e-a-task-never-fails) | `@Future<T, E>`? | Replaced by `@Task<T>`, which never fails; `await` answers the value (a `@Result` when there is one), `try await` propagates; the chain is `@Use ⊃ @Task`, `@Result` leaves it; commonJS `async function` for every `@Task` / `@Use` / `@Component` return — **amended by 128** |
 | [121](#121-only-result-fails) | Which wrappers fail? | Only `@Result`; `throw` / `try` are legal wherever a layer of the return is a `@Result`; a component handles its errors in its body |
 | [122](#122-iteratort-and-streamt-over-yieldstept-for-does-no-implicit-try) | The generators | `@Iterator<T>` (was `@Generator`) and `@Stream<T>` over `YieldStep<T> { Yield, Done }`; `@ResultGenerator` / `@FutureGenerator` leave; a `@Result` item fails per item; `for` does no implicit `try` and iterates any `@Iterator` in any body |
 | [123](#123-iterator-or-factory-a-body-that-yields-is-an-iterator) | An `@Iterator` return with no `yield`? | A factory — an ordinary function returning an iterator; mixing `yield` and `return <iterator>` is `iter-mixed-yield-return` |
@@ -68,6 +68,7 @@ what was left, now `00-compiler-carry-over`'s order),
 | [125](#125-iter-and-stream-prefix-a-loop-and-make-it-an-iterator-or-a-stream) | An iterator inside a function | `iter` / `stream` before `loop` / `while` / `for`: a closed expression worth `@Iterator` / `@Stream`, the item `@Result` inferred from `throw` / `try`; replaces `#[@X] loop` |
 | [126](#126-a-host-function-returning-taskresultt-e-turns-a-rejection-into-errore) | A host function that can fail | `#[@External…] … -> @Task<@Result<T, E>>` turns a rejection / `{error, …}` into `Error(e)`; `-> @Task<T>` makes a rejection a fatal host failure |
 | [127](#127-no-coexistence-the-old-annotations-and-wrappers-are-errors-with-a-fix-it-and-a-codemod) | A compatibility window for the old forms? | None (decision 67): `effect-annotation-removed`, `effect-type-removed`, `iterator-error-param-removed`, each with a fix-it, and the codemod `botopink migrate effects` |
+| [128](#128-one-context-wrapper-componentc-t) | `@Use<C, T>` and `@Component<T>`? | Unified into one wrapper, `@Component<C, T>`, for hooks and components alike; the base is always written; `@Use` leaves (`effect-type-removed`); a component is the `@Component<C, T>` whose `T` implements `@Context<C>` — amends 102, 104, 117 item 3 and 118–121 |
 
 ## 68. One milestone, the 1.0.9 numbers kept, the drafts deleted
 
@@ -2060,6 +2061,9 @@ Implements: front [`24-effects-by-return`](./00-compiler-carry-over/24-effects-b
 steps E2 (the annotations parsed only to be refused) and E3 (effect mode read from the syntactic
 return; `effect-wrapper-behind-alias`).
 
+**Amended by [128](#128-one-context-wrapper-componentc-t) (2026-09-25):** `@Use<C, T>` and
+`@Component<T>` are one wrapper, `@Component<C, T>`; read every `@Use` / `@Component` above as it.
+
 ## 119. What `return` does in an effect body
 
 **Decided 2026-09-26 by the maintainer** (D-B). In a function whose return is an effect wrapper:
@@ -2578,3 +2582,63 @@ The old names that had already left stay gone: `#[@context]` / `@Context<B, R>` 
 **Supersedes:** nothing in 95–117 beyond what 118–126 state; it fixes how the change lands.
 Bears on: every library front whose examples spell the old annotations (listed in front 24's README).
 Implements: front 24 steps E2 (the three diagnostics) and E6 (the codemod).
+
+## 128. One context wrapper: `@Component<C, T>`
+
+**Decided 2026-09-25 by the maintainer**, amending the effect revision before it lands: *"gostaria de
+unificar `@Use<C, T>` or `@Component<T>` em `@Component<C, T>`"*. The two wrappers that grant `use`
+become one:
+
+| Return | The body may write |
+|---|---|
+| `@Component<C, T>` | `use` · `await` |
+
+- **`C` is the base** the body's `use`s anchor at (`ElementBase`, `RequestBase` — the library's name;
+  the compiler knows none). It is **always written**, for a hook and for a component; it is never
+  read off `T`'s `implement @Context<…>` clause. `@Component<T>` with one argument is a type-arity
+  error.
+- **`T` is the return.** A **hook** returns any `T` (`@Component<ElementBase, State<T>>`); a
+  **component** is the `@Component<C, T>` whose `T` implements `@Context<C>`
+  (`@Component<ElementBase, Element>`). The rules of 96 / 104 stand, read off this one wrapper: one
+  base per function; hooks compose (`use h()` needs `h: @Component<C, _>` with the body's `C`); a
+  component is called (`Counter()`), never `use`d — `use` of a call whose `T` owns the context is
+  refused.
+- **The chain** is `@Component ⊃ @Task` (`@Stream ⊃ @Task`, `@Iterator`); `throw` / `try` follow
+  121 (legal when `T` is a `@Result`); commonJS lowers every `@Component` return to an
+  `async function` (120).
+- **`@Use` leaves** without an alias (127): `@Use<C, T>` in a type is `effect-type-removed`, fix-it
+  `@Component<C, T>`. The codemod rewrites `@Use<C, T>` → `@Component<C, T>` and `@Component<T>` →
+  `@Component<B, T>`, `B` read from `T implement @Context<B>` (a typed rewrite, like `try await`).
+- `effect-wrapper-mismatch`'s last case — `@Component<X>` with `X` owning no context — leaves with the
+  sugar: any `T` is a legal hook return.
+
+```bp
+pub fn state<T>(initial: T) -> @Component<ElementBase, State<T>> { … }       // a hook
+
+pub fn counter(start: i32) -> @Component<ElementBase, #(i32, fn() -> void)> {
+    val s = use state(start);
+    return #(s.get(), fn() { s.set(s.get() + 1); });
+}
+
+#[page]
+pub fn PostPage(ctx: PageContext) -> @Component<ElementBase, Element> {      // a component
+    val (n, inc) = use counter(0);
+    return div([p([text(n.toString())])]);
+}
+```
+
+**Amends:**
+- **102** — `@Use<C, T>` and `@Component<T>` ≡ `@Use<B, T>` become `@Component<C, T>`; the sugar that
+  read `B` from `T` leaves. `@Context<Base>` as the owner marker only stays.
+- **104** — its rules are read off `@Component<C, T>`; "the base of a `@Component<T>` is the `B` of
+  `T: @Context<B>`" becomes "the base is `C`".
+- **117 item 3** — `#[layout]` / `#[page]` / `#[template]` require `-> @Component<ElementBase, Element>`.
+- **118** — the table's `@Use<C, T>` or `@Component<T>` row is `@Component<C, T>`; rules 3 and 6 name
+  one wrapper.
+- **120, 121** — the chain is `@Component ⊃ @Task`; the await channel and the commonJS
+  `async function` key on `@Task` / `@Component`; `@Component<C, @Result<…>>` carries a hook's failure.
+
+Implements: front [`24-effects-by-return`](./00-compiler-carry-over/24-effects-by-return/README.md)
+steps E1 (`Component<C, T> extends Task`, `Use` removed), E2 (`@Use` → `effect-type-removed`), E3
+(the `use` gate and the component-is-called refusal keyed on `T: @Context<C>`), E6 (the two codemod
+rows) and E8 (the spec examples).
