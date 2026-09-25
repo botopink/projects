@@ -68,6 +68,7 @@ the import list. Fix both.
 | **Why** | `bindPatternNamesForSubject` is called for a `case` arm and (since `d2b468d`) for a `val assert`, but not for a plain destructuring bind |
 | **Correct** | the same walk, with the same typing, and the same refusal when the pattern cannot fail-safely cover the subject |
 | **Probe** | `val s = Shape.Circle(r: 2); val Circle(r) = s; @print(r);` → `unbound variable 'r'` at `2:71` |
+| **Landed** | `bindDestructPattern` in `comptime/infer.zig`. Decided failure behaviour: the bare form checks only where the pattern is irrefutable over the subject's type (one-variant `type`, record constructor, spread-only list); otherwise `refutable-val-pattern` at the binding |
 | **Acceptance** | `val Circle(r) = s;` binds `r: i32`; `val s: string = r;` after it reds. The commonJS lowering that follows is [`../04-js/pattern-binding.md`](../04-js/pattern-binding.md) |
 
 ## R6 — no lowering is recorded for a method on an associated fn's result

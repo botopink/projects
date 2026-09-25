@@ -48,6 +48,12 @@ emitted and this row is pure deletion.
 
 **Confirm that with the checker front before writing the lowering**, and record the answer here.
 
+**Answered by the checker (01 R5):** the bare `val <Pattern> = e` checks **only where it cannot fail** —
+the one variant of a one-variant `type`, a record's own constructor, a spread-only list pattern. Every
+refutable one is `refutable-val-pattern` at check time, naming `val assert` and `case`. So no program
+that reaches this lowering needs a test: the row is a plain destructure (`const { radius: r } = s;`)
+and pure deletion of the pattern spelling.
+
 ## The erlang and beam twins
 
 `destructPatternExpr` in `src/codegen/erlang.zig` (`:3219`, `:4109`) handles the same construct on
