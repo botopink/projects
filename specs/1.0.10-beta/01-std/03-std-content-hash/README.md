@@ -279,6 +279,7 @@ backends.
   expectations in the tests.
 - No function in the module builds a multi-part key by joining without framing.
 - `libs/std/AGENTS.md`'s `content_hash` row names the eight functions, and the section comment records the
-  `emilia.hashHex` duplication as a later `emilia`-owned change.
+  `emilia.hashHex` duplication as a later `emilia`-owned change — decision 116 rule 7: emilia's
+  class-name hash and onze front 68's recomputation call `contentHash`, and `hashHex` is deleted.
 - Every `// LANGUAGE GAP:` marker in the example appears in the table above.
 - The front's tests are green on its assigned target — here, both.
