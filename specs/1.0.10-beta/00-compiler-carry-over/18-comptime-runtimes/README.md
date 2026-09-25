@@ -14,12 +14,11 @@ and C-01 re-shapes that atom. Steps 0, 2, 3 (selector), 4 (layout) and 5 (browse
 depend on C-01: the wat runtime names no atom, the layout is a harness change, and the browser build
 ships the wat runtime alone.
 **Owns:** `src/comptime/runtime/**` (landed: `server_source.zig`, `render_resident.zig`, the cmd-4
-path in `persistent_erl.zig`; remaining: the `persistent_beam.zig` rename, `persistent_wat.zig`, the
-dispatcher that replaces the two `Runtime = enum { erl }` at `decorator_eval.zig:35` /
-`template_eval.zig:46`) · `src/codegen/beam/beam_file.zig` + `opcodes.zig` + `gen_opcodes.sh`
-(landed) · the comptime half of `src/codegen/beam_asm.zig` (the untyped lowering mode, remaining)
-and of `src/codegen/wat.zig` (the dynamic-term
-lowering mode and the binary emitter `src/codegen/wat/wasm_binary_emitter.zig`) ·
+path in `persistent_erl.zig`, `persistent_wat.zig`, `wat/`, `runtime.zig` the dispatcher, `parity.zig`,
+`reply_order.zig`; remaining: the `persistent_beam.zig` rename) · `src/codegen/beam/beam_file.zig` +
+`opcodes.zig` + `gen_opcodes.sh` (landed) · the comptime half of `src/codegen/beam_asm.zig` (the
+untyped lowering mode, remaining) · the binary emitter `src/codegen/wat/wasm_binary_emitter.zig`
+(landed) ·
 `src/codegen/snapshot.zig` + `src/comptime/snapshot.zig` + `src/utils/snap.zig` (directory
 selection) · `snapshots/codegen/**` (the re-layout, all 1 346 files) · root `build.zig` (the
 `render-resident` + `erlc` step and the `compiler-web` wasm build, landed) · `modules/compiler-web/**` (landed) · `modules/wasm3/**` (re-vendored) · `scripts/comptime_bench.sh`
@@ -149,9 +148,9 @@ What the runtime **returns** is JSON text produced in the node by the resident `
 4. *"The same for wat."* `wat.zig` is untyped already (E-8) — good — but its value model is
    **static**: an `i32` is a number or a pointer by the emitter's knowledge, never by a tag. A
    comptime body needs run-time typed values (`'__bp_add'` is number-or-string at run time;
-   `maps:get` in 159 of 183 modules). So `persistent_wat.zig` is not "run wat.zig's output": it is a
-   **dynamic-term mode** of `wat.zig` over a tagged heap, specified in
-   [`wat-runtime.md`](./wat-runtime.md).
+   `maps:get` in 159 of 183 modules). So `persistent_wat.zig` is not "run wat.zig's output": it runs
+   the comptime module's **Erlang text**, parsed and lowered over a tagged heap — the same program
+   the BEAM runs — as [`wat-runtime.md`](./wat-runtime.md) describes.
 5. *"Doubling the snapshot count."* Of 1 346 codegen files, **28** can differ between runtimes; the
    other 1 318 pairs are byte-identical by construction (the RUN LOG is the *target's* runtime,
    `COMPTIME VALUES` is Zig). The tree was collapsed for that reason twice (2026-09-15,
@@ -236,48 +235,30 @@ the emitter re-parsing its preludes (front 14 § *Landed*) — not this front's,
 
 ### Step 2 — `persistent_wat.zig`: comptime bodies on wasm3, in-process — LANDED (`80a19bf7` binary emitter, `1b1b34de` runtime)
 
-**As built — one deviation from the design below, taken because it makes the parity invariant hold by
-construction.** The wat runtime does not lower the botopink AST through a second, dynamic-term mode of
-`wat.zig`: it lowers **the Erlang text `emitComptimeModule` already produced** — the program the BEAM
-runtime compiles — so the two runtimes run one program and can only disagree through a BIF implemented
-twice. `comptime/runtime/wat/erl_parse.zig` reads the text back (all 420 comptime modules on disk
-parse), `lower.zig` lowers it and the prelude it imports into one `wat_ast` module, `link.zig` splices
-that into `rt.zig` — the term library, written in Zig and compiled at `zig build` for
-`wasm32-freestanding` (MVP) instead of hand-built `wat_prelude` groups — and `persistent_wat.zig` runs it
-on wasm3 (re-vendored, `modules/wasm3/`). The encodings are the ones below: ETF in (`rt_etf_decode` of
-`etf.zig`'s bytes), `json:encode` bytes out. A construct the lowering cannot take is a compile error
-naming it; the refusal count over the fixtures and the five libraries is **0**. What `rt.zig` does not
-do yet (`~p`'s 80-column wrapping, Unicode case mapping, tail calls) is listed in
-`comptime/runtime/wat/AGENTS.md`.
-
 Specified in [`wat-runtime.md`](./wat-runtime.md). Decision 84 makes this the runtime of every
 build whose target is `commonJS`, `typescript` or `wasm`, and of the client half of a split project
 — not a test-only artefact. The summary:
 
-- **Lowering.** `wat.zig` gains a *dynamic-term mode* (`ComptimeModule` config, `em.dynamic = true`)
-  in which every value is a pointer to a tagged term on the linear-memory heap — the same eight
-  variants `beam/term.zig` and `etf.zig` have (`atom binary integer float boolean nil list tuple
-  map`). `'__bp_add'`, `'__bp_len'`, `maps:get`, `lists:*`, `string:*` become prelude helpers over
-  that heap; a comptime body's text-mode listing (`COMPTIME WAT`) is the `.wat` of that module.
-- **Encoding in: ETF, unchanged.** The argument bytes `etf.encode` already produces are copied into
-  the module's memory and decoded by a prelude `$__etf_decode` into tagged terms. One encoder
-  (`etf.zig`, pinned to OTP's byte vectors) serves both runtimes; a JSON/CBOR argument would be a
-  second encoder that loses the atom/binary/tuple distinction the bodies rely on
-  (`maps:get(name, Decl)` keys are atoms).
-- **Encoding out: JSON text, identical to `'__bp_reply'/1`'s.** A prelude `$__bp_reply` +
-  `$__json_encode` write the same bytes OTP's `json:encode` writes for the same term, so
-  `parseOutcome` (`template_eval.zig:701`, `decorator_eval.zig:395`) is shared verbatim and neither
-  evaluator knows which runtime ran.
-- **Executor.** wasm3 embedded from a re-vendored `modules/wasm3/` (`build.zig` exporting `link`,
-  `exposeHeaders`, `wasm3_srcs`, `wasm3_cflags` as it did before its deletion); host import
-  `fd_write` served from Zig into a captured buffer (the body's prints go where `erl.stderr.log`
-  went), plus `bp_host.now`/`bp_host.random` only if a body needs them (today: none — E-9 shows
-  no `erlang:now`/`rand` use). wasm3 takes **binary** wasm: `src/codegen/wat/wasm_binary_emitter.zig`
-  renders the same `wat_ast` model to the binary format (text stays for snapshots; no text re-parse).
-- **Gap closure.** The 22 carriers of E-8 are static-mode gaps; in dynamic mode each construct is
-  either lowered to a helper call or **refused with the located diagnostic** `unsupported_method`
-  already produces for the erlang path (`erlang.zig:481`) — never a zero placeholder. Table in
-  `wat-runtime.md` § 4.
+- **One program.** The wat runtime lowers **the Erlang text `emitComptimeModule` already produced** —
+  the program the BEAM runtime compiles — not the botopink AST a second time, so the two runtimes
+  can only disagree through a BIF implemented twice. `comptime/runtime/wat/erl_parse.zig` reads the
+  text back (all 420 comptime modules on disk parse); `lower.zig` lowers it and the prelude it
+  imports to one `wat_ast` module over tagged terms; `link.zig` splices that into the term library.
+- **The term library** (`wat/rt.zig`) is Zig compiled at `zig build` for `wasm32-freestanding` (MVP)
+  and embedded (`bp_wat_rt.wasm`): Erlang terms on linear memory, one arena per evaluation,
+  exceptions as a pending class/reason tested after every call, the BIFs with the BEAM's error
+  reasons, `json:encode` byte-compatible with OTP's.
+- **Encodings.** ETF in (`etf.zig`'s bytes, decoded by `rt_etf_decode`); `json:encode` bytes out,
+  read in canonical key order on both runtimes (`reply_order.zig`: the BEAM iterates atom keys in
+  atom-table order, an accident of load order).
+- **Executor.** wasm3 in-process (`persistent_wat.zig`, re-vendored `modules/wasm3/`); the linked
+  module imports nothing, so a body's prints stay in its own memory. The browser build runs the same
+  module on the page's engine behind `bp_host` imports (step 5). Binary wasm comes from
+  `codegen/wat/wasm_binary_emitter.zig`.
+- **Refusals.** A construct the lowering cannot take (`self/0`, `apply/3`, a BIF outside the table) is
+  a compile error naming it — never a zero value. Refusal count over every fixture and the five
+  libraries: 0. What `rt.zig` does not do yet (`~p`'s 80-column wrapping, Unicode case mapping, tail
+  calls, bignums) is listed in `wat-runtime.md` § 7.
 
 **Acceptance:**
 - [x] `persistent_wat.zig` runs every one of the 33 `COMPTIME REPLY` fixtures and answers
