@@ -18,6 +18,8 @@ Paths are relative to the repository named in the section or row.
 ```
 wave 0    01-std ──────────────────────────────┐   asserts.bp · snapshots.bp · @src() · the
           (std enablement 01/02/03 as before)  │   old onze dir removed · onze13 → onze rename
+          01-std/04-routing-lib ───────────────┤   libs/routing: the matcher and the routing
+                                               │   wires rakun 22 and jhonstart 26 import
                                                │
 wave 1    02-packaging ────────────────────────┤   lands ALONGSIDE each library's first front:
           modules/<lib>/ · modules/<lib>-test/ │   rakun 04 · jhonstart 94 · emilia 54 · onze 49
@@ -138,6 +140,14 @@ test story stands on, and one compiler carve-out.
 | **F01 std-lib-enablement** | `src/net.bp`, `src/process.bp`, `src/path.bp`, `src/clock.bp`, `src/random.bp`, `src/regex.bp`, `src/encoding.bp`, `src/hmac.bp`, `src/escape.bp`, `src/root.bp` (exports only) | inline `test` blocks at the foot of each `src/*.bp` it owns |
 | **F02 std-async-primitives** | `src/async.bp` | inline `test` blocks in `src/async.bp` |
 | **F03 std-content-hash** | `src/content_hash.bp` | inline `test` blocks in `src/content_hash.bp` |
+
+The bundled `routing` library is `01-std`'s too, in its own directory beside `libs/std/` (decision
+115). Its directory number is its index inside `01-std`, not a milestone front number (front 04 is
+rakun's erlang runtime):
+
+| Front | Source it owns | Tests it owns |
+|---|---|---|
+| **routing-lib** ([`01-std/04-routing-lib/`](./01-std/04-routing-lib/README.md)) | `repository/botopink-lang/libs/routing/**` — `segment`, `table`, `match` (ported from rakun's `file_router.bp`), `route_kinds` (front 60's `k` codec), `slot_states` (61's `z` codec), `url_rules` (65's `canonicalize` / `clientHref` / redirect-table codec) · **by carve-out from `00`**: the bundled-package registry in `build.zig` and the `"std"` package checks it generalises (named in its README) | `libs/routing/test/**`, both targets |
 
 `src/root.bp` is the one shared file in track A. F01 owns it; F02 and F03 hand F01 their export
 lines rather than editing it, and F01 lands last of the three.
@@ -409,6 +419,7 @@ files by design and are made disjoint by the banner convention above.
 | `00 · 13-module-identity` · every erlang front | the erlang/beam emitters, ≈318 re-recorded cells | No shared file, but every server front's erlang cell re-runs after 13 (the module atom and the record representation change under it). A server front that lands before 13 re-verifies after; one that lands after never sees the old shape. This is why 13 is **pulled ahead** |
 | `00 · 21-effect-chain` · `00 · 22-loops` · `00 · 23-std-purity` · `00 · 15` / `16` / `01` / `04` and the backend fronts | `parser/{decls,exprs}.zig`, `lexer.zig`, `format.zig`, `comptime/infer.zig`, the four codegens | 21 and 22 rewrite the parser and every codegen, 23 the import path through parser, checker, codegens and the LSP: they run **one at a time, 21 → 22 → 23**, and never beside 15-language-surface, 16-formatter, 01-checker or a backend front. The `format.zig` printer arms are 16's carve-out to 22; `project_graph.zig` is 11's carve-out to 23 |
 | `00 · 23-std-purity` · `01-std` | `libs/std/src/**`, `root.bp`, `build.zig`'s `stdPkgFilesFromRoot` | 23 moves the modules fronts 01/02/03 land flat; it opens only after all three are merged, and `libs/std/src/**` is 23's from then until it lands |
+| `00 · 23-std-purity` · `01-std/04-routing-lib` | `build.zig`'s package registry, the `emitUse` of each backend, the CLI resolver's `"std"` exemption | routing-lib's bundling step is a **named carve-out** of `00`'s files, granted like `@src()`'s, and opens after 23 lands; its library steps (`libs/routing/**`) share nothing and run from wave 0 |
 | `00 · 21` / `22` / `23` · `03-rakun` · `04-jhonstart` · every `-test` member | jhonstart's `#[@context]` / `@Context<` sites (21), rakun's and jhonstart's `loop (` sites (22), every `from "std"` line (23) | Each is a named sweep landed through `scripts/known-red-libs.txt`: the compiler commit lands with the library in the ledger, the library sweep follows, the ledger line is deleted in the next compiler commit — adjacent commits, never a standing red |
 
 
@@ -483,9 +494,9 @@ land in wave 1; the wave below is its host half, which is what the fronts citing
 
 | Wave | Fronts | Blocked by |
 |---|---|---|
-| **0** | 01 · 02 · 03 · 54 · 94 · `02-packaging` (was 95) · `01-std`'s asserts/snapshots/`@src()` | nothing — except `@src()`, which needs `00`'s carve-out granted |
-| **1** | 04 · 05 · 26 · 56 | 01 · 54 · 94 |
-| **2** | 06 · 22 · 27 · 28 · 33 · 34 · 35 · 55 · 57 · 58 · 62 · 74 · 80 | 04 · 05 · 26 · 56 |
+| **0** | 01 · 02 · 03 · 54 · 94 · `02-packaging` (was 95) · `01-std`'s asserts/snapshots/`@src()` · `01-std/04-routing-lib` (the library) | nothing — except `@src()`, which needs `00`'s carve-out granted, and routing-lib's bundling step, which waits on `00 · 23-std-purity` |
+| **1** | 04 · 05 · 26 · 56 | 01 · 54 · 94 · routing-lib |
+| **2** | 06 · 22 · 27 · 28 · 33 · 34 · 35 · 55 · 57 · 58 · 62 · 74 · 80 | 04 · 05 · 26 · 56 · routing-lib |
 | **3** | 07 · 08 · 11 · 13 · 14 · 15 · 19 · 21 · 23 · 29 · 31 · 32 · 36 · 37 · 38 · 39 · 40 · 41 · 42 · 43 · 44 · 45 · 46 · 47 · 59 · 72 | 06 · 22 · 28 · 33 · 34 · 35 · 62 |
 | **4** | 09 · 10 · 16 · 17 · 18 · 30 · 48 · 63 · 66 · 73 · 75 · 77 · 78 · 82 · 93 | 07 · 08 · 11 · 13 · 14 · 23 · 29 · 31 · 32 · 33–47 · 72 |
 | **5** | 12 · 20 · 25 · 49 · 61 · 65 · 76 · 79 · 83 · 84 · 86 | 10 · 16 · 18 · 30 · 63 · 75 · 77 |

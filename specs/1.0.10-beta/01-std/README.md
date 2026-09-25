@@ -63,6 +63,7 @@ Verified by reading the trees at HEAD `b5ceb203` (meta) on 2026-09-20.
 | [`examples/asserts-unit-example.bp`](./examples/asserts-unit-example.bp) | Example 1 — `std/testing/asserts` alone |
 | [`examples/emilia-test-submodule-example.bp`](./examples/emilia-test-submodule-example.bp) · [`examples/emilia-test-consumer-example.bp`](./examples/emilia-test-consumer-example.bp) | Example 2 — an `emilia-test` submodule and the test file that consumes it with `@src()` |
 | [`01-std-lib-enablement/`](./01-std-lib-enablement/README.md) · [`02-std-async-primitives/`](./02-std-async-primitives/README.md) · [`03-std-content-hash/`](./03-std-content-hash/README.md) | step 6 — the three std sub-fronts |
+| [`04-routing-lib/`](./04-routing-lib/README.md) | step 8 — the second bundled library, `libs/routing` (decision 115): the route matcher and the `k` / `z` / URL-rule codecs rakun and jhonstart both import |
 
 ## Order
 
@@ -82,6 +83,9 @@ Verified by reading the trees at HEAD `b5ceb203` (meta) on 2026-09-20.
    │
 7  00-compiler-carry-over/23-std-purity — the tree of modules.md: io/, testing/, the merges,
    the root-does-not-import-io check, the import grammar (decisions 106, 107)
+
+8  04-routing-lib — libs/routing beside libs/std (decision 115): the library and its tests from
+   step 2 on, beside steps 3–7; its compiler bundling after step 7
 ```
 
 Step 1 is first because it is what the other steps verify with: `asserts.bp`'s own inline tests are
@@ -205,9 +209,24 @@ root-does-not-import-`io/` check, and lands the import grammar of decision 107.
 - [ ] every `from "std"` line in `repository/{rakun,jhonstart,emilia,erika,onze}` is rewritten per `modules.md` § *Old → new*; `zig build test-libs` green
 - [ ] every std inline test is green at its new path on commonJS and erlang
 
+### Step 8 — `04-routing-lib`: the bundled `routing` library
+
+`libs/routing/` beside `libs/std/` (decision 115): the route matcher ported from rakun's
+`file_router.bp`, the `k` and `z` blob codecs and the URL rules, pure and compiled for erlang and
+commonJS, and the compiler's std registry generalised into a bundled-package registry so
+`from "routing"` resolves as `from "std"` does. Specified in
+[`04-routing-lib/README.md`](./04-routing-lib/README.md). Its library steps need only step 2
+(`testing.asserts`); its bundling step opens after step 7, because it rewrites the registry
+`23-std-purity` rewrites.
+
+**Acceptance:**
+- [ ] the sub-front's own *Gate* holds
+- [ ] rakun front 22 and jhonstart front 26 import the matcher from `"routing"`, and no copy of it
+      remains under `repository/`
+
 ## Gate
 
-- [ ] `zig build test` from a **cold** runtime cache, green, in the compiler worktree (steps 1, 7)
+- [ ] `zig build test` from a **cold** runtime cache, green, in the compiler worktree (steps 1, 7, 8)
 - [ ] `botopink test` and `botopink test --target erlang` green in `libs/std` (steps 2–4, 6, 7)
 - [ ] `zig build test-libs` green — std, emilia, jhonstart, rakun, erika, and the new `onze`
 - [ ] the compiler's `snapshots/codegen/{commonJS,erlang,beam,wasm}/` are byte-identical for every pre-existing fixture — `@src()` is additive
@@ -224,6 +243,7 @@ root-does-not-import-`io/` check, and lands the import grammar of decision 107.
 | this front, step 5 | `.gitmodules`, `repository/onze` | `06-onze/49-onze-stand-up` — 49 creates the repository; this step swaps the submodule pointer. 49 cannot land before this step; this step cannot complete before 49's repository exists |
 | `02`, `03` | `async.bp`, the content-hash half of `hash.bp` | none |
 | `01-std-lib-enablement` | `io/net.bp`, `escape.bp`, the hmac half of `hash.bp`, the codec half of `encoding.bp`, additions to six existing modules, `root.bp`, `io/mod.bp` | none once ordered |
+| `04-routing-lib` | `libs/routing/**`; by carve-out, the bundled-package registry in `build.zig` and the `"std"` package checks in compiler-core, the CLI resolver and the LSP (named in its README) | `00 · 23-std-purity` on `build.zig`'s registry and `emitUse` — resolved by order: its Step 2 opens after 23 lands; nothing on `libs/std/**` |
 | `00-compiler-carry-over/23-std-purity` | every path under `libs/std/src/` (the move), `root.bp`, `build.zig` `stdPkgFilesFromRoot`, `parser/decls.zig`, `project_graph.zig`, `emitUse` ×4 | runs after steps 2–6 and after `.tasks/std-async` has merged; nothing else in track A edits std after it |
 
 Tracks B–E consume `@src()`, `testing.asserts` and `testing.snapshots` and write their `-test`
