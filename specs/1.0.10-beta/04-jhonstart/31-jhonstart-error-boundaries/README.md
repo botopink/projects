@@ -284,6 +284,12 @@ pub fn redirect(url: string) -> string {         // the caller writes `throw red
 }                                                // 307 before the first chunk (front 30's render)
 ```
 
+`throw notFound();` is the form inside a `-> @Result<…>` thunk, which is what a boundary's child is. A
+page, layout or template is a `-> @Component<ElementBase, Element>` body and cannot `throw`
+(decision 121); there the signal is the call `notFound();` / `redirect(url);` (front 24's `guide.md`
+§ 7). Whether that call raises the reason itself or the component returns a signalling tree is this
+library's review case in front 24's E7 sweep.
+
 `renderBoundary` re-raises a signal instead of catching it. Because `renderBoundary` does not itself
 return a `@Result`, the re-raise is done by the caller: `renderBoundary` returns the tree, and
 `renderBoundaryChecked` is the `-> @Result<Element, string>` wrapper front 30 calls.
