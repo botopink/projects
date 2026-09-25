@@ -2,22 +2,24 @@
 
 **Track:** E onze
 **Priority:** medium — an app has no CSS-module analogue, no global stylesheet and no preprocessor
-hook, and nothing serves `public/`
+hook, and nothing tells rakun-web's static server (front 82) to serve `public/`
 **Target:** erlang (server)
 **Wave:** 7 — after front 68 lands the manifest record this front appends to
 **Depends on:** 49 (config, `publicDir`, `outDir`, and the boot that fills jhonstart's
-`RenderHooks.headExtra`) · 03 (fingerprints) · 68 (the manifest it appends `Y` records to) · 01
-(`escape.html`, `escape.attribute`, `process.run`, `fs`, `path`)
+`RenderHooks.headExtra` and registers the static roots) · 03 (fingerprints) · 68 (the manifest it
+appends `Y` records to) · 82 (rakun-web's static-file server, which serves the roots this front
+declares — decision 116) · 01 (`escape.html`, `escape.attribute`, `process.run`, `fs`, `path`)
 **Owns:** `repository/onze/modules/onze-assets/src/**`,
 `repository/onze/modules/onze-assets/test/**` — CSS modules, the global stylesheet and its
-fingerprint, the `Y` manifest records, serving `public/`, the preprocessor hook
+fingerprint, the `Y` manifest records, the two static roots handed to rakun-web front 82, the
+preprocessor hook
 **Does not touch:** `repository/emilia/src/**` (emilia's `flush()` contract is not called here at
 all), `repository/jhonstart/**` — the moments emilia's sheet is flushed into the document are
 jhonstart front 30's `RenderPlugin` calls, and the adaptation to `flush()` is the
 `jhonstart-emilia` bridge's (decision 113) — `repository/onze/modules/onze-bundler/src/manifest.bp`
 (front 68 owns the record and the parser; this front hands it the style records),
 `repository/onze/src/integration.bp` (front 49, which registers the bridge plugin at boot),
-`repository/rakun/**`
+`repository/rakun/**` — the static-file server is rakun-web front 82's
 **Reference:** `NEXTJS-DOCS.md § 15. Estilização (CSS)` (CSS Modules · Global CSS · Sass ·
 `useServerInsertedHTML`), `§ 3. Estrutura do Projeto` (`public/`) · `../../contracts.md § 4`
 (class-name scheme, front 48) and `§ 6` (the manifest, front 68) ·
@@ -98,32 +100,34 @@ owns the manifest record and its parser; this front hands it the records** — t
 one-owner-per-file convention track A uses for `libs/std/src/root.bp`. This front never edits
 `manifest.bp`.
 
-### `public/`
+### `public/` — served by rakun-web front 82, configured by onze
 
-`§ 3`: `public/` is served from `/`. The rules:
+`§ 3`: `public/` is served from `/`. onze does not serve it: rakun-web front 82 is the static-file
+server — its content-type table, its `ETag` / `304` handling and its traversal refusal — and onze
+already depends on `rakun-web`, so a second server here would be a second copy of the same rules
+(decision 116 rule 6). What this front decides is **which roots exist and how they are cached**, and
+it states that as front 82's `StaticRoot` records, which front 49's boot registers with
+`registerStaticRoot`:
 
-| Path shape | Cache-Control | ETag |
-|---|---|---|
-| `/_onze/static/<buildId>/…` — fingerprinted | `public, max-age=31536000, immutable` | yes |
-| everything else under `public/` | `public, max-age=0, must-revalidate` | yes, front 03's content hash |
+| Root (`pattern` → `directory`) | `immutable` | `cacheSeconds` | Resulting `Cache-Control` (front 82) |
+|---|---|---|---|
+| `/_onze/static/<buildId>/**` → `<outDir>/static/<buildId>/` — fingerprinted | `true` | `31536000` | `public, max-age=31536000, immutable` |
+| `/**` → `public/` | `false` | `0` | `no-cache` |
 
-**Two prefixes are served and nothing else is.** `public/`, mapped at `/`, and the manifest's
+**Two roots are registered and nothing else is.** `public/`, mapped at `/`, and the manifest's
 `/_onze/static/<buildId>/` asset prefix. Every other directory in a project — `app/`, `src/`,
-`content/`, `lib/`, `.onze/` and anything a developer adds — is **not reachable over HTTP**, and a
-request for one is a 404. There is no configuration key, manifest record or route that adds a third
-served prefix: a project's data directory is data, and an app that wants a file published copies it
-into `public/` deliberately. Front 53 keeps its blog posts in `content/` and relies on this; it should
-not have to ask for it, and a later front that wants to serve a directory has found a design question,
-not a missing option.
+`content/`, `lib/`, `.onze/` and anything a developer adds — is **not reachable over HTTP**: no root
+points at it, so front 82 answers 404. There is no configuration key, manifest record or route that
+adds a third root: a project's data directory is data, and an app that wants a file published copies
+it into `public/` deliberately. Front 53 keeps its blog posts in `content/` and relies on this; it
+should not have to ask for it, and a later front that wants to serve a directory has found a design
+question, not a missing option.
 
-A request that escapes the public directory — `..`, an absolute path, a symlink out — is a 404, not
-a 403, and never a file. Content types come from a fixed extension table, not from sniffing; an
-unknown extension is `application/octet-stream`, never `text/html`, because a served-as-HTML upload
-is a stored-XSS vector.
-
-Binary files are copied and streamed by path, never read into botopink: there is no byte type
-(front 01 records the gap), so `fs` and the runtime move them and this front only decides the
-headers.
+A request that escapes a root (`..`, an encoded `..`, an absolute path, a symlink out), the content
+type of an extension (`application/octet-stream` for an unknown one, never `text/html`) and a
+matching `If-None-Match` (`304`, no body) are front 82's rules and front 82's tests; this front
+asserts none of them again. onze passes front 82 its URL prefix (`/_onze/static/`) as data, so no
+rakun file spells `_onze`.
 
 ### The preprocessor hook
 
@@ -169,30 +173,28 @@ pub fn styleRecords(buildId: string, sheetHash: string, bytes: i32) -> Array<str
 - [ ] `styleRecords` returns `Y|…` lines front 68's `parseManifest` reads back unchanged
 - [ ] This front's source contains no edit to `manifest.bp` — checked by ownership, stated here
 
-### Step 3 — Serving `public/`
+### Step 3 — The static roots onze hands front 82
 
 ```bp
-pub type AssetResponse(status: i32, contentType: string, cacheControl: string, etag: string, path: string)
+import {StaticRoot} from "rakun-web";
 
-pub fn servedPrefixes(buildId: string) -> Array<string>
-pub fn resolveAsset(publicDir: string, urlPath: string) -> AssetResponse
-pub fn contentTypeOf(extension: string) -> string
+pub fn staticRoots(publicDir: string, outDir: string, buildId: string) -> Array<StaticRoot>
 ```
 
+Front 49's boot calls `registerStaticRoot` (rakun-web front 82) once per record. This front defines
+no content-type table, no path resolver, no conditional-request handling and no traversal check —
+those are front 82's (decision 116 rule 6).
+
 **Acceptance:**
-- [ ] `/favicon.ico` resolves to `public/favicon.ico` with `image/x-icon`
-- [ ] `servedPrefixes()` returns exactly two entries, and a test asserts the count — the list is the
-      rule, not a comment describing one
-- [ ] `/../secrets.env`, `/%2e%2e/secrets.env` and an absolute path all give `404`, and the resolved
-      path field is empty
-- [ ] `/content/posts/hello.md` gives `404` with an empty path even though the file exists in the
-      project — only `public/` and `/_onze/static/<buildId>/` are served
-- [ ] `/app/page.bp`, `/src/main.bp` and `/.onze/client-manifest.txt` give `404` for the same reason
-- [ ] No config field, manifest record or call adds a third served prefix — asserted by resolving
-      every path above with every config field set adversarially and still getting `404`
-- [ ] A fingerprinted path gets `immutable`; a plain public path gets `must-revalidate`
-- [ ] An unknown extension is `application/octet-stream`, never `text/html`
-- [ ] A conditional request whose `If-None-Match` matches gives `304` with no body
+- [ ] `staticRoots("public", ".onze", "b7f2a1")` returns exactly two records, and a test asserts the
+      count — the list is the rule, not a comment describing one
+- [ ] the fingerprinted record is `/_onze/static/b7f2a1/**` → `.onze/static/b7f2a1/`, `immutable:
+      true`, `cacheSeconds: 31536000`; the other is `/**` → `public`, `immutable: false`,
+      `cacheSeconds: 0`
+- [ ] No config field, manifest record or call adds a third root — asserted by building the list
+      with every config field set adversarially and still getting two
+- [ ] `grep -rn "fn contentTypeOf\|fn resolveAsset" repository/onze` is empty — the table and the
+      resolver are front 82's
 
 ### Step 4 — The preprocessor hook
 
@@ -210,7 +212,7 @@ pub fn preprocess(command: string, inputPath: string) -> @Future<string>
 ## Examples
 
 - [`examples/css-module-example.bp`](./examples/css-module-example.bp) — a CSS module's scoped names
-  and the generated botopink module, plus `public/` resolution including the paths that must 404.
+  and the generated botopink module, plus the two static roots handed to rakun-web front 82.
 
 ## Language gaps
 
@@ -226,11 +228,11 @@ the module root, and `zig build test-libs`.
 | File | What it asserts |
 |---|---|
 | `style_module_test.bp` | `scopeName` determinism and collision-freedom, the name-set equality between the generated module and the rewritten CSS, the undefined-class report, the `</style` refusal |
-| `assets_test.bp` | `resolveAsset`'s traversal cases, the two-prefix rule including `/content/…`, the two cache policies, the content-type table, `304` |
+| `assets_test.bp` | `staticRoots`: exactly two records, their patterns, directories and cache policies, and no third root under an adversarial config (traversal, content types and `304` are front 82's tests) |
 | `stylesheet_test.bp` | Cascade order, fingerprint stability, and that `styleRecords` round-trips through front 68's `parseManifest` |
 
-**Erlang only, and what that costs.** This front is server-side — it serves files and builds the
-stylesheet the server links; a green commonJS cell would be a claim it does not make. The one place
+**Erlang only, and what that costs.** This front is server-side — it declares the served roots and
+builds the stylesheet the server links; a green commonJS cell would be a claim it does not make. The one place
 the two targets must agree is the manifest, and that round trip is front 68's `manifest_test.bp`,
 which runs on both. `stylesheet_test.bp` asserts only that the records this front emits are readable
 by that parser.
@@ -242,8 +244,8 @@ by that parser.
 - [ ] Nothing under `repository/onze/` calls `emilia.flush()` or defines a style sink — asserted by
       a grep in the front's own gate; the flush moments are jhonstart front 30's and the adaptation
       is the `jhonstart-emilia` bridge's (decision 113)
-- [ ] Exactly two URL prefixes are served, `public/` and `/_onze/static/<buildId>/`, with no
-      configuration path to a third; `repository/onze/docs.md` states it, because front 53 depends
+- [ ] Exactly two static roots are registered with rakun-web front 82, `public/` and
+      `/_onze/static/<buildId>/`, with no configuration path to a third; `repository/onze/docs.md` states it, because front 53 depends
       on its `content/` directory being unreachable
 - [ ] The `Y` records this front emits are read back unchanged by front 68's `parseManifest`
 - [ ] `repository/onze/docs.md` states that emilia's block is written by jhonstart's render

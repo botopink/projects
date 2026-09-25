@@ -35,7 +35,7 @@ for the data subsystem", not "some transitive edge dragged it in".
 | Piece | Where it is today | Shape |
 |---|---|---|
 | Module manifests | `modules/rakun-*/botopink.json` (14 of them) | `name`, `version: "0.0.1"`, `src`, `entry: "root.bp"` is implicit, `target: "commonJS"`, `target: "erlang"`, `targets: ["erlang"]` (decision 113), `dependencies: { "rakun": { "path": "../../" } }` |
-| rakun's own manifest | `repository/rakun/botopink.json` | `targets: ["commonJS"]` — decision 113 makes it `["erlang", "commonJS"]` at the root, `["erlang"]` for the core, with front 04; `files` lists the five modules a consumer loads |
+| rakun's own manifest | `repository/rakun/botopink.json` | `targets: ["commonJS"]` — decisions 113 and 116 make it `["erlang"]` at the root and for every member, with front 04; `files` lists the five modules a consumer loads |
 | Dependency shapes accepted | `modules/compiler-cli/src/cli/config.zig:64-73` | Both `["a","b"]` and `{ "a": { "git": …, "branch": … } }`, normalised to `[]DepEntry`; diagnostics `DEP-001` invalid shape, `DEP-002` no source, `DEP-003` ambiguous ref |
 | What a dependency source may be | `config.zig:42-46` — `DepSpec { git, path, ref }` | A git URL, or a filesystem path. **No subdirectory field.** |
 | Lockfile | `modules/bpmp/src/lockfile.zig:1-40` — `botopink.lock.json`, schema 1 | Pins every package and the toolchain by git commit SHA, carrying `version`, `commit`, `tag`, `constraint`, `sha256`, `source`, `requires[]` |
@@ -73,7 +73,7 @@ belongs to two subsystems is named by both — starters overlap, and the resolve
 | Starter | Pulls | Spring counterpart |
 |---|---|---|
 | `rakun-starter` | `rakun` (core), `rakun-logging` | `spring-boot-starter` |
-| `rakun-starter-web` | `rakun-starter`, `rakun-web`, `rakun-validation` | `spring-boot-starter-webmvc` |
+| `rakun-starter-web` | `rakun-starter`, `rakun-web` — validation is the bundled library `validation` (decision 116), reached with `from "validation"` and never listed | `spring-boot-starter-webmvc` |
 | `rakun-starter-data-sql` | `rakun-starter`, `rakun-data` | `spring-boot-starter-data-jpa` + `-jdbc` |
 | `rakun-starter-security` | `rakun-starter`, `rakun-security`, `rakun-session` | `spring-boot-starter-security` |
 | `rakun-starter-actuator` | `rakun-starter`, `rakun-actuator`, `rakun-metrics` | `spring-boot-starter-actuator` |
@@ -143,8 +143,7 @@ listing what the starter pulls and what an application gets by declaring it.
   "targets": ["erlang"],
   "dependencies": {
     "rakun-starter":    { "path": "../rakun-starter" },
-    "rakun-web":        { "path": "../../modules/rakun-web" },
-    "rakun-validation": { "path": "../../modules/rakun-validation" }
+    "rakun-web":        { "path": "../../modules/rakun-web" }
   }
 }
 ```
@@ -154,7 +153,7 @@ listing what the starter pulls and what an application gets by declaring it.
 - [ ] Each starter's `src/root.bp` declares no `mod` and exports no symbol — a starter that ships code fails the manifest test
 - [ ] `botopink build` in each starter directory succeeds and emits nothing importable
 - [ ] Every path in every starter's `dependencies` resolves to a directory containing a `botopink.json`
-- [ ] Declaring `rakun-starter-web` resolves `rakun`, `rakun-logging`, `rakun-web` and `rakun-validation` transitively, in one resolution pass
+- [ ] Declaring `rakun-starter-web` resolves `rakun`, `rakun-logging` and `rakun-web` transitively, in one resolution pass, and lists no bundled library (`validation`, `routing`, `actions`)
 
 ### Step 2 — the version set
 

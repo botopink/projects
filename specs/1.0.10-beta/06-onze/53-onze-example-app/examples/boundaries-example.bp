@@ -89,7 +89,7 @@ pub fn postBoundary(slug: string) -> ErrorBoundary {
 
 #[@result]
 fn signallingPanel() -> @Result<Element, string> {
-    throw "jhonstart:not-found";
+    throw "nav:not-found";
 }
 
 #[@result]
@@ -102,8 +102,8 @@ fn boundaryOver(child: fn() -> @Result<Element, string>) -> ErrorBoundary {
 }
 
 test "a navigation signal is recognised as a signal, an error is not" {
-    assert isSignal("jhonstart:not-found");
-    assert isSignal("jhonstart:redirect:/login");
+    assert isSignal("nav:not-found");
+    assert isSignal("nav:redirect:/login");
     assert isSignal("the content directory is unreadable") == false;
 }
 

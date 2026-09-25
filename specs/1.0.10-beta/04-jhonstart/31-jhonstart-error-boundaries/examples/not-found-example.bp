@@ -1,6 +1,6 @@
 // Front 31 — jhonstart-error-boundaries · examples/not-found-example.bp
 //
-// A `not-found.bp`, and the reason a boundary must let front 63's signals
+// A `not-found.bp`, and the reason a boundary must let navigation signals
 // through instead of swallowing them.
 //
 // A 404 travels the same `@Result` channel as a real failure — `throw` is the
@@ -11,8 +11,9 @@
 // rakun's 404 or 307.
 //
 // `notFound()` is jhonstart's own (front 31, `error_boundary.bp`): it builds the
-// `jhonstart:not-found` signal string of `contracts.md § 5b`, and jhonstart
-// imports nothing from rakun (decision 113).
+// `nav:not-found` signal string of `contracts.md § 5b` with the bundled library
+// `routing`'s `navigation.signalReason` (decision 116), and jhonstart imports
+// nothing from rakun (decision 113).
 //
 // Upstream:
 //   https://nextjs.org/docs/app/api-reference/file-conventions/not-found
@@ -73,7 +74,7 @@ pub fn postBoundary(slug: string) -> ErrorBoundary {
 
 #[@result]
 fn signallingPanel() -> @Result<Element, string> {
-    throw "jhonstart:not-found";
+    throw notFound();
 }
 
 #[@result]
@@ -86,8 +87,9 @@ fn boundaryOver(child: fn() -> @Result<Element, string>) -> ErrorBoundary {
 }
 
 test "a not-found signal is recognised as a signal" {
-    assert isSignal("jhonstart:not-found");
-    assert isSignal("jhonstart:redirect:/login");
+    assert isSignal("nav:not-found");
+    assert isSignal("nav:redirect:/login");
+    assert isSignal("nav:") == false;
     assert isSignal("the database is on fire") == false;
 }
 

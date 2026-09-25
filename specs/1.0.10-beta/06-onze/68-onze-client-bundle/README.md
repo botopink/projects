@@ -13,7 +13,9 @@ server reads it back to emit script tags
 (config, `outDir`, and the `ONZE_PUBLIC_` rule this front enforces) · 03 (content hashes) · 50 (the
 CLI that invokes it) · 01 (`path.walk`, `path.glob`, `process.run`, `fs`) · 30 (jhonstart's render:
 the payload, the globals registry — `globals.fill` and `globals.signal` — and the `RenderHooks` head and body fields its tags fill) · 27 (the link runtime the entry mounts) · 48 (the class names the
-tree carries) · 20 (the websocket the dev rebuild pushes over)
+tree carries) · 56 (emilia's `styleRule`, which the build-time rule evaluation calls — decision
+116) · `01-std/06-validation-lib` (`setMessageSource`, which the entry calls) · 20 (the websocket the
+dev rebuild pushes over)
 **Owns:** `repository/onze/modules/onze-bundler/src/**`,
 `repository/onze/modules/onze-bundler/test/**` — including `headScriptTags`/`scriptTags` and the
 `RenderHooks.headExtra`/`bodyExtra` values built from them, which `Onze.run` (front 49) hands to
@@ -21,7 +23,9 @@ jhonstart's render at boot. This front owns **no** definition in another reposit
 the payload and the globals registry are jhonstart front 30's, the island marker is front 29's, and
 `linkMount` / `formMount` are fronts 27's and 67's — all imported here (decisions 113, 114). The
 entry imports nothing from the bundled library `routing`: jhonstart's router and `Link` import it
-themselves (decision 115)
+themselves (decision 115), the navigation vocabulary included (`routing`'s `navigation`, decision
+116) — the entry keeps no copy of it. Build-time rule evaluation calls emilia's `styleRule` (emilia
+front 56) directly and the hash-parity check calls std's `content_hash.contentHash` (decision 116)
 **Does not touch:** `repository/onze/src/**` (front 49), `repository/onze/modules/onze-cli/**`
 (front 50), `repository/onze/modules/onze-assets/**` (front 69), `repository/jhonstart/src/**`,
 `repository/rakun/src/**`, `repository/emilia/src/**`
@@ -154,14 +158,19 @@ that computes a different one replaces correct markup with differently-classed m
 Four things enforce it, and they are this front's:
 
 1. **Same input, same function.** Clause 3 of `contracts.md § 4` is the ASCII restriction: the JS cell
-   folds UTF-16 units and the erlang cell folds codepoints, and they diverge above U+10000
-   (`repository/emilia/src/emilia.bp:31-35`). The bundler **recomputes both hashes for every rule body
-   reachable from the client graph and fails the build when they differ**, naming the token list. It is
-   the second line of defence behind front 48's payload-leaf gate, and it costs nothing.
+   folds UTF-16 units and the erlang cell folds codepoints, and they diverge above U+10000. The
+   function is std's `content_hash.contentHash` — emilia's class name and this check call the same
+   one, compiled for two targets (decision 116; emilia's private `hashHex` duplicate is gone). The
+   bundler **recomputes both hashes for every rule body reachable from the client graph and fails the
+   build when they differ**, naming the token list. It is the second line of defence behind front
+   48's payload-leaf gate, and it costs nothing.
 2. **Same tokens.** Every `emilia(...)` call in a client module must have a statically resolvable
    `Token[]` argument — a literal, or a module-level `val` of literals — **in author order**, since
-   clause 2 makes order identity. The bundler evaluates the rule body at build time and records it in a
-   `styleMap` (call-site id → class name + rule body). A call it cannot resolve fails the build naming
+   clause 2 makes order identity. The bundler evaluates the rule body at build time with emilia's
+   `styleRule(tokens, th)` (emilia front 56 — the class name and the encoded body, registering
+   nothing) and records it in a `styleMap` (call-site id → class name + rule body). onze imports emilia
+   for this directly — onze is the package that knows every library (decision 113) — and never goes
+   through the `jhonstart-emilia` bridge, which stays jhonstart's render plugin only (decision 116). A call it cannot resolve fails the build naming
    the call site: a class computed from runtime data cannot be in the server's stylesheet, and a class
    with no rule is invisible breakage.
 3. **One stylesheet, and it is the server's.** The client bundle never calls `flush()` — front 49
@@ -297,12 +306,16 @@ invent a marker; it consumes that one. The entry:
    (`<template data-jh-g="…">…</template><script>__bp2()</script>`, decision 115) has a function to
    call. The entry builds no matcher and hands the router nothing: front 26's router reads the
    payload's `t` and matches with the bundled library `routing` itself,
-7. calls front 27's `linkMount()` and front 67's `formMount(actionHeader)` once, after every island
+7. sets the browser's validation message source with `setMessageSource(…)` from the bundled library
+   `validation` (`01-std/06-validation-lib`, decision 116), over the message table onze ships for the
+   client; with none configured, the library's built-in texts answer. The entry imports nothing of
+   rakun — validation is a bundled library, not a rakun member,
+8. calls front 27's `linkMount()` and front 67's `formMount(actionHeader)` once, after every island
    is mounted — ordinary imports from `jhonstart-link` and `jhonstart-forms`, not globals; the header
    name is onze's configured value (`X-Bp-Action` by default), the same one front 49's boot sets in
    rakun's configuration, as the server render hands `actionField` (`__bp_action`) to front 67's
    `formAction`,
-8. schedules `afterInteractive` scripts, then `lazyOnload` ones.
+9. schedules `afterInteractive` scripts, then `lazyOnload` ones.
 
 An island in the DOM with no entry in the payload, or an entry with no element, is a **hard error at
 run time with the island id in the message**, not a silent skip — a mismatch here is the failure mode
@@ -379,7 +392,8 @@ pub fn refusalMessage(r: BuildRefusal) -> string
 - [ ] No configuration value, decorator or CLI flag changes any of these outcomes — asserted by a
       test that builds with every config field set adversarially and still gets the refusal
 - [ ] `checkEmiliaCalls` refuses a non-literal token list, a `flush()` reference, and a rule body
-      whose commonJS and erlang hashes differ
+      whose commonJS and erlang hashes differ; both hashes are `content_hash.contentHash`, and the
+      class a `styleMap` entry records equals `styleRule(tokens, th)._0` for the contract-4 fixture
 - [ ] A build with more than one refusal reports all of them, not the first
 
 ### Step 4 — chunking and emission
@@ -447,6 +461,8 @@ render that writes them and the entry that reads them cannot diverge (decision 1
       `formMount` receives the configured `actionHeader`, not a literal of the bundler's own
 - [ ] The entry registers `globals.signal` before the first streamed chunk can arrive, next to
       `globals.fill`
+- [ ] The entry calls `setMessageSource` from `"validation"` before the first island mounts, and the
+      client graph contains no `rakun` package
 - [ ] The entry imports nothing from `routing` and hands the router no `match`; it contains no
       matcher and no table parser, and the bundle's client graph reaches `routing` compiled for
       commonJS only through jhonstart's router and `Link`

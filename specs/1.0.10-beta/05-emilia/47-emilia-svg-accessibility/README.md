@@ -6,7 +6,7 @@
 **Wave:** 3
 **Depends on:** 33 (the palette — `fill` and `stroke` take colours, and this front takes them as payloads rather than duplicating front 33's families)
 **Owns:** token sections `Svg`, `A11y` in `repository/emilia/src/tokens.bp` · dispatchers `svgTokenToCss` and `a11yTokenToCss` in `repository/emilia/src/emilia.bp` · `repository/emilia/test/svg_a11y_test.bp`
-**Does not touch:** every other token section and sub-dispatcher; `emilia()`, `flush()`, `tokensToCss`, `hashHex`, `register`, `flushSheet`
+**Does not touch:** every other token section and sub-dispatcher; `emilia()`, `flush()`, `tokensToCss`, the class-name hash (std `content_hash.contentHash` since decision 116), `register`, `flushSheet`
 **Reference:** `TAILWIND_CSS_DOCS.md § 18. SVG` and `§ 19. Acessibilidade` · https://tailwindcss.com/docs/fill · https://tailwindcss.com/docs/screen-readers
 
 ---

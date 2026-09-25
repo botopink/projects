@@ -245,7 +245,7 @@ criterion in one paragraph.
 
 rakun's eight import lines (`config.bp`, `request_context.bp`, `events.bp`,
 `autoconfig_registry.bp`, `file_router.bp`, `ssr.bp`, `ssl_bundle.bp`,
-`rakun-validation/constraints.bp`) and every `<lib>-test` member's
+`constraints.bp` of `libs/validation` — rakun-validation's until `01-std/06-validation-lib` moves it, decision 116) and every `<lib>-test` member's
 `import {testing: {asserts, snapshots, mocks}} from "std";` — `#[mocks.mock]`, `mocks.when`,
 `mocks.verify` letter for letter; through `known-red-libs.txt` as 21 step 4.
 
@@ -255,7 +255,7 @@ import {hash} from "std";                            // request_context.bp
 import {io.clock} from "std";                        // events.bp
 import {collections.Dict, io.fs} from "std";         // file_router.bp
 import {path, io: {fs, process}} from "std";         // ssl_bundle.bp
-import {regex, io.clock} from "std";                 // rakun-validation/constraints.bp
+import {regex, io.clock} from "std";                 // validation/constraints.bp
 ```
 
 **Acceptance:** every library and example at its pre-sweep counts on its assigned rows;

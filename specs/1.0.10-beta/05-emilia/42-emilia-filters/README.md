@@ -6,7 +6,7 @@
 **Wave:** 3
 **Depends on:** none of the emilia fronts directly — `Filter` and `Backdrop` are self-contained scales. Wave 1 places it after wave 0 (33 · 34 · 35) so the `tokenToCss` arms land in front-number order.
 **Owns:** token sections `Filter`, `Backdrop` in `repository/emilia/src/tokens.bp` · dispatcher `filterTokenToCss` (and its sibling `backdropTokenToCss`) in `repository/emilia/src/emilia.bp` · `repository/emilia/test/filters_test.bp`
-**Does not touch:** every other token section and sub-dispatcher; `emilia()`, `flush()`, `tokensToCss`, `hashHex`, `register`, `flushSheet`
+**Does not touch:** every other token section and sub-dispatcher; `emilia()`, `flush()`, `tokensToCss`, the class-name hash (std `content_hash.contentHash` since decision 116), `register`, `flushSheet`
 **Reference:** `TAILWIND_CSS_DOCS.md § 13. Filtros` (blur literals inline at `§ 13.1`; the opacity scale mirrored from `§ 12.3`) · https://tailwindcss.com/docs/filter
 
 ---

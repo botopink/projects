@@ -43,7 +43,7 @@ Seven submodules. Front 95 proposed five (`onze`, `onze-test`, `onze-cli`, `onze
 | `onze-test` | 95 | **keep** | Every library has one; this one also owns the E2E runner (`bootApp`, `request`) because booting a built app and hitting routes is what onze's tests are |
 | `onze-cli` | 95 · 50 | **keep** | Runs on a developer's machine before any BEAM node exists (commonJS only); a production deploy never loads it. Copies `compiler-cli`'s shape: `main.bp` dispatch + one file per command + pure option parsers |
 | `onze-bundler` | 95 · 68 | **keep, one module, two targets** | The build half (graph, refusals, chunks, entry) runs in the CLI process; `manifest.bp` compiles for both because the BEAM server reads the manifest on every render. Splitting a `onze-manifest` out would be a submodule with one file whose only consumer is the sibling next to it — 68's own argument ("one parser, two targets, one round-trip test") holds better inside one module |
-| `onze-assets` | 95 (69 + 51 + 52 + 70) | **keep, and it takes 51 and 52** | One asset pipeline: one build step, one served prefix (`/_onze/static/<buildId>/`), one producer of the manifest's `Y` records. 51 and 52 both *depend on* 69 (asset manifest, `public/` serving, the head seam) — same direction, same target profile. The READMEs of 51/52 still say `repository/onze/src/image.bp` / `src/font.bp` (core); that is superseded here — core must stay `std`-only, and `Image` needs `jhonstart`, `rakun` and `rakun-cache` |
+| `onze-assets` | 95 (69 + 51 + 52 + 70) | **keep, and it takes 51 and 52** | One asset pipeline: one build step, one static prefix (`/_onze/static/<buildId>/`, served by rakun-web front 82 from the roots `staticRoots` declares — decision 116), one producer of the manifest's `Y` records. 51 and 52 both *depend on* 69 (asset manifest, the static roots, the head seam) — same direction, same target profile. The READMEs of 51/52 still say `repository/onze/src/image.bp` / `src/font.bp` (core); that is superseded here — core must stay `std`-only, and `Image` needs `jhonstart`, `rakun` and `rakun-cache` |
 | `onze-image`, `onze-font` | implied by 51/52 *Owns* lines | **merge** into `onze-assets` | One file each; 95's rule: a submodule is not warranted by file count, only by a consumer wanting one part without the rest — nobody serves fonts without the asset pipeline that fingerprints and serves them |
 | `onze-pipeline` | the 1.0.10 plan's starting list | **drop** | The render pipeline is jhonstart's (front 30) and the moments emilia's sheet is flushed are jhonstart's `RenderPlugin` calls, adapted by the `jhonstart-emilia` bridge (decision 113). onze keeps no render pipeline and no style sink for a module to hold |
 | `onze-og` | 70 (95 put it under `onze-assets/src/og/`) | **keep separate** | Different target profile: erlang only, one genuine external dependency (`resvg`/`rsvg-convert` port, NIF opt-in) that front 71 must package per deployment. A site with no social cards should not carry it. Direction is `onze-og → onze-assets` (70 reads 52's metrics sidecar), never the reverse |
@@ -65,10 +65,12 @@ Seven submodules. Front 95 proposed five (`onze`, `onze-test`, `onze-cli`, `onze
 ## Dependency graph
 
 ```
-   std ──────────────┐            (onze depends on rakun, jhonstart, jhonstart-emilia — never the
-   rakun ────────────┤             reverse; emilia only through the bridge. The bundled `routing`
-   jhonstart ────────┼──► onze     is rakun's and jhonstart's import, not onze's — decision 115) ──► onze-bundler ──► onze-assets ──► onze-og
-   jhonstart-emilia ─┘     │              │              │
+   std ──────────────┐            (onze depends on rakun, jhonstart, jhonstart-emilia and emilia —
+   rakun ────────────┤             never the reverse. emilia's sheet reaches a page only through the
+   jhonstart ────────┼──► onze     bridge; onze-bundler calls emilia's `styleRule` at build time
+   jhonstart-emilia ─┤             (decision 116). The bundled `routing`, `actions` and `validation`
+   emilia ───────────┘             are imported like std, never listed — decisions 115, 116) ──► onze-bundler ──► onze-assets ──► onze-og
+                           │              │              │
    rakun-cache · rakun-web ┘              └──► onze-release ◄┘
                                           
    onze-cli  ──► onze · onze-bundler · onze-assets · onze-release · std      (commonJS)
@@ -80,9 +82,12 @@ Edges, with the file that creates each:
 
 | From | To | Because |
 |---|---|---|
-| `onze` | `rakun` | `integration.bp`: `Rakun.run(App(port, basePath))`, the UI records copied into rakun's route table, one `PageRenderer` per page through `page(pattern, render)` over rakun's `ChunkWriter`, and `rakun.appDir`, `rakun.actions.field`, `rakun.actions.header` and `rakun.actions.bodyLimit` set in rakun's configuration (decisions 114, 115) |
+| `onze` | `rakun` | `integration.bp`: `Rakun.run(App(port, basePath))`, the UI records copied into rakun's route table, one `PageRenderer` per page through `page(pattern, render)` over rakun's `ChunkWriter`, and `rakun.appDir`, `rakun.actions.field`, `rakun.actions.header`, `rakun.actions.bodyLimit` and `rakun.i18n.exclude` set in rakun's configuration (decisions 114, 115, 116); a `nav:` reason from jhonstart's render read with `routing`'s `signalFromReason` and turned into rakun's 404 / 307 |
 | `onze` | `jhonstart` · `jhonstart-emilia` | `integration.bp`: `app(plugins: [emiliaPlugin()])`, the `RenderHooks` tag fields, `renderStream` handed `RequestData` built from rakun's `Request`, `actionField` / `actionHeader` (decisions 113, 114) |
-| `onze-bundler` | `jhonstart` | `entry.bp` generates a client entry importing `readPayload`, `registerFill`, `registerSignal`, `globals` and the islands; it builds no matcher — jhonstart's router imports the bundled `routing` itself (decision 115) |
+| `onze-bundler` | `jhonstart` | `entry.bp` generates a client entry importing `readPayload`, `registerFill`, `registerSignal`, `globals` and the islands; it builds no matcher and no signal decoder — jhonstart's router imports the bundled `routing` itself (decisions 115, 116) |
+| `onze-bundler` | `emilia` | `refusal.bp` / the `styleMap` build call emilia's `styleRule(tokens, th)` (emilia front 56) for every client `emilia(...)` call; the hash-parity check calls std's `content_hash.contentHash`, the function emilia's class name is. onze may import emilia directly — it is the package that knows every library (decision 113) — and the `jhonstart-emilia` bridge stays the render plugin only (decision 116) |
+| `onze-bundler` | `validation` (bundled) | `entry.bp` sets the browser's `MessageSource` with `setMessageSource` (`01-std/06-validation-lib`, decision 116). Bundled, so not in `dependencies` |
+| `onze` | `rakun-web` | `integration.bp` registers `onze-assets`' two `staticRoots` with front 82's `registerStaticRoot`; onze serves no file itself (decision 116) |
 | `onze-bundler` | `onze` | `refusal.bp` calls `isPublicEnvName` — one definition of the prefix (49 · 68) |
 | `onze-assets` | `onze-bundler` | `stylesheet.bp` emits `Y` records `parseManifest` reads back; `image.bp`'s `data-src` swap is documented against the entry |
 | `onze-assets` | `jhonstart` · `rakun` · `rakun-cache` | `Element` · `Request`/`HandlerResponse` (25) · the optimizer cache (12) |
@@ -93,12 +98,12 @@ Edges, with the file that creates each:
 ### The seams, and where each lives (decision 113)
 
 onze is the only package that imports jhonstart, rakun and the `jhonstart-emilia` bridge together.
-jhonstart and rakun never import each other, emilia imports nobody, and neither jhonstart nor rakun
+jhonstart and rakun never import each other, emilia imports no library, and neither jhonstart nor rakun
 names onze; every value that crosses is handed across by `Onze.run` (core `integration.bp`, front 49):
 
 | Seam | Direction it must not have | Where it lives |
 |---|---|---|
-| emilia's sheet reaches the head and each streamed chunk, and its class list the payload's `s` | onze → emilia `flush()`, or jhonstart → emilia | jhonstart front 30 declares the asynchronous `RenderPlugin` and awaits it; the `jhonstart-emilia` bridge (`repository/jhonstart/modules/jhonstart-emilia`) awaits `flush()` in `head` / `chunk` and returns `#("s", …)` from `payload()`; `Onze.run` registers it with `app(plugins: [emiliaPlugin()])`. onze defines no sink |
+| emilia's sheet reaches the head and each streamed chunk, and its class list the payload's `s` | onze → emilia `flush()`, or jhonstart → emilia (onze's only direct emilia call is the build-time `styleRule`, front 68) | jhonstart front 30 declares the asynchronous `RenderPlugin` and awaits it; the `jhonstart-emilia` bridge (`repository/jhonstart/modules/jhonstart-emilia`) awaits `flush()` in `head` / `chunk` and returns `#("s", …)` from `payload()`; `Onze.run` registers it with `app(plugins: [emiliaPlugin()])`. onze defines no sink |
 | The bundle's `<script>` tags reach the document | jhonstart → onze-bundler | jhonstart's `RenderHooks.headExtra(route) -> string` and `RenderHooks.bodyExtra(route) -> string`, filled by `Onze.run` from 68's `headScriptTags` / `scriptTags`. The payload script stays jhonstart's render's (`contracts.md § 2`) |
 | 68's entry generator and the render agree on the island marker and the three browser globals | jhonstart → onze-bundler if the definitions live in the bundler | The island marker is jhonstart's (front 29) and the globals registry is jhonstart's (front 30, `globals.payload` / `globals.fill` / `globals.signal`); `onze-bundler/src/entry.bp` imports both. `contracts.md § 2` is the text all cite |
 | A matched route becomes a rendered page | rakun → jhonstart, or jhonstart → rakun | jhonstart's `#[page]` / `#[layout]` decorators (front 30) fill jhonstart's UI registry; `Onze.run` copies the records into rakun's table and registers one opaque `PageRenderer` per page (rakun 23, decision 114); rakun matches (22, through the bundled `routing`) and calls the renderer with its `Request` and `ChunkWriter`; the renderer calls `site.renderStream(page, requestData(req), write)`, so jhonstart receives the segment chain, the payload's rakun-side strings (`t`, `a`, `b`), the `RequestData` its `headers()` / `cookies()` read, and a plain `fn(string)` writer; jhonstart's router imports the same matcher from `routing` (decision 115); jhonstart's `notFound` / `redirect` signals are translated by onze into rakun's 404 / 307 before the first chunk, and written as markup by jhonstart's render after it (status 200) |
@@ -117,7 +122,7 @@ names onze; every value that crosses is handed across by `Onze.run` (core `integ
 | core (49) | `assertConfig`, `assertAppFiles`, `assertAlias`, `assertPublicEnv` | resolved config table; classification table; alias resolutions; the filtered env table |
 | cli (50) | `assertScan`, `assertGeneratedTree`, `assertTreeCheck`, `assertScaffold`, `assertBuildOutput`, `assertDevServer`, `assertInfo` | route table; `app_tree.bp` source; check errors; file tree + `onze.json`; the `<outDir>/` tree; the route table `dev` prints; `onze info` |
 | bundler (68) | `assertGraph`, `assertRefusal`, `assertChunks`, `assertManifest`, `assertScriptTags`, `assertEntry` | node/chain listing; refusal messages; chunk plan; `client-manifest.txt`; tags for a route; generated `entry.bp` |
-| assets (69 · 51 · 52) | `assertHead`, `assertStyleModule`, `assertStylesheet`, `assertAsset`, `assertImage`, `assertImageSource`, `assertImageHandler`, `assertFontCss`, `assertFontHead` | head fragment; generated module + rewritten CSS; the sheet; resolution table; `<img>` markup; refusal table; response headers; `@font-face` CSS; the head string |
+| assets (69 · 51 · 52) | `assertHead`, `assertStyleModule`, `assertStylesheet`, `assertStaticRoots`, `assertImage`, `assertImageSource`, `assertImageHandler`, `assertFontCss`, `assertFontHead` | head fragment; generated module + rewritten CSS; the sheet; the two static roots (serving is rakun-web 82's); `<img>` markup; refusal table; response headers; `@font-face` CSS; the head string |
 | og (70) | `assertStyleParse`, `assertLayout`, `assertSvg`, `assertRasterizer` | property report; box tree; the SVG document; `requireRasterizer` outcome |
 | release (71) | `assertBuildId`, `assertReleaseText`, `assertDockerfile`, `assertReleaseTree`, `assertShutdown`, `assertStaticExport` | id + verification; `.rel`/`sys.config`/`vm.args`/boot script; the Dockerfile; the release tree; the drain order/report; the exported tree |
 | E2E (53) | `bootApp(dir, mode) -> @Future<RunningApp>`, `stopApp`, `assertResponse`, `assertBundle`, `assertCss`, `assertServeGate` | status + headers + body (hashes literal, build id masked to `<buildId>` only in `assertServeGate`); the chunk tree; a stylesheet; the dev-vs-start diff |

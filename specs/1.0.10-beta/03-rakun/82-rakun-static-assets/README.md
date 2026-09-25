@@ -7,7 +7,7 @@
 **Depends on:** 07 (the filter chain this sits in), 03 (content hashes for ETags and fingerprints), 01 (`fs`, `path`, `clock`), 05 (root configuration), 04 (`rkSetReplyHeader`)
 **Owns:** `modules/rakun-web/src/static/**` · `modules/rakun-web/test/static/**`
 **Does not touch:** front 07's `modules/rakun-web/src/*.bp` at the top level, front 20's `src/websocket/**`, and the four frozen files in `repository/rakun/src/`
-**Reference:** `04-web.md § Conteudo Estatico` · `04-web.md § Auto-configuracao Spring MVC` · `08-container-images.md § Reproducao e Cache` · <https://docs.spring.io/spring-boot/reference/web/servlet.html#web.servlet.spring-mvc.static-content>
+**Reference:** decision 116 rule 6 (onze configures this server instead of specifying one) · `04-web.md § Conteudo Estatico` · `04-web.md § Auto-configuracao Spring MVC` · `08-container-images.md § Reproducao e Cache` · <https://docs.spring.io/spring-boot/reference/web/servlet.html#web.servlet.spring-mvc.static-content>
 
 ---
 
@@ -125,6 +125,15 @@ One filter in front 07's chain, ahead of the router: a request matching a static
 and the chain stops; anything else falls through untouched. It does not register routes in front 04's
 table — a static root is a prefix, not a route, and putting thousands of files in a route table would
 make every dynamic request slower.
+
+### The one static-file server
+
+This front is the only static-file server in the stack (decision 116). onze does not specify one of
+its own: at boot it calls `registerStaticRoot` for its build output, its `public/` directory and its
+style chunks — the roots, the URL prefix of each (`pattern`) and the cache policy (`cacheSeconds`,
+`immutable` for its fingerprinted chunks) — and this front's content-type table, conditional requests
+and containment checks serve them (onze front 69). No onze name or path is spelled here; the prefix
+is whatever onze passes.
 
 ## Steps
 
@@ -253,6 +262,9 @@ consumes these URLs rather than implementing them.
 - [ ] Fingerprinted assets are `immutable`, unfingerprinted ones are `no-cache`
 - [ ] Pre-compressed variants are negotiated and every negotiating response carries `Vary`
 - [ ] No botopink value in this module ever holds a file body
+- [ ] onze front 69's roots are served through `registerStaticRoot` with no second content-type table,
+      ETag rule or traversal guard anywhere under `repository/` (`grep -rn "fn contentTypeOf"
+      --include=*.bp repository/` finds only `modules/rakun-web/src/static/`)
 - [ ] `repository/rakun/AGENTS.md` documents the resolution order and why containment precedes `stat`
 - [ ] The front's tests are green on its assigned target
 

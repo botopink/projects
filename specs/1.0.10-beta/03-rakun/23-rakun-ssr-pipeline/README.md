@@ -48,7 +48,9 @@ rakun gives it; rakun writes them to the socket and knows nothing else about the
 - `repository/rakun/src/ssr.bp` exists and carries the render as well as the dispatch: the escaping
   walker (`renderNode`, `raw`), `compose`, `Payload` / `writePayload` / `payloadEscape` / `document`,
   the `RenderHooks` record with `defaultHooks` / `setHooks`, island and hole ordinals, and
-  `render` / `renderStreaming`, and the dispatch's first seam, `RenderedPage` and
+  `render` / `renderStreaming`, the JSON helpers the payload writer uses (`ssr.bp:641-676`,
+  `jsonString` / `jsonBool` / `jsonStrings` / `jsonPairs` / `jsonTriples`, which escape no control
+  character but `\n` `\r` `\t`), and the dispatch's first seam, `RenderedPage` and
   `setPageRender(fn(PageContext) -> @Future<RenderedPage>)`. `repository/rakun/src/ssr.mjs` carries
   the fill function and the payload reader. The render is jhonstart's under decision 113 and leaves
   rakun in Step 5; the seam becomes `ChunkWriter` / `PageRenderer` in Steps 1–2 (decision 114).
@@ -170,6 +172,10 @@ table and escaping, the island and hole ordinals, the fill protocol and their ac
 - [ ] `renderNode`, `raw`, `compose`, `Payload`, `writePayload`, `payloadEscape`, `document`,
       `RenderHooks` / `defaultHooks` / `setHooks` and the island/hole ordinal code are gone from
       `repository/rakun/src/`, once jhonstart front 30 lands them.
+- [ ] `ssr.bp:641-676`'s JSON helpers are gone with no replacement in rakun: jhonstart's payload
+      writer uses std's `json.quote` / `json.array` / `json.object` and `escape.scriptJson`
+      (`01-std/07-std-json-writers`, decision 116); `grep -rn "fn jsonString" repository/rakun` is
+      empty.
 - [ ] `repository/rakun/src/ssr.mjs` is deleted; the fill function and the payload reader are
       jhonstart's (`render.mjs`).
 - [ ] `rtk proxy grep -rn 'from "jhonstart' repository/rakun/src` and

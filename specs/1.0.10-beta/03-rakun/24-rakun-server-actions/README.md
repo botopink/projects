@@ -9,14 +9,16 @@ what crosses back (decision 113)
 **Wave:** 7
 **Depends on:** 23 (the page dispatch the re-render goes through), 22 (route table), 06 (scopes), 62
 (request context — `cookies()`, `after()`), 12 (`revalidatePath`/`revalidateTag`), 63 (`redirect`),
-01 (constant-time compare, percent-encoding), 03 (build id), 14 (constraint mirroring); jhonstart 67
-writes the form, reached through onze only
+01 (constant-time compare, percent-encoding), 03 (build id), `01-std/06-validation-lib` (constraint
+mirroring), `01-std/05-actions-lib` (the envelope, the `state` grammar, the JSON-RPC body and the
+`refresh` value — decision 116); jhonstart 67 writes the form, reached through onze only
 **Owns:** `repository/rakun/src/actions.bp`, `repository/rakun/src/sidecars/rakun_actions.erl`,
 `repository/rakun/test/actions_test.bp`
 **Does not touch:** `repository/rakun/src/http.bp`, `src/decorators.bp`, `src/bootstrap.bp`
 (frozen), the files owned by 22 · 23 · 25, and every file outside `repository/rakun/` — this front
 builds no element and imports nothing from `jhonstart` (decision 113)
-**Reference:** `NEXTJS-DOCS.md § 10. Mutação de Dados`, `§ 27. Diretivas` ·
+**Reference:** [decision 116](../../decisions-taken.md#116-code-two-libraries-both-run-is-neutral-routing-gains-navigation-and-param-actions-and-validation-are-bundled-libraries-std-writes-json)
+rule 2 (the action protocol is the bundled library `actions`) · `NEXTJS-DOCS.md § 10. Mutação de Dados`, `§ 27. Diretivas` ·
 <https://nextjs.org/docs/app/getting-started/updating-data> ·
 <https://nextjs.org/docs/app/api-reference/directives/use-server>
 
@@ -157,14 +159,15 @@ The phase is restored before front 23's dispatch re-renders, so the re-render ru
 
 | | Progressive (no JS) | Scripted (front 67) |
 |---|---|---|
-| transport | `POST` to the current pathname, `application/x-www-form-urlencoded` | `POST` to the same pathname, `Accept: application/onze-action` |
+| transport | `POST` to the current pathname, `application/x-www-form-urlencoded` | `POST` to the same pathname carrying the header (`rakun.actions.header`) — its presence is what marks the scripted path; rakun spells no media type |
 | names the action | the field (`rakun.actions.field`) | the header (`rakun.actions.header`), falling back to the field |
 | the server answers with | a full document, or a 303 to the redirect target | the action result envelope, JSON |
 | runs | CSRF check, size check, decode, resolve, invoke, revalidate | the same six steps, same code |
 
 The scripted path is the JSON-RPC entry point for calling an action from an event handler
-(`§ 10. Invocando via event handlers`): the body is `{"v":1,"id":"a_…","args":["…","…"]}` and the
-answer is the same envelope. It differs from the form path in encoding only. Sharing the authorization
+(`§ 10. Invocando via event handlers`): the body is `{"v":1,"id":"a_…","args":["…","…"]}`, read with
+the bundled library `actions`' `parseRpcBody` (jhonstart front 67 writes it with `writeRpcBody`), and
+the answer is the same envelope. It differs from the form path in encoding only. Sharing the authorization
 path is not an optimization; a second entry point with its own checks is how the check gets skipped.
 
 **CSRF, and why there is no setting.** Before the body is read: if the request carries an `Origin`
@@ -184,7 +187,9 @@ which onze writes at boot like the two wire names (decision 115) — and not low
 and closing the connection at the limit — not by reading the body and then measuring it, which is the
 version that lets a 2 GB upload exhaust the node before the check runs.
 
-**The result envelope.** The one thing the scripted path returns:
+**The result envelope.** The one thing the scripted path returns, written by the bundled library
+`actions`' `writeEnvelope` (`01-std/05-actions-lib`) — this front builds an `ActionEnvelope` and
+writes no JSON itself:
 
 ```json
 {"v":1,"ok":true,"state":"message=","revalidated":["/blog"],"redirect":"","payload":""}
@@ -200,10 +205,11 @@ version that lets a 2 GB upload exhaust the node before the check runs.
 | `n` | the navigation signal from front 63 in its wire form (`contracts.md § 5b`): `""` no signal · `"N"` notFound · `"R\|307\|/login"` redirect · `"R\|308\|/new"` permanentRedirect. `location` is the remainder of the line, so a `\|` in a path round-trips |
 | `payload` | a fresh payload (contract 2, rendered by jhonstart front 30 through front 23's dispatch) for the current route when the action requested a refresh, or `""` |
 
-`state` is querystring-encoded for the same reason front 23's params are: both halves must read it
-with the same botopink code and `std/json` has no structured walker. `n` is produced by front 63's
-`signalToWire` and read by its `signalFromWire`; `redirect` is derived from it and never set
-independently, so there is one source of truth for where the browser goes next. An `ok: false`
+`state` is querystring-encoded because `std/json` has no structured walker; its grammar (`message`,
+`f.<name>`) and its encoder `writeState` are `actions`', the same code jhonstart front 67 reads it
+with. `n` is `routing`'s `signalToWire` of front 63's outcome; `redirect` is derived from it inside
+`writeEnvelope`, which takes no `redirect` parameter, so there is one source of truth for where the
+browser goes next. An `ok: false`
 envelope is **data handled by front 67**, never caught by a front-31 boundary — only a raised POST
 reaches a boundary.
 
@@ -214,7 +220,7 @@ user gets back is built from the invalidated-and-refilled cache rather than from
 mutation just made stale. The ordering is the whole point and it is tested.
 
 **`router.refresh()`.** Front 26 owns the client call; this front owns the endpoint. A POST with
-the header set to `refresh` and no action id re-renders the current route through the page renderer
+the header set to `actions`' `refreshValue()` (`refresh`) and no action id re-renders the current route through the page renderer
 front 23 dispatches and returns
 an envelope whose `payload` is the new payload and whose `state` is empty. The client re-reconciles
 without a document load. It runs the CSRF check like every other POST.
@@ -280,7 +286,7 @@ pub declare fn rkRegisterAction(
       configured as `__bp_action`) is a 404.
 - [ ] With `rakun.actions.field` or `rakun.actions.header` unset, the dispatcher refuses to start and
       the message names the missing key; no name is spelled in `src/actions.bp`, checked by grep for
-      `__bp_action`, `X-Bp-Action`, `__onze` and `X-Onze` in the gate.
+      `__bp_action`, `X-Bp-Action`, `__onze`, `X-Onze` and `onze-action` in the gate.
 - [ ] With the field configured as `__x`, a POST carrying `__x=<id>` dispatches and one carrying
       `__bp_action=<id>` does not — the configured name is the only one read.
 
@@ -344,8 +350,11 @@ pub fn dispatchAction(
       and `n: "R|307|/blog"` in the envelope on the scripted path, from one raise (front 63).
       `redirect` is derived from `n`, never set on its own.
 - [ ] `notFound()` inside an action gives `n: "N"` and status 404 on the progressive path.
-- [ ] A redirect target containing a `|` round-trips through `signalToWire`/`signalFromWire`.
-- [ ] The envelope names `v: 1` first.
+- [ ] A redirect target containing a `|` reaches the envelope's `n` unchanged (the codec is
+      `routing`'s and its round trip is asserted there).
+- [ ] The envelope is `actions`' `writeEnvelope` of the `ActionEnvelope` this front builds, and its
+      `state` is `writeState` of the action's result: `grep -n 'json\.\|"{\\"v' src/actions.bp` finds no
+      JSON written by hand. The key order (`v` first) and the literals are asserted in `libs/actions`.
 
 ### Step 6 — The JSON-RPC entry point and `router.refresh()`
 
@@ -354,8 +363,9 @@ pub fn dispatchAction(
       produces the same `state`.
 - [ ] The RPC path runs the same CSRF and size checks — asserted by the same test bodies, parameterised
       over the two encodings, so the paths cannot drift.
-- [ ] An RPC body with an unknown `v` is a 400.
-- [ ] The header set to `refresh` (`X-Bp-Action: refresh` with the header configured as
+- [ ] An RPC body `actions`' `parseRpcBody` refuses (an unknown `v`, no `id`, `args` not an array of
+      strings, text that is not JSON) is a 400.
+- [ ] The header set to `refreshValue()` (`X-Bp-Action: refresh` with the header configured as
       `X-Bp-Action`) returns an envelope whose `payload` parses as a contract-2 payload with the
       current pathname, and whose `state` is empty.
 
@@ -389,7 +399,9 @@ pub fn dispatchAction(
 
 `repository/rakun/test/actions_test.bp`, on `botopink test --target erlang`: the decorator, id
 derivation, `actionIdOf`, dispatch, CSRF, size limit, revalidation ordering and redirect. The
-envelope reader is jhonstart front 67's and is tested there against the same fixture strings.
+envelope, the `state` grammar and the RPC body are the bundled library `actions`' and their literals
+are asserted once, there, on both targets (`01-std/05-actions-lib`); jhonstart front 67 reads them
+with the same code, so no `state` or envelope literal is pinned in this front's tests.
 
 The round trip that matters — the id `actionIdOf` returns, stamped into front 67's form by onze,
 POSTed back and dispatched here — crosses all three packages, so it is asserted where all three meet:
@@ -405,7 +417,7 @@ the connection closes — lives in `src/sidecars/rakun_actions.erl`'s own suite,
 - One registration path for both spellings of the directive, proven by comparing records.
 - One authorization path for both encodings, proven by parameterising the same tests.
 - No configuration key exists that weakens the `Origin`/`Host` check, and a test asserts its absence.
-- The envelope key table above is final for the milestone and is cited by fronts 63, 67 and 68 rather
-  than re-derived.
+- The envelope key table above is final for the milestone and is implemented once, by the bundled
+  library `actions`, which this front and front 67 import; fronts 63 and 68 cite it.
 - `repository/rakun/AGENTS.md` names `actions.bp`, the id derivation and the envelope version.
 - The front's tests are green on its assigned target — erlang.

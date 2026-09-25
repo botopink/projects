@@ -4,8 +4,8 @@
 **Priority:** high — front 24 dispatches a server action and nothing in the browser binds a form to it, so the central example of `NEXTJS-DOCS.md § 10` and `§ 14` has no client half and no page can submit anything
 **Target:** js (client)
 **Wave:** 8
-**Depends on:** 24 (the action endpoint and its envelope — contract literals only; jhonstart imports nothing from rakun, and the action id and the wire names `actionField` / `actionHeader` reach the form from onze, decisions 113 and 114) · 29 (the client boundary and the hydration entry) · 94 (`form`, `input`, `button`, `label` — this front defines no constructor) · 14 (the constraint set the client mirrors) · 26 (navigation after a submit) · 31 (which settled that an `ok: false` envelope is data, not a boundary) · 63 (a redirect returned from an action) · 01 (percent encoding)
-**Owns:** `repository/jhonstart/src/form.bp`, `repository/jhonstart/src/form_state.bp`, `repository/jhonstart/test/form_test.bp`, `repository/jhonstart/test/form_state_test.bp`
+**Depends on:** `01-std/05-actions-lib` (`ActionState`, the `state` grammar, `parseActionState`, `writeRpcBody` — the protocol both sides import, decision 116) · 24 (the action endpoint — read-only; jhonstart imports nothing from rakun, and the action id and the wire names `actionField` / `actionHeader` reach the form from onze, decisions 113 and 114) · 29 (the client boundary and the hydration entry) · 94 (`form`, `input`, `button`, `label` — this front defines no constructor) · `01-std/06-validation-lib` (read-only — the constraints an application's client form mirrors; the application imports `from "validation"`, jhonstart imports no validation code) · 26 (navigation after a submit) · 31 (which settled that an `ok: false` envelope is data, not a boundary) · 63 (a redirect returned from an action) · 01 (percent encoding)
+**Owns:** `repository/jhonstart/src/form.bp`, `repository/jhonstart/test/form_test.bp` — `form_state.bp` and its test are not written: `ActionState` and its decoder are the bundled library `actions` (decision 116)
 **Does not touch:** `repository/jhonstart/src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen for the milestone), `src/elements.bp` (front 94), `src/router.bp` (front 26), `src/link.bp` (front 27), `src/client.bp` (front 29), `repository/rakun/src/actions.bp` (front 24)
 **Reference:** `NEXTJS-DOCS.md § 10. Mutação de Dados` (Formulários · useActionState · Invocando via event handlers · Segurança), `§ 14. Tratamento de Erros` (Erros esperados), `§ 25. Referência de Componentes` (`<Form>`) · `contracts.md § 3` (action id and
 envelope, owned by front 24) ·
@@ -98,32 +98,25 @@ is a form that does not compile rather than a form that posts to nothing.
 
 ### The envelope, and who owns which half
 
-Front 24 owns the response envelope and it is JSON:
+Front 24 writes the response envelope and this front reads it, but neither owns its text: the
+envelope, the `state` grammar, `ActionState` and its decoder are the bundled library `actions`
+(`libs/actions`, `01-std/05-actions-lib`, decision 116), which rakun and jhonstart both import —
+neutral like `routing`, not an edge between them.
 
 ```json
-{"v":1,"ok":true,"state":"<querystring>","revalidated":[…],"redirect":"…","payload":"…"}
+{"v":1,"ok":true,"state":"<querystring>","revalidated":[…],"redirect":"…","n":"…","payload":"…"}
 ```
 
-`state` is querystring-encoded rather than JSON because `libs/std/src/json.bp:36,45` is
-`parse`/`stringify` over strings with no structured walker — there is no JSON object to decode into a
-record. That constraint decides the division of labour here:
-
-- **The browser parses the JSON**, because the browser has a JSON parser and botopink does not. The
-  host cell `__jhFormSubmit` does `JSON.parse` and hands botopink a flat querystring of the envelope's
-  scalar fields: `ok=1&redirect=&state=<percent-encoded>&payload=<percent-encoded>`.
-- **This front parses the querystrings**, with `querystring.parse`
-  (`libs/std/src/querystring.bp:35`) and front 01's percent decoder, because `querystring` does not
-  escape (`querystring.bp:9-16`).
-
-`state` is the application's own state — whatever its action returned — and its grammar is this
-front's, since `actionState` is what reads it:
-
-| Key in `state` | Meaning |
-|---|---|
-| `message` | the form-level message; absent or `""` when there is none |
-| `f.<name>` | a per-field message, one key per field |
-
-`ok` and `redirect` come from the envelope, not from `state`.
+- **`__jhFormSubmit` returns the response body as it arrived.** It does no `JSON.parse` and no
+  flattening; `actions`' `parseActionState(envelope)` reads the JSON (an inline template on each
+  target) and the `state` querystring (std's `encoding`), so there is one reader of the envelope in
+  the stack and it is tested on both targets.
+- **The `state` grammar is `actions`'** — `message` for the form-level message, `f.<name>` per field;
+  `ok` and `redirect` come from the envelope, not from `state`. This front imports `ActionState`
+  (`ok`, `message`, `redirectTo`, `fields`, `fieldError`, `hasError`) and `newActionState` from
+  `"actions"` and defines neither.
+- **The envelope's `n`** — the navigation signal — is read by front 26's router with `routing`'s
+  `signalFromWire` when this front hands it the parsed result.
 
 **An `ok: false` envelope is data, and this front handles it.** Front 31 settled that: an action that
 returns a failure — a validation message, a rejected input, a conflict — produces a normal envelope
@@ -134,17 +127,27 @@ That is the whole of `NEXTJS-DOCS.md § 14`'s *Erros esperados* distinction, and
 `actionState`'s state carries a message rather than throwing: an expected failure is a value.
 `contracts.md § 3` is the envelope this rests on.
 
-The golden fixture, written here and asserted by a test on each side of the boundary, is the `state`
-value:
+The `state` literal the two sides once pinned separately
+(`message=Title%20must%20be%20at%20least%203%20characters&f.title=Too%20short`) is asserted once, in
+`libs/actions`, on both targets; this front's tests use it as input and do not re-assert the grammar.
 
-```
-message=Title%20must%20be%20at%20least%203%20characters&f.title=Too%20short
+### Calling an action from an event handler
+
+`NEXTJS-DOCS.md § 10` *Invocando via event handlers*: a button's click handler calls an action and
+awaits its state, with no form. The request is front 24's scripted path — the same POST to the
+current pathname, the `actionHeader` header onze names, and the JSON-RPC body
+`{"v":1,"id":…,"args":[…]}`. **This front is the one writer of that body in the browser**: it builds
+it with `actions`' `rpc.writeRpcBody` and reads the answer with `parseActionState`, over one more
+browser-only cell:
+
+```bp
+#[@future]
+pub fn invokeAction(actionId: string, args: Array<string>, actionHeader: string) -> @Future<ActionState>
 ```
 
-Front 24's encoder test asserts it produces exactly that string for the same action result; this
-front's decoder test asserts it reads exactly that string back. A change to the grammar that does not
-change both tests is a change that breaks one of them, which is the point of pinning a literal rather
-than sharing a parser between two targets that cannot share code.
+`__jhFormInvoke(actionId, body, actionHeader) -> string` posts the body and returns the response body
+as it arrived. onze's generated entry and a front 53 component call `invokeAction`; no other package
+spells the RPC body.
 
 ### The three hooks, and what the server render sees
 
@@ -156,11 +159,13 @@ During the server pass each yields its quiet value —
 in the server HTML is a spinner nobody can stop, and an optimistic value in the server HTML is a lie
 the server told.
 
-The browser values come from four `#[@External.Node]` cells, all of them browser-only, none with an
+The browser values come from five `#[@External.Node]` cells, all of them browser-only, none with an
 erlang twin:
 
 - `__jhFormSubmit(actionId, encodedBody, actionHeader) -> string` — posts with the header onze named
-  and returns the envelope.
+  and returns the response body unparsed; `encodedBody` is `encoding.formStringify` of the fields.
+- `__jhFormInvoke(actionId, rpcBody, actionHeader) -> string` — the scripted call of
+  `invokeAction`, the body written by `actions`' `writeRpcBody`, the response body returned unparsed.
 - `__jhFormPending(actionId) -> string` — `"1"` while a submit for that id is in flight.
 - `__jhFormState(actionId) -> string` — the last envelope received for that id, `""` before the first.
 - `__jhFormMount(actionHeader)` — delegated submit interception over `[data-jh-a]`. It is private;
@@ -190,41 +195,20 @@ already does correctly — this is the one case where progressive enhancement co
 
 ## Steps
 
-### Step 1 — `ActionState` and the envelope decoder
+### Step 1 — `ActionState` from `actions`
 
-`src/form_state.bp`. Pure botopink, no host cell, so every assertion in this step runs without a
-browser.
-
-```bp
-pub type ActionState(
-    ok: bool,
-    message: string,
-    redirectTo: string,
-    fields: Array<#(string, string)>,
-) {
-    pub fn fieldError(self: Self, name: string) -> string { … }
-    pub fn hasError(self: Self) -> bool { … }
-}
-
-pub fn newActionState(message: string) -> ActionState
-pub fn parseActionState(envelope: string) -> ActionState
-```
-
-`fieldError` of an absent field is `""`, matching `rakun`'s `Request.param`
-(`repository/rakun/src/http.bp:35-43`) and front 49's `Params.param` — one absence convention for the
-whole stack.
+`ActionState`, `newActionState` and `parseActionState(envelope)` (decision 78's name) are imported
+from the bundled library `actions`; this front writes no decoder and no `form_state.bp`.
 
 **Acceptance:**
-- [ ] `parseActionState("")` equals `newActionState("")` — an empty `state` means nothing has been
-      submitted, not a failure
-- [ ] The golden fixture from *Mechanism* decodes to `message: "Title must be at least 3 characters"`
-      and `fieldError("title") == "Too short"`
-- [ ] The same fixture string appears verbatim in front 24's encoder test
-- [ ] `ok` and `redirectTo` are filled from the envelope's own keys, never from `state` — asserted by
-      a `state` that contains an `ok` key and is ignored
-- [ ] `fieldError` of an absent name is `""`
-- [ ] A key that is neither `message` nor `f.`-prefixed is ignored, not an error
-- [ ] A value containing `&` and `=`, percent-encoded by front 01's encoder, round-trips
+- [ ] `form.bp` imports `ActionState`, `newActionState` and `parseActionState` from `"actions"`, and
+      `git grep -n "fn parseActionState\|type ActionState" modules/jhonstart/` is empty
+- [ ] `__jhFormSubmit`'s Node template contains no `JSON.parse`; the string it returns reaches
+      `parseActionState` unchanged — asserted by a stub cell returning a literal envelope
+- [ ] no test under `modules/jhonstart/test/` asserts the `state` literal against the grammar; the
+      grammar's test is `libs/actions`'
+- [ ] `fieldError` of an absent name is `""` — through the imported type, one absence convention for
+      the whole stack (rakun's `Request.param`, front 49's `Params.param`)
 
 ### Step 2 — `FormBinding` and the attributes
 
@@ -275,8 +259,8 @@ upstream doc finds the same three things in the same order.
 **Acceptance:**
 - [ ] On the server pass, `s.0` is the `initial` argument unchanged and `s.2` is `false`
 - [ ] `s.1` is a `FormBinding` for `actionId`, so the component never names the endpoint
-- [ ] After `__jhFormState` returns an envelope whose `state` is the golden fixture,
-      `s.0.fieldError("title") == "Too short"`
+- [ ] After `__jhFormState` returns an envelope written by `actions`' `writeEnvelope` whose `state`
+      is `writeState("…", [#("title", "Too short")])`, `s.0.fieldError("title") == "Too short"`
 - [ ] `s.0.redirectTo` non-empty makes the browser half call front 26's `push` exactly once, and the
       form is not re-rendered with a stale state afterwards
 - [ ] An `ok: false` envelope updates the state and re-renders the form **in place** — no boundary is
@@ -338,7 +322,18 @@ pub fn searchFormAttrs(props: SearchFormProps) -> Array<#(string, string)>
       because jhonstart writes it (decision 113), registered in `contracts.md § 2` with owner 67
 - [ ] With `prefetch: true` the target path is prefetched through front 27's `__jhLinkPrefetch`
 - [ ] Un-hydrated, the browser's own GET submit produces the same URL the hydrated path produces,
-      asserted by comparing `querystring.stringify` of the field list against the built URL
+      asserted by comparing `encoding.formStringify` of the field list against the built URL
+
+### Step 7 — `invokeAction`, the scripted call
+
+**Acceptance:**
+- [ ] `invokeAction("a_9f2c1b7e", ["x"], "X-Bp-Action")` hands `__jhFormInvoke` exactly the body
+      `writeRpcBody(RpcCall(id: "a_9f2c1b7e", args: ["x"]))` answers and the header name passed —
+      asserted by a recording stub cell
+- [ ] the answer is `parseActionState` of what the cell returned; an `ok: false` envelope resolves
+      the future with that state and raises nothing
+- [ ] `git grep -n '"v":1' modules/jhonstart/src` is empty — the body is written by `actions` only
+- [ ] no `X-Bp-Action` or other header literal under `src/`; the name is the `actionHeader` passed in
 
 ## Examples
 
@@ -393,13 +388,10 @@ checker's bindings are one flat map and a local would shadow the imported fn for
 
 ## Test plan
 
-`repository/jhonstart/test/form_state_test.bp` and `repository/jhonstart/test/form_test.bp`, run by
-`botopink test` from `repository/jhonstart/` and by `zig build test-libs`.
-
-`form_state_test.bp` is the envelope: the golden fixture, the empty envelope, an unknown key, an
-absent field, and the percent-encoded round trip. It is pure and would pass on either backend — it is
-still run only on `commonJS`, because this front is assigned js and a green erlang cell here would be
-a claim the front does not make.
+`repository/jhonstart/test/form_test.bp`, run by `botopink test` from `repository/jhonstart/` and by
+`zig build test-libs`. The envelope and the `state` grammar are tested in `libs/actions`
+(`01-std/05-actions-lib`), on both targets; this front asserts only that it hands them the body it
+received and the body it sends.
 
 `form_test.bp` is the attributes and the hooks' server-pass values: `formAttrs`'s three pairs and
 their order, the hidden field under the `actionField` passed in, the idle `FormStatus`, and
@@ -416,10 +408,11 @@ work, and it is falsifiable without a browser.
 
 ## Definition of done
 
-- [ ] `src/form_state.bp` and `src/form.bp` exist and `botopink build` succeeds in
-      `repository/jhonstart/`
-- [ ] The golden envelope fixture appears verbatim in this README, in `form_state_test.bp` and in
-      front 24's encoder test
+- [ ] `src/form.bp` exists and `botopink build` succeeds in `repository/jhonstart/`; there is no
+      `form_state.bp`
+- [ ] `ActionState`, `parseActionState` and the RPC body come from `"actions"` (decision 116); the
+      `state` literal is asserted in `libs/actions` only
+- [ ] `invokeAction` is the one writer of the JSON-RPC body in the browser
 - [ ] Every element constructor the examples call (`form`, `input`, `button`, `label`) is imported
       from `jhonstart` and marked `// provided by front 94`; this front's source defines none, and
       `element.bp` is unmodified

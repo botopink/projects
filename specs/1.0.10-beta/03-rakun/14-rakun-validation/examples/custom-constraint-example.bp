@@ -1,4 +1,4 @@
-// Front 14 — rakun-validation · example 2 of 2
+// Front 14 — validation (the bundled `libs/validation`, decision 116) · example 2 of 2
 //
 // An application constraint added through the SPI, a message template resolved
 // from configuration, a configuration record that refuses to boot when it is
@@ -12,9 +12,9 @@
 
 import {configuration, bean, service} from "rakun";
 import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
-import {validated, notBlank, sizeBetween, minValue, maxValue, constraint} from "rakun-validation";
-import {Constraint, Violation, ValidationReport, registerConstraint} from "rakun-validation";
-import {checkNotBlank, checkSizeBetween, checkRange, checkRegistered} from "rakun-validation";
+import {validated, notBlank, sizeBetween, minValue, maxValue, constraint} from "validation";
+import {Constraint, Violation, ValidationReport, registerConstraint} from "validation";
+import {checkNotBlank, checkSizeBetween, checkRange, checkRegistered} from "validation";
 
 // ── an application constraint ───────────────────────────────────────────────
 //

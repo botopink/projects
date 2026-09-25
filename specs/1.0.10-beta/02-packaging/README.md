@@ -176,7 +176,7 @@ array is a located error in every tool, `bpmp` included):
 
 **Library roots**, in order: `BOTOPINK_LIB_ROOTS`; then for each ancestor `D` of the project,
 nearest first: `D` itself when `D/botopink.json` is a workspace (its members), `D/repository/botopink-lang/libs`
-(the bundled `std` and `routing`), `D/repository`, `D/libs`; then `<project>/.botopinkbuild/deps`. A root
+(the bundled `std`, `routing`, `actions` and `validation`), `D/repository`, `D/libs`; then `<project>/.botopinkbuild/deps`. A root
 contributes every immediate child directory holding a `botopink.json` (a package named by the
 directory) **and every member of a workspace found there, named by its manifest** — so
 `repository/rakun` under the `D/repository` root contributes `rakun`, `rakun-web`, … and never
@@ -306,11 +306,11 @@ libraries:   emilia ──► jhonstart (Element)          rakun ──► (noth
 | `<lib>-test` depends on its core, on std, and on the domain members it asserts over; **a core never depends on `-test`** | An import of `<lib>-test` from a core's `src/` is a build error by construction — the core's manifest lists no such dependency |
 | A `-test` may depend on a lower library's `-test` (`onze-test` → `rakun-test`, `jhonstart-test`) by `path` | `onze` tests reach the server through `rakun-test`'s request double (front 19); [`../deferred.md`](../deferred.md) records why there is no shared double |
 | An example may depend on **several** libraries — its own by `{ "workspace": true }`, others' cores or `-test`s by `path` | `emilia-card` → `jhonstart` + `emilia` today; `onze-blog` → all four |
-| A bundled package — `std`, `routing` — is never listed | It is embedded in the compiler (`routing`: decision 115, `01-std/04-routing-lib`); listing it is a resolver error |
+| A bundled package — `std`, `routing`, `actions`, `validation` — is never listed | It is embedded in the compiler (`routing`: decision 115, `01-std/04-routing-lib`; `actions` and `validation`: decision 116, `01-std/05-actions-lib`, `01-std/06-validation-lib`); listing it is a resolver error |
 | No edge from any library into `repository/botopink-lang/**` | The compiler knows none of this (`overview.md` § Rules) |
 
 Direction between libraries: `emilia` depends on `jhonstart` for `Element`
-(front 48), `onze` depends on the other three, `rakun` and `jhonstart` depend on nothing but the bundled `std` and `routing` — `routing` is neutral like std, so importing it is not an edge between them (decision 115).
+(front 48), `onze` depends on the other three, `rakun` and `jhonstart` depend on nothing but the bundled `std`, `routing`, `actions` and `validation` — each is neutral like std, so importing it is not an edge between them (decisions 115, 116).
 
 ### 10. The `onze` name takeover
 
@@ -356,7 +356,7 @@ ownership rows of [`../fronts.md`](../fronts.md) imply; the library agent owns t
 
 | Library | Core | `-test` | Domain submodules (proposed) | Cut follows |
 |---|---|---|---|---|
-| **rakun** — the 13 scaffolded dirs are being migrated to the workspace rule in `.tasks/rakun-workspace` (§ 11) | `rakun` — DI, `#[bean]`/`#[configuration]`/`#[value]`, `App`, bootstrap, config/profiles (05), context (06), the file router and SSR spine (22–25, 60–66, 72, 74) | `rakun-test` — `FakeRequest`, `MockMvc`, context reset, broker double (front 19) | `rakun-web` (07, 20, 65, 82) · `rakun-data` (08, 09, 77, 78, 83) · `rakun-security` (10, 79) · `rakun-actuator` + `rakun-actuator-api` (11, 76, 87) · `rakun-cache` (12) · `rakun-client` (13) · `rakun-validation` (14) · `rakun-messaging` (15, 86, 89–91) · `rakun-scheduling` (16, 84) · `rakun-logging` (17) · `rakun-session` (18) · `rakun-hateoas` (21) · and the `../fronts.md` rows that name more: `rakun-i18n` (64), `rakun-starters` (73), `rakun-metrics`/`observability` (75), `rakun-devtools` (80), `rakun-release` (81), `rakun-tx` (83), `rakun-mail` (85), `rakun-cli` (88), `rakun-stream` (89), `rakun-rsocket` (92), `rakun-ws` (93) | Spring starters, one per `spring-boot-starter-*` a consumer takes alone |
+| **rakun** — the 13 scaffolded dirs are being migrated to the workspace rule in `.tasks/rakun-workspace` (§ 11) | `rakun` — DI, `#[bean]`/`#[configuration]`/`#[value]`, `App`, bootstrap, config/profiles (05), context (06), the file router and SSR spine (22–25, 60–66, 72, 74) | `rakun-test` — `FakeRequest`, `MockMvc`, context reset, broker double (front 19) | `rakun-web` (07, 20, 65, 82) · `rakun-data` (08, 09, 77, 78, 83) · `rakun-security` (10, 79) · `rakun-actuator` + `rakun-actuator-api` (11, 76, 87) · `rakun-cache` (12) · `rakun-client` (13) · `rakun-messaging` (15, 86, 89–91) · `rakun-scheduling` (16, 84) · `rakun-logging` (17) · `rakun-session` (18) · `rakun-hateoas` (21) · and the `../fronts.md` rows that name more: `rakun-i18n` (64), `rakun-starters` (73), `rakun-metrics`/`observability` (75), `rakun-devtools` (80), `rakun-release` (81), `rakun-tx` (83), `rakun-mail` (85), `rakun-cli` (88), `rakun-stream` (89), `rakun-rsocket` (92), `rakun-ws` (93) | Spring starters, one per `spring-boot-starter-*` a consumer takes alone |
 | **jhonstart** | `jhonstart` — `Element`, hooks, rendering, router (26), server components (28), streaming (30), boundaries (31), metadata (32), elements (94) | `jhonstart-test` — render helpers, element comparison, `assertElement(loc, …)`, `assertHtml(loc, …)` | `jhonstart-html` (the `html` DSL — 95's proposal, the byte-equality tests live there) · `jhonstart-forms` (67 — js-target, so a different target profile) · `jhonstart-router`? — 95 said no (one file, coupled to the core); `04-jhonstart/modules.md` decides | Next.js entry points: one package, a submodule only where the target profile differs (`'use client'` code is commonJS-only) |
 | **emilia** | `emilia` — tokens, every `<section>TokenToCss`, theme (54), preflight (55), cascade/output (56), escape hatches (57), containers (58), compose (59), attributes (48) | `emilia-test` — `assertCss(loc, tokens)`, `assertSheet(loc, …)`, `sampleTheme()`, the contract-4 literal fixture | `emilia-theme`? · `emilia-modifiers`? — 95 said **two submodules only**; the theme and the modifiers are layers of one pipeline and no consumer takes one without the others. Listed because the plan named them; `05-emilia/modules.md` confirms or refuses | Tailwind: one core, integrations apart. The integration here is front 48's html hook, which is part of the core because it is the only consumer |
 | **onze** | `onze` — orchestrator types, config, integration layer (49), the styling seam (69) | `onze-test` — app scaffolding helpers, route-table assertions, `assertRouteTable(loc, …)`, `assertPayload(loc, …)` | `onze-cli` (50) · `onze-bundler` (68) · `onze-assets` (51, 52, 69, 70) · `onze-release` (71) · `onze-pipeline`? — the plan named it; if it is 69's styling seam it belongs in `onze-assets` as the `../fronts.md` rows already say | Next.js `next` + `create-next-app`: the CLI and the bundler are what a deploy takes without the other |
@@ -375,6 +375,9 @@ name eleven more (`rakun-i18n`, `rakun-starters`, `rakun-metrics`, `rakun-observ
 `modules/rakun/` does not exist and `rakun-core` is what `modules/README.md` calls `../src/`. Under the
 landed model every one of the thirteen reads `✗ ships nothing` and its `{ "path": "../../" }` is the
 *points at the workspace itself* refusal — `.tasks/rakun-workspace` is the migration (step 2).
+`rakun-validation` is the one of the thirteen that leaves rakun rather than migrating: it is the
+bundled library `validation` (decision 116, `01-std/06-validation-lib`), and rakun front 14 Step 7
+deletes the member.
 
 ## Module ↔ Spring starter
 
@@ -391,7 +394,7 @@ same table at HEAD.
 | `-actuator` | `rakun-actuator` (+ `-api`) | 11 · 76 · 87 |
 | `-cache` | `rakun-cache` | 12 |
 | `RestClient` / `WebClient` | `rakun-client` | 13 |
-| `-validation` | `rakun-validation` | 14 |
+| `-validation` | the bundled library `validation` (`01-std/06-validation-lib`, decision 116) — no rakun member; rakun sets its message source | 14 |
 | `-amqp` / `-kafka` / `-activemq` / `-artemis` / `-pulsar` / `-rsocket` / `-integration` | `rakun-messaging` (+ `rakun-stream`, `rakun-rsocket`) | 15 · 86 · 89 · 90 · 91 · 92 |
 | `-quartz`, `@Scheduled` | `rakun-scheduling` | 16 · 84 |
 | logging | `rakun-logging` | 17 |

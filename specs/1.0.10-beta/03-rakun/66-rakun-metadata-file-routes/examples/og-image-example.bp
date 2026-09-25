@@ -15,10 +15,11 @@
 //         opengraph-image.bp     <- rendered per post (jhonstart + onze front 70)
 //
 // SERVER — both routes answer requests on the BEAM. rakun declares the dynamic
-// route, its URL and its <meta> tags; the card's body is an opaque renderer onze
+// route, its URL and its size (an ImageMeta record, which front 32 writes as
+// <meta> tags); the card's body is an opaque renderer onze
 // sets with `setImageRenderer` — jhonstart renders the element tree and onze
 // front 70 turns it into SVG. With no renderer set (front 70 absent) the route
-// answers 501 and the <meta> tag is still emitted, so the failure is one card
+// answers 501 and its ImageMeta is still answered, so the failure is one card
 // and not a missing head. This file sets a stand-in renderer that writes an SVG
 // string, so the route is testable from rakun alone; the jhonstart card is onze
 // front 53's.
@@ -32,7 +33,8 @@ import {
     registerImageRoute,
     setImageRenderer,
     imageUrlFor,
-    metaTagsFor,
+    imagesFor,
+    ImageMeta,
 } from "rakun";
 import {ChunkWriter, Request} from "rakun";  // provided by fronts 23 and 04
 
@@ -70,10 +72,11 @@ val _blogOgBody = setImageRenderer(ImageKind.OpenGraph, "blog/[slug]", fn(req: R
     return out.write("<svg xmlns=\"http://www.w3.org/2000/svg\"><text>" + post.title + " by " + post.author + "</text></svg>");
 });
 
-// SERVER — what jhonstart front 32 puts in <head>, handed to it by onze. The resolution rule is nearest
-// ancestor, implemented once here and cited there.
-pub fn headTagsFor(pathname: string, pattern: string) -> Array<#(string, string)> {
-    return metaTagsFor(pattern);
+// SERVER — the data jhonstart front 32 turns into <meta> tags, handed to it by onze. rakun answers
+// records and writes no markup (decision 116); the resolution rule is nearest ancestor, implemented
+// once here and cited there.
+pub fn cardsFor(pathname: string, pattern: string) -> Array<ImageMeta> {
+    return imagesFor(pathname, pattern);
 }
 
 pub fn cardUrlFor(pathname: string) -> string {

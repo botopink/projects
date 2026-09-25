@@ -6,7 +6,7 @@
 **Wave:** 3
 **Depends on:** 35 (the spacing scale `border-spacing` is a multiple of — this front reuses the step values, not front 35's tokens)
 **Owns:** token section `Table` in `repository/emilia/src/tokens.bp` · dispatcher `tableTokenToCss` in `repository/emilia/src/emilia.bp` · `repository/emilia/test/tables_test.bp`
-**Does not touch:** every other token section and sub-dispatcher; `emilia()`, `flush()`, `tokensToCss`, `hashHex`, `register`, `flushSheet`
+**Does not touch:** every other token section and sub-dispatcher; `emilia()`, `flush()`, `tokensToCss`, the class-name hash (std `content_hash.contentHash` since decision 116), `register`, `flushSheet`
 **Reference:** `TAILWIND_CSS_DOCS.md § 14. Tabelas` (the spacing base from `§ 21.2`) · https://tailwindcss.com/docs/border-collapse
 
 ---

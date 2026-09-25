@@ -198,7 +198,7 @@ in front-number order.
              ▲  ▲
              │  ├── jhonstart-emilia (flush/flushWith; its test renders a page and asserts the contract 4 literal)
              │  └── onze 69 (flushWith)
-             └───── onze 68 (contract 4 literal)
+             └───── onze 68 (styleRule at build time; contract 4 literal)
 
 Inside core, by file (arrows = imports):
   tokens.bp ◄── utilities/*.bp ◄── emilia.bp ──► output.bp ──► theme.bp ◄── spacing.bp
@@ -303,12 +303,14 @@ commit. A front that finds a helper missing files it against 56, not into `emili
 | jhonstart | [94](../04-jhonstart/94-jhonstart-element-surface/README.md) | the element constructors' `attrs` array that the slot writes into; attribute array order is class identity (contract 4 clause 5) | read-only |
 | jhonstart | [30](../04-jhonstart/30-jhonstart-streaming/README.md) | the `jhonstart-emilia` bridge (a member of jhonstart's workspace) implements jhonstart's asynchronous `RenderPlugin` by awaiting `#[@future] flush()` / `flushWith(o)`: the head's `<style>` once, each streamed boundary's `<style>` inside its fill, nothing left at `close`, and `payload()` answering `#("s", <the class names it flushed>)` for the payload's `s` key; the client bundle never calls `flush()` (contract 6a, decisions 113 and 114). The bridge's test asserts the contract 4 literal on the render side — it is the test that renders a page with emilia's classes | `jhonstart-emilia` → `emilia`; emilia imports nobody |
 | onze | [69](../06-onze/69-onze-styling-pipeline/README.md) | registers the bridge's plugin at boot (front 49's line); the stylesheet records of the manifest | `onze` → `jhonstart-emilia` |
-| onze | [68](../06-onze/68-onze-client-bundle/README.md) | the hydration entry recomputes `emilia(tokens)` and asserts the contract 4 literal | `onze` → `emilia` |
+| onze | [68](../06-onze/68-onze-client-bundle/README.md) | at build time the bundler calls `styleRule(tokens, th)` (front 56) for every client `emilia(...)` call to fill its `styleMap`, and asserts the contract 4 literal; onze imports emilia directly — it is the package that knows every library (decisions 113, 116) — and never reaches emilia's rules through the bridge | `onze` → `emilia` |
 
 The two consumers of the shared literal are the render side (the `jhonstart-emilia` bridge test,
 front 30) and front 68; 94 and the bridge are the surfaces it writes into and is collected by. The
 core package is what all of them depend on, and it never grows an import of `jhonstart`,
-`rakun` or `onze`, dev-only included — emilia imports nobody (decisions 113 and 114).
+`rakun` or `onze`, dev-only included — emilia imports no library but std (decisions 113 and 114); its
+class-name hash is std's `content_hash.contentHash` (decision 116), the same function onze 68's
+parity check runs, so contract 4 compares one implementation compiled for two targets.
 
 ## `repository/emilia/examples/**`
 

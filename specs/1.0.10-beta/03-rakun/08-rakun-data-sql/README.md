@@ -408,7 +408,8 @@ reading a counter the pool maintains for the test's benefit.
   Front 08's transaction is local to one connection, and says so.
 - **11-rakun-actuator** hosts the health endpoint; this front ships the `db` indicator and the pool
   metrics.
-- **14-rakun-validation** is what turns a constraint violation into a 422 before a statement runs.
+- The bundled library `validation` (formerly front 14's `rakun-validation`) is what turns a
+  constraint violation into a 422 before a statement runs.
 - **09-rakun-data-nosql** shares the module directory and consumes `datasource.bp` read-only.
 
 ## Contradictions with fronts.md

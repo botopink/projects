@@ -50,7 +50,7 @@
 **Wave:** 3
 **Depends on:** 44 (transitions — a transform without a transition snaps, so the examples pair the two; the dependency is on the token existing, not on its dispatcher)
 **Owns:** token section `Transform` in `repository/emilia/src/tokens.bp` · dispatcher `transformTokenToCss` in `repository/emilia/src/emilia.bp` · `repository/emilia/test/transforms_test.bp`
-**Does not touch:** every other token section and sub-dispatcher; `emilia()`, `flush()`, `tokensToCss`, `hashHex`, `register`, `flushSheet`
+**Does not touch:** every other token section and sub-dispatcher; `emilia()`, `flush()`, `tokensToCss`, the class-name hash (std `content_hash.contentHash` since decision 116), `register`, `flushSheet`
 **Reference:** `TAILWIND_CSS_DOCS.md § 16. Transforms` · https://tailwindcss.com/docs/rotate
 
 ---

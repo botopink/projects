@@ -20,16 +20,24 @@ import { Element, text, fragment, p, renderToString } from "jhonstart";
 // provided by front 94 (`jhonstart-element-surface`, src/elements.bp) — front 67
 // defines no constructor of its own and `element.bp` stays frozen.
 import { form, input, label, button } from "jhonstart";
-import { ActionState, newActionState, parseActionState } from "jhonstart";
+// The protocol is the bundled library `actions` (decision 116) — rakun front 24
+// writes the envelope with it, this file reads it with it.
+import { state: {ActionState, newActionState, writeState}, envelope: {ActionEnvelope, writeEnvelope, parseActionState} } from "actions";
 import { FormBinding, formAction, formAttrs, hiddenActionField, actionState } from "jhonstart";
 
 // Front 24 derives the action id and the server echoes it into the markup; this
 // file never constructs one. `contracts.md § 3` pins its shape.
 val sampleActionId = "a_9f31c0d7a4b2e5081c6fa3d2";
 
-// The `state` value of front 24's response envelope, verbatim from the README —
-// the same literal front 24's encoder test asserts it produces.
-val goldenState = "message=Title%20must%20be%20at%20least%203%20characters&f.title=Too%20short";
+// An `ok: false` envelope as front 24 answers it, written with the same library
+// that reads it — the `state` grammar's own literal is asserted in `libs/actions`.
+val failedEnvelope = writeEnvelope(ActionEnvelope(
+    ok: false,
+    state: writeState("Title must be at least 3 characters", [#("title", "Too short")]),
+    revalidated: [],
+    n: "",
+    payload: "",
+));
 
 fn binding() -> FormBinding {
     return formAction(sampleActionId, "/blog/new");
@@ -97,7 +105,7 @@ test "the empty form carries the attributes an un-hydrated browser needs" {
 }
 
 test "a field message from the action lands beside its own field" {
-    val state = parseActionState(goldenState);
+    val state = parseActionState(failedEnvelope);
     val markup = renderToString(createPostForm(binding(), state, false));
     assert markup.contains("<p class=\"field-error\">Too short</p>");
     assert state.fieldError("content") == "";

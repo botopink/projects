@@ -89,8 +89,10 @@ redirect to the prefixed path with front 63's `redirect`. Prefixing uses
 `Accept-Language` may carry anything.
 
 The filter never runs for a path the app should not translate. `rakun.i18n.exclude` is a list of path
-prefixes — `/api`, `/_onze`, `/sitemap.xml` — and the default list is not empty: redirecting
-`/sitemap.xml` to `/pt/sitemap.xml` breaks front 66 on day one. Front 65's matcher is the general form
+prefixes — `/api`, `/sitemap.xml`, `/robots.txt` — and the default list is not empty: redirecting
+`/sitemap.xml` to `/pt/sitemap.xml` breaks front 66 on day one. The default names no other package's
+paths: onze appends its own asset prefix to `rakun.i18n.exclude` at boot, as it writes rakun's other
+keys (decision 115 rule 4), and rakun spells no onze path (decision 116). Front 65's matcher is the general form
 of this, and this front's filter takes a compiled matcher from it rather than growing a second one.
 
 **Dictionaries are records, not JSON.** This is the one place this front deliberately departs from
@@ -235,6 +237,8 @@ neither.
 - [ ] A request for `/api/posts` is not redirected — `/api` is on the default exclude list.
 - [ ] `/sitemap.xml` and `/robots.txt` are not redirected: the default exclude list carries them, and
       the test names them, because front 66 breaks silently otherwise.
+- [ ] A prefix appended to `rakun.i18n.exclude` at boot (the test appends `/_assets`) is not
+      redirected; `grep -rn "_onze\|onze" modules/rakun-i18n/src` is empty.
 - [ ] `localeOf()` outside a request raises — front 62's rule, inherited not restated.
 - [ ] `setLocaleCookie("pt")` from a server action writes a cookie the next request's `negotiate`
       prefers; called from a render it raises, which is front 62's phase rule.

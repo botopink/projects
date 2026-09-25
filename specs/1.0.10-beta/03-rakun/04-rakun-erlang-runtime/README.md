@@ -428,11 +428,10 @@ rakun's erlang cell.
 
 **Acceptance:**
 - [ ] `modules/rakun/botopink.json` (the core) reads `"target": "erlang"` and `"targets": ["erlang"]`
-- [ ] the workspace root `repository/rakun/botopink.json` reads `"targets": ["erlang", "commonJS"]`,
-      the `commonJS` entry existing only for the boundary member `rakun-validation` (front 14) — the
-      matcher is the bundled library `routing`, not a member (decision 115); erlang is first in every
-      `targets` list under `repository/rakun/`, and is the default target of `botopink run` /
-      `botopink test` there
+- [ ] the workspace root `repository/rakun/botopink.json` and every member read `"targets":
+      ["erlang"]` — what both sides run is a bundled library, not a rakun member: the matcher and the
+      navigation vocabulary are `routing`, the action protocol `actions`, validation `validation`
+      (decisions 115, 116); erlang is the default target of `botopink run` / `botopink test` there
 - [ ] `src/runtime.mjs` is deleted, and no `#[@External.Node]` form remains in the core
       (`rtk proxy grep -rn 'External.Node' repository/rakun/src` is empty)
 - [ ] the five pre-existing test files pass on `--target erlang` with no source change
