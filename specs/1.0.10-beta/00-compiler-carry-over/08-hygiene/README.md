@@ -138,6 +138,18 @@ And every "Closes with" cell names `06 N…` — 1.0.4-beta's front 06, which is
 [`01-checker`](../01-checker/README.md) in this milestone. `docs.md:18` links to
 `specs/1.0.4-beta/MIGRATION.md`.
 
+**D2, re-measured by `15-language-surface` at `4fe1747e`:** the four stale rows above have already
+left `docs.md`'s table (its own note says seven rows left because the compiler accepts the form).
+What is left for this front in that section is:
+
+| `docs.md` says | Replacement |
+|---|---|
+| "A block-shaped statement ends itself … Closes with: 1.0.5-beta `15-language-surface` step 2, with `16-formatter`" | the owner is **C-13** (decisions 29 and 60): the parser accepts the `;` as optional first, the printer picks a side, then 12, `libs/std` and 09 migrate — 15's parked patch is `decision-29-parser-half.patch` |
+| "A pattern range written `..` … Closes with: 1.0.5-beta — owner unassigned" | decision 53 amended 36: `...` **is** the pattern's inclusive range and `..` the slice's — the row describes the settled rule as inverted. Its owner is `01-checker` (the brace-arm value on three backends) |
+| the "deliberately absent" table (three rows) | gains one row per kind 15 named in step 3, with the message each prints: `c ? a : b` → `ternary-absent` (`if` is an expression); `<<` `>>` `&` `^` → `bitwise-operator-absent` (none; `&&`/`\|\|`); `'a'` → `char-literal-absent` (`"a"`); `fn inner(…)` in a body → `nested-fn-decl` (`val inner = { x -> … };`); `[..a, 3]` → `list-spread-not-last`; `[...a]` → `list-spread-dot-dot-dot` (`..`); `implement A for P` after a bodyless `type P(…)` → `implement-clause-for`; `#(x: 1, y: 2)` → `tuple-literal-label` (positional `#(1, 2)`; the labeled construction is 01's §6, so this row moves to the "not yet" table when 01 parses it) |
+| § Lambdas and method chains, and every `loop (…) { x -> … }` fence | a one-line trailing-lambda or loop body needs no `;` after its last statement (15 step 4b): `xs.map { n -> n * 2 }` is the form the fences may write |
+| § Annotations | a negative literal is one argument: `#[order(-100)]` (15 step 4b) |
+
 **D3 — whether a lower-case `@external` is rejected is still not decided.** It has a `reject/` cell
 (`tests/language/reject/external_lowercase_target.bp`), and `expected-failures.txt` lists it against
 "`06` … (fronts.md § unowned items)" — a row that names no front. See

@@ -566,6 +566,24 @@ filed here.
 
 ---
 
+## Handed over by `15-language-surface` steps 3–5 (`front/15-language-surface`)
+
+Three rows of [`surface-gaps.md`](../15-language-surface/surface-gaps.md) are the checker's, measured
+again at `4fe1747e`:
+
+1. **`.Circle(radius: 1)` in expression position parses** — it did not at `c2dd780` — and reds
+   `unbound variable ''` at the `(`: a leading-dot variant with a payload call, in a position whose
+   expected type is a `val`'s annotation. This is the same empty-name diagnostic `status.md` already
+   lists for the typed array literal (`[.EffectShadowRaw("…")]`); the parser's node is a `dotIdent`
+   head with a call link, and whatever the answer is, a message quoting an empty name is not it.
+2. **`#(x: 1, y: 2)` — the labeled tuple construction** — is now refused by the parser as
+   `tuple-literal-label`, at the label, instead of `novalBinding` at the value. The form itself is
+   §6's and yours: when it parses, delete the refusal in `parseTupleLitExpr` (one `if`) and its R10
+   case, and the labels ride the tuple type. Until then `#(1, 2)` and `.0`/`.1` is what compiles.
+3. **`Box<i32>(value: 1).get()`** — explicit type arguments at a constructor call — still reds
+   `novalBinding` at `value`. 15 did not name it: `decision-8:60-64` writes the form, so it is a gap
+   (§1.3) rather than a decision, and naming it would record an absence the document contradicts.
+
 ## Handed over by `11-tooling`
 
 Three rows, each measured through `botopink check` rather than through the language server, so none of

@@ -144,36 +144,56 @@ and a standalone `extend P { … }` already reports `anonymous-impl-extend`.
 
 ### Step 4b — the two measured forms
 
+Landed at `botopink-lang` `727813e5`, both strictly accepting. `parseAnnotationCall` spans a `-` and
+the digits after it into one argument lexeme (`"-20"`), so the reader that evaluates the argument
+sees the number; the trailing lambda's body and the `loop (…) { x -> … }` body take the fn body's
+semicolon policy (`requiredExceptLast`) — they were the two blocks whose last statement could not
+drop its `;`. C-11's `arrow_when_empty` in `format.zig` is the printer half and is untouched.
+
 **Acceptance:**
-- [ ] `#[mark(-20)]` compiles and the annotation receives `-20`; if the form is instead **refused**,
-      the message names the **sign**, not the digits — the present diagnostic is wrong under either
-      answer
-- [ ] `for (xs) { x -> f(x) };` (`loop (xs)` until 22-loops lands) parses, or reports a located
-      message naming the missing `;`
-- [ ] a cell for each, each proved able to fail by planting the pre-fix behaviour
+- [x] `#[mark(-20)]` compiles and the annotation receives `-20` — proved on the front's compiler:
+      `fn mark(comptime decl: @Decl, n: i32)` emitting `n.toString()` answers `-20` on commonJS and
+      erlang, and `markedWith() + 25 == 5`
+- [x] `loop (xs) { x -> f(x) };` parses (and `xs.map { x -> f(x) }`, `memo { -> 42 }`,
+      `calcular(fator: 2) { a, b -> a + b }`); a body of several statements still needs its `;`
+      between them, asserted in `language_surface.zig` R11
+- [ ] a cell for each — specified for [`12-language-tests`](../12-language-tests/README.md) § *Handed
+      over by 15-language-surface steps 3 and 4b* (`run/decorator_negative_argument`,
+      `run/loop_one_line_body`, with sources and `.out`); each fails on `4fe1747e` as a parse error,
+      which is the pre-fix behaviour planted by running the cell on the base compiler
 
 ### Step 5 — hand the surface over
 
-- [ ] every form step 3 names has a `reject/` cell — specified here, written by
-      [`12-language-tests`](../12-language-tests/README.md), which owns `tests/language/**`
-- [ ] the `docs.md` rows that describe the surface are handed to
-      [`08-hygiene`](../08-hygiene/README.md) with the replacement text — four rows of its
-      "decided, not yet implemented" table describe as missing something that works
-      ([`surface-gaps.md`](./surface-gaps.md) § *What the documents say is missing and is not*)
-- [ ] `src/parser/AGENTS.md` and `src/lexer/AGENTS.md` state, for each hoisted rule, that it is
-      applied **once at the exit** and not per-arm, so the next arm inherits it
-- [ ] the rows that belong to other fronts are in those fronts' READMEs, not only in
-      [`surface-gaps.md`](./surface-gaps.md)
+- [x] every form step 3 names has a `reject/` cell — specified with its source, `.expect` line 1
+      (the code) and line 2 (the location, measured) in
+      [`12-language-tests`](../12-language-tests/README.md) § *Handed over by 15-language-surface
+      steps 3 and 4b*; 12 writes them, since it owns `tests/language/**`
+- [x] the `docs.md` rows handed to [`08-hygiene`](../08-hygiene/README.md) under D2 with the
+      replacement text — the four stale rows had already left the table by `4fe1747e`; what is
+      handed is the two rows that name the wrong owner or the inverted rule, the "deliberately
+      absent" table's eight new rows, and the two step-4b forms the fences may now write
+- [x] `src/parser/AGENTS.md` and `src/lexer/AGENTS.md` state, for each hoisted rule, that it is
+      applied once at the exit and not per-arm: the `T[]` suffix (§ *Type-ref grammar*), the chain
+      links and the absent-infix refusal (§ *The postfix chain*, § *A decided-against form is
+      refused by name*), the block body (§ *One block body*), the number's `.` (lexer § *A `.`
+      continues a number only before a digit*)
+- [x] the rows that belong to other fronts are in those fronts' READMEs: 01 (`.Circle(radius: 1)`
+      now parses and types as `unbound variable ''`; the labeled tuple literal; `Box<i32>(…)`), 08
+      (the `docs.md` rows), 12 (the cells); [`surface-gaps.md`](./surface-gaps.md) re-measured at
+      `4fe1747e` with a *Now* column
 
 ## Gate
 
-- [ ] `scripts/gate.sh --cold` green in this front's worktree
-- [ ] every change strictly accepting or a named refusal — no existing snapshot re-records
-- [ ] `zig build test-language` green, with the cells 12 writes from steps 3 and 5
-- [ ] every decided-against form has a named kind, a located message and an `expectError` case
-- [ ] `AGENTS.md` of every directory touched (`src/parser/`, `src/lexer/`, `src/parser/tests/`),
+- [x] `scripts/gate.sh --cold` green in this front's worktree at `727813e5` — all nine stages
+- [x] every change strictly accepting or a named refusal — no existing snapshot re-records (six
+      parser snapshots added, for the neighbouring forms that still parse)
+- [ ] `zig build test-language` green, with the cells 12 writes from steps 3 and 5 — green without
+      them at `727813e5` (no cell of the suite wrote a form the front refuses); the cells are 12's
+- [x] every decided-against form has a named kind, a located message and an `expectErrorAt` case
+- [x] `AGENTS.md` of every directory touched (`src/parser/`, `src/lexer/`, `src/parser/tests/`),
       updated in the same commit
-- [ ] Commit on `fix/language-surface`; no push, no merge — landing is the maintainer's step
+- [x] Committed on `front/15-language-surface` (the milestone's branch name for the front); no push,
+      no merge — landing is the maintainer's step
 
 ## Blast radius
 
