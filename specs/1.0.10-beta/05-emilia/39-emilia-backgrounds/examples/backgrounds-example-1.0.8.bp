@@ -13,7 +13,6 @@
 //       https://tailwindcss.com/docs/gradient-color-stops
 
 import { emilia, flush, Token } from "emilia";
-import { div, renderToString } from "jhonstart";
 
 // Background attachment
 val bgAttachTokens: Token[] = [
@@ -103,8 +102,6 @@ val gradientTokens: Token[] = [
 ];
 val gradientStyles = emilia(gradientTokens);
 
-val page = div([], []);
-
 #[@future]
 fn main() -> @Future<void> {
     @print("=== F05: Backgrounds Example ===");
@@ -117,7 +114,6 @@ fn main() -> @Future<void> {
     @print("Gradient Direction: " + gradDirStyles);
     @print("Gradient From: " + gradFromStyles);
     @print("Gradient: " + gradientStyles);
-    @print(renderToString(page));
     @print(await flush());
 }
 

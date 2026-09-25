@@ -1,9 +1,15 @@
-// Front 48 — emilia attributes and the jhonstart slot.
+// Front 48 — emilia attributes: the class slot.
 //
-// A card component whose elements carry emilia tokens through the attribute
-// slot, built with the jhonstart builders; the same markup through the
-// `html """..."""` DSL; the static-class merge; and the no-space rule shown as
-// the form that works.
+// A card component's attributes built with the slot as plain data — the
+// `#("class", …)` pairs a builder's `attrs:` array takes, and the bare class
+// string a `[class]={…}` hole takes — the static-class merge, the no-space rule
+// shown as the form that works, and the flushed CSS those classes select.
+//
+// emilia imports nobody (decisions 113 and 114): this example uses emilia only
+// and asserts class names, attribute arrays and CSS strings. Rendering these
+// attributes into HTML is jhonstart's; the rendered round trip (builders and
+// the html DSL producing the same bytes) is the `jhonstart-emilia` bridge's
+// test, and an application that renders a styled page is an onze example.
 //
 // Upstream:
 //   https://tailwindcss.com/docs/styling-with-utility-classes
@@ -11,40 +17,21 @@
 // Reference: TAILWIND_CSS_DOCS.md § 3. Core Concepts
 //
 // THE CONTRACT THIS FILE DEMONSTRATES:
-//   class = "e_" + djb2hex(tokensToCss(tokens))
-//   - a pure function of the token list, in author order
+//   class = "e_" + djb2hex(encodeSheet(tokensToSheet(tokens, theme)))
+//   - a pure function of the token list, in author order, and the theme
 //   - nothing else enters the hash
 //   - a static class merges BEFORE the emilia class, one ASCII space
 //   - the rule body must be ASCII, or the JS and erlang hashes diverge
 // The server renders this class into the HTML on BEAM; the client recomputes
 // it in JavaScript during hydration. If the two disagree, the page flashes.
 
-// From emilia: the slot (front 48), the DSL bridge (front 48), and the surface
-// that already exists today.
-import {styled, styledWith, className, cls, clsWith, flush, Token} from "emilia";
-
-// From jhonstart: the element builders and the html DSL that exist today, plus
-// the attribute plumbing this front adds. `bracketPair` is imported because the
-// html DSL lowers every `[name]={expr}` attribute to a call to it, resolved in
-// the CALLER's scope.
-import {
-    Element,
-    div,
-    span,
-    p,
-    h1,
-    text,
-    html,
-    bracketPair,
-    renderToString,
-} from "jhonstart";
-import {classAttr, withAttrs, attrValue} from "jhonstart";
+import {styled, styledWith, className, cls, clsWith, mergeClass, flush, defaultTheme, Theme, Token} from "emilia";
 
 // ── the token lists, in named functions ──────────────────────────────────────
 //
 // Token lists live in functions rather than inline for two reasons, and both
-// are load-bearing. First, the `[class]={...}` hole in the html DSL may not
-// contain a space, so an inline array literal cannot go there. Second, the
+// are load-bearing. First, the `[class]={...}` hole in jhonstart's html DSL may
+// not contain a space, so an inline array literal cannot go there. Second, the
 // server and the client must build the SAME list in the SAME order: one shared
 // function guarantees that, two inline copies do not.
 
@@ -79,139 +66,129 @@ fn cardBodyTokens() -> Token[] {
     return body;
 }
 
-fn cardBadgeTokens() -> Token[] {
-    val badge: Token[] = [
-        .Bg.Blue.100,
-        .Color.Blue.700,
-        .Pad.X.2,
-        .Border.Rounded.Full,
-        .Text.Size.Xs,
-    ];
-    return badge;
-}
-
-// ── the slot, through the builders ───────────────────────────────────────────
+// ── the slot, as attribute data ──────────────────────────────────────────────
 //
-// `styled(tokens)` is `#("class", emilia(tokens))` — the tuple drops straight
-// into any builder's `attrs:`. Every constructor call needs `attrs:` written
-// out, inner ones included: declared parameter defaults are never applied.
+// `styled(tokens, th)` is `#("class", emilia(tokens, th))` — the pair drops
+// straight into any builder's `attrs:` array. Here it is only data: the array a
+// renderer would write, in the order it would write it.
 
-pub fn CardBuilt() -> Element {
-    return div([
-            h1([text("Pedido #4821", attrs: [])], attrs: [styled(cardTitleTokens())]),
-            p([text("Entregue em 12 de setembro.", attrs: [])], attrs: [styled(cardBodyTokens())]),
-            span([text("pago", attrs: [])], attrs: [styled(cardBadgeTokens())]),
-        ], attrs: [styled(cardTokens())]);
+pub fn cardAttrs(th: Theme) -> Array<#(string, string)> {
+    val attrs: Array<#(string, string)> = [#("id", "card-4821"), styled(cardTokens(), th)];
+    return attrs;
 }
 
 // ── the static-class merge ───────────────────────────────────────────────────
 //
-// `styledWith(base, tokens)` puts the static class FIRST and the emilia class
-// second, separated by one ASCII space. The order is fixed because
+// `styledWith(base, tokens, th)` puts the static class FIRST and the emilia
+// class second, separated by one ASCII space. The order is fixed because
 // `class="card e_1f3a9b"` and `class="e_1f3a9b card"` are the same CSS and two
 // different attribute strings, and a hydrator comparing strings sees two
-// different values.
-//
-// The base is passed through unchanged: no sorting, no de-duplication, no
-// trimming of interior spaces.
+// different values. The base is passed through unchanged: no sorting, no
+// de-duplication, no trimming of interior spaces.
 
-pub fn CardWithLegacyClass() -> Element {
-    return div([
-            text("integrates with the legacy stylesheet", attrs: []),
-        ], attrs: [styledWith("legacy-card", cardTokens())]);
+pub fn legacyCardAttr(th: Theme) -> #(string, string) {
+    return styledWith("legacy-card", cardTokens(), th);
 }
 
-// ── mixing emilia with other attributes ──────────────────────────────────────
+// ── the class a `[class]={…}` hole receives ──────────────────────────────────
 //
-// `withAttrs` appends: base first, extra second, order preserved.
-// `renderToString` writes attributes in array order, so the attribute order in
-// the rendered tag is the array order — which is the fifth way the two halves
-// can disagree, and the reason there is one append function instead of a
-// convention.
-
-pub fn CardWithId() -> Element {
-    val base: Array<#(string, string)> = [#("id", "card-4821")];
-    val attrs = withAttrs(base, [styled(cardTokens())]);
-    return div([text("com id", attrs: [])], attrs: attrs);
-}
-
-// ── the same markup through the html DSL ─────────────────────────────────────
+// `cls(tokens, th)` returns the class name as a bare string, which is what a
+// hole in jhonstart's `html """…"""` DSL wants.
 //
-// The DSL's `[name]={expr}` attribute reaches `attrs` and resolves `expr` in
-// THIS scope. `cls(tokens)` returns the class name as a bare string, which is
-// exactly what the hole wants.
-//
-// THE NO-SPACE RULE. `html.bp` splits a tag's body on " " before parsing
+// THE NO-SPACE RULE. The DSL splits a tag's body on " " before parsing
 // attributes, so a hole containing a space is lexed as several attributes and
 // fails with a parse error carrying no line number. This does NOT work:
 //
-//     html """<div [class]={cls([.Text.Bold, .Color.Black])}>hi</div>"""
+//     html """<div [class]={cls(cardTokens(), th)}>hi</div>"""
 //
-// Bind the value first. That is what the `val`s below are for, and it is also
-// why the token lists live in zero-argument functions.
+// Bind the value first — `val card = cls(cardTokens(), th);` and then
+// `[class]={card}`. The bound values are all this library produces.
 
-pub fn CardTemplated() -> Element {
-    val card = cls(cardTokens());
-    val title = cls(cardTitleTokens());
-    val body = cls(cardBodyTokens());
-    return html """<div [class]={card}><h1 [class]={title}>Pedido #4821</h1><p [class]={body}>Entregue em 12 de setembro.</p></div>""";
+pub fn holeClasses(th: Theme) -> Array<string> {
+    val card = cls(cardTokens(), th);
+    val title = cls(cardTitleTokens(), th);
+    val body = clsWith("legacy-body", cardBodyTokens(), th);
+    val out: Array<string> = [card, title, body];
+    return out;
 }
 
-// The merge is available to the DSL too, under the same no-space rule.
-pub fn CardTemplatedWithLegacyClass() -> Element {
-    val card = clsWith("legacy-card", cardTokens());
-    return html """<div [class]={card}><p>integrates with the legacy stylesheet</p></div>""";
+// Reading a class back out of an attribute array: "" for an absent name rather
+// than `?string`, the convention the slot's consumers use.
+
+fn attrOf(attrs: Array<#(string, string)>, name: string) -> string {
+    var found = "";
+    for (attrs) { a ->
+        if (a._0 == name) found = a._1;
+    };
+    return found;
 }
 
-// ── the round trip ───────────────────────────────────────────────────────────
-//
-// One component, two authoring styles, one rendered string. A component may
-// move between builders and the DSL without changing the HTML the server
-// ships — which is what makes the two halves' agreement checkable rather than
-// hoped for.
-
-pub fn assertSameMarkup() -> bool {
-    val card = cls(cardTokens());
-    val built = div([p([text("hi", attrs: [])], attrs: [])], attrs: [classAttr(card)]);
-    val templated = html """<div [class]={card}><p>hi</p></div>""";
-    return renderToString(built) == renderToString(templated);
-}
-
-// Reading the class back out of a built tree: `attrValue` returns "" for an
-// absent name rather than `?string`, so no optional handling is needed at the
-// call site and none of it reaches a comptime body.
-
-pub fn cardClassOf(e: Element) -> string {
-    return attrValue(e.attrs, "class");
-}
-
-// ── order is identity ────────────────────────────────────────────────────────
-//
-// `tokensToCss` joins in list order, so reordering the tokens produces a
-// different rule body and therefore a different class. Both halves must build
-// the same list in the same order. This is the clause a shared token function
-// satisfies and two inline copies do not.
-
-pub fn orderChangesTheClass() -> bool {
-    val a: Token[] = [.Text.Bold, .Color.Black];
-    val b: Token[] = [.Color.Black, .Text.Bold];
-    return className(a) != className(b);
-}
-
-// ── the page ─────────────────────────────────────────────────────────────────
-//
-// The server render: build the tree, render it, flush the sheet, ship both.
-// The client does the same `emilia()` calls during hydration and gets the same
-// class names; its own `register` writes into a sheet it never flushes, because
-// the server already shipped the <style> block.
+// ── the page's CSS ───────────────────────────────────────────────────────────
 //
 // `flush()` is `#[@future]`, so the caller must be `#[@future]` too and must
-// `await` it.
+// `await` it. The sheet it returns is what the server ships in <style>; the
+// client does the same `emilia()` calls during hydration, gets the same class
+// names, and never flushes.
 
 #[@future]
-pub fn renderCardPage() -> @Future<string> {
-    val page = CardBuilt();
-    val markup = renderToString(page);
-    val styles = await flush();
-    return "<!doctype html><html><head>" + styles + "</head><body>" + markup + "</body></html>";
+pub fn cardSheet() -> @Future<string> {
+    val th = defaultTheme();
+    val card = className(cardTokens(), th);
+    val title = className(cardTitleTokens(), th);
+    val sheet = await flush();
+    return sheet;
+}
+
+#[@future]
+fn main() -> @Future<void> {
+    val th = defaultTheme();
+    @print("card attrs class: " + attrOf(cardAttrs(th), "class"));
+    @print("legacy card class: " + legacyCardAttr(th)._1);
+    @print(await cardSheet());
+}
+
+// ── tests ────────────────────────────────────────────────────────────────────
+
+test "attributes: styled is the class pair" {
+    val th = defaultTheme();
+    val pair = styled(cardTokens(), th);
+    assert pair._0 == "class";
+    assert pair._1 == className(cardTokens(), th);
+}
+
+test "attributes: the slot appends after the attributes before it" {
+    val th = defaultTheme();
+    val attrs = cardAttrs(th);
+    assert attrs.at(0).unwrapOr(#("", ""))._0 == "id";
+    assert attrs.at(1).unwrapOr(#("", ""))._0 == "class";
+}
+
+test "attributes: the static class merges first" {
+    val th = defaultTheme();
+    val v = legacyCardAttr(th)._1;
+    assert v.startsWith("legacy-card ");
+    assert v.endsWith(className(cardTokens(), th));
+    assert mergeClass("", "e_x") == "e_x";
+    assert mergeClass("a  b", "e_x") == "a  b e_x";
+}
+
+test "attributes: three names, one value" {
+    val th = defaultTheme();
+    assert cls(cardTokens(), th) == className(cardTokens(), th);
+    assert holeClasses(th).at(0).unwrapOr("") == className(cardTokens(), th);
+}
+
+test "attributes: order is identity" {
+    val th = defaultTheme();
+    val a: Token[] = [.Text.Bold, .Color.Black];
+    val b: Token[] = [.Color.Black, .Text.Bold];
+    assert className(a, th) != className(b, th);
+}
+
+#[@future]
+test "attributes: the flushed sheet selects the card class" {
+    val th = defaultTheme();
+    val card = className(cardTokens(), th);
+    val sheet = await flush();
+    assert sheet.indexOf("." + card) != -1;
 }
