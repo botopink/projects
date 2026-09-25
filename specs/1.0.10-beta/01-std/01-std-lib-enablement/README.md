@@ -241,11 +241,11 @@ pub fn jsString(s: string) -> string {
 ```
 
 **Acceptance:**
-- [ ] `escape.html("<a href=\"x\">&")` answers `&lt;a href=\"x\"&gt;&amp;` — the `&` is escaped once, not twice
-- [ ] `escape.unescapeHtml(escape.html(s)) == s` for the five entities, on both targets
-- [ ] `escape.attribute` escapes both quote characters and delegates the other three to `html`
-- [ ] `escape.jsString("</script>")` contains no literal `</script>` substring
-- [ ] the module declares no `#[@External.*]` cell and no `import`
+- [x] `escape.html("<a href=\"x\">&")` answers `&lt;a href=\"x\"&gt;&amp;` — the `&` is escaped once, not twice
+- [x] `escape.unescapeHtml(escape.html(s)) == s` for the five entities, on both targets
+- [x] `escape.attribute` escapes both quote characters and delegates the other three to `html`
+- [x] `escape.jsString("</script>")` contains no literal `</script>` substring
+- [x] the module declares no `#[@External.*]` cell and no `import`
 
 ### Step 2 — `path.bp` and `io/fs.bp` additions
 
@@ -283,11 +283,11 @@ pub declare fn glob(pattern: string, root: string) -> @Result<string[], string>;
 ```
 
 **Acceptance:**
-- [ ] `path.isInside("/app", "/app/blog/page.bp")` is true; `path.isInside("/app", "/app/../etc/passwd")` is false
-- [ ] `path.withoutExtension("page.bp")` answers `page`; `path.withoutExtension("noext")` answers `noext`
-- [ ] `fs.walk` on a fixture tree answers the same *set* of relative paths on both targets (order is not asserted — `filelib:fold_files` and `readdirSync` do not agree on it)
-- [ ] `fs.glob("**/page.bp", root)` finds a nested `page.bp` on both targets
-- [ ] the nine existing `path` functions and the existing `fs` functions are byte-unchanged; `path.bp` still declares no `#[@External.*]` cell
+- [x] `path.isInside("/app", "/app/blog/page.bp")` is true; `path.isInside("/app", "/app/../etc/passwd")` is false
+- [x] `path.withoutExtension("page.bp")` answers `page`; `path.withoutExtension("noext")` answers `noext`
+- [x] `fs.walk` on a fixture tree answers the same *set* of relative paths on both targets (order is not asserted — `filelib:fold_files` and `readdirSync` do not agree on it)
+- [x] `fs.glob("**/page.bp", root)` finds a nested `page.bp` on both targets
+- [x] the nine existing `path` functions and the existing `fs` functions are byte-unchanged; `path.bp` still declares no `#[@External.*]` cell
 
 ### Step 3 — `encoding.bp`
 
@@ -315,12 +315,12 @@ pub fn formStringify(pairs: Array<#(string, string)>) -> string {
 ```
 
 **Acceptance:**
-- [ ] `encoding.hexEncode("hi")` answers `6869` on both targets, lowercase
-- [ ] `encoding.hexDecode("zz")` answers an `Error`, not a crash
-- [ ] `encoding.percentEncode("a b&c=d")` answers `a%20b%26c%3Dd` on both targets
-- [ ] `encoding.percentDecode(encoding.percentEncode(s)) == s` for a string containing space, `&`, `=`, `+`, `/` and a non-ASCII character
-- [ ] `encoding.formStringify([#("q", "a b")])` answers `q=a%20b` — the case `querystring.stringify` documents itself as not handling
-- [ ] `encoding.base64UrlEncode` output contains no `+`, `/` or `=`
+- [x] `encoding.hexEncode("hi")` answers `6869` on both targets, lowercase
+- [x] `encoding.hexDecode("zz")` answers an `Error`, not a crash
+- [x] `encoding.percentEncode("a b&c=d")` answers `a%20b%26c%3Dd` on both targets
+- [x] `encoding.percentDecode(encoding.percentEncode(s)) == s` for a string containing space, `&`, `=`, `+`, `/` and a non-ASCII character
+- [x] `encoding.formStringify([#("q", "a b")])` answers `q=a%20b` — the case `querystring.stringify` documents itself as not handling
+- [x] `encoding.base64UrlEncode` output contains no `+`, `/` or `=`
 
 ### Step 4 — `hash.bp`, the hmac half
 
@@ -343,11 +343,11 @@ pub declare fn equalsConstantTime(a: string, b: string) -> bool;
 ```
 
 **Acceptance:**
-- [ ] `hash.hmacSha256Base64Url("key", "The quick brown fox jumps over the lazy dog")` matches the RFC 4231 vector re-encoded as base64url, byte-identical on both targets
-- [ ] `hash.sha1Base64` reproduces the RFC 6455 §1.3 WebSocket accept-key example
-- [ ] `hash.sha256Base64Url("")` answers `47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU` on both targets
-- [ ] `hash.equalsConstantTime` answers false for equal-length-different and for different-length inputs, and never throws
-- [ ] a test asserts `equalsConstantTime(x, x)` for a 43-character base64url signature — the exact shape front 10 compares
+- [x] `hash.hmacSha256Base64Url("key", "The quick brown fox jumps over the lazy dog")` matches the RFC 4231 vector re-encoded as base64url, byte-identical on both targets
+- [x] `hash.sha1Base64` reproduces the RFC 6455 §1.3 WebSocket accept-key example
+- [x] `hash.sha256Base64Url("")` answers `47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU` on both targets
+- [x] `hash.equalsConstantTime` answers false for equal-length-different and for different-length inputs, and never throws
+- [x] a test asserts `equalsConstantTime(x, x)` for a 43-character base64url signature — the exact shape front 10 compares
 
 ### Step 5 — `io/clock.bp` additions
 
@@ -379,11 +379,11 @@ pub fn isExpired(at: i64) -> bool { return nowMillis() > at; }
 ```
 
 **Acceptance:**
-- [ ] `clock.parseIso8601(clock.formatIso8601(t))` answers `Ok(t)` truncated to whole seconds, on both targets
-- [ ] `clock.parseIso8601("not a date")` answers an `Error` on both targets
-- [ ] `clock.toCivil` of a fixed epoch reading answers the same `Civil` on both targets, and `weekday` follows ISO-8601 (Monday = 1)
-- [ ] `clock.isExpired(clock.deadline(clock.seconds(60)))` is false; `clock.isExpired(0)` is true
-- [ ] `clock.sleep(20)` returns after at least 20 monotonic milliseconds on both targets
+- [x] `clock.parseIso8601(clock.formatIso8601(t))` answers `Ok(t)` truncated to whole seconds, on both targets
+- [x] `clock.parseIso8601("not a date")` answers an `Error` on both targets
+- [x] `clock.toCivil` of a fixed epoch reading answers the same `Civil` on both targets, and `weekday` follows ISO-8601 (Monday = 1)
+- [x] `clock.isExpired(clock.deadline(clock.seconds(60)))` is false; `clock.isExpired(0)` is true
+- [x] `clock.sleep(20)` returns after at least 20 monotonic milliseconds on both targets
 
 ### Step 6 — `io/random.bp` additions
 
@@ -402,10 +402,10 @@ pub declare fn uuidV4() -> string;
 ```
 
 **Acceptance:**
-- [ ] `random.secureToken(32)` answers 43 characters, containing none of `+`, `/`, `=`
-- [ ] two consecutive `random.secureToken(16)` calls differ, on both targets
-- [ ] `random.uuidV4()` matches `^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$` on both targets
-- [ ] the existing eight `random` functions and `randomBytes` are byte-unchanged and `random.seed`/`seededFloat` still round-trip
+- [x] `random.secureToken(32)` answers 43 characters, containing none of `+`, `/`, `=`
+- [x] two consecutive `random.secureToken(16)` calls differ, on both targets
+- [x] `random.uuidV4()` matches `^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$` on both targets
+- [x] the existing eight `random` functions and `randomBytes` are byte-unchanged and `random.seed`/`seededFloat` still round-trip
 
 ### Step 7 — `regex.bp` additions
 
@@ -429,12 +429,12 @@ pub declare fn captures(pattern: string, input: string) -> ?Array<string>;
 ```
 
 **Acceptance:**
-- [ ] `regex.captures("^/blog/([^/]+)$", "/blog/hello")` answers a two-element array whose second element is `hello`, on both targets
-- [ ] `regex.captures("^/x$", "/y")` answers `null`, not an empty array
-- [ ] `regex.namedCaptures("(?<slug>[^/]+)", "/hello")` answers one `#("slug", "hello")` pair on both targets
-- [ ] `regex.compile("(")` answers an `Error`; `regex.runCompiled` of a compiled pattern agrees with `regex.matches` of the same source
-- [ ] `regex.escapeLiteral(".*")` answers a pattern that matches the literal `.*` and nothing else
-- [ ] the six existing `regex` functions and the `Match` record are unchanged
+- [x] `regex.captures("^/blog/([^/]+)$", "/blog/hello")` answers a two-element array whose second element is `hello`, on both targets
+- [x] `regex.captures("^/x$", "/y")` answers `null`, not an empty array
+- [x] `regex.namedCaptures("(?<slug>[^/]+)", "/hello")` answers one `#("slug", "hello")` pair on both targets
+- [x] `regex.compile("(")` answers an `Error`; `regex.runCompiled` of a compiled pattern agrees with `regex.matches` of the same source
+- [x] `regex.escapeLiteral(".*")` answers a pattern that matches the literal `.*` and nothing else
+- [x] the six existing `regex` functions and the `Match` record are unchanged
 
 ### Step 8 — `io/process.bp` additions
 
@@ -455,11 +455,11 @@ front that needs them split on both targets is asking for a redirect through a t
 say so rather than assume.
 
 **Acceptance:**
-- [ ] `process.run("echo", ["hi"])` answers `Ok` with `status == 0` and `stdout` starting `hi`, on both targets
-- [ ] `process.run("definitely-not-a-binary", [])` answers an `Error` rather than crashing the caller
-- [ ] a non-zero exit is an `Ok` carrying that status, not an `Error` — the process ran, it just failed
-- [ ] `process.runShell("exit 3")` is documented as status-losing on Erlang (`os:cmd/1` answers output only) and the docblock says so
-- [ ] the five existing `process` functions are byte-unchanged
+- [x] `process.run("echo", ["hi"])` answers `Ok` with `status == 0` and `stdout` starting `hi`, on both targets
+- [x] `process.run("definitely-not-a-binary", [])` answers an `Error` rather than crashing the caller
+- [x] a non-zero exit is an `Ok` carrying that status, not an `Error` — the process ran, it just failed
+- [x] `process.runShell("exit 3")` is documented as status-losing on Erlang (`os:cmd/1` answers output only) and the docblock says so
+- [x] the five existing `process` functions are byte-unchanged
 
 ### Step 9 — `io/net.bp`
 
@@ -500,12 +500,12 @@ same again with `ssl:` in place of `gen_tcp:` and a `(catch ssl:start())` prelud
 start `http.bp:54` already uses for `inets`.
 
 **Acceptance:**
-- [ ] on erlang, a test binds an ephemeral port, connects to itself, sends 11 bytes, receives the same 11 bytes, and closes both ends
-- [ ] `net.accept` with a 50 ms timeout and no pending connection answers `Error("timeout")` rather than blocking the test
-- [ ] `net.connect("127.0.0.1", <closed port>, 200)` answers an `Error` naming the refusal
-- [ ] on commonJS, every `net` function answers `Error("std/io/net: server-only")` — asserted, not assumed
-- [ ] `net.peer` of an accepted socket answers the loopback address
-- [ ] the TLS path completes a handshake against a self-signed fixture cert and round-trips a payload
+- [x] on erlang, a test binds an ephemeral port, connects to itself, sends 11 bytes, receives the same 11 bytes, and closes both ends
+- [x] `net.accept` with a 50 ms timeout and no pending connection answers `Error("timeout")` rather than blocking the test
+- [x] `net.connect("127.0.0.1", <closed port>, 200)` answers an `Error` naming the refusal
+- [x] on commonJS, every `net` function answers `Error("std/io/net: server-only")` — asserted, not assumed
+- [x] `net.peer` of an accepted socket answers the loopback address
+- [x] the TLS path completes a handshake against a self-signed fixture cert and round-trips a payload
 
 ### Step 10 — export lines
 
@@ -528,10 +528,10 @@ pub mod clock;
 Front 03 hands over no export line: its functions live in `hash.bp`, which is registered already.
 
 **Acceptance:**
-- [ ] the build embeds every registered module without a `build.zig` edit (`libs/std/AGENTS.md`)
+- [x] the build embeds every registered module without a `build.zig` edit (`libs/std/AGENTS.md`)
 - [ ] `import {escape, encoding, hash, io: {net, clock}} from "std";` resolves from a consumer package
 - [ ] `libs/std/AGENTS.md`'s tree listing names `io/net.bp` and `escape.bp` and lists the added functions on the rows of the eight modules extended
-- [ ] fronts 02 and 03 have landed first, so this commit adds front 02's line rather than waiting on it
+- [x] fronts 02 and 03 have landed first, so this commit adds front 02's line rather than waiting on it
 
 ## Examples
 
