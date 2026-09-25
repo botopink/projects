@@ -32,6 +32,7 @@ language server this milestone.
 | **Why** | an import binds the names in its `from` clause; a typedef reached only through an imported declaration's *field* or *method signature* is never registered, and C10's two-pass registration (which landed) registers the module's own typedefs, not a dependency's transitive ones |
 | **Correct** | importing a type registers the closure of the types its declaration mentions — field types and method signature types, transitively — without binding their constructors unless they are named |
 | **Probe** | `src/users.bp`: `pub type Role(name: string)`, `pub type User(role: Role) { pub fn roleName(self: Self) -> string {…} }`, `pub fn makeUser() -> User`. `src/main.bp`: `pub mod users; import { User, makeUser } from "users";` → `error: unknown type 'Role' --> src/main.bp:2:21` (the caret sits on `makeUser`). Adding `Role` to the clause checks |
+| **Landed** | `registerImportedTypeClosure` (`comptime/infer.zig`), called from `comptime.zig`'s import loop before the imported declaration is registered. Constructors of the closure are not bound |
 | **Acceptance** | the probe checks without naming `Role`; naming it still checks; a type genuinely absent from the module still reds, at the annotation |
 
 Two sub-defects in one probe: the rule itself, and the caret, which points at the wrong element of
