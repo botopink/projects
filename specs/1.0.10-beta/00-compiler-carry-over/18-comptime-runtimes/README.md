@@ -90,6 +90,7 @@ excerpt in [`evidence.md`](./evidence.md), the call path in [`current-path.md`](
 | **step 2, the binary emitter** (`80a19bf7`): `codegen/wat/wasm_binary_emitter.zig` renders the `wat_ast.Module` to the binary format (every name resolved to an index; an unknown name, operator or numeral refused); `emitWat` returns text and binary (`GenerateResult.wasm`); `executeWat` runs the **binary** under wasmtime, so all 321 wasm RUN LOGs are the binary emitter's answer — equal, none re-recorded; the browser page runs the wasm target's output | `codegen/wat/wasm_binary_emitter.zig`, `wat.zig` (`emitWat`'s return), `moduleOutput.zig`, `codegen/runtime.zig` (`executeWat`), `modules/compiler-web/**` | — |
 | **step 2, the wat runtime** (`1b1b34de`): the generated Erlang text parsed (`wat/erl_parse.zig`), lowered with its prelude to one `wat_ast` module (`wat/lower.zig`), linked into the embedded term library (`wat/rt.zig` → `bp_wat_rt.wasm`, `wat/link.zig`) and run on wasm3 in-process (`persistent_wat.zig`, `modules/wasm3/` re-vendored); `runtime.zig` the dispatcher both evaluators call, with `parity`; reply JSON read in sorted key order (`reply_order.zig`, 33 `COMPTIME REPLY` sections re-recorded, key order only) | `comptime/runtime/**`, `template_eval.zig`/`decorator_eval.zig` (the call), `trace.zig` (the order), `codegen/tests/helpers.zig` (`generate` under parity), root `build.zig`, `modules/wasm3/**` | 84 |
 | **step 3, decision 84** (`96948082`): `codegen.generateWith` selects `Config.comptime_runtime orelse of(target)` for its comptime pass — commonJS/wasm on wat, erlang/beam on beam, no target (the LSP) on beam; no flag | `codegen.zig`, `codegen/config.zig`, `comptime/runtime/runtime.zig` | 84 |
+| **step 5, the comptime half** (`5cd2de13`): on `wasm32` `persistent_wat.zig` runs the linked module on the page's engine through `bp_host.run_module`/`result_len`/`result_copy` (`glue.js`); the page answers the decorator+template program's `COMPTIME REPLY` like the native compiler; `bp_set_package` names the page's project (decision 109). ReleaseSmall 2.91 MB / 908 KB gzip | `comptime/runtime/persistent_wat.zig`, `runtime.zig`, `modules/compiler-web/**` | 84, 109 |
 
 **CI consequence.** `erlc` (OTP 28+) is now a dependency of *building* the compiler: every workflow
 that runs `zig build` — the release cross-builds included — installs OTP 28 (`erlef/setup-beam`,
@@ -347,7 +348,7 @@ loop in `codegen/tests/helpers.zig:198` running `configs × runtimes`, not a `mv
 - [ ] `BOTOPINK_SNAP_TRACE` run: traced = on disk, 0 orphans, 0 unrecorded
 - [ ] `codegen/tests/AGENTS.md:24` and `codegen/AGENTS.md` name the new path
 
-### Step 5 — the browser build — LANDED in part: the build, the glue, the demo; its comptime half waits on step 2
+### Step 5 — the browser build — LANDED (`ed32ae82` build, `5cd2de13` comptime in the page); the CI-matrix box waits on the push
 
 Specified in [`browser-build.md`](./browser-build.md). `zig build compiler-web` builds
 `src/root.zig`'s API (`codegen.generate` takes sources in and gives text out) for `wasm32-wasi` —
@@ -371,12 +372,14 @@ instantiated and run in the same page.
 - [ ] `zig build compiler-web` green on the CI matrix — linux green (the target is fixed in `build.zig`, `-Dtarget` is not
       read; the `test-web` step is in `test.yml`, the matrix run follows the push); recorded: ReleaseSmall
       **2.64 MB · 813 KB gzip · 48 s**, Debug 15.8 MB · 16 s, the native Debug CLI 80 MB (budget ≤ 8 MB / ≤ 2.5 MB gzip: held)
-- [ ] the demo compiles the decorator+template program with **no network request after load**
+- [x] the demo compiles the decorator+template program with **no network request after load**
       (DevTools network tab empty after `botopink.wasm` and `glue.js`); its `COMPTIME REPLY` equals
-      the native one — the page references `glue.js` and `botopink.wasm` only (pinned by `tests/smoke.js`, not
-      yet watched in a browser); the `COMPTIME REPLY` is the located refusal until step 2's `persistent_wat.zig`;
-      the `wasm` output **is** instantiated and run in the page since `80a19bf7` (the binary beside the
-      `.wat`, `glue.js` `run`, pinned by `tests/smoke.js`: `hello, web` from the binary)
+      the native one — `5cd2de13`: the compiler lowers and links the bodies, the page's engine runs them
+      behind `bp_host`; `tests/smoke.js` compiles the program for commonJS and wasm and asserts both
+      `COMPTIME REPLY` sections equal the native compiler's, and pins the page's resource list to
+      `glue.js` + `botopink.wasm` (no DevTools session was watched); the `wasm` output is instantiated
+      and run in the page (`80a19bf7`). The page names its project (`bp_set_package`): decision 109
+      refuses an erlang/BEAM compile without a package
 - [x] `grep -rn "std.process\|std.fs\." src/` reaches only files excluded from the wasm build — non-test hits are
       `codegen/runtime.zig`, `comptime/runtime/persistent_erl.zig`, `utils/snap.zig`, `render_resident.zig` and
       `beam_file.zig`'s tests; the Debug wasm's DWARF file table names none of them, and `template_eval.zig`'s
