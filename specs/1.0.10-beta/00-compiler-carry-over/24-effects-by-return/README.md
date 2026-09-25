@@ -465,7 +465,9 @@ generator and loop cells are re-spelled into these.
 - `case` over `YieldStep` with an `.Error` arm;
 - functions that called `.next()` by hand on a generator and handled `Error`;
 - wrapper aliases used as the return of an effect function;
-- JS code consuming botopink functions that expected a rejected Promise.
+- JS code consuming botopink functions that expected a rejected Promise;
+- a decorator comparing `decl.returnType` with a renamed wrapper's head (`"Future"`,
+  `"Generator"`, …): the reflection answers the new head (`"Task"`) after the migration.
 
 Run it on the internal libraries first (E7), to validate it. The `await` → `try await` rewrite is
 reliable only where the function's return is known, which is why it needs the checker's types, not
