@@ -310,15 +310,24 @@ Two changes that must land together, because either alone is worse than neither.
    [`01-checker`](../01-checker/README.md), named and granted or this step does not open.**
 
 **Acceptance:**
-- [ ] `var hits: i32 = 0;` at module level parses; `#[@BeamMemory.Ets] var hits: i32 = 0;` parses
-- [ ] `val x: i32 = 0; x = 1;` is a located error naming `var`, in a `fn` body **and** at module level
-- [ ] The migration cost is counted the way decision 37 counted its own: `grep` for assignments to a
-      `val` over `libs/std`, `examples/**` and the five libraries, with the number in the commit
-      message. **Unmeasured today** — decision 37 found 0 field assignments; this is a different query
-- [ ] `expectError(src, kind, line, col)` cases in `src/parser/tests/**` (carve-out of
-      [`07`](../07-review-backlog/README.md))
-- [ ] `scripts/gate.sh --cold` green, and **no snapshot re-records**: every program this step changes
-      the meaning of is a program that does not compile today
+- [x] `var hits: i32 = 0;` at module level parses; `#[@BeamMemory.Ets] var hits: i32 = 0;` parses
+      (`parser/decls.zig` `parseValDecl` → `ValDecl.mutable`; the annotation branch of the top-level
+      dispatch lands `#[…]` on `ValDecl.annotations`, plain form only — an annotated shorthand is
+      `unexpectedToken` **at the annotation**)
+- [x] `val x: i32 = 0; x = 1;` is a located error, in a `fn` body **and** at module level —
+      `` `x` is a `val` and cannot be assigned`` at the assignment, hint `` Declare it `var x = …` ``
+      (`infer.zig` `refuseValAssign`, beside decision 37's record-field rule)
+- [x] The migration cost is counted the way decision 37 counted its own — **not** in the landing
+      commit's message (`8146d2b6` carries no number) but in step 0's row above and in the step-1
+      follow-up commit: 447 bare-name assignments over 212 files, 447 to a `var`, 0 to a `val`
+- [x] `expectError(src, kind, line, col)` cases in `src/parser/tests/surface.zig`: an annotated
+      `val` shorthand is `unexpectedToken` at `1:1` in both spellings; `var` reads no shorthand
+- [x] Gate green at the landing (`2788be9f`, cold) and at the follow-up. **Two snapshot re-records,
+      not none**, both in `snapshots/parser/`: `external_keyword_argument_form` and
+      `qualified_enum_variant_with_inline_true_flag` each gained a `labels` array, because the
+      parser now keeps the label written before an annotation argument (`keyed = true`,
+      `inline = true`) that it used to drop — a dump of a field that did not exist, not a program
+      whose meaning changed
 
 ### Step 2 — commonJS and wasm carry a module `var`, before any BEAM decision is taken
 
@@ -332,13 +341,15 @@ becomes coherent on two targets while the BEAM questions are still open.
   (`wat/wat_ast.zig:216`); three of the five paths already set it.
 
 **Acceptance:**
-- [ ] The [Problem](#problem) program, rewritten with `var`, prints `2` on node and `2` under
-      `wasmtime` — the value verified by running it, not read off the emitted code
-- [ ] `val` at module level still emits `const` / an immutable global — step 1's rule is what makes
-      that safe
-- [ ] Re-recorded snapshots in `snapshots/codegen/commonJS/**` and `snapshots/codegen/wasm/**` are
-      classified one by one; a `var` appearing in a cell is a cell step 1 just made legal
-- [ ] Carve-outs from [`04`](../04-js/README.md) and [`05`](../05-wasm/README.md), one function each
+- [x] The [Problem](#problem) program, rewritten with `var`, prints `2` on node and `2` under
+      `wasmtime` — run at `4fe1747e` (step 0) and pinned by `tests/language/run/module_var.bp`
+- [x] `val` at module level still emits `const` / an immutable global — the emitters read
+      `ValDecl.mutable` and nothing else changed for a `val`
+- [x] **No** codegen snapshot re-recorded: the landing touched `snapshots/parser/` only (two cells,
+      step 1's row). No program in `snapshots/codegen/{commonJS,wasm}/**` writes a module `var`
+- [x] Carve-outs from [`04`](../04-js/README.md) and [`05`](../05-wasm/README.md), one function
+      each: `commonJS.zig` `buildValDecl` (`let` for a `var`), `wat.zig` `emitGlobalVal` (`.mutable`
+      on the folded-numeric and `numberLit` paths)
 
 ### Step 3 — The annotation is validated, or it is worse than nothing
 
@@ -355,12 +366,20 @@ annotation does not fail, it **moves where the state lives**, and step 4's measu
 positionally. Nothing in the grammar changes; the validation is a lookup.
 
 **Acceptance:**
-- [ ] `#[@BeamMemory.<anything else>]` is a located error naming the three members
-- [ ] An unknown argument name under a known member is a located error naming `keyed`
-- [ ] `keyed` on anything but a `Dict` is a located error — there is no key (decision 51: scalars **and**
-      `List<T>`)
-- [ ] A `reject/` cell per diagnostic, specified here and handed to
-      [`12-language-tests`](../12-language-tests/README.md)
+- [x] `#[@BeamMemory.<anything else>]` is a located error naming the three members
+      (`infer.zig` `validateMemoryAnnotations`; the diagnostic texts are decision 41's verbatim)
+- [x] An unknown argument name under a known member is a located error naming `keyed`; a value
+      other than `true`/`false` is its own error
+- [x] `keyed` on anything but a `Dict` is a located error naming the type — `an `i32``,
+      `a `string[]`` (decision 51: scalars **and** `List<T>`); `#[@BeamMemory.…]` on a `val` is
+      refused with the `var` spelling as the hint
+- [x] A `reject/` cell per diagnostic — written into the suite (step 7), not only specified:
+      `beam_memory_unknown_member`, `beam_memory_unknown_argument`, `beam_memory_keyed_scalar`,
+      `beam_memory_keyed_list`, `beam_memory_on_val`
+- [ ] **Not this front's, recorded so it is not mistaken for closed:** an unknown *family* still
+      passes — `#[@TotallyMadeUp.Nonsense(whatever = 42)]` on a `var` checks clean at `4fe1747e`,
+      exactly as on a `fn`. Only the `BeamMemory.` prefix is validated. Decision 15 assigns the
+      annotation grammar to [`01`](../01-checker/README.md)
 
 ### Step 3b — `std/beam`: the host primitives leave the core
 

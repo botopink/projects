@@ -227,17 +227,23 @@ uses it), a `jsonStringify` that omits the defaults so no parser snapshot moves,
 `.mutable` on wasm; 3 parser + 2 format + 9 infer tests. `todo.md` has every box unticked.
 **Depends on:** nothing.
 **Acceptance:**
-- [ ] `var hits: i32 = 0;` and `#[@BeamMemory.Ets] var …` parse; `val x = 0; x = 1;` is a located error
-      naming `var`, in a `fn` and at module level; `expectError` cases; **no snapshot re-records**
-- [ ] a module `var` prints `2` on node and under wasmtime — *run, not read*; a `val` stays `const` /
-      an immutable global; the re-recorded commonJS/wasm cells classified
+- [x] `var hits: i32 = 0;` and `#[@BeamMemory.Ets] var …` parse; `val x = 0; x = 1;` is a located error
+      naming `var`, in a `fn` and at module level (`8146d2b6`); `expectError` cases (`37342d95`, which
+      also moved the annotated-shorthand refusal onto the annotation); **two** parser snapshot
+      re-records, not none — `external_keyword_argument_form` and
+      `qualified_enum_variant_with_inline_true_flag` gained the `labels` array the parser now keeps
+      (17's step 1 row)
+- [x] a module `var` prints `2` on node and under wasmtime — run at `4fe1747e` (17's step 0) and pinned
+      by `tests/language/run/module_var.bp`; a `val` stays `const` / an immutable global; **no**
+      commonJS/wasm cell re-recorded (none writes a module `var`)
 - [ ] unknown member → located error naming `ProcessDict`, `Ets`, `PersistentTerm`; unknown argument →
       names `keyed`; `keyed` on a scalar or a `List<T>` → "needs a keyed container"; a `reject/` cell
       per diagnostic handed to the suite
-- [ ] the formatter round-trips `#[@BeamMemory.Ets(keyed = true)] var d: Dict<string, i32> = …` —
-      `assertLossless`
-- [ ] the migration count in the commit message; `AGENTS.md` of `src/parser/`, `src/comptime/`,
-      `src/format/`, `src/codegen/` in the same commit; gate green
+- [x] the formatter round-trips `#[@BeamMemory.Ets(keyed = true)] var d: Dict<string, i32> = …` —
+      `assertLossless` in `src/format/tests/declarations.zig` (`8146d2b6`, decision 48's arm)
+- [x] the migration count — **not** in `8146d2b6`'s message; carried by `37342d95`'s and by 17's step 0
+      row (447 bare-name assignments over 212 files, 447 to a `var`, 0 to a `val`); `AGENTS.md` of
+      `src/parser/`, `src/comptime/`, `src/format/`, `src/codegen/` in `8146d2b6`; gate green at both
 
 ## C-06 — Decision 53 at run time
 
