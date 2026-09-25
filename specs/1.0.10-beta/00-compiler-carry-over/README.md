@@ -289,7 +289,7 @@ model fix); 04 step 2 D2/D3 and 05 step 2 D1–D3, which no commit names. F2–F
 
 **Origin:** 01 step 10 — the five parser gaps that live in `parser/{decls,exprs,patterns}.zig` by named
 site: `if (a && b)` (only the `prec.equality` site in an `if` condition widens), `_` as an `if` binder,
-`assert e is P;` (decision 11: delete the form and its three tests), unnamed variant payloads
+`assert e is P;` (deleted with its three tests), `<Pattern> as <name>` (decision 11: delete the form and its three tests), unnamed variant payloads
 (decision 12: a located diagnostic naming the field form); and decision 54's spelling — `case x { null
 { … } v { … } }` — which **does not parse** ("a parser row as well as a checker one"), with `.Some(v)` /
 `.None` on a `?T` becoming a located error.

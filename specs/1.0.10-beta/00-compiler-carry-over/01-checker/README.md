@@ -291,14 +291,14 @@ maintainer's and is listed in [Decisions the maintainer owes](#decisions-the-mai
 | `if (a && b)` / `if (a \|\| b)` | `Unexpected token` at `&&` | `parser/exprs.zig` `prec.equality` → `prec.lowest` **at the `if` condition only**; the other eleven `prec.equality` sites stay | few — `if` parser snapshots. Needed by step 3's narrowing through `&&` |
 | `_` as an `if` binder | `Unexpected token` at `_` | also accept `.underscore` before `->`, `binding = null` | none |
 | `assert <expr> is <Pattern>` | `is-variant-binding` at the `(` | a statement form binding into the **enclosing** scope; needs step 4's pattern typing | few parser + new checker work |
-| `<Pattern> as <name>` | `Unexpected token` at `as` | a `Pattern.bound` variant — reaches all four backends' pattern lowerings | many. **Recommend: delete the three tests** |
+| `<Pattern> as <name>` | `Unexpected token` at `as` | a `Pattern.bound` variant — reaches all four backends' pattern lowerings | **Decided (decision 11): not part of the language** — the three tests and their snapshots are deleted |
 | unnamed variant payload (declaration half) | — | optional field names + a reflected surface | many. **Recommend: drop; keep `name: Type`.** The pattern half (`.Some(#(a, b))`) **landed** with `dff3446` |
 
 **Acceptance:**
-- [ ] `if (a && b)` and `if (a || b)` parse; every other `prec.equality` call site is unchanged
-- [ ] `if (x) { _ -> … }` parses with `binding = null`
-- [ ] `assert e is P;` either parses and binds into the enclosing scope, or its three tests are deleted and the decision recorded
-- [ ] `<Pattern> as <name>` and the unnamed-payload declaration are implemented or their tests deleted, each with the decision recorded in [`residual-rows.md`](./residual-rows.md)
+- [x] `if (a && b)` and `if (a || b)` parse; every other `prec.equality` call site is unchanged
+- [x] `if (x) { _ -> … }` parses with `binding = null`
+- [x] `assert e is P;` either parses and binds into the enclosing scope, or its three tests are deleted and the decision recorded
+- [x] `<Pattern> as <name>` and the unnamed-payload declaration are implemented or their tests deleted, each with the decision recorded in [`residual-rows.md`](./residual-rows.md)
 
 ### Step 11 — decision 8 in the sources (`libs/std`, `examples`)
 
@@ -480,7 +480,7 @@ they were found probing `c2dd780` for this front and are not in that document ye
 | # | Decision | Measured context |
 |---|---|---|
 | D1 (= #1) | **Settled by decision 103: `#[@futureGenerator]` → `@FutureGenerator<T, E>`.** Neither `AsyncGenerator` (decision 8 §9's table) nor `AsyncIterator` (the compiler's `EffectKind.returnWrapper`, `libs/std/src/builtins.d.bp`'s `behavior AsyncIterator<T, E, C>`, the docs) survives; the rename lands with [`21-effect-chain`](../21-effect-chain/README.md) | `grep -rn AsyncIterator --include=*.zig --include=*.bp --include=*.md` → **69** hits; `AsyncGenerator` → **1** (decision 8 itself). Renaming crosses `libs/std`, the user docs and the compiler; `3e7cd62` enforced the spelling that exists and recorded the discrepancy in `comptime/AGENTS.md` |
-| D2 (= #11) | **`<Pattern> as <name>`: implement or delete the three tests** (`comptime/tests/variants.zig:291`, `:309`, `:328`) | the parser half is local; the consumer half is a new `ast.Pattern` variant in four backend lowerings this front does not own. No library uses the form |
+| D2 (= #11) | **Decided: `<Pattern> as <name>` is not part of the language.** The three tests in `comptime/tests/variants.zig` and their snapshots are deleted | the parser half is local; the consumer half is a new `ast.Pattern` variant in four backend lowerings this front does not own. No library uses the form |
 | D3 (= #12) | **Unnamed variant payloads: drop or implement.** The pattern half landed with `dff3446`; the declaration half remains | it changes the reflected `TypeInfo`/`EnumVariant` surface as well as four backends |
 | D4 (**new**) | **`is` with a payload pattern.** The parser refuses `x is Some(v)` with a located `is-variant-binding`; §4.2 lists the form | decide whether `is` carries a pattern or the refusal stands and `case` is the only reader |
 | D5 (**new**) | **Mismatched `case` arms: a union or an error?** §3.2 says the union, and step 2 makes one implementable. Two fixture slugs were named for the union answer | all 32 `case`-as-value blocks in the six libraries are type-homogeneous, so either answer costs zero migration |
