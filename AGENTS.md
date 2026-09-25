@@ -17,7 +17,7 @@ closest `AGENTS.md` in each directory you touch.
 | `repository/vscode-extension/` | VS Code extension |
 | `specs/1.0.10-beta/` | Current milestone (compiler carry-over · std · packaging · rakun · jhonstart · emilia · onze): index in `overview.md`, ownership in `fronts.md`, per-library `modules.md` / `test-snap.md`; new fronts start from `specs/__template.md` |
 | `specs/1.0.5-beta/` | Closed compiler milestone (`closure.md`); its open work is `specs/1.0.10-beta/00-compiler-carry-over/`. The `.tasks/*` worktrees are its fronts, still to be merged or continued |
-| `specs/1.0.0-beta/` … `1.0.4-beta/` | Closed. 1.0.6–1.0.9-beta were absorbed into 1.0.10-beta and deleted (decision 68); their originals are under `specs/1.0.10-beta/absorbed/`, the mapping in `specs/1.0.10-beta/unification.md` |
+| `specs/1.0.0-beta/` … `1.0.4-beta/` | Closed. 1.0.6–1.0.9-beta were absorbed into 1.0.10-beta and deleted (decision 68); the mapping in `specs/1.0.10-beta/unification.md` |
 | `todo.md` | Live plan of the task in the current checkout/worktree — git-ignored, never committed |
 | `architecture.md` | Comptime evaluation pipeline, current state |
 | `CHANGELOG.md` | Release log |
