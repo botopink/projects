@@ -4,8 +4,8 @@
 **Priority:** high — without a boundary every component is a server component and nothing is interactive; without a *checked* boundary, a secret read on the server reaches the browser and nobody notices
 **Target:** js (client)
 **Wave:** 5
-**Depends on:** 28 · 23 (payload envelope, read-only) · 68 (soft — build-time enforcement; 29 lands without it) · 94 (element builders used by the examples)
-**Owns:** `repository/jhonstart/src/client.bp` — including `islandAttr`, the island marker pair, which front 23 reads as `RenderHooks.islandAttr` and front 68's generated entry imports (decision 77: one definition, passed in, never two that must agree) — `repository/jhonstart/test/client_test.bp`
+**Depends on:** 28 · 30 (payload envelope and the render, read-only) · 68 (soft — build-time enforcement; 29 lands without it) · 94 (element builders used by the examples)
+**Owns:** `repository/jhonstart/src/client.bp` — including `islandAttr`, the island marker pair, which front 30's render calls directly and front 68's generated entry imports (decision 113: one definition, in the package that writes the marker) — `repository/jhonstart/test/client_test.bp`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (26), `src/link.bp` (27), `src/server.bp` (28), `src/root.bp` and `botopink.json` (front 94)
 **Reference:** `NEXTJS-DOCS.md § 7. Server e Client Components` · `§ 27. Diretivas` · https://nextjs.org/docs/app/api-reference/directives/use-client · https://nextjs.org/docs/app/guides/server-and-client-boundary
 
@@ -104,10 +104,10 @@ Splitting the marker in two is not an aesthetic choice. `@Decl` cannot see a fun
 so `#[client]` alone can check nothing about props. The record is the only place the information
 exists.
 
-### The placeholder — an island, and the format is front 23's
+### The placeholder — an island, and the format is front 30's
 
 During the server render a client component contributes an **island**. The marker is pinned in
-`contracts.md § 2`: `<div data-onze-i="i0">`. The component name and the encoded props do **not**
+`contracts.md § 2`: `<div data-jh-i="i0">`. The component name and the encoded props do **not**
 live on the element — they live in the payload's `i` array as `[id, component, props]`, which is how
 the client finds the island without parsing attributes off the DOM.
 
@@ -123,7 +123,7 @@ pub fn clientMount(island: Island, children: Children) -> Element {
         tag: "div",
         value: "",
         children: children,
-        attrs: [#("data-onze-i", island.id)],
+        attrs: [#("data-jh-i", island.id)],
     );
 }
 
@@ -132,18 +132,18 @@ pub fn islandEntry(island: Island) -> #(string, string, string) {
 }
 ```
 
-Front 23 assigns the ids (`i0`, `i1`, … in render order), collects one `islandEntry` per island into
+Front 30's render assigns the ids (`i0`, `i1`, … in render order), collects one `islandEntry` per island into
 the payload's `i` key, and escapes the whole script per `contracts.md § 2` — this front does not
 escape the payload and does not build it.
 
 **The pair itself is defined here, once.** `pub fn islandAttr(ordinal: i32) -> #(string, string)`
-returns the marker pair for an ordinal — `#("data-onze-i", "i0")` for `0` — and `clientMount` builds
+returns the marker pair for an ordinal — `#("data-jh-i", "i0")` for `0` — and `clientMount` builds
 its `attrs` from it. This front decides *which* components are islands, so it owns the attribute the
-marker is written with; front 23 assigns the ordinals and reads the pair through
-`RenderHooks.islandAttr` rather than spelling it a second time, and front 68's generated entry
-imports the same function for the selector it walks (decision 77).
+marker is written with; front 30's render assigns the ordinals and calls `islandAttr` rather than
+spelling the pair a second time — both files are jhonstart's, so no hook carries it (decision 113) —
+and front 68's generated entry imports the same function for the selector it walks.
 
-`clientMount` touches no host cell, so it renders identically during front 23's BEAM pass and during
+`clientMount` touches no host cell, so it renders identically during front 30's BEAM render and during
 a client re-render. The props encoding is `querystring.stringify` — the same `k=v&k=v` string
 fronts 26 and 28 use. One encoder for the whole milestone.
 
@@ -156,22 +156,22 @@ A client component may wrap server-rendered children: the Context Provider patte
 (`NEXTJS-DOCS.md § 7`, *Padrão: Context Provider*) puts a `'use client'` provider in the root layout
 with the entire server tree inside it. The provider is client code; its children are not.
 
-The payload therefore has a **hole**: inside `data-onze-i`, the subtree is server markup that the
+The payload therefore has a **hole**: inside `data-jh-i`, the subtree is server markup that the
 client must adopt as-is and must not re-render, because re-rendering it would need the server's data
 and the server's secrets. jhonstart marks the hole explicitly rather than leaving it implicit:
 
 ```bp
 pub fn serverSlot(children: Children) -> Element {
-    return Element(tag: "div", value: "", children: children, attrs: [#("data-onze-s", "1")]);
+    return Element(tag: "div", value: "", children: children, attrs: [#("data-jh-s", "1")]);
 }
 ```
 
-`data-onze-s` is this front's one addition to the `data-onze-` marker family, and it is registered
+`data-jh-s` is this front's one addition to the `data-jh-` marker family, and it is registered
 in `contracts.md § 2` alongside the island and hole markers rather than invented locally.
 
 The rules that follow from it, and that front 68 enforces:
 
-1. A `data-onze-s` subtree is adopted by the client reconciler, never reconstructed.
+1. A `data-jh-s` subtree is adopted by the client reconciler, never reconstructed.
 2. A server component may be a *child* of a client component. It may never be a *prop* of one —
    which is why `Element` is off the serializable whitelist.
 3. A client component may not read request scope. `request()`, `cookies()` and `headers()` are front
@@ -256,10 +256,10 @@ The whitelist, exactly: `string`, `i32`, `f64`, `bool`, `string[]`, `i32[]`.
 
 **Acceptance:**
 - [ ] `renderToString(clientMount(Island(id: "i0", component: "Counter", props: [#("start", "3")]), []))`
-      is `<div data-onze-i="i0"></div>` — the id only; the component and props are payload, not markup
+      is `<div data-jh-i="i0"></div>` — the id only; the component and props are payload, not markup
 - [ ] children passed to `clientMount` render inside the placeholder, unmodified
 - [ ] `islandEntry` produces `#("i0", "Counter", "start=3")` — the payload `i` row for that island
-- [ ] `serverSlot` emits `data-onze-s="1"` and nothing else
+- [ ] `serverSlot` emits `data-jh-s="1"` and nothing else
 - [ ] neither function reaches a host cell; both render on erlang and js
 
 ### Step 4 — Hydration entry and `server-only`
@@ -269,19 +269,19 @@ The whitelist, exactly: `string`, `i32`, `f64`, `bool`, `string[]`, `i32[]`.
 pub declare fn hydrate() -> i32;
 
 #[@External.Node("jhonstart/client-runtime", "islandProps")]
-declare fn __onzeClientPropsRaw(name: string) -> string;
+declare fn __jhClientPropsRaw(name: string) -> string;
 
 pub fn propsFor(name: string) -> Array<#(string, string)> {
-    return querystring.parse(__onzeClientPropsRaw(name));
+    return querystring.parse(__jhClientPropsRaw(name));
 }
 
 pub fn serverOnly() -> i32 { return 1; }
 ```
 
-`hydrate()` is the **per-island** hydrate point: it walks every `[data-onze-i]`, decodes that
+`hydrate()` is the **per-island** hydrate point: it walks every `[data-jh-i]`, decodes that
 island's props from the payload's `i` row and starts the component. It is not the bundle's entry
 module and it does not mount links or forms — front 68 generates the entry, which calls `hydrate()`
-and then front 27's `__onzeLinkMount()` and front 67's `__jhFormMount()` once each.
+and then front 27's `linkMount()` and front 67's `formMount()` once each.
 
 **Acceptance:**
 - [ ] every cell in the file is `#[@External.Node]`; there is no `#[@External.Erlang]` cell
@@ -300,7 +300,7 @@ front 94 owns `src/root.bp` and `botopink.json`'s `files` list; this front hands
 | Front 68 input | Produced by |
 |---|---|
 | the set of client component names | `__jhClient_<Name>` functions emitted by `#[client]` |
-| the island rows | `islandEntry` per island, collected into the payload's `i` key by front 23 |
+| the island rows | `islandEntry` per island, collected into the payload's `i` key by front 30's render |
 | the client module graph | the transitive imports of every module declaring one |
 | the poison-pill predicate | a module in that graph importing `serverOnly` |
 | the request-scope predicate | a module in that graph importing `request`/`cookies`/`headers` from front 28 |
@@ -309,6 +309,18 @@ front 94 owns `src/root.bp` and `botopink.json`'s `files` list; this front hands
 - [ ] `pub mod client;` and the `files` entry are handed to front 94; this front edits neither file
 - [ ] the four-row table above is in `repository/jhonstart/docs.md` and front 68's README cites it
 - [ ] `repository/jhonstart/AGENTS.md` updated in the same commit
+
+### Step 6 — Decision 113's spellings
+
+`client.bp` shipped writing `data-onze-i` (through `islandAttrOf`) and `data-onze-s` (through
+`serverSlotAttr`), and naming the props cell `__onzeClientPropsRaw`. Decision 113 gives every marker
+jhonstart writes the `data-jh-` prefix.
+
+**Acceptance:**
+- [ ] the island pair is `#("data-jh-i", "i0")` and the slot pair `#("data-jh-s", "1")`, each spelled
+      once in `client.bp`; no `data-onze-` string is left under `modules/jhonstart/src/`
+- [ ] `data-jh-on-click` is the handler marker; the props cell is `__jhClientPropsRaw`
+- [ ] the island and slot snapshots are re-recorded once, with only the attribute names changed
 
 ## Examples
 
@@ -358,10 +370,10 @@ would be a boundary that never starts.
 - [ ] `#[client]` and `#[clientProps]` both enforce placement and both emit located diagnostics
 - [ ] the emitted marker is a pure function — no `@emit` in this file produces a host call
 - [ ] the five-row front-68 contract table is written down and cited by front 68
-- [ ] the island marker is `data-onze-i` and the props are in the payload's `i` key, per
+- [ ] the island marker is `data-jh-i` and the props are in the payload's `i` key, per
       `contracts.md § 2`; nothing about the payload is escaped or built here
-- [ ] `islandAttr(ordinal)` is exported and is the only place the pair is spelled — front 23 reads it
-      as `RenderHooks.islandAttr` and front 68's entry imports it (decision 77)
+- [ ] `islandAttr(ordinal)` is exported and is the only place the pair is spelled — front 30's render
+      calls it and front 68's entry imports it (decision 113)
 - [ ] the README states, in *Mechanism*, that 29 without 68 is a convention nobody checks
 - [ ] all four language gaps appear in a `specs/1.0.10-beta/` spec
 - [ ] the front's tests are green on its assigned target

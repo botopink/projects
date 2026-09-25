@@ -7,7 +7,7 @@
 // 104: `@Component ⊃ @Future`, so a component awaits); the two loaders are
 // `#[@future]` and are awaited at statement level, one after the other, and the tree is
 // built synchronously from what they returned. Nothing here ships to the
-// browser — front 23 serializes the rendered markup, and the only thing the
+// browser — front 30's render serializes the markup, and the only thing the
 // client receives is HTML.
 //
 // The two awaits are sequential on purpose: the comments cannot be loaded until
@@ -92,7 +92,7 @@ pub fn postView(post: Post, comments: Array<Comment>) -> Element {
 }
 
 // The page itself. `params` is front 26's snapshot shape, handed down by
-// front 23 when it matched the route.
+// front 30's render from the match onze made.
 #[@use]
 pub fn PostPage(params: Array<#(string, string)>) -> @Component<Element> {
     val post = await loadPost(pairValue(params, "slug"));

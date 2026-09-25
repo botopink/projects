@@ -51,7 +51,7 @@ test "blog: the root layout wraps the page and the nav marks the section" {
     try assertHtmlLines(@src(), RootLayout(r, page));
 }
 ```
-`__snapshots__/blog/the-root-layout-wraps-the-page-and-the-nav-marks-the-section.snap` — `RootLayout` reads `r.segments().at(0)` for the active section; the document head is front 23's, so the layout starts at `body`'s content
+`__snapshots__/blog/the-root-layout-wraps-the-page-and-the-nav-marks-the-section.snap` — `RootLayout` reads `r.segments().at(0)` for the active section; the document head is front 30's, so the layout starts at `body`'s content
 ```
 <div class="site">
 <header class="site-header">
@@ -92,9 +92,9 @@ test "blog: streamed ---- shell with the loading boundary then the page" {
 `__snapshots__/blog/streamed-shell-with-the-loading-boundary-then-the-page.snap`
 ```
 --- chunk 0 (shell)
-<div data-onze-h="h0"><div class="loading"><span class="spinner">Loading post…</span></div></div>
+<div data-jh-h="h0"><div class="loading"><span class="spinner">Loading post…</span></div></div>
 --- chunk 1
-<template data-onze-f="h0"><article data-post="p-hello"><h1>Hello</h1><p>The first post, with a &lt;tag&gt; in it.</p><section class="comments"><h2>Comments</h2><ul><li><span class="author">ana</span>welcome</li><li><span class="author">bob</span>&lt;3</li></ul></section></article></template><script>__onzeFill("h0")</script>
+<template data-jh-f="h0"><article data-post="p-hello"><h1>Hello</h1><p>The first post, with a &lt;tag&gt; in it.</p><section class="comments"><h2>Comments</h2><ul><li><span class="author">ana</span>welcome</li><li><span class="author">bob</span>&lt;3</li></ul></section></article></template><script>__bp1("h0")</script>
 ```
 
 ```bp
@@ -102,7 +102,7 @@ test "blog: a missing slug raises the not-found signal through the boundary" {
     try assertErrorBoundary(@src(), catchError("post", ErrorPage, postPanel("nope")));
 }
 ```
-`__snapshots__/blog/a-missing-slug-raises-the-not-found-signal-through-the-boundary.snap` — `postPanel(slug)` returns the `#[@result]` thunk; the signal is front 63's, re-raised, and front 23 renders `NotFound()`
+`__snapshots__/blog/a-missing-slug-raises-the-not-found-signal-through-the-boundary.snap` — `postPanel(slug)` returns the `#[@result]` thunk; the signal is jhonstart's `notFound()` (front 31), re-raised, and front 30's render renders `NotFound()`
 ```
 outcome: error jhonstart:not-found
 ```
@@ -115,7 +115,7 @@ test "blog: a failing comment service shows the segment error page" {
 `__snapshots__/blog/a-failing-comment-service-shows-the-segment-error-page.snap`
 ```
 outcome: ok
-<div data-onze-e="comments"><section class="segment-error"><h2>This section is unavailable</h2><p>Reference: <digest></p><button data-onze-reset="comments">Retry</button></section></div>
+<div data-jh-e="comments"><section class="segment-error"><h2>This section is unavailable</h2><p>Reference: <digest></p><button data-jh-reset="comments">Retry</button></section></div>
 ```
 
 `<digest>` stands for `digestOf("comment service down")` — `hash.contentHash` is front 03's (std `hash`, decision 106) and its hex is front 03's snapshot, not this track's. The first run writes the `.snap.new` with the real hex; it is accepted only after that hex is checked against front 03's `__snapshots__`. The message itself is asserted absent by construction (`infoFor` blanks it).
@@ -143,7 +143,7 @@ test "blog: global error owns its document" {
 <main class="global-error">
 <h1>Something went wrong</h1>
 <p>Reference: a3f19c2b</p>
-<button data-onze-reset="root">Reload</button>
+<button data-jh-reset="root">Reload</button>
 </main>
 </body>
 </html>
@@ -219,7 +219,7 @@ test "nav: sidebar ---- guides selected" {
     try assertActiveLink(@src(), Sidebar(r), r.path);
 }
 ```
-`__snapshots__/nav/sidebar-guides-selected.snap` — every row is a `Link`, so each anchor also carries `data-onze-l`; `assertActiveLink` prints href and class only
+`__snapshots__/nav/sidebar-guides-selected.snap` — every row is a `Link`, so each anchor also carries `data-jh-l`; `assertActiveLink` prints href and class only
 ```
 path: /docs/guides/intro
 [ ] /docs/api row
@@ -238,13 +238,13 @@ test "nav: a sidebar row is a link with the two default attributes" {
 <nav class="sidebar">
 <ul>
 <li>
-<a href="/docs/api" data-onze-l="1" class="row active">API</a>
+<a href="/docs/api" data-jh-l="1" class="row active">API</a>
 </li>
 <li>
-<a href="/docs/guides" data-onze-l="1" class="row">Guides</a>
+<a href="/docs/guides" data-jh-l="1" class="row">Guides</a>
 </li>
 <li>
-<a href="/docs/faq" data-onze-l="1" class="row">FAQ</a>
+<a href="/docs/faq" data-jh-l="1" class="row">FAQ</a>
 </li>
 </ul>
 </nav>
@@ -260,15 +260,15 @@ test "nav: the index switches prefetch off for its rows and leaves the header on
 ```
 <div class="index">
 <nav>
-<a href="/" data-onze-l="1">Home</a>
-<a href="/docs" data-onze-l="1">Docs</a>
+<a href="/" data-jh-l="1">Home</a>
+<a href="/docs" data-jh-l="1">Docs</a>
 </nav>
 <ul class="archive">
 <li>
-<a href="/docs/a" data-onze-l="1" data-onze-prefetch="0">Alpha</a>
+<a href="/docs/a" data-jh-l="1" data-jh-prefetch="0">Alpha</a>
 </li>
 <li>
-<a href="/docs/b" data-onze-l="1" data-onze-prefetch="0">Beta</a>
+<a href="/docs/b" data-jh-l="1" data-jh-prefetch="0">Beta</a>
 </li>
 </ul>
 </div>
@@ -312,9 +312,9 @@ test "nav: checkout link ---- idle and busy" {
 ```
 `__snapshots__/nav/checkout-link-idle-and-busy.snap`
 ```
-<a href="/checkout" data-onze-l="1" class="cta">Checkout</a>
-<a href="/checkout" data-onze-l="1" class="cta busy"><span class="spinner"></span>Checking out…</a>
-<a href="/checkout" data-onze-l="1" class="cta">Checkout</a>
+<a href="/checkout" data-jh-l="1" class="cta">Checkout</a>
+<a href="/checkout" data-jh-l="1" class="cta busy"><span class="spinner"></span>Checking out…</a>
+<a href="/checkout" data-jh-l="1" class="cta">Checkout</a>
 ```
 
 ---
@@ -357,12 +357,12 @@ test "islands: one island per post numbered in render order" {
 <ul class="posts">
 <li>
 <h2>One</h2>
-<div data-onze-i="i0">
+<div data-jh-i="i0">
 </div>
 </li>
 <li>
 <h2>Two</h2>
-<div data-onze-i="i1">
+<div data-jh-i="i1">
 </div>
 </li>
 </ul>
@@ -380,8 +380,8 @@ test "islands: the payload rows for the list" {
 i0 LikeButton postId=p1&likes=3
 i1 LikeButton postId=p2&likes=0
 --- markup
-<div data-onze-i="i0"></div>
-<div data-onze-i="i1"></div>
+<div data-jh-i="i0"></div>
+<div data-jh-i="i1"></div>
 ```
 
 ```bp
@@ -400,9 +400,9 @@ test "islands: the theme provider wraps the whole server tree in a slot" {
     try assertHtml(@src(), RootLayout("dark", page));
 }
 ```
-`__snapshots__/islands/the-theme-provider-wraps-the-whole-server-tree-in-a-slot.snap` — island `i0` is the provider; the like island inside the slot is numbered after it by front 23 (here the example passes `i1`)
+`__snapshots__/islands/the-theme-provider-wraps-the-whole-server-tree-in-a-slot.snap` — island `i0` is the provider; the like island inside the slot is numbered after it by front 30's render (here the example passes `i1`)
 ```
-<div data-onze-i="i0"><div data-onze-s="1"><ul class="posts"><li><h2>One</h2><div data-onze-i="i1"></div></li></ul></div></div>
+<div data-jh-i="i0"><div data-jh-s="1"><ul class="posts"><li><h2>One</h2><div data-jh-i="i1"></div></li></ul></div></div>
 ```
 
 ---
@@ -436,7 +436,7 @@ test "forms: create post ---- empty" {
 ```
 `__snapshots__/forms/create-post-empty.snap`
 ```
-<form method="post" action="/blog/new" data-onze-a="a_9f31c0d7a4b2e5081c6fa3d2">
+<form method="post" action="/blog/new" data-jh-a="a_9f31c0d7a4b2e5081c6fa3d2">
 <input type="hidden" name="__onze_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
 </input>
 <label for="title">Title</label>
@@ -457,7 +457,7 @@ test "forms: create post ---- returned message beside the title" {
 ```
 `__snapshots__/forms/create-post-returned-message-beside-the-title.snap`
 ```
-<form method="post" action="/blog/new" data-onze-a="a_9f31c0d7a4b2e5081c6fa3d2">
+<form method="post" action="/blog/new" data-jh-a="a_9f31c0d7a4b2e5081c6fa3d2">
 <input type="hidden" name="__onze_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
 </input>
 <label for="title">Title</label>
@@ -492,7 +492,7 @@ test "forms: like widget ---- server pass shows the server's count" {
 ```
 `__snapshots__/forms/like-widget-server-pass-shows-the-server-s-count.snap`
 ```
-<form method="post" action="/blog/hello" data-onze-a="a_9f31c0d7a4b2e5081c6fa3d2">
+<form method="post" action="/blog/hello" data-jh-a="a_9f31c0d7a4b2e5081c6fa3d2">
 <input type="hidden" name="__onze_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
 </input>
 <span class="count">41</span>
@@ -509,7 +509,7 @@ test "forms: like widget ---- optimistic count with a busy nested button" {
 ```
 `__snapshots__/forms/like-widget-optimistic-count-with-a-busy-nested-button.snap` — the nested button reads its own form's status; the count is the fold, not the server's
 ```
-<form method="post" action="/blog/hello" data-onze-a="a_9f31c0d7a4b2e5081c6fa3d2">
+<form method="post" action="/blog/hello" data-jh-a="a_9f31c0d7a4b2e5081c6fa3d2">
 <input type="hidden" name="__onze_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
 </input>
 <span class="count">43</span>
@@ -539,7 +539,7 @@ test "forms: search form and the URL a plain GET produces" {
 ```
 `__snapshots__/forms/search-form-and-the-url-a-plain-get-produces.snap` — `querystring` does not percent-encode (`querystring.bp:9-16`); the space survives, which is the literal that front 01's encoder changes when it lands and this snapshot is regenerated deliberately
 ```
-<form method="get" action="/search" data-onze-sf="1"><input name="q"></input><select name="sort"><option value="new">Newest</option><option value="top">Top</option></select><button type="submit">Search</button></form>
+<form method="get" action="/search" data-jh-sf="1"><input name="q"></input><select name="sort"><option value="new">Newest</option><option value="top">Top</option></select><button type="submit">Search</button></form>
 /search?q=botopink lang&sort=new
 ```
 
@@ -632,4 +632,4 @@ test "shell: the main caveat ---- el keeps a module that declares main" {
 | `forms` | 7 | 67 binding, field message, pending, optimistic + nested status, GET form · 94 `form`/`input`/`label`/`button`/`select`/`option` · 26/27 by the search form's navigation (asserted as the URL) |
 | `document-shell` | 4 | 94 document builders, doctype prefix, `main` caveat · DSL parity |
 
-The browser-side behaviour none of these can reach — hydration, click interception, `__onzeFill` adoption, submit interception, `redirectTo → push` — is `../../06-onze/53-onze-example-app/`'s, the first project with a browser in the loop.
+The browser-side behaviour none of these can reach — hydration, click interception, `__bp1` adoption, submit interception, `redirectTo → push` — is `../../06-onze/53-onze-example-app/`'s, the first project with a browser in the loop.

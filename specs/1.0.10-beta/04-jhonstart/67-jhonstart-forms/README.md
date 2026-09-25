@@ -4,7 +4,7 @@
 **Priority:** high — front 24 dispatches a server action and nothing in the browser binds a form to it, so the central example of `NEXTJS-DOCS.md § 10` and `§ 14` has no client half and no page can submit anything
 **Target:** js (client)
 **Wave:** 8
-**Depends on:** 24 (the action endpoint and its envelope) · 29 (the client boundary and the hydration entry) · 94 (`form`, `input`, `button`, `label` — this front defines no constructor) · 14 (the constraint set the client mirrors) · 26 (navigation after a submit) · 31 (which settled that an `ok: false` envelope is data, not a boundary) · 63 (a redirect returned from an action) · 01 (percent encoding)
+**Depends on:** 24 (the action endpoint and its envelope — contract literals only; jhonstart imports nothing from rakun, and the action id reaches the form from onze, decision 113) · 29 (the client boundary and the hydration entry) · 94 (`form`, `input`, `button`, `label` — this front defines no constructor) · 14 (the constraint set the client mirrors) · 26 (navigation after a submit) · 31 (which settled that an `ok: false` envelope is data, not a boundary) · 63 (a redirect returned from an action) · 01 (percent encoding)
 **Owns:** `repository/jhonstart/src/form.bp`, `repository/jhonstart/src/form_state.bp`, `repository/jhonstart/test/form_test.bp`, `repository/jhonstart/test/form_state_test.bp`
 **Does not touch:** `repository/jhonstart/src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen for the milestone), `src/elements.bp` (front 94), `src/router.bp` (front 26), `src/link.bp` (front 27), `src/client.bp` (front 29), `repository/rakun/src/actions.bp` (front 24)
 **Reference:** `NEXTJS-DOCS.md § 10. Mutação de Dados` (Formulários · useActionState · Invocando via event handlers · Segurança), `§ 14. Tratamento de Erros` (Erros esperados), `§ 25. Referência de Componentes` (`<Form>`) · `contracts.md § 3` (action id and
@@ -75,14 +75,14 @@ never constructs it.
 element carries, and it is **front 24's markup, matched exactly**:
 
 ```
-<form method="post" action="<pathname>" data-onze-a="<id>">
+<form method="post" action="<pathname>" data-jh-a="<id>">
   <input type="hidden" name="__onze_action" value="<id>">
 ```
 
 That set is not an implementation detail — it is the whole progressive-enhancement story. With no
 JavaScript the browser reads `action` and `method`, posts the fields to the current pathname, and the
 hidden `__onze_action` field tells front 24 which action ran. With the bundle loaded, front 68's
-hydration entry finds every `[data-onze-a]`, attaches a submit listener, cancels the default, posts
+hydration entry finds every `[data-jh-a]`, attaches a submit listener, cancels the default, posts
 the same body with `fetch` plus the `X-Onze-Action` header, and applies the answer without a document
 navigation. Both paths hit the same URL through the same authorization path — front 24 admits no
 second door, and no configuration key weakens its `Origin`/`Host` check. This front adds neither.
@@ -156,8 +156,9 @@ erlang twin:
 - `__jhFormSubmit(actionId, encodedBody) -> string` — posts and returns the envelope.
 - `__jhFormPending(actionId) -> string` — `"1"` while a submit for that id is in flight.
 - `__jhFormState(actionId) -> string` — the last envelope received for that id, `""` before the first.
-- `__jhFormMount()` — delegated submit interception over `[data-onze-a]`, called once by front 68's
-  hydration entry, alongside front 27's `__jhLinkMount()`.
+- `__jhFormMount()` — delegated submit interception over `[data-jh-a]`. It is private; the entry
+  imports the `pub fn formMount()` over it (an ordinary import, not a browser global — decision
+  113), called once by front 68's hydration entry alongside front 27's `linkMount()`.
 
 ### Optimistic updates
 
@@ -230,12 +231,12 @@ pub fn hiddenActionField(binding: FormBinding) -> Element
 ```
 
 The markup is `contracts.md § 3`'s, matched exactly and not restated differently here: `method="post"`,
-`action` the current pathname, `data-onze-a` the action id, plus the hidden `__onze_action` field.
+`action` the current pathname, `data-jh-a` the action id, plus the hidden `__onze_action` field.
 `formAction` takes the pathname explicitly because there is no assignment to a `self` field and a
 declared default would never be applied — a builder pair would be two functions to get one string.
 
 **Acceptance:**
-- [ ] `formAttrs` emits exactly three pairs, in the order `method`, `action`, `data-onze-a`
+- [ ] `formAttrs` emits exactly three pairs, in the order `method`, `action`, `data-jh-a`
 - [ ] `formAttrs(formAction("a_9f…", "/blog/hello"))` has `action="/blog/hello"` — the current
       pathname, never a synthesized endpoint
 - [ ] `hiddenActionField` renders `<input type="hidden" name="__onze_action" value="<id>">`, and a
@@ -320,11 +321,10 @@ pub fn searchFormAttrs(props: SearchFormProps) -> Array<#(string, string)>
 ```
 
 **Acceptance:**
-- [ ] `searchFormAttrs` emits `method="get"` and `action="/search"`, and `data-onze-a` is absent —
+- [ ] `searchFormAttrs` emits `method="get"` and `action="/search"`, and `data-jh-a` is absent —
       a GET form is not an action submit and front 24's interceptor must not claim it
-- [ ] `data-onze-sf="1"` marks it for the navigation interceptor instead — the `data-jh-*` prefix is
-      retired, and this is the one marker `contracts.md § 2`'s registry does not yet carry, so front 67
-      hands it to that registry rather than minting a private prefix
+- [ ] `data-jh-sf="1"` marks it for the navigation interceptor instead — a `data-jh-*` marker,
+      because jhonstart writes it (decision 113), registered in `contracts.md § 2` with owner 67
 - [ ] With `prefetch: true` the target path is prefetched through front 27's `__jhLinkPrefetch`
 - [ ] Un-hydrated, the browser's own GET submit produces the same URL the hydrated path produces,
       asserted by comparing `querystring.stringify` of the field list against the built URL

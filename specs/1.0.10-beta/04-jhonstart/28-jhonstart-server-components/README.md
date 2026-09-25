@@ -4,7 +4,7 @@
 **Priority:** critical — this is the front the whole server/client split exists for; without it every component is a client component and the BEAM render has nothing to render
 **Target:** erlang (server)
 **Wave:** 4
-**Depends on:** 26 · 01 (escaping) · 23 (payload envelope, read-only) · 62 (request context, read-only) · 94 (element builders used by the examples)
+**Depends on:** 26 · 01 (escaping) · 30 (payload envelope, read-only) · 62 (request context, read-only) · 94 (element builders used by the examples)
 **Owns:** `repository/jhonstart/src/server.bp` (promoted from `server.d.bp`), `repository/jhonstart/test/server_test.bp`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (front 26), `src/link.bp` (front 27), `src/client.bp` (front 29), `src/root.bp` and `botopink.json` (front 94)
 **Reference:** `NEXTJS-DOCS.md § 7. Server e Client Components` · `§ 9. Busca de Dados (Fetching)` · `§ 26. Referência de Funções` · https://nextjs.org/docs/app/getting-started/server-and-client-components · https://nextjs.org/docs/app/getting-started/fetching-data
@@ -132,13 +132,13 @@ its examples call them at the point the untrusted value enters the tree.
 
 ### What crosses to the client
 
-Nothing from this file. A server component's output is markup; front 23 serializes the `__onze`
-payload (`contracts.md § 2`) and front 29 turns the client subtrees into islands. The one thing this
+Nothing from this file. A server component's output is markup; front 30's render serializes the payload
+(`globals.payload`) (`contracts.md § 2`) and front 29 turns the client subtrees into islands. The one thing this
 front owes the boundary is that `RequestData` never appears in the payload's `i` array: a value read
 from a header or a cookie must not be reachable from an island's props, and the check that it is not
 is front 68's build-time graph walk.
 
-The payload is front 23's to build and to escape — this front neither serializes nor escapes it, and
+The payload is front 30's to build and to escape — this front neither serializes nor escapes it, and
 the only escaping it performs is front 01's on values it renders into markup.
 
 ## Steps

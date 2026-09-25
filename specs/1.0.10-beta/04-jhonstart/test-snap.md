@@ -33,7 +33,10 @@ All in `modules/jhonstart-test/src/`. Every helper serialises and calls `snapsho
 | `fixtureRequest(method, path, params, query, headers, cookies) -> RequestData` (`harness.bp`) | all six querystring-decoded |
 | `assertClientBundleEntry(loc, islands: Array<Island>)` (`assert_island.bp`) | `--- payload i` then one `<id> <component> <props>` line per island (the `islandEntry` tuple, space-joined); `--- markup` then `renderToString(clientMount(island, []))` per island |
 | `assertStream(loc, chunks: Array<string>)` (`assert_stream.bp`) | for each chunk `--- chunk <n>` (`--- chunk 0 (shell)` for the first) followed by the chunk |
-| `renderToStream(shell: Element, boundaries: Array<Boundary>) -> @Future<Array<string>>` (`harness.bp`) | `[shellHtml(shell)] ++ [fillHtml(await resolve(b)) …]` in **declaration** order — the harness has no scheduler; completion order is front 23's own test |
+| `assertDocument(loc, doc: string)` (`assert_render.bp`) | the document split one tag per line after `<body>`; the payload script's JSON one key per line |
+| `renderStreamCollect(a: App, input: PageInput) -> @Future<Array<string>>` (`harness.bp`) | `renderStream` with a `write` that appends to an array — the chunks in the order `write` received them |
+| `fixturePageOver(path, shell: Element, child: fn() -> @Component<Element>) -> PageInput` (`harness.bp`) | a `PageInput` over one root segment whose page is `shell` with one boundary over `child`, build id `build-0001` |
+| `renderToStream(shell: Element, boundaries: Array<Boundary>) -> @Future<Array<string>>` (`harness.bp`) | `[shellHtml(shell)] ++ [fillHtml(await resolve(b), "") …]` in **declaration** order, no plugin — the harness has no scheduler; completion order is front 30's `render_test.bp` |
 | `assertErrorBoundary(loc, b: ErrorBoundary)` (`assert_error_boundary.bp`) | `renderBoundaryChecked(b)`: `outcome: ok` + newline + markup, or `outcome: error <message>` |
 | `assertMetadata(loc, m: Metadata)` · `assertViewport(loc, v: Viewport)` (`assert_metadata.bp`) | `renderHead(m)` / `renderViewport(v)` one tag per line (the `><` split) |
 | `assertForm(loc, f: Element)` (`assert_form.bp`) | `assertHtmlLines` under the `form` name |
@@ -41,7 +44,7 @@ All in `modules/jhonstart-test/src/`. Every helper serialises and calls `snapsho
 | `assertOptimistic(loc, base: i32, actions: i32[])` (`assert_form.bp`) | `base`, `actions` (space-joined), `value` = `applyOptimistic(base, actions, { c, a -> c + a })` |
 | `stubEnvelope(ok: bool, state: string, redirect: string) -> string` (`harness.bp`) | the flat string `__jhFormSubmit` hands botopink: `ok=<1|0>&redirect=<pct>&state=<pct>&payload=` |
 
-Three facts the map relies on and states rather than assumes silently: `renderToString` is the frozen renderer, so a void element renders `<input …></input>` in every snapshot below (front 94 *Blocked*; front 23's `renderNode` is the shipping renderer and is rakun's snapshot); `renderHead`/`renderViewport` write their own tags and emit no closing tag for `meta`/`link`; a fixture standing in for a server component is `#[@use] fn … -> @Component<Element>` even when it awaits nothing, because that is the thunk type `Boundary.child` and `renderServerComponent` take (decision 104), while a component that activates nothing is a bare `fn … -> Element` (question 92-b).
+Three facts the map relies on and states rather than assumes silently: `renderToString` is the frozen renderer, so a void element renders `<input …></input>` in every snapshot below (front 94 *Blocked*; front 30's `renderNode` is the shipping renderer and has its own section below, § 30 · render); `renderHead`/`renderViewport` write their own tags and emit no closing tag for `meta`/`link`; a fixture standing in for a server component is `#[@use] fn … -> @Component<Element>` even when it awaits nothing, because that is the thunk type `Boundary.child` and `renderServerComponent` take (decision 104), while a component that activates nothing is a bare `fn … -> Element` (question 92-b).
 
 Style rules every case follows: `if` is an expression and carries an `else`; no `//` inside a closure, template or enum body; `(expr).method()` is not written; a compound condition is bound to a `val` first; every constructor call spells `attrs:`; multiline text is leading-`\\` lines.
 
@@ -102,7 +105,7 @@ test "elements: attribute values are stored verbatim" {
     try assertHtml(@src(), tree);
 }
 ```
-`__snapshots__/elements/attribute-values-are-stored-verbatim.snap` — escaping is front 23's, not the constructor's
+`__snapshots__/elements/attribute-values-are-stored-verbatim.snap` — escaping is front 30's walker's, not the constructor's
 ```
 <a href="/a&b">x</a>
 ```
@@ -340,7 +343,7 @@ test "link: default props render two attributes" {
 ```
 `modules/jhonstart-link/test/__snapshots__/link/default-props-render-two-attributes.snap`
 ```
-<a href="/about" data-onze-l="1">About</a>
+<a href="/about" data-jh-l="1">About</a>
 ```
 
 ```bp
@@ -350,7 +353,7 @@ test "link: prefetch off adds one marker" {
 ```
 `__snapshots__/link/prefetch-off-adds-one-marker.snap`
 ```
-<a href="/blog/x" data-onze-l="1" data-onze-prefetch="0">x</a>
+<a href="/blog/x" data-jh-l="1" data-jh-prefetch="0">x</a>
 ```
 
 ```bp
@@ -361,7 +364,7 @@ test "link: replace and no scroll" {
 ```
 `__snapshots__/link/replace-and-no-scroll.snap`
 ```
-<a href="/settings" data-onze-l="1" data-onze-replace="1" data-onze-scroll="0">Settings</a>
+<a href="/settings" data-jh-l="1" data-jh-replace="1" data-jh-scroll="0">Settings</a>
 ```
 
 ```bp
@@ -372,7 +375,7 @@ test "link: target and class are real attributes" {
 ```
 `__snapshots__/link/target-and-class-are-real-attributes.snap`
 ```
-<a href="/docs" data-onze-l="1" target="_blank" class="ext">docs</a>
+<a href="/docs" data-jh-l="1" target="_blank" class="ext">docs</a>
 ```
 
 ```bp
@@ -473,7 +476,7 @@ keep: / /blog /blog/[slug]
 remount: 
 ```
 
-Not snapshotted: `__onzeLinkMount` idempotence and the island mount count across a transition — browser-only, front 53's example app.
+Not snapshotted: `linkMount` idempotence and the island mount count across a transition — browser-only, front 53's example app.
 
 ---
 
@@ -616,7 +619,7 @@ test "island: the placeholder carries the id and nothing else" {
 ```
 `__snapshots__/island/the-placeholder-carries-the-id-and-nothing-else.snap`
 ```
-<div data-onze-i="i0"></div>
+<div data-jh-i="i0"></div>
 ```
 
 ```bp
@@ -634,8 +637,8 @@ test "island: payload rows for two islands in render order" {
 i0 LikeButton postId=p1&likes=3
 i1 Footer 
 --- markup
-<div data-onze-i="i0"></div>
-<div data-onze-i="i1"></div>
+<div data-jh-i="i0"></div>
+<div data-jh-i="i1"></div>
 ```
 
 ```bp
@@ -647,7 +650,7 @@ test "island: a provider wraps a server slot" {
 ```
 `__snapshots__/island/a-provider-wraps-a-server-slot.snap` — the server subtree is inside the island, marked, and never re-rendered by the client
 ```
-<div data-onze-i="i0"><div data-onze-s="1"><div><h1>Dashboard</h1><p>3 open tickets</p></div></div></div>
+<div data-jh-i="i0"><div data-jh-s="1"><div><h1>Dashboard</h1><p>3 open tickets</p></div></div></div>
 ```
 
 ```bp
@@ -658,7 +661,7 @@ test "island: children of a placeholder render unmodified" {
 ```
 `__snapshots__/island/children-of-a-placeholder-render-unmodified.snap`
 ```
-<div data-onze-i="i2"><span>first</span></div>
+<div data-jh-i="i2"><span>first</span></div>
 ```
 
 ```bp
@@ -707,7 +710,7 @@ test "stream: the shell shows the fallback and not the child" {
 ```
 `modules/jhonstart/test/__snapshots__/stream/the-shell-shows-the-fallback-and-not-the-child.snap`
 ```
-<div class="page"><header>botopink</header><h1>Blog</h1><section class="main"><div data-onze-h="h1"><div class="skeleton">Loading posts…</div></div></section></div>
+<div class="page"><header>botopink</header><h1>Blog</h1><section class="main"><div data-jh-h="h1"><div class="skeleton">Loading posts…</div></div></section></div>
 ```
 
 ```bp
@@ -717,12 +720,12 @@ test "stream: shell then one fill" {
     try assertStream(@src(), chunks);
 }
 ```
-`__snapshots__/stream/shell-then-one-fill.snap` — chunk 0 is `shellHtml`, chunk 1 is `fillHtml(await resolve(b))`; the `<template>`/`__onzeFill` literal is `contracts.md § 2`'s
+`__snapshots__/stream/shell-then-one-fill.snap` — chunk 0 is `shellHtml`, chunk 1 is `fillHtml(await resolve(b), "")`; the `<template>`/`__bp1` literal is `contracts.md § 2`'s
 ```
 --- chunk 0 (shell)
-<div class="page"><header>botopink</header><h1>Blog</h1><section class="main"><div data-onze-h="h1"><div class="skeleton">Loading posts…</div></div></section></div>
+<div class="page"><header>botopink</header><h1>Blog</h1><section class="main"><div data-jh-h="h1"><div class="skeleton">Loading posts…</div></div></section></div>
 --- chunk 1
-<template data-onze-f="h1"><ul class="posts"><li>one</li><li>two</li></ul></template><script>__onzeFill("h1")</script>
+<template data-jh-f="h1"><ul class="posts"><li>one</li><li>two</li></ul></template><script>__bp1("h1")</script>
 ```
 
 ```bp
@@ -741,14 +744,14 @@ test "stream: two boundaries ---- declaration order in the harness" {
     try assertStream(@src(), chunks);
 }
 ```
-`__snapshots__/stream/two-boundaries-declaration-order-in-the-harness.snap` — front 23 flushes in completion order; the harness pins declaration order because it has no scheduler
+`__snapshots__/stream/two-boundaries-declaration-order-in-the-harness.snap` — front 30's `renderStream` hands fills over in completion order; the harness pins declaration order because it has no scheduler
 ```
 --- chunk 0 (shell)
-<div><div data-onze-h="h1"><div class="skeleton">Loading posts…</div></div><div data-onze-h="h2"><div class="skeleton">Loading related…</div></div></div>
+<div><div data-jh-h="h1"><div class="skeleton">Loading posts…</div></div><div data-jh-h="h2"><div class="skeleton">Loading related…</div></div></div>
 --- chunk 1
-<template data-onze-f="h1"><ul class="posts"><li>one</li><li>two</li></ul></template><script>__onzeFill("h1")</script>
+<template data-jh-f="h1"><ul class="posts"><li>one</li><li>two</li></ul></template><script>__bp1("h1")</script>
 --- chunk 2
-<template data-onze-f="h2"><div class="related">related</div></template><script>__onzeFill("h2")</script>
+<template data-jh-f="h2"><div class="related">related</div></template><script>__bp1("h2")</script>
 ```
 
 ```bp
@@ -769,9 +772,9 @@ test "stream: loading convention ---- segment shell" {
     try assertText(@src(), shellHtml(Suspense(b)));
 }
 ```
-`__snapshots__/stream/loading-convention-segment-shell.snap` — what front 22/23 build around a segment that has a `loading.bp`
+`__snapshots__/stream/loading-convention-segment-shell.snap` — what front 30's `compose` builds around a segment that has a `loading.bp` (front 22 discovers it)
 ```
-<div data-onze-h="h0"><div class="loading"><span class="spinner">Loading…</span></div></div>
+<div data-jh-h="h0"><div class="loading"><span class="spinner">Loading…</span></div></div>
 ```
 
 ```bp
@@ -786,15 +789,135 @@ h0 h1 h12
 
 ```bp
 test "stream: a fill is a template plus the call that applies it" {
-    try assertText(@src(), fillHtml(Chunk(id: "h1", html: "<ul></ul>")));
+    try assertText(@src(), fillHtml(Chunk(id: "h1", html: "<ul></ul>"), ""));
 }
 ```
 `__snapshots__/stream/a-fill-is-a-template-plus-the-call-that-applies-it.snap`
 ```
-<template data-onze-f="h1"><ul></ul></template><script>__onzeFill("h1")</script>
+<template data-jh-f="h1"><ul></ul></template><script>__bp1("h1")</script>
 ```
 
 The eager-`@Future` assertion ("constructing a `Boundary` runs nothing") is the first snapshot above: a shell that contained `class="posts"` would fail it.
+
+---
+
+## 30 · render — `modules/jhonstart/test/render_test.bp`
+
+The escaping walker, the composition order, the document and the payload (`contracts.md § 2`) —
+the render decision 113 places in jhonstart. rakun front 23's `ssr` cases (`../03-rakun/test-snap.md`
+§ 23) are the same expectations written against rakun's copy of this code; when front 30 lands they
+become cases of this file, rendered through `render` with a `PageInput` fixture instead of a request.
+
+```bp
+import { Element, div, p, input, style, text } from "jhonstart";
+import { renderNode, raw, compose, Segment, Payload, writePayload, globals } from "jhonstart";
+import { assertText, assertDocument } from "jhonstart-test";
+
+test "render: text is escaped" {
+    try assertText(@src(), renderNode(p([text("<script>alert(1)</script>", attrs: [])], attrs: [])));
+}
+```
+`__snapshots__/render/text-is-escaped.snap`
+```
+<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>
+```
+
+```bp
+test "render: an attribute value is escaped and a void tag is not closed" {
+    try assertText(@src(), renderNode(input([], attrs: [#("value", "a \" b & c")])));
+}
+```
+`__snapshots__/render/an-attribute-value-is-escaped-and-a-void-tag-is-not-closed.snap`
+```
+<input value="a &quot; b &amp; c">
+```
+
+```bp
+test "render: a raw-text body is verbatim" {
+    try assertText(@src(), renderNode(style([text(".a > .b{color:red}", attrs: [])], attrs: [])));
+}
+```
+`__snapshots__/render/a-raw-text-body-is-verbatim.snap`
+```
+<style>.a > .b{color:red}</style>
+```
+
+```bp
+test "render: raw is the one escape hatch" {
+    try assertText(@src(), renderNode(raw("<b>x</b>")));
+}
+```
+`__snapshots__/render/raw-is-the-one-escape-hatch.snap`
+```
+<b>x</b>
+```
+
+```bp
+test "render: the payload is one script assigning the registry's global" {
+    val pl = Payload(build: "build-0001", pathname: "/", pattern: "/", params: "", query: "q=</script>",
+                     table: "L|/||\nP|/||", islands: [], actions: [], styles: "", holes: [], dynamic: false);
+    try assertText(@src(), "<script>window." + globals.payload + " = " + writePayload(pl) + "</script>");
+}
+```
+`__snapshots__/render/the-payload-is-one-script-assigning-the-registry-s-global.snap` — `</script` is unrepresentable (`<`), the global is `__bp0`
+```
+<script>window.__bp0 = {"v":1,"b":"build-0001","p":"/","r":"/","m":"","q":"q=</script>","t":"L|/||\nP|/||","i":[],"a":[],"s":"","h":[],"d":false,"k":"","z":""}</script>
+```
+
+The remaining render cases map one-to-one onto rakun's § 23 cases, with the markers and globals of
+decision 113 — each asserts the document through `assertDocument` over `render(app([]), input)`:
+
+| Case | Asserts |
+|---|---|
+| `render: a static page renders inside the root layout` | `<div data-jh-root="">` wraps the root layout; the payload script is last before `RenderHooks.bodyExtra` |
+| `render: layouts nest root-first and the page is innermost` | `compose` order over a two-layout chain |
+| `render: one segment holding all six conventions nests layout template error loading not-found page` | `data-jh-t`, `data-jh-e`, `data-jh-h`, `data-jh-n` in that nesting |
+| `render: a segment without a template contributes no wrapper` | no `data-jh-t` |
+| `render: a nested not-found boundary wins over the root one` | outcome `jhonstart:not-found`, the nearest `not-found` markup |
+| `render: a param from the url is escaped on the way into the document` | `&lt;script&gt;` in the body, the escaped `m` in the payload |
+| `render: a three-deep layout chain receives depths 0 1 2` | `selected` per layout |
+| `render: fills are handed over in completion order` | two boundaries resolving in reverse order reach `write` as `h2` then `h1` |
+| `render: plugins are called head once, chunk per boundary, close last` | a recording plugin's call log: `head`, `chunk h1`, `chunk h2`, `close` |
+
+---
+
+## 30 · bridge — `modules/jhonstart-emilia/test/bridge_test.bp`
+
+The `jhonstart-emilia` member: emilia's `flush()` adapted to `RenderPlugin` (decision 113). The
+only test file in the repository that imports both jhonstart and emilia.
+
+```bp
+import { Element, div, text } from "jhonstart";
+import { app, render, renderStream, holeId } from "jhonstart";
+import { plugin } from "jhonstart-emilia";
+import { emilia } from "emilia";
+import { assertStream, renderStreamCollect, fixturePageOver } from "jhonstart-test";
+
+// The page is built here, not in `jhonstart-test`: only this member may import emilia.
+// Its outer `div` carries `emilia([.Pad.All.4])`; its one boundary's `ul` carries `emilia([.Border.Width.1])`.
+test "bridge: a streamed boundary carries its style first, inside the fill" {
+    val chunks = await renderStreamCollect(app([plugin()]), fixturePageOver("/blog", styledShell(), styledList));
+    try assertStream(@src(), chunks);
+}
+```
+`__snapshots__/bridge/a-streamed-boundary-carries-its-style-first-inside-the-fill.snap` — `head` once into `<head>`; the boundary's CSS as a bare `<style>` first inside `<template data-jh-f>`; no marker on the `<style>`
+```
+--- chunk 0 (shell)
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style>.e_3f9a1c{padding:1rem}</style></head><body><div data-jh-root=""><div class="e_3f9a1c"><div data-jh-h="h1"><p>Loading…</p></div></div></div>
+--- chunk 1
+<template data-jh-f="h1"><style>.e_6c2d90{border-width:1px}</style><ul class="e_6c2d90"><li>one</li></ul></template><script>__bp1("h1")</script>
+--- chunk 2
+<script>window.__bp0 = {…}</script></body></html>
+```
+
+| Case | Asserts |
+|---|---|
+| `bridge: head is called once` | one `<style>` in `<head>` for a non-streamed page |
+| `bridge: close refuses a leftover sheet` | a class registered after the last `chunk` makes `close` answer `Error`, and the render fails |
+| `bridge: the contract-4 class literal` | the fixed token list of `contracts.md § 4` renders the same literal hex class `emilia/modules/emilia/test/integration_test.bp` asserts — jhonstart core cannot import emilia, so this is where the rendered document and emilia's class meet |
+
+The class names in the snapshot above are placeholders until front 56 fixes the body being hashed;
+`renderStreamCollect` is the harness helper that passes a collecting `write` to `renderStream`.
 
 ---
 
@@ -806,7 +929,7 @@ import { ErrorInfo, ErrorBoundary, renderBoundary, renderBoundaryChecked, catchE
 import { assertErrorBoundary, assertHtml, assertHtmlLines, assertText } from "jhonstart-test";
 
 fn fallback(info: ErrorInfo) -> Element {
-    return div([p([text("Something went wrong" + info.message, attrs: [])], attrs: []), button([text("Try again", attrs: [])], attrs: [#("data-onze-reset", "metrics")])], attrs: [#("class", "error")]);
+    return div([p([text("Something went wrong" + info.message, attrs: [])], attrs: []), button([text("Try again", attrs: [])], attrs: [#("data-jh-reset", "metrics")])], attrs: [#("class", "error")]);
 }
 
 #[@result]
@@ -826,7 +949,7 @@ fn signallingPanel() -> @Result<Element, string> {
 
 #[@result]
 fn panelWithHandler() -> @Result<Element, string> {
-    return button([text("Like", attrs: [])], attrs: [#("data-onze-on-click", "like")]);
+    return button([text("Like", attrs: [])], attrs: [#("data-jh-on-click", "like")]);
 }
 
 test "boundary: a healthy child renders inside the wrapper" {
@@ -836,7 +959,7 @@ test "boundary: a healthy child renders inside the wrapper" {
 `modules/jhonstart/test/__snapshots__/boundary/a-healthy-child-renders-inside-the-wrapper.snap`
 ```
 outcome: ok
-<div data-onze-e="metrics"><section><h2>Metrics</h2><p>99.9%</p></section></div>
+<div data-jh-e="metrics"><section><h2>Metrics</h2><p>99.9%</p></section></div>
 ```
 
 ```bp
@@ -847,7 +970,7 @@ test "boundary: a failing child renders the fallback and leaks nothing" {
 `__snapshots__/boundary/a-failing-child-renders-the-fallback-and-leaks-nothing.snap` — `info.message` is `""`, so the connection string cannot appear; the reset control is inert until hydration
 ```
 outcome: ok
-<div data-onze-e="metrics"><div class="error"><p>Something went wrong</p><button data-onze-reset="metrics">Try again</button></div></div>
+<div data-jh-e="metrics"><div class="error"><p>Something went wrong</p><button data-jh-reset="metrics">Try again</button></div></div>
 ```
 
 ```bp
@@ -855,7 +978,7 @@ test "boundary: a signal passes through uncaught" {
     try assertErrorBoundary(@src(), catchError("post", fallback, signallingPanel));
 }
 ```
-`__snapshots__/boundary/a-signal-passes-through-uncaught.snap` — front 23 turns it into a 404; the boundary never renders a fallback for it
+`__snapshots__/boundary/a-signal-passes-through-uncaught.snap` — it leaves front 30's render as the outcome onze turns into rakun's 404; the boundary never renders a fallback for it
 ```
 outcome: error jhonstart:not-found
 ```
@@ -868,7 +991,7 @@ test "boundary: an event handler is outside the catch channel" {
 `__snapshots__/boundary/an-event-handler-is-outside-the-catch-channel.snap` — the handler is an attribute; nothing for `renderBoundary` to branch on
 ```
 outcome: ok
-<div data-onze-e="like"><button data-onze-on-click="like">Like</button></div>
+<div data-jh-e="like"><button data-jh-on-click="like">Like</button></div>
 ```
 
 ```bp
@@ -892,7 +1015,7 @@ signal=false true
 pub fn GlobalError(info: ErrorInfo) -> Element {
     return htmlTag([
         head([title([text("Error", attrs: [])], attrs: [])], attrs: []),
-        body([main([p([text("Something went wrong", attrs: [])], attrs: []), p([text("Reference: " + info.digest, attrs: [])], attrs: [#("class", "digest")]), button([text("Try again", attrs: [])], attrs: [#("data-onze-reset", "root")])], attrs: [])], attrs: []),
+        body([main([p([text("Something went wrong", attrs: [])], attrs: []), p([text("Reference: " + info.digest, attrs: [])], attrs: [#("class", "digest")]), button([text("Try again", attrs: [])], attrs: [#("data-jh-reset", "root")])], attrs: [])], attrs: []),
     ], attrs: [#("lang", "en")]);
 }
 
@@ -910,7 +1033,7 @@ test "boundary: global error owns its document" {
 <main>
 <p>Something went wrong</p>
 <p class="digest">Reference: a3f19c2b</p>
-<button data-onze-reset="root">Try again</button>
+<button data-jh-reset="root">Try again</button>
 </main>
 </body>
 </html>
@@ -1174,9 +1297,9 @@ test "form: binding attributes and the hidden action field" {
     try assertForm(@src(), createPostForm(formAction(actionId, "/blog/new"), actionState(""), false));
 }
 ```
-`modules/jhonstart-forms/test/__snapshots__/form/binding-attributes-and-the-hidden-action-field.snap` — `contracts.md § 3`'s markup: `method`, `action` (the current pathname), `data-onze-a`, then the hidden `__onze_action`; this is the un-hydrated POST
+`modules/jhonstart-forms/test/__snapshots__/form/binding-attributes-and-the-hidden-action-field.snap` — `contracts.md § 3`'s markup: `method`, `action` (the current pathname), `data-jh-a`, then the hidden `__onze_action`; this is the un-hydrated POST
 ```
-<form method="post" action="/blog/new" data-onze-a="a_9f31c0d7a4b2e5081c6fa3d2">
+<form method="post" action="/blog/new" data-jh-a="a_9f31c0d7a4b2e5081c6fa3d2">
 <input type="hidden" name="__onze_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
 </input>
 <label for="title">Title</label>
@@ -1194,7 +1317,7 @@ test "form: a field message lands beside its field" {
 ```
 `__snapshots__/form/a-field-message-lands-beside-its-field.snap` — an `ok: false` envelope re-renders the form in place; no boundary, no lost input
 ```
-<form method="post" action="/blog/new" data-onze-a="a_9f31c0d7a4b2e5081c6fa3d2">
+<form method="post" action="/blog/new" data-jh-a="a_9f31c0d7a4b2e5081c6fa3d2">
 <input type="hidden" name="__onze_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
 </input>
 <label for="title">Title</label>
@@ -1212,7 +1335,7 @@ test "form: an in-flight submit disables and renames the button" {
 ```
 `__snapshots__/form/an-in-flight-submit-disables-and-renames-the-button.snap`
 ```
-<form method="post" action="/blog/new" data-onze-a="a_9f31c0d7a4b2e5081c6fa3d2">
+<form method="post" action="/blog/new" data-jh-a="a_9f31c0d7a4b2e5081c6fa3d2">
 <input type="hidden" name="__onze_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
 </input>
 <label for="title">Title</label>
@@ -1282,9 +1405,9 @@ test "form: a search form is a GET form the action interceptor does not claim" {
     try assertForm(@src(), searchForm(searchFormProps("/search")));
 }
 ```
-`__snapshots__/form/a-search-form-is-a-get-form-the-action-interceptor-does-not-claim.snap` — `data-onze-sf`, not `data-onze-a`; un-hydrated the browser's own GET produces the same URL
+`__snapshots__/form/a-search-form-is-a-get-form-the-action-interceptor-does-not-claim.snap` — `data-jh-sf`, not `data-jh-a`; un-hydrated the browser's own GET produces the same URL
 ```
-<form method="get" action="/search" data-onze-sf="1">
+<form method="get" action="/search" data-jh-sf="1">
 <input name="q">
 </input>
 <button type="submit">Search</button>
@@ -1299,12 +1422,14 @@ Not snapshotted: `__jhFormSubmit`/`__jhFormPending`/`__jhFormState`/`__jhFormMou
 
 | Front | Criteria answered by a snapshot above | Left to plain `assert` or another front |
 |---|---|---|
-| 94 | signature parity (tag/attrs), attribute order, verbatim attribute, void drop + frozen `</input>`, renamed tags, `el`, both predicates, DSL resolution ×3 | escaping (01/23), self-closing in markup (frozen) |
+| 94 | signature parity (tag/attrs), attribute order, verbatim attribute, void drop + frozen `</input>`, renamed tags, `el`, both predicates, DSL resolution ×3 | escaping (01/30), self-closing in markup (frozen) |
 | 26 | `RouterState` accessors, absent key, first-match, `segments` bracket spelling, out-of-range `segment`, active nav ×2, search round-trip | `snapshot()` over the stub module, verbs return, `use` type-check |
 | 27 | seven attribute rows, `linkProps` defaults, `with*`, `prefetchMode` ×5, `layoutKey`/`layoutKeys`, `sharedDepth` ×3, idle `linkStatus` | mount idempotence, island mount count, route-kind flag read |
 | 28 | `RequestData` accessors present/absent, two sequential awaits, escaping at entry, `renderServerComponent` | `request()` over the filled context, missing-`#[@use]` compile error |
 | 29 | emitted marker, placeholder id-only, payload rows, `serverSlot` hole, children unmodified, `serverOnly` | decorator rejections (compile), `propsFor`, `hydrate` |
-| 30 | shell without child, fill literal, hole ids, two boundaries, `loading.bp` shell, `resolve` via the stream | completion-order flush (23), adoption rules (29/68) |
-| 31 | ok/error branches, empty client message, signal pass-through, handler outside the channel, digest agreement, `global-error` document, not-found page | `data-onze-e` routing of a transition failure (68), digest literal (03) |
+| 30 | shell without child, fill literal, hole ids, two boundaries, `loading.bp` shell, `resolve` via the stream | adoption rules (`render.mjs`, 68's entry) |
+| 30 · render | escaping walker ×6, composition order, document + payload, payload escaping, plugin order, globals registry, completion-order fills | the concurrency timing cell (plain `assert`), `render.mjs` DOM idempotence (browser) |
+| 30 · bridge | head once, fill carries its style first, `close` refuses a leftover, contract-4 class literal | emilia's own rule bodies (05-emilia) |
+| 31 | ok/error branches, empty client message, signal pass-through, handler outside the channel, digest agreement, `global-error` document, not-found page | `data-jh-e` routing of a transition failure (68), digest literal (03) |
 | 32 | empty, fixed order, template once, images wholesale, nested merge, three levels, inherit untemplated, escaping, viewport ×3 | — |
 | 67 | golden fixture, idle envelope, envelope-vs-state keys, percent round-trip, binding markup, field message in place, pending button, server pass of `actionState`, idle `formStatus`, optimistic ×2, GET form | browser cells, `redirectTo → push`, malformed id refusal |

@@ -7,10 +7,12 @@
 // only way to abort a render. So a boundary that caught everything would turn
 // every missing post into "something went wrong" and every redirect into a
 // fallback page. `renderBoundaryChecked` re-raises anything `isSignal`
-// recognises, and front 23 turns it into a 404 or a 307.
+// recognises; it leaves front 30's render as an outcome, and onze turns it into
+// rakun's 404 or 307.
 //
-// `notFound()` itself is front 63's (`rakun-navigation-signals`); this file
-// only shows what a boundary does when it sees the signal.
+// `notFound()` is jhonstart's own (front 31, `error_boundary.bp`): it builds the
+// `jhonstart:not-found` signal string of `contracts.md § 5b`, and jhonstart
+// imports nothing from rakun (decision 113).
 //
 // Upstream:
 //   https://nextjs.org/docs/app/api-reference/file-conventions/not-found
@@ -20,14 +22,13 @@ import { Element, div, p, text, renderToString } from "jhonstart";
 import { ErrorInfo, ErrorBoundary, catchError, renderBoundaryChecked, isSignal } from "jhonstart";
 import { Link, linkProps } from "jhonstart";
 import { section, h2 } from "jhonstart";
-import { notFound } from "rakun";
+import { notFound } from "jhonstart";
 
 // `section` and `h2` come from front 94 (jhonstart-element-surface). `Link`/`linkProps` are front 27's; `notFound` is
-// front 63's and builds the signal string — the caller writes the `throw`.
+// front 31's and builds the signal string — the caller writes the `throw`.
 //
-// This is APPLICATION code: an onze app depends on both jhonstart and rakun.
-// The jhonstart library itself does not depend on rakun; front 31 recognises
-// the signal by its prefix, not by importing front 63.
+// The page names only jhonstart. onze, which depends on both jhonstart and
+// rakun, translates the not-found outcome into rakun's 404.
 
 // ── what the developer writes: app/blog/[slug]/not-found.bp ─────────────────
 

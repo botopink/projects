@@ -2,7 +2,7 @@
 
 **Track:** C jhonstart
 **Priority:** critical — front 31's `global-error.bp` cannot be written without it, and nine other fronts each carry a private copy of `form`/`input`/`button` that will drift the first time an attribute convention changes
-**Target:** both — the surface is rendered on the server by front 23 and hydrated in the browser by front 68, so every constructor must produce the identical `Element` on both targets
+**Target:** both — the surface is rendered on the server by front 30 and hydrated in the browser by front 68, so every constructor must produce the identical `Element` on both targets
 **Wave:** 0
 **Depends on:** none — only the already-public `Element` record (`element.bp:3-8`)
 **Owns:** `repository/jhonstart/src/elements.bp` (plus its inline `test` blocks), `repository/jhonstart/test/elements_test.bp`, `repository/jhonstart/src/root.bp`, `repository/jhonstart/botopink.json`
@@ -143,21 +143,21 @@ pub fn isRawTextTag(tag: string) -> bool
 ```
 
 `isVoidTag` answers true for the fourteen HTML void elements — `area, base, br, col, embed, hr, img,
-input, link, meta, param, source, track, wbr` — which is the same list front 23's README already
-names (`23-rakun-ssr-pipeline/README.md:278`). Front 23's `renderNode` consults this function instead
+input, link, meta, param, source, track, wbr` — which is the same list front 30's README already
+names (`30-jhonstart-streaming/README.md` § *The escaping walker*). Front 30's `renderNode` consults this function instead
 of holding its own copy; two lists that must agree and are written twice will eventually not agree.
 
 `isRawTextTag` answers true for `script` and `style`, the two elements whose text content is raw text
-and must **not** be HTML-escaped. Front 23's walker escapes every `#text` with `escape.html`
-(`23-rakun-ssr-pipeline/README.md:138`), which would turn a `>` inside a CSS rule into `&gt;` and a
+and must **not** be HTML-escaped. Front 30's walker escapes every `#text` with `escape.html`
+(`30-jhonstart-streaming/README.md` § *The escaping walker*), which would turn a `>` inside a CSS rule into `&gt;` and a
 `<` inside a script into `&lt;`. `title` and `textarea` are *escapable* raw text, where
 `escape.html` is the correct treatment, so they are deliberately not in this set.
 
 ### Escaping is not this front's job
 
 A constructor stores the attribute value it was given, byte for byte. Escaping happens once, at
-render, and it is `escape.attribute` from front 01, called by front 23's walker
-(`23-rakun-ssr-pipeline/README.md:139`, `01-std-lib-enablement/README.md:249`). Escaping in the
+render, and it is `escape.attribute` from front 01, called by front 30's walker
+(`30-jhonstart-streaming/README.md` § *The escaping walker*, `01-std-lib-enablement/README.md:249`). Escaping in the
 constructor as well would double-escape every attribute the moment both layers are present, and a
 constructor cannot know whether its output is bound for HTML, for the payload envelope, or for a
 test. A test in `elements.bp` asserts the verbatim behaviour so that nobody adds escaping here later
@@ -202,7 +202,7 @@ a level for it.
 
 | Front | Today | After |
 |---|---|---|
-| **24** rakun-server-actions | Builds `form`, `input` and `button` through the public `Element` record in `src/actions.bp` (`24/README.md:121-128`) | `actionForm`, `hiddenField`, `textField` and `submitButton` stay — they carry the action id and the `__onze_action` contract — and their bodies call `form`, `input`, `button` imported from `"jhonstart"`. The local constructors go. |
+| **24** rakun-server-actions | Builds `form`, `input` and `button` through the public `Element` record in `src/actions.bp` (`24/README.md:121-128`) | rakun builds no markup and imports nothing from jhonstart (decision 113): the action form is front 67's `formAttrs` / `hiddenActionField`, built from this surface and fed the action id by onze; rakun keeps the id and the envelope (contract 3). The local constructors go with the form. |
 | **26** router · **27** link · **28** server-components · **29** client-directive · **30** streaming | Examples cite "the element-surface front of track C" for `nav`, `section`, `header`, `h2`, `button` | `import {…} from "jhonstart"` with `// provided by front 94`. None of them defines a constructor. |
 | **31** error-boundaries | `global-error.bp` listed under *Blocked* for want of `html` and `body` | Unblocked. `global-error.bp` builds its document with `htmlTag`, `head`, `body`, `title`, `meta`, `link` — the shape in `examples/document-shell-example.bp`. |
 | **32** metadata | `renderHead` produces head content | `renderHead` emits `meta`/`link`/`title` elements from this surface rather than a string. |
@@ -276,8 +276,8 @@ pub fn isRawTextTag(tag: string) -> bool {
 - [ ] `isVoidTag` answers true for all fourteen and false for `"div"`, `"span"`, `"form"` and `""`
 - [ ] `isRawTextTag("script")` and `isRawTextTag("style")` are true; `isRawTextTag("title")` and
       `isRawTextTag("textarea")` are false — escapable raw text is not raw text
-- [ ] The fourteen tags of `isVoidTag` are the same fourteen front 23's walker treats as void, and
-      front 23 imports the predicate rather than restating the list
+- [ ] The fourteen tags of `isVoidTag` are the same fourteen front 30's walker treats as void, and
+      front 30's `render.bp` calls the predicate rather than restating the list
 
 ### Step 2 — the non-void constructors
 
@@ -309,7 +309,7 @@ pub fn nav(children: Children, attrs: Array<#(string, string)> = []) -> Element 
       "/p"), #("rel", "next")]))` is `"<a href=\"/p\" rel=\"next\">x</a>"` — array order is the
       rendered order, which is what `contracts.md § 4` clause 5 depends on
 - [ ] An attribute value is stored verbatim: an `href` of `/a&b` renders `/a&b`, not `/a&amp;b`.
-      Escaping belongs to front 23
+      Escaping belongs to front 30
 
 ### Step 3 — the void constructors
 
@@ -367,7 +367,7 @@ test "a tag from the element surface resolves inside an html template" {
 
 | File | Demonstrates |
 |---|---|
-| [`examples/form-example.bp`](./examples/form-example.bp) | A form bound to a server action through `form`, `label`, `input`, `select`, `option` and `button`, matching front 24's binding from `contracts.md § 3` — `data-onze-a` on the form, a hidden `__onze_action` field. Every call spells `attrs:`. |
+| [`examples/form-example.bp`](./examples/form-example.bp) | A form bound to a server action through `form`, `label`, `input`, `select`, `option` and `button`, matching front 24's binding from `contracts.md § 3` — `data-jh-a` on the form, a hidden `__onze_action` field. Every call spells `attrs:`. |
 | [`examples/document-shell-example.bp`](./examples/document-shell-example.bp) | The `htmlTag`/`head`/`body` shell front 31's `global-error.bp` needs, with `title`, `meta` and `link`, and the doctype prefix that is a string because it is not an element. |
 
 ## Language gaps
@@ -388,8 +388,8 @@ and it is not what front 24's test asserts (`assert markup.contains("</input>") 
 `24-rakun-server-actions/examples/form-action-example.bp`).
 
 The nearest valid form today, and the one this front delivers: the void set is exported as
-`isVoidTag`, and the render that ships is front 23's `renderNode`, which is void-aware
-(`23-rakun-ssr-pipeline/README.md:88,278`). `renderToString` stays the in-repo test renderer, and
+`isVoidTag`, and the render that ships is front 30's `renderNode`, which is void-aware
+(`30-jhonstart-streaming/README.md` § *The escaping walker*). `renderToString` stays the in-repo test renderer, and
 every assertion in this front that goes through it spells the `</input>` out, so that the day
 `element.bp` is unfrozen the failing tests point straight at the four lines to change. Unfreezing
 `renderToString` — one `if (isVoidTag(e.tag)) return "<" + e.tag + attrStr + ">";` before
@@ -424,12 +424,12 @@ functions.
 
 Both run on **both targets** — `botopink test --target commonJS` and `botopink test --target erlang`
 from `repository/jhonstart/`, and through `zig build test-libs -- --lib jhonstart` in the ecosystem
-gate. Both targets are required, not preferred: the surface is rendered on the server (front 23,
+gate. Both targets are required, not preferred: the surface is rendered on the server (front 30,
 erlang) and rebuilt in the browser (front 68, commonJS), and a constructor that produced a different
 `Element` on the two targets would break hydration silently. The tests assert string literals, so a
 divergence is a red cell and not a hydration mismatch discovered by a reader.
 
-What the tests do **not** cover: escaping (front 01 and front 23 own it and test it), the void
+What the tests do **not** cover: escaping (front 01 and front 30 own it and test it), the void
 closing tag beyond asserting today's wrong answer, and self-closing tags in markup. Those three
 absences are stated above rather than papered over.
 
@@ -443,9 +443,9 @@ absences are stated above rather than papered over.
       and the README states the import that makes it resolve
 - [ ] `pub mod elements;` and the `botopink.json` entry are appended in front-number order, and the
       lines fronts 26–32 and 67 hand this front are appended alongside them
-- [ ] Fronts 24, 26, 27, 28, 29, 30, 31, 32, 53 and 67 import from `"jhonstart"` and define no
+- [ ] Fronts 26, 27, 28, 29, 30, 31, 32, 53 and 67 import from `"jhonstart"` and define no
       element constructor locally; front 31's *Blocked* entry for `global-error.bp` is removed
 - [ ] The `language-gaps.md` row "New jhonstart element constructors" moves out of *Unowned surface*
       and names this front
-- [ ] Front 23's `renderNode` calls `isVoidTag` and `isRawTextTag` rather than holding its own lists
+- [ ] Front 30's `renderNode` calls `isVoidTag` and `isRawTextTag` rather than holding its own lists
 - [ ] The front's tests are green on both of its assigned targets

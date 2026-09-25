@@ -4,7 +4,7 @@
 **Priority:** critical — without `Link` every navigation is a full page load, and the client half of the milestone has nothing to intercept
 **Target:** js (client)
 **Wave:** 4
-**Depends on:** 26 · 60 (route-kind flag, read-only) · 23 (payload envelope, read-only) · 68 (generated entry + DOM primitives, read-only) · 94 (element builders used by the examples)
+**Depends on:** 26 · 60 (route-kind flag, read-only) · 30 (payload envelope, read-only) · 68 (generated entry + DOM primitives, read-only) · 94 (element builders used by the examples)
 **Owns:** `repository/jhonstart/src/link.bp`, `repository/jhonstart/src/reconcile.bp` (the client-navigation reconciler), `repository/jhonstart/test/link_test.bp`, `repository/jhonstart/test/reconcile_test.bp`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (front 26), `src/client.bp` (front 29), `src/root.bp` and `botopink.json` (front 94)
 **Reference:** `NEXTJS-DOCS.md § 8. Navegação e Linking` · `§ 25. Referência de Componentes` · https://nextjs.org/docs/app/api-reference/components/link · https://nextjs.org/docs/app/getting-started/linking-and-navigating
@@ -48,22 +48,22 @@ that split, and it is what lets a client front render correctly during the serve
 ### The render half — pure botopink, no host
 
 `Link` is an ordinary function returning `Element(tag: "a", …)`. It touches no host cell, so it
-produces the same anchor on every backend, including during front 23's server render. The props
+produces the same anchor on every backend, including during front 30's server render. The props
 travel to the browser as `data-` attributes on the anchor itself — there is no second channel and no
 registry the server has to serialize.
 
 | Prop | Attribute emitted | Emitted when |
 |---|---|---|
 | `href` | `href="…"` | always |
-| — | `data-onze-l="1"` | always — this is what the runtime queries for |
-| `prefetch` | `data-onze-prefetch="0"` | only when `false`; absent means "decide by route kind" |
-| `replace` | `data-onze-replace="1"` | only when `true` |
-| `scroll` | `data-onze-scroll="0"` | only when `false` |
+| — | `data-jh-l="1"` | always — this is what the runtime queries for |
+| `prefetch` | `data-jh-prefetch="0"` | only when `false`; absent means "decide by route kind" |
+| `replace` | `data-jh-replace="1"` | only when `true` |
+| `scroll` | `data-jh-scroll="0"` | only when `false` |
 | `target` | `target="…"` | only when non-empty |
 | `className` | `class="…"` | only when non-empty |
 
 Attributes are emitted only when they differ from the default, so the common link is
-`<a href="/blog" data-onze-l="1">Blog</a>` and the HTML does not carry five redundant pairs per
+`<a href="/blog" data-jh-l="1">Blog</a>` and the HTML does not carry five redundant pairs per
 link on a page with two hundred of them.
 
 Because declared defaults are not applied, the props are a record and `linkProps(href)` is the
@@ -72,22 +72,23 @@ that returns a new record, since there is no assignment to a `self` field. The c
 `Link(withPrefetch(linkProps(href), false), children)`, which is the honest cost of the gap and
 still shorter than spelling six arguments.
 
-The `data-onze-` prefix is the milestone's marker family — front 23's islands and streaming holes
-use it (`contracts.md § 2`). This front owns the link markers inside it and nothing else; the
+The `data-jh-` prefix is the marker family of the HTML jhonstart writes — front 29's islands and
+front 30's streaming holes use it (`contracts.md § 2`, decision 113). This front owns the link markers inside it and nothing else; the
 attribute names above are the whole vocabulary it adds.
 
 ### The runtime half — the browser, `#[@External.Node]` only
 
 Four cells, all Node, none with an erlang twin, because none of them means anything on a server:
 
-- `__onzeLinkMount()` — delegated click interception plus an intersection observer over every
-  `[data-onze-l]`. The entry module **front 68 generates** calls it once, after it has hydrated the
-  islands, alongside one call to front 67's `__jhFormMount()`. Front 29 owns the per-island hydrate
+- `linkMount()` — a `pub fn` over the private host cell `__jhLinkMount`: delegated click
+  interception plus an intersection observer over every `[data-jh-l]`. It is an ordinary import,
+  not a browser global (decision 113). The entry module **front 68 generates** calls it once, after it has hydrated the
+  islands, alongside one call to front 67's `formMount()`. Front 29 owns the per-island hydrate
   point, not the entry, and does not call this.
-- `__onzeLinkPrefetch(href, mode)` — warms the client route cache. `mode` is `"full"`, `"partial"` or
+- `__jhLinkPrefetch(href, mode)` — warms the client route cache. `mode` is `"full"`, `"partial"` or
   `"skip"`.
-- `__onzeLinkStatus() -> string` — the href of the navigation currently in flight, `""` when idle.
-- `__onzeLinkRouteKind(href) -> string` — `"static"`, `"dynamic"` or `"unknown"`, read from the
+- `__jhLinkStatus() -> string` — the href of the navigation currently in flight, `""` when idle.
+- `__jhLinkRouteKind(href) -> string` — `"static"`, `"dynamic"` or `"unknown"`, read from the
   route-kind table **front 60** emits into the client bundle.
 
 ### Prefetch strategy
@@ -102,13 +103,13 @@ function so that it is testable without a browser:
 | dynamic | no | `skip` |
 | any | `prefetch: false` | `skip` |
 
-`prefetchMode(kind, hasLoading, requested)` is the function; `__onzeLinkPrefetch` is the consumer. The
+`prefetchMode(kind, hasLoading, requested)` is the function; `__jhLinkPrefetch` is the consumer. The
 two inputs `kind` and `hasLoading` both come from front 60's table, which is why this front depends
 on it read-only and owns none of it.
 
 The route the prefetcher resolves an href against is the table in the payload's `t` key, matched
-with front 22's `matchPath` (`contracts.md § 1`). There is one matcher in the milestone and this
-front is not a second one.
+with the `match` function front 26's router receives from onze (front 22's matcher,
+`contracts.md § 1`). There is one matcher in the milestone and this front is not a second one.
 
 ### Layout state preservation
 
@@ -135,15 +136,15 @@ The reconciler (`src/reconcile.bp`) is the client half of a navigation, and it i
 3. Unmount the current route's subtree below that depth, and mount the target's from the payload the
    prefetcher already has — or fetch it, with front 60's route-kind flag deciding whether a fetch
    was needed at all.
-4. Adopt `data-onze-s` slots as-is (front 29's rule) and re-anchor `data-onze-e` boundaries
+4. Adopt `data-jh-s` slots as-is (front 29's rule) and re-anchor `data-jh-e` boundaries
    (front 31's), because both are keyed to the response and not to the layout.
 
-The reconciler touches no host cell of its own: it drives `__onzeLinkPrefetch` and front 68's DOM
+The reconciler touches no host cell of its own: it drives `__jhLinkPrefetch` and front 68's DOM
 primitives, and everything it decides is a pure function of two key lists.
 
 ### `linkStatus`
 
-`linkStatus()` returns `LinkStatus(pending: bool, href: string)` from `__onzeLinkStatus()`, so a
+`linkStatus()` returns `LinkStatus(pending: bool, href: string)` from `__jhLinkStatus()`, so a
 link can render a spinner while its own navigation is in flight. It is a hook —
 `#[@use] fn linkStatus() -> @Use<ElementBase, LinkStatus>` (decision 102) — and is legal under `use`
 inside a `#[@use] fn … -> @Component<Element>` body (decision 104), the same shape `hooks.bp` uses.
@@ -199,10 +200,10 @@ pub fn withPrefetch(p: LinkProps, prefetch: bool) -> LinkProps {
 
 ```bp
 pub fn Link(props: LinkProps, children: Children) -> Element {
-    var pairs: Array<#(string, string)> = [#("href", props.href), #("data-onze-l", "1")];
-    if (!props.prefetch) pairs = pairs.append([#("data-onze-prefetch", "0")]);
-    if (props.replace) pairs = pairs.append([#("data-onze-replace", "1")]);
-    if (!props.scroll) pairs = pairs.append([#("data-onze-scroll", "0")]);
+    var pairs: Array<#(string, string)> = [#("href", props.href), #("data-jh-l", "1")];
+    if (!props.prefetch) pairs = pairs.append([#("data-jh-prefetch", "0")]);
+    if (props.replace) pairs = pairs.append([#("data-jh-replace", "1")]);
+    if (!props.scroll) pairs = pairs.append([#("data-jh-scroll", "0")]);
     if (props.target != "") pairs = pairs.append([#("target", props.target)]);
     if (props.className != "") pairs = pairs.append([#("class", props.className)]);
     return Element(tag: "a", value: "", children: children, attrs: pairs);
@@ -211,9 +212,9 @@ pub fn Link(props: LinkProps, children: Children) -> Element {
 
 **Acceptance:**
 - [ ] `renderToString(Link(linkProps("/about"), [text("About", attrs: [])]))` is
-      `<a href="/about" data-onze-l="1">About</a>` — two attributes, in that order, matching the
-      `data-onze-` family in `contracts.md § 2`
-- [ ] `prefetch: false` adds `data-onze-prefetch="0"` and nothing else
+      `<a href="/about" data-jh-l="1">About</a>` — two attributes, in that order, matching the
+      `data-jh-` family in `contracts.md § 2`
+- [ ] `prefetch: false` adds `data-jh-prefetch="0"` and nothing else
 - [ ] `target: "_blank"` emits a real `target` attribute, not a `data-` one
 - [ ] `Link` reaches no host cell and renders identically on erlang and js
 
@@ -252,7 +253,7 @@ common prefix of two such lists: everything strictly above it stays mounted, eve
 is replaced. Both are pure, so the whole remount decision is testable without a DOM.
 
 The transition driver (`reconcile(current, target)`) calls them, then unmounts and mounts through
-front 68's DOM primitives, adopting `data-onze-s` slots and re-anchoring `data-onze-e` boundaries.
+front 68's DOM primitives, adopting `data-jh-s` slots and re-anchoring `data-jh-e` boundaries.
 
 **Acceptance:**
 - [ ] `layoutKeys(["docs", "api"]) == ["/", "/docs", "/docs/api"]` — root-first, root included
@@ -273,7 +274,7 @@ front 68's DOM primitives, adopting `data-onze-s` slots and re-anchoring `data-o
 tree and reaches no host cell of any target, so all 35 assertions run on **both** rows. The four
 cells below and `linkStatus()` are **not shipped**: each binds to front 68's generated client bundle,
 and `routeKind` additionally wants front 60's route-kind table. When the bundle exists,
-`linkStatus()` is literally `return linkStatusOf(__onzeLinkStatus());` and nothing else in `link.bp`
+`linkStatus()` is literally `return linkStatusOf(__jhLinkStatus());` and nothing else in `link.bp`
 moves.
 
 Two things to settle before they are written:
@@ -289,22 +290,24 @@ Two things to settle before they are written:
 
 ```bp
 #[@External.Node("jhonstart/client-runtime", "linkMount")]
-pub declare fn __onzeLinkMount() -> i32;
+declare fn __jhLinkMount() -> i32;
+
+pub fn linkMount() -> i32 { return __jhLinkMount(); }
 
 #[@External.Node("jhonstart/client-runtime", "linkPrefetch")]
-pub declare fn __onzeLinkPrefetch(href: string, mode: string) -> i32;
+pub declare fn __jhLinkPrefetch(href: string, mode: string) -> i32;
 
 #[@External.Node("jhonstart/client-runtime", "linkStatus")]
-declare fn __onzeLinkStatus() -> string;
+declare fn __jhLinkStatus() -> string;
 
 #[@External.Node("jhonstart/client-runtime", "routeKind")]
-declare fn __onzeLinkRouteKind(href: string) -> string;
+declare fn __jhLinkRouteKind(href: string) -> string;
 
 pub type LinkStatus(pending: bool, href: string)
 
 #[@use]
 pub fn linkStatus() -> @Use<ElementBase, LinkStatus> {
-    val href = __onzeLinkStatus();
+    val href = __jhLinkStatus();
     return LinkStatus(pending: href != "", href: href);
 }
 ```
@@ -313,7 +316,7 @@ pub fn linkStatus() -> @Use<ElementBase, LinkStatus> {
 - [ ] every cell in the file is `#[@External.Node]`; there is no `#[@External.Erlang]` cell
 - [ ] `linkStatus()` is idle (`pending == false`, `href == ""`) when nothing is in flight
 - [ ] `use linkStatus()` type-checks inside a `#[@use] fn … -> @Component<Element>` body — never the doubled `use` + `useLinkStatus()`; without the annotation the body is `use-without-context-effect` (decision 104, [`19-use-activation`](../../00-compiler-carry-over/19-use-activation/README.md))
-- [ ] `__onzeLinkMount()` is idempotent — calling it twice registers one listener
+- [ ] `linkMount()` is idempotent — calling it twice registers one listener
 
 ### Step 5 — Module wiring
 
@@ -325,6 +328,18 @@ it.
 - [ ] `pub mod link;` and the `files` entry are handed to front 94; this front edits neither file
 - [ ] `git grep -n "declare fn Link"` finds nothing
 - [ ] `repository/jhonstart/AGENTS.md` updated in the same commit
+
+### Step 6 — Decision 113's spellings
+
+The pure half shipped with the `data-onze-` link markers. Decision 113 gives every marker jhonstart
+writes the `data-jh-` prefix and makes the mount an ordinary import.
+
+**Acceptance:**
+- [ ] `link.bp` writes `data-jh-l`, `data-jh-prefetch`, `data-jh-replace`, `data-jh-scroll`; no
+      `data-onze-` string is left under `modules/jhonstart*/src/`
+- [ ] the four host cells are `__jhLinkMount`, `__jhLinkPrefetch`, `__jhLinkStatus`,
+      `__jhLinkRouteKind`, and the entry imports `linkMount` by name — no `__onze*` spelling exists
+- [ ] the Step 2 literal `<a href="/about" data-jh-l="1">About</a>` is the snapshot, re-recorded once
 
 ## Examples
 
@@ -369,7 +384,7 @@ host cells have no erlang body and are never called from the erlang row.
 - [ ] `prefetchMode` implements § 8's table exactly, with a test per row
 - [ ] the client-navigation reconciler ships in `src/reconcile.bp` with its own test file, and
       `layoutKeys`/`sharedDepth` are pure and asserted without a DOM
-- [ ] front 68's generated entry calls `__onzeLinkMount()` once, and this README says so rather than
+- [ ] front 68's generated entry calls `linkMount()` once, and this README says so rather than
       attributing it to front 29
 - [ ] the route-kind flag is read from front 60 and not recomputed here
 - [ ] both language gaps appear in a `specs/1.0.10-beta/` spec

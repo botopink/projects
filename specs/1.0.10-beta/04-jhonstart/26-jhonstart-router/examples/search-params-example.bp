@@ -4,7 +4,7 @@
 // rewrites the URL when the reader changes it.
 //
 // The URL arithmetic is pure and runs on the SERVER during the first render
-// (`searchParams` reads the snapshot front 23 filled). `replace` is the one
+// (`searchParams` reads the snapshot front 30's render filled). `replace` is the one
 // dual-target call: on erlang it records a redirect, in the browser it is
 // `history.replaceState` followed by a re-render with no reload — the shape
 // NEXTJS-DOCS.md § 8 calls *native History API*.
