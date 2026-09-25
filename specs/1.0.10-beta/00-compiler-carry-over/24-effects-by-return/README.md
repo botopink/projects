@@ -273,7 +273,7 @@ arms print the three prefixes back.
 - [ ] every ✗ in [`guide.md`](./guide.md) answers exactly the code of the diagnostics table below, and every example without ✗ types
 - [ ] the *Return and effect mode*, *`@Task` and failure*, *Chain and `use`*, *`async { }`*, *Iterators* (type half) and *Prefixed loops* cells green on four targets
 - [ ] the hint of item 9 in a `reject/` cell's `.expect` for each of the three sources
-- [ ] `comptime/AGENTS.md` in the same commit
+- [x] `comptime/AGENTS.md` in the same commit
 
 ### Step E4 — consumption (`for` / `for await`)
 
@@ -294,8 +294,8 @@ re-keyed to `GenLoop`; the host rows of decision 126. TypeScript: `@Task` → `P
 
 **Acceptance:**
 - [ ] the *Iterators*, *Streams*, *Host* and *`@Task` and failure* run cells green on four targets by running, no `expected-failures.txt` line
-- [ ] JS: a `throw` in `@Task<@Result<…>>` resolves the Promise with `Error`, never rejects (`run/task_throw_resolves_error.bp`, node)
-- [ ] every re-recorded snapshot classified: rename, `async function` where a body did not await, a RUN LOG changed by running
+- [x] JS: a `throw` in `@Task<@Result<…>>` resolves the Promise with `Error`, never rejects (`run/task_throw_resolves_error.bp`, node)
+- [x] every re-recorded snapshot classified: rename, `async function` where a body did not await, a RUN LOG changed by running
 - [ ] `CHANGELOG.md` entry for the JS interop change; `codegen/AGENTS.md` in the same commit
 
 ### Step E6 — the codemod `botopink migrate effects`
