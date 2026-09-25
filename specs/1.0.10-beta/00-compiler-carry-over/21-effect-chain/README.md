@@ -177,18 +177,18 @@ iterable in any body, a plain `fn` included — that is what the infallible wrap
 - [ ] `grep -rn 'Iterator\b\|IteratorStep\|Yield<\|Iterable' libs/std/src/builtins.d.bp modules/`
       finds nothing; `EffectKind.all` has `resultGenerator` where it had `iterator`; the drift test
       green at every commit
-- [ ] a `#[@generator]` body with `try` is refused with the diagnostic above; a `#[@resultGenerator]`
+- [x] a `#[@generator]` body with `try` is refused with the diagnostic above; a `#[@resultGenerator]`
       body with `try` compiles; a `#[@futureGenerator]` body with `await` and `try` compiles — one
       `reject/` or `test/` cell each, on the four targets
 - [ ] `break v` in a `#[@generator] fn` emits `v` as the last item, run on all four;
       `run/loop_yield_then_break_value.bp` re-specified to that answer (its decision-55 reading is
       C-06's and is superseded — [`22-loops`](../22-loops/README.md))
-- [ ] a plain `fn` iterating a `@Generator<T>` compiles and runs; a plain `fn` iterating a
+- [x] a plain `fn` iterating a `@Generator<T>` compiles and runs; a plain `fn` iterating a
       `@ResultGenerator<T, E>` is refused naming `try` and the level; a `#[@result]` body iterating it
       compiles
-- [ ] the 38 + 40 iterator snapshots and the 19 + 6 + 15 generator snapshots re-recorded and
+- [x] the 38 + 40 iterator snapshots and the 19 + 6 + 15 generator snapshots re-recorded and
       classified: rename-only diffs, plus the RUN LOGs step 1 changes by running
-- [ ] `docs.md` § generators carries the three wrappers and `YieldStep`; `comptime/AGENTS.md` updated
+- [x] `docs.md` § generators carries the three wrappers and `YieldStep`; `comptime/AGENTS.md` updated
       in the same commit
 
 ### Step 2 — `@Context<Base>`, `@Use<C, T>`, `@Component<T>`, `#[@use]` (decisions 102 and 104)
