@@ -49,6 +49,7 @@ what was left, now `00-compiler-carry-over`'s order),
 | [106](#106-std-in-three-categories-a-pure-root-io-and-testing) | The shape of std | Pure root · `io/` · `testing/`; a root module imports nothing from `io/`; merge only where the name wins (`collections`, `hash`, `encoding`); 71 amended in path only |
 | [107](#107-import-a-dotted-path-and-a-braced-group-are-one-tree-and-only-the-leaf-enters-scope) | Import grammar | `import {a: {b: {c}}, x.y.z, e.t.r*}` — dotted path and braced group are one tree; only the leaf enters scope; `*` / `as` on the leaf; no `from` = the package root |
 | [108](#108-getcontex--getcontext) | `getContex` | Renamed `getContext` (99-a) |
+| [109](#109-a-module-atom-starts-with-its-package-and-the-declaration-boundary-is-) | How is a module, and a per-declaration BEAM module, named? | `<package>@<path>@@<Decl>` — the `botopink.json` `name` first, `@@` before the declaration, whose case is kept (`std@math@@PI`, `myapp@pond@@PatoNada`); A2's `__t__`/`__b__` qualifiers leave; an erlang/BEAM compilation with no `botopink.json` is refused, the compiler's tests compile as package `test` |
 
 ## 68. One milestone, the 1.0.9 numbers kept, the drafts deleted
 
@@ -911,3 +912,94 @@ diagnostic codes (`context-getcontex-outside-context-fn`, `context-getcontex-exp
 rules RC4/RC5 in `comptime/tests/infer_errors.zig` and the three snapshots whose slug carries the
 name move with it. No library spells it today. Its gate is decision 104's one flag.
 Implements: the `effect-chain` task, in the same sweep as decisions 102–104.
+
+## 109. A module atom starts with its package, and the declaration boundary is `@@`
+
+**Decided 2026-09-26 by the maintainer**, on his own proposal, in four messages. The boundary:
+*"poderia usar `@@` — `io@fs@@File` — quando for um módulo interno"*. The package: *"sempre dever
+começar o nome da lib que ta no botopink.json examplo `bp_std@math@@PI`"*, corrected the same day:
+*"não precisa ter prefixo"* — the package name as it is, `std@math@@PI`. And the case with no
+manifest: refused on erlang and beam, the compiler's tests under an implicit manifest `test`.
+
+Policy 3 (front 13, half 2) emits one BEAM module per `type` and per `implement`, and A2 named that
+module by appending a qualifier to the owning module's atom: `main__t__sourcelocation`, with
+`__b__` reserved (decision 23). Option A named the file's own module by its path alone, so two
+libraries' `main` were one atom and a single-segment `math` needed a `bp@` prefix to stay off OTP's
+`math`. Both give way to one rule:
+
+```
+atom(module) = sanitise(package) ++ "@" ++ sanitise(path)
+               sanitise: lowercase, '/' → '@', [^a-z0-9_@] → '_', a run of '_' → one '_'
+atom(decl)   = atom(module) ++ "@@" ++ <Decl>                        (case kept)
+```
+
+`package` is the `name` of the `botopink.json` the module was loaded under; `<Decl>` is the
+declaration's own name: a `type`'s, or the `val` an `implement` is bound to. A dependency's module
+path is already `<dep>/<stem>` — that is how `from "<dep>"` resolves — so its package is not written
+twice.
+
+| Package (`botopink.json` `name`) | Source | Atom |
+|---|---|---|
+| `std` | `pub val PI` in `src/math.bp` → the module | `std@math` |
+| `std` | `type File` in `src/io/fs.bp` | `std@io@fs@@File` |
+| `myapp` | `type SourceLocation` in `src/main.bp` | `myapp@main@@SourceLocation` |
+| `myapp` | the file's own module `src/main.bp` | `myapp@main` |
+| `pond_pkg` | `val PatoNada = implement Swimmer for Pato { … }` in `src/pond.bp` | `pond_pkg@pond@@PatoNada` |
+| `pond_pkg` | `type Pato(…) implement Swimmer { … }` (inline clause) | `pond_pkg@pond@@Pato` — the clause belongs to the type's module |
+| `acme-web` | `src/main.bp` | `acme_web@main` |
+| `test` (the compiler's tests, implicit) | `main` | `test@main` |
+| none | any module, on erlang or beam | refused: `module main belongs to no package …` |
+
+Five properties decide it:
+
+1. **The package keeps libraries apart and keeps every module off OTP's namespace.** Two
+   libraries' `main`, `http` or `root` are two atoms, and every atom holds an `@`, which no OTP
+   module name does — option A's `RESERVED` list and its `bp@` prefix for `math`, `dict`, `queue`
+   have nothing left to do and are deleted.
+2. **`@@` cannot collide.** A path segment is never empty, so `@@` never occurs in `atom(module)`;
+   and the sanitiser maps every foreign character to `_`, so no source name can produce `@`. The
+   decoder is `split("@@")`, then the module half's first `@` for the package — no qualifier table.
+3. **The declaration keeps its case.** A2 lowercased the whole atom, so `SourceLocation` reached
+   the BEAM as `sourcelocation` and the atom stopped decoding back to its source.
+   `myapp@main@@SourceLocation` is still a legal *unquoted* atom (E10). The module half stays
+   lowercase because it is also a file name.
+4. **The package must start with a lowercase letter, or it is refused.** The atom starts with it,
+   and an atom that does not start with `[a-z]` has to be quoted. Decision 67: `manifest` refuses
+   such a `name` (`"name" must start with a lowercase letter`), located at the name, for every tool,
+   and `botopink new` refuses it before scaffolding; the renderer refuses it again
+   (`invalid_package`) for a driver that did not read a manifest. Nothing is ever quoted.
+5. **One rule for every declaration kind.** An `implement` block is named by the `val` that binds it,
+   like a `type` by its own name. A behavior module, if decision 23 is ever reopened, is
+   `<package>@<path>@@<Behavior>`. Should the language ever nest a declaration inside another, each
+   `@@` descends one level; no construct does today.
+
+**Without a `botopink.json` the compilation is refused on erlang and beam** — decided by the
+maintainer the same day, the most restrictive reading: a diagnostic, no fallback name, no package
+guessed from a directory. The renderer answers `MissingPackage` and `crossModule.build` turns it
+into the located `no_package` fault (`module `main` belongs to no package — an erlang module atom
+starts with the `name` of the botopink.json it is compiled under, and there is none`). The CLI
+already needs a manifest for every command. **The compiler's own tests** compile under an
+implicit manifest named `test` — `test@main`, `test@main@@Person` — which only the test harness
+supplies (`crossModule.test_packages` on every `codegen/tests/helpers.configs` entry, and the
+runtime harness that runs them); a user's run never gets it. The comptime evaluators' modules
+live in the compiler's own package, `bp` (`bp@comptime__tpl__<decl>__<hash>`), and `manifest`
+refuses `"name": "bp"`, so no package's atoms can meet those. The embedded library `std` is a
+dependency of every compilation whether or not the driver lists it, so `std/math` is `std@math`
+there too.
+
+What it does **not** change: decision 6's flat `out/erl/` and `out/beam/` (the file is the atom:
+`std@io@fs@@File.erl`); decision 21's T2 tag (the same atom is the value's identity on both BEAM
+targets — `{'std@io@fs@@File', …}`; commonJS's identity is the class prototype, decision 5, and
+wasm's is the descriptor address, decision 22, so neither carries a second spelling); decision 23 (a
+behavior emits nothing); the comptime qualifier `__tpl__`/`__dec__` and its hash; commonJS and wasm
+artifact paths, which stay the module path. The cross-module refusal that two declarations of one
+module must not render one atom stays **case-insensitive**: `Person` and `person` are distinct
+atoms but one file on a case-insensitive file system, so the pair is refused (decision 67).
+
+Bears on: every erlang and beam snapshot (`-module(main)` is `-module(test@main)` in the harness);
+host templates that spell a tag (`{'std@regex@@Match', …}` in `libs/std`); `tests/language`'s
+`language_tests@main` entry; `crossModule.zig`'s `duplicate_decl` check and message;
+`13-module-identity`'s A2 text (`declaration-qualifier.md`), which describes this spelling.
+Implements: front 13 — `crossModule.erlAtom` / `declAtom` / `decodeAtom` / `Packages`, the erlang
+and beam emitters, `Config.packages`, `cli/{build,run,test_cmd,libs,new}.zig`, `manifest`'s
+`nameRefusal`, the snapshot re-record, `src/codegen/AGENTS.md`.
