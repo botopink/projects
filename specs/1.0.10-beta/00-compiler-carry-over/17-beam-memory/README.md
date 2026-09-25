@@ -259,19 +259,42 @@ declares `var`, zero to a `val` (decision 38); and step 3 validates the **three*
 `ProcessDict`, `Ets`, `PersistentTerm` — plus the argument names, which is decision 41 and matches what
 this README already answered: the explicit `ProcessDict` is the default said out loud.
 
-### Step 0 — Re-run every measurement at this front's HEAD, and open the five questions
+### Step 0 — Re-run every measurement at this front's HEAD
 
 Nothing is edited. The probe harness is one scratch project per form (`botopink new`, one `src/main.bp`,
 `botopink check` / `build --target …`), plus three hand-written Erlang modules compiled with `erlc`
-and run with `erl -noshell`.
+and run with `erl -noshell`. Re-run at `botopink-lang` `4fe1747e` (OTP 29, node v25, wasmtime 45),
+after steps 1–3 had landed — so the first row measures what step 1 changed, not the original defect.
 
 **Acceptance:**
-- [ ] The three broken emissions of [Problem](#problem) reproduce at HEAD, each with its exact
-      first diagnostic line and the emitted line that produced it
-- [ ] Questions **38–43** are opened in [`decisions-pending.md`](../../../1.0.5-beta/decisions-pending.md) in the
-      Measured / Options / Recommendation / Blocks shape, numbered from 38 as that file requires
-- [ ] The 96-line rakun count and the emilia reading are re-derived at the libraries' current
-      submodule pointers, with the function ranges named — not carried from this README
+- [x] The [Problem](#problem) program no longer reaches a backend: `botopink check` **and**
+      `botopink build --target <each of the three>` red at the assignment
+      (`` error: `hits` is a `val` and cannot be assigned`` at `src/main.bp:2:17`, exit 1, nothing
+      emitted). What still reproduces is the same program written `var` on the two BEAM targets
+      (step 4's): erlang emits `hits() -> 0.` and `Hits = (Hits + 1).` (`out/erl/main.erl:9`,
+      `variable 'Hits' is unbound`, the module does not compile); beam emits
+      `%% assign to unknown variable: hits` (`out/beam/main.S:22`), assembles, and prints **`0`** at
+      exit 0 — the write is dropped silently. commonJS (`let hits = 0;`) and wasm
+      (`(global $hits (mut i32) (i32.const 0))`) print `2`
+- [x] Questions **38–43** were opened and are **taken** (`decisions-taken.md` 38–43, plus 48–51 and
+      57); nothing is opened here
+- [x] The 96-line rakun count and the emilia reading are re-derived at the pinned submodule
+      commits (rakun `10c63974`, emilia `9c19e22`), function ranges named — in
+      [`rakun-migration.md`](./rakun-migration.md) (step 8). Two things moved since `bef762b`: rakun's
+      `runtime.mjs` is now `modules/rakun/src/runtime.mjs` (still 231 lines, the five ranges
+      unchanged) **and has an 850-line erlang twin**, `modules/rakun/src/sidecars/rakun_runtime.erl`,
+      whose six named public ETS tables are owned by a supervised `rakun_registry` `gen_server` —
+      rakun built decision 39's owner by hand; emilia's cell moved to `modules/emilia/src/emilia.bp:53-55`
+      (`register`: `get` + `lists:keystore` + `put`) and `:58-60` (`drainRules`: `erase`)
+- [x] The migration count step 1 owed its commit message and did not carry: at `4fe1747e`, over
+      `libs/std`, `examples/**` and the five libraries at their pins (212 `.bp` files), **447**
+      assignments to a bare name, **all 447** to a name the same file declares `var`, **0** to a `val`
+      (decision 38 counted 82 of 82 at `1379659`; the suite grew, the answer did not)
+- [x] Step 3b's reach, measured: on erlang `out/erl/std@beam.erl` exports the ten primitives and
+      every one answers under `erl` (`etsGet` 41, `etsBump` 42, `ptGet` 7, `pdGet` 1); on **beam**
+      `out/beam/std@beam.S` is written but `std@erlang:self()` is `undef` — the beam wrapper
+      predicate is unwired (C-03's beam half). On commonJS and wasm the import reds
+      `std-unsupported-on-target: std/beam.pdGet has no `@external` for target 'node'|'wasm'`
 
 ### Step 1 — `var` parses at module level, and `val` starts meaning what it reads as
 
