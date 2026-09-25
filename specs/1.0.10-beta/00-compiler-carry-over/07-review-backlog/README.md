@@ -1,5 +1,3 @@
-> Carried from `specs/1.0.5-beta/07-review-backlog/README.md`, status at carry (2026-09-20): not started; waves A and B, steps 3–5 and the handovers from 06 and 08 are C-22
-
 # Front 07 — review-backlog
 
 **Priority:** medium — nothing ships wrong because of it, but ~700 open review rows sit between the
@@ -114,7 +112,7 @@ re-recorded between `26d4fdc` and `c2dd780`** — 25 `parser`, 14 `codegen/wasm`
 and grammar waves alone. A row re-derived before
 [`01-checker`](../01-checker/README.md) closes is re-derived twice.
 
-## Rows handed over by front 06 (delivered 2026-09-18)
+## Rows handed over by front 06
 
 Two, both verified by that front and left unedited because they are this front's files:
 

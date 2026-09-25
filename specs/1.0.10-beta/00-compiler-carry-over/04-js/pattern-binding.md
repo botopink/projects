@@ -1,10 +1,7 @@
-> Carried from `specs/1.0.5-beta/04-js/pattern-binding.md`, status at carry (2026-09-20): all steps but 7 and 8's removal landed; step 7 waits on 01 R5 (C-09), decision 55's rows are C-06, `d["k"]` is C-02
-
 # JS-4 — a botopink pattern as a JS binding target (step 7)
 
-> Carried from 1.0.4-beta `01-backend-residuals/pattern-binding.md`, itself kept from the js-bridges
-> front's `bridges.md`. The other five bridges landed with js-bridges (`bd7836c`); this one waits on
-> the checker. Sites were re-located by symbol at `botopink-lang` `c2dd780` on 2026-09-18.
+The other five bridges landed with js-bridges (`bd7836c`); this one waits on the checker (01 R5).
+Sites are located by symbol at `botopink-lang` `c2dd780`.
 
 Paths are relative to `repository/botopink-lang/modules/compiler-core/`.
 

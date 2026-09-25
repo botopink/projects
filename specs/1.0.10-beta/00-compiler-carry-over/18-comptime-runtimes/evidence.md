@@ -1,7 +1,7 @@
 # Evidence
 
 Every measurement behind the README, with the command and the raw excerpt. Taken 2026-09-20 on
-`feat` in `repository/botopink-lang` **before** the same day's merges of `.tasks/{formatter,tooling,
+`feat` in `repository/botopink-lang` **before** the merges of `.tasks/{formatter,tooling,
 wasm}`; those merges touch `wat.zig`, `infer.zig`, the formatter and 7 snapshots, so line numbers
 in `wat.zig` may have drifted by a few lines — re-locate by symbol. Host: Linux, Zig 0.16.0,
 OTP 29 / ERTS 17.0.6, node 25.8.0, wasmtime 45.0.0. Paths below are relative to

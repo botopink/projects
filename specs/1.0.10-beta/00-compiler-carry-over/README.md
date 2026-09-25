@@ -22,42 +22,40 @@ row (C-02, C-14, C-17); the 1.0.10 track fronts under `03-rakun/`, `04-jhonstart
 implements against — it is **not** copied; links inside the copied deep dives that say
 `../decisions-taken.md` resolve there) · [`specs/1.0.5-beta/fronts.md`](../../1.0.5-beta/fronts.md)
 (ownership and carve-outs)
-**Replaces:** the open rows of 1.0.5-beta fronts 01–05, 07–09, 11–17, and the decisions 21–23, 29/60,
-31, 38–42, 44–48, 51–52, 54–55, 57, 63–66 that have no landing
 
 ---
 
-Every open or in-progress item of 1.0.5-beta, one id each, ordered by what it blocks — plus two items the maintainer added on 2026-09-20 (C-26, C-27), which are new fronts rather than carry-over and sit at the end of the table with their own directories. An item's
-acceptance is the 1.0.5 front's, condensed; the full text is in the copied README beside this file
-(`<front-dir>/README.md`, each headed by a "carried from" line saying its status at carry). Where a
-`.tasks/*` worktree already holds work, the row says which and what state it is in — three of the six worktrees
-(`formatter`, `tooling`, `wasm`) were landed on `feat` as-is on 2026-09-20 (`wip` commit + `--no-ff`
-merge each, gate green at the tip, pushed) and removed; `beammem`, `ecosystem` and `identity` remain,
-at `feat` `d55a3b87`, with their changes staged and the pre-commit gate red (see `status.md`).
+Every open or in-progress item of 1.0.5-beta, one id each, ordered by what it blocks — plus six
+items that are new fronts rather than carry-over and sit at the end of the table with their own
+directories: C-26 and C-27 (the comptime runtimes; the `use` activation), C-28 (the builtins
+surface) and C-29–C-31 (decisions 102–108: the effect chain, the loops, std purity — in that order).
+An item's acceptance is the 1.0.5 front's, condensed; the full text is in the README beside this file
+(`<front-dir>/README.md`). Where a `.tasks/*` worktree holds work, the row says which; where each
+item stands is `status.md`'s.
 
 ## Items
 
 | Id | Item | Origin | Priority | Blocks | Partial work |
 |---|---|---|---|---|---|
-| [C-01](#c-01--the-types-identity-in-the-value-and-one-module-per-type) | The type's identity in the value, and one BEAM module per `type` | 13 halves 2–3 (steps 8–19); decisions 21, 22, 23, 5 | **critical** | `is`, unions and `case` over named types on erlang/beam/wasm; §7 printing on three backends (02/03/05 F2–F4); C-07, C-10, C-17, C-20; today `Person(…) == Vec(…)` is `true` on erlang | none yet — `.tasks/module-identity` (`fix/module-identity-halves`) opened 2026-09-20 |
-| [C-02](#c-02--an-index-is-a-method-call) | An index is a method call: `Index`/`Slice`, the rewrite, and beam's silent `.length` | decision 63 (amended); 01 handover 15; 09 rows 1–4; 08's paragraph; decision 62's beam defect; 12's cell | **critical** | 1.0.9 gap "`xs[0]` silently drops the index on the BEAM backend — every server front"; `d["k"]` on every backend; `xs[0]` typing as `void` in the LSP | `libs/std` half landed on `feat` 2026-09-20 (`e065b564` + merge `1769456d`; two `at`-rename regressions fixed in commonJS); the `transform.zig` rewrite (the compiler half) remains |
-| [C-03](#c-03--a-wrapper-per-host-bound-std-declare-fn) | A wrapper per host-bound std `declare fn` on erlang and beam | decision 64; 17 step 3b's acceptance; 09's `beam.bp` header | **critical** | `std@erlang:self()` is `undef`; 17's every read/write lowering; 1.0.9 gap "a std module cannot call another std module" | erlang half landed on `feat` 2026-09-20 (`a8db11e4` + merge `a6b5b62a`, run fixture `erlang.node()`); beam twin `hostDeclareWrapperNeeded` still unwired |
+| [C-01](#c-01--the-types-identity-in-the-value-and-one-module-per-type) | The type's identity in the value, and one BEAM module per `type` | 13 halves 2–3 (steps 8–19); decisions 21, 22, 23, 5 | **critical** | `is`, unions and `case` over named types on erlang/beam/wasm; §7 printing on three backends (02/03/05 F2–F4); C-07, C-10, C-17, C-20; today `Person(…) == Vec(…)` is `true` on erlang | halves 2 and 3 landed on `feat`; the acceptance list below is the record to tick |
+| [C-02](#c-02--an-index-is-a-method-call) | An index is a method call: `Index`/`Slice`, the rewrite, and beam's silent `.length` | decision 63 (amended); 01 handover 15; 09 rows 1–4; 08's paragraph; decision 62's beam defect; 12's cell | **critical** | 1.0.9 gap "`xs[0]` silently drops the index on the BEAM backend — every server front"; `d["k"]` on every backend; `xs[0]` typing as `void` in the LSP | landed — the `libs/std` half and the checker rewrite (`xs[k]` is `xs.at(k)`, no `codegen/**` touched); residual: `xs[0]` still types `void` at a `val` binding |
+| [C-03](#c-03--a-wrapper-per-host-bound-std-declare-fn) | A wrapper per host-bound std `declare fn` on erlang and beam | decision 64; 17 step 3b's acceptance; 09's `beam.bp` header | **critical** | `std@erlang:self()` is `undef`; 17's every read/write lowering; 1.0.9 gap "a std module cannot call another std module" | erlang half landed (run fixture `erlang.node()`); beam twin `hostDeclareWrapperNeeded` still unwired |
 | [C-04](#c-04--trailing-defaults-are-applied) | Trailing defaults are applied at the call site | 01 step 7 (N1, N2); `trailing-defaults.md` | **high** | 1.0.9 gap "declared parameter defaults are never applied — every front"; `s.slice(1)` after C-02; jhonstart's 22 `attrs: []` paddings | none |
-| [C-05](#c-05--module-level-var-and-the-beammemory-carrier) | Module-level `var`, `val` refused on assignment, `@BeamMemory` validated | 17 steps 0–3; 15's held-back grammar; decisions 28, 38, 41, 48, 49, 51 | **high** | C-10; rakun's `runtime.mjs` (96 of 231 lines, 13 of 16 `@External.Node` declarations are registry code); 1.0.9's "module-level `pub val` of a user type" row | landed on `feat` 2026-09-20 (`8146d2b6` + merge `2788be9f`, cold gate green; step 2's run verification done: prints `2` on node and wasmtime) — steps 4–8 remain C-10 |
-| [C-06](#c-06--decisions-52-53-and-55-at-run-time) | Decisions 52, 53, 55 at run time: the exhausted loop is `null`, `1...9` matches, a value `break` ends a collection loop | 02 step 3 residual and "no step" rows; 03 step 3; 04 step 3; 05 steps 2/4 | **high** | 11 `expected-failures.txt` lines across four backends; a program that agrees on four backends and is wrong on all four | landed on `feat` 2026-09-20 as `wip(wasm)` + merge of `fix/wasm-patterns` (wasm's half: 3 lines deleted, 6 RUN LOGs moved); acceptance not verified against the front's rows |
+| [C-05](#c-05--module-level-var-and-the-beammemory-carrier) | Module-level `var`, `val` refused on assignment, `@BeamMemory` validated | 17 steps 0–3; 15's held-back grammar; decisions 28, 38, 41, 48, 49, 51 | **high** | C-10; rakun's `runtime.mjs` (96 of 231 lines, 13 of 16 `@External.Node` declarations are registry code); 1.0.9's "module-level `pub val` of a user type" row | landed (steps 0–3; a module `var` prints `2` on node and wasmtime) — steps 4–8 remain C-10 |
+| [C-06](#c-06--decision-53-at-run-time) | Decision 53 at run time: `1...9` matches on erlang, beam and wasm. Decisions 52 and 55 (the exhausted loop is `null`; a value `break` ends a collection loop) are superseded by decision 105 — C-30 re-specifies their cells | 02 step 3 residual and "no step" rows; 03 step 3; 04 step 3; 05 steps 2/4 | **high** | the `run/case_range_value.bp` lines; a program that agrees on four backends and is wrong on all four | wasm's half landed (3 lines deleted, 6 RUN LOGs moved) and accepted by running |
 | [C-07](#c-07--decision-8s-run-time-tails-on-erlang-and-beam) | Decision 8's run-time tails on erlang and beam: `is` by value, `unknown`, §2.3 `==`, tuple/`..`/type patterns on beam, `, ` on erlang | 02 steps 1 F1, 2; 03 step 3 D1–D4; 04 step 2 D2/D3; 05 step 2 D1–D3 | **high** | the erlang cells of every library that writes `is`; beam's `case` over a tuple | none; after C-01 for the named-type half |
 | [C-08](#c-08--the-parser-gaps-that-are-inference-side) | The parser gaps that are inference-side: `if (a && b)`, `_` as binder, decision 54's `null` arm, decisions 11 and 12 | 01 step 10; decision 54; 15's handover | **high** | 1.0.9 gap "`if (a && b)` does not parse in condition position" (fronts 53, 60); the decided `?T` pattern surface | none |
 | [C-09](#c-09--the-residual-checker-rows-and-their-backend-consumers) | The residual checker rows R1/R2/R4–R9, and what they unblock: JS-4, `Array.range(…).map`, the dead block-as-value lowerings | 01 step 8; 04 steps 7, 8; 02 steps 8, 9; decision 2 (R7) | **high** | `val Circle(r) = s` reds; `Array.range(0, 3).map(…)` is `undef` on erlang; three N25 diagnostics; `curried_call.bp` | none |
 | [C-10](#c-10--beammemory-steps-48) | `@BeamMemory`'s three modes on erlang and beam, the registered ETS owner, docs, cells, rakun's migration | 17 steps 4–8; decisions 39, 40, 42, 43 layer 2, 50 | **medium** | rakun's registry code on the BEAM; decision 17 | `design.md` carried; nothing in code |
 | [C-11](#c-11--format---check-over-the-whole-project-with-a-caller) | `format --check` over the whole project, structurally exempting `reject/**`, called by a gate — and the two parse defects in its way | decision 66; 09 step 1; 10's `format_cmd.zig`; 15's trailing lambda; 01 step 11 / 08's `await` | **medium** | 14 of 27 project directories red over 18 files and nothing says so; three `examples/jhonstart-app` files `botopink format` refuses; 1.0.9's formatter reds | none |
-| [C-12](#c-12--the-formatter-measures-width) | The formatter measures width: `fits` fixed with every group pinned, then the method chain | decision 65; 16's next row; the comment column; step 6's residual rows | **medium** | every `group` renders flat; rakun `runtime.bp:13`'s comment column; 09's reformat after each construct | landed on `feat` 2026-09-20 as `wip(formatter)` + merge of `fix/fits` (both planned commits in one); the zero-bytes-moved proof and the per-tree measurement not done |
+| [C-12](#c-12--the-formatter-measures-width) | The formatter measures width: `fits` fixed with every group pinned, then the method chain | decision 65; 16's next row; the comment column; step 6's residual rows | **medium** | every `group` renders flat; rakun `runtime.bp:13`'s comment column; 09's reformat after each construct | landed (both planned commits in one); measured: 0 hunks outside the chain rule across six trees, 29 chains opened |
 | [C-13](#c-13--the-optional--and-the-braced-blocks-trailing-) | The optional `;`: parser first, printer second, 245 sites third | decisions 29, 60; 15's parked patch; 16 step 6; 12, `libs/std`, 09 migrate | **medium** | every `if`/`loop`/`case` statement in the ecosystem carries a `;` the language does not want | `15-language-surface/decision-29-parser-half.patch` (uncommittable alone) |
 | [C-14](#c-14--decision-8-in-the-sources) | Decision 8 in the sources: `Self<…>`, the five `= []` bindings, `Dict implements Display`, the libraries' `case` arms and section paths | 01 step 11 rest; 09 step 3 (N28) | **medium** | `tests/language/test/case_sections.bp`; emilia's 27 section annotations | none |
 | [C-15](#c-15--generics-carry-all-their-arguments) | A written generic type carries all its arguments; `Self<T>` | 01 step 6 (N18, §1.1/§1.2) | **medium** | two `reject/` cells; the `Box(value: 1).map` → `Box<string>` rule | none |
 | [C-16](#c-16--the-language-suites-residual-cells) | The language suite's residual cells and its tally | 12 steps 4.2–4.4; decision 59 (b); cells for 63–66; the `modules/*` cells of 66 | **medium** | nothing compiles-side; the suite's own claims | unverified whether 4.2–4.4 exist |
 | [C-17](#c-17--the-libraries-erlang-cells-after-identity) | Every library's erlang cell re-run after C-01, and `beam.bp`'s header re-spelled | 09 step 4; decision 43's correction | **medium** | the libraries' CI on the target they ship | none; after C-01 |
 | [C-18](#c-18--decided-checker-rows-with-no-step) | Decided checker rows with no step: 44, 45, 47, 57, 31, 9; the document corrections of 1, 2, 10, 25, 32; 04's `tsc` gate and `42.toString()` | 01 rows; decisions named; 04 step 6 gate | **medium** | `optional<i32>` reaches the checker; `x?.f` on a `?T` has no diagnostic naming `?.`; `any` still parses | none |
-| [C-19](#c-19--the-declaration-name-builders-spell-the-103-surface) | The declaration-name builders spell the 1.0.3 surface | 11 step 5 | **low** — ready to land | one LSP snapshot line; 07 step 3's last `uncertain` row | landed on `feat` 2026-09-20 as `wip(tooling)` + merge of `fix/tooling-step5`; gate green at the tip |
+| [C-19](#c-19--the-declaration-name-builders-spell-the-103-surface) | The declaration-name builders spell the 1.0.3 surface | 11 step 5 | **low** — ready to land | one LSP snapshot line; 07 step 3's last `uncertain` row | landed |
 | [C-20](#c-20--the-comptime-module-reaches-the-node-as-beam-assembly) | The comptime module reaches the node as BEAM assembly | 14 step 3; decisions 24, 62 | **low** | nothing measurable (≈ 39 ms of 645); the principle | none; after C-01 |
 | [C-21](#c-21--every-error-names-its-file) | Every error names its file: the `.withLoc` sweep | 01 step 9; `blast-radius.md` | **low** — land last | 113 error snapshots without a file name, 22 without a box | none |
 | [C-22](#c-22--the-review-backlog) | The review backlog: waves A and B, the `uncertain` rows, two renames, the audit script | 07 steps 1–5; 06's handovers | **low** | the 1.0.1-beta reports' residual rows; `snap_audit.sh:501` | none |
@@ -65,8 +63,11 @@ at `feat` `d55a3b87`, with their changes staged and the pre-commit gate red (see
 | [C-24](#c-24--br5-as-its-own-spec) | BR5 — the beam backend compiles `@External.Erlang` templates at build time — as its own spec | 03 step 1; decision 62 | **low** | `base64:encode` 0.113 → 5.722 µs per call through `'__bp_erl_eval'` (50.6×) | `wip/br5-beam-templates` (836-line Erlang lexer+parser, does not build) |
 | [C-25](#c-25--the-unowned-residuals) | The unowned residuals: bare-name export collisions, the comptime server's purge, front 10's stash | 13 step 6; 10 step 1's housekeeping | **low** | two libraries exporting `pub fn get` collide silently | none |
 | [C-26](./18-comptime-runtimes/README.md) | Comptime runtimes: `persistent_erl.zig` → `persistent_beam.zig` (a `.beam` emitted directly, no `.erl`), `persistent_wat.zig` on wasm3, one runtime selector, `snapshots/codegen/{beam,wat}/<target>` (the suite recorded twice), and compiler-core built to wasm running 100 % in the browser | the maintainer's request of 2026-09-20; absorbs C-20 (14 step 3); decisions 24, 62 | **high** | the compiler on the web; `erl` off the comptime path; every comptime snapshot's directory | `18-comptime-runtimes/` (spec); nothing in code |
-| [C-27](./19-use-activation/README.md) | The `use` activation: hooks and components (`val c = use state(0)`, the static-prefix rule, `@Context<Owner, R>`), `use` inside `#[@future]` component bodies, destructuring from a `use`, the boundary directives' spelling, and the lowering contract per backend | the maintainer's request of 2026-09-20; `language-gaps.md` rows 52–53; jhonstart fronts 26–32 · 67 · 94 | **high** | every jhonstart hook and component; the language reference, which does not document `use` | `19-use-activation/` (spec); the construct exists in `parser.zig` / `infer.zig`, undocumented |
-| [C-28](./20-builtins-surface/README.md) | The builtins surface: `builtins.d.bp` made to agree with itself and with `ast.zig` (one `Context`, one async-generator vocabulary, `Ok`/`Error` in the prose), decision 95's chain spelled as `implement` clauses, and decision 96's one anchor per body | the maintainer's review of 2026-09-21; decisions 95, 96; questions 91, 93, 97 | **high** | every front that writes an effect, a hook or an indexable type reads this file; twelve findings, five of them the file contradicting itself | `20-builtins-surface/` (spec); `.tasks/effect-chain` opened against step 2 |
+| [C-27](./19-use-activation/README.md) | The `use` activation: hooks and components (`val c = use state(0)`, the static-prefix rule, `@Use<C, T>` / `@Component<T>` under decision 102), destructuring from a `use`, the boundary directives' spelling, and the lowering contract per backend — the grant itself is decision 104's and C-29's | the maintainer's request; `language-gaps.md`'s `use` rows; jhonstart fronts 26–32 · 67 · 94; decisions 87, 88, 96, 102, 104 | **high** | every jhonstart hook and component | `19-use-activation/`: documentation, the static prefix, the transparent lowering and the cells landed; step 3 (tuple destructuring) remains |
+| [C-28](./20-builtins-surface/README.md) | The builtins surface: `builtins.d.bp` agreeing with itself and with `ast.zig`, decision 95's chain as `comptime/effect_chain.zig`, decision 96's one anchor per body; amended by decisions 102–104 and 108, which C-29 lands | the maintainer's review of `builtins.d.bp`; decisions 95, 96, 98 | **high** | every front that writes an effect, a hook or an indexable type reads this file | `20-builtins-surface/`: steps 0–3 and 5 landed; step 4 (`External` / `Target`) remains |
+| [C-29](./21-effect-chain/README.md) | The effect chain: `@Context<Base>` as the owner marker only; `#[@use]` with `@Use<C, T>` / `@Component<T>` as the one grant of `use` (decisions 89 and 90 revoked); `@Generator<T>` · `@ResultGenerator<T, E>` · `@FutureGenerator<T, E>` over one `YieldStep` (`Iterator`, `Iterable`, `IteratorStep`, `Yield`, `C`, `R` leave); `getContext`; the jhonstart sweep (36 annotations, 24 wrappers) | decisions [102](../decisions-taken.md#102-contextbase-is-the-context-owner-marker-only-use-answers-usec-t-or-componentt), [103](../decisions-taken.md#103-a-generators-prefix-is-the-level-it-extends-generatort--resultgeneratort-e--futuregeneratort-e), [104](../decisions-taken.md#104-only-use-grants-use--decisions-89-and-90-revoked), [108](../decisions-taken.md#108-getcontex--getcontext); questions 91–93, 97, 99 | **critical** | every hook, component and generator; C-30 (an annotated `loop` answers its wrapper); jhonstart's 36 + 24 sites; ≈ 400 source lines, ≈ 250 snapshots | `21-effect-chain/` (spec); after C-28, one `EffectKind` value per commit |
+| [C-30](./22-loops/README.md) | Loops: `loop { }` · `while (…) { }` · `for (…) { x -> }` · `for await`; `#[@generator] loop { … }` as a lazy generator expression; `yield` / `break v` only in a generator scope; no loop answers `[v]`; the rakun (231 `loop (`, 2 `break v`) and jhonstart (12) rewrite | decision [105](../decisions-taken.md#105-three-loop-keywords-and-generator-loop-is-a-generator-scope); `docs.md:1400`, `:1014`; supersedes C-06's decision-52/55 rows | **high** | every loop in every library; C-06's `run/loop_*` cells; `while` as a lexer keyword | `22-loops/` (spec); after C-29 |
+| [C-31](./23-std-purity/README.md) | Std purity: a pure root · `io/` · `testing/`; `collections`, `hash`, `encoding` fused; a root module refused from importing `io/`; the embedded std following `pub mod io;`; the import tree `import {a: {b: {c}}, x.y.z, e.t.r*}` with the leaf bound and `as` honoured | decisions [106](../decisions-taken.md#106-std-in-three-categories-a-pure-root-io-and-testing), [107](../decisions-taken.md#107-import-a-dotted-path-and-a-braced-group-are-one-tree-and-only-the-leaf-enters-scope); `language-gaps.md`'s alias row; decision 71 amended in path | **high** | every `from "std"` line; the LSP's project graph; `build.zig`'s `stdPkgFilesFromRoot` | `23-std-purity/` (spec); after C-29 and after `01-std`'s fronts 01/02/03 merge |
 
 **What the 1.0.9 gaps map to.** `xs[0]` on the BEAM → C-02 · declared defaults never applied → C-04 ·
 `if (a && b)` in condition position → C-08 · a std module cannot call another std module (a bare
@@ -238,34 +239,27 @@ uses it), a `jsonStringify` that omits the defaults so no parser snapshot moves,
 - [ ] the migration count in the commit message; `AGENTS.md` of `src/parser/`, `src/comptime/`,
       `src/format/`, `src/codegen/` in the same commit; gate green
 
-## C-06 — Decisions 52, 53 and 55 at run time
+## C-06 — Decision 53 at run time
 
-**Origin:** three decisions the cells pinned and the backends did not follow. **52** — a condition loop
-that never breaks answers `null` on every backend (commonJS right; erlang `3`, beam `ok`, wasm landed).
-**53** — `A...B` is the inclusive range pattern, `..` the exclusive slice; the compiler did not move,
-but the `1...9` arm never matches on erlang (`{'', 1, 9}`, one line from fixed in 02's `patternNode`),
-never on wasm (falls into the variant path, answers `0`), always on beam. **55** — `break <value>` in
-a collection loop contributes its value **and ends the loop**; all four backends shared one
-accumulator that never stopped, so the four-way agreement was the evidence the decision overrides.
-Rows: 02 step 3's residual and its four "no step" lines, 03 step 3, 04 step 3, 05 steps 2 and 4.
-**Priority:** high — eleven `expected-failures.txt` lines (`run/loop_condition_no_break.bp` ×2,
-`run/case_range_value.bp` ×3, the three `run/loop_*_break_*` cells and `test/loop_collection.bp::§10`
-×2), and the loop semantics every library's code assumes.
-**Partial work:** `.tasks/wasm` (`fix/wasm-patterns`), uncommitted: the `A...B` arm in `wat.zig` with
-a `rangeBound` helper (a string bound "has no wasm ordering yet and answers `0`" — note it), the
-break-ends-the-loop change at both the statement and expression arms, the `KNOWN` note in
-`control_flow.zig`, six RUN LOGs moved (`[20]` where `[20, 40, 60]` was), three wasm lines deleted.
+**Origin:** **53** — `A...B` is the inclusive range pattern, `..` the exclusive slice; the `1...9` arm
+never matches on erlang (`{'', 1, 9}`, one line from fixed in 02's `patternNode`) and always on beam;
+wasm's arm (`rangeBound` in `wat.zig`; a string bound has no wasm ordering yet and answers `0`) is
+landed and accepted by running. Decisions **52** (a condition loop that never breaks answers `null`)
+and **55** (`break <value>` in a collection loop contributes its value and ends the loop) are
+**superseded by decision 105**: `while` and `for` are statements (`void`) and `break v` exists only in
+a generator scope, so neither has a landing — C-30 re-specifies `run/loop_condition_no_break.bp`, the
+three `run/loop_*_break_*` cells and `test/loop_collection.bp::§10`, and their `expected-failures.txt`
+lines go with the re-specification.
+**Priority:** high — the `run/case_range_value.bp` lines, and a pattern that answers differently on
+each backend.
 **Depends on:** nothing; 03's tuple/`..`/type-pattern reading (C-07) shares `beam_asm.zig`'s pattern
 code — sequence them.
 **Acceptance:**
-- [ ] `run/loop_condition_no_break.bp` prints `null` on erlang and beam; the two lines gone
 - [ ] `run/case_range_value.bp`'s five probes answer per decision 53 on erlang, beam and wasm; the
       three lines gone
-- [ ] `run/loop_{break_value_then_yield,yield_then_bare_break,yield_then_break_value}.bp` and
-      `test/loop_collection.bp::§10` pass on commonJS, erlang, beam and wasm — `4` / `20,40,99`, the
-      loop ended; the six lines gone
 - [ ] every moved RUN LOG verified by running the program; the header recounted from the file; the
-      four `KNOWN` notes in `src/codegen/tests/**` deleted with the fixtures they explain
+      `KNOWN` notes in `src/codegen/tests/**` that explain the decision-55 cells deleted by C-30 with
+      the cells they explain
 
 ## C-07 — Decision 8's run-time tails on erlang and beam
 

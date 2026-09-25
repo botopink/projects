@@ -1,5 +1,3 @@
-> Carried from `specs/1.0.5-beta/01-checker/README.md`, status at carry (2026-09-20): steps 1–5, 8 R3 and 11's `Display` landed; steps 6, 7, 8 (R1/R2/R4–R9), 9, 10, the rest of 11 and decision 63's rewrite are C-02/C-04/C-08/C-09/C-14/C-15/C-18/C-21
-
 # Front 01 — checker
 
 **Priority:** critical — it is the only front of this milestone that four other fronts read from.
@@ -284,7 +282,7 @@ in the old format.
 
 ### Step 10 — the parser gaps that are inference-side
 
-Five gaps, carried from 1.0.4's `parser-gaps.md`; all five reproduce at `c2dd780`. Two of them carry
+Five gaps; all five reproduce at `c2dd780`. Two of them carry
 a recommendation to delete the tests rather than implement the grammar — the decision is the
 maintainer's and is listed in [Decisions the maintainer owes](#decisions-the-maintainer-owes).
 
@@ -327,7 +325,7 @@ test against meanwhile.
 - [ ] `behavior Display` is declared in `libs/std` and `Dict<K, V>` implements it (§7's `Dict("a": 1, "b": 2)`)
 - [ ] `zig build test`, `test-libs` and `test-language` green
 
-### Step 12 — one flat table under four symptoms (added 2026-09-21)
+### Step 12 — one flat table under four symptoms
 
 Four defects that have been filed separately all resolve a **bare name** through one flat,
 program-wide table, and the table has no owner and no dissent check. Each was re-measured against
@@ -364,7 +362,7 @@ answer is yes, all three rows are one fix.
 `type_owner_path`, `imported_fns`) is the same shape one level up and is `02-erlang`'s, in worktree
 `.tasks/cross-module-exports`. The two should read each other's fix before either lands.
 
-### Step 13 — a local binding escapes its function (added 2026-09-21)
+### Step 13 — a local binding escapes its function
 
 Found by jhonstart front 29, verified against `ead0b645` in two shapes.
 
@@ -389,7 +387,7 @@ fn first()  -> i32    { val p = Thing(n: 3); return p.n; }
 fn second() -> string { return p("x"); }      // error: expected string, got Thing
 ```
 
-Inside a `#[@context]` body front 29 got the same error **with no line and no column**. In
+Inside a `#[@use]` body front 29 got the same error **with no line and no column**. In
 `repository/jhonstart` the exported tag constructors include `p`, `a`, `li`, `text`, `form`, `link`,
 `title` and `body`, so every file in that package is one declaration order away from it.
 
@@ -400,7 +398,7 @@ Repro: `repository/jhonstart/repro/local-binding-leaks-to-later-decls/` — twel
       binding belongs to
 - [ ] the shadowing shape resolves `p` to the exported declaration, and a local named `p` shadows it
       **only inside the function that declares it**
-- [ ] the `#[@context]` case carries a line and a column — a located message is not optional because
+- [ ] the `#[@use]` case carries a line and a column — a located message is not optional because
       the body is a comptime one
 - [ ] cells for both, each proved able to fail by planting the pre-fix behaviour, and the bare one
       asserted on **both** rows, since today it fails differently on each
@@ -481,7 +479,7 @@ they were found probing `c2dd780` for this front and are not in that document ye
 
 | # | Decision | Measured context |
 |---|---|---|
-| D1 (= #1) | **`@AsyncGenerator` or `@AsyncIterator`.** Decision 8 §9's table writes `#[@asyncGenerator]` → `@AsyncGenerator<T>`; the compiler (`EffectKind.returnWrapper`), `libs/std/src/builtins.d.bp`'s `behavior AsyncIterator<T, E, C>` and the docs write `AsyncIterator` | `grep -rn AsyncIterator --include=*.zig --include=*.bp --include=*.md` → **69** hits; `AsyncGenerator` → **1** (decision 8 itself). Renaming crosses `libs/std`, the user docs and the compiler; `3e7cd62` enforced the spelling that exists and recorded the discrepancy in `comptime/AGENTS.md` |
+| D1 (= #1) | **Settled by decision 103: `#[@futureGenerator]` → `@FutureGenerator<T, E>`.** Neither `AsyncGenerator` (decision 8 §9's table) nor `AsyncIterator` (the compiler's `EffectKind.returnWrapper`, `libs/std/src/builtins.d.bp`'s `behavior AsyncIterator<T, E, C>`, the docs) survives; the rename lands with [`21-effect-chain`](../21-effect-chain/README.md) | `grep -rn AsyncIterator --include=*.zig --include=*.bp --include=*.md` → **69** hits; `AsyncGenerator` → **1** (decision 8 itself). Renaming crosses `libs/std`, the user docs and the compiler; `3e7cd62` enforced the spelling that exists and recorded the discrepancy in `comptime/AGENTS.md` |
 | D2 (= #11) | **`<Pattern> as <name>`: implement or delete the three tests** (`comptime/tests/variants.zig:291`, `:309`, `:328`) | the parser half is local; the consumer half is a new `ast.Pattern` variant in four backend lowerings this front does not own. No library uses the form |
 | D3 (= #12) | **Unnamed variant payloads: drop or implement.** The pattern half landed with `dff3446`; the declaration half remains | it changes the reflected `TypeInfo`/`EnumVariant` surface as well as four backends |
 | D4 (**new**) | **`is` with a payload pattern.** The parser refuses `x is Some(v)` with a located `is-variant-binding`; §4.2 lists the form | decide whether `is` carries a pattern or the refusal stands and `case` is the only reader |
@@ -541,7 +539,7 @@ they were found probing `c2dd780` for this front and are not in that document ye
 
 ---
 
-## Handed over by `15-language-surface` (2026-09-18, `109f6c9`)
+## Handed over by `15-language-surface` (`109f6c9`)
 
 Front 15 made two forms parse that nothing types. Neither is a new AST variant, by the argument `is`
 already used, so the work is inference-side only.
@@ -568,7 +566,7 @@ filed here.
 
 ---
 
-## Handed over by `11-tooling` (2026-09-18)
+## Handed over by `11-tooling`
 
 Three rows, each measured through `botopink check` rather than through the language server, so none of
 them is a rendering problem:

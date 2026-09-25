@@ -141,7 +141,7 @@ the ratio.
 ## 8. Sibling worktrees and sequencing
 
 At measurement `.tasks/wasm` held 6 modified `codegen/wasm/loop_*.snap.md` and `.tasks/tooling` one
-LSP snapshot; both were merged into `feat` on 2026-09-20 with `.tasks/formatter`. `.tasks/beammem`,
+LSP snapshot; both are in `feat`, with `.tasks/formatter`. `.tasks/beammem`,
 `.tasks/ecosystem`, `.tasks/identity` remain with staged, uncommitted work whose pre-commit hooks
 fail (a compile error; 8 and 7 snapshot mismatches respectively — `codegen/erlang/external_*` for
 identity, string/std-package fixtures for ecosystem). Any of those that lands *after* the layout

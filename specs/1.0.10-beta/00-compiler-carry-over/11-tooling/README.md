@@ -1,5 +1,3 @@
-> Carried from `specs/1.0.5-beta/11-tooling/README.md`, status at carry (2026-09-20): steps 1–4 landed; step 5 is uncommitted in `.tasks/tooling` (C-19)
-
 # Front 11 — tooling
 
 **Priority:** medium — one item is a red gate in the VS Code extension right now, one is a

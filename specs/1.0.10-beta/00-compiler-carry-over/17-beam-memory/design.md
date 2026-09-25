@@ -1,5 +1,3 @@
-> Carried from `specs/1.0.5-beta/17-beam-memory/design.md`, status at carry (2026-09-20): step 3b landed (by 09); steps 0–3 are C-05 (uncommitted in `.tasks/beammem`), steps 4–8 are C-10 (decision 50)
-
 # The design — module-level `var` and `@BeamMemory`
 
 The argument behind [front 17](./README.md), with the evidence that produced it. Every number here was

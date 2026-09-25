@@ -1,5 +1,3 @@
-> Carried from `specs/1.0.5-beta/03-beam/README.md`, status at carry (2026-09-20): steps 2 F0/F1/F5, 3 D5–D7, 4, 5 landed; BR5 struck from 1.0.5 (decision 62, C-24); step 2 F2–F4, step 3 D1–D4, decisions 52/55 and the `.length` defect are C-01/C-02/C-06/C-07
-
 # Front 03 — beam
 
 **Priority:** high — beam is the backend furthest behind: it never received decision 1a's print text,
@@ -83,7 +81,7 @@ Measured over `snapshots/codegen/beam/` (314 files):
 | snapshots whose emitted `.S` carries the `'__bp_print'` prelude | **163** |
 | snapshots carrying `'__bp_erl_eval'` | **11** files, **22** occurrences |
 
-## Handed over by `01-checker` (2026-09-18) — three defects its step 4 exposes
+## Handed over by `01-checker` — three defects its step 4 exposes
 
 Front 01's `case`-arm typing is written and measured; six cells **compile** and then fail at run time
 on the backends, which is why that step waits for these three. Each is stated with the AST shape, so it
@@ -187,7 +185,7 @@ rather than erlang source:
 | D3 | §2.3 — `==` with an `unknown` operand compares numbers by value |
 | D4 | `case` arms (§5): type tests, `..`, `when (…)` guards, the dot shorthand, labelled payloads |
 | D5 | tuple labels → positional (§6 T4). N24 (`174e0e4`) landed the read path and the fn-typed-element call on beam; re-verify and close |
-| D6 | `loop (condition)` with a value `break` — refused today with the same unlocated `ConditionLoopValueUnsupported` erlang raises |
+| D6 | a condition loop (`while (cond)`, decision 105; lands with [`22-loops`](../22-loops/README.md)) with a value `break` — refused today with the same unlocated `ConditionLoopValueUnsupported` erlang raises |
 | D7 | `break <value>` — verify against the commonJS and wasm defect (both yield a one-element array); beam's behaviour is unmeasured because the language suite does not run it |
 
 **Acceptance:** every `tests/language` cell that names `§4`, `§5`, `§6` or `§10` runs by hand on beam

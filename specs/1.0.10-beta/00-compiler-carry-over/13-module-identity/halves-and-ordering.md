@@ -1,5 +1,3 @@
-> Carried from `specs/1.0.5-beta/13-module-identity/halves-and-ordering.md`, status at carry (2026-09-20): half 1 landed (`154f3bc9`); halves 2–3 (steps 8–19) are C-01, decision 64 is C-03 (uncommitted in `.tasks/identity`), step 6's residuals are C-25. The README still reads T1 and an unticked step 0 — decisions 6, 21, 22, 23 and 62 override it
-
 # The three halves, what each gives the next, and the circular dependency the milestone still owes
 
 This front was two in 1.0.4-beta: **16 module-naming** (the atom, then policy 3) and **19 runtime
@@ -128,7 +126,7 @@ that needs no stored identity, and this front's half 3 takes the named-type half
 | D8-3 `case` arms | literal, range, tuple, `_`, guards, `..` | an arm that is a named type or a section (§5.3b) |
 | D8-4 `row.label` → index | all of it | — |
 | D8-5 the formatter | the primitive, array and tuple text; `f64` always `5.0` | the `record` and `variant` rows of §7's table, and `Display` |
-| D8-6 `loop (condition)` | all of it (already delivered by 1.0.4-beta's 06 G0) | — |
+| D8-6 `loop (condition)` | all of it (landed) | — |
 
 ### 5.3 What the order costs, stated plainly
 

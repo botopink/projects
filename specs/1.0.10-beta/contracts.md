@@ -1,6 +1,7 @@
-> Carried from `specs/1.0.9-beta/contracts.md` on 2026-09-20; front numbers are unchanged, the fronts now live under `01-std/`, `03-rakun/`, `04-jhonstart/`, `05-emilia/`, `06-onze/` (map in [`unification.md`](./unification.md)); contract 7 is new — it is the test contract 1.0.9's `tracks/README.md` stated and never owned; the 1.0.8-beta dispatcher rules are appended to 4a.
-
 # Cross-front contracts — 1.0.10-beta
+
+The fronts live under `01-std/`, `03-rakun/`, `04-jhonstart/`, `05-emilia/`, `06-onze/` (map in
+[`unification.md`](./unification.md)).
 
 Ninety-six fronts stay coherent only where they agree on a format. This file is the list of those
 agreements. Each one is owned by a single front, consumed by several, and checkable by a test that
@@ -66,7 +67,7 @@ Markers — all `data-onze-*`, and the full registry is here so no front invents
 | `data-onze-a` | 24 | a form bound to a server action (contract 3) |
 | `data-onze-sf="1"` | 67 | a client-enhanced search form (GET, no action) |
 
-The old `data-jh-*` prefix is retired; any example still carrying it is stale.
+`data-jh-*` is not a marker prefix; an example carrying it is stale.
 
 Router state (front 26) maps one-to-one onto `p`/`m`/`q`/`r`; `segments` is derived from `r` by
 splitting on `/` with the bracket spelling kept, never transported. The one router value with no
@@ -77,10 +78,11 @@ Consumed by fronts 26, 27, 28, 29, 30, 31, 60, 61, 68.
 ## 3 · Action id and envelope — owned by front 24
 
 ```
-id = "a_" + crypto.hmacSha256(buildSecret, module + "." + name + ":" + buildId).slice(0, 24)
+id = "a_" + hash.hmacSha256(buildSecret, module + "." + name + ":" + buildId).slice(0, 24)
 ```
 
-Computed only on the server, echoed by the client, never derived in the browser.
+Computed only on the server, echoed by the client, never derived in the browser. `hash` is std's
+hashing module under decision 106 (`crypto` until `00 · 23-std-purity` lands).
 
 Form binding: `<form method="post" action="<pathname>" data-onze-a="<id>">` plus a hidden
 `__onze_action` field. Scripted invocation: the same POST carrying `X-Onze-Action`, or a JSON-RPC
@@ -116,12 +118,10 @@ Lowercase hex, seed 5381, multiplier 33, masked to 32 bits, folded over the enco
 `tokens` in author order. Nothing else enters the hash — no counter, no salt, no request id. With a
 static class present, the attribute value is `<static> + " " + <emilia class>`.
 
-Front 56 replaced the body being hashed (`tokensToCss` → `encodeSheet(tokensToSheet(tokens, th))`),
-so the **expected literal in the shared fixture is regenerated exactly once** when 56 lands, and
-fronts 23 and 68 take the new value. The djb2 parameters and clauses 2–5 are unchanged.
+The body hashed is `encodeSheet(tokensToSheet(tokens, th))` — front 56's rule model; the expected
+literal in the shared fixture is one value, and fronts 23 and 68 assert that value.
 
-This is emilia's existing scheme pinned as a contract rather than a new invention. Five clauses,
-each of them a test:
+Five clauses, each of them a test:
 
 1. A pure function of the token list **and the theme** — a themed value changes the rendered body,
    so the same tokens under a different `Theme` are a different class.
@@ -129,10 +129,10 @@ each of them a test:
 3. ASCII-only rule bodies — the JS cell folds UTF-16 units and the erlang cell folds codepoints, and
    they diverge above U+10000. Front 48 gates payload leaves on this.
 4. Merge order is static-first, one ASCII space, no sorting and no de-duplication, with one
-   implementation (`mergeClass` in `emilia/modules/emilia/src/attributes.bp` — the path after `02-packaging`; `emilia/src/attributes.bp` until then) and nowhere else.
+   implementation (`mergeClass` in `emilia/modules/emilia/src/attributes.bp`) and nowhere else.
 5. Attribute array order is fixed, because `renderToString` writes attrs in array order.
 
-**The shared fixture:** `emilia/modules/emilia/test/integration_test.bp` (today `emilia/test/integration_test.bp`) asserts the class for a fixed token list as
+**The shared fixture:** `emilia/modules/emilia/test/integration_test.bp` asserts the class for a fixed token list as
 a **literal hex string**, on both commonJS and erlang. Front 23's SSR test asserts the same literal
 for the same list, and front 68's bundle test asserts the client produces it too. If the three ever
 differ, hydration is broken and a test is red before a user sees it.
@@ -171,16 +171,14 @@ logic. `hover` is `Variant(atRule: "@media (hover: hover)", selector: "&:hover")
 `Rule.selector` is a nesting template with **exactly one `&`**; two or more is refused, no opt-out.
 
 
-**Carried from 1.0.8-beta** (`specs/1.0.8-beta/overview.md` § Regras, `fronts.md` § Rules) — the two
-dispatcher rules the 1.0.9 merge dropped, still binding on every token front:
+Two dispatcher rules binding on every token front:
 
 - **Exhaustive dispatch, no `_` catch-all.** Every `<section>TokenToCss` `case` names every leaf of
   its section, and the top-level `tokenToSheet` `case` names every top-level variant. A `_` arm is a
   refusal that compiles, and the checker's exhaustiveness walk (1.0.5-beta decision 58) is what
   makes the rule checkable rather than reviewed.
 - **Naming.** camelCase for functions (`gridTokenToCss`), PascalCase for sections and variants
-  (`Token.Grid.Cols`). 1.0.8's `__50`/`__500` spelling for numeric leaves is **superseded**: numeric
-  leaves are bare digits (`.Pad.All.4`, `.Color.Red.500`), which is what
+  (`Token.Grid.Cols`). Numeric leaves are bare digits (`.Pad.All.4`, `.Color.Red.500`), which is what
   [`language-gaps.md`](./language-gaps.md)'s negative-leaf row measures against.
 
 ## 5 · Request context — owned by front 62
@@ -393,8 +391,7 @@ class; contract 4 is untouched. The client bundle never calls `flush()`, which f
 
 ## 7 · Test and snapshot contract — owned by 01-std, consumed by every `-test` submodule
 
-Stated in 1.0.9's `tracks/README.md` and owned by nobody (its front 96 was never written); now
-specified by [`01-std/src-builtin.md`](./01-std/src-builtin.md), [`01-std/snapshots.md`](./01-std/snapshots.md)
+Specified by [`01-std/src-builtin.md`](./01-std/src-builtin.md), [`01-std/snapshots.md`](./01-std/snapshots.md)
 and [`01-std/asserts-api.md`](./01-std/asserts-api.md), and the shape every library's
 `modules/<lib>-test/` exposes ([`02-packaging/README.md`](./02-packaging/README.md)).
 

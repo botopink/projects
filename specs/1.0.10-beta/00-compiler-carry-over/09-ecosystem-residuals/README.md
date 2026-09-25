@@ -1,5 +1,3 @@
-> Carried from `specs/1.0.5-beta/09-ecosystem-residuals/README.md`, status at carry (2026-09-20): steps 1, 2 (superseded by decision 17) and `std/beam` landed; step 3 is C-14, step 4 is C-17, decision 63's `libs/std` rows are C-02 (uncommitted in `.tasks/ecosystem`), decision 66's gate caller is C-11
-
 # Front 09 — ecosystem residuals
 
 **Priority:** medium — the migration is done and every library compiles, runs and passes its cell.
@@ -20,10 +18,10 @@ Measured at the five libraries' checked-out commits (emilia `a02b6e8`, erika `97
 
 ---
 
-## What 1.0.4-beta delivered, verified here
+## Delivered, verified here
 
-The 1.0.4-beta document described a front that had not run. It has. Re-measured, four of its five
-acceptance conditions are met across all five libraries, and the rows that named them are closed.
+Re-measured, four of the five acceptance conditions are met across all five libraries, and the
+rows that named them are closed.
 
 | Claim | Measurement |
 |---|---|
@@ -34,7 +32,7 @@ acceptance conditions are met across all five libraries, and the rows that named
 
 ### A row that no longer reproduces
 
-1.0.4-beta's `fronts.md` carried: *"commonJS: a sibling-module import inside a dependency is emitted as
+The row read *"commonJS: a sibling-module import inside a dependency is emitted as
 `require("../module")` — `emilia-card`, `jhonstart-counter`, `jhonstart-todo` build but fail at run
 time `Cannot find module '../module'`"*.
 
@@ -139,7 +137,7 @@ positions — formatting it reorders a public enum's variants.
 - [ ] The three information-losing classes are registered in
       [`01-checker`](../01-checker/README.md)'s README with the file and line that shows each
 
-### Step 1 — landed 2026-09-18
+### Step 1 — landed
 
 Four commits, one per library, each through its own pre-commit gate; onze was already clean.
 

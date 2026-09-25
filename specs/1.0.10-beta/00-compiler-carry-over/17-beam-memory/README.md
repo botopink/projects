@@ -1,5 +1,3 @@
-> Carried from `specs/1.0.5-beta/17-beam-memory/README.md`, status at carry (2026-09-20): step 3b landed (by 09); steps 0–3 are C-05 (uncommitted in `.tasks/beammem`), steps 4–8 are C-10 (decision 50)
-
 # Front 17 — beam-memory
 
 **Decided 2026-09-18.** Every question this front opened is answered —

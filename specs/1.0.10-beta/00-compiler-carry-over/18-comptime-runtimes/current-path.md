@@ -1,6 +1,6 @@
 # The comptime call path at HEAD
 
-Traced 2026-09-20 on `feat` (before the same day's `.tasks/*` merges), file by file. Lines are those
+Traced 2026-09-20 on `feat`, before the `.tasks/{formatter,tooling,wasm}` merges, file by file. Lines are those
 of `repository/botopink-lang/modules/compiler-core/src/` unless the path says otherwise. The path is
 the same for a decorator and a template; the two evaluators differ in what they put into the module
 and the argument, not in how the runtime is driven.

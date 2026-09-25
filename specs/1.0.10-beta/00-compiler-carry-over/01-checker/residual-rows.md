@@ -1,5 +1,3 @@
-> Carried from `specs/1.0.5-beta/01-checker/residual-rows.md`, status at carry (2026-09-20): steps 1–5, 8 R3 and 11's `Display` landed; steps 6, 7, 8 (R1/R2/R4–R9), 9, 10, the rest of 11 and decision 63's rewrite are C-02/C-04/C-08/C-09/C-14/C-15/C-18/C-21
-
 # Residual rows — what 1.0.4-beta's front 06 did not close
 
 Everything this front owes that is not decision 8's inference. Each row is: **where** it is decided,
@@ -128,9 +126,8 @@ token, and their lines leave `expected-failures.txt`.
 
 ## The parser gaps
 
-Carried from 1.0.4's `06-checker/parser-gaps.md`; all five re-probed at `c2dd780`. The pattern half
-of the nested-payload gap **landed** with `dff3446` (`.Some(#(a, b))` parses), so it is struck from
-the list.
+Five gaps, all probed at `c2dd780`. The pattern half of the nested-payload gap parses since
+`dff3446` (`.Some(#(a, b))`) and is not listed.
 
 | Gap | Probe at `c2dd780` | Site | Change | Blast radius |
 |---|---|---|---|---|
@@ -151,7 +148,7 @@ record the fact if it is ever widened).
 
 ## Does not reproduce — closed, with the evidence
 
-Do not carry these into the milestone. Each was re-probed at `c2dd780` on 2026-09-18.
+Closed. Each was probed at `c2dd780`.
 
 | 1.0.4 row | Probe | Result | Closed by |
 |---|---|---|---|

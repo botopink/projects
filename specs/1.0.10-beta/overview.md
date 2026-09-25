@@ -1,16 +1,12 @@
 # Specs — 1.0.10-beta: the milestone cut once
 
-1.0.10-beta is two things that were four. [1.0.5-beta](../1.0.5-beta/closure.md) was the compiler
-milestone; it closed on 2026-09-20 with seventeen fronts partly landed and its open rows carried here
-as one front. [1.0.9-beta](./absorbed/1.0.9-beta/overview.md) was the ecosystem milestone that had already
-merged the three drafts ([1.0.6](./absorbed/1.0.6-beta/overview.md) rakun, [1.0.7](./absorbed/1.0.7-beta/overview.md)
-onze/jhonstart, [1.0.8](./absorbed/1.0.8-beta/overview.md) emilia); it never started, and it was missing the
-one thing every library test stands on — the assertion library, the snapshot engine and the `@src()`
-builtin that names a snapshot. This milestone is those two programs in one directory, ordered by what
-blocks what, with nothing dropped: every 1.0.9 front keeps its number and its files, and every open
-1.0.5 row has an id. The lossless-merge proof is [`unification.md`](./unification.md); the raw originals of the merged
-drafts are kept verbatim under [`absorbed/`](./absorbed/README.md), and the four directories
-themselves were deleted (decision 68).
+1.0.10-beta is the open half of the compiler milestone ([1.0.5-beta](../1.0.5-beta/closure.md),
+carried as one front) and the whole of the ecosystem milestone
+(1.0.9-beta, which merged 1.0.6 rakun, 1.0.7 onze/jhonstart and 1.0.8 emilia) plus what every
+library test stands on — the
+assertion library, the snapshot engine and the `@src()` builtin that names a snapshot — in one
+directory, ordered by what blocks what: every 1.0.9 front keeps its number and its files, and every
+open 1.0.5 row has an id (decision 68; the mapping is [`unification.md`](./unification.md)).
 
 **Where the milestone stands is [`status.md`](./status.md)** — the one file allowed to carry status,
 kept current in the same commit as the work it reflects. **What the maintainer has decided and still
@@ -25,7 +21,7 @@ their 1.0.9 numbers (identifiers, never reassigned — `03-rakun/23-rakun-ssr-pi
 
 | Front | Priority | What |
 |---|---|---|
-| [`00-compiler-carry-over/`](./00-compiler-carry-over/README.md) | critical (two items pulled ahead), the rest beside | The open half of 1.0.5-beta as 25 prioritised items C-01…C-25: the type's identity in the value and one BEAM module per type (C-01), the index as a method call (C-02), the host-bound std wrapper (C-03), trailing defaults, module-level `var`, the run-time tails of decision 8, the parser gaps, the formatter's width, the optional `;` … Each item carries its 1.0.5 deep dives. The `.tasks/*` worktrees are its partial work. Two fronts added on 2026-09-20 sit inside it: [`18-comptime-runtimes`](./00-compiler-carry-over/18-comptime-runtimes/README.md) (C-26 — `.beam` emitted directly, a WAT comptime runtime on wasm3, snapshots per runtime, the compiler on wasm in the browser) and [`19-use-activation`](./00-compiler-carry-over/19-use-activation/README.md) (C-27 — the `use` construct hooks and components are written with) |
+| [`00-compiler-carry-over/`](./00-compiler-carry-over/README.md) | critical (two items pulled ahead), the rest beside | The open half of 1.0.5-beta as 25 prioritised items C-01…C-25: the type's identity in the value and one BEAM module per type (C-01), the index as a method call (C-02), the host-bound std wrapper (C-03), trailing defaults, module-level `var`, the run-time tails of decision 8, the parser gaps, the formatter's width, the optional `;` … Each item carries its 1.0.5 deep dives. Six fronts sit inside it beyond the carry-over: [`18-comptime-runtimes`](./00-compiler-carry-over/18-comptime-runtimes/README.md) (C-26 — `.beam` emitted directly, a WAT comptime runtime on wasm3, snapshots per runtime, the compiler on wasm in the browser), [`19-use-activation`](./00-compiler-carry-over/19-use-activation/README.md) (C-27 — the `use` construct hooks and components are written with), [`20-builtins-surface`](./00-compiler-carry-over/20-builtins-surface/README.md) (C-28 — `builtins.d.bp` agreeing with itself and the effect chain of decision 95), and the three surface fronts of decisions 102–108: [`21-effect-chain`](./00-compiler-carry-over/21-effect-chain/README.md) (C-29 — `@Context<Base>` is only the owner marker; `#[@use]` with `@Use<C, T>` / `@Component<T>` is the one grant of `use`; the generators are `@Generator<T>` · `@ResultGenerator<T, E>` · `@FutureGenerator<T, E>` over one `YieldStep`; `getContext`), [`22-loops`](./00-compiler-carry-over/22-loops/README.md) (C-30 — `loop` / `while (…)` / `for (…) { x -> }` / `for await`, `#[@generator] loop { … }` as a generator expression, `yield` / `break v` only in a generator scope) and [`23-std-purity`](./00-compiler-carry-over/23-std-purity/README.md) (C-31 — std as a pure root · `io/` · `testing/`, and the import tree `import {a: {b: {c}}, x.y.z, e.t.r*}`). They run 21 → 22 → 23, one at a time; 23 after `01-std`'s fronts 01/02/03 merge |
 | [`01-std/`](./01-std/README.md) | **critical — blocks everything** | `@src()` in the compiler → `import {asserts} from "std"` (`isTrue`, `isFalse`, `equals`, `notEquals`, `isNil`, `isNotNil`, `isOk`, `isError`, `contains`, `throws`, and the rest of the inventory) → the `std/snapshots` engine (`__snapshots__/<suite>/<slug>.snap`, `.new` on mismatch, no update flag) → the old `onze` mocking library retired into `std/asserts` → the orchestrator takes the name `onze` → the three std enablement fronts of 1.0.9 (01–03) |
 | [`02-packaging/`](./02-packaging/README.md) | high — lands alongside each library's first front | `repository/<lib>/modules/<lib>/`, `modules/<lib>-test/`, `modules/<lib>-<domain>/`, `examples/<project>/`; the manifest shapes the compiler actually parses; how `test-libs` discovers them; the dependency direction; front 95 carried beside it. Each library refines the cut in its own `modules.md` |
 | [`03-rakun/`](./03-rakun/README.md) | per front — see its README | 51 fronts (04–25 · 60–66 · 72–93): Spring Boot 4 parity plus the server half of Next.js. `modules.md` reconciles the 13 submodules already scaffolded under `repository/rakun/modules/` with the reference cut; `test-snap.md` / `test-snap-examples.md` are the preventive snapshot maps |
@@ -58,8 +54,9 @@ waves 2–5 the 1.0.9 waves, unchanged (fronts.md § Waves):    ▼
           62 ► 60 · 64      29 ► 68      24 + 68 ► 67      26 + 48 ► 50 · 51 · 52 · 70 · 71 · 81
           … ► 53-onze-example-app (the proof)
 
-beside    00-compiler-carry-over, C-02 … C-25 on its own order (C-01 is the spine); the libraries
-          consume what lands and file gaps for what does not.
+beside    00-compiler-carry-over, C-02 … C-31 on its own order (C-01 is the spine; the surface
+          fronts 21-effect-chain → 22-loops → 23-std-purity one at a time, 23 after 01-std's
+          fronts 01/02/03 merge); the libraries consume what lands and file gaps for what does not.
 ```
 
 **Why `01-std` is first, in terms of what the others cannot verify without it.** Every `<lib>-test`

@@ -1,5 +1,3 @@
-> Carried from `specs/1.0.5-beta/13-module-identity/representation.md`, status at carry (2026-09-20): half 1 landed (`154f3bc9`); halves 2–3 (steps 8–19) are C-01, decision 64 is C-03 (uncommitted in `.tasks/identity`), step 6's residuals are C-25. The README still reads T1 and an unticked step 0 — decisions 6, 21, 22, 23 and 62 override it
-
 # How a value is represented today, per backend
 
 Measured 2026-09-18 at `botopink-lang` `26d4fdc` by compiling one scratch program with the installed

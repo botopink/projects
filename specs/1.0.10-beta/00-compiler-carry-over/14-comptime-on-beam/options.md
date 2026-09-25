@@ -1,5 +1,3 @@
-> Carried from `specs/1.0.5-beta/14-comptime-on-beam/options.md`, status at carry (2026-09-20): steps 0–2 landed (`bef762be`); step 3 is C-20, after C-01 (decisions 24 and 62)
-
 # Options — what "comptime on BEAM" can mean
 
 Five candidates, measured against the same question: **what does it remove from a build, and what

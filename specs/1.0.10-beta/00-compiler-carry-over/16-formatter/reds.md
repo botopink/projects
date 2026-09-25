@@ -1,5 +1,3 @@
-> Carried from `specs/1.0.5-beta/16-formatter/reds.md`, status at carry (2026-09-20): steps 1–7 and decision 61 landed; decision 65 is C-12 (uncommitted in `.tasks/formatter`), the `;` printer half is C-13, `arrow_when_empty` is C-11
-
 # The ten red files, classified
 
 Every row was produced by formatting a **copy** of the library in a scratch directory and diffing it

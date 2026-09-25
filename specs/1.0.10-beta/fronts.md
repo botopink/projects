@@ -1,14 +1,6 @@
 # Fronts — 1.0.10-beta: who may touch what, when
 
-> Carried from `specs/1.0.9-beta/fronts.md` on 2026-09-20: every ownership row of tracks A–E, the
-> sidecar rule, the shared-file rules (`tokens.bp`/`emilia.bp` banners, rakun's `src/root.bp` +
-> `botopink.json`, the four frozen rakun files, jhonstart's `root.bp`), the conflict exceptions, the
-> waves and the exit gate are unchanged in substance. New: the `00-compiler-carry-over` section (the
-> compiler is no longer frozen — but only for `00`), the `01-std` section (Track A plus
-> `asserts.bp`/`snapshots.bp` and the `@src()` carve-out), the `02-packaging` section (front 95
-> re-cut), the blocking order at the top, the section-level *who may run together* matrix, and the
-> *Rules for a front* carried from 1.0.6/1.0.7/1.0.8. The front-number → directory map is in
-> [`unification.md`](./unification.md).
+The front-number → directory map is in [`unification.md`](./unification.md).
 
 The overview says *what* each front delivers; this says *who owns which file*. A front is one
 worktree (`.tasks/<name>`), one branch, one `todo.md`, one owner. Two fronts may run at the same
@@ -41,6 +33,10 @@ beside    00-compiler-carry-over — the open 1.0.5-beta compiler fronts, on the
                                     server fronts have cells to re-run)
             · @src()               (contract 7: no snapshot test is writable without it; specified
                                     by 01-std, landed through 00's named carve-out)
+          three surface fronts, one at a time, in this order:
+            · 21-effect-chain → 22-loops → 23-std-purity   (decisions 102–108; 23 opens only
+                                    after 01-std's fronts 01/02/03 merge, because it moves
+                                    their modules)
 ```
 
 Why this order and not another: `01-std` first because every `-test` submodule imports
@@ -54,25 +50,43 @@ of it — they wait on the two items named, which is why those two are listed an
 
 ### `00-compiler-carry-over` (`repository/botopink-lang/modules/**`)
 
-Two sub-fronts were added on 2026-09-20 and own paths no 1.0.5 front named: **18-comptime-runtimes**
-(C-26) owns `src/comptime/runtime/**` (the new `persistent_beam.zig` / `persistent_wat.zig` and the
-selector), the comptime halves of `src/codegen/beam_asm.zig` and `src/codegen/wat.zig`,
-`src/codegen/snapshot.zig` + `src/comptime/snapshot.zig` (directory selection) and the whole of
-`snapshots/codegen/**` for the `{beam,wat}/<target>` re-layout — so it must land its layout step
-**before** any other `00` item re-records a codegen snapshot, or after all of them, never between;
-**19-use-activation** (C-27) owns the `use` rules in `parser.zig` (activation statement,
-`useAfterBranchGuard`), the `@Context` functions of `comptime/infer.zig`, the `use`-expression lowering
-arm of each emitter and the `docs.md` section — a carve-out of C-08's parser rows and C-01's emitter
-rows, sequenced after whichever lands first. Both are specified in their own directories.
+Six sub-fronts own paths no 1.0.5 front named. **18-comptime-runtimes** (C-26) owns
+`src/comptime/runtime/**` (`persistent_beam.zig` / `persistent_wat.zig` and the selector), the
+comptime halves of `src/codegen/beam_asm.zig` and `src/codegen/wat.zig`, `src/codegen/snapshot.zig` +
+`src/comptime/snapshot.zig` (directory selection) and the whole of `snapshots/codegen/**` for the
+`{beam,wat}/<target>` re-layout — so it must land its layout step **before** any other `00` item
+re-records a codegen snapshot, or after all of them, never between. **19-use-activation** (C-27) owns
+the `use` rules in `parser.zig` (activation statement, `useAfterBranchGuard`), the `use` functions of
+`comptime/infer.zig`, the `use`-expression lowering arm of each emitter and the `docs.md` section —
+a carve-out of C-08's parser rows and C-01's emitter rows. **20-builtins-surface** (C-28) owns
+`libs/std/src/builtins.d.bp`, `comptime/effect_chain.zig`, the effect-legality checks in `infer.zig`
+and `EffectKind` in `ast.zig`.
+
+Three fronts follow decisions 102–108 and run **one at a time, 21 → 22 → 23** — 21 and 22 both
+rewrite `parser/decls.zig`, `comptime/infer.zig` and the four codegens, and 23 shares
+`parser/decls.zig` with 21. **21-effect-chain** (C-29) owns `libs/std/src/builtins.d.bp`, `ast.zig`'s
+`EffectKind`, `comptime/effect_chain.zig`, the annotation names, `parseAnnotations`' keyword
+acceptance and the post-return label in `parser/decls.zig`, the effect legality and `use` owner rules
+in `comptime/infer.zig`, `comptime/stdlib/prelude.zig`'s `getContext` entry, the name mappings in
+`codegen/{typescript,wat}.zig`, `fnKeyword` in `codegen/commonJS.zig`, `docs.md` § effects /
+generators / use, `comptime/AGENTS.md`, and — through `scripts/known-red-libs.txt` — jhonstart's
+`element.bp`, 36 annotations and 24 wrappers. **22-loops** (C-30) owns `lexer.zig` (`while`), the loop
+forms in `parser/exprs.zig`, the loop typing and generator-scope gating in `infer.zig`, the loop
+lowering of the four codegens, the `while`/`for` printer arms in `format.zig` (a carve-out of 16),
+`docs.md` § loops, the `tests/language` loop cells, and the rakun/jhonstart `loop (` rewrite.
+**23-std-purity** (C-31) owns `parseImportItem` in `parser/decls.zig`, the import binding in
+`infer.zig` and the four `emitUse`, `modules/language-server/src/project_graph.zig` (a carve-out of
+11), `build.zig`'s `stdPkgFilesFromRoot`, `libs/std/src/**` (the tree of decision 106, `root.bp`
+included), `libs/std/AGENTS.md`, `docs.md` § imports / std, and the consumers' `from "std"` lines;
+it opens only after `01-std`'s fronts 01, 02 and 03 have merged, because it moves their modules.
 
 **The compiler fronts are the only fronts that touch the compiler.** No library front, no packaging
 step and no std front edits a file under `repository/botopink-lang/modules/**` — with one named
 exception, `@src()` (below). A library front that needs a compiler change files a row in
 [`language-gaps.md`](./language-gaps.md) with the `00` sub-front it belongs to, and works around it.
 
-`00`'s internal ownership is [`00-compiler-carry-over/README.md`](./00-compiler-carry-over/README.md)'s,
-carried from `specs/1.0.5-beta/fronts.md`. The sub-areas, so that a library front can name the one
-its gap belongs to:
+`00`'s internal ownership is [`00-compiler-carry-over/README.md`](./00-compiler-carry-over/README.md)'s.
+The sub-areas, so that a library front can name the one its gap belongs to:
 
 | Sub-front | Owns (relative to `modules/compiler-core/src/` unless stated) | Snapshots |
 |---|---|---|
@@ -93,6 +107,12 @@ its gap belongs to:
 | **15-language-surface** | `parser/types.zig` · `lexer.zig`, `lexer/token.zig` · `print.zig` · the `ParseErrorType` enum in `parser.zig` · four named sites in `parser/exprs.zig` | — (strictly accepting) |
 | **16-formatter** | `format.zig` · `format/**` · the trivia/member-order fields of `ast.zig` and their fill sites in `parser/decls.zig` | — (inline expectations) |
 | **17-beam-memory** | `parser.zig`'s top-level dispatch (not the `ParseErrorType` enum) · `ast.zig`'s `ValDecl` · two `infer.zig` diagnostics · one emission site per backend · a new `Form` variant in `codegen/beam/erl_ast.zig` | only cells its step 2 makes legal |
+| **18-comptime-runtimes** | `comptime/runtime/**` · the comptime halves of `codegen/{beam_asm,wat}.zig` · `codegen/snapshot.zig`, `comptime/snapshot.zig` · root `build.zig` (the resident step, the wasm build) · `modules/wasm3/**` | `snapshots/codegen/**` (the `{beam,wat}/<target>` re-layout) |
+| **19-use-activation** | the `use` rules in `parser.zig` · the `use` functions of `comptime/infer.zig` · the `useHook` arm of each emitter · `docs.md` § use | the `codegen_use_*` cells |
+| **20-builtins-surface** | `libs/std/src/builtins.d.bp` · `comptime/effect_chain.zig` · the effect-legality checks in `comptime/infer.zig` · `EffectKind` in `ast.zig` | the effect cells of `comptime/tests` and `tests/language` |
+| **21-effect-chain** | `libs/std/src/builtins.d.bp` · `ast.zig`'s `EffectKind` · `comptime/effect_chain.zig` · the annotation names, `parseAnnotations` and the post-return label in `parser/decls.zig` · the effect legality and `use` owner rules in `comptime/infer.zig` · `comptime/stdlib/prelude.zig` (`getContext`) · the name mappings in `codegen/{typescript,wat}.zig` · `fnKeyword` in `codegen/commonJS.zig` · `docs.md` § effects / generators / use · `scripts/known-red-libs.txt` (during the jhonstart sweep) | every snapshot spelling an effect name (≈ 250) |
+| **22-loops** | `lexer.zig` (`while`) · the loop forms in `parser/exprs.zig` · the loop typing and generator scope in `comptime/infer.zig` · the loop lowering of the four codegens · the `while`/`for` printer arms in `format.zig` (carve-out of 16) · `docs.md` § loops · `tests/language`'s loop cells · `scripts/known-red-libs.txt` (during the rakun/jhonstart sweep) | the loop snapshots of four backends |
+| **23-std-purity** | `parseImportItem` in `parser/decls.zig` · the import binding in `comptime/infer.zig` · the four `emitUse` · `modules/language-server/src/project_graph.zig` (carve-out of 11) · `build.zig`'s `stdPkgFilesFromRoot` · `libs/std/src/**`, `libs/std/AGENTS.md` · `docs.md` § imports / std · `scripts/known-red-libs.txt` (during the consumer sweep) | every snapshot carrying a std module name |
 
 Two items are **pulled ahead** of the library waves: `13-module-identity` (its halves 2–3 re-record
 the erlang/beam corpus and change the record representation every server front's erlang cell runs
@@ -122,26 +142,23 @@ test story stands on, and one compiler carve-out.
 `src/root.bp` is the one shared file in track A. F01 owns it; F02 and F03 hand F01 their export
 lines rather than editing it, and F01 lands last of the three.
 
-**Two corrections that came out of writing front 01, and that the rest of the milestone depends on.**
+Nineteen of the fifty primitives the milestone needs already exist — `path.bp` is a complete posix
+calculator, `regex.bp` wraps `re:run/3`, `crypto.bp` has SHA-256/512 and HMAC-SHA256, `time.bp` has
+both clocks and RFC-3339 formatting, `base64.bp` has the url-safe alphabet. Front 01 **extends**
+those files rather than shipping parallel copies beside them, which is why they appear in its
+ownership row. Seven absences block the milestone: no socket at all, no directory walk, no child
+process, no percent-encoding, no constant-time compare, no base64url of a raw digest, and no HTML
+escaping.
 
-std is not empty. Nineteen of the fifty primitives the milestone needs already exist — `path.bp` is
-a complete posix calculator, `regex.bp` already wraps `re:run/3`, `crypto.bp` has SHA-256/512 and
-HMAC-SHA256, `time.bp` has both clocks and RFC-3339 formatting, `base64.bp` has the url-safe
-alphabet. Front 01 therefore **extends** those files rather than shipping parallel copies beside
-them, which is why they appear in its ownership row. Seven absences are the ones that actually block
-the milestone: no socket at all, no directory walk, no child process, no percent-encoding, no
-constant-time compare, no base64url of a raw digest, and no HTML escaping.
+std tests are **inline**, not in `test/`: `test/` compiles against the ambient global environment
+with no module import path (`libs/std/AGENTS.md`), so a file there cannot reach the module it would
+be testing. Every std test sits in a `test` block at the foot of its own `src/*.bp`.
 
-std tests are **inline**, not in `test/`. `libs/std/AGENTS.md` is explicit that `test/` compiles
-against the ambient global environment with no module import path, so a file there cannot reach the
-module it would be testing. Every real std test sits in a `test` block at the foot of its own
-`src/*.bp`. Any front adding to std follows that, and an earlier draft of this table that assigned
-nine `test/*.bp` files to front 01 was wrong.
-
-
-`libs/std/src/root.bp` therefore has **two** appenders beyond F01 in this milestone: `snapshots`
-(01-std) and nothing else — F02 and F03 hand F01 their lines as before, and `snapshots` is appended
-by 01-std under the same rule.
+`libs/std/src/root.bp` has **two** appenders beyond F01 in this milestone: `snapshots` (01-std) and
+nothing else — F02 and F03 hand F01 their lines, and `snapshots` is appended by 01-std under the
+same rule. Fronts 01, 02 and 03 land their files **flat** at `src/<name>.bp`; the tree of decision
+106 (`io/`, `testing/`, the `collections` / `hash` / `encoding` merges) is `00 · 23-std-purity`'s
+`git mv` after all three merge.
 
 ### `02-packaging` (every repository, structurally) — [`02-packaging/README.md`](./02-packaging/README.md)
 
@@ -382,6 +399,9 @@ files by design and are made disjoint by the banner convention above.
 | `00` · `01-std` | the compiler files of `@src()` | `@src()` is a builtin: `01-std` specifies it and lands it through a **named carve-out** of `00`'s files (the builtin table in `comptime/`, the four backends' lowering of a `SourceLocation` literal). `00` grants the carve-out in its README or `@src()` does not open; `00`'s other rows do not wait on it |
 | `00` · every library track | `repository/{emilia,erika,jhonstart,onze,rakun}/**` | 1.0.5's `09-ecosystem-residuals` owned the library trees. Here it does not: the trees are tracks B–E's. `09` keeps `repository/erika/**` (no track) and the meta submodule pointers, and its "re-run every library's erlang cell after 13" is an exit-gate step, run by each track after `00 · 13-module-identity` lands |
 | `00 · 13-module-identity` · every erlang front | the erlang/beam emitters, ≈318 re-recorded cells | No shared file, but every server front's erlang cell re-runs after 13 (the module atom and the record representation change under it). A server front that lands before 13 re-verifies after; one that lands after never sees the old shape. This is why 13 is **pulled ahead** |
+| `00 · 21-effect-chain` · `00 · 22-loops` · `00 · 23-std-purity` · `00 · 15` / `16` / `01` / `04` and the backend fronts | `parser/{decls,exprs}.zig`, `lexer.zig`, `format.zig`, `comptime/infer.zig`, the four codegens | 21 and 22 rewrite the parser and every codegen, 23 the import path through parser, checker, codegens and the LSP: they run **one at a time, 21 → 22 → 23**, and never beside 15-language-surface, 16-formatter, 01-checker or a backend front. The `format.zig` printer arms are 16's carve-out to 22; `project_graph.zig` is 11's carve-out to 23 |
+| `00 · 23-std-purity` · `01-std` | `libs/std/src/**`, `root.bp`, `build.zig`'s `stdPkgFilesFromRoot` | 23 moves the modules fronts 01/02/03 land flat; it opens only after all three are merged, and `libs/std/src/**` is 23's from then until it lands |
+| `00 · 21` / `22` / `23` · `03-rakun` · `04-jhonstart` · every `-test` member | jhonstart's `#[@context]` / `@Context<` sites (21), rakun's and jhonstart's `loop (` sites (22), every `from "std"` line (23) | Each is a named sweep landed through `scripts/known-red-libs.txt`: the compiler commit lands with the library in the ledger, the library sweep follows, the ledger line is deleted in the next compiler commit — adjacent commits, never a standing red |
 
 
 ## Who may run together — section level
@@ -402,12 +422,16 @@ above applies.
 
 1. `@src()`: `01-std` specifies it and lands it in `00`'s files by carve-out. Sequence: `00` grants
    the carve-out in its README, `01-std` lands the builtin, `00`'s owning sub-fronts (01-checker and
-   the four backends) re-verify their corpus after. No other shared file.
+   the four backends) re-verify their corpus after. The other shared files are `libs/std/src/**`
+   and `root.bp`, which `00 · 23-std-purity` takes over once `01-std`'s fronts 01/02/03 have merged
+   (§ Ownership).
 2. `02-packaging` needs `modules/lib-test-runner/src/discovery.zig` only if the `BOTOPINK_LIB_ROOTS`
    route in `scripts/test-libs.sh` proves insufficient; if it does, that is a carve-out of
    `00 · 10-cli-residuals`, granted the same way as note 1.
 3. A library compiles against the compiler: no shared file, but every library's erlang cells re-run
-   after `00 · 13-module-identity`, and every `format --check` row re-runs after `00 · 16-formatter`.
+   after `00 · 13-module-identity`, every `format --check` row re-runs after `00 · 16-formatter`, and
+   `00 · 21` / `22` / `23` each rewrite library sources in a named sweep (jhonstart's effect
+   annotations, the `loop (` sites, the `from "std"` lines) through `scripts/known-red-libs.txt`.
    The order is *13 first*, which is why it is pulled ahead.
 4. `repository/onze/`: `01-std` removes the mocking library, `02-packaging` creates the orchestrator
    tree at the same path. Removal first; never both in flight.
@@ -425,10 +449,8 @@ above applies.
 
 ## Waves
 
-Regenerated on 2026-09-21 from every front README's `Depends on` line, across all five tracks at
-once — the 1.0.9 diagram this section used to carry disagreed with those lines in six places
-(72 ← 06, 12 ← 18, 85 ← 83, 88 ← 81, 81 ← 76/11, and 60/61/63/65 placed above 23) and put 22, 50,
-51 and 52 in wave 1 above fronts they consume. The inputs are the per-track computed tables —
+Computed from every front README's `Depends on` line, across all five tracks at once. The inputs
+are the per-track computed tables —
 [`03-rakun/README.md`](./03-rakun/README.md) § *The fronts, in blocking order* (levels, with the
 seven corrections of its `modules.md`), [`05-emilia/README.md`](./05-emilia/README.md) § levels,
 [`04-jhonstart/README.md`](./04-jhonstart/README.md) and
@@ -508,7 +530,7 @@ The milestone closes when, on `feat`, all of the following hold at once:
 - no server front carries a **new** `@External.Node` cell, and no client front carries an
   `#[@external(erlang)]` cell; the target split in the overview is checked, not assumed. Two things
   are not violations: an **explicit refusal cell** — a host cell that exists only to return an error
-  naming the target it does not serve, as `std/net` does on commonJS — and the **seventeen
+  naming the target it does not serve, as std's `io.net` does on commonJS — and the **seventeen
   pre-existing Node forms in `rakun/src/runtime.bp`**, which front 04 leaves in place and adds
   Erlang forms beside
 - every erlang sidecar is named `src/sidecars/rakun_<name>.erl`, and no `.mjs` file exists in a
@@ -531,28 +553,23 @@ The milestone closes when, on `feat`, all of the following hold at once:
   green — the library gate is not a substitute for the compiler gate, and the milestone does not close
   on a compiler that passes `test-libs` and fails `zig build test`
 
-## Carried from 1.0.6/1.0.7/1.0.8-beta — Rules for a front
-
-The three drafts each carried a *Rules for a Front* section that 1.0.9 folded into `__template.md`'s
-*Working a front* and never restated. Restated here, merged, with the rules 1.0.9 superseded marked:
+## Rules for a front
 
 1. **One worktree, one branch, one `todo.md`** — `git worktree add .tasks/<front-name> -b fix/<front-name>`
-   from the repository that owns the code (1.0.7's "from the submodule that owns the code"). A
-   library front's worktree is under `repository/<lib>/`; a `00` front's is under
-   `repository/botopink-lang/`; `02-packaging` opens one worktree per repository it moves.
+   from the repository that owns the code. A library front's worktree is under `repository/<lib>/`;
+   a `00` front's is under `repository/botopink-lang/`; `02-packaging` opens one worktree per
+   repository it moves.
 2. **Never edit a file you do not own** — if a fix needs one, stop and report. The carve-outs granted
    by name in this file are the only exceptions.
 3. **Verify by running** — execute the emitted code, drive the server, run the CLI. Re-record a
    snapshot only for a value that was verified; a `.snap` is evidence, not a baseline.
-4. ~~**Dual-target — every front works on commonJS and erlang**~~ (1.0.6 "Erlang + commonJS", 1.0.7
-   "where applicable", 1.0.8 "verify on both") — **superseded** by *target is assigned, not chosen*
-   (`overview.md` § Which target runs what): a front tests on its assigned target and does not ship a
-   second one for completeness.
-5. **Only your sections** (1.0.8) — in a shared file, add your fenced block and your arm; never modify
+4. **Target is assigned, not chosen** (`overview.md` § Which target runs what): a front tests on its
+   assigned target and does not ship a second one for completeness.
+5. **Only your sections** — in a shared file, add your fenced block and your arm; never modify
    another front's. The banner convention above is the mechanism.
-6. **Exhaustive `case`, no `_` catch-all** (1.0.8) — now [`contracts.md § 4a`](./contracts.md).
-7. **Tailwind values / byte-equality** (1.0.8) — `overview.md` § Rules, the named exception to
-   *additive only*.
+6. **Exhaustive `case`, no `_` catch-all** — [`contracts.md § 4a`](./contracts.md).
+7. **Tailwind values / byte-equality** — `overview.md` § Rules, the named exception to *additive
+   only*.
 8. **Land:** merge into `feat`, suite green in the main checkout, push, submodule bump in the meta
    repository — for a front that commits in a sibling repository, push that repository in the same
    sweep — then delete the worktree and the branch. No pull request; no `--no-verify`.

@@ -1,10 +1,4 @@
-> Carried from `specs/1.0.5-beta/14-comptime-on-beam/README.md`, status at carry (2026-09-20): steps 0–2 landed (`bef762be`); step 3 is C-20, after C-01 (decisions 24 and 62)
-
 # Front 14 — comptime-on-beam
-
-Carried into 1.0.5-beta from 1.0.4-beta's front 18, never started. The analysis is unchanged; the
-numbering, the links, the dependency section and the ordering are re-anchored to the fourteen-front
-milestone.
 
 **Priority: first front of the milestone (maintainer).** The reason is not importance, it is what the
 other thirteen fronts gain.
@@ -130,7 +124,7 @@ call sites have drifted to `:2341` and `:3522`.
 
 ---
 
-## Landed — 2026-09-18, merged into `feat` as `bef762b` (steps 0–2; step 3 not attempted)
+## Landed — steps 0–2 (`bef762b`); step 3 not attempted
 
 Four commits on `fix/comptimebeam`, cold gate green at the head and at each commit.
 
@@ -552,9 +546,8 @@ machine; step 0 exists so the next reader re-measures instead of quoting.
 
 ## Rows for `fronts.md`
 
-This front is **new to 1.0.5-beta's `fronts.md`** — 1.0.4's paste-ready rows were written against a
-milestone that no longer exists and carried the old number 18. Paste the three below; this front
-edits neither `fronts.md` nor `overview.md`, both of which are the maintainer's.
+Paste-ready; this front edits neither `fronts.md` nor `overview.md`, both of which are the
+maintainer's.
 
 ### 1. The ownership row
 

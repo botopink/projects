@@ -1,5 +1,3 @@
-> Carried from `specs/1.0.5-beta/02-erlang/README.md`, status at carry (2026-09-20): steps 3 (arms), 5, 6 and the imported-enum row landed; step 1, step 2 D1–D3, the `1...9` arm, steps 7–9 and decisions 52/55/64 are C-01/C-03/C-06/C-07/C-09
-
 # Front 02 — erlang
 
 **Priority:** high — erlang is the backend the six libraries' CI cells run on, and it is the only
@@ -65,7 +63,7 @@ Measured over `snapshots/codegen/erlang/` (315 files):
 
 `zig build test-libs` at `c2dd780` is 11 cells, 0 failed; `scripts/known-red-libs.txt` is empty.
 
-## Handed over by `01-checker` (2026-09-18) — three defects its step 4 exposes
+## Handed over by `01-checker` — three defects its step 4 exposes
 
 Front 01's `case`-arm typing is written and measured; six cells **compile** and then fail at run time
 on the backends, which is why that step waits for these three. Each is stated with the AST shape, so it
@@ -167,14 +165,16 @@ val found = loop (i < 10) { if (i == 4) { break i * 2; }; i = i + 1; };
 ```
 
 `c51aadd` lowered `loop (condition)` on all four backends; a condition loop whose `break` carries a
-value is refused on erlang (and beam) with an **unlocated** `ConditionLoopValueUnsupported`.
+value is refused on erlang (and beam) with an **unlocated** `ConditionLoopValueUnsupported`. The
+condition loop is spelled `while (cond)` once decision 105 lands with
+[`22-loops`](../22-loops/README.md); the lowering fix is the same.
 
 **Acceptance:** `test/loop_break_value.bp` passes on erlang — `break <value>` out of a condition loop
 is the loop's value — and the error kind is gone. Its `expected-failures.txt` line goes with it.
 
 ### Step 6 — the generator protocol
 
-`#[@generator]` and `#[@iterator]` compile on erlang and raise `case_clause` at run time, but only
+`#[@generator]` and `#[@resultGenerator]` compile on erlang and raise `case_clause` at run time, but only
 when the generator body drives itself with a **condition loop**:
 
 | Body | erlang |

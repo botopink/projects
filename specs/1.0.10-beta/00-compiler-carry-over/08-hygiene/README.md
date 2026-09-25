@@ -1,5 +1,3 @@
-> Carried from `specs/1.0.5-beta/08-hygiene/README.md`, status at carry (2026-09-20): steps 1–5 landed; 2.1's remainder, 3.1's `@external` comments and step 6 are C-23
-
 # Front 08 — hygiene
 
 **Priority:** low, with one exception — the transport-error one-liner (step 5) is the difference

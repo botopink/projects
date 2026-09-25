@@ -1,6 +1,7 @@
-> Carried from `specs/1.0.9-beta/deferred.md` on 2026-09-20; every row is unchanged except the *Revisit* cell of Partial Prerendering (it named this milestone) and the new *Deferred — ecosystem* section, which records the old `onze` mocking runtime that front 95 promised to record here and never did. The fronts a row cites are under `03-rakun/`, `04-jhonstart/`, `05-emilia/`, `06-onze/` (map in [`unification.md`](./unification.md)).
-
 # Deferred and out of scope — 1.0.10-beta
+
+The fronts a row cites are under `03-rakun/`, `04-jhonstart/`, `05-emilia/`, `06-onze/` (map in
+[`unification.md`](./unification.md)).
 
 A milestone that claims to cover three frameworks has to say what it does not cover, or the claim
 cannot be checked. This file is that list. Every row here was found by reading the reference
@@ -54,7 +55,7 @@ path in a comptime library whose token set is closed and typed.
 
 | Feature | Source | Why emilia cannot carry it | What would have to exist first | Revisit |
 |---|---|---|---|---|
-| `@source` / `@source not` / source detection of class strings, dynamic class objects, template literals | `§ 3.8`, `§ 3.9`, `§ 20.6` | emilia scans nothing. There are no class strings to detect, only typed tokens — the problem the scanner solves does not arise | A build-time source scanner and class extractor in the toolchain | When the toolchain has a build-graph file walker; front 01's `path`/`process` work is the nearest precursor |
+| `@source` / `@source not` / source detection of class strings, dynamic class objects, template literals | `§ 3.8`, `§ 3.9`, `§ 20.6` | emilia scans nothing. There are no class strings to detect, only typed tokens — the problem the scanner solves does not arise | A build-time source scanner and class extractor in the toolchain | When the toolchain has a build-graph file walker; front 01's `io.fs.walk` / `io.process` work is the nearest precursor |
 | `@apply` inside a hand-written `.css` file | `§ 3.9`, `§ 20.5` | Requires parsing and rewriting CSS the user authored. The composition half — naming a reusable `Token[]` bundle — is **not** deferred; it is front 59 | A comptime CSS parser and project-file reads during compilation | When a comptime filesystem and parser story exists; front 59 covers the common case meanwhile |
 | `@layer` wrapping user-authored CSS | `§ 3.1`, `§ 3.7` | Same file-consumption problem. Emitting emilia's *own* output into layers is front 56 | As above | As above |
 | `@import "tailwindcss"` and partial imports | `§ 2.1`, `§ 20.1` | These import real CSS files from an npm package; emilia has no CSS input path and no npm dependency | A CSS import resolver at comptime | Only if interop with an existing Tailwind install becomes a goal; parity does not need it |
@@ -73,11 +74,11 @@ path in a comptime library whose token set is closed and typed.
 
 ## Deferred — ecosystem
 
-Rows produced by the package restructure itself, not by a reference document.
+Rows produced by the package restructure itself, not by a reference document. The mocking surface
+is not deferred: it is `std/mocks` (decision 71; `testing.mocks` under decision 106).
 
 | Feature | Source | Why it is not re-homed now | What would have to exist first | Revisit |
 |---|---|---|---|---|
-| The old `onze` mocking runtime — `#[mock]`, `when().thenReturn/thenThrow`, `verify`, `times`/`atLeastOnce`/`never`, backed by `repository/onze/src/onze.mjs` (121 lines) and the erlang cells in `onze.bp` (187 lines) | `specs/1.0.9-beta/95-ecosystem-package-restructure/README.md` § 3 and Step 7 | The assertion predicates moved into `std/asserts` ([`01-std/asserts-api.md`](./01-std/asserts-api.md)); the mocking half is comptime code generation plus a host runtime with module-global mutable state, and no `-test` submodule needs it before the first library front that mocks a dependency (front 19's `rakun-test` is the likely first). `01-std` removes the directory so the orchestrator can take the name; the code stays in the repository's history | The first `-test` submodule that documents the `#[mock]` + `#[bean]` convention adopts the runtime from history into its own `src/`, on its library's assigned target | Front 19 (`rakun-test`), or the first `-test` submodule to need a mock — whichever lands first |
 | The `Request`/`MockMvc` double as a *shared* helper across libraries | 1.0.9 `language-gaps.md` § Unowned surface | Closed as front 19's, rakun-only; jhonstart and onze tests reach the server through `onze-test`, which depends on `rakun-test` (dependency direction in [`02-packaging/README.md`](./02-packaging/README.md)) | Nothing | Never as a shared helper |
 
 ## Out of scope

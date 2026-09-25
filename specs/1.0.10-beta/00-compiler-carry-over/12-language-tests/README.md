@@ -1,5 +1,3 @@
-> Carried from `specs/1.0.5-beta/12-language-tests/README.md`, status at carry (2026-09-20): steps 1–3, 4.1 and 5 landed; steps 4.2–4.4, decision 59 (b)'s tally and the cells for 63–66 are C-16
-
 # Front 12 — language tests
 
 **Priority:** high — this is the only suite that asserts what a botopink **program does**, on more

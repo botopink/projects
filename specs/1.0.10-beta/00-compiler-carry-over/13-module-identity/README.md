@@ -1,11 +1,9 @@
-> Carried from `specs/1.0.5-beta/13-module-identity/README.md`, status at carry (2026-09-20): half 1 landed (`154f3bc9`); halves 2–3 (steps 8–19) are C-01, decision 64 is C-03 (uncommitted in `.tasks/identity`), step 6's residuals are C-25. The README still reads T1 and an unticked step 0 — decisions 6, 21, 22, 23 and 62 override it
-
 # Front 13 — module-identity
 
-Carried into 1.0.5-beta from 1.0.4-beta's fronts **16 (module-naming)** and **19 (runtime type
-identity)**, neither started, **merged into one front by the maintainer**. The measured analysis of
-both is unchanged and lives in the companion documents; what changed is the numbering, the links,
-the dependency section and the ordering, re-anchored to a fourteen-front milestone.
+One front for two concerns, **module naming** and **run-time type identity**; the measured analysis
+of both lives in the companion documents. Decisions 6, 21, 22, 23 and 62 of
+[1.0.5-beta](../../../1.0.5-beta/decisions-taken.md) settle step 0's layout call and the term's
+representation; where a section below still weighs them, the decision governs.
 
 **Priority:** high — the erlang backend gives two modules with the same file basename the same
 module atom, silently; eleven `libs/std` modules already carry the name of an OTP module; and no
@@ -909,7 +907,7 @@ or a snapshot directory, sequence them · `seq` = no shared file, but the milest
    | D8-3 `case` arms | literal, range, tuple, `_`, guards, `..` | an arm that is a named type or a section (§5.3b) |
    | D8-4 `row.label` → index | all of it | — |
    | D8-5 the formatter | the primitive, array and tuple text; `f64` always `5.0` | the `record` and `variant` rows of §7's table, and `Display` |
-   | D8-6 `loop (condition)` | all of it (already delivered by 1.0.4's 06 G0) | — |
+   | D8-6 `loop (condition)` | all of it (landed) | — |
 
    **What each ordering costs.**
    - *The maintainer's order (14 → 13 → backends).* No cut, every snapshot written once,
@@ -967,7 +965,7 @@ carry the old numbers 16 and 19. Paste the three below; this front edits neither
 ### 1. The ownership row
 
 ```markdown
-| **13** [`module-identity`](./README.md) | `src/codegen/crossModule.zig` · `src/codegen/{erlang.zig,beam_asm.zig,runtime.zig}` — the **module-atom sites** for steps 1–6 (carve-out of 02 and 03), the two emitters **wholesale** for steps 7–20 · `modules/compiler-cli/src/cli/{build.zig,run.zig}` (the output layout, and `botopink run --target erlang`'s `-pa`) · the module-atom lines and `buildModule` signatures of `src/comptime/{template_eval,decorator_eval}.zig` (carve-out of 01) · the `tests/language/` cells for `is`, a named-type union `case` and decision 8 §7's printed form (coordinate with 12) | `snapshots/codegen/{erlang,beam}/`: **≈ 20** (half 1, names) then **188** (half 2, shapes) then **130** (half 3, value lines) | not started — **runs immediately after 14**; **02 and 03 stall while halves 2–3 run** (both emitters owned wholesale); steps 17–19 additionally after 01's N19–N22. Merged from 1.0.4-beta's 16 and 19 |
+| **13** [`module-identity`](./README.md) | `src/codegen/crossModule.zig` · `src/codegen/{erlang.zig,beam_asm.zig,runtime.zig}` — the **module-atom sites** for steps 1–6 (carve-out of 02 and 03), the two emitters **wholesale** for steps 7–20 · `modules/compiler-cli/src/cli/{build.zig,run.zig}` (the output layout, and `botopink run --target erlang`'s `-pa`) · the module-atom lines and `buildModule` signatures of `src/comptime/{template_eval,decorator_eval}.zig` (carve-out of 01) · the `tests/language/` cells for `is`, a named-type union `case` and decision 8 §7's printed form (coordinate with 12) | `snapshots/codegen/{erlang,beam}/`: **≈ 20** (half 1, names) then **188** (half 2, shapes) then **130** (half 3, value lines) | not started — **runs immediately after 14**; **02 and 03 stall while halves 2–3 run** (both emitters owned wholesale); steps 17–19 additionally after 01's N19–N22. |
 ```
 
 ### 2. The conflict notes
@@ -1010,7 +1008,7 @@ carry the old numbers 16 and 19. Paste the three below; this front edits neither
 ### 3. The front-table row
 
 ```markdown
-| [`13-module-identity`](./README.md) | high | not started — **immediately after 14**; 02 and 03 stall while halves 2–3 run | Two botopink modules whose files share a basename become the same Erlang/BEAM module, silently, and eleven `libs/std` modules shadow an OTP module node-wide; and no value on any backend knows its own type, so `is`, unions, a `case` over named types and decision 8 §7's per-type formatter have nothing to test. One front, three halves that land in order: **the atom** (option A + A2, ≈ 20 snapshots, names only), **policy 3** (one BEAM module per `type` and per `behavior` — both name manglings deleted, 188 snapshots, shapes), and **the identity in the value** (the qualified atom inside the term, 130 snapshots, 0 `RUN LOG`s). Merged from 1.0.4-beta's fronts 16 and 19 |
+| [`13-module-identity`](./README.md) | high | not started — **immediately after 14**; 02 and 03 stall while halves 2–3 run | Two botopink modules whose files share a basename become the same Erlang/BEAM module, silently, and eleven `libs/std` modules shadow an OTP module node-wide; and no value on any backend knows its own type, so `is`, unions, a `case` over named types and decision 8 §7's per-type formatter have nothing to test. One front, three halves that land in order: **the atom** (option A + A2, ≈ 20 snapshots, names only), **policy 3** (one BEAM module per `type` and per `behavior` — both name manglings deleted, 188 snapshots, shapes), and **the identity in the value** (the qualified atom inside the term, 130 snapshots, 0 `RUN LOG`s). |
 ```
 
 ### The residual the policy-3 decision changed

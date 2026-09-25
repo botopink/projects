@@ -50,7 +50,7 @@ process spawn — today's compiler cannot run there at all, and nothing in the t
 
 ## Current state
 
-Measured at `feat`, 2026-09-20, before the `.tasks/*` merges of the same day; every command and raw
+Measured at `feat`, 2026-09-20, before the `.tasks/{formatter,tooling,wasm}` merges; every command and raw
 excerpt in [`evidence.md`](./evidence.md), the call path in [`current-path.md`](./current-path.md).
 
 | Fact | Value | Where |
@@ -372,7 +372,7 @@ instantiated and run in the same page.
 | What moves | Size | How to sequence |
 |---|---:|---|
 | every codegen snapshot path | 1 346 files → `beam/…`, + 1 346 recorded under `wat/…` | one commit, `git mv` proven by hash, before any content change |
-| `.tasks/wasm` (6 modified `codegen/wasm/*.snap.md`) and `.tasks/tooling` (1 LSP snapshot) at measurement time; being merged into `feat` on 2026-09-20 | 7 files | land the merges first (in progress); if any worktree survives, its snapshot edits are re-applied under `beam/` by path rewrite, then the layout commit |
+| the snapshot edits `.tasks/wasm` (6 `codegen/wasm/*.snap.md`) and `.tasks/tooling` (1 LSP snapshot) held at measurement time, now in `feat` | 7 files | if any worktree survives, its snapshot edits are re-applied under `beam/` by path rewrite, then the layout commit |
 | C-01 (`.tasks/identity`): owns `beam_asm.zig` and `erlang.zig` wholesale and re-records ≈ 318 cells | the same files as step 1b | step 1b waits for C-01 (the *Depends on* line); steps 2–5 do not |
 | C-06 / C-07 (`beam_asm.zig` patterns, `wat.zig` `A...B`) | same emitters, run-time halves | additive mode only on this side; conflicts are textual, not semantic |
 | scripts naming the tree: `scripts/snap_audit.sh:41,120,134-141,496`, `scripts/beam_export_audit.sh:9,48`, `scripts/AGENTS.md:232` | 3 files | in the layout commit |

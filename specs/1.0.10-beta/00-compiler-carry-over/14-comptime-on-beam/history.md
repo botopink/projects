@@ -1,5 +1,3 @@
-> Carried from `specs/1.0.5-beta/14-comptime-on-beam/history.md`, status at carry (2026-09-20): steps 0–2 landed (`bef762be`); step 3 is C-20, after C-01 (decisions 24 and 62)
-
 # History — what has already been decided about the comptime runtime
 
 Checked before proposing anything, as the front rules require. Sources: `botopink-lang`'s git

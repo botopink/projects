@@ -1,5 +1,3 @@
-> Carried from `specs/1.0.5-beta/14-comptime-on-beam/migration.md`, status at carry (2026-09-20): steps 0–2 landed (`bef762be`); step 3 is C-20, after C-01 (decisions 24 and 62)
-
 # Migration — the staged plan, what proves each stage, what to fall back to
 
 The recommendation of [`options.md`](./options.md#7-recommendation) as a sequence. Each stage lands

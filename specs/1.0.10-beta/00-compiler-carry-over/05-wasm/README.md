@@ -1,5 +1,3 @@
-> Carried from `specs/1.0.5-beta/05-wasm/README.md`, status at carry (2026-09-20): steps 1–8 landed; F2–F4 wait on 13 step 18 (C-01), decisions 53/55 are uncommitted in `.tasks/wasm` (C-06)
-
 # Front 05 — wasm
 
 **Priority:** high — wasm is the backend that answers a **wrong value with exit 0 and no
@@ -99,7 +97,7 @@ The 24 traps are the honest part of this backend: `executeWat` runs (`HARNESS_VE
 nothing. The three heap addresses above are the dishonest part — they are not traps, they are wrong
 answers with exit 0.
 
-## Handed over by `01-checker` (2026-09-18) — three defects its step 4 exposes
+## Handed over by `01-checker` — three defects its step 4 exposes
 
 Front 01's `case`-arm typing is written and measured; six cells **compile** and then fail at run time
 on the backends, which is why that step waits for these three. Each is stated with the AST shape, so it

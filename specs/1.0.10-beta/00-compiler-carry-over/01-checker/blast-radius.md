@@ -1,5 +1,3 @@
-> Carried from `specs/1.0.5-beta/01-checker/blast-radius.md`, status at carry (2026-09-20): steps 1–5, 8 R3 and 11's `Display` landed; steps 6, 7, 8 (R1/R2/R4–R9), 9, 10, the rest of 11 and decision 63's rewrite are C-02/C-04/C-08/C-09/C-14/C-15/C-18/C-21
-
 # Blast radius — what moves when the checker becomes strict
 
 Every number here was measured against `botopink-lang` `c2dd780` on 2026-09-18, from the working

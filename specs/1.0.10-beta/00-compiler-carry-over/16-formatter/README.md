@@ -1,5 +1,3 @@
-> Carried from `specs/1.0.5-beta/16-formatter/README.md`, status at carry (2026-09-20): steps 1–7 and decision 61 landed; decision 65 is C-12 (uncommitted in `.tasks/formatter`), the `;` printer half is C-13, `arrow_when_empty` is C-11
-
 # Front 16 — formatter
 
 **Priority:** **high** — raised from the medium decision 18 implied. The standing intent is that

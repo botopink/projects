@@ -182,12 +182,9 @@ token" — see step 3 of the [README](./README.md).
 
 ## 6 — `var` at module level
 
-**Decision 28 (2026-09-18): it parses** — reversing decision 14's "deliberately absent".
-The earlier reading, that it contradicts decision 2's "a module has no mutable state", was
-**wrong on both halves**: decision 2 is about the value of a block, and the sentence comes from
-`rakun/AGENTS.md:22`, where a library observes the property while working around it. The cost is
-real and per backend — commonJS a module `let`, wasm a mutable global, and erlang and beam the
-process dictionary, since neither has module-level mutable storage.
+**Decision 28: it parses** (C-05). The cost is per backend — commonJS a module `let`, wasm a
+mutable global, and erlang and beam the process dictionary, since neither has module-level mutable
+storage.
 
 ```botopink
 var counter = 0;
@@ -204,8 +201,7 @@ error: Unexpected token
 
 **Deciding line.** `parseDecls` (`src/parser.zig:374-470`) dispatches on the leading token; its
 binding arm is `this.checkShorthand(.val)` at `:441`. There is no `.@"var"` arm, so `var` falls
-through every arm to the final `else` and takes the generic error. Same as `??`: the absence is
-right and the **message** is what the front changes.
+through every arm to the final `else` and takes the generic error. The arm is C-05's.
 
 ## 7 — a bare `if` that is not the last statement of its block
 

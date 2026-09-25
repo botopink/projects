@@ -1,5 +1,3 @@
-> Carried from `specs/1.0.5-beta/04-js/README.md`, status at carry (2026-09-20): all steps but 7 and 8's removal landed; step 7 waits on 01 R5 (C-09), decision 55's rows are C-06, `d["k"]` is C-02
-
 # Front 04 — js
 
 **Priority:** high — commonJS is the default target, the one every `botopink new` project runs, and
@@ -115,7 +113,7 @@ There is **no `snapshots/codegen/typescript/` directory**: the TypeScript output
 each commonJS snapshot, so `typescript.zig` and `commonJS.zig` cannot be split across fronts even if
 the ownership table names them separately. That is why they are one front.
 
-## Handed over by `01-checker` (2026-09-18) — three defects its step 4 exposes
+## Handed over by `01-checker` — three defects its step 4 exposes
 
 Front 01's `case`-arm typing is written and measured; six cells **compile** and then fail at run time
 on the backends, which is why that step waits for these three. Each is stated with the AST shape, so it
