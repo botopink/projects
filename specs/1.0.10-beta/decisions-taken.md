@@ -49,6 +49,7 @@ what was left, now `00-compiler-carry-over`'s order),
 | [106](#106-std-in-three-categories-a-pure-root-io-and-testing) | The shape of std | Pure root · `io/` · `testing/`; a root module imports nothing from `io/`; merge only where the name wins (`collections`, `hash`, `encoding`); 71 amended in path only |
 | [107](#107-import-a-dotted-path-and-a-braced-group-are-one-tree-and-only-the-leaf-enters-scope) | Import grammar | `import {a: {b: {c}}, x.y.z, e.t.r*}` — dotted path and braced group are one tree; only the leaf enters scope; `*` / `as` on the leaf; no `from` = the package root |
 | [108](#108-getcontex--getcontext) | `getContex` | Renamed `getContext` (99-a) |
+| [109](#109-the-declaration-boundary-in-a-module-atom-is--and-the-declaration-keeps-its-case) | How is a per-declaration BEAM module named? | `<path>@@<Decl>` — `@@` is the boundary, the path stays lowercase, the declaration keeps its case, and `@@` chains (`pond@@Pato@@Swimmer`); A2's `__t__`/`__b__` qualifiers leave |
 
 ## 68. One milestone, the 1.0.9 numbers kept, the drafts deleted
 
@@ -911,3 +912,55 @@ diagnostic codes (`context-getcontex-outside-context-fn`, `context-getcontex-exp
 rules RC4/RC5 in `comptime/tests/infer_errors.zig` and the three snapshots whose slug carries the
 name move with it. No library spells it today. Its gate is decision 104's one flag.
 Implements: the `effect-chain` task, in the same sweep as decisions 102–104.
+
+## 109. The declaration boundary in a module atom is `@@`, and the declaration keeps its case
+
+**Decided 2026-09-26 by the maintainer**, on his own proposal: *"poderia usar `@@` — `io@fs@@File` — quando
+for um módulo interno"*. Policy 3 (front 13, half 2) emits one BEAM module per `type` and per
+`implement`, and A2 named that module by appending a qualifier to the owning module's atom:
+`main__t__sourcelocation`, with `__b__` reserved (decision 23). The qualifier is replaced by one
+boundary token:
+
+```
+atom(module)       = lowercase(path), '/' → '@', [^a-z0-9_@] → '_'     (option A, unchanged)
+atom(decl)         = atom(module) ++ "@@" ++ <Decl>                      (case kept)
+atom(implement)    = atom(module) ++ "@@" ++ <Type> ++ "@@" ++ <Behavior>
+```
+
+| Source | Atom |
+|---|---|
+| `type SourceLocation` in `src/main.bp` | `main@@SourceLocation` |
+| `type File` in `src/io/fs.bp` | `io@fs@@File` |
+| `implement Swimmer for Pato` in `src/pond.bp` | `pond@@Pato@@Swimmer` |
+
+Three properties decide it, each measured against the A2 spelling it replaces:
+
+1. **`@@` cannot collide.** A path segment is never empty, so `@@` never occurs in `atom(module)`;
+   and the sanitiser maps every foreign character to `_`, so a source name containing `__t__` is
+   ambiguous to A2's decoder while no source name can produce `@`. The decoder is `split("@@")`,
+   with no qualifier table.
+2. **The declaration keeps its case.** A2 lowercased the whole atom, so `SourceLocation` reached
+   the BEAM as `sourcelocation` and the atom stopped decoding back to its source — the property A2
+   was written for. `main@@SourceLocation` is still a legal *unquoted* atom: it starts with a
+   lowercase letter and holds only `[a-zA-Z0-9_@]` (E10). The module half stays lowercase because
+   it is also a directory and file name.
+3. **It chains.** An `implement` block is a module under policy 3 and A2 had no qualifier for it;
+   each `@@` descends one declaration. A behavior module, if decision 23 is ever reopened, is
+   `<path>@@<Behavior>` like everything else, so the `__b__` reservation has nothing left to do.
+
+What it does **not** change: option A for the module half; decision 6's flat `out/erl/` and
+`out/beam/` (the file is still the atom: `io@fs@@File.erl`, and `@` was already in file names);
+decision 21's T2 tag (the same atom is the value's identity on every backend, so
+`{'io@fs@@File', …}` and the commonJS/wasm identity string are one spelling — front 13 step 1's
+"one canonical identity, one renderer per backend"); decision 23 (a behavior emits nothing); the
+`bp@comptime@…` atoms of template evaluations. The cross-module refusal that two declarations of
+one module must not render one atom stays, and stays **case-insensitive**: `Person` and `person`
+are distinct atoms but one file on a case-insensitive file system, so the pair is refused
+(decision 67).
+
+Bears on: the ≈ 188 erlang and beam snapshots policy 3 re-recorded, which move again by the atom
+spelling alone; `crossModule.zig`'s `duplicate_decl` check and message; `13-module-identity`'s A2
+text (`declaration-qualifier.md`), which now describes this spelling.
+Implements: front 13 — the one renderer per backend (`erlang.zig`, `beam_asm.zig`, the commonJS
+and wasm identity string), the decoder, the snapshot re-record, `src/codegen/AGENTS.md`.
+

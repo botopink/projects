@@ -3,7 +3,7 @@
 **Three open: 94, 100 and 101.** All three are **non-blocking**: nothing running waits on them, and
 each answer is a rewrite of prose, not of a landed refusal. Every other number up to 108 is answered
 in [`decisions-taken.md`](./decisions-taken.md) — 91, 92, 93 and 97 by decisions 103 and 104, 99 by
-108. The next free number is **109**.
+108. The next free number is **110**.
 
 This file stays because the fronts will fill it again. A front that meets a question it cannot answer
 from the code writes it here rather than guessing, in the shape the others used:
