@@ -250,6 +250,27 @@ and a listed cell that passes fails the gate, so the window is exactly one commi
 `grep -rn '#\[@context\]\|@Context<Element, ' repository/jhonstart` returns nothing;
 `known-red-libs.txt` back to its header; the meta submodule pointer bumped in the same sweep.
 
+### Step 5 — one context wrapper, `@Component<C, T>` (decision 128)
+
+`@Use<C, T>` and `@Component<T>` ≡ `@Use<B, T>` become one wrapper, `@Component<C, T>`, for hooks
+and components alike. `builtins.d.bp`: `pub behavior Component<C, T> extends Future { }`, `Use`
+deleted, `getContext` answers `Component<T, any>`; `effect_chain.zig`: `Component ⊃ Future`;
+`EffectKind.use.returnWrapper()` = `Component` (a set of one); `contextInfoFromReturn` reads `C`
+and nothing off `T`; a component is the `@Component<C, T>` whose `T` implements `@Context<C>`
+(`isComponentType`), which `use` refuses; a `T` owning a context at another base is
+`effect-wrapper-mismatch`; `@Component<T>` with one argument is an arity error. `typescript.zig`
+maps `@Component<C, T>` → `Promise<T>`. jhonstart: `@Use<ElementBase, X>` →
+`@Component<ElementBase, X>`, `@Component<Element>` → `@Component<ElementBase, Element>`.
+
+**Acceptance:**
+- [ ] `grep -rnE '@Use\b|\bUse<|@Component<[A-Za-z_]+>' modules/ libs/ tests/ docs.md repository/jhonstart`
+      finds nothing but prose naming the removed form
+- [ ] a hook and a component under the one wrapper compose; `use` of a component refused;
+      `@Component<Http, Element>` (`Element: @Context<Element>`) is `effect-wrapper-mismatch`;
+      `@Component<Element>` is an arity error
+- [ ] `zig build test`, `test-language` on four targets and jhonstart `test-libs` green; snapshots
+      re-recorded and classified (renamed wrapper strings only)
+
 ## Gate
 
 - [ ] `scripts/gate.sh --cold` green in this front's worktree at every commit; `test-libs` at
