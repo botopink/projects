@@ -11,8 +11,8 @@ registry the `#[page]` / `#[layout]` decorators fill, and the `jhonstart-emilia`
 `plugin()` the boot registers) · 28 (`RequestData`, built here from rakun's `Request`) · 23
 (`ChunkWriter`, `PageRenderer` and `page(pattern, render)`, the registry the boot hands one renderer
 per page) · 22 (rakun's route table, and the `rakun-routing` matcher the client entry hands
-jhonstart's router as `match`) · 24 and 05 (the action wire names the boot sets in rakun's
-configuration)
+jhonstart's router as `match`) · 05 (the configuration the boot writes `rakun.actions.field` /
+`rakun.actions.header` into — front 24 reads them later and is not a dependency of the boot)
 **Owns:** `botopink.json`, `src/root.bp`, `src/types.bp`, `src/config.bp`, `src/integration.bp`,
 `test/config_test.bp`, `test/types_test.bp`
 **Does not touch:** `repository/jhonstart/**` (the render, `RenderHooks`, `RenderPlugin` and the

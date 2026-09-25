@@ -31,6 +31,11 @@ import {cookies} from "rakun";                                  // front 62
 import {redirect} from "rakun";                                 // front 63
 import {collections.Dict} from "std";
 
+// The action id is front 24's (contract 3) and the field name is the one onze configures
+// (decision 114; `__bp_action` is onze's default). Both arrive from the boot; fixed here.
+val createPostId = "a_9f31c0d7a4b2e5081c6fa3d2";
+val actionField = "__bp_action";
+
 fn panelTokens() -> Token[] {
     return [.Pad.All.8, .Bg.White, .Border.Rounded.Md];
 }
@@ -118,7 +123,7 @@ fn NewPostForm() -> @Component<Element> {
 pub fn newPostPage(route: PageContext) -> @Future<Element> {
     return div([
         h1([text("New post", attrs: [])], attrs: []),
-        newPostForm(formAction("createPost"), actionState(""), false),
+        newPostForm(formAction(createPostId, "/dashboard/posts/new", actionField), actionState(""), false),
     ], attrs: []);
 }
 
@@ -133,7 +138,7 @@ fn newPostRoute() -> PageContext {
 }
 
 test "the empty form carries what an un-hydrated browser needs to submit it" {
-    val markup = renderToString(newPostForm(formAction("createPost"), actionState(""), false));
+    val markup = renderToString(newPostForm(formAction(createPostId, "/dashboard/posts/new", actionField), actionState(""), false));
     assert markup.contains("method=\"post\"");
     assert markup.contains("enctype=\"application/x-www-form-urlencoded\"");
     assert markup.contains("data-jh-a=\"a_");
@@ -149,19 +154,19 @@ test "the action is named by its id and never by its function name" {
 test "a field message from the action lands beside its own field" {
     val envelope = "ok=0&message=Title%20too%20short&redirect=&f.title=Too%20short";
     val state = parseActionState(envelope);
-    val markup = renderToString(newPostForm(formAction("createPost"), state, false));
+    val markup = renderToString(newPostForm(formAction(createPostId, "/dashboard/posts/new", actionField), state, false));
     assert markup.contains("<p class=\"field-error\">Too short</p>");
     assert state.fieldError("body") == "";
 }
 
 test "an in-flight submit disables the button and renames it" {
-    val markup = renderToString(newPostForm(formAction("createPost"), actionState(""), true));
+    val markup = renderToString(newPostForm(formAction(createPostId, "/dashboard/posts/new", actionField), actionState(""), true));
     assert markup.contains("disabled=\"disabled\"");
     assert markup.contains("Publishing…");
 }
 
 test "an idle form carries no disabled attribute at all" {
-    val markup = renderToString(newPostForm(formAction("createPost"), actionState(""), false));
+    val markup = renderToString(newPostForm(formAction(createPostId, "/dashboard/posts/new", actionField), actionState(""), false));
     assert markup.contains("disabled") == false;
     assert markup.contains("Publish");
 }
