@@ -9,7 +9,6 @@
 **Owns:** `repository/jhonstart/src/error_boundary.bp`, `repository/jhonstart/test/error_boundary_test.bp`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (26), `src/link.bp` (27), `src/server.bp` (28), `src/client.bp` (29), `src/suspense.bp`/`src/streaming.bp` (30), `src/root.bp` and `botopink.json` (front 94)
 **Reference:** `NEXTJS-DOCS.md § 14. Tratamento de Erros` · `§ 3. Estrutura do Projeto` · https://nextjs.org/docs/app/getting-started/error-handling · https://nextjs.org/docs/app/api-reference/file-conventions/error · https://nextjs.org/docs/app/api-reference/file-conventions/not-found
-**Replaces:** `1.0.7-beta/07-jhonstart-error-boundaries`
 
 ---
 
@@ -28,19 +27,14 @@ stack trace and possibly a connection string. Upstream solves that with `digest`
 the error and the client sees only an opaque id (`NEXTJS-DOCS.md § 14`, `error: Error & { digest?:
 string }`). jhonstart has neither the digest nor the logging it correlates with.
 
-The 1.0.7 draft's `ErrorBoundary` rendered its children inside a `<div
-data-jhonstart-error-boundary>` and caught nothing — there was no `try`, no `@Result`, and no point
-at which a throwing child could have been intercepted. It was the shape of an error boundary without
-the mechanism.
-
 ## Current state
 
 - No error handling anywhere in `repository/jhonstart/src/`. `root.bp:15-17` declares three modules.
 - `#[@result] fn … -> @Result<D, E>` with `throw`/`try`/`case` is landed and documented
   (`docs.md:513-524`). `@Result` variants are `Ok(result: R)` and `Error(error: E)`
   (`libs/std/src/builtins.d.bp:24-27`); there is no `Err` and no `.unwrap()`.
-- `libs/std/src/crypto.bp` exists; a stable content hash for the digest is front 03's
-  `content_hash`, not a private hash here.
+- a stable content hash for the digest is front 03's `contentHash`, in std's `hash` module
+  (decision 106), not a private hash here.
 - `notFound()`, `redirect()`, `permanentRedirect()`, `forbidden()` and `unauthorized()` are **front
   63**'s navigation signals. This front does not define them; it defines what happens to the render
   when one is raised.
@@ -115,9 +109,11 @@ type defined here — this front owns the type, not the dispatch.
 
 | File | Exports | Rendered when | Owns its document? |
 |---|---|---|---|
-| `error.bp` | `#[@context] pub fn ErrorPage(info: ErrorInfo) -> Element` | the segment's subtree returns `Error(…)` | no |
-| `not-found.bp` | `#[@context] pub fn NotFound() -> Element` | front 63's not-found signal reaches this segment | no |
-| `global-error.bp` | `#[@context] pub fn GlobalError(info: ErrorInfo) -> Element` | the root segment fails, or no other boundary caught | **yes** — it renders its own `htmlTag` and `body` |
+| `error.bp` | `pub fn ErrorPage(info: ErrorInfo) -> Element` | the segment's subtree returns `Error(…)` | no |
+| `not-found.bp` | `pub fn NotFound() -> Element` | front 63's not-found signal reaches this segment | no |
+| `global-error.bp` | `pub fn GlobalError(info: ErrorInfo) -> Element` | the root segment fails, or no other boundary caught | **yes** — it renders its own `htmlTag` and `body` |
+
+All three activate nothing, so none carries an annotation (decision 104).
 
 The export is `ErrorPage`, not `Error`, and the difference matters: `Error(error: E)` is the
 `@Result` variant (`libs/std/src/builtins.d.bp:24-27`). A module-level `pub fn Error` would shadow
@@ -180,7 +176,7 @@ that does nothing forever.
 ```bp
 // src/error_boundary.bp
 import {Element} from "element";
-import {content_hash} from "std";
+import {hash} from "std";
 
 pub type ErrorInfo(message: string, digest: string)
 
@@ -191,7 +187,7 @@ pub type ErrorBoundary(
 )
 
 pub fn digestOf(message: string) -> string {
-    return content_hash.short(message);
+    return hash.contentHash(message);
 }
 
 pub fn infoFor(message: string) -> ErrorInfo {
@@ -366,150 +362,3 @@ contract is untested and the milestone should treat it as a red rather than as d
       DSL (`html.bp:94`)
 - [ ] all three language gaps appear in a `specs/1.0.10-beta/` spec
 - [ ] the front's tests are green on its assigned target
-
-## Carried from 1.0.7-beta F07 jhonstart-error-boundaries
-
-Items of the 1.0.7 draft not restated above, quoted so nothing is lost; where the milestone decided differently the 1.0.9 decision stands and the old text is kept for the record.
-
-### `ErrorBoundaryProps` / `ErrorBoundary(props)` / `NotFoundBoundary`
-
-`1.0.7-beta/07-jhonstart-error-boundaries/README.md § Mechanism`, `§ Steps › Step 1 — ErrorBoundary component`. Superseded by the `ErrorBoundary` record with a `#[@result]` thunk and `renderBoundary`'s `case` (*Mechanism › The erlang half*, Step 1, Step 2). `NotFoundBoundary` has no counterpart: `not-found.bp` is rendered by front 23 using the single boundary type (*Mechanism › Navigation signals are not errors*).
-
-> Introduce error boundary components:
-> - `ErrorBoundary` wraps children and catches rendering errors
-> - `error.bp` convention: file router wraps each route segment in an error boundary
-> - `not-found.bp` convention: 404 UI when a route is not found
-> - `global-error.bp` convention: root-level error boundary
-
-```bp
-// src/error_boundary.bp
-import {Element} from "element";
-
-pub type ErrorBoundaryProps(
-    fallback: fn(error: string) -> Element,
-    children: Children,
-)
-
-pub fn ErrorBoundary(props: ErrorBoundaryProps) -> Element {
-    return Element(
-        tag: "div",
-        value: "",
-        children: props.children,
-        attrs: [#("data-jhonstart-error-boundary", "true")],
-    );
-}
-
-pub fn NotFoundBoundary(props: ErrorBoundaryProps) -> Element {
-    return Element(
-        tag: "div",
-        value: "",
-        children: props.children,
-        attrs: [#("data-jhonstart-not-found-boundary", "true")],
-    );
-}
-```
-
-| Old item | Status |
-|---|---|
-| `data-jhonstart-error-boundary` marker | replaced — `data-onze-e="ID"` (`contracts.md § 2`) |
-| `fallback: fn(error: string) -> Element` | replaced — `fn(info: ErrorInfo) -> Element`; the raw message never reaches the fallback |
-| `NotFoundBoundary` / `data-jhonstart-not-found-boundary` | absent — one boundary type; signals pass through |
-| Acceptance: `ErrorBoundary` and `NotFoundBoundary` compile; render children with boundary metadata | replaced — Step 1/2 acceptance |
-
-### `error.bp` exporting `Error` (with `#[client]` and `retry: fn()`)
-
-`1.0.7-beta/07-jhonstart-error-boundaries/README.md § Exemplos em bp › error.bp` and `§ Steps › Step 2 — error.bp / not-found.bp conventions`. Superseded: the export is `ErrorPage(info: ErrorInfo)` (*Mechanism › The three file conventions*, with the shadowing rationale); the retry is `data-onze-reset="ID"` bound by front 29 (*Mechanism › `reset` / `retry`*); there is no `#[client]` marker on the file.
-
-```bp
-#[client]
-pub fn Error(error: string, retry: fn()) -> Element {
-    return div([
-        h2([text("Algo deu errado!")]),
-        button([text("Tentar novamente")], attrs: [#("onClick", "retry")]),
-    ], attrs: []);
-}
-```
-
-> `error.bp`: exports `fn Error() -> Element` — fallback UI for errors in this segment
-
-```bp
-// app/blog/error.bp
-pub fn Error() -> Element {
-    return div([
-        h1([text("Something went wrong", attrs: [])], attrs: []),
-        p([text("Please try again later.", attrs: [])], attrs: []),
-    ], attrs: []);
-}
-```
-
-### `notFound()` as a host-backed declaration
-
-`1.0.7-beta/07-jhonstart-error-boundaries/README.md § Steps › Step 3 — notFound() function`, `§ Exemplos em bp › notFound()`, `§ Notes`. Superseded: `notFound()` is front 63's signal builder, thrown through the `@Result` channel and **not** caught by the boundary (*Current state*, *Mechanism › Navigation signals are not errors*, Step 3). The old front declared it as an external in this file for both targets.
-
-```bp
-// Throw a special error to trigger not-found UI
-#[@External.Node("onze13/runtime", "notFound")]
-#[@External.Erlang("onze13_runtime", "not_found")]
-declare fn notFound() -> void;
-```
-
-```bp
-#[@future]
-pub fn BlogPost(params: Dict<string, string>) -> @Future<Element> {
-    val post = await getPost(params.get("slug"));
-    if (post == null) { notFound(); };
-    return div([h1([text(post.title)])], attrs: []);
-}
-```
-
-| Old item | Status |
-|---|---|
-| `notFound()` declared for both targets (`#[@External.Node]` + `#[@External.Erlang]`) | different decision — front 63 owns it; no host cell in this front |
-| Acceptance: throws an error the error boundary catches | reversed — the boundary re-raises signals (`isSignal`) so front 23 turns them into a 404 |
-| Note: "`notFound()` throws a special error; the file router catches it and renders `not-found.bp`" | covered — front 23 renders `not-found.bp` on the not-found signal |
-| `params: Dict<string, string>` / `params.get("slug")` / `post == null` | absent — new examples take `slug: string` and test `raw == ""` |
-
-### Step 4 — old test, and the commonJS + erlang test target
-
-`1.0.7-beta/07-jhonstart-error-boundaries/README.md § Steps › Step 4 — Tests`. The assertion `html.contains("data-jhonstart-error-boundary")` is replaced by `data-onze-e`; the target list `commonJS + erlang` is narrowed to erlang (*Target*, *Test plan*).
-
-```bp
-test "ErrorBoundary renders children" {
-    val el = ErrorBoundary(ErrorBoundaryProps(
-        fallback: { error -> div([text(error, attrs: [])], attrs: []) },
-        children: [div([text("Content", attrs: [])], attrs: [])],
-    ));
-    val html = renderToString(el);
-    assert html.contains("Content");
-    assert html.contains("data-jhonstart-error-boundary");
-}
-```
-
-| Old acceptance | Status |
-|---|---|
-| Tests pass on commonJS + erlang | narrowed — erlang only; js rules asserted by front 29 |
-
-### Gate — branch name
-
-`1.0.7-beta/07-jhonstart-error-boundaries/README.md § Gate`. Not restated above.
-
-| Old gate item | Status |
-|---|---|
-| Commit on `fix/jhonstart-error-boundaries` | absent — no branch convention in the new front |
-| `error_boundary.bp` in `botopink.json` and `root.bp` | covered — handed to front 94 (Step 5) |
-| `botopink test` green · AGENTS.md updated | covered — *Definition of done*, Step 5 |
-
-### Reference rows from 1.0.7 overview/fronts
-
-| Source | Row | Status |
-|---|---|---|
-| `1.0.7-beta/overview.md` front table | `07-jhonstart-error-boundaries` · **high** · jhonstart · jhonstart-core · "Error boundaries: error.bp, not-found.bp, global-error.bp" | covered — header block + *The three file conventions* |
-| `1.0.7-beta/overview.md` Next.js mapping | `error.tsx` → `error.bp` → jhonstart (error boundaries) | covered — conventions table |
-| `1.0.7-beta/overview.md` Next.js mapping | `not-found.tsx` → `not-found.bp` → jhonstart (error boundaries) | covered — conventions table |
-| `1.0.7-beta/overview.md` app tree | `app/error.bp` — "Global error boundary" (root-segment `error.bp`) | different decision — the root fallback that owns its document is `global-error.bp`; a root-level `error.bp` is not distinguished above |
-| `1.0.7-beta/overview.md` app tree | `app/not-found.bp` — "Global 404" | absent — only the per-segment `not-found.bp` is described; root-level 404 dispatch is front 23's |
-| `1.0.7-beta/overview.md` app tree | `app/blog/[slug]/not-found.bp` (nested segment) | covered — `examples/not-found-example.bp` |
-| `1.0.7-beta/fronts.md` ownership | owns `repository/jhonstart/src/error_boundary.bp`; tests `repository/jhonstart/test/error_boundary_test.bp` | covered — *Owns* |
-| `1.0.7-beta/fronts.md` conflict matrix | F07 row: `yes` (parallel-safe) against every other front | covered in spirit — *Does not touch* |
-| `1.0.7-beta/fronts.md` phases | Phase 2 (Core features — 7 in parallel): F05 ∥ F06 ∥ F07 ∥ F10 ∥ F11 ∥ F12 ∥ F15 | different decision — *Wave 3*, depends on 28 · 03 · 94 · 17 · 24 · 63 |
-| `1.0.7-beta/07-…/README.md` header | Depends on: F04 (jhonstart-server-components); does not touch `suspense.bp` | covered — depends on 28; `src/suspense.bp`/`src/streaming.bp` (30) in *Does not touch* |

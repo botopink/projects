@@ -1,11 +1,10 @@
-// Carried from 1.0.7-beta examples-bp.md § F05 — Componente cliente com effect
 // components/timer.bp
 #[client]
 import {Element, div, p, text} from "jhonstart";
 import {state, effect} from "jhonstart";
 
-#[@context]
-pub fn Timer() -> Element {
+#[@use]
+pub fn Timer() -> @Component<Element> {
     val seconds = use state(0);
     use effect({ ->
         val interval = setInterval({ ->
@@ -14,6 +13,6 @@ pub fn Timer() -> Element {
         return { -> clearInterval(interval); };
     }, []);
     return div([
-        p([text("Tempo: " + seconds.value.toString() + "s", attrs: [])], attrs: []),
+        p([text("Time: " + seconds.value.toString() + "s", attrs: [])], attrs: []),
     ], attrs: []);
 }

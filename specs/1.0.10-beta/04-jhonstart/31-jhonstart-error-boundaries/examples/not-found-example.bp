@@ -31,7 +31,6 @@ import { notFound } from "rakun";
 
 // ── what the developer writes: app/blog/[slug]/not-found.bp ─────────────────
 
-#[@context]
 pub fn NotFound() -> Element {
     return section([
         h2([text("Post not found", attrs: [])], attrs: []),

@@ -30,8 +30,8 @@ fn addLike(current: i32, action: i32) -> i32 {
 }
 
 // The submit button, which reads its own form's status rather than a prop.
-#[@context]
-fn LikeButton() -> Element {
+#[@use]
+fn LikeButton() -> @Component<Element> {
     val status = use formStatus();
     return likeButton(status);
 }
@@ -60,8 +60,8 @@ fn likeWidget(binding: FormBinding, shown: i32, status: FormStatus) -> Element {
 
 // The component. `push(1)` is called by the submit interceptor, not from here:
 // the prediction is recorded against the submit that is starting.
-#[@context]
-fn LikeWidget(serverCount: i32) -> Element {
+#[@use]
+fn LikeWidget(serverCount: i32) -> @Component<Element> {
     // LANGUAGE GAP: `val #(shown, push) = use …` parses and lowers, but the elements
     // are fresh type vars (`infer.zig:8194-8196`) — `shown` is typed only because
     // `likeWidget` takes an `i32`. Upstream: `const [shown, push] = useOptimistic(...)`.

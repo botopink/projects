@@ -75,8 +75,8 @@ fn createPostForm(binding: FormBinding, state: ActionState, pending: bool) -> El
 
 // The component. `use actionState(...)` is the hook form; `newActionState("")` builds the
 // initial value (the hook owns the noun `actionState`; the helper takes a verb).
-#[@context]
-fn CreatePostForm(actionId: string) -> Element {
+#[@use]
+fn CreatePostForm(actionId: string) -> @Component<Element> {
     // LANGUAGE GAP: tuple labels are lost through generic instantiation — this
     // would read `s.state` / `s.action` / `s.pending`; positional below.
     val s = use actionState(actionId, newActionState(""));

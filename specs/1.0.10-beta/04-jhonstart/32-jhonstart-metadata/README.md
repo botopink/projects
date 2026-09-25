@@ -8,7 +8,6 @@
 **Owns:** `repository/jhonstart/src/metadata.bp`, `repository/jhonstart/test/metadata_test.bp`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (26), `src/link.bp` (27), `src/server.bp` (28), `src/client.bp` (29), `src/suspense.bp`/`src/streaming.bp` (30), `src/error_boundary.bp` (31), `src/root.bp` and `botopink.json` (front 94)
 **Reference:** `NEXTJS-DOCS.md § 18. Metadata e OG Images` · https://nextjs.org/docs/app/getting-started/metadata-and-og-images · https://nextjs.org/docs/app/api-reference/functions/generate-metadata
-**Replaces:** `1.0.7-beta/08-jhonstart-metadata`
 
 ---
 
@@ -39,8 +38,6 @@ have had to hand-roll it.
   front 01's, new, in pure botopink.
 - `pub val` of a primitive is real (`libs/std/src/math.bp:16`, `libs/std/src/path.bp:13`); a `pub val`
   of a user record type is unexercised anywhere in the tree — which decides the export shape below.
-- The 1.0.7 draft proposed `pub val metadata: Metadata = Metadata(...)` and a `collectMetadata()`
-  host cell. Both are dropped; see *Mechanism*.
 - `sitemap`, `robots`, `manifest` and `opengraph-image` are **file routes**, and file routes are
   front 66's (`rakun-metadata-file-routes`). This front owns `generateMetadata` and the head tags it
   emits, and nothing that is addressed by a URL.
@@ -86,8 +83,7 @@ so a page that only sets a title writes one field's worth of difference and not 
 
 ### The merge rule
 
-This is the part the 1.0.7 draft did not have, and it is the part with actual semantics. Merging a
-child segment's metadata onto its parent's:
+This is the part with actual semantics. Merging a child segment's metadata onto its parent's:
 
 | Field kind | Rule | Example |
 |---|---|---|
@@ -341,172 +337,3 @@ payload, and asserting that is front 26's and front 68's, not this front's.
 - [ ] the two reference gaps are recorded under *Reference gaps* with their upstream URLs
 - [ ] all three language gaps appear in a `specs/1.0.10-beta/` spec
 - [ ] the front's tests are green on its assigned target
-
-## Carried from 1.0.7-beta F08 jhonstart-metadata
-
-Items of the 1.0.7 draft not restated above, quoted so nothing is lost; where the milestone decided differently the 1.0.9 decision stands and the old text is kept for the record.
-
-### Static export as `pub val` (1.0.7 F08 README · *Exemplos em bp › Metadata estático*, lines 24-32)
-
-Different decision — *Mechanism › Exports are functions, both of them*: the static form is `pub fn metadata() -> Metadata`; a `pub val` of a user record type is unexercised anywhere in the tree. The draft also built `OpenGraph` with two of its five fields; 1.0.9 has no optionals, so every field is spelled and `emptyOpenGraph()` is the starting point.
-
-```bp
-pub val metadata: Metadata = Metadata(
-    title: "Sobre Nós",
-    description: "Saiba mais sobre nossa empresa.",
-    openGraph: OpenGraph(title: "Sobre", images: ["/og.png"]),
-);
-```
-
-### `generateMetadata(params: Dict<string, string>)` (lines 34-42)
-
-Different decision — `generateMetadata(params, parent)`: `params` is `Array<#(string, string)>` read through front 26's `pairValue`, and the parent's resolved metadata is the second argument (*Mechanism*, Step 5 table).
-
-```bp
-#[@future]
-pub fn generateMetadata(params: Dict<string, string>) -> @Future<Metadata> {
-    val post = await fetchPost(params.get("slug"));
-    return Metadata(title: post.title, description: post.excerpt);
-}
-```
-
-### Both exports in one segment (*Mechanism*, lines 44-74)
-
-Different decision — "A segment may export either. Exporting both is a front-23 error, not a silent precedence rule." The draft's mechanism block exported both from the same `page.bp`. Its three bullets — `metadata` static object exported from `page.bp` or `layout.bp`; `generateMetadata` async for dynamic pages; the SSR pipeline (then F09, now front 23) collects metadata and renders it into `<head>` — are covered above.
-
-```bp
-// app/blog/[slug]/page.bp
-import {Metadata} from "jhonstart";
-
-pub val metadata: Metadata = Metadata(
-    title: "My Blog Post",
-    description: "A great blog post",
-    openGraph: OpenGraph(
-        title: "My Blog Post",
-        description: "A great blog post",
-        images: ["/og/blog-post.png"],
-    ),
-);
-
-#[@future]
-pub fn generateMetadata(params: Dict<string, string>) -> @Future<Metadata> {
-    val slug = params.get("slug");
-    val post = await fetchPost(slug);
-    return Metadata(
-        title: post.title,
-        description: post.excerpt,
-    );
-}
-```
-
-### The 1.0.7 record set (*Step 1 — Metadata types*, lines 78-113)
-
-Different decision — `OpenGraph.type` is `ogType` (`type` is a keyword); `OpenGraph.siteName` and `Metadata.titleTemplate` are added. The `TwitterCard.card` value list (`"summary" | "summary_large_image" | "app" | "player"`) is not restated above. Acceptance "All fields are optional (use defaults)" is replaced by the absence convention (`""` / `[]`, `emptyMetadata()`); see also *Language gaps*, declared defaults are never applied.
-
-```bp
-// src/metadata.bp
-pub type Metadata(
-    title: string,
-    description: string,
-    openGraph: OpenGraph,
-    twitter: TwitterCard,
-    icons: Icons,
-)
-
-pub type OpenGraph(
-    title: string,
-    description: string,
-    images: string[],
-    url: string,
-    type: string,
-)
-
-pub type TwitterCard(
-    card: string,    // "summary" | "summary_large_image" | "app" | "player"
-    title: string,
-    description: string,
-    images: string[],
-)
-
-pub type Icons(
-    icon: string,
-    apple: string,
-)
-```
-
-| Old acceptance | 1.0.9 |
-|---|---|
-| Metadata types compile | Step 1 |
-| All fields are optional (use defaults) | different decision — no optionals; `emptyMetadata()` |
-
-### `collectMetadata()` host cell (*Step 2 — Metadata collection*, lines 115-126)
-
-Different decision — dropped (*Current state*): front 23 resolves the segment export by name and merges it down the chain; there is no host cell and no runtime collection step.
-
-```bp
-// During SSR, collect metadata from page/layout exports
-#[@External.Node("onze13/runtime", "collectMetadata")]
-#[@External.Erlang("onze13_runtime", "collect_metadata")]
-declare fn collectMetadata() -> Metadata;
-```
-
-| Old acceptance | 1.0.9 |
-|---|---|
-| Host cells declared for both targets | dropped |
-| SSR pipeline can collect metadata | front 23 calls `metadata()` / awaits `generateMetadata(params, parent)` (Step 5 table) |
-
-### `renderMetadataToHtml` (*Step 3 — Render metadata to HTML*, lines 128-146)
-
-Different decision — renamed `renderHead(m) -> string`; a fixed tag order; every value through front 01's `escape.html` / `escape.attribute`. The draft concatenated raw field values. Its two acceptance items (valid HTML; empty/missing fields handled) are Step 3 above.
-
-```bp
-pub fn renderMetadataToHtml(metadata: Metadata) -> string {
-    var html = "";
-    if (metadata.title != "") {
-        html = html + "<title>" + metadata.title + "</title>";
-    };
-    if (metadata.description != "") {
-        html = html + "<meta name=\"description\" content=\"" + metadata.description + "\">";
-    };
-    // ... OG, Twitter, icons
-    return html;
-}
-```
-
-### Tests on both targets (*Step 4 — Tests*, lines 148-165)
-
-Different decision — this front's target is erlang only (*Test plan*: "There is no js row and none is needed"). The draft's acceptance was "Tests pass on commonJS + erlang".
-
-```bp
-test "renderMetadataToHtml produces title tag" {
-    val meta = Metadata(
-        title: "My Page",
-        description: "",
-        openGraph: OpenGraph(title: "", description: "", images: [], url: "", type: ""),
-        twitter: TwitterCard(card: "", title: "", description: "", images: []),
-        icons: Icons(icon: "", apple: ""),
-    );
-    val html = renderMetadataToHtml(meta);
-    assert html.contains("<title>My Page</title>");
-}
-```
-
-### Gate items (lines 167-172)
-
-| Old gate | 1.0.9 |
-|---|---|
-| `botopink test` green | Definition of done |
-| `metadata.bp` in `botopink.json` and `root.bp` | different decision — lines handed to front 94, which owns both files (Step 5) |
-| AGENTS.md updated | Step 5 |
-| Commit on `fix/jhonstart-metadata` | not restated |
-
-### Reference rows from 1.0.7 overview/fronts
-
-| Source | Row | 1.0.9 |
-|---|---|---|
-| `overview.md:14` | `08-jhonstart-metadata` · medium · jhonstart · jhonstart-core · "Metadata API: generateMetadata, OG images, SEO tags" | `generateMetadata` and the head tags are here; OG images are file routes, front 66 |
-| `overview.md:151` | Next.js `generateMetadata` → `generateMetadata fn` → jhonstart | covered |
-| `overview.md:152` | Next.js `ImageResponse (OG)` → "OG image generation" → jhonstart + onze13 | different decision — `opengraph-image` is a file route owned by front 66 (rakun); this front owes it only `openGraph.images` |
-| `overview.md:84` | "decorator-based metadata" listed under convention over configuration | different decision — named segment exports `metadata()` / `generateMetadata()`, no decorator |
-| `fronts.md:14` | F08 owns `repository/jhonstart/src/metadata.bp`; tests `repository/jhonstart/test/metadata_test.bp` | header **Owns** |
-| `fronts.md:76,87` | F08 in Phase 3, parallel with F13 · F16 · F18–F21 | Wave 3 |

@@ -1,10 +1,10 @@
-// Carried from 1.0.7-beta examples-bp.md § F08 — Metadata dinâmico (dynamic metadata)
-// 1.0.9 decided differently: `generateMetadata(params: Array<#(string, string)>, parent)` with `pairValue`,
-// `OpenGraph.type` is `ogType`, every field is spelled (no optionals). Kept verbatim for the record.
+// NOTE: 32 spells `generateMetadata(params: Array<#(string, string)>, parent)` with `pairValue`,
+// `OpenGraph.type` as `ogType`, and every field (no optionals); this example keeps the older shape.
 
 // app/blog/[slug]/page.bp
 import {Element, div, h1, p, text} from "jhonstart";
 import {Metadata} from "jhonstart";
+import {collections.Dict} from "std";
 
 #[@future]
 pub fn generateMetadata(params: Dict<string, string>) -> @Future<Metadata> {
@@ -30,8 +30,8 @@ pub fn generateMetadata(params: Dict<string, string>) -> @Future<Metadata> {
     );
 }
 
-#[@future]
-pub fn BlogPost(params: Dict<string, string>) -> @Future<Element> {
+#[@use]
+pub fn BlogPost(params: Dict<string, string>) -> @Component<Element> {
     val slug = params.get("slug");
     val post = await fetchPost(slug);
     return div([

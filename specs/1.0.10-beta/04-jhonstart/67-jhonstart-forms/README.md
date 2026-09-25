@@ -7,14 +7,13 @@
 **Depends on:** 24 (the action endpoint and its envelope) · 29 (the client boundary and the hydration entry) · 94 (`form`, `input`, `button`, `label` — this front defines no constructor) · 14 (the constraint set the client mirrors) · 26 (navigation after a submit) · 31 (which settled that an `ok: false` envelope is data, not a boundary) · 63 (a redirect returned from an action) · 01 (percent encoding)
 **Owns:** `repository/jhonstart/src/form.bp`, `repository/jhonstart/src/form_state.bp`, `repository/jhonstart/test/form_test.bp`, `repository/jhonstart/test/form_state_test.bp`
 **Does not touch:** `repository/jhonstart/src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen for the milestone), `src/elements.bp` (front 94), `src/router.bp` (front 26), `src/link.bp` (front 27), `src/client.bp` (front 29), `repository/rakun/src/actions.bp` (front 24)
-**Reference:** `NEXTJS-DOCS.md § 10. Mutação de Dados` (Formulários · useActionState · Invocando via event handlers · Segurança), `§ 14. Tratamento de Erros` (Erros esperados), `§ 25. Referência de Componentes` (`<Form>`) · `specs/1.0.9-beta/contracts.md § 3` (action id and
+**Reference:** `NEXTJS-DOCS.md § 10. Mutação de Dados` (Formulários · useActionState · Invocando via event handlers · Segurança), `§ 14. Tratamento de Erros` (Erros esperados), `§ 25. Referência de Componentes` (`<Form>`) · `contracts.md § 3` (action id and
 envelope, owned by front 24) ·
 <https://nextjs.org/docs/app/getting-started/updating-data> ·
 <https://nextjs.org/docs/app/api-reference/components/form> ·
 <https://react.dev/reference/react/useActionState> ·
 <https://react.dev/reference/react-dom/hooks/useFormStatus> ·
 <https://react.dev/reference/react/useOptimistic>
-**Replaces:** new — admitted by the Next.js coverage audit, which found the client half of front 24 unowned
 
 ---
 
@@ -36,7 +35,7 @@ progressive-enhancement path is not a nicety here; it is the reason the API has 
 
 And `repository/jhonstart/src/element.bp` has no `form`, no `input`, no `button` and no `label`
 (`element.bp:10-53` — the complete constructor set is `text, fragment, div, span, p, h1, ul, li`).
-That question is now answered: **front 94 (`jhonstart-element-surface`) owns `form`, `input`,
+**Front 94 (`jhonstart-element-surface`) owns `form`, `input`,
 `button`, `label`, `select` and `textarea` in `repository/jhonstart/src/elements.bp`.** Front 67 adds
 no constructor of its own and defines none locally; it imports them from `jhonstart` and marks each
 import `// provided by front 94`. `element.bp` stays frozen.
@@ -143,8 +142,9 @@ than sharing a parser between two targets that cannot share code.
 
 ### The three hooks, and what the server render sees
 
-All three are hooks in the existing sense: a fn returning `@Context<Element, _>`, legal under `use`
-inside a `#[@context] fn … -> Element` body (`hooks.bp:23-60`). During the server pass each yields its quiet value —
+All three are hooks in the existing sense: `#[@use] fn … -> @Use<ElementBase, _>` (decision 102),
+legal under `use` inside a `#[@use] fn … -> @Component<Element>` body (decision 104; `hooks.bp:23-60`).
+During the server pass each yields its quiet value —
 `actionState` yields the initial state with `pending: false`, `formStatus` yields idle,
 `optimistic` yields the base value. That is not a stub; it is the correct first render. A spinner
 in the server HTML is a spinner nobody can stop, and an optimistic value in the server HTML is a lie
@@ -247,10 +247,11 @@ declared default would never be applied — a builder pair would be two function
 ### Step 3 — `actionState`
 
 ```bp
+#[@use]
 pub fn actionState(
     actionId: string,
     initial: ActionState,
-) -> @Context<Element, #(ActionState, FormBinding, bool)>
+) -> @Use<ElementBase, #(ActionState, FormBinding, bool)>
 ```
 
 Read positionally — `s.0` the state, `s.1` the binding, `s.2` the pending flag — because the labels of
@@ -276,7 +277,8 @@ upstream doc finds the same three things in the same order.
 ```bp
 pub type FormStatus(pending: bool, actionId: string, method: string)
 
-pub fn formStatus() -> @Context<Element, FormStatus>
+#[@use]
+pub fn formStatus() -> @Use<ElementBase, FormStatus>
 ```
 
 The hook a nested submit button calls to disable itself, without the parent threading `pending` down
@@ -291,10 +293,11 @@ through every intermediate component. Absent from this doc revision — see *Ref
 ### Step 5 — `optimistic`
 
 ```bp
+#[@use]
 pub fn optimistic<T>(
     base: T,
     apply: fn(current: T, action: T) -> T,
-) -> @Context<Element, #(T, fn(action: T))>
+) -> @Use<ElementBase, #(T, fn(action: T))>
 
 pub fn applyOptimistic<T>(base: T, actions: Array<T>, apply: fn(current: T, action: T) -> T) -> T
 ```
@@ -352,15 +355,15 @@ them, and a form that posts to the endpoint gets the check whether or not it cam
 
 ## Naming under the `use` rule
 
-Every hook of this front is spelled by [`19-use-activation`](../../00-compiler-carry-over/19-use-activation/README.md): the keyword `use` is the
+Every hook of this front is spelled by [`19-use-activation`](../../00-compiler-carry-over/19-use-activation/README.md) and decisions 102/104: `#[@use] fn <noun>(…) -> @Use<ElementBase, _>`, the keyword `use` is the
 activation, the name is the noun of what is yielded, never `use`-prefixed — `actionState`, `formStatus`,
-`optimistic`; activated as `val s = use actionState(id, initial)`, called plainly (`actionState(id, initial)`)
-for the server-pass value, which is what every `test` here does (a `test` body has no `@Context` return, so
-`use` is illegal there). Two collisions this created, and how they are resolved:
+`optimistic`; activated as `val s = use actionState(id, initial)` inside a `#[@use] fn … -> @Component<Element>`
+body, called plainly (`actionState(id, initial)`) for the server-pass value, which is what every `test` here
+does (a `test` body carries no `#[@use]`, so `use` is illegal there).
 
-| Collision | Decision |
+| Name | Rule |
 |---|---|
-| The 1.0.9 text had a helper `actionState(message) -> ActionState` **and** a hook `useActionState(id, initial)`; under the rule both wanted the noun | The hook owns the noun: `actionState(actionId, initial)`. The helper takes a verb, like its sibling `parseActionState`: **`newActionState(message)`**. The type constructor stays `ActionState(ok:, message:, redirectTo:, fields:)` — PascalCase, four required fields (declared defaults are not applied, see below), which is why a helper exists at all |
+| `actionState(actionId, initial)` — the hook owns the noun; `newActionState(message)` — the helper takes a verb, like its sibling `parseActionState` | the type constructor stays `ActionState(ok:, message:, redirectTo:, fields:)` — PascalCase, four required fields (declared defaults are not applied, see below), which is why a helper exists at all |
 | `formStatus()` / `FormStatus(…)`, `optimistic()` / `applyOptimistic(…)` | no collision — a constructor is PascalCase, the helper carries a verb |
 
 A binding never reuses its hook's name (`val s = use actionState(…)`, not `val actionState = …`): the

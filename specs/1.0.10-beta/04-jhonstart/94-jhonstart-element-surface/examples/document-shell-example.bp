@@ -19,8 +19,8 @@
 //   https://nextjs.org/docs/app/api-reference/file-conventions/layout
 //   https://nextjs.org/docs/app/api-reference/file-conventions/error#global-errortsx
 //   https://html.spec.whatwg.org/multipage/semantics.html#the-head-element
-//   NEXTJS-DOCS.md § 4. App Router — Fundamentos · Root Layout (obrigatório)
-//   NEXTJS-DOCS.md § 14. Tratamento de Erros
+//   NEXTJS-DOCS.md § 4. App Router — Fundamentals · Root Layout (required)
+//   NEXTJS-DOCS.md § 14. Error Handling
 //
 // LANGUAGE GAP: declared parameter defaults are never applied, so every
 // constructor call below spells `attrs:` — the inner `text(…)` calls included.

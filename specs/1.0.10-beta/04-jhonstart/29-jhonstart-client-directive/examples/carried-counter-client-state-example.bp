@@ -1,11 +1,10 @@
-// Carried from 1.0.7-beta examples-bp.md § F05 — Componente cliente com state
 // components/counter.bp
 #[client]
 import {Element, div, button, p, text} from "jhonstart";
 import {state} from "jhonstart";
 
-#[@context]
-pub fn Counter() -> Element {
+#[@use]
+pub fn Counter() -> @Component<Element> {
     val count = use state(0);
     return div([
         p([text("Count: " + count.value.toString(), attrs: [])], attrs: []),

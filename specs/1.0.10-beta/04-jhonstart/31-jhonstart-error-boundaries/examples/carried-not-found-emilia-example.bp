@@ -1,15 +1,13 @@
-// Carried from 1.0.7-beta examples-bp.md § F07 — not-found.bp
 // app/blog/[slug]/not-found.bp
 import {Element, div, h2, p, text} from "jhonstart";
 import {Link} from "jhonstart";
 import {emilia, Token} from "emilia";
 
-#[@context]
 pub fn NotFound() -> Element {
     val containerClass = emilia([.Pad.All.8, .Text.Center]);
     return div([
-        h2([text("Post não encontrado", attrs: [])], attrs: []),
-        p([text("O post que você procura não existe.", attrs: [])], attrs: []),
-        Link("/blog", [text("Voltar ao blog", attrs: [])]),
+        h2([text("Post not found", attrs: [])], attrs: []),
+        p([text("The post you are looking for does not exist.", attrs: [])], attrs: []),
+        Link("/blog", [text("Back to the blog", attrs: [])]),
     ], attrs: [#("class", containerClass)]);
 }

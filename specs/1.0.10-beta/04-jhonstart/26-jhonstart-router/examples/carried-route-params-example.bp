@@ -1,12 +1,12 @@
-// Carried from 1.0.7-beta examples-bp.md § F02 — Acessando params da rota
 // app/blog/[slug]/page.bp
-// Respelled under the `use` rule (00-compiler-carry-over/19): `use router()` →
-// `use router()`, binding `r`; the draft's `r.params().get()` call shape is kept as the record.
+// Under the `use` rule (00-compiler-carry-over/19, decision 104):
+// `#[@use] … -> @Component<Element>`, `use router()` binding `r`; the
+// `r.params().get()` call shape is kept as the record.
 import {router} from "jhonstart";
 import {Element, div, h1, text} from "jhonstart";
 
-#[@context]
-pub fn BlogPost() -> Element {
+#[@use]
+pub fn BlogPost() -> @Component<Element> {
     val r = use router();
     val slug = r.params().get("slug");
     return div([

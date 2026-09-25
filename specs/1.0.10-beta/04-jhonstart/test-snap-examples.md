@@ -118,7 +118,7 @@ outcome: ok
 <div data-onze-e="comments"><section class="segment-error"><h2>This section is unavailable</h2><p>Reference: <digest></p><button data-onze-reset="comments">Retry</button></section></div>
 ```
 
-`<digest>` stands for `digestOf("comment service down")` — `content_hash.short` is front 03's and its hex is front 03's snapshot, not this track's. The first run writes the `.snap.new` with the real hex; it is accepted only after that hex is checked against front 03's `__snapshots__`. The message itself is asserted absent by construction (`infoFor` blanks it).
+`<digest>` stands for `digestOf("comment service down")` — `hash.contentHash` is front 03's (std `hash`, decision 106) and its hex is front 03's snapshot, not this track's. The first run writes the `.snap.new` with the real hex; it is accepted only after that hex is checked against front 03's `__snapshots__`. The message itself is asserted absent by construction (`infoFor` blanks it).
 
 ```bp
 test "blog: not-found page" {

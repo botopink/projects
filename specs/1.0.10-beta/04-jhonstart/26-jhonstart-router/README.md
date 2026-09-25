@@ -9,7 +9,6 @@
 **Owns:** `repository/jhonstart/src/router.bp` (promoted from `router.d.bp`, and the package's one `pairValue` pair-list decoder), `repository/jhonstart/test/router_test.bp`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/link.bp` (front 27), `src/server.bp` (front 28), `src/root.bp` and `botopink.json` (front 94)
 **Reference:** `NEXTJS-DOCS.md § 8. Navegação e Linking` · `§ 26. Referência de Funções` · https://nextjs.org/docs/app/api-reference/functions/use-router · https://nextjs.org/docs/app/api-reference/functions/use-params · https://nextjs.org/docs/app/api-reference/functions/use-search-params
-**Replaces:** `1.0.7-beta/02-jhonstart-router`
 
 ---
 
@@ -30,10 +29,9 @@ is the piece in between — a record the render can read, filled by the server, 
 client after a client-side navigation so that the same component code produces the same markup on
 both sides.
 
-The second problem is one the 1.0.7 draft did not see. That draft made every navigation verb a
-method on `Router` (`push`, `replace`) whose implementation mutated the record. botopink records are
-immutable and there is no assignment to a `self` field anywhere in the tree; `dict.insert` returning
-a new dict is the ecosystem's shape. So navigation cannot be a method at all — it is a call against
+The second problem is that navigation cannot be a method on the record. botopink records are
+immutable and there is no assignment to a `self` field anywhere in the tree; `Dict.insert` (std
+`collections`) returning a new dict is the ecosystem's shape. So a navigation verb is a call against
 host state, and the record is a read-only snapshot of that state.
 
 ## Current state
@@ -66,11 +64,10 @@ jhonstart keeps that split and makes the record concrete.
 
 ### The erlang half — this front
 
-`router.bp` defines `RouterState`, a plain record with five fields and no behavior. The 1.0.7 draft
-kept `behavior Router` and had `RouterState implement Router`; this front drops the behavior. A
+`router.bp` defines `RouterState`, a plain record with five fields and no `Router` behavior. A
 behavior with `val` members has no verified implementor anywhere in the tree, and a concrete record
-is what the `use` capability has to yield anyway — the indirection buys nothing and risks a
-construct nobody has exercised.
+is what `use` has to yield anyway — the indirection buys nothing and risks a construct nobody has
+exercised.
 
 The snapshot is filled from five `#[@External.Erlang]` cells that read what front 22 put in the
 request's process dictionary before dispatch. Every one of them returns a `string`, and each maps
@@ -102,9 +99,10 @@ does not parse the table itself. A router with its own matcher is a router that 
 server on precedence (static > dynamic > catch-all > optional catch-all), and the disagreement shows
 up only on the routes nobody tested.
 
-The five hooks are thin. Each returns `@Context<Element, T>`, which is what makes `use` legal on it
-inside a `#[@context]` body whose owner is `Element` — the same capability `hooks.bp` uses for `state`/`memo`
-(`hooks.bp:30-60`).
+The five hooks are thin. Each is `#[@use] fn … -> @Use<ElementBase, T>` (decision 102): the wrapper
+names the base the hook anchors on, and `use` on it is legal inside a `#[@use]` body whose base is
+`ElementBase` — a `#[@use] fn … -> @Component<Element>` component, or another hook (decision 104).
+It is the same shape `hooks.bp` uses for `state`/`memo` (`hooks.bp:30-60`).
 
 ### The js half — front 27 and front 29
 
@@ -234,33 +232,40 @@ pub fn snapshot() -> RouterState {
 ### Step 3 — The five hooks
 
 ```bp
-pub fn router() -> @Context<Element, RouterState> {
+#[@use]
+pub fn router() -> @Use<ElementBase, RouterState> {
     return snapshot();
 }
 
-pub fn pathname() -> @Context<Element, string> {
+#[@use]
+pub fn pathname() -> @Use<ElementBase, string> {
     return snapshot().path;
 }
 
-pub fn params() -> @Context<Element, Array<#(string, string)>> {
+#[@use]
+pub fn params() -> @Use<ElementBase, Array<#(string, string)>> {
     return snapshot().params;
 }
 
-pub fn searchParams() -> @Context<Element, Array<#(string, string)>> {
+#[@use]
+pub fn searchParams() -> @Use<ElementBase, Array<#(string, string)>> {
     return snapshot().search;
 }
 
-pub fn selectedLayoutSegment() -> @Context<Element, string> {
+#[@use]
+pub fn selectedLayoutSegment() -> @Use<ElementBase, string> {
     return snapshot().segment();
 }
 
-pub fn selectedLayoutSegments() -> @Context<Element, Array<string>> {
+#[@use]
+pub fn selectedLayoutSegments() -> @Use<ElementBase, Array<string>> {
     return snapshot().segments();
 }
 ```
 
 **Acceptance:**
-- [ ] `use pathname()` type-checks inside a `#[@context] fn … -> Element` body — never the doubled `use` + `usePathname()`: the keyword is the activation, the name is the noun; without the annotation the body is `use-without-context-effect` ([`19-use-activation`](../../00-compiler-carry-over/19-use-activation/README.md))
+- [ ] `use pathname()` type-checks inside a `#[@use] fn … -> @Component<Element>` body — never the doubled `use` + `usePathname()`: the keyword is the activation, the name is the noun; without the annotation the body is `use-without-context-effect` (decision 104, [`19-use-activation`](../../00-compiler-carry-over/19-use-activation/README.md))
+- [ ] every hook carries `#[@use]` and returns `@Use<ElementBase, T>`; a hook whose annotation and wrapper disagree is a located error
 - [ ] `pathname()` called WITHOUT `use` also type-checks and returns the string — the server render calls hooks directly, as `jhonstart-counter`'s `StatefulBadge` does
 - [ ] `selectedLayoutSegments()` returns the segments root-first
 - [ ] all six are `pub`
@@ -357,179 +362,3 @@ type-checked, not executed, exactly as `hooks.bp:104-117` does for `Counter`.
 - [ ] no `#[@External.Node]`-only cell in the file; the one dual-target cell is `__jhNavigate`
 - [ ] both language gaps appear in a `specs/1.0.10-beta/` spec
 - [ ] the front's tests are green on its assigned target
-
-## Carried from 1.0.7-beta F02 jhonstart-router
-
-Items of the 1.0.7 draft not restated above, quoted so nothing is lost; where the milestone decided differently the 1.0.9 decision stands and the old text is kept for the record.
-
-### Examples — `useRouter` as the one hook, `pathname()` / `params().get()` (different decision)
-
-`1.0.7-beta/02-jhonstart-router/README.md § Examples in bp` (the draft's `useRouter` [now `router()`]). The draft read the path and the params through methods of a `Router` behavior, with `params` a `Dict<string, string>`. Front 26 has `pathname()` / `RouterState.path`, `param(name)` over `Array<#(string, string)>`, and no `.get`. The two blocks are respelled under the `use` rule — the draft's `use`-prefixed `useRouter()` call → `use router()`, binding `r` — and keep the draft's call shape (`r.pathname()`, `r.params().get()`) as the record.
-
-```bp
-#[client]
-import {router} from "jhonstart";
-
-#[@context]
-pub fn Breadcrumb() -> Element {
-    val r = use router();
-    return div([span([text("Path: " + r.pathname())])], attrs: []);
-}
-```
-
-```bp
-#[@context]
-pub fn BlogPost() -> Element {
-    val r = use router();
-    val slug = r.params().get("slug");
-    return div([h1([text("Post: " + slug)])], attrs: []);
-}
-```
-
-### Mechanism — behavior + one host cell per target + navigation as methods (different decision)
-
-`1.0.7-beta/02-jhonstart-router/README.md § Mechanism`. Old text:
-
-> Promote `router.d.bp` → `router.bp` with a real implementation:
-> - `Router` behavior gets a concrete type `RouterState` holding pathname + params
-> - `useRouter()` [now `router()`] returns `@Context<Element, Router>` backed by a host cell (commonJS: module-global state; erlang: process dictionary)
-> - Navigation (`push`/`replace`) updates the host cell
-> - The host runtime (rakun SSR pipeline, F09) provides the initial Router state from the HTTP request
-
-| Old item | Front 26 decision |
-|---|---|
-| `Router` behavior with `RouterState` implementor | behavior dropped; `RouterState` is a plain five-field record (§ Mechanism, *The erlang half*) |
-| `@Context<Element, Router>` | `@Context<Element, RouterState>` (§ Step 3) |
-| commonJS host cell = module-global state | client rebuilds the snapshot from front 23's `__onze` payload / `window.location` via `matchPath` (§ *Native History API*, § *What crosses*) |
-| erlang host cell = process dictionary | kept: five `#[@External.Erlang]` cells read the request's process dictionary (§ Step 2) |
-| `push`/`replace` mutate the host cell | free functions over `__jhNavigate(kind, href)`; on erlang they record a 307 redirect (§ Step 4) |
-| initial state from rakun SSR pipeline (F09) | fronts 22 (match) and 23 (payload) fill it; the front numbering changed |
-
-### Step 1 — `RouterState implement Router` with `Dict` fields and four methods (different decision)
-
-`1.0.7-beta/02-jhonstart-router/README.md § Step 1 — Concrete RouterState type`
-
-```bp
-// src/router.bp
-import {Element} from "element";
-
-pub type RouterState(
-    pathname: string,
-    params: Dict<string, string>,
-    searchParams: Dict<string, string>,
-) implement Router
-
-pub fn pathname(self: Self) -> string { return self.pathname; }
-pub fn params(self: Self) -> Dict<string, string> { return self.params; }
-pub fn push(self: Self, href: string) { routerPush(href); }
-pub fn replace(self: Self, href: string) { routerReplace(href); }
-```
-
-Old acceptance: `RouterState` implements `Router` behavior · all 4 methods have real bodies · compiles on commonJS + erlang. Front 26: no behavior; fields `path`/`params`/`search`/`pattern`/`selected` with `param`/`searchParam`/`segments`/`segment` methods; target erlang only (the commonJS row is not this front's gate).
-
-### Step 2 — `onze13/runtime` cells, dual-target, three verbs (different decision; one item absent)
-
-`1.0.7-beta/02-jhonstart-router/README.md § Step 2 — Host cells for navigation`
-
-```bp
-// In router.bp
-#[@External.Node("onze13/runtime", "routerPush")]
-#[@External.Erlang("onze13_runtime", "router_push")]
-declare fn routerPush(href: string) -> void;
-
-#[@External.Node("onze13/runtime", "routerReplace")]
-#[@External.Erlang("onze13_runtime", "router_replace")]
-declare fn routerReplace(href: string) -> void;
-
-#[@External.Node("onze13/runtime", "routerGetState")]
-#[@External.Erlang("onze13_runtime", "router_get_state")]
-declare fn routerGetState() -> RouterState;
-```
-
-| Old item | Front 26 |
-|---|---|
-| host module `onze13/runtime` / `onze13_runtime` | `jhonstart_router` (erlang) and `jhonstart/client-runtime` (js) |
-| `routerGetState() -> RouterState` as a host cell | `snapshot()` is pure botopink over five `string`/`i32` cells; no record crosses the host boundary |
-| `routerPush`/`routerReplace` as two cells | one dual-target `__jhNavigate(kind, href) -> i32` |
-| `-> void` cells | `-> i32`, the ecosystem's shape for an unused host value |
-| acceptance "Host cells declared for both targets" | only `__jhNavigate` is dual-target; the five read cells are erlang-only |
-| acceptance "`botopink check` passes" | **absent** — not restated as a gate |
-
-### Step 3 — `useRouter() -> @Context<Element, Router>` (different decision)
-
-`1.0.7-beta/02-jhonstart-router/README.md § Step 3 — useRouter hook` [now `router()`]
-
-```bp
-pub fn router() -> @Context<Element, Router> {
-    return routerGetState();
-}
-```
-
-Old acceptance: returns `@Context<Element, Router>` · usable with `use` prefix in components · test `val r = useRouter(); r.pathname()` returns current path. Front 26: returns `@Context<Element, RouterState>` from `snapshot()`; the `use` form is type-checked; `r.pathname()` has no equivalent — the path is `r.path` or `pathname()`.
-
-### Step 4 — this front edits `botopink.json` and `root.bp` (different decision; one item absent)
-
-`1.0.7-beta/02-jhonstart-router/README.md § Step 4 — Remove router.d.bp`
-
-> Delete `router.d.bp` (replaced by `router.bp`). Update `botopink.json` `files` list. Update `root.bp` to include `pub mod router;`.
-
-Front 26 deletes `router.d.bp` but hands the `pub mod router;` line and the `files` swap to front 94 and edits neither file. Old acceptance "All existing tests still pass" is **absent** — front 26 asserts only "the front's tests are green on its assigned target".
-
-### Step 5 — tests built on `dict` (different decision)
-
-`1.0.7-beta/02-jhonstart-router/README.md § Step 5 — Tests`
-
-```bp
-test "RouterState holds pathname and params" {
-    val r = RouterState(pathname: "/blog/hello", params: dict.fromList([#("slug", "hello")]), searchParams: dict.empty());
-    assert r.pathname() == "/blog/hello";
-    assert r.params() == dict.fromList([#("slug", "hello")]);
-}
-```
-
-Old acceptance: construction and method access tested · tests pass on commonJS + erlang. Front 26: pair-list construction (`params: [#("slug", "hi")]`), `param("slug") == "hi"`, absent-key `""`; erlang row only.
-
-### Gate (different decision; one item absent)
-
-`1.0.7-beta/02-jhonstart-router/README.md § Gate`
-
-| Old gate line | Front 26 |
-|---|---|
-| `botopink test` green (commonJS + erlang) | `botopink test --target erlang`; commonJS is exercised through front 27's `test/link_test.bp` |
-| `router.d.bp` removed, `router.bp` in its place | present (§ Step 5, § Definition of done) |
-| `botopink.json` and `root.bp` updated | handed to front 94 |
-| AGENTS.md updated | present (§ Step 5 acceptance) |
-| Commit on `fix/jhonstart-router` | **absent** — no branch name in the new README |
-
-### Blast radius (two items absent / different)
-
-`1.0.7-beta/02-jhonstart-router/README.md § Blast radius`
-
-> - `router.d.bp` → `router.bp` promotion: no API change for consumers (same `from "jhonstart"` import)
-> - `botopink.json` files list changes
-> - `root.bp` gains `pub mod router;`
-> - Examples that used `router.d.bp` declarations still compile
-
-The first bullet is **superseded**: consumers do see an API change (`Router` behavior gone, `router.pathname()` → the `pathname()` hook / `RouterState.path`, `params()` Dict → `param(name)` over pairs, `push`/`replace` free functions, `Link` moved to front 27). The last bullet is **absent** and no longer holds for the same reason. Bullets 2–3 are present as the hand-off to front 94.
-
-### Notes (different decision)
-
-`1.0.7-beta/02-jhonstart-router/README.md § Notes`
-
-> - The actual navigation (push/replace) is a no-op during SSR — the host runtime (rakun) provides the initial state. Client-side navigation is the browser runtime's job (recorded follow-up for client hydration).
-> - `Router` behavior stays the same interface — only the implementation changes from declaration to concrete.
-
-Front 26: `push`/`replace` on erlang **record a 307 redirect** on the response (only `back`/`forward`/`refresh`/`prefetch` are server no-ops); client-side navigation is in-milestone (fronts 27 and 29), not a follow-up; the `Router` behavior is dropped, not kept.
-
-### Reference rows from 1.0.7 overview/fronts
-
-| Source | Row | In front 26? |
-|---|---|---|
-| `overview.md` § front table | `02-jhonstart-router/` · **critical** · jhonstart · jhonstart-core · "Real router (useRouter, pathname, params, push/replace) — promote router.d.bp → .bp" | substance yes; `push`/`replace` are free functions, not `Router` methods |
-| `overview.md` § Next.js → onze13 mapping | `next/navigation (useRouter)` → `useRouter behavior` → jhonstart | different: `router()` [Next's `useRouter`] yields the `RouterState` record; no behavior; `pathname`/`params`/`searchParams`/`selectedLayoutSegment(s)` added |
-| `overview.md` § dependency sketch | `… ──► 02-jhonstart-router ──┐ ├──► 03-jhonstart-link` | present as front 27 **Depends on:** 26 |
-| `fronts.md` § ownership | F02 · jhonstart · jhonstart-core · owns `repository/jhonstart/src/router.bp` (promote from .d.bp) · tests `repository/jhonstart/test/router_test.bp` | present in **Owns** (both paths) |
-| `fronts.md` § Conflict Notes 1 | "F02 ↔ F03: Both touch `router.d.bp`/`router.bp` (F02 promotes it to real .bp, F03 adds Link). Sequence: F02 first (router foundation), then F03 (Link uses router)." | substance present (26 deletes `router.d.bp`; 27 "adds nothing to it and reads nothing from it"); the note itself is not restated |
-| `fronts.md` § dependency graph / critical path | `F17 ──┴──► F02 ──┐ └──► F03 · F04 · F09 (3 in parallel)`; critical path `F01 → F02 → F03/F04/F09`; Phase 1 `F01 ∥ F17, then F02 ∥ F14, then F03 ∥ F04 ∥ F09` | absent; replaced by **Wave:** 1 and **Depends on:** 01 · 22 · 23 · 94 |
-| `README.md` header | **Depends on:** F01 (onze13-stand-up) | present as `01` |
-| `README.md` header | **Does not touch:** `server.d.bp` | not listed; `src/server.bp` (front 28) is |

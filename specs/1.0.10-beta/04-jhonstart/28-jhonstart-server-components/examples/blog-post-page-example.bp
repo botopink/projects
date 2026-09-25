@@ -3,8 +3,9 @@
 // The `/blog/[slug]` page, as a server component.
 //
 // Everything in this file runs on the BEAM, once, while the request is in
-// flight. `PostPage` is `#[@future]` and returns `@Future<Element>`; the two
-// loaders are awaited at statement level, one after the other, and the tree is
+// flight. `PostPage` is `#[@use]` and returns `@Component<Element>` (decision
+// 104: `@Component ⊃ @Future`, so a component awaits); the two loaders are
+// `#[@future]` and are awaited at statement level, one after the other, and the tree is
 // built synchronously from what they returned. Nothing here ships to the
 // browser — front 23 serializes the rendered markup, and the only thing the
 // client receives is HTML.
@@ -92,8 +93,8 @@ pub fn postView(post: Post, comments: Array<Comment>) -> Element {
 
 // The page itself. `params` is front 26's snapshot shape, handed down by
 // front 23 when it matched the route.
-#[@future]
-pub fn PostPage(params: Array<#(string, string)>) -> @Future<Element> {
+#[@use]
+pub fn PostPage(params: Array<#(string, string)>) -> @Component<Element> {
     val post = await loadPost(pairValue(params, "slug"));
     val comments = await loadComments(post.id);
     return postView(post, comments);

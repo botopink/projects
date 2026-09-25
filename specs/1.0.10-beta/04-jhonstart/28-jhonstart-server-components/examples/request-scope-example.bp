@@ -3,10 +3,12 @@
 // A greeting bar that reads the reader's locale from a cookie and their client
 // from a header.
 //
-// Request scope is per-request state on the BEAM: front 62 puts it in the
-// process dictionary before dispatch, and `request()` reads it back. It is a
-// plain function, not a hook — see the front README's *Language gaps*: `use request()`
-// is decided (decisions 89 and 90) and waits on front 19 step 2.
+// Request scope is per-request state on the BEAM: front 62 fills it once per
+// request through `fillRequest`, and `request()` reads it back. It is called
+// plainly here — the server-pass value — so `GreetingBar` and `Page` activate
+// nothing and carry no annotation (decision 104). The hook form, `use request()`
+// inside a `#[@use] fn … -> @Component<Element>`, is the front README's
+// *Language gaps* row 1 and waits on the effect-chain task (front 19 step 2).
 //
 // Nothing read here may cross to the client. The `authorization` header is the
 // case that matters: it is used to decide what to render and is never handed to
@@ -47,14 +49,12 @@ pub fn greetingBar(req: RequestData) -> Element {
 }
 
 // The server component. One call to `request()`, then pure rendering.
-#[@context]
 pub fn GreetingBar() -> Element {
     return greetingBar(request());
 }
 
 // A second server component, showing that the request is read once per render
 // and passed down rather than re-read in every child.
-#[@context]
 pub fn Page() -> Element {
     val req = request();
     return div([

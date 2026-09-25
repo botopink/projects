@@ -8,7 +8,6 @@
 **Owns:** `repository/jhonstart/src/link.bp`, `repository/jhonstart/src/reconcile.bp` (the client-navigation reconciler), `repository/jhonstart/test/link_test.bp`, `repository/jhonstart/test/reconcile_test.bp`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (front 26), `src/client.bp` (front 29), `src/root.bp` and `botopink.json` (front 94)
 **Reference:** `NEXTJS-DOCS.md § 8. Navegação e Linking` · `§ 25. Referência de Componentes` · https://nextjs.org/docs/app/api-reference/components/link · https://nextjs.org/docs/app/getting-started/linking-and-navigating
-**Replaces:** `1.0.7-beta/03-jhonstart-link`
 
 ---
 
@@ -28,11 +27,6 @@ entry point to client-side transitions. It prefetches when it enters the viewpor
 without a reload and without remounting shared layouts, and it exposes whether its own navigation is
 still in flight so the link can show a spinner. None of that exists, and none of it can be faked by
 a host stub that returns an `Element`.
-
-The 1.0.7 draft also wrote `Link("/about", [text("About")])` and
-`Link("/blog", [text("Blog")], prefetch: false, attrs: [])` — six parameters with five defaults.
-Declared parameter defaults are never applied (`tests/language/expected-failures.txt`), so every one
-of those call sites would have to spell all six arguments. That is not an API anyone writes twice.
 
 ## Current state
 
@@ -151,8 +145,8 @@ primitives, and everything it decides is a pure function of two key lists.
 
 `linkStatus()` returns `LinkStatus(pending: bool, href: string)` from `__onzeLinkStatus()`, so a
 link can render a spinner while its own navigation is in flight. It is a hook —
-`@Context<Element, LinkStatus>` — and is legal under `use` inside a `#[@context] fn … -> Element` body, the same
-capability `hooks.bp` uses.
+`#[@use] fn linkStatus() -> @Use<ElementBase, LinkStatus>` (decision 102) — and is legal under `use`
+inside a `#[@use] fn … -> @Component<Element>` body (decision 104), the same shape `hooks.bp` uses.
 
 ## Steps
 
@@ -204,7 +198,6 @@ pub fn withPrefetch(p: LinkProps, prefetch: bool) -> LinkProps {
 ### Step 2 — `Link`
 
 ```bp
-#[@context]
 pub fn Link(props: LinkProps, children: Children) -> Element {
     var pairs: Array<#(string, string)> = [#("href", props.href), #("data-onze-l", "1")];
     if (!props.prefetch) pairs = pairs.append([#("data-onze-prefetch", "0")]);
@@ -276,26 +269,23 @@ front 68's DOM primitives, adopting `data-onze-s` slots and re-anchoring `data-o
 
 ### Step 4 — The browser runtime cells and `linkStatus`
 
+**Landed state (jhonstart `1707823`):** the pure half — `link.bp` and `reconcile.bp` — is in the
+tree and reaches no host cell of any target, so all 35 assertions run on **both** rows. The four
+cells below and `linkStatus()` are **not shipped**: each binds to front 68's generated client bundle,
+and `routeKind` additionally wants front 60's route-kind table. When the bundle exists,
+`linkStatus()` is literally `return linkStatusOf(__onzeLinkStatus());` and nothing else in `link.bp`
+moves.
 
-> **Amended 2026-09-21, on landing (jhonstart `1707823`).** These four cells are **not shipped**, and
-> the front said so rather than stubbing them: each binds to front 68's generated client bundle,
-> which has not started, and `routeKind` additionally wants front 60's route-kind table. What landed
-> is the pure half — `link.bp` and `reconcile.bp` reach no host cell of any target, so all 35 new
-> assertions run on **both** rows. When the bundle exists, `linkStatus()` is literally
-> `return linkStatusOf(__onzeLinkStatus());` and nothing else in `link.bp` moves.
->
-> Two things to settle before they are written:
->
-> - **The module name.** The package already ships `./client_runtime.mjs` for `clientRender`. If
->   front 68's bundle is a different module from that sidecar, the two names sitting side by side
->   will read as a typo to the next person; if it is the same one, this block should spell it the way
->   the tree does. Either way the spec has to say which.
-> - **The target cost.** A node-only cell that is **called** reds the erlang compile at the caller's
->   body — measured in both directions against `2e6bb4ac`, with a declared-and-never-called control
->   that is clean. `link.bp` lives in the core member, compiled on both rows, so a `linkStatus()`
->   wrapper as written would take all 103 of the package's assertions off erlang. That is why the
->   hook is absent rather than gated, and it is the same question `modules.md`'s amendment (b) puts
->   to the `jhonstart-link` row.
+Two things to settle before they are written:
+
+- **The module name.** The package already ships `./client_runtime.mjs` for `clientRender`. If
+  front 68's bundle is a different module from that sidecar, this block must spell which; if it is
+  the same one, it must spell it the way the tree does.
+- **The target cost.** A node-only cell that is **called** reds the erlang compile at the caller's
+  body (a declared-and-never-called cell compiles clean). `link.bp` lives in the core member,
+  compiled on both rows, so a `linkStatus()` wrapper as written would take all 103 of the package's
+  assertions off erlang. That is why the hook is absent rather than gated, and it is the same
+  question `modules.md § 4` puts to the `jhonstart-link` row.
 
 ```bp
 #[@External.Node("jhonstart/client-runtime", "linkMount")]
@@ -312,7 +302,8 @@ declare fn __onzeLinkRouteKind(href: string) -> string;
 
 pub type LinkStatus(pending: bool, href: string)
 
-pub fn linkStatus() -> @Context<Element, LinkStatus> {
+#[@use]
+pub fn linkStatus() -> @Use<ElementBase, LinkStatus> {
     val href = __onzeLinkStatus();
     return LinkStatus(pending: href != "", href: href);
 }
@@ -321,7 +312,7 @@ pub fn linkStatus() -> @Context<Element, LinkStatus> {
 **Acceptance:**
 - [ ] every cell in the file is `#[@External.Node]`; there is no `#[@External.Erlang]` cell
 - [ ] `linkStatus()` is idle (`pending == false`, `href == ""`) when nothing is in flight
-- [ ] `use linkStatus()` type-checks inside a `#[@context] fn … -> Element` body — never the doubled `use` + `useLinkStatus()`; without the annotation the body is `use-without-context-effect` ([`19-use-activation`](../../00-compiler-carry-over/19-use-activation/README.md))
+- [ ] `use linkStatus()` type-checks inside a `#[@use] fn … -> @Component<Element>` body — never the doubled `use` + `useLinkStatus()`; without the annotation the body is `use-without-context-effect` (decision 104, [`19-use-activation`](../../00-compiler-carry-over/19-use-activation/README.md))
 - [ ] `__onzeLinkMount()` is idempotent — calling it twice registers one listener
 
 ### Step 5 — Module wiring
@@ -383,165 +374,3 @@ host cells have no erlang body and are never called from the erlang row.
 - [ ] the route-kind flag is read from front 60 and not recomputed here
 - [ ] both language gaps appear in a `specs/1.0.10-beta/` spec
 - [ ] the front's tests are green on its assigned target
-
-## Carried from 1.0.7-beta F03 jhonstart-link
-
-Items of the 1.0.7 draft not restated above, quoted so nothing is lost; where the milestone decided differently the 1.0.9 decision stands and the old text is kept for the record.
-
-### Examples — positional `Link(href, children, prefetch: …)` (different decision)
-
-`1.0.7-beta/03-jhonstart-link/README.md § Examples in bp`. The draft's call shape relied on declared parameter defaults, which are never applied; front 27 takes a `LinkProps` record — `Link(linkProps(href), children)` and `withPrefetch(props, false)`.
-
-```bp
-import {Link} from "jhonstart";
-
-pub fn NavBar() -> Element {
-    return nav([
-        Link("/", [text("Home")]),
-        Link("/blog", [text("Blog")]),
-    ], attrs: []);
-}
-```
-
-```bp
-Link("/blog/" + post.slug, [text(post.title)], prefetch: false)
-```
-
-### Mechanism — `data-onze13-link` marker and pass-through `attrs` (different decision; one item absent)
-
-`1.0.7-beta/03-jhonstart-link/README.md § Mechanism`. Old text:
-
-> `Link` is a real `.bp` function that:
-> 1. Renders an `<a>` element with `href` in attrs
-> 2. Adds `data-onze13-link` attribute for client-side interception
-> 3. Accepts `prefetch`, `replace`, `scroll` props (analogous to Next.js)
-
-```bp
-pub fn Link(href: string, children: Children, attrs: Array<#(string, string)> = []) -> Element {
-    val linkAttrs = attrs + [
-        #("href", href),
-        #("data-onze13-link", "true"),
-    ];
-    return Element(tag: "a", value: "", children: children, attrs: linkAttrs);
-}
-```
-
-| Old item | Front 27 |
-|---|---|
-| marker `data-onze13-link="true"` | `data-onze-l="1"` — the milestone's `data-onze-` family (`contracts.md § 2`) |
-| `prefetch`, `replace`, `scroll` props | present as `LinkProps` fields; `target` and `className` added |
-| pass-through `attrs: Array<#(string, string)> = []` merged into the anchor | **absent** — `Link` has no arbitrary-attribute parameter; only `target` and `class` can be set, through `LinkProps` |
-| marker order `attrs + [href, marker]` (caller attrs first) | `[href, data-onze-l]` first, then the optional pairs |
-
-### Step 1 — expected anchor string (different decision)
-
-`1.0.7-beta/03-jhonstart-link/README.md § Step 1 — Link component in real .bp`
-
-> Create `src/link.bp` with the `Link` function above.
-> - `Link` renders `<a href="...">...</a>`
-> - `renderToString(Link("/about", [text("About")]))` produces `<a href="/about" data-onze13-link="true">About</a>`
-> - Compiles on commonJS + erlang
-
-Front 27: `renderToString(Link(linkProps("/about"), [text("About", attrs: [])]))` is `<a href="/about" data-onze-l="1">About</a>`; renders identically on erlang and js.
-
-### Step 2 — defaults as parameters, `data-onze13-*` attribute names and `"true"`/`"false"` values (different decision)
-
-`1.0.7-beta/03-jhonstart-link/README.md § Step 2 — Props: prefetch, replace, scroll`
-
-```bp
-pub fn Link(
-    href: string,
-    children: Children,
-    prefetch: bool = true,
-    replace: bool = false,
-    scroll: bool = true,
-    attrs: Array<#(string, string)> = [],
-) -> Element {
-    var linkAttrs = attrs + [#("href", href), #("data-onze13-link", "true")];
-    if (!prefetch) {
-        linkAttrs = linkAttrs + [#("data-onze13-prefetch", "false")];
-    };
-    if (replace) {
-        linkAttrs = linkAttrs + [#("data-onze13-replace", "true")];
-    };
-    if (!scroll) {
-        linkAttrs = linkAttrs + [#("data-onze13-scroll", "false")];
-    };
-    return Element(tag: "a", value: "", children: children, attrs: linkAttrs);
-}
-```
-
-| Old acceptance | Front 27 |
-|---|---|
-| `prefetch={false}` adds `data-onze13-prefetch="false"` | `data-onze-prefetch="0"` |
-| `replace={true}` adds `data-onze13-replace="true"` | `data-onze-replace="1"` |
-| `scroll={false}` adds `data-onze13-scroll="false"` | `data-onze-scroll="0"` |
-| defaults `prefetch = true`, `replace = false`, `scroll = true` as parameter defaults | same values, filled by `linkProps(href)` (§ Step 1) |
-
-### Step 3 — "or delete the file entirely" (covered; recorded for the wording)
-
-`1.0.7-beta/03-jhonstart-link/README.md § Step 3 — Remove Link from router.d.bp`
-
-> Remove the `Link` declaration from `router.d.bp` (or delete the file entirely if router is also promoted). Update `botopink.json`.
-
-Front 27: front 26 deletes `router.d.bp`; `pub mod link;` and the `files` entry are handed to front 94. Acceptance rows (`Link` no longer in `router.d.bp` · `link.bp` in `botopink.json` · `root.bp` declares `pub mod link;`) are present under § Step 5 — Module wiring.
-
-### Step 4 — tests against the old API (different decision)
-
-`1.0.7-beta/03-jhonstart-link/README.md § Step 4 — Tests`
-
-```bp
-test "Link renders an anchor with href" {
-    val el = Link("/about", [text("About")], attrs: []);
-    assert renderToString(el) == "<a href=\"/about\" data-onze13-link=\"true\">About</a>";
-}
-
-test "Link with prefetch=false adds data attribute" {
-    val el = Link("/blog", [text("Blog")], prefetch: false, attrs: []);
-    val html = renderToString(el);
-    assert html.contains("data-onze13-prefetch=\"false\"");
-}
-```
-
-Old acceptance "All tests pass on commonJS + erlang". Front 27: gate is `botopink test --target commonJS`; one anchor assertion is expected on both targets; the four host cells are never called from the erlang row.
-
-### Gate (one item absent)
-
-`1.0.7-beta/03-jhonstart-link/README.md § Gate`
-
-| Old gate line | Front 27 |
-|---|---|
-| `botopink test` green | present (§ Test plan, § Definition of done) |
-| `link.bp` in `botopink.json` and `root.bp` | handed to front 94 |
-| AGENTS.md updated | present (§ Step 5 acceptance) |
-| Commit on `fix/jhonstart-link` | **absent** — no branch name in the new README |
-
-### Blast radius (different decision)
-
-`1.0.7-beta/03-jhonstart-link/README.md § Blast radius`
-
-> - New file `link.bp` — no changes to existing files (except removing Link from router.d.bp)
-> - Consumers get a real `Link` component instead of a host-bound stub
-
-Front 27 adds two files (`src/link.bp`, `src/reconcile.bp`) and two test files; the `router.d.bp` removal belongs to front 26. The second bullet is present in § Problem.
-
-### Notes — client interception and prefetch deferred to "a client runtime" (different decision)
-
-`1.0.7-beta/03-jhonstart-link/README.md § Notes`
-
-> - Client-side navigation interception (clicking the `<a>` and using `history.pushState` instead of full page load) is a client runtime concern — not implemented here. The `data-onze13-link` attribute is the hook for the client runtime to intercept.
-> - Prefetching (loading the next page's data when Link enters viewport) is also a client runtime concern. The `data-onze13-prefetch` attribute signals intent.
-
-Front 27 implements both halves in this front: `__onzeLinkMount()` (delegated click interception + intersection observer over `[data-onze-l]`), `__onzeLinkPrefetch(href, mode)` with the `prefetchMode` table, and the `src/reconcile.bp` transition. The markers are `data-onze-l` / `data-onze-prefetch`.
-
-### Reference rows from 1.0.7 overview/fronts
-
-| Source | Row | In front 27? |
-|---|---|---|
-| `overview.md` § front table | `03-jhonstart-link/` · **critical** · jhonstart · jhonstart-core · "Link component with prefetch, scroll, client-side navigation" | present in substance (§ Mechanism props table, § runtime half) |
-| `overview.md` § Next.js → onze13 mapping | `next/link` → `Link component` → jhonstart | present in substance; `linkStatus` (upstream `useLinkStatus`, `use-link-status`) added |
-| `overview.md` § dependency sketch | `02-jhonstart-router ──┐ ├──► 03-jhonstart-link` | present as **Depends on:** 26 |
-| `fronts.md` § ownership | F03 · jhonstart · jhonstart-core · owns `repository/jhonstart/src/link.bp` · tests `repository/jhonstart/test/link_test.bp` | present in **Owns** (both paths, plus `reconcile.bp` / `reconcile_test.bp`) |
-| `fronts.md` § Conflict Notes 1 | "F02 ↔ F03: Both touch `router.d.bp`/`router.bp` … Sequence: F02 first, then F03 (Link uses router)." | substance present (§ Step 5: front 26 deletes the file; this front adds nothing to it); the note itself is not restated |
-| `fronts.md` § dependency graph / critical path | `F02 ──┐ └──► F03 · F04 · F09 (3 in parallel)`; critical path `F01 → F02 → F03/F04/F09`; Phase 1 `… then F03 ∥ F04 ∥ F09` | absent; replaced by **Wave:** 2 and **Depends on:** 26 · 60 · 23 · 68 · 94 |
-| `README.md` header | **Does not touch:** `server.d.bp` | not listed; `src/client.bp` (front 29), `src/root.bp`, `botopink.json` are |

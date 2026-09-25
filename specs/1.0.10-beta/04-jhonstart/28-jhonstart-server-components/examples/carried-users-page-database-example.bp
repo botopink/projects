@@ -1,10 +1,9 @@
-// Carried from 1.0.7-beta examples-bp.md § F04 — Server component com banco de dados
 // app/users/page.bp
 import {Element, div, table, tr, td, text} from "jhonstart";
 import {db} from "@/lib/db";
 
-#[@future]
-pub fn UsersPage() -> @Future<Element> {
+#[@use]
+pub fn UsersPage() -> @Component<Element> {
     val users = await db.user.findAll();
     return div([
         table(

@@ -1,15 +1,14 @@
-// Carried from 1.0.7-beta examples-bp.md § F04 — Acessando a request no server component
 // app/search/page.bp
 import {Element, div, h1, ul, li, text} from "jhonstart";
 import {request} from "jhonstart";
 
-#[@future]
-pub fn SearchPage() -> @Future<Element> {
+#[@use]
+pub fn SearchPage() -> @Component<Element> {
     val req = use request();
     val query = req.query("q");
     val results = await search(query);
     return div([
-        h1([text("Resultados para: " + query, attrs: [])], attrs: []),
+        h1([text("Results for: " + query, attrs: [])], attrs: []),
         ul(
             results.map({ r ->
                 li([text(r.title, attrs: [])], attrs: [])

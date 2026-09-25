@@ -1,13 +1,12 @@
-// Carried from 1.0.7-beta examples-bp.md § F06 — Suspense com fallback
 // app/blog/page.bp
 import {Element, div, h1, Suspense, text} from "jhonstart";
 
-#[@future]
-pub fn BlogPage() -> @Future<Element> {
+#[@use]
+pub fn BlogPage() -> @Component<Element> {
     return div([
         h1([text("Blog", attrs: [])], attrs: []),
         Suspense(SuspenseProps(
-            fallback: div([text("Carregando posts...", attrs: [])], attrs: []),
+            fallback: div([text("Loading posts...", attrs: [])], attrs: []),
             children: [await PostList()],
         )),
     ], attrs: []);

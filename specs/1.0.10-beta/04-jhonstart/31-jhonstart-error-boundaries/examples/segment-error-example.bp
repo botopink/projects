@@ -29,7 +29,6 @@ import { escape } from "std";
 
 // ── what the developer writes: app/dashboard/error.bp ───────────────────────
 
-#[@context]
 pub fn ErrorPage(info: ErrorInfo) -> Element {
     return section([
         h2([text("The metrics are unavailable", attrs: [])], attrs: []),
@@ -63,7 +62,6 @@ pub fn metricsBoundary() -> ErrorBoundary {
 
 // ── the page ────────────────────────────────────────────────────────────────
 
-#[@context]
 pub fn Dashboard() -> Element {
     return div([
         h1([text("Dashboard", attrs: [])], attrs: []),

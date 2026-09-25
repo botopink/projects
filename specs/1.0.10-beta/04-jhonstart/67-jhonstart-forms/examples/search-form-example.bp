@@ -10,7 +10,7 @@
 //
 // Upstream:
 //   https://nextjs.org/docs/app/api-reference/components/form
-//   NEXTJS-DOCS.md § 25. Referência de Componentes — `<Form>`
+//   NEXTJS-DOCS.md § 25. Component Reference — `<Form>`
 
 import { Element, text, renderToString } from "jhonstart";
 // provided by front 94 (`jhonstart-element-surface`, src/elements.bp)
@@ -33,7 +33,6 @@ fn searchForm(props: SearchFormProps) -> Element {
     ], attrs: searchFormAttrs(props));
 }
 
-#[@context]
 fn SearchForm() -> Element {
     return searchForm(searchFormProps("/search"));
 }

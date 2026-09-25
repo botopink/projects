@@ -1,34 +1,32 @@
-// Carried from 1.0.7-beta examples-bp.md § F08 — Metadata estático (static metadata)
-// 1.0.9 decided differently: the static export is `pub fn metadata() -> Metadata`, `OpenGraph.type` is `ogType`,
-// `OpenGraph` also carries `siteName`, `Metadata` carries `titleTemplate`. Kept verbatim for the record.
+// NOTE: 32 spells the static export `pub fn metadata() -> Metadata`, `OpenGraph.type` as `ogType`,
+// `OpenGraph` with `siteName` and `Metadata` with `titleTemplate`; this example keeps the older shape.
 
 // app/about/page.bp
 import {Element, div, h1, p, text} from "jhonstart";
 import {Metadata} from "jhonstart";
 
 pub val metadata: Metadata = Metadata(
-    title: "Sobre Nós — Minha Empresa",
-    description: "Saiba mais sobre nossa empresa.",
+    title: "About Us — My Company",
+    description: "Learn more about our company.",
     openGraph: OpenGraph(
-        title: "Sobre Nós",
-        description: "Nossa missão é transformar o mundo.",
+        title: "About Us",
+        description: "Our mission is to transform the world.",
         images: ["/og/about.png"],
         url: "/about",
         type: "website",
     ),
     twitter: TwitterCard(
         card: "summary_large_image",
-        title: "Sobre Nós",
-        description: "Conheça nossa empresa.",
+        title: "About Us",
+        description: "Get to know our company.",
         images: ["/og/about.png"],
     ),
     icons: Icons(icon: "/favicon.ico", apple: "/apple-icon.png"),
 );
 
-#[@context]
 pub fn AboutPage() -> Element {
     return div([
-        h1([text("Sobre Nós", attrs: [])], attrs: []),
-        p([text("Somos uma empresa de tecnologia.", attrs: [])], attrs: []),
+        h1([text("About Us", attrs: [])], attrs: []),
+        p([text("We are a technology company.", attrs: [])], attrs: []),
     ], attrs: []);
 }

@@ -8,7 +8,6 @@
 **Owns:** `repository/jhonstart/src/client.bp` — including `islandAttr`, the island marker pair, which front 23 reads as `RenderHooks.islandAttr` and front 68's generated entry imports (decision 77: one definition, passed in, never two that must agree) — `repository/jhonstart/test/client_test.bp`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (26), `src/link.bp` (27), `src/server.bp` (28), `src/root.bp` and `botopink.json` (front 94)
 **Reference:** `NEXTJS-DOCS.md § 7. Server e Client Components` · `§ 27. Diretivas` · https://nextjs.org/docs/app/api-reference/directives/use-client · https://nextjs.org/docs/app/guides/server-and-client-boundary
-**Replaces:** `1.0.7-beta/05-jhonstart-client-directive`
 
 ---
 
@@ -66,13 +65,13 @@ pure declaration:
 pub fn client(comptime decl: @Decl) {
     @emit("pub fn __jhClient_" + decl.name + "() -> string { return \"" + decl.name + "\"; }");
     if (decl.kind != DeclKind.Fn) decl.fail("#[client] must annotate a function");
-    if (decl.returnType != "Element") decl.fail("#[client] must annotate a component returning Element");
+    val isComponent = decl.returnType == "Element" || decl.returnType == "@Component<Element>";
+    if (!isComponent) decl.fail("#[client] must annotate a component returning Element or @Component<Element>");
 }
 ```
 
 The emitted declaration is a **pure function returning a string**, not a call into a runtime
-registry. That is deliberate and it is the difference between this design and the 1.0.7 draft, which
-emitted a call to an `#[@External.Node]` cell. An `@emit` fires on every target, so emitting a call
+registry. That is deliberate. An `@emit` fires on every target, so emitting a call
 into a Node-only cell would make every `#[client]` component fail to link during the erlang server
 render — the exact case the boundary exists to support. A pure marker links everywhere and carries
 the same information.
@@ -217,17 +216,27 @@ import {querystring} from "std";
 pub fn client(comptime decl: @Decl) {
     @emit("pub fn __jhClient_" + decl.name + "() -> string { return \"" + decl.name + "\"; }");
     if (decl.kind != DeclKind.Fn) decl.fail("#[client] must annotate a function");
-    if (decl.returnType != "Element") decl.fail("#[client] must annotate a component returning Element");
+    val isComponent = decl.returnType == "Element" || decl.returnType == "@Component<Element>";
+    if (!isComponent) decl.fail("#[client] must annotate a component returning Element or @Component<Element>");
 }
 ```
 
 The body calls no sibling function and contains no `//` comment — both are hard constraints on a
 decorator body.
 
+A client component that activates a hook is `#[@use] fn … -> @Component<Element>`; one that
+activates nothing is `fn … -> Element` (decision 104). Both spell a component and both pass the
+return-type check. A server component returns the same `@Component<Element>`, so `#[client]` cannot
+tell the two apart by return type: the server/client split is front 68's graph walk (the
+request-scope predicate in Step 5), not this decorator's.
+
 **Acceptance:**
-- [ ] `#[client]` on `#[@context] fn X() -> Element` emits `__jhClient_X` returning `"X"`
+- [ ] `#[client]` on `fn X() -> Element` and on `#[@use] fn X() -> @Component<Element>` emits
+      `__jhClient_X` returning `"X"`
 - [ ] `#[client]` on a `type` fails with the placement message
-- [ ] `#[client]` on a fn returning `@Future<Element>` fails — a server component is not a client one
+- [ ] `#[client]` on a fn returning `@Future<T>` or `@Result<T, E>` fails — a loader is not a
+      component; a server component reached from a `#[client]` module is refused by front 68's
+      graph walk, not here
 - [ ] the emitted name is reachable at the application site, which must therefore import `client`;
       the test file records that import requirement the way `rakun/test/server_test.bp:13-18` does
 - [ ] `botopink check` is documented as unable to see the emitted name; the gate is `botopink test`
@@ -356,211 +365,3 @@ would be a boundary that never starts.
 - [ ] the README states, in *Mechanism*, that 29 without 68 is a convention nobody checks
 - [ ] all four language gaps appear in a `specs/1.0.10-beta/` spec
 - [ ] the front's tests are green on its assigned target
-
-## Carried from 1.0.7-beta F05 jhonstart-client-directive
-
-Items of the 1.0.7 draft not restated above, quoted so nothing is lost; where the milestone decided differently the 1.0.9 decision stands and the old text is kept for the record.
-
-### Current state — the `use` prefix and context-inference
-
-`1.0.7-beta/05-jhonstart-client-directive/README.md § Current state`
-
-> The `use` prefix is legal in any `-> Element` body (context-inference).
-
-Superseded by decision 88: `use` is legal in a `#[@context]` body whose return type owns the context, not in *any* `-> Element` body — a component without the annotation is an ordinary function and a `use` in it is `use-without-context-effect`. The rule is [`19-use-activation`](../../00-compiler-carry-over/19-use-activation/README.md) § *The rule for libraries*; front 28's *Language gaps* carries the server-component half.
-
-### Old inline examples — zero-param `Counter` and direct client call from a server component (different decision)
-
-`1.0.7-beta/05-jhonstart-client-directive/README.md § Exemplos em bp`, `§ Mechanism`
-
-Client component with state:
-
-```bp
-#[client]
-#[@context]
-pub fn Counter() -> Element {
-    val count = use state(0);
-    return div([
-        p([text("Count: " + count.value.toString())]),
-        button([text("+1")], attrs: [#("onClick", "increment")]),
-    ], attrs: []);
-}
-```
-
-Mixing server and client:
-
-```bp
-#[@future]
-pub fn DashboardPage() -> @Future<Element> {
-    return div([
-        Counter(),           // client component
-        await RecentPosts(), // server component
-    ], attrs: []);
-}
-```
-
-The *Mechanism* variant of `Counter` (`attrs: []` on every builder, `"count: "` / `"increment"` labels):
-
-```bp
-#[client]
-#[@context]
-pub fn Counter() -> Element {
-    val c = use state(0);
-    return div([
-        p([text("count: " + c.value.toString(), attrs: [])], attrs: []),
-        button([text("increment", attrs: [])], attrs: [#("onClick", "increment")]),
-    ], attrs: []);
-}
-```
-
-| Old | 1.0.9 decision (above) |
-|---|---|
-| client component takes no parameter | one record parameter carrying `#[clientProps]` (*Mechanism § The props*) |
-| `#("onClick", "increment")` attribute | `data-onze-on-click` handler name bound by the client runtime (`like-button-client-example.bp`) |
-| server component calls `Counter()` directly | server component emits the island via `clientMount(Island, children)`; the component name lives in the payload's `i` row (*Mechanism § The placeholder*) |
-| `await RecentPosts()` inside an array literal | `await` at statement level only (front 28 *Step 4*) |
-| `text("…")` without `attrs` | `attrs: []` on every builder (*Language gaps*, row 4) |
-
-### Mechanism — "serialized as references" wording
-
-`1.0.7-beta/05-jhonstart-client-directive/README.md § Mechanism`
-
-> - The decorator is a comptime fn that emits metadata
-> - At runtime, client components are serialized as references (not rendered HTML)
-> - The client runtime hydrates them with real interactivity
->
-> Since botopink has no `'use client'` directive syntax, we use a decorator: `#[client]`.
-
-Restated above as the island + payload row + `hydrate()`; kept for the original phrasing.
-
-### Step 1 — `#[client]` emitting a `val` flag (different decision)
-
-`1.0.7-beta/05-jhonstart-client-directive/README.md § Step 1 — #[client] decorator`
-
-```bp
-// src/client.bp
-pub fn client(comptime decl: @Decl) {
-    if (decl.kind != DeclKind.Fn) decl.fail("#[client] must annotate a function");
-    // Emit metadata: this function is a client component
-    @emit("val __jhonstart_client_" + decl.name + " = true;");
-}
-```
-
-Old acceptance (restated in *Step 1*): decorator compiles; applicable to `fn(...) -> Element`; fails with a diagnostic on a non-function.
-
-| Old | 1.0.9 decision (above) |
-|---|---|
-| emits `val __jhonstart_client_<name> = true;` | emits `pub fn __jhClient_<Name>() -> string { return "<Name>"; }` — a pure function testable as `__jhClient_X() == "X"` |
-| `fail` before `@emit` | `@emit` before the `fail` checks, matching rakun's ordering (`decorators.bp:36-40`) |
-| no return-type check | `decl.returnType != "Element"` fails — a `@Future<Element>` fn is a server component |
-| `//` comment inside the decorator body | forbidden — a `//` comment inside a comptime body breaks the emitted line (*Current state*) |
-
-### Step 2 — runtime `isClientComponent` registry (different decision)
-
-`1.0.7-beta/05-jhonstart-client-directive/README.md § Step 2 — Client component detection`
-
-```bp
-// Runtime check: is a component a client component?
-#[@External.Node("onze13/runtime", "isClientComponent")]
-#[@External.Erlang("onze13_runtime", "is_client_component")]
-declare fn isClientComponent(name: string) -> bool;
-```
-
-Old acceptance:
-- Host cells declared for both targets
-- Returns true for `#[client]`-annotated components
-
-Decided differently: no runtime registry and no `#[@External.Erlang]` cell in `client.bp`. The set of client component names is the emitted `__jhClient_<Name>` functions, read by front 68's build-time graph walk (*Step 5* contract table). An `@emit` that called a Node-only cell would fail to link during the erlang server render (*Mechanism § The marker*).
-
-### Step 3 — `renderClientComponent` placeholder with name and props on the element (different decision)
-
-`1.0.7-beta/05-jhonstart-client-directive/README.md § Step 3 — SSR behavior for client components`
-
-> When `renderToString` encounters a client component:
-> - Renders a placeholder `<div data-jhonstart-client="Counter"></div>`
-> - The client runtime replaces this with the real interactive component
-
-```bp
-// In renderToString (or a wrapper)
-pub fn renderClientComponent(name: string, props: string) -> Element {
-    return Element(
-        tag: "div",
-        value: "",
-        children: [],
-        attrs: [
-            #("data-jhonstart-client", name),
-            #("data-jhonstart-props", props),
-        ],
-    );
-}
-```
-
-Old acceptance:
-- Client components render as placeholder divs during SSR
-- Placeholder carries component name and props
-
-| Old | 1.0.9 decision (above) |
-|---|---|
-| `renderClientComponent(name: string, props: string)` | `clientMount(island: Island, children: Children)` + `islandEntry(island)` (*Mechanism § The placeholder*, *Step 3*) |
-| `data-jhonstart-client` / `data-jhonstart-props` attributes | `data-onze-i="<id>"` only, per `contracts.md § 2`; component name and encoded props go to the payload's `i` row `[id, component, props]` |
-| props as an opaque `string` | `Array<#(string, string)>` encoded with `querystring.stringify` |
-| no children | children render inside the placeholder; `serverSlot` marks the server-owned hole (`data-onze-s`) |
-
-### Step 4 — test asserting only that the decorator compiles (different decision)
-
-`1.0.7-beta/05-jhonstart-client-directive/README.md § Step 4 — Tests`
-
-```bp
-test "#[client] decorator can be applied to a component" {
-    #[client]
-    fn TestComponent() -> Element {
-        return div([text("hello", attrs: [])], attrs: []);
-    }
-    // The decorator emits metadata; we verify it compiles
-    assert true;
-}
-```
-
-Old acceptance:
-- Tests pass on commonJS + erlang
-
-Decided differently: the test asserts the emitted `__jhClient_X()` returns `"X"` (proves `@emit` fired; only under `botopink test`); gate is `botopink test --target commonJS`, with one erlang assertion for the pure `clientMount`/`serverSlot` (*Test plan*).
-
-### Gate — branch name
-
-`1.0.7-beta/05-jhonstart-client-directive/README.md § Gate`
-
-- Commit on `fix/jhonstart-client-directive`
-
-### Blast radius
-
-`1.0.7-beta/05-jhonstart-client-directive/README.md § Blast radius`
-
-> - New file `client.bp` — no changes to existing files
-> - Consumers can opt-in to client components with `#[client]`
-
-Restated by *Does not touch* and *Mechanism*; kept for the record. Above adds `client_test.bp`, the `docs.md` contract table and the AGENTS.md entry as the front's footprint.
-
-### Notes — hydration out of scope; future native directive (different decision / absent)
-
-`1.0.7-beta/05-jhonstart-client-directive/README.md § Notes`
-
-> - The actual client-side hydration (replacing the placeholder with a real React-like component) is a client runtime concern — not implemented here.
-> - `#[client]` is a convention, not a compiler directive. The compiler core remains unaware.
-> - Future: if botopink adds a `'use client'` directive syntax, this front's decorator can be deprecated in favor of the native syntax.
-
-| Old | 1.0.9 decision (above) |
-|---|---|
-| hydration not implemented here | `hydrate()` and `propsFor` are declared here as `#[@External.Node("jhonstart/client-runtime", …)]` cells; front 68 generates the bundle entry that calls them (*Step 4*) |
-| convention, compiler unaware | restated: "29 defines the boundary; 68 enforces it at build time" (*What this front is not*) |
-| deprecate in favor of a future `'use client'` syntax | not restated; the milestone forbids compiler changes (*Problem*) |
-
-### Reference rows from 1.0.7 overview/fronts
-
-| Source | Row | Status above |
-|---|---|---|
-| `overview.md` front table | `05-jhonstart-client-directive` · **high** · repo `jhonstart` · module `jhonstart-core` · "'use client' directive: boundary between server and client modules" | priority and repo restated; module column `jhonstart-core` not restated |
-| `overview.md § Mapeamento Next.js → onze13` | 'use client' directive → `#[client]` decorator / convention · jhonstart | restated in *Mechanism § The marker* and *What this front is not* |
-| `fronts.md § Ownership` | F05 · jhonstart · jhonstart-core · `repository/jhonstart/src/client.bp` · `repository/jhonstart/test/client_test.bp` | both paths restated in *Owns* |
-| `fronts.md § Conflict Matrix` | F05 row: `yes` against every other front, no conflict note | not restated (the 1.0.10 dependency list replaces the matrix) |
-| `overview.md § Order`, `fronts.md § Order` | Phase 2 (core features, 7 in parallel): F05 · F06 · F07 · F10 · F11 · F12 · F15, after F04 | replaced by *Wave 3*, depends on 28 · 23 · 68 (soft) · 94 |

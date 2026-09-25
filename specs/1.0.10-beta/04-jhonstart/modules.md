@@ -1,33 +1,27 @@
 # Track C — jhonstart · modules
 
-**Repo:** `repository/jhonstart` · **Pattern:** front 95 (`../02-packaging/95-ecosystem-package-restructure/README.md`) — `modules/<name>/`, `modules/<name>-test/`, `modules/<name>-<domain>/`, `examples/**` · **Fronts delivering into it:** 26 · 27 · 28 · 29 · 30 · 31 · 32 · 67 · 94 (identifiers from 1.0.9-beta) · **Cross-track files landing here:** front 48's `html_attrs.bp` (emilia track)
+**Repo:** `repository/jhonstart` · **Pattern:** front 95 (`../02-packaging/95-ecosystem-package-restructure/README.md`) — `modules/<name>/`, `modules/<name>-test/`, `modules/<name>-<domain>/`, `examples/**` · **Fronts delivering into it:** 26 · 27 · 28 · 29 · 30 · 31 · 32 · 67 · 94 · **Cross-track files landing here:** front 48's `html_attrs.bp` (emilia track)
 
-> **Amended 2026-09-21, after fronts 94, 26, 28 and 27 landed.** Three things in this document no
-> longer match the tree, and one of them is a contradiction rather than drift.
->
-> **(a) The submodule split has not happened.** `repository/jhonstart/` has exactly **one** member,
-> `modules/jhonstart/`. `html.bp` — which § 6 assigns to `jhonstart-html` — is still in core, and so
-> are front 27's `link.bp` and `reconcile.bp`, landed there deliberately rather than creating a
-> member to satisfy a table. The cut below is a plan, not a description; whoever performs it does so
-> as its own front, and until then every front reads "core".
->
-> **(b) § 4's `jhonstart-link` row cannot hold as written.** It declares `["commonJS", "erlang"]`
-> *and* says the member carries four `#[@External.Node]` cells. Measured against `2e6bb4ac`, in both
-> directions and with a control: a foreign cell that is **called** reds the other target's compile at
-> the caller's body (`` `__cellStatus` has no `#[@External.<Target>(…)]` for the erlang backend ``),
-> while the same cell **declared and never called** compiles clean there. So a member may hold a
-> node-only cell only if nothing on the erlang row calls it. Restricting `targets` to `["commonJS"]`
-> is the other way out, but it costs the same row's own claim that "one `Link` render assertion also
-> runs on erlang". Front 27 resolved it by shipping the **pure** half — `link.bp` and `reconcile.bp`
-> reach no host cell at all and all 35 assertions run on both rows — and leaving the four cells to
-> front 68. When they arrive they must be dual-target, or live behind a wrapper nothing on erlang
-> calls, or sit in a commonJS-only member; the row has to choose one and say which.
->
-> **(c) `root.bp` and `botopink.json` are edited by the front that adds the module.** Several front
-> specs hand those two lines to front 94 and list both files under *Does not touch*. That was written
-> while 94 was open; it has closed, and the intermediate state the hand-off implies does not build.
-> Fronts 26, 94, 28 and 27 each appended their own line in their own commit, and that is the
-> convention — the package's `AGENTS.md` records it.
+## 0 · Where the tree is
+
+Fronts 94, 26, 28 and 27 have landed. Three facts about the tree that the cut below has to be read
+against:
+
+- **(a) The submodule split has not happened.** `repository/jhonstart/` has exactly **one** member,
+  `modules/jhonstart/`. `html.bp` — which § 6 assigns to `jhonstart-html` — is in core, and so are
+  front 27's `link.bp` and `reconcile.bp`. The cut below is a plan, not a description; whoever
+  performs it does so as its own front, and until then every front reads "core".
+- **(b) § 4's `jhonstart-link` row is unsettled.** A member cannot declare `["commonJS", "erlang"]`
+  *and* carry four `#[@External.Node]` cells that anything on the erlang row calls: a foreign cell
+  that is **called** reds the other target's compile at the caller's body (`` `__cellStatus` has no
+  `#[@External.<Target>(…)]` for the erlang backend ``), while the same cell declared and never
+  called compiles clean. Front 27 ships the **pure** half — `link.bp` and `reconcile.bp` reach no
+  host cell and all 35 assertions run on both rows — and leaves the four cells to front 68. When they
+  arrive they must be dual-target, or live behind a wrapper nothing on erlang calls, or sit in a
+  commonJS-only member; the row has to choose one and say which.
+- **(c) `root.bp` and `botopink.json` are edited by the front that adds the module**, in its own
+  commit — the package's `AGENTS.md` records the convention. A hand-off to front 94 would leave an
+  intermediate state that does not build.
 
 ## 1 · The cut
 
@@ -64,7 +58,7 @@ One criterion decides core versus submodule, and it is checkable by grep: **core
 | `jhonstart-forms` | `form.bp`, `form_state.bp` | 67 | — |
 | `jhonstart-test` | one `assert_<subject>.bp` per front + `harness.bp` | all nine (§ 5) | — |
 
-`root.bp` of each submodule lists its `pub mod` lines in front-number order; front 94 keeps ownership of `modules/jhonstart/src/root.bp` and `modules/jhonstart/botopink.json` exactly as it owns `src/root.bp` and `botopink.json` in the 1.0.9 text — the file moved, the rule did not.
+`root.bp` of each submodule lists its `pub mod` lines in front-number order; the front that adds a module appends its own line and its `files` entry in its own commit (§ 0 (c)).
 
 ### 1.2 The merged `modules/jhonstart/src/root.bp`
 
@@ -92,11 +86,11 @@ pub mod elements;        // front 94
 | `link.bp`, `reconcile.bp` (27) | `import {Element} from "element";` | `import {Element, RouterState} from "jhonstart";` | 27 reads `RouterState.segments()` for `layoutKeys` |
 | `form.bp`, `form_state.bp` (67) | `from "element"` | `import {Element, push, form, input, …} from "jhonstart"; import {prefetch} from "jhonstart-link";` | 67 depends on 26 (`push`), 27 (prefetch), 94 (constructors) |
 
-Every other `import {…} from "<sibling>"` in the 1.0.9 step code stays a sibling import because both files land in the same submodule (`server.bp` ← `router`'s `pairValue`; `streaming.bp` ← `suspense`'s `Boundary`).
+Every other `import {…} from "<sibling>"` in the fronts' step code stays a sibling import because both files land in the same submodule (`server.bp` ← `router`'s `pairValue`; `streaming.bp` ← `suspense`'s `Boundary`).
 
 ### 1.4 Consumer import map
 
-The 1.0.9 fronts and their examples write `import {…} from "jhonstart"` for every symbol. Under this cut that line resolves for core symbols; the two submodules are imported by name. The examples are not edited in the spec copies (they are 1.0.9 text); this table is what an implementer applies when the file is created in `repository/jhonstart/examples/**` or `modules/*/test/**`.
+The fronts and their examples write `import {…} from "jhonstart"` for every symbol. Under this cut that line resolves for core symbols; the two submodules are imported by name. This table is what an implementer applies when the file is created in `repository/jhonstart/examples/**` or `modules/*/test/**`.
 
 | Symbol group | Import |
 |---|---|
@@ -137,7 +131,7 @@ Net: **five directories** — core, `-html`, `-link`, `-forms`, `-test`.
 ## 3 · Dependency graph
 
 ```
-                    std (01 escape · 02 spawn/gather · 03 content_hash · querystring · asserts · snapshots)
+                    std (01 escape · 02 async · 03 hash · querystring · testing.asserts · testing.snapshots)
                      │
                      ▼
               ┌── jhonstart ──────────────────────────────────────────────────────────┐
@@ -153,7 +147,7 @@ Net: **five directories** — core, `-html`, `-link`, `-forms`, `-test`.
                       │                   │
           emilia (48 html_hook)           │
                                           ▼
-                              jhonstart-test  ◄── depends on all four + std/asserts + std/snapshots
+                              jhonstart-test  ◄── depends on all four + std testing.asserts + testing.snapshots
                                           │
                                           ▼
                                  onze (68 entry · 53 example app)
@@ -179,7 +173,7 @@ Host cells by submodule — the rule the manifests encode: core carries `#[@Exte
 
 ## 5 · `jhonstart-test`
 
-Depends on: `std` (`asserts`, `snapshots`, `querystring`), `jhonstart`, `jhonstart-html`, `jhonstart-link`, `jhonstart-forms`. Every helper is `pub fn assert<Subject>(loc: SourceLocation, …) -> @Result<void, string>`; each renders its subject to a deterministic string and hands it to `snapshots.match(loc, text)` (`../../01-std/snapshots.md`). Exact signatures and the text each one produces are in [`test-snap.md § 0`](./test-snap.md).
+Depends on: `std` (`import {testing: {asserts, snapshots}, querystring} from "std"` — decisions 106/107; only the leaves enter scope, so `asserts.equal` and `snapshots.match` are spelled as before), `jhonstart`, `jhonstart-html`, `jhonstart-link`, `jhonstart-forms`. Every helper is `pub fn assert<Subject>(loc: SourceLocation, …) -> @Result<void, string>`; each renders its subject to a deterministic string and hands it to `snapshots.match(loc, text)` (`../../01-std/snapshots.md`). Exact signatures and the text each one produces are in [`test-snap.md § 0`](./test-snap.md).
 
 | File | Exposes | Filled by front |
 |---|---|---|
@@ -194,7 +188,7 @@ Depends on: `std` (`asserts`, `snapshots`, `querystring`), `jhonstart`, `jhonsta
 | `assert_metadata.bp` | `assertMetadata(loc, m: Metadata)` · `assertViewport(loc, v: Viewport)` | 32 |
 | `assert_form.bp` | `assertForm(loc, f: Element)` · `assertActionState(loc, s: ActionState)` · `assertOptimistic(loc, base: i32, actions: i32[])` | 67 |
 
-Rules carried from front 95 § 5: import `std/asserts`, never re-implement `equal`; expose fixtures (`fixtureRouter`, `fixtureRequest`, `stubEnvelope`), not only assertions; `#[mock]` pairing is documented in the submodule README, and the host runtime behind it lives in the first `-test` submodule that needs it (rakun's, not this one).
+Rules carried from front 95 § 5: import std's `testing.asserts`, never re-implement `equal`; expose fixtures (`fixtureRouter`, `fixtureRequest`, `stubEnvelope`), not only assertions; `#[mock]` pairing is documented in the submodule README, and the host runtime behind it lives in the first `-test` submodule that needs it (rakun's, not this one).
 
 ## 6 · Front → directory ownership
 
@@ -226,7 +220,7 @@ Tests: each front's `test/<name>_test.bp` moves with its source into the same su
 | rakun (B) | **22** file-routing · **62** request-context · **63** navigation-signals · **66** metadata-file-routes | 22 discovers `loading.bp`/`error.bp`/`not-found.bp`/`global-error.bp` and calls `matchPath` for 26; 62 is the erlang module `server.bp` binds; 63's `jhonstart:` prefix is `isSignal`'s; 66 serves the paths `openGraph.images` names. | route table `t`; `k=v&k=v` strings; the signal prefix; image paths |
 | onze (E) | **68** client-bundle | Generates the entry that calls `hydrate()`, `__onzeLinkMount()`, `__jhFormMount()`; enforces 29's boundary rules over the module graph. | `__jhClient_<Name>` markers; the `server-only` import predicate |
 | onze (E) | **53** example-app | The first place a browser is in the loop; imports every symbol in § 1.4. | — |
-| std (A) | **01** · **02** · **03** | `escape.html`/`escape.attribute` (28, 32); spawn/gather over thunks (30, via 23); `content_hash.short` (31). | — |
+| std (A) | **01** · **02** · **03** | `escape.html`/`escape.attribute` (28, 32); `async` spawn/gather over thunks (30, via 23); `hash.contentHash` (31). | — |
 
 ## 8 · `repository/jhonstart/examples/**`
 

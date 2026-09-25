@@ -7,7 +7,7 @@
 // (`searchParams` reads the snapshot front 23 filled). `replace` is the one
 // dual-target call: on erlang it records a redirect, in the browser it is
 // `history.replaceState` followed by a re-render with no reload — the shape
-// NEXTJS-DOCS.md § 8 calls *History API nativa*.
+// NEXTJS-DOCS.md § 8 calls *native History API*.
 //
 // Upstream:
 //   https://nextjs.org/docs/app/api-reference/functions/use-search-params
@@ -37,8 +37,8 @@ fn orderLabel(order: string) -> string {
 }
 
 // The toolbar as a server-rendered component.
-#[@context]
-fn ProductToolbar() -> Element {
+#[@use]
+fn ProductToolbar() -> @Component<Element> {
     val search = use searchParams();
     val order = pairValue(search, "sort");
     return div([

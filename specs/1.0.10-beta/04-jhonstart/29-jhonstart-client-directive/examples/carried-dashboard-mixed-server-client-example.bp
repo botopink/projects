@@ -1,14 +1,13 @@
-// Carried from 1.0.7-beta examples-bp.md § F05 — Misturando server e client components
 // app/dashboard/page.bp
 import {Element, div, h1} from "jhonstart";
 import {Counter} from "@/components/counter";    // client component
 import {RecentPosts} from "@/components/posts";   // server component
 
-#[@future]
-pub fn DashboardPage() -> @Future<Element> {
+#[@use]
+pub fn DashboardPage() -> @Component<Element> {
     return div([
         h1([text("Dashboard")], attrs: []),
-        Counter(),               // hidratado no cliente
-        await RecentPosts(),     // renderizado no servidor
+        Counter(),               // hydrated on the client
+        await RecentPosts(),     // rendered on the server
     ], attrs: []);
 }

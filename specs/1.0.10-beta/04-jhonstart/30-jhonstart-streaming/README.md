@@ -9,7 +9,6 @@
 **Owns:** `repository/jhonstart/src/streaming.bp`, `repository/jhonstart/src/suspense.bp`, `repository/jhonstart/test/streaming_test.bp`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (26), `src/link.bp` (27), `src/server.bp` (28), `src/client.bp` (29), `src/root.bp` and `botopink.json` (front 94)
 **Reference:** `NEXTJS-DOCS.md § 13. Streaming` · `§ 5. Layouts e Páginas` · https://nextjs.org/docs/app/guides/streaming · https://nextjs.org/docs/app/api-reference/file-conventions/loading
-**Replaces:** `1.0.7-beta/06-jhonstart-streaming`
 
 ---
 
@@ -41,10 +40,6 @@ owes front 22 a shape it can wrap things in, not a second file convention.
 - `libs/std/src/http.bp:16-18` — "Erlang is eager: `@Future<T>` resolves to `T` … so the caller's
   `await fetch(url)` is identity on that backend." There is no concurrent scheduler behind `@Future`
   on the BEAM, which is the single most important fact about this front.
-- The 1.0.7 draft's `Suspense` rendered the fallback into an attribute
-  (`data-jhonstart-fallback: renderToString(props.fallback)`) *and* the children into the same
-  element. That is not streaming — it sends both halves in the first flush, which costs more bytes
-  than sending neither.
 
 ## Mechanism
 
@@ -62,9 +57,11 @@ of results that have *already* been computed, in order, before anything was flus
 boundary, having paid the sum of all of them. It would pass a test that checks the chunks and fail
 the only thing a reader can see.
 
-So a boundary in this design holds an **unstarted task** — `fn() -> @Future<Element>`, a thunk —
-and progressive flush is driven by the completion of **spawned work**, one BEAM process per
-boundary, gathered by index. Front 02 owns spawning and gathering, and its surface takes exactly
+So a boundary in this design holds an **unstarted task** — `fn() -> @Component<Element>`, a thunk
+over a server component (decision 104: a component that awaits is `#[@use] fn … -> @Component<Element>`,
+and `@Component ⊃ @Future`, so `await b.child()` is legal in a `#[@future]` body) — and progressive
+flush is driven by the completion of **spawned work**, one BEAM process per boundary, gathered by
+index. Front 02 owns spawning and gathering, and its surface takes exactly
 that shape: `Array<fn() -> @Future<T>>`. Front 23 spawns the boundaries, flushes the shell
 immediately, and flushes each chunk as its process reports.
 
@@ -88,7 +85,7 @@ A boundary is a record, not an element:
 pub type Boundary(
     id: string,
     fallback: Element,
-    child: fn() -> @Future<Element>,
+    child: fn() -> @Component<Element>,
 )
 ```
 
@@ -119,9 +116,7 @@ the boundaries this front handed it.
 
 **Ordering and flushing are front 23's.** This front produces the shell markup and one `Chunk` per
 boundary; front 23 decides when each goes on the wire, and whether a chunk that resolves out of
-order is flushed early or held. Saying so here is the point — the 1.0.7 draft left "the actual
-streaming transport is rakun's job" as a footnote after designing an API that could not be flushed
-at all.
+order is flushed early or held.
 
 ### The js half — front 29 and front 68
 
@@ -157,7 +152,8 @@ that survived a navigation would be a hole whose fill belongs to the previous pa
 
 ### `loading.bp`
 
-A segment's `loading.bp` exports `#[@context] pub fn Loading() -> Element`. Front 22 discovers the file (kind `S`
+A segment's `loading.bp` exports `pub fn Loading() -> Element` — it activates nothing, so it carries
+no annotation (decision 104). Front 22 discovers the file (kind `S`
 in the route table, `contracts.md § 1`); front 23 builds
 `Boundary(id: holeId(n), fallback: Loading(), child: { -> Page(params) })` around the segment's page,
 with `n` the next ordinal. This front defines the record they build and asserts nothing about file
@@ -177,10 +173,9 @@ import {Element} from "element";
 pub type Boundary(
     id: string,
     fallback: Element,
-    child: fn() -> @Future<Element>,
+    child: fn() -> @Component<Element>,
 )
 
-#[@context]
 pub fn Suspense(b: Boundary) -> Element {
     return Element(
         tag: "div",
@@ -293,7 +288,7 @@ front 94 owns `src/root.bp` and `botopink.json`'s `files` list; this front hands
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| `Children` coerces from an array, an `Element` or a string (`infer.zig:4228-4239`) but not from a deferred value, so a boundary's child cannot be a child | `Boundary` is a record holding a `fn() -> @Future<Element>` beside the fallback, instead of `Suspense(fallback, child)` taking the child as `Children` | a record | let `Children` accept a thunk, resolved by the renderer |
+| `Children` coerces from an array, an `Element` or a string (`infer.zig:4228-4239`) but not from a deferred value, so a boundary's child cannot be a child | `Boundary` is a record holding a `fn() -> @Component<Element>` beside the fallback, instead of `Suspense(fallback, child)` taking the child as `Children` | a record | let `Children` accept a thunk, resolved by the renderer |
 | `await` is not safe as a lambda's last statement — a lambda's last statement must be an implicit-return expression, and nothing in the tree awaits in one | `resolve(b)` awaits one boundary; front 23 loops, this front does not | one await per call, at statement level | an awaiting lambda, so `boundaries.map({ b -> await resolve(b) })` types |
 | Declared parameter defaults are never applied | every `Element` builder call in both examples spells `attrs: []` | write every argument | apply the declared default when an argument is omitted |
 
@@ -333,147 +328,3 @@ treat that as a red.
       front 23's README cites them
 - [ ] all three language gaps appear in a `specs/1.0.10-beta/` spec
 - [ ] the front's tests are green on its assigned target
-
-## Carried from 1.0.7-beta F06 jhonstart-streaming
-
-Items of the 1.0.7 draft not restated above, quoted so nothing is lost; where the milestone decided differently the 1.0.9 decision stands and the old text is kept for the record.
-
-### `SuspenseProps` / `Suspense(props)` — children as `Children`, fallback in an attribute
-
-`1.0.7-beta/06-jhonstart-streaming/README.md § Mechanism`, `§ Steps › Step 1 — Suspense component`. Superseded by `Boundary` (a record holding a thunk) and the `data-onze-h` hole marker in *Mechanism › The erlang half* and *Step 1* above; the reason is recorded in *Current state*.
-
-> Introduce `Suspense` boundary (analogous to React's `<Suspense>`):
-> - `Suspense` wraps a component and provides a fallback UI
-> - During SSR, if the wrapped component is still loading, the fallback is rendered
-> - The actual content is streamed later (or hydrated on the client)
-
-```bp
-pub fn BlogPage() -> Element {
-    return div([
-        h1([text("Blog", attrs: [])], attrs: []),
-        Suspense(
-            fallback: div([text("Loading posts...", attrs: [])], attrs: []),
-            children: [PostList()],
-        ),
-    ], attrs: []);
-}
-```
-
-```bp
-// src/suspense.bp
-import {Element} from "element";
-
-pub type SuspenseProps(
-    fallback: Element,
-    children: Children,
-)
-
-pub fn Suspense(props: SuspenseProps) -> Element {
-    // During SSR, render the fallback immediately
-    // The actual content is streamed/hydrated later
-    return Element(
-        tag: "div",
-        value: "",
-        children: props.children,
-        attrs: [
-            #("data-jhonstart-suspense", "true"),
-            #("data-jhonstart-fallback", renderToString(props.fallback)),
-        ],
-    );
-}
-```
-
-Old acceptance (replaced by Step 1's acceptance above):
-
-| Old item | Status |
-|---|---|
-| `Suspense` component compiles | replaced — `Suspense(b: Boundary)` |
-| Renders children with fallback metadata | reversed — the child is **not** rendered in the shell |
-| `renderToString(Suspense(...))` produces HTML with data attributes | replaced — `data-onze-h="h<n>"` only |
-
-### `Suspense` with `children: [await PostList()]` (Exemplos em bp)
-
-`1.0.7-beta/06-jhonstart-streaming/README.md § Exemplos em bp › Suspense com fallback`. Superseded: awaiting the child before building the boundary is the eager-`@Future` mistake named in *Mechanism › What makes it actually stream*.
-
-```bp
-#[@future]
-pub fn BlogPage() -> @Future<Element> {
-    return div([
-        h1([text("Blog")]),
-        Suspense(SuspenseProps(
-            fallback: div([text("Carregando...")]),
-            children: [await PostList()],
-        )),
-    ], attrs: []);
-}
-```
-
-### `loading.bp` styled with emilia
-
-`1.0.7-beta/06-jhonstart-streaming/README.md § Exemplos em bp › loading.bp`. The convention is restated in *Mechanism › `loading.bp`*; the emilia-token styling of the fallback is not shown in either example above.
-
-```bp
-// app/blog/loading.bp
-pub fn Loading() -> Element {
-    return div([text("Carregando...")], attrs: [#("class", emilia([.Bg.Gray100]))]);
-}
-```
-
-### Step 3 — Streaming render deferred as a follow-up to rakun F09
-
-`1.0.7-beta/06-jhonstart-streaming/README.md § Steps › Step 3 — Streaming render (future)` and `§ Notes`. Superseded: *Mechanism › The erlang half* assigns ordering and flushing to front 23 and Step 4 writes the flush contract down, instead of deferring the transport.
-
-> Full streaming SSR (sending HTML chunks as they render) requires async I/O and is a recorded follow-up. This front provides the `Suspense` boundary mechanism; the actual streaming transport is rakun's job (F09).
->
-> Acceptance: streaming transport documented as follow-up.
-
-> Full streaming (sending HTML chunks over the wire) is rakun's job (F09). This front provides the component-level boundary.
-
-### Note — fallback and children rendered together, client swaps
-
-`1.0.7-beta/06-jhonstart-streaming/README.md § Notes`. Reversed by *Current state* (last bullet) and Step 1's acceptance: the shell carries the fallback only.
-
-> `Suspense` during SSR renders the fallback + children together; the client runtime can swap them if needed.
-
-### Step 4 — old test, and the commonJS + erlang test target
-
-`1.0.7-beta/06-jhonstart-streaming/README.md § Steps › Step 4 — Tests`. The assertion `html.contains("Content")` is reversed above (test plan item 1). The target list `commonJS + erlang` is narrowed to erlang (*Target*, *Test plan*).
-
-```bp
-test "Suspense renders children with fallback metadata" {
-    val el = Suspense(SuspenseProps(
-        fallback: div([text("Loading...", attrs: [])], attrs: []),
-        children: [div([text("Content", attrs: [])], attrs: [])],
-    ));
-    val html = renderToString(el);
-    assert html.contains("data-jhonstart-suspense=\"true\"");
-    assert html.contains("Content");
-}
-```
-
-| Old acceptance | Status |
-|---|---|
-| Tests pass on commonJS + erlang | narrowed — erlang only; no js row for this front |
-
-### Gate — branch name
-
-`1.0.7-beta/06-jhonstart-streaming/README.md § Gate`. Not restated above.
-
-| Old gate item | Status |
-|---|---|
-| Commit on `fix/jhonstart-streaming` | absent — no branch convention in the new front |
-| `suspense.bp` in `botopink.json` and `root.bp` | covered — handed to front 94 (Step 5) |
-| `botopink test` green · AGENTS.md updated | covered — *Definition of done*, Step 5 |
-
-### Reference rows from 1.0.7 overview/fronts
-
-| Source | Row | Status |
-|---|---|---|
-| `1.0.7-beta/overview.md` front table | `06-jhonstart-streaming` · **high** · jhonstart · jhonstart-core · "Streaming SSR: Suspense boundary, loading states, progressive render" | covered — header block above |
-| `1.0.7-beta/overview.md` Next.js mapping | `loading.tsx` → `loading.bp` → jhonstart (streaming) | covered — *Mechanism › `loading.bp`* |
-| `1.0.7-beta/overview.md` app tree | `app/loading.bp` — "Global loading UI" (root-segment `loading.bp`) | absent — only segment-level `loading.bp` is described above; root wrapping is front 22/23's |
-| `1.0.7-beta/overview.md` app tree | `app/blog/loading.bp` — "Blog loading"; `app/blog/[slug]/loading.bp` (nested segment) | covered — per-segment `Boundary` built by front 23 |
-| `1.0.7-beta/fronts.md` ownership | owns `repository/jhonstart/src/streaming.bp`, `repository/jhonstart/src/suspense.bp`; tests `repository/jhonstart/test/streaming_test.bp` | covered — *Owns* |
-| `1.0.7-beta/fronts.md` conflict matrix | F06 row: `yes` (parallel-safe) against every other front | covered in spirit — *Does not touch* |
-| `1.0.7-beta/fronts.md` phases | Phase 2 (Core features — 7 in parallel): F05 ∥ F06 ∥ F07 ∥ F10 ∥ F11 ∥ F12 ∥ F15 | different decision — *Wave 3*, depends on 28 · 02 · 23 · 94 |
-| `1.0.7-beta/06-…/README.md` header | Depends on: F04 (jhonstart-server-components) | covered — depends on 28 |

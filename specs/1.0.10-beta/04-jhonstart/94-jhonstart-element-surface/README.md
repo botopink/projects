@@ -8,7 +8,6 @@
 **Owns:** `repository/jhonstart/src/elements.bp` (plus its inline `test` blocks), `repository/jhonstart/test/elements_test.bp`, `repository/jhonstart/src/root.bp`, `repository/jhonstart/botopink.json`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (26), `src/link.bp` (27), `src/server.bp` (28), `src/client.bp` (29), `src/suspense.bp`/`src/streaming.bp` (30), `src/error_boundary.bp` (31), `src/metadata.bp` (32), `src/form.bp`/`src/form_state.bp` (67)
 **Reference:** `NEXTJS-DOCS.md § 4. App Router — Fundamentos` · Root Layout (obrigatório) · `NEXTJS-DOCS.md § 10. Mutação de Dados` · <https://html.spec.whatwg.org/multipage/indices.html#elements-3> · <https://html.spec.whatwg.org/multipage/syntax.html#void-elements> · <https://nextjs.org/docs/app/api-reference/file-conventions/layout>
-**Replaces:** new — allocated from the element-constructor question raised by fronts 24, 26–32 and 67
 
 ---
 
@@ -36,7 +35,9 @@ should own the element surface."
 ## Current state
 
 - `repository/jhonstart/src/element.bp:3-8` — `pub type Element(tag, value, children, attrs)
-  implement @Context<Element, Element>`. Public, and everything this front needs.
+  implement @Context<ElementBase>` (decision 102: `@Context<Base>` is the context-owner marker, and
+  `ElementBase` is the base every hook in this track anchors on). Public, and everything this front
+  needs.
 - `repository/jhonstart/src/element.bp:10-53` — the eight constructors plus `bracketPair`. Every one
   has the same shape: `pub fn <tag>(children: Children, attrs: Array<#(string, string)> = []) ->
   Element`, returning `Element(tag: "<tag>", value: "", children: children, attrs: attrs)`.
@@ -167,7 +168,7 @@ by mistake.
 | Tag | Constructor | Why |
 |---|---|---|
 | `<html>` | `htmlTag` | `html` is already a `pub fn` in the same package — the `html """…"""` template fn (`html.bp:94`). Two `pub fn html` reachable from `import {…} from "jhonstart"` is a collision, and the DSL is the one with ten years of muscle memory behind the name. |
-| `<time>` | `timeTag` | `time` is a std module (`libs/std/src/root.bp`), and a consumer doing `import {time} from "std"` in the same file would collide. Front 53 already writes `timeTag` (`53-onze-example-app/examples/blog-slug-page-example.bp:19`). |
+| `<time>` | `timeTag` | Parity with `htmlTag`, and front 53 already writes `timeTag` (`53-onze-example-app/examples/blog-slug-page-example.bp:19`). Std's clock is `io.clock` (decision 106), so `import {io.clock} from "std"` brings `clock`, not `time`, and the bare word is free — the constructor keeps its landed name anyway. |
 | `<main>` | `main` | Shipped under its own name, because fronts 53 and 30 import it that way. The caveat is real and belongs in `docs.md`: a module that declares the program entry point `fn main()` must not also import `main` from `"jhonstart"` in that same module. `el("main", kids, attrs: [])` is the remedy; import aliasing is not — `import {main as m}` parses (`parser/decls.zig:242-258`) but nothing outside the parser reads the alias for a package import, so the binding still lands under `main`. |
 
 `link` and `element` are Erlang auto-imported BIFs, at arity 1 and 2 respectively. `link/2` and
@@ -448,120 +449,3 @@ absences are stated above rather than papered over.
       and names this front
 - [ ] Front 23's `renderNode` calls `isVoidTag` and `isRawTextTag` rather than holding its own lists
 - [ ] The front's tests are green on both of its assigned targets
-
-## Carried from 1.0.7-beta F16 emilia-jhonstart-integration
-
-Items of the 1.0.7 draft not restated above, quoted so nothing is lost; where the milestone decided differently the 1.0.9 decision stands and the old text is kept for the record.
-
-Front 48 (`1.0.9-beta/48-emilia-attributes`) replaces 1.0.7 F15 + F16 and owns `repository/jhonstart/src/html_attrs.bp`. What follows is the jhonstart-side residue — the html DSL attribute path, the `[emilia]` lowering, and the shared-file lines — that neither front 48 nor the sections above restate.
-
-### `[emilia]={expr}` in `html """…"""` and its lowering (1.0.7 F16 README · *Problem*, *Mechanism*, lines 14, 22-36)
-
-Different decision — `html.bp` is frozen and grows no `[emilia]` attribute. The class string goes through the existing `[class]={…}` hole, pre-bound to a `val` (48 *Mechanism › html_hook.bp*; 48 *Blocked* row 2: "if `html.bp` unfreezes in 1.0.10, an `[emilia]={…}` handler is a one-arm addition to its `attrBracketProp` branch"). The draft's intended surface and lowering:
-
-```bp
-val page = html """
-<div [emilia]={[.Pad.All.4, .Bg.White]}>
-  <p>Hello</p>
-</div>
-""";
-```
-
-Expands to:
-
-```bp
-div([p([text("Hello", attrs: [])], attrs: [])], attrs: [#("class", emilia([.Pad.All.4, .Bg.White]))])
-```
-
-The draft's *Current state* ("attributes in html are static strings; no dynamic attribute syntax") is corrected by 48 *Current state*: `[class]={expr}` already reaches `attrs` via `bracketPair` (`html.bp:234-241`), and plain `name="value"` attributes are captured for the LSP overlay only (48 *Blocked* row 3).
-
-### README example (*Exemplos em bp › Atributo [emilia] no html DSL*, lines 38-50)
-
-Same decision as above. Carried files: `examples/carried-emilia-attribute-html-dsl-example.bp`, `examples/carried-responsive-modifiers-example.bp`.
-
-```bp
-val page = html """
-<div [emilia]={[.Pad.All.8, .Bg.Gray100]}>
-  <h1 [emilia]={[.Text.Size.X3xl, .Text.Bold]}>Título</h1>
-  <button [emilia]={[.Pad.X.4, .Bg.Blue500, .Hover([.Bg.Blue700])]}>
-    Clique
-  </button>
-</div>
-""";
-```
-
-### Handler registry in the DSL parser (*Step 1 — html DSL extension*, lines 52-70)
-
-Absent from both 48 and this front — there is no name → handler lookup; `[name]={expr}` lowers to `bracketPair(name, expr)` unconditionally (`html.bp:240`).
-
-```bp
-// In html.bp's parser
-// When encountering [name]={expr}:
-// 1. Look up `name` in registered annotation handlers
-// 2. Pass `expr` to the handler
-// 3. Replace with the handler's output (e.g., class="emilia(...)")
-```
-
-| Old acceptance | 1.0.9 |
-|---|---|
-| html DSL parses `[name]={expr}` | exists today — 48 *Current state*; Step 4 acceptance above (`[class]={c}` on an `elements.bp` tag) |
-| Looks up handler by name | absent |
-| Passes expr to handler | absent |
-
-### `html_attrs.bp` as an emilia bridge (*Step 3 — jhonstart html_attrs*, lines 84-96)
-
-Different decision — 48 Step 4: `html_attrs.bp` is emilia-unaware (`classAttr`, `withAttrs`, `attrValue`), imports only `element`, and a test asserts the string `emilia` is absent from `repository/jhonstart/src/`. The dependency runs one way.
-
-```bp
-// src/html_attrs.bp
-// Bridge between jhonstart's html DSL and emilia
-// Provides the handler registration
-```
-
-| Old acceptance | 1.0.9 |
-|---|---|
-| Bridge module created | 48 Step 4, as plumbing, not a bridge |
-| jhonstart and emilia both updated | 48 header **Owns** |
-
-### The integration test (*Step 4 — Tests*, lines 98-110)
-
-Different decision — 48 Step 5 renders the builder tree and the `[class]={c}` template and asserts the two strings byte-identical, on both `commonJS` and `erlang`; the file is `repository/emilia/test/integration_test.bp` and jhonstart gets no test file for this seam (48 *Test plan*).
-
-```bp
-test "html DSL supports [emilia] attribute" {
-    val page = html """<div [emilia]={[.Pad.All.4]}>Hello</div>""";
-    val html = renderToString(page);
-    assert html.contains("class=\"e_");
-}
-```
-
-### Generic handlers and future attribute kinds (*Notes*, lines 130-132)
-
-Absent from both.
-
-- "The `[name]={expr}` syntax is generic — other libs can register handlers."
-- "Future: more attribute handlers (data attributes, ARIA, etc.)."
-
-Today any `[name]={expr}` reaches `attrs` as `#(name, expr)`, so `[data-x]={v}` and `[aria-label]={l}` need no handler; what is absent is a per-name transform.
-
-### `pub mod html_attrs;` in the shared files (48 Step 4 · 1.0.7 `fronts.md:22`)
-
-Front 48 adds `repository/jhonstart/src/html_attrs.bp` and states "`root.bp` gains `pub mod html_attrs;` and `botopink.json`'s `files` array gains it". The merged `src/root.bp` listing under *The two shared files* and the **Does not touch** line above carry no front-48 entry. In front-number order the line sits between front 32 and front 67:
-
-```bp
-pub mod metadata;        // front 32
-pub mod html_attrs;      // front 48
-pub mod form;            // front 67
-```
-
-`"html_attrs.bp"` joins `botopink.json`'s `files` at the same position; `src/html_attrs.bp (48)` joins **Does not touch**.
-
-### Reference rows from 1.0.7 overview/fronts
-
-| Source | Row | 1.0.9 |
-|---|---|---|
-| `overview.md:22` | `16-emilia-jhonstart-integration` · high · emilia + jhonstart · emilia-core · "html DSL integration: [emilia]={expr} attribute, class auto-injection" | `1.0.9 overview.md:21` — folded into 48; class injection is `styled` / `styledWith` / `classAttr` |
-| `fronts.md:22` | F16 owns `repository/emilia/src/html_hook.bp`, `repository/jhonstart/src/html_attrs.bp`; tests `repository/emilia/test/integration_test.bp` | 48 header **Owns**, identical set; `1.0.9 fronts.md:203-205, 247` |
-| `fronts.md:61` | Conflict note 3 — F15 first (attribute mechanism), then F16 (html DSL uses attributes) | moot — one front (48) |
-| `overview.md:80` | "each front owns files in ONE repo only (except 16, which touches emilia + jhonstart — documented)" | `1.0.9 overview.md:289`: 48 is the single cross-repo front |
-| `fronts.md:76,87` | F16 in Phase 3, parallel with F08 · F13 · F18–F21 | 48 is wave 2 |

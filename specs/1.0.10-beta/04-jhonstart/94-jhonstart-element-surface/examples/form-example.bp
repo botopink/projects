@@ -17,7 +17,7 @@
 // Upstream:
 //   https://nextjs.org/docs/app/getting-started/updating-data
 //   https://html.spec.whatwg.org/multipage/forms.html#the-form-element
-//   NEXTJS-DOCS.md § 10. Mutação de Dados
+//   NEXTJS-DOCS.md § 10. Data Mutation
 //
 // LANGUAGE GAP: declared parameter defaults are never applied, so every
 // constructor call below spells `attrs:` — the inner `text(…)` calls included.

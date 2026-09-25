@@ -1,16 +1,19 @@
 // Front 29 — jhonstart-client-directive · examples/like-button-client-example.bp
 //
-// The `§ 7. Padrão: Server + Client` shape: a server component lists the posts,
+// The `§ 7. Pattern: Server + Client` shape: a server component lists the posts,
 // and each row embeds a CLIENT component that owns the like count.
 //
 // Three things are worth reading closely.
 //   - `LikeProps` carries `#[clientProps]`. Its two fields are a `string` and an
 //     `i32`, both on the serializable whitelist. A field typed `Element` would
 //     be rejected at comptime, with a message located at the declaration.
-//   - `LikeButton` carries `#[client]`. Its body uses `use state`, which only
-//     means anything in the browser; on the server it is never called.
-//   - `PostList` is a SERVER component. It does not call `LikeButton` — it emits
-//     the ISLAND, which is what front 23 serializes and front 68's bundle starts.
+//   - `LikeButton` carries `#[client]` and, because its body activates
+//     `use state`, `#[@use]` with a `@Component<Element>` return (decision 104).
+//     `use state` only means anything in the browser; on the server it is never
+//     called.
+//   - `PostList` is a SERVER component that activates nothing, so it is a plain
+//     `fn … -> Element`. It does not call `LikeButton` — it emits the ISLAND,
+//     which is what front 23 serializes and front 68's bundle starts.
 //
 // The island marker is `<div data-onze-i="i0">` and the component name and props
 // live in the payload's `i` array, not on the element (`contracts.md § 2`).
@@ -42,8 +45,8 @@ pub type LikeProps(
 // The interactive component. `data-onze-on-click` names a handler the client
 // runtime binds after hydration; there is no JavaScript string in this file.
 #[client]
-#[@context]
-pub fn LikeButton(props: LikeProps) -> Element {
+#[@use]
+pub fn LikeButton(props: LikeProps) -> @Component<Element> {
     val c = use state(props.likes);
     return button([
         text(c.value.toString() + " likes", attrs: []),
@@ -74,7 +77,6 @@ fn postRow(id: string, p: Post) -> Element {
 
 // A server component. Everything it renders is markup; the only client code on
 // the page is whatever `LikeButton` compiles to in front 68's bundle.
-#[@context]
 pub fn PostList(posts: Array<Post>) -> Element {
     return div([
         h1([text("Posts", attrs: [])], attrs: []),
@@ -88,7 +90,7 @@ pub fn PostList(posts: Array<Post>) -> Element {
 // there is no separate `i32` to keep in step with it.
 fn postRows(posts: Array<Post>) -> Array<Element> {
     var rows: Array<Element> = [];
-    loop (posts) { p ->
+    for (posts) { p ->
         rows = rows.append([postRow("i" + rows.length.toString(), p)]);
     };
     return rows;

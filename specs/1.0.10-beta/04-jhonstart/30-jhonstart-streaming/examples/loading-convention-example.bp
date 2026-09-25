@@ -22,8 +22,8 @@ import { shellHtml } from "jhonstart";
 
 // ── what the developer writes: app/blog/loading.bp ──────────────────────────
 
-// One export, no arguments, no boundary name. This is the whole file.
-#[@context]
+// One export, no arguments, no boundary name. It activates nothing, so it
+// carries no annotation (decision 104). This is the whole file.
 pub fn Loading() -> Element {
     return div([
         span([text("Loading the blog…", attrs: [])], attrs: [#("class", "skeleton-line")]),
@@ -33,8 +33,8 @@ pub fn Loading() -> Element {
 
 // ── what the developer writes: app/blog/page.bp ─────────────────────────────
 
-#[@future]
-pub fn Page(params: Array<#(string, string)>) -> @Future<Element> {
+#[@use]
+pub fn Page(params: Array<#(string, string)>) -> @Component<Element> {
     return div([
         text("the real blog", attrs: []),
     ], attrs: [#("class", "blog")]);

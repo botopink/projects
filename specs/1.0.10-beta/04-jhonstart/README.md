@@ -2,18 +2,18 @@
 
 **Track:** C — jhonstart · **Repo:** `repository/jhonstart` · **Reference:** Next.js docs (`/home/ericfillipe/develop/nextjs/NEXTJS-DOCS.md`), the React half — App Router hooks, `<Link>`, Server/Client Components, streaming, error boundaries, metadata, forms, `'use client'` — plus the `html """…"""` DSL and the element surface that half renders through.
 
-Front numbers are **1.0.9-beta identifiers** and are preserved: `26` is `26-jhonstart-router` in both milestones, and the directories keep their exact 1.0.9 names. New work in this milestone gets a new number, never a renumbering.
+Front numbers are stable identifiers: `26` is `26-jhonstart-router` here and everywhere else. New work gets a new number, never a renumbering.
 
 | File | Holds |
 |---|---|
 | [`modules.md`](./modules.md) | The package cut: `modules/jhonstart`, `-html`, `-link`, `-forms`, `-test`; dependency graph; targets; front → directory ownership; relations to emilia/rakun/onze; `examples/**` |
-| [`unification.md`](./unification.md) | Proof of lossless carry from 1.0.9 and absorption of the 1.0.7 draft; the Next.js rows still missed |
+| [`unification.md`](./unification.md) | How the coordinates the READMEs cite resolve in this milestone; the Next.js rows no front owns yet |
 | [`test-snap.md`](./test-snap.md) | The preventive snapshot-test map of the modules — helper signatures, `.bp` cases, exact `.snap` files |
 | [`test-snap-examples.md`](./test-snap-examples.md) | The same map for `repository/jhonstart/examples/**` |
 
 ## 1 · Fronts — in blocking order
 
-Ordered by the level each front occupies in the dependency graph; *(ro)* = read-only citation, not an edge. **Wave (milestone)** is the level [`../../fronts.md`](../../fronts.md) § *Waves* computes across all five tracks from the unannotated `Depends on` edges — not a track-internal numbering, which is only a lower bound, and not the superseded diagram this table used to copy. It is regenerated there and copied here; a wave is corrected in `fronts.md` first. Priority is the 1.0.9 value.
+Ordered by the level each front occupies in the dependency graph; *(ro)* = read-only citation, not an edge. **Wave (milestone)** is the level [`../../fronts.md`](../../fronts.md) § *Waves* computes across all five tracks from the unannotated `Depends on` edges — not a track-internal numbering, which is only a lower bound. It is regenerated there and copied here; a wave is corrected in `fronts.md` first.
 
 | # | Front | Priority | Wave (milestone) | Submodule | Depends on (track C) | Depends on (other tracks) | Gate |
 |---|---|---|---|---|---|---|---|
@@ -82,15 +82,17 @@ Every front's tests assert string literals so that a divergence between the two 
 
 `modules/jhonstart/src/element.bp`, `modules/jhonstart/src/hooks.bp`, `modules/jhonstart-html/src/html.bp` — content frozen; the one relocation edit each of `html.bp` and 48's `html_attrs.bp` needs is listed in `modules.md § 1.3`. The consequences that shape every front: `renderToString` neither escapes nor knows void elements (front 23's `renderNode` does both; 94's `isVoidTag`/`isRawTextTag` feed it); declared parameter defaults are never applied, so every constructor call spells `attrs:`; a self-closing tag cannot be authored inside `html """…"""`.
 
-## 6 · Written with `use`, under `#[@context]`
+## 6 · Written with `use`, under `#[@use]`
 
-Every hook and every component in this track follows [`00-compiler-carry-over/19-use-activation`](../00-compiler-carry-over/19-use-activation/README.md) § *The rule for libraries*, as decisions 87–90 settled it:
+Every hook and every component in this track follows [`00-compiler-carry-over/19-use-activation`](../00-compiler-carry-over/19-use-activation/README.md) § *The rule for libraries* and decisions 102 and 104:
 
-1. A hook is `pub fn <noun>(…) -> @Context<Element, R>` — `router`, `pathname`, `params`, `searchParams`, `selectedLayoutSegment(s)`, `linkStatus`, `formStatus`, `actionState`, `optimistic`, `request` — with **no `use` prefix in its name** and no annotation of its own; the keyword is the activation.
-2. It is activated as `val x = use <noun>(…)` in the static prefix of an activating body; never the doubled `use` + `use<Noun>()`.
-3. **A component is `#[@context] fn … -> Element`** — no longer "any `fn … -> Element`" (decision 88). The annotation is the lowercase effect; a capital `#[@Context]` is an unknown annotation the compiler silently ignores, and a body that activates a hook without it is `use-without-context-effect`. A custom hook composing hooks carries it too: `#[@context] fn <noun>(…) -> @Context<Element, _>`.
-4. **A server component is `#[@future] fn … -> @Future<Element>`, with no second annotation** (decision 90): one effect annotation per fn, and the wrapper effect activates on its own because `@Future<Element>` unwraps to the owner `Element` (decision 89). `#[@future] #[@context]` is `effect-duplicate-annotation`.
-5. Called without `use` a hook is an ordinary call — the server-pass value; that is what every `test` and every `sidebarFor`/`checkoutLinkFor`-style pure twin uses, and the caller needs no annotation for it.
-6. The binding never reuses the hook's name (`val r = use router()`); type constructors stay PascalCase (`RouterState`, `LinkStatus`, `FormStatus`, `ActionState`) and helpers take a verb (`newActionState`, `parseActionState`). The Next.js names appear only where a text names Next's API as the reference.
+1. `Element` is the context owner: `pub type Element(…) implement @Context<ElementBase>` (decision 102). `ElementBase` is the base every hook in this track anchors on.
+2. A hook is `#[@use] pub fn <noun>(…) -> @Use<ElementBase, R>` — `router`, `pathname`, `params`, `searchParams`, `selectedLayoutSegment(s)`, `linkStatus`, `formStatus`, `actionState`, `optimistic`, `request` — with **no `use` prefix in its name**; the keyword is the activation. A hook composing hooks has the same shape.
+3. It is activated as `val x = use <noun>(…)` in the static prefix of a `#[@use]` body; never the doubled `use` + `use<Noun>()`. Only `#[@use]` grants `use` (decision 104): a body that activates a hook without it is `use-without-context-effect`, and the base of every `use` in one body is the same `ElementBase` (decision 96).
+4. **A component that activates a hook or awaits is `#[@use] fn … -> @Component<Element>`** — `@Component<Element>` is `@Use<ElementBase, Element>` for `Element: @Context<ElementBase>`, and `@Component ⊃ @Future`, so a server component awaits its loaders and activates `request()` under the one annotation (decisions 102, 104). A component is **called** (`Card()`), never `use`d.
+5. **A component that activates nothing carries no annotation and returns bare `Element`** (decision 104, question 92-b): `Loading`, `NotFound`, `GlobalError`, `ErrorPage`, `Link`, `Suspense` and every pure twin (`sidebarFor`, `checkoutLinkFor`, `greetingBar`) are ordinary functions.
+6. Called without `use` a hook is an ordinary call — the server-pass value; that is what every `test` uses, since a `test` body carries no `#[@use]`.
+7. The binding never reuses the hook's name (`val r = use router()`); type constructors stay PascalCase (`RouterState`, `LinkStatus`, `FormStatus`, `ActionState`) and helpers take a verb (`newActionState`, `parseActionState`). The Next.js names appear only where a text names Next's API as the reference.
+8. On the commonJS target every `#[@use]` body is emitted as `async function` (decision 104): a component and a hook return a Promise there, and a caller `await`s. On erlang `@Future` is eager and `await` is identity.
 
-Item 4 is written in the specs and not yet in the compiler: front 19 step 2 is what makes `use request()` infer inside a `#[@future]` body, and front 28's `server.d.bp` stays gated until it lands.
+Rules 1–4 and 8 are written in the specs and not yet in the compiler: the effect-chain task (front 19 step 2) lands `#[@use]`, `@Use`, `@Component` and `@Context<Base>`, and until then front 28's `request()` is a plain function and every hook in the tree is called, not `use`d.
