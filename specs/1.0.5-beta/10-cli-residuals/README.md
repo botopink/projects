@@ -207,7 +207,7 @@ No code. Register, in the owning front's README, with the reproduction:
 | Row | Owner |
 |---|---|
 | the `shipErlSidecars` call site in `cli/build.zig` ([R2](#r2-buildrun-does-not-ship-an-erl-sidecar)) | [`13-module-identity`](../13-module-identity/README.md) |
-| `loadSrcTree`'s `catch continue` (`project_graph.zig:347`, [R3](#r3-a-third-catch-continue-in-project_graphzig)) | [`11-tooling`](../11-tooling/README.md) |
+| ~~`loadSrcTree`'s `catch continue` (`project_graph.zig:347`, [R3](#r3-a-third-catch-continue-in-project_graphzig))~~ — closed by `botopink-lang` `ae6476c` (11 step 3) | [`11-tooling`](../11-tooling/README.md) |
 | `ast.ImportDecl` has no `Loc`; if one is added, delete this front's token walk (`fromLocations`) | [`01-checker`](../01-checker/README.md) |
 
 **Acceptance:**

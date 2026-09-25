@@ -545,9 +545,12 @@ share one generic-parameter renderer and print `type Name<G>(…)`, `behavior Na
 { … }`; the snapshot re-recorded.
 **Depends on:** nothing.
 **Acceptance:**
-- [ ] `grep -rn 'record {' modules/language-server/snapshots/lsp/` returns nothing
-- [ ] hover, completion, signature help and inlay hints print the 1.0.3 surface for `type`/`behavior`
-- [ ] gate green; `AGENTS.md` of `src/comptime/` in the same commit; 07's row struck
+- [x] `grep -rn 'record {' modules/language-server/snapshots/lsp/` returns nothing
+- [x] hover, completion, signature help and inlay hints print the 1.0.3 surface for `type`/`behavior`
+      — one LSP snapshot each, read (11's Landed — 2026-09-25); signature help over a `type`
+      constructor was **null**, `engine.recordCtorSignature` answers it
+- [x] gate green; `AGENTS.md` of `src/comptime/` in the same commit; 07's row struck — the builders
+      landed as `f952bfc6` without their `AGENTS.md` lines; `front/11-tooling` carries them
 
 ## C-20 — The comptime module reaches the node as BEAM assembly
 
