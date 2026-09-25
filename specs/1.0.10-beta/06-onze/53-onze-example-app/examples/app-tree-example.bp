@@ -6,7 +6,8 @@
 // The decorators, `PageContext` and `LayoutProps` are jhonstart front 30's; at
 // boot onze (front 49) copies the UI records into rakun front 22's route table
 // and hands rakun one renderer per page (decision 114). The route table is the
-// one artifact that also reaches the browser, matched there by `rakun-routing`.
+// one artifact that also reaches the browser, matched there by the bundled
+// library `routing` (decision 115) — the same matcher rakun runs.
 //
 // Upstream:
 //   https://nextjs.org/docs/app/getting-started/project-structure

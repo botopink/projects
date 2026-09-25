@@ -2130,7 +2130,7 @@ probe listener public -> ok
 
 ## 22-rakun-file-routing — `rakun-app`
 
-**Test file:** `modules/rakun-app/test/file_router_test.bp` · **Snapshots:** `modules/rakun-app/test/__snapshots__/route/` · **Target:** erlang for the registry and the scan; the matcher these rows exercise is `rakun-routing`'s (decision 114), whose own `modules/rakun-routing/test/routing_test.bp` runs the same precedence cases on erlang and commonJS — the table rebuilt from payload `t` in the browser · **Pins:** Step 1 group/slot/private classification, Step 2 `#[layout("")]` root, Step 3 registration order, Step 4 static-over-dynamic precedence + catch-all refuses zero + optional catch-all zero/many + layout-only pattern not public + `layoutChain` root-first, Step 5 `_` dir skipped, `N` kind letter
+**Test file:** `modules/rakun-app/test/file_router_test.bp` · **Snapshots:** `modules/rakun-app/test/__snapshots__/route/` · **Target:** erlang for the registry and the scan; the matcher these rows exercise is the bundled library `routing`'s (decision 115), whose own `libs/routing/test/match_test.bp` runs the same precedence cases on erlang and commonJS — the table rebuilt from payload `t` in the browser · **Pins:** Step 1 group/slot/private classification, Step 2 `#[layout("")]` root, Step 3 registration order, Step 4 static-over-dynamic precedence + catch-all refuses zero + optional catch-all zero/many + layout-only pattern not public + `layoutChain` root-first, Step 5 `_` dir skipped, `N` kind letter
 
 > helper gap: `assertRouteTree` renders no verb column, so the `R` row's verb is pinned in 25's `handler` suite; the table letters are `P|L|R|N` only, so `template.bp`/`default.bp` (`T`/`D`) trees are pinned in 23 (`ssr`) and 61 (`slots`).
 
@@ -3128,7 +3128,7 @@ row 2
 
 ## 60-rakun-static-generation — `rakun-app`
 
-**Test file:** `modules/rakun-app/test/static_gen_test.bp` · **Snapshots:** `modules/rakun-app/test/__snapshots__/static/` · **Target:** erlang (decision, enumeration and config inheritance; the route-kind blob these rows are joined on is `rakun-routing`'s codec, round-tripped on both targets in `modules/rakun-routing/test/route_kinds_test.bp`) · **Pins:** Step 1 default config `Auto`/`dynamicParams: true`/`revalidate: -1` + `configFor` inherits `revalidate` from `/blog` + `revalidate: 0` normalized to `ForceDynamic`, Step 2 rules 1–5 in order (`ForceDynamic` wins over `generateStaticParams`, `ForceStatic` + dynamic read stays static naming the conflict, dynamic pattern without params is dynamic, `isDynamic()` reason recorded, `reason == ""` only by rule 5) + `dynamicParams: false` with no rows is static, Step 3 `expandParams` for `[slug]`, `[...slug]`, `[[...slug]]`, Step 4 one static entry + one `skippedDynamic` with the reason
+**Test file:** `modules/rakun-app/test/static_gen_test.bp` · **Snapshots:** `modules/rakun-app/test/__snapshots__/static/` · **Target:** erlang (decision, enumeration and config inheritance; the route-kind blob these rows are joined on is `routing`'s codec, round-tripped on both targets in `libs/routing/test/route_kinds_test.bp`) · **Pins:** Step 1 default config `Auto`/`dynamicParams: true`/`revalidate: -1` + `configFor` inherits `revalidate` from `/blog` + `revalidate: 0` normalized to `ForceDynamic`, Step 2 rules 1–5 in order (`ForceDynamic` wins over `generateStaticParams`, `ForceStatic` + dynamic read stays static naming the conflict, dynamic pattern without params is dynamic, `isDynamic()` reason recorded, `reason == ""` only by rule 5) + `dynamicParams: false` with no rows is static, Step 3 `expandParams` for `[slug]`, `[...slug]`, `[[...slug]]`, Step 4 one static entry + one `skippedDynamic` with the reason
 
 > helper gap: `reason` is `""` exactly when the kind is `Static` by rule 5 (Step 2); the row renders that as `because -` so no line carries a double space. `revalidate=` is the value `configFor` answers, `never` for `-1`.
 
@@ -3425,7 +3425,7 @@ test "static: dynamicParams false with no rows is static and enumerates nothing"
 
 ## 61-rakun-parallel-intercepting-routes — `rakun-app`
 
-**Test file:** `modules/rakun-app/test/route_slots_test.bp` · **Snapshots:** `modules/rakun-app/test/__snapshots__/slots/` · **Target:** erlang (slot enumeration, per-slot matching, `default` fallback, the header gate and the marker parser/resolver; the `slot|pattern|state` codec is `rakun-routing`'s, round-tripped on both targets in `modules/rakun-routing/test/slot_states_test.bp`) · **Pins:** Step 1 `Matched` with params + hard-unmatched → `Defaulted`/`Empty` + soft-unmatched → `Unchanged` + two slots match independently in one call, Step 2 the hard-reload case end to end, Step 3 `(.)`/`(..)(..)` resolution + `(marketing)` is not an interception, Step 4 `soft: true` answers the intercepting entry and `soft: false` answers `null` for the same URL (the round trip in one snapshot)
+**Test file:** `modules/rakun-app/test/route_slots_test.bp` · **Snapshots:** `modules/rakun-app/test/__snapshots__/slots/` · **Target:** erlang (slot enumeration, per-slot matching, `default` fallback, the header gate and the marker parser/resolver; the `slot|pattern|state` codec is `routing`'s, round-tripped on both targets in `libs/routing/test/slot_states_test.bp`) · **Pins:** Step 1 `Matched` with params + hard-unmatched → `Defaulted`/`Empty` + soft-unmatched → `Unchanged` + two slots match independently in one call, Step 2 the hard-reload case end to end, Step 3 `(.)`/`(..)(..)` resolution + `(marketing)` is not an interception, Step 4 `soft: true` answers the intercepting entry and `soft: false` answers `null` for the same URL (the round trip in one snapshot)
 
 > helper gap: `assertSlots` renders `matched|default` only; `SlotState.Unchanged` and `SlotState.Empty` (Step 1) render as `unchanged` / `empty`. A hard request has no `from` and is written `- -> <to>`; a `from` pattern means the navigation carried `x-rakun-nav: soft`. One line per navigation, every slot of the layout on it in declaration order, then `intercept=`.
 
@@ -5600,7 +5600,7 @@ upgrade 400
 
 ## 65-rakun-url-rules — `rakun-web`
 
-**Test file:** `modules/rakun-web/test/rules/apply_test.bp` · **Snapshots:** `modules/rakun-web/test/rules/__snapshots__/rules/` · **Target:** erlang for the rule engine (`applyRules`); `canonicalize`/`clientHref` and the redirect blob are `rakun-routing`'s (decision 114), and the basePath case below is the one that also runs on commonJS against the same `.snap` · **Pins:** Step 1 the three matcher forms, one segment means one segment, literal dot escaped, § 20's lookahead example; Step 2 basePath strip, trailing slash, a path outside the base path untouched, single percent-decode; Step 3 308/307, capture interpolation percent-encoded, first match wins, self-redirect refused; Step 4 internal rewrite continues at the target, `isExternal` protocol-relative, unlisted origin refused, a rewrite never feeds the redirect table; Step 6 the five-step order
+**Test file:** `modules/rakun-web/test/rules/apply_test.bp` · **Snapshots:** `modules/rakun-web/test/rules/__snapshots__/rules/` · **Target:** erlang for the rule engine (`applyRules`); `canonicalize`/`clientHref` and the redirect blob are the bundled library `routing`'s (decision 115), and the basePath case below is the one that also runs on commonJS against the same `.snap` · **Pins:** Step 1 the three matcher forms, one segment means one segment, literal dot escaped, § 20's lookahead example; Step 2 basePath strip, trailing slash, a path outside the base path untouched, single percent-decode; Step 3 308/307, capture interpolation percent-encoded, first match wins, self-redirect refused; Step 4 internal rewrite continues at the target, `isExternal` protocol-relative, unlisted origin refused, a rewrite never feeds the redirect table; Step 6 the five-step order
 
 Rule lines are `redirect|<source>|<destination>|<permanent 0/1>` (README § *Redirects* blob), `rewrite|<source>|<destination>`, `matcher|<source>`, and `basePath=…` / `trailingSlash=…` for `UrlRules` fields (name per README § Step 2). A matcher hit renders `match`.
 
@@ -5682,7 +5682,7 @@ test "rules: the negative lookahead example from section 20" {
 
 ### `rules: basePath is stripped trailing slash normalized and decoding happens once`
 
-Boundary case — the `canonicalize` half is `rakun-routing`'s and runs on erlang and commonJS against this one file.
+Boundary case — the `canonicalize` half is `routing`'s and runs on erlang and commonJS against this one file.
 
 ```bp
 test "rules: basePath is stripped trailing slash normalized and decoding happens once" {

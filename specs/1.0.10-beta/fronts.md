@@ -18,6 +18,8 @@ Paths are relative to the repository named in the section or row.
 ```
 wave 0    01-std ──────────────────────────────┐   asserts.bp · snapshots.bp · @src() · the
           (std enablement 01/02/03 as before)  │   old onze dir removed · onze13 → onze rename
+          01-std/04-routing-lib ───────────────┤   libs/routing: the matcher and the routing
+                                               │   wires rakun 22 and jhonstart 26 import
                                                │
 wave 1    02-packaging ────────────────────────┤   lands ALONGSIDE each library's first front:
           modules/<lib>/ · modules/<lib>-test/ │   rakun 04 · jhonstart 94 · emilia 54 · onze 49
@@ -139,6 +141,14 @@ test story stands on, and one compiler carve-out.
 | **F02 std-async-primitives** | `src/async.bp` | inline `test` blocks in `src/async.bp` |
 | **F03 std-content-hash** | `src/content_hash.bp` | inline `test` blocks in `src/content_hash.bp` |
 
+The bundled `routing` library is `01-std`'s too, in its own directory beside `libs/std/` (decision
+115). Its directory number is its index inside `01-std`, not a milestone front number (front 04 is
+rakun's erlang runtime):
+
+| Front | Source it owns | Tests it owns |
+|---|---|---|
+| **routing-lib** ([`01-std/04-routing-lib/`](./01-std/04-routing-lib/README.md)) | `repository/botopink-lang/libs/routing/**` — `segment`, `table`, `match` (ported from rakun's `file_router.bp`), `route_kinds` (front 60's `k` codec), `slot_states` (61's `z` codec), `url_rules` (65's `canonicalize` / `clientHref` / redirect-table codec) · **by carve-out from `00`**: the bundled-package registry in `build.zig` and the `"std"` package checks it generalises (named in its README) | `libs/routing/test/**`, both targets |
+
 `src/root.bp` is the one shared file in track A. F01 owns it; F02 and F03 hand F01 their export
 lines rather than editing it, and F01 lands last of the three.
 
@@ -204,17 +214,17 @@ Rows carried as written in 1.0.9: rakun-core paths read `src/…` because that i
 | **F19 test-utilities** | rakun-test | `modules/rakun-test/src/**`, `modules/rakun-test/test/**` | `modules/rakun-test/test/**` |
 | **F20 websocket** | rakun-web | `modules/rakun-web/src/websocket/**`, `modules/rakun-web/test/websocket/**` | `modules/rakun-web/test/websocket/**` |
 | **F21 hateoas** | rakun-hateoas | `modules/rakun-hateoas/src/**`, `modules/rakun-hateoas/test/**` | `modules/rakun-hateoas/test/**` |
-| **F22 file-routing** | rakun-core · rakun-routing | `src/file_router.bp` (the registry: `R` handlers, the opaque `PageRenderer` per page pattern, the UI records onze copies in, the scan), `src/sidecars/rakun_file_router.erl` · `modules/rakun-routing/**` (the pure matcher — segment grammar, contract 1's wire, `matchPath`, `layoutChain`; decision 114 — and the member's manifest; fronts 60, 61 and 65 add one pure codec file each) | `test/file_router_test.bp`, `modules/rakun-routing/test/**` |
+| **F22 file-routing** | rakun-core | `src/file_router.bp` (the registry: `R` handlers, the opaque `PageRenderer` per page pattern, the UI records onze copies in, the scan; the matcher is imported from the bundled library `routing` — decision 115, `01-std/04-routing-lib`), `src/sidecars/rakun_file_router.erl` | `test/file_router_test.bp` |
 | **F23 ssr-pipeline** | rakun-core | `src/ssr.bp` (page serving: route → the route's `PageRenderer` onze registered → chunks through `ChunkWriter`), `src/sidecars/rakun_ssr.erl` | `test/ssr_test.bp` |
 | **F24 server-actions** | rakun-core | `src/actions.bp` (the action id, the envelope, dispatch over the wire names onze configures — the form markup is F67's) | `test/actions_test.bp` |
 | **F25 route-handlers** | rakun-core | `src/route_handler.bp`, `test/route_handler_test.bp` | `test/route_handler_test.bp` |
 
-| **F60 static-generation** | rakun-core · rakun-routing | `src/static_gen.bp`, `src/segment_config.bp`, `modules/rakun-routing/src/route_kinds.bp` (the `k` blob codec the browser reads), | `test/static_gen_test.bp` |
-| **F61 parallel-intercepting-routes** | rakun-core · rakun-routing | `src/route_slots.bp`, `src/route_intercept.bp`, `modules/rakun-routing/src/slot_states.bp` (the `z` codec), | `test/parallel_routes_test.bp` |
+| **F60 static-generation** | rakun-core | `src/static_gen.bp`, `src/segment_config.bp` (the `k` blob codec the browser reads is `routing`'s `route_kinds`), | `test/static_gen_test.bp` |
+| **F61 parallel-intercepting-routes** | rakun-core | `src/route_slots.bp`, `src/route_intercept.bp` (the `z` codec is `routing`'s `slot_states`), | `test/parallel_routes_test.bp` |
 | **F62 request-context** | rakun-core | `src/request_context.bp`, `src/request_memo.bp`, | `test/request_context_test.bp` |
 | **F63 navigation-signals** | rakun-core | `src/navigation.bp`, | `test/navigation_test.bp` |
 | **F64 i18n-routing** | rakun-core | `modules/rakun-i18n/botopink.json`, | `test/i18n_test.bp` |
-| **F65 url-rules** | rakun-web · rakun-routing | `modules/rakun-web/src/rules/**`, `modules/rakun-routing/src/url_rules.bp` (`canonicalize`, `clientHref`, the redirect-table codec), | `test/url_rules_test.bp` |
+| **F65 url-rules** | rakun-web | `modules/rakun-web/src/rules/**` (`canonicalize`, `clientHref` and the redirect-table codec are `routing`'s `url_rules`), | `test/url_rules_test.bp` |
 | **F66 metadata-file-routes** | rakun-core | `src/metadata_routes.bp`, | `test/metadata_routes_test.bp` |
 | **F72 auto-configuration** | rakun-core | `src/autoconfig.bp`, `src/conditions.bp`, `src/condition_report.bp`, `src/autoconfig_registry.bp`, `src/sidecars/rakun_autoconfig.erl` · `test/autoconfig_test.bp`, `test/conditions_test.bp` | `test/autoconfig_test.bp` |
 | **F73 starters** | rakun-starters | `starters/rakun-starter-*/botopink.json`, `starters/rakun-starter-*/src/root.bp`, `starters/README.md`, `src/version_set.bp` · `test/version_set_test.bp`, `test/starter_manifest_test.bp` | `modules/rakun-starters/test/**` |
@@ -253,10 +263,10 @@ reorder. Each `modules/<name>/` directory's `botopink.json` and `src/root.bp` ar
 **lowest-numbered front in that module** and appended to by the rest under the same rule.
 
 rakun targets erlang (decision 113): the core member is `"target": "erlang"`, `"targets":
-["erlang"]`; `rakun-validation` and `rakun-routing` are the two members on `["erlang", "commonJS"]`,
-because the same validation runs in the client's form and the same matcher in onze's client entry
-(decision 114); `rakun-test` follows the members it tests; the workspace root is
-`["erlang", "commonJS"]` only to admit those two; erlang is first in every list and the
+["erlang"]`; `rakun-validation` is the one member on `["erlang", "commonJS"]`, because the same
+validation runs in the client's form (the matcher both sides run is the bundled library `routing`,
+not a member — decision 115); `rakun-test` follows the members it tests; the workspace root is
+`["erlang", "commonJS"]` only to admit it; erlang is first in every list and the
 default target of `botopink run` / `test` in rakun. `repository/rakun/botopink.json` declares
 `"targets": ["commonJS"]` at HEAD, so until front 04 sets those arrays **no rakun front can have a
 green erlang row** — which would make the exit gate unfalsifiable for the whole of track B. That
@@ -409,6 +419,7 @@ files by design and are made disjoint by the banner convention above.
 | `00 · 13-module-identity` · every erlang front | the erlang/beam emitters, ≈318 re-recorded cells | No shared file, but every server front's erlang cell re-runs after 13 (the module atom and the record representation change under it). A server front that lands before 13 re-verifies after; one that lands after never sees the old shape. This is why 13 is **pulled ahead** |
 | `00 · 21-effect-chain` · `00 · 22-loops` · `00 · 23-std-purity` · `00 · 15` / `16` / `01` / `04` and the backend fronts | `parser/{decls,exprs}.zig`, `lexer.zig`, `format.zig`, `comptime/infer.zig`, the four codegens | 21 and 22 rewrite the parser and every codegen, 23 the import path through parser, checker, codegens and the LSP: they run **one at a time, 21 → 22 → 23**, and never beside 15-language-surface, 16-formatter, 01-checker or a backend front. The `format.zig` printer arms are 16's carve-out to 22; `project_graph.zig` is 11's carve-out to 23 |
 | `00 · 23-std-purity` · `01-std` | `libs/std/src/**`, `root.bp`, `build.zig`'s `stdPkgFilesFromRoot` | 23 moves the modules fronts 01/02/03 land flat; it opens only after all three are merged, and `libs/std/src/**` is 23's from then until it lands |
+| `00 · 23-std-purity` · `01-std/04-routing-lib` | `build.zig`'s package registry, the `emitUse` of each backend, the CLI resolver's `"std"` exemption | routing-lib's bundling step is a **named carve-out** of `00`'s files, granted like `@src()`'s, and opens after 23 lands; its library steps (`libs/routing/**`) share nothing and run from wave 0 |
 | `00 · 21` / `22` / `23` · `03-rakun` · `04-jhonstart` · every `-test` member | jhonstart's `#[@context]` / `@Context<` sites (21), rakun's and jhonstart's `loop (` sites (22), every `from "std"` line (23) | Each is a named sweep landed through `scripts/known-red-libs.txt`: the compiler commit lands with the library in the ledger, the library sweep follows, the ledger line is deleted in the next compiler commit — adjacent commits, never a standing red |
 
 
@@ -450,7 +461,7 @@ above applies.
    (04 · 94 · 54 · 49) lands in the same wave, after the tree. Later fronts never see the old paths.
 7. Front 48 is the one cross-repository front: it adds `repository/jhonstart/src/html_attrs.bp` and
    edits nothing there. It is a track-D front; 04-jhonstart's rows do not touch that file.
-8. `06-onze` consumes rakun (22–25, 62, 63), `rakun-routing` (22), jhonstart (26–32, 94) and the
+8. `06-onze` consumes rakun (22–25, 62, 63), jhonstart (26–32, 94) and the
    `jhonstart-emilia` bridge (30) by contract, and is the one package that imports jhonstart and
    rakun together (decision 113); an example that combines libraries is onze's, in front 53's
    application — a library's own examples use that library only, with no dev-dependency on another
@@ -483,9 +494,9 @@ land in wave 1; the wave below is its host half, which is what the fronts citing
 
 | Wave | Fronts | Blocked by |
 |---|---|---|
-| **0** | 01 · 02 · 03 · 54 · 94 · `02-packaging` (was 95) · `01-std`'s asserts/snapshots/`@src()` | nothing — except `@src()`, which needs `00`'s carve-out granted |
-| **1** | 04 · 05 · 26 · 56 | 01 · 54 · 94 |
-| **2** | 06 · 22 · 27 · 28 · 33 · 34 · 35 · 55 · 57 · 58 · 62 · 74 · 80 | 04 · 05 · 26 · 56 |
+| **0** | 01 · 02 · 03 · 54 · 94 · `02-packaging` (was 95) · `01-std`'s asserts/snapshots/`@src()` · `01-std/04-routing-lib` (the library) | nothing — except `@src()`, which needs `00`'s carve-out granted, and routing-lib's bundling step, which waits on `00 · 23-std-purity` |
+| **1** | 04 · 05 · 26 · 56 | 01 · 54 · 94 · routing-lib |
+| **2** | 06 · 22 · 27 · 28 · 33 · 34 · 35 · 55 · 57 · 58 · 62 · 74 · 80 | 04 · 05 · 26 · 56 · routing-lib |
 | **3** | 07 · 08 · 11 · 13 · 14 · 15 · 19 · 21 · 23 · 29 · 31 · 32 · 36 · 37 · 38 · 39 · 40 · 41 · 42 · 43 · 44 · 45 · 46 · 47 · 59 · 72 | 06 · 22 · 28 · 33 · 34 · 35 · 62 |
 | **4** | 09 · 10 · 16 · 17 · 18 · 30 · 48 · 63 · 66 · 73 · 75 · 77 · 78 · 82 · 93 | 07 · 08 · 11 · 13 · 14 · 23 · 29 · 31 · 32 · 33–47 · 72 |
 | **5** | 12 · 20 · 25 · 49 · 61 · 65 · 76 · 79 · 83 · 84 · 86 | 10 · 16 · 18 · 30 · 63 · 75 · 77 |
@@ -508,12 +519,12 @@ shutdown (07 and 76).
 A wave is a **level in the dependency graph, not a sprint**: a front sits one level below everything
 it consumes, so no front shares a wave with something it reads. The table is computed from every
 front's `Depends on` line, not hand-placed — when a front's dependencies change, the table is
-regenerated, not edited. Front 22 sits below 05 because `appDir` is one of its config values; front
-26 sits directly on 01 and 94, because it receives `match` from onze rather than calling 22's
-`matchPath`; front 23 sits below 22 and 62 only, because it serves a page and renders nothing;
+regenerated, not edited. Front 22 sits below 05 because `rakun.appDir` is one of its config values;
+front 26 sits directly on 01, 94 and routing-lib, because it imports `matchPath` from the bundled
+library `routing` rather than from rakun (decision 115); front 23 sits below 22 and 62 only, because it serves a page and renders nothing;
 front 30 sits below 29, 31 and 32, because its render calls `islandAttr`, `renderBoundaryChecked`
 and `renderHead`; and onze's 49 sits below 30, 23 and 22, because its boot wires the render, the
-page dispatch and the matcher together — so every onze front that needs 49 follows the render
+page dispatch and the configuration together — so every onze front that needs 49 follows the render
 (decision 113). The rakun corrections of [`03-rakun/modules.md § The graph`](./03-rakun/modules.md#the-graph)
 (09→07 and 21→22 read-only, 07→76 and 13→12 soft, 85→23 and 86→83 seams, 93→88 reversed) and the
 three mutual pairs above are applied before the levels are taken.

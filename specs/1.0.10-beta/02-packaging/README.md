@@ -176,7 +176,7 @@ array is a located error in every tool, `bpmp` included):
 
 **Library roots**, in order: `BOTOPINK_LIB_ROOTS`; then for each ancestor `D` of the project,
 nearest first: `D` itself when `D/botopink.json` is a workspace (its members), `D/repository/botopink-lang/libs`
-(the bundled `std`), `D/repository`, `D/libs`; then `<project>/.botopinkbuild/deps`. A root
+(the bundled `std` and `routing`), `D/repository`, `D/libs`; then `<project>/.botopinkbuild/deps`. A root
 contributes every immediate child directory holding a `botopink.json` (a package named by the
 directory) **and every member of a workspace found there, named by its manifest** — so
 `repository/rakun` under the `D/repository` root contributes `rakun`, `rakun-web`, … and never
@@ -306,11 +306,11 @@ libraries:   emilia ──► jhonstart (Element)          rakun ──► (noth
 | `<lib>-test` depends on its core, on std, and on the domain members it asserts over; **a core never depends on `-test`** | An import of `<lib>-test` from a core's `src/` is a build error by construction — the core's manifest lists no such dependency |
 | A `-test` may depend on a lower library's `-test` (`onze-test` → `rakun-test`, `jhonstart-test`) by `path` | `onze` tests reach the server through `rakun-test`'s request double (front 19); [`../deferred.md`](../deferred.md) records why there is no shared double |
 | An example may depend on **several** libraries — its own by `{ "workspace": true }`, others' cores or `-test`s by `path` | `emilia-card` → `jhonstart` + `emilia` today; `onze-blog` → all four |
-| `std` is never listed | It is embedded; listing it is a resolver error |
+| A bundled package — `std`, `routing` — is never listed | It is embedded in the compiler (`routing`: decision 115, `01-std/04-routing-lib`); listing it is a resolver error |
 | No edge from any library into `repository/botopink-lang/**` | The compiler knows none of this (`overview.md` § Rules) |
 
 Direction between libraries: `emilia` depends on `jhonstart` for `Element`
-(front 48), `onze` depends on the other three, `rakun` and `jhonstart` depend on nothing but std.
+(front 48), `onze` depends on the other three, `rakun` and `jhonstart` depend on nothing but the bundled `std` and `routing` — `routing` is neutral like std, so importing it is not an edge between them (decision 115).
 
 ### 10. The `onze` name takeover
 

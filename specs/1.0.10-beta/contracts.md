@@ -25,12 +25,15 @@ kind|pattern|slot|verb
 are illegal inside a segment name. Match precedence is static > dynamic > catch-all > optional
 catch-all.
 
-`parseTable`, `writeTable` and `matchPath` are **one botopink implementation**, in rakun's boundary
-module `rakun-routing` (`["erlang", "commonJS"]`, owned by front 22 — decision 114). The server
-imports it on erlang (with the pure codecs of fronts 60, 61 and 65 that the browser also reads — the `k` and `z` blobs and the URL rules); onze's generated browser entry imports it on commonJS and hands
-`{ path -> matchPath(table, path) }` to front 26's router as `match`, so jhonstart names neither
-rakun nor `rakun-routing` (decision 113). Neither side writes a second parser or a second precedence
-rule. The `P` records carry no function on the wire or in the module: the renderer rakun calls for a
+`parseTable`, `writeTable` and `matchPath` are **one botopink implementation**, in the
+compiler-bundled library `routing` (`libs/routing`, `["erlang", "commonJS"]`, decision 115) — the
+format is front 22's, the code `01-std/04-routing-lib`'s. The library also holds the pure codecs of
+fronts 60, 61 and 65 that the browser reads: the `k` and `z` blobs and the URL rules. rakun imports
+it on erlang; jhonstart's router (front 26) and `Link` (front 27) import it on commonJS and parse
+the payload's `t` themselves. `routing` is neutral like std — it names neither library — so neither
+import is an edge between jhonstart and rakun (decision 113), and onze hands no matcher. Neither
+side writes a second parser or a second precedence rule. Module atoms follow decision 109
+(`routing@match`, `routing@table@@RouteEntry`). The `P` records carry no function on the wire or in the module: the renderer rakun calls for a
 page is an opaque `PageRenderer` registered by onze (decision 114), and the `L` / `T` / `P` / `D`
 records come from jhonstart's UI conventions (front 30), copied into rakun's table by onze at boot.
 
@@ -62,7 +65,8 @@ U+2029. `</script` is therefore **unrepresentable by construction** rather than 
 
 Two more keys, allocated by front 30 for fronts that publish a separate blob joined on `pattern` so
 that contract 1 stays untouched: `k` — route kinds (front 60: static/dynamic/revalidate per pattern);
-`z` — slot states (front 61: which `@slot` rendered for which pattern).
+`z` — slot states (front 61: which `@slot` rendered for which pattern). Both blobs are written and
+read with the bundled library `routing`'s codecs (`route_kinds`, `slot_states` — decision 115).
 
 Markers — the prefix is the package that writes the marker (decision 113). jhonstart writes every
 marker in use, so every one is `data-jh-*`; a marker onze itself wrote would be `data-onze-*`, and
@@ -79,12 +83,14 @@ none exists. The full registry is here so no front invents one:
 | `data-jh-on-click` | jhonstart · 29 | a handler id |
 | `data-jh-a` | jhonstart · 67 | a form bound to a server action; the id is front 24's (contract 3), handed to the form by onze |
 | `data-jh-sf="1"` | jhonstart · 67 | a client-enhanced search form (GET, no action) |
+| `data-jh-g="redirect"` + `data-jh-to` / `data-jh-g="not-found"` | jhonstart · 30 | a navigation signal raised after the first chunk, written as a `<template>` followed by `<script>__bp2()</script>`: the client runs `location.replace(data-jh-to)`, or swaps the template's not-found markup into `data-jh-root`; the status stays 200 (decision 115, § 5b) |
 
 An example carrying `data-onze-*` on a framework marker is stale.
 
-**Browser globals** — only a value the HTML names by text is a global, and there are two:
-`globals.payload` (`__bp0`, the payload above) and `globals.fill` (`__bp1`, the function a fill's
-`<script>` calls). Both are indexed aliases from jhonstart's globals registry (front 30), numbered
+**Browser globals** — only a value the HTML names by text is a global, and there are three:
+`globals.payload` (`__bp0`, the payload above), `globals.fill` (`__bp1`, the function a fill's
+`<script>` calls) and `globals.signal` (`__bp2`, the function a late signal's `<script>` calls —
+decision 115). Both are indexed aliases from jhonstart's globals registry (front 30), numbered
 in declaration order in jhonstart so the server and client builds agree. No hand-written `__jh*` or
 `__onze*` global exists; link and form mount are the ordinary imports `linkMount` and `formMount`.
 A host cell (`declare fn` bound by `#[@External.…]`) is a module function, not a global, and keeps
@@ -285,15 +291,21 @@ pub fn signalToWire(out: NavOutcome) -> string / signalFromWire(wire: string) ->
 
 A signal is a raised **prefixed string**, not a tagged tuple — a tuple could not be matched from
 jhonstart without a rakun dependency.
-A jhonstart page does not call this front's functions: its `notFound` is jhonstart's own signal
-(front 31), which onze translates into rakun's 404 (decision 113). botopink's `try … catch` unwraps an `@Result` and nothing
+A jhonstart page, layout or template does not call this front's functions: its `notFound` and
+`redirect(url)` are jhonstart's own signals (front 31, decision 115), raising the reasons below, and
+it reads cookies with jhonstart's `cookies()` (front 28) — it imports all three from `"jhonstart"`.
+Raised **before the render's first chunk**, onze translates them into rakun's 404 and 307. Raised
+**after** it, the headers are gone: jhonstart's render writes them as markup (`data-jh-g`, § 2) that
+its client executes, the status stays 200, and a late redirect is written only for a relative
+target `routing`'s `matchPath` finds in the table — an absolute one fails the render, because the
+allow-list below cannot be consulted any more (decisions 67, 115). botopink's `try … catch` unwraps an `@Result` and nothing
 else, so **no construct can swallow a signal** — asserted by a test. Front 63 owns the list; front
 31 matches it through `signalPrefixes()` rather than a copy of the table:
 
 | Raised by | Reason, literally | Status |
 |---|---|---|
-| `notFound()` | `jhonstart:not-found` | 404 |
-| `redirect(loc)` | `jhonstart:redirect:<loc>` | 307 |
+| `notFound()` — rakun's, and jhonstart's (front 31) | `jhonstart:not-found` | 404 |
+| `redirect(loc)` — rakun's, and jhonstart's (front 31) | `jhonstart:redirect:<loc>` | 307 |
 | `permanentRedirect(loc)` | `jhonstart:permanent-redirect:<loc>` | 308 |
 | `redirectWithStatus(loc, 303)` | `jhonstart:see-other:<loc>` | 303 |
 
@@ -361,9 +373,10 @@ installs them as jhonstart's `RenderHooks.headExtra` / `RenderHooks.bodyExtra` a
 what the fields return (decisions 77, 113).
 
 **Hydration entry** (`<outDir>/client/entry.bp`, botopink source): reads the payload through
-`readPayload(globals.payload)`, builds front 26's router with `match` over `parseTable(payload.t)`
-from `rakun-routing` (§ 1), takes `i`, queries `[data-jh-i]` in document order, calls front 29's
-hydrate point per island, registers the fill function under `globals.fill` for every `h`, then calls
+`readPayload(globals.payload)` — front 26's router reads the table from its `t` and matches with
+`routing` itself (§ 1), so the entry builds no matcher — takes `i`, queries `[data-jh-i]` in document order, calls front 29's
+hydrate point per island, registers the fill function under `globals.fill` for every `h` and the signal function under
+`globals.signal`, then calls
 `linkMount()` and `formMount(actionHeader)` once each — `actionHeader` is the wire name onze configures (§ 3). No `__` name is written by hand in it.
 Front 29 owns the per-island hydrate point; front 68 owns the module that calls it. An id in the
 DOM with no payload entry, or the reverse, is a hard runtime error naming the id.

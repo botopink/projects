@@ -1295,7 +1295,7 @@ GET /api/nothing -> 404
 
 ## `examples/blog-server`
 
-**Fronts:** 12 · 22 · 23 · 24 · 25 · 60 · 61 · 62 · 63 · 64 · 65 · 66 · 82 · **Depends on:** `rakun-app`, `rakun-web`, `rakun-cache` · **Tests:** `examples/blog-server/test/blog-server_test.bp` · **Snapshots:** `examples/blog-server/test/__snapshots__/blog-server/` · **Target:** erlang (the boundary halves — 22's matcher, 60's route kinds, 61's slot states, 65's canonicalization — are `rakun-routing`'s and run on both targets in its own tests)
+**Fronts:** 12 · 22 · 23 · 24 · 25 · 60 · 61 · 62 · 63 · 64 · 65 · 66 · 82 · **Depends on:** `rakun-app`, `rakun-web`, `rakun-cache` · **Tests:** `examples/blog-server/test/blog-server_test.bp` · **Snapshots:** `examples/blog-server/test/__snapshots__/blog-server/` · **Target:** erlang (the boundary halves — 22's matcher, 60's route kinds, 61's slot states, 65's canonicalization — are the bundled library `routing`'s and run on both targets in its own tests)
 
 rakun only (decision 114): every page is a `PageRenderer` writing plain text and every handler answers JSON. A `layout.bp` in a file list below is a table record the `rakun-test` helper registers the way onze's boot does (front 22's `rkAppRegisterEntry`); no layout function exists in this project. The blog rendered by jhonstart and styled by emilia — layouts, payload, forms, the browser half — is onze's (onze front 53, `repository/onze/examples/blog`).
 

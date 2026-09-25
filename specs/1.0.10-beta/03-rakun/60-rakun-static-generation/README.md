@@ -5,10 +5,10 @@
 request, a `generateStaticParams` in an app's source is silently ignored, a blog with 10 000 posts hits
 the database 10 000 times an hour, and the exit gate's claim that the example app "builds, serves, and
 renders its routes" is true only in the SSR sense
-**Target:** erlang, with one boundary file. The prerender, the store and the decision run on BEAM
-(`rakun-app`); the route-kind codec the browser reads is pure botopink in the boundary member
-`rakun-routing` (`["erlang", "commonJS"]`, decision 114). The two halves are named below and neither
-is optional
+**Target:** erlang. The prerender, the store and the decision run on BEAM (`rakun-app`); the
+route-kind codec the browser reads is pure botopink in the bundled library `routing` (`libs/routing`,
+erlang and commonJS, decision 115), written by `01-std/04-routing-lib` to this front's Step 6 and
+imported here. The two halves are named below and neither is optional
 **Wave:** 6
 **Depends on:** 22 (the route table), 23 (the renderer), 62 (the definition of dynamic), 12 (the store
 the prerendered entries live in), 03 (content hash), 02 (unstarted tasks, for the build fan-out),
@@ -16,9 +16,9 @@ the prerendered entries live in), 03 (content hash), 02 (unstarted tasks, for th
 **Owns:** `repository/rakun/src/static_gen.bp`, `repository/rakun/src/segment_config.bp`,
 `repository/rakun/src/sidecars/rakun_static_gen.erl`,
 `repository/rakun/test/static_gen_test.bp`, `repository/rakun/test/segment_config_test.bp`, two
-`pub mod` lines in `repository/rakun/src/root.bp`, and `repository/rakun/modules/rakun-routing/src/route_kinds.bp`
-with `modules/rakun-routing/test/route_kinds_test.bp` (Step 6's codec, one `pub mod` line handed to
-front 22)
+`pub mod` lines in `repository/rakun/src/root.bp`, and `routeKinds()` (Step 6's server half); the
+codec file `libs/routing/src/route_kinds.bp` is `01-std/04-routing-lib`'s, written to Step 6's
+format
 **Does not touch:** `repository/rakun/src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`,
 `src/runtime.mjs` — frozen for the milestone; `src/file_router.bp` (front 22), `src/ssr.bp` (front 23)
 and `modules/rakun-cache/**` (front 12) are read-only here
@@ -193,8 +193,8 @@ one record per line, `K` being `S` for static or `D` for dynamic. It is a **seco
 field on front 22's `kind|pattern|slot|verb` record, because front 22 owns that format and this front
 owns this one; the two are joined on `pattern`. The server publishes it with `routeKinds()`, onze
 hands it to jhonstart's render as the `"k"` field of the payload beside front 22's `"t"` (contract 2),
-and `routeKindOf(wire, pattern)` is one botopink function in `rakun-routing`, compiled for both
-targets — the same arrangement front 22 uses for `parseTable`/`matchPath`, and for the same reason.
+and `routeKindOf(wire, pattern)` is one botopink function in the bundled library `routing`, compiled
+for both targets — the same arrangement as `parseTable`/`matchPath`, and for the same reason.
 
 **A missing or unparsable blob means `Dynamic`.** Front 27 runs before this front in the wave order, so
 it must have a defined answer when the blob is absent, and the defined answer is the conservative one:
@@ -204,9 +204,9 @@ front 27 cites it rather than inventing one.
 ### Target and sidecar naming
 
 The server half declares `#[@External.Erlang]` cells only. The boundary half —
-`routeKindOf`/`parseKinds`/`writeKinds` — is pure botopink with no host cell at all, in
-`rakun-routing`, so it compiles for both targets without a second implementation; `routeKinds()`
-reads the server's decisions and stays in `rakun-app`.
+`routeKindOf`/`parseKinds`/`writeKinds` — is pure botopink with no host cell at all, in `routing`,
+so it compiles for both targets without a second implementation; `routeKinds()` reads the server's
+decisions and stays in `rakun-app`.
 
 **The sidecar module atom is `rakun_static_gen`**, not `static_gen`: `shipErlSidecars` skips a
 qualifier whose atom matches a module this build emitted
@@ -261,6 +261,7 @@ pub fn configFor(pattern: string) -> SegmentConfig
 ### Step 2 — The static/dynamic decision
 
 ```bp
+// `RouteKind` is `routing`'s (`route_kinds`, Step 6) and imported here; shown for reference
 pub type RouteKind {
     Static,
     Dynamic,
@@ -377,15 +378,15 @@ pub fn regenerate(path: string) -> i32
 // rakun-app — reads the server's own decisions
 pub fn routeKinds() -> string
 
-// modules/rakun-routing/src/route_kinds.bp — pure, both targets
+// routing — the `route_kinds` module, pure, both targets
 pub fn parseKinds(wire: string) -> Array<#(string, RouteKind)>
 pub fn writeKinds(kinds: Array<#(string, RouteKind)>) -> string
 pub fn routeKindOf(wire: string, pattern: string) -> RouteKind
 ```
 
-`RouteKind` and the three codec functions live in `rakun-routing` beside the route table's wire, so
-the browser reads the `k` blob with the code the server wrote it with; onze's client entry hands
-`routeKindOf` to jhonstart front 27 the way it hands `match` (decision 114).
+`RouteKind` and the three codec functions live in `routing` beside the route table's wire, so the
+browser reads the `k` blob with the code the server wrote it with: this front's server half and
+jhonstart front 27 both import them (decision 115).
 
 **Acceptance:**
 - [ ] `parseKinds(writeKinds(xs))` equals `xs` compared element by element on `.0` and `.1` — never
@@ -395,7 +396,7 @@ the browser reads the `k` blob with the code the server wrote it with; onze's cl
       is absent.
 - [ ] `routeKindOf("garbage", "/x")` answers `RouteKind.Dynamic` and does not raise.
 - [ ] Every assertion in this step runs green on `--target erlang` and on `--target commonJS`, from
-      `modules/rakun-routing/test/route_kinds_test.bp`. This is the boundary half and a format only one side can read is the bug this
+      `libs/routing/test/route_kinds_test.bp` (`01-std/04-routing-lib` Step 4). This is the boundary half and a format only one side can read is the bug this
       step exists to prevent.
 
 ### Step 7 — Static export
@@ -437,7 +438,7 @@ likewise not specified. Its BEAM analogue would be a supervised lightweight proc
   bound param. The route that stays dynamic is in the same file, so the contrast is visible.
 - [`examples/route-kinds-example.bp`](./examples/route-kinds-example.bp) — the boundary artifact: the
   kind blob, `writeKinds`/`parseKinds`/`routeKindOf`, and the `Dynamic`-when-absent default that front
-  27 relies on, from `rakun-routing`, asserted in a `test` block that runs on both targets.
+  27 relies on, from `routing`, asserted in a `test` block that runs on both targets.
 
 ## Language gaps
 
@@ -458,9 +459,9 @@ not compute a hash of its own.
 `zig build test-libs -- --target erlang --lib rakun` in the ecosystem gate.
 
 *Step 6*'s codec — and only it — runs on `--target erlang` and `--target commonJS`, from
-`modules/rakun-routing/test/route_kinds_test.bp`, because the route-kind blob is the boundary half and
-the browser parses it. That is the same split front 22 uses for its route table: the pure codec is
-in `rakun-routing`, and `static_gen.bp` stays erlang.
+`libs/routing/test/route_kinds_test.bp`, because the route-kind blob is the boundary half and the
+browser parses it. That is the same split front 22 uses for its route table: the pure codec is in
+`routing`, and `static_gen.bp` stays erlang.
 
 What the tests assert, by step: the config default, inheritance, field-wise override, normalization and
 duplicate-registration failure; the thirty-two-row decision truth table; path expansion including
@@ -475,8 +476,9 @@ the `strict`-frame raise (front 62 owns it and asserts it) and the CLI wiring of
 
 ## Definition of done
 
-- `src/static_gen.bp` and `src/segment_config.bp` compile on erlang; the route-kind codec is
-  `rakun-routing`'s `src/route_kinds.bp`, carries no host cell, and builds for both targets.
+- `src/static_gen.bp` and `src/segment_config.bp` compile on erlang and import `RouteKind` and the
+  route-kind codec from `routing`'s `route_kinds`, which carries no host cell and builds for both
+  targets.
 - `src/sidecars/rakun_static_gen.erl` compiles under `erlc` with `-Werror` and its atom does not
   collide with a module rakun emits.
 - The five decision rules, the kind blob's format and the `Dynamic`-when-absent default are written

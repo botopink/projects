@@ -5,19 +5,19 @@
 name the scanner recognizes and nothing more: layouts never receive named slot props, `default.bp` has
 no meaning, and the modal-over-a-feed pattern of `§ 21` — the reason most real Next apps use the App
 Router at all — is unbuildable
-**Target:** erlang, with one boundary file. The server resolves slots and decides interception
-(`rakun-app`, erlang); the slot-state codec the browser reads is pure botopink in the boundary member
-`rakun-routing` (`["erlang", "commonJS"]`, decision 114), and the two halves are named below
+**Target:** erlang. The server resolves slots and decides interception (`rakun-app`, erlang); the
+slot-state codec the browser reads is pure botopink in the bundled library `routing` (`libs/routing`,
+erlang and commonJS, decision 115), written by `01-std/04-routing-lib` to this front's Step 5 and
+imported here; the two halves are named below
 **Wave:** 6
-**Depends on:** 22 (the table and `rakun-routing`), 23 (the page dispatch), 27
+**Depends on:** 22 (the table), `01-std/04-routing-lib` (the matcher and the `z` codec), 23 (the page dispatch), 27
 (client navigation, which sets the soft-navigation marker), 30 (per-slot `loading` boundaries),
 62 (the request frame the marker is read from)
 **Owns:** `repository/rakun/src/route_slots.bp`, `repository/rakun/src/route_intercept.bp`,
 `repository/rakun/src/sidecars/rakun_route_slots.erl`,
 `repository/rakun/test/route_slots_test.bp`, `repository/rakun/test/route_intercept_test.bp`, two
-`pub mod` lines in `repository/rakun/src/root.bp`, and `repository/rakun/modules/rakun-routing/src/slot_states.bp`
-with its test `modules/rakun-routing/test/slot_states_test.bp` (the codec of Step 5, one `pub mod`
-line handed to front 22)
+`pub mod` lines in `repository/rakun/src/root.bp`; the codec file `libs/routing/src/slot_states.bp`
+is `01-std/04-routing-lib`'s, written to Step 5's format
 **Does not touch:** `repository/rakun/src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`,
 `src/runtime.mjs` — frozen; `src/file_router.bp` (front 22) and `src/ssr.bp` (front 23) are read-only
 here; this front names no jhonstart type — placing the slots in a layout is jhonstart front 30's
@@ -121,9 +121,9 @@ renderer it registered (front 23) and hands jhonstart the matching UI functions,
    value, written down here so neither side spells it differently.
 2. The slot section of the payload (contract 2, jhonstart front 30): `slot|pattern|state` lines, `state` being `M` matched,
    `D` default, `U` unchanged, `E` empty. Front 27 reads `U` and keeps the DOM it has; anything else
-   it replaces. `parseSlotStates`/`writeSlotStates` are the shared functions; they live in
-   `rakun-routing` beside the route table's wire and compile for both targets, and onze's client entry
-   hands the parser to jhonstart front 27 the way it hands `match` (decision 114).
+   it replaces. `parseSlotStates`/`writeSlotStates` are the shared functions; they live in the
+   bundled library `routing` beside the route table's wire and compile for both targets, and this
+   front's server half and jhonstart front 27 both import them (decision 115).
 
 This front tests the round trip — a soft navigation producing `U` for a slot the URL does not name,
 and a hard request for the same URL producing `D` — rather than testing each side alone.
@@ -131,7 +131,7 @@ and a hard request for the same URL producing `D` — rather than testing each s
 ### Target and sidecar naming
 
 The server half declares `#[@External.Erlang]` cells only; the two boundary artifacts are pure
-botopink, and the codec is the one file this front adds to `rakun-routing`. **The sidecar module atom is `rakun_route_slots`**, not `route_slots`: `shipErlSidecars`
+botopink, and the codec is `routing`'s `slot_states`, which this front imports. **The sidecar module atom is `rakun_route_slots`**, not `route_slots`: `shipErlSidecars`
 skips a qualifier whose atom matches a module this build emitted
 (`modules/compiler-cli/src/cli/libs.zig:596`) and rakun emits `rakun/route_slots`. Same rule as front
 04's `rakun_runtime`.
@@ -146,6 +146,7 @@ pub type SlotEntry(
     pattern: string,
 )
 
+// `SlotState` is `routing`'s (`slot_states`, Step 5) and imported here; shown for reference
 pub type SlotState {
     Matched,
     Defaulted,
@@ -248,22 +249,29 @@ request, which is front 62's rule and is inherited, not restated.
 - [ ] The round trip: one test issues the same URL twice, once with the header and once without, and
       asserts the two different entries. Asserting only one half is how this front's central bug ships.
 
-### Step 5 — The payload slot section (in `rakun-routing`)
+### Step 5 — The payload slot section (the codec is `routing`'s)
 
 ```bp
-pub fn writeSlotStates(rs: SlotResolution[]) -> string
+// routing — the `slot_states` module, both targets (01-std/04-routing-lib Step 5)
+pub fn writeSlotStates(states: Array<#(string, string, SlotState)>) -> string
 pub fn parseSlotStates(wire: string) -> Array<#(string, string, SlotState)>
+
+// rakun-app — this front's server half
+pub fn slotStateLines(rs: SlotResolution[]) -> Array<#(string, string, SlotState)>
 ```
 
-`slot|pattern|state`, one record per line, `state` one letter: `M`, `D`, `U`, `E`.
+`slot|pattern|state`, one record per line, `state` one letter: `M`, `D`, `U`, `E`. `SlotState` is
+`routing`'s — the codec returns it — and this front imports it; `SlotResolution`, which carries a
+`RouteEntry` and params, stays here, and `slotStateLines` turns resolutions into the triples the
+codec writes (the pattern is the resolution's entry pattern, `""` when it has none).
 
 **Acceptance:**
-- [ ] `parseSlotStates(writeSlotStates(rs))` recovers the slot name, pattern and state of each
-      resolution, compared field by field.
+- [ ] `parseSlotStates(writeSlotStates(slotStateLines(rs)))` recovers the slot name, pattern and
+      state of each resolution, compared field by field.
 - [ ] A slot name containing `|` fails the scan (front 22 already forbids it in a segment name; this
       step asserts the same rule reaches the slot field).
 - [ ] The same assertions run green on `--target erlang` and `--target commonJS` from
-      `modules/rakun-routing/test/slot_states_test.bp` — this is the boundary half.
+      `libs/routing/test/slot_states_test.bp` — this is the boundary half.
 - [ ] An unknown state letter parses as `SlotState.Empty` rather than raising: a malformed payload
       arriving from the network must not be able to crash the client router.
 
@@ -310,7 +318,7 @@ destructuring in a binding, so both wire formats are parsed with `split` and `.a
 `zig build test-libs -- --target erlang --lib rakun`.
 
 *Step 5* (the payload slot section) runs on `--target erlang` and `--target commonJS` from
-`modules/rakun-routing/test/slot_states_test.bp`, because it is the pure botopink the browser half
+`libs/routing/test/slot_states_test.bp`, because it is the pure botopink the browser half
 needs. Everything else — marker parsing, resolution, and whatever reads a header or the route
 registry — is erlang only.
 
@@ -327,8 +335,9 @@ precedent front 22 sets and `repository/rakun/test/di_test.bp:14-16` before it.
 
 ## Definition of done
 
-- `src/route_slots.bp` and `src/route_intercept.bp` compile on erlang; the payload codec is
-  `rakun-routing`'s `src/slot_states.bp`, carries no host cell, and builds for both targets.
+- `src/route_slots.bp` and `src/route_intercept.bp` compile on erlang and import `SlotState` and the
+  payload codec from `routing`'s `slot_states`, which carries no host cell and builds for both
+  targets.
 - `src/sidecars/rakun_route_slots.erl` compiles under `erlc` with `-Werror` and its atom does not
   collide with a module rakun emits.
 - The `x-rakun-nav` header name, the four state letters and the soft/hard asymmetry are written down

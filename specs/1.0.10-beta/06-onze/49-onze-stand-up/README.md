@@ -10,9 +10,9 @@ JS build half; the render seam runs on erlang, the registry it reads is built by
 registry the `#[page]` / `#[layout]` decorators fill, and the `jhonstart-emilia` bridge member whose
 `plugin()` the boot registers) · 28 (`RequestData`, built here from rakun's `Request`) · 23
 (`ChunkWriter`, `PageRenderer` and `page(pattern, render)`, the registry the boot hands one renderer
-per page) · 22 (rakun's route table, and the `rakun-routing` matcher the client entry hands
-jhonstart's router as `match`) · 05 (the configuration the boot writes `rakun.actions.field` /
-`rakun.actions.header` into — front 24 reads them later and is not a dependency of the boot)
+per page) · 22 (rakun's route table and `rakun.appDir`) · 05 (the configuration the boot writes
+`rakun.appDir`, `rakun.actions.field`, `rakun.actions.header` and `rakun.actions.bodyLimit` into —
+fronts 22 and 24 read them later and are not dependencies of the boot)
 **Owns:** `botopink.json`, `src/root.bp`, `src/types.bp`, `src/config.bp`, `src/integration.bp`,
 `test/config_test.bp`, `test/types_test.bp`
 **Does not touch:** `repository/jhonstart/**` (the render, `RenderHooks`, `RenderPlugin` and the
@@ -77,12 +77,13 @@ three libraries do not share, and the one package that imports all of them (deci
 onze ──► jhonstart-emilia ──► jhonstart   (the plugin contract only)
   │                      └──► emilia
   ├────► jhonstart
-  ├────► rakun
-  └────► rakun-routing       (the pure matcher, on the server and in the client entry)
+  └────► rakun
 ```
 
 jhonstart and rakun never import each other, and emilia imports nobody; every value that crosses
-between jhonstart and rakun is handed across by onze.
+between jhonstart and rakun is handed across by onze. The route matcher and the routing codecs are
+not one of those values: they are the compiler-bundled library `routing`, which rakun and jhonstart
+each import directly (decision 115), so onze neither imports nor hands it.
 
 What onze actually contributes, once fronts 22, 23, 30, 48 and 69 exist, is small and worth stating
 plainly: one config record (`OnzeConfig`), one import-alias map, one
@@ -92,7 +93,7 @@ adapter. Everything else in track E stands on those five and on the other fronts
 ### The three seams, and who actually owns each of them
 
 **onze does not own a page registry, a props vocabulary, a renderer or a head-insertion point.**
-rakun front 22 owns the route table (its matcher in `rakun-routing`) and front 23 the opaque page
+rakun front 22 owns the route table (its matcher is the bundled `routing`) and front 23 the opaque page
 registry, jhonstart front 30 owns the render, its plugin point and the UI conventions, and
 onze's job is to be the package where they meet and the project-level configuration they read.
 
@@ -102,13 +103,14 @@ Not at comptime. `@Decl` carries no source location (`language-gaps.md`), so a d
 which file it annotates, and a decorator body runs in a minimal eval prelude with no `fs`. The answer
 is an explicit argument: `#[page("blog/[slug]")]`, `#[layout("blog")]` (jhonstart front 30's UI
 decorators), `#[getRoute("api/posts")]` (rakun front 25's), where the argument is the app-relative
-directory and the segment grammar is front 22's, in `rakun-routing`. Front 50's CLI generates the `pub mod` lines from the
+directory and the segment grammar is front 22's, in the bundled library `routing`. Front 50's CLI generates the `pub mod` lines from the
 tree and **fails the scan when a file's location and its decorator argument disagree** — that check is
 the whole of the file-system convention, and it lives in the CLI because nothing else can see a
 directory.
 
-onze's contribution to this seam is one config value: `appDir`. Front 22 scans what `OnzeConfig`
-says to scan, so `app/` and `src/app/` are the same mechanism with a different string.
+onze's contribution to this seam is one config value: `appDir`, which the boot writes into rakun's
+configuration as `rakun.appDir` (decision 115 — rakun reads no `onze.` key). Front 22 scans what that
+key says to scan, so `app/` and `src/app/` are the same mechanism with a different string.
 
 **Seam 2 — how a matched route becomes HTML, and the HTML reaches the wire.**
 
@@ -137,15 +139,17 @@ from the other (decision 113):
   rakun's `Request`, which is what jhonstart's `request()`, `headers()` and `cookies()` read; and a
   `fn(string) -> @Future<void>` writer over rakun's `ChunkWriter`. jhonstart never sees the
   `ChunkWriter`;
-- to **jhonstart's router** (front 26), the `match` function — `rakun-routing`'s `matchPath` over the
-  payload's table, handed in by the generated client entry (front 68) — so the router keeps no
-  matcher and no table parser of its own;
 - to **both sides of a server action**, the wire names (decision 114): the boot sets rakun's
   `rakun.actions.field` / `rakun.actions.header` (fronts 05 and 24) and passes the same two values to
   jhonstart's form binding as `actionField` / `actionHeader` (front 67). onze's defaults are
-  `__bp_action` and `X-Bp-Action`; neither library spells a name;
-- back to **rakun**, the not-found outcome: a page that raises jhonstart's own not-found signal is
-  answered by rakun with 404, and onze is the one that translates the signal into the status.
+  `__bp_action` and `X-Bp-Action`; neither library spells a name. The same boot writes
+  `rakun.actions.bodyLimit` from `OnzeConfig.actionsBodyLimit` and `rakun.appDir` from
+  `OnzeConfig.appDir` — every key rakun reads is a `rakun.*` key (decision 115);
+- back to **rakun**, the navigation outcome: a page that raises jhonstart's `notFound()` or
+  `redirect(url)` (front 31) before the render's first chunk leaves `renderStream` with the signal's
+  reason, and onze translates it into rakun's `notFound()` (404) or `redirect(url)` (307) inside the
+  renderer, before anything is written. A signal raised after the first chunk never reaches onze:
+  jhonstart's render writes it as markup and the status stays 200 (front 30, decision 115).
 
 The vocabulary — `PageContext(pathname, pattern, params, query, rest)`, `LayoutProps.children` — is
 jhonstart front 30's, and onze does not restate it as `PageProps`/`Params`: a second name for every
@@ -271,6 +275,7 @@ pub type OnzeConfig(
     publicDir: string,
     outDir: string,
     dev: bool,
+    actionsBodyLimit: i32,   // bytes; written into rakun.actions.bodyLimit at boot
 ) {
     pub fn origin(self: Self) -> string {
         return "http://localhost:" + self.port.toString();
@@ -284,7 +289,8 @@ pub fn withDev(base: OnzeConfig, dev: bool) -> OnzeConfig { … }
 
 **Acceptance:**
 - [ ] `defaultConfig()` returns `port: 3000`, `basePath: ""`, `appDir: "app"`, `publicDir: "public"`,
-      `outDir: ".onze"`, `dev: false` — the values the CLI's scaffold writes into `onze.json`
+      `outDir: ".onze"`, `dev: false`, `actionsBodyLimit: 1048576` (rakun front 24's 1 MiB default)
+      — the values the CLI's scaffold writes into `onze.json`
 - [ ] `withPort(defaultConfig(), 4000).appDir == defaultConfig().appDir` — the copy carries every
       other field
 - [ ] `withPort(defaultConfig(), 4000).origin() == "http://localhost:4000"`
@@ -356,8 +362,9 @@ because an app author reads onze's docs and not rakun's internals.
       not exist), registers jhonstart's UI records in rakun's table and hands rakun one
       `PageRenderer` per page through `page(pattern, render)`, builds `RequestData` from rakun's
       `Request`, sets `rakun.actions.field` / `rakun.actions.header` and passes the same values to
-      jhonstart as `actionField` / `actionHeader`, and translates jhonstart's not-found signal into
-      rakun's 404. Any other onze file reaching for
+      jhonstart as `actionField` / `actionHeader`, sets `rakun.appDir` and `rakun.actions.bodyLimit`
+      from `OnzeConfig`, and translates jhonstart's `notFound` / `redirect` outcome into rakun's 404 /
+      307. It imports nothing from `routing` and hands jhonstart no matcher. Any other onze file reaching for
       the seam means the seam is in the wrong place, and the front says so under *Blocked* rather
       than adding a second wiring point
 - [ ] Nothing under `repository/onze/src/` calls emilia's `flush()`, and no onze file defines a style

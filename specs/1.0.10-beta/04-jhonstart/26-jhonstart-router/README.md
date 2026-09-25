@@ -3,9 +3,9 @@
 **Track:** C jhonstart
 **Priority:** critical — nothing downstream can ask "which route is this?"; `Link`, server components, streaming, error boundaries and metadata all read the answer this front produces
 **Target:** erlang (server)
-**Boundary:** the route snapshot is one of the three things `overview.md` says crosses. The server matches and fills it; the client rebuilds it from the payload (`globals.payload`, front 30) after a client navigation. The payload envelope and the route table are **not** defined here — they are front 30's and front 22's; this front consumes the envelope and receives the matcher from onze. jhonstart and rakun never import each other (decision 113).
+**Boundary:** the route snapshot is one of the three things `overview.md` says crosses. The server matches and fills it; the client rebuilds it from the payload (`globals.payload`, front 30) after a client navigation. The payload envelope and the route table are **not** defined here — they are front 30's and front 22's; this front consumes the envelope and imports the matcher from the compiler-bundled library `routing` (decision 115), which is neutral like std — jhonstart and rakun never import each other (decision 113), and both import `routing`.
 **Wave:** 3
-**Depends on:** 01 · 30 (payload envelope, read-only) · 94 (element builders used by the examples)
+**Depends on:** 01 · `01-std/04-routing-lib` (`parseTable`, `matchPath`) · 30 (payload envelope, read-only) · 94 (element builders used by the examples)
 **Owns:** `repository/jhonstart/src/router.bp` (promoted from `router.d.bp`, and the package's one `pairValue` pair-list decoder), `repository/jhonstart/test/router_test.bp`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/link.bp` (front 27), `src/server.bp` (front 28), `src/root.bp` and `botopink.json` (front 94)
 **Reference:** `NEXTJS-DOCS.md § 8. Navegação e Linking` · `§ 26. Referência de Funções` · https://nextjs.org/docs/app/api-reference/functions/use-router · https://nextjs.org/docs/app/api-reference/functions/use-params · https://nextjs.org/docs/app/api-reference/functions/use-search-params
@@ -92,13 +92,14 @@ to agree between an Erlang term and a JS object.
 
 ### The route table is front 22's, and there is one parser
 
-`matchPath`, `parseTable` and `writeTable` are front 22's, in the boundary module `rakun-routing`
-(`["erlang", "commonJS"]`, `contracts.md § 1`, decision 114). The table is line-oriented
-(`kind|pattern|slot|verb`, kinds `L T P D R S E N`) and travels in the payload's `t` key. This front
-**receives `match`** — onze's generated entry imports `parseTable` and `matchPath` from
-`rakun-routing` on commonJS and hands `{ path -> matchPath(table, path) }` to the router, and onze's
-server wiring does the same on erlang (decisions 113 and 114); the router names neither rakun nor
-`rakun-routing`, contains no second matcher and does not parse the table itself. A router with its own matcher is a router that disagrees with the
+`matchPath`, `parseTable` and `writeTable` are specified by front 22 and implemented once, in the
+compiler-bundled library `routing` (`libs/routing`, erlang and commonJS, `contracts.md § 1`,
+decision 115). The table is line-oriented (`kind|pattern|slot|verb`, kinds `L T P D R S E N`) and
+travels in the payload's `t` key. **The router imports the matcher** — `import {table.parseTable,
+match.matchPath} from "routing";` — parses the payload's `t` itself and matches with the function
+rakun's server matches with, on erlang and on commonJS alike. `routing` names neither jhonstart nor
+rakun, so the import is not an edge between the two (decision 113); onze hands the router nothing
+(decision 115). The router contains no second matcher and no second table parser. A router with its own matcher is a router that disagrees with the
 server on precedence (static > dynamic > catch-all > optional catch-all), and the disagreement shows
 up only on the routes nobody tested.
 
@@ -128,7 +129,7 @@ onze, and this front only calls it.
 
 Native History API use is also supported: the browser half listens for `popstate` and for a
 `pushState` the application performs itself (`NEXTJS-DOCS.md § 8`, *History API nativa*), rebuilds
-`RouterState` by running the `match` onze handed in against `window.location` and the table in the
+`RouterState` by running `routing`'s `matchPath` against `window.location` and the table in the
 payload's `t` key, and re-renders. Because the rebuild goes through the same matcher and the same
 `querystring.parse`, `searchParams()` reacts to a bare `pushState` without a reload, without a
 second parser, and without a second precedence rule.
@@ -352,14 +353,14 @@ exercised by front 27's `test/link_test.bp` on the js target; this front's erlan
 snapshot and the hooks, which is what the server render needs. The `use`-prefixed call form is
 type-checked, not executed, exactly as `hooks.bp:104-117` does for `Counter`.
 
-### Decision 113's spellings
+### Decisions 113 and 115's spellings
 
-The router shipped naming front 22's `matchPath` as the thing it calls; under decision 113 jhonstart
-names no rakun symbol.
+jhonstart names no rakun symbol (decision 113); the matcher is `routing`'s (decision 115).
 
-- [ ] `router.bp` takes the matcher as a value (`match`) that onze hands in — `rakun-routing`'s
-      `matchPath` over the payload's table; no `matchPath`, `parseTable`, `rakun` or `rakun-routing`
-      identifier appears under `modules/jhonstart/src/`
+- [ ] `router.bp` imports `parseTable` and `matchPath` from `"routing"` and defines neither; the
+      router takes no `match` parameter; no `rakun` identifier appears under
+      `modules/jhonstart/src/`, and jhonstart's `botopink.json` lists no `routing` dependency
+      (bundled, like std)
 - [ ] the payload the client half reads is `globals.payload` (front 30's registry), never a literal
       `__onze`
 
@@ -372,7 +373,7 @@ names no rakun symbol.
 - [ ] the five cells map one-to-one onto payload keys `p`/`m`/`q`/`r` plus the per-layout
       `selected`, and the mapping table is in `repository/jhonstart/docs.md`
 - [ ] `segments` is derived from `pattern`, never transported
-- [ ] the router has no matcher and no table parser of its own; it receives `match` from onze
+- [ ] the router has no matcher and no table parser of its own; it imports both from `routing`
 - [ ] no `#[@External.Node]`-only cell in the file; the one dual-target cell is `__jhNavigate`
 - [ ] both language gaps appear in a `specs/1.0.10-beta/` spec
 - [ ] the front's tests are green on its assigned target

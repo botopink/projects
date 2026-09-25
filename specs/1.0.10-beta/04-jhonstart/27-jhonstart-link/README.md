@@ -4,7 +4,7 @@
 **Priority:** critical — without `Link` every navigation is a full page load, and the client half of the milestone has nothing to intercept
 **Target:** js (client)
 **Wave:** 4
-**Depends on:** 26 · 60 (route-kind flag, read-only) · 30 (payload envelope, read-only) · 68 (generated entry + DOM primitives, read-only) · 94 (element builders used by the examples)
+**Depends on:** 26 · `01-std/04-routing-lib` (`matchPath`, `routeKindOf`, `parseSlotStates`, `clientHref`) · 60 (route-kind flag, read-only) · 30 (payload envelope, read-only) · 68 (generated entry + DOM primitives, read-only) · 94 (element builders used by the examples)
 **Owns:** `repository/jhonstart/src/link.bp`, `repository/jhonstart/src/reconcile.bp` (the client-navigation reconciler), `repository/jhonstart/test/link_test.bp`, `repository/jhonstart/test/reconcile_test.bp`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (front 26), `src/client.bp` (front 29), `src/root.bp` and `botopink.json` (front 94)
 **Reference:** `NEXTJS-DOCS.md § 8. Navegação e Linking` · `§ 25. Referência de Componentes` · https://nextjs.org/docs/app/api-reference/components/link · https://nextjs.org/docs/app/getting-started/linking-and-navigating
@@ -108,8 +108,10 @@ two inputs `kind` and `hasLoading` both come from front 60's table, which is why
 on it read-only and owns none of it.
 
 The route the prefetcher resolves an href against is the table in the payload's `t` key, matched
-with the `match` function front 26's router receives from onze (front 22's matcher,
-`contracts.md § 1`). There is one matcher in the milestone and this front is not a second one.
+with `routing`'s `matchPath`, which front 26's router imports too (front 22's matcher, bundled with
+the compiler — `contracts.md § 1`, decision 115). The route-kind blob is read with `routing`'s
+`routeKindOf`, the slot states with `parseSlotStates`, and an href is built with `clientHref`: one
+implementation of each in the milestone, and this front is not a second one.
 
 ### Layout state preservation
 
