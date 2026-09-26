@@ -184,11 +184,11 @@ erlang. Test helpers that run on the server target, testing server code.
 ### Step 1 — `FakeRequest`
 
 **Acceptance:**
-- [ ] `FakeRequest` implements `Request` and is accepted by a handler declaring a `Request` parameter, with no cast. — open on two compiler rows (`language-gaps.md`: an implementer does not convert to its behavior; a behavior method lowers to another type's same-named method on erlang). Today the double does not `implement Request` and a handler takes `fake.toRequest()` — the runtime's own request (`rkMakeRequest`)
+- [x] `FakeRequest` implements `Request` and is accepted by a handler declaring a `Request` parameter, with no cast. — `modules/rakun-test/test/fake_request_test.bp` "a handler declaring Request takes the double itself" (`toRequest()` still answers the runtime's own request)
 - [x] Every accessor returns `""` for an absent name, never an optional. — `paramOf`/`queryOf`/`headerOf`/`cookieOf`/`bodyOf` answer `""` (`modules/rakun-test/test/fake_request_test.bp` "an absent name reads as the empty string"), rakun `203ddb9`
 - [x] `header("Content-Type")` and `header("content-type")` return the same value. — `headerOf` lower-cases on store and lookup; the handler's `req.header("Cookie")` too (`fake_request_test.bp` "header names match case-insensitively")
 - [x] `withQuery`/`withHeader`/`withCookie`/`withParam` each return a new value, leaving the receiver unchanged. — `fake_request_test.bp` "the builders leave the receiver unchanged"
-- [x] `fakeGet("/x").method` is `HttpMethod.Get` and `fakePost("/x", "b").body()` is `"b"`. — `fakePost(…).bodyOf()`, not `body()` (see step 1's first box); `fake_request_test.bp` "fakeGet carries HttpMethod.Get and fakePost the body"
+- [x] `fakeGet("/x").method` is `HttpMethod.Get` and `fakePost("/x", "b").body()` is `"b"`. — `body()` is the `Request` method, `bodyOf()` its alias; `fake_request_test.bp` "fakeGet carries HttpMethod.Get and fakePost the body"
 - [x] Front 25's inline `FakeRequest` is deleted and its example imports this one — the duplicate does not survive the milestone. — `25-rakun-route-handlers/examples/route-handler-example.bp` imports `fakeGet`/`fakePost` from `rakun-test` and builds its requests with `toRequest()`
 
 ### Step 2 — Response assertions

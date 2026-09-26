@@ -18,11 +18,11 @@ import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute, rkProp} from "rak
 // Provided by front 12. `#[cached]` splices the twin type and its factory into
 // this module too, and the twin's body calls the store cells — same rule.
 import {cached, cacheable, cacheEvict} from "rakun-cache";
-import {cacheThrough, cachePolicy, cacheLife, CacheScope, cachedTwin} from "rakun-cache";
+import {cacheThrough, cachePolicy, cacheLife, CacheScope} from "rakun-cache";
 // LANGUAGE GAP: `cacheKey` from "rakun-cache" is refused as ambiguous with
 // std's `hash.cacheKey`; its module names it.
 import {cacheKey} from "rakun-cache/cache";
-import {rkCacheEnabled, rkCacheLookup, rkCachePut, rkCacheEvict, rkCacheClear} from "rakun-cache";
+import {cacheMethod, cacheEvictAll, cacheEvictKeys} from "rakun-cache";
 
 // ── the contract ────────────────────────────────────────────────────────────
 //
@@ -34,12 +34,6 @@ import {rkCacheEnabled, rkCacheLookup, rkCachePut, rkCacheEvict, rkCacheClear} f
 // `productJson` and `listJson` go through the "products" cache; `reprice`
 // delegates first and then clears it. `slugFor` carries no annotation, so the
 // twin passes it straight through and never touches the store.
-
-// LANGUAGE GAP: on erlang, two types of ONE module declaring `productJson`
-// make a call through a `ProductCatalog`-typed receiver a bare local call.
-// In an application this behavior sits in its own module (`catalog.bp`,
-// importing `cacheMethod`, `cacheEvictAll`, `cacheEvictKeys`) and everything
-// below in another — `modules/rakun-cache/test/fixtures/twin` is that shape.
 
 #[cached]
 pub behavior ProductCatalog {
@@ -93,12 +87,9 @@ pub type SqlProductCatalog(
 pub type CatalogConfig(
     real: SqlProductCatalog,
 ) {
-    // LANGUAGE GAP: `cachedProductCatalog` is emitted into the behavior's
-    // module and an emitted declaration is not importable, so another module
-    // reaches the twin by the behavior's name.
     #[bean]
     pub fn productCatalog(self: Self) -> ProductCatalog {
-        return cachedTwin("ProductCatalog", self.real);
+        return cachedProductCatalog(self.real);
     }
 }
 

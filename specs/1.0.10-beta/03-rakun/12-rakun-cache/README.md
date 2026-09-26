@@ -36,17 +36,15 @@ lifetimes, settings and the customizer fold, `cacheThrough` / `cacheFn` / `cache
 and their seams), `cached.bp` (`#[cached]` / `#[cacheable]` / `#[cacheEvict]`), `cache_endpoint.bp`
 (`installCache`, the `caches` endpoint, the `cache` indicator), `cache_host.bp` over
 `src/sidecars/rakun_cache.erl` (one ETS table owned by `rakun_cache_owner`, single flight, background
-refresh, the clock, the log, a RESP double). 52 tests on erlang across seven files; the twin and the
+refresh, the clock, the log, a RESP double). 55 tests on erlang across seven files; the twin and the
 import spellings are exercised by consumer projects under `test/fixtures/`.
 
 Where it differs from the text below:
 
 - **Keys** hash with std's `hash.strongCacheKey` (length-framed parts, SHA-256 truncated), not
   `contentHash` (03r-f). One ETS table keyed `{name, key}` replaces a table per cache name.
-- **The twin on erlang** needs three rules (`language-gaps.md`): the implementation lives in another
-  module than the behavior, other modules reach the twin with `cachedTwin("<Name>", inner)`
-  (`cached<Name>(inner)` is emitted but not importable), one `#[cached]` behavior per module.
-- **Customizers** are registered functions (`registerCacheCustomizer`); `CacheCustomizer` is the shape.
+- **Customizers** are `CacheCustomizer` values (`registerCustomizer`) or bare functions
+  (`registerCacheCustomizer`).
 - **Redis** reuses rakun-session's wire (`rkSessRedis`) rather than front 13's client, has no stale
   window (`revalidateTag` deletes there) and runs the loader when it does not answer (03r-i).
 - **The private scope** with no session runs the loader and stores nothing (03r-g).
@@ -54,8 +52,7 @@ Where it differs from the text below:
   stale, so front 24's re-render reads the refilled cache (03r-m); inside any request every verb also
   appends to the frame's `revalidated` slot, which front 24's envelope echoes.
 - **Single flight** — concurrent misses on one key run one loader — is in; onze's image routes use it.
-- **Open:** the qualified import form (Step 5), and front 24's mutation test over `revalidatedPaths()`
-  (front 24's box).
+- **Open:** none of this front's boxes; front 24's mutation test over `revalidatedPaths()` is its own.
 
 ## Mechanism
 
@@ -355,7 +352,7 @@ methods at once.
 **Acceptance:**
 - [x] `#[cacheable]` on anything but a method fails with a located message. — `consumer_test.bp` "#[cacheable] and #[cacheEvict] anywhere but on a method fail with a located message"
 - [x] Annotations written on a `behavior`'s method signatures reach `#[cached]` as `m.annotations`. If the reflection does not carry them, this front stops and files it rather than working around it. — they do: every twin cell of `consumer_test.bp` (fixture `twin`) depends on it
-- [x] The emitted twin implements the behavior: a field declared `catalog: ProductCatalog` accepts it. — fixture `twin` "a field declared ProductCatalog is injected with the caching twin" (the bean returns `cachedTwin("ProductCatalog", self.real)`; `cachedProductCatalog(inner)` reaches only the behavior's own module — `language-gaps.md`)
+- [x] The emitted twin implements the behavior: a field declared `catalog: ProductCatalog` accepts it. — fixture `twin` "a field declared ProductCatalog is injected with the caching twin" (the bean returns the imported `cachedProductCatalog(self.real)`)
 - [x] A method with no cache annotation is delegated unchanged and never touches the store. — fixture `twin` "a method with no cache annotation is delegated and never touches the store"
 - [x] `#[cacheEvict(name, true)]` clears the whole cache after the method returns; `#[cacheEvict(name, false)]` removes only the key built from the method's arguments. — fixture `twin` "cacheEvict(name, true) clears the whole cache after the delegate returns", "cacheEvict(name, false) removes only the rows its arguments key" (the key `[m, args…]` under every `#[cacheable(name)]` method `m`, 03r-h)
 - [x] Eviction runs *after* the delegate returns, so a delegate that raises leaves the cache alone. — fixture `twin` "a delegate that raises leaves the cache alone"
@@ -394,7 +391,7 @@ pub fn revalidatePath(path: string) -> i32 {
 - [x] After `revalidateTag("t")`, the next read returns the previous value and the refresh runs; the read after that returns the new value. — `revalidate_test.bp` "revalidateTag serves the stale value once, refreshes, and the read after that is fresh" (the trace pins miss → revalidate → hit)
 - [x] An entry carrying two tags is invalidated by either. — `revalidate_test.bp` "an entry carrying two tags is invalidated by either"
 - [x] `revalidatedPaths()` and `revalidatedTags()` report exactly what the request invalidated, in call order, and `clearRevalidated()` empties them. — `revalidate_test.bp` "the seams report what was invalidated, in call order, and clear only on request"
-- [ ] Both import spellings in *Package, module and import spellings* resolve, asserted by two test files that import differently. — the bare form resolves (`consumer_test.bp`, fixture `imports`: "the bare form"); the qualified `import {cache} from "rakun-cache"` is `unbound variable 'cache'` (a workspace module cannot be imported as a namespace, `language-gaps.md`), so the box stays open. `cacheKey` must be imported `from "rakun-cache/cache"` (fixture "cacheKey through the leaf")
+- [x] Both import spellings in *Package, module and import spellings* resolve, asserted by two test files that import differently. — `consumer_test.bp` "the qualified and the bare import forms both resolve" (fixture `imports`: `qualified_test.bp` and `bare_test.bp`); `cacheKey` alone is imported `from "rakun-cache/cache"`, since `from "rakun-cache"` is ambiguous with std's `hash.cacheKey` (`language-gaps.md`)
 
 ### Step 6 — The function-wrapping entry point
 
@@ -461,8 +458,6 @@ reach `/actuator`; this front does not get a second answer.
 |---|---|---|---|
 | A decorator cannot replace or wrap the body of the declaration it annotates. `@Decl` is read-only and `@emit` appends new module-level declarations only, so a transparent `'use cache'` / `#[useCache]` on a plain function is not expressible. | `examples/use-cache-example.bp`, every `cacheThrough` call | Write the combinator in the body: `cacheThrough(policy, keys, { -> load() })`. For methods, the `#[cached]` behavior twin avoids the gap entirely. | `decl.replaceBody(src)`, or an `@emit` whose output shadows the annotated declaration |
 | botopink has no module-level annotation, so a file-level directive (`'use cache'` as the first line of a file) has no spelling. | `examples/use-cache-example.bp`, the module-level policy | A module-level `val` holding the default `CachePolicy`, read by every combinator in the module. | An inner attribute at module scope, e.g. `#![useCache]` |
-| An `@emit`ted `pub` declaration cannot be imported from another module, and an imported fn returning a behavior does not unify with the importer's behavior | `cacheable-service-example.bp`, the bean | `cachedTwin("ProductCatalog", self.real)`, a host lookup of the emitted twin | Export emitted declarations; one identity per behavior |
-| Two types of one module declaring a behavior's method make a call through a behavior-typed receiver a bare local call on erlang (`productJson/2 undefined`) | `cacheable-service-example.bp` (behavior, implementation and consumer in one module) | Keep the implementation in another module than the `#[cached]` behavior | Dispatch a behavior-typed receiver through the value |
 | `import {cacheKey} from "rakun-cache"` is refused as ambiguous with std's `hash.cacheKey`, although the package is named | `cacheable-service-example.bp` | `import {cacheKey} from "rakun-cache/cache"` | A named package's export wins over std's |
 | Declared parameter defaults are never applied, so a decorator cannot have an optional argument. Spring writes `@CacheEvict("users")` and `@CacheEvict(value = "users", allEntries = true)` from one annotation. | `#[cacheEvict("products", true)]` in both examples | Pass every argument explicitly, always. | Apply declared defaults at call sites (`docs.md:502-505`) |
 
