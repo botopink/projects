@@ -389,15 +389,15 @@ browser reads the `k` blob with the code the server wrote it with: this front's 
 jhonstart front 27 both import them (decision 115).
 
 **Acceptance:**
-- [ ] `parseKinds(writeKinds(xs))` equals `xs` compared element by element on `.0` and `.1` — never
-      with `==` on the arrays, which is reference equality.
-- [ ] `routeKindOf(wire, "/blog/[slug]")` answers the recorded kind.
-- [ ] `routeKindOf("", "/anything")` answers `RouteKind.Dynamic` — the documented default when the blob
-      is absent.
-- [ ] `routeKindOf("garbage", "/x")` answers `RouteKind.Dynamic` and does not raise.
-- [ ] Every assertion in this step runs green on `--target erlang` and on `--target commonJS`, from
+- [x] `parseKinds(writeKinds(xs))` equals `xs` compared element by element on `.0` and `.1` — never
+      with `==` on the arrays, which is reference equality. — held: `libs/routing/test/route_kinds_test.bp` "parseKinds(writeKinds(xs)) equals xs element by element"
+- [x] `routeKindOf(wire, "/blog/[slug]")` answers the recorded kind. — held: `libs/routing/test/route_kinds_test.bp` "routeKindOf answers the recorded kind"
+- [x] `routeKindOf("", "/anything")` answers `RouteKind.Dynamic` — the documented default when the blob
+      is absent. — held: `libs/routing/test/route_kinds_test.bp` "an absent blob or an unknown pattern answers Dynamic"
+- [x] `routeKindOf("garbage", "/x")` answers `RouteKind.Dynamic` and does not raise. — held: `libs/routing/test/route_kinds_test.bp` "a garbage blob answers Dynamic and does not raise"
+- [x] Every assertion in this step runs green on `--target erlang` and on `--target commonJS`, from
       `libs/routing/test/route_kinds_test.bp` (`01-std/04-routing-lib` Step 4). This is the boundary half and a format only one side can read is the bug this
-      step exists to prevent.
+      step exists to prevent. — held: `libs/routing` 66/0 on erlang and on commonJS (2026-09-26)
 
 ### Step 7 — Static export
 
