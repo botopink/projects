@@ -343,8 +343,8 @@ After `01-std/06-validation-lib` Steps 1–4. rakun keeps what names rakun and n
 - [ ] rakun's boot calls `setMessageSource(MessageSource(locale: …, template: …))` over
       `rakun.validation.locale` and `rakun.validation.messages.*` before the first component, and a
       test setting `rakun.validation.messages.sizeBetween` sees it in a violation's message
-- [ ] rakun's workspace root and every member are `"targets": ["erlang"]` — no rakun package is on
-      commonJS
+- [x] rakun's workspace root and every member are `"targets": ["erlang"]` — no rakun package is on
+      commonJS — held: rakun `99b8049`
 - [x] `grep -rn "rakun-validation" repository/rakun --include=*.bp --include=botopink.json` is empty — held: grep empty (2026-09-26)
 
 ## Examples
