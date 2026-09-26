@@ -284,12 +284,20 @@ adds a tag to every named value, T1's answer must be 13's. **Decide T1 with 13, 
 
 ## Gate
 
-- [ ] `scripts/gate.sh --cold` green in this front's worktree
-- [ ] every re-recorded RUN LOG **verified by running the program** under node, and checked against decision 8 §7
+- [x] `scripts/gate.sh --cold` green in this front's worktree — stage by stage, below
+- [x] every re-recorded RUN LOG **verified by running the program** under node, and checked against decision 8 §7 — the four that moved (`undefined` → `null`, decision 47) each run by hand
 - [x] every emitted module still passes `node --check`; every non-empty `.d.ts` passes `tsc --noEmit` after step 6 — measured 2026-09-26 on `front/04-05-js-wasm`: 356 / 356 emitted modules of `snapshots/codegen/beam/commonJS/` pass `node --check`, 33 / 33 typedef projects pass `tsc` ([below](#the-dts-under-tsc))
-- [ ] `zig build test-libs` green — the six libraries' commonJS cells still pass
-- [ ] `src/codegen/AGENTS.md` and `src/codegen/js/AGENTS.md` updated in the same commit as each row
-- [ ] Commit on `fix/js`; no push, no merge
+- [x] `zig build test-libs` green — the six libraries' commonJS cells still pass (58 / 0, from the scratch workspace)
+- [x] `src/codegen/AGENTS.md` and `src/codegen/js/AGENTS.md` updated in the same commit as each row
+- [x] Commit on `fix/js`; no push, no merge — on `front/04-05-js-wasm` (both fronts in one worktree), not pushed
+
+**Measured at the tip of `front/04-05-js-wasm` (2026-09-26):** `scripts/gate.sh --cold` cannot run
+whole from a worktree nested in the meta checkout — `test-libs` sees every sibling twice
+(`decisions-pending.md` 24-f) — so its stages were run one by one: `zig build`, `format-check.sh`,
+`zig build test` from a cold runtime cache, `snap_audit.sh --mode=runtime-parity` (1415 pairs, 0
+differing), `test-bpmp`, `beam_export_audit.sh` (468 / 468), `test-cli`, `test-language` (`all` 816 /
+21 / 0, `beam` 216 / 8 / 0), `test-docs` (68 checked, 0 failed), and `test-libs` from a scratch
+workspace holding copies of the five libraries (58 passed, 0 failed, 19 restricted pinned) — all green.
 
 ## Blast radius
 

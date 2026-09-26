@@ -304,12 +304,20 @@ Consequence for acceptance: of this front's four `expected-failures.txt` lines, 
 
 ## Gate
 
-- [ ] `scripts/gate.sh --cold` green in this front's worktree
-- [ ] every re-recorded RUN LOG **verified by running the program** under wasmtime, and checked against decision 8 §7
-- [ ] no new `RUN LOG` answers a value with exit 0 that another backend answers differently — a shape wasm cannot do is a `RUNTIME TRAP`, never a wrong number
-- [ ] the 24 existing `RUNTIME TRAP` fixtures are re-read: each is still a shape wasm cannot do, or it is fixed
-- [ ] `src/codegen/AGENTS.md` and `src/codegen/wat/AGENTS.md` updated in the same commit as each row
-- [ ] Commit on `fix/wasm`; no push, no merge
+- [x] `scripts/gate.sh --cold` green in this front's worktree — stage by stage, below
+- [x] every re-recorded RUN LOG **verified by running the program** under wasmtime, and checked against decision 8 §7 — each moved log compared with commonJS's for the same fixture
+- [x] no new `RUN LOG` answers a value with exit 0 that another backend answers differently — a shape wasm cannot do is a `RUNTIME TRAP`, never a wrong number — every moved log is commonJS's answer, `null` for absence, or a trap replacing a wrong answer (`import_a_dotted_path_and_a_group_bind_their_leaves_across_a_module_tree`)
+- [x] the 24 existing `RUNTIME TRAP` fixtures are re-read: each is still a shape wasm cannot do, or it is fixed — **11** carry one now: eight are the program's own `@todo()`, one a fatal `assert` outside test mode, one the flat namespace (a trap by design until the link mangles), and `interface_*` / `tuple_a_bare_digit…` / `src_in_a_method` / the slice and enum fixtures were fixed on this branch
+- [x] `src/codegen/AGENTS.md` and `src/codegen/wat/AGENTS.md` updated in the same commit as each row
+- [x] Commit on `fix/wasm`; no push, no merge — on `front/04-05-js-wasm`, not pushed
+
+**Measured at the tip of `front/04-05-js-wasm` (2026-09-26):** `scripts/gate.sh --cold` cannot run
+whole from a worktree nested in the meta checkout — `test-libs` sees every sibling twice
+(`decisions-pending.md` 24-f) — so its stages were run one by one: `zig build`, `format-check.sh`,
+`zig build test` from a cold runtime cache, `snap_audit.sh --mode=runtime-parity` (1415 pairs, 0
+differing), `test-bpmp`, `beam_export_audit.sh` (468 / 468), `test-cli`, `test-language` (`all` 816 /
+21 / 0, `beam` 216 / 8 / 0), `test-docs` (68 checked, 0 failed), and `test-libs` from a scratch
+workspace holding copies of the five libraries (58 passed, 0 failed, 19 restricted pinned) — all green.
 
 ## Blast radius
 
@@ -483,3 +491,8 @@ before anything was written.
 `run/index_at_optional.bp`, `run/index_user_type.bp` — a `?V` over a type parameter is carried
 unboxed and nothing monomorphises), C-30's eager generator `break` (`run/generator_break_value.bp`,
 22-loops' row), per-module mangling of the link, and step 8 (no lowering to delete — struck above).
+- **Behaviors' `default fn`s, `Array.find`, the option `map`** (compiler `cf6e92e2`, `fe996180`) — a
+  type adopts the defaults it does not write (`Money(…).clamp(…)` trapped); a method answers the
+  record its return names (`Stub(n: 1).where()`'s `SourceLocation` printed two addresses at exit 0);
+  `find` is `filter` then `at(0)`; `opt.map(…)` is a registered optional (a `return` into `-> ?i32`
+  boxed the box). 5 wasm snapshots per tree moved, each to commonJS's answer.
