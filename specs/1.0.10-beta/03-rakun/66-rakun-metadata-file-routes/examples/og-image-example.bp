@@ -35,8 +35,9 @@ import {
     imageUrlFor,
     imagesFor,
     ImageMeta,
-} from "rakun";
-import {ChunkWriter, Request} from "rakun";  // provided by fronts 23 and 04
+} from "rakun-app/metadata_routes";
+import {Request} from "rakun";
+import {ChunkWriter} from "rakun-app/ssr";
 
 pub type Post(
     slug: string,
