@@ -254,10 +254,10 @@ pub type ValidationReport(violations: Array<Violation>) {
 ```
 
 **Acceptance:**
-- [ ] An empty report is valid; a report with one violation is not.
-- [ ] `merge` preserves order: the receiver's violations come first.
-- [ ] `toJson` escapes a message containing a quote or a backslash.
-- [ ] A field that fails two constraints produces two violations, not one.
+- [x] An empty report is valid; a report with one violation is not. — held: `libs/validation/test/report_test.bp` "an empty report is valid, one violation is not"
+- [x] `merge` preserves order: the receiver's violations come first. — held: `libs/validation/test/report_test.bp` "merge preserves order, receiver first"
+- [x] `toJson` escapes a message containing a quote or a backslash. — held: `libs/validation/test/report_test.bp` "toJson escapes a quote and a backslash"
+- [x] A field that fails two constraints produces two violations, not one. — held: `libs/validation/test/report_test.bp` "one field failing two constraints is two violations"
 
 ### Step 2 — The constraint markers and `#[validated]`
 
@@ -279,11 +279,11 @@ pub type CreateUserRequest(
 ```
 
 **Acceptance:**
-- [ ] `#[validated]` emits `validateCreateUserRequest` and `constraintsOfCreateUserRequest` into the annotated type's module, and both are callable there.
-- [ ] Every constraint marker on anything but a field fails with a located message.
-- [ ] `#[validated]` on an enum-shaped `type` fails, the same way `#[service]` does (`decl.variants.length > 0`).
-- [ ] A field with no constraint contributes no violation and no constraint-table row.
-- [ ] Constraints on one field are evaluated in declaration order, and all of them run — the first failure does not stop the second.
+- [x] `#[validated]` emits `validateCreateUserRequest` and `constraintsOfCreateUserRequest` into the annotated type's module, and both are callable there. — held: `libs/validation/test/constraints_test.bp` "#[validated] emits a callable validator into this module" + `test/table_test.bp` `constraintsOfTableUserRequest`
+- [x] Every constraint marker on anything but a field fails with a located message. — held: `libs/validation/src/decorators.bp` — every marker `decl.fail`s off a `DeclKind.Field` (code; a compile failure has no cell)
+- [x] `#[validated]` on an enum-shaped `type` fails, the same way `#[service]` does (`decl.variants.length > 0`). — held: `libs/validation/src/decorators.bp` `validated` — `decl.variants.length > 0` → `decl.fail` (code)
+- [x] A field with no constraint contributes no violation and no constraint-table row. — held: `libs/validation/test/constraints_test.bp` "a field with no constraint contributes nothing"
+- [x] Constraints on one field are evaluated in declaration order, and all of them run — the first failure does not stop the second. — held: `libs/validation/test/constraints_test.bp` "every constraint on a field runs, in declaration order"
 
 ### Step 3 — The constraint table, and what crosses
 
@@ -295,30 +295,30 @@ pub fn constraintsOfCreateUserRequest() -> string
 ```
 
 **Acceptance:**
-- [ ] The table names every constrained field, every code, and every parameter, and nothing else.
-- [ ] `validateCreateUserRequest` compiles and runs on **both** targets, and returns the same report for the same input on each.
-- [ ] The round-trip test is one test running the same twenty inputs through the same function on erlang and on commonJS and comparing reports — not two tests asserting each side separately.
-- [ ] The table is stable across rebuilds: the same source produces byte-identical JSON.
-- [ ] The client bundle (front 68) can obtain the table without importing anything that reaches a socket or the filesystem.
+- [x] The table names every constrained field, every code, and every parameter, and nothing else. — held: `libs/validation/test/table_test.bp` "the table names every constrained field, code and parameter" + "…names nothing else"
+- [x] `validateCreateUserRequest` compiles and runs on **both** targets, and returns the same report for the same input on each. — held: `libs/validation/test/parity_test.bp` green on erlang and commonJS (54/0 each row, 2026-09-26)
+- [x] The round-trip test is one test running the same twenty inputs through the same function on erlang and on commonJS and comparing reports — not two tests asserting each side separately. — held: `libs/validation/test/parity_test.bp` "twenty inputs, one function, one answer on both rows" — one cell, one expected digest, run on both rows
+- [x] The table is stable across rebuilds: the same source produces byte-identical JSON. — held: `libs/validation/test/parity_test.bp` "the table crosses byte-identically too" (a fixed literal) + `table_test.bp` "byte-stable"
+- [x] The client bundle (front 68) can obtain the table without importing anything that reaches a socket or the filesystem. — held: `libs/validation/src/table.bp` imports only std `json` (code)
 
 ### Step 4 — Typed coercion
 
 **Acceptance:**
-- [ ] `bindInt("age", "")` yields `0` and a violation with code `typeMismatch` naming `age`.
-- [ ] `bindInt("age", "12x")` yields `0` and a violation; `bindInt("age", "12")` yields `12` and none.
-- [ ] `bindBool` accepts `true`/`false`/`1`/`0` and rejects everything else with a violation.
-- [ ] `bindRequired` on `""` produces a `required` violation — the distinction `Request` cannot make.
-- [ ] `bindingReport()` returns every violation accumulated during the request and leaves the accumulator empty, so the next request on the same process starts clean.
-- [ ] Two concurrent requests do not see each other's violations.
+- [x] `bindInt("age", "")` yields `0` and a violation with code `typeMismatch` naming `age`. — held: `libs/validation/test/binding_test.bp` "bindInt on an empty string is zero AND a violation"
+- [x] `bindInt("age", "12x")` yields `0` and a violation; `bindInt("age", "12")` yields `12` and none. — held: `libs/validation/test/binding_test.bp` "bindInt rejects a trailing character and accepts a number"
+- [x] `bindBool` accepts `true`/`false`/`1`/`0` and rejects everything else with a violation. — held: `libs/validation/test/binding_test.bp` "bindBool takes four spellings and refuses the rest"
+- [x] `bindRequired` on `""` produces a `required` violation — the distinction `Request` cannot make. — held: `libs/validation/test/binding_test.bp` "bindRequired makes the distinction Request cannot"
+- [x] `bindingReport()` returns every violation accumulated during the request and leaves the accumulator empty, so the next request on the same process starts clean. — held: `libs/validation/test/binding_test.bp` "asking drains, so the next request starts clean"
+- [x] Two concurrent requests do not see each other's violations. — held: `libs/validation/test/binding_test.bp` "a second scope cannot see this scope's violations"
 
 ### Step 5 — The SPI and message interpolation
 
 **Acceptance:**
-- [ ] A registered constraint reached through `#[constraint("cpf")]` produces a violation with code `cpf`.
-- [ ] An unregistered name in `#[constraint(...)]` fails at the first validation call with the name in the message, not silently.
-- [ ] `rakun.validation.messages.sizeBetween` overrides the built-in template for every field using it.
-- [ ] `rakun.validation.messages.pt-BR.email` is preferred over `rakun.validation.messages.email` when the locale resolves to `pt-BR`.
-- [ ] `{min}` and `{max}` are substituted from the constraint's arguments; an unknown placeholder survives verbatim.
+- [x] A registered constraint reached through `#[constraint("cpf")]` produces a violation with code `cpf`. — held: `libs/validation/test/spi_test.bp` "a registered constraint is reached by name"
+- [x] An unregistered name in `#[constraint(...)]` fails at the first validation call with the name in the message, not silently. — held: `libs/validation/test/spi_test.bp` "an unregistered name is a violation, never a pass" + "the refusal names what IS registered"
+- [x] `rakun.validation.messages.sizeBetween` overrides the built-in template for every field using it. — held: `libs/validation/test/spi_test.bp` "a global override replaces the built-in for every field" + rakun's key via `modules/rakun/test/config_check_test.bp` "rakun's message source answers from rakun's keys"
+- [x] `rakun.validation.messages.pt-BR.email` is preferred over `rakun.validation.messages.email` when the locale resolves to `pt-BR`. — held: `libs/validation/test/spi_test.bp` "the locale key wins over the global one" (rakun key `rakun.validation.messages.<locale>.<code>` in `config_check.bp` `installMessageSource`)
+- [x] `{min}` and `{max}` are substituted from the constraint's arguments; an unknown placeholder survives verbatim. — held: `libs/validation/test/spi_test.bp` "an unknown placeholder survives verbatim" + "a global override…" (`{min}`/`{max}` → 2/50)
 
 ### Step 6 — Boot-time configuration validation
 
@@ -333,19 +333,19 @@ pub fn constraintsOfCreateUserRequest() -> string
 After `01-std/06-validation-lib` Steps 1–4. rakun keeps what names rakun and nothing else.
 
 **Acceptance:**
-- [ ] `modules/rakun-validation/` is deleted, with its `botopink.json`, `validation_host.mjs` and
+- [x] `modules/rakun-validation/` is deleted, with its `botopink.json`, `validation_host.mjs` and
       `src/sidecars/rakun_validation.erl`; rakun's workspace `botopink.json`, `modules/README.md`,
-      `AGENTS.md` and `docs.md` name the bundled `validation` instead
-- [ ] `boot.bp` is `modules/rakun/src/config_check.bp` (`propertyKey`, `violationLine`,
+      `AGENTS.md` and `docs.md` name the bundled `validation` instead — held: no `modules/rakun-validation/`; the workspace manifest lists no such member; `modules/README.md`, `AGENTS.md` § Validation and `docs.md` § Validation name `validation`
+- [x] `boot.bp` is `modules/rakun/src/config_check.bp` (`propertyKey`, `violationLine`,
       `configProblem`, `refuseInvalidConfig`), importing `ValidationReport` / `Violation` from
       `"validation"`; `config_test.bp`'s six tests are `modules/rakun/test/config_check_test.bp`, green
-      on erlang
+      on erlang — held: `modules/rakun/src/config_check.bp` (four fns, imports from `"validation"`); `modules/rakun/test/config_check_test.bp` 7 cells, rakun 310/0 erlang
 - [ ] rakun's boot calls `setMessageSource(MessageSource(locale: …, template: …))` over
       `rakun.validation.locale` and `rakun.validation.messages.*` before the first component, and a
       test setting `rakun.validation.messages.sizeBetween` sees it in a violation's message
 - [ ] rakun's workspace root and every member are `"targets": ["erlang"]` — no rakun package is on
       commonJS
-- [ ] `grep -rn "rakun-validation" repository/rakun --include=*.bp --include=botopink.json` is empty
+- [x] `grep -rn "rakun-validation" repository/rakun --include=*.bp --include=botopink.json` is empty — held: grep empty (2026-09-26)
 
 ## Examples
 
