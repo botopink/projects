@@ -257,14 +257,14 @@ step live.
 `Value`, `Grow`, `Shrink`, `Basis`, `Order`, plus the three reverse direction/wrap leaves.
 
 **Acceptance:**
-- [ ] `.Flex.Value.One` emits `flex:1 1 0%` — three components, spaces as `§ 6.4` prints them
-- [ ] `.Flex.Value.None` emits `flex:none`, not `flex:0 0 auto`
-- [ ] `.Flex.Grow.1` emits `flex-grow:1`; `.Flex.Grow.0` emits `flex-grow:0`
-- [ ] `.Flex.Basis.Frac.Third` emits `flex-basis:33.333333%` and agrees with `.Size.W.Frac.Third`'s
-      percentage, asserted directly
-- [ ] `.Flex.Order.First` emits `order:-9999` and `.Flex.Order.Last` emits `order:9999`
-- [ ] `.Flex.Order.None` emits `order:0`, not `order:none`
-- [ ] `.Flex.Row`, `.Flex.Col`, `.Flex.Wrap`, `.Flex.NoWrap` emit exactly what they emit today
+- [x] `.Flex.Value.One` emits `flex:1 1 0%` — three components, spaces as `§ 6.4` prints them — held: test "the flex shorthand keeps all three components, and `none` is a keyword"
+- [x] `.Flex.Value.None` emits `flex:none`, not `flex:0 0 auto` — held: test "the flex shorthand keeps all three components, and `none` is a keyword"
+- [x] `.Flex.Grow.1` emits `flex-grow:1`; `.Flex.Grow.0` emits `flex-grow:0` — held: test "grow and shrink are bare numbers on their own properties"
+- [x] `.Flex.Basis.Frac.Third` emits `flex-basis:33.333333%` and agrees with `.Size.W.Frac.Third`'s
+      percentage, asserted directly — held: test "a basis fraction and a width fraction are the same percentage"
+- [x] `.Flex.Order.First` emits `order:-9999` and `.Flex.Order.Last` emits `order:9999` — held: test "order — a count, the two sentinels, and the one that is not a keyword"
+- [x] `.Flex.Order.None` emits `order:0`, not `order:none` — held: test "order — a count, the two sentinels, and the one that is not a keyword"
+- [x] `.Flex.Row`, `.Flex.Col`, `.Flex.Wrap`, `.Flex.NoWrap` emit exactly what they emit today — held: test "flex direction and wrap — the four that compile today, unchanged"
 
 ### Step 2 — the alignment family
 
@@ -273,13 +273,13 @@ Seven new sub-sections (`JustifyItems`, `JustifySelf`, `Self`, `Content`, `Place
 `Items`.
 
 **Acceptance:**
-- [ ] `Justify` answers all eight `§ 6.16` values
-- [ ] `Items` answers all five `§ 6.20` values, `Baseline` included
-- [ ] `justify-content:flex-start` and `justify-items:start` are both emitted, from different tokens —
-      the asymmetry is asserted rather than normalised
-- [ ] `place-content-between` emits `place-content:space-between`
-- [ ] every alignment token is reachable from a grid container as well as a flex one, which is a
-      documentation claim the README makes and the grid example exercises
+- [x] `Justify` answers all eight `§ 6.16` values — held: test "justify-content — all eight values of `§ 6.16`, three of them new"
+- [x] `Items` answers all five `§ 6.20` values, `Baseline` included — held: test "align-items — all five values of `§ 6.20`, `baseline` included"
+- [x] `justify-content:flex-start` and `justify-items:start` are both emitted, from different tokens —
+      the asymmetry is asserted rather than normalised — held: test "`flex-start` and `start` are both right, and each from its own token"
+- [x] `place-content-between` emits `place-content:space-between` — held: test "the three `place-*` shorthands, and `place-content-between` spells space"
+- [x] every alignment token is reachable from a grid container as well as a flex one, which is a
+      documentation claim the README makes and the grid example exercises — held (shape: `Self` is a keyword, so `Flex.AlignSelf` and flat `Flex.PlaceContent`/`PlaceItems`/`PlaceSelf`): `AGENTS.md` front-37 paragraph + `tokens.bp` `////` Flex note; `examples/emilia-grid/src/main.bp` uses the family on grid containers
 
 ### Step 3 — `Grid`
 
@@ -304,15 +304,15 @@ fn gridRepeat(n: string) -> string {
 ```
 
 **Acceptance:**
-- [ ] `.Grid.Cols.12` emits `grid-template-columns:repeat(12, minmax(0, 1fr))` — one space after the
-      comma, in both places
-- [ ] `.Grid.Cols.None` and `.Grid.Cols.Subgrid` emit the keyword, not a `repeat()`
-- [ ] `.Grid.Col.Span.2` emits `grid-column:span 2 / span 2` and `.Grid.Col.Span.Full` emits
-      `grid-column:1 / -1`
-- [ ] `.Grid.Col.Start.13` resolves — the thirteenth line exists
-- [ ] `.Grid.Flow.RowDense` emits `grid-auto-flow:row dense` with a single space
-- [ ] `.Grid.AutoCols.Fr` emits `grid-auto-columns:minmax(0, 1fr)`
-- [ ] `gridRepeat` is the only place `repeat(…, minmax(0, 1fr))` is spelled
+- [x] `.Grid.Cols.12` emits `grid-template-columns:repeat(12, minmax(0, 1fr))` — one space after the
+      comma, in both places — held: test "a column template is a repeat built from the leaf, with its spaces"
+- [x] `.Grid.Cols.None` and `.Grid.Cols.Subgrid` emit the keyword, not a `repeat()` — held: test "`none` and `subgrid` are keywords, not a repeat of anything"
+- [x] `.Grid.Col.Span.2` emits `grid-column:span 2 / span 2` and `.Grid.Col.Span.Full` emits
+      `grid-column:1 / -1` — held: test "a span is doubled, and `full` is the line-based form instead"
+- [x] `.Grid.Col.Start.13` resolves — the thirteenth line exists — held: test "the thirteenth line exists, on both axes and on both ends"
+- [x] `.Grid.Flow.RowDense` emits `grid-auto-flow:row dense` with a single space — held: test "auto-flow keeps one space, and `col` is `column` in the value"
+- [x] `.Grid.AutoCols.Fr` emits `grid-auto-columns:minmax(0, 1fr)` — held: test "the implicit tracks — `min`/`max` are `-content`, `fr` is a minmax"
+- [x] `gridRepeat` is the only place `repeat(…, minmax(0, 1fr))` is spelled — held: `emilia.bp:gridRepeat`/`gridFr`; test "`gridRepeat` and `gridFr` are the only places those two strings live"
 
 ### Step 4 — the top-level `Gap` section
 
@@ -325,12 +325,12 @@ fn gridRepeat(n: string) -> string {
 ```
 
 **Acceptance:**
-- [ ] `.Gap.All.4` emits `gap:calc(var(--spacing) * 4)`
-- [ ] `.Gap.X.1` emits `column-gap:…` and `.Gap.Y.1` emits `row-gap:…`
-- [ ] `.Gap.All.0` emits `gap:0`
-- [ ] `.Flex.Gap.4` still emits `gap:1rem`'s replacement — the same string `.Gap.All.4` emits,
-      asserted side by side, so the two spellings cannot drift
-- [ ] front 54's `spacing` is called, not copied, and `.Gap.All.4` reads `calc(var(--spacing) * 4)`
+- [x] `.Gap.All.4` emits `gap:calc(var(--spacing) * 4)` — held: test "gap — the shorthand over the ladder, and zero is the literal 0"
+- [x] `.Gap.X.1` emits `column-gap:…` and `.Gap.Y.1` emits `row-gap:…` — held: test "gap — the two axes are two different properties"
+- [x] `.Gap.All.0` emits `gap:0` — held: test "gap — the shorthand over the ladder, and zero is the literal 0"
+- [x] `.Flex.Gap.4` still emits `gap:1rem`'s replacement — the same string `.Gap.All.4` emits,
+      asserted side by side, so the two spellings cannot drift — held: test "`.Flex.Gap.N` and `.Gap.All.N` are one declaration by two names"
+- [x] front 54's `spacing` is called, not copied, and `.Gap.All.4` reads `calc(var(--spacing) * 4)` — held: `gapScale*` call `spacing`/`spacingHalf`; test "gap reads front 54's ladder, so halving `--spacing` moves no rule"
 
 ### Step 5 — the three dispatchers and the top-level arms
 
@@ -339,10 +339,10 @@ contract-4a signature. Two arms are added to the top-level `tokenToSheet` case (
 `Flex` already has one. All three go through `declSheet` — no token in this front needs a selector.
 
 **Acceptance:**
-- [ ] each dispatcher follows the file's `val out = case …; return out;` idiom and takes `th: Theme`
-- [ ] every arm is an arrow arm
-- [ ] the banner `// ── front 37 — flexbox, grid and gap ──` fences the block in both files
-- [ ] the two new top-level arms sit in front-number order
+- [x] each dispatcher follows the file's `val out = case …; return out;` idiom and takes `th: Theme` — held: `flexTokenToCss`/`gridTokenToCss`/`gapTokenToCss` and every sub-dispatcher take `th: Theme`
+- [x] every arm is an arrow arm — held: every arm in the front-37 block of `emilia.bp` is `X -> expr;`
+- [x] the banner `// ── front 37 — flexbox, grid and gap ──` fences the block in both files — held: `tokens.bp:1220` and `emilia.bp:6512`, each closed by `// ── end front 37 ──`
+- [x] the two new top-level arms sit in front-number order — held: `emilia.bp:tokenToSheet` — `Grid`/`Gap` after `Flex`, before front 40's `Border`
 
 ## Examples
 
@@ -390,12 +390,12 @@ What the tests assert:
 
 ## Definition of done
 
-- [ ] every utility in `§ 6.1`–`§ 6.24` that is not an arbitrary-value form has a token
-- [ ] `Flex`'s existing nine paths emit byte-identical CSS afterwards
-- [ ] `Grid` and `Gap` exist as sections, with `Gap` shared by flex and grid
-- [ ] `gridRepeat` is spelled once, and `spacing` comes from front 54
-- [ ] the banner fences this front's block in both files, appended at the end
-- [ ] two arms added to the top-level `tokenToCss` case, in front-number order
-- [ ] `repository/emilia/AGENTS.md` and the `////` header of `tokens.bp` record the new sections and
-      the note that alignment lives under `Flex` while applying to grid
-- [ ] the front's tests are green on its assigned target — here, both backends, since emilia is comptime
+- [x] every utility in `§ 6.1`–`§ 6.24` that is not an arbitrary-value form has a token — held (shape: basis quarters and below left out, as the spec's reference gap says): `tokens.bp` `Flex`/`Grid`/`Gap`; test "regression — no leaf of this front resolves a length; all 356 declare"
+- [x] `Flex`'s existing nine paths emit byte-identical CSS afterwards — held (shape: `.Flex.Gap.{1,2,4,8}` deliberately moved from `rem` to the `spacing` reference, per Step 4): tests "flex direction and wrap — the four that compile today, unchanged" + "`.Flex.Gap.N` and `.Gap.All.N` are one declaration by two names"
+- [x] `Grid` and `Gap` exist as sections, with `Gap` shared by flex and grid — held: `tokens.bp` top-level `Grid` and `Gap`; `examples/emilia-grid` uses `Gap` on flex and grid
+- [x] `gridRepeat` is spelled once, and `spacing` comes from front 54 — held: test "`gridRepeat` and `gridFr` are the only places those two strings live"; test "regression — `Gap` and `Basis` are the ladder `Pad` is, property aside"
+- [x] the banner fences this front's block in both files, appended at the end — held (shape: block sits in front-number position, not at file end): `tokens.bp:1220`, `emilia.bp:6512`
+- [x] two arms added to the top-level `tokenToCss` case, in front-number order — held: `emilia.bp:tokenToSheet` `Grid`/`Gap` arms
+- [x] `repository/emilia/AGENTS.md` and the `////` header of `tokens.bp` record the new sections and
+      the note that alignment lives under `Flex` while applying to grid — held: `AGENTS.md` front-37 paragraph ("The whole alignment family stays under `Flex`…"); `tokens.bp` `////` SECTIONS `Flex`/`Grid`/`Gap`
+- [x] the front's tests are green on its assigned target — here, both backends, since emilia is comptime — held: emilia suite 569/569 on commonJS and erlang
