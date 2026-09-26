@@ -30,13 +30,13 @@ Nesting is source order — the outer modifier is outermost. A **range** is nest
 | Breakpoints, max (`max-sm:`…) | `MaxSm`, `MaxMd`, `MaxLg`, `MaxXl`, `MaxX2xl` | `@media (width < <--breakpoint-*>)` · `&` |
 | Dark mode | `Dark` | `darkAtRule(th)` · `darkSelector(th)` — `Media` puts the strategy in the at-rule, `Class`/`Attribute` in the selector; the variant never learns which is in force |
 | Other media | `Print`, `Portrait`, `Landscape`, `MotionSafe`, `MotionReduce`, `ContrastMore`, `ContrastLess`, `ForcedColors` | `@media print`, `@media (orientation: …)`, `@media (prefers-reduced-motion: no-preference\|reduce)`, `@media (prefers-contrast: more\|less)`, `@media (forced-colors: active)` · `&` |
-| Interaction | `Hover`, `Focus`, `FocusWithin`, `FocusVisible`, `Active`, `Visited`, `Target`, `Open`, `Inert` | `Hover` = `@media (hover: hover)` · `&:hover`; the rest selector-only: `&:focus` … `&:target`, `Open` = `&:is(:open, :popover-open)` (one `&` — the reference's `&:open, &:popover-open` has two), `Inert` = `&:is([inert], [inert] *)` |
+| Interaction | `Hover`, `Focus`, `FocusWithin`, `FocusVisible`, `Active`, `Visited`, `Target`, `Open`, `Inert` | `Hover` = `@media (hover: hover)` · `&:hover`; the rest selector-only: `&:focus` … `&:target`, `Open` = `&:is([open], :popover-open, :open)` (upstream v4; one `&` — the reference's `&:open, &:popover-open` has two and omits `[open]`), `Inert` = `&:is([inert], [inert] *)` |
 | Form state | `Disabled`, `Enabled`, `Checked`, `Indeterminate`, `Default`, `Optional`, `Required`, `Valid`, `Invalid`, `UserValid`, `UserInvalid`, `InRange`, `OutOfRange`, `PlaceholderShown`, `Autofill`, `ReadOnly` | `&:<pseudo-class>` |
 | Structural | `First`, `Last`, `Only`, `Odd`, `Even`, `FirstOfType`, `LastOfType`, `OnlyOfType`, `Empty`, `Nth(index, inner)`, `NthLast(index, inner)` | `&:first-child`, …, `&:nth-child(odd\|even)`, `&:nth-child(N)`, `&:nth-last-child(N)` |
-| Pseudo-elements | `Before`, `After`, `FirstLetter`, `FirstLine`, `Placeholder`, `File`, `Marker`, `Selection`, `Backdrop` | `&::before` …, `&::file-selector-button`; `Marker` = `& ::marker` and `Selection` = `& ::selection` — with the space, as the reference writes them |
+| Pseudo-elements | `Before`, `After`, `FirstLetter`, `FirstLine`, `Placeholder`, `File`, `Marker`, `Selection`, `Backdrop` | `&::before` …, `&::file-selector-button`; `Marker` = `& *::marker`, `&::marker` and the same two for `::-webkit-details-marker`, `Selection` = `& *::selection`, `&::selection` — upstream v4's lists, each a list of one-`&` variants (`markerVariants()`, `selectionVariants()`) wrapped once each by `nestVariants` |
 | Parent state | `GroupHover`, `GroupFocus`, `GroupActive`, `GroupVisited`, `GroupDisabled`, `GroupOpen` | `&:is(:where(.group)<state> *)` |
 | Sibling state | `PeerHover`, `PeerFocus`, `PeerActive`, `PeerChecked`, `PeerInvalid`, `PeerRequired`, `PeerDisabled`, `PeerPlaceholderShown` | `&:is(:where(.peer)<state> ~ *)` |
-| Direction and descent | `Rtl`, `Ltr`, `Children` (`*:`), `Descendants` (`**:`) | `[dir="rtl"] &`, `[dir="ltr"] &`, `:is(& > *)`, `:is(& *)` |
+| Direction and descent | `Rtl`, `Ltr`, `Children` (`*:`), `Descendants` (`**:`) | `&:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *)` and its `ltr` twin (upstream v4.1), `:is(& > *)`, `:is(& *)` |
 | Important | `Important(inner)` | `markImportant(tokensToSheet(inner, th))` |
 
 The `.group` / `.peer` classes are the consumer's markup; emilia never emits them. `2xl` is spelled
@@ -75,9 +75,6 @@ is `@media (hover: hover){.e_x:hover{font-weight:bold}}`.
 
 ## Known gaps
 
-- Upstream v4 spells `open` as `&:is([open], :popover-open, :open)` (the legacy `[open]` attribute
-  matches `<details open>` without `:open`); the local reference omits `[open]`. The next change to
-  this row adds it — recorded in [`../reference-coverage.md`](../reference-coverage.md).
 - Arbitrary variants (`[&.is-dragging]:`, `supports-[…]:`, `aria-*`, `data-*`, `has-*`, `not-*`) are
   front 57's `arbSel`/`arbAt` and front 59's `selector(v, inner)`; named groups/peers
   (`group/item`) are not covered.

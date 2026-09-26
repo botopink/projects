@@ -6,8 +6,6 @@
 **User docs:** `repository/emilia/docs.md` § *The theme*
 **Reference:** `TAILWIND_CSS_DOCS.md § 3.5`, `§ 3.9`, `§ 20.2 @theme`, `§ 20.8 --spacing()`, `§ 20.9 theme()`, `§ 21.1–§ 21.7` · https://tailwindcss.com/docs/theme
 
-**Open:** one box — the unknown-prefix refusal is not yet in the compiler's Zig suite (Step 3).
-
 ---
 
 ## What it delivers
@@ -39,7 +37,7 @@ pub type Ns {
 | `themeValue(th, name)` / `themeVar(name)` | `theme()` of `§ 20.9` (`""` when absent); the reference form `var(--name)` every utility emits |
 | `themeCss(th)` / `keyframeCss(th)` | the `:root` body (`name:value` joined by `;`, in theme order — deterministic, since class names are content hashes); the keyframe entries, bodies brace-balanced |
 | `darkAtRule(th)` / `darkSelector(th)` / `withDarkMode(th, mode)` | `Media` → `@media (prefers-color-scheme: dark)` + `&`; `Class("dark")` → `""` + `&:where(.dark, .dark *)`; `Attribute("data-theme", "dark")` → `""` + `&:where([data-theme=dark], [data-theme=dark] *)`. Front 34's `Dark` consumes them |
-| `spacing(n)` / `spacingHalf(n)` | `spacing(0) == "0"`, otherwise `calc(var(--spacing) * n)` (negatives included); `spacingHalf(n)` is `calc(var(--spacing) * n.5)`. emilia never resolves a spacing value; `i32`, not `f64`, so no backend float formatting leaks into the string |
+| `spacing(n)` / `spacingHalf(n)` / `spacingNegHalf(n)` | `spacing(0) == "0"`, otherwise `calc(var(--spacing) * n)` (negatives included); `spacingHalf(n)` is `calc(var(--spacing) * n.5)` and `spacingNegHalf(n)` is `calc(var(--spacing) * -n.5)`, `n` the whole part and never negative (a negative `n` aborts) — so `-0.5` is `spacingNegHalf(0)`, which a signed whole part could not spell (an `i32` has no negative zero). emilia never resolves a spacing value; `i32`, not `f64`, so no backend float formatting leaks into the string |
 
 The theme block is always the whole theme (upstream's `@theme static`): tree-shaking would need a
 whole-program pass over every `emilia()` site. The palette and the other per-front namespaces are
@@ -72,14 +70,13 @@ A theme is a function in a module, so sharing one is an ordinary package depende
       the strategy changes nothing else about the theme.
 - [x] A brand theme is defined in one function and used (`examples/emilia-theme`), and a test
       composes `defaultTheme()` with a second package's entries, both reachable through `themeValue`.
-
-### Open
-
-- [ ] `extendTheme(th, [ThemeEntry(name: "--gutter", value: "1rem")])` aborts with a message
-      naming the unknown prefix. A test asserts the *absence* of the entry, and the wrong-placement
-      case is recorded in the compiler's own suite per the project convention. — the abort holds
-      (`theme.bp` `checkEntry` panics naming the entry; the file records why absence is not asserted
-      at runtime); the `--gutter` case is not yet in the compiler's Zig suite.
+- [x] `extendTheme(th, [ThemeEntry(name: "--gutter", value: "1rem")])` aborts with a message naming
+      the entry and the nineteen prefixes; a test reads that refusal through `panicMessage` — never
+      the entry's absence, which accept-and-ignore would also produce — and one bad entry among good
+      ones aborts the whole extension (`emilia.bp` "front 54 — an entry in no namespace aborts…").
+- [x] `spacingNegHalf(0) == "calc(var(--spacing) * -0.5)"`; every `*.Neg.Half` section is
+      `{ 0, 1, 2, 3 }` over it, and `spacingHalf` refuses a negative whole part
+      (`spacing.bp`, `emilia.bp` "the `-0.5` rung…").
 
 ## Constraints
 

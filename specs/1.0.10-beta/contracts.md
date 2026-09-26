@@ -57,7 +57,7 @@ the render as strings handed in by onze; jhonstart names no rakun module.
 | `a` | actions, `[name, id]` |
 | `s` | emilia class names already present in the server-emitted `<style>` — a render-plugin key (§ 6a), given by `jhonstart-emilia` |
 | `h` | open streaming holes |
-| `d` | dynamic flag |
+| `d` | dynamic flag — `true` only when the render read the query (`searchParams()`) or the request (`request()`, `cookies()`, `headers()`), a boundary's read included (26-b) |
 
 Writing and escaping that script is std's (decision 116): the JSON is written with `json.quote`,
 `json.array` and `json.object`, which escape every control character, and escaped with

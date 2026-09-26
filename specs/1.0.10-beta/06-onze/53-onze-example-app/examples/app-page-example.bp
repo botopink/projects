@@ -47,7 +47,7 @@ val _homeConfig = registerSegmentConfig("", SegmentConfig(
 ));
 
 // front 22 — `/`. The page touches nothing request-specific, so front 60's trial
-// render leaves it static; reading `route.query` here would opt it out.
+// render leaves it static; a `use searchParams()` here would opt it out.
 #[page("")]
 pub fn homePage(route: PageContext) -> @Component<ElementBase, Element> {
     val cfg = defaultImageConfig();
@@ -68,7 +68,6 @@ fn homeRoute() -> PageContext {
         pathname: "/",
         pattern: "/",
         params: Dict.empty(),
-        query: Dict.empty(),
         rest: [],
     );
 }

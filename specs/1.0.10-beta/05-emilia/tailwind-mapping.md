@@ -47,7 +47,7 @@
 | `overflow-*`, `overflow-x-*`, `overflow-y-*` | `.Layout.Overflow.*`, `.Overflow.X.*`, `.Overflow.Y.*` | `overflow[-x\|-y]:auto` … |
 | `overscroll-*` (and `-x`, `-y`) | `.Layout.Overscroll.*`, `.X.*`, `.Y.*` | `overscroll-behavior[-x\|-y]:contain` … |
 | `static` `fixed` `absolute` `relative` `sticky` | `.Layout.Position.*` | `position:<value>` |
-| `inset-*` `inset-x-*` `inset-y-*` `top-*` `right-*` `bottom-*` `left-*` `start-*` `end-*` | `.Layout.Inset.{All, X, Y, T, R, B, L, S, E}` + `Auto`, `Full`, `Frac.{Half, Third, TwoThirds}`, `Neg.*` | `inset:0`; `left:0;right:0`; `top:calc(var(--spacing) * 4)`; `top:50%`; `inset-inline-start:0` |
+| `inset-*` `inset-x-*` `inset-y-*` `top-*` `right-*` `bottom-*` `left-*` `start-*` `end-*` | `.Layout.Inset.{All, X, Y, T, R, B, L, S, E}` + `Auto`, `Full`, `Frac.{Half, Third, TwoThirds}`, `Neg.*` | `inset:0`; `left:0;right:0`; `top:calc(var(--spacing) * 4)`; `top:calc(1 / 2 * 100%)`; `inset-inline-start:0` |
 | `visible` / `invisible` / `collapse` | `.Layout.Visibility.{Visible, Invisible, Collapse}` | `visibility:visible` / `hidden` / `collapse` |
 | `z-0` … `z-50` / `z-auto` | `.Layout.Z.{0, 10, 20, 30, 40, 50, Auto}` | `z-index:50` |
 
@@ -59,7 +59,7 @@
 | `flex-wrap` `-wrap-reverse` `-nowrap` | `.Flex.{Wrap, WrapReverse, NoWrap}` | `flex-wrap:<value>` |
 | `flex-1` `-auto` `-initial` `-none` | `.Flex.Value.{One, Auto, Initial, None}` | `flex:1 1 0%` … `flex:none` |
 | `grow` / `grow-0`, `shrink` / `shrink-0` | `.Flex.Grow.{1, 0}`, `.Flex.Shrink.{1, 0}` | `flex-grow:1` … |
-| `basis-*` | `.Flex.Basis` over the spacing scale + `Auto`, `Full`, `Frac.{Half, Third, TwoThirds}` | `flex-basis:calc(var(--spacing) * 4)`, `flex-basis:33.333333%` |
+| `basis-*` | `.Flex.Basis` over the spacing scale + `Auto`, `Full`, `Frac.{Half, Third, TwoThirds}` | `flex-basis:calc(var(--spacing) * 4)`, `flex-basis:calc(1 / 3 * 100%)` |
 | `order-1` … `order-12` / `order-first` / `-last` / `-none` | `.Flex.Order.{1 … 12, First, Last, None}` | `order:-9999` / `9999` / `0` |
 | `justify-*` (8) | `.Flex.Justify.*` | `justify-content:flex-start` … `space-evenly` |
 | `justify-items-*` / `justify-self-*` | `.Flex.JustifyItems.*` / `.Flex.JustifySelf.*` | `justify-items:start` … |
@@ -83,7 +83,7 @@
 
 | Tailwind | emilia token | CSS |
 |---|---|---|
-| `w-*` / `h-*` | `.Size.W.*` / `.Size.H.*`: the scale, `Frac.*` (11), `Full`, `Screen`, `Svw`/`Lvw`/`Dvw` (`Svh`/`Lvh`/`Dvh`), `Min`, `Max`, `Fit`, `Auto` | `width:33.333333%`; `width:100vw`; `height:100vh` |
+| `w-*` / `h-*` | `.Size.W.*` / `.Size.H.*`: the scale, `Frac.*` (11), `Full`, `Screen`, `Svw`/`Lvw`/`Dvw` (`Svh`/`Lvh`/`Dvh`), `Min`, `Max`, `Fit`, `Auto` | `width:calc(1 / 3 * 100%)`; `width:100vw`; `height:100vh` |
 | `size-*` | `.Size.Both.*` | `width:…;height:…` |
 | `min-w-*` `max-w-*` `min-h-*` `max-h-*` | `.Size.{MinW, MaxW, MinH, MaxH}.*` | `max-width:var(--container-md)`; `max-width:var(--breakpoint-2xl)` (`MaxW.Screen.*`) |
 | `inline-*` `block-*` and their min/max | `.Size.{Inline, Block, MinInline, MaxInline, MinBlock, MaxBlock}.*` | `inline-size:…` |
@@ -157,7 +157,7 @@
 | `shadow-2xs` … `shadow-2xl`, `shadow-none`, `shadow-inner` | `.Effect.Shadow.{X2xs, Xs, Sm, Md, Lg, Xl, X2xl, None, Inner}` | `--tw-shadow:var(--shadow-md);box-shadow:<five-channel reader>` |
 | `inset-shadow-*` | `.Effect.InsetShadow.{X2xs, Xs, Sm}` | `--tw-inset-shadow:inset var(--inset-shadow-sm);box-shadow:<reader>` |
 | `text-shadow-*` | `.Effect.TextShadow.{X2xs, Xs, Sm, Md, Lg, None}` | `text-shadow:var(--text-shadow-sm)` |
-| `opacity-*` | `.Effect.Opacity.*` (15 + 6 provisional) | `opacity:0.6` |
+| `opacity-*` | `.Effect.Opacity.*` (21, confirmed upstream) | `opacity:60%` |
 | `mix-blend-*` / `bg-blend-*` | `.Blend.Mix.*` / `.Blend.Bg.*` (17 each) | `mix-blend-mode:multiply` |
 | `mask-clip-*` … `mask-type-*` | `.Mask.{Clip, Composite, Image, Mode, Origin, Position, Repeat, Size, Type}.*` | `mask-clip:padding-box` … |
 | `shadow-<colour>/<opacity>` | ❌ | — |
@@ -194,9 +194,9 @@
 
 | Tailwind | emilia token | CSS |
 |---|---|---|
-| `rotate-*` / `-rotate-*` | `.Transform.Rotate.*` / `.Transform.Rotate.Neg.*` | `rotate:45deg` / `rotate:-12deg` |
-| `scale-*` / `scale-x-*` / `scale-y-*` | `.Transform.{Scale, ScaleX, ScaleY}.*` | `scale:.5`; `scale:.5 1` |
-| `translate-x-*` / `translate-y-*` / `translate-*` | `.Transform.{TranslateX, TranslateY, Translate}.{0, Px, 1, Half, Full}` | `--tw-translate-x:50%;translate:var(--tw-translate-x) var(--tw-translate-y)` (+ `@property`); both axes write both variables |
+| `rotate-*` / `-rotate-*` | `.Transform.Rotate.*` / `.Transform.Rotate.Neg.*` | `rotate:45deg` / `rotate:calc(12deg * -1)` |
+| `scale-*` / `scale-x-*` / `scale-y-*` | `.Transform.{Scale, ScaleX, ScaleY}.*` | `--tw-scale-x:50%;--tw-scale-y:50%;--tw-scale-z:50%;scale:var(--tw-scale-x) var(--tw-scale-y)`; `--tw-scale-x:50%` + the reader |
+| `translate-x-*` / `translate-y-*` / `translate-*` | `.Transform.{TranslateX, TranslateY, Translate}.{0, Px, 1, Half, Full}` | `--tw-translate-x:calc(1 / 2 * 100%);translate:var(--tw-translate-x) var(--tw-translate-y)` (+ `@property`); both axes write both variables |
 | `skew-x-*` / `skew-y-*` | `.Transform.{SkewX, SkewY}.*` | `--tw-skew-x:skewX(3deg);transform:var(--tw-rotate-x,) … var(--tw-skew-y,)` (+ `@property`) |
 | `origin-*` (9) | `.Transform.Origin.*` | `transform-origin:top right` |
 | `transform-flat` / `transform-3d`, `backface-*` | `.Transform.Style.{Flat, Preserve3d}`, `.Transform.Backface.*` | `transform-style:preserve-3d` |
@@ -237,13 +237,13 @@
 | `print:` `portrait:` `landscape:` `motion-safe:` `motion-reduce:` `contrast-more:` `contrast-less:` `forced-colors:` | `Print` … `ForcedColors` | the matching `@media` |
 | `hover:` | `Hover` | `@media (hover: hover)` + `&:hover` |
 | `focus:` `focus-within:` `focus-visible:` `active:` `visited:` `target:` | `Focus` … `Target` | `&:<state>` |
-| `open:` / `inert:` | `Open` / `Inert` | `&:is(:open, :popover-open)` / `&:is([inert], [inert] *)` |
+| `open:` / `inert:` | `Open` / `Inert` | `&:is([open], :popover-open, :open)` / `&:is([inert], [inert] *)` |
 | form states (16) | `Disabled` … `ReadOnly` | `&:<state>` |
 | `first:` … `empty:`, `nth-N:`, `nth-last-N:` | `First` … `Empty`, `Nth(index, inner)`, `NthLast(index, inner)` | `&:nth-child(3)` … |
-| `before:` … `backdrop:` | `Before` … `Backdrop` | `&::before`; `& ::marker`; `& ::selection` |
+| `before:` … `backdrop:` | `Before` … `Backdrop` | `&::before`; `& *::marker, &::marker` (+ `::-webkit-details-marker`); `& *::selection, &::selection` |
 | `group-hover:` `-focus:` `-active:` `-visited:` `-disabled:` `-open:` | `GroupHover` … `GroupOpen` | `&:is(:where(.group):hover *)` |
 | `peer-*:` (8) | `PeerHover` … `PeerPlaceholderShown` | `&:is(:where(.peer):checked ~ *)` |
-| `rtl:` `ltr:` `*:` `**:` | `Rtl`, `Ltr`, `Children`, `Descendants` | `[dir="rtl"] &`; `:is(& > *)`; `:is(& *)` |
+| `rtl:` `ltr:` `*:` `**:` | `Rtl`, `Ltr`, `Children`, `Descendants` | `&:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *)`; `:is(& > *)`; `:is(& *)` |
 | `!` | `Important` | `!important` on every inner declaration |
 | `@3xs:` … `@7xl:`, `@sm/main:` | `containerAt3xs(inner)` … `containerAt7xl(inner)`, `containerNamed(size, name, inner)` (front 58) | `@container (width >= 28rem)`, `@container main (width >= 24rem)` |
 | `@container` / `@container/main` | `.Container.{Inline, Normal, Size}`, `containerName(name)` | `container-type:inline-size;container-name:main` |

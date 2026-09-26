@@ -26,10 +26,10 @@ leaves' `1px` is the reference's own value).
 
 | Group | Tokens | CSS |
 |---|---|---|
-| Rotate (`§ 16.4`) | `.Transform.Rotate.{0, 1, 45, 90, 180}`, `.Transform.Rotate.Neg.{1, 12, 45, 90, 180}` | `rotate:45deg`, `rotate:-12deg` (`Neg`: no spelling for a negative numeric leaf) |
-| Scale (`§ 16.5`) | `.Transform.Scale.{0, 50, 75, 90, 95, 100, 105, 110, 125, 150}`, `.ScaleX.*`, `.ScaleY.*` | `scale:.5` (no leading zero), `scale:1`; `ScaleX.50` → `scale:.5 1`, `ScaleY.50` → `scale:1 .5` |
-| Translate, one axis (`§ 16.10`) | `.Transform.TranslateX.{0, Px, 1, Half, Full}`, `.TranslateY.*` | the axis's variable, then both: `--tw-translate-x:50%;translate:var(--tw-translate-x) var(--tw-translate-y)`; `TranslateX.1` writes `--tw-translate-x:calc(var(--spacing) * 1)` |
-| Translate, both axes | `.Transform.Translate.{0, Px, 1, Half, Full}` | `--tw-translate-x:50%;--tw-translate-y:50%;translate:var(--tw-translate-x) var(--tw-translate-y)` |
+| Rotate (`§ 16.4`) | `.Transform.Rotate.{0, 1, 45, 90, 180}`, `.Transform.Rotate.Neg.{1, 12, 45, 90, 180}` | `rotate:45deg`, `rotate:calc(12deg * -1)` (`Neg`: no spelling for a negative numeric leaf; upstream negates by multiplying) |
+| Scale (`§ 16.5`) | `.Transform.Scale.{0, 50, 75, 90, 95, 100, 105, 110, 125, 150}`, `.ScaleX.*`, `.ScaleY.*` | upstream v4: `Scale.50` → `--tw-scale-x:50%;--tw-scale-y:50%;--tw-scale-z:50%;scale:var(--tw-scale-x) var(--tw-scale-y)`; `ScaleX.50` → `--tw-scale-x:50%` + the reader, so the axes compose; the three variables registered with `@property` (initial `1`) |
+| Translate, one axis (`§ 16.10`) | `.Transform.TranslateX.{0, Px, 1, Half, Full}`, `.TranslateY.*` | the axis's variable, then both: `--tw-translate-x:calc(1 / 2 * 100%);translate:var(--tw-translate-x) var(--tw-translate-y)`; `TranslateX.1` writes `--tw-translate-x:calc(var(--spacing) * 1)` |
+| Translate, both axes | `.Transform.Translate.{0, Px, 1, Half, Full}` | `--tw-translate-x:calc(1 / 2 * 100%);--tw-translate-y:calc(1 / 2 * 100%);translate:var(--tw-translate-x) var(--tw-translate-y)` |
 | Skew (`§ 16.6`) | `.Transform.SkewX.{0, 1, 2, 3, 6, 12}`, `.SkewY.*` | `--tw-skew-x:skewX(3deg);transform:var(--tw-rotate-x,) var(--tw-rotate-y,) var(--tw-rotate-z,) var(--tw-skew-x,) var(--tw-skew-y,)` — upstream's; the reference file's `skew-x:` is not CSS and is never emitted |
 | Origin (`§ 16.8`) | `.Transform.Origin.{Center, Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left, TopLeft}` | `transform-origin:top right` (two keywords) |
 | Style / backface (`§ 16.9`, `16.1`) | `.Transform.Style.{Flat, Preserve3d}`, `.Transform.Backface.{Visible, Hidden}` | `transform-style:preserve-3d`, `backface-visibility:hidden` |
@@ -57,11 +57,12 @@ leaves' `1px` is the reference's own value).
 
 ### Delivered
 
-- [x] `.Transform.Rotate.90` → `rotate:90deg`; `Rotate.Neg.12` → `rotate:-12deg`;
+- [x] `.Transform.Rotate.90` → `rotate:90deg`; `Rotate.Neg.12` → `rotate:calc(12deg * -1)`;
       `Token.TransformRotateRaw(value: "17deg")` constructs; no payload leaf inside a section; the
       rotate dispatchers are exhaustive with no `_` arm.
-- [x] `Scale.75` → `scale:.75`; `ScaleX.50` → `scale:.5 1` and `ScaleY.50` → `scale:1 .5`, asserted
-      adjacently; `Scale.100` → `scale:1`.
+- [x] `Scale.75` → the three `--tw-scale-*` at `75%` and the reader; `ScaleX.50` → `--tw-scale-x:50%`
+      and `ScaleY.50` → `--tw-scale-y:50%`, asserted adjacently; the reference file's `scale:.5` /
+      `scale:.5 1` asserted absent; `[.ScaleX.50, .ScaleY.150]` composes.
 - [x] The ten one-axis translate rows write their axis's variable and the two-variable composition;
       `TranslateX.1` carries `calc(var(--spacing) * 1)`; no `rem` anywhere in the block;
       `[.TranslateX.Half, .TranslateY.Half]` writes both variables; every translate sheet carries the
@@ -79,7 +80,7 @@ leaves' `1px` is the reference's own value).
       `@property` blocks bring upstream's `properties` layer", "renderDocument — no `@property` block,
       no `properties` layer".
 - [x] Origin, style, backface, perspective, perspective-origin and zoom rows return the reference's
-      strings; `scale:.5` and `zoom:0.5` are asserted adjacently; the perspective keywords are theme
+      strings; a scale percentage and `zoom:0.5` are asserted adjacently; the perspective keywords are theme
       references with no `px`, contributed by `transformEntries()`.
 - [x] `Shorthand.Cpu` is the skew chain and `.Gpu` `translateZ(0)` + the chain, with no `@property`
       block; a `Cpu` reads the chain a `SkewX` writes — "Transform.Shorthand — upstream v4's three rows",

@@ -2,9 +2,9 @@
 
 **Three questions are open** (lg-a, lg-b, ck2-c). Implementation choices wait for the maintainer to confirm or reverse them:
 front 24's (24-a…c, 24-g), `01-std`'s (01std-a, 01std-c…e, std-a…c), `00 · 23-std-purity`'s (23-a…c), front 95's
-(95-a…e), `00 · 16-formatter`'s (16-a…b), track C's (26-a, 27-a, 30-b…e, 31-a), `00 · 04-js` /
+(95-a…e), `00 · 16-formatter`'s (16-a…b), track C's (26-a…b, 27-a, 30-b…e, 31-a), `00 · 04-js` /
 `05-wasm`'s (0405-b), `00 · 01-checker`'s (01c-a…b), `checker-rows-2`'s (ck2-a, ck2-b, ck2-d, ck2-e),
-track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…e) and the host methods' (lem-a…f). Three
+track D's (05emilia-a…l), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…e) and the host methods' (lem-a…f). Three
 questions are open: the language-gaps sweep's lg-a and lg-b, and `checker-rows-2`'s ck2-c (§ Open). Every other question raised so far is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 24-f is decision 143 (library resolution stops at the
 enclosing checkout; dependencies are transitive); the next free number is **144**.
@@ -778,6 +778,20 @@ each.
 > digest, and the render still names no rakun type; onze wires it like `allowedRedirects`.
 > **Blocks.** front 31's "correlates with front 17's log line" box.
 
+### 26-b · The query is reachable only through a marking hook; the payload's `d` is the mark
+
+> **Raised by:** `status.md`'s `03-rakun` front 22 / `04-jhonstart` dynamic-marking row
+> **Measured.** `PageContext.query` was a public field, so a page could read the query without
+> marking the render dynamic; botopink has no private field. jhonstart's payload wrote `d` as a
+> constant `true`. On erlang each boundary renders in its own process, whose process dictionary a
+> flag set there does not reach.
+> **Options.** (a) Drop `query` from `PageContext`; `searchParams()` and `request()` set a flag in the
+> router's host store; `renderWith` clears it; `Resolved.dynamic` carries a boundary's flag back;
+> `d` is the flag. (b) Keep the field and document a direct read as undefined for caching. (c) Keep
+> `d` constant `true`.
+> **Recommendation.** (a) — implemented (`streaming_test.bp` "dynamic: …"). `request()` marks on any
+> read, headers and cookies included, as Next's dynamic APIs do.
+
 ## Front 00 · 04-js / 05-wasm — choices made in implementation, to confirm
 
 Decided by the implementation of 04-js and 05-wasm; the maintainer confirms or reverses each.
@@ -915,6 +929,45 @@ local change in the named front.
 > changes for a document without a transform (no `properties` layer is declared).
 > **Blocks.** Nothing. `scale-*` still writes `scale:` directly where upstream writes `--tw-scale-*`
 > and percentages — `status.md` records it.
+
+### 05emilia-j. A selector-list modifier is a list of one-`&` variants (front 34, front 56)
+
+> **Raised by:** `reference-coverage.md`'s `marker:` / `selection:` rows
+> **Measured.** Tailwind 4.3.2 compiles `marker:flex` to four rules — `& *::marker`, `&::marker`,
+> `& *::-webkit-details-marker`, `&::-webkit-details-marker` — and `selection:` to two. "The element
+> and its descendants" cannot be one selector with one `&` (a pseudo-element cannot sit inside
+> `:is()`), and front 56's `checkVariantSelector` refuses two `&` with no opt-out.
+> **Options.** (a) A LIST of one-`&` variants (`markerVariants()`, `selectionVariants()`), the inner
+> sheet wrapped once per variant by `nestVariants` — several rules, upstream's order. (b) Keep the
+> reference's `& ::marker` (descendants only). (c) Let `Variant` carry a selector list.
+> **Recommendation.** (a) — implemented: front 56's one-`&` rule is untouched and the output is
+> upstream's; front 34's "one `Variant` fn per name" becomes "one fn per name, a list for these two".
+
+### 05emilia-k. The negative half step is `spacingNegHalf(n)`; `spacingHalf` refuses a negative `n` (front 54)
+
+> **Raised by:** `status.md`'s front 54 row (`spacingHalf` cannot spell `-0.5`)
+> **Measured.** `spacingHalf(n: i32)` takes the whole part; `-0` is `0`, so `-mt-0.5` had no token.
+> Upstream 4.3.2: `-mt-0.5` is `margin-top: calc(var(--spacing) * -0.5)`.
+> **Options.** (a) `spacingNegHalf(n)` — the sign in the name, `n` the magnitude's whole part —
+> and `spacingHalf` aborting on a negative `n`, so every rung has one spelling. (b) `spacingHalf(n,
+> negative: bool)`. (c) A string-typed step (`"0.5"`, `"-0.5"`).
+> **Recommendation.** (a) — implemented; every `*.Neg.Half` gains `0`.
+
+### 05emilia-l. Confirming a column moves its whole family to upstream's form (fronts 35–45)
+
+> **Raised by:** `status.md`'s spec-writing-rule row and fronts 36/47's two flagged spellings
+> **Measured.** Tailwind 4.3.2, compiled: a fraction is `calc(1 / 2 * 100%)` on `w-*`, `inset-*`,
+> `basis-*` and `translate-*`; `opacity-60` is `opacity: 60%`; `-rotate-12` is
+> `rotate: calc(12deg * -1)`; `shadow-[…]` writes `--tw-shadow` and the five-channel reader;
+> `transition-[…]` writes the property with the timing and duration defaults.
+> **Options.** (a) Move each family whole to upstream's form, one helper per shape (`fraction(n, d)`),
+> so the library keeps one convention. (b) Change only the unconfirmed rows. (c) Keep the reference's
+> spellings and document the divergence.
+> **Recommendation.** (a) — implemented. `rawTransitionProperty` takes the presets' defaults
+> (`var(--ease-out)`, `150ms`) rather than upstream's `var(--tw-ease, …)`, because the presets beside it
+> have not moved; the presets' own shape, `backdrop-opacity`'s `opacity(0.5)` (upstream
+> `opacity(50%)`), `border-spacing` (upstream's `--tw-border-spacing-*`) and `-webkit-backdrop-filter`
+> are the same kind of divergence in families no open row names — `status.md` records them.
 
 ## `libs-external-methods` (host functions as methods of their owner) — choices made in implementation, to confirm
 

@@ -147,7 +147,6 @@ fn route(pattern: string, slug: string) -> PageContext {
         pathname: "/blog/" + slug,
         pattern: pattern,
         params: Dict.empty().insert("slug", slug),
-        query: Dict.empty(),
         rest: [],
     );
 }

@@ -26,7 +26,7 @@ pub type Options(theme: Theme, base: Rule[], prefix: string, important: bool, la
 ```
 
 - **`selector` is a nesting template** with exactly one `&` standing for the class (`&`, `&:hover`,
-  `[dir="rtl"] &`, `:is(& > *)`, `&:is(:where(.group):hover *)`). No `&` is a literal selector
+  `.dark &`, `:is(& > *)`, `&:is(:where(.group):hover *)`). No `&` is a literal selector
   (54's `:root`, 55's reset); two or more is refused when the variant is applied, naming the
   selector, with no opt-out. `atRules` is outermost-first; `declarations` is `;`-joined, no braces.
 - **Constructors:** `emptySheet()`, `declSheet(decls)` (`declSheet("")` is empty), `staticSheet(layer,

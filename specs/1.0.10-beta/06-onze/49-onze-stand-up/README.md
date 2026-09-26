@@ -170,7 +170,7 @@ relative one against the route table, an absolute one against `allowedRedirects`
 on a signal, reads no `nav:` reason and calls none of rakun's signals; `renderStream` answers no
 outcome for it to read.
 
-The vocabulary — `PageContext(pathname, pattern, params, query, rest)`, `LayoutProps.children` — is
+The vocabulary — `PageContext(pathname, pattern, params, rest)` (no `query`: `searchParams()` reads it and marks the render dynamic), `LayoutProps.children` — is
 jhonstart front 30's, and onze does not restate it as `PageProps`/`Params`: a second name for every
 value in the stack is a translation layer and a class of bugs.
 

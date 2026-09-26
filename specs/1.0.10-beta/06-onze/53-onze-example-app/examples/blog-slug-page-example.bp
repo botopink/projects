@@ -134,7 +134,6 @@ fn postRoute(slug: string) -> PageContext {
         pathname: "/blog/" + slug,
         pattern: "/blog/[slug]",
         params: Dict.empty().insert("slug", slug),
-        query: Dict.empty(),
         rest: [],
     );
 }

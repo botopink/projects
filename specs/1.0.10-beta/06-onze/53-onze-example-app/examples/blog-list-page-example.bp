@@ -89,7 +89,6 @@ fn blogRoute() -> PageContext {
         pathname: "/blog",
         pattern: "/blog",
         params: Dict.empty(),
-        query: Dict.empty(),
         rest: [],
     );
 }

@@ -15,7 +15,7 @@
 // Spelling reminders, all three real and all three different:
 //   declaration     Opacity { 0, 5, 10, ... }
 //   expression      .Effect.Opacity.60
-//   `case` pattern  __60 -> "opacity:0.6";
+//   `case` pattern  __60 -> "opacity:60%";
 
 import {emilia, flush, Token} from "emilia";
 

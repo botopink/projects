@@ -27,7 +27,7 @@ navigates through six free functions over one host cell. Everything is reached a
 | The pair codec | std's `encoding.formParse` / `formStringify` (decision 116 rule 4); the package carries no copy |
 | The build | `snapshot()` — five cells in, the record out; no `?T` unwrap that can fail |
 | The writer | `fill(path, params, search, pattern, selected)` — the one way route state is installed, every field at once; `params`/`search` querystring-encoded as the payload's `m`/`q` carry them |
-| The hooks | `router` · `pathname` · `params` · `searchParams` · `selectedLayoutSegment` · `selectedLayoutSegments` — each `-> @Component<ElementBase, T>`, activated with `use`; `selectedLayoutSegments()` is root-first |
+| The hooks | `router` · `pathname` · `params` · `searchParams` (the only reader of the query — `PageContext` has no `query` field — and it marks the render dynamic, 26-b) · `selectedLayoutSegment` · `selectedLayoutSegments` — each `-> @Component<ElementBase, T>`, activated with `use`; `selectedLayoutSegments()` is root-first |
 | The verbs | `push` · `replace` · `back` · `forward` · `refresh` · `prefetch` — free functions over `__jhNavigate`, `-> i32` nobody reads; `lastNavigation()` answers `"<kind> <href>"` |
 | The envelope's signal | `navigationFor(wire)` (pure: `""`, `"not-found"`, `"replace <location>"`) · `applySignal(wire)` — the `n` field read with `routing`'s `signalFromWire` |
 | The route of a URL | `resolveRoute(tableWire, path, search)` — `routing`'s `parseTable` + `matchPath` over the payload's `t`; unmatched answers `pattern: ""`, `params: []` |

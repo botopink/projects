@@ -362,9 +362,9 @@ pub fn button() -> Token[] {
 ```css
 .e{display:inline-flex;align-items:center;column-gap:calc(var(--spacing) * 2);padding-left:calc(var(--spacing) * 4);padding-right:calc(var(--spacing) * 4);padding-top:calc(var(--spacing) * 2);padding-bottom:calc(var(--spacing) * 2);border-radius:var(--radius-md);background-color:var(--color-indigo-600);color:var(--color-white);font-weight:600;box-shadow:var(--shadow-sm);outline:2px solid transparent;outline-offset:2px;cursor:pointer;user-select:none;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;transition-timing-function:var(--ease-out);transition-duration:150ms;transition-duration:150ms}
 .e:focus-visible{--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);--tw-ring-color:var(--color-indigo-500);--tw-ring-offset-width:2px}
-.e:active{scale:.95}
-.e:disabled{opacity:0.5;cursor:not-allowed;pointer-events:none}
-@media (hover: hover){.e:hover{background-color:var(--color-indigo-700);box-shadow:var(--shadow-md);scale:1.05}}
+.e:active{--tw-scale-x:95%;--tw-scale-y:95%;--tw-scale-z:95%;scale:var(--tw-scale-x) var(--tw-scale-y)}
+.e:disabled{opacity:50%;cursor:not-allowed;pointer-events:none}
+@media (hover: hover){.e:hover{background-color:var(--color-indigo-700);box-shadow:var(--shadow-md);--tw-scale-x:105%;--tw-scale-y:105%;--tw-scale-z:105%;scale:var(--tw-scale-x) var(--tw-scale-y)}}
 ```
 
 `examples/interactive-button/test/__snapshots__/ast/button-the-focus-ring-is-one-rule.snap`
@@ -628,7 +628,7 @@ pub fn primaryButton() -> Token[] {
 `examples/arbitrary-and-compose/test/__snapshots__/css/arbitrary-dragging-row.snap`
 ```css
 .e{display:flex;cursor:grab}
-.e.is-dragging{box-shadow:var(--shadow-lg);opacity:0.75}
+.e.is-dragging{box-shadow:var(--shadow-lg);opacity:75%}
 ```
 
 `examples/arbitrary-and-compose/test/__snapshots__/css/arbitrary-progressive-grid-and-the-two-widths.snap`
