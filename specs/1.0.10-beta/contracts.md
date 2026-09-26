@@ -114,7 +114,7 @@ id = "a_" + hash.hmacSha256(buildSecret, module + "." + name + ":" + buildId).sl
 ```
 
 Computed only on the server, echoed by the client, never derived in the browser. `hash` is std's
-hashing module under decision 106 (`crypto` until `00 · 23-std-purity` lands).
+hashing module under decision 106 (it absorbed `crypto`'s digests).
 
 Form binding, written by jhonstart front 67 with the id onze hands it:
 `<form method="post" action="<pathname>" data-jh-a="<id>">` plus a hidden field named

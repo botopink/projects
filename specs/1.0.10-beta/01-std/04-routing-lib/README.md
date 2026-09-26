@@ -392,7 +392,7 @@ ways and agreeing case for case; the `:param` grammar's matches, captures and re
 
 ## Gate
 
-- [ ] `zig build test` from a **cold** runtime cache, green, in the compiler worktree (Step 2) — **open:** green on a warm cache on every commit; not re-run from a cold runtime cache
+- [x] `zig build test` from a **cold** runtime cache, green, in the compiler worktree (Step 2) — `scripts/gate.sh --cold` green at `feat` `ffe2db69` (compiler `b6ba65a3`), run from an rsync copy with `repository/botopink-lang` made a standalone repository: `zig build test` from a deleted runtime cache, runtime parity, `test-cli`, `test-libs` 58 / 0, `test-language` 799 passed / 28 expected / 0 failed, `test-docs`; and again at `00 · 23-std-purity`'s head
 - [x] `zig build test-libs` green — `routing` on both targets; std, rakun and jhonstart unchanged
       by this front's commits — `zig build test-libs` 58 passed / 0 failed (19 restricted as pinned), emilia and erika included, run from an rsync copy of the worktree; std unchanged, jhonstart unchanged, rakun changed only by the moved tests (388 → 369 / 0 commonJS, 386 → 367 / 2 erlang with the pinned reds; rakun-web 104 / 0 both)
 - [x] the compiler's `snapshots/codegen/**` byte-identical — `zig build test` green, no `.snap.md.new`; `tests/language/run.sh --target all` 799 passed / 28 expected / 0 failed

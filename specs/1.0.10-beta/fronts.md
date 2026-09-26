@@ -153,8 +153,8 @@ test story stands on, and one compiler carve-out.
 
 | Front / item | Source it owns | Tests it owns |
 |---|---|---|
-| **asserts** ([`01-std/asserts-api.md`](./01-std/asserts-api.md)) | `libs/std/src/asserts.bp` (expands the existing module; front 95's function table; every existing function byte-unchanged) | inline `test` blocks in `asserts.bp` |
-| **snapshots** ([`01-std/snapshots.md`](./01-std/snapshots.md)) | `libs/std/src/snapshots.bp` (new: `path(loc)`, the `.snap` writer/reader, the `.new` refusal) · its `pub mod` line in `libs/std/src/root.bp` (appended under the F01 rule) | inline `test` blocks in `snapshots.bp`, plus one `__snapshots__/` fixture beside `libs/std/src/` |
+| **asserts** ([`01-std/asserts-api.md`](./01-std/asserts-api.md)) | `libs/std/src/testing/asserts.bp` (expands the existing module; front 95's function table; every existing function byte-unchanged) | inline `test` blocks in `asserts.bp` |
+| **snapshots** ([`01-std/snapshots.md`](./01-std/snapshots.md)) | `libs/std/src/testing/snapshots.bp` (new: `path(loc)`, the `.snap` writer/reader, the `.new` refusal) · its `pub mod` line in `libs/std/src/root.bp` (appended under the F01 rule) | inline `test` blocks in `snapshots.bp`, plus one `__snapshots__/` fixture beside `libs/std/src/` |
 | **`@src()`** ([`01-std/src-builtin.md`](./01-std/src-builtin.md)) | the `SourceLocation` record and `@src` entry in `libs/std/src/builtins.d.bp`; **by carve-out from `00`**: the builtin's typing site in `comptime/infer.zig` and the literal lowering in each of the four backends — named file by file in `src-builtin.md`, granted in `00`'s README before the work opens | one `tests/language/` cell per backend (coordinated with `00 · 12-language-tests`, which owns that directory) |
 | **old `onze` removal + `onze13 → onze`** | `repository/onze/**` (the mocking library — removed; its assertions live in `asserts.bp` from this milestone on) · every `onze13` in a directory name, an `**Owns:**` line or a manifest under `specs/1.0.10-beta/**` (the history rows of `unification.md` and the carried front 95 excepted) | `grep -rl onze13 repository` answers nothing |
 
