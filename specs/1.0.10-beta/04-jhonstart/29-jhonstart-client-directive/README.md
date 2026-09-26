@@ -231,8 +231,8 @@ tell the two apart by return type: the server/client split is front 68's graph w
 request-scope predicate in Step 5), not this decorator's.
 
 **Acceptance:**
-- [ ] `#[client]` on `fn X() -> Element` and on `fn X() -> @Component<ElementBase, Element>` emits
-      `__jhClient_X` returning `"X"`
+- [x] `#[client]` on `fn X() -> Element` and on `fn X() -> @Component<ElementBase, Element>` emits
+      `__jhClient_X` returning `"X"` — `test/client_test.bp` "client: the marker emits a pure fn returning the component's name" (`@Component`) and "client: the marker fires on a plain -> Element component too" (jhonstart `117aed4`)
 - [x] `#[client]` on a `type` fails with the placement message — `test/client_test.bp` header, refusal 1 (`client.bp` `decl.fail`)
 - [x] `#[client]` on a fn returning `@Task<T>` or `@Result<T, E>` fails — a loader is not a
       component; a server component reached from a `#[client]` module is refused by front 68's
@@ -255,11 +255,11 @@ The whitelist, exactly: `string`, `i32`, `f64`, `bool`, `string[]`, `i32[]`.
 ### Step 3 — `clientMount` and `serverSlot`
 
 **Acceptance:**
-- [ ] `renderToString(clientMount(Island(id: "i0", component: "Counter", props: [#("start", "3")]), []))`
-      is `<div data-jh-i="i0"></div>` — the id only; the component and props are payload, not markup
+- [x] `renderToString(clientMount(Island(id: "i0", component: "Counter", props: [#("start", "3")]), []))`
+      is `<div data-jh-i="i0"></div>` — the id only; the component and props are payload, not markup — `test/client_test.bp` "client: the placeholder carries the id only — the name and props are payload"
 - [x] children passed to `clientMount` render inside the placeholder, unmodified — `test/client_test.bp` "client: children render inside the placeholder, unmodified"
-- [ ] `islandEntry` produces `#("i0", "Counter", "start=3")` — the payload `i` row for that island
-- [ ] `serverSlot` emits `data-jh-s="1"` and nothing else
+- [x] `islandEntry` produces `#("i0", "Counter", "start=3")` — the payload `i` row for that island — `test/client_test.bp` "client: islandEntry is the payload's i row — id, component, encoded props"
+- [x] `serverSlot` emits `data-jh-s="1"` and nothing else — `test/client_test.bp` "client: serverSlot emits data-jh-s=\"1\" and nothing else"
 - [x] neither function reaches a host cell; both render on erlang and js — `client.bp` declares no cell; `test/client_test.bp` green on both rows
 
 ### Step 4 — Hydration entry and `server-only`
@@ -317,10 +317,10 @@ front 94 owns `src/root.bp` and `botopink.json`'s `files` list; this front hands
 jhonstart writes the `data-jh-` prefix.
 
 **Acceptance:**
-- [ ] the island pair is `#("data-jh-i", "i0")` and the slot pair `#("data-jh-s", "1")`, each spelled
-      once in `client.bp`; no `data-onze-` string is left under `modules/jhonstart/src/`
+- [x] the island pair is `#("data-jh-i", "i0")` and the slot pair `#("data-jh-s", "1")`, each spelled
+      once in `client.bp`; no `data-onze-` string is left under `modules/jhonstart/src/` — `client.bp` `islandAttrOf` / `serverSlotAttr`; `grep -rn data-onze- modules/*/src` is empty
 - [ ] `data-jh-on-click` is the handler marker; the props cell is `__jhClientPropsRaw`
-- [ ] the island and slot snapshots are re-recorded once, with only the attribute names changed
+- [x] the island and slot snapshots are re-recorded once, with only the attribute names changed — jhonstart `117aed4`
 
 ## Examples
 

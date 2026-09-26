@@ -213,10 +213,10 @@ pub fn Link(props: LinkProps, children: Children) -> Element {
 ```
 
 **Acceptance:**
-- [ ] `renderToString(Link(linkProps("/about"), [text("About", attrs: [])]))` is
+- [x] `renderToString(Link(linkProps("/about"), [text("About", attrs: [])]))` is
       `<a href="/about" data-jh-l="1">About</a>` — two attributes, in that order, matching the
-      `data-jh-` family in `contracts.md § 2`
-- [ ] `prefetch: false` adds `data-jh-prefetch="0"` and nothing else
+      `data-jh-` family in `contracts.md § 2` — `test/link_test.bp` "link: the common anchor is href plus the marker, in that order" (jhonstart `117aed4`)
+- [x] `prefetch: false` adds `data-jh-prefetch="0"` and nothing else — `test/link_test.bp` "link: prefetch false adds data-jh-prefetch=\"0\" and nothing else"
 - [x] `target: "_blank"` emits a real `target` attribute, not a `data-` one — `test/link_test.bp` "link: target emits a REAL target attribute, not a data- one"
 - [x] `Link` reaches no host cell and renders identically on erlang and js — `link.bp` declares no cell; `test/link_test.bp` green on both rows
 
@@ -336,11 +336,11 @@ The pure half shipped with the `data-onze-` link markers. Decision 113 gives eve
 writes the `data-jh-` prefix and makes the mount an ordinary import.
 
 **Acceptance:**
-- [ ] `link.bp` writes `data-jh-l`, `data-jh-prefetch`, `data-jh-replace`, `data-jh-scroll`; no
-      `data-onze-` string is left under `modules/jhonstart*/src/`
+- [x] `link.bp` writes `data-jh-l`, `data-jh-prefetch`, `data-jh-replace`, `data-jh-scroll`; no
+      `data-onze-` string is left under `modules/jhonstart*/src/` — jhonstart `117aed4`; `grep -rn data-onze- modules/*/src` is empty
 - [ ] the four host cells are `__jhLinkMount`, `__jhLinkPrefetch`, `__jhLinkStatus`,
       `__jhLinkRouteKind`, and the entry imports `linkMount` by name — no `__onze*` spelling exists
-- [ ] the Step 2 literal `<a href="/about" data-jh-l="1">About</a>` is the snapshot, re-recorded once
+- [x] the Step 2 literal `<a href="/about" data-jh-l="1">About</a>` is the snapshot, re-recorded once — `test/link_test.bp`, re-recorded in `117aed4`
 
 ## Examples
 
