@@ -140,6 +140,7 @@ annotation, `@Task<T>`, only `@Result` fails, `@Iterator<T>` / `@Stream<T>`, `as
 - [x] `00 · 02-erlang` step 2 (C-07 erlang half) — decision 8 at run time on erlang: compiler `6f7ef37d`. `x is i32` and an `i32` arm test by value (`is_number(X) andalso X == trunc(X)` + range; `f64` is any number) and the narrowed value is converted — `N = trunc(I32)` on an arm binder, `X@n = trunc(X)` opening `if (x is i32)`'s then-arm; `==`/`!=` with an `unknown` operand are `==`/`/=`, typed operands keep `=:=`; `unknown` stores nothing. `test/case_unknown.bp` 6/6 on erlang, its line gone; one run-log fixture pins D1–D3; no snapshot moved
 
 ## In analysis
+- [ ] `00 · 25-gate-perf` (C-33) — step 1 of 4 · worktree `.tasks/25-gate-perf` (`front/25-gate-perf`) · baseline measured at compiler `82e32e36` under other agents' load: warm gate 144.3 s, cold 264.8 s, 1044.8 CPU-s warm (`test-libs` 52.6 s, `zig build test` 25.9 s warm / 138.0 s cold, `test-language` 28.9 s, `test-cli` 16.9 s, `test-docs` 8.4 s); the shell runners' pool is being worked
 - [ ] `00 · 05-wasm` — worktree `.tasks/wasm-refusals` (`fix/wasm-refusals`): `String.at` lowered rather than refused (the pieces were already in `wat.zig`), and a host-backed `declare fn` with no wasm host refused at compile time in the same words the other three backends use — no suite cell carries a `.targets` exception any more. Merging onto C-01 half 2
 
 ## Pending
