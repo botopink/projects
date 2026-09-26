@@ -288,9 +288,9 @@ pub fn snapshot() -> RouterState {
 - [x] `snapshot()` of `("/blog/hi", "slug=hi", "", "/blog/[slug]", 0)` round-trips to the record in step 1 — `test/router_test.bp` "router: the five cells round-trip into the record of step 1"
 - [x] each cell maps to exactly one payload key, and the mapping table is in `docs.md` — `docs.md` § *The snapshot, the five cells and `fill`*
 - [x] an empty params string yields `[]`, not `[#("", "")]` — `test/router_test.bp` "router: an empty params string yields the empty list, not one empty pair"
-- [ ] `snapshot()` of search `q=a%20b` has `searchParam("q") == "a b"` — the value decoded, not
+- [x] `snapshot()` of search `q=a%20b` has `searchParam("q") == "a b"` — the value decoded, not
       `a%20b` (the landed stand-in's answer) — and `encoding.formStringify([#("q", "a b")])`, the
-      form the router writes back into a URL, is `q=a%20b`; one cell asserts both directions
+      form the router writes back into a URL, is `q=a%20b`; one cell asserts both directions — `test/router_test.bp` "router: a percent-encoded search value is decoded, and written back encoded" (jhonstart `0101ad1`)
 - [x] `snapshot()` performs no `?T` unwrap that can fail — `router.bp` `snapshot()`
 
 ### Step 3 — The five hooks
@@ -435,23 +435,23 @@ type-checked, not executed, exactly as `hooks.bp:104-117` does for `Counter`.
 
 jhonstart names no rakun symbol (decision 113); the matcher is `routing`'s (decision 115).
 
-- [ ] `router.bp` imports `parseTable` and `matchPath` from `"routing"` and defines neither; the
+- [x] `router.bp` imports `parseTable` and `matchPath` from `"routing"` and defines neither; the
       router takes no `match` parameter; no `rakun` identifier appears under
       `modules/jhonstart/src/`, and jhonstart's `botopink.json` lists no `routing` dependency
-      (bundled, like std)
+      (bundled, like std) — `resolveRoute`; `test/router_test.bp` "router: resolveRoute matches with routing's matchPath over the payload's t"
 - [ ] the payload the client half reads is `globals.payload` (front 30's registry), never a literal
       `__onze`
 
 ### Decision 116's spellings
 
-- [ ] `decodePairs` and `encodePairs` (`router.bp:123-162`) are deleted; `router.bp` and front 28's
+- [x] `decodePairs` and `encodePairs` (`router.bp:123-162`) are deleted; `router.bp` and front 28's
       `server.bp` decode with `encoding.formParse` and encode with `encoding.formStringify`, and
-      `git grep -n "fn decodePairs\|fn encodePairs"` under `modules/jhonstart/` is empty
-- [ ] the `a b` cell above is green on erlang (and on commonJS through front 27's row)
-- [ ] an action or refresh envelope's `n` is read with `routing`'s `signalFromWire`; `router.bp`
-      defines no `signalFromWire` and no `"R|"` parser of its own
-- [ ] `refresh()` sends `refreshValue()` imported from `"actions"`; no `"refresh"` header literal
-      under `modules/jhonstart/src/`
+      `git grep -n "fn decodePairs\|fn encodePairs"` under `modules/jhonstart/` is empty — jhonstart `0101ad1`
+- [x] the `a b` cell above is green on erlang (and on commonJS through front 27's row) — both rows
+- [x] an action or refresh envelope's `n` is read with `routing`'s `signalFromWire`; `router.bp`
+      defines no `signalFromWire` and no `"R|"` parser of its own — `navigationFor` / `applySignal`; `test/router_test.bp` "router: the four n forms pick the navigation the router performs"
+- [x] `refresh()` sends `refreshValue()` imported from `"actions"`; no `"refresh"` header literal
+      under `modules/jhonstart/src/` — `test/router_test.bp` "router: refresh() carries actions' refreshValue, spelled nowhere here" (`"refresh"` remains only as the navigation cell's verb name)
 
 ## Definition of done
 
@@ -462,9 +462,9 @@ jhonstart names no rakun symbol (decision 113); the matcher is `routing`'s (deci
 - [x] the five cells map one-to-one onto payload keys `p`/`m`/`q`/`r` plus the per-layout
       `selected`, and the mapping table is in `repository/jhonstart/docs.md` — `docs.md` § *The snapshot, the five cells and `fill`*
 - [x] `segments` is derived from `pattern`, never transported — `RouterState.segments()` = `patternSegments(self.pattern)`
-- [ ] the router has no matcher and no table parser of its own; it imports both from `routing`
-- [ ] the router has no pair codec and no signal-wire decoder of its own: std `encoding` and
-      `routing`'s `navigation` (decision 116)
+- [x] the router has no matcher and no table parser of its own; it imports both from `routing` — `router.bp` imports both from `routing`
+- [x] the router has no pair codec and no signal-wire decoder of its own: std `encoding` and
+      `routing`'s `navigation` (decision 116) — std `encoding`, `routing`'s `navigation`
 - [ ] one `#[@External.Node]`-only cell in the file, `__jhMount(selector, html)`, which `clientApp`
       renders through; history goes through `__jhNavigate`, the one dual-target cell
 - [ ] `clientApp` handles `notFound` / `redirect` in a client-only app as front 30's render does on

@@ -260,11 +260,11 @@ RequestData>`, activated as `use request()` inside a `fn … -> @Component<Eleme
 - [x] every cell is dual-target — `#[@External.Erlang("jhonstart_server", …)]` with its
       `#[@External.Node]` twin in `./server_runtime.mjs`; there is no erlang-only cell in the file,
       and the member compiles on both rows — `server.bp` six cells + `fill`, twins in `server_runtime.mjs` / `sidecars/jhonstart_server.erl`; 120/120 on both rows
-- [ ] `enterRequest` is the only writer and `leaveRequest` its pair; outside `server.bp` and front
-      30's `render.bp` nothing calls either (grep in the gate)
+- [x] `enterRequest` is the only writer and `leaveRequest` its pair; outside `server.bp` and front
+      30's `render.bp` nothing calls either (grep in the gate) — `server.bp` (jhonstart `0101ad1`); in `src/` only `server.bp` names either until front 30's `render.bp`
 - [x] `cookies()` and `headers()` are the only two shortcuts; `after`, `connection`, `draftMode` and
       memoization are front 62's, not re-declared here and not called from jhonstart — `server.bp`
-- [ ] `request()` after `enterRequest(req)` reconstructs the six fields of `req`
+- [x] `request()` after `enterRequest(req)` reconstructs the six fields of `req` — `test/server_test.bp` "server: request() after enterRequest(req) reconstructs the six fields"
 - [x] no cell in `server.bp` names a rakun module, and `grep -rn rakun modules/jhonstart/src` is
       empty — `grep -rn rakun modules/jhonstart/src` names rakun only in comments
 
@@ -329,7 +329,7 @@ not provide a second answer.
 - [x] the convention is written in `repository/jhonstart/docs.md` with the rule about lambdas — `docs.md` § *The loader convention*
 - [x] the test suite contains a component with two sequential awaits at statement level — `test/server_test.bp` "server: two sequential awaits at statement level, then a sync render"
 - [x] `server.bp` exports no `awaitAll`-style helper, and the README says front 02 owns that — `server.bp`; `docs.md` names front 02
-- [ ] the doc names the erlang eager-`@Task` fact and cites `libs/std/src/http.bp:16-18`
+- [x] the doc names the erlang eager-`@Task` fact and cites `libs/std/src/http.bp:16-18` — `docs.md` § *The loader convention*
 
 ### Step 5 — Module promotion
 
@@ -384,8 +384,8 @@ erlang, and makes every other assertion construct its `RequestData` explicitly.
       to front 94
 - [x] `RequestData`, four accessors, `request`, `cookies`, `headers` all `pub` and tested — `test/server_test.bp`
 - [x] every cell is dual-target; no erlang-only cell in the file — `server.bp`
-- [ ] `enterRequest` / `leaveRequest`, their one caller (front 30's render) and the `k=v&k=v`
-      encoding are written down in `repository/jhonstart/docs.md`
+- [x] `enterRequest` / `leaveRequest`, their one caller (front 30's render) and the `k=v&k=v`
+      encoding are written down in `repository/jhonstart/docs.md` — `docs.md` § *The six cells, and where they point*
 - [x] the `Http` phantom base and the `Request` behavior are gone, and `AGENTS.md` says why — `AGENTS.md` § *The `Http` base, and why it is gone*
 - [ ] every untrusted value in an example passes through front 01's `escape.html` /
       `escape.attribute`; this front hand-rolls no escaping
