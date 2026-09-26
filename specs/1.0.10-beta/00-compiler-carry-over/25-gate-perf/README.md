@@ -111,9 +111,15 @@ before comparing; `check-docs.sh` now writes its report in fence order with a pl
 runs the checks on the pool, and prints the report with each placeholder replaced by its verdict.
 
 **Acceptance:**
-- [ ] `run.sh` and `check-docs.sh`, default vs `--jobs 1` vs the pre-change script: identical stdout,
-      stderr and exit status on the real suite and on a fixture with red cells
-- [ ] § Measurements row
+- [x] `run.sh` and `check-docs.sh`, default vs `--jobs 1` vs the pre-change script: identical stdout,
+      stderr and exit status — the whole language suite (644 passed / 29 expected / 0 failed, exit 0;
+      default 18.3 s, `--jobs 1` 106.5 s, the old `--jobs 4` 28.8 s), `--target beam` (136 / 7 / 1,
+      exit 1 — the one pre-existing `run/effect_method.bp` red), three red cells planted — a wrong
+      `.out`, a parse error, a failing `assert` next to a passing one (646 / 29 / 8, exit 1); the docs
+      (72 fences — 59 checked, 5 skipped, 0 failed; 8.5 s → 1.5 s, `--jobs 1` 9.0 s) and a docs
+      fixture with a failing module fence, a failing `body` fence, a `skip` with no reason, a project
+      with no `src/main.bp`, a failing project and an unknown directive (6 failed, exit 1)
+- [x] § Measurements row
 
 ### Step 2 — the independent stages side by side
 
@@ -164,7 +170,16 @@ One row per landed step, cumulative. Wall and CPU in seconds; "rest" is stages 2
 
 | Row | Date | Compiler | Warm total | Cold total | CPU warm | `zig build test` | `test-libs` | `test-language` | `test-cli` | `test-docs` | rest | Δ vs baseline (warm) | Load |
 |---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| baseline | 2026-09-26 | `82e32e36` | 144.3 | 264.8 | 1044.8 | 25.9 / 138.0 cold | 52.6 | 28.9 | 16.9 | 8.4 | 11.6 | — | other agents' gates, load 7–38 |
+| baseline | 2026-09-26 | `82e32e36` | 144.3 | 264.8 | 1044.8 | 25.9 / 138.0 cold | 52.6 | 28.9 | 16.9 | 8.4 | 11.6 | — | other agents' gates; load 22–27 (cold run 22–24) |
+| step 1 — the shell runners on the pool | 2026-09-26 | `112d248a` | 130.1 | 292.2 | 1071.0 | 23.6 / 154.4 cold | 56.5 | 19.9 | 17.5 | 1.5 | 11.3 | −14.2 s (−9.8 %) | other agents' gates; load 34–37 (cold run 7→37) |
+
+The cold total of step 1 is higher than the baseline's because the machine was: the stages step 1
+does not touch moved by +16 s (`zig build test` cold) and +7 s (`test-libs`) between the two runs.
+Per stage, step 1 is `test-language` 28.9 → 19.9 s warm (−31 %) and `test-docs` 8.4 → 1.5 s warm
+(−82 %), at +1 % gate CPU-seconds (`test-language` 189.5 → 215.2 CPU-s; more of its cells overlap,
+each a little slower). The earlier measurement that kept `--jobs 4` (`11-tooling`, "one job per CPU
+moved nothing measurable") was without the admission rule and under a different load; the
+comparisons above ran the three variants back to back on one tree.
 
 ## Gate
 
