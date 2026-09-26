@@ -469,6 +469,8 @@ generator and loop cells are re-spelled into these.
 - a `@Future<T>` body that throws or tries (open point 5 — `E = any` was an error channel
   `@Task<T>` does not have), and a `declare fn … -> @Future<T>` host binding (a rejection was its
   error; under `@Task<T>` it is fatal, decision 126).
+- a decorator comparing `decl.returnType` with a renamed wrapper's head (`"Future"`,
+  `"Generator"`, …): the reflection answers the new head (`"Task"`) after the migration.
 
 The codemod first normalises the pre-121 spellings guide.md § 9 lists (`#[@context]` /
 `@Context<B, R>`, `@Use<C, T>`, `#[@iterator]` / `@Iterator<T, E>`, `#[@asyncGenerator]` /
