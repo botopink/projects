@@ -4,7 +4,7 @@
 front 24's (24-a…c, 24-f…g), `01-std`'s (01std-a, 01std-c…e), `00 · 23-std-purity`'s (23-a…c), front 95's
 (95-a…e), `00 · 16-formatter`'s (16-a…b), track C's (26-a, 27-a, 30-b…e, 31-a), `00 · 04-js` /
 `05-wasm`'s (0405-b), `00 · 01-checker`'s (01c-a…b),
-track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…e) and the host methods' (lem-a…f). Every question raised so far is answered in
+track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…j) and the host methods' (lem-a…f). Every question raised so far is answered in
 [`decisions-taken.md`](./decisions-taken.md); the next free number is **143**.
 
 This file stays because the fronts will fill it again. A front that meets a question it cannot answer
@@ -390,6 +390,61 @@ fronts could land; the maintainer confirms or reverses each.
 > **Options.** (1) `decodeComponent` as above; (2) std's decode verbatim.
 > **Recommendation.** (1) — the restrictive default. With rakun's `percentDecode` gone, 95-e's
 > qualified import can return to `from "rakun"`; it is left as it is.
+
+### 03r-f · A cache key hashes with `hash.strongCacheKey`, not `contentHash`
+
+> **Raised by:** `12-rakun-cache` step 1
+> **Measured.** The README writes `namespace + ":" + contentHash(parts.join("\u{1f}"))`. A join lets
+> `["a\u{1f}b"]` equal `["a", "b"]` (the step's own first box), and std documents `contentHash` as a
+> djb2 fold that is trivial to collide on purpose — a key carries request input and, in the private
+> scope, a session id. std's `hash.strongCacheKey(parts)` length-frames every part and hashes with
+> SHA-256 truncated to 32 hex.
+> **Options.** (1) `namespace + ":" + hash.strongCacheKey(parts)`; (2) the README's form.
+> **Recommendation.** (1) — implemented. A cache that collides across a user boundary serves one user
+> another's page.
+
+### 03r-g · A private-scope read with no session runs the loader and stores nothing
+
+> **Raised by:** `12-rakun-cache` step 1
+> **Measured.** `CacheScope.Private` keys on the session id; a request may carry none, and the README
+> does not say what then happens. rakun-cache reads `optionalSession()` (front 18).
+> **Options.** (1) bypass: run the loader, store nothing; (2) create a session to key on; (3) raise.
+> **Recommendation.** (1) — implemented (`key_test.bp`). (2) makes a cache read create sessions and
+> cookies; (3) makes an anonymous page fail for a cache annotation.
+
+### 03r-h · A twin's key is `[method, args…]`, and `#[cacheEvict(name, false)]` evicts that key under every reader
+
+> **Raised by:** `12-rakun-cache` step 4
+> **Measured.** The README's `peekCachedProduct` reads `cacheKey("products", ["productJson", id])`, so
+> a `#[cacheable]` row is keyed by the method name and its arguments. "The key built from the
+> method's arguments" for `#[cacheEvict(name, false)]` then matches nothing unless it is built under
+> a reader's name.
+> **Options.** (1) evict `[m, args…]` for every `#[cacheable(name)]` method `m` of the behavior;
+> (2) key rows by arguments only (Spring's default key — two readers of one cache then share rows).
+> **Recommendation.** (1) — implemented (fixture `twin`, "removes only the rows its arguments key").
+
+### 03r-i · The Redis provider: rakun-session's wire, no stale window, a miss when Redis is down
+
+> **Raised by:** `12-rakun-cache` step 3
+> **Measured.** The README names front 13's client as the Redis transport; `rakun-client` speaks HTTP
+> only, and rakun-session already carries a RESP wire (`rkSessRedis`). Redis expires rows itself and
+> has no "serve once, then refresh" state.
+> **Options.** (1) reuse `rkSessRedis`; on Redis `revalidateTag` deletes; an unreachable Redis runs the
+> loader uncached (health reports DOWN); (2) a RESP client in `rakun-client`; (3) keep the stale
+> marker in a Redis hash.
+> **Recommendation.** (1) — implemented; `modules.md`'s `rakun-client` edge is not taken.
+
+### 03r-j · Outside a request `revalidateTag` / `revalidatePath` are legal and `updateTag` raises; `none` beats a per-cache type
+
+> **Raised by:** `12-rakun-cache` steps 3 and 5
+> **Measured.** The legality table has three columns (action, handler, render); a scheduled job or a
+> boot hook runs with no request frame. Separately, `rakun.cache.type=none` with
+> `rakun.cache.<name>.type=ets` is not settled.
+> **Options.** (1) no frame reads as phase `none`: the two revalidations are legal, `updateTag`
+> (read-your-own-writes, meaningless without a request) raises; the global `none` disables every
+> cache whatever its own type; (2) refuse all three outside a request; per-cache type wins.
+> **Recommendation.** (1) — implemented (`revalidate_test.bp`, `store_test.bp`): the kill switch is
+> Spring's `spring.cache.type=none` and must not be defeated by one line of configuration.
 
 ## Open
 ## Front 16 (formatter) — choices made in implementation, to confirm
