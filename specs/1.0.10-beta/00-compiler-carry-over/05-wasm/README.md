@@ -186,10 +186,15 @@ after the loop — the shape 1.0.4's WR1 (closure captures) touched. Reproduce a
 first: a `forEach` over a two-element array assigning to an outer `var`, printed after.
 
 **Acceptance:**
-- [ ] the probe in [Problem](#problem) prints `1` and `9`
-- [ ] `wasm | modules/std_import` leaves `expected-failures.txt`
-- [ ] a fixture in `src/codegen/tests/**` pins the minimal shape (a `forEach` writing an outer `var`) with a RUN LOG, so the next regression is caught before `Dict` is
-- [ ] the wrong-answer class is audited: any other shape that answers a value with exit 0 and no diagnostic is listed in `src/codegen/wat/AGENTS.md` or fixed
+- [x] the probe in [Problem](#problem) prints `1` and `9` — re-measured 2026-09-26 on `b6ba65a3`
+      (spelled `d.at(…)`: decision 63 renamed `lookup`)
+- [x] `wasm | modules/std_import` leaves `expected-failures.txt` — gone before this front re-opened;
+      the cell is green
+- [x] a fixture in `src/codegen/tests/**` pins the minimal shape (a `forEach` writing an outer `var`) with a RUN LOG, so the next regression is caught before `Dict` is —
+      `wat.zig` `option ---- a value assigned into a declared ?T is boxed like one`
+      (`[1, 2].forEach({ n -> seen = n }); @print(seen)` → `2`)
+- [x] the wrong-answer class is audited: any other shape that answers a value with exit 0 and no diagnostic is listed in `src/codegen/wat/AGENTS.md` or fixed —
+      § *Where this backend refuses to answer* and § *The carrier of a `?T`*
 
 ### Step 4 — `break <value>`
 
@@ -391,3 +396,42 @@ Measured while the cells were written: `case 9 { 1...9 { 1 } _ { 0 } }` prints `
 commonJS, `0` on erlang and **`256` — a heap address — on wasm**, and written where its type is known
 it does not compile at all. The cells are owed once `01 step 4` lands.
 
+---
+
+## Re-verified and continued — 2026-09-26, `front/04-05-js-wasm`
+
+Every row re-measured against `feat` (`b6ba65a3`) with `botopink run --target wasm` (wasmtime)
+before anything was written.
+
+| Row | State | Evidence |
+|---|---|---|
+| Step 1 F1, F5 | **holds** | `5.0`, `[1, 2]`, `#(1, "a")`; `run/tuple_print.bp` green, its line gone |
+| Step 1 F2, F3 | **holds** (C-01 half 3's descriptor header) | `run/print_formatter.bp` green on wasm |
+| Step 1 F4 (`Display`) | **open** | `run/display_print.bp` prints `Money(cents: 5)` where `$5` is owed |
+| Step 2 D1–D3 | **open** | `x is i32` over an `unknown` traps (`§4.2 is: no run-time test for this type on wasm`) — honest, not a wrong answer |
+| Step 3 `Dict` | **holds** | boxes above |
+| Step 4 `break <value>` | **superseded** by decision 105 (C-30) | |
+| Step 5 `==` on tuples | **holds** | `true` / `false` for `#(1, "a")` against `#(1, "a")` / `#(1, "b")` |
+| Step 6 `toUpperCase` / `toLowerCase` | **holds** | `AB` / `ab` (`$__str_case`) |
+| Step 7 function values | **holds** (front 05 step 7, `wat/AGENTS.md` § Function values) | |
+| Step 8 dead block-as-value | **struck** — measured: no such lowering (`wat/AGENTS.md`) | |
+| Step 9 row 1 (tail calls) | **holds** (`1914ea21`, in `feat`) | `run/tail_self_call.bp` green on four targets |
+| Step 9 row 2 (`es.map({ e -> e.key })`) | **holds** | `run/map_record_field_length.bp` prints `3` on wasm |
+| Step 9 row 3 (`?.` chain, second method) | **open** | |
+| Step 9 row 4 (beam) | **moved to 03** — `1380a66e` closed `modules/{field,method}_name_collision` on beam | |
+
+**Landed here** (compiler commit in `status.md`):
+
+- **A constructor in binding position** — `val Circle(r) = s;` / `val Sq(side) = q;` answered `0`
+  at exit 0 (the `.ctor` destructure fell to "unsupported destructure pattern" and bound nothing);
+  it reads each binding off its field's slot now — the twin of 04's JS-4.
+- **Calling the result of a call** — `adder(3)(4)` trapped (`unresolved call`); `lowerValueCall`
+  applies `calleeExpr`. On the way, a function value declared to return a `string` —
+  `greeter("a")("b")`, or `f("b")` after `val f = greeter("a")` — printed its **heap address** at
+  exit 0 (`312`, `288`), and the lambda `greeter` returns concatenated a number (`a264`): both fixed
+  (`valueCallTypeRef`, `expected_fn`).
+- **Decision 47's spelling of absent** — the empty `?T` prints `null` (`$__print_null`), not
+  `undefined`; `run/index_past_the_end_is_null.bp`'s wasm line deleted, `run/index_at_optional.bp`'s
+  reworded to the `Dict` half that is left. 12 wasm snapshots per tree moved: the helper's bytes, and
+  five RUN LOGs `undefined` → `null` (one is `if_simple_conditional_in_fn_body`, an `if` with no
+  `else` used as a value — commonJS still prints `undefined` there, see status.md).
