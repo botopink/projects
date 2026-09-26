@@ -469,7 +469,7 @@ it does not compile at all. The cells are owed once `01 step 4` lands.
    module; std's own tests (std compiled as the package) were green. `encoding.bp` now writes
    `f.slice(eq + 1, f.length)`; the repro is any std function with a one-argument `slice`, imported
    from a scratch package and run with `botopink test --target erlang`.
-2. **A string literal's `\u{…}` above U+007F lowers to ONE latin1 byte.** `"\u{e7}"` is `<<"\x{e7}">>`
+2. **[x] Landed** (compiler `06bf0ec1`). **A string literal's `\u{…}` above U+007F lowers to ONE latin1 byte.** `"\u{e7}"` is `<<"\x{e7}">>`
    (one byte, not UTF-8 `C3 A7`), `"\u{2028}"` is `<<40>>` — the byte of `(` — and `"\u{1f600}"` is
    `<<0>>`; commonJS answers the UTF-8 bytes (`c3a7`, `e280a8`, `f09f9880` through
    `Buffer.from(s).toString('hex')`). `writeStringFromLexeme` (`codegen/beam/erl_emitter.zig`) emits
@@ -477,7 +477,11 @@ it does not compile at all. The cells are owed once `01 step 4` lands.
    way. It made `escape.jsString("f(x)")` answer `f x ` on erlang (fixed in std by building
    U+2028/U+2029 in private host cells). The fix is to write each UTF-8 byte of the code point as
    `\x{HH}`.
-3. **A `@Result` method inside a closure is an undefined function.** `table.filter({ s ->
+3. **[ ] Re-measured 2026-09-26: not reproduced as written** — `xs.map({ x -> half(x).unwrapOr(0) })`,
+   `o.unwrapOr(x)` over a captured `?i32` and over a captured `var` all run on erlang. What does
+   reproduce is a **prelude** `default fn` body (`Array.unique`'s `prev.unwrapOr(x)`), which no
+   inference ever typed — it fails on all four backends, recorded in `src/codegen/AGENTS.md`.
+   **A `@Result` method inside a closure is an undefined function.** `table.filter({ s ->
    unquote(quote(s)).unwrapOr("<err>") != s })` compiles to `unwrapOr/2 undefined` on erlang (and
    `….unwrapOr is not a function` on commonJS); the same call in a named function is fine.
 4. **`try` inside a `while` body does not propagate.** In a `-> @Result<…>` fn, `while (i < n) { val v =
