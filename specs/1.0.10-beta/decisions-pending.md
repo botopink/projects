@@ -238,6 +238,44 @@ maintainer confirms or reverses each.
 > **Recommendation.** (a).
 > **Blocks.** Nothing.
 
+## Track D (`05-emilia`) — choices made in implementation, to confirm
+
+Each was implemented with the recommended option on `front/05-emilia`; a different answer is a
+local change in the named front.
+
+### 05emilia-a. The filter reader is an inline chain, not `var(--tw-filter)` (front 42)
+
+> **Raised by:** `42-emilia-filters` step 4, 2026-09-26
+> **Measured.** The spec's reader `filter:var(--tw-filter)` needs `--tw-filter` defined somewhere.
+> `extendTheme` panics on a name in none of `Ns`'s nineteen prefixes, and `--tw-` is in none
+> (front 45 met the same wall). Even as a `:root` rule it would not compose: a custom property's
+> `var()`s are substituted on the element that declares it, so `:root`'s `--tw-filter` would read
+> `:root`'s (unset) families and every element would inherit that empty result. Upstream v4
+> (`utilities.ts`, `cssFilterValue`) writes the chain into every utility:
+> `filter: var(--tw-blur, ) var(--tw-brightness, ) … var(--tw-drop-shadow, )`.
+> **Options.** (a) Inline upstream's chain, spelled once by `filterChain()` / `backdropFilterChain()`.
+> (b) Add a `Tw` namespace to `Ns` so `--tw-filter` is a theme entry — it still would not compose.
+> **Recommendation.** (a) — implemented, emilia `5711732`; the step-4 box is marked superseded.
+
+### 05emilia-b. The backdrop section is `BackdropFilter`, not `Backdrop` (front 42)
+
+> **Raised by:** `42-emilia-filters` step 3, 2026-09-26
+> **Measured.** `Backdrop(inner: Token[])` is front 34's `::backdrop` modifier, a top-level payload
+> variant; a section head of the same name is the collision emilia's `AGENTS.md` records as silently
+> breaking the variant's payload projection.
+> **Options.** (a) `BackdropFilter` (upstream's property name). (b) Rename front 34's modifier.
+> **Recommendation.** (a) — implemented; `BackdropRaw` keeps the spec's name.
+
+### 05emilia-c. `drop-shadow-none` follows upstream (front 42)
+
+> **Raised by:** `42-emilia-filters` step 2, 2026-09-26
+> **Measured.** `TAILWIND_CSS_DOCS.md § 13.1` prints `filter: drop-shadow(none)`, which is not valid
+> CSS (`drop-shadow()` takes a shadow). Upstream's `staticUtility('drop-shadow-none')` writes
+> `--tw-drop-shadow: ` and the reader.
+> **Options.** (a) Upstream's form. (b) The reference's string.
+> **Recommendation.** (a) — implemented, the reference form asserted absent. `blur-none` keeps the
+> reference's `filter:none`, which is valid CSS.
+
 ## Open
 
 ### `botopink migrate` beside `botopink migrate effects` (front 24, open point 7)
