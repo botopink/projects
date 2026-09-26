@@ -10,8 +10,8 @@ imports and the browser imports too, so both match with the same code (decision 
 **Wave:** 2
 **Depends on:** 01 (the directory walk — `path` is already complete), 05 (`rakun.appDir` as a config
 value), `01-std/04-routing-lib` (the matcher, Steps 1, 3 and 4's code and tests)
-**Owns:** `repository/rakun/src/file_router.bp` (the registry cells and the scan entry),
-`repository/rakun/src/sidecars/rakun_file_router.erl`, `repository/rakun/test/file_router_test.bp`
+**Owns:** `repository/rakun/modules/rakun-app/src/file_router.bp` (the registry cells and the scan entry),
+`repository/rakun/modules/rakun-app/src/sidecars/rakun_file_router.erl`, `repository/rakun/modules/rakun-app/test/file_router_test.bp` (in the `rakun-app` member since front 95's relocation, `modules.md` § The cut)
 **Does not touch:** `repository/rakun/src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`,
 `src/runtime.mjs` (frozen for the milestone), and the files owned by 23 · 24 · 25; the UI
 conventions — `#[page]`, `#[layout]`, `#[template]`, `#[defaultView]`, `PageContext`, `LayoutProps`

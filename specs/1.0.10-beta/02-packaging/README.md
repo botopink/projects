@@ -473,13 +473,13 @@ as a member. jhonstart, emilia and onze (after `01-std` has removed the old `onz
 their first front, in their own worktrees.
 
 **Acceptance:**
-- [ ] `import { Element } from "jhonstart";`, `import { Token } from "emilia";`, `import { … } from "rakun";` resolve to `modules/<lib>/` from a consumer under the roots — each pinned by an example member that imports it
+- [x] `import { Element } from "jhonstart";`, `import { Token } from "emilia";`, `import { … } from "rakun";` resolve to `modules/<lib>/` from a consumer under the roots — each pinned by an example member that imports it (`jhonstart-counter`/`-markup`/`-todo`, the fifteen `emilia-*` examples, `rakun-example`; green in the 2026-09-26 run below)
 - [ ] `import { … } from "rakun-web";` from an example resolves to `rakun-web/root` (one module, not zero); no `modules/*/botopink.json` in any repository lacks `files`; no manifest carries `{ "path": "../../" }`
-- [ ] `import { … } from "jhonstart-test";` (and emilia, rakun, onze) resolves to a member with an empty `pub` surface and one inline `test` that passes
+- [ ] `import { … } from "jhonstart-test";` (and emilia, rakun, onze) resolves to a member with an empty `pub` surface and one inline `test` that passes — jhonstart, emilia, rakun and erika hold (each 1/1 on both rows, front 95); onze's waits on the takeover (front 95 step 2)
 - [ ] `jhonstart/modules/jhonstart/test/html_test.bp` green at its new path; every emilia inline test green at its new path; rakun's five `test/*_test.bp` green through the core
-- [ ] `zig build test-libs` lists every `modules/*` and `examples/*` member on every target its (inherited or restricted) `targets` allows, and no `rakun`/`jhonstart`/`emilia`/`onze` umbrella row — the listing diffed against `find repository -name botopink.json`
-- [ ] `scripts/known-red-libs.txt` names every red row with a front number that exists in `specs/1.0.10-beta/`, and `zig build test-libs` exits 0 with them in place
-- [ ] every `AGENTS.md` in a moved directory reflects the tree, same commit
+- [x] `zig build test-libs` lists every `modules/*` and `examples/*` member on every target its (inherited or restricted) `targets` allows, and no `rakun`/`jhonstart`/`emilia`/`onze` umbrella row — the listing diffed against `find repository -name botopink.json` (2026-09-26, standalone copy of `.tasks/95-packaging`: every workspace member has its rows; the manifests without a row are test fixtures, `jhonstart/repro/*` and the old onze's `onze-demo`, none a member; onze's workspace rows arrive with front 95 step 2)
+- [x] `scripts/known-red-libs.txt` names every red row with a front number that exists in `specs/1.0.10-beta/`, and `zig build test-libs` exits 0 with them in place — no red row, the file holds only its header; `66 passed, 0 failed, 0 known red, 19 restricted (pinned)`, exit 0
+- [x] every `AGENTS.md` in a moved directory reflects the tree, same commit — front 95's moves: jhonstart `8cec7e1`, rakun `2a01ea5`, erika `1922dce`
 
 ### Step 3 — Examples become members
 
@@ -490,7 +490,7 @@ front's spec `examples/`. `examples/mock_synthesis.bp` leaves with the old `onze
 
 **Acceptance:**
 - [ ] every `examples/<p>/` has `botopink.json`, `README.md`, and builds under `zig build test-libs` on its declared target
-- [ ] `git ls-files | grep 'examples/.*/out/'` is empty in every repository
+- [x] `git ls-files | grep 'examples/.*/out/'` is empty in every repository (measured 2026-09-26 in jhonstart, emilia, rakun, erika, onze)
 - [ ] `emilia-card` still runs and prints what it printed before the move (verified by running, output compared)
 - [ ] no example manifest carries a `git` dependency on a library of this ecosystem
 
@@ -507,10 +507,10 @@ depends on it.
 ## Gate
 
 - [x] `zig build test` green in `repository/botopink-lang` with `modules/manifest/` (step 1, landed)
-- [ ] `zig build test-libs` green with the per-member row list as the acceptance artefact
-- [ ] `botopink format --check` clean in every moved tree
-- [ ] `grep -rl onze13 repository` empty; no `**Owns:**` line, manifest `name` or directory under `specs/1.0.10-beta/` carries `onze13` (`../unification.md` and front 95 excepted)
-- [ ] `AGENTS.md` of every directory touched, updated in the same commit
+- [x] `zig build test-libs` green with the per-member row list as the acceptance artefact — 2026-09-26, front 95's branches: 66 passed, 0 failed, 19 restricted (pinned), 13 without tests, exit 0
+- [ ] `botopink format --check` clean in every moved tree — not yet: the files front 95 moved (`jhonstart-link` 3, `rakun-app` 6) and the cores they left (`jhonstart` 8, `rakun` 24) would be reformatted, drift that predates the move (multi-line imports collapsed, braces dropped around one-statement `if` bodies) — the moved files are byte-identical but for their import lines; the new members are clean. `00 · 16-formatter`'s
+- [x] `grep -rl onze13 repository` empty; no `**Owns:**` line, manifest `name` or directory under `specs/1.0.10-beta/` carries `onze13` (`../unification.md` and front 95 excepted) — measured 2026-09-26; what remains names the rename
+- [x] `AGENTS.md` of every directory touched, updated in the same commit — front 95's commits (jhonstart `8cec7e1`, rakun `2a01ea5`, erika `1922dce`, onze `92a7b3a`)
 - [ ] one worktree per repository moved; each lands as a merge into that repository's `feat`, then the meta submodule bump — the seven remotes unified at the end (`overview.md` exit gate)
 
 ## Blast radius

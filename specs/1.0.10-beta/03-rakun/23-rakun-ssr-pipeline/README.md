@@ -10,9 +10,9 @@ through the chunk writer this front owns
 chain), 06 (scopes), 62 (request context — the request scope, `setPhase`, `markDynamic`), 03
 (content hash for the build id). The page renderers arrive at boot from onze 49, which depends on
 this front — not the reverse
-**Owns:** `repository/rakun/src/ssr.bp` — `ChunkWriter`, `PageRenderer`, `page(pattern, render)`
+**Owns:** `repository/rakun/modules/rakun-app/src/ssr.bp` — `ChunkWriter`, `PageRenderer`, `page(pattern, render)`
 through which onze hands it one renderer per page pattern, and the page dispatch —
-`repository/rakun/src/sidecars/rakun_ssr.erl` (the chunk writer), `repository/rakun/test/ssr_test.bp`
+`repository/rakun/modules/rakun-app/src/sidecars/rakun_ssr.erl` (the chunk writer), `repository/rakun/modules/rakun-app/test/ssr_test.bp` (in the `rakun-app` member since front 95's relocation, `modules.md` § The cut)
 **Does not touch:** `repository/rakun/src/http.bp`, `src/decorators.bp`, `src/bootstrap.bp`
 (frozen), the files owned by 22 · 24 · 25, and every file outside `repository/rakun/` — rakun
 builds no HTML and imports nothing from `jhonstart`, `emilia` or `onze` (decision 113). The walker,

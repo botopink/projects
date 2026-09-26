@@ -12,8 +12,8 @@ what crosses back (decision 113)
 01 (constant-time compare, percent-encoding), 03 (build id), `01-std/06-validation-lib` (constraint
 mirroring), `01-std/05-actions-lib` (the envelope, the `state` grammar, the JSON-RPC body and the
 `refresh` value — decision 116); jhonstart 67 writes the form, reached through onze only
-**Owns:** `repository/rakun/src/actions.bp`, `repository/rakun/src/sidecars/rakun_actions.erl`,
-`repository/rakun/test/actions_test.bp`
+**Owns:** `repository/rakun/modules/rakun-app/src/actions.bp`, `repository/rakun/modules/rakun-app/src/sidecars/rakun_actions.erl`,
+`repository/rakun/modules/rakun-app/test/actions_test.bp`
 **Does not touch:** `repository/rakun/src/http.bp`, `src/decorators.bp`, `src/bootstrap.bp`
 (frozen), the files owned by 22 · 23 · 25, and every file outside `repository/rakun/` — this front
 builds no element and imports nothing from `jhonstart` (decision 113)

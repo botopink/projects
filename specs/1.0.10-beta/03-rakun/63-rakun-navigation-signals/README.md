@@ -11,9 +11,9 @@ outcome is recorded on) — fronts 24 and 25, whose action dispatcher and handle
 on this front, `01-std/04-routing-lib` Step 7 (the
 vocabulary this front imports — `NavKind`, `NavOutcome`, the four `nav:` reasons and the `n` wire
 form, decision 116)
-**Owns:** `repository/rakun/src/navigation.bp`,
-`repository/rakun/src/sidecars/rakun_navigation.erl`,
-`repository/rakun/test/navigation_test.bp`, and one `pub mod` line in `repository/rakun/src/root.bp`
+**Owns:** `repository/rakun/modules/rakun-app/src/navigation.bp`,
+`repository/rakun/modules/rakun-app/src/sidecars/rakun_navigation.erl`,
+`repository/rakun/modules/rakun-app/test/navigation_test.bp`, and one `pub mod` line in `repository/rakun/modules/rakun-app/src/root.bp`
 **Does not touch:** `repository/rakun/src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`,
 `src/runtime.mjs` — frozen for the milestone; `src/file_router.bp` (front 22) and `src/ssr.bp`
 (front 23) are read-only here; the signal vocabulary and both codecs are the bundled library

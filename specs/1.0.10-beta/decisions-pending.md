@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e) and three of `00 · 23-std-purity` (23-a…c). Every other question this milestone raised is answered in
+**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e) three of `00 · 23-std-purity` (23-a…c) and five of front 95's (95-a…e). Every other question this milestone raised is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 91, 92, 93 and 97 by decisions 103 and 104, 99 by 108,
 94, 100 and 101 by 113; every number up to 117 is answered — 114 answers the eight seams decision 113 left open, 115 the five points 114 left open, 116 nine more pieces two libraries both run, 117 the nine points 113–116 left, and 118–127 register the maintainer's effect revision (the return type is the annotation, `@Task<T>`, only `@Result` fails, `@Iterator<T>` / `@Stream<T>`, `async { }`, `iter` / `stream` loops, no compatibility mode — front `00 · 24-effects-by-return`), and 128 merges `@Use<C, T>` and `@Component<T>` into `@Component<C, T>`. The next free number is **130**.
 
@@ -288,6 +288,74 @@ tree could land; the maintainer confirms or reverses each.
 > **Recommendation.** (a). The rules are general — any library with a folder module had both
 > defects — and neither touches compiler-core or a snapshot.
 > **Blocks.** Nothing.
+
+## Front 02-packaging · 95 (the package cut) — choices made in implementation, to confirm
+
+Decided by `02-packaging/95-ecosystem-package-restructure` (worktree `.tasks/95-packaging`,
+2026-09-26) so the relocations could land; the maintainer confirms or reverses each.
+
+### 95-a · Front 95 performs the relocation-only cuts `jhonstart-link` and `rakun-app`
+
+> **Raised by:** `95-ecosystem-package-restructure` steps 5 and 7, 2026-09-26
+> **Measured.** `04-jhonstart/modules.md` § 1 puts front 27's `link.bp` / `reconcile.bp` in
+> `jhonstart-link`, and `03-rakun/modules.md` § The cut puts fronts 22 and 23 in `rakun-app`; both
+> fronts had landed in the core. Front 95's own README listed `jhonstart-link` as "front 27's" and
+> said rakun had "nothing left" for it, while its **Owns** line claims "the relocations the cut in
+> each library's `modules.md` needs". Nothing in either core imports the moved modules
+> (`grep`), so each move is the files plus the import lines it changes: jhonstart 120 → 85 + 35,
+> rakun 369 → 310 + 59 on commonJS (367/2 → 308/2 + 59/0 on erlang); `examples/rakun-ssr` prints
+> a byte-identical document.
+> **Options.** (1) relocate now, as a move with no behaviour; (2) leave both in the core until the
+> owning fronts (27's step 4, 22/24) touch them again.
+> **Recommendation.** (1) — implemented. The two owning fronts would otherwise make the move in the
+> middle of a behaviour change, which is the harder diff to review; `modules.md` § 0 (a) and the
+> `fronts.md` rows now name the members.
+
+### 95-b · `rakun-app` inherits the workspace's `targets`
+
+> **Raised by:** `95-ecosystem-package-restructure` step 5, 2026-09-26
+> **Measured.** The core it came from declares `["commonJS"]` (a restriction front 04 lifts);
+> `03-rakun/modules.md` § Targets says every member is `["erlang"]`, corrected "by the lowest-numbered
+> front of each module". The 59 moved tests pass on **both** rows.
+> **Options.** (1) no `targets` — inherit `["commonJS", "erlang"]` now and `["erlang"]` when front 04
+> changes the workspace root; (2) `["commonJS"]` like the core (an erlang ledger line); (3)
+> `["erlang"]` now (a commonJS ledger line, and the node half of `ssr.mjs` untested).
+> **Recommendation.** (1) — implemented: both rows are hard cells, no ledger line, and the member
+> follows the workspace without an edit.
+
+### 95-c · `erika-test` exists
+
+> **Raised by:** `95-ecosystem-package-restructure`, 2026-09-26
+> **Measured.** `02-packaging/README.md` § 2 makes `modules/<lib>-test/` mandatory for every library;
+> erika is a workspace since `02-packaging` step 2 and its `AGENTS.md` said the member "waits on
+> `01-std` steps 2–3", which have landed. Front 95's table did not list erika.
+> **Options.** (1) create it empty now; (2) wait for an erika front.
+> **Recommendation.** (1) — implemented: one inline test, 1/1 on both rows.
+
+### 95-d · The onze takeover, prepared: the tag's commit and the orchestrator's first commit
+
+> **Raised by:** `95-ecosystem-package-restructure` step 2, 2026-09-26
+> **Measured.** The orchestrator's workspace is an orphan branch `front/95-onze-orchestrator` (no
+> history of the mocking library) — seven members, each 1/1 on commonJS and erlang on a copy of
+> the tree; the retirement banner is a commit on onze `front/95-packaging` over `feat` `b1e690d`.
+> The restricted cells `onze-cli · erlang` and `onze-og · commonJS` need ledger lines that are
+> stale (refused) until `repository/onze` is the orchestrator.
+> **Options.** Tag `mocking-lib-final` on (1) `b1e690d`, the last code commit, or (2) the banner
+> commit. Ledger lines (a) in the compiler commit the takeover's meta bump pins, or (b) now, which
+> reds `test-libs` until the takeover.
+> **Recommendation.** (1) and (a); the exact commands are in front 95's step 2.
+
+### 95-e · A member importing the core's request context names the module
+
+> **Raised by:** `95-ecosystem-package-restructure` step 5, 2026-09-26
+> **Measured.** In `modules/rakun-app/src/ssr.bp`, `import {…, percentDecode, …} from "rakun";`
+> is refused: `` `percentDecode` is declared `pub` by `std/encoding` and by `rakun/request_context`,
+> and this import does not say which ``. Inside the core the same import (`from "request_context"`)
+> named the module. The move writes `from "rakun/request_context"`, which the compiler accepts.
+> **Options.** (1) keep the qualified import; (2) rename one of the two `percentDecode`s (decision
+> 116 moves rakun's codec to std `encoding`, which would retire the duplicate).
+> **Recommendation.** (1) now; (2) is the decision-116 work of rakun front 62, after which the line
+> can go back to `from "rakun"` or drop the name.
 
 ## Open
 
