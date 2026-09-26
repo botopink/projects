@@ -229,7 +229,7 @@ configuration names.
 
 **Acceptance:**
 - [ ] `verify=full` refuses a server whose certificate does not match the requested hostname
-- [ ] `verify=full` refuses a server whose chain does not verify against the bundle's trust store
+- [x] `verify=full` refuses a server whose chain does not verify against the bundle's trust store — held: `modules/rakun-client/test/tls_test.bp` "a server the trust bundle does not vouch for is refused with -1" (front 13's client over `rakun_ssl:connect_options/2`)
 - [ ] `verify=none` connects to both, and resolving it logs a warning naming the bundle
 - [x] A bundle with only a trust store — no client certificate — is valid and produces a verify-only option list — held: `modules/rakun/test/ssl_bundle_test.bp` "a trust-store-only bundle produces a verify-only client option list"
 - [x] The same bundle name is usable by a listener and by a client without conflict — held: `modules/rakun-web/test/tls_test.bp` "a client bundle resolves through the same registry and refusal"

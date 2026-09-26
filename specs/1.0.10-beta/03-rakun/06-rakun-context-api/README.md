@@ -336,7 +336,7 @@ has no analogue and needs none; the README says that rather than inventing one.
 ### Step 8 — Shutdown and exit codes
 
 **Acceptance:**
-- [ ] `SIGTERM` runs every `#[preDestroy]` in reverse registration order before the node stops
+- [x] `SIGTERM` runs every `#[preDestroy]` in reverse registration order before the node stops — held: `modules/rakun-web/test/shutdown_test.bp` "SIGTERM runs the installed hook instead of stopping the node" (`installShutdownHook` = `gracefulShutdown()` then halt) + "the #[preDestroy] pass runs after the drain" + `modules/rakun/test/context_test.bp` "the pre pass runs in reverse order and answers the exit code"
 - [x] `#[exitCode]` functions are consulted and the highest value is the process status — held: `test/context_test.bp` "rakun shutdown: the highest generator wins and none means zero"
 - [ ] With no generator, a clean stop is status 0 and a failed boot is non-zero
 - [x] A `#[preDestroy]` that raises is logged and does not prevent the remaining ones from running — held: `test/context_test.bp` "rakun shutdown: a #[preDestroy] that raises is logged and the rest still run"
