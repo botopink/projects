@@ -43,8 +43,6 @@ import {collections.Dict} from "std";
 // LANGUAGE GAP: `@Decl` carries no source location, so a decorator cannot read the file it
 // annotates; the app-relative directory has to be passed as an argument. With `decl.source()`
 // these would all be a bare `#[page]` / `#[layout]`.
-// LANGUAGE GAP: declared parameter defaults are never applied, so every constructor call below
-// writes `attrs:` even though `element.bp` declares a default for it.
 
 // ---- app/layout.bp — the root layout ------------------------------------------
 //
@@ -103,9 +101,7 @@ pub fn blogIndexPage(route: PageContext) -> @Component<ElementBase, Element> {
 // ---- app/blog/[slug]/page.bp — a dynamic segment ------------------------------
 //
 // `blogPostPageParams` is emitted by the `#[page]` decorator from the bracket
-// segments of its own argument — the `PageProps<'/blog/[slug]'>` equivalent. It is
-// visible under `botopink test` and `botopink build`; `botopink check` skips
-// decorator invocation and will report it unbound.
+// segments of its own argument — the `PageProps<'/blog/[slug]'>` equivalent.
 
 fn postBody(slug: string) -> @Task<string> {
     return "The body of " + slug + ", loaded on the server.";

@@ -113,9 +113,8 @@ pub fn newPostForm(binding: FormBinding, state: ActionState, pending: bool) -> E
 // ── the client component — front 67 + front 68 ──────────────────────────────
 
 fn NewPostForm() -> @Component<ElementBase, Element> {
-    // LANGUAGE GAP: tuple labels are lost through generic instantiation, so this
-    // reads positionally; with labels preserved it would be `s.state`,
-    // `s.binding`, `s.pending`.
+    // Read positionally; the labels survive the hook (`s.state`, `s.binding`,
+    // `s.pending`) as well.
     val s = use useActionState("createPost", actionState(""));
     val state = s.0;
     val binding = s.1;

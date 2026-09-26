@@ -98,6 +98,5 @@ pub fn taxpayerConstraintTable() -> string {
     return constraintsOfTaxpayerRequest();
 }
 
-// LANGUAGE GAP: a decorator argument's declared default is not applied, so a constraint
-// decorator cannot carry an optional argument. Spring writes `@Size(min = 2)`
-// and lets `max` default; `#[sizeBetween(2, 80)]` above must name both bounds.
+// A constraint decorator may declare a closed default for an optional bound;
+// `#[sizeBetween(2, 80)]` above names both.

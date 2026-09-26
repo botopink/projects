@@ -25,8 +25,7 @@ import {rkTestRequest, rkTestRequestAuthed, rkReplyHeaderValue} from "rakun-web"
 // skips this function entirely, which is the difference between "the auth check
 // returned early" and "the auth check never ran".
 //
-// LANGUAGE GAP: `if (a && b)` does not parse in condition position, so each
-// conjunction below is bound to a `val` first — see `language-gaps.md`.
+// Each conjunction below is bound to a `val` first.
 #[middleware]
 #[matcher("/dashboard/:path*")]
 pub fn middleware(req: Request, chain: Chain) -> Response {

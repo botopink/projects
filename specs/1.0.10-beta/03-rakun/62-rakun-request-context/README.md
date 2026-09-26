@@ -453,9 +453,9 @@ val setCookies = endRequest();
 | A record field cannot be assigned (`self.field = x` appears nowhere in the real libs and every record is immutable), so the frame cannot be a botopink value and must live in the host process dictionary | the whole `Mechanism` — every accessor is a host cell rather than a method on a `RequestFrame` record | keep the frame in `rakun_request_context.erl` and pass an epoch | a mutable binding form, or an explicit `@Cell<T>` builtin |
 
 Three gaps front 01 already recorded are load-bearing here and are cited rather than re-filed: there is
-no byte/binary type, so the signed draft cookie marshals through `string` at the host boundary; a std
-module cannot call another std module, which is why this front imports `hash` and `encoding`
-directly instead of reaching them through one façade; and there is no array destructuring in a binding, so every wire blob is
+no byte/binary type, so the signed draft cookie marshals through `string` at the host boundary; this
+front imports `hash` and `encoding` directly rather than through one façade; and there is no array
+destructuring in a binding, so every wire blob is
 parsed with `split` and indexed with `.at(i)`.
 
 ## Test plan

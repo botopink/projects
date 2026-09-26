@@ -34,9 +34,8 @@ fn classifyShipment(delivery: Delivery) -> Outcome {
     return Outcome.Done;
 }
 
-// LANGUAGE GAP: a decorator argument's declared default is not applied, so the decorator cannot
-// carry `selector:` or `durable:` as optional arguments. Nearest valid form below: one
-// destination argument, and the rest under `rakun.messaging.listener.shipping.*`.
+// One destination argument, and the rest under `rakun.messaging.listener.shipping.*`
+// (a decorator parameter may declare a closed default instead).
 #[service]
 type ShippingListener {
     #[jmsListener("shipping.requests")]

@@ -26,9 +26,7 @@ import { ImageSize, ImageResponse, FontRef, imageResponse, defaultSize } from "o
 import { toSvg, layout, parseStyle } from "onze-og";
 
 // The two exports §18 documents. Front 66 reads both when it registers the route.
-// LANGUAGE GAP: a module-level `pub val` of a user-defined type is unverified —
-// if it does not hold, the exports become `pub fn size() -> ImageSize` and
-// `pub fn contentType() -> string`, and front 66 calls them instead of reading them.
+// A module-level `pub val` of a user-defined type crosses modules (decision 140).
 pub val size: ImageSize = ImageSize(width: 1200, height: 630);
 pub val contentType: string = "image/svg+xml";
 

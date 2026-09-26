@@ -11,7 +11,7 @@ outside the process, and `testing/` for the harness. A root module may not impor
 compiler refuses it inside std, with no flag. A directory groups function modules (`fs`, `http`,
 `asserts` each keep their file); a file groups types (`collections.bp` holds `Dict`, `Set`,
 `Queue`, `Order` — the type is the namespace, and one file is what lets `Dict.keys()` answer
-`Set<K>` when a std module cannot import another). Merges only where the name wins: `collections`,
+`Set<K>`). Merges only where the name wins: `collections`,
 `hash`, `encoding`. `erlang.bp` and `beam.bp` are the target's surface, outside the criterion.
 
 ```

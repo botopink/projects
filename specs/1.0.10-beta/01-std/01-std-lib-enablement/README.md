@@ -37,11 +37,10 @@ signature strings is a timing side channel on both backends.
 
 ## Mechanism
 
-**A std module cannot call another std module.** A cross-module bare import of an `#[@External.*]`
-symbol resolves at type level and is `undefined` at run time. Decision 106 puts each addition in
-the file that already holds what it extends, so nothing re-declares a sibling's cell; where two cells
-in one file call the same host function, the duplication is in the template string, not in
-behaviour.
+**A std module imports another as a program's module does** (`import {encoding.percentEncode} from
+"std"` in `querystring`): the compiler infers and embeds each std module after the ones it imports.
+Decision 106 puts each addition in the file that already holds what it extends; where two cells in
+one file call the same host function, the duplication is in the template string, not in behaviour.
 
 **Every host call is a `declare fn` with one cell per target** — a `////` docblock naming both
 upstream APIs, a `//` comment per fn explaining the two templates, the annotations, the bodyless
@@ -187,7 +186,6 @@ hashes live in `hash.bp` and hand over no line.
 |---|---|---|---|
 | No bitwise operators (`&`, `\|`, `^`, `<<`, `>>`) | `random.uuidV4` sets the version/variant bits; `encoding.hexEncode` would fold nibbles | do the bit work inside the host template, in JS and Erlang | `&`, `\|`, `^`, `~`, `<<`, `>>` on the integer behaviors in `primitives.bp` |
 | No byte/binary type — every host cell marshals through `string` | `hash.hmacSha256Base64Url` cannot take a raw key; `random.secureToken` answers base64url text rather than bytes; `Socket.recv` answers a UTF-8 `string` for what is a byte stream | text-encode at the boundary (hex or base64url) and accept that a non-UTF-8 payload is lossy on the Node side | a `bytes` primitive with `length`, `at`, `slice`, `concat`, and `@External` marshalling to an Erlang binary and a JS `Buffer` |
-| A std module cannot call another std module | `io/net.bp`, `io/fs.bp` and `io/process.bp` declare their own cells | one file per name | make a cross-module bare import of an `#[@External.*]` symbol lower to the defining module's binding |
 | Declared parameter defaults are never applied | `accept(timeoutMillis)`, `fs.glob(pattern, root)`, `process.run(cmd, args)` all want a default and cannot have one | every call passes every argument | apply defaults at the call site |
 | No `toString(radix)` on the integer behaviors | hex rendering in `encoding` and `hash` | render inside the host template | `fn toStringRadix(self: Self, radix: i32) -> string` on `Integer` |
 | A closure passed to a host cell is unverified on the Erlang target | `process.onSignal(name, handler)` | signals are left out; the CLI polls instead | pin fn-valued `$N` markers in the `@External.Erlang` template grammar |

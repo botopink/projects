@@ -105,11 +105,11 @@ pub type OrderController(
 ) {
     #[getMapping("/count")]
     pub fn count(self: Self, req: Request) -> Response {
-        // The type comes from the annotated binding: explicit generic arguments
-        // do not parse at a call site, so the registry key travels as a string.
-        // LANGUAGE GAP: no `@typeName<T>()` and no `f<T>(args)` call form — the
-        // string and `T` are not checked against each other. With either, this
-        // would read `self.ctx.resolve<OrderCache>()`.
+        // The type comes from the annotated binding (or an explicit type
+        // argument, `self.ctx.resolve<OrderCache>("OrderCache")`); the registry
+        // key travels as a string.
+        // LANGUAGE GAP: no `@typeName<T>()` — the string and `T` are not
+        // checked against each other.
         val cache: ?OrderCache = self.ctx.resolve("OrderCache");
         var body = "no cache";
         if (cache) { c -> body = c.size().toString(); };
