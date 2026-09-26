@@ -369,7 +369,7 @@ checkable.
       first, appended, order preserved. — held: jhonstart html_attrs.bp test "withAttrs — base first, appended, order preserved" (with `classAttr`, not `styled` — jhonstart may not import emilia; the pair shape is the same)
 - [x] `attrValue(attrs, "class")` returns the class; `attrValue(attrs, "missing")` returns `""`. — held: jhonstart html_attrs.bp tests "withAttrs — …" and "attrValue — a missing name is the empty string, the last duplicate wins"
 - [x] `repository/jhonstart/src/html_attrs.bp` imports only `element`. — held: `modules/jhonstart/src/html_attrs.bp` imports only `element`
-- [x] No file under `repository/jhonstart/src/` names emilia. — held: `grep -rni emilia modules/jhonstart/src` is empty
+- [ ] No file under `repository/jhonstart/src/` names emilia. — **open:** `html_attrs.bp` names none, but feat's `modules/jhonstart/src/streaming.bp:237` (front 30) names emilia in one comment — front 30's to reword; the bridge test that should assert the absence does not yet
 - [x] `repository/jhonstart/src/root.bp` declares the module and `botopink.json` lists it. — held: jhonstart `root.bp` `pub mod html_attrs;`, `botopink.json` `files`
 
 ### Step 5 — the five ways the halves can disagree, asserted on the class
@@ -481,7 +481,7 @@ front 68's bundle test assert the same literal for the same token list and theme
       declared in `emilia/src/root.bp`, and are listed in `emilia/botopink.json`. — held (shape: `attributes.bp` exists and is declared; `html_hook.bp` does not — its functions live in `emilia.bp`, decisions-pending 05emilia-h)
 - [x] `repository/jhonstart/src/html_attrs.bp` exists, is declared in `jhonstart/src/root.bp`, is
       listed in `jhonstart/botopink.json`, and imports only `element`. — held: `modules/jhonstart/src/html_attrs.bp`, declared, listed, imports only `element`
-- [x] No file under `repository/jhonstart/src/` names emilia, asserted by the bridge test. — held (shape: asserted by grep here; the bridge test that asserts it is jhonstart front 30's)
+- [ ] No file under `repository/jhonstart/src/` names emilia, asserted by the bridge test. — **open:** same — one comment in front 30's `streaming.bp`, and no bridge assertion yet
 - [x] No test or example of this front imports jhonstart, and emilia's `botopink.json` names no
       jhonstart dependency, dev-dependency included. — held: no front 48 test or example imports jhonstart; the core member's `botopink.json` has no dependency at all (`examples/emilia-card` predates decision 113)
 - [x] `mergeClass` has exactly one implementation in the workspace. — held: `grep -rn 'fn mergeClass'` across `repository/` finds `attributes.bp` only
@@ -495,6 +495,6 @@ front 68's bundle test assert the same literal for the same token list and theme
 - [x] `repository/emilia/AGENTS.md` and `repository/jhonstart/AGENTS.md` both record the new modules
       and the cross-repo seam. — held: emilia `AGENTS.md` "Front 48 owns **the class slot**" and jhonstart `AGENTS.md`'s tree entry for `html_attrs.bp`
 - [ ] The literal-hex fixture in `attributes_test.bp` is shared with the `jhonstart-emilia` bridge
-      test and front 68 and all three assert it, and it was regenerated exactly once, when 56 landed. — **open:** emilia asserts `e_39b87d03`; the `jhonstart-emilia` bridge test (jhonstart front 30) and onze front 68 do not exist yet and must assert the same literal
+      test and front 68 and all three assert it, and it was regenerated exactly once, when 56 landed. — **open:** emilia asserts `e_39b87d03`; the `jhonstart-emilia` bridge now exists (6/6 on both rows against this branch's emilia) but asserts no literal yet, and onze front 68 is not written
 - [x] The front's tests are green on its assigned target — here, both `commonJS` and `erlang`,
       because agreement between the two is the deliverable. — held: `modules/emilia` 722/722 and jhonstart core green on commonJS and erlang
