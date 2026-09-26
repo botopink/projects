@@ -4,6 +4,7 @@
 machine; a slow gate is paid by every landing
 **Depends on:** none
 **Owns:** `repository/botopink-lang/scripts/{gate.sh,check-docs.sh,test-libs.sh,lib/pool.sh}` ·
+`repository/botopink-lang/modules/test-shard/**` · the compiler-core test step of `build.zig` ·
 `repository/botopink-lang/tests/language/run.sh` (the runner only — not the cells, not
 `expected-failures.txt`) · `repository/botopink-lang/modules/lib-test-runner/**` · the `AGENTS.md`
 of those directories · no snapshot directory
@@ -121,7 +122,35 @@ runs the checks on the pool, and prints the report with each placeholder replace
       with no `src/main.bp`, a failing project and an unknown directive (6 failed, exit 1)
 - [x] § Measurements row
 
-### Step 2 — the independent stages side by side
+### Step 2 — the compiler-core suite as shards
+
+What dominated `zig build test`, measured by running the compiler-core test binary by hand with a
+timestamp per test line (`~/.cache/bp-gateperf/zbt/`): of the six test binaries, compiler-core is
+2046 of the 2426 tests and all but ~1 s of the stage (the language-server's 216 tests take 0.6 s,
+the other four under 0.2 s together). zig's default test runner is **serial inside one process**,
+and the time is spread over hundreds of tests, none above 0.26 s warm or 1.5 s cold: warm it is
+21.5 s, `codegen/tests` 17.0 s of it; from a cold runtime cache it is 134.8 s — `codegen/tests/wat`
+22.6 s, `features` 21.1 s, `control_flow` 20.4 s, `builtins` 12.3 s, `dispatch` 10.0 s, … — each
+test waiting on the `node` / `erlc` + `erl` / `wasmtime` its RUN LOG spawns (1111 executions fill the
+cache). A serial process over a wait-bound suite is the whole cost.
+
+`modules/test-shard/runner.zig` is zig 0.16's default runner restricted to the tests whose index is
+`i` modulo `n` (`BOTOPINK_TEST_SHARD=<i>/<n>`, unset = every test), and `build.zig` runs the one
+compiler-core test binary as `-Dtest-shards` run steps (default CPUs, at most 8) side by side. Every
+test runs exactly once and is still reported by name through the build runner's protocol — failure,
+leak, logged error, timeout. The suite was already written for concurrent processes over one
+checkout (`test_scratch` roots per process, the runtime cache written by rename, the snapshot trace
+opened `O_APPEND`), which is what makes the shards safe. Files outside the runners: `build.zig`'s
+compiler-core test step and the new `modules/test-shard/`.
+
+**Acceptance:**
+- [x] the names the 8 shards run are exactly the unsharded binary's 2046, none twice; the build
+      summary reads 2426/2426 at 1 shard and at 8
+- [x] a planted failing test, a leaking test and a test that logs an error: each named, "2428/2429
+      tests passed (1 failed)" and exit 1, at `-Dtest-shards=1` and at the default
+- [x] § Measurements row
+
+### Step 3 — the independent stages side by side
 
 After `zig build test`, stages 4b–10 read the built tree and write only their own scratch
 directories (`test-cli`'s scripts share `zig-out/` and fixture `out/` among themselves, which is why
@@ -138,17 +167,11 @@ admit by `procs_running`, so two of them side by side share the CPUs instead of 
       stage planted in the middle and at the end
 - [ ] § Measurements row
 
-### Step 3 — `test-libs`' CPU (692 CPU-s warm, the largest cost)
+### Step 4 — `test-libs`' CPU (692 CPU-s warm, the largest cost)
 
 To measure per cell (`botopink test` per library and target): which part is compile, comptime
 `erl`, `precompileErlang`, `escript` start-up per test module. Candidates only after the measurement
 names the dominant one.
-
-### Step 4 — `zig build test` from a cold runtime cache (138 s, ≈ 1.9 CPUs used)
-
-The snapshot RUN LOG executions run with little parallelism. The executor is
-`modules/compiler-core/src/codegen/runtime.zig`, every compiler front's file: measure which tests
-dominate and propose; a change there waits until front 24 has landed.
 
 ### Not a step: the hooks in worktrees
 
@@ -172,6 +195,11 @@ One row per landed step, cumulative. Wall and CPU in seconds; "rest" is stages 2
 |---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
 | baseline | 2026-09-26 | `82e32e36` | 144.3 | 264.8 | 1044.8 | 25.9 / 138.0 cold | 52.6 | 28.9 | 16.9 | 8.4 | 11.6 | — | other agents' gates; load 22–27 (cold run 22–24) |
 | step 1 — the shell runners on the pool | 2026-09-26 | `112d248a` | 130.1 | 292.2 | 1071.0 | 23.6 / 154.4 cold | 56.5 | 19.9 | 17.5 | 1.5 | 11.3 | −14.2 s (−9.8 %) | other agents' gates; load 34–37 (cold run 7→37) |
+| step 2 — compiler-core as 8 shards | 2026-09-26 | `49cc56aa` | 125.0 | 160.9 | 1099.5 | 6.8 / 33.7 cold | 63.5 | 21.4 | 18.5 | 1.8 | 13.0 | −19.3 s (−13.4 %); cold −103.9 s (−39.2 %) | other agents' gates; load 36–43 (cold run 11→36) |
+
+Step 2's own gain is `zig build test` 25.9 → 6.8 s warm (−74 %) and 138.0 → 33.7 s cold (−76 %), at
++12 CPU-s warm (each shard starts its own process and `erl`). Its warm total moved less than that
+because `test-libs` ran 7 s slower under a load of 36–43, a stage step 2 does not touch.
 
 The cold total of step 1 is higher than the baseline's because the machine was: the stages step 1
 does not touch moved by +16 s (`zig build test` cold) and +7 s (`test-libs`) between the two runs.
