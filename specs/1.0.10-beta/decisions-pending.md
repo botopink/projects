@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e), three of `00 · 23-std-purity` (23-a…c), five of front 95's (95-a…e), four of `00 · 16-formatter` (16-a…d), track C's (26-a, 27-a, 30-a…e, 31-a), `00 · 04-js` / `05-wasm`'s (0405-a…b) and `00 · 02-erlang` / `03-beam`'s (0203-a…b) and track E's (49-a…d, 53-a, 68-a…c, 69-a). Every other question this milestone raised is answered in
+**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e), three of `00 · 23-std-purity` (23-a…c), five of front 95's (95-a…e), four of `00 · 16-formatter` (16-a…d), track C's (26-a, 27-a, 30-a…e, 31-a), `00 · 04-js` / `05-wasm`'s (0405-a…b) and `00 · 02-erlang` / `03-beam`'s (0203-a…b) and track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a). Every other question this milestone raised is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 91, 92, 93 and 97 by decisions 103 and 104, 99 by 108,
 94, 100 and 101 by 113; every number up to 117 is answered — 114 answers the eight seams decision 113 left open, 115 the five points 114 left open, 116 nine more pieces two libraries both run, 117 the nine points 113–116 left, and 118–127 register the maintainer's effect revision (the return type is the annotation, `@Task<T>`, only `@Result` fails, `@Iterator<T>` / `@Stream<T>`, `async { }`, `iter` / `stream` loops, no compatibility mode — front `00 · 24-effects-by-return`), and 128 merges `@Use<C, T>` and `@Component<T>` into `@Component<C, T>`. The next free number is **130**.
 
@@ -674,6 +674,18 @@ onze on the local branch `front/06-onze` cut from the prepared orchestrator `91e
 > **Recommendation.** (a): rakun matched the route and knows its chain; onze does not derive it
 > twice.
 > **Blocks.** Nothing.
+
+### 52-a · The font-metrics table is transcribed, and its generator is owed
+
+> **Raised by:** `06-onze/52-onze-font` step 2, 2026-09-26
+> **Measured.** Generating the table needs each family's font files (a network fetch) and a binary
+> reader (`fontTools`); neither is available to this thread.
+> **Options.** (a) commit five transcribed rows (Arial, Times New Roman, Inter, Roboto,
+> Merriweather) with their provenance in the file header and the generator owed — implemented;
+> (b) commit no table, so every Google family with `adjustFontFallback: true` is refused.
+> **Recommendation.** (a), with the rows re-derived by the generator before a release; the
+> formula tests pin the arithmetic independently of the rows.
+> **Blocks.** Step 2's "the script that generated it" box.
 
 ### 53-a · The blog's sources sit under `src/`
 

@@ -159,17 +159,17 @@ pub fn googleFont(family: string, opts: GoogleFontOptions) -> @Task<Font>
 ```
 
 **Acceptance:**
-- [ ] `css` contains one `@font-face` per requested weight × style
-- [ ] Every `src:` URL in `css` is a local path under `<outDir>/static/fonts/`; no
+- [x] `css` contains one `@font-face` per requested weight × style
+- [x] Every `src:` URL in `css` is a local path under `<outDir>/static/fonts/`; no
       `fonts.googleapis.com` or `fonts.gstatic.com` string survives into the output — asserted by a
       substring check, because this is the privacy property
-- [ ] `display` reaches `font-display:` verbatim; `"swap"` is the default and anything outside the
+- [x] `display` reaches `font-display:` verbatim; `"swap"` is the default and anything outside the
       four values reds
-- [ ] `subsets: []` reds, naming the option — an unsubsetted font is a 300 kB font
-- [ ] `variable: "--font-inter"` emits a `:root` rule defining it; `variable: ""` emits none
-- [ ] `preload: true` emits one `<link rel="preload" as="font" type="font/woff2" crossorigin>` per
+- [x] `subsets: []` reds, naming the option — an unsubsetted font is a 300 kB font
+- [x] `variable: "--font-inter"` emits a `:root` rule defining it; `variable: ""` emits none
+- [x] `preload: true` emits one `<link rel="preload" as="font" type="font/woff2" crossorigin>` per
       preloaded file; `preload: false` emits `""`
-- [ ] A family not in the metrics table with `adjustFontFallback: true` reds naming the family,
+- [x] A family not in the metrics table with `adjustFontFallback: true` reds naming the family,
       rather than silently emitting an unadjusted fallback
 
 ### Step 2 — The adjusted fallback
@@ -187,14 +187,14 @@ pub fn fallbackFace(family: string, localFamily: string, real: FontMetrics, fall
 ```
 
 **Acceptance:**
-- [ ] `fallbackFace` emits `size-adjust`, `ascent-override`, `descent-override` and
+- [x] `fallbackFace` emits `size-adjust`, `ascent-override`, `descent-override` and
       `line-gap-override`, each as a percentage with two decimals
-- [ ] `ascent-override` equals `ascent / unitsPerEm` as a percentage — asserted against a
+- [x] `ascent-override` equals `ascent / unitsPerEm` as a percentage — asserted against a
       hand-computed value for Inter, so the formula is pinned, not paraphrased
-- [ ] `size-adjust` equals the ratio of the two fonts' `avgCharWidth`, normalized by `unitsPerEm`
-- [ ] Identical metrics produce `size-adjust: 100.00%` and three `0.00%`/exact overrides, and the
+- [x] `size-adjust` equals the ratio of the two fonts' `avgCharWidth`, normalized by `unitsPerEm`
+- [x] Identical metrics produce `size-adjust: 100.00%` and three `0.00%`/exact overrides, and the
       generated CSS still parses
-- [ ] `adjustFontFallback: false` omits the whole block and the family list falls back to `opts.fallback`
+- [x] `adjustFontFallback: false` omits the whole block and the family list falls back to `opts.fallback`
 
 ### Step 3 — `localFont`
 
@@ -218,11 +218,11 @@ pub fn localFont(family: string, opts: LocalFontOptions) -> @Task<Font>
 ```
 
 **Acceptance:**
-- [ ] Each source file is copied to `<outDir>/static/fonts/` under its content hash and referenced
+- [x] Each source file is copied to `<outDir>/static/fonts/` under its content hash and referenced
       from there
-- [ ] A source path that normalizes outside the project root reds, naming the path
-- [ ] A missing source file reds naming the file, at build time, not at first request
-- [ ] With the metrics probe absent and `adjustFontFallback: true`, the build logs once and emits the
+- [x] A source path that normalizes outside the project root reds, naming the path
+- [x] A missing source file reds naming the file, at build time, not at first request
+- [x] With the metrics probe absent and `adjustFontFallback: true`, the build logs once and emits the
       unadjusted face — and the log names the family, so the degradation is attributable
 
 ### Step 4 — Head output
@@ -235,9 +235,9 @@ Concatenates every font's `preload` then every font's `css`, deduplicating ident
 blocks so two components asking for the same family emit one.
 
 **Acceptance:**
-- [ ] Preload links precede all font CSS in the output
-- [ ] Two `Font` values for the same family and weight produce one `@font-face`
-- [ ] The output is a string `headExtra` can carry without re-parsing it
+- [x] Preload links precede all font CSS in the output
+- [x] Two `Font` values for the same family and weight produce one `@font-face`
+- [x] The output is a string `headExtra` can carry without re-parsing it
 
 ## Examples
 
@@ -273,11 +273,26 @@ therefore the one most worth a test that can fail.
 Coverage this front does not have: whether the swap is actually invisible in a browser. That is a
 visual property and the test asserts the four descriptors that cause it, not the pixels.
 
+## Where it stands
+
+Landed on onze `front/06-onze` (`2382a03`): `modules/onze-assets/src/font.bp` and
+`font_metrics.bp` (the member cut of `modules.md`, not core), 7 tests on commonJS **and** erlang
+over a fixture Google CSS and a download seam — the suite never reaches the network. Faces live
+under `<outDir>/static/<buildId>/fonts/` (the fingerprinted static root front 69 declares), each
+with the `.metrics.txt` sidecar front 70 reads (`unitsPerEm`, `ascent`, `descent`, `lineGap`,
+`avgCharWidth`, one per line). `googleFont` takes the build id and out dir and answers a
+`@Result` (the build seam can fail); the percentages are computed by a host cell per row
+(`toFixed(2)` / `float_to_binary(…, [{decimals, 2}])`) and agree on both rows.
+
+Open: the metrics table's generator — the rows are transcribed (provenance in the file's header),
+so the box asking for "the script that generated it" stays open (52-a); and the local-font metrics
+probe itself (`localFont` takes it as a function; none is bound yet).
+
 ## Definition of done
 
-- [ ] `src/font.bp` and `test/font_test.bp` exist; the `pub mod font;` line is handed to front 49
+- [x] `src/font.bp` and `test/font_test.bp` exist; the `pub mod font;` line is handed to front 49
 - [ ] The metrics table is committed, with the script that generated it and the date it was generated
-- [ ] No output of this front references a Google host at request time
-- [ ] `docs.md` states the probe-absent degradation and names it as a degradation
+- [x] No output of this front references a Google host at request time
+- [x] `docs.md` states the probe-absent degradation and names it as a degradation
 - [ ] Front 70's README can point at this front for glyph metrics without this front changing shape
-- [ ] The front's tests are green on its assigned target — both, here
+- [x] The front's tests are green on its assigned target — both, here
