@@ -472,7 +472,7 @@ Create the module (`botopink.json` with `"target": "erlang"`, `src/root.bp`), th
 **Acceptance:**
 - [x] `raiseProblem("order.not-found", "no order 42")` with a matching `#[exceptionHandler]` answers that handler's `ProblemDetail` — held: `test/error_test.bp` "a tagged raise with a matching handler answers that handler's ProblemDetail"
 - [x] The response content type is `application/problem+json` — held: `test/error_test.bp` "a problem response carries application/problem+json"
-- [ ] A `detail` carrying U+0001 and a `"` yields a body std's `json.decode` answers `Ok` for; `grep -n "fn jsonEscape" modules/rakun-web/src/error.bp` is empty
+- [x] A `detail` carrying U+0001 and a `"` yields a body std's `json.decode` answers `Ok` for; `grep -n "fn jsonEscape" modules/rakun-web/src/error.bp` is empty — held: `modules/rakun-web/test/error_test.bp` "a detail with a control character and a quote decodes back through std"; `jsonEscape` is gone (rakun `783f4ac`)
 - [x] An unmatched raise answers 500 with `about:blank`, a digest, and no reason text in the body — held: `test/error_test.bp` "an unmatched tagged raise answers 500 with about:blank, a digest, and no reason"
 - [x] The digest appears in the log line for the same request — held: `test/error_test.bp` "the digest in the body is the digest in the log line"
 - [x] Two advice types both contribute; a tag registered twice fails at boot naming both — held: `test/error_test.bp` "two advice types both contribute" + "a tag registered twice fails naming both owners"
@@ -482,10 +482,10 @@ Create the module (`botopink.json` with `"target": "erlang"`, `src/root.bp`), th
 ### Step 5 — Static error pages
 
 **Acceptance:**
-- [ ] A 404 with `Accept: text/html` and an `error/404.html` present serves that file
-- [ ] With only `error/4xx.html` present, a 404 serves it
-- [ ] `Accept: application/json` serves the problem detail even when the page exists
-- [ ] A missing page directory is not an error; the problem detail is served
+- [x] A 404 with `Accept: text/html` and an `error/404.html` present serves that file — held: `modules/rakun-web/test/error_pages_test.bp` "a browser's 404 gets error/404.html"
+- [x] With only `error/4xx.html` present, a 404 serves it — held: `modules/rakun-web/test/error_pages_test.bp` "with only 4xx.html present, a 404 serves it"
+- [x] `Accept: application/json` serves the problem detail even when the page exists — held: `modules/rakun-web/test/error_pages_test.bp` "Accept application/json gets the problem detail even when the page exists"
+- [x] A missing page directory is not an error; the problem detail is served — held: `modules/rakun-web/test/error_pages_test.bp` "a missing page directory is not an error; the problem detail is served"
 
 ### Step 6 — Content negotiation
 
@@ -517,14 +517,14 @@ Create the module (`botopink.json` with `"target": "erlang"`, `src/root.bp`), th
 ### Step 9 — Compression and server identification
 
 **Acceptance:**
-- [ ] `Accept-Encoding: gzip` on a 4 KB JSON response yields a gzipped body with `Content-Encoding: gzip` and a correct `Content-Length`
-- [ ] `Accept-Encoding: deflate` yields deflate
-- [ ] `Accept-Encoding: gzip;q=0, deflate` yields deflate
-- [ ] A 100-byte response is not compressed
-- [ ] An `image/png` response is not compressed
-- [ ] `Vary: Accept-Encoding` is set on every compressible response, compressed or not
-- [ ] Configuring `br` fails at boot with a message naming the missing NIF
-- [ ] No `Server` header is sent by default; setting `rakun.server.server-header` sends exactly that value
+- [x] `Accept-Encoding: gzip` on a 4 KB JSON response yields a gzipped body with `Content-Encoding: gzip` and a correct `Content-Length` — held: `modules/rakun-web/test/compression_test.bp` "gzip on a 4 KB JSON response yields a gzipped body" + "over the socket the Content-Length is the compressed body's" (with `rakun.server.compression.enabled=true`; off by default)
+- [x] `Accept-Encoding: deflate` yields deflate — held: `modules/rakun-web/test/compression_test.bp` "deflate is chosen when asked, and gzip;q=0 falls back to it"
+- [x] `Accept-Encoding: gzip;q=0, deflate` yields deflate — held: `modules/rakun-web/test/compression_test.bp` "deflate is chosen when asked, and gzip;q=0 falls back to it"
+- [x] A 100-byte response is not compressed — held: `modules/rakun-web/test/compression_test.bp` "a 100-byte response is not compressed, and still varies"
+- [x] An `image/png` response is not compressed — held: `modules/rakun-web/test/compression_test.bp` "an image/png response is not compressed and does not vary"
+- [x] `Vary: Accept-Encoding` is set on every compressible response, compressed or not — held: `modules/rakun-web/test/compression_test.bp` "Vary is set on a compressible response whether it was compressed or not"
+- [x] Configuring `br` fails at boot with a message naming the missing NIF — held: `modules/rakun-web/test/compression_test.bp` "naming br fails the boot saying a NIF would be required" (`validateCompression`, called by `bootWeb()`)
+- [x] No `Server` header is sent by default; setting `rakun.server.server-header` sends exactly that value — held: `modules/rakun-web/test/compression_test.bp` "no Server header by default, exactly the configured one otherwise" + the socket cell
 
 ### Step 10 — Graceful shutdown
 
@@ -619,7 +619,7 @@ convention has no client half — front 27's `Link` prefetch reads the route tab
 - [x] CORS defaults deny, and `*` with credentials fails at boot — held: `test/cors_test.bp` "the default denies every origin" + "the wildcard with credentials fails at boot…"
 - [x] Problem details are RFC 9457-shaped, `application/problem+json`, and never carry a raw reason — held: `test/error_test.bp` "the defaults are RFC 9457's" + "…no reason" + "application/problem+json"
 - [ ] `Accept` and `Accept-Encoding` are both negotiated with q-values; `br` is refused rather than faked
-- [ ] No `Server` header by default
+- [x] No `Server` header by default — held: `modules/rakun-web/test/compression_test.bp` "no Server header by default, exactly the configured one otherwise"
 - [ ] Shutdown awaits front 76's `readinessDrained()`, drains, then hands to front 06 — in that order,
       asserted by two recorded timestamps
 - [x] `repository/rakun/AGENTS.md` documents the order band and the two entry points — held: `repository/rakun/AGENTS.md` § The filter chain (order band table, two entry points)
