@@ -170,11 +170,30 @@ admit by `procs_running`, so two of them side by side share the CPUs instead of 
       language cell planted (stage 9, exit 1) and a red docs fence planted (stage 10, exit 1)
 - [x] § Measurements row
 
-### Step 4 — `test-libs`' CPU (692 CPU-s warm, the largest cost)
+### Step 4 — `test-libs`' erlang cells (open)
 
-To measure per cell (`botopink test` per library and target): which part is compile, comptime
-`erl`, `precompileErlang`, `escript` start-up per test module. Candidates only after the measurement
-names the dominant one.
+With steps 1–3 landed, `test-libs` is the gate's critical path: ~55–63 s of wall clock and ~690 of
+its ~1100 CPU-seconds, running beside everything else. Measured cell by cell with
+`botopink-lib-test --include-unsupported --jobs 1` (the stderr header of each cell timestamped;
+the copy at `~/.cache/bp-gateperf/libs/`): **356 s serial, 257 s of it the erlang cells** against
+99 s for commonJS. The longest cell is `emilia · erlang` (27.2 s), then `emilia-typography`
+(14.5 s), `rakun` (14.5 s), `emilia-text-decoration` (11.7 s), `emilia-card` (11.1 s), `std`
+(9.9 s); the fifteen `emilia-*` example members take 8–15 s each on erlang and ~4 s on commonJS.
+
+One erlang cell traced (`strace -f -e execve`, `emilia/examples/emilia-borders`, 9.1 s wall /
+22 CPU-s, commonJS 4.1 s): ~6 s compiling the project with its dependencies (`emilia`, `std`) in the
+`botopink` process, ~3.3 s in `precompileErlang` compiling every emitted `.erl` once, ~2.5 s in the
+`escript` that runs the tests. Every `emilia-*` member compiles the same `emilia` and `std` modules
+to the same `.erl` text and then to the same `.beam`, fifteen times over, in every gate.
+
+Remaining work, in order of measured size:
+1. **A content-keyed `.beam` cache for `precompileErlang`** (`modules/compiler-cli/src/cli/test_cmd.zig`):
+   the key is the `.erl` bytes, the compile options and the running OTP release; a hit copies the
+   `.beam` beside the source, a miss compiles as today and publishes by rename (two gates share it),
+   a source that does not compile is never cached (so its refusal is unchanged). ~3 s × ~30 erlang
+   cells per gate. It needs a reaping rule like `clean-tmp`'s.
+2. The per-cell compile of the same dependency modules (~4–6 s a cell on both targets) is the
+   compiler's own pipeline (`compiler-core`) — a front of its own, after `front/24-integration`.
 
 ### Not a step: the hooks in worktrees
 
@@ -221,10 +240,10 @@ comparisons above ran the three variants back to back on one tree.
 
 ## Gate
 
-- [ ] `zig build test` in this worktree before every commit (hooks do not run in worktrees)
-- [ ] the full suite a changed runner drives, before and after, with equivalent verdicts
-- [ ] `AGENTS.md` of every directory touched, updated in the same commit
-- [ ] Commit on `front/25-gate-perf`; no push, no merge
+- [x] `zig build test` in this worktree before every commit (hooks do not run in worktrees)
+- [x] the full suite a changed runner drives, before and after, with equivalent verdicts
+- [x] `AGENTS.md` of every directory touched, updated in the same commit
+- [x] Commit on `front/25-gate-perf`; no push, no merge
 
 ## Blast radius
 
@@ -232,3 +251,15 @@ None on the language: no cell, no snapshot, no expected-failure line moves. `fro
 adds ~150 language cells; they run on the same pool with no change. The pools raise the momentary
 CPU demand of one gate — bounded by the admission rule, which is the same one `test-libs` has run
 with since step 1 of `00 · gate-perf`.
+
+## Notes
+
+- **Outside this front, test-related, reported rather than fixed.** Under a load of ~40,
+  `libs/std`'s `async: delay ---- takes at least the requested time` (`async.bp:265`, commonJS)
+  failed once in the unchanged serial gate and passed on every other run — a wall-clock assertion
+  that reds under load. The tests front owns it.
+- `scripts/known-red-libs.txt` / `scripts/restricted-targets.txt` are stale at this pin (§ Current
+  state); the comparisons that needed a green `test-libs` aligned them in the measurement copy only.
+- Files touched outside `scripts/` and the runners: `build.zig` (the compiler-core test step, step
+  2), the new `modules/test-shard/`, and the `AGENTS.md` of the root, `modules/`, `scripts/` and
+  `tests/language/`.
