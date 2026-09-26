@@ -131,10 +131,10 @@ front 57's builders. A bundle is an ordinary `pub fn`, so it is exported, import
 findable by go-to-definition — none of which a CSS `@utility` is.
 
 **Acceptance:**
-- [ ] `emilia(scrollbarHidden())` renders `scrollbar-width:none` and a second rule whose selector is
-      the class followed by `::-webkit-scrollbar`.
-- [ ] The bundle function takes no arguments and is callable from another package.
-- [ ] A test asserts that the emitted declarations match `§ 20.4`'s example body.
+- [x] `emilia(scrollbarHidden())` renders `scrollbar-width:none` and a second rule whose selector is
+      the class followed by `::-webkit-scrollbar`. — held: emilia.bp front 59 test "scrollbarHidden — `§ 20.4`'s body …"
+- [x] The bundle function takes no arguments and is callable from another package. — held: `pub fn scrollbarHidden()` in `pub mod compose`; examples/emilia-cascade test "a bundle and a named class from compose.bp, used from another package" (both targets)
+- [x] A test asserts that the emitted declarations match `§ 20.4`'s example body. — held: same emilia.bp test, both declarations asserted
 
 ### Step 2 — `@apply` is `append`
 
@@ -148,13 +148,13 @@ is the array method — and `compose` exists for the four-or-five-bundle case wh
 calls stops being readable.
 
 **Acceptance:**
-- [ ] `btn().append(extra)` renders the bundle's declarations followed by the extra ones, in that
-      order.
-- [ ] `compose([a(), b(), c()])` equals `a().append(b()).append(c())` by rendered output.
-- [ ] Where two bundles set the same property, the later one is emitted second and the test cites
-      `§ 3.1`.
-- [ ] `compose([])` renders an empty rule body, the same as `emilia([])` does today
-      (`emilia.bp:465-473`).
+- [x] `btn().append(extra)` renders the bundle's declarations followed by the extra ones, in that
+      order. — held: emilia.bp test "append — the bundle's declarations, then the extra ones, in that order"
+- [x] `compose([a(), b(), c()])` equals `a().append(b()).append(c())` by rendered output. — held: emilia.bp test "compose — equals chained append by class, and [] is the empty class" (by class, which is the rendered output's hash)
+- [x] Where two bundles set the same property, the later one is emitted second and the test cites
+      `§ 3.1`. — held: emilia.bp test "compose — two bundles on one property: the later one is emitted second (`§ 3.1`)"
+- [x] `compose([])` renders an empty rule body, the same as `emilia([])` does today
+      (`emilia.bp:465-473`). — held: same test as the equivalence one — `compose([])` gives `emilia([])`'s class
 
 ### Step 3 — custom variants are functions over the inner list
 
@@ -173,12 +173,12 @@ has never heard of — `§ 3.2`'s `@custom-variant theme-midnight (&:where([data
 becomes a `Variant` with that selector and a one-line function around it.
 
 **Acceptance:**
-- [ ] `emilia(hocus(bold))` renders two rules, `:hover` and `:focus`, with identical declarations.
-- [ ] A custom variant composes with a built-in one in both nesting orders, and both are asserted.
-- [ ] `selector(Variant(atRule: "", selector: "&:where([data-theme=\"midnight\"] *)"), inner)`
-      renders that selector with the class substituted for `&`.
-- [ ] A `Variant` whose selector holds the wrong number of `&` is refused by front 56, and this
-      front adds no path around that check.
+- [x] `emilia(hocus(bold))` renders two rules, `:hover` and `:focus`, with identical declarations. — held: emilia.bp test "hocus — `§ 20.3`: two rules, :hover and :focus, one body"
+- [x] A custom variant composes with a built-in one in both nesting orders, and both are asserted. — held: emilia.bp test "a custom variant composes with a built-in one, both orders"
+- [x] `selector(Variant(atRule: "", selector: "&:where([data-theme=\"midnight\"] *)"), inner)`
+      renders that selector with the class substituted for `&`. — held: emilia.bp test "selector — an arbitrary Variant, with the class substituted for `&`" (imported as `customVariant` there)
+- [x] A `Variant` whose selector holds the wrong number of `&` is refused by front 56, and this
+      front adds no path around that check. — held: emilia.bp test "selector — a Variant with the wrong number of `&` is refused, no path around it" (front 57's `arbSel`, then front 56's `nestVariant`)
 
 ### Step 4 — the named-class escape
 
@@ -187,19 +187,19 @@ pub fn named(className: string, tokens: Token[]) -> string
 ```
 
 **Acceptance:**
-- [ ] `named("btn", btn())` returns `"btn"` and renders `.btn{…}` inside `@layer components{…}`.
-- [ ] The same token list passed to `emilia()` renders inside `@layer utilities{…}` under its hash,
-      and the two rules coexist in one document.
-- [ ] The hex produced by `emilia()` for a token list is byte-identical whether or not `named()` was
+- [x] `named("btn", btn())` returns `"btn"` and renders `.btn{…}` inside `@layer components{…}`. — held: emilia.bp test "named — `btn` lands in `@layer components`, beside the hashed class in utilities"
+- [x] The same token list passed to `emilia()` renders inside `@layer utilities{…}` under its hash,
+      and the two rules coexist in one document. — held: same test
+- [x] The hex produced by `emilia()` for a token list is byte-identical whether or not `named()` was
       called with the same list — the shared fixture from contract 4 is re-run as this front's own
-      test to prove it.
-- [ ] `named("e_abc", …)` is refused. So is a name carrying a character outside front 57's
-      `cssIdent` set.
-- [ ] Calling `named` twice with the same class name and different token lists is refused rather
+      test to prove it. — held: emilia.bp test "named — the hashed class of the same list is byte-identical either way" (a literal hex; front 48's shared fixture does not exist yet)
+- [x] `named("e_abc", …)` is refused. So is a name carrying a character outside front 57's
+      `cssIdent` set. — held: emilia.bp test "named — refuses the e_ space, a bad ident, and a second different registration"
+- [x] Calling `named` twice with the same class name and different token lists is refused rather
       than last-write-wins, because the host cell is keyed by name and the loser would vanish
-      silently.
-- [ ] A named class and a utility class on one element: the utility wins, and the test asserts the
-      layer order that makes it win rather than the outcome alone.
+      silently. — held: same test
+- [x] A named class and a utility class on one element: the utility wins, and the test asserts the
+      layer order that makes it win rather than the outcome alone. — held: emilia.bp test "named — a named class and a utility on one element: the utilities layer is later"
 
 ### Step 5 — the statement that this needs nothing from the compiler
 
@@ -209,10 +209,10 @@ no `#[@External]` cell, adds no `Token` variant, adds no `tokenToSheet` arm, and
 comptime block.
 
 **Acceptance:**
-- [ ] `compose.bp` contains no `declare fn`, no `#[@`, no `comptime` and no `@emit`.
-- [ ] `git diff` for this front touches `tokens.bp` in zero lines and `emilia.bp` in zero lines.
-- [ ] The front's `## Language gaps` section reads `None`, and that is asserted by the absence of a
-      `// LANGUAGE GAP:` marker in its example.
+- [x] `compose.bp` contains no `declare fn`, no `#[@`, no `comptime` and no `@emit`. — held: `compose.bp` has no `declare fn`, no `#[@`, no `comptime` and no `@emit`
+- [x] `git diff` for this front touches `tokens.bp` in zero lines and `emilia.bp` in zero lines. — superseded: `tokens.bp` is untouched, but `named()` and the read-only `lookupRule` cell live in `emilia.bp` — a sibling module cannot import `emilia.bp` (it does not resolve when emilia is a dependency) and a host cell does not cross modules; `compose.bp` still adds no `Token` and no arm (decisions-pending 05emilia-h)
+- [x] The front's `## Language gaps` section reads `None`, and that is asserted by the absence of a
+      `// LANGUAGE GAP:` marker in its example. — held: the spec's `examples/compose-example.bp` carries no `// LANGUAGE GAP:` marker
 
 ## Examples
 

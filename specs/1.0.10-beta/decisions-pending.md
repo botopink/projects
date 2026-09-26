@@ -320,6 +320,19 @@ local change in the named front.
 > **Recommendation.** (a), as a follow-up — not done in this pass because it moves two landed fronts'
 > pinned output together and every example that asserts a divided or spaced list.
 
+### 05emilia-h. Sibling modules never import `from "emilia"`; `named()` lives in `emilia.bp` (fronts 55, 57, 58, 59)
+
+> **Raised by:** `59-emilia-custom-utilities-and-variants` step 5, 2026-09-26
+> **Measured.** A sibling module importing `from "emilia"` (the default module `emilia.bp`) passes
+> `botopink test` in `modules/emilia/` and fails in every consumer: `unbound variable 'flushWith'`
+> in `emilia/preflight.bp` when `examples/emilia-cascade` compiles emilia as a dependency. Front 59's
+> step 5 wants `emilia.bp` untouched, but `named()` needs the host cell, and a host cell cannot be
+> imported across modules either.
+> **Options.** (a) Siblings import `tokens`/`theme`/`output`/each other only; `named()` and the
+> read-only `lookupRule` cell live in `emilia.bp`, and each front's rendering tests sit under its
+> banner there. (b) Fix the resolver first (a compiler change — not this track's).
+> **Recommendation.** (a) — implemented, emilia `76da9fb`; the resolver defect is a compiler finding.
+
 ## Front 23 (`00 · 23-std-purity`) — choices made in implementation, to confirm
 
 Decided by the implementation of steps 3 and 5 (worktree `.tasks/23-std-purity`, 2026-09-26) so the
