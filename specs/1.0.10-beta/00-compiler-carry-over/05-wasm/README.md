@@ -447,3 +447,11 @@ before anything was written.
   `unresolved call`. New cell `run/optional_chain_method.bp`; no snapshot moved.
 - **`x is Token.Num`** (status.md's `x is <Enum>.<Variant>` row, wasm half) — tests the one variant's
   descriptor; it trapped. A leading-dot variant two enums declare keeps the trap.
+- **The rows no step named** (each had its own `expected-failures.txt` line, 05's): an enum's methods
+  are emitted (`Shape.Rect(…).counts(3)` trapped) and its associated fn is a call (`Shape.unit()`
+  answered `0`); a method declared `-> @Iterator<T>` accumulates its yields (they were dropped —
+  `run/effect_method.bp`'s `0`); a method on a value of an imported type resolves through the
+  receiver's record (`modules/method_name_collision`'s `0` / `0`); the optional binder takes the
+  payload's record type (`modules/field_name_collision`'s `0`); a `_`-named top-level statement runs
+  at load (`run/module_init_order.bp`). Four lines deleted; 8 wasm snapshots per tree moved, three
+  RUN LOGs from a trap to the commonJS answer.
