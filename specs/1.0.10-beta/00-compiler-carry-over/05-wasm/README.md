@@ -112,25 +112,31 @@ record; the optional binder takes the payload's record type; a `_`-named top-lev
 load; a constructor in binding position reads each binding off its field's slot (JS-4's twin); a
 behavior's `default fn`s are adopted by a type that does not write them; a method answers the record
 its return names; `opt.map(…)` is a registered optional; a slice's `null` end is the end; a variant
-reached through its enum is the enum's even beside a same-named record; a call to a name two linked
-modules declare traps where it is called instead of reaching the first module's function.
+reached through its enum is the enum's even beside a same-named record; a function two linked
+modules declare is mangled per module (`<module>/<name>`) and every call that means it is rewritten
+to it, and a module-level `val` two modules declare traps where it is read; a float literal is an
+`f64.const` and a radix literal its decimal value; a named record's `f64` field is a boxed `f64`
+cell, and a method's float parameter and result are the float it declares; a `?V` over a type
+parameter is always a box (C-18's wasm half), a method's `return` boxes into its declared `?T`, and
+a `?T[]` of a scalar prints as the array or `null`; a lambda in a function-typed field takes its
+parameter types from the field, and the call its return type; `try f()` over a `-> @Result<T[], E>`
+is an array, and a `for` over an iterable wasm cannot walk traps; a bare `return;` in a function
+with a result leaves with the neutral value.
 
 ### Open rows with no numbered step
 
-- **Per-module mangling of the link** — wasm links every module into one flat namespace, so two
-  definitions of one name reachable from one program collide; the silent half is closed (the call
-  traps), the linking model is not.
-- **C-18's `Dict` absence** — `run/index_dict.bp`, `run/index_at_optional.bp`,
-  `run/index_user_type.bp`: a `?V` over a type parameter is carried unboxed (nothing monomorphises —
-  the generic-parameter limit, `src/codegen/wat/AGENTS.md`), so an absent `Dict.at` prints `0` and a
-  non-scalar `?T` prints a heap address.
+- **`==` between two type-parameter values compares words** —
+  `modules/method_on_unimported_type`: `Dict.at` finds a string key only when both sides are one
+  interned literal; nothing monomorphises (`src/codegen/wat/AGENTS.md` § the generic-parameter
+  limit).
+- **`val assert` over a record's constructor** — `run/val_assert_record_pattern.bp`: the pattern is
+  neither tested nor bound.
 
 ## Dependencies
 
 | This front's row | Needs |
 |---|---|
-| C-18's `Dict` absence | a `?V` over a type parameter boxed — monomorphisation or a boxed generic slot |
-| per-module mangling | nothing outside this front |
+| type-parameter `==` | the instantiated type at the call site — monomorphisation or a tagged word |
 
 ## Gate
 
@@ -141,8 +147,8 @@ modules declare traps where it is called instead of reaching the first module's 
 - [x] no new `RUN LOG` answers a value with exit 0 that another backend answers differently — a shape
   wasm cannot do is a `RUNTIME TRAP`, never a wrong number
 - [x] the `RUNTIME TRAP` fixtures are re-read: each is still a shape wasm cannot do, or it is fixed —
-  those left are the program's own `@todo()`, a fatal `assert` outside test mode, and the flat
-  namespace (a trap by design until the link mangles)
+  those left are the program's own `@todo()`, a fatal `assert` outside test mode, and a
+  module-level `val` two linked modules declare
 - [x] `src/codegen/AGENTS.md` and `src/codegen/wat/AGENTS.md` updated in the same commit as each row
 - [x] Commit on a branch; no push, no merge — `front/04-05-js-wasm`
 

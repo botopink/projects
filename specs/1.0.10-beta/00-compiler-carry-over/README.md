@@ -76,8 +76,8 @@ item stands is `status.md`'s.
 `if (a && b)` in condition position → C-08 · a std module cannot call another std module (a bare
 import of an external symbol is `undefined` at run time) → C-03 is the erlang half; the commonJS route
 is unverified and may be its own row · module-level `pub val` of a user type / module-level state →
-C-05 · sidecar module atoms colliding silently with emitted basenames → C-25 (the collision check of
-13 half 1 covers emitted modules; extending it to `shipErlSidecars` is the row) · the formatter's reds
+C-05 · a sidecar named like an emitted module's atom → C-25 (the collision check of 13 half 1 covers
+emitted modules; extending it to `shipErlSidecars` is the row) · the formatter's reds
 → C-11, C-12. The rest of `language-gaps.md` (bitwise operators, a byte type, decorator bodies, `@Decl`
 source location, `never`, record update, the import alias, …) has **no 1.0.5 origin** and needs its own
 front in this milestone; it is not carried here so that this front stays what it is — the compiler
@@ -689,9 +689,10 @@ each costed, one recommended.
 
 **Origin:** 13 step 6's residuals, which `fronts.md` says live in `decisions-pending.md` and do not:
 `CrossModule.exports` is keyed by bare symbol name, so two libraries exporting `pub fn get` collide
-silently (and `language-gaps.md`'s toolchain row — a sidecar `.erl` whose atom matches an emitted
-module is skipped by `shipErlSidecars` and the program dies `undefined function` — is the same class,
-one predicate away from the collision check 13 half 1 built); the comptime server never purges a
+silently (a sidecar named like an emitted module's BASENAME is shipped since `shipErlSidecars`
+matches emitted module atoms only; a sidecar whose file is named like an emitted ATOM,
+`<pkg>@<path>.erl`, is still never consulted — the same class, one predicate away from the
+collision check 13 half 1 built); the comptime server never purges a
 loaded module (`persistent_erl.zig`, no `code:purge/1`) and never deletes
 `.botopinkbuild/tmp/{template,decorator}/*.erl`. And 10's housekeeping: `stash@{0}` (front 20 defect A,
 an obsolete subset of `feat`) is still in the main checkout's stash list.
