@@ -220,7 +220,8 @@ repository (it has no manifest; each `repository/<lib>` is a workspace and the g
 
 - The runner prints **one row per member**, examples included, on every target the member's
   (inherited or restricted) `targets` allows; the umbrella has no row. `✗` is the only status that
-  fails the run; `scripts/known-red-libs.txt` names a red cell with the front that owns it.
+  fails the run; `scripts/known-red-libs.txt` names a red cell with the front that owns it and the
+  library commit it was measured at, and a line whose library has moved fails the run as stale.
 - A **library member** (`root.bp`-rooted) that lists no `files` **ships nothing**: `botopink test`
   inside it fails, and the runner marks every cell `✗ ships nothing`.
 - `botopink test` inside a member needs nothing new: cwd is the member, `src/` and `test/` are its

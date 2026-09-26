@@ -167,8 +167,8 @@ Each example is a workspace member (`botopink.json` + `src/main.bp`, inline test
 examples gate. The fifteen that exist are per-front worked examples (named in each front's README
 and in `docs.md`). Remaining work, unowned:
 
-- `emilia-card` still depends on jhonstart and targets commonJS only; decision 114 makes it an
-  emilia-only example that prints its class names and flushed sheet, on both targets.
+- `emilia-card` still depends on jhonstart (it targets commonJS and erlang, 4/4 on both); decision
+  114 makes it an emilia-only example that prints its class names and flushed sheet.
 - [`test-snap-examples.md`](./test-snap-examples.md) maps nine cross-front snapshot examples
   (`theme-brand`, `dashboard-layout`, `typography-article`, `interactive-button`, `dark-mode-nav`,
   `media-gallery`, `arbitrary-and-compose`, `class-attributes`, and `emilia-card`); only
