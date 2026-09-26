@@ -241,9 +241,9 @@ type raise `effect-type-removed`, and `@Iterator<T, E>` `iterator-error-param-re
 arms print the three prefixes back.
 
 **Acceptance:**
-- [ ] every new form in [`guide.md`](./guide.md) parses, each with a `parser/tests/` case and an `assertLossless` round-trip
+- [x] every new form in [`guide.md`](./guide.md) parses, each with a `parser/tests/` case and an `assertLossless` round-trip — `parser/tests/effect_rejections.zig` (the five wrappers, the prefixed loops as a value and an argument, `try await x` is `try (await x)`), `parser/tests/surface.zig` (the prefixed loop's kind and keyword); `format/tests/expressions.zig`'s two `assertFormatLossless` cases (`iter loop` / `stream loop`, and `async { … }`, `iter while` / `iter for`, `stream while` / `stream for`, `try await`, `yield :label`)
 - [x] every old form raises the right code with the fix-it located on the annotation / type argument — `reject/` cells per row of the diagnostics table below
-- [ ] `g.iter()`, `val stream = 1`, `http.stream(…)`, `import {async} from "std"` and `async.allOf(…)` parse as identifiers (`test/contextual_words.bp`)
+- [x] `g.iter()`, `val stream = 1`, `http.stream(…)`, `import {async} from "std"` and `async.allOf(…)` parse as identifiers (`test/contextual_words.bp`; `async.allOf` beside an `async { }` block in `run/async_block_all_of.bp`)
 - [x] `src/parser/AGENTS.md`, `src/format/AGENTS.md` in the same commit
 
 ### Step E3 — types and effects
@@ -271,7 +271,17 @@ arms print the three prefixes back.
 
 **Acceptance:**
 - [ ] every ✗ in [`guide.md`](./guide.md) answers exactly the code of the diagnostics table below, and every example without ✗ types
-- [ ] the *Return and effect mode*, *`@Task` and failure*, *Chain and `use`*, *`async { }`*, *Iterators* (type half) and *Prefixed loops* cells green on four targets
+      — **open.** Measured fence by fence at compiler `f7398c40` (one program per fence, stubs for the
+      helpers it does not declare): every ✗ that names a code answers it, and the code-less ones answer a
+      located error (24-a) — except `#[layout] … -> Element` (§ 4.5), which nothing refuses (decision 117's
+      check is jhonstart's and is not written). Six ✓ fences do not type as written: guide slips — `parsePort`
+      returns `n: i64` as an `i32` (§ 2), `http.get` / `json.decode` are not std's (`http.fetch`), `async.timeout`
+      takes a thunk (24-g), `val (n, inc) = use …` is `val #(n, inc)`, `e.toString()` on a `ParseError` that
+      declares none; and three checker gaps — `try x catch null` into a `?U` is refused with no location
+      (§ 4.3, § 4.4, § 7), a `null` check whose branch ends in a `noreturn` call (`redirect`, `notFound`) does
+      not narrow, and a component called inside a component body answers `@Component<…>` where the guide
+      uses it as an `Element` (no location either)
+- [x] the *Return and effect mode*, *`@Task` and failure*, *Chain and `use`*, *`async { }`*, *Iterators* (type half) and *Prefixed loops* cells green on four targets (`tests/language/run.sh --target all` and `--target beam`, none in `expected-failures.txt`; `run/async_block_all_of` runs on commonJS and erlang only — `std/async` has no wasm / beam host)
 - [x] the hint of item 9 in a `reject/` cell's `.expect` for each of the three sources
 - [x] `comptime/AGENTS.md` in the same commit
 
@@ -293,10 +303,10 @@ re-keyed to `GenLoop`; the host rows of decision 126. TypeScript: `@Task` → `P
 `IterableIterator`, `@Stream` → `AsyncGenerator`.
 
 **Acceptance:**
-- [ ] the *Iterators*, *Streams*, *Host* and *`@Task` and failure* run cells green on four targets by running, no `expected-failures.txt` line
+- [x] the *Iterators*, *Streams*, *Host* and *`@Task` and failure* run cells green on four targets by running, no `expected-failures.txt` line (the host cells and `run/task_throw_resolves_error` are one-host claims, `.targets` commonJS / erlang)
 - [x] JS: a `throw` in `@Task<@Result<…>>` resolves the Promise with `Error`, never rejects (`run/task_throw_resolves_error.bp`, node)
 - [x] every re-recorded snapshot classified: rename, `async function` where a body did not await, a RUN LOG changed by running
-- [ ] `CHANGELOG.md` entry for the JS interop change; `codegen/AGENTS.md` in the same commit
+- [x] `CHANGELOG.md` entry for the JS interop change; `codegen/AGENTS.md` in the same commit (meta `CHANGELOG.md` § v1.0.10-beta *2. JavaScript interop — a failing Task resolves, it does not reject* and the Migration Guide's last mark; `codegen/AGENTS.md`'s `-> @Task<T>` row and the host rows)
 
 ### Step E6 — the codemod `botopink migrate effects`
 
@@ -329,7 +339,7 @@ compiler commit.
 
 **Acceptance:**
 - [x] `std/async` and `std/http` signatures closed and green **before** the codemod runs on the libraries (§ *Merge order*, 5)
-- [ ] `zig build test-libs` green on every row at its pre-sweep counts; `known-red-libs.txt` back to its header
+- [x] `zig build test-libs` green on every row at its pre-sweep counts; `known-red-libs.txt` back to its header — measured per row with `botopink test --json` from a copy outside the meta checkout (24-f), compiler `f7398c40`: rakun 388 / 386 + 2 pinned red (erlang) / rakun-web 104 / rakun-validation 54 per row; jhonstart 120 per row (jhonstart-html 5, jhonstart-test 1, markup 7, todo 3, counter 4 on commonJS — erlang `build`, pinned); emilia 569 per row plus its fourteen members (1–18 each, equal on both rows); onze 8 (+ example 4 on commonJS); erika 31 + erika-linq 9 — every row at the pre-sweep count
 - [x] `grep -rnE '#\[@(result|future|use|generator|resultGenerator|futureGenerator)\]|@(Future|Use)<|@(Result|Future)?Generator<' repository/{jhonstart,rakun,emilia,onze,erika} libs/` finds nothing
 - [x] the meta submodule pointers bumped in the same sweep
 
@@ -344,6 +354,12 @@ new codes added to the diagnostics reference (`comptime/diagnostics.zig`'s table
 **Acceptance:**
 - [x] `scripts/check-docs.sh` green; every `docs.md` fence compiles
 - [ ] `grep -rnE '#\[@(result|future|use|generator|resultGenerator|futureGenerator)\]|@(Future|Use)<|@ResultGenerator|@FutureGenerator' specs/1.0.10-beta --include=*.md --include=*.bp` finds only `decisions-taken.md` (the record)
+      — **open, by wording.** Every library front, `01-std`, `02-packaging` and the milestone files are clean. What
+      remains is record, not example: this front's own README and `guide.md` (which name the old forms to
+      refuse and migrate them), `decisions-pending.md` 24-d / 24-g, `status.md`'s history lines, and the specs of
+      the landed compiler fronts `19-use-activation`, `20-builtins-surface`, `21-effect-chain` and `22-loops`
+      (their cells are re-specified in § *Cells*; rewriting their text would misstate what they landed). The
+      maintainer decides whether the line widens to that set or those four fronts get a superseded note
 - [x] no front README keeps the "pre-118 effect annotations" line
 
 ## Diagnostics
@@ -377,59 +393,59 @@ re-recorded under `snapshots/codegen/{beam,wat}/<target>/` (decision 85). 21's a
 generator and loop cells are re-spelled into these.
 
 **Return and effect mode**
-- [ ] ✓ `@Result` with `throw`, `try`, `return T`, `return @Result`
-- [ ] ✓ `@Task<@Result<U, E>>`: `return U`, `return @Result`, `return @Task<…>` (three layers)
-- [ ] ✗ `effect-return-ambiguous-nesting` with `@Result<@Result<…>>`
-- [ ] ✗ `effect-wrapper-behind-alias`
-- [ ] ✓ an alias on a function **without** capabilities (it only passes a value along)
+- [x] ✓ `@Result` with `throw`, `try`, `return T`, `return @Result` — `test/effect_return_result`
+- [x] ✓ `@Task<@Result<U, E>>`: `return U`, `return @Result`, `return @Task<…>` (three layers) — `run/task_return_layers`
+- [x] ✗ `effect-return-ambiguous-nesting` with `@Result<@Result<…>>` — `reject/effect_return_ambiguous_nesting`
+- [x] ✗ `effect-wrapper-behind-alias` — `reject/effect_wrapper_behind_alias`
+- [x] ✓ an alias on a function **without** capabilities (it only passes a value along) — `run/effect_alias_passes_value`
 
 **`@Task` and failure**
-- [ ] ✓ `@Task<T>` with `await` and no `try`
-- [ ] ✗ `throw` in `@Task<i32>`
-- [ ] ✓ `await t` answers the `@Result`; `try await t` propagates; `try await t catch x`
-- [ ] ✗ `try await` in a `@Task<i32>` function (no `@Result`)
-- [ ] ✓ JS run: a `throw` in `@Task<@Result<…>>` resolves the Promise with `Error`, does not reject
+- [x] ✓ `@Task<T>` with `await` and no `try` — `run/task_await_no_try`
+- [x] ✗ `throw` in `@Task<i32>` — `reject/task_throw_without_result`
+- [x] ✓ `await t` answers the `@Result`; `try await t` propagates; `try await t catch x` — `run/task_await_result`
+- [x] ✗ `try await` in a `@Task<i32>` function (no `@Result`) — `reject/task_try_await_without_result`
+- [x] ✓ JS run: a `throw` in `@Task<@Result<…>>` resolves the Promise with `Error`, does not reject — `run/task_throw_resolves_error` (`.targets commonJS`)
 
 **Chain and `use`**
-- [ ] ✓ `@Component<C, T>` with `use` + `await`, as a hook (any `T`) and as a component (`T: @Context<C>`)
-- [ ] ✓ `@Component<C, @Result<T, E>>` with `try await`
-- [ ] ✗ `try` in `@Component<ElementBase, Element>`
-- [ ] ✗ `await` under `@Result`; `use` under `@Task`; two bases in one `@Component`; `use` of a component (its `T` owns the context)
+- [x] ✓ `@Component<C, T>` with `use` + `await`, as a hook (any `T`) and as a component (`T: @Context<C>`) — `run/component_hook_and_component`
+- [x] ✓ `@Component<C, @Result<T, E>>` with `try await` — `run/component_result_try_await`
+- [x] ✗ `try` in `@Component<ElementBase, Element>` — `reject/component_try_element`
+- [x] ✗ `await` under `@Result`; `use` under `@Task`; two bases in one `@Component`; `use` of a component (its `T` owns the context) — `reject/await_under_result`, `reject/use_under_task`, `reject/component_two_bases`, `reject/use_of_component`
 
 **`async { }`**
-- [ ] ✓ in a plain function, passed to `async.allOf`
-- [ ] ✓ without `throw` / `try` → `@Task<T>`; with → `@Task<@Result<U, E>>`
-- [ ] ✓ `return` leaves the block, not the function
-- [ ] ✗ `use` inside `async { }` in a `@Component` function (closure)
-- [ ] ✗ `gen-infer-conflicting-errors`
+- [x] ✓ in a plain function, passed to `async.allOf` — `run/async_block_all_of` (`.targets commonJS erlang` — `std/async` has no wasm/beam host, `std-unsupported-on-target`)
+- [x] ✓ without `throw` / `try` → `@Task<T>`; with → `@Task<@Result<U, E>>` — `run/async_block_value_type`
+- [x] ✓ `return` leaves the block, not the function — `run/async_block_return`
+- [x] ✗ `use` inside `async { }` in a `@Component` function (closure) — `reject/async_block_use`
+- [x] ✗ `gen-infer-conflicting-errors` — `reject/async_block_conflicting_errors`
 
 **Iterators**
-- [ ] ✓ `fibonacci`, `firstNegative` (run: the exact sequence)
-- [ ] ✓ `@Result` item: `yield try`, `throw` → the last item is `Error`, then `Done`
-- [ ] ✓ `for` with `try r` propagates; `for` with `case` continues
-- [ ] ✓ factory (`return iter for …`) vs iterator
-- [ ] ✗ `throw` with an item that is not a `@Result`; `iter-await`; `iter-mixed-yield-return`; `iterator-error-param-removed`
+- [x] ✓ `fibonacci`, `firstNegative` (run: the exact sequence) — `run/iterator_fibonacci`
+- [x] ✓ `@Result` item: `yield try`, `throw` → the last item is `Error`, then `Done` — `run/iterator_result_item`, `run/prefixed_loop_result_item`
+- [x] ✓ `for` with `try r` propagates; `for` with `case` continues — `run/iterator_result_items`
+- [x] ✓ factory (`return iter for …`) vs iterator — `run/iterator_factory`
+- [x] ✗ `throw` with an item that is not a `@Result`; `iter-await`; `iter-mixed-yield-return`; `iterator-error-param-removed` — `reject/iterator_throw_without_result`, `reject/iter_await`, `reject/iter_mixed_yield_return`, `reject/iterator_error_param_removed`
 
 **Streams**
-- [ ] ✓ `pages` + `for await` (run with a simulated http, including a failure in the middle)
-- [ ] ✓ `stream loop` with no failure → `@Stream<T>`
-- [ ] ✗ `for await` without an await channel
+- [x] ✓ `pages` + `for await` (run with a simulated http, including a failure in the middle) — `run/stream_pages`
+- [x] ✓ `stream loop` with no failure → `@Stream<T>` — `run/stream_loop_no_failure`
+- [x] ✗ `for await` without an await channel — `reject/for_await_without_task`
 
 **Prefixed loops**
-- [ ] ✓ `iter loop` / `iter while` / `iter for` as a `val` and as an argument
-- [ ] ✓ `break v` in the prefixed loop ends the sequence
-- [ ] ✓ `yield` in an inner `for` feeds the outer `iter`; `yield :label`
-- [ ] ✗ `break :outer` crossing the border
-- [ ] ✓ `g.iter()`, `val stream = 1`, `http.stream(…)`, `async.allOf(…)` stay identifiers
+- [x] ✓ `iter loop` / `iter while` / `iter for` as a `val` and as an argument — `run/prefixed_loop_forms`
+- [x] ✓ `break v` in the prefixed loop ends the sequence — `run/prefixed_loop_break_value`
+- [x] ✓ `yield` in an inner `for` feeds the outer `iter`; `yield :label` — `run/prefixed_loop_nearest_scope`
+- [x] ✗ `break :outer` crossing the border — `reject/prefixed_loop_break_outer`
+- [x] ✓ `g.iter()`, `val stream = 1`, `http.stream(…)`, `async.allOf(…)` stay identifiers — `test/contextual_words` (`async.all`), `run/async_block_all_of` (`async.allOf`)
 
 **Host**
-- [ ] ✓ `@External.Node` with `-> @Task<@Result<T, string>>`: a rejected Promise becomes `Error`
-- [ ] ✓ `@External.Erlang` with `{error, R}` becomes `Error(R)`
+- [x] ✓ `@External.Node` with `-> @Task<@Result<T, string>>`: a rejected Promise becomes `Error` — `run/host_node_task_result` (`.targets commonJS`)
+- [x] ✓ `@External.Erlang` with `{error, R}` becomes `Error(R)` — `run/host_erlang_task_result` (`.targets erlang`)
 
 **Migration**
-- [ ] ✗ each old annotation gives `effect-annotation-removed` with the right fix-it
-- [ ] ✗ `@Future<…>` gives `effect-type-removed` suggesting `@Task<@Result<…>>`
-- [ ] ✗ `@Use<C, T>` gives `effect-type-removed` suggesting `@Component<C, T>`; `@Component<T>` (one argument) is a type-arity error
+- [x] ✗ each old annotation gives `effect-annotation-removed` with the right fix-it — `reject/effect_annotation_removed_*` (nine cells, the three loop forms among them); the fix-it text per kind in `print.zig`, located by `parser/tests/effect_rejections.zig`
+- [x] ✗ `@Future<…>` gives `effect-type-removed` suggesting `@Task<@Result<…>>` — `reject/effect_type_removed_future`, `…_future_no_error`
+- [x] ✗ `@Use<C, T>` gives `effect-type-removed` suggesting `@Component<C, T>`; `@Component<T>` (one argument) is a type-arity error — `reject/effect_type_removed_use`, `reject/component_one_type_argument` (`generic-required-arg-missing`)
 - [x] the codemod snapshot over a file with every pattern of § *Codemod* (E6)
 
 ## Codemod
@@ -496,11 +512,32 @@ a text pass.
 
 ## Gate
 
-- [ ] `scripts/gate.sh --cold` green at every commit; `test-libs` at baseline (a library through the ledger only during its sweep)
-- [ ] `zig build test-language` green on the four targets with § *Cells*; every re-recorded RUN LOG verified by running
+- [x] `scripts/gate.sh --cold` green at every commit; `test-libs` at baseline (a library through the ledger only during its sweep) — at the integration tip, compiler `f7398c40`, from a standalone copy outside the meta checkout (24-f); numbers below
+- [x] `zig build test-language` green on the four targets with § *Cells*; every re-recorded RUN LOG verified by running (785 / 28 expected / 0 on commonJS, erlang, wasm; `--target beam` 204 / 7 / 0; no § *Cells* line in `expected-failures.txt`; a RUN LOG is written by running the program, and the cold `zig build test` re-ran every one)
 - [x] the `effect_chain.zig` drift test green with `builtins.d.bp` at its final shape
 - [ ] `AGENTS.md` of every directory touched, in the same commit as each change
-- [ ] Commit on `front/24-effects-by-return`; no push, no merge — landing is the maintainer's step
+      — **holds at the tip, not per commit.** Over `82e32e36..f7398c40` every directory with a code change has
+      its `AGENTS.md` changed (the last gap, `src/AGENTS.md` on the `YieldStep` splice, closed here); per
+      commit, 10 of the 23 non-merge commits changed a file whose nearest `AGENTS.md` moved in a later commit
+      (`86609a66`, `f56fdeb0`, `ead68172`, `7895a72c`, `f3ad584a`, `8da5cfc1`, `a23510d1`, `e69438a4`,
+      `f9da1cc5`, `145fda1c`) — history this front does not rewrite
+- [x] Commit on `front/24-effects-by-return`; no push, no merge — landing is the maintainer's step (the front's branches are gathered on `front/24-integration`; nothing pushed, `feat` untouched)
+
+**Measured** at compiler `f7398c40` (meta `front/24-integration`), 2026-09-26, from a standalone copy
+outside the meta checkout (24-f):
+
+| Stage | Result |
+|---|---|
+| `scripts/gate.sh --cold` | every stage passed |
+| `zig build test` | 2474 / 2474 |
+| comptime runtime parity | 1415 pairs, 0 differing |
+| beam export audit | 468 / 468 modules |
+| `test-cli`, `test-bpmp`, `format-check.sh` | green |
+| `test-libs` | 54 passed, 0 failed, 0 known red, 19 restricted as pinned, 17 without tests; per-row counts at baseline (E7) |
+| `test-language` (commonJS, erlang, wasm) | 785 passed, 28 expected, 0 failed |
+| `tests/language/run.sh --target beam` | 204 passed, 7 expected, 0 failed |
+| `test-docs` | 82 fences, 68 checked, 6 skipped, 0 failed |
+| vscode-extension `npm test` / `compiler-check` | 49 / 49; passed |
 
 ## Risks and open points
 

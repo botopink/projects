@@ -23,4 +23,14 @@ One line per landed step; the boxes are in [`README.md`](README.md).
   (commonJS, erlang, wasm) and `--target beam` 198 / 8 / 0; `test-docs` 68 checked / 0 failed;
   `test-libs` 54 passed, 0 failed, 0 known red, 19 restricted as pinned, 17 without tests (per-test
   counts not compared with the pre-sweep ones); `test-cli`, `test-bpmp`, `format-check.sh` green; `scripts/gate.sh --cold` green end to end;
-  vscode-extension `npm test` 49/49 and `compiler-check` passed. `front/24-yieldstep` not merged yet.
+  vscode-extension `npm test` 49/49 and `compiler-check` passed.
+- Close-out (`front/24-integration`, 2026-09-26) — compiler `f7398c40`: `front/24-yieldstep`,
+  `front/24-cells`, `front/24-type-alias` and `front/24-lsp` merged; the migration mode reads the pre-122
+  `YieldStep<T, E>` as `YieldStep<T>` (`816ec3b9` — RG5's arity check on the now-registered type had left
+  the codemod's fixtures untyped); the E2 lossless round-trip of `async { }`, `iter` / `stream while` /
+  `for`, `try await` and `yield :label` (`f7398c40`). Gate from a standalone copy: `scripts/gate.sh --cold`
+  green (`zig build test` 2474/2474, runtime parity 1415 pairs, beam export 468/468, test-libs 54 / 0 / 0
+  known red / 19 restricted as pinned with every row at its pre-sweep count, test-language 785 / 28 / 0,
+  test-docs 68 checked / 0 failed), `--target beam` 204 / 7 / 0, vscode-extension 49/49 and
+  `compiler-check` passed. README: 68 boxes ticked, 3 open with their reasons (guide fences that do not
+  type as written, the E8 grep's wording, `AGENTS.md` per commit).
