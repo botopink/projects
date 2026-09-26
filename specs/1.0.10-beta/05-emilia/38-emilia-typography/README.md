@@ -277,12 +277,12 @@ and `:513-520`, is **not** affected: `font-weight:bold` is emilia's own leaf, no
 a Tailwind utility, and this front leaves it alone.
 
 **Acceptance:**
-- [ ] `.Text.Size.Lg` emits two declarations, `;`-joined, from one token
-- [ ] `.Font.Sans` emits `font-family:var(--font-sans)`
-- [ ] `.Text.Underline` emits `text-decoration-line:underline`
-- [ ] `.Text.Bold` still emits `font-weight:bold`, and `emilia.bp:407-409` is untouched
-- [ ] the two affected assertions in `src/emilia.bp` are updated, and `grep -R 'font-size:1.125rem' repository/emilia`
-      returns nothing outside front 54's theme entries
+- [x] `.Text.Size.Lg` emits two declarations, `;`-joined, from one token — held: test "front 38 — a size token is the --text-* PAIR, and no longer a rem"
+- [x] `.Font.Sans` emits `font-family:var(--font-sans)` — held: test "front 38 — a family references var(--font-*), not a literal stack"
+- [x] `.Text.Underline` emits `text-decoration-line:underline` — held: test "front 38 — underline is the text-decoration-line LONGHAND"
+- [x] `.Text.Bold` still emits `font-weight:bold`, and `emilia.bp:407-409` is untouched — held: test "front 38 — .Text.Bold is untouched, and sits next to three that changed"
+- [x] the two affected assertions in `src/emilia.bp` are updated, and `grep -R 'font-size:1.125rem' repository/emilia`
+      returns nothing outside front 54's theme entries — held (shape: grep still hits comments/docs and hand-built probe controls — `emilia.bp:3005`/`:6400`/`:7475`/`:10673`/`:17788`, `output.bp:876` — none a token's output): test "front 38 — a size token is the --text-* PAIR, and no longer a rem"
 
 ### Step 2 — widen size, weight and family
 
@@ -292,42 +292,42 @@ into front 54's theme with `extend`, beside front 33's `paletteEntries()`; `§ 2
 and its line-height, so this half is fully specifiable from the reference.
 
 **Acceptance:**
-- [ ] thirteen sizes, `Xs` through `X9xl`
-- [ ] the entries define `--text-xs` as `0.75rem` with `--text-xs--line-height` as `calc(1 / 0.75)`, and
-      `--text-5xl` as `3rem` with line-height `1` — the two shapes `§ 21.3` distinguishes
-- [ ] nine weights, `100` through `900`
-- [ ] `.Font.Weight.Bold` still emits `font-weight:700`
+- [x] thirteen sizes, `Xs` through `X9xl` — held: test "front 38 — thirteen sizes, each a --text-* pair"
+- [x] the entries define `--text-xs` as `0.75rem` with `--text-xs--line-height` as `calc(1 / 0.75)`, and
+      `--text-5xl` as `3rem` with line-height `1` — the two shapes `§ 21.3` distinguishes — held (shape: `--text-*` lives in front 54's `defaultTheme()`, not restated in `typographyEntries()`): test "front 38 — the --text-* half of the theme is front 54's, not a second copy"
+- [x] nine weights, `100` through `900` — held: test "front 38 — nine weights, 100 through 900"
+- [x] `.Font.Weight.Bold` still emits `font-weight:700` — held: test "front 38 — nine weights, 100 through 900"
 
 ### Step 3 — smoothing, style, stretch, variant-numeric
 
 Four sub-sections under `Font`.
 
 **Acceptance:**
-- [ ] `antialiased` emits both vendor properties, `;`-joined, from one token
-- [ ] nine stretch values
-- [ ] nine variant-numeric values
-- [ ] `.Font.Style.Normal` emits `font-style:normal` — the Tailwind name is `not-italic` and the CSS
-      value is `normal`, and the test says so
+- [x] `antialiased` emits both vendor properties, `;`-joined, from one token — held: test "front 38 — antialiased is two vendor properties from one token"
+- [x] nine stretch values — held: test "front 38 — nine font-stretch values"
+- [x] nine variant-numeric values — held: test "front 38 — nine font-variant-numeric values, upstream's spelling"
+- [x] `.Font.Style.Normal` emits `font-style:normal` — the Tailwind name is `not-italic` and the CSS
+      value is `normal`, and the test says so — held: test "front 38 — not-italic is Style.Normal, and the CSS value is normal"
 
 ### Step 4 — tracking, leading, clamp
 
 **Acceptance:**
-- [ ] six tracking values, each a `var(--tracking-*)`
-- [ ] six leading values, five of them `var(--leading-*)` and `None` the literal `1`
-- [ ] the theme entries carry the six tracking and five leading values `§ 9.9` and `§ 9.11` print in
-      parentheses
-- [ ] `.Text.Clamp.3` emits four declarations in the order `§ 9.10` prints them
-- [ ] `.Text.Clamp.None` emits the four-declaration reset, not an omission
+- [x] six tracking values, each a `var(--tracking-*)` — held: test "front 38 — six tracking values, each a var(--tracking-*)"
+- [x] six leading values, five of them `var(--leading-*)` and `None` the literal `1` — held: test "front 38 — six leading values, five references and one literal"
+- [x] the theme entries carry the six tracking and five leading values `§ 9.9` and `§ 9.11` print in
+      parentheses — held: test "front 38 — the tracking and leading values the reference prints"
+- [x] `.Text.Clamp.3` emits four declarations in the order `§ 9.10` prints them — held: test "front 38 — line-clamp-N is four declarations in the reference's order"
+- [x] `.Text.Clamp.None` emits the four-declaration reset, not an omission — held: test "front 38 — line-clamp-none is the four-declaration RESET, not an omission"
 
 ### Step 5 — transform, overflow, wrap, whitespace, breaking, hyphens
 
 **Acceptance:**
-- [ ] `.Text.Truncate` emits three declarations
-- [ ] `.Text.Break.Normal` emits two; `.Text.Break.Words` emits one
-- [ ] `Break` (`§ 9.29`, `word-break`) and `OverflowWrap` (`§ 9.30`) are separate sub-sections —
+- [x] `.Text.Truncate` emits three declarations — held: test "front 38 — truncate is three declarations"
+- [x] `.Text.Break.Normal` emits two; `.Text.Break.Words` emits one — held: test "front 38 — break-normal is two, break-words is one, and they differ in property"
+- [x] `Break` (`§ 9.29`, `word-break`) and `OverflowWrap` (`§ 9.30`) are separate sub-sections —
       Tailwind's `break-*` and `wrap-*` overlap in effect and not in property, and merging them
-      would lose `wrap-anywhere`
-- [ ] six whitespace values, three hyphens values
+      would lose `wrap-anywhere` — held: test "front 38 — OverflowWrap is a separate section, and wrap-anywhere is why"
+- [x] six whitespace values, three hyphens values — held: tests "front 38 — six whitespace values" + "front 38 — three hyphens values"
 
 ### Step 6 — decoration, indent, vertical-align, tab, content, and the `List` section
 
@@ -335,14 +335,14 @@ Four sub-sections under `Font`.
 cannot drift.
 
 **Acceptance:**
-- [ ] `Decoration.Style` answers five values, `Thickness` six, `Offset` five
-- [ ] `.Text.Decoration.Color.Red.500` emits `text-decoration-color:var(--color-red-500)` and is
-      produced by front 33's helper, not a copy
-- [ ] `.Text.Indent.8` calls front 54's `spacing(8)` and emits `calc(var(--spacing) * 8)`
-- [ ] eight vertical-align values, four tab sizes
-- [ ] `.Text.Content.Empty` emits `content:""` — two quote characters inside the CSS value
-- [ ] `List` answers six leaves across three properties
-- [ ] one arm added to the top-level `tokenToCss` case for `List`; `Text` and `Font` already have theirs
+- [x] `Decoration.Style` answers five values, `Thickness` six, `Offset` five — held: tests "front 38 — five decoration styles" + "front 38 — six thicknesses and five offsets, the reference's extent"
+- [x] `.Text.Decoration.Color.Red.500` emits `text-decoration-color:var(--color-red-500)` and is
+      produced by front 33's helper, not a copy — held: `emilia.bp:textDecorationColorToCss` calls `paletteVar`; test "front 38 — a decoration colour is front 33's reference, not a copy"
+- [x] `.Text.Indent.8` calls front 54's `spacing(8)` and emits `calc(var(--spacing) * 8)` — held: test "front 38 — indent answers front 54's spacing(n), and resolves nothing"
+- [x] eight vertical-align values, four tab sizes — held: tests "front 38 — eight vertical-align values" + "front 38 — four tab sizes, each a COUNT and not a length"
+- [x] `.Text.Content.Empty` emits `content:""` — two quote characters inside the CSS value — held: test "front 38 — content-none and content-[''], two quote characters and all"
+- [x] `List` answers six leaves across three properties — held: test "front 38 — List answers six leaves across three properties"
+- [x] one arm added to the top-level `tokenToCss` case for `List`; `Text` and `Font` already have theirs — held: `emilia.bp:tokenToSheet` `List(_inner) -> declSheet(listTokenToCss(_inner, th))` beside the existing `Text`/`Font` arms
 
 ## Examples
 
@@ -395,14 +395,14 @@ What the tests assert:
 
 ## Definition of done
 
-- [ ] every utility in `§ 9.1`–`§ 9.32` that is not an arbitrary-value form has a token
-- [ ] the four corrected tokens emit the v4.3 form and the two affected assertions in
-      `src/emilia.bp` are updated in the same commit
-- [ ] `.Text.Bold` is unchanged
-- [ ] the `--text-*`, `--font-weight-*`, `--tracking-*` and `--leading-*` entries are contributed as a
-      `ThemeEntry[]` composed into front 54's theme, with the values `§ 21.3`, `§ 9.9` and `§ 9.11` print
-- [ ] every sub-dispatcher takes `th: Theme` and returns a declaration string, per contract 4a
-- [ ] the banner `// ── front 38 — typography ──` fences the block in both files
-- [ ] one arm added to the top-level `tokenToCss` case for `List`, in front-number order
-- [ ] `repository/emilia/AGENTS.md` and the `////` header of `tokens.bp` record the widened sections
-- [ ] the front's tests are green on its assigned target — here, both backends, since emilia is comptime
+- [x] every utility in `§ 9.1`–`§ 9.32` that is not an arbitrary-value form has a token — held: `tokens.bp` `Text`/`Font`/`List`; test "regression — 437 leaves, and every one declares something well formed"
+- [x] the four corrected tokens emit the v4.3 form and the two affected assertions in
+      `src/emilia.bp` are updated in the same commit — held: the four correction tests ("front 38 — a size token is the --text-* PAIR…", "…a family references var(--font-*)…", "…underline is the text-decoration-line LONGHAND"); no test asserts the old literals as output
+- [x] `.Text.Bold` is unchanged — held: test "front 38 — .Text.Bold is untouched, and sits next to three that changed"
+- [x] the `--text-*`, `--font-weight-*`, `--tracking-*` and `--leading-*` entries are contributed as a
+      `ThemeEntry[]` composed into front 54's theme, with the values `§ 21.3`, `§ 9.9` and `§ 9.11` print — held (shape: `--text-*` is already in front 54's `defaultTheme()`; `typographyEntries()` carries weight/tracking/leading plus the three provisional `--font-*` stacks, composed via `extendTheme` like `paletteEntries()`): tests "front 38 — typographyEntries carries 23 entries in four namespaces" + "…the tracking and leading values the reference prints"
+- [x] every sub-dispatcher takes `th: Theme` and returns a declaration string, per contract 4a — held (shape: the 26 `decoration<Family>Shade` value helpers take no `th` and return a shade, as front 33's shade helpers do): every `text*`/`font*`/`list*` dispatcher takes `th: Theme`
+- [x] the banner `// ── front 38 — typography ──` fences the block in both files — held: `emilia.bp:1533` (closed at `:3050`) and `tokens.bp:575` plus the in-section fences at `:448`/`:549`
+- [x] one arm added to the top-level `tokenToCss` case for `List`, in front-number order — held (shape: `List` sits beside the pre-existing `Text`/`Font` arms under a front-38 sub-banner at the top of the case, ahead of front 33's `Color`): `emilia.bp:tokenToSheet`
+- [x] `repository/emilia/AGENTS.md` and the `////` header of `tokens.bp` record the widened sections — held: `AGENTS.md` front-38 paragraph; `tokens.bp` `////` SECTIONS `Text`/`Font`/`List`
+- [x] the front's tests are green on its assigned target — here, both backends, since emilia is comptime — held: emilia suite 569/569 on commonJS and erlang
