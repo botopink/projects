@@ -199,12 +199,11 @@ A `src/…` path in a row is relative to the member its *Module* column names (`
 | **F92 rsocket** | rakun-rsocket | `modules/rakun-rsocket/src/**`, `modules/rakun-rsocket/test/**` | `modules/rakun-rsocket/test/**` |
 | **F93 soap-webservices** | rakun-ws | `modules/rakun-ws/src/**`, `modules/rakun-ws/test/**` | `modules/rakun-ws/test/**` |
 
-**Sidecars.** Every erlang host module a rakun front ships is `src/sidecars/rakun_<name>.erl` —
-never a bare `<name>.erl`. `shipErlSidecars` skips any atom that matches a module this build emitted
-(`libs.zig:596`), and rakun emits `rakun/runtime`, `rakun/config`, `rakun/file_router`; a sidecar
-with one of those basenames is silently not shipped and the program dies at run time with
-`undefined function runtime:scan/1`. This is recorded as a toolchain gap in
-[`language-gaps.md`](./language-gaps.md); until it is a build error, the naming rule is the guard.
+**Sidecars.** Every erlang host module a rakun front ships is `src/sidecars/rakun_<name>.erl`.
+`shipErlSidecars` tells a module of the build by its atom (`rakun@runtime`), so a sidecar named like
+one of rakun's modules is shipped all the same; an `@External.Erlang` module that is neither shipped
+nor in the Erlang code path is a located build error, on `botopink build` and `botopink test`
+alike. The `rakun_` prefix is the naming convention, no longer a guard.
 
 **Shared files in `repository/rakun/`.** `src/root.bp` and `botopink.json`'s `files` list are
 appended to by every core front that adds a module (05, 06, 22, 23, 24, 25, 60, 61, 62, 63, 64, 65,

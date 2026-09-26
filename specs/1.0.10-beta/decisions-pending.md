@@ -332,6 +332,10 @@ fronts could land; the maintainer confirms or reverses each.
 > rakun_file_router:register_layout/2`. The three examples build; none runs. The compiler
 > repository's `scripts/restricted-targets.txt` pins the old matrix, so `test-libs` reds on stale
 > lines until that ledger is edited.
+> **The compiler half now.** `botopink build --target erlang` ships a package's `.erl` sidecars into
+> `out/erl/` (five for `examples/rakun`), where `botopink run` compiles every `.erl` onto the code
+> path; an `@External.Erlang` module neither shipped nor in the Erlang code path is a located build
+> error.
 > **Options.** (1) move now (rakun `99b8049`) and owe the run to `00 · 10-cli-residuals` and the
 > ledger to the compiler repository; (2) keep the examples on commonJS with a node twin kept alive
 > for them only; (3) wait for the compiler.
