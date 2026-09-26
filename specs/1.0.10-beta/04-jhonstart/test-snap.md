@@ -9,36 +9,35 @@ The preventive snapshot map of `repository/jhonstart/modules/**`: the `jhonstart
 | Item | Rule |
 |---|---|
 | `SourceLocation(file, line, column, fnName)` | `@src()`, comptime |
-| Test name | `"<suite>: <rest>"` — `suite` is the text before the first `": "`; `slug` is the slugified rest: lowercase, every run of characters outside `[a-z0-9]` collapsed to one `-`, leading/trailing `-` dropped. `"stream: shell then one fill ---- two chunks"` → suite `stream`, slug `shell-then-one-fill-two-chunks` |
+| Test name | `"<suite>: <rest>"` — `suite` is the text before the first `": "`; `slug` is std's `snapshots.slugOf` of the rest: lowercase, every run of characters outside `[a-z0-9]` collapsed to one `_`, leading/trailing `_` dropped. `"stream: shell then one fill ---- two chunks"` → suite `stream`, slug `shell_then_one_fill_two_chunks` |
 | Path | `snapshots.path(loc)` = `<dir of loc.file>/__snapshots__/<suite>/<slug>.snap` |
-| Content | exactly the text the helper hands to `snapshots.match(loc, text)`; helpers end the text with one `\n`; an empty subject produces an empty file |
+| Content | std's `.snap` file: the `botopink-snap 1` / `test:` / `subject:` header, an empty line, then exactly the text the helper hands to `snapshots.assertAs(loc, "<subject>", text)`; an empty subject text is an empty body. The bodies below are that text |
 | Mismatch / missing | `<path>.new` is written and the test fails; no update flag; acceptance is a person renaming the file |
-| Helper shape | `pub fn assert<Subject>(loc: SourceLocation, …) -> @Result<void, string>`; called as `try assert<Subject>(@src(), …);` |
+| Helper shape | `pub fn assert<Subject>(loc: SourceLocation, …) -> @Result<void, string>`; called as `try assert<Subject>(@src(), …);`. Each has a pure `<subject>Text` twin (`routeText`, `streamText`, …) answering the body, which a plain `assert` can read |
 
 ### 0.2 `jhonstart-test` — signatures and the text each one produces
 
-All in `modules/jhonstart-test/src/`. Every helper serialises and calls `snapshots.match`; none formats HTML beyond the two splits named here.
+All in `modules/jhonstart-test/src/`. Every helper serialises and calls `snapshots.assertAs`; none formats HTML beyond the two splits named here.
 
 | Helper (file) | Text |
 |---|---|
-| `assertText(loc, text: string)` (`harness.bp`) | `text` verbatim — the escape hatch for a pure value already rendered to a string |
+| `assertText(loc, text: string)` — std's `testing.snapshots.assertText`, imported from `"std"`, not re-exported by the member | `text` verbatim — the escape hatch for a pure value already rendered to a string |
 | `assertHtml(loc, e: Element)` (`assert_html.bp`) | `renderToString(e)`, one line |
 | `assertHtmlLines(loc, e: Element)` (`assert_html.bp`) | `renderToString(e)` with every `><` boundary broken into `>\n<` — one tag per line, for documents and forms |
 | `assertRoute(loc, r: RouterState)` (`assert_route.bp`) | seven `key: value` lines — `path`, `pattern`, `params` (querystring), `search` (querystring), `selected`, `segments` (space-joined), `segment` |
 | `assertActiveLink(loc, nav: Element, path: string)` (`assert_route.bp`) | line 1 `path: <path>`; then one line per `a` in tree order: `[*]` if its `class` contains `active` else `[ ]`, the `href`, the `class` |
 | `assertNavigation(loc, n: Navigation)` (`assert_link.bp`) | `from`, `to` (space-joined layout keys), `shared` (depth), `keep` (keys kept mounted), `remount` (keys replaced) |
-| `simulateNavigation(from: RouterState, to: RouterState) -> Navigation` (`harness.bp`) | pure: `layoutKeys(from.segments())`, `layoutKeys(to.segments())`, `sharedDepth`, and the two partitions |
+| `simulateNavigation(current: RouterState, target: RouterState) -> Navigation` (`harness.bp`) | pure: `layoutKeys(current.segments())`, `layoutKeys(target.segments())`, `sharedDepth`, and the two partitions — `Navigation(fromKeys, toKeys, shared, keep, remount)` (`from` is a keyword) |
 | `fixtureRouter(path, pattern, params, search) -> RouterState` (`harness.bp`) | `RouterState(path, querystring.parse(params), querystring.parse(search), pattern, selected: 0)` |
 | `assertRequest(loc, r: RequestData)` (`assert_server.bp`) | six `key: value` lines — `method`, `path`, `params`, `query`, `headers`, `cookies` (querystring each) |
-| `fixtureRequest(method, path, params, query, headers, cookies) -> RequestData` (`harness.bp`) | all six querystring-decoded |
+| `fixtureRequest(method, path, params = "", query = "", headers = "", cookies = "") -> RequestData` (`harness.bp`) | the four lists querystring-decoded; `fixtureRequest("GET", path)` is the bare request onze would build from rakun's `Request` |
 | `assertClientBundleEntry(loc, islands: Array<Island>)` (`assert_island.bp`) | `--- payload i` then one `<id> <component> <props>` line per island (the `islandEntry` tuple, space-joined); `--- markup` then `renderToString(clientMount(island, []))` per island |
 | `assertStream(loc, chunks: Array<string>)` (`assert_stream.bp`) | for each chunk `--- chunk <n>` (`--- chunk 0 (shell)` for the first) followed by the chunk |
-| `assertDocument(loc, doc: string)` (`assert_render.bp`) | the document split one tag per line after `<body>`; the payload script's JSON one key per line |
+| `assertDocument(loc, doc: string)` (`assert_render.bp`) | everything through `<body>` on one line, then one tag per line; under `--- payload` the payload script's JSON one top-level member per line (`jsonMembers`); under `--- after the payload` the rest, one tag per line |
 | `renderStreamCollect(a: App, input: PageInput, req: RequestData) -> @Task<Array<string>>` (`harness.bp`) | `renderStream` with a recording `Response` whose `write` appends to an array — the chunks in the order `write` received them |
 | `renderRecorded(a: App, input: PageInput, req: RequestData, streaming: bool) -> @Task<RecordedResponse>` (`harness.bp`) | `render` or `renderStream` over a recording `Response`: `RecordedResponse(status, headers, chunks, closed)` — `status` 200 when never set |
 | `assertResponse(loc, r: RecordedResponse)` (`assert_render.bp`) | `status <n>`, one `header <name>: <value>` line each, `chunks <n>`, `closed <n>` |
-| `fixtureRequest(path) -> RequestData` (`harness.bp`) | a `GET` `RequestData` for `path` with no params, query, headers or cookies — the value onze would build from rakun's `Request` |
-| `fixturePageOver(path, shell: Element, child: fn() -> @Component<ElementBase, Element>) -> PageInput` (`harness.bp`) | a `PageInput` over one root segment whose page is `shell` with one boundary over `child`, build id `build-0001` |
+| `fixturePageOver(path, shell: Element, child: fn() -> @Component<ElementBase, Element>) -> PageInput` (`harness.bp`) | a `PageInput` with no layout whose page is `shell` with one boundary (`h1`, fallback `<p>Loading…</p>`) over `child` appended to its children, build id `build-0001`, table `P\|<path>` |
 | `renderToStream(shell: Element, boundaries: Array<Boundary>) -> @Task<Array<string>>` (`harness.bp`) | `[shellHtml(shell)] ++ [fillHtml(await resolve(b), "") …]` in **declaration** order, no plugin — the harness has no scheduler; completion order is front 30's `render_test.bp` |
 | `assertErrorBoundary(loc, b: ErrorBoundary)` (`assert_error_boundary.bp`) | `renderBoundaryChecked(b)`: `outcome: ok` + newline + markup, or `outcome: error <message>` |
 | `assertMetadata(loc, m: Metadata)` · `assertViewport(loc, v: Viewport)` (`assert_metadata.bp`) | `renderHead(m)` / `renderViewport(v)` one tag per line (the `><` split) |
@@ -57,14 +56,15 @@ Style rules every case follows: `if` is an expression and carries an `else`; no 
 
 ```bp
 import { Element, text, a, nav, section, h2, main, input, htmlTag, head, body, title, meta, link, timeTag, el, isVoidTag, isRawTextTag, renderToString } from "jhonstart";
-import { assertHtml, assertHtmlLines, assertText } from "jhonstart-test";
+import { assertHtml, assertHtmlLines } from "jhonstart-test";
+import { testing.snapshots.assertText } from "std";
 
 test "elements: section with a heading" {
     val tree = section([h2([text("Posts", attrs: [])], attrs: [])], attrs: []);
     try assertHtml(@src(), tree);
 }
 ```
-`modules/jhonstart/test/__snapshots__/elements/section-with-a-heading.snap`
+`modules/jhonstart/test/__snapshots__/elements/section_with_a_heading.snap`
 ```
 <section><h2>Posts</h2></section>
 ```
@@ -75,7 +75,7 @@ test "elements: attribute order is array order" {
     try assertHtml(@src(), tree);
 }
 ```
-`__snapshots__/elements/attribute-order-is-array-order.snap`
+`__snapshots__/elements/attribute_order_is_array_order.snap`
 ```
 <a href="/p" rel="next">x</a>
 ```
@@ -86,7 +86,7 @@ test "elements: a void constructor drops its children" {
     try assertHtml(@src(), tree);
 }
 ```
-`__snapshots__/elements/a-void-constructor-drops-its-children.snap` — the frozen renderer's closing tag, spelled out so the day `element.bp` is unfrozen this file is the one that fails
+`__snapshots__/elements/a_void_constructor_drops_its_children.snap` — the frozen renderer's closing tag, spelled out so the day `element.bp` is unfrozen this file is the one that fails
 ```
 <input name="title"></input>
 ```
@@ -97,7 +97,7 @@ test "elements: renamed constructors render their real tag" {
     try assertHtml(@src(), tree);
 }
 ```
-`__snapshots__/elements/renamed-constructors-render-their-real-tag.snap`
+`__snapshots__/elements/renamed_constructors_render_their_real_tag.snap`
 ```
 <html lang="en"><time datetime="2026-09-20">today</time></html>
 ```
@@ -108,7 +108,7 @@ test "elements: attribute values are stored verbatim" {
     try assertHtml(@src(), tree);
 }
 ```
-`__snapshots__/elements/attribute-values-are-stored-verbatim.snap` — escaping is front 30's walker's, not the constructor's
+`__snapshots__/elements/attribute_values_are_stored_verbatim.snap` — escaping is front 30's walker's, not the constructor's
 ```
 <a href="/a&b">x</a>
 ```
@@ -118,7 +118,7 @@ test "elements: the escape hatch builds an unnamed tag" {
     try assertHtml(@src(), el("figure", [text("x", attrs: [])], attrs: []));
 }
 ```
-`__snapshots__/elements/the-escape-hatch-builds-an-unnamed-tag.snap`
+`__snapshots__/elements/the_escape_hatch_builds_an_unnamed_tag.snap`
 ```
 <figure>x</figure>
 ```
@@ -136,7 +136,7 @@ test "elements: document shell ---- head before body" {
     try assertHtmlLines(@src(), doc);
 }
 ```
-`__snapshots__/elements/document-shell-head-before-body.snap`
+`__snapshots__/elements/document_shell_head_before_body.snap`
 ```
 <html lang="en">
 <head>
@@ -162,7 +162,7 @@ test "elements: void and raw-text predicates" {
     try assertText(@src(), "void " + lines.join(" ") + "\nraw " + raws.join(" "));
 }
 ```
-`__snapshots__/elements/void-and-raw-text-predicates.snap`
+`__snapshots__/elements/void_and_raw_text_predicates.snap`
 ```
 void area=true base=true br=true col=true embed=true hr=true img=true input=true link=true meta=true param=true source=true track=true wbr=true div=false form=false =false
 raw script=true style=true title=false textarea=false
@@ -191,15 +191,15 @@ test "html-dsl: a bracket prop reaches attrs on a surface tag" {
     try assertHtml(@src(), tree);
 }
 ```
-`modules/jhonstart-html/test/__snapshots__/html-dsl/a-surface-tag-resolves-inside-a-template.snap`
+`modules/jhonstart-html/test/__snapshots__/html-dsl/a_surface_tag_resolves_inside_a_template.snap`
 ```
 <nav><span>home</span></nav>
 ```
-`__snapshots__/html-dsl/a-v0-tag-and-a-surface-tag-nest.snap`
+`__snapshots__/html-dsl/a_v0_tag_and_a_surface_tag_nest.snap`
 ```
 <section><p>hi</p></section>
 ```
-`__snapshots__/html-dsl/a-bracket-prop-reaches-attrs-on-a-surface-tag.snap`
+`__snapshots__/html-dsl/a_bracket_prop_reaches_attrs_on_a_surface_tag.snap`
 ```
 <nav class="card"><span>x</span></nav>
 ```
@@ -211,14 +211,15 @@ test "html-dsl: a bracket prop reaches attrs on a surface tag" {
 ```bp
 import { Element, span, ul, li, text, a, nav, renderToString } from "jhonstart";
 import { RouterState, pairValue } from "jhonstart";
-import { assertRoute, assertActiveLink, assertText, fixtureRouter } from "jhonstart-test";
+import { assertRoute, assertActiveLink, fixtureRouter } from "jhonstart-test";
+import { testing.snapshots.assertText } from "std";
 
 test "route: snapshot ---- blog slug" {
     val r = RouterState(path: "/blog/hi", params: [#("slug", "hi")], search: [], pattern: "/blog/[slug]", selected: 0);
     try assertRoute(@src(), r);
 }
 ```
-`modules/jhonstart/test/__snapshots__/route/snapshot-blog-slug.snap` — the bracket spelling is kept in `segments`
+`modules/jhonstart/test/__snapshots__/route/snapshot_blog_slug.snap` — the bracket spelling is kept in `segments`
 ```
 path: /blog/hi
 pattern: /blog/[slug]
@@ -235,7 +236,7 @@ test "route: search params round-trip through the snapshot" {
     try assertRoute(@src(), r);
 }
 ```
-`__snapshots__/route/search-params-round-trip-through-the-snapshot.snap`
+`__snapshots__/route/search_params_round_trip_through_the_snapshot.snap`
 ```
 path: /products
 pattern: /products
@@ -252,7 +253,7 @@ test "route: an out-of-range selected depth yields an empty segment" {
     try assertRoute(@src(), r);
 }
 ```
-`__snapshots__/route/an-out-of-range-selected-depth-yields-an-empty-segment.snap`
+`__snapshots__/route/an_out_of_range_selected_depth_yields_an_empty_segment.snap`
 ```
 path: /
 pattern: /
@@ -269,7 +270,7 @@ test "route: a duplicated key takes the first match and an absent key is empty" 
     try assertText(@src(), "slug=" + pairValue(pairs, "slug") + "\nmissing=" + pairValue(pairs, "missing"));
 }
 ```
-`__snapshots__/route/a-duplicated-key-takes-the-first-match-and-an-absent-key-is-empty.snap`
+`__snapshots__/route/a_duplicated_key_takes_the_first_match_and_an_absent_key_is_empty.snap`
 ```
 slug=a
 missing=
@@ -294,7 +295,7 @@ test "route: active nav ---- api selected" {
     try assertActiveLink(@src(), sidebarFor(r.segment()), r.path);
 }
 ```
-`__snapshots__/route/active-nav-api-selected.snap`
+`__snapshots__/route/active_nav_api_selected.snap`
 ```
 path: /docs/api
 [*] /docs/api row active
@@ -308,7 +309,7 @@ test "route: active nav ---- nobody selected" {
     try assertActiveLink(@src(), sidebarFor(r.segment()), r.path);
 }
 ```
-`__snapshots__/route/active-nav-nobody-selected.snap`
+`__snapshots__/route/active_nav_nobody_selected.snap`
 ```
 path: /docs
 [ ] /docs/api row
@@ -322,7 +323,7 @@ test "route: hooks called directly return the field they name" {
     try assertText(@src(), "segments=" + r.segments().join(",") + "\nparam=" + r.param("slug") + "\nsearch=" + r.searchParam("q"));
 }
 ```
-`__snapshots__/route/hooks-called-directly-return-the-field-they-name.snap`
+`__snapshots__/route/hooks_called_directly_return_the_field_they_name.snap`
 ```
 segments=blog,[slug]
 param=hi
@@ -338,13 +339,14 @@ Not snapshotted here: `snapshot()` over the five route cells and the six navigat
 ```bp
 import { Element, text, span, renderToString, RouterState } from "jhonstart";
 import { Link, LinkProps, linkProps, withPrefetch, withReplace, withScroll, withTarget, withClass, prefetchMode, linkStatus } from "jhonstart-link";
-import { assertHtml, assertText } from "jhonstart-test";
+import { assertHtml } from "jhonstart-test";
+import { testing.snapshots.assertText } from "std";
 
 test "link: default props render two attributes" {
     try assertHtml(@src(), Link(linkProps("/about"), [text("About", attrs: [])]));
 }
 ```
-`modules/jhonstart-link/test/__snapshots__/link/default-props-render-two-attributes.snap`
+`modules/jhonstart-link/test/__snapshots__/link/default_props_render_two_attributes.snap`
 ```
 <a href="/about" data-jh-l="1">About</a>
 ```
@@ -354,7 +356,7 @@ test "link: prefetch off adds one marker" {
     try assertHtml(@src(), Link(withPrefetch(linkProps("/blog/x"), false), [text("x", attrs: [])]));
 }
 ```
-`__snapshots__/link/prefetch-off-adds-one-marker.snap`
+`__snapshots__/link/prefetch_off_adds_one_marker.snap`
 ```
 <a href="/blog/x" data-jh-l="1" data-jh-prefetch="0">x</a>
 ```
@@ -365,7 +367,7 @@ test "link: replace and no scroll" {
     try assertHtml(@src(), Link(props, [text("Settings", attrs: [])]));
 }
 ```
-`__snapshots__/link/replace-and-no-scroll.snap`
+`__snapshots__/link/replace_and_no_scroll.snap`
 ```
 <a href="/settings" data-jh-l="1" data-jh-replace="1" data-jh-scroll="0">Settings</a>
 ```
@@ -376,7 +378,7 @@ test "link: target and class are real attributes" {
     try assertHtml(@src(), Link(props, [text("docs", attrs: [])]));
 }
 ```
-`__snapshots__/link/target-and-class-are-real-attributes.snap`
+`__snapshots__/link/target_and_class_are_real_attributes.snap`
 ```
 <a href="/docs" data-jh-l="1" target="_blank" class="ext">docs</a>
 ```
@@ -393,7 +395,7 @@ test "link: prefetch mode table" {
     try assertText(@src(), rows.join("\n"));
 }
 ```
-`__snapshots__/link/prefetch-mode-table.snap` — one line per row of § 8 *Prefetching*
+`__snapshots__/link/prefetch_mode_table.snap` — one line per row of § 8 *Prefetching*
 ```
 static/-/requested=full
 dynamic/loading/requested=partial
@@ -410,7 +412,7 @@ test "link: idle status" {
     try assertText(@src(), "pending=" + s.pending.toString() + "\nhref=" + s.href);
 }
 ```
-`__snapshots__/link/idle-status.snap`
+`__snapshots__/link/idle_status.snap`
 ```
 pending=false
 href=
@@ -420,13 +422,14 @@ href=
 // reconcile_test.bp
 import { RouterState } from "jhonstart";
 import { layoutKey, layoutKeys, sharedDepth } from "jhonstart-link";
-import { assertNavigation, assertText, simulateNavigation, fixtureRouter } from "jhonstart-test";
+import { assertNavigation, simulateNavigation, fixtureRouter } from "jhonstart-test";
+import { testing.snapshots.assertText } from "std";
 
 test "reconcile: layout keys are root-first and include the root" {
     try assertText(@src(), layoutKeys(["docs", "api"]).join(" ") + "\n" + layoutKey([], 0));
 }
 ```
-`modules/jhonstart-link/test/__snapshots__/reconcile/layout-keys-are-root-first-and-include-the-root.snap`
+`modules/jhonstart-link/test/__snapshots__/reconcile/layout_keys_are_root_first_and_include_the_root.snap`
 ```
 / /docs /docs/api
 /
@@ -439,7 +442,7 @@ test "reconcile: docs api to docs guides keeps the docs layout" {
     try assertNavigation(@src(), simulateNavigation(from, to));
 }
 ```
-`__snapshots__/reconcile/docs-api-to-docs-guides-keeps-the-docs-layout.snap`
+`__snapshots__/reconcile/docs_api_to_docs_guides_keeps_the_docs_layout.snap`
 ```
 from: / /docs /docs/api
 to: / /docs /docs/guides
@@ -455,7 +458,7 @@ test "reconcile: docs to blog keeps only the root" {
     try assertNavigation(@src(), simulateNavigation(from, to));
 }
 ```
-`__snapshots__/reconcile/docs-to-blog-keeps-only-the-root.snap`
+`__snapshots__/reconcile/docs_to_blog_keeps_only_the_root.snap`
 ```
 from: / /docs
 to: / /blog
@@ -470,7 +473,7 @@ test "reconcile: the same route remounts nothing" {
     try assertNavigation(@src(), simulateNavigation(here, here));
 }
 ```
-`__snapshots__/reconcile/the-same-route-remounts-nothing.snap` — layout keys are built from the pattern, so the bracket segment is the key
+`__snapshots__/reconcile/the_same_route_remounts_nothing.snap` — layout keys are built from the pattern, so the bracket segment is the key
 ```
 from: / /blog /blog/[slug]
 to: / /blog /blog/[slug]
@@ -489,14 +492,15 @@ Not snapshotted: `linkMount` idempotence and the island mount count across a tra
 import { Element, div, span, p, h1, ul, li, article, section, h2, text, renderToString } from "jhonstart";
 import { RequestData, request, cookies, headers, renderServerComponent, pairValue } from "jhonstart";
 import { escape } from "std";
-import { assertRequest, assertHtml, assertText, fixtureRequest } from "jhonstart-test";
+import { assertRequest, assertHtml, fixtureRequest } from "jhonstart-test";
+import { testing.snapshots.assertText } from "std";
 
 test "request: fixture with a locale cookie and an auth header" {
     val r = fixtureRequest("GET", "/blog/hi", "slug=hi", "ref=home", "authorization=Bearer%20x", "locale=pt-BR");
     try assertRequest(@src(), r);
 }
 ```
-`modules/jhonstart/test/__snapshots__/request/fixture-with-a-locale-cookie-and-an-auth-header.snap`
+`modules/jhonstart/test/__snapshots__/request/fixture_with_a_locale_cookie_and_an_auth_header.snap`
 ```
 method: GET
 path: /blog/hi
@@ -513,7 +517,7 @@ test "request: absent keys read as empty strings" {
     try assertHtml(@src(), tree);
 }
 ```
-`__snapshots__/request/absent-keys-read-as-empty-strings.snap`
+`__snapshots__/request/absent_keys_read_as_empty_strings.snap`
 ```
 <span>|||</span>
 ```
@@ -549,7 +553,7 @@ test "ssr: server component ---- async page with params" {
     try assertHtml(@src(), tree);
 }
 ```
-`__snapshots__/ssr/server-component-async-page-with-params.snap` — two sequential awaits at statement level; every untrusted value through front 01's `escape`
+`__snapshots__/ssr/server_component_async_page_with_params.snap` — two sequential awaits at statement level; every untrusted value through front 01's `escape`
 ```
 <article data-post="p1"><h1>Hello, world</h1><p>First &lt;b&gt;post&lt;/b&gt;</p><section><h2>Comments</h2><ul><li><span class="author">ana</span>nice</li><li><span class="author">bob</span>&lt;script&gt;x&lt;/script&gt;</li></ul></section></article>
 ```
@@ -566,7 +570,7 @@ test "ssr: renderServerComponent awaits once and renders" {
     try assertText(@src(), html);
 }
 ```
-`__snapshots__/ssr/renderservercomponent-awaits-once-and-renders.snap`
+`__snapshots__/ssr/renderservercomponent_awaits_once_and_renders.snap`
 ```
 <div class="done">ready</div>
 ```
@@ -577,7 +581,7 @@ test "ssr: a page with no comments still renders its heading" {
     try assertHtml(@src(), tree);
 }
 ```
-`__snapshots__/ssr/a-page-with-no-comments-still-renders-its-heading.snap`
+`__snapshots__/ssr/a_page_with_no_comments_still_renders_its_heading.snap`
 ```
 <article><h1>Solo</h1><section><h2>Comments</h2><ul></ul></section></article>
 ```
@@ -591,7 +595,8 @@ Not snapshotted: `request()` over the six `jhonstart_server` cells (`enterReques
 ```bp
 import { Element, div, h1, p, span, button, text, renderToString } from "jhonstart";
 import { client, clientProps, Island, clientMount, serverSlot, islandEntry, propsFor, serverOnly } from "jhonstart";
-import { assertHtml, assertClientBundleEntry, assertText } from "jhonstart-test";
+import { assertHtml, assertClientBundleEntry } from "jhonstart-test";
+import { testing.snapshots.assertText } from "std";
 
 #[clientProps]
 pub type LikeProps(postId: string, likes: i32)
@@ -605,7 +610,7 @@ test "island: the marker is a pure function returning the name" {
     try assertText(@src(), __jhClient_LikeButton());
 }
 ```
-`modules/jhonstart/test/__snapshots__/island/the-marker-is-a-pure-function-returning-the-name.snap` — proves `@emit` fired; only under `botopink test`
+`modules/jhonstart/test/__snapshots__/island/the_marker_is_a_pure_function_returning_the_name.snap` — proves `@emit` fired; only under `botopink test`
 ```
 LikeButton
 ```
@@ -616,7 +621,7 @@ test "island: the placeholder carries the id and nothing else" {
     try assertHtml(@src(), clientMount(island, []));
 }
 ```
-`__snapshots__/island/the-placeholder-carries-the-id-and-nothing-else.snap`
+`__snapshots__/island/the_placeholder_carries_the_id_and_nothing_else.snap`
 ```
 <div data-jh-i="i0"></div>
 ```
@@ -630,7 +635,7 @@ test "island: payload rows for two islands in render order" {
     try assertClientBundleEntry(@src(), islands);
 }
 ```
-`__snapshots__/island/payload-rows-for-two-islands-in-render-order.snap` — the `i` rows are `[id, component, props]`; the props are `querystring.stringify`
+`__snapshots__/island/payload_rows_for_two_islands_in_render_order.snap` — the `i` rows are `[id, component, props]`; the props are `querystring.stringify`
 ```
 --- payload i
 i0 LikeButton postId=p1&likes=3
@@ -647,7 +652,7 @@ test "island: a provider wraps a server slot" {
     try assertHtml(@src(), clientMount(island, [serverSlot([page])]));
 }
 ```
-`__snapshots__/island/a-provider-wraps-a-server-slot.snap` — the server subtree is inside the island, marked, and never re-rendered by the client
+`__snapshots__/island/a_provider_wraps_a_server_slot.snap` — the server subtree is inside the island, marked, and never re-rendered by the client
 ```
 <div data-jh-i="i0"><div data-jh-s="1"><div><h1>Dashboard</h1><p>3 open tickets</p></div></div></div>
 ```
@@ -658,7 +663,7 @@ test "island: children of a placeholder render unmodified" {
     try assertHtml(@src(), clientMount(island, [span([text("first", attrs: [])], attrs: [])]));
 }
 ```
-`__snapshots__/island/children-of-a-placeholder-render-unmodified.snap`
+`__snapshots__/island/children_of_a_placeholder_render_unmodified.snap`
 ```
 <div data-jh-i="i2"><span>first</span></div>
 ```
@@ -668,7 +673,7 @@ test "island: server-only is a value nobody reads" {
     try assertText(@src(), "serverOnly=" + serverOnly().toString());
 }
 ```
-`__snapshots__/island/server-only-is-a-value-nobody-reads.snap`
+`__snapshots__/island/server_only_is_a_value_nobody_reads.snap`
 ```
 serverOnly=1
 ```
@@ -682,7 +687,8 @@ Not snapshotted: `#[client]` on a `type`, on a `fn … -> @Task<T>` loader, `#[c
 ```bp
 import { Element, div, h1, ul, li, span, header, section, text, renderToString } from "jhonstart";
 import { Boundary, Suspense, holeId, Chunk, resolve, fillHtml, shellHtml } from "jhonstart";
-import { assertHtml, assertStream, assertText, renderToStream } from "jhonstart-test";
+import { assertHtml, assertStream, renderToStream } from "jhonstart-test";
+import { testing.snapshots.assertText } from "std";
 
 fn postList() -> @Component<ElementBase, Element> {
     return ul([li([text("one", attrs: [])], attrs: []), li([text("two", attrs: [])], attrs: [])], attrs: [#("class", "posts")]);
@@ -706,7 +712,7 @@ test "stream: the shell shows the fallback and not the child" {
     try assertHtml(@src(), page(postsBoundary(1)));
 }
 ```
-`modules/jhonstart/test/__snapshots__/stream/the-shell-shows-the-fallback-and-not-the-child.snap`
+`modules/jhonstart/test/__snapshots__/stream/the_shell_shows_the_fallback_and_not_the_child.snap`
 ```
 <div class="page"><header>botopink</header><h1>Blog</h1><section class="main"><div data-jh-h="h1"><div class="skeleton">Loading posts…</div></div></section></div>
 ```
@@ -718,7 +724,7 @@ test "stream: shell then one fill" {
     try assertStream(@src(), chunks);
 }
 ```
-`__snapshots__/stream/shell-then-one-fill.snap` — chunk 0 is `shellHtml`, chunk 1 is `fillHtml(await resolve(b), "")`; the `<template>`/`__bp1` literal is `contracts.md § 2`'s
+`__snapshots__/stream/shell_then_one_fill.snap` — chunk 0 is `shellHtml`, chunk 1 is `fillHtml(await resolve(b), "")`; the `<template>`/`__bp1` literal is `contracts.md § 2`'s
 ```
 --- chunk 0 (shell)
 <div class="page"><header>botopink</header><h1>Blog</h1><section class="main"><div data-jh-h="h1"><div class="skeleton">Loading posts…</div></div></section></div>
@@ -741,7 +747,7 @@ test "stream: two boundaries ---- declaration order in the harness" {
     try assertStream(@src(), chunks);
 }
 ```
-`__snapshots__/stream/two-boundaries-declaration-order-in-the-harness.snap` — front 30's `renderStream` hands fills over in completion order; the harness pins declaration order because it has no scheduler
+`__snapshots__/stream/two_boundaries_declaration_order_in_the_harness.snap` — front 30's `renderStream` hands fills over in completion order; the harness pins declaration order because it has no scheduler
 ```
 --- chunk 0 (shell)
 <div><div data-jh-h="h1"><div class="skeleton">Loading posts…</div></div><div data-jh-h="h2"><div class="skeleton">Loading related…</div></div></div>
@@ -768,7 +774,7 @@ test "stream: loading convention ---- segment shell" {
     try assertText(@src(), shellHtml(Suspense(b)));
 }
 ```
-`__snapshots__/stream/loading-convention-segment-shell.snap` — what front 30's `compose` builds around a segment that has a `loading.bp` (front 22 discovers it)
+`__snapshots__/stream/loading_convention_segment_shell.snap` — what front 30's `compose` builds around a segment that has a `loading.bp` (front 22 discovers it)
 ```
 <div data-jh-h="h0"><div class="loading"><span class="spinner">Loading…</span></div></div>
 ```
@@ -778,7 +784,7 @@ test "stream: hole ids are ordinals" {
     try assertText(@src(), [holeId(0), holeId(1), holeId(12)].join(" "));
 }
 ```
-`__snapshots__/stream/hole-ids-are-ordinals.snap`
+`__snapshots__/stream/hole_ids_are_ordinals.snap`
 ```
 h0 h1 h12
 ```
@@ -788,7 +794,7 @@ test "stream: a fill is a template plus the call that applies it" {
     try assertText(@src(), fillHtml(Chunk(id: "h1", html: "<ul></ul>"), ""));
 }
 ```
-`__snapshots__/stream/a-fill-is-a-template-plus-the-call-that-applies-it.snap`
+`__snapshots__/stream/a_fill_is_a_template_plus_the_call_that_applies_it.snap`
 ```
 <template data-jh-f="h1"><ul></ul></template><script>__bp1("h1")</script>
 ```
@@ -807,13 +813,14 @@ the render decision 113 places in jhonstart. rakun front 23's `ssr` cases (`../0
 ```bp
 import { Element, div, p, input, style, text } from "jhonstart";
 import { renderNode, raw, compose, Segment, Payload, writePayload, globals } from "jhonstart";
-import { assertText, assertDocument } from "jhonstart-test";
+import { assertDocument } from "jhonstart-test";
+import { testing.snapshots.assertText } from "std";
 
 test "render: text is escaped" {
     try assertText(@src(), renderNode(p([text("<script>alert(1)</script>", attrs: [])], attrs: [])));
 }
 ```
-`__snapshots__/render/text-is-escaped.snap`
+`__snapshots__/render/text_is_escaped.snap`
 ```
 <p>&lt;script&gt;alert(1)&lt;/script&gt;</p>
 ```
@@ -823,7 +830,7 @@ test "render: an attribute value is escaped and a void tag is not closed" {
     try assertText(@src(), renderNode(input([], attrs: [#("value", "a \" b & c")])));
 }
 ```
-`__snapshots__/render/an-attribute-value-is-escaped-and-a-void-tag-is-not-closed.snap`
+`__snapshots__/render/an_attribute_value_is_escaped_and_a_void_tag_is_not_closed.snap`
 ```
 <input value="a &quot; b &amp; c">
 ```
@@ -833,7 +840,7 @@ test "render: a raw-text body is verbatim" {
     try assertText(@src(), renderNode(style([text(".a > .b{color:red}", attrs: [])], attrs: [])));
 }
 ```
-`__snapshots__/render/a-raw-text-body-is-verbatim.snap`
+`__snapshots__/render/a_raw_text_body_is_verbatim.snap`
 ```
 <style>.a > .b{color:red}</style>
 ```
@@ -843,7 +850,7 @@ test "render: raw is the one escape hatch" {
     try assertText(@src(), renderNode(raw("<b>x</b>")));
 }
 ```
-`__snapshots__/render/raw-is-the-one-escape-hatch.snap`
+`__snapshots__/render/raw_is_the_one_escape_hatch.snap`
 ```
 <b>x</b>
 ```
@@ -855,7 +862,7 @@ test "render: the payload is one script assigning the registry's global" {
     try assertText(@src(), "<script>window." + globals.payload + " = " + writePayload(pl) + "</script>");
 }
 ```
-`__snapshots__/render/the-payload-is-one-script-assigning-the-registry-s-global.snap` — `</script` is unrepresentable (`<`), the global is `__bp0`
+`__snapshots__/render/the_payload_is_one_script_assigning_the_registry_s_global.snap` — `</script` is unrepresentable (`<`), the global is `__bp0`
 ```
 <script>window.__bp0 = {"v":1,"b":"build-0001","p":"/","r":"/","m":"","q":"q=</script>","t":"L|/||\nP|/||","i":[],"a":[],"s":"","h":[],"d":false,"k":"","z":""}</script>
 ```
@@ -898,11 +905,11 @@ import { assertStream, renderStreamCollect, fixturePageOver, fixtureRequest } fr
 // The page is built here, not in `jhonstart-test`: only this member may import emilia.
 // Its outer `div` carries `emilia([.Pad.All.4])`; its one boundary's `ul` carries `emilia([.Border.Width.1])`.
 test "bridge: a streamed boundary carries its style first, inside the fill" {
-    val chunks = await renderStreamCollect(app([plugin()]), fixturePageOver("/blog", styledShell(), styledList), fixtureRequest("/blog"));
+    val chunks = await renderStreamCollect(app([plugin()]), fixturePageOver("/blog", styledShell(), styledList), fixtureRequest("GET", "/blog"));
     try assertStream(@src(), chunks);
 }
 ```
-`__snapshots__/bridge/a-streamed-boundary-carries-its-style-first-inside-the-fill.snap` — `head` once into `<head>`; the boundary's CSS as a bare `<style>` first inside `<template data-jh-f>`; no marker on the `<style>`
+`__snapshots__/bridge/a_streamed_boundary_carries_its_style_first_inside_the_fill.snap` — `head` once into `<head>`; the boundary's CSS as a bare `<style>` first inside `<template data-jh-f>`; no marker on the `<style>`
 ```
 --- chunk 0 (shell)
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><style>.e_3f9a1c{padding:1rem}</style></head><body><div data-jh-root=""><div class="e_3f9a1c"><div data-jh-h="h1"><p>Loading…</p></div></div></div>
@@ -929,7 +936,8 @@ The class names in the snapshot above are placeholders until front 56 fixes the 
 ```bp
 import { Element, div, p, h1, section, h2, button, main, htmlTag, head, body, title, a, text, renderToString } from "jhonstart";
 import { ErrorInfo, ErrorBoundary, renderBoundary, renderBoundaryChecked, catchError, infoFor, serverInfoFor, isSignal, wrap, notFound } from "jhonstart";
-import { assertErrorBoundary, assertHtml, assertHtmlLines, assertText } from "jhonstart-test";
+import { assertErrorBoundary, assertHtml, assertHtmlLines } from "jhonstart-test";
+import { testing.snapshots.assertText } from "std";
 
 fn fallback(info: ErrorInfo) -> Element {
     return div([p([text("Something went wrong" + info.message, attrs: [])], attrs: []), button([text("Try again", attrs: [])], attrs: [#("data-jh-reset", "metrics")])], attrs: [#("class", "error")]);
@@ -955,7 +963,7 @@ test "boundary: a healthy child renders inside the wrapper" {
     try assertErrorBoundary(@src(), catchError("metrics", fallback, healthyPanel));
 }
 ```
-`modules/jhonstart/test/__snapshots__/boundary/a-healthy-child-renders-inside-the-wrapper.snap`
+`modules/jhonstart/test/__snapshots__/boundary/a_healthy_child_renders_inside_the_wrapper.snap`
 ```
 outcome: ok
 <div data-jh-e="metrics"><section><h2>Metrics</h2><p>99.9%</p></section></div>
@@ -966,7 +974,7 @@ test "boundary: a failing child renders the fallback and leaks nothing" {
     try assertErrorBoundary(@src(), catchError("metrics", fallback, failingPanel));
 }
 ```
-`__snapshots__/boundary/a-failing-child-renders-the-fallback-and-leaks-nothing.snap` — `info.message` is `""`, so the connection string cannot appear; the reset control is inert until hydration
+`__snapshots__/boundary/a_failing_child_renders_the_fallback_and_leaks_nothing.snap` — `info.message` is `""`, so the connection string cannot appear; the reset control is inert until hydration
 ```
 outcome: ok
 <div data-jh-e="metrics"><div class="error"><p>Something went wrong</p><button data-jh-reset="metrics">Try again</button></div></div>
@@ -977,7 +985,7 @@ test "boundary: a signal passes through uncaught" {
     try assertErrorBoundary(@src(), catchError("post", fallback, signallingPanel));
 }
 ```
-`__snapshots__/boundary/a-signal-passes-through-uncaught.snap` — it reaches front 30's render, which answers the 404 with the not-found document itself (decision 117); the boundary never renders a fallback for it
+`__snapshots__/boundary/a_signal_passes_through_uncaught.snap` — it reaches front 30's render, which answers the 404 with the not-found document itself (decision 117); the boundary never renders a fallback for it
 ```
 outcome: error nav:not-found
 ```
@@ -987,7 +995,7 @@ test "boundary: an event handler is outside the catch channel" {
     try assertErrorBoundary(@src(), catchError("like", fallback, panelWithHandler));
 }
 ```
-`__snapshots__/boundary/an-event-handler-is-outside-the-catch-channel.snap` — the handler is an attribute; nothing for `renderBoundary` to branch on
+`__snapshots__/boundary/an_event_handler_is_outside_the_catch_channel.snap` — the handler is an attribute; nothing for `renderBoundary` to branch on
 ```
 outcome: ok
 <div data-jh-e="like"><button data-jh-on-click="like">Like</button></div>
@@ -1001,7 +1009,7 @@ test "boundary: the reader's digest is the server's digest" {
     try assertText(@src(), "same-digest=" + same.toString() + "\nnon-empty=" + nonEmpty.toString() + "\nclient-message=" + infoFor(m).message + "\nserver-message=" + serverInfoFor(m).message + "\nsignal=" + isSignal(m).toString() + " " + isSignal("nav:redirect:/login").toString());
 }
 ```
-`__snapshots__/boundary/the-reader-s-digest-is-the-server-s-digest.snap` — the digest literal itself is front 03's snapshot, not this one
+`__snapshots__/boundary/the_reader_s_digest_is_the_server_s_digest.snap` — the digest literal itself is front 03's snapshot, not this one
 ```
 same-digest=true
 non-empty=true
@@ -1022,7 +1030,7 @@ test "boundary: global error owns its document" {
     try assertHtmlLines(@src(), GlobalError(ErrorInfo(message: "", digest: "a3f19c2b")));
 }
 ```
-`__snapshots__/boundary/global-error-owns-its-document.snap` — `htmlTag` and `body` exactly once, both from front 94
+`__snapshots__/boundary/global_error_owns_its_document.snap` — `htmlTag` and `body` exactly once, both from front 94
 ```
 <html lang="en">
 <head>
@@ -1047,7 +1055,7 @@ test "boundary: not-found page" {
     try assertHtml(@src(), NotFound());
 }
 ```
-`__snapshots__/boundary/not-found-page.snap` — a plain `a` here: `Link` is `jhonstart-link`, which core tests do not import (dependency direction, `modules.md § 3`)
+`__snapshots__/boundary/not_found_page.snap` — a plain `a` here: `Link` is `jhonstart-link`, which core tests do not import (dependency direction, `modules.md § 3`)
 ```
 <section class="not-found"><h2>Not found</h2><p><a href="/blog">Back to the blog</a></p></section>
 ```
@@ -1059,7 +1067,8 @@ test "boundary: not-found page" {
 ```bp
 import { Metadata, OpenGraph, TwitterCard, Icons, Viewport } from "jhonstart";
 import { emptyMetadata, emptyOpenGraph, mergeMetadata, renderHead, viewport, mergeViewport, renderViewport, applyTemplate } from "jhonstart";
-import { assertMetadata, assertViewport, assertText } from "jhonstart-test";
+import { assertMetadata, assertViewport } from "jhonstart-test";
+import { testing.snapshots.assertText } from "std";
 
 fn rootMetadata() -> Metadata {
     return Metadata(
@@ -1087,7 +1096,7 @@ test "metadata: empty renders nothing" {
     try assertMetadata(@src(), emptyMetadata());
 }
 ```
-`modules/jhonstart/test/__snapshots__/metadata/empty-renders-nothing.snap` — an empty file (zero bytes)
+`modules/jhonstart/test/__snapshots__/metadata/empty_renders_nothing.snap` — an empty file (zero bytes)
 ```
 ```
 
@@ -1096,7 +1105,7 @@ test "metadata: root layout head in fixed order" {
     try assertMetadata(@src(), rootMetadata());
 }
 ```
-`__snapshots__/metadata/root-layout-head-in-fixed-order.snap` — the template is not applied to the segment that declares it; `""` fields emit no tag
+`__snapshots__/metadata/root_layout_head_in_fixed_order.snap` — the template is not applied to the segment that declares it; `""` fields emit no tag
 ```
 <title>botopink</title>
 <meta name="description" content="A language and its libraries">
@@ -1116,7 +1125,7 @@ test "metadata: page merged onto root ---- template once and images wholesale" {
     try assertMetadata(@src(), mergeMetadata(rootMetadata(), pageMetadata()));
 }
 ```
-`__snapshots__/metadata/page-merged-onto-root-template-once-and-images-wholesale.snap` — strings: non-empty child replaces; lists: replace wholesale (one image, not four); nested records field by field (`og:site_name` from the root, `og:title`/`og:type` from the page)
+`__snapshots__/metadata/page_merged_onto_root_template_once_and_images_wholesale.snap` — strings: non-empty child replaces; lists: replace wholesale (one image, not four); nested records field by field (`og:site_name` from the root, `og:title`/`og:type` from the page)
 ```
 <title>Hello | botopink</title>
 <meta name="description" content="A language and its libraries">
@@ -1141,7 +1150,7 @@ test "metadata: three levels apply the template once" {
     try assertText(@src(), merged.title + "\n" + merged.titleTemplate + "|");
 }
 ```
-`__snapshots__/metadata/three-levels-apply-the-template-once.snap` — the result's `titleTemplate` is the child's (empty), so nothing composes into `Hello | Docs | botopink | botopink`
+`__snapshots__/metadata/three_levels_apply_the_template_once.snap` — the result's `titleTemplate` is the child's (empty), so nothing composes into `Hello | Docs | botopink | botopink`
 ```
 Hello | botopink
 |
@@ -1153,7 +1162,7 @@ test "metadata: a child with no title inherits the parent's untemplated" {
     try assertText(@src(), mergeMetadata(rootMetadata(), child).title + "\n" + applyTemplate("%s | x", "") + "|" + applyTemplate("", "Plain"));
 }
 ```
-`__snapshots__/metadata/a-child-with-no-title-inherits-the-parent-s-untemplated.snap`
+`__snapshots__/metadata/a_child_with_no_title_inherits_the_parent_s_untemplated.snap`
 ```
 botopink
 |Plain
@@ -1166,7 +1175,7 @@ test "metadata: markup in a title and a quote in a description are escaped" {
     try assertMetadata(@src(), hostile);
 }
 ```
-`__snapshots__/metadata/markup-in-a-title-and-a-quote-in-a-description-are-escaped.snap` — `escape.html` for the element text, `escape.attribute` for the attribute
+`__snapshots__/metadata/markup_in_a_title_and_a_quote_in_a_description_are_escaped.snap` — `escape.html` for the element text, `escape.attribute` for the attribute
 ```
 <title>&lt;script&gt;alert(1)&lt;/script&gt; &amp; co</title>
 <meta name="description" content="She said &quot;hi&quot;">
@@ -1177,7 +1186,7 @@ test "metadata: viewport renders both tags" {
     try assertViewport(@src(), Viewport(width: "device-width", initialScale: "1", themeColor: "#0b0b0b"));
 }
 ```
-`__snapshots__/metadata/viewport-renders-both-tags.snap`
+`__snapshots__/metadata/viewport_renders_both_tags.snap`
 ```
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0b0b0b">
@@ -1190,7 +1199,7 @@ test "metadata: viewport merge picks the child colour and keeps the parent width
     try assertViewport(@src(), mergeViewport(parent, child));
 }
 ```
-`__snapshots__/metadata/viewport-merge-picks-the-child-colour-and-keeps-the-parent-width.snap`
+`__snapshots__/metadata/viewport_merge_picks_the_child_colour_and_keeps_the_parent_width.snap`
 ```
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0b0b0b">
@@ -1201,7 +1210,7 @@ test "metadata: an empty viewport renders nothing" {
     try assertViewport(@src(), Viewport(width: "", initialScale: "", themeColor: ""));
 }
 ```
-`__snapshots__/metadata/an-empty-viewport-renders-nothing.snap` — empty file
+`__snapshots__/metadata/an_empty_viewport_renders_nothing.snap` — empty file
 ```
 ```
 
@@ -1221,7 +1230,8 @@ the page renders from a parsed state; `stubEnvelope` builds a real envelope with
 import { Element, text, fragment, p, form, input, label, button, renderToString } from "jhonstart";
 import { FormBinding, formAction, formAttrs, hiddenActionField, actionState, FormStatus, formStatus, applyOptimistic, SearchFormProps, searchFormProps, searchFormAttrs } from "jhonstart-forms";
 import { state: {ActionState, newActionState, writeState}, envelope: {parseActionState} } from "actions";
-import { assertForm, assertText, assertOptimistic, stubEnvelope } from "jhonstart-test";
+import { assertForm, assertOptimistic, stubEnvelope } from "jhonstart-test";
+import { testing.snapshots.assertText } from "std";
 
 val actionId = "a_9f31c0d7a4b2e5081c6fa3d2";
 val failedState = writeState("Title must be at least 3 characters", [#("title", "Too short")]);
@@ -1244,7 +1254,7 @@ test "form: binding attributes and the hidden action field" {
     try assertForm(@src(), createPostForm(formAction(actionId, "/blog/new"), actionState(""), false));
 }
 ```
-`modules/jhonstart-forms/test/__snapshots__/form/binding-attributes-and-the-hidden-action-field.snap` — `contracts.md § 3`'s markup: `method`, `action` (the current pathname), `data-jh-a`, then the hidden `__bp_action`; this is the un-hydrated POST
+`modules/jhonstart-forms/test/__snapshots__/form/binding_attributes_and_the_hidden_action_field.snap` — `contracts.md § 3`'s markup: `method`, `action` (the current pathname), `data-jh-a`, then the hidden `__bp_action`; this is the un-hydrated POST
 ```
 <form method="post" action="/blog/new" data-jh-a="a_9f31c0d7a4b2e5081c6fa3d2">
 <input type="hidden" name="__bp_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
@@ -1262,7 +1272,7 @@ test "form: a field message lands beside its field" {
     try assertForm(@src(), createPostForm(formAction(actionId, "/blog/new"), state, false));
 }
 ```
-`__snapshots__/form/a-field-message-lands-beside-its-field.snap` — an `ok: false` envelope re-renders the form in place; no boundary, no lost input
+`__snapshots__/form/a_field_message_lands_beside_its_field.snap` — an `ok: false` envelope re-renders the form in place; no boundary, no lost input
 ```
 <form method="post" action="/blog/new" data-jh-a="a_9f31c0d7a4b2e5081c6fa3d2">
 <input type="hidden" name="__bp_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
@@ -1280,7 +1290,7 @@ test "form: an in-flight submit disables and renames the button" {
     try assertForm(@src(), createPostForm(formAction(actionId, "/blog/new"), actionState(""), true));
 }
 ```
-`__snapshots__/form/an-in-flight-submit-disables-and-renames-the-button.snap`
+`__snapshots__/form/an_in_flight_submit_disables_and_renames_the_button.snap`
 ```
 <form method="post" action="/blog/new" data-jh-a="a_9f31c0d7a4b2e5081c6fa3d2">
 <input type="hidden" name="__bp_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
@@ -1302,7 +1312,7 @@ test "form: the server pass of actionState is the initial state and not pending"
     try assertText(@src(), "ok=" + state.ok.toString() + " message=" + state.message + "\naction=" + binding.actionId + " path=" + binding.pathname + "\npending=" + pending.toString());
 }
 ```
-`__snapshots__/form/the-server-pass-of-actionstate-is-the-initial-state-and-not-pending.snap` — read positionally (tuple labels are lost through generic instantiation); the pathname is the current route's, supplied by the binding
+`__snapshots__/form/the_server_pass_of_actionstate_is_the_initial_state_and_not_pending.snap` — read positionally (tuple labels are lost through generic instantiation); the pathname is the current route's, supplied by the binding
 ```
 ok=true message=
 action=a_9f31c0d7a4b2e5081c6fa3d2 path=/blog/new
@@ -1316,7 +1326,7 @@ test "form: idle form status" {
     try assertText(@src(), "pending=" + s.pending.toString() + " actionId=" + s.actionId + " method=" + s.method);
 }
 ```
-`__snapshots__/form/idle-form-status.snap`
+`__snapshots__/form/idle_form_status.snap`
 ```
 pending=false actionId= method=post
 ```
@@ -1330,13 +1340,13 @@ test "form: optimistic fold ---- no prediction is the identity" {
     try assertOptimistic(@src(), 41, []);
 }
 ```
-`__snapshots__/form/optimistic-fold-three-likes.snap`
+`__snapshots__/form/optimistic_fold_three_likes.snap`
 ```
 base: 0
 actions: 1 1 1
 value: 3
 ```
-`__snapshots__/form/optimistic-fold-no-prediction-is-the-identity.snap`
+`__snapshots__/form/optimistic_fold_no_prediction_is_the_identity.snap`
 ```
 base: 41
 actions: 
@@ -1352,7 +1362,7 @@ test "form: a search form is a GET form the action interceptor does not claim" {
     try assertForm(@src(), searchForm(searchFormProps("/search")));
 }
 ```
-`__snapshots__/form/a-search-form-is-a-get-form-the-action-interceptor-does-not-claim.snap` — `data-jh-sf`, not `data-jh-a`; un-hydrated the browser's own GET produces the same URL
+`__snapshots__/form/a_search_form_is_a_get_form_the_action_interceptor_does_not_claim.snap` — `data-jh-sf`, not `data-jh-a`; un-hydrated the browser's own GET produces the same URL
 ```
 <form method="get" action="/search" data-jh-sf="1">
 <input name="q">

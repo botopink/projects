@@ -79,14 +79,14 @@ sheet carries `.e_39b87d03{` and its `:hover` rule.
 
 ### Open
 
-- [ ] No file under `repository/jhonstart/modules/jhonstart/src/` names emilia. — `html_attrs.bp`
-      names none, but `streaming.bp` (front 30) names emilia in one comment; front 30 rewords it.
-- [ ] No file under `repository/jhonstart/modules/jhonstart/src/` names emilia, asserted by the
-      `jhonstart-emilia` bridge test. — the comment above, and the bridge test has no such assertion
-      yet (front 30).
+- [x] No file under `repository/jhonstart/modules/jhonstart/src/` names emilia — `git grep -i emilia
+      -- modules/jhonstart/src` is empty.
+- [x] No file under `repository/jhonstart/modules/jhonstart/src/` names emilia, asserted by the
+      `jhonstart-emilia` bridge test — `bridge_test.bp` "bridge: no file of the core's src names
+      emilia" (every file read with std's `io.fs`).
 - [ ] The literal-hex fixture (`e_39b87d03`) is shared with the `jhonstart-emilia` bridge test and onze
-      front 68, and all three assert it. — emilia asserts it; the bridge exists but asserts no
-      literal yet; onze front 68 is not written.
+      front 68, and all three assert it — emilia and the bridge assert it (`bridge_test.bp` "bridge:
+      the contract-4 literal on a rendered document"); onze front 68's bundle test does not yet.
 
 ## Constraints
 

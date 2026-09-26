@@ -604,6 +604,24 @@ each.
 > (b) is additive when front 64 lands (a per-request value beside the app's default).
 > **Blocks.** Nothing.
 
+### 30-g · The browser half is asserted in a commonJS-only member over a minimal document
+
+> **Raised by:** `04-jhonstart/30-jhonstart-streaming` Step 7 / Step 12 (the fill function, the
+> payload reader and the signal function "on the DOM")
+> **Measured.** `render.mjs`'s `registerFill` / `registerSignal` / `payloadText` read `document`,
+> `history` and `location`; `botopink test` runs on node and on the BEAM, neither has a DOM, and the
+> core member runs every suite on both rows (a node-only fake would red or vacuously pass the erlang
+> row); no browser is in reach before onze front 53.
+> **Options.** (a) a member `modules/jhonstart-dom-test` with `targets ["commonJS"]`: `fake_dom.mjs`
+> parses the render's markup into a minimal document (the selectors, `template` content,
+> `replaceChildren` and serializer those functions use; `history` / `location` / `dispatchEvent`
+> recorded) and `dom_test.bp` calls the registered functions by their registry names —
+> implemented; (b) leave the boxes to front 53's browser-in-the-loop; (c) a real DOM library as a
+> dependency.
+> **Recommendation.** (a): the three boxes are asserted today against the markup the render's own
+> writers produce, with no dependency; front 53 still proves them in a browser.
+> **Blocks.** Nothing.
+
 ### 31-b · The error digest: one scheme, and the render's way to the logger
 
 > **Raised by:** `04-jhonstart/31-jhonstart-error-boundaries` Definition of done ("correlates with
