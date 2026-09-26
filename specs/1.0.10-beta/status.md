@@ -294,7 +294,7 @@ annotation, `@Task<T>`, only `@Result` fails, `@Iterator<T>` / `@Stream<T>`, `as
 - [ ] `00` C-04, C-07…C-11, C-13…C-18, C-20 (absorbed by C-26), C-21…C-25 — no worktree, no owner
 - [ ] `03-rakun` — 51 fronts; **04, 05, 06, 07, 14, 22, 23, 62, 72 and 74 landed** (core 369/0 on commonJS after the routing and validation moves, `rakun-web` 104/0; `rakun-validation` is now the bundled `validation`). Next unblocked: 08, 11, 13, 80
 - [ ] `05-emilia` — 22 fronts; 33–41, 44, 45, 54 and 56 landed (569 / 569 on both rows, fifteen example members). `Transition.Transform` is a leaf, so a `Transform` *section* beside it is safe, but a top-level `Transform(…)` **payload** variant is the shape that silently breaks a section of the same name. Level 3 still holds 42, 43, 45, 46, 47, 48 and 59; level 2 holds 55, 57 and 58
-- [ ] `06-onze` — 9 fronts, none started; `49-onze-stand-up` after the name takeover, then `68-onze-client-bundle`
+- [ ] `06-onze` — 9 fronts; **audited 2026-09-26** on `front/06-onze` against the prepared orchestrator workspace (`front/95-onze-orchestrator` `91ea040`, cut locally in the worktree's onze clone — the decision-79 takeover itself is the maintainer's): of 352 boxes none held — every member was a skeleton `root.bp` with one inline test, and the only files a box names that existed were `AGENTS.md`, `README.md` and the CI workflow. Work proceeds in the READMEs' dependency order (49 first)
 
 ## Deferred out of this milestone
 - See [`deferred.md`](./deferred.md) — GraalVM/AOT/CRaC/JNDI/Servlet/agents, Vercel hosting, the bundler plugin APIs, the CSS features that read user files, the old `onze` mocking runtime; plus the per-track reference-coverage holes listed in each `unification.md`.
