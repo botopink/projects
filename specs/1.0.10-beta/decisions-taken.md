@@ -77,6 +77,7 @@ what was left, now `00-compiler-carry-over`'s order),
 | [134](#134-every-example-in-the-guide-and-in-docsmd-is-correct-against-the-compiler) | Guide examples that do not type | Fixed in the text; three checker gaps closed by `01-checker`; decision 117's decorator check written in jhonstart |
 | [135](#135-specs-keep-only-what-still-holds) | Closed fronts spelling removed forms | Condensed to their current outcome; removed spellings only in the record and the removed-names tables |
 | [139](#139-a-module-level-pub-val-crosses-modules-and-an-imported-modules-body-runs-first) | A `pub val` of a record imported from a sibling (30-a) | Readable on every backend, of any type; the imported modules' bodies run before the importer's, dependencies first, each once; jhonstart reads `globals.fill` from one `pub val globals` |
+| [140](#140-the-beam-lowering-takes-every-construct-the-templates-use-and-nothing-evaluates-erlang-at-run-time) | A template the BEAM lowering refuses (0203-b) | (c): `receive`, `!`, `catch E`, `try … of`, `try … after` and integer-field binary patterns lowered; `'__bp_erl_eval'/2` deleted — a refused template is a located build error |
 
 ## 68. One milestone, the 1.0.9 numbers kept, the drafts deleted
 
@@ -2840,4 +2841,31 @@ this: the checker does not bind a sibling module as a namespace (`unbound variab
 Implements: compiler (`commonJS.zig`, `erlang.zig`, `beam_asm.zig`, `wat.zig`, `crossModule.zig`),
 `tests/language/modules/pub_val_across_modules` on all four targets, jhonstart `globals.bp` and its
 four readers; the `language-gaps.md` rows on a `pub val` of a user type.
+
+## 140. The BEAM lowering takes every construct the templates use, and nothing evaluates Erlang at run time
+
+**Decided 2026-09-26 by the maintainer** (pending item 0203-b): option (c), and then the run-time
+path goes. `comptime/runtime/beam/lower.zig` — the lowering the comptime BEAM runtime and the beam
+backend's `@External.Erlang` templates (BR5) share — takes the constructs it refused, within
+decision 86's OTP-24-stable opcodes:
+
+- `receive … [after T -> …] end` is `erlc`'s selective-receive loop (`loop_rec`, the clauses,
+  `remove_message`, `loop_rec_end`, `wait` or `wait_timeout` + `timeout`); `!` is `send`; the old
+  `catch E` is `catch` / `catch_end`; `try … of` matches after `try_end` (no clause is
+  `{try_clause, V}`); `try … after` runs the `after` body on both ways out;
+- a binary pattern of fixed-size unsigned big-endian integer fields (`<<A:32, _:4, B:12>>`,
+  optionally with a `/binary` tail) reads its fields through `binary:decode_unsigned/1` and shifts;
+- a call to any of `erl_internal:bif/2`'s auto-imported functions resolves (`open_port/2` did not).
+
+The beam backend's `'__bp_erl_eval'/2` is deleted (decision 67): a template the reader or the
+lowering refuses is a build error at its call site naming the function and the construct. Before,
+169 of the 177 Erlang templates `libs/std` and the bundled libraries ship lowered and 8 were
+evaluated from source at run time (`async.spawnAll` / `raceOf`, `json.unquote`,
+`encoding.percentDecode`, `io/http.fetch`, `io/random.uuidV4`, `io/process.run`, `validation`'s
+`rkvIsolated`); now all 177 lower, and the five sibling libraries' 29 did before and do now.
+
+Implements: compiler (`beam/lower.zig`, `wat/erl_parse.zig`, `wat/lower.zig` refusing the three
+read-only constructs, `beam_asm.zig`, `asm_text.zig`); `codegen/tests/beam_templates.zig` (every
+shipped template lowers), `program.zig`'s `erlc`-comparison module for each construct,
+`tests/language/run/external_template_refused_on_beam`.
 

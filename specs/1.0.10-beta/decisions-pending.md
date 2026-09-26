@@ -3,12 +3,12 @@
 **None open.** Implementation choices wait for the maintainer to confirm or reverse them: six of
 front 24's (24-a…c, 24-e…g), five `01-std` ones (01std-a…e), three of `00 · 23-std-purity` (23-a…c),
 five of front 95's (95-a…e), two of `00 · 16-formatter` (16-a…b), track C's (26-a, 27-a, 30-b…e, 31-a),
-`00 · 04-js` / `05-wasm`'s (0405-a…b) `00 · 02-erlang` / `03-beam`'s (0203-a…b), track D's (05emilia-a…h) and `libs-external-methods`' (lem-a…f). Every question
+`00 · 04-js` / `05-wasm`'s (0405-a…b) `00 · 02-erlang` / `03-beam`'s (0203-a), track D's (05emilia-a…h) and `libs-external-methods`' (lem-a…f). Every question
 this milestone raised is answered in [`decisions-taken.md`](./decisions-taken.md) — up to 128 as
 before; 129 the type-alias details, 130 front 24's open point 8 (a failing render's `E`), 131 its open
 point 7 and 24-d (no migration routine), 132 and 133 the formatter's 16-d and 16-c, 134 and 135 front
-24's two documentation boxes; 139 answers 30-a (a `pub val` crosses modules). The next free number
-is **140**.
+24's two documentation boxes; 139 answers 30-a (a `pub val` crosses modules), 140 0203-b (no run-time template
+evaluation on beam). The next free number is **141**.
 
 This file stays because the fronts will fill it again. A front that meets a question it cannot answer
 from the code writes it here rather than guessing, in the shape the others used:
@@ -526,21 +526,6 @@ Implemented on `front/02-03-erlang-beam` (worktree `.tasks/02-03-erlang-beam`, 2
 > **Recommendation.** (b) is the restrictive reading (decision 67) and is `01-checker`'s; until it
 > lands, (a) keeps the four backends giving one answer instead of three. Choosing (b) deletes
 > `primNodeAliasIn` and its two call sites.
-
-### 0203-b · A template the BEAM lowering refuses keeps the run-time `'__bp_erl_eval'/2`
-
-> **Measured.** BR5 (compiler `8333aaab`) compiles every `@External.Erlang` template at build time
-> through the comptime runtime's reader and lowering; no beam snapshot carries `'__bp_erl_eval'`.
-> `lower.zig` refuses `receive`, `!`, the old `catch Expr`, `try … of` and `try … after`, and by
-> text at most 6 of `libs/std`'s 159 templates carry one (`async.allOf`/`raceOf`, `encoding`'s
-> percent-decode, one `json` reader, `http.get`, `process`'s run).
-> **Options.** (a) such a template keeps the run-time evaluator, named in `beam/AGENTS.md` —
-> **implemented**; (b) refuse it at build time on beam (a located error naming the construct), so
-> those six std functions stop compiling on beam until (c); (c) teach `lower.zig` the five
-> constructs (a `front 14`/`18` row — the comptime runtime would gain them too).
-> **Recommendation.** (c), and (a) until it lands: decision 67 argues for (b), but (b) turns
-> programs that run correctly today into build errors for a construct the compiler, not the
-> program, cannot yet lower.
 
 ## Track D (`05-emilia`) — choices made in implementation, to confirm
 
