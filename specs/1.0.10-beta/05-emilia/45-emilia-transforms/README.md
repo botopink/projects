@@ -6,9 +6,12 @@
 `Transform`, and the top-level `TransformRotateRaw`, `TransformTranslateRaw`) · `src/emilia.bp`
 (front-45 block: `transformTokenToCss` and its sub-dispatchers — `transformRotateToCss`,
 `transformRotateNegToCss`, … — all taking `th: Theme`; `transformEntries`, `rawRotate`,
-`rawTranslate`; three `tokenToSheet` arms after front 44's)
+`rawTranslate`; `transformSheet` and the `@property` registrations `twProperty` /
+`translateProperties` / `chainProperties`; three `tokenToSheet` arms after front 44's) ·
+`src/output.bp` (`propertiesFallback`, the `properties` layer in `renderDocument`)
 **User docs:** `repository/emilia/docs.md` § *Transform*
-**Reference:** `TAILWIND_CSS_DOCS.md § 16` · https://tailwindcss.com/docs/rotate
+**Reference:** `TAILWIND_CSS_DOCS.md § 16` · https://tailwindcss.com/docs/rotate · upstream Tailwind v4
+(4.3.2, compiled output) where the reference file disagrees with it
 
 **Open:** none.
 
@@ -25,26 +28,28 @@ leaves' `1px` is the reference's own value).
 |---|---|---|
 | Rotate (`§ 16.4`) | `.Transform.Rotate.{0, 1, 45, 90, 180}`, `.Transform.Rotate.Neg.{1, 12, 45, 90, 180}` | `rotate:45deg`, `rotate:-12deg` (`Neg`: no spelling for a negative numeric leaf) |
 | Scale (`§ 16.5`) | `.Transform.Scale.{0, 50, 75, 90, 95, 100, 105, 110, 125, 150}`, `.ScaleX.*`, `.ScaleY.*` | `scale:.5` (no leading zero), `scale:1`; `ScaleX.50` → `scale:.5 1`, `ScaleY.50` → `scale:1 .5` |
-| Translate, one axis (`§ 16.10`) | `.Transform.TranslateX.{0, Px, 1, Half, Full}`, `.TranslateY.*` | one declaration: `translate:50% var(--tw-translate-y, 0)`, `translate:var(--tw-translate-x, 0) 50%`; `TranslateX.1` → `translate:calc(var(--spacing) * 1) var(--tw-translate-y, 0)` |
-| Translate, both axes | `.Transform.Translate.{0, Px, 1, Half, Full}` | `translate:50% 50%` — the value on each axis, no `--tw-` fallback |
-| Skew (`§ 16.6`) | `.Transform.SkewX.{0, 1, 2, 3, 6, 12}`, `.SkewY.*` | `transform:skewX(3deg)` — upstream's property; the reference file's `skew-x:` is not CSS and is never emitted |
+| Translate, one axis (`§ 16.10`) | `.Transform.TranslateX.{0, Px, 1, Half, Full}`, `.TranslateY.*` | the axis's variable, then both: `--tw-translate-x:50%;translate:var(--tw-translate-x) var(--tw-translate-y)`; `TranslateX.1` writes `--tw-translate-x:calc(var(--spacing) * 1)` |
+| Translate, both axes | `.Transform.Translate.{0, Px, 1, Half, Full}` | `--tw-translate-x:50%;--tw-translate-y:50%;translate:var(--tw-translate-x) var(--tw-translate-y)` |
+| Skew (`§ 16.6`) | `.Transform.SkewX.{0, 1, 2, 3, 6, 12}`, `.SkewY.*` | `--tw-skew-x:skewX(3deg);transform:var(--tw-rotate-x,) var(--tw-rotate-y,) var(--tw-rotate-z,) var(--tw-skew-x,) var(--tw-skew-y,)` — upstream's; the reference file's `skew-x:` is not CSS and is never emitted |
 | Origin (`§ 16.8`) | `.Transform.Origin.{Center, Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left, TopLeft}` | `transform-origin:top right` (two keywords) |
 | Style / backface (`§ 16.9`, `16.1`) | `.Transform.Style.{Flat, Preserve3d}`, `.Transform.Backface.{Visible, Hidden}` | `transform-style:preserve-3d`, `backface-visibility:hidden` |
 | Perspective (`§ 16.2`, `16.3`) | `.Transform.Perspective.{None, Dramatic, Near, Normal, Midrange, Distant}`, `.Transform.PerspectiveOrigin.{Center, Top, Bottom, Left, Right}` | `perspective:var(--perspective-near)`; `None` → `perspective:none` |
 | Zoom (`§ 16.11`) | `.Transform.Zoom.{0, 50, 75, 100, 125, 150, 200}` | `zoom:0.5` (with the leading zero, as `§ 16.11` prints) |
-| Shorthand (`§ 16.7`) | `.Transform.Shorthand.{None, Cpu, Gpu}` | `transform:none`; `Cpu`/`Gpu` emit `§ 16.7`'s composed values verbatim (`translate3d(var(--tw-translate-x), var(--tw-translate-y), 0) rotate(var(--tw-rotate)) …`) |
+| Shorthand (`§ 16.7`) | `.Transform.Shorthand.{None, Cpu, Gpu}` | `transform:none`; `Cpu` is the skew chain (`transform:var(--tw-rotate-x,) … var(--tw-skew-y,)`), `Gpu` puts `translateZ(0) ` in front of it — upstream v4's rows; `§ 16.7`'s `translate3d(…) rotate(…) scaleX(…)` values are v3's and are not emitted |
 | Arbitrary | `Token.TransformRotateRaw(value)` / `rawRotate(v)`, `Token.TransformTranslateRaw(value)` / `rawTranslate(v)` | `rotate:<v>`, `translate:<v>` |
 
-- **Translate axes do not compose.** Each one-axis token is one `translate:` declaration carrying the
-  other axis as `var(--tw-translate-<other>, 0)` (the `0` is upstream's `@property` default, inlined
-  through `cssVarOr` because `--tw-` is in no theme namespace); two axes in one list are two
-  declarations of one property, last wins. `.Transform.Translate.*` or `rawTranslate` gives a
-  diagonal.
-- **Skews do not compose**: both axes write `transform`.
-- **The `Cpu`/`Gpu` shorthand is inert**: the six `--tw-*` variables it reads are set by no emilia
-  token. It is shipped for byte-equality and marked inert (docblock, `AGENTS.md`, `docs.md`, the
-  example); fallbacks would make `Cpu` an identity transform overwriting a `skewX` beside it. Making
-  it resolve needs `@property` emission, a new output kind of front 56's.
+- **Translate axes compose.** A one-axis token writes its own `--tw-translate-<axis>` and reads both,
+  so `[.TranslateX.Half, .TranslateY.Half]` moves diagonally. An axis no token set reads `0`:
+  the identity default is not a theme entry (`--tw-` is in no `Ns` namespace and `extendTheme`
+  panics on it) but upstream's `@property --tw-translate-{x,y,z}` registration (initial `0`), which
+  each translate sheet carries as a `Block`.
+- **Skews compose.** Each axis writes its `--tw-skew-<axis>`; the chain's empty fallbacks make an
+  unset variable nothing, and each skew sheet registers the chain's five variables (no initial value).
+- **The `@property` fallback.** For an engine without `@property`, `renderDocument` declares
+  `@layer properties;` before every other layer and writes upstream's `@supports (…)` rule setting
+  every registered variable's initial value (`initial` where it has none) on `*, ::before, ::after,
+  ::backdrop` after the blocks; a document with no `@property` block declares no `properties` layer
+  (`decisions-pending.md` 05emilia-i).
 - **`transformEntries()`** contributes the five `--perspective-*` values (`100px`, `300px`, `500px`,
   `800px`, `1200px` — all printed by `§ 16.2`, none provisional) to `fullTheme()`.
 
@@ -57,19 +62,30 @@ leaves' `1px` is the reference's own value).
       rotate dispatchers are exhaustive with no `_` arm.
 - [x] `Scale.75` → `scale:.75`; `ScaleX.50` → `scale:.5 1` and `ScaleY.50` → `scale:1 .5`, asserted
       adjacently; `Scale.100` → `scale:1`.
-- [x] The ten one-axis translate rows emit the one-declaration form; `TranslateX.1` carries
-      `calc(var(--spacing) * 1)`; no `rem` anywhere in the block; `[.TranslateX.Half,
-      .TranslateY.Half]` is two declarations, last wins; the inline `0` is asserted to be there
-      because `--tw-*` is in no namespace.
-- [x] `Transform.Translate` emits both axes with no fallback.
-- [x] The twelve skew leaves emit `transform:skewX(…)`/`skewY(…)` and `skew-x:` is asserted absent;
-      the upstream check is recorded with URL and date in the `emilia.bp` banner and `AGENTS.md`; the
-      `tokens.bp` docblock carries the note.
+- [x] The ten one-axis translate rows write their axis's variable and the two-variable composition;
+      `TranslateX.1` carries `calc(var(--spacing) * 1)`; no `rem` anywhere in the block;
+      `[.TranslateX.Half, .TranslateY.Half]` writes both variables; every translate sheet carries the
+      three `@property` blocks with initial `0`, and no rotate sheet carries one — `emilia.bp`
+      "Transform.TranslateX — the five rows of `§ 16.10`, upstream v4's form", "… two axes write two
+      variables…", "… the sheet carries upstream's three `@property` blocks".
+- [x] `Transform.Translate` writes both variables and the composition — "Transform.Translate — both
+      axes: both variables, then the composition".
+- [x] The twelve skew leaves write `--tw-skew-*` and upstream's chain, each sheet registering the
+      chain's five variables; `skew-x:` is asserted absent; two skews write both variables — "Transform.SkewX
+      — upstream v4's variable and chain…", "Transform.Skew — the sheet carries the chain's five
+      `@property` blocks", "… the reference file's `skew-x:` column is never emitted, and the axes compose".
+- [x] `renderDocument` declares `@layer properties;` first and writes the `@supports` fallback last
+      when a `@property` block is present, and nothing of it otherwise — `output.bp` "renderDocument —
+      `@property` blocks bring upstream's `properties` layer", "renderDocument — no `@property` block,
+      no `properties` layer".
 - [x] Origin, style, backface, perspective, perspective-origin and zoom rows return the reference's
       strings; `scale:.5` and `zoom:0.5` are asserted adjacently; the perspective keywords are theme
       references with no `px`, contributed by `transformEntries()`.
-- [x] `Shorthand.Cpu` and `.Gpu` are `§ 16.7`'s strings verbatim and are marked inert.
-- [x] Three `tokenToSheet` arms after front 44's, each one `declSheet(…)`; no `_` arm.
+- [x] `Shorthand.Cpu` is the skew chain and `.Gpu` `translateZ(0)` + the chain, with no `@property`
+      block; a `Cpu` reads the chain a `SkewX` writes — "Transform.Shorthand — upstream v4's three rows",
+      "Transform.Shorthand — the chain it reads is the skew leaves' chain".
+- [x] Three `tokenToSheet` arms after front 44's — `Transform` through `transformSheet`, the two raw
+      variants `declSheet(…)`; no `_` arm.
 - [x] The `skew` note, the translate shape and the `Neg` convention are stated in the `tokens.bp`
       docblock; `repository/emilia/AGENTS.md` records the section and the notes; the class name for a
       fixed list is a literal both targets agree on; green on commonJS and erlang.
@@ -81,6 +97,6 @@ leaves' `1px` is the reference's own value).
 
 ## Examples
 
-- [`./examples/transforms-example.bp`](./examples/transforms-example.bp) — the `Transform` catalogue
-  with the inert shorthand marked at its declaration, a card that lifts and scales on hover with a
+- [`./examples/transforms-example.bp`](./examples/transforms-example.bp) — the `Transform` catalogue,
+  a card that lifts and scales on hover with a
   transition, and a disclosure chevron that rotates 180° when open.

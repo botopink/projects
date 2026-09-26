@@ -109,7 +109,7 @@ It touches no host cell of its own: it drives `linkPrefetch` and front 68's DOM 
 - The four cells `__jhLinkMount`, `__jhLinkPrefetch`, `__jhLinkStatus`, `__jhLinkRouteKind`; `linkStatus()` idle when nothing is in flight; `linkMount()` idempotent; `linkRouteKind` reads front 60's table and answers `"unknown"` without one.
 - No `data-onze-` string under `modules/jhonstart*/src/`; no `__onze*` spelling; `git grep -n "declare fn Link"` finds nothing.
 - `repository/jhonstart/AGENTS.md` records the member; front 68's README (step 8) calls `linkMount()` once.
-- Both language gaps below are rows of `language-gaps.md`. The member's tests are green on both rows.
+- The language gap below is a row of `language-gaps.md`. The member's tests are green on both rows.
 
 ## Steps
 
@@ -136,8 +136,11 @@ Done.
 
 ### Step 4 — The browser runtime cells and `linkStatus`
 
-- [ ] every cell in the file is `#[@External.Node]`; there is no `#[@External.Erlang]` cell —
-      left unticked by pending decision 27-a, which makes the cells dual-target
+- [x] every cell in the file is dual-target — `link_runtime.mjs` beside
+      `sidecars/jhonstart_link.erl`, whose twin answers the server's truth (no link in flight,
+      nothing prefetched, route kind unknown): a called node-only cell reds the erlang compile of
+      the member at its caller, and the member declares both targets (`decisions-pending.md` 27-a)
+      — held: `link.bp:249-262`
 - [ ] `use linkStatus()` type-checks inside a `fn … -> @Component<ElementBase, Element>` body — never the doubled `use` + `useLinkStatus()`; without a `@Component` return the body is `use-without-context-effect` (decisions 118 and 128)
 
 ### Step 5 — Module wiring
@@ -160,7 +163,6 @@ Done.
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| Declared parameter defaults of an imported function are not applied (`language-gaps.md`, "Declared parameter defaults are never applied") | `Link` would naturally be `Link(href, children, prefetch = true, replace = false, scroll = true)`; instead the props are a record and `linkProps(href)` fills the defaults | `Link(linkProps("/x"), children)` and `withPrefetch(p, false)` | apply the declared default when an argument is omitted |
 | No assignment to a `self` field; a record has no copy-with-update | each `with*` helper respells all six fields to change one | a `with*` helper per field | a `Record(base, field: value)` copy-update expression |
 
 ## Test plan
@@ -182,5 +184,5 @@ route-kind flag read by the reconciler (Step 3b), both with the transition drive
 - [x] front 68's generated entry calls `linkMount()` once, and this README says so rather than
       attributing it to front 29 — § *The runtime half*
 - [x] the route-kind flag is read from front 60 and not recomputed here
-- [x] both language gaps appear in a `specs/1.0.10-beta/` spec
+- [x] the language gap appears in a `specs/1.0.10-beta/` spec
 - [x] the front's tests are green on its assigned target

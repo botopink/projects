@@ -17,9 +17,6 @@
 //   https://nextjs.org/docs/app/getting-started/updating-data
 //   https://html.spec.whatwg.org/multipage/forms.html#the-form-element
 //   NEXTJS-DOCS.md § 10. Data Mutation
-//
-// LANGUAGE GAP: declared parameter defaults are never applied, so every
-// constructor call below spells `attrs:` — the inner `text(…)` calls included.
 
 import {Element, text, renderToString} from "jhonstart";
 // front 94's element surface (`modules/jhonstart/src/elements.bp`).
@@ -64,13 +61,13 @@ fn postTextField(name: string, caption: string) -> Element {
 }
 
 fn fieldLabel(name: string, caption: string) -> Element {
-    return label([text(caption, attrs: [])], attrs: [#("for", name)]);
+    return label([text(caption)], attrs: [#("for", name)]);
 }
 
 fn visibilityField() -> Element {
     return select([
-        option([text("Public", attrs: [])], attrs: [#("value", "public")]),
-        option([text("Draft", attrs: [])], attrs: [#("value", "draft")]),
+        option([text("Public")], attrs: [#("value", "public")]),
+        option([text("Draft")], attrs: [#("value", "draft")]),
     ], attrs: [#("id", "visibility"), #("name", "visibility")]);
 }
 
@@ -85,7 +82,7 @@ pub fn newPostForm(actionId: string, pathname: string) -> Element {
         postTextField("body", "Body"),
         fieldLabel("visibility", "Visibility"),
         visibilityField(),
-        button([text("Publish", attrs: [])], attrs: [#("type", "submit")]),
+        button([text("Publish")], attrs: [#("type", "submit")]),
     ], attrs: actionFormAttrs(actionId, pathname));
 }
 
@@ -118,12 +115,12 @@ test "select and option nest, and the option carries its value" {
 }
 
 test "the submit button is an ordinary element with a type attribute" {
-    val markup = renderToString(button([text("Publish", attrs: [])], attrs: [#("type", "submit")]));
+    val markup = renderToString(button([text("Publish")], attrs: [#("type", "submit")]));
     assert markup == "<button type=\"submit\">Publish</button>";
 }
 
 test "a void constructor drops children instead of rendering them" {
-    val hostile = input([text("dropped", attrs: [])], attrs: [#("name", "title")]);
+    val hostile = input([text("dropped")], attrs: [#("name", "title")]);
     assert renderToString(hostile).contains("dropped") == false;
 }
 

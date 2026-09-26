@@ -107,7 +107,7 @@ Nothing from this file. A server component's output is markup; front 30's render
 - `renderServerComponent` awaits exactly once; a component with two sequential statement-level awaits compiles and renders.
 - `docs.md` § *The loader convention* (with the lambda rule, front 02 as the owner of parallel awaiting, the eager-`@Task` fact) and § *The six cells, and where they point* (the writer pair, its caller, the `k=v&k=v` encoding).
 - `server.d.bp` is gone; `AGENTS.md` § *The `Http` base, and why it is gone* records why the phantom `Http` base and the `Request` behavior were dropped: one base, `ElementBase`, serves the whole render tree.
-- `use request()` is granted by the `@Component` return (`00 · 24`); the other two language gaps are rows of `language-gaps.md`.
+- `use request()` is granted by the `@Component` return (`00 · 24`); the other language gap is a row of `language-gaps.md`.
 
 ## Steps
 
@@ -145,7 +145,6 @@ Done.
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| Declared parameter defaults of an imported function are not applied | every `Element` builder call in both examples spells `attrs: []`, inner `text(…)` included | write every argument | apply the declared default when an argument is omitted |
 | `xs[0]` silently drops the index on the beam backend (`tests/language/expected-failures.txt`) | reading the first row of a loader's result | `.at(0).unwrapOr(default)` | make the index expression lower correctly on beam, or reject it there |
 
 ## Test plan
@@ -169,5 +168,5 @@ statement-level awaits.
       `escape.attribute`; this front hand-rolls no escaping
 - [ ] the erlang eager-`@Task` fact is stated in the README and in `repository/jhonstart/docs.md`,
       and every multi-loader example routes through front 02's unstarted-task list
-- [x] all three language gaps appear in a `specs/1.0.10-beta/` spec
+- [x] both language gaps appear in a `specs/1.0.10-beta/` spec
 - [x] the front's tests are green on its assigned target

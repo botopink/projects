@@ -1,7 +1,6 @@
 // Front 45 — emilia transforms.
 //
-// The whole `Transform` catalogue, with the inert `var(--tw-*)` families marked
-// at their declaration site, then a card that lifts and scales on hover and a
+// The whole `Transform` catalogue, then a card that lifts and scales on hover and a
 // disclosure chevron that rotates 180 degrees when open.
 //
 // Upstream:
@@ -16,10 +15,10 @@
 //   scale-50 -> scale:.5      (no leading zero, § 16.5)
 //   zoom-50  -> zoom:0.5      (leading zero,    § 16.11)
 //
-// Perspective keywords are theme references (`transformEntries()`). A one-axis
-// translate token is ONE `translate:` declaration carrying the other axis as
-// `var(--tw-translate-<other>, 0)`, so two axis tokens in one rule do not
-// compose — the last wins; `.Transform.Translate.*` moves both axes.
+// Perspective keywords are theme references (`transformEntries()`). Translate and
+// skew take upstream v4's form: each axis writes its `--tw-*` variable and reads
+// both, so two axis tokens in one rule compose; the variables are registered
+// with `@property`.
 
 import {emilia, flush, Token} from "emilia";
 
@@ -81,9 +80,8 @@ val scaleAxes: Token[] = [
 
 // ── translate ────────────────────────────────────────────────────────────────
 //
-// `TranslateX.Half` is `translate:50% var(--tw-translate-y, 0)` — one
-// declaration, the other axis read with a `0` fallback so a lone axis token
-// renders. Two axis tokens are two declarations of one property: last wins.
+// `TranslateX.Half` is `--tw-translate-x:50%;translate:var(--tw-translate-x)
+// var(--tw-translate-y)`; the other axis reads its `@property` initial `0`.
 
 val translateXSteps: Token[] = [
     .Transform.TranslateX.0,
@@ -106,9 +104,9 @@ val centred: Token[] = [rawTranslate("-50% -50%")];
 
 // ── skew ─────────────────────────────────────────────────────────────────────
 //
-// Upstream's property, not the reference file's `skew-x:` column (which is not
-// CSS): `.Transform.SkewX.3` is `transform:skewX(3deg)`. Both axes write
-// `transform`, so two skews in one rule do not compose — the second wins.
+// Upstream's form, not the reference file's `skew-x:` column (which is not
+// CSS): `.Transform.SkewX.3` is `--tw-skew-x:skewX(3deg)` and the five-variable
+// `transform` chain, so two skews in one rule skew on both axes.
 
 val skewXSteps: Token[] = [
     .Transform.SkewX.0,
@@ -186,9 +184,8 @@ val zoomSteps: Token[] = [
 
 // ── the transform shorthand ──────────────────────────────────────────────────
 //
-// INERT. `Cpu` and `Gpu` are § 16.7's strings verbatim, but the six `--tw-*`
-// variables they read are set by no emilia token (rotate/scale/translate write
-// their own properties, skew its own `transform`). Only `None` does anything.
+// Upstream v4's rows: `Cpu` is the skew chain and `Gpu` puts `translateZ(0)` in
+// front of it, so either keeps a skew beside it.
 
 val shorthands: Token[] = [
     .Transform.Shorthand.None,

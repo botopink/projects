@@ -13,11 +13,11 @@ current answer:
 | `accent-auto` | 46 | the nullary leaf `Interact.AccentAuto` beside the payload variant (decision 81) |
 | Dark mode by class / attribute | 34 · 54 | 34's `darkVariant(th)` reads `darkAtRule(th)`/`darkSelector(th)`; a test proves each `DarkMode` strategy |
 | Breakpoints under a theme override | 34 · 54 · 58 | every breakpoint fn takes `th` and reads `--breakpoint-*` (decision 82); container sizes read `--container-*` |
-| The filter and translate `--tw-*` readers | 42 · 45 · 46 | the reader is inlined in each rule with `cssVarOr` fallbacks (`filterChain()`, `var(--tw-translate-y, 0)`, `var(--tw-scroll-snap-strictness, proximity)`); a `--tw-*` name cannot be a theme entry |
+| The filter, snap and transform `--tw-*` readers | 42 · 45 · 46 | a `--tw-*` name cannot be a theme entry; filters and snap inline the reader with `cssVarOr` fallbacks (`filterChain()`, `var(--tw-scroll-snap-strictness, proximity)`); the transform variables are upstream's `@property` blocks with the document's `properties` layer (05emilia-i) |
 | Shadow and ring composition | 40 · 41 | one five-channel `box-shadow` reader shared by every shadow and ring token |
 | `space-*` and `divide-*` child selector | 35 · 40 | one `siblingSelector()` (`:where(& > :not(:last-child))`), asserted byte-identical |
 | `sr-only` bodies and the keyframes bodies | 44 · 47 · 54 | read from upstream (`utilities.ts`, `theme.css`), dated in the source comment, asserted as literals |
-| `skew-x` in the reference file | 45 | not CSS; the leaves emit upstream's `transform:skewX(…)` |
+| `skew-x` in the reference file | 45 | not CSS; the leaves emit upstream v4's `--tw-skew-x:skewX(…)` and the `transform` chain |
 | The class-name hash | 48 · 56 | contract 4, fixture `e_39b87d03`; the switch to std's `hash.contentHash` is open (below) |
 
 ## Open boxes

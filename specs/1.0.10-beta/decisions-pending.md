@@ -484,9 +484,8 @@ each.
 > `#[@External.Node("./router_runtime.mjs", …)]` twin.
 > **Options.** (a) dual-target cells, one assertion set on both rows (landed); (b) move the router
 > to an erlang-only member, which the core's render (front 30) then imports across a target split.
-> **Recommendation.** (a). Leaves two boxes of the README unticked by design: "all five cells are
-> `#[@External.Erlang]`; none is `#[@External.Node]`" and "`__jhNavigate` is the only dual-target
-> cell in the file".
+> **Recommendation.** (a). The README's Step 2 / Step 4 boxes state the dual-target shape and cite
+> this entry.
 > **Blocks.** Nothing.
 
 ### 31-a · `notFound()` / `redirect(url)` raise; a boundary captures the raise through one host cell
@@ -517,8 +516,8 @@ each.
 > a server (no link in flight, nothing prefetched, nothing hydrated, no props) — implemented;
 > (b) a wrapper nothing on erlang calls (impossible for a hook a server render calls); (c) a
 > commonJS-only member for the cells (splits `link.bp` in two).
-> **Recommendation.** (a). Leaves the Step 4 boxes "every cell in the file is `#[@External.Node]`;
-> there is no `#[@External.Erlang]` cell" of fronts 27 and 29 unticked by design.
+> **Recommendation.** (a). The Step 4 boxes of fronts 27 and 29 state the dual-target shape and cite
+> this entry.
 > **Blocks.** Nothing.
 
 ### 30-b · `RenderPlugin` is a record of async functions; `chunk` runs where the boundary resolved
@@ -559,7 +558,7 @@ each.
 > **Options.** (a) `Suspense(b)` pushes `b` into the per-render state (`render.mjs` /
 > `jhonstart_render`) as it writes the hole — implemented; (b) a page returns its boundaries beside
 > its tree.
-> **Recommendation.** (a). Leaves the Step 1 box "`Suspense` reaches no host cell" unticked by design.
+> **Recommendation.** (a). The Step 1 box states the one host cell and cites this entry.
 > **Blocks.** Nothing.
 
 ### 30-e · The segment record is `UiSegment`
@@ -571,6 +570,58 @@ each.
 > (b) keep `Segment` and require consumers to name the module.
 > **Recommendation.** (a).
 > **Blocks.** Nothing.
+
+### 29-a · The island starter table is a registry global filled through two functions, split by route
+
+> **Raised by:** onze front 68's "What the other libraries owe" (68-c: "jhonstart owes a registry
+> entry (or a `registerStarter`)"; the entry imports every client component, so the bundle does not
+> split by route)
+> **Measured.** `hydrate()` read `globalThis.__jhIslandStarters`, a name onze's generated entry wrote
+> by hand through a host cell of its own; the payload's `r` carries the matched pattern and the
+> manifest's `R` record maps a pattern to its chunk, and nothing in jhonstart could start a route's
+> islands from that route's chunk.
+> **Options.** (a) the table is the registry's fourth global (`globals.starters`, `__bp3`), filled
+> by `registerStarter(name, start)` and `registerRouteStarters(pattern, load)`; `hydrate()` calls the
+> loader of the payload's `r` once and runs again when it resolves; a second starter for one
+> component, or a second loader for one pattern, fails naming it — implemented; (b) the registry
+> entry only, the entry keeping its own host cell over `globals.starters`; (c) per-component lazy
+> starters instead of per-route loaders.
+> **Recommendation.** (a): the entry names no global and declares no cell, the split follows the
+> manifest's own unit (the route), and the refusals keep one starter per name. A client navigation
+> that reaches a route whose loader has not run starts its islands on the next `hydrate()` call.
+> **Blocks.** Nothing; onze front 68 adopts it (its "no hand-written `__` name" box).
+
+### 30-f · `app(…, lang:)`: one language per app, `"en"` by default, a checked tag
+
+> **Raised by:** onze front 50's `--lang` ("the `lang` attribute, written once on the document
+> element"), which a root layout cannot reach: the render writes `<html>` itself
+> **Measured.** `documentStart` wrote the literal `<html lang="pt-BR">`; rakun front 64's
+> `htmlLang()` (per request, from the resolved locale) is not landed.
+> **Options.** (a) `app(plugins, allowedRedirects = [], lang = "en")` — `App.lang`, written into
+> every document, refused by `app` unless letters, digits and `-` starting with a letter —
+> implemented; (b) a `PageInput.lang`, per request, for front 64's `htmlLang()`; (c) no default.
+> **Recommendation.** (a) now — onze's CLI default is `en` and the attribute is written once per app;
+> (b) is additive when front 64 lands (a per-request value beside the app's default).
+> **Blocks.** Nothing.
+
+### 31-b · The error digest: one scheme, and the render's way to the logger
+
+> **Raised by:** `04-jhonstart/31-jhonstart-error-boundaries` Definition of done ("correlates with
+> front 17's log line")
+> **Measured.** jhonstart's `digestOf(message)` is `hash.contentHash(message)` — 8 hex, the message
+> only. rakun front 17's `errorDigest(module, errorClass, message, topFrames)` is the first 16 hex of
+> `hash.strongHash` over `module|errorClass|message|topFrames` (`contentHash` cannot give 16 hex),
+> and `logErrorWithDigest` returns it "for the renderer to put in the payload". jhonstart's render
+> never calls a logger (jhonstart and rakun never import each other, decision 113), so today no log
+> line carries the digest a fallback shows. Both READMEs claim the scheme.
+> **Options.** (a) jhonstart takes the digest from outside: `app(…)` (or `RenderHooks`) gains an
+> `onError: fn(message: string) -> string` that onze sets to `logErrorWithDigest(log, …)`, the
+> default staying `contentHash`; (b) jhonstart adopts front 17's scheme (a `strongHash` of what it
+> has — the message alone — which still differs from the logger's four-part input); (c) front 17
+> adopts `contentHash(message)`, dropping the module, class and frames from the fault identity.
+> **Recommendation.** (a): one scheme (front 17's), one call site that both logs and answers the
+> digest, and the render still names no rakun type; onze wires it like `allowedRedirects`.
+> **Blocks.** front 31's "correlates with front 17's log line" box.
 
 ## Front 00 · 04-js / 05-wasm — choices made in implementation, to confirm
 
@@ -690,6 +741,25 @@ local change in the named front.
 > read-only `lookupRule` cell live in `emilia.bp`, and each front's rendering tests sit under its
 > banner there. (b) Fix the resolver first (a compiler change — not this track's).
 > **Recommendation.** (a) — implemented; the resolver defect is a compiler finding.
+
+### 05emilia-i. The `--tw-*` transform variables are `@property` blocks, with upstream's `properties` layer (front 45, fronts 54/56)
+
+> **Raised by:** `status.md`'s front 45 / fronts 54–56 rows (translate and skew did not compose;
+> "making it compose needs `@property` emission, a new output kind and front 56's")
+> **Measured.** Tailwind 4.3.2, compiled: `translate-x-4` is `--tw-translate-x: …; translate:
+> var(--tw-translate-x) var(--tw-translate-y)` with `@property --tw-translate-{x,y,z}` (initial `0`)
+> and a `@layer properties` `@supports` fallback; `skew-x-3` is `--tw-skew-x: skewX(3deg); transform:
+> var(--tw-rotate-x,) … var(--tw-skew-y,)` with five `@property` (no initial value). emilia's `Block`
+> is already `header` + brace-balanced `body`, deduplicated by header at flush — the shape a
+> `@property` rule has.
+> **Options.** (a) each translate / skew sheet carries its `@property` registrations as `Block`s,
+> and `renderDocument` writes `@layer properties;` first and the `@supports` fallback last when a
+> `@property` block is present — implemented; (b) a new output kind in front 56's model; (c) keep the
+> inline `var(--tw-translate-y, 0)` fallback and non-composing skews.
+> **Recommendation.** (a): upstream's output byte for byte in shape, no new model kind, and nothing
+> changes for a document without a transform (no `properties` layer is declared).
+> **Blocks.** Nothing. `scale-*` still writes `scale:` directly where upstream writes `--tw-scale-*`
+> and percentages — `status.md` records it.
 
 ## `libs-external-methods` (host functions as methods of their owner) — choices made in implementation, to confirm
 
@@ -876,7 +946,8 @@ reverses each.
 > implemented; (b) wait for front 56.
 > **Recommendation.** (a) now; when `styleRule` lands the build generates a program over the
 > recorded token texts and records the class and body, and the runtime `s` check follows.
-> **Blocks.** Step 3's `styleRule` half, step 6's `s` box.
+> **Blocks.** Step 3's `styleRule` half, step 6's `s` box — onze's to adopt: `styleRule` is in
+> emilia's `emilia.bp`.
 
 ### 68-c · Island starters decode `#[clientProps]` from source into `__jhIslandStarters`
 
@@ -891,7 +962,8 @@ reverses each.
 > entry writes no `__` name by hand. The document/payload check is generated into the entry as
 > the twin of the bundler's `islandMismatches` (asserted equal), because the entry imports nothing
 > of onze.
-> **Blocks.** The "no hand-written `__` name" box.
+> **Blocks.** The "no hand-written `__` name" box — onze's to adopt: jhonstart's `registerStarter` /
+> `registerRouteStarters` over `globals.starters` (29-a) replace the generated cell.
 
 ### 69-a · The static roots are onze's `AssetRoot` until rakun-web front 82 lands `StaticRoot`
 

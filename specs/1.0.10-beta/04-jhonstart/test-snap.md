@@ -49,7 +49,7 @@ All in `modules/jhonstart-test/src/`. Every helper serialises and calls `snapsho
 
 Three facts the map relies on and states rather than assumes silently: `renderToString` is the frozen renderer, so a void element renders `<input …></input>` in every snapshot below (front 94 *Open*; front 30's `renderNode` is the shipping renderer and has its own section below, § 30 · render); `renderHead`/`renderViewport` write their own tags and emit no closing tag for `meta`/`link`; a fixture standing in for a server component is `fn … -> @Component<ElementBase, Element>` even when it awaits nothing, because that is the thunk type `Boundary.child` and `renderComponent` take (decision 104; `renderServerComponent` takes a `fn() -> @Task<Element>` thunk), while a component that activates nothing is a bare `fn … -> Element` (`README.md § 6` rule 6).
 
-Style rules every case follows: `if` is an expression and carries an `else`; no `//` inside a closure, template or enum body; `(expr).method()` is not written; a compound condition is bound to a `val` first; every constructor call spells `attrs:`; multiline text is leading-`\\` lines.
+Style rules every case follows: `if` is an expression and carries an `else`; no `//` inside a closure, template or enum body; `(expr).method()` is not written; a compound condition is bound to a `val` first; multiline text is leading-`\\` lines.
 
 ---
 
@@ -905,7 +905,7 @@ test "bridge: a streamed boundary carries its style first, inside the fill" {
 `__snapshots__/bridge/a-streamed-boundary-carries-its-style-first-inside-the-fill.snap` — `head` once into `<head>`; the boundary's CSS as a bare `<style>` first inside `<template data-jh-f>`; no marker on the `<style>`
 ```
 --- chunk 0 (shell)
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style>.e_3f9a1c{padding:1rem}</style></head><body><div data-jh-root=""><div class="e_3f9a1c"><div data-jh-h="h1"><p>Loading…</p></div></div></div>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><style>.e_3f9a1c{padding:1rem}</style></head><body><div data-jh-root=""><div class="e_3f9a1c"><div data-jh-h="h1"><p>Loading…</p></div></div></div>
 --- chunk 1
 <template data-jh-f="h1"><style>.e_6c2d90{border-width:1px}</style><ul class="e_6c2d90"><li>one</li></ul></template><script>__bp1("h1")</script>
 --- chunk 2

@@ -161,9 +161,8 @@ segment, which has the same effect with one field instead of three.
 |---|---|---|---|
 | A `pub val` of a user record type is unexercised; only primitive `pub val`s exist in the tree | the static export is `pub fn metadata() -> Metadata`, not `pub val metadata: Metadata` | a zero-argument function | verify and document a `pub val` of a record, or say it is not supported |
 | No assignment to a `self` field; a record has no copy-with-update | `mergeMetadata` respells all six fields, and `mergeOpenGraph` all six of its own, to change any of them | a merge function per record | a `Record(base, field: value)` copy-update expression |
-| Declared parameter defaults are never applied | `emptyMetadata()` exists precisely because a six-field constructor cannot default five of them | a constructor per empty record | apply the declared default when an argument is omitted |
 
-All three are rows of `language-gaps.md`.
+Both are rows of `language-gaps.md`.
 
 ## Test plan
 
@@ -187,5 +186,5 @@ front 68's, not this front's.
 - [x] `sitemap`, `robots`, `manifest` and `opengraph-image` are **not** in this file, and the README
       names front 66
 - [x] the two reference gaps are recorded under *Reference gaps* with their upstream URLs
-- [x] all three language gaps appear in a `specs/1.0.10-beta/` spec
+- [x] both language gaps appear in a `specs/1.0.10-beta/` spec
 - [x] the front's tests are green on its assigned target — on both rows

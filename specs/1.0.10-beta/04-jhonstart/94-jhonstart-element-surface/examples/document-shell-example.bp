@@ -19,9 +19,6 @@
 //   https://html.spec.whatwg.org/multipage/semantics.html#the-head-element
 //   NEXTJS-DOCS.md § 4. App Router — Fundamentals · Root Layout (required)
 //   NEXTJS-DOCS.md § 14. Error Handling
-//
-// LANGUAGE GAP: declared parameter defaults are never applied, so every
-// constructor call below spells `attrs:` — the inner `text(…)` calls included.
 
 import {Element, p, text, renderToString} from "jhonstart";
 // front 94's element surface (`modules/jhonstart/src/elements.bp`).
@@ -40,9 +37,9 @@ fn documentHead(pageTitle: string, styleHref: string) -> Element {
             #("name", "viewport"),
             #("content", "width=device-width, initial-scale=1"),
         ]),
-        title([text(pageTitle, attrs: [])], attrs: []),
+        title([text(pageTitle)]),
         link([], attrs: [#("rel", "stylesheet"), #("href", styleHref)]),
-    ], attrs: []);
+    ]);
 }
 
 pub fn documentShell(
@@ -53,7 +50,7 @@ pub fn documentShell(
 ) -> Element {
     return htmlTag([
         documentHead(pageTitle, styleHref),
-        body([content], attrs: []),
+        body([content]),
     ], attrs: [#("lang", lang)]);
 }
 
@@ -79,15 +76,15 @@ pub fn document(
 pub fn globalErrorDocument(digest: string) -> Element {
     val message = "Something went wrong";
     return documentShell("en", message, "/app.css", main([
-        h2([text(message, attrs: [])], attrs: []),
-        p([text("Reference: " + digest, attrs: [])], attrs: []),
+        h2([text(message)]),
+        p([text("Reference: " + digest)]),
     ], attrs: [#("data-jh-boundary", "root")]));
 }
 
 // ── what it renders ─────────────────────────────────────────────────────────
 
 test "the shell nests head before body inside a lang-tagged html element" {
-    val markup = renderToString(documentShell("pt-BR", "Blog", "/app.css", p([text("hi", attrs: [])], attrs: [])));
+    val markup = renderToString(documentShell("pt-BR", "Blog", "/app.css", p([text("hi")])));
     assert markup.contains("<html lang=\"pt-BR\"><head>");
     assert markup.contains("</head><body><p>hi</p></body></html>");
 }
@@ -100,7 +97,7 @@ test "title carries text, and the two void head elements carry only attributes" 
 }
 
 test "the doctype is a string prefix, not an element" {
-    val out = document("en", "Blog", "/app.css", p([text("hi", attrs: [])], attrs: []));
+    val out = document("en", "Blog", "/app.css", p([text("hi")]));
     assert out.startsWith("<!doctype html><html lang=\"en\">");
 }
 

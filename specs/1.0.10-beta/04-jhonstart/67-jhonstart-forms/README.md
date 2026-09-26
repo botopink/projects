@@ -277,7 +277,6 @@ would shadow the imported function for the rest of the module
 |---|---|---|---|
 | Tuple labels are lost through generic instantiation, so a hook's multi-value return is read positionally | `actionState` (`s._0`/`s._1`/`s._2`) in `create-post-form-example.bp`; `optimistic-like-example.bp` destructures positionally instead | read by index and bind each element to a named `val` on the next line | preserve the written labels through instantiation |
 | No assignment to a `self` field | every optimistic update | return a new record | mutable record fields, or a `with` expression |
-| Declared parameter defaults are never applied | every constructor call in the examples spells `attrs:`, and `formAction` has no optional parameter | pass every argument explicitly; a second constructor per default | apply the declared default at the call site |
 | A closure stored in a record field cannot be replaced after construction, so `push` must be handed out by the hook rather than rebound | `optimistic`'s `#(T, fn(action: T) -> i32)` | the host cell holds the action list and the closure reads it | see the `self`-field gap — the same fix covers it |
 
 ## Test plan

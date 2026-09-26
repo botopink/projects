@@ -196,13 +196,13 @@
 |---|---|---|
 | `rotate-*` / `-rotate-*` | `.Transform.Rotate.*` / `.Transform.Rotate.Neg.*` | `rotate:45deg` / `rotate:-12deg` |
 | `scale-*` / `scale-x-*` / `scale-y-*` | `.Transform.{Scale, ScaleX, ScaleY}.*` | `scale:.5`; `scale:.5 1` |
-| `translate-x-*` / `translate-y-*` / `translate-*` | `.Transform.{TranslateX, TranslateY, Translate}.{0, Px, 1, Half, Full}` | `translate:50% var(--tw-translate-y, 0)`; `translate:50% 50%` |
-| `skew-x-*` / `skew-y-*` | `.Transform.{SkewX, SkewY}.*` | `transform:skewX(3deg)` |
+| `translate-x-*` / `translate-y-*` / `translate-*` | `.Transform.{TranslateX, TranslateY, Translate}.{0, Px, 1, Half, Full}` | `--tw-translate-x:50%;translate:var(--tw-translate-x) var(--tw-translate-y)` (+ `@property`); both axes write both variables |
+| `skew-x-*` / `skew-y-*` | `.Transform.{SkewX, SkewY}.*` | `--tw-skew-x:skewX(3deg);transform:var(--tw-rotate-x,) … var(--tw-skew-y,)` (+ `@property`) |
 | `origin-*` (9) | `.Transform.Origin.*` | `transform-origin:top right` |
 | `transform-flat` / `transform-3d`, `backface-*` | `.Transform.Style.{Flat, Preserve3d}`, `.Transform.Backface.*` | `transform-style:preserve-3d` |
 | `perspective-*` / `perspective-origin-*` | `.Transform.Perspective.*` / `.Transform.PerspectiveOrigin.*` | `perspective:var(--perspective-near)` |
 | `zoom-*` | `.Transform.Zoom.*` | `zoom:0.5` |
-| `transform-none` `transform` `transform-cpu` `transform-gpu` | `.Transform.Shorthand.{None, Cpu, Gpu}` | verbatim `§ 16.7`; `Cpu`/`Gpu` inert |
+| `transform-none` `transform` `transform-cpu` `transform-gpu` | `.Transform.Shorthand.{None, Cpu, Gpu}` | `transform:none`; upstream v4's chain rows (`Gpu` with `translateZ(0)`) |
 | `rotate-x-*` … `scale-z-*` | ❌ | — |
 
 ## 14. Interactivity — front 46

@@ -46,16 +46,8 @@ val insetShadows: Token[] = [
 // constructed by any spelling (language-gaps.md row 52), so the arbitrary-value
 // escape hatches are TOP-LEVEL `Token` variants — `EffectShadowRaw`, not
 // `Effect.Shadow.Raw`. Contract § 4a states the rule.
-//
-// LANGUAGE GAP: and even at top level, a dot-shorthand path followed by a
-// payload call does not propagate the typed-array context (row 51), so
-// `[.EffectShadowRaw("0 0 0 1px red")]` trips the parser and the construction
-// goes through a fn.
-fn rawShadow(v: string) -> Token {
-    return Token.EffectShadowRaw(value: v);
-}
 
-val ringLike: Token[] = [rawShadow("0 0 0 1px rgb(0 0 0 / 0.1)")];
+val ringLike: Token[] = [.EffectShadowRaw("0 0 0 1px rgb(0 0 0 / 0.1)")];
 
 // ── text-shadow ──────────────────────────────────────────────────────────────
 //

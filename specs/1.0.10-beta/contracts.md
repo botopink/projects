@@ -89,13 +89,14 @@ none exists. The full registry is here so no front invents one:
 
 An example carrying `data-onze-*` on a framework marker is stale.
 
-**Browser globals** — only a value the HTML names by text is a global, and there are three:
+**Browser globals** — only a value two builds must agree on by name is a global, and there are four:
 `globals.payload` (`__bp0`, the payload above), `globals.fill` (`__bp1`, the function a fill's
-`<script>` calls) and `globals.signal` (`__bp2`, the function a late signal's `<script>` calls —
-`pub val signal = alias("signal")`, decisions 115 and 117). All three are indexed aliases from
-jhonstart's globals registry (front 30), declared in the order `payload`, `fill`, `signal` and
-numbered in that order so the server and client builds agree; each does one thing, and the fill's
-function never reads a signal. No hand-written `__jh*` or
+`<script>` calls), `globals.signal` (`__bp2`, the function a late signal's `<script>` calls —
+decisions 115 and 117) and `globals.starters` (`__bp3`, the island starter table front 29's
+`registerStarter` / `registerRouteStarters` fill and `hydrate()` reads). All four are indexed aliases
+from jhonstart's globals registry (front 30), declared in the order `payload`, `fill`, `signal`,
+`starters` and numbered in that order so the server and client builds agree; each does one thing,
+and the fill's function never reads a signal. No hand-written `__jh*` or
 `__onze*` global exists; link and form mount are the ordinary imports `linkMount` and `formMount`.
 A host cell (`declare fn` bound by `#[@External.…]`) is a module function, not a global, and keeps
 its owner's `__jh` prefix.
@@ -480,8 +481,9 @@ what the fields return (decisions 77, 113).
 
 **Hydration entry** (`<outDir>/client/entry.bp`, botopink source): reads the payload through
 `readPayload(globals.payload)` — front 26's router reads the table from its `t` and matches with
-`routing` itself (§ 1), so the entry builds no matcher — takes `i`, queries `[data-jh-i]` in document order, calls front 29's
-hydrate point per island, registers the fill function under `globals.fill` for every `h` and the signal function under
+`routing` itself (§ 1), so the entry builds no matcher — takes `i`, registers one starter per eagerly bundled client component with front 29's
+`registerStarter(name, start)` and one loader per split route with `registerRouteStarters(pattern,
+load)` (the manifest's `R` → chunk), calls front 29's hydrate point `hydrate()`, registers the fill function under `globals.fill` for every `h` and the signal function under
 `globals.signal`, then calls
 `linkMount()` and `formMount(actionHeader)` once each — `actionHeader` is the wire name onze configures (§ 3) — and sets the browser's validation message source (`setMessageSource`, the bundled library `validation` — decision 116). No `__` name is written by hand in it.
 Front 29 owns the per-island hydrate point; front 68 owns the module that calls it. An id in the
