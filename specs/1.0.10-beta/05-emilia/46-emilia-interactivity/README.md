@@ -141,9 +141,9 @@ table (`modules/compiler-core/src/lexer.zig:721-767`), and a leaf whose name dif
 only by case is an avoidable hazard. The emitted value is still `default`.
 
 **Acceptance:**
-- [ ] Thirty-six arms in `cursorToCss`, exhaustive, no `_`.
-- [ ] `interactTokenToCss(.Cursor.Standard, th)` returns `cursor:default`.
-- [ ] Every kebab-case value keeps its hyphens: `not-allowed`, `nesw-resize`, `zoom-out`.
+- [x] Thirty-six arms in `cursorToCss`, exhaustive, no `_`. — held (shape: `interactCursorToCss`): 36 arms, no `_`; test "Interact.Cursor — the thirty-six rows of `§ 17.5`"
+- [x] `interactTokenToCss(.Cursor.Standard, th)` returns `cursor:default`. — held: same test
+- [x] Every kebab-case value keeps its hyphens: `not-allowed`, `nesw-resize`, `zoom-out`. — held: same test
 
 ### Step 2 — the form-control properties
 
@@ -166,13 +166,13 @@ only by case is an avoidable hazard. The emitted value is still `default`.
 *Mechanism*, and `v` is `paletteVar("indigo", 600)` → `var(--color-indigo-600)`, not a hex.
 
 **Acceptance:**
-- [ ] `interactTokenToCss(.ColorScheme.LightDark, th)` returns `color-scheme:light dark` — one
-      space, two words.
-- [ ] `Token.InteractAccent(value: paletteVar("indigo", 600))` **constructs** and its arm returns
-      `accent-color:var(--color-indigo-600)`.
-- [ ] No hex literal appears in any test or example of this front: every colour goes through
-      `paletteVar`.
-- [ ] No section in this front's `tokens.bp` block contains a payload leaf.
+- [x] `interactTokenToCss(.ColorScheme.LightDark, th)` returns `color-scheme:light dark` — one
+      space, two words. — held: test "Interact.ColorScheme — every row"
+- [x] `Token.InteractAccent(value: paletteVar("indigo", 600))` **constructs** and its arm returns
+      `accent-color:var(--color-indigo-600)`. — held: test "InteractAccent / InteractCaret / InteractScrollbarColor — construct and emit" (shade passed as a string: `paletteVar` takes `(family, shade: string)`)
+- [x] No hex literal appears in any test or example of this front: every colour goes through
+      `paletteVar`. — held: every colour in the tests is `paletteVar(…)`; the walk's control is an `oklch()` string, not a hex
+- [x] No section in this front's `tokens.bp` block contains a payload leaf. — held: `tokens.bp` front 46 block — leaves only; the three colour variants are top-level
 
 ### Step 3 — `pointer-events`, `resize`, `user-select`, `will-change`, `touch-action`
 
@@ -208,9 +208,9 @@ from-memory transcription goes wrong: `resize-y` → `vertical`, `resize-x` → 
 `will-change-scroll` → `scroll-position`.
 
 **Acceptance:**
-- [ ] `interactTokenToCss(.Resize.Y, th)` returns `resize:vertical`, not `resize:y`.
-- [ ] `interactTokenToCss(.WillChange.Scroll, th)` returns `will-change:scroll-position`.
-- [ ] All ten `touch-action` values keep the `pan-`/`pinch-` prefix.
+- [x] `interactTokenToCss(.Resize.Y, th)` returns `resize:vertical`, not `resize:y`. — held: test "Interact — the three class names that do not match their values"
+- [x] `interactTokenToCss(.WillChange.Scroll, th)` returns `will-change:scroll-position`. — held: same test
+- [x] All ten `touch-action` values keep the `pan-`/`pinch-` prefix. — held: test "Interact.Touch — every row"
 
 ### Step 4 — `scroll-behavior`, `scroll-margin`, `scroll-padding`
 
@@ -240,12 +240,12 @@ own `scroll-m-0` and `scroll-p-0` rows. The two axis sub-sections emit two decla
 `;`, which is the same join `tokensToCss` uses, so they drop into a rule body unchanged.
 
 **Acceptance:**
-- [ ] `interactTokenToCss(.Scroll.Mt.4, th)` returns `scroll-margin-top:calc(var(--spacing) * 4)` —
+- [x] `interactTokenToCss(.Scroll.Mt.4, th)` returns `scroll-margin-top:calc(var(--spacing) * 4)` —
       `spacing(4)`, spaces around the `*` kept, and **no `rem` literal anywhere in this front's
-      block**.
-- [ ] `.Interact.Scroll.M.0` returns `scroll-margin:0`, with no `calc`.
-- [ ] `.Interact.Scroll.Mx.4` returns two declarations, left before right; `.My.4` returns top before
-      bottom. Both asserted whole.
+      block**. — held: test "Interact.Scroll — the fourteen offset families over five steps"; walk "front 46 — 161 leaves …" finds no `rem`
+- [x] `.Interact.Scroll.M.0` returns `scroll-margin:0`, with no `calc`. — held: test "Interact.Scroll — bare zero, left before right, top before bottom"
+- [x] `.Interact.Scroll.Mx.4` returns two declarations, left before right; `.My.4` returns top before
+      bottom. Both asserted whole. — held: same test
 
 ### Step 5 — the scrollbar family
 
@@ -268,12 +268,12 @@ by their declared names, which is required: a payload is projected by field name
 positional bind type-checks and is `undefined` at run time.
 
 **Acceptance:**
-- [ ] `Token.InteractScrollbarColor(thumb: paletteVar("red", 500), track: paletteVar("gray", 200))`
-      returns `scrollbar-color:var(--color-red-500) var(--color-gray-200)` — one space between them.
-- [ ] The `case` arm destructures as `InteractScrollbarColor(thumb, track)`, matching the declared
-      field names.
-- [ ] `interactTokenToCss(.Scrollbar.Gutter.StableBothEdges, th)` returns
-      `scrollbar-gutter:stable both-edges`.
+- [x] `Token.InteractScrollbarColor(thumb: paletteVar("red", 500), track: paletteVar("gray", 200))`
+      returns `scrollbar-color:var(--color-red-500) var(--color-gray-200)` — one space between them. — held: test "InteractAccent / InteractCaret / InteractScrollbarColor — construct and emit"
+- [x] The `case` arm destructures as `InteractScrollbarColor(thumb, track)`, matching the declared
+      field names. — held: `tokenToSheet` arm `InteractScrollbarColor(thumb, track)`
+- [x] `interactTokenToCss(.Scrollbar.Gutter.StableBothEdges, th)` returns
+      `scrollbar-gutter:stable both-edges`. — held: test "Interact.Scrollbar.Gutter — every row"
 
 ### Step 6 — the snap family, and the one place a `--tw-*` variable resolves
 
@@ -303,14 +303,14 @@ theme's `--tw-scroll-snap-strictness` entry**, which front 54 carries, so the lo
 renders. The test file asserts both the explicit pair and the lone `Snap.Type.X`.
 
 **Acceptance:**
-- [ ] `[.Interact.Snap.Type.X, .Interact.Snap.Strictness.Mandatory]` produces
+- [x] `[.Interact.Snap.Type.X, .Interact.Snap.Strictness.Mandatory]` produces
       `scroll-snap-type:x var(--tw-scroll-snap-strictness)` and
-      `--tw-scroll-snap-strictness:mandatory` as two entries of `Rule.declarations`.
-- [ ] The `--tw-scroll-snap-strictness` default is contributed to front 54's theme and named in this
-      front's `TODO.md`.
-- [ ] `snap-align-none` maps to `Snap.Align.None` and `snap-none` to `Snap.Type.None` — two
-      different properties whose class names differ by one word, asserted adjacently.
-- [ ] The pairing contract is stated in the `tokens.bp` docblock.
+      `--tw-scroll-snap-strictness:mandatory` as two entries of `Rule.declarations`. — held (shape: the reader carries `proximity` as its fallback — `var(--tw-scroll-snap-strictness, proximity)`): test "Interact.Snap — an axis and a strictness in one list, both declared"
+- [x] The `--tw-scroll-snap-strictness` default is contributed to front 54's theme and named in this
+      front's `TODO.md`. — superseded: a `--tw-*` default cannot be a theme entry (`extendTheme` refuses `--tw-`); upstream's `@property` initial value `proximity` is the `cssVarOr` fallback, and nothing is owed to front 54 (decisions-pending 05emilia-d)
+- [x] `snap-align-none` maps to `Snap.Align.None` and `snap-none` to `Snap.Type.None` — two
+      different properties whose class names differ by one word, asserted adjacently. — held: test "Interact.Snap — snap-none and snap-align-none are different properties"
+- [x] The pairing contract is stated in the `tokens.bp` docblock. — held: `tokens.bp` docblock `Interact —` row and the front 46 banner
 
 ### Step 7 — four new arms in `tokenToSheet`
 
@@ -325,10 +325,10 @@ and each top-level payload variant needs its own arm.
 ```
 
 **Acceptance:**
-- [ ] The four arms sit between front 45's arms and front 47's, in front-number order.
-- [ ] Each arm is one `declSheet(...)` call; none builds a `Rule` or a `Sheet` by hand.
-- [ ] Every payload arm destructures by declared field name (`value`, `thumb`, `track`).
-- [ ] `tokenToSheet` still has no `_` arm.
+- [x] The four arms sit between front 45's arms and front 47's, in front-number order. — held: `tokenToSheet`'s `// ── front 46 — interactivity` fence right after front 45's
+- [x] Each arm is one `declSheet(...)` call; none builds a `Rule` or a `Sheet` by hand. — held: the four arms are `declSheet(…)`
+- [x] Every payload arm destructures by declared field name (`value`, `thumb`, `track`). — held: `InteractAccent(value)`, `InteractCaret(value)`, `InteractScrollbarColor(thumb, track)`
+- [x] `tokenToSheet` still has no `_` arm. — held: `tokenToSheet` has no `_` arm
 
 ## Examples
 
@@ -395,19 +395,19 @@ What the tests assert:
 
 ## Definition of done
 
-- [ ] `Interact` exists as a top-level section with `Cursor`, `Appearance`, `FieldSizing`,
+- [x] `Interact` exists as a top-level section with `Cursor`, `Appearance`, `FieldSizing`,
       `ColorScheme`, `PointerEvents`, `Resize`, `Select`, `WillChange`, `Touch`, `Scroll`,
       `Scrollbar`, `Snap` — and **no payload leaf** — fenced by a `front 46` banner in `tokens.bp`
-      and appended after front 45's block.
-- [ ] `Token.InteractAccent`, `Token.InteractCaret` and `Token.InteractScrollbarColor` exist as
-      top-level variants with `string` fields, in the same banner.
-- [ ] `interactTokenToCss` and its sub-dispatchers are fenced by a `front 46` banner in `emilia.bp`,
-      appended after front 45's block, and take `th: Theme` per contract `§ 4a`.
-- [ ] Four arms added to `tokenToSheet`, each a `declSheet(...)` call, in front-number order, and no
-      other line of that `case` moved.
-- [ ] No hex literal and no `rem` literal appears in this front's block or tests.
-- [ ] The snap fallback and the `paletteVar` rule are stated in the `tokens.bp` docblock, not only
-      here.
-- [ ] `repository/emilia/AGENTS.md` records the new section and both notes.
-- [ ] The front's tests are green on its assigned target — here, both `commonJS` and `erlang`,
-      because comptime output must not differ between them.
+      and appended after front 45's block. — held: `tokens.bp` `// ── front 46 — interactivity` fence after front 45's, plus the nullary `AccentAuto` (decision 81)
+- [x] `Token.InteractAccent`, `Token.InteractCaret` and `Token.InteractScrollbarColor` exist as
+      top-level variants with `string` fields, in the same banner. — held: same banner
+- [x] `interactTokenToCss` and its sub-dispatchers are fenced by a `front 46` banner in `emilia.bp`,
+      appended after front 45's block, and take `th: Theme` per contract `§ 4a`. — held: `emilia.bp` `// ── front 46 — interactivity` block after front 45's; `interactTokenToCss(t, th)`
+- [x] Four arms added to `tokenToSheet`, each a `declSheet(...)` call, in front-number order, and no
+      other line of that `case` moved. — held: four arms after front 45's fence, no other line moved
+- [x] No hex literal and no `rem` literal appears in this front's block or tests. — held: walk "front 46 — 161 leaves, every one well-formed, none resolving a length or a colour"
+- [x] The snap fallback and the `paletteVar` rule are stated in the `tokens.bp` docblock, not only
+      here. — held: `tokens.bp` docblock `Interact —` row (SNAP PAIRING, `paletteVar`)
+- [x] `repository/emilia/AGENTS.md` records the new section and both notes. — held: emilia `AGENTS.md` "Front 46 owns **interactivity**"
+- [x] The front's tests are green on its assigned target — here, both `commonJS` and `erlang`,
+      because comptime output must not differ between them. — held: `modules/emilia` 633/633 on commonJS and erlang (+25 inline tests; shape: inline, no `test/interactivity_test.bp`)

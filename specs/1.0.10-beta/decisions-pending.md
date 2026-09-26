@@ -276,6 +276,17 @@ local change in the named front.
 > **Recommendation.** (a) — implemented, the reference form asserted absent. `blur-none` keeps the
 > reference's `filter:none`, which is valid CSS.
 
+### 05emilia-d. The snap strictness default is a fallback, not a theme entry (front 46)
+
+> **Raised by:** `46-emilia-interactivity` step 6, 2026-09-26
+> **Measured.** The step asks front 54's theme to carry `--tw-scroll-snap-strictness`; `extendTheme`
+> refuses any `--tw-` name (05emilia-a). Upstream registers the variable with `@property` and the
+> initial value `proximity`.
+> **Options.** (a) `scroll-snap-type:x var(--tw-scroll-snap-strictness, proximity)` — front 39's
+> `cssVarOr`. (b) A `Tw` namespace in `Ns`.
+> **Recommendation.** (a) — implemented, emilia `7004c96`: a lone `Snap.Type.X` snaps by proximity,
+> a `Snap.Strictness` token in the same class overrides it.
+
 ## Open
 
 ### `botopink migrate` beside `botopink migrate effects` (front 24, open point 7)
