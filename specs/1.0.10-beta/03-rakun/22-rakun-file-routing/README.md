@@ -191,18 +191,18 @@ pub fn slotOf(segments: Segment[]) -> string
 ```
 
 **Acceptance:**
-- [ ] `parseSegment("blog")` is `Static`/`blog`; `parseSegment("[slug]")` is `Dynamic`/`slug`.
-- [ ] `parseSegment("[...slug]")` is `CatchAll`/`slug`; `parseSegment("[[...slug]]")` is
+- [x] `parseSegment("blog")` is `Static`/`blog`; `parseSegment("[slug]")` is `Dynamic`/`slug`. — held: `libs/routing/test/segment_test.bp` "a static folder is a static segment", "[slug] is a dynamic segment"
+- [x] `parseSegment("[...slug]")` is `CatchAll`/`slug`; `parseSegment("[[...slug]]")` is
       `OptionalCatchAll`/`slug`. The optional form is tested against the required form, not only
-      against a static one.
-- [ ] `parseSegment("(marketing)")` is `Group`/`marketing`; `parseSegment("@team")` is `Slot`/`team`;
-      `parseSegment("_components")` is `Private`/`components`.
-- [ ] `patternOf(parsePath("(marketing)/about"))` is `/about` — a group contributes no segment.
-- [ ] `patternOf(parsePath("dashboard/@team/settings"))` is `/dashboard/settings` and
-      `slotOf(...)` is `team`.
-- [ ] `parsePath("blog/_drafts/[slug]")` fails with a message naming `_drafts`: a private folder may
-      not appear on a registered path at all.
-- [ ] A segment name containing `|` or a newline fails with a message naming the segment.
+      against a static one. — held: `libs/routing/test/segment_test.bp` "the catch-all and the optional catch-all are told apart"
+- [x] `parseSegment("(marketing)")` is `Group`/`marketing`; `parseSegment("@team")` is `Slot`/`team`;
+      `parseSegment("_components")` is `Private`/`components`. — held: `libs/routing/test/segment_test.bp` "a group, a slot and a private folder"
+- [x] `patternOf(parsePath("(marketing)/about"))` is `/about` — a group contributes no segment. — held: `libs/routing/test/segment_test.bp` "a group contributes no URL segment"
+- [x] `patternOf(parsePath("dashboard/@team/settings"))` is `/dashboard/settings` and
+      `slotOf(...)` is `team`. — held: `libs/routing/test/segment_test.bp` "a slot contributes no URL segment and names itself"
+- [x] `parsePath("blog/_drafts/[slug]")` fails with a message naming `_drafts`: a private folder may
+      not appear on a registered path at all. — held: `libs/routing/test/segment_test.bp` "parsePath halts on a private folder, naming it"
+- [x] A segment name containing `|` or a newline fails with a message naming the segment. — held: `libs/routing/test/segment_test.bp` "a `|` or a newline in a segment is refused by name" (`pathProblem` names the segment for both)
 
 ### Step 2 — The registry: table records and opaque page renderers
 
@@ -263,13 +263,13 @@ pub declare fn rkAppTable() -> string;
 ```
 
 **Acceptance:**
-- [ ] `parseTable(writeTable(xs))` equals `xs` for a table holding one entry of each of the eight
+- [x] `parseTable(writeTable(xs))` equals `xs` for a table holding one entry of each of the eight
       kinds — compared field by field, never with `==` on the arrays, which is reference equality
-      (`docs.md`, gotcha: `==` on arrays lowers to `===`).
-- [ ] `writeTable` emits records in registration order and terminates no line with a trailing `|`.
-- [ ] The same assertion, in `routing`'s `test/table_test.bp`, runs green on `--target erlang` and on
+      (`docs.md`, gotcha: `==` on arrays lowers to `===`). — held: `libs/routing/test/table_test.bp` "the wire format round-trips all eight kinds, field by field"
+- [x] `writeTable` emits records in registration order and terminates no line with a trailing `|`. — held: `libs/routing/test/table_test.bp` "writeTable keeps registration order and ends no line with a bar"
+- [x] The same assertion, in `routing`'s `test/table_test.bp`, runs green on `--target erlang` and on
       `--target commonJS`. A wire format only one target can read is the bug this front exists to
-      prevent.
+      prevent. — held: `libs/routing` 66/0 on erlang and on commonJS (2026-09-26)
 
 ### Step 4 — The matcher
 
@@ -292,16 +292,16 @@ optional catch-all. Groups never consume a URL segment. Slots never consume a UR
 entry is matched separately against the same URL by front 61.
 
 **Acceptance:**
-- [ ] `/blog/hello` against `/blog/[slug]` binds `slug` to `hello`.
-- [ ] `/shop/a/b` against `/shop/[...slug]` binds `slug` to `a/b` and `rest` to `["a", "b"]`.
-- [ ] `/docs` matches `/docs/[[...slug]]` with `rest` empty; `/docs/a/b` matches it with
-      `rest == ["a", "b"]`. `/shop` does *not* match `/shop/[...slug]`.
-- [ ] A table holding both `/blog/new` and `/blog/[slug]` matches `/blog/new` to the static entry.
-- [ ] `matchPath` returns `null` for a pattern that has a `L` entry but no `P` or `R` entry — a route
-      is public only when a page or a handler claims it (`§ 3. Convenções de nomenclatura`).
-- [ ] `layoutChain(table, "/blog/[slug]")` returns the `L` entries for `/`, `/blog`, `/blog/[slug]`
-      in root-first order, and skips group segments' patterns because they are not in the pattern.
-- [ ] Every assertion above is run twice, once per target, from `routing`'s `test/match_test.bp`.
+- [x] `/blog/hello` against `/blog/[slug]` binds `slug` to `hello`. — held: `libs/routing/test/match_test.bp` "a dynamic segment binds its parameter"
+- [x] `/shop/a/b` against `/shop/[...slug]` binds `slug` to `a/b` and `rest` to `["a", "b"]`. — held: `libs/routing/test/match_test.bp` "a catch-all binds the remainder and fills rest"
+- [x] `/docs` matches `/docs/[[...slug]]` with `rest` empty; `/docs/a/b` matches it with
+      `rest == ["a", "b"]`. `/shop` does *not* match `/shop/[...slug]`. — held: `libs/routing/test/match_test.bp` "an optional catch-all matches with and without a remainder", "a required catch-all does not match its own bare prefix"
+- [x] A table holding both `/blog/new` and `/blog/[slug]` matches `/blog/new` to the static entry. — held: `libs/routing/test/match_test.bp` "a static entry beats a dynamic one for the same URL"
+- [x] `matchPath` returns `null` for a pattern that has a `L` entry but no `P` or `R` entry — a route
+      is public only when a page or a handler claims it (`§ 3. Convenções de nomenclatura`). — held: `libs/routing/test/match_test.bp` "a layout alone does not make a route public"
+- [x] `layoutChain(table, "/blog/[slug]")` returns the `L` entries for `/`, `/blog`, `/blog/[slug]`
+      in root-first order, and skips group segments' patterns because they are not in the pattern. — held: `libs/routing/test/match_test.bp` "the layout chain is root-first…", "a group never reaches the chain…"
+- [x] Every assertion above is run twice, once per target, from `routing`'s `test/match_test.bp`. — held: `libs/routing` 66/0 on erlang and on commonJS (2026-09-26)
 
 ### Step 5 — Scan-time conflicts
 
@@ -310,15 +310,15 @@ front 50's CLI runs. It reads `rakun.appDir` from front 05, walks the tree, and 
 than serving something surprising.
 
 **Acceptance:**
-- [ ] A segment holding both `page.bp` and `route.bp` fails the scan with a message naming the
-      segment directory — `§ 19` states the rule and this is where it is enforced.
-- [ ] A directory under `appDir` whose name starts with `_` is skipped, and nothing inside it is
-      registered even if it holds a `page.bp`.
-- [ ] Two route groups may each own a root layout (`§ 5. Múltiplos Root Layouts`); the scan fails
-      when two root layouts' subtrees both match one URL, naming the URL and both groups.
-- [ ] A registered segment with no corresponding directory under `appDir` fails the scan, naming the
+- [x] A segment holding both `page.bp` and `route.bp` fails the scan with a message naming the
+      segment directory — `§ 19` states the rule and this is where it is enforced. — held: `modules/rakun-app/test/file_router_scan_test.bp` "a segment holding page.bp and route.bp is refused by name" (message names `e.seg`)
+- [x] A directory under `appDir` whose name starts with `_` is skipped, and nothing inside it is
+      registered even if it holds a `page.bp`. — held: `modules/rakun-app/test/file_router_scan_test.bp` "a `_`-prefixed directory is skipped, page.bp and all"
+- [x] Two route groups may each own a root layout (`§ 5. Múltiplos Root Layouts`); the scan fails
+      when two root layouts' subtrees both match one URL, naming the URL and both groups. — held: `modules/rakun-app/test/file_router_scan_test.bp` "two root layouts meeting at one URL name the URL and both groups"
+- [x] A registered segment with no corresponding directory under `appDir` fails the scan, naming the
       segment and the function that registered it. This is the check that keeps the decorator
-      argument honest.
+      argument honest. — held: `modules/rakun-app/test/file_router_scan_test.bp` "a registered segment with no directory names the segment and the fn"
 - [ ] The scan runs with `rakun.appDir` set to `app` and to `src/app` and produces the same table;
       unset, it scans `app`. `grep -rn '"onze\.' repository/rakun` is empty — rakun reads no
       `onze.` key (decision 115).
@@ -358,11 +358,11 @@ import {segment.parsePath, segment.patternOf, table.RouteEntry, table.parseTable
 **Acceptance:**
 - [ ] `rakun-app`'s `file_router.bp` imports `parsePath`, `patternOf`, `RouteEntry`, `parseTable`,
       `writeTable`, `matchPath` and `layoutChain` from `"routing"` and defines none of them.
-- [ ] `file_router_test.bp` keeps only the registry, the scan and the dispatch tests; the grammar,
-      wire and matcher tests are `routing`'s.
-- [ ] No `botopink.json` under `repository/rakun/` lists `routing` in `dependencies`, and no member
-      named `rakun-routing` exists.
-- [ ] `repository/rakun/AGENTS.md` names `routing` as the library the matcher comes from.
+- [x] `file_router_test.bp` keeps only the registry, the scan and the dispatch tests; the grammar,
+      wire and matcher tests are `routing`'s. — held: `modules/rakun-app/test/file_router_test.bp` holds registry/dispatch tests only; grammar, wire and matcher tests are in `libs/routing/test/`
+- [x] No `botopink.json` under `repository/rakun/` lists `routing` in `dependencies`, and no member
+      named `rakun-routing` exists. — held: no `botopink.json` under `repository/rakun` names `routing`; `modules/` has no `rakun-routing`
+- [x] `repository/rakun/AGENTS.md` names `routing` as the library the matcher comes from. — held: `repository/rakun/AGENTS.md` "The grammar, the wire and the matcher are the bundled library `routing`'s"
 
 ## Examples
 
