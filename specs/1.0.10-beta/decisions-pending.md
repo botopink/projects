@@ -1,11 +1,11 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**Two questions are open** (lg-a, lg-b). Implementation choices wait for the maintainer to confirm or reverse them:
+**Three questions are open** (lg-a, lg-b, ck2-c). Implementation choices wait for the maintainer to confirm or reverse them:
 front 24's (24-a…c, 24-g), `01-std`'s (01std-a, 01std-c…e, std-a…c), `00 · 23-std-purity`'s (23-a…c), front 95's
 (95-a…e), `00 · 16-formatter`'s (16-a…b), track C's (26-a, 27-a, 30-b…e, 31-a), `00 · 04-js` /
-`05-wasm`'s (0405-b), `00 · 01-checker`'s (01c-a…b),
-track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…e) and the host methods' (lem-a…f). Two
-questions are open: the language-gaps sweep's lg-a and lg-b (§ Open). Every other question raised so far is answered in
+`05-wasm`'s (0405-b), `00 · 01-checker`'s (01c-a…b), `checker-rows-2`'s (ck2-a, ck2-b, ck2-d, ck2-e),
+track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…e) and the host methods' (lem-a…f). Three
+questions are open: the language-gaps sweep's lg-a and lg-b, and `checker-rows-2`'s ck2-c (§ Open). Every other question raised so far is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 24-f is decision 143 (library resolution stops at the
 enclosing checkout; dependencies are transitive); the next free number is **144**.
 
@@ -250,6 +250,71 @@ maintainer confirms or reverses each. Numbered `01c-a` … so they do not collid
 > **Blocks.** Nothing; emilia writes the full path today and keeps compiling.
 
 
+## `checker-rows-2` — choices made in implementation, to confirm
+
+Decided by the checker rows of `front/checker-rows-2` so they could land; the maintainer confirms or
+reverses each. Numbered `ck2-a` … so they do not collide with the decisions.
+
+### ck2-a · `@module()` is refused until a target lowers it
+
+> **Raised by:** `checker-rows-2`, the `runtime_builtin_names` row
+> **Measured.** `builtins.d.bp` declares `pub declare fn module() -> module;`; no backend lowers the
+> call — commonJS emitted `@module()` verbatim (`SyntaxError` at load), erlang called an undefined
+> `module/0` — and no type named `module` exists. The checker typed it `void`.
+> **Options.** (a) refuse it at the `@` (`builtin-not-lowered`) until a rule says what a module
+> value is (implemented, `reject/builtin_module_not_lowered`); (b) delete the declaration from
+> `builtins.d.bp`, making it `unknown-builtin`; (c) specify the module value and lower it.
+> **Recommendation.** (a) now, (b) unless a front needs the value: a declared name with no meaning is
+> a promise the compiler does not keep.
+> **Blocks.** Nothing.
+
+### ck2-b · A section member may share a name with a top-level variant of the same enum
+
+> **Raised by:** `checker-rows-2`, the status row "an enum section head silently captures a top-level
+> variant of the same name"
+> **Measured.** `Layout.Break { After }` beside `After(inner: Token[])`: the checker resolves each
+> position by its path or its expected type — `Token.After(…)` and `.After(…)` under `Token` build the
+> payload variant, `.After` under `Token.Layout.Break` the leaf, a `case` over each matches its own —
+> and commonJS, erlang and beam run it (`modules/enum_section_leaf_beside_variant`); wasm's `case`
+> reads the leaf's tag through a flat table. Refusing the name at the declaration was implemented and
+> measured: emilia's `Token` has eleven such pairs (`Sm`/`Md`/`Lg`/`Xl`/`X2xl` beside
+> `Text.Size.*`, `Alpha` beside `Mask.Mode.Alpha`, `Empty`, `First`, `Last`, `Dark`, `Transform`),
+> each an upstream Tailwind name.
+> **Options.** (a) legal: the path and the position's type tell the two apart (`docs.md` § Sections of
+> an enum says so — implemented); (b) refuse a section member named like a top-level variant
+> (`enum-section-member-shadows-variant`, at the member), and emilia renames eleven members.
+> **Recommendation.** (a): nothing is ambiguous in the language — every position that names the
+> member names its level — and the defect was the checker's flat table (fixed) and is wasm's
+> (listed). A variant declared twice at ONE level is refused (`enum-variant-duplicate`).
+> **Blocks.** emilia, if (b).
+
+### ck2-d · A label in a call of a function value is refused
+
+> **Raised by:** `checker-rows-2`, the labelled-call row
+> **Measured.** `fn apply(f: fn(i32, string) -> string) { return f(n: 1, s: "x"); }` checked and
+> zipped by position: a function type carries no parameter names, so the labels were ignored and
+> `f(s: "x", n: 1)` meant `f("x", 1)`.
+> **Options.** (a) `label-on-function-value` at the labelled argument (implemented;
+> `reject/label_on_function_value`); (b) labels ignored (today's reading, silent); (c) function types
+> carry names (`fn(n: i32, s: string)`) and a label must match one.
+> **Recommendation.** (a); (c) is a larger surface change for a form nobody writes.
+> **Blocks.** Nothing.
+
+### ck2-e · A std decorator is reached through its module, and emits through the annotation's handle
+
+> **Raised by:** `checker-rows-2`, the `#[mocks.mock]` row
+> **Measured.** `@emit`ted code is spliced into the consumer's module, where `mocks.bp`'s runtime is
+> reachable only through the handle the consumer imported (`mocks`, or an alias); inside `mocks.bp`
+> it is bare. A leaf import (`import {testing.mocks.mock}`) would leave the emitted code no handle.
+> **Options.** (a) a namespace import registers the module's decorators as `#[<handle>.<fn>]`; the
+> decorator reads its handle from the annotation that fired it (`decl.annotations`' name prefix); a
+> leaf import of a std decorator is `std-decorator-leaf-import`; `#[<handle>.<not a decorator>]` is
+> `unknown-annotation` (implemented); (b) the leaf import allowed, and the decorator's emitted names
+> resolved in the decorator's module (decision 112's hygiene extended to `@emit`).
+> **Recommendation.** (a) now; (b) is the general answer for every library's decorator and needs
+> decision 112 to say it covers `@emit`.
+> **Blocks.** Nothing.
+
 ## Front 23 (`00 · 23-std-purity`) — choices made in implementation, to confirm
 
 Decided by the implementation of steps 3 and 5 so the
@@ -442,6 +507,20 @@ fronts could land; the maintainer confirms or reverses each.
 
 Questions the language-gaps sweep (`front/compiler-gaps-rakun`, the rakun rows of
 [`language-gaps.md`](./language-gaps.md)) could not answer from `docs.md` or the decisions taken.
+
+### ck2-c · A leading default on a free `fn`
+
+> **Raised by:** `checker-rows-2`, C-04's remaining reach
+> **Measured.** `fn lead(a: i32 = 1, b: i32)` is `fn-param-default-trailing-only`, while
+> `type Port(number: i32 = 80, host: string)` is legal and `Port(host: "a")` fills `number`
+> (`docs.md` § defaults). Since a label names its parameter on every call path, `lead(b: 2)` would
+> fill `a` by the same rule the record uses.
+> **Options.** (a) keep the asymmetry: a free `fn` declares trailing defaults only; (b) a free `fn` may
+> declare a leading default, reached by labelling what follows it, as a record's field; (c) refuse the
+> leading default on a record too.
+> **Recommendation.** (a) — the most restrictive that breaks nothing written: (c) would refuse
+> `docs.md`'s own `Port` and the libraries' records with a leading default.
+> **Blocks.** Nothing.
 
 ### lg-a · Where a `try` inside a lambda may appear
 

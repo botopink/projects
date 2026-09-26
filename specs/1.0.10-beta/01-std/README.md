@@ -27,7 +27,7 @@ flag, no environment variable, no manifest key (decision 67). Mocking is `testin
 | a `try` in a `test` body | `codegen/tests/builtins.zig` "test body ---- try on an Error fails the test" / "… prints the FAIL line" |
 | `testing.asserts` | `libs/std/src/testing/asserts.bp` — the surface of [`asserts-api.md`](./asserts-api.md) |
 | `testing.snapshots` | `libs/std/src/testing/snapshots.bp` — `path`, `pathNamed`, `suiteOf`, `slugOf`, `assertText`, `assertAs`, `assertNamed`, `assertNamedAs` ([`snapshots.md`](./snapshots.md)) |
-| `testing.mocks` | `libs/std/src/testing/mocks.bp` — the old onze surface, lifted; the eight cells `pub declare fn` with Node and Erlang templates; `#[mock]` fires inside `mocks.bp` only (the consumer gap is in `onze-migration.md` § *Language gaps*) |
+| `testing.mocks` | `libs/std/src/testing/mocks.bp` — the old onze surface, lifted; the eight cells `pub declare fn` with Node and Erlang templates; a consumer writes `#[mocks.mock]` (`onze-migration.md` § *Decorator resolution*) |
 | the std tree | decision 106's: pure root, `io/`, `testing/` — `modules.md` § *The tree* |
 | the bundled libraries | `libs/routing`, `libs/actions`, `libs/validation` beside `libs/std`, embedded by `build.zig`'s `bundled_packages` (fronts 04–06 of this directory) |
 | the old `onze` | still checked out at `repository/onze`: the retired mocking library with its archive banner and the tag `mocking-lib-final`; the submodule still points at `botopink/onze` |
