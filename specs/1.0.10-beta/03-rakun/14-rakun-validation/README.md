@@ -323,10 +323,10 @@ pub fn constraintsOfCreateUserRequest() -> string
 ### Step 6 — Boot-time configuration validation
 
 **Acceptance:**
-- [ ] A configuration record carrying `#[validated]` is validated after binding and before the first request.
-- [ ] An invalid configuration stops startup with every violation printed, each naming its property key rather than its field name.
+- [x] A configuration record carrying `#[validated]` is validated after binding and before the first request. — held: `test/config_check_test.bp` "a #[validated] configuration record is a registered boot check" — the check runs in `bootSequenceFor` before the eager pass (rakun `c8f185c`)
+- [x] An invalid configuration stops startup with every violation printed, each naming its property key rather than its field name. — held: `test/config_check_test.bp` "an invalid configuration halts the boot…" + "two invalid records are one refusal naming both"
 - [ ] A valid configuration adds no measurable startup cost beyond one pass over the record's fields.
-- [ ] Front 05 calls `validate<TypeName>` by name and nothing else; changing that name breaks the build, not a test.
+- [x] Front 05 calls `validate<TypeName>` by name and nothing else; changing that name breaks the build, not a test. — held: `modules/rakun/src/config.bp` `configurationProperties` emits `__rkCheck_<Name>` calling `validate<Name>` by name — a missing or renamed validator is an unbound name at compile time
 
 ### Step 7 — The member leaves rakun
 
@@ -340,9 +340,9 @@ After `01-std/06-validation-lib` Steps 1–4. rakun keeps what names rakun and n
       `configProblem`, `refuseInvalidConfig`), importing `ValidationReport` / `Violation` from
       `"validation"`; `config_test.bp`'s six tests are `modules/rakun/test/config_check_test.bp`, green
       on erlang — held: `modules/rakun/src/config_check.bp` (four fns, imports from `"validation"`); `modules/rakun/test/config_check_test.bp` 7 cells, rakun 310/0 erlang
-- [ ] rakun's boot calls `setMessageSource(MessageSource(locale: …, template: …))` over
+- [x] rakun's boot calls `setMessageSource(MessageSource(locale: …, template: …))` over
       `rakun.validation.locale` and `rakun.validation.messages.*` before the first component, and a
-      test setting `rakun.validation.messages.sizeBetween` sees it in a violation's message
+      test setting `rakun.validation.messages.sizeBetween` sees it in a violation's message — held: `bootSequenceFor` calls `installMessageSource()` before the checks; `test/config_check_test.bp` "the boot's message source answers a violation's message from rakun.validation.messages"
 - [x] rakun's workspace root and every member are `"targets": ["erlang"]` — no rakun package is on
       commonJS — held: rakun `99b8049`
 - [x] `grep -rn "rakun-validation" repository/rakun --include=*.bp --include=botopink.json` is empty — held: grep empty (2026-09-26)

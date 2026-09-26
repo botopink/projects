@@ -321,7 +321,7 @@ plus the document boundaries, and `read_tree/1` for `configtree:`.
 ### Step 9 — Validation and the catalogue
 
 **Acceptance:**
-- [ ] A `#[validated]` configuration record with a violated constraint halts the boot before any component is constructed
+- [x] A `#[validated]` configuration record with a violated constraint halts the boot before any component is constructed — held: `test/config_check_test.bp` "an invalid configuration halts the boot before any component is constructed" (rakun `c8f185c`)
 - [ ] The report names the key, the offending value and the source file it came from
 - [x] `rkRegisterConfigKeys` records every bound key with its type and declared default — held: `test/typed_config_test.bp` "rakun config: every emission registers its keys in the catalogue"
 - [x] The catalogue dump lists every key rakun itself reads (`rakun.main.*`, `rakun.server.*`, `rakun.config.*`, `rakun.profiles.*`) alongside the application's own — held: `test/typed_config_test.bp` "rakun config: every emission registers its keys in the catalogue" + `src/config.bp` own-key registration (`rakun.main`/`server`/`config`/`profiles`)
@@ -397,7 +397,7 @@ here only so the reasoning survives:
 - [ ] a `.json` value holding `\u0041`, `\b` and `\/` loads as `A`, U+0008 and `/`; a malformed document is refused with `json.decode`'s `Error` message, naming the file; `grep -n "fn jsonString\|fn jsonUnquote\|json\.unquote\|json\.parse" src/config.bp` is empty
 - [x] `#[configurationProperties]` binds nested records, `Duration` and `DataSize` — held: `test/typed_config_test.bp` "binds every field from the prefix" + "#[nested] composes two levels down"
 - [x] A missing non-optional location, an unresolvable placeholder, a placeholder cycle, a profile-group cycle and an unparsable typed value each fail the boot with a message naming the input — held: `test/config_test.bp` (non-optional location, `${missing}`, placeholder cycle, group cycle, unparsable typed value tests)
-- [ ] `#[validated]` configuration refuses the boot on a violation
+- [x] `#[validated]` configuration refuses the boot on a violation — held: `test/config_check_test.bp` "an invalid configuration halts the boot before any component is constructed"
 - [x] The key catalogue lists every key rakun reads — held: `test/typed_config_test.bp` "rakun config: every emission registers its keys in the catalogue"
 - [x] `repository/rakun/AGENTS.md` documents the source order, the location syntax and the YAML subset — held: `repository/rakun/AGENTS.md` § Externalized configuration (eight sources, Locations, document formats)
 - [x] The front's tests are green on its assigned target — held: `modules/rakun` `botopink test --target erlang` 310/0
