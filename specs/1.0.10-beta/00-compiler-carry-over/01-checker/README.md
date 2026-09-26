@@ -284,9 +284,9 @@ in the old format.
 
 **Acceptance:**
 - [ ] every error snapshot's box names its file
-- [ ] 0 `TypeError` raised from `comptime/unify.zig` without a location; the two bare `unify` arithmetic call sites go through `unifyAt`
+- [ ] 0 `TypeError` raised from `comptime/unify.zig` without a location; the two bare `unify` arithmetic call sites go through `unifyAt` — **the arithmetic half landed** (compiler `3a504c90`: both sites are `unifyAt` the right operand, three snapshots gained a box); `unify.zig` itself still raises unlocated errors that its callers locate
 - [ ] a `throw` under `fn f() -> i32` reports `effect-try-without-fallible-channel` at the `throw`, not at the first body statement (the annotated form this box named leaves with C-32, decision 118)
-- [ ] the 44 box-less snapshots have a box; the re-recorded 270 are **read** for expected/found orientation, not bulk-accepted
+- [ ] the 44 box-less snapshots have a box; the re-recorded 270 are **read** for expected/found orientation, not bulk-accepted — **measured at `ffe2db69`: 23 box-less of 166** (one directory now); 11 located by compiler `e361fd69` (RG3, `@Option<T>`, the two `@External` shapes), 12 remain — the implement/extend/behavior coverage refusals, the two `pub default` duplicates, the two activation refusals — whose declarations carry no location in the AST (`ImplementDecl`, `ExtendDecl`, `FnDecl`, `ModDecl`); giving them one re-records the parser dumps, which is this step's own landing. The file name in the box (143 snapshots) is `snapshot.zig`'s and the harness's, outside this front's files
 
 ### Step 10 — the parser gaps that are inference-side
 
@@ -616,7 +616,9 @@ again at `4fe1747e`:
    expected type is a `val`'s annotation. This is the same empty-name diagnostic `status.md` already
    lists for the typed array literal (`[.EffectShadowRaw("…")]`); the parser's node is a `dotIdent`
    head with a call link, and whatever the answer is, a message quoting an empty name is not it.
-2. **`#(x: 1, y: 2)` — the labeled tuple construction** — is now refused by the parser as
+2. **Answered — the refusal stands** (decision 8 §6 T1: "construction has no labels"; the labels
+   ride the TYPE and the variables a tuple is built from). T7's warning — a variable's name
+   differing from the written label — landed with compiler `dd20304d`. **`#(x: 1, y: 2)` — the labeled tuple construction** — is now refused by the parser as
    `tuple-literal-label`, at the label, instead of `novalBinding` at the value. The form itself is
    §6's and yours: when it parses, delete the refusal in `parseTupleLitExpr` (one `if`) and its R10
    case, and the labels ride the tuple type. Until then `#(1, 2)` and `.0`/`.1` is what compiles.
@@ -629,7 +631,9 @@ again at `4fe1747e`:
 Three rows, each measured through `botopink check` rather than through the language server, so none of
 them is a rendering problem:
 
-1. **`xs[0]` types as `void`.** `val first: string = xs[0];` → `error: type mismatch: expected string,
+1. **Landed** — C-02 types `xs[0]` as `?T`, and the message now reads `expected string, got ?string`
+   (compiler `b21ebfbb`: a mismatch spells `?T`, `T[]` and a section's path, never the internal
+   `optional`). **`xs[0]` types as `void`.** `val first: string = xs[0];` → `error: type mismatch: expected string,
    got void`. `ast.zig:1734` already assigns the index expression's typing to this front; the
    consequence 11 found is that hover, inlay hints and the annotation code action all offer `: void`
    for every index expression.
