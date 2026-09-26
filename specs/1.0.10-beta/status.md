@@ -26,7 +26,7 @@ README.
 - [x] `00 · 15-language-surface` — closed: every decided-against form refused by name with its cell; a negative decorator argument; a one-line lambda or loop body needs no `;`. C-13's parser patch is 16-formatter's
 - [x] `00 · 16-formatter` (C-11, C-12, C-13, G7) — `format --check` walks the whole project; the width rules (16-a, 16-b; a trailing comma keeps a list open, decision 133); the `;` after a braced block optional, not printed, and migrated out of the compiler's trees. Open: refusing that `;` after the libraries and `tests/language` migrate (decision 132); 09's reformat
 - [x] `00 · 17-beam-memory` (C-05, C-10) — the `#[@BeamMemory]` carrier, rule and validation; a module `var` lives where the annotation says on erlang and beam through `std/beam`'s primitives; the refusals and cells; the docs text and the rakun migration plan. Open: no `Dict` satisfies the `Ets` seed rule yet
-- [x] `00 · 19-use-activation` (C-27) — closed; the `use` statement and its destructuring under front 24's grant. Open: front 67's example
+- [x] `00 · 19-use-activation` (C-27) — closed; the `use` statement and its destructuring under front 24's grant; front 67's `optimistic-like-example.bp` compiles with the tuple form
 - [x] `00 · 20-builtins-surface` (C-28) — closed
 - [x] `00 · 21-effect-chain` (C-29) — closed; its outcomes hold in front 24's surface
 - [x] `00 · 22-loops` (C-30) — closed; `for` / `while` / `loop`, `iter` / `stream` prefixes, ranges, the library sweep; wasm's `run/generator_break_value.bp` green (`emitGenEnd`)

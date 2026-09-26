@@ -4,7 +4,7 @@
 **State:** closed. What it built — the `use` statement, the static-prefix guard, tuple and record
 destructuring from a `use`, the lowering contract — holds under the effect surface of
 [`24-effects-by-return`](../24-effects-by-return/README.md) (decisions 118–128), which owns the
-`use` gate from here on. One box is open, and it is front 67's (§ *Open*).
+`use` gate from here on. Nothing is open.
 **Owns (still):** the `use` rules in `src/parser.zig` (the activation statement, `useAfterBranchGuard`,
 `useBranchSeen`, `bindingUseLoc`, `freshUseScope`) and the `use` prefix in `src/parser/exprs.zig` ·
 the `use` binding functions of `src/comptime/infer.zig` (`bindingSourceType`, `inferUseHookExpr`,
@@ -94,13 +94,24 @@ that activates nothing), `run/use_one_base.bp`;
 Codegen snapshots `codegen_use_*_is_a_plain_call`, `codegen_use_object_destructure_*`,
 `codegen_use_tuple_destructure_*`; `grep -rl useState snapshots/` is empty.
 
-## Open
+## Closed
 
-- [ ] `67-jhonstart-forms/examples/optimistic-like-example.bp` compiles with the tuple form — the
-      hooks it imports (`optimistic`, `formStatus`) live in jhonstart's `jhonstart-forms` member;
-      compiling the example is front 67's.
+- [x] `67-jhonstart-forms/examples/optimistic-like-example.bp` compiles with the tuple form —
+      measured at compiler `90ef5afd`, jhonstart `e9154b7`: the example as a test module of the
+      `jhonstart-forms` member checks and its five tests pass on commonJS and erlang, and
+      `val #(shown, push) = use optimistic(…)` types `shown` as the `i32` of `T` (a `val s: string =
+      shown` is `expected string, got i32`). The example's imports named `"jhonstart"` for the
+      hooks, which live in `"jhonstart-forms"`, and omitted `ElementBase`; both corrected, and its
+      "LANGUAGE GAP" comment went with the gap.
 
 ## Notes
+
+- Found closing the box, not this front's: a package outside the jhonstart workspace that depends on
+  `jhonstart-forms` does not compile — `jhonstart-forms/form.bp`'s `import {linkPrefetch} from
+  "jhonstart-link"` is `unbound variable 'linkPrefetch'` in the consumer's build even with
+  `jhonstart-link` in its `dependencies`, while the member's own `botopink test` is green; a
+  direct consumer of `jhonstart-link` resolves it. A transitive workspace dependency does not
+  reach a dependency's modules — library resolution.
 
 - The labeled-tuple half (`#(state: S, dispatch: fn(…))` losing its labels through generic
   instantiation) is C-08 / `01-checker`'s; this front's destructure is positional.
