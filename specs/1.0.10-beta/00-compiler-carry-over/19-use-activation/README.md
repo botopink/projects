@@ -97,7 +97,7 @@ Codegen snapshots `codegen_use_*_is_a_plain_call`, `codegen_use_object_destructu
 ## Closed
 
 - [x] `67-jhonstart-forms/examples/optimistic-like-example.bp` compiles with the tuple form —
-      measured at compiler `90ef5afd`, jhonstart `e9154b7`: the example as a test module of the
+      measured, : the example as a test module of the
       `jhonstart-forms` member checks and its five tests pass on commonJS and erlang, and
       `val #(shown, push) = use optimistic(…)` types `shown` as the `i32` of `T` (a `val s: string =
       shown` is `expected string, got i32`). The example's imports named `"jhonstart"` for the

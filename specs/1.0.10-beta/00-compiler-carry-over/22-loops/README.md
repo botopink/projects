@@ -94,7 +94,7 @@ depth. The `dobros` example prints `2 4 … 18 20` on all four.
 
 - [x] wasm: `run/generator_break_value.bp` — `0127` / `1` / `56`. The eager scope did yield; what
       was wrong is `ends()`'s bare `break` at the body's own level, which wasm dropped (`12`). It
-      now ends the generator (`wat.zig` `emitGenEnd`, compiler `90ef5afd`); the line left
+      now ends the generator (`wat.zig` `emitGenEnd`); the line left
       `expected-failures.txt`, and the cell is green on all four targets.
 
 ## Notes

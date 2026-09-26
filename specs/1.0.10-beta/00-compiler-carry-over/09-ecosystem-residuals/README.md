@@ -9,7 +9,7 @@ line and the rows the library tracks carry.
 [`06-onze`](../../06-onze/README.md)); a row below that names one of them is that track's
 **Does not touch:** `repository/botopink-lang/**` · `repository/vscode-extension/**`
 
-Measured 2026-09-26 against the compiler `front/sweep-docs` builds, from an rsync copy of the
+Measured against the compiler `front/sweep-docs` builds, from an rsync copy of the
 checkout outside `.tasks/` (inside a worktree the library runner sees every library twice — the
 worktree's and the main checkout's — and refuses until C-33's `25-gate-perf` fix lands).
 

@@ -1,6 +1,6 @@
 # Front 17 — beam-memory
 
-**Decided 2026-09-18.** Every question this front opened is answered —
+**Decided.** Every question this front opened is answered
 [38 to 44](../../../1.0.5-beta/decisions-taken.md), plus three the same pass raised and answered: **48** (the
 formatter's `var` arm is a named carve-out of `16`, landed here in the same commit as the form),
 **49** (this front opens once [`01-checker`](../01-checker/README.md) has committed its step 4) and
@@ -60,13 +60,13 @@ two named diagnostics ([`01`](../01-checker/README.md)) · the module atoms of `
 **The two exceptions decision 48 and decision 49 write into the lists above.** `src/format.zig` moves
 from *does not touch* to a **named carve-out**: one `ValDecl` printer arm reading the new `mutable`
 field and one `assertLossless` case, in the same commit that makes `var` parse — because `16-formatter`
-has landed (`37d3dc7`) and `09-ecosystem-residuals` has already committed the five libraries formatted,
+has landed and `09-ecosystem-residuals` has already committed the five libraries formatted,
 so an arm arriving one commit late edits committed files. And the `infer.zig` carve-out is granted
 **after** `01`'s step 4 is committed, not before: that front holds +208/−23 uncommitted lines in the
 same file, beside the same `:2742`.
 
 Paths are relative to `repository/botopink-lang/` unless a row says otherwise. Every count and
-`file:line` below was measured on 2026-09-18 at `botopink-lang` `bef762b`, in a detached scratch
+`file:line` below was measured, in a detached scratch
 worktree — never in `repository/botopink-lang`, never in `.tasks/`. The Erlang numbers are OTP 29 /
 erts 17.0.6, the node numbers node v25.8.0, the wasm numbers wasmtime 45.0.0, on a 16-core machine.
 
@@ -75,7 +75,7 @@ erts 17.0.6, the node numbers node v25.8.0, the wasm numbers wasmtime 45.0.0, on
 ## Problem
 
 **A module-level binding that is assigned compiles clean and breaks on every target.** This program
-passes `botopink check` at `bef762b`:
+passes `botopink check`:
 
 ```botopink
 val hits: i32 = 0;
@@ -123,7 +123,7 @@ is what makes it portable instead of ported.
 | `var` at module level | `error: this token cannot appear here … ^^^ unexpected 'var'` at `1:1` |
 | `#[…]` before a top-level `val` | `error: … ^ unexpected '#'` at `1:1` — the annotated-declaration `switch` (`parser.zig:450`) has no `.val` arm |
 | `#[@BeamMemory.Ets(keyed = true)]` on a `fn` | **parses** — `Checked in 60.93ms` |
-| an unknown builtin annotation (`#[@TotallyMadeUp.Nonsense(whatever = 42)]`) | `unknown-annotation`, located (01, compiler `a62baf77`) |
+| an unknown builtin annotation (`#[@TotallyMadeUp.Nonsense(whatever = 42)]`) | `unknown-annotation`, located (01) |
 | `ast.ValDecl` fields | 7; **no `mutable`, no `annotations`** (`ast.zig:1891-1909`) |
 | `ast.Stmt.Kind.localBind` | **has `mutable: bool`** (`ast.zig:563`) and `commonJS.zig:2366` already reads it |
 | purity analysis in `src/comptime/**` | **none** — `EffectKind` (`ast.zig:2014`) is `result\|future\|generator\|iterator\|asyncGenerator\|context`, the declared return wrappers |
@@ -266,7 +266,7 @@ this README already answered: the explicit `ProcessDict` is the default said out
 
 Nothing is edited. The probe harness is one scratch project per form (`botopink new`, one `src/main.bp`,
 `botopink check` / `build --target …`), plus three hand-written Erlang modules compiled with `erlc`
-and run with `erl -noshell`. Re-run at `botopink-lang` `4fe1747e` (OTP 29, node v25, wasmtime 45),
+and run with `erl -noshell`. Re-run (OTP 29, node v25, wasmtime 45),
 after steps 1–3 had landed — so the first row measures what step 1 changed, not the original defect.
 
 **Acceptance:**
@@ -282,14 +282,14 @@ after steps 1–3 had landed — so the first row measures what step 1 changed, 
 - [x] Questions **38–43** were opened and are **taken** (`decisions-taken.md` 38–43, plus 48–51 and
       57); nothing is opened here
 - [x] The 96-line rakun count and the emilia reading are re-derived at the pinned submodule
-      commits (rakun `10c63974`, emilia `9c19e22`), function ranges named — in
-      [`rakun-migration.md`](./rakun-migration.md) (step 8). Two things moved since `bef762b`: rakun's
+      commits, function ranges named — in
+      [`rakun-migration.md`](./rakun-migration.md) (step 8). Two things moved since: rakun's
       `runtime.mjs` is now `modules/rakun/src/runtime.mjs` (still 231 lines, the five ranges
       unchanged) **and has an 850-line erlang twin**, `modules/rakun/src/sidecars/rakun_runtime.erl`,
       whose six named public ETS tables are owned by a supervised `rakun_registry` `gen_server` —
       rakun built decision 39's owner by hand; emilia's cell moved to `modules/emilia/src/emilia.bp:53-55`
       (`register`: `get` + `lists:keystore` + `put`) and `:58-60` (`drainRules`: `erase`)
-- [x] The migration count step 1 owed its commit message and did not carry: at `4fe1747e`, over
+- [x] The migration count step 1 owed its commit message and did not carry:, over
       `libs/std`, `examples/**` and the five libraries at their pins (212 `.bp` files), **447**
       assignments to a bare name, **all 447** to a name the same file declares `var`, **0** to a `val`
       (decision 38 counted 82 of 82 at `1379659`; the suite grew, the answer did not)
@@ -321,11 +321,11 @@ Two changes that must land together, because either alone is worse than neither.
       `` `x` is a `val` and cannot be assigned`` at the assignment, hint `` Declare it `var x = …` ``
       (`infer.zig` `refuseValAssign`, beside decision 37's record-field rule)
 - [x] The migration cost is counted the way decision 37 counted its own — **not** in the landing
-      commit's message (`8146d2b6` carries no number) but in step 0's row above and in the step-1
+      commit's message ( carries no number) but in step 0's row above and in the step-1
       follow-up commit: 447 bare-name assignments over 212 files, 447 to a `var`, 0 to a `val`
 - [x] `expectError(src, kind, line, col)` cases in `src/parser/tests/surface.zig`: an annotated
       `val` shorthand is `unexpectedToken` at `1:1` in both spellings; `var` reads no shorthand
-- [x] Gate green at the landing (`2788be9f`, cold) and at the follow-up. **Two snapshot re-records,
+- [x] Gate green at the landing (cold) and at the follow-up. **Two snapshot re-records,
       not none**, both in `snapshots/parser/`: `external_keyword_argument_form` and
       `qualified_enum_variant_with_inline_true_flag` each gained a `labels` array, because the
       parser now keeps the label written before an annotation argument (`keyed = true`,
@@ -345,7 +345,7 @@ becomes coherent on two targets while the BEAM questions are still open.
 
 **Acceptance:**
 - [x] The [Problem](#problem) program, rewritten with `var`, prints `2` on node and `2` under
-      `wasmtime` — run at `4fe1747e` (step 0) and pinned by `tests/language/run/module_var.bp`
+      `wasmtime` — run (step 0) and pinned by `tests/language/run/module_var.bp`
 - [x] `val` at module level still emits `const` / an immutable global — the emitters read
       `ValDecl.mutable` and nothing else changed for a `val`
 - [x] **No** codegen snapshot re-recorded: the landing touched `snapshots/parser/` only (two cells,
@@ -380,7 +380,7 @@ positionally. Nothing in the grammar changes; the validation is a lookup.
       `beam_memory_unknown_member`, `beam_memory_unknown_argument`, `beam_memory_keyed_scalar`,
       `beam_memory_keyed_list`, `beam_memory_on_val`
 - [x] An unknown *family* is refused — closed by [`01`](../01-checker/README.md) (decision 15
-      assigns it the annotation grammar), compiler `a62baf77`: `#[@TotallyMadeUp.Nonsense(whatever = 42)]`
+      assigns it the annotation grammar), : `#[@TotallyMadeUp.Nonsense(whatever = 42)]`
       on a `var` or a `fn` is `unknown-annotation` at the annotation; a family an edit away is named
       (`#[@BeamMemroy.Ets]` → `@BeamMemory`). The families are `External`, `BeamMemory`, `Host`, or
       an annotation type (`implement @Annotation`). `reject/annotation_unknown_family`,
@@ -469,7 +469,7 @@ is a 0-arity function"* — which re-evaluates the initialiser on **every read**
 - [x] The initialiser rule is `ast.Expr.isComptimeExpr()` plus the literal path (`ast.isMemorySeed`:
       number, string, `null`, `true`/`false`, a negation, an array or tuple of them) — **not purity**;
       `reject/beam_memory_ets_initialiser` refuses `registry()`. **Finding:** no `Dict` can satisfy
-      it — there is no `Dict` literal and `comptime dict.empty()` does not fold (`'call' is a runtime
+      it — there is no `Dict` literal and `comptime Dict.empty()` does not fold (`'call' is a runtime
       identifier`) — so an `Ets` `Dict`, keyed or not, cannot be declared until one of the two exists
 - [x] No use of `ets:update_counter`'s `{Pos, Incr, Threshold, SetValue}` form. It works (measured:
       `2147483647 + 1` → `-2147483648`) and it would make `Ets` diverge from the erlang backend's own
@@ -505,7 +505,7 @@ re-measure before it is sized.
 ### Step 6 — The diagnostics and the documentation text
 
 This front writes no `docs.md`; it supplies the text to [`08-hygiene`](../08-hygiene/README.md) —
-[`docs-text.md`](./docs-text.md) beside this file, in two parts: what is true at `4fe1747e` (the
+[`docs-text.md`](./docs-text.md) beside this file, in two parts: what is true (the
 `val` rule, the module `var`, the validated annotation — can go in now) and the three mode
 paragraphs, which describe C-10's emission and must not be published before it.
 
@@ -519,15 +519,14 @@ paragraphs, which describe C-10's emission and must not be published before it.
 - ~~The `keyed`-on-a-`Dict` warning of question 42, **if** the warning channel exists~~ **struck:**
       [decision 42](../../../1.0.5-beta/decisions-taken.md#42-a-dict-under-ets-with-keyed-unwritten-keeps-the-default-with-no-warning)
       answered **(b), no warning** — replacing the whole container is a thing authors legitimately
-      want — and its note after decision 57 says the answer does not move once a channel exists (at
-      `4fe1747e` it still does not: `grep -rln warning src/comptime/*.zig` → 0). The behaviour and the
+      want — and its note after decision 57 says the answer does not move once a channel exists (it still does not: `grep -rln warning src/comptime/*.zig` → 0). The behaviour and the
       5 061× / 19 994-of-20 000 figures are the `Ets` paragraph's, where the default is documented,
       and nowhere else
 
 ### Step 7 — The language cells
 
 Specified here; the cells that can run were written into `tests/language/` in this front
-(`3cd77667`), because [`12-language-tests`](../12-language-tests/README.md) was absorbed into
+, because [`12-language-tests`](../12-language-tests/README.md) was absorbed into
 [C-16](../README.md#c-16--the-language-suites-residual-cells) and the suite's one-file-per-cell layout
 means nothing of anyone else's is edited. The cells that cannot run yet — the three modes on the two
 BEAM targets, and step 4's three refusals — are **specified below for C-10**, which is the step that
@@ -583,14 +582,14 @@ gives them something to run against.
 
 This front does not edit a library. It writes the migration and hands it over —
 [`rakun-migration.md`](./rakun-migration.md) beside this file, re-derived at the pins of this
-worktree (rakun `10c63974`, emilia `9c19e22`) rather than carried from `bef762b`.
+worktree rather than carried from.
 
 **Acceptance:**
 - [x] **rakun**: the mode per registry and the line ranges that go — now
       `modules/rakun/src/runtime.mjs:16-32`, `:33-63`, `:64-79`, `:80-98`, `:107-108` + `:113-123`
       (**still 96 of 231 lines**), the 13 of 16 `@External.Node` declarations of
       `modules/rakun/src/runtime.bp` that go with them (`rkDispatch`, `rkDispatchHttp`, `rkServe`
-      stay), **and** the erlang twin that did not exist at `bef762b`: `sidecars/rakun_runtime.erl`
+      stay), **and** the erlang twin that did not exist: `sidecars/rakun_runtime.erl`
       (850 lines), whose five registry sections (`:171-297`) and the `rakun_registry` `gen_server`
       that owns their tables — decision 39's owner, built by hand — go with them. The one caveat is
       `singletons`: its erlang half is `ets:insert_new` (the loser discards its instance) and the
@@ -622,7 +621,7 @@ worktree (rakun `10c63974`, emilia `9c19e22`) rather than carried from `bef762b`
 ## Notes
 
 - **The grammar was never the problem.** `#[@BeamMemory.Ets(keyed = true)]` already parses on a `fn`
-  at `bef762b`. What does not exist is a declaration that can carry an annotation *and* a mutable
+  . What does not exist is a declaration that can carry an annotation *and* a mutable
   value. Sizing this front as "a parser change plus three erlang lowerings" gets the first half right
   and the second half backwards.
 - **The two targets the annotation does not touch are the cheap ones.** commonJS is a `Kw` field that

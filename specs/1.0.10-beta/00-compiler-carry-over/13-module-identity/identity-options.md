@@ -8,7 +8,7 @@ Two questions.
    question [`README.md`](./README.md) § 2.1 did not ask — **prefix the term** or **qualify the tag
    atom** for a variant. § 4 shows the second answer is free and the first is not.
 
-Every mechanical claim below was run at OTP 29 / erts 17.0.6, 2026-09-18; the transcripts are in
+Every mechanical claim below was run at OTP 29 / erts 17.0.6; the transcripts are in
 [`evidence.md`](./identity-evidence.md).
 
 ---
