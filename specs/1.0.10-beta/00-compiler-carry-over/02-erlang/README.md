@@ -135,13 +135,7 @@ compiled as a dependency keeps its default-fn shims.
   all four backends, recorded in `src/codegen/AGENTS.md`. The original report: `table.filter({ s ->
   unquote(quote(s)).unwrapOr("<err>") != s })` compiled to `unwrapOr/2 undefined` on erlang (and
   `….unwrapOr is not a function` on commonJS); the same call in a named function was fine.
-- **`status.md` § Pending** carries further erlang rows, each with its repro: `patternNodeExtra` asks
-  `enum_variants` first, so a `case` over a union of records whose arm names a record some enum also
-  declares as a variant dies with `case_clause`; `Array.lastIndexOf` emits `lastIndexOf/2 undefined`;
-  a function-valued record field must be read into a local before it is called (`v.tagOf(e)` →
-  `tagOf/2 undefined`); a module-level `val` with a side effect never runs, and a method on a
-  host-supplied `behavior` receiver lowers to a bare local call (worktree `.tasks/erlang-module-load`);
-  `std-unsupported-on-target` names the module's first declaration instead of the function called.
+- **`status.md` § Pending** carries the erlang rows still open, each with its repro.
 
 ## Dependencies
 
