@@ -67,27 +67,59 @@ measurement, and it argues against nothing else in this front: 15 cells is a sma
 schedule reason, so if the maintainer holds 14 at the front of the milestone, pay it. If 06 happens
 to be ready first, take it first.
 
-## Step 3 is deferred, and here is the number
+## Step 3 — landed: a comptime body reaches the node as BEAM bytes
 
-**Step 3 (`.S` + `erlc +from_asm`) waits.** Steps 0–2 take `erika-linq`'s erl-side work from
-**960 ms to ≈ 49 ms** — 19×, and 911 ms off a 1 592 ms build. Step 3 takes that ≈ 49 ms to
-**≈ 11 ms**: a further **38 ms**, which is **≈ 5.6 % of the 681 ms build that remains once steps 0–2
-have landed**. Against that marginal 5.6 %:
+**No Erlang compiler in the compile path** (decision 24's principle). On the BEAM runtime a template
+or decorator module is read back from the Erlang `erlang.zig`'s untyped mode produced
+(`comptime/runtime/wat/erl_parse.zig`, the reader the wat runtime uses), lowered to BEAM
+instructions (`comptime/runtime/beam/lower.zig`), assembled in Zig (`codegen/beam/beam_file.zig`,
+front 18's 1c) and loaded with cmd 4 — `code:load_binary/3`, no file, no `compile:file`. The same
+instructions rendered as `.S` text (`codegen/beam/asm_text.zig`) are the listing a snapshot shows,
+so bytes and listing cannot describe two programs, and `scripts/beam_export_audit.sh` hands the
+listing to `beam_validator`, which the load path does not run. The node lost cmds 1 and 2 and the
+`.erl` staging; `persistent_erl.zig` is `persistent_beam.zig`.
 
-- **The renderer it needs does not exist.** The 19 template and 6 decorator host functions are
-  `erl_ast.Form` values; `erl_ast.Expr` has **27** variants and its only renderer is
-  `codegen/beam/erl_emitter.zig` → Erlang source. `codegen/beam/beam_emitter.zig` has never seen an
-  `erl_ast.Expr`. There is no `erl_ast` → `.S` path to extend
-  ([E11](./evidence.md#e11--the-beam-backend-has-no-comptime-path)) — the step is **≈ 1 500–2 500
-  LOC** and a *second* lowering of every comptime construct.
-- **It touches `src/codegen/beam_asm.zig`**, which is [`../03-beam/`](../03-beam/README.md)'s and,
-  for steps 7–20, [`../13-module-identity/`](../13-module-identity/README.md)'s **wholesale**. Under
-  the maintainer's order both of those come after this front, so step 3 cannot be in the same pass.
-- **It still needs a maintainer answer** on which reading of the request governs it (the boxed
-  question below).
+**Why not an untyped mode of `beam_asm.zig`** (what this README proposed): a comptime body's
+meaning is already decided by `erlang.zig`'s untyped mode — records and enums without
+declarations, the resident `-import`, the `'__bp_prim_…'` shims — and the wat runtime lowers that
+same Erlang. Lowering the botopink body a second time in `beam_asm.zig` was this front's own named
+risk ("two emitters can diverge silently"); lowering the Erlang keeps one decision and three
+consumers of it, costs ≈ 1 900 lines instead of 1 500–2 500 across ~80 type-directed sites, and
+leaves the typed backend (03, 13) untouched. The Erlang is an in-memory intermediate the evaluator
+already renders for the wat runtime and the module's content hash; nothing writes it or compiles it.
 
-**Recorded: the marginal gain does not justify the dependency now.** Step 3 reopens after 03-beam
-closes, with its number re-measured by step 0's script rather than quoted from here.
+**The code shape** is deliberately plain: every value in a Y register, operators and calls through
+`call_ext`, so errors are the BEAM's own (`badmatch`, `case_end`, `function_clause`, `{badarg, V}`
+from `andalso`, `bad_generator`…); guards on `bif`/`gc_bif` with fail labels; a `fun` lifted with its
+captures as trailing parameters; a named `fun` calling itself as a direct tail call; a list
+comprehension as an in-line loop. Decision 86 holds: a computed binary has no opcode stable since
+OTP 24 (`bs_create_bin` is 25), so it is `iolist_to_binary/1` over segments each type-checked as the
+segment would be. Detail in `src/comptime/runtime/AGENTS.md` and `src/codegen/beam/AGENTS.md`.
+
+**What it refuses** it names, as a compile error of that comptime module — the wat runtime's
+channel (decision 67: refuse, do not fall back). The per-declaration `.erl` fallback this step
+first kept was counted at **0** everywhere and then deleted: over the suite 17 template and 19
+decorator bodies (distinct modules), over `test-libs` 2 template and 61 decorator bodies, plus 377
+of 389 older on-disk modules (the 12 refused are modules `erlc` rejects too). The refusal list is in
+`src/codegen/beam/AGENTS.md` § *Comptime lowering*.
+
+**Measured** on one machine, OTP 29, min of 3 (the compile-side split by timing `beam/program.zig`
+over erika-linq's module; the builds by `scripts/comptime_bench.sh --target erlang` and by hand for
+ReleaseSafe, which is what `release.yml` ships):
+
+| erika-linq, one 661-line template | at `0cd949a4` | after step 3 |
+|---|---:|---:|
+| in the node: `compile:file` | **49.1 ms** | — (nothing compiles) |
+| in the node: `code:load_binary` | 1.4 ms | **0.6 ms** (19.6 KB `.beam`) |
+| in the compiler: read back + lower + list + assemble | — | **2.9 ms** ReleaseSafe (12.3 ms Debug) |
+| **the single compile, text to loaded code** | **50.5 ms** | **3.5 ms** ReleaseSafe (12.9 ms Debug) |
+| build `--target erlang`, ReleaseSafe | 273 ms | **161 ms** |
+| build `--target erlang`, Debug (`comptime_bench.sh`) | 522 ms | **443 ms** |
+| generated N=10 / N=200, Debug (`comptime_bench.sh`) | 336 / 1 258 ms | 289 / 1 289 ms |
+
+The generated project's slope is the compiler side's per-evaluation `emitComptimeModule` (the
+prelude re-parse of step 2's *Landed*), which this step does not touch. Front 18's E-16 read
+erika-linq's `compile:file` at 126 ms; re-measured here at the same compiler it is 49.1 ms.
 
 ## Ownership
 
@@ -98,9 +130,9 @@ closes, with its number re-measured by step 0's script rather than quoted from h
 `evaluate(…)` call sites and the memo cache of `src/comptime/infer.zig` (carve-out of
 [`../01-checker/`](../01-checker/README.md)) ·
 `src/codegen/erlang.zig`'s `ComptimeModule` / `emitComptimeModule` (carve-out of
-[`../02-erlang/`](../02-erlang/README.md)) and, for the deferred step 3, the untyped comptime mode of
-`src/codegen/beam_asm.zig` (carve-out of [`../03-beam/`](../03-beam/README.md)) · the 48
-snapshots carrying a `----- COMPTIME ERLANG` section
+[`../02-erlang/`](../02-erlang/README.md)) and, for step 3, the new `src/comptime/runtime/beam/`
+and `src/codegen/beam/asm_text.zig` (no edit to `beam_asm.zig`), 18's `persistent_erl.zig` →
+`persistent_beam.zig` step · the 33 snapshots that carried a `----- COMPTIME ERLANG` section
 **Does not touch:** `src/comptime/eval.zig` (the Zig-folded `comptime` values — 56 `COMPTIME VALUES`
 snapshots stay put) · `src/comptime/infer.zig` beyond the two `evaluate(…)` call sites (01) ·
 `src/comptime/snapshot.zig` ([`../06-comptime-dedup/`](../../../1.0.5-beta/06-comptime-dedup/README.md)) · the module
@@ -124,7 +156,7 @@ call sites have drifted to `:2341` and `:3522`.
 
 ---
 
-## Landed — steps 0–2 (`bef762b`); step 3 not attempted
+## Landed — steps 0–2 (`bef762b`)
 
 Four commits on `fix/comptimebeam`, cold gate green at the head and at each commit.
 
@@ -176,55 +208,6 @@ input half of the evaluation the reply answers.
 `codegen/beam/{erl_ast,erl_emitter}.zig` — **additive only**, one `Form.import` variant and the arm
 that writes it; 08's eval-protocol half of `persistent_erl.zig`; 11's one script. **01's `infer.zig`
 was not touched at all** — zero edits, better than the carve-out allowed.
-
-### Step 3 is not attempted, and the reason is measured
-
-- `beam_asm.zig` is **8 422 lines** at `4fe1747e` with **0** occurrences of `ComptimeModule`,
-  `'__bp_len'` or `'__bp_json'`; its 5 `'__bp_prim_'` hits are the typed backend's own run-time
-  dispatch shim for an untyped receiver (`:4941`), not a comptime path. An untyped mode crosses
-  ~80 type-directed sites (at `bef762b`: `string_locals` 22, `isStringExpr` 16, `numKind` 15,
-  primitive dispatch 14, `num_locals` 11, `record_fields` 10, `instance_lowerings` 5).
-- **The typed beam backend already fails the case the untyped mode exists to serve**:
-  `"a b".split(" ").map({ x -> x.toUpper() })` with `--target beam` assembles and dies at run time
-  with `{unresolved_method, toUpper, 1}`, while the same straight-line typed code runs. In a comptime
-  body **every** receiver is untyped.
-- The file belongs to [`03-beam`](../03-beam/README.md) and
-  [`13-module-identity`](../13-module-identity/README.md) entirely, and
-  [decision 24](../../../1.0.5-beta/decisions-taken.md#24-does-step-3-of-14-comptime-on-beam-happen-at-all) already
-  sequences step 3 after them.
-
-**And the value shrank, measured against the post-step-2 build**: erika's 47.7 ms of `compile:file` is
-now paid **once per build**, not 18 times, so step 3 would save ≈ 39 ms of a 645 ms build — ≈ 6 %,
-which is the front's own ≈ 5.6 % estimate, now confirmed rather than projected.
-
-**Re-measured at `4fe1747e` (2026-09-25)** — OTP 29, the same machine, minimum of 3 builds,
-10 repetitions per module in the node:
-
-| | at `bef762b` | at `4fe1747e` |
-|---|---:|---:|
-| `erika-linq` build, `--target commonJS` | 645 ms | **551 ms** |
-| `.erl` modules the build leaves | 1 | **1** (656 lines; 10 540 B `.beam`) |
-| `compile:file` + `code:load_binary`, once per build | 47.7 + 1.3 ms | **54.6 + 2.5 ms** |
-| the same module as `.S` (`erlc -S`), `compile:file(…, [from_asm])` | — | **13.6 ms** (4.05×); `load_binary` 2.3 ms either way |
-| **what step 3 saves** | ≈ 39 ms of 645 ms (≈ 6 %) | **≈ 41 ms of 551 ms (≈ 7.5 %)** |
-| generated N=200: build · modules · ms/eval · `compile:file` | 2 172 ms · 1 · 9.4 · 3.8 ms | **1 322 ms · 1 · 5.6 · 5.9 ms** |
-
-The number sits in the deferral's own band, and the step is no longer this front's to take:
-[`../18-comptime-runtimes/`](../18-comptime-runtimes/README.md) **owns** the untyped lowering mode
-of `beam_asm.zig` (its step 1b — *"C-20 is absorbed. Its body is step 1b verbatim"*),
-`src/comptime/runtime/**` and `scripts/comptime_bench.sh`, and goes past `.S` + `erlc +from_asm`
-to `.beam` bytes over cmd 4 (its steps 1a and 1c, landed). Step 3 stays deferred here; its
-acceptance lines are carried by 18's step 1.
-
-**How the number is taken.** The generated-project rows are the script unchanged
-(`scripts/comptime_bench.sh --n 0,1,10,50,200 --repeat 3 --reps 10`). `erika-linq`'s `erika`
-dependency is `"workspace": true` at HEAD, and the script's `--project` copy carries `path:`
-dependencies only, so the copy leaves its workspace and the build refuses (`"erika": { "workspace":
-true } but botopink.json is not a member of any workspace`). The whole `repository/erika`
-workspace is copied into the scratch tree and the member built there, `BOTOPINK_LIB_ROOTS` pointing
-at the worktree's `repository/`; the in-node split is the script's own `bp_comptime_bench` harness
-over the module that build leaves. The `--project` fix — copy the workspace root of a
-`workspace: true` member — belongs to 18's script.
 
 ### Also reported, not done
 
@@ -426,10 +409,9 @@ this project ([`history.md`](./history.md)). This front does not re-propose them
 
 ## Steps
 
-Step 0 is a prerequisite for every acceptance below. **Steps 0–2 are this front's scope in
-1.0.5-beta.** Step 3 is the maintainer's literal request and is **deferred** — the reason, with the
-number, is in § *Step 3 is deferred*: it is worth a further ≈ 5.6 % of the build once steps 0–2 have
-landed, and it needs a renderer that does not exist plus a file 03-beam and 13-module-identity own. Detail, fallbacks and estimates in [`migration.md`](./migration.md).
+Step 0 is a prerequisite for every acceptance below. Steps 0–2 landed in 1.0.5-beta; step 3 — the
+maintainer's literal request — landed in 1.0.10-beta, § *Step 3 — landed*. Detail, fallbacks and
+estimates of the original plan in [`migration.md`](./migration.md).
 
 ### Step 0 — the measurement lives in the repository
 
@@ -484,25 +466,32 @@ the existing regression tests (`persistent_erl.zig:445-485`).
 - [x] `botopink clean` removes `tmp/template` and `tmp/decorator` (`cli/clean.zig`) — it removes `.botopinkbuild/` whole, nothing to change
 - [x] `zig build test` green from a cold cache; `test-libs` green
 
-### Step 3 — the module reaches the node as BEAM assembly — **deferred** (after [`../03-beam/`](../03-beam/README.md) closes, and after the maintainer answers)
+### Step 3 — the module reaches the node as BEAM assembly — landed
 
-`beam_asm.zig` gains what `erlang.zig:777` gates: an untyped lowering mode, host records and host
-enums without declarations, and a `main/1` entry. The reply encoder and the capture API are already
-resident after step 1, so **no host function needs a `.S` form**. `writeModule` writes `<module>.S`;
-cmd 2 learns `[from_asm]`.
-
-**The `.erl` path stays, per declaration, as the fallback** — a body the BEAM path cannot lower
-falls back instead of failing. The fallback rate is the step's progress metric.
+The module reaches the node as `.beam` bytes assembled in Zig (cmd 4), listed as BEAM assembly;
+the design and the numbers are § *Step 3 — landed*. `.S` + `erlc +from_asm` (what this step first
+proposed) was passed over for bytes: `erlc` itself would still compile, and front 18's cmd 4 and
+container already existed. No host function needs a `.S` form — the preludes are resident `.beam`s
+reached by `call_ext`.
 
 **Acceptance:**
-- [ ] erika's single compile: **47.3 ms → ≤ 12 ms**
-- [ ] All 48 `COMPTIME REPLY` sections byte-identical; the `COMPTIME ERLANG` sections become
-      `COMPTIME BEAM ASSEMBLY`, 48 files, classified as a rename in the commit message
-- [ ] `scripts/beam_export_audit.sh` still 295/295
-- [ ] The count of distinct bodies lowering on beam is recorded: *N of 39 template and M of 33
-      decorator bodies in the suite*; every fallback names the construct in
-      `src/codegen/beam/AGENTS.md`
-- [ ] No `.erl` is written for a declaration the BEAM path lowered
+- [x] erika's single compile: **47.3 ms → ≤ 12 ms** — re-baselined at `0cd949a4` on the same machine:
+      `compile:file` 49.1 + `load_binary` 1.4 ms → lower-and-assemble 2.9 ms (ReleaseSafe; 12.3 ms Debug)
+      + `load_binary` 0.6 ms
+- [x] All `COMPTIME REPLY` sections byte-identical; the `COMPTIME ERLANG` sections become
+      `COMPTIME BEAM ASSEMBLY` — **33** files (this README's 48 predates 06's re-layout: 7 each in
+      `codegen/beam/{beam,commonJS,erlang,wasm}` + 5 in `comptime/runtime/beam`; the `wat/` tree's 33
+      `COMPTIME WAT` do not move), classified as a rename in the commit message; every other section
+      compared, 0 differences
+- [x] `scripts/beam_export_audit.sh` green — 475/475 (the suite grew past 295; the recorded
+      `COMPTIME BEAM ASSEMBLY` listings are now assembled and validated too, 7 + 5)
+- [x] The count of distinct bodies lowering on beam is recorded: **17 of 17 template and 19 of 19
+      decorator bodies in the suite** (the 39 / 33 of this README counted before dedup), 2 + 61 in the
+      libraries; the refusals are listed, by construct, in `src/codegen/beam/AGENTS.md`
+- [x] No `.erl` is written for a declaration the BEAM path lowered — nor for any: the staging is
+      deleted with cmds 1 and 2
+- [x] `scripts/snap_audit.sh --mode=runtime-parity` green — 1 415 pairs, 0 differing (the new section
+      is set aside as the old one was)
 
 ### Step 4 — not proposed, recorded
 
@@ -532,18 +521,19 @@ falls back instead of failing. The fallback rate is the step's progress metric.
 
 | What moves | Size |
 |---|---:|
-| snapshots recording the generated Erlang (`----- COMPTIME ERLANG`) | **48** of 2 529 — 7 each in `codegen/{beam,commonJS,erlang,wasm}`, 5 each in `comptime/{beam,erlang,node,wasm}` |
-| snapshots recording the reply (`----- COMPTIME REPLY`) | 48 — **must not move** |
+| snapshots recording the generated Erlang (`----- COMPTIME ERLANG`) | **33** since 06's re-layout (48 before it) — 7 each in `codegen/beam/{beam,commonJS,erlang,wasm}`, 5 in `comptime/runtime/beam`; all `COMPTIME BEAM ASSEMBLY` since step 3 |
+| snapshots recording the reply (`----- COMPTIME REPLY`) | 33 per runtime tree — **must not move**, and did not |
 | snapshots of Zig-folded comptime values (`----- COMPTIME VALUES`) | 56 — **not this front's** |
-| compiler source | step 1 ≈ 250 LOC · step 2 ≈ 500 LOC · step 3 ≈ 1 500–2 500 LOC |
+| compiler source | step 1 ≈ 250 LOC · step 2 ≈ 500 LOC · step 3 ≈ 1 900 LOC (the lowering, its listing, the node's deletions) |
 | `.bp` source anywhere | **none** |
 | libraries that get faster | `erika` (12 evaluations/build), `erika-linq` (18), `jhonstart` (10), `rakun` (16 decorators), `onze` (7) |
 
-The risk worth naming: **step 3 is a second lowering of every comptime construct.** Today one
-emitter (`erlang.zig`, untyped mode) decides what a comptime body means; step 3 adds a second in
-`beam_asm.zig`, and the two can diverge silently because the `COMPTIME ERLANG` listing stops being
-the same language. The `COMPTIME REPLY` snapshots are the only cross-check, which is why they are a
-gate line and not a step-3 line.
+The risk worth naming was **a second lowering of every comptime construct** in `beam_asm.zig`,
+diverging silently from `erlang.zig`'s untyped mode. Step 3 avoided it by lowering the Erlang that
+mode produces, not the botopink body; what remains is one lowering of **Erlang** per runtime (BEAM
+here, wasm in front 18), cross-checked by the `COMPTIME REPLY` snapshots, the codegen harness's
+`runtime.parity` on every fixture, and the semantics test in `beam/program.zig` (one module over
+every construct, answered as `erlc`'s build of it answers).
 
 The other risk: **the front's own numbers date fast.** Every figure here is OTP 29 on one Linux
 machine; step 0 exists so the next reader re-measures instead of quoting.
@@ -650,16 +640,12 @@ maintainer's.
 
 ### Decisions the maintainer still owes this front
 
-1. **Which reading of the request governs step 3** (§ *The request*, the boxed question). Under the
-   adopted reading step 3 extends `beam_asm.zig` with an untyped lowering mode and reuses it. Under
-   the second reading — *"the comptime evaluator must not touch `beam_asm.zig`"* — step 3 needs a
-   **second** BEAM lowering owned by `src/comptime/`, which this front does not recommend and has
-   not costed. Steps 0–2 are unaffected either way, so the answer is only needed before step 3 opens.
-2. **Whether step 3 happens at all.** Steps 0–2 remove 95 % of the erl-side cost — 57 % of
-   `erika-linq`'s whole build — with no BEAM work
-   ([`options.md` § 7](./options.md#7-recommendation)). If the goal is build time, step 3 is
-   optional. If the goal is the principle — *no Erlang source in the compile-time path* — it is not.
-   Which is it?
+1. ~~Which reading of the request governs step 3~~ — **moot as landed**: the lowering lives in
+   `src/comptime/runtime/beam/` and lowers the Erlang `erlang.zig` already produced, so it neither
+   extends `beam_asm.zig` (the adopted reading's plan) nor duplicates the botopink lowering (what the
+   second reading would have cost) — "leave the BEAM backend to codegen" holds under both.
+2. ~~Whether step 3 happens at all~~ — **answered by decision 24**: the principle governs; step 3
+   landed.
 3. **The three carve-outs**, each of which decides whether this front can start in parallel:
    `{template_eval,decorator_eval}.zig` plus the `infer.zig` call sites from
    [`../01-checker/`](../01-checker/README.md), the eval-protocol half of `persistent_erl.zig` from
