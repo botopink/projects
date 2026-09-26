@@ -32,6 +32,14 @@ strings is a timing side channel on both backends.
 
 ## Current state
 
+**2026-09-26:** Steps 1–9, 11, 12 and 13 hold, and Step 10 but for two boxes. Step 13 landed
+`json.Json` and `json.decode`, a botopink reader (four private conversion cells, no parser template);
+Step 12's `scriptJson` was already in `escape.bp`, and its decode-equality box is closed from
+`json.bp`'s side. Open: Step 10's `io: {net, clock}` import and the `io/net.bp` tree line, which wait
+on `00 · 23-std-purity` moving the tree (the files are flat today), and Step 14's grep, which the
+consumer fronts close (rakun `ssr.bp` `jsonString`…, rakun-web `jsonEscape`, jhonstart's payload
+escaper). The text below is the state the front started from.
+
 Verified by reading `repository/botopink-lang/libs/std/src/` in full.
 
 - **Twenty-four importable modules**, declared one `pub mod` per line in `src/root.bp:13-36`:
@@ -519,8 +527,8 @@ Front 03 hands over no export line: its functions live in `hash.bp`, which is re
 
 **Acceptance:**
 - [x] the build embeds every registered module without a `build.zig` edit (`libs/std/AGENTS.md`)
-- [ ] `import {escape, encoding, hash, io: {net, clock}} from "std";` resolves from a consumer package
-- [ ] `libs/std/AGENTS.md`'s tree listing names `io/net.bp` and `escape.bp` and lists the added functions on the rows of the eight modules extended
+- [ ] `import {escape, encoding, hash, io: {net, clock}} from "std";` resolves from a consumer package — **open:** there is no `io/` yet; `00 · 23-std-purity` step 3 moves the tree (the flat `import {escape, encoding, hash, net, time} from "std"` resolves)
+- [ ] `libs/std/AGENTS.md`'s tree listing names `io/net.bp` and `escape.bp` and lists the added functions on the rows of the eight modules extended — **open:** the rows list every added function and the tree names `escape.bp` and the flat `net.bp`; `io/net.bp` waits on the move
 - [x] fronts 02 and 03 have landed first, so this commit adds front 02's line rather than waiting on it
 
 ## Examples
@@ -705,30 +713,36 @@ script parser would see.
 After Step 1 has created `escape.bp`; one function and its tests appended below Step 1's four.
 
 **Acceptance:**
-- [ ] `escape.scriptJson(json.object([#("h", json.quote("</script><!--&"))]))` contains no `<`, `>`
-      or `&`, and `json.decode` of it equals `json.decode` of the input
-- [ ] U+2028 and U+2029 inside a string come out as ` ` and ` `
-- [ ] JSON text with none of the five characters comes out unchanged
-- [ ] the function declares no `#[@External]` cell
+- [x] `escape.scriptJson(json.object([#("h", json.quote("</script><!--&"))]))` contains no `<`, `>`
+      or `&`, and `json.decode` of it equals `json.decode` of the input — `escape.bp`'s test pins the
+      output literal; `json.bp`'s "reads escape.scriptJson's output as the same value" decodes that literal
+      and the input to the same `Json` (a std module imports no other, so the halves meet in the literal)
+- [x] U+2028 and U+2029 inside a string come out as ` ` and ` `
+- [x] JSON text with none of the five characters comes out unchanged
+- [x] the function declares no `#[@External]` cell (it composes `replaceAll`; U+2028/U+2029 come from
+      `escape.bp`'s two private separator cells, because the erlang backend truncates a `\u{2028}` literal)
 
 ### Step 13 — `Json` and `json.decode`
 
 **Acceptance:**
-- [ ] `json.decode("{\"rakun\":{\"actions\":{\"bodyLimit\":5242880},\"appDir\":\"app\"}}")` answers
+- [x] `json.decode("{\"rakun\":{\"actions\":{\"bodyLimit\":5242880},\"appDir\":\"app\"}}")` answers
       `Ok(Obj([#("rakun", Obj([#("actions", Obj([#("bodyLimit", Num(5242880.0))])), #("appDir", Str("app"))]))]))`
       — members in document order, on both targets
-- [ ] `json.decode("{\"b\":1,\"a\":2,\"1\":3}")` keeps the order `b`, `a`, `1` on commonJS as on erlang
-- [ ] `json.decode("{\"a\":1,\"a\":2}")` answers an `Error` naming the duplicate `a`
-- [ ] `json.decode("[1,2] x")`, `json.decode("")`, `json.decode("1 2")` answer an `Error`
-- [ ] `json.decode("\"\\u0041\\u00e7\\ud83d\\ude00\\b\\f\\/\"")` answers `Ok(Str("Aç😀` + U+0008 +
+- [x] `json.decode("{\"b\":1,\"a\":2,\"1\":3}")` keeps the order `b`, `a`, `1` on commonJS as on erlang
+- [x] `json.decode("{\"a\":1,\"a\":2}")` answers an `Error` naming the duplicate `a`
+- [x] `json.decode("[1,2] x")`, `json.decode("")`, `json.decode("1 2")` answer an `Error`
+- [x] `json.decode("\"\\u0041\\u00e7\\ud83d\\ude00\\b\\f\\/\"")` answers `Ok(Str("Aç😀` + U+0008 +
       U+000C + `/"))`; `"\\ud83d"` alone (an unpaired surrogate) answers an `Error`
-- [ ] a raw U+0001 inside a string literal answers an `Error`; `"\\u0001"` answers `Ok(Str(U+0001))`
-- [ ] `01`, `+1`, `.5`, `1.`, `NaN`, `Infinity` and `1e400` each answer an `Error`; `-0.5e2` answers
+- [x] a raw U+0001 inside a string literal answers an `Error`; `"\\u0001"` answers `Ok(Str(U+0001))`
+- [x] `01`, `+1`, `.5`, `1.`, `NaN`, `Infinity` and `1e400` each answer an `Error`; `-0.5e2` answers
       `Ok(Num(-50.0))`; `true`, `false`, `null` answer `Bool(true)`, `Bool(false)`, `Null`
-- [ ] for every string `s` in Step 11's table, `json.decode(json.quote(s))` is `Ok(Str(s))`, and for
+- [x] for every string `s` in Step 11's table, `json.decode(json.quote(s))` is `Ok(Str(s))`, and for
       the envelope, RPC-body and payload literals of contracts 2 and 3, `decode` answers the same
       `Json` on both targets
-- [ ] `decode` declares no `#[@External]` cell
+- [x] `decode` declares no `#[@External]` cell — the grammar, order, duplicates and escapes are botopink;
+      it calls two private conversion cells the language lacks, neither a parser: `codepointText` (a `\u`
+      escape's text) and `numeralValue` (an already-validated numeral → the host's correctly rounded
+      `strtod`; scaling digits in botopink answered a wrong `f64` for `1.7976931348623157e308`)
 
 ### Step 14 — The copies are deletable
 
@@ -748,7 +762,7 @@ that front's step:
 **Acceptance:**
 - [ ] `grep -rn "fn jsonString\|fn jsonEscape\|fn jsonStrings\|fn jsonPairs\|fn jsonTriples\|fn payloadEscape" --include=*.bp repository/`
       is empty once the fronts in the table have landed — asserted in this milestone's exit gate,
-      not by this front
+      not by this front — **open:** `rakun-validation`'s `jsonEscape` left with the member (`06-validation-lib`); rakun `ssr.bp`'s four, rakun-web's `jsonEscape` and jhonstart's are their fronts'
 
 ### Test plan (Steps 11–14)
 
@@ -760,9 +774,9 @@ cell for cell on both targets.
 
 ### Gate (Steps 11–14)
 
-- [ ] `botopink test` green in `libs/std` on commonJS and erlang
-- [ ] `libs/std/AGENTS.md`'s `json` and `escape` rows list the added names
-- [ ] no `root.bp` line changed by these steps
+- [x] `botopink test` green in `libs/std` on commonJS and erlang — 417 passed / 0 failed on each, `json` 23/0
+- [x] `libs/std/AGENTS.md`'s `json` and `escape` rows list the added names
+- [x] no `root.bp` line changed by these steps
 
 Additive: four functions, one type and one reader in `json.bp`, one function in `escape.bp`; no
 existing function changes. The consumers' switches — and the invalid JSON they stop emitting — are
