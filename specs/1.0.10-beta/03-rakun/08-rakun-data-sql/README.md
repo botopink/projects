@@ -293,74 +293,74 @@ indicator; the indicator list is not front 11's work, and the same rule holds fo
 ### Step 1 — `modules/rakun-data/` and the `DataSource` behavior
 
 **Acceptance:**
-- [ ] The module compiles with `"target": "erlang"` and its tests run
-- [ ] `DataSource` and `Connection` behaviors are declared
-- [ ] `rakun.datasource.url` selects the arm; an unknown scheme fails at boot naming the value
-- [ ] A configured driver whose module is not loadable fails at boot naming the driver — it does not fall back
+- [x] The module compiles with `"target": "erlang"` and its tests run — held: `modules/rakun-data/test/sql_datasource_test.bp` "datasource: rakun.datasource.url selects the arm" (the member's suite: 77 passed / 0 failed / 0 compile failures)
+- [x] `DataSource` and `Connection` behaviors are declared — held: `modules/rakun-data/src/datasource.bp` `DataSource` / `Connection` / `PooledDataSource implement DataSource`; `modules/rakun-data/test/sql_datasource_test.bp` "datasource: a started datasource is a DataSource with connect, close and stats"
+- [x] `rakun.datasource.url` selects the arm; an unknown scheme fails at boot naming the value — held: `modules/rakun-data/test/sql_datasource_test.bp` "datasource: an unknown scheme fails at boot naming the value"
+- [x] A configured driver whose module is not loadable fails at boot naming the driver — it does not fall back — held: `modules/rakun-data/test/sql_datasource_test.bp` "datasource: a PostgreSQL URL whose driver is not loadable fails at boot naming it, with no fallback" · "datasource: a MySQL URL whose driver is not loadable fails at boot naming it, with no fallback"
 
 ### Step 2 — The ETS arm
 
 **Acceptance:**
-- [ ] `CREATE TABLE`, `INSERT`, `SELECT … WHERE col = :p`, `ORDER BY`, `UPDATE`, `DELETE` all work
-- [ ] A statement outside the supported subset fails with a message naming the unsupported construct
-- [ ] It is selected automatically under the `test` profile with no URL configured
-- [ ] Two test blocks do not see each other's rows
+- [x] `CREATE TABLE`, `INSERT`, `SELECT … WHERE col = :p`, `ORDER BY`, `UPDATE`, `DELETE` all work — held: `modules/rakun-data/test/sql_template_test.bp` "ets: SELECT with WHERE col = :p answers the matching rows" · "ets: ORDER BY sorts numbers as numbers, ascending and descending" · "ets: UPDATE changes the matching rows and answers how many" · "ets: DELETE removes the matching rows and answers how many"
+- [x] A statement outside the supported subset fails with a message naming the unsupported construct — held: `modules/rakun-data/test/sql_template_test.bp` "ets: a statement outside the subset fails naming the unsupported construct"
+- [x] It is selected automatically under the `test` profile with no URL configured — held: `modules/rakun-data/test/sql_datasource_test.bp` "datasource: the ETS arm is selected under the test profile with no URL configured"
+- [x] Two test blocks do not see each other's rows — held: `modules/rakun-data/test/sql_template_test.bp` "ets: a test block wrapped in withRollback leaves nothing behind (2 of 2)" (isolation is `SqlTemplate.withRollback`, a transaction that always rolls back)
 
 ### Step 3 — The pool
 
 **Acceptance:**
-- [ ] The configured number of connection processes start under `rakun_pool_sup`
-- [ ] A checkout with an empty free list waits and then raises after `connection-timeout`
-- [ ] A connection process killed mid-idle is restarted and the pool returns to full size
-- [ ] A borrower that dies mid-query has its connection reclaimed and any open transaction rolled back
-- [ ] No connection is checked out until the first statement runs
-- [ ] `rkPoolStats()` reports size, in-use and waiting, and front 11 can read it
-- [ ] `bootstrap-mode=eager` (the default) fails the boot when the database is unreachable
-- [ ] `bootstrap-mode=deferred` boots with the database down and opens the first connection on the first statement
+- [x] The configured number of connection processes start under `rakun_pool_sup` — held: `modules/rakun-data/test/sql_pool_test.bp` "pool: the configured number of connection processes start under rakun_pool_sup"
+- [x] A checkout with an empty free list waits and then raises after `connection-timeout` — held: `modules/rakun-data/test/sql_pool_test.bp` "pool: a checkout with an empty free list waits and then fails after connection-timeout" · "pool: the raising surface raises when the checkout times out"
+- [x] A connection process killed mid-idle is restarted and the pool returns to full size — held: `modules/rakun-data/test/sql_pool_test.bp` "pool: a connection process killed while idle is restarted and the pool returns to full size"
+- [x] A borrower that dies mid-query has its connection reclaimed and any open transaction rolled back — held: `modules/rakun-data/test/sql_pool_test.bp` "pool: a borrower that dies mid-query has its connection reclaimed and its transaction rolled back"
+- [x] No connection is checked out until the first statement runs — held: `modules/rakun-data/test/sql_pool_test.bp` "pool: no connection is checked out until the first statement runs"
+- [x] `rkPoolStats()` reports size, in-use and waiting, and front 11 can read it — held: `modules/rakun-data/test/sql_pool_test.bp` "pool: rkPoolStats reports size, in-use and waiting" (`rkPoolStats()` / `poolStats(name)` in `src/datasource.bp`, a `pub fn` over the `PoolStats` record)
+- [x] `bootstrap-mode=eager` (the default) fails the boot when the database is unreachable — held: `modules/rakun-data/test/sql_datasource_test.bp` "bootstrap: eager (the default) fails the boot when the database is unreachable" · "bootstrap: the mode defaults to eager and an unknown mode is refused"
+- [x] `bootstrap-mode=deferred` boots with the database down and opens the first connection on the first statement — held: `modules/rakun-data/test/sql_datasource_test.bp` "bootstrap: deferred boots with the database down and opens the first connection on the first statement"
 - [ ] `bootstrap-mode=lazy` additionally excludes every `#[repository]` from front 06's eager pass
-- [ ] `deferred` under a `production` profile logs a warning naming the profile, and still boots
+- [x] `deferred` under a `production` profile logs a warning naming the profile, and still boots — held: `modules/rakun-data/test/sql_datasource_test.bp` "bootstrap: deferred under a production profile logs a warning naming the profile, and still boots"
 
 ### Step 4 — `SqlTemplate`, named parameters and `Rows`
 
 **Acceptance:**
-- [ ] `:name` binds from a `Param` of the same name
-- [ ] The same `:name` used twice binds once and is passed once
-- [ ] A `:name` with no `Param` fails naming the name; an unused `Param` fails naming it too
-- [ ] A parameter value containing `'; DROP TABLE users; --` is bound as a value and changes nothing
-- [ ] `single` on an empty result answers `null`, and on two rows fails naming the statement
-- [ ] `query` raises on a driver error and `tryQuery` returns `Error(reason)` for the same input
-- [ ] `Row.int` on a non-numeric column fails naming the column, rather than answering 0
+- [x] `:name` binds from a `Param` of the same name — held: `modules/rakun-data/test/sql_template_test.bp` "params: :name binds from the Param of the same name, in first-appearance order" · `sql_query_test.bp` "query: a named parameter binds by name and the statement is emitted verbatim"
+- [x] The same `:name` used twice binds once and is passed once — held: `modules/rakun-data/test/sql_template_test.bp` "params: the same :name used twice binds once and is passed once" · `sql_query_test.bp` "query: the same name used twice binds once and is passed once"
+- [x] A `:name` with no `Param` fails naming the name; an unused `Param` fails naming it too — held: `modules/rakun-data/test/sql_template_test.bp` "params: a :name with no Param fails naming it, and so does an unused Param"
+- [x] A parameter value containing `'; DROP TABLE users; --` is bound as a value and changes nothing — held: `modules/rakun-data/test/sql_template_test.bp` "params: a hostile value is bound as a value and changes nothing" · `sql_query_test.bp` "query: a hostile value is bound as a value and changes nothing"
+- [x] `single` on an empty result answers `null`, and on two rows fails naming the statement — held: `modules/rakun-data/test/sql_template_test.bp` "template: single answers null on no row and fails naming the statement on two"
+- [x] `query` raises on a driver error and `tryQuery` returns `Error(reason)` for the same input — held: `modules/rakun-data/test/sql_template_test.bp` "template: query raises on a driver error and tryQuery answers Error for the same input"
+- [x] `Row.int` on a non-numeric column fails naming the column, rather than answering 0 — held: `modules/rakun-data/test/sql_template_test.bp` "rows: Row.int reads a number and fails naming a non-numeric column rather than answering 0"
 
 ### Step 5 — `#[query]`
 
 **Acceptance:**
-- [ ] `#[query("SELECT …")]` emits `__rkQuery_<name>()` returning the statement verbatim
-- [ ] It registers the statement, and `rkRegisteredQueries()` lists it
-- [ ] An empty statement, an unknown leading keyword, and a `'` adjacent to a placeholder each fail the build with a located message
-- [ ] `#[query]` on a non-method fails at comptime
-- [ ] Two methods of the same name in one module fail the build on the duplicate helper
+- [x] `#[query("SELECT …")]` emits `__rkQuery_<name>()` returning the statement verbatim — held: `modules/rakun-data/test/sql_query_test.bp` "query: #[query] emits __rkQuery_<name>() returning the statement verbatim"
+- [x] It registers the statement, and `rkRegisteredQueries()` lists it — held: `modules/rakun-data/test/sql_query_test.bp` "query: every #[query] statement is registered and rkRegisteredQueries lists it" (registration is a module-body `val`: on erlang it runs for a module whose body runs — see the compiler findings in AGENTS.md)
+- [x] An empty statement, an unknown leading keyword, and a `'` adjacent to a placeholder each fail the build with a located message — held: `modules/rakun-data/test/sql_build_test.bp` "build: an empty #[query] statement fails at the method" · "build: an unknown leading keyword fails naming it" · "build: a quote next to a placeholder fails as the concatenation smell"
+- [x] `#[query]` on a non-method fails at comptime — held: `modules/rakun-data/test/sql_build_test.bp` "build: #[query] on a type fails at comptime"
+- [x] Two methods of the same name in one module fail the build on the duplicate helper — held: `modules/rakun-data/test/sql_build_test.bp` "build: two #[query] methods of one name in one module fail on the duplicate helper" (the refusal is erlc's `function '__rkQuery_<name>'/0 already defined`, so it surfaces where erlc runs — `botopink test` / `run`; `botopink build` does not run erlc and exits 0)
 
 ### Step 6 — Transactions
 
 **Acceptance:**
-- [ ] `sql.transaction({ tx -> … })` commits when the thunk returns
-- [ ] It rolls back when the thunk raises, and the raise propagates
-- [ ] Two statements inside one transaction are both visible or neither is
-- [ ] A nested `transaction` inside an open one joins it — one commit, not two
-- [ ] `#[transactional]` on a service emits `<Type>Tx` with one method per public method
-- [ ] Injecting `<Type>Tx` gets the transactional path; injecting `<Type>` gets the bare one
-- [ ] `#[noTransaction]` on one method emits a plain forward
-- [ ] `#[transactional]` on an enum-shaped `type` fails at comptime
-- [ ] `REQUIRES_NEW` and `NESTED` are rejected with a message saying they are not implemented — not accepted and ignored
+- [x] `sql.transaction({ tx -> … })` commits when the thunk returns — held: `modules/rakun-data/test/sql_query_test.bp` "query: sql.transaction commits when the thunk returns"
+- [x] It rolls back when the thunk raises, and the raise propagates — held: `modules/rakun-data/test/sql_query_test.bp` "query: sql.transaction rolls back when the thunk raises, and the raise propagates" · "query: a raise inside the proxy rolls back and the raise propagates"
+- [x] Two statements inside one transaction are both visible or neither is — held: `modules/rakun-data/test/sql_query_test.bp` "query: two statements in one transaction are both visible or neither is"
+- [x] A nested `transaction` inside an open one joins it — one commit, not two — held: `modules/rakun-data/test/sql_query_test.bp` "query: a nested transaction joins the open one with a single commit" · "query: a nested transaction inside the proxy joins it with a single commit"
+- [x] `#[transactional]` on a service emits `<Type>Tx` with one method per public method — held: `modules/rakun-data/test/sql_query_test.bp` "query: a transactional proxy call is wrapped in begin and commit" (every REFLECTED method is forwarded: `Method` carries no visibility, so a private one is forwarded too; a parameter whose type reflection loses is refused — `sql_build_test.bp` "build: a parameter whose type reflection loses is refused naming it")
+- [x] Injecting `<Type>Tx` gets the transactional path; injecting `<Type>` gets the bare one — held: `modules/rakun-data/test/sql_query_test.bp` "query: injecting the Tx proxy gets the transaction and injecting the bare type does not"
+- [x] `#[noTransaction]` on one method emits a plain forward — held: `modules/rakun-data/test/sql_query_test.bp` "query: noTransaction emits a plain forward"
+- [x] `#[transactional]` on an enum-shaped `type` fails at comptime — held: `modules/rakun-data/test/sql_build_test.bp` "build: #[transactional] on an enum-shaped type fails at comptime"
+- [x] `REQUIRES_NEW` and `NESTED` are rejected with a message saying they are not implemented — not accepted and ignored — held: `modules/rakun-data/test/sql_build_test.bp` "build: REQUIRES_NEW is refused as not implemented" · "build: NESTED is refused as not implemented" · `sql_query_test.bp` "query: REQUIRES_NEW and NESTED are refused at run time too, never ignored" (the method marker is `#[propagation("…")]`)
 
 ### Step 7 — Futures and health
 
 **Acceptance:**
-- [ ] `await sql.queryAsync(…)` returns the same rows as `sql.query(…)`
-- [ ] A raise inside an async query surfaces at the `await`
-- [ ] Two async queries from one request run concurrently and both complete
-- [ ] `#[healthIndicator("db")]` answers `UP` with a reachable database and `DOWN` with the reason otherwise
-- [ ] The indicator appears in front 11's health report without front 11 knowing about SQL
+- [x] `await sql.queryAsync(…)` returns the same rows as `sql.query(…)` — held: `modules/rakun-data/test/sql_template_test.bp` "async: await queryAsync answers the same rows as query"
+- [x] A raise inside an async query surfaces at the `await` — held: `modules/rakun-data/test/sql_template_test.bp` "async: a raise inside an async query surfaces at the await"
+- [x] Two async queries from one request run concurrently and both complete — held: `modules/rakun-data/test/sql_template_test.bp` "async: two async queries from one request run concurrently and both complete"
+- [x] `#[healthIndicator("db")]` answers `UP` with a reachable database and `DOWN` with the reason otherwise — held: `modules/rakun-data/test/sql_health_test.bp` "health: db answers UP with the arm and the liveness statement when the database is reachable" · "health: db answers DOWN with the reason when the database is unreachable"
+- [x] The indicator appears in front 11's health report without front 11 knowing about SQL — held: `modules/rakun-data/test/sql_health_test.bp` "health: the db indicator is registered with the actuator contract without the host knowing SQL" (through `registerDbHealth()`: the decorator's module-body registration does not run for a library module on erlang — compiler finding in AGENTS.md)
 
 ## Examples
 
@@ -425,14 +425,14 @@ reading a counter the pool maintains for the test's benefit.
 
 ## Definition of done
 
-- [ ] `modules/rakun-data/` exists with a manifest, a root module, `datasource.bp`, `src/sql/**` and
-      the sidecar
-- [ ] The ETS arm passes the whole suite with no external service
-- [ ] A configured-but-unloadable driver fails at boot instead of falling back
+- [x] `modules/rakun-data/` exists with a manifest, a root module, `datasource.bp`, `src/sql/**` and
+      the sidecar — held: `modules/rakun-data/botopink.json`, `src/root.bp`, `src/datasource.bp`, `src/sql/{mod,params,rows,template,query,transactional,health}.bp`, `src/sidecars/rakun_sql.erl`
+- [x] The ETS arm passes the whole suite with no external service — held: `modules/rakun-data/test/*` — 77 passed / 0 failed / 0 compile failures, no database
+- [x] A configured-but-unloadable driver fails at boot instead of falling back — held: `modules/rakun-data/test/sql_datasource_test.bp` "datasource: the boot reads rakun.datasource.* and refuses a configured driver it cannot load"
 - [ ] Named parameters, `#[query]`, the pool and local transactions all behave as the acceptance lists
       state
-- [ ] `#[transactional]` emits a proxy, and both the proxy and the bare type are injectable
-- [ ] `REQUIRES_NEW` and `NESTED` are rejected rather than ignored
-- [ ] The `db` health indicator registers with front 11
+- [x] `#[transactional]` emits a proxy, and both the proxy and the bare type are injectable — held: `modules/rakun-data/test/sql_query_test.bp` "query: injecting the Tx proxy gets the transaction and injecting the bare type does not"
+- [x] `REQUIRES_NEW` and `NESTED` are rejected rather than ignored — held: `modules/rakun-data/test/sql_build_test.bp` "build: REQUIRES_NEW is refused as not implemented"
+- [x] The `db` health indicator registers with front 11 — held: `modules/rakun-data/test/sql_health_test.bp` "health: the db indicator is registered with the actuator contract without the host knowing SQL"
 - [ ] `repository/rakun/AGENTS.md` documents the repository shape decided here, and front 09 follows it
-- [ ] The front's tests are green on its assigned target
+- [x] The front's tests are green on its assigned target — held: `botopink test` in `modules/rakun-data/` (erlang) — 77 passed / 0 failed / 0 compile failures
