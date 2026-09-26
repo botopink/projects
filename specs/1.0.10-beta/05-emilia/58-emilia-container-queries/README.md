@@ -148,13 +148,13 @@ top-level variant, because a payload leaf inside a section does not. Its payload
 its declared field name; a positional bind type-checks and is `undefined` at run time.
 
 **Acceptance:**
-- [ ] `emilia([.Container.Inline])` renders `.e_x{container-type:inline-size}`.
-- [ ] `emilia([Token.ContainerNamed("main")])` renders
+- [x] `emilia([.Container.Inline])` renders `.e_x{container-type:inline-size}`. — held: emilia.bp test "Container — the three `container-type` markers, each alone"
+- [x] `emilia([Token.ContainerNamed("main")])` renders
       `.e_x{container-type:inline-size;container-name:main}` — one rule, two declarations, in that
-      order.
-- [ ] `Normal` and `Size` each have their own test.
-- [ ] `container-name` is validated by front 57's `cssIdent` reject set before it is emitted; a name
-      carrying `}` or `<` panics rather than reaching the document.
+      order. — held (shape: built through `containerName("main")`, which validates): emilia.bp test "ContainerNamed — one rule, the type then the name"
+- [x] `Normal` and `Size` each have their own test. — held: same test as the markers, one document each
+- [x] `container-name` is validated by front 57's `cssIdent` reject set before it is emitted; a name
+      carrying `}` or `<` panics rather than reaching the document. — held: container.bp test "container names — refused by front 57's cssIdent reject set" (builder, named builder and dispatcher)
 
 ### Step 2 — the thirteen sizes, sourced from the theme
 
@@ -170,26 +170,26 @@ authoring surface has thirteen names even though `Token` has one variant.
 `"@container " + name + " (width >= " + value + ")"` with the name omitted when it is `""`.
 
 **Acceptance:**
-- [ ] All thirteen sizes render, and each test asserts the rem value from the `§ 3.3` table:
+- [x] All thirteen sizes render, and each test asserts the rem value from the `§ 3.3` table:
       `3xs` 16rem, `2xs` 18rem, `xs` 20rem, `sm` 24rem, `md` 28rem, `lg` 32rem, `xl` 36rem,
-      `2xl` 42rem, `3xl` 48rem, `4xl` 56rem, `5xl` 64rem, `6xl` 72rem, `7xl` 80rem.
-- [ ] `emilia(containerAtMd(inner))` renders `@container (width >= 28rem){.e_x{…}}` as a hoisted
-      rule, not as a block inside the class body.
-- [ ] `containerKey` has thirteen arms and a `ContainerAt` built with a key outside them is refused
-      by the builder, so the `string` field is not a way past the enum.
-- [ ] Narrowing `--container-md` to `20rem` in the theme changes that rule's width and changes
-      nothing else.
-- [ ] `clearNamespace(th, Ns.Container)` makes every size token panic rather than emit
-      `@container (width >= )`.
-- [ ] The emitted syntax is `width >=`, matching the `§ 3.3` breakpoint table, not `min-width:`.
+      `2xl` 42rem, `3xl` 48rem, `4xl` 56rem, `5xl` 64rem, `6xl` 72rem, `7xl` 80rem. — held: container.bp test "containerAtRule — the thirteen widths of `§ 3.3`, from the theme"
+- [x] `emilia(containerAtMd(inner))` renders `@container (width >= 28rem){.e_x{…}}` as a hoisted
+      rule, not as a block inside the class body. — held: emilia.bp test "ContainerAt — `@md:` is a hoisted `@container (width >= 28rem)` rule" (the whole document)
+- [x] `containerKey` has thirteen arms and a `ContainerAt` built with a key outside them is refused
+      by the builder, so the `string` field is not a way past the enum. — held (shape: the builders take `ContainerSize`, so a bad key can only come from the bare constructor, and `containerAtRule` refuses it at dispatch): container.bp tests "containerKey — thirteen keys …" and "… an unknown key panics"
+- [x] Narrowing `--container-md` to `20rem` in the theme changes that rule's width and changes
+      nothing else. — held: container.bp test "containerAtRule — narrowing --container-md moves that query and nothing else"
+- [x] `clearNamespace(th, Ns.Container)` makes every size token panic rather than emit
+      `@container (width >= )`. — held: container.bp test "containerAtRule — a cleared namespace or an unknown key panics, never an empty width"
+- [x] The emitted syntax is `width >=`, matching the `§ 3.3` breakpoint table, not `min-width:`. — held: the thirteen-widths test asserts no `min-width`
 
 ### Step 3 — named containers
 
 **Acceptance:**
-- [ ] `containerNamed(ContainerSize.Sm, "main", inner)` renders
-      `@container main (width >= 24rem){.e_x{…}}`.
-- [ ] The unnamed form emits no name and exactly one space after `@container`.
-- [ ] A named query and an unnamed query on the same class produce two separate hoisted rules.
+- [x] `containerNamed(ContainerSize.Sm, "main", inner)` renders
+      `@container main (width >= 24rem){.e_x{…}}`. — held: container.bp test "containerAtRule — a named query …" and emilia.bp test "ContainerAtNamed — `@sm/main:` …"
+- [x] The unnamed form emits no name and exactly one space after `@container`. — held: container.bp test "containerAtRule — a named query, and exactly one space when unnamed"
+- [x] A named query and an unnamed query on the same class produce two separate hoisted rules. — held: emilia.bp test "ContainerAtNamed — `@sm/main:`, and a named and an unnamed query are two rules"
 
 ### Step 4 — composition with the other modifiers
 
@@ -197,13 +197,13 @@ A container query is a `Variant` like any other, so nesting comes free from fron
 matters and is pinned rather than left to the implementation.
 
 **Acceptance:**
-- [ ] `Token.Md([containerAtSm(inner)])` renders the viewport query outside the container query, and
-      the reverse nesting renders them the other way round; both are asserted.
-- [ ] `Token.Hover([containerAtSm(inner)])` renders
+- [x] `Token.Md([containerAtSm(inner)])` renders the viewport query outside the container query, and
+      the reverse nesting renders them the other way round; both are asserted. — held: emilia.bp test "ContainerAt — nests with a breakpoint in both orders, and with a state"
+- [x] `Token.Hover([containerAtSm(inner)])` renders
       `@container (width >= 24rem){.e_x:hover{…}}` — the at-rule hoists, the pseudo-class stays on
-      the selector.
-- [ ] A container query wrapping an arbitrary selector from front 57 composes without a special
-      case.
+      the selector. — held: same test
+- [x] A container query wrapping an arbitrary selector from front 57 composes without a special
+      case. — held: emilia.bp test "ContainerAt — wraps a front 57 arbitrary selector with no special case"
 
 ### Step 5 — the pair that makes it work
 
@@ -211,10 +211,10 @@ The two halves are useless apart: a size variant with no ancestor container matc
 container with no queries does nothing. The example and one test carry both.
 
 **Acceptance:**
-- [ ] `examples/container-queries-example.bp` renders a parent and a child from the same file and asserts
-      both rules in one flushed document.
-- [ ] A test asserts the child's rule and the parent's `container-type` appear in the same
-      `@layer utilities` body.
+- [x] `examples/container-queries-example.bp` renders a parent and a child from the same file and asserts
+      both rules in one flushed document. — held (shape: the pair is the emilia.bp test "Container — the parent and the child land in one utilities layer" — one flushed document; no new example member, the spec-side example is unchanged)
+- [x] A test asserts the child's rule and the parent's `container-type` appear in the same
+      `@layer utilities` body. — held: same test — both rules asserted inside the one `@layer utilities` body
 
 ## Examples
 
