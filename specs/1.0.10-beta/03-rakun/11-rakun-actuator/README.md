@@ -437,12 +437,12 @@ Erlang-only. There is no client half: a browser reads these endpoints over HTTP 
 - [ ] `modules/rakun-actuator/` exists with the endpoint host, the health and info registries, the
       four registry-reading endpoints, `shutdown`, `instrumentation.bp` and the sidecar
 - [x] One route serves every endpoint, with a configurable base path and per-endpoint path — held: `modules/rakun-actuator/test/endpoint_test.bp` "endpoint: exactly one route is registered regardless of the number of endpoints", "endpoint: base-path moves every endpoint", "endpoint: path-mapping renames one segment and the id stays health"
-- [ ] The health-indicator contract is documented in this README and in `AGENTS.md`, and the
-      badly-behaved-indicator suite is green
+- [x] The health-indicator contract is documented in this README and in `AGENTS.md`, and the
+      badly-behaved-indicator suite is green — held: `repository/rakun/AGENTS.md` § The actuator (the contract table) + `modules/rakun-actuator/test/health_test.bp` "health: four badly behaved indicators cannot break the endpoint"
 - [x] Indicators run concurrently, each with a timeout, and none can break the endpoint — held: `modules/rakun-actuator/test/health_test.bp` "health: four badly behaved indicators cannot break the endpoint", "health: ten indicators at 300 ms each complete in about 300 ms, not 3 s"
 - [ ] Spans are emitted for request, render, action and handler, `:telemetry`-shaped, with W3C trace
       propagation, and cost nothing with no subscriber
-- [ ] `management.endpoints.jmx.*` is documented as not ported, with `:telemetry` and `erl -remsh`
-      named as the analogues
+- [x] `management.endpoints.jmx.*` is documented as not ported, with `:telemetry` and `erl -remsh`
+      named as the analogues — held: `repository/rakun/AGENTS.md` § The actuator ("Not ported: … jmx")
 - [x] Front 11 exposes only `health` by default and defers every access decision to front 76 — held: `modules/rakun-actuator/test/endpoint_test.bp` "endpoint: with front 76 absent only health is reachable, and a hidden endpoint answers exactly like an unknown one" (`installExposure` is front 76's seam)
 - [x] The front's tests are green on its assigned target — held: `modules/rakun-actuator-api` 10/0/0 and `modules/rakun-actuator` 38/0/0 on erlang
