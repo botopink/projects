@@ -421,63 +421,63 @@ Create the module (`botopink.json` with `"target": "erlang"`, `src/root.bp`), th
 `Filter` behavior, `Chain`, `#[filter]`, `#[order]`, and `rakun_chain:run/6`.
 
 **Acceptance:**
-- [ ] `modules/rakun-web/` compiles and its tests run under `botopink test --target erlang`
-- [ ] With rakun-web absent from a build, request handling is byte-identical to front 04's
-- [ ] Three filters with orders −10, 0, 10 run in that order on the way in and the reverse on the way out
-- [ ] Two filters with the same order run in registration order
-- [ ] A filter that does not call `chain.next` short-circuits and the handler never runs
-- [ ] A filter may read the response the chain returned and answer a different one
-- [ ] `#[filter]` on a non-type fails at comptime with a located message
+- [x] `modules/rakun-web/` compiles and its tests run under `botopink test --target erlang` — held: `count.sh modules/rakun-web erlang` 104/0
+- [x] With rakun-web absent from a build, request handling is byte-identical to front 04's — held: `modules/rakun/src/sidecars/rakun_runtime.erl` `dispatch_http/5` — `rakun_chain:run/6` absent → the direct `handle/6` call (code; no cell reaches it)
+- [x] Three filters with orders −10, 0, 10 run in that order on the way in and the reverse on the way out — held: `test/middleware_test.bp` "three filters at -10, 0 and 10 run in that order in and the reverse out"
+- [x] Two filters with the same order run in registration order — held: `test/middleware_test.bp` "two entries at the same order run in registration order"
+- [x] A filter that does not call `chain.next` short-circuits and the handler never runs — held: `test/middleware_test.bp` "a filter that does not call chain.next short-circuits…"
+- [x] A filter may read the response the chain returned and answer a different one — held: `test/middleware_test.bp` "a filter may read the response the chain returned…"
+- [x] `#[filter]` on a non-type fails at comptime with a located message — held: `src/convention.bp` `filter` — `decl.fail("#[filter] must annotate a type")` (code; a compile failure has no cell)
 
 ### Step 2 — `middleware.bp` and `Next`
 
 **Acceptance:**
-- [ ] `#[middleware]` on `pub fn middleware(req, chain)` registers one entry at order −50
-- [ ] It runs after the built-in entries and before an application `#[filter]` with default order
-- [ ] `Next.redirect("/login")` answers 307 with `Location: /login` and the handler never runs
-- [ ] `Next.permanentRedirect` answers 308
-- [ ] `Next.rewrite("/other")` reaches `/other`'s handler with the original URL unchanged in `req.path`
-- [ ] `Next.pass()` and `chain.next(req)` produce identical responses for the same request
-- [ ] The status-0 sentinel never appears on the wire under any of the above
-- [ ] `#[matcher("/dashboard/:path*")]` restricts the entry; a non-matching path skips it entirely
-- [ ] the matcher and the CORS preflight both go through `routing`'s `matchPattern`; `grep -rn "fn matcherMatches\|fn routeMatches\|fn checkMatcher" modules/rakun-web/src` is empty
-- [ ] Two `#[middleware]` functions in one build fail at boot naming both — there is one middleware entry point
+- [x] `#[middleware]` on `pub fn middleware(req, chain)` registers one entry at order −50 — held: `test/decorators_test.bp` "#[middleware] registers one entry at -50 with its matcher"
+- [x] It runs after the built-in entries and before an application `#[filter]` with default order — held: `test/middleware_test.bp` "it runs after a built-in and before an application filter"
+- [x] `Next.redirect("/login")` answers 307 with `Location: /login` and the handler never runs — held: `test/middleware_test.bp` "redirect answers 307 with Location…"
+- [x] `Next.permanentRedirect` answers 308 — held: `test/middleware_test.bp` "permanentRedirect answers 308"
+- [x] `Next.rewrite("/other")` reaches `/other`'s handler with the original URL unchanged in `req.path` — held: `test/middleware_test.bp` "rewrite reaches the other handler with the original URL unchanged"
+- [x] `Next.pass()` and `chain.next(req)` produce identical responses for the same request — held: `test/middleware_test.bp` "pass() and chain.next(req) produce identical responses"
+- [x] The status-0 sentinel never appears on the wire under any of the above — held: `test/middleware_test.bp` "the status-0 sentinel never reaches the wire"
+- [x] `#[matcher("/dashboard/:path*")]` restricts the entry; a non-matching path skips it entirely — held: `test/middleware_test.bp` "a non-matching path skips the entry entirely"
+- [x] the matcher and the CORS preflight both go through `routing`'s `matchPattern`; `grep -rn "fn matcherMatches\|fn routeMatches\|fn checkMatcher" modules/rakun-web/src` is empty — held: `src/middleware.bp` `matcherAdmits` and `src/filter.bp` `routeAdmits` call `matchPattern`; the grep is empty
+- [x] Two `#[middleware]` functions in one build fail at boot naming both — there is one middleware entry point — held: `test/middleware_test.bp` "two #[middleware] functions fail naming both"
 
 ### Step 3b — `withHeader`
 
 **Acceptance:**
-- [ ] `withHeader(res, "X-A", "1")` produces exactly one `X-A: 1` on the wire
-- [ ] Two `withHeader` calls with the same name, in any case spelling (`x-a` and `X-A`), produce one line carrying the second value
-- [ ] `withHeaders` applies a list in order, with the same replace-by-name rule between its own entries
-- [ ] The returned `Response` is the one passed in — `withHeader(res, …).status == res.status` and `.body == res.body`
-- [ ] `withHeader(res, "Vary", "Origin")` after the compression entry set `Accept-Encoding` yields one `Vary` line carrying both tokens, deduplicated
-- [ ] `withHeader(res, "Set-Cookie", …)` fails at boot naming front 62's list API — it never silently sets one cookie
-- [ ] A list of three cookie lines from front 62's `endRequest` is written as three `Set-Cookie` lines
-- [ ] A front that sets no header produces the same bytes as today
+- [x] `withHeader(res, "X-A", "1")` produces exactly one `X-A: 1` on the wire — held: `test/middleware_test.bp` "one call produces exactly one line"
+- [x] Two `withHeader` calls with the same name, in any case spelling (`x-a` and `X-A`), produce one line carrying the second value — held: `test/middleware_test.bp` "a second call with the same name in any case spelling replaces the first"
+- [x] `withHeaders` applies a list in order, with the same replace-by-name rule between its own entries — held: `test/middleware_test.bp` "a pair list applies in order with the same replace rule"
+- [x] The returned `Response` is the one passed in — `withHeader(res, …).status == res.status` and `.body == res.body` — held: `test/middleware_test.bp` "the returned Response is the one passed in"
+- [x] `withHeader(res, "Vary", "Origin")` after the compression entry set `Accept-Encoding` yields one `Vary` line carrying both tokens, deduplicated — held: `test/middleware_test.bp` "Vary is unioned, deduplicated, not replaced"
+- [x] `withHeader(res, "Set-Cookie", …)` fails at boot naming front 62's list API — it never silently sets one cookie — held: `test/middleware_test.bp` "Set-Cookie is refused by name…" (refusal names `writeCookies(blob)`)
+- [x] A list of three cookie lines from front 62's `endRequest` is written as three `Set-Cookie` lines — held: `test/middleware_test.bp` "three lines from endRequest are written as three Set-Cookie lines"
+- [x] A front that sets no header produces the same bytes as today — held: `test/middleware_test.bp` "a front that sets none produces no head at all"
 
 ### Step 3 — CORS
 
 **Acceptance:**
-- [ ] With no policy, no CORS header is ever set
-- [ ] A simple request from an allowed origin gets `Access-Control-Allow-Origin` echoing that origin, not `*`
-- [ ] A request from a non-allowed origin gets no CORS header and the handler still runs
-- [ ] An `OPTIONS` preflight is answered by the CORS entry with `Allow-Methods`, `Allow-Headers` and `Max-Age`, and the handler does not run
-- [ ] A preflight for a path with no route answers 404
-- [ ] `allowCredentials: true` with `allowedOrigins: ["*"]` fails at boot naming the combination
-- [ ] `Vary: Origin` is set whenever the response depends on the origin
-- [ ] `#[crossOrigin]` on a controller overrides the global policy for that controller's routes only
+- [x] With no policy, no CORS header is ever set — held: `test/cors_test.bp` "with no policy, no CORS header is ever set"
+- [x] A simple request from an allowed origin gets `Access-Control-Allow-Origin` echoing that origin, not `*` — held: `test/cors_test.bp` "a simple request from an allowed origin echoes that origin…"
+- [x] A request from a non-allowed origin gets no CORS header and the handler still runs — held: `test/cors_test.bp` "a non-allowed origin gets no CORS header and the handler still runs"
+- [x] An `OPTIONS` preflight is answered by the CORS entry with `Allow-Methods`, `Allow-Headers` and `Max-Age`, and the handler does not run — held: `test/cors_test.bp` "an allowed preflight answers 204…" + "max-age, allowed headers and exposed headers…"
+- [x] A preflight for a path with no route answers 404 — held: `test/cors_test.bp` "a preflight for a path with no route answers 404"
+- [x] `allowCredentials: true` with `allowedOrigins: ["*"]` fails at boot naming the combination — held: `test/cors_test.bp` "the wildcard with credentials fails at boot naming the combination"
+- [x] `Vary: Origin` is set whenever the response depends on the origin — held: `test/cors_test.bp` asserts `Vary: Origin` on allowed, refused and preflight responses
+- [x] `#[crossOrigin]` on a controller overrides the global policy for that controller's routes only — held: `test/decorators_test.bp` "#[crossOrigin] registers a mapping keyed by the #[route] prefix" + `test/cors_test.bp` "a mapping applies to its controller's paths and to no others"
 
 ### Step 4 — Problem details and advice
 
 **Acceptance:**
-- [ ] `raiseProblem("order.not-found", "no order 42")` with a matching `#[exceptionHandler]` answers that handler's `ProblemDetail`
-- [ ] The response content type is `application/problem+json`
+- [x] `raiseProblem("order.not-found", "no order 42")` with a matching `#[exceptionHandler]` answers that handler's `ProblemDetail` — held: `test/error_test.bp` "a tagged raise with a matching handler answers that handler's ProblemDetail"
+- [x] The response content type is `application/problem+json` — held: `test/error_test.bp` "a problem response carries application/problem+json"
 - [ ] A `detail` carrying U+0001 and a `"` yields a body std's `json.decode` answers `Ok` for; `grep -n "fn jsonEscape" modules/rakun-web/src/error.bp` is empty
-- [ ] An unmatched raise answers 500 with `about:blank`, a digest, and no reason text in the body
-- [ ] The digest appears in the log line for the same request
-- [ ] Two advice types both contribute; a tag registered twice fails at boot naming both
-- [ ] `rakun.web.problemdetails.enabled=true` fills an empty-bodied 404 from `Response.notFound()` with the standard shape; with it off, the body stays empty
-- [ ] A handler's own `Response` with a body is never rewritten
+- [x] An unmatched raise answers 500 with `about:blank`, a digest, and no reason text in the body — held: `test/error_test.bp` "an unmatched tagged raise answers 500 with about:blank, a digest, and no reason"
+- [x] The digest appears in the log line for the same request — held: `test/error_test.bp` "the digest in the body is the digest in the log line"
+- [x] Two advice types both contribute; a tag registered twice fails at boot naming both — held: `test/error_test.bp` "two advice types both contribute" + "a tag registered twice fails naming both owners"
+- [x] `rakun.web.problemdetails.enabled=true` fills an empty-bodied 404 from `Response.notFound()` with the standard shape; with it off, the body stays empty — held: `test/error_test.bp` "problemdetails.enabled fills an EMPTY-bodied 404 and leaves it empty when off"
+- [x] A handler's own `Response` with a body is never rewritten — held: `test/error_test.bp` "a handler's own 4xx WITH a body is never rewritten, property or not"
 
 ### Step 5 — Static error pages
 
@@ -611,16 +611,16 @@ convention has no client half — front 27's `Link` prefetch reads the route tab
 
 ## Definition of done
 
-- [ ] `modules/rakun-web/` exists with a manifest, a root module, the five source files and the chain
-      sidecar
-- [ ] One chain, two entry points, with the documented order band and a test that asserts the whole
-      sequence
-- [ ] `withHeader`/`withHeaders` ship, replace by name case-insensitively, merge `Vary`, and refuse `Set-Cookie`
-- [ ] CORS defaults deny, and `*` with credentials fails at boot
-- [ ] Problem details are RFC 9457-shaped, `application/problem+json`, and never carry a raw reason
+- [x] `modules/rakun-web/` exists with a manifest, a root module, the five source files and the chain
+      sidecar — held: `modules/rakun-web/botopink.json`, `src/root.bp`, `src/{filter,error,middleware,cors,convention}.bp`, `src/sidecars/rakun_chain.erl`
+- [x] One chain, two entry points, with the documented order band and a test that asserts the whole
+      sequence — held: `test/middleware_test.bp` "the order band is one table and every built-in sits in it"
+- [x] `withHeader`/`withHeaders` ship, replace by name case-insensitively, merge `Vary`, and refuse `Set-Cookie` — held: `test/middleware_test.bp` withHeader/withHeaders/Vary/Set-Cookie cells
+- [x] CORS defaults deny, and `*` with credentials fails at boot — held: `test/cors_test.bp` "the default denies every origin" + "the wildcard with credentials fails at boot…"
+- [x] Problem details are RFC 9457-shaped, `application/problem+json`, and never carry a raw reason — held: `test/error_test.bp` "the defaults are RFC 9457's" + "…no reason" + "application/problem+json"
 - [ ] `Accept` and `Accept-Encoding` are both negotiated with q-values; `br` is refused rather than faked
 - [ ] No `Server` header by default
 - [ ] Shutdown awaits front 76's `readinessDrained()`, drains, then hands to front 06 — in that order,
       asserted by two recorded timestamps
-- [ ] `repository/rakun/AGENTS.md` documents the order band and the two entry points
-- [ ] The front's tests are green on its assigned target
+- [x] `repository/rakun/AGENTS.md` documents the order band and the two entry points — held: `repository/rakun/AGENTS.md` § The filter chain (order band table, two entry points)
+- [x] The front's tests are green on its assigned target — held: `count.sh modules/rakun-web erlang` 104/0
