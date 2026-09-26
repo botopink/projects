@@ -90,13 +90,6 @@ depth. The `dobros` example prints `2 4 … 18 20` on all four.
 `reject/for_over_condition.bp`, `reject/generator_loop_{use,await,break_outer}.bp`,
 `reject/prefixed_loop_break_outer.bp`, `reject/yield_label_loop.bp`, `reject/continue_outside_loop.bp`.
 
-## Closed
-
-- [x] wasm: `run/generator_break_value.bp` — `0127` / `1` / `56`. The eager scope did yield; what
-      was wrong is `ends()`'s bare `break` at the body's own level, which wasm dropped (`12`). It
-      now ends the generator (`wat.zig` `emitGenEnd`); the line left
-      `expected-failures.txt`, and the cell is green on all four targets.
-
 ## Notes
 
 - Decision 105 supersedes decisions 52 and 55 for the statement forms; decision 53 (`...` inclusive

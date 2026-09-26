@@ -1,7 +1,7 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
 **Two questions are open** (lg-a, lg-b). Implementation choices wait for the maintainer to confirm or reverse them:
-front 24's (24-a…c, 24-g), `01-std`'s (01std-a, 01std-c…e), `00 · 23-std-purity`'s (23-a…c), front 95's
+front 24's (24-a…c, 24-g), `01-std`'s (01std-a, 01std-c…e, std-a…c), `00 · 23-std-purity`'s (23-a…c), front 95's
 (95-a…e), `00 · 16-formatter`'s (16-a…b), track C's (26-a, 27-a, 30-b…e, 31-a), `00 · 04-js` /
 `05-wasm`'s (0405-b), `00 · 01-checker`'s (01c-a…b),
 track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…e) and the host methods' (lem-a…f). Two
@@ -163,6 +163,58 @@ maintainer confirms or reverses each.
 > **Recommendation.** (a).
 > **Blocks.** Nothing.
 
+## Front 01-std (std's open rows) — choices made in implementation, to confirm
+
+Decided by the std rows (`querystring`, `fs.exists`, `throwsWith`, decision 110's use side) so the
+rows could close; the maintainer confirms or reverses each.
+
+### std-a · `querystring` refuses by `Error`, in both directions, with two parsers
+
+> **Raised by:** `01-std` — the `querystring` row
+> **Measured.** rakun's 03r-e keeps a component that is malformed or decodes to a control character
+> *as written* (`decodeComponent("%0A") == "%0A"`). `querystring.parse` / `parseForm` answer
+> `@Result<Array<#(string, string)>, string>` and refuse instead: "a `%` not followed by two hex
+> digits", "an escape sequence that is not UTF-8", "a control character" (U+0000–U+001F, U+007F, raw)
+> and "an escape that decodes to a control character". `stringify` answers `@Result<string, string>`
+> and refuses a control character, so every text it writes is one `parse` reads back. `parse` is the
+> RFC 3986 query (`+` stays `+`, a leading `?` stripped); `parseForm` is the form flavour (`+` is a
+> space, nothing stripped). Identical on commonJS, erlang and beam (`libs/std/src/querystring.bp`'s
+> fourteen tests; the beam run by hand); wasm refuses the host cells at the call.
+> **Options.** (a) as implemented; (b) 03r-e's keep-as-written in `parse`, `stringify` infallible;
+> (c) one `parse` taking the flavour as a parameter.
+> **Recommendation.** (a) — the restrictive reading (decision 67): a component that cannot be read is
+> not read, and an input the codec's own reader refuses is not written.
+> **Blocks.** rakun's `splitQuery` / `encodeQuery` moving onto `querystring` (the rakun front's).
+
+### std-b · `fs.exists` follows a symbolic link
+
+> **Raised by:** `01-std` — the `fs.exists` row
+> **Measured.** `fs.exists` is a `stat` on both targets now (`existsSync` / `file:read_file_info`):
+> `/`, `/dev/null`, a file and a directory are `true` on commonJS and erlang (`io/fs.bp`'s "fs.exists
+> is true for a path of any kind"). A link whose target is missing is `false` on both — the answer a
+> read through it gives.
+> **Options.** (a) follow the link (implemented); (b) `lstat` — a dangling link exists as a link.
+> **Recommendation.** (a): the question a caller asks before reading is whether the read can find
+> something.
+> **Blocks.** Nothing.
+
+### std-c · Decision 110's folder namespace is a rewrite of the parsed program
+
+> **Raised by:** `00 · 23-std-purity` step 6
+> **Measured.** `comptime/std_namespace.zig` rewrites `io.fs.f()` after `import {io} from "std"`
+> into the namespace of `io/fs` bound as `__bp_ns_io_fs` (the item `io.fs as __bp_ns_io_fs` added),
+> and `collections.Dict` after `import {collections}` into `Dict` (the item `collections.Dict`
+> added) — the leaf forms the checker and four backends already lower. Only the modules the program
+> reaches are imported, so STD-001 checks those and not all of `io/`. A member that names nothing
+> (`io.nope.f()`) is refused as `unbound variable 'io'` at the use, and a module declaring its own
+> top-level `Dict` keeps `collections.Dict` unrewritten (refused the same way). A local named like
+> the folder (`fn f(io: …)`) is not told apart from it.
+> **Options.** (a) the rewrite (implemented); (b) a namespace type in the checker and a lowering of
+> `a.b.f()` in each of the four backends.
+> **Recommendation.** (a) — one file, no backend change; (b) only if a diagnostic naming the folder
+> ("std folder `io` has no module `nope`") is wanted.
+> **Blocks.** Nothing; 23-a's option (b) is this.
+
 ## Front 01-checker — choices made in implementation, to confirm
 
 Decided by `00 · 01-checker` so its steps could land; the
@@ -215,7 +267,9 @@ tree could land; the maintainer confirms or reverses each.
 > **Options.** (a) the leaf form is the spelling (implemented; decision 111's own example imports
 > `collections: {Dict, Set, Queue}`); (b) teach the checker and the four codegens
 > `module.Type.fn()` — the same use-side path decision 110's folder namespace needs.
-> **Recommendation.** (a) now, (b) with decision 110 (23 step 6, open): one change covers both.
+> **Recommendation.** (a) now, (b) with decision 110 (23 step 6): one change covers both.
+> **(b) landed** — 23 step 6: `collections.Dict.empty()` after `import {collections}` runs on the four
+> targets (`modules/import_std_type_through_module`; the mechanism is std-c).
 > **Blocks.** Nothing.
 
 ### 23-b · `base64`'s four functions are retired, not aliased

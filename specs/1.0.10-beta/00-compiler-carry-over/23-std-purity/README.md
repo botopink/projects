@@ -2,8 +2,8 @@
 
 **Track:** compiler (carry-over item **C-31**) — the compiler half is the import grammar and the
 loader; the library half is `libs/std`
-**Priority:** high — the tree and the import grammar are in; what is left is decision 110/111's use
-side (step 6), the namespace-qualified constructor, `docs.md`'s grammar and the gate's open rows.
+**Priority:** high — the tree, the import grammar and decisions 110/111's use side (step 6) are in;
+what is left is the gate's open rows.
 **Depends on:** [`01-std`](../../01-std/README.md) lands new std modules at their final path in this
 tree. Shares `parser/decls.zig` with [`21-effect-chain`](../21-effect-chain/README.md).
 **Owns:** `parser/decls.zig`'s `parseImportItem` (the grouped form) · `ast.zig`'s `ImportPath` if
@@ -30,11 +30,11 @@ otherwise.
 ## Current state
 
 std is the tree below; the import grammar is decision 107's. The purity refusal is in `infer.zig`
-(`std-root-imports-io`). Open: the use side of decisions 110 and 111 (step 6) — `as` on a type leaf
-(`import-alias-on-type` still refuses it), a folder leaf as a namespace of its submodules
-(`import {io} from "std"; io.fs.readText(p)` is `unknown "std" module`), and
-`collections.Dict.empty()` after `import {collections}` (`unbound variable 'collections'`,
-`decisions-pending.md` 23-a).
+(`std-root-imports-io`). Decisions 110 and 111's use side (step 6): `as` binds a type leaf as a
+checker-local name; a folder leaf is a namespace of its submodules (`import {io} from "std";
+io.fs.readText(p)`), and a module namespace reaches its types (`collections.Dict.empty()`) — both
+rewritten by `comptime/std_namespace.zig` into the one-dot forms before the checker and the backends
+see the module (`decisions-pending.md` std-c).
 
 ## Mechanism — decisions [106](../../decisions-taken.md#106-std-in-three-categories-a-pure-root-io-and-testing) and [107](../../decisions-taken.md#107-import-a-dotted-path-and-a-braced-group-are-one-tree-and-only-the-leaf-enters-scope)
 
@@ -182,9 +182,8 @@ The tree above; inline tests travel with their functions.
       `testing/mod.bp` three
 - [x] decision 111: `Dict.empty()`, `Set.empty()` / `Set.fromList(xs)`, `Queue.empty()` /
       `Queue.fromList(xs)` are type-scoped and compile on all four backends when the type is
-      imported as a leaf (`import {collections.Dict}`, `collections: {Dict, Set}`) — **open:** the
-      namespace-qualified spelling `collections.Dict.empty()` after `import {collections}` is
-      `unbound variable 'collections'` in the checker (`decisions-pending.md` 23-a)
+      imported as a leaf (`import {collections.Dict}`, `collections: {Dict, Set}`), and through the
+      namespace (`collections.Dict.empty()` after `import {collections}`, step 6)
 
 ### Step 4 — the purity refusal
 
@@ -234,12 +233,18 @@ module namespace is the same use-side path as 110's rule 2. `project_graph.zig` 
 namespace), `comptime/infer.zig` (type alias; `ns.Type.fn()`), the hover and diagnostic renderers.
 
 **Acceptance:**
-- [ ] `import {collections.Dict as D} from "std"; val d: D<string, i32> = D.empty();` compiles on
+- [x] `import {collections.Dict as D} from "std"; val d: D<string, i32> = D.empty();` compiles on
       four targets and hovers `D` = `Dict`; `import-alias-on-type` is gone and
-      `reject/import_alias_on_type.bp` with it
-- [ ] `import {io} from "std"; io.fs.readText(p)` resolves (today `unknown "std" module`)
-- [ ] `import {collections} from "std"; collections.Dict.empty()` resolves on four targets (today
-      `unbound variable 'collections'`)
+      `reject/import_alias_on_type.bp` with it — `tests/language/modules/import_alias_on_type` and
+      `import_std_type_through_module` run on commonJS, erlang, beam and wasm; the hover card of `D`
+      reads `D = Dict` (`language-server` "hover: a std type imported under an alias hovers as the
+      declared type"); no `import-alias-on-type` and no `reject/import_alias_on_type.bp` is left
+- [x] `import {io} from "std"; io.fs.readText(p)` resolves — `io.fs.exists("/")` runs on commonJS
+      and erlang; `modules/import_std_folder_namespace` (`io.clock` through the folder) runs on
+      commonJS, erlang and beam and is refused on wasm by STD-001 as `import {io.clock}` is
+- [x] `import {collections} from "std"; collections.Dict.empty()` resolves on four targets —
+      `modules/import_std_type_through_module` (`Dict`, `Set`, `Queue` through the namespace, beside
+      `collections.lt()`) on commonJS, erlang, beam and wasm
 
 ## Gate
 

@@ -50,4 +50,4 @@ neither.
 ## Closed
 
 - [x] `run/generator_break_value.bp` on wasm — green: a bare `break` at a generator body's own level
-      ends it ([`22-loops`](../22-loops/README.md)).
+      ends it (`wat.zig` `emitGenEnd`); the cell prints its `.out` on commonJS, erlang, wasm and beam

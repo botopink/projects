@@ -121,7 +121,7 @@ private cells in the `io/fs.bp` shape and writes `dirname`/`join` inline over `S
 | `readFile(p) -> @Result<string, string>` | `fs.readFileSync(p, 'utf8')` in an IIFE try/catch | `file:read_file/1` |
 | `writeFile(p, text) -> @Result<i32, string>` | `fs.mkdirSync(dirname, {recursive: true}); fs.writeFileSync(p, text)` | `filelib:ensure_dir/1` + `file:write_file/2` |
 | `removeFile(p) -> @Result<i32, string>` | `fs.rmSync(p, {force: true})` | `file:delete/1`, `enoent` is `ok` |
-| `exists(p) -> bool` | `fs.existsSync(p)` | `filelib:is_file/1` |
+| `exists(p) -> bool` | `fs.existsSync(p)` | `file:read_file_info/1` (a path of any kind) |
 
 Two more private cells serve the engine's own tests: `removeTree` and `tmpDir`. Private, so STD-001
 does not fire and `import {testing.snapshots} from "std"` type-checks on beam and wasm; the four
