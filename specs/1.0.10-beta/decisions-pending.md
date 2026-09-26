@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e). Every other question this milestone raised is answered in
+**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e) and the `01-checker` ones (01c-…). Every other question this milestone raised is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 91, 92, 93 and 97 by decisions 103 and 104, 99 by 108,
 94, 100 and 101 by 113; every number up to 117 is answered — 114 answers the eight seams decision 113 left open, 115 the five points 114 left open, 116 nine more pieces two libraries both run, 117 the nine points 113–116 left, and 118–127 register the maintainer's effect revision (the return type is the annotation, `@Task<T>`, only `@Result` fails, `@Iterator<T>` / `@Stream<T>`, `async { }`, `iter` / `stream` loops, no compatibility mode — front `00 · 24-effects-by-return`), and 128 merges `@Use<C, T>` and `@Component<T>` into `@Component<C, T>`. The next free number is **130**.
 
@@ -236,6 +236,27 @@ maintainer confirms or reverses each.
 > writer can never produce a disagreeing pair, so one that arrives was not written by it.
 > **Options.** (a) refuse it (implemented, decision 67); (b) read `n` and ignore `redirect`.
 > **Recommendation.** (a).
+> **Blocks.** Nothing.
+
+## Front 01-checker — choices made in implementation, to confirm
+
+Decided by `00 · 01-checker` (worktree `.tasks/01-checker`, 2026-09-26) so its steps could land; the
+maintainer confirms or reverses each. Numbered `01c-a` … so they do not collide with the decisions.
+
+### 01c-a · A comptime module's atom keeps the compiler's `bp` namespace and adds the owner's path
+
+> **Raised by:** `00 · 01-checker` / C-01 (13 half 1 step 5's last box), 2026-09-26
+> **Measured.** 13's README wrote the target atom as `jhonstart@html__tpl__html__<hash>` — the owning
+> package's namespace — before decision 109 made every atom start with its package and before the
+> comptime node became shared by every package of a build. The owner's path now reaches the
+> evaluator (compiler `89ac5cdf`, `Env.comptimeOwners`); the owner's *package* does not reach
+> `comptime/**` at all — `crossModule.Packages` is set by the driver on the codegen config.
+> **Options.** (a) `bp@comptime@<owner path>__tpl__<decl>__<hash>` — the compiler's reserved package,
+> the owner as path (implemented; decodes to package `bp`, path `comptime/<owner>`); (b)
+> `<owner package>@<owner path>__tpl__<decl>__<hash>` — needs `Packages` threaded into inference, and
+> puts content-addressed scratch in the same namespace as the modules the package ships.
+> **Recommendation.** (a): no user atom can ever meet it (`manifest` refuses `bp`), the file is named,
+> and the hash keeps its content-addressing.
 > **Blocks.** Nothing.
 
 ## Open

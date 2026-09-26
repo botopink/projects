@@ -616,13 +616,16 @@ Touches two literals plus two test assertions (`codegen/tests/comptime_module.zi
 
 **Acceptance:**
 - [x] `zig build test` green with `snapshots/comptime/**` byte-identical
-- [ ] A template evaluation's module atom names its file and its template:
-      `jhonstart@html__tpl__html__<hash>`, not `template_<hash>` — **half**: the atom names the
-      template (`bp@comptime__tpl__html__<hash>`, `erlDeclAtom(comptime_owner, .tpl, …)`) but not
-      the file, because the owning module's path does not reach `buildModule`: the evaluator is
-      handed the `FnDecl` and the template registry of `src/comptime.zig` records no owner, so
-      threading it needs `env.TemplateEvalCtx` in `src/comptime/env.zig` and `src/comptime.zig`
-      — **01's, beyond this front's carve-out** (`template_eval.zig`, `comptime_owner`'s comment)
+- [x] A template evaluation's module atom names its file and its template:
+      `bp@comptime@jhonstart@html__tpl__html__<hash>`, not `template_<hash>` — closed by 01
+      (compiler `89ac5cdf`): `Env.comptimeOwners` records the declaring module's path keyed by the
+      declaration's body address (the declaring module in `registerFnSignatures`, an importer in
+      `comptime.zig` `resolveImports`), and `template_eval.ownerId` renders it under the compiler's
+      own `bp` namespace, so the atom decodes to package `bp`, path `comptime/<owner>`. The namespace
+      stays `bp` rather than the owner's package (the module is content-addressed scratch shared by
+      every package of a build) — recorded as `decisions-pending.md` 01c-a. Measured on
+      `tests/language/modules/local_dependency`:
+      `.botopinkbuild/tmp/template/bp@comptime@shapesdsl@shapesdsl__tpl__shapesdsl__<hash>.erl`
 - [x] Re-evaluating an identical body still yields the identical atom (content-addressing intact)
       — the Wyhash of the generated code is the hash segment, unchanged (`template_eval.zig` test
       at `buildModule`)

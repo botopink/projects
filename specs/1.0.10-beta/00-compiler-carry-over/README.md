@@ -96,7 +96,8 @@ prototype *is* the identity, so half 3 has nothing to do there beyond step 19's 
 test until a value knows its declaration; today two records with the same fields are `==` on erlang.
 02 and 03's tails (C-07), 14's step 3 (C-20), 17's modes (C-10) and 09's erlang re-run (C-17) all
 stand behind it, which is why decision 62 released it before the backends closed.
-**Partial work:** none of steps 8–19. `.tasks/identity` (`fix/identity-halves`) holds C-03. Half 1
+**Partial work:** steps 8–19 landed (`cbd5f1ec`, `a8087490`, audited `def58473`/`e2da8408`); the
+comptime atom's file half of step 5 landed with 01 (`89ac5cdf`). `.tasks/identity` (`fix/identity-halves`) holds C-03. Half 1
 (`ModuleId`, `erlDeclAtom`, the collision check, the flat layout, the runner) is in `feat`; step 7 (the
 `-pa` runner) was closed by it.
 **Depends on:** C-03 lands first in the same file (it is one predicate; sequencing it avoids a
@@ -105,30 +106,39 @@ re-record on top of a re-record); 01's N19–N22 for steps 17–18 are landed.
 + 73 beam — **354 cell-writes over 210 distinct files, 144 written twice**, the milestone's largest
 movement. Zero RUN LOGs should move in steps 14–16; a RUN LOG that moves is a defect found, verified by
 running. 142 new atoms ecosystem-wide; +0.372 ns per `call_ext`.
-**Acceptance** (from the front's README and policy 3 §9):
-- [ ] a fixture emitting two files per `.bp` on erlang; commonJS output byte-identical (step 8)
-- [ ] two types in one file both declaring `greet/1` compile and both run on erlang and beam;
+**Acceptance** (from the front's README and policy 3 §9). Re-verified 2026-09-26 by `01-checker`
+against `13-module-identity/README.md`, whose every box but one is ticked with its commit (halves
+2–3 audited at `def58473` and `e2da8408`); the language suite at `ffe2db69` runs the identity cells
+green (799 / 28 / 0, no `13 step` line left). The last piece of 13's half 1 — the comptime atom
+naming its file — is 01's compiler `89ac5cdf`:
+- [x] a fixture emitting two files per `.bp` on erlang; commonJS output byte-identical (step 8)
+- [x] two types in one file both declaring `greet/1` compile and both run on erlang and beam;
       `recordMethodAtom`, `record_method_collisions`, `isRecordMethodCollision`, `interfaceAssocAtom`
       **deleted, not bypassed** (steps 9–10)
 - [ ] a behavior consumed by three modules has exactly one emitted copy; `libs/std` green on erlang and
       beam (step 10); an imported type's method links to `<package>@<path>@@<Decl>` (decision 109) and executes (step 11);
-      `beam_export_audit.sh` green at its new total (step 12)
-- [ ] the 188 classified: which gained a module, which local call became `call_ext`, which RUN LOG
+      `beam_export_audit.sh` green at its new total (step 12) — **all but the first clause hold**
+      (`13-module-identity/README.md` half 2, audited `def58473`); the one-copy clause is answered
+      by decision 23 (a behavior emits nothing, so its associated fn is copied per consumer) and
+      reopens only with that decision
+- [x] the 188 classified: which gained a module, which local call became `call_ext`, which RUN LOG
       changed — none should (step 13)
-- [ ] `typeAtom`/`variantAtom` with unit tests and the `__v__` decoder clause; two declarations
+- [x] `typeAtom`/`variantAtom` with unit tests and the `__v__` decoder clause; two declarations
       rendering the same atom is a located diagnostic (step 14)
-- [ ] two types with identical fields are `!=`, executed; two enums sharing a variant name both `case`,
+- [x] two types with identical fields are `!=`, executed; two enums sharing a variant name both `case`,
       executed; an imported type constructed in a consumer carries the **owner's** atom; the erlang and
       beam cells re-recorded and classified one by one (steps 15–16)
-- [ ] `x is Point`, `x is Option.Some(v)`, `case` over `Person | Car` with no `_` — cells on erlang and
+- [x] `x is Point`, `x is Option.Some(v)`, `case` over `Person | Car` with no `_` — cells on erlang and
       beam, their `expected-failures.txt` lines gone (3 `13 step 15/17` lines today); erlang, beam and
       commonJS agree (step 17)
-- [ ] `@print(Point(x: 1, y: 2))` → `Point(x: 1, y: 2)`, `@print(Shape.Circle(radius: 4))` →
+- [x] `@print(Point(x: 1, y: 2))` → `Point(x: 1, y: 2)`, `@print(Shape.Circle(radius: 4))` →
       `Shape.Circle(radius: 4)` on erlang and beam, `Display` consulted, nested too — the six
-      `run/{display_print,print_formatter,type_identity_print}.bp` lines of 02/03/05 gone (step 18)
-- [ ] the invariant as a test, one cell per backend: two values carry the same identity iff they were
+      `run/{display_print,print_formatter,type_identity_print}.bp` lines of 02/03/05 gone (step 18) —
+      one wasm line stays, `wasm | run/display_print.bp`, re-attributed to `05-wasm` (the record
+      prints; the nested `Display` text is wasm's own)
+- [x] the invariant as a test, one cell per backend: two values carry the same identity iff they were
       built by the same declaration
-- [ ] `scripts/gate.sh --cold` green; `test-libs` at baseline; `AGENTS.md` of `src/codegen/` updated
+- [x] `scripts/gate.sh --cold` green; `test-libs` at baseline; `AGENTS.md` of `src/codegen/` updated
 
 ## C-02 — An index is a method call
 
