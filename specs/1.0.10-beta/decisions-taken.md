@@ -2642,3 +2642,31 @@ Implements: front [`24-effects-by-return`](./00-compiler-carry-over/24-effects-b
 steps E1 (`Component<C, T> extends Task`, `Use` removed), E2 (`@Use` → `effect-type-removed`), E3
 (the `use` gate and the component-is-called refusal keyed on `T: @Context<C>`), E6 (the two codemod
 rows) and E8 (the spec examples).
+
+## 136. A primitive receiver answers only the methods it declares
+
+**Decided 2026-09-26 by the maintainer**, answering pending 0203-a with option (b). A method call on
+a builtin-primitive receiver (`string`, `T[]`, `bool`, the integer and float widths) is legal only
+when the receiver's interface in `primitives.bp` — or one it `extends` — declares it: a `fn` method,
+a `val` field, the `len` / `size` spellings of `length`, or a method an `extend` block on the type
+adds. Anything else is refused on every target:
+
+- **`unknown-primitive-method`**, located at the method name: `` `string` has no method `fooBar` ``.
+- **A near name is suggested.** The declared method whose `#[@External.Node("<name>")]` host
+  spelling is the name written comes first (`"abc".toUpperCase()` → *did you mean `toUpper`?*),
+  then one an edit away (`xs.lenght()` → `length`).
+- **A host spelling is not a method.** `#[@External.Node("toUpperCase")]` says how commonJS lowers
+  `toUpper`; it adds no name to the language. The backend aliases that answered the host spelling
+  leave: erlang / beam's `primNodeAliasIn` and its two call sites (0203-a (a)), and wasm's
+  `toUpperCase` / `toLowerCase` rows of `primCallRes` and `lowerStringMethod`.
+
+It used to type as a fresh variable and reach the host under the name written: `"x".fooBar()`
+checked, commonJS answered `toUpperCase` because it is JavaScript's own, wasm answered both
+spellings and erlang emitted `toUpperCase/1 undefined` — three answers for one program. Decision 67:
+refuse.
+
+Implements: front [`01-checker`](./00-compiler-carry-over/01-checker/README.md), compiler `9dfeedf6`
+(`refuseUndeclaredPrimMethod` in `comptime/infer.zig`; `reject/primitive_method_undeclared`,
+`reject/primitive_method_unknown`; `test/string_case_conversion` re-spelled `toUpper` /
+`toLower`). `primNodeAliasIn` exists only on `feat` after this front's base; it is deleted when the
+front merges `feat`.
