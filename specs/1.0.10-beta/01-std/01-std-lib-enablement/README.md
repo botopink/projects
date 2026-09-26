@@ -740,9 +740,8 @@ After Step 1 has created `escape.bp`; one function and its tests appended below 
       the envelope, RPC-body and payload literals of contracts 2 and 3, `decode` answers the same
       `Json` on both targets
 - [x] `decode` declares no `#[@External]` cell — the grammar, order, duplicates and escapes are botopink;
-      it calls two private conversion cells the language lacks, neither a parser: `codepointText` (a `\u`
-      escape's text) and `numeralValue` (an already-validated numeral → the host's correctly rounded
-      `strtod`; scaling digits in botopink answered a wrong `f64` for `1.7976931348623157e308`)
+      it calls one private conversion cell the language lacks, not a parser: `codepointText` (a `\u`
+      escape's text); a numeral becomes its correctly rounded `f64` in botopink (decision 142)
 
 ### Step 14 — The copies are deletable
 

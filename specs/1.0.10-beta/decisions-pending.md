@@ -1,14 +1,15 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
 **None open.** Implementation choices wait for the maintainer to confirm or reverse them: six of
-front 24's (24-a…c, 24-e…g), five `01-std` ones (01std-a…e), three of `00 · 23-std-purity` (23-a…c),
+front 24's (24-a…c, 24-e…g), four `01-std` ones (01std-a, 01std-c…e), three of `00 · 23-std-purity` (23-a…c),
 five of front 95's (95-a…e), two of `00 · 16-formatter` (16-a…b), track C's (26-a, 27-a, 30-b…e, 31-a),
 `00 · 04-js` / `05-wasm`'s (0405-a…b) `00 · 02-erlang` / `03-beam`'s (0203-a), track D's (05emilia-a…h) and `libs-external-methods`' (lem-a…f). Every question
 this milestone raised is answered in [`decisions-taken.md`](./decisions-taken.md) — up to 128 as
 before; 129 the type-alias details, 130 front 24's open point 8 (a failing render's `E`), 131 its open
 point 7 and 24-d (no migration routine), 132 and 133 the formatter's 16-d and 16-c, 134 and 135 front
-24's two documentation boxes; 139 answers 30-a (a `pub val` crosses modules), 140 0203-b (no run-time template
-evaluation on beam). The next free number is **141**.
+24's two documentation boxes; 140 answers 30-a (a `pub val` crosses modules), 141 0203-b (no run-time template
+evaluation on beam), 142 01std-b (`json.decode` converts numerals in botopink). The next free
+number is **143**.
 
 This file stays because the fronts will fill it again. A front that meets a question it cannot answer
 from the code writes it here rather than guessing, in the shape the others used:
@@ -152,22 +153,6 @@ maintainer confirms or reverses each.
 > beside `std_package.zig`, replaced by CLI and LSP unit tests.
 > **Blocks.** Nothing; `00 · 23-std-purity` step 3 rewrites `stdPkgFilesFromRoot` beside the new
 > `bundledPkgFiles` and should keep `std` out of the latter.
-
-### 01std-b · `json.decode` converts a validated numeral through the host's `strtod`
-
-> **Raised by:** `01-std-lib-enablement` Step 13, 2026-09-26
-> **Measured.** The language has no text → float conversion and no integer → float one. Scaling the
-> digits by powers of ten in botopink is identical on both targets but not correctly rounded
-> (`1.7976931348623157e308` came out a different `f64`). `binary_to_float` and `Number` of the same
-> canonical `-?D+.D+e-?D+` spelling agree bit for bit and are correctly rounded; overflow is an
-> `Error` on both, underflow `0.0` on both.
-> **Options.** (a) the grammar in botopink, the conversion through a private cell `numeralValue`
-> (implemented; `decode` itself declares no cell); (b) pure botopink, correctly rounded only within
-> the fast-path range (≤ 15 significant digits, |exponent| ≤ 22); (c) a `f64.parse` in the language.
-> **Recommendation.** (a) now, (c) later — the Step 13 box "`decode` declares no `#[@External]` cell"
-> is read as "no parser template"; four private conversion cells remain in `json.bp`
-> (`codePointsOf`, `textsOf`, `codepointText`, `numeralValue`).
-> **Blocks.** Nothing.
 
 ### 01std-c · `routing.pattern`'s empty pattern matches only `/`
 

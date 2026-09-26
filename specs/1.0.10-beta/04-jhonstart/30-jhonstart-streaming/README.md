@@ -624,7 +624,7 @@ pub behavior RenderPlugin {
 
 **Acceptance:**
 - [x] `globals.payload == "__bp0"`, `globals.fill == "__bp1"` and `globals.signal == "__bp2"`,
-      derived from the registry's declaration order, on both targets — `test/render_test.bp` "render: the three globals come from the registry's declaration order" (`globals.payload`, one `pub val` — decision 139)
+      derived from the registry's declaration order, on both targets — `test/render_test.bp` "render: the three globals come from the registry's declaration order" (`globals.payload`, one `pub val` — decision 140)
 - [x] no `__bp` literal appears in `render.bp`, `streaming.bp` or `render.mjs` outside the registry
       — the render and the client read the same names
 - [ ] `render.mjs`'s fill function, registered under `globals.fill`, is idempotent: calling it twice

@@ -658,7 +658,7 @@ each costed, one recommended.
 - [x] superseded by landing it (compiler `8333aaab`, `front/02-03-erlang-beam`): the structural block
       — nothing in the compiler read Erlang — went away with front 14's `comptime/runtime/wat/erl_parse.zig`
       and `comptime/runtime/beam/lower.zig`, which BR5 reuses; no beam snapshot carries
-      `'__bp_erl_eval'`, and decision 140 deleted it: every shipped template lowers and a refused one
+      `'__bp_erl_eval'`, and decision 141 deleted it: every shipped template lowers and a refused one
       is a located build error (`src/codegen/beam/AGENTS.md` has the counts and the cost). The parked
       `wip/br5-beam-templates` branch (an 836-line second Erlang parser) is obsolete — the maintainer's
       to delete

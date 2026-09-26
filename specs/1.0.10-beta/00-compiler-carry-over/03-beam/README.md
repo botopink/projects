@@ -153,7 +153,7 @@ array_zip_via_external_node_template             bool_instance_default_fn_method
 ```
 
 **Acceptance:**
-- [x] no `'__bp_erl_eval'` left in any beam snapshot, and none in the compiler: the comptime runtime's Erlang reader (`wat/erl_parse.zig`) and BEAM lowering (`beam/lower.zig`) compile every shipped template (177 / 177), a refused one is a located build error (decision 140)
+- [x] no `'__bp_erl_eval'` left in any beam snapshot, and none in the compiler: the comptime runtime's Erlang reader (`wat/erl_parse.zig`) and BEAM lowering (`beam/lower.zig`) compile every shipped template (177 / 177), a refused one is a located build error (decision 141)
 - [x] every RUN LOG unchanged — 15 beam snapshots (both trees) re-record `.S` only, compared RUN LOG by RUN LOG
 - [x] `scripts/beam_export_audit.sh` still assembles every module (475/475 at `8333aaab`)
 - [x] the measured cost re-measured and the note updated: 0.25–0.39 µs per loop iteration through the compiled helper against 0.24–0.34 written directly (1.06–1.16×), was 5.722 against 0.113 (50.6×)

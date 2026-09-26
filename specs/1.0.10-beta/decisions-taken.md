@@ -76,8 +76,9 @@ what was left, now `00-compiler-carry-over`'s order),
 | [133](#133-a-trailing-comma-keeps-a-list-in-its-open-form) | Does a trailing comma still open a list? | Yes — the author's explicit request; amends 65 part 2 |
 | [134](#134-every-example-in-the-guide-and-in-docsmd-is-correct-against-the-compiler) | Guide examples that do not type | Fixed in the text; three checker gaps closed by `01-checker`; decision 117's decorator check written in jhonstart |
 | [135](#135-specs-keep-only-what-still-holds) | Closed fronts spelling removed forms | Condensed to their current outcome; removed spellings only in the record and the removed-names tables |
-| [139](#139-a-module-level-pub-val-crosses-modules-and-an-imported-modules-body-runs-first) | A `pub val` of a record imported from a sibling (30-a) | Readable on every backend, of any type; the imported modules' bodies run before the importer's, dependencies first, each once; jhonstart reads `globals.fill` from one `pub val globals` |
-| [140](#140-the-beam-lowering-takes-every-construct-the-templates-use-and-nothing-evaluates-erlang-at-run-time) | A template the BEAM lowering refuses (0203-b) | (c): `receive`, `!`, `catch E`, `try … of`, `try … after` and integer-field binary patterns lowered; `'__bp_erl_eval'/2` deleted — a refused template is a located build error |
+| [140](#140-a-module-level-pub-val-crosses-modules-and-an-imported-modules-body-runs-first) | A `pub val` of a record imported from a sibling (30-a) | Readable on every backend, of any type; the imported modules' bodies run before the importer's, dependencies first, each once; jhonstart reads `globals.fill` from one `pub val globals` |
+| [141](#141-the-beam-lowering-takes-every-construct-the-templates-use-and-nothing-evaluates-erlang-at-run-time) | A template the BEAM lowering refuses (0203-b) | (c): `receive`, `!`, `catch E`, `try … of`, `try … after` and integer-field binary patterns lowered; `'__bp_erl_eval'/2` deleted — a refused template is a located build error |
+| [142](#142-jsondecode-converts-a-numeral-exactly-in-botopink) | `json.decode`'s numeral through the host `strtod` (01std-b) | (b), made exact: a correctly rounded decimal → `f64` in botopink (fast path + big-integer quotient, ties to even); no host cell left for it |
 
 ## 68. One milestone, the 1.0.9 numbers kept, the drafts deleted
 
@@ -2813,7 +2814,7 @@ the table of removed names: this file, and the removed-names table of `guide.md`
 Implements: front 24's closeout — fronts 19, 20, 21 and 22, front 24's README, guide and status,
 `decisions-pending.md` and `status.md` rewritten to the current state.
 
-## 139. A module-level `pub val` crosses modules, and an imported module's body runs first
+## 140. A module-level `pub val` crosses modules, and an imported module's body runs first
 
 **Decided 2026-09-26 by the maintainer** (pending item 30-a): option (b) — module-level values, not
 the `globals()` function. The question was only open because a `pub val` of a record type imported
@@ -2842,7 +2843,7 @@ Implements: compiler (`commonJS.zig`, `erlang.zig`, `beam_asm.zig`, `wat.zig`, `
 `tests/language/modules/pub_val_across_modules` on all four targets, jhonstart `globals.bp` and its
 four readers; the `language-gaps.md` rows on a `pub val` of a user type.
 
-## 140. The BEAM lowering takes every construct the templates use, and nothing evaluates Erlang at run time
+## 141. The BEAM lowering takes every construct the templates use, and nothing evaluates Erlang at run time
 
 **Decided 2026-09-26 by the maintainer** (pending item 0203-b): option (c), and then the run-time
 path goes. `comptime/runtime/beam/lower.zig` — the lowering the comptime BEAM runtime and the beam
@@ -2868,4 +2869,29 @@ Implements: compiler (`beam/lower.zig`, `wat/erl_parse.zig`, `wat/lower.zig` ref
 read-only constructs, `beam_asm.zig`, `asm_text.zig`); `codegen/tests/beam_templates.zig` (every
 shipped template lowers), `program.zig`'s `erlc`-comparison module for each construct,
 `tests/language/run/external_template_refused_on_beam`.
+
+## 142. `json.decode` converts a numeral exactly, in botopink
+
+**Decided 2026-09-26 by the maintainer** (pending item 01std-b): option (b), without its limit — the
+conversion is botopink's own and correctly rounded for every numeral, not only in the fast-path
+range. `libs/std/src/json.bp`'s `numeralValue` reads the validated numeral's digits and exponent from
+the document and answers the `f64` nearest to its exact decimal value, ties to even:
+
+- Clinger's fast path when it is exact — at most 15 significant digits and a decimal exponent in
+  -22…22: the digits and the power of ten are exact `f64`s, so one operation rounds once;
+- otherwise the exact fraction of big integers (15-bit limbs in `Array<i32>`, every product below
+  2^31 on every target): the binary exponent chosen for a 53-bit quotient (the subnormal grid below
+  2^-1022), the quotient found by shift-and-subtract, the remainder rounding it;
+- the `f64` assembled with no integer → float conversion — the quotient's bits accumulate into an
+  `f64`, exact power-of-two multiplications scale it — so no primitive was missing and no host cell
+  remains for it.
+
+An overflow keeps the refusal (`number overflows f64`); a value below half the least subnormal is
+`0.0`. Measured: bit-identical to the host `strtod` for every tested value — the std test's
+boundaries (`1.7976931348623157e308` and the halfway point above it, `5e-324` and the halfway point
+below it, `2.2250738585072014e-308` and the largest subnormal, `0.1`, `1e23`, `9007199254740993`,
+the fast path's edges, overflowing and vanishing exponents) and 3 500 randomized numerals including
+halfway points, on commonJS and erlang.
+
+Implements: `libs/std/src/json.bp` and its test, `libs/std/AGENTS.md`.
 
