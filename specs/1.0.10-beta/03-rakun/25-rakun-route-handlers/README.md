@@ -10,7 +10,7 @@ reaches an `onze` app
 **Depends on:** 22 (route table and the `R` registration cell), 06 (scopes), 62 (request context —
 `cookies()`, `headers()`, `after()`), 07 (the filter chain a handler runs inside), 23 (the shared
 dispatch entry), 30 (the flush primitive streaming reuses), 01 (percent-decoding for form bodies)
-**Owns:** `repository/rakun/src/route_handler.bp`, `repository/rakun/test/route_handler_test.bp`
+**Owns:** `repository/rakun/modules/rakun-app/src/route_handler.bp`, `repository/rakun/modules/rakun-app/test/route_handler_test.bp`
 **Does not touch:** `repository/rakun/src/http.bp`, `src/decorators.bp`, `src/bootstrap.bp`,
 `src/runtime.mjs` (frozen), and the files owned by 22 · 23 · 24. It declares no host cell of its own:
 registration goes through front 22's `rkAppRegisterHandler`, which is why this front has no `.erl`

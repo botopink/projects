@@ -13,10 +13,10 @@ imported here. The two halves are named below and neither is optional
 **Depends on:** 22 (the route table), 23 (the renderer), 62 (the definition of dynamic), 12 (the store
 the prerendered entries live in), 03 (content hash), 02 (unstarted tasks, for the build fan-out),
 01 (`path.walk`, `path.glob`, `fs`, `clock`)
-**Owns:** `repository/rakun/src/static_gen.bp`, `repository/rakun/src/segment_config.bp`,
-`repository/rakun/src/sidecars/rakun_static_gen.erl`,
-`repository/rakun/test/static_gen_test.bp`, `repository/rakun/test/segment_config_test.bp`, two
-`pub mod` lines in `repository/rakun/src/root.bp`, and `routeKinds()` (Step 6's server half); the
+**Owns:** `repository/rakun/modules/rakun-app/src/static_gen.bp`, `repository/rakun/modules/rakun-app/src/segment_config.bp`,
+`repository/rakun/modules/rakun-app/src/sidecars/rakun_static_gen.erl`,
+`repository/rakun/modules/rakun-app/test/static_gen_test.bp`, `repository/rakun/modules/rakun-app/test/segment_config_test.bp`, two
+`pub mod` lines in `repository/rakun/modules/rakun-app/src/root.bp`, and `routeKinds()` (Step 6's server half); the
 codec file `libs/routing/src/route_kinds.bp` is `01-std/04-routing-lib`'s, written to Step 6's
 format
 **Does not touch:** `repository/rakun/src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`,

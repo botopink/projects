@@ -225,11 +225,26 @@ The moves and fusions above, by `git mv` where a file survives (fronts 01/02/03 
 directory `mod.bp`s; `absolutePath`, `walk`, `glob` and `randomBytes` re-homed; inline tests travel
 with their functions.
 
-**Acceptance:** `zig build test-libs`'s std cell at its pre-move count on commonJS and erlang; every
-moved function reachable by its new path from a scratch consumer on four targets;
-`libs/std/AGENTS.md` carries the tree and the old → new table;
-`grep -rn 'pub mod \(dict\|sets\|queue\|order\|fs\|time\|clock\|net\|random\|crypto\|hmac\|content_hash\|base64\|http\|os\|env\|process\|asserts\|snapshots\|mocks\)' libs/std/src/root.bp`
-returns nothing.
+**Acceptance:**
+- [x] `zig build test-libs`'s std cell at its pre-move count on commonJS and erlang — 417 / 0 on
+      each, as before the move (25 modules instead of 31: `base64`'s four tests re-spelled over
+      `encoding`'s names, `crypto`'s and `content_hash`'s under `hash`, `randomBytes`' under
+      `io.random`)
+- [x] every moved function reachable by its new path from a scratch consumer on four targets —
+      `collections` (pure) answers on commonJS, erlang, beam and wasm; the host-bound modules
+      (`hash`, `encoding`, everything under `io/`, `testing.mocks`/`snapshots`) answer on
+      commonJS and erlang and are STD-001-refused on beam and wasm exactly as their flat
+      predecessors were; `import {escape, encoding, hash, io: {net, clock}}` and
+      `import {testing: {asserts, snapshots, mocks}}` resolve from a consumer and bind only the
+      leaves
+- [x] `libs/std/AGENTS.md` carries the tree and the old → new table
+- [x] `grep -rn 'pub mod \(dict\|sets\|queue\|order\|fs\|time\|clock\|net\|random\|crypto\|hmac\|content_hash\|base64\|http\|os\|env\|process\|asserts\|snapshots\|mocks\)' libs/std/src/root.bp`
+      returns nothing — `root.bp` has seventeen lines, `io/mod.bp` eight, `testing/mod.bp` three
+- [x] decision 111: `Dict.empty()`, `Set.empty()` / `Set.fromList(xs)`, `Queue.empty()` /
+      `Queue.fromList(xs)` are type-scoped and compile on all four backends when the type is
+      imported as a leaf (`import {collections.Dict}`, `collections: {Dict, Set}`) — **open:** the
+      namespace-qualified spelling `collections.Dict.empty()` after `import {collections}` is
+      `unbound variable 'collections'` in the checker (`decisions-pending.md` 23-a)
 
 ### Step 4 — the purity refusal
 
@@ -258,14 +273,47 @@ import {path, io: {fs, process}} from "std";         // ssl_bundle.bp
 import {regex, io.clock} from "std";                 // validation/constraints.bp
 ```
 
-**Acceptance:** every library and example at its pre-sweep counts on its assigned rows;
-`grep -rn 'from "std"' repository/*/modules repository/*/examples` shows no retired module name;
-`known-red-libs.txt` back to its header; the meta pointers bumped.
+`request_context.bp` reads `import {hash, io.random} from "std";` — its token is
+`randomBytes`, which is `io.random`'s. The `<lib>-test` members import nothing from std today, so
+no `testing:` line was owed; routing, actions and validation (bundled, decision 116) import
+`testing.asserts`, `collections.Dict`, `io.clock`.
+
+**Acceptance:**
+- [x] every library and example at its pre-sweep counts on its assigned rows — `zig build
+      test-libs` from an rsync copy, per-cell counts identical to the pre-move baseline (58
+      passed / 0 failed, 19 restricted at their pins; rakun 369 / 0 commonJS, rakun-web 104 / 0
+      erlang, jhonstart 120, emilia 569, erika 31, onze 8, routing 66, actions 19, validation 54
+      on both rows)
+- [x] `grep -rn 'from "std"' repository/*/modules repository/*/examples` shows no retired module
+      name in an import — the remaining hits are prose in the compiler's own sources (codegen and
+      checker comments that recount a defect under its flat-tree spelling, in files held by
+      parallel fronts) and the deliberate `import {dict.Dict}` of the "prefix is no module" test
+- [x] `known-red-libs.txt` back to its header — rakun's seventeen cells (and fourteen restricted
+      pins at `build`) were in the ledger for exactly the one commit before rakun's sweep
+- [x] the meta pointers bumped
+
+### Step 6 — decisions 110 and 111 on the use side
+
+Decision 110 amends 107 after steps 1–5 were specified: `as` binds a type leaf as a checker-local
+name (the emitted identity stays the declaration's), and a leaf that names a folder module is a
+namespace of its submodules. Decision 111's constructors are type-scoped; reaching one through the
+module namespace is the same use-side path as 110's rule 2. `project_graph.zig` (folder leaf as
+namespace), `comptime/infer.zig` (type alias; `ns.Type.fn()`), the hover and diagnostic renderers.
+
+**Acceptance:**
+- [ ] `import {collections.Dict as D} from "std"; val d: D<string, i32> = D.empty();` compiles on
+      four targets and hovers `D` = `Dict`; `import-alias-on-type` is gone and
+      `reject/import_alias_on_type.bp` with it
+- [ ] `import {io} from "std"; io.fs.readText(p)` resolves (today `unknown "std" module`)
+- [ ] `import {collections} from "std"; collections.Dict.empty()` resolves on four targets (today
+      `unbound variable 'collections'`)
 
 ## Gate
 
-- [ ] `scripts/gate.sh --cold` green at every commit; `test-libs` at baseline (the ledger only during
-      step 5)
+- [x] `scripts/gate.sh --cold` green at every commit; `test-libs` at baseline (the ledger only during
+      step 5) — steps 3 and 5: green from an rsync copy at each compiler commit (the tree with
+      rakun's seventeen cells in the ledger; the ledger back to its header; the headers), `test-libs`
+      58 / 0 with per-cell counts identical to the pre-move run, `test-language` 799 / 28 expected / 0
 - [ ] `zig build test-language` green on four targets with the import cells;
       `modules/language-server` tests green with the `project_graph.zig` cells
 - [ ] `AGENTS.md` of `src/parser/`, `src/comptime/`, `src/codegen/`, `libs/std/`,

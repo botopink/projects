@@ -527,8 +527,8 @@ Front 03 hands over no export line: its functions live in `hash.bp`, which is re
 
 **Acceptance:**
 - [x] the build embeds every registered module without a `build.zig` edit (`libs/std/AGENTS.md`)
-- [ ] `import {escape, encoding, hash, io: {net, clock}} from "std";` resolves from a consumer package — **open:** there is no `io/` yet; `00 · 23-std-purity` step 3 moves the tree (the flat `import {escape, encoding, hash, net, time} from "std"` resolves)
-- [ ] `libs/std/AGENTS.md`'s tree listing names `io/net.bp` and `escape.bp` and lists the added functions on the rows of the eight modules extended — **open:** the rows list every added function and the tree names `escape.bp` and the flat `net.bp`; `io/net.bp` waits on the move
+- [x] `import {escape, encoding, hash, io: {net, clock}} from "std";` resolves from a consumer package — a scratch consumer runs `escape.html`, `encoding.base64Encode`, `hash.sha256`, `clock.nowMillis` and `net.listen` on commonJS and erlang after `00 · 23-std-purity` step 3
+- [x] `libs/std/AGENTS.md`'s tree listing names `io/net.bp` and `escape.bp` and lists the added functions on the rows of the eight modules extended
 - [x] fronts 02 and 03 have landed first, so this commit adds front 02's line rather than waiting on it
 
 ## Examples

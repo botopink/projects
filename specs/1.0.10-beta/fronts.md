@@ -153,8 +153,8 @@ test story stands on, and one compiler carve-out.
 
 | Front / item | Source it owns | Tests it owns |
 |---|---|---|
-| **asserts** ([`01-std/asserts-api.md`](./01-std/asserts-api.md)) | `libs/std/src/asserts.bp` (expands the existing module; front 95's function table; every existing function byte-unchanged) | inline `test` blocks in `asserts.bp` |
-| **snapshots** ([`01-std/snapshots.md`](./01-std/snapshots.md)) | `libs/std/src/snapshots.bp` (new: `path(loc)`, the `.snap` writer/reader, the `.new` refusal) · its `pub mod` line in `libs/std/src/root.bp` (appended under the F01 rule) | inline `test` blocks in `snapshots.bp`, plus one `__snapshots__/` fixture beside `libs/std/src/` |
+| **asserts** ([`01-std/asserts-api.md`](./01-std/asserts-api.md)) | `libs/std/src/testing/asserts.bp` (expands the existing module; front 95's function table; every existing function byte-unchanged) | inline `test` blocks in `asserts.bp` |
+| **snapshots** ([`01-std/snapshots.md`](./01-std/snapshots.md)) | `libs/std/src/testing/snapshots.bp` (new: `path(loc)`, the `.snap` writer/reader, the `.new` refusal) · its `pub mod` line in `libs/std/src/root.bp` (appended under the F01 rule) | inline `test` blocks in `snapshots.bp`, plus one `__snapshots__/` fixture beside `libs/std/src/` |
 | **`@src()`** ([`01-std/src-builtin.md`](./01-std/src-builtin.md)) | the `SourceLocation` record and `@src` entry in `libs/std/src/builtins.d.bp`; **by carve-out from `00`**: the builtin's typing site in `comptime/infer.zig` and the literal lowering in each of the four backends — named file by file in `src-builtin.md`, granted in `00`'s README before the work opens | one `tests/language/` cell per backend (coordinated with `00 · 12-language-tests`, which owns that directory) |
 | **old `onze` removal + `onze13 → onze`** | `repository/onze/**` (the mocking library — removed; its assertions live in `asserts.bp` from this milestone on) · every `onze13` in a directory name, an `**Owns:**` line or a manifest under `specs/1.0.10-beta/**` (the history rows of `unification.md` and the carried front 95 excepted) | `grep -rl onze13 repository` answers nothing |
 
@@ -222,7 +222,7 @@ it.
 
 ### Track B — rakun (`repository/rakun/`) — `03-rakun/`
 
-Rows carried as written in 1.0.9: rakun-core paths read `src/…` because that is where the core lives at HEAD. `02-packaging` adds `modules/rakun/` as a re-exporting core and [`03-rakun/modules.md`](./03-rakun/modules.md) decides when the core files move under it; when they do, the rakun agent re-points these rows and the *Module* column, and this file follows. The `modules/rakun-*` paths are already final — those thirteen directories exist.
+Rows carried as written in 1.0.9: rakun-core paths read `src/…` because that is where the core lives at HEAD. `02-packaging` adds `modules/rakun/` as a re-exporting core and [`03-rakun/modules.md`](./03-rakun/modules.md) decides when the core files move under it; when they do, the rakun agent re-points these rows and the *Module* column, and this file follows. The `modules/rakun-*` paths are already final. A `src/…` path in a row is relative to the member its *Module* column names (`rakun-core` is `modules/rakun/`); fronts 22–25, 60, 61, 63 and 66 read `rakun-app` — the member front 95 created when it relocated 22's `file_router.bp` and 23's `ssr.bp` out of the core (`03-rakun/modules.md` § The cut).
 
 | Front | Module | Source it owns | Tests it owns |
 |---|---|---|---|
@@ -244,18 +244,18 @@ Rows carried as written in 1.0.9: rakun-core paths read `src/…` because that i
 | **F19 test-utilities** | rakun-test | `modules/rakun-test/src/**`, `modules/rakun-test/test/**` | `modules/rakun-test/test/**` |
 | **F20 websocket** | rakun-web | `modules/rakun-web/src/websocket/**`, `modules/rakun-web/test/websocket/**` | `modules/rakun-web/test/websocket/**` |
 | **F21 hateoas** | rakun-hateoas | `modules/rakun-hateoas/src/**`, `modules/rakun-hateoas/test/**` | `modules/rakun-hateoas/test/**` |
-| **F22 file-routing** | rakun-core | `src/file_router.bp` (the registry: `R` handlers, the opaque `PageRenderer` per page pattern, the UI records onze copies in, the scan; the matcher is imported from the bundled library `routing` — decision 115, `01-std/04-routing-lib`), `src/sidecars/rakun_file_router.erl` | `test/file_router_test.bp` |
-| **F23 ssr-pipeline** | rakun-core | `src/ssr.bp` (page serving: route → the route's `PageRenderer` onze registered → chunks, status and headers through `ChunkWriter` — `setStatus` / `setHeader` before the first write; no page signal is translated — decision 117), `src/sidecars/rakun_ssr.erl` | `test/ssr_test.bp` |
-| **F24 server-actions** | rakun-core | `src/actions.bp` (the action id, the checks, dispatch over the wire names onze configures; the envelope, `state` and RPC texts are the bundled library `actions` — decision 116; the form markup is F67's) | `test/actions_test.bp` |
-| **F25 route-handlers** | rakun-core | `src/route_handler.bp`, `test/route_handler_test.bp` | `test/route_handler_test.bp` |
+| **F22 file-routing** | rakun-app | `src/file_router.bp` (the registry: `R` handlers, the opaque `PageRenderer` per page pattern, the UI records onze copies in, the scan; the matcher is imported from the bundled library `routing` — decision 115, `01-std/04-routing-lib`), `src/sidecars/rakun_file_router.erl` | `test/file_router_test.bp` |
+| **F23 ssr-pipeline** | rakun-app | `src/ssr.bp` (page serving: route → the route's `PageRenderer` onze registered → chunks, status and headers through `ChunkWriter` — `setStatus` / `setHeader` before the first write; no page signal is translated — decision 117), `src/sidecars/rakun_ssr.erl` | `test/ssr_test.bp` |
+| **F24 server-actions** | rakun-app | `src/actions.bp` (the action id, the checks, dispatch over the wire names onze configures; the envelope, `state` and RPC texts are the bundled library `actions` — decision 116; the form markup is F67's) | `test/actions_test.bp` |
+| **F25 route-handlers** | rakun-app | `src/route_handler.bp`, `test/route_handler_test.bp` | `test/route_handler_test.bp` |
 
-| **F60 static-generation** | rakun-core | `src/static_gen.bp`, `src/segment_config.bp` (the `k` blob codec the browser reads is `routing`'s `route_kinds`), | `test/static_gen_test.bp` |
-| **F61 parallel-intercepting-routes** | rakun-core | `src/route_slots.bp`, `src/route_intercept.bp` (the `z` codec is `routing`'s `slot_states`), | `test/parallel_routes_test.bp` |
+| **F60 static-generation** | rakun-app | `src/static_gen.bp`, `src/segment_config.bp` (the `k` blob codec the browser reads is `routing`'s `route_kinds`), | `test/static_gen_test.bp` |
+| **F61 parallel-intercepting-routes** | rakun-app | `src/route_slots.bp`, `src/route_intercept.bp` (the `z` codec is `routing`'s `slot_states`), | `test/parallel_routes_test.bp` |
 | **F62 request-context** | rakun-core | `src/request_context.bp`, `src/request_memo.bp`, | `test/request_context_test.bp` |
-| **F63 navigation-signals** | rakun-core | `src/navigation.bp` (the signals of server actions and route handlers only — page signals are jhonstart's, decision 117: the throw, the capture, the redirect checks, the response composition; the vocabulary and the `n` codec are `routing`'s `navigation` — decision 116), `src/sidecars/rakun_navigation.erl` | `test/navigation_test.bp` |
+| **F63 navigation-signals** | rakun-app | `src/navigation.bp` (the signals of server actions and route handlers only — page signals are jhonstart's, decision 117: the throw, the capture, the redirect checks, the response composition; the vocabulary and the `n` codec are `routing`'s `navigation` — decision 116), `src/sidecars/rakun_navigation.erl` | `test/navigation_test.bp` |
 | **F64 i18n-routing** | rakun-core | `modules/rakun-i18n/botopink.json`, | `test/i18n_test.bp` |
 | **F65 url-rules** | rakun-web | `modules/rakun-web/src/rules/**` (`canonicalize`, `clientHref` and the redirect-table codec are `routing`'s `url_rules`), | `test/url_rules_test.bp` |
-| **F66 metadata-file-routes** | rakun-core | `src/metadata_routes.bp`, | `test/metadata_routes_test.bp` |
+| **F66 metadata-file-routes** | rakun-app | `src/metadata_routes.bp`, | `test/metadata_routes_test.bp` |
 | **F72 auto-configuration** | rakun-core | `src/autoconfig.bp`, `src/conditions.bp`, `src/condition_report.bp`, `src/autoconfig_registry.bp`, `src/sidecars/rakun_autoconfig.erl` · `test/autoconfig_test.bp`, `test/conditions_test.bp` | `test/autoconfig_test.bp` |
 | **F73 starters** | rakun-starters | `starters/rakun-starter-*/botopink.json`, `starters/rakun-starter-*/src/root.bp`, `starters/README.md`, `src/version_set.bp` · `test/version_set_test.bp`, `test/starter_manifest_test.bp` | `modules/rakun-starters/test/**` |
 | **F74 tls-ssl-bundles** | rakun-core | `src/ssl_bundle.bp`, `src/sidecars/rakun_ssl.erl`, `modules/rakun-web/src/tls.bp` · `test/ssl_bundle_test.bp`, `modules/rakun-web/test/tls_test.bp` | `test/ssl_bundles_test.bp` |
@@ -317,7 +317,7 @@ README under *Blocked*; it does not edit them. `runtime.mjs` is F04's to delete 
 | Front | Source it owns | Tests it owns |
 |---|---|---|
 | **F26 router** | `src/router.bp` (promoted from `router.d.bp`, and the package's one `pairValue` pair-list decoder; `clientApp` and the client half of page signals — decision 117), `test/router_test.bp` | `test/router_test.bp` |
-| **F27 link** | `src/link.bp`, `src/reconcile.bp` (the client-navigation reconciler), `test/link_test.bp`, `test/reconcile_test.bp` | `test/link_test.bp` |
+| **F27 link** | `modules/jhonstart-link/src/link.bp`, `modules/jhonstart-link/src/reconcile.bp` (the client-navigation reconciler), `modules/jhonstart-link/test/link_test.bp`, `modules/jhonstart-link/test/reconcile_test.bp` | `modules/jhonstart-link/test/link_test.bp` |
 | **F28 server-components** | `src/server.bp` (promoted from `server.d.bp`), `test/server_test.bp` | `test/server_test.bp` |
 | **F29 client-directive** | `src/client.bp`, `test/client_test.bp` | `test/client_test.bp` |
 | **F30 render and streaming** | `src/render.bp` (the escaping walker, composition, the document, the payload — contract 2), `src/plugin.bp` (`RenderPlugin`, contract 6a), `Response` and the page-signal translation (contract 5d, decision 117), `src/globals.bp` (the `__bp<N>` registry: `payload`, `fill`, `signal`), `src/render.mjs`, `src/streaming.bp`, `src/suspense.bp`, `src/routes.bp` (the UI file conventions — `#[page]` / `#[layout]` / `#[template]` / `#[defaultView]`, `PageContext`, `LayoutProps`, the parameter accessors; decision 114) with `src/routes.mjs` and `src/sidecars/jhonstart_routes.erl`, `test/render_test.bp`, `test/streaming_test.bp` · the bridge member `modules/jhonstart-emilia/**` (decision 113) | `test/render_test.bp`, `test/streaming_test.bp`, `modules/jhonstart-emilia/test/**` |
