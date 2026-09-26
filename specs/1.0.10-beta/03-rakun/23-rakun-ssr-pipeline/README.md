@@ -132,52 +132,52 @@ nothing in rakun serialises a payload.
 ### Step 1 — `ChunkWriter`, `PageRenderer` and `page`
 
 **Acceptance:**
-- [ ] `ChunkWriter` (its four fields) and `PageRenderer` are declared exactly as above; neither
-      names a jhonstart, emilia or onze type.
-- [ ] `page(pattern, render)` registers the renderer through front 22's `rkAppRegisterPage`; a second
-      `page` for one pattern fails at registration, naming the pattern.
-- [ ] The dispatch never builds a chunk: every byte of a page body on the socket came through
-      `out.write`.
+- [x] `ChunkWriter` (its four fields) and `PageRenderer` are declared exactly as above; neither
+      names a jhonstart, emilia or onze type. — held: `modules/rakun-app/src/ssr.bp` (rakun `2e9b0e1`)
+- [x] `page(pattern, render)` registers the renderer through front 22's `rkAppRegisterPage`; a second
+      `page` for one pattern fails at registration, naming the pattern. — held: `modules/rakun-app/test/ssr_test.bp` "a second page for one pattern is refused naming it"
+- [x] The dispatch never builds a chunk: every byte of a page body on the socket came through
+      `out.write`. — held: `modules/rakun-app/test/ssr_test.bp` "over the socket the chunks arrive in order, byte for byte, with the default head" — the body bytes are exactly the renderer's writes
 
 ### Step 2 — The dispatch
 
 **Acceptance:**
-- [ ] A URL with no matching page answers 404 without calling any renderer.
-- [ ] A renderer that calls `out.setStatus(307)` and `out.setHeader("location", "/login")` and closes
+- [x] A URL with no matching page answers 404 without calling any renderer. — held: `modules/rakun-app/test/ssr_test.bp` "a URL with no page answers 404 and no renderer runs"
+- [x] A renderer that calls `out.setStatus(307)` and `out.setHeader("location", "/login")` and closes
       without writing is answered 307 with `Location: /login` and an empty body; one that calls
-      `out.setStatus(404)` and writes a body is answered 404 with that body.
-- [ ] `out.setStatus` or `out.setHeader` after the first `out.write` fails the request, naming the
-      call; the status already on the wire does not change.
-- [ ] A renderer that raises a `nav:` reason (front 63's `notFound()`, say) is answered 500 as a
-      failed render, not 404 — a page signal is jhonstart's (decision 117 rule 1).
+      `out.setStatus(404)` and writes a body is answered 404 with that body. — held: `modules/rakun-app/test/ssr_test.bp` "a renderer's own 307 with location and no body" + "a renderer's own 404 with a body"
+- [x] `out.setStatus` or `out.setHeader` after the first `out.write` fails the request, naming the
+      call; the status already on the wire does not change. — held: `modules/rakun-app/test/ssr_test.bp` "setStatus after the first write fails the request and the status stays"
+- [x] A renderer that raises a `nav:` reason (front 63's `notFound()`, say) is answered 500 as a
+      failed render, not 404 — a page signal is jhonstart's (decision 117 rule 1). — held: `modules/rakun-app/test/ssr_test.bp` "a raised navigation reason is a failed render, 500 - not 404"
 - [x] The whole call runs inside one request scope from front 62, with `setPhase(RequestPhase.Render)`
       entered before the renderer and the previous phase restored after its future resolves. A
       `cookies().set(...)` from inside the renderer raises, per the phase table in `contracts.md § 5`. — held: `modules/rakun-app/test/ssr_test.bp` "the render runs in phase Render, where a cookie write raises", "the previous phase is restored after a render" (`ssr.bp` `render` sets and restores the phase)
-- [ ] A read of the request's query from the renderer calls `markDynamic("searchParams")`; front
+- [x] A read of the request's query from the renderer calls `markDynamic("searchParams")`; front
       60's prerenderer with `strict` set then raises instead of marking, which is how a static export
-      fails the build.
-- [ ] The response is closed exactly once: by the renderer, or by the dispatch when the renderer's
-      future resolves with it still open. Any `out` call after `close` fails the request, naming it.
+      fails the build. — held: `modules/rakun-app/test/ssr_test.bp` "the renderer reads the pattern's params and the query…" + "a strict render raises on a query read instead of marking it"
+- [x] The response is closed exactly once: by the renderer, or by the dispatch when the renderer's
+      future resolves with it still open. Any `out` call after `close` fails the request, naming it. — held: `modules/rakun-app/test/ssr_test.bp` "a call on the writer after close fails the request, and it is closed once"
 
 ### Step 3 — Writing the chunks
 
 **Acceptance:**
-- [ ] The chunks reach the socket in the order the renderer wrote them, byte for byte; a test over a
-      renderer writing a fixed list asserts the bytes on the socket.
-- [ ] The first chunk reaches the socket before the last one is written when the renderer streams —
-      asserted over `rakun_ssr.erl` with a renderer that delays its second `out.write`.
-- [ ] `Content-Type: text/html; charset=utf-8` and status 200 go out with the first chunk when the
-      renderer set neither; a header the renderer set replaces the default by name.
+- [x] The chunks reach the socket in the order the renderer wrote them, byte for byte; a test over a
+      renderer writing a fixed list asserts the bytes on the socket. — held: `modules/rakun-app/test/ssr_test.bp` "over the socket the chunks arrive in order, byte for byte, with the default head"
+- [x] The first chunk reaches the socket before the last one is written when the renderer streams —
+      asserted over `rakun_ssr.erl` with a renderer that delays its second `out.write`. — held: `modules/rakun-app/test/ssr_test.bp` "the first chunk reaches the socket before the second is written"
+- [x] `Content-Type: text/html; charset=utf-8` and status 200 go out with the first chunk when the
+      renderer set neither; a header the renderer set replaces the default by name. — held: `modules/rakun-app/test/ssr_test.bp` "over the socket…with the default head" + "a header the renderer set replaces the default by name"
 
 ### Step 4 — The route data the renderer reads
 
 **Acceptance:**
-- [ ] The `Request` handed to the renderer answers `param(name)` for the matched pattern's dynamic
+- [x] The `Request` handed to the renderer answers `param(name)` for the matched pattern's dynamic
       segments and `query(name)` for the search params; onze builds jhonstart's `RequestData` and the
       segment chain from it and from front 22's `layoutChain`, never from a rakun type jhonstart
-      would have to name.
-- [ ] Nothing in `ssr.bp` builds an element: the composition of the chain into a tree is jhonstart
-      front 30's `compose`.
+      would have to name. — held: `modules/rakun-app/test/ssr_test.bp` "the renderer reads the pattern's params and the query…"; the chain comes from `appLayoutChain`
+- [x] Nothing in `ssr.bp` builds an element: the composition of the chain into a tree is jhonstart
+      front 30's `compose`. — held: `modules/rakun-app/src/ssr.bp` (no element, no composition)
 
 ### Step 5 — The render leaves `ssr.bp` (decision 113)
 
@@ -186,21 +186,21 @@ which receives the walker's escaping rules, the composition order, the document,
 table and escaping, the island and hole ordinals, the fill protocol and their acceptance boxes.
 
 **Acceptance:**
-- [ ] `renderNode`, `raw`, `compose`, `Payload`, `writePayload`, `payloadEscape`, `document`,
+- [x] `renderNode`, `raw`, `compose`, `Payload`, `writePayload`, `payloadEscape`, `document`,
       `RenderHooks` / `defaultHooks` / `setHooks` and the island/hole ordinal code are gone from
-      `repository/rakun/src/`, once jhonstart front 30 lands them.
-- [ ] `ssr.bp:641-676`'s JSON helpers are gone with no replacement in rakun: jhonstart's payload
+      `repository/rakun/src/`, once jhonstart front 30 lands them. — held: gone from `modules/rakun-app/src/ssr.bp` (the render is the HTML library's)
+- [x] `ssr.bp:641-676`'s JSON helpers are gone with no replacement in rakun: jhonstart's payload
       writer uses std's `json.quote` / `json.array` / `json.object` and `escape.scriptJson`
       (`01-std/01-std-lib-enablement`, decisions 116 and 117); `grep -rn "fn jsonString" repository/rakun` is
-      empty.
-- [ ] `repository/rakun/src/ssr.mjs` is deleted; the fill function and the payload reader are
-      jhonstart's (`render.mjs`).
-- [ ] `rtk proxy grep -rn 'from "jhonstart' repository/rakun/src` and
-      `rtk proxy grep -rni 'onze' repository/rakun/src` are both empty — the grep is part of the gate.
+      empty. — held: `grep -rn "fn jsonString" repository/rakun` is empty
+- [x] `repository/rakun/src/ssr.mjs` is deleted; the fill function and the payload reader are
+      jhonstart's (`render.mjs`). — held: deleted with front 04 Step 10 (rakun `99b8049`); the fill function and the payload reader are the HTML library's
+- [x] `rtk proxy grep -rn 'from "jhonstart' repository/rakun/src` and
+      `rtk proxy grep -rni 'onze' repository/rakun/src` are both empty — the grep is part of the gate. — held: both greps are empty over `modules/rakun/src` and `modules/rakun-app/src` and are part of the pre-commit gate
 - [x] `modules/rakun-app/botopink.json` lists neither `jhonstart` nor `emilia`. — held: `modules/rakun-app/botopink.json` depends on `rakun` only
-- [ ] A `PageRenderer` registered through `page(pattern, render)` is the only way HTML enters a
+- [x] A `PageRenderer` registered through `page(pattern, render)` is the only way HTML enters a
       rakun response on the page path; `RenderedPage`, `setPageRender` and `toResponse` are gone from
-      `ssr.bp` (decision 114).
+      `ssr.bp` (decision 114). — held: `RenderedPage`, `setPageRender` and `toResponse` are gone from `ssr.bp`
 
 ## Examples
 

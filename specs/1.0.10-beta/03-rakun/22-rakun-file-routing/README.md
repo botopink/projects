@@ -233,15 +233,15 @@ the same table, as `R` records, so this front never has to know what a `HandlerR
 front 25 never has to declare a host cell.
 
 **Acceptance:**
-- [ ] `rkAppRegisterEntry("L", "blog", "")` adds the record `L|/blog||`; a `kind` outside the eight
-      letters fails naming the letter.
-- [ ] `rkAppRegisterPage("blog/[slug]", r)` adds `P|/blog/[slug]||` and the dispatch (front 23) finds
-      `r` for a request matching that pattern.
-- [ ] Registering two renderers for one pattern fails at registration, naming the pattern — the
-      table never holds two pages for one URL.
-- [ ] `rkAppRegisterEntry("L", "", "")` registers the root layout at `/`.
-- [ ] `grep -rn "Element\|LayoutProps\|jhonstart" modules/rakun-app/src` is empty — the registry
-      names no UI type (decision 114).
+- [x] `rkAppRegisterEntry("L", "blog", "")` adds the record `L|/blog||` (written `L|/blog` — `routing`'s `writeTable` drops trailing empty fields); a `kind` outside the eight
+      letters fails naming the letter. — held: `modules/rakun-app/test/file_router_test.bp` "an entry becomes one line of the host table" + "a kind outside the eight letters is refused naming the letter" (rakun `2e9b0e1`)
+- [x] `rkAppRegisterPage("blog/[slug]", r)` adds `P|/blog/[slug]||` and the dispatch (front 23) finds
+      `r` for a request matching that pattern. — held: `modules/rakun-app/test/file_router_test.bp` "a page is a P record whose renderer the dispatch finds"
+- [x] Registering two renderers for one pattern fails at registration, naming the pattern — the
+      table never holds two pages for one URL. — held: `modules/rakun-app/test/file_router_test.bp` "a second renderer for one pattern is refused naming the pattern"
+- [x] `rkAppRegisterEntry("L", "", "")` registers the root layout at `/`. — held: `modules/rakun-app/test/file_router_test.bp` "an entry becomes one line of the host table"
+- [x] `grep -rn "Element\|LayoutProps\|jhonstart" modules/rakun-app/src` is empty — the registry
+      names no UI type (decision 114). — held: the grep is empty, and the pre-commit gate enforces it (`scripts/git-hooks/lib/runner-standalone.sh`)
 
 ### Step 3 — The route table and its wire format
 
@@ -319,9 +319,9 @@ than serving something surprising.
 - [x] A registered segment with no corresponding directory under `appDir` fails the scan, naming the
       segment and the function that registered it. This is the check that keeps the decorator
       argument honest. — held: `modules/rakun-app/test/file_router_scan_test.bp` "a registered segment with no directory names the segment and the fn"
-- [ ] The scan runs with `rakun.appDir` set to `app` and to `src/app` and produces the same table;
+- [x] The scan runs with `rakun.appDir` set to `app` and to `src/app` and produces the same table;
       unset, it scans `app`. `grep -rn '"onze\.' repository/rakun` is empty — rakun reads no
-      `onze.` key (decision 115).
+      `onze.` key (decision 115). — held: `modules/rakun-app/test/file_router_scan_test.bp` "app and src/app produce the same table" + "appDir is configuration, defaulting to app"; no `onze.` key in any rakun source (the gate's grep)
 - [ ] A `middleware.bp` at the **project root** — beside `botopink.json`, not under `appDir` — is
       discovered by the same scan that discovers `appDir`, with no `pub mod` line naming it, and is
       handed to front 07. The discovery is this front's; what runs in it is front 07's. A project
@@ -335,11 +335,11 @@ emitted `<page>Params(route)` accessors are jhonstart front 30's (decision 114).
 its copies once jhonstart front 30 has them, and keeps Step 2's registry.
 
 **Acceptance:**
-- [ ] `modules/rakun-app/src/file_router.bp` declares none of `layout`, `template`, `page`,
+- [x] `modules/rakun-app/src/file_router.bp` declares none of `layout`, `template`, `page`,
       `defaultView` (as decorators), `PageContext`, `LayoutProps`, and no `@emit` of a parameter
-      accessor.
-- [ ] `test/file_router_test.bp` registers pages through `rkAppRegisterPage` with a renderer that
-      writes plain text through a `ChunkWriter` (front 23) — no `Element` in the file.
+      accessor. — held: `modules/rakun-app/src/file_router.bp` (the markers, `PageContext`, `LayoutProps` and the accessor emission are gone)
+- [x] `test/file_router_test.bp` registers pages through `rkAppRegisterPage` with a renderer that
+      writes plain text through a `ChunkWriter` (front 23) — no `Element` in the file. — held: `modules/rakun-app/test/file_router_test.bp` (`textPage` writes plain text through `writeTo`)
 
 ### Step 7 — rakun imports `routing`
 
@@ -356,8 +356,8 @@ import {segment.parsePath, segment.patternOf, table.RouteEntry, table.parseTable
 ```
 
 **Acceptance:**
-- [ ] `rakun-app`'s `file_router.bp` imports `parsePath`, `patternOf`, `RouteEntry`, `parseTable`,
-      `writeTable`, `matchPath` and `layoutChain` from `"routing"` and defines none of them.
+- [x] `rakun-app`'s `file_router.bp` imports `parsePath`, `patternOf`, `RouteEntry`, `parseTable`,
+      `writeTable`, `matchPath` and `layoutChain` from `"routing"` and defines none of them. — held: `modules/rakun-app/src/file_router.bp` imports all seven from `routing` (`matchPath` / `layoutChain` behind `appMatch` / `appLayoutChain`) and defines none
 - [x] `file_router_test.bp` keeps only the registry, the scan and the dispatch tests; the grammar,
       wire and matcher tests are `routing`'s. — held: `modules/rakun-app/test/file_router_test.bp` holds registry/dispatch tests only; grammar, wire and matcher tests are in `libs/routing/test/`
 - [x] No `botopink.json` under `repository/rakun/` lists `routing` in `dependencies`, and no member
