@@ -38,7 +38,7 @@ fn classifyOrder(delivery: Delivery) -> Outcome {
     return out;
 }
 
-// LANGUAGE GAP: declared parameter defaults are never applied, so a decorator cannot
+// LANGUAGE GAP: a decorator argument's declared default is not applied, so a decorator cannot
 // carry optional arguments — `#[rabbitListener("orders.confirm", maxAttempts: 3,
 // ackMode: "manual")]` would force every listener in the codebase to spell every
 // setting. Nearest valid form below: one required argument, and the rest read from

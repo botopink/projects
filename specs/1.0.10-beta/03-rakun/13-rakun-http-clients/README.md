@@ -296,7 +296,6 @@ partner's API on every health scrape is rude, and the default is false.
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
 | std reads JSON into a structured `Json` (`json.decode`, decision 117) but has no derivation from `Json` to a record, so a typed `body(User)` in Spring's sense cannot be expressed. | `examples/rest-client-example.bp`, every `ClientResponse.body` read | Return the body as `string` and let the caller shape it, or reflect the target record with a comptime decorator and `@emit` a field-by-field decoder. | a comptime record decoder over std's `Json` |
-| Declared parameter defaults are never applied, so the builder cannot have optional arguments the way `RestClient.Builder` does. | Every builder method in both examples | One method per setting, each taking every argument. | Apply declared defaults at call sites (`docs.md:502-505`) |
 | There is no byte or binary type — host cells marshal through `string` — so a response body that is not UTF-8 text (an image, a protobuf frame, a gzip stream) cannot be represented. Recorded by front 01; repeated here because this front is where it bites first. | `ClientResponse.body` in both examples | Restrict clients to text media types and refuse a binary `content-type` with a named error rather than returning mojibake. | A `bytes` primitive with `string` conversions at the edges |
 
 ## Test plan

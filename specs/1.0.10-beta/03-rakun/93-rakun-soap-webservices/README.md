@@ -191,7 +191,6 @@ pub fn parseFault(bodyXml: string) -> ?SoapFault
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
 | **A comptime body has no filesystem access** — it sees only a minimal native-JS prelude (ground truth §2.2). A `wsdl """…"""` template function cannot read a schema, which is why generation is a CLI step and not comptime. | `examples/soap-client-example.bp`, the header comment over the generated types | `rakun ws generate` (front 88) emits checked-in `.bp` source, read like any other module. | A comptime capability for reading a declared build input, sandboxed to the project directory |
-| **Declared parameter defaults are never applied** — the row already in [`language-gaps.md`](../../language-gaps.md). A generated operation cannot leave an optional element out of its call. | `examples/soap-client-example.bp`, the request record | Every field is passed; a `minOccurs="0"` element is `?T` and is passed as `null`. | Apply declared defaults at call sites |
 
 ## Test plan
 

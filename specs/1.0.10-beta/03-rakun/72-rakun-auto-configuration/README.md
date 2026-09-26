@@ -380,7 +380,7 @@ The profile set itself is front 05's (`rakun.profiles.active`, `rakun.profiles.d
 | **A decorator argument cannot name a type** — decorator arguments are ordinary values type-checked against the signature, and there is no type-of-type, so `#[conditionalOnMissingBean(MailSender)]` does not compile. **New row; not yet in [`language-gaps.md`](../../language-gaps.md).** Also bites front 78 (`#[entityRepository]`, `#[belongsTo]`). | `examples/mail-auto-configuration-example.bp` — every `conditionalOn*Bean` marker | The type's name as a string literal: `#[conditionalOnMissingBean("MailSender")]`, which is also Spring's `excludeName` spelling | A `@Type` decorator-parameter kind that accepts a type name in argument position and reflects it to `{ name, fields }`, so the marker is checked against a type that exists rather than against a string |
 
 One further row already in [`language-gaps.md`](../../language-gaps.md) shapes this front and is not
-restated: *declared parameter defaults are never applied*, which is why
+restated: *a decorator argument's declared default is not applied (the comptime call fails)*, which is why
 `#[conditionalOnProperty("rakun.mail.host", "*")]` spells out `"*"` where Spring writes nothing — a
 decorator cannot have an optional argument.
 

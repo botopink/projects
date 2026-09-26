@@ -17,8 +17,6 @@ fn skuOf(line: string) -> string {
 // stage cannot hand the next stage a labelled `#(key: string, count: i32)` and have it
 // read back by name. Nearest valid form below: one payload type — a string — with the
 // pair encoded at the edge and read positionally where it is decoded.
-// LANGUAGE GAP: declared parameter defaults are never applied, so `windowMs` cannot be
-// omitted for the common one-minute case; every construction spells it.
 val counting: Array<Stage> = [
     Stage.Transform(name: "to-sku", apply: { item -> skuOf(item) }),
     Stage.Aggregate(name: "per-minute", key: { item -> item }, windowMs: 60000),

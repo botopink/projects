@@ -61,9 +61,7 @@ fn conversionResponseFromXml(xml: string) -> ConversionResponse {
 // --- end generated ---
 
 pub fn convert(client: WsClient, req: ConversionRequest) -> @Result<ConversionResponse, SoapFault> {
-    // LANGUAGE GAP: declared parameter defaults are never applied, so an optional
-    // element cannot be left out of a generated call. Nearest valid form: every field is
-    // passed, and a `minOccurs="0"` element is `?T` passed as null.
+    // A `minOccurs="0"` element is `?T`, passed as null.
     val body = conversionRequestToXml(req);
     val answer = try wsCall(client, "urn:rates/Convert", body) catch "";
     if (answer == "") {

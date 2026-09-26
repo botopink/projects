@@ -240,8 +240,7 @@ Served by front 11, behind front 76's access control like every other endpoint.
 
 ## Language gaps
 
-Every gap this front meets is already filed in [`../language-gaps.md`](../../language-gaps.md): declared
-parameter defaults are never applied (so `Trigger` is a record with every field written), `@Decl`
+Every gap this front meets is already filed in [`../language-gaps.md`](../../language-gaps.md): `@Decl`
 carries no source location (so `#[persistentJob]` takes an explicit `name:` rather than deriving one),
 and there is no structured JSON value (so job data is querystring-encoded). This front adds no new
 row.

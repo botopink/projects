@@ -178,7 +178,7 @@ pub fn onMessage(self: Self, delivery: Delivery) -> Outcome
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
 | **No byte or binary type** — the row already in [`language-gaps.md`](../../language-gaps.md). A JMS `BytesMessage`, and any STOMP frame whose body is not UTF-8, cannot be carried without corruption. | `examples/jms-listener-example.bp`, the body of `onOrderMessage` | Refuse a non-text body at the codec with a located error; text bodies are unaffected. | A `Bytes` primitive with a declared encoding boundary |
-| **Declared parameter defaults are never applied** — the row already in [`language-gaps.md`](../../language-gaps.md). `#[jmsListener("q", selector: "...", durable: true)]` would force every listener to spell every argument. | `examples/jms-listener-example.bp`, the `#[jmsListener]` line | One required destination argument; selectors, durability and acknowledgement come from `rakun.messaging.listener.<name>.*`. | Apply declared defaults at call sites |
+| **A decorator argument's declared default is not applied** (the comptime call fails). `#[jmsListener("q", selector: "...", durable: true)]` would force every listener to spell every argument. | `examples/jms-listener-example.bp`, the `#[jmsListener]` line | One required destination argument; selectors, durability and acknowledgement come from `rakun.messaging.listener.<name>.*`. | Apply declared defaults at call sites |
 
 ## Test plan
 

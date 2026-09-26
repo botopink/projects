@@ -19,9 +19,9 @@ prove the process is alive proves nothing. `modules/rakun-scheduling/` is a `bot
 `src/root.bp` holding a TODO comment.
 
 A single `#[scheduled(cron: …)]` with labelled, optional arguments cannot be built: every existing
-marker takes positional arguments (`repository/rakun/src/decorators.bp:210-240`) and declared
-parameter defaults are never applied (`docs.md:502-505`). So: three markers, one per trigger kind,
-each with the arguments it actually needs.
+marker takes positional arguments (`repository/rakun/src/decorators.bp:210-240`) and a
+decorator argument's declared default is not applied (the comptime call fails). So: three markers,
+one per trigger kind, each with the arguments it actually needs.
 
 ## Current state
 
