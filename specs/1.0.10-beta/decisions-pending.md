@@ -4,7 +4,7 @@
 front 24's (24-a…c, 24-g), `01-std`'s (01std-a, 01std-c…e), `00 · 23-std-purity`'s (23-a…c), front 95's
 (95-a…e), `00 · 16-formatter`'s (16-a…b), track C's (26-a, 27-a, 30-b…e, 31-a), `00 · 04-js` /
 `05-wasm`'s (0405-b), `00 · 01-checker`'s (01c-a…b),
-track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…v) and the host methods' (lem-a…f). Two
+track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…w) and the host methods' (lem-a…f). Two
 questions are open: the language-gaps sweep's lg-a and lg-b (§ Open). Every other question raised so far is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 24-f is decision 143 (library resolution stops at the
 enclosing checkout; dependencies are transitive); the next free number is **144**.
@@ -571,6 +571,18 @@ fronts could land; the maintainer confirms or reverses each.
 > **Options.** (1) `Op.Eq | Ne | Lt | Gt | Le | Ge | Like`, so an unknown operator is an unknown variant;
 > (2) strings checked at run time.
 > **Recommendation.** (1) — implemented (`queryOf(CityMeta()).where(CityCol().state, Op.Eq, "CA")`).
+
+### 03r-w · OAuth2's explicit endpoints are provider fields, and client credentials are a function
+
+> **Raised by:** `79-rakun-oauth2-sso`
+> **Measured.** The front's `OAuth2Provider` has no field for "the four endpoints set explicitly" its
+> non-OIDC case needs, and `#[clientCredentials("id")]` on a front-13 client field would have to wrap
+> every call the client makes — a decorator cannot rewrite a body it does not own.
+> **Options.** (1) `authorizationUri`, `tokenUri`, `userinfoUri`, `jwksUri` on `OAuth2Provider`
+> (`oidcProvider(...)` fills them empty), and `withClientToken(id, call)` running a call with the token
+> and retrying once on 401; (2) a separate `ProviderEndpoints` argument and a client interceptor seam in
+> front 13.
+> **Recommendation.** (1) — implemented. (2) needs a request-interceptor hook in rakun-client.
 
 ## Open
 

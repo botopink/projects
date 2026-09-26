@@ -190,11 +190,11 @@ pub fn registerProvider(p: OAuth2Provider) -> i32
 ```
 
 **Acceptance:**
-- [ ] `discover` fetches `<issuerUri>/.well-known/openid-configuration` exactly once per issuer per boot and caches the result
-- [ ] A discovery document whose `issuer` field disagrees with the configured `issuerUri` is rejected at boot with a message naming both values — not at first login
-- [ ] A provider with all four endpoints set and an empty `issuerUri` registers without any network call
-- [ ] Two providers with the same `id` fail the boot, naming the id
-- [ ] A provider whose `clientSecret` is empty and whose `pkce` is `false` fails the boot: that combination is a public client with no proof of possession
+- [x] `discover` fetches `<issuerUri>/.well-known/openid-configuration` exactly once per issuer per boot and caches the result — `modules/rakun-security/test/oauth2_test.bp` "oauth2: discovery is fetched once per issuer and cached"
+- [x] A discovery document whose `issuer` field disagrees with the configured `issuerUri` is rejected at boot with a message naming both values — not at first login — `modules/rakun-security/test/oauth2_test.bp` "oauth2: a discovery document announcing another issuer refuses the boot naming both"
+- [x] A provider with all four endpoints set and an empty `issuerUri` registers without any network call — `modules/rakun-security/test/oauth2_test.bp` "oauth2: explicit endpoints register with no request; a duplicate id and a public client without PKCE are refused" (the four endpoints are fields of `OAuth2Provider` — 03r-w)
+- [x] Two providers with the same `id` fail the boot, naming the id — same test
+- [x] A provider whose `clientSecret` is empty and whose `pkce` is `false` fails the boot: that combination is a public client with no proof of possession — same test
 
 ### Step 2 — PKCE, state and nonce
 
@@ -214,12 +214,12 @@ pub fn authorizationRequest(p: OAuth2Provider, returnTo: string) -> Authorizatio
 ```
 
 **Acceptance:**
-- [ ] The URL carries `response_type=code`, `client_id`, `redirect_uri`, `scope`, `state`, `nonce`, `code_challenge` and `code_challenge_method=S256`
-- [ ] `verifier.length() >= 43` and every character is in the unreserved set
-- [ ] `challenge == encoding.encodeUrlSafe(hash.sha256(verifier))` with no `=` padding
-- [ ] Two calls a millisecond apart produce different `state`, `nonce` and `verifier`
-- [ ] `returnTo` is stored server-side and never appears in the redirect URL, so an open-redirect parameter cannot be forged
-- [ ] A `returnTo` that is not a path on this application is replaced by `/`
+- [x] The URL carries `response_type=code`, `client_id`, `redirect_uri`, `scope`, `state`, `nonce`, `code_challenge` and `code_challenge_method=S256` — `modules/rakun-security/test/oauth2_test.bp` "oauth2: the authorization request carries every parameter, a S256 challenge and fresh secrets"
+- [x] `verifier.length() >= 43` and every character is in the unreserved set — same test
+- [x] `challenge == encoding.encodeUrlSafe(hash.sha256(verifier))` with no `=` padding — same test
+- [x] Two calls a millisecond apart produce different `state`, `nonce` and `verifier` — same test
+- [x] `returnTo` is stored server-side and never appears in the redirect URL, so an open-redirect parameter cannot be forged — same test
+- [x] A `returnTo` that is not a path on this application is replaced by `/` — same test
 
 ### Step 3 — The two endpoints
 
@@ -228,12 +228,12 @@ The callback is single-use: the state entry is deleted before the token exchange
 replayed callback finds nothing.
 
 **Acceptance:**
-- [ ] `GET /oauth2/authorization/keycloak` answers 302 with a `Location` built by step 2 and sets the session cookie if there is none
-- [ ] `GET /oauth2/authorization/unknown` answers 404
-- [ ] A callback with no `state`, an unknown `state`, or a `state` already consumed answers 400 and performs no token exchange
-- [ ] A callback carrying `error=access_denied` answers 403 with the provider's `error_description`, and does not exchange
-- [ ] A successful callback answers 302 to the stored `returnTo`
-- [ ] Neither endpoint ever puts the code, the verifier or the token in a response body or a log line
+- [x] `GET /oauth2/authorization/keycloak` answers 302 with a `Location` built by step 2 and sets the session cookie if there is none — `modules/rakun-security/test/oauth2_test.bp` "oauth2: the authorization endpoint redirects and sets a session cookie; an unknown provider is 404"
+- [x] `GET /oauth2/authorization/unknown` answers 404 — same test
+- [x] A callback with no `state`, an unknown `state`, or a `state` already consumed answers 400 and performs no token exchange — `modules/rakun-security/test/oauth2_test.bp` "oauth2: a callback with no, an unknown or a spent state is 400 and exchanges nothing; error= is 403"
+- [x] A callback carrying `error=access_denied` answers 403 with the provider's `error_description`, and does not exchange — same test
+- [x] A successful callback answers 302 to the stored `returnTo` — `modules/rakun-security/test/oauth2_test.bp` "oauth2: a successful callback redirects to the stored return path and leaks no secret"
+- [x] Neither endpoint ever puts the code, the verifier or the token in a response body or a log line — same test (no endpoint logs; the responses carry neither the code nor a token)
 
 ### Step 4 — Token exchange, ID-token verification, refresh
 
@@ -253,13 +253,13 @@ pub type TokenSet(
 ```
 
 **Acceptance:**
-- [ ] A token response missing `id_token` for an `openid`-scoped request fails the login; it does not produce an anonymous session
-- [ ] An ID token whose `nonce` differs from the stored one fails, and the failure names `nonce` rather than "invalid token"
-- [ ] An ID token signed with a key absent from the cached JWKS triggers exactly one re-fetch; a second token with the same unknown `kid` within the rate-limit window does not re-fetch
-- [ ] `exp` in the past by less than the skew passes; by more than the skew fails
-- [ ] `aud` that is an array containing the client id passes; one that does not contain it fails
-- [ ] A refresh that fails with `invalid_grant` clears the session rather than retrying
-- [ ] A JWKS fetch failure leaves the previously cached key set in place
+- [x] A token response missing `id_token` for an `openid`-scoped request fails the login; it does not produce an anonymous session — `modules/rakun-security/test/oauth2_test.bp` "oauth2: an openid token response without an ID token fails the login"
+- [x] An ID token whose `nonce` differs from the stored one fails, and the failure names `nonce` rather than "invalid token" — `modules/rakun-security/test/oauth2_test.bp` "oauth2: the ID token checks name the claim that failed"
+- [x] An ID token signed with a key absent from the cached JWKS triggers exactly one re-fetch; a second token with the same unknown `kid` within the rate-limit window does not re-fetch — `modules/rakun-security/test/oauth2_test.bp` "oauth2: an unknown kid re-fetches the key set once per window"
+- [x] `exp` in the past by less than the skew passes; by more than the skew fails — `modules/rakun-security/test/oauth2_test.bp` "oauth2: the ID token checks name the claim that failed"
+- [x] `aud` that is an array containing the client id passes; one that does not contain it fails — same test
+- [x] A refresh that fails with `invalid_grant` clears the session rather than retrying — `modules/rakun-security/test/oauth2_test.bp` "oauth2: a refresh answered invalid_grant ends the session instead of retrying"
+- [x] A JWKS fetch failure leaves the previously cached key set in place — `modules/rakun-security/test/oauth2_test.bp` "oauth2: a failing key-set fetch keeps the cached keys"
 
 ### Step 5 — Resource server
 
@@ -269,11 +269,11 @@ principal. A request with no bearer token is left anonymous — this filter auth
 authorize; `#[secured]` from front 10 does that.
 
 **Acceptance:**
-- [ ] `scope: "orders:read orders:write"` produces authorities `SCOPE_orders:read` and `SCOPE_orders:write`
-- [ ] A `roles` claim that is an array of strings produces `ROLE_<name>` for each
-- [ ] A malformed bearer token answers 401 with `WWW-Authenticate: Bearer error="invalid_token"`, through front 04's `rkSetReplyHeader`
-- [ ] A request with no `Authorization` header reaches the handler as anonymous and a `#[secured]` handler answers 401, not 500
-- [ ] Token validation does not hit the network when the key set is cached and the `kid` is present
+- [x] `scope: "orders:read orders:write"` produces authorities `SCOPE_orders:read` and `SCOPE_orders:write` — `modules/rakun-security/test/oauth2_test.bp` "oauth2: a bearer token's scope and roles become authorities, without the network once the keys are cached"
+- [x] A `roles` claim that is an array of strings produces `ROLE_<name>` for each — same test
+- [x] A malformed bearer token answers 401 with `WWW-Authenticate: Bearer error="invalid_token"`, through front 04's `rkSetReplyHeader` — `modules/rakun-security/test/oauth2_test.bp` "oauth2: a malformed bearer is 401 with the invalid_token challenge; no header is anonymous and a protected path 401s"
+- [x] A request with no `Authorization` header reaches the handler as anonymous and a `#[secured]` handler answers 401, not 500 — same test
+- [x] Token validation does not hit the network when the key set is cached and the `kid` is present — `modules/rakun-security/test/oauth2_test.bp` "oauth2: a bearer token's scope and roles become authorities, without the network once the keys are cached"
 
 ### Step 6 — Client credentials for service-to-service calls
 
@@ -282,10 +282,10 @@ on a front-13 client field emits the interceptor that attaches it, refreshing on
 as step 4. Tokens are cached per registration, not per call.
 
 **Acceptance:**
-- [ ] N concurrent calls through a cold token source perform one token request, not N
-- [ ] A 401 from the downstream service invalidates the cached token and retries exactly once
-- [ ] The token never appears in an exception message or a log line
-- [ ] A registration used by no client is never fetched
+- [x] N concurrent calls through a cold token source perform one token request, not N — `modules/rakun-security/test/oauth2_test.bp` "oauth2: concurrent calls through a cold source make one token request"
+- [x] A 401 from the downstream service invalidates the cached token and retries exactly once — `modules/rakun-security/test/oauth2_test.bp` "oauth2: a 401 downstream drops the cached token and retries exactly once; a token appears in no failure"
+- [x] The token never appears in an exception message or a log line — same test
+- [x] A registration used by no client is never fetched — `modules/rakun-security/test/oauth2_test.bp` "oauth2: a registration no client uses is never fetched"
 
 ### Step 7 — LDAP directory authentication
 
@@ -296,12 +296,12 @@ The `ldap` health indicator from `09-actuator.md § HealthIndicators Auto-config
 with front 11 here, because this front owns the connection.
 
 **Acceptance:**
-- [ ] A correct username and password produce `Authenticated(principal)` with the DN as `subject`
-- [ ] A wrong password produces `Rejected`, and the reason does not distinguish "no such user" from "bad password"
-- [ ] An unreachable directory produces `Unavailable`, and `Unavailable` is not treated as a rejection by front 10's manager
-- [ ] A user whose entry has three `memberOf` values produces three authorities
-- [ ] The `ldap` health indicator is `DOWN` when a bind against the service account fails, and carries no credentials in its detail map
-- [ ] Every `eldap` handle opened is closed, including on the failure paths — asserted by a handle count before and after
+- [x] A correct username and password produce `Authenticated(principal)` with the DN as `subject` — `modules/rakun-security/test/ldap_test.bp` "ldap: a correct password authenticates with the DN as subject and one authority per memberOf"
+- [x] A wrong password produces `Rejected`, and the reason does not distinguish "no such user" from "bad password" — `modules/rakun-security/test/ldap_test.bp` "ldap: a wrong password and an unknown user are the same rejection"
+- [ ] An unreachable directory produces `Unavailable`, and `Unavailable` is not treated as a rejection by front 10's manager — open: `unavailable` is a distinct answer (`ldap_test.bp` "ldap: an unreachable directory is unavailable, not a rejection"), but front 10's Basic path reads its own user store and no seam lets the directory stand in as its manager
+- [x] A user whose entry has three `memberOf` values produces three authorities — `modules/rakun-security/test/ldap_test.bp` "ldap: a correct password authenticates with the DN as subject and one authority per memberOf"
+- [x] The `ldap` health indicator is `DOWN` when a bind against the service account fails, and carries no credentials in its detail map — `modules/rakun-security/test/ldap_test.bp` "ldap: the health indicator is DOWN on a failed service bind and carries no credential"
+- [x] Every `eldap` handle opened is closed, including on the failure paths — asserted by a handle count before and after — `modules/rakun-security/test/ldap_test.bp` "ldap: every handle opened is closed, on the failure paths too"
 
 ### Step 8 — SAML 2.0 service provider (last; cut first)
 
@@ -310,12 +310,12 @@ signature), and an assertion consumer service that verifies the IdP's signature,
 window, the audience restriction and the `InResponseTo` correlation.
 
 **Acceptance:**
-- [ ] `/saml2/metadata` serves SP metadata whose `entityID` and ACS URL match the configuration
-- [ ] An `AuthnRequest` round-trips through deflate/base64 to the same XML
-- [ ] An assertion with a valid signature, in-window `Conditions`, matching audience and matching `InResponseTo` authenticates
-- [ ] Each of those four checks, failed on its own, rejects — four separate cases, not one
-- [ ] An assertion whose signature covers a different document rejects
-- [ ] **If this step is cut:** the ACS path answers 501 with a body naming the missing canonicalization, and the front's tests assert that 501 rather than skipping
+- [x] `/saml2/metadata` serves SP metadata whose `entityID` and ACS URL match the configuration — `modules/rakun-security/test/oauth2_test.bp` "saml2: the SP metadata, the AuthnRequest round trip and the ACS 501"
+- [x] An `AuthnRequest` round-trips through deflate/base64 to the same XML — same test
+- [ ] An assertion with a valid signature, in-window `Conditions`, matching audience and matching `InResponseTo` authenticates — open: step 8 is cut; verifying the IdP signature needs Exclusive XML Canonicalization, which neither OTP nor std provides
+- [ ] Each of those four checks, failed on its own, rejects — four separate cases, not one — open: step 8 is cut (see above)
+- [ ] An assertion whose signature covers a different document rejects — open: step 8 is cut (see above)
+- [x] **If this step is cut:** the ACS path answers 501 with a body naming the missing canonicalization, and the front's tests assert that 501 rather than skipping — `modules/rakun-security/test/oauth2_test.bp` "saml2: the SP metadata, the AuthnRequest round trip and the ACS 501" (the body names Exclusive XML Canonicalization)
 
 ## Examples
 
@@ -356,13 +356,13 @@ compiles.
 
 ## Definition of done
 
-- [ ] `OAuth2Provider`, discovery, the two endpoints, exchange, verification and refresh all land, and a login against the fixture provider produces a principal front 10 accepts
-- [ ] The JWKS cache re-fetches on an unknown `kid`, at most once per rate-limit window, and survives a provider outage
-- [ ] The resource-server filter maps scopes and roles into front 10's authority list
-- [ ] `#[clientCredentials]` attaches a token to a front-13 client with no token mentioned in the service body
-- [ ] LDAP bind-and-search authenticates, and its health indicator is registered with front 11
-- [ ] SAML either lands complete or answers 501 with a named reason — never a weakened verification path
-- [ ] No cell in this module carries a Node form
-- [ ] `modules/rakun-security/AGENTS.md` documents the front-10 boundary table above
-- [ ] The front's tests are green on its assigned target
+- [x] `OAuth2Provider`, discovery, the two endpoints, exchange, verification and refresh all land, and a login against the fixture provider produces a principal front 10 accepts — `oauth2_test.bp` (a login against the node's own provider ends in a front 18 session carrying the subject)
+- [x] The JWKS cache re-fetches on an unknown `kid`, at most once per rate-limit window, and survives a provider outage — `oauth2_test.bp` "oauth2: an unknown kid re-fetches the key set once per window", "oauth2: a failing key-set fetch keeps the cached keys"
+- [x] The resource-server filter maps scopes and roles into front 10's authority list — `modules/rakun-security/test/oauth2_test.bp` "oauth2: a bearer token's scope and roles become authorities, without the network once the keys are cached"
+- [ ] `#[clientCredentials]` attaches a token to a front-13 client with no token mentioned in the service body — open: the token source is `withClientToken(id, call)` (03r-w); a `#[clientCredentials]` field decorator cannot rewrite the client call it would wrap
+- [x] LDAP bind-and-search authenticates, and its health indicator is registered with front 11 — `ldap_test.bp`; `registerLdapHealth` adds `ldap` to front 11
+- [x] SAML either lands complete or answers 501 with a named reason — never a weakened verification path — `modules/rakun-security/test/oauth2_test.bp` "saml2: the SP metadata, the AuthnRequest round trip and the ACS 501"
+- [x] No cell in this module carries a Node form — every cell is `#[@External.Erlang]` (`oauth2_host.bp`, `ldap_host.bp`, the templates)
+- [ ] `modules/rakun-security/AGENTS.md` documents the front-10 boundary table above — open: rakun keeps one AGENTS.md at the repository root; the boundary is documented there (§ OAuth2, OIDC, LDAP and SAML)
+- [x] The front's tests are green on its assigned target — `oauth2_test.bp` 18/18, `ldap_test.bp` 5/5 (erlang)
 
