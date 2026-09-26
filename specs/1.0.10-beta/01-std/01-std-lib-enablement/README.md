@@ -11,7 +11,8 @@
 
 ## State
 
-Steps 1–13 hold. Open: Step 14's grep, which the consumer fronts close.
+Steps 1–13 hold. Step 14 holds for jhonstart and emilia; open: rakun's copies, which rakun's
+fronts close.
 
 Two of the primitives are security requirements rather than conveniences. `escape.html` is what
 stands between the SSR pipeline (front 23) and a stored-XSS hole. `hash.equalsConstantTime` is what
@@ -94,7 +95,7 @@ the wire-format surface.
 - [x] `encoding.hexDecode("zz")` answers an `Error`, not a crash
 - [x] `encoding.percentEncode("a b&c=d")` answers `a%20b%26c%3Dd` on both targets
 - [x] `encoding.percentDecode(encoding.percentEncode(s)) == s` for a string containing space, `&`, `=`, `+`, `/` and a non-ASCII character
-- [x] `encoding.formStringify([#("q", "a b")])` answers `q=a%20b` — the case `querystring.stringify` documents itself as not handling
+- [x] `encoding.formStringify([#("q", "a b")])` answers `q=a%20b`
 - [x] `encoding.base64UrlEncode` output contains no `+`, `/` or `=`
 
 ### Step 4 — `hash.bp`, the base64url digests
@@ -328,20 +329,25 @@ script parser would see.
 
 ### Step 14 — The copies are deletable
 
-These steps delete nothing outside std; they are done when each consumer front has switched:
+These steps delete nothing outside std; they are done when each consumer has switched:
 
-| Copy | Replaced by | Front |
+| Copy | Replaced by | State |
 |---|---|---|
-| rakun-app `ssr.bp` `jsonString`, `jsonStrings`, `jsonPairs`, `jsonTriples` | `json.quote`, `json.array`, `json.object` — in jhonstart's payload writer | jhonstart 30 (the writer leaves rakun, decision 113) |
-| rakun-app `ssr.bp` `payloadEscape` | `escape.scriptJson` | jhonstart 30 |
-| jhonstart's payload reader | `json.decode` | jhonstart 30 |
-| `rakun-web/src/error.bp` `jsonEscape` | `json.quote`, `json.object` | rakun 07 |
-| `rakun/src/config.bp`'s hand scanner (`jsonString`, `jsonStringEnd`) | `json.decode` | rakun 05 |
+| jhonstart's payload writer (was rakun-app `ssr.bp`'s `jsonString`, `jsonStrings`, `jsonPairs`, `jsonTriples`, `payloadEscape`) | `json.quote`, `json.array`, `json.object`, `escape.scriptJson` | switched — `modules/jhonstart/src/render.bp`; the `ssr.bp` copies are gone |
+| jhonstart's payload reader | `json.decode` | switched — `modules/jhonstart/src/globals.bp` `readPayload` |
+| jhonstart-emilia's class list | `json.quote`, `json.array` | switched — `modules/jhonstart-emilia/src/root.bp` |
+| emilia | — | holds no JSON code: its one codec (`output.bp` `encodeSheet` / `decodeSheet`) is a tab/newline record format, not JSON |
+| `rakun-web/src/error.bp` `jsonEscape` | `json.quote`, `json.object` | gone (rakun 07) |
+| `rakun/src/config.bp`'s hand scanner (`jsonString`, `jsonStringEnd`) | `json.decode` | gone (rakun 05) |
+| rakun, still open (rakun's fronts) | `json.quote` / `json.decode` | `rakun-data/src/sql/health.bp:37` `jsonText` (a hand escaper); `rakun/src/autoconfig_registry.bp:150-195` (`endOfQuoted`, `quotedAt`, `openerAfter` — a hand scanner of `botopink.json`'s `dependencies`); `rakun-actuator/src/health.bp:47` `rkActuatorJsonObject` (a `json:decode` host cell, `rakun_actuator.erl:154`) |
 
 **Acceptance:**
-- [ ] `grep -rn "fn jsonString\|fn jsonEscape\|fn jsonStrings\|fn jsonPairs\|fn jsonTriples\|fn payloadEscape" --include=*.bp repository/`
-      is empty once the fronts in the table have landed — asserted in this milestone's exit gate,
-      not by this front — **open:** rakun-app's `ssr.bp` five, rakun-web's `jsonEscape` and rakun config's scanner are their fronts'
+- [x] `grep -rn "fn jsonString\|fn jsonEscape\|fn jsonStrings\|fn jsonPairs\|fn jsonTriples\|fn payloadEscape" --include=*.bp repository/`
+      is empty — and so is `JSON.parse` / `JSON.stringify` in jhonstart's and emilia's `.bp` and
+      `.mjs` sources
+- [ ] no hand-written JSON reader or writer is left under `repository/` — **open:** rakun's three
+      sites in the table
+- [x] jhonstart and emilia green on both rows — `zig build test-libs`
 
 ### Test plan (Steps 11–14)
 

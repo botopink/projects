@@ -68,7 +68,7 @@ item stands is `status.md`'s.
 | [C-28](./20-builtins-surface/README.md) | The builtins surface: `builtins.d.bp` agreeing with itself and with `ast.zig`, decision 95's chain as `comptime/effect_chain.zig`, decision 96's one anchor per body; amended by decisions 102–104 and 108, which C-29 lands | the maintainer's review of `builtins.d.bp`; decisions 95, 96, 98 | **high** | every front that writes an effect, a hook or an indexable type reads this file | `20-builtins-surface/`: closed — every step and the gate, `builtins.d.bp` parses and formats |
 | [C-29](./21-effect-chain/README.md) | The effect chain: `@Context<Base>` as the owner marker only; one grant of `use`; `getContext` — its outcomes hold in C-32's return-type surface | decisions [102](../decisions-taken.md#102-contextbase-is-the-context-owner-marker-only-use-answers-usec-t-or-componentt), [104](../decisions-taken.md#104-only-use-grants-use--decisions-89-and-90-revoked), [108](../decisions-taken.md#108-getcontex--getcontext) | — | — | closed |
 | [C-30](./22-loops/README.md) | Loops: `loop { }` · `while (…) { }` · `for (…) { x -> }` · `for await`; `yield` / `break v` only in a generator scope (an `@Iterator` / `@Stream` function or an `iter` / `stream` loop); no loop answers `[v]`; the libraries swept | decision [105](../decisions-taken.md#105-three-loop-keywords-and-generator-loop-is-a-generator-scope) as amended by 125; supersedes C-06's decision-52/55 rows | — | — | closed |
-| [C-31](./23-std-purity/README.md) | Std purity: a pure root · `io/` · `testing/`; `collections`, `hash`, `encoding` fused; a root module refused from importing `io/`; the embedded std following `pub mod io;`; the import tree `import {a: {b: {c}}, x.y.z, e.t.r*}` with the leaf bound and `as` honoured | decisions [106](../decisions-taken.md#106-std-in-three-categories-a-pure-root-io-and-testing), [107](../decisions-taken.md#107-import-a-dotted-path-and-a-braced-group-are-one-tree-and-only-the-leaf-enters-scope), 110, 111; decision 71 amended in path | **high** | every `from "std"` line; the LSP's project graph | steps 1–5 landed; open: step 6 (decision 110 on the use side, `collections.Dict.empty()` through the namespace) |
+| [C-31](./23-std-purity/README.md) | Std purity: a pure root · `io/` · `testing/`; `collections`, `hash`, `encoding` fused; a root module refused from importing `io/`; the embedded std following `pub mod io;`; the import tree `import {a: {b: {c}}, x.y.z, e.t.r*}` with the leaf bound and `as` honoured | decisions [106](../decisions-taken.md#106-std-in-three-categories-a-pure-root-io-and-testing), [107](../decisions-taken.md#107-import-a-dotted-path-and-a-braced-group-are-one-tree-and-only-the-leaf-enters-scope), 110, 111; decision 71 amended in path | **high** | every `from "std"` line; the LSP's project graph | steps 1–6 landed (step 6: decision 110 on the use side, `collections.Dict.empty()` through the namespace); open: the gate's rows |
 | [C-32](./24-effects-by-return/README.md) | Effects by return type: the wrapper in the return is the annotation; `@Task<T>` never fails; only `@Result` fails (`@Task<@Result<T, E>>`, `@Iterator<@Result<T, E>>`); `@Component<C, T>`; `@Iterator<T>` / `@Stream<T>` over `YieldStep<T>`, iterator or factory; `async { }`; `iter` / `stream` before `loop` / `while` / `for`; the host rows; no compatibility mode | decisions [118–135](../decisions-taken.md#118-the-return-type-is-the-annotation) | **critical** | every effectful body in the compiler, std and the libraries | landed; open: the README's unticked boxes |
 | [C-33](./25-gate-perf/README.md) | Gate performance: the same checks in less wall clock — the shell runners (`tests/language/run.sh`, `scripts/check-docs.sh`) on `botopink-lib-test`'s bounded pool, the independent stages of `scripts/gate.sh` side by side with each stage's output one block in order, then `test-libs`' CPU and `zig build test`'s cold runtime cache | `00 · gate-perf` step 1 (the lib-test pool); decision 67 (no check skipped to be fast) | high | every landing's gate; nothing in the language | `25-gate-perf/` (spec); runners and scripts only, beside every compiler front |
 
@@ -192,15 +192,24 @@ emission); `beam_asm.zig` gains `hostDeclareWrapperNeeded(f)` **declared and not
 re-record, no `AGENTS.md`.
 **Depends on:** nothing.
 **Acceptance:**
-- [ ] `import { erlang } from "std"` then `erlang.self()` runs under `erl` on erlang and beam — a fixture
-      whose RUN LOG is the value run, not the emitted text
+- [x] `import { erlang } from "std"` then `erlang.self()` runs under `erl` on erlang and beam — a fixture
+      whose RUN LOG is the value run, not the emitted text — `erlang.self()` / `erlang.node()` print
+      `<0.10.0>` / `nonode@nohost` on both; `tests/language/run/std_erlang_node` on both
 - [x] 17 step 3b's guarded-init and owner shapes ~~byte-compared and~~ re-run under `erl` — 17's
       box: the shapes are layer 2's, run by `run/beam_memory_*` on erlang and beam
-- [ ] `out/erl/std@beam.erl` exports the ten primitives; the same on beam through the wired helper
-- [ ] the bare-import route (`import { self } from "std/erlang"` → `undefined` on commonJS, per
+- [x] `out/erl/std@beam.erl` exports the ten primitives; the same on beam through the wired helper —
+      `-export([pdGet/1, …, ptPut/2])` and `std@beam.S`'s `{exports, [...]}` list the ten;
+      `beam.pdPut(t, t)` / `beam.pdGet(t)` run on both
+- [x] the bare-import route (`import { self } from "std/erlang"` → `undefined` on commonJS, per
       `language-gaps.md`) measured on each backend; fixed here if it is the same predicate, otherwise
-      its own row with the measurement
-- [ ] `beam.bp`'s header re-spelled; `AGENTS.md` of `src/codegen/` in the same commit; gate green
+      its own row with the measurement — `from "std/erlang"` names no package now (refused at the
+      call); its decision-107 spelling `import {erlang.self, erlang.node} from "std"` runs on erlang
+      and beam and is refused by STD-001 on commonJS and wasm (the refusal's wording is its own
+      `status.md` row)
+- [x] `beam.bp`'s header re-spelled; `AGENTS.md` of `src/codegen/` in the same commit; gate green —
+      the header spells `out/erl/std@beam.erl`, `-module(std@beam).`, `std@beam:pdPut(T, T)`;
+      `src/codegen/AGENTS.md` carries decision 64's `externalWrapperNeeded`. The beam half's
+      template-bodied host `declare fn`s are still unwrapped (`status.md` § Pending)
 
 ## C-04 — Trailing defaults are applied
 

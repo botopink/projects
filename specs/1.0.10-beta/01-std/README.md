@@ -74,11 +74,11 @@ and no codegen file changes. An unknown `@name(…)` is `error[unknown-builtin]`
 `Error` inside a `test` body ends the test as `FAIL` with the error string as the message.
 
 **Acceptance:**
-- [ ] `val loc = @src();` inside `test "x: y"` in `src/a.bp` at line 12 column 15 lowers, on all four backends, to the same code as `SourceLocation(file: "src/a.bp", line: 12, column: 15, fnName: "x: y")` — four `src_*.snap.md` fixtures byte-identical to the hand-written constructor's
-- [ ] `@src(1)` → `error[src-takes-no-arguments]`; `@nope()` → `error[unknown-builtin]`, both located
-- [ ] `fnName` is the test name inside a `test`, the fn name inside a `fn`, `Type.method` inside a method, `""` at module level — one snapshot per position
-- [ ] `test "t: fails" { try failing(); }` prints `FAIL t: fails (<error string>) at src/a.bp:N` on commonJS and erlang — `codegen/tests/builtins.zig` gains a run-log fixture for each
-- [ ] `docs.md` § Builtins and `libs/std/src/builtins.d.bp` document `@src()` and `SourceLocation`; `vscode-extension/syntaxes/botopink.tmLanguage.json` highlights `@src`
+- [x] `val loc = @src();` inside `test "x: y"` in `src/a.bp` at line 12 column 15 lowers, on all four backends, to the same code as `SourceLocation(file: "src/a.bp", line: 12, column: 15, fnName: "x: y")` — four `src_*.snap.md` fixtures byte-identical to the hand-written constructor's — a project whose `locate()` returns `@src()` and its twin returning `SourceLocation(file: "src/main.bp", line: 2, column: 12, fnName: "locate")` build to byte-identical `out/` trees on commonJS, erlang, beam and wasm; `src_equals_a_hand_written_constructor.snap.md` on each
+- [x] `@src(1)` → `error[src-takes-no-arguments]`; `@nope()` → `error[unknown-builtin]`, both located — `botopink check` reports each at `src/main.bp:2:13`
+- [x] `fnName` is the test name inside a `test`, the fn name inside a `fn`, `Type.method` inside a method, `""` at module level — one snapshot per position — `src_in_a_test` / `in_a_fn` / `in_a_method` / `at_module_level`; run: `f`, `Box.where` and the empty string on the four targets, the test name under `botopink test`
+- [ ] `test "t: fails" { try failing(); }` prints `FAIL t: fails (<error string>) at src/a.bp:N` on commonJS and erlang — `codegen/tests/builtins.zig` gains a run-log fixture for each — **open:** both targets print `FAIL t: fails  (went wrong)  at main.bp:4` for `src/main.bp`: the file is its basename, not the path the box names
+- [x] `docs.md` § Builtins and `libs/std/src/builtins.d.bp` document `@src()` and `SourceLocation`; `vscode-extension/syntaxes/botopink.tmLanguage.json` highlights `@src` — `docs.md` § Builtins › "`@src()` and `SourceLocation`", `builtins.d.bp` § Source location; the grammar's `builtins` rule `@[a-zA-Z_][A-Za-z0-9_]*` paints `@src`
 - [ ] `zig build test` green from a cold cache
 
 ### Step 2 — `testing.asserts`
@@ -93,11 +93,11 @@ STD-001 on every target; `matches`, `deepEquals`, `throws` and `throwsWith` use 
 Node and Erlang templates.
 
 **Acceptance:**
-- [ ] `import {testing.asserts} from "std"` type-checks for `--target commonJS`, `erlang`, `beam` and `wasm` (STD-001 does not fire — no `pub declare fn` in the file)
-- [ ] every function's pass and fail path is covered by an inline `test` at the foot of the file, written with `try`; the fail paths assert the literal message through `throws`/`throwsWith`
+- [x] `import {testing.asserts} from "std"` type-checks for `--target commonJS`, `erlang`, `beam` and `wasm` (STD-001 does not fire — no `pub declare fn` in the file) — `asserts.errorText(asserts.isTrue(false))` runs on commonJS, erlang and beam; on wasm STD-001 is silent and the build then refuses the private cell `canonical` at `asserts.bp:106`, so the *Target* line's "compiles on all four backends" does not hold on wasm
+- [x] every function's pass and fail path is covered by an inline `test` at the foot of the file, written with `try`; the fail paths assert the literal message through `errorText` (an assertion answers `@Result` and raises nothing a `throws` / `throwsWith` could catch)
 - [ ] `botopink test` in `libs/std` green on commonJS and erlang; `zig build test-libs` reads `std · commonJS: pass` and `std · erlang: pass`
-- [ ] the old names (`truthy`, `falsy`, `equal`, `notEqual`, `approxEqual`, `AssertError`) are gone and `grep -rn "asserts\.\(truthy\|equal\b\)" --include=*.bp repository/` is empty
-- [ ] `libs/std/AGENTS.md`'s `asserts` row lists the surface
+- [x] the old names (`truthy`, `falsy`, `equal`, `notEqual`, `approxEqual`, `AssertError`) are gone and `grep -rn "asserts\.\(truthy\|equal\b\)" --include=*.bp repository/` is empty — the grep and one for `AssertError` / `falsy` / `notEqual` / `approxEqual` are empty
+- [x] `libs/std/AGENTS.md`'s `asserts` row lists the surface
 
 ### Step 3 — `testing.snapshots`
 
@@ -108,11 +108,11 @@ A mismatch or a missing file writes `<path>.new` and answers `Error`. There is n
 environment variable and no manifest key that records a snapshot.
 
 **Acceptance:**
-- [ ] `snapshots.path(SourceLocation(file: "src/emilia.bp", line: 1, column: 1, fnName: "css: modifiers ---- hover on md breakpoint"))` answers `src/__snapshots__/css/modifiers_hover_on_md_breakpoint.snap` on both targets
-- [ ] a name with no `": "` answers `Error("snapshots: test name needs a suite …")` — asserted, not assumed
-- [ ] missing → `.new` written + `Error`; mismatch → `.new` written + `Error`; match → `Ok` and a stale `.new` deleted; each is an inline test running against a scratch `__snapshots__/` under the host tmpdir
-- [ ] `grep -rn "SNAP_CREATE\|update" libs/std/src/testing/snapshots.bp` finds no code path that writes `<path>` itself
-- [ ] `*.snap.new` is in `.gitignore` of `botopink-lang`, `rakun`, `jhonstart`, `emilia` and the new `onze`, and each repo's `scripts/git-hooks/pre-commit` refuses a staged `*.snap.new`
+- [x] `snapshots.path(SourceLocation(file: "src/emilia.bp", line: 1, column: 1, fnName: "css: modifiers ---- hover on md breakpoint"))` answers `src/__snapshots__/css/modifiers_hover_on_md_breakpoint.snap` on both targets — run on commonJS and erlang
+- [x] a name with no `": "` answers `Error("snapshots: test name needs a suite …")` — asserted, not assumed — "path ---- a name without a suite is refused"
+- [x] missing → `.new` written + `Error`; mismatch → `.new` written + `Error`; match → `Ok` and a stale `.new` deleted; each is an inline test running against a scratch `__snapshots__/` under the host tmpdir — the `engine ----` tests, green on both rows
+- [x] `grep -rn "SNAP_CREATE\|update" libs/std/src/testing/snapshots.bp` finds no code path that writes `<path>` itself — the grep finds the header's "there is no update flag" only; the engine's one `writeFile` writes `<path>.new`
+- [ ] `*.snap.new` is in `.gitignore` of `botopink-lang`, `rakun`, `jhonstart`, `emilia` and the new `onze`, and each repo's `scripts/git-hooks/pre-commit` refuses a staged `*.snap.new` — **open:** only `botopink-lang`'s `.gitignore` has it, and no repo's pre-commit refuses one
 
 ### Step 4 — the old `onze`, migrated 100 %
 
@@ -122,11 +122,11 @@ cells) is `testing.mocks`, lifted verbatim (decision 71); its `onzeKey` renderer
 private `canonical`. There is no `.mjs` sidecar: the Node tables are a `globalThis.__bp_mocks` cell.
 
 **Acceptance:**
-- [ ] every row of the inventory table in `onze-migration.md` has a destination and a test that exercises it there
-- [ ] `repository/onze/test/onze_test.bp`'s eight tests pass, re-spelled against `testing.mocks`, as inline tests at the foot of `libs/std/src/testing/mocks.bp`, on commonJS and erlang
-- [ ] `../03-rakun/19-rakun-test-utilities/examples/controller-test-example.bp` imports from `"std"` instead of `"onze"`
-- [ ] no `.mjs` file is added under `libs/std/src/sidecars/`
-- [ ] `grep -rn 'from "onze"' --include=*.bp repository/ specs/1.0.10-beta/` finds only orchestrator imports
+- [x] every row of the inventory table in `onze-migration.md` has a destination and a test that exercises it there — every symbol row lands in `mocks.bp` (or `asserts`' `canonical`) and is reached by the eight tests, `anyString()`'s and `deepEquals`'
+- [x] `repository/onze/test/onze_test.bp`'s eight tests pass, re-spelled against `testing.mocks`, as inline tests at the foot of `libs/std/src/testing/mocks.bp`, on commonJS and erlang — the eight names, `mocks: …`, green on both rows
+- [ ] `../03-rakun/19-rakun-test-utilities/examples/controller-test-example.bp` imports from `"std"` instead of `"onze"` — **open:** line 24 still reads `from "onze"`
+- [x] no `.mjs` file is added under `libs/std/src/sidecars/` — `random.mjs` alone
+- [ ] `grep -rn 'from "onze"' --include=*.bp repository/ specs/1.0.10-beta/` finds only orchestrator imports — **open:** the old library's own `repository/onze` files and the rakun example above
 
 ### Step 5 — `onze13 → onze` namespace takeover
 
