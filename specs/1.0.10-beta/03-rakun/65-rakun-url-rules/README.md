@@ -239,19 +239,19 @@ pub fn clientHref(rules: PathRules, pathname: string) -> string
 origin rule; the server passes `pathRulesOf(rules)`.
 
 **Acceptance:**
-- [ ] With `basePath: "/docs"`, `canonicalize(rules, "/docs/about")` answers `/about` and
-      `clientHref(rules, "/about")` answers `/docs/about`.
-- [ ] `clientHref(canonicalize(rules, p)) == p` for twenty paths including `/`, `/docs`, `/docs/`,
-      a path with a query string, and a percent-encoded path.
-- [ ] With `basePath: ""` both functions are identity apart from the trailing-slash rule.
-- [ ] `canonicalize(rules, "/other/about")` with `basePath: "/docs"` answers `/other/about` unchanged —
-      a path outside the base path is not this app's and is not rewritten into it.
-- [ ] `trailingSlash: false` maps `/about/` to `/about` and leaves `/` alone.
-- [ ] `trailingSlash: true` maps `/about` to `/about/` and leaves `/` alone.
-- [ ] Percent-decoding happens once: `/a%252Fb` decodes to `/a%2Fb` and not to `/a/b`, because
-      double-decoding is a path-traversal primitive.
-- [ ] Every assertion in this step runs green on `--target erlang` and `--target commonJS` from
-      `libs/routing/test/url_rules_test.bp`. This is the boundary half.
+- [x] With `basePath: "/docs"`, `canonicalize(rules, "/docs/about")` answers `/about` and
+      `clientHref(rules, "/about")` answers `/docs/about`. — held: `libs/routing/test/url_rules_test.bp` "canonicalize strips basePath and clientHref restores it"
+- [x] `clientHref(canonicalize(rules, p)) == p` for twenty paths including `/`, `/docs`, `/docs/`,
+      a path with a query string, and a percent-encoded path. — held: `libs/routing/test/url_rules_test.bp` "clientHref inverts canonicalize over twenty paths"
+- [x] With `basePath: ""` both functions are identity apart from the trailing-slash rule. — held: `libs/routing/test/url_rules_test.bp` "with no basePath both are identity apart from the trailing slash"
+- [x] `canonicalize(rules, "/other/about")` with `basePath: "/docs"` answers `/other/about` unchanged —
+      a path outside the base path is not this app's and is not rewritten into it. — held: `libs/routing/test/url_rules_test.bp` "a path outside basePath is answered unchanged"
+- [x] `trailingSlash: false` maps `/about/` to `/about` and leaves `/` alone. — held: `libs/routing/test/url_rules_test.bp` "trailingSlash false drops it and leaves the root alone"
+- [x] `trailingSlash: true` maps `/about` to `/about/` and leaves `/` alone. — held: `libs/routing/test/url_rules_test.bp` "trailingSlash true adds it and leaves the root alone"
+- [x] Percent-decoding happens once: `/a%252Fb` decodes to `/a%2Fb` and not to `/a/b`, because
+      double-decoding is a path-traversal primitive. — held: `libs/routing/test/url_rules_test.bp` "percent-decoding happens once"
+- [x] Every assertion in this step runs green on `--target erlang` and `--target commonJS` from
+      `libs/routing/test/url_rules_test.bp`. This is the boundary half. — held: `libs/routing` 66/0 on erlang and on commonJS (2026-09-26)
 
 ### Step 3 — Redirects
 
@@ -281,7 +281,7 @@ pub fn parseRedirectTable(wire: string) -> Array<RedirectRule>
 - [ ] The first matching rule wins and later ones are not evaluated.
 - [ ] A rule whose source matches its own destination fails at registration — a self-redirect is an
       infinite loop and there is no reason to allow one.
-- [ ] `parseRedirectTable(writeRedirectTable(rs))` recovers every rule field by field, on both targets.
+- [x] `parseRedirectTable(writeRedirectTable(rs))` recovers every rule field by field, on both targets. — held: `libs/routing/test/url_rules_test.bp` "parseRedirectTable(writeRedirectTable(rs)) recovers every field", 66/0 on both targets
 - [ ] A source or destination containing `|` fails at registration, naming the rule.
 
 ### Step 4 — Rewrites
