@@ -223,89 +223,89 @@ writes through `rakun_runtime:set_prop/2`. Two modules, one table, no second sto
 plus the document boundaries, and `read_tree/1` for `configtree:`.
 
 **Acceptance:**
-- [ ] `server.port=8080` in a `.properties` file reads back through `rkProp("server.port")`
-- [ ] `{"server":{"port":8080}}` flattens to `server.port`
-- [ ] `{"a":["x","y"]}` flattens to `a[0]` and `a[1]`
-- [ ] A YAML block mapping, a block sequence and a quoted scalar all read correctly
-- [ ] A YAML anchor, alias or flow mapping is refused with an error naming the file and the line — it is not silently dropped
-- [ ] `configtree:` over a directory containing `username` and `password` yields `username` and `password` keys with the file bodies as values, trailing newline stripped
+- [x] `server.port=8080` in a `.properties` file reads back through `rkProp("server.port")` — held: `test/config_test.bp` "rakun config: a .properties document reads back through rkProp"
+- [x] `{"server":{"port":8080}}` flattens to `server.port` — held: `test/config_test.bp` "rakun config: a nested .json object flattens to dot keys"
+- [x] `{"a":["x","y"]}` flattens to `a[0]` and `a[1]` — held: `test/config_test.bp` "rakun config: a .json array flattens to indexed keys"
+- [x] A YAML block mapping, a block sequence and a quoted scalar all read correctly — held: `test/config_test.bp` "rakun config: a YAML block mapping, block sequence and quoted scalar all read"
+- [x] A YAML anchor, alias or flow mapping is refused with an error naming the file and the line — it is not silently dropped — held: `test/config_test.bp` "rakun config: a YAML anchor is refused with the file and the line" + "…alias and a flow mapping are refused too" (one `origin:line` refusal path in `src/config.bp`)
+- [x] `configtree:` over a directory containing `username` and `password` yields `username` and `password` keys with the file bodies as values, trailing newline stripped — held: `test/config_test.bp` "rakun config: configtree reads one file per key, newline stripped"
 
 ### Step 2 — Locations, names and imports
 
 **Acceptance:**
-- [ ] `rakun.config.name=myproject` reads `myproject.yaml` instead of `application.yaml`
-- [ ] A non-`optional:` location that does not exist fails the boot naming the path
-- [ ] An `optional:` location that does not exist contributes nothing and does not warn
-- [ ] Later locations in the list override earlier ones
-- [ ] `rakun.config.import` pulls in a second document, resolved after the importing one
-- [ ] An import cycle fails the boot naming both files
+- [x] `rakun.config.name=myproject` reads `myproject.yaml` instead of `application.yaml` — held: `test/config_test.bp` "rakun config: rakun.config.name picks the document stem"
+- [x] A non-`optional:` location that does not exist fails the boot naming the path — held: `test/config_test.bp` "rakun config: a non-optional location that does not exist fails the boot"
+- [x] An `optional:` location that does not exist contributes nothing and does not warn — held: `test/config_test.bp` "rakun config: an optional location that does not exist contributes nothing"
+- [x] Later locations in the list override earlier ones — held: `test/config_test.bp` "rakun config: a later location overrides an earlier one"
+- [x] `rakun.config.import` pulls in a second document, resolved after the importing one — held: `test/config_test.bp` "rakun config: rakun.config.import pulls a document resolved after the importer"
+- [x] An import cycle fails the boot naming both files — held: `test/config_test.bp` "rakun config: an import cycle fails the boot naming both files" (message is the visited chain)
 
 ### Step 3 — Ordering
 
 **Acceptance:**
-- [ ] `--server.port=9090` beats `RAKUN_SERVER_PORT=8081` beats `application.yaml`
-- [ ] `application-prod.yaml` beats `application.yaml` when `prod` is active
-- [ ] With `dev,prod` active, `application-prod.yaml` beats `application-dev.yaml`
-- [ ] `rkSetProp` loses to every file source and wins over a declared field default
-- [ ] `RAKUN_APPLICATION_JSON` beats the environment variables beside it
-- [ ] Each of the eight rows in the source table has one test asserting it beats the row below it
+- [x] `--server.port=9090` beats `RAKUN_SERVER_PORT=8081` beats `application.yaml` — held: `test/config_test.bp` "rakun config: the full stack — one key in six sources, one winner" + rows 1→5 tests
+- [x] `application-prod.yaml` beats `application.yaml` when `prod` is active — held: `test/config_test.bp` "rakun config: row 4 beats row 5 — a profile document beats the base document"
+- [x] With `dev,prod` active, `application-prod.yaml` beats `application-dev.yaml` — held: `test/config_test.bp` "rakun config: with dev and prod active the later profile wins"
+- [x] `rkSetProp` loses to every file source and wins over a declared field default — held: `test/config_test.bp` "rakun config: row 6 beats row 7 — a configuration tree beats rkSetProp"; `test/typed_config_test.bp` "#[nested] composes two levels down" (rkSetProp over `#[defaultValue]`)
+- [x] `RAKUN_APPLICATION_JSON` beats the environment variables beside it — held: `test/config_test.bp` "rakun config: row 2 beats row 3 — RAKUN_APPLICATION_JSON beats the variables beside it"
+- [x] Each of the eight rows in the source table has one test asserting it beats the row below it — held: `test/config_test.bp` "row 1 beats row 2" … "row 7 beats row 8" (rakun `0a8deef`)
 
 ### Step 4 — Placeholders and random values
 
 **Acceptance:**
-- [ ] `${app.name}` resolves from another key
-- [ ] `${missing:fallback}` resolves to `fallback`
-- [ ] `${missing}` with no default fails the boot naming both keys
-- [ ] `a=${b}` / `b=${a}` fails the boot naming the cycle
-- [ ] `${random.uuid}` is a valid v4 UUID and differs between two references
-- [ ] `${random.int[1024,65536]}` is inside the range, and one thousand draws cover more than one value
+- [x] `${app.name}` resolves from another key — held: `test/config_test.bp` "rakun config: ${key} resolves from another key, recursively"
+- [x] `${missing:fallback}` resolves to `fallback` — held: `test/config_test.bp` "rakun config: ${missing:fallback} resolves to the default"
+- [x] `${missing}` with no default fails the boot naming both keys — held: `test/config_test.bp` "rakun config: ${missing} with no default fails the boot naming both keys"
+- [x] `a=${b}` / `b=${a}` fails the boot naming the cycle — held: `test/config_test.bp` "rakun config: a placeholder cycle fails the boot naming the chain"
+- [x] `${random.uuid}` is a valid v4 UUID and differs between two references — held: `test/config_test.bp` "rakun config: ${random.uuid} is a v4 UUID and differs between references"
+- [x] `${random.int[1024,65536]}` is inside the range, and one thousand draws cover more than one value — held: `test/config_test.bp` "rakun config: ${random.int[lo,hi]} stays in range and is not one value"
 
 ### Step 5 — Multi-document activation and cloud-platform detection
 
 **Acceptance:**
-- [ ] A `---`-separated YAML document with `on-profile: prod` contributes only when `prod` is active
-- [ ] `on-profile: "prod | staging"` matches either; `"!prod"` matches when it is not active
-- [ ] `on-cloud-platform: kubernetes` matches when `KUBERNETES_SERVICE_HOST` is set and not otherwise
-- [ ] A document with two conditions needs both
-- [ ] A non-contributing document does not lower-priority-contribute; the key is absent
+- [x] A `---`-separated YAML document with `on-profile: prod` contributes only when `prod` is active — held: `test/config_test.bp` "rakun config: a conditional document contributes only when its profile is active"
+- [x] `on-profile: "prod | staging"` matches either; `"!prod"` matches when it is not active — held: `test/config_test.bp` "rakun config: on-profile takes an expression" + "the profile expression grammar"
+- [x] `on-cloud-platform: kubernetes` matches when `KUBERNETES_SERVICE_HOST` is set and not otherwise — held: `test/config_test.bp` "rakun config: on-cloud-platform matches a detected platform"
+- [x] A document with two conditions needs both — held: `test/config_test.bp` "rakun config: a document with two conditions needs both"
+- [x] A non-contributing document does not lower-priority-contribute; the key is absent — held: `test/config_test.bp` "rakun config: a conditional document contributes only when its profile is active" (`act.prodish` stays blank)
 
 ### Step 6 — Profiles, includes and groups
 
 **Acceptance:**
-- [ ] `rakun.profiles.active=dev` loads `application-dev.yaml`
-- [ ] `rakun.profiles.default` applies only when nothing is active
-- [ ] `rakun.profiles.include[0]=common` activates `common` regardless of the active list
-- [ ] `rakun.profiles.group.production[0]=proddb` and `[1]=prodmq` activates all three when `production` is activated
-- [ ] A group referring to itself fails the boot naming the cycle
-- [ ] The resolved profile list is readable at run time (`profiles.active()`), in activation order
+- [x] `rakun.profiles.active=dev` loads `application-dev.yaml` — held: `test/config_test.bp` "rakun config: an active profile loads its document and is readable back"
+- [x] `rakun.profiles.default` applies only when nothing is active — held: `test/config_test.bp` "rakun config: rakun.profiles.default applies only when nothing is active"
+- [x] `rakun.profiles.include[0]=common` activates `common` regardless of the active list — held: `test/config_test.bp` "rakun config: an include activates a profile regardless of the active list"
+- [x] `rakun.profiles.group.production[0]=proddb` and `[1]=prodmq` activates all three when `production` is activated — held: `test/config_test.bp` "rakun config: a group expands one name into a list, the name included"
+- [x] A group referring to itself fails the boot naming the cycle — held: `test/config_test.bp` "rakun config: a group that refers to itself fails the boot naming the cycle"
+- [x] The resolved profile list is readable at run time (`profiles.active()`), in activation order — held: `test/config_test.bp` "rakun config: an include activates a profile regardless of the active list" (`active()` = `dev,common`)
 
 ### Step 7 — `#[configurationProperties]` binding
 
 **Acceptance:**
-- [ ] `#[configurationProperties("my.service")]` on a record binds every field from `my.service.*`
-- [ ] `remoteAddress` binds from `remote-address`, from `remoteAddress` and from `REMOTE_ADDRESS`
+- [x] `#[configurationProperties("my.service")]` on a record binds every field from `my.service.*` — held: `test/typed_config_test.bp` "rakun config: #[configurationProperties] binds every field from the prefix"
+- [x] `remoteAddress` binds from `remote-address`, from `remoteAddress` and from `REMOTE_ADDRESS` — held: `test/typed_config_test.bp` "rakun config: a field binds from the kebab, the camel and the screaming spelling"
 - [ ] `bool`, `i32`, `i64`, `f64`, `string`, `string[]`, `Duration` and `DataSize` all coerce
-- [ ] A `#[nested]` field of a type that also carries `#[configurationProperties]` binds under `<prefix>.<field>`
-- [ ] Two levels of nesting work
-- [ ] The bound record is injectable by type into a `#[service]` with no extra wiring
-- [ ] `#[configurationProperties]` on an enum-shaped `type` fails at comptime with a located message
-- [ ] An unparsable value fails the boot naming the key, the value and the accepted forms
+- [x] A `#[nested]` field of a type that also carries `#[configurationProperties]` binds under `<prefix>.<field>` — held: `test/typed_config_test.bp` "rakun config: #[nested] composes two levels down"
+- [x] Two levels of nesting work — held: `test/typed_config_test.bp` "rakun config: #[nested] composes two levels down"
+- [x] The bound record is injectable by type into a `#[service]` with no extra wiring — held: `test/typed_config_test.bp` "rakun config: the bound record is injectable by type with no extra wiring"
+- [x] `#[configurationProperties]` on an enum-shaped `type` fails at comptime with a located message — held: `src/config.bp` `configurationProperties` → `decl.fail("… not an enum")`
+- [x] An unparsable value fails the boot naming the key, the value and the accepted forms — held: `test/config_test.bp` "rakun config: an unparsable typed value refuses rather than answering zero" (parser `assert`s on `durationProblem`/`dataSizeProblem`/`boolProblem`)
 
 ### Step 8 — `Duration` and `DataSize`
 
 **Acceptance:**
-- [ ] `30`, `30s`, `PT30S` all give 30000 ms under `#[unit("seconds")]`
-- [ ] `500ms`, `2m`, `1h`, `PT1H30M` parse without a unit annotation
-- [ ] `10` under `#[unit("megabytes")]` is 10485760 bytes; `10MB` is the same; `10KB` is 10240
-- [ ] `30x` fails the boot naming the value
+- [x] `30`, `30s`, `PT30S` all give 30000 ms under `#[unit("seconds")]` — held: `test/config_test.bp` "rakun config: 30, 30s and PT30S are all 30000 ms under seconds"
+- [x] `500ms`, `2m`, `1h`, `PT1H30M` parse without a unit annotation — held: `test/config_test.bp` "rakun config: a suffixed duration parses without a unit annotation"
+- [x] `10` under `#[unit("megabytes")]` is 10485760 bytes; `10MB` is the same; `10KB` is 10240 — held: `test/config_test.bp` "rakun config: data sizes scale by their suffix or the unit default"
+- [x] `30x` fails the boot naming the value — held: `test/config_test.bp` "rakun config: an unparsable typed value refuses rather than answering zero"
 
 ### Step 9 — Validation and the catalogue
 
 **Acceptance:**
-- [ ] A `#[validated]` configuration record with a violated constraint halts the boot before any component is constructed
+- [x] A `#[validated]` configuration record with a violated constraint halts the boot before any component is constructed — held: `test/config_check_test.bp` "an invalid configuration halts the boot before any component is constructed" (rakun `c8f185c`)
 - [ ] The report names the key, the offending value and the source file it came from
-- [ ] `rkRegisterConfigKeys` records every bound key with its type and declared default
-- [ ] The catalogue dump lists every key rakun itself reads (`rakun.main.*`, `rakun.server.*`, `rakun.config.*`, `rakun.profiles.*`) alongside the application's own
+- [x] `rkRegisterConfigKeys` records every bound key with its type and declared default — held: `test/typed_config_test.bp` "rakun config: every emission registers its keys in the catalogue"
+- [x] The catalogue dump lists every key rakun itself reads (`rakun.main.*`, `rakun.server.*`, `rakun.config.*`, `rakun.profiles.*`) alongside the application's own — held: `test/typed_config_test.bp` "rakun config: every emission registers its keys in the catalogue" + `src/config.bp` own-key registration (`rakun.main`/`server`/`config`/`profiles`)
 
 ## Examples
 
@@ -363,13 +363,13 @@ This front is erlang-only and ships no Node file (decision 113).
 
 ## Definition of done
 
-- [ ] `src/config.bp` and `src/profiles.bp` exist; `src/sidecars/rakun_config.erl` compiles under `erlc`
-- [ ] All eight sources resolve in the documented order, each with its own test
-- [ ] `.properties`, `.json` and the documented YAML subset all load; an unsupported YAML construct is a located error
-- [ ] a `.json` value holding `\u0041`, `\b` and `\/` loads as `A`, U+0008 and `/`; a malformed document is refused with `json.decode`'s `Error` message, naming the file; `grep -n "fn jsonString\|fn jsonUnquote\|json\.unquote\|json\.parse" src/config.bp` is empty
-- [ ] `#[configurationProperties]` binds nested records, `Duration` and `DataSize`
-- [ ] A missing non-optional location, an unresolvable placeholder, a placeholder cycle, a profile-group cycle and an unparsable typed value each fail the boot with a message naming the input
-- [ ] `#[validated]` configuration refuses the boot on a violation
-- [ ] The key catalogue lists every key rakun reads
-- [ ] `repository/rakun/AGENTS.md` documents the source order, the location syntax and the YAML subset
-- [ ] The front's tests are green on its assigned target
+- [x] `src/config.bp` and `src/profiles.bp` exist; the readers are botopink, so there is no `src/sidecars/rakun_config.erl` (`decisions-pending.md` 03r-c) — held: `modules/rakun/src/{config,profiles}.bp`
+- [x] All eight sources resolve in the documented order, each with its own test — held: `test/config_test.bp` the seven "row N beats row N+1" cells + "the full stack — one key in six sources, one winner"
+- [x] `.properties`, `.json` and the documented YAML subset all load; an unsupported YAML construct is a located error — held: `test/config_test.bp` step-1 reader tests (anchor refusal names `file:line`)
+- [x] a `.json` value holding `\u0041`, `\b` and `\/` loads as `A`, U+0008 and `/`; a malformed document is refused with `json.decode`'s `Error` message, naming the file; `grep -n "fn jsonString\|fn jsonUnquote\|json\.unquote\|json\.parse" src/config.bp` is empty — held: `test/config_test.bp` "a .json value's escapes are decoded by std's json.decode" + "a malformed .json is refused with json.decode's message, naming the file"; the grep is empty (rakun `b742a4c`)
+- [x] `#[configurationProperties]` binds nested records, `Duration` and `DataSize` — held: `test/typed_config_test.bp` "binds every field from the prefix" + "#[nested] composes two levels down"
+- [x] A missing non-optional location, an unresolvable placeholder, a placeholder cycle, a profile-group cycle and an unparsable typed value each fail the boot with a message naming the input — held: `test/config_test.bp` (non-optional location, `${missing}`, placeholder cycle, group cycle, unparsable typed value tests)
+- [x] `#[validated]` configuration refuses the boot on a violation — held: `test/config_check_test.bp` "an invalid configuration halts the boot before any component is constructed"
+- [x] The key catalogue lists every key rakun reads — held: `test/typed_config_test.bp` "rakun config: every emission registers its keys in the catalogue"
+- [x] `repository/rakun/AGENTS.md` documents the source order, the location syntax and the YAML subset — held: `repository/rakun/AGENTS.md` § Externalized configuration (eight sources, Locations, document formats)
+- [x] The front's tests are green on its assigned target — held: `modules/rakun` `botopink test --target erlang` 310/0

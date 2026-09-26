@@ -32,36 +32,10 @@ import {Request, HttpMethod} from "rakun";
 import {getRoute, postRoute, HandlerResponse, bodyJson, streamed} from "rakun";
 // Front 22 registers the entries these decorators emit.
 import {rkAppRegisterHandler} from "rakun";
-import {collections.Dict} from "std";
 
-// A test double for the request. `Request` is a BEHAVIOR — the server supplies the
-// concrete instance at runtime (`repository/rakun/src/http.bp:22-34`) — so a test
-// cannot construct one and has to implement it. Front 19 (test utilities) should
-// own this type; it is written out here so the example stands alone.
-type FakeRequest(
-    method: HttpMethod,
-    path: string,
-    params: Dict<string, string>,
-    queries: Dict<string, string>,
-    heads: Dict<string, string>,
-    payload: string,
-) implement Request {
-    pub fn param(self: Self, name: string) -> string {
-        return self.params.lookup(name).unwrapOr("");
-    }
-
-    pub fn query(self: Self, name: string) -> string {
-        return self.queries.lookup(name).unwrapOr("");
-    }
-
-    pub fn header(self: Self, name: string) -> string {
-        return self.heads.lookup(name).unwrapOr("");
-    }
-
-    pub fn body(self: Self) -> string {
-        return self.payload;
-    }
-}
+// The request double is front 19's: `fakeGet`/`fakePost` build a `FakeRequest`
+// and `toRequest()` hands the handler the runtime's own `Request`.
+import {fakeGet, fakePost} from "rakun-test";
 
 // The app's own data layer — front 08 in a real application.
 fn allPosts() -> @Task<string[]> {
@@ -148,26 +122,12 @@ pub fn exportPosts(req: Request) -> @Task<HandlerResponse> {
 
 // ---- test doubles -------------------------------------------------------------
 
-fn fakeGet(path: string, id: string) -> FakeRequest {
-    return FakeRequest(
-        method: HttpMethod.Get,
-        path: path,
-        params: Dict.empty().insert("id", id),
-        queries: Dict.empty(),
-        heads: Dict.empty(),
-        payload: "",
-    );
+fn getRequest(path: string, id: string) -> Request {
+    return fakeGet(path).withParam("id", id).toRequest();
 }
 
-fn fakePost(path: string, contentType: string, payload: string) -> FakeRequest {
-    return FakeRequest(
-        method: HttpMethod.Post,
-        path: path,
-        params: Dict.empty(),
-        queries: Dict.empty(),
-        heads: Dict.empty().insert("content-type", contentType),
-        payload: payload,
-    );
+fn postRequest(path: string, contentType: string, payload: string) -> Request {
+    return fakePost(path, payload).withHeader("content-type", contentType).toRequest();
 }
 
 fn headerOf(res: HandlerResponse, name: string) -> string {
@@ -184,7 +144,7 @@ fn headerOf(res: HandlerResponse, name: string) -> string {
 // ---- what the handlers answer -------------------------------------------------
 
 test "the list handler answers JSON with the right content type" {
-    val res = await listPosts(fakeGet("/api/posts", ""));
+    val res = await listPosts(getRequest("/api/posts", ""));
     val body = res.chunks.join("");
     assert res.status == 200;
     assert body.startsWith("[{\"id\":\"1\"");
@@ -192,34 +152,34 @@ test "the list handler answers JSON with the right content type" {
 }
 
 test "a create with a valid body is 201 and points at the new resource" {
-    val res = await createPost(fakePost("/api/posts", "application/json", "{\"title\":\"x\"}"));
+    val res = await createPost(postRequest("/api/posts", "application/json", "{\"title\":\"x\"}"));
     assert res.status == 201;
     assert headerOf(res, "location") == "/api/posts/3";
 }
 
 test "a create with a malformed body is 400, not 500" {
-    val res = await createPost(fakePost("/api/posts", "application/json", "{not json"));
+    val res = await createPost(postRequest("/api/posts", "application/json", "{not json"));
     assert res.status == 400;
 }
 
 test "a multipart create is refused before the body is read" {
-    val res = await createPost(fakePost("/api/posts", "multipart/form-data; boundary=x", ""));
+    val res = await createPost(postRequest("/api/posts", "multipart/form-data; boundary=x", ""));
     assert res.status == 415;
 }
 
 test "a dynamic segment reaches the handler as an ordinary request param" {
-    val res = await showPost(fakeGet("/api/posts/7", "7"));
+    val res = await showPost(getRequest("/api/posts/7", "7"));
     val body = res.chunks.join("");
     assert body.contains("\"id\":\"7\"");
 }
 
 test "a missing dynamic param is a 404, not an empty 200" {
-    val res = await showPost(fakeGet("/api/posts/", ""));
+    val res = await showPost(getRequest("/api/posts/", ""));
     assert res.status == 404;
 }
 
 test "the export streams one chunk per row, in index order" {
-    val res = await exportPosts(fakeGet("/api/export", ""));
+    val res = await exportPosts(getRequest("/api/export", ""));
     assert res.chunks.length == 3;
     assert res.chunks.join("") == "row 0\nrow 1\nrow 2\n";
     assert headerOf(res, "transfer-encoding") == "chunked";

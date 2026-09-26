@@ -241,15 +241,15 @@ pub fn requestEpoch() -> i64
 Cookies are parsed out of the `cookie` header by this front, not passed separately.
 
 **Acceptance:**
-- [ ] `beginRequest` returns an epoch strictly greater than the previous call's on the same process.
-- [ ] `requestPhase()` with no frame raises, and the message contains `request context is not established`.
-- [ ] `beginRequest` called twice with no intervening `endRequest` raises, naming the path of the
-      outer scope.
-- [ ] `endRequest` with no frame raises.
-- [ ] After `endRequest`, `requestEpoch()` raises — the key is erased, not blanked.
-- [ ] Two sequential requests on one process see different epochs, and a `Cookies` handle minted in
+- [x] `beginRequest` returns an epoch strictly greater than the previous call's on the same process. — held: `test/request_context_test.bp` "rakun request: beginRequest answers an epoch strictly greater than the previous one"
+- [x] `requestPhase()` with no frame raises, and the message contains `request context is not established`. — held: `test/request_context_test.bp` "rakun request: an accessor with no frame raises and names the mechanism"
+- [x] `beginRequest` called twice with no intervening `endRequest` raises, naming the path of the
+      outer scope. — held: `test/request_context_test.bp` "rakun request: beginRequest inside a request scope raises, naming the outer path"
+- [x] `endRequest` with no frame raises. — held: `test/request_context_test.bp` "rakun request: endRequest with no frame raises"
+- [x] After `endRequest`, `requestEpoch()` raises — the key is erased, not blanked. — held: `test/request_context_test.bp` "rakun request: the key is erased, not blanked"
+- [x] Two sequential requests on one process see different epochs, and a `Cookies` handle minted in
       the first raises when used in the second. This is the keep-alive test and it is the first one
-      in the file.
+      in the file. — held: `test/request_context_test.bp` first test "rakun request: two requests on one process get different epochs and an old handle raises" + "a Cookies handle minted in the previous request raises in the next"
 - [ ] `setPhase(RequestPhase.Action)` is visible to `requestPhase()` and to front 12's
       `rkCachePhase()` in the same process, asserted through front 12's own verb.
 
@@ -270,13 +270,13 @@ RFC 9110 §5.3 says a recipient may do and what front 04's dispatcher already do
 string's repeated keys.
 
 **Acceptance:**
-- [ ] `headers().get("User-Agent")` and `headers().get("user-agent")` answer the same value.
-- [ ] `headers().get("x-absent")` answers `null`, not `""` — this is the one place the front
-      deliberately differs from `Request.header`, which is frozen at plain `string`.
-- [ ] A header sent twice answers both values joined with `", "`.
-- [ ] `headers()` in phase `Render` sets `isDynamic()`; in phase `Action` it does not.
-- [ ] `headers()` in a `strict` frame raises, and the message names `headers` and the request path.
-- [ ] `headers()` with no frame raises.
+- [x] `headers().get("User-Agent")` and `headers().get("user-agent")` answer the same value. — held: `test/request_context_test.bp` "rakun request: a header lookup case-folds its name"
+- [x] `headers().get("x-absent")` answers `null`, not `""` — this is the one place the front
+      deliberately differs from `Request.header`, which is frozen at plain `string`. — held: `test/request_context_test.bp` "rakun request: an absent header answers null, not the empty string"
+- [x] A header sent twice answers both values joined with `", "`. — held: `test/request_context_test.bp` "rakun request: a header sent twice answers both values joined"
+- [x] `headers()` in phase `Render` sets `isDynamic()`; in phase `Action` it does not. — held: `test/request_context_test.bp` "rakun request: headers() marks a render dynamic and an action does not"
+- [x] `headers()` in a `strict` frame raises, and the message names `headers` and the request path. — held: `test/request_context_test.bp` "rakun request: headers() in a strict frame raises, naming the function and the route"
+- [x] `headers()` with no frame raises. — held: `test/request_context_test.bp` "rakun request: headers() with no frame raises"
 
 ### Step 3 — `cookies()`
 
@@ -309,18 +309,18 @@ pub fn cookies() -> Cookies
 default that ships untightened. `delete` queues the same cookie with `Max-Age=0` and an empty value.
 
 **Acceptance:**
-- [ ] `cookies().get("theme")` reads a value out of the `cookie` request header, percent-decoded.
-- [ ] A cookie header with no `=`, with a trailing `;`, and with spaces around the separator all parse
-      without raising and without inventing entries.
-- [ ] `serializeCookie("s", "a b", cookieDefaults())` answers
+- [x] `cookies().get("theme")` reads a value out of the `cookie` request header, percent-decoded. — held: `test/request_context_test.bp` "rakun request: a cookie value is read back percent-decoded"
+- [x] A cookie header with no `=`, with a trailing `;`, and with spaces around the separator all parse
+      without raising and without inventing entries. — held: `test/request_context_test.bp` "rakun request: the cookie header parses without inventing entries"
+- [x] `serializeCookie("s", "a b", cookieDefaults())` answers
       `s=a%20b; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax` — asserted as a literal, because
-      this string goes on the wire.
-- [ ] `cookies().set(...)` in phase `Render` raises, and the message says a cookie may be set from a
-      server action, a route handler or middleware.
-- [ ] Two `set` calls for different names produce two lines in `endRequest()`'s blob; two `set` calls
-      for the same name produce one, the later value.
-- [ ] `cookies().delete("session")` produces a line with `Max-Age=0`.
-- [ ] A `Cookies` handle used after `endRequest` raises rather than writing anywhere.
+      this string goes on the wire. — held: `test/request_context_test.bp` "rakun request: serializeCookie writes the literal that goes on the wire"
+- [x] `cookies().set(...)` in phase `Render` raises, and the message says a cookie may be set from a
+      server action, a route handler or middleware. — held: `test/request_context_test.bp` "rakun request: a cookie set in phase Render raises"
+- [x] Two `set` calls for different names produce two lines in `endRequest()`'s blob; two `set` calls
+      for the same name produce one, the later value. — held: `test/request_context_test.bp` "rakun request: two names queue two lines and one name queues the later value"
+- [x] `cookies().delete("session")` produces a line with `Max-Age=0`. — held: `test/request_context_test.bp` "rakun request: delete queues an empty value with Max-Age=0"
+- [x] A `Cookies` handle used after `endRequest` raises rather than writing anywhere. — held: `test/request_context_test.bp` "rakun request: a Cookies handle used after endRequest raises rather than writing"
 
 ### Step 4 — `draftMode()` and `connection()`
 
@@ -344,15 +344,15 @@ the render is still static, and otherwise the name of the first function that ma
 is what turns "this page is not being prerendered" from a mystery into a line of build output.
 
 **Acceptance:**
-- [ ] `draftMode().isEnabled()` is false with no cookie, false with a cookie whose signature does not
-      verify, and true only for a cookie this server issued.
-- [ ] A draft cookie whose signature is one character short answers false and does not raise.
-- [ ] `enable()` with `rakun.draft.secret` unset raises, naming the property.
-- [ ] `enable()` queues a `Set-Cookie` with `HttpOnly`, `Secure` and `SameSite=Lax`, and marks the
-      request dynamic.
-- [ ] `connection()` sets `isDynamic()` and `dynamicReason() == "connection"`.
-- [ ] `dynamicReason()` names the **first** function to mark, not the last.
-- [ ] `isDynamic()` is false for a render that touched none of them.
+- [x] `draftMode().isEnabled()` is false with no cookie, false with a cookie whose signature does not
+      verify, and true only for a cookie this server issued. — held: `test/request_context_test.bp` "rakun request: draft mode is off with no cookie and off for a forged one" + "draft mode is on only for a cookie this server issued"
+- [x] A draft cookie whose signature is one character short answers false and does not raise. — held: `test/request_context_test.bp` "rakun request: a truncated draft signature answers false and does not raise"
+- [x] `enable()` with `rakun.draft.secret` unset raises, naming the property. — held: `test/request_context_test.bp` "rakun request: enable with no secret raises, naming the property"
+- [x] `enable()` queues a `Set-Cookie` with `HttpOnly`, `Secure` and `SameSite=Lax`, and marks the
+      request dynamic. — held: `test/request_context_test.bp` "rakun request: enable queues a signed cookie, marks dynamic and sets the bypass"
+- [x] `connection()` sets `isDynamic()` and `dynamicReason() == "connection"`. — held: `test/request_context_test.bp` "rakun request: connection() marks and reads nothing"
+- [x] `dynamicReason()` names the **first** function to mark, not the last. — held: `test/request_context_test.bp` "rakun request: dynamicReason names the first function to mark, not the last"
+- [x] `isDynamic()` is false for a render that touched none of them. — held: `test/request_context_test.bp` "rakun request: a render that touched none of them is not dynamic"
 
 ### Step 5 — `after()`
 
@@ -361,18 +361,18 @@ pub fn after(work: fn() -> i32) -> i32
 ```
 
 **Acceptance:**
-- [ ] Work registered with `after` has not run when `endRequest` is called, and has run within the
-      test's wait budget afterwards.
-- [ ] The deferred process can read `headers()` and `cookies().get(...)` — the frozen copy carries
-      them — and `requestPhase()` answers `RequestPhase.After`.
-- [ ] `cookies().set(...)` inside deferred work raises.
-- [ ] `after(...)` inside deferred work raises.
+- [x] Work registered with `after` has not run when `endRequest` is called, and has run within the
+      test's wait budget afterwards. — held: `test/request_context_test.bp` "rakun request: deferred work has not run at endRequest and has run after the drain"
+- [x] The deferred process can read `headers()` and `cookies().get(...)` — the frozen copy carries
+      them — and `requestPhase()` answers `RequestPhase.After`. — held: `test/request_context_test.bp` "rakun request: the deferred child sees the frozen frame under phase After"
+- [x] `cookies().set(...)` inside deferred work raises. — held: `test/request_context_test.bp` "rakun request: a cookie write and a second after() are refused in phase After"
+- [x] `after(...)` inside deferred work raises. — held: `test/request_context_test.bp` "rakun request: a cookie write and a second after() are refused in phase After"
 - [ ] A deferred function that raises does not affect the response, and the failure is reported once
       to front 17 with the request id.
-- [ ] A deferred function still running after `rakun.request.after.timeout` is killed, and the kill is
-      logged.
-- [ ] Deferred work outlives the frame: `requestEpoch()` in the parent process raises while the child
-      is still running.
+- [x] A deferred function still running after `rakun.request.after.timeout` is killed, and the kill is
+      logged. — held: `test/request_context_test.bp` "rakun request: a deferred function that outlives the budget is killed and the kill is logged"
+- [x] Deferred work outlives the frame: `requestEpoch()` in the parent process raises while the child
+      is still running. — held: `test/request_context_test.bp` "rakun request: deferred work outlives the frame"
 
 ### Step 6 — `request_memo.bp`
 
@@ -389,21 +389,21 @@ shape front 12's `cacheKey` uses — the difference is that this one does not ha
 request-scoped table is small and a readable key is worth more than a fixed width here.
 
 **Acceptance:**
-- [ ] Two `memoize` calls with one key run the loader once and answer the same value; `memoHits()` is
+- [x] Two `memoize` calls with one key run the loader once and answer the same value; `memoHits()` is
       1 and `memoMisses()` is 1. The second call does not evaluate its `load` argument at all — the
-      loader increments an ETS counter and the counter reads 1.
-- [ ] The same holds when the loader returns `@Task<T>`: the eager
+      loader increments an ETS counter and the counter reads 1. — held: `test/request_memo_test.bp` "rakun memo: two memoize calls with one key run the loader once"
+- [x] The same holds when the loader returns `@Task<T>`: the eager
       erlang lowering means the first call stores a value, so the second call is the resolved-value
-      row of the table above and never re-runs it.
-- [ ] Two requests with the same key run the loader twice — a memo that survives a request is a cache,
-      and caches belong to front 12.
-- [ ] `preload(k, load)` followed by `memoize(k, load)` runs the loader once, and the `memoize` call
-      returns the preloaded value rather than starting a second load.
-- [ ] `memoize` called while a `preload` for that key is still running blocks until the child answers
+      row of the table above and never re-runs it. — held: `test/request_memo_test.bp` "rakun memo: a task-returning loader memoizes the same way"
+- [x] Two requests with the same key run the loader twice — a memo that survives a request is a cache,
+      and caches belong to front 12. — held: `test/request_memo_test.bp` "rakun memo: a memo does not survive its request"
+- [x] `preload(k, load)` followed by `memoize(k, load)` runs the loader once, and the `memoize` call
+      returns the preloaded value rather than starting a second load. — held: `test/request_memo_test.bp` "rakun memo: preload then memoize runs the loader once and answers the preloaded value"
+- [x] `memoize` called while a `preload` for that key is still running blocks until the child answers
       and then returns the child's value — the pending row of the table, asserted with a loader that
-      sleeps through `clock.sleep`.
-- [ ] A loader that raises does not poison the key: the next `memoize` with that key runs it again.
-- [ ] `memoize` outside a request raises.
+      sleeps through `clock.sleep`. — held: `test/request_memo_test.bp` "rakun memo: memoize over a preload that is still running waits for the child" (the loader sleeps through `rkReqSleep`)
+- [x] A loader that raises does not poison the key: the next `memoize` with that key runs it again. — held: `test/request_memo_test.bp` "rakun memo: a loader that raises does not poison the key"
+- [x] `memoize` outside a request raises. — held: `test/request_memo_test.bp` "rakun memo: memoize outside a request raises"
 
 ### Step 7 — The dispatcher contract
 
@@ -425,15 +425,15 @@ val setCookies = endRequest();
 ```
 
 **Acceptance:**
-- [ ] `endRequest` runs on the failure path too — a handler that raises still tears the frame down,
-      asserted by a second request on the same process seeing a clean frame.
-- [ ] The `Set-Cookie` blob splits on `\n` into whole header values, and a cookie value containing a
-      newline is impossible because `serializeCookie` percent-encodes it.
-- [ ] `grep -n "fn percentEncode\|fn percentDecode\|fn hexValue" src/request_context.bp` is empty —
-      the codec is std's `encoding`.
-- [ ] Fronts 23, 24, 25 and 07 each call `beginRequest` with the phase their table row names; the
+- [x] `endRequest` runs on the failure path too — a handler that raises still tears the frame down,
+      asserted by a second request on the same process seeing a clean frame. — held: `test/request_context_test.bp` "rakun request: endRequest runs on the failure path and the next request is clean"
+- [x] The `Set-Cookie` blob splits on `\n` into whole header values, and a cookie value containing a
+      newline is impossible because `serializeCookie` percent-encodes it. — held: `test/request_context_test.bp` "rakun request: the three-line contract, end to end" + "a queued cookie value can never split the blob"
+- [x] `grep -n "fn percentEncode\|fn percentDecode\|fn hexValue" src/request_context.bp` is empty —
+      the codec is std's `encoding`. — held: rakun `98a5090` — `encoding.percentEncode` / `decodeComponent` over `encoding.percentDecode` (`decisions-pending.md` 03r-e)
+- [x] Fronts 23, 24, 25 and 07 each call `beginRequest` with the phase their table row names; the
       assertion lives in this front's test as a table of phase-to-permission, so those fronts inherit
-      it rather than restating it.
+      it rather than restating it. — held: `test/request_context_test.bp` "rakun request: the phase-to-permission table, written down once"
 
 ## Examples
 

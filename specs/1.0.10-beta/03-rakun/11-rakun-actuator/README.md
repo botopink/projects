@@ -272,71 +272,71 @@ The dependency-free module: the five types, the four decorators, the five regist
 info and endpoint ETS tables.
 
 **Acceptance:**
-- [ ] `modules/rakun-actuator-api/` compiles with `"target": "erlang"` and depends on no other rakun module
-- [ ] A front can declare `#[healthIndicator("db")]` with `rakun-actuator-api` as its only actuator dependency
-- [ ] Registration succeeds with the host absent, and nothing reads the table
-- [ ] `startSpan`/`endSpan` work with no host and no subscriber, and cost nothing
-- [ ] The three registries are `named_table, public` and survive a host restart
-- [ ] Nothing in this module decides a status, a timeout, a route or an exposure — those are all host
+- [x] `modules/rakun-actuator-api/` compiles with `"target": "erlang"` and depends on no other rakun module — held: `modules/rakun-actuator-api/botopink.json` (dependencies: `rakun` only), 10 passed / 0 failed / 0 compile failures
+- [x] A front can declare `#[healthIndicator("db")]` with `rakun-actuator-api` as its only actuator dependency — held: `modules/rakun-actuator-api/test/registration_test.bp` "registry: indicators, a contributor and endpoints register under their ids with the host absent, sorted by name"
+- [x] Registration succeeds with the host absent, and nothing reads the table — held: `modules/rakun-actuator-api/test/registration_test.bp` "registry: indicators, a contributor and endpoints register under their ids with the host absent, sorted by name" (the member has no host dependency)
+- [x] `startSpan`/`endSpan` work with no host and no subscriber, and cost nothing — held: `modules/rakun-actuator-api/test/span_test.bp` "span: a root span starts a trace, and a span started inside it is its child", "span: with no subscriber an emission costs under a microsecond"
+- [x] The three registries are `named_table, public` and survive a host restart — held: `modules/rakun-actuator-api/test/registration_test.bp` "registry: the three registries are named, public and owned by the API process", `modules/rakun-actuator/test/health_test.bp` "health: the registries are the API's, so a host restart loses no registration"
+- [x] Nothing in this module decides a status, a timeout, a route or an exposure — those are all host — held: `modules/rakun-actuator-api/src/registration.bp` (writes rows and answers ids/owners only; the duplicate-id refusal is the one rule, a registry property) and `rakun_actuator_api.erl`
 
 ### Step 1 — The endpoint host (wave 3)
 
 **Acceptance:**
-- [ ] `modules/rakun-actuator/` compiles with `"target": "erlang"`, depends on `rakun-actuator-api`, and its tests run
-- [ ] `#[endpoint("x")]` registers and is reachable at `/actuator/x`
-- [ ] `management.endpoints.web.base-path=/manage` moves every endpoint
-- [ ] `management.endpoints.web.path-mapping.health=healthcheck` renames one segment, and the id stays `health`
-- [ ] Exactly one route is registered regardless of the number of endpoints
-- [ ] An unknown endpoint id answers 404 through front 07's problem-detail shape
-- [ ] Two endpoints with the same id fail at boot naming both
-- [ ] With front 76 absent, only `health` is reachable — front 11 does not open the others by default
+- [x] `modules/rakun-actuator/` compiles with `"target": "erlang"`, depends on `rakun-actuator-api`, and its tests run — held: `modules/rakun-actuator/botopink.json`, 38 passed / 0 failed / 0 compile failures
+- [x] `#[endpoint("x")]` registers and is reachable at `/actuator/x` — held: `modules/rakun-actuator/test/endpoint_test.bp` "endpoint: an application endpoint is reachable by id under the base path" (with a front-76 stand-in exposure decision installed)
+- [x] `management.endpoints.web.base-path=/manage` moves every endpoint — held: `modules/rakun-actuator/test/endpoint_test.bp` "endpoint: base-path moves every endpoint"
+- [x] `management.endpoints.web.path-mapping.health=healthcheck` renames one segment, and the id stays `health` — held: `modules/rakun-actuator/test/endpoint_test.bp` "endpoint: path-mapping renames one segment and the id stays health"
+- [x] Exactly one route is registered regardless of the number of endpoints — held: `modules/rakun-actuator/test/endpoint_test.bp` "endpoint: exactly one route is registered regardless of the number of endpoints"
+- [x] An unknown endpoint id answers 404 through front 07's problem-detail shape — held: `modules/rakun-actuator/test/endpoint_test.bp` "endpoint: an unknown id answers 404 through the problem-detail shape"
+- [x] Two endpoints with the same id fail at boot naming both — held: `modules/rakun-actuator/test/endpoint_test.bp` "endpoint: two endpoints with the same id fail at boot naming both"
+- [x] With front 76 absent, only `health` is reachable — front 11 does not open the others by default — held: `modules/rakun-actuator/test/endpoint_test.bp` "endpoint: with front 76 absent only health is reachable, and a hidden endpoint answers exactly like an unknown one"
 
 ### Step 2 — Response cache and endpoint CORS
 
 **Acceptance:**
-- [ ] `management.endpoint.health.cache.time-to-live=5s` serves the cached body for 5 seconds and the indicators run once
-- [ ] A TTL of 0 (the default) runs the indicators on every request
-- [ ] The cache is per endpoint, not global
-- [ ] Endpoint CORS uses front 07's policy type and its own configured origins
-- [ ] A preflight to an endpoint is answered without running the endpoint
+- [x] `management.endpoint.health.cache.time-to-live=5s` serves the cached body for 5 seconds and the indicators run once — held: `modules/rakun-actuator/test/endpoint_test.bp` "endpoint: a cache time-to-live serves the cached response and the indicators run once"
+- [x] A TTL of 0 (the default) runs the indicators on every request — held: `modules/rakun-actuator/test/endpoint_test.bp` "endpoint: a TTL of 0, the default, runs the indicators on every request"
+- [x] The cache is per endpoint, not global — held: `modules/rakun-actuator/test/endpoint_test.bp` "endpoint: the cache is per endpoint, not global"
+- [x] Endpoint CORS uses front 07's policy type and its own configured origins — held: `modules/rakun-actuator/test/endpoint_test.bp` "endpoint: endpoint CORS uses front 07's policy with its own origins, and a preflight never runs the endpoint"
+- [x] A preflight to an endpoint is answered without running the endpoint — held: `modules/rakun-actuator/test/endpoint_test.bp` "endpoint: endpoint CORS uses front 07's policy with its own origins, and a preflight never runs the endpoint"
 
 ### Step 3 — Health aggregation and the indicator contract
 
 **Acceptance:**
-- [ ] With only `ping`, `/actuator/health` answers `{"status":"UP"}` and 200
-- [ ] One `DOWN` indicator makes the aggregate `DOWN` and the status code 503
-- [ ] `management.endpoint.health.status.order` changes which status wins
-- [ ] An indicator that raises becomes `DOWN` with the reason in `details`, and the endpoint still answers
-- [ ] An indicator that exceeds its timeout becomes `UNKNOWN` and is abandoned — the endpoint answers within the timeout
-- [ ] Ten indicators at 1 s each complete in about 1 s, not 10 — they run in their own processes
-- [ ] `#[healthIndicator("db")]` in another module registers here with no change to front 11
-- [ ] Two indicators with one id fail at boot naming both
+- [x] With only `ping`, `/actuator/health` answers `{"status":"UP"}` and 200 — held: `modules/rakun-actuator/test/health_test.bp` "health: with only ping the aggregate is UP and the endpoint answers 200"
+- [x] One `DOWN` indicator makes the aggregate `DOWN` and the status code 503 — held: `modules/rakun-actuator/test/health_test.bp` "health: one DOWN indicator makes the aggregate DOWN and the code 503"
+- [x] `management.endpoint.health.status.order` changes which status wins — held: `modules/rakun-actuator/test/health_test.bp` "health: status.order changes which status wins, and http-mapping changes the code"
+- [x] An indicator that raises becomes `DOWN` with the reason in `details`, and the endpoint still answers — held: `modules/rakun-actuator/test/health_test.bp` "health: an indicator that raises becomes DOWN with the reason and the endpoint still answers"
+- [x] An indicator that exceeds its timeout becomes `UNKNOWN` and is abandoned — the endpoint answers within the timeout — held: `modules/rakun-actuator/test/health_test.bp` "health: an indicator past its timeout becomes UNKNOWN, is abandoned, and the endpoint answers within the timeout"
+- [x] Ten indicators at 1 s each complete in about 1 s, not 10 — they run in their own processes — held: `modules/rakun-actuator/test/health_test.bp` "health: ten indicators at 300 ms each complete in about 300 ms, not 3 s" (measured at 300 ms per indicator to keep the suite short)
+- [x] `#[healthIndicator("db")]` in another module registers here with no change to front 11 — held: `modules/rakun-actuator/test/health_test.bp` "health: a #[healthIndicator] declared in another module registers here with no change to the host"
+- [x] Two indicators with one id fail at boot naming both — held: `modules/rakun-actuator/test/health_test.bp` "health: two indicators with one id fail at boot naming both"
 
 ### Step 4 — Info contributors
 
 **Acceptance:**
-- [ ] `/actuator/info` merges every contributor by top-level key
-- [ ] `build`, `otp`, `os` and `process` ship and report real values
-- [ ] Keys under `info.*` in configuration appear
-- [ ] Two contributors claiming one key fail at boot naming both
-- [ ] `#[infoContributor]` in another module registers here
+- [x] `/actuator/info` merges every contributor by top-level key — held: `modules/rakun-actuator/test/info_test.bp` "info: every contributor is merged by top-level key"
+- [x] `build`, `otp`, `os` and `process` ship and report real values — held: `modules/rakun-actuator/test/info_test.bp` "info: build, otp, os and process report real values"
+- [x] Keys under `info.*` in configuration appear — held: `modules/rakun-actuator/test/info_test.bp` "info: keys under info.* in configuration appear, nested by their dots"
+- [x] Two contributors claiming one key fail at boot naming both — held: `modules/rakun-actuator/test/info_test.bp` "info: two contributors claiming one key fail at boot naming both"
+- [x] `#[infoContributor]` in another module registers here — held: `modules/rakun-actuator/test/info_test.bp` "info: an #[infoContributor] declared in another module registers here"
 
 ### Step 5 — `beans`, `configprops`, `mappings`
 
 **Acceptance:**
-- [ ] `beans` lists every registered bean with its qualifier, scope and lazy flag
+- [x] `beans` lists every registered bean with its qualifier, scope and lazy flag — held: `modules/rakun-actuator/test/registry_endpoints_test.bp` "beans: every registered bean is listed with its qualifier, scope and lazy flag"
 - [ ] `configprops` lists every key front 05 registered, with the bound value and the source it came from
 - [ ] `mappings` lists decorator routes and file-router routes, each labelled with its source
-- [ ] Each endpoint reads its registry and holds no state of its own
-- [ ] With front 05 or front 22 absent, the corresponding endpoint reports an empty list rather than failing
+- [x] Each endpoint reads its registry and holds no state of its own — held: `modules/rakun-actuator/test/registry_endpoints_test.bp` "registry endpoints hold no state: a route registered after a read appears in the next read"
+- [x] With front 05 or front 22 absent, the corresponding endpoint reports an empty list rather than failing — held: `modules/rakun-actuator/test/registry_endpoints_test.bp` "mappings: with front 22 absent the file-router half is an empty list, not a failure" (front 05's catalogue is in the core, so "absent" is an empty catalogue: `configpropsJson` folds over `configCatalogue()`)
 
 ### Step 6 — `startup` and boot-step timing
 
 **Acceptance:**
-- [ ] Every boot step is recorded with a start time and a duration
+- [x] Every boot step is recorded with a start time and a duration — held: `modules/rakun-actuator/test/instrumentation_test.bp` "startup: every boot step is recorded with a start and a duration, and the steps sum to the total"
 - [ ] `config.load`, `eager.init`, each `#[postConstruct]` and `listener.bind` all appear
-- [ ] The steps sum to within a few milliseconds of the total boot time
-- [ ] Front 17 can read the same record for its startup summary line
+- [x] The steps sum to within a few milliseconds of the total boot time — held: `modules/rakun-actuator/test/instrumentation_test.bp` "startup: every boot step is recorded with a start and a duration, and the steps sum to the total" (contiguous marks: the sum equals the total)
+- [x] Front 17 can read the same record for its startup summary line — held: `startupSteps()` in `modules/rakun-actuator/src/instrumentation.bp` (the record the `startup` endpoint renders)
 
 ### Step 7 — `shutdown`
 
@@ -350,14 +350,14 @@ info and endpoint ETS tables.
 
 **Acceptance:**
 - [ ] `#[instrumentation]` runs before configuration is loaded and before any bean is constructed
-- [ ] Two `#[instrumentation]` functions fail at boot naming both
-- [ ] An `http.server.request` span wraps the handler and every filter below order +100
-- [ ] A span carries a trace id, a span id and a parent id, and a child span's parent is its caller's span
-- [ ] An inbound `traceparent` continues the trace; an absent one starts a new one with a fresh trace id
+- [x] Two `#[instrumentation]` functions fail at boot naming both — held: `modules/rakun-actuator/test/instrumentation_test.bp` "instrumentation: two #[instrumentation] functions fail at boot naming both"
+- [x] An `http.server.request` span wraps the handler and every filter below order +100 — held: `modules/rakun-actuator/test/instrumentation_test.bp` "spans: the http.server.request entry sits at +100 and wraps the filters below it and the handler"
+- [x] A span carries a trace id, a span id and a parent id, and a child span's parent is its caller's span — held: `modules/rakun-actuator-api/test/span_test.bp` "span: a root span starts a trace, and a span started inside it is its child"
+- [x] An inbound `traceparent` continues the trace; an absent one starts a new one with a fresh trace id — held: `modules/rakun-actuator/test/instrumentation_test.bp` "spans: an absent traceparent starts a fresh trace, and the span parents on the inbound one when present", `modules/rakun-actuator-api/test/span_test.bp` "span: an inbound traceparent continues the trace, a malformed one is ignored"
 - [ ] Front 13's outbound client sends `traceparent` carrying the current span
 - [ ] `render`, `action` and `handler` spans are emitted by fronts 23, 24 and 25 through this front's API, with no second hook into the request path
-- [ ] Emitted events are `:telemetry`-shaped; front 75 can subscribe without front 11 changing
-- [ ] With no subscriber, span emission is a no-op measured at under one microsecond
+- [x] Emitted events are `:telemetry`-shaped; front 75 can subscribe without front 11 changing — held: `modules/rakun-actuator-api/test/span_test.bp` "span: events are telemetry-shaped and reach a subscriber" (`telemetry:execute/3` is also called when the module is loaded)
+- [x] With no subscriber, span emission is a no-op measured at under one microsecond — held: `modules/rakun-actuator-api/test/span_test.bp` "span: with no subscriber an emission costs under a microsecond"
 
 ## Examples
 
@@ -436,13 +436,13 @@ Erlang-only. There is no client half: a browser reads these endpoints over HTTP 
       16 · 17 · 18 · 77 · 85 import for their indicators and endpoints
 - [ ] `modules/rakun-actuator/` exists with the endpoint host, the health and info registries, the
       four registry-reading endpoints, `shutdown`, `instrumentation.bp` and the sidecar
-- [ ] One route serves every endpoint, with a configurable base path and per-endpoint path
-- [ ] The health-indicator contract is documented in this README and in `AGENTS.md`, and the
-      badly-behaved-indicator suite is green
-- [ ] Indicators run concurrently, each with a timeout, and none can break the endpoint
+- [x] One route serves every endpoint, with a configurable base path and per-endpoint path — held: `modules/rakun-actuator/test/endpoint_test.bp` "endpoint: exactly one route is registered regardless of the number of endpoints", "endpoint: base-path moves every endpoint", "endpoint: path-mapping renames one segment and the id stays health"
+- [x] The health-indicator contract is documented in this README and in `AGENTS.md`, and the
+      badly-behaved-indicator suite is green — held: `repository/rakun/AGENTS.md` § The actuator (the contract table) + `modules/rakun-actuator/test/health_test.bp` "health: four badly behaved indicators cannot break the endpoint"
+- [x] Indicators run concurrently, each with a timeout, and none can break the endpoint — held: `modules/rakun-actuator/test/health_test.bp` "health: four badly behaved indicators cannot break the endpoint", "health: ten indicators at 300 ms each complete in about 300 ms, not 3 s"
 - [ ] Spans are emitted for request, render, action and handler, `:telemetry`-shaped, with W3C trace
       propagation, and cost nothing with no subscriber
-- [ ] `management.endpoints.jmx.*` is documented as not ported, with `:telemetry` and `erl -remsh`
-      named as the analogues
-- [ ] Front 11 exposes only `health` by default and defers every access decision to front 76
-- [ ] The front's tests are green on its assigned target
+- [x] `management.endpoints.jmx.*` is documented as not ported, with `:telemetry` and `erl -remsh`
+      named as the analogues — held: `repository/rakun/AGENTS.md` § The actuator ("Not ported: … jmx")
+- [x] Front 11 exposes only `health` by default and defers every access decision to front 76 — held: `modules/rakun-actuator/test/endpoint_test.bp` "endpoint: with front 76 absent only health is reachable, and a hidden endpoint answers exactly like an unknown one" (`installExposure` is front 76's seam)
+- [x] The front's tests are green on its assigned target — held: `modules/rakun-actuator-api` 10/0/0 and `modules/rakun-actuator` 38/0/0 on erlang

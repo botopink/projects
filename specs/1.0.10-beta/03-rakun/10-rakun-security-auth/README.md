@@ -227,82 +227,82 @@ responses.
 ### Step 1 — The module, the context and the chain entry
 
 **Acceptance:**
-- [ ] `modules/rakun-security/` compiles with `"target": "erlang"` and its tests run
-- [ ] The security entry registers at order −300 and runs before CORS and the error boundary
-- [ ] With no policy configured, every path requires authentication
-- [ ] The context is readable inside a request and a hard failure outside one
-- [ ] Two concurrent requests never observe each other's context
+- [x] `modules/rakun-security/` compiles with `"target": "erlang"` and its tests run — held: `modules/rakun-security/botopink.json` (erlang only); `botopink test` 73 passed / 0 failed / 0 compile failures
+- [x] The security entry registers at order −300 and runs before CORS and the error boundary — held: `modules/rakun-security/test/policy_test.bp` "policy: the entry registers at -300 and runs before CORS and the error boundary"
+- [x] With no policy configured, every path requires authentication — held: `modules/rakun-security/test/policy_test.bp` "policy: with no policy configured every path requires authentication"
+- [x] The context is readable inside a request and a hard failure outside one — held: `modules/rakun-security/test/policy_test.bp` "policy: the context is readable inside a request and a hard failure outside one"
+- [x] Two concurrent requests never observe each other's context — held: `modules/rakun-security/test/policy_test.bp` "policy: two concurrent requests never observe each other's context"
 
 ### Step 2 — The policy
 
 **Acceptance:**
-- [ ] Rules match in declaration order and the first match wins
-- [ ] `/api/public/**` before `/api/**` makes only the public subtree public
-- [ ] A path with no rule requires authentication
-- [ ] `defaultRequirement` cannot be set to `permitAll`; a configuration that tries fails at boot
-- [ ] Patterns are compiled by front 65's matcher, not by this front
+- [x] Rules match in declaration order and the first match wins — held: `modules/rakun-security/test/policy_test.bp` "policy: rules match in declaration order and the first match wins"
+- [x] `/api/public/**` before `/api/**` makes only the public subtree public — held: `modules/rakun-security/test/policy_test.bp` "policy: /api/public/** before /api/** makes only the public subtree public"
+- [x] A path with no rule requires authentication — held: `modules/rakun-security/test/policy_test.bp` "policy: a path with no rule requires authentication"
+- [x] `defaultRequirement` cannot be set to `permitAll`; a configuration that tries fails at boot — held: `modules/rakun-security/test/policy_test.bp` "policy: defaultRequirement permitAll fails at boot"
+- [x] Patterns are compiled by front 65's matcher, not by this front — held: `compileRule` in `modules/rakun-security/src/policy.bp` calls rakun-web's `matcher`; `modules/rakun-security/test/policy_test.bp` "policy: patterns are front 65's grammar - :name, :name* and a raw regex"
 
 ### Step 3 — JWT
 
 **Acceptance:**
-- [ ] A valid HS256 token authenticates and its claims become the principal and authorities
-- [ ] A tampered payload is rejected
-- [ ] `alg: none` is rejected before signature verification
-- [ ] An `alg` the configuration does not name is rejected even when the signature would verify
-- [ ] An expired token is rejected; one expiring within the skew window is accepted
-- [ ] A `nbf` in the future is rejected
-- [ ] A wrong `iss` or `aud` is rejected when either is configured
-- [ ] Signature comparison uses front 01's constant-time compare — asserted by reading the call, and by a test that a one-byte-different signature and a wholly different one both fail
-- [ ] A malformed token (one part, four parts, non-base64) is rejected without raising
+- [x] A valid HS256 token authenticates and its claims become the principal and authorities — held: `modules/rakun-security/test/jwt_test.bp` "jwt: a valid HS256 token authenticates and its claims become the principal and authorities"
+- [x] A tampered payload is rejected — held: `modules/rakun-security/test/jwt_test.bp` "jwt: every entry of the negative table is rejected without raising" (row `tampered payload`)
+- [x] `alg: none` is rejected before signature verification — held: `modules/rakun-security/test/jwt_test.bp` "jwt: alg none is rejected before signature verification"
+- [x] An `alg` the configuration does not name is rejected even when the signature would verify — held: `modules/rakun-security/test/jwt_test.bp` "jwt: an alg the configuration does not name is rejected even when the signature would verify"
+- [x] An expired token is rejected; one expiring within the skew window is accepted — held: `modules/rakun-security/test/jwt_test.bp` "jwt: an expired token is rejected and one expiring within the skew window is accepted"
+- [x] A `nbf` in the future is rejected — held: `modules/rakun-security/test/jwt_test.bp` "jwt: a nbf in the future is rejected and one within the skew is accepted"
+- [x] A wrong `iss` or `aud` is rejected when either is configured — held: `modules/rakun-security/test/jwt_test.bp` "jwt: the issuer and audience rows fail only because they are configured"
+- [x] Signature comparison uses front 01's constant-time compare — asserted by reading the call, and by a test that a one-byte-different signature and a wholly different one both fail — held: `signatureMatches` in `modules/rakun-security/src/jwt.bp` (`hash.equalsConstantTime`); `modules/rakun-security/test/jwt_test.bp` "jwt: a one-byte-different signature and a wholly different one both fail the constant-time compare"
+- [x] A malformed token (one part, four parts, non-base64) is rejected without raising — held: `modules/rakun-security/test/jwt_test.bp` "jwt: every entry of the negative table is rejected without raising"
 
 ### Step 4 — Basic authentication and passwords
 
 **Acceptance:**
-- [ ] `Authorization: Basic` authenticates a known user with the right password
-- [ ] A password containing `:` round-trips — the split takes the first colon only
-- [ ] A wrong password and an unknown user produce the identical response and comparable timing
-- [ ] `encode` produces `{pbkdf2}310000$<salt>$<hash>` with a fresh salt each time
-- [ ] Two encodes of one password differ; both `matches`
-- [ ] A stored hash with an unknown prefix fails naming the prefix rather than answering `false`
-- [ ] Configuring `bcrypt` fails at boot naming the missing NIF
-- [ ] `rakun.security.users` with a production profile active fails at boot
+- [x] `Authorization: Basic` authenticates a known user with the right password — held: `modules/rakun-security/test/basic_test.bp` "basic: a known user with the right password authenticates"
+- [x] A password containing `:` round-trips — the split takes the first colon only — held: `modules/rakun-security/test/basic_test.bp` "basic: a password containing a colon round-trips - the split takes the first colon only"
+- [x] A wrong password and an unknown user produce the identical response and comparable timing — held: `modules/rakun-security/test/basic_test.bp` "basic: a wrong password and an unknown user produce the identical response and one derivation each"
+- [x] `encode` produces `{pbkdf2}310000$<salt>$<hash>` with a fresh salt each time — held: `modules/rakun-security/test/password_test.bp` "password: encode produces {pbkdf2}310000$<salt>$<hash> with a fresh salt each time"
+- [x] Two encodes of one password differ; both `matches` — held: `modules/rakun-security/test/password_test.bp` "password: two encodes of one password differ and both match"
+- [x] A stored hash with an unknown prefix fails naming the prefix rather than answering `false` — held: `modules/rakun-security/test/password_test.bp` "password: a stored hash with an unknown prefix fails naming the prefix rather than answering false"
+- [x] Configuring `bcrypt` fails at boot naming the missing NIF — held: `modules/rakun-security/test/password_test.bp` "password: configuring bcrypt fails at boot naming the missing NIF"
+- [x] `rakun.security.users` with a production profile active fails at boot — held: `modules/rakun-security/test/password_test.bp` "password: rakun.security.users with a production profile active fails at boot"
 
 ### Step 5 — `UserDetailsService`
 
 **Acceptance:**
-- [ ] The in-memory arm parses the configured user list
-- [ ] The SQL arm loads a user through a front 08 `#[query]` statement
-- [ ] A disabled user is rejected with the same 401 as a wrong password
-- [ ] An application can `#[provides]` its own implementation and it wins
+- [x] The in-memory arm parses the configured user list — held: `modules/rakun-security/test/basic_test.bp` "users: the in-memory arm parses the configured user list"
+- [x] The SQL arm loads a user through a front 08 `#[query]` statement — held: `modules/rakun-security/test/basic_test.bp` "users: the SQL arm loads a user through a front 08 #[query] statement"
+- [x] A disabled user is rejected with the same 401 as a wrong password — held: `modules/rakun-security/test/basic_test.bp` "users: a disabled user is rejected with the same 401 as a wrong password"
+- [x] An application can `#[provides]` its own implementation and it wins — held: `modules/rakun-security/test/users_test.bp` "users: an application can #[provides] its own implementation and it wins" (provided as a `UserStore` wrapping the implementation — see AGENTS)
 
 ### Step 6 — Method security
 
 **Acceptance:**
-- [ ] `#[methodSecurity]` emits `<Type>Sec` with one method per public method
-- [ ] `#[secured("ROLE_ADMIN")]` refuses a caller without the authority, with 403
-- [ ] `#[secured("ROLE_A,ROLE_B")]` admits a caller holding either
-- [ ] `#[permitAll]` admits an anonymous caller
-- [ ] A method with no marker inherits the type's requirement, and an unmarked type requires authentication
-- [ ] Calling a secured method outside a request is a hard failure, not an implicit allow
-- [ ] `#[preAuthorize]` fails at comptime with a message saying expression security is not ported and naming the supported forms
-- [ ] `#[methodSecurity]` on an enum-shaped `type` fails at comptime
+- [x] `#[methodSecurity]` emits `<Type>Sec` with one method per public method — held: `modules/rakun-security/test/method_security_test.bp` "method: #[methodSecurity] emits <Type>Sec with one forwarding method per method"
+- [x] `#[secured("ROLE_ADMIN")]` refuses a caller without the authority, with 403 — held: `modules/rakun-security/test/method_security_test.bp` "method: a refusal inside the handler answers 403 naming the required authority, with or without the error entry"
+- [x] `#[secured("ROLE_A,ROLE_B")]` admits a caller holding either — held: `modules/rakun-security/test/method_security_test.bp` "method: #[secured(ROLE_A,ROLE_B)] admits a caller holding either"
+- [x] `#[permitAll]` admits an anonymous caller — held: `modules/rakun-security/test/method_security_test.bp` "method: #[permitAll] admits an anonymous caller"
+- [x] A method with no marker inherits the type's requirement, and an unmarked type requires authentication — held: `modules/rakun-security/test/method_type_test.bp` "method type: an unmarked method inherits the type's #[secured] requirement"; `modules/rakun-security/test/method_security_test.bp` "method: an unmarked method inherits the type's requirement, and an unmarked type requires authentication"
+- [x] Calling a secured method outside a request is a hard failure, not an implicit allow — held: `modules/rakun-security/test/method_security_test.bp` "method: calling a secured method outside a request is a hard failure, not an implicit allow"
+- [x] `#[preAuthorize]` fails at comptime with a message saying expression security is not ported and naming the supported forms — held: `modules/rakun-security/test/build_test.bp` "build: #[preAuthorize] fails at comptime saying expression security is not ported and naming the supported forms"
+- [x] `#[methodSecurity]` on an enum-shaped `type` fails at comptime — held: `modules/rakun-security/test/build_test.bp` "build: #[methodSecurity] on an enum-shaped type fails at comptime"
 
 ### Step 7 — CSRF
 
 **Acceptance:**
-- [ ] A `POST` with a session cookie and no `X-CSRF-Token` answers 403
-- [ ] A `POST` with a matching token succeeds
-- [ ] A `POST` authenticated by a bearer token and no cookie is exempt
-- [ ] The token is compared in constant time
-- [ ] `GET` and `HEAD` are never challenged
+- [x] A `POST` with a session cookie and no `X-CSRF-Token` answers 403 — held: `modules/rakun-security/test/csrf_test.bp` "csrf: a POST with a session cookie and no X-CSRF-Token answers 403"
+- [x] A `POST` with a matching token succeeds — held: `modules/rakun-security/test/csrf_test.bp` "csrf: a POST with a matching token succeeds"
+- [x] A `POST` authenticated by a bearer token and no cookie is exempt — held: `modules/rakun-security/test/csrf_test.bp` "csrf: a POST authenticated by a bearer token and no cookie is exempt"
+- [x] The token is compared in constant time — held: `tokenMatches` in `modules/rakun-security/src/csrf.bp` (`hash.equalsConstantTime`); `modules/rakun-security/test/csrf_test.bp` "csrf: the token is compared in constant time"
+- [x] `GET` and `HEAD` are never challenged — held: `modules/rakun-security/test/csrf_test.bp` "csrf: GET and HEAD are never challenged"
 
 ### Step 8 — Failure shape
 
 **Acceptance:**
-- [ ] 401 sets `WWW-Authenticate` and returns a problem detail
-- [ ] An unknown user and a wrong password produce byte-identical bodies
-- [ ] A 403 names the required authority and not the caller's authorities
-- [ ] No response, log line or actuator endpoint ever contains a password or a raw token
+- [x] 401 sets `WWW-Authenticate` and returns a problem detail — held: `modules/rakun-security/test/basic_test.bp` "basic: the 401 carries WWW-Authenticate and a problem detail, never the credentials"
+- [x] An unknown user and a wrong password produce byte-identical bodies — held: `modules/rakun-security/test/basic_test.bp` "basic: a wrong password and an unknown user produce the identical response and one derivation each"
+- [x] A 403 names the required authority and not the caller's authorities — held: `modules/rakun-security/test/security_test.bp` "security: the method security proxy refuses a non-admin naming the required authority and a comma list admits either"
+- [x] No response, log line or actuator endpoint ever contains a password or a raw token — held: `modules/rakun-security/test/jwt_test.bp` "jwt: every negative token answers 401 with the byte-identical body and never echoes the token"; `modules/rakun-security/test/basic_test.bp` "basic: the 401 carries WWW-Authenticate and a problem detail, never the credentials"; `Authentication` has no credentials field (`src/principal.bp`) and the member registers no actuator endpoint
 
 ## Examples
 
@@ -372,13 +372,13 @@ the validation constraints that mirror to the client ([`contracts.md`](../../con
 
 ## Definition of done
 
-- [ ] `modules/rakun-security/` exists with the policy, the chain entry, both authentication arms,
-      the encoder and method security
-- [ ] A path with no rule is protected, and the default cannot be weakened
-- [ ] The JWT negative table is green and every rejection is byte-identical
-- [ ] The only password encoder is PBKDF2-HMAC-SHA256, stored with its algorithm prefix; `bcrypt`
-      fails at boot rather than silently downgrading
-- [ ] `#[methodSecurity]` emits a proxy; `#[preAuthorize]` fails at comptime naming what is supported
-- [ ] No password or raw token appears in any response, log or endpoint
-- [ ] `repository/rakun/AGENTS.md` documents the policy order rule and the stored-hash format
-- [ ] The front's tests are green on its assigned target
+- [x] `modules/rakun-security/` exists with the policy, the chain entry, both authentication arms,
+      the encoder and method security — held: `src/policy.bp`, `src/security_filter.bp`, `src/jwt.bp`, `src/basic.bp`, `src/password.bp`, `src/method_security.bp`
+- [x] A path with no rule is protected, and the default cannot be weakened — held: `test/policy_test.bp` "policy: a path with no rule requires authentication", "policy: defaultRequirement permitAll fails at boot"
+- [x] The JWT negative table is green and every rejection is byte-identical — held: `test/jwt_test.bp` "jwt: every negative token answers 401 with the byte-identical body and never echoes the token"
+- [x] The only password encoder is PBKDF2-HMAC-SHA256, stored with its algorithm prefix; `bcrypt`
+      fails at boot rather than silently downgrading — held: `test/password_test.bp` "password: configuring bcrypt fails at boot naming the missing NIF"
+- [x] `#[methodSecurity]` emits a proxy; `#[preAuthorize]` fails at comptime naming what is supported — held: `test/method_security_test.bp`, `test/build_test.bp`
+- [x] No password or raw token appears in any response, log or endpoint — held: as step 8's last box
+- [x] `repository/rakun/AGENTS.md` documents the policy order rule and the stored-hash format — held: `repository/rakun/AGENTS.md` § Security (front 10), merged with rakun `def4533`
+- [x] The front's tests are green on its assigned target — held: `botopink test` in `modules/rakun-security`: 73 passed / 0 failed / 0 compile failures (erlang)

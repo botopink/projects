@@ -132,9 +132,9 @@ pub declare fn rkRunTaskNow(name: string) -> i32;
 ```
 
 **Acceptance:**
-- [ ] Two tasks registered under the same name are refused at boot with both method names in the message.
-- [ ] `rkRunTaskNow` executes a task once, out of band, and records the run — this is the seam the tests use so that no test waits on wall-clock time.
-- [ ] Every declared fn in this module is `#[@External.Erlang]`; a grep for `External.Node` under `modules/rakun-scheduling/src` returns nothing.
+- [x] Two tasks registered under the same name are refused at boot with both method names in the message. — held: `modules/rakun-scheduling/test/registry_test.bp` "registry: two tasks under one name are refused at boot with both method names"
+- [x] `rkRunTaskNow` executes a task once, out of band, and records the run — this is the seam the tests use so that no test waits on wall-clock time. — held: `modules/rakun-scheduling/test/registry_test.bp` "registry: rkRunTaskNow runs a task once, out of band, and records the run"
+- [x] Every declared fn in this module is `#[@External.Erlang]`; a grep for `External.Node` under `modules/rakun-scheduling/src` returns nothing. — held: `modules/rakun-scheduling/test/executor_test.bp` "executor: every declared fn is #[@External.Erlang] and no source names External.Node"
 
 ### Step 2 — `#[scheduler]` and the three markers
 
@@ -154,32 +154,32 @@ pub type CleanupService(repo: SessionRepo) {
 ```
 
 **Acceptance:**
-- [ ] Each marker on anything but a method fails with a located message.
-- [ ] `#[scheduler]` on a type with no trigger-annotated method fails saying so.
-- [ ] A method carrying two trigger markers is refused — one trigger per task.
-- [ ] The emitted closure builds the component through `__rkMake_<Type>()`, so a task and an HTTP handler on the same `#[service]` share one instance.
-- [ ] A method whose parameter list is anything but `(self: Self)` is refused, with the extra parameter named — a scheduler has no argument to give it.
+- [x] Each marker on anything but a method fails with a located message. — held: `modules/rakun-scheduling/test/build_test.bp` "build: each trigger marker anywhere but on a method fails with a located message"
+- [x] `#[scheduler]` on a type with no trigger-annotated method fails saying so. — held: `modules/rakun-scheduling/test/build_test.bp` "build: #[scheduler] on a type with no trigger-annotated method fails saying so"
+- [x] A method carrying two trigger markers is refused — one trigger per task. — held: `modules/rakun-scheduling/test/build_test.bp` "build: a method carrying two trigger markers is refused - one trigger per task"
+- [x] The emitted closure builds the component through `__rkMake_<Type>()`, so a task and an HTTP handler on the same `#[service]` share one instance. — held: `modules/rakun-scheduling/test/registry_test.bp` "registry: a task and an HTTP handler on one component share one instance" (emission: `markers.bp` `scheduler`)
+- [x] A method whose parameter list is anything but `(self: Self)` is refused, with the extra parameter named — a scheduler has no argument to give it. — held: `modules/rakun-scheduling/test/build_test.bp` "build: a task method with a parameter besides self is refused naming it"
 
 ### Step 3 — The cron parser
 
 **Acceptance:**
-- [ ] `0 0 * * * *`, `*/15 * * * * *`, `0 30 9-17 * * 1-5`, `0 0 0 1 1 ?` all parse and produce the expected next-fire instants from a fixed reference time.
-- [ ] `L`, `W`, `#`, `MON` and `JAN` are each refused at comptime with the field index and the token in the message.
-- [ ] A five-field expression is refused with a message saying six fields are expected and showing the seconds field.
-- [ ] A step larger than the field's range is refused.
-- [ ] Next-fire computation crosses a month boundary, a year boundary and a leap day correctly, tested against a fixed clock rather than the wall clock.
+- [x] `0 0 * * * *`, `*/15 * * * * *`, `0 30 9-17 * * 1-5`, `0 0 0 1 1 ?` all parse and produce the expected next-fire instants from a fixed reference time. — held: `modules/rakun-scheduling/test/cron_test.bp` "cron: the four reference expressions parse and fire at the expected next instant"
+- [x] `L`, `W`, `#`, `MON` and `JAN` are each refused at comptime with the field index and the token in the message. — held: `modules/rakun-scheduling/test/build_test.bp` "build: L, W, #, MON and JAN are each refused at comptime with the field index and the token"
+- [x] A five-field expression is refused with a message saying six fields are expected and showing the seconds field. — held: `modules/rakun-scheduling/test/build_test.bp` "build: a five-field expression is refused at comptime showing the seconds field"
+- [x] A step larger than the field's range is refused. — held: `modules/rakun-scheduling/test/cron_test.bp` "cron: a step larger than the field's range is refused" and `modules/rakun-scheduling/test/build_test.bp` "build: a step larger than the field's range is refused at comptime"
+- [x] Next-fire computation crosses a month boundary, a year boundary and a leap day correctly, tested against a fixed clock rather than the wall clock. — held: `modules/rakun-scheduling/test/cron_test.bp` "cron: next fire crosses a month boundary", "cron: next fire crosses a year boundary", "cron: next fire lands on a leap day and skips a february without one"
 - [ ] The parser is an ordinary compiled function; the decorator body calls it and does not inline a parser of its own.
 
 ### Step 4 — The executor
 
 **Acceptance:**
-- [ ] Two tasks due at the same instant run in two processes; neither delays the other.
-- [ ] A task that raises is recorded as a failure, its supervisor restarts the timer, and the next fire happens on schedule.
-- [ ] `overlap = skip` does not start a run while the previous one is in flight, and increments `missed`.
-- [ ] `overlap = allow` starts it.
-- [ ] `rakun.scheduling.enabled = false` registers every task and starts none.
-- [ ] `rakun.scheduling.<task>.cron` overrides the compiled expression, and an unparseable override refuses the boot with the key named.
-- [ ] Nothing in the module reads or defines a pool-size key, and `AGENTS.md` records why.
+- [x] Two tasks due at the same instant run in two processes; neither delays the other. — held: `modules/rakun-scheduling/test/executor_test.bp` "executor: two tasks due at the same instant run in two processes and neither delays the other"
+- [x] A task that raises is recorded as a failure, its supervisor restarts the timer, and the next fire happens on schedule. — held: `modules/rakun-scheduling/test/executor_test.bp` "executor: a task that raises is recorded as a failure and the next fire keeps its schedule" and "executor: a dead timer is restarted by its supervisor and fires on schedule"
+- [x] `overlap = skip` does not start a run while the previous one is in flight, and increments `missed`. — held: `modules/rakun-scheduling/test/executor_test.bp` "executor: overlap skip does not start a run while the previous is in flight and counts it missed"
+- [x] `overlap = allow` starts it. — held: `modules/rakun-scheduling/test/executor_test.bp` "executor: overlap allow starts the next run while the previous is in flight"
+- [x] `rakun.scheduling.enabled = false` registers every task and starts none. — held: `modules/rakun-scheduling/test/executor_test.bp` "executor: rakun.scheduling.enabled false registers every task and starts none"
+- [x] `rakun.scheduling.<task>.cron` overrides the compiled expression, and an unparseable override refuses the boot with the key named. — held: `modules/rakun-scheduling/test/executor_test.bp` "executor: a cron override replaces the compiled expression without a rebuild" and "executor: an unparseable cron override refuses the boot naming the key, and starts nothing"
+- [x] Nothing in the module reads or defines a pool-size key, and `AGENTS.md` records why. — held: `modules/rakun-scheduling/test/executor_test.bp` "executor: nothing in the module reads or defines a pool-size key" (the reason: `src/executor.bp` docblock and the AGENTS section)
 
 ### Step 5 — The `scheduledtasks` endpoint and health
 
@@ -197,11 +197,11 @@ with no separate opt-out here. Front 11 decides who may reach `/actuator`; this 
 second answer.
 
 **Acceptance:**
-- [ ] The listing reports, per task, the trigger kind, the expression, the last start, the last finish, the last result, the next fire, and the run/failure/missed counters.
-- [ ] Timestamps are RFC 3339 via `clock.formatIso8601`, not raw millis.
-- [ ] `POST .../run` on an unknown name returns 404; on a known one it returns 202 and the run appears in the next listing.
-- [ ] Both routes are refused with front 11's standard response when the caller is not authorized, and no key in this module changes that.
-- [ ] `schedulingHealth()` reports DOWN when any enabled task's timer process is not alive, naming the task.
+- [x] The listing reports, per task, the trigger kind, the expression, the last start, the last finish, the last result, the next fire, and the run/failure/missed counters. — held: `modules/rakun-scheduling/test/endpoint_test.bp` "endpoint: the listing reports trigger, expression, last start and finish, last result, next fire and the counters"
+- [x] Timestamps are RFC 3339 via `clock.formatIso8601`, not raw millis. — held: `modules/rakun-scheduling/test/endpoint_test.bp` "endpoint: timestamps are RFC 3339 through clock.formatIso8601, never raw millis, and null for never"
+- [x] `POST .../run` on an unknown name returns 404; on a known one it returns 202 and the run appears in the next listing. — held: `modules/rakun-scheduling/test/endpoint_test.bp` "endpoint: POST run on an unknown name answers 404" and "endpoint: POST run on a known name answers 202 and the run appears in the next listing"
+- [x] Both routes are refused with front 11's standard response when the caller is not authorized, and no key in this module changes that. — held: `modules/rakun-scheduling/test/endpoint_test.bp` "endpoint: both routes answer front 11's 404 problem when the caller is not authorized" (no key: `src/endpoint.bp` reads none)
+- [x] `schedulingHealth()` reports DOWN when any enabled task's timer process is not alive, naming the task. — held: `modules/rakun-scheduling/test/endpoint_test.bp` "endpoint: scheduling health is DOWN naming an enabled task whose timer is not alive"
 
 ## Examples
 

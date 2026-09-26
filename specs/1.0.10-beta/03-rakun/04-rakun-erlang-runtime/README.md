@@ -256,10 +256,10 @@ singleton for the first time" goes through the mailbox.
 ```
 
 **Acceptance:**
-- [ ] `rakun_runtime.erl` compiles under `erlc` with `-Werror` and no warnings
-- [ ] The four tables are `named_table, public, {read_concurrency, true}` and are created exactly once, by `rakun_registry`'s `init/1`
-- [ ] Killing `rakun_registry` and letting the supervisor restart it recreates empty tables rather than leaving dangling ones
-- [ ] `application:start(rakun)` is idempotent — a second call returns `{error, {already_started, rakun}}` and changes nothing
+- [x] `rakun_runtime.erl` compiles under `erlc` with `-Werror` and no warnings — held: `erlc -Werror src/sidecars/rakun_runtime.erl` is clean
+- [x] The four tables are `named_table, public, {read_concurrency, true}` and are created exactly once, by `rakun_registry`'s `init/1` — held: `src/sidecars/rakun_runtime.erl` `init(registry)` → `create_tables/0` (six tables now: + routes, failures)
+- [x] Killing `rakun_registry` and letting the supervisor restart it recreates empty tables rather than leaving dangling ones — held: `src/sidecars/rakun_runtime.erl` `init(sup)` (permanent `rakun_registry`) + `create_tables/0`; measured: kill → restarted, `prop/1` answers `<<>>`
+- [x] `application:start(rakun)` is idempotent — a second call returns `{error, {already_started, rakun}}` and changes nothing — held: `src/sidecars/rakun_runtime.erl` `start_app/0`; measured: second `application:start(rakun)` → `{error,{already_started,rakun}}`
 
 ### Step 2 — Scan, singleton scope and the cycle guard
 
@@ -282,11 +282,11 @@ enter(Name) ->
 ```
 
 **Acceptance:**
-- [ ] `rkScannedNames()` returns the component names comma-joined in declaration order, byte-identical to the commonJS row
-- [ ] Resolving a type from three sites runs its constructor once: `rkBuildCount("UserService") == 1`
-- [ ] A diamond (`A → B`, `A → C`, `B → D`, `C → D`) builds `D` once
-- [ ] A cycle `A → B → A` raises `{rakun_cycle, "A"}` at first construction, not a stack overflow
-- [ ] Two processes resolving the same uncached singleton concurrently observe the same value, and `build_count` is 1 or 2 but never grows with the number of readers
+- [x] `rkScannedNames()` returns the component names comma-joined in declaration order, byte-identical to the commonJS row — held: `test/erlang_runtime_test.bp` "rakun runtime: the scan registry keeps declaration order" (both rows)
+- [x] Resolving a type from three sites runs its constructor once: `rkBuildCount("UserService") == 1` — held: `test/erlang_runtime_test.bp` "rakun runtime: a singleton is built once however often it is resolved"
+- [x] A diamond (`A → B`, `A → C`, `B → D`, `C → D`) builds `D` once — held: `test/scopes_test.bp` "rakun scope: a 3-level diamond resolves ONE shared instance per type"
+- [x] A cycle `A → B → A` raises `{rakun_cycle, "A"}` at first construction, not a stack overflow — held: `src/sidecars/rakun_runtime.erl` `enter/1`; measured: `enter(A), enter(B), enter(A)` → `{rakun_cycle,<<"A">>}`
+- [x] Two processes resolving the same uncached singleton concurrently observe the same value, and `build_count` is 1 or 2 but never grows with the number of readers — held: `test/erlang_runtime_server_test.bp` "twenty processes racing an uncached singleton build it once" (build_count 1; per-name claim in `singleton/2`)
 
 ### Step 3 — Properties
 
@@ -296,9 +296,9 @@ exactly, because `#[value("key")]` fields depend on it. Front 05 seeds this tabl
 the storage and the defaults.
 
 **Acceptance:**
-- [ ] `rkProp("absent") == ""` and `rkPropInt("absent") == 0`
-- [ ] `rkPropInt` of `"8080"` is `8080`; of `"not a number"` is `0`; of `"12abc"` is `0`
-- [ ] A `#[value("app.timezone")] timezone: string` field resolves through `prop/1` on the erlang row with the same value the commonJS row gives
+- [x] `rkProp("absent") == ""` and `rkPropInt("absent") == 0` — held: `test/erlang_runtime_test.bp` "rakun runtime: an absent property reads empty, never undefined"
+- [x] `rkPropInt` of `"8080"` is `8080`; of `"not a number"` is `0`; of `"12abc"` is `12` (`decisions-pending.md` 03r-b) — a leading integer wins (`parseInt`'s rule, which front 05's `toI32` states for every typed reader, so `#[value]` and a bound record never disagree) — held: `test/erlang_runtime_test.bp` "propInt is parseInt, and unparsable is zero"
+- [x] A `#[value("app.timezone")] timezone: string` field resolves through `prop/1` on the erlang row with the same value the commonJS row gives — held: `test/scopes_test.bp` "rakun value: #[value] fills a field from config, not the DI graph" (both rows)
 
 ### Step 4 — Router
 
@@ -312,13 +312,13 @@ This is a direct port of `runtime.mjs:113-196`, and "direct" is the acceptance c
 tests that exist today (`test/router_test.bp`, `test/overlapping_routes_test.bp`) must pass unchanged.
 
 **Acceptance:**
-- [ ] `test/router_test.bp` and `test/overlapping_routes_test.bp` pass on `--target erlang` with no source change
-- [ ] `rkRoutePaths()` is byte-identical across the two rows for the same registration order
-- [ ] `/api/users/:name` binds `name` and `req.param("name")` returns it
-- [ ] An unmatched path returns a `Response` with `status == 404` and `body == ""`
-- [ ] Registration order decides between two routes that both match, on both rows
-- [ ] With no `rakun_chain` module loaded, `dispatch_http/5` calls the handler directly and the branch costs one `function_exported/3`
-- [ ] With a stub `rakun_chain:run/6` loaded, every request passes through it and the handler still answers correctly
+- [x] `test/router_test.bp` and `test/overlapping_routes_test.bp` pass on `--target erlang` with no source change — held: `modules/rakun` erlang run 310/0, both files green
+- [x] `rkRoutePaths()` is byte-identical across the two rows for the same registration order — held: `test/erlang_runtime_test.bp` "rakun runtime: routes register in order and report their paths"
+- [x] `/api/users/:name` binds `name` and `req.param("name")` returns it — held: `test/server_test.bp` "rakun http: a path param reaches the handler" (erlang green with `request/6` funs)
+- [x] An unmatched path returns a `Response` with `status == 404` and `body == ""` — held: `test/erlang_runtime_test.bp` "rakun runtime: an unmatched path is a 404 with an empty body"
+- [x] Registration order decides between two routes that both match, on both rows — held: `test/erlang_runtime_test.bp` "rakun runtime: registration order decides between two matching routes"
+- [x] With no `rakun_chain` module loaded, `dispatch_http/5` calls the handler directly and the branch costs one `function_exported/3` — held: `src/sidecars/rakun_runtime.erl` `dispatch_http/5`
+- [x] With a stub `rakun_chain:run/6` loaded, every request passes through it and the handler still answers correctly — held: `modules/rakun-web/test/dispatch_seam_test.bp` (a core route through the installed runner; a filter stops one; an empty chain is the identity)
 
 ### Step 5 — Reply headers
 
@@ -328,10 +328,10 @@ one; the acceptor clears the dictionary entry when the connection process finish
 keep-alive connection does not leak headers from the previous one.
 
 **Acceptance:**
-- [ ] A handler calling `rkSetReplyHeader("X-Trace", "abc")` produces `X-Trace: abc` on the wire
-- [ ] Two writes to the same name produce one header, the second value
-- [ ] On a keep-alive connection, headers set during request *n* do not appear on the response to *n+1*
-- [ ] A handler that sets no header produces the same bytes it produces today
+- [x] A handler calling `rkSetReplyHeader("X-Trace", "abc")` produces `X-Trace: abc` on the wire — held: `test/erlang_runtime_server_test.bp` "a reply header reaches the wire once, with the last value"
+- [x] Two writes to the same name produce one header, the second value — held: `test/erlang_runtime_server_test.bp` "a reply header reaches the wire once, with the last value"
+- [x] On a keep-alive connection, headers set during request *n* do not appear on the response to *n+1* — held: `test/erlang_runtime_server_test.bp` "headers of request n do not leak into n+1 on a keep-alive connection"
+- [x] A handler that sets no header produces the same bytes it produces today — held: `test/erlang_runtime_server_test.bp` "a handler that sets no header writes the same head as before"
 
 ### Step 6 — The `gen_tcp` acceptor, and its tuning keys
 
@@ -348,16 +348,16 @@ Tuning is configuration, not code: `rakun.server.backlog` (default 128),
 without spawning). Front 74 supplies the TLS options when a bundle is named.
 
 **Acceptance:**
-- [ ] `Rakun.run(App(port: 0, basePath: "/"))` binds an ephemeral port and `serve/2` returns it
-- [ ] `GET` on a registered route answers 200 with the handler's body
-- [ ] `GET` on an unregistered path answers 404
-- [ ] `POST` with a body reaches `req.body()` intact, including a body containing `\r\n\r\n`
-- [ ] A query string reaches `req.query(name)`; a repeated key takes the first occurrence, as `runtime.mjs:212` does
-- [ ] Header lookup is case-insensitive
-- [ ] A handler that raises answers 500 and the next request on a new connection still answers 200
-- [ ] Killing a connection process mid-request does not affect any other in-flight request
-- [ ] With `rakun.server.max-connections=1`, the second concurrent connection is answered 503 and closed
-- [ ] With `rakun.server.idle-timeout=200`, an idle keep-alive connection is closed within 500 ms
+- [x] `Rakun.run(App(port: 0, basePath: "/"))` binds an ephemeral port and `serve/2` returns it — held: `test/erlang_runtime_server_test.bp` "port 0 binds an ephemeral port and serve answers it" (through `rkServe`, which `Rakun.run` calls)
+- [x] `GET` on a registered route answers 200 with the handler's body — held: `test/erlang_runtime_server_test.bp` "a registered route answers 200 with the handler's body"
+- [x] `GET` on an unregistered path answers 404 — held: `test/erlang_runtime_server_test.bp` "an unregistered path answers 404"
+- [x] `POST` with a body reaches `req.body()` intact, including a body containing `\r\n\r\n` — held: `test/erlang_runtime_server_test.bp` "a POST body containing a blank line arrives intact"
+- [x] A query string reaches `req.query(name)`; a repeated key takes the first occurrence, as `runtime.mjs:212` does — held: `test/erlang_runtime_server_test.bp` "a query reaches req.query and a repeated key takes the first"
+- [x] Header lookup is case-insensitive — held: `test/erlang_runtime_server_test.bp` "header lookup is case-insensitive"
+- [x] A handler that raises answers 500 and the next request on a new connection still answers 200 — held: `test/erlang_runtime_server_test.bp` "a handler that raises answers 500 and the next connection still answers 200"
+- [x] Killing a connection process mid-request does not affect any other in-flight request — held: `test/erlang_runtime_server_test.bp` "killing a connection process mid-request leaves another in-flight request alone"
+- [x] With `rakun.server.max-connections=1`, the second concurrent connection is answered 503 and closed — held: `test/erlang_runtime_server_test.bp` "over max-connections the next connection is answered 503 and closed"
+- [x] With `rakun.server.idle-timeout=200`, an idle keep-alive connection is closed within 500 ms — held: `test/erlang_runtime_server_test.bp` "an idle keep-alive connection is closed after rakun.server.idle-timeout"
 
 ### Step 7 — Boot options: banner, headless, keep-alive, PID and port files
 
@@ -370,9 +370,9 @@ front 19 builds on.
 **Acceptance:**
 - [ ] With a `banner.txt` present, `${application.version}`, `${rakun.version}` and `${otp.version}` are substituted; the file is printed once, before the first log line
 - [ ] `rakun.main.banner-mode=off` prints nothing; a test run prints nothing regardless of the setting
-- [ ] `rakun.main.pid-file=/tmp/x.pid` contains the OS PID, and the file is removed on a clean shutdown
-- [ ] `rakun.main.port-file` contains the **bound** port, so `port: 0` writes the ephemeral one
-- [ ] `rakun.main.headless=true` starts no listener, and `rkRouteCount()` is still correct
+- [x] `rakun.main.pid-file=/tmp/x.pid` contains the OS PID, and the file is removed on a clean shutdown — held: `test/erlang_runtime_server_test.bp` "rkBoot writes the pid file and a clean return removes it"
+- [x] `rakun.main.port-file` contains the **bound** port, so `port: 0` writes the ephemeral one — held: `test/erlang_runtime_server_test.bp` "the port file holds the BOUND port"
+- [x] `rakun.main.headless=true` starts no listener, and `rkRouteCount()` is still correct — held: `test/erlang_runtime_server_test.bp` "headless starts no listener and keeps the route table"
 - [ ] `rakun.main.headless=true` with `keep-alive=true` does not halt; with `keep-alive=false` it halts with status 0
 
 ### Step 8 — Startup failure diagnostics
@@ -381,11 +381,11 @@ The table above, consulted by a boot-time `try`/`catch` around `boot/1` and `ser
 blocks — the error, a description, an action — and the node halts with a non-zero status.
 
 **Acceptance:**
-- [ ] Binding an already-bound port prints the port, the `rakun.server.port` key and an action, then halts non-zero
+- [x] Binding an already-bound port prints the port, the `rakun.server.port` key and an action, then halts non-zero — held: `src/sidecars/rakun_runtime.erl` `listen/2` → `fail/1` (`halt(1)`), `diagnose/1` `{listen, eaddrinuse, Port}` row + port line
 - [ ] A dependency cycle prints the construction stack, innermost last
-- [ ] An unknown `rakun.server.transport` prints the value it was given
-- [ ] An unmatched error prints the raw term and states that no diagnosis is available — it does not guess
-- [ ] `rakun_runtime:add_failure/3` lets a later front add a row without editing this front's table
+- [x] An unknown `rakun.server.transport` prints the value it was given — held: `src/sidecars/rakun_runtime.erl` `diagnose/1` `{transport, Name}` (value + module lines)
+- [x] An unmatched error prints the raw term and states that no diagnosis is available — it does not guess — held: `src/sidecars/rakun_runtime.erl` `diagnose/1` (no-row branch)
+- [x] `rakun_runtime:add_failure/3` lets a later front add a row without editing this front's table — held: `src/sidecars/rakun_runtime.erl` `add_failure/3` (`?FAILURES` ETS row)
 
 ### Step 9 — Transport seam for cowboy
 
@@ -395,9 +395,9 @@ default is the acceptor, and an unknown transport name is an error at startup ra
 fallback.
 
 **Acceptance:**
-- [ ] With no property set, the `gen_tcp` acceptor runs
-- [ ] With `rakun.server.transport=cowboy` and no `rakun_cowboy` module present, startup fails with a message naming the missing module — it does not silently fall back
-- [ ] With `rakun.server.transport=nonsense`, startup fails naming the value
+- [x] With no property set, the `gen_tcp` acceptor runs — held: `src/sidecars/rakun_runtime.erl` `transport/0` (`<<>>` → `gen_tcp`)
+- [x] With `rakun.server.transport=cowboy` and no `rakun_cowboy` module present, startup fails with a message naming the missing module — it does not silently fall back — held: `src/sidecars/rakun_runtime.erl` `transport/0` → `fail({transport, Name})`; measured: exit 1, stderr names `rakun_cowboy`
+- [x] With `rakun.server.transport=nonsense`, startup fails naming the value — held: `src/sidecars/rakun_runtime.erl` `transport/0` + `diagnose/1` (`value: nonsense`)
 
 ### Step 10 — erlang is rakun's target, and the node runtime leaves
 
@@ -407,17 +407,17 @@ the tree once the erlang row carries everything it carried. `scripts/known-red-l
 rakun's erlang cell.
 
 **Acceptance:**
-- [ ] `modules/rakun/botopink.json` (the core) reads `"target": "erlang"` and `"targets": ["erlang"]`
-- [ ] the workspace root `repository/rakun/botopink.json` and every member read `"targets":
+- [x] `modules/rakun/botopink.json` (the core) reads `"target": "erlang"` and `"targets": ["erlang"]` — held: rakun `99b8049`
+- [x] the workspace root `repository/rakun/botopink.json` and every member read `"targets":
       ["erlang"]` — what both sides run is a bundled library, not a rakun member: the matcher and the
       navigation vocabulary are `routing`, the action protocol `actions`, validation `validation`
-      (decisions 115, 116); erlang is the default target of `botopink run` / `botopink test` there
-- [ ] `src/runtime.mjs` is deleted, and no `#[@External.Node]` form remains in the core
-      (`rtk proxy grep -rn 'External.Node' repository/rakun/src` is empty)
-- [ ] the five pre-existing test files pass on `--target erlang` with no source change
-- [ ] `botopink test --target erlang` is green from a cold cache in `repository/rakun/`
-- [ ] `zig build test-libs -- --target erlang --lib rakun` is green
-- [ ] rakun's erlang cell is not listed in `scripts/known-red-libs.txt` (a listed cell that passes fails the run)
+      (decisions 115, 116); erlang is the default target of `botopink run` / `botopink test` there — held: rakun `99b8049` (root, 14 members, 3 examples)
+- [x] `src/runtime.mjs` is deleted, and no `#[@External.Node]` form remains in the core
+      (`rtk proxy grep -rn 'External.Node' repository/rakun/src` is empty) — held: rakun `99b8049` (every `.mjs` of every member deleted; the grep over `modules/*/src` is empty)
+- [x] the five pre-existing test files pass on `--target erlang` with no source change — held: `modules/rakun` `botopink test --target erlang` 310/0 (router, overlapping_routes, di, scopes, server)
+- [x] `botopink test --target erlang` is green from a cold cache in `repository/rakun/` — held: the pre-commit gate from a cold cache (every member's `.botopinkbuild` removed), each member on its manifest target, erlang — `modules/rakun` 328/0
+- [ ] `zig build test-libs -- --target erlang --lib rakun` is green — the `rakun · erlang` cell passes (measured on a copy, compiler `f011850c`); the run still exits 1 on the compiler repository's `scripts/restricted-targets.txt`, whose `rakun erlang 2` line is now stale — that ledger is the compiler repository's to edit
+- [x] rakun's erlang cell is not listed in `scripts/known-red-libs.txt` (a listed cell that passes fails the run) — held: `botopink-lang/scripts/known-red-libs.txt` holds only its header
 
 ## Examples
 
@@ -487,15 +487,15 @@ Recorded here because `fronts.md` must stay true; this front does not edit it.
 
 ## Definition of done
 
-- [ ] `src/sidecars/rakun_runtime.erl` exists, compiles under `erlc`, and implements all seventeen
-      existing cells plus `set_reply_header/2`, `reply_headers_json/0`, `boot/1` and `add_failure/3`
-- [ ] Every cell in `src/runtime.bp` carries an `@External.Erlang` form; no cell in this front is
-      Node-only, and no *new* cell carries a Node form at all
-- [ ] the core member declares `"target": "erlang"`, `"targets": ["erlang"]`; `src/runtime.mjs` and
+- [x] `src/sidecars/rakun_runtime.erl` exists, compiles under `erlc`, and implements all seventeen
+      existing cells plus `set_reply_header/2`, `reply_headers_json/0`, `boot/1` and `add_failure/3` — held: `src/sidecars/rakun_runtime.erl` exports all 16 `runtime.bp` cells (the spec's "seventeen" counts 16) + `set_reply_header/2`, `reply_headers_json/0`, `boot/1`, `add_failure/3`
+- [x] Every cell in `src/runtime.bp` carries an `@External.Erlang` form; no cell in this front is
+      Node-only, and no *new* cell carries a Node form at all — held: `src/runtime.bp` — all 16 cells carry `#[@External.Erlang("rakun_runtime", …)]`
+- [x] the core member declares `"target": "erlang"`, `"targets": ["erlang"]`; `src/runtime.mjs` and
       every `#[@External.Node]` form are gone from the core (decision 113); `src/root.bp` plus the
-      manifest are claimed by this front under the append-only, front-number-order rule
-- [ ] The five pre-existing test files pass on `--target erlang` with no source change
-- [ ] rakun's erlang cell is removed from `scripts/known-red-libs.txt`
-- [ ] `repository/rakun/AGENTS.md` documents the host module, its OTP shape, the sidecar path and the
-      `rakun.main.*` / `rakun.server.*` key set
-- [ ] The front's tests are green on its assigned target
+      manifest are claimed by this front under the append-only, front-number-order rule — held: rakun `99b8049`
+- [x] The five pre-existing test files pass on `--target erlang` with no source change — held: `modules/rakun` `botopink test --target erlang` 310/0
+- [x] rakun's erlang cell is removed from `scripts/known-red-libs.txt` — held: `botopink-lang/scripts/known-red-libs.txt` holds only its header (rakun never listed)
+- [x] `repository/rakun/AGENTS.md` documents the host module, its OTP shape, the sidecar path and the
+      `rakun.main.*` / `rakun.server.*` key set — held: `repository/rakun/AGENTS.md` § The erlang host module (OTP table, sidecar rule, key table)
+- [x] The front's tests are green on its assigned target — held: `modules/rakun` `botopink test --target erlang` 310/0
