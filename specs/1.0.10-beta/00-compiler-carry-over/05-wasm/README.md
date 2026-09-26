@@ -186,10 +186,15 @@ after the loop — the shape 1.0.4's WR1 (closure captures) touched. Reproduce a
 first: a `forEach` over a two-element array assigning to an outer `var`, printed after.
 
 **Acceptance:**
-- [ ] the probe in [Problem](#problem) prints `1` and `9`
-- [ ] `wasm | modules/std_import` leaves `expected-failures.txt`
-- [ ] a fixture in `src/codegen/tests/**` pins the minimal shape (a `forEach` writing an outer `var`) with a RUN LOG, so the next regression is caught before `Dict` is
-- [ ] the wrong-answer class is audited: any other shape that answers a value with exit 0 and no diagnostic is listed in `src/codegen/wat/AGENTS.md` or fixed
+- [x] the probe in [Problem](#problem) prints `1` and `9` — re-measured 2026-09-26 on `b6ba65a3`
+      (spelled `d.at(…)`: decision 63 renamed `lookup`)
+- [x] `wasm | modules/std_import` leaves `expected-failures.txt` — gone before this front re-opened;
+      the cell is green
+- [x] a fixture in `src/codegen/tests/**` pins the minimal shape (a `forEach` writing an outer `var`) with a RUN LOG, so the next regression is caught before `Dict` is —
+      `wat.zig` `option ---- a value assigned into a declared ?T is boxed like one`
+      (`[1, 2].forEach({ n -> seen = n }); @print(seen)` → `2`)
+- [x] the wrong-answer class is audited: any other shape that answers a value with exit 0 and no diagnostic is listed in `src/codegen/wat/AGENTS.md` or fixed —
+      § *Where this backend refuses to answer* and § *The carrier of a `?T`*
 
 ### Step 4 — `break <value>`
 
@@ -216,6 +221,13 @@ time is positional and equality compares elements; T5: labels take no part.
 **Acceptance:** both methods answer `AB` and `ab`; an audit of the primitive method table lists every
 method wasm does not lower, and each is either lowered or carries a documented `RUNTIME TRAP` fixture
 — never a silent wrong answer.
+
+- [x] `AB` / `ab` — re-measured 2026-09-26 (`$__str_case`)
+- [x] the audit — `src/codegen/wat/AGENTS.md` § The primitive method table: `Float.toString`,
+      `String.charCodeAt`/`lastIndexOf`/`padStart`/`padEnd`/`replace`/`replaceAll`/`chars` lowered
+      (compiler `31841673`), and the eleven left (`String.lines`/`words`, `Array.pop`/`find`/
+      `flatMap`/`flatten`/`flat`/`chunked`/`sliding`/`fill`/`unique`) each pinned as a trap by one
+      program in `src/codegen/tests/wat.zig`
 
 ### Step 7 — a function value held in a value cannot be applied
 
@@ -292,12 +304,20 @@ Consequence for acceptance: of this front's four `expected-failures.txt` lines, 
 
 ## Gate
 
-- [ ] `scripts/gate.sh --cold` green in this front's worktree
-- [ ] every re-recorded RUN LOG **verified by running the program** under wasmtime, and checked against decision 8 §7
-- [ ] no new `RUN LOG` answers a value with exit 0 that another backend answers differently — a shape wasm cannot do is a `RUNTIME TRAP`, never a wrong number
-- [ ] the 24 existing `RUNTIME TRAP` fixtures are re-read: each is still a shape wasm cannot do, or it is fixed
-- [ ] `src/codegen/AGENTS.md` and `src/codegen/wat/AGENTS.md` updated in the same commit as each row
-- [ ] Commit on `fix/wasm`; no push, no merge
+- [x] `scripts/gate.sh --cold` green in this front's worktree — stage by stage, below
+- [x] every re-recorded RUN LOG **verified by running the program** under wasmtime, and checked against decision 8 §7 — each moved log compared with commonJS's for the same fixture
+- [x] no new `RUN LOG` answers a value with exit 0 that another backend answers differently — a shape wasm cannot do is a `RUNTIME TRAP`, never a wrong number — every moved log is commonJS's answer, `null` for absence, or a trap replacing a wrong answer (`import_a_dotted_path_and_a_group_bind_their_leaves_across_a_module_tree`)
+- [x] the 24 existing `RUNTIME TRAP` fixtures are re-read: each is still a shape wasm cannot do, or it is fixed — **11** carry one now: eight are the program's own `@todo()`, one a fatal `assert` outside test mode, one the flat namespace (a trap by design until the link mangles), and `interface_*` / `tuple_a_bare_digit…` / `src_in_a_method` / the slice and enum fixtures were fixed on this branch
+- [x] `src/codegen/AGENTS.md` and `src/codegen/wat/AGENTS.md` updated in the same commit as each row
+- [x] Commit on `fix/wasm`; no push, no merge — on `front/04-05-js-wasm`, not pushed
+
+**Measured at the tip of `front/04-05-js-wasm` (2026-09-26):** `scripts/gate.sh --cold` cannot run
+whole from a worktree nested in the meta checkout — `test-libs` sees every sibling twice
+(`decisions-pending.md` 24-f) — so its stages were run one by one: `zig build`, `format-check.sh`,
+`zig build test` from a cold runtime cache, `snap_audit.sh --mode=runtime-parity` (1415 pairs, 0
+differing), `test-bpmp`, `beam_export_audit.sh` (468 / 468), `test-cli`, `test-language` (`all` 816 /
+21 / 0, `beam` 216 / 8 / 0), `test-docs` (68 checked, 0 failed), and `test-libs` from a scratch
+workspace holding copies of the five libraries (58 passed, 0 failed, 19 restricted pinned) — all green.
 
 ## Blast radius
 
@@ -391,3 +411,88 @@ Measured while the cells were written: `case 9 { 1...9 { 1 } _ { 0 } }` prints `
 commonJS, `0` on erlang and **`256` — a heap address — on wasm**, and written where its type is known
 it does not compile at all. The cells are owed once `01 step 4` lands.
 
+---
+
+## Re-verified and continued — 2026-09-26, `front/04-05-js-wasm`
+
+Every row re-measured against `feat` (`b6ba65a3`) with `botopink run --target wasm` (wasmtime)
+before anything was written.
+
+| Row | State | Evidence |
+|---|---|---|
+| Step 1 F1, F5 | **holds** | `5.0`, `[1, 2]`, `#(1, "a")`; `run/tuple_print.bp` green, its line gone |
+| Step 1 F2, F3 | **holds** (C-01 half 3's descriptor header) | `run/print_formatter.bp` green on wasm |
+| Step 1 F4 (`Display`) | **landed here** | `run/display_print.bp` prints `$5` / `[$1, $2]`; its line deleted |
+| Step 2 D1–D4 | **landed here** (compiler `b11867d6`) | the box, `is` by value, `==` by value, primitive-type `case` arms — `run/unknown_by_value.bp` green on four targets |
+| Step 2 D5 | **holds** — the read path worked, the call path is step 7's (landed) | `tuple_labels_resolve_to_positions_on_every_backend` |
+| Step 3 `Dict` | **holds** | boxes above |
+| Step 4 `break <value>` | **superseded** by decision 105 (C-30) | |
+| Step 5 `==` on tuples | **holds** | `true` / `false` for `#(1, "a")` against `#(1, "a")` / `#(1, "b")` |
+| Step 6 `toUpperCase` / `toLowerCase` | **holds**; the audit **landed here** | `AB` / `ab` (`$__str_case`); boxes above |
+| Step 7 function values | **holds** (front 05 step 7, `wat/AGENTS.md` § Function values) | |
+| Step 8 dead block-as-value | **struck** — measured: no such lowering (`wat/AGENTS.md`) | |
+| Step 9 row 1 (tail calls) | **holds** (`1914ea21`, in `feat`) | `run/tail_self_call.bp` green on four targets |
+| Step 9 row 2 (`es.map({ e -> e.key })`) | **holds** | `run/map_record_field_length.bp` prints `3` on wasm |
+| Step 9 row 3 (`?.` chain, second method) | **landed here** | `run/optional_chain_method.bp` green on commonJS and wasm; erlang and beam listed for 02 / 03 (the method runs on `undefined`) |
+| Step 9 row 4 (beam) | **moved to 03** — `1380a66e` closed `modules/{field,method}_name_collision` on beam | |
+
+**Landed here** (compiler commit in `status.md`):
+
+- **A constructor in binding position** — `val Circle(r) = s;` / `val Sq(side) = q;` answered `0`
+  at exit 0 (the `.ctor` destructure fell to "unsupported destructure pattern" and bound nothing);
+  it reads each binding off its field's slot now — the twin of 04's JS-4.
+- **Calling the result of a call** — `adder(3)(4)` trapped (`unresolved call`); `lowerValueCall`
+  applies `calleeExpr`. On the way, a function value declared to return a `string` —
+  `greeter("a")("b")`, or `f("b")` after `val f = greeter("a")` — printed its **heap address** at
+  exit 0 (`312`, `288`), and the lambda `greeter` returns concatenated a number (`a264`): both fixed
+  (`valueCallTypeRef`, `expected_fn`).
+- **Decision 47's spelling of absent** — the empty `?T` prints `null` (`$__print_null`), not
+  `undefined`; `run/index_past_the_end_is_null.bp`'s wasm line deleted, `run/index_at_optional.bp`'s
+  reworded to the `Dict` half that is left. 12 wasm snapshots per tree moved: the helper's bytes, and
+  five RUN LOGs `undefined` → `null` (one is `if_simple_conditional_in_fn_body`, an `if` with no
+  `else` used as a value — commonJS still prints `undefined` there, see status.md).
+- **Step 1 F4, `Display`** — `$__print_tagged_raw` asks `$__display_of(v)` first; the prelude's
+  `display_of` group answers `0` (so every group still renders alone) and `wat.zig` substitutes the
+  module's dispatch, one descriptor compare per record type declaring `display(self) -> string`,
+  written after lowering (a table index interned into the descriptor would shift as lambdas are
+  lifted — the reason the old line gave for leaving it). `run/display_print.bp`'s wasm line deleted;
+  5 wasm snapshots per tree moved, helper text only.
+- **Step 9's `?.` row** — a primitive method on the rest of a `?.` chain runs under the chain's guard
+  (`lowerChainedCall`): absent stays absent, present unboxes the receiver and boxes a scalar result.
+  Before, `es.at(9)?.key.length()` read a length from address 0 at exit 0 and `….toString()` trapped
+  `unresolved call`. New cell `run/optional_chain_method.bp`; no snapshot moved.
+- **`x is Token.Num`** (status.md's `x is <Enum>.<Variant>` row, wasm half) — tests the one variant's
+  descriptor; it trapped. A leading-dot variant two enums declare keeps the trap.
+- **The rows no step named** (each had its own `expected-failures.txt` line, 05's): an enum's methods
+  are emitted (`Shape.Rect(…).counts(3)` trapped) and its associated fn is a call (`Shape.unit()`
+  answered `0`); a method declared `-> @Iterator<T>` accumulates its yields (they were dropped —
+  `run/effect_method.bp`'s `0`); a method on a value of an imported type resolves through the
+  receiver's record (`modules/method_name_collision`'s `0` / `0`); the optional binder takes the
+  payload's record type (`modules/field_name_collision`'s `0`); a `_`-named top-level statement runs
+  at load (`run/module_init_order.bp`). Four lines deleted; 8 wasm snapshots per tree moved, three
+  RUN LOGs from a trap to the commonJS answer.
+- **Step 2 D1–D4, the box** (compiler `b11867d6`) — designed on C-01's header, as this README asked:
+  a value entering an `unknown` or union slot carries the header a declared value already carries; a
+  primitive is boxed with a `'P' <n> name` descriptor, so one field answers "which primitive" and
+  "which declaration" and 13's named-type tests read an `unknown` value unchanged. `x is T` by value
+  (§4.1), `==` by value (§2.3), `@print` by the box, `if (x is T)` narrowing, primitive-type arms
+  (§5.2). Before, `x is i32` trapped and a type arm matched every value (`number 364`, an address,
+  exit 0). A value whose type nothing proves — a type parameter's slot, since nothing monomorphises —
+  traps rather than being boxed by a guess (`tests/wat.zig` pins it). No snapshot moved; new cell
+  `run/unknown_by_value.bp`. Not in the box: arrays and tuples are boxed with a descriptor but have
+  no printed form and no element-wise `is` through `unknown` (they trap).
+- **Three status rows** — a slice's `null` end is the end (compiler `37563df6`; `s.slice(2, null)`
+  trapped out of bounds), a variant reached through its enum is the enum's even beside a same-named
+  record (`100381cd`; `.Layout.Size.Large` answered `display:block`), and a call to a name two
+  linked modules declare traps instead of reaching the first module's function (`305b845d`; the
+  flat-namespace row's silent half — per-module mangling is still open).
+
+**Left open here, with the reason:** C-18's `Dict` absence (`run/index_dict.bp`,
+`run/index_at_optional.bp`, `run/index_user_type.bp` — a `?V` over a type parameter is carried
+unboxed and nothing monomorphises), C-30's eager generator `break` (`run/generator_break_value.bp`,
+22-loops' row), per-module mangling of the link, and step 8 (no lowering to delete — struck above).
+- **Behaviors' `default fn`s, `Array.find`, the option `map`** (compiler `cf6e92e2`, `fe996180`) — a
+  type adopts the defaults it does not write (`Money(…).clamp(…)` trapped); a method answers the
+  record its return names (`Stub(n: 1).where()`'s `SourceLocation` printed two addresses at exit 0);
+  `find` is `filter` then `at(0)`; `opt.map(…)` is a registered optional (a `return` into `-> ?i32`
+  boxed the box). 5 wasm snapshots per tree moved, each to commonJS's answer.

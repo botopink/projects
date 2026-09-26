@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e), three of `00 · 23-std-purity` (23-a…c), five of front 95's (95-a…e) and track D's (05emilia-a…). Every other question this milestone raised is answered in
+**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e), three of `00 · 23-std-purity` (23-a…c), five of front 95's (95-a…e), four of `00 · 16-formatter` (16-a…d), track C's (26-a, 27-a, 30-a…e, 31-a), `00 · 04-js` / `05-wasm`'s (0405-a…b) `00 · 02-erlang` / `03-beam`'s (0203-a…b) and track D's (05emilia-a…h). Every other question this milestone raised is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 91, 92, 93 and 97 by decisions 103 and 104, 99 by 108,
 94, 100 and 101 by 113; every number up to 117 is answered — 114 answers the eight seams decision 113 left open, 115 the five points 114 left open, 116 nine more pieces two libraries both run, 117 the nine points 113–116 left, and 118–127 register the maintainer's effect revision (the return type is the annotation, `@Task<T>`, only `@Result` fails, `@Iterator<T>` / `@Stream<T>`, `async { }`, `iter` / `stream` loops, no compatibility mode — front `00 · 24-effects-by-return`), and 128 merges `@Use<C, T>` and `@Component<T>` into `@Component<C, T>`. The next free number is **130**.
 
@@ -451,6 +451,263 @@ Decided by `02-packaging/95-ecosystem-package-restructure` (worktree `.tasks/95-
 > 116 moves rakun's codec to std `encoding`, which would retire the duplicate).
 > **Recommendation.** (1) now; (2) is the decision-116 work of rakun front 62, after which the line
 > can go back to `from "rakun"` or drop the name.
+
+## Front 16 (formatter) — choices made in implementation, to confirm
+
+Decided by the implementation of `00-compiler-carry-over/16-formatter` (worktree `.tasks/16-formatter`,
+compiler `0f0be511`…`7af79f44`, 2026-09-26) so C-12 and C-13 could land; the maintainer confirms or
+reverses each. Every number below is measured over scratch copies of the compiler's trees (`libs/std`,
+the three bundled libraries, `examples/`) and the five sibling libraries at their pinned commits — 248
+`.bp` files — formatted by the parent commit's binary and by the new one.
+
+### 16-a · C-12's argument list is enabled **with** the constructs that enclose it
+
+> **Measured.** Enabled alone (the parked `argument-list.patch`), the list opened ~1 480 of ~2 770
+> lists for what followed them (`) != -1;`, `) + "…"`), because the binary expression around them was
+> pinned — decision 65's wrong middle. The same happens inside a pinned array literal
+> (`[ThemeEntry(` / `…` / `)]`) and after a brace-less `if` condition (`if (absDiff` /
+> `    > tolerance) throw "…"`, the condition breaking for the branch that follows it).
+> **Options.** (a) Enable the enclosing constructs first, the list after them, one commit each;
+> (b) enable the list together with them; (c) keep the list pinned.
+> **Chosen: (b)** — (a)'s intermediate commits are each a wrong middle of their own (a binary run
+> enabled alone breaks *inside* the still-pinned argument list: `doc.indexOf("."` / `+ a` …), so the
+> six trees would be reformatted twice for nothing. One `groupMeasured` each, all-or-nothing, the outer
+> deciding first: a **binary run** (one precedence level) breaks before every operator `+4`; a
+> **brace-less `if`** puts its branch on the next line `+4` (a bare `else` under an `else` line; an
+> `else if` chain breaks at every `else` or at none; a braced `else { … }` stays outside the group);
+> the **argument list** takes decision 61 rule 4's shape; the **array, tuple and behavior literals**
+> the same. `commaList` (generic, parameter, pattern, import, type lists) and the one-step pipeline
+> stay pinned — none of them holds a call.
+> **Cost.** 142 files, +20 835 −7 292 (C-13 included); lines past 80 columns 5 973 → 1 840 (the rest are
+> strings and comments); lines opening with `)` and going on with an operator 192 → 8. A second pass
+> moves nothing, no token or comment is lost, every sibling package `check`s as before and the cells
+> run identically (emilia 569, erika 31, jhonstart 120, onze 4, rakun-web 104 — before and after).
+> Per sibling: emilia 18 files +12 940 −4 663 (mostly its test assertions: `assert doc.indexOf(…)` /
+> `    != -1;`), rakun 47 +4 760 −1 471, jhonstart 19 +784 −231, erika 2 +167 −63, onze 2 +44 −8 —
+> **09's reformat, not committed here**; the compiler's own canonical trees are reformatted
+> (`44ec5e3a`).
+> **Blocks.** 09's reformat of the five libraries; nothing else.
+
+### 16-b · An array literal's open form is one element per line
+
+> **Measured.** Elements written on one source line were kept on one output line. Once the list
+> measures width that is not idempotent (the joined line runs past 80, a call inside it breaks, and the
+> next pass reads a different layout: 3 files of the corpus moved on a second pass), and it makes the
+> output a function of the input's layout, which decision 65 part 2 rules out.
+> **Options.** (a) One element per line in the open form; (b) Wadler's `fill` (as many per line as fit).
+> **Chosen: (a)** — all-or-nothing, as decision 65 part 1 states for every group; (b) is the middle.
+> **Cost.** Part of 16-a's numbers: a long list of short numbers takes one line each.
+
+### 16-c · A trailing comma still opens a list — does it stay?
+
+> **Measured.** An array, tuple, record field list or enum body written with a trailing comma prints
+> open even when it fits (Prettier's "magic trailing comma"). That is the output depending on the
+> input's layout, which decision 65 part 2 rules out for every construct — but it is the canonical
+> form every library is written in, and the broken form now *adds* the comma, so it is stable.
+> **Options.** (a) Keep it; (b) ignore the comma: a list that fits is joined, like a hand-broken chain.
+> **Recommendation.** (b), by decision 65 part 2 and decision 67 — not implemented here, because it
+> reformats every file that writes an open list that fits (a record type's fields among them), which is
+> a canonical-form change the maintainer takes, not a front.
+> **Blocks.** Nothing.
+
+### 16-d · C-13 stops at "optional": the parser refuses the `;` only after 09 and 12 migrate
+
+> **Measured.** The parser accepts a braced `if` / loop / `case` statement with or without its `;`
+> (`a688bfb5`), the formatter prints none (`6c33c6f4`), and the compiler's own trees are migrated
+> (`7af79f44`: 213 lines in 27 files, `libs/std`, `examples/`, the three bundled libraries,
+> `docs.md`'s fences). Still writing it: `tests/language` **275** sites, and the siblings — rakun
+> **454**, jhonstart **40**, erika **28**, onze **1**, emilia **0** (counted by `c13-migrate.py` on
+> copies; decision 29's 245 predates rakun's growth). Refusing it now (front 15's parked patch) would
+> fail every one of them.
+> **Chosen.** Optional until 12 and 09 have run `c13-migrate.py` (or `botopink format`) over their
+> trees; then the refusal lands with `blockStatementSemicolon`, narrowed to the braced form
+> (`Parser.isBracedBlockStmt` is already the test it needs).
+> **Blocks.** Front 15's patch; decision 29's "rejected".
+
+## Track C (jhonstart) — choices made in implementation, to confirm
+
+Decided by the implementation of `04-jhonstart` fronts on `front/04-jhonstart` (worktree
+`.tasks/04-jhonstart`, 2026-09-26) so the fronts could land; the maintainer confirms or reverses
+each.
+
+### 26-a · Every router cell is dual-target, not `#[@External.Erlang]` only
+
+> **Raised by:** `04-jhonstart/26-jhonstart-router` Step 2 / Step 4, 2026-09-26 (landed with jhonstart `2bb6fd9`)
+> **Measured.** A called erlang-only cell reds the commonJS compile of the core member at its call
+> site (`` `__jhRoutePath` has no `#[@External.<Target>(…)]` for the node backend ``); the core is
+> compiled on both rows. The five reads, `fill`, `navigate` and `lastNavigation` therefore carry a
+> `#[@External.Node("./router_runtime.mjs", …)]` twin.
+> **Options.** (a) dual-target cells, one assertion set on both rows (landed); (b) move the router
+> to an erlang-only member, which the core's render (front 30) then imports across a target split.
+> **Recommendation.** (a). Leaves two boxes of the README unticked by design: "all five cells are
+> `#[@External.Erlang]`; none is `#[@External.Node]`" and "`__jhNavigate` is the only dual-target
+> cell in the file".
+> **Blocks.** Nothing.
+
+### 31-a · `notFound()` / `redirect(url)` raise; a boundary captures the raise through one host cell
+
+> **Raised by:** `04-jhonstart/31-jhonstart-error-boundaries` Step 3, 2026-09-26
+> **Measured.** A page, layout or template is a `-> @Component<ElementBase, Element>` body and
+> cannot `throw` (decision 121), so the README's `notFound();` statement form needs the call itself
+> to raise; `throw notFound();` inside a `@Result` thunk must keep working. botopink's `try … catch`
+> unwraps a `@Result` only, so no `.bp` code can observe a raise.
+> **Options.** (a) the two functions raise the `routing` reason through a jhonstart host cell
+> (`__jhRaise`, `signal_runtime.mjs` / `jhonstart_signal.erl`), typed `-> string`, and the boundary
+> runs its child through `__jhCapture`, which answers a raise as `Error(reason)` — implemented;
+> (b) the functions return the reason and a component returns a "signalling tree" the render
+> inspects; (c) a `never` type (the language gap front 63 records).
+> **Recommendation.** (a): the same statement works in a page, a layout, a template and a thunk, a
+> crashing component is caught like one that answered `Error`, and the render (front 30) needs the
+> same capture for its page thunks. `notFoundReason()` / `redirectReason(url)` answer the reason
+> without raising, for a caller that wants it as a value.
+> **Blocks.** Nothing.
+
+### 27-a · A browser cell in a two-target member is dual-target, its erlang twin answering the server's truth
+
+> **Raised by:** `04-jhonstart/27-jhonstart-link` Step 4 and `29-jhonstart-client-directive` Step 4, 2026-09-26 (`modules.md` § 0 (b) / § 4's unsettled `jhonstart-link` row)
+> **Measured.** A CALLED `#[@External.Node]`-only cell reds the erlang compile at its caller; both
+> `jhonstart-link` and the core declare both targets, and `linkStatus()` / `propsFor()` call theirs.
+> **Options.** (a) dual-target cells — `link_runtime.mjs` + `sidecars/jhonstart_link.erl`,
+> `island_runtime.mjs` + `sidecars/jhonstart_island.erl` — whose erlang twins answer what is true on
+> a server (no link in flight, nothing prefetched, nothing hydrated, no props) — implemented;
+> (b) a wrapper nothing on erlang calls (impossible for a hook a server render calls); (c) a
+> commonJS-only member for the cells (splits `link.bp` in two).
+> **Recommendation.** (a). Leaves the Step 4 boxes "every cell in the file is `#[@External.Node]`;
+> there is no `#[@External.Erlang]` cell" of fronts 27 and 29 unticked by design.
+> **Blocks.** Nothing.
+
+### 30-a · The globals are read through `globals()`, not three module-level `pub val`s
+
+> **Raised by:** `04-jhonstart/30-jhonstart-streaming` Step 7, 2026-09-26
+> **Measured.** A `pub val globals = Globals(…)` imported from a sibling module is `undefined` on
+> commonJS (`Cannot read properties of undefined (reading 'payload')`) and an unbound variable on
+> erlang (compiler `f011850c`) — the `language-gaps.md` row "`pub val` of a user record type is
+> unexercised", now measured. Three flat `pub val payload / fill / signal` would shadow front 26's
+> `fill` in a consumer's flat `import {…} from "jhonstart"`.
+> **Options.** (a) `pub fn globals() -> Globals` and `alias(name)` over the registry — implemented;
+> (b) three `pub val`s of `string` with non-clashing names (`payloadGlobal`, …).
+> **Recommendation.** (a): one spelling (`globals().fill`) for the render, `render.mjs` and onze's
+> entry; revisit when a `pub val` of a record crosses modules.
+> **Blocks.** Nothing.
+
+### 30-b · `RenderPlugin` is a record of async functions; `chunk` runs where the boundary resolved
+
+> **Raised by:** `04-jhonstart/30-jhonstart-streaming` Step 6 / Step 9, 2026-09-26
+> **Measured.** An `Array<RenderPlugin>` of two different types implementing a `behavior` does not
+> type (`type mismatch: expected Rec, got Quiet`). On erlang each streamed boundary resolves in its own
+> process, and emilia's stylesheet is per process, so a `chunk(id)` called by the render's process
+> never sees what the boundary registered.
+> **Options.** (a) `RenderPlugin(name, head, chunk, close, payload)` as a record of functions,
+> `payload` answering `Array<#(key, json)>` (`[]` for "nothing", one pair otherwise) instead of
+> `?#(…)`, and `chunk(id)` called in the boundary's own process right after it rendered —
+> implemented; (b) the `behavior` shape once heterogeneous behavior arrays type.
+> **Recommendation.** (a). The four moments and their order are the README's; only where `chunk`
+> executes moves, and the fill still carries its CSS first.
+> **Blocks.** Nothing.
+
+### 30-c · `render` / `renderStream` / `App` live in `streaming.bp`; `compose` takes the page as a thunk
+
+> **Raised by:** `04-jhonstart/30-jhonstart-streaming` Steps 4 and 8, 2026-09-26
+> **Measured.** `resolve` needs `render.bp`'s walker and the entries need `resolve` — the same file
+> pair importing each other. A layout must run before the page for "a layout's redirect means the
+> page is never called", so `compose` cannot take a rendered `page: Element`.
+> **Options.** (a) the walker, `compose`, the payload and the document in `render.bp`; `Chunk` /
+> `resolve` / `fillHtml`, `Response`, `PageInput`, `App`, `render` / `renderStream` in
+> `streaming.bp`; `compose(chain, route, page: fn() -> @Component<…>)` running layouts first over a
+> placeholder child — implemented; (b) one larger module.
+> **Recommendation.** (a). The flat `from "jhonstart"` surface is unchanged. `PageInput` also gains
+> `metadata: Array<Metadata>` / `viewports: Array<Viewport>` (the segments' resolved exports,
+> root-first) so the render merges front 32's head itself.
+> **Blocks.** Nothing.
+
+### 30-d · `Suspense` registers its boundary with the render
+
+> **Raised by:** `04-jhonstart/30-jhonstart-streaming` Step 1, 2026-09-26
+> **Measured.** An `Element` has no field that can carry the thunk, so the render cannot find a
+> hand-written boundary in the tree it composed.
+> **Options.** (a) `Suspense(b)` pushes `b` into the per-render state (`render.mjs` /
+> `jhonstart_render`) as it writes the hole — implemented; (b) a page returns its boundaries beside
+> its tree.
+> **Recommendation.** (a). Leaves the Step 1 box "`Suspense` reaches no host cell" unticked by design.
+> **Blocks.** Nothing.
+
+### 30-e · The segment record is `UiSegment`
+
+> **Raised by:** `04-jhonstart/30-jhonstart-streaming` Step 4, 2026-09-26
+> **Measured.** The bundled `routing` also exports `Segment` (its `segment` module); a consumer's
+> `import {Segment} from "jhonstart"` is then refused as ambiguous.
+> **Options.** (a) `UiSegment`, with `segment(pattern)` / `with*` / `segmentFor` — implemented;
+> (b) keep `Segment` and require consumers to name the module.
+> **Recommendation.** (a).
+> **Blocks.** Nothing.
+
+## Front 00 · 04-js / 05-wasm — choices made in implementation, to confirm
+
+Decided by the implementation on `front/04-05-js-wasm` (worktree `.tasks/04-05-js-wasm`, 2026-09-26);
+the maintainer confirms or reverses each.
+
+### 0405-a · `Array.at` with a negative index is out of range on commonJS
+
+> **Raised by:** `04-js`, C-18's commonJS half (decision 47), 2026-09-26
+> **Measured.** Native `Array.prototype.at` answers `undefined` past the end and counts a negative
+> index from the back (`[10, 20, 30].at(-1)` → `30`). wasm's `$__arr_at` and commonJS's own
+> `__bp_string_char_at` answer absence for a negative index; `String.at(-1)` is `null` on commonJS.
+> **Options.** (a) `__bp_array_at(xs, i)` answers `null` for any `i` outside `0..len` — one rule for
+> both readers and every backend that has a bounds test; (b) keep the native negative reading and only
+> map `undefined` to `null`.
+> **Recommendation.** (a), implemented: the language documents no negative index, and a program that
+> means "the last element" on one backend and "absent" on another is the divergence decision 67 refuses.
+> **Blocks.** Nothing.
+
+### 0405-b · The empty value `?.` answers on commonJS still prints `undefined`
+
+> **Raised by:** `04-js` / `05-wasm`, decision 47, 2026-09-26
+> **Measured.** wasm prints every empty `?T` as `null` now (`$__print_null`), and commonJS's
+> `Array.at` answers `null`. Two commonJS shapes still produce JS's other none: `choose(false)?.kind`
+> (native `?.`) and an `if` with no `else` used as a value (`val r = if (n > 0) { "positive"; };`),
+> and both print `undefined` — `snapshots/codegen/*/commonJS/{optional_fn_return_null_path,if_simple_conditional_in_fn_body}`,
+> where wasm now prints `null`.
+> **Options.** (a) `__bp_show` prints `undefined` as `null` — one branch in the §7 printer, which is
+> written into every module that prints, so the prelude text of every such commonJS snapshot moves
+> (163 per tree); (b) lower `?.` and the else-less `if` to produce `null`, which moves every `?.` site.
+> **Recommendation.** (a), as its own commit: the printer is where the spelling is decided, and it
+> leaves `== null` (already loose on this backend) untouched. Implemented (compiler `d798775b`):
+> 196 commonJS snapshots per tree gained the one prelude line, and the two RUN LOGs above read `null`.
+> **Blocks.** Nothing now — commonJS and wasm both print absence as `null`; erlang and beam are C-18's.
+
+## Fronts 00 · 02-erlang / 03-beam — choices made in implementation, to confirm
+
+Implemented on `front/02-03-erlang-beam` (worktree `.tasks/02-03-erlang-beam`, 2026-09-26).
+
+### 0203-a · A primitive method's host spelling (`toUpperCase`) answers on erlang and beam
+
+> **Measured.** `tests/language/test/string_case_conversion.bp` writes `"abc".toUpperCase()`; the
+> method's name is `toUpper`, and `toUpperCase` is its `#[@External.Node(…)]` spelling. The checker
+> accepts **any** method name on a primitive receiver (`"x".fooBar()` checks), commonJS answers
+> because the name is JavaScript's own, wasm already answers both spellings (`$__str_case`), and
+> erlang emitted `toUpperCase/1 undefined`.
+> **Options.** (a) erlang and beam resolve a `#[@External.Node("<name>")]` spelling to the method it
+> spells, after every other lowering missed — **implemented** (`primNodeAliasIn`, compiler
+> `31b5d2bf`), so the four backends agree; (b) the checker refuses a method no primitive behavior
+> declares, the cell is rewritten to `toUpper`, and the alias leaves erlang, beam and wasm.
+> **Recommendation.** (b) is the restrictive reading (decision 67) and is `01-checker`'s; until it
+> lands, (a) keeps the four backends giving one answer instead of three. Choosing (b) deletes
+> `primNodeAliasIn` and its two call sites.
+
+### 0203-b · A template the BEAM lowering refuses keeps the run-time `'__bp_erl_eval'/2`
+
+> **Measured.** BR5 (compiler `8333aaab`) compiles every `@External.Erlang` template at build time
+> through the comptime runtime's reader and lowering; no beam snapshot carries `'__bp_erl_eval'`.
+> `lower.zig` refuses `receive`, `!`, the old `catch Expr`, `try … of` and `try … after`, and by
+> text at most 6 of `libs/std`'s 159 templates carry one (`async.allOf`/`raceOf`, `encoding`'s
+> percent-decode, one `json` reader, `http.get`, `process`'s run).
+> **Options.** (a) such a template keeps the run-time evaluator, named in `beam/AGENTS.md` —
+> **implemented**; (b) refuse it at build time on beam (a located error naming the construct), so
+> those six std functions stop compiling on beam until (c); (c) teach `lower.zig` the five
+> constructs (a `front 14`/`18` row — the comptime runtime would gain them too).
+> **Recommendation.** (c), and (a) until it lands: decision 67 argues for (b), but (b) turns
+> programs that run correctly today into build errors for a construct the compiler, not the
+> program, cannot yet lower.
 
 ## Open
 

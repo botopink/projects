@@ -47,6 +47,24 @@ field comment — fire on constructed input and on none of these ten files.** Th
 writes a trailing comment on a member today. That is the difference between the evidence and the
 scope: decision 18's four libraries are the evidence; the formatter's soundness is the scope.
 
+**Re-measured 2026-09-26** at compiler `b6ba65a3`, over the five libraries at the meta repository's
+pinned commits (`git archive` copies — 09 has reformatted them since, so the ten files above are no
+longer red and the whole trees were measured instead: 158 `.bp` files). Every file's tokens and
+comments were compared as multisets, and `botopink check` run in all 46 packages before and after.
+Two **C** rows no earlier probe had found, both fixed in compiler `0f0be511`:
+
+| | The formatter | Found in | Cause |
+|---|---|---|---|
+| **G8** | **deletes** a comment written before an enum body's or an enum section's closing `}` | emilia's token module — four `// ── end front NN ──` lines | the section's comments were collected by `parseEnumItem` and freed; the enum's sat in `TypeDecl.bodyComments`, which only the record path printed ([`parser-gaps.md`](./parser-gaps.md#g8--a-comment-before-an-enum-bodys-or-a-sections-closing-brace)) |
+| **D2** | **adds** a `catch @panic("assert pattern did not match")` to the handler-less `val assert P = e;` — a form the checker refuses | rakun, 15 of its packages stop compiling after `format` | the parser desugars the form into that handler (decision 8 § 9) and the printer wrote it back; `assertPattern.fatal` marks it |
+
+D2 is the first formatter defect found by the **compile** half of step 1's acceptance rather than by the
+token comparison: nothing was lost, something was added, and the result was idempotent.
+
+**Step 5's demonstration, recorded here as the box asks:** `assertLossless` run against the parent of
+the step-4 commits (`4841983`) fails **4 of the 5** probes (the three of the README's Problem plus
+D1's two keywords); after the landing, 0.
+
 ---
 
 ## C — the defects
@@ -168,6 +186,9 @@ file is **C** because of the one keyword.
 
 ### `jhonstart/src/hooks.bp`
 
+**All three B rows implemented**: the joined signature by decision 61 rule 4, the exploded empty
+closure by rule 2, and `rakun/src/runtime.bp`'s comment column by C-12 (below).
+
 | Change | Count | Why the library is right |
 |---|---|---|
 | a deliberately wrapped 3-line `reducer` signature joined into **one 122-character line** | 1 | no other line in the file exceeded 100 characters. A formatter that has a break policy for bodies should have one for signatures |
@@ -188,6 +209,11 @@ claim ("moves to the next line" → "loses its padding"), confirmed here from th
 Graded **B** rather than A because the alignment was authored and a formatter that preserves a
 comment's text but not its column is making a choice, not applying a rule. Low priority: it is one
 line in one file.
+
+**Closed 2026-09-26** (compiler `0f0be511`, C-12's comment column): a comment continuing a trailing
+comment on the next line, from the same source column, prints under the first comment's printed
+column. The revision of `runtime.bp` 09 had to re-emit at column 0 (`dcf1938`) now round-trips at
+lines 10-15.
 
 ---
 

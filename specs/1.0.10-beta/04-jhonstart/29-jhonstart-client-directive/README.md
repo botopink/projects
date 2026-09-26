@@ -231,36 +231,36 @@ tell the two apart by return type: the server/client split is front 68's graph w
 request-scope predicate in Step 5), not this decorator's.
 
 **Acceptance:**
-- [ ] `#[client]` on `fn X() -> Element` and on `fn X() -> @Component<ElementBase, Element>` emits
-      `__jhClient_X` returning `"X"`
-- [ ] `#[client]` on a `type` fails with the placement message
-- [ ] `#[client]` on a fn returning `@Task<T>` or `@Result<T, E>` fails — a loader is not a
+- [x] `#[client]` on `fn X() -> Element` and on `fn X() -> @Component<ElementBase, Element>` emits
+      `__jhClient_X` returning `"X"` — `test/client_test.bp` "client: the marker emits a pure fn returning the component's name" (`@Component`) and "client: the marker fires on a plain -> Element component too" (jhonstart `117aed4`)
+- [x] `#[client]` on a `type` fails with the placement message — `test/client_test.bp` header, refusal 1 (`client.bp` `decl.fail`)
+- [x] `#[client]` on a fn returning `@Task<T>` or `@Result<T, E>` fails — a loader is not a
       component; a server component reached from a `#[client]` module is refused by front 68's
-      graph walk, not here
-- [ ] the emitted name is reachable at the application site, which must therefore import `client`;
-      the test file records that import requirement the way `rakun/test/server_test.bp:13-18` does
-- [ ] `botopink check` is documented as unable to see the emitted name; the gate is `botopink test`
+      graph walk, not here — `test/client_test.bp` header, refusal 2
+- [x] the emitted name is reachable at the application site, which must therefore import `client`;
+      the test file records that import requirement the way `rakun/test/server_test.bp:13-18` does — `test/client_test.bp` header and its `import { client, clientProps, … } from "client";`
+- [x] `botopink check` is documented as unable to see the emitted name; the gate is `botopink test` — `test/client_test.bp` header § 1; `docs.md` § *`#[client]` — the marker*
 
 ### Step 2 — `#[clientProps]` and the serializable whitelist
 
 The whitelist, exactly: `string`, `i32`, `f64`, `bool`, `string[]`, `i32[]`.
 
 **Acceptance:**
-- [ ] a record of whitelisted fields passes
-- [ ] a field typed `Element` fails, and the message names the field and its type
-- [ ] a field typed with a function type fails
-- [ ] an enum-shaped `type` fails with the record placement message
-- [ ] the failing message is produced by `decl.fail`, so it is located at the declaration
+- [x] a record of whitelisted fields passes — `test/client_test.bp` "client: a record of whitelisted fields passes and is an ordinary record"
+- [x] a field typed `Element` fails, and the message names the field and its type — `test/client_test.bp` header, refusal 4
+- [x] a field typed with a function type fails — `test/client_test.bp` header, refusal 5
+- [x] an enum-shaped `type` fails with the record placement message — `test/client_test.bp` header, refusal 3
+- [x] the failing message is produced by `decl.fail`, so it is located at the declaration — `client.bp` `clientProps`
 
 ### Step 3 — `clientMount` and `serverSlot`
 
 **Acceptance:**
-- [ ] `renderToString(clientMount(Island(id: "i0", component: "Counter", props: [#("start", "3")]), []))`
-      is `<div data-jh-i="i0"></div>` — the id only; the component and props are payload, not markup
-- [ ] children passed to `clientMount` render inside the placeholder, unmodified
-- [ ] `islandEntry` produces `#("i0", "Counter", "start=3")` — the payload `i` row for that island
-- [ ] `serverSlot` emits `data-jh-s="1"` and nothing else
-- [ ] neither function reaches a host cell; both render on erlang and js
+- [x] `renderToString(clientMount(Island(id: "i0", component: "Counter", props: [#("start", "3")]), []))`
+      is `<div data-jh-i="i0"></div>` — the id only; the component and props are payload, not markup — `test/client_test.bp` "client: the placeholder carries the id only — the name and props are payload"
+- [x] children passed to `clientMount` render inside the placeholder, unmodified — `test/client_test.bp` "client: children render inside the placeholder, unmodified"
+- [x] `islandEntry` produces `#("i0", "Counter", "start=3")` — the payload `i` row for that island — `test/client_test.bp` "client: islandEntry is the payload's i row — id, component, encoded props"
+- [x] `serverSlot` emits `data-jh-s="1"` and nothing else — `test/client_test.bp` "client: serverSlot emits data-jh-s=\"1\" and nothing else"
+- [x] neither function reaches a host cell; both render on erlang and js — `client.bp` declares no cell; `test/client_test.bp` green on both rows
 
 ### Step 4 — Hydration entry and `server-only`
 
@@ -285,12 +285,12 @@ and then front 27's `linkMount()` and front 67's `formMount()` once each.
 
 **Acceptance:**
 - [ ] every cell in the file is `#[@External.Node]`; there is no `#[@External.Erlang]` cell
-- [ ] `propsFor` of a component with no props returns `[]`
-- [ ] `hydrate()` is idempotent
-- [ ] `hydrate()` mounts islands only; it calls no link or form mount, and front 68's README says
-      its generated entry does
-- [ ] `serverOnly()` is `pub`, returns `1`, and its doc comment says the value is meaningless and the
-      import is the signal
+- [x] `propsFor` of a component with no props returns `[]` — `test/client_test.bp` "client: propsFor of a component with no row is the empty list" (jhonstart `d07943f`)
+- [x] `hydrate()` is idempotent — `test/client_test.bp` "client: hydrate is idempotent — a second call starts nothing new"; `island_runtime.mjs` marks a started island
+- [x] `hydrate()` mounts islands only; it calls no link or form mount, and front 68's README says
+      its generated entry does — `island_runtime.mjs`; 68's README § step 8 calls `linkMount()` / `formMount()` after every island
+- [x] `serverOnly()` is `pub`, returns `1`, and its doc comment says the value is meaningless and the
+      import is the signal — `test/client_test.bp` "client: serverOnly is pub and its value is meaningless"; `client.bp` doc comment
 
 ### Step 5 — Module wiring and the front-68 contract
 
@@ -308,7 +308,7 @@ front 94 owns `src/root.bp` and `botopink.json`'s `files` list; this front hands
 **Acceptance:**
 - [ ] `pub mod client;` and the `files` entry are handed to front 94; this front edits neither file
 - [ ] the four-row table above is in `repository/jhonstart/docs.md` and front 68's README cites it
-- [ ] `repository/jhonstart/AGENTS.md` updated in the same commit
+- [x] `repository/jhonstart/AGENTS.md` updated in the same commit — jhonstart `0af0b4d`
 
 ### Step 6 — Decision 113's spellings
 
@@ -317,10 +317,10 @@ front 94 owns `src/root.bp` and `botopink.json`'s `files` list; this front hands
 jhonstart writes the `data-jh-` prefix.
 
 **Acceptance:**
-- [ ] the island pair is `#("data-jh-i", "i0")` and the slot pair `#("data-jh-s", "1")`, each spelled
-      once in `client.bp`; no `data-onze-` string is left under `modules/jhonstart/src/`
-- [ ] `data-jh-on-click` is the handler marker; the props cell is `__jhClientPropsRaw`
-- [ ] the island and slot snapshots are re-recorded once, with only the attribute names changed
+- [x] the island pair is `#("data-jh-i", "i0")` and the slot pair `#("data-jh-s", "1")`, each spelled
+      once in `client.bp`; no `data-onze-` string is left under `modules/jhonstart/src/` — `client.bp` `islandAttrOf` / `serverSlotAttr`; `grep -rn data-onze- modules/*/src` is empty
+- [x] `data-jh-on-click` is the handler marker; the props cell is `__jhClientPropsRaw` — `client.bp`
+- [x] the island and slot snapshots are re-recorded once, with only the attribute names changed — jhonstart `117aed4`
 
 ## Examples
 
@@ -367,13 +367,13 @@ would be a boundary that never starts.
 ## Definition of done
 
 - [ ] `client.bp` in the build tree, its `root.bp` and `files` lines handed to front 94
-- [ ] `#[client]` and `#[clientProps]` both enforce placement and both emit located diagnostics
-- [ ] the emitted marker is a pure function — no `@emit` in this file produces a host call
+- [x] `#[client]` and `#[clientProps]` both enforce placement and both emit located diagnostics — `client.bp`; five located refusals recorded in `test/client_test.bp`
+- [x] the emitted marker is a pure function — no `@emit` in this file produces a host call — `test/client_test.bp` "client: the emitted marker is a VALUE, not a call into a host registry"
 - [ ] the five-row front-68 contract table is written down and cited by front 68
-- [ ] the island marker is `data-jh-i` and the props are in the payload's `i` key, per
-      `contracts.md § 2`; nothing about the payload is escaped or built here
+- [x] the island marker is `data-jh-i` and the props are in the payload's `i` key, per
+      `contracts.md § 2`; nothing about the payload is escaped or built here — `client.bp` builds and escapes no payload; front 30's `writePayload` writes `i`
 - [ ] `islandAttr(ordinal)` is exported and is the only place the pair is spelled — front 30's render
       calls it and front 68's entry imports it (decision 113)
-- [ ] the README states, in *Mechanism*, that 29 without 68 is a convention nobody checks
-- [ ] all four language gaps appear in a `specs/1.0.10-beta/` spec
-- [ ] the front's tests are green on its assigned target
+- [x] the README states, in *Mechanism*, that 29 without 68 is a convention nobody checks — § *What this front is not*
+- [x] all four language gaps appear in a `specs/1.0.10-beta/` spec — `language-gaps.md` rows "A method-level `@Decl` carries no owner and no parameter list", "A decorator body cannot call a sibling function", "`botopink check` skips decorator invocation", "Declared parameter defaults…"
+- [x] the front's tests are green on its assigned target — 22 blocks on both rows

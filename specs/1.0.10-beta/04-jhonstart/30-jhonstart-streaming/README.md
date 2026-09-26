@@ -469,10 +469,10 @@ pub fn holeId(index: i32) -> string {
 ```
 
 **Acceptance:**
-- [ ] `renderNode(Suspense(b))` emits the fallback inside `<div data-jh-h="h1">` and nothing else —
-      the child is not rendered and does not appear in the shell
-- [ ] `holeId(1) == "h1"`, `holeId(0) == "h0"` — the spelling `contracts.md § 2` pins
-- [ ] a `Boundary` carries the ordinal the render assigned it, in shell order
+- [x] `renderNode(Suspense(b))` emits the fallback inside `<div data-jh-h="h1">` and nothing else —
+      the child is not rendered and does not appear in the shell — `test/render_test.bp` "render: Suspense renders the fallback in the hole and never the child" (jhonstart `89a1528`)
+- [x] `holeId(1) == "h1"`, `holeId(0) == "h0"` — the spelling `contracts.md § 2` pins — `test/render_test.bp` "render: holeId spells h<n> and nothing outside [h0-9]"
+- [x] a `Boundary` carries the ordinal the render assigned it, in shell order — `compose` assigns `nextHoleOrdinal()`; `test/streaming_test.bp` "stream: fills come in completion order…" (`"h":["h1","h2"]`)
 - [ ] `Suspense` reaches no host cell
 
 ### Step 2 — `Chunk`, `resolve`, `fillHtml`
@@ -499,16 +499,16 @@ pub fn fillHtml(c: Chunk, css: string) -> string {
 ```
 
 **Acceptance:**
-- [ ] `resolve` awaits exactly once, at statement level, never inside a closure
-- [ ] `resolve` of a boundary whose child returns immediately produces the rendered child, through
-      `renderNode`
-- [ ] `fillHtml(Chunk(id: "h1", html: "<ul></ul>"), "")` is exactly
+- [x] `resolve` awaits exactly once, at statement level, never inside a closure — `streaming.bp` `resolve`
+- [x] `resolve` of a boundary whose child returns immediately produces the rendered child, through
+      `renderNode` — `test/render_test.bp` "render: resolve awaits the child once and renders it through the walker"
+- [x] `fillHtml(Chunk(id: "h1", html: "<ul></ul>"), "")` is exactly
       `<template data-jh-f="h1"><ul></ul></template><script>__bp1("h1")</script>` — the literal
-      `contracts.md § 2` pins, asserted here and on the browser side
-- [ ] `fillHtml(Chunk(id: "h1", html: "<ul></ul>"), "<style>.e_1{}</style>")` puts the `<style>`
-      first inside the `<template>`, with no attribute of its own
-- [ ] a chunk id is always `h<n>` from `holeId`, so the quote and `</script` cases cannot arise —
-      a test asserts `holeId` produces nothing outside `[h0-9]`
+      `contracts.md § 2` pins, asserted here and on the browser side — `test/render_test.bp` "render: a fill is the contract-2 template plus the fill call"
+- [x] `fillHtml(Chunk(id: "h1", html: "<ul></ul>"), "<style>.e_1{}</style>")` puts the `<style>`
+      first inside the `<template>`, with no attribute of its own — `test/render_test.bp` "render: a fill's CSS goes first inside the template, with no marker"
+- [x] a chunk id is always `h<n>` from `holeId`, so the quote and `</script` cases cannot arise —
+      a test asserts `holeId` produces nothing outside `[h0-9]` — `test/render_test.bp` "render: holeId spells h<n>…"
 
 ### Step 3 — The escaping walker
 
@@ -520,24 +520,24 @@ pub fn shellHtml(page: Element) -> string   // renderNode(page): the shell, ever
 ```
 
 **Acceptance:**
-- [ ] `renderNode(text("<script>alert(1)</script>", attrs: []))` contains no `<`
-- [ ] an attribute value containing `"` renders as `&quot;` and the produced tag re-parses
-- [ ] `renderNode(Element(tag: "input", value: "", children: [], attrs: [...]))` emits no closing
+- [x] `renderNode(text("<script>alert(1)</script>", attrs: []))` contains no `<` — `test/render_test.bp` "render: a text node is escaped — no < survives"
+- [x] an attribute value containing `"` renders as `&quot;` and the produced tag re-parses — `test/render_test.bp` "render: an attribute value holding a quote renders &quot; and re-parses"
+- [x] `renderNode(Element(tag: "input", value: "", children: [], attrs: [...]))` emits no closing
       tag; the void set is front 94's `isVoidTag` and this front keeps no list of its own, checked
-      by grep in its gate
-- [ ] a `style` body containing `a > b` renders verbatim — not `a &gt; b` — and so does a `script`
-      body containing `&&`
-- [ ] a `script` or `style` body containing `</script` or `</style`, in any case, **fails the
-      render** with the tag named; it is not escaped, and no configuration makes it escaped
-- [ ] a raw-text body (front 94's `isRawTextTag`) is the only text this walker does not escape, and
-      `#raw` is the only element
-- [ ] `renderNode(raw("<b>x</b>"))` is `<b>x</b>` exactly
-- [ ] `renderNode` and `renderToString` produce the same string for a tree with no special
-      characters and no void tag — the walker is a superset, not a divergence
-- [ ] `shellHtml` of a page containing two boundaries emits both placeholders and neither child,
-      and adds no doctype and no head — the document is Step 4's
-- [ ] no path in `render.bp`, `streaming.bp` or `suspense.bp` calls `renderToString` — checked by
-      grep in the gate, because a single call is the whole hole
+      by grep in its gate — `test/render_test.bp` "render: a void tag has no closing tag"; `render.bp` keeps no void list
+- [x] a `style` body containing `a > b` renders verbatim — not `a &gt; b` — and so does a `script`
+      body containing `&&` — `test/render_test.bp` "render: a style and a script body are raw text, verbatim"
+- [x] a `script` or `style` body containing `</script` or `</style`, in any case, **fails the
+      render** with the tag named; it is not escaped, and no configuration makes it escaped — `test/render_test.bp` "render: a raw-text body that would close its element fails the render, naming the tag"
+- [x] a raw-text body (front 94's `isRawTextTag`) is the only text this walker does not escape, and
+      `#raw` is the only element — `render.bp` `renderNode`
+- [x] `renderNode(raw("<b>x</b>"))` is `<b>x</b>` exactly — `test/render_test.bp` "render: #raw is the one element written verbatim"
+- [x] `renderNode` and `renderToString` produce the same string for a tree with no special
+      characters and no void tag — the walker is a superset, not a divergence — `test/render_test.bp` "render: renderNode is renderToString on a tree with nothing to escape"
+- [x] `shellHtml` of a page containing two boundaries emits both placeholders and neither child,
+      and adds no doctype and no head — the document is Step 4's — `test/render_test.bp` "render: the shell carries every placeholder and no child, and no document"
+- [x] no path in `render.bp`, `streaming.bp` or `suspense.bp` calls `renderToString` — checked by
+      grep in the gate, because a single call is the whole hole — the name appears only in `render.bp`'s header comment
 
 ### Step 4 — Composition and the document
 
@@ -547,16 +547,16 @@ pub fn compose(chain: Array<Segment>, page: Element) -> Element
 ```
 
 **Acceptance:**
-- [ ] for a chain of one segment holding all six conventions, the rendered nesting is
-      `layout > template > error > loading > not-found > page`, asserted on the markup string
-- [ ] for `/blog/[slug]`, the root layout is the outermost element and the page innermost
-- [ ] a segment with no `template.bp` contributes no wrapper — the nesting shrinks, it does not gain
-      an empty `div`
-- [ ] a `template` wrapper carries `data-jh-t` with the pattern and the navigation counter; two
-      renders of one route produce two values
-- [ ] each layout render receives its `selected` depth: a three-deep chain yields `0, 1, 2`
-- [ ] the composed tree sits inside `<div data-jh-root="">`, and an unmatched not-found boundary
-      renders as `data-jh-n`
+- [x] for a chain of one segment holding all six conventions, the rendered nesting is
+      `layout > template > error > loading > not-found > page`, asserted on the markup string — `test/streaming_test.bp` "compose: layout > template > error > loading > not-found > page, in the markup"
+- [x] for `/blog/[slug]`, the root layout is the outermost element and the page innermost — `test/streaming_test.bp` "compose: each layout receives its selected depth, root-first"
+- [x] a segment with no `template.bp` contributes no wrapper — the nesting shrinks, it does not gain
+      an empty `div` — `test/streaming_test.bp` "compose: a segment with no template contributes no wrapper"
+- [x] a `template` wrapper carries `data-jh-t` with the pattern and the navigation counter; two
+      renders of one route produce two values — `test/streaming_test.bp` "compose: two renders of one route give the template two keys"
+- [x] each layout render receives its `selected` depth: a three-deep chain yields `0, 1, 2` — `test/streaming_test.bp` "compose: each layout receives its selected depth, root-first"
+- [x] the composed tree sits inside `<div data-jh-root="">`, and an unmatched not-found boundary
+      renders as `data-jh-n` — `test/streaming_test.bp` "compose: a segment with no template…"; the not-found level writes `data-jh-n` ("compose: layout > …")
 - [ ] `Segment` and `compose` name no rakun type; `grep -rn rakun modules/jhonstart/src` is empty
 
 ### Step 5 — The payload (contract 2)
@@ -573,23 +573,23 @@ pub fn writePayload(p: Payload) -> string   // json.object / json.quote, then es
 ```
 
 **Acceptance:**
-- [ ] the document carries exactly one `<script>window.__bp0 = {…}</script>`, last in `<body>`
-      before `RenderHooks.bodyExtra`, and the name comes from `globals.payload`
-- [ ] `writePayload` emits `v` first and `1` as its value
-- [ ] the payload block leaves no literal `<`, `>` or `&` — it is `escape.scriptJson` of the JSON —
+- [x] the document carries exactly one `<script>window.__bp0 = {…}</script>`, last in `<body>`
+      before `RenderHooks.bodyExtra`, and the name comes from `globals.payload` — `documentEnd`; `test/streaming_test.bp` "stream: fills come in completion order…"
+- [x] `writePayload` emits `v` first and `1` as its value — `test/render_test.bp` "render: the payload starts with v, and v is 1"
+- [x] the payload block leaves no literal `<`, `>` or `&` — it is `escape.scriptJson` of the JSON —
       and a payload whose params contain `</script>` produces a document with exactly the real
-      script closers and no `<img`
-- [ ] a param holding U+0001 produces a payload `JSON.parse` accepts (std's `json.quote`)
-- [ ] `render.bp` defines no `payloadEscape`, `jsonString` or other JSON escaper;
+      script closers and no `<img` — `test/render_test.bp` "render: the payload leaves no literal <, > or &, and </script> cannot close it"
+- [x] a param holding U+0001 produces a payload `JSON.parse` accepts (std's `json.quote`) — `test/render_test.bp` "render: a control character in a param is escaped by std's json.quote"
+- [x] `render.bp` defines no `payloadEscape`, `jsonString` or other JSON escaper;
       `grep -n "fn payloadEscape\|fn jsonString" modules/jhonstart/src/render.bp` is empty
-- [ ] `t`, `a` and `b` are written verbatim from the strings the caller passed; the render derives
-      none of them
-- [ ] each `extras` entry is written verbatim under its key; `s` appears in the payload only when a
-      plugin contributed it — the render has no `styles` field of its own
-- [ ] island ids are `i0`, `i1`, … in render order, written through front 29's `islandAttr`, and
-      the payload's `i` array is in the same order
-- [ ] parsing the emitted value with `JSON.parse` (commonJS) and `json:decode/1` (erlang) yields the
-      same field set — the round trip is the test, not two half-tests
+- [x] `t`, `a` and `b` are written verbatim from the strings the caller passed; the render derives
+      none of them — `writePayload`
+- [x] each `extras` entry is written verbatim under its key; `s` appears in the payload only when a
+      plugin contributed it — the render has no `styles` field of its own — `test/render_test.bp` "render: an extra is written verbatim under its key, and s only when given"
+- [x] island ids are `i0`, `i1`, … in render order, written through front 29's `islandAttr`, and
+      the payload's `i` array is in the same order — `test/render_test.bp` "render: islands take i0, i1 in render order, and the i rows follow"
+- [x] parsing the emitted value with `JSON.parse` (commonJS) and `json:decode/1` (erlang) yields the
+      same field set — the round trip is the test, not two half-tests — `test/render_test.bp` "render: the payload decodes with std's json.decode to the contract-2 field set" — std's one reader, on both rows
 
 ### Step 6 — `RenderPlugin` and the order it is called in
 
@@ -606,26 +606,26 @@ pub behavior RenderPlugin {
 ```
 
 **Acceptance:**
-- [ ] with a recording plugin, a streamed render with two boundaries calls `head` once, `chunk`
-      once per boundary (`h1`, `h2`, in completion order), `close` once and `payload` once, last
-- [ ] each call is awaited: a plugin whose `chunk` resolves after a delay still has its `<style>`
-      inside the right fill, and the fill is not written before it resolves
-- [ ] a plugin returning `#("x", "[1]")` puts `"x":[1]` in the payload; returning `null` adds no key
-- [ ] a plugin key that is a render key (`v`, `t`, `h`, … — every contract-2 key but `s`) fails the
-      render naming the key; two plugins giving one key fail it naming both
-- [ ] `head`'s string lands in `<head>`; each `chunk`'s string lands first inside its fill's
-      `<template data-jh-f="…">`, before the boundary's markup, with no marker
-- [ ] a plugin whose `close` returns `Error(…)` fails the render with that message
-- [ ] a render with no plugin emits no `<style>`, no plugin key, and calls nothing
-- [ ] the word `emilia` appears in no file under `modules/jhonstart/` — jhonstart knows the
+- [x] with a recording plugin, a streamed render with two boundaries calls `head` once, `chunk`
+      once per boundary (`h1`, `h2`, in completion order), `close` once and `payload` once, last — `test/streaming_test.bp` "plugin: head once, chunk per boundary in completion order, close once, payload last" (`chunk(id)` runs in the boundary's own process — `decisions-pending.md` 30-b)
+- [x] each call is awaited: a plugin whose `chunk` resolves after a delay still has its `<style>`
+      inside the right fill, and the fill is not written before it resolves — `test/streaming_test.bp` "plugin: head lands in <head>, each chunk first inside its fill…" (the recording `chunk` delays 5 ms)
+- [x] a plugin returning `#("x", "[1]")` puts `"x":[1]` in the payload; returning `null` adds no key — `test/streaming_test.bp` "plugin: head lands in <head>…"; `test/render_test.bp` "render: an extra is written verbatim…" (a plugin answers `[]`, not `null` — 30-b)
+- [x] a plugin key that is a render key (`v`, `t`, `h`, … — every contract-2 key but `s`) fails the
+      render naming the key; two plugins giving one key fail it naming both — `test/streaming_test.bp` "plugin: a render key, or one key from two plugins, fails the render naming them"
+- [x] `head`'s string lands in `<head>`; each `chunk`'s string lands first inside its fill's
+      `<template data-jh-f="…">`, before the boundary's markup, with no marker — `test/streaming_test.bp` "plugin: head lands in <head>, each chunk first inside its fill, the payload key verbatim"
+- [x] a plugin whose `close` returns `Error(…)` fails the render with that message — `test/streaming_test.bp` "plugin: a close answering Error fails the render with that message"
+- [x] a render with no plugin emits no `<style>`, no plugin key, and calls nothing — `test/streaming_test.bp` "plugin: a render with no plugin writes no <style> and no plugin key"
+- [x] the word `emilia` appears in no file under `modules/jhonstart/` — jhonstart knows the
       contract only (decision 113)
 
 ### Step 7 — The globals registry and `render.mjs`
 
 **Acceptance:**
-- [ ] `globals.payload == "__bp0"`, `globals.fill == "__bp1"` and `globals.signal == "__bp2"`,
-      derived from the registry's declaration order, on both targets
-- [ ] no `__bp` literal appears in `render.bp`, `streaming.bp` or `render.mjs` outside the registry
+- [x] `globals.payload == "__bp0"`, `globals.fill == "__bp1"` and `globals.signal == "__bp2"`,
+      derived from the registry's declaration order, on both targets — `test/render_test.bp` "render: the three globals come from the registry's declaration order" (spelled `globals().payload` — 30-a)
+- [x] no `__bp` literal appears in `render.bp`, `streaming.bp` or `render.mjs` outside the registry
       — the render and the client read the same names
 - [ ] `render.mjs`'s fill function, registered under `globals.fill`, is idempotent: calling it twice
       for one id leaves the DOM unchanged; a fill for an absent hole is dropped
@@ -633,7 +633,7 @@ pub behavior RenderPlugin {
       `json.decode` (decision 117 rule 7) — `render.mjs`'s cell hands over only the payload
       script's JSON text (the text after `window.<globals.payload> = `); a text `json.decode`
       refuses is an `Error`, never a partial payload
-- [ ] no `__onze*` or hand-written `__jh*` global is referenced by any HTML this front writes
+- [x] no `__onze*` or hand-written `__jh*` global is referenced by any HTML this front writes — every global through `globals()`
 
 ### Step 8 — `RenderHooks`, `app`, `render` and `renderStream`
 
@@ -673,37 +673,37 @@ which `E` the two functions answer (`-> @Task<@Result<void, E>>`) and whether `R
 infallible `@Task<void>` is front 24's open point 8, settled with this library's E7 sweep. The signal translation is *Navigation signals* above.
 
 **Acceptance:**
-- [ ] a page with one boundary produces at least three `write` calls, the first ending inside
-      `<body>`, each awaited before the next
-- [ ] a component calling front 28's `request()` / `headers()` / `cookies()` reads the `req` the
-      render received; after the render ends, `request()` outside a render raises
-- [ ] every id in the payload's `h` appears in exactly one `data-jh-f` template in a later chunk
-- [ ] hole ids are `h1`, `h2`, … in shell order, and a page whose boundaries resolve in reverse
-      order still numbers them in shell order
+- [x] a page with one boundary produces at least three `write` calls, the first ending inside
+      `<body>`, each awaited before the next — `test/streaming_test.bp` "stream: a page with boundaries writes the shell, then each fill, each awaited"
+- [x] a component calling front 28's `request()` / `headers()` / `cookies()` reads the `req` the
+      render received; after the render ends, `request()` outside a render raises — `test/streaming_test.bp` "stream: a component reads the req the render received, and nothing after it ends"
+- [x] every id in the payload's `h` appears in exactly one `data-jh-f` template in a later chunk — `test/streaming_test.bp` "stream: fills come in completion order…"
+- [x] hole ids are `h1`, `h2`, … in shell order, and a page whose boundaries resolve in reverse
+      order still numbers them in shell order — `test/streaming_test.bp` "stream: fills come in completion order…" (h2 resolves first, keeps its id)
 - [ ] a boundary that resolves before the shell is written produces no hole and no fill
-- [ ] two boundaries that resolve out of order produce fills in resolution order, each carrying its
-      own markup
+- [x] two boundaries that resolve out of order produce fills in resolution order, each carrying its
+      own markup — `test/streaming_test.bp` "stream: fills come in completion order, each carrying its own markup"
 - [ ] sibling server components are handed to front 02 as **unstarted thunks** in one await; two
       50 ms loaders finish in well under 100 ms on `--target erlang`, and the same test over
       already-started `@Task` values is kept as the regression case
-- [ ] `defaultHooks()` renders a working document with no `<script src>`; replacing one field leaves
-      the other at its default
-- [ ] a page raising jhonstart's `notFound()` (front 31) before the first chunk makes the render
+- [x] `defaultHooks()` renders a working document with no `<script src>`; replacing one field leaves
+      the other at its default — `test/streaming_test.bp` "stream: defaultHooks renders a working document with no <script src>; one field replaced keeps the other"
+- [x] a page raising jhonstart's `notFound()` (front 31) before the first chunk makes the render
       call `res.status(404)` and write a document whose body is the nearest `not-found` boundary,
-      then `res.close()` once — asserted by a recording `Response`
-- [ ] `redirect("/login")` raised before the first chunk, with `/login` in `PageInput.table`, calls
+      then `res.close()` once — asserted by a recording `Response` — `test/streaming_test.bp` "signal: notFound before the first chunk is a 404 with the nearest not-found boundary"
+- [x] `redirect("/login")` raised before the first chunk, with `/login` in `PageInput.table`, calls
       `res.status(307)`, `res.header("location", "/login")`, `res.close()`, and `res.write` zero
-      times
-- [ ] a layout whose `use cookies()` finds no session and raises `redirect("/login")` produces the
-      same 307, and the page's function is never called (a marker the page appends stays empty)
-- [ ] `redirect("/nowhere")` (not in the table) and `redirect("https://evil.example")` with
+      times — `test/streaming_test.bp` "signal: redirect(\"/login\") before the first chunk is a 307 with no body"
+- [x] a layout whose `use cookies()` finds no session and raises `redirect("/login")` produces the
+      same 307, and the page's function is never called (a marker the page appends stays empty) — `test/streaming_test.bp` "signal: a layout's redirect means the page never runs"
+- [x] `redirect("/nowhere")` (not in the table) and `redirect("https://evil.example")` with
       `allowedRedirects` empty fail the render before the first chunk: no status, no `location`,
       the render's failure names the target; `redirect("https://accounts.example/")` with that
-      target listed in `app(allowedRedirects: [...])` is a 307 to it
-- [ ] `res.status` or `res.header` after the first `write` fails the render, naming the call
-- [ ] `res.close()` is called exactly once on every path; a normal render answers `Ok` and a
-      failed render answers its failure — neither answers a reason string
-- [ ] a signal raised after the first `write` is Step 12's, not this step's
+      target listed in `app(allowedRedirects: [...])` is a 307 to it — `test/streaming_test.bp` "signal: a target outside the table, or an unlisted absolute one, fails the render"
+- [x] `res.status` or `res.header` after the first `write` fails the render, naming the call — `test/streaming_test.bp` "response: status after the first write fails, naming the call"
+- [x] `res.close()` is called exactly once on every path; a normal render answers `Ok` and a
+      failed render answers its failure — neither answers a reason string — `test/streaming_test.bp` (`countOf("close") == 1` on every path)
+- [x] a signal raised after the first `write` is Step 12's, not this step's
 
 ### Step 9 — The `jhonstart-emilia` bridge
 
@@ -738,17 +738,17 @@ onze registers it at boot — `app(plugins: [emiliaPlugin()])` — and that is o
 CSS moment.
 
 **Acceptance:**
-- [ ] `botopink.json` declares `jhonstart` as `{ "workspace": true }` (decision 75) and `emilia` as
-      a dependency; the member's `targets` match jhonstart core's
-- [ ] a page styled with `emilia([...])` and rendered with `app(plugins: [plugin()])` has one
-      `<style>` in `<head>` — `head` was called once
-- [ ] a streamed boundary whose subtree registers a new class carries its CSS as
+- [x] `botopink.json` declares `jhonstart` as `{ "workspace": true }` (decision 75) and `emilia` as
+      a dependency; the member's `targets` match jhonstart core's — `modules/jhonstart-emilia/botopink.json` (`emilia` by `path` into the sibling library; no `targets`, so it inherits the workspace's, as the core does)
+- [x] a page styled with `emilia([...])` and rendered with `app(plugins: [plugin()])` has one
+      `<style>` in `<head>` — `head` was called once — `jhonstart-emilia/test/bridge_test.bp` "bridge: a styled page has one <style> in <head>, carrying its class"
+- [x] a streamed boundary whose subtree registers a new class carries its CSS as
       `<template data-jh-f="h1"><style>…</style>…</template><script>__bp1("h1")</script>`, style
-      before markup
-- [ ] after the last chunk `close` is `Ok`; a class registered after the last `chunk` makes it
-      `Error` and the render fails
-- [ ] the payload's `s` lists exactly the class names in the document's `<style>` blocks (head and
-      fills), in flush order, and a render with no emilia class writes `"s":[]`
+      before markup — `jhonstart-emilia/test/bridge_test.bp` "bridge: a streamed boundary's new class is its fill's style, before the markup"
+- [x] after the last chunk `close` is `Ok`; a class registered after the last `chunk` makes it
+      `Error` and the render fails — `jhonstart-emilia/test/bridge_test.bp` "bridge: close is Ok after the last chunk and Error for a class registered later"; `test/streaming_test.bp` "plugin: a close answering Error…"
+- [x] the payload's `s` lists exactly the class names in the document's `<style>` blocks (head and
+      fills), in flush order, and a render with no emilia class writes `"s":[]` — `jhonstart-emilia/test/bridge_test.bp` "bridge: the payload's s lists the flushed classes, and [] when there were none"
 - [ ] the contract-4 class literal (`contracts.md § 4`'s shared fixture) is asserted here, on a
       rendered document — the bridge's test is the one test that renders emilia classes with
       jhonstart (decision 114, item 6), and emilia's own `modules/emilia/test/attributes_test.bp`
@@ -759,8 +759,8 @@ CSS moment.
 - [ ] a rendered element with a static class and an emilia class writes `class="<static> <emilia>"`:
       static first, one ASCII space, no sorting, attributes in array order (contract 4, clauses 4
       and 5)
-- [ ] `grep -rn emilia modules/jhonstart/src` is empty — the bridge is the only member naming emilia
-- [ ] no file of `repository/emilia/` changes for this step
+- [x] `grep -rn emilia modules/jhonstart/src` is empty — the bridge is the only member naming emilia
+- [x] no file of `repository/emilia/` changes for this step
 
 ### Step 10 — The UI file conventions — `routes.bp`
 
@@ -862,24 +862,24 @@ builds the `PageInput` from this registry and calls `renderStream`. Nothing in t
 or onze.
 
 **Acceptance:**
-- [ ] `#[page("blog")]` on a `fn(route: PageContext) -> @Component<ElementBase, Element>` compiles and
-      puts one `P|/blog||` record in `uiTable()`
-- [ ] `#[page("blog")]` on a type fails with `#[page] must annotate a function`; `#[page]`,
+- [x] `#[page("blog")]` on a `fn(route: PageContext) -> @Component<ElementBase, Element>` compiles and
+      puts one `P|/blog||` record in `uiTable()` — `test/routes_test.bp` "routes: each marker puts its contract-1 line in uiTable…" (the line is `P|/blog`: `routing`'s `writeTable` drops trailing empty fields)
+- [x] `#[page("blog")]` on a type fails with `#[page] must annotate a function`; `#[page]`,
       `#[layout]` and `#[template]` on a function returning `Element` /
       `@Task<Element>` rather than `@Component<ElementBase, Element>`, fail at compile time naming the function
-      and `fn … -> @Component<ElementBase, Element>` (decision 117 rule 3)
-- [ ] `#[layout("")]` registers the root layout at `/`; `#[layout("(marketing)")]` contributes no
-      segment to the pattern
-- [ ] `#[page("blog/[slug]")] pub fn blogPostPage(...)` makes `blogPostPageParams` available in the
+      and `fn … -> @Component<ElementBase, Element>` (decision 117 rule 3) — `test/routes_test.bp` header records each refusal's message
+- [x] `#[layout("")]` registers the root layout at `/`; `#[layout("(marketing)")]` contributes no
+      segment to the pattern — `test/routes_test.bp` "routes: a group contributes no segment — (marketing) is the root pattern"
+- [x] `#[page("blog/[slug]")] pub fn blogPostPage(...)` makes `blogPostPageParams` available in the
       same module with a `slug: string` field; `#[page("shop/[...slug]")]` types it `string[]`;
-      `#[page("about")]` returns `#()`
-- [ ] `uiTable()` is asserted as contract-1 literals (`L|/||`, `P|/blog/[slug]||`, …), the same
+      `#[page("about")]` returns `#()` — `test/routes_test.bp` "routes: blogPostPageParams…", "routes: a catch-all's field is string[]", "routes: a page with no dynamic segment answers the empty tuple"
+- [x] `uiTable()` is asserted as contract-1 literals (`L|/||`, `P|/blog/[slug]||`, …), the same
       literals `routing`'s tests pin, and `test/routes_test.bp` round-trips it through `routing`'s
       `parseTable` and `patternOf(parsePath(seg))` — jhonstart imports the bundled library directly
-      (decision 115)
-- [ ] no `rakun` identifier appears in `routes.bp`, `routes.mjs` or `jhonstart_routes.erl`
-- [ ] the tests that exercise the decorators run under `botopink test`, not `botopink check` —
-      `check` skips decorator invocation and reports every `@emit`ted name as unbound
+      (decision 115) — `test/routes_test.bp` "routes: the table round-trips through routing's parseTable and parsePath"
+- [x] no `rakun` identifier appears in `routes.bp`, `routes.mjs` or `jhonstart_routes.erl`
+- [x] the tests that exercise the decorators run under `botopink test`, not `botopink check` —
+      `check` skips decorator invocation and reports every `@emit`ted name as unbound — `test/routes_test.bp` header
 
 ### Step 11 — Module wiring
 
@@ -893,11 +893,11 @@ manifest's `workspaces` by this front, in its own commit.
 **Acceptance:**
 - [ ] the `pub mod` lines and `files` entries are handed to front 94; this front edits neither
       `src/root.bp` nor `botopink.json` of the core member
-- [ ] `streaming.bp` imports `Boundary` from `"suspense"` by explicit module name, not the bare
+- [x] `streaming.bp` imports `Boundary` from `"suspense"` by explicit module name, not the bare
       shorthand — the bare form lowers to `require("../suspense")` and breaks when jhonstart is
       consumed as a dependency (`html.bp:87-92`)
-- [ ] `repository/jhonstart/AGENTS.md` names `render.bp`, the payload version, the plugin order,
-      the globals registry and the UI conventions of `routes.bp`, in the same commit
+- [x] `repository/jhonstart/AGENTS.md` names `render.bp`, the payload version, the plugin order,
+      the globals registry and the UI conventions of `routes.bp`, in the same commit — `AGENTS.md` tree + `src/AGENTS.md`
 
 ### Step 12 — Late signals: a signal after the first chunk (decisions 115 rule 2 and 117)
 
@@ -907,22 +907,22 @@ shell has been written, turned into the last chunk; a reason that is not a signa
 nearest error boundary unchanged.
 
 **Acceptance:**
-- [ ] a boundary raising `notFound()` after the shell was written produces a last chunk
+- [x] a boundary raising `notFound()` after the shell was written produces a last chunk
       `<template data-jh-g="not-found">…</template><script>__bp2()</script>` carrying that
       boundary's nearest not-found markup (plugin CSS first inside the template), writes no later
-      fill, closes the plugins, and calls `res.close()` once
-- [ ] a boundary raising `redirect("/blog")` after the shell, with `/blog` found by `routing`'s
+      fill, closes the plugins, and calls `res.close()` once — `test/streaming_test.bp` "late: a notFound after the shell is the last chunk, status 200, no later fill"
+- [x] a boundary raising `redirect("/blog")` after the shell, with `/blog` found by `routing`'s
       `matchPath` in `PageInput.table`, produces
       `<template data-jh-g="redirect" data-jh-to="/blog"></template><script>__bp2()</script>` and
       `data-jh-to` goes through `escape.attribute`; an absolute target listed in
-      `app(allowedRedirects: [...])` is written the same way
-- [ ] `redirect("/nowhere")` (not in the table) and `redirect("https://evil.example")` (absolute,
+      `app(allowedRedirects: [...])` is written the same way — `test/streaming_test.bp` "late: a redirect after the shell is data-jh-g markup through escape.attribute"
+- [x] `redirect("/nowhere")` (not in the table) and `redirect("https://evil.example")` (absolute,
       not listed) after the shell fail the render and write no signal markup — no option writes
-      them anyway (decision 67)
-- [ ] the status the caller observes is 200 in every late case: the render calls `res.status` /
-      `res.header` never once a chunk is out — asserted by a recording `Response`
-- [ ] the signal script's name comes from `globals.signal` (`__bp2`), never a literal
-- [ ] `render.bp` and `streaming.bp` spell no `nav:` or `jhonstart:` literal and define no
+      them anyway (decision 67) — `test/streaming_test.bp` "late: a refused target after the shell fails the render and writes no markup"
+- [x] the status the caller observes is 200 in every late case: the render calls `res.status` /
+      `res.header` never once a chunk is out — asserted by a recording `Response` — `test/streaming_test.bp` "late: …" (`countOf("status") == 1`)
+- [x] the signal script's name comes from `globals.signal` (`__bp2`), never a literal — `notFoundSignalHtml` / `redirectSignalHtml`
+- [x] `render.bp` and `streaming.bp` spell no `nav:` or `jhonstart:` literal and define no
       `signalFromReason`: `grep -rn '"nav:\|"jhonstart:' modules/jhonstart/src/{render,streaming}.bp`
       is empty
 - [ ] `render.mjs`'s signal function, on `redirect`, navigates to `data-jh-to` through front 26's
@@ -965,26 +965,26 @@ is the assertion that catches the eager-`@Task` mistake.
 - [ ] `render.bp`, `plugin.bp`, `globals.bp`, `routes.bp`, `suspense.bp`, `streaming.bp`,
       `render.mjs` and `routes.mjs` in the
       build tree, their `root.bp` and `files` lines handed to front 94
-- [ ] no path in the render calls `renderToString`; the grep is part of the gate
+- [x] no path in the render calls `renderToString`; the grep is part of the gate
 - [ ] the payload key table of `contracts.md § 2` is this front's, and the fronts that cite it
       (24, 26, 27, 29, 60, 61, 63, 68) cite `contracts.md`, not a re-derivation
-- [ ] every marker the render writes is `data-jh-*` and every global comes from `globals.bp`
-- [ ] a navigation signal is translated here and nowhere else (decision 117): before the first
+- [x] every marker the render writes is `data-jh-*` and every global comes from `globals.bp`
+- [x] a navigation signal is translated here and nowhere else (decision 117): before the first
       chunk a 307 + `location` or a 404 with the not-found document through `Response`, after it
       markup with status 200 — Steps 8 and 12, reading the `nav:` reasons with `routing`'s
-      `navigation` (decision 116)
-- [ ] every redirect target is checked before anything is written: relative through `matchPath` on
-      `PageInput.table`, absolute only when listed in `allowedRedirects` (decision 117)
-- [ ] `#[layout]`, `#[template]` and `#[page]` accept only `fn … -> @Component<ElementBase, Element>`
-      (decision 117 rule 3)
-- [ ] the payload is written with std's `json` writers and `escape.scriptJson`; `render.bp` has no
+      `navigation` (decision 116) — `streaming.bp` `early` / `writeLateSignal`
+- [x] every redirect target is checked before anything is written: relative through `matchPath` on
+      `PageInput.table`, absolute only when listed in `allowedRedirects` (decision 117) — `redirectAllowed`
+- [x] `#[layout]`, `#[template]` and `#[page]` accept only `fn … -> @Component<ElementBase, Element>`
+      (decision 117 rule 3) — `routes.bp`
+- [x] the payload is written with std's `json` writers and `escape.scriptJson`; `render.bp` has no
       JSON escaper of its own (decision 116)
-- [ ] `RenderHooks` carries `headExtra` and `bodyExtra` only; the style moments and the plugin
+- [x] `RenderHooks` carries `headExtra` and `bodyExtra` only; the style moments and the plugin
       payload keys are `RenderPlugin`'s four asynchronous methods
-- [ ] `routes.bp` carries the four UI decorators, `PageContext`, `LayoutProps` and the accessors;
+- [x] `routes.bp` carries the four UI decorators, `PageContext`, `LayoutProps` and the accessors;
       rakun names none of them
-- [ ] the `jhonstart-emilia` member exists, its tests are green, and `repository/emilia/` is
-      unchanged
-- [ ] nothing under `repository/jhonstart/` imports `rakun`, `onze` or (outside the bridge) `emilia`
-- [ ] all four language gaps appear in a `specs/1.0.10-beta/` spec
-- [ ] the front's tests are green on both rows
+- [x] the `jhonstart-emilia` member exists, its tests are green, and `repository/emilia/` is
+      unchanged — 6/6 on both rows
+- [x] nothing under `repository/jhonstart/` imports `rakun`, `onze` or (outside the bridge) `emilia`
+- [x] all four language gaps appear in a `specs/1.0.10-beta/` spec — `language-gaps.md` rows "`Children` coerces…", "`await` is unusable as a lambda's last statement", "Declared parameter defaults…", "`@Decl` carries no source location"
+- [x] the front's tests are green on both rows — core 181/181, `jhonstart-emilia` 6/6 on commonJS and erlang

@@ -167,6 +167,14 @@ So the exemption is a **fidelity** hold. Step 2 of the [README](./README.md) re-
 at the front's own HEAD, because an emitter that starts keying on an ordinal turns a style question
 into a correctness one silently.
 
+**Re-run 2026-09-26 at compiler `b6ba65a3`**: an enum written with a variant after a section, and the
+same enum with that variant hoisted above the section, build **byte-identically** on commonJS, erlang,
+beam and wasm, and run the same. One thing changed since `c2dd780`: `codegen/wat.zig` now represents
+an all-unit enum's variant by its **ordinal** — its index among `variants` — so the grep for
+`ordinal` is no longer empty. That index is not what the hoist moves: sections are a separate slice,
+and the formatter has never permuted variants among themselves, so the output stays identical. What no
+emitter may read is `order`, the interleaving with sections; `parser/AGENTS.md` says so now.
+
 ## G2 — a trailing comment on a record field
 
 ### The loss
@@ -433,6 +441,25 @@ and the carve-out this front holds is `parser/decls.zig`'s member sites only. Ha
 lands after it.
 
 ---
+
+**Closed 2026-09-26** (compiler `0f0be511`): the parser half landed with the printer half, since 15
+had closed. `trailingPerElem` is filled by `takeElemTrailingComment` after the element's `,` when the
+comment is on the same line, omitted from the dump when empty (no snapshot moved), and printed after
+the element; the minimal input above and the sibling example's three lines round-trip.
+
+## G8 — a comment before an enum body's or a section's closing brace
+
+**Found 2026-09-26** by step 1's re-measurement: emilia's token module closes four sections with a
+`// ── end front NN ──` line, and `format` deleted all four — idempotently.
+
+- **Section.** `parseEnumItem`'s section loop collected the comments before `}` with
+  `takeMemberComments` and then `alloc.free`d them. Now `EnumSection.bodyComments` (omitted from the
+  dump when empty), printed after the section's last member.
+- **Enum body.** The parser already recorded them in `TypeDecl.bodyComments`; `fmtType`'s enum path
+  never read the field (the record path did). It prints them now, and one forces the body open.
+
+Parser half in this front's carve-out (`parser/decls.zig`'s `parseEnumItem`), printer half in
+`format.zig`.
 
 ## What no gap explains
 

@@ -194,9 +194,9 @@ pub fn withPrefetch(p: LinkProps, prefetch: bool) -> LinkProps {
 `withReplace`, `withScroll`, `withTarget`, `withClass` follow the same shape.
 
 **Acceptance:**
-- [ ] `linkProps("/x")` yields Next's documented defaults: prefetch true, replace false, scroll true
-- [ ] each `with*` helper changes exactly one field and copies the other five
-- [ ] no helper assigns to a field of its argument
+- [x] `linkProps("/x")` yields Next's documented defaults: prefetch true, replace false, scroll true — `test/link_test.bp` "link: linkProps fills Next's documented defaults"
+- [x] each `with*` helper changes exactly one field and copies the other five — `test/link_test.bp` "link: withPrefetch changes exactly one field…", "link: withReplace, withScroll, withTarget and withClass do the same"
+- [x] no helper assigns to a field of its argument — `link.bp`: each `with*` builds a new `LinkProps`
 
 ### Step 2 — `Link`
 
@@ -213,12 +213,12 @@ pub fn Link(props: LinkProps, children: Children) -> Element {
 ```
 
 **Acceptance:**
-- [ ] `renderToString(Link(linkProps("/about"), [text("About", attrs: [])]))` is
+- [x] `renderToString(Link(linkProps("/about"), [text("About", attrs: [])]))` is
       `<a href="/about" data-jh-l="1">About</a>` — two attributes, in that order, matching the
-      `data-jh-` family in `contracts.md § 2`
-- [ ] `prefetch: false` adds `data-jh-prefetch="0"` and nothing else
-- [ ] `target: "_blank"` emits a real `target` attribute, not a `data-` one
-- [ ] `Link` reaches no host cell and renders identically on erlang and js
+      `data-jh-` family in `contracts.md § 2` — `test/link_test.bp` "link: the common anchor is href plus the marker, in that order" (jhonstart `117aed4`)
+- [x] `prefetch: false` adds `data-jh-prefetch="0"` and nothing else — `test/link_test.bp` "link: prefetch false adds data-jh-prefetch=\"0\" and nothing else"
+- [x] `target: "_blank"` emits a real `target` attribute, not a `data-` one — `test/link_test.bp` "link: target emits a REAL target attribute, not a data- one"
+- [x] `Link` reaches no host cell and renders identically on erlang and js — `link.bp` declares no cell; `test/link_test.bp` green on both rows
 
 ### Step 3 — Prefetch strategy and layout keys
 
@@ -236,10 +236,10 @@ pub fn layoutKey(segments: Array<string>, depth: i32) -> string {
 ```
 
 **Acceptance:**
-- [ ] every row of the prefetch table above is one assertion
-- [ ] `layoutKey(["docs", "api", "use-router"], 1) == "/docs"`
-- [ ] `layoutKey([], 0) == "/"`
-- [ ] `prefetchMode` and `layoutKey` are pure — no host cell, no `?T` unwrap that can fail
+- [x] every row of the prefetch table above is one assertion — `test/link_test.bp`, the five "link: prefetchMode — …" tests
+- [x] `layoutKey(["docs", "api", "use-router"], 1) == "/docs"` — `test/link_test.bp` "link: layoutKey is the segment path, not a position in the tree"
+- [x] `layoutKey([], 0) == "/"` — `test/link_test.bp` "link: layoutKey is the segment path, not a position in the tree"
+- [x] `prefetchMode` and `layoutKey` are pure — no host cell, no `?T` unwrap that can fail — `link.bp`
 
 ### Step 3b — The client-navigation reconciler
 
@@ -258,17 +258,17 @@ The transition driver (`reconcile(current, target)`) calls them, then unmounts a
 front 68's DOM primitives, adopting `data-jh-s` slots and re-anchoring `data-jh-e` boundaries.
 
 **Acceptance:**
-- [ ] `layoutKeys(["docs", "api"]) == ["/", "/docs", "/docs/api"]` — root-first, root included
-- [ ] `sharedDepth(layoutKeys(["docs","api"]), layoutKeys(["docs","guides"])) == 2` — the docs layout
-      is reused
-- [ ] `sharedDepth(layoutKeys(["docs"]), layoutKeys(["blog"])) == 1` — only the root layout survives
-- [ ] `sharedDepth` of two identical routes is the full length: a navigation to the current route
-      remounts nothing
+- [x] `layoutKeys(["docs", "api"]) == ["/", "/docs", "/docs/api"]` — root-first, root included — `test/reconcile_test.bp` "reconcile: layoutKeys is root-first and includes the root"
+- [x] `sharedDepth(layoutKeys(["docs","api"]), layoutKeys(["docs","guides"])) == 2` — the docs layout
+      is reused — `test/reconcile_test.bp` "reconcile: two routes under /docs reuse root AND the docs layout"
+- [x] `sharedDepth(layoutKeys(["docs"]), layoutKeys(["blog"])) == 1` — only the root layout survives — `test/reconcile_test.bp` "reconcile: routes under different sections keep only the root layout"
+- [x] `sharedDepth` of two identical routes is the full length: a navigation to the current route
+      remounts nothing — `test/reconcile_test.bp` "reconcile: a navigation to the current route remounts nothing"
 - [ ] a shared layout's islands are not re-hydrated across a transition, asserted by an island whose
       mount count is observable
 - [ ] the reconciler reads front 60's route-kind flag to decide whether the target payload had to be
       fetched, and does not recompute it
-- [ ] `reconcile.bp` declares no `#[@External.Erlang]` cell
+- [x] `reconcile.bp` declares no `#[@External.Erlang]` cell — `reconcile.bp` declares no cell
 
 ### Step 4 — The browser runtime cells and `linkStatus`
 
@@ -315,9 +315,9 @@ pub fn linkStatus() -> @Component<ElementBase, LinkStatus> {
 
 **Acceptance:**
 - [ ] every cell in the file is `#[@External.Node]`; there is no `#[@External.Erlang]` cell
-- [ ] `linkStatus()` is idle (`pending == false`, `href == ""`) when nothing is in flight
+- [x] `linkStatus()` is idle (`pending == false`, `href == ""`) when nothing is in flight — `jhonstart-link/test/link_test.bp` "link: linkStatus is idle when nothing is in flight" (jhonstart `a2c1233`)
 - [ ] `use linkStatus()` type-checks inside a `fn … -> @Component<ElementBase, Element>` body — never the doubled `use` + `useLinkStatus()`; without a `@Component` return the body is `use-without-context-effect` (decisions 118 and 128)
-- [ ] `linkMount()` is idempotent — calling it twice registers one listener
+- [x] `linkMount()` is idempotent — calling it twice registers one listener — `jhonstart-link/test/link_test.bp` "link: linkMount is idempotent — a second call registers nothing"
 
 ### Step 5 — Module wiring
 
@@ -327,8 +327,8 @@ it.
 
 **Acceptance:**
 - [ ] `pub mod link;` and the `files` entry are handed to front 94; this front edits neither file
-- [ ] `git grep -n "declare fn Link"` finds nothing
-- [ ] `repository/jhonstart/AGENTS.md` updated in the same commit
+- [x] `git grep -n "declare fn Link"` finds nothing
+- [x] `repository/jhonstart/AGENTS.md` updated in the same commit — jhonstart `1707823`
 
 ### Step 6 — Decision 113's spellings
 
@@ -336,11 +336,11 @@ The pure half shipped with the `data-onze-` link markers. Decision 113 gives eve
 writes the `data-jh-` prefix and makes the mount an ordinary import.
 
 **Acceptance:**
-- [ ] `link.bp` writes `data-jh-l`, `data-jh-prefetch`, `data-jh-replace`, `data-jh-scroll`; no
-      `data-onze-` string is left under `modules/jhonstart*/src/`
-- [ ] the four host cells are `__jhLinkMount`, `__jhLinkPrefetch`, `__jhLinkStatus`,
-      `__jhLinkRouteKind`, and the entry imports `linkMount` by name — no `__onze*` spelling exists
-- [ ] the Step 2 literal `<a href="/about" data-jh-l="1">About</a>` is the snapshot, re-recorded once
+- [x] `link.bp` writes `data-jh-l`, `data-jh-prefetch`, `data-jh-replace`, `data-jh-scroll`; no
+      `data-onze-` string is left under `modules/jhonstart*/src/` — jhonstart `117aed4`; `grep -rn data-onze- modules/*/src` is empty
+- [x] the four host cells are `__jhLinkMount`, `__jhLinkPrefetch`, `__jhLinkStatus`,
+      `__jhLinkRouteKind`, and the entry imports `linkMount` by name — no `__onze*` spelling exists — `link.bp`'s four cells and `linkMount` (jhonstart `a2c1233`)
+- [x] the Step 2 literal `<a href="/about" data-jh-l="1">About</a>` is the snapshot, re-recorded once — `test/link_test.bp`, re-recorded in `117aed4`
 
 ## Examples
 
@@ -381,12 +381,12 @@ host cells have no erlang body and are never called from the erlang row.
 ## Definition of done
 
 - [ ] `link.bp` in the build tree, its `root.bp` and `files` lines handed to front 94
-- [ ] `Link` renders the documented anchor and reaches no host
-- [ ] `prefetchMode` implements § 8's table exactly, with a test per row
-- [ ] the client-navigation reconciler ships in `src/reconcile.bp` with its own test file, and
-      `layoutKeys`/`sharedDepth` are pure and asserted without a DOM
-- [ ] front 68's generated entry calls `linkMount()` once, and this README says so rather than
-      attributing it to front 29
-- [ ] the route-kind flag is read from front 60 and not recomputed here
-- [ ] both language gaps appear in a `specs/1.0.10-beta/` spec
-- [ ] the front's tests are green on its assigned target
+- [x] `Link` renders the documented anchor and reaches no host — `test/link_test.bp` "link: the common anchor is href plus the marker, in that order"
+- [x] `prefetchMode` implements § 8's table exactly, with a test per row — `test/link_test.bp`
+- [x] the client-navigation reconciler ships in `src/reconcile.bp` with its own test file, and
+      `layoutKeys`/`sharedDepth` are pure and asserted without a DOM — `test/reconcile_test.bp`, 10 blocks
+- [x] front 68's generated entry calls `linkMount()` once, and this README says so rather than
+      attributing it to front 29 — § *The runtime half*; 68's README § step 8
+- [x] the route-kind flag is read from front 60 and not recomputed here — `linkRouteKind` reads front 60's table through its cell and answers "unknown" without one
+- [x] both language gaps appear in a `specs/1.0.10-beta/` spec — `language-gaps.md` rows "Declared parameter defaults…" and "No assignment to a `self` field"
+- [x] the front's tests are green on its assigned target — 35 blocks on both rows
