@@ -203,10 +203,10 @@ pub type RestClientBuilder(
 ```
 
 **Acceptance:**
-- [ ] `RestClient.builder()` starts from the global settings, so a client built with no calls already carries the configured timeouts.
-- [ ] Each builder method returns a new value and leaves the receiver unchanged — two clients built from one builder do not share headers.
-- [ ] A settings value of `0` for either timeout is refused at boot with the key named.
-- [ ] There is no bodyless method in any `type` body in this module.
+- [x] `RestClient.builder()` starts from the global settings, so a client built with no calls already carries the configured timeouts. — held: `modules/rakun-client/test/builder_test.bp` "builder: a client built with no calls carries the configured global settings"
+- [x] Each builder method returns a new value and leaves the receiver unchanged — two clients built from one builder do not share headers. — held: `modules/rakun-client/test/builder_test.bp` "builder: each method answers a new builder and two clients from one builder share no headers"
+- [x] A settings value of `0` for either timeout is refused at boot with the key named. — held: `modules/rakun-client/test/builder_test.bp` "builder: a zero connect timeout is refused at boot naming the key", "builder: a zero read timeout is refused at boot naming the key", "builder: building a client over a zero timeout raises naming the key" (the boot check is `registerClientConfigCheck`, registered by the first `RestClient.builder()`/group client because a library module's body does not run on erlang)
+- [x] There is no bodyless method in any `type` body in this module. — held: `modules/rakun-client/src/client.bp`, `modules/rakun-client/src/response.bp` — every method of `RestClient`, `RestClientBuilder`, `RequestSpec`, `ClientResponse` has a body; the only bodyless signatures are the consumer's `#[httpExchange]` behavior
 
 ### Step 2 — The request chain and the two terminal operations
 
@@ -229,12 +229,12 @@ pub fn retrieveFuture(spec: RequestSpec) -> @Task<ClientResponse>
 ```
 
 **Acceptance:**
-- [ ] `retrieve` and `retrieveFuture` on the same `RequestSpec` produce the same status, body and headers against the same stub server.
-- [ ] `retrieveFuture` returns `@Task<ClientResponse>`; the return is the whole declaration of the effect (decision 118) — no annotation, and an alias of `@Task` does not activate `await` (`effect-wrapper-behind-alias`).
-- [ ] Two `retrieveFuture` calls issued before either is awaited do **not** overlap on erlang, and the test that measures it asserts that rather than the opposite — the concurrency story is front 02's.
-- [ ] A non-2xx response is returned, not raised — the caller decides, via `isOk()`.
-- [ ] A read timeout produces a `ClientResponse` with status `-1` and the reason in the body, matching the shape `libs/std/src/http.bp` already uses for a failed erlang fetch.
-- [ ] `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD` and `OPTIONS` all reach the transport with the right verb.
+- [x] `retrieve` and `retrieveFuture` on the same `RequestSpec` produce the same status, body and headers against the same stub server. — held: `modules/rakun-client/test/request_test.bp` "request: retrieve and retrieveFuture agree on status, body and headers"
+- [x] `retrieveFuture` returns `@Task<ClientResponse>`; the return is the whole declaration of the effect (decision 118) — no annotation, and an alias of `@Task` does not activate `await` (`effect-wrapper-behind-alias`). — held: `modules/rakun-client/src/request.bp` `retrieveFuture(spec) -> @Task<ClientResponse>` and `RequestSpec.retrieveFuture` in `modules/rakun-client/src/client.bp` — no annotation, no alias
+- [x] Two `retrieveFuture` calls issued before either is awaited do **not** overlap on erlang, and the test that measures it asserts that rather than the opposite — the concurrency story is front 02's. — held: `modules/rakun-client/test/request_test.bp` "request: two retrieveFuture calls issued before either is awaited do not overlap on erlang"
+- [x] A non-2xx response is returned, not raised — the caller decides, via `isOk()`. — held: `modules/rakun-client/test/request_test.bp` "request: a non-2xx response is returned, not raised"
+- [x] A read timeout produces a `ClientResponse` with status `-1` and the reason in the body, matching the shape `libs/std/src/http.bp` already uses for a failed erlang fetch. — held: `modules/rakun-client/test/request_test.bp` "request: a read timeout answers status -1 with the reason in the body"
+- [x] `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD` and `OPTIONS` all reach the transport with the right verb. — held: `modules/rakun-client/test/request_test.bp` "request: every verb reaches the transport with its own verb"
 
 ### Step 3 — The address filter
 
@@ -245,11 +245,11 @@ pub fn addressAllowed(policy: AddressPolicy, addr: string) -> bool
 ```
 
 **Acceptance:**
-- [ ] A request to `http://127.0.0.1/`, `http://169.254.169.254/`, `http://10.0.0.1/`, `http://192.168.1.1/` and `http://[::1]/` is refused with status `-1` and a message naming the blocked address, with no socket opened.
-- [ ] Adding `10.0.0.0/8` to `rakun.http.clients.allow` admits `10.0.0.1` and still refuses `169.254.169.254`.
-- [ ] A hostname whose DNS answer contains one public and one private address is refused.
-- [ ] A 302 to a private address is refused even when the original host was public.
-- [ ] There is no configuration key, builder method or environment variable in this module that turns the filter off. A grep for `ssrf` in the module finds documentation and tests, never a flag.
+- [x] A request to `http://127.0.0.1/`, `http://169.254.169.254/`, `http://10.0.0.1/`, `http://192.168.1.1/` and `http://[::1]/` is refused with status `-1` and a message naming the blocked address, with no socket opened. — held: `modules/rakun-client/test/ssrf_test.bp` "ssrf: loopback, link-local, private and IPv6 loopback are refused with -1 naming the address", "ssrf: a refused loopback request opens no socket"
+- [x] Adding `10.0.0.0/8` to `rakun.http.clients.allow` admits `10.0.0.1` and still refuses `169.254.169.254`. — held: `modules/rakun-client/test/ssrf_test.bp` "ssrf: allowing 10.0.0.0/8 admits 10.0.0.1 and still refuses 169.254.169.254"
+- [x] A hostname whose DNS answer contains one public and one private address is refused. — held: `modules/rakun-client/test/ssrf_test.bp` "ssrf: a hostname answering one public and one private address is refused"
+- [x] A 302 to a private address is refused even when the original host was public. — held: `modules/rakun-client/test/ssrf_test.bp` "ssrf: a 302 to a private address is refused even from an admitted host"
+- [x] There is no configuration key, builder method or environment variable in this module that turns the filter off. A grep for `ssrf` in the module finds documentation and tests, never a flag. — held: `modules/rakun-client/test/ssrf_test.bp` "ssrf: the module holds no switch for the filter"
 
 ### Step 4 — Response caching over front 12
 
@@ -259,21 +259,21 @@ pub fn revalidate(spec: RequestSpec, seconds: i32) -> RequestSpec
 ```
 
 **Acceptance:**
-- [ ] A second `retrieve()` on a cached GET within the freshness window does not reach the transport.
+- [x] A second `retrieve()` on a cached GET within the freshness window does not reach the transport. — held: `modules/rakun-client/test/cache_test.bp` "cache: a second retrieve of a cached GET inside the window does not reach the transport" (against a stand-in store installed through `installResponseCache`, the entry front 12 calls; the window itself is the store's)
 - [ ] `revalidateTag` on one of the request's tags makes the next `retrieve()` reach the transport.
-- [ ] `.cached(...)` or `.revalidate(...)` on a POST raises with the method named.
-- [ ] With `rakun.cache.type=none`, every cached request reaches the transport and nothing is stored.
-- [ ] With `rakun-cache` absent from the build entirely, the module still compiles and every cached request reaches the transport — the soft edge is asserted, not assumed.
-- [ ] Two requests differing only in a request header share a cache row; two differing in body do not.
+- [x] `.cached(...)` or `.revalidate(...)` on a POST raises with the method named. — held: `modules/rakun-client/test/cache_test.bp` "cache: cached or revalidate on a POST raises naming the method"
+- [x] With `rakun.cache.type=none`, every cached request reaches the transport and nothing is stored. — held: `modules/rakun-client/test/cache_test.bp` "cache: with rakun.cache.type=none every cached request reaches the transport and nothing is stored"
+- [x] With `rakun-cache` absent from the build entirely, the module still compiles and every cached request reaches the transport — the soft edge is asserted, not assumed. — held: `modules/rakun-client/botopink.json` (no `rakun-cache` dependency; the member compiles and runs) + `modules/rakun-client/test/cache_test.bp` "cache: with no store installed a cached request is a direct transport call"
+- [x] Two requests differing only in a request header share a cache row; two differing in body do not. — held: `modules/rakun-client/test/cache_test.bp` "cache: requests differing only in a header share a row, differing in body do not"
 
 ### Step 5 — `#[httpExchange]`
 
 **Acceptance:**
-- [ ] `#[httpExchange("echo")]` on a behavior emits a type implementing it plus a `http<Name>()` factory, and the factory's client is configured from `rakun.http.serviceclient.echo.*`.
-- [ ] A `:param` in an exchange path with no matching method parameter name fails at comptime with both names in the message.
-- [ ] `#[getExchange]` / `#[postExchange]` / `#[putExchange]` / `#[patchExchange]` / `#[deleteExchange]` on anything but a method fail with a located message.
-- [ ] A method whose return type is not `string` fails with a message pointing at the missing JSON value model rather than emitting something that cannot work.
-- [ ] Two groups configured with different base URLs produce two clients that do not share settings.
+- [x] `#[httpExchange("echo")]` on a behavior emits a type implementing it plus a `http<Name>()` factory, and the factory's client is configured from `rakun.http.serviceclient.echo.*`. — held: `modules/rakun-client/test/exchange_test.bp` "exchange: the twin substitutes the path parameter from the method parameter", "exchange: a field typed by the behavior accepts the twin", "exchange: each group's client is configured from its own keys and shares no settings"
+- [x] A `:param` in an exchange path with no matching method parameter name fails at comptime with both names in the message. — held: `modules/rakun-client/test/exchange_build_test.bp` "build: a path parameter with no method parameter of that name fails naming both"
+- [x] `#[getExchange]` / `#[postExchange]` / `#[putExchange]` / `#[patchExchange]` / `#[deleteExchange]` on anything but a method fail with a located message. — held: `modules/rakun-client/test/exchange_build_test.bp` "build: an exchange annotation on anything but a method fails with a located message"
+- [x] A method whose return type is not `string` fails with a message pointing at the missing JSON value model rather than emitting something that cannot work. — held: `modules/rakun-client/test/exchange_build_test.bp` "build: a method whose return type is not string fails pointing at the missing JSON value model"
+- [x] Two groups configured with different base URLs produce two clients that do not share settings. — held: `modules/rakun-client/test/exchange_test.bp` "exchange: each group's client is configured from its own keys and shares no settings"
 
 ### Step 6 — Health indicator
 
@@ -283,8 +283,8 @@ It is opt-in per group via `rakun.http.serviceclient.<group>.health-check=true`,
 partner's API on every health scrape is rude, and the default is false.
 
 **Acceptance:**
-- [ ] With the key set, the indicator appears in front 11's report under `httpClient.<group>`.
-- [ ] With it unset, the group contributes no indicator and the scrape makes no outbound request.
+- [x] With the key set, the indicator appears in front 11's report under `httpClient.<group>`. — held: `modules/rakun-client/test/health_test.bp` "health: with health-check=true the group registers httpClient.<group> and answers UP" (the row is in front 11's registry, which its report reads; the host is not in this member's graph)
+- [x] With it unset, the group contributes no indicator and the scrape makes no outbound request. — held: `modules/rakun-client/test/health_test.bp` "health: with the key unset the group registers nothing and makes no request"
 
 ## Examples
 

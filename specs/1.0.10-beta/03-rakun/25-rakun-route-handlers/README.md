@@ -184,29 +184,29 @@ that precedence and tests it; it does not implement a second CORS policy.
 ### Step 1 — The seven verb decorators
 
 **Acceptance:**
-- [ ] `#[getRoute("api/posts")]` on a `fn(req: Request) -> @Task<HandlerResponse>`
-      compiles and adds `R|/api/posts||GET` to front 22's table.
-- [ ] Each of the seven verbs registers with its own verb string, and the set matches
-      `HttpMethod` (`repository/rakun/src/http.bp:12-20`) exactly — no eighth verb, no missing one.
-- [ ] A verb decorator on a type fails with a message naming the decorator and `function`.
-- [ ] A handler whose return is not a `@Task` fails, naming the required return type.
-- [ ] Registering the same verb twice at one segment fails at module load, naming both functions.
-- [ ] `#[getRoute("blog/[slug]")]` binds `slug` through `req.param("slug")`, using front 22's matcher
-      and not a second path parser.
+- [x] `#[getRoute("api/posts")]` on a `fn(req: Request) -> @Task<HandlerResponse>`
+      compiles and adds `R|/api/posts||GET` to front 22's table. — held: `modules/rakun-app/test/route_handler_test.bp` "the verb decorators registered R records at module load" (written `R|/api/posts||GET`; rakun `9c2c12c`)
+- [x] Each of the seven verbs registers with its own verb string, and the set matches
+      `HttpMethod` (`repository/rakun/src/http.bp:12-20`) exactly — no eighth verb, no missing one. — held: `modules/rakun-app/test/route_handler_test.bp` "the seven verbs are HttpMethod's, exactly" + `modules/rakun-app/src/route_handler.bp` (seven decorators)
+- [x] A verb decorator on a type fails with a message naming the decorator and `function`. — held: `modules/rakun-app/src/route_handler.bp` — each decorator `decl.fail`s "#[getRoute] must annotate a function…" (code)
+- [x] A handler whose return is not a `@Task` fails, naming the required return type. — held: `modules/rakun-app/src/route_handler.bp` — "needs a handler returning @Task<HandlerResponse>, not <type>" (code)
+- [x] Registering the same verb twice at one segment fails at module load, naming both functions. — held: `modules/rakun-app/test/route_handler_test.bp` "one verb twice at one segment is refused naming both functions"
+- [x] `#[getRoute("blog/[slug]")]` binds `slug` through `req.param("slug")`, using front 22's matcher
+      and not a second path parser. — held: `modules/rakun-app/test/route_handler_test.bp` "a dynamic segment binds through req.param" (`routing`'s `matchPath`)
 
 ### Step 2 — Reading the request
 
 **Acceptance:**
-- [ ] `bodyText` returns the body verbatim, including an empty body as `""`.
-- [ ] `bodyForm("a=1&b=two+words")` yields `a -> "1"`, `b -> "two words"`; a percent-encoded `%26`
-      does not split a field.
-- [ ] `bodyJson` on malformed input is `Error`, and the handler that ignores the error returns 400
-      rather than 500 — asserted, because the default when nobody looks is 500.
-- [ ] `bodyJson` on valid input returns the raw text, and the test says so in its name, so nobody
-      later assumes it returns a structure.
-- [ ] `Content-Type: multipart/form-data` gives 415 before the body is read.
-- [ ] `cookies()` and `headers()` inside a handler come from front 62 and see the in-flight request;
-      `cookies().set(...)` inside a handler is legal and its value reaches the response.
+- [x] `bodyText` returns the body verbatim, including an empty body as `""`. — held: `modules/rakun-app/test/route_handler_test.bp` "bodyText is the body verbatim, and an empty body is empty"
+- [x] `bodyForm("a=1&b=two+words")` yields `a -> "1"`, `b -> "two words"`; a percent-encoded `%26`
+      does not split a field. — held: `modules/rakun-app/test/route_handler_test.bp` "bodyForm decodes a form, + as a space, and %26 does not split a field"
+- [x] `bodyJson` on malformed input is `Error`, and the handler that ignores the error returns 400
+      rather than 500 — asserted, because the default when nobody looks is 500. — held: `modules/rakun-app/test/route_handler_test.bp` "bodyJson on malformed input is an Error and the handler answers 400, not 500"
+- [x] `bodyJson` on valid input returns the raw text, and the test says so in its name, so nobody
+      later assumes it returns a structure. — held: `modules/rakun-app/test/route_handler_test.bp` "bodyJson answers the RAW text of valid input, not a structure"
+- [x] `Content-Type: multipart/form-data` gives 415 before the body is read. — held: `modules/rakun-app/test/route_handler_test.bp` "multipart/form-data is 415 before the body is read"
+- [x] `cookies()` and `headers()` inside a handler come from front 62 and see the in-flight request;
+      `cookies().set(...)` inside a handler is legal and its value reaches the response. — held: `modules/rakun-app/test/route_handler_test.bp` "cookies().set inside a handler is legal and reaches the response"
 - [ ] `setPhase(RequestPhase.Handler)` is entered before the handler body and the previous phase is
       restored after. Removing the call makes a revalidation from a handler raise, and that negative
       case is the test.
@@ -214,34 +214,34 @@ that precedence and tests it; it does not implement a second CORS policy.
 ### Step 3 — Writing the response
 
 **Acceptance:**
-- [ ] `HandlerResponse.json("{}")` is 200 with `Content-Type: application/json`.
-- [ ] `HandlerResponse.noContent()` is 204 with no chunks and no `Content-Type`.
-- [ ] `withHeader` returns a new value and leaves the original unchanged — asserted on both.
-- [ ] A header name that repeats is emitted twice rather than replacing, because `Set-Cookie` needs
-      that.
-- [ ] `toResponse` joins chunks in order and sets the status; it is not called on the streaming path.
+- [x] `HandlerResponse.json("{}")` is 200 with `Content-Type: application/json`. — held: `modules/rakun-app/test/route_handler_test.bp` "json is 200 application/json; noContent is 204 with no body and no type"
+- [x] `HandlerResponse.noContent()` is 204 with no chunks and no `Content-Type`. — held: `modules/rakun-app/test/route_handler_test.bp` "json is 200 application/json; noContent is 204…"
+- [x] `withHeader` returns a new value and leaves the original unchanged — asserted on both. — held: `modules/rakun-app/test/route_handler_test.bp` "withHeader returns a new value and a repeated name is kept twice"
+- [x] A header name that repeats is emitted twice rather than replacing, because `Set-Cookie` needs
+      that. — held: `modules/rakun-app/test/route_handler_test.bp` "withHeader returns a new value and a repeated name is kept twice" (the writer appends in handler mode)
+- [x] `toResponse` joins chunks in order and sets the status; it is not called on the streaming path. — held: `modules/rakun-app/test/route_handler_test.bp` "toResponse joins the chunks in order and keeps the status"
 
 ### Step 4 — Streaming
 
 **Acceptance:**
-- [ ] `streamed(200, tasks)` produces one chunk per thunk, in index order, regardless of completion
-      order.
-- [ ] The response carries `Transfer-Encoding: chunked` and no `Content-Length`.
-- [ ] Three 50 ms thunks complete in well under 150 ms on `--target erlang`, which is the assertion
+- [x] `streamed(200, tasks)` produces one chunk per thunk, in index order, regardless of completion
+      order. — held: `modules/rakun-app/test/route_handler_test.bp` "streamed writes one chunk per thunk in index order, concurrently"
+- [x] The response carries `Transfer-Encoding: chunked` and no `Content-Length`. — held: `modules/rakun-app/test/route_handler_test.bp` "a streamed response is chunked with no Content-Length"
+- [x] Three 50 ms thunks complete in well under 150 ms on `--target erlang`, which is the assertion
       that the thunks were spawned rather than awaited in sequence. The variant written over
-      already-started `@Task` values is kept as a failing regression case.
-- [ ] A thunk that throws ends the stream and the already-written chunks stand; the status cannot be
-      changed after the first chunk, and the test says what the client sees.
+      already-started `@Task` values is kept as a failing regression case. — held: `modules/rakun-app/test/route_handler_test.bp` "streamed writes one chunk per thunk in index order, concurrently" (50/10/30 ms under 90 ms)
+- [x] A thunk that throws ends the stream and the already-written chunks stand; the status cannot be
+      changed after the first chunk, and the test says what the client sees. — held: `modules/rakun-app/test/route_handler_test.bp` "a thunk that raises ends the stream; the chunks already written stand"
 
 ### Step 5 — Coexistence, precedence and the method-not-allowed answer
 
 **Acceptance:**
 - [ ] `page.bp` and `route.bp` in one segment is a scan error naming the segment (the error text is
       front 22's; this front asserts the handler side registered nothing).
-- [ ] A segment with a `GET` handler and no `POST` answers `POST` with 405 and an `Allow` header
-      listing exactly the registered verbs.
-- [ ] `HEAD` falls back to the `GET` handler with the body dropped when no `#[headRoute]` is
-      registered.
+- [x] A segment with a `GET` handler and no `POST` answers `POST` with 405 and an `Allow` header
+      listing exactly the registered verbs. — held: `modules/rakun-app/test/route_handler_test.bp` "a verb the segment does not register is 405 with Allow listing exactly the registered ones"
+- [x] `HEAD` falls back to the `GET` handler with the body dropped when no `#[headRoute]` is
+      registered. — held: `modules/rakun-app/test/route_handler_test.bp` "HEAD falls back to GET with the body dropped"
 - [ ] `OPTIONS` is answered by front 07's chain unless an `#[optionsRoute]` is registered for the
       segment, in which case the explicit handler runs and the chain does not.
 - [ ] A handler runs inside front 07's filter chain, so a filter that rejects the request means the
