@@ -52,6 +52,7 @@ README.
 - [x] onze F8 — a lexer error in an imported module is the reported, located error (`modules/lexer_error_in_imported_module`)
 - [x] onze F10 — an imported module's `'_botopink_init'/0` runs, by decision 140 (`modules/pub_val_across_modules`)
 - [x] erlang float literal — every number token is a valid Erlang number (`5e-324` → `5.0e-324`, `0xFF` → `16#FF`), and an exponent literal is an `f64` (`run/float_literal_spellings.bp`, `run/number_literal_erlang_spellings.bp`)
+- [x] `00 · 11-tooling` — `test-libs` is deterministic on the rakun cells: `botopink test` gives each run its own scratch directory (`BOTOPINK_TEST_TMPDIR`), and rakun's fixture projects and scratch files live there instead of under the member both of its cells share
 
 ## In analysis
 - [ ] `00 · 25-gate-perf` (C-33) — steps 1–4 (the bounded worker pool for `botopink-lib-test`, `tests/language` and `check-docs`; the compiler-core suite in shards; the gate's stages side by side; a content-keyed, relocated `.beam` cache for the erlang cells — warm gate 227 → 132 s, `test-libs` 168 → 70 s, same verdicts and output). Decision 143: `test-libs` and the gate run in place in a worktree. Open: the per-cell dependency compile (a `compiler-core` front)
