@@ -282,9 +282,9 @@ Land this **last**: steps 1–8 add error snapshots, and every one written befor
 in the old format.
 
 **Acceptance:**
-- [ ] every error snapshot's box names its file
-- [ ] 0 `TypeError` raised from `comptime/unify.zig` without a location; the two bare `unify` arithmetic call sites go through `unifyAt` — **the arithmetic half landed** (both sites are `unifyAt` the right operand, three snapshots gained a box); `unify.zig` itself still raises unlocated errors that its callers locate
-- [ ] a `throw` under `fn f() -> i32` reports `effect-try-without-fallible-channel` at the `throw`, not at the first body statement (the annotated form this box named leaves with C-32, decision 118)
+- [x] every error snapshot's box names its file — `┌─ main.bp:L:C`: the renderers (`renderTypeErrorBody`, `renderParseErrorBody`, `ComptimeError.renderAlloc`) take the module's file, the name its `SOURCE CODE --` header carries; the CLI's and the browser build's comptime-validation box name it too
+- [x] 0 `TypeError` raised from `comptime/unify.zig` without a location — `infer.zig` reaches `unify` only as `unifyUnlocated`, inside `unifyAt` / `unifyErrorChannel` or under a caller that stamps the place (`locateLast`: an `or`-pattern alternative, a union member, a `case`'s arms, a destructured `val`); the `if` branches and a `break <value>` arm go through `unifyAt`
+- [x] a `throw` under `fn f() -> i32` reports `effect-try-without-fallible-channel` at the `throw`, not at the first body statement — does not reproduce: `botopink run --target commonJS` over a `throw` in an `if` after a `val` reds at the `throw` (`4:9`); `reject/throw_outside_result` pins the refusal
 - [x] the 44 box-less snapshots have a box; the re-recorded 270 are **read** for expected/found orientation, not bulk-accepted — 23 of 166 had none; compilers (11: the annotation-position refusals) and (12: declarations now carry a `loc` — implement/extend/behavior coverage, `pub default` duplicates, activations) — 0 box-less now, each re-record read (box added, message and orientation unchanged). The box's FILE name (143 snapshots) is `snapshot.zig` / the harness's, outside this front's files
 
 ### Step 10 — the parser gaps that are inference-side
@@ -434,11 +434,17 @@ library writes (`double(` … `)`) is `unbound variable 'double'`, an alias the 
 the DSL author writes nothing extra. The `@Expr`/`@ExprCustom` surface does not change.
 
 **Acceptance**
-- [ ] the three rows of decision 112's table print 40 — private helper, consumer alias, consumer's own
-      `double` not captured; the three `run/` cells are front 12's ([`../12-language-tests/README.md`](../12-language-tests/README.md) step 4, item 5)
-- [ ] `e.lookup("surface")` answers `area`'s identity, and hover / go-to-definition / the `CustomNode`
-      point at `area`
-- [ ] no `reject/` cell (the decision adds none)
+- [x] the three rows of decision 112's table print 40 — private helper, consumer alias, consumer's own
+      `double` not captured — `modules/dsl_hygiene_{private_helper,consumer_alias,consumer_double}` (a
+      dependency is a project cell), each red on the parent binary; the third's wasm line is the flat
+      namespace's (`05-wasm`). `comptime/dsl_hygiene.zig`: the library's names resolve in its module
+      and are imported under an alias by `withTemplateHygiene`
+- [x] `e.lookup("surface")` answers `area`'s identity, and hover / go-to-definition / the `CustomNode`
+      point at `area` — the binding carries `name: "area"`, `identity: "shapesdsl@shapesdsl@@area"` and
+      `local: "surface"` (`comptime/tests/templates.zig`); go-to-definition jumps to `pub fn area` in the
+      declaring module (`language-server` `tests/sublanguage.zig`). A root-package declaration's identity
+      starts at its path — the checker is not told the root package (01c-a)
+- [x] no `reject/` cell (the decision adds none)
 
 ## Acceptance — the `expected-failures.txt` lines this front deletes
 
@@ -467,7 +473,7 @@ line exists because `botopink test` does not run wasm.
 - [ ] `scripts/gate.sh --cold` green in this front's worktree (`zig build`, cold `zig build test`, `test-cli`, `test-libs`, `test-language`) — **run stage by stage, not as the script** (its `test-libs` stage writes into the main checkout's sibling libraries, which this worktree may not touch): `zig build`, `zig build test` (warm), `test-bpmp`, `beam_export_audit.sh` 465/465, `test-cli`, `test-libs` over the bundled libraries (8 / 0) and over a scratch copy of the five siblings (50 / 20, identical to the `feat` binary's 50 / 20 — the 20 are the copy's environment), `test-language` 834 / 22 / 0 (beam 227 / 4 / 0), `test-docs` 69 / 0 — all green
 - [x] `botopink check` clean in `libs/std` and in every `examples/` project — `examples/modules` and `examples/stdlib-tour` clean; `examples/generic-loader-binding` needs the erika checkout, which this worktree's submodule does not hold
 - [x] the six sibling libraries still compile (`zig build test-libs`, 11 cells) — a library that reds gets a migration plan in this front's commit, not a `known-red-libs.txt` line — erika reds under step 6's `Self<…>` rule; erika migrated its 39 sites (31 / 31 on both targets); the other four are unchanged
-- [ ] every re-recorded error snapshot **read** for expected/found orientation and for a `┌─` box that names its file
+- [x] every re-recorded error snapshot **read** for expected/found orientation and for a `┌─` box that names its file — the re-record changed the box's file and nothing else
 - [x] `AGENTS.md` of every directory touched, updated in the same commit
 - [ ] Commit on `fix/checker`; no push, no merge
 
@@ -610,11 +616,10 @@ filed here.
 Three rows of [`surface-gaps.md`](../15-language-surface/surface-gaps.md) are the checker's, measured
 again:
 
-1. **`.Circle(radius: 1)` in expression position parses** — it did not — and reds
-   `unbound variable ''` at the `(`: a leading-dot variant with a payload call, in a position whose
-   expected type is a `val`'s annotation. This is the same empty-name diagnostic `status.md` already
-   lists for the typed array literal (`[.EffectShadowRaw("…")]`); the parser's node is a `dotIdent`
-   head with a call link, and whatever the answer is, a message quoting an empty name is not it.
+1. **Landed** — `.Circle(radius: 1)` in expression position parses and constructs the variant of the
+   position's expected type, in a `val`'s annotation, a typed array literal (`[.EffectShadowRaw("…")]`)
+   and a nested section path (`.Effect.Shadow.Raw("x")`); with no expectation it is the named
+   leading-dot refusal. No form quotes an empty name.
 2. **Answered — the refusal stands** (decision 8 §6 T1: "construction has no labels"; the labels
    ride the TYPE and the variables a tuple is built from). T7's warning — a variable's name
    differing from the written label — landed. **`#(x: 1, y: 2)` — the labeled tuple construction** — is now refused by the parser as
