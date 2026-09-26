@@ -228,7 +228,7 @@ pub fn serverInfoFor(message: string) -> ErrorInfo {
 **Acceptance:**
 - [x] `infoFor("boom")` carries an empty message and a non-empty digest — `test/error_boundary_test.bp` "error: infoFor carries no message and a non-empty digest" (jhonstart `08950fd`)
 - [x] `serverInfoFor("boom")` carries the message and the **same** digest — `test/error_boundary_test.bp` "error: serverInfoFor keeps the message and the SAME digest"
-- [x] `digestOf` is front 03's hash; this file defines no hash of its own — `digestOf` is std's `content_hash.contentHash`
+- [x] `digestOf` is front 03's hash; this file defines no hash of its own — `digestOf` is std's `hash.contentHash`
 - [x] `digestOf` is stable across runs and across the erlang and js backends — std's `contentHash` (its own cross-row literal cells); `test/error_boundary_test.bp` runs green on both rows
 
 ### Step 2 — The catch
