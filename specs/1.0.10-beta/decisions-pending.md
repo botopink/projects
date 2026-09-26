@@ -68,21 +68,41 @@ reverses it. Numbered `24-a` … so they do not collide with the decision number
 
 ### 24-d · The codemod needs the old syntax; E2 refuses it at parse time
 
-> **Raised by:** the codemod thread (`front/24-codemod`, E6), 2026-09-25
-> **Measured.** `botopink migrate effects` type-checks the OLD program to decide `await` → `try await`.
-> At `86609a66` the parser refuses every removed annotation and wrapper (`effect-annotation-removed`,
-> `effect-type-removed`) and stops — there is no AST for the old program, and the checker no longer
-> knows `@Future` / `@ResultGenerator` / `@FutureGenerator`.
-> **Options.** (a) the codemod runs from a binary built at `feat` before E2 (its own build of the old
-> parser/checker, shipped only inside `migrate`); (b) a migration-only lenient mode in the parser
-> (record the annotation / old wrapper, report the refusal as a diagnostic, keep parsing) and the old
-> wrappers' typing reachable only from `migrate`; (c) the codemod rewrites textually and leaves
-> `await` → `try await` to the E3.9 type-error hint.
-> **Recommendation.** (a) — decision 67 wants no mode that accepts the old forms, and a mode reachable
-> only through `migrate` is still a second grammar to maintain. Not implemented in this front: the
-> refusal path stops at the first old form.
-> **Blocks.** Merging `front/24-codemod` into `front/24-effects-by-return` (its tests type-check the old
-> surface).
+> **Raised by:** the codemod thread (`front/24-codemod`, E6), 2026-09-25; resolved on
+> `front/24-integration`, 2026-09-26
+> **Measured.** `botopink migrate effects` type-checks the OLD program to decide `await` → `try await`
+> (and the `for` / `.next()` / `case` review marks). At `86609a66` the parser refuses every removed
+> annotation and wrapper (`effect-annotation-removed`, `effect-type-removed`) and stops — there is no AST
+> for the old program, and the checker no longer knows `@Future` / `@ResultGenerator` /
+> `@FutureGenerator`. Merged as written, four of the codemod's seven unit tests fail (every module
+> "does not parse").
+> **Options.** (a) the codemod runs from a binary built at `feat` before E2 (its own copy of the old
+> parser/checker — about 120 000 lines of `compiler-core/src` — shipped only inside `migrate`); (b) a
+> migration-only mode reachable only from `migrate effects`: the parser reads the old annotations and
+> wrappers, the checker types them with their pre-front-24 meaning; (c) the codemod rewrites textually
+> and leaves `await` → `try await` to the E3.9 type-error hint.
+> **Recommendation.** (b), implemented (compiler `9d8331ad`). `comptime.setEffectMigration(files)` is
+> called only by `migrate_effects.run` / `migrate` for their own duration and cleared before they return;
+> it is thread-local, and no flag of `build` / `check` / `test` or the language server reaches it, so
+> every normal compile still refuses the old forms (decision 67 — a unit test pins that the refusal is
+> back once the command returns). While it is on: the **parser** (`parser.effect_migration`) drops a
+> removed `#[@<effect>]` annotation (on a loop it becomes the `iter` / `stream` prefix) and reads a
+> removed wrapper as its new spelling — `@Future<T, E>` → `@Task<@Result<T, E>>`, `@Future<T>` →
+> `@Task<T>`, `@Generator<T>` → `@Iterator<T>`, `@ResultGenerator<T, E>` / `@Iterator<T, E>` →
+> `@Iterator<@Result<T, E>>`, `@FutureGenerator<T, E>` → `@Stream<@Result<T, E>>`, `@Use<C, T>` →
+> `@Component<C, T>`; the **checker** (`infer.effect_migration_files`), only in the files the codemod
+> rewrites and the dependencies that still spell the old surface, gives the old meaning — `await` of a
+> `@Task<@Result<U, E>>` answers `U`, a `for` / `for await` over a sequence of `@Result<T, E>` binds `T`,
+> and `throw` / `try` need no `@Result` layer. The mode is not a second grammar: it is two spellings
+> mapped onto the one AST and three relaxations in the checker (≈ 120 lines), and it dies with the
+> codemod. Measured: the codemod's snapshots are unchanged, and over the 53 packages of jhonstart,
+> rakun, emilia, onze and erika at their pre-front-24 pins its output is byte-identical to the pre-E2
+> codemod binary's (`front/24-crosscheck-libs` `b2985088`). Known imprecision: an old
+> `@Generator<@Result<T, E>>` / `@Future<@Result<T, E>>` reads like a fallible wrapper, so its `for` /
+> `await` would gain a `try` it did not have — none occurs in the five libraries. (a) was the earlier
+> recommendation; it is the heavier of the two by three orders of magnitude and leaves two compilers in
+> one binary.
+> **Blocks.** Nothing — the codemod is merged with its tests green.
 
 ### 24-e · `try` and `await` as operands
 

@@ -330,8 +330,8 @@ compiler commit.
 **Acceptance:**
 - [x] `std/async` and `std/http` signatures closed and green **before** the codemod runs on the libraries (§ *Merge order*, 5)
 - [ ] `zig build test-libs` green on every row at its pre-sweep counts; `known-red-libs.txt` back to its header
-- [ ] `grep -rnE '#\[@(result|future|use|generator|resultGenerator|futureGenerator)\]|@(Future|Use)<|@(Result|Future)?Generator<' repository/{jhonstart,rakun,emilia,onze,erika} libs/` finds nothing
-- [ ] the meta submodule pointers bumped in the same sweep
+- [x] `grep -rnE '#\[@(result|future|use|generator|resultGenerator|futureGenerator)\]|@(Future|Use)<|@(Result|Future)?Generator<' repository/{jhonstart,rakun,emilia,onze,erika} libs/` finds nothing
+- [x] the meta submodule pointers bumped in the same sweep
 
 ### Step E8 — documentation
 
@@ -342,9 +342,9 @@ new codes added to the diagnostics reference (`comptime/diagnostics.zig`'s table
 `comptime/AGENTS.md`); the 1.0.10-beta changelog.
 
 **Acceptance:**
-- [ ] `scripts/check-docs.sh` green; every `docs.md` fence compiles
+- [x] `scripts/check-docs.sh` green; every `docs.md` fence compiles
 - [ ] `grep -rnE '#\[@(result|future|use|generator|resultGenerator|futureGenerator)\]|@(Future|Use)<|@ResultGenerator|@FutureGenerator' specs/1.0.10-beta --include=*.md --include=*.bp` finds only `decisions-taken.md` (the record)
-- [ ] no front README keeps the "pre-118 effect annotations" line
+- [x] no front README keeps the "pre-118 effect annotations" line
 
 ## Diagnostics
 
@@ -474,9 +474,11 @@ generator and loop cells are re-spelled into these.
 
 The codemod first normalises the pre-121 spellings guide.md § 9 lists (`#[@context]` /
 `@Context<B, R>`, `@Use<C, T>`, `#[@iterator]` / `@Iterator<T, E>`, `#[@asyncGenerator]` /
-`@AsyncIterator`, `IteratorStep`, `loop (xs) { x -> }`, `loop (cond)`, `loop await`) to today's
-language, so the file type-checks; `Iterable` and `Yield<T, R>` are marked. A module that does not
-type-check has its `await` / `for await` sites marked instead of decided.
+`@AsyncIterator`, `IteratorStep`, `loop (xs) { x -> }`, `loop (cond)`, `loop await`) to the
+pre-front-24 language, which it type-checks in a migration-only mode no other command reaches
+(`decisions-pending.md` 24-d: the parser reads the old annotations and wrappers as their new spelling,
+the checker gives them their old meaning); `Iterable` and `Yield<T, R>` are marked. A module that does
+not type-check has its `await` / `for await` sites marked instead of decided.
 
 Run it on the internal libraries first (E7), to validate it. The `await` → `try await` rewrite is
 reliable only where the function's return is known, which is why it needs the checker's types, not
@@ -496,7 +498,7 @@ a text pass.
 
 - [ ] `scripts/gate.sh --cold` green at every commit; `test-libs` at baseline (a library through the ledger only during its sweep)
 - [ ] `zig build test-language` green on the four targets with § *Cells*; every re-recorded RUN LOG verified by running
-- [ ] the `effect_chain.zig` drift test green with `builtins.d.bp` at its final shape
+- [x] the `effect_chain.zig` drift test green with `builtins.d.bp` at its final shape
 - [ ] `AGENTS.md` of every directory touched, in the same commit as each change
 - [ ] Commit on `front/24-effects-by-return`; no push, no merge — landing is the maintainer's step
 
