@@ -397,6 +397,14 @@ front's compiler on commonJS and erlang):
 Both are strictly accepting, so no `expected-failures.txt` line moves; the 4b probe in 15's README
 (`loop (xs) { x -> @print(x) };`) is the second cell's form.
 
+**Written by 15 itself** (12 was closed by then), on `front/15-language-surface`:
+- [x] the eight `reject/` cells — each carries a header comment, so its `.expect` line 2 is the
+      location above shifted by the header's lines; code and column re-measured, unchanged
+- [x] `run/decorator_negative_argument` and `run/loop_one_line_body` — pass on all four targets
+      (beam included); the second is spelled `for (xs) { x -> … }`, since decision 105 removed
+      `loop (…)`
+- [x] listed in `tests/language/AGENTS.md`; no `expected-failures.txt` line
+
 ---
 
 ## Landed — 2026-09-18

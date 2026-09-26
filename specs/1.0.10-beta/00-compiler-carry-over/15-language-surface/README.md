@@ -139,8 +139,9 @@ and a standalone `extend P { … }` already reports `anonymous-impl-extend`.
       asserted by `expectErrorAt(src, kind, line, col)` in `src/parser/tests/language_surface.zig`
       (R10; the harness is `tests/helpers.zig`'s, shared with `surface.zig`)
 - [x] `grep -c unexpectedToken` over `src/parser/**` does not grow (13 before and after)
-- [ ] a `reject/` cell per form, handed to [`12-language-tests`](../12-language-tests/README.md) with
-      the `.expect` first line and location
+- [x] a `reject/` cell per form — specified for [`12-language-tests`](../12-language-tests/README.md)
+      with the `.expect` first line and location, and written by this front (12 had closed):
+      `tests/language/reject/{ternary_absent,bitwise_operator_absent,char_literal_absent,nested_fn_decl,list_spread_not_last,list_spread_dot_dot_dot,implement_clause_for,tuple_literal_label}`
 
 ### Step 4b — the two measured forms
 
@@ -157,10 +158,12 @@ drop its `;`. C-11's `arrow_when_empty` in `format.zig` is the printer half and 
 - [x] `loop (xs) { x -> f(x) };` parses (and `xs.map { x -> f(x) }`, `memo { -> 42 }`,
       `calcular(fator: 2) { a, b -> a + b }`); a body of several statements still needs its `;`
       between them, asserted in `language_surface.zig` R11
-- [ ] a cell for each — specified for [`12-language-tests`](../12-language-tests/README.md) § *Handed
+- [x] a cell for each — specified for [`12-language-tests`](../12-language-tests/README.md) § *Handed
       over by 15-language-surface steps 3 and 4b* (`run/decorator_negative_argument`,
       `run/loop_one_line_body`, with sources and `.out`); each fails on `4fe1747e` as a parse error,
-      which is the pre-fix behaviour planted by running the cell on the base compiler
+      which is the pre-fix behaviour planted by running the cell on the base compiler. Written by
+      this front; the second is spelled `for (xs) { x -> … }` (decision 105 removed `loop (…)`), and
+      both pass on all four targets, beam included
 
 ### Step 5 — hand the surface over
 
@@ -187,8 +190,11 @@ drop its `;`. C-11's `arrow_when_empty` in `format.zig` is the printer half and 
 - [x] `scripts/gate.sh --cold` green in this front's worktree at `727813e5` — all nine stages
 - [x] every change strictly accepting or a named refusal — no existing snapshot re-records (six
       parser snapshots added, for the neighbouring forms that still parse)
-- [ ] `zig build test-language` green, with the cells 12 writes from steps 3 and 5 — green without
-      them at `727813e5` (no cell of the suite wrote a form the front refuses); the cells are 12's
+- [x] `zig build test-language` green with the ten cells of steps 3 and 4b, on `feat` `82e32e36`:
+      `run.sh` (commonJS, erlang, wasm) **658 passed / 29 expected / 0 failed**; `--target beam`
+      146 / 7 / 1 — the one is `run/effect_method.bp`, unlisted and red before these cells
+      (`tests/language/AGENTS.md` § *Status and the gate*), not a cell of this front; `zig build test`
+      green
 - [x] every decided-against form has a named kind, a located message and an `expectErrorAt` case
 - [x] `AGENTS.md` of every directory touched (`src/parser/`, `src/lexer/`, `src/parser/tests/`),
       updated in the same commit
