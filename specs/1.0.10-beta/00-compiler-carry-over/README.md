@@ -551,7 +551,7 @@ with the `?T` diagnostic), **45** (a member access on a `?T` is an error naming 
 `null` — the `array_at` helper on every backend), **57** (a `warnings` list on the `Env`, rendered like
 a `TypeError`), **31** (`any` deleted — it still parses and checks; `erlang.bp`/`beam.bp` need a host
 vocabulary first), **9** (`Array.unique` rewritten in `libs/std` to avoid a method call on an optional
-inside a `default fn`); the document corrections the record is silent on — **1** (`@AsyncIterator<T>`),
+inside a `default fn`); the document corrections the record is silent on — **1** (the async sequence type — `@Stream<T>` since decision 122),
 **2** (`?T` only), **10** (the `@code` annotation renamed), **25** (`is` does not bind), **32** (no
 `Option.Some` value names); and 04's two unverified rows — the `tsc --noEmit` gate over every
 non-empty `.d.ts` (no `tsc` in the checkout when 04 closed) and `42.toString()` emitting
