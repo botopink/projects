@@ -16,18 +16,18 @@
 //   src/__snapshots__/css/shared_fixture_bg_white_text_lg.snap
 //   src/__snapshots__/utility/two_utilities_side_by_side.snap
 //   src/__snapshots__/utility/two_utilities_side_by_side.second.snap
-// and snapshots.md shows the exact bytes of the first two.
+// and snapshots.md shows the header of the first one.
 
 import {testing.asserts} from "std";
 import {Token} from "emilia";
-import {assertCss, assertUtility, assertUtilityNamed, assertDeclaration, hoverOnMd, sharedFixtureTokens} from "emilia-test";
+import {assertSheet, assertUtility, assertUtilityNamed, assertHasDeclaration, hoverOnMd, sharedFixtureTokens} from "emilia-test";
 
 // ── snapshots ──────────────────────────────────────────────────────────────
 
-// The enum example from the contract, in the spelling that parses today.
+// The enum example from the contract, in the spelling that parses.
 test "css: modifiers ---- hover on md breakpoint" {
     val leaf: Token[] = [.Bg.Red.500];
-    try assertCss(@src(), hoverOnMd(leaf));
+    try assertSheet(@src(), hoverOnMd(leaf));
 }
 
 // Same tokens, whole utility (class + rule). Suite `utility`, same slug.
@@ -36,11 +36,11 @@ test "utility: modifiers ---- hover on md breakpoint" {
     try assertUtility(@src(), hoverOnMd(leaf));
 }
 
-// The contract-4 shared fixture, as CSS. When front 56 changes the emitted
-// body this snapshot mismatches, a `.new` appears, and a person reads it —
-// the regeneration contract 4 describes, made visible.
+// The contract-4 shared fixture, as a sheet. When emilia changes what the
+// list encodes to, this snapshot mismatches, a `.new` appears, and a person
+// reads it — the regeneration contract 4 describes, made visible.
 test "css: shared fixture ---- bg white text lg" {
-    try assertCss(@src(), sharedFixtureTokens());
+    try assertSheet(@src(), sharedFixtureTokens());
 }
 
 // Two snapshots from one test: the second is named.
@@ -53,9 +53,9 @@ test "utility: two utilities side by side" {
 
 // ── plain assertions beside the snapshots ──────────────────────────────────
 
-test "emilia: a single text token lowers to one declaration" {
+test "emilia: a single text token lowers to its declaration" {
     val tokens: Token[] = [.Text.Bold];
-    try assertDeclaration(tokens, "font-weight:bold");
+    try assertHasDeclaration(tokens, "font-weight:bold");
 }
 
 test "emilia: @src() names this test and this file" {

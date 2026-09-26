@@ -1,252 +1,76 @@
 # Front 01 — Std Lib Enablement
 
 **Track:** A std
-**Priority:** critical — fifty of the fifty-three fronts bottom out in a socket, a clock, a path, a digest or an escape; without this front they are `declare fn`s with nothing behind them
+**Priority:** critical — the milestone's fronts bottom out in a socket, a clock, a path, a digest or an escape; this front puts each one in std, dual-target, instead of a private `#[@External.Node]` cell per front
 **Target:** both — std is the floor under both halves
-**Wave:** 0
-**Depends on:** none
-**Owns:** two new files — `src/io/net.bp`, `src/escape.bp`; the hmac half of `src/hash.bp`; the codec half of `src/encoding.bp`; additions to `src/path.bp`, `src/io/fs.bp` (`walk`, `glob`), `src/io/clock.bp`, `src/io/random.bp`, `src/regex.bp`, `src/io/process.bp`; `src/root.bp` and `src/io/mod.bp` (exports only). Paths are the final tree of `../modules.md` (decision 106); the files land at `src/<name>.bp` when the front merges and `00-compiler-carry-over/23-std-purity` moves them
-**Does not touch:** `src/primitives.bp`, `src/builtins.d.bp`, `src/builtins_fns.d.bp` (the three ambient files); every function already in the modules it adds to (the readings in `io/clock.bp`, the digests in `hash.bp`, the base64 four in `encoding.bp`, the rand-backed eight in `io/random.bp`, the nine `path` calculations, the five `process` introspections, the six `regex` matchers); the std modules it does not own — `querystring.bp`, `url.bp`, `io/env.bp`, `io/os.bp`, `io/http.bp`, `json.bp`, `erlang.bp`, `beam.bp`, `collections.bp`, `math.bp`, `string_builder.bp`, `unicode.bp`, `async.bp`, `testing/**`
+**Owns:** `src/io/net.bp`, `src/escape.bp`; the base64url digests of `src/hash.bp`; the codec half of `src/encoding.bp`; the functions it added to `src/path.bp`, `src/io/fs.bp` (`walk`, `glob`), `src/io/clock.bp`, `src/io/random.bp`, `src/regex.bp`, `src/io/process.bp`; `json.bp`'s writers, `Json` and `decode` (Steps 11–14). Paths are the tree of `../modules.md` (decision 106)
+**Does not touch:** `src/primitives.bp`, `src/builtins.d.bp`, `src/builtins_fns.d.bp` (the three ambient files); the functions that predate it in the modules it extends; `querystring.bp`, `url.bp`, `io/env.bp`, `io/os.bp`, `io/http.bp`, `erlang.bp`, `beam.bp`, `collections.bp`, `math.bp`, `string_builder.bp`, `unicode.bp`, `async.bp`, `testing/**`
 **Reference:** Erlang/OTP — [`gen_tcp`](https://www.erlang.org/doc/apps/kernel/gen_tcp.html) · [`ssl`](https://www.erlang.org/doc/apps/ssl/ssl.html) · [`crypto`](https://www.erlang.org/doc/apps/crypto/crypto.html) · [`re`](https://www.erlang.org/doc/apps/stdlib/re.html) · [`filelib`](https://www.erlang.org/doc/apps/stdlib/filelib.html) · [`filename`](https://www.erlang.org/doc/apps/stdlib/filename.html) · [`calendar`](https://www.erlang.org/doc/apps/stdlib/calendar.html) · [`uri_string`](https://www.erlang.org/doc/apps/stdlib/uri_string.html). Node.js — [`net`](https://nodejs.org/api/net.html) · [`tls`](https://nodejs.org/api/tls.html) · [`child_process`](https://nodejs.org/api/child_process.html) · [`crypto`](https://nodejs.org/api/crypto.html) · [`path`](https://nodejs.org/api/path.html)
 
 ---
 
-## Problem
+## State
 
-Fifty of the fifty-three fronts in this milestone name a primitive in their mechanism section that
-does not exist anywhere in `libs/std/src/`, and would otherwise grow a private `#[@External.Node]`
-cell of their own — which the overview's *Reuse std* rule forbids, and which would leave the erlang
-half of this milestone unimplemented while the commonJS half looked finished.
+Steps 1–13 hold. Open: Step 14's grep, which the consumer fronts close.
 
-The gap is not uniform. `path.bp` is a complete posix path calculator in pure botopink, `regex.bp`
-wraps `re:run/3` with a capture-carrying `Match` record, the digests include SHA-256 and HMAC-SHA256,
-the clock readings cover wall and monotonic time on both targets. What is missing is narrower: there
-is no socket at all, no directory walk, no child process, no percent-encoding, no constant-time
-compare, no base64url of a raw digest, and no HTML escaping. Those seven absences are what block the
-milestone.
+Two of the primitives are security requirements rather than conveniences. `escape.html` is what
+stands between the SSR pipeline (front 23) and a stored-XSS hole. `hash.equalsConstantTime` is what
+stands between the session-cookie check (front 18) and a byte-at-a-time signature oracle; `==` on two
+signature strings is a timing side channel on both backends.
 
-Two of them are security requirements rather than conveniences. `escape.html` is what stands between
-the SSR pipeline (front 23) and a stored-XSS hole. `hash.equalsConstantTime` is what stands between
-the session-cookie check (front 18) and a byte-at-a-time signature oracle; `==` on two signature
-strings is a timing side channel on both backends.
+## The surface
 
-## Current state
-
-**2026-09-26:** Steps 1–9, 11, 12 and 13 hold, and Step 10 but for two boxes. Step 13 landed
-`json.Json` and `json.decode`, a botopink reader (four private conversion cells, no parser template);
-Step 12's `scriptJson` was already in `escape.bp`, and its decode-equality box is closed from
-`json.bp`'s side. Open: Step 10's `io: {net, clock}` import and the `io/net.bp` tree line, which wait
-on `00 · 23-std-purity` moving the tree (the files are flat today), and Step 14's grep, which the
-consumer fronts close (rakun `ssr.bp` `jsonString`…, rakun-web `jsonEscape`, jhonstart's payload
-escaper). The text below is the state the front started from.
-
-Verified by reading `repository/botopink-lang/libs/std/src/` in full.
-
-- **Twenty-four importable modules**, declared one `pub mod` per line in `src/root.bp:13-36`:
-  `order, dict, sets, string_builder, queue, math, asserts, path, random, querystring, time, url,
-  base64, unicode, process, os, env, crypto, regex, erlang, beam, json, fs, http`. Three further
-  files (`primitives.bp`, `builtins.d.bp`, `builtins_fns.d.bp`) are ambient — flattened into the
-  global type env, not imported (`src/root.bp:9-11`).
-- **`path.bp` is pure botopink and complete for the calculations it covers**: `split`, `isAbsolute`,
-  `basename`, `dirname`, `extname`, `join`, `normalize`, `relative`, `resolve`, plus `separator` and
-  `delimiter` as `pub val` (`path.bp:13-190`). It touches no host cell, which is why it runs on
-  every backend including wat. It cannot see the filesystem at all — there is no `walk` and no
-  `glob`.
-- **`process.bp` is introspection only**: `exit`, `cwd`, `platform`, `arch`, `pid`
-  (`process.bp:28-62`). There is no way to start a child process.
-- **`random.bp` is not a CSPRNG**: `float`, `seed`, `seededFloat`, `coin`, `bool`, `intInRange`,
-  `pick`, `shuffle` (`random.bp:17-116`), backed by `Math.random` and `rand:uniform`. The only strong
-  source in std today is `crypto.randomBytes(n) -> string` (hex, `crypto.bp:77`), in a module this
-  front does not own.
-- **`regex.bp` covers matching but not capture groups**: `matches`, `replace`, `replaceAll`,
-  `splitOn`, `match`, `matchAll`, and a `Match(value, index)` record (`regex.bp:35-90`). `match`
-  captures `first` only — a route pattern like `/blog/(?<slug>[^/]+)` has no way to read `slug`.
-- **`crypto.bp` answers hex, and only hex**: `sha256`, `sha512`, `md5`, `hmacSha256`, `randomBytes`
-  (`crypto.bp:22-77`). RFC 7515 wants base64url of the *raw* digest, so JWT cannot be built on it as
-  it stands. There is no SHA-1 (front 20's WebSocket handshake needs one) and no constant-time
-  compare.
-- **`time.bp` has the clock but not the calendar**: `nowMillis`, `monotonicMillis`, `formatIso8601`,
-  `measureMillis` (`time.bp:56-104`). No parse, no civil breakdown, no timezone, no duration type,
-  and `sleep` is explicitly deferred in its own docblock (`time.bp:31-34`).
-- **`querystring.bp` does not percent-encode.** Its docblock says so: "URI percent-encoding for
-  component values is deferred… callers pre-escape" (`querystring.bp:10-15`). Nothing in std can do
-  that pre-escaping.
-- **`base64.bp` encodes text, not bytes**: `encode`, `decode`, `encodeUrlSafe`, `decodeUrlSafe`
-  (`base64.bp:22-45`), all `string -> string` through UTF-8.
-- **Nothing in std opens a socket, parses a timestamp, hex- or percent-encodes, answers a base64url
-  digest, or escapes HTML** — the surface `io/net.bp`, `io/clock.bp`, `encoding.bp`, `hash.bp` and
-  `escape.bp` carry after this front.
-- **No std module imports another.** Zero `import` lines across all twenty-seven files in
-  `src/`. This is structural, not stylistic — see *Mechanism*.
-- **Tests live inline.** Every std module carries its `test` blocks at the bottom of its own source
-  file (`time.bp:108`, `process.bp:66`, `fs.bp:107`, `regex.bp:98`). `libs/std/test/` holds three
-  files and they test the ambient surface against the global env, with no module import path
-  (`libs/std/AGENTS.md`).
-
-## Requirements table
-
-This table is the front. Each row is a primitive some downstream front bottoms out in; the rightmost
-columns say what has to exist behind it on each target. "Exists today" cites the file when the answer
-is yes.
-
-| Primitive | Needed by front(s) | Exists today | BEAM backing | JS backing | Server-only? |
-|---|---|---|---|---|---|
-| **net** — `listen(port, backlog)` | 04, 20 | no | `gen_tcp:listen/2` | — | **yes** |
-| `accept(listener, timeoutMillis)` | 04, 20 | no | `gen_tcp:accept/2` | — | **yes** |
-| `connect(host, port, timeoutMillis)` | 08, 09, 13, 15 | no | `gen_tcp:connect/4` | — | **yes** |
-| `recv(sock, length, timeoutMillis)` / `send(sock, data)` | 04, 08, 09, 13, 15, 20 | no | `gen_tcp:recv/3`, `gen_tcp:send/2` | — | **yes** |
-| `close(sock)` / `closeListener(l)` | 04, 20 | no | `gen_tcp:close/1` | — | **yes** |
-| `peer(sock) -> Peer(host, port)` | 07, 17 | no | `inet:peername/1` | — | **yes** |
-| `tlsListen` / `tlsAccept` / `tlsConnect` / `tlsRecv` / `tlsSend` / `tlsClose` | 10, 13, 15 | no | `ssl` application | — | **yes** |
-| **clock** — `nowMillis` / `monotonicMillis` / `formatIso8601` | 11, 12, 16, 17, 18 | **yes** — `time.bp:56,80,92` | `erlang:system_time/1`, `erlang:monotonic_time/1`, `calendar:system_time_to_rfc3339/2` | `Date.now`, `performance.now`, `Date#toISOString` | no |
-| `parseIso8601(s) -> @Result<i64, string>` | 12, 16, 18, 32 | no | `calendar:rfc3339_to_system_time/2` | `Date.parse` | no |
-| `toCivil(epochMillis) -> Civil(...)` | 16, 17 | no | `calendar:system_time_to_universal_time/2` + `calendar:day_of_the_week/3` | `Date` getters | no |
-| `offsetMinutes(epochMillis)` (host timezone) | 16, 32 | no | `calendar:universal_time_to_local_time/1` | `Date#getTimezoneOffset` | no |
-| `Duration` + `millis/seconds/minutes/hours/add/toMillis` | 12, 16, 18 | no | pure `.bp` | pure `.bp` | no |
-| `sleep(millis)` | 16, 19 | no — deferred in `time.bp:31-34` | `timer:sleep/1` | `Atomics.wait` on a scratch `SharedArrayBuffer` | no |
-| `deadline(millis)` / `isExpired(d)` | 12, 18 | no | pure `.bp` | pure `.bp` | no |
-| **process** — `exit/cwd/platform/arch/pid` | 50 | **yes** — `process.bp:28-62` | `erlang:halt/1`, `file:get_cwd/0`, `os:type/0`, `erlang:system_info/1`, `os:getpid/0` | `process.*` | no |
-| `run(cmd, args) -> @Result<Exit, string>` | 50, 51, 52 | no | `open_port({spawn_executable, _}, [exit_status, stderr_to_stdout, binary])` | `child_process.spawnSync` | no |
-| `runShell(cmd) -> string` | 50 | no | `os:cmd/1` | `child_process.execSync` | no |
-| `argv()` | 50 | **yes** — `env.args()`, `env.bp:44` (not owned here) | `init:get_plain_arguments/0` | `process.argv.slice(2)` | no |
-| `onSignal(name, handler)` | 50, dev server | no | `os:set_signal/2` + a handler process | `process.on` | no |
-| **path** — `split/isAbsolute/basename/dirname/extname/join/normalize/relative/resolve` | 22, 50, 51, 52 | **yes** — `path.bp:24-190`, pure `.bp` | pure `.bp` | pure `.bp` | no |
-| `withoutExtension(p)` | 22, 51, 52 | no | pure `.bp` | pure `.bp` | no |
-| `isInside(parent, child)` — traversal guard | 22, 25 | no | pure `.bp` | pure `.bp` | no |
-| **fs** (`io/`) — `walk(root) -> @Result<string[], string>` | 22, 50 | no | `filelib:fold_files/5` | `fs.readdirSync(p, {recursive: true})` | no |
-| `glob(pattern, root) -> @Result<string[], string>` | 22, 50 | no | `filelib:wildcard/2` | `fs.globSync` | no |
-| **random** — `float/coin/bool/intInRange/pick/shuffle` | — | **yes** — `random.bp:17-116`, **not** a CSPRNG | `rand:uniform/0` | `Math.random` | no |
-| `secureBytesHex(n)` | 10, 18 | **yes** — `randomBytes`, `crypto.bp:77` (in `io/random.bp` after decision 106; not owned here) | `crypto:strong_rand_bytes/1` | `crypto.randomBytes` | no |
-| `secureToken(bytes) -> base64url` | 10, 18 | no | `crypto:strong_rand_bytes/1` + `base64:encode/1` | `randomBytes(n).toString('base64url')` | no |
-| `uuidV4()` | 17, 18 | no | `crypto:strong_rand_bytes(16)` + version/variant rewrite | same | no |
-| **regex** — `matches/replace/replaceAll/splitOn/match/matchAll` | 07, 14, 22 | **yes** — `regex.bp:35-90` | `re:run/3`, `re:replace/4`, `re:split/3` | `RegExp` | no |
-| `compile(pattern) -> @Result<Regex, string>` | 07, 22 | no | `re:compile/2` | `new RegExp` | no |
-| `captures(pattern, input) -> ?Array<string>` | 14, 22 | no | `re:run(_, _, [{capture, all, binary}])` | `String#match` | no |
-| `namedCaptures(pattern, input) -> Array<#(string, string)>` | 22 | no | `re:inspect/2` + `{capture, all_names, binary}` | named groups | no |
-| `escapeLiteral(s)` | 07, 22 | no | pure `.bp` | pure `.bp` | no |
-| **encoding** — `base64Encode/Decode`, `base64UrlEncode/Decode` | 10, 13, 18 | **yes** — `base64.bp:22-45` (the base64 four of `encoding.bp`, under these names; not owned here) | `base64:encode/1`, `base64:decode/1` | `Buffer` | no |
-| `hexEncode(s)` / `hexDecode(s)` | 03, 10 | no | `binary:encode_hex/1`, `binary:decode_hex/1` | `Buffer#toString('hex')` | no |
-| `percentEncode(s)` / `percentDecode(s)` | 13, 22, 25 | no — `querystring.bp:10-15` defers it | `uri_string:quote/1`, `uri_string:unquote/1` | `encodeURIComponent` | no |
-| `formParse(q)` / `formStringify(pairs)` — percent-aware | 07, 24, 25 | partly — `querystring.bp:35,48` is escape-naive | `uri_string:dissect_query/1`, `uri_string:compose_query/1` | pure `.bp` over `percentEncode` | no |
-| **hash** — `sha256/sha512/md5/hmacSha256` (hex) | 03, 10, 18 | **yes** — `crypto.bp:22-38` (the digest half of `hash.bp`; not owned here) | `crypto:hash/2`, `crypto:mac/4` | `node:crypto` | no |
-| `sha1Base64(data)` | 20 (WebSocket accept key) | no | `crypto:hash(sha, _)` + `base64:encode/1` | `createHash('sha1').digest('base64')` | no |
-| `sha256Base64Url(data)` | 03, 10 | no | `crypto:hash(sha256, _)` + base64url rewrite | `digest('base64url')` | no |
-| `hmacSha256Base64Url(key, data)` | 10 (JWT), 18 | no | `crypto:mac(hmac, sha256, _, _)` + base64url rewrite | `createHmac(...).digest('base64url')` | no |
-| `equalsConstantTime(a, b)` | 10, 18 | no | `crypto:hash_equals/2` | `crypto.timingSafeEqual` | no |
-| **escape** — `html(s)` | 23, 25, 32 | no | pure `.bp` | pure `.bp` | no |
-| `attribute(s)` | 23, 48 | no | pure `.bp` | pure `.bp` | no |
-| `unescapeHtml(s)` | 23 | no | pure `.bp` | pure `.bp` | no |
-| `jsString(s)` — the `<script>` payload block | 23, 24 | no | pure `.bp` | pure `.bp` | no |
-
-Read down the "Exists today" column and the front's real size appears: nineteen rows are already
-there, thirty-one are not, and the thirty-one cluster into two new files (`io/net.bp`, `escape.bp`)
-plus additions to eight modules that exist (`path`, `io/fs`, `encoding`, `hash`, `io/clock`,
-`io/random`, `regex`, `io/process`).
+| Module | What this front put there | Needed by front(s) | Server-only? |
+|---|---|---|---|
+| `io/net` | `listen(port, backlog)`, `connect(host, port, timeoutMillis)`, `tlsListen(port, certFile, keyFile)`, `tlsConnect(host, port, caFile, timeoutMillis)`; the methods of `Listener` (`port`, `accept(timeoutMillis)`, `close`), `Socket` (`recv(length, timeoutMillis)`, `send(data)`, `close`, `peer`), `TlsListener`, `TlsSocket`; `Peer(host, port)` | 04, 07, 08, 09, 10, 13, 15, 17, 20 | **yes** |
+| `io/clock` | `parseIso8601`, `toCivil` → `Civil`, `offsetMinutes`, `Duration` + `millis`/`seconds`/`minutes`/`hours`/`add`/`toMillis`, `sleep`, `deadline`, `isExpired` | 11, 12, 16, 17, 18, 19, 32 | no |
+| `io/process` | `run(cmd, args) -> @Result<Exit, string>` (`Exit(status, stdout, stderr)`), `runShell(cmd)` | 50, 51, 52 | no |
+| `path` | `withoutExtension`, `isInside` (the traversal guard) | 22, 25, 51, 52 | no |
+| `io/fs` | `walk(root)`, `glob(pattern, root)` | 22, 50 | no |
+| `io/random` | `secureToken(bytes)` (base64url), `uuidV4()` | 10, 17, 18 | no |
+| `regex` | `Regex` with the method `matches(input)`, `compile`, `captures`, `namedCaptures`, `escapeLiteral` | 07, 14, 22 | no |
+| `encoding` | `hexEncode`/`hexDecode`, `percentEncode`/`percentDecode`, `formStringify`/`formParse` (percent-aware) | 03, 07, 10, 13, 22, 24, 25 | no |
+| `hash` | `hmacSha256Base64Url`, `sha1Base64`, `sha256Base64Url`, `equalsConstantTime` | 03, 10, 18, 20 | no |
+| `escape` | `html`, `attribute`, `unescapeHtml`, `jsString`, `scriptJson` | 23, 24, 25, 32, 48 | no |
+| `json` | `quote`, `unquote`, `array`, `object`, `Json`, `decode` | rakun 05, `05-actions-lib`, `06-validation-lib`, jhonstart 30 | no |
 
 ## Mechanism
 
-Four structural facts about `libs/std` decide how every row above gets built, and all four were
-verified by reading the tree rather than assumed.
+**A std module cannot call another std module.** A cross-module bare import of an `#[@External.*]`
+symbol resolves at type level and is `undefined` at run time. Decision 106 puts each addition in
+the file that already holds what it extends, so nothing re-declares a sibling's cell; where two cells
+in one file call the same host function, the duplication is in the template string, not in
+behaviour.
 
-**A std module cannot call another std module.** There is not one `import` line in any of the
-twenty-seven files under `src/`. This is not a convention someone could relax: a cross-module bare
-import of an `#[@External.*]` symbol resolves at type level and is `undefined` at run time — the same
-lowering gap that made `emilia` fold its host cells back into `emilia.bp` instead of keeping a
-`stylesheet.bp`. Decision 106 puts each of this front's additions in the file that already holds
-what it extends — the clock readings and the parser in `io/clock.bp`, the digests and the base64url
-digests in `hash.bp`, the base64 four and the hex/percent codec in `encoding.bp` — so nothing here
-re-declares a sibling's cell. Where two cells in one file call the same host function
-(`sha256Base64Url` and `sha256` both call `crypto:hash(sha256, _)`), the duplication is in the
-template string, not in behaviour.
+**Every host call is a `declare fn` with one cell per target** — a `////` docblock naming both
+upstream APIs, a `//` comment per fn explaining the two templates, the annotations, the bodyless
+`declare fn`, in the shape of `io/fs.bp`. A host function that has an owner is a method inside its
+type body (`Socket.send`, `Regex.matches`).
 
-**Every host call is a `declare fn` with one cell per target.** The shape is fixed by the rest of
-std: a `////` docblock naming both upstream APIs, then a `//` comment per fn explaining the two
-templates, then the annotations, then the bodyless `pub declare fn`. `fs.bp` is the reference
-implementation and this front copies it exactly.
+**Failure travels through a `@Result` return, and the template owns the wrapping.** The Node cell is
+an IIFE with try/catch answering `{ ok: v }` or `{ error: msg }`, the Erlang cell a `fun` answering
+`{ok, V}` or `{error, Bin}`, and the signature `-> @Result<T, string>`. Nothing returns a sentinel.
 
-**Failure travels through a `@Result` return, and the template owns the wrapping.** `fs.bp:30-33` is the
-pattern: the Node cell is an IIFE with try/catch answering `{ ok: v }` or `{ error: msg }`, the
-Erlang cell is a `fun` answering `{ok, V}` or `{error, Bin}`, and the botopink signature is
-`-> @Result<T, string>`. Every fallible row in the table above — `net.*`, `fs.walk`, `fs.glob`,
-`process.run`, `clock.parseIso8601`, `regex.compile`, `encoding.hexDecode`, `encoding.percentDecode`
-— uses it. Nothing in this front returns a sentinel.
+**Records cross the boundary as an Erlang map and a JS object**; opaque handles are
+`pub type Socket(handle: any)` — a single `any` field wrapping the port or descriptor, so the type
+system keeps a listener and a socket apart without the compiler knowing what either is.
 
-**Records cross the boundary as an Erlang map and a JS object.** `fs.stat` answers a `FileStat` from
-a host template by building `#{size => _, mtime => _, isDir => _}` on Erlang and
-`{ size, mtime, isDir }` on Node (`fs.bp:97-99`). That is how `Exit`, `Peer`, `Civil`, `Match` and
-the opaque socket handles are shaped: a one- or few-field record whose payload the host template
-constructs. Opaque handles are `pub type Socket(handle: any)` — a single `any` field wrapping the
-port or the file descriptor, so the type system keeps a listener and a socket apart without the
-compiler needing to know what either is.
+**`io/net` refuses commonJS explicitly.** Node's socket API is callback-driven and cannot answer
+`accept` inline, and a browser has no listener at all. The commonJS cells answer
+`Error("std/io/net: server-only")`: std still compiles for both targets, the tests assert the
+refusal, and a client front that reaches for a socket gets a `@Result` error instead of a lowering
+diagnostic.
 
-**Server-only modules carry an explicit refusal on commonJS.** `io/net` is the one module in this
-front that has no browser meaning and no synchronous Node equivalent — Node's `net` is callback-driven
-and cannot answer `accept` inline. Rather than omit the Node cell and have std's commonJS build red at
-the first call site, `io/net.bp` declares the commonJS cell as a refusal that answers
-`Error("std/io/net: server-only")`. That has three properties worth the ugliness: std still compiles for
-both targets, the test file can *assert the refusal* rather than hoping nobody calls it, and a client
-front that reaches for a socket gets a clear `@Result` error instead of a lowering diagnostic nobody
-reads. This is the only module in track A that does it; every other row above is genuinely dual.
-
-Two modules are pure botopink with no host cell at all — `escape.bp` and the additions to
-`path.bp`; both sit at the pure root (decision 106). They compose `String` methods (`replaceAll`, `split`, `slice`, `startsWith`) exactly the
-way `path.bp` already does, which is what makes them work on wat and BEAM as well as the two targets
-this milestone cares about. `escape.html` in particular must replace `&` first, or the ampersand it
-introduces for `<` gets re-escaped; that ordering is the whole correctness of the function and the
-test file pins it.
+**`escape` and the `path` additions are pure botopink** at the pure root: they compose `String`
+methods, so they run on every backend. `escape.html` replaces `&` first, or the ampersand it
+introduces for `<` gets re-escaped; the tests pin that order.
 
 ## Steps
 
-The order is dependency order and also risk order: the pure modules land first and cannot break
-anything, `io/net` lands last because it is the one that needs an OTP application started. Every
-module below is named by its path in the final tree (`../modules.md`); its docblock header is written
-for that path.
-
 ### Step 1 — `escape.bp`
 
-Pure botopink, no host cell, no imports. Four functions and the ordering rule.
+Pure botopink, no host cell, no imports.
 
-```bp
-//// std/escape — HTML/attribute escaping for server-rendered markup.
-////
-//// Reference:
-////   OWASP — https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
-////   WHATWG — https://html.spec.whatwg.org/multipage/parsing.html#character-reference-state
-////
-//// Lib-self-contained: every function composes `String.replaceAll`, so the
-//// module runs on every backend including wat. `&` is replaced FIRST; any
-//// other order re-escapes the ampersands the later rules introduce.
-
-pub fn html(s: string) -> string {
-    val amp = s.replaceAll("&", "&amp;");
-    val lt = amp.replaceAll("<", "&lt;");
-    val gt = lt.replaceAll(">", "&gt;");
-    return gt;
-}
-
-pub fn attribute(s: string) -> string {
-    val base = html(s);
-    val dq = base.replaceAll("\"", "&quot;");
-    return dq.replaceAll("'", "&#39;");
-}
-
-pub fn unescapeHtml(s: string) -> string {
-    val dq = s.replaceAll("&quot;", "\"");
-    val sq = dq.replaceAll("&#39;", "'");
-    val gt = sq.replaceAll("&gt;", ">");
-    val lt = gt.replaceAll("&lt;", "<");
-    return lt.replaceAll("&amp;", "&");
-}
-
-pub fn jsString(s: string) -> string {
-    val bs = s.replaceAll("\\", "\\\\");
-    val dq = bs.replaceAll("\"", "\\\"");
-    val lt = dq.replaceAll("<", "\\u003c");
-    return lt.replaceAll(" ", "\\u2028");
-}
-```
-
-**Acceptance:**
 - [x] `escape.html("<a href=\"x\">&")` answers `&lt;a href=\"x\"&gt;&amp;` — the `&` is escaped once, not twice
 - [x] `escape.unescapeHtml(escape.html(s)) == s` for the five entities, on both targets
 - [x] `escape.attribute` escapes both quote characters and delegates the other three to `html`
@@ -255,69 +79,17 @@ pub fn jsString(s: string) -> string {
 
 ### Step 2 — `path.bp` and `io/fs.bp` additions
 
-Two pure functions appended to `path.bp` below the existing nine, and two host cells appended to
-`io/fs.bp` — `walk` and `glob` read the disk, so they cannot sit in a root module (decision 106).
-Nothing already in either file changes.
-
-```bp
-pub fn withoutExtension(p: string) -> string {
-    val ext = extname(p);
-    val n = p.length();
-    val stem = if (ext == "") p else p.slice(0, n - ext.length());
-    return stem;
-}
-
-// True when `child` resolves inside `parent`. The traversal guard front 22
-// applies before it turns a request path into a file path.
-pub fn isInside(parent: string, child: string) -> bool {
-    val up = normalize(parent);
-    val down = normalize(child);
-    val rel = relative(up, down);
-    val escapes = rel.startsWith("..");
-    return escapes == false;
-}
-
-#[@External.Node("""(() => { try { return { ok: require('fs').readdirSync($0, { recursive: true, withFileTypes: false }) } } catch (__e) { return { error: String(__e) } } })()""")]
-#[@External.Erlang("""(fun(__R) -> {ok, filelib:fold_files(__R, ".*", true, fun(__F, __A) -> [list_to_binary(__F) | __A] end, [])} end)($0)""")]
-pub declare fn walk(root: string) -> @Result<string[], string>;
-
-#[@External.Node("""(() => { try { return { ok: require('fs').globSync($0, { cwd: $1 }) } } catch (__e) { return { error: String(__e) } } })()""")]
-#[@External.Erlang("""(fun(__P, __R) -> {ok, [list_to_binary(__F) || __F <- filelib:wildcard(binary_to_list(__P), binary_to_list(__R))]} end)($0, $1)""")]
-pub declare fn glob(pattern: string, root: string) -> @Result<string[], string>;
-```
-
-**Acceptance:**
 - [x] `path.isInside("/app", "/app/blog/page.bp")` is true; `path.isInside("/app", "/app/../etc/passwd")` is false
 - [x] `path.withoutExtension("page.bp")` answers `page`; `path.withoutExtension("noext")` answers `noext`
 - [x] `fs.walk` on a fixture tree answers the same *set* of relative paths on both targets (order is not asserted — `filelib:fold_files` and `readdirSync` do not agree on it)
 - [x] `fs.glob("**/page.bp", root)` finds a nested `page.bp` on both targets
-- [x] the nine existing `path` functions and the existing `fs` functions are byte-unchanged; `path.bp` still declares no `#[@External.*]` cell
+- [x] the nine pre-existing `path` functions and the pre-existing `fs` functions are byte-unchanged; `path.bp` declares no `#[@External.*]` cell
 
 ### Step 3 — `encoding.bp`
 
-Hex, percent-encoding, and the percent-aware form codec, appended below the base64 four
-(`base64Encode`, `base64Decode`, `base64UrlEncode`, `base64UrlDecode`) that the same file holds, so
-a caller needs one import for the whole wire-format surface.
+Hex, percent-encoding and the percent-aware form codec, beside the base64 four, so one import covers
+the wire-format surface.
 
-```bp
-#[@External.Node("""Buffer.from($0, 'utf8').toString('hex')""")]
-#[@External.Erlang("""string:lowercase(binary:encode_hex($0))""")]
-pub declare fn hexEncode(s: string) -> string;
-
-#[@External.Node("""(() => { try { return { ok: Buffer.from($0, 'hex').toString('utf8') } } catch (__e) { return { error: String(__e) } } })()""")]
-#[@External.Erlang("""(fun(__H) -> try {ok, binary:decode_hex(string:uppercase(__H))} catch _:__E -> {error, iolist_to_binary(io_lib:format("~p", [__E]))} end end)($0)""")]
-pub declare fn hexDecode(s: string) -> @Result<string, string>;
-
-#[@External.Node("""encodeURIComponent($0)""")]
-#[@External.Erlang("""uri_string:quote($0)""")]
-pub declare fn percentEncode(s: string) -> string;
-
-pub fn formStringify(pairs: Array<#(string, string)>) -> string {
-    return pairs.map({ p -> percentEncode(p._0) + "=" + percentEncode(p._1) }).join("&");
-}
-```
-
-**Acceptance:**
 - [x] `encoding.hexEncode("hi")` answers `6869` on both targets, lowercase
 - [x] `encoding.hexDecode("zz")` answers an `Error`, not a crash
 - [x] `encoding.percentEncode("a b&c=d")` answers `a%20b%26c%3Dd` on both targets
@@ -325,27 +97,8 @@ pub fn formStringify(pairs: Array<#(string, string)>) -> string {
 - [x] `encoding.formStringify([#("q", "a b")])` answers `q=a%20b` — the case `querystring.stringify` documents itself as not handling
 - [x] `encoding.base64UrlEncode` output contains no `+`, `/` or `=`
 
-### Step 4 — `hash.bp`, the hmac half
+### Step 4 — `hash.bp`, the base64url digests
 
-The digests the security fronts actually need: base64url rather than hex, SHA-1 for the WebSocket
-handshake, and a constant-time compare. Appended below the hex digests (`sha256`, `sha512`, `md5`,
-`hmacSha256`) the file already holds; front 03's content hashes follow below these.
-
-```bp
-#[@External.Node("""require('crypto').createHmac('sha256', $0).update($1).digest('base64url')""")]
-#[@External.Erlang("""(fun(__K, __D) -> __B = base64:encode(crypto:mac(hmac, sha256, __K, __D)), binary:replace(binary:replace(binary:replace(__B, <<"=">>, <<>>, [global]), <<"+">>, <<"-">>, [global]), <<"/">>, <<"_">>, [global]) end)($0, $1)""")]
-pub declare fn hmacSha256Base64Url(key: string, data: string) -> string;
-
-#[@External.Node("""require('crypto').createHash('sha1').update($0).digest('base64')""")]
-#[@External.Erlang("""base64:encode(crypto:hash(sha, $0))""")]
-pub declare fn sha1Base64(data: string) -> string;
-
-#[@External.Node("""(() => { const __c = require('crypto'); const __a = Buffer.from($0); const __b = Buffer.from($1); return __a.length === __b.length && __c.timingSafeEqual(__a, __b) })()""")]
-#[@External.Erlang("""crypto:hash_equals($0, $1)""")]
-pub declare fn equalsConstantTime(a: string, b: string) -> bool;
-```
-
-**Acceptance:**
 - [x] `hash.hmacSha256Base64Url("key", "The quick brown fox jumps over the lazy dog")` matches the RFC 4231 vector re-encoded as base64url, byte-identical on both targets
 - [x] `hash.sha1Base64` reproduces the RFC 6455 §1.3 WebSocket accept-key example
 - [x] `hash.sha256Base64Url("")` answers `47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU` on both targets
@@ -354,33 +107,9 @@ pub declare fn equalsConstantTime(a: string, b: string) -> bool;
 
 ### Step 5 — `io/clock.bp` additions
 
-Parsing, civil breakdown, durations, deadlines and `sleep`, appended below the readings the file
-already holds (`nowMillis`, `monotonicMillis`, `formatIso8601`, `measureMillis`), which are not
-edited. One import covers reading the clock and scheduling against it.
+A deadline is an absolute epoch reading, so it survives being handed to another process — front 12
+puts one in a cache entry and front 18 in a session.
 
-```bp
-pub type Civil(
-    year: i32, month: i32, day: i32,
-    hour: i32, minute: i32, second: i32,
-    weekday: i32,
-)
-
-pub type Duration(millis: i64)
-
-#[@External.Node("""(() => { const __t = Date.parse($0); return Number.isNaN(__t) ? { error: 'not an RFC 3339 timestamp' } : { ok: __t } })()""")]
-#[@External.Erlang("""(fun(__S) -> try {ok, calendar:rfc3339_to_system_time(binary_to_list(__S), [{unit, millisecond}])} catch _:_ -> {error, <<"not an RFC 3339 timestamp">>} end end)($0)""")]
-pub declare fn parseIso8601(s: string) -> @Result<i64, string>;
-
-pub fn seconds(n: i64) -> Duration { return Duration(millis: n * 1000); }
-pub fn minutes(n: i64) -> Duration { return Duration(millis: n * 60000); }
-
-// A deadline is an absolute epoch reading, so it survives being handed to
-// another process — front 12 puts one in a cache entry and front 18 in a session.
-pub fn deadline(d: Duration) -> i64 { return nowMillis() + d.millis; }
-pub fn isExpired(at: i64) -> bool { return nowMillis() > at; }
-```
-
-**Acceptance:**
 - [x] `clock.parseIso8601(clock.formatIso8601(t))` answers `Ok(t)` truncated to whole seconds, on both targets
 - [x] `clock.parseIso8601("not a date")` answers an `Error` on both targets
 - [x] `clock.toCivil` of a fixed epoch reading answers the same `Civil` on both targets, and `weekday` follows ISO-8601 (Monday = 1)
@@ -389,147 +118,56 @@ pub fn isExpired(at: i64) -> bool { return nowMillis() > at; }
 
 ### Step 6 — `io/random.bp` additions
 
-The CSPRNG surface, appended below the existing `rand`-backed functions and `randomBytes`, which do
-not change. The module docblock gains one sentence saying which half is which — a caller reaching
-for `float()` when they wanted `secureToken()` is the bug this front is trying not to ship.
+The module docblock says which half is a CSPRNG and which is not — a caller reaching for `float()`
+when they wanted `secureToken()` is the bug to avoid.
 
-```bp
-#[@External.Node("""require('crypto').randomBytes($0).toString('base64url')""")]
-#[@External.Erlang("""(fun(__N) -> __B = base64:encode(crypto:strong_rand_bytes(__N)), binary:replace(binary:replace(binary:replace(__B, <<"=">>, <<>>, [global]), <<"+">>, <<"-">>, [global]), <<"/">>, <<"_">>, [global]) end)($0)""")]
-pub declare fn secureToken(bytes: i32) -> string;
-
-#[@External.Node("""require('crypto').randomUUID()""")]
-#[@External.Erlang("""(fun() -> <<__A:32, __B:16, _:4, __C:12, _:2, __D:14, __E:48>> = crypto:strong_rand_bytes(16), iolist_to_binary(io_lib:format("~8.16.0b-~4.16.0b-4~3.16.0b-~4.16.0b-~12.16.0b", [__A, __B, __C, __D bor 16#8000, __E])) end)()""")]
-pub declare fn uuidV4() -> string;
-```
-
-**Acceptance:**
 - [x] `random.secureToken(32)` answers 43 characters, containing none of `+`, `/`, `=`
 - [x] two consecutive `random.secureToken(16)` calls differ, on both targets
 - [x] `random.uuidV4()` matches `^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$` on both targets
-- [x] the existing eight `random` functions and `randomBytes` are byte-unchanged and `random.seed`/`seededFloat` still round-trip
+- [x] the eight `rand`-backed `random` functions and `randomBytes` are byte-unchanged and `random.seed`/`seededFloat` still round-trip
 
 ### Step 7 — `regex.bp` additions
 
-Capture groups and a compiled-pattern handle. The route matcher in front 22 compiles each pattern
-once at start-up and runs it per request; without `compile` it re-parses the pattern on every
-request, which on the BEAM means `re:run/3` re-compiling inside the hot path.
+The route matcher compiles each pattern once at start-up and runs it per request.
 
-```bp
-pub type Regex(handle: any)
-
-#[@External.Node("""(() => { try { return { ok: { handle: new RegExp($0) } } } catch (__e) { return { error: String(__e) } } })()""")]
-#[@External.Erlang("""(fun(__P) -> case re:compile(__P) of {ok, __M} -> {ok, #{handle => __M}}; {error, __R} -> {error, iolist_to_binary(io_lib:format("~p", [__R]))} end end)($0)""")]
-pub declare fn compile(pattern: string) -> @Result<Regex, string>;
-
-// Every capture group, group 0 first. `null` when the pattern does not match —
-// distinguishing "no match" from "matched with empty groups".
-#[@External.Node("""(() => { const __m = $1.match(new RegExp($0)); return __m ? Array.from(__m).map(__g => __g ?? '') : null })()""")]
-#[@External.Erlang("""(fun(__P, __S) -> case re:run(__S, __P, [{capture, all, binary}]) of {match, __G} -> __G; nomatch -> undefined end end)($0, $1)""")]
-pub declare fn captures(pattern: string, input: string) -> ?Array<string>;
-```
-
-**Acceptance:**
 - [x] `regex.captures("^/blog/([^/]+)$", "/blog/hello")` answers a two-element array whose second element is `hello`, on both targets
 - [x] `regex.captures("^/x$", "/y")` answers `null`, not an empty array
 - [x] `regex.namedCaptures("(?<slug>[^/]+)", "/hello")` answers one `#("slug", "hello")` pair on both targets
-- [x] `regex.compile("(")` answers an `Error`; `regex.runCompiled` of a compiled pattern agrees with `regex.matches` of the same source
+- [x] `regex.compile("(")` answers an `Error`; a compiled pattern's `matches(input)` agrees with `regex.matches` of the same source
 - [x] `regex.escapeLiteral(".*")` answers a pattern that matches the literal `.*` and nothing else
-- [x] the six existing `regex` functions and the `Match` record are unchanged
+- [x] the six pre-existing `regex` functions and the `Match` record are unchanged
 
 ### Step 8 — `io/process.bp` additions
 
-Child processes and signals, appended below the five introspection functions.
+`stderr` is empty on the Erlang side because `stderr_to_stdout` folds the two streams; the record
+keeps the field so the Node side stays faithful, and the docblock says which target splits them.
 
-```bp
-pub type Exit(status: i32, stdout: string, stderr: string)
-
-#[@External.Node("""(() => { try { const __r = require('child_process').spawnSync($0, $1, { encoding: 'utf8' }); return { ok: { status: __r.status ?? -1, stdout: __r.stdout ?? '', stderr: __r.stderr ?? '' } } } catch (__e) { return { error: String(__e) } } })()""")]
-#[@External.Erlang("""(fun(__C, __A) -> try __P = open_port({spawn_executable, os:find_executable(binary_to_list(__C))}, [binary, exit_status, stderr_to_stdout, {args, [binary_to_list(__X) || __X <- __A]}]), __L = fun __F(__Acc) -> receive {__P, {data, __D}} -> __F([__D | __Acc]); {__P, {exit_status, __S}} -> {__S, iolist_to_binary(lists:reverse(__Acc))} end end, {__St, __Out} = __L([]), {ok, #{status => __St, stdout => __Out, stderr => <<>>}} catch _:__E -> {error, iolist_to_binary(io_lib:format("~p", [__E]))} end end)($0, $1)""")]
-pub declare fn run(cmd: string, args: string[]) -> @Result<Exit, string>;
-```
-
-`stderr` is empty on the Erlang side because `stderr_to_stdout` folds the two streams — the record
-keeps the field so the Node side stays faithful, and the docblock says which target splits them. A
-front that needs them split on both targets is asking for a redirect through a temp file, and should
-say so rather than assume.
-
-**Acceptance:**
 - [x] `process.run("echo", ["hi"])` answers `Ok` with `status == 0` and `stdout` starting `hi`, on both targets
 - [x] `process.run("definitely-not-a-binary", [])` answers an `Error` rather than crashing the caller
 - [x] a non-zero exit is an `Ok` carrying that status, not an `Error` — the process ran, it just failed
 - [x] `process.runShell("exit 3")` is documented as status-losing on Erlang (`os:cmd/1` answers output only) and the docblock says so
-- [x] the five existing `process` functions are byte-unchanged
+- [x] the five pre-existing `process` functions are byte-unchanged
 
 ### Step 9 — `io/net.bp`
 
-Last, because it is the only module that needs an OTP application running and the only one that
-refuses one of the two targets.
+TCP and TLS sockets; the TLS path starts the `ssl` application idempotently.
 
-```bp
-//// std/io/net — TCP and TLS sockets. SERVER-ONLY.
-////
-//// Reference:
-////   Erlang — https://www.erlang.org/doc/apps/kernel/gen_tcp.html
-////            https://www.erlang.org/doc/apps/ssl/ssl.html
-////   Node   — https://nodejs.org/api/net.html (for the shape only)
-////
-//// The commonJS cells are explicit refusals answering
-//// `Error("std/io/net: server-only")`. Node's socket API is callback-driven and
-//// cannot answer `accept` inline, and a browser has no listener at all. The
-//// refusal keeps std compiling for both targets and makes the absence
-//// assertable instead of hopeful.
-
-pub type Listener(handle: any)
-pub type Socket(handle: any)
-pub type Peer(host: string, port: i32)
-
-#[@External.Node("""({ error: 'std/io/net: server-only' })""")]
-#[@External.Erlang("""(fun(__P, __B) -> case gen_tcp:listen(__P, [binary, {packet, raw}, {active, false}, {reuseaddr, true}, {backlog, __B}]) of {ok, __L} -> {ok, #{handle => __L}}; {error, __R} -> {error, iolist_to_binary(io_lib:format("~p", [__R]))} end end)($0, $1)""")]
-pub declare fn listen(port: i32, backlog: i32) -> @Result<Listener, string>;
-
-#[@External.Node("""({ error: 'std/io/net: server-only' })""")]
-#[@External.Erlang("""(fun(__L, __T) -> case gen_tcp:accept(maps:get(handle, __L), __T) of {ok, __S} -> {ok, #{handle => __S}}; {error, __R} -> {error, iolist_to_binary(io_lib:format("~p", [__R]))} end end)($0, $1)""")]
-pub declare fn accept(listener: Listener, timeoutMillis: i32) -> @Result<Socket, string>;
-```
-
-`recv`, `send`, `close`, `closeListener`, `connect`, `peer` follow the same shape; the TLS six are the
-same again with `ssl:` in place of `gen_tcp:` and a `(catch ssl:start())` prelude, the idempotent
-start `http.bp:54` already uses for `inets`.
-
-**Acceptance:**
 - [x] on erlang, a test binds an ephemeral port, connects to itself, sends 11 bytes, receives the same 11 bytes, and closes both ends
-- [x] `net.accept` with a 50 ms timeout and no pending connection answers `Error("timeout")` rather than blocking the test
+- [x] `accept` with a 50 ms timeout and no pending connection answers `Error("timeout")` rather than blocking the test
 - [x] `net.connect("127.0.0.1", <closed port>, 200)` answers an `Error` naming the refusal
 - [x] on commonJS, every `net` function answers `Error("std/io/net: server-only")` — asserted, not assumed
-- [x] `net.peer` of an accepted socket answers the loopback address
+- [x] `peer()` of an accepted socket answers the loopback address
 - [x] the TLS path completes a handshake against a self-signed fixture cert and round-trips a payload
 
 ### Step 10 — export lines
 
-The last commit of the front, and the only shared file in track A. On the tree as it stands at the
-merge, the commit appends one `pub mod` line per file this front and fronts 02/03 add (`net`,
-`clock`, `encoding`, `hmac`, `escape`, `async`, `content_hash`). After `23-std-purity` the same
-exports read, in the final registry:
+`escape` and `async` are root modules of `root.bp`; `net` and `clock` are in `io/mod.bp`. The content
+hashes live in `hash.bp` and hand over no line.
 
-```bp
-// src/root.bp — this front's and front 02's root modules; `hash` and `encoding` are already declared
-pub mod escape;
-pub mod async;          // front 02
-pub mod io;
-
-// src/io/mod.bp — this front's io modules
-pub mod net;
-pub mod clock;
-```
-
-Front 03 hands over no export line: its functions live in `hash.bp`, which is registered already.
-
-**Acceptance:**
 - [x] the build embeds every registered module without a `build.zig` edit (`libs/std/AGENTS.md`)
-- [x] `import {escape, encoding, hash, io: {net, clock}} from "std";` resolves from a consumer package — a scratch consumer runs `escape.html`, `encoding.base64Encode`, `hash.sha256`, `clock.nowMillis` and `net.listen` on commonJS and erlang after `00 · 23-std-purity` step 3
+- [x] `import {escape, encoding, hash, io: {net, clock}} from "std";` resolves from a consumer package — a scratch consumer runs `escape.html`, `encoding.base64Encode`, `hash.sha256`, `clock.nowMillis` and `net.listen` on commonJS and erlang
 - [x] `libs/std/AGENTS.md`'s tree listing names `io/net.bp` and `escape.bp` and lists the added functions on the rows of the eight modules extended
-- [x] fronts 02 and 03 have landed first, so this commit adds front 02's line rather than waiting on it
+- [x] fronts 02 and 03 landed first, so front 02's line is in place
 
 ## Examples
 
@@ -546,146 +184,96 @@ Front 03 hands over no export line: its functions live in `hash.bp`, which is re
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| No bitwise operators (`&`, `\|`, `^`, `<<`, `>>`) | `random.uuidV4` must set the version/variant bits; `encoding.hexEncode` would fold nibbles | do the bit work inside the host template, in JS and Erlang | `&`, `\|`, `^`, `~`, `<<`, `>>` on the integer behaviors in `primitives.bp` |
-| No byte/binary type — every host cell marshals through `string` | `hash.hmacSha256Base64Url` cannot take a raw key; `random.secureToken` must answer base64url text rather than bytes; `net.recv` answers a UTF-8 `string` for what is a byte stream | text-encode at the boundary (hex or base64url) and accept that a non-UTF-8 payload is lossy on the Node side | a `bytes` primitive with `length`, `at`, `slice`, `concat`, and `@External` marshalling to an Erlang binary and a JS `Buffer` |
-| A std module cannot call another std module | nothing in this front any more — decision 106 puts each addition in the file it extends; `io/net.bp`, `io/fs.bp` and `io/process.bp` declare their own cells | one file per name | make a cross-module bare import of an `#[@External.*]` symbol lower to the defining module's binding |
-| Declared parameter defaults are never applied | `net.accept(l, timeoutMillis)`, `fs.glob(pattern, root)`, `process.run(cmd, args)` all want a default and cannot have one | every call passes every argument | apply defaults at the call site |
-| No `toString(radix)` on the integer behaviors | hex rendering in `encoding` and `hash` (both halves) | render inside the host template | `fn toStringRadix(self: Self, radix: i32) -> string` on `Integer` |
-| A closure passed to a host cell is unverified on the Erlang target | `process.onSignal(name, handler)` | leave signals out of the first cut; the CLI polls instead | pin fn-valued `$N` markers in the `@External.Erlang` template grammar |
+| No bitwise operators (`&`, `\|`, `^`, `<<`, `>>`) | `random.uuidV4` sets the version/variant bits; `encoding.hexEncode` would fold nibbles | do the bit work inside the host template, in JS and Erlang | `&`, `\|`, `^`, `~`, `<<`, `>>` on the integer behaviors in `primitives.bp` |
+| No byte/binary type — every host cell marshals through `string` | `hash.hmacSha256Base64Url` cannot take a raw key; `random.secureToken` answers base64url text rather than bytes; `Socket.recv` answers a UTF-8 `string` for what is a byte stream | text-encode at the boundary (hex or base64url) and accept that a non-UTF-8 payload is lossy on the Node side | a `bytes` primitive with `length`, `at`, `slice`, `concat`, and `@External` marshalling to an Erlang binary and a JS `Buffer` |
+| A std module cannot call another std module | `io/net.bp`, `io/fs.bp` and `io/process.bp` declare their own cells | one file per name | make a cross-module bare import of an `#[@External.*]` symbol lower to the defining module's binding |
+| Declared parameter defaults are never applied | `accept(timeoutMillis)`, `fs.glob(pattern, root)`, `process.run(cmd, args)` all want a default and cannot have one | every call passes every argument | apply defaults at the call site |
+| No `toString(radix)` on the integer behaviors | hex rendering in `encoding` and `hash` | render inside the host template | `fn toStringRadix(self: Self, radix: i32) -> string` on `Integer` |
+| A closure passed to a host cell is unverified on the Erlang target | `process.onSignal(name, handler)` | signals are left out; the CLI polls instead | pin fn-valued `$N` markers in the `@External.Erlang` template grammar |
 
 ## Test plan
 
-Tests are inline `test` blocks at the bottom of each `src/*.bp`, which is what every existing std
-module does (`time.bp:108`, `process.bp:66`, `fs.bp:107`) and what the lib-test harness runs. They
-are invoked by `botopink test --target commonJS` and `botopink test --target erlang` from
-`libs/std/`, and by `zig build test-libs` from `repository/botopink-lang/` as part of the ecosystem
-gate.
+Inline `test` blocks at the bottom of each `src/*.bp`, run by `botopink test --target commonJS` and
+`botopink test --target erlang` from `libs/std/`, and by `zig build test-libs`.
 
-What each module's tests assert:
-
-- `escape.bp`, `path.bp` — pure functions, exact string equality, identical on every backend. These
-  are the only modules in the front whose tests are fully deterministic cross-target.
-- `encoding.bp`, `hash.bp` — published vectors (RFC 4231 for HMAC-SHA256, RFC 6455 §1.3 for the
-  WebSocket accept key, the empty-string SHA-256), asserted byte-identical on both targets. A digest
-  that differs between targets is a failure, not a platform difference.
-- `io/clock.bp` — round trips rather than absolutes (`parseIso8601(formatIso8601(t)) == t` to whole
-  seconds), plus ordering assertions (`isExpired` before and after a `sleep`). Wall-clock values are
-  never asserted directly.
-- `io/random.bp` — shape and distinctness, never a specific value: length, alphabet, the UUID v4
-  pattern, and two draws differing.
-- `regex.bp` — the same pattern and input on both targets must answer the same captures. PCRE and
-  `re` agree on the constructs used here; a test that needs a construct they disagree on belongs in
-  the front that needs it, with its divergence documented.
-- `io/process.bp` — `echo` and a missing binary, on both targets. `runShell`'s status-loss on Erlang is
-  asserted as the documented behaviour rather than treated as a bug.
-- `io/net.bp` — **erlang only for the real path**: bind, self-connect, round-trip, close. On commonJS
-  the suite asserts the refusal. This is the one module where one target's coverage is a refusal
-  assertion rather than behaviour, and the README says so rather than letting a green commonJS cell
-  imply sockets work there.
+- `escape.bp`, `path.bp` — pure functions, exact string equality, identical on every backend.
+- `encoding.bp`, `hash.bp` — published vectors (RFC 4231, RFC 6455 §1.3, the empty-string SHA-256),
+  byte-identical on both targets. A digest that differs between targets is a failure, not a
+  platform difference.
+- `io/clock.bp` — round trips rather than absolutes, plus ordering assertions (`isExpired` before and
+  after a `sleep`). Wall-clock values are never asserted directly.
+- `io/random.bp` — shape and distinctness, never a specific value.
+- `regex.bp` — the same pattern and input on both targets answer the same captures; a construct
+  PCRE and `re` disagree on belongs in the front that needs it, with its divergence documented.
+- `io/process.bp` — `echo` and a missing binary, on both targets; `runShell`'s status loss on Erlang
+  asserted as the documented behaviour.
+- `io/net.bp` — **erlang only for the real path**: bind, self-connect, round-trip, close. On
+  commonJS the suite asserts the refusal, so a green commonJS cell does not imply sockets work there.
 
 ## Definition of done
 
-- Two new files exist (`io/net.bp`, `escape.bp`) and eight existing modules gained the functions in
-  the requirements table (`path`, `io/fs`, `encoding`, `hash`, `io/clock`, `io/random`, `regex`,
-  `io/process`).
-- Every row of the requirements table is either implemented, or cited as already existing with its
-  file and line.
-- No module imports another std module; no function that existed before the front is edited.
-- The export lines of step 10 are in place, including front 02's `async`.
-- `libs/std/AGENTS.md`'s tree listing is updated in the same commit as the files it describes.
+- `io/net.bp` and `escape.bp` exist and eight modules carry the functions of *The surface* (`path`,
+  `io/fs`, `encoding`, `hash`, `io/clock`, `io/random`, `regex`, `io/process`).
+- No module imports another std module; no function that predates the front is edited.
+- The export lines of Step 10 are in place.
+- `libs/std/AGENTS.md`'s tree listing names the files and functions.
 - Every `// LANGUAGE GAP:` marker in this front's examples appears in the table above.
-- The front's tests are green on its assigned target — here, both.
+- The front's tests are green on both targets.
 
 ---
 
 ## Steps 11–14 — std reads and writes JSON
 
 Decision 116 rules 3 and 8 and [decision 117](../../decisions-taken.md#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only)
-rules 6 and 7. These four steps are self-contained: they carry their own ownership, dependencies and
-gate, and the header lines above describe Steps 1–10.
+rules 6 and 7. Every library that answers JSON wrote its own string escaper and none escaped what
+RFC 8259 requires; every library that reads JSON sliced it by hand. These steps give std the writer,
+the `<script>`-safe form and a structured reader.
 
-**Owns:** the functions added at the foot of `repository/botopink-lang/libs/std/src/json.bp`
-(`quote`, `unquote`, `array`, `object`, the `Json` type and `decode`) and their inline tests · the one
-function `scriptJson` appended to `libs/std/src/escape.bp` below Step 1's four, and its inline tests
-· the `json` and `escape` rows of `libs/std/AGENTS.md` (the added names only). The *Does not touch*
-line's `json.bp` covers `parse` and `stringify`, which these steps leave as they are.
-**Depends on:** `01-std` step 2 (`testing.asserts`) · Step 1 (for Step 12 only — it creates
-`escape.bp`). Steps 11 and 13 land beside `01-std`'s own steps; Step 12 after Step 1. All of them
-land either **before** `00 · 23-std-purity` opens or **after** it lands, never while it holds
-`libs/std/src/**`; `json.bp` and `escape.bp` stay at the root of decision 106's tree, so their path
-is the same on both sides of the move.
-**Does not touch:** `root.bp` (`json` and `escape` are exported by Step 10); every consumer — rakun
-fronts 05, 07 and 23, `05-actions-lib`, `06-validation-lib` and jhonstart front 30 switch to these
-functions in their own fronts.
+**Owns:** the functions at the foot of `libs/std/src/json.bp` (`quote`, `unquote`, `array`, `object`,
+the `Json` type and `decode`) and their inline tests · `scriptJson` in `libs/std/src/escape.bp` · the
+`json` and `escape` rows of `libs/std/AGENTS.md` (the added names only).
+**Does not touch:** `root.bp`; `json.parse` and `json.stringify`; every consumer — rakun fronts 05 and
+07, `05-actions-lib`, `06-validation-lib` and jhonstart front 30 switch in their own fronts.
 **Reference:** [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259) (§ 7: a JSON string must escape
 `"`, `\` and U+0000–U+001F; § 4: object member names *should* be unique) ·
 [HTML § 4.12.1.3](https://html.spec.whatwg.org/multipage/scripting.html#restrictions-for-contents-of-script-elements)
 (what may not appear inside `<script>`)
 
-### Problem
-
-std reads JSON only to validate it (`json.parse` and `json.stringify` both answer a re-serialised
-`string`, `libs/std/src/json.bp:36,45`) and writes none. Every library that answers JSON therefore
-wrote its own string escaper, and none escapes what RFC 8259 requires; every library that reads
-JSON slices it by hand:
-
-| Copy | Does | Evidence |
-|---|---|---|
-| rakun `jsonString` (+ `jsonStrings`, `jsonPairs`, `jsonTriples`) | escapes `\` `"` `\n` `\r` `\t` only | `modules/rakun/src/ssr.bp:641-676` |
-| rakun-validation `jsonEscape` | escapes `\` `"` `\n` `\r` `\t` only | `modules/rakun-validation/src/report.bp:80` |
-| rakun-web `jsonEscape` | escapes `"` `\` `\n` `\r` `\t` only | `modules/rakun-web/src/error.bp:131` |
-| rakun config's hand scanner | reads `\n` `\t` `\r`, any other escaped char as itself — `\b`, `\f`, `\/`, `\u` misread | `modules/rakun/src/config.bp:394-433` |
-
-A U+0001 in a user's input, echoed into any of those bodies, produces text a JSON parser rejects. A
-JSON value placed inside `<script>` needs one more escape none of them has: `</script>` ends the
-element, and U+2028 / U+2029 end a JavaScript line in older engines — neither `escape.html`
-(entities, wrong inside a script) nor `escape.jsString` (a JS string literal, not JSON text) is it.
-And the three readers — rakun's configuration (front 05), the action envelope and RPC body
-(`05-actions-lib`) and jhonstart's payload (front 30) — each need a JSON *value*, which std does not
-have.
-
 ### Mechanism
 
 ```bp
-// json — added
-pub fn quote(s: string) -> string                          // a JSON string literal, quotes included
-pub fn unquote(literal: string) -> @Result<string, string>   // its inverse
-pub fn array(items: Array<string>) -> string               // items already encoded
-pub fn object(fields: Array<#(string, string)>) -> string  // keys quoted here, values already encoded
+// json
+pub declare fn quote(s: string) -> string                   // a JSON string literal, quotes included
+pub declare fn unquote(literal: string) -> @Result<string, string>   // its inverse
+pub fn array(items: Array<string>) -> string                // items already encoded
+pub fn object(fields: Array<#(string, string)>) -> string   // keys quoted here, values already encoded
 
 pub type Json { Null, Bool(bool), Num(f64), Str(string), Arr(Array<Json>), Obj(Array<#(string, Json)>) }
 pub fn decode(s: string) -> @Result<Json, string>
 
-// escape — added
-pub fn scriptJson(json: string) -> string                  // JSON text, safe inside <script>
+// escape
+pub fn scriptJson(json: string) -> string                   // JSON text, safe inside <script>
 ```
 
 `quote` escapes `"` as `\"`, `\` as `\\`, U+0008 / U+000C / U+000A / U+000D / U+0009 as `\b` `\f`
 `\n` `\r` `\t`, every other code point below U+0020 as `\u00xx` (lowercase hex), and nothing else —
-non-ASCII text passes through as UTF-8, as RFC 8259 allows. It may be written in botopink or as an
-inline template per target (`JSON.stringify` on node, `json:encode` on erlang, OTP 28); either way
-the acceptance literals below are the same on both targets, and a template whose output differs from
-them on one target is replaced, not documented. `unquote` reads one string literal and refuses
-anything else (a bare word, a number, a missing quote) with an `Error`.
+non-ASCII text passes through as UTF-8. The literals below are the same on both targets. `unquote`
+reads one string literal and refuses anything else (a bare word, a number, a missing quote) with an
+`Error`.
 
 `array` and `object` do no escaping of values: a value is the output of `quote`, a number's text,
 `true` / `false` / `null`, or another writer's output. `object` quotes its keys with `quote` and keeps
-the given order — the envelope's `v` first (contract 3) and the payload's key order (contract 2) are
-the caller's order.
+the given order.
 
 `decode` reads one RFC 8259 document into a `Json` and answers an `Error` naming the byte offset for
-anything that is not exactly one. It is **written in botopink**, not as a per-target template:
-`JSON.parse` reorders integer-like keys and keeps the last of two duplicates, and OTP's
-`json:decode` answers a map, so neither can keep member order or refuse a duplicate, and the two
-targets would disagree. The reader is the most restrictive one RFC 8259 admits (decision 67):
-`Obj` keeps members in document order; a duplicate member name in one object is an `Error`, not a
-last-wins; text after the value other than whitespace is an `Error`; a number follows the RFC
-grammar exactly (`01`, `+1`, `.5`, `1.`, `NaN`, `Infinity` are refused) and is an `f64`, and one that
-overflows `f64` is an `Error`; `\u` escapes are decoded, a surrogate pair into its code point, and an
-unpaired surrogate is an `Error`; a raw control character below U+0020 inside a string is an `Error`.
-The rakun configuration reader (front 05), `actions`' envelope and RPC readers (`05-actions-lib`) and
-jhonstart's payload reader (front 30) read through `decode`; none of them validates with `json.parse`
-and then slices string tokens with `json.unquote` by hand.
+anything that is not exactly one. It is **written in botopink**: `JSON.parse` reorders integer-like
+keys and keeps the last of two duplicates, and OTP's `json:decode` answers a map, so neither keeps
+member order or refuses a duplicate. The reader is the most restrictive one RFC 8259 admits
+(decision 67): `Obj` keeps members in document order; a duplicate member name in one object is an
+`Error`; text after the value other than whitespace is an `Error`; a number follows the RFC grammar
+exactly (`01`, `+1`, `.5`, `1.`, `NaN`, `Infinity` are refused), is an `f64`, and one that overflows
+`f64` is an `Error`; `\u` escapes are decoded, a surrogate pair into its code point, an unpaired
+surrogate is an `Error`; a raw control character below U+0020 inside a string is an `Error`.
 
 `scriptJson` takes JSON text and replaces `&` with `&`, `<` with `<`, `>` with `>`,
 U+2028 with ` ` and U+2029 with ` `. In JSON those characters can only occur inside a
@@ -695,7 +283,6 @@ script parser would see.
 
 ### Step 11 — `json.quote`, `json.unquote`, `json.array`, `json.object`
 
-**Acceptance:**
 - [x] `json.quote("a\"b\\c")` answers `"a\"b\\c"` (as text: quote, `a`, `\"`, `b`, `\\`, `c`, quote)
 - [x] `json.quote` of a string holding U+0001, U+0008, U+000C, U+001F, a newline and a tab answers
       `"\u0001\b\f\u001f\n\t"`, identical on erlang and commonJS
@@ -710,9 +297,6 @@ script parser would see.
 
 ### Step 12 — `escape.scriptJson`
 
-After Step 1 has created `escape.bp`; one function and its tests appended below Step 1's four.
-
-**Acceptance:**
 - [x] `escape.scriptJson(json.object([#("h", json.quote("</script><!--&"))]))` contains no `<`, `>`
       or `&`, and `json.decode` of it equals `json.decode` of the input — `escape.bp`'s test pins the
       output literal; `json.bp`'s "reads escape.scriptJson's output as the same value" decodes that literal
@@ -724,7 +308,6 @@ After Step 1 has created `escape.bp`; one function and its tests appended below 
 
 ### Step 13 — `Json` and `json.decode`
 
-**Acceptance:**
 - [x] `json.decode("{\"rakun\":{\"actions\":{\"bodyLimit\":5242880},\"appDir\":\"app\"}}")` answers
       `Ok(Obj([#("rakun", Obj([#("actions", Obj([#("bodyLimit", Num(5242880.0))])), #("appDir", Str("app"))]))]))`
       — members in document order, on both targets
@@ -742,42 +325,34 @@ After Step 1 has created `escape.bp`; one function and its tests appended below 
 - [x] `decode` declares no `#[@External]` cell — the grammar, order, duplicates and escapes are botopink;
       it calls two private conversion cells the language lacks, neither a parser: `codepointText` (a `\u`
       escape's text) and `numeralValue` (an already-validated numeral → the host's correctly rounded
-      `strtod`; scaling digits in botopink answered a wrong `f64` for `1.7976931348623157e308`)
+      `strtod`)
 
 ### Step 14 — The copies are deletable
 
-These steps delete nothing outside std; they are done when each consumer front can. Each switch is
-that front's step:
+These steps delete nothing outside std; they are done when each consumer front has switched:
 
 | Copy | Replaced by | Front |
 |---|---|---|
-| `ssr.bp:641-676` (`jsonString` …) | `json.quote`, `json.array`, `json.object` — in jhonstart's payload writer | jhonstart 30 (the writer leaves rakun, decision 113) |
-| jhonstart's `payloadEscape` | `escape.scriptJson` | jhonstart 30 |
+| rakun-app `ssr.bp` `jsonString`, `jsonStrings`, `jsonPairs`, `jsonTriples` | `json.quote`, `json.array`, `json.object` — in jhonstart's payload writer | jhonstart 30 (the writer leaves rakun, decision 113) |
+| rakun-app `ssr.bp` `payloadEscape` | `escape.scriptJson` | jhonstart 30 |
 | jhonstart's payload reader | `json.decode` | jhonstart 30 |
-| `rakun-validation/src/report.bp:80` | `json.quote` | `06-validation-lib` |
-| `rakun-web/src/error.bp:131` | `json.quote`, `json.object` | rakun 07 |
-| `config.bp:394-433` (the hand scanner) | `json.decode` | rakun 05 |
-| the action envelope and RPC body | `json.quote`, `json.array`, `json.object` to write; `json.decode` to read | `05-actions-lib` |
+| `rakun-web/src/error.bp` `jsonEscape` | `json.quote`, `json.object` | rakun 07 |
+| `rakun/src/config.bp`'s hand scanner (`jsonString`, `jsonStringEnd`) | `json.decode` | rakun 05 |
 
 **Acceptance:**
 - [ ] `grep -rn "fn jsonString\|fn jsonEscape\|fn jsonStrings\|fn jsonPairs\|fn jsonTriples\|fn payloadEscape" --include=*.bp repository/`
       is empty once the fronts in the table have landed — asserted in this milestone's exit gate,
-      not by this front — **open:** `rakun-validation`'s `jsonEscape` left with the member (`06-validation-lib`); rakun `ssr.bp`'s four, rakun-web's `jsonEscape` and jhonstart's are their fronts'
+      not by this front — **open:** rakun-app's `ssr.bp` five, rakun-web's `jsonEscape` and rakun config's scanner are their fronts'
 
 ### Test plan (Steps 11–14)
 
-Inline `test` blocks at the foot of `json.bp` and `escape.bp`, as every std test (`fronts.md` § *std
-tests are inline*), run by `botopink test` and `botopink test --target erlang` in `libs/std`. Every
-expected text is a literal; the round-trip table covers the empty string, every code point below
-U+0020, `"`, `\`, `/`, U+2028, U+2029 and a four-byte UTF-8 character. The `decode` table is asserted
-cell for cell on both targets.
+Inline `test` blocks at the foot of `json.bp` and `escape.bp`, run by `botopink test` and
+`botopink test --target erlang` in `libs/std`. Every expected text is a literal; the round-trip table
+covers the empty string, every code point below U+0020, `"`, `\`, `/`, U+2028, U+2029 and a
+four-byte UTF-8 character. The `decode` table is asserted cell for cell on both targets.
 
 ### Gate (Steps 11–14)
 
 - [x] `botopink test` green in `libs/std` on commonJS and erlang — 417 passed / 0 failed on each, `json` 23/0
 - [x] `libs/std/AGENTS.md`'s `json` and `escape` rows list the added names
 - [x] no `root.bp` line changed by these steps
-
-Additive: four functions, one type and one reader in `json.bp`, one function in `escape.bp`; no
-existing function changes. The consumers' switches — and the invalid JSON they stop emitting — are
-their fronts'.
