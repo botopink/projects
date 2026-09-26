@@ -36,7 +36,7 @@ lifetimes, settings and the customizer fold, `cacheThrough` / `cacheFn` / `cache
 and their seams), `cached.bp` (`#[cached]` / `#[cacheable]` / `#[cacheEvict]`), `cache_endpoint.bp`
 (`installCache`, the `caches` endpoint, the `cache` indicator), `cache_host.bp` over
 `src/sidecars/rakun_cache.erl` (one ETS table owned by `rakun_cache_owner`, single flight, background
-refresh, the clock, the log, a RESP double). 50 tests on erlang across seven files; the twin and the
+refresh, the clock, the log, a RESP double). 52 tests on erlang across seven files; the twin and the
 import spellings are exercised by consumer projects under `test/fixtures/`.
 
 Where it differs from the text below:
@@ -50,6 +50,9 @@ Where it differs from the text below:
 - **Redis** reuses rakun-session's wire (`rkSessRedis`) rather than front 13's client, has no stale
   window (`revalidateTag` deletes there) and runs the loader when it does not answer (03r-i).
 - **The private scope** with no session runs the loader and stores nothing (03r-g).
+- **Inside a server action** `revalidateTag` / `revalidatePath` expire the rows rather than mark them
+  stale, so front 24's re-render reads the refilled cache (03r-m); inside any request every verb also
+  appends to the frame's `revalidated` slot, which front 24's envelope echoes.
 - **Single flight** — concurrent misses on one key run one loader — is in; onze's image routes use it.
 - **Open:** the qualified import form (Step 5), and front 24's mutation test over `revalidatedPaths()`
   (front 24's box).
