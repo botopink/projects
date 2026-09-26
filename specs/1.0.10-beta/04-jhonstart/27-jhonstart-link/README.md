@@ -315,9 +315,9 @@ pub fn linkStatus() -> @Component<ElementBase, LinkStatus> {
 
 **Acceptance:**
 - [ ] every cell in the file is `#[@External.Node]`; there is no `#[@External.Erlang]` cell
-- [ ] `linkStatus()` is idle (`pending == false`, `href == ""`) when nothing is in flight
+- [x] `linkStatus()` is idle (`pending == false`, `href == ""`) when nothing is in flight — `jhonstart-link/test/link_test.bp` "link: linkStatus is idle when nothing is in flight" (jhonstart `a2c1233`)
 - [ ] `use linkStatus()` type-checks inside a `fn … -> @Component<ElementBase, Element>` body — never the doubled `use` + `useLinkStatus()`; without a `@Component` return the body is `use-without-context-effect` (decisions 118 and 128)
-- [ ] `linkMount()` is idempotent — calling it twice registers one listener
+- [x] `linkMount()` is idempotent — calling it twice registers one listener — `jhonstart-link/test/link_test.bp` "link: linkMount is idempotent — a second call registers nothing"
 
 ### Step 5 — Module wiring
 
@@ -338,8 +338,8 @@ writes the `data-jh-` prefix and makes the mount an ordinary import.
 **Acceptance:**
 - [x] `link.bp` writes `data-jh-l`, `data-jh-prefetch`, `data-jh-replace`, `data-jh-scroll`; no
       `data-onze-` string is left under `modules/jhonstart*/src/` — jhonstart `117aed4`; `grep -rn data-onze- modules/*/src` is empty
-- [ ] the four host cells are `__jhLinkMount`, `__jhLinkPrefetch`, `__jhLinkStatus`,
-      `__jhLinkRouteKind`, and the entry imports `linkMount` by name — no `__onze*` spelling exists
+- [x] the four host cells are `__jhLinkMount`, `__jhLinkPrefetch`, `__jhLinkStatus`,
+      `__jhLinkRouteKind`, and the entry imports `linkMount` by name — no `__onze*` spelling exists — `link.bp`'s four cells and `linkMount` (jhonstart `a2c1233`)
 - [x] the Step 2 literal `<a href="/about" data-jh-l="1">About</a>` is the snapshot, re-recorded once — `test/link_test.bp`, re-recorded in `117aed4`
 
 ## Examples

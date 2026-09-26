@@ -285,8 +285,8 @@ and then front 27's `linkMount()` and front 67's `formMount()` once each.
 
 **Acceptance:**
 - [ ] every cell in the file is `#[@External.Node]`; there is no `#[@External.Erlang]` cell
-- [ ] `propsFor` of a component with no props returns `[]`
-- [ ] `hydrate()` is idempotent
+- [x] `propsFor` of a component with no props returns `[]` — `test/client_test.bp` "client: propsFor of a component with no row is the empty list" (jhonstart `d07943f`)
+- [x] `hydrate()` is idempotent — `test/client_test.bp` "client: hydrate is idempotent — a second call starts nothing new"; `island_runtime.mjs` marks a started island
 - [ ] `hydrate()` mounts islands only; it calls no link or form mount, and front 68's README says
       its generated entry does
 - [x] `serverOnly()` is `pub`, returns `1`, and its doc comment says the value is meaningless and the
@@ -319,7 +319,7 @@ jhonstart writes the `data-jh-` prefix.
 **Acceptance:**
 - [x] the island pair is `#("data-jh-i", "i0")` and the slot pair `#("data-jh-s", "1")`, each spelled
       once in `client.bp`; no `data-onze-` string is left under `modules/jhonstart/src/` — `client.bp` `islandAttrOf` / `serverSlotAttr`; `grep -rn data-onze- modules/*/src` is empty
-- [ ] `data-jh-on-click` is the handler marker; the props cell is `__jhClientPropsRaw`
+- [x] `data-jh-on-click` is the handler marker; the props cell is `__jhClientPropsRaw` — `client.bp`
 - [x] the island and slot snapshots are re-recorded once, with only the attribute names changed — jhonstart `117aed4`
 
 ## Examples

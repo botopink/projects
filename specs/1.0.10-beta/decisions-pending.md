@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e), three of `00 · 23-std-purity` (23-a…c), five of front 95's (95-a…e) and track C's (26-a, 31-a, 30-a…e). Every other question this milestone raised is answered in
+**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e), three of `00 · 23-std-purity` (23-a…c), five of front 95's (95-a…e) and track C's (26-a, 27-a, 30-a…e, 31-a). Every other question this milestone raised is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 91, 92, 93 and 97 by decisions 103 and 104, 99 by 108,
 94, 100 and 101 by 113; every number up to 117 is answered — 114 answers the eight seams decision 113 left open, 115 the five points 114 left open, 116 nine more pieces two libraries both run, 117 the nine points 113–116 left, and 118–127 register the maintainer's effect revision (the return type is the annotation, `@Task<T>`, only `@Result` fails, `@Iterator<T>` / `@Stream<T>`, `async { }`, `iter` / `stream` loops, no compatibility mode — front `00 · 24-effects-by-return`), and 128 merges `@Use<C, T>` and `@Component<T>` into `@Component<C, T>`. The next free number is **130**.
 
@@ -394,6 +394,20 @@ each.
 > crashing component is caught like one that answered `Error`, and the render (front 30) needs the
 > same capture for its page thunks. `notFoundReason()` / `redirectReason(url)` answer the reason
 > without raising, for a caller that wants it as a value.
+> **Blocks.** Nothing.
+
+### 27-a · A browser cell in a two-target member is dual-target, its erlang twin answering the server's truth
+
+> **Raised by:** `04-jhonstart/27-jhonstart-link` Step 4 and `29-jhonstart-client-directive` Step 4, 2026-09-26 (`modules.md` § 0 (b) / § 4's unsettled `jhonstart-link` row)
+> **Measured.** A CALLED `#[@External.Node]`-only cell reds the erlang compile at its caller; both
+> `jhonstart-link` and the core declare both targets, and `linkStatus()` / `propsFor()` call theirs.
+> **Options.** (a) dual-target cells — `link_runtime.mjs` + `sidecars/jhonstart_link.erl`,
+> `island_runtime.mjs` + `sidecars/jhonstart_island.erl` — whose erlang twins answer what is true on
+> a server (no link in flight, nothing prefetched, nothing hydrated, no props) — implemented;
+> (b) a wrapper nothing on erlang calls (impossible for a hook a server render calls); (c) a
+> commonJS-only member for the cells (splits `link.bp` in two).
+> **Recommendation.** (a). Leaves the Step 4 boxes "every cell in the file is `#[@External.Node]`;
+> there is no `#[@External.Erlang]` cell" of fronts 27 and 29 unticked by design.
 > **Blocks.** Nothing.
 
 ### 30-a · The globals are read through `globals()`, not three module-level `pub val`s
