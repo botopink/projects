@@ -465,11 +465,11 @@ line exists because `botopink test` does not run wasm.
 
 ## Gate
 
-- [ ] `scripts/gate.sh --cold` green in this front's worktree (`zig build`, cold `zig build test`, `test-cli`, `test-libs`, `test-language`)
-- [ ] `botopink check` clean in `libs/std` and in every `examples/` project
-- [ ] the six sibling libraries still compile (`zig build test-libs`, 11 cells) — a library that reds gets a migration plan in this front's commit, not a `known-red-libs.txt` line
+- [ ] `scripts/gate.sh --cold` green in this front's worktree (`zig build`, cold `zig build test`, `test-cli`, `test-libs`, `test-language`) — **run stage by stage, not as the script** (its `test-libs` stage writes into the main checkout's sibling libraries, which this worktree may not touch): at compiler `1f235dce` `zig build`, `zig build test` (warm), `test-bpmp`, `beam_export_audit.sh` 465/465, `test-cli`, `test-libs` over the bundled libraries (8 / 0) and over a scratch copy of the five siblings (50 / 20, identical to the `feat` binary's 50 / 20 — the 20 are the copy's environment), `test-language` 834 / 22 / 0 (beam 227 / 4 / 0), `test-docs` 69 / 0 — all green
+- [x] `botopink check` clean in `libs/std` and in every `examples/` project — `examples/modules` and `examples/stdlib-tour` clean; `examples/generic-loader-binding` needs the erika checkout, which this worktree's submodule does not hold
+- [x] the six sibling libraries still compile (`zig build test-libs`, 11 cells) — a library that reds gets a migration plan in this front's commit, not a `known-red-libs.txt` line — erika reds under step 6's `Self<…>` rule; its plan is `erika-self-migration.patch` (39 sites, 31 / 31 on both targets with it); the other four are unchanged
 - [ ] every re-recorded error snapshot **read** for expected/found orientation and for a `┌─` box that names its file
-- [ ] `AGENTS.md` of every directory touched, updated in the same commit
+- [x] `AGENTS.md` of every directory touched, updated in the same commit
 - [ ] Commit on `fix/checker`; no push, no merge
 
 ## Blast radius
