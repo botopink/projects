@@ -93,6 +93,7 @@ the import list. Fix both.
 | **Correct** | [decision 2](../../../1.0.4-beta/08-review-backlog/semantics-decisions.md#decision-2) — a block is a statement and its value comes from `break`. A valueless block in value position reds with a location; a non-`unit` fn with no final `return`/`break` reds at the declaration |
 | **Probe** | `fn f() -> i32 { val x = 1; }` → `Checked`. `fn f(c: bool) -> i32 { val y = if (c) { 1 }; return 0; }` → `Checked` |
 | **Acceptance** | both probes red with a location; the decision is written into the language reference; the four backend fronts are told, **by name**, which of their lowerings become dead: erlang's tail `case`, beam's `make_fun3` (12 sites in `codegen/beam_asm.zig`), commonJS's IIFE (27 `(() =>` sites in `codegen/commonJS.zig`), wasm's `;; lambda` |
+| **Landed** | compiler `ddeb887f` — `refuseFallingOffTheEnd` (at the return type) and `refuseValuelessIf` (at the `if`); a wrapper return, a type guard and a template fn are not judged. The note to the four fronts is in the README's step 8. Measured before landing: `libs/std`, the three bundled libraries, the five sibling libraries and every language cell already `return` — only 18 compiler-test fixtures in the pre-decision-2 surface moved |
 
 ## R8 — `type` as a value is still any binding
 

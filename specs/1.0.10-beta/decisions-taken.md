@@ -76,6 +76,7 @@ what was left, now `00-compiler-carry-over`'s order),
 | [133](#133-a-trailing-comma-keeps-a-list-in-its-open-form) | Does a trailing comma still open a list? | Yes — the author's explicit request; amends 65 part 2 |
 | [134](#134-every-example-in-the-guide-and-in-docsmd-is-correct-against-the-compiler) | Guide examples that do not type | Fixed in the text; three checker gaps closed by `01-checker`; decision 117's decorator check written in jhonstart |
 | [135](#135-specs-keep-only-what-still-holds) | Closed fronts spelling removed forms | Condensed to their current outcome; removed spellings only in the record and the removed-names tables |
+| [136](#136-a-primitive-receiver-answers-only-the-methods-it-declares) | A method a primitive interface does not declare (`"abc".toUpperCase()`) | Refused, `unknown-primitive-method`, naming the declared method it is the host spelling of; the backend aliases leave |
 
 ## 68. One milestone, the 1.0.9 numbers kept, the drafts deleted
 
@@ -2810,3 +2811,31 @@ the table of removed names: this file, and the removed-names table of `guide.md`
 
 Implements: front 24's closeout — fronts 19, 20, 21 and 22, front 24's README, guide and status,
 `decisions-pending.md` and `status.md` rewritten to the current state.
+
+## 136. A primitive receiver answers only the methods it declares
+
+**Decided 2026-09-26 by the maintainer**, answering pending 0203-a with option (b). A method call on
+a builtin-primitive receiver (`string`, `T[]`, `bool`, the integer and float widths) is legal only
+when the receiver's interface in `primitives.bp` — or one it `extends` — declares it: a `fn` method,
+a `val` field, the `len` / `size` spellings of `length`, or a method an `extend` block on the type
+adds. Anything else is refused on every target:
+
+- **`unknown-primitive-method`**, located at the method name: `` `string` has no method `fooBar` ``.
+- **A near name is suggested.** The declared method whose `#[@External.Node("<name>")]` host
+  spelling is the name written comes first (`"abc".toUpperCase()` → *did you mean `toUpper`?*),
+  then one an edit away (`xs.lenght()` → `length`).
+- **A host spelling is not a method.** `#[@External.Node("toUpperCase")]` says how commonJS lowers
+  `toUpper`; it adds no name to the language. The backend aliases that answered the host spelling
+  leave: erlang / beam's `primNodeAliasIn` and its two call sites (0203-a (a)), and wasm's
+  `toUpperCase` / `toLowerCase` rows of `primCallRes` and `lowerStringMethod`.
+
+It used to type as a fresh variable and reach the host under the name written: `"x".fooBar()`
+checked, commonJS answered `toUpperCase` because it is JavaScript's own, wasm answered both
+spellings and erlang emitted `toUpperCase/1 undefined` — three answers for one program. Decision 67:
+refuse.
+
+Implements: front [`01-checker`](./00-compiler-carry-over/01-checker/README.md), compiler `9dfeedf6`
+(`refuseUndeclaredPrimMethod` in `comptime/infer.zig`; `reject/primitive_method_undeclared`,
+`reject/primitive_method_unknown`; `test/string_case_conversion` re-spelled `toUpper` /
+`toLower`). `primNodeAliasIn` exists only on `feat` after this front's base; it is deleted when the
+front merges `feat`.

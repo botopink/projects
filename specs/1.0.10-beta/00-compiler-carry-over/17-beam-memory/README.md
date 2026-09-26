@@ -123,7 +123,7 @@ is what makes it portable instead of ported.
 | `var` at module level | `error: this token cannot appear here … ^^^ unexpected 'var'` at `1:1` |
 | `#[…]` before a top-level `val` | `error: … ^ unexpected '#'` at `1:1` — the annotated-declaration `switch` (`parser.zig:450`) has no `.val` arm |
 | `#[@BeamMemory.Ets(keyed = true)]` on a `fn` | **parses** — `Checked in 60.93ms` |
-| an unknown builtin annotation (`#[@TotallyMadeUp.Nonsense(whatever = 42)]`) | **parses and checks**, silently |
+| an unknown builtin annotation (`#[@TotallyMadeUp.Nonsense(whatever = 42)]`) | `unknown-annotation`, located (01, compiler `a62baf77`) |
 | `ast.ValDecl` fields | 7; **no `mutable`, no `annotations`** (`ast.zig:1891-1909`) |
 | `ast.Stmt.Kind.localBind` | **has `mutable: bool`** (`ast.zig:563`) and `commonJS.zig:2366` already reads it |
 | purity analysis in `src/comptime/**` | **none** — `EffectKind` (`ast.zig:2014`) is `result\|future\|generator\|iterator\|asyncGenerator\|context`, the declared return wrappers |
@@ -379,11 +379,12 @@ positionally. Nothing in the grammar changes; the validation is a lookup.
 - [x] A `reject/` cell per diagnostic — written into the suite (step 7), not only specified:
       `beam_memory_unknown_member`, `beam_memory_unknown_argument`, `beam_memory_keyed_scalar`,
       `beam_memory_keyed_list`, `beam_memory_on_val`
-- [ ] **Not this front's, recorded so it is not mistaken for closed:** an unknown *family* still
-      passes — `#[@TotallyMadeUp.Nonsense(whatever = 42)]` on a `var` checks clean at `4fe1747e`,
-      exactly as on a `fn`, and again at compiler `90ef5afd`. Only the `BeamMemory.` prefix is
-      validated. Decision 15 assigns the annotation grammar to [`01`](../01-checker/README.md),
-      whose `infer.zig` is in flight on `front/01-checker`
+- [x] An unknown *family* is refused — closed by [`01`](../01-checker/README.md) (decision 15
+      assigns it the annotation grammar), compiler `a62baf77`: `#[@TotallyMadeUp.Nonsense(whatever = 42)]`
+      on a `var` or a `fn` is `unknown-annotation` at the annotation; a family an edit away is named
+      (`#[@BeamMemroy.Ets]` → `@BeamMemory`). The families are `External`, `BeamMemory`, `Host`, or
+      an annotation type (`implement @Annotation`). `reject/annotation_unknown_family`,
+      `reject/annotation_family_misspelled`; both accepted by the `feat` binary
 
 ### Step 3b — `std/beam`: the host primitives leave the core
 
@@ -408,10 +409,8 @@ table.
       new one. **Note the tension to settle with the maintainer:** the design says the *annotation* is
       a **no-op** off the BEAM, while the std module is a **hard error** there. Both are defensible;
       they must not be decided separately
-- [x] ~~The guarded-init and the owner shapes are byte-compared against the Erlang programs step 0
-      measured, and~~ re-run under `erl` — `run/beam_memory_{ets,persistent_term,process_dict}.bp`
-      green on erlang and beam and `scripts/beam_export_audit.sh` 491/491 at compiler `90ef5afd`.
-      **Re-run, not byte-compared:** the shapes are layer 2's, not
+- [ ] The guarded-init and the owner shapes are byte-compared against the Erlang programs step 0
+      measured, and re-run under `erl`. **Re-run, not byte-compared:** the shapes are layer 2's, not
       template text in `beam.bp` — the module's own header says "which process then owns the table
       is layer 2's", and the ten primitives cannot express a `receive` or a registered process — so
       they are emitted by `erlang.zig` (`etsOwnerForms`) and `beam_asm.zig` (`emitEtsHelpers`) and

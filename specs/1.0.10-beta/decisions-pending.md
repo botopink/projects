@@ -3,11 +3,11 @@
 **None open.** Implementation choices wait for the maintainer to confirm or reverse them: six of
 front 24's (24-a…c, 24-e…g), five `01-std` ones (01std-a…e), three of `00 · 23-std-purity` (23-a…c),
 five of front 95's (95-a…e), two of `00 · 16-formatter` (16-a…b), track C's (26-a, 27-a, 30-a…e, 31-a),
-`00 · 04-js` / `05-wasm`'s (0405-a…b) `00 · 02-erlang` / `03-beam`'s (0203-a…b), track D's (05emilia-a…h) and `libs-external-methods`' (lem-a…f). Every question
+`00 · 04-js` / `05-wasm`'s (0405-a…b) `00 · 02-erlang` / `03-beam`'s (0203-b), `00 · 01-checker`'s (01c-a…b), track D's (05emilia-a…h) and `libs-external-methods`' (lem-a…f). Every question
 this milestone raised is answered in [`decisions-taken.md`](./decisions-taken.md) — up to 128 as
 before; 129 the type-alias details, 130 front 24's open point 8 (a failing render's `E`), 131 its open
 point 7 and 24-d (no migration routine), 132 and 133 the formatter's 16-d and 16-c, 134 and 135 front
-24's two documentation boxes. The next free number is **136**.
+24's two documentation boxes, 136 `00 · 02-erlang` / `03-beam`'s 0203-a (a primitive receiver answers only its declared methods). The next free number is **137**.
 
 This file stays because the fronts will fill it again. A front that meets a question it cannot answer
 from the code writes it here rather than guessing, in the shape the others used:
@@ -194,6 +194,8 @@ maintainer confirms or reverses each.
 > change for `00 · 01-checker`.
 > **Recommendation.** (a) for rakun now, and (b) as a checker item: two libraries may not declare a
 > same-named decorator today without one silently winning.
+> **(b) landed** — `00 · 01-checker`, compiler `e758791b`: both comptime registries are keyed by the
+> exporting module; `modules/template_name_collision` pins it.
 > **Blocks.** Nothing here; (b) blocks any two bundled/declared libraries sharing a decorator name.
 
 ### 01std-e · `actions.readEnvelope` refuses a `redirect` that disagrees with `n`
@@ -204,6 +206,42 @@ maintainer confirms or reverses each.
 > **Options.** (a) refuse it (implemented, decision 67); (b) read `n` and ignore `redirect`.
 > **Recommendation.** (a).
 > **Blocks.** Nothing.
+
+## Front 01-checker — choices made in implementation, to confirm
+
+Decided by `00 · 01-checker` (worktree `.tasks/01-checker`, 2026-09-26) so its steps could land; the
+maintainer confirms or reverses each. Numbered `01c-a` … so they do not collide with the decisions.
+
+### 01c-a · A comptime module's atom keeps the compiler's `bp` namespace and adds the owner's path
+
+> **Raised by:** `00 · 01-checker` / C-01 (13 half 1 step 5's last box), 2026-09-26
+> **Measured.** 13's README wrote the target atom as `jhonstart@html__tpl__html__<hash>` — the owning
+> package's namespace — before decision 109 made every atom start with its package and before the
+> comptime node became shared by every package of a build. The owner's path now reaches the
+> evaluator (compiler `89ac5cdf`, `Env.comptimeOwners`); the owner's *package* does not reach
+> `comptime/**` at all — `crossModule.Packages` is set by the driver on the codegen config.
+> **Options.** (a) `bp@comptime@<owner path>__tpl__<decl>__<hash>` — the compiler's reserved package,
+> the owner as path (implemented; decodes to package `bp`, path `comptime/<owner>`); (b)
+> `<owner package>@<owner path>__tpl__<decl>__<hash>` — needs `Packages` threaded into inference, and
+> puts content-addressed scratch in the same namespace as the modules the package ships.
+> **Recommendation.** (a): no user atom can ever meet it (`manifest` refuses `bp`), the file is named,
+> and the hash keeps its content-addressing.
+> **Blocks.** Nothing.
+
+### 01c-b · A section leaf has a leading-dot shorthand, where the position is that section
+
+> **Raised by:** `00 · 01-checker` step 12, 2026-09-26 — the step's own "what the step has to decide
+> first".
+> **Measured.** At `ffe2db69` `.Zeta` against `Token.Layout.Break` was `unbound variable 'Zeta'` with no
+> collision anywhere; step 4 (d)'s acceptance already wrote `val t: Token.Text = .Bold;` as checking.
+> A top-level variant's shorthand is decided by the position's expected type (`.Circle(…)`, front 15).
+> **Options.** (a) yes, by the same rule — the position's type is the section (implemented, compiler
+> `909acc34`); with no expectation the leaf is refused naming its section; (b) no shorthand for a
+> section leaf, the full path always, with a named refusal.
+> **Recommendation.** (a): one rule for every leading dot, and a refusal wherever the rule has no
+> answer — nothing is picked.
+> **Blocks.** Nothing; emilia writes the full path today and keeps compiling.
+
 
 ## Front 23 (`00 · 23-std-purity`) — choices made in implementation, to confirm
 
@@ -524,21 +562,6 @@ the maintainer confirms or reverses each.
 ## Fronts 00 · 02-erlang / 03-beam — choices made in implementation, to confirm
 
 Implemented on `front/02-03-erlang-beam` (worktree `.tasks/02-03-erlang-beam`, 2026-09-26).
-
-### 0203-a · A primitive method's host spelling (`toUpperCase`) answers on erlang and beam
-
-> **Measured.** `tests/language/test/string_case_conversion.bp` writes `"abc".toUpperCase()`; the
-> method's name is `toUpper`, and `toUpperCase` is its `#[@External.Node(…)]` spelling. The checker
-> accepts **any** method name on a primitive receiver (`"x".fooBar()` checks), commonJS answers
-> because the name is JavaScript's own, wasm already answers both spellings (`$__str_case`), and
-> erlang emitted `toUpperCase/1 undefined`.
-> **Options.** (a) erlang and beam resolve a `#[@External.Node("<name>")]` spelling to the method it
-> spells, after every other lowering missed — **implemented** (`primNodeAliasIn`, compiler
-> `31b5d2bf`), so the four backends agree; (b) the checker refuses a method no primitive behavior
-> declares, the cell is rewritten to `toUpper`, and the alias leaves erlang, beam and wasm.
-> **Recommendation.** (b) is the restrictive reading (decision 67) and is `01-checker`'s; until it
-> lands, (a) keeps the four backends giving one answer instead of three. Choosing (b) deletes
-> `primNodeAliasIn` and its two call sites.
 
 ### 0203-b · A template the BEAM lowering refuses keeps the run-time `'__bp_erl_eval'/2`
 
