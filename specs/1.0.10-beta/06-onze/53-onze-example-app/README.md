@@ -166,10 +166,10 @@ needs a front beyond 49 and std, so it can be written and tested first, and it i
 stands on.
 
 **Acceptance:**
-- [ ] `listPosts()` returns the three seeded posts, sorted by publication date descending
-- [ ] `readPost("missing")` reds with a message naming the slug
-- [ ] `writePost` then `listPosts` shows four
-- [ ] `tags.bp` renders `<nav>`, `<article>`, `<h2>`, `<a>`, `<form>`, `<label>`, `<input>`,
+- [x] `listPosts()` returns the three seeded posts, sorted by publication date descending
+- [x] `readPost("missing")` reds with a message naming the slug
+- [x] `writePost` then `listPosts` shows four
+- [x] `tags.bp` renders `<nav>`, `<article>`, `<h2>`, `<a>`, `<form>`, `<label>`, `<input>`,
       `<button>`, `<time>` — the nine tags the app needs and jhonstart does not have
 - [ ] The alias `@/lib.db` resolves from `app/blog/[slug]/page.bp`
 
@@ -423,6 +423,24 @@ is what serves.
 contains `like_button` and does not contain `db`, and the document references it. Whether a click
 increments a counter needs a browser, and the milestone has no browser harness; the README says so
 rather than claiming hydration is tested.
+
+## Where it stands
+
+Step 1 landed on onze `front/06-onze` (`fbe105b`): `examples/blog/` with `botopink.json` (the
+alias map), `onze.json`, three seed posts, `src/lib/db.bp` and `test/{db,tags}_test.bp` — 7 tests
+on commonJS and erlang, and the example builds under the workspace's examples gate. The app's
+sources sit under `src/` (`src/app/`, `src/components/`, `src/lib/`; `onze.json`'s `appDir` is
+`"src/app"`, Next's `src/` layout): **finding F5** — a package whose `"src"` is `"."` cannot reach
+a nested module (`src/lib/mod.bp` + `src/lib/db.bp` imported as `from "lib.db"` works; the same
+tree at the root with `"src": "."` answers `unbound variable`), so the root layout the acceptance
+script names does not compile. `components/tags.bp` is not written: front 94's elements are
+jhonstart's, and the step-1 box is asserted on them (through the render's `renderNode`, the one
+that knows the void elements). The `@/lib.db` box is open: the app's map resolves it
+(`tags_test.bp`), but resolving it *from* `app/blog/[slug]/page.bp` is front 50's staging.
+
+Steps 2–7 wait on front 50 (the `app/` tree is only reachable through the staged `.onze/app/`)
+and on rakun (serving, the middleware, the actions, the cache). The rakun-cache member holds no
+cache surface yet, so `lib/db.bp` reads directly; its `readCount()` is the counter step 3 asserts.
 
 ## Definition of done
 
