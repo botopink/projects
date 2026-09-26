@@ -366,3 +366,54 @@ Same closed set as 09-20, in the same proportions; still no `spawn`/`receive`/`e
 **E-12 — suite wall time.** `rm -rf modules/compiler-core/.botopinkbuild/runtime-cache; time zig build
 test` (warm zig cache, cold runtime cache): **2 m 42 s real** (3 m 10 s user, 1 m 06 s sys), exit 0.
 This is the number step 4's doubled harness is compared against (expected ≈ 1.5×).
+
+## E-16 — the selector remainder, the cross-builds and the bench (2026-09-26, compiler `07913054`, worktree `.tasks/18-comptime-runtimes`)
+
+**Decision 84 outside `codegen.generateWith`.** `botopink check` calls `comptime.compile` directly,
+and the runtime used to be selected in `generateWith` only, so `check` evaluated every decorator on
+the BEAM default whatever the target. A project with one `@emit` decorator, `strace -f -e
+trace=execve botopink check`, the manifest's `target` set in turn:
+
+```
+                 before (0cd949a4)          after (2371d128)
+commonJS         execve 18, erl 11          execve 1, erl 0
+wasm             execve 18, erl 11          execve 1, erl 0
+erlang           execve 18, erl 11          execve 18, erl 11
+```
+
+The choice now lives in `comptime.compile` (`runtime.forTarget(target_name)`), which every driver
+calls; `generateWith` and the comptime snapshot helpers pin a runtime with `runtime.force`.
+
+**Cross-builds** — release.yml's command, `zig build -Doptimize=ReleaseSafe -Dtarget=<t>`, on this
+linux host (zig 0.16.0, OTP 29's `erlc` for the residents), all four executables each:
+
+```
+x86_64-linux-gnu    rc 0   161 s   botopink ELF x86-64   26 MB
+aarch64-linux-gnu   rc 0   187 s   botopink ELF aarch64  29 MB
+x86_64-windows-gnu  rc 0   167 s   botopink.exe PE32+    6.1 MB
+x86_64-macos        rc 1 → rc 0 (158 s)  Mach-O x86_64  6.5 MB   'endian.h' not found in the wasm3 @cImport
+aarch64-macos       rc 1 → rc 0 (181 s)  Mach-O arm64   5.8 MB   (same) — fixed by modules/wasm3/cimport/endian.h
+```
+
+`zig build compiler-web -Doptimize=ReleaseSmall`: **3.21 MB, 998 KB gzip, 65 s** (budget ≤ 8 MB /
+≤ 2.5 MB gzip held); `zig build test-web` all green. Not runnable here: the macOS and windows
+binaries (no macOS host, no wine) — CI's runners are the only place they run.
+
+**Bench** — `TMPDIR=… BOTOPINK_LIB_ROOTS=../../repository scripts/comptime_bench.sh --n 0,10,200
+--repeat 3 --target <t> --project ../../repository/erika/examples/erika-linq --no-build`:
+
+```
+target commonJS (wat runtime)          target erlang (beam runtime)
+ N   build ms   modules  ms/eval        N   build ms   modules  .erl B  ms/eval
+ 0     258        0        —            0     226        0        0      —
+10     327        0       6.9          10     682        1      890    45.6
+200   2184        0       9.8          200   1958        1      890     6.7
+erika-linq build: 688 ms                erika-linq build: 925 ms
+
+in-node split (erlang only — the wat runtime writes no module):
+  bp@comptime__tpl__conf__…   22 lines   compile:file 6.672 ms   load_binary 2.762 ms   .beam 1404 B
+  bp@comptime__tpl__erika__…  661 lines  compile:file 126.351 ms load_binary 3.620 ms   .beam 10440 B
+```
+
+erika-linq's erl side is now **130 ms** (one 661-line module: compile 126.4 + load 3.6), not the
+49.0 ms of front 14 — the template grew; 1b's target (≤ 3 ms, load only) stands, and is front 14's.
