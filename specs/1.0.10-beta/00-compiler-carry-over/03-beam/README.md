@@ -85,7 +85,11 @@ field and a type name two modules declare resolve by the module the import names
 emitter cannot place asks the value; the module body runs once, in declaration order, before `main`;
 a `return` inside a loop body leaves the function; a top-level `fn` named as a value is its fun; a
 non-ASCII string literal is its UTF-8 bytes; `@todo` and `@panic` raise the erlang backend's
-`{todo, Msg}` / `{panic, Msg}`; each module keeps its own synthesized helpers.
+`{todo, Msg}` / `{panic, Msg}`; each module keeps its own synthesized helpers. C-03's beam half: a
+`pub` host `declare fn` whose `@External.Erlang` body is a template has a wrapper tail-calling the
+template compiled at build time, so another module reaches it (`fs.exists`, `os.eol` —
+`run/std_template_host_fns_across_modules`). `String.split("")` cuts into codepoints: the method runs
+std's template instead of `string:split/3` (`run/string_split_empty_separator`, all four targets).
 
 ### Open rows with no numbered step
 
@@ -100,9 +104,6 @@ non-ASCII string literal is its UTF-8 bytes; `@todo` and `@panic` raise the erla
   `{unresolved_identifier, r}`: the `.ctor` destructure binds nothing. See
   [`04-js/pattern-binding.md`](../04-js/pattern-binding.md).
 - **`Array.lastIndexOf`** — does not run on beam either (the erlang row in `status.md` § Pending).
-- **C-03's beam half** — the carry-over README's C-03 row: the wrapper per host-bound std
-  `declare fn` is wired on beam for a plain `module:symbol` target; template and `@External.Beam`
-  bodies are still unwrapped.
 
 ## Dependencies
 

@@ -1051,3 +1051,20 @@ reverses each.
 > **Recommendation.** (a); the swap is one import and one type name. A CSS module's generated
 > accessors are `pub fn` rather than `pub val` for the same reason as 49's constants (finding F1).
 > **Blocks.** Step 3's registration box; rakun owes front 82.
+
+### ck-host · A function around a host call with no binding for the target
+
+> **Raised by:** the merge of `checker-rows` and `beam-std-rows`, 2026-09-26
+> **Measured.** `checker-rows` wrote the strict rule into `docs.md` § host bindings and pinned it
+> with `run/external_wrapper_keeps_refusal`: `fn linkStatus() { return otpRelease(); }`, where
+> `otpRelease` names only `@External.Erlang`, is refused on commonJS and wasm even though nothing
+> calls `linkStatus`. `beam-std-rows` made wasm drop such a function (`collectHostBound`) and refuse
+> only a call to it — which is what lets `testing.asserts` build on wasm (`deepEquals` reaches
+> `canonical`, which has no wasm binding). Together, wasm accepts the cell; commonJS still refuses it.
+> **Options.** (a) the strict rule everywhere: `asserts` does not build on wasm until `canonical` has
+> a wasm lowering (restructure `deepEquals` without it); (b) the lazy rule everywhere: a function is
+> refused only when called, and `docs.md` says so; (c) strict for the root package, lazy for a
+> dependency's functions (a library ships functions no consumer calls).
+> **Recommendation.** (a) — the most restrictive (decision 67), and the one `docs.md` states; the
+> cost is one std restructuring.
+> **Blocks.** The wasm line of `run/external_wrapper_keeps_refusal`.
