@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e), three of `00 · 23-std-purity` (23-a…c), five of front 95's (95-a…e), four of `00 · 16-formatter` (16-a…d), track C's (26-a, 27-a, 30-a…e, 31-a), `00 · 04-js` / `05-wasm`'s (0405-a…b) `00 · 02-erlang` / `03-beam`'s (0203-a…b) and track D's (05emilia-a…h). Every other question this milestone raised is answered in
+**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e), three of `00 · 23-std-purity` (23-a…c), five of front 95's (95-a…e), four of `00 · 16-formatter` (16-a…d), track C's (26-a, 27-a, 30-a…e, 31-a), `00 · 04-js` / `05-wasm`'s (0405-a…b), `00 · 02-erlang` / `03-beam`'s (0203-a…b), track D's (05emilia-a…h) and `libs-external-methods`' (lem-a…f). Every other question this milestone raised is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 91, 92, 93 and 97 by decisions 103 and 104, 99 by 108,
 94, 100 and 101 by 113; every number up to 117 is answered — 114 answers the eight seams decision 113 left open, 115 the five points 114 left open, 116 nine more pieces two libraries both run, 117 the nine points 113–116 left, and 118–127 register the maintainer's effect revision (the return type is the annotation, `@Task<T>`, only `@Result` fails, `@Iterator<T>` / `@Stream<T>`, `async { }`, `iter` / `stream` loops, no compatibility mode — front `00 · 24-effects-by-return`), and 128 merges `@Use<C, T>` and `@Component<T>` into `@Component<C, T>`. The next free number is **130**.
 
@@ -708,6 +708,84 @@ Implemented on `front/02-03-erlang-beam` (worktree `.tasks/02-03-erlang-beam`, 2
 > **Recommendation.** (c), and (a) until it lands: decision 67 argues for (b), but (b) turns
 > programs that run correctly today into build errors for a construct the compiler, not the
 > program, cannot yet lower.
+
+## `libs-external-methods` (host functions as methods of their owner) — choices made in implementation, to confirm
+
+Implemented on `front/libs-external-methods` (worktree `.tasks/libs-external-methods`, 2026-09-26),
+compiler `3630b648` + `612280ac`, std `8086c7ea`.
+
+### lem-a · A host method is a real method whose body is the binding, never inlined at the call site
+
+> **Measured.** At `f011850c` a `declare fn` with `#[@External.*]` inside a `type` body parsed and
+> checked, and no backend emitted it (erlang `undef`, commonJS `… is not a function`, beam panicked
+> in `lowerIdentAccess`, wasm wrote an invalid module).
+> **Options.** (a) every backend emits the method as a function of the type (class member, exported
+> function of the type's module) whose body is the binding over its own parameters — the wrapper a
+> `pub` module-level `declare fn` already gets — so `sock.recv(n)` stays an ordinary method call and
+> a method on an imported type is answered by its owner (decision 21) with no new call-site path —
+> **implemented** (`codegen/hostMethods.zig`); (b) additionally render the binding inline at a call
+> site in the owning module, as a module-level template is.
+> **Recommendation.** (a): one lowering, one frame more per call. (b) is an optimisation with a
+> second path to keep in agreement on four backends.
+
+### lem-b · `inline = true` on a method's `External.Erlang` / `External.Beam` changes nothing
+
+> **Measured.** `inline` opts a PRIMITIVE behavior's method out of the dispatch table so a
+> hand-coded shape keeps emitting; a user type has neither the table nor a hand-coded shape.
+> **Options.** (a) accept it (the checker's `refuseUnreadInline` rules still apply) and lower the
+> method the same way — **implemented**, pinned by `run/external_method_local`'s `times`; (b) refuse
+> it on a type-body method as a switch nothing reads (decision 67's reading of front 20 F9).
+> **Recommendation.** (b) is the restrictive reading and is `01-checker`'s to add; (a) until then.
+
+### lem-c · A method with no binding is refused where it is CALLED; wasm refuses every host method
+
+> **Measured.** A module-level host function is refused at its call site (06 C13); a type is
+> declared once and may be compiled for a backend its method has no binding for.
+> **Options.** (a) the method is not emitted and a call through a receiver inference typed
+> (`InstanceLowering.type_`) is refused with `MissingExternal` naming `Type.method` —
+> **implemented** (`hostMethods.missingAt`, `CrossModule.host_methods`); (b) refuse the
+> declaration itself on that backend. On wasm (a) refuses even an `External.Wasm` binding, where a
+> module-level one lowers to `unreachable`; the index is keyed by the TYPE NAME, so two modules
+> declaring one `Type.method` keep the first walked.
+> **Recommendation.** (a); the wasm asymmetry resolves the day wasm has a host (both then refuse
+> or both lower). An untyped receiver (no `.type_` lowering) is not refused and fails at run time as
+> any unknown method does.
+
+### lem-d · The names the collapse chose
+
+> **Measured.** `io.net` had one free function per type and operation; `regex` had
+> `runCompiled(r, input)` because `matches(pattern, input)` held the name.
+> **Options.** (a) one name per operation on every type — `Listener.port/accept/close`,
+> `Socket.recv/send/close/peer`, `TlsListener.port/accept`, `TlsSocket.recv/send/close`,
+> `Regex.matches` — **implemented**; (b) keep the old names as methods (`l.listenerPort()`,
+> `r.runCompiled(s)`).
+> **Recommendation.** (a): the prefixes named the owner, which the receiver now does. Constructors
+> (`listen`, `connect`, `tlsListen`, `tlsConnect`, `regex.compile`) stay module functions.
+
+### lem-e · What stayed free although it takes a type
+
+> **Measured.** `io.net`'s private `tlsEchoOnce(listener, length)` (a test instrument); `validation`'s
+> private `rkvPush(v: Violation)`, `putMessageSource(source)` and `messageSourceOr(fallback)` (a
+> process-global store, not an operation on the value); every other std host function takes
+> primitives, `any` host terms or builtin types (`@Task`), and `routing` / `actions` declare none.
+> **Options.** (a) keep them free — **implemented**: a method is exported from its type's module on
+> erlang and beam, so a private helper would join the type's public surface; (b) move them too.
+> **Recommendation.** (a).
+
+### lem-f · commonJS adopts a host-built record into its class
+
+> **Measured.** A host answer declared as a record stayed a plain object on commonJS — fields read,
+> methods absent (`regex.compile(p).map({ r -> r.matches(s) })`: `r.matches is not a function`),
+> printed as `%O`. erlang has adopted maps since decision 21 (`adoptHostResult`).
+> **Options.** (a) `__bp_adopt(v, C, path)` gives the answer the class's prototype — directly,
+> through `?T`, an array, an `@Result`'s ok side — at the owner's call site, in the exported
+> template wrapper and in a host method's body — **implemented** (compiler `612280ac`, pinned by
+> `run/external_method_on_host_record`); `@Task` is not looked through, and a `(module, symbol)`
+> alias another module imports bypasses it; (b) require templates to build the class
+> (`new Regex(…)`).
+> **Recommendation.** (a): (b) makes a template name an emitted class, and `docs.md` already
+> promised the adoption on every backend. beam still adopts no host map (`external_host_record`'s
+> `.targets`) — a `03-beam` row.
 
 ## Open
 
