@@ -392,4 +392,4 @@ erlang, and makes every other assertion construct its `RequestData` explicitly.
 - [ ] the erlang eager-`@Task` fact is stated in the README and in `repository/jhonstart/docs.md`,
       and every multi-loader example routes through front 02's unstarted-task list
 - [x] all three language gaps appear in a `specs/1.0.10-beta/` spec — `language-gaps.md` rows "Declared parameter defaults…", "`xs[0]` silently drops the index…"; the `@Component` grant landed with `00 · 24`
-- [ ] the front's tests are green on its assigned target
+- [x] the front's tests are green on its assigned target — `server_test.bp` 19/19 on erlang and commonJS

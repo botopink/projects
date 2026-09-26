@@ -385,8 +385,8 @@ host cells have no erlang body and are never called from the erlang row.
 - [x] `prefetchMode` implements § 8's table exactly, with a test per row — `test/link_test.bp`
 - [x] the client-navigation reconciler ships in `src/reconcile.bp` with its own test file, and
       `layoutKeys`/`sharedDepth` are pure and asserted without a DOM — `test/reconcile_test.bp`, 10 blocks
-- [ ] front 68's generated entry calls `linkMount()` once, and this README says so rather than
-      attributing it to front 29
+- [x] front 68's generated entry calls `linkMount()` once, and this README says so rather than
+      attributing it to front 29 — § *The runtime half*; 68's README § step 8
 - [x] the route-kind flag is read from front 60 and not recomputed here — `linkRouteKind` reads front 60's table through its cell and answers "unknown" without one
 - [x] both language gaps appear in a `specs/1.0.10-beta/` spec — `language-gaps.md` rows "Declared parameter defaults…" and "No assignment to a `self` field"
 - [x] the front's tests are green on its assigned target — 35 blocks on both rows

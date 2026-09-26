@@ -470,4 +470,4 @@ jhonstart names no rakun symbol (decision 113); the matcher is `routing`'s (deci
 - [x] `clientApp` handles `notFound` / `redirect` in a client-only app as front 30's render does on
       the server, with the same target check (decision 117) — `client_app.bp` `handleSignal`, front 30's `redirectAllowed`
 - [x] both language gaps appear in a `specs/1.0.10-beta/` spec — `language-gaps.md` rows "Declared parameter defaults are never applied" and "No assignment to a `self` field"
-- [ ] the front's tests are green on its assigned target
+- [x] the front's tests are green on its assigned target — core 187/187 on erlang and commonJS (`router_test.bp` 29, `client_app_test.bp` 4)

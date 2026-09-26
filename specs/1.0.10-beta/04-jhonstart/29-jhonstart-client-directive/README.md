@@ -287,8 +287,8 @@ and then front 27's `linkMount()` and front 67's `formMount()` once each.
 - [ ] every cell in the file is `#[@External.Node]`; there is no `#[@External.Erlang]` cell
 - [x] `propsFor` of a component with no props returns `[]` — `test/client_test.bp` "client: propsFor of a component with no row is the empty list" (jhonstart `d07943f`)
 - [x] `hydrate()` is idempotent — `test/client_test.bp` "client: hydrate is idempotent — a second call starts nothing new"; `island_runtime.mjs` marks a started island
-- [ ] `hydrate()` mounts islands only; it calls no link or form mount, and front 68's README says
-      its generated entry does
+- [x] `hydrate()` mounts islands only; it calls no link or form mount, and front 68's README says
+      its generated entry does — `island_runtime.mjs`; 68's README § step 8 calls `linkMount()` / `formMount()` after every island
 - [x] `serverOnly()` is `pub`, returns `1`, and its doc comment says the value is meaningless and the
       import is the signal — `test/client_test.bp` "client: serverOnly is pub and its value is meaningless"; `client.bp` doc comment
 
@@ -370,8 +370,8 @@ would be a boundary that never starts.
 - [x] `#[client]` and `#[clientProps]` both enforce placement and both emit located diagnostics — `client.bp`; five located refusals recorded in `test/client_test.bp`
 - [x] the emitted marker is a pure function — no `@emit` in this file produces a host call — `test/client_test.bp` "client: the emitted marker is a VALUE, not a call into a host registry"
 - [ ] the five-row front-68 contract table is written down and cited by front 68
-- [ ] the island marker is `data-jh-i` and the props are in the payload's `i` key, per
-      `contracts.md § 2`; nothing about the payload is escaped or built here
+- [x] the island marker is `data-jh-i` and the props are in the payload's `i` key, per
+      `contracts.md § 2`; nothing about the payload is escaped or built here — `client.bp` builds and escapes no payload; front 30's `writePayload` writes `i`
 - [ ] `islandAttr(ordinal)` is exported and is the only place the pair is spelled — front 30's render
       calls it and front 68's entry imports it (decision 113)
 - [x] the README states, in *Mechanism*, that 29 without 68 is a convention nobody checks — § *What this front is not*
