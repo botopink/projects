@@ -50,6 +50,8 @@ time.
 A nested string prints as `"a"` with source escapes, a tuple as `#(1, "a")`, `, ` after each
 separator, `5.0`, records and variants in source shape, `Display` consulted; absent prints `null`
 (decision 47). `run/tuple_print.bp`, `run/print_formatter.bp` and `run/display_print.bp` pass on beam.
+No `'__bp_erl_eval'` is left: the comptime runtime's Erlang reader and BEAM lowering compile every
+shipped template (177 / 177), and a refused one is a located build error (decision 141).
 
 ### Step 3 — decision 8 at run time — delivered, with C-07's tails open
 

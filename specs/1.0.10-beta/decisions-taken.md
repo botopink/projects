@@ -80,6 +80,9 @@ what was left, now `00-compiler-carry-over`'s order),
 | [137](#137-try-and-await-begin-an-expression-they-are-never-an-operand) | `try` / `await` as operands (pending 24-e)? | Reversed: only where an expression begins; as an operand (operator, unary, group, chain) `try-await-operand` with the fix-it `val x = try …;` |
 | [138](#138-the-empty-record-is-type-x-the-brace-only-form-is-refused) | How is a record with no fields spelled? | `type X()` / `type X() { … }`; `type X {}`, `type X { fn … }` and a bare `type X` are `type-without-field-list`, located where `()` belongs; the formatter prints `()` |
 | [139](#139-a-negative-index-counts-from-the-end-on-every-backend) | `Array.at` with a negative index (pending 0405-a)? | Reversed: counts from the end on every backend — `[1, 2, 3].at(-1)` is `3`, `.at(-3)` is `1`, `.at(-4)` / `.at(3)` absent; `xs[i]` and `String.at` alike; `Dict.at` is by key |
+| [140](#140-a-module-level-pub-val-crosses-modules-and-an-imported-modules-body-runs-first) | A `pub val` of a record imported from a sibling (30-a) | Readable on every backend, of any type; the imported modules' bodies run before the importer's, dependencies first, each once; jhonstart reads `globals.fill` from one `pub val globals` |
+| [141](#141-the-beam-lowering-takes-every-construct-the-templates-use-and-nothing-evaluates-erlang-at-run-time) | A template the BEAM lowering refuses (0203-b) | (c): `receive`, `!`, `catch E`, `try … of`, `try … after` and integer-field binary patterns lowered; `'__bp_erl_eval'/2` deleted — a refused template is a located build error |
+| [142](#142-jsondecode-converts-a-numeral-exactly-in-botopink) | `json.decode`'s numeral through the host `strtod` (01std-b) | (b), made exact: a correctly rounded decimal → `f64` in botopink (fast path + big-integer quotient, ties to even); no host cell left for it |
 
 ## 68. One milestone, the 1.0.9 numbers kept, the drafts deleted
 
@@ -2938,3 +2941,85 @@ the length before their bounds test.
 `libs/std/src/primitives.bp`, `codegen/beam_asm.zig`, `codegen/wat/wat_prelude.zig`,
 `codegen/erlang.zig`'s run-time `'__bp_index'/2`; cell `tests/language/run/index_negative_from_end`;
 the codegen snapshots that carry the helpers re-recorded in both trees (the RUN LOGs unchanged).
+
+## 140. A module-level `pub val` crosses modules, and an imported module's body runs first
+
+**Decided 2026-09-26 by the maintainer** (pending item 30-a): option (b) — module-level values, not
+the `globals()` function. The question was only open because a `pub val` of a record type imported
+from a sibling module did not work (`undefined` on commonJS, an unbound variable on erlang); the
+answer is that it works, for a value of any type, on every backend:
+
+- a `pub val` — a record, an enum, an array, a primitive, a function — is imported like a `pub fn`
+  (`import {globals} from "globals";`, an `as` alias included) and read from any function or method
+  of the importer. commonJS exports it (`exports.<name>`); erlang and beam export its 0-arity
+  reader and the importer calls `owner:name()` (an imported val holding a fun is applied); wasm,
+  which links statically, reaches an aliased one by its declared global;
+- the module body keeps its rule — evaluated **once**, in declaration order, when the module loads,
+  before `main` — across modules too: a program runs the bodies of the modules it imports,
+  transitively, dependencies first, before its own. commonJS's `require` and wasm's linking already
+  did; erlang's and beam's entry now calls each imported module's `'_botopink_init'/0` first
+  (`crossModule.importClosure`), where before an imported module's effectful `val` ran at its first
+  read and its `_` statements never ran;
+- jhonstart's three browser globals are the fields of one `pub val globals` — `globals.payload`,
+  `globals.fill`, `globals.signal`, the README's spelling — and `globals()` leaves. One record rather
+  than three flat values keeps front 26's `fill` unshadowed in a consumer's flat import.
+
+The namespace form (`import {config};` then `config.limit`) for a sibling module is not part of
+this: the checker does not bind a sibling module as a namespace (`unbound variable 'config'`).
+
+Implements: compiler (`commonJS.zig`, `erlang.zig`, `beam_asm.zig`, `wat.zig`, `crossModule.zig`),
+`tests/language/modules/pub_val_across_modules` on all four targets, jhonstart `globals.bp` and its
+four readers; the `language-gaps.md` rows on a `pub val` of a user type.
+
+## 141. The BEAM lowering takes every construct the templates use, and nothing evaluates Erlang at run time
+
+**Decided 2026-09-26 by the maintainer** (pending item 0203-b): option (c), and then the run-time
+path goes. `comptime/runtime/beam/lower.zig` — the lowering the comptime BEAM runtime and the beam
+backend's `@External.Erlang` templates (BR5) share — takes the constructs it refused, within
+decision 86's OTP-24-stable opcodes:
+
+- `receive … [after T -> …] end` is `erlc`'s selective-receive loop (`loop_rec`, the clauses,
+  `remove_message`, `loop_rec_end`, `wait` or `wait_timeout` + `timeout`); `!` is `send`; the old
+  `catch E` is `catch` / `catch_end`; `try … of` matches after `try_end` (no clause is
+  `{try_clause, V}`); `try … after` runs the `after` body on both ways out;
+- a binary pattern of fixed-size unsigned big-endian integer fields (`<<A:32, _:4, B:12>>`,
+  optionally with a `/binary` tail) reads its fields through `binary:decode_unsigned/1` and shifts;
+- a call to any of `erl_internal:bif/2`'s auto-imported functions resolves (`open_port/2` did not).
+
+The beam backend's `'__bp_erl_eval'/2` is deleted (decision 67): a template the reader or the
+lowering refuses is a build error at its call site naming the function and the construct. Before,
+169 of the 177 Erlang templates `libs/std` and the bundled libraries ship lowered and 8 were
+evaluated from source at run time (`async.spawnAll` / `raceOf`, `json.unquote`,
+`encoding.percentDecode`, `io/http.fetch`, `io/random.uuidV4`, `io/process.run`, `validation`'s
+`rkvIsolated`); now all 177 lower, and the five sibling libraries' 29 did before and do now.
+
+Implements: compiler (`beam/lower.zig`, `wat/erl_parse.zig`, `wat/lower.zig` refusing the three
+read-only constructs, `beam_asm.zig`, `asm_text.zig`); `codegen/tests/beam_templates.zig` (every
+shipped template lowers), `program.zig`'s `erlc`-comparison module for each construct,
+`tests/language/run/external_template_refused_on_beam`.
+
+## 142. `json.decode` converts a numeral exactly, in botopink
+
+**Decided 2026-09-26 by the maintainer** (pending item 01std-b): option (b), without its limit — the
+conversion is botopink's own and correctly rounded for every numeral, not only in the fast-path
+range. `libs/std/src/json.bp`'s `numeralValue` reads the validated numeral's digits and exponent from
+the document and answers the `f64` nearest to its exact decimal value, ties to even:
+
+- Clinger's fast path when it is exact — at most 15 significant digits and a decimal exponent in
+  -22…22: the digits and the power of ten are exact `f64`s, so one operation rounds once;
+- otherwise the exact fraction of big integers (15-bit limbs in `Array<i32>`, every product below
+  2^31 on every target): the binary exponent chosen for a 53-bit quotient (the subnormal grid below
+  2^-1022), the quotient found by shift-and-subtract, the remainder rounding it;
+- the `f64` assembled with no integer → float conversion — the quotient's bits accumulate into an
+  `f64`, exact power-of-two multiplications scale it — so no primitive was missing and no host cell
+  remains for it.
+
+An overflow keeps the refusal (`number overflows f64`); a value below half the least subnormal is
+`0.0`. Measured: bit-identical to the host `strtod` for every tested value — the std test's
+boundaries (`1.7976931348623157e308` and the halfway point above it, `5e-324` and the halfway point
+below it, `2.2250738585072014e-308` and the largest subnormal, `0.1`, `1e23`, `9007199254740993`,
+the fast path's edges, overflowing and vanishing exponents) and 3 500 randomized numerals including
+halfway points, on commonJS and erlang.
+
+Implements: `libs/std/src/json.bp` and its test, `libs/std/AGENTS.md`.
+

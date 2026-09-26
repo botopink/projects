@@ -1,11 +1,11 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
 **No question is open.** Implementation choices wait for the maintainer to confirm or reverse them:
-front 24's (24-a…c, 24-f…g), `01-std`'s (01std-a…e), `00 · 23-std-purity`'s (23-a…c), front 95's
-(95-a…e), `00 · 16-formatter`'s (16-a…b), track C's (26-a, 27-a, 30-a…e, 31-a), `00 · 04-js` /
-`05-wasm`'s (0405-b), `00 · 02-erlang` / `03-beam`'s (0203-b), `00 · 01-checker`'s (01c-a…b),
+front 24's (24-a…c, 24-f…g), `01-std`'s (01std-a, 01std-c…e), `00 · 23-std-purity`'s (23-a…c), front 95's
+(95-a…e), `00 · 16-formatter`'s (16-a…b), track C's (26-a, 27-a, 30-b…e, 31-a), `00 · 04-js` /
+`05-wasm`'s (0405-b), `00 · 01-checker`'s (01c-a…b),
 track D's (05emilia-a…h) and the host methods' (lem-a…f). Every question raised so far is answered in
-[`decisions-taken.md`](./decisions-taken.md); the next free number is **140**.
+[`decisions-taken.md`](./decisions-taken.md); the next free number is **143**.
 
 This file stays because the fronts will fill it again. A front that meets a question it cannot answer
 from the code writes it here rather than guessing, in the shape the others used:
@@ -134,22 +134,6 @@ maintainer confirms or reverses each.
 > beside `std_package.zig`, replaced by CLI and LSP unit tests.
 > **Blocks.** Nothing; `00 · 23-std-purity` step 3 rewrites `stdPkgFilesFromRoot` beside the new
 > `bundledPkgFiles` and should keep `std` out of the latter.
-
-### 01std-b · `json.decode` converts a validated numeral through the host's `strtod`
-
-> **Raised by:** `01-std-lib-enablement` Step 13
-> **Measured.** The language has no text → float conversion and no integer → float one. Scaling the
-> digits by powers of ten in botopink is identical on both targets but not correctly rounded
-> (`1.7976931348623157e308` came out a different `f64`). `binary_to_float` and `Number` of the same
-> canonical `-?D+.D+e-?D+` spelling agree bit for bit and are correctly rounded; overflow is an
-> `Error` on both, underflow `0.0` on both.
-> **Options.** (a) the grammar in botopink, the conversion through a private cell `numeralValue`
-> (implemented; `decode` itself declares no cell); (b) pure botopink, correctly rounded only within
-> the fast-path range (≤ 15 significant digits, |exponent| ≤ 22); (c) a `f64.parse` in the language.
-> **Recommendation.** (a) now, (c) later — the Step 13 box "`decode` declares no `#[@External]` cell"
-> is read as "no parser template"; four private conversion cells remain in `json.bp`
-> (`codePointsOf`, `textsOf`, `codepointText`, `numeralValue`).
-> **Blocks.** Nothing.
 
 ### 01std-c · `routing.pattern`'s empty pattern matches only `/`
 
@@ -438,20 +422,6 @@ each.
 > there is no `#[@External.Erlang]` cell" of fronts 27 and 29 unticked by design.
 > **Blocks.** Nothing.
 
-### 30-a · The globals are read through `globals()`, not three module-level `pub val`s
-
-> **Raised by:** `04-jhonstart/30-jhonstart-streaming` Step 7
-> **Measured.** A `pub val globals = Globals(…)` imported from a sibling module is `undefined` on
-> commonJS (`Cannot read properties of undefined (reading 'payload')`) and an unbound variable on
-> erlang — the `language-gaps.md` row "`pub val` of a user record type is
-> unexercised", now measured. Three flat `pub val payload / fill / signal` would shadow front 26's
-> `fill` in a consumer's flat `import {…} from "jhonstart"`.
-> **Options.** (a) `pub fn globals() -> Globals` and `alias(name)` over the registry — implemented;
-> (b) three `pub val`s of `string` with non-clashing names (`payloadGlobal`, …).
-> **Recommendation.** (a): one spelling (`globals().fill`) for the render, `render.mjs` and onze's
-> entry; revisit when a `pub val` of a record crosses modules.
-> **Blocks.** Nothing.
-
 ### 30-b · `RenderPlugin` is a record of async functions; `chunk` runs where the boundary resolved
 
 > **Raised by:** `04-jhonstart/30-jhonstart-streaming` Step 6 / Step 9
@@ -526,21 +496,6 @@ Decided by the implementation of 04-js and 05-wasm; the maintainer confirms or r
 ## Fronts 00 · 02-erlang / 03-beam — choices made in implementation, to confirm
 
 Decided by the implementation of 02-erlang and 03-beam; the maintainer confirms or reverses each.
-
-### 0203-b · A template the BEAM lowering refuses keeps the run-time `'__bp_erl_eval'/2`
-
-> **Measured.** BR5 compiles every `@External.Erlang` template at build time
-> through the comptime runtime's reader and lowering; no beam snapshot carries `'__bp_erl_eval'`.
-> `lower.zig` refuses `receive`, `!`, the old `catch Expr`, `try … of` and `try … after`, and by
-> text at most 6 of `libs/std`'s 159 templates carry one (`async.allOf`/`raceOf`, `encoding`'s
-> percent-decode, one `json` reader, `http.get`, `process`'s run).
-> **Options.** (a) such a template keeps the run-time evaluator, named in `beam/AGENTS.md` —
-> **implemented**; (b) refuse it at build time on beam (a located error naming the construct), so
-> those six std functions stop compiling on beam until (c); (c) teach `lower.zig` the five
-> constructs (a `front 14`/`18` row — the comptime runtime would gain them too).
-> **Recommendation.** (c), and (a) until it lands: decision 67 argues for (b), but (b) turns
-> programs that run correctly today into build errors for a construct the compiler, not the
-> program, cannot yet lower.
 
 ## Track D (`05-emilia`) — choices made in implementation, to confirm
 
