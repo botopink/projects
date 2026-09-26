@@ -77,6 +77,7 @@ what was left, now `00-compiler-carry-over`'s order),
 | [134](#134-every-example-in-the-guide-and-in-docsmd-is-correct-against-the-compiler) | Guide examples that do not type | Fixed in the text; three checker gaps closed by `01-checker`; decision 117's decorator check written in jhonstart |
 | [135](#135-specs-keep-only-what-still-holds) | Closed fronts spelling removed forms | Condensed to their current outcome; removed spellings only in the record and the removed-names tables |
 | [136](#136-try-and-await-begin-an-expression-they-are-never-an-operand) | `try` / `await` as operands (pending 24-e)? | Reversed: only where an expression begins; as an operand (operator, unary, group, chain) `try-await-operand` with the fix-it `val x = try …;` |
+| [137](#137-the-empty-record-is-type-x-the-brace-only-form-is-refused) | How is a record with no fields spelled? | `type X()` / `type X() { … }`; `type X {}`, `type X { fn … }` and a bare `type X` are `type-without-field-list`, located where `()` belongs; the formatter prints `()` |
 
 ## 68. One milestone, the 1.0.9 numbers kept, the drafts deleted
 
@@ -2847,3 +2848,32 @@ a call argument or a literal's element still has none.
 **Amends:** front 24's step E2 (24-e). Implements: `parser/exprs.zig` (`parseExprAtStart`, the
 `tryAwaitOperand` refusal), the guide (§ 2.2, § 5.2, § 5.3), `docs.md` § Results; cells
 `tests/language/run/try_start_positions` and `reject/{try_operand_of_operator,try_in_parentheses,await_operand_of_unary}`.
+
+## 137. The empty record is `type X()`; the brace-only form is refused
+
+**Decided 2026-09-26 by the maintainer**: *"the correct is `pub type RequestBase();` or
+`pub type RequestBase() {};`"*. A record always writes its field list, so the shape of a `type` is
+read off what was written — a field list (`()` included) is a record, braces holding a variant or a
+section are an enum:
+
+```bp
+pub type RequestBase()                 // the empty record
+
+type MathOps() {                       // an empty record with members
+    fn double(self: Self, x: i32) -> i32 { return x * 2; }
+}
+```
+
+The empty field list `()` stops being `type-empty-field-list`. A `type` that ends with neither a field
+list nor a variant — `type X {}`, `type X { fn … }`, a bare `type X`, and the val-form `type {}` — is
+`type-without-field-list`, located where the `()` belongs (after the name and generics), with the
+fix-it `type Name()`. One spelling (decision 67). `botopink format` prints `()` for every record
+with no fields, and an LSP hover card does the same.
+
+**Amends:** decision 12's shape resolution (front 12's `type-grammar.md`: "`type Name { methods }` /
+`type Name` → record with no fields"). Implements: `parser/decls.zig` (`parseTypeDeclRest`,
+`parseFieldList`), `format.zig`, `language-server/src/engine.zig`; every record in the compiler
+repository re-spelled (std's bundled `validation` test, the `tests/language` cells, the unit-test
+sources); cells `run/type_empty_record`, `reject/{type_empty_braces,type_without_field_list}`; the
+guide's § 4.1 / § 4.4 (`pub type ElementBase();`, `pub type RequestBase();`). The libraries re-spell
+their own — the list is in `status.md`.

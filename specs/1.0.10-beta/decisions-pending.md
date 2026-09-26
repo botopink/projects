@@ -7,7 +7,8 @@ five of front 95's (95-a…e), two of `00 · 16-formatter` (16-a…b), track C's
 this milestone raised is answered in [`decisions-taken.md`](./decisions-taken.md) — up to 128 as
 before; 129 the type-alias details, 130 front 24's open point 8 (a failing render's `E`), 131 its open
 point 7 and 24-d (no migration routine), 132 and 133 the formatter's 16-d and 16-c, 134 and 135 front
-24's two documentation boxes, 136 24-e reversed (`try` / `await` only where an expression begins). The next free number is **137**.
+24's two documentation boxes, 136 24-e reversed (`try` / `await` only where an expression begins), 137 the empty record
+(`type X()`). The next free number is **138**.
 
 This file stays because the fronts will fill it again. A front that meets a question it cannot answer
 from the code writes it here rather than guessing, in the shape the others used:
