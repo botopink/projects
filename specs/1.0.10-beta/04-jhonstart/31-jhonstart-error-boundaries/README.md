@@ -226,10 +226,10 @@ pub fn serverInfoFor(message: string) -> ErrorInfo {
 ```
 
 **Acceptance:**
-- [ ] `infoFor("boom")` carries an empty message and a non-empty digest
-- [ ] `serverInfoFor("boom")` carries the message and the **same** digest
-- [ ] `digestOf` is front 03's hash; this file defines no hash of its own
-- [ ] `digestOf` is stable across runs and across the erlang and js backends
+- [x] `infoFor("boom")` carries an empty message and a non-empty digest — `test/error_boundary_test.bp` "error: infoFor carries no message and a non-empty digest" (jhonstart `08950fd`)
+- [x] `serverInfoFor("boom")` carries the message and the **same** digest — `test/error_boundary_test.bp` "error: serverInfoFor keeps the message and the SAME digest"
+- [x] `digestOf` is front 03's hash; this file defines no hash of its own — `digestOf` is std's `hash.contentHash`
+- [x] `digestOf` is stable across runs and across the erlang and js backends — std's `contentHash` (its own cross-row literal cells); `test/error_boundary_test.bp` runs green on both rows
 
 ### Step 2 — The catch
 
@@ -259,12 +259,12 @@ pub fn renderBoundary(b: ErrorBoundary) -> Element {
 ```
 
 **Acceptance:**
-- [ ] a child returning `Ok` renders the child inside the boundary wrapper
-- [ ] a child that `throw`s renders the fallback, and the child's markup is absent
-- [ ] the fallback receives an `ErrorInfo` whose `message` is `""`
-- [ ] `renderBoundary` calls the thunk exactly once
-- [ ] the arms are arrow arms (`Ok(tree) -> …;`), not block arms — block arms parse but do not yield
-      a value (`tests/language/expected-failures.txt`, `case_sections.bp`)
+- [x] a child returning `Ok` renders the child inside the boundary wrapper — `test/error_boundary_test.bp` "error: an Ok child renders inside the boundary wrapper"
+- [x] a child that `throw`s renders the fallback, and the child's markup is absent — `test/error_boundary_test.bp` "error: a throwing child renders the fallback, and the child's markup is absent"
+- [x] the fallback receives an `ErrorInfo` whose `message` is `""` — `test/error_boundary_test.bp` "error: the fallback's ErrorInfo has an empty message — nothing leaks"
+- [x] `renderBoundary` calls the thunk exactly once — `test/error_boundary_test.bp` "error: renderBoundary calls the thunk exactly once"
+- [x] the arms are arrow arms (`Ok(tree) -> …;`), not block arms — block arms parse but do not yield
+      a value (`tests/language/expected-failures.txt`, `case_sections.bp`) — `error_boundary.bp`
 
 ### Step 3 — Signals pass through
 
@@ -305,18 +305,18 @@ pub fn renderBoundaryChecked(b: ErrorBoundary) -> @Result<Element, string> {
 ```
 
 **Acceptance:**
-- [ ] a child failing with `"nav:not-found"` is not caught — the boundary's result is `Error`
-      with the same message
-- [ ] a child failing with an ordinary message is caught and yields `Ok` of the fallback
-- [ ] `isSignal` recognises every entry of `routing`'s `signalPrefixes()` — the test iterates that
-      function, not a copy of the list — and answers `false` for `"nav:"` and `"boom"`
-- [ ] no `"nav:` or `"jhonstart:` literal appears in `error_boundary.bp`; the reasons come from
-      `routing`'s `navigation`
-- [ ] `notFound()` is `pub`, returns `"nav:not-found"` (the reason in `contracts.md § 5b`),
-      and nothing under `repository/jhonstart/` imports `rakun` — checked by grep in the gate
-- [ ] `redirect("/login")` is `pub`, returns `"nav:redirect:/login"`, passes through
+- [x] a child failing with `"nav:not-found"` is not caught — the boundary's result is `Error`
+      with the same message — `test/error_boundary_test.bp` "error: a nav:not-found child is not caught — the result is Error, unchanged"
+- [x] a child failing with an ordinary message is caught and yields `Ok` of the fallback — `test/error_boundary_test.bp` "error: an ordinary failure is caught and yields Ok of the fallback"
+- [x] `isSignal` recognises every entry of `routing`'s `signalPrefixes()` — the test iterates that
+      function, not a copy of the list — and answers `false` for `"nav:"` and `"boom"` — `test/error_boundary_test.bp` "error: isSignal recognises every routing prefix and nothing else"
+- [x] no `"nav:` or `"jhonstart:` literal appears in `error_boundary.bp`; the reasons come from
+      `routing`'s `navigation` — reasons through `signalReason`
+- [x] `notFound()` is `pub`, returns `"nav:not-found"` (the reason in `contracts.md § 5b`),
+      and nothing under `repository/jhonstart/` imports `rakun` — checked by grep in the gate — `notFound()` raises `notFoundReason()` = `"nav:not-found"` (a `@Component` body cannot `throw`, so the call raises — `decisions-pending.md` 31-a); `test/error_boundary_test.bp` "error: notFound and redirect are routing's reasons…"; no `rakun` import
+- [x] `redirect("/login")` is `pub`, returns `"nav:redirect:/login"`, passes through
       `renderBoundaryChecked` uncaught, and a target containing `:` is kept whole
-      (`redirect("/a:b")` → `"nav:redirect:/a:b"`)
+      (`redirect("/a:b")` → `"nav:redirect:/a:b"`) — `test/error_boundary_test.bp` "error: redirect passes through uncaught, the target kept whole" and "…routing's reasons…"
 
 ### Step 4 — `catchError`, the functional form
 
@@ -335,8 +335,8 @@ That is `ErrorBoundary(…)` with a different name, and the README says so: the 
 that it reads like the upstream one at the call site, not that it does anything more.
 
 **Acceptance:**
-- [ ] `catchError` is documented as the readable spelling of the constructor, not a second mechanism
-- [ ] the curried form is recorded as a language gap, with the expected-failure citation
+- [x] `catchError` is documented as the readable spelling of the constructor, not a second mechanism — `error_boundary.bp` step 4; `docs.md` § *Error boundaries*
+- [x] the curried form is recorded as a language gap, with the expected-failure citation — `language-gaps.md` "A curried call does not type"
 
 ### Step 5 — The three file conventions, written down
 
@@ -345,12 +345,12 @@ rules. Front 22 cites the table for discovery; front 30 cites it for wrapping; f
 browser rules.
 
 **Acceptance:**
-- [ ] the table and the browser rules are in `repository/jhonstart/docs.md`
-- [ ] `global-error.bp`'s requirement to render its own `htmlTag`/`body` is stated, and names front 94
-      as the source of both builders
+- [x] the table and the browser rules are in `repository/jhonstart/docs.md` — `docs.md` § *Error boundaries*
+- [x] `global-error.bp`'s requirement to render its own `htmlTag`/`body` is stated, and names front 94
+      as the source of both builders — `docs.md` § *Error boundaries*, file-convention table
 - [ ] this front's `pub mod error_boundary;` line and its `botopink.json` `files` entry are handed
       to front 94, which owns `src/root.bp` and the `files` list and appends in front-number order
-- [ ] `repository/jhonstart/AGENTS.md` updated in the same commit
+- [x] `repository/jhonstart/AGENTS.md` updated in the same commit
 
 ## Examples
 
@@ -395,22 +395,22 @@ contract is untested and the milestone should treat it as a red rather than as d
 ## Definition of done
 
 - [ ] `error_boundary.bp` in the build tree, its `root.bp` and `files` lines handed to front 94
-- [ ] `renderBoundary` catches with a `case` over `@Result` — the only catching mechanism the
-      language has — and a test proves a throwing child does not reach the output
-- [ ] no client-visible `ErrorInfo` ever carries a message; a test asserts it
+- [x] `renderBoundary` catches with a `case` over `@Result` — the only catching mechanism the
+      language has — and a test proves a throwing child does not reach the output — `test/error_boundary_test.bp` "error: a throwing child renders the fallback…"
+- [x] no client-visible `ErrorInfo` ever carries a message; a test asserts it — `test/error_boundary_test.bp` "error: the fallback's ErrorInfo has an empty message — nothing leaks"
 - [ ] the digest is front 03's hash and correlates with front 17's log line
-- [ ] every signal passes through, recognised by `routing`'s `isSignalReason` — the one vocabulary
-      rakun front 63 also imports (decision 116); the test asserts through `signalPrefixes()`
+- [x] every signal passes through, recognised by `routing`'s `isSignalReason` — the one vocabulary
+      rakun front 63 also imports (decision 116); the test asserts through `signalPrefixes()` — `test/error_boundary_test.bp`, through `signalPrefixes()`
 - [ ] `notFound` and `redirect` are jhonstart's, and every page example in the milestone imports
       them (and `cookies`) from `"jhonstart"` (decision 115); jhonstart turns them into a status or
       markup itself — no onze or rakun code translates a page signal (decision 117)
-- [ ] the event-handler and `startTransition` semantics each have a test
-- [ ] `data-jh-e` and `data-jh-reset` are registered in `contracts.md § 2`
-- [ ] an action envelope with `ok: false` is documented as data, not as something a boundary catches,
-      and front 67's README agrees
-- [ ] `global-error.bp` renders its own document root with front 94's `htmlTag` and `body`, and a
-      test asserts both tags are present exactly once
-- [ ] no example or step in this front calls `html(...)` as a constructor — that name is the markup
+- [x] the event-handler and `startTransition` semantics each have a test — `test/error_boundary_test.bp` "error: an event handler is outside the boundary…", "error: the boundary's anchor carries data-jh-e with its id"
+- [x] `data-jh-e` and `data-jh-reset` are registered in `contracts.md § 2`
+- [x] an action envelope with `ok: false` is documented as data, not as something a boundary catches,
+      and front 67's README agrees — `docs.md` § *Error boundaries*; 67's README § *The envelope*
+- [x] `global-error.bp` renders its own document root with front 94's `htmlTag` and `body`, and a
+      test asserts both tags are present exactly once — `test/error_boundary_test.bp` "error: global-error renders its own html and body, each exactly once"
+- [x] no example or step in this front calls `html(...)` as a constructor — that name is the markup
       DSL (`html.bp:94`)
-- [ ] all three language gaps appear in a `specs/1.0.10-beta/` spec
-- [ ] the front's tests are green on its assigned target
+- [x] all three language gaps appear in a `specs/1.0.10-beta/` spec — `language-gaps.md` rows "A curried call…", "No assignment to a `self` field", "Declared parameter defaults…"
+- [x] the front's tests are green on its assigned target — 19 blocks on both rows
