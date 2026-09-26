@@ -421,7 +421,7 @@ Create the module (`botopink.json` with `"target": "erlang"`, `src/root.bp`), th
 `Filter` behavior, `Chain`, `#[filter]`, `#[order]`, and `rakun_chain:run/6`.
 
 **Acceptance:**
-- [x] `modules/rakun-web/` compiles and its tests run under `botopink test --target erlang` — held: `count.sh modules/rakun-web erlang` 104/0
+- [x] `modules/rakun-web/` compiles and its tests run under `botopink test --target erlang` — held: `count.sh modules/rakun-web` 154/0 (erlang, rakun `6fcbdde`)
 - [x] With rakun-web absent from a build, request handling is byte-identical to front 04's — held: `modules/rakun/src/sidecars/rakun_runtime.erl` `dispatch_http/5` — `rakun_chain:run/6` absent → the direct `handle/6` call (code; no cell reaches it)
 - [x] Three filters with orders −10, 0, 10 run in that order on the way in and the reverse on the way out — held: `test/middleware_test.bp` "three filters at -10, 0 and 10 run in that order in and the reverse out"
 - [x] Two filters with the same order run in registration order — held: `test/middleware_test.bp` "two entries at the same order run in registration order"
@@ -529,15 +529,15 @@ Create the module (`botopink.json` with `"target": "erlang"`, `src/root.bp`), th
 ### Step 10 — Graceful shutdown
 
 **Acceptance:**
-- [ ] `SIGTERM` awaits front 76's `readinessDrained()` before closing the listening socket
-- [ ] **One run records two timestamps — when readiness went false, and when the socket stopped accepting — and asserts the first is strictly earlier than the second by at least `rakun.lifecycle.pre-drain-period`** ([`contracts.md`](../../contracts.md) §5c)
-- [ ] Front 07 contains no readiness flag of its own; the state is read from front 76 or not at all
-- [ ] With front 76 absent, `readinessDrained()` returns immediately and steps 2–5 still run in order
-- [ ] A request in flight at `SIGTERM` completes and its response reaches the client
-- [ ] A new connection after `SIGTERM` is refused
-- [ ] A request still running at the timeout is killed and counted in the shutdown log line
-- [ ] Front 06's `#[preDestroy]` pass runs after the drain, not before
-- [ ] `rakun.server.shutdown=immediate` skips the drain
+- [x] `SIGTERM` awaits front 76's `readinessDrained()` before closing the listening socket — held: `modules/rakun-web/test/shutdown_test.bp` "SIGTERM runs the installed hook instead of stopping the node" (the hook is `gracefulShutdown()`, `installShutdownHook`) + "readiness goes false at least the pre-drain period before the socket stops accepting" (rakun `6fcbdde`)
+- [x] **One run records two timestamps — when readiness went false, and when the socket stopped accepting — and asserts the first is strictly earlier than the second by at least `rakun.lifecycle.pre-drain-period`** ([`contracts.md`](../../contracts.md) §5c) — held: `modules/rakun-web/test/shutdown_test.bp` "readiness goes false at least the pre-drain period before the socket stops accepting" — against a stand-in `rakun_probes` compiled at run time until front 76 lands
+- [x] Front 07 contains no readiness flag of its own; the state is read from front 76 or not at all — held: `modules/rakun-web/src/shutdown.bp` + `rakun_runtime:readiness_drained/0` — the only readiness read is `rakun_probes:readiness_drained/0`
+- [x] With front 76 absent, `readinessDrained()` returns immediately and steps 2–5 still run in order — held: `modules/rakun-web/test/shutdown_test.bp` "with front 76 absent readinessDrained returns at once and the steps still run in order"
+- [x] A request in flight at `SIGTERM` completes and its response reaches the client — held: `modules/rakun-web/test/shutdown_test.bp` "a request in flight completes and its response reaches the client"
+- [x] A new connection after `SIGTERM` is refused — held: `modules/rakun-web/test/shutdown_test.bp` "a new connection after the socket stops accepting is refused"
+- [x] A request still running at the timeout is killed and counted in the shutdown log line — held: `modules/rakun-web/test/shutdown_test.bp` "a request still running at the timeout is killed and counted in the log line"
+- [x] Front 06's `#[preDestroy]` pass runs after the drain, not before — held: `modules/rakun-web/test/shutdown_test.bp` "the #[preDestroy] pass runs after the drain, not before"
+- [x] `rakun.server.shutdown=immediate` skips the drain — held: `modules/rakun-web/test/shutdown_test.bp` "rakun.server.shutdown=immediate skips the drain"
 
 ## Examples
 
@@ -618,9 +618,9 @@ convention has no client half — front 27's `Link` prefetch reads the route tab
 - [x] `withHeader`/`withHeaders` ship, replace by name case-insensitively, merge `Vary`, and refuse `Set-Cookie` — held: `test/middleware_test.bp` withHeader/withHeaders/Vary/Set-Cookie cells
 - [x] CORS defaults deny, and `*` with credentials fails at boot — held: `test/cors_test.bp` "the default denies every origin" + "the wildcard with credentials fails at boot…"
 - [x] Problem details are RFC 9457-shaped, `application/problem+json`, and never carry a raw reason — held: `test/error_test.bp` "the defaults are RFC 9457's" + "…no reason" + "application/problem+json"
-- [ ] `Accept` and `Accept-Encoding` are both negotiated with q-values; `br` is refused rather than faked
+- [x] `Accept` and `Accept-Encoding` are both negotiated with q-values; `br` is refused rather than faked — held: `test/negotiation_test.bp` "q-values decide…" + `test/compression_test.bp` "q=0 refuses an encoding…" + "naming br fails the boot…"
 - [x] No `Server` header by default — held: `modules/rakun-web/test/compression_test.bp` "no Server header by default, exactly the configured one otherwise"
-- [ ] Shutdown awaits front 76's `readinessDrained()`, drains, then hands to front 06 — in that order,
-      asserted by two recorded timestamps
+- [x] Shutdown awaits front 76's `readinessDrained()`, drains, then hands to front 06 — in that order,
+      asserted by two recorded timestamps — held: `modules/rakun-web/test/shutdown_test.bp` (the stand-in cell and the preDestroy-after-drain cell)
 - [x] `repository/rakun/AGENTS.md` documents the order band and the two entry points — held: `repository/rakun/AGENTS.md` § The filter chain (order band table, two entry points)
-- [x] The front's tests are green on its assigned target — held: `count.sh modules/rakun-web erlang` 104/0
+- [x] The front's tests are green on its assigned target — held: `count.sh modules/rakun-web` 154/0 (erlang, rakun `6fcbdde`)
