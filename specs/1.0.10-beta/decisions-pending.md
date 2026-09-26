@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e), three of `00 · 23-std-purity` (23-a…c), five of front 95's (95-a…e) and track C's (26-a, 31-a). Every other question this milestone raised is answered in
+**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e), three of `00 · 23-std-purity` (23-a…c), five of front 95's (95-a…e) and track C's (26-a, 31-a, 30-a…e). Every other question this milestone raised is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 91, 92, 93 and 97 by decisions 103 and 104, 99 by 108,
 94, 100 and 101 by 113; every number up to 117 is answered — 114 answers the eight seams decision 113 left open, 115 the five points 114 left open, 116 nine more pieces two libraries both run, 117 the nine points 113–116 left, and 118–127 register the maintainer's effect revision (the return type is the annotation, `@Task<T>`, only `@Result` fails, `@Iterator<T>` / `@Stream<T>`, `async { }`, `iter` / `stream` loops, no compatibility mode — front `00 · 24-effects-by-return`), and 128 merges `@Use<C, T>` and `@Component<T>` into `@Component<C, T>`. The next free number is **130**.
 
@@ -394,6 +394,71 @@ each.
 > crashing component is caught like one that answered `Error`, and the render (front 30) needs the
 > same capture for its page thunks. `notFoundReason()` / `redirectReason(url)` answer the reason
 > without raising, for a caller that wants it as a value.
+> **Blocks.** Nothing.
+
+### 30-a · The globals are read through `globals()`, not three module-level `pub val`s
+
+> **Raised by:** `04-jhonstart/30-jhonstart-streaming` Step 7, 2026-09-26
+> **Measured.** A `pub val globals = Globals(…)` imported from a sibling module is `undefined` on
+> commonJS (`Cannot read properties of undefined (reading 'payload')`) and an unbound variable on
+> erlang (compiler `f011850c`) — the `language-gaps.md` row "`pub val` of a user record type is
+> unexercised", now measured. Three flat `pub val payload / fill / signal` would shadow front 26's
+> `fill` in a consumer's flat `import {…} from "jhonstart"`.
+> **Options.** (a) `pub fn globals() -> Globals` and `alias(name)` over the registry — implemented;
+> (b) three `pub val`s of `string` with non-clashing names (`payloadGlobal`, …).
+> **Recommendation.** (a): one spelling (`globals().fill`) for the render, `render.mjs` and onze's
+> entry; revisit when a `pub val` of a record crosses modules.
+> **Blocks.** Nothing.
+
+### 30-b · `RenderPlugin` is a record of async functions; `chunk` runs where the boundary resolved
+
+> **Raised by:** `04-jhonstart/30-jhonstart-streaming` Step 6 / Step 9, 2026-09-26
+> **Measured.** An `Array<RenderPlugin>` of two different types implementing a `behavior` does not
+> type (`type mismatch: expected Rec, got Quiet`). On erlang each streamed boundary resolves in its own
+> process, and emilia's stylesheet is per process, so a `chunk(id)` called by the render's process
+> never sees what the boundary registered.
+> **Options.** (a) `RenderPlugin(name, head, chunk, close, payload)` as a record of functions,
+> `payload` answering `Array<#(key, json)>` (`[]` for "nothing", one pair otherwise) instead of
+> `?#(…)`, and `chunk(id)` called in the boundary's own process right after it rendered —
+> implemented; (b) the `behavior` shape once heterogeneous behavior arrays type.
+> **Recommendation.** (a). The four moments and their order are the README's; only where `chunk`
+> executes moves, and the fill still carries its CSS first.
+> **Blocks.** Nothing.
+
+### 30-c · `render` / `renderStream` / `App` live in `streaming.bp`; `compose` takes the page as a thunk
+
+> **Raised by:** `04-jhonstart/30-jhonstart-streaming` Steps 4 and 8, 2026-09-26
+> **Measured.** `resolve` needs `render.bp`'s walker and the entries need `resolve` — the same file
+> pair importing each other. A layout must run before the page for "a layout's redirect means the
+> page is never called", so `compose` cannot take a rendered `page: Element`.
+> **Options.** (a) the walker, `compose`, the payload and the document in `render.bp`; `Chunk` /
+> `resolve` / `fillHtml`, `Response`, `PageInput`, `App`, `render` / `renderStream` in
+> `streaming.bp`; `compose(chain, route, page: fn() -> @Component<…>)` running layouts first over a
+> placeholder child — implemented; (b) one larger module.
+> **Recommendation.** (a). The flat `from "jhonstart"` surface is unchanged. `PageInput` also gains
+> `metadata: Array<Metadata>` / `viewports: Array<Viewport>` (the segments' resolved exports,
+> root-first) so the render merges front 32's head itself.
+> **Blocks.** Nothing.
+
+### 30-d · `Suspense` registers its boundary with the render
+
+> **Raised by:** `04-jhonstart/30-jhonstart-streaming` Step 1, 2026-09-26
+> **Measured.** An `Element` has no field that can carry the thunk, so the render cannot find a
+> hand-written boundary in the tree it composed.
+> **Options.** (a) `Suspense(b)` pushes `b` into the per-render state (`render.mjs` /
+> `jhonstart_render`) as it writes the hole — implemented; (b) a page returns its boundaries beside
+> its tree.
+> **Recommendation.** (a). Leaves the Step 1 box "`Suspense` reaches no host cell" unticked by design.
+> **Blocks.** Nothing.
+
+### 30-e · The segment record is `UiSegment`
+
+> **Raised by:** `04-jhonstart/30-jhonstart-streaming` Step 4, 2026-09-26
+> **Measured.** The bundled `routing` also exports `Segment` (its `segment` module); a consumer's
+> `import {Segment} from "jhonstart"` is then refused as ambiguous.
+> **Options.** (a) `UiSegment`, with `segment(pattern)` / `with*` / `segmentFor` — implemented;
+> (b) keep `Segment` and require consumers to name the module.
+> **Recommendation.** (a).
 > **Blocks.** Nothing.
 
 ## Open
