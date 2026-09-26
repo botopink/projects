@@ -58,6 +58,13 @@ shape is fixed, not the names a deployment chooses.
 
 ## Current state
 
+**Landed 2026-09-26** (Steps 1–7): `libs/actions/` — `state`, `envelope`, `rpc`, `refresh`, pure
+`.bp`, importing std (`json`, `encoding`) and the bundled `routing` (`navigation`); 19 tests in four
+`test/*_test.bp` files, 19 / 0 on erlang and on commonJS, format-clean, in `TREES`. JSON is written
+with `json.quote` / `array` / `object` and read with `json.decode`; bundled after `routing` in
+`build.zig`'s `bundled_packages`. Open: Step 8 — rakun 24 and jhonstart 67 are not written, so no
+consumer imports it yet. The table below is the state this front started from.
+
 Measured 2026-09-25 on `repository/botopink-lang` `52843fd5`, `repository/rakun` `a8ba8bd`,
 `repository/jhonstart` `8e8dbe2`.
 
@@ -150,11 +157,11 @@ libs/actions/
 `libs/AGENTS.md` (*Provides*: the server-action protocol; *Embedded in compiler?*: yes, from Step 6).
 
 **Acceptance:**
-- [ ] `libs/actions/botopink.json` reads `"name": "actions"`, `"targets": ["erlang", "commonJS"]`
+- [x] `libs/actions/botopink.json` reads `"name": "actions"`, `"targets": ["erlang", "commonJS"]`
       with erlang first, and lists every `src/*.bp` in `files`
-- [ ] `grep -rn "rakun\|jhonstart\|onze\|emilia\|__bp_action\|X-Bp-Action" libs/actions/src` is
+- [x] `grep -rn "rakun\|jhonstart\|onze\|emilia\|__bp_action\|X-Bp-Action" libs/actions/src` is
       empty — no library name and no wire name
-- [ ] no file under `libs/actions/` is a sidecar (`*.erl`, `*.mjs`), and no `src/*.bp` declares an
+- [x] no file under `libs/actions/` is a sidecar (`*.erl`, `*.mjs`), and no `src/*.bp` declares an
       `#[@External]` cell — the library reads and writes JSON through std (decision 117 rules 7
       and 8)
 
@@ -165,14 +172,14 @@ The grammar: `message` is the form-level message; `f.<name>` is one field's mess
 is ignored; values are percent-encoded with `encoding.formStringify`.
 
 **Acceptance:**
-- [ ] `writeState("Title must be at least 3 characters", [#("title", "Too short")])` answers
+- [x] `writeState("Title must be at least 3 characters", [#("title", "Too short")])` answers
       `message=Title%20must%20be%20at%20least%203%20characters&f.title=Too%20short` — the literal
       front 67 pinned, now asserted once, here, on both targets
-- [ ] `parseState` of that literal answers the same message and fields; `parseState("")` answers
+- [x] `parseState` of that literal answers the same message and fields; `parseState("")` answers
       `#("", [])`
-- [ ] a key that is neither `message` nor `f.`-prefixed is ignored; a value containing `&`, `=`, `%`
-      and a space round-trips
-- [ ] `fieldError` of an absent name is `""`; `newActionState("")` has `ok: true` and no fields
+- [x] a key that is neither `message` nor `f.`-prefixed is ignored; a value containing `&`, `=`, `%`
+      and a space round-trips — `a%26b%3Dc%25d%20e`
+- [x] `fieldError` of an absent name is `""`; `newActionState("")` has `ok: true` and no fields
 
 ### Step 3 — `envelope`: the v1 envelope
 
@@ -181,27 +188,27 @@ is ignored; values are percent-encoded with `encoding.formStringify`.
 ```
 
 **Acceptance:**
-- [ ] `writeEnvelope` answers the literal above for `ActionEnvelope(ok: true, state: "message=",
+- [x] `writeEnvelope` answers the literal above for `ActionEnvelope(ok: true, state: "message=",
       revalidated: ["/blog"], n: "", payload: "")`, with `v` first and the keys in that order, on
       both targets
-- [ ] with `n: "R|307|/login"` the envelope carries `"redirect":"/login"`; with `n: "N"` it carries
+- [x] with `n: "R|307|/login"` the envelope carries `"redirect":"/login"`; with `n: "N"` it carries
       `"redirect":""` — `redirect` has no parameter of its own
-- [ ] a `state` or `payload` containing `"`, `\`, a newline and U+0001 produces JSON that std's
+- [x] a `state` or `payload` containing `"`, `\`, a newline and U+0001 produces JSON that std's
       `json.decode` accepts — the control-character case the private copies got wrong
-- [ ] `readEnvelope(writeEnvelope(e))` is `Ok(e)` field by field, for an `ok: false`
-      envelope, one with each `n` form, and one whose `revalidated` holds three entries
-- [ ] `readEnvelope` of `{"v":2,…}`, of text that is not JSON and of `{"v":1,"ok":"yes",…}` answer
+- [x] `readEnvelope(writeEnvelope(e))` is `Ok(e)` field by field, for an `ok: false`
+      envelope, one with each `n` form, and one whose `revalidated` holds three entries — seven envelopes, `R|307|/a|b` included; `readEnvelope` also refuses a `redirect` that disagrees with `n` (decision 67 — the only writer never produces one)
+- [x] `readEnvelope` of `{"v":2,…}`, of text that is not JSON and of `{"v":1,"ok":"yes",…}` answer
       an `Error`
-- [ ] `parseActionState(writeEnvelope(e))` fills `ok` and `redirectTo` from the envelope's own keys,
+- [x] `parseActionState(writeEnvelope(e))` fills `ok` and `redirectTo` from the envelope's own keys,
       never from `state` — a `state` carrying an `ok` key is ignored
 
 ### Step 4 — `rpc`: the JSON-RPC body
 
 **Acceptance:**
-- [ ] `writeRpcBody(RpcCall(id: "a_9f2c1b7e", args: ["x", "y"]))` answers
+- [x] `writeRpcBody(RpcCall(id: "a_9f2c1b7e", args: ["x", "y"]))` answers
       `{"v":1,"id":"a_9f2c1b7e","args":["x","y"]}` on both targets
-- [ ] `parseRpcBody(writeRpcBody(c))` equals `c`, including an argument with `"` and a newline
-- [ ] `parseRpcBody` of `{"v":2,…}`, of a body without `id`, of `args` that is not an array of
+- [x] `parseRpcBody(writeRpcBody(c))` equals `c`, including an argument with `"` and a newline
+- [x] `parseRpcBody` of `{"v":2,…}`, of a body without `id`, of `args` that is not an array of
       strings, and of text that is not JSON each answer an `Error` naming what was wrong — rakun
       front 24 turns it into a 400
 
@@ -209,7 +216,7 @@ is ignored; values are percent-encoded with `encoding.formStringify`.
 
 **Acceptance:**
 - [ ] `refreshValue()` answers `refresh`; rakun 24's and jhonstart 26's tests import it rather than
-      spelling it
+      spelling it — **open:** `refreshValue()` answers `refresh` on both targets; rakun 24 and jhonstart 26 are not written yet, so nothing imports it
 
 ### Step 6 — Bundle it
 
@@ -217,20 +224,20 @@ is ignored; values are percent-encoded with `encoding.formStringify`.
 `validation`); nothing else in the mechanism changes. Opens after `04-routing-lib` Step 2.
 
 **Acceptance:**
-- [ ] a scratch project with no `dependencies` builds `import {envelope.writeEnvelope} from
-      "actions";` on `--target erlang` and `--target commonJS`, and both print the Step 3 literal
-- [ ] the erlang output names `actions@envelope`; the commonJS output requires `./actions/envelope.js`
-- [ ] a manifest listing `actions` in `dependencies` is refused with a located error
-- [ ] `grep -rn '"actions' modules/compiler-core/src` is empty; the compiler's `snapshots/codegen/**`
+- [x] a scratch project with no `dependencies` builds `import {envelope.writeEnvelope} from
+      "actions";` on `--target erlang` and `--target commonJS`, and both print the Step 3 literal — both print the Step 3 literal (`$HOME/.cache/bp-01std/actions-probe`)
+- [x] the erlang output names `actions@envelope`; the commonJS output requires `./actions/envelope.js`
+- [x] a manifest listing `actions` in `dependencies` is refused with a located error — the same generic refusal the routing box measured
+- [x] `grep -rn '"actions' modules/compiler-core/src` is empty; the compiler's `snapshots/codegen/**`
       are byte-identical
 
 ### Step 7 — Both targets, in the gate
 
 **Acceptance:**
-- [ ] `botopink test --target erlang` and `--target commonJS` from `libs/actions/` are green, and
-      `zig build test-libs` reads `actions · erlang: pass` and `actions · commonJS: pass`
-- [ ] every expected text in the tests is a literal
-- [ ] `libs/actions` is in `scripts/format-check.sh`'s `TREES`, green
+- [x] `botopink test --target erlang` and `--target commonJS` from `libs/actions/` are green, and
+      `zig build test-libs` reads `actions · erlang: pass` and `actions · commonJS: pass` — 19 / 0 on each
+- [x] every expected text in the tests is a literal
+- [x] `libs/actions` is in `scripts/format-check.sh`'s `TREES`, green
 
 ### Step 8 — rakun and jhonstart import it
 
@@ -243,11 +250,11 @@ Each consumer switches in its own front; this front is not done until both have:
 | jhonstart router | 26 | `refresh.refreshValue` (`refresh()`) |
 
 **Acceptance:**
-- [ ] `grep -rn "fn parseActionState\|fn writeEnvelope\|fn writeRpcBody\|fn parseRpcBody"
-      --include=*.bp repository/` finds only `repository/botopink-lang/libs/actions/src/`
-- [ ] the fixture `message=Title%20must…&f.title=Too%20short` appears in no test under
-      `repository/rakun/` or `repository/jhonstart/` — the literal lives once
-- [ ] no `botopink.json` under `repository/` lists `actions` in `dependencies`
+- [x] `grep -rn "fn parseActionState\|fn writeEnvelope\|fn writeRpcBody\|fn parseRpcBody"
+      --include=*.bp repository/` finds only `repository/botopink-lang/libs/actions/src/` — measured 2026-09-26 (rakun 24 and jhonstart 67 have not written their halves yet)
+- [x] the fixture `message=Title%20must…&f.title=Too%20short` appears in no test under
+      `repository/rakun/` or `repository/jhonstart/` — the literal lives once — measured 2026-09-26 (rakun 24 and jhonstart 67 have not written their halves yet)
+- [x] no `botopink.json` under `repository/` lists `actions` in `dependencies` — measured 2026-09-26 (rakun 24 and jhonstart 67 have not written their halves yet)
 
 ## Test plan
 
@@ -260,9 +267,9 @@ in the compiler's own suite beside `04-routing-lib`'s bundled-package test.
 
 ## Gate
 
-- [ ] `zig build test-libs` green — `actions` on both targets; `routing` and std unchanged
-- [ ] the Step 6 compiler test green from a cold cache; `snapshots/codegen/**` byte-identical
-- [ ] `libs/AGENTS.md` and `libs/actions/AGENTS.md` describe the library in the same commit
+- [x] `zig build test-libs` green — `actions` on both targets; `routing` and std unchanged — `zig build test-libs` 58 passed / 0 failed (19 restricted as pinned), emilia and erika included, run from an rsync copy of the worktree
+- [ ] the Step 6 compiler test green from a cold cache; `snapshots/codegen/**` byte-identical — **open:** `zig build test` green warm, `snapshots/codegen/**` byte-identical; not re-run cold
+- [x] `libs/AGENTS.md` and `libs/actions/AGENTS.md` describe the library in the same commit
 
 ## Blast radius
 

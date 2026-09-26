@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below. Every other question this milestone raised is answered in
+**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e). Every other question this milestone raised is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 91, 92, 93 and 97 by decisions 103 and 104, 99 by 108,
 94, 100 and 101 by 113; every number up to 117 is answered — 114 answers the eight seams decision 113 left open, 115 the five points 114 left open, 116 nine more pieces two libraries both run, 117 the nine points 113–116 left, and 118–127 register the maintainer's effect revision (the return type is the annotation, `@Task<T>`, only `@Result` fails, `@Iterator<T>` / `@Stream<T>`, `async { }`, `iter` / `stream` loops, no compatibility mode — front `00 · 24-effects-by-return`), and 128 merges `@Use<C, T>` and `@Component<T>` into `@Component<C, T>`. The next free number is **130**.
 
@@ -154,6 +154,89 @@ reverses it. Numbered `24-a` … so they do not collide with the decision number
 > and `attempt` are removed: a Task has no rejection to settle. A crash inside a spawned task is
 > re-raised (a crash is a bug, decision 120's fatal host failure).
 > **Blocks.** `01-std/02-std-async-primitives`, whose README still specifies the thunk-shaped `allOf`.
+
+## Front 01-std (the bundled libraries, `json.decode`) — choices made in implementation, to confirm
+
+Decided by the implementation of `01-std-lib-enablement` Step 13, `04-routing-lib`, `05-actions-lib`
+and `06-validation-lib` (worktree `.tasks/01-std-libs`, 2026-09-26) so the fronts could land; the
+maintainer confirms or reverses each.
+
+### 01std-a · Where a bundled library is loaded — the CLI and the LSP, not `expandStdImports`
+
+> **Raised by:** `01-std/04-routing-lib` Step 2, 2026-09-26
+> **Measured.** The front's *Mechanism* table generalises `expandStdImports` and replaces each `"std"`
+> check in compiler-core, `commonJS.zig`, `erlang.zig`, `beam_asm.zig` and `engine.zig` with a lookup.
+> `std`'s path through the core is std-specific end to end (`markStdImports`, `env.stdModules`,
+> qualified-call gating, the BIF table, synthesised imports), and `beam_asm.zig` is held by fronts 14
+> and 18. A declared dependency, on the other hand, already reaches the codegens as ordinary modules
+> `<dep>/<stem>` and comes out as `<dep>@<stem>` / `./<dep>/<stem>.js` (decision 109). Implemented:
+> `build.zig`'s `bundled_packages` generates `comptime.bundled_packages` (names + embedded `.bp`
+> modules); the CLI (`libs.loadDependencies` → `appendBundled`) and the LSP
+> (`ProjectGraph.appendBundled`) prepend the embedded modules of every bundled package a module
+> imports; `checkImportSources` exempts bundled names; a bundled name in `dependencies` is refused.
+> compiler-core names no package but `std`; no codegen file changed; `snapshots/codegen/**` unchanged.
+> **Options.** (a) keep it — a non-std bundled package is ordinary code to the core, as decision 115's
+> "`routing` is ordinary code to the checker" reads; (b) generalise `expandStdImports` and the std
+> checks as the table says, which changes the four codegens and the checker for no observable
+> difference today.
+> **Recommendation.** (a). The observable contract of Step 2 holds (no `dependencies`, atoms,
+> requires, refusal, embedded copy only); the one box it does not tick is the compiler-suite test
+> beside `std_package.zig`, replaced by CLI and LSP unit tests.
+> **Blocks.** Nothing; `00 · 23-std-purity` step 3 rewrites `stdPkgFilesFromRoot` beside the new
+> `bundledPkgFiles` and should keep `std` out of the latter.
+
+### 01std-b · `json.decode` converts a validated numeral through the host's `strtod`
+
+> **Raised by:** `01-std-lib-enablement` Step 13, 2026-09-26
+> **Measured.** The language has no text → float conversion and no integer → float one. Scaling the
+> digits by powers of ten in botopink is identical on both targets but not correctly rounded
+> (`1.7976931348623157e308` came out a different `f64`). `binary_to_float` and `Number` of the same
+> canonical `-?D+.D+e-?D+` spelling agree bit for bit and are correctly rounded; overflow is an
+> `Error` on both, underflow `0.0` on both.
+> **Options.** (a) the grammar in botopink, the conversion through a private cell `numeralValue`
+> (implemented; `decode` itself declares no cell); (b) pure botopink, correctly rounded only within
+> the fast-path range (≤ 15 significant digits, |exponent| ≤ 22); (c) a `f64.parse` in the language.
+> **Recommendation.** (a) now, (c) later — the Step 13 box "`decode` declares no `#[@External]` cell"
+> is read as "no parser template"; four private conversion cells remain in `json.bp`
+> (`codePointsOf`, `textsOf`, `codepointText`, `numeralValue`).
+> **Blocks.** Nothing.
+
+### 01std-c · `routing.pattern`'s empty pattern matches only `/`
+
+> **Raised by:** `01-std/04-routing-lib` Step 8, 2026-09-26
+> **Measured.** rakun-web's `matcherMatches("", path)` was true for every path (the Next default for a
+> middleware with no `#[matcher]`); `routeMatches` had no such rule. A grammar shared with jhonstart
+> should not carry one consumer's default.
+> **Options.** (a) `parsePattern("")` is no segments and matches `/` only; rakun-web keeps "empty runs
+> everywhere" at its call site (`matcherAdmits`) — implemented; (b) the library's empty pattern
+> matches everything.
+> **Recommendation.** (a). Leaves the Step 8 box "every `middleware_test.bp` assertion has a line here
+> with the same literals" one literal short, by design.
+> **Blocks.** Nothing.
+
+### 01std-d · The decorator registry is keyed by bare name — rakun's placement-only `#[validated]` left
+
+> **Raised by:** `01-std/06-validation-lib` Step 7, 2026-09-26
+> **Measured.** In `modules/rakun`, a test importing `{decorators.validated} from "validation"` got
+> `unbound variable 'validateProbe'`: `config.bp`'s placement-only `pub fn validated(comptime decl:
+> @Decl)` shadowed the imported one package-wide, even under `as`. The same probe in a package with no
+> local `validated` passes. `comptime.zig` `resolveImports` looks decorators up in one
+> `StringHashMap(FnDecl)` keyed by name.
+> **Options.** (a) delete rakun's placement-only marker (implemented — decision 116 rule 5 already says
+> never both); (b) key the decorator registry by module and resolve through the import, a checker
+> change for `00 · 01-checker`.
+> **Recommendation.** (a) for rakun now, and (b) as a checker item: two libraries may not declare a
+> same-named decorator today without one silently winning.
+> **Blocks.** Nothing here; (b) blocks any two bundled/declared libraries sharing a decorator name.
+
+### 01std-e · `actions.readEnvelope` refuses a `redirect` that disagrees with `n`
+
+> **Raised by:** `01-std/05-actions-lib` Step 3, 2026-09-26
+> **Measured.** The spec derives `redirect` from `n` in the writer; the reader was silent. The only
+> writer can never produce a disagreeing pair, so one that arrives was not written by it.
+> **Options.** (a) refuse it (implemented, decision 67); (b) read `n` and ignore `redirect`.
+> **Recommendation.** (a).
+> **Blocks.** Nothing.
 
 ## Open
 

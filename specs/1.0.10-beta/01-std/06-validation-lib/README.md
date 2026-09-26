@@ -56,6 +56,14 @@ else, and the one thing it took from rakun — where a message template comes fr
 
 ## Current state
 
+**Landed 2026-09-26** (Steps 1–6): `libs/validation/` — `report`, `table`, `messages`, `spi`,
+`constraints`, `binding`, `decorators`, pure `.bp` with the host state as inline templates
+(`persistent_term` `{validation, constraints}` / `{validation, messages}` and the process
+dictionary `{validation, acc}` on erlang; one `globalThis.__bp_validation` cell on node); the
+message lookup is injected (`MessageSource`, `setMessageSource`, `builtInOnly`); JSON through std;
+54 tests, 54 / 0 on erlang and on commonJS; bundled. `boot.bp` did not move (rakun's). Open: the
+consumer switch of Step 7 (see its box). The table below is the state this front started from.
+
 Measured 2026-09-25 on `repository/rakun` `a8ba8bd` (front 14 landed at `af933f7`) and
 `repository/botopink-lang` `52843fd5`.
 
@@ -146,14 +154,14 @@ Module atoms follow decision 109: `validation@report`, `validation@report@@Valid
 ### Step 1 — Scaffold `libs/validation`
 
 **Acceptance:**
-- [ ] `libs/validation/botopink.json` reads `"name": "validation"`, `"targets": ["erlang",
+- [x] `libs/validation/botopink.json` reads `"name": "validation"`, `"targets": ["erlang",
       "commonJS"]` with erlang first, no `dependencies`, and lists the eight `src/*.bp` in import order
       (a module before the siblings that import it — the order `rakun-validation/src/root.bp:26-30`
       documents)
-- [ ] `grep -rn "rakun\|jhonstart\|onze\|emilia" libs/validation/src` finds no import and no key —
-      only prose may cite rakun front 14 as the origin
-- [ ] no `*.erl` or `*.mjs` file under `libs/validation/`
-- [ ] `libs/AGENTS.md` names `validation/`
+- [x] `grep -rn "rakun\|jhonstart\|onze\|emilia" libs/validation/src` finds no import and no key —
+      only prose may cite rakun front 14 as the origin — the hits are `////` prose citing rakun front 14 as the origin
+- [x] no `*.erl` or `*.mjs` file under `libs/validation/`
+- [x] `libs/AGENTS.md` names `validation/`
 
 ### Step 2 — Move the seven modules and their tests
 
@@ -163,31 +171,31 @@ Module atoms follow decision 109: `validation@report`, `validation@report@@Valid
 four that set a key with `rkSetProp` set a `MessageSource` over a test table instead.
 
 **Acceptance:**
-- [ ] the 48 tests of `binding_test`, `constraints_test`, `parity_test`, `report_test`, `spi_test`
-      and `table_test` keep their assertions and are green on erlang and on commonJS
+- [x] the 48 tests of `binding_test`, `constraints_test`, `parity_test`, `report_test`, `spi_test`
+      and `table_test` keep their assertions and are green on erlang and on commonJS — 48 / 0 on each row; the rest of the 54 are `messages_test` (5, new) and the U+0001 case
 - [ ] `diff` of every moved function body against `modules/rakun-validation/src/` shows only the
-      four changes of *Mechanism*
-- [ ] `bindingIsolated()` is `true` on erlang, measured by the template, and two concurrent
-      processes binding at once see only their own violations
+      four changes of *Mechanism* — **open:** function bodies change only by the four changes, but `botopink format` re-wrapped several bodies and the prose headers were rewritten, so a plain `diff` shows more than four
+- [x] `bindingIsolated()` is `true` on erlang, measured by the template, and two concurrent
+      processes binding at once see only their own violations — measured by the template (spawn, push in the child, compare); on node it answers `true` as a stated fact (one thread)
 
 ### Step 3 — The injected message source
 
 **Acceptance:**
-- [ ] with no source set, `templateFor("size", builtInTemplate("size"))` answers the built-in text
-- [ ] with a source whose table holds `pt.size` and `size`, locale `pt` answers `pt.size`'s text,
+- [x] with no source set, `templateFor("size", builtInTemplate("size"))` answers the built-in text
+- [x] with a source whose table holds `pt.size` and `size`, locale `pt` answers `pt.size`'s text,
       locale `en` answers `size`'s, and a table with neither answers the built-in — the resolution
       order front 14 specified, asserted three ways
-- [ ] the rakun-shaped source of *Mechanism* reproduces every message the member's `spi_test.bp`
+- [x] the rakun-shaped source of *Mechanism* reproduces every message the member's `spi_test.bp`
       and `parity_test.bp` assert today, literal for literal
-- [ ] `grep -rn "rakun\." libs/validation/src` is empty
+- [x] `grep -rn "rakun\." libs/validation/src` is empty
 
 ### Step 4 — JSON through std
 
 **Acceptance:**
-- [ ] `violationJson` and `constraintTableJson` answer the literals `report_test.bp` and
+- [x] `violationJson` and `constraintTableJson` answer the literals `report_test.bp` and
       `table_test.bp` assert today, byte for byte
-- [ ] a message containing U+0001 and a `"` produces JSON std's `json.decode` accepts
-- [ ] `grep -n "fn jsonEscape" libs/validation/src` is empty
+- [x] a message containing U+0001 and a `"` produces JSON std's `json.decode` accepts
+- [x] `grep -n "fn jsonEscape" libs/validation/src` is empty
 
 ### Step 5 — Bundle it
 
@@ -195,21 +203,21 @@ four that set a key with `rkSetProp` set a `MessageSource` over a test table ins
 `04-routing-lib` Step 2.
 
 **Acceptance:**
-- [ ] a scratch project with no `dependencies` and a `#[validated]` record builds on `--target
+- [x] a scratch project with no `dependencies` and a `#[validated]` record builds on `--target
       erlang` and `--target commonJS`, `validate<TypeName>` answers the same report on both, and the
-      program imports only `from "validation"` and `from "std"`
-- [ ] the erlang output names `validation@constraints`; the commonJS output requires
+      program imports only `from "validation"` and `from "std"` — `validateReq` answers `{"errors":[{"field":"name","code":"sizeBetween",…}]}` on both (`$HOME/.cache/bp-01std/validation-scratch/consumer`)
+- [x] the erlang output names `validation@constraints`; the commonJS output requires
       `./validation/constraints.js`
-- [ ] a manifest listing `validation` in `dependencies` is refused with a located error
-- [ ] `grep -rn '"validation' modules/compiler-core/src` is empty; `snapshots/codegen/**`
-      byte-identical
+- [x] a manifest listing `validation` in `dependencies` is refused with a located error
+- [x] `grep -rn '"validation' modules/compiler-core/src` is empty; `snapshots/codegen/**`
+      byte-identical — `snapshots/codegen/**` byte-identical (`zig build test` green)
 
 ### Step 6 — Both targets, in the gate
 
 **Acceptance:**
-- [ ] `botopink test --target erlang` and `--target commonJS` from `libs/validation/` green;
-      `zig build test-libs` reads `validation · erlang: pass` and `validation · commonJS: pass`
-- [ ] `libs/validation` is in `scripts/format-check.sh`'s `TREES`, green
+- [x] `botopink test --target erlang` and `--target commonJS` from `libs/validation/` green;
+      `zig build test-libs` reads `validation · erlang: pass` and `validation · commonJS: pass` — 54 / 0 on each
+- [x] `libs/validation` is in `scripts/format-check.sh`'s `TREES`, green
 
 ### Step 7 — The consumers switch
 
@@ -222,10 +230,10 @@ four that set a key with `rkSetProp` set a `MessageSource` over a test table ins
 | application code | onze 53 | `#[validated]` records and the client form import `from "validation"` |
 
 **Acceptance:**
-- [ ] `grep -rn "rakun-validation" repository/ --include=*.bp --include=botopink.json` is empty
-- [ ] `grep -rn "fn vNotBlank\|fn constraintTableJson\|fn registerConstraint" --include=*.bp
-      repository/` finds only `repository/botopink-lang/libs/validation/src/`
-- [ ] no `botopink.json` under `repository/` lists `validation` in `dependencies`
+- [x] `grep -rn "rakun-validation" repository/ --include=*.bp --include=botopink.json` is empty — measured: the member is deleted; `boot.bp` is rakun's `config_check.bp` with `config_check_test.bp` (6 moved + 1 new for the message source); `Rakun.run` installs rakun's `MessageSource`
+- [x] `grep -rn "fn vNotBlank\|fn constraintTableJson\|fn registerConstraint" --include=*.bp
+      repository/` finds only `repository/botopink-lang/libs/validation/src/` — measured
+- [x] no `botopink.json` under `repository/` lists `validation` in `dependencies` — measured, and refused by the CLI
 
 ## Test plan
 
@@ -236,10 +244,10 @@ resolution; Step 4 the control-character case. `config_test.bp`'s six stay rakun
 
 ## Gate
 
-- [ ] `zig build test-libs` green — `validation` on both targets; rakun green with the member gone
-- [ ] the Step 5 compiler test green from a cold cache; `snapshots/codegen/**` byte-identical
-- [ ] `libs/AGENTS.md`, `libs/validation/AGENTS.md`, and (with rakun front 14 Step 7)
-      `repository/rakun/AGENTS.md`, `modules/README.md` and `docs.md` in the same commits
+- [x] `zig build test-libs` green — `validation` on both targets; rakun green with the member gone — `zig build test-libs` 58 passed / 0 failed (19 restricted as pinned), emilia and erika included, run from an rsync copy of the worktree; rakun green with the member gone
+- [ ] the Step 5 compiler test green from a cold cache; `snapshots/codegen/**` byte-identical — **open:** `zig build test` green warm, `snapshots/codegen/**` byte-identical; not re-run cold
+- [x] `libs/AGENTS.md`, `libs/validation/AGENTS.md`, and (with rakun front 14 Step 7)
+      `repository/rakun/AGENTS.md`, `modules/README.md` and `docs.md` in the same commits — rakun's `AGENTS.md`, `modules/README.md`, `docs.md` and `CHANGELOG.md` in the rakun commit
 
 ## Blast radius
 

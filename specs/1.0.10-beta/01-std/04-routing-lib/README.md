@@ -72,6 +72,20 @@ dependency found on disk.
 
 ## Current state
 
+**Landed 2026-09-26** (Steps 1–9): `libs/routing/` holds the eight modules of *Mechanism*, pure
+`.bp`, 66 tests in eight `test/*_test.bp` files, 66 / 0 on erlang and on commonJS, format-clean and
+in `TREES`. It is bundled: `build.zig`'s `bundled_packages` (`std`, `routing`, `actions`,
+`validation`) generates the table `comptime.bundled_packages`; the CLI (`libs.loadDependencies` →
+`appendBundled`) and the LSP (`ProjectGraph.appendBundled`) load the embedded modules of every
+bundled package a module imports as `<pkg>/<stem>`, first and in dependency order, so the codegens
+see ordinary modules (`routing@match`, `./routing/match.js`) and compiler-core names no package but
+`std`. A bundled name in `dependencies` is a located refusal; `checkImportSources` exempts every
+bundled name. What differs from *Mechanism*: `expandStdImports` and the std checks were NOT
+generalised — `std` keeps its own embedding and rules, and a non-std bundled package reaches the core
+the way a declared dependency does (the table above says so). Open: the compiler-suite bundled test
+(Step 2, see the box), one `middleware_test` literal (Step 8), and every consumer switch (Step 10).
+The table below is the state this front started from.
+
 Measured 2026-09-25 on `repository/botopink-lang` `ac5f5703` and `repository/rakun` `a8ba8bd`.
 
 | Piece | State | Evidence |
@@ -147,15 +161,15 @@ It imports `std` and nothing else. Consumers write `import {match.matchPath, tab
 from Step 2).
 
 **Acceptance:**
-- [ ] `libs/routing/botopink.json` reads `"name": "routing"`, `"targets": ["erlang", "commonJS"]`
+- [x] `libs/routing/botopink.json` reads `"name": "routing"`, `"targets": ["erlang", "commonJS"]`
       with erlang first, and lists every `src/*.bp` in `files`
-- [ ] `grep -rn "External\|declare fn\|rakun\|jhonstart\|onze\|emilia" libs/routing/src` is empty —
+- [x] `grep -rn "External\|declare fn\|rakun\|jhonstart\|onze\|emilia" libs/routing/src` is empty —
       no host cell, no library name; no `*.erl` or `*.mjs` file under `libs/routing/` (decision 117
       rule 8 — a piece that cannot be written in `.bp` stops the front and goes to
       `decisions-pending.md`)
-- [ ] `zig build test-libs -- --lib routing` lists the two cells `routing · erlang` and
-      `routing · commonJS` and no other target
-- [ ] `libs/AGENTS.md`'s tree and packages table name `routing/`
+- [x] `zig build test-libs -- --lib routing` lists the two cells `routing · erlang` and
+      `routing · commonJS` and no other target — measured in the full `zig build test-libs`: `routing · commonJS: pass`, `routing · erlang: pass`, no other routing cell
+- [x] `libs/AGENTS.md`'s tree and packages table name `routing/`
 
 ### Step 2 — Bundle it with the compiler
 
@@ -170,19 +184,19 @@ their `std/` test. `resolver.zig` exempts the bundled names and refuses one list
 a `from "routing"` import.
 
 **Acceptance:**
-- [ ] a scratch project with **no** `dependencies` builds `import {match.matchPath, table.parseTable}
+- [x] a scratch project with **no** `dependencies` builds `import {match.matchPath, table.parseTable}
       from "routing";` on `--target erlang` and `--target commonJS`, and running it matches
-      `/blog/x` against `P|/blog/[slug]` — the same result on both
-- [ ] the erlang output names the module `routing@match` and the record `routing@match@@RouteMatch`;
+      `/blog/x` against `P|/blog/[slug]` — the same result on both — both print `/blog/[slug] slug=x` (`$HOME/.cache/bp-01std/bundle-probe`)
+- [x] the erlang output names the module `routing@match` and the record `routing@match@@RouteMatch`;
       the commonJS output requires `./routing/match.js`
-- [ ] a manifest with `"dependencies": { "routing": … }` is refused with a located error naming the
+- [x] a manifest with `"dependencies": { "routing": … }` is refused with a located error naming the
       key; `from "routing"` from inside the meta workspace resolves the embedded copy, never the
-      directory the disk loader would find
-- [ ] `grep -rn '"routing' modules/compiler-core/src` is empty; the lib-agnostic gate is unchanged
-- [ ] the compiler's `snapshots/codegen/**` are byte-identical — the std path is unchanged
+      directory the disk loader would find — `dependency "routing" is bundled with the compiler …` at `botopink.json:2:21`; the CLI (`libs.appendBundled`) and the LSP (`ProjectGraph.appendBundled`) load only the embedded copy
+- [x] `grep -rn '"routing' modules/compiler-core/src` is empty; the lib-agnostic gate is unchanged
+- [x] the compiler's `snapshots/codegen/**` are byte-identical — the std path is unchanged — `zig build test` green, no `.snap.md.new`
 - [ ] `codegen/tests/std_package.zig`'s pattern gains a bundled-package test (two packages in the
-      registry, an import from each, both atoms)
-- [ ] `modules/compiler-core/AGENTS.md`, `modules/compiler-cli/AGENTS.md` and `libs/AGENTS.md`
+      registry, an import from each, both atoms) — **open:** the bundling lives in the CLI and the LSP, not in compiler-core's codegen (a non-std bundled package is ordinary modules `<pkg>/<stem>` to the codegens), so its tests are `compiler-cli/src/cli/libs.zig` ("a bundled package a module imports is loaded from the compiler, first, as <pkg>/<stem>", "a bundled name listed in `dependencies` is refused") and `language-server/src/project_graph.zig` ("an import of a bundled package loads its embedded modules"); the two-atom assertion is the scratch run above, not a compiler-suite test
+- [x] `modules/compiler-core/AGENTS.md`, `modules/compiler-cli/AGENTS.md` and `libs/AGENTS.md`
       describe the bundled-package list in the same commit
 
 ### Step 3 — Port the matcher from rakun
@@ -201,11 +215,11 @@ split per module, suite `routing:`; the registry and context tests (`:373-435`) 
 jhonstart's.
 
 **Acceptance:**
-- [ ] every acceptance line of rakun front 22 Steps 1, 3 and 4 is a test here, green on erlang and on
-      commonJS with the same literals
-- [ ] `parseTable(writeTable(xs))` equals `xs` field by field for one entry of each of the eight kinds
-- [ ] the 26 moved tests keep their assertions; `diff` of each function body against
-      `file_router.bp` shows only the three changes above
+- [x] every acceptance line of rakun front 22 Steps 1, 3 and 4 is a test here, green on erlang and on
+      commonJS with the same literals — plus `parsePath` halting on `_drafts` and on `|` through `asserts.throwsWith`
+- [x] `parseTable(writeTable(xs))` equals `xs` field by field for one entry of each of the eight kinds
+- [x] the 26 moved tests keep their assertions; `diff` of each function body against
+      `file_router.bp` shows only the three changes above — a whitespace-insensitive diff shows the three changes plus the refusal prefix `rakun routing:` → `routing:` and the private-folder refusal's em dash → ` - ` (on erlang `throwsWith` cannot find a needle in non-ASCII text)
 
 ### Step 4 — The `k` blob: `route_kinds.bp`
 
@@ -286,17 +300,17 @@ pub fn signalFromWire(wire: string) -> NavOutcome
 
 **Acceptance:** front 63 Step 6's and Step 7's lines, from `test/navigation_test.bp` on both targets,
 with the `nav:` spellings —
-- [ ] `signalReason` answers each of the four reasons as a literal; `signalFromReason(signalReason(o))`
+- [x] `signalReason` answers each of the four reasons as a literal; `signalFromReason(signalReason(o))`
       equals `o` field by field, and `signalReason(signalFromReason(r)) == r` for each literal,
       including a location containing `:` and `/`
-- [ ] `signalFromWire(signalToWire(o))` equals `o` for every row; `signalToWire` of `None` is `""`;
+- [x] `signalFromWire(signalToWire(o))` equals `o` for every row; `signalToWire` of `None` is `""`;
       `signalFromWire("garbage")` is `None`; `signalFromWire("R|307|/a|b")` has location `/a|b`
-- [ ] for each row, `signalToWire(signalFromReason(reason))` equals the table's wire literal — the
+- [x] for each row, `signalToWire(signalFromReason(reason))` equals the table's wire literal — the
       test that ties the two artefacts together
-- [ ] `signalPrefixes()` is exactly `["nav:not-found", "nav:redirect:", "nav:permanent-redirect:",
+- [x] `signalPrefixes()` is exactly `["nav:not-found", "nav:redirect:", "nav:permanent-redirect:",
       "nav:see-other:"]`; `isSignalReason("nav:")` and `isSignalReason("boom")` are false
-- [ ] `signalFromReason("nav:teleport:/x")` raises, naming the verb
-- [ ] `grep -rn "jhonstart:\|rakun:" libs/routing/src/navigation.bp` is empty
+- [x] `signalFromReason("nav:teleport:/x")` raises, naming the verb
+- [x] `grep -rn "jhonstart:\|rakun:" libs/routing/src/navigation.bp` is empty
 
 ### Step 8 — The `:param` grammar: `pattern.bp`
 
@@ -316,22 +330,22 @@ pub fn patternProblem(pattern: string, segment: string) -> string
 **Acceptance:**
 - [ ] every assertion of `modules/rakun-web/test/middleware_test.bp` on `matcherMatches` /
       `checkMatcher` and of the CORS preflight's `routeMatches` has a line here, green on both
-      targets with the same literals
-- [ ] `/api/:id` matches `/api/7` with `[#("id", "7")]` and not `/api/7/x`; `/files/:rest*` matches
+      targets with the same literals — **open:** every line is here with the same literals except one: rakun-web's "an empty matcher matches every path" — in `pattern` the empty pattern matches only `/`, and "no pattern means every path" stays the consumer's rule (rakun front 07 keeps it at its call site)
+- [x] `/api/:id` matches `/api/7` with `[#("id", "7")]` and not `/api/7/x`; `/files/:rest*` matches
       `/files` and `/files/a/b` (`rest` = `a/b`)
-- [ ] `parsePattern("/a/*.js")`, `"/a/[x]"`, `"/a/(x)"`, `"/a/x?"` and `"/a/{x}"` answer an `Error`
+- [x] `parsePattern("/a/*.js")`, `"/a/[x]"`, `"/a/(x)"`, `"/a/x?"` and `"/a/{x}"` answer an `Error`
       whose text is `patternProblem`'s; `:param*` anywhere but last is an `Error`
-- [ ] `grep -rn "fn matcherMatches\|fn routeMatches\|fn checkMatcher" --include=*.bp repository/`
-      is empty once rakun front 07 switches (Step 10)
+- [x] `grep -rn "fn matcherMatches\|fn routeMatches\|fn checkMatcher" --include=*.bp repository/`
+      is empty once rakun front 07 switches (Step 10) — measured empty: rakun-web's `middleware.bp` / `filter.bp` call `parsePattern` / `matchPattern` (`validateMatcher`, `matcherAdmits`, `routeAdmits`), rakun-web 104 / 0 on both rows before and after
 
 ### Step 9 — Both targets, in the gate
 
 **Acceptance:**
-- [ ] `botopink test --target erlang` and `botopink test --target commonJS` from `libs/routing/` are
-      green, and `zig build test-libs` reads `routing · erlang: pass` and `routing · commonJS: pass`
-- [ ] every expected wire string in the tests is a literal, not the output of a second call — the
+- [x] `botopink test --target erlang` and `botopink test --target commonJS` from `libs/routing/` are
+      green, and `zig build test-libs` reads `routing · erlang: pass` and `routing · commonJS: pass` — 66 passed / 0 failed on each; `routing · erlang: pass`, `routing · commonJS: pass`
+- [x] every expected wire string in the tests is a literal, not the output of a second call — the
       only form that catches the two targets drifting
-- [ ] `libs/routing` is in `scripts/format-check.sh`'s `TREES`, and `botopink format --check` is green
+- [x] `libs/routing` is in `scripts/format-check.sh`'s `TREES`, and `botopink format --check` is green
       on it
 
 ### Step 10 — rakun and jhonstart import it
@@ -355,12 +369,12 @@ front is not done until both have:
 | jhonstart boundaries, `notFound` / `redirect` | 31 | `navigation.signalReason`, `isSignalReason`, `signalPrefixes` |
 
 **Acceptance:**
-- [ ] `grep -rn "fn matchPath\|fn parseTable\|fn parseKinds\|fn parseSlotStates\|fn canonicalize\|fn signalFromWire\|fn signalReason\|fn matchPattern"
-      --include=*.bp repository/` finds only `repository/botopink-lang/libs/routing/src/`
-- [ ] `grep -rn '"jhonstart:' --include=*.bp repository/` is empty — no reason carries a framework's
-      name
-- [ ] no `botopink.json` under `repository/` lists `routing` in `dependencies`
-- [ ] `grep -rn "rakun-routing" repository/` is empty
+- [x] `grep -rn "fn matchPath\|fn parseTable\|fn parseKinds\|fn parseSlotStates\|fn canonicalize\|fn signalFromWire\|fn signalReason\|fn matchPattern"
+      --include=*.bp repository/` finds only `repository/botopink-lang/libs/routing/src/` — measured: rakun's `file_router.bp` imports `segment` / `table` / `match` from "routing" and keeps the registry, markers and scan; the 26 tests left `file_router_test.bp`
+- [x] `grep -rn '"jhonstart:' --include=*.bp repository/` is empty — no reason carries a framework's
+      name — measured empty
+- [x] no `botopink.json` under `repository/` lists `routing` in `dependencies` — measured; and the CLI now refuses one that does
+- [x] `grep -rn "rakun-routing" repository/` is empty — measured empty
 
 ## Test plan
 
@@ -378,13 +392,13 @@ ways and agreeing case for case; the `:param` grammar's matches, captures and re
 
 ## Gate
 
-- [ ] `zig build test` from a **cold** runtime cache, green, in the compiler worktree (Step 2)
-- [ ] `zig build test-libs` green — `routing` on both targets; std, rakun and jhonstart unchanged
-      by this front's commits
-- [ ] the compiler's `snapshots/codegen/**` byte-identical
-- [ ] `AGENTS.md` of every directory touched (`libs/`, `libs/routing/`, `modules/compiler-core`,
-      `modules/compiler-cli/src/cli/`, `modules/language-server`), updated in the same commit
-- [ ] `docs.md` names the bundled packages beside § std
+- [ ] `zig build test` from a **cold** runtime cache, green, in the compiler worktree (Step 2) — **open:** green on a warm cache on every commit; not re-run from a cold runtime cache
+- [x] `zig build test-libs` green — `routing` on both targets; std, rakun and jhonstart unchanged
+      by this front's commits — `zig build test-libs` 58 passed / 0 failed (19 restricted as pinned), emilia and erika included, run from an rsync copy of the worktree; std unchanged, jhonstart unchanged, rakun changed only by the moved tests (388 → 369 / 0 commonJS, 386 → 367 / 2 erlang with the pinned reds; rakun-web 104 / 0 both)
+- [x] the compiler's `snapshots/codegen/**` byte-identical — `zig build test` green, no `.snap.md.new`; `tests/language/run.sh --target all` 799 passed / 28 expected / 0 failed
+- [x] `AGENTS.md` of every directory touched (`libs/`, `libs/routing/`, `modules/compiler-core`,
+      `modules/compiler-cli/src/cli/`, `modules/language-server`), updated in the same commit — also `modules/language-server/src/AGENTS.md` and the compiler root `AGENTS.md` tree
+- [x] `docs.md` names the bundled packages beside § std — § Imports, *Bundled packages*
 
 ## Blast radius
 

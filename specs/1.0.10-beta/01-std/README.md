@@ -232,7 +232,7 @@ commonJS, and the compiler's std registry generalised into a bundled-package reg
 **Acceptance:**
 - [ ] the sub-front's own *Gate* holds
 - [ ] rakun front 22 and jhonstart front 26 import the matcher from `"routing"`, and no copy of it
-      remains under `repository/`
+      remains under `repository/` — **open:** rakun imports it (`file_router.bp`, 2026-09-26) and no copy remains; jhonstart's router (`router.bp`) takes the matched pattern from the payload and matches nothing yet — its client-side `matchPath` import is jhonstart 26's remaining work
 
 ### Step 9 — `05-actions-lib` and `06-validation-lib`: two more bundled libraries
 
@@ -247,9 +247,9 @@ Each is bundled by adding its name to step 8's registry. Specified in
 
 **Acceptance:**
 - [ ] each sub-front's own *Gate* holds
-- [ ] `grep -rn "rakun-validation" repository/ --include=*.bp --include=botopink.json` is empty, and
+- [x] `grep -rn "rakun-validation" repository/ --include=*.bp --include=botopink.json` is empty, and
       no action-envelope or `state` literal is asserted under `repository/rakun/` or
-      `repository/jhonstart/`
+      `repository/jhonstart/` — measured 2026-09-26: rakun's member is deleted, and no envelope or `state` literal is asserted under rakun or jhonstart (the literal lives in `libs/actions/test/`)
 
 ### Step 10 — std reads and writes JSON (`01-std-lib-enablement` Steps 11–14)
 
@@ -263,7 +263,7 @@ which carry their own ownership lines; `scriptJson` is appended to that front's 
 Step 1.
 
 **Acceptance:**
-- [ ] `01-std-lib-enablement`'s *Gate (Steps 11–14)* holds
+- [x] `01-std-lib-enablement`'s *Gate (Steps 11–14)* holds — std 417 / 0 on both rows
 
 ## Gate
 
