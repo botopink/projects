@@ -270,10 +270,10 @@ codec writes (the pattern is the resolution's entry pattern, `""` when it has no
       state of each resolution, compared field by field.
 - [ ] A slot name containing `|` fails the scan (front 22 already forbids it in a segment name; this
       step asserts the same rule reaches the slot field).
-- [ ] The same assertions run green on `--target erlang` and `--target commonJS` from
-      `libs/routing/test/slot_states_test.bp` — this is the boundary half.
-- [ ] An unknown state letter parses as `SlotState.Empty` rather than raising: a malformed payload
-      arriving from the network must not be able to crash the client router.
+- [x] The same assertions run green on `--target erlang` and `--target commonJS` from
+      `libs/routing/test/slot_states_test.bp` — this is the boundary half. — held: `libs/routing/test/slot_states_test.bp`, `libs/routing` 66/0 on erlang and on commonJS (2026-09-26)
+- [x] An unknown state letter parses as `SlotState.Empty` rather than raising: a malformed payload
+      arriving from the network must not be able to crash the client router. — held: `libs/routing/test/slot_states_test.bp` "an unknown state letter reads as Empty rather than raising"
 
 ### Step 6 — The resolutions onze hands to jhonstart
 
