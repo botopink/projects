@@ -15,7 +15,7 @@ Front numbers are stable identifiers: `26` is `26-jhonstart-router` here and eve
 
 ## 1 · Fronts — in blocking order
 
-Ordered by the level each front occupies in the dependency graph; *(ro)* = read-only citation, not an edge. **Wave (milestone)** is the level [`../../fronts.md`](../../fronts.md) § *Waves* computes across all five tracks from the unannotated `Depends on` edges — not a track-internal numbering, which is only a lower bound. It is regenerated there and copied here; a wave is corrected in `fronts.md` first.
+Ordered by the level each front occupies in the dependency graph; *(ro)* = read-only citation, not an edge. **Wave (milestone)** is the level [`../fronts.md`](../fronts.md) § *Waves* computes across all five tracks from the unannotated `Depends on` edges — not a track-internal numbering, which is only a lower bound. It is regenerated there and copied here; a wave is corrected in `fronts.md` first.
 
 | # | Front | Priority | Wave (milestone) | Submodule | Depends on (track C) | Depends on (other tracks) | Gate |
 |---|---|---|---|---|---|---|---|

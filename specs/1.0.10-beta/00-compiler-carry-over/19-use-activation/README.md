@@ -15,7 +15,7 @@ front 24's (`contextInfoFromReturn`, `FnContext.annotated` / `env.inContextFn`).
 Paths are relative to `repository/botopink-lang/modules/compiler-core/`. Decisions:
 [87](../../decisions-taken.md#87-the-boundary-directives-stay-library-decorators--use-never-leaves-a-function-body)
 the boundary directives are library decorators and `use` never leaves a function body ·
-[88](../../decisions-taken.md#88-use-lowers-transparently-and-a-component-is-context-fn---element)
+[88](../../decisions-taken.md#88-use-lowers-transparently-and-a-component-is-context-fn----element)
 `use f(x)` lowers to `f(x)` on every backend · [96](../../decisions-taken.md#96-one-contextbase-per-function-and-element-carries-its-base)
 one base per body · [104](../../decisions-taken.md#104-only-use-grants-use--decisions-89-and-90-revoked)
 one grant of `use` · [108](../../decisions-taken.md#108-getcontex--getcontext) `getContext` ·
