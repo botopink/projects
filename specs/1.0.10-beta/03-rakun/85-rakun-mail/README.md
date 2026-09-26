@@ -33,14 +33,14 @@ reset that did not happen is worse than no mail at all.
 
 | Piece | Where it is today |
 |---|---|
-| `modules/rakun-mail/` | does not exist — this front creates it |
-| An SMTP client | nothing, in rakun or in std |
-| MIME encoding | nothing. `libs/std/src/base64.bp` has `encode`/`decode`; quoted-printable and RFC 2047 header encoding do not exist |
-| A socket | front 01 delivers `io.net`; nothing today |
+| `modules/rakun-mail/` | `mail` (types, composition, queue, outbox publisher, health) and `fixture` (the test server's cells); `Mail.from` is `Mail.sender` — a keyword cannot name a field (language-gaps) |
+| An SMTP client | `src/sidecars/rakun_mail.erl` over gen_tcp / OTP ssl |
+| MIME encoding | `rakun_mail.erl` (quoted-printable, base64, RFC 2047) |
+| A socket | gen_tcp / ssl in the sidecar |
 | HTML escaping | front 01 delivers `escape.html`; nothing today |
 | TLS | front 74 delivers the bundle registry over OTP's `ssl` |
 | An HTML body | a string the caller hands in; rakun builds no HTML (decision 113) — in an onze application it is jhonstart's render |
-| A durable queue | front 83 delivers the outbox; this front does not grow a second one |
+| A durable queue | front 83's outbox (`publishMailAfterCommit`, `mailRelayPublisher`); the in-VM queue is not durable |
 | `gen_smtp` | not present, and not installable by the path the test row loads code — see *Mechanism* |
 
 ## Mechanism
@@ -153,13 +153,13 @@ The three timeouts are the three `07 § Configuracao` names
 (`mail.smtp.connectiontimeout`, `mail.smtp.timeout`, `mail.smtp.writetimeout`).
 
 **Acceptance:**
-- [ ] EHLO, AUTH PLAIN, MAIL FROM, RCPT TO, DATA and QUIT complete against the fixture server
-- [ ] AUTH LOGIN is used when the server advertises it and not PLAIN
-- [ ] `StartTls` upgrades the connection and refuses to continue in the clear when the server does not advertise `STARTTLS` — there is no property that permits the downgrade
-- [ ] `Implicit` connects over TLS from the first byte, on the configured bundle
-- [ ] Each of the three timeouts fires independently and is reported as a distinct reason
-- [ ] A server that answers 5xx at any stage fails the attempt permanently; a 4xx fails it retryably, and the two are not confused
-- [ ] Credentials never appear in a log line, an error message or a health detail — asserted by a test that greps the captured output
+- [x] EHLO, AUTH PLAIN, MAIL FROM, RCPT TO, DATA and QUIT complete against the fixture server — `smtp_test` "EHLO, AUTH PLAIN, MAIL FROM, RCPT TO, DATA and QUIT complete against the fixture"
+- [x] AUTH LOGIN is used when the server advertises it and not PLAIN — `smtp_test` "AUTH LOGIN is used when the server offers it and not PLAIN"
+- [x] `StartTls` upgrades the connection and refuses to continue in the clear when the server does not advertise `STARTTLS` — there is no property that permits the downgrade — `smtp_test` "StartTls upgrades the connection, and refuses a server that does not advertise STARTTLS"
+- [x] `Implicit` connects over TLS from the first byte, on the configured bundle — `smtp_test` "Implicit is TLS from the first byte, on the configured bundle"
+- [x] Each of the three timeouts fires independently and is reported as a distinct reason — `smtp_test` "the connect, read and write timeouts fire independently, each named" (`connect-timeout`, `read-timeout`, `write-timeout`)
+- [x] A server that answers 5xx at any stage fails the attempt permanently; a 4xx fails it retryably, and the two are not confused — `smtp_test` "a 5xx fails permanently and a 4xx retryably"
+- [x] Credentials never appear in a log line, an error message or a health detail — asserted by a test that greps the captured output — `smtp_test` "credentials appear in no log line, error or health detail"
 
 ### Step 2 — Composition and encoding
 
@@ -185,47 +185,47 @@ An attachment is a **path**, not bytes: botopink has no byte type
 and never passes through a botopink value.
 
 **Acceptance:**
-- [ ] Text only produces a single-part `text/plain; charset=utf-8` message
-- [ ] Text plus HTML produces `multipart/alternative` with plain first and HTML second
-- [ ] An inline image produces `multipart/related` with a `Content-ID` matching the `cid` the HTML references
-- [ ] An attachment wraps the whole thing in `multipart/mixed`
-- [ ] A subject containing a non-ASCII character is RFC 2047 encoded; an ASCII one is not encoded at all
-- [ ] A display name containing a comma or a quote is quoted correctly and does not split the header
-- [ ] Every line of the emitted message is at most 998 bytes, including a quoted-printable body with a long unbroken word
-- [ ] A body line beginning with `.` is dot-stuffed
-- [ ] `bcc` recipients appear in `RCPT TO` and in **no** header
-- [ ] The boundary string appears nowhere in any part's content — it is derived and checked, not assumed
+- [x] Text only produces a single-part `text/plain; charset=utf-8` message — `compose_test` "text only is a single text/plain; charset=utf-8 part"
+- [x] Text plus HTML produces `multipart/alternative` with plain first and HTML second — `compose_test` "text plus HTML is multipart/alternative with plain first"
+- [x] An inline image produces `multipart/related` with a `Content-ID` matching the `cid` the HTML references — `compose_test` "an inline image is multipart/related with a Content-ID matching the cid"
+- [x] An attachment wraps the whole thing in `multipart/mixed` — `compose_test` "an attachment wraps the whole message in multipart/mixed"
+- [x] A subject containing a non-ASCII character is RFC 2047 encoded; an ASCII one is not encoded at all — `compose_test` "a non-ASCII subject is RFC 2047, an ASCII one is left alone"
+- [x] A display name containing a comma or a quote is quoted correctly and does not split the header — `compose_test` "a display name with a comma or a quote is quoted and does not split the header"
+- [x] Every line of the emitted message is at most 998 bytes, including a quoted-printable body with a long unbroken word — `compose_test` "every line is at most 998 bytes, a long unbroken word included"
+- [x] A body line beginning with `.` is dot-stuffed — `compose_test` "a body line beginning with a dot is dot-stuffed on the wire"
+- [x] `bcc` recipients appear in `RCPT TO` and in **no** header — `compose_test` "bcc recipients are in RCPT TO and in no header"
+- [x] The boundary string appears nowhere in any part's content — it is derived and checked, not assumed — `compose_test` "a boundary appears nowhere in any part's content"
 
 ### Step 3 — HTML bodies as strings
 
 **Acceptance:**
-- [ ] `Mail.html` is written to the HTML part byte for byte, in its transfer encoding; the part is
-      never re-escaped or re-parsed
-- [ ] A value the caller escaped with `escape.html` containing `<script>` arrives escaped in the HTML
-      part and literal in the plain part the caller supplied
-- [ ] A message with an HTML body and no text body has a plain part generated from it, rather than being sent HTML-only
-- [ ] `grep -rn jhonstart modules/rakun-mail` is empty
+- [x] `Mail.html` is written to the HTML part byte for byte, in its transfer encoding; the part is
+      never re-escaped or re-parsed — `compose_test` "the HTML string is written byte for byte, never re-escaped"
+- [x] A value the caller escaped with `escape.html` containing `<script>` arrives escaped in the HTML
+      part and literal in the plain part the caller supplied — `compose_test` "a value the caller escaped arrives escaped in HTML and literal in the plain part it supplied"
+- [x] A message with an HTML body and no text body has a plain part generated from it, rather than being sent HTML-only — `compose_test` "an HTML body without text gets a generated plain part"
+- [x] `grep -rn jhonstart modules/rakun-mail` is empty — `compose_test` "rakun-mail names no HTML library" (over `src` and the manifest)
 
 ### Step 4 — The queue, retries and the dead-letter path
 
 **Acceptance:**
-- [ ] `send` returns before any socket is opened
-- [ ] An unreachable server does not slow a request handler — asserted by timing a handler that sends against a server that never answers
-- [ ] A retryable failure is retried with the configured backoff to the configured ceiling
-- [ ] Past the ceiling the message moves to the dead-letter store with its last error, and is readable there
-- [ ] A permanent failure (5xx, bad recipient) goes straight to dead-letter without consuming retries
-- [ ] Concurrency is bounded: N queued messages open at most the configured number of connections
-- [ ] A message enqueued through front 83's outbox is sent once per relay pass and is not duplicated by this front's own queue
+- [x] `send` returns before any socket is opened — `queue_test` "send returns before any socket is opened" (a queue with concurrency 0: the fixture sees no connection)
+- [x] An unreachable server does not slow a request handler — asserted by timing a handler that sends against a server that never answers — `queue_test` "an unreachable server does not slow the sender - four sends return at once" (four sends against a silent server, under 200 ms with a 2 s read timeout)
+- [x] A retryable failure is retried with the configured backoff to the configured ceiling — `queue_test` "a retryable failure is retried with backoff to the ceiling, then dead-lettered with its last error"
+- [x] Past the ceiling the message moves to the dead-letter store with its last error, and is readable there — `queue_test` "a retryable failure is retried … then dead-lettered with its last error" (`mailDeadLetters()`)
+- [x] A permanent failure (5xx, bad recipient) goes straight to dead-letter without consuming retries — `queue_test` "a permanent failure goes straight to dead-letter without retries"
+- [x] Concurrency is bounded: N queued messages open at most the configured number of connections — `queue_test` "N queued messages open at most the configured number of connections"
+- [x] A message enqueued through front 83's outbox is sent once per relay pass and is not duplicated by this front's own queue — `queue_test` "a mail through front 83's outbox is sent once per relay pass, and never after a rollback"
 
 ### Step 5 — The `mail` health indicator
 
 **Acceptance:**
-- [ ] `UP` when EHLO and, where configured, STARTTLS complete
-- [ ] `DOWN` with a reason when the connection, the greeting or the TLS negotiation fails
-- [ ] No message is ever sent by the check
-- [ ] The detail map carries host, port and TLS mode, and carries no username and no password
-- [ ] The check has its own timeout, shorter than the send timeouts, so a hanging SMTP server cannot hang `/actuator/health`
-- [ ] It is registered with front 11 and absent when this module is not present
+- [x] `UP` when EHLO and, where configured, STARTTLS complete — `smtp_test` "health: UP when EHLO and STARTTLS complete, and nothing is sent"
+- [x] `DOWN` with a reason when the connection, the greeting or the TLS negotiation fails — `smtp_test` "health: DOWN with a reason when the connection or the TLS negotiation fails"
+- [x] No message is ever sent by the check — `smtp_test` "health: UP when EHLO and STARTTLS complete, and nothing is sent"
+- [x] The detail map carries host, port and TLS mode, and carries no username and no password — `smtp_test` "health: UP …" (host, port, tls) and "credentials appear in no log line, error or health detail"
+- [x] The check has its own timeout, shorter than the send timeouts, so a hanging SMTP server cannot hang `/actuator/health` — `smtp_test` "health: the check has its own timeout, shorter than the send timeouts"
+- [x] It is registered with front 11 and absent when this module is not present — `smtp_test` "health: absent until mounted, then registered with front 11"
 
 ## Examples
 
@@ -245,7 +245,7 @@ is why the example spells `cc`, `bcc` and `replyTo` even when they are empty).
 `modules/rakun-mail/test/`, run with `botopink test --target erlang` from `modules/rakun-mail/`, and
 in the gate as `zig build test-libs -- --target erlang --lib rakun`.
 
-The suite runs against a **fixture SMTP server** this front ships in `test/fixture_smtp.bp`: a
+The suite runs against a **fixture SMTP server** this front ships as `src/sidecars/rakun_mail_fixture.erl` behind `src/fixture.bp` (a `test/` module cannot import a sibling): a
 listener on an ephemeral port that speaks enough of the protocol to accept a message, records the
 exact bytes it received, and can be told to answer 4xx, 5xx, to omit `STARTTLS` from its EHLO
 response, or to stop answering entirely. That is what makes step 1 and step 2 testable as byte
@@ -268,17 +268,17 @@ be a module that compiles and cannot work.
 
 ## Definition of done
 
-- [ ] `modules/rakun-mail/` exists with its manifest and module tree
-- [ ] A message is delivered to the fixture server over plain, STARTTLS and implicit TLS
-- [ ] STARTTLS cannot be downgraded, and no configuration key permits it
-- [ ] All four MIME shapes are produced correctly, with RFC 2047 headers, dot-stuffing and the 998-byte
-      line limit asserted on captured bytes
-- [ ] An HTML body is a string the caller rendered; this front encodes it and names no HTML library
-- [ ] `send` never blocks a request, retries retryable failures, and dead-letters the rest with a reason
-- [ ] A send that must not outlive a rolled-back transaction goes through front 83's outbox, and this
-      front grows no second durable queue
-- [ ] The `mail` health indicator is registered with front 11, sends nothing, and leaks no credential
-- [ ] `repository/rakun/AGENTS.md` records the transport decision and its parallel with front 04's
-      cowboy seam
-- [ ] The front's tests are green on its assigned target
+- [x] `modules/rakun-mail/` exists with its manifest and module tree — `root` · `mail` · `fixture`
+- [x] A message is delivered to the fixture server over plain, STARTTLS and implicit TLS — step 1
+- [x] STARTTLS cannot be downgraded, and no configuration key permits it — step 1
+- [x] All four MIME shapes are produced correctly, with RFC 2047 headers, dot-stuffing and the 998-byte
+      line limit asserted on captured bytes — step 2
+- [x] An HTML body is a string the caller rendered; this front encodes it and names no HTML library — step 3
+- [x] `send` never blocks a request, retries retryable failures, and dead-letters the rest with a reason — step 4
+- [x] A send that must not outlive a rolled-back transaction goes through front 83's outbox, and this
+      front grows no second durable queue — step 4
+- [x] The `mail` health indicator is registered with front 11, sends nothing, and leaks no credential — step 5
+- [x] `repository/rakun/AGENTS.md` records the transport decision and its parallel with front 04's
+      cowboy seam — § Mail
+- [x] The front's tests are green on its assigned target — rakun-mail 32/0 on erlang
 
