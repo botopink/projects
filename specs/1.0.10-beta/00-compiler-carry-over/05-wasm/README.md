@@ -222,6 +222,13 @@ time is positional and equality compares elements; T5: labels take no part.
 method wasm does not lower, and each is either lowered or carries a documented `RUNTIME TRAP` fixture
 — never a silent wrong answer.
 
+- [x] `AB` / `ab` — re-measured 2026-09-26 (`$__str_case`)
+- [x] the audit — `src/codegen/wat/AGENTS.md` § The primitive method table: `Float.toString`,
+      `String.charCodeAt`/`lastIndexOf`/`padStart`/`padEnd`/`replace`/`replaceAll`/`chars` lowered
+      (compiler `31841673`), and the eleven left (`String.lines`/`words`, `Array.pop`/`find`/
+      `flatMap`/`flatten`/`flat`/`chunked`/`sliding`/`fill`/`unique`) each pinned as a trap by one
+      program in `src/codegen/tests/wat.zig`
+
 ### Step 7 — a function value held in a value cannot be applied
 
 `174e0e4` added `tuple_a_labeled_element_of_function_type_is_called_like_a_method` and recorded wasm's
@@ -412,7 +419,7 @@ before anything was written.
 | Step 3 `Dict` | **holds** | boxes above |
 | Step 4 `break <value>` | **superseded** by decision 105 (C-30) | |
 | Step 5 `==` on tuples | **holds** | `true` / `false` for `#(1, "a")` against `#(1, "a")` / `#(1, "b")` |
-| Step 6 `toUpperCase` / `toLowerCase` | **holds** | `AB` / `ab` (`$__str_case`) |
+| Step 6 `toUpperCase` / `toLowerCase` | **holds**; the audit **landed here** | `AB` / `ab` (`$__str_case`); boxes above |
 | Step 7 function values | **holds** (front 05 step 7, `wat/AGENTS.md` § Function values) | |
 | Step 8 dead block-as-value | **struck** — measured: no such lowering (`wat/AGENTS.md`) | |
 | Step 9 row 1 (tail calls) | **holds** (`1914ea21`, in `feat`) | `run/tail_self_call.bp` green on four targets |
