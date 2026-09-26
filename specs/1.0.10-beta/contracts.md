@@ -451,8 +451,23 @@ pub type ClientBundleManifest(
 
 On disk: `<outDir>/client-manifest.txt`, `|`-delimited, one record per line — the same shape as
 contract 1 and for the same reason. Kinds `V` version · `E` entry · `S` shared · `C` chunk ·
-`R` route → chunk · `Y` style · `P` public env. Values percent-encoded; an unknown kind byte is
-ignored so 69 and 71 may add records; a `V` line other than `1` is a hard error.
+`H` `beforeInteractive` script (the only tags in `<head>`) · `R` route → chunk · `Y` style · `P`
+public env. A field escapes `%`, `|`, line feed and carriage return as `%25`, `%7C`, `%0A`, `%0D`
+and is read back with std's `encoding.percentDecode`; an unknown kind byte is ignored so 69 and 71
+may add records; a `V` line other than `1` is a hard error.
+
+```
+V|1|<buildId>
+E|entry|/_onze/static/<buildId>/entry.<hash>.js|<hash>|<bytes>
+S|shared|/_onze/static/<buildId>/shared.<hash>.js|<hash>|<bytes>
+C|route:/blog/[slug]|/_onze/static/<buildId>/r1.<hash>.js|<hash>|<bytes>
+H|script:analytics|/a.js|<hash>|<bytes>
+R|/blog/[slug]|route:/blog/[slug]
+Y|styles|/_onze/static/<buildId>/app.<hash>.css|<hash>|<bytes>
+P|ONZE_PUBLIC_API_URL|https://api.example.com
+```
+
+`<hash>` is std's `hash.contentHash` of the linked chunk, eight hex digits.
 `parseManifest(formatManifest(m)) == m` is asserted on both targets with the same literal.
 
 **Emission order** in the document front 30's render writes: 1 `beforeInteractive` chunks in

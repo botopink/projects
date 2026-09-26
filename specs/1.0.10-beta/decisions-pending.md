@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e), three of `00 · 23-std-purity` (23-a…c), five of front 95's (95-a…e), four of `00 · 16-formatter` (16-a…d), track C's (26-a, 27-a, 30-a…e, 31-a), `00 · 04-js` / `05-wasm`'s (0405-a…b) and `00 · 02-erlang` / `03-beam`'s (0203-a…b) and track E's (49-a…d). Every other question this milestone raised is answered in
+**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e), three of `00 · 23-std-purity` (23-a…c), five of front 95's (95-a…e), four of `00 · 16-formatter` (16-a…d), track C's (26-a, 27-a, 30-a…e, 31-a), `00 · 04-js` / `05-wasm`'s (0405-a…b) and `00 · 02-erlang` / `03-beam`'s (0203-a…b) and track E's (49-a…d, 53-a, 68-a…c). Every other question this milestone raised is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 91, 92, 93 and 97 by decisions 103 and 104, 99 by 108,
 94, 100 and 101 by 113; every number up to 117 is answered — 114 answers the eight seams decision 113 left open, 115 the five points 114 left open, 116 nine more pieces two libraries both run, 117 the nine points 113–116 left, and 118–127 register the maintainer's effect revision (the return type is the annotation, `@Task<T>`, only `@Result` fails, `@Iterator<T>` / `@Stream<T>`, `async { }`, `iter` / `stream` loops, no compatibility mode — front `00 · 24-effects-by-return`), and 128 merges `@Use<C, T>` and `@Component<T>` into `@Component<C, T>`. The next free number is **130**.
 
@@ -674,6 +674,58 @@ onze on the local branch `front/06-onze` cut from the prepared orchestrator `91e
 > **Recommendation.** (a): rakun matched the route and knows its chain; onze does not derive it
 > twice.
 > **Blocks.** Nothing.
+
+### 53-a · The blog's sources sit under `src/`
+
+> **Raised by:** `06-onze/53-onze-example-app` step 1, 2026-09-26
+> **Measured.** A package whose `"src"` is `"."` cannot reach a nested module (finding F5 of front
+> 53: `lib/mod.bp` + `lib/db.bp` under `"src": "."` answer `unbound variable`; the same tree under
+> `"src": "src/"` imports as `from "lib.db"`).
+> **Options.** (a) `src/app/`, `src/components/`, `src/lib/` with `onze.json`'s `appDir:
+> "src/app"` — Next's own `src/` layout — implemented; (b) keep the root layout and wait for the
+> compiler.
+> **Recommendation.** (a): the acceptance script's rows read `src/<path>`; nothing else changes.
+> **Blocks.** Nothing.
+
+### 68-a · A manifest field escapes four characters, not the whole value
+
+> **Raised by:** `06-onze/68-onze-client-bundle` step 5, 2026-09-26
+> **Measured.** std's `encoding.percentEncode` escapes `/`, `:` and `[`, so every URL and route
+> pattern in the manifest became unreadable (`%2F_onze%2Fstatic…`), while the README's own
+> example keeps URLs raw.
+> **Options.** (a) escape `%`, `|`, LF and CR only (`%25`, `%7C`, `%0A`, `%0D`) and read back with
+> `percentDecode` — implemented; (b) `percentEncode` every field.
+> **Recommendation.** (a): the rule the format needs is "no `|` and no newline inside a field",
+> and (a) is exactly that, round-trip asserted on both targets.
+> **Blocks.** Nothing.
+
+### 68-b · The emilia rules without `styleRule`: token text in the `styleMap`, an ASCII-only refusal
+
+> **Raised by:** `06-onze/68-onze-client-bundle` step 3, 2026-09-26
+> **Measured.** emilia front 56's `styleRule(tokens, th)` is not in `repository/emilia` at
+> `4cac151`; a token list read from source text cannot be evaluated without it.
+> **Options.** (a) the `styleMap` records the literal token text per call site, and the
+> hash-parity rule is the static one — a non-ASCII token list is `emilia-hash-split` (std's two
+> `contentHash` cells differ only above U+FFFF, and contract 4 clause 3 makes rule text ASCII) —
+> implemented; (b) wait for front 56.
+> **Recommendation.** (a) now; when `styleRule` lands the build generates a program over the
+> recorded token texts and records the class and body, and the runtime `s` check follows.
+> **Blocks.** Step 3's `styleRule` half, step 6's `s` box.
+
+### 68-c · Island starters decode `#[clientProps]` from source into `__jhIslandStarters`
+
+> **Raised by:** `06-onze/68-onze-client-bundle` step 6, 2026-09-26
+> **Measured.** jhonstart's `hydrate()` starts `globalThis.__jhIslandStarters[component](el,
+> props)`; `@Decl` has no parameters, so no decorator can build a props decoder.
+> **Options.** (a) the generator reads `#[client] pub fn Name(props: T)` and `T`'s fields from the
+> source, generates `startName(raw, commit)` decoding the four whitelisted types, and registers it
+> through a generated host cell writing `__jhIslandStarters` — implemented; (b) jhonstart grows a
+> starter API.
+> **Recommendation.** (a), with jhonstart asked for a registry-owned name for the table so the
+> entry writes no `__` name by hand. The document/payload check is generated into the entry as
+> the twin of the bundler's `islandMismatches` (asserted equal), because the entry imports nothing
+> of onze.
+> **Blocks.** The "no hand-written `__` name" box.
 
 ## Open
 
