@@ -430,10 +430,13 @@ Step 1 landed on onze `front/06-onze` (`fbe105b`): `examples/blog/` with `botopi
 alias map), `onze.json`, three seed posts, `src/lib/db.bp` and `test/{db,tags}_test.bp` — 7 tests
 on commonJS and erlang, and the example builds under the workspace's examples gate. The app's
 sources sit under `src/` (`src/app/`, `src/components/`, `src/lib/`; `onze.json`'s `appDir` is
-`"src/app"`, Next's `src/` layout): **finding F5** — a package whose `"src"` is `"."` cannot reach
-a nested module (`src/lib/mod.bp` + `src/lib/db.bp` imported as `from "lib.db"` works; the same
-tree at the root with `"src": "."` answers `unbound variable`), so the root layout the acceptance
-script names does not compile. `components/tags.bp` is not written: front 94's elements are
+`"src/app"`, Next's `src/` layout): **finding F5** — a package whose `"src"` is `"."` is not
+honoured: `botopink check` answers `no source files found in src/ or test/`, and a test file cannot
+import a nested module (`import {one} from "lib.db"` → `unbound variable`, where the same tree
+under `"src": "src/"` works; a source module importing `lib.db` does compile). Minimal repro:
+`botopink.json` `{ "name": "p", "src": ".", "entry": "root.bp", "files": ["root.bp"] }`,
+`root.bp` `pub mod lib;`, `lib/mod.bp` `pub mod db;`, `lib/db.bp` `pub fn one() -> i32 { return
+1; }`, `test/a_test.bp` `import {one} from "lib.db"; test "p: x" { assert one() == 1; }`. `components/tags.bp` is not written: front 94's elements are
 jhonstart's, and the step-1 box is asserted on them (through the render's `renderNode`, the one
 that knows the void elements). The `@/lib.db` box is open: the app's map resolves it
 (`tags_test.bp`), but resolving it *from* `app/blog/[slug]/page.bp` is front 50's staging.
