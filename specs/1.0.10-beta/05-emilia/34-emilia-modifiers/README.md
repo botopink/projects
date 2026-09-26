@@ -261,15 +261,15 @@ which is exactly those lines; the assertions are collateral and are named here s
 sees them before the merge rather than in it.
 
 **Acceptance:**
-- [ ] `focusVariant()` is `Variant(atRule: "", selector: "&:focus")`
-- [ ] `mdVariant()` is `Variant(atRule: "@media (width >= 48rem)", selector: "&")`
-- [ ] every variant fn returns a `selector` containing exactly one `&`
-- [ ] this front contains no string concatenation that builds a `{` or a `}` — wrapping is front 56's
-- [ ] `Token.Hover([.Text.Bold])` renders `@media (hover: hover){&:hover{font-weight:bold}}`
-- [ ] `Token.Md([.Text.Bold])` emits `@media (width >= 48rem){font-weight:bold}`
+- [x] `focusVariant()` is `Variant(atRule: "", selector: "&:focus")` — held: emilia.bp test "interaction state — the two halves of every Variant in the family"
+- [x] `mdVariant()` is `Variant(atRule: "@media (width >= 48rem)", selector: "&")` — held (shape: `mdVariant(th)` reads `--breakpoint-md`, decision 82): emilia.bp test "breakpoints, min-width — the two halves of every Variant in the family"
+- [x] every variant fn returns a `selector` containing exactly one `&` — held: emilia.bp test "the walk — every selector template carries exactly one ampersand"
+- [x] this front contains no string concatenation that builds a `{` or a `}` — wrapping is front 56's — held: emilia.bp test "the walk — this front builds no brace, and every at-rule is an at-rule"
+- [x] `Token.Hover([.Text.Bold])` renders `@media (hover: hover){&:hover{font-weight:bold}}` — held (shape: rendered on a class, `.x:hover`): emilia.bp test "interaction state — the CSS each row renders around one declaration"
+- [x] `Token.Md([.Text.Bold])` emits `@media (width >= 48rem){font-weight:bold}` — held (shape: rendered on a class, `.x{…}`): emilia.bp test "breakpoints, min-width — the CSS each row renders around one declaration"
 - [ ] the five assertions in `src/emilia.bp` are updated, and no sixth assertion anywhere in the
       repository still expects the old spelling (`grep -R ':hover{' repository/emilia` returns only
-      the new form)
+      the new form) — **open:** the assertions are updated, but `grep -R ':hover{'` still hits emilia `README.md:60` (`Token.Hover([Token.ColorRed500]), // :hover{color:#ef4444}`), the old nested form
 
 ### Step 2 — breakpoints, both directions
 
@@ -289,10 +289,10 @@ A breakpoint range — Tailwind's `md:max-xl:` — is nesting, not a new variant
 `Token.Md([Token.MaxXl(inner)])`.
 
 **Acceptance:**
-- [ ] all ten breakpoints emit their reference query, byte for byte, spaces included
-- [ ] `Token.Md([Token.MaxXl([.Text.Bold])])` emits
-      `@media (width >= 48rem){@media (width < 80rem){font-weight:bold}}`
-- [ ] no breakpoint emits a `px` value — v4.3 breakpoints are `rem`
+- [x] all ten breakpoints emit their reference query, byte for byte, spaces included — held: emilia.bp tests "breakpoints, min-width — the CSS each row renders …" and "breakpoints, max-width — the CSS each row renders …"
+- [x] `Token.Md([Token.MaxXl([.Text.Bold])])` emits
+      `@media (width >= 48rem){@media (width < 80rem){font-weight:bold}}` — held: emilia.bp test "a breakpoint RANGE is nesting, not a variant — `md:max-xl:`"
+- [x] no breakpoint emits a `px` value — v4.3 breakpoints are `rem` — held: emilia.bp test "the walk — no breakpoint query resolves a pixel, and none is min-width"
 
 ### Step 3 — dark mode and the other media variants
 
@@ -301,9 +301,9 @@ class-based and attribute-based forms in `§ 3.4` are `@custom-variant` registra
 has no equivalent of; they are out of scope and named as such in *Reference gaps*.
 
 **Acceptance:**
-- [ ] `Token.Dark([.Bg.Color.Slate.900])` emits `@media (prefers-color-scheme: dark){background-color:var(--color-slate-900)}`
-- [ ] `Print`, `Portrait`, `Landscape`, `MotionSafe`, `MotionReduce`, `ContrastMore`, `ContrastLess`, `ForcedColors` each emit their reference query
-- [ ] `Dark` nests with a breakpoint in both orders and the blocks come out in source order
+- [x] `Token.Dark([.Bg.Color.Slate.900])` emits `@media (prefers-color-scheme: dark){background-color:var(--color-slate-900)}` — held: emilia.bp test "end to end — a light background and its dark override, as one document"
+- [x] `Print`, `Portrait`, `Landscape`, `MotionSafe`, `MotionReduce`, `ContrastMore`, `ContrastLess`, `ForcedColors` each emit their reference query — held: emilia.bp test "dark mode and the other media features — the CSS each row renders around one declaration"
+- [ ] `Dark` nests with a breakpoint in both orders and the blocks come out in source order — **open:** only dark-outside-md is pinned ("three deep — `dark:md:hover:`…"); no test nests `Dark` inside a breakpoint
 
 ### Step 4 — state, structural and form variants
 
@@ -322,12 +322,12 @@ fn nthVariant(index: i32) -> Variant {
 ```
 
 **Acceptance:**
-- [ ] each of the 36 nullary variants emits exactly the selector its reference row names
-- [ ] `Token.Nth(index: 3, inner: [.Text.Underline])` emits `&:nth-child(3){text-decoration-line:underline}`
-- [ ] `Token.NthLast(index: 5, inner: […])` emits `&:nth-last-child(5){…}`
-- [ ] `Open` emits the two-selector form `&:open, &:popover-open` — the comma is inside the selector,
-      not a separator emilia added
-- [ ] `Inert` emits `&:is([inert], [inert] *)`
+- [x] each of the 36 nullary variants emits exactly the selector its reference row names — held (shape: `Open` is `&:is(:open, :popover-open)`, see below): emilia.bp tests "interaction state / form state / structural position — the CSS each row renders around one declaration"
+- [x] `Token.Nth(index: 3, inner: [.Text.Underline])` emits `&:nth-child(3){text-decoration-line:underline}` — held (shape: pinned over `.Text.Bold`): emilia.bp test "Nth — three indices, including a two-digit one"
+- [x] `Token.NthLast(index: 5, inner: […])` emits `&:nth-last-child(5){…}` — held: emilia.bp test "NthLast — the same three, counted from the end"
+- [x] `Open` emits the two-selector form `&:open, &:popover-open` — the comma is inside the selector,
+      not a separator emilia added — held (shape: `&:is(:open, :popover-open)`, one `&`, because front 56 refuses two): emilia.bp test "the two states of `open` live inside one selector, not a selector list"
+- [x] `Inert` emits `&:is([inert], [inert] *)` — held: emilia.bp test "`inert` is the attribute pair the reference gives, not a pseudo-class"
 
 ### Step 5 — pseudo-elements
 
@@ -335,10 +335,10 @@ Nine variants. `Before` and `After` are useless without `content`, which front 3
 `Text.Content.*`; the example names that dependency.
 
 **Acceptance:**
-- [ ] `Before`, `After`, `FirstLetter`, `FirstLine`, `Placeholder`, `File`, `Backdrop` emit `&::…`
-- [ ] `Marker` emits `& ::marker` and `Selection` emits `& ::selection` — with the space
-- [ ] `Token.Before([.Text.Content.Empty, .Color.Red.500])` composes both declarations inside one
-      `&::before{…}` block
+- [x] `Before`, `After`, `FirstLetter`, `FirstLine`, `Placeholder`, `File`, `Backdrop` emit `&::…` — held: emilia.bp test "pseudo-elements — the CSS each row renders around one declaration"
+- [x] `Marker` emits `& ::marker` and `Selection` emits `& ::selection` — with the space — held: emilia.bp test "`marker` and `selection` carry the space before `::`, and the others do not"
+- [x] `Token.Before([.Text.Content.Empty, .Color.Red.500])` composes both declarations inside one
+      `&::before{…}` block — held (shape: by renderDocument's same-context fold, output.bp test "renderDocument — consecutive rules of one class in one context fold into one"; no `Before`-specific test)
 
 ### Step 6 — group, peer, direction and descent
 
@@ -346,12 +346,12 @@ Eleven group/peer variants built from the reference's two templates, plus `Rtl`,
 `Descendants`.
 
 **Acceptance:**
-- [ ] every group variant matches `&:is(:where(.group)<state> *)`
-- [ ] every peer variant matches `&:is(:where(.peer)<state> ~ *)`
-- [ ] `Rtl` emits `[dir="rtl"] &{…}` — the `&` is at the end, not the start
-- [ ] `Children` emits `:is(& > *){…}` and `Descendants` emits `:is(& *){…}`
-- [ ] the group and peer class names (`.group`, `.peer`) are documented as the consumer's
-      responsibility: emilia does not emit them, the markup carries them
+- [x] every group variant matches `&:is(:where(.group)<state> *)` — held: emilia.bp test "parent state (`group-*`) — the two halves of every Variant in the family"
+- [x] every peer variant matches `&:is(:where(.peer)<state> ~ *)` — held: emilia.bp test "sibling state (`peer-*`) — the two halves of every Variant in the family"
+- [x] `Rtl` emits `[dir="rtl"] &{…}` — the `&` is at the end, not the start — held: emilia.bp test "`rtl` and `ltr` put the ampersand LAST, and the class still lands there"
+- [x] `Children` emits `:is(& > *){…}` and `Descendants` emits `:is(& *){…}` — held: emilia.bp test "`*:` and `**:` wrap the ampersand rather than following it"
+- [x] the group and peer class names (`.group`, `.peer`) are documented as the consumer's
+      responsibility: emilia does not emit them, the markup carries them — held: emilia `docs.md` "Parent state — the `.group` class is the consumer's, never emilia's"; tokens.bp MODIFIERS header
 
 ### Step 7 — nesting, ordering and the top-level arms
 
@@ -360,14 +360,14 @@ arm is one line of the form `<Name>(inner) -> nestVariant(tokensToSheet(inner, t
 per the shared-file convention in `fronts.md`.
 
 **Acceptance:**
-- [ ] a three-deep nest emits three nested blocks in source order:
+- [x] a three-deep nest emits three nested blocks in source order:
       `Token.Dark([Token.Md([Token.Hover([.Text.Bold])])])` →
-      `@media (prefers-color-scheme: dark){@media (width >= 48rem){@media (hover: hover){&:hover{font-weight:bold}}}}`
-- [ ] a modifier whose inner list is empty produces an empty `Sheet`, which front 56's `declSheet`
-      contract already drops — the front states the behaviour and tests it
-- [ ] `tokens.bp` carries no `//` comment inside the `pub type Token` braces
-- [ ] the modifier block is appended at the end of `tokens.bp`, after every section, matching the
-      position the six existing modifiers occupy
+      `@media (prefers-color-scheme: dark){@media (width >= 48rem){@media (hover: hover){&:hover{font-weight:bold}}}}` — held: emilia.bp test "three deep — `dark:md:hover:` comes out in source order"
+- [x] a modifier whose inner list is empty produces an empty `Sheet`, which front 56's `declSheet`
+      contract already drops — the front states the behaviour and tests it — held: emilia.bp tests "a modifier whose inner list is empty produces an empty sheet, and is dropped" and "an empty modifier beside a real token leaves exactly the real rule"
+- [ ] `tokens.bp` carries no `//` comment inside the `pub type Token` braces — **open:** tokens.bp carries `//` comments inside the braces — this front's own `// ── front 34 — modifiers ──` fence among them — and parses; the constraint is obsolete
+- [x] the modifier block is appended at the end of `tokens.bp`, after every section, matching the
+      position the six existing modifiers occupy — held: tokens.bp `// ── front 34 — modifiers ──` … `// ── end front 34 ──` closes `pub type Token`
 
 ## Examples
 
@@ -425,11 +425,11 @@ surface and the regression that the old surface now emits the v4.3 form.
 
 ## Definition of done
 
-- [ ] every variant in `§ 3.2`'s reference table that is not an arbitrary-value form has a token
-- [ ] one `Variant`-returning fn per variant name, and no brace-building anywhere in this front
-- [ ] the six pre-existing modifiers emit the v4.3 form, and the five affected assertions in
-      `src/emilia.bp` are updated in the same commit
-- [ ] the banner `// ── front 34 — modifiers ──` fences this front's block in both files
-- [ ] one arm added to the top-level `tokenToCss` case, in front-number order
-- [ ] `repository/emilia/AGENTS.md` and the `////` header of `tokens.bp` record the new modifier map
-- [ ] the front's tests are green on its assigned target — here, both backends, since emilia is comptime
+- [x] every variant in `§ 3.2`'s reference table that is not an arbitrary-value form has a token — held (shape: checked against this README's token-surface tables — every row has a token, 83 modifiers; the reference file is not in the checkout): emilia.bp test "the table — 82 Variant fns and 83 modifier tokens, and no row is a copy"
+- [x] one `Variant`-returning fn per variant name, and no brace-building anywhere in this front — held: emilia.bp front-34 block + test "the walk — this front builds no brace, and every at-rule is an at-rule"
+- [x] the six pre-existing modifiers emit the v4.3 form, and the five affected assertions in
+      `src/emilia.bp` are updated in the same commit — held: emilia.bp tests "Hover — the `hover` row is …", "Focus and Active — …", "Md, Lg and Xl — …"
+- [x] the banner `// ── front 34 — modifiers ──` fences this front's block in both files — held: tokens.bp and the `tokenToSheet` arms carry `// ── front 34 — modifiers ──`; the variant fns sit under `//// ═══ FRONT 34 ·`
+- [ ] one arm added to the top-level `tokenToCss` case, in front-number order — **open:** the front-34 block of `tokenToSheet` comes after fronts 38/40/41/44/45/39, not in front-number order
+- [x] `repository/emilia/AGENTS.md` and the `////` header of `tokens.bp` record the new modifier map — held: AGENTS.md (front-34 paragraph) and tokens.bp `//// MODIFIERS — front 34's table`
+- [x] the front's tests are green on its assigned target — here, both backends, since emilia is comptime — held: 569/569 on commonJS and erlang
