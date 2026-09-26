@@ -142,12 +142,12 @@ all.
 ### Step 1 — `Link` and the link set
 
 **Acceptance:**
-- [ ] `link("self", "/api/users/1")` renders `{"href":"/api/users/1"}` under the key `self`.
-- [ ] Empty `mediaType` and `title` are omitted; non-empty ones are emitted.
-- [ ] `templated` is emitted only when true.
-- [ ] Two links with the same `rel` render as an array under that key, in insertion order.
-- [ ] An `href` containing a quote or a backslash is escaped.
-- [ ] No field in this module is named `type`.
+- [x] `link("self", "/api/users/1")` renders `{"href":"/api/users/1"}` under the key `self`. — held: `modules/rakun-hateoas/test/hal_test.bp` "a link renders its href under its rel" (rakun `7dfec03`)
+- [x] Empty `mediaType` and `title` are omitted; non-empty ones are emitted. — held: `modules/rakun-hateoas/test/hal_test.bp` "empty mediaType and title are omitted, non-empty ones written; templated only when true"
+- [x] `templated` is emitted only when true. — held: `modules/rakun-hateoas/test/hal_test.bp` "empty mediaType and title are omitted…templated only when true"
+- [x] Two links with the same `rel` render as an array under that key, in insertion order. — held: `modules/rakun-hateoas/test/hal_test.bp` "two links with one rel are an array, in insertion order"
+- [x] An `href` containing a quote or a backslash is escaped. — held: `modules/rakun-hateoas/test/hal_test.bp` "a quote or a backslash in an href is escaped"
+- [x] No field in this module is named `type`. — held: `modules/rakun-hateoas/src/hal.bp` (`Link.mediaType`)
 
 ### Step 2 — `#[halResource]`
 
@@ -161,12 +161,12 @@ pub type UserResource(
 ```
 
 **Acceptance:**
-- [ ] `#[halResource]` emits `userResourceToHal(v, links)` into the annotated type's module.
-- [ ] `#[halResource]` on an enum-shaped `type` fails, the same way `#[service]` does.
-- [ ] Strings are quoted and escaped; `i32`, `i64`, `f64` and `bool` are rendered bare.
-- [ ] A field of an unsupported type — a nested record, an array of records, an optional — **fails at comptime** naming the field and its type, and emits nothing.
-- [ ] Field order in the output matches declaration order, and `_links` is last.
-- [ ] Two renderings of the same value are byte-identical.
+- [x] `#[halResource]` emits `userResourceToHal(v, links)` into the annotated type's module. — held: `modules/rakun-hateoas/test/hal_test.bp` "#[halResource] emits <typeName>ToHal - fields in order, bare scalars, _links last"
+- [x] `#[halResource]` on an enum-shaped `type` fails, the same way `#[service]` does. — held: `modules/rakun-hateoas/src/hal.bp` `halResource` — `decl.fail` on an enum (code)
+- [x] Strings are quoted and escaped; `i32`, `i64`, `f64` and `bool` are rendered bare. — held: `modules/rakun-hateoas/test/hal_test.bp` "#[halResource] emits…" + "the scalar renderers"
+- [x] A field of an unsupported type — a nested record, an array of records, an optional — **fails at comptime** naming the field and its type, and emits nothing. — held: measured — `botopink build` of a scratch member: "#[halResource] cannot render the field home: Address …" at the annotation
+- [x] Field order in the output matches declaration order, and `_links` is last. — held: `modules/rakun-hateoas/test/hal_test.bp` "#[halResource] emits <typeName>ToHal - fields in order, bare scalars, _links last"
+- [x] Two renderings of the same value are byte-identical. — held: `modules/rakun-hateoas/test/hal_test.bp` "#[halResource] emits…" (rendered twice, compared)
 
 ### Step 3 — Collections
 
@@ -178,18 +178,18 @@ pub fn halCollection(rel: string, items: Array<string>, links: Array<Link>) -> s
 records and render each one at run time.
 
 **Acceptance:**
-- [ ] `_embedded` comes first, keyed by `rel`, and `_links` last.
-- [ ] An empty collection renders `"_embedded":{"users":[]}` rather than omitting the key — a client that branches on presence should not have to branch on emptiness too.
-- [ ] Paging links (`self`, `first`, `prev`, `next`, `last`) round-trip through the link set in that order.
+- [x] `_embedded` comes first, keyed by `rel`, and `_links` last. — held: `modules/rakun-hateoas/test/hal_test.bp` "a collection is _embedded first and _links last; empty is []"
+- [x] An empty collection renders `"_embedded":{"users":[]}` rather than omitting the key — a client that branches on presence should not have to branch on emptiness too. — held: `modules/rakun-hateoas/test/hal_test.bp` "a collection is _embedded first and _links last; empty is []"
+- [x] Paging links (`self`, `first`, `prev`, `next`, `last`) round-trip through the link set in that order. — held: `modules/rakun-hateoas/test/hal_test.bp` "paging links keep their order"
 
 ### Step 4 — `linkTo`
 
 **Acceptance:**
-- [ ] `linkTo("self", "/api/users/:id", [#("id", "1")])` yields `/api/users/1`.
-- [ ] A pattern not in the route table raises, naming the pattern and the nearest registered path.
-- [ ] A `:param` with no matching entry raises with its name.
-- [ ] An entry with no matching `:param` raises with its name.
-- [ ] A param value containing `/`, `?` or `#` is percent-encoded — front 01's encoding, not a private copy.
+- [x] `linkTo("self", "/api/users/:id", [#("id", "1")])` yields `/api/users/1`. — held: `modules/rakun-hateoas/test/hal_test.bp` "linkTo substitutes by name over a registered route"
+- [x] A pattern not in the route table raises, naming the pattern and the nearest registered path. — held: `modules/rakun-hateoas/test/hal_test.bp` "a pattern nobody serves raises, naming it and the nearest path"
+- [x] A `:param` with no matching entry raises with its name. — held: `modules/rakun-hateoas/test/hal_test.bp` "a missing entry and an unused entry both raise with the name"
+- [x] An entry with no matching `:param` raises with its name. — held: `modules/rakun-hateoas/test/hal_test.bp` "a missing entry and an unused entry both raise with the name"
+- [x] A param value containing `/`, `?` or `#` is percent-encoded — front 01's encoding, not a private copy. — held: `modules/rakun-hateoas/test/hal_test.bp` "a value holding / ? or # is percent-encoded"
 
 ### Step 5 — The response helper and negotiation
 
@@ -198,9 +198,9 @@ pub fn halResponse(body: string) -> Response
 ```
 
 **Acceptance:**
-- [ ] `halResponse` produces a 200 whose content type is `application/hal+json`, set through front 07's header mechanism rather than by a second `Response` type.
-- [ ] With `use-hal-as-default-json-media-type=false`, the same body is served as `application/json`.
-- [ ] A client sending `Accept: application/hal+json` gets it in both modes.
+- [x] `halResponse` produces a 200 whose content type is `application/hal+json`, set through front 07's header mechanism rather than by a second `Response` type. — held: `modules/rakun-hateoas/test/hal_test.bp` "halResponse is 200 application/hal+json through the header surface"
+- [x] With `use-hal-as-default-json-media-type=false`, the same body is served as `application/json`. — held: `modules/rakun-hateoas/test/hal_test.bp` "with the default off, plain JSON - unless the client asks for HAL"
+- [x] A client sending `Accept: application/hal+json` gets it in both modes. — held: `modules/rakun-hateoas/test/hal_test.bp` "with the default off, plain JSON - unless the client asks for HAL" + "halResponse is 200 application/hal+json"
 
 ## Examples
 
