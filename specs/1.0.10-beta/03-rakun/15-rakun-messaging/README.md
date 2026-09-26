@@ -27,11 +27,23 @@ Redis pub/sub after that is a file, not a front.
 
 ## Current state
 
-- `repository/rakun/modules/rakun-messaging/src/root.bp` — docblock and `// Module contents will be added by the respective fronts.`
-- `repository/rakun/src/runtime.bp` — the only registry rakun has is the HTTP route table (`rkRegisterRoute`, `rkRouteCount`, `rkRoutePaths`, `rkDispatch`). It is a good model for this one and it is not reusable for it: routes are matched by verb and path, listeners by broker and destination.
-- `io.net` (`libs/std/src/io/net.bp`) has `connect` / `tlsConnect`; every broker connection in this front goes through it.
-- `repository/rakun/src/decorators.bp` — no listener markers, and frozen.
-- No supervision surface is exposed to a rakun library today; front 04's BEAM runtime owns the supervision tree this front's containers attach to.
+Landed in `modules/rakun-messaging/` (erlang; `repository/rakun/AGENTS.md` § Messaging):
+`message.bp`, `registry.bp`, `markers.bp`, `container.bp`, `templates.bp`, `messaging_health.bp`,
+`messaging_host.bp` over `src/sidecars/rakun_messaging.erl`. 38 tests on erlang across six files.
+
+Where it differs from the text below:
+
+- **One transport: the in-process broker** (`rakun.messaging.<arm>.transport=memory`). `amqp_client`,
+  `brod` and `rabbitmq_stream_client` are OTP applications a sidecar cannot load (`language-gaps.md`),
+  so an arm's address key without `transport=memory` refuses the boot naming the driver (03r-k). Every
+  box below holds on that broker; the integration cells against real brokers are not written, and by the
+  test plan's own rule this front is not a pass of the real transports.
+- **Containers are named after the destination** (`rakun.messaging.listener.<destination>.*`); Redis
+  defaults to `ack-mode = none` (03r-l).
+- `#[listener]` emits `rkRegisterListenerAs("<Type>.<method>", …)` — the named form, so a duplicate
+  names both handlers; `rkRegisterListener` keeps the five-argument signature.
+- Templates are plain injectable singletons (`__rkMake_AmqpTemplate()`, …), with no `#[value]` fields:
+  the in-process broker has no address to read.
 
 ## Mechanism
 
@@ -158,9 +170,9 @@ pub behavior MessageBroker {
 ```
 
 **Acceptance:**
-- [ ] `Message` carries the same fields whatever the arm; an arm that has no key sets `""` and one that has no offset sets `-1`.
-- [ ] A handler written against `Message` compiles unchanged for all four arms.
-- [ ] `MessageBroker` is a `behavior`, not a `type` with bodyless methods.
+- [x] `Message` carries the same fields whatever the arm; an arm that has no key sets `""` and one that has no offset sets `-1`. — `test/registry_test.bp` "Message carries the same fields on every arm - key empty and offset -1 where the arm has none" (through a container on each arm)
+- [x] A handler written against `Message` compiles unchanged for all four arms. — `registry_test.bp` "one handler written against Message compiles for all four arms"
+- [x] `MessageBroker` is a `behavior`, not a `type` with bodyless methods. — `registry_test.bp` "MessageBroker is a behavior, and no type body here holds a bodyless method" (`InProcessBroker` implements it)
 
 ### Step 2 — The registry and the dispatch loop
 
@@ -182,45 +194,45 @@ pub declare fn rkDeliver(broker: string, destination: string, payload: string) -
 `rkDispatch` plays for the router (`repository/rakun/test/router_test.bp:46-50`).
 
 **Acceptance:**
-- [ ] Registering two listeners on the same broker and destination is refused at boot with both handler names in the message — a silently shadowed listener is the worst failure mode here.
-- [ ] `rkListenerCount()` equals the number of annotated methods across every `#[listener]` type in the build.
-- [ ] `rkDeliver` reaches the handler and returns its result, with no broker running.
-- [ ] A handler that raises does not take the container's other workers with it.
+- [x] Registering two listeners on the same broker and destination is refused at boot with both handler names in the message — a silently shadowed listener is the worst failure mode here. — `registry_test.bp` "two listeners on one broker and destination are refused at boot naming both handlers"
+- [x] `rkListenerCount()` equals the number of annotated methods across every `#[listener]` type in the build. — `test/decorators_test.bp` "one registration per annotated method across every #[listener] type"
+- [x] `rkDeliver` reaches the handler and returns its result, with no broker running. — `registry_test.bp` "rkDeliver reaches the handler and returns its result with no broker running"
+- [x] A handler that raises does not take the container's other workers with it. — `registry_test.bp` "a handler that raises takes only its own worker down"
 
 ### Step 3 — `#[listener]` and the four markers
 
 **Acceptance:**
-- [ ] `#[listener]` on a type with no broker-annotated method emits nothing and fails with a message saying so.
-- [ ] Each of `#[amqpListener]`, `#[kafkaListener]`, `#[redisListener]`, `#[streamListener]` on anything but a method fails with a located message.
-- [ ] `#[kafkaListener("t", "g")]` takes both arguments; declared defaults are never applied, so there is no one-argument form.
-- [ ] A `#[listener]` type is also a component (stacked `#[service]`), and the emitted handler closure builds it through `__rkMake_<Type>()` — one instance, not one per message.
-- [ ] `#[streamListener("s", "first")]` rejects an offset that is neither `first`, `last`, `next` nor a decimal number, at comptime.
+- [x] `#[listener]` on a type with no broker-annotated method emits nothing and fails with a message saying so. — `test/build_test.bp` "#[listener] on a type with no broker marker fails saying so"
+- [x] Each of `#[amqpListener]`, `#[kafkaListener]`, `#[redisListener]`, `#[streamListener]` on anything but a method fails with a located message. — `build_test.bp` "each marker anywhere but on a method fails with a located message"
+- [x] `#[kafkaListener("t", "g")]` takes both arguments; declared defaults are never applied, so there is no one-argument form. — `build_test.bp` "#[kafkaListener] with one argument is refused - there is no one-argument form"; the group reaches the registry (`decorators_test.bp`)
+- [x] A `#[listener]` type is also a component (stacked `#[service]`), and the emitted handler closure builds it through `__rkMake_<Type>()` — one instance, not one per message. — `decorators_test.bp` "one component instance serves every message" (`rkBuildCount` 1); without a stereotype the build is refused (`build_test.bp`)
+- [x] `#[streamListener("s", "first")]` rejects an offset that is neither `first`, `last`, `next` nor a decimal number, at comptime. — `build_test.bp` "#[streamListener] refuses an offset that is neither first, last, next nor a decimal"
 
 ### Step 4 — Containers and concurrency
 
 **Acceptance:**
-- [ ] A container with `concurrency = 4` starts four worker processes, visible in the supervision tree.
-- [ ] Killing one worker leaves the other three consuming and the killed one restarted within the supervisor's restart window.
-- [ ] `prefetch` is honoured: a worker holds no more than that many unacknowledged messages.
-- [ ] `ack-mode = manual` means a handler that returns without acking causes redelivery; `auto` acks on a non-raising return.
-- [ ] `ack-mode = none` is refused for AMQP and Kafka at boot, and is the only value accepted for Redis.
-- [ ] `enabled = false` starts no container and the application boots with the listener registered but idle.
-- [ ] A container with `concurrency > 1` logs, at startup, that per-destination ordering is not preserved.
+- [x] A container with `concurrency = 4` starts four worker processes, visible in the supervision tree. — `test/container_test.bp` "concurrency 4 starts four workers in the supervision tree" (`supervisor:which_children` under `rakun_sup`)
+- [x] Killing one worker leaves the other three consuming and the killed one restarted within the supervisor's restart window. — `container_test.bp` "a killed worker is restarted and the other three keep consuming"
+- [x] `prefetch` is honoured: a worker holds no more than that many unacknowledged messages. — `container_test.bp` "a worker holds no more than prefetch unsettled messages"
+- [x] `ack-mode = manual` means a handler that returns without acking causes redelivery; `auto` acks on a non-raising return. — `container_test.bp` "under manual a handler that returns without acking is redelivered", "under manual nackMessage redelivers and ackMessage settles", "under auto a non-raising return is acked once, a raising one is redelivered"
+- [x] `ack-mode = none` is refused for AMQP and Kafka at boot, and is the only value accepted for Redis. — `container_test.bp` "ack-mode none is refused for amqp and kafka at boot", "redis accepts ack-mode none only, and defaults to it" (03r-l)
+- [x] `enabled = false` starts no container and the application boots with the listener registered but idle. — `container_test.bp` "enabled false starts no container and the listener stays registered"
+- [x] A container with `concurrency > 1` logs, at startup, that per-destination ordering is not preserved. — `container_test.bp` "concurrency above one logs that ordering is not preserved"
 
 ### Step 5 — Templates and the passthrough
 
 **Acceptance:**
-- [ ] Each template is resolvable by type from any `#[service]` that declares a field of it.
-- [ ] A publish to a destination with no broker connection returns a non-zero result and does not raise — a failed publish is a decision for the caller.
-- [ ] Every `rakun.messaging.<arm>.properties.*` key reaches the driver unmodified.
-- [ ] The startup log lists the passed-through keys by name, and the list is empty when none were set.
+- [x] Each template is resolvable by type from any `#[service]` that declares a field of it. — `test/template_test.bp` "each template is injected by type into a service that declares it" (the consumer imports `__rkMake_<Template>`)
+- [x] A publish to a destination with no broker connection returns a non-zero result and does not raise — a failed publish is a decision for the caller. — `template_test.bp` "a publish with no broker connection answers non-zero and does not raise"
+- [x] Every `rakun.messaging.<arm>.properties.*` key reaches the driver unmodified. — `template_test.bp` "every properties key reaches the arm unmodified and the startup log names them" — the arm is the in-process broker; no real driver exists to receive them (03r-k)
+- [x] The startup log lists the passed-through keys by name, and the list is empty when none were set. — same test (`passthrough kafka: client.id, max.poll.records`; `passthrough amqp: (none)`)
 
 ### Step 6 — Health
 
 **Acceptance:**
-- [ ] Each configured arm contributes one indicator to front 11's report.
-- [ ] Stopping the broker turns its indicator DOWN with the arm named, and restarting it turns it UP again without an application restart.
-- [ ] An arm whose containers are all down reports DOWN with the container named, even when the connection is up.
+- [x] Each configured arm contributes one indicator to front 11's report. — `test/health_test.bp` "each configured arm contributes one indicator"
+- [x] Stopping the broker turns its indicator DOWN with the arm named, and restarting it turns it UP again without an application restart. — `health_test.bp` "a stopped broker turns its indicator DOWN naming the arm, and restarting it turns it UP" (the in-process broker's outage, `stopBroker` / `startBroker`)
+- [x] An arm whose containers are all down reports DOWN with the container named, even when the connection is up. — `health_test.bp` "an arm whose container has no live worker is DOWN naming the container, the connection up"
 
 ## Examples
 

@@ -12,7 +12,8 @@
 import {service, component} from "rakun";
 import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
 import {listener, streamListener} from "rakun-messaging";
-import {Message, StreamTemplate, rkRegisterListener, ackMessage, nackMessage} from "rakun-messaging";
+import {Message, StreamTemplate, rkRegisterListenerAs, rkDeliver, ackMessage, nackMessage} from "rakun-messaging";
+import {__rkMake_StreamTemplate} from "rakun-messaging";
 
 // ── the consumer ────────────────────────────────────────────────────────────
 //
@@ -23,9 +24,9 @@ import {Message, StreamTemplate, rkRegisterListener, ackMessage, nackMessage} fr
 //
 // Container policy for this listener lives in configuration, not here:
 //
-//   rakun.messaging.listener.audit.concurrency = 4
-//   rakun.messaging.listener.audit.prefetch    = 50
-//   rakun.messaging.listener.audit.ack-mode    = manual
+//   rakun.messaging.listener.audit-stream.concurrency = 4
+//   rakun.messaging.listener.audit-stream.prefetch    = 50
+//   rakun.messaging.listener.audit-stream.ack-mode    = manual
 //
 // At concurrency 4 the container starts four worker processes under its own
 // supervisor and per-stream ordering is NOT preserved; the container says so in

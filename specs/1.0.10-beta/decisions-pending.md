@@ -4,7 +4,7 @@
 front 24's (24-a…c, 24-f…g), `01-std`'s (01std-a, 01std-c…e), `00 · 23-std-purity`'s (23-a…c), front 95's
 (95-a…e), `00 · 16-formatter`'s (16-a…b), track C's (26-a, 27-a, 30-b…e, 31-a), `00 · 04-js` /
 `05-wasm`'s (0405-b), `00 · 01-checker`'s (01c-a…b),
-track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…j) and the host methods' (lem-a…f). Every question raised so far is answered in
+track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…l) and the host methods' (lem-a…f). Every question raised so far is answered in
 [`decisions-taken.md`](./decisions-taken.md); the next free number is **143**.
 
 This file stays because the fronts will fill it again. A front that meets a question it cannot answer
@@ -445,6 +445,30 @@ fronts could land; the maintainer confirms or reverses each.
 > cache whatever its own type; (2) refuse all three outside a request; per-cache type wins.
 > **Recommendation.** (1) — implemented (`revalidate_test.bp`, `store_test.bp`): the kill switch is
 > Spring's `spring.cache.type=none` and must not be defeated by one line of configuration.
+
+### 03r-k · Every messaging arm runs on the in-process broker; a real address refuses the boot
+
+> **Raised by:** `15-rakun-messaging` steps 1–6
+> **Measured.** The README's drivers — `amqp_client`, `brod`, `rabbitmq_stream_client` — are OTP
+> applications, and a sidecar loads only the `.erl` files beside the emitted module (the
+> `language-gaps.md` row on external OTP applications). A hand-written AMQP 0-9-1, Kafka or Streams
+> client over `gen_tcp` is a front of its own per protocol.
+> **Options.** (1) one in-process broker behind all four arms (`transport=memory`), and an address key
+> without it refuses the boot naming the driver; (2) the same, but fall back to the in-process broker
+> silently; (3) hand-roll the wires now.
+> **Recommendation.** (1) — implemented. (2) lets an application believe it reaches RabbitMQ while its
+> messages never leave the node. The integration cells wait on (3) or on the sidecar gap.
+
+### 03r-l · A container is named after its destination, and Redis defaults to ack-mode none
+
+> **Raised by:** `15-rakun-messaging` steps 3–4
+> **Measured.** The markers carry no container name; the README's examples configure
+> `rakun.messaging.listener.orders.*` for the queue `orders` but `listener.audit.*` for the stream
+> `audit-stream`. The ack-mode default is `auto` for every arm, and Redis accepts only `none`.
+> **Options.** (1) the container is the destination; Redis defaults to `none` (an explicit `auto` or
+> `manual` on Redis still refuses the boot); (2) a container argument on every marker; (3) keep `auto`
+> as the Redis default, so every Redis listener needs a configuration line to boot.
+> **Recommendation.** (1) — implemented; the stream example now reads `listener.audit-stream.*`.
 
 ## Open
 ## Front 16 (formatter) — choices made in implementation, to confirm

@@ -14,9 +14,11 @@
 import {service, component} from "rakun";
 import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
 // Provided by front 15. #[listener] splices the registrations into THIS module,
-// and they call `rkRegisterListener`, so it must resolve here.
+// and they call `rkRegisterListenerAs`, so it must resolve here. The templates
+// resolve through their hand-written `__rkMake_<Template>()` factories.
 import {listener, amqpListener, kafkaListener, redisListener} from "rakun-messaging";
-import {Message, AmqpTemplate, KafkaTemplate, RedisPubSubTemplate, rkRegisterListener} from "rakun-messaging";
+import {Message, AmqpTemplate, KafkaTemplate, RedisPubSubTemplate, rkRegisterListenerAs} from "rakun-messaging";
+import {__rkMake_AmqpTemplate, __rkMake_KafkaTemplate} from "rakun-messaging";
 
 // ── the consumer ────────────────────────────────────────────────────────────
 //
