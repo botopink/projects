@@ -53,15 +53,19 @@ serves a modal to someone who pasted a URL.
 
 ## Current state
 
-- `repository/rakun/src/file_router.bp` (front 22) — `SegmentKind.Slot`, `slotOf(segments)`, and the
-  table's `slot` field. `matchPath` explicitly does not match slot entries: front 22's *Step 4* says
-  "a slot entry is matched separately against the same URL by front 61".
-- Front 22's table has a `D` kind letter reserved for `default.bp` and a `#[defaultView(seg)]`
-  decorator that registers one. Nothing consumes either.
-- `repository/rakun/src/ssr.bp` (front 23) — dispatches one renderer per matched page pattern; the
-  layout chain and its slots are composed by jhonstart front 30's `compose`, whose `LayoutProps` has a
-  `slots` field onze fills from this front's resolutions.
-- `repository/rakun/src/route_slots.bp` and `route_intercept.bp` do not exist.
+Landed in `modules/rakun-app/src/route_slots.bp` and `route_intercept.bp` (`repository/rakun/AGENTS.md`
+§ Parallel and intercepting routes): 14 cells in `test/route_slots_test.bp`, 9 in
+`test/route_intercept_test.bp`; the `z` codec is `routing`'s.
+
+Where it differs from the text below:
+
+- **No sidecar**: every function is pure over the table or reads front 62's `headers()`, so there is
+  nothing for `rakun_route_slots.erl` to hold.
+- **A slot belongs to the nearest layout above its shortest entry** — front 22's record drops the
+  `@slot` segment, so the slot folder's own depth is not in the table (03r-p).
+- **The slot conflict is two pages of ONE slot at one URL**; two slots at one URL is what parallel
+  routes are for (03r-p). The scan refusals are functions (`defaultProblem`, `slotConflictProblem`,
+  `interceptProblem`) for front 50's scan to call.
 
 ## Mechanism
 
@@ -168,30 +172,30 @@ pub fn resolveSlots(table: RouteEntry[], layoutPattern: string, pathname: string
 ```
 
 **Acceptance:**
-- [ ] `slotsOf` for a layout with `@analytics` and `@team` answers both, in registration order, and
-      does not include the children slot.
-- [ ] `resolveSlot` for a slot whose subtree matches the URL answers `SlotState.Matched` with the
-      bound params.
-- [ ] `resolveSlot` for an unmatched slot on a **hard** request answers `SlotState.Defaulted` when the
-      slot has a `D` entry and `SlotState.Empty` when it does not.
-- [ ] `resolveSlot` for an unmatched slot on a **soft** navigation answers `SlotState.Unchanged`,
-      whether or not the slot has a `D` entry.
-- [ ] Two slots match two different URLs independently: `/dashboard/settings` matches `@team`'s
-      `settings` page while `@analytics` falls back, in one call to `resolveSlots`.
-- [ ] A slot's own `loading.bp` (`S`) and `error.bp` (`E`) entries are found within that slot's
-      filtered table and not inherited from the children slot.
-- [ ] `resolveSlots` preserves declaration order, because the layout binds them positionally in the
-      payload.
+- [x] `slotsOf` for a layout with `@analytics` and `@team` answers both, in registration order, and
+      does not include the children slot. — `test/route_slots_test.bp` "slotsOf answers the layout's slots in registration order, not children"
+- [x] `resolveSlot` for a slot whose subtree matches the URL answers `SlotState.Matched` with the
+      bound params. — `test/route_slots_test.bp` "a slot whose subtree matches answers Matched with its params"
+- [x] `resolveSlot` for an unmatched slot on a **hard** request answers `SlotState.Defaulted` when the
+      slot has a `D` entry and `SlotState.Empty` when it does not. — `test/route_slots_test.bp` "unmatched on a hard request is Defaulted with a default and Empty without"
+- [x] `resolveSlot` for an unmatched slot on a **soft** navigation answers `SlotState.Unchanged`,
+      whether or not the slot has a `D` entry. — `test/route_slots_test.bp` "unmatched on a soft navigation is Unchanged, default or not"
+- [x] Two slots match two different URLs independently: `/dashboard/settings` matches `@team`'s
+      `settings` page while `@analytics` falls back, in one call to `resolveSlots`. — `test/route_slots_test.bp` "two slots match independently in one resolveSlots call"
+- [x] A slot's own `loading.bp` (`S`) and `error.bp` (`E`) entries are found within that slot's
+      filtered table and not inherited from the children slot. — `test/route_slots_test.bp` "a slot's own loading and error entries are in its view, not the children slot's"
+- [x] `resolveSlots` preserves declaration order, because the layout binds them positionally in the
+      payload. — `test/route_slots_test.bp` "resolveSlots keeps declaration order"
 
 ### Step 2 — `default.bp`
 
 **Acceptance:**
-- [ ] A `D` entry registered under `@analytics` is found for that slot and not for `@team`.
-- [ ] A `D` entry registered outside any slot fails the scan, naming the directory.
-- [ ] Two `D` entries under one slot fail the scan.
-- [ ] The hard-reload case is asserted end to end: a request for `/dashboard/settings` with no
+- [x] A `D` entry registered under `@analytics` is found for that slot and not for `@team`. — `test/route_slots_test.bp` "a default under @analytics is analytics' and not team's"
+- [x] A `D` entry registered outside any slot fails the scan, naming the directory. — `test/route_slots_test.bp` "a default outside any slot, or two under one slot, fail the scan" (`defaultProblem`)
+- [x] Two `D` entries under one slot fail the scan. — same test
+- [x] The hard-reload case is asserted end to end: a request for `/dashboard/settings` with no
       `x-rakun-nav` header resolves `@analytics` to its `default.bp`, and the rendered layout contains
-      the default's output rather than a hole.
+      the default's output rather than a hole. — `test/route_slots_test.bp` "a hard reload of /dashboard/settings renders analytics' default, not a hole" (the default's registered renderer is run; composing it into a layout is jhonstart's)
 
 ### Step 3 — Interception markers
 
@@ -214,19 +218,19 @@ pub fn resolveIntercept(marker: Intercept, fromPattern: string) -> string
 ```
 
 **Acceptance:**
-- [ ] `parseIntercept("(.)photo")` is `Same`/`photo`; `(..)photo` is `Up1`; `(..)(..)photo` is `Up2`;
-      `(...)photo` is `Root`.
-- [ ] `parseIntercept("(marketing)")` answers `null` — a route group is not an interception, and the
-      two spellings share an opening character, which is the parse that goes wrong first.
-- [ ] `parseIntercept("photo")` answers `null`.
-- [ ] `parseIntercept("(....)photo")` raises, naming the folder — an unrecognized marker is a typo, and
-      treating it as a static folder named `(....)photo` would create a route nobody asked for.
-- [ ] `resolveIntercept(Same/photo, "/feed/[id]")` answers `/feed/[id]/photo`.
-- [ ] `resolveIntercept(Up1/photo, "/feed/[id]")` answers `/feed/photo`.
-- [ ] `resolveIntercept(Up2/photo, "/feed/[id]")` answers `/photo`.
-- [ ] `resolveIntercept(Root/photo, "/feed/[id]")` answers `/photo` regardless of depth.
-- [ ] `resolveIntercept(Up2/photo, "/feed")` raises: the marker climbs past the root, and a silent
-      clamp would claim a route the developer did not write.
+- [x] `parseIntercept("(.)photo")` is `Same`/`photo`; `(..)photo` is `Up1`; `(..)(..)photo` is `Up2`;
+      `(...)photo` is `Root`. — `test/route_intercept_test.bp` "the four markers parse"
+- [x] `parseIntercept("(marketing)")` answers `null` — a route group is not an interception, and the
+      two spellings share an opening character, which is the parse that goes wrong first. — `test/route_intercept_test.bp` "a route group and a plain folder are not interceptions"
+- [x] `parseIntercept("photo")` answers `null`. — same test
+- [x] `parseIntercept("(....)photo")` raises, naming the folder — an unrecognized marker is a typo, and
+      treating it as a static folder named `(....)photo` would create a route nobody asked for. — `test/route_intercept_test.bp` "an unrecognised marker raises naming the folder"
+- [x] `resolveIntercept(Same/photo, "/feed/[id]")` answers `/feed/[id]/photo`. — `test/route_intercept_test.bp` "resolution appends, climbs one, two, or starts at the root"
+- [x] `resolveIntercept(Up1/photo, "/feed/[id]")` answers `/feed/photo`. — same test
+- [x] `resolveIntercept(Up2/photo, "/feed/[id]")` answers `/photo`. — same test
+- [x] `resolveIntercept(Root/photo, "/feed/[id]")` answers `/photo` regardless of depth. — same test
+- [x] `resolveIntercept(Up2/photo, "/feed")` raises: the marker climbs past the root, and a silent
+      clamp would claim a route the developer did not write. — `test/route_intercept_test.bp` "climbing past the root raises"
 
 ### Step 4 — The soft/hard gate
 
@@ -239,15 +243,15 @@ pub fn interceptFor(table: RouteEntry[], fromPattern: string, toPattern: string,
 request, which is front 62's rule and is inherited, not restated.
 
 **Acceptance:**
-- [ ] `interceptFor(..., soft: true)` answers the intercepting entry for a URL a marker claims.
-- [ ] `interceptFor(..., soft: false)` answers `null` for the same inputs, so the full route renders.
-- [ ] `isSoftNavigation()` is false with no header, false for `x-rakun-nav: hard`, true only for
-      `x-rakun-nav: soft`, and the header name is compared case-insensitively.
-- [ ] An interception whose resolved target is not in the table fails the scan, naming both patterns.
-- [ ] Two interceptions resolving to the same target from different origins do not conflict — the
-      origin pattern is part of the key — while two from the *same* origin do, and fail the scan.
-- [ ] The round trip: one test issues the same URL twice, once with the header and once without, and
-      asserts the two different entries. Asserting only one half is how this front's central bug ships.
+- [x] `interceptFor(..., soft: true)` answers the intercepting entry for a URL a marker claims. — `test/route_intercept_test.bp` "soft answers the intercepting entry, hard answers null - one URL, both halves"
+- [x] `interceptFor(..., soft: false)` answers `null` for the same inputs, so the full route renders. — same test
+- [x] `isSoftNavigation()` is false with no header, false for `x-rakun-nav: hard`, true only for
+      `x-rakun-nav: soft`, and the header name is compared case-insensitively. — `test/route_intercept_test.bp` "only x-rakun-nav: soft is a soft navigation, the name compared case-insensitively"
+- [x] An interception whose resolved target is not in the table fails the scan, naming both patterns. — `test/route_intercept_test.bp` "a target with no page, or two interceptions from one origin, fail the scan; two origins do not" (`interceptProblem`)
+- [x] Two interceptions resolving to the same target from different origins do not conflict — the
+      origin pattern is part of the key — while two from the *same* origin do, and fail the scan. — same test
+- [x] The round trip: one test issues the same URL twice, once with the header and once without, and
+      asserts the two different entries. Asserting only one half is how this front's central bug ships. — `test/route_intercept_test.bp` "the round trip - the same URL with and without the header picks two entries"
 
 ### Step 5 — The payload slot section (the codec is `routing`'s)
 
@@ -266,10 +270,10 @@ pub fn slotStateLines(rs: SlotResolution[]) -> Array<#(string, string, SlotState
 codec writes (the pattern is the resolution's entry pattern, `""` when it has none).
 
 **Acceptance:**
-- [ ] `parseSlotStates(writeSlotStates(slotStateLines(rs)))` recovers the slot name, pattern and
-      state of each resolution, compared field by field.
-- [ ] A slot name containing `|` fails the scan (front 22 already forbids it in a segment name; this
-      step asserts the same rule reaches the slot field).
+- [x] `parseSlotStates(writeSlotStates(slotStateLines(rs)))` recovers the slot name, pattern and
+      state of each resolution, compared field by field. — `test/route_slots_test.bp` "the z section round-trips slot, pattern and state"
+- [x] A slot name containing `|` fails the scan (front 22 already forbids it in a segment name; this
+      step asserts the same rule reaches the slot field). — `test/route_slots_test.bp` "a slot name holding a bar is refused at registration"
 - [x] The same assertions run green on `--target erlang` and `--target commonJS` from
       `libs/routing/test/slot_states_test.bp` — this is the boundary half. — held: `libs/routing/test/slot_states_test.bp`, `libs/routing` 66/0 on erlang and on commonJS (2026-09-26)
 - [x] An unknown state letter parses as `SlotState.Empty` rather than raising: a malformed payload
@@ -283,14 +287,14 @@ matched layout, maps each resolved entry to the jhonstart function registered fo
 list to jhonstart's render.
 
 **Acceptance:**
-- [ ] `resolveSlots` for a layout declaring `@analytics` and `@team` answers two resolutions, in
-      declaration order.
-- [ ] An `Empty` slot is a resolution with state `E`, not a missing entry — a layout that indexes its
-      slots positionally must not shift.
-- [ ] An `Unchanged` slot is a resolution with state `U` and no entry, and the payload carries `U` for
+- [x] `resolveSlots` for a layout declaring `@analytics` and `@team` answers two resolutions, in
+      declaration order. — `test/route_slots_test.bp` "resolveSlots keeps declaration order"
+- [x] An `Empty` slot is a resolution with state `E`, not a missing entry — a layout that indexes its
+      slots positionally must not shift. — `test/route_slots_test.bp` "an Empty slot and an Unchanged slot are resolutions, so positions do not shift"
+- [x] An `Unchanged` slot is a resolution with state `U` and no entry, and the payload carries `U` for
       it; front 27 is what keeps the DOM, and this front's test asserts the resolution and the payload
-      line rather than the DOM.
-- [ ] `grep -rn "Element\|LayoutProps" src/route_slots.bp src/route_intercept.bp` is empty.
+      line rather than the DOM. — same test
+- [x] `grep -rn "Element\|LayoutProps" src/route_slots.bp src/route_intercept.bp` is empty. — `test/route_slots_test.bp` "the slot modules name no element and no LayoutProps"
 
 ## Examples
 

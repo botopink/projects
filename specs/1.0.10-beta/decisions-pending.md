@@ -4,7 +4,7 @@
 front 24's (24-a…c, 24-g), `01-std`'s (01std-a, 01std-c…e), `00 · 23-std-purity`'s (23-a…c), front 95's
 (95-a…e), `00 · 16-formatter`'s (16-a…b), track C's (26-a, 27-a, 30-b…e, 31-a), `00 · 04-js` /
 `05-wasm`'s (0405-b), `00 · 01-checker`'s (01c-a…b),
-track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…o) and the host methods' (lem-a…f). Two
+track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…p) and the host methods' (lem-a…f). Two
 questions are open: the language-gaps sweep's lg-a and lg-b (§ Open). Every other question raised so far is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 24-f is decision 143 (library resolution stops at the
 enclosing checkout; dependencies are transitive); the next free number is **144**.
@@ -493,6 +493,18 @@ fronts could land; the maintainer confirms or reverses each.
 > second record of optional fields for registration; (3) wholesale replacement.
 > **Recommendation.** (1) — implemented. The one thing it cannot say is "reset this field to the
 > default below an ancestor that changed it"; (2) is the shape once optional record fields exist.
+
+### 03r-p · A slot belongs to the nearest layout above it, and only one slot can conflict with itself
+
+> **Raised by:** `61-rakun-parallel-intercepting-routes` steps 1–2
+> **Measured.** Front 22's record drops the `@slot` segment (`dashboard/@team/settings` is
+> `P|/dashboard/settings|team`), so which layout a slot folder sits under is not in the table. And
+> step 2's "two slots claiming the same URL under one layout" fail the scan — but `§ 21`'s own
+> dashboard has `@analytics` and `@team` both rendering at `/dashboard`, which is the feature.
+> **Options.** (1) the owner is the nearest `L` at or above the slot's shortest entry; the conflict is
+> two pages of ONE slot at one URL (two route groups inside `@team`); (2) add the slot depth to front
+> 22's record; (3) read the conflict as written and refuse `§ 21`'s example.
+> **Recommendation.** (1) — implemented. (2) changes contract 1, which front 22 owns.
 
 ## Open
 
