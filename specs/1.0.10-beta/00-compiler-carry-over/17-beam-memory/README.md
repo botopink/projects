@@ -381,8 +381,9 @@ positionally. Nothing in the grammar changes; the validation is a lookup.
       `beam_memory_keyed_list`, `beam_memory_on_val`
 - [ ] **Not this front's, recorded so it is not mistaken for closed:** an unknown *family* still
       passes — `#[@TotallyMadeUp.Nonsense(whatever = 42)]` on a `var` checks clean at `4fe1747e`,
-      exactly as on a `fn`. Only the `BeamMemory.` prefix is validated. Decision 15 assigns the
-      annotation grammar to [`01`](../01-checker/README.md)
+      exactly as on a `fn`, and again at compiler `90ef5afd`. Only the `BeamMemory.` prefix is
+      validated. Decision 15 assigns the annotation grammar to [`01`](../01-checker/README.md),
+      whose `infer.zig` is in flight on `front/01-checker`
 
 ### Step 3b — `std/beam`: the host primitives leave the core
 
@@ -407,8 +408,10 @@ table.
       new one. **Note the tension to settle with the maintainer:** the design says the *annotation* is
       a **no-op** off the BEAM, while the std module is a **hard error** there. Both are defensible;
       they must not be decided separately
-- [ ] The guarded-init and the owner shapes are byte-compared against the Erlang programs step 0
-      measured, and re-run under `erl`. **Re-run, not byte-compared:** the shapes are layer 2's, not
+- [x] ~~The guarded-init and the owner shapes are byte-compared against the Erlang programs step 0
+      measured, and~~ re-run under `erl` — `run/beam_memory_{ets,persistent_term,process_dict}.bp`
+      green on erlang and beam and `scripts/beam_export_audit.sh` 491/491 at compiler `90ef5afd`.
+      **Re-run, not byte-compared:** the shapes are layer 2's, not
       template text in `beam.bp` — the module's own header says "which process then owns the table
       is layer 2's", and the ten primitives cannot express a `receive` or a registered process — so
       they are emitted by `erlang.zig` (`etsOwnerForms`) and `beam_asm.zig` (`emitEtsHelpers`) and

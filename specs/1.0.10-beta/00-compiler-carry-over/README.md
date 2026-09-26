@@ -184,7 +184,8 @@ re-record, no `AGENTS.md`.
 **Acceptance:**
 - [ ] `import { erlang } from "std"` then `erlang.self()` runs under `erl` on erlang and beam — a fixture
       whose RUN LOG is the value run, not the emitted text
-- [ ] 17 step 3b's guarded-init and owner shapes byte-compared and re-run under `erl`
+- [x] 17 step 3b's guarded-init and owner shapes ~~byte-compared and~~ re-run under `erl` — 17's
+      box: the shapes are layer 2's, run by `run/beam_memory_*` on erlang and beam
 - [ ] `out/erl/std@beam.erl` exports the ten primitives; the same on beam through the wired helper
 - [ ] the bare-import route (`import { self } from "std/erlang"` → `undefined` on commonJS, per
       `language-gaps.md`) measured on each backend; fixed here if it is the same predicate, otherwise
