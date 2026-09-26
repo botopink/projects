@@ -380,5 +380,5 @@ the validation constraints that mirror to the client ([`contracts.md`](../../con
       fails at boot rather than silently downgrading — held: `test/password_test.bp` "password: configuring bcrypt fails at boot naming the missing NIF"
 - [x] `#[methodSecurity]` emits a proxy; `#[preAuthorize]` fails at comptime naming what is supported — held: `test/method_security_test.bp`, `test/build_test.bp`
 - [x] No password or raw token appears in any response, log or endpoint — held: as step 8's last box
-- [ ] `repository/rakun/AGENTS.md` documents the policy order rule and the stored-hash format
+- [x] `repository/rakun/AGENTS.md` documents the policy order rule and the stored-hash format — held: `repository/rakun/AGENTS.md` § Security (front 10), merged with rakun `def4533`
 - [x] The front's tests are green on its assigned target — held: `botopink test` in `modules/rakun-security`: 73 passed / 0 failed / 0 compile failures (erlang)
