@@ -1,10 +1,11 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**No question is open.** Implementation choices wait for the maintainer to confirm or reverse them:
+**Two questions are open** (lg-a, lg-b). Implementation choices wait for the maintainer to confirm or reverse them:
 front 24's (24-a…c, 24-g), `01-std`'s (01std-a, 01std-c…e), `00 · 23-std-purity`'s (23-a…c), front 95's
 (95-a…e), `00 · 16-formatter`'s (16-a…b), track C's (26-a, 27-a, 30-b…e, 31-a), `00 · 04-js` /
 `05-wasm`'s (0405-b), `00 · 01-checker`'s (01c-a…b),
-track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…e) and the host methods' (lem-a…f). Every question raised so far is answered in
+track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…e) and the host methods' (lem-a…f). Two
+questions are open: the language-gaps sweep's lg-a and lg-b (§ Open). Every other question raised so far is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 24-f is decision 143 (library resolution stops at the
 enclosing checkout; dependencies are transitive); the next free number is **144**.
 
@@ -380,6 +381,51 @@ fronts could land; the maintainer confirms or reverses each.
 > qualified import can return to `from "rakun"`; it is left as it is.
 
 ## Open
+
+Questions the language-gaps sweep (`front/compiler-gaps-rakun`, the rakun rows of
+[`language-gaps.md`](./language-gaps.md)) could not answer from `docs.md` or the decisions taken.
+
+### lg-a · Where a `try` inside a lambda may appear
+
+> **Raised by:** the language-gaps sweep, row "`try` inside a lambda does not propagate", 2026-09-26
+> **Measured.** `fn each() -> @Result<i32, string> { [1, 2].forEach({ x -> try bad(); }); return 2; }`
+> answers `Ok(2)` on commonJS and erlang: the checker gives every lambda body `throwContext =
+> .unchecked` (`inferFunctionExprExpected`), so the `try` type-checks, the lambda's `Error` is its
+> own value and `forEach` drops it. `docs.md` § Tests says "a `try` inside a lambda is the lambda's",
+> and decision 121 says `try` is legal only where a `@Result` is in some layer of the return — but no
+> rule says what a lambda's return is when nothing annotates it, nor whether a `@Result` a callee
+> discards is an error. An assertion written through a lambda passes vacuously.
+> **Options.** (1) The lambda's return is its expected type's (`fn(x: T)` → `void`): `try` there is
+> `effect-try-without-fallible-channel`, and an unannotated lambda with no expected type takes the
+> same refusal; (2) as (1), but a lambda with no expected type becomes `-> @Result<…>` on its own;
+> (3) keep today's reading and refuse only a `@Result` a statement discards.
+> **Recommendation.** (1) — the most restrictive, and 121's rule applied to lambdas as written: a
+> lambda that must fail declares it (`{ x -> … }` under an expected `fn(x: T) -> @Result<U, E>`).
+> Every library lambda with a `try` today is then located by the checker.
+> **Blocks.** The language-gaps row; front 08's assertion helpers.
+
+### lg-b · What a lambda's write to a captured `var` means on the BEAM
+
+> **Raised by:** the language-gaps sweep, row "A `var` mutated inside a lambda body (outside a
+> `for`) does not lower on erlang", 2026-09-26
+> **Measured.** `fn run(f: fn() -> i32, x: i32) -> i32 { return f() + x; }` ·
+> `var n = 0; val r = run({ -> n = n + 1; 1; }, 0); @print(n);` prints `1` on commonJS; erlang does
+> not compile (`variable 'N@1' is unbound`); **beam prints `0` at exit 0**. `test/closure_capture.bp`
+> pins that a write threads out of the lambda `forEach` runs (lowered as a fold), and a local
+> closure called at statement position threads through its arguments — but a lambda handed to an
+> arbitrary function has no value to thread through, and the BEAM has no mutable local. Every
+> lowering is a semantic choice: a process-dictionary cell per activation (never erased — an
+> escaping closure still needs it — and invisible to a process `async.runAll` spawns), an ETS cell
+> (shared across processes, needs an owner), or a refusal.
+> **Options.** (1) Refuse at check time a write to a captured `var` from a lambda that is neither a
+> `forEach` body nor a local closure called at statement position (every target, located at the
+> write); (2) a process-dictionary cell on erlang and beam, documented as per-process; (3) an ETS
+> cell like decision 39's `Ets` module var.
+> **Recommendation.** (1) — the most restrictive: the one form each backend threads stays, and the
+> program that meant a shared counter says so with a module-level `var` and its `#[@BeamMemory]`
+> mode (decisions 38–43), which already answers the per-process question.
+> **Blocks.** The language-gaps row; beam's silent `0` stays until the answer lands.
+
 ## Front 16 (formatter) — choices made in implementation, to confirm
 
 Decided by the implementation of `00-compiler-carry-over/16-formatter` so C-12 and C-13 could land; the maintainer confirms or
