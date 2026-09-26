@@ -207,10 +207,18 @@ A written generic type without its arguments, and a bare `Self` inside a declara
 parameters, both check (exit 0).
 
 **Acceptance:**
-- [ ] `fn get(b: Box) -> i32` reds "`Box` needs 1 type argument"; `Pair<i32>` for a 2-parameter `Pair` reds with both counts
-- [ ] inside `type Box<T>`, `self: Self` reds and names `Self<T>`; inside `type Point(x: i32)`, `Self` stays right
-- [ ] §1.2's A1 rule: a non-generic type implementing a generic behavior writes `Self` and binds the behavior's parameters to the implementation's arguments — `Point(x: 1).map({ x -> "a" })` reds, `Box(value: 1).map({ x -> "a" })` checks as `Box<string>`
-- [ ] `reject/generic_missing_argument.bp` and `reject/self_without_argument.bp` are rejected
+- [x] `fn get(b: Box) -> i32` reds "`Box` needs 1 type argument"; `Pair<i32>` for a 2-parameter `Pair` reds with both counts — compiler `e7f1af11`
+- [x] inside `type Box<T>`, `self: Self` reds and names `Self<T>`; inside `type Point(x: i32)`, `Self` stays right — `e7f1af11` (`Self<…>` in a plain declaration is refused as well)
+- [x] §1.2's A1 rule: a non-generic type implementing a generic behavior writes `Self` and binds the behavior's parameters to the implementation's arguments — `Point(x: 1).map({ x -> "a" })` reds, `Box(value: 1).map({ x -> "a" })` checks as `Box<string>` — `e7f1af11`, pinned by `comptime/tests/infer_errors.zig` `generics: …`
+- [x] `reject/generic_missing_argument.bp` and `reject/self_without_argument.bp` are rejected — their lines left `expected-failures.txt`; the `.expect` columns corrected to the caret every annotation diagnostic uses (5:11, 5:22)
+
+**Sibling libraries under the rule** (measured with `botopink-lib-test` over a scratch copy of the five
+repositories, `feat` binary against this one: 50 → 46 passing cells, the 4 new reds all erika's).
+`erika` writes bare `Self` 39 times in `Query<T>` / `Grouping<K, V>`; the mechanical migration is
+[`erika-self-migration.patch`](./erika-self-migration.patch) (`patch -p1` from the erika checkout) and
+with it `modules/erika` is 31 / 31 on commonJS and erlang and `examples/erika-linq` runs on both. It
+lands with erika's own front (`09-ecosystem-residuals`, C-14) before this front merges; jhonstart,
+rakun, emilia and onze are unaffected.
 
 ### Step 7 — arity and trailing defaults (N1, N2)
 
@@ -320,8 +328,8 @@ declares it — `tests/language/run/display_print.bp` declares its own, which is
 test against meanwhile.
 
 **Acceptance:**
-- [ ] no bare `Self` in a generic declaration in `libs/std` or `examples`; the 16 declarations carry `Self<…>`
-- [ ] the 5 unannotated `= []` bindings carry an annotation and §1.4 warns on none of them
+- [x] no bare `Self` in a generic declaration in `libs/std` or `examples`; the 16 declarations carry `Self<…>` — `e7f1af11` (79 sites; `examples/` had none)
+- [x] the 5 unannotated `= []` bindings carry an annotation and §1.4 warns on none of them — `bdbbeae6`
 - [ ] `behavior Display` is declared in `libs/std` and `Dict<K, V>` implements it (§7's `Dict("a": 1, "b": 2)`)
 - [ ] `zig build test`, `test-libs` and `test-language` green
 

@@ -486,8 +486,8 @@ and the rule C-14's `Self<…>` sweep enforces.
 **Partial work:** none.
 **Depends on:** nothing.
 **Acceptance:**
-- [ ] the two `reject/` cells rejected for their own reason; the A1 rule pinned by a `test/` cell
-- [ ] `libs/std` and the examples compile under the rule (the sweep is C-14)
+- [x] the two `reject/` cells rejected for their own reason; the A1 rule pinned by a `test/` cell — compiler `e7f1af11`; the A1 rule is pinned by a checker test (`infer_errors.zig` `generics: …`) rather than a `test/` cell, which is front 12's to add
+- [x] `libs/std` and the examples compile under the rule (the sweep is C-14) — the `libs/std` half of C-14's sweep landed with it; erika's 39 sites are a patch waiting on erika (`01-checker/erika-self-migration.patch`)
 
 ## C-16 — The language suite's residual cells
 
