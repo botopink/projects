@@ -252,12 +252,12 @@ declaration lists both.
 
 **Acceptance:**
 - [x] `.Ring.W.2` emits both the `--tw-ring-shadow` custom property and the composed `box-shadow` — held (shape: `--tw-ring-shadow:0 0 0 2px`, the v4 value, not the spec's v3 `calc(…)` form): `Ring.W — the custom property AND the composed box-shadow`
-- [ ] a `Ring` token and an `Effect.Shadow` token in the same list produce one `box-shadow`
-      declaration that references both, not two competing ones — asserted directly — **open:** `Effect.Shadow` writes `box-shadow:var(--shadow-*)`, not `--tw-shadow`, so `[.Ring.W.2, .Effect.Shadow.Md]` is two `box-shadow` declarations and the second wins (AGENTS.md front 41 residual); the test asserts only that the ring lists `var(--tw-shadow)`
+- [x] a `Ring` token and an `Effect.Shadow` token in the same list produce one `box-shadow`
+      declaration that references both, not two competing ones — asserted directly — held: emilia.bp test "Ring composes with Effect.Shadow rather than overwriting it" — two channels, one `boxShadowChain()` reader (fronts 40 and 41 recomposed on upstream's five channels in the audit pass)
 - [x] `.Ring.Inset` sets `--tw-ring-inset` — held: `Ring.Inset and Ring.Offset — the inset flag and the two offset families`
 - [x] `Ring.Color` and `Ring.Offset.Color` go through `paletteVar` — held: `emilia.bp:ringColorToCss`, `ringOffsetColorToCss` call `paletteVar`
 - [x] the dispatcher is a `…ToSheet`, per front 56's second shape, and says so in its own header — held: `emilia.bp:ringTokenToSheet` header comment
-- [ ] every custom-property name is verified against upstream before merge — **open:** the composed `box-shadow` list and the whole `ring-offset-*` family are still unverified (front 40 banner in `emilia.bp`, AGENTS.md front 40 row)
+- [x] every custom-property name is verified against upstream before merge — held: verified against upstream `utilities.ts` on 2026-09-26 (`cssBoxShadowValue`, `ringShadowValue`, `ringOffsetShadowValue`) and re-emitted in that shape, with fallbacks for the `@property` initials emilia does not emit
 
 ### Step 5 — divide, as a `Sheet`
 
@@ -359,7 +359,7 @@ What the tests assert:
       and recorded in *Reference gaps* until it is — held (shape: the `box-shadow` list and `ring-offset-*` are still unverified and recorded as such in the `emilia.bp` banner and AGENTS.md): `Ring.W — the ladder, and the v4 default the README told us to verify`
 - [x] the four colour sub-sections call front 33's `paletteVar`; this front holds no colour table — held: `the five colour sub-sections agree, because all five call paletteVar`
 - [x] `Divide` and front 35's `Space` share one child selector, asserted by a test — held: `Divide and front 35's Space emit BYTE-IDENTICAL child selectors`
-- [ ] `Ring` composes with `Effect.Shadow` rather than overwriting it — **open:** `Effect.Shadow` does not set `--tw-shadow`; ring + shadow is two `box-shadow` declarations, last wins (AGENTS.md front 41 residual)
+- [x] `Ring` composes with `Effect.Shadow` rather than overwriting it — held: same composition test, and emilia-outline-ring's "a ring composes with a shadow …"
 - [x] the banner fences this front's block in both files, appended at the end — held: `tokens.bp`/`emilia.bp` front 40 banners
 - [x] three arms added to the top-level dispatcher, in front-number order — held (shape: in order after front 38's; front 39's `Gradient` arm trails front 45's)
 - [x] `repository/emilia/AGENTS.md` and the `////` header of `tokens.bp` record the new sections and

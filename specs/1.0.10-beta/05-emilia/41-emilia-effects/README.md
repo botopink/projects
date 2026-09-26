@@ -153,7 +153,7 @@ level, with builtin-typed fields. The name keeps the path it would have had, fla
 
 **Acceptance:**
 - [x] `effectTokenToCss(.Shadow.Md, th)` returns `box-shadow:var(--shadow-md)` — the string
-      `box-shadow:md` appears nowhere in `repository/emilia/src/`. — held (shape: the string survives only in comments, negative asserts and probe controls; no arm emits it): `the defect — the four pre-41 shadow leaves emit a theme reference, never a class suffix`
+      `box-shadow:md` appears nowhere in `repository/emilia/src/`. — held (shape: since the audit pass the value `var(--shadow-md)` is written into the `--tw-shadow` channel beside the shared `box-shadow` reader, so a ring composes with it — front 40 step 4): `the defect — the four pre-41 shadow leaves emit a theme reference, never a class suffix`
 - [x] `Token.EffectShadowRaw(value: "0 0 0 1px red")` **constructs** — a test builds one, which is
       the check that would have failed against a nested `Effect.Shadow.Raw`. — held: `the three Raw variants construct, and each reaches its own arm`
 - [x] No section in this front's `tokens.bp` block contains a payload leaf. — held: `tokens.bp` front 41 block — `Effect`/`Blend`/`Mask` are keyword/numeric only; the three payloads are top-level
@@ -161,7 +161,7 @@ level, with builtin-typed fields. The name keeps the path it would have had, fla
       literal inside a dispatcher is the defect this acceptance exists to catch. — superseded: `Shadow.Inner` is upstream's literal with no `--shadow-inner` (AGENTS.md front 41 row); `regression — exactly one leaf resolves a shadow value, and it is Shadow.Inner`
 - [x] All nine bare shadow leaves plus the three inset leaves have an arm in `shadowToCss` / `insetShadowToCss`; the `case` is exhaustive with no `_` arm. — held: `emilia.bp:shadowToCss`, `insetShadowToCss` — no `_` arm
 - [x] `.Effect.Shadow.Sm`, `.Md`, `.Lg`, `.Xl` still type-check at every existing call site — the leaf names did not move. — held: `the defect — the four pre-41 shadow leaves emit a theme reference, never a class suffix`
-- [x] Each of the twelve values is character-identical to its row above, which is character-identical to the "Propriedade CSS" column of `TAILWIND_CSS_DOCS.md § 12.1`. — held: `Effect.Shadow — the seven scale steps are --shadow-* references`, `…None is a keyword and Inner is the reference's own literal`, `Effect.InsetShadow — inset leads the value…`
+- [x] Each of the twelve values is character-identical to its row above, which is character-identical to the "Propriedade CSS" column of `TAILWIND_CSS_DOCS.md § 12.1`. — held (shape: each value is now the `--tw-shadow` / `--tw-inset-shadow` channel's value beside the shared reader, so `Shadow.None` is the null shadow of its channel rather than `box-shadow:none`, upstream's `0 0 #0000` behaviour): `Effect.Shadow — the seven scale steps are --shadow-* references`, `…None is a keyword and Inner is the reference's own literal`, `Effect.InsetShadow — inset leads the value…`
 
 ### Step 2 — text-shadow
 
