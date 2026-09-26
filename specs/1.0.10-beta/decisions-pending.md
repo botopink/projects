@@ -586,13 +586,14 @@ fronts could land; the maintainer confirms or reverses each.
 
 ### 03r-x · The relay claims by conditional UPDATE, and the coordinators are resumed, not supervised
 
-> **Raised by:** `83-rakun-distributed-transactions`
+> **Raised by:** `83-rakun-distributed-transactions`, `84-rakun-persistent-jobs`
 > **Measured.** rakun-data's embedded `ets:memory` arm — the datasource the front's tests run on —
 > has no `FOR UPDATE SKIP LOCKED`, and a botopink module cannot declare a `gen_statem`.
 > **Options.** (1) The relay claims each row with `UPDATE … SET status = 'claimed' WHERE id = :id AND
 > status = 'pending'` (one winner per row on every arm), a crashed relay's claims come back through
 > `reclaimStale`; the saga and 2PC coordinators persist every transition and are resumed by
-> `resumeSagas` / `recover2pc` at boot; (2) a `SKIP LOCKED` arm per driver and supervised
+> `resumeSagas` / `recover2pc` at boot; the job store claims a due trigger and takes over an expired
+lease the same way (`… WHERE name = :n AND state = 'waiting'` / `AND owner = :old`); (2) a `SKIP LOCKED` arm per driver and supervised
 > `gen_statem` sidecars.
 > **Recommendation.** (1) — implemented. (2) is an optimisation for the Postgres arm; the durable
 > state, not the process, is what recovery reads.

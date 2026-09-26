@@ -41,11 +41,11 @@ that may be missed; this front owns work that may not.**
 
 | Piece | Where it is today |
 |---|---|
-| `modules/rakun-scheduling/` | `botopink.json` plus `src/root.bp`, whose body is the comment *"Module contents will be added by the respective fronts."* |
-| `#[scheduled]`, cron parsing, the in-VM timer | front 16 delivers them; nothing exists today |
-| `modules/rakun-scheduling/src/jobstore/` | does not exist — this front creates it |
-| A durable job store, a cluster lease, a misfire policy | nothing, in rakun or in std |
-| A clock | front 01 delivers `io.clock` (decision 106); `libs/std/src/time.bp` exists today but front 01 owns the monotonic and wall-clock split this front needs |
+| `modules/rakun-scheduling/` | front 16's in-VM scheduler, plus `src/jobstore/` (this front) |
+| `#[scheduled]`, cron parsing, the in-VM timer | front 16's `markers`, `cron` (six fields, seconds first — the triggers here use it), `executor` |
+| `modules/rakun-scheduling/src/jobstore/` | `store`, `scheduler`, `markers` (`#[persistentJob]`, `#[jobs]`), `endpoint` (`quartz`) |
+| A durable job store, a cluster lease, a misfire policy | `rakun_job`, `rakun_job_trigger`, `rakun_job_history` (`installJobStore`); the lease and the policies in `scheduler` |
+| A clock | `jobClock()` — the wall clock in ms, or the instant a test pinned with `setJobClock` |
 | Node identity | front 04's release gives the node a name; `erlang:node/0` behind a cell is the only identifier needed |
 
 ## Mechanism
@@ -166,17 +166,17 @@ pub type MisfirePolicy {
 ```
 
 **Acceptance:**
-- [ ] A job registered twice with the same name and group is one row, and its definition is the later one only when `rakun.scheduling.overwrite-existing-jobs` is true — the `07 § Configuracao` switch
-- [ ] With that switch false, a changed definition fails the boot naming the job, rather than running the old one
-- [ ] A trigger whose cron does not parse fails the boot, naming the trigger and the parse error
-- [ ] A trigger whose `endAt` precedes its `startAt` fails the boot
-- [ ] A dedicated datasource is used when configured, and the application's otherwise
-- [ ] Job data round-trips a value containing `&`, `=`, a newline and a four-byte UTF-8 character
+- [x] A job registered twice with the same name and group is one row, and its definition is the later one only when `rakun.scheduling.overwrite-existing-jobs` is true — the `07 § Configuracao` switch — `jobstore/store_test` "a job registered twice is one row, replaced only with overwrite-existing-jobs"
+- [x] With that switch false, a changed definition fails the boot naming the job, rather than running the old one — `jobstore/store_test` "a changed definition without overwrite refuses the boot naming the job"
+- [x] A trigger whose cron does not parse fails the boot, naming the trigger and the parse error — `jobstore/store_test` "a trigger whose cron does not parse refuses, naming the trigger and the parse error"
+- [x] A trigger whose `endAt` precedes its `startAt` fails the boot — `jobstore/store_test` "a trigger that ends before it starts refuses"
+- [x] A dedicated datasource is used when configured, and the application's otherwise — `jobstore/store_test` "a dedicated datasource is used when configured, the application's otherwise"
+- [x] Job data round-trips a value containing `&`, `=`, a newline and a four-byte UTF-8 character — `jobstore/store_test` "job data round-trips &, =, a newline and a four-byte character"
 
 ### Step 2 — `#[persistentJob]` and registration
 
 ```bp
-#[persistentJob("nightly-invoices", "0 3 * * *")]
+#[persistentJob("nightly-invoices", "0 0 3 * * *")]
 pub fn runInvoices(self: Self, data: string) -> string
 ```
 
@@ -186,38 +186,38 @@ this repository uses anywhere. The decorator `@emit`s the registration the same 
 and checks placement and argument shape at comptime.
 
 **Acceptance:**
-- [ ] `#[persistentJob]` on something that is not a method is a located compile error
-- [ ] A handler whose signature is not `(self, data: string) -> string` is a located compile error
-- [ ] Registration is idempotent across restarts: booting twice produces one job row and one trigger row
-- [ ] A job removed from the source is marked orphaned at boot and does not fire; it is not deleted, so its history survives
+- [x] `#[persistentJob]` on something that is not a method is a located compile error — `jobstore/build_test` "#[persistentJob] on something that is not a method is a located error"
+- [x] A handler whose signature is not `(self, data: string) -> string` is a located compile error — `jobstore/build_test` "a handler not (self, data: string) -> string is a located error" — located at the `#[jobs]` type, naming the method (a method `@Decl` has no parameter list: language-gaps)
+- [x] Registration is idempotent across restarts: booting twice produces one job row and one trigger row — `jobstore/store_test` "registering on every boot keeps one job row and one trigger row"
+- [x] A job removed from the source is marked orphaned at boot and does not fire; it is not deleted, so its history survives — `jobstore/store_test` "a job whose handler is gone is orphaned at boot, keeps its history and does not fire"
 
 ### Step 3 — Firing, once, across a cluster
 
 **Acceptance:**
-- [ ] Three nodes with the same trigger due fire it once — asserted with three schedulers against one store
-- [ ] The winning node is recorded as the owner in the history row
-- [ ] A node that acquires and then dies has its trigger reclaimed after the lease expires, and the reclaim is recorded as a takeover
-- [ ] A handler that runs longer than the lease renews it and is not reclaimed
-- [ ] Ticks are jittered per node, so N nodes do not all query at the same instant
-- [ ] A store that is unreachable at tick time logs once per interval rather than once per tick, and recovers without a restart
+- [x] Three nodes with the same trigger due fire it once — asserted with three schedulers against one store — `jobstore/cluster_test` "three nodes with one trigger due fire it once, and the winner is the recorded owner" — the claim is a conditional UPDATE (03r-x)
+- [x] The winning node is recorded as the owner in the history row — `jobstore/cluster_test` "three nodes with one trigger due fire it once, and the winner is the recorded owner"
+- [x] A node that acquires and then dies has its trigger reclaimed after the lease expires, and the reclaim is recorded as a takeover — `jobstore/cluster_test` "a node killed after acquiring is taken over after its lease, and the takeover is recorded"
+- [x] A handler that runs longer than the lease renews it and is not reclaimed — `jobstore/cluster_test` "a handler that outlives its lease renews it and is not taken over"
+- [x] Ticks are jittered per node, so N nodes do not all query at the same instant — `jobstore/cluster_test` "ticks are jittered per node, within a quarter of the interval", "the scheduler loop ticks on its own and stops"
+- [x] A store that is unreachable at tick time logs once per interval rather than once per tick, and recovers without a restart — `jobstore/cluster_test` "an unreachable store logs once per interval, and the node recovers without a restart"
 
 ### Step 4 — Misfires
 
 **Acceptance:**
-- [ ] `FireNow` on a trigger whose window passed fires once immediately and then resumes the schedule
-- [ ] `SkipToNext` fires nothing and the next fire time is the next scheduled one
-- [ ] `FireAll` over three missed windows fires three times, in chronological order
-- [ ] `FireAll` past the configured ceiling stops at the ceiling and records an error entry naming how many windows were skipped
-- [ ] The policy is read per trigger; there is no global override that silently changes a job's semantics
+- [x] `FireNow` on a trigger whose window passed fires once immediately and then resumes the schedule — `jobstore/cluster_test` "FireNow on a missed window fires once and resumes the schedule"
+- [x] `SkipToNext` fires nothing and the next fire time is the next scheduled one — `jobstore/cluster_test` "SkipToNext fires nothing for missed windows and fires at the next one"
+- [x] `FireAll` over three missed windows fires three times, in chronological order — `jobstore/cluster_test` "FireAll over three missed windows fires three times, in order"
+- [x] `FireAll` past the configured ceiling stops at the ceiling and records an error entry naming how many windows were skipped — `jobstore/cluster_test` "FireAll past its ceiling stops there and records how many windows it skipped"
+- [x] The policy is read per trigger; there is no global override that silently changes a job's semantics — `jobstore/cluster_test` "the misfire policy is the trigger's own - two triggers of one job differ" (no key reads a policy)
 
 ### Step 5 — Retries, history and failure
 
 **Acceptance:**
-- [ ] A handler that raises is retried to the declared ceiling with the declared backoff
-- [ ] Past the ceiling the execution is `failed` with the reason, and the trigger's next scheduled fire still happens
-- [ ] A retry storm is impossible: a job cannot consume its own next window retrying the previous one
-- [ ] Every execution — success, failure, takeover — has a history row with node, start, end and outcome
-- [ ] History is pruned on a configured retention, bounded per pass
+- [x] A handler that raises is retried to the declared ceiling with the declared backoff — `jobstore/cluster_test` "a raising handler is retried to its ceiling, then failed with the reason, and the next window still fires"
+- [x] Past the ceiling the execution is `failed` with the reason, and the trigger's next scheduled fire still happens — `jobstore/cluster_test` "a raising handler is retried to its ceiling, then failed with the reason, and the next window still fires"
+- [x] A retry storm is impossible: a job cannot consume its own next window retrying the previous one — `jobstore/cluster_test` "retries stop when the next window is due - no retry storm"
+- [x] Every execution — success, failure, takeover — has a history row with node, start, end and outcome — `jobstore/cluster_test` "every execution has a history row with node, start, end and outcome, pruned by retention in bounded passes", "a node killed after acquiring…" (takeover)
+- [x] History is pruned on a configured retention, bounded per pass — `jobstore/cluster_test` "every execution has a history row … pruned by retention in bounded passes"
 
 ### Step 6 — The actuator endpoint
 
@@ -225,11 +225,11 @@ The `quartz` endpoint from `09 § Endpoints`: jobs, triggers, next fire times an
 Served by front 11, behind front 76's access control like every other endpoint.
 
 **Acceptance:**
-- [ ] `/actuator/quartz` lists every job with its group, triggers and next fire time
-- [ ] A named job's recent executions are readable, newest first, bounded
-- [ ] Job data is sanitised by front 76's rules before it is served — a job whose data carries a token must not leak it through an endpoint
-- [ ] The endpoint is read-only: there is no trigger-now and no delete, because an endpoint that fires a job is an endpoint that fires a job twice
-- [ ] It is absent, not empty, when this module is not present
+- [x] `/actuator/quartz` lists every job with its group, triggers and next fire time — `jobstore/endpoint_test` "quartz: lists every job with its group, triggers and next fire time"
+- [x] A named job's recent executions are readable, newest first, bounded — `jobstore/endpoint_test` "quartz: a job's executions are readable newest first, bounded"
+- [x] Job data is sanitised by front 76's rules before it is served — a job whose data carries a token must not leak it through an endpoint — `jobstore/endpoint_test` "quartz: job data is sanitized by front 76's rules - masked by default, a secret-named key masked even when values are shown"
+- [x] The endpoint is read-only: there is no trigger-now and no delete, because an endpoint that fires a job is an endpoint that fires a job twice — `jobstore/endpoint_test` "quartz: read-only - no route fires or deletes a job"
+- [x] It is absent, not empty, when this module is not present — `jobstore/endpoint_test` "quartz: absent, not empty, when the job store is not mounted"
 
 ## Examples
 
@@ -275,14 +275,14 @@ This front is erlang-only. A durable schedule has no browser half.
 
 ## Definition of done
 
-- [ ] `modules/rakun-scheduling/src/jobstore/` exists and front 16's top-level files are untouched
-- [ ] `#[persistentJob]` registers a job and a trigger idempotently across restarts
-- [ ] Three schedulers against one store fire a due trigger exactly once
-- [ ] A dead node's acquired trigger is reclaimed after its lease and the takeover is recorded
-- [ ] All three misfire policies behave as specified, and `FireAll` reports rather than truncates
-- [ ] A failing handler retries to its ceiling and then fails without stopping its own schedule
-- [ ] `/actuator/quartz` is read-only, sanitised, and absent when the module is not present
-- [ ] The README's at-least-once statement is in `repository/rakun/AGENTS.md` too, next to front 16's
-      at-most-once one — the two guarantees are the reason there are two fronts
-- [ ] The front's tests are green on its assigned target
+- [x] `modules/rakun-scheduling/src/jobstore/` exists and front 16's top-level files are untouched — `store` · `scheduler` · `markers` · `endpoint` · `mod`; of front 16's files only `root.bp` (`pub mod jobstore;`) and the manifest (`files`, the rakun-data dependency) changed
+- [x] `#[persistentJob]` registers a job and a trigger idempotently across restarts — step 2
+- [x] Three schedulers against one store fire a due trigger exactly once — step 3
+- [x] A dead node's acquired trigger is reclaimed after its lease and the takeover is recorded — step 3
+- [x] All three misfire policies behave as specified, and `FireAll` reports rather than truncates — step 4
+- [x] A failing handler retries to its ceiling and then fails without stopping its own schedule — step 5
+- [x] `/actuator/quartz` is read-only, sanitised, and absent when the module is not present — step 6
+- [x] The README's at-least-once statement is in `repository/rakun/AGENTS.md` too, next to front 16's
+      at-most-once one — the two guarantees are the reason there are two fronts — § Scheduling, after front 16's guarantee
+- [x] The front's tests are green on its assigned target — rakun-scheduling 100/0 on erlang (33 of them `test/jobstore/`)
 
