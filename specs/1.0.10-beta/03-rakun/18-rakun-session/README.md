@@ -4,7 +4,7 @@
 **Priority:** low as a feature, high as a security surface — front 12's private cache scope keys on the session id, so a weak session here weakens the cache too
 **Target:** erlang (server)
 **Wave:** 4
-**Depends on:** 01 (`random`, `hmac`, constant-time compare), 05 (config), 06 (context), 07 (the filter chain the session filter joins), 08 (`datasource`, for the SQL arm), 11 (endpoint host + health registry), 62 (per-request context)
+**Depends on:** 01 (`io.random`, `hash` — HMAC and constant-time compare), 05 (config), 06 (context), 07 (the filter chain the session filter joins), 08 (`datasource`, for the SQL arm), 11 (endpoint host + health registry), 62 (per-request context)
 **Owns:** `modules/rakun-session/src/**`, `modules/rakun-session/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone
 **Reference:** `04-web.md § Spring Session` · https://docs.spring.io/spring-boot/reference/web/spring-session.html
@@ -28,8 +28,8 @@ rotates on privilege change is the thing worth writing down.
 - `repository/rakun/modules/rakun-session/src/root.bp` — docblock and `// Module contents will be added by the respective fronts.`
 - `repository/rakun/src/http.bp:35-43` — `Request` has `param`, `query`, `header`, `body`. No cookie accessor. The file is frozen, so cookie parsing happens in this module over `req.header("cookie")`.
 - `repository/rakun/src/http.bp:45-73` — `Response` has six builders and no header surface. Setting `Set-Cookie` needs front 07's response-header mechanism; this front produces the header value and hands it over.
-- `libs/std/src/crypto.bp:38` — `hmacSha256(key, data) -> string` already exists. `crypto.bp:77` — `randomBytes(n) -> string`. Both are usable today (`hash.hmacSha256` and `random.randomBytes` under `io.random` after decision 106); front 01 adds base64url of a raw digest and a **constant-time compare**, which this front requires and which std does not have.
-- `libs/std/src/time.bp:56` — `nowMillis()` exists, so expiry arithmetic needs no new primitive.
+- `hash` (`libs/std/src/hash.bp`) has `hmacSha256`, `hmacSha256Base64Url` (base64url of the raw digest) and `equalsConstantTime`, the **constant-time compare** this front requires; `io.random` has `randomBytes(n)` and `secureToken(bytes)`.
+- `io.clock`'s `nowMillis()` covers expiry arithmetic; no new primitive.
 
 ## Mechanism
 
@@ -88,7 +88,7 @@ Expired rows are swept by a `#[fixedDelay]` task from front 16, not by a timer t
 
 Three rules, and each of them exists because the obvious implementation is wrong.
 
-1. **The id is 32 random bytes**, from front 01's `random`, rendered base64url. Not a UUID: a v4 UUID
+1. **The id is 32 random bytes**, from `io.random`, rendered base64url. Not a UUID: a v4 UUID
    carries 122 bits in a shape that invites a v1 to be substituted later, and there is no reason to
    spend the ambiguity.
 2. **The cookie is signed, not bare.** Its value is `<id>.<base64url(hmacSha256(secret, id))>` with the
@@ -158,7 +158,7 @@ eagerly on erlang (`libs/std/src/http.bp:16-18`), so such a method would buy not
 - [ ] An id is 32 bytes of randomness rendered base64url; two ids generated in the same millisecond differ.
 - [ ] A cookie whose signature does not match is rejected without the store being touched — asserted by a store double that counts lookups.
 - [ ] A cookie with a valid signature for a deleted session is rejected as *not found*, distinctly from *bad signature*, and both produce the same response to the client.
-- [ ] Verification uses front 01's constant-time compare; a test greps the verification path and fails on a `==` between the computed and supplied signatures.
+- [ ] Verification uses `hash.equalsConstantTime`; a test greps the verification path and fails on a `==` between the computed and supplied signatures.
 - [ ] With the store enabled and `rakun.session.secret` unset, boot fails naming the key.
 - [ ] Rotating the secret invalidates existing cookies and does not crash on them.
 

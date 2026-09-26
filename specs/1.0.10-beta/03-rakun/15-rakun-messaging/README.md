@@ -4,7 +4,7 @@
 **Priority:** medium — a service that can only answer HTTP cannot be told anything; every asynchronous workflow in the ecosystem bottoms out here
 **Target:** erlang (server)
 **Wave:** 3
-**Depends on:** 01 (`net`), 05 (config), 06 (context), 11 (health registry)
+**Depends on:** 01 (`io.net`), 05 (config), 06 (context), 11 (health registry)
 **Owns:** `modules/rakun-messaging/src/**`, `modules/rakun-messaging/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone
 **Reference:** `06-messaging.md § AMQP (RabbitMQ)` · `06-messaging.md § Apache Kafka` · https://docs.spring.io/spring-boot/reference/messaging/amqp.html · https://docs.spring.io/spring-boot/reference/messaging/kafka.html
@@ -29,7 +29,7 @@ Redis pub/sub after that is a file, not a front.
 
 - `repository/rakun/modules/rakun-messaging/src/root.bp` — docblock and `// Module contents will be added by the respective fronts.`
 - `repository/rakun/src/runtime.bp` — the only registry rakun has is the HTTP route table (`rkRegisterRoute`, `rkRouteCount`, `rkRoutePaths`, `rkDispatch`). It is a good model for this one and it is not reusable for it: routes are matched by verb and path, listeners by broker and destination.
-- `libs/std/src/` has **no socket module**. Every broker connection in this front waits on front 01's `io.net`; there is nothing under it today.
+- `io.net` (`libs/std/src/io/net.bp`) has `connect` / `tlsConnect`; every broker connection in this front goes through it.
 - `repository/rakun/src/decorators.bp` — no listener markers, and frozen.
 - No supervision surface is exposed to a rakun library today; front 04's BEAM runtime owns the supervision tree this front's containers attach to.
 

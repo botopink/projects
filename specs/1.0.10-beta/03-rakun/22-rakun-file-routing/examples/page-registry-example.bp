@@ -26,8 +26,11 @@ import {rkAppRegisterEntry, rkAppTable} from "rakun";      // this front
 import {page, ChunkWriter, Request} from "rakun";          // front 23 · front 04
 import {table.parseTable, match.matchPath} from "routing"; // bundled (decision 115)
 
-fn text(body: string) -> fn(Request, ChunkWriter) -> @Task<void> {
-    return fn(req: Request, out: ChunkWriter) { return out.write(body); };
+fn text(body: string) -> fn(Request, ChunkWriter) -> @Task<@Result<void, string>> {
+    return fn(req: Request, out: ChunkWriter) -> @Task<@Result<void, string>> {
+        await out.write(body);
+        return;
+    };
 }
 
 fn install() -> void {
@@ -35,8 +38,9 @@ fn install() -> void {
     rkAppRegisterEntry("L", "blog", "");
     val _home = page("", text("home"));
     val _blog = page("blog", text("blog index"));
-    val _post = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
-        return out.write("post " + req.param("slug"));
+    val _post = page("blog/[slug]", fn(req: Request, out: ChunkWriter) -> @Task<@Result<void, string>> {
+        await out.write("post " + req.param("slug"));
+        return;
     });
     val _about = page("(marketing)/about", text("about"));
 }

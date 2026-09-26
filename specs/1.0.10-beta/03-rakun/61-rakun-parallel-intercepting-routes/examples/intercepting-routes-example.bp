@@ -47,7 +47,7 @@ fn findPhoto(id: string) -> Photo {
 // SERVER — the feed.
 val _feed = page("feed", fn(req: Request, out: ChunkWriter) {
     val captions = allPhotos().map({ photo -> photo.caption });
-    return out.write("Feed: " + captions.join(", "));
+    await out.write("Feed: " + captions.join(", "));
 });
 
 // SERVER — the interception. It claims /feed/photo/[photoId] only when the
@@ -55,13 +55,13 @@ val _feed = page("feed", fn(req: Request, out: ChunkWriter) {
 // navigation. A pasted URL or a reload gets the `photo/[id]` renderer instead.
 val _modal = page("feed/(.)photo/[photoId]", fn(req: Request, out: ChunkWriter) {
     val photo = findPhoto(req.param("photoId"));
-    return out.write("modal: " + photo.caption);
+    await out.write("modal: " + photo.caption);
 });
 
 // SERVER — the full page, which is what a direct request gets.
 val _photo = page("photo/[id]", fn(req: Request, out: ChunkWriter) {
     val photo = findPhoto(req.param("id"));
-    return out.write(photo.caption + " — photo #" + photo.id);
+    await out.write(photo.caption + " — photo #" + photo.id);
 });
 
 // Marker parsing and resolution carry no host cell.

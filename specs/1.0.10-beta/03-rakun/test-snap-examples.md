@@ -1374,7 +1374,7 @@ test "blog-server: a post page writes its text through the chunk writer" {
     try assertPageDispatch(@src(),
         \\ import {page, ChunkWriter, Request} from "rakun";
         \\ val _post = page("[locale]/blog/[slug]", fn(req: Request, out: ChunkWriter) {
-        \\     return out.write("Hello (" + req.param("locale") + "): first post");
+        \\     await out.write("Hello (" + req.param("locale") + "): first post");
         \\ });
         , "GET /en/blog/hello");
 }
@@ -1605,7 +1605,7 @@ test "blog-server: a post render reads the theme cookie and memoizes the post on
         \\     val related = memoize(relatedKey, { ->
         \\         loadRelatedCount(slug);
         \\     });
-        \\     return out.write(title + ": " + post.body + " (" + related.toString() + " related, " + theme + ")");
+        \\     await out.write(title + ": " + post.body + " (" + related.toString() + " related, " + theme + ")");
         \\ });
         , "GET /en/blog/hello Cookie: theme=dark");
 }
@@ -1649,10 +1649,11 @@ test "blog-server: a missing post answers 404 from its page renderer" {
         \\     val found = findPost(req.param("slug"));
         \\     if (found.isError()) {
         \\         out.setStatus(404);
-        \\         return out.write("no such post");
+        \\         await out.write("no such post");
+        \\         return;
         \\     };
         \\     val post = found.unwrapOr(Post(slug: "", title: "", body: ""));
-        \\     return out.write(post.title + ": " + post.body);
+        \\     await out.write(post.title + ": " + post.body);
         \\ });
         , "GET /en/blog/missing");
 }

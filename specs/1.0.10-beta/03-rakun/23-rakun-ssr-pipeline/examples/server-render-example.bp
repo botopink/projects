@@ -55,7 +55,7 @@ fn recorder() -> ChunkWriter {
 
 var phaseSeen: string = "";
 
-fn stubRender(req: Request, out: ChunkWriter) -> @Task<void> {
+fn stubRender(req: Request, out: ChunkWriter) -> @Task<@Result<void, string>> {
     phaseSeen = if (requestPhase() == RequestPhase.Render) { "render" } else { "other" };
     await out.write("<shell " + req.param("slug") + ">");
     await out.write("<fill h1>");
@@ -64,28 +64,34 @@ fn stubRender(req: Request, out: ChunkWriter) -> @Task<void> {
 
 // A renderer answers a missing record with its own status, before its first
 // write — the shape jhonstart's render uses for a not-found page.
-fn missingRender(req: Request, out: ChunkWriter) -> @Task<void> {
+fn missingRender(req: Request, out: ChunkWriter) -> @Task<@Result<void, string>> {
     out.setStatus(404);
     await out.write("no such page");
 }
 
 // A renderer that redirects: status and `location`, no body, closed by itself.
-fn movedRender(req: Request, out: ChunkWriter) -> @Task<void> {
+fn movedRender(req: Request, out: ChunkWriter) -> @Task<@Result<void, string>> {
     out.setStatus(307);
     out.setHeader("location", "/blog/hello");
     await out.close();
 }
 
 // A status after the first chunk is too late: the request fails.
-fn lateStatusRender(req: Request, out: ChunkWriter) -> @Task<void> {
+fn lateStatusRender(req: Request, out: ChunkWriter) -> @Task<@Result<void, string>> {
     await out.write("<shell>");
     out.setStatus(404);
 }
 
 // A page renderer raising a navigation reason is a failed render, not a 404.
-fn signallingRender(req: Request, out: ChunkWriter) -> @Task<void> {
+fn signallingRender(req: Request, out: ChunkWriter) -> @Task<@Result<void, string>> {
     val _gone = notFound();
     await out.write("never written");
+}
+
+// A render that fails resolves `Error(msg)` (decision 130): 500 when nothing
+// was written, the message logged under a digest and never on the wire.
+fn failingRender(req: Request, out: ChunkWriter) -> @Task<@Result<void, string>> {
+    throw "no data for " + req.path;
 }
 
 val _post = page("blog/[slug]", stubRender);
@@ -93,6 +99,7 @@ val _gone = page("gone", missingRender);
 val _moved = page("moved", movedRender);
 val _late = page("late", lateStatusRender);
 val _signal = page("signal", signallingRender);
+val _failing = page("failing", failingRender);
 
 // ---- what the dispatch does ------------------------------------------------------------
 
@@ -146,6 +153,12 @@ test "a status set after the first write fails the request" {
 
 test "a navigation reason out of a page renderer is a failed render" {
     val status = await servePage(fakeGet("/signal"), recorder());
+    assert status == 500;
+    assert written.length == 0;
+}
+
+test "a render that resolves Error answers 500 and writes nothing" {
+    val status = await servePage(fakeGet("/failing"), recorder());
     assert status == 500;
     assert written.length == 0;
 }

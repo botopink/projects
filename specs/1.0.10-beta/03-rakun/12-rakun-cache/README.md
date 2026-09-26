@@ -4,7 +4,7 @@
 **Priority:** medium — without it every `#[service]` that reads twice reads twice, and the Next-style render pipeline in fronts 23–25 has nowhere to put a memoized segment
 **Target:** erlang (server)
 **Wave:** 5
-**Depends on:** 01 (`clock`), 03 (content hash), 05 (config), 06 (context), 11 (endpoint host + health registry), 13 (the Redis transport), 18 (session id for the private scope), 62 (per-request context)
+**Depends on:** 01 (`io.clock`), 03 (content hash), 05 (config), 06 (context), 11 (endpoint host + health registry), 13 (the Redis transport), 18 (session id for the private scope), 62 (per-request context)
 **Owns:** `modules/rakun-cache/src/**`, `modules/rakun-cache/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone
 **Reference:** `07-io.md § Caching` · `NEXTJS-DOCS.md § 11. Cache` · `NEXTJS-DOCS.md § 12. Revalidação` · https://docs.spring.io/spring-boot/reference/io/caching.html · https://nextjs.org/docs/app/api-reference/directives/use-cache · https://nextjs.org/docs/app/api-reference/functions/revalidateTag
@@ -31,12 +31,12 @@ the same ETS row under the same key and are invalidated by the same `revalidateT
 
 ## Current state
 
-- `repository/rakun/modules/rakun-cache/botopink.json` — package metadata only, `"targets": ["commonJS", "erlang"]`, which this front corrects to `["erlang"]` (decision 113).
+- `repository/rakun/modules/rakun-cache/botopink.json` — package metadata only, `"targets": ["erlang"]` (decision 113).
 - `repository/rakun/modules/rakun-cache/src/root.bp` — a docblock and a TODO comment. No `pub mod` line, no code.
 - `repository/rakun/src/runtime.bp:56-66` — the only key/value surface that exists in rakun today is the property store (`rkSetProp`/`rkProp`/`rkPropInt`), which is configuration, not cache: no expiry, no tags, no scope.
 - `repository/rakun/src/decorators.bp` — fifteen decorators, none of them `#[cacheable]`. The file is frozen; every decorator this front adds lives in `modules/rakun-cache/src/`.
-- `libs/std/src/` has no content-hash module; front 03 delivers it as `hash.contentHash` (decision 106), and this front's key protocol is its first consumer.
-- `libs/std/src/time.bp:56,80,92` already has `nowMillis`, `monotonicMillis` and `formatIso8601`. Freshness arithmetic uses the monotonic clock, not the system one, so a clock step does not resurrect an expired entry; front 01 ships them as `io.clock` (`now`, `monotonic`, `formatIso8601` — decision 106).
+- std's `hash.contentHash` (`libs/std/src/hash.bp`) is the hash this front's key protocol uses; this front is its first consumer.
+- `io.clock` (`libs/std/src/io/clock.bp`) has `nowMillis`, `monotonicMillis` and `formatIso8601`. Freshness arithmetic uses the monotonic clock, not the system one, so a clock step does not resurrect an expired entry.
 
 ## Mechanism
 

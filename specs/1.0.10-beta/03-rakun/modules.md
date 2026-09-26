@@ -8,17 +8,6 @@ exposes, which front delivers into which directory, and the example projects und
 `repository/rakun/examples/**`. It overrides the per-front `**Owns:**` lines where they disagree; a front README that names a different directory is
 read through the ownership table below.
 
-## Inputs
-
-| Source | What it says |
-|---|---|
-| `repository/rakun/modules/` | 13 scaffolds, every one a `botopink.json` (`targets: ["commonJS", "erlang"]`, `dependencies.rakun.path = "../../"`) plus a two-comment `src/root.bp` and an empty `test/`. `rakun-data` has empty `src/sql/` and `src/nosql/`; `rakun-messaging` has empty `src/amqp/` and `src/kafka/`. Zero lines of code. |
-| `repository/rakun/src/` | The core today: `decorators.bp`, `http.bp`, `bootstrap.bp`, `runtime.bp`, `runtime.mjs`, `rakun.d.bp`, `root.bp`; `botopink.json` declares `"targets": ["commonJS"]` until front 04 makes it `["erlang"]` (decision 113). Five tests in `test/`. |
-| `repository/rakun/examples/` | One project, `examples/rakun` (`main`, `users`, `posts`, `config`), commonJS. |
-| Front 95 § 2 | "thirteen existing + one new": a core `modules/rakun/` that re-exports `src/`; every other submodule depends on it. |
-| Front 73 | Eight starters over "twenty-two `rakun-*` modules". |
-| Spring Boot 4 starters | `spring-boot-starter` (core, logging, YAML) · `-webmvc`/`-webflux` · `-websocket` · `-data-jpa`/`-data-jdbc`/`-jdbc`/`-r2dbc`/`-jooq` · `-data-mongodb`/`-data-redis` · `-security` · `-security-oauth2-client`/`-saml2` · `-session-jdbc`/`-session-data-redis` · `-actuator` · `-cache` · `-validation` · `-amqp`/`-kafka`/`-activemq`/`-artemis`/`-pulsar`/`-rsocket`/`-integration` · `-quartz` · `-mail` · `-hateoas` · `-webservices` · `-test`; plus `spring-boot-devtools`, the CLI and the build plugins as separate artefacts |
-
 ## Three facts that decide the cut
 
 1. **The Next.js server half is its own module, and it imports no HTML library.** Fronts 22–25 and
@@ -86,7 +75,7 @@ is the normative graph and [§ The graph](#the-graph) draws it. `std` is implici
 
 | Candidate | Origin | Verdict | Reason |
 |---|---|---|---|
-| `rakun` (core) | 95 § 2, new | **keep (create)** | DI, bootstrap, configuration, context, auto-configuration, request context, SSL bundles. `modules/rakun/` re-exports `src/` (95 Step 5); `src/` stays where the frozen files are. Depends on `std` only. |
+| `rakun` (core) | 95 § 2, new | **keep (create)** | DI, bootstrap, configuration, context, auto-configuration, request context, SSL bundles. The core, frozen files included, is `modules/rakun/`. Depends on `std` only. |
 | `rakun-app` | new | **split** from core | Fronts 22–25, 60–66. Reason 1 above. erlang. Depends on no HTML or CSS library: the page's markup is the output of the function onze hands front 23 (decision 113). |
 | `rakun-web` | scaffold | **keep, slimmed** | 07 (chain, CORS, problem details, `middleware.bp`), 65 (`src/rules/**`), 82 (`src/static/**`). Loses websocket (reason 2). No dependency on `rakun-app`: 65 depends on 07 only. |
 | `rakun-websocket` | new | **split** from `rakun-web` | Front 20. Reason 2; matches `spring-boot-starter-websocket`. 92 (rsocket) stands on it. |
@@ -94,7 +83,7 @@ is the normative graph and [§ The graph](#the-graph) draws it. `std` is implici
 | `rakun-tx` | ownership row | **keep, separate** | Front 83 depends on 15 (publisher), 16 (relay tick) and 77 — a `rakun-data/src/tx/**` placement would make the data layer depend on messaging and scheduling. Spring's JTA support is its own module too. |
 | `rakun-security` | scaffold | **keep** | 10 core, 79 `src/oauth2/**`, `src/oidc/**`, `src/ldap/**`, `src/saml2/**`. Spring ships `-security`, `-security-oauth2-client`, `-security-saml2` as starters over one security module; the starter cut is 73's, not this one. |
 | `rakun-session` | scaffold | **keep** | Front 18. 12's private scope and 79's flow state key on it; both would otherwise depend on `rakun-web` for a session id. |
-| `rakun-validation` | landed (front 14) | **drop — moved** | Decision 116: the constraints the server enforces and the client's form mirrors are the bundled library `validation` (`libs/validation`, `01-std/06-validation-lib`), which imports std only; the member imported rakun's erlang-only core (`messages.bp:22`). Front 14 Step 7 deletes it and keeps `boot.bp` in the core as `config_check.bp`. `rakun-data` (78) and `rakun-web` (07) import `validation` like `std`. |
+| `rakun-validation` | front 14 | **drop — moved** | Decision 116: the constraints the server enforces and the client's form mirrors are the bundled library `validation` (`libs/validation`, `01-std/06-validation-lib`), which imports std only; the member imported rakun's erlang-only core (`messages.bp:22`). Front 14 Step 7 deletes it and keeps `boot.bp` in the core as `config_check.bp`. `rakun-data` (78) and `rakun-web` (07) import `validation` like `std`. |
 | `rakun-cache` | scaffold | **keep** | Front 12: both entry points, `#[cacheable]` and `'use cache'`. Depends on `rakun-session` (private scope) and `rakun-client` (Redis transport), never on `rakun-app` — 60 consumes it, not the reverse. |
 | `rakun-client` | scaffold | **keep** | Front 13, RestClient + WebClient over one builder. 12's dependency on it is what keeps 13 free of the cache. |
 | `rakun-actuator-api` | 11 Step 0 | **keep (create)** | Reason 3. `Health`, `HealthIndicator`, `InfoContributor`, `Endpoint`, `Span`, the four decorators, the three registration cells, the sidecar that owns the ETS registries. No rakun dependency beyond core. |
@@ -129,7 +118,7 @@ registers nothing back. `std` is below everything and omitted, and it is the onl
 no rakun module depends on `jhonstart`, `emilia` or `onze` (decision 113). The bundled libraries
 sit beside `std` and are not drawn as members: `routing` (decisions 115, 116 — `rakun-app` 22, 60,
 61, 63 and `rakun-web` 07, 65 import it), `actions` (decision 116 — front 24) and `validation`
-(decision 116 — `[validation]` above, formerly the member `rakun-validation`, imported by the core,
+(decision 116 — `[validation]` above, imported by the core,
 `rakun-web` and `rakun-data`); like `std` none is ever listed in a manifest.
 
 ```
@@ -179,7 +168,7 @@ reversed or soft here, and the README's *Depends on* line is read through this t
 
 | Submodule | Target | Why |
 |---|---|---|
-| `rakun`, `rakun-app`, `rakun-web`, `rakun-websocket`, `rakun-data`, `rakun-tx`, `rakun-security`, `rakun-session`, `rakun-cache`, `rakun-client`, `rakun-actuator-api`, `rakun-actuator`, `rakun-metrics`, `rakun-logging`, `rakun-messaging`, `rakun-pulsar`, `rakun-stream`, `rakun-rsocket`, `rakun-scheduling`, `rakun-mail`, `rakun-hateoas`, `rakun-soap`, `rakun-devtools`, `rakun-release`, `rakun-cli` | **erlang** | rakun is the service, and the service runs on BEAM (decision 113). `botopink.json` declares `"target": "erlang"`, `"targets": ["erlang"]`; the scaffolds' `["commonJS", "erlang"]` is corrected by the lowest-numbered front of each module. The core reaches it when front 04 closes: `runtime.mjs`, the node server and the Node forms in `src/runtime.bp` leave, so there is no second runtime with the same semantics to keep. |
+| `rakun`, `rakun-app`, `rakun-web`, `rakun-websocket`, `rakun-data`, `rakun-tx`, `rakun-security`, `rakun-session`, `rakun-cache`, `rakun-client`, `rakun-actuator-api`, `rakun-actuator`, `rakun-metrics`, `rakun-logging`, `rakun-messaging`, `rakun-pulsar`, `rakun-stream`, `rakun-rsocket`, `rakun-scheduling`, `rakun-mail`, `rakun-hateoas`, `rakun-soap`, `rakun-devtools`, `rakun-release`, `rakun-cli` | **erlang** | rakun is the service, and the service runs on BEAM (decision 113). `botopink.json` declares `"target": "erlang"`, `"targets": ["erlang"]`. The core (`modules/rakun`, still `["commonJS"]`) reaches it when front 04 closes: `runtime.mjs`, the node server and the Node forms in `src/runtime.bp` leave, so there is no second runtime with the same semantics to keep. |
 | — | — | No rakun member is on commonJS: the constraints the client's form mirrors are the bundled library `validation` (decision 116), which rakun imports like `std`. |
 | `rakun-test` | **erlang** | It follows the packages it tests; `["erlang"]` like every rakun manifest (decision 117 rule 9). |
 | `starters/*` | none | Manifests. |
@@ -311,9 +300,8 @@ are mapped in [`test-snap-examples.md`](./test-snap-examples.md).
 ```
 repository/rakun/
 ├── botopink.json                  targets ["erlang"] (no commonJS member — decision 116); "rakun" = modules/rakun
-├── src/                           the frozen four + runtime.bp + root.bp; core fronts append here
 ├── modules/
-│   ├── rakun/                     core re-export (95 Step 5)
+│   ├── rakun/                     the core: the frozen four + runtime.bp + root.bp; core fronts append here
 │   ├── rakun-actuator-api/
 │   ├── rakun-client/
 │   ├── rakun-logging/
@@ -357,7 +345,7 @@ differently, and each row's reason is in *Verdicts* or *The graph*.
 
 | Front | README says | Read as |
 |---|---|---|
-| 22 · 23 · 24 · 25 · 60 · 61 · 63 · 66 | `repository/rakun/src/<file>.bp` | `modules/rakun-app/src/<file>.bp` — the **Owns** lines now say so; front 95 created `modules/rakun-app/` by relocating 22's `file_router.bp` and 23's `ssr.bp` out of the core |
+| 22 · 23 · 24 · 25 · 60 · 61 · 63 · 66 | `repository/rakun/src/<file>.bp` | `modules/rakun-app/src/<file>.bp` — the **Owns** lines say so; 22's `file_router.bp` and 23's `ssr.bp` are there |
 | 64 | `modules/rakun-i18n/**` | `modules/rakun-app/src/i18n/**` |
 | 20 | `modules/rakun-web/src/websocket/**` | `modules/rakun-websocket/**` |
 | 75 | `modules/rakun-metrics/**`, tests in `rakun-observability` | `modules/rakun-metrics/**` for both |
@@ -384,6 +372,6 @@ a later front should re-decide. None is applied here: the maps cite the names be
 | `rakun-hateoas → rakun-app (ro)` | the one Spring-side edge to the Next side | `linkTo` needs only the route-table *type* and lookup. If 22's `route_table.bp` type moved into core `rakun` (with `rakun-app` filling it), the edge disappears and `rakun-hateoas` depends on core alone | decide when 21 lands; a type move is additive |
 | Fifteen single-front packages | `rakun-rsocket`, `-pulsar`, `-stream`, `-mail`, `-soap`, `-hateoas`, `-devtools`, `-release`, `-cli`, `-websocket`, `-logging`, `-session`, `-validation`, `-cache`, `-client` | Spring's cut is equally fine; the cost is one manifest with `files` and one discovery cell each (`02-packaging § 5`). The only merge that reverses no edge is `rakun-release` + `rakun-cli` (both build-time, 88 → 81): a `rakun-tooling` if the count ever matters. `rakun-devtools` must stay alone — nothing at run time may depend on it | keep fifteen |
 | Example project names | `rest-service`, `secured-api`, `blog-server`, `order-pipeline`, `observed-service`, `realtime-gateway`, `release-kit` | `02-packaging § 4` says `examples/<lib>-<thing>/` (`rakun-app`, `onze-blog`) so the flat listing across repositories reads. Only `examples/rakun` (existing) is exempt as "the existing project" | either prefix (`rakun-rest-service`, …) before the first one lands and re-point [`test-snap-examples.md`](./test-snap-examples.md), or record the exception in `02-packaging`; this document prefers the prefix |
-| Scaffold `targets` | thirteen manifests say `["commonJS", "erlang"]` | 26 of 27 modules are erlang-only (decision 113); the lowest-numbered front of each module corrects the array, and front 04 the core's | as stated in [§ Targets](#targets) |
+| Manifest `targets` | the core says `["commonJS"]`, `rakun-test` and the workspace root `["commonJS", "erlang"]` | every rakun package is erlang-only (decisions 113, 117 rule 9); front 04 corrects the core's | as stated in [§ Targets](#targets) |
 | `rakun-i18n` merged into `rakun-app` | `modules/rakun-app/src/i18n/**` | 64 is the only front whose ownership row named a package that has one consumer; if a non-app consumer appears (a locale-aware `rakun-web` rule, say), split it back out — the directory is already package-shaped | keep merged |
 

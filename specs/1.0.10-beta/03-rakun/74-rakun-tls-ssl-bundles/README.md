@@ -13,11 +13,11 @@
 
 ## Problem
 
-Every transport rakun opens is plaintext. `runtime.mjs:206-231` creates a `node:http` server; front 04
-replaces it with a `gen_tcp` listener; neither has a path to TLS, and neither has anywhere to put the
+Without this front every transport rakun opens is plaintext: front 04's `gen_tcp` listener has no path
+to TLS and nowhere to put the
 material if it did. The same hole appears on the outbound side: front 13's HTTP clients, front 08's SQL
 driver, front 09's Redis connection and front 15's broker connections each need a certificate, a key
-and a trust store, and today each would have to invent its own three properties for them.
+and a trust store, and each would have to invent its own three properties for them.
 
 Spring solved this in 3.1 by naming the material instead of the consumer. A bundle is a named group —
 `spring.ssl.bundle.pem.mybundle.*` — and every subsystem refers to it by name:
@@ -30,19 +30,6 @@ The consequence of not having it is not "rakun cannot do HTTPS" — a reverse pr
 It is that rakun cannot be the thing making a TLS *connection*: no mutual TLS to an internal service,
 no certificate-authenticated database connection, no `ssl` health indicator warning that a certificate
 expires in four days. Those are the cases where a proxy does not help.
-
-## Current state
-
-| Piece | Where it is today |
-|---|---|
-| Listener | `runtime.mjs:206-231` (`node:http`), replaced by front 04's `gen_tcp` acceptor under `rakun_sup` |
-| Listener options | front 04's `rakun.server.backlog`, `.idle-timeout`, `.max-connections` — all plaintext |
-| Any certificate handling anywhere | none |
-| Any use of OTP `ssl` or `public_key` | none |
-| Configuration reader | `rkProp`/`rkPropInt` (`src/runtime.bp`), fed by front 05 |
-| `std` crypto surface | `libs/std/src/crypto.bp`; front 01 adds `hmac` and `encoding` (`hash` and `encoding` under decision 106) — neither reads a certificate |
-| `ssl` health indicator | listed by `09 § HealthIndicators Auto-configurados`; front 11 has the SPI, nothing implements this key |
-| `ssl` info contributor | listed by `09 § InfoContributors Auto-configurados`; same |
 
 ## Mechanism
 

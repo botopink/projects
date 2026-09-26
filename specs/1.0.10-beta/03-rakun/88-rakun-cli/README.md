@@ -4,7 +4,7 @@
 **Priority:** medium — it is the first thing anyone touches, and today starting a rakun project means copying an example directory and editing it by hand
 **Target:** erlang (server) — the CLI itself ships as an escript
 **Wave:** 7
-**Depends on:** 81 (the release builder `rakun build` delegates to, and the escript that packages this CLI), 05 (profiles and the configuration reader), 80 (the file watcher behind `rakun run --watch`), 06 (the exit-code hook the inspect commands return through), 04 (the BEAM runtime every generated project stands on), 01 (`process`, `path`)
+**Depends on:** 81 (the release builder `rakun build` delegates to, and the escript that packages this CLI), 05 (profiles and the configuration reader), 80 (the file watcher behind `rakun run --watch`), 06 (the exit-code hook the inspect commands return through), 04 (the BEAM runtime every generated project stands on), 01 (`io.process`, `path`)
 **Owns:** `modules/rakun-cli/src/**`, `modules/rakun-cli/templates/**`, `modules/rakun-cli/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone. It does not write to `repository/onze/` either; front 50 owns that CLI and this one never reaches across.
 **Reference:** `12-upgrading.md § Spring Boot CLI` · `01-primeiros-passos.md § Executando o Exemplo` (Via IDE, Via Linha de Comando, Com Maven, Com Gradle) · `11-topicos-avancados.md § Plugins de Build` · https://docs.spring.io/spring-boot/cli/index.html · https://docs.spring.io/spring-boot/maven-plugin/index.html

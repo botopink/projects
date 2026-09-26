@@ -4,7 +4,7 @@
 **Priority:** low — nothing else in the milestone depends on it, and an application that needs push today polls
 **Target:** erlang (server)
 **Wave:** 5
-**Depends on:** 01 (`net`), 04 (the BEAM runtime and its supervision tree), 05 (config), 06 (context), 07 (the HTTP path the upgrade happens on), 10 (authorization at upgrade), 11 (health registry), 62 (per-request context)
+**Depends on:** 01 (`io.net`), 04 (the BEAM runtime and its supervision tree), 05 (config), 06 (context), 07 (the HTTP path the upgrade happens on), 10 (authorization at upgrade), 11 (health registry), 62 (per-request context)
 **Owns:** `modules/rakun-web/src/websocket/**`, `modules/rakun-web/test/websocket/**`
 **Does not touch:** `modules/rakun-web/src/*.bp` — front 07 owns those, and this front adds no arm to its filter chain. `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` are frozen for the milestone
 **Reference:** `02-desenvolvendo-com-spring-boot.md § Starters` (`spring-boot-starter-websocket`) · `06-messaging.md § RSocket` (the WebSocket transport) · https://docs.spring.io/spring-framework/reference/web/websocket.html
@@ -41,7 +41,7 @@ directory, which is exactly the shape `overview.md` forbids.
 
 ## Current state
 
-- `repository/rakun/modules/rakun-web/src/root.bp` — docblock and `// Module contents will be added by the respective fronts.` The `websocket/` subtree does not exist.
+- `repository/rakun/modules/rakun-web/src/` holds front 07's chain; the `websocket/` subtree does not exist.
 - `repository/rakun/src/runtime.bp:110-117` — `rkServe(port, dispatcher)` takes a dispatcher over five scalars and returns a `Response`. There is no upgrade path through it: a 101 response has no body and keeps the socket, which that signature cannot express. The upgrade is handled by front 04's BEAM listener before dispatch, not by returning a special `Response`.
 - `repository/rakun/src/http.bp:12-20` — `HttpMethod` has seven variants and none of them is relevant; an upgrade is a GET with headers.
 - Nothing in the tree tracks a long-lived connection. Every rakun process today lives for one request.

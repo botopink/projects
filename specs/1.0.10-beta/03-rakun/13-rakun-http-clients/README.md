@@ -4,7 +4,7 @@
 **Priority:** medium — a service that cannot call another service is a leaf, and fronts 12, 15 and 21 all assume an outbound call exists
 **Target:** erlang (server)
 **Wave:** 3
-**Depends on:** 01 (`net`), 05 (config), 06 (context), 12 (soft — cache options map onto the store when it is present; 13 lands without it)
+**Depends on:** 01 (`io.net`), 05 (config), 06 (context), 12 (soft — cache options map onto the store when it is present; 13 lands without it)
 **Owns:** `modules/rakun-client/src/**`, `modules/rakun-client/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone
 **Reference:** `07-io.md § REST Clients` (WebClient · RestClient · RestTemplate · HTTP Service Interfaces · Configuracao Global · SSRF Protection) · https://docs.spring.io/spring-boot/reference/io/rest-client.html
@@ -13,8 +13,8 @@
 
 ## Problem
 
-A rakun service has no way to call another HTTP service. `libs/std/src/http.bp` offers exactly one
-function — `fetch(url) -> @Task<Response>` (`http.bp:55`) — which does GET only, takes no headers, no
+A rakun service has no way to call another HTTP service. `io.http` (`libs/std/src/io/http.bp`) offers exactly one
+function — `fetch(url) -> @Task<@Result<Response, string>>` (`http.bp:55`) — which does GET only, takes no headers, no
 body, no timeout and no method, and whose erlang cell starts `inets` and calls `httpc:request/4`
 inline. `modules/rakun-client/` is a `botopink.json` and a `src/root.bp` containing a TODO comment.
 
@@ -30,11 +30,11 @@ that forwards a user-supplied URL today would happily fetch `http://169.254.169.
 
 ## Current state
 
-- `libs/std/src/http.bp:55` — `pub declare fn fetch(url: string) -> @Task<Response>`; GET only, no headers, no timeout. `http.bp:71` — `fetchStatus`. That is the entire outbound surface in the ecosystem.
-- `libs/std/src/http.bp:25-29` — the file's own docblock states BEAM and wasm are out of scope and a caller on those backends fails with a missing-external diagnostic.
+- `libs/std/src/io/http.bp:55` — `pub declare fn fetch(url: string) -> @Task<@Result<Response, string>>`; GET only, no headers, no timeout. `http.bp:70` — `fetchStatus`. That is the entire outbound surface in the ecosystem.
+- `libs/std/src/io/http.bp:28-32` — the file's own docblock states BEAM and wasm are out of scope and a caller on those backends fails with a missing-external diagnostic.
 - `repository/rakun/modules/rakun-client/src/root.bp` — docblock plus `// Module contents will be added by the respective fronts.`
-- `libs/std/src/json.bp:36,45` — `parse` and `stringify` both take and return `string`; there is no structured JSON value, so response decoding in this front stops at the body string.
-- `libs/std/src/` has **no socket module at all** — no `net.bp`, no `gen_tcp` wrapper, no TLS surface. Front 01 delivers it and this front is its first consumer; until it lands there is nothing under `fetch` but the one inline `httpc` template.
+- `libs/std/src/json.bp` — `json.decode(text) -> @Result<Json, string>` gives a `Json` tree (decision 117); `parse` and `stringify` take and return `string`. Response decoding in this front stops at the body string.
+- `io.net` (`libs/std/src/io/net.bp`) has `connect` / `tlsConnect` over `Socket` / `TlsSocket`; this front is its first HTTP consumer. Under `fetch` there is only the one inline `httpc` template.
 - No address filter, no connection reuse, no redirect policy anywhere in the tree.
 
 ## Mechanism
@@ -48,7 +48,7 @@ ported at all — upstream marks it legacy (`07-io.md § RestTemplate (Legacy)`)
 API to a new language is work nobody asked for.
 
 **What `@Task` does and does not mean here.** `@Task<T>` lowers **eagerly** on erlang —
-`libs/std/src/http.bp:16-18` — so `retrieveFuture()` is not a concurrent call. It is the same blocking
+`libs/std/src/io/http.bp:19-20` — so `retrieveFuture()` is not a concurrent call. It is the same blocking
 request with a different return shape, which is exactly why it costs one method rather than a second
 stack. A service that wants two upstream calls to overlap does not get it from `@Task`; it gets it
 from front 02, which parallelises **unstarted** tasks (`Array<fn() -> @Task<T>>`). Any README, test
@@ -66,7 +66,7 @@ RestClient.get(path) -> RequestSpec -> .header(n,v) -> .cached(...) -> .retrieve
 
 **The transport is front 01, not a private host cell.** rakun-client declares no socket, TLS or DNS
 cell of its own. It assembles a method, an absolute URL, a header list, a body and a timeout, hands
-them to `net` from front 01, and maps what comes back onto `ClientResponse`. The milestone rule is
+them to `io.net` (front 01), and maps what comes back onto `ClientResponse`. The milestone rule is
 explicit about this — *"a front that needs a primitive asks front 01 for it"* — and the payoff is that
 the address filter below sits in exactly one place instead of once per caller.
 
@@ -233,7 +233,7 @@ pub fn retrieveFuture(spec: RequestSpec) -> @Task<ClientResponse>
 - [ ] `retrieveFuture` returns `@Task<ClientResponse>`; the return is the whole declaration of the effect (decision 118) — no annotation, and an alias of `@Task` does not activate `await` (`effect-wrapper-behind-alias`).
 - [ ] Two `retrieveFuture` calls issued before either is awaited do **not** overlap on erlang, and the test that measures it asserts that rather than the opposite — the concurrency story is front 02's.
 - [ ] A non-2xx response is returned, not raised — the caller decides, via `isOk()`.
-- [ ] A read timeout produces a `ClientResponse` with status `-1` and the reason in the body, matching the shape `libs/std/src/http.bp` already uses for a failed erlang fetch.
+- [ ] A read timeout produces a `ClientResponse` with status `-1` and the reason in the body, matching the shape `libs/std/src/io/http.bp` uses for a failed erlang fetch.
 - [ ] `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD` and `OPTIONS` all reach the transport with the right verb.
 
 ### Step 3 — The address filter

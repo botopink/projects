@@ -117,17 +117,16 @@ case; the wave columns are kept as written so the other tracks' cross-references
   for): 22←05 · 23←06/62 · 61/63←23 · 65←07/13/63 · 12←13 · 15/16/17←11 · 20←10 · 24←12/63/14 ·
   25←07 · 75←11/13/74 · 76←10 · 79←10/18 · 81←76 · 82←07 · 83/84←77 · 85←83 · 86←75 · 87←76 ·
   88←80 · 89/90/92←86 · 91←86/79/83. The level column is that order.
-- **[`../fronts.md § Waves`](../fronts.md#waves)** (the third numbering, "computed") was
-  regenerated from this table on 2026-09-21 and no longer disagrees: 60 · 61 · 63 · 65 sit below 23
-  there, and 81 · 88 are no longer in wave 2. Its numbers are the *milestone* levels — the levels
+- **[`../fronts.md § Waves`](../fronts.md#waves)** (the third numbering, "computed") agrees
+  with this table: 60 · 61 · 63 · 65 sit below 23 there, and 81 · 88 are not in wave 2. Its numbers are the *milestone* levels — the levels
   below, lifted by the cross-track edges a track-B level cannot see — so they are equal or larger,
   never smaller: 23 is level 3 here and wave 5 there, because it serves pages jhonstart 28 renders.
-- **Cross-track:** 66 is level 3 in track B and depends on jhonstart 32, which is wave 5 in the
-  regenerated [`../fronts.md § Waves`](../fronts.md#waves); 61 on 27 (wave 4); 23 on 28 (wave 4).
+- **Cross-track:** 66 is level 3 in track B and depends on jhonstart 32, which is wave 5 in
+  [`../fronts.md § Waves`](../fronts.md#waves); 61 on 27 (wave 4); 23 on 28 (wave 4).
   24 and 67 cite each other, and `fronts.md` resolves the pair with 24 first, because 67 consumes
-  the action envelope 24 defines. [`../04-jhonstart/README.md`](../04-jhonstart/README.md) still
-  carries its 1.0.9 wave column (28 = 3, 32 = 6, 67 = 6), which is the track's own numbering, not
-  the milestone's. A track-B level is a lower bound, not a date.
+  the action envelope 24 defines. [`../04-jhonstart/README.md`](../04-jhonstart/README.md) carries
+  its own wave column (28 = 3, 32 = 6, 67 = 6), which is the track's numbering, not the
+  milestone's. A track-B level is a lower bound, not a date.
 
 ## Dependency graph
 
@@ -161,7 +160,7 @@ Module level, the same graph collapsed onto the 28 submodules, is drawn in
 
 | Direction | Front | Other track | What crosses |
 |---|---|---|---|
-| rakun → std | 04 · 05 · 10 · 12 · 13 · 14 · 15 · 16 · 18 · 20 · 22 · 23 · 24 · 25 · 60 · 62 · 64 · 65 · 66 · 79 · 80 · 81 · 82 · 85 · 86 · 87 · 88 · 89 · 92 | 01 | `net`, `path`, `fs`, `process`, `clock`, `random`, `hmac`, `encoding`, `regex`, `escape` — named per front in its `Depends on` line |
+| rakun → std | 04 · 05 · 10 · 12 · 13 · 14 · 15 · 16 · 18 · 20 · 22 · 23 · 24 · 25 · 60 · 62 · 64 · 65 · 66 · 79 · 80 · 81 · 82 · 85 · 86 · 87 · 88 · 89 · 92 | 01 | `io.net`, `path`, `io.fs`, `io.process`, `io.clock`, `io.random`, `hash`, `encoding`, `regex`, `escape` — named per front in its `Depends on` line |
 | rakun → std | 23 · 60 · 92 | 02 | spawn/gather over unstarted thunks (`async.all`) — `@Task` carries no concurrency on BEAM |
 | rakun → std | 12 · 17 · 23 · 24 · 60 · 66 · 77 · 82 | 03 | content hash: cache keys, error digest, build id, fingerprints, migration checksums |
 | rakun ⇄ jhonstart, through onze | 23 | 30 (render) · 28 | onze registers one `PageRenderer` per page with 23 and builds 28's `RequestData` from rakun's `Request`; jhonstart writes status, headers and chunks through its `Response`, which onze builds over 23's `ChunkWriter` (`setStatus` / `setHeader` / `write` / `close`). No package edge either way (decisions 113, 114, 117) |
@@ -203,8 +202,8 @@ validation is `validation` (decision 116) — bundled libraries rakun imports.
 - One repo per front; the compiler knows none of this; target is assigned, not chosen; reuse `std`;
   additive only; examples are code, not prose — [`../contracts.md`](../contracts.md).
 - Every erlang host module is `src/sidecars/rakun_<name>.erl`, never a bare `<name>.erl`.
-- `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp` are frozen; 04 appends one
-  `#[@external(erlang)]` block to `src/runtime.bp`, and when it closes `src/runtime.mjs` and the Node
+- `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp` are frozen; 04 adds
+  `#[@External.Erlang(…)]` forms to `src/runtime.bp`, and when it closes `src/runtime.mjs` and the Node
   forms leave the core (decision 113).
 - rakun imports nothing from `jhonstart`, `emilia` or `onze`, and builds no HTML (decision 113).
 - `botopink.json` and `src/root.bp` of a shared module belong to the lowest-numbered front in it;

@@ -63,8 +63,8 @@ does nothing is worse than one that is missing.
   sized one.
 - `repository/rakun/src/request_context.bp` (front 62) — `isDynamic()`, `dynamicReason()`, and the
   `strict` frame flag that makes a dynamic read raise during a prerender.
-- `libs/std/src/path.bp` — the posix calculator; `walk` and `glob` are added by front 01 and this
-  front is one of their two consumers (front 66 is the other).
+- `libs/std/src/path.bp` — the posix calculator; `io.fs`'s `walk` and `glob` (`libs/std/src/io/fs.bp`)
+  walk the tree, and this front is one of their two consumers (front 66 is the other).
 - `repository/rakun/src/static_gen.bp` does not exist. Neither does `segment_config.bp`.
 
 ## Mechanism

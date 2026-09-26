@@ -4,7 +4,7 @@
 **Priority:** high — front 10 validates a token somebody else issued; it cannot log a user in against an identity provider, which is how essentially every real application authenticates
 **Target:** erlang (server)
 **Wave:** 5
-**Depends on:** 01 (`crypto`, `random`, `base64`, `regex`), 05 (provider configuration), 10 (the security context, the authority list, JWT signature verification), 13 (token and JWKS fetch), 18 (the session the flow's state lives in), 74 (the TLS bundle every provider connection uses), 11 (registers the `ldap` health indicator)
+**Depends on:** 01 (`hash`, `io.random`, `encoding`, `regex`), 05 (provider configuration), 10 (the security context, the authority list, JWT signature verification), 13 (token and JWKS fetch), 18 (the session the flow's state lives in), 74 (the TLS bundle every provider connection uses), 11 (registers the `ldap` health indicator)
 **Owns:** `modules/rakun-security/src/oauth2/**`, `modules/rakun-security/src/oidc/**`, `modules/rakun-security/src/ldap/**`, `modules/rakun-security/src/saml2/**` · `modules/rakun-security/test/oauth2/**`, `test/oidc/**`, `test/ldap/**`, `test/saml2/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone. Also `modules/rakun-security/src/*.bp` at the top level, which is front 10's
 **Reference:** `04-web.md § OAuth2` · `04-web.md § SAML 2.0` · `05-data.md § LDAP` · `06-messaging.md § Apache Pulsar · Autenticacao OAuth2` · <https://docs.spring.io/spring-boot/reference/web/spring-security.html> · <https://docs.spring.io/spring-boot/reference/data/nosql.html#data.nosql.ldap>
@@ -330,7 +330,6 @@ window, the audience restriction and the `InResponseTo` correlation.
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| A `fn` cannot forward a `@Result` it received until front 24 lands decision 119: inside a `-> @Result<…>` fn `return v` wraps `v` again, so a token exchange that calls a fetch which already returns `@Result` double-wraps. | `examples/service-token-and-ldap-example.bp`, `tokenFor` — written as a total fn returning `""` on failure instead | `.map` / `.flatMap` / `.unwrapOr`, or unwrap and `throw` | A forwarding return (`return! r;`), or an implicit forward when the returned expression is already `@Result<D, E>`. Already recorded by front 04 |
 | Declared parameter defaults are never applied, so an API with optional arguments has to be a record constructor or force every caller to write every argument. | `examples/oidc-login-example.bp`, `OAuth2Provider(...)` — seven named fields where four would do | Record construction with every field written | Apply declared defaults at the call site, which would let `OAuth2Provider` default `pkce`, `scopes` and `redirectPath` |
 
 ## Test plan

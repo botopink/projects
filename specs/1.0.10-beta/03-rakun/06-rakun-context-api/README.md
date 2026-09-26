@@ -38,23 +38,6 @@ Nothing publishes or observes an application event, so the nine lifecycle events
 a component until something asks for it, so a misconfiguration surfaces on the first request that
 touches it rather than at boot.
 
-## Current state
-
-| Piece | Where | State |
-|---|---|---|
-| `Context` behavior | `src/rakun.d.bp:22-25` | declaration-only, "not yet implemented" |
-| Component factories | emitted `__rkMake_<Type>()` per stereotype, `decorators.bp:59-61` | works; one factory per type name |
-| Scan registry | `rkScan`, `rkScannedNames` (`runtime.bp:19-26`) | records **names only** — no factory, no type, no way to call back |
-| `#[bean]` | `decorators.bp:198-200` | placement marker only (`DeclKind.Method`), wired by `#[configuration]` at `:186-190`; **frozen** |
-| Lifecycle hooks | — | none |
-| Events | — | none |
-| Eager initialization | — | none; `rkSingleton`'s thunk means everything is lazy already |
-| Qualifiers, primary, scopes | — | none |
-
-The scan registry row is the one that shapes the whole front. `rkScan("UserService")` stores a string.
-Nothing can turn that string back into a constructor, so "resolve by name" cannot be built on top of
-the scan — and the component decorators that *could* register a factory are frozen.
-
 ## Mechanism
 
 ### `#[managed]`: the one new type-level decorator, and why it is separate
@@ -231,7 +214,7 @@ listener must not take the boot down.
 ### Eager initialization is the deliverable; lazy is the default
 
 Spring's `spring.main.lazy-initialization=true` is an opt-in because Spring is eager. rakun is the
-other way round: `rkSingleton` takes a thunk (`runtime.mjs:73-78`), so nothing is constructed until
+other way round: `rkSingleton` takes a thunk, so nothing is constructed until
 something resolves it, and an unresolved component is never built at all.
 
 So what is missing is eagerness. `context.eagerInit()` walks the bean registry and calls every
@@ -346,9 +329,8 @@ has no analogue and needs none; the README says that rather than inventing one.
 `src/rakun.d.bp:20-25` declares a declaration-only `behavior Context` that this front replaces with a
 concrete `pub type Context`. `rakun.d.bp` is loaded for consumers through `botopink.json`'s `files`
 list, so leaving the stub in place puts **two** `Context` declarations into every consumer's
-namespace. The stub goes, and the file's docblock — which currently advertises `Context` as "the
-intended shape for a future `ctx.resolve<T>()` API (not yet implemented)" (`rakun.d.bp:3-5`) — is
-updated to say it was implemented and where.
+namespace. The stub goes, and the file's docblock stops advertising `Context` as unimplemented and
+says where it lives.
 
 This front touches nothing else in `rakun.d.bp`.
 
@@ -391,7 +373,7 @@ Shutdown is tested by calling the terminate pass directly rather than by sending
 the test does not take the runner down. The real signal path is covered once, in front 07's graceful
 shutdown tests, where it belongs.
 
-Erlang-only. The commonJS row has no bean registry and is not expected to grow one.
+Erlang-only (decision 113).
 
 ## Adjacent fronts
 
@@ -407,10 +389,10 @@ Erlang-only. The commonJS row has no bean registry and is not expected to grow o
 
 ## Contradictions with fronts.md
 
-1. **Resolved:** `src/rakun.d.bp` is now in this front's ownership row, scoped to removing the
+1. `src/rakun.d.bp` is in this front's ownership row, scoped to removing the
    declaration-only `Context` (Step 9). The sidecar is `src/sidecars/rakun_context.erl`, per the
    mandated `rakun_<name>` form.
-2. **Resolved:** `src/root.bp` and `botopink.json` belong to **front 04**. This front appends
+2. `src/root.bp` and `botopink.json` belong to **front 04**. This front appends
    `pub mod context;`, `pub mod events;` and `pub mod lifecycle;` to `root.bp`, and its declaration
    surface to the manifest's `files` list, in front-number order and reordering nothing.
 
