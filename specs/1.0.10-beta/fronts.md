@@ -122,7 +122,7 @@ The sub-areas, so that a library front can name the one its gap belongs to:
 | **05-wasm** | `codegen/wat.zig` · `codegen/wat/**` | `snapshots/codegen/wasm/**` |
 | **06-comptime-dedup** | `comptime/snapshot.zig` · `comptime/tests/helpers.zig` | `snapshots/comptime/**` (layout) |
 | **07-review-backlog** | `utils/snap.zig` · `scripts/snap_audit.sh` · `codegen/tests/**` · `comptime/tests/**` (not `helpers.zig`) · `parser/tests/**` · `modules/language-server/src/tests/**` | — |
-| **08-hygiene** | `comptime/runtime/persistent_erl.zig` (residual) · `libs/std/botopink.json`, `libs/std/AGENTS.md` · docs and comments after their owners | — |
+| **08-hygiene** | `docs.md`, `README.md`, every `AGENTS.md`, the relative links of `specs/` · `libs/std/botopink.json`, `libs/std/AGENTS.md` · comments after their owners (C-23) | — |
 | **09-ecosystem-residuals** | `repository/erika/**` and the meta submodule pointers **only** — the other library trees are tracks B–E's in this milestone (see Conflict rules) | the libraries' own outputs |
 | **10-cli-residuals** | `modules/compiler-cli/**` except `src/cli/{build,run}.zig` (13's) · `modules/lib-test-runner/**` where a fix needs it · `modules/bpmp/**` (the manifest reader) | — |
 | **11-tooling** | `modules/language-server/**` except `src/tests/**` (07's) · `repository/vscode-extension/**` | `modules/language-server/snapshots/lsp/` |

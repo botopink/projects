@@ -547,7 +547,7 @@ chosen rule, `RESERVED` (the OTP module names, frozen as a source list), and
 - [x] **A collision check over the rendered atoms** in `crossModule.build` (`crossModule.zig:86`):
       a duplicate atom, a `RESERVED` hit or a name over 250 bytes is a located diagnostic, not a
       silent winner — this is the check whose absence is the whole front
-      ([`declaration-qualifier.md` § 4](./declaration-qualifier.md#4-__-is-reserved-and-what-that-costs))
+      ([`declaration-qualifier.md` § 6](./declaration-qualifier.md#6-what-the-compiler-refuses))
 
 ### Step 2 — the output layout follows the atom
 

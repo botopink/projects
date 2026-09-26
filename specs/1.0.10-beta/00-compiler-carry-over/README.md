@@ -60,7 +60,7 @@ item stands is `status.md`'s.
 | [C-20](#c-20--the-comptime-module-reaches-the-node-as-beam-assembly) | The comptime module reaches the node as BEAM assembly | 14 step 3; decisions 24, 62 | **low** | nothing measurable (≈ 39 ms of 645); the principle | none; after C-01 |
 | [C-21](#c-21--every-error-names-its-file) | Every error names its file: the `.withLoc` sweep | 01 step 9; `blast-radius.md` | **low** — land last | 113 error snapshots without a file name, 22 without a box | none |
 | [C-22](#c-22--the-review-backlog) | The review backlog: waves A and B, the `uncertain` rows, two renames, the audit script | 07 steps 1–5; 06's handovers | **low** | the 1.0.1-beta reports' residual rows; `snap_audit.sh:501` | none |
-| [C-23](#c-23--the-hygiene-sweeps) | The hygiene sweeps left in other fronts' files | 08 steps 2.1, 3.1, 6 | **low** | nothing; 14 stale `primitives.d.bp` comments, 18 `@external(` comments, five test-file sites | none |
+| [C-23](#c-23--the-hygiene-sweeps) | The hygiene sweeps left in other fronts' files | 08 steps 2.1, 3.1, 6 | **low** | nothing; 14 stale `primitives.d.bp` comments, the `@external(<target>, …)` comments in six owners' files, four test-file sites, ten files `zig fmt --check` reds, the transport-error test — each site in [`08-hygiene`](./08-hygiene/README.md#open) | `docs.md`, the links and the libraries' `AGENTS.md` done on `front/sweep-docs` |
 | [C-24](#c-24--br5-as-its-own-spec) | BR5 — the beam backend compiles `@External.Erlang` templates at build time — as its own spec | 03 step 1; decision 62 | **low** | `base64:encode` 0.113 → 5.722 µs per call through `'__bp_erl_eval'` (50.6×) | `wip/br5-beam-templates` (836-line Erlang lexer+parser, does not build) |
 | [C-25](#c-25--the-unowned-residuals) | The unowned residuals: bare-name export collisions, the comptime server's purge, front 10's stash | 13 step 6; 10 step 1's housekeeping | **low** | two libraries exporting `pub fn get` collide silently | none |
 | [C-26](./18-comptime-runtimes/README.md) | Comptime runtimes: `persistent_erl.zig` → `persistent_beam.zig` (a `.beam` emitted directly, no `.erl`), `persistent_wat.zig` on wasm3, one runtime selector, `snapshots/codegen/{beam,wat}/<target>` (the suite recorded twice), and compiler-core built to wasm running 100 % in the browser | the maintainer's request of 2026-09-20; absorbs C-20 (14 step 3); decisions 24, 62 | **high** | the compiler on the web; `erl` off the comptime path; every comptime snapshot's directory | `18-comptime-runtimes/` (spec); nothing in code |
@@ -630,17 +630,19 @@ C-01/C-07.
 
 ## C-23 — The hygiene sweeps
 
-**Origin:** 08 steps 2.1 (14 of the 19 `primitives.d.bp` comments remain — 11 in `erlang.zig`, the
-rest in `infer`/`env`/`prelude`, `engine.zig`, `tests/hover.zig`), 3.1 (18 `@external(` comments in
-`erlang.zig` name the retired form as current; the `infer_decls.zig:538` fixture note), 6 (five sites in
-07's test files: `narrowing.zig:105`, `wat.zig:86`, `control_flow.zig:73,:76`, `builtins.zig:382`).
-**Priority:** low — comments. Each sweep lands after the owner of the swept file, one commit per file.
-**Partial work:** none.
-**Depends on:** C-01 for `erlang.zig`'s (the file re-records under it anyway).
+**Origin:** 08's open items — every site, by owner, is in
+[`08-hygiene` § Open](./08-hygiene/README.md#open): 14 comments naming `primitives.d.bp` (the file is
+`primitives.bp`), the comments that teach `@external(<target>, …)` / `@[external(…)]` as current,
+four comments in `codegen/tests/**` naming a moved owner or a changed lowering, ten `.zig` files
+`zig fmt --check` reds on an untouched base, and the test that a comptime transport failure reaches
+the user's diagnostic.
+**Priority:** low — comments and one test. Each sweep lands after the owner of the swept file, one
+commit per file.
+**Partial work:** `docs.md` § *Decided, not yet implemented* re-derived and the documents' links
+fixed (`front/sweep-docs`).
+**Depends on:** the owner of each file (`01-checker`, `02-erlang`, `11-tooling`, C-22, C-26).
 **Acceptance:**
-- [ ] `grep -rn 'primitives.d.bp' modules/` returns only the two legitimate mentions;
-      `grep -rn '@external(' modules/compiler-core/src/codegen/erlang.zig` returns nothing that
-      calls the form current; the five test-file comments say what the tests test
+- [ ] `08-hygiene`'s five open boxes
 
 ## C-24 — BR5 as its own spec
 

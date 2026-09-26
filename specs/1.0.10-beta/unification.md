@@ -10,7 +10,7 @@ directory is now.
 
 Two levels of proof. This file covers the **top-level** documents and the **front-number map**. The
 **per-front** proof — which sections of each old front README were carried, appended or superseded —
-is each library's own `unification.md`: [`01-std/unification.md`](./01-std/unification.md),
+is each library's own `unification.md`:
 [`03-rakun/unification.md`](./03-rakun/unification.md), [`04-jhonstart/unification.md`](./04-jhonstart/unification.md),
 [`05-emilia/unification.md`](./05-emilia/unification.md), [`06-onze/unification.md`](./06-onze/unification.md).
 
