@@ -273,8 +273,8 @@ schema" has no good default answer.
 ### Step 7 — `ddl-auto` and the production refusal
 
 **Acceptance:**
-- [ ] `ddl-auto=validate` fails the boot naming the table and column when an entity and the live schema disagree — open: comparing the live schema needs front 78's entity metadata
-- [ ] `ddl-auto=create` with active profile `dev` recreates every entity table — open: recreating the entity tables needs front 78's entity metadata
+- [x] `ddl-auto=validate` fails the boot naming the table and column when an entity and the live schema disagree — `modules/rakun-data/test/orm_test.bp` "orm ddl: validate names the table and the column of a missing, extra or retyped column" (`migrationBoot` → `ddlAutoOn` raises it)
+- [x] `ddl-auto=create` with active profile `dev` recreates every entity table — `modules/rakun-data/test/orm_test.bp` "orm ddl: create recreates every entity table under a dev profile"
 - [x] `ddl-auto=create` with active profile `prod` is a **boot failure** naming the profile, the property and the value — `modules/rakun-data/test/migration_test.bp` "migration: ddl-auto create or create-drop under a production profile refuses the boot, naming all three"
 - [x] `ddl-auto=create-drop` with `production-profiles=staging` and active profile `staging` is refused the same way — same test
 - [x] No property lifts the refusal; a test enumerates this front's configuration keys and asserts that none of them does — `modules/rakun-data/test/migration_test.bp` "migration: no key lifts the ddl-auto refusal, create beside migration files refuses, validate is allowed in prod"
