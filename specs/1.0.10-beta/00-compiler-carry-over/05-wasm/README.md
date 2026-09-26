@@ -489,8 +489,7 @@ before anything was written.
 
 **Left open here, with the reason:** C-18's `Dict` absence (`run/index_dict.bp`,
 `run/index_at_optional.bp`, `run/index_user_type.bp` — a `?V` over a type parameter is carried
-unboxed and nothing monomorphises), C-30's eager generator `break` (`run/generator_break_value.bp`,
-22-loops' row), per-module mangling of the link, and step 8 (no lowering to delete — struck above).
+unboxed and nothing monomorphises), per-module mangling of the link, and step 8 (no lowering to delete — struck above).
 - **Behaviors' `default fn`s, `Array.find`, the option `map`** (compiler `cf6e92e2`, `fe996180`) — a
   type adopts the defaults it does not write (`Money(…).clamp(…)` trapped); a method answers the
   record its return names (`Stub(n: 1).where()`'s `SourceLocation` printed two addresses at exit 0);

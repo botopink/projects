@@ -29,7 +29,7 @@ README.
 - [x] `00 · 19-use-activation` (C-27) — closed; the `use` statement and its destructuring under front 24's grant. Open: front 67's example
 - [x] `00 · 20-builtins-surface` (C-28) — closed
 - [x] `00 · 21-effect-chain` (C-29) — closed; its outcomes hold in front 24's surface
-- [x] `00 · 22-loops` (C-30) — closed; `for` / `while` / `loop`, `iter` / `stream` prefixes, ranges, the library sweep. Open: wasm's `run/generator_break_value.bp`
+- [x] `00 · 22-loops` (C-30) — closed; `for` / `while` / `loop`, `iter` / `stream` prefixes, ranges, the library sweep; wasm's `run/generator_break_value.bp` green (`emitGenEnd`)
 - [x] `00 · 23-std-purity` (C-31) — steps 1–5: the import tree (one `ImportPath` per leaf, `as` on four backends, located refusals), the embedded std following `mod`, the pure root with `io/` and `testing/`, `collections` with type-scoped constructors. Open: step 6 — decision 110 on the use side and `collections.Dict.empty()` through the namespace (23-a)
 - [x] `00 · 24-effects-by-return` (C-32) — the return is the annotation (decisions 118–128): `@Task` / `@Component<C, T>` / `@Iterator` / `@Stream`, `async { }`, `iter` / `stream` loops, `YieldStep<T>`, the three-source hint, type aliases; libraries swept, every `test-libs` row at its pre-sweep count. Open: the README's unticked boxes
 - [x] `01-std` — steps 1–4 (`@src()` and the fallible test body, `std/asserts`, `std/snapshots`, `std/mocks`); `01-std-lib-enablement` steps 11–13 (the JSON writers, `json.Json`, `json.decode`); front 03's content hash (in `hash`); `02-std-async-primitives` (`std/async`, in 24-g's shape); the bundled `routing`, `actions` and `validation` libraries (01std-a…e). Open: step 5 (the onze takeover), step 6's copied std fronts, the rows under Pending

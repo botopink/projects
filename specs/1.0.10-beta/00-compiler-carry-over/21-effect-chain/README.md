@@ -4,7 +4,7 @@
 **State:** closed. Its five steps landed on `feat` and were then carried into the return-type
 surface by [`24-effects-by-return`](../24-effects-by-return/README.md) (decisions 118–128), which owns
 the effect chain, `EffectKind`, `effect_chain.zig` and the effect legality from here on. The
-outcomes below hold in today's surface; the one open item left in their area is 22-loops' (§ *Open*).
+outcomes below hold in today's surface; nothing is open.
 
 Decisions [102](../../decisions-taken.md#102-contextbase-is-the-context-owner-marker-only-use-answers-usec-t-or-componentt),
 [103](../../decisions-taken.md#103-a-generators-prefix-is-the-level-it-extends-generatort--resultgeneratort-e--futuregeneratort-e),
@@ -46,11 +46,10 @@ Decisions [102](../../decisions-taken.md#102-contextbase-is-the-context-owner-ma
 `reject/yield_step_error_param.bp`; RC4 / RC5 in `comptime/tests/infer_errors.zig` for
 `getContext`.
 
-## Open
+## Closed
 
-- [ ] `run/generator_break_value.bp` on wasm — every `digits` answers the empty string (the eager
-      generator scope yields nothing into the `for` that reads it); the `expected-failures.txt` line
-      is C-30's ([`22-loops`](../22-loops/README.md) § *Open*).
+- [x] `run/generator_break_value.bp` on wasm — green since a bare `break` at a generator body's own
+      level ends it there too ([`22-loops`](../22-loops/README.md) § *Closed*).
 
 ## Notes
 

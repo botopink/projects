@@ -6,4 +6,4 @@ The boxes and the surface are in [`README.md`](README.md).
   is a statement; the generator loop is `iter` / `stream` (front 24); `a...b` inclusive on four
   targets; `loop (…)` is `removed-loop-parenthesised`; `docs.md` § Loops is the README's table;
   rakun, jhonstart and erika carry no `loop (`; `known-red-libs.txt` carries no front-22 line.
-- Open: wasm's `run/generator_break_value.bp` (README § *Open*).
+- wasm's `run/generator_break_value.bp` — green (compiler `90ef5afd`, `emitGenEnd`). Nothing is open.

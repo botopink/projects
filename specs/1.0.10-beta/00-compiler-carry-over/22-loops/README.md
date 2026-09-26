@@ -5,7 +5,7 @@
 libraries are swept (no `loop (` left in rakun, jhonstart or erika). The generator loop is now
 written with the `iter` / `stream` prefix of decision 125, landed by
 [`24-effects-by-return`](../24-effects-by-return/README.md), which owns the prefixed loop
-(`GenLoop`) and its typing. One wasm cell is open (§ *Open*).
+(`GenLoop`) and its typing. Nothing is open.
 **Owns (still):** the loop forms in `parser/exprs.zig` (`while` / `for` / `for await` / `loop { }`,
 labels, the `removed-loop-parenthesised` refusal) · `comptime/infer.zig`'s loop typing (statements
 are `void`; the generator scope; `yield` / `break v` gating; ranges) · the loop lowering in
@@ -90,11 +90,12 @@ depth. The `dobros` example prints `2 4 … 18 20` on all four.
 `reject/for_over_condition.bp`, `reject/generator_loop_{use,await,break_outer}.bp`,
 `reject/prefixed_loop_break_outer.bp`, `reject/yield_label_loop.bp`, `reject/continue_outside_loop.bp`.
 
-## Open
+## Closed
 
-- [ ] wasm: `run/generator_break_value.bp` — every `digits` answers the empty string: the eager
-      generator scope yields nothing into the `for` that reads it (`expected-failures.txt`, owner
-      C-30).
+- [x] wasm: `run/generator_break_value.bp` — `0127` / `1` / `56`. The eager scope did yield; what
+      was wrong is `ends()`'s bare `break` at the body's own level, which wasm dropped (`12`). It
+      now ends the generator (`wat.zig` `emitGenEnd`, compiler `90ef5afd`); the line left
+      `expected-failures.txt`, and the cell is green on all four targets.
 
 ## Notes
 
