@@ -4,7 +4,7 @@
 front 24's (24-a…c, 24-g), `01-std`'s (01std-a, 01std-c…e), `00 · 23-std-purity`'s (23-a…c), front 95's
 (95-a…e), `00 · 16-formatter`'s (16-a…b), track C's (26-a, 27-a, 30-b…e, 31-a), `00 · 04-js` /
 `05-wasm`'s (0405-b), `00 · 01-checker`'s (01c-a…b),
-track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…r) and the host methods' (lem-a…f). Two
+track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…s) and the host methods' (lem-a…f). Two
 questions are open: the language-gaps sweep's lg-a and lg-b (§ Open). Every other question raised so far is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 24-f is decision 143 (library resolution stops at the
 enclosing checkout; dependencies are transitive); the next free number is **144**.
@@ -527,6 +527,18 @@ fronts could land; the maintainer confirms or reverses each.
 > `starters/` out of `workspaces` and write `path`.
 > **Recommendation.** (1) — implemented. The runtime resolver (`resolvedModuleListIn`) follows both
 > forms, so a consumer's `path` to a starter still reaches every module.
+
+### 03r-s · OTLP is pushed as HTTP/JSON, not HTTP/protobuf
+
+> **Raised by:** `75-rakun-observability-metrics`
+> **Measured.** The front says "HTTP/protobuf push". Neither OTP nor std has a protobuf encoder, and a
+> hand-written one for the OTLP metrics and trace messages is a large surface to keep correct. OTLP/HTTP
+> accepts `application/json` with the same messages (the protobuf JSON mapping) on the same `/v1/metrics`
+> and `/v1/traces` paths, and every collector that takes protobuf takes JSON.
+> **Options.** (1) OTLP/HTTP-JSON built by `rakun_metrics.erl` with `json:encode`; (2) a protobuf encoder
+> in the sidecar.
+> **Recommendation.** (1) — implemented. (2) is an encoder beside the JSON one if a collector ever needs
+> protobuf only.
 
 ## Open
 
