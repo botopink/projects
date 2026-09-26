@@ -424,7 +424,10 @@ form already in `format/AGENTS.md` — i.e. both planned commits in one tree. `t
       breaks); one that does not puts every call on its own line, `+4`, never aligned under the
       receiver; a hand-broken chain that fits is joined; `assertFormat`/`assertIdempotent`/`assertLossless`
       cases; the per-tree movement measured against the 44 predicted; the other eight constructs pinned
-- [ ] the comment column recorded and printed; rakun `runtime.bp:13` round-trips
+- [x] the comment column recorded and printed; rakun `runtime.bp:13` round-trips — compiler `0f0be511`
+      (`Doc.markColumn` / `alignToMark`; a top-level comment records its `loc`); rakun's `dcf1938` revision
+      round-trips at lines 10-15. And the argument list is enabled with the constructs that enclose it
+      (`7146d402`, 16's `decisions-pending.md` 16-a)
 - [ ] gate green, reported verbatim
 
 ## C-13 — The optional `;`, and the braced block's trailing `;`
@@ -442,10 +445,14 @@ want, and the formatter cannot pick a side until the parser accepts both.
 **Partial work:** the patch.
 **Depends on:** nothing; strictly ordered inside (parser → printer → migration).
 **Acceptance:**
-- [ ] the parser accepts `if (…) { … }` with and without `;`, no snapshot re-recorded (strictly accepting)
-- [ ] the formatter prints the braced form without `;`, idempotent, lossless
+- [x] the parser accepts `if (…) { … }` with and without `;`, no snapshot re-recorded (strictly accepting)
+      — compiler `a688bfb5`, `Parser.isBracedBlockStmt` (a loop and a `case` too; the closing brace is the test)
+- [x] the formatter prints the braced form without `;`, idempotent, lossless — compiler `6c33c6f4`
 - [ ] the 245 sites migrated one tree per commit (12, `libs/std`, then 09's five siblings), each tree's
-      cells green before and after; `docs.md`'s row moved from "decided, not implemented"
+      cells green before and after; `docs.md`'s row moved from "decided, not implemented" — **the
+      compiler's trees done** (`7af79f44`: `libs/std`, `examples/`, the bundled libraries, `docs.md`'s
+      fences, 213 lines; `docs.md`'s row now says "optional"); left: `tests/language` 275, rakun 454,
+      jhonstart 40, erika 28, onze 1 — `16-formatter/c13-migrate.py`; then the parser refuses the `;`
 
 ## C-14 — Decision 8 in the sources
 

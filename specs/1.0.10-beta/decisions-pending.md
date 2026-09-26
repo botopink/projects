@@ -238,6 +238,78 @@ maintainer confirms or reverses each.
 > **Recommendation.** (a).
 > **Blocks.** Nothing.
 
+## Front 16 (formatter) — choices made in implementation, to confirm
+
+Decided by the implementation of `00-compiler-carry-over/16-formatter` (worktree `.tasks/16-formatter`,
+compiler `0f0be511`…`7af79f44`, 2026-09-26) so C-12 and C-13 could land; the maintainer confirms or
+reverses each. Every number below is measured over scratch copies of the compiler's trees (`libs/std`,
+the three bundled libraries, `examples/`) and the five sibling libraries at their pinned commits — 248
+`.bp` files — formatted by the parent commit's binary and by the new one.
+
+### 16-a · C-12's argument list is enabled **with** the constructs that enclose it
+
+> **Measured.** Enabled alone (the parked `argument-list.patch`), the list opened ~1 480 of ~2 770
+> lists for what followed them (`) != -1;`, `) + "…"`), because the binary expression around them was
+> pinned — decision 65's wrong middle. The same happens inside a pinned array literal
+> (`[ThemeEntry(` / `…` / `)]`) and after a brace-less `if` condition (`if (absDiff` /
+> `    > tolerance) throw "…"`, the condition breaking for the branch that follows it).
+> **Options.** (a) Enable the enclosing constructs first, the list after them, one commit each;
+> (b) enable the list together with them; (c) keep the list pinned.
+> **Chosen: (b)** — (a)'s intermediate commits are each a wrong middle of their own (a binary run
+> enabled alone breaks *inside* the still-pinned argument list: `doc.indexOf("."` / `+ a` …), so the
+> six trees would be reformatted twice for nothing. One `groupMeasured` each, all-or-nothing, the outer
+> deciding first: a **binary run** (one precedence level) breaks before every operator `+4`; a
+> **brace-less `if`** puts its branch on the next line `+4` (a bare `else` under an `else` line; an
+> `else if` chain breaks at every `else` or at none; a braced `else { … }` stays outside the group);
+> the **argument list** takes decision 61 rule 4's shape; the **array, tuple and behavior literals**
+> the same. `commaList` (generic, parameter, pattern, import, type lists) and the one-step pipeline
+> stay pinned — none of them holds a call.
+> **Cost.** 142 files, +20 835 −7 292 (C-13 included); lines past 80 columns 5 973 → 1 840 (the rest are
+> strings and comments); lines opening with `)` and going on with an operator 192 → 8. A second pass
+> moves nothing, no token or comment is lost, every sibling package `check`s as before and the cells
+> run identically (emilia 569, erika 31, jhonstart 120, onze 4, rakun-web 104 — before and after).
+> Per sibling: emilia 18 files +12 940 −4 663 (mostly its test assertions: `assert doc.indexOf(…)` /
+> `    != -1;`), rakun 47 +4 760 −1 471, jhonstart 19 +784 −231, erika 2 +167 −63, onze 2 +44 −8 —
+> **09's reformat, not committed here**; the compiler's own canonical trees are reformatted
+> (`44ec5e3a`).
+> **Blocks.** 09's reformat of the five libraries; nothing else.
+
+### 16-b · An array literal's open form is one element per line
+
+> **Measured.** Elements written on one source line were kept on one output line. Once the list
+> measures width that is not idempotent (the joined line runs past 80, a call inside it breaks, and the
+> next pass reads a different layout: 3 files of the corpus moved on a second pass), and it makes the
+> output a function of the input's layout, which decision 65 part 2 rules out.
+> **Options.** (a) One element per line in the open form; (b) Wadler's `fill` (as many per line as fit).
+> **Chosen: (a)** — all-or-nothing, as decision 65 part 1 states for every group; (b) is the middle.
+> **Cost.** Part of 16-a's numbers: a long list of short numbers takes one line each.
+
+### 16-c · A trailing comma still opens a list — does it stay?
+
+> **Measured.** An array, tuple, record field list or enum body written with a trailing comma prints
+> open even when it fits (Prettier's "magic trailing comma"). That is the output depending on the
+> input's layout, which decision 65 part 2 rules out for every construct — but it is the canonical
+> form every library is written in, and the broken form now *adds* the comma, so it is stable.
+> **Options.** (a) Keep it; (b) ignore the comma: a list that fits is joined, like a hand-broken chain.
+> **Recommendation.** (b), by decision 65 part 2 and decision 67 — not implemented here, because it
+> reformats every file that writes an open list that fits (a record type's fields among them), which is
+> a canonical-form change the maintainer takes, not a front.
+> **Blocks.** Nothing.
+
+### 16-d · C-13 stops at "optional": the parser refuses the `;` only after 09 and 12 migrate
+
+> **Measured.** The parser accepts a braced `if` / loop / `case` statement with or without its `;`
+> (`a688bfb5`), the formatter prints none (`6c33c6f4`), and the compiler's own trees are migrated
+> (`7af79f44`: 213 lines in 27 files, `libs/std`, `examples/`, the three bundled libraries,
+> `docs.md`'s fences). Still writing it: `tests/language` **275** sites, and the siblings — rakun
+> **454**, jhonstart **40**, erika **28**, onze **1**, emilia **0** (counted by `c13-migrate.py` on
+> copies; decision 29's 245 predates rakun's growth). Refusing it now (front 15's parked patch) would
+> fail every one of them.
+> **Chosen.** Optional until 12 and 09 have run `c13-migrate.py` (or `botopink format`) over their
+> trees; then the refusal lands with `blockStatementSemicolon`, narrowed to the braced form
+> (`Parser.isBracedBlockStmt` is already the test it needs).
+> **Blocks.** Front 15's patch; decision 29's "rejected".
+
 ## Open
 
 ### `botopink migrate` beside `botopink migrate effects` (front 24, open point 7)
