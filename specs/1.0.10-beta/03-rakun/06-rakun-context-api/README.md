@@ -321,7 +321,7 @@ has no analogue and needs none; the README says that rather than inventing one.
 **Acceptance:**
 - [x] A `Prototype` bean returns a distinct instance per `resolve` — held: `test/context_test.bp` "rakun scope: a prototype bean is constructed on every resolve"
 - [x] A `Request` bean returns one instance within a request and a different one in the next request — held: `test/context_test.bp` "rakun scope: a request bean is one instance within a request and another in the next"
-- [ ] Two concurrent requests each get their own `Request` instance
+- [x] Two concurrent requests each get their own `Request` instance — held: `test/context_test.bp` "rakun scope: two concurrent requests each get their own request instance" (rakun `d982052`)
 - [ ] `#[scope("request")]` on a type whose factory is constructor-injected somewhere fails at comptime naming the injection site's limitation
 
 ### Step 7 — Eager initialization and lazy
