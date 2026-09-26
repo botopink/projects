@@ -622,7 +622,9 @@ again at `4fe1747e`:
    `tuple-literal-label`, at the label, instead of `novalBinding` at the value. The form itself is
    §6's and yours: when it parses, delete the refusal in `parseTupleLitExpr` (one `if`) and its R10
    case, and the labels ride the tuple type. Until then `#(1, 2)` and `.0`/`.1` is what compiles.
-3. **`Box<i32>(value: 1).get()`** — explicit type arguments at a constructor call — still reds
+3. **Landed** (compiler `44144e3b`, `run/explicit_type_arguments`): `Box<i32>(value: 1)` and
+   `first<string>([])` parse and pin the type parameters; `Option<i32>.None` (arguments before a `.`)
+   does not parse yet. **`Box<i32>(value: 1).get()`** — explicit type arguments at a constructor call — still reds
    `novalBinding` at `value`. 15 did not name it: `decision-8:60-64` writes the form, so it is a gap
    (§1.3) rather than a decision, and naming it would record an absence the document contradicts.
 
