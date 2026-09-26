@@ -171,7 +171,7 @@ stands on.
 - [x] `writePost` then `listPosts` shows four
 - [x] `tags.bp` renders `<nav>`, `<article>`, `<h2>`, `<a>`, `<form>`, `<label>`, `<input>`,
       `<button>`, `<time>` — the nine tags the app needs and jhonstart does not have
-- [ ] The alias `@/lib.db` resolves from `app/blog/[slug]/page.bp`
+- [x] The alias `@/lib.db` resolves from `app/blog/[slug]/page.bp`
 
 ### Step 2 — The read path
 
@@ -180,12 +180,12 @@ stands on.
 `components/nav.bp`.
 
 **Acceptance:**
-- [ ] `/` renders with the hero image, the nav and one `<style>` block
-- [ ] `/blog` lists three posts, each in a `PostCard` carrying one emilia class
+- [x] `/` renders with the hero image, the nav and one `<style>` block
+- [x] `/blog` lists three posts, each in a `PostCard` carrying one emilia class
 - [ ] `/blog/hello-world` renders that post's title and body
 - [ ] `/about` renders — the route group does not appear in the URL
-- [ ] The document has exactly one `<style>` element and it is non-empty
-- [ ] Two consecutive requests both have a non-empty `<style>` — which is the test that catches a
+- [x] The document has exactly one `<style>` element and it is non-empty
+- [x] Two consecutive requests both have a non-empty `<style>` — which is the test that catches a
       sheet flushed once per process instead of once per request
 
 ### Step 3 — Static generation and metadata
@@ -441,8 +441,18 @@ jhonstart's, and the step-1 box is asserted on them (through the render's `rende
 that knows the void elements). The `@/lib.db` box is open: the app's map resolves it
 (`tags_test.bp`), but resolving it *from* `app/blog/[slug]/page.bp` is front 50's staging.
 
-Steps 2–7 wait on front 50 (the `app/` tree is only reachable through the staged `.onze/app/`)
-and on rakun (serving, the middleware, the actions, the cache). The rakun-cache member holds no
+Step 2 (onze `aadf0a0`): the root and blog layouts, `/`, `/blog`, `/blog/[slug]`, `/about`
+under `(marketing)`, `components/nav.bp` (front 27's `Link`) and `components/post_card.bp` (one
+emilia class). `test/render_test.bp` renders `/` and `/blog` **in process** through onze's
+`bootSite` (the jhonstart-emilia bridge registered, the chain from jhonstart's UI registry) on both
+rows — 10 blog tests in all. `/blog/[slug]` and `/about` live in directories no `mod` path reaches,
+so they are compiled by `onze build` (which builds the whole tree, the alias `@/lib.db` in the
+`[slug]` page rewritten by the staging) but not rendered by a test yet — their two boxes stay
+open. On erlang an imported module's decorator registrations only run through onze's
+`loadModuleBodies` (front 49's finding F10).
+
+Steps 3–7 wait on rakun (serving, prerender — front 60 —, the middleware, the actions, the cache)
+and on `Onze.run`. The rakun-cache member holds no
 cache surface yet, so `lib/db.bp` reads directly; its `readCount()` is the counter step 3 asserts.
 
 ## Definition of done
