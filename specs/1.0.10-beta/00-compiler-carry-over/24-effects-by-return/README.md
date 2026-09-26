@@ -176,8 +176,11 @@ emilia, onze and erika are written in the surface.
 
 - [x] `scripts/check-docs.sh` green; every `docs.md` fence compiles (`zig build test-docs`)
 - [x] no front README keeps a "written in the pre-118 model" line
-- [ ] the removed spellings appear in `specs/1.0.10-beta` only in the record and the removed-names
-      table (decision 135) — see *Open*
+- [x] the removed spellings appear in `specs/1.0.10-beta` only in the record and the removed-names
+      table (decision 135):
+      `grep -rlE '#\[@(result|future|use|generator|resultGenerator|futureGenerator)\]|@(Future|Use)<|@(Result|Future)Generator' specs/1.0.10-beta --include=*.md --include=*.bp`
+      → `specs/1.0.10-beta/00-compiler-carry-over/24-effects-by-return/guide.md` (lines 770–780, § 9
+      *Old names that left*, only) and `specs/1.0.10-beta/decisions-taken.md`
 
 ## Diagnostics
 
@@ -269,13 +272,15 @@ where it runs, a `run/` cell on the four targets.
 
 ## Open
 
-- **Guide fences (E3, decision 134).** The guide's slips are fixed. Three fences wait for
-  `00 · 01-checker`: `try x catch null` into a `?U` (§ 4.3, § 4.4, § 7), a `null` check whose branch
-  ends in a `noreturn` call (`notFound()`, `redirect()`) narrowing what follows, and a component
-  called inside a component's body answering its `T` (`Element`). The box ticks when they type.
-- **The removed-spellings grep (E8, decision 135).**
-  `grep -rnE '#\[@(result|future|use|generator|resultGenerator|futureGenerator)\]|@(Future|Use)<|@(Result|Future)Generator' specs/1.0.10-beta --include=*.md --include=*.bp`
-  finds only `decisions-taken.md` and `guide.md` § 9's removed-names table.
+- **Guide fences (E3, decision 134).** The guide's slips are fixed and compiled fence by fence
+  (one program per fence, `botopink check`, jhonstart as a path dependency): 21 ✓ fences type, 16 ✗
+  sites answer their code located — `#[layout] … -> Element` answers jhonstart's decision-117
+  refusal (`routes.bp`, pinned by jhonstart's `refusals/` projects). Three fences wait for
+  `00 · 01-checker`: `try x catch null` into a `?U` (§ 4.2 `currentUser`, § 4.3 `PostPage`, § 7), a
+  `null` check whose branch ends in a `noreturn` call (`redirect()`) narrowing what follows (§ 4.3
+  `DashboardLayout`), and a component called inside a component's body answering its `T`
+  (`Sidebar(…)` / `Counter()`, § 4.3). § 7's server action types against stubs only: rakun has no
+  `serverAction` yet. The box ticks when the three type.
 - **`AGENTS.md` per commit** (front 24 box 3, the maintainer's call). It holds at the tip; 10 of the
   front's 23 commits updated the nearest `AGENTS.md` in a later commit instead of the same one, and
   the history is not rewritten. The maintainer accepts or not.
