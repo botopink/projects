@@ -653,3 +653,20 @@ them is a rendering problem:
    with a private identity cell `wide(n: i32) -> i64` (`libs/std/src/time.bp`), and its `Duration`
    builders take `i32` because of it. The cell goes when a literal takes the integer type its context
    asks for.
+
+## Decided by the maintainer on 2026-09-26 (`tmp/decisoes-pendentes.md`) — landed
+
+1. **`try x catch null` in a `?U` position** types — the handler `null` makes the whole a `?U`; a
+   handler of another type is refused at the handler (compiler `ca0d6b15`,
+   `run/try_catch_null_and_noreturn_narrowing`, `reject/try_catch_handler_mismatch`).
+2. **Narrowing after a `noreturn` call** — a branch ending in a call whose declared return is
+   `noreturn` (`notFound()`, `redirect(…)`, `@panic`, `@todo`) exits like a `return` for narrowing
+   and for decision 2 (`ca0d6b15`).
+3. **A component called inside a component** (decisions 104/118/128, guide § 4.3) — in a body whose
+   return is `@Component<C, _>`, a call answering `@Component<C, T>` whose `T` owns the context is
+   typed `T` and `await` is spliced for the backends; as `use`'s operand, outside a component body
+   or under another base it keeps its wrapper (`ca0d6b15`, `run/component_call_renders`).
+4. **Decision 110 for types and type aliases** — `import {Point as P}`, `import {Pair as Two}`,
+   `import {dict.Dict as D} from "std"`; the alias is checker-local, the emitted name the declared
+   one; `import-alias-on-type` deleted (`bfc5e76d`, `modules/import_alias_on_type`).
+

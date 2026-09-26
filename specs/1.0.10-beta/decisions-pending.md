@@ -366,6 +366,10 @@ maintainer confirms or reverses each. Numbered `01c-a` … so they do not collid
 > 4. *`as` on an imported alias* (`import {Parser as P}`): (a) refused like any type,
 >    `import-alias-on-type` — implemented, since decision 110's checker-local type alias has not
 >    landed; (b) allowed once 110 lands for types, because an alias has no emitted identity at all.
+>    **Answered by the maintainer (2026-09-26): (b)** — "`as` passa a valer em import de tipo e de
+>    alias (decisão 110); os outros 4 pontos ficam como estão". Landed by `00 · 01-checker`, compiler
+>    `bfc5e76d`: `as` on a type or a type alias binds a checker-local alias, the emitted identity
+>    stays the declared name, and `import-alias-on-type` is deleted (`modules/import_alias_on_type`).
 > 5. *An alias taking the name of a type in scope*: (a) refused, `type-alias-name-taken` —
 >    implemented; (b) the alias shadows.
 > 6. *A return alias of a wrapper in the backends*: the backends see `-> Parser<i32>` unexpanded
