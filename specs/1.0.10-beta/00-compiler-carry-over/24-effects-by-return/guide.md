@@ -138,6 +138,14 @@ fn mustParse() {
 }
 ```
 
+**`try` and `await` begin an expression** (decision 136). They stand where an expression starts — a
+statement, a `val` / `var` initializer, the right side of `=`, a `return` / `yield` / `break` /
+`throw` operand, a call argument, an element of an array, tuple or record literal, an `if` / `while`
+condition, a `case` subject, a `for` iterable — and take the whole expression after them
+(`try await f()` is `try (await f())`). They are never the operand of an operator, of a unary `-` /
+`!`, of parentheses or of a `.` chain: `total + try r` and `(try batch).length` are
+`try-await-operand`, whose fix-it binds the value first — `val x = try r; total + x`.
+
 ### 2.3 Compile errors
 
 ```bp
@@ -477,7 +485,10 @@ Whoever iterates receives the `@Result` and decides. **`for` does no implicit `t
 // stop at the first error: an explicit try, inside a function with @Result in the return
 fn sumPorts(text: string) -> @Result<i32, ParseError> {
     var total = 0;
-    for (parseLines(text)) { r -> total = total + try r; }
+    for (parseLines(text)) { r ->
+        val p = try r;                    // `total + try r` is refused: bind it first
+        total = total + p;
+    }
     return total;
 }
 
@@ -510,7 +521,8 @@ pub fn pages(url: string) -> @Stream<@Result<Array<User>, string>> {
 fn countUsers() -> @Task<@Result<i32, string>> {
     var n = 0;
     for await (pages("https://api.example.com/users")) { batch ->
-        n = n + (try batch).length;
+        val users = try batch;
+        n = n + users.length;
     }
     return n;
 }

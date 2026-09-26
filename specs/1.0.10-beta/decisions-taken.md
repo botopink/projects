@@ -76,6 +76,7 @@ what was left, now `00-compiler-carry-over`'s order),
 | [133](#133-a-trailing-comma-keeps-a-list-in-its-open-form) | Does a trailing comma still open a list? | Yes — the author's explicit request; amends 65 part 2 |
 | [134](#134-every-example-in-the-guide-and-in-docsmd-is-correct-against-the-compiler) | Guide examples that do not type | Fixed in the text; three checker gaps closed by `01-checker`; decision 117's decorator check written in jhonstart |
 | [135](#135-specs-keep-only-what-still-holds) | Closed fronts spelling removed forms | Condensed to their current outcome; removed spellings only in the record and the removed-names tables |
+| [136](#136-try-and-await-begin-an-expression-they-are-never-an-operand) | `try` / `await` as operands (pending 24-e)? | Reversed: only where an expression begins; as an operand (operator, unary, group, chain) `try-await-operand` with the fix-it `val x = try …;` |
 
 ## 68. One milestone, the 1.0.9 numbers kept, the drafts deleted
 
@@ -2810,3 +2811,39 @@ the table of removed names: this file, and the removed-names table of `guide.md`
 
 Implements: front 24's closeout — fronts 19, 20, 21 and 22, front 24's README, guide and status,
 `decisions-pending.md` and `status.md` rewritten to the current state.
+
+## 136. `try` and `await` begin an expression; they are never an operand
+
+**Decided 2026-09-26 by the maintainer** (pending item 24-e, reversed): `try` and `await` are legal
+only where an expression begins, and the operand form front 24 implemented is refused —
+*"`val x = try r; total + x`"*. A position where an expression begins is one the grammar reads as a
+whole expression:
+
+- a statement; a `val` / `var` initializer; the right side of `=` (`x = …`, `x.f = …`, `x += …`);
+- the operand of `return`, `yield`, `break v` and `throw`;
+- a call argument (positional, labelled or `..` spread); an element of an array, tuple or record
+  literal;
+- a condition or subject the construct delimits: the `if` / `while` condition, a `case` subject, a
+  `for` iterable;
+- a `catch` handler.
+
+There the keyword takes the whole expression after it — `try a + b` is `try (a + b)`, `try await f()`
+is `try (await f())` — and `try … catch x` stands in the same positions. Everywhere else — the
+operand of a binary operator or `??`, of a unary `-` / `!`, an index or a range bound, and inside
+parentheses (a group exists only to become an operand, so `(try r).length` and
+`(try r catch 0) == 1` are the operand form) — the parser refuses it as `try-await-operand`, located
+at the keyword, with the fix-it "bind it first: `val x = try …;`".
+
+```bp
+fn sum(r: @Result<i32, string>, total: i32) -> @Result<i32, string> {
+    val x = try r;          // not `total + try r`
+    return total + x;
+}
+```
+
+The backends keep the propagation front 24 gave a `try` with no rest of the function to nest in —
+a call argument or a literal's element still has none.
+
+**Amends:** front 24's step E2 (24-e). Implements: `parser/exprs.zig` (`parseExprAtStart`, the
+`tryAwaitOperand` refusal), the guide (§ 2.2, § 5.2, § 5.3), `docs.md` § Results; cells
+`tests/language/run/try_start_positions` and `reject/{try_operand_of_operator,try_in_parentheses,await_operand_of_unary}`.
