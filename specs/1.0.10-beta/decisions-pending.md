@@ -227,6 +227,8 @@ maintainer confirms or reverses each.
 > change for `00 · 01-checker`.
 > **Recommendation.** (a) for rakun now, and (b) as a checker item: two libraries may not declare a
 > same-named decorator today without one silently winning.
+> **(b) landed** — `00 · 01-checker`, compiler `e758791b`: both comptime registries are keyed by the
+> exporting module; `modules/template_name_collision` pins it.
 > **Blocks.** Nothing here; (b) blocks any two bundled/declared libraries sharing a decorator name.
 
 ### 01std-e · `actions.readEnvelope` refuses a `redirect` that disagrees with `n`

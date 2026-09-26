@@ -554,7 +554,7 @@ non-empty `.d.ts` (no `tsc` in the checkout when 04 closed) and `42.toString()` 
 - [x] `Env.warnings` exists and one warning renders (the always-false `is` of 01 step 3 is the first) — compiler `bdbbeae6`: `OkData.warnings`, rendered by `botopink check` under `warning:`; §1.4's `[]` birth is the second writer. `build` / `test` / the LSP do not print them yet
 - [ ] `any` gone from the grammar, `erlang.bp`/`beam.bp` re-spelled, or the row re-decided with the
       measurement
-- [ ] `Array.unique` answers on both backends, a `libs/std` test
+- [x] `Array.unique` answers on both backends, a `libs/std` test — compiler `6cb3ef93` (decision 9 (b): the body rewritten; `test/primitives_gaps_test.bp` `array unique drops consecutive duplicates`, commonJS and erlang)
 - [ ] the five documents corrected; `tsc --noEmit` green over every `.d.ts`; `42.toString()` runs on node
 
 ## C-19 — The declaration-name builders spell the 1.0.3 surface
