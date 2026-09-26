@@ -490,20 +490,20 @@ Create the module (`botopink.json` with `"target": "erlang"`, `src/root.bp`), th
 ### Step 6 — Content negotiation
 
 **Acceptance:**
-- [ ] `Accept: application/json` selects the JSON converter; `text/plain` selects the identity one
-- [ ] `Accept: application/json;q=0.5, text/plain;q=0.9` selects `text/plain`
-- [ ] `Accept: */*` selects the first registered converter that can write
-- [ ] An `Accept` matching nothing answers 406
-- [ ] A request body with `Content-Type: application/json` reaches the handler decoded by the JSON converter
-- [ ] `#[messageConverter]` registers an application converter and it wins for its media type
+- [x] `Accept: application/json` selects the JSON converter; `text/plain` selects the identity one — held: `modules/rakun-web/test/negotiation_test.bp` "Accept application/json selects JSON, text/plain the identity" (rakun `ad3bb08`)
+- [x] `Accept: application/json;q=0.5, text/plain;q=0.9` selects `text/plain` — held: `modules/rakun-web/test/negotiation_test.bp` "q-values decide between two acceptable types"
+- [x] `Accept: */*` selects the first registered converter that can write — held: `modules/rakun-web/test/negotiation_test.bp` "*/* selects the first registered converter"
+- [x] An `Accept` matching nothing answers 406 — held: `modules/rakun-web/test/negotiation_test.bp` "an Accept matching nothing answers 406"
+- [x] A request body with `Content-Type: application/json` reaches the handler decoded by the JSON converter — held: `modules/rakun-web/test/negotiation_test.bp` "a JSON request body reaches the handler read by the JSON converter" (read = validated by `json.decode`; a malformed body is a 400)
+- [x] `#[messageConverter]` registers an application converter and it wins for its media type — held: `modules/rakun-web/test/negotiation_test.bp` "#[messageConverter] registered its media type when the module loaded" + "… an application converter that wins for its type"
 
 ### Step 7 — `WebCustomizer`
 
 **Acceptance:**
-- [ ] A `#[webCustomizer]` component's `customize` runs once at boot
-- [ ] Two customizers run in `#[order]` order
-- [ ] A converter, a CORS mapping and a filter added from a customizer all take effect
-- [ ] A customizer that raises fails the boot naming the component
+- [x] A `#[webCustomizer]` component's `customize` runs once at boot — held: `modules/rakun-web/test/customizer_test.bp` "the pass runs every customizer once, in #[order] order" (`bootWeb()` runs `runCustomizers()`)
+- [x] Two customizers run in `#[order]` order — held: `modules/rakun-web/test/customizer_test.bp` "the pass runs every customizer once, in #[order] order"
+- [x] A converter, a CORS mapping and a filter added from a customizer all take effect — held: `modules/rakun-web/test/customizer_test.bp` "a converter, a CORS mapping, a filter and a formatter all take effect"
+- [x] A customizer that raises fails the boot naming the component — held: `modules/rakun-web/test/customizer_test.bp` "one that raises fails the boot naming the component"
 
 ### Step 8 — API versioning
 
