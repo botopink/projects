@@ -187,12 +187,12 @@ a certificate and no key, or a key and no certificate, is a startup failure nami
 missing half.
 
 **Acceptance:**
-- [ ] Two bundles configured independently resolve independently, and one failing does not prevent the other from resolving
-- [ ] A bundle naming a file that does not exist fails at startup, naming the bundle, the property and the absolute path searched
-- [ ] A certificate and a key that do not correspond fail at startup, naming the bundle — not at first handshake
-- [ ] A JKS file is refused with a message naming `keytool -importkeystore -deststoretype PKCS12`, and there is no property that accepts it anyway
-- [ ] `sslBundleNames()` lists every configured bundle in property order
-- [ ] `sslBundle("absent")` answers the empty optional; reading it with `if (b) { … }` is the documented form
+- [x] Two bundles configured independently resolve independently, and one failing does not prevent the other from resolving — held: `modules/rakun/test/ssl_bundle_test.bp` "two bundles resolve independently and one failing does not stop the other"
+- [x] A bundle naming a file that does not exist fails at startup, naming the bundle, the property and the absolute path searched — held: `modules/rakun/test/ssl_bundle_test.bp` "a file that is not there is refused, naming the absolute path searched" + "a file that vanished between configuration and boot is a refusal"
+- [x] A certificate and a key that do not correspond fail at startup, naming the bundle — not at first handshake — held: `modules/rakun/test/ssl_bundle_test.bp` "two bundles resolve independently…" (`sslBoot` raises `keyMismatchProblem`, which names the bundle)
+- [x] A JKS file is refused with a message naming `keytool -importkeystore -deststoretype PKCS12`, and there is no property that accepts it anyway — held: `modules/rakun/test/ssl_bundle_test.bp` "a JKS is refused with the keytool command, and no property lifts it"
+- [x] `sslBundleNames()` lists every configured bundle in property order — held: `modules/rakun/test/ssl_bundle_test.bp` "the bundle names are read in property order"
+- [x] `sslBundle("absent")` answers the empty optional; reading it with `if (b) { … }` is the documented form — held: `modules/rakun/test/ssl_bundle_test.bp` "a name nobody configured is the empty optional, not an empty bundle"
 
 ### Step 2 — the server listener
 
@@ -201,7 +201,7 @@ module from the same call. `rakun.server.ssl.bundle` names the listener's bundle
 is plaintext and nothing in this front runs.
 
 **Acceptance:**
-- [ ] With no bundle named, the listener is `gen_tcp` and byte-for-byte the same behaviour front 04 tests
+- [x] With no bundle named, the listener is `gen_tcp` and byte-for-byte the same behaviour front 04 tests — held: `modules/rakun-web/test/tls_test.bp` "with no bundle named the listener is gen_tcp and nothing else runs" (front 04's acceptor is unedited)
 - [ ] With a bundle named, a TLS 1.3 client completes a handshake and receives the handler's body
 - [ ] `protocols=tlsv1.2` refuses a TLS 1.3-only client, and the refusal is logged with the bundle name
 - [ ] The handshake runs in the connection process: a client that opens a socket and sends nothing does not delay the acceptance of a second connection
@@ -231,8 +231,8 @@ configuration names.
 - [ ] `verify=full` refuses a server whose certificate does not match the requested hostname
 - [ ] `verify=full` refuses a server whose chain does not verify against the bundle's trust store
 - [ ] `verify=none` connects to both, and resolving it logs a warning naming the bundle
-- [ ] A bundle with only a trust store — no client certificate — is valid and produces a verify-only option list
-- [ ] The same bundle name is usable by a listener and by a client without conflict
+- [x] A bundle with only a trust store — no client certificate — is valid and produces a verify-only option list — held: `modules/rakun/test/ssl_bundle_test.bp` "a trust-store-only bundle produces a verify-only client option list"
+- [x] The same bundle name is usable by a listener and by a client without conflict — held: `modules/rakun-web/test/tls_test.bp` "a client bundle resolves through the same registry and refusal"
 
 ### Step 5 — reload
 
@@ -241,9 +241,9 @@ configuration names.
 **Acceptance:**
 - [ ] `sslReload` after replacing both files on disk makes the next handshake present the new certificate
 - [ ] A connection established before the reload continues with the old material and is not dropped
-- [ ] A reload whose certificate and key do not match keeps the old material and returns false
-- [ ] `rkSslLastError` names the reason for the last failed reload and is `""` after a successful one
-- [ ] `reload-on-update=false` does not poll — with the property off, no filesystem call happens on the interval
+- [x] A reload whose certificate and key do not match keeps the old material and returns false — held: `modules/rakun/test/ssl_bundle_test.bp` "a broken rotation keeps the previous material and is recorded"
+- [x] `rkSslLastError` names the reason for the last failed reload and is `""` after a successful one — held: `modules/rakun/test/ssl_bundle_test.bp` "a broken rotation keeps the previous material…" (reason, then `""` after a good reload)
+- [x] `reload-on-update=false` does not poll — with the property off, no filesystem call happens on the interval — held: `modules/rakun/test/ssl_bundle_test.bp` "reload-on-update false makes the poll touch no file at all"
 - [ ] `reload-on-update=true` picks up a rotated certificate within two intervals
 
 ### Step 6 — health and info
@@ -251,12 +251,12 @@ configuration names.
 Implement the `ssl` key for front 11's two SPIs.
 
 **Acceptance:**
-- [ ] A certificate expiring in 30 days with a 14-day threshold reports `UP`
+- [x] A certificate expiring in 30 days with a 14-day threshold reports `UP` — held: `modules/rakun/test/ssl_bundle_test.bp` "the four verdicts one bundle can have" — `sslHealthOf(30, "", 14)` is `UP` (synthetic days; no 30-day certificate)
 - [ ] A certificate expiring in 3 days reports `OUT_OF_SERVICE` and names the bundle and the days remaining
-- [ ] An already-expired certificate reports `DOWN`
-- [ ] A bundle whose last reload failed reports `DOWN` with the reload error as the detail
-- [ ] The info contribution carries subject, issuer, not-before, not-after and days remaining per bundle, and no key material
-- [ ] With no bundles configured, the `ssl` indicator reports `UP` with an empty detail rather than being absent — "no TLS configured" and "TLS broken" must not look the same
+- [x] An already-expired certificate reports `DOWN` — held: `modules/rakun/test/ssl_bundle_test.bp` "the indicator names the bundle, the days and the reason" (the expired fixture is `DOWN`)
+- [x] A bundle whose last reload failed reports `DOWN` with the reload error as the detail — held: `modules/rakun/test/ssl_bundle_test.bp` "a failed resolve is DOWN with the reason as the detail" + "the four verdicts…"
+- [x] The info contribution carries subject, issuer, not-before, not-after and days remaining per bundle, and no key material — held: `modules/rakun/test/ssl_bundle_test.bp` "the indicator names the bundle, the days and the reason" (`sslInfo`, no `PRIVATE`/`password`)
+- [x] With no bundles configured, the `ssl` indicator reports `UP` with an empty detail rather than being absent — "no TLS configured" and "TLS broken" must not look the same — held: `modules/rakun/test/ssl_bundle_test.bp` "with no bundles the indicator is UP with an empty detail, never absent"
 
 ## Examples
 
