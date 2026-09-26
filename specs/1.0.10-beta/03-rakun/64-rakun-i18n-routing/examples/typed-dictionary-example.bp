@@ -13,7 +13,7 @@
 // Upstream:
 //   https://nextjs.org/docs/app/guides/internationalization
 
-import {localeOf} from "rakun-i18n";
+import {localeOf} from "rakun-app";
 import {page, ChunkWriter, Request} from "rakun";  // provided by fronts 23 and 04
 
 // SERVER — the copy block. Every locale must supply every field.

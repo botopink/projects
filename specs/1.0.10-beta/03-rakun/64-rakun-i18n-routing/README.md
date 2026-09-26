@@ -38,18 +38,20 @@ that exists today, which is wrong the moment a second locale exists.
 
 ## Current state
 
-- `repository/rakun/modules/` has no `rakun-i18n`; this front's directory is
-  `modules/rakun-app/src/i18n/**` ([`modules.md`](../modules.md)).
-- `repository/rakun/src/file_router.bp` (front 22) — `SegmentKind.Dynamic` for `[locale]`, the
-  `kind|pattern|slot|verb` table of [`contracts.md` § 1](../../contracts.md), and `matchPath`. Nothing
-  distinguishes a locale segment from any other dynamic segment.
-- `repository/rakun/modules/rakun-web/src/middleware.bp` (front 07) — the filter chain this front
-  installs one filter into; this front declares the filter and front 07 owns the chain.
-- `libs/std/src/url.bp` and `querystring.bp` exist; neither parses `Accept-Language`, and
-  `querystring.stringify` documents itself as not percent-encoding, which is why this front uses
-  `encoding.percentEncode`/`percentDecode`.
-- `repository/rakun/src/request_context.bp` (front 62) — `headers()` and `cookies()`, which is where
-  `Accept-Language` and the locale cookie come from.
+Landed in `modules/rakun-app/src/i18n.bp` (`repository/rakun/AGENTS.md` § Locale routing): 17 cells in
+`modules/rakun-app/test/i18n_test.bp`.
+
+Where it differs from the text below:
+
+- **In `rakun-app`, not a `rakun-i18n` member** — `modules.md`'s cut puts i18n negotiation in
+  `rakun-app` (03r-q); the examples import `from "rakun-app"`. No sidecar: the locale set and the
+  dictionary loader are two `persistent_term` cells written inline.
+- **The exclude list is prefixes** (`/api`, `/sitemap.xml`, `/robots.txt`, plus `rakun.i18n.exclude`),
+  not front 65 matchers.
+- **The redirect rebuilds the query** from the chain's decoded pairs, each part percent-encoded.
+- **`dictionaryBlob`** reads through a registered loader (`registerDictionaryLoader`) into front 12's
+  framework cache `rakun.i18n` (60 s).
+- **Open:** the raw query bytes, and front 32's use of `Alternate`.
 
 ## Mechanism
 
@@ -162,13 +164,13 @@ pub fn normalizeTag(tag: string) -> string
 become `pt-BR` — so a comparison is a string comparison and not a parser.
 
 **Acceptance:**
-- [ ] `registerLocales` with a `defaultLocale` not in `locales` raises, naming both.
-- [ ] `registerLocales` with an empty `locales` raises.
-- [ ] `registerLocales` with `"en_US"` raises, naming the tag — the separator is `-`, and accepting
-      both spellings means two representations of one locale.
-- [ ] `normalizeTag("pt-br")`, `normalizeTag("PT-BR")` and `normalizeTag("Pt-Br")` all answer `pt-BR`.
-- [ ] `isSupported` compares normalized tags, so a request for `PT-br` matches a declared `pt-BR`.
-- [ ] Registering twice raises rather than replacing.
+- [x] `registerLocales` with a `defaultLocale` not in `locales` raises, naming both. — `modules/rakun-app/test/i18n_test.bp` "a default outside the set, an empty set and an underscore tag are refused"
+- [x] `registerLocales` with an empty `locales` raises. — same test
+- [x] `registerLocales` with `"en_US"` raises, naming the tag — the separator is `-`, and accepting
+      both spellings means two representations of one locale. — same test
+- [x] `normalizeTag("pt-br")`, `normalizeTag("PT-BR")` and `normalizeTag("Pt-Br")` all answer `pt-BR`. — `modules/rakun-app/test/i18n_test.bp` "tags normalise, and isSupported compares normalised tags"
+- [x] `isSupported` compares normalized tags, so a request for `PT-br` matches a declared `pt-BR`. — same test
+- [x] Registering twice raises rather than replacing. — `modules/rakun-app/test/i18n_test.bp` "registering twice is refused"
 
 ### Step 2 — `Accept-Language` parsing and negotiation
 
@@ -183,20 +185,20 @@ pub fn negotiate(set: LocaleSet, acceptLanguage: string, cookieValue: string) ->
 ```
 
 **Acceptance:**
-- [ ] `parseAcceptLanguage("pt-BR,pt;q=0.9,en;q=0.8")` answers three entries with q 1000, 900, 800, in
-      descending order.
-- [ ] A tag with no `q` is 1000.
-- [ ] `q=0` sorts last and is never selected, even when it is the only supported tag — RFC 9110 §12.5.4
-      says `q=0` means not acceptable, and treating it as a weak preference is the common bug.
-- [ ] A malformed q (`q=abc`, `q=`, `q=1.2.3`) answers 0 and does not raise.
-- [ ] An empty header answers an empty array.
-- [ ] A header with 500 entries parses without raising — it is attacker-controlled length.
-- [ ] `negotiate` prefers a supported cookie value over the header.
-- [ ] `negotiate` ignores an unsupported cookie value and falls through to the header.
-- [ ] `negotiate` with a header naming only unsupported tags answers `defaultLocale`.
-- [ ] `negotiate` falls back from `pt-PT` to a declared `pt` when the exact tag is unsupported but the
+- [x] `parseAcceptLanguage("pt-BR,pt;q=0.9,en;q=0.8")` answers three entries with q 1000, 900, 800, in
+      descending order. — `modules/rakun-app/test/i18n_test.bp` "Accept-Language parses into per-mille q, highest first"
+- [x] A tag with no `q` is 1000. — same test (`en;q=0.5,fr` → `fr=1000`)
+- [x] `q=0` sorts last and is never selected, even when it is the only supported tag — RFC 9110 §12.5.4
+      says `q=0` means not acceptable, and treating it as a weak preference is the common bug. — `modules/rakun-app/test/i18n_test.bp` "q=0 is never selected, a malformed q is 0, and a 500-entry header parses"
+- [x] A malformed q (`q=abc`, `q=`, `q=1.2.3`) answers 0 and does not raise. — same test
+- [x] An empty header answers an empty array. — `modules/rakun-app/test/i18n_test.bp` "Accept-Language parses into per-mille q, highest first"
+- [x] A header with 500 entries parses without raising — it is attacker-controlled length. — `modules/rakun-app/test/i18n_test.bp` "q=0 is never selected, a malformed q is 0, and a 500-entry header parses"
+- [x] `negotiate` prefers a supported cookie value over the header. — `modules/rakun-app/test/i18n_test.bp` "negotiation prefers a supported cookie, ignores an unsupported one, falls to the default"
+- [x] `negotiate` ignores an unsupported cookie value and falls through to the header. — same test
+- [x] `negotiate` with a header naming only unsupported tags answers `defaultLocale`. — same test
+- [x] `negotiate` falls back from `pt-PT` to a declared `pt` when the exact tag is unsupported but the
       language subtag is, and does **not** fall back from `pt` to `pt-BR` — widening is safe,
-      narrowing is a guess.
+      narrowing is a guess. — `modules/rakun-app/test/i18n_test.bp` "pt-PT widens to a declared pt, pt never narrows to pt-BR"
 
 ### Step 3 — Path prefixing
 
@@ -207,16 +209,16 @@ pub fn withLocale(set: LocaleSet, locale: string, pathname: string) -> string
 ```
 
 **Acceptance:**
-- [ ] `localeOfPath(set, "/pt/about")` answers `pt`; `localeOfPath(set, "/klingon/about")` answers
-      `null`; `localeOfPath(set, "/about")` answers `null`.
-- [ ] `localeOfPath(set, "/pt")` answers `pt` — the bare prefix is a locale root, not a page named
-      after a locale.
-- [ ] `stripLocale(set, "/pt/about")` answers `/about`; `stripLocale(set, "/about")` answers `/about`.
-- [ ] `withLocale(set, "pt", "/about")` answers `/pt/about`; `withLocale(set, "pt", "/")` answers
-      `/pt`.
-- [ ] `withLocale` percent-encodes each segment with `encoding.percentEncode` (front 01): a path
-      containing a space or a non-ASCII character round-trips through `stripLocale`.
-- [ ] `withLocale(set, "pt", "/pt/about")` answers `/pt/about` and does not double-prefix.
+- [x] `localeOfPath(set, "/pt/about")` answers `pt`; `localeOfPath(set, "/klingon/about")` answers
+      `null`; `localeOfPath(set, "/about")` answers `null`. — `modules/rakun-app/test/i18n_test.bp` "localeOfPath, stripLocale and withLocale"
+- [x] `localeOfPath(set, "/pt")` answers `pt` — the bare prefix is a locale root, not a page named
+      after a locale. — same test
+- [x] `stripLocale(set, "/pt/about")` answers `/about`; `stripLocale(set, "/about")` answers `/about`. — same test
+- [x] `withLocale(set, "pt", "/about")` answers `/pt/about`; `withLocale(set, "pt", "/")` answers
+      `/pt`. — same test
+- [x] `withLocale` percent-encodes each segment with `encoding.percentEncode` (front 01): a path
+      containing a space or a non-ASCII character round-trips through `stripLocale`. — `modules/rakun-app/test/i18n_test.bp` "withLocale percent-encodes each segment, and the path round-trips"
+- [x] `withLocale(set, "pt", "/pt/about")` answers `/pt/about` and does not double-prefix. — `modules/rakun-app/test/i18n_test.bp` "localeOfPath, stripLocale and withLocale"
 
 ### Step 4 — The negotiation filter
 
@@ -230,17 +232,17 @@ pub fn setLocaleCookie(locale: string) -> i32
 neither.
 
 **Acceptance:**
-- [ ] A request for `/about` with `Accept-Language: pt` redirects 307 to `/pt/about`.
-- [ ] A request for `/pt/about` is not redirected and `localeOf()` answers `pt`.
-- [ ] A request for `/api/posts` is not redirected — `/api` is on the default exclude list.
-- [ ] `/sitemap.xml` and `/robots.txt` are not redirected: the default exclude list carries them, and
-      the test names them, because front 66 breaks silently otherwise.
-- [ ] A prefix appended to `rakun.i18n.exclude` at boot (the test appends `/_assets`) is not
-      redirected; `grep -rn "_onze\|onze" modules/rakun-i18n/src` is empty.
-- [ ] `localeOf()` outside a request raises — front 62's rule, inherited not restated.
-- [ ] `setLocaleCookie("pt")` from a server action writes a cookie the next request's `negotiate`
-      prefers; called from a render it raises, which is front 62's phase rule.
-- [ ] The redirect preserves the query string and the fragment-free remainder of the URL byte for byte.
+- [x] A request for `/about` with `Accept-Language: pt` redirects 307 to `/pt/about`. — `modules/rakun-app/test/i18n_test.bp` "an unprefixed path redirects 307 to the negotiated locale, the query kept"
+- [x] A request for `/pt/about` is not redirected and `localeOf()` answers `pt`. — `modules/rakun-app/test/i18n_test.bp` "a prefixed path passes and localeOf answers its locale"
+- [x] A request for `/api/posts` is not redirected — `/api` is on the default exclude list. — `modules/rakun-app/test/i18n_test.bp` "/api, /sitemap.xml, /robots.txt and an appended prefix are not redirected"
+- [x] `/sitemap.xml` and `/robots.txt` are not redirected: the default exclude list carries them, and
+      the test names them, because front 66 breaks silently otherwise. — same test
+- [x] A prefix appended to `rakun.i18n.exclude` at boot (the test appends `/_assets`) is not
+      redirected; `grep -rn "_onze\|onze" modules/rakun-i18n/src` is empty. — same test (the grep is in the cell)
+- [x] `localeOf()` outside a request raises — front 62's rule, inherited not restated. — `modules/rakun-app/test/i18n_test.bp` "localeOf and htmlLang raise outside a request"
+- [x] `setLocaleCookie("pt")` from a server action writes a cookie the next request's `negotiate`
+      prefers; called from a render it raises, which is front 62's phase rule. — `modules/rakun-app/test/i18n_test.bp` "setLocaleCookie from an action is what the next negotiation prefers; from a render it raises"
+- [ ] The redirect preserves the query string and the fragment-free remainder of the URL byte for byte. — open: the chain hands the query as decoded `name\tvalue` pairs, so the redirect rebuilds it (`?x=1&y=%20`, each part percent-encoded — asserted in the redirect cell); the raw bytes of the original query are not available to a filter
 
 ### Step 5 — Dictionaries
 
@@ -253,15 +255,15 @@ The typed form needs no library function at all — it is the app's record and t
 this step's deliverable is the open-set fallback plus the build-time check.
 
 **Acceptance:**
-- [ ] `dictionaryBlob` reads through front 12 under `CacheScope.Shared`, namespace `rakun.i18n`, and a
-      second call in the same second does not re-read.
-- [ ] `dictionaryBlob` for an unsupported locale raises, naming the locale and the declared set.
-- [ ] `declaredLocaleFiles` uses `path.glob("**/dictionaries/*.bp", appDir)` (front 01) and answers one
-      entry per file found.
-- [ ] A declared locale with no dictionary file fails the check, naming the locale.
-- [ ] A dictionary file naming an undeclared locale fails the check, naming the file.
-- [ ] The typed path is demonstrated in the example and needs no library call, which the example's
-      comment says in one line.
+- [x] `dictionaryBlob` reads through front 12 under `CacheScope.Shared`, namespace `rakun.i18n`, and a
+      second call in the same second does not re-read. — `modules/rakun-app/test/i18n_test.bp` "dictionaryBlob reads once through front 12 and refuses an undeclared locale" (the framework cache `rakun.i18n`)
+- [x] `dictionaryBlob` for an unsupported locale raises, naming the locale and the declared set. — same test
+- [x] `declaredLocaleFiles` uses `path.glob("**/dictionaries/*.bp", appDir)` (front 01) and answers one
+      entry per file found. — `modules/rakun-app/test/i18n_test.bp` "the dictionary check finds every file and names what is missing or undeclared" (std `fs.glob`)
+- [x] A declared locale with no dictionary file fails the check, naming the locale. — same test (`dictionaryProblem`)
+- [x] A dictionary file naming an undeclared locale fails the check, naming the file. — same test
+- [x] The typed path is demonstrated in the example and needs no library call, which the example's
+      comment says in one line. — `examples/typed-dictionary-example.bp` — the record, the constructors and the `case`, with `localeOf()` its only library call
 
 ### Step 6 — Metadata and `<html lang>`
 
@@ -276,15 +278,15 @@ pub fn htmlLang() -> string
 ```
 
 **Acceptance:**
-- [ ] `alternatesFor` over a three-locale set answers four entries: one per locale plus `x-default`
-      pointing at the default locale's URL.
-- [ ] The `href` values are absolute when `rakun.i18n.origin` is set and root-relative when it is not —
-      a crawler needs absolute, and inventing an origin is worse than omitting one.
-- [ ] `alternatesFor` strips the locale from the incoming pathname before rebuilding, so calling it
-      from `/pt/about` and from `/about` answers the same set.
-- [ ] `htmlLang()` answers the resolved locale, and raises outside a request.
+- [x] `alternatesFor` over a three-locale set answers four entries: one per locale plus `x-default`
+      pointing at the default locale's URL. — `modules/rakun-app/test/i18n_test.bp` "alternates are one per locale plus x-default, the same from either path"
+- [x] The `href` values are absolute when `rakun.i18n.origin` is set and root-relative when it is not —
+      a crawler needs absolute, and inventing an origin is worse than omitting one. — same test
+- [x] `alternatesFor` strips the locale from the incoming pathname before rebuilding, so calling it
+      from `/pt/about` and from `/about` answers the same set. — same test
+- [x] `htmlLang()` answers the resolved locale, and raises outside a request. — `modules/rakun-app/test/i18n_test.bp` "htmlLang answers the request's locale", "localeOf and htmlLang raise outside a request"
 - [ ] Front 32 consumes `Alternate[]` unchanged — the record is declared here and cited there, not
-      re-declared.
+      re-declared. — open: front 32 is jhonstart's; `Alternate` is declared here for it to cite
 
 ## Examples
 
