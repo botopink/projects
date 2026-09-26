@@ -103,7 +103,6 @@ std's template instead of `string:split/3` (`run/string_split_empty_separator`, 
 - **JS-4's beam twin** — `val Circle(r) = s;` checks and assembles, and the run aborts with
   `{unresolved_identifier, r}`: the `.ctor` destructure binds nothing. See
   [`04-js/pattern-binding.md`](../04-js/pattern-binding.md).
-- **`Array.lastIndexOf`** — does not run on beam either (the erlang row in `status.md` § Pending).
 
 ## Dependencies
 

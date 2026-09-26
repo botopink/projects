@@ -33,8 +33,8 @@ Each row run in a scratch project on commonJS (erlang, beam and wasm where the r
 | `Self<T>` in a generic declaration | `fn get(self: Self<T>)` → `type mismatch: expected Self, got Holder`; bare `Self` runs | stays — C-15 |
 | no `;` after a braced statement | both forms compile and run; `format` prints none | stays — C-13 in decision 132's order |
 | the pattern range | `1..9` in an arm is `error[pattern-range-exclusive]` naming `...`; `case 9 { 1...9 { 1 } _ { 0 } }` prints `1` on commonJS, erlang, beam and wasm | **left the table** — the row stated decision 53 inverted; § Case teaches `...` with a fence |
-| an imported default | an imported `fn`'s default is not filled (`'greet' expects 2 argument(s), got 1`); an imported record's field default **is** (`Cfg(n: 1).m` prints `5`) | the limit narrowed to functions |
-| a behavior-typed parameter or return | one module: runs on commonJS, erlang and beam, **traps on wasm** (`unreachable`); across a sibling `mod` or a package: `expected behavior Greeter { … }, got Bob` | taught in § behavior; both limits stated |
+| an imported default | `import {greet} from "helper"; greet("w")` prints `hi w` on commonJS, erlang and wasm; an imported record's field default is filled too | **left the table** — the limit paragraph now states it is filled |
+| a behavior-typed parameter or return | runs on all four targets, in one module and across two (`run/behavior_method_dispatch_by_value`, `modules/behavior_across_modules`) | **left the table** — the paragraph states it |
 | the deliberately-absent forms | `is` binding a payload, a nameless payload, `val assert … catch`, plus the eight the parser names — `ternary-absent`, `bitwise-operator-absent`, `char-literal-absent`, `nested-fn-decl`, `list-spread-not-last`, `list-spread-dot-dot-dot`, `implement-clause-for`, `tuple-literal-label` — each message as printed | the table carries all eleven |
 
 ## Open
