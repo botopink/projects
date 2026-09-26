@@ -40,7 +40,7 @@ item stands is `status.md`'s.
 |---|---|---|---|---|---|
 | [C-01](#c-01--the-types-identity-in-the-value-and-one-module-per-type) | The type's identity in the value, and one BEAM module per `type` | 13 halves 2–3 (steps 8–19); decisions 21, 22, 23, 5 | **critical** | `is`, unions and `case` over named types on erlang/beam/wasm; §7 printing on three backends (02/03/05 F2–F4); C-07, C-10, C-17, C-20; today `Person(…) == Vec(…)` is `true` on erlang | halves 2 and 3 landed on `feat`; the acceptance list below is the record to tick |
 | [C-02](#c-02--an-index-is-a-method-call) | An index is a method call: `Index`/`Slice`, the rewrite, and beam's silent `.length` | decision 63 (amended); 01 handover 15; 09 rows 1–4; 08's paragraph; decision 62's beam defect; 12's cell | **critical** | 1.0.9 gap "`xs[0]` silently drops the index on the BEAM backend — every server front"; `d["k"]` on every backend; `xs[0]` typing as `void` in the LSP | landed — the `libs/std` half and the checker rewrite (`xs[k]` is `xs.at(k)`, no `codegen/**` touched); residual: `xs[0]` still types `void` at a `val` binding |
-| [C-03](#c-03--a-wrapper-per-host-bound-std-declare-fn) | A wrapper per host-bound std `declare fn` on erlang and beam | decision 64; 17 step 3b's acceptance; 09's `beam.bp` header | **critical** | `std@erlang:self()` is `undef`; 17's every read/write lowering; 1.0.9 gap "a std module cannot call another std module" | erlang half landed (run fixture `erlang.node()`); beam wrapper wired for a plain `module:symbol` target by 17 step 5 (`run/std_erlang_node` passes on beam); templates and `@External.Beam` bodies still unwrapped |
+| [C-03](#c-03--a-wrapper-per-host-bound-std-declare-fn) | A wrapper per host-bound std `declare fn` on erlang and beam | decision 64; 17 step 3b's acceptance; 09's `beam.bp` header | **critical** | `std@erlang:self()` is `undef`; 17's every read/write lowering; 1.0.9 gap "a std module cannot call another std module" | landed on erlang and beam: every `pub` host-bound std `declare fn` has a wrapper — a plain `module:symbol` target or an `@External.Erlang` template compiled at build time (`run/std_erlang_node`, `run/std_template_host_fns_across_modules`) |
 | [C-04](#c-04--trailing-defaults-are-applied) | Trailing defaults are applied at the call site | 01 step 7 (N1, N2); `trailing-defaults.md` | **high** | 1.0.9 gap "declared parameter defaults are never applied — every front"; `s.slice(1)` after C-02; jhonstart's 22 `attrs: []` paddings | none |
 | [C-05](#c-05--module-level-var-and-the-beammemory-carrier) | Module-level `var`, `val` refused on assignment, `@BeamMemory` validated | 17 steps 0–3; 15's held-back grammar; decisions 28, 38, 41, 48, 49, 51 | **high** | C-10; rakun's `runtime.mjs` (96 of 231 lines, 13 of 16 `@External.Node` declarations are registry code); 1.0.9's "module-level `pub val` of a user type" row | landed (steps 0–3; a module `var` prints `2` on node and wasmtime) — steps 4–8 remain C-10 |
 | [C-06](#c-06--decision-53-at-run-time) | Decision 53 at run time: `1...9` matches on erlang, beam and wasm. Decisions 52 and 55 (the exhausted loop is `null`; a value `break` ends a collection loop) are superseded by decision 105 — C-30 re-specifies their cells | 02 step 3 residual and "no step" rows; 03 step 3; 04 step 3; 05 steps 2/4 | **high** | the `run/case_range_value.bp` lines; a program that agrees on four backends and is wrong on all four | wasm's half landed (3 lines deleted, 6 RUN LOGs moved) and accepted by running |
@@ -208,8 +208,14 @@ re-record, no `AGENTS.md`.
       `status.md` row)
 - [x] `beam.bp`'s header re-spelled; `AGENTS.md` of `src/codegen/` in the same commit; gate green —
       the header spells `out/erl/std@beam.erl`, `-module(std@beam).`, `std@beam:pdPut(T, T)`;
-      `src/codegen/AGENTS.md` carries decision 64's `externalWrapperNeeded`. The beam half's
-      template-bodied host `declare fn`s are still unwrapped (`status.md` § Pending)
+      `src/codegen/AGENTS.md` carries decision 64's `externalWrapperNeeded`
+- [x] the beam half covers the template-bodied ones: `hostWrapperFor` answers a `pub` host `declare
+      fn` with a wrapper that tail-calls its `@External.Erlang` template compiled at build time (or
+      the arity branch for its parameter count) — all 166 of std's are exported by their `.S`
+      module, and `run/std_template_host_fns_across_modules` calls `fs.exists`, `fs.readText`,
+      `os.eol`, `process.platform`, `encoding.hexEncode`, `hash.sha256`, `json.quote` and
+      `regex.matches` from another module on commonJS, erlang and beam (`io.fs.exists("/")` was
+      `undef std@io@fs:exists/1` under `erl`)
 
 ## C-04 — Trailing defaults are applied
 

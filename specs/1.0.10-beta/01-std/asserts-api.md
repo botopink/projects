@@ -54,7 +54,7 @@ Five rules, each with its reason:
 |---|---|---|---|
 | `equals` | `<T>(actual: T, expected: T)` | `actual != expected` | `asserts.equals: values differ` |
 | `notEquals` | `<T>(actual: T, expected: T)` | `actual == expected` | `asserts.notEquals: values match` |
-| `approxEquals` | `(actual: f64, expected: f64, tolerance: f64)` | `abs(actual - expected) > tolerance` (inline `if`, no `math` import) | `asserts.approxEquals: values differ by more than tolerance` |
+| `approxEquals` | `(actual: f64, expected: f64, tolerance: f64)` | `abs(actual - expected) > tolerance`, written `d > t || -d > t` (no `math` import) | `asserts.approxEquals: values differ by more than tolerance` |
 | `deepEquals` | `<T>(actual: T, expected: T)` | `canonical(actual) != canonical(expected)` — private cell, see below | `asserts.deepEquals: values differ structurally` |
 
 `==` is the language's rule: structural for primitives, reference for arrays and records on
@@ -175,11 +175,11 @@ reader can grep the message to the function.
 |---|---|---|---|
 | commonJS | yes | yes | `botopink test` target |
 | erlang | yes | yes | `botopink test` target |
-| beam | yes | pure functions yes; `matches`/`deepEquals`/`throws`/`throwsWith` unresolved at lowering | private cells carry no `@External.Beam`; the docblock names the four |
-| wasm | yes | as beam | `wat` renders no templates (`libs/std/AGENTS.md`) |
+| beam | yes | yes | the private cells' `@External.Erlang` templates are compiled at build time |
+| wasm | yes | pure functions yes | wasm has no host: the module is emitted without `matches`/`deepEquals`/`throws`/`throwsWith`, and a call of one is refused where it is written, naming the cell it reaches |
 
 "Compiles" means `import {testing.asserts} from "std"` passes STD-001 on that target, which it does because
-the file has no `pub declare fn`. `beam` and `wasm` are not `botopink test` targets
+the file has no `pub declare fn`, and building a program that imports it succeeds on all four. `beam` and `wasm` are not `botopink test` targets
 (`compiler-cli/AGENTS.md` § *`botopink test` output format*), so no test executes there; the
 guarantee that matters is that a library compiled for beam/wasm can still import the module.
 

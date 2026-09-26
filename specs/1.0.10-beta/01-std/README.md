@@ -77,9 +77,9 @@ and no codegen file changes. An unknown `@name(…)` is `error[unknown-builtin]`
 - [x] `val loc = @src();` inside `test "x: y"` in `src/a.bp` at line 12 column 15 lowers, on all four backends, to the same code as `SourceLocation(file: "src/a.bp", line: 12, column: 15, fnName: "x: y")` — four `src_*.snap.md` fixtures byte-identical to the hand-written constructor's — a project whose `locate()` returns `@src()` and its twin returning `SourceLocation(file: "src/main.bp", line: 2, column: 12, fnName: "locate")` build to byte-identical `out/` trees on commonJS, erlang, beam and wasm; `src_equals_a_hand_written_constructor.snap.md` on each
 - [x] `@src(1)` → `error[src-takes-no-arguments]`; `@nope()` → `error[unknown-builtin]`, both located — `botopink check` reports each at `src/main.bp:2:13`
 - [x] `fnName` is the test name inside a `test`, the fn name inside a `fn`, `Type.method` inside a method, `""` at module level — one snapshot per position — `src_in_a_test` / `in_a_fn` / `in_a_method` / `at_module_level`; run: `f`, `Box.where` and the empty string on the four targets, the test name under `botopink test`
-- [ ] `test "t: fails" { try failing(); }` prints `FAIL t: fails (<error string>) at src/a.bp:N` on commonJS and erlang — `codegen/tests/builtins.zig` gains a run-log fixture for each — **open:** both targets print `FAIL t: fails  (went wrong)  at main.bp:4` for `src/main.bp`: the file is its basename, not the path the box names
+- [x] `test "t: fails" { try failing(); }` prints `FAIL t: fails (<error string>) at src/a.bp:N` on commonJS and erlang — `codegen/tests/builtins.zig` gains a run-log fixture for each — `test_body_try_on_an_error_fails_the_test` on both (the harness passes no path, so `main.bp:N`); under the CLI the TEST, FAIL and `assert` locations name the scanned path (`ComptimeOutput.srcPath`): `modules/compiler-cli/tests/test_tooling.sh` pins `FAIL t: fails  (went wrong)  at src/main.bp:25` and the assert's `at src/main.bp:22` on commonJS and erlang
 - [x] `docs.md` § Builtins and `libs/std/src/builtins.d.bp` document `@src()` and `SourceLocation`; `vscode-extension/syntaxes/botopink.tmLanguage.json` highlights `@src` — `docs.md` § Builtins › "`@src()` and `SourceLocation`", `builtins.d.bp` § Source location; the grammar's `builtins` rule `@[a-zA-Z_][A-Za-z0-9_]*` paints `@src`
-- [ ] `zig build test` green from a cold cache
+- [x] `zig build test` green from a cold cache — `runtime-cache` deleted, 2565 / 2565
 
 ### Step 2 — `testing.asserts`
 
@@ -93,9 +93,9 @@ STD-001 on every target; `matches`, `deepEquals`, `throws` and `throwsWith` use 
 Node and Erlang templates.
 
 **Acceptance:**
-- [x] `import {testing.asserts} from "std"` type-checks for `--target commonJS`, `erlang`, `beam` and `wasm` (STD-001 does not fire — no `pub declare fn` in the file) — `asserts.errorText(asserts.isTrue(false))` runs on commonJS, erlang and beam; on wasm STD-001 is silent and the build then refuses the private cell `canonical` at `asserts.bp:106`, so the *Target* line's "compiles on all four backends" does not hold on wasm
+- [x] `import {testing.asserts} from "std"` type-checks for `--target commonJS`, `erlang`, `beam` and `wasm` (STD-001 does not fire — no `pub declare fn` in the file) — and builds and runs on all four: `tests/language/run/std_asserts_on_every_target.bp`. wasm emits the module without the four host-backed assertions (`wat.zig` `collectHostBound`) and refuses a CALL of one where it is written — `` `deepEquals` calls `canonical`, which has no `#[@External.<Target>(…)]` for the wasm backend `` (`run/std_asserts_host_cell_on_wasm.bp`); `approxEquals` no longer binds an `f64` `if`-value, which wasm typed `i32`
 - [x] every function's pass and fail path is covered by an inline `test` at the foot of the file, written with `try`; the fail paths assert the literal message through `errorText` (an assertion answers `@Result` and raises nothing a `throws` / `throwsWith` could catch)
-- [ ] `botopink test` in `libs/std` green on commonJS and erlang; `zig build test-libs` reads `std · commonJS: pass` and `std · erlang: pass`
+- [x] `botopink test` in `libs/std` green on commonJS and erlang; `zig build test-libs` reads `std · commonJS: pass` and `std · erlang: pass` — 431 passed, 0 failed on each; `test-libs` 77 passed, 0 failed, both std rows `pass`
 - [x] the old names (`truthy`, `falsy`, `equal`, `notEqual`, `approxEqual`, `AssertError`) are gone and `grep -rn "asserts\.\(truthy\|equal\b\)" --include=*.bp repository/` is empty — the grep and one for `AssertError` / `falsy` / `notEqual` / `approxEqual` are empty
 - [x] `libs/std/AGENTS.md`'s `asserts` row lists the surface
 
@@ -112,7 +112,7 @@ environment variable and no manifest key that records a snapshot.
 - [x] a name with no `": "` answers `Error("snapshots: test name needs a suite …")` — asserted, not assumed — "path ---- a name without a suite is refused"
 - [x] missing → `.new` written + `Error`; mismatch → `.new` written + `Error`; match → `Ok` and a stale `.new` deleted; each is an inline test running against a scratch `__snapshots__/` under the host tmpdir — the `engine ----` tests, green on both rows
 - [x] `grep -rn "SNAP_CREATE\|update" libs/std/src/testing/snapshots.bp` finds no code path that writes `<path>` itself — the grep finds the header's "there is no update flag" only; the engine's one `writeFile` writes `<path>.new`
-- [ ] `*.snap.new` is in `.gitignore` of `botopink-lang`, `rakun`, `jhonstart`, `emilia` and the new `onze`, and each repo's `scripts/git-hooks/pre-commit` refuses a staged `*.snap.new` — **open:** only `botopink-lang`'s `.gitignore` has it, and no repo's pre-commit refuses one
+- [ ] `*.snap.new` is in `.gitignore` of `botopink-lang`, `rakun`, `jhonstart`, `emilia` and the new `onze`, and each repo's `scripts/git-hooks/pre-commit` refuses a staged `*.snap.new` — botopink-lang holds: `.gitignore` has it, and its hook's `scripts/gate.sh --staged` refuses a staged `*.snap.new` / `*.snap.md.new` (`git add -f` included); `botopink test` lists every candidate after the results (`modules/compiler-cli/tests/test_tooling.sh`). **Open:** rakun, jhonstart, emilia and onze — neither the `.gitignore` line nor the refusal
 
 ### Step 4 — the old `onze`, migrated 100 %
 
