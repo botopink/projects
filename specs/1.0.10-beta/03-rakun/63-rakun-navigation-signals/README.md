@@ -339,10 +339,9 @@ and `signalToWire` reads that same `NavOutcome`.
 |---|---|---|---|
 | There is no bottom/never type, so a function that cannot return still has to declare a return type, and every call site binds a value that is never produced | `val _gone = redirect("/login");` in both examples | declare `-> i32` and bind to an ignored `val` | a `never` return type, so `redirect(...)` is a statement and unreachable code after it is a compile error |
 
-Two gaps front 01 already recorded apply and are cited rather than re-filed: there is no array
-destructuring in a binding, so `routing`'s `signalFromWire` splits and indexes with `.at(i)`; and a std module
-cannot call another std module, which is why this front takes the route table as a parameter rather
-than reaching front 22 through a façade.
+A gap front 01 already recorded applies and is cited rather than re-filed: there is no array
+destructuring in a binding, so `routing`'s `signalFromWire` splits and indexes with `.at(i)`. The
+route table is a parameter rather than reached through a façade over front 22.
 
 ## Test plan
 

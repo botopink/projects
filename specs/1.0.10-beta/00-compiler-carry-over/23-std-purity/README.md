@@ -263,9 +263,9 @@ are the maintainer's; [`contracts.md`](../../contracts.md) § 3 spells `hash.hma
 
 ## Handoff
 
-- **To C-03 / `language-gaps.md`'s "a std module cannot call another std module":** step 4's
-  refusal is the rule — decision 106 closes the cross-module import only *inside* std, as the purity
-  rule a root module may not break, never as a limitation.
+- **To C-03:** a std module imports another; step 4's refusal is the rule — decision 106 closes the
+  cross-module import only *inside* std, as the purity rule a root module may not break, never as a
+  limitation.
 - **To [`01-std`](../../01-std/README.md):** a new std module lands at its path in this tree.
 
 ## Notes

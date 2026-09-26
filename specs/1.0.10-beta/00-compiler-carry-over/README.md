@@ -73,9 +73,8 @@ item stands is `status.md`'s.
 | [C-33](./25-gate-perf/README.md) | Gate performance: the same checks in less wall clock — the shell runners (`tests/language/run.sh`, `scripts/check-docs.sh`) on `botopink-lib-test`'s bounded pool, the independent stages of `scripts/gate.sh` side by side with each stage's output one block in order, then `test-libs`' CPU and `zig build test`'s cold runtime cache | `00 · gate-perf` step 1 (the lib-test pool); decision 67 (no check skipped to be fast) | high | every landing's gate; nothing in the language | `25-gate-perf/` (spec); runners and scripts only, beside every compiler front |
 
 **What the 1.0.9 gaps map to.** `xs[0]` on the BEAM → C-02 · declared defaults never applied → C-04 ·
-`if (a && b)` in condition position → C-08 · a std module cannot call another std module (a bare
-import of an external symbol is `undefined` at run time) → C-03 is the erlang half; the commonJS route
-is unverified and may be its own row · module-level `pub val` of a user type / module-level state →
+`if (a && b)` in condition position → C-08 · a std module cannot call another std module → closed
+(C-03's erlang half; std modules are inferred and embedded after the ones they import) · module-level `pub val` of a user type / module-level state →
 C-05 · a sidecar named like an emitted module's atom → C-25 (the collision check of 13 half 1 covers
 emitted modules; extending it to `shipErlSidecars` is the row) · the formatter's reds
 → C-11, C-12. The rest of `language-gaps.md` (bitwise operators, a byte type, decorator bodies, `@Decl`

@@ -112,9 +112,9 @@ reason the module beside this one is `asserts`), and `assertText` is the `assert
 for the subject the header records. The wrappers use the `try inner(); return;` shape every `-test`
 helper uses, because `return r` inside a `@Result`-returning body re-wraps (`language-gaps.md`).
 
-**Host cells — private, Node and Erlang.** A std module cannot call another std module, so
-`snapshots.bp` cannot use `fs.readText`/`fs.writeText`/`fs.rm` or `path.dirname`. It re-declares
-private cells in the `io/fs.bp` shape and writes `dirname`/`join` inline over `String.split`/`join`:
+**Host cells — private, Node and Erlang.** `snapshots.bp` re-declares private cells in the
+`io/fs.bp` shape and writes `dirname`/`join` inline over `String.split`/`join`; a std module may
+import another now, so moving them onto `io/fs` and `path` is open:
 
 | Private cell | Node | Erlang |
 |---|---|---|
@@ -261,7 +261,6 @@ full name with its `----` intact (the slug is for the filename, the header is fo
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| A std module cannot call another std module | the private cells duplicate `io/fs.bp`; `dirname` duplicates `path.bp` | re-declare | the cross-module bare-import fix `01-std-lib-enablement` records |
 | A function cannot forward a `@Result` | every `assert*` wrapper and every `-test` helper | `try inner(); return;` | pass-through `return` |
 | A dot-shorthand payload call inside an array literal does not parse | example 2's token list | typed `val` intermediates (example 2) | let the element type drive resolution through the call |
 | Test bodies run in one process per module, in order | two tests writing the same `.new` in the same run cannot both be seen | `assertNamed` | a runner that isolates tests, or a per-test scratch directory |
