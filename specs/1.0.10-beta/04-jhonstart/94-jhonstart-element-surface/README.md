@@ -275,8 +275,8 @@ pub fn isRawTextTag(tag: string) -> bool {
 - [x] `isVoidTag` answers true for all fourteen and false for `"div"`, `"span"`, `"form"` and `""` — `modules/jhonstart/src/elements.bp` test "isVoidTag answers the HTML spec's list and nothing else"
 - [x] `isRawTextTag("script")` and `isRawTextTag("style")` are true; `isRawTextTag("title")` and
       `isRawTextTag("textarea")` are false — escapable raw text is not raw text — `modules/jhonstart/src/elements.bp` test "isRawTextTag is script and style"
-- [ ] The fourteen tags of `isVoidTag` are the same fourteen front 30's walker treats as void, and
-      front 30's `render.bp` calls the predicate rather than restating the list
+- [x] The fourteen tags of `isVoidTag` are the same fourteen front 30's walker treats as void, and
+      front 30's `render.bp` calls the predicate rather than restating the list — `render.bp` `renderNode` calls `isVoidTag` / `isRawTextTag` and keeps no list (jhonstart `89a1528`)
 
 ### Step 2 — the non-void constructors
 
@@ -446,5 +446,5 @@ absences are stated above rather than papered over.
       element constructor locally; front 31's *Blocked* entry for `global-error.bp` is removed
 - [x] The `language-gaps.md` row "New jhonstart element constructors" moves out of *Unowned surface*
       and names this front — the row is no longer in `language-gaps.md` § *Unowned surface*
-- [ ] Front 30's `renderNode` calls `isVoidTag` and `isRawTextTag` rather than holding its own lists
+- [x] Front 30's `renderNode` calls `isVoidTag` and `isRawTextTag` rather than holding its own lists — `render.bp`
 - [x] The front's tests are green on both of its assigned targets — 120/120 on both rows
