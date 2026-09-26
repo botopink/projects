@@ -106,7 +106,7 @@ document, reading the payload with `readPayload(globals().payload)` (std `json.d
 - A percent-encoded search value is decoded (`q=a%20b` → `"a b"`) and written back encoded, on both rows.
 - `refresh()` sends `refreshValue()` from `"actions"`; `"refresh"` remains only as the navigation cell's verb name.
 - `clientApp` renders the matched route layout-first; `notFound` and the three `redirect` cases behave as the table above (a layout's redirect means the page never runs — `compose`'s order).
-- Both language gaps below are rows of `language-gaps.md`.
+- The language gap below is a row of `language-gaps.md`.
 
 ## Steps
 
@@ -114,12 +114,18 @@ Only the open boxes are listed; everything else in each step is under *Delivered
 
 ### Step 1 — `RouterState` and its accessors
 
-- [ ] `pairValue` is `pub` and is the only pair-list decoder in the package: fronts 28 and 32 import
-      it, and `git grep -n "fn pairValue"` finds exactly one definition
+- [x] `pairValue` is `pub` and is the only pair-list decoder in the package: front 28 (`server.bp`)
+      and front 30 (`routes.bp`) import it — front 32's `metadata.bp` decodes no pair list — and
+      `git grep -n "fn pairValue" -- '*.bp'` finds exactly one definition — held: `router.bp:60`,
+      `server.bp:87`, `routes.bp:44`
 
 ### Step 2 — The five host cells and the snapshot builder
 
-- [ ] all five cells are `#[@External.Erlang]`; none is `#[@External.Node]`
+- [x] every cell — the five reads, `fill`, `navigate`, `lastNavigation` — is dual-target, an
+      `#[@External.Node("./router_runtime.mjs", …)]` twin beside `#[@External.Erlang("jhonstart_router", …)]`:
+      an erlang-only cell reds the commonJS compile of the core member at its call site, and the core
+      is compiled on both rows (`decisions-pending.md` 26-a) — held: `router.bp:139-304`, the reason in
+      its header (`router.bp:125-135`) and in `docs.md` § *The snapshot, the five cells and `fill`*
 
 ### Step 3 — The five hooks
 
@@ -128,7 +134,8 @@ Done: `use pathname()` type-checks in a `fn … -> @Component<ElementBase, Eleme
 
 ### Step 4 — Navigation verbs
 
-- [ ] `__jhNavigate` is the only dual-target cell in the file, and the README says why
+- [x] `__jhNavigate` is dual-target like every cell of the file (Step 2's reason, 26-a) — held:
+      `router.bp:293`
 
 ### Step 5 — Module promotion
 
@@ -153,7 +160,6 @@ Done: `use pathname()` type-checks in a `fn … -> @Component<ElementBase, Eleme
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| Declared parameter defaults of an imported function are not applied (`language-gaps.md`, "Declared parameter defaults are never applied") | every `Element` builder call in both examples must spell `attrs: []`, inner `text(…)` included | write every argument at every call site | apply the declared default when an argument is omitted |
 | No assignment to a `self` field; a record has no in-place update | `push`/`replace` cannot be methods on `RouterState` — they are free functions over a host cell | free functions + an immutable snapshot | a `var` field or a `with`-style copy update |
 
 ## Reference gaps
@@ -184,9 +190,11 @@ rendered route, both signals and the target check. Open: the shared late-signal 
 - [x] the router has no matcher and no table parser of its own; it imports both from `routing`
 - [x] the router has no pair codec and no signal-wire decoder of its own: std `encoding` and
       `routing`'s `navigation` (decision 116)
-- [ ] one `#[@External.Node]`-only cell in the file, `__jhMount(selector, html)`, which `clientApp`
-      renders through; history goes through `__jhNavigate`, the one dual-target cell
+- [x] `clientApp` renders through `__jhMount(selector, html)` and moves history through
+      `__jhNavigate`; both are dual-target (`client_app.mjs` / `sidecars/jhonstart_client_app.erl`,
+      the erlang twin a module store the tests read) — a called node-only cell reds the erlang
+      compile of the core (26-a) — held: `client_app.bp:49-51`, `client_app_test.bp`
 - [x] `clientApp` handles `notFound` / `redirect` in a client-only app as front 30's render does on
       the server, with the same target check (decision 117)
-- [x] both language gaps appear in a `specs/1.0.10-beta/` spec
+- [x] the language gap appears in a `specs/1.0.10-beta/` spec
 - [x] the front's tests are green on its assigned target

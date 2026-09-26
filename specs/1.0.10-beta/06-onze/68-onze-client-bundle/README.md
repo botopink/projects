@@ -559,13 +559,17 @@ so every island's closure lands in `shared` — until the entry starts islands l
 
 Open, and why:
 
-- the `styleMap` class (`styleRule(tokens, th)._0`) and the runtime `s` check: emilia front 56's
-  `styleRule` does not exist yet, so a literal call records its token text; the hash-parity rule
-  is enforced statically — a non-ASCII token list is refused (`emilia-hash-split`), which is
-  contract 4 clause 3 and covers the astral divergence the two `contentHash` cells have;
-- "no hand-written `__` name": the island starters go into `globalThis.__jhIslandStarters`,
-  jhonstart's table outside its globals registry — jhonstart owes a registry entry (or a
-  `registerStarter`) for it;
+- the `styleMap` class (`styleRule(tokens, th)._0`) and the runtime `s` check: emilia's side is
+  there — `styleRule(tokens, th) -> #(className, encodedSheet)` in `emilia.bp`, pure, the class
+  contract 4's fixture pins (`e_39b87d03`) — and the bundler still records a literal call's token
+  text; the hash-parity rule is enforced statically — a non-ASCII token list is refused
+  (`emilia-hash-split`), which is contract 4 clause 3 and covers the astral divergence the two
+  `contentHash` cells have;
+- "no hand-written `__` name": jhonstart's side is there — the starter table is the registry's
+  `globals.starters` (`__bp3`), filled by `registerStarter(name, start)` and, for a route split,
+  `registerRouteStarters(pattern, load)` (front 29, `decisions-pending.md` 29-a) — and the generated
+  entry still declares its own cell writing `globalThis.__jhIslandStarters`, which `hydrate()` no
+  longer reads;
 - `onze build` over the blog, and the tags handed over by `Onze.run` (fronts 50 and 49's rakun
   half).
 

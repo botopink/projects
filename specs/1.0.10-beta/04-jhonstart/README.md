@@ -86,7 +86,7 @@ Every front's tests assert string literals so that a divergence between the two 
 
 ## 5 · Frozen for the milestone
 
-`modules/jhonstart/src/element.bp`, `modules/jhonstart/src/hooks.bp`, `modules/jhonstart-html/src/html.bp` — content frozen (`html.bp` imports `Element` from `"jhonstart"`, `modules.md § 1.3`). The consequences that shape every front: `renderToString` neither escapes nor knows void elements (front 30's `renderNode` does both; 94's `isVoidTag`/`isRawTextTag` feed it); declared parameter defaults are never applied, so every constructor call spells `attrs:`; a self-closing tag cannot be authored inside `html """…"""`.
+`modules/jhonstart/src/element.bp`, `modules/jhonstart/src/hooks.bp`, `modules/jhonstart-html/src/html.bp` — content frozen (`html.bp` imports `Element` from `"jhonstart"`, `modules.md § 1.3`) but for decision 138's respelling of the phantom base as `type ElementBase()`. The consequences that shape every front: `renderToString` neither escapes nor knows void elements (front 30's `renderNode` does both; 94's `isVoidTag`/`isRawTextTag` feed it); a self-closing tag cannot be authored inside `html """…"""`. A builder's `attrs` defaults to `[]` and the default travels with the imported function, so `attrs:` is written only when there are attributes.
 
 ## 6 · Written with `use`, under a `@Component` return
 

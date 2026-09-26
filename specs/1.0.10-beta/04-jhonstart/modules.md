@@ -6,10 +6,12 @@
 
 The six members of § 1 exist. What is still to be written into them:
 
-- **`jhonstart-test` is empty** — `src/root.bp` holds one inline test proving the core resolves from
-  the member. The helpers of § 5 are owed by the fronts in its *Filled by* column.
-- **The example projects of § 8 do not exist yet**; `examples/jhonstart-app/` is still the
-  manifest-less aspirational sketch.
+- **`jhonstart-test` holds the helpers of § 5** — every file of the table, each `assert<Subject>` with a
+  pure `<subject>Text` twin, and `test/helpers_test.bp` asserting each twin against `test-snap.md`'s
+  literal plus one accepted snapshot per helper family (21 tests on both rows).
+- **The example projects of § 8 exist** (`blog-ssr`, `nav-shell`, `islands`, `forms`,
+  `document-shell`, 32 snapshots through `jhonstart-test`); the aspirational
+  `examples/jhonstart-app/` sketch is removed.
 - **`jhonstart-link` / core browser cells are dual-target** (§ 4) — the choice is implemented and
   awaits confirmation in `../decisions-pending.md` 27-a.
 
@@ -27,13 +29,16 @@ repository/jhonstart/
 │   ├── jhonstart-link/                client navigation: Link, prefetch, remount decision, browser cells
 │   ├── jhonstart-forms/               form binding, action state, optimistic, the GET search form
 │   ├── jhonstart-emilia/              the bridge: RenderPlugin over emilia's flush(), payload `s`
-│   └── jhonstart-test/                render/stream/route harness + assert<Subject>   (dev)
+│   ├── jhonstart-test/                render/stream/route harness + assert<Subject>   (dev)
+│   └── jhonstart-dom-test/            front 30's browser half against a minimal document (dev, commonJS)
 ├── examples/                          § 8
 ├── refusals/                          one project per compile-time refusal of the library (not members)
 └── repro/                             jhonstart-free compiler repros (not members)
 ```
 
-Every member declares no `targets` and inherits the workspace's two.
+Every member but `jhonstart-dom-test` declares no `targets` and inherits the workspace's two;
+`jhonstart-dom-test` is `["commonJS"]` — it asserts `render.mjs`'s browser functions, which have no
+BEAM counterpart (§ 4, `../decisions-pending.md` 30-g).
 
 One criterion decides core versus submodule, and it is checkable by grep: **core is what front 30's render reaches.** The render (`render.bp`, `streaming.bp`) calls `isVoidTag`/`isRawTextTag` (94), `Boundary`/`Suspense`/`resolve`/`fillHtml` (30), `renderBoundaryChecked`/`isSignal` (31), `islandAttr`/`islandEntry` (29), `renderHead`/`mergeMetadata` (32), `RouterState`/`fill` (26) and `enterRequest`/`request()` (28); everything it reaches is core. `Link`, `layoutKeys`, `formAttrs`, `actionState` are reached only by application components and by onze front 68's generated entry — they are submodules. The bridge `jhonstart-emilia` is a submodule for the other admissible reason: it is the one member with a dependency (emilia) core must not have. No rakun module imports jhonstart and jhonstart imports no rakun module (decision 113); onze hands the route data in.
 
@@ -57,6 +62,7 @@ One criterion decides core versus submodule, and it is checkable by grep: **core
 | `jhonstart-forms` | `form.bp` + `form_runtime.mjs` / `sidecars/jhonstart_forms.erl` | 67 | — |
 | `jhonstart-emilia` | `root.bp` (`plugin()`, `classesIn`) | 30 | — |
 | `jhonstart-test` | one `assert_<subject>.bp` per front + `harness.bp` | all nine (§ 5) | — |
+| `jhonstart-dom-test` | `root.bp` + `fake_dom.mjs` (a minimal document), `test/dom_test.bp` | 30 | — |
 
 `root.bp` of each submodule lists its `pub mod` lines in front-number order; `botopink.json`'s `files`
 is in **dependency** order (a module after every module it imports).
@@ -173,7 +179,7 @@ Edges are `botopink.json` dependencies. Three facts the graph encodes:
 
 - **jhonstart and rakun never import each other; onze is the only package that names both** (decision 113). The route data, the action ids and the wire names `actionField` / `actionHeader` (front 67's `setWireNames`), the `RequestData` (front 28) and a `Response` (front 30 — status, header, write, close) onze builds over rakun's `ChunkWriter` reach jhonstart as values onze hands in. The matcher and the routing codecs are the compiler-bundled library `routing` (decision 115), which core imports like std — not an edge to rakun, and never listed in a manifest. No jhonstart cell names a rakun host module. The UI file conventions (`#[page]`, `#[layout]`, `#[template]` — each a `fn … -> @Component<ElementBase, Element>`, decision 117 — `PageContext`, `LayoutProps`) are jhonstart's (front 30, `routes.bp`); rakun holds only an opaque `PageRenderer` per route. A page's or layout's `notFound()` and `redirect(url)` are jhonstart's own (front 31) and jhonstart handles them end to end (decision 117): front 30's render answers a 404 or a 307 through the `Response` before the first chunk and writes markup after it, and front 26's `clientApp` handles them in a client-only app; onze has no `case` on a signal. A server action's `redirect` is rakun's, read from the envelope's `n` by front 26.
 - **emilia enters through the bridge only.** `jhonstart-emilia` is the one member that imports emilia; core and every other member know only `RenderPlugin`, and front 30's gate asserts that the string `emilia` appears nowhere under `modules/jhonstart/`. Front 48's `html_attrs.bp` is emilia-unaware plumbing; emilia's `html_hook.bp` imports no jhonstart module (`styled`/`cls` return plain pairs and strings).
-- **Front 68's generated entry** imports `hydrate`, `readPayload`, `registerFill`, `registerSignal` and `globals` from core, `linkMount` from `jhonstart-link`, `formMount` from `jhonstart-forms` — ordinary imports, one call each; the only browser globals are the three `globals()` aliases (`__bp0`, `__bp1`, `__bp2`).
+- **Front 68's generated entry** imports `hydrate`, `registerStarter`, `registerRouteStarters`, `readPayload`, `registerFill`, `registerSignal` and `globals` from core, `linkMount` from `jhonstart-link`, `formMount` from `jhonstart-forms` — ordinary imports; the only browser globals are the four registry aliases (`__bp0`–`__bp3`).
 
 ## 4 · Target of each submodule
 
@@ -187,6 +193,7 @@ Every member inherits `["commonJS", "erlang"]` from the workspace, and `zig buil
 | `jhonstart-forms` | `formAttrs`/`hiddenActionField` render in the server pass — the progressive-enhancement markup |
 | `jhonstart-emilia` | the plugin runs wherever front 30's render does |
 | `jhonstart-test` | helpers are pure over strings |
+| `jhonstart-dom-test` | **commonJS only** — it installs a minimal document and calls the browser functions `render.mjs` registers; on the BEAM their twins answer the empty value, which the core's own suites assert |
 
 **Host cells are dual-target** — the rule the manifests encode: every browser cell (`#[@External.Node]`)
 carries an `#[@External.Erlang]` twin whose answer is what is true on a server (no link in flight,
@@ -197,9 +204,7 @@ ships beside its module (`<name>_runtime.mjs` / `sidecars/jhonstart_<name>.erl`)
 
 ## 5 · `jhonstart-test`
 
-Depends on: `std` (`import {testing: {asserts, snapshots}, querystring} from "std"` — decisions 106/107; only the leaves enter scope), `jhonstart`, `jhonstart-html`, `jhonstart-link`, `jhonstart-forms`. Every helper is `pub fn assert<Subject>(loc: SourceLocation, …) -> @Result<void, string>`; each renders its subject to a deterministic string and hands it to `snapshots.match(loc, text)` (`../01-std/snapshots.md`). Exact signatures and the text each one produces are in [`test-snap.md § 0`](./test-snap.md).
-
-None of these files exists yet; the member holds only its `root.bp` smoke test.
+Depends on: `std` (`import {testing.snapshots, encoding} from "std"` — decisions 106/107; only the leaves enter scope), the bundled `actions` and `routing`, `jhonstart`, `jhonstart-link`, `jhonstart-forms` (no helper needs `jhonstart-html`). Every helper is `pub fn assert<Subject>(loc: SourceLocation, …) -> @Result<void, string>`; each renders its subject to a deterministic string — the pure `<subject>Text` twin — and hands it to `snapshots.assertAs(loc, "<subject>", text)` (`../01-std/snapshots.md`). Exact signatures and the text each one produces are in [`test-snap.md § 0`](./test-snap.md).
 
 | File | Exposes | Filled by front |
 |---|---|---|
@@ -210,7 +215,7 @@ None of these files exists yet; the member holds only its `root.bp` smoke test.
 | `assert_server.bp` | `assertRequest(loc, r: RequestData)` — a server component is snapshotted by `val tree = await Page(params); try assertHtml(@src(), tree);` (`await` is legal in a `test` block) | 28 |
 | `assert_island.bp` | `assertClientBundleEntry(loc, islands: Array<Island>)` — the payload `i` rows plus each placeholder | 29 |
 | `assert_stream.bp` | `assertStream(loc, chunks: Array<string>)` — one chunk per block, in order | 30 |
-| `assert_render.bp` | `assertDocument(loc, doc: string)` — the document front 30's `render` wrote, one line per chunk · `assertResponse(loc, r: RecordedResponse)` — the status, the headers and the chunks a recording `Response` received, and how many times it was closed · `assertPayload(loc, p: Payload)` — `writePayload(p)` | 30 |
+| `assert_render.bp` | `assertDocument(loc, doc: string)` — the document front 30's `render` wrote, one tag per line, the payload one member per line · `assertResponse(loc, r: RecordedResponse)` — the status, the headers and the chunks a recording `Response` received, and how many times it was closed · `assertPayload(loc, p: Payload)` — `writePayload(p)` | 30 |
 | `assert_error_boundary.bp` | `assertErrorBoundary(loc, b: ErrorBoundary)` — the `renderBoundaryChecked` outcome tagged `ok`/`error` | 31 |
 | `assert_metadata.bp` | `assertMetadata(loc, m: Metadata)` · `assertViewport(loc, v: Viewport)` | 32 |
 | `assert_form.bp` | `assertForm(loc, f: Element)` · `assertActionState(loc, s: ActionState)` · `assertOptimistic(loc, base: i32, actions: i32[])` | 67 |
@@ -253,16 +258,14 @@ Tests: each front's `test/<name>_test.bp` sits in the same submodule's `test/` a
 
 ## 8 · `repository/jhonstart/examples/**`
 
-Existing members: `jhonstart-counter/`, `jhonstart-markup/` (the `html """…"""` DSL cross-module), `jhonstart-todo/` (v0, pure client, stay as-is). `jhonstart-app/` has no manifest (aspirational, not a member) and is removed when `blog-ssr` lands.
-
-To create — one per consumer shape, each with `botopink.json`, `src/`, `test/` and its own `__snapshots__/`:
+The v0 members `jhonstart-counter/`, `jhonstart-markup/` (the `html """…"""` DSL cross-module) and `jhonstart-todo/` (pure client) stay as they are. One member per consumer shape, each with `botopink.json`, `src/` (a `main.bp` declaring the module tree), `test/` and its own `__snapshots__/`:
 
 | Project | Shape | Fronts exercised | Depends on | Target |
 |---|---|---|---|---|
-| `examples/blog-ssr/` | the server-rendered blog: root layout, `/blog/[slug]` page with two sequential loaders, `loading.bp`, `error.bp`, `not-found.bp`, `global-error.bp`, static + dynamic metadata, viewport | 26 · 28 · 30 · 31 · 32 · 94 | `jhonstart`, `jhonstart-test`, `std` | erlang |
+| `examples/blog-ssr/` | the server-rendered blog: root layout, `/blog/[slug]` page with two sequential loaders, `loading`, `error`, `not_found`, `global_error` (module names are identifiers), static + dynamic metadata, viewport | 26 · 28 · 30 · 31 · 32 · 94 | `jhonstart`, `jhonstart-test`, `std` | both |
 | `examples/nav-shell/` | a docs shell: sidebar with active-segment highlighting, prefetch policy per route kind, pending checkout link, shared-layout reuse across a transition | 26 · 27 · 94 | `jhonstart`, `jhonstart-link`, `jhonstart-test` | both |
 | `examples/islands/` | a like-button island per post, a theme provider wrapping server children, the payload `i` rows | 28 · 29 · 94 | `jhonstart`, `jhonstart-test` | both |
-| `examples/forms/` | create-post form with per-field message, optimistic like with nested `formStatus` button, GET search form | 67 · 29 · 26 · 27 · 94 | `jhonstart`, `jhonstart-link`, `jhonstart-forms`, `jhonstart-test`, `std` | commonJS |
+| `examples/forms/` | create-post form with per-field message, optimistic like with nested `formStatus` button, GET search form | 67 · 29 · 26 · 27 · 94 | `jhonstart`, `jhonstart-link`, `jhonstart-forms`, `jhonstart-test`, `std` | both |
 | `examples/document-shell/` | `htmlTag`/`head`/`body` document built once with constructors and once with `html """…"""` over the same tags; void-element and `main` caveats as literals | 94 · (DSL) | `jhonstart`, `jhonstart-html`, `jhonstart-test` | both |
 
 Every `.bp` under `examples/**` and every `.snap` it produces is mapped in [`test-snap-examples.md`](./test-snap-examples.md).

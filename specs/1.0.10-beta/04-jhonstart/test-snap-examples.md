@@ -1,45 +1,52 @@
 # Track C — jhonstart · snapshot-test map (examples)
 
-The same map as [`test-snap.md`](./test-snap.md) for `repository/jhonstart/examples/**` — the five projects `modules.md § 8` creates. Contract, helpers and style rules are `test-snap.md § 0`; nothing is restated here. Each project has `botopink.json` (dependencies as listed), `src/` or `app/`, `test/`, and `test/__snapshots__/` beside its tests. The paths under each case are relative to `repository/jhonstart/examples/<project>/test/`.
+The same map as [`test-snap.md`](./test-snap.md) for `repository/jhonstart/examples/**` — the five projects `modules.md § 8` creates, all landed. Contract, helpers and style rules are `test-snap.md § 0`; nothing is restated here. Each project has `botopink.json` (dependencies as listed, `"src": "src/"`), a `src/main.bp` declaring its module tree, `test/`, and `test/__snapshots__/` beside its tests; a test imports a module by its path under `src/` (`from "sidebar"`, `from "app/layout"`), and a value already rendered to a string is snapshotted with std's `testing.snapshots.assertText`. The paths under each case are relative to `repository/jhonstart/examples/<project>/test/`.
 
-The v0 projects `jhonstart-counter/`, `jhonstart-markup/`, `jhonstart-todo/` keep their inline `assert` tests and gain no snapshots; `jhonstart-app/` is removed when `blog-ssr` lands (its three aspirational files are what `blog-ssr/app/` makes real).
+The v0 projects `jhonstart-counter/`, `jhonstart-markup/`, `jhonstart-todo/` keep their inline `assert` tests and gain no snapshots; the aspirational `jhonstart-app/` sketch is removed — `blog-ssr` is what it described.
 
 ---
 
-## `examples/blog-ssr/` — fronts 26 · 28 · 30 · 31 · 32 · 94 — depends on `jhonstart`, `jhonstart-test`, `std` — target erlang
+## `examples/blog-ssr/` — fronts 26 · 28 · 30 · 31 · 32 · 94 — depends on `jhonstart`, `jhonstart-test`, `std` — targets both
 
 ```
-app/
-├── layout.bp          RootLayout(page) · metadata() · viewport()
-├── loading.bp         Loading()
-├── error.bp           ErrorPage(info)
-├── not-found.bp       NotFound()
-├── global-error.bp    GlobalError(info)
-└── blog/[slug]/
-    ├── page.bp        PostPage(params) — two sequential loaders
-    └── metadata.bp    generateMetadata(params, parent)
-src/repo.bp            loadPost · loadComments (pure fixtures standing in for front 08's rows)
+src/
+├── main.bp                 pub mod repo; pub mod app; — renders the post in the layout
+├── repo.bp                 findPost · findComments · loadPost · loadComments (pure fixtures standing in for front 08's rows)
+└── app/                    a module name is an identifier: Next's not-found / global-error / [slug] are not_found / global_error / slug
+    ├── layout.bp           RootLayout(r, page) · metadata() · viewport()
+    ├── loading.bp          Loading()
+    ├── error.bp            ErrorPage(info)
+    ├── not_found.bp        NotFound()
+    ├── global_error.bp     GlobalError(info)
+    └── blog/slug/
+        ├── page.bp         PostPage(params) — two sequential loaders · postPanel(slug)
+        └── metadata.bp     generateMetadata(params, parent)
 test/blog_test.bp
 ```
 
+Escaping happens once, in front 30's `renderNode`: the cases whose tree holds untrusted text
+(`the post page`, `the root layout …`) snapshot `renderNode`'s output (`tagPerLine` for the layout),
+not the frozen `renderToString`, which escapes nothing.
+
 ```bp
 // test/blog_test.bp
-import { Element, RouterState, Boundary, Suspense, holeId, ErrorInfo, catchError, mergeMetadata, renderToString } from "jhonstart";
+import { Element, RouterState, Boundary, Suspense, holeId, ErrorInfo, catchError, mergeMetadata, renderNode, digestOf } from "jhonstart";
 import { RootLayout, metadata, viewport } from "app/layout";
 import { Loading } from "app/loading";
 import { ErrorPage } from "app/error";
-import { NotFound } from "app/not-found";
-import { GlobalError } from "app/global-error";
-import { PostPage, postPanel } from "app/blog/[slug]/page";
-import { generateMetadata } from "app/blog/[slug]/metadata";
-import { assertHtml, assertHtmlLines, assertStream, assertErrorBoundary, assertMetadata, assertViewport, assertRoute, renderToStream, fixtureRouter } from "jhonstart-test";
+import { NotFound } from "app/not_found";
+import { GlobalError } from "app/global_error";
+import { PostPage, postPanel } from "app/blog/slug/page";
+import { generateMetadata } from "app/blog/slug/metadata";
+import { assertHtml, assertHtmlLines, tagPerLine, assertStream, assertErrorBoundary, assertMetadata, assertViewport, assertRoute, renderToStream, fixtureRouter } from "jhonstart-test";
+import { testing.snapshots.assertText } from "std";
 
 test "blog: the post page ---- hello" {
     val tree = await PostPage([#("slug", "hello")]);
-    try assertHtml(@src(), tree);
+    try assertText(@src(), renderNode(tree));
 }
 ```
-`__snapshots__/blog/the-post-page-hello.snap`
+`__snapshots__/blog/the_post_page_hello.snap`
 ```
 <article data-post="p-hello"><h1>Hello</h1><p>The first post, with a &lt;tag&gt; in it.</p><section class="comments"><h2>Comments</h2><ul><li><span class="author">ana</span>welcome</li><li><span class="author">bob</span>&lt;3</li></ul></section></article>
 ```
@@ -48,10 +55,10 @@ test "blog: the post page ---- hello" {
 test "blog: the root layout wraps the page and the nav marks the section" {
     val r = fixtureRouter("/blog/hello", "/blog/[slug]", "slug=hello", "");
     val page = await PostPage(r.params);
-    try assertHtmlLines(@src(), RootLayout(r, page));
+    try assertText(@src(), tagPerLine(renderNode(RootLayout(r, page))));
 }
 ```
-`__snapshots__/blog/the-root-layout-wraps-the-page-and-the-nav-marks-the-section.snap` — `RootLayout` reads `r.segments().at(0)` for the active section; the document head is front 30's, so the layout starts at `body`'s content
+`__snapshots__/blog/the_root_layout_wraps_the_page_and_the_nav_marks_the_section.snap` — `RootLayout` reads `r.segments().at(0)` for the active section; the document head is front 30's, so the layout starts at `body`'s content
 ```
 <div class="site">
 <header class="site-header">
@@ -82,14 +89,12 @@ test "blog: the root layout wraps the page and the nav marks the section" {
 ```bp
 test "blog: streamed ---- shell with the loading boundary then the page" {
     val params = [#("slug", "hello")];
-    val b = Boundary(id: holeId(0), fallback: Loading(), child: { ->
-        PostPage(params);
-    });
+    val b = Boundary(id: holeId(0), fallback: Loading(), child: { -> PostPage(params) });
     val chunks = await renderToStream(Suspense(b), [b]);
     try assertStream(@src(), chunks);
 }
 ```
-`__snapshots__/blog/streamed-shell-with-the-loading-boundary-then-the-page.snap`
+`__snapshots__/blog/streamed_shell_with_the_loading_boundary_then_the_page.snap`
 ```
 --- chunk 0 (shell)
 <div data-jh-h="h0"><div class="loading"><span class="spinner">Loading post…</span></div></div>
@@ -99,26 +104,26 @@ test "blog: streamed ---- shell with the loading boundary then the page" {
 
 ```bp
 test "blog: a missing slug raises the not-found signal through the boundary" {
-    try assertErrorBoundary(@src(), catchError("post", ErrorPage, postPanel("nope")));
+    try assertErrorBoundary(@src(), catchError("post", { info -> ErrorPage(info) }, postPanel("nope")));
 }
 ```
-`__snapshots__/blog/a-missing-slug-raises-the-not-found-signal-through-the-boundary.snap` — `postPanel(slug)` returns the thunk answering `@Result`; the signal is jhonstart's `notFound()` (front 31), re-raised, and front 30's render renders `NotFound()`
+`__snapshots__/blog/a_missing_slug_raises_the_not_found_signal_through_the_boundary.snap` — `postPanel(slug)` returns the thunk answering `@Result`; the signal is jhonstart's `notFound()` (front 31), re-raised, and front 30's render renders `NotFound()`
 ```
 outcome: error nav:not-found
 ```
 
 ```bp
 test "blog: a failing comment service shows the segment error page" {
-    try assertErrorBoundary(@src(), catchError("comments", ErrorPage, postPanel("broken-comments")));
+    try assertErrorBoundary(@src(), catchError("comments", { info -> ErrorPage(info) }, postPanel("broken-comments")));
 }
 ```
-`__snapshots__/blog/a-failing-comment-service-shows-the-segment-error-page.snap`
+`__snapshots__/blog/a_failing_comment_service_shows_the_segment_error_page.snap`
 ```
 outcome: ok
-<div data-jh-e="comments"><section class="segment-error"><h2>This section is unavailable</h2><p>Reference: <digest></p><button data-jh-reset="comments">Retry</button></section></div>
+<div data-jh-e="comments"><section class="segment-error"><h2>This section is unavailable</h2><p>Reference: 9f4eba41</p><button data-jh-reset="comments">Retry</button></section></div>
 ```
 
-`<digest>` stands for `digestOf("comment service down")` — `hash.contentHash` is front 03's (std `hash`, decision 106) and its hex is front 03's snapshot, not this track's. The first run writes the `.snap.new` with the real hex; it is accepted only after that hex is checked against front 03's `__snapshots__`. The message itself is asserted absent by construction (`infoFor` blanks it).
+`9f4eba41` is `digestOf("comment service down")` — std's `hash.contentHash` (front 03, decision 106), the same hex on both rows. The message itself is absent by construction (`infoFor` blanks it).
 
 ```bp
 test "blog: not-found page" {
@@ -129,11 +134,11 @@ test "blog: global error owns its document" {
     try assertHtmlLines(@src(), GlobalError(ErrorInfo(message: "", digest: "a3f19c2b")));
 }
 ```
-`__snapshots__/blog/not-found-page.snap`
+`__snapshots__/blog/not_found_page.snap`
 ```
 <section class="not-found"><h2>No such post</h2><p><a href="/blog">Back to the index</a></p></section>
 ```
-`__snapshots__/blog/global-error-owns-its-document.snap`
+`__snapshots__/blog/global_error_owns_its_document.snap`
 ```
 <html lang="en">
 <head>
@@ -159,7 +164,7 @@ test "blog: viewport of the root layout" {
     try assertViewport(@src(), viewport());
 }
 ```
-`__snapshots__/blog/metadata-post-merged-onto-the-root-layout.snap`
+`__snapshots__/blog/metadata_post_merged_onto_the_root_layout.snap`
 ```
 <title>Hello | botopink blog</title>
 <meta name="description" content="The first post, with a &lt;tag&gt; in it.">
@@ -171,7 +176,7 @@ test "blog: viewport of the root layout" {
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/favicon.ico">
 ```
-`__snapshots__/blog/viewport-of-the-root-layout.snap`
+`__snapshots__/blog/viewport_of_the_root_layout.snap`
 ```
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#111111">
@@ -182,7 +187,7 @@ test "blog: the route snapshot the layout reads" {
     try assertRoute(@src(), fixtureRouter("/blog/hello", "/blog/[slug]", "slug=hello", "ref=home"));
 }
 ```
-`__snapshots__/blog/the-route-snapshot-the-layout-reads.snap`
+`__snapshots__/blog/the_route_snapshot_the_layout_reads.snap`
 ```
 path: /blog/hello
 pattern: /blog/[slug]
@@ -199,6 +204,7 @@ segment: blog
 
 ```
 src/
+├── main.bp         pub mod sidebar; pub mod index; pub mod checkout; — prints the sidebar
 ├── sidebar.bp      Sidebar(r: RouterState) — pathname/selectedLayoutSegment shape, Link rows
 ├── index.bp        DocsIndex(pages) — two hundred rows with prefetch off, two nav links with it on
 └── checkout.bp     CheckoutLink(status: LinkStatus)
@@ -209,17 +215,18 @@ test/nav_test.bp
 // test/nav_test.bp
 import { RouterState, renderToString } from "jhonstart";
 import { LinkStatus, prefetchMode } from "jhonstart-link";
-import { Sidebar } from "src/sidebar";
-import { DocsIndex, Page } from "src/index";
-import { CheckoutLink } from "src/checkout";
-import { assertActiveLink, assertHtml, assertHtmlLines, assertNavigation, assertText, simulateNavigation, fixtureRouter } from "jhonstart-test";
+import { Sidebar } from "sidebar";
+import { DocsIndex, Page } from "index";
+import { CheckoutLink } from "checkout";
+import { assertActiveLink, assertHtml, assertHtmlLines, assertNavigation, simulateNavigation, fixtureRouter } from "jhonstart-test";
+import { testing.snapshots.assertText } from "std";
 
 test "nav: sidebar ---- guides selected" {
     val r = RouterState(path: "/docs/guides/intro", params: [], search: [], pattern: "/docs/guides/[page]", selected: 1);
     try assertActiveLink(@src(), Sidebar(r), r.path);
 }
 ```
-`__snapshots__/nav/sidebar-guides-selected.snap` — every row is a `Link`, so each anchor also carries `data-jh-l`; `assertActiveLink` prints href and class only
+`__snapshots__/nav/sidebar_guides_selected.snap` — every row is a `Link`, so each anchor also carries `data-jh-l`; `assertActiveLink` prints href and class only
 ```
 path: /docs/guides/intro
 [ ] /docs/api row
@@ -233,7 +240,7 @@ test "nav: a sidebar row is a link with the two default attributes" {
     try assertHtmlLines(@src(), Sidebar(r));
 }
 ```
-`__snapshots__/nav/a-sidebar-row-is-a-link-with-the-two-default-attributes.snap`
+`__snapshots__/nav/a_sidebar_row_is_a_link_with_the_two_default_attributes.snap`
 ```
 <nav class="sidebar">
 <ul>
@@ -256,7 +263,7 @@ test "nav: the index switches prefetch off for its rows and leaves the header on
     try assertHtmlLines(@src(), DocsIndex(pages));
 }
 ```
-`__snapshots__/nav/the-index-switches-prefetch-off-for-its-rows-and-leaves-the-header-on.snap`
+`__snapshots__/nav/the_index_switches_prefetch_off_for_its_rows_and_leaves_the_header_on.snap`
 ```
 <div class="index">
 <nav>
@@ -279,7 +286,7 @@ test "nav: prefetch policy per route kind" {
     try assertText(@src(), "docs=" + prefetchMode("static", false, true) + "\nguide-page=" + prefetchMode("dynamic", true, true) + "\nsearch=" + prefetchMode("dynamic", false, true));
 }
 ```
-`__snapshots__/nav/prefetch-policy-per-route-kind.snap`
+`__snapshots__/nav/prefetch_policy_per_route_kind.snap`
 ```
 docs=full
 guide-page=partial
@@ -288,12 +295,12 @@ search=skip
 
 ```bp
 test "nav: moving between two guides keeps the docs and guides layouts" {
-    val from = fixtureRouter("/docs/guides/intro", "/docs/guides/[page]", "page=intro", "");
-    val to = fixtureRouter("/docs/guides/setup", "/docs/guides/[page]", "page=setup", "");
-    try assertNavigation(@src(), simulateNavigation(from, to));
+    val current = fixtureRouter("/docs/guides/intro", "/docs/guides/[page]", "page=intro", "");
+    val target = fixtureRouter("/docs/guides/setup", "/docs/guides/[page]", "page=setup", "");
+    try assertNavigation(@src(), simulateNavigation(current, target));
 }
 ```
-`__snapshots__/nav/moving-between-two-guides-keeps-the-docs-and-guides-layouts.snap` — keys come from the pattern, so two pages of one dynamic segment share every layout and remount only the leaf
+`__snapshots__/nav/moving_between_two_guides_keeps_the_docs_and_guides_layouts.snap` — keys come from the pattern, so two pages of one dynamic segment share every layout and remount only the leaf
 ```
 from: / /docs /docs/guides /docs/guides/[page]
 to: / /docs /docs/guides /docs/guides/[page]
@@ -310,7 +317,7 @@ test "nav: checkout link ---- idle and busy" {
     try assertText(@src(), idle + "\n" + busy + "\n" + other);
 }
 ```
-`__snapshots__/nav/checkout-link-idle-and-busy.snap`
+`__snapshots__/nav/checkout_link_idle_and_busy.snap`
 ```
 <a href="/checkout" data-jh-l="1" class="cta">Checkout</a>
 <a href="/checkout" data-jh-l="1" class="cta busy"><span class="spinner"></span>Checking out…</a>
@@ -323,25 +330,27 @@ test "nav: checkout link ---- idle and busy" {
 
 ```
 src/
+├── main.bp          pub mod like_button; pub mod theme; pub mod page; — prints the list in the provider
 ├── like_button.bp   #[clientProps] LikeProps · #[client] LikeButton · likeIsland(id, props)
 ├── theme.bp         #[clientProps] ThemeProps · #[client] ThemeProvider · themeIsland(id, theme)
-└── page.bp          PostList(posts) — one island per post · RootLayout(theme, page)
+└── page.bp          PostList(posts) / PostListFrom(posts, first) — one island per post · RootLayout(theme, page)
 test/islands_test.bp
 ```
 
 ```bp
 // test/islands_test.bp
 import { Element, Island, clientMount, serverSlot, islandEntry, renderToString } from "jhonstart";
-import { LikeProps, LikeButton, likeIsland } from "src/like_button";
-import { ThemeProps, ThemeProvider, themeIsland } from "src/theme";
-import { Post, PostList, RootLayout } from "src/page";
-import { assertHtml, assertHtmlLines, assertClientBundleEntry, assertText } from "jhonstart-test";
+import { LikeProps, LikeButton, likeIsland, __jhClient_LikeButton } from "like_button";
+import { ThemeProps, ThemeProvider, themeIsland, __jhClient_ThemeProvider } from "theme";
+import { Post, PostList, PostListFrom, RootLayout } from "page";
+import { assertHtml, assertHtmlLines, assertClientBundleEntry } from "jhonstart-test";
+import { testing.snapshots.assertText } from "std";
 
 test "islands: both markers are emitted" {
     try assertText(@src(), __jhClient_LikeButton() + " " + __jhClient_ThemeProvider());
 }
 ```
-`__snapshots__/islands/both-markers-are-emitted.snap`
+`__snapshots__/islands/both_markers_are_emitted.snap`
 ```
 LikeButton ThemeProvider
 ```
@@ -352,7 +361,7 @@ test "islands: one island per post numbered in render order" {
     try assertHtmlLines(@src(), PostList(posts));
 }
 ```
-`__snapshots__/islands/one-island-per-post-numbered-in-render-order.snap` — the component and its props are not in the markup
+`__snapshots__/islands/one_island_per_post_numbered_in_render_order.snap` — the component and its props are not in the markup
 ```
 <ul class="posts">
 <li>
@@ -374,7 +383,7 @@ test "islands: the payload rows for the list" {
     try assertClientBundleEntry(@src(), islands);
 }
 ```
-`__snapshots__/islands/the-payload-rows-for-the-list.snap`
+`__snapshots__/islands/the_payload_rows_for_the_list.snap`
 ```
 --- payload i
 i0 LikeButton postId=p1&likes=3
@@ -389,30 +398,31 @@ test "islands: the client component's own render is what hydration produces" {
     try assertHtml(@src(), LikeButton(LikeProps(postId: "p1", likes: 3)));
 }
 ```
-`__snapshots__/islands/the-client-component-s-own-render-is-what-hydration-produces.snap` — rendered directly (no `use` in the body), the markup the browser paints inside `i0`
+`__snapshots__/islands/the_client_component_s_own_render_is_what_hydration_produces.snap` — rendered directly (no `use` in the body), the markup the browser paints inside `i0`
 ```
 <button class="like" data-post="p1">♥ 3</button>
 ```
 
 ```bp
 test "islands: the theme provider wraps the whole server tree in a slot" {
-    val page = PostList([Post(id: "p1", title: "One", likes: 3)]);
+    val page = PostListFrom([Post(id: "p1", title: "One", likes: 3)], 1);
     try assertHtml(@src(), RootLayout("dark", page));
 }
 ```
-`__snapshots__/islands/the-theme-provider-wraps-the-whole-server-tree-in-a-slot.snap` — island `i0` is the provider; the like island inside the slot is numbered after it by front 30's render (here the example passes `i1`)
+`__snapshots__/islands/the_theme_provider_wraps_the_whole_server_tree_in_a_slot.snap` — island `i0` is the provider; the like island inside the slot is numbered after it — by front 30's render in a real render (`mountIsland`), here by `PostListFrom(posts, 1)`
 ```
 <div data-jh-i="i0"><div data-jh-s="1"><ul class="posts"><li><h2>One</h2><div data-jh-i="i1"></div></li></ul></div></div>
 ```
 
 ---
 
-## `examples/forms/` — fronts 67 · 29 · 26 · 27 · 94 — depends on `jhonstart`, `jhonstart-link`, `jhonstart-forms`, `jhonstart-test`, `std` — target commonJS
+## `examples/forms/` — fronts 67 · 29 · 26 · 27 · 94 — depends on `jhonstart`, `jhonstart-link`, `jhonstart-forms`, `jhonstart-test`, `std` — targets both
 
 ```
 src/
+├── main.bp          pub mod create_post; pub mod like; pub mod search; — prints two forms
 ├── create_post.bp   createPostForm(binding, state, pending) · CreatePostForm(actionId)
-├── like.bp          likeWidget(binding, shown, status) · LikeWidget(serverCount)
+├── like.bp          likeWidget(binding, shown, status) · addLike · LikeWidget(actionId, pathname, serverCount)
 └── search.bp        searchForm(props) · SearchForm()
 test/forms_test.bp
 ```
@@ -420,22 +430,22 @@ test/forms_test.bp
 ```bp
 // test/forms_test.bp
 import { Element, renderToString } from "jhonstart";
-import { actionState, formAction, FormStatus, applyOptimistic, searchFormProps } from "jhonstart-forms";
-import { state: {ActionState, writeState}, envelope: {parseActionState} } from "actions";
-import { createPostForm } from "src/create_post";
-import { likeWidget, addLike } from "src/like";
-import { searchForm } from "src/search";
-import { querystring } from "std";
-import { assertForm, assertActionState, assertOptimistic, assertText, stubEnvelope } from "jhonstart-test";
+import { formAction, FormStatus, applyOptimistic, searchFormProps, searchHref } from "jhonstart-forms";
+import { state: {ActionState, writeState, newActionState}, envelope: {parseActionState} } from "actions";
+import { createPostForm } from "create_post";
+import { likeWidget, addLike } from "like";
+import { searchForm } from "search";
+import { assertForm, assertActionState, assertOptimistic, stubEnvelope } from "jhonstart-test";
+import { testing.snapshots.assertText } from "std";
 
 val actionId = "a_9f31c0d7a4b2e5081c6fa3d2";
 val failedState = writeState("Title must be at least 3 characters", [#("title", "Too short")]);
 
 test "forms: create post ---- empty" {
-    try assertForm(@src(), createPostForm(formAction(actionId, "/blog/new"), actionState(""), false));
+    try assertForm(@src(), createPostForm(formAction(actionId, "/blog/new", "__bp_action"), newActionState(""), false));
 }
 ```
-`__snapshots__/forms/create-post-empty.snap`
+`__snapshots__/forms/create_post_empty.snap`
 ```
 <form method="post" action="/blog/new" data-jh-a="a_9f31c0d7a4b2e5081c6fa3d2">
 <input type="hidden" name="__bp_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
@@ -453,10 +463,10 @@ test "forms: create post ---- empty" {
 ```bp
 test "forms: create post ---- returned message beside the title" {
     val state = parseActionState(stubEnvelope(false, failedState, ""));
-    try assertForm(@src(), createPostForm(formAction(actionId, "/blog/new"), state, false));
+    try assertForm(@src(), createPostForm(formAction(actionId, "/blog/new", "__bp_action"), state, false));
 }
 ```
-`__snapshots__/forms/create-post-returned-message-beside-the-title.snap`
+`__snapshots__/forms/create_post_returned_message_beside_the_title.snap`
 ```
 <form method="post" action="/blog/new" data-jh-a="a_9f31c0d7a4b2e5081c6fa3d2">
 <input type="hidden" name="__bp_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
@@ -477,7 +487,7 @@ test "forms: a failed action's state as the page sees it" {
     try assertActionState(@src(), parseActionState(stubEnvelope(false, failedState, "")));
 }
 ```
-`__snapshots__/forms/a-failed-action-s-state-as-the-page-sees-it.snap` — the `state` grammar itself is asserted in `libs/actions` (decision 116); this cell shows what the page receives
+`__snapshots__/forms/a_failed_action_s_state_as_the_page_sees_it.snap` — the `state` grammar itself is asserted in `libs/actions` (decision 116); this cell shows what the page receives
 ```
 ok: false
 message: Title must be at least 3 characters
@@ -488,10 +498,10 @@ f.title: Too short
 ```bp
 test "forms: like widget ---- server pass shows the server's count" {
     val idle = FormStatus(pending: false, actionId: "", method: "post");
-    try assertForm(@src(), likeWidget(formAction(actionId, "/blog/hello"), 41, idle));
+    try assertForm(@src(), likeWidget(formAction(actionId, "/blog/hello", "__bp_action"), 41, idle));
 }
 ```
-`__snapshots__/forms/like-widget-server-pass-shows-the-server-s-count.snap`
+`__snapshots__/forms/like_widget_server_pass_shows_the_server_s_count.snap`
 ```
 <form method="post" action="/blog/hello" data-jh-a="a_9f31c0d7a4b2e5081c6fa3d2">
 <input type="hidden" name="__bp_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
@@ -504,11 +514,11 @@ test "forms: like widget ---- server pass shows the server's count" {
 ```bp
 test "forms: like widget ---- optimistic count with a busy nested button" {
     val busy = FormStatus(pending: true, actionId: actionId, method: "post");
-    val shown = applyOptimistic(41, [1, 1], addLike);
-    try assertForm(@src(), likeWidget(formAction(actionId, "/blog/hello"), shown, busy));
+    val shown = applyOptimistic(41, [1, 1], { c, a -> addLike(c, a) });
+    try assertForm(@src(), likeWidget(formAction(actionId, "/blog/hello", "__bp_action"), shown, busy));
 }
 ```
-`__snapshots__/forms/like-widget-optimistic-count-with-a-busy-nested-button.snap` — the nested button reads its own form's status; the count is the fold, not the server's
+`__snapshots__/forms/like_widget_optimistic_count_with_a_busy_nested_button.snap` — the nested button reads its own form's status; the count is the fold, not the server's
 ```
 <form method="post" action="/blog/hello" data-jh-a="a_9f31c0d7a4b2e5081c6fa3d2">
 <input type="hidden" name="__bp_action" value="a_9f31c0d7a4b2e5081c6fa3d2">
@@ -523,7 +533,7 @@ test "forms: optimistic fold and its collapse" {
     try assertOptimistic(@src(), 41, [1, 1]);
 }
 ```
-`__snapshots__/forms/optimistic-fold-and-its-collapse.snap` — after the envelope the actions are dropped and the value is the new base; both outcomes end at `assertOptimistic(@src(), newBase, [])`
+`__snapshots__/forms/optimistic_fold_and_its_collapse.snap` — after the envelope the actions are dropped and the value is the new base; both outcomes end at `assertOptimistic(@src(), newBase, [])`
 ```
 base: 41
 actions: 1 1
@@ -534,14 +544,13 @@ value: 43
 test "forms: search form and the URL a plain GET produces" {
     val props = searchFormProps("/search");
     val fields = [#("q", "botopink lang"), #("sort", "new")];
-    val url = "/search?" + querystring.stringify(fields);
-    try assertText(@src(), renderToString(searchForm(props)) + "\n" + url);
+    try assertText(@src(), renderToString(searchForm(props)) + "\n" + searchHref(props, fields));
 }
 ```
-`__snapshots__/forms/search-form-and-the-url-a-plain-get-produces.snap` — `querystring` does not percent-encode (`querystring.bp:9-16`); the space survives, which is the literal that front 01's encoder changes when it lands and this snapshot is regenerated deliberately
+`__snapshots__/forms/search_form_and_the_url_a_plain_get_produces.snap` — `searchHref` encodes with std's `encoding.formStringify`, so the space is `%20`
 ```
 <form method="get" action="/search" data-jh-sf="1"><input name="q"></input><select name="sort"><option value="new">Newest</option><option value="top">Top</option></select><button type="submit">Search</button></form>
-/search?q=botopink lang&sort=new
+/search?q=botopink%20lang&sort=new
 ```
 
 ---
@@ -550,8 +559,9 @@ test "forms: search form and the URL a plain GET produces" {
 
 ```
 src/
-├── shell.bp        documentShell(lang, pageTitle, styleHref, content) with constructors
-└── shell_dsl.bp    documentBody(content) written as html """…""" over the same tags
+├── main.bp         pub mod shell; pub mod shell_dsl; — fn main builds its <main> with el("main", …)
+├── shell.bp        documentShell(lang, pageTitle, styleHref, content) with constructors · doctype()
+└── shell_dsl.bp    documentBody(title) written as html """…""" over the same tags
 test/shell_test.bp
 ```
 
@@ -559,16 +569,17 @@ test/shell_test.bp
 // test/shell_test.bp
 import { Element, text, p, main, h2, el, renderToString } from "jhonstart";
 import { html } from "jhonstart-html";
-import { documentShell, doctype } from "src/shell";
-import { documentBody } from "src/shell_dsl";
-import { assertHtml, assertHtmlLines, assertText } from "jhonstart-test";
+import { documentShell, doctype } from "shell";
+import { documentBody } from "shell_dsl";
+import { assertHtml, assertHtmlLines } from "jhonstart-test";
+import { testing.snapshots.assertText } from "std";
 
 test "shell: constructors ---- head before body" {
     val content = main([h2([text("Welcome", attrs: [])], attrs: [])], attrs: []);
     try assertHtmlLines(@src(), documentShell("en", "botopink", "/app.css", content));
 }
 ```
-`__snapshots__/shell/constructors-head-before-body.snap`
+`__snapshots__/shell/constructors_head_before_body.snap`
 ```
 <html lang="en">
 <head>
@@ -592,7 +603,7 @@ test "shell: the doctype is a string prefix, not an element" {
     try assertText(@src(), doctype() + renderToString(documentShell("en", "x", "/a.css", content)));
 }
 ```
-`__snapshots__/shell/the-doctype-is-a-string-prefix-not-an-element.snap`
+`__snapshots__/shell/the_doctype_is_a_string_prefix_not_an_element.snap`
 ```
 <!doctype html><html lang="en"><head><meta charset="utf-8"></meta><title>x</title><link rel="stylesheet" href="/a.css"></link></head><body><main></main></body></html>
 ```
@@ -604,7 +615,7 @@ test "shell: the dsl body equals the constructor body" {
     try assertText(@src(), fromDsl + "\n" + fromCtor);
 }
 ```
-`__snapshots__/shell/the-dsl-body-equals-the-constructor-body.snap` — `documentBody` is `html """<main [class]={cls}><h2>${title}</h2></main>"""`; `<html>` itself cannot be authored in the DSL (the tag resolves to the template fn), which is why only the body has a DSL twin
+`__snapshots__/shell/the_dsl_body_equals_the_constructor_body.snap` — `documentBody` is `html """<main [class]={cls}><h2>${title}</h2></main>"""`; `<html>` itself cannot be authored in the DSL (the tag resolves to the template fn), which is why only the body has a DSL twin
 ```
 <main class="page"><h2>Welcome</h2></main>
 <main class="page"><h2>Welcome</h2></main>
@@ -616,7 +627,7 @@ test "shell: the main caveat ---- el keeps a module that declares main" {
     try assertHtml(@src(), tree);
 }
 ```
-`__snapshots__/shell/the-main-caveat-el-keeps-a-module-that-declares-main.snap` — this test file declares no `fn main()`; the example's `src/entry.bp` does and uses `el("main", …)` because a package import alias is parsed and ignored
+`__snapshots__/shell/the_main_caveat_el_keeps_a_module_that_declares_main.snap` — this test file declares no `fn main()`; the example's `src/main.bp` does and uses `el("main", …)` because a package import alias is parsed and ignored
 ```
 <main><p>entry</p></main>
 ```

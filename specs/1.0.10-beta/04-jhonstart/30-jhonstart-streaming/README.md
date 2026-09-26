@@ -104,7 +104,7 @@ value.
 **The document.**
 
 ```html
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">…front 32's head…
+<!DOCTYPE html><html lang="…app(lang:)…"><head><meta charset="utf-8">…front 32's head…
 …plugin head()…RenderHooks.headExtra(route)…</head><body>
 <div data-jh-root="">…composed tree…</div>
 …fill chunks…
@@ -147,8 +147,8 @@ pub type RenderHooks(
 pub fn defaultHooks() -> RenderHooks
 pub fn setHooks(h: RenderHooks) -> void      // stored once, at boot, for every render that follows
 
-pub type App(plugins: Array<RenderPlugin>, allowedRedirects: string[]) { … render / renderStream … }
-pub fn app(plugins: Array<RenderPlugin>, allowedRedirects: string[] = []) -> App
+pub type App(plugins: Array<RenderPlugin>, allowedRedirects: string[], lang: string) { … render / renderStream … }
+pub fn app(plugins: Array<RenderPlugin>, allowedRedirects: string[] = [], lang: string = "en") -> App
 ```
 
 The style moments are the plugin list, and the render calls front 29's `islandAttr` directly. onze
@@ -429,7 +429,10 @@ render), `holeId(index) -> string`.
       the child is not rendered and does not appear in the shell — `render_test.bp` "render: Suspense renders the fallback in the hole and never the child"
 - [x] `holeId(1) == "h1"`, `holeId(0) == "h0"` — the spelling `contracts.md § 2` pins — `render_test.bp` "render: holeId spells h<n> and nothing outside [h0-9]"
 - [x] a `Boundary` carries the ordinal the render assigned it, in shell order — `compose` assigns `nextHoleOrdinal()`; `streaming_test.bp` "stream: fills come in completion order…" (`"h":["h1","h2"]`)
-- [ ] `Suspense` reaches no host cell
+- [x] `Suspense` reaches one host cell and no other: it registers its boundary with the render
+      (`__jhPushBoundary`, `render.mjs` / `jhonstart_render`), because an `Element` has no field that
+      can carry the thunk (`decisions-pending.md` 30-d) — held: `suspense.bp:29-35`; `render_test.bp`
+      "render: Suspense renders the fallback in the hole and never the child"
 
 ### Step 2 — `Chunk`, `resolve`, `fillHtml`
 
@@ -553,16 +556,21 @@ pub fn writePayload(p: Payload) -> string   // json.object / json.quote, then es
 ### Step 7 — The globals registry and `render.mjs`
 
 **Acceptance:**
-- [x] `globals.payload == "__bp0"`, `globals.fill == "__bp1"` and `globals.signal == "__bp2"`,
-      derived from the registry's declaration order, on both targets — `test/render_test.bp` "render: the three globals come from the registry's declaration order" (`globals.payload`, one `pub val` — decision 140)
+- [x] `globals.payload == "__bp0"`, `globals.fill == "__bp1"`, `globals.signal == "__bp2"` and
+      `globals.starters == "__bp3"` (front 29's starter table), derived from the registry's
+      declaration order, on both targets — `test/render_test.bp` "render: the four globals come from the registry's declaration order" (`globals.payload`, one `pub val` — decision 140)
 - [x] no `__bp` literal appears in `render.bp`, `streaming.bp` or `render.mjs` outside the registry
       — the render and the client read the same names
-- [ ] `render.mjs`'s fill function, registered under `globals.fill`, is idempotent: calling it twice
-      for one id leaves the DOM unchanged; a fill for an absent hole is dropped
-- [ ] `readPayload(globals.payload)` returns the payload the render assigned, decoded with std's
+- [x] `render.mjs`'s fill function, registered under `globals.fill`, is idempotent: calling it twice
+      for one id leaves the DOM unchanged; a fill for an absent hole is dropped — `jhonstart-dom-test`
+      `test/dom_test.bp` "dom: a fill replaces its hole…", "dom: a second call for one id leaves the
+      document unchanged", "dom: a fill for a hole that is not in the document is dropped" (a minimal
+      document on node, 30-g)
+- [x] `readPayload(globals.payload)` returns the payload the render assigned, decoded with std's
       `json.decode` (decision 117 rule 7) — `render.mjs`'s cell hands over only the payload
       script's JSON text (the text after `window.<globals.payload> = `); a text `json.decode`
-      refuses is an `Error`, never a partial payload
+      refuses is an `Error`, never a partial payload — `dom_test.bp` "dom: readPayload decodes the
+      last payload script…", "dom: a payload json.decode refuses is an Error…"
 - [x] no `__onze*` or hand-written `__jh*` global is referenced by any HTML this front writes — every global through `globals()`
 
 ### Step 8 — `RenderHooks`, `app`, `render` and `renderStream`
@@ -573,7 +581,7 @@ pub type PageInput(build: string, pathname: string, pattern: string, params: str
                    page: fn() -> @Component<ElementBase, Element>,
                    metadata: Array<Metadata>, viewports: Array<Viewport>)
 
-pub type App(plugins: Array<RenderPlugin>, allowedRedirects: string[]) {
+pub type App(plugins: Array<RenderPlugin>, allowedRedirects: string[], lang: string) {
     pub fn render(self: Self, input: PageInput, req: RequestData, res: Response) -> @Task<@Result<void, string>>;
     pub fn renderStream(self: Self, input: PageInput, req: RequestData, res: Response) -> @Task<@Result<void, string>>;
 }
@@ -608,7 +616,19 @@ normal render, `Error(message)` for a failed one — a refused redirect target, 
 answering `Error`, `status` / `header` after the first write. `Response.write` stays an infallible
 `@Task<void>`. The signal translation is *Navigation signals* above.
 
+`lang` is the document's `<html lang>`, one per app (onze front 50's `--lang`, written once): letters,
+digits and `-`, starting with a letter (`isLangTag`); `app` refuses anything else, naming it
+(`decisions-pending.md` 30-f).
+
 **Acceptance:**
+- [x] `app(…, lang: "pt-BR")` writes `<html lang="pt-BR">`, `app(…)` writes `<html lang="en">`, and a
+      value that is not a language tag fails `app`, naming it — `streaming_test.bp` "stream:
+      app(lang:) is the document's <html lang>…", "stream: a lang that is not a language tag is refused…"
+- [x] the three literals of `contracts.md § 5d` over a record spelled field for field like rakun's
+      `ChunkWriter` and adapted into `Response` as onze does: a page (`status 200`, `content-type`,
+      one document, one `close`), a pre-first-chunk `redirect("/login")` (`307`, `location`, `close`,
+      no body) and a pre-first-chunk `notFound()` (`404`, the not-found document) — `streaming_test.bp`
+      "chunk writer: …" ×3
 - [x] a page with one boundary produces at least three `write` calls, the first ending inside
       `<body>`, each awaited before the next — `streaming_test.bp` "stream: a page with boundaries writes the shell, then each fill, each awaited"
 - [x] a component calling front 28's `request()` / `headers()` / `cookies()` reads the `req` the
@@ -672,16 +692,18 @@ and that is onze's whole part in the CSS moment.
       `Error` and the render fails — `jhonstart-emilia/test/bridge_test.bp` "bridge: close is Ok after the last chunk and Error for a class registered later"; `streaming_test.bp` "plugin: a close answering Error…"
 - [x] the payload's `s` lists exactly the class names in the document's `<style>` blocks (head and
       fills), in flush order, and a render with no emilia class writes `"s":[]` — `jhonstart-emilia/test/bridge_test.bp` "bridge: the payload's s lists the flushed classes, and [] when there were none"
-- [ ] the contract-4 class literal (`contracts.md § 4`'s shared fixture) is asserted here, on a
+- [x] the contract-4 class literal (`contracts.md § 4`'s shared fixture) is asserted here, on a
       rendered document — the bridge's test is the one test that renders emilia classes with
-      jhonstart (decision 114, item 6), and emilia's own `modules/emilia/test/attributes_test.bp`
-      asserts the same literal without HTML
-- [ ] the builders and the `html` DSL render an element with an emilia class slot byte for byte
+      jhonstart (decision 114, item 6), and emilia's own front-48 suite (`emilia.bp` "class:
+      attributes — the shared fixture") asserts the same literal `e_39b87d03` without HTML —
+      `jhonstart-emilia/test/bridge_test.bp` "bridge: the contract-4 literal on a rendered document"
+- [x] the builders and the `html` DSL render an element with an emilia class slot byte for byte
       the same, and `withAttrs` / `attrValue` over a built tree read that class back — front 48's
-      rendered cells, which need jhonstart and therefore live here
-- [ ] a rendered element with a static class and an emilia class writes `class="<static> <emilia>"`:
+      rendered cells, which need jhonstart and therefore live here — `bridge_test.bp` "bridge: the
+      builders and the html DSL render the class slot byte for byte the same"
+- [x] a rendered element with a static class and an emilia class writes `class="<static> <emilia>"`:
       static first, one ASCII space, no sorting, attributes in array order (contract 4, clauses 4
-      and 5)
+      and 5) — `bridge_test.bp` "bridge: a static and an emilia class render static first…"
 - [x] `grep -rn emilia modules/jhonstart/src` is empty — the bridge is the only member naming emilia
 - [x] no file of `repository/emilia/` changes for this step
 
@@ -756,8 +778,8 @@ pub fn ctxRest(route: PageContext) -> string[]
 
 `PageContext`'s plural fields are pair lists, the shape front 26's snapshot and front 28's
 `RequestData` use, read with front 26's `pairValue`. `LayoutProps` is one record rather than three
-parameters because declared parameter defaults are never applied: a layout that uses no slot would
-otherwise spell an empty `slots:` at every call site the registry generates.
+parameters: the registry generates one call shape for every layout, and a layout that uses no slot
+reads an empty `slots`.
 
 Each decorator body `@emit`s its registration — a module-level `val` calling a registry function
 with a lambda, so it runs at module load — then the per-route parameter accessor, then enforces
@@ -847,10 +869,12 @@ resolution: a raised reason for which `navigation.isSignalReason` holds is read 
 - [x] `render.bp` and `streaming.bp` spell no `nav:` or `jhonstart:` literal and define no
       `signalFromReason`: `grep -rn '"nav:\|"jhonstart:' modules/jhonstart/src/{render,streaming}.bp`
       is empty
-- [ ] `render.mjs`'s signal function, on `redirect`, navigates to `data-jh-to` through front 26's
-      client router (`history.replaceState`, no reload) for a relative target and with
-      `location.replace` for a listed absolute one; on `not-found`, replaces `[data-jh-root]`'s
-      content with the template's and drops any later fill
+- [x] `render.mjs`'s signal function, on `redirect`, navigates to `data-jh-to` through front 26's
+      client router (`history.replaceState`, no reload, then the `popstate` the router listens to)
+      for a relative target and with `location.replace` for a listed absolute one (an unlisted one
+      is not followed); on `not-found`, replaces `[data-jh-root]`'s content with the template's and
+      drops any later fill — `dom_test.bp` "dom: a late relative redirect…", "dom: a late absolute
+      redirect is followed only when listed", "dom: a late not-found swaps the root's content…"
 
 ## Examples
 
@@ -865,10 +889,9 @@ resolution: a raised reason for which `navigation.isSignalReason` holds is read 
 |---|---|---|---|
 | `Children` coerces from an array, an `Element` or a string but not from a deferred value, so a boundary's child cannot be a child | `Boundary` is a record holding a `fn() -> @Component<ElementBase, Element>` beside the fallback, instead of `Suspense(fallback, child)` taking the child as `Children` | a record | let `Children` accept a thunk, resolved by the renderer |
 | `await` is not safe as a lambda's last statement — a lambda's last statement must be an implicit-return expression | `resolve(b)` awaits one boundary; `renderStream` spawns, it does not map | one await per call, at statement level | an awaiting lambda, so `boundaries.map({ b -> await resolve(b) })` types |
-| Declared parameter defaults are never applied | every `Element` builder call in both examples spells `attrs: []`; `LayoutProps` is one record | write every argument | apply the declared default when an argument is omitted |
 | `@Decl` carries no source location, so a decorator cannot learn which file it annotates | every `#[page(...)]` / `#[layout(...)]` (Step 10) | the app-relative directory is an explicit decorator argument, verified against the tree by rakun front 22's scan | `decl.source() -> Source` |
 
-All four are rows of `language-gaps.md`.
+All three are rows of `language-gaps.md`.
 
 ## Test plan
 
@@ -910,5 +933,5 @@ is the assertion that catches the eager-`@Task` mistake.
 - [x] the `jhonstart-emilia` member exists, its tests are green, and `repository/emilia/` is
       unchanged
 - [x] nothing under `repository/jhonstart/` imports `rakun`, `onze` or (outside the bridge) `emilia`
-- [x] all four language gaps appear in a `specs/1.0.10-beta/` spec — `language-gaps.md` rows "`Children` coerces…", "`await` is unusable as a lambda's last statement", "Declared parameter defaults…", "`@Decl` carries no source location"
+- [x] all three language gaps appear in a `specs/1.0.10-beta/` spec — `language-gaps.md` rows "`Children` coerces…", "`await` is unusable as a lambda's last statement", "`@Decl` carries no source location"
 - [x] the front's tests are green on both rows — core and `jhonstart-emilia`, on commonJS and erlang

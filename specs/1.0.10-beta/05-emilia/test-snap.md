@@ -1336,9 +1336,9 @@ test "css: transforms ---- lift on hover with transition" {
 
 `modules/emilia/test/__snapshots__/css/transforms-skew-origin-style-backface.snap`
 ```css
-.e{skew-x:3deg;transform-origin:top left;transform-style:preserve-3d;backface-visibility:hidden}
+.e{--tw-skew-x:skewX(3deg);transform:var(--tw-rotate-x,) var(--tw-rotate-y,) var(--tw-rotate-z,) var(--tw-skew-x,) var(--tw-skew-y,);transform-origin:top left;transform-style:preserve-3d;backface-visibility:hidden}
 ```
-The skew is upstream's `transform:skewX(3deg)`; the reference file's `skew-x:` column is not CSS.
+The skew is upstream v4's variable and chain; the reference file's `skew-x:` column is not CSS.
 
 `modules/emilia/test/__snapshots__/css/transforms-perspective.snap`
 ```css
@@ -1347,7 +1347,7 @@ The skew is upstream's `transform:skewX(3deg)`; the reference file's `skew-x:` c
 
 `modules/emilia/test/__snapshots__/css/transforms-gpu-shorthand.snap`
 ```css
-.e{transform:translate3d(var(--tw-translate-x), var(--tw-translate-y), 0) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}
+.e{transform:translateZ(0) var(--tw-rotate-x,) var(--tw-rotate-y,) var(--tw-rotate-z,) var(--tw-skew-x,) var(--tw-skew-y,)}
 ```
 
 `modules/emilia/test/__snapshots__/css/transforms-lift-on-hover-with-transition.snap`

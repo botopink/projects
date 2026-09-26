@@ -76,10 +76,26 @@ Form state — `formStatus`, `actionState`, optimistic updates, the form's actio
 
 ### `hydrate()`
 
-The **per-island** hydrate point: walks every `[data-jh-i]`, decodes that island's props from the
-payload's `i` row and starts the component; idempotent. It is not the bundle's entry module and it
-mounts no links or forms — front 68 generates the entry, which calls `hydrate()` and then front 27's
+The **per-island** hydrate point: walks every `[data-jh-i]`, finds that island's `i` row and starts
+the starter registered for its component in the island starter table, handing it the encoded props
+and `commit(html)`; idempotent. It is not the bundle's entry module and it mounts no links or forms —
+front 68 generates the entry, which registers the starters, calls `hydrate()` and then front 27's
 `linkMount()` and front 67's `formMount()` once each.
+
+**The starter table** is the globals registry's fourth entry, `globals.starters` (`__bp3`), so the
+entry writes no `__` name and holds no host cell for it:
+
+```bp
+pub fn registerStarter(name: string, start: fn(raw: string, commit: fn(html: string) -> i32) -> i32) -> i32
+pub fn registerRouteStarters(pattern: string, load: fn() -> @Task<i32>) -> i32
+pub fn registeredStarters() -> string[]
+pub fn registeredRouteStarters() -> string[]
+```
+
+One starter per component and one loader per route pattern — a second registration fails, naming
+it. `hydrate()` calls the loader registered for the payload's matched pattern `r` once and runs again
+when it resolves, so a route's islands live in that route's chunk and the bundle splits by route
+(`decisions-pending.md` 29-a).
 
 ### The front-68 contract
 
@@ -87,6 +103,7 @@ mounts no links or forms — front 68 generates the entry, which calls `hydrate(
 |---|---|
 | the set of client component names | `__jhClient_<Name>` functions emitted by `#[client]` |
 | the island rows | `islandEntry` per island, collected into the payload's `i` key by front 30's render |
+| the starter table | `registerStarter` / `registerRouteStarters` into `globals.starters` — the entry names no global |
 | the client module graph | the transitive imports of every module declaring one |
 | the poison-pill predicate | a module in that graph importing `serverOnly` |
 | the request-scope predicate | a module in that graph importing `request`/`cookies`/`headers` from front 28 |
@@ -101,7 +118,7 @@ mounts no links or forms — front 68 generates the entry, which calls `hydrate(
 - The island pair and slot pair are each spelled once in `client.bp`; `data-jh-on-click` is the handler marker; the props cell is `__jhClientPropsRaw`; no `data-onze-` string under `modules/jhonstart/src/`.
 - `client.bp` builds and escapes no payload; front 30's `writePayload` writes `i`.
 - `repository/jhonstart/AGENTS.md` § *Front 29 — the client boundary* records the boundary and what it does not check.
-- The four language gaps below are rows of `language-gaps.md`. The front's tests are green on both rows.
+- The three language gaps below are rows of `language-gaps.md`. The front's tests are green on both rows.
 
 ## Steps
 
@@ -121,8 +138,16 @@ Done.
 
 ### Step 4 — Hydration entry and `server-only`
 
-- [ ] every cell in the file is `#[@External.Node]`; there is no `#[@External.Erlang]` cell —
-      left unticked by pending decision 27-a, which makes the cells dual-target
+- [x] every cell in the file is dual-target — `island_runtime.mjs` beside
+      `sidecars/jhonstart_island.erl`, whose twin starts nothing and reads back registrations: the
+      core is compiled on both rows and a called node-only cell reds its erlang compile
+      (`decisions-pending.md` 27-a) — held: `client.bp:328-349`
+- [x] the island starter table is `globals.starters` (`__bp3`), filled by `registerStarter` and
+      `registerRouteStarters`, one per component / per route, a second failing with its name, on both
+      rows — `client_test.bp` "client: registerStarter fills the registry's table…", "client: a second
+      starter for one component fails, naming it", "client: registerRouteStarters keeps one loader per
+      route pattern", "client: the starter table is the registry's fourth global"; `render_test.bp`
+      "render: the four globals come from the registry's declaration order"
 
 ### Step 5 — Module wiring and the front-68 contract
 
@@ -147,7 +172,6 @@ Done.
 | `@Decl` exposes `fields`, `variants`, `methods`, `returnType` but **not a function's parameters**; and `Field.typeName` carries **no element type** for an array | `#[client]` cannot check a component's props; `#[clientProps]` cannot admit `string[]`/`i32[]` | a second decorator `#[clientProps]` on the props record; arrays spelled as an encoded `string` | `val params: Param[]` on `Decl` for `DeclKind.Fn`, and the full type on `Field` |
 | A decorator body cannot call a sibling function | the whitelist predicate is one inlined boolean expression, duplicated if a third marker needs it | inline everything | emit the module's other top-level fns alongside the decorator |
 | `botopink check` skips decorator invocation, so every `@emit`ted name reads as unbound | `__jhClient_<Name>` is invisible to `check` | gate on `botopink test`, never on `check` | run decorators under `check` too, or report emitted names as known |
-| Declared parameter defaults of an imported function are not applied | every `Element` builder call in both examples spells `attrs: []` | write every argument | apply the declared default when an argument is omitted |
 
 ## Test plan
 
@@ -169,5 +193,5 @@ by expected message. The module-graph predicates are front 68's to test.
 - [ ] `islandAttr(ordinal)` is exported and is the only place the pair is spelled — front 30's render
       calls it and front 68's entry imports it (decision 113)
 - [x] the README states, in *Mechanism*, that 29 without 68 is a convention nobody checks — § *What this front is not*
-- [x] all four language gaps appear in a `specs/1.0.10-beta/` spec
+- [x] all three language gaps appear in a `specs/1.0.10-beta/` spec
 - [x] the front's tests are green on its assigned target

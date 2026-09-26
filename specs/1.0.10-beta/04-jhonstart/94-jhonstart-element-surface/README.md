@@ -39,8 +39,8 @@ pub fn input(_children: Children, attrs: Array<#(string, string)> = []) -> Eleme
 ```
 
 Children positional, `attrs:` labeled — the exact call the `html """…"""` DSL writes
-(`tag([kids], attrs: [pairs])`), so every constructor is reachable from markup. The declared default is
-not applied to an imported function, so **every call spells `attrs:`**, inner ones included.
+(`tag([kids], attrs: [pairs])`), so every constructor is reachable from markup. `attrs` defaults to
+`[]`, and the default travels with the imported function, so `div([p([text("hi")])])` is a call.
 
 A constructor stores attribute values **verbatim**. Escaping happens once, at render, with std's
 `escape.attribute` inside front 30's walker; escaping here too would double-escape.
@@ -137,7 +137,6 @@ to the DSL's own `html`.
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| **An imported declared default is not applied** (`language-gaps.md`, row "Declared parameter defaults are never applied") | every constructor call | Pass every argument explicitly — `attrs:` on every call, inner ones included | Apply declared defaults at the call site for imported functions too; `div([p("hi")])` would then be the surface |
 | **No assignment to a `self` field** (`language-gaps.md`, row "No assignment to a `self` field") | `elements.bp` builds each `Element` in one `Element(…)` call | Construct complete, or return a new value | A mutable field form, or a documented statement that records are immutable by design |
 | **A package import alias is parsed and then ignored** — `import {main as mainTag} from "jhonstart";` parses but nothing outside the parser reads the alias for a package import, so the binding lands under `main` | the `main` constructor beside a program entry point `fn main()` | `el("main", children, attrs: [])`, or keep the two in different modules | Honour the alias in the resolver and in codegen |
 

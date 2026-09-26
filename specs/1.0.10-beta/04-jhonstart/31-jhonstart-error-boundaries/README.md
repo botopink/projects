@@ -210,9 +210,8 @@ boxes are listed with their step.
 |---|---|---|---|
 | Curried calls parse but do not type — `adder(3)(4)` reports `unbound variable ''` (`tests/language/expected-failures.txt`) | `catchError(Fallback)` cannot return a component the way upstream does | `catchError(id, fallback, child) -> ErrorBoundary`, rendered by the caller | type a call whose callee is a returned function |
 | No assignment to a `self` field; a record has no in-place update | a boundary cannot record "I already failed once" to suppress a retry loop; the retry budget lives in front 29's runtime instead | host-side state | a `var` field or a copy-update expression |
-| Declared parameter defaults are never applied | every `Element` builder call in both examples spells `attrs: []` | write every argument | apply the declared default when an argument is omitted |
 
-All three are rows of `language-gaps.md`.
+Both are rows of `language-gaps.md`.
 
 ## Test plan
 
@@ -235,7 +234,12 @@ browser contract is untested and the milestone treats it as a red rather than as
 - [x] `renderBoundary` catches with a `case` over `@Result` — the only catching mechanism the
       language has — and a test proves a throwing child does not reach the output
 - [x] no client-visible `ErrorInfo` ever carries a message; a test asserts it
-- [ ] the digest is front 03's hash and correlates with front 17's log line
+- [ ] the digest is front 03's hash and correlates with front 17's log line — open: the two schemes
+      differ. `digestOf(message)` is std's `contentHash` of the message (8 hex); rakun's
+      `errorDigest` is the first 16 hex of std's `strongHash` over `module|errorClass|message|topFrames`
+      (`rakun-logging/src/digest.bp`), so no log line carries the digest a fallback shows, and the
+      render calls no logger. Which side owns the scheme, and how the render reaches a logger it may
+      not import, is `decisions-pending.md` 31-b
 - [x] every signal passes through, recognised by `routing`'s `isSignalReason` — the one vocabulary
       rakun front 63 also imports (decision 116); the test asserts through `signalPrefixes()`
 - [ ] `notFound` and `redirect` are jhonstart's, and every page example in the milestone imports
@@ -249,5 +253,5 @@ browser contract is untested and the milestone treats it as a red rather than as
       test asserts both tags are present exactly once
 - [x] no example or step in this front calls `html(...)` as a constructor — that name is the markup
       DSL
-- [x] all three language gaps appear in a `specs/1.0.10-beta/` spec
+- [x] both language gaps appear in a `specs/1.0.10-beta/` spec
 - [x] the front's tests are green on its assigned target — on both rows
