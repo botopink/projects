@@ -113,30 +113,30 @@ front 40 inert — which is precisely the defect this front exists to stop. The 
 so it reads as a decision rather than as an unsourced addition.
 
 **Acceptance:**
-- [ ] Eleven rules, every one with `layer == "base"` and an empty `atRules`.
-- [ ] No rule's selector contains `&`, so none of them is affected by `Options.prefix`.
-- [ ] Each of `§ 4`'s eight bullets is covered by at least one rule, and the test names the bullet.
-- [ ] `content:""` appears exactly once, on `::before,::after`.
+- [x] Eleven rules, every one with `layer == "base"` and an empty `atRules`. — held: preflight.bp test "preflight — eleven rules, every one in the base layer with no at-rule"
+- [x] No rule's selector contains `&`, so none of them is affected by `Options.prefix`. — held: preflight.bp test "preflight — no selector carries `&`, so a prefix never reaches one"
+- [x] Each of `§ 4`'s eight bullets is covered by at least one rule, and the test names the bullet. — held: the eight preflight.bp tests "… (`§ 4` bullet N)"
+- [x] `content:""` appears exactly once, on `::before,::after`. — held: preflight.bp test "preflight — content: \"\" on ::before and ::after, once (`§ 4` bullet 8)"
 
 ### Step 2 — `border` means what it means in Tailwind
 
 The reset's reason for existing is testable against front 40's output.
 
 **Acceptance:**
-- [ ] With preflight in `Options.base`, the document contains `border-style:solid` before any
-      `@layer utilities` body.
-- [ ] `emilia([.Border.W.1])` plus preflight produces a document in which `border-width:1px` is
-      preceded by the `border-width:0;border-style:solid` base rule, in that order.
-- [ ] Without preflight, the same call produces a document containing no `border-style` at all — the
-      test asserts the absence, so the difference the reset makes is recorded rather than assumed.
+- [x] With preflight in `Options.base`, the document contains `border-style:solid` before any
+      `@layer utilities` body. — held: preflight.bp test "preflight — border-style:solid precedes every utilities body"
+- [x] `emilia([.Border.W.1])` plus preflight produces a document in which `border-width:1px` is
+      preceded by the `border-width:0;border-style:solid` base rule, in that order. — held: preflight.bp test "preflight — Border.W.1 lands after the zero-width solid base rule"
+- [x] Without preflight, the same call produces a document containing no `border-style` at all — the
+      test asserts the absence, so the difference the reset makes is recorded rather than assumed. — held: preflight.bp test "preflight — without it, the same class carries no border-style at all"
 
 ### Step 3 — the pseudo-element precondition
 
 **Acceptance:**
-- [ ] With preflight, the document contains `::before,::after{content:""}`.
-- [ ] A test in this file — not in front 34's — asserts that the `content` rule precedes the
+- [x] With preflight, the document contains `::before,::after{content:""}`. — held: preflight.bp test "preflight — ::before,::after{content:\"\"} precedes the utilities"
+- [x] A test in this file — not in front 34's — asserts that the `content` rule precedes the
       `@layer utilities` body, because a `::before` utility that sets `content` must be able to
-      override it.
+      override it. — held: same test, in `preflight.bp`
 
 ### Step 4 — the rendered form
 
@@ -148,19 +148,19 @@ The same eleven rules rendered through 56's `renderRule` with `defaultOptions()`
 separator. For a consumer shipping a static `reset.css`.
 
 **Acceptance:**
-- [ ] `preflight()` starts with `*,::before,::after{box-sizing:border-box`.
-- [ ] `preflight()` contains no `@layer` token and no `<style>` token — it is a fragment, not a
-      document.
-- [ ] `preflight()` is byte-identical on `--target commonJS` and `--target erlang`.
+- [x] `preflight()` starts with `*,::before,::after{box-sizing:border-box`. — held: preflight.bp test "preflight() — a fragment that starts with the box-sizing rule"
+- [x] `preflight()` contains no `@layer` token and no `<style>` token — it is a fragment, not a
+      document. — held: same test
+- [x] `preflight()` is byte-identical on `--target commonJS` and `--target erlang`. — held: preflight.bp test "preflight() — the whole fragment, as one literal", green on both targets
 
 ### Step 5 — the opt-out, stated once
 
 **Acceptance:**
-- [ ] `defaultOptions()` renders a document with no `@layer base` body.
-- [ ] `withBase(defaultOptions(), preflightRules())` renders one.
-- [ ] `withBase(o, [])` on an options value that had preflight removes it again.
-- [ ] There is no function, field, file or environment variable in `repository/emilia/` that turns
-      preflight on without passing it. A grep in the test file's comment records what was checked.
+- [x] `defaultOptions()` renders a document with no `@layer base` body. — held: preflight.bp test "preflight — off by default, on when passed, off again when removed"
+- [x] `withBase(defaultOptions(), preflightRules())` renders one. — held: same test
+- [x] `withBase(o, [])` on an options value that had preflight removes it again. — held: same test
+- [x] There is no function, field, file or environment variable in `repository/emilia/` that turns
+      preflight on without passing it. A grep in the test file's comment records what was checked. — held: the check is recorded in `preflight.bp`'s test header; `preflight` appears only in that module and in `output.bp` comments
 
 ## Examples
 
