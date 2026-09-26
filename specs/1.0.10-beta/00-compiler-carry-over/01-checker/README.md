@@ -330,8 +330,8 @@ test against meanwhile.
 **Acceptance:**
 - [x] no bare `Self` in a generic declaration in `libs/std` or `examples`; the 16 declarations carry `Self<…>` — `e7f1af11` (79 sites; `examples/` had none)
 - [x] the 5 unannotated `= []` bindings carry an annotation and §1.4 warns on none of them — `bdbbeae6`
-- [ ] `behavior Display` is declared in `libs/std` and `Dict<K, V>` implements it (§7's `Dict("a": 1, "b": 2)`)
-- [ ] `zig build test`, `test-libs` and `test-language` green
+- [x] `behavior Display` is declared in `libs/std` and `Dict<K, V>` implements it (§7's `Dict("a": 1, "b": 2)`) — `builtins.d.bp` declares it (decision 27); `Dict` implements it with compiler `a91e21f9`, `@print(d)` → `Dict("a": 1, "b": 2)` on commonJS and erlang, `dict.bp`'s test
+- [x] `zig build test`, `test-libs` and `test-language` green — at `a91e21f9`: `zig build test` green, `test-libs` 8 / 0 over the bundled libraries (the sibling libraries unchanged against `feat` in a scratch copy, erika with its migration patch), `run.sh` 825 / 22 / 0
 
 ### Step 12 — one flat table under four symptoms
 

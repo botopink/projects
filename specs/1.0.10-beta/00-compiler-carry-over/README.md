@@ -470,8 +470,8 @@ in the trees that teach it.
 **Depends on:** C-15 for `Self<…>`; 01 step 4 (d) for the section paths (part of C-08's parser work or
 its own row).
 **Acceptance:**
-- [ ] no bare `Self` in a generic declaration in `libs/std` or `examples/**`; the five bindings
-      annotated; `Dict` prints through `Display`; `zig build test`, `test-libs`, `test-language` green
+- [x] no bare `Self` in a generic declaration in `libs/std` or `examples/**`; the five bindings
+      annotated; `Dict` prints through `Display`; `zig build test`, `test-libs`, `test-language` green — `01-checker` compilers `bdbbeae6`, `e7f1af11`, `a91e21f9`
 - [ ] no `pattern -> value;` arm in any library `.bp`; `test/case_sections.bp` passes (its lines
       deleted by 01, not here) before emilia's rewrite starts; every library's cell and examples green
       after each rewrite
