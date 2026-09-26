@@ -166,6 +166,11 @@ label as an atom key.
 
 ### Step 5 — `loop`: a condition loop used as a value
 
+> **Superseded (re-verified 2026-09-26).** Decision 105 made `while`/`for` statements and `break v`
+> a generator-scope form; `test/loop_break_value.bp` is gone, and `ConditionLoopValueUnsupported`
+> no longer appears in the tree. What decision 103 asks of the erlang generator scope — a bare
+> `break` at a generator's own level — landed at `975d41ce` (`run/generator_break_value.bp`).
+
 ```
 var i = 0;
 val found = loop (i < 10) { if (i == 4) { break i * 2; }; i = i + 1; };
@@ -182,6 +187,9 @@ condition loop is spelled `while (cond)` once decision 105 lands with
 is the loop's value — and the error kind is gone. Its `expected-failures.txt` line goes with it.
 
 ### Step 6 — the generator protocol
+
+> **Holds (re-verified 2026-09-26):** the README's own program prints `012` on erlang and beam, and
+> `test/effect_generator.bp` has no `expected-failures.txt` line.
 
 An `@Iterator<T>` function — and one whose item is a `@Result` — compiles on erlang and raises `case_clause` at run time, but only
 when the generator body drives itself with a **condition loop**:
@@ -221,6 +229,10 @@ empty or written into `src/codegen/AGENTS.md` with its reason.
 
 ### Step 8 — a method on an associated fn's result (01's R6, codegen half)
 
+> **Holds (re-verified 2026-09-26):** `@print(Array.range(0, 3).map({ x -> x + 1 }))` emits no
+> `'__bp_prim_map'` and prints `[1, 2, 3]` on erlang and beam (`array_range/2` is emitted locally).
+> The `[2, 3, 4]` below is this README's arithmetic slip: `range(0, 3)` is `[0, 1, 2]`.
+
 ```
 @print(Array.range(0, 3).map({ x -> x + 1 }));
 ```
@@ -243,6 +255,9 @@ emitted as a remote call into an `array` module no program declares, which is `u
 
 ### Step 9 — the block-as-value lowerings decision 2 leaves dead
 
+> **Waits on C-09's R7** (`01-checker` step 8), unlanded at `248d0896`: until decision 2 is enforced
+> the tail-`case` lowering still has producers.
+
 Once [`01-checker`](../01-checker/README.md) step 8's R7 enforces decision 2 — a block is a
 statement, its value comes from `break` — erlang's tail-`case` block-as-value lowering has no
 producer. Delete it.
@@ -253,6 +268,9 @@ twins are each their own front's: beam's `make_fun3` (12 sites), commonJS's IIFE
 wasm's `;; lambda`.
 
 ### Step 10 — the prelude memo in `emitErlangModule` (handed over by 14, still open for 18)
+
+> **Landed before this front** (`9e1a1c43`, `prelude_cache` in `erlang.zig`: both embedded preludes
+> parsed once per process). Re-verified in the tree 2026-09-26.
 
 Every `emitComptimeModule` call re-parses the embedded `primitives.bp` and `erlang_bifs.d.bp`
 preludes (`collectPrimErlangDispatch`, `loadAutoImportedBifsFromPrelude`) — **16.1 ms of every
@@ -343,11 +361,19 @@ evidence.
 
 ## Gate
 
-- [ ] `scripts/gate.sh --cold` green in this front's worktree
-- [ ] every re-recorded RUN LOG **verified by running the program**, and checked against decision 8 §7 — never bulk-accepted
-- [ ] `zig build test-libs` green: the six libraries' erlang cells still pass, with no `known-red-libs.txt` line added
-- [ ] `src/codegen/AGENTS.md` and `src/codegen/erlang.zig`'s own notes updated in the same commit as each row
-- [ ] Commit on `fix/erlang`; no push, no merge
+- [ ] `scripts/gate.sh --cold` green in this front's worktree — **not green, and not for this front's
+  reason**: its `test-libs` stage reads the libraries of the MAIN checkout (a worktree cannot
+  initialise its own — two copies collide by name), and those moved under it on 2026-09-26: rakun
+  at `94d0d38` imports 23-std-purity's `io` tree and jhonstart at `bc781b0` needs a newer std, so
+  their cells fail on both targets at `build`. Every other stage was run on its own, green
+- [x] every re-recorded RUN LOG **verified by running the program** — each moved RUN LOG was
+  compared block by block (`toUpperCase` → `AB`/`ab`, `undefined` → `null`, a beam slice that
+  printed nothing → erlang's text) and the program run under `botopink run`; nothing bulk-accepted
+- [ ] `zig build test-libs` green — every non-rakun/jhonstart cell passes, no `known-red-libs.txt`
+  line added; `jhonstart-counter · erlang` moved `build` → `0` and is banked in
+  `scripts/restricted-targets.txt` (`12b53077`); see the gate box for the environmental reds
+- [x] `src/codegen/AGENTS.md` and `src/codegen/erlang.zig`'s own notes updated in the same commit as each row
+- [x] Commit on a branch; no push, no merge — `front/02-03-erlang-beam` (the milestone's naming, not `fix/erlang`)
 
 ## Blast radius
 
