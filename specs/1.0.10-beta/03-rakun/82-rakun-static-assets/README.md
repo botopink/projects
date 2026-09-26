@@ -158,65 +158,65 @@ Defaults mirror `04 § Conteudo Estatico`: `/static/**` → `static/`, `/public/
 `index.html` resolution for a directory request.
 
 **Acceptance:**
-- [ ] A request matching no pattern falls through to the router with nothing changed
-- [ ] Two roots whose patterns overlap resolve in registration order, and the front documents that
-- [ ] `contentTypeOf` covers at minimum html, css, js, mjs, json, svg, png, jpeg, webp, avif, woff2, wasm, txt, xml, ico, map
-- [ ] An unknown extension answers `application/octet-stream`, never a guess
-- [ ] `.css` and `.js` carry `; charset=utf-8`; binary types do not
-- [ ] A directory request with no `indexFile` present answers 404, never a listing — there is no directory-listing mode and no configuration key that adds one
+- [x] A request matching no pattern falls through to the router with nothing changed — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] Two roots whose patterns overlap resolve in registration order, and the front documents that — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] `contentTypeOf` covers at minimum html, css, js, mjs, json, svg, png, jpeg, webp, avif, woff2, wasm, txt, xml, ico, map — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] An unknown extension answers `application/octet-stream`, never a guess — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] `.css` and `.js` carry `; charset=utf-8`; binary types do not — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] A directory request with no `indexFile` present answers 404, never a listing — there is no directory-listing mode and no configuration key that adds one — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
 
 ### Step 2 — Containment
 
 **Acceptance:**
-- [ ] `/static/../../etc/passwd` answers 404 and performs no filesystem call — asserted by a `stat` counter
-- [ ] `/static/%2e%2e%2fsecret` answers 404; a single percent-decode happens, and a doubly-encoded `%252e` answers 400
-- [ ] A path containing a NUL byte answers 400
-- [ ] A symlink inside the root pointing outside it answers 404
-- [ ] A symlink inside the root pointing inside it is served
-- [ ] Every containment failure answers 404 — no case answers 403, and none distinguishes "exists but refused" from "does not exist"
-- [ ] An absolute path in the request (`/static//etc/passwd`) answers 404
+- [x] `/static/../../etc/passwd` answers 404 and performs no filesystem call — asserted by a `stat` counter — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] `/static/%2e%2e%2fsecret` answers 404; a single percent-decode happens, and a doubly-encoded `%252e` answers 400 — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] A path containing a NUL byte answers 400 — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] A symlink inside the root pointing outside it answers 404 — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] A symlink inside the root pointing inside it is served — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] Every containment failure answers 404 — no case answers 403, and none distinguishes "exists but refused" from "does not exist" — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] An absolute path in the request (`/static//etc/passwd`) answers 404 — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
 
 ### Step 3 — Conditional requests
 
 **Acceptance:**
-- [ ] A first request answers 200 with an `ETag`
-- [ ] The same request with `If-None-Match` carrying that ETag answers 304 with no body and no `Content-Length` of the file
-- [ ] A changed file answers 200 with a different ETag
-- [ ] With `useLastModified: true`, `If-Modified-Since` at or after the mtime answers 304
-- [ ] With `useLastModified: false`, no `Last-Modified` is emitted and `If-Modified-Since` is ignored
-- [ ] When both validators are present and disagree, the ETag decides
-- [ ] A 304 carries the same `Cache-Control` and `ETag` the 200 carried
+- [x] A first request answers 200 with an `ETag` — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] The same request with `If-None-Match` carrying that ETag answers 304 with no body and no `Content-Length` of the file — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] A changed file answers 200 with a different ETag — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] With `useLastModified: true`, `If-Modified-Since` at or after the mtime answers 304 — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] With `useLastModified: false`, no `Last-Modified` is emitted and `If-Modified-Since` is ignored — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] When both validators are present and disagree, the ETag decides — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] A 304 carries the same `Cache-Control` and `ETag` the 200 carried — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
 
 ### Step 4 — Ranges and streaming
 
 **Acceptance:**
-- [ ] `Range: bytes=0-99` answers 206 with `Content-Range: bytes 0-99/<size>` and exactly 100 bytes
-- [ ] `Range: bytes=100-` answers the tail
-- [ ] `Range: bytes=-100` answers the last 100 bytes
-- [ ] An unsatisfiable range answers 416 with `Content-Range: bytes */<size>`
-- [ ] A multi-range request answers 200 with the whole file — multipart ranges are not implemented, and the front says so rather than emitting a broken multipart body
-- [ ] `If-Range` with a stale ETag answers 200, not 206
-- [ ] Every root answers `Accept-Ranges: bytes`
-- [ ] Serving a 200 MB file allocates no proportional memory in the VM — asserted by `erlang:memory(total)` before and after
+- [x] `Range: bytes=0-99` answers 206 with `Content-Range: bytes 0-99/<size>` and exactly 100 bytes — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] `Range: bytes=100-` answers the tail — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] `Range: bytes=-100` answers the last 100 bytes — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] An unsatisfiable range answers 416 with `Content-Range: bytes */<size>` — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] A multi-range request answers 200 with the whole file — multipart ranges are not implemented, and the front says so rather than emitting a broken multipart body — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] `If-Range` with a stale ETag answers 200, not 206 — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] Every root answers `Accept-Ranges: bytes` — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] Serving a 200 MB file allocates no proportional memory in the VM — asserted by `erlang:memory(total)` before and after — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
 
 ### Step 5 — Cache policy and fingerprints
 
 **Acceptance:**
-- [ ] `immutable: true` emits `public, max-age=<cacheSeconds>, immutable`
-- [ ] `immutable: false` with `cacheSeconds: 0` emits `no-cache`
-- [ ] `fingerprint("app.css")` is stable for identical content and differs for one changed byte
-- [ ] A fingerprinted request for a file whose content no longer matches its name answers 404, not a stale file
-- [ ] The dev property default from front 80 sets `cacheSeconds` to 0 for every root under a dev profile
+- [x] `immutable: true` emits `public, max-age=<cacheSeconds>, immutable` — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] `immutable: false` with `cacheSeconds: 0` emits `no-cache` — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] `fingerprint("app.css")` is stable for identical content and differs for one changed byte — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] A fingerprinted request for a file whose content no longer matches its name answers 404, not a stale file — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [ ] The dev property default from front 80 sets `cacheSeconds` to 0 for every root under a dev profile — open: the entry honours `rakun.web.resources.cache.period` (0 → `no-cache` on every root, `static_test.bp`); the dev-profile default that sets it is front 80's
 
 ### Step 6 — Encoding negotiation
 
 **Acceptance:**
-- [ ] With `precompressed: true` and `app.css.br` present, `Accept-Encoding: br` answers the `.br` file with `Content-Encoding: br` and the *uncompressed* file's content type
-- [ ] With only `.gz` present and `Accept-Encoding: br, gzip`, the `.gz` is served
-- [ ] With neither variant present, the plain file is served with no `Content-Encoding`
-- [ ] Every response from a negotiating root carries `Vary: Accept-Encoding`, including the ones that did not compress
-- [ ] A variant whose mtime is older than the original is ignored and the original is served — a stale pre-compressed file is a wrong answer, not a fast one
-- [ ] `Accept-Encoding: br;q=0` does not select the `.br` variant
+- [x] With `precompressed: true` and `app.css.br` present, `Accept-Encoding: br` answers the `.br` file with `Content-Encoding: br` and the *uncompressed* file's content type — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] With only `.gz` present and `Accept-Encoding: br, gzip`, the `.gz` is served — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] With neither variant present, the plain file is served with no `Content-Encoding` — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] Every response from a negotiating root carries `Vary: Accept-Encoding`, including the ones that did not compress — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] A variant whose mtime is older than the original is ignored and the original is served — a stale pre-compressed file is a wrong answer, not a fast one — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] `Accept-Encoding: br;q=0` does not select the `.br` variant — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
 
 ## Examples
 
@@ -254,17 +254,17 @@ consumes these URLs rather than implementing them.
 
 ## Definition of done
 
-- [ ] `modules/rakun-web/src/static/` exists and registers one filter in front 07's chain
-- [ ] Traversal, encoded traversal and symlink escape all answer 404 without a filesystem call
-- [ ] ETag-based conditional requests answer 304, and `Last-Modified` is off by default for a
-      reproducible build
-- [ ] Ranges answer 206/416 correctly and a large file is streamed without a proportional allocation
-- [ ] Fingerprinted assets are `immutable`, unfingerprinted ones are `no-cache`
-- [ ] Pre-compressed variants are negotiated and every negotiating response carries `Vary`
-- [ ] No botopink value in this module ever holds a file body
+- [x] `modules/rakun-web/src/static/` exists and registers one filter in front 07's chain — `src/static.bp` (one file, not a directory), entry `static` at +150
+- [ ] Traversal, encoded traversal and symlink escape all answer 404 without a filesystem call — traversal and encoded traversal: 404 with `rkStaticFsCalls()` unchanged (`static_test.bp`); a symlink escape is 404 but is found by resolving the link, which is a filesystem call by nature — open as worded
+- [x] ETag-based conditional requests answer 304, and `Last-Modified` is off by default for a
+      reproducible build — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] Ranges answer 206/416 correctly and a large file is streamed without a proportional allocation — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] Fingerprinted assets are `immutable`, unfingerprinted ones are `no-cache` — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] Pre-compressed variants are negotiated and every negotiating response carries `Vary` — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
+- [x] No botopink value in this module ever holds a file body — `modules/rakun-web/test/static_test.bp`, rakun `3521aff`
 - [ ] onze front 69's roots are served through `registerStaticRoot` with no second content-type table,
       ETag rule or traversal guard anywhere under `repository/` (`grep -rn "fn contentTypeOf"
-      --include=*.bp repository/` finds only `modules/rakun-web/src/static/`)
-- [ ] `repository/rakun/AGENTS.md` documents the resolution order and why containment precedes `stat`
-- [ ] The front's tests are green on its assigned target
+      --include=*.bp repository/` finds only `modules/rakun-web/src/static/`) — the grep holds today (`src/static.bp:232` is the only one); onze registering its roots through `registerStaticRoot` is onze's half
+- [x] `repository/rakun/AGENTS.md` documents the resolution order and why containment precedes `stat` — § Static files
+- [x] The front's tests are green on its assigned target — rakun-web 209 / 0 on erlang
 
