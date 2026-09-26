@@ -83,8 +83,8 @@ pointing at the `00` item that owns it, and works around it.
 ## What this milestone delivers, in the order the plan gave it
 
 1. **The base and `std` (blocking).** The old `onze` mocking library is retired and 100 % of its
-   assertions live in `libs/std/src/asserts.bp`; `onze13` is renamed `onze`; `import {asserts} from
-   "std"` has at least the ten functions named above; `@src()` exists; snapshots have one engine and
+   assertions live in `libs/std/src/testing/asserts.bp`; `onze13` is renamed `onze`; `import
+   {testing.asserts} from "std"` has at least the ten functions named above; `@src()` exists; snapshots have one engine and
    one path rule.
 2. **Modules and submodules (structural).** Every library is `modules/**` (core, `<lib>-test`, the
    domain submodules its `modules.md` argues for) and `examples/**` (runnable `.bp` projects). The

@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e). Every other question this milestone raised is answered in
+**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e) and three of `00 · 23-std-purity` (23-a…c). Every other question this milestone raised is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 91, 92, 93 and 97 by decisions 103 and 104, 99 by 108,
 94, 100 and 101 by 113; every number up to 117 is answered — 114 answers the eight seams decision 113 left open, 115 the five points 114 left open, 116 nine more pieces two libraries both run, 117 the nine points 113–116 left, and 118–127 register the maintainer's effect revision (the return type is the annotation, `@Task<T>`, only `@Result` fails, `@Iterator<T>` / `@Stream<T>`, `async { }`, `iter` / `stream` loops, no compatibility mode — front `00 · 24-effects-by-return`), and 128 merges `@Use<C, T>` and `@Component<T>` into `@Component<C, T>`. The next free number is **130**.
 
@@ -236,6 +236,57 @@ maintainer confirms or reverses each.
 > writer can never produce a disagreeing pair, so one that arrives was not written by it.
 > **Options.** (a) refuse it (implemented, decision 67); (b) read `n` and ignore `redirect`.
 > **Recommendation.** (a).
+> **Blocks.** Nothing.
+
+## Front 23 (`00 · 23-std-purity`) — choices made in implementation, to confirm
+
+Decided by the implementation of steps 3 and 5 (worktree `.tasks/23-std-purity`, 2026-09-26) so the
+tree could land; the maintainer confirms or reverses each.
+
+### 23-a · A `collections` constructor is reached through its type leaf, not the module namespace
+
+> **Raised by:** `00 · 23-std-purity` step 3, 2026-09-26
+> **Measured.** Decision 111's `Dict.empty()` compiles and runs on commonJS, erlang, beam and wasm
+> when `Dict` is imported as a leaf (`import {collections.Dict}` / `collections: {Dict, Set}`).
+> After `import {collections} from "std"`, `collections.Dict.empty()` is `unbound variable
+> 'collections'` on every target — the checker has no `module.Type.fn()` path; `collections.toInt(…)`
+> (a module function) resolves. Every importer written by the sweep (routing, rakun, the compiler's
+> tests and cells, `examples/stdlib-tour`) uses the leaf form.
+> **Options.** (a) the leaf form is the spelling (implemented; decision 111's own example imports
+> `collections: {Dict, Set, Queue}`); (b) teach the checker and the four codegens
+> `module.Type.fn()` — the same use-side path decision 110's folder namespace needs.
+> **Recommendation.** (a) now, (b) with decision 110 (23 step 6, open): one change covers both.
+> **Blocks.** Nothing.
+
+### 23-b · `base64`'s four functions are retired, not aliased
+
+> **Raised by:** `00 · 23-std-purity` step 3, 2026-09-26
+> **Measured.** `base64.decode` answered a `string`; its replacement `encoding.base64Decode` answers
+> `@Result<string, string>` (front 01 validates before `Buffer.from` truncates), and
+> `decodeUrlSafe` → `base64UrlDecode` likewise. No library imported `base64`. `base64.bp` is deleted
+> and its four tests are re-spelled over `encoding`'s names at the foot of `encoding.bp` (so std
+> stays at 417 tests).
+> **Options.** (a) retire the four (implemented — decision 106 and `01-std/modules.md` name the
+> replacements); (b) keep `encode`/`decode`/`encodeUrlSafe`/`decodeUrlSafe` in `encoding` as
+> string-returning aliases.
+> **Recommendation.** (a): two spellings of one codec, one of which hides the refusal, is what front
+> 01 removed.
+> **Blocks.** Nothing.
+
+### 23-c · Two `botopink test` fixes for a project whose own modules sit in a folder
+
+> **Raised by:** `00 · 23-std-purity` step 3, 2026-09-26
+> **Measured.** `botopink test` in `libs/std` after the move: on commonJS every module refused with
+> `module 'io/random' requires "./sidecars/random.mjs", but its library 'io' resolves to no package
+> directory` (`shipMjsSidecars` reads any `a/b` module name as dependency `a`'s); on erlang twelve
+> tests died `{error,undef}` — `test_cmd` wrote a module's type units (`std@io@net@@Socket`) at the
+> root of the run, and the runner of `io/net` loads only its own directory and below. A two-module
+> scratch (`src/top.bp`, `src/io/rec.bp`, one record each) reproduces the second on any project.
+> **Options.** (a) fix both in the CLI (implemented, compiler-cli carve-out: a module whose source
+> is in the project's own `src` is the project's; units are written beside the module that declares
+> them); (b) keep std flat on disk and nest only the registry keys.
+> **Recommendation.** (a). The rules are general — any library with a folder module had both
+> defects — and neither touches compiler-core or a snapshot.
 > **Blocks.** Nothing.
 
 ## Open

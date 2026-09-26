@@ -213,11 +213,11 @@ and the sub-fronts'. It creates `io/` and `testing/` with their `mod.bp`, merges
 root-does-not-import-`io/` check, and lands the import grammar of decision 107.
 
 **Acceptance:**
-- [ ] `libs/std/src/` matches `modules.md` § *The tree* file for file; `root.bp` has seventeen lines, `io/mod.bp` eight, `testing/mod.bp` three
-- [ ] `import {testing: {asserts, snapshots, mocks}} from "std";` resolves from a consumer package and only the three leaves enter scope
-- [ ] a root module that imports from `io/` is refused by the compiler, inside std, with no flag
-- [ ] every `from "std"` line in `repository/{rakun,jhonstart,emilia,erika,onze}` is rewritten per `modules.md` § *Old → new*; `zig build test-libs` green
-- [ ] every std inline test is green at its new path on commonJS and erlang
+- [x] `libs/std/src/` matches `modules.md` § *The tree* file for file; `root.bp` has seventeen lines, `io/mod.bp` eight, `testing/mod.bp` three
+- [x] `import {testing: {asserts, snapshots, mocks}} from "std";` resolves from a consumer package and only the three leaves enter scope
+- [x] a root module that imports from `io/` is refused by the compiler, inside std, with no flag (`std-root-imports-io`, `00 · 23-std-purity` step 4)
+- [x] every `from "std"` line in `repository/{rakun,jhonstart,emilia,erika,onze}` is rewritten per `modules.md` § *Old → new*; `zig build test-libs` green — rakun's eight source files and eleven test files; jhonstart, emilia, erika and onze import nothing from std (three comments re-spelled)
+- [x] every std inline test is green at its new path on commonJS and erlang — 417 / 0 on each
 
 ### Step 8 — `04-routing-lib`: the bundled `routing` library
 
