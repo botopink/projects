@@ -4,7 +4,7 @@
 front 24's (24-a…c, 24-f…g), `01-std`'s (01std-a, 01std-c…e), `00 · 23-std-purity`'s (23-a…c), front 95's
 (95-a…e), `00 · 16-formatter`'s (16-a…b), track C's (26-a, 27-a, 30-b…e, 31-a), `00 · 04-js` /
 `05-wasm`'s (0405-b), `00 · 01-checker`'s (01c-a…b),
-track D's (05emilia-a…h) and the host methods' (lem-a…f). Every question raised so far is answered in
+track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a) and the host methods' (lem-a…f). Every question raised so far is answered in
 [`decisions-taken.md`](./decisions-taken.md); the next free number is **143**.
 
 This file stays because the fronts will fill it again. A front that meets a question it cannot answer
@@ -669,3 +669,138 @@ owner-bound host functions moved into their types); the maintainer confirms or r
 > **Recommendation.** (a): (b) makes a template name an emitted class, and `docs.md` already
 > promised the adoption on every backend. beam still adopts no host map (`external_host_record`'s
 > `.targets`) — a `03-beam` row.
+
+## Track E (onze) — choices made in implementation, to confirm
+
+Decided by the implementation of the `06-onze` fronts so they could land; the maintainer confirms or
+reverses each.
+
+### 49-a · The core's suites render through the core's own `describe*`; `onze-test` wraps them
+
+> **Raised by:** `06-onze/49-onze-stand-up` test plan, 2026-09-26
+> **Measured.** `test-snap.md` writes the core's suites as `import {assertConfig, …} from
+> "onze-test"`, and front 49's test plan says the core's `test/` imports only std. `onze-test`
+> depends on `onze`, and a manifest has no dev-dependencies, so the core cannot import it.
+> **Options.** (a) the core owns `describeConfig` / `describeAliases` / `describeAppFiles` /
+> `describePublicEnv` (the text `onze info` prints too); the core's suites call std's
+> `snapshots.assertAs` over them, and `onze-test`'s `assert<Subject>` helpers are thin wrappers
+> with their own suite — implemented; (b) move the core's snapshot suites into `onze-test/test/`.
+> **Recommendation.** (a): one rendering, the snapshot paths `test-snap.md` names, and the
+> std-only rule holds for `config_test` / `types_test`. The snapshot slugs are std's
+> (`snapshots.slugOf`: `_` separators), not the `-` `test-snap.md` spells.
+> **Blocks.** Nothing.
+
+### 49-b · The boot's rakun half is data and adapters until rakun 23 / 04 / 82 land
+
+> **Raised by:** `06-onze/49-onze-stand-up` step 4, 2026-09-26
+> **Measured.** At rakun `2a01ea5` there is no `ChunkWriter`, `PageRenderer`, `page(pattern,
+> render)` or `registerStaticRoot`; `modules/rakun` is `["commonJS"]` and `rakun-web` `["erlang"]`,
+> so a both-target member cannot import them together.
+> **Options.** (a) `integration.bp` imports jhonstart, `jhonstart-forms` and the bridge now and
+> hands rakun `rakunEntries(config, i18nExclude)` (the five `rakun.*` keys as pairs) and
+> `responseOver(setStatus, setHeader, write, close)`; `Onze.run` lands with rakun's pieces —
+> implemented; (b) write `Onze.run` against rakun's commonJS core now and make the core
+> commonJS-only.
+> **Recommendation.** (a): the jhonstart half is exercised on both rows today (a render through
+> the bridge, a 307 through the writer), and (b) would pin the core to the row rakun is leaving.
+> The core's `integration_test.bp` imports jhonstart and emilia — the one suite of the core that
+> is not std-only, because the boot is the seam it tests.
+> **Blocks.** Step 4's `Onze.run` boxes; rakun owes front 23 step 1, 04 and 82.
+
+### 49-c · `onze.json` refuses an unknown key; the config table has every field
+
+> **Raised by:** `06-onze/49-onze-stand-up` step 2, 2026-09-26
+> **Measured.** The README lists the fields but not what a key outside them does.
+> **Options.** (a) an unknown key, a duplicate, a value of the wrong kind, a fractional or
+> out-of-range port (`1..65535`) and a non-string `allowedRedirects` entry are each an `Error`
+> naming the key — implemented; (b) ignore unknown keys.
+> **Recommendation.** (a) (decision 67: a misspelt `"prot"` must not silently leave port 3000).
+> `describeConfig` prints `actionsBodyLimit` and `allowedRedirects` rows beside the eight
+> `test-snap.md` shows (decision 117 added the two fields after the map was written).
+> **Blocks.** Nothing.
+
+### 49-d · `chainFor` takes the ancestor patterns; onze imports nothing from `routing`
+
+> **Raised by:** `06-onze/49-onze-stand-up` step 4, 2026-09-26
+> **Measured.** jhonstart builds its client chain with `routing`'s `ancestorPatterns`; step 4 says
+> the boot imports nothing from `routing`.
+> **Options.** (a) `chainFor(patterns)` maps `segmentFor` over the patterns rakun's layout chain
+> names for the matched route — implemented; (b) import `ancestorPatterns`.
+> **Recommendation.** (a): rakun matched the route and knows its chain; onze does not derive it
+> twice.
+> **Blocks.** Nothing.
+
+### 52-a · The font-metrics table is transcribed, and its generator is owed
+
+> **Raised by:** `06-onze/52-onze-font` step 2, 2026-09-26
+> **Measured.** Generating the table needs each family's font files (a network fetch) and a binary
+> reader (`fontTools`); neither is available to this thread.
+> **Options.** (a) commit five transcribed rows (Arial, Times New Roman, Inter, Roboto,
+> Merriweather) with their provenance in the file header and the generator owed — implemented;
+> (b) commit no table, so every Google family with `adjustFontFallback: true` is refused.
+> **Recommendation.** (a), with the rows re-derived by the generator before a release; the
+> formula tests pin the arithmetic independently of the rows.
+> **Blocks.** Step 2's "the script that generated it" box.
+
+### 53-a · The blog's sources sit under `src/`
+
+> **Raised by:** `06-onze/53-onze-example-app` step 1, 2026-09-26
+> **Measured.** A package whose `"src"` is `"."` cannot reach a nested module (finding F5 of front
+> 53: `lib/mod.bp` + `lib/db.bp` under `"src": "."` answer `unbound variable`; the same tree under
+> `"src": "src/"` imports as `from "lib.db"`).
+> **Options.** (a) `src/app/`, `src/components/`, `src/lib/` with `onze.json`'s `appDir:
+> "src/app"` — Next's own `src/` layout — implemented; (b) keep the root layout and wait for the
+> compiler.
+> **Recommendation.** (a): the acceptance script's rows read `src/<path>`; nothing else changes.
+> **Blocks.** Nothing.
+
+### 68-a · A manifest field escapes four characters, not the whole value
+
+> **Raised by:** `06-onze/68-onze-client-bundle` step 5, 2026-09-26
+> **Measured.** std's `encoding.percentEncode` escapes `/`, `:` and `[`, so every URL and route
+> pattern in the manifest became unreadable (`%2F_onze%2Fstatic…`), while the README's own
+> example keeps URLs raw.
+> **Options.** (a) escape `%`, `|`, LF and CR only (`%25`, `%7C`, `%0A`, `%0D`) and read back with
+> `percentDecode` — implemented; (b) `percentEncode` every field.
+> **Recommendation.** (a): the rule the format needs is "no `|` and no newline inside a field",
+> and (a) is exactly that, round-trip asserted on both targets.
+> **Blocks.** Nothing.
+
+### 68-b · The emilia rules without `styleRule`: token text in the `styleMap`, an ASCII-only refusal
+
+> **Raised by:** `06-onze/68-onze-client-bundle` step 3, 2026-09-26
+> **Measured.** emilia front 56's `styleRule(tokens, th)` is not in `repository/emilia` at
+> `4cac151`; a token list read from source text cannot be evaluated without it.
+> **Options.** (a) the `styleMap` records the literal token text per call site, and the
+> hash-parity rule is the static one — a non-ASCII token list is `emilia-hash-split` (std's two
+> `contentHash` cells differ only above U+FFFF, and contract 4 clause 3 makes rule text ASCII) —
+> implemented; (b) wait for front 56.
+> **Recommendation.** (a) now; when `styleRule` lands the build generates a program over the
+> recorded token texts and records the class and body, and the runtime `s` check follows.
+> **Blocks.** Step 3's `styleRule` half, step 6's `s` box.
+
+### 68-c · Island starters decode `#[clientProps]` from source into `__jhIslandStarters`
+
+> **Raised by:** `06-onze/68-onze-client-bundle` step 6, 2026-09-26
+> **Measured.** jhonstart's `hydrate()` starts `globalThis.__jhIslandStarters[component](el,
+> props)`; `@Decl` has no parameters, so no decorator can build a props decoder.
+> **Options.** (a) the generator reads `#[client] pub fn Name(props: T)` and `T`'s fields from the
+> source, generates `startName(raw, commit)` decoding the four whitelisted types, and registers it
+> through a generated host cell writing `__jhIslandStarters` — implemented; (b) jhonstart grows a
+> starter API.
+> **Recommendation.** (a), with jhonstart asked for a registry-owned name for the table so the
+> entry writes no `__` name by hand. The document/payload check is generated into the entry as
+> the twin of the bundler's `islandMismatches` (asserted equal), because the entry imports nothing
+> of onze.
+> **Blocks.** The "no hand-written `__` name" box.
+
+### 69-a · The static roots are onze's `AssetRoot` until rakun-web front 82 lands `StaticRoot`
+
+> **Raised by:** `06-onze/69-onze-styling-pipeline` step 3, 2026-09-26
+> **Measured.** `grep -rn "StaticRoot\|registerStaticRoot" repository/rakun` is empty at `2a01ea5`.
+> **Options.** (a) `AssetRoot(pattern, directory, immutable, cacheSeconds)` in `onze-assets`, the
+> README's four fields, replaced by an import of front 82's record when it exists — implemented;
+> (b) wait.
+> **Recommendation.** (a); the swap is one import and one type name. A CSS module's generated
+> accessors are `pub fn` rather than `pub val` for the same reason as 49's constants (finding F1).
+> **Blocks.** Step 3's registration box; rakun owes front 82.

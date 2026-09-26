@@ -152,12 +152,12 @@ pub fn generateStyleModuleSource(m: StyleModule) -> string
 ```
 
 **Acceptance:**
-- [ ] Two files each defining `.container` produce two different scoped names
-- [ ] The same file produces the same scoped names on a second build
-- [ ] Every name in the generated `.bp` module appears in the rewritten CSS, and vice versa —
+- [x] Two files each defining `.container` produce two different scoped names
+- [x] The same file produces the same scoped names on a second build
+- [x] Every name in the generated `.bp` module appears in the rewritten CSS, and vice versa —
       asserted as a set comparison, since that pair is the whole contract
-- [ ] A class used but not defined is left unscoped and reported once
-- [ ] The generated module compiles: `botopink build` over `<outDir>/styles/` succeeds
+- [x] A class used but not defined is left unscoped and reported once
+- [x] The generated module compiles: `botopink build` over `<outDir>/styles/` succeeds
 
 ### Step 2 — Global CSS, fingerprinting, and the manifest records
 
@@ -167,11 +167,11 @@ pub fn styleRecords(buildId: string, sheetHash: string, bytes: i32) -> Array<str
 ```
 
 **Acceptance:**
-- [ ] Global CSS precedes module CSS in the emitted file — the cascade depends on it
-- [ ] The emitted URL contains the sheet's own content hash
-- [ ] An unchanged app produces an unchanged sheet hash across two builds
-- [ ] `styleRecords` returns `Y|…` lines front 68's `parseManifest` reads back unchanged
-- [ ] This front's source contains no edit to `manifest.bp` — checked by ownership, stated here
+- [x] Global CSS precedes module CSS in the emitted file — the cascade depends on it
+- [x] The emitted URL contains the sheet's own content hash
+- [x] An unchanged app produces an unchanged sheet hash across two builds
+- [x] `styleRecords` returns `Y|…` lines front 68's `parseManifest` reads back unchanged
+- [x] This front's source contains no edit to `manifest.bp` — checked by ownership, stated here
 
 ### Step 3 — The static roots onze hands front 82
 
@@ -186,14 +186,14 @@ no content-type table, no path resolver, no conditional-request handling and no 
 those are front 82's (decision 116 rule 6).
 
 **Acceptance:**
-- [ ] `staticRoots("public", ".onze", "b7f2a1")` returns exactly two records, and a test asserts the
+- [x] `staticRoots("public", ".onze", "b7f2a1")` returns exactly two records, and a test asserts the
       count — the list is the rule, not a comment describing one
-- [ ] the fingerprinted record is `/_onze/static/b7f2a1/**` → `.onze/static/b7f2a1/`, `immutable:
+- [x] the fingerprinted record is `/_onze/static/b7f2a1/**` → `.onze/static/b7f2a1/`, `immutable:
       true`, `cacheSeconds: 31536000`; the other is `/**` → `public`, `immutable: false`,
       `cacheSeconds: 0`
-- [ ] No config field, manifest record or call adds a third root — asserted by building the list
+- [x] No config field, manifest record or call adds a third root — asserted by building the list
       with every config field set adversarially and still getting two
-- [ ] `grep -rn "fn contentTypeOf\|fn resolveAsset" repository/onze` is empty — the table and the
+- [x] `grep -rn "fn contentTypeOf\|fn resolveAsset" repository/onze` is empty — the table and the
       resolver are front 82's
 
 ### Step 4 — The preprocessor hook
@@ -203,10 +203,10 @@ pub fn preprocess(command: string, inputPath: string) -> @Task<string>
 ```
 
 **Acceptance:**
-- [ ] With no command configured the file's own text is returned unchanged
-- [ ] With a command configured its stdout is returned
-- [ ] A missing command fails the build naming the command — no silent fallback
-- [ ] A command exiting non-zero fails the build with its stderr attached
+- [x] With no command configured the file's own text is returned unchanged
+- [x] With a command configured its stdout is returned
+- [x] A missing command fails the build naming the command — no silent fallback
+- [x] A command exiting non-zero fails the build with its stderr attached
 
 ## Examples
 
@@ -236,19 +236,34 @@ the two targets must agree is the manifest, and that round trip is front 68's `m
 which runs on both. `stylesheet_test.bp` asserts only that the records this front emits are readable
 by that parser.
 
+## Where it stands
+
+Implemented: `modules/onze-assets/src/`
+`style_module`, `stylesheet`, `assets`, `preprocess` and `head` (`pageRenderHooks`: the stylesheet
+links, then front 68's head scripts, and the body tags), 12 tests on erlang **and** commonJS (the
+functions are pure or go through std's `process` / `fs`, which answer on both rows). The gate test
+walks every `modules/*/src/*.bp` and finds no `flush()` call and no sink.
+
+`onze build` generates the accessors into the staged tree as `styles.<file>` and compiles them
+(front 50's `build_test`). Open: the two roots **registered** with rakun-web
+front 82, whose `StaticRoot` / `registerStaticRoot` do not exist in rakun today: the roots are
+onze's `AssetRoot(pattern, directory, immutable, cacheSeconds)`, field for field what the README
+gives front 82's record, and the boot registers them when front 82 lands (69-a). The generated
+module's accessors are `pub fn`, not the README's `pub val` (front 49's finding F1).
+
 ## Definition of done
 
-- [ ] `repository/onze/modules/onze-assets/` exists with `botopink.json`, `src/root.bp`,
+- [x] `repository/onze/modules/onze-assets/` exists with `botopink.json`, `src/root.bp`,
       `src/style_module.bp`, `src/stylesheet.bp`, `src/assets.bp`
-- [ ] Nothing under `repository/onze/` calls `emilia.flush()` or defines a style sink — asserted by
+- [x] Nothing under `repository/onze/` calls `emilia.flush()` or defines a style sink — asserted by
       a grep in the front's own gate; the flush moments are jhonstart front 30's and the adaptation
       is the `jhonstart-emilia` bridge's (decision 113)
 - [ ] Exactly two static roots are registered with rakun-web front 82, `public/` and
       `/_onze/static/<buildId>/`, with no configuration path to a third; `repository/onze/docs.md` states it, because front 53 depends
       on its `content/` directory being unreachable
-- [ ] The `Y` records this front emits are read back unchanged by front 68's `parseManifest`
-- [ ] `repository/onze/docs.md` states that emilia's block is written by jhonstart's render
+- [x] The `Y` records this front emits are read back unchanged by front 68's `parseManifest`
+- [x] `repository/onze/docs.md` states that emilia's block is written by jhonstart's render
       through the `jhonstart-emilia` plugin that front 49 registers, and points at jhonstart front 30
       for the ordering rule — onze restates none of it
-- [ ] The front's tests are green on its assigned target — `erlang`
+- [x] The front's tests are green on its assigned target — `erlang`
 

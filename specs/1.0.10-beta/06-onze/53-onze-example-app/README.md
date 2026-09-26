@@ -165,12 +165,12 @@ needs a front beyond 49 and std, so it can be written and tested first, and it i
 stands on.
 
 **Acceptance:**
-- [ ] `listPosts()` returns the three seeded posts, sorted by publication date descending
-- [ ] `readPost("missing")` reds with a message naming the slug
-- [ ] `writePost` then `listPosts` shows four
-- [ ] `tags.bp` renders `<nav>`, `<article>`, `<h2>`, `<a>`, `<form>`, `<label>`, `<input>`,
+- [x] `listPosts()` returns the three seeded posts, sorted by publication date descending
+- [x] `readPost("missing")` reds with a message naming the slug
+- [x] `writePost` then `listPosts` shows four
+- [x] `tags.bp` renders `<nav>`, `<article>`, `<h2>`, `<a>`, `<form>`, `<label>`, `<input>`,
       `<button>`, `<time>` — the nine tags the app needs and jhonstart does not have
-- [ ] The alias `@/lib.db` resolves from `app/blog/[slug]/page.bp`
+- [x] The alias `@/lib.db` resolves from `app/blog/[slug]/page.bp`
 
 ### Step 2 — The read path
 
@@ -179,12 +179,12 @@ stands on.
 `components/nav.bp`.
 
 **Acceptance:**
-- [ ] `/` renders with the hero image, the nav and one `<style>` block
-- [ ] `/blog` lists three posts, each in a `PostCard` carrying one emilia class
+- [x] `/` renders with the hero image, the nav and one `<style>` block
+- [x] `/blog` lists three posts, each in a `PostCard` carrying one emilia class
 - [ ] `/blog/hello-world` renders that post's title and body
 - [ ] `/about` renders — the route group does not appear in the URL
-- [ ] The document has exactly one `<style>` element and it is non-empty
-- [ ] Two consecutive requests both have a non-empty `<style>` — which is the test that catches a
+- [x] The document has exactly one `<style>` element and it is non-empty
+- [x] Two consecutive requests both have a non-empty `<style>` — which is the test that catches a
       sheet flushed once per process instead of once per request
 
 ### Step 3 — Static generation and metadata
@@ -404,6 +404,37 @@ is what serves.
 contains `like_button` and does not contain `db`, and the document references it. Whether a click
 increments a counter needs a browser, and the milestone has no browser harness; the README says so
 rather than claiming hydration is tested.
+
+## Where it stands
+
+Step 1 implemented: `examples/blog/` with `botopink.json` (the
+alias map), `onze.json`, three seed posts, `src/lib/db.bp` and `test/{db,tags}_test.bp` — 7 tests
+on commonJS and erlang, and the example builds under the workspace's examples gate. The app's
+sources sit under `src/` (`src/app/`, `src/components/`, `src/lib/`; `onze.json`'s `appDir` is
+`"src/app"`, Next's `src/` layout): **finding F5** — a package whose `"src"` is `"."` is not
+honoured: `botopink check` answers `no source files found in src/ or test/`, and a test file cannot
+import a nested module (`import {one} from "lib.db"` → `unbound variable`, where the same tree
+under `"src": "src/"` works; a source module importing `lib.db` does compile). Minimal repro:
+`botopink.json` `{ "name": "p", "src": ".", "entry": "root.bp", "files": ["root.bp"] }`,
+`root.bp` `pub mod lib;`, `lib/mod.bp` `pub mod db;`, `lib/db.bp` `pub fn one() -> i32 { return
+1; }`, `test/a_test.bp` `import {one} from "lib.db"; test "p: x" { assert one() == 1; }`. `components/tags.bp` is not written: front 94's elements are
+jhonstart's, and the step-1 box is asserted on them (through the render's `renderNode`, the one
+that knows the void elements). The `@/lib.db` box is open: the app's map resolves it
+(`tags_test.bp`), but resolving it *from* `app/blog/[slug]/page.bp` is front 50's staging.
+
+Step 2: the root and blog layouts, `/`, `/blog`, `/blog/[slug]`, `/about`
+under `(marketing)`, `components/nav.bp` (front 27's `Link`) and `components/post_card.bp` (one
+emilia class). `test/render_test.bp` renders `/` and `/blog` **in process** through onze's
+`bootSite` (the jhonstart-emilia bridge registered, the chain from jhonstart's UI registry) on both
+rows — 10 blog tests in all. `/blog/[slug]` and `/about` live in directories no `mod` path reaches,
+so they are compiled by `onze build` (which builds the whole tree, the alias `@/lib.db` in the
+`[slug]` page rewritten by the staging) but not rendered by a test yet — their two boxes stay
+open. On erlang an imported module's decorator registrations only run through onze's
+`loadModuleBodies` (front 49's finding F10).
+
+Steps 3–7 wait on rakun (serving, prerender — front 60 —, the middleware, the actions, the cache)
+and on `Onze.run`. The rakun-cache member holds no
+cache surface yet, so `lib/db.bp` reads directly; its `readCount()` is the counter step 3 asserts.
 
 ## Definition of done
 
