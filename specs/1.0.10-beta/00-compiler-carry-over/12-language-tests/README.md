@@ -1,306 +1,175 @@
 # Front 12 — language tests
 
+**State:** closed (C-16) — steps 1, 4 (items 1–4) and 5 delivered; step 2 is continuous, step 3's
+last box waits on beam joining `--target all`, and step 4's item 5 is owed.
 **Priority:** high — this is the only suite that asserts what a botopink **program does**, on more
-than one backend, rather than what the compiler emits. Every unowned row the last two milestones
-carried was found by a library failing, not by a test; the cells written since are how that stops.
-**Depends on:** nothing to write a cell. Step 2's re-classification needs
-[`01-checker`](../01-checker/README.md) and the four backend fronts to have landed *something* — it is
-run after each landing, not once
-**Owns:** `repository/botopink-lang/tests/language/**` — the cells, their `.out`/`.expect` files,
-`expected-failures.txt`, `run.sh` and `AGENTS.md`
+than one backend, rather than what the compiler emits
+**Owns:** `repository/botopink-lang/tests/language/**` — the cells, their `.out`/`.expect`/`.exit`
+files, `expected-failures.txt`, `run.sh` and `AGENTS.md`
 **Does not touch:** any compiler source, `libs/std/**`, `examples/**`, any snapshot directory,
-`build.zig`, `scripts/**` — except step 3, which needs one `run.sh` change and, if the maintainer
-takes option A, one line in `scripts/gate.sh`. A cell that fails is recorded as an expected failure
-naming the front that owns the fix, **never** fixed here.
-
-Measured at `botopink-lang` `c2dd780`, 2026-09-18, node v25.8.0, OTP 29.
+`build.zig`, `scripts/**`. A cell that fails is recorded as an expected failure naming the front that
+owns the fix, **never** fixed here.
 
 ---
 
-## Current state
+## The suite today
 
-```
-$ zig build test-language
-language tests: 205 passed, 54 expected failures, 0 failed
-```
-
-| Kind | `.bp` cells | Runs on |
+| Kind | What a cell is | Runs on |
 |---|---|---|
-| `test/` — `test "…" { assert … }` blocks | 40 | commonJS, erlang |
-| `run/` — a whole program, stdout is the assertion | 6 | commonJS, erlang, wasm |
-| `reject/` — must not compile | 22 | once (`check` is target-independent) |
-| `modules/` — a whole project with its own `botopink.json` | 3 | commonJS, erlang, wasm |
-| **total** | **71** cells, 75 `.bp` files | |
+| `test/` | `test "…" { assert … }` blocks | commonJS, erlang (`botopink test` refuses beam and wasm) |
+| `run/` | a whole program; stdout (and, with a `.exit`, the exit status) is the assertion | commonJS, erlang, wasm; beam with `--target beam` |
+| `reject/` | must not compile; `.expect` names the code and the location | once (`check` is target-independent) |
+| `modules/` | a whole project with its own `botopink.json`, a local dependency included | commonJS, erlang, wasm; beam with `--target beam` |
 
-`tests/language/AGENTS.md` is the layout and the rules; it is this front's file and is **stale in one
-place**: its status table records "**196 results pass and 61 are expected failures**", classified in
-the front-17 worktree on top of `26d4fdc`. The suite is 205/54 at `c2dd780` — seven
-`expected-failures.txt` lines were deleted by the checker landings and nine more results now pass.
-
-## Problem
-
-### P1 — every owner row in `expected-failures.txt` names a milestone that no longer exists
-
-All 54 lines cite 1.0.4-beta front numbers. The runner enforces that a line names an owner
-(`AGENTS.md`: "The owner row must exist in the specs … **A cell whose owner is nobody is reported to
-the maintainer, not listed against an invented row**"), so a stale owner is a broken contract, not a
-cosmetic.
-
-Counted at `c2dd780`:
-
-| Cited owner | Lines | Is now |
-|---|---|---|
-| `01 step 6` | 21 | split by target: **erlang 12** → [`02-erlang`](../02-erlang/README.md) · **commonJS 5** → [`04-js`](../04-js/README.md) · **wasm 4** → [`05-wasm`](../05-wasm/README.md) |
-| `06 N22` (alone or with N19/N20/N21/N28) | 23 | [`01-checker`](../01-checker/README.md) |
-| `06 N25` | 3 | [`01-checker`](../01-checker/README.md) |
-| `06 N1`, `06 N12`, `06 N18` | 2 each | [`01-checker`](../01-checker/README.md) |
-| `06` — `reject/external_lowercase_target.bp` | 1 | **nobody.** It cites "a `fronts.md` unowned item", which is the shape `AGENTS.md` forbids |
-
-By target: 21 erlang, 16 commonJS, 12 `*` (reject), 5 wasm.
-
-### P2 — the suite says nothing about a named type's run-time identity
-
-`grep -rln 'is [A-Z]' test run reject` matches **one** cell (`test/case_arms.bp`). Nothing asserts:
-
-- `Person(name: "Ana", age: 30) == Vec(name: "Ana", age: 30)` — two different types with the same
-  fields;
-- `p is Person` on a value whose static type is a union or `unknown`;
-- `@print(p)` naming the type (`Person(name: "Ana", age: 30)`, decision 8 §7);
-- a `case` over a value of a union of two **named** types.
-
-That is the whole subject of [`13-module-identity`](../13-module-identity/README.md) — a type gets a
-unique atom and the atom goes **inside the value** — and it has no botopink-level cell. The `case`
-cells that exist (`case_variants`, `case_values`, `case_exhaustive`, `case_unknown`) fail *earlier*
-than identity today: their `expected-failures.txt` reasons are checker reasons
-(`.Variant` arms are not resolved against the matched value's type; an arm body is a lambda the checker
-does not unwrap; a union annotation is not a union type yet). **So their current owner is
-[`01-checker`](../01-checker/README.md) and that is correct** — but when 01 lands, some of them will
-fail again for the run-time reason, and those lines move to
-[`13-module-identity`](../13-module-identity/README.md), not to a backend front. Step 2 is that
-re-classification, done by running.
-
-### P3 — beam is excluded, and the reason is narrower than the document says
-
-`tests/language/AGENTS.md`'s target table says beam "writes `out/main.S` and stops — a BEAM Assembly
-artifact, not a run" and is therefore excluded, "because nothing executes: a `run/` cell would compare
-an empty stdout and pass vacuously."
-
-Measured at `c2dd780`, the first half is right and the conclusion is not:
-
-```
-$ botopink test --target beam
-error: `botopink test` currently supports only the commonJS and erlang targets
- hint: run with `--target commonJS` or set "target": "commonJS" in botopink.json
-
-$ botopink run --target beam
-   Compiled in 70.32ms
-wrote out/main.S — BEAM Assembly is an artifact; compile with `erlc +from_asm out/main.S` to produce a `.beam`.
-$ ls out/
-main.S
-
-$ cd out && erlc +from_asm main.S && ls
-main.beam  main.S
-$ erl -noshell -pa . -eval 'main:main(), halt().'
-hi
-```
-
-**The beam output executes, in two commands the gate already has** — `erlc` is a dependency of every
-erlang cell and of `scripts/beam_export_audit.sh`, which is gate stage 5. What is missing is a runner
-step, not a compiler change. That is a decision, not an assumption; see
-[Decisions the maintainer owes](#decisions-the-maintainer-owes).
-
-### P4 — the capabilities no cell reaches
-
-`AGENTS.md`'s closing section lists what cannot be tested from botopink at all, with a reason each:
-`@Context` / `use`; `pub default mod` / `pub default fn`; `@ExprCustom` / `q.custom`; `.d.bp` shipped
-through `botopink.json` `files`; "no external target for the active backend"; `@typeInfo` /
-`@makeRecord` / `partial` / `omit` / `pick`; `@panic` / `@todo`. Each of the first four is a
-*dependency's* surface — the suite deliberately does not fetch one, because `zig build test-libs` is
-that job and this suite must not need the network.
-
-Three of those reasons are worth re-testing rather than carrying:
-
-| Capability | The stated reason | Worth re-measuring because |
-|---|---|---|
-| `pub default mod` / `pub default fn`, `@ExprCustom`, `.d.bp` via `files` | needs a dependency | a `modules/` cell **is** a whole project. A second project inside it, resolved by a relative `BOTOPINK_LIB_ROOTS`, is a local dependency with no network |
-| "no external target for the active backend" | `reject/` runs `check`, which is target-independent | a `run/` cell on one target, expected to fail, says the same thing — and `botopink build --target <t>` is not target-independent |
-| `@panic` / `@todo` | a cell that aborts reports no result through `--json` | a `run/` cell compares stdout **and exit status**; an aborting program is exactly what it can assert |
-
-### P5 — the coverage numbers in `AGENTS.md` do not match the suite
-
-Its table sums to 68 cells and its classification line reads 196/61. The suite is 71 cells and 205/54.
+- `tests/language/run.sh [--target commonJS|erlang|wasm|beam|all]` prints the run's own tally; the
+  header carries no hand-kept number. `all` is commonJS, erlang and wasm; **beam** runs
+  `botopink run --target beam`, then `erlc +from_asm`, then `erl` (`exec_run`), and is not in `all`
+  yet — the flip is one line in `run.sh`, scheduled as 13's closing step.
+- `expected-failures.txt` is shared and **delete-only**: every line names an owner row — a 1.0.5-beta
+  step spelling (`01 step 4`, `02 step 4`, `04 step 2`, …), which resolves against the carried copies
+  under `00-compiler-carry-over/<front>/README.md` with the same number, or a carry-over item (`C-02`,
+  `C-03`, `C-18`); `AGENTS.md` documents both spellings. A line whose cell passes fails the runner
+  ("now passes: delete its line"). A cell whose owner is nobody is reported to the maintainer, not
+  listed against an invented row.
+- `AGENTS.md`'s "what cannot be tested from botopink at all" list keeps only `@typeInfo` /
+  `@makeRecord` / `partial` / `omit` / `pick`, with the reason.
 
 ## Steps
 
-### Step 1 — repoint every owner row, and give the orphan one
+### Step 1 — every owner row names a live front — delivered
 
-Rewrite all 54 `expected-failures.txt` owner cells to 1.0.5-beta fronts, by the mapping in
-[P1](#p1--every-owner-row-in-expected-failurestxt-names-a-milestone-that-no-longer-exists), and settle
-`reject/external_lowercase_target.bp`.
-
-That cell asserts that `#[@external(node, "console.log($0)")]` — the lower-case form — is a **located
-error**. Today it passes `check`, binds no host and says nothing. Whether it should be an error is a
-decision [`08-hygiene`](../08-hygiene/README.md) D3 raises; its implementation site is the annotation
-grammar, [`01-checker`](../01-checker/README.md)'s.
-
-**Acceptance:**
 - [x] Every line's owner cell names a 1.0.5-beta front and, where the front has numbered rows, one of
-      them — landed at `7ab6a55` before this wave (§ Landed — 2026-09-18); at `f58fd392` the file's
-      1.0.5 spellings resolve against the carried copies under `00-compiler-carry-over/<front>/`,
-      same step numbers, and `AGENTS.md` says so
-- [x] The 21 `01 step 6` lines are split 12 / 5 / 4 across
+      them; the 1.0.5 spellings resolve against the carried copies under
+      `00-compiler-carry-over/<front>/`, same step numbers, and `AGENTS.md` says so
+- [x] The erlang / commonJS / wasm lines once owned by 1.0.4's `01 step 6` are split across
       [`02-erlang`](../02-erlang/README.md), [`04-js`](../04-js/README.md),
-      [`05-wasm`](../05-wasm/README.md) — by the target in column 1, not by guess (`7ab6a55`)
+      [`05-wasm`](../05-wasm/README.md) — by the target in column 1, not by guess
 - [x] `reject/external_lowercase_target.bp` names a real row, or the cell is deleted with the decision
-      that deleted it written in `AGENTS.md` — neither: `e37186b` made the cell pass and deleted its line
-- [x] `zig build test-language` still reads 205 passed, 54 expected failures, 0 failed — repointing an
-      owner changes no result (true at `7ab6a55`; the suite is 553 / 42 / 0 at `f58fd392`)
-- [x] `AGENTS.md`'s owner-row rule names the 1.0.5-beta fronts — and, since 2026-09-25, where their
-      steps now live
+      that deleted it written in `AGENTS.md` — neither: the cell passes and its line is gone
+- [x] `zig build test-language` reads `0 failed` — repointing an owner changes no result
+- [x] `AGENTS.md`'s owner-row rule names the 1.0.5-beta fronts and where their steps now live
 
-### Step 2 — re-classify after each landing, and route the identity rows
+### Step 2 — re-classify after each landing
 
-Run the suite after every front of this milestone lands and re-derive each remaining line's **reason**,
-not only its owner. A line whose failure has changed shape moves to the front that now owns it; a line
-that passes is deleted by the landing front, and the runner already fails if it is not ("now passes:
-delete its line").
+Run the suite after every front lands and re-derive each remaining line's **reason**, not only its
+owner. A line whose failure has changed shape moves to the front that now owns it; a line that passes
+is deleted by the landing front.
 
-The rows to watch are the ones in [P2](#p2--the-suite-says-nothing-about-a-named-types-run-time-identity):
-after [`01-checker`](../01-checker/README.md) resolves `.Variant` arms and union types, a `case` over
-two named types and an `is` on a named type either work or fail because **the value does not know its
-own type** — and that is [`13-module-identity`](../13-module-identity/README.md)'s, not a backend
-front's.
-
-**Acceptance:**
 - [ ] After each landing: the suite run, `0 failed`, and every surviving line's reason re-derived from
-      the actual output, quoted in the line — **continuous**; done at `f58fd392` on 2026-09-25 for
-      the beam column, where six unlisted failures were found and listed with the assembled
-      program's answer quoted (§ Landed — 2026-09-25)
-- [x] No line names a front that has closed — `13 step …` is gone from the file (C-01 halves 2–3
-      deleted or re-derived every one), and the 1.0.5 step spellings resolve against their carried
-      copies in this milestone's tree (`AGENTS.md` § expected-failures.txt)
+      the actual output, quoted in the line — **continuous**; the beam column included, run by hand
+      with `--target beam`
+- [x] No line names a front that has closed — `13 step …` is gone from the file, and the 1.0.5 step
+      spellings resolve against their carried copies in this milestone's tree
 - [x] The lines that survive [`01-checker`](../01-checker/README.md) with a run-time reason name
-      [`13-module-identity`](../13-module-identity/README.md) — none survive: at `f58fd392` no line
-      names 13, and no `type_identity_*` cell carries a line on any target
+      [`13-module-identity`](../13-module-identity/README.md) — none survive: no line names 13, and no
+      `type_identity_*` cell carries a line on any target
 
-### Step 3 — the beam answer, acted on
+### Step 3 — beam in the suite
 
-Decide (below) and implement.
+beam is an opt-in target: `run.sh --target beam` assembles and runs every `run/` and `modules/` cell;
+`test/` cells stay out until `botopink test` accepts the target (a CLI row).
 
-If beam joins the suite: `run.sh` gains a beam path — `botopink run --target beam`, then
-`erlc +from_asm out/main.S`, then `erl -noshell -pa out -eval '<mod>:main(), halt().'` — and the `.out`
-comparison is unchanged. `test/` cells stay out until `botopink test` accepts the target, which is a
-CLI row, not this front's.
-
-If it does not: `AGENTS.md`'s target table is corrected — "the artifact executes after
-`erlc +from_asm`; the suite does not run it because \<reason\>" — so the next reader does not re-derive
-this.
-
-**Acceptance:**
 - [x] `tests/language/AGENTS.md`'s target table states the measured behaviour of all four targets,
-      with the commands (`eeff1e1`; re-read at `f58fd392`)
-- [x] If beam is added: every `run/` and `modules/` cell has a beam result, each pass or expected
-      failure, and the new expected failures name [`03-beam`](../03-beam/README.md) — beam is added
-      as an opt-in target (`run.sh --target beam`, `exec_run`'s three-step path); **at `f58fd392` six
-      `run/`+`modules/` cells had a beam result nobody had looked at** (79 / 19 / 6 failed), listed
-      on 2026-09-25 against `03 step 3 (D6)`, `03 step 4` and `03 (no step; …)` → 79 / 25 / 0
-- [ ] If beam is added: `erlc` is already a gate dependency (stage 5, `beam_export_audit.sh`) — no new
-      tool in the gate, verified by running `scripts/gate.sh --cold` on a machine without anything
-      installed beyond what it needed before — **open**, and moot until beam joins `--target all`,
-      which is 13's closing step (`run.sh` § beam)
+      with the commands
+- [x] every `run/` and `modules/` cell has a beam result, each pass or expected failure, and the beam
+      expected failures name [`03-beam`](../03-beam/README.md)
+- [ ] `erlc` is already a gate dependency (`beam_export_audit.sh`) — no new tool in the gate, verified
+      by running `scripts/gate.sh --cold` on a machine without anything installed beyond what it
+      needed before — **open**, and moot until beam joins `--target all`
 
-### Step 4 — the cells that are missing
+### Step 4 — the cells that were missing
 
-Write them, one commit per capability group, each run on every target it declares before it is listed.
-
-1. **Run-time type identity** ([P2](#p2--the-suite-says-nothing-about-a-named-types-run-time-identity)) — a `run/` cell and a `test/` cell:
-   two types with identical fields comparing unequal; `is` on a named type through a union and through
-   `unknown`; `@print` of a record and of a variant naming the type (§7); a `case` over a union of two
-   named types. Expected failures against
-   [`13-module-identity`](../13-module-identity/README.md). **These cells are the acceptance evidence
-   for that front**, so they are worth writing before it starts, not after.
-2. **A local dependency** ([P4](#p4--the-capabilities-no-cell-reaches)) — a `modules/` cell holding two
-   projects, the second resolved through a relative `BOTOPINK_LIB_ROOTS`, covering `pub default mod` /
-   `pub default fn`, a `.d.bp` shipped through `files`, and `@ExprCustom` / `q.custom`. No network.
-3. **`@panic` / `@todo`** — a `run/` cell asserting stdout **and** a non-zero exit.
-4. **"no external target for the active backend"** — a `run/` cell on one target, per
-   [P4](#p4--the-capabilities-no-cell-reaches).
-5. **DSL hygiene** ([decision 112](../../decisions-taken.md)) — three `run/` cells over one local
-   library `shapesdsl` whose template writes `e.build("double(" + e.text() + ")")` with `double`
-   **private** to the library: `shapesdsl "area(4, 5)"` with `{area}` imported; the same through
-   `{area as surface}` and `shapesdsl "surface(4, 5)"`; and a consumer that declares its own
+1. **Run-time type identity** — `type_identity_*` cells: two types with identical fields comparing
+   unequal; `is` on a named type through a union and through `unknown`; `@print` of a record and of
+   a variant naming the type (§7); a `case` over a union of two named types. Delivered.
+2. **A local dependency** — `modules/local_dependency`: `deps/shapesdsl/` with `pub default mod
+   shapesdsl;`, a `pub default fn … -> @ExprCustom<T>` returning `e.custom(ast, code)`, and
+   `shapes.d.bp` shipped through `files`; the consumer expands `shapesdsl "4, 5"` at compile time. No
+   network. Delivered.
+3. **`@panic` / `@todo`** — `run/panic_aborts.bp`, `run/todo_aborts.bp`, each with `.exit` =
+   `nonzero`. Delivered.
+4. **"no external target for the active backend"** — `run/external_erlang_only.bp`, refused on
+   commonJS and wasm (`.commonJS.expect`, `.wasm.expect`), runs on erlang and beam. Delivered.
+5. **DSL hygiene** ([decision 112](../../decisions-taken.md#112-dsl-hygiene-each-name-resolves-in-the-scope-of-whoever-wrote-it))
+   — **owed.** Three `run/` cells over one local library `shapesdsl` whose template writes
+   `e.build("double(" + e.text() + ")")` with `double` **private** to the library:
+   `shapesdsl "area(4, 5)"` with `{area}` imported; the same through `{area as surface}` and
+   `shapesdsl "surface(4, 5)"`; and a consumer that declares its own
    `fn double(x: i32) -> i32 { return x + 1; }`. Each prints **40** (today: unbound, unbound, 21). No
    `reject/` cell. Until [`01-checker`](../01-checker/README.md) step 14 lands, the three are
    expected failures against it.
 
+Also delivered: a cell per decision 63–66 of 1.0.5-beta — 63 `run/index_*`, 64
+`run/std_erlang_node`, 66 the three `modules/*` cells formatted; 65 is a sentence, since the formatter
+writes text and the suite runs programs (`AGENTS.md` § Notes).
+
 **Acceptance:**
-- [x] `zig build test-language` green, with the new cells, on every target each declares — 4.1 at
-      `7b96ce7` (`type_identity_*`), 4.2–4.4 at `259916e1` / `ca477dec` (C-16: `modules/local_dependency`,
-      `run/panic_aborts` + `run/todo_aborts`, `run/external_erlang_only`); verified on disk and by
-      running at `f58fd392`, 2026-09-25: 553 / 42 / 0 on commonJS+erlang+wasm, and all four cells
-      pass on beam as well
+- [x] `zig build test-language` green, with the new cells, on every target each declares (items 1–4;
+      all four pass on beam as well)
 - [x] Every added `expected-failures.txt` line names an existing 1.0.5-beta row — or a carry-over item
       (`C-02`, `C-03`, `C-18`), the second spelling `AGENTS.md` documents
 - [x] Anything with no owner is reported here and to the maintainer, not listed against an invented row
-      — `@todo` on beam passing for the wrong reason (`{undef, main:notReady/0}`) is in `status.md`
-      and `AGENTS.md` § Notes, unlisted
 - [x] `AGENTS.md`'s "what cannot be tested from botopink at all" list loses the entries step 4 covers,
-      and each remaining entry keeps its reason — only `@typeInfo` / `@makeRecord` / `partial` /
-      `omit` / `pick` remain, with the reason
+      and each remaining entry keeps its reason
 
-### Step 5 — `AGENTS.md` matches the suite
+### Step 5 — `AGENTS.md` matches the suite — delivered
 
-**Acceptance:**
 - [x] The coverage table's cell counts equal what is on disk, per directory, with the command that
-      counted them — the recount block at `f58fd392` (2026-09-25): 56 / 52 / 48 / 9, 165 cells, and
-      the 31 since C-04's block named one by one
-- [x] The classification line quotes the current run (`zig build test-language`) and the commit it was
-      run at — the runner's own tally line and 553 / 42 / 0, 79 / 25 / 0 on beam, at `f58fd392`
-- [x] The "shapes that do not parse" list is re-derived: the entries that now parse — `Pattern { body }`
-      arms and §5.3b are listed there as `06 N22` — are struck or moved (`7bfecf7`); re-measured
-      2026-09-25: the module-level `var` row moved too (it parses and checks; `17-beam-memory`'s
-      semantics, no cell), and decision 29's `;` row still holds (`3:3`)
+      counted them
+- [x] The classification line quotes the runner's own tally line
+- [x] The "shapes that do not parse" list is re-derived: the entries that parse now (`Pattern { body }`
+      arms, §5.3b, a module-level `var`) are struck or moved
+
+## Delivered (the C-16 cells)
+
+C-16's step 4.2–4.4 cells are items 2–4 of [step 4](#step-4--the-cells-that-were-missing); the tally
+is `run.sh`'s own; decisions 63–66 have their cells. The beam column, run by hand, found cells other
+fronts had measured on three targets only — the `modules/*_name_collision` cells,
+`run/labelled_arguments.bp`, `run/effect_method.bp` — handed to [`03-beam`](../03-beam/README.md),
+which closed them.
+
+## Handed over by 15-language-surface steps 3 and 4b
+
+Written by 15 itself (12 had closed), each run on every target it declares:
+
+- **Eight `reject/` cells, one per decided-against form** — each pins the named code at the site
+  every spelling reaches: `reject/ternary_absent` (`ternary-absent`),
+  `reject/bitwise_operator_absent` (`bitwise-operator-absent`), `reject/char_literal_absent`
+  (`char-literal-absent`), `reject/nested_fn_decl` (`nested-fn-decl`),
+  `reject/list_spread_not_last` (`list-spread-not-last`), `reject/list_spread_dot_dot_dot`
+  (`list-spread-dot-dot-dot`), `reject/implement_clause_for` (`implement-clause-for`),
+  `reject/tuple_literal_label` (`tuple-literal-label`). `tests/language/AGENTS.md`'s list of
+  deliberately absent forms carries them.
+- **`run/decorator_negative_argument`** — `#[mark(-20)]` over `type Account(id: i32)`; the decorator
+  receives the number `-20`, one annotation argument; `.out` = `5`.
+- **`run/loop_one_line_body`** — a trailing lambda and a `for (xs) { x -> … }` body whose one
+  statement takes no `;`; `.out` = `52`.
+
+- [x] the eight `reject/` cells — each carries a header comment, so its `.expect` line 2 is the
+      location shifted by the header's lines
+- [x] `run/decorator_negative_argument` and `run/loop_one_line_body` — pass on all four targets
+      (beam included)
+- [x] listed in `tests/language/AGENTS.md`; no `expected-failures.txt` line
+
+## Open rows
+
+- **`test/case_arms.bp`'s `1..9` arm** — the cell writes `1..9`; decision 53 of 1.0.5-beta made
+  `A...B` the inclusive range pattern and `..` the exclusive slice. `01-checker`'s README says the cell
+  is this front's to rewrite; its `expected-failures.txt` line (owner `01 step 4`) says the cell is
+  right as written. One of the two readings is the owner's to settle.
+
+- **`AGENTS.md`'s decision-29 row is stale.** "Shapes that do not parse" still lists a block-shaped
+  statement not last in its block (`if (1 > 0) { … }` then `@print("b");`); since C-13 the `;` after a
+  braced block is optional (decisions 29, 132) and the program runs. The row leaves the list with the
+  next `AGENTS.md` edit.
 
 ## Gate
 
 - [ ] `scripts/gate.sh --cold` green in this front's worktree — the pre-commit gate ran green on
       every commit; `--cold` not run separately
-- [x] `zig build test-language` green on every target the suite declares — 553 / 42 / 0 and, on
-      `--target beam`, 79 / 25 / 0 at `f58fd392`
+- [x] `zig build test-language` green on every target the suite declares, and on `--target beam`
 - [x] `tests/language/AGENTS.md` updated in the same commit as any cell or owner-row change
-- [x] Commit on `fix/language-tests`; no push, no merge — landing is the maintainer's step — the
-      branch is `front/12-language-tests` in this milestone (meta and compiler alike)
-
-## Blast radius
-
-**None on the compiler**: this front adds no source change and re-records no snapshot. It moves the
-number of known-red cells up, which is the point — every line it adds to `expected-failures.txt` is a
-promise the language makes and does not keep, made visible to the front that owns it.
-
-Two interactions to plan for:
-
-- **`expected-failures.txt` is shared, delete-only.** Every other front of this milestone deletes a
-  line when its row lands, and the runner fails if it does not. Step 1 rewrites all 54 owner cells at
-  once, so it must land **before** any front starts deleting — otherwise two commits touch the same
-  line.
-- **Step 3, if beam is added, roughly doubles the `run/` and `modules/` results** (6 + 3 cells gain a
-  target) and adds two subprocess calls per cell to the suite's wall time.
-
-<a id="decisions-the-maintainer-owes"></a>
-
-## Decisions the maintainer owes
-
-1. **Does the suite run beam?** The artifact executes — `botopink run --target beam` then
-   `erlc +from_asm out/main.S` then `erl -noshell -pa out -eval 'main:main(), halt().'` prints `hi`,
-   measured at `c2dd780` — and `erlc` is already a gate dependency. The cost is a `run.sh` path and
-   suite time; the gain is that decision 8's run-time half stops being asserted on beam only by
-   `snapshots/codegen/beam/`.
-2. **Is a lower-case `#[@external(node, …)]` a located error?** Also
-   [`08-hygiene`](../08-hygiene/README.md) D3. One `reject/` cell has been listed against a
-   non-existent row since front 17 wrote it; it needs an owner or a deletion.
-3. **Does a range pattern's end include its endpoint?** `1...9` in a `case` arm parses and checks green
-   at `c2dd780`; `loop (0..4)` is exclusive. Decision 8 does not say, and the cells route around the
-   edge (`AGENTS.md`'s closing note). One sentence settles it and unblocks a cell.
+- [x] Commit on a branch; no push, no merge — `front/12-language-tests`
 
 ## Notes
 
@@ -308,217 +177,9 @@ Two interactions to plan for:
   written and is listed in `expected-failures.txt`. Never rewrite a cell to match current behaviour —
   the rule is in `AGENTS.md` and it is what makes the file an inventory of open promises rather than a
   log.
-- `test/case_arrow_arms.bp` exists beside `test/case_arms.bp`: both arm forms parse at `c2dd780`, and
-  the suite pins both. Whether the arrow form stays in the language is decision 8's §5.1 reading and
-  not this front's to settle; the cell is how a removal would be noticed.
+- `test/case_arrow_arms.bp` is a transition guard beside `test/case_arms.bp`: both arm forms parse,
+  and the suite pins both; the cell is how a removal of the arrow form would be noticed.
 - A cell that needs a git dependency stays out of scope — that is `zig build test-libs`' job, and this
-  suite must not need the network. Step 4's item 2 is a *local* second project, which is not the same
-  thing.
-
----
-
-## Rows for `fronts.md`
-
-**Ownership table:**
-
-```markdown
-| **12** [`language-tests`](./README.md) | `repository/botopink-lang/tests/language/**` — the cells, `expected-failures.txt`, `run.sh`, `AGENTS.md` | — | not started — step 1 lands before any front deletes an expected-failure line |
-```
-
-**Conflict notes** (against the other thirteen fronts):
-
-| With | Verdict | Why |
-|---|---|---|
-| **01 checker** | yes, **but step 1 lands first** | 32 of the 54 expected-failure lines are 01's, and 01 deletes each as its row lands. The file is shared delete-only; step 1 rewrites every owner cell at once, so it must precede the first deletion |
-| **02 erlang · 03 beam · 04 js · 05 wasm** | yes, same rule | 12 / 0 / 5 / 4 of the `01 step 6` lines are theirs after step 1's split. 03 gains lines only if the maintainer adds beam to the suite (step 3) |
-| **06 comptime-dedup · 07 review-backlog · 08 hygiene · 11 tooling** | yes | No shared file, no shared snapshot directory. 08's D3 decision is what lets step 1 give `reject/external_lowercase_target.bp` an owner |
-| **09 ecosystem-residuals** | yes | Different repositories. The five libraries and these cells exercise the same features from opposite ends |
-| **10 cli-residuals** | **seq** — 10 first | 10 step 1 and step 2 change what `check` and `test` reject, which is what `reject/` cells assert. No shared file; re-run the suite after |
-| **13 module-identity** | **no** — 12's step 4.1 first, then 13 | Step 4's identity cells are 13's acceptance evidence and should exist before it starts. Step 2 then routes the surviving `is` / union / named-`case` lines to it. 13 also changes the erlang output layout the three `modules/` cells execute |
-| **14 comptime-on-beam** | yes | It changes how a comptime body is evaluated; `test/comptime_template.bp`, `test/decorator_emit.bp` and `test/decorator_reflect.bp` run that path and re-run after it. No shared file |
-
-**Front-table row (`overview.md`):**
-
-```markdown
-| [`12-language-tests`](./README.md) | high | not started — step 1 first of the milestone | The suite is at 205 passed / 54 expected failures / 0 failed, and every one of those 54 owner rows names a 1.0.4-beta front number, one of them a row that never existed. Plus the cells still missing: nothing asserts that a value knows its own type — the whole subject of `13-module-identity` has no botopink-level test — and beam is excluded on a reason that does not hold: `erlc +from_asm out/main.S` and `erl -eval` run the artifact, with a tool the gate already has |
-```
-
----
-
-## Handed over by `15-language-surface` (2026-09-18, `109f6c9`)
-
-**`tests/language/AGENTS.md:183-186` is now doubly obsolete.** Its `??` and module-`var` lines still
-read "deliberately absent (14)", and [decision 28](../../../1.0.5-beta/decisions-taken.md) reversed the first: `??`
-parses as of `fb230e5`. The `??` line also repeats the premise this milestone already measured as
-false — that `catch` covers it; `catch` is `@Result`-only.
-
-**Cells that can now be written** (the forms landed, the backends have not): `xs[0]` and `xs[0..2]`
-reach the unrecognised-builtin path on all four backends until fronts 02–05 lower them, so index cells
-belong in `expected-failures.txt` with those owners, not as passing cells.
-
-**Decision 29, when it lands**, moves **44** sites in this suite — not the 88 the decision estimated.
-The count is the compiler's, and the migration is coordinated with
-[`16-formatter`](../16-formatter/README.md) and [`15-language-surface`](../15-language-surface/README.md).
-
-## Handed over by `15-language-surface` steps 3 and 4b (`front/15-language-surface`)
-
-**Eight `reject/` cells, one per decided-against form.** Each form has a named kind now, raised once
-at the site every spelling reaches (15's README § step 3); the cell pins the code and the location.
-Every source below was run through `botopink check` on the front's compiler, and the `.expect` lines
-are what it printed. `reject/list_spread_not_last` is the one whose code did not exist before the
-front: the kind was in the enum and nothing raised it.
-
-| Cell | `src/main.bp` | `.expect` line 1 | line 2 |
-|---|---|---|---|
-| `reject/ternary_absent` | `pub fn main() {` · `    val c = true;` · `    val x = c ? 1 : 2;` · `    @print(x.toString());` · `}` | `ternary-absent` | `3:15` |
-| `reject/bitwise_operator_absent` | `pub fn main() {` · `    val x = 1 << 2;` · `    @print(x.toString());` · `}` | `bitwise-operator-absent` | `2:15` |
-| `reject/char_literal_absent` | `pub fn main() {` · `    val c = 'a';` · `    @print(c);` · `}` | `char-literal-absent` | `2:13` |
-| `reject/nested_fn_decl` | `pub fn main() {` · `    fn inner(x: i32) -> i32 { return x + 1; }` · `    @print(inner(1).toString());` · `}` | `nested-fn-decl` | `2:5` |
-| `reject/list_spread_not_last` | `pub fn main() {` · `    val a = [1, 2];` · `    val b = [..a, 3];` · `    @print(b.length.toString());` · `}` | `list-spread-not-last` | `3:19` |
-| `reject/list_spread_dot_dot_dot` | `pub fn main() {` · `    val a = [1, 2];` · `    val b = [...a, 3];` · `    @print(b.length.toString());` · `}` | `list-spread-dot-dot-dot` | `3:14` |
-| `reject/implement_clause_for` | `behavior Named { fn name(self: Self) -> string; }` · `type P(x: i32)` · `implement Named for P { fn name(self: Self) -> string { return "p"; } }` · `pub fn main() { @print(P(x: 1).name()); }` | `implement-clause-for` | `3:17` |
-| `reject/tuple_literal_label` | `pub fn main() {` · `    val t = #(x: 1, y: 2);` · `    @print(t.x.toString());` · `}` | `tuple-literal-label` | `2:15` |
-
-`a & b`, `a ^ b` and `'a'` used to be **lexer** errors ("unexpected character", no code), which no
-`reject/` cell could pin by name; they are parse errors now. `tests/language/AGENTS.md`'s list of
-deliberately absent forms gains these eight.
-
-**Two `run/` cells for step 4b**, each a form that was a parse error and now runs (proved on the
-front's compiler on commonJS and erlang):
-
-- `run/decorator_negative_argument` — `fn mark(comptime decl: @Decl, n: i32) { @emit("pub fn markedWith() -> i32 { return " + n.toString() + "; }"); }`,
-  `#[mark(-20)]` over `type Account(id: i32)`, and `pub fn main() { @print((markedWith() + 25).toString()); }`
-  with `.out` = `5`. The decorator receives the **number**: `-20`, one annotation argument.
-- `run/loop_one_line_body` — `fn f(x: i32) -> i32 { return x + 1; }`, then in `main`
-  `val xs = [1, 2];` · `var acc = 0;` · `loop (xs) { x -> acc = acc + f(x) };` ·
-  `val ys = xs.map { x -> f(x) };` · `@print(acc.toString() + ys.length.toString());`; `.out` = `52`. The
-  trailing lambda and the loop body take the fn body's semicolon policy (`requiredExceptLast`).
-
-Both are strictly accepting, so no `expected-failures.txt` line moves; the 4b probe in 15's README
-(`loop (xs) { x -> @print(x) };`) is the second cell's form.
-
-**Written by 15 itself** (12 was closed by then), on `front/15-language-surface`:
-- [x] the eight `reject/` cells — each carries a header comment, so its `.expect` line 2 is the
-      location above shifted by the header's lines; code and column re-measured, unchanged
-- [x] `run/decorator_negative_argument` and `run/loop_one_line_body` — pass on all four targets
-      (beam included); the second is spelled `for (xs) { x -> … }`, since decision 105 removed
-      `loop (…)`
-- [x] listed in `tests/language/AGENTS.md`; no `expected-failures.txt` line
-
----
-
-## Landed — 2026-09-18
-
-**This README's premise did not hold: step 1 had already landed at `7ab6a55`**, before this wave
-started. Every owner cell in `expected-failures.txt` already named a 1.0.5-beta front, re-checked one
-by one against `specs/1.0.5-beta/` — 01 steps 1–8, 02 steps 1/5/6/7, 03 steps 2/4, 05 steps 1/3, 13
-steps 2/15/17/18 — and **none is orphaned**. `reject/external_lowercase_target.bp`, "the row that
-never existed", is not listed at all any more: `e37186b` made the cell pass and deleted its line.
-Steps 2, 3, 4.1 and 5 had landed too (`fcc4b5b`, `eeff1e1`, `7b96ce7`). **The file was safe to delete
-lines from all along**, which means the wave's coordination rule — backends report, 12 deletes — was
-caution, not a dependency.
-
-| commit | what |
-|---|---|
-| `aab5489` | the header block re-derived from a run: it still claimed 205/54 at `c2dd780`, with seven `04-js` lines that no longer existed |
-| `7bfecf7` | `AGENTS.md`'s "shapes that do not parse" table re-measured — **5 of its 7 rows now parse** |
-| `5dfb638` | 7 new cells for decisions 28, 30 and 33 |
-| `23eea0b` | the header's numbers and base sha corrected after the cells moved them |
-
-| | before | after |
-|---|---|---|
-| `run.sh` (commonJS, erlang, wasm) | 218 passed / 53 expected / 0 failed | **250 / 61 / 0** |
-| `run.sh --target beam` | 13 / 19 / 0 | **14 / 20 / 0** |
-| `expected-failures.txt` lines | 61 | **70** |
-| cells on disk | 76 | **83** |
-
-Neither "53 lines" nor "54 rows" was right: the file was at 61 lines, and 53 is how many `--target all`
-exercises. **No line was found passing**, before or after.
-
-**Four defects the cells found, and nothing else had:**
-
-1. **beam drops an index silently and exits 0.** The other three targets die loudly (`SyntaxError`;
-   `'[]'/2 undefined`; wasm refuses to validate); beam prints the whole array for `xs[0]`, and `ok`
-   for `xs[0..2].length` and `rows[1][0]`. A backend that is wrong quietly is the reason a suite
-   exists — [`03-beam`](../03-beam/README.md).
-2. **commonJS: the optional-binding `if` emits `if (n !== null)` while `?.` answers `undefined`**, so
-   `o.inner?.v ?? 9` answers `undefined` on commonJS and `9` on erlang and wasm.
-   `test/optional.bp` never saw it because its optionals are explicit `null`s. **No step of
-   [`04-js`](../04-js/README.md) named this.**
-3. **commonJS: `42.toString()` emits `__bp_print(42.toString())`**, which node refuses — `42.` reads as
-   a float — while erlang and wasm print `42`. Recorded in a cell comment rather than asserted,
-   because a listed line needs a row.
-4. **A tuple label does not survive a generic array method** — `rs.at(0).b` answers `undefined` on
-   commonJS, raises `bad map: {1,<<"x">>}` on erlang and `0` on wasm. This one has rows, so it is
-   asserted: §6 T4 → `04 step 2`, `02 step 4`.
-
-**Two spec premises that did not reproduce**, both now corrected in the specs rather than here:
-decision 28's landing note read as if module-level `var` parses — it does not (`this token cannot
-appear here` at `1:1`), and its semantics are [`17-beam-memory`](../17-beam-memory/README.md); and
-decision 30's "one lowering in each of fronts 02–05" has no numbered step in any of those fronts, only
-a handover section, so the new owner cells read `<front> handover 15` and `AGENTS.md` documents the
-convention.
-
-**Deliberately left undone:** the range cells, because decision 36's sentence is still not in
-decision 8 §5 and the parser still refuses `1..9` in a pattern. The measurement was extended while
-looking: `val r = case 9 { 1...9 { 1 } _ { 0 } }; @print(r);` prints `undefined` on commonJS, `0` on
-erlang and **`256` — a heap address — on wasm**; written where its type is known it does not compile
-at all. Three backends, three wrong answers; the cell is owed once `01 step 4` lands. Also out:
-`d["k"]` (needs `from "std"`, whose own rows would hide the index reason) and `s[1]` (decision 30
-leaves a string element's type and printed form open).
-
----
-
-## Landed — 2026-09-25 (`front/12-language-tests`, compiler `f58fd392`)
-
-**C-16's "unverified whether 4.2–4.4 exist" is answered: they exist, and they are green.** Verified
-on disk and by running, not by reading the specs:
-
-| Step | Cell | Result at `f58fd392` |
-|---|---|---|
-| 4.2 | `modules/local_dependency` — `deps/shapesdsl/` with `pub default mod shapesdsl;`, `pub default fn … -> @ExprCustom<T>` returning `e.custom(ast, code)`, `shapes.d.bp` through `files`; the consumer expands `shapesdsl "4, 5"` at compile time | pass ×4 (commonJS, erlang, wasm, beam) |
-| 4.3 | `run/panic_aborts.bp`, `run/todo_aborts.bp` — `.exit` = `nonzero` | pass ×4 each (beam's `@todo` for the wrong reason, § below) |
-| 4.4 | `run/external_erlang_only.bp` — `.commonJS.expect`, `.wasm.expect` | pass ×4 (refused where the sidecars say, runs on erlang and beam) |
-| tally | `run.sh`'s first line is recounted from the file; the header carries no number | yes |
-| 63–66 | `run/index_*` (63), `run/std_erlang_node` (64), a sentence for 65 (the formatter has no program to run), the three `modules/*` cells of 66 formatted | yes |
-
-```
-$ tests/language/run.sh                 # commonJS, erlang, wasm
-language tests: 553 passed, 42 expected failures, 0 failed
-$ tests/language/run.sh --target beam   # BEFORE this front's commit
-language tests: 79 passed, 19 expected failures, 6 failed
-$ tests/language/run.sh --target beam   # after
-language tests: 79 passed, 25 expected failures, 0 failed
-```
-
-**The finding: beam was red by six cells and nobody knew**, because beam is outside `--target all`
-and no gate runs it. Every one is a cell another front added since C-04's recount and measured on
-three targets: the four `modules/*_name_collision` cells (`ead0b645`'s message says beam got the
-import walk and the export fault, not the `record_fields` / `type_owner_path` / method halves, and
-that the cells "carry no `expected-failures.txt` line, because `--target all` excludes beam"),
-`run/labelled_arguments.bp` (erlang's enum-variant shape, `205` for `502`) and
-`run/effect_method.bp` (`ConditionLoopValueUnsupported`, unlocated — `03 step 3` D6's own wording).
-Listed with the assembled program's answer quoted, against `03 step 3 (D6)`, `03 step 4` and four
-`03 (no step; …)` cells; handed to [`03-beam`](../03-beam/README.md) as a table at its end. The
-three-target run did not move: 42 exercised lines before and after, checked by (target, key).
-
-**Recounted at `f58fd392`:** 165 cells (56 `test/`, 52 `run/`, 48 `reject/`, 9 `modules/`), +31
-since C-04's block, every one named in `AGENTS.md`'s new block; `expected-failures.txt` 55 → 61
-lines. Two `AGENTS.md` rows re-measured: a module-level `var` **parses and checks** now (it did not
-at `aab5489`; `17-beam-memory`'s, and no cell asserts its semantics), and decision 29's `;` after a
-block-shaped statement still reds at the next statement.
-
-**Deliberately not done, and why:**
-
-- The 1.0.5-beta owner spellings (`01 step 4`, `02 step 7`, `04 step 2`, `05 step 2`, `01 handover
-  15`, `03 handover 01`, …) are not repointed to `C-NN` rows. The file is shared and delete-only,
-  twenty-odd fronts are in flight against it, and every one of those steps is carried under
-  `00-compiler-carry-over/<front>/README.md` with the same number — so the row exists in this
-  milestone's tree and `AGENTS.md`'s owner-row rule now says where. A wholesale rewrite would
-  collide with every deletion in flight for no change of meaning.
-- `reject/loop_while.bp` asserts `while` is refused ("use `loop (`"); decision 105 makes `while` a
-  keyword. The cell is [`22-loops`](../22-loops/README.md)'s to rewrite in the landing that makes
-  it parse — no loop cell was touched here, by the wave's rule.
-- beam stays outside `--target all` (13's closing step). The six lines are the cost of that
-  scheduling, paid late; the next front that adds a `run/` or `modules/` cell should run
-  `--target beam` once by hand.
+  suite must not need the network. `modules/local_dependency` is a *local* second project.
+- A front that adds a `run/` or `modules/` cell runs `--target beam` once by hand until beam is in
+  `all`.
