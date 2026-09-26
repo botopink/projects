@@ -200,14 +200,14 @@ already does correctly — this is the one case where progressive enhancement co
 from the bundled library `actions`; this front writes no decoder and no `form_state.bp`.
 
 **Acceptance:**
-- [ ] `form.bp` imports `ActionState`, `newActionState` and `parseActionState` from `"actions"`, and
-      `git grep -n "fn parseActionState\|type ActionState" modules/jhonstart/` is empty
-- [ ] `__jhFormSubmit`'s Node template contains no `JSON.parse`; the string it returns reaches
-      `parseActionState` unchanged — asserted by a stub cell returning a literal envelope
-- [ ] no test under `modules/jhonstart/test/` asserts the `state` literal against the grammar; the
-      grammar's test is `libs/actions`'
-- [ ] `fieldError` of an absent name is `""` — through the imported type, one absence convention for
-      the whole stack (rakun's `Request.param`, front 49's `Params.param`)
+- [x] `form.bp` imports `ActionState`, `newActionState` and `parseActionState` from `"actions"`, and
+      `git grep -n "fn parseActionState\|type ActionState" modules/jhonstart/` is empty — `modules/jhonstart-forms/src/form.bp` (jhonstart `9991042`); no `fn parseActionState` / `type ActionState` in the tree
+- [x] `__jhFormSubmit`'s Node template contains no `JSON.parse`; the string it returns reaches
+      `parseActionState` unchanged — asserted by a stub cell returning a literal envelope — `form_runtime.mjs` answers the body as it arrived; `jhonstart-forms/test/form_test.bp` "form: submitForm hands the cell the form-encoded fields and reads actions' envelope" (stub cell, literal envelope)
+- [x] no test under `modules/jhonstart/test/` asserts the `state` literal against the grammar; the
+      grammar's test is `libs/actions`' — `jhonstart-forms/test/form_test.bp` builds its envelopes with `actions`' writers
+- [x] `fieldError` of an absent name is `""` — through the imported type, one absence convention for
+      the whole stack (rakun's `Request.param`, front 49's `Params.param`) — `jhonstart-forms/test/form_test.bp` "form: submitForm hands the cell…" (`fieldError("body") == ""`)
 
 ### Step 2 — `FormBinding` and the attributes
 
@@ -227,17 +227,17 @@ The markup is `contracts.md § 3`'s, matched exactly and not restated differentl
 declared default would never be applied — a builder pair would be two functions to get one string.
 
 **Acceptance:**
-- [ ] `formAttrs` emits exactly three pairs, in the order `method`, `action`, `data-jh-a`
-- [ ] `formAttrs(formAction("a_9f…", "/blog/hello", "__bp_action"))` has `action="/blog/hello"` — the current
-      pathname, never a synthesized endpoint
-- [ ] `hiddenActionField` renders `<input type="hidden" name="<actionField>" value="<id>">` — with
+- [x] `formAttrs` emits exactly three pairs, in the order `method`, `action`, `data-jh-a` — `jhonstart-forms/test/form_test.bp` "form: formAttrs is exactly method, action, data-jh-a — the current pathname"
+- [x] `formAttrs(formAction("a_9f…", "/blog/hello", "__bp_action"))` has `action="/blog/hello"` — the current
+      pathname, never a synthesized endpoint — `jhonstart-forms/test/form_test.bp` "form: formAttrs is exactly method, action, data-jh-a…"
+- [x] `hiddenActionField` renders `<input type="hidden" name="<actionField>" value="<id>">` — with
       `"__bp_action"` passed, `name="__bp_action"` — and a form built without it fails its own test;
-      the un-hydrated POST is unroutable without it
-- [ ] no `__bp_action`, `X-Bp-Action` or other wire-name literal appears under `src/` — the names
-      reach this front only as `actionField` / `actionHeader` (grep in the gate)
-- [ ] `renderToString` of a complete form contains `method="post"` and the hidden field
-- [ ] An action id that does not start with `a_`, or contains `/`, a space or a quote, is rejected by
-      `formAction` naming the id — this front echoes front 24's id and never constructs one
+      the un-hydrated POST is unroutable without it — `jhonstart-forms/test/form_test.bp` "form: the hidden field is named by the actionField passed in"; `actionForm` always writes it first
+- [x] no `__bp_action`, `X-Bp-Action` or other wire-name literal appears under `src/` — the names
+      reach this front only as `actionField` / `actionHeader` (grep in the gate) — `setWireNames` is the one entry
+- [x] `renderToString` of a complete form contains `method="post"` and the hidden field — `jhonstart-forms/test/form_test.bp` "form: a complete form carries method=post, the pathname and the hidden field"
+- [x] An action id that does not start with `a_`, or contains `/`, a space or a quote, is rejected by
+      `formAction` naming the id — this front echoes front 24's id and never constructs one — `jhonstart-forms/test/form_test.bp` "form: an id that is not front 24's is refused, naming it"
 
 ### Step 3 — `actionState`
 
@@ -255,16 +255,16 @@ a labeled tuple return are lost through generic instantiation and jhonstart alre
 upstream doc finds the same three things in the same order.
 
 **Acceptance:**
-- [ ] On the server pass, `s.0` is the `initial` argument unchanged and `s.2` is `false`
-- [ ] `s.1` is a `FormBinding` for `actionId`, so the component never names the endpoint
+- [x] On the server pass, `s.0` is the `initial` argument unchanged and `s.2` is `false` — `jhonstart-forms/test/form_test.bp` "form: actionState's server pass is the initial state, a binding for the id, not pending"
+- [x] `s.1` is a `FormBinding` for `actionId`, so the component never names the endpoint — `jhonstart-forms/test/form_test.bp` "form: actionState's server pass…"
 - [ ] After `__jhFormState` returns an envelope written by `actions`' `writeEnvelope` whose `state`
       is `writeState("…", [#("title", "Too short")])`, `s.0.fieldError("title") == "Too short"`
-- [ ] `s.0.redirectTo` non-empty makes the browser half call front 26's `push` exactly once, and the
-      form is not re-rendered with a stale state afterwards
+- [x] `s.0.redirectTo` non-empty makes the browser half call front 26's `push` exactly once, and the
+      form is not re-rendered with a stale state afterwards — `jhonstart-forms/test/form_test.bp` "form: a redirect in the envelope is the router's push, exactly once" (`submitForm`)
 - [ ] An `ok: false` envelope updates the state and re-renders the form **in place** — no boundary is
       entered, no field value is lost, asserted against front 31's error-boundary test which asserts
       the same envelope does not reach it
-- [ ] A component that calls `actionState` twice with different ids gets two independent states
+- [x] A component that calls `actionState` twice with different ids gets two independent states — `jhonstart-forms/test/form_test.bp` "form: actionState's server pass…" (second id)
 
 ### Step 4 — `formStatus`
 
@@ -278,9 +278,9 @@ The hook a nested submit button calls to disable itself, without the parent thre
 through every intermediate component. Absent from this doc revision — see *Reference gaps*.
 
 **Acceptance:**
-- [ ] The server pass yields `FormStatus(pending: false, actionId: "", method: "post")`
+- [x] The server pass yields `FormStatus(pending: false, actionId: "", method: "post")` — `jhonstart-forms/test/form_test.bp` "form: formStatus is idle on the server pass and outside any form"
 - [ ] Inside a form whose submit is in flight, `pending` is `true` and `actionId` is that form's id
-- [ ] Outside any form, `pending` is `false` and `actionId` is `""` — never an error
+- [x] Outside any form, `pending` is `false` and `actionId` is `""` — never an error — `jhonstart-forms/test/form_test.bp` "form: formStatus is idle…" (`formStatusOf("")`)
 - [ ] Two forms submitting at once give each button its own form's status, asserted with two ids
 
 ### Step 5 — `optimistic`
@@ -295,9 +295,9 @@ pub fn applyOptimistic<T>(base: T, actions: Array<T>, apply: fn(current: T, acti
 ```
 
 **Acceptance:**
-- [ ] The server pass yields `#(base, <no-op>)` and rendering it twice gives identical HTML
-- [ ] `applyOptimistic(0, [1, 1, 1], { c, a -> c + a }) == 3`
-- [ ] `applyOptimistic(base, [], apply) == base` — no prediction is the identity
+- [x] The server pass yields `#(base, <no-op>)` and rendering it twice gives identical HTML — `jhonstart-forms/test/form_test.bp` "form: optimistic's server pass is the base and a no-op push"
+- [x] `applyOptimistic(0, [1, 1, 1], { c, a -> c + a }) == 3` — `jhonstart-forms/test/form_test.bp` "form: applyOptimistic folds the actions, and no prediction is the identity"
+- [x] `applyOptimistic(base, [], apply) == base` — no prediction is the identity — `jhonstart-forms/test/form_test.bp` "form: applyOptimistic folds…"
 - [ ] When an envelope arrives the recorded actions are dropped, so a commit and a roll-back are the
       same code path, asserted by one test per outcome ending in the same assertion
 - [ ] `push` called after the envelope arrives records against the next submit, not the finished one
@@ -312,24 +312,24 @@ pub fn searchFormAttrs(props: SearchFormProps) -> Array<#(string, string)>
 ```
 
 **Acceptance:**
-- [ ] `searchFormAttrs` emits `method="get"` and `action="/search"`, and `data-jh-a` is absent —
-      a GET form is not an action submit and front 24's interceptor must not claim it
-- [ ] `data-jh-sf="1"` marks it for the navigation interceptor instead — a `data-jh-*` marker,
-      because jhonstart writes it (decision 113), registered in `contracts.md § 2` with owner 67
-- [ ] With `prefetch: true` the target path is prefetched through front 27's `__jhLinkPrefetch`
-- [ ] Un-hydrated, the browser's own GET submit produces the same URL the hydrated path produces,
-      asserted by comparing `encoding.formStringify` of the field list against the built URL
+- [x] `searchFormAttrs` emits `method="get"` and `action="/search"`, and `data-jh-a` is absent —
+      a GET form is not an action submit and front 24's interceptor must not claim it — `jhonstart-forms/test/form_test.bp` "form: the search form is method=get with data-jh-sf and no data-jh-a"
+- [x] `data-jh-sf="1"` marks it for the navigation interceptor instead — a `data-jh-*` marker,
+      because jhonstart writes it (decision 113), registered in `contracts.md § 2` with owner 67 — `jhonstart-forms/test/form_test.bp` "form: the search form…"; `contracts.md § 2` registers it with owner 67
+- [x] With `prefetch: true` the target path is prefetched through front 27's `__jhLinkPrefetch` — `prefetchSearch` → `jhonstart-link`'s `linkPrefetch`; `jhonstart-forms/test/form_test.bp` "form: prefetch goes through the link prefetcher only when asked"
+- [x] Un-hydrated, the browser's own GET submit produces the same URL the hydrated path produces,
+      asserted by comparing `encoding.formStringify` of the field list against the built URL — `jhonstart-forms/test/form_test.bp` "form: the GET submit's URL is the one the client navigation builds"
 
 ### Step 7 — `invokeAction`, the scripted call
 
 **Acceptance:**
-- [ ] `invokeAction("a_9f2c1b7e", ["x"], "X-Bp-Action")` hands `__jhFormInvoke` exactly the body
+- [x] `invokeAction("a_9f2c1b7e", ["x"], "X-Bp-Action")` hands `__jhFormInvoke` exactly the body
       `writeRpcBody(RpcCall(id: "a_9f2c1b7e", args: ["x"]))` answers and the header name passed —
-      asserted by a recording stub cell
-- [ ] the answer is `parseActionState` of what the cell returned; an `ok: false` envelope resolves
-      the future with that state and raises nothing
-- [ ] `git grep -n '"v":1' modules/jhonstart/src` is empty — the body is written by `actions` only
-- [ ] no `X-Bp-Action` or other header literal under `src/`; the name is the `actionHeader` passed in
+      asserted by a recording stub cell — `jhonstart-forms/test/form_test.bp` "form: invokeAction hands the cell writeRpcBody's body and the header passed" (recording stub cell)
+- [x] the answer is `parseActionState` of what the cell returned; an `ok: false` envelope resolves
+      the future with that state and raises nothing — `jhonstart-forms/test/form_test.bp` "form: invokeAction…" (`ok: false` resolves with the state)
+- [x] `git grep -n '"v":1' modules/jhonstart/src` is empty — the body is written by `actions` only
+- [x] no `X-Bp-Action` or other header literal under `src/`; the name is the `actionHeader` passed in
 
 ## Examples
 
@@ -404,15 +404,15 @@ work, and it is falsifiable without a browser.
 
 ## Definition of done
 
-- [ ] `src/form.bp` exists and `botopink build` succeeds in `repository/jhonstart/`; there is no
-      `form_state.bp`
-- [ ] `ActionState`, `parseActionState` and the RPC body come from `"actions"` (decision 116); the
+- [x] `src/form.bp` exists and `botopink build` succeeds in `repository/jhonstart/`; there is no
+      `form_state.bp` — `modules/jhonstart-forms/src/form.bp`; no `form_state.bp`
+- [x] `ActionState`, `parseActionState` and the RPC body come from `"actions"` (decision 116); the
       `state` literal is asserted in `libs/actions` only
-- [ ] `invokeAction` is the one writer of the JSON-RPC body in the browser
+- [x] `invokeAction` is the one writer of the JSON-RPC body in the browser
 - [ ] Every element constructor the examples call (`form`, `input`, `button`, `label`) is imported
       from `jhonstart` and marked `// provided by front 94`; this front's source defines none, and
       `element.bp` is unmodified
-- [ ] `formStatus` and `optimistic` are marked in `repository/jhonstart/docs.md` as specified
-      from upstream React rather than from `NEXTJS-DOCS.md`
+- [x] `formStatus` and `optimistic` are marked in `repository/jhonstart/docs.md` as specified
+      from upstream React rather than from `NEXTJS-DOCS.md` — `docs.md` § *Forms*
 - [ ] Every `// LANGUAGE GAP:` marker in the three example files appears in the table above
-- [ ] The front's tests are green on its assigned target — `commonJS`
+- [x] The front's tests are green on its assigned target — `commonJS` — 15/15 on commonJS and erlang
