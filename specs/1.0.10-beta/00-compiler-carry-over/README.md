@@ -548,7 +548,7 @@ non-empty `.d.ts` (no `tsc` in the checkout when 04 closed) and `42.toString()` 
 **Partial work:** none.
 **Depends on:** nothing.
 **Acceptance:**
-- [ ] `optional<i32>` and `x?.f` on a `?T` each a located error with the decided text; a cell each
+- [x] `optional<i32>` and `x?.f` on a `?T` each a located error with the decided text; a cell each — compiler `4dd24965` (`x.f` on a `?T` is the error, `x?.f` the spelling; `Option<i32>` refused alike); `reject/member_of_optional` and `comptime/tests/infer_errors.zig` `decision 44:` (the annotation diagnostic has its unit test; a `reject/` cell for 44 is front 12's to add)
 - [ ] an out-of-range read prints `null` on all four backends, one cell; `tuple_labels.bp::§6 T4` reds
       at `check`
 - [x] `Env.warnings` exists and one warning renders (the always-false `is` of 01 step 3 is the first) — compiler `bdbbeae6`: `OkData.warnings`, rendered by `botopink check` under `warning:`; §1.4's `[]` birth is the second writer. `build` / `test` / the LSP do not print them yet

@@ -633,16 +633,16 @@ them is a rendering problem:
    got void`. `ast.zig:1734` already assigns the index expression's typing to this front; the
    consequence 11 found is that hover, inlay hints and the annotation code action all offer `: void`
    for every index expression.
-2. **`val v: optional<i32> = null;` checks clean** — the checker's internal name (`infer.zig:4590`) is
+2. **Landed** (`4dd24965`, decision 44) — **`val v: optional<i32> = null;` checks clean** — the checker's internal name (`infer.zig:4590`) is
    reachable as a type annotation, which [decision 2](../../../1.0.5-beta/decisions-taken.md) and `builtins.d.bp:56-58`
    say no spelling but `?T` is. Opened as [question 44](../../../1.0.5-beta/decisions-pending.md).
-3. **`val v: Option<i32> = null;`** answers `type mismatch: expected Option, got optional` — not the
+3. **Landed** (`4dd24965`) — **`val v: Option<i32> = null;`** answers `type mismatch: expected Option, got optional` — not the
    pointed diagnostic `builtins.d.bp:56-58` promises, and the message leaks the internal name.
 
 
 ## Handed over by `01-std/01-std-lib-enablement` (2026-09-25)
 
-1. **An integer literal is `i32` and never widens to `i64`.** With `n: i64`, `n * 1000` is `type
+1. **Landed** (compiler `3a504c90`) — **An integer literal is `i32` and never widens to `i64`.** With `n: i64`, `n * 1000` is `type
    mismatch: expected i64, got i32`, and so are `val k: i64 = 1000;`, `t - (t % 1000)`, a literal or a
    literal product (`3 * 86400000`) passed to an `i64` parameter, and `r.unwrapOr(0)` on an
    `@Result<i64, _>` — the last one unlocated (`--> src/time.bp`, no line). `std/time` works around it
