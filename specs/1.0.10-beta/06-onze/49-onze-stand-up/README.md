@@ -274,11 +274,11 @@ pub default mod integration;
 ```
 
 **Acceptance:**
-- [ ] `repository/onze/botopink.json` parses and names exactly the four `files` above
-- [ ] `botopink build` succeeds in `repository/onze/`
-- [ ] `repository/onze/AGENTS.md`, `README.md` and `docs.md` exist and follow the sibling repos'
+- [x] `repository/onze/botopink.json` parses and names exactly the four `files` above
+- [x] `botopink build` succeeds in `repository/onze/`
+- [x] `repository/onze/AGENTS.md`, `README.md` and `docs.md` exist and follow the sibling repos'
       layout (`repository/emilia/AGENTS.md` is the model)
-- [ ] `zig build test-libs` discovers `onze` as a sibling library and reports a cell for it on both
+- [x] `zig build test-libs` discovers `onze` as a sibling library and reports a cell for it on both
       targets
 
 ### Step 2 — `config.bp`
@@ -311,13 +311,13 @@ pub fn withDev(base: OnzeConfig, dev: bool) -> OnzeConfig { … }
 ```
 
 **Acceptance:**
-- [ ] `defaultConfig()` returns `port: 3000`, `basePath: ""`, `appDir: "app"`, `publicDir: "public"`,
+- [x] `defaultConfig()` returns `port: 3000`, `basePath: ""`, `appDir: "app"`, `publicDir: "public"`,
       `outDir: ".onze"`, `dev: false`, `actionsBodyLimit: 1048576` (rakun front 24's 1 MiB default,
       decision 117), `allowedRedirects: []` — the values the CLI's scaffold writes into `onze.json`
-- [ ] `withPort(defaultConfig(), 4000).appDir == defaultConfig().appDir` — the copy carries every
+- [x] `withPort(defaultConfig(), 4000).appDir == defaultConfig().appDir` — the copy carries every
       other field
-- [ ] `withPort(defaultConfig(), 4000).origin() == "http://localhost:4000"`
-- [ ] `test/config_test.bp` green on `commonJS` and on `erlang`
+- [x] `withPort(defaultConfig(), 4000).origin() == "http://localhost:4000"`
+- [x] `test/config_test.bp` green on `commonJS` and on `erlang`
 
 ### Step 3 — `types.bp`
 
@@ -345,13 +345,13 @@ all have to agree on one spelling of the routing-file table, and one declaration
 documents agree.
 
 **Acceptance:**
-- [ ] `AppFile.kind` covers exactly the eight conventions in `NEXTJS-DOCS.md § 3` — no more, no fewer
-- [ ] The `segment` produced for `app/blog/[slug]/page.bp` is `"blog/[slug]"`, matching front 22's
+- [x] `AppFile.kind` covers exactly the eight conventions in `NEXTJS-DOCS.md § 3` — no more, no fewer
+- [x] The `segment` produced for `app/blog/[slug]/page.bp` is `"blog/[slug]"`, matching front 22's
       decorator argument character for character, including the bracket spelling
-- [ ] The `segment` produced for `app/(marketing)/about/page.bp` is `"(marketing)/about"` — the group
+- [x] The `segment` produced for `app/(marketing)/about/page.bp` is `"(marketing)/about"` — the group
       is in the segment and absent from the route pattern, which is front 22's distinction, not this
       front's
-- [ ] `test/types_test.bp` green on `commonJS` and on `erlang`
+- [x] `test/types_test.bp` green on `commonJS` and on `erlang`
 
 ### Step 4 — `integration.bp`
 
@@ -393,7 +393,7 @@ because an app author reads onze's docs and not rakun's internals.
       no matcher. Any other onze file reaching for
       the seam means the seam is in the wrong place, and the front says so under *Blocked* rather
       than adding a second wiring point
-- [ ] Nothing under `repository/onze/src/` calls emilia's `flush()`, and no onze file defines a style
+- [x] Nothing under `repository/onze/src/` calls emilia's `flush()`, and no onze file defines a style
       sink — the flush moments are jhonstart front 30's and the adaptation is the bridge's
 - [ ] The renderer handed to rakun maps `Response.status` / `header` / `write` / `close` onto
       `out.setStatus` / `setHeader` / `write` / `close` one to one and resolves when jhonstart's
@@ -417,8 +417,8 @@ Written down so the question is answered before it is asked.
 | `RouteSegmentConfig(dynamic, revalidate)` | Front 60's `SegmentConfig(dynamic, dynamicParams, revalidate, fetchCache)` |
 
 **Acceptance:**
-- [ ] `repository/onze/src/` contains no type whose name also exists in rakun or jhonstart
-- [ ] `docs.md` carries this table, so the question is answered before it is asked
+- [x] `repository/onze/src/` contains no type whose name also exists in rakun or jhonstart
+- [x] `docs.md` carries this table, so the question is answered before it is asked
 
 ### Step 6 — The import alias map
 
@@ -459,12 +459,12 @@ pub fn resolveAlias(map: AliasMap, spec: string) -> string
 ```
 
 **Acceptance:**
-- [ ] `resolveAlias` with `@/components → components` maps `"@/components.post_card"` to
+- [x] `resolveAlias` with `@/components → components` maps `"@/components.post_card"` to
       `"components.post_card"`
-- [ ] A spec with no matching prefix is returned unchanged
-- [ ] Two prefixes where one is a prefix of the other (`@/lib` and `@/lib/db`) resolve longest-first,
+- [x] A spec with no matching prefix is returned unchanged
+- [x] Two prefixes where one is a prefix of the other (`@/lib` and `@/lib/db`) resolve longest-first,
       asserted
-- [ ] An alias whose target escapes the package root (`"..": ".."`) is rejected at config load, naming
+- [x] An alias whose target escapes the package root (`"..": ".."`) is rejected at config load, naming
       the entry
 
 ### Step 7 — `ONZE_PUBLIC_` and the env split
@@ -483,10 +483,10 @@ the list front 68 inlines into the bundle cannot contain a non-public value even
 caller passes one.
 
 **Acceptance:**
-- [ ] `isPublicEnvName("ONZE_PUBLIC_API_URL")` is true; `isPublicEnvName("DATABASE_URL")` is false
-- [ ] `isPublicEnvName("onze_public_x")` is false — the prefix is case-sensitive, asserted, because a
+- [x] `isPublicEnvName("ONZE_PUBLIC_API_URL")` is true; `isPublicEnvName("DATABASE_URL")` is false
+- [x] `isPublicEnvName("onze_public_x")` is false — the prefix is case-sensitive, asserted, because a
       case-insensitive match is how a secret named `Onze_Public_Secret` would leak
-- [ ] `publicEnv(["ONZE_PUBLIC_A", "SECRET_B"])` returns at most one entry, never two
+- [x] `publicEnv(["ONZE_PUBLIC_A", "SECRET_B"])` returns at most one entry, never two
 - [ ] The README of front 68 cites this front for the rule and does not restate the prefix
 
 ## Examples
@@ -526,16 +526,49 @@ decorator takes and front 50's scan compares against.
 unambiguously onze's and not a sibling's. The assertions that need `emilia`, `jhonstart` or `rakun`
 live with the examples.
 
+## Where it stands
+
+Landed on onze `front/06-onze` (the orchestrator's workspace, before the decision-79 takeover):
+`modules/onze/src/{config,types,integration}.bp`, `test/{config,types,integration}_test.bp`
+(21 tests, commonJS and erlang, `botopink test` and `botopink-lib-test` rows), `docs.md`, and
+`modules/onze-test/src/{core,fixtures}.bp` with its 7 tests. The file cut is `modules.md`'s:
+`repository/onze/src/…` in this README reads `repository/onze/modules/onze/src/…`, and step 1's
+`botopink build` runs in the member (the workspace root refuses it, decision 75).
+
+**Blocked on rakun** (the boxes left open in step 4): rakun's `ChunkWriter` with `setStatus` /
+`setHeader`, `PageRenderer` and `page(pattern, render)` (front 23 step 1), the core on
+`["erlang"]` (front 04 — today `modules/rakun` is `["commonJS"]` and `rakun-web` `["erlang"]`, so
+no both-target member can import the pair), `registerStaticRoot` (front 82) and a library-side way
+to apply configuration entries do not exist at rakun `2a01ea5`. The boot therefore hands rakun
+data and adapters — `rakunEntries(config, i18nExclude)` (the five `rakun.*` keys),
+`responseOver(setStatus, setHeader, write, close)`, `chainFor(patterns)` over the ancestor
+patterns rakun's layout chain names — and `Onze.run` (`Rakun.run(App(port, basePath))` after the
+boot), the per-page renderer registration and `requestData(req)` from rakun's `Request` land
+when those do. The `__bp_action` box stays open because `jhonstart-forms/test/form_test.bp`
+passes the two names in as literals (a test of the setter, not a default). Step 7's last box stays
+open: front 68's README names the prefix while citing this front.
+
+**Choices** recorded in `../../decisions-pending.md` 49-a…d.
+
+### Compiler findings (each repro is the whole program, inline)
+
+| # | Finding | Minimal repro | Workaround in onze |
+|---|---|---|---|
+| F1 | A `pub val` imported from a sibling module is `undefined` on commonJS and fails the erlang compile (`escript: There were compilation errors`) | `src/a.bp`: `pub val greeting: string = "hi";` · `test/a_test.bp`: `import {greeting} from "a"; test "r: x" { assert greeting == "hi"; }` | every constant is a `pub fn` |
+| F2 | Importing a record type from another package does not bring the types its fields or methods name from the package's *other* modules: `unknown type 'Other'`, located at the dependency's line in the consumer's file | lib `a.bp`: `pub type Other(y: i32)`; lib `c.bp`: `import {Other} from "a"; pub type Outer(others: Array<Other>) {…} pub fn outer() -> Outer {…}`; app: `import {Outer, outer} from "lib"; pub fn seven() -> Outer { return outer(); }` | `integration.bp` imports `RenderPlugin`, `RequestData`, `ErrorInfo`, `LayoutProps`, `PageContext`, `OpenGraph`, `TwitterCard`, `Icons` beside `App` / `PageInput` / `UiSegment` |
+| F3 | A dependency's own `dependencies` are not followed (path or workspace), and the consumer's map is loaded in the order written: `jhonstart-emilia` listed before `emilia` gives `unbound variable 'flush'` inside the bridge | app deps `{ "jhonstart-emilia": {path}, "emilia": {path} }` | each member lists the jhonstart chain first, in dependency order |
+| F4 | `xs.at(i).unwrapOr(d)` inside a record method is not lowered: commonJS `__bp_array_at(...).unwrapOr is not a function`, erlang module does not compile; the same body in a free function works | `pub type Box(items: Array<R>) { pub fn firstV(self: Self) -> string { val hit: Array<R> = self.items.filter({ r -> r.v != "" }); return hit.at(0).unwrapOr(R(v: "")).v; } }` | the method calls a free function |
+
 ## Definition of done
 
-- [ ] `repository/onze/` exists with `botopink.json`, `src/root.bp`, `src/config.bp`,
+- [x] `repository/onze/` exists with `botopink.json`, `src/root.bp`, `src/config.bp`,
       `src/types.bp`, `src/integration.bp` (the wiring), `AGENTS.md`, `README.md`, `docs.md`
-- [ ] `.github/workflows/test.yml` runs `botopink test --target commonJS` and `--target erlang`
-- [ ] `onze` appears as a cell in `zig build test-libs` on both targets
-- [ ] The four seams are documented in `docs.md` with the same precision as the *Mechanism* section
+- [x] `.github/workflows/test.yml` runs `botopink test --target commonJS` and `--target erlang`
+- [x] `onze` appears as a cell in `zig build test-libs` on both targets
+- [x] The four seams are documented in `docs.md` with the same precision as the *Mechanism* section
       here, because fronts 22, 23, 48, 50, 53, 68 and 69 all read them
-- [ ] `docs.md` carries the *What this front deliberately does not build* table
-- [ ] `docs.md` states that onze is opt-in: nothing in `libs/std` or the compiler references it
-- [ ] `docs.md` states the OTP version onze requires, as the replacement for Next's
+- [x] `docs.md` carries the *What this front deliberately does not build* table
+- [x] `docs.md` states that onze is opt-in: nothing in `libs/std` or the compiler references it
+- [x] `docs.md` states the OTP version onze requires, as the replacement for Next's
       "Node.js >= 20.9" system requirement (`NEXTJS-DOCS.md § 2`)
-- [ ] The front's tests are green on its assigned target — both, here
+- [x] The front's tests are green on its assigned target — both, here

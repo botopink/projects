@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e), three of `00 · 23-std-purity` (23-a…c), five of front 95's (95-a…e), four of `00 · 16-formatter` (16-a…d), track C's (26-a, 27-a, 30-a…e, 31-a), `00 · 04-js` / `05-wasm`'s (0405-a…b) and `00 · 02-erlang` / `03-beam`'s (0203-a…b). Every other question this milestone raised is answered in
+**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e), three of `00 · 23-std-purity` (23-a…c), five of front 95's (95-a…e), four of `00 · 16-formatter` (16-a…d), track C's (26-a, 27-a, 30-a…e, 31-a), `00 · 04-js` / `05-wasm`'s (0405-a…b) and `00 · 02-erlang` / `03-beam`'s (0203-a…b) and track E's (49-a…d). Every other question this milestone raised is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 91, 92, 93 and 97 by decisions 103 and 104, 99 by 108,
 94, 100 and 101 by 113; every number up to 117 is answered — 114 answers the eight seams decision 113 left open, 115 the five points 114 left open, 116 nine more pieces two libraries both run, 117 the nine points 113–116 left, and 118–127 register the maintainer's effect revision (the return type is the annotation, `@Task<T>`, only `@Result` fails, `@Iterator<T>` / `@Stream<T>`, `async { }`, `iter` / `stream` loops, no compatibility mode — front `00 · 24-effects-by-return`), and 128 merges `@Use<C, T>` and `@Component<T>` into `@Component<C, T>`. The next free number is **130**.
 
@@ -613,6 +613,67 @@ Implemented on `front/02-03-erlang-beam` (worktree `.tasks/02-03-erlang-beam`, 2
 > **Recommendation.** (c), and (a) until it lands: decision 67 argues for (b), but (b) turns
 > programs that run correctly today into build errors for a construct the compiler, not the
 > program, cannot yet lower.
+
+## Track E (onze) — choices made in implementation, to confirm
+
+Decided by the implementation of `06-onze` fronts on `front/06-onze` (worktree `.tasks/06-onze`,
+onze on the local branch `front/06-onze` cut from the prepared orchestrator `91ea040`,
+2026-09-26) so the fronts could land; the maintainer confirms or reverses each.
+
+### 49-a · The core's suites render through the core's own `describe*`; `onze-test` wraps them
+
+> **Raised by:** `06-onze/49-onze-stand-up` test plan, 2026-09-26
+> **Measured.** `test-snap.md` writes the core's suites as `import {assertConfig, …} from
+> "onze-test"`, and front 49's test plan says the core's `test/` imports only std. `onze-test`
+> depends on `onze`, and a manifest has no dev-dependencies, so the core cannot import it.
+> **Options.** (a) the core owns `describeConfig` / `describeAliases` / `describeAppFiles` /
+> `describePublicEnv` (the text `onze info` prints too); the core's suites call std's
+> `snapshots.assertAs` over them, and `onze-test`'s `assert<Subject>` helpers are thin wrappers
+> with their own suite — implemented; (b) move the core's snapshot suites into `onze-test/test/`.
+> **Recommendation.** (a): one rendering, the snapshot paths `test-snap.md` names, and the
+> std-only rule holds for `config_test` / `types_test`. The snapshot slugs are std's
+> (`snapshots.slugOf`: `_` separators), not the `-` `test-snap.md` spells.
+> **Blocks.** Nothing.
+
+### 49-b · The boot's rakun half is data and adapters until rakun 23 / 04 / 82 land
+
+> **Raised by:** `06-onze/49-onze-stand-up` step 4, 2026-09-26
+> **Measured.** At rakun `2a01ea5` there is no `ChunkWriter`, `PageRenderer`, `page(pattern,
+> render)` or `registerStaticRoot`; `modules/rakun` is `["commonJS"]` and `rakun-web` `["erlang"]`,
+> so a both-target member cannot import them together.
+> **Options.** (a) `integration.bp` imports jhonstart, `jhonstart-forms` and the bridge now and
+> hands rakun `rakunEntries(config, i18nExclude)` (the five `rakun.*` keys as pairs) and
+> `responseOver(setStatus, setHeader, write, close)`; `Onze.run` lands with rakun's pieces —
+> implemented; (b) write `Onze.run` against rakun's commonJS core now and make the core
+> commonJS-only.
+> **Recommendation.** (a): the jhonstart half is exercised on both rows today (a render through
+> the bridge, a 307 through the writer), and (b) would pin the core to the row rakun is leaving.
+> The core's `integration_test.bp` imports jhonstart and emilia — the one suite of the core that
+> is not std-only, because the boot is the seam it tests.
+> **Blocks.** Step 4's `Onze.run` boxes; rakun owes front 23 step 1, 04 and 82.
+
+### 49-c · `onze.json` refuses an unknown key; the config table has every field
+
+> **Raised by:** `06-onze/49-onze-stand-up` step 2, 2026-09-26
+> **Measured.** The README lists the fields but not what a key outside them does.
+> **Options.** (a) an unknown key, a duplicate, a value of the wrong kind, a fractional or
+> out-of-range port (`1..65535`) and a non-string `allowedRedirects` entry are each an `Error`
+> naming the key — implemented; (b) ignore unknown keys.
+> **Recommendation.** (a) (decision 67: a misspelt `"prot"` must not silently leave port 3000).
+> `describeConfig` prints `actionsBodyLimit` and `allowedRedirects` rows beside the eight
+> `test-snap.md` shows (decision 117 added the two fields after the map was written).
+> **Blocks.** Nothing.
+
+### 49-d · `chainFor` takes the ancestor patterns; onze imports nothing from `routing`
+
+> **Raised by:** `06-onze/49-onze-stand-up` step 4, 2026-09-26
+> **Measured.** jhonstart builds its client chain with `routing`'s `ancestorPatterns`; step 4 says
+> the boot imports nothing from `routing`.
+> **Options.** (a) `chainFor(patterns)` maps `segmentFor` over the patterns rakun's layout chain
+> names for the matched route — implemented; (b) import `ancestorPatterns`.
+> **Recommendation.** (a): rakun matched the route and knows its chain; onze does not derive it
+> twice.
+> **Blocks.** Nothing.
 
 ## Open
 
