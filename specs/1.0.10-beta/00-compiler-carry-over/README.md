@@ -582,7 +582,7 @@ share one generic-parameter renderer and print `type Name<G>(…)`, `behavior Na
 **Origin:** 14 step 3 — the per-declaration comptime module goes to the resident node as `.S`
 (`erlc +from_asm`) instead of Erlang source, so no Erlang source is in the compile path (decision 24:
 the principle governs, every step happens; decision 62: after 13). What it needs, from
-[`14-comptime-on-beam/migration.md`](./14-comptime-on-beam/migration.md) stage 3: an untyped lowering
+[`14-comptime-on-beam`](./14-comptime-on-beam/README.md): an untyped lowering
 mode in `beam_asm.zig` (`+` → `'__bp_add'`, `.length` → `'__bp_len'`, located `unsupported_method`),
 the host records without declarations (`Span`, `CustomNode`, `Binding`, `Source`, `Context`, …), a
 `main/1` entry, `writeModule` writing `<module>.S`, the `.erl` path kept as a per-declaration fallback

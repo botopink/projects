@@ -197,7 +197,7 @@ pub fn delayed(ms: i32) -> @Task<void> {
 | `try await t catch x` | `U` (or `x`) | with an await channel |
 
 ```bp
-// waiting on several at once (std/async)
+// waiting on several at once (std's async)
 import {async} from "std";
 
 pub fn dashboard() -> @Task<@Result<string, string>> {
@@ -355,7 +355,7 @@ pub fn Badge(label: string) -> Element {
 
 ```bp
 // rakun — the owner of the request context
-pub type RequestBase {}
+pub type RequestBase();
 pub type RequestScope(id: string) implement @Context<RequestBase>
 
 pub fn requestId() -> @Component<RequestBase, string> {
@@ -541,7 +541,7 @@ fn evensOf(xs: i32[]) -> @Iterator<i32> {
 
 ### 5.5 A type that "is iterable": a method returning an iterator
 
-There is no `Iterable`. The type exposes an ordinary method:
+No behavior marks a type as iterable: the type exposes an ordinary method:
 
 ```bp
 pub type Grid(cells: i32[]) {
