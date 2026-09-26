@@ -157,14 +157,14 @@ Every family and shade front 33 declares is available on all three stops, plus `
 declaration each.
 
 **Acceptance:**
-- [ ] all three attachment values, four clip values, three origin values
-- [ ] all nine positions, with the four two-word values carrying exactly one space
-- [ ] all six repeat values; `.Bg.Repeat.None` emits `no-repeat`
-- [ ] three size values
-- [ ] `.Bg.Image.None` emits `background-image:none`
-- [ ] `.Bg.Pos.*` and `.Layout.Position.*` are distinct paths and neither shadows the other
-- [ ] the legacy `.Bg.White` path still emits `background:#ffffff`, and `emilia.bp:419-421` passes
-      untouched
+- [x] all three attachment values, four clip values, three origin values — held: tests `background-attachment — the three values of § 10.1`, `background-clip — the four values…`, `background-origin — the three values…`
+- [x] all nine positions, with the four two-word values carrying exactly one space — held: `background-position — each two-word value carries exactly one space and no hyphen`
+- [x] all six repeat values; `.Bg.Repeat.None` emits `no-repeat` — held: `background-repeat — the six values of § 10.7, None spelling no-repeat`
+- [x] three size values — held: `background-size — the three values of § 10.8…`
+- [x] `.Bg.Image.None` emits `background-image:none` — held: `background-image — bg-none is the one non-gradient row of § 10.4`
+- [x] `.Bg.Pos.*` and `.Layout.Position.*` are distinct paths and neither shadows the other — held: `background-position — .Bg.Pos and .Layout.Position are two properties`
+- [x] the legacy `.Bg.White` path still emits `background:#ffffff`, and `emilia.bp:419-421` passes
+      untouched — held (shape: the `emilia.bp:419-421` cite is stale; pinned by `the legacy Bg leaves are byte-identical after this front`)
 
 ### Step 2 — gradient direction
 
@@ -177,10 +177,10 @@ declaration each.
 One fn builds the whole declaration from the direction phrase, so adding a direction is one arm.
 
 **Acceptance:**
-- [ ] all eight directions emit `linear-gradient(<phrase>, var(--tw-gradient-stops))` with the
-      phrase exactly as `§ 10.4` prints it — `to top right`, not `to top-right`
-- [ ] one space after the comma
-- [ ] the direction phrases are spelled in exactly one place
+- [x] all eight directions emit `linear-gradient(<phrase>, var(--tw-gradient-stops))` with the
+      phrase exactly as `§ 10.4` prints it — `to top right`, not `to top-right` — held: `gradient direction — the eight phrases of § 10.4`, `…a corner is two keywords, not a hyphenated one`
+- [x] one space after the comma — held: `gradient direction — exactly one space after the comma, on all eight`
+- [x] the direction phrases are spelled in exactly one place — held: `emilia.bp:gradientToTokenToCss` (+ `linearGradient`)
 
 ### Step 3 — gradient stops
 
@@ -194,15 +194,15 @@ The colour half of each stop is `paletteVar(family, shade)` from front 33. This 
 colour table.
 
 **Acceptance:**
-- [ ] `.Gradient.From.Indigo.500` and `.Bg.Color.Indigo.500` reference the same custom property,
-      asserted by comparing the substring `var(--color-indigo-500)` in both outputs
-- [ ] `From` sets `--tw-gradient-from` and the two-stop `--tw-gradient-stops`
-- [ ] `Via` sets `--tw-gradient-via` and the three-stop `--tw-gradient-stops`
-- [ ] `Stop` sets `--tw-gradient-to` only
-- [ ] a `From` + `Via` + `Stop` triple composes in one class body, with `Via`'s three-stop list
+- [x] `.Gradient.From.Indigo.500` and `.Bg.Color.Indigo.500` reference the same custom property,
+      asserted by comparing the substring `var(--color-indigo-500)` in both outputs — held: `gradient stops — the stop and the background read ONE custom property`
+- [x] `From` sets `--tw-gradient-from` and the two-stop `--tw-gradient-stops` — held (shape: the terminal reference carries a `var(--tw-gradient-to, transparent)` fallback for upstream's `@property` default, per emilia AGENTS.md front 39): `gradient stops — From sets its colour and the two-stop list`
+- [x] `Via` sets `--tw-gradient-via` and the three-stop `--tw-gradient-stops` — held (shape: `from`/`to` references carry the `transparent` fallback): `gradient stops — Via sets its colour and the three-stop list`
+- [x] `Stop` sets `--tw-gradient-to` only — held: `gradient stops — Stop sets the terminal colour AND NOTHING ELSE`
+- [x] a `From` + `Via` + `Stop` triple composes in one class body, with `Via`'s three-stop list
       overriding `From`'s two-stop list because it is listed after it — which makes token order
-      load-bearing, exactly as contract 4 in [`contracts.md`](../../contracts.md) requires
-- [ ] the custom-property names are checked against upstream before merge — see *Reference gaps*
+      load-bearing, exactly as contract 4 in [`contracts.md`](../../contracts.md) requires — held: `gradient stops — From + Via + Stop composes, and order is load-bearing`, `…reversing the two lists reverses which one wins`
+- [x] the custom-property names are checked against upstream before merge — see *Reference gaps* — held: names verified, composition simplified after the check (note above `emilia.bp:gradientFromVar`; AGENTS.md front 39 row)
 
 ### Step 4 — the dispatchers and the top-level arm
 
@@ -211,12 +211,12 @@ colour table.
 top-level `case` for `Gradient`; `Bg` already has one.
 
 **Acceptance:**
-- [ ] every arm is an arrow arm, and each dispatcher follows the `val out = case …; return out;` idiom
-- [ ] each sub-dispatcher has the `(t, th: Theme) -> string` shape front 56's `declSheet` adapts;
-      this front emits no selector and adds no `…TokenToSheet`
-- [ ] the banner `// ── front 39 — backgrounds ──` fences this front's block in both files
-- [ ] the `Bg` sub-sections are appended after front 33's `Bg.Color` block, not interleaved with it
-- [ ] one arm added to the top-level `tokenToCss` / `tokenToSheet` case, in front-number order
+- [x] every arm is an arrow arm, and each dispatcher follows the `val out = case …; return out;` idiom — held: `emilia.bp` front 39 block (`bgTokenToCss` arms, `gradientTokenToCss` and sub-dispatchers)
+- [x] each sub-dispatcher has the `(t, th: Theme) -> string` shape front 56's `declSheet` adapts;
+      this front emits no selector and adds no `…TokenToSheet` — held: every `bg*TokenToCss`/`gradient*TokenToCss` is `(…, th: Theme) -> string`; no `…TokenToSheet`
+- [x] the banner `// ── front 39 — backgrounds ──` fences this front's block in both files — held: `tokens.bp` (inside `Bg`, before `Gradient`) and `emilia.bp` (`bgTokenToCss` arms, `tokenToSheet` arm, main block)
+- [x] the `Bg` sub-sections are appended after front 33's `Bg.Color` block, not interleaved with it — held: `tokens.bp` `Bg` — after `Color` and the legacy leaves
+- [ ] one arm added to the top-level `tokenToCss` / `tokenToSheet` case, in front-number order — **open:** the `Gradient` arm sits after front 45's arms in `tokenToSheet`, not between front 38's and front 40's
 
 ## Examples
 
@@ -278,12 +278,12 @@ What the tests assert:
 
 ## Definition of done
 
-- [ ] every utility in `§ 10.1`–`§ 10.8` that the reference documents has a token
-- [ ] the four undocumented gradient families are recorded in *Reference gaps*, not guessed at
-- [ ] `Gradient` stops call front 33's `paletteVar`; this front holds no colour table
-- [ ] the eight direction phrases are spelled once
-- [ ] the legacy `Bg` leaves emit byte-identical CSS afterwards
-- [ ] the banner fences this front's block in both files, appended at the end
-- [ ] one arm added to the top-level dispatcher, in front-number order
-- [ ] `repository/emilia/AGENTS.md` and the `////` header of `tokens.bp` record the new sections
-- [ ] the front's tests are green on its assigned target — here, both backends, since emilia is comptime
+- [x] every utility in `§ 10.1`–`§ 10.8` that the reference documents has a token — held: `tokens.bp` `Bg.{Attachment,Clip,Origin,Pos,Repeat,Size,Image}` + `Gradient`; `regression — every one of the 910 leaves declares something`
+- [x] the four undocumented gradient families are recorded in *Reference gaps*, not guessed at — held: this README's *Reference gaps*; AGENTS.md front 39 row
+- [x] `Gradient` stops call front 33's `paletteVar`; this front holds no colour table — held: `emilia.bp:gradientFromTokenToCss`/`…Via…`/`…Stop…` call `paletteVar`
+- [x] the eight direction phrases are spelled once — held: `emilia.bp:gradientToTokenToCss`
+- [x] the legacy `Bg` leaves emit byte-identical CSS afterwards — held: `the legacy Bg leaves are byte-identical after this front`
+- [x] the banner fences this front's block in both files, appended at the end — held: front 39 blocks close `Bg` and follow front 45 in `tokens.bp`; last block of `emilia.bp`
+- [ ] one arm added to the top-level dispatcher, in front-number order — **open:** `Gradient` arm trails front 45's in `tokenToSheet`
+- [x] `repository/emilia/AGENTS.md` and the `////` header of `tokens.bp` record the new sections — held: AGENTS.md front 39 row + § Test surface; `tokens.bp` header `Bg` and `Gradient` entries
+- [x] the front's tests are green on its assigned target — here, both backends, since emilia is comptime — held: `modules/emilia` 569/569 on commonJS and erlang (AGENTS.md § Test surface); `examples/emilia-backgrounds`
