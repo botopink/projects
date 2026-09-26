@@ -284,8 +284,8 @@ where it runs, a `run/` cell on the four targets.
 - **The JS interop helper.** Whether an `unwrapOrThrow` (a resolved `Error` turned back into a
   rejection, for JavaScript callers) ships, and where — std or the JS runtime — is not decided.
 - **Confirmations** in `decisions-pending.md`: 24-a (the effect codes), 24-b (`@Task`'s `map` /
-  `then`), 24-c (a prefixed loop's label), 24-f (`test-libs` from
-  a nested worktree), 24-g (std's `async` shape).
+  `then`), 24-c (a prefixed loop's label), 24-g (std's `async` shape). 24-f (`test-libs` from a
+  nested worktree) is decision 143.
 
 ## Risks
 

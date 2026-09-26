@@ -1,11 +1,12 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
 **No question is open.** Implementation choices wait for the maintainer to confirm or reverse them:
-front 24's (24-a…c, 24-f…g), `01-std`'s (01std-a, 01std-c…e), `00 · 23-std-purity`'s (23-a…c), front 95's
+front 24's (24-a…c, 24-g), `01-std`'s (01std-a, 01std-c…e), `00 · 23-std-purity`'s (23-a…c), front 95's
 (95-a…e), `00 · 16-formatter`'s (16-a…b), track C's (26-a, 27-a, 30-b…e, 31-a), `00 · 04-js` /
 `05-wasm`'s (0405-b), `00 · 01-checker`'s (01c-a…b),
 track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…e) and the host methods' (lem-a…f). Every question raised so far is answered in
-[`decisions-taken.md`](./decisions-taken.md); the next free number is **143**.
+[`decisions-taken.md`](./decisions-taken.md) — 24-f is decision 143 (library resolution stops at the
+enclosing checkout; dependencies are transitive); the next free number is **144**.
 
 This file stays because the fronts will fill it again. A front that meets a question it cannot answer
 from the code writes it here rather than guessing, in the shape the others used:
@@ -68,19 +69,6 @@ reverses it. Numbered `24-a` … so they do not collide with the decision number
 > `yield-label-not-generator`. If the maintainer wants the label of a prefixed `for` to name the generator
 > scope too, the parser moves it to the outer node; nothing else changes.
 > **Blocks.** Nothing.
-
-### 24-f · `test-libs` cannot be measured from a worktree nested in the meta checkout
-
-> **Raised by:** step E7
-> **Measured.** `zig build test-libs` from `.tasks/24-effects-by-return/repository/botopink-lang` sees
-> every sibling library twice (`.tasks/…/repository/<lib>` and the main checkout's
-> `repository/<lib>`) and every cell except std fails with "`<lib>` is declared by two libraries".
-> **Options.** (a) the lib-test-runner stops walking up past the first `repository/` ancestor;
-> (b) run `test-libs` only from a non-nested checkout.
-> **Recommendation.** (a), as a `lib-test-runner` fix outside this front. Until then front 24's ledger
-> lines (`scripts/known-red-libs.txt`, `restricted-targets.txt`) were written from a static reading of
-> which libraries spell the pre-118 surface, not from a measured run.
-> **Blocks.** The E7 acceptance box "test-libs green on every row".
 
 ### 24-g · `std/async`'s shape under a Task that never fails (README open point 3)
 

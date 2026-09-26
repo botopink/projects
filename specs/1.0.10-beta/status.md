@@ -54,7 +54,7 @@ README.
 - [x] erlang float literal — every number token is a valid Erlang number (`5e-324` → `5.0e-324`, `0xFF` → `16#FF`), and an exponent literal is an `f64` (`run/float_literal_spellings.bp`, `run/number_literal_erlang_spellings.bp`)
 
 ## In analysis
-- [ ] `00 · 25-gate-perf` (C-33) — steps 1–3 (the bounded worker pool for `botopink-lib-test`, `tests/language` and `check-docs`; the compiler-core suite in shards; the gate's stages side by side). Open: step 4, a content-keyed `.beam` cache for `test-libs`' erlang cells
+- [ ] `00 · 25-gate-perf` (C-33) — steps 1–4 (the bounded worker pool for `botopink-lib-test`, `tests/language` and `check-docs`; the compiler-core suite in shards; the gate's stages side by side; a content-keyed, relocated `.beam` cache for the erlang cells — warm gate 227 → 132 s, `test-libs` 168 → 70 s, same verdicts and output). Decision 143: `test-libs` and the gate run in place in a worktree. Open: the per-cell dependency compile (a `compiler-core` front)
 
 ## Pending
 - [ ] `00 · 24` / commonJS — **an `if` block that `await`s without returning, in a `@Task` body, is lowered into a non-`async` arrow** (`SyntaxError: await is only valid in async functions`), and the test runner then prints no summary for the module yet still counts it as run — a crashed module reads as green in a per-module sum. `repository/jhonstart/repro/commonjs-await-in-if-block/`, measured
