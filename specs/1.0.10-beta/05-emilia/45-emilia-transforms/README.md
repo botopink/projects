@@ -187,12 +187,12 @@ section cannot be constructed by any spelling — verified against the real comp
 builtin-typed fields, and the name keeps the path it would have had, flattened.
 
 **Acceptance:**
-- [ ] `transformTokenToCss(.Rotate.90, th)` returns `rotate:90deg`.
-- [ ] `Token.TransformRotateRaw(value: "17deg")` **constructs** — a test builds one, which is the
-      check that would have failed against a nested `Transform.Rotate.Raw`.
-- [ ] No section in this front's `tokens.bp` block contains a payload leaf.
-- [ ] `transformTokenToCss(.Rotate.Neg.12, th)` returns `rotate:-12deg` — one `-`, no space.
-- [ ] `rotateToCss` and `rotateNegToCss` are exhaustive with no `_` arm.
+- [x] `transformTokenToCss(.Rotate.90, th)` returns `rotate:90deg`. — held: `Transform.Rotate — the five positive steps of § 16.4`
+- [x] `Token.TransformRotateRaw(value: "17deg")` **constructs** — a test builds one, which is the
+      check that would have failed against a nested `Transform.Rotate.Raw`. — held: `TransformRotateRaw / TransformTranslateRaw — they construct, and they emit`
+- [x] No section in this front's `tokens.bp` block contains a payload leaf. — held: `tokens.bp` front 45 block — the two payloads are top-level
+- [x] `transformTokenToCss(.Rotate.Neg.12, th)` returns `rotate:-12deg` — one `-`, no space. — held: `Transform.Rotate.Neg — the negative half, one - and no space`
+- [x] `rotateToCss` and `rotateNegToCss` are exhaustive with no `_` arm. — held (shape: named `transformRotateToCss` / `transformRotateNegToCss`, per the amendment above)
 
 ### Step 2 — `scale`, both axes
 
@@ -217,11 +217,11 @@ the `50` row of each and states the shape, which is the two-value `scale` syntax
 pinned at `1`.
 
 **Acceptance:**
-- [ ] `transformTokenToCss(.Scale.75, th)` returns `scale:.75`; a leading `0` fails.
-- [ ] `transformTokenToCss(.ScaleX.50, th)` returns `scale:.5 1` and `.ScaleY.50` returns
+- [x] `transformTokenToCss(.Scale.75, th)` returns `scale:.75`; a leading `0` fails. — held: `Transform.Scale — no leading zero, no trailing zero`
+- [x] `transformTokenToCss(.ScaleX.50, th)` returns `scale:.5 1` and `.ScaleY.50` returns
       `scale:1 .5` — asserted in adjacent lines, because a copy-paste between them is invisible
-      otherwise.
-- [ ] `.Transform.Scale.100` returns `scale:1`, not `scale:1.0`.
+      otherwise. — held: `Transform.ScaleX / ScaleY — the two-value scale, the other axis at 1`
+- [x] `.Transform.Scale.100` returns `scale:1`, not `scale:1.0`. — held: `Transform.Scale — the ten unaxed steps of § 16.5`
 
 ### Step 3 — `translate`
 
@@ -253,13 +253,13 @@ translate the token set does not name. The identity defaults `--tw-translate-x: 
 `--tw-translate-y: 0` are theme entries this front contributes to front 54.
 
 **Acceptance:**
-- [ ] Every one of the ten rows emits its axis variable **and** the shorthand, in that order.
-- [ ] `transformTokenToCss(.TranslateX.1, th)` contains `calc(var(--spacing) * 1)` — spaces around
-      the `*` kept — and no `rem` literal appears anywhere in this front's block.
-- [ ] `[.TranslateX.Half, .TranslateY.Half]` produces three distinct declarations in
-      `Rule.declarations`: the two axis variables and one shorthand, deduplicated.
-- [ ] The two `--tw-translate-*` identity defaults are contributed to front 54's theme and named in
-      this front's `TODO.md`.
+- [x] Every one of the ten rows emits its axis variable **and** the shorthand, in that order. — superseded: reference and upstream print one declaration, `translate:<axis> var(--tw-translate-<other>, 0)` (amendment above; AGENTS.md front 45): `Transform.TranslateX — the five rows of § 16.10, whole`
+- [x] `transformTokenToCss(.TranslateX.1, th)` contains `calc(var(--spacing) * 1)` — spaces around
+      the `*` kept — and no `rem` literal appears anywhere in this front's block. — held: `Transform.TranslateX.1 — front 54's spacing, not a resolved length`, `regression — no walked leaf of this front resolves a length`
+- [x] `[.TranslateX.Half, .TranslateY.Half]` produces three distinct declarations in
+      `Rule.declarations`: the two axis variables and one shorthand, deduplicated. — superseded: the two axes are two `translate:` declarations and the last wins (amendment above; AGENTS.md front 45): `Transform.Translate — two axes are two declarations, and the last wins`
+- [x] The two `--tw-translate-*` identity defaults are contributed to front 54's theme and named in
+      this front's `TODO.md`. — superseded: `--tw-` is in no `Ns` prefix and `extendTheme` panics, so the `0` rides in `cssVarOr` (AGENTS.md front 45): `regression — --tw-* is in no namespace, which is why the 0 is inline`
 
 ### Step 4 — `skew`
 
@@ -289,10 +289,10 @@ if the upstream page disagrees with the reference file, the reference file is wr
 table changes with a note saying so.
 
 **Acceptance:**
-- [ ] All twelve rows emit the reference's property name verbatim.
-- [ ] The `tokens.bp` docblock carries the flag above, so the next reader does not have to rediscover
-      it.
-- [ ] A reviewer has checked the upstream page and recorded the outcome in the front's `TODO.md`.
+- [x] All twelve rows emit the reference's property name verbatim. — superseded: upstream prints `transform:skewX(Ndeg)`/`skewY`, checked 2026-09-21 (AGENTS.md front 45): `Transform.Skew — the reference file's skew-x: column is never emitted`
+- [x] The `tokens.bp` docblock carries the flag above, so the next reader does not have to rediscover
+      it. — held: `tokens.bp` header `Transform` entry and front 45 block comment
+- [x] A reviewer has checked the upstream page and recorded the outcome in the front's `TODO.md`. — held (shape: recorded with URL and date in the `emilia.bp` front 45 banner, AGENTS.md and the amendment above; `TODO.md` is git-ignored)
 
 ### Step 5 — `transform-origin`, `transform-style`, `backface-visibility`, `perspective`, `zoom`
 
@@ -338,11 +338,11 @@ exactly why they must be copied and not remembered.
 and naming it after the value it emits is clearer than `X3d`.
 
 **Acceptance:**
-- [ ] All thirty-one rows return the reference's strings.
-- [ ] `.Transform.Zoom.50` returns `zoom:0.5` and `.Transform.Scale.50` returns `scale:.5` — the two
-      asserted in adjacent lines, with a comment saying the difference is the reference's.
-- [ ] The five perspective keywords emit `themeVar(...)` lookups; **no `px` literal appears in any
-      perspective arm**, and the five entries are contributed to front 54's theme.
+- [x] All thirty-one rows return the reference's strings. — held: `Transform.Origin — the nine rows…`, `Transform.Style / Backface — four rows…`, `Transform.Perspective — six rows…`, `Transform.PerspectiveOrigin — …`, `Transform.Zoom — the seven rows of § 16.11`
+- [x] `.Transform.Zoom.50` returns `zoom:0.5` and `.Transform.Scale.50` returns `scale:.5` — the two
+      asserted in adjacent lines, with a comment saying the difference is the reference's. — held: `Transform — scale:.5 and zoom:0.5, and the difference is the reference's`
+- [x] The five perspective keywords emit `themeVar(...)` lookups; **no `px` literal appears in any
+      perspective arm**, and the five entries are contributed to front 54's theme. — held (shape: the five entries are `transformEntries()`, composed with `extendTheme`, not in `defaultTheme()`): `Transform.Perspective — six rows, five of them theme references`, `transformEntries — the five --perspective-* of § 16.2`
 
 ### Step 6 — `transform` (the shorthand) and one new arm in `tokenToSheet`
 
@@ -370,12 +370,12 @@ inside it. Each destructures by its declared field name (`value`) — a position
 and is `undefined` at run time.
 
 **Acceptance:**
-- [ ] `.Transform.Shorthand.Cpu` and `.Gpu` emit the reference's strings verbatim, `translate3d` and
+- [x] `.Transform.Shorthand.Cpu` and `.Gpu` emit the reference's strings verbatim, `translate3d` and
       the `, 0` argument included — and now resolve, because the `--tw-*` identity defaults are
-      theme entries and the axis tokens write their own.
-- [ ] The arm sits between front 44's two arms and front 46's, in front-number order, and is one
-      `declSheet(...)` call.
-- [ ] `tokenToSheet` still has no `_` arm.
+      theme entries and the axis tokens write their own. — superseded: verbatim held (`Transform.Shorthand — § 16.7's four rows, verbatim`); they do not resolve — no emilia token sets the `--tw-*` chain, marked inert (AGENTS.md front 45; `…the --tw-* chain it reads is written by nothing`)
+- [x] The arm sits between front 44's two arms and front 46's, in front-number order, and is one
+      `declSheet(...)` call. — held (shape: three arms, after front 44's four; front 46 has no arm yet): `emilia.bp:tokenToSheet`
+- [x] `tokenToSheet` still has no `_` arm. — held: `emilia.bp:tokenToSheet` has no `_` arm
 
 ## Examples
 
@@ -441,16 +441,16 @@ What the tests assert:
 - [ ] `Transform` exists as a top-level section with `Rotate`, `Scale`, `ScaleX`, `ScaleY`,
       `TranslateX`, `TranslateY`, `Translate`, `SkewX`, `SkewY`, `Origin`, `Style`, `Backface`,
       `Perspective`, `PerspectiveOrigin`, `Zoom`, `Shorthand`, fenced by a `front 45` banner in
-      `tokens.bp` and appended after front 44's block.
+      `tokens.bp` and appended after front 44's block. — **open:** no `Translate` (both-axes) section — left as a reference gap (AGENTS.md front 45), `rawTranslate` covers the use; the other fifteen exist, fenced, after front 44's block
 - [ ] `transformTokenToCss` and its sub-dispatchers are fenced by a `front 45` banner in
-      `emilia.bp`, appended after front 44's block, and take `th: Theme` per contract `§ 4a`.
-- [ ] One arm added to `tokenToSheet`, a `declSheet(...)` call, in front-number order, and no other
-      line of that `case` moved.
-- [ ] Every axis token emits its `--tw-*` variable and the shorthand; the five perspective keywords
+      `emilia.bp`, appended after front 44's block, and take `th: Theme` per contract `§ 4a`. — **open:** fenced and appended after front 44's block, but only `transformTokenToCss` takes `th: Theme`; its sixteen sub-dispatchers do not
+- [x] One arm added to `tokenToSheet`, a `declSheet(...)` call, in front-number order, and no other
+      line of that `case` moved. — held (shape: three arms — `Transform` and the two `Raw` variants, as Step 6 counts): `emilia.bp:tokenToSheet`
+- [x] Every axis token emits its `--tw-*` variable and the shorthand; the five perspective keywords
       are `themeVar(...)` lookups; the `--tw-*` identity defaults and the five `--perspective-*`
-      entries are contributed to front 54.
-- [ ] The `skew-x` flag, the `--tw-*` chain shape and the `Neg` convention are stated in the
-      `tokens.bp` docblock, not only here.
-- [ ] `repository/emilia/AGENTS.md` records the new section and all three notes.
-- [ ] The front's tests are green on its assigned target — here, both `commonJS` and `erlang`,
-      because comptime output must not differ between them.
+      entries are contributed to front 54. — superseded for the axis half: one declaration with a `cssVarOr` fallback, no theme entry possible (AGENTS.md front 45); perspective held — `transformEntries — the five --perspective-* of § 16.2`
+- [x] The `skew-x` flag, the `--tw-*` chain shape and the `Neg` convention are stated in the
+      `tokens.bp` docblock, not only here. — held: `tokens.bp` header `Transform` entry and front 45 block comment
+- [x] `repository/emilia/AGENTS.md` records the new section and all three notes. — held: AGENTS.md front 45 section ("THREE ROWS OF § 16 DID NOT SURVIVE")
+- [x] The front's tests are green on its assigned target — here, both `commonJS` and `erlang`,
+      because comptime output must not differ between them. — held: `modules/emilia` 569/569 on commonJS and erlang (AGENTS.md § Test surface); `Transform — the class name is a literal, and both targets must agree`
