@@ -43,7 +43,7 @@ named column widths answer `var(--container-*)`, and `Z` is a bare integer.
 - [x] All eleven `§ 5.8` display values have a token; the six earlier ones (`Block`, `Flex`, `Grid`,
       `Hidden`, `Inline`, `InlineBlock`) emit byte-identical CSS.
 - [x] Five position values; `Inset.All.0` → `inset:0`; `Inset.X.0`/`Y.0` → the two-declaration forms;
-      `Inset.T.Frac.Half` → `top:50%`; `Inset.T.Neg.4` → `top:calc(var(--spacing) * -4)`; `S`/`E` are
+      `Inset.T.Frac.Half` → `top:calc(1 / 2 * 100%)` (front 35's `fraction`); `Inset.T.Neg.4` → `top:calc(var(--spacing) * -4)`; `S`/`E` are
       the logical pair.
 - [x] `.Layout.Inset.T.4` and `.Pad.T.4` differ only in the property name — one scale, asserted.
 - [x] `Overflow` five values on the shorthand and each axis; `Overscroll` three on each; `invisible` →

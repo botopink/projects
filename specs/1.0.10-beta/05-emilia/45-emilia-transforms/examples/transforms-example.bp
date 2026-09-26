@@ -11,9 +11,9 @@
 //   https://tailwindcss.com/docs/perspective
 // Reference: TAILWIND_CSS_DOCS.md § 16. Transforms
 //
-// Two decimal conventions live in this file and both are the reference's:
-//   scale-50 -> scale:.5      (no leading zero, § 16.5)
-//   zoom-50  -> zoom:0.5      (leading zero,    § 16.11)
+// Two conventions live in this file:
+//   scale-50 -> --tw-scale-x/y/z:50% + scale:var(--tw-scale-x) var(--tw-scale-y)  (upstream v4)
+//   zoom-50  -> zoom:0.5      (the reference's bare number, § 16.11)
 //
 // Perspective keywords are theme references (`transformEntries()`). Translate and
 // skew take upstream v4's form: each axis writes its `--tw-*` variable and reads

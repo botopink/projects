@@ -65,7 +65,6 @@ fn homeRoute() -> PageContext {
         pathname: "/",
         pattern: "/",
         params: Dict.empty(),
-        query: Dict.empty(),
         rest: [],
     );
 }

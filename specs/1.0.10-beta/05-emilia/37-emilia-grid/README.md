@@ -26,7 +26,7 @@ and line numbers are bare integers.
 | Direction / wrap (`§ 6.2`, `6.3`) | `.Flex.{Row, RowReverse, Col, ColReverse, Wrap, WrapReverse, NoWrap}` | `flex-direction:column`, `flex-wrap:wrap-reverse`, … |
 | Shorthand (`§ 6.4`) | `.Flex.Value.{One, Auto, Initial, None}` (`Value`, since a section cannot hold a sub-section of its own name) | `flex:1 1 0%`, `flex:1 1 auto`, `flex:0 1 auto`, `flex:none` |
 | Grow / shrink (`§ 6.5`, `6.6`) | `.Flex.Grow.{0, 1}`, `.Flex.Shrink.{0, 1}` | `flex-grow:1`, … |
-| Basis (`§ 6.1`) | `.Flex.Basis` over the spacing scale + `Auto`, `Full`, `Frac { Half, Third, TwoThirds }` | `flex-basis:calc(var(--spacing) * 4)`, `flex-basis:33.333333%` (the same percentage as `.Size.W.Frac.Third`) |
+| Basis (`§ 6.1`) | `.Flex.Basis` over the spacing scale + `Auto`, `Full`, `Frac { Half, Third, TwoThirds }` | `flex-basis:calc(var(--spacing) * 4)`, `flex-basis:calc(1 / 3 * 100%)` (the same fraction as `.Size.W.Frac.Third`) |
 | Order (`§ 6.7`) | `.Flex.Order.{1…12, First, Last, None}` | `order:-9999`, `order:9999`, `order:0` |
 | Alignment (`§ 6.16`–`6.24`) | `.Flex.Justify` (8), `.Flex.Items` (5), `.Flex.AlignSelf`, `.Flex.Content`, `.Flex.JustifyItems`, `.Flex.JustifySelf`, `.Flex.PlaceContent`, `.Flex.PlaceItems`, `.Flex.PlaceSelf` | `justify-content`, `align-items`, `align-self`, `align-content` take `flex-start`/`flex-end`; `justify-items`, `justify-self` and `place-*` take `start`/`end` — upstream's asymmetry, copied; `place-content:space-between` |
 | Templates (`§ 6.8`) | `.Grid.Cols.{1…12, None, Subgrid}`, `.Grid.Rows.{…}` | `grid-template-columns:repeat(12, minmax(0, 1fr))` via `gridRepeat(n)`; keywords for `None`/`Subgrid` |

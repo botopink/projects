@@ -138,7 +138,6 @@ fn newPostRoute() -> PageContext {
         pathname: "/dashboard/posts/new",
         pattern: "/dashboard/posts/new",
         params: Dict.empty(),
-        query: Dict.empty(),
         rest: [],
     );
 }

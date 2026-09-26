@@ -54,7 +54,7 @@ Status: `covered` — the front's token surface delivers the row byte-equal to t
 | § 3.2 parent state `group-*` | [34](./34-emilia-modifiers/README.md) | partial | `GroupHover/Focus/Active/Visited/Disabled/Open` from the `&:is(:where(.group) … *)` template; other states via `arbSel`. Named groups (`group/item`) are not declared. |
 | § 3.2 sibling state `peer-*` | [34](./34-emilia-modifiers/README.md) | partial | `PeerHover/Focus/Active/Checked/Invalid/Required/Disabled/PlaceholderShown`; named peers not declared. |
 | § 3.2 `in-[…]` (`:where(…) &`) | [57](./57-emilia-escape-hatches/README.md) | partial | No named form; the selector has one `&`, so `arbSel` carries it. |
-| § 3.2 pseudo-elements before / after / first-letter / first-line / placeholder / file / marker / selection / backdrop | [34](./34-emilia-modifiers/README.md) | covered | Nine variants; `Marker`/`Selection` keep the reference's `& ::` space; `Before`/`After` pair with 38's `Text.Content.*`. |
+| § 3.2 pseudo-elements before / after / first-letter / first-line / placeholder / file / marker / selection / backdrop | [34](./34-emilia-modifiers/README.md) | covered | Nine variants; `Marker`/`Selection` are upstream v4's lists — the element's own and its descendants' (`& *::marker, &::marker`, plus WebKit's details marker), one rule per one-`&` variant; the reference's `& ::marker` reached descendants only; `Before`/`After` pair with 38's `Text.Content.*`. |
 | § 3.2 media: responsive `md:` | [34](./34-emilia-modifiers/README.md) | covered | See § 3.3 rows. |
 | § 3.2 media: `dark:` | [34](./34-emilia-modifiers/README.md) | covered | `@media (prefers-color-scheme: dark)`; class/attribute strategies see § 3.4. |
 | § 3.2 media: `motion-safe:` / `motion-reduce:` | [34](./34-emilia-modifiers/README.md) | covered | `MotionSafe`, `MotionReduce`. |
@@ -64,8 +64,8 @@ Status: `covered` — the front's token surface delivers the row byte-equal to t
 | § 3.2 media: `portrait:` / `landscape:` | [34](./34-emilia-modifiers/README.md) | covered | `Portrait`, `Landscape`. |
 | § 3.2 ARIA (`aria-checked:`, `aria-[…]`) | [57](./57-emilia-escape-hatches/README.md) | partial | No named `Aria*` token; `arbSel("&[aria-checked=\"true\"]", inner)` only. |
 | § 3.2 data attributes (`data-active:`, `data-[size=large]:`) | [57](./57-emilia-escape-hatches/README.md) | partial | Same: `arbSel("&[data-size=large]", inner)` only. |
-| § 3.2 `rtl:` / `ltr:` | [34](./34-emilia-modifiers/README.md) | covered | `[dir="rtl"] &` — `&` at the end. |
-| § 3.2 `open:` / `inert:` | [34](./34-emilia-modifiers/README.md) | partial | `Open` → `&:is(:open, :popover-open)` (one `&`; the reference's `&:open, &:popover-open` has two); `Inert` → `&:is([inert], [inert] *)`. Upstream v4 also matches the legacy `[open]` attribute (`&:is([open], :popover-open, :open)`), which the next change to this row adds. |
+| § 3.2 `rtl:` / `ltr:` | [34](./34-emilia-modifiers/README.md) | covered | Upstream v4.1's `&:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *)`; the reference's pre-v4 `[dir="rtl"] &` is not emitted. |
+| § 3.2 `open:` / `inert:` | [34](./34-emilia-modifiers/README.md) | covered | `Open` → upstream v4's `&:is([open], :popover-open, :open)` (one `&`; the reference's `&:open, &:popover-open` has two and omits the legacy `[open]`); `GroupOpen` carries the same three; `Inert` → `&:is([inert], [inert] *)`. |
 | § 3.2 child selectors `*:` / `**:` | [34](./34-emilia-modifiers/README.md) | covered | `Children` → `:is(& > *)`, `Descendants` → `:is(& *)`; `**:data-avatar:` is `Descendants([arbSel(…)])`. |
 | § 3.2 arbitrary variants `[&.is-dragging]:` / `[@supports(…)]:` | [57](./57-emilia-escape-hatches/README.md) | covered | `arbSel(selector, inner)` (`ArbVariant`; exactly one `&`), `arbAt(query, inner)`. |
 | § 3.2 registering custom variants (`@custom-variant theme-midnight`) | [59](./59-emilia-custom-utilities-and-variants/README.md) | covered | A custom variant is `fn (inner: Token[]) -> Token[]`; `selector(Variant(atRule: "", selector: "&:where([data-theme=\"midnight\"] *)"), inner)`. |
@@ -100,7 +100,7 @@ Status: `covered` — the front's token surface delivers the row byte-equal to t
 | § 3.5 namespace `--blur-*` | [42](./42-emilia-filters/README.md) · [54](./54-emilia-theme/README.md) | covered | `blur(var(--blur-sm))`, shared by `Filter` and `BackdropFilter`; the values are `filterEntries()`. |
 | § 3.5 namespace `--perspective-*` | [45](./45-emilia-transforms/README.md) · [54](./54-emilia-theme/README.md) | covered | `perspective:var(--perspective-near)` (`300px` in the theme). |
 | § 3.5 namespace `--aspect-*` | [54](./54-emilia-theme/README.md) · [36](./36-emilia-layout/README.md) | covered | Validated prefix in 54; `.Layout.Aspect.Video` emits the literal `aspect-ratio:16 / 9` that § 5.1 prints — no theme lookup. |
-| § 3.5 namespace `--ease-*` | [44](./44-emilia-transitions/README.md) · [54](./54-emilia-theme/README.md) | covered | `transition-timing-function:var(--ease-in)`; `ease-linear` is the keyword; the values (`transitionEntries()`) are provisional — the reference prints only the names. |
+| § 3.5 namespace `--ease-*` | [44](./44-emilia-transitions/README.md) · [54](./54-emilia-theme/README.md) | covered | `transition-timing-function:var(--ease-in)`; `ease-linear` is the keyword; the values (`transitionEntries()`) are upstream v4's `theme.css` — the reference prints only the names. |
 | § 3.5 namespace `--animate-*` | [44](./44-emilia-transitions/README.md) · [54](./54-emilia-theme/README.md) | covered | `animation:var(--animate-spin)`; four values byte-equal to § 21.6. |
 | § 3.5 extending the theme | [54](./54-emilia-theme/README.md) | covered | `extendTheme(th, entries)`; an entry outside the nineteen prefixes panics, no relaxing argument. |
 | § 3.5 overriding the theme | [54](./54-emilia-theme/README.md) | covered | `extendTheme` with an existing name replaces the value in place. |
@@ -224,7 +224,7 @@ Status: `covered` — the front's token surface delivers the row byte-equal to t
 | § 11 `divide-*` (not in the reference) | [40](./40-emilia-borders/README.md) | covered | Beyond the reference: `Divide.X/Y/Color/Style/XReverse/YReverse` as a rule on `:where(& > :not(:last-child))`, byte-identical to 35's `Space`. |
 | § 12.1 box-shadow | [41](./41-emilia-effects/README.md) | partial | Nine leaves + three `InsetShadow` + `EffectShadowRaw` covered. `shadow-red-500/50`: the reference gives no property/value row. |
 | § 12.2 text-shadow | [41](./41-emilia-effects/README.md) | covered | Six leaves + `EffectTextShadowRaw`. |
-| § 12.3 opacity | [41](./41-emilia-effects/README.md) | covered | Fifteen steps (+ six provisional); `opacity:0.6`, not `.6`. |
+| § 12.3 opacity | [41](./41-emilia-effects/README.md) | covered | Fifteen steps + six the reference omits, all confirmed upstream; upstream v4's `opacity:60%`, where the reference prints `opacity:0.6`. |
 | § 12.4 mix-blend-mode | [41](./41-emilia-effects/README.md) | covered | Seventeen leaves. |
 | § 12.5 background-blend-mode | [41](./41-emilia-effects/README.md) | covered | Seventeen leaves under `Blend.Bg`. |
 | § 12.6 mask utilities | [41](./41-emilia-effects/README.md) | covered | Twenty leaves across nine sub-sections + `MaskImageRaw`. |
@@ -311,7 +311,6 @@ Category: (a) follow-up for an existing front · (b) out of scope by design · (
 |---|---|---|---|---|
 | § 3.2 `:has()`, `:not()`, ARIA, data-attribute and `in-[…]` named forms | partial | [34](./34-emilia-modifiers/README.md) / [57](./57-emilia-escape-hatches/README.md) | (c) | Reachable only through `arbSel`; no named tokens or recipes. |
 | § 3.2 `group-*` / `peer-*` beyond the declared states; named groups and peers | partial | [34](./34-emilia-modifiers/README.md) | (c) | Six group and eight peer states are named; `group/item`, `peer/name` are not declared. |
-| § 3.2 `open:` legacy `[open]` attribute | partial | [34](./34-emilia-modifiers/README.md) | (a) | Upstream v4 is `&:is([open], :popover-open, :open)`; emilia emits the reference's two pseudo-classes. The test pins the current spelling so the addition shows as a change. |
 | § 3.2 full variant table — five bracket rows | partial | [34](./34-emilia-modifiers/README.md) / [57](./57-emilia-escape-hatches/README.md) | (c) | Aggregate of the rows above. |
 | § 3.3 custom breakpoints — a new name | partial | [34](./34-emilia-modifiers/README.md) · [54](./54-emilia-theme/README.md) | (b) | Overrides move the query; a new `--breakpoint-*` name adds no variant (use `arbMin`/`arbMax`). |
 | § 3.3 removing breakpoints | partial | [34](./34-emilia-modifiers/README.md) | (c) | A cleared `--breakpoint-*` makes the variant emit `@media (width >= )`; refusing it, as 58 does for container sizes, is unowned. |

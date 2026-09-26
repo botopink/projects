@@ -24,7 +24,7 @@ the theme holds the values.
 | Box shadow (`§ 12.1`) | `.Effect.Shadow.{X2xs, Xs, Sm, Md, Lg, Xl, X2xl, None, Inner}` | `--tw-shadow:var(--shadow-md);box-shadow:<reader>` — the `--tw-shadow` channel plus the shared five-channel reader (front 40), so a ring composes with it; `None` → `--tw-shadow:0 0 transparent` (empties only its channel); `Inner` → `inset 0 2px 4px 0 rgb(0 0 0 / 0.05)`, the one literal (upstream has no `--shadow-inner`) |
 | Inset shadow | `.Effect.InsetShadow.{X2xs, Xs, Sm}` | `--tw-inset-shadow:inset var(--inset-shadow-sm);box-shadow:<reader>` |
 | Text shadow (`§ 12.2`) | `.Effect.TextShadow.{X2xs, Xs, Sm, Md, Lg, None}` | `text-shadow:var(--text-shadow-sm)`; `None` → `text-shadow:none` |
-| Opacity (`§ 12.3`) | `.Effect.Opacity.{0, 5, 10, 20, 25, 30, 40, 50, 60, 70, 75, 80, 90, 95, 100}` + provisional `15, 35, 45, 55, 65, 85` | `opacity:0.6` — always a leading zero; `100` → `opacity:1` |
+| Opacity (`§ 12.3`) | `.Effect.Opacity.{0, 5, 10, 20, 25, 30, 40, 50, 60, 70, 75, 80, 90, 95, 100}` + `15, 35, 45, 55, 65, 85` (confirmed upstream) | `opacity:60%` — upstream v4's percentage; `100` → `opacity:100%` |
 | Blend (`§ 12.4`, `12.5`) | `.Blend.Mix.*`, `.Blend.Bg.*` — seventeen values each (`Normal` … `PlusLighter`) | `mix-blend-mode:plus-lighter`, `background-blend-mode:overlay`; the two value tables are asserted equal, in order |
 | Mask (`§ 12.6`) | `.Mask.{Clip, Composite, Image, Mode, Origin, Position, Repeat, Size, Type}` | `mask-clip:padding-box` (the suffix is not the value), `mask-composite:intersect`, `mask-image:none`, …; `Position.{Top, Bottom, Left, Right}`, `Repeat.{RepeatX, RepeatY, Round, Space}`, `Size.Auto` are provisional |
 | Arbitrary | `Token.EffectShadowRaw(value)`, `Token.EffectTextShadowRaw(value)`, `Token.MaskImageRaw(value)`; wrappers `rawShadow(v)`, `rawTextShadow(v)`, `rawMaskImage(v)` | `box-shadow:<v>`, `text-shadow:<v>`, `mask-image:<v>` |
@@ -50,8 +50,8 @@ the theme holds the values.
 - [x] The seven scale steps are `--shadow-*` references, `None` is its channel's null shadow, `Inner`
       is the reference's literal; inset leads the inset-shadow value.
 - [x] `TextShadow`: five references and the `none` keyword; `textShadowToCss` exhaustive.
-- [x] `opacity:0.6` with a leading zero; the five earlier opacity leaves unchanged; the six extra
-      steps marked provisional at their arm.
+- [x] `opacity:60%`, upstream v4's percentage, on all twenty-one steps; the six steps the reference
+      omits confirmed against upstream's compiled output.
 - [x] `Blend` has two sub-sections of seventeen leaves; `blendTokenToCss` prepends the property and
       the two value tables agree; `.Blend.Mix.PlusLighter` → `mix-blend-mode:plus-lighter`.
 - [x] `Mask` has nine sub-sections, `maskTokenToCss` nine arms with no `_`; `[.Mask.Clip.Padding,

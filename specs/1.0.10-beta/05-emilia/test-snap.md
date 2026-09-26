@@ -330,16 +330,16 @@ atRule:
 selector: &:is(:where(.group):hover *)
 ```
 
-`modules/emilia/test/__snapshots__/variant/modifiers-rtl-puts-the-class-last.snap`
+`modules/emilia/test/__snapshots__/variant/modifiers-rtl-where-dir.snap`
 ```
 atRule: 
-selector: [dir="rtl"] &
+selector: &:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *)
 ```
 
-`modules/emilia/test/__snapshots__/variant/modifiers-open-is-a-selector-list.snap`
+`modules/emilia/test/__snapshots__/variant/modifiers-open-three-states-one-ampersand.snap`
 ```
 atRule: 
-selector: &:open, &:popover-open
+selector: &:is([open], :popover-open, :open)
 ```
 
 `modules/emilia/test/__snapshots__/css/modifiers-hover-on-md-breakpoint.snap`
@@ -379,8 +379,12 @@ selector: &:open, &:popover-open
 `modules/emilia/test/__snapshots__/css/modifiers-pseudo-elements-before-marker-selection.snap`
 ```css
 .e::before{content:"";color:var(--color-red-500)}
-.e ::marker{color:var(--color-sky-400)}
-.e ::selection{background-color:var(--color-fuchsia-300)}
+.e *::marker{color:var(--color-sky-400)}
+.e::marker{color:var(--color-sky-400)}
+.e *::-webkit-details-marker{color:var(--color-sky-400)}
+.e::-webkit-details-marker{color:var(--color-sky-400)}
+.e *::selection{background-color:var(--color-fuchsia-300)}
+.e::selection{background-color:var(--color-fuchsia-300)}
 ```
 
 `modules/emilia/test/__snapshots__/css/modifiers-hover-before-and-before-hover-differ.snap`
@@ -398,8 +402,8 @@ selector: &:open, &:popover-open
 
 `modules/emilia/test/__snapshots__/css/modifiers-direction-and-descent.snap`
 ```css
-[dir="ltr"] .e{margin-left:calc(var(--spacing) * 3)}
-[dir="rtl"] .e{margin-right:calc(var(--spacing) * 3)}
+.e:where(:dir(ltr), [dir="ltr"], [dir="ltr"] *){margin-left:calc(var(--spacing) * 3)}
+.e:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *){margin-right:calc(var(--spacing) * 3)}
 :is(.e > *){border-radius:9999px}
 :is(.e *){border-radius:9999px}
 ```
@@ -409,7 +413,7 @@ selector: &:open, &:popover-open
 .e:disabled{color:var(--color-gray-400)}
 .e:invalid{border-color:var(--color-pink-500)}
 .e:placeholder-shown{color:var(--color-gray-400)}
-.e:open, .e:popover-open{color:var(--color-gray-400)}
+.e:is([open], :popover-open, :open){color:var(--color-gray-400)}
 .e:is([inert], [inert] *){color:var(--color-gray-400)}
 ```
 
@@ -514,7 +518,7 @@ test "spacing ladder is a calc over the theme" {
 
 `modules/emilia/test/__snapshots__/css/sizing-fractions.snap`
 ```css
-.e{width:50%;width:33.333333%;width:66.666667%;width:83.333333%}
+.e{width:calc(1 / 2 * 100%);width:calc(1 / 3 * 100%);width:calc(2 / 3 * 100%);width:calc(5 / 6 * 100%)}
 ```
 
 `modules/emilia/test/__snapshots__/css/sizing-max-width-ladder-and-screens.snap`
@@ -591,7 +595,7 @@ test "css: layout ---- box sizing and decoration" {
 
 `modules/emilia/test/__snapshots__/css/layout-inset-forms.snap`
 ```css
-.e{inset:0;left:0;right:0;top:calc(var(--spacing) * 1);top:50%;top:calc(var(--spacing) * -4);inset-inline-start:0}
+.e{inset:0;left:0;right:0;top:calc(var(--spacing) * 1);top:calc(1 / 2 * 100%);top:calc(var(--spacing) * -4);inset-inline-start:0}
 ```
 
 `modules/emilia/test/__snapshots__/css/layout-overflow-overscroll-visibility.snap`
@@ -667,7 +671,7 @@ test "css: gap ---- legacy flex gap equals gap all" {
 
 `modules/emilia/test/__snapshots__/css/flex-grow-shrink-basis-order.snap`
 ```css
-.e{flex-grow:1;flex-shrink:0;flex-basis:calc(var(--spacing) * 1);flex-basis:33.333333%;order:-9999;order:9999;order:0}
+.e{flex-grow:1;flex-shrink:0;flex-basis:calc(var(--spacing) * 1);flex-basis:calc(1 / 3 * 100%);order:-9999;order:9999;order:0}
 ```
 
 `modules/emilia/test/__snapshots__/css/flex-alignment-keeps-the-flex-start-asymmetry.snap`
@@ -1012,7 +1016,7 @@ test "css: effects ---- shadow lifts on hover" {
 
 `modules/emilia/test/__snapshots__/css/effects-opacity-steps-keep-the-leading-zero.snap`
 ```css
-.e{opacity:0.05;opacity:0.6;opacity:1}
+.e{opacity:5%;opacity:60%;opacity:100%}
 ```
 
 `modules/emilia/test/__snapshots__/css/effects-blend-modes.snap`
@@ -1316,17 +1320,17 @@ test "css: transforms ---- lift on hover with transition" {
 
 `modules/emilia/test/__snapshots__/css/transforms-rotate-and-negative-rotate.snap`
 ```css
-.e{rotate:45deg;rotate:-12deg;rotate:0deg}
+.e{rotate:45deg;rotate:calc(12deg * -1);rotate:0deg}
 ```
 
 `modules/emilia/test/__snapshots__/css/transforms-scale-drops-the-leading-zero-zoom-keeps-it.snap`
 ```css
-.e{scale:.5;scale:1;scale:1.05;scale:.5 1;scale:1 .5;zoom:0.5}
+.e{--tw-scale-x:50%;--tw-scale-y:50%;--tw-scale-z:50%;scale:var(--tw-scale-x) var(--tw-scale-y);--tw-scale-x:100%;--tw-scale-y:100%;--tw-scale-z:100%;scale:var(--tw-scale-x) var(--tw-scale-y);--tw-scale-x:105%;--tw-scale-y:105%;--tw-scale-z:105%;scale:var(--tw-scale-x) var(--tw-scale-y);--tw-scale-x:50%;scale:var(--tw-scale-x) var(--tw-scale-y);--tw-scale-y:50%;scale:var(--tw-scale-x) var(--tw-scale-y);zoom:0.5}
 ```
 
 `modules/emilia/test/__snapshots__/css/transforms-translate-axis-vars-and-shorthand.snap`
 ```css
-.e{--tw-translate-x:50%;translate:var(--tw-translate-x) var(--tw-translate-y);--tw-translate-y:100%;translate:var(--tw-translate-x) var(--tw-translate-y)}
+.e{--tw-translate-x:calc(1 / 2 * 100%);translate:var(--tw-translate-x) var(--tw-translate-y);--tw-translate-y:100%;translate:var(--tw-translate-x) var(--tw-translate-y)}
 ```
 
 `modules/emilia/test/__snapshots__/css/transforms-translate-px-and-spacing.snap`
@@ -1353,7 +1357,7 @@ The skew is upstream v4's variable and chain; the reference file's `skew-x:` col
 `modules/emilia/test/__snapshots__/css/transforms-lift-on-hover-with-transition.snap`
 ```css
 .e{transition-property:transform;transition-timing-function:var(--ease-out);transition-duration:150ms}
-@media (hover: hover){.e:hover{scale:1.05}}
+@media (hover: hover){.e:hover{--tw-scale-x:105%;--tw-scale-y:105%;--tw-scale-z:105%;scale:var(--tw-scale-x) var(--tw-scale-y)}}
 ```
 
 ---
@@ -2066,7 +2070,7 @@ test "ast: arbitrary ---- min is hoisted not nested" {
 
 `modules/emilia/test/__snapshots__/css/arbitrary-selector-variant.snap`
 ```css
-.e.is-dragging{box-shadow:var(--shadow-lg);opacity:0.75}
+.e.is-dragging{box-shadow:var(--shadow-lg);opacity:75%}
 ```
 
 `modules/emilia/test/__snapshots__/css/arbitrary-supports-query.snap`
@@ -2082,7 +2086,7 @@ test "ast: arbitrary ---- min is hoisted not nested" {
 
 `modules/emilia/test/__snapshots__/css/arbitrary-selector-variant-inside-md.snap`
 ```css
-@media (width >= 48rem){.e.is-dragging{opacity:0.75}}
+@media (width >= 48rem){.e.is-dragging{opacity:75%}}
 ```
 
 `modules/emilia/test/__snapshots__/ast/arbitrary-min-is-hoisted-not-nested.snap`
@@ -2281,7 +2285,7 @@ an at-rule precede rules with one inside a class (56, order rule 5).
 
 `modules/emilia/test/__snapshots__/css/compose-selector-helper.snap`
 ```css
-.e[aria-busy="true"]{opacity:0.5}
+.e[aria-busy="true"]{opacity:50%}
 ```
 
 `modules/emilia/test/__snapshots__/css/compose-scrollbar-hidden.snap`

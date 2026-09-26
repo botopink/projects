@@ -747,11 +747,10 @@ front 31); onze registers them with `jhLoading` / `jhError` / `jhNotFound` from 
 performs, and they reach `compose` through the same registry.
 
 ```bp
-pub type PageContext(
+pub type PageContext(          // no `query`: `searchParams()` is its reader, and marks the render dynamic
     pathname: string,
     pattern: string,
     params: Array<#(string, string)>,
-    query: Array<#(string, string)>,
     rest: string[],
 )
 

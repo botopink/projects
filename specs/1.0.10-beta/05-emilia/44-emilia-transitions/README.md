@@ -37,8 +37,8 @@ in fronts 41–47, because `animate-spin` is a declaration plus a `@keyframes` b
   blocks out of every layer and `dedupeBlocks` makes two spinners one block.
 - **`transitionEntries()`** contributes `--ease-in: cubic-bezier(0.4, 0, 1, 1)`,
   `--ease-out: cubic-bezier(0, 0, 0.2, 1)`, `--ease-in-out: cubic-bezier(0.4, 0, 0.2, 1)` to
-  `fullTheme()`. The three names are the reference's; the **values are provisional** (the reference
-  prints none) — replacing them moves no leaf, declaration or class name.
+  `fullTheme()`. The three names are the reference's; the values are upstream v4's `theme.css`
+  (the reference prints none).
 
 ## Acceptance
 

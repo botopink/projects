@@ -35,7 +35,7 @@ one).
 |---|---|---|
 | Padding (`§ 7.1`) | `Pad.{All, X, Y, T, R, B, L, S, E}` | `padding`, `padding-left`+`padding-right`, `padding-top`+`padding-bottom`, `padding-top` … `padding-inline-start`, `padding-inline-end` |
 | Margin (`§ 7.2`) | `Margin.{All, X, Y, T, R, B, L, S, E}` + `Auto` and `Neg { … }` on every direction | as padding with `margin-*`; `.Margin.X.Auto` → `margin-left:auto;margin-right:auto`; `.Margin.T.Neg.4` → `margin-top:calc(var(--spacing) * -4)` (no negative `0`/`Auto`) |
-| Width / height (`§ 8.1`, `§ 8.4`) | `Size.W`, `Size.H`: the scale, `Frac { Half, Third, TwoThirds, Quarter, ThreeQuarters, Fifth, TwoFifths, ThreeFifths, FourFifths, Sixth, FiveSixths }`, `Full`, `Screen`, `Svw/Lvw/Dvw` (`Svh/Lvh/Dvh` on `H`), `Min`, `Max`, `Fit`, `Auto` | `width:33.333333%`, `width:66.666667%` (upstream's decimals); `Screen` is `100vw` on `W` and `100vh` on `H` |
+| Width / height (`§ 8.1`, `§ 8.4`) | `Size.W`, `Size.H`: the scale, `Frac { Half, Third, TwoThirds, Quarter, ThreeQuarters, Fifth, TwoFifths, ThreeFifths, FourFifths, Sixth, FiveSixths }`, `Full`, `Screen`, `Svw/Lvw/Dvw` (`Svh/Lvh/Dvh` on `H`), `Min`, `Max`, `Fit`, `Auto` | `width:calc(1 / 3 * 100%)`, `width:calc(2 / 3 * 100%)` (upstream v4's form, through `fraction(n, d)`); `Screen` is `100vw` on `W` and `100vh` on `H` |
 | Min / max (`§ 8.2`, `8.3`, `8.5`, `8.6`) | `Size.MinW`, `MaxW`, `MinH`, `MaxH` | `MaxW` named widths `X3xs`…`X7xl` → `max-width:var(--container-*)`; `MaxW.Screen.{Sm…X2xl}` → `max-width:var(--breakpoint-*)` |
 | Logical (`§ 8.7`) | `Size.Inline`, `Block`, `MinInline`, `MaxInline`, `MinBlock`, `MaxBlock` | `inline-size`, `block-size` and their min/max forms |
 | `size-*` | `Size.Both` | `width:…;height:…` from one leaf |
