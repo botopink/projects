@@ -305,8 +305,8 @@ also the form that reads correctly in the report.
 
 **Acceptance:**
 - [x] Each marker on a wrong declaration kind fails with a message naming the marker and the kinds it accepts — held: `src/conditions.bp` — each marker `decl.fail`s naming itself and the kinds it accepts (code)
-- [ ] `#[conditionalOnProperty("k")]` — one argument — is rejected by the compiler's own arity check, with no code in this front
-- [ ] `#[conditionalOnProperty("k", 1)]` is rejected by the type check, with no code in this front
+- [x] `#[conditionalOnProperty("k")]` — one argument — is rejected by the compiler's own arity check, with no code in this front — held: measured — `botopink build` of a scratch member: `#[conditionalOnProperty]` on `MailAuto` expects 2 argument(s), got 1 (compiler `f011850c`)
+- [x] `#[conditionalOnProperty("k", 1)]` is rejected by the type check, with no code in this front — held: measured — `botopink build`: `#[conditionalOnProperty]` argument 2 must be string (compiler `f011850c`)
 - [x] Three conditions on one type produce three records in the blob, in source order — held: `test/conditions_test.bp` "three conditions produce three records, in source order"
 - [x] A condition marker used without `#[autoConfiguration]` on the same declaration fails, naming the missing marker — a condition that nothing reads is a silent no-op otherwise — held: `src/conditions.bp` companion check ("needs #[autoConfiguration], a stereotype or #[bean]…") — widened to stereotypes/`#[bean]` for `#[profile]` (code)
 
@@ -348,10 +348,10 @@ An excluded name that matches no registered configuration is a startup failure, 
 in an exclusion silently disables nothing and leaves the developer believing they turned something off.
 
 **Acceptance:**
-- [ ] `rakun.autoconfigure.exclude=RakunMailAutoConfiguration` leaves the mail configuration unapplied and its beans unbuildable
+- [x] `rakun.autoconfigure.exclude=RakunMailAutoConfiguration` leaves the mail configuration unapplied and its beans unbuildable — held: `test/autoconfig_test.bp` "the exclude property leaves a configuration unapplied" + "the exclude property leaves the beans of the configuration unbuildable" (rakun `9e9b1d3`)
 - [x] `autoConfigureExcept(["RakunMailAutoConfiguration"])` has the same effect with no property set — held: `test/autoconfig_test.bp` "autoConfigureExcept does the same with no property set"
 - [x] Both together are a union, not a conflict — held: `test/autoconfig_test.bp` "the two channels are a union, not a conflict"
-- [ ] `rakun.autoconfigure.exclude=Nonexistent` halts at startup naming the value and listing the registered names
+- [x] `rakun.autoconfigure.exclude=Nonexistent` halts at startup naming the value and listing the registered names — held: `test/autoconfig_test.bp` "the exclude PROPERTY naming nothing halts, naming the value and the registered names"
 - [x] An excluded configuration's conditions are not evaluated at all — a property read it would have done does not appear in the report — held: `test/autoconfig_test.bp` "an excluded configuration's conditions are never evaluated"
 
 ### Step 5 — the condition report
@@ -368,7 +368,7 @@ diagnosis.
 **Acceptance:**
 - [x] Every registered configuration appears in exactly one of the three blocks — held: `test/autoconfig_test.bp` "every registered name is in exactly one of the three blocks"
 - [x] A failed row names the failing condition record and the value seen (the property's value, the module list, the bean name) — held: `test/autoconfig_test.bp` "a failed row names the record and the value observed"
-- [ ] Only the *first* failing condition is reported per configuration — evaluation short-circuits, and the report says so rather than implying the rest passed
+- [x] Only the *first* failing condition is reported per configuration — evaluation short-circuits, and the report says so rather than implying the rest passed — held: `test/autoconfig_test.bp` "the report says evaluation stopped at the first failing condition"
 - [x] The report is stable across runs given the same inputs: the sorted order, not a hash order — held: `test/autoconfig_test.bp` "the report is stable across runs…" (Kahn's walk, ties by registration order)
 - [x] `rakun.main.debug=false` prints nothing at boot and `rkAutoReport()` still returns the full table — held: `test/autoconfig_test.bp` "…and debug only gates the printing"
 
