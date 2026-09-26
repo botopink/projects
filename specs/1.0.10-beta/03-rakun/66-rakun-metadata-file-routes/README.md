@@ -12,10 +12,10 @@ and `<meta>` tags it builds from this front's data — soft, a citation), 62 (th
 content hash that fingerprints an image URL), `01-std/01-std-lib-enablement` (the manifest JSON), 01 (`path.walk`, `path.glob`, `escape.attribute`,
 `encoding.percentEncode`). Optional: 60 (prerendering these routes), 70 (dynamic OG image bodies) —
 neither blocks this front, and both are named where they attach
-**Owns:** `repository/rakun/src/metadata_routes.bp`,
-`repository/rakun/src/sidecars/rakun_metadata_routes.erl`,
-`repository/rakun/test/metadata_routes_test.bp`, and one `pub mod` line in
-`repository/rakun/src/root.bp`
+**Owns:** `repository/rakun/modules/rakun-app/src/metadata_routes.bp`,
+`repository/rakun/modules/rakun-app/src/sidecars/rakun_metadata_routes.erl`,
+`repository/rakun/modules/rakun-app/test/metadata_routes_test.bp`, and one `pub mod` line in
+`repository/rakun/modules/rakun-app/src/root.bp`
 **Does not touch:** `repository/rakun/src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`,
 `src/runtime.mjs` — frozen; `src/file_router.bp` (front 22) is read-only, and this front registers
 through its public API rather than editing its table format; `repository/jhonstart/src/metadata.bp` is

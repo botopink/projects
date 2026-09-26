@@ -8,9 +8,10 @@ Fronts 94, 26, 28 and 27 have landed. Three facts about the tree that the cut be
 against:
 
 - **(a) The submodule split is partial.** Front 95 cut `modules/jhonstart-html/` (`html.bp`, with
-  `test/html_test.bp` and `test/elements_test.bp`) and created `modules/jhonstart-test/` empty.
-  Front 27's `link.bp` and `reconcile.bp` are still in core; `jhonstart-link`, `jhonstart-forms` and
-  `jhonstart-emilia` do not exist yet. The rest of the cut below is a plan, not a description;
+  `test/html_test.bp` and `test/elements_test.bp`), created `modules/jhonstart-test/` empty, and
+  relocated front 27's `link.bp` and `reconcile.bp` (with their two suites) into
+  `modules/jhonstart-link/`, which inherits both targets while its code is pure; `jhonstart-forms`
+  and `jhonstart-emilia` do not exist yet. The rest of the cut below is a plan, not a description;
   whoever performs it does so as its own front, and until then those fronts read "core".
 - **(b) § 4's `jhonstart-link` row is unsettled.** A member cannot declare `["commonJS", "erlang"]`
   *and* carry four `#[@External.Node]` cells that anything on the erlang row calls: a foreign cell
