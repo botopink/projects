@@ -123,7 +123,7 @@ is what makes it portable instead of ported.
 | `var` at module level | `error: this token cannot appear here … ^^^ unexpected 'var'` at `1:1` |
 | `#[…]` before a top-level `val` | `error: … ^ unexpected '#'` at `1:1` — the annotated-declaration `switch` (`parser.zig:450`) has no `.val` arm |
 | `#[@BeamMemory.Ets(keyed = true)]` on a `fn` | **parses** — `Checked in 60.93ms` |
-| an unknown builtin annotation (`#[@TotallyMadeUp.Nonsense(whatever = 42)]`) | **parses and checks**, silently |
+| an unknown builtin annotation (`#[@TotallyMadeUp.Nonsense(whatever = 42)]`) | `unknown-annotation`, located (01, compiler `a62baf77`) |
 | `ast.ValDecl` fields | 7; **no `mutable`, no `annotations`** (`ast.zig:1891-1909`) |
 | `ast.Stmt.Kind.localBind` | **has `mutable: bool`** (`ast.zig:563`) and `commonJS.zig:2366` already reads it |
 | purity analysis in `src/comptime/**` | **none** — `EffectKind` (`ast.zig:2014`) is `result\|future\|generator\|iterator\|asyncGenerator\|context`, the declared return wrappers |
@@ -379,10 +379,12 @@ positionally. Nothing in the grammar changes; the validation is a lookup.
 - [x] A `reject/` cell per diagnostic — written into the suite (step 7), not only specified:
       `beam_memory_unknown_member`, `beam_memory_unknown_argument`, `beam_memory_keyed_scalar`,
       `beam_memory_keyed_list`, `beam_memory_on_val`
-- [ ] **Not this front's, recorded so it is not mistaken for closed:** an unknown *family* still
-      passes — `#[@TotallyMadeUp.Nonsense(whatever = 42)]` on a `var` checks clean at `4fe1747e`,
-      exactly as on a `fn`. Only the `BeamMemory.` prefix is validated. Decision 15 assigns the
-      annotation grammar to [`01`](../01-checker/README.md)
+- [x] An unknown *family* is refused — closed by [`01`](../01-checker/README.md) (decision 15
+      assigns it the annotation grammar), compiler `a62baf77`: `#[@TotallyMadeUp.Nonsense(whatever = 42)]`
+      on a `var` or a `fn` is `unknown-annotation` at the annotation; a family an edit away is named
+      (`#[@BeamMemroy.Ets]` → `@BeamMemory`). The families are `External`, `BeamMemory`, `Host`, or
+      an annotation type (`implement @Annotation`). `reject/annotation_unknown_family`,
+      `reject/annotation_family_misspelled`; both accepted by the `feat` binary
 
 ### Step 3b — `std/beam`: the host primitives leave the core
 
