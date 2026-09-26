@@ -512,3 +512,8 @@ declared `{ tag: "Ok"; result: T } | { tag: "Error"; error: E }`** while every m
 reads `{ ok }` / `{ error }` — now `{ ok: T } | { error: E }` (2 snapshots). After: **33 of 33
 accepted**. 16 commonJS snapshots per tree moved, typedef sections only; `tsc` is not in the checkout
 or on `PATH` (it ran through `npx`), so the gate stays a measurement rather than a script.
+
+**Decision 47 on the printer** (compiler `d798775b`, `decisions-pending.md` 0405-b): JavaScript's
+`undefined` — what `?.` on an absent receiver and an `if` with no `else` answer — prints `null`, as
+`Array.at`'s absence already did. 196 commonJS snapshots per tree moved, each by the one prelude line
+(verified mechanically), and two RUN LOGs `undefined` → `null`.

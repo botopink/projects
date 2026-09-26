@@ -268,8 +268,9 @@ the maintainer confirms or reverses each.
 > written into every module that prints, so the prelude text of every such commonJS snapshot moves
 > (163 per tree); (b) lower `?.` and the else-less `if` to produce `null`, which moves every `?.` site.
 > **Recommendation.** (a), as its own commit: the printer is where the spelling is decided, and it
-> leaves `== null` (already loose on this backend) untouched. Not done on this branch.
-> **Blocks.** The last commonJS half of decision 47.
+> leaves `== null` (already loose on this backend) untouched. Implemented (compiler `d798775b`):
+> 196 commonJS snapshots per tree gained the one prelude line, and the two RUN LOGs above read `null`.
+> **Blocks.** Nothing now — commonJS and wasm both print absence as `null`; erlang and beam are C-18's.
 
 ## Open
 
