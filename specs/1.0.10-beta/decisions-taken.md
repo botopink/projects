@@ -78,6 +78,7 @@ what was left, now `00-compiler-carry-over`'s order),
 | [135](#135-specs-keep-only-what-still-holds) | Closed fronts spelling removed forms | Condensed to their current outcome; removed spellings only in the record and the removed-names tables |
 | [136](#136-try-and-await-begin-an-expression-they-are-never-an-operand) | `try` / `await` as operands (pending 24-e)? | Reversed: only where an expression begins; as an operand (operator, unary, group, chain) `try-await-operand` with the fix-it `val x = try …;` |
 | [137](#137-the-empty-record-is-type-x-the-brace-only-form-is-refused) | How is a record with no fields spelled? | `type X()` / `type X() { … }`; `type X {}`, `type X { fn … }` and a bare `type X` are `type-without-field-list`, located where `()` belongs; the formatter prints `()` |
+| [138](#138-a-negative-index-counts-from-the-end-on-every-backend) | `Array.at` with a negative index (pending 0405-a)? | Reversed: counts from the end on every backend — `[1, 2, 3].at(-1)` is `3`, `.at(-3)` is `1`, `.at(-4)` / `.at(3)` absent; `xs[i]` and `String.at` alike; `Dict.at` is by key |
 
 ## 68. One milestone, the 1.0.9 numbers kept, the drafts deleted
 
@@ -2877,3 +2878,34 @@ repository re-spelled (std's bundled `validation` test, the `tests/language` cel
 sources); cells `run/type_empty_record`, `reject/{type_empty_braces,type_without_field_list}`; the
 guide's § 4.1 / § 4.4 (`pub type ElementBase();`, `pub type RequestBase();`). The libraries re-spell
 their own — the list is in `status.md`.
+
+## 138. A negative index counts from the end, on every backend
+
+**Decided 2026-09-26 by the maintainer** (pending item 0405-a, reversed): a negative position counts
+from the end, the way native `Array.prototype.at` already did on commonJS — and now on all four
+backends, so no program reads "the last element" on one and "absent" on another.
+
+```bp
+val xs = [1, 2, 3];
+xs.at(-1);    // 3
+xs.at(-3);    // 1
+xs.at(-4);    // null — past the front
+xs.at(3);     // null — past the back
+xs[-1];       // 3 — an index is `.at` (decision 63)
+"abc".at(-1); // "c"
+```
+
+The rule is `Array.at` and `String.at` — and therefore `xs[i]` and `s[i]`, which the checker rewrites
+to them. The answer stays decision 47's `?T`: absent past either end. `Dict.at` is by key and has no
+position to count from; a user type's `at` (decision 63's `Index<K, V>`) decides for itself. A
+tuple's constant index is the checker's own case and is unaffected.
+
+Per backend: commonJS `__bp_array_at` / `__bp_string_char_at` are native `.at(i) ?? null`; erlang
+`primitives.bp`'s templates add the length to a negative index (beam evaluates the `String.at` one);
+beam's `'-bp_at-'/2` branches on the sign; wasm's `$__arr_at`, `$__arr_at_box` and `$__str_at` add
+the length before their bounds test.
+
+**Amends:** `00 · 04-js`'s C-18 half (0405-a). Implements: `codegen/js/js_prelude.zig`,
+`libs/std/src/primitives.bp`, `codegen/beam_asm.zig`, `codegen/wat/wat_prelude.zig`,
+`codegen/erlang.zig`'s run-time `'__bp_index'/2`; cell `tests/language/run/index_negative_from_end`;
+the codegen snapshots that carry the helpers re-recorded in both trees (the RUN LOGs unchanged).
