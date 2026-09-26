@@ -259,6 +259,20 @@ maintainer confirms or reverses each. Numbered `01c-a` … so they do not collid
 > and the hash keeps its content-addressing.
 > **Blocks.** Nothing.
 
+### 01c-b · A section leaf has a leading-dot shorthand, where the position is that section
+
+> **Raised by:** `00 · 01-checker` step 12, 2026-09-26 — the step's own "what the step has to decide
+> first".
+> **Measured.** At `ffe2db69` `.Zeta` against `Token.Layout.Break` was `unbound variable 'Zeta'` with no
+> collision anywhere; step 4 (d)'s acceptance already wrote `val t: Token.Text = .Bold;` as checking.
+> A top-level variant's shorthand is decided by the position's expected type (`.Circle(…)`, front 15).
+> **Options.** (a) yes, by the same rule — the position's type is the section (implemented, compiler
+> `909acc34`); with no expectation the leaf is refused naming its section; (b) no shorthand for a
+> section leaf, the full path always, with a named refusal.
+> **Recommendation.** (a): one rule for every leading dot, and a refusal wherever the rule has no
+> answer — nothing is picked.
+> **Blocks.** Nothing; emilia writes the full path today and keeps compiling.
+
 ## Open
 
 ### `botopink migrate` beside `botopink migrate effects` (front 24, open point 7)

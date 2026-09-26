@@ -180,7 +180,7 @@ The parser half of (d) is this front's too: a section body carrying a `fn` does 
 - [x] `test/case_tuples.bp`, `test/case_guards.bp`, `test/case_variants.bp`, `run/case_values.bp` and `test/case_sections.bp` compile and run on commonJS and erlang — none has a line left; green in `run.sh --target all` at `ffe2db69`
 - [x] `reject/case_missing_variant.bp` is rejected **because `Rect` is missing**, not because `.Circle` does not resolve — "missing variant(s) Rect"
 - [x] `reject/case_arity_without_rest.bp` names the missing field — "missing required field 'height' on type 'Rect'"
-- [ ] `val t: Token.Text = .Bold;` checks, `Token.Text.Bold` checks, and a `case` over `Token.Text` is exhaustive on its own members with no `_`
+- [x] `val t: Token.Text = .Bold;` checks, `Token.Text.Bold` checks, and a `case` over `Token.Text` is exhaustive on its own members with no `_` — compiler `909acc34` (`val w: Token.Text = Token.Text.Italic;` too); `run/section_path_resolution`
 
 ### Step 5 — exhaustiveness (decision 8 §5.4)
 
@@ -359,12 +359,12 @@ the full path`) rather than `unbound variable`, and row 3's must stop being a ty
 answer is yes, all three rows are one fix.
 
 **Acceptance**
-- [ ] a bare name that two declarations claim is a **named refusal**, never a silent pick — decision 67, and the atom-collision check in `crossModule.zig` is the precedent for what loud looks like
-- [ ] row 1's erlang half cannot survive: binding one enum's variant to another enum's type is a wrong value, not a wrong message
-- [ ] **row 3c is the gate for the whole step**: `Shape.Circle(…)` types as `Shape` whenever `Shape` declares `Circle`, regardless of what any other enum declares. If the fully-qualified spelling still resolves by table order, nothing else here is really closed
-- [ ] row 3 reports a resolution failure, not a type mismatch
-- [ ] every one of the four has a language cell, and each cell is **proved able to fail** by planting the pre-fix behaviour
-- [ ] the two targets agree, and the cells say so — three of these four answer differently on commonJS and erlang, which is how they stayed open
+- [x] a bare name that two declarations claim is a **named refusal**, never a silent pick — decision 67, and the atom-collision check in `crossModule.zig` is the precedent for what loud looks like — compiler `909acc34`: "`Circle` is a variant of `Shape` and of `Hole`, and nothing here says which — write `Shape.Circle` or `Hole.Circle`" (`Env.variantClaims`). **The language answer the step asked for first**: a section leaf *has* a leading-dot shorthand, exactly where a top-level variant has one — where the position's type is that section — and none elsewhere (a named refusal)
+- [x] row 1's erlang half cannot survive: binding one enum's variant to another enum's type is a wrong value, not a wrong message — the leading dot is spliced in qualified (`Warm.Red`), so no backend picks
+- [x] **row 3c is the gate for the whole step**: `Shape.Circle(…)` types as `Shape` whenever `Shape` declares `Circle`, regardless of what any other enum declares. If the fully-qualified spelling still resolves by table order, nothing else here is really closed — `Env.variantCtors`; `9` on commonJS, erlang and wasm
+- [x] row 3 reports a resolution failure, not a type mismatch — with the section expected it resolves; without, `.Zeta` is refused as "a leaf of the section `Token.Layout.Break`"
+- [x] every one of the four has a language cell, and each cell is **proved able to fail** by planting the pre-fix behaviour — `run/variant_leading_dot_expected` (rows 1, 3c), `reject/variant_name_ambiguous` (row 1 unexpected), `run/section_path_resolution` (rows 2, 3, 3b), `reject/section_leaf_without_expectation`; each run with the `feat` binary fails as the row describes
+- [x] the two targets agree, and the cells say so — three of these four answer differently on commonJS and erlang, which is how they stayed open — the cells run on commonJS, erlang and wasm with one `.out` each. Left for 05-wasm: a `case` arm's leading-dot PATTERN is resolved by the backend, and wasm's `findVariant` takes the first enum declaring the name (a `.Red` arm over `Cold` traps when `Warm` also declares `Red` first)
 
 **Not this step.** The *cross-module* name-keyed registry (`CrossModule.exports`, `variant_enum`,
 `type_owner_path`, `imported_fns`) is the same shape one level up and is `02-erlang`'s, in worktree
