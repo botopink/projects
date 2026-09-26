@@ -5,9 +5,7 @@
 // dependency name against, and which `rakun-data` is this. The table is authored
 // data; `test/version_set_test.bp` is what stops it drifting from the manifests.
 //
-// Server side — compiles to BEAM. It also compiles and passes on commonJS,
-// because nothing in it is target-specific; running it on both rows is free and
-// catches an `io.fs` divergence.
+// Server side — compiles to BEAM (rakun is erlang-only, decision 113).
 //
 // Upstream:
 //   https://docs.spring.io/spring-boot/appendix/dependency-versions/index.html
@@ -17,8 +15,8 @@
 
 import {rakunVersion, versionOf, moduleVersions, ModuleVersion} from "rakun";
 
-// What front 11's `info` contributor reports. Built here rather than there so
-// the shape is pinned by this front's own test.
+// A one-line rendering of the table. Front 11's `info` reports the same data as
+// JSON under its `rakun` key (`rakunInfo` in rakun-actuator).
 pub fn infoVersionLine() -> string {
     val modules = moduleVersions().map({ m -> m.name + "@" + m.version });
     return "rakun " + rakunVersion() + " [" + modules.join(" ") + "]";

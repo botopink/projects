@@ -40,8 +40,9 @@ for the data subsystem", not "some transitive edge dragged it in".
 | What a dependency source may be | `config.zig:42-46` — `DepSpec { git, path, ref }` | A git URL, or a filesystem path. **No subdirectory field.** |
 | Lockfile | `modules/bpmp/src/lockfile.zig:1-40` — `botopink.lock.json`, schema 1 | Pins every package and the toolchain by git commit SHA, carrying `version`, `commit`, `tag`, `constraint`, `sha256`, `source`, `requires[]` |
 | Version resolution | `modules/bpmp/src/semver.zig`, `src/resolver.zig`, `src/dep/resolver.zig` | Constraint solving and materialisation exist |
-| Starters | none | — |
-| A curated version set | none | every module reads `0.0.1` and nothing checks that they agree |
+| Starters | `repository/rakun/starters/rakun-starter*` (8), members of rakun's workspace (`"workspaces": ["modules/*", "starters/*", "examples/*"]`) | a manifest with `files: ["root.bp"]` and a docblock-only root; in-repo dependencies `{ "workspace": true }`, `onze` by `path`. `rakun-starter-actuator` pulls `rakun-actuator` only until front 75 adds `rakun-metrics` |
+| A curated version set | `modules/rakun/src/version_set.bp` | `rakunVersion`, `moduleVersions` (every module and starter), `versionOf`, `versionSetProblems`; the actuator's `info` reports it under `rakun` |
+| The resolved set | `modules/rakun/src/autoconfig_registry.bp` | `resolvedModuleListIn` follows `path` and `workspace` dependencies breadth first; `moduleList()` (every `#[conditionalOnModule]`) is the resolved set of the working directory's manifest |
 
 The row that decides this front's shape is `DepSpec`. Every `rakun-*` module is a **directory inside
 one git repository**, and a `DepSpec` can name a git URL or a path but not a path *within* a git
@@ -149,11 +150,11 @@ listing what the starter pulls and what an application gets by declaring it.
 ```
 
 **Acceptance:**
-- [ ] Each of the eight starters loads with no `DEP-001`/`DEP-002`/`DEP-003` diagnostic
-- [ ] Each starter's `src/root.bp` declares no `mod` and exports no symbol — a starter that ships code fails the manifest test
-- [ ] `botopink build` in each starter directory succeeds and emits nothing importable
-- [ ] Every path in every starter's `dependencies` resolves to a directory containing a `botopink.json`
-- [ ] Declaring `rakun-starter-web` resolves `rakun`, `rakun-logging` and `rakun-web` transitively, in one resolution pass, and lists no bundled library (`validation`, `routing`, `actions`)
+- [x] Each of the eight starters loads with no `DEP-001`/`DEP-002`/`DEP-003` diagnostic — `zig build test-libs`: the eight `rakun-starter-*` cells compile (erlang), and a program declaring all eight builds (137 modules); the in-repo members are `{ "workspace": true }` (the loader refuses a `path` at a sibling member — 03r-r), `onze` is a `path`
+- [x] Each starter's `src/root.bp` declares no `mod` and exports no symbol — a starter that ships code fails the manifest test — `modules/rakun/test/starter_manifest_test.bp` "starters: a root declares no mod and ships no code"
+- [x] `botopink build` in each starter directory succeeds and emits nothing importable — `zig build test-libs` cells `rakun-starter-*`; the emitted `rakun_starter_*@root.erl` exports nothing
+- [x] Every path in every starter's `dependencies` resolves to a directory containing a `botopink.json` — `modules/rakun/test/starter_manifest_test.bp` "starters: every dependency resolves to a directory holding a botopink.json"
+- [x] Declaring `rakun-starter-web` resolves `rakun`, `rakun-logging` and `rakun-web` transitively, in one resolution pass, and lists no bundled library (`validation`, `routing`, `actions`) — `modules/rakun/test/starter_manifest_test.bp` "starters: rakun-starter-web resolves rakun, rakun-logging and rakun-web, and no bundled library" (`resolvedModuleListIn`, `modules/rakun/src/autoconfig_registry.bp`)
 
 ### Step 2 — the version set
 
@@ -189,12 +190,12 @@ contract `Request.param` already sets in `src/http.bp:30-34`. Callers that need 
 from empty compare against the full list.
 
 **Acceptance:**
-- [ ] `versionOf("rakun-data")` returns the same string the module's manifest carries
-- [ ] `versionOf("nope")` returns `""`
-- [ ] `moduleVersions()` names every directory under `modules/` and every directory under `starters/`
-- [ ] `test/version_set_test.bp` fails when a manifest version is edited and the table is not
-- [ ] `test/version_set_test.bp` fails when a new module directory is added and no row is
-- [ ] `rakunVersion()` is the version front 11's `info` contributor reports
+- [x] `versionOf("rakun-data")` returns the same string the module's manifest carries — `modules/rakun/test/version_set_test.bp` "version set: versionOf answers the manifest's version, and \"\" for a name nobody pinned"
+- [x] `versionOf("nope")` returns `""` — same test
+- [x] `moduleVersions()` names every directory under `modules/` and every directory under `starters/` — `modules/rakun/test/version_set_test.bp` "version set: every module and every starter has a row, and every row a directory"
+- [x] `test/version_set_test.bp` fails when a manifest version is edited and the table is not — `modules/rakun/test/version_set_test.bp` "version set: an edited manifest version with the table unchanged is a problem" (`versionSetProblems`)
+- [x] `test/version_set_test.bp` fails when a new module directory is added and no row is — `modules/rakun/test/version_set_test.bp` "version set: a new module directory with no row, and a row with no directory, are problems"
+- [x] `rakunVersion()` is the version front 11's `info` contributor reports — `modules/rakun-actuator/test/info_test.bp` "info: the rakun key is the version set's framework version and the resolved modules' versions"; `modules/rakun/test/version_set_test.bp` "version set: rakunVersion is what the core's manifest carries"
 
 ### Step 3 — the naming convention and its lint
 
@@ -209,11 +210,11 @@ module, a known starter, or a name listed in the small allow-list for out-of-rep
 today); and no dependency is declared twice.
 
 **Acceptance:**
-- [ ] A starter directory whose name and manifest `name` disagree fails the lint, naming both
-- [ ] A starter named `web-starter` fails the lint naming the required prefix
-- [ ] A dependency on an unknown name fails the lint, listing the known names
-- [ ] A third-party starter named `acme-rakun-starter` is documented in `starters/README.md` as the correct form and is *not* rejected by the lint's prefix rule, because it is not under `starters/`
-- [ ] The allow-list is a literal list in the test file, not a pattern — a new out-of-repo dependency is a deliberate edit
+- [x] A starter directory whose name and manifest `name` disagree fails the lint, naming both — `modules/rakun/test/starter_manifest_test.bp` "starters: a name and directory that disagree fail the lint, naming both"
+- [x] A starter named `web-starter` fails the lint naming the required prefix — `modules/rakun/test/starter_manifest_test.bp` "starters: a wrong prefix fails the lint naming the prefix"
+- [x] A dependency on an unknown name fails the lint, listing the known names — `modules/rakun/test/starter_manifest_test.bp` "starters: an unknown dependency fails, listing the known names; a duplicate fails"
+- [x] A third-party starter named `acme-rakun-starter` is documented in `starters/README.md` as the correct form and is *not* rejected by the lint's prefix rule, because it is not under `starters/` — `modules/rakun/test/starter_manifest_test.bp` "starters: the README states the third-party form, the subdirectory limitation, bpmp and the lockfile"; the lint reads only `starters/*`
+- [x] The allow-list is a literal list in the test file, not a pattern — a new out-of-repo dependency is a deliberate edit — `modules/rakun/test/starter_manifest_test.bp` "starters: the allow-list is a literal list"
 
 ### Step 4 — the auto-configuration tie-in
 
@@ -222,11 +223,11 @@ application declaring exactly one starter must reach a configured subsystem with
 and the condition report must say so in those words.
 
 **Acceptance:**
-- [ ] An application declaring only `rakun-starter-data-sql` has `#[conditionalOnModule("rakun-data")]` evaluate true
-- [ ] The same application declaring only `rakun-starter-web` has it evaluate false
-- [ ] A transitive dependency counts: `rakun-starter-web` makes `#[conditionalOnModule("rakun")]` true
-- [ ] `rkModulePresent("rakun-starter-web")` is true for the starter itself, so a condition may name either the starter or the module
-- [ ] The condition report names the resolved dependency list as the value observed when a module condition fails
+- [x] An application declaring only `rakun-starter-data-sql` has `#[conditionalOnModule("rakun-data")]` evaluate true — `modules/rakun/test/starter_manifest_test.bp` "starters: rakun-starter-data-sql alone makes conditionalOnModule(rakun-data) true"
+- [x] The same application declaring only `rakun-starter-web` has it evaluate false — `modules/rakun/test/starter_manifest_test.bp` "starters: rakun-starter-web alone leaves it false, and the report names the resolved list"
+- [x] A transitive dependency counts: `rakun-starter-web` makes `#[conditionalOnModule("rakun")]` true — `modules/rakun/test/starter_manifest_test.bp` "starters: a transitive module counts, and so does the starter itself"
+- [x] `rkModulePresent("rakun-starter-web")` is true for the starter itself, so a condition may name either the starter or the module — same test (`moduleVerdict`, the `M` branch `rkModulePresent` and the evaluator share)
+- [x] The condition report names the resolved dependency list as the value observed when a module condition fails — `modules/rakun/test/starter_manifest_test.bp` "starters: rakun-starter-web alone leaves it false, and the report names the resolved list"
 
 ### Step 5 — `starters/README.md`
 
@@ -235,10 +236,10 @@ subdirectory limitation below and what it means for an out-of-tree consumer toda
 describes the intended end state without saying which half works is worse than none.
 
 **Acceptance:**
-- [ ] Every starter in `starters/` appears in the table, and every row in the table is a directory
-- [ ] The third-party convention is stated with an example name
-- [ ] The subdirectory limitation is stated with the interim form (`path`) and the condition for lifting it
-- [ ] The document names `bpmp` as the resolver and the lockfile as the pin, rather than describing a mechanism rakun does not own
+- [x] Every starter in `starters/` appears in the table, and every row in the table is a directory — `modules/rakun/test/starter_manifest_test.bp` "starters: the README's table rows are exactly the starter directories"
+- [x] The third-party convention is stated with an example name — `modules/rakun/test/starter_manifest_test.bp` "starters: the README states the third-party form, the subdirectory limitation, bpmp and the lockfile"
+- [x] The subdirectory limitation is stated with the interim form (`path`) and the condition for lifting it — same test
+- [x] The document names `bpmp` as the resolver and the lockfile as the pin, rather than describing a mechanism rakun does not own — same test
 
 ## Examples
 

@@ -14,7 +14,10 @@
 // The application's botopink.json, quoted because a manifest is not botopink.
 // The `path` sources are the interim form: a dependency cannot name a
 // subdirectory of a git repository today, so an out-of-tree consumer needs a
-// checkout of the rakun repository beside it. See this front's README.
+// checkout of the rakun repository beside it. The `rakun` and `rakun-data`
+// lines are there because an import is accepted only from a package the
+// manifest declares itself — the starters load them either way
+// (language-gaps.md, *Toolchain gaps*). See this front's README.
 //
 //   {
 //     "name": "orders",
@@ -25,7 +28,9 @@
 //     "targets": ["erlang"],
 //     "dependencies": {
 //       "rakun-starter-web":      { "path": "../rakun/starters/rakun-starter-web" },
-//       "rakun-starter-data-sql": { "path": "../rakun/starters/rakun-starter-data-sql" }
+//       "rakun-starter-data-sql": { "path": "../rakun/starters/rakun-starter-data-sql" },
+//       "rakun":                  { "path": "../rakun/modules/rakun" },
+//       "rakun-data":             { "path": "../rakun/modules/rakun-data" }
 //     }
 //   }
 //

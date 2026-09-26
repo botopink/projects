@@ -4,7 +4,7 @@
 front 24's (24-a…c, 24-g), `01-std`'s (01std-a, 01std-c…e), `00 · 23-std-purity`'s (23-a…c), front 95's
 (95-a…e), `00 · 16-formatter`'s (16-a…b), track C's (26-a, 27-a, 30-b…e, 31-a), `00 · 04-js` /
 `05-wasm`'s (0405-b), `00 · 01-checker`'s (01c-a…b),
-track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…q) and the host methods' (lem-a…f). Two
+track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…r) and the host methods' (lem-a…f). Two
 questions are open: the language-gaps sweep's lg-a and lg-b (§ Open). Every other question raised so far is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 24-f is decision 143 (library resolution stops at the
 enclosing checkout; dependencies are transitive); the next free number is **144**.
@@ -515,6 +515,18 @@ fronts could land; the maintainer confirms or reverses each.
 > **Options.** (1) `rakun-app/src/i18n.bp`; (2) a new member `rakun-i18n`.
 > **Recommendation.** (1) — implemented; the examples import `from "rakun-app"`. (2) is one move of one
 > file if a Spring-style service ever wants locales without the app router.
+
+### 03r-r · Starters name their sibling modules `{ "workspace": true }`, not `path`
+
+> **Raised by:** `73-rakun-starters`
+> **Measured.** The front's step 1 writes `"rakun-web": { "path": "../../modules/rakun-web" }`. With
+> `starters/*` in rakun's `workspaces`, the loader refuses that entry ("path points at the sibling member
+> `rakun` — use { "workspace": true }"); outside the workspace the starters would not be `test-libs`
+> cells. `onze` is outside the repository and stays a `path`.
+> **Options.** (1) starters are workspace members and name siblings `{ "workspace": true }`; (2) keep
+> `starters/` out of `workspaces` and write `path`.
+> **Recommendation.** (1) — implemented. The runtime resolver (`resolvedModuleListIn`) follows both
+> forms, so a consumer's `path` to a starter still reaches every module.
 
 ## Open
 
