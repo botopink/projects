@@ -492,7 +492,7 @@ is ticked with the program that answered it.
 - **C-09's commonJS half of `adder(3)(4)`** — `calleeExpr` is the callee; `test/curried_call.bp`'s
   commonJS line deleted (both tests pass).
 - **C-18's commonJS half of decision 47** — `Array.at` goes through `__bp_array_at`, `null` out of
-  range (a negative index included, as `String.at` and wasm answer); `run/index_past_the_end_is_null.bp`'s
+  range, a negative index counting from the end (decision 139); `run/index_past_the_end_is_null.bp`'s
   commonJS line deleted. 8 commonJS snapshots per tree moved: the helper and the call, and two RUN LOGs
   `undefined` → `null` (`array_at_lowers_byte_identically_across_backends`,
   `index_an_index_past_the_end_answers_zero`).

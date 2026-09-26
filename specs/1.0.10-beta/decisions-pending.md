@@ -1,13 +1,15 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**None open.** Implementation choices wait for the maintainer to confirm or reverse them: six of
-front 24's (24-a…c, 24-e…g), five `01-std` ones (01std-a…e), three of `00 · 23-std-purity` (23-a…c),
+**None open.** Implementation choices wait for the maintainer to confirm or reverse them: five of
+front 24's (24-a…c, 24-f…g), five `01-std` ones (01std-a…e), three of `00 · 23-std-purity` (23-a…c),
 five of front 95's (95-a…e), two of `00 · 16-formatter` (16-a…b), track C's (26-a, 27-a, 30-a…e, 31-a),
-`00 · 04-js` / `05-wasm`'s (0405-a…b) `00 · 02-erlang` / `03-beam`'s (0203-b), `00 · 01-checker`'s (01c-a…b), track D's (05emilia-a…h) and `libs-external-methods`' (lem-a…f). Every question
+`00 · 04-js` / `05-wasm`'s (0405-b), `00 · 02-erlang` / `03-beam`'s (0203-b), `00 · 01-checker`'s (01c-a…b), track D's (05emilia-a…h) and `libs-external-methods`' (lem-a…f). Every question
 this milestone raised is answered in [`decisions-taken.md`](./decisions-taken.md) — up to 128 as
 before; 129 the type-alias details, 130 front 24's open point 8 (a failing render's `E`), 131 its open
 point 7 and 24-d (no migration routine), 132 and 133 the formatter's 16-d and 16-c, 134 and 135 front
-24's two documentation boxes, 136 `00 · 02-erlang` / `03-beam`'s 0203-a (a primitive receiver answers only its declared methods). The next free number is **137**.
+24's two documentation boxes, 136 `00 · 02-erlang` / `03-beam`'s 0203-a (a primitive receiver answers only its declared methods), 137 24-e reversed (`try` / `await` only where an expression
+begins), 138 the empty record (`type X()`), 139 0405-a reversed (a negative index counts from the end).
+The next free number is **140**.
 
 This file stays because the fronts will fill it again. A front that meets a question it cannot answer
 from the code writes it here rather than guessing, in the shape the others used:
@@ -69,21 +71,6 @@ reverses it. Numbered `24-a` … so they do not collide with the decision number
 > the written `for` (so `break :l` / `continue :l` keep their meaning) — `yield :l` there is then
 > `yield-label-not-generator`. If the maintainer wants the label of a prefixed `for` to name the generator
 > scope too, the parser moves it to the outer node; nothing else changes.
-> **Blocks.** Nothing.
-
-### 24-e · `try` and `await` as operands
-
-> **Raised by:** step E2, 2026-09-25
-> **Measured.** `total + try r`, `(try batch).length` and `yield try x` are guide spellings; the parser
-> only read `try` / `await` at the start of an expression statement, and `yield` took an equality-level
-> operand.
-> **Options.** Parse them where a primary expression may stand (operand = the next primary, postfix chain
-> included), or keep them statement-only and rewrite the guide.
-> **Recommendation.** Parse them, implemented. Each backend now propagates a `try` that has no rest of
-> the function to nest in: commonJS through `__bp_try` + a per-function guard, erlang through
-> `throw({'__bp_try', E})` + a guard, beam by throwing out of a loop's fun to a catch section at the loop's
-> call site, wasm as before; inside a sequence whose item is a `@Result`, the failing `try` emits the
-> Error as the last item and ends (decision 122).
 > **Blocks.** Nothing.
 
 ### 24-f · `test-libs` cannot be measured from a worktree nested in the meta checkout
@@ -529,19 +516,6 @@ each.
 
 Decided by the implementation on `front/04-05-js-wasm` (worktree `.tasks/04-05-js-wasm`, 2026-09-26);
 the maintainer confirms or reverses each.
-
-### 0405-a · `Array.at` with a negative index is out of range on commonJS
-
-> **Raised by:** `04-js`, C-18's commonJS half (decision 47), 2026-09-26
-> **Measured.** Native `Array.prototype.at` answers `undefined` past the end and counts a negative
-> index from the back (`[10, 20, 30].at(-1)` → `30`). wasm's `$__arr_at` and commonJS's own
-> `__bp_string_char_at` answer absence for a negative index; `String.at(-1)` is `null` on commonJS.
-> **Options.** (a) `__bp_array_at(xs, i)` answers `null` for any `i` outside `0..len` — one rule for
-> both readers and every backend that has a bounds test; (b) keep the native negative reading and only
-> map `undefined` to `null`.
-> **Recommendation.** (a), implemented: the language documents no negative index, and a program that
-> means "the last element" on one backend and "absent" on another is the divergence decision 67 refuses.
-> **Blocks.** Nothing.
 
 ### 0405-b · The empty value `?.` answers on commonJS still prints `undefined`
 

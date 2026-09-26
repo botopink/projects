@@ -115,7 +115,7 @@ Every step has landed; the open boxes are listed under *Open*.
 `async` before `{` → an `AsyncBlock`; `iter` / `stream` before `loop` / `while` / `for` / `for await`
 → the prefixed loop (`iter for (xs) { … }` is the prefixed `loop { for (xs) { … }; break; }`, the
 written keyword kept for the formatter); the three words are contextual; `try await x` is
-`try (await x)`; `try` and `await` are operands (`total + try r`, `yield try x`); the removed
+`try (await x)`; `try` and `await` begin an expression and are never an operand (decision 137: `yield try x`, `f(try x)`; `total + try r` is `try-await-operand`); the removed
 annotations and wrappers are recognised only to be refused, located.
 
 - [x] every form in [`guide.md`](./guide.md) parses, with `parser/tests/` cases and lossless
@@ -287,7 +287,7 @@ where it runs, a `run/` cell on the four targets.
 - **The JS interop helper.** Whether an `unwrapOrThrow` (a resolved `Error` turned back into a
   rejection, for JavaScript callers) ships, and where — std or the JS runtime — is not decided.
 - **Confirmations** in `decisions-pending.md`: 24-a (the effect codes), 24-b (`@Task`'s `map` /
-  `then`), 24-c (a prefixed loop's label), 24-e (`try` / `await` as operands), 24-f (`test-libs` from
+  `then`), 24-c (a prefixed loop's label), 24-f (`test-libs` from
   a nested worktree), 24-g (`std/async`'s shape).
 
 ## Risks

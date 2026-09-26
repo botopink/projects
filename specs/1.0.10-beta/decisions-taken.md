@@ -77,6 +77,9 @@ what was left, now `00-compiler-carry-over`'s order),
 | [134](#134-every-example-in-the-guide-and-in-docsmd-is-correct-against-the-compiler) | Guide examples that do not type | Fixed in the text; three checker gaps closed by `01-checker`; decision 117's decorator check written in jhonstart |
 | [135](#135-specs-keep-only-what-still-holds) | Closed fronts spelling removed forms | Condensed to their current outcome; removed spellings only in the record and the removed-names tables |
 | [136](#136-a-primitive-receiver-answers-only-the-methods-it-declares) | A method a primitive interface does not declare (`"abc".toUpperCase()`) | Refused, `unknown-primitive-method`, naming the declared method it is the host spelling of; the backend aliases leave |
+| [137](#137-try-and-await-begin-an-expression-they-are-never-an-operand) | `try` / `await` as operands (pending 24-e)? | Reversed: only where an expression begins; as an operand (operator, unary, group, chain) `try-await-operand` with the fix-it `val x = try …;` |
+| [138](#138-the-empty-record-is-type-x-the-brace-only-form-is-refused) | How is a record with no fields spelled? | `type X()` / `type X() { … }`; `type X {}`, `type X { fn … }` and a bare `type X` are `type-without-field-list`, located where `()` belongs; the formatter prints `()` |
+| [139](#139-a-negative-index-counts-from-the-end-on-every-backend) | `Array.at` with a negative index (pending 0405-a)? | Reversed: counts from the end on every backend — `[1, 2, 3].at(-1)` is `3`, `.at(-3)` is `1`, `.at(-4)` / `.at(3)` absent; `xs[i]` and `String.at` alike; `Dict.at` is by key |
 
 ## 68. One milestone, the 1.0.9 numbers kept, the drafts deleted
 
@@ -2839,3 +2842,99 @@ Implements: front [`01-checker`](./00-compiler-carry-over/01-checker/README.md),
 `reject/primitive_method_unknown`; `test/string_case_conversion` re-spelled `toUpper` /
 `toLower`). `primNodeAliasIn` exists only on `feat` after this front's base; it is deleted when the
 front merges `feat`.
+
+## 137. `try` and `await` begin an expression; they are never an operand
+
+**Decided 2026-09-26 by the maintainer** (pending item 24-e, reversed): `try` and `await` are legal
+only where an expression begins, and the operand form front 24 implemented is refused —
+*"`val x = try r; total + x`"*. A position where an expression begins is one the grammar reads as a
+whole expression:
+
+- a statement; a `val` / `var` initializer; the right side of `=` (`x = …`, `x.f = …`, `x += …`);
+- the operand of `return`, `yield`, `break v` and `throw`;
+- a call argument (positional, labelled or `..` spread); an element of an array, tuple or record
+  literal;
+- a condition or subject the construct delimits: the `if` / `while` condition, a `case` subject, a
+  `for` iterable;
+- a `catch` handler.
+
+There the keyword takes the whole expression after it — `try a + b` is `try (a + b)`, `try await f()`
+is `try (await f())` — and `try … catch x` stands in the same positions. Everywhere else — the
+operand of a binary operator or `??`, of a unary `-` / `!`, an index or a range bound, and inside
+parentheses (a group exists only to become an operand, so `(try r).length` and
+`(try r catch 0) == 1` are the operand form) — the parser refuses it as `try-await-operand`, located
+at the keyword, with the fix-it "bind it first: `val x = try …;`".
+
+```bp
+fn sum(r: @Result<i32, string>, total: i32) -> @Result<i32, string> {
+    val x = try r;          // not `total + try r`
+    return total + x;
+}
+```
+
+The backends keep the propagation front 24 gave a `try` with no rest of the function to nest in —
+a call argument or a literal's element still has none.
+
+**Amends:** front 24's step E2 (24-e). Implements: `parser/exprs.zig` (`parseExprAtStart`, the
+`tryAwaitOperand` refusal), the guide (§ 2.2, § 5.2, § 5.3), `docs.md` § Results; cells
+`tests/language/run/try_start_positions` and `reject/{try_operand_of_operator,try_in_parentheses,await_operand_of_unary}`.
+
+## 138. The empty record is `type X()`; the brace-only form is refused
+
+**Decided 2026-09-26 by the maintainer**: *"the correct is `pub type RequestBase();` or
+`pub type RequestBase() {};`"*. A record always writes its field list, so the shape of a `type` is
+read off what was written — a field list (`()` included) is a record, braces holding a variant or a
+section are an enum:
+
+```bp
+pub type RequestBase()                 // the empty record
+
+type MathOps() {                       // an empty record with members
+    fn double(self: Self, x: i32) -> i32 { return x * 2; }
+}
+```
+
+The empty field list `()` stops being `type-empty-field-list`. A `type` that ends with neither a field
+list nor a variant — `type X {}`, `type X { fn … }`, a bare `type X`, and the val-form `type {}` — is
+`type-without-field-list`, located where the `()` belongs (after the name and generics), with the
+fix-it `type Name()`. One spelling (decision 67). `botopink format` prints `()` for every record
+with no fields, and an LSP hover card does the same.
+
+**Amends:** decision 12's shape resolution (front 12's `type-grammar.md`: "`type Name { methods }` /
+`type Name` → record with no fields"). Implements: `parser/decls.zig` (`parseTypeDeclRest`,
+`parseFieldList`), `format.zig`, `language-server/src/engine.zig`; every record in the compiler
+repository re-spelled (std's bundled `validation` test, the `tests/language` cells, the unit-test
+sources); cells `run/type_empty_record`, `reject/{type_empty_braces,type_without_field_list}`; the
+guide's § 4.1 / § 4.4 (`pub type ElementBase();`, `pub type RequestBase();`). The libraries re-spell
+their own — the list is in `status.md`.
+
+## 139. A negative index counts from the end, on every backend
+
+**Decided 2026-09-26 by the maintainer** (pending item 0405-a, reversed): a negative position counts
+from the end, the way native `Array.prototype.at` already did on commonJS — and now on all four
+backends, so no program reads "the last element" on one and "absent" on another.
+
+```bp
+val xs = [1, 2, 3];
+xs.at(-1);    // 3
+xs.at(-3);    // 1
+xs.at(-4);    // null — past the front
+xs.at(3);     // null — past the back
+xs[-1];       // 3 — an index is `.at` (decision 63)
+"abc".at(-1); // "c"
+```
+
+The rule is `Array.at` and `String.at` — and therefore `xs[i]` and `s[i]`, which the checker rewrites
+to them. The answer stays decision 47's `?T`: absent past either end. `Dict.at` is by key and has no
+position to count from; a user type's `at` (decision 63's `Index<K, V>`) decides for itself. A
+tuple's constant index is the checker's own case and is unaffected.
+
+Per backend: commonJS `__bp_array_at` / `__bp_string_char_at` are native `.at(i) ?? null`; erlang
+`primitives.bp`'s templates add the length to a negative index (beam evaluates the `String.at` one);
+beam's `'-bp_at-'/2` branches on the sign; wasm's `$__arr_at`, `$__arr_at_box` and `$__str_at` add
+the length before their bounds test.
+
+**Amends:** `00 · 04-js`'s C-18 half (0405-a). Implements: `codegen/js/js_prelude.zig`,
+`libs/std/src/primitives.bp`, `codegen/beam_asm.zig`, `codegen/wat/wat_prelude.zig`,
+`codegen/erlang.zig`'s run-time `'__bp_index'/2`; cell `tests/language/run/index_negative_from_end`;
+the codegen snapshots that carry the helpers re-recorded in both trees (the RUN LOGs unchanged).

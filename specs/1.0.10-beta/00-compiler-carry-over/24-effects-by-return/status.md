@@ -6,5 +6,5 @@ The boxes are in [`README.md`](README.md).
   emilia, onze, erika, std) written in the surface; `docs.md` carries the guide. No codemod
   (decision 131).
 - **Open:** three guide fences wait for `00 · 01-checker` (decision 134); the per-commit `AGENTS.md`
-  box waits for the maintainer; the JS interop helper is undecided; 24-a…c and 24-e…g wait for
+  box waits for the maintainer; the JS interop helper is undecided; 24-a…c, 24-f and 24-g wait for
   confirmation in `decisions-pending.md`.
