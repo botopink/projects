@@ -146,49 +146,49 @@ eagerly on erlang (`libs/std/src/http.bp:16-18`), so such a method would buy not
 ### Step 1 — The session value and the store behavior
 
 **Acceptance:**
-- [ ] `withAttribute` returns a new session and leaves the receiver unchanged.
-- [ ] `withAttribute` on an existing name replaces it rather than appending a second pair.
-- [ ] `attribute` on a missing name returns `""`, matching `Request`'s convention rather than introducing a second one.
-- [ ] `isExpired` is computed from `lastAccessedAt + maxInactiveSeconds`, against a clock passed in — not read inside, so it is testable without waiting.
-- [ ] `SessionStore` is a `behavior`; no `type` body in this module contains a bodyless method.
+- [x] `withAttribute` returns a new session and leaves the receiver unchanged. — `modules/rakun-session/test/session_test.bp`, rakun `c6f536e`
+- [x] `withAttribute` on an existing name replaces it rather than appending a second pair. — `session_test.bp` "replaces it in place"
+- [x] `attribute` on a missing name returns `""`, matching `Request`'s convention rather than introducing a second one. — `session_test.bp`
+- [x] `isExpired` is computed from `lastAccessedAt + maxInactiveSeconds`, against a clock passed in — not read inside, so it is testable without waiting. — `session_test.bp` (61000 ms against a 60 s budget)
+- [x] `SessionStore` is a `behavior`; no `type` body in this module contains a bodyless method. — `session_test.bp` reads `src/session.bp` and counts bodyless `pub fn` outside the behavior
 
 ### Step 2 — Ids, signing and verification
 
 **Acceptance:**
-- [ ] An id is 32 bytes of randomness rendered base64url; two ids generated in the same millisecond differ.
-- [ ] A cookie whose signature does not match is rejected without the store being touched — asserted by a store double that counts lookups.
-- [ ] A cookie with a valid signature for a deleted session is rejected as *not found*, distinctly from *bad signature*, and both produce the same response to the client.
-- [ ] Verification uses front 01's constant-time compare; a test greps the verification path and fails on a `==` between the computed and supplied signatures.
-- [ ] With the store enabled and `rakun.session.secret` unset, boot fails naming the key.
-- [ ] Rotating the secret invalidates existing cookies and does not crash on them.
+- [x] An id is 32 bytes of randomness rendered base64url; two ids generated in the same millisecond differ. — `test/signing_test.bp` (43 base64url characters, two ids differ)
+- [x] A cookie whose signature does not match is rejected without the store being touched — asserted by a store double that counts lookups. — a counting `SessionRepository` double: 0 lookups for the forgery, 1 for the valid cookie — `signing_test.bp`
+- [x] A cookie with a valid signature for a deleted session is rejected as *not found*, distinctly from *bad signature*, and both produce the same response to the client. — `not-found` vs `bad-signature` in `sessionOutcome()`, both `200 anonymous` through the chain — `signing_test.bp`
+- [x] Verification uses front 01's constant-time compare; a test greps the verification path and fails on a `==` between the computed and supplied signatures. — `hash.equalsConstantTime`; `signing_test.bp` fails on any ` == `/` != ` code line of `src/signing.bp`
+- [x] With the store enabled and `rakun.session.secret` unset, boot fails naming the key. — `sessionConfigProblem` names `rakun.session.secret`; `installSession` panics with it — `signing_test.bp`
+- [x] Rotating the secret invalidates existing cookies and does not crash on them. — `bad-signature` under a new secret, malformed values refused — `signing_test.bp`
 
 ### Step 3 — The three store arms
 
 **Acceptance:**
-- [ ] The same store test suite runs against all three arms and passes unchanged — the arms are interchangeable or one of them is wrong.
-- [ ] `findByPrincipal` returns every live session for a principal and no expired one.
-- [ ] `deleteExpired` removes only expired sessions and reports how many.
-- [ ] The SQL arm ships DDL and does not create its table unless `initialize-schema=always`.
-- [ ] The Redis arm sets a server-side TTL equal to the session timeout, so an abandoned session expires even if the sweeper never runs.
-- [ ] The ETS arm's table survives a worker crash — it is owned by the supervisor, not by a worker.
+- [ ] The same store test suite runs against all three arms and passes unchanged — the arms are interchangeable or one of them is wrong. — runs on ETS and SQL (`test/store_test.bp`); the Redis arm runs only with `RAKUN_TEST_REDIS_URL` (no Redis on this machine), so it stays open
+- [x] `findByPrincipal` returns every live session for a principal and no expired one. — the suite in `test/store_test.bp`, ETS and SQL arms
+- [x] `deleteExpired` removes only expired sessions and reports how many. — `store_test.bp` (reports 1, the live session kept)
+- [x] The SQL arm ships DDL and does not create its table unless `initialize-schema=always`. — `sessionDdl`; `initializeSessionSchema(…, "never")` creates nothing and the probe fails — `store_test.bp`
+- [x] The Redis arm sets a server-side TTL equal to the session timeout, so an abandoned session expires even if the sweeper never runs. — `saveCommand` is `SET rakun:session:<id> … EX <timeout>` — `store_test.bp`
+- [x] The ETS arm's table survives a worker crash — it is owned by the supervisor, not by a worker. — `rkSessSpawnCrash` + owner facts `owner=rakun_session_owner alive=true caller=not-owner` — `store_test.bp`
 
 ### Step 4 — Cookie emission
 
 **Acceptance:**
-- [ ] The emitted header carries `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/` and `Max-Age` by default.
-- [ ] `Secure` is present when the listener is TLS, present when `forwarded-proto` is set, and absent only when the listener is plain and bound to loopback.
-- [ ] `SameSite=None` without `Secure` refuses the boot.
-- [ ] There is no configuration key in this module that removes `HttpOnly` or `Secure`; a grep for `http-only` and `secure` in the module finds documentation and tests, never a flag.
+- [x] The emitted header carries `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/` and `Max-Age` by default. — `SESSION=id.sig; Path=/; Max-Age=1800; HttpOnly; Secure; SameSite=Lax` — `test/cookie_test.bp`
+- [x] `Secure` is present when the listener is TLS, present when `forwarded-proto` is set, and absent only when the listener is plain and bound to loopback. — `secureApplies(bundle, address, forwardedProto)`; the core now binds `rakun.server.address` — `cookie_test.bp`
+- [x] `SameSite=None` without `Secure` refuses the boot. — `cookie_test.bp`
+- [x] There is no configuration key in this module that removes `HttpOnly` or `Secure`; a grep for `http-only` and `secure` in the module finds documentation and tests, never a flag. — `cookie_test.bp` greps the sources for `http-only` / `rakun.session.cookie.secure`
 
 ### Step 5 — Rotation and the filter
 
 **Acceptance:**
-- [ ] `rotate` produces a new id, preserves every attribute, and the old id is not found afterwards.
-- [ ] A session fixation attempt — a request presenting a known id, then authenticating — ends with a different id in the response cookie. This test is the reason the function exists.
-- [ ] The filter runs before authentication in front 07's chain.
-- [ ] A handler reading `currentSession()` sees the loaded session without parsing a header.
-- [ ] A request with no cookie gets a session only when a handler asks for one — an anonymous GET of a static route creates nothing.
-- [ ] `lastAccessedAt` is updated at most once per request.
+- [x] `rotate` produces a new id, preserves every attribute, and the old id is not found afterwards. — `test/rotation_test.bp`
+- [x] A session fixation attempt — a request presenting a known id, then authenticating — ends with a different id in the response cookie. This test is the reason the function exists. — planted cookie → `authenticateSession("victim")` → a different id in `Set-Cookie`, the planted id gone — `rotation_test.bp`
+- [x] The filter runs before authentication in front 07's chain. — `session` at −350 < `orderSecurity()` −300 — `rotation_test.bp`
+- [x] A handler reading `currentSession()` sees the loaded session without parsing a header. — `rotation_test.bp`
+- [x] A request with no cookie gets a session only when a handler asks for one — an anonymous GET of a static route creates nothing. — `rotation_test.bp` (no `Set-Cookie`, outcome `none`; a handler asking gets one)
+- [x] `lastAccessedAt` is updated at most once per request. — touched in the entry only; `touchesThisRequest()` 1 — `rotation_test.bp`
 
 ### Step 6 — The `sessions` endpoint and health
 
@@ -207,11 +207,11 @@ operator needs to count sessions and end one they were given, not to read a vali
 monitoring dashboard.
 
 **Acceptance:**
-- [ ] The listing reports creation time, last access, expiry and attribute *names* — never attribute values, which may hold anything an application put there.
-- [ ] Ids appear truncated, and the untruncated id is never in a response body.
-- [ ] `DELETE` ends the session and the next request with that cookie is unauthenticated.
-- [ ] Both routes are refused with front 11's standard response when unauthorized.
-- [ ] `sessionHealth()` reports DOWN naming the arm when the configured store is unreachable.
+- [x] The listing reports creation time, last access, expiry and attribute *names* — never attribute values, which may hold anything an application put there. — `test/endpoint_test.bp` (attribute value absent)
+- [x] Ids appear truncated, and the untruncated id is never in a response body. — 8 characters + `...`; the full id absent — `endpoint_test.bp`
+- [x] `DELETE` ends the session and the next request with that cookie is unauthenticated. — 204, then the cookie resolves `not-found` — `endpoint_test.bp`
+- [x] Both routes are refused with front 11's standard response when unauthorized. — unexposed: GET and DELETE answer the host's 404 like an unknown id — `endpoint_test.bp` (the access rule itself is front 76's)
+- [x] `sessionHealth()` reports DOWN naming the arm when the configured store is unreachable. — `{"arm":"sql","reason":…}` from the probe — `endpoint_test.bp`
 
 ## Examples
 
