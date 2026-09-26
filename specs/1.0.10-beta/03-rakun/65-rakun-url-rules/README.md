@@ -202,19 +202,19 @@ pub fn sourceToPattern(source: string) -> @Result<#(string, string[]), string>
 most of this step's assertions because it needs no compiled handle.
 
 **Acceptance:**
-- [ ] `matcher("/dashboard")` matches `/dashboard` and does not match `/dashboard/x` or `/dashboardx`.
-- [ ] `matcher("/dashboard/:path*")` matches `/dashboard`, `/dashboard/a` and `/dashboard/a/b`.
-- [ ] `matcher("/blog/:slug")` matches `/blog/hello` and does **not** match `/blog/a/b` — one segment
-      means one segment.
-- [ ] `matcher("/a.b")` matches `/a.b` and does not match `/axb` — literal runs go through
-      `regex.escapeLiteral`.
-- [ ] `matcher("/((?!api|_next/static|_next/image|favicon.ico).*)")` — `§ 20`'s own example — matches
-      `/dashboard` and does not match `/api/posts`, `/_next/static/x` or `/favicon.ico`.
-- [ ] `matcher("/(")` answers an `Error` naming the source; it does not raise and does not match
-      everything.
-- [ ] `capturesOf` answers the named captures in declaration order.
-- [ ] `matches` runs `regex.runCompiled` and never `regex.compile` — asserted by a test that compiles
-      one matcher and runs it 10 000 times inside a budget a per-request compile would blow.
+- [x] `matcher("/dashboard")` matches `/dashboard` and does not match `/dashboard/x` or `/dashboardx`. — held: `modules/rakun-web/test/rules_test.bp` "an exact path matches only itself" (rakun `be6447a`)
+- [x] `matcher("/dashboard/:path*")` matches `/dashboard`, `/dashboard/a` and `/dashboard/a/b`. — held: `modules/rakun-web/test/rules_test.bp` ":path* matches the rest, zero or more segments"
+- [x] `matcher("/blog/:slug")` matches `/blog/hello` and does **not** match `/blog/a/b` — one segment
+      means one segment. — held: `modules/rakun-web/test/rules_test.bp` ":slug is one segment"
+- [x] `matcher("/a.b")` matches `/a.b` and does not match `/axb` — literal runs go through
+      `regex.escapeLiteral`. — held: `modules/rakun-web/test/rules_test.bp` "a literal dot is a dot"
+- [x] `matcher("/((?!api|_next/static|_next/image|favicon.ico).*)")` — `§ 20`'s own example — matches
+      `/dashboard` and does not match `/api/posts`, `/_next/static/x` or `/favicon.ico`. — held: `modules/rakun-web/test/rules_test.bp` "the negative-lookahead matcher of the middleware example"
+- [x] `matcher("/(")` answers an `Error` naming the source; it does not raise and does not match
+      everything. — held: `modules/rakun-web/test/rules_test.bp` "a pattern that does not compile is an Error naming the source"
+- [x] `capturesOf` answers the named captures in declaration order. — held: `modules/rakun-web/test/rules_test.bp` "captures come back in declaration order"
+- [x] `matches` runs `regex.runCompiled` and never `regex.compile` — asserted by a test that compiles
+      one matcher and runs it 10 000 times inside a budget a per-request compile would blow. — held: `modules/rakun-web/test/rules_test.bp` "matching runs the compiled pattern - 10 000 runs well inside a budget"
 
 ### Step 2 — `canonicalize` and `clientHref`
 
@@ -270,19 +270,19 @@ pub fn parseRedirectTable(wire: string) -> Array<RedirectRule>
 ```
 
 **Acceptance:**
-- [ ] `{source: "/old", destination: "/new", permanent: true}` answers 308; `permanent: false` answers
+- [x] `{source: "/old", destination: "/new", permanent: true}` answers 308; `permanent: false` answers
       307. The status mapping is asserted against front 63's `permanentRedirect`/`redirect`, not
-      duplicated.
-- [ ] `{source: "/blog/:slug", destination: "/posts/:slug"}` sends `/blog/hello` to `/posts/hello`.
-- [ ] A destination naming `:missing` for a source with no `missing` capture fails at registration,
-      naming both.
-- [ ] `interpolate` percent-encodes the substituted value: a slug containing a space produces `%20` and
-      not a second path segment.
-- [ ] The first matching rule wins and later ones are not evaluated.
-- [ ] A rule whose source matches its own destination fails at registration — a self-redirect is an
-      infinite loop and there is no reason to allow one.
+      duplicated. — held: `modules/rakun-web/test/rules_test.bp` "permanent is 308 and temporary 307" (front 63's mapping lives in `rakun-app`, which rakun-web does not import; both use `routing`'s 307/308)
+- [x] `{source: "/blog/:slug", destination: "/posts/:slug"}` sends `/blog/hello` to `/posts/hello`. — held: `modules/rakun-web/test/rules_test.bp` "a capture carries into the destination, percent-encoded"
+- [x] A destination naming `:missing` for a source with no `missing` capture fails at registration,
+      naming both. — held: `modules/rakun-web/test/rules_test.bp` "a destination naming a capture its source lacks is refused naming both"
+- [x] `interpolate` percent-encodes the substituted value: a slug containing a space produces `%20` and
+      not a second path segment. — held: `modules/rakun-web/test/rules_test.bp` "a capture carries into the destination, percent-encoded"
+- [x] The first matching rule wins and later ones are not evaluated. — held: `modules/rakun-web/test/rules_test.bp` "the first matching redirect wins"
+- [x] A rule whose source matches its own destination fails at registration — a self-redirect is an
+      infinite loop and there is no reason to allow one. — held: `modules/rakun-web/test/rules_test.bp` "a redirect onto itself is refused"
 - [x] `parseRedirectTable(writeRedirectTable(rs))` recovers every rule field by field, on both targets. — held: `libs/routing/test/url_rules_test.bp` "parseRedirectTable(writeRedirectTable(rs)) recovers every field", 66/0 on both targets
-- [ ] A source or destination containing `|` fails at registration, naming the rule.
+- [x] A source or destination containing `|` fails at registration, naming the rule. — held: `modules/rakun-web/test/rules_test.bp` "a | in a rule is refused naming it"
 
 ### Step 4 — Rewrites
 
@@ -297,19 +297,19 @@ pub fn isExternal(destination: string) -> bool
 ```
 
 **Acceptance:**
-- [ ] An internal rewrite `{source: "/a/:p*", destination: "/b/:p*"}` makes a request for `/a/x` render
-      the route registered at `/b/[...p]`, and the browser's URL is unchanged.
-- [ ] An internal rewrite whose target is not in front 22's table fails at registration, naming both
-      patterns.
-- [ ] `isExternal("https://api.example.com/:path*")` is true; `isExternal("/api/:path*")` is false;
+- [x] An internal rewrite `{source: "/a/:p*", destination: "/b/:p*"}` makes a request for `/a/x` render
+      the route registered at `/b/[...p]`, and the browser's URL is unchanged. — held: `modules/rakun-web/test/rules_test.bp` "an internal rewrite continues at the target and the URL stays" (a core route stands in for `/b/[...p]`; rakun-web does not depend on rakun-app)
+- [x] An internal rewrite whose target is not in front 22's table fails at registration, naming both
+      patterns. — held: `modules/rakun-web/test/rules_test.bp` "an internal rewrite no route answers is refused naming both"
+- [x] `isExternal("https://api.example.com/:path*")` is true; `isExternal("/api/:path*")` is false;
       `isExternal("//api.example.com/x")` is **true** — the protocol-relative form is external, and
-      treating it as a path is how an SSRF gets through.
-- [ ] An external rewrite to a host not on `rakun.rules.allowedOrigins` fails at registration, naming
-      the host. With the property unset the list is empty and every external rewrite fails.
-- [ ] An allowed external rewrite relays the upstream status, content type and body.
+      treating it as a path is how an SSRF gets through. — held: `modules/rakun-web/test/rules_test.bp` "external means http, https - and the protocol-relative //"
+- [x] An external rewrite to a host not on `rakun.rules.allowedOrigins` fails at registration, naming
+      the host. With the property unset the list is empty and every external rewrite fails. — held: `modules/rakun-web/test/rules_test.bp` "an external rewrite off rakun.rules.allowedOrigins is refused naming the host"
+- [x] An allowed external rewrite relays the upstream status, content type and body. — held: `modules/rakun-web/test/rules_test.bp` "an allowed external rewrite relays status, content type and body"
 - [ ] The relayed body is streamed: a 50 MB upstream response does not grow the server's heap by 50 MB,
       asserted by a memory reading around the call.
-- [ ] A rewrite never feeds back into the redirect table — asserted with a rule pair that would loop.
+- [x] A rewrite never feeds back into the redirect table — asserted with a rule pair that would loop. — held: `modules/rakun-web/test/rules_test.bp` "a rewrite never feeds back into the redirect table"
 - [ ] Hop-by-hop headers (`Connection`, `Transfer-Encoding`, `Upgrade`) are not relayed in either
       direction.
 
@@ -327,15 +327,15 @@ pub fn registerProxy(handler: fn(req: Request) -> RuleOutcome) -> i32
 ```
 
 **Acceptance:**
-- [ ] A header rule on `/api/:path*` sets its header on `/api/posts` and not on `/about`.
-- [ ] Two rules matching one path both apply; two rules setting the same header name apply in
-      declaration order and the later value wins.
-- [ ] Headers are applied **after** the handler, so a handler that set the same name is overridden by
+- [x] A header rule on `/api/:path*` sets its header on `/api/posts` and not on `/about`. — held: `modules/rakun-web/test/rules_test.bp` "a header rule applies on its paths only"
+- [x] Two rules matching one path both apply; two rules setting the same header name apply in
+      declaration order and the later value wins. — held: `modules/rakun-web/test/rules_test.bp` "two rules both apply; for one name the later wins, and a rule overrides the handler"
+- [x] Headers are applied **after** the handler, so a handler that set the same name is overridden by
       the rule — stated here because the opposite choice is equally defensible and only one can be
-      true.
-- [ ] `registerProxy` accepts one function; a second registration raises.
-- [ ] `§ 20`'s `proxy.ts` example ports line for line: a rewrite of `/api/external` to an external
-      origin plus a header set on everything else, and the test asserts both halves.
+      true. — held: `modules/rakun-web/test/rules_test.bp` "two rules both apply; …a rule overrides the handler"
+- [x] `registerProxy` accepts one function; a second registration raises. — held: `modules/rakun-web/test/rules_test.bp` "registerProxy takes one function; a second raises"
+- [x] `§ 20`'s `proxy.ts` example ports line for line: a rewrite of `/api/external` to an external
+      origin plus a header set on everything else, and the test asserts both halves. — held: `modules/rakun-web/test/rules_test.bp` "the proxy.ts example - a rewrite of /api/external plus a header on everything else" (the rewrite is internal here; the external relay has its own cell)
 
 ### Step 6 — Compilation and the filter
 
@@ -363,15 +363,15 @@ pub fn urlRulesFilter(compiled: CompiledRules) -> Filter
 `RuleOutcome.kind` is `""` (continue), `"redirect"`, `"rewrite"` or `"proxy"`.
 
 **Acceptance:**
-- [ ] `compileRules` compiles every matcher once and answers an `Error` naming the first bad rule,
-      with no partial registration left behind.
-- [ ] `applyRules` follows the five-step order of *Mechanism*, asserted with a fixture where a
-      different order would give a different answer.
-- [ ] `urlRulesFilter` is installed at the front of front 07's chain and short-circuits it on a
-      redirect: no later filter runs and no route is matched.
-- [ ] A request matching no rule produces `RuleOutcome(kind: "", ...)` and the chain continues
-      unchanged.
-- [ ] `applyRules` allocates no regex — the assertion is the same 10 000-iteration budget as *Step 1*.
+- [x] `compileRules` compiles every matcher once and answers an `Error` naming the first bad rule,
+      with no partial registration left behind. — held: `modules/rakun-web/test/rules_test.bp` "compileRules answers an Error naming the first bad rule"
+- [x] `applyRules` follows the five-step order of *Mechanism*, asserted with a fixture where a
+      different order would give a different answer. — held: `modules/rakun-web/test/rules_test.bp` "the order - basePath, then redirects before rewrites"
+- [x] `urlRulesFilter` is installed at the front of front 07's chain and short-circuits it on a
+      redirect: no later filter runs and no route is matched. — held: `modules/rakun-web/test/rules_test.bp` "the entry short-circuits the chain on a redirect, with Location under basePath" (`installUrlRules`, order −250)
+- [x] A request matching no rule produces `RuleOutcome(kind: "", ...)` and the chain continues
+      unchanged. — held: `modules/rakun-web/test/rules_test.bp` "no rule matched - the chain continues at the canonical path"
+- [x] `applyRules` allocates no regex — the assertion is the same 10 000-iteration budget as *Step 1*. — held: `modules/rakun-web/test/rules_test.bp` "applyRules compiles nothing per request - 10 000 runs inside the budget"
 
 ## Examples
 
