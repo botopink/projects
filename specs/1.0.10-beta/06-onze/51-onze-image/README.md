@@ -168,12 +168,12 @@ pub fn defaultImageProps(src: string, alt: string, width: i32, height: i32) -> I
 ```
 
 **Acceptance:**
-- [ ] `alt` is not optional and an empty `alt` is legal only when it is written — the record has no
+- [x] `alt` is not optional and an empty `alt` is legal only when it is written — the record has no
       default, so omitting it is a compile error, which is the accessibility property this buys
-- [ ] `quality` outside 1..100 reds, naming the value
-- [ ] `placeholder: "blur"` with an empty `blurDataURL` reds
-- [ ] `fill: true` with a non-zero `width`/`height` reds — the two layouts are exclusive
-- [ ] `priority: true` with `loading: "lazy"` reds
+- [x] `quality` outside 1..100 reds, naming the value
+- [x] `placeholder: "blur"` with an empty `blurDataURL` reds
+- [x] `fill: true` with a non-zero `width`/`height` reds — the two layouts are exclusive
+- [x] `priority: true` with `loading: "lazy"` reds
 
 ### Step 2 — Source validation and the remote allowlist
 
@@ -190,13 +190,13 @@ pub fn validateSource(cfg: ImageConfig, publicDir: string, src: string) -> @Resu
 ```
 
 **Acceptance:**
-- [ ] `defaultImageConfig().remotePatterns` is empty, and `validateSource` refuses
+- [x] `defaultImageConfig().remotePatterns` is empty, and `validateSource` refuses
       `https://cdn.example.com/a.jpg` against it, naming the host
-- [ ] A matching pattern accepts; a pattern differing only in port, protocol or path prefix refuses
-- [ ] `*.example.com` matches `cdn.example.com`, refuses `example.com`, refuses `a.b.example.com`
-- [ ] `hostname: "*"` is refused at config load, not at request time
-- [ ] `/photos/../../../etc/passwd` refuses after normalization, for both the local and the remote path
-- [ ] `data:image/png;base64,…` and `file:///etc/passwd` both refuse
+- [x] A matching pattern accepts; a pattern differing only in port, protocol or path prefix refuses
+- [x] `*.example.com` matches `cdn.example.com`, refuses `example.com`, refuses `a.b.example.com`
+- [x] `hostname: "*"` is refused at config load, not at request time
+- [x] `/photos/../../../etc/passwd` refuses after normalization, for both the local and the remote path
+- [x] `data:image/png;base64,…` and `file:///etc/passwd` both refuse
 
 ### Step 3 — The component
 
@@ -205,15 +205,15 @@ pub fn Image(props: ImageProps, cfg: ImageConfig, publicDir: string) -> Element
 ```
 
 **Acceptance:**
-- [ ] Renders `<img>` with `src`, `alt`, `width`, `height`, `loading`, `decoding`
-- [ ] `priority: true` renders `loading="eager"` and `fetchpriority="high"`
-- [ ] Default renders `loading="lazy"` and `decoding="async"`
-- [ ] `sizes` present renders a `srcset` with one candidate per `deviceWidths` entry ≤ `width`
-- [ ] `sizes` absent renders a two-candidate `srcset` (1× and 2×) and no `sizes` attribute
-- [ ] `fill: true` renders no `width`/`height` and a `style` reserving the box
-- [ ] `placeholder: "blur"` renders the `blurDataURL` as the initial `src` and the optimized URL in
+- [x] Renders `<img>` with `src`, `alt`, `width`, `height`, `loading`, `decoding`
+- [x] `priority: true` renders `loading="eager"` and `fetchpriority="high"`
+- [x] Default renders `loading="lazy"` and `decoding="async"`
+- [x] `sizes` present renders a `srcset` with one candidate per `deviceWidths` entry ≤ `width`
+- [x] `sizes` absent renders a two-candidate `srcset` (1× and 2×) and no `sizes` attribute
+- [x] `fill: true` renders no `width`/`height` and a `style` reserving the box
+- [x] `placeholder: "blur"` renders the `blurDataURL` as the initial `src` and the optimized URL in
       `data-src`, which is the attribute front 68's hydration entry swaps
-- [ ] A refused `src` renders nothing and the render reports the URL
+- [x] A refused `src` renders nothing and the render reports the URL
 
 ### Step 4 — The optimizer and its port
 
@@ -230,14 +230,14 @@ pub fn encode(cfg: ImageConfig, req: EncodeRequest) -> @Task<@Result<i32, string
 ```
 
 **Acceptance:**
-- [ ] `encode` spawns the configured binary with an argument vector; the input path is passed as an
+- [x] `encode` spawns the configured binary with an argument vector; the input path is passed as an
       argument and never interpolated into a shell string
-- [ ] A missing binary returns a named error once at startup and the optimizer switches to
+- [x] A missing binary returns a named error once at startup and the optimizer switches to
       pass-through; subsequent calls do not re-probe
-- [ ] An encoder exceeding `encoderTimeoutMs` is killed and the request returns a timeout error; the
+- [x] An encoder exceeding `encoderTimeoutMs` is killed and the request returns a timeout error; the
       node stays up, asserted by a test that runs a deliberately slow command
-- [ ] A non-zero exit returns the encoder's stderr in the error, truncated
-- [ ] No NIF is loaded anywhere in this front — checked by grep in the test plan, not by intention
+- [x] A non-zero exit returns the encoder's stderr in the error, truncated
+- [x] No NIF is loaded anywhere in this front — checked by grep in the test plan, not by intention
 
 ### Step 5 — The `/_onze/image` handler
 
@@ -246,13 +246,13 @@ pub fn imageHandler(req: Request, cfg: ImageConfig, publicDir: string) -> @Task<
 ```
 
 **Acceptance:**
-- [ ] Re-validates `src` against the allowlist — a URL the component would have refused is refused
+- [x] Re-validates `src` against the allowlist — a URL the component would have refused is refused
       here too, even though the component already checked
-- [ ] `w` outside `deviceWidths` and `q` outside 1..100 return 400, not a clamped image
-- [ ] A cache hit returns the stored bytes with `Cache-Control: public, max-age=31536000, immutable`
+- [x] `w` outside `deviceWidths` and `q` outside 1..100 return 400, not a clamped image
+- [x] A cache hit returns the stored bytes with `Cache-Control: public, max-age=31536000, immutable`
       and the content hash as `ETag`
 - [ ] A cache miss encodes once — two concurrent identical requests produce one encoder invocation
-- [ ] The response `Content-Type` is the negotiated format from `cfg.formats`, falling back to the
+- [x] The response `Content-Type` is the negotiated format from `cfg.formats`, falling back to the
       original when the browser accepts nothing configured
 
 ## Examples
@@ -288,10 +288,26 @@ Coverage this front does not have: actual pixel output. Whether `vips` produced 
 `vips`'s test suite, not this one. The test asserts the arguments, the exit code handling, the cache
 key and the response headers.
 
+## Where it stands
+
+Landed on onze `front/06-onze` (`55946aa`): `modules/onze-assets/src/image.bp` and
+`image_handler.bp`, 7 tests on commonJS **and** erlang with stand-in encoder scripts (one copies,
+one sleeps past the timeout, one exits 3). Every `srcset` width is snapped to a configured width
+(`servedWidth`), because the handler refuses any other — so a 1200-wide image's 2× candidate is the
+next configured width, not 2400. The handler is a pure outcome (`imageResponse → ImageOutcome(status,
+headers, file, message)`): the `#[getRoute("_onze/image")]` registration and the byte response are
+rakun front 25's `HandlerResponse`, and the cache is a content-hash file under `<outDir>/images/`
+rather than rakun-cache (front 12 holds no cache surface yet). Remote sources pass the allowlist but
+are not fetched by the handler yet (501).
+
+Open: two concurrent identical requests sharing one encoder run (needs rakun-cache's single-flight),
+the blog's README stating the empty allowlist (front 53), and the `NEXTJS-DOCS.md § 16` prop table
+walked row by row (`loader`, `unoptimized`, `overrideSrc`, `onLoad`/`onError` are not implemented).
+
 ## Definition of done
 
-- [ ] `src/image.bp` and `test/image_test.bp` exist; the `pub mod image;` line is handed to front 49
+- [x] `src/image.bp` and `test/image_test.bp` exist; the `pub mod image;` line is handed to front 49
 - [ ] `defaultImageConfig()` has an empty `remotePatterns`, and the README of the example app says so
 - [ ] Every prop in `NEXTJS-DOCS.md § 16`'s table is honoured or explicitly listed as out of scope
-- [ ] `docs.md` documents the pass-through degradation and the no-NIF rule
-- [ ] The front's tests are green on its assigned target — both, here
+- [x] `docs.md` documents the pass-through degradation and the no-NIF rule
+- [x] The front's tests are green on its assigned target — both, here
