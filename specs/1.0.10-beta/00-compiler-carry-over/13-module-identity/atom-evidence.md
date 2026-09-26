@@ -505,8 +505,8 @@ my__mod@user   legal atom, but split on "__" gives ["my","mod@user"]
 my_mod@user    legal atom, but split on "__" gives ["my_mod@user"]
 ```
 
-A source segment containing `__` would be read back as a declaration qualifier. Hence clause 3b of
-[`declaration-qualifier.md` § 4](./declaration-qualifier.md#4-__-is-reserved-and-what-that-costs):
+A source segment containing `__` would be read back as a declaration qualifier. Hence the `duplicate` refusal of
+[`declaration-qualifier.md` § 6](./declaration-qualifier.md#6-what-the-compiler-refuses):
 collapse runs of `_`, and diagnose the resulting `my__mod` / `my_mod` collision instead of picking a
 winner. No file or directory in the seven repositories uses `__` today.
 

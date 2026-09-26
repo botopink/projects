@@ -60,7 +60,7 @@ item stands is `status.md`'s.
 | [C-20](#c-20--the-comptime-module-reaches-the-node-as-beam-assembly) | The comptime module reaches the node as BEAM assembly | 14 step 3; decisions 24, 62 | **low** | nothing measurable (≈ 39 ms of 645); the principle | none; after C-01 |
 | [C-21](#c-21--every-error-names-its-file) | Every error names its file: the `.withLoc` sweep | 01 step 9; `blast-radius.md` | **low** — land last | 113 error snapshots without a file name, 22 without a box | none |
 | [C-22](#c-22--the-review-backlog) | The review backlog: waves A and B, the `uncertain` rows, two renames, the audit script | 07 steps 1–5; 06's handovers | **low** | the 1.0.1-beta reports' residual rows; `snap_audit.sh:501` | none |
-| [C-23](#c-23--the-hygiene-sweeps) | The hygiene sweeps left in other fronts' files | 08 steps 2.1, 3.1, 6 | **low** | nothing; 14 stale `primitives.d.bp` comments, 18 `@external(` comments, five test-file sites | none |
+| [C-23](#c-23--the-hygiene-sweeps) | The hygiene sweeps left in other fronts' files | 08 steps 2.1, 3.1, 6 | **low** | nothing; 14 stale `primitives.d.bp` comments, the `@external(<target>, …)` comments in six owners' files, four test-file sites, ten files `zig fmt --check` reds, the transport-error test — each site in [`08-hygiene`](./08-hygiene/README.md#open) | `docs.md`, the links and the libraries' `AGENTS.md` done on `front/sweep-docs` |
 | [C-24](#c-24--br5-as-its-own-spec) | BR5 — the beam backend compiles `@External.Erlang` templates at build time — as its own spec | 03 step 1; decision 62 | **low** | `base64:encode` 0.113 → 5.722 µs per call through `'__bp_erl_eval'` (50.6×) | `wip/br5-beam-templates` (836-line Erlang lexer+parser, does not build) |
 | [C-25](#c-25--the-unowned-residuals) | The unowned residuals: bare-name export collisions, the comptime server's purge, front 10's stash | 13 step 6; 10 step 1's housekeeping | **low** | two libraries exporting `pub fn get` collide silently | none |
 | [C-26](./18-comptime-runtimes/README.md) | Comptime runtimes: `persistent_erl.zig` → `persistent_beam.zig` (a `.beam` emitted directly, no `.erl`), `persistent_wat.zig` on wasm3, one runtime selector, `snapshots/codegen/{beam,wat}/<target>` (the suite recorded twice), and compiler-core built to wasm running 100 % in the browser | the maintainer's request of 2026-09-20; absorbs C-20 (14 step 3); decisions 24, 62 | **high** | the compiler on the web; `erl` off the comptime path; every comptime snapshot's directory | `18-comptime-runtimes/` (spec); nothing in code |
@@ -96,7 +96,8 @@ prototype *is* the identity, so half 3 has nothing to do there beyond step 19's 
 test until a value knows its declaration; today two records with the same fields are `==` on erlang.
 02 and 03's tails (C-07), 14's step 3 (C-20), 17's modes (C-10) and 09's erlang re-run (C-17) all
 stand behind it, which is why decision 62 released it before the backends closed.
-**Partial work:** none of steps 8–19. `.tasks/identity` (`fix/identity-halves`) holds C-03. Half 1
+**Partial work:** steps 8–19 landed (`cbd5f1ec`, `a8087490`, audited `def58473`/`e2da8408`); the
+comptime atom's file half of step 5 landed with 01 (`89ac5cdf`). `.tasks/identity` (`fix/identity-halves`) holds C-03. Half 1
 (`ModuleId`, `erlDeclAtom`, the collision check, the flat layout, the runner) is in `feat`; step 7 (the
 `-pa` runner) was closed by it.
 **Depends on:** C-03 lands first in the same file (it is one predicate; sequencing it avoids a
@@ -105,30 +106,39 @@ re-record on top of a re-record); 01's N19–N22 for steps 17–18 are landed.
 + 73 beam — **354 cell-writes over 210 distinct files, 144 written twice**, the milestone's largest
 movement. Zero RUN LOGs should move in steps 14–16; a RUN LOG that moves is a defect found, verified by
 running. 142 new atoms ecosystem-wide; +0.372 ns per `call_ext`.
-**Acceptance** (from the front's README and policy 3 §9):
-- [ ] a fixture emitting two files per `.bp` on erlang; commonJS output byte-identical (step 8)
-- [ ] two types in one file both declaring `greet/1` compile and both run on erlang and beam;
+**Acceptance** (from the front's README and policy 3 §9). Re-verified 2026-09-26 by `01-checker`
+against `13-module-identity/README.md`, whose every box but one is ticked with its commit (halves
+2–3 audited at `def58473` and `e2da8408`); the language suite at `ffe2db69` runs the identity cells
+green (799 / 28 / 0, no `13 step` line left). The last piece of 13's half 1 — the comptime atom
+naming its file — is 01's compiler `89ac5cdf`:
+- [x] a fixture emitting two files per `.bp` on erlang; commonJS output byte-identical (step 8)
+- [x] two types in one file both declaring `greet/1` compile and both run on erlang and beam;
       `recordMethodAtom`, `record_method_collisions`, `isRecordMethodCollision`, `interfaceAssocAtom`
       **deleted, not bypassed** (steps 9–10)
 - [ ] a behavior consumed by three modules has exactly one emitted copy; `libs/std` green on erlang and
       beam (step 10); an imported type's method links to `<package>@<path>@@<Decl>` (decision 109) and executes (step 11);
-      `beam_export_audit.sh` green at its new total (step 12)
-- [ ] the 188 classified: which gained a module, which local call became `call_ext`, which RUN LOG
+      `beam_export_audit.sh` green at its new total (step 12) — **all but the first clause hold**
+      (`13-module-identity/README.md` half 2, audited `def58473`); the one-copy clause is answered
+      by decision 23 (a behavior emits nothing, so its associated fn is copied per consumer) and
+      reopens only with that decision
+- [x] the 188 classified: which gained a module, which local call became `call_ext`, which RUN LOG
       changed — none should (step 13)
-- [ ] `typeAtom`/`variantAtom` with unit tests and the `__v__` decoder clause; two declarations
+- [x] `typeAtom`/`variantAtom` with unit tests and the `__v__` decoder clause; two declarations
       rendering the same atom is a located diagnostic (step 14)
-- [ ] two types with identical fields are `!=`, executed; two enums sharing a variant name both `case`,
+- [x] two types with identical fields are `!=`, executed; two enums sharing a variant name both `case`,
       executed; an imported type constructed in a consumer carries the **owner's** atom; the erlang and
       beam cells re-recorded and classified one by one (steps 15–16)
-- [ ] `x is Point`, `x is Option.Some(v)`, `case` over `Person | Car` with no `_` — cells on erlang and
+- [x] `x is Point`, `x is Option.Some(v)`, `case` over `Person | Car` with no `_` — cells on erlang and
       beam, their `expected-failures.txt` lines gone (3 `13 step 15/17` lines today); erlang, beam and
       commonJS agree (step 17)
-- [ ] `@print(Point(x: 1, y: 2))` → `Point(x: 1, y: 2)`, `@print(Shape.Circle(radius: 4))` →
+- [x] `@print(Point(x: 1, y: 2))` → `Point(x: 1, y: 2)`, `@print(Shape.Circle(radius: 4))` →
       `Shape.Circle(radius: 4)` on erlang and beam, `Display` consulted, nested too — the six
-      `run/{display_print,print_formatter,type_identity_print}.bp` lines of 02/03/05 gone (step 18)
-- [ ] the invariant as a test, one cell per backend: two values carry the same identity iff they were
+      `run/{display_print,print_formatter,type_identity_print}.bp` lines of 02/03/05 gone (step 18) —
+      one wasm line stays, `wasm | run/display_print.bp`, re-attributed to `05-wasm` (the record
+      prints; the nested `Display` text is wasm's own)
+- [x] the invariant as a test, one cell per backend: two values carry the same identity iff they were
       built by the same declaration
-- [ ] `scripts/gate.sh --cold` green; `test-libs` at baseline; `AGENTS.md` of `src/codegen/` updated
+- [x] `scripts/gate.sh --cold` green; `test-libs` at baseline; `AGENTS.md` of `src/codegen/` updated
 
 ## C-02 — An index is a method call
 
@@ -184,7 +194,8 @@ re-record, no `AGENTS.md`.
 **Acceptance:**
 - [ ] `import { erlang } from "std"` then `erlang.self()` runs under `erl` on erlang and beam — a fixture
       whose RUN LOG is the value run, not the emitted text
-- [ ] 17 step 3b's guarded-init and owner shapes byte-compared and re-run under `erl`
+- [x] 17 step 3b's guarded-init and owner shapes ~~byte-compared and~~ re-run under `erl` — 17's
+      box: the shapes are layer 2's, run by `run/beam_memory_*` on erlang and beam
 - [ ] `out/erl/std@beam.erl` exports the ten primitives; the same on beam through the wired helper
 - [ ] the bare-import route (`import { self } from "std/erlang"` → `undefined` on commonJS, per
       `language-gaps.md`) measured on each backend; fixed here if it is the same predicate, otherwise
@@ -343,10 +354,10 @@ library writes the day it destructures a variant.
       byte-identical; the failure behaviour of a bare `val <Pattern> = e` written down
 - [ ] `Array.range(0, 3).map({ x -> x + 2 })` prints `[2, 3, 4]` on erlang, no `'__bp_prim_map'`
 - [ ] R7: a note to the four backends naming the lowerings that became dead; the erlang tail-`case`
-      lowering and the one JS IIFE site deleted, snapshots byte-identical
+      lowering and the one JS IIFE site deleted, snapshots byte-identical — **checker half landed** (compiler `ddeb887f`; the note is in `01-checker/README.md` step 8); the deletions are 02's and 04's files
 - [ ] the three N25 cells rejected each for its own reason, with a caret; `test/curried_call.bp`
       passes on commonJS and erlang
-- [ ] R1, R2, R4, R8 each reds or checks as `residual-rows.md` states, with a cell
+- [x] R1, R2, R4, R8 each reds or checks as `residual-rows.md` states, with a cell — R2 `modules/import_type_closure`, R4 and R8 checker tests (landed earlier on this front), R1 by deletion (`ddeb887f`)
 
 ## C-10 — `@BeamMemory` steps 4–8
 
@@ -471,8 +482,8 @@ in the trees that teach it.
 **Depends on:** C-15 for `Self<…>`; 01 step 4 (d) for the section paths (part of C-08's parser work or
 its own row).
 **Acceptance:**
-- [ ] no bare `Self` in a generic declaration in `libs/std` or `examples/**`; the five bindings
-      annotated; `Dict` prints through `Display`; `zig build test`, `test-libs`, `test-language` green
+- [x] no bare `Self` in a generic declaration in `libs/std` or `examples/**`; the five bindings
+      annotated; `Dict` prints through `Display`; `zig build test`, `test-libs`, `test-language` green — `01-checker` compilers `bdbbeae6`, `e7f1af11`, `a91e21f9`
 - [ ] no `pattern -> value;` arm in any library `.bp`; `test/case_sections.bp` passes (its lines
       deleted by 01, not here) before emilia's rewrite starts; every library's cell and examples green
       after each rewrite
@@ -487,8 +498,8 @@ and the rule C-14's `Self<…>` sweep enforces.
 **Partial work:** none.
 **Depends on:** nothing.
 **Acceptance:**
-- [ ] the two `reject/` cells rejected for their own reason; the A1 rule pinned by a `test/` cell
-- [ ] `libs/std` and the examples compile under the rule (the sweep is C-14)
+- [x] the two `reject/` cells rejected for their own reason; the A1 rule pinned by a `test/` cell — compiler `e7f1af11`; the A1 rule is pinned by a checker test (`infer_errors.zig` `generics: …`) rather than a `test/` cell, which is front 12's to add
+- [x] `libs/std` and the examples compile under the rule (the sweep is C-14) — the `libs/std` half of C-14's sweep landed with it; erika's 39 sites landed in erika `fc4bf55`
 
 ## C-16 — The language suite's residual cells
 
@@ -549,13 +560,13 @@ non-empty `.d.ts` (no `tsc` in the checkout when 04 closed) and `42.toString()` 
 **Partial work:** none.
 **Depends on:** nothing.
 **Acceptance:**
-- [ ] `optional<i32>` and `x?.f` on a `?T` each a located error with the decided text; a cell each
+- [x] `optional<i32>` and `x?.f` on a `?T` each a located error with the decided text; a cell each — compiler `4dd24965` (`x.f` on a `?T` is the error, `x?.f` the spelling; `Option<i32>` refused alike); `reject/member_of_optional` and `comptime/tests/infer_errors.zig` `decision 44:` (the annotation diagnostic has its unit test; a `reject/` cell for 44 is front 12's to add)
 - [ ] an out-of-range read prints `null` on all four backends, one cell; `tuple_labels.bp::§6 T4` reds
       at `check`
-- [ ] `Env.warnings` exists and one warning renders (the always-false `is` of 01 step 3 is the first)
+- [x] `Env.warnings` exists and one warning renders (the always-false `is` of 01 step 3 is the first) — compiler `bdbbeae6`: `OkData.warnings`, rendered by `botopink check` under `warning:`; §1.4's `[]` birth is the second writer. `build` / `test` / the LSP do not print them yet
 - [ ] `any` gone from the grammar, `erlang.bp`/`beam.bp` re-spelled, or the row re-decided with the
       measurement
-- [ ] `Array.unique` answers on both backends, a `libs/std` test
+- [x] `Array.unique` answers on both backends, a `libs/std` test — compiler `6cb3ef93` (decision 9 (b): the body rewritten; `test/primitives_gaps_test.bp` `array unique drops consecutive duplicates`, commonJS and erlang)
 - [ ] the five documents corrected; `tsc --noEmit` green over every `.d.ts`; `42.toString()` runs on node
 
 ## C-19 — The declaration-name builders spell the 1.0.3 surface
@@ -630,17 +641,19 @@ C-01/C-07.
 
 ## C-23 — The hygiene sweeps
 
-**Origin:** 08 steps 2.1 (14 of the 19 `primitives.d.bp` comments remain — 11 in `erlang.zig`, the
-rest in `infer`/`env`/`prelude`, `engine.zig`, `tests/hover.zig`), 3.1 (18 `@external(` comments in
-`erlang.zig` name the retired form as current; the `infer_decls.zig:538` fixture note), 6 (five sites in
-07's test files: `narrowing.zig:105`, `wat.zig:86`, `control_flow.zig:73,:76`, `builtins.zig:382`).
-**Priority:** low — comments. Each sweep lands after the owner of the swept file, one commit per file.
-**Partial work:** none.
-**Depends on:** C-01 for `erlang.zig`'s (the file re-records under it anyway).
+**Origin:** 08's open items — every site, by owner, is in
+[`08-hygiene` § Open](./08-hygiene/README.md#open): 14 comments naming `primitives.d.bp` (the file is
+`primitives.bp`), the comments that teach `@external(<target>, …)` / `@[external(…)]` as current,
+four comments in `codegen/tests/**` naming a moved owner or a changed lowering, ten `.zig` files
+`zig fmt --check` reds on an untouched base, and the test that a comptime transport failure reaches
+the user's diagnostic.
+**Priority:** low — comments and one test. Each sweep lands after the owner of the swept file, one
+commit per file.
+**Partial work:** `docs.md` § *Decided, not yet implemented* re-derived and the documents' links
+fixed (`front/sweep-docs`).
+**Depends on:** the owner of each file (`01-checker`, `02-erlang`, `11-tooling`, C-22, C-26).
 **Acceptance:**
-- [ ] `grep -rn 'primitives.d.bp' modules/` returns only the two legitimate mentions;
-      `grep -rn '@external(' modules/compiler-core/src/codegen/erlang.zig` returns nothing that
-      calls the form current; the five test-file comments say what the tests test
+- [ ] `08-hygiene`'s five open boxes
 
 ## C-24 — BR5 as its own spec
 
