@@ -153,10 +153,10 @@ array_zip_via_external_node_template             bool_instance_default_fn_method
 ```
 
 **Acceptance:**
-- [ ] no `'__bp_erl_eval'` left in any beam snapshot, **or** each remaining use named with its reason in `src/codegen/beam/AGENTS.md`
-- [ ] every RUN LOG unchanged — this is a lowering change, not a behaviour change
-- [ ] `scripts/beam_export_audit.sh` still assembles every module (315/315 at `c2dd780`)
-- [ ] the measured cost that motivated BR4 (`'__bp_erl_eval'/2` at roughly 50× a direct call, recorded in `src/codegen/beam/AGENTS.md`) is re-measured and the note updated
+- [x] no `'__bp_erl_eval'` left in any beam snapshot, **and** the remaining run-time use named with its reason in `src/codegen/beam/AGENTS.md` — a template `lower.zig` refuses (`receive`, `!`, `try … of`, …; at most 6 of `libs/std`'s 159 by text) — compiler `8333aaab`, which reuses the comptime runtime's Erlang reader (`wat/erl_parse.zig`) and BEAM lowering (`beam/lower.zig`), no second template language (`decisions-pending.md` 0203-b)
+- [x] every RUN LOG unchanged — 15 beam snapshots (both trees) re-record `.S` only, compared RUN LOG by RUN LOG
+- [x] `scripts/beam_export_audit.sh` still assembles every module (475/475 at `8333aaab`)
+- [x] the measured cost re-measured and the note updated: 0.25–0.39 µs per loop iteration through the compiled helper against 0.24–0.34 written directly (1.06–1.16×), was 5.722 against 0.113 (50.6×)
 
 ### Step 2 — the formatter: decision 1a **and** §7, in one landing
 
@@ -204,6 +204,10 @@ The row measured in [Problem](#problem): `{badfun, #{x=>1,y=>2}}`. The record's 
 - [x] `beam_export_audit.sh` still assembles every module
 
 ### Step 5 — the block-as-value lowering decision 2 leaves dead
+
+> **Nothing to delete on beam** (recorded in `src/codegen/beam/AGENTS.md` § Closure values): of the 8
+> places that build a fun, none is a block as a value — `@block` runs in the frame, and the case-arm
+> producer was removed by `ae813cc8`. The row closes with R7 without a beam change.
 
 `grep -c make_fun3 modules/compiler-core/src/codegen/beam_asm.zig` → **12** sites. Once
 [`01-checker`](../01-checker/README.md) step 8's R7 enforces decision 2, the ones that exist to give
@@ -259,12 +263,19 @@ so no re-recorded snapshot ever carries both reasons; and F2/F3/F4 land inside
 
 ## Gate
 
-- [ ] `scripts/gate.sh --cold` green in this front's worktree
-- [x] `scripts/beam_export_audit.sh` assembles every module, before and after each row
-- [ ] every re-recorded RUN LOG **verified by running the program** — `erlc +from_asm out/*.S` then `erl -pa out -eval "main:'_botopink_main'()"` — and checked against decision 8 §7
-- [ ] every `tests/language` cell this front's rows touch run by hand on beam and matched against its `.out`, with the transcript in the landing note (the suite cannot do it)
+- [ ] `scripts/gate.sh --cold` green in this front's worktree — not green for an environmental reason
+  (the `test-libs` stage reads the main checkout's rakun and jhonstart, which moved ahead of `feat`'s
+  std on 2026-09-26); every other stage green run on its own — see `02-erlang`'s gate
+- [x] `scripts/beam_export_audit.sh` assembles every module, before and after each row (475/475)
+- [x] every re-recorded RUN LOG **verified by running the program** — the beam snapshot harness runs
+  `erlc +from_asm` and `erl` itself; each moved block compared by hand (`undefined` → `null`, a slice
+  that printed nothing → the erlang text); BR5 and the `@todo` reason moved no RUN LOG
+- [x] every `tests/language` cell this front's rows touch run on beam and matched against its
+  `.out` — the suite does run beam now (`run.sh --target beam`, `erlc +from_asm` then `erl`):
+  **218 passed / 3 expected / 0 failed** at `58a2c76b` (was 214 / 7 / 0), the three being `*` reject
+  cells of `01`
 - [x] `src/codegen/AGENTS.md` and `src/codegen/beam/AGENTS.md` updated in the same commit as each row
-- [ ] Commit on `fix/beam`; no push, no merge
+- [x] Commit on a branch; no push, no merge — `front/02-03-erlang-beam`
 
 ## Blast radius
 

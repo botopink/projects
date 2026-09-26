@@ -265,8 +265,9 @@ each backend.
 **Depends on:** nothing; 03's tuple/`..`/type-pattern reading (C-07) shares `beam_asm.zig`'s pattern
 code — sequence them.
 **Acceptance:**
-- [ ] `run/case_range_value.bp`'s five probes answer per decision 53 on erlang, beam and wasm; the
-      three lines gone
+- [x] `run/case_range_value.bp`'s five probes answer per decision 53 on erlang, beam and wasm; the
+      three lines gone — re-verified 2026-09-26 on `front/02-03-erlang-beam`: the cell passes on
+      erlang and beam (`run.sh --only`), no `case_range_value` line is left in `expected-failures.txt`
 - [ ] every moved RUN LOG verified by running the program; the header recounted from the file; the
       `KNOWN` notes in `src/codegen/tests/**` that explain the decision-55 cells deleted by C-30 with
       the cells they explain
@@ -286,14 +287,17 @@ model fix); 04 step 2 D2/D3 and 05 step 2 D1–D3, which no commit names. F2–F
 **Partial work:** none.
 **Depends on:** C-01 for anything that tests a named type; C-06 shares beam's pattern code.
 **Acceptance:**
-- [ ] `run/tuple_print.bp` passes on erlang (F1); `run/type_identity_{unknown,union}.bp` and
-      `test/case_unknown.bp` pass on erlang after C-01
+- [x] `run/tuple_print.bp` passes on erlang (F1); `run/type_identity_{unknown,union}.bp` and
+      `test/case_unknown.bp` pass on erlang after C-01 — re-verified 2026-09-26 (the two identity
+      cells live under `test/`): 11 tests of the five cells pass on erlang, and `run/tuple_print`,
+      `print_formatter`, `display_print`, `type_identity_print`, `type_identity_equality`,
+      `case_values`, `case_range_value` pass on beam
 - [ ] every `tests/language` cell naming §2, §4, §5, §6 runs by hand on beam and matches its `.out`,
       each with a beam fixture whose RUN LOG is the value run; the tuple/`..`/type-pattern fixtures
       02 added have beam and wasm twins
 - [ ] §4.1's truth table answered by each §4.2 form on erlang and beam; §11's "erlang: nothing" pinned
-- [ ] 02 step 7 settled: `test/string_case_conversion.bp` run on erlang — the line deleted or the
-      merge's claim corrected
+- [x] 02 step 7 settled: `test/string_case_conversion.bp` run on erlang — the line deleted (compiler
+      `31b5d2bf`; the host spelling resolves to the method it spells, `decisions-pending.md` 0203-a)
 
 ## C-08 — The parser gaps that are inference-side
 
@@ -651,8 +655,13 @@ each costed, one recommended.
 **Partial work:** the branch.
 **Depends on:** C-01 (the emitter is 13's until then).
 **Acceptance:**
-- [ ] a spec under this milestone with the measurement, the options and a recommendation; the branch
-      deleted or restarted from
+- [x] superseded by landing it (compiler `8333aaab`, `front/02-03-erlang-beam`): the structural block
+      — nothing in the compiler read Erlang — went away with front 14's `comptime/runtime/wat/erl_parse.zig`
+      and `comptime/runtime/beam/lower.zig`, which BR5 reuses; no beam snapshot carries
+      `'__bp_erl_eval'`, the refused-construct residue and the re-measured cost are in
+      `src/codegen/beam/AGENTS.md`, the choice in `decisions-pending.md` 0203-b. The parked
+      `wip/br5-beam-templates` branch (an 836-line second Erlang parser) is obsolete — the maintainer's
+      to delete
 
 ## C-25 — The unowned residuals
 

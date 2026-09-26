@@ -580,6 +580,40 @@ the maintainer confirms or reverses each.
 > 196 commonJS snapshots per tree gained the one prelude line, and the two RUN LOGs above read `null`.
 > **Blocks.** Nothing now — commonJS and wasm both print absence as `null`; erlang and beam are C-18's.
 
+## Fronts 00 · 02-erlang / 03-beam — choices made in implementation, to confirm
+
+Implemented on `front/02-03-erlang-beam` (worktree `.tasks/02-03-erlang-beam`, 2026-09-26).
+
+### 0203-a · A primitive method's host spelling (`toUpperCase`) answers on erlang and beam
+
+> **Measured.** `tests/language/test/string_case_conversion.bp` writes `"abc".toUpperCase()`; the
+> method's name is `toUpper`, and `toUpperCase` is its `#[@External.Node(…)]` spelling. The checker
+> accepts **any** method name on a primitive receiver (`"x".fooBar()` checks), commonJS answers
+> because the name is JavaScript's own, wasm already answers both spellings (`$__str_case`), and
+> erlang emitted `toUpperCase/1 undefined`.
+> **Options.** (a) erlang and beam resolve a `#[@External.Node("<name>")]` spelling to the method it
+> spells, after every other lowering missed — **implemented** (`primNodeAliasIn`, compiler
+> `31b5d2bf`), so the four backends agree; (b) the checker refuses a method no primitive behavior
+> declares, the cell is rewritten to `toUpper`, and the alias leaves erlang, beam and wasm.
+> **Recommendation.** (b) is the restrictive reading (decision 67) and is `01-checker`'s; until it
+> lands, (a) keeps the four backends giving one answer instead of three. Choosing (b) deletes
+> `primNodeAliasIn` and its two call sites.
+
+### 0203-b · A template the BEAM lowering refuses keeps the run-time `'__bp_erl_eval'/2`
+
+> **Measured.** BR5 (compiler `8333aaab`) compiles every `@External.Erlang` template at build time
+> through the comptime runtime's reader and lowering; no beam snapshot carries `'__bp_erl_eval'`.
+> `lower.zig` refuses `receive`, `!`, the old `catch Expr`, `try … of` and `try … after`, and by
+> text at most 6 of `libs/std`'s 159 templates carry one (`async.allOf`/`raceOf`, `encoding`'s
+> percent-decode, one `json` reader, `http.get`, `process`'s run).
+> **Options.** (a) such a template keeps the run-time evaluator, named in `beam/AGENTS.md` —
+> **implemented**; (b) refuse it at build time on beam (a located error naming the construct), so
+> those six std functions stop compiling on beam until (c); (c) teach `lower.zig` the five
+> constructs (a `front 14`/`18` row — the comptime runtime would gain them too).
+> **Recommendation.** (c), and (a) until it lands: decision 67 argues for (b), but (b) turns
+> programs that run correctly today into build errors for a construct the compiler, not the
+> program, cannot yet lower.
+
 ## Open
 
 ### `botopink migrate` beside `botopink migrate effects` (front 24, open point 7)
