@@ -438,12 +438,12 @@ What the tests assert:
 
 ## Definition of done
 
-- [ ] `Transform` exists as a top-level section with `Rotate`, `Scale`, `ScaleX`, `ScaleY`,
+- [x] `Transform` exists as a top-level section with `Rotate`, `Scale`, `ScaleX`, `ScaleY`,
       `TranslateX`, `TranslateY`, `Translate`, `SkewX`, `SkewY`, `Origin`, `Style`, `Backface`,
       `Perspective`, `PerspectiveOrigin`, `Zoom`, `Shorthand`, fenced by a `front 45` banner in
-      `tokens.bp` and appended after front 44's block. — **open:** no `Translate` (both-axes) section — left as a reference gap (AGENTS.md front 45), `rawTranslate` covers the use; the other fifteen exist, fenced, after front 44's block
-- [ ] `transformTokenToCss` and its sub-dispatchers are fenced by a `front 45` banner in
-      `emilia.bp`, appended after front 44's block, and take `th: Theme` per contract `§ 4a`. — **open:** fenced and appended after front 44's block, but only `transformTokenToCss` takes `th: Theme`; its sixteen sub-dispatchers do not
+      `tokens.bp` and appended after front 44's block. — held: all sixteen plus `Translate` (both axes, added in the audit pass: `translate:<v> <v>`), fenced after front 44's block; test "Transform.Translate — both axes, the value on each and no fallback"
+- [x] `transformTokenToCss` and its sub-dispatchers are fenced by a `front 45` banner in
+      `emilia.bp`, appended after front 44's block, and take `th: Theme` per contract `§ 4a`. — held: fenced after front 44's block; `transformTokenToCss` and every sub-dispatcher take `th: Theme` since the audit pass
 - [x] One arm added to `tokenToSheet`, a `declSheet(...)` call, in front-number order, and no other
       line of that `case` moved. — held (shape: three arms — `Transform` and the two `Raw` variants, as Step 6 counts): `emilia.bp:tokenToSheet`
 - [x] Every axis token emits its `--tw-*` variable and the shorthand; the five perspective keywords

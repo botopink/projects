@@ -368,9 +368,9 @@ What the tests assert:
 
 - [x] `Effect` carries `Shadow`, `InsetShadow`, `TextShadow`, `Opacity`; `Blend` and `Mask` exist as
       top-level sections; all three blocks are fenced by a `front 41` banner in `tokens.bp`. — held: `tokens.bp` front 41 block
-- [ ] `effectTokenToCss`, `blendTokenToCss`, `maskTokenToCss` and their sub-dispatchers are fenced
+- [x] `effectTokenToCss`, `blendTokenToCss`, `maskTokenToCss` and their sub-dispatchers are fenced
       by a `front 41` banner in `emilia.bp`, appended after front 40's block, and every one of them
-      takes `th: Theme` per contract `§ 4a`. — **open:** only the three section dispatchers take `th: Theme`; the sub-dispatchers (`shadowToCss`, `insetShadowToCss`, `textShadowToCss`, `opacityToCss`, `blendMixValue`, `blendBgValue`, `mask*ToCss`) do not
+      takes `th: Theme` per contract `§ 4a`. — held: the three dispatchers and all their sub-dispatchers (`shadowToCss`, `insetShadowToCss`, `textShadowToCss`, `opacityToCss`, `blendMixValue`, `blendBgValue`, the nine `mask*ToCss`) take `th: Theme` since the audit pass
 - [x] `box-shadow:sm` and its three siblings are gone from the repository. — held (shape: survives only in comments, negative asserts and probe controls): `the defect — …never a class suffix`
 - [x] The shadow, inset-shadow and text-shadow scales are `themeVar(...)` lookups; no `rgb(` literal
       appears anywhere in this front's block. — held (shape: the one `rgb(` is `Shadow.Inner`, upstream's literal — AGENTS.md front 41 row): `emilia.bp:shadowVar`/`insetShadowVar`/`textShadowVar`
