@@ -202,6 +202,14 @@ these two do not.
 table names every method that emits a call to a function no emitted module defines, and the list is
 empty or written into `src/codegen/AGENTS.md` with its reason.
 
+- [x] **Landed** (compiler `31b5d2bf`, 2026-09-26): erlang and beam resolve a primitive method's
+  `#[@External.Node]` spelling to the method it spells (`primNodeAliasIn`), after every other
+  lowering missed — the cell passes on erlang and its line is gone. The audit (82 calls over every
+  method `primitives.bp` declares on the seven primitive behaviors) prints the same 84 lines on
+  erlang and beam; the one method no backend answers, `Array.unique` (its untyped prelude body's
+  `unwrapOr`), is written into `src/codegen/AGENTS.md` § Primitive methods with its reason. The
+  checker accepting any method name on a primitive receiver (`"x".fooBar()` checks) is 01's
+
 ### Step 8 — a method on an associated fn's result (01's R6, codegen half)
 
 ```
