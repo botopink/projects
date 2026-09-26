@@ -286,7 +286,7 @@ adds a tag to every named value, T1's answer must be 13's. **Decide T1 with 13, 
 
 - [ ] `scripts/gate.sh --cold` green in this front's worktree
 - [ ] every re-recorded RUN LOG **verified by running the program** under node, and checked against decision 8 §7
-- [ ] every emitted module still passes `node --check`; every non-empty `.d.ts` passes `tsc --noEmit` after step 6
+- [x] every emitted module still passes `node --check`; every non-empty `.d.ts` passes `tsc --noEmit` after step 6 — measured 2026-09-26 on `front/04-05-js-wasm`: 356 / 356 emitted modules of `snapshots/codegen/beam/commonJS/` pass `node --check`, 33 / 33 typedef projects pass `tsc` ([below](#the-dts-under-tsc))
 - [ ] `zig build test-libs` green — the six libraries' commonJS cells still pass
 - [ ] `src/codegen/AGENTS.md` and `src/codegen/js/AGENTS.md` updated in the same commit as each row
 - [ ] Commit on `fix/js`; no push, no merge
@@ -469,7 +469,7 @@ is ticked with the program that answered it.
 | Step 3 `break <value>` | **superseded** by decision 105 (`break v` only in a generator scope, C-30); `test/loop_break_value.bp`'s lines are gone | |
 | Step 4 `==` on tuples | **holds** | `#(1, "a") == #(1, "a")` → `true`, `… == #(1, "b")` → `false` (`__bp_eq`); `test/tuple_equality.bp` green |
 | Step 5 sibling `require` | **holds**, now pinned | boxes above |
-| Step 6 T1–T3 | **hold**; the `tsc` gate is **red** | see [the `.d.ts` under `tsc`](#the-dts-under-tsc) |
+| Step 6 T1–T3 | **hold**; the `tsc` gate was **red** (14 of 33) and is green here | see [the `.d.ts` under `tsc`](#the-dts-under-tsc) |
 | Step 7 JS-4 | **landed here** | [`pattern-binding.md`](./pattern-binding.md) acceptance |
 | Step 8 | **waits on R7** | `@block { 1 + 2 }` still type-checks and lowers to `(() => {(1 + 2);})()` — `undefined`, exit 0 |
 | 12's handovers | **hold** | `o.inner?.v ?? 9` → `9`; `42.toString()` → `(42).toString()` prints `42` |
@@ -491,5 +491,24 @@ is ticked with the program that answered it.
 
 ### The `.d.ts` under `tsc`
 
-`npx -p typescript tsc --noEmit --strict` (TypeScript 7.0.2) over the **48** non-empty typedefs of
-`snapshots/codegen/beam/commonJS/`, each file alone: see the step 6 row below for what it finds.
+`npx -p typescript tsc --noEmit --strict --lib es2022 --module commonjs` (TypeScript 7.0.2) over
+every snapshot of `snapshots/codegen/beam/commonJS/` with a non-empty typedef, each module's `.d.ts`
+laid out at its module path so an import resolves the way it would under `out/`: **33 projects,
+14 rejected** at `b6ba65a3`. Every failure was the `.d.ts` disagreeing with the `.js` beside it or
+with TypeScript:
+
+| Defect | Projects | Now |
+|---|---|---|
+| an import's source written verbatim — `from "geometry"`, a bare specifier — where the `.js` requires `./geometry.js`; `from "std"` for a std symbol | 9 | relative to the module's own path, one `import` per owning file (`CrossModule.picked`); a std module is `import * as dict from "./std/dict"`, a std symbol `import { empty as newDict } from "./std/dict"` |
+| the same `import` written once per imported name | 7 | once per `ImportDecl`, each name bound once |
+| an activated `implement` (`PatoNada*`) imported, which no `.d.ts` declares | 2 | left out |
+| type parameters never declared — `class Dict`, `empty(): Dict<K, V>`, `fold(…): A` | 2 | `Dict<K, V>`, `empty<K, V>()`, `fold<A>(…)` |
+| `Self` in a signature | 1 | the declaring type |
+| a function type with unnamed parameters — `(A, K, V) => A` makes each `A` a parameter NAME | 2 | `(acc: A, key: K, value: V) => A` |
+| a decorator declared (`describe(decl: Decl)`) though the program drops it | 2 | no declaration |
+
+And one the `tsc` run could not see, because the typedef is valid TypeScript: **`@Result<T, E>` was
+declared `{ tag: "Ok"; result: T } | { tag: "Error"; error: E }`** while every module builds and
+reads `{ ok }` / `{ error }` — now `{ ok: T } | { error: E }` (2 snapshots). After: **33 of 33
+accepted**. 16 commonJS snapshots per tree moved, typedef sections only; `tsc` is not in the checkout
+or on `PATH` (it ran through `npx`), so the gate stays a measurement rather than a script.
