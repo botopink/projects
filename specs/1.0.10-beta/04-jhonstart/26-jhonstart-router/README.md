@@ -439,8 +439,8 @@ jhonstart names no rakun symbol (decision 113); the matcher is `routing`'s (deci
       router takes no `match` parameter; no `rakun` identifier appears under
       `modules/jhonstart/src/`, and jhonstart's `botopink.json` lists no `routing` dependency
       (bundled, like std) — `resolveRoute`; `test/router_test.bp` "router: resolveRoute matches with routing's matchPath over the payload's t"
-- [ ] the payload the client half reads is `globals.payload` (front 30's registry), never a literal
-      `__onze`
+- [x] the payload the client half reads is `globals.payload` (front 30's registry), never a literal
+      `__onze` — `hydrate()` / `propsFor` / `readPayload` read `globals().payload` (`__bp0`); no `__onze` literal in the tree
 
 ### Decision 116's spellings
 

@@ -375,5 +375,5 @@ would be a boundary that never starts.
 - [ ] `islandAttr(ordinal)` is exported and is the only place the pair is spelled — front 30's render
       calls it and front 68's entry imports it (decision 113)
 - [x] the README states, in *Mechanism*, that 29 without 68 is a convention nobody checks — § *What this front is not*
-- [ ] all four language gaps appear in a `specs/1.0.10-beta/` spec
+- [x] all four language gaps appear in a `specs/1.0.10-beta/` spec — `language-gaps.md` rows "A method-level `@Decl` carries no owner and no parameter list", "A decorator body cannot call a sibling function", "`botopink check` skips decorator invocation", "Declared parameter defaults…"
 - [x] the front's tests are green on its assigned target — 22 blocks on both rows
