@@ -354,7 +354,7 @@ test "a tag from the element surface resolves inside an html template" {
 ### Step 5 — `root.bp`, `botopink.json`, `docs.md`, `AGENTS.md`
 
 **Acceptance:**
-- [ ] `pub mod elements;` appended to `src/root.bp` after every other front's line
+- [x] `pub mod elements;` appended to `src/root.bp` after every other front's line — jhonstart `08950fd` — last `pub mod`
 - [x] `"elements.bp"` appended to `botopink.json`'s `files` — `modules/jhonstart/botopink.json` `files`
 - [x] `docs.md` gains the constructor table, the three renamed tags with their reasons, and the
       `main` caveat — `docs.md` § *The element surface* (*The tags*, *Three names that could not be the obvious one*)
@@ -440,8 +440,8 @@ absences are stated above rather than papered over.
 - [x] The six void constructors store no children, and a test asserts the drop — `modules/jhonstart/src/elements.bp` test "a void element handed children drops them"
 - [x] `test/elements_test.bp` proves a tag from this file resolves inside an `html """…"""` template,
       and the README states the import that makes it resolve — `modules/jhonstart-html/test/elements_test.bp`
-- [ ] `pub mod elements;` and the `botopink.json` entry are appended in front-number order, and the
-      lines fronts 26–32 and 67 hand this front are appended alongside them
+- [x] `pub mod elements;` and the `botopink.json` entry are appended in front-number order, and the
+      lines fronts 26–32 and 67 hand this front are appended alongside them — jhonstart `08950fd`: 26, 27, 28, 29, 31, 94
 - [ ] Fronts 26, 27, 28, 29, 30, 31, 32, 53 and 67 import from `"jhonstart"` and define no
       element constructor locally; front 31's *Blocked* entry for `global-error.bp` is removed
 - [x] The `language-gaps.md` row "New jhonstart element constructors" moves out of *Unowned surface*

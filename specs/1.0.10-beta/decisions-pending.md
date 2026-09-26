@@ -238,6 +238,44 @@ maintainer confirms or reverses each.
 > **Recommendation.** (a).
 > **Blocks.** Nothing.
 
+## Track C (jhonstart) — choices made in implementation, to confirm
+
+Decided by the implementation of `04-jhonstart` fronts on `front/04-jhonstart` (worktree
+`.tasks/04-jhonstart`, 2026-09-26) so the fronts could land; the maintainer confirms or reverses
+each.
+
+### 26-a · Every router cell is dual-target, not `#[@External.Erlang]` only
+
+> **Raised by:** `04-jhonstart/26-jhonstart-router` Step 2 / Step 4, 2026-09-26 (landed with jhonstart `2bb6fd9`)
+> **Measured.** A called erlang-only cell reds the commonJS compile of the core member at its call
+> site (`` `__jhRoutePath` has no `#[@External.<Target>(…)]` for the node backend ``); the core is
+> compiled on both rows. The five reads, `fill`, `navigate` and `lastNavigation` therefore carry a
+> `#[@External.Node("./router_runtime.mjs", …)]` twin.
+> **Options.** (a) dual-target cells, one assertion set on both rows (landed); (b) move the router
+> to an erlang-only member, which the core's render (front 30) then imports across a target split.
+> **Recommendation.** (a). Leaves two boxes of the README unticked by design: "all five cells are
+> `#[@External.Erlang]`; none is `#[@External.Node]`" and "`__jhNavigate` is the only dual-target
+> cell in the file".
+> **Blocks.** Nothing.
+
+### 31-a · `notFound()` / `redirect(url)` raise; a boundary captures the raise through one host cell
+
+> **Raised by:** `04-jhonstart/31-jhonstart-error-boundaries` Step 3, 2026-09-26
+> **Measured.** A page, layout or template is a `-> @Component<ElementBase, Element>` body and
+> cannot `throw` (decision 121), so the README's `notFound();` statement form needs the call itself
+> to raise; `throw notFound();` inside a `@Result` thunk must keep working. botopink's `try … catch`
+> unwraps a `@Result` only, so no `.bp` code can observe a raise.
+> **Options.** (a) the two functions raise the `routing` reason through a jhonstart host cell
+> (`__jhRaise`, `signal_runtime.mjs` / `jhonstart_signal.erl`), typed `-> string`, and the boundary
+> runs its child through `__jhCapture`, which answers a raise as `Error(reason)` — implemented;
+> (b) the functions return the reason and a component returns a "signalling tree" the render
+> inspects; (c) a `never` type (the language gap front 63 records).
+> **Recommendation.** (a): the same statement works in a page, a layout, a template and a thunk, a
+> crashing component is caught like one that answered `Error`, and the render (front 30) needs the
+> same capture for its page thunks. `notFoundReason()` / `redirectReason(url)` answer the reason
+> without raising, for a caller that wants it as a value.
+> **Blocks.** Nothing.
+
 ## Open
 
 ### `botopink migrate` beside `botopink migrate effects` (front 24, open point 7)
