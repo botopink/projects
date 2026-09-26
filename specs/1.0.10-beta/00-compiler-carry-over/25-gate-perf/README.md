@@ -163,9 +163,12 @@ the cost of a red run, not of a green one. The pools inside `test-libs` and `tes
 admit by `procs_running`, so two of them side by side share the CPUs instead of doubling the load.
 
 **Acceptance:**
-- [ ] same stage blocks, same order, same exit status as the serial gate — green, and with a red
-      stage planted in the middle and at the end
-- [ ] § Measurements row
+- [x] same stage blocks, same order, same exit status as the serial gate — compared on one copy of
+      the tree with colours, random ids, seeds and timings stripped: identical with `test-libs` red
+      (stage 8, both exit 1), all green (both exit 0 — the copy's `known-red-libs.txt` and
+      `restricted-targets.txt` aligned with its libraries for the run, § Current state), a red
+      language cell planted (stage 9, exit 1) and a red docs fence planted (stage 10, exit 1)
+- [x] § Measurements row
 
 ### Step 4 — `test-libs`' CPU (692 CPU-s warm, the largest cost)
 
@@ -196,6 +199,13 @@ One row per landed step, cumulative. Wall and CPU in seconds; "rest" is stages 2
 | baseline | 2026-09-26 | `82e32e36` | 144.3 | 264.8 | 1044.8 | 25.9 / 138.0 cold | 52.6 | 28.9 | 16.9 | 8.4 | 11.6 | — | other agents' gates; load 22–27 (cold run 22–24) |
 | step 1 — the shell runners on the pool | 2026-09-26 | `112d248a` | 130.1 | 292.2 | 1071.0 | 23.6 / 154.4 cold | 56.5 | 19.9 | 17.5 | 1.5 | 11.3 | −14.2 s (−9.8 %) | other agents' gates; load 34–37 (cold run 7→37) |
 | step 2 — compiler-core as 8 shards | 2026-09-26 | `49cc56aa` | 125.0 | 160.9 | 1099.5 | 6.8 / 33.7 cold | 63.5 | 21.4 | 18.5 | 1.8 | 13.0 | −19.3 s (−13.4 %); cold −103.9 s (−39.2 %) | other agents' gates; load 36–43 (cold run 11→36) |
+| step 3 — stages 4b–10 side by side | 2026-09-26 | `9724b417` | 89.4 | 116.0 | 1119.7 | side by side | side by side | side by side | side by side | side by side | side by side | −54.9 s (−38.0 %); cold −148.8 s (−56.2 %) | other agents' gates; load 46–52, the heaviest of the four rows |
+
+Step 3's row is `scripts/gate.sh` itself timed whole (stages 4b–10 overlap, so they have no wall
+clock of their own), on the copy with its `test-libs` ledger aligned so every stage runs. Back to
+back on that copy, warm, the serial gate took 125.5 s and the side-by-side one 101.5 s (load
+35–48); with a red cell at stage 9 or 10, 102.8 → 81.5 s and 111.7 → 81.3 s. CPU-seconds stay
+within 7 % of the baseline across the three steps — the work is the same, only its overlap moved.
 
 Step 2's own gain is `zig build test` 25.9 → 6.8 s warm (−74 %) and 138.0 → 33.7 s cold (−76 %), at
 +12 CPU-s warm (each shard starts its own process and `erl`). Its warm total moved less than that
