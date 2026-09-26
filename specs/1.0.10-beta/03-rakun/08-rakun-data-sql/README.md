@@ -434,5 +434,5 @@ reading a counter the pool maintains for the test's benefit.
 - [x] `#[transactional]` emits a proxy, and both the proxy and the bare type are injectable — held: `modules/rakun-data/test/sql_query_test.bp` "query: injecting the Tx proxy gets the transaction and injecting the bare type does not"
 - [x] `REQUIRES_NEW` and `NESTED` are rejected rather than ignored — held: `modules/rakun-data/test/sql_build_test.bp` "build: REQUIRES_NEW is refused as not implemented"
 - [x] The `db` health indicator registers with front 11 — held: `modules/rakun-data/test/sql_health_test.bp` "health: the db indicator is registered with the actuator contract without the host knowing SQL"
-- [ ] `repository/rakun/AGENTS.md` documents the repository shape decided here, and front 09 follows it
+- [x] `repository/rakun/AGENTS.md` documents the repository shape decided here, and front 09 follows it — held: `repository/rakun/AGENTS.md` § SQL data access — `modules/rakun-data/` (front 08) (the `#[query]` helper shape front 09 follows)
 - [x] The front's tests are green on its assigned target — held: `botopink test` in `modules/rakun-data/` (erlang) — 77 passed / 0 failed / 0 compile failures
