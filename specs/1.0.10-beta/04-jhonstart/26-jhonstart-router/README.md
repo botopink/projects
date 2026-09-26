@@ -367,21 +367,21 @@ Delete `router.d.bp`. front 94 owns `src/root.bp` and `botopink.json`'s `files` 
 ### Step 6 — `clientApp` (decision 117)
 
 **Acceptance:**
-- [ ] `clientApp(routes, mount, allowedRedirects).start()` renders the route `window.location`
-      matches into `mount`, with the layouts before the page, on `--target commonJS`
-- [ ] a page raising `notFound()` renders the route's not-found boundary into `mount` and leaves
-      `location.pathname` unchanged
-- [ ] a page or layout raising `redirect("/login")`, with `/login` in `routes`, performs
+- [x] `clientApp(routes, mount, allowedRedirects).start()` renders the route `window.location`
+      matches into `mount`, with the layouts before the page, on `--target commonJS` — `test/client_app_test.bp` "clientApp: start renders the matched route into mount, the layout before the page" (jhonstart `9d7f28d`, `client_app.bp`)
+- [x] a page raising `notFound()` renders the route's not-found boundary into `mount` and leaves
+      `location.pathname` unchanged — `test/client_app_test.bp` "clientApp: notFound renders the route's not-found boundary and leaves the URL alone"
+- [x] a page or layout raising `redirect("/login")`, with `/login` in `routes`, performs
       `history.replaceState` and a client navigation to `/login` with no reload; a layout's
-      redirect means the page's function is never called
-- [ ] `redirect("/nowhere")` (not in `routes`) and `redirect("https://evil.example")` with
+      redirect means the page's function is never called — `test/client_app_test.bp` "clientApp: a relative redirect in routes is a replaceState and a client navigation"; the layout-first order is `compose`'s (front 30 "signal: a layout's redirect means the page never runs")
+- [x] `redirect("/nowhere")` (not in `routes`) and `redirect("https://evil.example")` with
       `allowedRedirects` empty fail the render and navigate nowhere; the same absolute target listed
-      in `allowedRedirects` is a `location.replace`
+      in `allowedRedirects` is a `location.replace` — `test/client_app_test.bp` "clientApp: an unlisted target fails the start and navigates nowhere; a listed absolute one is location.replace"
 - [ ] the late-signal function front 30 registers under `globals.signal` and `clientApp` share one
       handler: a `data-jh-g="redirect"` template and a raised `redirect` with the same target take
       the same path
-- [ ] `clientApp` reads the table with `routing`'s `parseTable` and matches with `matchPath`; it
-      defines neither
+- [x] `clientApp` reads the table with `routing`'s `parseTable` and matches with `matchPath`; it
+      defines neither — through `resolveRoute`
 
 ## Examples
 
@@ -467,7 +467,7 @@ jhonstart names no rakun symbol (decision 113); the matcher is `routing`'s (deci
       `routing`'s `navigation` (decision 116) — std `encoding`, `routing`'s `navigation`
 - [ ] one `#[@External.Node]`-only cell in the file, `__jhMount(selector, html)`, which `clientApp`
       renders through; history goes through `__jhNavigate`, the one dual-target cell
-- [ ] `clientApp` handles `notFound` / `redirect` in a client-only app as front 30's render does on
-      the server, with the same target check (decision 117)
+- [x] `clientApp` handles `notFound` / `redirect` in a client-only app as front 30's render does on
+      the server, with the same target check (decision 117) — `client_app.bp` `handleSignal`, front 30's `redirectAllowed`
 - [x] both language gaps appear in a `specs/1.0.10-beta/` spec — `language-gaps.md` rows "Declared parameter defaults are never applied" and "No assignment to a `self` field"
 - [ ] the front's tests are green on its assigned target
