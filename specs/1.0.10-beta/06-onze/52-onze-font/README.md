@@ -294,5 +294,5 @@ probe itself (`localFont` takes it as a function; none is bound yet).
 - [ ] The metrics table is committed, with the script that generated it and the date it was generated
 - [x] No output of this front references a Google host at request time
 - [x] `docs.md` states the probe-absent degradation and names it as a degradation
-- [ ] Front 70's README can point at this front for glyph metrics without this front changing shape
+- [x] Front 70's README can point at this front for glyph metrics without this front changing shape
 - [x] The front's tests are green on its assigned target — both, here

@@ -316,6 +316,21 @@ The metrics-agreement test (step 6's last item) is the one test that needs both 
 rasterizer. It is worth its cost: it is the only thing that catches a sidecar describing a different
 font than the one embedded, and that failure looks like "the text sometimes overflows".
 
+## Where it stands
+
+Landed on onze `front/06-onze` (`a1ed330`): `modules/onze-og/src/` `card_style` (the README's
+`style.bp` — jhonstart exports a `style` element, and a module named `style` then fails to export
+its own `Style`), `metrics`, `layout`, `svg`, `raster` and `response`; 10 tests on erlang, one
+producing a real PNG through `rsvg-convert` when it is installed. The metrics are front 52's
+`.metrics.txt` sidecar (`key value` lines, optional `codepoint|advance` lines); a missing glyph
+takes `avgCharWidth` as `.notdef`. The route exports are functions (`pub fn size()`), the answer
+front 32 gives `metadata`. `onze-og` no longer lists `onze-assets`: it parses the sidecar itself.
+
+Open: route discovery applying the defaults (rakun front 66), the 2 % agreement with a real
+rasterizer's layout (needs per-glyph advances the sidecar does not carry yet), one render per post
+under concurrent requests (rakun-cache's single-flight), and the README's supported table
+reconciled with `supportedProperties()` (the code adds `margin` and `border`).
+
 ## Definition of done
 
 - [x] `repository/onze/modules/onze-og/` exists with `botopink.json`, `src/root.bp`,
