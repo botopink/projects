@@ -517,3 +517,9 @@ or on `PATH` (it ran through `npx`), so the gate stays a measurement rather than
 `undefined` — what `?.` on an absent receiver and an `if` with no `else` answer — prints `null`, as
 `Array.at`'s absence already did. 196 commonJS snapshots per tree moved, each by the one prelude line
 (verified mechanically), and two RUN LOGs `undefined` → `null`.
+
+**The status rows no step named** (re-measured 2026-09-26): a behavior literal's `self` method is an
+object method now (compiler `ccfe6561`, `hi undefined` → `hi bo`); `\"` in an `@External.Node`
+template, `await` inside an `if`/`else` of a `-> @Task<T>` body, a `try` inside a `while`, a
+leading-dot variant, `x is <Enum>.<Variant>`, a function-valued record field and the `process` shadow
+(01-std's handover 1) all answer right on commonJS at this branch — no change needed.
