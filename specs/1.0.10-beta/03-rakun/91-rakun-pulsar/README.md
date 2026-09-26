@@ -112,27 +112,27 @@ pub fn renderTopic(name: TopicName) -> string
 ```
 
 **Acceptance:**
-- [ ] `parseTopic("persistent://public/default/orders")` fills all four fields; `parseTopic("orders")` fills the defaults `persistent`, `public`, `default` and round-trips through `renderTopic`.
-- [ ] A non-persistent topic keeps `non-persistent` and is not silently promoted.
-- [ ] The admin arm creates a topic, lists subscriptions and reports a backlog, each through front 13's client with the configured timeouts.
-- [ ] Each admin response reader is tested against a captured body, and an unexpected shape is an error rather than a zero.
+- [x] `parseTopic("persistent://public/default/orders")` fills all four fields; `parseTopic("orders")` fills the defaults `persistent`, `public`, `default` and round-trips through `renderTopic`. — `pulsar/topic_test` "topics: a full name fills four fields; a bare name takes the defaults and round-trips"
+- [x] A non-persistent topic keeps `non-persistent` and is not silently promoted. — `pulsar/topic_test` "topics: non-persistent is kept"
+- [x] The admin arm creates a topic, lists subscriptions and reports a backlog, each through front 13's client with the configured timeouts. — `pulsar/admin_test` "admin: create a topic, list its subscriptions and read a backlog through front 13's client" (`rakun.pulsar.admin.connect-timeout` / `.read-timeout`)
+- [x] Each admin response reader is tested against a captured body, and an unexpected shape is an error rather than a zero. — `pulsar/admin_test` "admin: each reader is tested against a captured body, and another shape is an error, not a zero"
 
 ### Step 2 — The protocol module
 
 **Acceptance:**
-- [ ] Every command in the table above encodes and decodes, asserted against captured frames from a real broker.
-- [ ] CRC32C matches the broker's expectation, verified by a frame the broker accepts and by a known-answer vector.
-- [ ] A frame split across two TCP segments is reassembled; a frame larger than the configured maximum closes the connection with a named error rather than allocating.
-- [ ] `PING` is answered with `PONG` and a missed keep-alive closes the connection.
-- [ ] The whole codec lives in the Erlang cell: `grep` finds no byte or bit manipulation in the botopink sources of this front.
+- [ ] Every command in the table above encodes and decodes, asserted against captured frames from a real broker. — open: the data plane (the connection, LOOKUP, producers, consumers) is not written; there is no Pulsar broker here to capture frames from or run against
+- [ ] CRC32C matches the broker's expectation, verified by a frame the broker accepts and by a known-answer vector. — open: the known-answer vector holds (`pulsar/topic_test` "codec: CRC32C matches the Castagnoli known-answer vector"); no broker has accepted a frame
+- [x] A frame split across two TCP segments is reassembled; a frame larger than the configured maximum closes the connection with a named error rather than allocating. — `pulsar/topic_test` "codec: a frame split across two reads is reassembled, and an oversized one is refused naming the limit" (the decoder; no connection exists to close)
+- [ ] `PING` is answered with `PONG` and a missed keep-alive closes the connection. — open: the data plane (the connection, LOOKUP, producers, consumers) is not written; there is no Pulsar broker here to capture frames from or run against
+- [x] The whole codec lives in the Erlang cell: `grep` finds no byte or bit manipulation in the botopink sources of this front. — `pulsar/topic_test` "codec: the protocol lives in the Erlang cell - no byte manipulation in the botopink sources"
 
 ### Step 3 — Connection and lookup
 
 **Acceptance:**
-- [ ] A connection resolves a topic through `LOOKUP` and follows a redirect to the owning broker.
-- [ ] A partitioned topic is discovered through `PARTITIONED_METADATA` and produces one producer per partition.
-- [ ] A broker restart reconnects with backoff and re-establishes producers and consumers, with no message acknowledged twice.
-- [ ] A connection failure surfaces as a health-indicator transition, not as a crashed application.
+- [ ] A connection resolves a topic through `LOOKUP` and follows a redirect to the owning broker. — open: the data plane (the connection, LOOKUP, producers, consumers) is not written; there is no Pulsar broker here to capture frames from or run against
+- [ ] A partitioned topic is discovered through `PARTITIONED_METADATA` and produces one producer per partition. — open: the data plane (the connection, LOOKUP, producers, consumers) is not written; there is no Pulsar broker here to capture frames from or run against
+- [ ] A broker restart reconnects with backoff and re-establishes producers and consumers, with no message acknowledged twice. — open: the data plane (the connection, LOOKUP, producers, consumers) is not written; there is no Pulsar broker here to capture frames from or run against
+- [ ] A connection failure surfaces as a health-indicator transition, not as a crashed application. — open: the data plane (the connection, LOOKUP, producers, consumers) is not written; there is no Pulsar broker here to capture frames from or run against
 
 ### Step 4 — Producing
 
@@ -141,32 +141,32 @@ pub fn pulsarSend(topic: string, body: string) -> i32
 ```
 
 **Acceptance:**
-- [ ] A send is confirmed by `SEND_RECEIPT` before `pulsarSend` returns; an unconfirmed send is retried through front 86's policy.
-- [ ] A key supplied for a `key_shared` topic reaches the message metadata and two messages with the same key land on the same consumer.
-- [ ] Batching, where enabled, does not reorder messages within a key.
+- [ ] A send is confirmed by `SEND_RECEIPT` before `pulsarSend` returns; an unconfirmed send is retried through front 86's policy. — open: the data plane (the connection, LOOKUP, producers, consumers) is not written; there is no Pulsar broker here to capture frames from or run against
+- [ ] A key supplied for a `key_shared` topic reaches the message metadata and two messages with the same key land on the same consumer. — open: the data plane (the connection, LOOKUP, producers, consumers) is not written; there is no Pulsar broker here to capture frames from or run against
+- [ ] Batching, where enabled, does not reorder messages within a key. — open: the data plane (the connection, LOOKUP, producers, consumers) is not written; there is no Pulsar broker here to capture frames from or run against
 
 ### Step 5 — `#[pulsarListener]`
 
 **Acceptance:**
-- [ ] The emitted registration is the shape front 15's registry expects, asserted by reading the registry.
-- [ ] Subscription type reaches `SUBSCRIBE` and is reported by the health indicator.
-- [ ] `Outcome.Retry` re-delivers through Pulsar's negative acknowledgement, `Outcome.Reject` dead-letters through front 86, and `Outcome.Done` acknowledges — three separate protocol paths, three tests.
-- [ ] Flow control is credit-based: with a permit of 1 and a blocked handler, the broker does not push a second message.
+- [ ] The emitted registration is the shape front 15's registry expects, asserted by reading the registry. — open: the data plane (the connection, LOOKUP, producers, consumers) is not written; there is no Pulsar broker here to capture frames from or run against
+- [ ] Subscription type reaches `SUBSCRIBE` and is reported by the health indicator. — open: the data plane (the connection, LOOKUP, producers, consumers) is not written; there is no Pulsar broker here to capture frames from or run against
+- [ ] `Outcome.Retry` re-delivers through Pulsar's negative acknowledgement, `Outcome.Reject` dead-letters through front 86, and `Outcome.Done` acknowledges — three separate protocol paths, three tests. — open: the data plane (the connection, LOOKUP, producers, consumers) is not written; there is no Pulsar broker here to capture frames from or run against
+- [ ] Flow control is credit-based: with a permit of 1 and a blocked handler, the broker does not push a second message. — open: the data plane (the connection, LOOKUP, producers, consumers) is not written; there is no Pulsar broker here to capture frames from or run against
 
 ### Step 6 — `#[pulsarReader]`
 
 **Acceptance:**
-- [ ] `earliest`, `latest` and an explicit message id all position the cursor, and an unparseable start id fails at boot.
-- [ ] A reader acknowledges nothing, and the module README says why a reader message is never dead-lettered.
-- [ ] Two readers on one topic do not interfere; neither affects a subscription's backlog.
+- [ ] `earliest`, `latest` and an explicit message id all position the cursor, and an unparseable start id fails at boot. — open: the three spellings are checked and an unparseable one refused (`pulsar/topic_test` "settings: …"); no reader positions a cursor yet
+- [ ] A reader acknowledges nothing, and the module README says why a reader message is never dead-lettered. — open: the data plane (the connection, LOOKUP, producers, consumers) is not written; there is no Pulsar broker here to capture frames from or run against
+- [ ] Two readers on one topic do not interfere; neither affects a subscription's backlog. — open: the data plane (the connection, LOOKUP, producers, consumers) is not written; there is no Pulsar broker here to capture frames from or run against
 
 ### Step 7 — Authentication and transactions
 
 **Acceptance:**
-- [ ] Token authentication connects with a static token from configuration.
-- [ ] OAuth2 authentication obtains a token through front 79's client-credentials flow from the configured issuer, private key and audience, and refreshes before expiry.
-- [ ] A rejected stale token reconnects once with a fresh token and does not loop.
-- [ ] Pulsar registers with front 83 as transaction-capable, and a transaction that aborts leaves no message visible to a consumer.
+- [ ] Token authentication connects with a static token from configuration. — open: the data plane (the connection, LOOKUP, producers, consumers) is not written; there is no Pulsar broker here to capture frames from or run against
+- [ ] OAuth2 authentication obtains a token through front 79's client-credentials flow from the configured issuer, private key and audience, and refreshes before expiry. — open: the data plane (the connection, LOOKUP, producers, consumers) is not written; there is no Pulsar broker here to capture frames from or run against
+- [ ] A rejected stale token reconnects once with a fresh token and does not loop. — open: the data plane (the connection, LOOKUP, producers, consumers) is not written; there is no Pulsar broker here to capture frames from or run against
+- [ ] Pulsar registers with front 83 as transaction-capable, and a transaction that aborts leaves no message visible to a consumer. — open: the data plane (the connection, LOOKUP, producers, consumers) is not written; there is no Pulsar broker here to capture frames from or run against
 
 ## Examples
 
