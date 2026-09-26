@@ -28,8 +28,6 @@ half of that story. `divide-*` is how a list separates its rows without a border
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 | What | Where | State |
 |---|---|---|
 | `Border.W { 0, 1, 2, 4 }` | `tokens.bp:221-226` | shorthand only; `§ 11.2` also has `8` and eight per-side forms |

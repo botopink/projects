@@ -259,8 +259,7 @@ val borderColorTokens: Token[] = [
 ];
 val borderColorStyles = emilia(borderColorTokens);
 
-#[@future]
-fn main() -> @Future<void> {
+fn main() -> @Task<void> {
     @print("=== F14: Color Palette Example ===");
     @print("Red: " + redStyles);
     @print("Orange: " + orangeStyles);

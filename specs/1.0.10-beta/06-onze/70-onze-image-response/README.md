@@ -39,8 +39,6 @@ SVG→PNG — so this front splits there too and is explicit about which half le
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `repository/onze/` does not exist; this front creates `modules/onze-og/` inside it.
 - Nothing in the workspace emits SVG, measures text, or spawns a rendering process.
   `grep -rn "svg" repository/*/src/` returns nothing.
@@ -63,8 +61,7 @@ An image route is a module with two values and one function, mirroring `§ 18` e
 pub val size: ImageSize = ImageSize(width: 1200, height: 630);
 pub val contentType: string = "image/png";
 
-#[@future]
-pub fn image(ctx: RouteContext) -> @Future<ImageResponse>
+pub fn image(ctx: RouteContext) -> @Task<ImageResponse>
 ```
 
 Front 66 discovers the file and registers the route; this front owns what `image` returns and how it
@@ -150,7 +147,7 @@ rasterized file's path, stored through front 12. Hashing the SVG rather than the
 to the template invalidates the card without anyone remembering to bump a version. A crawler hitting
 the same URL a hundred times spawns one process.
 
-`@Future` lowers eagerly on erlang (`libs/std/src/http.bp:16-18`), so rendering N cards is sequential
+`@Task` lowers eagerly on erlang (`libs/std/src/http.bp:16-18`), so rendering N cards is sequential
 unless it is handed to front 02's task runner over unstarted tasks. This front does not claim
 parallelism it does not have; the build-time prerender of every card is where front 02 is worth using
 and the README says so rather than implying a future is a thread.
@@ -233,8 +230,7 @@ pub fn toSvg(box: LayoutBox, size: ImageSize, fonts: Array<FontRef>) -> string
 ```bp
 pub type Rasterizer(kind: string, command: string)
 
-#[@future]
-pub fn rasterize(r: Rasterizer, svg: string, size: ImageSize, outPath: string) -> @Future<string>
+pub fn rasterize(r: Rasterizer, svg: string, size: ImageSize, outPath: string) -> @Task<string>
 pub fn requireRasterizer(contentType: string, r: Rasterizer) -> Array<string>
 ```
 

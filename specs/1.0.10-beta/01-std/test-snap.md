@@ -19,7 +19,7 @@ format*). Each is recorded once, so a message cannot drift without a `.new` appe
 
 The error text is read with `asserts.errorText(r)` — a `pub fn errorText(r: @Result<void, string>)
 -> string` this front adds to the module (`asserts-api.md` § *Utility*): a plain `case` over the
-`Ok`/`Error` variants, not `#[@result]`, answering `""` for `Ok`. It is the same helper every
+`Ok`/`Error` variants, returning a plain `string`, answering `""` for `Ok`. It is the same helper every
 `-test` submodule uses to snapshot a failure message.
 
 ```bp

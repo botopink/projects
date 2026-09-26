@@ -27,8 +27,6 @@ Redis pub/sub after that is a file, not a front.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `repository/rakun/modules/rakun-messaging/src/root.bp` — docblock and `// Module contents will be added by the respective fronts.`
 - `repository/rakun/src/runtime.bp` — the only registry rakun has is the HTTP route table (`rkRegisterRoute`, `rkRouteCount`, `rkRoutePaths`, `rkDispatch`). It is a good model for this one and it is not reusable for it: routes are matched by verb and path, listeners by broker and destination.
 - `libs/std/src/` has **no socket module**. Every broker connection in this front waits on front 01's `io.net`; there is nothing under it today.
@@ -79,7 +77,7 @@ each holding a channel or a partition assignment. A worker that crashes is resta
 with the connection re-established; the container does not catch the error, because catching it would
 lose the restart.
 
-This is not `@Future`. `@Future<T>` lowers **eagerly** on erlang (`libs/std/src/http.bp:16-18`), so a
+This is not `@Task`. `@Task<T>` lowers **eagerly** on erlang (`libs/std/src/http.bp:16-18`), so a
 handler returning a future gives no concurrency at all. Concurrency here is process count, and the only
 knob is the worker count.
 

@@ -3,9 +3,9 @@
 //
 // Server-side file. Nothing here is a reactive type: fire-and-forget is a spawned
 // process, request/response is a process whose return value is framed back, and a
-// stream is a producer process holding a credit counter. `@Future` appears only where
+// stream is a producer process holding a credit counter. `@Task` appears only where
 // it is honest — as the requester's return shape — and the concurrency comes from
-// front 02's thunks, because `@Future` lowers eagerly on erlang.
+// front 02's thunks, because `@Task` lowers eagerly on erlang.
 //
 // Upstream:
 //   https://docs.spring.io/spring-boot/reference/messaging/rsocket.html
@@ -57,18 +57,16 @@ type UserEndpoint {
     }
 }
 
-#[@future]
-pub fn fetchUser(requester: Requester, id: string) -> @Future<string> {
+pub fn fetchUser(requester: Requester, id: string) -> @Task<string> {
     return await requestResponse(requester, "user.byId", id);
 }
 
-// LANGUAGE GAP: `@Future<T>` lowers eagerly on erlang, so two `await`s in a row are two
+// LANGUAGE GAP: `@Task<T>` lowers eagerly on erlang, so two `await`s in a row are two
 // sequential round trips. LANGUAGE GAP: `await` is not allowed inside a closure, which
 // is exactly why the thunk form works — each thunk returns the future and the gather
 // awaits. Nearest valid form below: front 02's thunk array, one process per thunk.
-#[@future]
-pub fn fetchBoth(requester: Requester) -> @Future<string> {
-    val thunks: Array<fn() -> @Future<string>> = [
+pub fn fetchBoth(requester: Requester) -> @Task<string> {
+    val thunks: Array<fn() -> @Task<string>> = [
         { -> fetchUser(requester, "ana") },
         { -> fetchUser(requester, "bob") },
     ];

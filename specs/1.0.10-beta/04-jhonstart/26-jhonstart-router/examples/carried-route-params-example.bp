@@ -1,12 +1,11 @@
 // app/blog/[slug]/page.bp
 // Under the `use` rule (00-compiler-carry-over/19, decision 104):
-// `#[@use] … -> @Component<Element>`, `use router()` binding `r`; the
+// `fn … -> @Component<ElementBase, Element>`, `use router()` binding `r`; the
 // `r.params().get()` call shape is kept as the record.
 import {router} from "jhonstart";
 import {Element, div, h1, text} from "jhonstart";
 
-#[@use]
-pub fn BlogPost() -> @Component<Element> {
+pub fn BlogPost() -> @Component<ElementBase, Element> {
     val r = use router();
     val slug = r.params().get("slug");
     return div([

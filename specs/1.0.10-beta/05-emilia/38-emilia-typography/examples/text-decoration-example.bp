@@ -155,8 +155,7 @@ fn contentValues() -> Token[] {
 // hyphenated body that breaks long identifiers, and a superscript footnote
 // marker built from `content` and front 34's `After` pseudo-element.
 
-#[@future]
-pub fn glossaryEntry(term: string, body: string) -> @Future<string> {
+pub fn glossaryEntry(term: string, body: string) -> @Task<string> {
     val list: Token[] = [
         .List.Disc,
         .List.Outside,

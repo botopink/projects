@@ -67,8 +67,6 @@ in a file served to the public.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `repository/onze/` does not exist. Front 49 creates it; `modules/onze-bundler/` is created by
   this front inside it.
 - Nothing in the workspace computes a module graph. The compiler resolves imports to compile them
@@ -404,11 +402,11 @@ pub fn refusalMessage(r: BuildRefusal) -> string
 
 ```bp
 pub fn planChunks(graph: ClientGraph, routes: Array<#(string, string)>) -> Array<ChunkPlan>
-pub fn emitChunk(plan: ChunkPlan, compiledDir: string) -> @Future<ChunkRef>
+pub fn emitChunk(plan: ChunkPlan, compiledDir: string) -> @Task<ChunkRef>
 ```
 
 Compilation is `process.run` (front 01) over `botopink build --target commonJS`; concatenation is
-`fs.readText`/`fs.writeText` plus the module-registry prelude. `@Future` lowers eagerly on erlang
+`fs.readText`/`fs.writeText` plus the module-registry prelude. `@Task` lowers eagerly on erlang
 (`libs/std/src/http.bp:16-18`), so chunk emission is sequential unless it is handed to front 02's
 task runner over unstarted tasks — the parallel path is front 02's, and this front does not fake it.
 
@@ -496,7 +494,7 @@ pub fn scriptPlacement(strategy: string) -> string
 ### Step 8 — dev rebuild
 
 ```bp
-pub fn rebuild(graph: ClientGraph, changed: string) -> @Future<#(ClientGraph, Array<string>)>
+pub fn rebuild(graph: ClientGraph, changed: string) -> @Task<#(ClientGraph, Array<string>)>
 ```
 
 **Acceptance:**

@@ -142,7 +142,7 @@ val customAnimation: Token[] = [rawAnimate("fade 300ms ease-out")];
 // busy class, which runs the spin animation and drops the pointer transition
 // entirely — a button that is already disabled should not animate its hover.
 //
-// `flush()` is `#[@future]`, so the caller must be `#[@future]` too and must
+// `flush()` returns a `@Task<string>`, so the caller must return a `@Task` too (or be a `test`) and must
 // `await` it.
 
 fn submitButtonTokens() -> Token[] {
@@ -181,8 +181,7 @@ fn spinnerTokens() -> Token[] {
     return spinner;
 }
 
-#[@future]
-pub fn renderSubmitButton(inFlight: bool) -> @Future<string> {
+pub fn renderSubmitButton(inFlight: bool) -> @Task<string> {
     val tokens = if (inFlight) busyButtonTokens() else submitButtonTokens();
     val buttonCls = emilia(tokens);
     val spinnerCls = emilia(spinnerTokens());

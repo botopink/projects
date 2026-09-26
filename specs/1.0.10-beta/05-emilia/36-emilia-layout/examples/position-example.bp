@@ -97,8 +97,7 @@ fn stackingValues() -> Token[] {
 // of a scrolling body and stacks above it; the badge is pulled out of the
 // panel's top-right corner by a negative inset.
 
-#[@future]
-pub fn stickyPanel(heading: string, body: string, badge: string) -> @Future<string> {
+pub fn stickyPanel(heading: string, body: string, badge: string) -> @Task<string> {
     val shell: Token[] = [
         .Layout.Position.Relative,
         .Layout.Overflow.Y.Auto,

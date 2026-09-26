@@ -138,7 +138,7 @@ call `currentSession()`.
 Spring documents a servlet session and a reactive session as separate starters. There is no such split
 here, and not because it was skipped: on the BEAM a request is a process and a blocking store call
 costs a process that waits, so the blocking API *is* the concurrent one. Where a future-returning form
-is genuinely wanted it is one extra method on the same store, not a second stack — and `@Future` lowers
+is genuinely wanted it is one extra method on the same store, not a second stack — and `@Task` lowers
 eagerly on erlang (`libs/std/src/http.bp:16-18`), so such a method would buy nothing at all today.
 
 ## Steps

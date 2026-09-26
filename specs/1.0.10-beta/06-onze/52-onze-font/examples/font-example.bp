@@ -28,8 +28,7 @@ import {layout, LayoutProps} from "jhonstart";                      // front 30
 
 // Body text: Inter, two weights, latin only, swap, with the metric-adjusted
 // fallback on. `variable: ""` means "give me a class, not a custom property".
-#[@future]
-pub fn bodyFont() -> @Future<Font> {
+pub fn bodyFont() -> @Task<Font> {
     val opts = GoogleFontOptions(
         weights: ["400", "700"],
         styles: ["normal"],
@@ -45,8 +44,7 @@ pub fn bodyFont() -> @Future<Font> {
 
 // Headings: a local face shipped with the app, exposed as a custom property so
 // the app's own CSS can reference `var(--font-brand)`.
-#[@future]
-pub fn brandFont() -> @Future<Font> {
+pub fn brandFont() -> @Task<Font> {
     val sources = [
         LocalFontSource(path: "./fonts/Brand-Bold.woff2", weight: "700", style: "normal"),
     ];
@@ -71,13 +69,11 @@ pub fn brandFont() -> @Future<Font> {
 val siteFont = "onze-font-inter";
 
 #[layout("")]
-#[@use]
-pub fn RootLayout(props: LayoutProps) -> @Component<Element> {
+pub fn RootLayout(props: LayoutProps) -> @Component<ElementBase, Element> {
     return div([props.children], attrs: [#("class", siteFont)]);
 }
 
-#[@future]
-pub fn documentHead() -> @Future<string> {
+pub fn documentHead() -> @Task<string> {
     val body = await bodyFont();
     val brand = await brandFont();
     return fontHead([body, brand]);

@@ -162,7 +162,7 @@ fn rawMaskImage(v: string) -> Token {
 //
 // A photo card: a raised surface that lifts on hover, a caption image that
 // multiplies into the card behind it, and a fade-out mask on the bottom edge.
-// `flush()` is `#[@future]`, so the caller must be `#[@future]` too and must
+// `flush()` returns a `@Task<string>`, so the caller must return a `@Task` too (or be a `test`) and must
 // `await` it.
 
 fn photoCardTokens() -> Token[] {
@@ -187,8 +187,7 @@ fn captionTokens() -> Token[] {
     return caption;
 }
 
-#[@future]
-pub fn renderPhotoCard() -> @Future<string> {
+pub fn renderPhotoCard() -> @Task<string> {
     val cardCls = emilia(photoCardTokens());
     val captionCls = emilia(captionTokens());
     val styles = await flush();

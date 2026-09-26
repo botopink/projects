@@ -16,7 +16,6 @@ import {Outcome, retryPolicy, nextDelay, nextAction, attemptOf, deadLetterOf, de
 // `rabbitListener` and `Delivery` are provided by front 15; everything else on the
 // second import line is this front's surface.
 
-#[@result]
 fn chargeCard(orderId: string) -> @Result<string, string> {
     if (orderId == "gateway-down") {
         throw "payment gateway timeout";

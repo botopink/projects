@@ -32,8 +32,6 @@ have had to hand-roll it.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - No metadata of any kind in `repository/jhonstart/src/`. `root.bp:15-17` declares three modules.
 - `element.bp:10-53` — eight builders, none of them a head tag.
 - `libs/std/src/` has nineteen modules and **no escaping**. `escape.html` and `escape.attribute` are
@@ -60,7 +58,7 @@ one code path instead of two.
 
 ```bp
 pub fn metadata() -> Metadata                                  // static
-#[@future] pub fn generateMetadata(params, parent) -> @Future<Metadata>   // dynamic
+pub fn generateMetadata(params, parent) -> @Task<Metadata>   // dynamic
 ```
 
 A segment may export either. Exporting both is a front-30 render error, not a silent precedence rule.
@@ -133,7 +131,7 @@ title template it never asked for.
 ```bp
 pub type Viewport(width: string, initialScale: string, themeColor: string)
 pub fn viewport() -> Viewport
-#[@future] pub fn generateViewport(params) -> @Future<Viewport>
+pub fn generateViewport(params) -> @Task<Viewport>
 ```
 
 `renderViewport(v) -> string` emits `<meta name="viewport" …>` and `<meta name="theme-color" …>`.
@@ -270,7 +268,7 @@ pub fn applyTemplate(template: string, title: string) -> string {
 | Segment export | Kind | Front 30 does |
 |---|---|---|
 | `metadata()` | static | calls it, merges onto the parent's |
-| `generateMetadata(params, parent)` | `#[@future]` | awaits it, merges onto the parent's |
+| `generateMetadata(params, parent)` | `-> @Task<Metadata>` | awaits it, merges onto the parent's |
 | both present | error | fails the build with a located message |
 | `viewport()` / `generateViewport(params)` | as above | merged independently of `Metadata` |
 

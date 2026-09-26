@@ -30,8 +30,6 @@ problem. The work is breadth, and the risk is transcription, not design.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - No `Interact` section, and no `cursor`, `resize`, `scroll-`, `snap-`, `touch-action`,
   `user-select`, `will-change`, `appearance`, `accent-color`, `caret-color`, `field-sizing`,
   `color-scheme` or `scrollbar-` string anywhere in `repository/emilia/src/`.

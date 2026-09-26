@@ -1,8 +1,7 @@
 // app/blog/page.bp
 import {Element, div, h1, ul, li, p, text} from "jhonstart";
 
-#[@use]
-pub fn BlogPage() -> @Component<Element> {
+pub fn BlogPage() -> @Component<ElementBase, Element> {
     val posts = await fetch("https://api.example.com/posts").then({ r -> r.json() });
     return div([
         h1([text("Blog", attrs: [])], attrs: []),

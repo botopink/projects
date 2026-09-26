@@ -39,8 +39,6 @@ repository surface, so this front decides it once and front 09 follows.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 | Piece | Where | State |
 |---|---|---|
 | `#[repository]` | `decorators.bp:84-100` | a stereotype alias for `#[service]`; frozen |
@@ -143,8 +141,8 @@ pub type SqlTemplate(dataSourceName: string) {
 
 `query` and `update` **raise** on a driver error, the way `JdbcTemplate` throws, and front 07's error
 entry turns the raise into a 500 problem detail. The `try*` pair returns `@Result` for the caller who
-wants to branch. Both exist because botopink cannot forward a `@Result` value: `-> @Result<…>`
-requires `#[@result]`, and inside such a function `return r` wraps `r` again, so a repository that
+wants to branch. Both exist because botopink cannot forward a `@Result` value until front 24 lands decision 119:
+inside a `-> @Result<…>` function `return r` wraps `r` again, so a repository that
 returned `@Result` would force every caller up the stack to unwrap and re-wrap. The raising form keeps
 the common path readable; the `try*` form keeps the branch possible. This is the same gap front 04
 recorded and it is why the surface is doubled.
@@ -278,7 +276,7 @@ usual reason it is set in production is that someone was debugging a slow boot.
 
 ### Futures
 
-Every call has a `#[@future]` twin: `queryAsync`, `updateAsync`, `singleAsync`. This is the whole of
+Every call has a `@Task`-returning twin: `queryAsync`, `updateAsync`, `singleAsync`. This is the whole of
 the R2DBC and reactive story and it costs one extra function each, because on the BEAM a "reactive"
 query is a process doing a blocking call. Front 04's README states that position once for the track;
 this front is where it becomes surface.
@@ -380,7 +378,7 @@ The milestone register is [`language-gaps.md`](../../language-gaps.md); the rows
 | A bodyless method in a `type` body does not parse (`docs.md:183-196`), so `#[query("…")] pub fn findById(…);` — the shape every Spring Data tutorial uses — is not writable. | `examples/user-orders-example.bp`, every repository method | A real body calling the emitted `__rkQuery_<name>()` helper | Abstract methods in a `type` body, filled in by the decorator's emission. This is the single change that would make the repository surface read like its upstream |
 | A method-level `@Decl` exposes no parameter list, so `#[query]` cannot check its placeholders against the method's parameters. | same file — the check is documented as absent | Check only what the statement text shows | `decl.params` on a `DeclKind.Method` handle (also front 06's gap) |
 | A decorator cannot rewrite the body it annotates (`decorators.bp:48-240`), so `#[transactional]` cannot open a transaction around the annotated method. | `examples/user-orders-example.bp`, `#[transactional]` on `OrderService` emitting `OrderServiceTx` | A type-level decorator emitting a proxy type, and injecting the proxy | `decl.wrapBody(expr)`, or a body-rewriting emission. Shared with fronts 06, 07 and 10 |
-| A function cannot forward a `@Result` value: `-> @Result<…>` requires `#[@result]` and `return r` re-wraps. Every layer would have to unwrap and re-wrap. | `examples/user-orders-example.bp` — the repositories use the raising `query`, not `tryQuery` | Two surfaces: a raising form and a `try*` form | A forwarding return, or letting `return` pass an already-`@Result` value through unchanged |
+| A function cannot forward a `@Result` value: inside a `-> @Result<…>` fn `return r` re-wraps (until front 24 lands decision 119's pass-through). Every layer would have to unwrap and re-wrap. | `examples/user-orders-example.bp` — the repositories use the raising `query`, not `tryQuery` | Two surfaces: a raising form and a `try*` form | A forwarding return, or letting `return` pass an already-`@Result` value through unchanged |
 
 ## Test plan
 

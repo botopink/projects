@@ -33,8 +33,7 @@ fn navItem(href: string, label: string, active: bool) -> Element {
 
 // The sidebar itself. `use pathname()` and `use selectedLayoutSegment()`
 // are the hook form; both read the one snapshot the server filled.
-#[@use]
-fn Sidebar() -> @Component<Element> {
+fn Sidebar() -> @Component<ElementBase, Element> {
     val path = use pathname();
     val section = use selectedLayoutSegment();
     val onGuides = section == "guides";

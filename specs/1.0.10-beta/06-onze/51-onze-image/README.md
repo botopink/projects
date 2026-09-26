@@ -45,8 +45,6 @@ through the builder API today.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `repository/onze/src/image.bp` does not exist; `repository/onze/` does not exist until front 49.
 - `repository/jhonstart/src/element.bp` is **frozen** for this milestone (`fronts.md`, track C). It
   provides `text, fragment, div, span, p, h1, ul, li` and no `img`. What it does provide is the
@@ -188,7 +186,6 @@ pub type ImageConfig(
     encoderTimeoutMs: i32,      // 5000
 )
 
-#[@result]
 pub fn validateSource(cfg: ImageConfig, publicDir: string, src: string) -> @Result<string, string>
 ```
 
@@ -229,8 +226,7 @@ pub type EncodeRequest(
     format: string,
 )
 
-#[@future]
-pub fn encode(cfg: ImageConfig, req: EncodeRequest) -> @Future<@Result<i32, string>>
+pub fn encode(cfg: ImageConfig, req: EncodeRequest) -> @Task<@Result<i32, string>>
 ```
 
 **Acceptance:**
@@ -246,8 +242,7 @@ pub fn encode(cfg: ImageConfig, req: EncodeRequest) -> @Future<@Result<i32, stri
 ### Step 5 — The `/_onze/image` handler
 
 ```bp
-#[@future]
-pub fn imageHandler(req: Request, cfg: ImageConfig, publicDir: string) -> @Future<HandlerResponse>
+pub fn imageHandler(req: Request, cfg: ImageConfig, publicDir: string) -> @Task<HandlerResponse>
 ```
 
 **Acceptance:**

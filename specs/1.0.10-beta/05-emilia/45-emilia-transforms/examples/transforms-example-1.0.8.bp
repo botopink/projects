@@ -180,8 +180,7 @@ val cardHoverTokens: Token[] = [
 ];
 val cardHoverStyles = emilia(cardHoverTokens);
 
-#[@future]
-fn main() -> @Future<void> {
+fn main() -> @Task<void> {
     @print("=== F11: Transforms Example ===");
     @print("Rotate: " + rotateStyles);
     @print("Neg Rotate: " + negRotateStyles);

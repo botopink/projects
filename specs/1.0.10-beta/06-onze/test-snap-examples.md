@@ -14,11 +14,11 @@ pub type RunningApp(dir: string, mode: string, origin: string, buildId: string)
 pub type Reply(status: i32, headers: Array<#(string, string)>, body: string)
 pub type BuildReport(exitCode: i32, log: string)
 
-#[@future] pub fn bootApp(exampleDir: string, mode: string) -> @Future<RunningApp>   // mode: "dev" | "start"
-#[@future] pub fn stopApp(app: RunningApp) -> @Future<void>
-#[@future] pub fn buildApp(exampleDir: string) -> @Future<BuildReport>                 // onze build only; never boots
-#[@future] pub fn request(app: RunningApp, method: string, path: string, headers: Array<#(string, string)>, body: string) -> @Future<Reply>
-#[@future] pub fn requestChunks(app: RunningApp, method: string, path: string) -> @Future<string[]>   // one entry per flushed chunk
+pub fn bootApp(exampleDir: string, mode: string) -> @Task<RunningApp>   // mode: "dev" | "start"
+pub fn stopApp(app: RunningApp) -> @Task<void>
+pub fn buildApp(exampleDir: string) -> @Task<BuildReport>                 // onze build only; never boots
+pub fn request(app: RunningApp, method: string, path: string, headers: Array<#(string, string)>, body: string) -> @Task<Reply>
+pub fn requestChunks(app: RunningApp, method: string, path: string) -> @Task<string[]>   // one entry per flushed chunk
 
 pub fn assertResponse(loc: SourceLocation, reply: Reply) -> @Result<void, string>
 pub fn assertResponseStream(loc: SourceLocation, chunks: string[]) -> @Result<void, string>

@@ -34,12 +34,12 @@ All in `modules/jhonstart-test/src/`. Every helper serialises and calls `snapsho
 | `assertClientBundleEntry(loc, islands: Array<Island>)` (`assert_island.bp`) | `--- payload i` then one `<id> <component> <props>` line per island (the `islandEntry` tuple, space-joined); `--- markup` then `renderToString(clientMount(island, []))` per island |
 | `assertStream(loc, chunks: Array<string>)` (`assert_stream.bp`) | for each chunk `--- chunk <n>` (`--- chunk 0 (shell)` for the first) followed by the chunk |
 | `assertDocument(loc, doc: string)` (`assert_render.bp`) | the document split one tag per line after `<body>`; the payload script's JSON one key per line |
-| `renderStreamCollect(a: App, input: PageInput, req: RequestData) -> @Future<Array<string>>` (`harness.bp`) | `renderStream` with a recording `Response` whose `write` appends to an array — the chunks in the order `write` received them |
-| `renderRecorded(a: App, input: PageInput, req: RequestData, streaming: bool) -> @Future<RecordedResponse>` (`harness.bp`) | `render` or `renderStream` over a recording `Response`: `RecordedResponse(status, headers, chunks, closed)` — `status` 200 when never set |
+| `renderStreamCollect(a: App, input: PageInput, req: RequestData) -> @Task<Array<string>>` (`harness.bp`) | `renderStream` with a recording `Response` whose `write` appends to an array — the chunks in the order `write` received them |
+| `renderRecorded(a: App, input: PageInput, req: RequestData, streaming: bool) -> @Task<RecordedResponse>` (`harness.bp`) | `render` or `renderStream` over a recording `Response`: `RecordedResponse(status, headers, chunks, closed)` — `status` 200 when never set |
 | `assertResponse(loc, r: RecordedResponse)` (`assert_render.bp`) | `status <n>`, one `header <name>: <value>` line each, `chunks <n>`, `closed <n>` |
 | `fixtureRequest(path) -> RequestData` (`harness.bp`) | a `GET` `RequestData` for `path` with no params, query, headers or cookies — the value onze would build from rakun's `Request` |
-| `fixturePageOver(path, shell: Element, child: fn() -> @Component<Element>) -> PageInput` (`harness.bp`) | a `PageInput` over one root segment whose page is `shell` with one boundary over `child`, build id `build-0001` |
-| `renderToStream(shell: Element, boundaries: Array<Boundary>) -> @Future<Array<string>>` (`harness.bp`) | `[shellHtml(shell)] ++ [fillHtml(await resolve(b), "") …]` in **declaration** order, no plugin — the harness has no scheduler; completion order is front 30's `render_test.bp` |
+| `fixturePageOver(path, shell: Element, child: fn() -> @Component<ElementBase, Element>) -> PageInput` (`harness.bp`) | a `PageInput` over one root segment whose page is `shell` with one boundary over `child`, build id `build-0001` |
+| `renderToStream(shell: Element, boundaries: Array<Boundary>) -> @Task<Array<string>>` (`harness.bp`) | `[shellHtml(shell)] ++ [fillHtml(await resolve(b), "") …]` in **declaration** order, no plugin — the harness has no scheduler; completion order is front 30's `render_test.bp` |
 | `assertErrorBoundary(loc, b: ErrorBoundary)` (`assert_error_boundary.bp`) | `renderBoundaryChecked(b)`: `outcome: ok` + newline + markup, or `outcome: error <message>` |
 | `assertMetadata(loc, m: Metadata)` · `assertViewport(loc, v: Viewport)` (`assert_metadata.bp`) | `renderHead(m)` / `renderViewport(v)` one tag per line (the `><` split) |
 | `assertForm(loc, f: Element)` (`assert_form.bp`) | `assertHtmlLines` under the `form` name |
@@ -47,7 +47,7 @@ All in `modules/jhonstart-test/src/`. Every helper serialises and calls `snapsho
 | `assertOptimistic(loc, base: i32, actions: i32[])` (`assert_form.bp`) | `base`, `actions` (space-joined), `value` = `applyOptimistic(base, actions, { c, a -> c + a })` |
 | `stubEnvelope(ok: bool, state: string, redirect: string) -> string` (`harness.bp`) | the JSON envelope `__jhFormSubmit` returns unparsed, written with `actions`' `writeEnvelope` (`n` = `R\|307\|<redirect>` when `redirect` is not `""`) — decision 116 |
 
-Three facts the map relies on and states rather than assumes silently: `renderToString` is the frozen renderer, so a void element renders `<input …></input>` in every snapshot below (front 94 *Blocked*; front 30's `renderNode` is the shipping renderer and has its own section below, § 30 · render); `renderHead`/`renderViewport` write their own tags and emit no closing tag for `meta`/`link`; a fixture standing in for a server component is `#[@use] fn … -> @Component<Element>` even when it awaits nothing, because that is the thunk type `Boundary.child` and `renderServerComponent` take (decision 104), while a component that activates nothing is a bare `fn … -> Element` (question 92-b).
+Three facts the map relies on and states rather than assumes silently: `renderToString` is the frozen renderer, so a void element renders `<input …></input>` in every snapshot below (front 94 *Blocked*; front 30's `renderNode` is the shipping renderer and has its own section below, § 30 · render); `renderHead`/`renderViewport` write their own tags and emit no closing tag for `meta`/`link`; a fixture standing in for a server component is `fn … -> @Component<ElementBase, Element>` even when it awaits nothing, because that is the thunk type `Boundary.child` and `renderServerComponent` take (decision 104), while a component that activates nothing is a bare `fn … -> Element` (question 92-b).
 
 Style rules every case follows: `if` is an expression and carries an `else`; no `//` inside a closure, template or enum body; `(expr).method()` is not written; a compound condition is bound to a `val` first; every constructor call spells `attrs:`; multiline text is leading-`\\` lines.
 
@@ -405,7 +405,7 @@ unknown/loading/requested=partial
 ```bp
 test "link: idle status" {
     // the plain call, on purpose: the server-pass value. `use` is illegal in a `test` body
-    // (it carries no `#[@use]`, decision 104) — 00-compiler-carry-over/19 § rule 3.
+    // (it has no `@Component` return, decision 118) — 04-jhonstart README § 6 rule 7.
     val s = linkStatus();
     try assertText(@src(), "pending=" + s.pending.toString() + "\nhref=" + s.href);
 }
@@ -522,13 +522,11 @@ test "request: absent keys read as empty strings" {
 pub type Post(id: string, title: string, body: string)
 pub type Comment(author: string, body: string)
 
-#[@future]
-fn loadPost(slug: string) -> @Future<Post> {
+fn loadPost(slug: string) -> @Task<Post> {
     return Post(id: "p1", title: "Hello, " + slug, body: "First <b>post</b>");
 }
 
-#[@future]
-fn loadComments(postId: string) -> @Future<Array<Comment>> {
+fn loadComments(postId: string) -> @Task<Array<Comment>> {
     return [Comment(author: "ana", body: "nice"), Comment(author: "bob", body: "<script>x</script>")];
 }
 
@@ -536,8 +534,7 @@ fn commentRow(c: Comment) -> Element {
     return li([span([text(escape.html(c.author), attrs: [])], attrs: [#("class", "author")]), text(escape.html(c.body), attrs: [])], attrs: []);
 }
 
-#[@use]
-pub fn PostPage(params: Array<#(string, string)>) -> @Component<Element> {
+pub fn PostPage(params: Array<#(string, string)>) -> @Component<ElementBase, Element> {
     val post = await loadPost(pairValue(params, "slug"));
     val comments = await loadComments(post.id);
     return article([
@@ -558,8 +555,7 @@ test "ssr: server component ---- async page with params" {
 ```
 
 ```bp
-#[@use]
-fn emptyPage() -> @Component<Element> {
+fn emptyPage() -> @Component<ElementBase, Element> {
     return div([text("ready", attrs: [])], attrs: [#("class", "done")]);
 }
 
@@ -586,7 +582,7 @@ test "ssr: a page with no comments still renders its heading" {
 <article><h1>Solo</h1><section><h2>Comments</h2><ul></ul></section></article>
 ```
 
-Not snapshotted: `request()` over the six `jhonstart_server` cells (`enterRequest` beside the test; `assertRequest` over its result reproduces the first snapshot above once it is filled with the same six strings), and the compile-error case for a missing `#[@use]` (compiler suite).
+Not snapshotted: `request()` over the six `jhonstart_server` cells (`enterRequest` beside the test; `assertRequest` over its result reproduces the first snapshot above once it is filled with the same six strings), and the compile-error case for an `await` under a plain `-> Element` return (compiler suite).
 
 ---
 
@@ -677,7 +673,7 @@ test "island: server-only is a value nobody reads" {
 serverOnly=1
 ```
 
-Not snapshotted: `#[client]` on a `type`, on a `#[@future] fn … -> @Future<T>` loader, `#[clientProps]` with an `Element` field — compile failures, recorded as comments naming the expected message (`rakun/test/di_test.bp:14-16` style). `propsFor` and `hydrate()` need the browser cell.
+Not snapshotted: `#[client]` on a `type`, on a `fn … -> @Task<T>` loader, `#[clientProps]` with an `Element` field — compile failures, recorded as comments naming the expected message (`rakun/test/di_test.bp:14-16` style). `propsFor` and `hydrate()` need the browser cell.
 
 ---
 
@@ -688,8 +684,7 @@ import { Element, div, h1, ul, li, span, header, section, text, renderToString }
 import { Boundary, Suspense, holeId, Chunk, resolve, fillHtml, shellHtml } from "jhonstart";
 import { assertHtml, assertStream, assertText, renderToStream } from "jhonstart-test";
 
-#[@use]
-fn postList() -> @Component<Element> {
+fn postList() -> @Component<ElementBase, Element> {
     return ul([li([text("one", attrs: [])], attrs: []), li([text("two", attrs: [])], attrs: [])], attrs: [#("class", "posts")]);
 }
 
@@ -732,8 +727,7 @@ test "stream: shell then one fill" {
 ```
 
 ```bp
-#[@use]
-fn sidebar() -> @Component<Element> {
+fn sidebar() -> @Component<ElementBase, Element> {
     return div([text("related", attrs: [])], attrs: [#("class", "related")]);
 }
 
@@ -762,8 +756,7 @@ pub fn Loading() -> Element {
     return div([span([text("Loading…", attrs: [])], attrs: [#("class", "spinner")])], attrs: [#("class", "loading")]);
 }
 
-#[@use]
-fn segmentPage(params: Array<#(string, string)>) -> @Component<Element> {
+fn segmentPage(params: Array<#(string, string)>) -> @Component<ElementBase, Element> {
     return h1([text("Page", attrs: [])], attrs: []);
 }
 
@@ -800,7 +793,7 @@ test "stream: a fill is a template plus the call that applies it" {
 <template data-jh-f="h1"><ul></ul></template><script>__bp1("h1")</script>
 ```
 
-The eager-`@Future` assertion ("constructing a `Boundary` runs nothing") is the first snapshot above: a shell that contained `class="posts"` would fail it.
+The eager-`@Task` assertion ("constructing a `Boundary` runs nothing") is the first snapshot above: a shell that contained `class="posts"` would fail it.
 
 ---
 
@@ -879,7 +872,7 @@ decision 113 — each asserts the document through `assertDocument` over what `r
 | `render: a nested not-found boundary wins over the root one` | `status 404`, the document's body the nearest `not-found` markup, `closed 1` |
 | `render: a redirect before the first chunk is a 307` | `status 307`, `header location: /login`, `chunks 0`, `closed 1` |
 | `render: a layout's redirect stops the page` | the same 307, and the page's marker stays empty |
-| `render: an unlisted absolute redirect fails the render` | the future's error names the target; `status 200` (never set), `chunks 0`, `closed 1` |
+| `render: an unlisted absolute redirect fails the render` | the render's failure names the target; `status 200` (never set), `chunks 0`, `closed 1` |
 | `render: a param from the url is escaped on the way into the document` | `&lt;script&gt;` in the body, the escaped `m` in the payload |
 | `render: a three-deep layout chain receives depths 0 1 2` | `selected` per layout |
 | `render: fills are handed over in completion order` | two boundaries resolving in reverse order reach `write` as `h2` then `h1` |
@@ -890,7 +883,7 @@ decision 113 — each asserts the document through `assertDocument` over what `r
 
 ## 30 · bridge — `modules/jhonstart-emilia/test/bridge_test.bp`
 
-The `jhonstart-emilia` member: emilia's `#[@future] flush()` adapted to the asynchronous
+The `jhonstart-emilia` member: emilia's `@Task`-returning `flush()` adapted to the asynchronous
 `RenderPlugin`, and the payload's `s` contributed through `payload` (decisions 113 and 114). The only
 test file in the repository that imports both jhonstart and emilia — emilia's integration test is
 this file (decision 114, item 6), and so are emilia front 48's rendered cells (builders and `html` DSL round trip with an emilia class slot, `withAttrs` / `attrValue`, static-first class order).
@@ -942,22 +935,18 @@ fn fallback(info: ErrorInfo) -> Element {
     return div([p([text("Something went wrong" + info.message, attrs: [])], attrs: []), button([text("Try again", attrs: [])], attrs: [#("data-jh-reset", "metrics")])], attrs: [#("class", "error")]);
 }
 
-#[@result]
 fn healthyPanel() -> @Result<Element, string> {
     return section([h2([text("Metrics", attrs: [])], attrs: []), p([text("99.9%", attrs: [])], attrs: [])], attrs: []);
 }
 
-#[@result]
 fn failingPanel() -> @Result<Element, string> {
     throw "metrics service down: postgres://user:secret@db/metrics";
 }
 
-#[@result]
 fn signallingPanel() -> @Result<Element, string> {
     throw notFound();
 }
 
-#[@result]
 fn panelWithHandler() -> @Result<Element, string> {
     return button([text("Like", attrs: [])], attrs: [#("data-jh-on-click", "like")]);
 }
@@ -1383,7 +1372,7 @@ Not snapshotted: `__jhFormSubmit`/`__jhFormPending`/`__jhFormState`/`__jhFormMou
 | 94 | signature parity (tag/attrs), attribute order, verbatim attribute, void drop + frozen `</input>`, renamed tags, `el`, both predicates, DSL resolution ×3 | escaping (01/30), self-closing in markup (frozen) |
 | 26 | `RouterState` accessors, absent key, first-match, `segments` bracket spelling, out-of-range `segment`, active nav ×2, search round-trip | `snapshot()` over the stub module, verbs return, `use` type-check |
 | 27 | seven attribute rows, `linkProps` defaults, `with*`, `prefetchMode` ×5, `layoutKey`/`layoutKeys`, `sharedDepth` ×3, idle `linkStatus` | mount idempotence, island mount count, route-kind flag read |
-| 28 | `RequestData` accessors present/absent, two sequential awaits, escaping at entry, `renderServerComponent` | `request()` over the filled context, missing-`#[@use]` compile error |
+| 28 | `RequestData` accessors present/absent, two sequential awaits, escaping at entry, `renderServerComponent` | `request()` over the filled context, the `await`-under-`-> Element` compile error |
 | 29 | emitted marker, placeholder id-only, payload rows, `serverSlot` hole, children unmodified, `serverOnly` | decorator rejections (compile), `propsFor`, `hydrate` |
 | 30 | shell without child, fill literal, hole ids, two boundaries, `loading.bp` shell, `resolve` via the stream | adoption rules (`render.mjs`, 68's entry) |
 | 30 · render | escaping walker ×6, composition order, document + payload, payload escaping, plugin order, globals registry, completion-order fills | the concurrency timing cell (plain `assert`), `render.mjs` DOM idempotence (browser) |

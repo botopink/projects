@@ -69,7 +69,6 @@ pub fn NotFound() -> Element {
 
 // ── the page this wraps ─────────────────────────────────────────────────────
 
-#[@result]
 fn postPanel(slug: string) -> @Result<Element, string> {
     val found = findPost(slug);
     if (found.isEmpty()) {
@@ -87,12 +86,10 @@ pub fn postBoundary(slug: string) -> ErrorBoundary {
 
 // ── stubs, so both outcomes are reachable without a filesystem ─────────────
 
-#[@result]
 fn signallingPanel() -> @Result<Element, string> {
     throw "nav:not-found";
 }
 
-#[@result]
 fn failingPanel() -> @Result<Element, string> {
     throw "the content directory is unreadable";
 }

@@ -77,8 +77,7 @@ fn hidePlaceholderOnFocus() -> Token {
 // invalid, and unstyled in print. The field itself trims its focus ring under a
 // reduced-motion preference.
 
-#[@future]
-pub fn emailField(label: string, message: string) -> @Future<string> {
+pub fn emailField(label: string, message: string) -> @Task<string> {
     val focusRing: Token[] = [.Border.Color.Indigo.500];
     val noMotion: Token[] = [.Border.Color.Slate.400];
     val focusUnderReducedMotion: Token[] = [Token.Focus(noMotion)];

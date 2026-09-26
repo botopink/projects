@@ -8,7 +8,7 @@
 //     62's frame). Reading it marks the render dynamic, so front 60 will not
 //     prerender the route, and `dynamicReason()` answers "cookies" in the build report.
 //   - front 31: no session means jhonstart's `redirect("/login")`, thrown from the
-//     LAYOUT. A layout is a component (`#[@use] … -> @Component<Element>`,
+//     LAYOUT. A layout is a component (`fn … -> @Component<ElementBase, Element>`,
 //     decision 117) and renders before the page, so the signal leaves before the
 //     first chunk: jhonstart's render answers 307 with `location: /login` itself
 //     and the page never runs. The check is written once, here; no page under
@@ -58,12 +58,11 @@ fn fieldTokens() -> Token[] {
 // here would raise — the render phase forbids it, and front 62 checks rather
 // than documents.
 #[layout("dashboard")]
-#[@use]
-pub fn dashboardLayout(props: LayoutProps) -> @Component<Element> {
+pub fn dashboardLayout(props: LayoutProps) -> @Component<ElementBase, Element> {
     val jar = use cookies();
     val session = pairValue(jar, "session");
     if (session == "") {
-        throw redirect("/login");
+        redirect("/login");                 // a component cannot `throw` (decision 121)
     };
     return section([
         p([text("signed in as " + session, attrs: [])], attrs: []),
@@ -113,8 +112,7 @@ pub fn newPostForm(binding: FormBinding, state: ActionState, pending: bool) -> E
 
 // ── the client component — front 67 + front 68 ──────────────────────────────
 
-#[@use]
-fn NewPostForm() -> @Component<Element> {
+fn NewPostForm() -> @Component<ElementBase, Element> {
     // LANGUAGE GAP: tuple labels are lost through generic instantiation, so this
     // reads positionally; with labels preserved it would be `s.state`,
     // `s.binding`, `s.pending`.
@@ -128,8 +126,7 @@ fn NewPostForm() -> @Component<Element> {
 // ── app/dashboard/posts/new/page.bp — SERVER renders what the CLIENT submits ─
 
 #[page("dashboard/posts/new")]
-#[@use]
-pub fn newPostPage(route: PageContext) -> @Component<Element> {
+pub fn newPostPage(route: PageContext) -> @Component<ElementBase, Element> {
     return div([
         h1([text("New post", attrs: [])], attrs: []),
         newPostForm(formAction(createPostId, "/dashboard/posts/new", actionField), actionState(""), false),

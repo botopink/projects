@@ -173,8 +173,7 @@ fn overflowAndWrap() -> Token[] {
 // the viewport, a tabular byline, and a three-line clamped excerpt that goes to
 // six lines on wide screens.
 
-#[@future]
-pub fn articleHeader(title: string, byline: string, excerpt: string) -> @Future<string> {
+pub fn articleHeader(title: string, byline: string, excerpt: string) -> @Task<string> {
     val biggerFromMd: Token[] = [.Text.Size.X5xl];
     val biggerFromLg: Token[] = [.Text.Size.X7xl];
 

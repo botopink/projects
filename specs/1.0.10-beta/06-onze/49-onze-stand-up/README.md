@@ -52,8 +52,6 @@ reliable way to build four things that do not fit together.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `repository/onze/` does not exist. The five libraries in the workspace are `emilia`, `erika`,
   `jhonstart`, `onze` (the mocking library — unrelated, and the name collision is worth noting) and
   `rakun`, plus `libs/std`.
@@ -61,7 +59,7 @@ Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([
   `element.bp:55-67` — `renderToString`. This is the whole render surface that exists today, and it
   is enough for onze's render seam.
 - `repository/emilia/src/emilia.bp:46-51` — `emilia(tokens: Token[]) -> string` registers a rule and
-  returns a class name; `emilia.bp:62-65` — `#[@future] flush() -> @Future<string>` serializes the
+  returns a class name; `emilia.bp:62-65` — `flush() -> @Task<string>` serializes the
   sheet **and clears it**. `emilia.bp:53-56` is the reason ordering matters: a second flush emits
   `<style></style>`.
 - `repository/rakun/src/http.bp:75-78` — `App(port, basePath)`; `src/bootstrap.bp:28-37` —
@@ -133,7 +131,7 @@ from the other (decision 113):
 
   ```bp
   // onze/src/integration.bp — `site` is jhonstart's `App`, `input` the jhonstart page input for `route`
-  rakun.page(route, fn(req: Request, out: ChunkWriter) -> @Future<void> {
+  rakun.page(route, fn(req: Request, out: ChunkWriter) -> @Task<void> {
       return site.renderStream(input(req), requestData(req), Response(
           status: fn(c) { out.setStatus(c); },
           header: fn(n, v) { out.setHeader(n, v); },
@@ -186,7 +184,7 @@ serialises the sheet **and clears it** (`emilia.bp:53-56`). The moments at which
 once into the head after the shell, once per streamed boundary inside that boundary's fill
 `<template>`, and nothing left at the end — are jhonstart's: front 30 declares the `RenderPlugin`
 point, whose methods are asynchronous, and awaits it; the `jhonstart-emilia` bridge awaits emilia's
-`#[@future] flush()` in `head` and `chunk`, and its `payload()` returns `#("s", <the classes it
+`flush()` (a `@Task<string>`) in `head` and `chunk`, and its `payload()` returns `#("s", <the classes it
 flushed>)`, which jhonstart writes as the payload's `s` key (decision 114). onze's part is one line
 at boot, registering the bridge:
 

@@ -1,7 +1,7 @@
 // Front 13 — rakun-client · example 1 of 2
 //
 // A service that calls a partner API. One builder, two terminal operations —
-// `retrieve()` blocks, `retrieveFuture()` returns `@Future` — and a cached GET
+// `retrieve()` blocks, `retrieveFuture()` returns a `@Task` — and a cached GET
 // that writes into front 12's store rather than a cache of its own.
 //
 // Upstream: https://docs.spring.io/spring-boot/reference/io/rest-client.html
@@ -93,8 +93,7 @@ pub type PartnerCatalog(
 pub type PartnerCatalogAsync(
     client: RestClient,
 ) {
-    #[@future]
-    pub fn productJson(self: Self, id: string) -> @Future<string> {
+    pub fn productJson(self: Self, id: string) -> @Task<string> {
         val res = await retrieveFuture(self.client.get("/products/" + id));
         return res.body;
     }

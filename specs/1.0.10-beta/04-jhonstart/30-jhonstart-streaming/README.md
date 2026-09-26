@@ -32,7 +32,7 @@ receives; rakun front 23 removes its copy when this front lands.
 emilia's CSS reaches the document through this front too: jhonstart declares an asynchronous
 render-plugin point and awaits it at the three moments CSS has to be written (the head, each
 streamed boundary, the end) and once more for the plugin's payload contribution, and the
-`jhonstart-emilia` bridge — a member of this workspace — adapts emilia's `#[@future] flush()` to it
+`jhonstart-emilia` bridge — a member of this workspace — adapts emilia's `@Task`-returning `flush()` to it
 and contributes the payload's `s` key. jhonstart never names emilia.
 
 **Streaming.** Front 28 gives a page one `await` per loader and one tree at the end. That is all-or-nothing: a blog
@@ -53,8 +53,6 @@ owes front 22 a shape it can wrap things in, not a second file convention.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `element.bp:55-67` — `renderToString`, synchronous, one pass, no seam, no escaping, void tags
   closed.
 - `repository/rakun/src/ssr.bp` — the escaping walker, the composition order, the document, the
@@ -66,11 +64,11 @@ Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([
   `Element`; this front's Step 10 is where they live, and rakun front 22 removes its copy when it lands
   (decision 114).
 - `src/root.bp:15-17` — no `suspense`, no `streaming`.
-- `#[@future]` + `await` work and are exercised (`repository/emilia/src/emilia.bp:62-65`,
+- a `@Task` return + `await` work and are exercised (`repository/emilia/src/emilia.bp:62-65`,
   `:475-480`).
 - Nothing in the repository emits more than one string per render, and nothing reads a partial one.
-- `libs/std/src/http.bp:16-18` — "Erlang is eager: `@Future<T>` resolves to `T` … so the caller's
-  `await fetch(url)` is identity on that backend." There is no concurrent scheduler behind `@Future`
+- `libs/std/src/http.bp:16-18` — "Erlang is eager: `@Task<T>` resolves to `T` … so the caller's
+  `await fetch(url)` is identity on that backend." There is no concurrent scheduler behind `@Task`
   on the BEAM, which is the single most important fact about this front.
 
 ## Mechanism
@@ -188,16 +186,16 @@ any plugin. `allowedRedirects` is the one list of absolute redirect targets the 
 pub type Json = string;   // JSON text the plugin serialised; written verbatim
 
 pub behavior RenderPlugin {
-    fn head(self: Self) -> @Future<string>;                    // once, after the shell
-    fn chunk(self: Self, holeId: string) -> @Future<string>;   // per boundary, before its markup
-    fn close(self: Self) -> @Future<@Result<void, string>>;    // at the end: nothing may be left
-    fn payload(self: Self) -> @Future<?#(string, Json)>;       // once, after close
+    fn head(self: Self) -> @Task<string>;                    // once, after the shell
+    fn chunk(self: Self, holeId: string) -> @Task<string>;   // per boundary, before its markup
+    fn close(self: Self) -> @Task<@Result<void, string>>;    // at the end: nothing may be left
+    fn payload(self: Self) -> @Task<?#(string, Json)>;       // once, after close
 }
 ```
 
-Every method is asynchronous (decision 114, item 3): the render is `#[@future]` and streaming
+Every method is asynchronous (decision 114, item 3): the render returns a `@Task` and is streaming
 already, so awaiting a plugin is its normal shape, and a plugin that reads a file or flushes a
-`#[@future]` sheet needs it. std has no structured JSON value — the reason contract 1 is not JSON —
+sheet through a `@Task` needs it. std has no structured JSON value — the reason contract 1 is not JSON —
 so `Json` is the JSON text the plugin serialised, which `writePayload` writes verbatim as it writes
 `t`, `a` and `b`.
 
@@ -260,18 +258,18 @@ three are called only by onze's generated client entry; nothing on the erlang ro
 
 ### What makes it actually stream
 
-`@Future` is eager on the BEAM (`libs/std/src/http.bp:16-18`). A list of futures is therefore a list
+`@Task` is eager on the BEAM (`libs/std/src/http.bp:16-18`). A list of futures is therefore a list
 of results that have *already* been computed, in order, before anything was flushed — and a
 "progressive flush" driven by awaiting such a list flushes everything at once, after the slowest
 boundary, having paid the sum of all of them. It would pass a test that checks the chunks and fail
 the only thing a reader can see.
 
-So a boundary in this design holds an **unstarted task** — `fn() -> @Component<Element>`, a thunk
-over a server component (decision 104: a component that awaits is `#[@use] fn … -> @Component<Element>`,
-and `@Component ⊃ @Future`, so `await b.child()` is legal in a `#[@future]` body) — and progressive
+So a boundary in this design holds an **unstarted task** — `fn() -> @Component<ElementBase, Element>`, a thunk
+over a server component (decision 104: a component that awaits is `fn … -> @Component<ElementBase, Element>`,
+and `@Component ⊃ @Task`, so `await b.child()` is legal in a `@Task` body) — and progressive
 flush is driven by the completion of **spawned work**, one BEAM process per boundary, gathered by
 index. Front 02 owns spawning and gathering, and its surface takes exactly
-that shape: `Array<fn() -> @Future<T>>`. `renderStream` spawns the boundaries, hands the shell to
+that shape: `Array<fn() -> @Task<T>>`. `renderStream` spawns the boundaries, hands the shell to
 `res.write` (the `Response` onze built over rakun's `ChunkWriter`) immediately, and hands each fill
 to it as its process reports.
 
@@ -295,7 +293,7 @@ A boundary is a record, not an element:
 pub type Boundary(
     id: string,
     fallback: Element,
-    child: fn() -> @Component<Element>,
+    child: fn() -> @Component<ElementBase, Element>,
 )
 ```
 
@@ -306,7 +304,7 @@ pins. That goes out with the shell.
 <div data-jh-h="h1"><div class="skeleton">Loading posts…</div></div>
 ```
 
-`resolve(b)` is `#[@future]` and awaits the child exactly once, at statement level, returning a
+`resolve(b)` returns a `@Task<Chunk>` and awaits the child exactly once, at statement level, returning a
 `Chunk`. Nothing in this file awaits inside a closure — the lambda rule (`§2.38`) makes that a poor
 bet and no file in the tree does it.
 
@@ -364,8 +362,8 @@ the signal itself.
 pub type Response(
     status: fn(code: i32) -> void,                 // before the first write only
     header: fn(name: string, value: string) -> void, // before the first write only
-    write:  fn(chunk: string) -> @Future<void>,
-    close:  fn() -> @Future<void>,
+    write:  fn(chunk: string) -> @Task<void>,
+    close:  fn() -> @Task<void>,
 );
 ```
 
@@ -453,7 +451,7 @@ import {Element} from "element";
 pub type Boundary(
     id: string,
     fallback: Element,
-    child: fn() -> @Component<Element>,
+    child: fn() -> @Component<ElementBase, Element>,
 )
 
 pub fn Suspense(b: Boundary) -> Element {
@@ -488,8 +486,7 @@ import {globals} from "globals";
 
 pub type Chunk(id: string, html: string)
 
-#[@future]
-pub fn resolve(b: Boundary) -> @Future<Chunk> {
+pub fn resolve(b: Boundary) -> @Task<Chunk> {
     val tree = await b.child();
     return Chunk(id: b.id, html: renderNode(tree));
 }
@@ -601,10 +598,10 @@ pub fn writePayload(p: Payload) -> string   // json.object / json.quote, then es
 pub type Json = string;
 
 pub behavior RenderPlugin {
-    fn head(self: Self) -> @Future<string>;
-    fn chunk(self: Self, holeId: string) -> @Future<string>;
-    fn close(self: Self) -> @Future<@Result<void, string>>;
-    fn payload(self: Self) -> @Future<?#(string, Json)>;
+    fn head(self: Self) -> @Task<string>;
+    fn chunk(self: Self, holeId: string) -> @Task<string>;
+    fn close(self: Self) -> @Task<@Result<void, string>>;
+    fn payload(self: Self) -> @Task<?#(string, Json)>;
 }
 ```
 
@@ -643,10 +640,10 @@ pub behavior RenderPlugin {
 ```bp
 pub type PageInput(build: string, pathname: string, pattern: string, params: string, query: string,
                    table: string, actions: Array<#(string, string)>, chain: Array<Segment>,
-                   page: fn() -> @Component<Element>)
+                   page: fn() -> @Component<ElementBase, Element>)
 
-#[@future] pub fn render(self: App, input: PageInput, req: RequestData, res: Response) -> @Future<void>
-#[@future] pub fn renderStream(self: App, input: PageInput, req: RequestData, res: Response) -> @Future<void>
+pub fn render(self: App, input: PageInput, req: RequestData, res: Response) -> @Task<void>
+pub fn renderStream(self: App, input: PageInput, req: RequestData, res: Response) -> @Task<void>
 ```
 
 onze calls `renderStream` inside the `PageRenderer` it registers with rakun (decision 114, item 5),
@@ -654,7 +651,7 @@ handing it a `Response` built over rakun's `ChunkWriter` (decision 117 rule 1):
 
 ```bp
 // onze, at boot — not jhonstart code
-rakun.page(pattern, fn(req: Request, out: ChunkWriter) -> @Future<void> {
+rakun.page(pattern, fn(req: Request, out: ChunkWriter) -> @Task<void> {
     return site.renderStream(input(req), requestData(req), Response(
         status: fn(c) { out.setStatus(c); },
         header: fn(n, v) { out.setHeader(n, v); },
@@ -670,8 +667,10 @@ front 28's `enterRequest` before the tree is built and leaves it at the end. `re
 non-streaming form: it resolves every boundary before it writes anything and hands the whole
 document to `res.write` once, so every signal it meets is before the first chunk. Both answer no
 reason: they resolve when the response is closed, and a failed render — a refused redirect target,
-a plugin's `close` answering `Error`, `status` / `header` after the first write — is the future's
-error. The signal translation is *Navigation signals* above.
+a plugin's `close` answering `Error`, `status` / `header` after the first write — fails the render.
+Under decision 120 a `@Task` never fails, so that failure has to be a `@Result` inside the value:
+which `E` the two functions answer (`-> @Task<@Result<void, E>>`) and whether `Response.write` stays an
+infallible `@Task<void>` is front 24's open point 8, settled with this library's E7 sweep. The signal translation is *Navigation signals* above.
 
 **Acceptance:**
 - [ ] a page with one boundary produces at least three `write` calls, the first ending inside
@@ -686,7 +685,7 @@ error. The signal translation is *Navigation signals* above.
       own markup
 - [ ] sibling server components are handed to front 02 as **unstarted thunks** in one await; two
       50 ms loaders finish in well under 100 ms on `--target erlang`, and the same test over
-      already-started `@Future` values is kept as the regression case
+      already-started `@Task` values is kept as the regression case
 - [ ] `defaultHooks()` renders a working document with no `<script src>`; replacing one field leaves
       the other at its default
 - [ ] a page raising jhonstart's `notFound()` (front 31) before the first chunk makes the render
@@ -699,11 +698,11 @@ error. The signal translation is *Navigation signals* above.
       same 307, and the page's function is never called (a marker the page appends stays empty)
 - [ ] `redirect("/nowhere")` (not in the table) and `redirect("https://evil.example")` with
       `allowedRedirects` empty fail the render before the first chunk: no status, no `location`,
-      the future's error names the target; `redirect("https://accounts.example/")` with that
+      the render's failure names the target; `redirect("https://accounts.example/")` with that
       target listed in `app(allowedRedirects: [...])` is a 307 to it
 - [ ] `res.status` or `res.header` after the first `write` fails the render, naming the call
 - [ ] `res.close()` is called exactly once on every path; a normal render answers `Ok` and a
-      failed render answers the future's error — neither answers a reason string
+      failed render answers its failure — neither answers a reason string
 - [ ] a signal raised after the first `write` is Step 12's, not this step's
 
 ### Step 9 — The `jhonstart-emilia` bridge
@@ -772,16 +771,16 @@ them. One decorator per file, taking the app-relative directory of the file it s
 
 | File in `app/` | Decorator | Signature the registry pins |
 |---|---|---|
-| `layout.bp` | `#[layout(seg)]` | `#[@use] fn(props: LayoutProps) -> @Component<Element>` |
-| `template.bp` | `#[template(seg)]` | `#[@use] fn(props: LayoutProps) -> @Component<Element>` |
-| `page.bp` | `#[page(seg)]` | `#[@use] fn(route: PageContext) -> @Component<Element>` |
+| `layout.bp` | `#[layout(seg)]` | `fn(props: LayoutProps) -> @Component<ElementBase, Element>` |
+| `template.bp` | `#[template(seg)]` | `fn(props: LayoutProps) -> @Component<ElementBase, Element>` |
+| `page.bp` | `#[page(seg)]` | `fn(route: PageContext) -> @Component<ElementBase, Element>` |
 | `default.bp` | `#[defaultView(seg)]` | `fn(props: LayoutProps) -> Element` |
 
 A layout, a template and a page are components (decision 117 rule 3, over decision 102): each may
 `await` and `use` hooks — `use cookies()` and the other request hooks of front 28 read the
 `RequestData` the render was handed (decision 114 item 8) — and each may raise a navigation signal,
 which *Navigation signals* handles the same way wherever it was raised. A function under
-`#[layout]`, `#[template]` or `#[page]` without `#[@use]` and `-> @Component<Element>` is a compile
+`#[layout]`, `#[template]` or `#[page]` without a `-> @Component<ElementBase, Element>` return is a compile
 error the marker raises, naming the function and the form it needs; there is no plain-layout form
 (decision 67):
 
@@ -789,8 +788,7 @@ error the marker raises, naming the function and the form it needs; there is no 
 import {redirect, cookies, pairValue, Element, LayoutProps, div} from "jhonstart";
 
 #[layout("dashboard")]
-#[@use]
-pub fn DashboardLayout(props: LayoutProps) -> @Component<Element> {
+pub fn DashboardLayout(props: LayoutProps) -> @Component<ElementBase, Element> {
     val jar = use cookies();                                     // front 28, over the RequestData
     if (pairValue(jar, "session") == "") { redirect("/login"); } // before the first chunk: a 307
     return div([Sidebar(), props.children], attrs: []);
@@ -824,7 +822,7 @@ pub fn defaultView(comptime decl: @Decl, seg: string)
 
 #[@External.Erlang("jhonstart_routes", "register_page")]
 #[@External.Node("./routes.mjs", "registerPage")]
-pub declare fn jhRegisterPage(seg: string, render: fn(route: PageContext) -> @Component<Element>) -> i32;
+pub declare fn jhRegisterPage(seg: string, render: fn(route: PageContext) -> @Component<ElementBase, Element>) -> i32;
 // … `jhRegisterLayout`, `jhRegisterTemplate` the same shape over `LayoutProps`;
 // `jhRegisterDefault` over `fn(props: LayoutProps) -> Element`
 
@@ -864,12 +862,12 @@ builds the `PageInput` from this registry and calls `renderStream`. Nothing in t
 or onze.
 
 **Acceptance:**
-- [ ] `#[page("blog")]` on a `#[@use] fn(route: PageContext) -> @Component<Element>` compiles and
+- [ ] `#[page("blog")]` on a `fn(route: PageContext) -> @Component<ElementBase, Element>` compiles and
       puts one `P|/blog||` record in `uiTable()`
 - [ ] `#[page("blog")]` on a type fails with `#[page] must annotate a function`; `#[page]`,
-      `#[layout]` and `#[template]` on a function without `#[@use]`, or returning `Element` /
-      `@Future<Element>` rather than `@Component<Element>`, fail at compile time naming the function
-      and `#[@use] fn … -> @Component<Element>` (decision 117 rule 3)
+      `#[layout]` and `#[template]` on a function returning `Element` /
+      `@Task<Element>` rather than `@Component<ElementBase, Element>`, fail at compile time naming the function
+      and `fn … -> @Component<ElementBase, Element>` (decision 117 rule 3)
 - [ ] `#[layout("")]` registers the root layout at `/`; `#[layout("(marketing)")]` contributes no
       segment to the pattern
 - [ ] `#[page("blog/[slug]")] pub fn blogPostPage(...)` makes `blogPostPageParams` available in the
@@ -943,7 +941,7 @@ nearest error boundary unchanged.
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| `Children` coerces from an array, an `Element` or a string (`infer.zig:4228-4239`) but not from a deferred value, so a boundary's child cannot be a child | `Boundary` is a record holding a `fn() -> @Component<Element>` beside the fallback, instead of `Suspense(fallback, child)` taking the child as `Children` | a record | let `Children` accept a thunk, resolved by the renderer |
+| `Children` coerces from an array, an `Element` or a string (`infer.zig:4228-4239`) but not from a deferred value, so a boundary's child cannot be a child | `Boundary` is a record holding a `fn() -> @Component<ElementBase, Element>` beside the fallback, instead of `Suspense(fallback, child)` taking the child as `Children` | a record | let `Children` accept a thunk, resolved by the renderer |
 | `await` is not safe as a lambda's last statement — a lambda's last statement must be an implicit-return expression, and nothing in the tree awaits in one | `resolve(b)` awaits one boundary; `renderStream` spawns, it does not map | one await per call, at statement level | an awaiting lambda, so `boundaries.map({ b -> await resolve(b) })` types |
 | Declared parameter defaults are never applied | every `Element` builder call in both examples spells `attrs: []`; `LayoutProps` is one record | write every argument | apply the declared default when an argument is omitted |
 | `@Decl` carries no source location, so a decorator cannot learn which file it annotates | every `#[page(...)]` / `#[layout(...)]` (Step 10) | the app-relative directory is an explicit decorator argument, verified against the tree by rakun front 22's scan | `decl.source() -> Source` |
@@ -960,7 +958,7 @@ manifest declares.
 Streaming assertions are string assertions over the chunks handed to `write`, not timing
 assertions, except the one that proves front 02's spawn is concurrent. Constructing a `Boundary`
 runs nothing — a thunk that appends to a module-level marker proves the child has not started, which
-is the assertion that catches the eager-`@Future` mistake.
+is the assertion that catches the eager-`@Task` mistake.
 
 ## Definition of done
 
@@ -977,7 +975,7 @@ is the assertion that catches the eager-`@Future` mistake.
       `navigation` (decision 116)
 - [ ] every redirect target is checked before anything is written: relative through `matchPath` on
       `PageInput.table`, absolute only when listed in `allowedRedirects` (decision 117)
-- [ ] `#[layout]`, `#[template]` and `#[page]` accept only `#[@use] fn … -> @Component<Element>`
+- [ ] `#[layout]`, `#[template]` and `#[page]` accept only `fn … -> @Component<ElementBase, Element>`
       (decision 117 rule 3)
 - [ ] the payload is written with std's `json` writers and `escape.scriptJson`; `render.bp` has no
       JSON escaper of its own (decision 116)

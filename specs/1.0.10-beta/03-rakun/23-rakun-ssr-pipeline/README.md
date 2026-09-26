@@ -45,8 +45,6 @@ else about them. A navigation signal raised by a page is jhonstart's to turn int
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `repository/rakun/src/http.bp:45-78` — `Response` has `status` and `body` and nothing else. No
   headers, no streaming body, no cookie jar.
 - `repository/rakun/src/ssr.bp` exists and carries the render as well as the dispatch: the escaping
@@ -55,7 +53,7 @@ Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([
   `render` / `renderStreaming`, the JSON helpers the payload writer uses (`ssr.bp:641-676`,
   `jsonString` / `jsonBool` / `jsonStrings` / `jsonPairs` / `jsonTriples`, which escape no control
   character but `\n` `\r` `\t`), and the dispatch's first seam, `RenderedPage` and
-  `setPageRender(fn(PageContext) -> @Future<RenderedPage>)`. `repository/rakun/src/ssr.mjs` carries
+  `setPageRender(fn(PageContext) -> @Task<RenderedPage>)`. `repository/rakun/src/ssr.mjs` carries
   the fill function and the payload reader. The render is jhonstart's under decision 113 and leaves
   rakun in Step 5; the seam becomes `ChunkWriter` / `PageRenderer` in Steps 1–2 (decision 114).
 
@@ -78,12 +76,11 @@ imports what fills them (decision 114):
 
 ```bp
 pub type ChunkWriter(setStatus: fn(code: i32) -> void, setHeader: fn(name: string, value: string) -> void,
-                     write: fn(string) -> @Future<void>, close: fn() -> @Future<void>);
-pub type PageRenderer = fn(req: Request, out: ChunkWriter) -> @Future<void>;
+                     write: fn(string) -> @Task<void>, close: fn() -> @Task<void>);
+pub type PageRenderer = fn(req: Request, out: ChunkWriter) -> @Task<void>;
 
 pub fn page(pattern: string, render: PageRenderer) -> i32     // front 22's rkAppRegisterPage
-#[@future]
-pub fn servePage(req: Request, out: ChunkWriter) -> @Future<i32>   // the status written
+pub fn servePage(req: Request, out: ChunkWriter) -> @Task<i32>   // the status written
 ```
 
 onze registers one renderer per page pattern at boot; inside it jhonstart renders the page (front 30)
@@ -91,7 +88,7 @@ into jhonstart's `Response`, which onze builds over `out` field by field (decisi
 
 ```bp
 // onze, at boot — not rakun code
-rakun.page(route, fn(req: Request, out: ChunkWriter) -> @Future<void> {
+rakun.page(route, fn(req: Request, out: ChunkWriter) -> @Task<void> {
     return ui.renderStream(input(req), requestData(req), Response(
         status: fn(c) { out.setStatus(c); },
         header: fn(n, v) { out.setHeader(n, v); },

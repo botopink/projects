@@ -172,8 +172,8 @@ val rawStack: Token[] = [rawFilter("blur(8px) grayscale(100%) brightness(1.1)")]
 //
 // A frosted navigation bar sitting over a hero image: the bar blurs and
 // saturates what is behind it, the image itself is dimmed and desaturated so
-// the bar's text stays legible. `flush()` is `#[@future]`, so the caller must
-// be `#[@future]` too and must `await` it.
+// the bar's text stays legible. `flush()` returns a `@Task<string>`, so the caller must
+// return a `@Task` too (or be a `test`) and must `await` it.
 
 fn heroImageTokens() -> Token[] {
     val dimmed: Token[] = [.Filter.Brightness.75, .Filter.Saturate.50];
@@ -204,8 +204,7 @@ fn frostedBarRawTokens() -> Token[] {
     return sat;
 }
 
-#[@future]
-pub fn renderFrostedHeader() -> @Future<string> {
+pub fn renderFrostedHeader() -> @Task<string> {
     val heroCls = emilia(heroImageTokens());
     val barCls = emilia(frostedBarSaturationTokens());
     val styles = await flush();

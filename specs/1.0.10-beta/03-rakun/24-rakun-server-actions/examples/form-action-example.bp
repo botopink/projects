@@ -28,8 +28,7 @@ import {collections.Dict} from "std";
 
 // The app's own data layer — front 08 in a real application. Stubbed here so the
 // example is about the action, not about the store.
-#[@future]
-fn savePost(title: string, body: string) -> @Future<string> {
+fn savePost(title: string, body: string) -> @Task<string> {
     return "post_" + title;
 }
 
@@ -44,8 +43,7 @@ fn savePost(title: string, body: string) -> @Future<string> {
 // the function's own name: an unmarked `pub fn` must not be reachable by naming it.
 
 #[serverAction]
-#[@future]
-pub fn createPost(form: FormData) -> @Future<ActionResult> {
+pub fn createPost(form: FormData) -> @Task<ActionResult> {
     val title = form.field("title");
     val body = form.field("body");
     val tooShort = title.length() < 3;

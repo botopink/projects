@@ -74,8 +74,6 @@ are not enumerated anywhere in it. Each of those is called out below rather than
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - No `Transform` section; no `rotate`, `scale`, `skew`, `translate`, `perspective`,
   `transform-origin`, `transform-style`, `backface-visibility` or `zoom` string anywhere in
   `repository/emilia/src/`.

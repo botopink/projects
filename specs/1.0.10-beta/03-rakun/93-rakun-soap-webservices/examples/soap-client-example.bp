@@ -60,7 +60,6 @@ fn conversionResponseFromXml(xml: string) -> ConversionResponse {
 
 // --- end generated ---
 
-#[@result]
 pub fn convert(client: WsClient, req: ConversionRequest) -> @Result<ConversionResponse, SoapFault> {
     // LANGUAGE GAP: declared parameter defaults are never applied, so an optional
     // element cannot be left out of a generated call. Nearest valid form: every field is

@@ -13,8 +13,7 @@
 import {Request, Response} from "rakun";
 import {json} from "std";
 
-#[@future]
-pub fn GET(request: Request) -> @Future<Response> {
+pub fn GET(request: Request) -> @Task<Response> {
     val posts = await db.post.findAll();
     return Response.json(json.stringify(posts));
 }
@@ -23,8 +22,7 @@ pub fn GET(request: Request) -> @Future<Response> {
 import {Request, Response} from "rakun";
 import {json} from "std";
 
-#[@future]
-pub fn POST(request: Request) -> @Future<Response> {
+pub fn POST(request: Request) -> @Task<Response> {
     val body = await request.json();
     val post = await db.post.create(body);
     return Response(status: 201, body: json.stringify(post));
@@ -34,8 +32,7 @@ pub fn POST(request: Request) -> @Future<Response> {
 import {Request, Response} from "rakun";
 import {json} from "std";
 
-#[@future]
-pub fn GET(request: Request) -> @Future<Response> {
+pub fn GET(request: Request) -> @Task<Response> {
     val id = request.param("id");
     val post = await db.post.findById(id);
     if (post == null) {
@@ -44,8 +41,7 @@ pub fn GET(request: Request) -> @Future<Response> {
     return Response.json(json.stringify(post));
 }
 
-#[@future]
-pub fn DELETE(request: Request) -> @Future<Response> {
+pub fn DELETE(request: Request) -> @Task<Response> {
     val id = request.param("id");
     await db.post.delete(id);
     return Response(status: 204, body: "");

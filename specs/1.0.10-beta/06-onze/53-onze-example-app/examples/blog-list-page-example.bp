@@ -34,8 +34,7 @@ fn listTokens() -> Token[] {
 // front 22 — `app/blog/layout.bp`. Wraps /blog and everything under it, and is
 // NOT re-rendered when the client navigates between two routes that share it.
 #[layout("blog")]
-#[@use]
-pub fn blogLayout(props: LayoutProps) -> @Component<Element> {
+pub fn blogLayout(props: LayoutProps) -> @Component<ElementBase, Element> {
     return section([
         h1([text("All posts", attrs: [])], attrs: [styled(titleTokens())]),
         props.children,
@@ -58,8 +57,7 @@ pub fn Loading() -> Element {
 // front 12 — `listPosts` reads through the `"posts"` tag, which is exactly what
 // `lib/actions.bp` expires after a write.
 #[page("blog")]
-#[@use]
-pub fn blogIndexPage(route: PageContext) -> @Component<Element> {
+pub fn blogIndexPage(route: PageContext) -> @Component<ElementBase, Element> {
     val posts = listPosts();
     val items = posts.map({ p -> li([PostCard(p)], attrs: []) });
     return ul(items, attrs: [styled(listTokens())]);

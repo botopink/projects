@@ -210,6 +210,6 @@ drop its `;`. C-11's `arrow_when_empty` in `format.zig` is the printer half and 
   29 (a block-shaped statement ends itself), 30 (the index expression), 31 (`any` is deleted — C-18),
   32 (no `Option` value names), 33 (a bodyless fn declares its return type), 36 (`...` is the inclusive
   pattern range), 37 (an index in write position is a question, not a gap).
-- `libs/std` writes `E = any` as a default type argument on the generator wrappers
-  (`@ResultGenerator<T, E = any>`, `@FutureGenerator<T, E = any>` under decision 103) — decision 31's
-  deletion of `any` (C-18) needs a real default there first.
+- `libs/std` writes `E = any` as a default type argument on the fallible wrappers — the generators'
+  error parameter and the pre-120 future's — until C-32 removes that parameter (decisions 120 and 122:
+  a failure is a `@Result` inside the value); decision 31's deletion of `any` (C-18) waits on it.

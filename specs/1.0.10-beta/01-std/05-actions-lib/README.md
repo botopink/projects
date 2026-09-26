@@ -58,8 +58,6 @@ shape is fixed, not the names a deployment chooses.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 Measured 2026-09-25 on `repository/botopink-lang` `52843fd5`, `repository/rakun` `a8ba8bd`,
 `repository/jhonstart` `8e8dbe2`.
 
@@ -102,13 +100,13 @@ pub fn parseState(state: string) -> #(string, Array<#(string, string)>)   // (me
 pub type ActionEnvelope(ok: bool, state: string, revalidated: Array<string>,
                         n: string, payload: string)
 pub fn writeEnvelope(e: ActionEnvelope) -> string          // JSON, `v` first, `redirect` from `n`
-#[@result] pub fn readEnvelope(json: string) -> @Result<ActionEnvelope, string>
+pub fn readEnvelope(json: string) -> @Result<ActionEnvelope, string>
 pub fn parseActionState(envelope: string) -> ActionState    // decision 78's name, over the JSON
 
 // rpc
 pub type RpcCall(id: string, args: Array<string>)
 pub fn writeRpcBody(call: RpcCall) -> string               // {"v":1,"id":…,"args":[…]}
-#[@result] pub fn parseRpcBody(body: string) -> @Result<RpcCall, string>
+pub fn parseRpcBody(body: string) -> @Result<RpcCall, string>
 
 // refresh
 pub fn refreshValue() -> string                             // "refresh"

@@ -211,7 +211,7 @@ val shorthands: Token[] = [
 // The transition tokens come from front 44; without them the motion is a single
 // frame and the transform is invisible.
 //
-// `flush()` is `#[@future]`, so the caller must be `#[@future]` too and must
+// `flush()` returns a `@Task<string>`, so the caller must return a `@Task` too (or be a `test`) and must
 // `await` it.
 
 fn liftCardTokens() -> Token[] {
@@ -249,8 +249,7 @@ fn chevronTokens(open: bool) -> Token[] {
     return out;
 }
 
-#[@future]
-pub fn renderDisclosureCard(open: bool) -> @Future<string> {
+pub fn renderDisclosureCard(open: bool) -> @Task<string> {
     val cardCls = emilia(liftCardTokens());
     val chevronCls = emilia(chevronTokens(open));
     val styles = await flush();

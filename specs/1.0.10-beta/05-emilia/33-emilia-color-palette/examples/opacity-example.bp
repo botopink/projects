@@ -65,8 +65,7 @@ fn hoverFade() -> Token {
 // A modal overlay: an opaque panel over a translucent scrim, with a link whose
 // hover state fades. Three classes, one flush.
 
-#[@future]
-pub fn overlayPanel(title: string, body: string) -> @Future<string> {
+pub fn overlayPanel(title: string, body: string) -> @Task<string> {
     val scrimBase: Token[] = [.Bg.Color.Slate.950];
     val scrim: Token[] = [Token.Alpha(percent: 60, inner: scrimBase)];
 

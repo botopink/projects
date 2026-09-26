@@ -281,7 +281,7 @@ pub fn after(work: fn() -> i32) -> i32
 
 pub fn memoKey(name: string, parts: Array<string>) -> string
 pub fn memoize<T>(key: string, load: fn() -> T) -> T
-pub fn preload<T>(key: string, load: fn() -> T) -> i32   // spawns a BEAM process — @Future is eager
+pub fn preload<T>(key: string, load: fn() -> T) -> i32   // spawns a BEAM process — @Task is eager
 ```
 
 Every handle carries the epoch it was minted with; a mismatch raises, which is what makes a
@@ -379,17 +379,17 @@ default disables absolute redirects entirely. No property turns either check off
 pub type Response(
     status: fn(code: i32) -> void,
     header: fn(name: string, value: string) -> void,
-    write:  fn(chunk: string) -> @Future<void>,
-    close:  fn() -> @Future<void>,
+    write:  fn(chunk: string) -> @Task<void>,
+    close:  fn() -> @Task<void>,
 );
 
 // rakun front 23 — what a page renderer is handed
 pub type ChunkWriter(setStatus: fn(code: i32) -> void, setHeader: fn(name: string, value: string) -> void,
-                     write: fn(string) -> @Future<void>, close: fn() -> @Future<void>);
-pub type PageRenderer = fn(req: Request, out: ChunkWriter) -> @Future<void>;
+                     write: fn(string) -> @Task<void>, close: fn() -> @Task<void>);
+pub type PageRenderer = fn(req: Request, out: ChunkWriter) -> @Task<void>;
 
 // onze front 49 — the whole adapter; no `case` on a signal
-rakun.page(pattern, fn(req: Request, out: ChunkWriter) -> @Future<void> {
+rakun.page(pattern, fn(req: Request, out: ChunkWriter) -> @Task<void> {
     return site.renderStream(input(req), requestData(req), Response(
         status: fn(c) { out.setStatus(c); },
         header: fn(n, v) { out.setHeader(n, v); },
@@ -496,10 +496,10 @@ registers it at boot; emilia does not change and imports nobody (decision 113).
 ```bp
 // jhonstart/src/plugin.bp
 pub behavior RenderPlugin {
-    fn head(self: Self) -> @Future<string>;                    // once, after the shell
-    fn chunk(self: Self, holeId: string) -> @Future<string>;   // per boundary, before its markup
-    fn close(self: Self) -> @Future<@Result<void, string>>;    // at the end: nothing may be left
-    fn payload(self: Self) -> @Future<?#(string, Json)>;       // once, after close
+    fn head(self: Self) -> @Task<string>;                    // once, after the shell
+    fn chunk(self: Self, holeId: string) -> @Task<string>;   // per boundary, before its markup
+    fn close(self: Self) -> @Task<@Result<void, string>>;    // at the end: nothing may be left
+    fn payload(self: Self) -> @Task<?#(string, Json)>;       // once, after close
 }
 
 // onze, at boot
@@ -519,8 +519,8 @@ unstyled paint" holds by construction: a fill's content reaches the document whe
 inserts style and markup together. The plugin never recomputes, re-hashes, sorts or dedups a class;
 contract 4 is untouched. The client bundle never calls `flush()`, which front 68 enforces.
 
-Every method is asynchronous (decision 114): the render is `#[@future]` and awaits each call, and
-the bridge awaits emilia's `#[@future] flush()` in `head` and `chunk`. The bridge's `payload()`
+Every method is asynchronous (decision 114): the render returns a `@Task` and awaits each call, and
+the bridge awaits emilia's `@Task`-returning `flush()` in `head` and `chunk`. The bridge's `payload()`
 returns `#("s", <the class names it flushed>)` — the payload's `s` key (§ 2) — and front 68's entry
 checks it with `checkStyles(payload.s)`. jhonstart names no plugin key.
 

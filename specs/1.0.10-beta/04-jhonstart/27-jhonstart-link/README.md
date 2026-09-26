@@ -30,8 +30,6 @@ a host stub that returns an `Element`.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `src/router.d.bp:27-28` — the one-line `declare fn Link`, Node-only, gated.
 - `src/element.bp:3-8` — `Element` with `attrs`; `:55-67` — `renderToString` renders them.
 - `src/element.bp:10-12` — `bracketPair(name, value) -> #(string, string)`, the pair constructor.
@@ -150,8 +148,8 @@ primitives, and everything it decides is a pure function of two key lists.
 
 `linkStatus()` returns `LinkStatus(pending: bool, href: string)` from `__jhLinkStatus()`, so a
 link can render a spinner while its own navigation is in flight. It is a hook —
-`#[@use] fn linkStatus() -> @Use<ElementBase, LinkStatus>` (decision 102) — and is legal under `use`
-inside a `#[@use] fn … -> @Component<Element>` body (decision 104), the same shape `hooks.bp` uses.
+`fn linkStatus() -> @Component<ElementBase, LinkStatus>` (decision 102) — and is legal under `use`
+inside a `fn … -> @Component<ElementBase, Element>` body (decision 104), the same shape `hooks.bp` uses.
 
 ## Steps
 
@@ -309,8 +307,7 @@ declare fn __jhLinkRouteKind(href: string) -> string;
 
 pub type LinkStatus(pending: bool, href: string)
 
-#[@use]
-pub fn linkStatus() -> @Use<ElementBase, LinkStatus> {
+pub fn linkStatus() -> @Component<ElementBase, LinkStatus> {
     val href = __jhLinkStatus();
     return LinkStatus(pending: href != "", href: href);
 }
@@ -319,7 +316,7 @@ pub fn linkStatus() -> @Use<ElementBase, LinkStatus> {
 **Acceptance:**
 - [ ] every cell in the file is `#[@External.Node]`; there is no `#[@External.Erlang]` cell
 - [ ] `linkStatus()` is idle (`pending == false`, `href == ""`) when nothing is in flight
-- [ ] `use linkStatus()` type-checks inside a `#[@use] fn … -> @Component<Element>` body — never the doubled `use` + `useLinkStatus()`; without the annotation the body is `use-without-context-effect` (decision 104, [`19-use-activation`](../../00-compiler-carry-over/19-use-activation/README.md))
+- [ ] `use linkStatus()` type-checks inside a `fn … -> @Component<ElementBase, Element>` body — never the doubled `use` + `useLinkStatus()`; without a `@Component` return the body is `use-without-context-effect` (decisions 118 and 128)
 - [ ] `linkMount()` is idempotent — calling it twice registers one listener
 
 ### Step 5 — Module wiring

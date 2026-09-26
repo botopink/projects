@@ -133,8 +133,7 @@ fn bothAxesAlignment() -> Token[] {
 // A toolbar: a row that wraps under `sm`, a title that takes the remaining
 // space, and a trailing action pinned last in the order.
 
-#[@future]
-pub fn toolbar(title: string, action: string) -> @Future<string> {
+pub fn toolbar(title: string, action: string) -> @Task<string> {
     val stackUnderSm: Token[] = [.Flex.Col, .Flex.Items.Start];
 
     val bar: Token[] = [

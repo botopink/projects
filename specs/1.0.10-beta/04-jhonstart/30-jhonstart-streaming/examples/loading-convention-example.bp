@@ -33,8 +33,7 @@ pub fn Loading() -> Element {
 
 // ── what the developer writes: app/blog/page.bp ─────────────────────────────
 
-#[@use]
-pub fn Page(params: Array<#(string, string)>) -> @Component<Element> {
+pub fn Page(params: Array<#(string, string)>) -> @Component<ElementBase, Element> {
     return div([
         text("the real blog", attrs: []),
     ], attrs: [#("class", "blog")]);

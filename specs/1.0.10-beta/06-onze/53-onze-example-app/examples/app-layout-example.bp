@@ -43,8 +43,7 @@ fn navTokens() -> Token[] {
 // front 52 — one family, two weights, latin, swap, adjusted fallback on. The
 // font files are downloaded at build time and self-hosted, so nothing at
 // request time reaches a third-party host.
-#[@future]
-fn bodyFont() -> @Future<Font> {
+fn bodyFont() -> @Task<Font> {
     val opts = GoogleFontOptions(
         weights: ["400", "700"],
         styles: ["normal"],
@@ -72,7 +71,7 @@ fn siteNav() -> Element {
 // passes through. The decorator argument is the app-relative directory, and
 // front 50's scan fails the build when it disagrees with the file's location.
 //
-// A layout is a component (`#[@use] … -> @Component<Element>`, decision 117) and
+// A layout is a component (`fn … -> @Component<ElementBase, Element>`, decision 117) and
 // could await the font, but it does not need to: front 52 resolves the family
 // at BUILD time and its class name is a pure function of family and build id,
 // so the layout names it as a constant and `documentHead` below produces the
@@ -80,8 +79,7 @@ fn siteNav() -> Element {
 val siteFont = "onze-font-inter";
 
 #[layout("")]
-#[@use]
-pub fn rootLayout(props: LayoutProps) -> @Component<Element> {
+pub fn rootLayout(props: LayoutProps) -> @Component<ElementBase, Element> {
     return div([
         header([siteNav()], attrs: []),
         main([props.children], attrs: []),
@@ -91,8 +89,7 @@ pub fn rootLayout(props: LayoutProps) -> @Component<Element> {
 // front 52 + front 69 — the head. `fontHead` produces the preload links and the
 // `@font-face` blocks; front 69's sink is what decides where they go relative to
 // emilia's `<style>` and to a streamed chunk's own block.
-#[@future]
-pub fn documentHead() -> @Future<string> {
+pub fn documentHead() -> @Task<string> {
     val font = await bodyFont();
     return fontHead([font]);
 }

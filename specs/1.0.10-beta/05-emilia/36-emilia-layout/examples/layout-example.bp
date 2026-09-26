@@ -140,8 +140,7 @@ fn boxValues() -> Token[] {
 // A media card: a 16:9 thumbnail that crops rather than stretches, a body that
 // clips its overflow, and a caption laid out in two columns on wide screens.
 
-#[@future]
-pub fn mediaCard(caption: string, body: string) -> @Future<string> {
+pub fn mediaCard(caption: string, body: string) -> @Task<string> {
     val frame: Token[] = [
         .Layout.Block,
         .Layout.Overflow.Hidden,

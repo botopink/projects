@@ -31,8 +31,6 @@ it matters.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 | What | Where | State |
 |---|---|---|
 | `Bg { Red{100,500,700}, Blue{100,500,700}, Gray{100,200,500,900}, White, Black, Hex(value) }` | `tokens.bp:118-138` | colour only |

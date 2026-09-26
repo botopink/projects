@@ -7,8 +7,7 @@
 import {cacheLife, cacheTag} from "rakun";
 
 #[cache]
-#[@future]
-pub fn getProducts() -> @Future<Product[]> {
+pub fn getProducts() -> @Task<Product[]> {
     cacheLife("hours");
     cacheTag("products");
     return await db.product.findAll();
@@ -16,12 +15,11 @@ pub fn getProducts() -> @Future<Product[]> {
 
 // --- Cache with on-demand revalidation (lib/actions.bp)
 // NOTE: 12 imports `revalidateTag` from "rakun-cache" (12 § Package, module and import spellings);
-// the action shape (`FormData.field`, `@Future<ActionResult>`) is 24's.
+// the action shape (`FormData.field`, `@Task<ActionResult>`) is 24's.
 import {revalidateTag} from "rakun";
 
 #[serverAction]
-#[@future]
-pub fn updateProduct(formData: FormData) -> @Future<void> {
+pub fn updateProduct(formData: FormData) -> @Task<void> {
     val id = formData.get("id");
     val name = formData.get("name");
     await db.product.update(id, name: name);

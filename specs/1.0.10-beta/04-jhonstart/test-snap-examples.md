@@ -102,7 +102,7 @@ test "blog: a missing slug raises the not-found signal through the boundary" {
     try assertErrorBoundary(@src(), catchError("post", ErrorPage, postPanel("nope")));
 }
 ```
-`__snapshots__/blog/a-missing-slug-raises-the-not-found-signal-through-the-boundary.snap` — `postPanel(slug)` returns the `#[@result]` thunk; the signal is jhonstart's `notFound()` (front 31), re-raised, and front 30's render renders `NotFound()`
+`__snapshots__/blog/a-missing-slug-raises-the-not-found-signal-through-the-boundary.snap` — `postPanel(slug)` returns the thunk answering `@Result`; the signal is jhonstart's `notFound()` (front 31), re-raised, and front 30's render renders `NotFound()`
 ```
 outcome: error nav:not-found
 ```

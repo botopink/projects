@@ -34,8 +34,6 @@ of what annotation processing already gives: a `@Decl`-first comptime function a
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - No boundary mechanism of any kind in `repository/jhonstart/src/`. `root.bp:15-17` declares three
   modules; none of them is `client`.
 - `hooks.bp:30-60` — five hooks with SSR-only bodies, no marker distinguishing them from a server
@@ -67,8 +65,8 @@ pure declaration:
 pub fn client(comptime decl: @Decl) {
     @emit("pub fn __jhClient_" + decl.name + "() -> string { return \"" + decl.name + "\"; }");
     if (decl.kind != DeclKind.Fn) decl.fail("#[client] must annotate a function");
-    val isComponent = decl.returnType == "Element" || decl.returnType == "@Component<Element>";
-    if (!isComponent) decl.fail("#[client] must annotate a component returning Element or @Component<Element>");
+    val isComponent = decl.returnType == "Element" || decl.returnType == "@Component<ElementBase, Element>";
+    if (!isComponent) decl.fail("#[client] must annotate a component returning Element or @Component<ElementBase, Element>");
 }
 ```
 
@@ -218,25 +216,25 @@ import {querystring} from "std";
 pub fn client(comptime decl: @Decl) {
     @emit("pub fn __jhClient_" + decl.name + "() -> string { return \"" + decl.name + "\"; }");
     if (decl.kind != DeclKind.Fn) decl.fail("#[client] must annotate a function");
-    val isComponent = decl.returnType == "Element" || decl.returnType == "@Component<Element>";
-    if (!isComponent) decl.fail("#[client] must annotate a component returning Element or @Component<Element>");
+    val isComponent = decl.returnType == "Element" || decl.returnType == "@Component<ElementBase, Element>";
+    if (!isComponent) decl.fail("#[client] must annotate a component returning Element or @Component<ElementBase, Element>");
 }
 ```
 
 The body calls no sibling function and contains no `//` comment — both are hard constraints on a
 decorator body.
 
-A client component that activates a hook is `#[@use] fn … -> @Component<Element>`; one that
+A client component that activates a hook is `fn … -> @Component<ElementBase, Element>`; one that
 activates nothing is `fn … -> Element` (decision 104). Both spell a component and both pass the
-return-type check. A server component returns the same `@Component<Element>`, so `#[client]` cannot
+return-type check. A server component returns the same `@Component<ElementBase, Element>`, so `#[client]` cannot
 tell the two apart by return type: the server/client split is front 68's graph walk (the
 request-scope predicate in Step 5), not this decorator's.
 
 **Acceptance:**
-- [ ] `#[client]` on `fn X() -> Element` and on `#[@use] fn X() -> @Component<Element>` emits
+- [ ] `#[client]` on `fn X() -> Element` and on `fn X() -> @Component<ElementBase, Element>` emits
       `__jhClient_X` returning `"X"`
 - [ ] `#[client]` on a `type` fails with the placement message
-- [ ] `#[client]` on a fn returning `@Future<T>` or `@Result<T, E>` fails — a loader is not a
+- [ ] `#[client]` on a fn returning `@Task<T>` or `@Result<T, E>` fails — a loader is not a
       component; a server component reached from a `#[client]` module is refused by front 68's
       graph walk, not here
 - [ ] the emitted name is reachable at the application site, which must therefore import `client`;

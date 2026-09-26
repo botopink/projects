@@ -31,8 +31,6 @@ breakpoints are equally off: `Md` emits `@media(min-width:768px)` where v4.3 emi
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 | What | Where | State |
 |---|---|---|
 | `Hover/Focus/Active/Md/Lg/Xl(inner: Token[])` | `tokens.bp:264-269` | the complete modifier set today |

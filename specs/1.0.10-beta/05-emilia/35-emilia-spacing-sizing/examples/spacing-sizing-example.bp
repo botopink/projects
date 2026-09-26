@@ -209,8 +209,7 @@ val logicalTokens: Token[] = [
 ];
 val logicalStyles = emilia(logicalTokens);
 
-#[@future]
-fn main() -> @Future<void> {
+fn main() -> @Task<void> {
     @print("=== F03: Spacing & Sizing Example ===");
     @print("Pad All: " + padAllStyles);
     @print("Pad Dir: " + padDirStyles);

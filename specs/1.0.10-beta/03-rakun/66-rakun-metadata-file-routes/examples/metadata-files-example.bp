@@ -50,8 +50,7 @@ fn allPosts() -> Post[] {
 
 // SERVER — /sitemap.xml. Above 50 000 entries this is sharded automatically and
 // /sitemap.xml becomes the index; below it, it is the document itself.
-#[@future]
-pub fn sitemap() -> @Future<SitemapEntry[]> {
+pub fn sitemap() -> @Task<SitemapEntry[]> {
     val roots = [
         SitemapEntry(
             loc: "https://example.com/",
@@ -76,8 +75,7 @@ val _sitemap = registerSitemap(sitemap);
 // SERVER — /robots.txt. With no registration this URL answers 404 rather than
 // an empty file, because an empty robots.txt means "crawl everything" and that
 // is a policy decision the library does not make for an app.
-#[@future]
-pub fn robots() -> @Future<Robots> {
+pub fn robots() -> @Task<Robots> {
     return Robots(
         rules: [
             RobotRule(
@@ -94,8 +92,7 @@ pub fn robots() -> @Future<Robots> {
 val _robots = registerRobots(robots);
 
 // SERVER — /manifest.webmanifest.
-#[@future]
-pub fn manifest() -> @Future<WebManifest> {
+pub fn manifest() -> @Task<WebManifest> {
     return WebManifest(
         name: "Example Blog",
         shortName: "Blog",

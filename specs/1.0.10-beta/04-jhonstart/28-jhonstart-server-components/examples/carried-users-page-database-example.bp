@@ -2,8 +2,7 @@
 import {Element, div, table, tr, td, text} from "jhonstart";
 import {db} from "@/lib/db";
 
-#[@use]
-pub fn UsersPage() -> @Component<Element> {
+pub fn UsersPage() -> @Component<ElementBase, Element> {
     val users = await db.user.findAll();
     return div([
         table(

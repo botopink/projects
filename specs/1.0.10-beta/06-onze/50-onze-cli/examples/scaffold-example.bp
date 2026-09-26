@@ -34,14 +34,13 @@ fn shellTokens() -> Token[] {
 }
 
 #[layout("")]
-#[@use]
-pub fn rootLayout(props: LayoutProps) -> @Component<Element> {
+pub fn rootLayout(props: LayoutProps) -> @Component<ElementBase, Element> {
     return div([props.children], attrs: [styled(shellTokens())]);
 }
 
 // ── app/page.bp ──────────────────────────────────────────────────────────────
 //
-// Every page, layout and template is `#[@use] … -> @Component<Element>` (decision 117):
+// Every page, layout and template is `fn … -> @Component<ElementBase, Element>` (decision 117):
 // jhonstart front 30's UI registry pins one shape and the marker refuses any other at
 // compile time. A page that needs no data awaits nothing and costs nothing.
 
@@ -54,8 +53,7 @@ fn leadTokens() -> Token[] {
 }
 
 #[page("")]
-#[@use]
-pub fn homePage(route: PageContext) -> @Component<Element> {
+pub fn homePage(route: PageContext) -> @Component<ElementBase, Element> {
     return div([
         h1([text("onze", attrs: [])], attrs: [styled(titleTokens())]),
         p([text("Edit app/page.bp and reload.", attrs: [])], attrs: [styled(leadTokens())]),

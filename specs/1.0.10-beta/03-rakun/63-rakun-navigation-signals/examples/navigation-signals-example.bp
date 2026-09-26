@@ -29,7 +29,6 @@ pub type Post(
 )
 
 // SERVER — stands in for the repository read from front 08.
-#[@result]
 fn findPost(slug: string) -> @Result<Post, string> {
     if (slug == "hello") {
         return Post(slug: "hello", title: "Hello", body: "first post");
@@ -40,8 +39,7 @@ fn findPost(slug: string) -> @Result<Post, string> {
 // SERVER — a missing record. The signal unwinds to front 25's handler wrapper,
 // which answers 404; the statements after `notFound()` are never reached.
 #[getRoute("api/posts/[slug]")]
-#[@future]
-pub fn showPost(req: Request) -> @Future<HandlerResponse> {
+pub fn showPost(req: Request) -> @Task<HandlerResponse> {
     val found = findPost(req.param("slug"));
     if (found.isError()) {
         val _gone = notFound();
@@ -54,8 +52,7 @@ pub fn showPost(req: Request) -> @Future<HandlerResponse> {
 // against the route table, so a typo fails here rather than sending a client
 // to a 404.
 #[getRoute("api/account")]
-#[@future]
-pub fn account(req: Request) -> @Future<HandlerResponse> {
+pub fn account(req: Request) -> @Task<HandlerResponse> {
     val session = cookies().get("session").unwrapOr("");
     if (session == "") {
         val _gone = redirect("/login");

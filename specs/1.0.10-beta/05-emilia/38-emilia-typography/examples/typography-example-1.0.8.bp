@@ -260,8 +260,7 @@ val underlineOffsetTokens: Token[] = [
 ];
 val underlineOffsetStyles = emilia(underlineOffsetTokens);
 
-#[@future]
-fn main() -> @Future<void> {
+fn main() -> @Task<void> {
     @print("=== F04: Typography Example ===");
     @print("Font Family: " + fontFamilyStyles);
     @print("Font Weight: " + fontWeightStyles);

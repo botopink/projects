@@ -55,8 +55,7 @@ fn recorder() -> ChunkWriter {
 
 var phaseSeen: string = "";
 
-#[@future]
-fn stubRender(req: Request, out: ChunkWriter) -> @Future<void> {
+fn stubRender(req: Request, out: ChunkWriter) -> @Task<void> {
     phaseSeen = if (requestPhase() == RequestPhase.Render) { "render" } else { "other" };
     await out.write("<shell " + req.param("slug") + ">");
     await out.write("<fill h1>");
@@ -65,30 +64,26 @@ fn stubRender(req: Request, out: ChunkWriter) -> @Future<void> {
 
 // A renderer answers a missing record with its own status, before its first
 // write — the shape jhonstart's render uses for a not-found page.
-#[@future]
-fn missingRender(req: Request, out: ChunkWriter) -> @Future<void> {
+fn missingRender(req: Request, out: ChunkWriter) -> @Task<void> {
     out.setStatus(404);
     await out.write("no such page");
 }
 
 // A renderer that redirects: status and `location`, no body, closed by itself.
-#[@future]
-fn movedRender(req: Request, out: ChunkWriter) -> @Future<void> {
+fn movedRender(req: Request, out: ChunkWriter) -> @Task<void> {
     out.setStatus(307);
     out.setHeader("location", "/blog/hello");
     await out.close();
 }
 
 // A status after the first chunk is too late: the request fails.
-#[@future]
-fn lateStatusRender(req: Request, out: ChunkWriter) -> @Future<void> {
+fn lateStatusRender(req: Request, out: ChunkWriter) -> @Task<void> {
     await out.write("<shell>");
     out.setStatus(404);
 }
 
 // A page renderer raising a navigation reason is a failed render, not a 404.
-#[@future]
-fn signallingRender(req: Request, out: ChunkWriter) -> @Future<void> {
+fn signallingRender(req: Request, out: ChunkWriter) -> @Task<void> {
     val _gone = notFound();
     await out.write("never written");
 }

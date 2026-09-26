@@ -90,8 +90,7 @@ val spinnerTokens: Token[] = [
 ];
 val spinnerStyles = emilia(spinnerTokens);
 
-#[@future]
-fn main() -> @Future<void> {
+fn main() -> @Task<void> {
     @print("=== F10: Transitions & Animation Example ===");
     @print("Transition Property: " + transitionPropStyles);
     @print("Transition Behavior: " + transitionBehaviorStyles);

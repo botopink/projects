@@ -4,8 +4,8 @@
 // renders; the metrics panel is replaced by its segment's `error.bp`.
 //
 // This is the SERVER half. The catch is a `case` over `@Result` — the only
-// catching mechanism botopink has — so the failing child must be a `#[@result]`
-// thunk. Nothing else could have been caught.
+// catching mechanism botopink has — so the failing child must be a thunk
+// returning `@Result`. Nothing else could have been caught.
 //
 // The reader never sees the error message. `infoFor` hands the fallback a
 // digest and an empty message; `serverInfoFor` hands front 17's logger the full
@@ -45,7 +45,6 @@ pub fn ErrorPage(info: ErrorInfo) -> Element {
 #[@External.Erlang("metrics_service", "summary")]
 declare fn metricsSummary() -> string;
 
-#[@result]
 fn MetricsPanel() -> @Result<Element, string> {
     val raw = metricsSummary();
     if (raw == "") { throw "metrics service returned no rows"; };
@@ -72,17 +71,14 @@ pub fn Dashboard() -> Element {
 
 // ── stubs, so the boundary is testable without the service ──────────────────
 
-#[@result]
 fn failingPanel() -> @Result<Element, string> {
     throw "connection refused: metrics-01:5432";
 }
 
-#[@result]
 fn healthyPanel() -> @Result<Element, string> {
     return div([text("42 requests/s", attrs: [])], attrs: [#("class", "metrics")]);
 }
 
-#[@result]
 fn panelWithHandler() -> @Result<Element, string> {
     return button([text("Retry now", attrs: [])], attrs: [
         #("data-jh-on-click", "Metrics:retry"),

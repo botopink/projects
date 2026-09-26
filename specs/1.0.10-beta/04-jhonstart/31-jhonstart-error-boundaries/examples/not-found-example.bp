@@ -48,7 +48,6 @@ pub type Post(slug: string, title: string)
 #[@External.Erlang("blog_repo", "post_by_slug")]
 declare fn postRow(slug: string) -> string;
 
-#[@result]
 fn PostPanel(slug: string) -> @Result<Element, string> {
     val raw = postRow(slug);
     if (raw == "") { throw notFound(); };
@@ -72,12 +71,10 @@ pub fn postBoundary(slug: string) -> ErrorBoundary {
 
 // ── stubs ──────────────────────────────────────────────────────────────────
 
-#[@result]
 fn signallingPanel() -> @Result<Element, string> {
     throw notFound();
 }
 
-#[@result]
 fn failingPanel() -> @Result<Element, string> {
     throw "the database is on fire";
 }

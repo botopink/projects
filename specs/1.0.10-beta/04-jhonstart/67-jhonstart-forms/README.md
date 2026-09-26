@@ -42,8 +42,6 @@ import `// provided by front 94`. `element.bp` stays frozen.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `repository/jhonstart/src/element.bp:10-53` — eight constructors, none of them a form control.
   `element.bp:3-8` — `Element(tag, value, children, attrs)`; the `attrs` slot exists, so a form
   element needs no compiler or `element.bp` change once a constructor exists.
@@ -143,8 +141,7 @@ it with `actions`' `rpc.writeRpcBody` and reads the answer with `parseActionStat
 browser-only cell:
 
 ```bp
-#[@future]
-pub fn invokeAction(actionId: string, args: Array<string>, actionHeader: string) -> @Future<ActionState>
+pub fn invokeAction(actionId: string, args: Array<string>, actionHeader: string) -> @Task<ActionState>
 ```
 
 `__jhFormInvoke(actionId, body, actionHeader) -> string` posts the body and returns the response body
@@ -153,8 +150,8 @@ spells the RPC body.
 
 ### The three hooks, and what the server render sees
 
-All three are hooks in the existing sense: `#[@use] fn … -> @Use<ElementBase, _>` (decision 102),
-legal under `use` inside a `#[@use] fn … -> @Component<Element>` body (decision 104; `hooks.bp:23-60`).
+All three are hooks in the existing sense: `fn … -> @Component<ElementBase, _>` (decision 102),
+legal under `use` inside a `fn … -> @Component<ElementBase, Element>` body (decision 104; `hooks.bp:23-60`).
 During the server pass each yields its quiet value —
 `actionState` yields the initial state with `pending: false`, `formStatus` yields idle,
 `optimistic` yields the base value. That is not a stub; it is the correct first render. A spinner
@@ -245,11 +242,10 @@ declared default would never be applied — a builder pair would be two function
 ### Step 3 — `actionState`
 
 ```bp
-#[@use]
 pub fn actionState(
     actionId: string,
     initial: ActionState,
-) -> @Use<ElementBase, #(ActionState, FormBinding, bool)>
+) -> @Component<ElementBase, #(ActionState, FormBinding, bool)>
 ```
 
 Read positionally — `s.0` the state, `s.1` the binding, `s.2` the pending flag — because the labels of
@@ -275,8 +271,7 @@ upstream doc finds the same three things in the same order.
 ```bp
 pub type FormStatus(pending: bool, actionId: string, method: string)
 
-#[@use]
-pub fn formStatus() -> @Use<ElementBase, FormStatus>
+pub fn formStatus() -> @Component<ElementBase, FormStatus>
 ```
 
 The hook a nested submit button calls to disable itself, without the parent threading `pending` down
@@ -291,11 +286,10 @@ through every intermediate component. Absent from this doc revision — see *Ref
 ### Step 5 — `optimistic`
 
 ```bp
-#[@use]
 pub fn optimistic<T>(
     base: T,
     apply: fn(current: T, action: T) -> T,
-) -> @Use<ElementBase, #(T, fn(action: T))>
+) -> @Component<ElementBase, #(T, fn(action: T))>
 
 pub fn applyOptimistic<T>(base: T, actions: Array<T>, apply: fn(current: T, action: T) -> T) -> T
 ```
@@ -363,11 +357,11 @@ them, and a form that posts to the endpoint gets the check whether or not it cam
 
 ## Naming under the `use` rule
 
-Every hook of this front is spelled by [`19-use-activation`](../../00-compiler-carry-over/19-use-activation/README.md) and decisions 102/104: `#[@use] fn <noun>(…) -> @Use<ElementBase, _>`, the keyword `use` is the
+Every hook of this front is spelled by decisions 118 and 128 ([`24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/guide.md) § 4): `fn <noun>(…) -> @Component<ElementBase, _>`, the keyword `use` is the
 activation, the name is the noun of what is yielded, never `use`-prefixed — `actionState`, `formStatus`,
-`optimistic`; activated as `val s = use actionState(id, initial)` inside a `#[@use] fn … -> @Component<Element>`
+`optimistic`; activated as `val s = use actionState(id, initial)` inside a `fn … -> @Component<ElementBase, Element>`
 body, called plainly (`actionState(id, initial)`) for the server-pass value, which is what every `test` here
-does (a `test` body carries no `#[@use]`, so `use` is illegal there).
+does (a `test` body has no `@Component` return, so `use` is illegal there).
 
 | Name | Rule |
 |---|---|

@@ -3,8 +3,7 @@
 import {Element, div, button, p, text} from "jhonstart";
 import {state} from "jhonstart";
 
-#[@use]
-pub fn Counter() -> @Component<Element> {
+pub fn Counter() -> @Component<ElementBase, Element> {
     val count = use state(0);
     return div([
         p([text("Count: " + count.value.toString(), attrs: [])], attrs: []),

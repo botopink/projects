@@ -35,8 +35,6 @@ Three further facts make this the blocking front rather than a documentation gap
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 Verified by reading the trees at HEAD `b5ceb203` (meta) on 2026-09-20.
 
 | Piece | State | Evidence |
@@ -133,7 +131,7 @@ body ends the test as `FAIL` with the error string as the message.
 ### Step 2 — `std/testing/asserts`
 
 Specified in [`asserts-api.md`](./asserts-api.md). `libs/std/src/testing/asserts.bp` is rewritten:
-every assertion is `#[@result]` and answers `@Result<void, string>`; the canonical names are
+every assertion answers `@Result<void, string>`; the canonical names are
 `isTrue`, `isFalse`, `equals`, `notEquals`, `approxEquals`, `isNil`, `isNotNil`, `isOk`, `isError`,
 `contains`, `notContains`, `startsWith`, `endsWith`, `matches`, `isEmpty`, `isNotEmpty`,
 `lengthIs`, `includes`, `notIncludes`, `between`, `greaterThan`, `lessThan`, `deepEquals`,

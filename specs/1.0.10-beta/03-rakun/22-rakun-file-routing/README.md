@@ -54,8 +54,6 @@ checked against the real tree by the CLI (front 50), so a developer still only m
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `repository/rakun/src/decorators.bp:217-244` — the five route-mapping decorators, all method-level,
   all taking a full path string. No file-convention decorator exists.
 - `repository/rakun/src/runtime.bp:76-104` — `rkRegisterRoute` / `rkDispatch` / `rkDispatchHttp`. A
@@ -98,12 +96,12 @@ record, registered by whoever owns the function behind it:
 | `page.bp` | jhonstart front 30's `#[page(seg)]` | a `P` record and one opaque `PageRenderer` (front 23), handed in by onze through `page(pattern, render)` |
 | `default.bp` | jhonstart front 30's `#[defaultView(seg)]` | a `D` record, registered by onze at boot |
 | `loading.bp` · `error.bp` · `not-found.bp` | jhonstart fronts 30 · 31 | an `S` · `E` · `N` record, registered by onze at boot |
-| `route.bp` | front 25's verb decorators | an `R` record and the handler, `#[@future] fn(req: Request) -> @Future<HandlerResponse>` |
+| `route.bp` | front 25's verb decorators | an `R` record and the handler, `fn(req: Request) -> @Task<HandlerResponse>` |
 
 The UI decorators, `PageContext`, `LayoutProps` and the per-route parameter accessors are jhonstart
 front 30's: they fill jhonstart's UI registry, and onze copies that registry into this front's table
 at boot, so the table the server matches and the payload's `t` are one table (contract 1). A page's
-renderer is opaque here — `fn(req: Request, out: ChunkWriter) -> @Future<void>` (front 23); rakun
+renderer is opaque here — `fn(req: Request, out: ChunkWriter) -> @Task<void>` (front 23); rakun
 calls it and never looks inside. A page's `notFound` / `redirect` are jhonstart's and never reach
 this table's dispatch as signals (decision 117 rule 1); an `N` record is the boundary jhonstart's
 render uses for its own 404.

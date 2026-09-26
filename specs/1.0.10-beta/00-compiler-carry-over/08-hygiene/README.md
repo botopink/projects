@@ -166,7 +166,7 @@ At `f58fd392` the table is **five rows**, each re-derived by running the form in
 (`7fa248f2` in 1.0.5-beta, again by this front): `break <value>` still answers `[3]` on three
 backends (now decision 105's row, C-30); `Self<T>` still reds `expected Self, got Holder` (C-15);
 the trailing `;` is still required (C-13); `case 9 { 1...9 { 1 } _ { 0 } }` prints `1` on commonJS
-**and on wasm** (C-06's wasm half; it printed `256`) and `0` on erlang; `await` in a `#[@context]` body
+**and on wasm** (C-06's wasm half; it printed `256`) and `0` on erlang; `await` in a context body
 no longer reds commonJS with a `SyntaxError` — `async function` is emitted and the caller receives a
 Promise (`Widget(1).count` prints `undefined` against `2` on erlang and wasm; C-29). The row front 20
 added for an effect annotation on a record method left: commonJS emits `*iter()` and runs it.

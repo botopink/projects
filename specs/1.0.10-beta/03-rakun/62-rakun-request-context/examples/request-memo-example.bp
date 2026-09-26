@@ -52,7 +52,7 @@ val _post = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
     val title = postTitle(slug);
 
     // The preload: start the related-count load in its own BEAM process before
-    // the blocking read below. `@Future` is eager on erlang, so a future gives
+    // the blocking read below. `@Task` is eager on erlang, so a future gives
     // no parallelism here — the spawned process does.
     val relatedKey = memoKey("relatedCount", [slug]);
     val _started = preload(relatedKey, { ->

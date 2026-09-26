@@ -152,8 +152,7 @@ fn radiusLogical() -> Token[] {
 // so it butts against the next card, a hairline border all round, and a dashed
 // internal rule above the footer.
 
-#[@future]
-pub fn pricingCard(plan: string, price: string, note: string) -> @Future<string> {
+pub fn pricingCard(plan: string, price: string, note: string) -> @Task<string> {
     val hoverBorder: Token[] = [.Border.Color.Indigo.400];
 
     val card: Token[] = [

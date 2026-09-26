@@ -32,8 +32,6 @@ strings is a timing side channel on both backends.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 Verified by reading `repository/botopink-lang/libs/std/src/` in full.
 
 - **Twenty-four importable modules**, declared one `pub mod` per line in `src/root.bp:13-36`:
@@ -158,7 +156,7 @@ std: a `////` docblock naming both upstream APIs, then a `//` comment per fn exp
 templates, then the annotations, then the bodyless `pub declare fn`. `fs.bp` is the reference
 implementation and this front copies it exactly.
 
-**Failure travels through `#[@result]`, and the template owns the wrapping.** `fs.bp:30-33` is the
+**Failure travels through a `@Result` return, and the template owns the wrapping.** `fs.bp:30-33` is the
 pattern: the Node cell is an IIFE with try/catch answering `{ ok: v }` or `{ error: msg }`, the
 Erlang cell is a `fun` answering `{ok, V}` or `{error, Bin}`, and the botopink signature is
 `-> @Result<T, string>`. Every fallible row in the table above — `net.*`, `fs.walk`, `fs.glob`,
@@ -271,12 +269,10 @@ pub fn isInside(parent: string, child: string) -> bool {
     return escapes == false;
 }
 
-#[@result]
 #[@External.Node("""(() => { try { return { ok: require('fs').readdirSync($0, { recursive: true, withFileTypes: false }) } } catch (__e) { return { error: String(__e) } } })()""")]
 #[@External.Erlang("""(fun(__R) -> {ok, filelib:fold_files(__R, ".*", true, fun(__F, __A) -> [list_to_binary(__F) | __A] end, [])} end)($0)""")]
 pub declare fn walk(root: string) -> @Result<string[], string>;
 
-#[@result]
 #[@External.Node("""(() => { try { return { ok: require('fs').globSync($0, { cwd: $1 }) } } catch (__e) { return { error: String(__e) } } })()""")]
 #[@External.Erlang("""(fun(__P, __R) -> {ok, [list_to_binary(__F) || __F <- filelib:wildcard(binary_to_list(__P), binary_to_list(__R))]} end)($0, $1)""")]
 pub declare fn glob(pattern: string, root: string) -> @Result<string[], string>;
@@ -300,7 +296,6 @@ a caller needs one import for the whole wire-format surface.
 #[@External.Erlang("""string:lowercase(binary:encode_hex($0))""")]
 pub declare fn hexEncode(s: string) -> string;
 
-#[@result]
 #[@External.Node("""(() => { try { return { ok: Buffer.from($0, 'hex').toString('utf8') } } catch (__e) { return { error: String(__e) } } })()""")]
 #[@External.Erlang("""(fun(__H) -> try {ok, binary:decode_hex(string:uppercase(__H))} catch _:__E -> {error, iolist_to_binary(io_lib:format("~p", [__E]))} end end)($0)""")]
 pub declare fn hexDecode(s: string) -> @Result<string, string>;
@@ -364,7 +359,6 @@ pub type Civil(
 
 pub type Duration(millis: i64)
 
-#[@result]
 #[@External.Node("""(() => { const __t = Date.parse($0); return Number.isNaN(__t) ? { error: 'not an RFC 3339 timestamp' } : { ok: __t } })()""")]
 #[@External.Erlang("""(fun(__S) -> try {ok, calendar:rfc3339_to_system_time(binary_to_list(__S), [{unit, millisecond}])} catch _:_ -> {error, <<"not an RFC 3339 timestamp">>} end end)($0)""")]
 pub declare fn parseIso8601(s: string) -> @Result<i64, string>;
@@ -416,7 +410,6 @@ request, which on the BEAM means `re:run/3` re-compiling inside the hot path.
 ```bp
 pub type Regex(handle: any)
 
-#[@result]
 #[@External.Node("""(() => { try { return { ok: { handle: new RegExp($0) } } } catch (__e) { return { error: String(__e) } } })()""")]
 #[@External.Erlang("""(fun(__P) -> case re:compile(__P) of {ok, __M} -> {ok, #{handle => __M}}; {error, __R} -> {error, iolist_to_binary(io_lib:format("~p", [__R]))} end end)($0)""")]
 pub declare fn compile(pattern: string) -> @Result<Regex, string>;
@@ -443,7 +436,6 @@ Child processes and signals, appended below the five introspection functions.
 ```bp
 pub type Exit(status: i32, stdout: string, stderr: string)
 
-#[@result]
 #[@External.Node("""(() => { try { const __r = require('child_process').spawnSync($0, $1, { encoding: 'utf8' }); return { ok: { status: __r.status ?? -1, stdout: __r.stdout ?? '', stderr: __r.stderr ?? '' } } } catch (__e) { return { error: String(__e) } } })()""")]
 #[@External.Erlang("""(fun(__C, __A) -> try __P = open_port({spawn_executable, os:find_executable(binary_to_list(__C))}, [binary, exit_status, stderr_to_stdout, {args, [binary_to_list(__X) || __X <- __A]}]), __L = fun __F(__Acc) -> receive {__P, {data, __D}} -> __F([__D | __Acc]); {__P, {exit_status, __S}} -> {__S, iolist_to_binary(lists:reverse(__Acc))} end end, {__St, __Out} = __L([]), {ok, #{status => __St, stdout => __Out, stderr => <<>>}} catch _:__E -> {error, iolist_to_binary(io_lib:format("~p", [__E]))} end end)($0, $1)""")]
 pub declare fn run(cmd: string, args: string[]) -> @Result<Exit, string>;
@@ -484,12 +476,10 @@ pub type Listener(handle: any)
 pub type Socket(handle: any)
 pub type Peer(host: string, port: i32)
 
-#[@result]
 #[@External.Node("""({ error: 'std/io/net: server-only' })""")]
 #[@External.Erlang("""(fun(__P, __B) -> case gen_tcp:listen(__P, [binary, {packet, raw}, {active, false}, {reuseaddr, true}, {backlog, __B}]) of {ok, __L} -> {ok, #{handle => __L}}; {error, __R} -> {error, iolist_to_binary(io_lib:format("~p", [__R]))} end end)($0, $1)""")]
 pub declare fn listen(port: i32, backlog: i32) -> @Result<Listener, string>;
 
-#[@result]
 #[@External.Node("""({ error: 'std/io/net: server-only' })""")]
 #[@External.Erlang("""(fun(__L, __T) -> case gen_tcp:accept(maps:get(handle, __L), __T) of {ok, __S} -> {ok, #{handle => __S}}; {error, __R} -> {error, iolist_to_binary(io_lib:format("~p", [__R]))} end end)($0, $1)""")]
 pub declare fn accept(listener: Listener, timeoutMillis: i32) -> @Result<Socket, string>;
@@ -651,12 +641,12 @@ have.
 ```bp
 // json — added
 pub fn quote(s: string) -> string                          // a JSON string literal, quotes included
-#[@result] pub fn unquote(literal: string) -> @Result<string, string>   // its inverse
+pub fn unquote(literal: string) -> @Result<string, string>   // its inverse
 pub fn array(items: Array<string>) -> string               // items already encoded
 pub fn object(fields: Array<#(string, string)>) -> string  // keys quoted here, values already encoded
 
 pub type Json { Null, Bool(bool), Num(f64), Str(string), Arr(Array<Json>), Obj(Array<#(string, Json)>) }
-#[@result] pub fn decode(s: string) -> @Result<Json, string>
+pub fn decode(s: string) -> @Result<Json, string>
 
 // escape — added
 pub fn scriptJson(json: string) -> string                  // JSON text, safe inside <script>

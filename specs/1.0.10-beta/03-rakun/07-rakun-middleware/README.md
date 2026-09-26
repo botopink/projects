@@ -100,8 +100,6 @@ rolling deploy loses the requests in flight at every instance, every time.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 | Piece | Where | State |
 |---|---|---|
 | Request path | `runtime.mjs:188-196`; front 04's `dispatch_http/5` | match, call, write — no hook of its own |
@@ -279,7 +277,7 @@ the CORS entry without reaching the handler.
 
 ### RFC 9457 problem details, and what an "exception" is here
 
-botopink has no exception hierarchy. `throw` is legal only inside a `#[@result]` function and produces
+botopink has no exception hierarchy. `throw` is legal only where the return carries a `@Result` and produces
 an `Error(e)` **value**, not a raise (`libs/std/src/builtins.d.bp:52-54`); `try … catch` works over
 `@Result` and nothing else. So a type-keyed `#[exceptionHandler("NotFoundException")]` has nothing to catch.
 
@@ -556,7 +554,7 @@ The milestone register is [`language-gaps.md`](../../language-gaps.md); the rows
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| There is no typed raise and no user-visible catch of one. `throw` is legal only inside `#[@result]` and yields an `Error(e)` **value** (`builtins.d.bp:52-54`); `try … catch` works over `@Result` alone. So an exception handler cannot key on a type. | `examples/filter-chain-example.bp` — `raiseProblem("order.not-found", …)` and `#[exceptionHandler("order.not-found")]` key on a string tag | A host-declared raise plus a string tag, matched in the chain's `try`/`catch` | A typed raise (`throw` outside `#[@result]`) with `catch` binding by type, which would make `#[exceptionHandler(NotFoundError)]` the obvious spelling |
+| There is no typed raise and no user-visible catch of one. `throw` is legal only where the return carries a `@Result` and yields an `Error(e)` **value** (`builtins.d.bp:52-54`); `try … catch` works over `@Result` alone. So an exception handler cannot key on a type. | `examples/filter-chain-example.bp` — `raiseProblem("order.not-found", …)` and `#[exceptionHandler("order.not-found")]` key on a string tag | A host-declared raise plus a string tag, matched in the chain's `try`/`catch` | A typed raise (`throw` with no `@Result` in the return) with `catch` binding by type, which would make `#[exceptionHandler(NotFoundError)]` the obvious spelling |
 | A decorator cannot wrap the body it annotates (`decorators.bp:48-240`). `#[filter]` therefore registers a component rather than decorating a function in place, and `#[exceptionHandler]` is wired by the type-level `#[controllerAdvice]` rather than by itself. | both examples | Type-level decorator does the wiring; method-level marker checks placement | `decl.wrapBody(…)`, shared with fronts 06, 08 and 10 |
 | A decorator argument is a raw lexeme typed by the decorator's signature (`builtins.d.bp:447-451`); an array literal in that position is unverified. | `examples/filter-chain-example.bp`, `#[crossOrigin("https://example.com", "GET,POST")]` | Comma-joined strings, split by the decorator | Typed list arguments in an annotation, so `#[crossOrigin(origins: ["…"], methods: ["GET"])]` reads as it does upstream |
 

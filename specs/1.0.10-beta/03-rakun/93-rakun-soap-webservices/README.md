@@ -27,8 +27,6 @@ list is part of the deliverable rather than an apology.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `repository/rakun/modules/` holds no `rakun-ws`. The directory this front owns does not exist.
 - There is no XML anything in the workspace: no parser, no serializer, no schema reader.
   `libs/std/src/root.bp:13-36` lists twenty-four modules and none of them is XML.
@@ -81,7 +79,7 @@ rebuild, and the compiler never learns what XML is.
 runtime half is small because the generated marshaller knows its own shape: a record in, an element
 out, field by field, with escaping applied once at the leaf.
 
-**A fault is an `Error`, not an exception.** A generated operation is a `#[@result] fn` returning
+**A fault is an `Error`, not an exception.** A generated operation is a fn returning
 `@Result<Response, SoapFault>`; `throw` inside it produces the `Error` arm, and a caller matches
 `case r { Ok(result) -> …; Error(error) -> …; }`. `SoapFault` carries the fault code, the reason, the
 actor and the detail element as text. HTTP 500 with a fault body is a fault and not a transport
@@ -139,7 +137,6 @@ rakun ws generate --wsdl billing.wsdl --out src/billing/
 ```bp
 pub type WsClient(endpoint: string, version: string, timeoutMs: i32)
 
-#[@result]
 pub fn wsCall(client: WsClient, action: string, bodyXml: string) -> @Result<string, SoapFault>
 ```
 

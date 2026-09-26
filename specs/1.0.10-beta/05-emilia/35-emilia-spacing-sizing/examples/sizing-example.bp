@@ -144,8 +144,7 @@ fn logicalSizes() -> Token[] {
 // and a sidebar that is a third of the column on wide screens and full width
 // below. Four classes, one flush.
 
-#[@future]
-pub fn articleShell(title: string, body: string, aside: string) -> @Future<string> {
+pub fn articleShell(title: string, body: string, aside: string) -> @Task<string> {
     val header: Token[] = [
         .Size.W.Full,
         .Size.H.64,

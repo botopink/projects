@@ -63,8 +63,7 @@ pub type Post(slug: string, title: string, excerpt: string)
 #[@External.Erlang("blog_repo", "post_by_slug")]
 declare fn postRow(slug: string) -> string;
 
-#[@future]
-fn loadPost(slug: string) -> @Future<Post> {
+fn loadPost(slug: string) -> @Task<Post> {
     val parts = postRow(slug).split("|");
     return Post(
         slug: slug,
@@ -74,8 +73,7 @@ fn loadPost(slug: string) -> @Future<Post> {
 }
 
 // The dynamic export. One await, at statement level.
-#[@future]
-pub fn generateMetadata(params: Array<#(string, string)>) -> @Future<Metadata> {
+pub fn generateMetadata(params: Array<#(string, string)>) -> @Task<Metadata> {
     val post = await loadPost(pairValue(params, "slug"));
     return postMetadata(post);
 }

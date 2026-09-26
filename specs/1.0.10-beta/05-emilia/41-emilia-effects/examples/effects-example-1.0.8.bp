@@ -137,8 +137,7 @@ val maskTypeTokens: Token[] = [
 ];
 val maskTypeStyles = emilia(maskTypeTokens);
 
-#[@future]
-fn main() -> @Future<void> {
+fn main() -> @Task<void> {
     @print("=== F07: Effects Example ===");
     @print("Shadow: " + shadowStyles);
     @print("Inset Shadow: " + insetShadowStyles);

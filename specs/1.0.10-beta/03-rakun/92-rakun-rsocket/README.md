@@ -4,7 +4,7 @@
 **Priority:** low — an elegant protocol with modest adoption, and nothing else in the milestone depends on it
 **Target:** erlang (server) — the browser half would be a client front and is out of this scope
 **Wave:** 6
-**Depends on:** 20 (the WebSocket transport and its upgrade path), 07 (the filter chain the WebSocket mapping path sits behind), 15 (the listener registry `#[messageMapping]` registers on), 86 (the outcome contract for fire-and-forget), 02 (the thunk-and-gather pattern a requester needs, because `@Future` carries no concurrency on BEAM), 01 (`net`), 74 (TLS)
+**Depends on:** 20 (the WebSocket transport and its upgrade path), 07 (the filter chain the WebSocket mapping path sits behind), 15 (the listener registry `#[messageMapping]` registers on), 86 (the outcome contract for fire-and-forget), 02 (the thunk-and-gather pattern a requester needs, because `@Task` carries no concurrency on BEAM), 01 (`net`), 74 (TLS)
 **Owns:** `modules/rakun-rsocket/src/**`, `modules/rakun-rsocket/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone. `modules/rakun-web/src/websocket/**` is front 20's and is consumed read-only.
 **Reference:** `06-messaging.md § RSocket` (Server, Client) · `§ Spring Integration · RSocket com Integration` · https://docs.spring.io/spring-boot/reference/messaging/rsocket.html · https://rsocket.io/about/protocol
@@ -26,12 +26,10 @@ architecture: on BEAM the four models are four shapes of process, not four types
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `repository/rakun/modules/` holds no `rakun-rsocket`. The directory this front owns does not exist.
 - `repository/rakun/modules/rakun-web/src/root.bp` — a stub; front 20 lands the WebSocket upgrade
   this front's second transport stands on.
-- [`language-gaps.md`](../../language-gaps.md) records **`@Future<T>` lowers eagerly on erlang** — the
+- [`language-gaps.md`](../../language-gaps.md) records **`@Task<T>` lowers eagerly on erlang** — the
   type carries no concurrency on the server target — and **no byte or binary type**. Both decide the
   design below rather than complicating it.
 - There is no socket server in rakun other than whatever `rkServe` sets up for HTTP
@@ -44,16 +42,16 @@ Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([
 | Model | RSocket frames | On BEAM | What the developer writes |
 |---|---|---|---|
 | Fire-and-forget | `REQUEST_FNF` | the connection process spawns a handler process and forgets it; nothing is sent back | a handler returning `Outcome` — the same contract front 86 defines for a broker message |
-| Request/response | `REQUEST_RESPONSE` → one `PAYLOAD` | one process per stream id; the handler runs in it and its return value is framed back | a handler returning a plain value; the *requester* is handed `@Future<T>` and awaits it |
+| Request/response | `REQUEST_RESPONSE` → one `PAYLOAD` | one process per stream id; the handler runs in it and its return value is framed back | a handler returning a plain value; the *requester* is handed `@Task<T>` and awaits it |
 | Request/stream | `REQUEST_STREAM`, `REQUEST_N`, `PAYLOAD`… | one producer process holding a credit counter; `REQUEST_N` increments it, each emission decrements it | a handler returning a `StreamHandle`; the requester calls `request(n)` and `next()` |
 | Channel | `REQUEST_CHANNEL` in both directions | two of the above over one stream id — a process pair, each holding the other's credit | a handler over a `StreamHandle` in and a `StreamHandle` out |
 
-**`@Future` is the return shape, not the scheduler.** The milestone verified that `@Future<T>` lowers
+**`@Task` is the return shape, not the scheduler.** The milestone verified that `@Task<T>` lowers
 eagerly on erlang: awaiting it does not make anything concurrent. So a requester issuing one call
-gets `@Future<string>` because that is the honest type of "a value that is not here yet", and the
+gets `@Task<string>` because that is the honest type of "a value that is not here yet", and the
 concurrency comes from where it always comes from on BEAM — the connection process spawned per
 stream. A requester issuing *several* calls at once uses front 02's pattern directly: an array of
-unstarted thunks `Array<fn() -> @Future<T>>`, one process per thunk, gathered by index. That is the
+unstarted thunks `Array<fn() -> @Task<T>>`, one process per thunk, gathered by index. That is the
 same workaround front 02 exists to provide, cited rather than reinvented, and it is why this front's
 example builds its parallel calls as thunks instead of as three `await`s in a row.
 
@@ -127,7 +125,7 @@ rakun.rsocket.server.transport = tcp | websocket
 
 **Acceptance:**
 - [ ] Fire-and-forget returns nothing on the wire and the handler's `Outcome.Reject` reaches front 86's dead-letter path.
-- [ ] Request/response returns exactly one `PAYLOAD` and the requester's `@Future` resolves to it.
+- [ ] Request/response returns exactly one `PAYLOAD` and the requester's `@Task` resolves to it.
 - [ ] Request/stream emits no more than the credit granted: with `request(2)` the producer emits two and stops, and emits the third only after `request(1)`.
 - [ ] `CANCEL` stops the producer process and no further `PAYLOAD` is sent.
 - [ ] Channel carries demand in both directions independently: a slow consumer on one side does not stop the other.
@@ -146,8 +144,7 @@ rakun.rsocket.server.transport = tcp | websocket
 ```bp
 pub fn rsocketRequester(url: string) -> Requester
 
-#[@future]
-pub fn requestResponse(requester: Requester, route: string, data: string) -> @Future<string>
+pub fn requestResponse(requester: Requester, route: string, data: string) -> @Task<string>
 ```
 
 **Acceptance:**
@@ -166,7 +163,7 @@ pub fn requestResponse(requester: Requester, route: string, data: string) -> @Fu
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| **`@Future<T>` lowers eagerly on erlang** — the row already in [`language-gaps.md`](../../language-gaps.md). Three `await`s in a row are three sequential calls, which is the opposite of what an RSocket requester is for. | `examples/rsocket-service-example.bp`, `fetchBoth` | Front 02's pattern: `Array<fn() -> @Future<T>>` thunks, one process per thunk, gathered by index. | A real scheduler behind `@Future` on BEAM, or an explicit `spawn`/`join` pair |
+| **`@Task<T>` lowers eagerly on erlang** — the row already in [`language-gaps.md`](../../language-gaps.md). Three `await`s in a row are three sequential calls, which is the opposite of what an RSocket requester is for. | `examples/rsocket-service-example.bp`, `fetchBoth` | Front 02's pattern: `Array<fn() -> @Task<T>>` thunks, one process per thunk, gathered by index. | A real scheduler behind `@Task` on BEAM, or an explicit `spawn`/`join` pair |
 | **No byte or binary type** and **no bitwise operators** — both rows already in [`language-gaps.md`](../../language-gaps.md). The 24-bit length prefix, the 31-bit stream id and the flag bits are unwritable in botopink. | `examples/rsocket-service-example.bp`, the header comment on the protocol seam | The codec is one `#[@External.Erlang]` module; the botopink half never sees a frame. | A `Bytes` primitive and the five bitwise operators |
 | **No `await` inside a closure** — the row already in [`language-gaps.md`](../../language-gaps.md). A thunk may *return* a future but may not await one. | `examples/rsocket-service-example.bp`, the thunk array | Each thunk returns the future; the gather awaits. | Allow the effect marker on a closure, or infer it |
 
@@ -195,7 +192,7 @@ scope by the milestone's target split.
 
 - `modules/rakun-rsocket/` exists, is declared from its `root.bp`, and holds no `@External.Node` cell and no JavaScript.
 - The module README states that no BEAM RSocket implementation exists and that this front writes one, with the twelve-frame scope and the `RESUME` refusal named.
-- The four interaction models are explained in the README as process shapes, with `@Future` named as the return shape and front 02's thunks as the concurrency.
+- The four interaction models are explained in the README as process shapes, with `@Task` named as the return shape and front 02's thunks as the concurrency.
 - `#[messageMapping]` registers on front 15's registry and appears in `rakun routes`.
 - Credit accounting is tested as arithmetic, not observed as timing.
 - All three language-gap rows are cited from the example and already appear in [`language-gaps.md`](../../language-gaps.md).

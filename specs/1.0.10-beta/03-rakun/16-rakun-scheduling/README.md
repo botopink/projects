@@ -25,8 +25,6 @@ each with the arguments it actually needs.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `repository/rakun/modules/rakun-scheduling/src/root.bp` — docblock and `// Module contents will be added by the respective fronts.`
 - `libs/std/src/time.bp:56,80,92` — `nowMillis()`, `monotonicMillis()` and `formatIso8601(epochMillis)` all exist today. The scheduler needs both clocks and has both; front 01 ships them as `io.clock` (`now`, `monotonic`, `formatIso8601` — decision 106).
 - `repository/rakun/src/runtime.bp` — no timer seam of any kind. The only periodic thing in rakun is the HTTP server's accept loop, which front 04 owns.
@@ -77,9 +75,9 @@ theatre. What the configuration does carry is the thing an operator actually nee
 | `rakun.scheduling.<task>.overlap` | `skip` | `skip` \| `allow`. What happens when a run is still going and the next is due. `skip` is the default because a task that can run twice at once and was not designed to is a data race that only appears under load. |
 | `rakun.scheduling.timezone` | `UTC` | The zone cron expressions are evaluated in |
 
-### `@Future` is not the parallelism here
+### `@Task` is not the parallelism here
 
-`@Future<T>` lowers **eagerly** on erlang (`libs/std/src/http.bp:16-18`), so a task returning a future
+`@Task<T>` lowers **eagerly** on erlang (`libs/std/src/http.bp:16-18`), so a task returning a future
 gains nothing. Parallelism in this front is process count and nothing else: two tasks due at the same
 instant run in two processes because the supervisor spawns two, not because anything was awaited.
 

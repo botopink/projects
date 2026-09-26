@@ -1,8 +1,7 @@
 // app/blog/page.bp
 import {Element, div, h1, Suspense, text} from "jhonstart";
 
-#[@use]
-pub fn BlogPage() -> @Component<Element> {
+pub fn BlogPage() -> @Component<ElementBase, Element> {
     return div([
         h1([text("Blog", attrs: [])], attrs: []),
         Suspense(SuspenseProps(

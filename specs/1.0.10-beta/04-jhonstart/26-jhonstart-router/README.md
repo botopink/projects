@@ -36,8 +36,6 @@ host state, and the record is a read-only snapshot of that state.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `src/router.d.bp` — 28 lines, declaration-only: `behavior Router` with `pathname`/`params`/`push`/
   `replace` (`:17-22`), `useRouter()` (`:24-25`), `Link()` (`:27-28`). Both cells are
   `#[@External.Node]` — Node-only, which the milestone's target split forbids for a server front.
@@ -111,9 +109,9 @@ rakun, so the import is not an edge between the two (decision 113); onze hands t
 server on precedence (static > dynamic > catch-all > optional catch-all), and the disagreement shows
 up only on the routes nobody tested.
 
-The five hooks are thin. Each is `#[@use] fn … -> @Use<ElementBase, T>` (decision 102): the wrapper
-names the base the hook anchors on, and `use` on it is legal inside a `#[@use]` body whose base is
-`ElementBase` — a `#[@use] fn … -> @Component<Element>` component, or another hook (decision 104).
+The five hooks are thin. Each is `fn … -> @Component<ElementBase, T>` (decision 128): the wrapper
+names the base the hook anchors on, and `use` on it is legal inside a `@Component` body whose base is
+`ElementBase` — a `fn … -> @Component<ElementBase, Element>` component, or another hook (decision 104).
 It is the same shape `hooks.bp` uses for `state`/`memo` (`hooks.bp:30-60`).
 
 ### The js half — front 27 and front 29
@@ -165,7 +163,7 @@ clientApp(routes: routeTable, mount: "#root", allowedRedirects: []).start();
 ```bp
 pub type ClientApp(routes: string, mount: string, allowedRedirects: string[])
 pub fn clientApp(routes: string, mount: string, allowedRedirects: string[] = []) -> ClientApp
-pub fn start(self: ClientApp) -> @Future<void>
+pub fn start(self: ClientApp) -> @Task<void>
 ```
 
 `routes` is the route table in contract 1's wire (the text a server writes into the payload's
@@ -173,7 +171,7 @@ pub fn start(self: ClientApp) -> @Future<void>
 renders into, written through the one browser-only cell `__jhMount(selector, html)`; history moves
 through `__jhNavigate`. `start()` matches `window.location` with `matchPath`, renders the matched chain with
 front 30's `compose` into `mount`, and listens for the navigations of *The js half*. A page, layout
-or template is the same `#[@use] fn … -> @Component<Element>` it is with a server, and a navigation
+or template is the same `fn … -> @Component<ElementBase, Element>` it is with a server, and a navigation
 signal it raises is handled here, as front 30's render handles it on the server:
 
 | Raised | `clientApp` does |
@@ -298,40 +296,34 @@ pub fn snapshot() -> RouterState {
 ### Step 3 — The five hooks
 
 ```bp
-#[@use]
-pub fn router() -> @Use<ElementBase, RouterState> {
+pub fn router() -> @Component<ElementBase, RouterState> {
     return snapshot();
 }
 
-#[@use]
-pub fn pathname() -> @Use<ElementBase, string> {
+pub fn pathname() -> @Component<ElementBase, string> {
     return snapshot().path;
 }
 
-#[@use]
-pub fn params() -> @Use<ElementBase, Array<#(string, string)>> {
+pub fn params() -> @Component<ElementBase, Array<#(string, string)>> {
     return snapshot().params;
 }
 
-#[@use]
-pub fn searchParams() -> @Use<ElementBase, Array<#(string, string)>> {
+pub fn searchParams() -> @Component<ElementBase, Array<#(string, string)>> {
     return snapshot().search;
 }
 
-#[@use]
-pub fn selectedLayoutSegment() -> @Use<ElementBase, string> {
+pub fn selectedLayoutSegment() -> @Component<ElementBase, string> {
     return snapshot().segment();
 }
 
-#[@use]
-pub fn selectedLayoutSegments() -> @Use<ElementBase, Array<string>> {
+pub fn selectedLayoutSegments() -> @Component<ElementBase, Array<string>> {
     return snapshot().segments();
 }
 ```
 
 **Acceptance:**
-- [ ] `use pathname()` type-checks inside a `#[@use] fn … -> @Component<Element>` body — never the doubled `use` + `usePathname()`: the keyword is the activation, the name is the noun; without the annotation the body is `use-without-context-effect` (decision 104, [`19-use-activation`](../../00-compiler-carry-over/19-use-activation/README.md))
-- [ ] every hook carries `#[@use]` and returns `@Use<ElementBase, T>`; a hook whose annotation and wrapper disagree is a located error
+- [ ] `use pathname()` type-checks inside a `fn … -> @Component<ElementBase, Element>` body — never the doubled `use` + `usePathname()`: the keyword is the activation, the name is the noun; without a `@Component` return the body is `use-without-context-effect` (decisions 118 and 128)
+- [ ] every hook returns `@Component<ElementBase, T>` with the base written (decision 128); `@Component<T>` with one argument is a type-arity error
 - [ ] `pathname()` called WITHOUT `use` also type-checks and returns the string — the server render calls hooks directly, as `jhonstart-counter`'s `StatefulBadge` does
 - [ ] `selectedLayoutSegments()` returns the segments root-first
 - [ ] all six are `pub`

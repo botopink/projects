@@ -54,8 +54,6 @@ fraction of a percent of requests.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `repository/rakun/src/http.bp:50-73` — `Response.ok/json/created/withStatus/notFound/badRequest`.
   `notFound()` builds a `Response`; it does not unwind anything. The file is frozen.
 - `repository/rakun/src/runtime.bp:91-104` — `rkDispatch`/`rkDispatchHttp` return a `Response`. An
@@ -64,7 +62,7 @@ Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([
   There is no server-side counterpart of any kind.
 - `repository/rakun/src/navigation.bp` does not exist.
 - botopink's `try … catch` is `@Result`-shaped: `val n = try parse("42") catch 0;`
-  (`docs.md:513-524`). It unwraps an `@Result` produced by a `#[@result]` fn. It does not catch a
+  (`docs.md:513-524`). It unwraps an `@Result` produced by a `-> @Result<…>` fn. It does not catch a
   host-level raise, which is the property this front depends on.
 
 ## Mechanism
@@ -98,7 +96,7 @@ sides import — rakun here, jhonstart in fronts 30 and 31 — and neither names
 
 Choosing a throw over a returned sentinel is the whole design, and it buys three things a sentinel
 cannot. It composes through nested calls without changing one signature. It composes through
-`await`, which on erlang is identity over an eagerly-lowered `@Future`
+`await`, which on erlang is identity over an eagerly-lowered `@Task`
 (`libs/std/src/http.bp:17-19`), so a signal raised inside an awaited server component reaches the
 pipeline the same way a synchronous one does. And it cannot be swallowed by application code by
 accident: botopink's `try … catch` unwraps an `@Result` and nothing else, so
@@ -126,7 +124,7 @@ and clears it — a signal is consumed once, by whoever is composing the respons
 
 It is generic over the body's type for the same reason `rkSingleton<T>` is
 (`repository/rakun/src/runtime.bp:47`): the dispatchers compose `HandlerResponse`, `ActionResult` and
-`@Future` of either, and should not stringify any of them. Note that it returns `T` rather than a
+`@Task` of either, and should not stringify any of them. Note that it returns `T` rather than a
 `#(T, NavOutcome)` tuple deliberately — tuple labels are lost through generic instantiation
 (`repository/jhonstart/src/hooks.bp:75-77`), so a two-field return would have to be read positionally
 by every consumer. One value out, one frame read, no positional access.
@@ -235,12 +233,12 @@ pub fn peekSignal() -> NavOutcome
 
 ### Step 3 — Signals through `await`
 
-A route handler is `#[@future] fn(req: Request) -> @Future<HandlerResponse>` (front 25) and an action
-answers `@Future<ActionResult>` (front 24); whatever they call awaits others. On erlang `@Future`
+A route handler is `fn(req: Request) -> @Task<HandlerResponse>` (front 25) and an action
+answers `@Task<ActionResult>`, or `@Task<@Result<ActionResult, E>>` when it can fail (front 24); whatever they call awaits others. On erlang `@Task`
 lowers eagerly, so the signal is raised during the awaited call and propagates as a plain throw.
 
 **Acceptance:**
-- [ ] `captureSignals` around a body that `await`s a `#[@future]` function which calls `notFound()`
+- [ ] `captureSignals` around a body that `await`s a `@Task` function which calls `notFound()`
       records the signal.
 - [ ] The same holds two levels of `await` deep.
 - [ ] The value bound by `await` is never used, asserted by a body whose next statement increments a
