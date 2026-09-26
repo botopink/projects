@@ -473,3 +473,13 @@ before anything was written.
   traps rather than being boxed by a guess (`tests/wat.zig` pins it). No snapshot moved; new cell
   `run/unknown_by_value.bp`. Not in the box: arrays and tuples are boxed with a descriptor but have
   no printed form and no element-wise `is` through `unknown` (they trap).
+- **Three status rows** — a slice's `null` end is the end (compiler `37563df6`; `s.slice(2, null)`
+  trapped out of bounds), a variant reached through its enum is the enum's even beside a same-named
+  record (`100381cd`; `.Layout.Size.Large` answered `display:block`), and a call to a name two
+  linked modules declare traps instead of reaching the first module's function (`305b845d`; the
+  flat-namespace row's silent half — per-module mangling is still open).
+
+**Left open here, with the reason:** C-18's `Dict` absence (`run/index_dict.bp`,
+`run/index_at_optional.bp`, `run/index_user_type.bp` — a `?V` over a type parameter is carried
+unboxed and nothing monomorphises), C-30's eager generator `break` (`run/generator_break_value.bp`,
+22-loops' row), per-module mangling of the link, and step 8 (no lowering to delete — struck above).
