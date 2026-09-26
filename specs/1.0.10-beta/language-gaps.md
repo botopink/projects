@@ -47,7 +47,6 @@ bites, what the nearest valid form is today, and what surface would close it.
 | **No module-level annotation** — Next's file-level `'use cache'` has no spelling | 12 | A module-level `val` holding the default policy | An inner attribute, `#![useCache]` | [`00`](./00-compiler-carry-over/README.md) · 15-language-surface |
 | **`Children` coerces from array, `Element` and `string` but not from a thunk** (`infer.zig:4228-4239`) | 30 | A Suspense boundary takes its child as a named field, not as a child | Thunk coercion into `Children` | — |
 | **`await` is unusable as a lambda's last statement** — nothing can `map` over resolves | 28 · 30 | Lift into a named `@Task` fn | Allow `await` in closure tail position | [`00`](./00-compiler-carry-over/README.md) · 01-checker |
-| **`pub val` of a user record type is unexercised** — only primitive `pub val`s exist in the tree (`math.bp:16`, `path.bp:13`) | 32 | Metadata exports are functions, not values | Verify or reject `pub val` of a record at module scope | [`00`](./00-compiler-carry-over/README.md) · 17-beam-memory (module-level values are its declaration) — verify, not implement |
 | **A comptime body has no filesystem access** — it sees only a minimal native-JS prelude, so a `wsdl """…"""` template cannot read a schema file | 88 · 93 | `rakun ws generate` emits checked-in `.bp`; scaffolding is a runtime copy | A sandboxed comptime build-input read | [`00`](./00-compiler-carry-over/README.md) · 14-comptime-on-beam (the sandbox is its prelude) |
 | **Tuple labels are lost through generic instantiation** | 89 | Positional access after a generic hop | Preserve labels on instantiated tuple types | [`00`](./00-compiler-carry-over/README.md) · 01-checker |
 | **No cancellation** — a losing racer and an expired timeout keep running | 02 | Document it; let the work complete and discard the result | Cancellation tokens, or linked processes with a kill path | — |
@@ -106,4 +105,3 @@ needs it starts.
 | Missing thing | First needed by | Note |
 |---|---|---|
 | **A std JSON walker** | 24 · 25 | `std/json` has no structured value, so a route handler can validate a body and return raw text and nothing more. Candidate for 1.0.10-beta, or a fold-in to a std front |
-| **Module-level `pub val` of a user-defined type** — fronts 32 (`metadata`) and 70 (`§18`'s route surface) both export one, and it is unverified in the tree | 32 · 70 | Both use the same answer: a zero-argument `pub fn` | Verify or reject at the language level |

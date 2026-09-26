@@ -76,6 +76,7 @@ what was left, now `00-compiler-carry-over`'s order),
 | [133](#133-a-trailing-comma-keeps-a-list-in-its-open-form) | Does a trailing comma still open a list? | Yes — the author's explicit request; amends 65 part 2 |
 | [134](#134-every-example-in-the-guide-and-in-docsmd-is-correct-against-the-compiler) | Guide examples that do not type | Fixed in the text; three checker gaps closed by `01-checker`; decision 117's decorator check written in jhonstart |
 | [135](#135-specs-keep-only-what-still-holds) | Closed fronts spelling removed forms | Condensed to their current outcome; removed spellings only in the record and the removed-names tables |
+| [139](#139-a-module-level-pub-val-crosses-modules-and-an-imported-modules-body-runs-first) | A `pub val` of a record imported from a sibling (30-a) | Readable on every backend, of any type; the imported modules' bodies run before the importer's, dependencies first, each once; jhonstart reads `globals.fill` from one `pub val globals` |
 
 ## 68. One milestone, the 1.0.9 numbers kept, the drafts deleted
 
@@ -2810,3 +2811,33 @@ the table of removed names: this file, and the removed-names table of `guide.md`
 
 Implements: front 24's closeout — fronts 19, 20, 21 and 22, front 24's README, guide and status,
 `decisions-pending.md` and `status.md` rewritten to the current state.
+
+## 139. A module-level `pub val` crosses modules, and an imported module's body runs first
+
+**Decided 2026-09-26 by the maintainer** (pending item 30-a): option (b) — module-level values, not
+the `globals()` function. The question was only open because a `pub val` of a record type imported
+from a sibling module did not work (`undefined` on commonJS, an unbound variable on erlang); the
+answer is that it works, for a value of any type, on every backend:
+
+- a `pub val` — a record, an enum, an array, a primitive, a function — is imported like a `pub fn`
+  (`import {globals} from "globals";`, an `as` alias included) and read from any function or method
+  of the importer. commonJS exports it (`exports.<name>`); erlang and beam export its 0-arity
+  reader and the importer calls `owner:name()` (an imported val holding a fun is applied); wasm,
+  which links statically, reaches an aliased one by its declared global;
+- the module body keeps its rule — evaluated **once**, in declaration order, when the module loads,
+  before `main` — across modules too: a program runs the bodies of the modules it imports,
+  transitively, dependencies first, before its own. commonJS's `require` and wasm's linking already
+  did; erlang's and beam's entry now calls each imported module's `'_botopink_init'/0` first
+  (`crossModule.importClosure`), where before an imported module's effectful `val` ran at its first
+  read and its `_` statements never ran;
+- jhonstart's three browser globals are the fields of one `pub val globals` — `globals.payload`,
+  `globals.fill`, `globals.signal`, the README's spelling — and `globals()` leaves. One record rather
+  than three flat values keeps front 26's `fill` unshadowed in a consumer's flat import.
+
+The namespace form (`import {config};` then `config.limit`) for a sibling module is not part of
+this: the checker does not bind a sibling module as a namespace (`unbound variable 'config'`).
+
+Implements: compiler (`commonJS.zig`, `erlang.zig`, `beam_asm.zig`, `wat.zig`, `crossModule.zig`),
+`tests/language/modules/pub_val_across_modules` on all four targets, jhonstart `globals.bp` and its
+four readers; the `language-gaps.md` rows on a `pub val` of a user type.
+

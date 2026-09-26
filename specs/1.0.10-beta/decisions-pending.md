@@ -2,12 +2,13 @@
 
 **None open.** Implementation choices wait for the maintainer to confirm or reverse them: six of
 front 24's (24-a…c, 24-e…g), five `01-std` ones (01std-a…e), three of `00 · 23-std-purity` (23-a…c),
-five of front 95's (95-a…e), two of `00 · 16-formatter` (16-a…b), track C's (26-a, 27-a, 30-a…e, 31-a),
+five of front 95's (95-a…e), two of `00 · 16-formatter` (16-a…b), track C's (26-a, 27-a, 30-b…e, 31-a),
 `00 · 04-js` / `05-wasm`'s (0405-a…b) `00 · 02-erlang` / `03-beam`'s (0203-a…b), track D's (05emilia-a…h) and `libs-external-methods`' (lem-a…f). Every question
 this milestone raised is answered in [`decisions-taken.md`](./decisions-taken.md) — up to 128 as
 before; 129 the type-alias details, 130 front 24's open point 8 (a failing render's `E`), 131 its open
 point 7 and 24-d (no migration routine), 132 and 133 the formatter's 16-d and 16-c, 134 and 135 front
-24's two documentation boxes. The next free number is **136**.
+24's two documentation boxes; 139 answers 30-a (a `pub val` crosses modules). The next free number
+is **140**.
 
 This file stays because the fronts will fill it again. A front that meets a question it cannot answer
 from the code writes it here rather than guessing, in the shape the others used:
@@ -420,20 +421,6 @@ each.
 > commonJS-only member for the cells (splits `link.bp` in two).
 > **Recommendation.** (a). Leaves the Step 4 boxes "every cell in the file is `#[@External.Node]`;
 > there is no `#[@External.Erlang]` cell" of fronts 27 and 29 unticked by design.
-> **Blocks.** Nothing.
-
-### 30-a · The globals are read through `globals()`, not three module-level `pub val`s
-
-> **Raised by:** `04-jhonstart/30-jhonstart-streaming` Step 7, 2026-09-26
-> **Measured.** A `pub val globals = Globals(…)` imported from a sibling module is `undefined` on
-> commonJS (`Cannot read properties of undefined (reading 'payload')`) and an unbound variable on
-> erlang (compiler `f011850c`) — the `language-gaps.md` row "`pub val` of a user record type is
-> unexercised", now measured. Three flat `pub val payload / fill / signal` would shadow front 26's
-> `fill` in a consumer's flat `import {…} from "jhonstart"`.
-> **Options.** (a) `pub fn globals() -> Globals` and `alias(name)` over the registry — implemented;
-> (b) three `pub val`s of `string` with non-clashing names (`payloadGlobal`, …).
-> **Recommendation.** (a): one spelling (`globals().fill`) for the render, `render.mjs` and onze's
-> entry; revisit when a `pub val` of a record crosses modules.
 > **Blocks.** Nothing.
 
 ### 30-b · `RenderPlugin` is a record of async functions; `chunk` runs where the boundary resolved
