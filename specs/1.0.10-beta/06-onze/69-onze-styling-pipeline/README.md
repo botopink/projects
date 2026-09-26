@@ -157,7 +157,7 @@ pub fn generateStyleModuleSource(m: StyleModule) -> string
 - [x] Every name in the generated `.bp` module appears in the rewritten CSS, and vice versa —
       asserted as a set comparison, since that pair is the whole contract
 - [x] A class used but not defined is left unscoped and reported once
-- [ ] The generated module compiles: `botopink build` over `<outDir>/styles/` succeeds
+- [x] The generated module compiles: `botopink build` over `<outDir>/styles/` succeeds
 
 ### Step 2 — Global CSS, fingerprinting, and the manifest records
 
@@ -244,8 +244,8 @@ links, then front 68's head scripts, and the body tags), 12 tests on erlang **an
 functions are pure or go through std's `process` / `fs`, which answer on both rows). The gate test
 walks every `modules/*/src/*.bp` and finds no `flush()` call and no sink.
 
-Open: the generated style module compiling under `onze build` (front 50 — it is four-line
-accessor functions, but the box names the build), and the two roots **registered** with rakun-web
+`onze build` generates the accessors into the staged tree as `styles.<file>` and compiles them
+(front 50's `build_test`). Open: the two roots **registered** with rakun-web
 front 82, whose `StaticRoot` / `registerStaticRoot` do not exist at rakun `2a01ea5`: the roots are
 onze's `AssetRoot(pattern, directory, immutable, cacheSeconds)`, field for field what the README
 gives front 82's record, and the boot registers them when front 82 lands (69-a). The generated

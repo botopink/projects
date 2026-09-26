@@ -452,7 +452,7 @@ render that writes them and the entry that reads them cannot diverge (decision 1
 - [x] `islandAttr(0)` is `#("data-jh-i", "i0")`, matching `contracts.md § 2` — asserted here
       against front 29's definition, not against a local one
 - [x] `parseIslands` of the payload's `i` key returns one `Island` per triple, props parsed
-- [ ] The generated entry compiles: `botopink build` over `<outDir>/client/` succeeds
+- [x] The generated entry compiles: `botopink build` over `<outDir>/client/` succeeds
 - [x] An island id present in the DOM and absent from the payload raises, with the id in the message
 - [x] An island id present in the payload and absent from the DOM raises, with the id in the message
 - [x] A hole id in the payload's `h` key with no `[data-jh-h]` element raises, with the id
@@ -556,9 +556,11 @@ Landed on onze `front/06-onze` (`5e68a7e`, `6ba1b25`, `c90199d`): `modules/onze-
 jhonstart's `RenderHooks`) and `fixture` (the frozen fixture app every track-E suite reads); six
 suites, **37 tests, all on commonJS and on erlang** (the build half is pure and runs on both rows;
 the prelude's `require` test evaluates the chunk under node and answers `no-js-engine` on erlang).
-The generated entry was type-checked, built and run under node in a scratch package — its
-starters render `Nav` / `LikeButton` from form-encoded props — but that is a manual check; the
-box stays open until `onze build` (front 50) compiles `<outDir>/client/`.
+The generated entry is compiled by `onze build` (front 50) inside the staged client package,
+and linked by file (`link.bp`: the relative-`require` closure, `.mjs` sidecars as factories,
+jhonstart's `hooks` → `client_runtime` substitution); the scaffold's bundle boots under node.
+Route-level splitting at the file level is not done — the entry imports every client component,
+so every island's closure lands in `shared` — until the entry starts islands lazily.
 
 Open, and why:
 

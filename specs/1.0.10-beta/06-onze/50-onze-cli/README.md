@@ -334,11 +334,11 @@ prerender pass → write `<outDir>/`:
 
 **Acceptance:**
 - [ ] `onze build` on the scaffolded app exits zero and produces the five entries above
-- [ ] Two builds of an unchanged tree produce the same `build-id`
-- [ ] A client module reading a non-`ONZE_PUBLIC_` variable fails the build, naming the variable and
+- [x] Two builds of an unchanged tree produce the same `build-id`
+- [x] A client module reading a non-`ONZE_PUBLIC_` variable fails the build, naming the variable and
       the module (the rule is front 49's, the enforcement front 68's, and the *failure* is this
       command's exit code)
-- [ ] `build` does not start a server and does not open a port
+- [x] `build` does not start a server and does not open a port
 
 ### Step 8 — `start`
 
@@ -445,9 +445,18 @@ checkout by path (git `feat` otherwise); `loading` / `error` / `not-found` need 
 the generated `onze_routes.bp` registers them with jhonstart's `jhLoading` / `jhError` /
 `jhNotFound`.
 
-Open: `build` (waits on wiring front 71's build id and the bundler/stylesheet into one command),
-`dev` and `start` (rakun's server boot — rakun fronts 04 and 23), `--example`, the prompts (no TTY
-reader in std), and the docs table generated from the one defaults record.
+`build` (onze `13f896a`) runs the whole pipeline — scan, check, refusals, CSS-module accessors,
+the staged server package compiled for erlang (`server/` holds the emitted `.erl`; no `erlc` pass
+yet), the staged client package plus the generated entry compiled for commonJS and linked by
+file, the stylesheet, the build id, `static/<buildId>/`, `client-manifest.txt`, `build-id`; the
+committed scaffold builds twice to the same id and its bundle boots under node (23 tests).
+`<outDir>/` holds `src/` (the staged tree — the README's `app_tree.bp` + `app/`), `server/`,
+`client/`, `client-js/`, `static/`, `client-manifest.txt` and `build-id`, but no `prerender/`
+(rakun front 60), so the "five entries" box stays open.
+
+Open: `dev` and `start` (rakun's server boot — rakun fronts 04 and 23), `prerender/`, route-level
+chunk splitting (lazy starters), `--example`, the prompts (no TTY reader in std), and the docs
+table generated from the one defaults record.
 
 ## Definition of done
 
