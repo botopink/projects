@@ -214,9 +214,13 @@ A `mod` sibling imported without a `from` clause emits `require("./module")` ins
 name and the emitter writes the word.
 
 **Acceptance:**
-- [ ] the repro in [Problem](#problem) runs under node and prints `7`
-- [ ] the same shape inside a dependency (a `libs/<name>` project with a `files` manifest) runs
-- [ ] a fixture in `src/codegen/tests/**` pins both, with a RUN LOG
+- [x] the repro in [Problem](#problem) runs under node and prints `7` — `require("./leaf.js")`,
+      re-measured 2026-09-26 on `b6ba65a3` (the defect was fixed before this front re-opened)
+- [x] the same shape inside a dependency (a `libs/<name>` project with a `files` manifest) runs —
+      `require("../tree/leaf.js")` from `tree/api.js`, prints `7`
+- [x] a fixture in `src/codegen/tests/**` pins both (`features.zig` `a sibling module imported with no
+      from requires its own path`, needles for both shapes), with the RUN LOG in
+      `tests/language/modules/sibling_import_in_a_dependency` — green on all four targets
 - [ ] the workaround rule in `repository/jhonstart/AGENTS.md` can be deleted — the deletion itself is [`09-ecosystem-residuals`](../09-ecosystem-residuals/README.md)'s
 
 ### Step 6 — the `.d.ts` and the JavaScript agree
@@ -280,12 +284,20 @@ adds a tag to every named value, T1's answer must be 13's. **Decide T1 with 13, 
 
 ## Gate
 
-- [ ] `scripts/gate.sh --cold` green in this front's worktree
-- [ ] every re-recorded RUN LOG **verified by running the program** under node, and checked against decision 8 §7
-- [ ] every emitted module still passes `node --check`; every non-empty `.d.ts` passes `tsc --noEmit` after step 6
-- [ ] `zig build test-libs` green — the six libraries' commonJS cells still pass
-- [ ] `src/codegen/AGENTS.md` and `src/codegen/js/AGENTS.md` updated in the same commit as each row
-- [ ] Commit on `fix/js`; no push, no merge
+- [x] `scripts/gate.sh --cold` green in this front's worktree — stage by stage, below
+- [x] every re-recorded RUN LOG **verified by running the program** under node, and checked against decision 8 §7 — the four that moved (`undefined` → `null`, decision 47) each run by hand
+- [x] every emitted module still passes `node --check`; every non-empty `.d.ts` passes `tsc --noEmit` after step 6 — measured 2026-09-26 on `front/04-05-js-wasm`: 356 / 356 emitted modules of `snapshots/codegen/beam/commonJS/` pass `node --check`, 33 / 33 typedef projects pass `tsc` ([below](#the-dts-under-tsc))
+- [x] `zig build test-libs` green — the six libraries' commonJS cells still pass (58 / 0, from the scratch workspace)
+- [x] `src/codegen/AGENTS.md` and `src/codegen/js/AGENTS.md` updated in the same commit as each row
+- [x] Commit on `fix/js`; no push, no merge — on `front/04-05-js-wasm` (both fronts in one worktree), not pushed
+
+**Measured at the tip of `front/04-05-js-wasm` (2026-09-26):** `scripts/gate.sh --cold` cannot run
+whole from a worktree nested in the meta checkout — `test-libs` sees every sibling twice
+(`decisions-pending.md` 24-f) — so its stages were run one by one: `zig build`, `format-check.sh`,
+`zig build test` from a cold runtime cache, `snap_audit.sh --mode=runtime-parity` (1415 pairs, 0
+differing), `test-bpmp`, `beam_export_audit.sh` (468 / 468), `test-cli`, `test-language` (`all` 816 /
+21 / 0, `beam` 216 / 8 / 0), `test-docs` (68 checked, 0 failed), and `test-libs` from a scratch
+workspace holding copies of the five libraries (58 passed, 0 failed, 19 restricted pinned) — all green.
 
 ## Blast radius
 
@@ -447,3 +459,75 @@ front 12's `§6 T4` owner row to 01), [46](../../../1.0.5-beta/decisions-pending
    renamed binding (or the runner must reach the global through `globalThis.process`).
 2. **`try` inside a `while` body does not propagate** (shared with `02-erlang`, repro there): the loop
    keeps running after the `Error`, and the function answers `Ok`.
+
+---
+
+## Re-verified and continued — 2026-09-26, `front/04-05-js-wasm`
+
+Every row re-measured against `feat` (`b6ba65a3`) before anything was written; a row ticked here
+is ticked with the program that answered it.
+
+| Row | State | Evidence |
+|---|---|---|
+| Step 1 F1, F5 | **holds** | `@print(5.0)` → `5.0`, `[1, 2]`, `#(1, "a")`; `run/tuple_print.bp` green, its line gone |
+| Step 1 F2, F3, F4 | **holds** (landed with C-01 half 3) | `run/print_formatter.bp`, `run/display_print.bp` green on commonJS, no line |
+| Step 2 D1–D3 | **holds** | `show(x: unknown)` answers `i32` / `string` / `other` for `1`, `"s"`, `2.5`; `300 is i8` → `false`; `#(1, "a") is #(i32, string)` → `true`; `val u: unknown = 2.0; u == 2` → `true` |
+| Step 2 D4 | **holds** (`6196b86`) | |
+| Step 2 D5 | **open — not this backend's** | `test/tuple_labels.bp::§6 T4 a label survives a generic array method`: the label `rs.at(0).b` reaches the backend unresolved (the checker resolves a label to `_N` only at the written type), and decision 45 says a member access on the `?T` `at` answers is a check error — both halves are `01-checker`'s (C-18) |
+| Step 3 `break <value>` | **superseded** by decision 105 (`break v` only in a generator scope, C-30); `test/loop_break_value.bp`'s lines are gone | |
+| Step 4 `==` on tuples | **holds** | `#(1, "a") == #(1, "a")` → `true`, `… == #(1, "b")` → `false` (`__bp_eq`); `test/tuple_equality.bp` green |
+| Step 5 sibling `require` | **holds**, now pinned | boxes above |
+| Step 6 T1–T3 | **hold**; the `tsc` gate was **red** (14 of 33) and is green here | see [the `.d.ts` under `tsc`](#the-dts-under-tsc) |
+| Step 7 JS-4 | **landed here** | [`pattern-binding.md`](./pattern-binding.md) acceptance |
+| Step 8 | **waits on R7** | `@block { 1 + 2 }` still type-checks and lowers to `(() => {(1 + 2);})()` — `undefined`, exit 0 |
+| 12's handovers | **hold** | `o.inner?.v ?? 9` → `9`; `42.toString()` → `(42).toString()` prints `42` |
+| 01-std handover 1 (`process` shadow) | **holds** | the runner reads `globalThis.process` (`codegen/AGENTS.md`) |
+
+**Landed here** (compiler commit in `status.md`):
+
+- **JS-4** — `val Circle(r) = s;` is `const { r } = s;`, `val Sq(side) = q;` `const { side } = q;`;
+  `Pattern.match`, `MatchPattern` and `writeMatchPattern` deleted; a nested constructor is a nested
+  object pattern (`ObjectPattern.Prop.nested`). Zero commonJS snapshots moved — no fixture reached a
+  build site, which is why the bridge survived four landings.
+- **C-09's commonJS half of `adder(3)(4)`** — `calleeExpr` is the callee; `test/curried_call.bp`'s
+  commonJS line deleted (both tests pass).
+- **C-18's commonJS half of decision 47** — `Array.at` goes through `__bp_array_at`, `null` out of
+  range (a negative index included, as `String.at` and wasm answer); `run/index_past_the_end_is_null.bp`'s
+  commonJS line deleted. 8 commonJS snapshots per tree moved: the helper and the call, and two RUN LOGs
+  `undefined` → `null` (`array_at_lowers_byte_identically_across_backends`,
+  `index_an_index_past_the_end_answers_zero`).
+
+### The `.d.ts` under `tsc`
+
+`npx -p typescript tsc --noEmit --strict --lib es2022 --module commonjs` (TypeScript 7.0.2) over
+every snapshot of `snapshots/codegen/beam/commonJS/` with a non-empty typedef, each module's `.d.ts`
+laid out at its module path so an import resolves the way it would under `out/`: **33 projects,
+14 rejected** at `b6ba65a3`. Every failure was the `.d.ts` disagreeing with the `.js` beside it or
+with TypeScript:
+
+| Defect | Projects | Now |
+|---|---|---|
+| an import's source written verbatim — `from "geometry"`, a bare specifier — where the `.js` requires `./geometry.js`; `from "std"` for a std symbol | 9 | relative to the module's own path, one `import` per owning file (`CrossModule.picked`); a std module is `import * as dict from "./std/dict"`, a std symbol `import { empty as newDict } from "./std/dict"` |
+| the same `import` written once per imported name | 7 | once per `ImportDecl`, each name bound once |
+| an activated `implement` (`PatoNada*`) imported, which no `.d.ts` declares | 2 | left out |
+| type parameters never declared — `class Dict`, `empty(): Dict<K, V>`, `fold(…): A` | 2 | `Dict<K, V>`, `empty<K, V>()`, `fold<A>(…)` |
+| `Self` in a signature | 1 | the declaring type |
+| a function type with unnamed parameters — `(A, K, V) => A` makes each `A` a parameter NAME | 2 | `(acc: A, key: K, value: V) => A` |
+| a decorator declared (`describe(decl: Decl)`) though the program drops it | 2 | no declaration |
+
+And one the `tsc` run could not see, because the typedef is valid TypeScript: **`@Result<T, E>` was
+declared `{ tag: "Ok"; result: T } | { tag: "Error"; error: E }`** while every module builds and
+reads `{ ok }` / `{ error }` — now `{ ok: T } | { error: E }` (2 snapshots). After: **33 of 33
+accepted**. 16 commonJS snapshots per tree moved, typedef sections only; `tsc` is not in the checkout
+or on `PATH` (it ran through `npx`), so the gate stays a measurement rather than a script.
+
+**Decision 47 on the printer** (compiler `d798775b`, `decisions-pending.md` 0405-b): JavaScript's
+`undefined` — what `?.` on an absent receiver and an `if` with no `else` answer — prints `null`, as
+`Array.at`'s absence already did. 196 commonJS snapshots per tree moved, each by the one prelude line
+(verified mechanically), and two RUN LOGs `undefined` → `null`.
+
+**The status rows no step named** (re-measured 2026-09-26): a behavior literal's `self` method is an
+object method now (compiler `ccfe6561`, `hi undefined` → `hi bo`); `\"` in an `@External.Node`
+template, `await` inside an `if`/`else` of a `-> @Task<T>` body, a `try` inside a `while`, a
+leading-dot variant, `x is <Enum>.<Variant>`, a function-valued record field and the `process` shadow
+(01-std's handover 1) all answer right on commonJS at this branch — no change needed.

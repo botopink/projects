@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e), three of `00 · 23-std-purity` (23-a…c), five of front 95's (95-a…e), four of `00 · 16-formatter` (16-a…d) and track C's (26-a, 27-a, 30-a…e, 31-a). Every other question this milestone raised is answered in
+**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e), three of `00 · 23-std-purity` (23-a…c), five of front 95's (95-a…e), four of `00 · 16-formatter` (16-a…d), track C's (26-a, 27-a, 30-a…e, 31-a) and `00 · 04-js` / `05-wasm`'s (0405-a…b). Every other question this milestone raised is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 91, 92, 93 and 97 by decisions 103 and 104, 99 by 108,
 94, 100 and 101 by 113; every number up to 117 is answered — 114 answers the eight seams decision 113 left open, 115 the five points 114 left open, 116 nine more pieces two libraries both run, 117 the nine points 113–116 left, and 118–127 register the maintainer's effect revision (the return type is the annotation, `@Task<T>`, only `@Result` fails, `@Iterator<T>` / `@Stream<T>`, `async { }`, `iter` / `stream` loops, no compatibility mode — front `00 · 24-effects-by-return`), and 128 merges `@Use<C, T>` and `@Component<T>` into `@Component<C, T>`. The next free number is **130**.
 
@@ -545,6 +545,40 @@ each.
 > (b) keep `Segment` and require consumers to name the module.
 > **Recommendation.** (a).
 > **Blocks.** Nothing.
+
+## Front 00 · 04-js / 05-wasm — choices made in implementation, to confirm
+
+Decided by the implementation on `front/04-05-js-wasm` (worktree `.tasks/04-05-js-wasm`, 2026-09-26);
+the maintainer confirms or reverses each.
+
+### 0405-a · `Array.at` with a negative index is out of range on commonJS
+
+> **Raised by:** `04-js`, C-18's commonJS half (decision 47), 2026-09-26
+> **Measured.** Native `Array.prototype.at` answers `undefined` past the end and counts a negative
+> index from the back (`[10, 20, 30].at(-1)` → `30`). wasm's `$__arr_at` and commonJS's own
+> `__bp_string_char_at` answer absence for a negative index; `String.at(-1)` is `null` on commonJS.
+> **Options.** (a) `__bp_array_at(xs, i)` answers `null` for any `i` outside `0..len` — one rule for
+> both readers and every backend that has a bounds test; (b) keep the native negative reading and only
+> map `undefined` to `null`.
+> **Recommendation.** (a), implemented: the language documents no negative index, and a program that
+> means "the last element" on one backend and "absent" on another is the divergence decision 67 refuses.
+> **Blocks.** Nothing.
+
+### 0405-b · The empty value `?.` answers on commonJS still prints `undefined`
+
+> **Raised by:** `04-js` / `05-wasm`, decision 47, 2026-09-26
+> **Measured.** wasm prints every empty `?T` as `null` now (`$__print_null`), and commonJS's
+> `Array.at` answers `null`. Two commonJS shapes still produce JS's other none: `choose(false)?.kind`
+> (native `?.`) and an `if` with no `else` used as a value (`val r = if (n > 0) { "positive"; };`),
+> and both print `undefined` — `snapshots/codegen/*/commonJS/{optional_fn_return_null_path,if_simple_conditional_in_fn_body}`,
+> where wasm now prints `null`.
+> **Options.** (a) `__bp_show` prints `undefined` as `null` — one branch in the §7 printer, which is
+> written into every module that prints, so the prelude text of every such commonJS snapshot moves
+> (163 per tree); (b) lower `?.` and the else-less `if` to produce `null`, which moves every `?.` site.
+> **Recommendation.** (a), as its own commit: the printer is where the spelling is decided, and it
+> leaves `== null` (already loose on this backend) untouched. Implemented (compiler `d798775b`):
+> 196 commonJS snapshots per tree gained the one prelude line, and the two RUN LOGs above read `null`.
+> **Blocks.** Nothing now — commonJS and wasm both print absence as `null`; erlang and beam are C-18's.
 
 ## Open
 
