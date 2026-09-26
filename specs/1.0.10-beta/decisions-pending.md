@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e). Every other question this milestone raised is answered in
+**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e), three of `00 · 23-std-purity` (23-a…c), five of front 95's (95-a…e) and track C's (26-a, 31-a). Every other question this milestone raised is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 91, 92, 93 and 97 by decisions 103 and 104, 99 by 108,
 94, 100 and 101 by 113; every number up to 117 is answered — 114 answers the eight seams decision 113 left open, 115 the five points 114 left open, 116 nine more pieces two libraries both run, 117 the nine points 113–116 left, and 118–127 register the maintainer's effect revision (the return type is the annotation, `@Task<T>`, only `@Result` fails, `@Iterator<T>` / `@Stream<T>`, `async { }`, `iter` / `stream` loops, no compatibility mode — front `00 · 24-effects-by-return`), and 128 merges `@Use<C, T>` and `@Component<T>` into `@Component<C, T>`. The next free number is **130**.
 
@@ -237,6 +237,126 @@ maintainer confirms or reverses each.
 > **Options.** (a) refuse it (implemented, decision 67); (b) read `n` and ignore `redirect`.
 > **Recommendation.** (a).
 > **Blocks.** Nothing.
+
+## Front 23 (`00 · 23-std-purity`) — choices made in implementation, to confirm
+
+Decided by the implementation of steps 3 and 5 (worktree `.tasks/23-std-purity`, 2026-09-26) so the
+tree could land; the maintainer confirms or reverses each.
+
+### 23-a · A `collections` constructor is reached through its type leaf, not the module namespace
+
+> **Raised by:** `00 · 23-std-purity` step 3, 2026-09-26
+> **Measured.** Decision 111's `Dict.empty()` compiles and runs on commonJS, erlang, beam and wasm
+> when `Dict` is imported as a leaf (`import {collections.Dict}` / `collections: {Dict, Set}`).
+> After `import {collections} from "std"`, `collections.Dict.empty()` is `unbound variable
+> 'collections'` on every target — the checker has no `module.Type.fn()` path; `collections.toInt(…)`
+> (a module function) resolves. Every importer written by the sweep (routing, rakun, the compiler's
+> tests and cells, `examples/stdlib-tour`) uses the leaf form.
+> **Options.** (a) the leaf form is the spelling (implemented; decision 111's own example imports
+> `collections: {Dict, Set, Queue}`); (b) teach the checker and the four codegens
+> `module.Type.fn()` — the same use-side path decision 110's folder namespace needs.
+> **Recommendation.** (a) now, (b) with decision 110 (23 step 6, open): one change covers both.
+> **Blocks.** Nothing.
+
+### 23-b · `base64`'s four functions are retired, not aliased
+
+> **Raised by:** `00 · 23-std-purity` step 3, 2026-09-26
+> **Measured.** `base64.decode` answered a `string`; its replacement `encoding.base64Decode` answers
+> `@Result<string, string>` (front 01 validates before `Buffer.from` truncates), and
+> `decodeUrlSafe` → `base64UrlDecode` likewise. No library imported `base64`. `base64.bp` is deleted
+> and its four tests are re-spelled over `encoding`'s names at the foot of `encoding.bp` (so std
+> stays at 417 tests).
+> **Options.** (a) retire the four (implemented — decision 106 and `01-std/modules.md` name the
+> replacements); (b) keep `encode`/`decode`/`encodeUrlSafe`/`decodeUrlSafe` in `encoding` as
+> string-returning aliases.
+> **Recommendation.** (a): two spellings of one codec, one of which hides the refusal, is what front
+> 01 removed.
+> **Blocks.** Nothing.
+
+### 23-c · Two `botopink test` fixes for a project whose own modules sit in a folder
+
+> **Raised by:** `00 · 23-std-purity` step 3, 2026-09-26
+> **Measured.** `botopink test` in `libs/std` after the move: on commonJS every module refused with
+> `module 'io/random' requires "./sidecars/random.mjs", but its library 'io' resolves to no package
+> directory` (`shipMjsSidecars` reads any `a/b` module name as dependency `a`'s); on erlang twelve
+> tests died `{error,undef}` — `test_cmd` wrote a module's type units (`std@io@net@@Socket`) at the
+> root of the run, and the runner of `io/net` loads only its own directory and below. A two-module
+> scratch (`src/top.bp`, `src/io/rec.bp`, one record each) reproduces the second on any project.
+> **Options.** (a) fix both in the CLI (implemented, compiler-cli carve-out: a module whose source
+> is in the project's own `src` is the project's; units are written beside the module that declares
+> them); (b) keep std flat on disk and nest only the registry keys.
+> **Recommendation.** (a). The rules are general — any library with a folder module had both
+> defects — and neither touches compiler-core or a snapshot.
+> **Blocks.** Nothing.
+
+## Front 02-packaging · 95 (the package cut) — choices made in implementation, to confirm
+
+Decided by `02-packaging/95-ecosystem-package-restructure` (worktree `.tasks/95-packaging`,
+2026-09-26) so the relocations could land; the maintainer confirms or reverses each.
+
+### 95-a · Front 95 performs the relocation-only cuts `jhonstart-link` and `rakun-app`
+
+> **Raised by:** `95-ecosystem-package-restructure` steps 5 and 7, 2026-09-26
+> **Measured.** `04-jhonstart/modules.md` § 1 puts front 27's `link.bp` / `reconcile.bp` in
+> `jhonstart-link`, and `03-rakun/modules.md` § The cut puts fronts 22 and 23 in `rakun-app`; both
+> fronts had landed in the core. Front 95's own README listed `jhonstart-link` as "front 27's" and
+> said rakun had "nothing left" for it, while its **Owns** line claims "the relocations the cut in
+> each library's `modules.md` needs". Nothing in either core imports the moved modules
+> (`grep`), so each move is the files plus the import lines it changes: jhonstart 120 → 85 + 35,
+> rakun 369 → 310 + 59 on commonJS (367/2 → 308/2 + 59/0 on erlang); `examples/rakun-ssr` prints
+> a byte-identical document.
+> **Options.** (1) relocate now, as a move with no behaviour; (2) leave both in the core until the
+> owning fronts (27's step 4, 22/24) touch them again.
+> **Recommendation.** (1) — implemented. The two owning fronts would otherwise make the move in the
+> middle of a behaviour change, which is the harder diff to review; `modules.md` § 0 (a) and the
+> `fronts.md` rows now name the members.
+
+### 95-b · `rakun-app` inherits the workspace's `targets`
+
+> **Raised by:** `95-ecosystem-package-restructure` step 5, 2026-09-26
+> **Measured.** The core it came from declares `["commonJS"]` (a restriction front 04 lifts);
+> `03-rakun/modules.md` § Targets says every member is `["erlang"]`, corrected "by the lowest-numbered
+> front of each module". The 59 moved tests pass on **both** rows.
+> **Options.** (1) no `targets` — inherit `["commonJS", "erlang"]` now and `["erlang"]` when front 04
+> changes the workspace root; (2) `["commonJS"]` like the core (an erlang ledger line); (3)
+> `["erlang"]` now (a commonJS ledger line, and the node half of `ssr.mjs` untested).
+> **Recommendation.** (1) — implemented: both rows are hard cells, no ledger line, and the member
+> follows the workspace without an edit.
+
+### 95-c · `erika-test` exists
+
+> **Raised by:** `95-ecosystem-package-restructure`, 2026-09-26
+> **Measured.** `02-packaging/README.md` § 2 makes `modules/<lib>-test/` mandatory for every library;
+> erika is a workspace since `02-packaging` step 2 and its `AGENTS.md` said the member "waits on
+> `01-std` steps 2–3", which have landed. Front 95's table did not list erika.
+> **Options.** (1) create it empty now; (2) wait for an erika front.
+> **Recommendation.** (1) — implemented: one inline test, 1/1 on both rows.
+
+### 95-d · The onze takeover, prepared: the tag's commit and the orchestrator's first commit
+
+> **Raised by:** `95-ecosystem-package-restructure` step 2, 2026-09-26
+> **Measured.** The orchestrator's workspace is an orphan branch `front/95-onze-orchestrator` (no
+> history of the mocking library) — seven members, each 1/1 on commonJS and erlang on a copy of
+> the tree; the retirement banner is a commit on onze `front/95-packaging` over `feat` `b1e690d`.
+> The restricted cells `onze-cli · erlang` and `onze-og · commonJS` need ledger lines that are
+> stale (refused) until `repository/onze` is the orchestrator.
+> **Options.** Tag `mocking-lib-final` on (1) `b1e690d`, the last code commit, or (2) the banner
+> commit. Ledger lines (a) in the compiler commit the takeover's meta bump pins, or (b) now, which
+> reds `test-libs` until the takeover.
+> **Recommendation.** (1) and (a); the exact commands are in front 95's step 2.
+
+### 95-e · A member importing the core's request context names the module
+
+> **Raised by:** `95-ecosystem-package-restructure` step 5, 2026-09-26
+> **Measured.** In `modules/rakun-app/src/ssr.bp`, `import {…, percentDecode, …} from "rakun";`
+> is refused: `` `percentDecode` is declared `pub` by `std/encoding` and by `rakun/request_context`,
+> and this import does not say which ``. Inside the core the same import (`from "request_context"`)
+> named the module. The move writes `from "rakun/request_context"`, which the compiler accepts.
+> **Options.** (1) keep the qualified import; (2) rename one of the two `percentDecode`s (decision
+> 116 moves rakun's codec to std `encoding`, which would retire the duplicate).
+> **Recommendation.** (1) now; (2) is the decision-116 work of rakun front 62, after which the line
+> can go back to `from "rakun"` or drop the name.
+
 
 ## Track C (jhonstart) — choices made in implementation, to confirm
 

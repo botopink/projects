@@ -357,7 +357,7 @@ differently, and each row's reason is in *Verdicts* or *The graph*.
 
 | Front | README says | Read as |
 |---|---|---|
-| 22 · 23 · 24 · 25 · 60 · 61 · 63 · 66 | `repository/rakun/src/<file>.bp` | `modules/rakun-app/src/<file>.bp` |
+| 22 · 23 · 24 · 25 · 60 · 61 · 63 · 66 | `repository/rakun/src/<file>.bp` | `modules/rakun-app/src/<file>.bp` — the **Owns** lines now say so; front 95 created `modules/rakun-app/` by relocating 22's `file_router.bp` and 23's `ssr.bp` out of the core |
 | 64 | `modules/rakun-i18n/**` | `modules/rakun-app/src/i18n/**` |
 | 20 | `modules/rakun-web/src/websocket/**` | `modules/rakun-websocket/**` |
 | 75 | `modules/rakun-metrics/**`, tests in `rakun-observability` | `modules/rakun-metrics/**` for both |

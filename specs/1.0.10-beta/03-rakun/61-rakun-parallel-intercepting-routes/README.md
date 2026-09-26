@@ -13,10 +13,10 @@ imported here; the two halves are named below
 **Depends on:** 22 (the table), `01-std/04-routing-lib` (the matcher and the `z` codec), 23 (the page dispatch), 27
 (client navigation, which sets the soft-navigation marker), 30 (per-slot `loading` boundaries),
 62 (the request frame the marker is read from)
-**Owns:** `repository/rakun/src/route_slots.bp`, `repository/rakun/src/route_intercept.bp`,
-`repository/rakun/src/sidecars/rakun_route_slots.erl`,
-`repository/rakun/test/route_slots_test.bp`, `repository/rakun/test/route_intercept_test.bp`, two
-`pub mod` lines in `repository/rakun/src/root.bp`; the codec file `libs/routing/src/slot_states.bp`
+**Owns:** `repository/rakun/modules/rakun-app/src/route_slots.bp`, `repository/rakun/modules/rakun-app/src/route_intercept.bp`,
+`repository/rakun/modules/rakun-app/src/sidecars/rakun_route_slots.erl`,
+`repository/rakun/modules/rakun-app/test/route_slots_test.bp`, `repository/rakun/modules/rakun-app/test/route_intercept_test.bp`, two
+`pub mod` lines in `repository/rakun/modules/rakun-app/src/root.bp`; the codec file `libs/routing/src/slot_states.bp`
 is `01-std/04-routing-lib`'s, written to Step 5's format
 **Does not touch:** `repository/rakun/src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`,
 `src/runtime.mjs` — frozen; `src/file_router.bp` (front 22) and `src/ssr.bp` (front 23) are read-only

@@ -5,7 +5,7 @@
 **Target:** js (client)
 **Wave:** 4
 **Depends on:** 26 · `01-std/04-routing-lib` (`matchPath`, `routeKindOf`, `parseSlotStates`, `clientHref`) · 60 (route-kind flag, read-only) · 30 (payload envelope, read-only) · 68 (generated entry + DOM primitives, read-only) · 94 (element builders used by the examples)
-**Owns:** `repository/jhonstart/src/link.bp`, `repository/jhonstart/src/reconcile.bp` (the client-navigation reconciler), `repository/jhonstart/test/link_test.bp`, `repository/jhonstart/test/reconcile_test.bp`
+**Owns:** `repository/jhonstart/modules/jhonstart-link/src/link.bp`, `repository/jhonstart/modules/jhonstart-link/src/reconcile.bp` (the client-navigation reconciler), `repository/jhonstart/modules/jhonstart-link/test/link_test.bp`, `repository/jhonstart/modules/jhonstart-link/test/reconcile_test.bp` — the `jhonstart-link` member since front 95's relocation (`modules.md` § 1); its `root.bp` and `botopink.json` are this front's
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (front 26), `src/client.bp` (front 29), `src/root.bp` and `botopink.json` (front 94)
 **Reference:** `NEXTJS-DOCS.md § 8. Navegação e Linking` · `§ 25. Referência de Componentes` · https://nextjs.org/docs/app/api-reference/components/link · https://nextjs.org/docs/app/getting-started/linking-and-navigating
 

@@ -268,7 +268,7 @@ in the compiler's own suite beside `04-routing-lib`'s bundled-package test.
 ## Gate
 
 - [x] `zig build test-libs` green — `actions` on both targets; `routing` and std unchanged — `zig build test-libs` 58 passed / 0 failed (19 restricted as pinned), emilia and erika included, run from an rsync copy of the worktree
-- [ ] the Step 6 compiler test green from a cold cache; `snapshots/codegen/**` byte-identical — **open:** `zig build test` green warm, `snapshots/codegen/**` byte-identical; not re-run cold
+- [x] the Step 6 compiler test green from a cold cache; `snapshots/codegen/**` byte-identical — `scripts/gate.sh --cold` green at `feat` `ffe2db69` (compiler `b6ba65a3`), run from an rsync copy with `repository/botopink-lang` made a standalone repository: `zig build test` from a deleted runtime cache, runtime parity, `test-cli`, `test-libs` 58 / 0, `test-language` 799 passed / 28 expected / 0 failed, `test-docs`; and again at `00 · 23-std-purity`'s head; no `.snap.md.new`
 - [x] `libs/AGENTS.md` and `libs/actions/AGENTS.md` describe the library in the same commit
 
 ## Blast radius
