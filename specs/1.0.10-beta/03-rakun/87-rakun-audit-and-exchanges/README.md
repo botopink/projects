@@ -155,10 +155,10 @@ parameters. The field is `kind` and not `type` because `type` is a keyword
 name `type`, so the HTTP surface is unchanged.
 
 **Acceptance:**
-- [ ] `find("", 0, "")` returns every retained event, newest last.
-- [ ] `find("ana", 0, "")` returns only `ana`'s events; `find("", 0, "AUTHENTICATION_FAILURE")` only that kind; both together intersect rather than union.
-- [ ] `afterMs` is exclusive, so paging by the last seen timestamp cannot re-read an event.
-- [ ] An event with an empty `data` array round-trips through both arms unchanged.
+- [x] `find("", 0, "")` returns every retained event, newest last. — `audit/event_test` "find with no filter answers every event, newest last"
+- [x] `find("ana", 0, "")` returns only `ana`'s events; `find("", 0, "AUTHENTICATION_FAILURE")` only that kind; both together intersect rather than union. — `audit/event_test` "principal and kind filter, and together they intersect"
+- [x] `afterMs` is exclusive, so paging by the last seen timestamp cannot re-read an event. — `audit/event_test` "afterMs is exclusive"
+- [x] An event with an empty `data` array round-trips through both arms unchanged. — `audit/event_test` "an event with empty data round-trips through both arms"
 
 ### Step 2 — The in-memory ring
 
@@ -167,10 +167,10 @@ pub fn memoryAuditRepository(capacity: i32) -> AuditRepository
 ```
 
 **Acceptance:**
-- [ ] Writing `capacity + 5` events retains exactly `capacity`, and the five dropped are the oldest.
-- [ ] `dropped()` reports 5 after that write, and is monotonic.
-- [ ] The ETS table is owned by the module's supervisor, so a crashing recorder does not take the history with it — asserted by killing the recorder process and reading the history back.
-- [ ] Two repositories built with different capacities do not share a table.
+- [x] Writing `capacity + 5` events retains exactly `capacity`, and the five dropped are the oldest. — `audit/event_test` "capacity + 5 writes keep capacity events, dropping the five oldest, counted monotonically"
+- [x] `dropped()` reports 5 after that write, and is monotonic. — `audit/event_test` "capacity + 5 writes keep capacity events, dropping the five oldest, counted monotonically"
+- [x] The ETS table is owned by the module's supervisor, so a crashing recorder does not take the history with it — asserted by killing the recorder process and reading the history back. — `audit/event_test` "the ring survives the process that recorded into it" — the table is owned by a keeper process of its own, not by the recorder
+- [x] Two repositories built with different capacities do not share a table. — `audit/event_test` "two repositories never share a table"
 
 ### Step 3 — The durable arm
 
@@ -179,10 +179,10 @@ pub fn sqlAuditRepository(table: string) -> AuditRepository
 ```
 
 **Acceptance:**
-- [ ] The schema is created by a front 77 migration, not by the repository at boot — a repository that mutates schema at boot is a repository that surprises a DBA.
-- [ ] `find` pushes the principal, kind and timestamp filters into SQL; a test asserts the query text contains all three predicates rather than filtering in botopink after a full read.
-- [ ] `dropped()` is always 0 for this arm, and the README says why.
-- [ ] A write that fails does not raise into the caller's request — audit failure is logged at error and counted, because an unavailable audit database must not take the application down with it. Whether that trade is right is stated explicitly, not assumed.
+- [x] The schema is created by a front 77 migration, not by the repository at boot — a repository that mutates schema at boot is a repository that surprises a DBA. — `audit/event_test` "audit sql: the repository never creates its table - the schema is a migration" (`auditSchemaSql(table)` is the migration text)
+- [x] `find` pushes the principal, kind and timestamp filters into SQL; a test asserts the query text contains all three predicates rather than filtering in botopink after a full read. — `audit/event_test` "audit sql: find pushes principal, kind and instant into the WHERE"
+- [x] `dropped()` is always 0 for this arm, and the README says why. — `audit/event_test` "audit sql: dropped is 0, and a failed write is logged and counted, never raised"; the reason is in `repository/rakun/AGENTS.md` § Audit and HTTP exchanges
+- [x] A write that fails does not raise into the caller's request — audit failure is logged at error and counted, because an unavailable audit database must not take the application down with it. Whether that trade is right is stated explicitly, not assumed. — `audit/event_test` "audit sql: dropped is 0, and a failed write is logged and counted, never raised"; the trade is stated in `audit.bp` and AGENTS.md
 
 ### Step 4 — The events front 10 publishes
 
@@ -191,10 +191,10 @@ pub fn audit(kind: string, principal: string, data: Array<#(string, string)>) ->
 ```
 
 **Acceptance:**
-- [ ] Front 10 calls this and nothing in `src/audit/**` imports front 10.
-- [ ] With no actuator module present, the seam is a no-op and front 10's tests still pass.
-- [ ] A successful authentication produces one `AUTHENTICATION_SUCCESS` carrying the principal and the remote address; a failure produces one `AUTHENTICATION_FAILURE` carrying the attempted principal and *no* password field, asserted by a test that greps the stored data.
-- [ ] A denied request produces one `AUTHORIZATION_FAILURE` carrying the path and the required role.
+- [x] Front 10 calls this and nothing in `src/audit/**` imports front 10. — front 10's `securityEntry` calls rakun-actuator-api's `rkAudit` seam (rakun-security `audit_events_test`); `src/audit/audit.bp` imports only rakun, std, rakun-actuator-api and `management`
+- [x] With no actuator module present, the seam is a no-op and front 10's tests still pass. — `audit/endpoint_test` "audit seam: without an installed repository rkAudit is a no-op"; rakun-security `audit_events_test` "with no sink installed the filter runs unchanged", and the rest of rakun-security's suite installs no sink
+- [x] A successful authentication produces one `AUTHENTICATION_SUCCESS` carrying the principal and the remote address; a failure produces one `AUTHENTICATION_FAILURE` carrying the attempted principal and *no* password field, asserted by a test that greps the stored data. — rakun-security `audit_events_test` "a successful authentication is one AUTHENTICATION_SUCCESS …", "a failure is one AUTHENTICATION_FAILURE naming the attempted principal and carrying no password" (the remote address is the socket peer; a chain run with no socket carries it empty)
+- [x] A denied request produces one `AUTHORIZATION_FAILURE` carrying the path and the required role. — rakun-security `audit_events_test` "a denied request is one AUTHORIZATION_FAILURE with the path and the required role"
 
 ### Step 5 — The exchange recorder
 
@@ -224,12 +224,12 @@ anything. `exchangeFields` is the projection itself and is pure, which is what m
 exclusions testable without a listener.
 
 **Acceptance:**
-- [ ] With recording disabled, the filter is not installed at all — verified by counting the chain's arms, not by checking an empty ring.
-- [ ] With it enabled and no include list, an exchange carries exactly method, URI, status and duration.
-- [ ] With `request-headers` included, an `authorization` header is absent from the record and a `cookie` header is absent from the record.
-- [ ] With `authorization-header` included, it is present — the only way it can be.
-- [ ] An unknown include name fails at boot with a located message listing the eight valid ones.
-- [ ] A request that raises inside the chain is still recorded, with the status the error handler produced.
+- [x] With recording disabled, the filter is not installed at all — verified by counting the chain's arms, not by checking an empty ring. — `exchanges/recording_test` "exchanges: with recording disabled the chain carries no recorder entry"
+- [x] With it enabled and no include list, an exchange carries exactly method, URI, status and duration. — `exchanges/recording_test` "exchanges: enabled with no include list keeps method, URI, status and duration only"
+- [x] With `request-headers` included, an `authorization` header is absent from the record and a `cookie` header is absent from the record. — `exchanges/recording_test` "exchanges: request-headers never carries authorization or cookie"
+- [x] With `authorization-header` included, it is present — the only way it can be. — `exchanges/recording_test` "exchanges: authorization-header and cookie-headers are their own switches"
+- [x] An unknown include name fails at boot with a located message listing the eight valid ones. — `exchanges/recording_test` "exchanges: an unknown include name refuses the boot listing the eight" (time taken is always recorded; the message lists the seven switches)
+- [x] A request that raises inside the chain is still recorded, with the status the error handler produced. — `exchanges/recording_test` "exchanges: a request that raises in the chain is recorded with status 500"
 
 ### Step 6 — The two endpoints
 
@@ -239,18 +239,18 @@ GET /actuator/httpexchanges
 ```
 
 **Acceptance:**
-- [ ] Both are registered with front 11 and both are absent from the discovery page unless front 76's exposure list names them.
-- [ ] Both are read-only: no verb other than `GET` is routed.
-- [ ] `auditevents` renders `dropped` alongside `events`.
-- [ ] `httpexchanges` renders newest first, and the ring's capacity is reported with the payload.
-- [ ] Sanitization from front 76 applies to both — a value in an audit `data` pair whose key matches the sanitize list is masked.
+- [x] Both are registered with front 11 and both are absent from the discovery page unless front 76's exposure list names them. — `audit/endpoint_test` "auditevents: registered, absent unless exposed, …", `exchanges/recording_test` "httpexchanges: exposed only by front 76, …" (404 until exposed; the actuator has no discovery page)
+- [x] Both are read-only: no verb other than `GET` is routed. — `audit/endpoint_test` "auditevents: … read-only …", `exchanges/recording_test` "httpexchanges: … read-only …"
+- [x] `auditevents` renders `dropped` alongside `events`. — `audit/endpoint_test` "auditevents: … rendering dropped with events and filters"
+- [x] `httpexchanges` renders newest first, and the ring's capacity is reported with the payload. — `exchanges/recording_test` "httpexchanges: exposed only by front 76, read-only, newest first with its capacity"
+- [x] Sanitization from front 76 applies to both — a value in an audit `data` pair whose key matches the sanitize list is masked. — `audit/endpoint_test` "auditevents: a data value under a secret-named key is masked by front 76's sanitizer", `exchanges/recording_test` "httpexchanges: recorded header values go through front 76's sanitizer"
 
 ### Step 7 — Retention
 
 **Acceptance:**
-- [ ] `rakun.management.auditevents.capacity` and `rakun.management.httpexchanges.capacity` both take effect at boot and are reported by their endpoints.
-- [ ] Capacity 0 is rejected at boot rather than producing a repository that records nothing.
-- [ ] The SQL arm has a documented retention story — a scheduled prune via front 16 — and the README says that unbounded audit tables are the caller's decision to make.
+- [x] `rakun.management.auditevents.capacity` and `rakun.management.httpexchanges.capacity` both take effect at boot and are reported by their endpoints. — `audit/endpoint_test` "audit retention: the capacity key takes effect at boot and is reported; 0 refuses", `exchanges/recording_test` "httpexchanges: exposed only by front 76, …" (capacity 2)
+- [x] Capacity 0 is rejected at boot rather than producing a repository that records nothing. — `audit/endpoint_test` "audit retention: …; 0 refuses", `exchanges/recording_test` "httpexchanges: capacity 0 refuses the boot"
+- [x] The SQL arm has a documented retention story — a scheduled prune via front 16 — and the README says that unbounded audit tables are the caller's decision to make. — `repository/rakun/AGENTS.md` § Audit and HTTP exchanges and the header of `audit.bp`
 
 ## Examples
 
