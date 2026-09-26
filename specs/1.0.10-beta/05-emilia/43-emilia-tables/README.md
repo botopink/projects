@@ -111,9 +111,9 @@ pub type Token {
 ```
 
 **Acceptance:**
-- [ ] `tableTokenToCss(.Collapse, th)` returns `border-collapse:collapse`.
-- [ ] `tableTokenToCss(.Layout.Fixed, th)` returns `table-layout:fixed`.
-- [ ] `tableTokenToCss` is exhaustive with no `_` arm.
+- [x] `tableTokenToCss(.Collapse, th)` returns `border-collapse:collapse`. — held: test "Table — border-collapse and table-layout, `§ 14.1` and `§ 14.3`"
+- [x] `tableTokenToCss(.Layout.Fixed, th)` returns `table-layout:fixed`. — held: same test
+- [x] `tableTokenToCss` is exhaustive with no `_` arm. — held: `tableTokenToCss` and its sub-dispatchers have no `_` arm
 
 ### Step 2 — `border-spacing`, all three axes
 
@@ -146,14 +146,14 @@ The three axes are separate sub-sections rather than one section with an axis pa
 form it emits is simpler than a dispatcher that reassembles it.
 
 **Acceptance:**
-- [ ] `tableTokenToCss(.Spacing.2, th)` returns `border-spacing:calc(var(--spacing) * 2)` — spaces
-      around the `*` kept, and **no `rem` literal anywhere in this front's block**.
-- [ ] `tableTokenToCss(.SpacingX.2, th)` returns `border-spacing:calc(var(--spacing) * 2) 0` and
+- [x] `tableTokenToCss(.Spacing.2, th)` returns `border-spacing:calc(var(--spacing) * 2)` — spaces
+      around the `*` kept, and **no `rem` literal anywhere in this front's block**. — held: test "Table.Spacing — the five steps as spacing multipliers"; walk "front 43 — 21 leaves … none resolving a length"
+- [x] `tableTokenToCss(.SpacingX.2, th)` returns `border-spacing:calc(var(--spacing) * 2) 0` and
       `.SpacingY.2` returns `border-spacing:0 calc(var(--spacing) * 2)` — the two are not
-      interchangeable and a test asserts both.
-- [ ] `.Table.Spacing.0` returns `border-spacing:0`, with no unit and no `calc`.
-- [ ] `.Table.SpacingX.0` and `.Table.SpacingY.0` both return `border-spacing:0 0`, which is the
-      one place the two axes agree.
+      interchangeable and a test asserts both. — held: test "Table.SpacingX / SpacingY — the axes are not interchangeable"
+- [x] `.Table.Spacing.0` returns `border-spacing:0`, with no unit and no `calc`. — held: test "Table.Spacing — the zero rows carry no unit and no calc"
+- [x] `.Table.SpacingX.0` and `.Table.SpacingY.0` both return `border-spacing:0 0`, which is the
+      one place the two axes agree. — held: same test
 
 ### Step 3 — `caption-side`
 
@@ -163,8 +163,8 @@ form it emits is simpler than a dispatcher that reassembles it.
 | `caption-bottom` | `.Table.Caption.Bottom` | `caption-side:bottom` |
 
 **Acceptance:**
-- [ ] `tableTokenToCss(.Caption.Bottom, th)` returns `caption-side:bottom`.
-- [ ] `Caption` has exactly two leaves; `§ 14.4` lists two.
+- [x] `tableTokenToCss(.Caption.Bottom, th)` returns `caption-side:bottom`. — held: test "Table.Caption — the two rows of `§ 14.4`"
+- [x] `Caption` has exactly two leaves; `§ 14.4` lists two. — held: `tokens.bp` `Table.Caption { Top, Bottom }`
 
 ### Step 4 — one new arm in `tokenToSheet`
 
@@ -180,11 +180,11 @@ destructures by its declared field name (`value`) — a positional bind type-che
 at run time.
 
 **Acceptance:**
-- [ ] The two arms sit between front 42's arms and front 44's, in front-number order.
-- [ ] Each arm is one `declSheet(...)` call; neither builds a `Rule` or a `Sheet` by hand.
-- [ ] `Token.TableSpacingRaw(value: "1px 2px")` **constructs** — a test builds one.
-- [ ] No section in this front's `tokens.bp` block contains a payload leaf.
-- [ ] `tokenToSheet` still has no `_` arm.
+- [x] The two arms sit between front 42's arms and front 44's, in front-number order. — held: `tokenToSheet`'s `// ── front 43 — tables` fence between front 42's and front 44's
+- [x] Each arm is one `declSheet(...)` call; neither builds a `Rule` or a `Sheet` by hand. — held: both arms are `declSheet(…)`
+- [x] `Token.TableSpacingRaw(value: "1px 2px")` **constructs** — a test builds one. — held: test "TableSpacingRaw — the escape hatch constructs and emits"
+- [x] No section in this front's `tokens.bp` block contains a payload leaf. — held: `tokens.bp` front 43 block — leaves only
+- [x] `tokenToSheet` still has no `_` arm. — held: `tokenToSheet` has no `_` arm
 
 ## Examples
 
@@ -231,14 +231,14 @@ What the tests assert:
 
 ## Definition of done
 
-- [ ] `Table` exists as a top-level section with `Collapse`, `Separate`, `Layout`, `Spacing`,
+- [x] `Table` exists as a top-level section with `Collapse`, `Separate`, `Layout`, `Spacing`,
       `SpacingX`, `SpacingY`, `Caption`, fenced by a `front 43` banner in `tokens.bp` and appended
-      after front 42's block.
-- [ ] `tableTokenToCss` and its sub-dispatchers are fenced by a `front 43` banner in `emilia.bp`,
-      appended after front 42's block, and take `th: Theme` per contract `§ 4a`.
-- [ ] One arm added to `tokenToSheet`, a `declSheet(...)` call, in front-number order, and no other
-      line of that `case` moved.
-- [ ] Every non-zero spacing step is `spacing(n)`; no `rem` literal appears in this front's block.
-- [ ] `repository/emilia/AGENTS.md` records the new section.
-- [ ] The front's tests are green on its assigned target — here, both `commonJS` and `erlang`,
-      because comptime output must not differ between them.
+      after front 42's block. — held: `tokens.bp` `// ── front 43 — tables` fence after front 42's
+- [x] `tableTokenToCss` and its sub-dispatchers are fenced by a `front 43` banner in `emilia.bp`,
+      appended after front 42's block, and take `th: Theme` per contract `§ 4a`. — held: `emilia.bp` `// ── front 43 — tables` block after front 42's; `tableTokenToCss(t, th)`
+- [x] One arm added to `tokenToSheet`, a `declSheet(...)` call, in front-number order, and no other
+      line of that `case` moved. — held (shape: two arms — `Table` and the top-level `TableSpacingRaw`, as step 4 says): after front 42's fence, no other line moved
+- [x] Every non-zero spacing step is `spacing(n)`; no `rem` literal appears in this front's block. — held: `tableSpacing*Value` all `spacing(n)`; the walk finds no `rem` or `px`
+- [x] `repository/emilia/AGENTS.md` records the new section. — held: emilia `AGENTS.md` "Front 43 owns **tables**"
+- [x] The front's tests are green on its assigned target — here, both `commonJS` and `erlang`,
+      because comptime output must not differ between them. — held: `modules/emilia` 608/608 on commonJS and erlang (+10 inline tests; shape: inline, no `test/tables_test.bp`)
