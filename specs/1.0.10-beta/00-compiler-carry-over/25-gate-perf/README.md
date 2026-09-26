@@ -41,7 +41,9 @@ resolution walks up the tree and would find the main checkout's libraries too �
 the same directory (the user's `/tmp` quota fills up under several agents and fails a run with
 `EDQUOT`). The copy's `repository/botopink-lang` is a fresh `git init` of the tree (the gate asks
 `git rev-parse --show-toplevel`). The harness is `~/.cache/bp-gateperf/timed-gate.sh`; unlike
-`gate.sh` it continues past a red stage so that every stage is timed.
+`gate.sh` it continues past a red stage so that every stage is timed. Since decision 143 (library
+resolution stops at the enclosing checkout) the gate and `test-libs` run in place in a worktree, and
+step 4's row was measured that way.
 
 - **warm**: the runtime cache and the zig cache as the previous run left them.
 - **cold**: `--cold` (the runtime cache deleted — the run that decides a merge), zig cache warm.
@@ -159,9 +161,9 @@ admit by `procs_running`, so two of them side by side share the CPUs instead of 
       language cell planted (stage 9, exit 1) and a red docs fence planted (stage 10, exit 1)
 - [x] § Measurements row
 
-### Step 4 — `test-libs`' erlang cells (open)
+### Step 4 — `test-libs`' erlang cells: a `.beam` cache
 
-With steps 1–3 in, `test-libs` is the gate's critical path: ~55–63 s of wall clock and ~690 of
+With steps 1–3 in, `test-libs` was the gate's critical path: ~55–63 s of wall clock and ~690 of
 its ~1100 CPU-seconds, running beside everything else. Measured cell by cell with
 `botopink-lib-test --include-unsupported --jobs 1` (the stderr header of each cell timestamped;
 the copy at `~/.cache/bp-gateperf/libs/`): **356 s serial, 257 s of it the erlang cells** against
@@ -173,16 +175,48 @@ One erlang cell traced (`strace -f -e execve`, `emilia/examples/emilia-borders`,
 22 CPU-s, commonJS 4.1 s): ~6 s compiling the project with its dependencies (`emilia`, `std`) in the
 `botopink` process, ~3.3 s in `precompileErlang` compiling every emitted `.erl` once, ~2.5 s in the
 `escript` that runs the tests. Every `emilia-*` member compiles the same `emilia` and `std` modules
-to the same `.erl` text and then to the same `.beam`, fifteen times over, in every gate.
+to the same `.erl` text and then to the same `.beam` — 4 093 modules a member — fifteen times over,
+in every gate.
 
-Remaining work, in order of measured size:
-1. **A content-keyed `.beam` cache for `precompileErlang`** (`modules/compiler-cli/src/cli/test_cmd.zig`):
-   the key is the `.erl` bytes, the compile options and the running OTP release; a hit copies the
-   `.beam` beside the source, a miss compiles as today and publishes by rename (two gates share it),
-   a source that does not compile is never cached (so its refusal is unchanged). ~3 s × ~30 erlang
-   cells per gate. It needs a reaping rule like `clean-tmp`'s.
-2. The per-cell compile of the same dependency modules (~4–6 s a cell on both targets) is the
-   compiler's own pipeline (`compiler-core`) — a front of its own, after `front/24-integration`.
+`precompileErlang` (`modules/compiler-cli/src/cli/test_cmd.zig`) now keeps each `.beam` it compiles
+in `${XDG_CACHE_HOME:-$HOME/.cache}/botopink/beam/<k[0..2]>/<k>.beam`, shared by every checkout and
+gate of the machine (the cells that compile the same dependency run from different project
+directories, so a per-project `.botopinkbuild/` would share nothing). `k` is the SHA-256 of the source
+bytes, the compile options, the OTP release, the erts / `compiler` / `stdlib` versions and
+`ERL_COMPILER_OPTIONS` (which `compile:file/2` appends); the botopink compiler's version is not in it,
+because the `.beam` is a function of the `.erl` bytes, which already carry whatever the compiler
+emitted. A `.beam` also names the path it was compiled from — the `Line` table (every stack trace
+prints it), `CInf` (the include dir and the absolute source) and `Dbgi` (the options) — and each run's
+directory is new, so an entry stores the path and include dir it was compiled with and a hit is
+**relocated**: those three chunks are rewritten to this run's source and include dir. An entry is
+stored only when relocating the fresh `.beam` to its own path gives the same bytes, and never for a
+source that does not compile (its refusal stays the loader's), nor one that names `parse_transform`
+(the transform's code is not in the key), `?FILE` (the path is a literal in the code) or `-file`
+(more names in the `Line` table). Entries are written by staging under a unique name and renaming (two
+cells or two gates race to the same bytes); an entry that does not decode or relocate is a miss. A
+hit refreshes the entry's mtime and every run reaps one of the 256 shards at random — entries unused
+for 7 days, staging files older than a day — so the cache needs no `clean-tmp` step; after one full
+gate it held 14 860 entries, 72 MB.
+
+**Acceptance:**
+- [x] a hit is the compile's own bytes: the 4 093 `.erl` of an `emilia-*` member compiled with the
+      cache populated from another directory, and compiled again with no cache in the same directory
+      — every `.beam` byte-identical; one byte changed in one source → that module is compiled (a new
+      entry) and its `.beam` equals a fresh compile of the edited source; fifty entries truncated to
+      100 bytes → misses, every `.beam` still identical
+- [x] `test-libs` before / with an empty cache / warm: the same 103 cell lines (70 passed, 0 failed,
+      19 restricted pinned, 13 without tests) and the same output line for line, with the run
+      directory id, durations, error-report timestamps, pids and escript module names stripped;
+      the 18 largest erlang cells run one at a time (15 `emilia-*`, `emilia`, `std`, `rakun`): 18
+      identical logs under the same stripping — stack traces through a cached sidecar name this run's
+      file, as before
+- [x] a library whose host `.erl` does not compile (`does not compile — refusing to run the tests of
+      …`, exit 1) and a project whose sidecar is missing (`{error,undef}`, exit 1): the same output and
+      exit status before, with an empty cache and warm
+- [x] § Measurements row
+
+What remains is the per-cell compile of the same dependency modules (~4–6 s a cell on both targets):
+it is the compiler's own pipeline (`compiler-core`), a front of its own.
 
 ### Not a step: the hooks in worktrees
 
@@ -208,12 +242,25 @@ One row per landed step, cumulative. Wall and CPU in seconds; "rest" is stages 2
 | step 1 — the shell runners on the pool | 130.1 | 292.2 | 1071.0 | 23.6 / 154.4 cold | 56.5 | 19.9 | 17.5 | 1.5 | 11.3 | −14.2 s (−9.8 %) | other agents' gates; load 34–37 (cold run 7→37) |
 | step 2 — compiler-core as 8 shards | 125.0 | 160.9 | 1099.5 | 6.8 / 33.7 cold | 63.5 | 21.4 | 18.5 | 1.8 | 13.0 | −19.3 s (−13.4 %); cold −103.9 s (−39.2 %) | other agents' gates; load 36–43 (cold run 11→36) |
 | step 3 — stages 4b–10 side by side | 89.4 | 116.0 | 1119.7 | side by side | side by side | side by side | side by side | side by side | side by side | −54.9 s (−38.0 %); cold −148.8 s (−56.2 %) | other agents' gates; load 46–52, the heaviest of the four rows |
+| step 4 — the `.beam` cache (in place, before → after) | 227.4 → 131.5 | 282.9 → 268.6 | 1883.7 → 1452.3 | side by side | 168.3 → 69.5 (1263.0 → 864.2 CPU-s) | side by side | side by side | side by side | side by side | see below | other agents' gates; load 45–73, the heaviest of all rows |
 
 Step 3's row is `scripts/gate.sh` itself timed whole (stages 4b–10 overlap, so they have no wall
 clock of their own), on the copy with its `test-libs` ledger aligned so every stage runs. Back to
 back on that copy, warm, the serial gate took 125.5 s and the side-by-side one 101.5 s (load
 35–48); with a red cell at stage 9 or 10, 102.8 → 81.5 s and 111.7 → 81.3 s. CPU-seconds stay
 within 7 % of the baseline across the three steps — the work is the same, only its overlap moved.
+
+Step 4's row is two series run back to back on this worktree at compiler `c40e3476`, in place
+(decision 143), the "before" with `test_cmd.zig` as on `feat`: `zig build test-libs`, the gate, the
+gate `--cold`; then the cache emptied and the same with it (`test-libs` once with the cache empty:
+102.0 s, 1142.8 CPU-s). The load (45–73) was far above the other rows', so its totals are not
+comparable with them — only with each other: warm gate −95.9 s (−42 %) and −431 CPU-s (−23 %);
+`test-libs` warm −98.8 s (−59 %), −399 CPU-s (−32 %); cold gate (runtime cache deleted, `.beam`
+cache warm) −14.3 s and −380 CPU-s — the cold gate's wall clock is `zig build test`'s. The serial
+series of the 18 largest erlang cells (`--jobs 1`, the load 7–49): 796.7 CPU-s before, 568.8 with the
+cache filling, 461.6 warm (−42 %); wall 398.6 → 262.7 → 170.8 s. A hit is not free: relocating a
+`.beam` costs about half of what compiling it does (an `emilia-*` member's 4 093 modules: 4.8 s to
+compile, 2.7 s from the cache).
 
 Step 2's own gain is `zig build test` 25.9 → 6.8 s warm (−74 %) and 138.0 → 33.7 s cold (−76 %), at
 +12 CPU-s warm (each shard starts its own process and `erl`). Its warm total moved less than that
@@ -247,4 +294,8 @@ with since step 1 of `00 · gate-perf`.
   that reds under load. The tests front owns it.
 - Files touched outside `scripts/` and the runners: `build.zig` (the compiler-core test step, step
   2), the new `modules/test-shard/`, and the `AGENTS.md` of the root, `modules/`, `scripts/` and
-  `tests/language/`.
+  `tests/language/`. Step 4, approved by the maintainer beyond this front's ownership:
+  `compiler-cli/src/cli/test_cmd.zig` (`precompileErlang`, the `.beam` cache), and decision 143's
+  library resolution — `manifest.isCheckoutRoot`, the three walk-ups (`compiler-cli` `libs.zig`,
+  `lib-test-runner` `discovery.zig`, `language-server` `project_graph.zig`) and `libs.zig`'s
+  transitive dependency loading (`DepClosure`).
