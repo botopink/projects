@@ -42,6 +42,16 @@ README.
 - [x] decision 140 — a module-level `pub val` of any type is read from an importing module on all four backends, and an imported module's body runs before the importer's, dependencies first (`tests/language/modules/pub_val_across_modules`); jhonstart's globals are `pub val globals`
 - [x] decision 141 — the BEAM lowering takes `receive`, `!`, `catch E`, `try … of`, `try … after` and integer-field binary patterns; `'__bp_erl_eval'/2` is gone, a refused template is a located build error; 177 / 177 shipped templates lower (169 before)
 - [x] decision 142 — `json.decode` converts a numeral to its correctly rounded `f64` in botopink (no host `strtod` cell); bit-identical to the host on the boundary values and 3 500 randomized numerals, commonJS and erlang
+- [x] onze F1 — a sibling's `pub val` read by a test: the erlang test runner loads the sibling (`modules/pub_val_in_a_test`)
+- [x] onze F2 — an imported record's closure reaches the types its module imports from the package's other modules (`modules/import_type_closure_across_modules`)
+- [ ] onze F3 — a dependency's own dependencies are not followed; owned by `00 · 25-gate-perf` step 4 (`loadDependencies`)
+- [x] onze F4 / F9 — `xs.at(i).unwrapOr(d)` lowers in a method body and inside parentheses (`run/unwrap_or_positions.bp`)
+- [x] onze F5 — `"src": "."` is honoured by `build`, `check` and `test` (`modules/src_at_package_root`)
+- [x] onze F6 — a one-argument `slice` as an `if` branch's value gets its default on erlang (`run/string_slice_in_if_branch.bp`)
+- [x] onze F7 — integer `/` truncates toward zero on every backend (`run/integer_division_truncates.bp`); the rule awaits the maintainer's confirmation (docs.md was silent)
+- [x] onze F8 — a lexer error in an imported module is the reported, located error (`modules/lexer_error_in_imported_module`)
+- [x] onze F10 — an imported module's `'_botopink_init'/0` runs, by decision 140 (`modules/pub_val_across_modules`)
+- [x] erlang float literal — every number token is a valid Erlang number (`5e-324` → `5.0e-324`, `0xFF` → `16#FF`), and an exponent literal is an `f64` (`run/float_literal_spellings.bp`, `run/number_literal_erlang_spellings.bp`)
 
 ## In analysis
 - [ ] `00 · 25-gate-perf` (C-33) — steps 1–3 (the bounded worker pool for `botopink-lib-test`, `tests/language` and `check-docs`; the compiler-core suite in shards; the gate's stages side by side). Open: step 4, a content-keyed `.beam` cache for `test-libs`' erlang cells
