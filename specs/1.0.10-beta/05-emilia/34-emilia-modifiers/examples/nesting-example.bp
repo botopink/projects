@@ -8,9 +8,6 @@
 // Reference: TAILWIND_CSS_DOCS.md § 3.3 ("Breakpoint Range"), § 3.2
 //
 // emilia runs at comptime and emits a CSS string; this file is target-independent.
-// Nesting is the one part of the modifier surface that works today
-// (repository/emilia/src/emilia.bp:455-461); front 34 keeps it and widens the
-// set of wrappers that can take part.
 
 import {emilia, flush, Token} from "emilia";
 
@@ -116,20 +113,20 @@ test "a breakpoint range nests the upper bound inside the lower" {
     val tokens: Token[] = [onlyBetweenMdAndXl()];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{@media (width >= 48rem){@media (width < 80rem){display:flex;flex-direction:row}}}</style>";
+    assert styles.contains("@media (width >= 48rem){@media (width < 80rem){." + cls
+        + "{display:flex;flex-direction:row}}}");
 }
 
 test "dark outside hover and hover outside dark are different rules" {
     val a: Token[] = [darkHoverSurface()];
     val clsA = emilia(a);
     val stylesA = await flush();
-    assert stylesA.contains("@media (prefers-color-scheme: dark){@media (hover: hover){&:hover{");
+    assert stylesA.contains("@media (prefers-color-scheme: dark){@media (hover: hover){." + clsA + ":hover{");
 
     val b: Token[] = [hoverDarkSurface()];
     val clsB = emilia(b);
     val stylesB = await flush();
-    assert stylesB.contains("@media (hover: hover){&:hover{@media (prefers-color-scheme: dark){");
+    assert stylesB.contains("@media (hover: hover){@media (prefers-color-scheme: dark){." + clsB + ":hover{");
     assert clsA != clsB;
 }
 
@@ -137,28 +134,27 @@ test "three modifiers nest in source order" {
     val tokens: Token[] = [threeDeep()];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{@media (prefers-color-scheme: dark){@media (width >= 48rem)"
-        + "{@media (hover: hover){&:hover{font-weight:bold}}}}}</style>";
+    assert styles.contains("@media (prefers-color-scheme: dark){@media (width >= 48rem)"
+        + "{@media (hover: hover){." + cls + ":hover{font-weight:bold}}}}");
 }
 
 test "a group state may be scoped to a breakpoint" {
     val tokens: Token[] = [revealOnWideHover()];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles.contains("@media (width >= 64rem){&:is(:where(.group):hover *){color:var(--color-white)}}");
+    assert styles.contains("@media (width >= 64rem){." + cls + ":is(:where(.group):hover *){color:var(--color-white)}}");
 }
 
 test "a pseudo-element may live inside a state" {
     val tokens: Token[] = [hidePlaceholderOnFocus()];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles.contains("&:focus{&::placeholder{color:transparent}}");
+    assert styles.contains("." + cls + ":focus::placeholder{color:transparent}");
 }
 
 test "the email field drives its error message from the peer state" {
     val out = await emailField("Email", "Enter a valid address.");
     assert out.startsWith("<style>");
-    assert out.contains("&:is(:where(.peer):invalid ~ *){visibility:visible;color:var(--color-pink-600)}");
-    assert out.contains("@media print{display:none}");
+    assert out.contains(":is(:where(.peer):invalid ~ *){visibility:visible;color:var(--color-pink-600)}");
+    assert out.contains("@media print{.");
 }

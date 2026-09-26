@@ -94,7 +94,7 @@ leaves — so the card uses `arbValue("background-color", themeVar("--color-lago
 
 ```bp
 import { brandTheme, card } from "main";
-import { Token, ThemeEntry, defaultOptions, withTheme, themeValue, defaultTheme, emptyTheme, extend, clearNamespace, Ns } from "emilia";
+import { Token, ThemeEntry, defaultOptions, withTheme, themeValue, defaultTheme, emptyTheme, extendTheme, clearNamespace, Ns } from "emilia";
 import { assertTheme, assertCssWith, assertCascade } from "emilia-test";
 import { testing.asserts.equal } from "std";
 
@@ -144,7 +144,7 @@ test "the stock palette is gone and the brand is reachable" {
 @layer theme{:root{--spacing:4px;--font-body:Inter, sans-serif;--color-lagoon:oklch(0.72 0.11 221.19);--color-coral:oklch(0.74 0.17 40.24)}}
 @layer utilities{.e1{background-color:var(--color-lagoon);padding:calc(var(--spacing) * 4);font-weight:bold}}
 ```
-`extend` overrides in place, so `--spacing:4px` keeps the position `defaultTheme()` gave `--spacing`
+`extendTheme` overrides in place, so `--spacing:4px` keeps the position `defaultTheme()` gave `--spacing`
 — first — and the four keyframes cleared with `Ns.Animate` leave no `@keyframes` line.
 
 ---
@@ -246,7 +246,7 @@ and a page flushed with preflight on.
 
 ```bp
 import { prose, heading, lede } from "main";
-import { Token, preflightRules, defaultOptions, withBase, withTheme, emptyTheme, extend, ThemeEntry } from "emilia";
+import { Token, preflightRules, defaultOptions, withBase, withTheme, emptyTheme, extendTheme, ThemeEntry } from "emilia";
 import { assertCss, assertCascade } from "emilia-test";
 
 test "css: article ---- prose measure and leading" {
@@ -501,7 +501,7 @@ pub fn thumb() -> Token[] {
 }
 pub fn glass() -> Token[] {
     val inner: Token[] = [.Bg.Color.White];
-    val tokens: Token[] = [Token.Alpha(percent: 30, inner: inner), .Backdrop.Blur.Md, .Border.W.1, .Border.Color.White, .Pad.All.4];
+    val tokens: Token[] = [Token.Alpha(percent: 30, inner: inner), .BackdropFilter.Blur.Md, .Border.W.1, .Border.Color.White, .Pad.All.4];
     return tokens;
 }
 pub fn icon() -> Token[] {
@@ -725,7 +725,7 @@ same token list under the same `fullTheme()`. A test in the module `contains`-ch
 | Example | Adds |
 |---|---|
 | `emilia-card` | a four-list document where one list repeats (collapse across calls with other classes between) |
-| `theme-brand` | a cleared namespace rendering, an `arbValue` over `themeVar`, `extend` keeping the override's position |
+| `theme-brand` | a cleared namespace rendering, an `arbValue` over `themeVar`, `extendTheme` keeping the override's position |
 | `dashboard-layout` | a sibling rule listed after a breakpoint rule (partition order visible on real markup), grid span + container on one element |
 | `typography-article` | the `base` layer losing to `utilities` on `h1`, `::first-letter` carrying a size pair |
 | `interactive-button` | six fronts in one class: coalescing of three declaration tokens under one variant, the at-rule-free variants (`:focus-visible`, `:active`, `:disabled`) preceding the hover |

@@ -11,8 +11,7 @@
 // Reference: TAILWIND_CSS_DOCS.md § 14. Tables (spacing base from § 21.2)
 //
 // The spacing steps are `spacing(n)` = `calc(var(--spacing) * n)`, never a
-// resolved `rem` (contract § 4a). They are the same steps `Pad` and `Margin`
-// already use, so `.Pad.All.4` and `.Table.Spacing.4` mean the same distance —
+// resolved `rem`. They are the same steps `Pad` and `Margin` use, so `.Pad.All.4` and `.Table.Spacing.4` mean the same distance —
 // and both follow the theme when a project overrides `--spacing`.
 
 import {emilia, flush, Token} from "emilia";
@@ -43,8 +42,9 @@ val spacingScale: Token[] = [
 
 // ── border-spacing, per axis ─────────────────────────────────────────────────
 //
-// `SpacingX` writes the horizontal component first (`border-spacing:0.5rem 0`)
-// and `SpacingY` writes it second (`border-spacing:0 0.5rem`). The two are not
+// `SpacingX` writes the horizontal component first
+// (`border-spacing:calc(var(--spacing) * 2) 0`) and `SpacingY` writes it second
+// (`border-spacing:0 calc(var(--spacing) * 2)`). The two are not
 // interchangeable; only the `0` step is the same for both.
 
 val spacingXScale: Token[] = [
@@ -63,13 +63,11 @@ val spacingYScale: Token[] = [
     .Table.SpacingY.8,
 ];
 
-// LANGUAGE GAP: a payload leaf nested inside an enum section cannot be
-// constructed by any spelling (language-gaps.md row 52), so this is a TOP-LEVEL
-// `Token` variant — `TableSpacingRaw`, not `Table.Spacing.Raw`. Contract § 4a.
-//
-// LANGUAGE GAP: and even at top level, a dot-shorthand path followed by a
-// payload call does not propagate the typed-array context (row 51), so the
-// construction goes through a fn.
+// A payload leaf nested inside an enum section cannot be constructed, so the
+// escape hatch is a TOP-LEVEL `Token` variant — `TableSpacingRaw`, not
+// `Table.Spacing.Raw`. A dot-shorthand path followed by a payload call does not
+// carry the typed-array context, so construction goes through a fn (emilia
+// exports `rawTableSpacing`).
 fn rawSpacing(v: string) -> Token {
     return Token.TableSpacingRaw(value: v);
 }
@@ -91,7 +89,7 @@ val captionSides: Token[] = [
 //
 // The narrow-screen fallback drops back to `auto` layout, because a fixed table
 // with five columns on a phone is unreadable — `Md` applies the fixed layout
-// only from 768px up.
+// only from the `md` breakpoint (48rem) up.
 
 fn ledgerTableTokens() -> Token[] {
     val wide: Token[] = [.Table.Layout.Fixed];

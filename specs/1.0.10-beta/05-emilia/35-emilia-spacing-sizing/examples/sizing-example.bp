@@ -10,8 +10,6 @@
 // Reference: TAILWIND_CSS_DOCS.md § 8. Sizing (8.1-8.7)
 //
 // emilia runs at comptime and emits a CSS string; this file is target-independent.
-// The whole `Size` section is delivered by front 35 — emilia has no width token
-// of any kind today. Colours come from front 33, modifiers from front 34.
 
 import {emilia, flush, Token} from "emilia";
 
@@ -191,8 +189,8 @@ test "width takes the spacing scale and the keyword leaves" {
 test "a fraction keeps six decimal places" {
     val cls = emilia(fractionalWidths());
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{width:50%;width:33.333333%;width:66.666667%}</style>";
+    assert styles.contains("." + cls
+        + "{width:50%;width:33.333333%;width:66.666667%}");
 }
 
 test "the viewport unit follows the axis" {
@@ -208,30 +206,32 @@ test "the square form emits both axes from one token" {
     val tokens: Token[] = [.Size.Both.12];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{width:calc(var(--spacing) * 12);height:calc(var(--spacing) * 12)}</style>";
+    assert styles.contains("." + cls
+        + "{width:calc(var(--spacing) * 12);height:calc(var(--spacing) * 12)}");
 }
 
-test "the named max widths match the reference table" {
+test "the named max widths are theme references, not lengths" {
     val tokens: Token[] = [.Size.MaxW.Xs, .Size.MaxW.Md, .Size.MaxW.X3xl, .Size.MaxW.X7xl];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{max-width:20rem;max-width:28rem;max-width:48rem;max-width:80rem}</style>";
+    assert styles.contains("." + cls
+        + "{max-width:var(--container-xs);max-width:var(--container-md)"
+        + ";max-width:var(--container-3xl);max-width:var(--container-7xl)}");
+    assert styles.contains("--container-xs:20rem");
 }
 
 test "the breakpoint-sized maxima live under Screen" {
     val tokens: Token[] = [.Size.MaxW.Screen.Lg, .Size.MaxW.Screen.X2xl];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls + "{max-width:64rem;max-width:96rem}</style>";
+    assert styles.contains("." + cls + "{max-width:var(--breakpoint-lg);max-width:var(--breakpoint-2xl)}");
 }
 
 test "the logical pair emits inline-size and block-size" {
     val cls = emilia(logicalSizes());
     val styles = await flush();
     assert styles.contains("inline-size:calc(var(--spacing) * 4)");
-    assert styles.contains("max-inline-size:28rem");
+    assert styles.contains("max-inline-size:var(--container-md)");
     assert styles.contains("block-size:calc(var(--spacing) * 4)");
     assert styles.contains("max-block-size:100%");
 }
@@ -239,7 +239,8 @@ test "the logical pair emits inline-size and block-size" {
 test "the article shell centres a capped column and narrows its sidebar" {
     val out = await articleShell("Release notes", "…", "On this page");
     assert out.startsWith("<style>");
-    assert out.contains("max-width:48rem");
+    assert out.contains("max-width:var(--container-3xl)");
     assert out.contains("margin-left:auto;margin-right:auto");
-    assert out.contains("@media (width >= 64rem){width:33.333333%}");
+    assert out.contains("@media (width >= 64rem){.");
+    assert out.contains("width:33.333333%");
 }

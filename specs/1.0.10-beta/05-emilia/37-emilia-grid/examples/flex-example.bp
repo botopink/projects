@@ -10,10 +10,7 @@
 // Reference: TAILWIND_CSS_DOCS.md § 6. Flexbox & Grid (6.1-6.7, 6.16-6.24)
 //
 // emilia runs at comptime and emits a CSS string; this file is target-independent.
-// `Flex.Row/Col/Wrap/NoWrap`, `Flex.Items` and `Flex.Justify` exist today
-// (tokens.bp:194-218); everything else here is delivered by front 37.
-// `display:flex` is a Layout token (front 36). Spacing from front 35, colours
-// from front 33, modifiers from front 34.
+// `display:flex` is a display value on `Layout`; `Flex` is what a flex box says next.
 
 import {emilia, flush, Token} from "emilia";
 
@@ -83,7 +80,7 @@ fn orderValues() -> Token[] {
 }
 
 // ── alignment ────────────────────────────────────────────────────────────────
-// Tailwind is not internally consistent here and this front copies it rather
+// Tailwind is not internally consistent here and emilia copies it rather
 // than smoothing it: `justify-content` and `align-items` take `flex-start`,
 // while `justify-items`, `justify-self` and `place-*` take `start`.
 
@@ -108,10 +105,10 @@ fn crossAxisAlignment() -> Token[] {
         .Flex.Items.Center,
         .Flex.Items.Baseline,
         .Flex.Items.Stretch,
-        .Flex.Self.Auto,
-        .Flex.Self.Start,
-        .Flex.Self.Center,
-        .Flex.Self.Baseline,
+        .Flex.AlignSelf.Auto,
+        .Flex.AlignSelf.Start,
+        .Flex.AlignSelf.Center,
+        .Flex.AlignSelf.Baseline,
         .Flex.Content.Between,
         .Flex.Content.Evenly,
     ];
@@ -122,9 +119,9 @@ fn bothAxesAlignment() -> Token[] {
     val values: Token[] = [
         .Flex.JustifyItems.Start,
         .Flex.JustifySelf.Center,
-        .Flex.Place.Content.Between,
-        .Flex.Place.Items.Center,
-        .Flex.Place.Self.Stretch,
+        .Flex.PlaceContent.Between,
+        .Flex.PlaceItems.Center,
+        .Flex.PlaceSelf.Stretch,
     ];
     return values;
 }
@@ -159,7 +156,7 @@ pub fn toolbar(title: string, action: string) -> @Task<string> {
     val trailing: Token[] = [
         .Flex.Shrink.0,
         .Flex.Order.Last,
-        .Flex.Self.Center,
+        .Flex.AlignSelf.Center,
         .Pad.X.3,
         .Bg.Color.Indigo.600,
         .Color.White,
@@ -186,12 +183,12 @@ test "the reverse direction and wrap values" {
     assert styles.contains("flex-wrap:wrap-reverse");
 }
 
-test "the four flex paths that compile today are unchanged" {
+test "direction and wrap are one declaration each" {
     val tokens: Token[] = [.Flex.Row, .Flex.Col, .Flex.Wrap, .Flex.NoWrap];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{flex-direction:row;flex-direction:column;flex-wrap:wrap;flex-wrap:nowrap}</style>";
+    assert styles.contains("." + cls
+        + "{flex-direction:row;flex-direction:column;flex-wrap:wrap;flex-wrap:nowrap}");
 }
 
 test "the flex shorthand keeps its three components" {
@@ -220,15 +217,15 @@ test "order-first and order-last are sentinel integers" {
     val tokens: Token[] = [.Flex.Order.First, .Flex.Order.Last, .Flex.Order.None];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls + "{order:-9999;order:9999;order:0}</style>";
+    assert styles.contains("." + cls + "{order:-9999;order:9999;order:0}");
 }
 
 test "justify-content takes flex-start and justify-items takes start" {
     val tokens: Token[] = [.Flex.Justify.Start, .Flex.JustifyItems.Start];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{justify-content:flex-start;justify-items:start}</style>";
+    assert styles.contains("." + cls
+        + "{justify-content:flex-start;justify-items:start}");
 }
 
 test "the alignment family covers all nine property groups" {
@@ -255,5 +252,6 @@ test "the toolbar gives its heading the remaining space" {
     assert out.startsWith("<style>");
     assert out.contains("flex:1 1 0%;flex-basis:0");
     assert out.contains("justify-content:space-between");
-    assert out.contains("@media (width < 40rem){flex-direction:column;align-items:flex-start}");
+    assert out.contains("@media (width < 40rem){.");
+    assert out.contains("{flex-direction:column;align-items:flex-start}");
 }

@@ -11,12 +11,9 @@
 
 import { emilia, flush, Token } from "emilia";
 import { defaultOptions, withBase, withPrefix, withImportant, withLayers, flushWith } from "emilia";
-// `preflightRules` is provided by front 55.
 import { preflightRules } from "emilia";
 
-// A card and its hover state. `Token.Hover` needs its inner list as a typed `val`
-// first: the dot-shorthand form `[.Bg.White]` inside the call argument does not
-// propagate the typed-array context (see repository/emilia/src/emilia.bp:498-503).
+// A card, its hover state and a breakpoint override.
 fn card() -> string {
     val hovered: Token[] = [.Bg.Gray.100];
     val wide: Token[] = [.Pad.All.8];

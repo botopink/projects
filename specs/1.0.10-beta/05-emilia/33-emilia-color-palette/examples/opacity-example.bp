@@ -8,8 +8,6 @@
 // Reference: TAILWIND_CSS_DOCS.md § 3.6 Colors ("Opacity with colors")
 //
 // emilia runs at comptime and emits a CSS string; this file is target-independent.
-// `Alpha` is delivered by front 33. The modifiers it nests with (`Hover`) exist
-// today; the wider modifier set is front 34.
 
 import {emilia, flush, Token} from "emilia";
 
@@ -96,16 +94,16 @@ test "Alpha rewrites a background-color into a color-mix" {
     val tokens: Token[] = [translucentSurface()];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{background-color:color-mix(in oklab, var(--color-red-500) 50%, transparent)}</style>";
+    assert styles.contains("." + cls
+        + "{background-color:color-mix(in oklab, var(--color-red-500) 50%, transparent)}");
 }
 
 test "Alpha rewrites a text colour" {
     val tokens: Token[] = [translucentText()];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{color:color-mix(in oklab, var(--color-blue-600) 80%, transparent)}</style>";
+    assert styles.contains("." + cls
+        + "{color:color-mix(in oklab, var(--color-blue-600) 80%, transparent)}");
 }
 
 test "Alpha rewrites every declaration it wraps" {

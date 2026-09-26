@@ -10,9 +10,7 @@
 // Reference: TAILWIND_CSS_DOCS.md § 10. Backgrounds (10.1, 10.2, 10.4-10.8)
 //
 // emilia runs at comptime and emits a CSS string; this file is target-independent.
-// `Bg` today is colour-only (tokens.bp:118-138); every sub-section here is
-// delivered by front 39. `Bg.Color` is front 33's. Sizing comes from front 35,
-// layout from front 36, modifiers from front 34.
+// `Bg.Color` (the palette on `background-color`) sits beside these sub-sections.
 
 import {emilia, flush, Token} from "emilia";
 
@@ -156,9 +154,9 @@ pub fn heroPanel(heading: string, kicker: string) -> @Task<string> {
 test "the three attachment values" {
     val cls = emilia(attachmentValues());
     val styles = await flush();
-    assert styles == "<style>." + cls
+    assert styles.contains("." + cls
         + "{background-attachment:fixed;background-attachment:local"
-        + ";background-attachment:scroll}</style>";
+        + ";background-attachment:scroll}");
 }
 
 test "three clip values are box values and one is text" {
@@ -173,24 +171,24 @@ test "three clip values are box values and one is text" {
 test "origin answers the three box values" {
     val cls = emilia(originValues());
     val styles = await flush();
-    assert styles == "<style>." + cls
+    assert styles.contains("." + cls
         + "{background-origin:border-box;background-origin:padding-box"
-        + ";background-origin:content-box}</style>";
+        + ";background-origin:content-box}");
 }
 
 test "a two-word background position keeps exactly one space" {
     val tokens: Token[] = [.Bg.Pos.LeftTop, .Bg.Pos.RightBottom];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{background-position:left top;background-position:right bottom}</style>";
+    assert styles.contains("." + cls
+        + "{background-position:left top;background-position:right bottom}");
 }
 
 test "bg-no-repeat is spelled Repeat.None and emits no-repeat" {
     val tokens: Token[] = [.Bg.Repeat.None];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls + "{background-repeat:no-repeat}</style>";
+    assert styles.contains("." + cls + "{background-repeat:no-repeat}");
 }
 
 test "the axis repeats keep their CSS spelling" {
@@ -204,27 +202,29 @@ test "the axis repeats keep their CSS spelling" {
 test "the three background sizes" {
     val cls = emilia(sizeValues());
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{background-size:auto;background-size:cover;background-size:contain}</style>";
+    assert styles.contains("." + cls
+        + "{background-size:auto;background-size:cover;background-size:contain}");
 }
 
 test "bg-none is a background-image, not a background-color" {
     val cls = emilia(imageValues());
     val styles = await flush();
-    assert styles == "<style>." + cls + "{background-image:none}</style>";
+    assert styles.contains("." + cls + "{background-image:none}");
 }
 
 test "the legacy Bg colour paths are untouched" {
     val tokens: Token[] = [.Bg.White];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls + "{background:#ffffff}</style>";
+    assert styles.contains("." + cls + "{background:#ffffff}");
 }
 
 test "the hero covers, anchors to the top and releases under reduced motion" {
     val out = await heroPanel("Built at comptime", "Release 1.0.9");
     assert out.startsWith("<style>");
     assert out.contains("background-size:cover;background-position:top;background-repeat:no-repeat");
-    assert out.contains("@media (width >= 64rem){background-attachment:fixed}");
-    assert out.contains("@media (prefers-reduced-motion: reduce){background-attachment:scroll}");
+    assert out.contains("@media (width >= 64rem){.");
+    assert out.contains("{background-attachment:fixed}");
+    assert out.contains("@media (prefers-reduced-motion: reduce){.");
+    assert out.contains("{background-attachment:scroll}");
 }

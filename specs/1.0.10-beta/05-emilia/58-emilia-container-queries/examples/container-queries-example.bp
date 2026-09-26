@@ -7,12 +7,10 @@
 // https://tailwindcss.com/docs/responsive-design#container-queries
 // https://tailwindcss.com/docs/theme
 
-import { emilia, flush, Token } from "emilia";
-import { ContainerSize, containerKey, containerAt, containerNamed } from "emilia";
+import { emilia, emiliaWith, flush, Token } from "emilia";
+import { ContainerSize, containerKey, containerAt, containerNamed, containerName } from "emilia";
 import { containerAtMd, containerAt2xl } from "emilia";
-// `defaultTheme`, `extend`, `ThemeEntry`, `withTheme` and `flushWith` come from
-// fronts 54 and 56.
-import { ThemeEntry, defaultTheme, extend, defaultOptions, withTheme, flushWith } from "emilia";
+import { ThemeEntry, defaultTheme, extendTheme, defaultOptions, withTheme, flushWith } from "emilia";
 
 // The parent declares itself a container. `Container.Inline` carries no payload, so it
 // stays a section leaf; everything below that carries a payload is a top-level variant
@@ -26,7 +24,7 @@ fn slot() -> string {
 // The child asks about the space it was given, not about the window. At 28rem of
 // container width it becomes a row; below that it stays a column. The same token
 // list renders the same way in a three-column grid and in a 300px drawer.
-fn card() -> string {
+fn cardTokens() -> Token[] {
     val wide: Token[] = [.Flex.Row, .Flex.Items.Center, .Flex.Gap.4];
     val roomy: Token[] = [.Pad.All.8];
     val tokens: Token[] = [
@@ -36,13 +34,17 @@ fn card() -> string {
         containerAtMd(wide),
         containerAt2xl(roomy),
     ];
-    return emilia(tokens);
+    return tokens;
+}
+
+fn card() -> string {
+    return emilia(cardTokens());
 }
 
 // A named container. The shell names itself `page`; a card nested three levels down
 // queries `page` directly instead of the nearest container above it.
 fn shell() -> string {
-    val named = Token.ContainerNamed("page");
+    val named = containerName("page");
     val tokens: Token[] = [named, .Layout.Block];
     return emilia(tokens);
 }
@@ -73,7 +75,9 @@ test "a size variant is a hoisted at-rule, not a block inside the class body" {
 test "the sizes come from the theme, so narrowing one narrows the rule" {
     val narrower: ThemeEntry[] = [ThemeEntry(name: "--container-md", value: "20rem")];
     val th = extendTheme(defaultTheme(), narrower);
-    val cls = card();
+    // The query is resolved when the class is built, so the class is built under the
+    // same theme the document is flushed with.
+    val cls = emiliaWith(cardTokens(), th);
     val opts = withTheme(defaultOptions(), th);
     val css = await flushWith(opts);
     assert css.contains("@container (width >= 20rem){." + cls + "{flex-direction:row");
@@ -108,17 +112,13 @@ test "the named builder and the general builder agree" {
     val _css = await flush();
 }
 
-// LANGUAGE GAP: a payload leaf nested inside an enum section cannot be constructed by
-// any spelling, so the size variants and the named container are top-level `Token`
-// variants and only the payload-free markers stay in the `Container` section.
-// LANGUAGE GAP: a section-typed value cannot be constructed standalone, so `ContainerAt`
-// carries its size as a `string` theme key and the typing lives in `ContainerSize` and
-// the thirteen builders.
-// LANGUAGE GAP: a dot-shorthand path followed by a payload call does not propagate the
-// typed-array context inside an array literal, so `[.ContainerAt(size: "md", inner: wide)]`
-// does not parse. The builders above are the nearest valid forms — the same workaround
-// repository/emilia/src/emilia.bp:498-503 already records. All three rows are in
-// ../../language-gaps.md; the rule they imply is stated in ../../contracts.md § 4a.
+// A payload leaf nested inside an enum section cannot be constructed, so the size
+// variants and the named container are top-level `Token` variants and only the
+// payload-free markers stay in the `Container` section. A section-typed value cannot
+// be constructed standalone either, so `ContainerAt` carries its size as a `string`
+// theme key and the typing lives in `ContainerSize` and the thirteen builders. And
+// `[.ContainerAt(size: "md", inner: wide)]` does not parse (a leading-dot path followed
+// by a payload call carries no typed-array context) — the builders are the valid forms.
 
 // The pair is what makes it work: a size variant with no ancestor container matches
 // nothing, and a container with no queries does nothing. Both halves are in this file

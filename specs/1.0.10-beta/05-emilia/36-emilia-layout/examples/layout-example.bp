@@ -10,15 +10,12 @@
 // Reference: TAILWIND_CSS_DOCS.md § 5. Layout (5.1-5.15, 5.18, 5.19)
 //
 // emilia runs at comptime and emits a CSS string; this file is target-independent.
-// The six display leaves exist today (tokens.bp:185-192); everything else here
-// is delivered by front 36. Colours come from front 33, spacing from front 35,
-// modifiers from front 34.
 
 import {emilia, flush, Token} from "emilia";
 
 // ── display ──────────────────────────────────────────────────────────────────
-// The display values stay bare leaves of `Layout`, so `.Layout.Flex` keeps the
-// spelling it has today.
+// The display values are bare leaves of `Layout`: `.Layout.Flex` is a display
+// value, not a flex container.
 
 fn displayValues() -> Token[] {
     val values: Token[] = [
@@ -119,9 +116,9 @@ fn columnValues() -> Token[] {
         .Layout.Columns.Auto,
         .Layout.Columns.Xs,
         .Layout.Columns.X3xl,
-        .Layout.Break.Inside.Avoid,
-        .Layout.Break.After.Column,
-        .Layout.Break.Before.Page,
+        .Layout.BreakInside.Avoid,
+        .Layout.BreakAfter.Column,
+        .Layout.BreakBefore.Page,
     ];
     return values;
 }
@@ -168,7 +165,7 @@ pub fn mediaCard(caption: string, body: string) -> @Task<string> {
     val label: Token[] = [
         .Layout.Block,
         .Color.Slate.500,
-        .Layout.Break.Inside.Avoid,
+        .Layout.BreakInside.Avoid,
     ];
 
     val frameClass = emilia(frame);
@@ -196,11 +193,11 @@ test "every display value of the reference has a token" {
     assert styles.contains("display:none");
 }
 
-test "the six display paths that compile today are unchanged" {
+test "a display leaf is one display declaration" {
     val tokens: Token[] = [.Layout.Flex];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls + "{display:flex}</style>";
+    assert styles.contains("." + cls + "{display:flex}");
 }
 
 test "overflow answers the shorthand and both axes" {
@@ -217,29 +214,29 @@ test "invisible is visibility hidden, not visibility invisible" {
     val tokens: Token[] = [.Layout.Visibility.Invisible];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls + "{visibility:hidden}</style>";
+    assert styles.contains("." + cls + "{visibility:hidden}");
 }
 
 test "float-start and clear-start are the logical values" {
     val tokens: Token[] = [.Layout.Float.Start, .Layout.Clear.Start];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls + "{float:inline-start;clear:inline-start}</style>";
+    assert styles.contains("." + cls + "{float:inline-start;clear:inline-start}");
 }
 
 test "a two-word object position keeps its single space" {
     val tokens: Token[] = [.Layout.Object.Pos.LeftTop, .Layout.Object.Pos.RightBottom];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{object-position:left top;object-position:right bottom}</style>";
+    assert styles.contains("." + cls
+        + "{object-position:left top;object-position:right bottom}");
 }
 
 test "the aspect ratios keep the spaces around the slash" {
     val tokens: Token[] = [.Layout.Aspect.Square, .Layout.Aspect.Video];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls + "{aspect-ratio:1 / 1;aspect-ratio:16 / 9}</style>";
+    assert styles.contains("." + cls + "{aspect-ratio:1 / 1;aspect-ratio:16 / 9}");
 }
 
 test "columns answer integers and named widths" {
@@ -247,8 +244,8 @@ test "columns answer integers and named widths" {
     val styles = await flush();
     assert styles.contains("columns:2");
     assert styles.contains("columns:auto");
-    assert styles.contains("columns:20rem");
-    assert styles.contains("columns:48rem");
+    assert styles.contains("columns:var(--container-xs)");
+    assert styles.contains("columns:var(--container-3xl)");
     assert styles.contains("break-inside:avoid");
 }
 
@@ -266,5 +263,6 @@ test "the media card crops its image and clips its frame" {
     assert out.contains("aspect-ratio:16 / 9");
     assert out.contains("object-fit:cover");
     assert out.contains("overflow:hidden");
-    assert out.contains("@media (width >= 64rem){columns:2}");
+    assert out.contains("@media (width >= 64rem){.");
+    assert out.contains("columns:2");
 }

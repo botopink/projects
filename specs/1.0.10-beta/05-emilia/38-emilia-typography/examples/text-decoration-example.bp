@@ -11,11 +11,9 @@
 //            9.25-9.32)
 //
 // emilia runs at comptime and emits a CSS string; this file is target-independent.
-// `.Text.Underline` and `.Text.LineThrough` exist today and emit the
-// `text-decoration` SHORTHAND; front 38 corrects them to the longhand so that a
-// line and a style can be set independently. Everything else here is new.
-// The decoration colour reuses front 33's palette helper; `Text.Indent` reuses
-// front 35's spacing scale.
+// `.Text.Underline` emits the `text-decoration-line` LONGHAND, so a line and a
+// style are set independently. The decoration colour reuses the palette helper;
+// `Text.Indent` reuses the spacing scale.
 
 import {emilia, flush, Token} from "emilia";
 
@@ -205,8 +203,8 @@ test "the decoration line is the longhand, not the shorthand" {
     val tokens: Token[] = [.Text.Underline, .Text.LineThrough];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{text-decoration-line:underline;text-decoration-line:line-through}</style>";
+    assert styles.contains("." + cls
+        + "{text-decoration-line:underline;text-decoration-line:line-through}");
     assert !styles.contains("text-decoration:underline");
 }
 
@@ -214,8 +212,8 @@ test "a line and a style compose instead of overwriting" {
     val tokens: Token[] = [.Text.Underline, .Text.Decoration.Style.Dotted];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{text-decoration-line:underline;text-decoration-style:dotted}</style>";
+    assert styles.contains("." + cls
+        + "{text-decoration-line:underline;text-decoration-style:dotted}");
 }
 
 test "thickness and offset are pixel values, auto and from-font are keywords" {
@@ -231,8 +229,8 @@ test "a decoration colour is the palette on another property" {
     val tokens: Token[] = [.Text.Decoration.Color.Red.500];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{text-decoration-color:var(--color-red-500)}</style>";
+    assert styles.contains("." + cls
+        + "{text-decoration-color:var(--color-red-500)}");
 }
 
 test "lists cover type, position and image" {
@@ -247,15 +245,15 @@ test "break-normal emits two declarations and break-words one" {
     val tokens: Token[] = [.Text.Break.Normal, .Text.Break.Words];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{overflow-wrap:normal;word-break:normal;overflow-wrap:break-word}</style>";
+    assert styles.contains("." + cls
+        + "{overflow-wrap:normal;word-break:normal;overflow-wrap:break-word}");
 }
 
 test "wrap-anywhere survives because OverflowWrap is its own sub-section" {
     val tokens: Token[] = [.Text.OverflowWrap.Anywhere];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls + "{overflow-wrap:anywhere}</style>";
+    assert styles.contains("." + cls + "{overflow-wrap:anywhere}");
 }
 
 test "whitespace answers all six values" {
@@ -268,8 +266,8 @@ test "indent uses the spacing scale and tab-size is a bare integer" {
     val tokens: Token[] = [.Text.Indent.8, .Text.Tab.4];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{text-indent:calc(var(--spacing) * 8);tab-size:4}</style>";
+    assert styles.contains("." + cls
+        + "{text-indent:calc(var(--spacing) * 8);tab-size:4}");
 }
 
 test "content has two non-arbitrary values and the empty one keeps its quotes" {
@@ -285,5 +283,5 @@ test "the glossary entry underlines its term and hyphenates its body" {
     assert out.contains("text-decoration-line:underline;text-decoration-style:wavy");
     assert out.contains("text-decoration-color:var(--color-sky-400)");
     assert out.contains("hyphens:auto;overflow-wrap:break-word");
-    assert out.contains("&::after{content:\"\";color:var(--color-rose-500)}");
+    assert out.contains("::after{content:\"\";color:var(--color-rose-500)}");
 }

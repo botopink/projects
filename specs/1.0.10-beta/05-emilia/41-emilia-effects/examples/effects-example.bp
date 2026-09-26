@@ -60,10 +60,9 @@ val ringLike: Token[] = [rawShadow("0 0 0 1px rgb(0 0 0 / 0.1)")];
 // ── text-shadow ──────────────────────────────────────────────────────────────
 //
 // These emit `text-shadow:var(--text-shadow-sm)` and friends — `themeVar(...)`
-// lookups from front 54. The literals are theme entries a project composes
-// through `extend`, exactly like the box-shadow scale above: the reference
-// never gives them and the dispatcher never needs them. `None` is a keyword,
-// not a lookup.
+// lookups. The values are theme entries (`effectEntries()`, composed into
+// `fullTheme()`), exactly like the box-shadow scale above: the dispatcher never
+// resolves them. `None` is a keyword, not a lookup.
 
 val textShadows: Token[] = [
     .Effect.TextShadow.X2xs,

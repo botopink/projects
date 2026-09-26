@@ -13,7 +13,7 @@
 // Reference: TAILWIND_CSS_DOCS.md § 17. Interactivity (spacing base § 21.2)
 //
 // Scroll offsets are `spacing(n)` = `calc(var(--spacing) * n)`, never a
-// resolved `rem` (contract § 4a).
+// resolved `rem`.
 //
 // Three class names in this section do not match the CSS value they emit:
 //   resize-y            -> resize:vertical
@@ -22,7 +22,7 @@
 
 import {emilia, flush, Token} from "emilia";
 
-// `paletteVar(family, shade)` comes from front 33 and returns
+// `paletteVar(family, shade)` returns
 // `var(--color-indigo-600)`. Every colour in this file goes through it, so
 // `accent-indigo-600` and `bg-indigo-600` read one theme entry and cannot
 // drift. A hex literal here would be a second copy of a colour the theme owns.
@@ -96,18 +96,13 @@ val colorSchemes: Token[] = [
     .Interact.ColorScheme.OnlyLight,
 ];
 
-// LANGUAGE GAP: a payload leaf nested inside an enum section cannot be
-// constructed by any spelling (language-gaps.md row 52) — verified against the
-// real compiler. So the three colour-carrying variants are TOP-LEVEL `Token`
-// variants: `InteractAccent`, not `Interact.Accent`. Contract § 4a states it.
-//
-// LANGUAGE GAP: their fields are `string` and not a colour section type,
-// because a section-typed value cannot be constructed standalone either
-// (row 53). The value is front 33's `paletteVar(...)` result.
-//
-// LANGUAGE GAP: and even at top level, a dot-shorthand path followed by a
-// payload call does not propagate the typed-array context (row 51), so
-// construction goes through a fn.
+// A payload leaf nested inside an enum section cannot be constructed, so the
+// three colour-carrying variants are TOP-LEVEL `Token` variants:
+// `InteractAccent`, not `Interact.Accent`. Their fields are `string` (a
+// section-typed value cannot be constructed standalone) and carry a
+// `paletteVar(...)` result. A dot-shorthand path followed by a payload call
+// does not carry the typed-array context, so construction goes through a fn
+// (emilia exports `accent`, `caret` and `scrollbarColor`).
 fn accent(v: string) -> Token {
     return Token.InteractAccent(value: v);
 }
@@ -121,8 +116,8 @@ fn scrollbarColor(t: string, k: string) -> Token {
 }
 
 val brandedInput: Token[] = [
-    accent(paletteVar("indigo", 600)),
-    caret(paletteVar("indigo", 600)),
+    accent(paletteVar("indigo", "600")),
+    caret(paletteVar("indigo", "600")),
     .Interact.Appearance.None,
     .Interact.FieldSizing.Content,
 ];
@@ -210,13 +205,11 @@ val scrollbarGutters: Token[] = [
 
 // ── the snap family and its --tw-* chain ─────────────────────────────────────
 //
-// `Snap.Type.X` emits `scroll-snap-type:x var(--tw-scroll-snap-strictness)` and
-// `Snap.Strictness.Mandatory` emits `--tw-scroll-snap-strictness:mandatory`.
-// Front 56's `Rule.declarations` keeps both in one rule, so the variable
-// resolves. Fronts 42 and 45 use the same shape for `filter` and `translate`.
-//
-// A `Snap.Type` token without a `Snap.Strictness` token falls back to front
-// 54's theme entry for the strictness, so it still renders.
+// `Snap.Type.X` emits `scroll-snap-type:x var(--tw-scroll-snap-strictness, proximity)`
+// and `Snap.Strictness.Mandatory` emits `--tw-scroll-snap-strictness:mandatory`.
+// Both land in one rule, so the variable resolves. A `Snap.Type` token without
+// a `Snap.Strictness` token falls back to `proximity` (upstream's `@property`
+// initial value), so it still renders.
 
 val snapAligns: Token[] = [
     .Interact.Snap.Align.Start,
@@ -294,7 +287,7 @@ fn scrollbarTokens() -> Token[] {
     val bar: Token[] = [
         .Interact.Scrollbar.Width.Thin,
         .Interact.Scrollbar.Gutter.Stable,
-        scrollbarColor(paletteVar("red", 500), paletteVar("gray", 200)),
+        scrollbarColor(paletteVar("red", "500"), paletteVar("gray", "200")),
     ];
     return bar;
 }

@@ -1,395 +1,90 @@
-# Front 33 — emilia-color-palette
+# Front 33 — emilia color palette
 
-**Track:** D emilia
-**Priority:** critical — every other emilia front that names a colour (borders, backgrounds, gradients, rings, shadows, SVG) resolves its value through this front's table. Until it lands they each invent a private one.
-**Target:** comptime — `emilia` runs at comptime and emits a CSS string. It is neither erlang- nor js-specific, and this front compiles for neither target in particular.
-**Wave:** 2
-**Depends on:** 54 (`Theme`, `themeVar`, `ThemeEntry`, `extendTheme`), 56 (`declSheet` — this front emits declarations only)
-**Owns:** `repository/emilia/src/tokens.bp` (the `Color` section, the `Bg.Color` sub-section, the `Alpha` wrapper variant) · `repository/emilia/src/emilia.bp` (`colorTokenToCss`, `bgColorTokenToCss`, `paletteVar`, `alphaWrap`) · `repository/emilia/test/colors_test.bp`
-**Does not touch:** every other token section; `Bg`'s non-colour sub-sections (front 39); the modifier variants (front 34)
-**Reference:** `TAILWIND_CSS_DOCS.md § 3.6 Cores`, `§ 21.1 Paleta de Cores Padrão`, `§ 3.5 Namespaces de Variáveis de Tema` · https://tailwindcss.com/docs/colors
+**Track:** D emilia · **Priority:** critical · **Level:** 2 · **Target:** comptime (commonJS and erlang)
+**Depends on:** 54 (`Theme`, `themeVar`, `ThemeEntry`, `extendTheme`), 56 (`declSheet`)
+**Code:** `repository/emilia/modules/emilia/src/tokens.bp` (`// ── front 33 — colour palette` banner:
+`Color`, `Bg.Color`, the top-level `Alpha`) · `src/emilia.bp` (front-33 block: `colorTokenToCss`,
+`bgColorTokenToCss`, `paletteVar`, `alphaWrap`, `paletteEntries`; the `Color`/`Bg`/`Alpha` arms of
+`tokenToSheet`)
+**User docs:** `repository/emilia/docs.md` § *Color*, § *Bg.Color*, § *Alpha*, § *The colour palette*
+**Reference:** `TAILWIND_CSS_DOCS.md § 3.6`, `§ 21.1`, `§ 3.5` · https://tailwindcss.com/docs/colors
+
+**Open:** none.
 
 ---
 
-## Problem
+## What it delivers
 
-A developer using `emilia` today can write four colours. `tokens.bp:72-116` declares `Color` with
-`Red`, `Blue`, `Green` and `Gray`; `tokens.bp:118-138` declares `Bg` with `Red`, `Blue` and `Gray`.
-Tailwind v4.3 ships twenty-six families of eleven shades each (`§ 3.6`, `§ 21.1`). So twenty-two
-families have no token at all, and of the four that exist, `Green` carries five shades instead of
-eleven and `Bg.Red` carries three.
+The colour table every other front resolves through: 26 families × 11 shades on `color` and on
+`background-color`, the five named colours, and upstream's `/N` opacity suffix.
 
-The dispatcher is worse than the enum. `colorTokenToCss` (`emilia.bp:156-167`) matches
-`Red(_inner) -> "color:red"` — it discards the shade it was handed and emits the CSS keyword `red`.
-`.Color.Red.100` and `.Color.Red.900` produce byte-identical CSS today, which means the shade level
-exists in the type and does nothing in the output. `bgTokenToCss` (`emilia.bp:169-179`) does the
-same. There is one correct palette function in the file, `redPaletteHex` (`emilia.bp:385-398`), and
-nothing calls it — it is dead code holding nine Tailwind v3 hex values.
+- **Families** — seventeen chromatic (`Red Orange Amber Yellow Lime Green Emerald Teal Cyan Sky Blue
+  Indigo Violet Purple Fuchsia Pink Rose`) and nine neutral (`Slate Gray Zinc Neutral Stone Mauve
+  Olive Mist Taupe`); **shades** `50 100 200 300 400 500 600 700 800 900 950`.
+- **The token emits the reference, never the value**; the theme holds the value:
 
-Opacity has no surface whatsoever. `bg-red-500/50` is the single most used colour form in real
-Tailwind markup and there is no token that expresses it.
-
-## Current state
-
-| What | Where | State |
+| Tailwind | emilia token | CSS |
 |---|---|---|
-| `Color { Red, Blue, Green, Gray, White, Black, Hex(value) }` | `tokens.bp:72-116` | 4 families; Red/Blue/Gray carry `100..900`, Green carries `100,300,500,700,900` |
-| `Bg { Red, Blue, Gray, White, Black, Hex(value) }` | `tokens.bp:118-138` | 3 families, 3–4 shades each |
-| `colorTokenToCss` | `emilia.bp:156-167` | shade discarded; emits `color:red` / `color:blue` / `color:green` / `color:gray` |
-| `bgTokenToCss` | `emilia.bp:169-179` | shade discarded; emits `background:red` etc. — and `background`, not `background-color` |
-| `redPaletteHex` | `emilia.bp:385-398` | correct shape, v3 hex values, zero callers |
-| opacity on a colour | — | does not exist |
-
-`Color.Hex(value: string)` and `Bg.Hex(value: string)` exist in the enum and are matched by the
-dispatchers, but **no caller can construct them**. See *Language gaps* — this is a compiler
-limitation, verified, not a missing library function.
-
-## Mechanism
-
-Tailwind v4 does not inline colour values into utility rules. It defines them once in the theme
-layer as custom properties and every utility references one:
-
-```css
-@theme { --color-red-500: oklch(0.637 0.237 25.331); }   /* § 3.6 */
-.text-red-500 { color: var(--color-red-500); }
-```
-
-That two-layer shape is visible throughout the reference: `§ 9.1` emits `font-family: var(--font-sans)`,
-`§ 9.2` emits `font-size: var(--text-xs)`, `§ 11.1` emits `border-radius: var(--radius-sm)`,
-`§ 12.1` emits `box-shadow: var(--shadow-sm)`. emilia mirrors it exactly, which is what makes the
-utility half byte-equal without needing all 286 numeric values in the repository:
-
-- **The token emits the reference.** `.Color.Red.500` produces `color:var(--color-red-500)`. That
-  string is byte-equal to Tailwind's utility rule body, and it is derivable entirely from the
-  reference's own convention.
-- **The theme block is a separate, one-time artifact, and front 54 owns the machinery.**
-  `defaultTheme()` carries only `--color-black` and `--color-white`; the 286-entry grid is this
-  front's, handed over as `paletteEntries() -> ThemeEntry[]` and composed in by a consumer through
-  front 54's `extend`. The utility side reads it back with `paletteVar(family, shade)`, which is a
-  one-line wrapper over front 54's `themeVar`:
-  `themeVar("color-" + family + "-" + shade)` → `var(--color-red-500)`. The numeric OKLCH values in
-  those entries come from upstream `theme.css`, not from this spec — the reference prints only two
-  of them (`§ 3.6`). See *Reference gaps*.
-
-The enum shape follows the path form the language already supports. A four-segment path resolves
-(`.Bg.Color.Red.500`), a numeric leaf is bare digits in the declaration and in expression position,
-and `__`-prefixed in a `case` pattern. Both were verified against the compiler at
-`zig-out/bin/botopink` before this spec was written.
-
-Opacity cannot be a leaf under the family, because the shade level is already the leaf and a second
-numeric level would multiply 26 × 11 × 21 leaves. It is instead a **top-level payload variant**,
-`Alpha(percent: i32, inner: Token[])`, which is the one payload shape the compiler can actually
-construct (see *Language gaps*). Its dispatcher rewrites each inner declaration's value into a
-`color-mix()` call. A payload variant carrying an `i32` alongside a `Token[]` was verified to
-construct and destructure correctly.
-
-## Token surface
-
-The grid is regular, so the table below is written once per shape rather than once per leaf: every
-one of the 26 families answers all 11 shades on both properties, which is 572 paths.
-
-| Tailwind utility | emilia token | CSS emitted |
-|---|---|---|
-| `text-red-50` | `.Color.Red.50` | `color:var(--color-red-50)` |
-| `text-red-100` | `.Color.Red.100` | `color:var(--color-red-100)` |
-| `text-red-200` | `.Color.Red.200` | `color:var(--color-red-200)` |
-| `text-red-300` | `.Color.Red.300` | `color:var(--color-red-300)` |
-| `text-red-400` | `.Color.Red.400` | `color:var(--color-red-400)` |
 | `text-red-500` | `.Color.Red.500` | `color:var(--color-red-500)` |
-| `text-red-600` | `.Color.Red.600` | `color:var(--color-red-600)` |
-| `text-red-700` | `.Color.Red.700` | `color:var(--color-red-700)` |
-| `text-red-800` | `.Color.Red.800` | `color:var(--color-red-800)` |
-| `text-red-900` | `.Color.Red.900` | `color:var(--color-red-900)` |
-| `text-red-950` | `.Color.Red.950` | `color:var(--color-red-950)` |
-| `text-orange-500` | `.Color.Orange.500` | `color:var(--color-orange-500)` |
-| `text-amber-500` | `.Color.Amber.500` | `color:var(--color-amber-500)` |
-| `text-yellow-500` | `.Color.Yellow.500` | `color:var(--color-yellow-500)` |
-| `text-lime-500` | `.Color.Lime.500` | `color:var(--color-lime-500)` |
-| `text-green-500` | `.Color.Green.500` | `color:var(--color-green-500)` |
-| `text-emerald-500` | `.Color.Emerald.500` | `color:var(--color-emerald-500)` |
-| `text-teal-500` | `.Color.Teal.500` | `color:var(--color-teal-500)` |
-| `text-cyan-500` | `.Color.Cyan.500` | `color:var(--color-cyan-500)` |
-| `text-sky-500` | `.Color.Sky.500` | `color:var(--color-sky-500)` |
-| `text-blue-500` | `.Color.Blue.500` | `color:var(--color-blue-500)` |
-| `text-indigo-500` | `.Color.Indigo.500` | `color:var(--color-indigo-500)` |
-| `text-violet-500` | `.Color.Violet.500` | `color:var(--color-violet-500)` |
-| `text-purple-500` | `.Color.Purple.500` | `color:var(--color-purple-500)` |
-| `text-fuchsia-500` | `.Color.Fuchsia.500` | `color:var(--color-fuchsia-500)` |
-| `text-pink-500` | `.Color.Pink.500` | `color:var(--color-pink-500)` |
-| `text-rose-500` | `.Color.Rose.500` | `color:var(--color-rose-500)` |
-| `text-slate-500` | `.Color.Slate.500` | `color:var(--color-slate-500)` |
-| `text-gray-500` | `.Color.Gray.500` | `color:var(--color-gray-500)` |
-| `text-zinc-500` | `.Color.Zinc.500` | `color:var(--color-zinc-500)` |
-| `text-neutral-500` | `.Color.Neutral.500` | `color:var(--color-neutral-500)` |
-| `text-stone-500` | `.Color.Stone.500` | `color:var(--color-stone-500)` |
-| `text-mauve-500` | `.Color.Mauve.500` | `color:var(--color-mauve-500)` |
-| `text-olive-500` | `.Color.Olive.500` | `color:var(--color-olive-500)` |
-| `text-mist-500` | `.Color.Mist.500` | `color:var(--color-mist-500)` |
-| `text-taupe-500` | `.Color.Taupe.500` | `color:var(--color-taupe-500)` |
-| `text-white` | `.Color.White` | `color:var(--color-white)` |
-| `text-black` | `.Color.Black` | `color:var(--color-black)` |
-| `text-transparent` | `.Color.Transparent` | `color:transparent` |
-| `text-current` | `.Color.Current` | `color:currentColor` |
-| `text-inherit` | `.Color.Inherit` | `color:inherit` |
+| `text-white` / `text-black` | `.Color.White` / `.Color.Black` | `color:var(--color-white)` / `color:var(--color-black)` |
+| `text-transparent` / `text-current` / `text-inherit` | `.Color.Transparent` / `.Current` / `.Inherit` | `color:transparent` / `color:currentColor` / `color:inherit` |
 | `bg-red-500` | `.Bg.Color.Red.500` | `background-color:var(--color-red-500)` |
-| `bg-sky-100` | `.Bg.Color.Sky.100` | `background-color:var(--color-sky-100)` |
-| `bg-slate-900` | `.Bg.Color.Slate.900` | `background-color:var(--color-slate-900)` |
-| `bg-taupe-950` | `.Bg.Color.Taupe.950` | `background-color:var(--color-taupe-950)` |
-| `bg-white` | `.Bg.Color.White` | `background-color:var(--color-white)` |
-| `bg-black` | `.Bg.Color.Black` | `background-color:var(--color-black)` |
-| `bg-transparent` | `.Bg.Color.Transparent` | `background-color:transparent` |
+| `bg-white` / `bg-transparent` | `.Bg.Color.White` / `.Bg.Color.Transparent` | `background-color:var(--color-white)` / `background-color:transparent` |
 | `bg-red-500/50` | `Token.Alpha(percent: 50, inner: [.Bg.Color.Red.500])` | `background-color:color-mix(in oklab, var(--color-red-500) 50%, transparent)` |
 | `text-blue-600/80` | `Token.Alpha(percent: 80, inner: [.Color.Blue.600])` | `color:color-mix(in oklab, var(--color-blue-600) 80%, transparent)` |
 
-The eleven shades are `50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950`. The 26 families are
-the seventeen chromatic (`Red Orange Amber Yellow Lime Green Emerald Teal Cyan Sky Blue Indigo
-Violet Purple Fuchsia Pink Rose`) and the nine neutral (`Slate Gray Zinc Neutral Stone Mauve Olive
-Mist Taupe`) of `§ 21.1`.
+- **`paletteEntries() -> ThemeEntry[]`** — the 286 `--color-<family>-<shade>` entries, transcribed from
+  upstream `tailwindcss` 4.3.2 `theme.css` in upstream's spelling (`--color-red-500:
+  oklch(63.7% 0.237 25.331)`, `--color-blue-500: oklch(62.3% 0.214 259.815)` — the two values the
+  reference prints in decimal-lightness form). `--color-white`/`--color-black` stay in 54's
+  `defaultTheme()`. Composed into `fullTheme()` by front 56; `emilia(tokens)` itself emits no
+  `@theme` block.
+- **`paletteVar(family, shade)`** — `themeVar(nsPrefix(Ns.Color) + family + "-" + shade)`; two plain
+  strings in, the `--color-` prefix spelled once. `pub`, so front 57 and every colour-carrying front
+  reuse it.
+- **`alphaWrap(percent, css)`** — rewrites each `;`-separated declaration's value into
+  `color-mix(in oklab, <value> <percent>%, transparent)`. A non-colour token under `Alpha` is rewritten
+  too, into meaningless CSS, documented rather than dropped. `Alpha` nests inside modifiers and vice
+  versa.
+- **Legacy leaves** — `Bg`'s `Red`/`Blue`/`Gray`/`White`/`Black`/`Hex` keep the `background` shorthand
+  and their earlier output (`.Bg.White` → `background:#ffffff`).
+- **`Color.Hex(value)`** — the arm (`Hex(value) -> "color:" + value`) is kept, but the leaf is
+  unconstructible (see *Language gaps*); arbitrary colours go through front 57.
 
-**Note on the family count.** `overview.md` says "22 families × 11 shades". The reference says 17
-chromatic + 9 neutral = 26 (`§ 3.6`, `§ 21.1`). This front implements 26; the overview's figure is
-the one that is wrong.
+## Acceptance
 
-## Steps
+### Delivered
 
-### Step 1 — the family and shade grid
-
-One section per family under `Color`, eleven numeric leaves each. Families from `§ 3.6` and
-`§ 21.1`: seventeen chromatic and nine neutral.
-
-```bp
-// appended to `pub type Token { … }` in tokens.bp, under the front-33 banner
-    Color {
-        Red    { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Orange { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Amber  { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Yellow { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Lime   { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Green  { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Emerald{ 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Teal   { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Cyan   { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Sky    { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Blue   { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Indigo { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Violet { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Purple { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Fuchsia{ 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Pink   { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Rose   { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Slate  { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Gray   { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Zinc   { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Neutral{ 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Stone  { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Mauve  { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Olive  { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Mist   { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        Taupe  { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-        White,
-        Black,
-        Transparent,
-        Current,
-        Inherit,
-        Hex(value: string),
-    }
-```
-
-The existing `Red`, `Blue`, `Green` and `Gray` sections are widened in place, not replaced — every
-path that compiles today still compiles. `Green` gains `50, 200, 400, 600, 800, 950`; `Red`, `Blue`
-and `Gray` gain `50` and `950`.
-
-**Acceptance:**
-- [x] `.Color.Red.500` type-checks and emits `color:var(--color-red-500)` — held: emilia.bp test "palette — red, eleven shades on `color`"
-- [x] `.Color.Taupe.950` type-checks and emits `color:var(--color-taupe-950)` — held: emilia.bp test "palette — taupe, eleven shades on `color`"
-- [x] `.Color.Green.400` type-checks — it does not today — held: emilia.bp test "the paths that compiled before this front still compile, with a shade in them"
-- [x] every one of the 26 families answers all 11 shades: 286 assertions, generated as one test per family — held: emilia.bp tests "palette — <family>, eleven shades on `color`" (26 tests, 286 asserts)
-- [x] `.Color.Blue.700`, valid today, still emits under the new dispatcher — with a different body than before, which is the point — held: emilia.bp test "the paths that compiled before this front still compile, with a shade in them"
-- [x] `tokens.bp` carries no `//` comment inside the `pub type Token` braces (parser constraint — the section map stays in the `////` header) — superseded: the parser constraint is gone — `tokens.bp` carries `//` banners inside the braces for fronts 33–47, green on both targets since front 35 measured it (emilia `AGENTS.md` § Maintainer rules)
-
-### Step 2 — `Bg.Color`, the same grid for background-color
-
-`fronts.md` assigns `Bg.Color` to this front and the rest of `Bg` to front 39. The grid is
-identical; only the emitted property differs.
-
-```bp
-    Bg {
-        Color {
-            Red { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950 }
-            // … the same 26 families, White, Black, Transparent, Current, Inherit …
-        }
-    }
-```
-
-Note that today's `Bg` emits `background:red` — the shorthand property, not `background-color`.
-Tailwind emits `background-color` (`§ 10.3`). The new sub-section emits the correct property; the
-legacy `Bg.Red` / `Bg.Blue` / `Bg.Gray` paths keep their current output so nothing that compiles
-today changes meaning.
-
-**Acceptance:**
-- [x] `.Bg.Color.Red.500` emits `background-color:var(--color-red-500)` — held: emilia.bp test "the sub-section emits the longhand the shorthand was hiding"
-- [x] `.Bg.Color.White` emits `background-color:var(--color-white)` — held: emilia.bp test "the five named colours on `background-color`"
-- [x] `.Bg.White`, the legacy path, still emits `background:#ffffff` — `emilia.bp:419-421` still passes — held: emilia.bp test "the legacy Bg leaves keep the shorthand and the output they had"
-- [x] the four-segment path `.Bg.Color.<Family>.<shade>` resolves for all 26 families — held: emilia.bp tests "palette — <family>, eleven shades on `background-color`" (26 tests)
-
-### Step 3 — the palette helper and the theme preamble
-
-`paletteVar` is one fn per level, matching emilia's existing dispatcher shape (`val out = case …;
-return out;`). The family dispatcher returns the family's kebab name, the shade dispatcher returns
-the numeral, and the caller concatenates.
-
-Per contract 4a in [`contracts.md`](../../contracts.md), every sub-dispatcher takes the `Theme`:
-
-```bp
-fn colorTokenToCss(t: Token.Color, th: Theme) -> string {
-    val out = case t {
-        Red(_inner) -> "color:var(--color-red-" + shadeName(_inner) + ")";
-        // … one arm per family …
-        White -> "color:var(--color-white)";
-        Black -> "color:var(--color-black)";
-        Transparent -> "color:transparent";
-        Current -> "color:currentColor";
-        Inherit -> "color:inherit";
-        Hex(value) -> "color:" + value;
-    };
-    return out;
-}
-```
-
-`paletteEntries() -> ThemeEntry[]` is this front's contribution to front 54's theme. It is a plain
-list of entries, not a rendered block: a consumer composes it with `extend`, and front 54's
-`themeCss` renders it into the `theme` layer. Keeping it a list rather than a string is what lets a
-project that already imports Tailwind's own theme leave it out and still use every colour token.
-
-**Acceptance:**
-- [x] `paletteEntries()` carries `--color-red-500` as `oklch(0.637 0.237 25.331)` — the value the reference prints (`§ 3.6`) — held (shape: upstream 4.3.2 spelling `oklch(63.7% 0.237 25.331)`, the same colour): emilia.bp test "paletteEntries — the two values the reference prints, in upstream's spelling"
-- [x] it carries `--color-blue-500` as `oklch(0.623 0.214 259.815)` — likewise — held (shape: upstream spelling `oklch(62.3% 0.214 259.815)`): same test
-- [x] it returns 286 entries; `--color-white` and `--color-black` stay in front 54's `defaultTheme()` and are **not** duplicated here — held: emilia.bp tests "paletteEntries — 286 entries, 26 families x 11 shades, and nothing else" and "paletteEntries — white and black stay front 54's and are not duplicated"
-- [x] `paletteVar(family, shade)` is `themeVar("color-" + family + "-" + shade)` and spells the prefix once — held (shape: `themeVar(nsPrefix(Ns.Color) + family + "-" + shade)`): emilia.bp test "paletteVar — two plain strings, and the `--color-` prefix spelled once"
-- [x] every other numeric value is transcribed from upstream `theme.css`, with the upstream commit recorded in the test file's header — see *Reference gaps* — held (shape: source recorded as upstream `tailwindcss` 4.3.2 `theme.css`, a release rather than a commit, in the banner above emilia.bp:paletteEntries)
-- [x] `emilia(tokens)` output contains no `@theme` block: composing `paletteEntries()` into the theme is the consumer's call — held: emilia.bp test "emilia emits no @theme block of its own — composing the palette is the caller's"
-
-### Step 4 — opacity
-
-Tailwind's `/N` suffix (`§ 3.6`, "Opacidade com cores") mixes the colour with transparent. The token
-is a wrapper, because the payload must be constructible and only a top-level variant is.
-
-```bp
-    Alpha(percent: i32, inner: Token[]),
-```
-
-```bp
-fn tokenToCss(t: Token) -> string {
-    val out = case t {
-        // …
-        Alpha(percent, inner) -> alphaWrap(percent, tokensToCss(inner));
-    };
-    return out;
-}
-```
-
-`alphaWrap` splits each `;`-separated declaration of the composed inner CSS at its first `:` and
-rebuilds it as `prop:color-mix(in oklab, value <percent>%, transparent)`. Only string ops that exist
-on `behavior String` are used — `split`, `indexOf`, `slice`, `join` — and the fn lives in ordinary
-`.bp`, not in a comptime template body, so there is no prelude restriction on it.
-
-**Acceptance:**
-- [x] `Token.Alpha(percent: 50, inner: [.Bg.Color.Red.500])` emits
-      `background-color:color-mix(in oklab, var(--color-red-500) 50%, transparent)` — held: emilia.bp test "Alpha — the two rows the reference shows as classes"
-- [x] `Token.Alpha(percent: 80, inner: [.Color.Blue.600])` emits
-      `color:color-mix(in oklab, var(--color-blue-600) 80%, transparent)` — held: emilia.bp test "Alpha — the two rows the reference shows as classes"
-- [x] an `Alpha` over two colour tokens rewrites both declarations — held: emilia.bp test "Alpha — over two colour tokens, both declarations are rewritten"
-- [x] an `Alpha` over a non-colour token leaves the declaration's value structurally intact — the
-      front documents that the result is meaningless CSS rather than silently dropping it — held: emilia.bp test "Alpha — a non-colour token is rewritten too, and the result is meaningless CSS"
-- [x] `Alpha` nests inside `Hover` and vice versa — held: emilia.bp tests "Alpha nests inside Hover, …" and "Hover nests inside Alpha, …"
-
-### Step 5 — the palette stays compatible with a string-carrying leaf
-
-`Color.Hex(value: string)` (`tokens.bp:115`) proves that an enum leaf can carry an arbitrary string
-payload and splice it into the emitted CSS: `emilia.bp:164` matches it and concatenates. Tailwind's
-arbitrary values are therefore expressible in principle, and **this front's palette is designed to
-stay compatible with that rather than assuming a closed enum.**
-
-One qualification, verified against `zig-out/bin/botopink` before this spec was written and recorded
-in [`language-gaps.md`](../../language-gaps.md): a payload leaf **nested inside a section** has no
-constructible spelling, so `Color.Hex` is reachable by a `case` arm and by nothing else. A
-string-carrying leaf has to be a **top-level** `Token` variant to be built, which is the shape
-`Token.Hover(inner: Token[])` already has and which does construct.
-
-What that means for this front is concrete and small: nothing in the palette assumes its input comes
-from an enum leaf. `paletteVar(family, shade)` takes two plain strings, and the property prefix lives
-in the dispatcher rather than in the value, so front 57's escape hatch can hand a raw colour string
-to the same formatter and get a well-formed declaration without a second palette table and without
-this front changing shape. `Color.Hex`'s arm is kept, unchanged, as the proof that the splice works.
-
-**Acceptance:**
-- [x] `colorTokenToCss`'s `Hex(value)` arm is retained unchanged — held: emilia.bp:colorTokenToCss `Hex(value) -> "color:" + value`
-- [x] `paletteVar(family: string, shade: string) -> string` is `pub` so front 57 can call it — held: emilia.bp:paletteVar
-- [x] no fn in this front takes a `Token.Color` where a `string` would do — the palette is a
-      string-to-string mapping with the enum only at its edge — held: emilia.bp:paletteVar/alphaWrap take strings; only the dispatchers take the enum
-- [x] the README records that `.Color.Hex("#abc")` is unconstructible today, with the exact compiler
-      error text, and that a top-level variant is the shape that works — held (shape: recorded in emilia `docs.md` with both compiler errors, and in this README's Language gaps)
-
-## Examples
-
-- `./examples/palette-example.bp` — the family/shade grid across chromatic and neutral families, the
-  named colours, and a pricing badge that composes four colour tokens with `emilia(...)` and `flush()`.
-- `./examples/opacity-example.bp` — the `Alpha` wrapper at four percentages, over text and background,
-  and nested with a modifier; ends with a translucent overlay panel.
+- [x] `.Color.Red.500` → `color:var(--color-red-500)`, `.Color.Taupe.950` →
+      `color:var(--color-taupe-950)`; every family answers all eleven shades (26 tests, 286 asserts).
+- [x] The widened `Red`/`Blue`/`Green`/`Gray` paths still compile (e.g. `.Color.Green.400`,
+      `.Color.Blue.700`) and now carry their shade.
+- [x] `tokens.bp` carries `//` banners inside the `pub type Token` braces, green on both targets.
+- [x] `.Bg.Color.Red.500` → `background-color:var(--color-red-500)`; `.Bg.Color.White` →
+      `background-color:var(--color-white)`; the four-segment path resolves for all 26 families; the
+      legacy `.Bg.White` still emits `background:#ffffff`.
+- [x] `paletteEntries()` returns 286 entries, carries the two reference anchors in upstream's `%`
+      spelling, does not duplicate white/black, and records its source (upstream 4.3.2 `theme.css`)
+      in the banner above it.
+- [x] `paletteVar` spells the prefix once; no fn takes a `Token.Color` where a string would do.
+- [x] `emilia(tokens)` output carries no `@theme` block.
+- [x] `Alpha` emits the two reference rows, rewrites both declarations of two colour tokens, rewrites
+      a non-colour token into meaningless CSS, and nests with `Hover` both ways.
+- [x] The shade survives: two shades of one family are different CSS.
+- [x] The front-33 banner fences its block in `tokens.bp` and `emilia.bp`; its arms lead the section
+      arms of `tokenToSheet`; `repository/emilia/AGENTS.md` records the section map.
+- [x] Green on commonJS and erlang.
 
 ## Language gaps
 
-| Gap | Where | Nearest valid form today | Proposed surface |
-|---|---|---|---|
-| A payload leaf **nested inside an enum section** cannot be constructed by any spelling. `Tok.Color.Hex("#abc")` reds `'Hex' is not declared in any behavior implemented for 'Tok'`; `val h: Tok = .Color.Hex("#abc")` reds `unbound variable 'Color'`. The variant type-checks in a `case` pattern, so the surface looks complete and is not. | `examples/palette-example.bp`, the `Color.Hex` note | move the payload variant to the **top level** of the enum (`Token.ColorHex(value: string)`), where construction works | let the section-path resolver accept a trailing payload call, so `.Color.Hex("#abc")` builds `Color(Hex(value: "#abc"))` |
-| A value of a **section type** cannot be constructed standalone. `val a: Token.Alpha = .50;` reds `this token cannot appear here`. Consequently a payload variant cannot take a section-typed field — `Token.Fade(amount: .Alpha.50, …)` reds `type mismatch: expected __Token__Alpha, got Token`. | the `Alpha` variant, Step 4 | give the payload a builtin type (`percent: i32`) | allow a dot-shorthand rooted at the declared section type of the parameter |
-
-Both were verified by compiling probe libraries against `zig-out/bin/botopink` at the time of
-writing, not inferred from the sources.
-
-## Reference gaps
-
-`TAILWIND_CSS_DOCS.md` does not carry these, and the CSS below must be checked against upstream
-before implementation rather than trusted from this spec:
-
-| Item | Why it is missing | What implementation must do |
+| Gap | Nearest valid form | Proposed surface |
 |---|---|---|
-| The 286 per-shade OKLCH values | `§ 3.6` prints exactly two (`--color-red-500`, `--color-blue-500`) and `§ 21.1` describes the grid without listing it | transcribe from upstream `packages/tailwindcss/theme.css`, record the commit in `test/colors_test.bp`'s header, and pin the two documented values as the conformance anchors |
-| `color-mix()` and the `/N` opacity expansion | `§ 3.6` shows the class form `bg-red-500/50` but never its CSS | verify the emitted `color-mix(in oklab, … %, transparent)` against upstream; the `in oklab` colour space in particular is not documented locally |
-| P3 / wide-gamut colour | absent entirely | out of scope for this front; do not invent a token for it |
-| The utility CSS for `text-*` and `bg-*` colours | `§ 9.16` and `§ 10.3` show HTML, not CSS | the `prop: var(--token)` form is derived from the reference's own convention for theme-backed utilities (`§ 9.1`, `§ 9.2`, `§ 11.1`, `§ 12.1`); confirm against upstream before merge |
+| A payload leaf nested inside an enum section cannot be constructed: `Tok.Color.Hex("#abc")` reds `'Hex' is not declared in any behavior implemented for 'Tok'`; `val h: Tok = .Color.Hex("#abc")` reds `unbound variable 'Color'` — while the variant type-checks in a `case` pattern | a **top-level** payload variant (`Token.Alpha(…)`, front 57's `Arb*`) | let the section-path resolver accept a trailing payload call |
+| A value of a section type cannot be constructed standalone (`val a: Token.Alpha = .50;` reds `this token cannot appear here`), so a payload cannot take a section-typed field | a builtin-typed payload (`percent: i32`) | a dot-shorthand rooted at the parameter's declared section type |
 
-## Test plan
+## Examples
 
-`repository/emilia/test/colors_test.bp`, a flat suite that bare-imports across `src`. Run with `botopink test` from
-`repository/emilia`, and in the ecosystem gate with `zig build test-libs --  --lib emilia`.
-
-Target: emilia has no target split, so the suite runs on **both** backends —
-`botopink test` (commonJS, the default) and `botopink test --target erlang`. Both must produce the
-same strings; a colour token that differs between them is a bug in `tokensToCss`, not in the palette.
-
-What the tests assert:
-
-1. **One test per family** — eleven asserts each, comparing `tokenToCss(.Color.<F>.<N>)` against the
-   literal `"color:var(--color-<f>-<n>)"`. 26 tests, 286 asserts.
-2. **`Bg.Color` mirror** — the same grid against `background-color:`.
-3. **Named colours** — `White`, `Black`, `Transparent`, `Current`, `Inherit` on both properties.
-4. **Legacy paths unchanged** — `.Color.Black`, `.Bg.White`, `.Color.Blue.700` still answer what
-   `emilia.bp`'s existing tests assert.
-5. **Theme entry anchors** — `paletteEntries()` contains an entry named `color-red-500` whose value
-   is `oklch(0.637 0.237 25.331)`, and the blue equivalent; and `paletteVar("red", "500")` returns
-   `var(--color-red-500)`.
-6. **Alpha** — four percentages over text and background, one nested inside `Hover`.
-7. **End to end** — `emilia([.Bg.Color.Slate.900, .Color.Slate.50])` then `await flush()` returns
-   `"<style>." + cls + "{background-color:var(--color-slate-900);color:var(--color-slate-50)}</style>"`.
-
-## Definition of done
-
-- [x] 26 families × 11 shades declared under `Color` and under `Bg.Color`, plus the five named colours — held: emilia.bp per-family tests on `color` and `background-color` + "the five named colours on …" (both)
-- [x] `colorTokenToCss` and `bgColorTokenToCss` emit the shade; no arm discards its payload — held: emilia.bp test "the shade survives — two shades of one family are no longer the same CSS"
-- [x] `paletteEntries()` returns the full 286-entry grid, with the two reference-documented values exact — held (shape: anchors in upstream's `%` spelling): emilia.bp tests "paletteEntries — 286 entries…" and "…the two values the reference prints, in upstream's spelling"
-- [x] `Alpha(percent, inner)` composes with every colour token and with the modifiers — held: emilia.bp `Alpha` tests (four percentages, two tokens, keyword colour, both nestings with `Hover`)
-- [x] the banner `// ── front 33 — colour palette ──` fences this front's block in both `tokens.bp` and `emilia.bp`, appended at the end of each file — held (shape: in place, not at the end of the file — the grid predates the banner): `tokens.bp` `// ── front 33 — colour palette` … `// ── end front 33` (Color, then `Alpha`); `emilia.bp` `//// ═══ FRONT 33 · the colour palette`
-- [x] one arm added to the top-level `tokenToCss` case, in front-number order — held: `tokenToSheet` `// ── front 33 — colour palette` fence (`Color`, `Bg`, `Alpha`) first among the section arms
-- [x] `repository/emilia/AGENTS.md` records the new section map in the same commit — held: emilia AGENTS.md § Surface (`Color` widened) and the front-33 row of the fronts table
-- [x] the front's tests are green on its assigned target — here, both backends, since emilia is comptime — held: 569/569 on commonJS and erlang
+- [`./examples/palette-example.bp`](./examples/palette-example.bp) — the grid across chromatic and
+  neutral families, the named colours, and a pricing badge composing four colour tokens.
+- [`./examples/opacity-example.bp`](./examples/opacity-example.bp) — `Alpha` at four percentages, over
+  text and background, nested with a modifier; a translucent overlay panel.

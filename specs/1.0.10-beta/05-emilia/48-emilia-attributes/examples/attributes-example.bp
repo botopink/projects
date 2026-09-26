@@ -17,7 +17,7 @@
 // Reference: TAILWIND_CSS_DOCS.md § 3. Core Concepts
 //
 // THE CONTRACT THIS FILE DEMONSTRATES:
-//   class = "e_" + contentHash(encodeSheet(tokensToSheet(tokens, theme)))   // std content_hash, a djb2 fold
+//   class = "e_" + <djb2 hex>(encodeSheet(tokensToSheet(tokens, theme)))
 //   - a pure function of the token list, in author order, and the theme
 //   - nothing else enters the hash
 //   - a static class merges BEFORE the emilia class, one ASCII space
@@ -68,7 +68,7 @@ fn cardBodyTokens() -> Token[] {
 
 // ── the slot, as attribute data ──────────────────────────────────────────────
 //
-// `styled(tokens, th)` is `#("class", emilia(tokens, th))` — the pair drops
+// `styled(tokens, th)` is `#("class", emiliaWith(tokens, th))` — the pair drops
 // straight into any builder's `attrs:` array. Here it is only data: the array a
 // renderer would write, in the order it would write it.
 
