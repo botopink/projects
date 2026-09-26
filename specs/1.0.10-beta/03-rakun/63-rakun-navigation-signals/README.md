@@ -199,16 +199,16 @@ pub fn redirectWithStatus(location: string, status: i32) -> i32
 wrong; the accepted set is 303, 307 and 308 and anything else raises.
 
 **Acceptance:**
-- [ ] `notFound()` never returns: the statement after it does not execute, asserted by a counter that
-      stays at its initial value.
-- [ ] `redirect("/login")` produces `NavOutcome(kind: NavKind.Redirect, location: "/login", status: 307)`.
-- [ ] `permanentRedirect("/new")` produces status 308.
-- [ ] `redirectWithStatus("/x", 302)` raises, naming the accepted set.
-- [ ] `redirect("/nowhere")` with no matching route in the table raises, naming `/nowhere`.
-- [ ] `redirect("https://example.com/")` raises with `rakun.navigation.allowedHosts` unset, and
-      succeeds with `example.com` on the list.
-- [ ] `redirect("//evil.example")` is treated as absolute — the protocol-relative form is the classic
-      open-redirect bypass and it is checked against the same list.
+- [x] `notFound()` never returns: the statement after it does not execute, asserted by a counter that
+      stays at its initial value. — held: `modules/rakun-app/test/navigation_test.bp` "notFound never returns - the statement after it does not execute" (rakun `368d0a1`)
+- [x] `redirect("/login")` produces `NavOutcome(kind: NavKind.Redirect, location: "/login", status: 307)`. — held: `modules/rakun-app/test/navigation_test.bp` "redirect is a 307 NavOutcome, permanentRedirect a 308"
+- [x] `permanentRedirect("/new")` produces status 308. — held: `modules/rakun-app/test/navigation_test.bp` "redirect is a 307 NavOutcome, permanentRedirect a 308"
+- [x] `redirectWithStatus("/x", 302)` raises, naming the accepted set. — held: `modules/rakun-app/test/navigation_test.bp` "a status outside 303, 307 and 308 raises naming the set"
+- [x] `redirect("/nowhere")` with no matching route in the table raises, naming `/nowhere`. — held: `modules/rakun-app/test/navigation_test.bp` "a relative target no route matches raises naming it"
+- [x] `redirect("https://example.com/")` raises with `rakun.navigation.allowedHosts` unset, and
+      succeeds with `example.com` on the list. — held: `modules/rakun-app/test/navigation_test.bp` "an absolute target needs its host on rakun.navigation.allowedHosts"
+- [x] `redirect("//evil.example")` is treated as absolute — the protocol-relative form is the classic
+      open-redirect bypass and it is checked against the same list. — held: `modules/rakun-app/test/navigation_test.bp` "the protocol-relative //host is absolute and checked against the same list"
 
 ### Step 2 — Capture
 
@@ -219,17 +219,17 @@ pub fn peekSignal() -> NavOutcome
 ```
 
 **Acceptance:**
-- [ ] `captureSignals({ -> notFound(); }, 0)` answers `0` and `takeSignal().kind` is `NavKind.NotFound`.
-- [ ] `captureSignals({ -> 7; }, 0)` answers `7` and `takeSignal().kind` is `NavKind.None`.
-- [ ] An exception that is not a navigation reason passes through `captureSignals` unchanged, with its
-      original reason.
-- [ ] `takeSignal()` clears: a second call answers `NavKind.None`. `peekSignal()` does not clear.
-- [ ] A nested `captureSignals` inside a captured body does not hide the signal from the outer one —
-      the inner capture writes the frame, the outer one finds it.
-- [ ] `captureSignals` outside a request raises, because there is no frame to record the outcome on
-      (front 62's rule, inherited not restated).
-- [ ] A signal raised inside a function wrapped by `try … catch` reaches `captureSignals` — this is the
-      test that pins "a signal is not an error".
+- [x] `captureSignals({ -> notFound(); }, 0)` answers `0` and `takeSignal().kind` is `NavKind.NotFound`. — held: `modules/rakun-app/test/navigation_test.bp` "notFound never returns…" (answer 0, kind NotFound)
+- [x] `captureSignals({ -> 7; }, 0)` answers `7` and `takeSignal().kind` is `NavKind.None`. — held: `modules/rakun-app/test/navigation_test.bp` "a body that returns is answered and leaves no signal"
+- [x] An exception that is not a navigation reason passes through `captureSignals` unchanged, with its
+      original reason. — held: `modules/rakun-app/test/navigation_test.bp` "a raise that is not a signal passes through with its reason"
+- [x] `takeSignal()` clears: a second call answers `NavKind.None`. `peekSignal()` does not clear. — held: `modules/rakun-app/test/navigation_test.bp` "takeSignal clears, peekSignal does not"
+- [x] A nested `captureSignals` inside a captured body does not hide the signal from the outer one —
+      the inner capture writes the frame, the outer one finds it. — held: `modules/rakun-app/test/navigation_test.bp` "a nested capture does not hide the signal from the outer one"
+- [x] `captureSignals` outside a request raises, because there is no frame to record the outcome on
+      (front 62's rule, inherited not restated). — held: `modules/rakun-app/test/navigation_test.bp` "captureSignals outside a request raises"
+- [x] A signal raised inside a function wrapped by `try … catch` reaches `captureSignals` — this is the
+      test that pins "a signal is not an error". — held: `modules/rakun-app/test/navigation_test.bp` "a signal inside try … catch still reaches the capture - it is not an error"
 
 ### Step 3 — Signals through `await`
 
@@ -238,11 +238,11 @@ answers `@Task<ActionResult>`, or `@Task<@Result<ActionResult, E>>` when it can 
 lowers eagerly, so the signal is raised during the awaited call and propagates as a plain throw.
 
 **Acceptance:**
-- [ ] `captureSignals` around a body that `await`s a `@Task` function which calls `notFound()`
-      records the signal.
-- [ ] The same holds two levels of `await` deep.
-- [ ] The value bound by `await` is never used, asserted by a body whose next statement increments a
-      counter that stays at zero.
+- [x] `captureSignals` around a body that `await`s a `@Task` function which calls `notFound()`
+      records the signal. — held: `modules/rakun-app/test/navigation_test.bp` "a signal raised two awaits deep is captured and the awaited value is never used"
+- [x] The same holds two levels of `await` deep. — held: `modules/rakun-app/test/navigation_test.bp` "a signal raised two awaits deep…"
+- [x] The value bound by `await` is never used, asserted by a body whose next statement increments a
+      counter that stays at zero. — held: `modules/rakun-app/test/navigation_test.bp` "a signal raised two awaits deep … and the awaited value is never used"
 
 ### Step 4 — Response composition
 
@@ -256,18 +256,18 @@ not-found boundary is jhonstart's render's (front 31, decision 117), so this fro
 lookup.
 
 **Acceptance:**
-- [ ] `statusFor` answers 404, 307, 308, 303 and 200 for the five cases.
-- [ ] `locationHeaderFor` answers `null` for `NotFound` and the destination for a redirect.
-- [ ] `grep -n "fn boundaryFor" repository/rakun/modules/rakun/src/navigation.bp` is empty.
+- [x] `statusFor` answers 404, 307, 308, 303 and 200 for the five cases. — held: `modules/rakun-app/test/navigation_test.bp` "statusFor and locationHeaderFor"
+- [x] `locationHeaderFor` answers `null` for `NotFound` and the destination for a redirect. — held: `modules/rakun-app/test/navigation_test.bp` "statusFor and locationHeaderFor"
+- [x] `grep -n "fn boundaryFor" repository/rakun/modules/rakun/src/navigation.bp` is empty. — held: empty over `modules/rakun-app/src/navigation.bp` (the file lives in `rakun-app`, modules.md)
 
 ### Step 5 — A page renderer is not a signal source
 
 **Acceptance:**
-- [ ] A page renderer (front 23) that raises `notFound()` before its first write is answered 500 as a
+- [x] A page renderer (front 23) that raises `notFound()` before its first write is answered 500 as a
       failed render, not 404; one that raises after its first write fails the request with the status
-      already on the wire unchanged. Page signals are jhonstart's (decision 117 rule 1).
-- [ ] The same `notFound()` inside a route handler answers 404 and inside an action answers `n: "N"` —
-      the test runs the three in one suite so the distinction is asserted, not assumed.
+      already on the wire unchanged. Page signals are jhonstart's (decision 117 rule 1). — held: `modules/rakun-app/test/navigation_test.bp` "one notFound - 404 from a handler, a 500 from a page, N on the action wire" (the after-first-write half: `ssr_test.bp` "setStatus after the first write…")
+- [x] The same `notFound()` inside a route handler answers 404 and inside an action answers `n: "N"` —
+      the test runs the three in one suite so the distinction is asserted, not assumed. — held: `modules/rakun-app/test/navigation_test.bp` "one notFound - 404 from a handler, a 500 from a page, N on the action wire"
 
 ### Step 6 — The action wire format
 
@@ -276,10 +276,10 @@ trip, the `""` for `None`, the tolerant `garbage → None` and the `R|307|/a|b` 
 asserted on both targets. This front asserts that it uses them.
 
 **Acceptance:**
-- [ ] `signalToWire(takeSignal())` after `captureSignals` around a `redirect("/blog")` answers
-      `R|307|/blog`, and after `notFound()` answers `N` — the literals of `routing`'s table.
-- [ ] `grep -n "fn signalToWire\|fn signalFromWire" repository/rakun/modules/rakun/src/navigation.bp`
-      is empty — the codec is imported, not re-declared.
+- [x] `signalToWire(takeSignal())` after `captureSignals` around a `redirect("/blog")` answers
+      `R|307|/blog`, and after `notFound()` answers `N` — the literals of `routing`'s table. — held: `modules/rakun-app/test/navigation_test.bp` "the action wire of a captured redirect is routing's literal" + "one notFound…N on the action wire"
+- [x] `grep -n "fn signalToWire\|fn signalFromWire" repository/rakun/modules/rakun/src/navigation.bp`
+      is empty — the codec is imported, not re-declared. — held: empty over `modules/*/src` — the codec is `routing`'s, imported
 
 ### Step 7 — The signal-prefix list
 
@@ -312,15 +312,15 @@ on both targets (`01-std/04-routing-lib` Step 7). `takeSignal` reads a frame wri
 and `signalToWire` reads that same `NavOutcome`.
 
 **Acceptance:**
-- [ ] `redirect("/login")` raises exactly `signalReason(NavOutcome(kind: NavKind.Redirect, location:
+- [x] `redirect("/login")` raises exactly `signalReason(NavOutcome(kind: NavKind.Redirect, location:
       "/login", status: 307))` — `nav:redirect:/login` — asserted as a literal caught at the host
-      boundary, and likewise `nav:not-found`, `nav:permanent-redirect:/new`, `nav:see-other:/done`.
-- [ ] `captureSignals` recognises a reason through `routing`'s `isSignalReason` and nothing else:
-      `nav:` alone and `boom` are re-raised unchanged with their original reason.
-- [ ] `captureSignals` around a raised `nav:teleport:/x` re-raises the error `signalFromReason` gives
-      for an unknown verb — a version skew stays loud.
-- [ ] `grep -rn '"jhonstart:\|fn signalReason\|fn signalPrefixes\|fn isSignalReason'
-      repository/rakun/modules/rakun/src` is empty — the vocabulary is imported, not spelled.
+      boundary, and likewise `nav:not-found`, `nav:permanent-redirect:/new`, `nav:see-other:/done`. — held: `modules/rakun-app/test/navigation_test.bp` "the four reasons are routing's, caught at the host boundary"
+- [x] `captureSignals` recognises a reason through `routing`'s `isSignalReason` and nothing else:
+      `nav:` alone and `boom` are re-raised unchanged with their original reason. — held: `modules/rakun-app/test/navigation_test.bp` "a raise that is not a signal passes through with its reason" (`nav:` and `boom`)
+- [x] `captureSignals` around a raised `nav:teleport:/x` re-raises the error `signalFromReason` gives
+      for an unknown verb — a version skew stays loud. — held: `modules/rakun-app/test/navigation_test.bp` "an unknown nav verb stays loud"
+- [x] `grep -rn '"jhonstart:\|fn signalReason\|fn signalPrefixes\|fn isSignalReason'
+      repository/rakun/modules/rakun/src` is empty — the vocabulary is imported, not spelled. — held: empty over `repository/rakun/modules/*/src`
 
 ## Examples
 

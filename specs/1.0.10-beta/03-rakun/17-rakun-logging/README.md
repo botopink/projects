@@ -183,55 +183,55 @@ erlang. `logger` is an OTP application; every host cell in this module is `#[@Ex
 ### Step 1 — Logger, levels and the resolver
 
 **Acceptance:**
-- [ ] `logger("rakun.data.sql").isEnabled(Level.Debug)` follows `rakun.logging.level.rakun.data`, and `rakun.logging.level.rakun.data.sql` overrides it — longest prefix wins.
-- [ ] With no key set, `root` applies.
-- [ ] A `Trace` record is discarded before `logger:log/3` when the level is `Debug`, and the OTP handler never sees it.
-- [ ] `isEnabled` returns false without building the message — a test asserts the message-building closure was not called.
-- [ ] Every host cell in the module is `#[@External.Erlang]`.
+- [x] `logger("rakun.data.sql").isEnabled(Level.Debug)` follows `rakun.logging.level.rakun.data`, and `rakun.logging.level.rakun.data.sql` overrides it — longest prefix wins. — held: `repository/rakun/modules/rakun-logging/test/level_test.bp` "level: the longest prefix wins"
+- [x] With no key set, `root` applies. — held: `repository/rakun/modules/rakun-logging/test/level_test.bp` "level: with no key set the root applies"
+- [x] A `Trace` record is discarded before `logger:log/3` when the level is `Debug`, and the OTP handler never sees it. — held: `repository/rakun/modules/rakun-logging/test/level_test.bp` "level: a trace record is discarded before OTP when the level is debug"
+- [x] `isEnabled` returns false without building the message — a test asserts the message-building closure was not called. — held: `repository/rakun/modules/rakun-logging/test/level_test.bp` "level: isEnabled false means the message is never built"
+- [x] Every host cell in the module is `#[@External.Erlang]`. — held: `repository/rakun/modules/rakun-logging/src/cells.bp` (every `declare fn` of the member, over `src/sidecars/rakun_logging.erl`)
 
 ### Step 2 — Structured formatters
 
 **Acceptance:**
-- [ ] Each of `ecs`, `gelf`, `logstash`, `plain` produces its documented field set, in a fixed order, one line per record.
-- [ ] A message containing a quote, a backslash, a newline or a control character round-trips through each JSON schema.
-- [ ] Console and file may carry different formats at the same time.
-- [ ] An unknown format name refuses the boot with the key and the four valid values named.
+- [x] Each of `ecs`, `gelf`, `logstash`, `plain` produces its documented field set, in a fixed order, one line per record. — held: `repository/rakun/modules/rakun-logging/test/format_test.bp` "log: ecs renders the documented field set in fixed order" + the gelf/logstash/plain cells + "log: every schema writes one line per record"
+- [x] A message containing a quote, a backslash, a newline or a control character round-trips through each JSON schema. — held: `repository/rakun/modules/rakun-logging/test/format_test.bp` "log: a quote a backslash a newline and a control character round-trip through gelf and logstash"
+- [x] Console and file may carry different formats at the same time. — held: `repository/rakun/modules/rakun-logging/test/format_test.bp` "log: console and file carry different formats at the same time"
+- [x] An unknown format name refuses the boot with the key and the four valid values named. — held: `repository/rakun/modules/rakun-logging/test/format_test.bp` "log: an unknown format refuses the boot naming the key and the four values"
 
 ### Step 3 — Groups
 
 **Acceptance:**
-- [ ] `rakun.logging.level.web = debug` raises every member of the predefined `web` group.
-- [ ] `rakun.logging.group.web = a,b` replaces the predefined membership entirely.
-- [ ] A group name and a logger name that collide resolve to the group, and the boot logs that it did.
-- [ ] `sql` is predefined with the three members listed above.
+- [x] `rakun.logging.level.web = debug` raises every member of the predefined `web` group. — held: `repository/rakun/modules/rakun-logging/test/group_test.bp` "group: a level on web raises every member"
+- [x] `rakun.logging.group.web = a,b` replaces the predefined membership entirely. — held: `repository/rakun/modules/rakun-logging/test/group_test.bp` "group: redefining web replaces the predefined membership entirely"
+- [x] A group name and a logger name that collide resolve to the group, and the boot logs that it did. — held: `repository/rakun/modules/rakun-logging/test/group_test.bp` "group: a group name and a logger name that collide resolve to the group and the boot says so"
+- [x] `sql` is predefined with the three members listed above. — held: `repository/rakun/modules/rakun-logging/test/group_test.bp` "group: web and sql are predefined with their members" + "group: a level on sql raises its three members"
 
 ### Step 4 — Correlation
 
 **Acceptance:**
-- [ ] A request carrying `traceparent` reuses its trace id; one carrying `x-request-id` reuses that; one carrying neither gets a generated id.
-- [ ] Every record emitted during a request carries the same id, including records from a `#[service]` three calls deep.
-- [ ] A scheduled task and a message listener each get an id, and two concurrent runs get different ones.
-- [ ] `withCorrelationId` propagates an id into a worker started by a request.
-- [ ] Two concurrent requests never share an id.
+- [x] A request carrying `traceparent` reuses its trace id; one carrying `x-request-id` reuses that; one carrying neither gets a generated id. — held: `repository/rakun/modules/rakun-logging/test/correlation_test.bp` "correlation: a traceparent is reused, then x-request-id, else an id is generated"
+- [x] Every record emitted during a request carries the same id, including records from a `#[service]` three calls deep. — held: `repository/rakun/modules/rakun-logging/test/correlation_test.bp` "correlation: every record of a request carries one id three calls deep"
+- [x] A scheduled task and a message listener each get an id, and two concurrent runs get different ones. — held: `repository/rakun/modules/rakun-logging/test/correlation_test.bp` "correlation: a scheduled task and a listener each get an id and two concurrent runs differ"
+- [x] `withCorrelationId` propagates an id into a worker started by a request. — held: `repository/rakun/modules/rakun-logging/test/correlation_test.bp` "correlation: withCorrelationId propagates an id into a worker started by a request"
+- [x] Two concurrent requests never share an id. — held: `repository/rakun/modules/rakun-logging/test/correlation_test.bp` "correlation: two concurrent requests never share an id"
 
 ### Step 5 — `error.digest`
 
 **Acceptance:**
-- [ ] The same fault raised twice produces the same digest.
-- [ ] The same fault raised on two nodes of the same build produces the same digest.
-- [ ] Changing the message changes the digest; changing only the timestamp, the request id or an argument value does not.
-- [ ] `logErrorWithDigest` writes exactly one record, carrying the full message and frames, and returns the digest.
-- [ ] A test asserts that the record the renderer hands the client contains the digest and contains neither the message nor any frame — this is the boundary and it is checked, not trusted.
+- [x] The same fault raised twice produces the same digest. — held: `repository/rakun/modules/rakun-logging/test/digest_test.bp` "digest: the same fault raised twice produces the same digest"
+- [x] The same fault raised on two nodes of the same build produces the same digest. — held: `repository/rakun/modules/rakun-logging/test/digest_test.bp` "digest: the same fault on two nodes of one build produces the pinned digest" (the digest reads no node fact; the pinned literal is recomputable with `sha256sum`)
+- [x] Changing the message changes the digest; changing only the timestamp, the request id or an argument value does not. — held: `repository/rakun/modules/rakun-logging/test/digest_test.bp` "digest: the message changes it, the time the request id and argument values do not"
+- [x] `logErrorWithDigest` writes exactly one record, carrying the full message and frames, and returns the digest. — held: `repository/rakun/modules/rakun-logging/test/digest_test.bp` "digest: logErrorWithDigest writes exactly one record with the full message and frames"
+- [x] A test asserts that the record the renderer hands the client contains the digest and contains neither the message nor any frame — this is the boundary and it is checked, not trusted. — held: `repository/rakun/modules/rakun-logging/test/digest_test.bp` "digest: the body handed to the client carries the digest and neither the message nor a frame"
 - [ ] Front 31's client half renders the digest string this front produced; the two agree in a shared fixture rather than by convention.
 
 ### Step 6 — File output and external configuration
 
 **Acceptance:**
-- [ ] With `file.name` set, records reach the file and the console according to their two formats.
-- [ ] Rotation happens at `max-size`, keeps `max-history` files, and deletes beyond `total-size-cap`.
-- [ ] `rakun.logging.config` loads a `sys.config` and its keys win over `application.yaml`.
-- [ ] A `{profile, staging, [...]}` section applies only when `staging` is active.
-- [ ] The startup summary names the loaded configuration file, or says none was loaded.
+- [x] With `file.name` set, records reach the file and the console according to their two formats. — held: `repository/rakun/modules/rakun-logging/test/file_test.bp` "file: records reach the file and the console in their two formats"
+- [x] Rotation happens at `max-size`, keeps `max-history` files, and deletes beyond `total-size-cap`. — held: `repository/rakun/modules/rakun-logging/test/file_test.bp` "file: rotation happens at max-size and keeps max-history archives" + "file: the total-size-cap deletes archives beyond it"
+- [x] `rakun.logging.config` loads a `sys.config` and its keys win over `application.yaml`. — held: `repository/rakun/modules/rakun-logging/test/file_test.bp` "file: rakun.logging.config loads a sys.config whose keys win over application.yaml"
+- [x] A `{profile, staging, [...]}` section applies only when `staging` is active. — held: `repository/rakun/modules/rakun-logging/test/file_test.bp` "file: a profile section applies only when that profile is active"
+- [x] The startup summary names the loaded configuration file, or says none was loaded. — held: `repository/rakun/modules/rakun-logging/test/file_test.bp` "summary: the line carries elapsed time, pid, node, port, profiles and the config file"
 
 ### Step 7 — The `loggers` and `logfile` endpoints
 
@@ -250,18 +250,18 @@ anything an application logged — so both sit behind front 11's access control 
 in this module. Front 11 decides who may reach `/actuator`; this front does not get a second answer.
 
 **Acceptance:**
-- [ ] `POST /actuator/loggers/rakun.data` with `{"level":"debug"}` takes effect on the next record, with no restart.
-- [ ] Setting a level on a group sets it on every member.
-- [ ] A level reset (`null`) returns the logger to its inherited level.
-- [ ] `GET /actuator/logfile` honours `Range` and returns 206 with `Content-Range`; it returns 404 when no file is configured.
+- [x] `POST /actuator/loggers/rakun.data` with `{"level":"debug"}` takes effect on the next record, with no restart. — held: `repository/rakun/modules/rakun-logging/test/endpoint_test.bp` "loggers: POST a level takes effect on the next record without a restart"
+- [x] Setting a level on a group sets it on every member. — held: `repository/rakun/modules/rakun-logging/test/endpoint_test.bp` "loggers: setting a level on a group sets it on every member"
+- [x] A level reset (`null`) returns the logger to its inherited level. — held: `repository/rakun/modules/rakun-logging/test/endpoint_test.bp` "loggers: a null level returns the logger to its inherited level"
+- [x] `GET /actuator/logfile` honours `Range` and returns 206 with `Content-Range`; it returns 404 when no file is configured. — held: `repository/rakun/modules/rakun-logging/test/endpoint_test.bp` "logfile: Range is honoured with 206 and Content-Range" + "logfile: 404 when no file is configured"
 - [ ] Both routes are refused with front 11's standard response when the caller is not authorized, and no key in this module changes that.
 
 ### Step 8 — The startup summary
 
 **Acceptance:**
-- [ ] The line is emitted once, at ready, at `Info`, from the logger `rakun.core.Bootstrap`.
-- [ ] It carries elapsed time, PID, node, port and active profiles, and the profile list matches front 05's.
-- [ ] With no profile active it prints `profiles []` rather than omitting the field.
+- [x] The line is emitted once, at ready, at `Info`, from the logger `rakun.core.Bootstrap`. — held: `repository/rakun/modules/rakun-logging/test/file_test.bp` "summary: emitted once at ready at Info from rakun.core.Bootstrap with front 05's profiles"
+- [x] It carries elapsed time, PID, node, port and active profiles, and the profile list matches front 05's. — held: `repository/rakun/modules/rakun-logging/test/file_test.bp` "summary: emitted once at ready at Info from rakun.core.Bootstrap with front 05's profiles"
+- [x] With no profile active it prints `profiles []` rather than omitting the field. — held: `repository/rakun/modules/rakun-logging/test/file_test.bp` "summary: with no profile active it prints profiles []"
 
 ## Examples
 

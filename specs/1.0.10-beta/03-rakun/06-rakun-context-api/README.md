@@ -254,57 +254,57 @@ has no analogue and needs none; the README says that rather than inventing one.
 `{TypeName, Qualifier}` holding `{Primary, Lazy, Scope, Factory}`.
 
 **Acceptance:**
-- [ ] `#[managed]` on a `#[service]` registers exactly one bean
-- [ ] `rkBeanNames()` lists registered beans in declaration order
-- [ ] Registering the same `(type, qualifier)` twice fails at boot naming both declaration sites
-- [ ] `rkResolve` of an unregistered type answers `null`, and `rkHasBean` answers `false`
+- [x] `#[managed]` on a `#[service]` registers exactly one bean — held: `test/context_test.bp` "rakun context: #[managed] on a #[service] registers exactly one bean"
+- [x] `rkBeanNames()` lists registered beans in declaration order — held: `test/context_test.bp` "rakun context: beanNames lists registered beans in declaration order"
+- [x] Registering the same `(type, qualifier)` twice fails at boot naming both declaration sites — held: `test/context_test.bp` "rakun context: registering the same type and qualifier twice names both owners"
+- [x] `rkResolve` of an unregistered type answers `null`, and `rkHasBean` answers `false` — held: `test/context_test.bp` "rakun context: an unregistered type resolves to null and has answers false"
 
 ### Step 2 — `Context`
 
 **Acceptance:**
-- [ ] `val repo: ?UserRepository = ctx.resolve("UserRepository");` returns the same instance field injection returns
-- [ ] `ctx.has("UserRepository")` is `true`, `ctx.has("Nonexistent")` is `false`
+- [x] `val repo: ?UserRepository = ctx.resolve("UserRepository");` returns the same instance field injection returns — held: `test/context_test.bp` "rakun context: a resolved bean is the same instance field injection gives"
+- [x] `ctx.has("UserRepository")` is `true`, `ctx.has("Nonexistent")` is `false` — held: `test/context_test.bp` "rakun context: ctx.resolve returns what field injection returns"
 - [ ] `ctx.beanNames()` matches `rkScannedNames()` filtered to `#[managed]` types
-- [ ] A field of type `Context` is injected without any extra declaration
-- [ ] `Context` does not appear in its own `beanNames()` and does not participate in the cycle guard
-- [ ] `ctx.child("request").resolve(…)` finds a bean registered only in the parent
+- [x] A field of type `Context` is injected without any extra declaration — held: `test/context_test.bp` "rakun context: a field of type Context is injected with no extra declaration"
+- [x] `Context` does not appear in its own `beanNames()` and does not participate in the cycle guard — held: `test/context_test.bp` "rakun context: Context is not a bean of its own registry and is not in the cycle guard"
+- [x] `ctx.child("request").resolve(…)` finds a bean registered only in the parent — held: `test/context_test.bp` "rakun context: a child context finds a bean registered only in the parent"
 
 ### Step 3 — `#[provides]`, qualifiers and primary
 
 **Acceptance:**
-- [ ] `#[provides] pub fn systemClock() -> Clock` makes `Clock` injectable by type
+- [x] `#[provides] pub fn systemClock() -> Clock` makes `Clock` injectable by type — held: `test/context_test.bp` "rakun context: #[provides] makes the return type injectable by type"
 - [ ] Two `#[provides]` of the same type without qualifiers fail the build naming both functions
-- [ ] Two with distinct `#[qualifier]`s both register, and `resolveNamed` picks each
-- [ ] An unqualified `resolve` with two candidates and no `#[primary]` fails with the message above, naming both
-- [ ] With one marked `#[primary]`, the unqualified `resolve` returns it
-- [ ] `#[provides]` on a function returning `void` fails at comptime
+- [x] Two with distinct `#[qualifier]`s both register, and `resolveNamed` picks each — held: `test/context_test.bp` "rakun context: two #[provides] of one type are told apart by qualifier"
+- [x] An unqualified `resolve` with two candidates and no `#[primary]` fails with the message above, naming both — held: `test/context_test.bp` "rakun context: two candidates and no #[primary] name both owners"
+- [x] With one marked `#[primary]`, the unqualified `resolve` returns it — held: `test/context_test.bp` "rakun context: with one candidate marked #[primary] the unqualified resolve returns it"
+- [x] `#[provides]` on a function returning `void` fails at comptime — held: `src/context.bp` `provides` → `decl.fail("… returns a value …")`
 
 ### Step 4 — Lifecycle
 
 **Acceptance:**
 - [ ] `#[postConstruct]` runs after the instance is constructed and before `eagerInit` returns
-- [ ] It runs exactly once for a singleton, no matter how many sites resolve it
-- [ ] It can use every injected dependency
-- [ ] `#[preDestroy]` runs on shutdown, in reverse registration order
-- [ ] `#[postConstruct]` on a non-method fails at comptime with a located message
-- [ ] A `#[postConstruct]` that raises fails the boot naming the component and the method
+- [x] It runs exactly once for a singleton, no matter how many sites resolve it — held: `test/context_test.bp` "rakun lifecycle: the post pass runs a hook exactly once and it sees its dependencies"
+- [x] It can use every injected dependency — held: `test/context_test.bp` "rakun lifecycle: the post pass runs a hook exactly once and it sees its dependencies"
+- [x] `#[preDestroy]` runs on shutdown, in reverse registration order — held: `test/context_test.bp` "rakun shutdown: the pre pass runs in reverse order and answers the exit code"
+- [x] `#[postConstruct]` on a non-method fails at comptime with a located message — held: `src/lifecycle.bp` `postConstruct` → `decl.fail` on `decl.kind != DeclKind.Method`
+- [x] A `#[postConstruct]` that raises fails the boot naming the component and the method — held: `test/context_test.bp` "rakun lifecycle: a #[postConstruct] that raises fails the boot naming both"
 
 ### Step 5 — Events
 
 **Acceptance:**
-- [ ] `#[eventListener("ApplicationReady")]` receives the event
-- [ ] Two listeners for one event both run, in registration order
-- [ ] A listener for an event that is never published never runs and is not an error
-- [ ] `ctx.publish(Event(name: "OrderPlaced", …))` reaches an application listener
-- [ ] A listener that raises is logged with its owner and does not stop the sequence or the other listeners
-- [ ] The eight boot events are published in the documented order, and `ApplicationFailed` replaces the tail when the boot fails
+- [x] `#[eventListener("ApplicationReady")]` receives the event — held: `test/events_test.bp` "rakun events: the eight boot events publish in the documented order" (listener log carries `ApplicationReady:`)
+- [x] Two listeners for one event both run, in registration order — held: `test/events_test.bp` "rakun events: two listeners for one event both run, in registration order"
+- [x] A listener for an event that is never published never runs and is not an error — held: `test/events_test.bp` "rakun events: a listener for an event never published never runs and is not an error"
+- [x] `ctx.publish(Event(name: "OrderPlaced", …))` reaches an application listener — held: `test/events_test.bp` "rakun events: ctx.publish reaches an application listener"
+- [x] A listener that raises is logged with its owner and does not stop the sequence or the other listeners — held: `test/events_test.bp` "rakun events: a listener that raises is logged with its owner and stops nothing"
+- [x] The eight boot events are published in the documented order, and `ApplicationFailed` replaces the tail when the boot fails — held: `test/events_test.bp` "rakun events: the eight boot events publish in the documented order" + "ApplicationFailed replaces the tail when a #[postConstruct] raises"
 
 ### Step 6 — Scopes
 
 **Acceptance:**
-- [ ] A `Prototype` bean returns a distinct instance per `resolve`
-- [ ] A `Request` bean returns one instance within a request and a different one in the next request
-- [ ] Two concurrent requests each get their own `Request` instance
+- [x] A `Prototype` bean returns a distinct instance per `resolve` — held: `test/context_test.bp` "rakun scope: a prototype bean is constructed on every resolve"
+- [x] A `Request` bean returns one instance within a request and a different one in the next request — held: `test/context_test.bp` "rakun scope: a request bean is one instance within a request and another in the next"
+- [x] Two concurrent requests each get their own `Request` instance — held: `test/context_test.bp` "rakun scope: two concurrent requests each get their own request instance" (rakun `d982052`)
 - [ ] `#[scope("request")]` on a type whose factory is constructor-injected somewhere fails at comptime naming the injection site's limitation
 
 ### Step 7 — Eager initialization and lazy
@@ -312,17 +312,17 @@ has no analogue and needs none; the README says that rather than inventing one.
 **Acceptance:**
 - [ ] With defaults, every registered bean is constructed before `Rakun.run` returns
 - [ ] A component whose `#[value]` key is missing fails the boot, not the first request
-- [ ] `rakun.main.lazy-initialization=true` constructs nothing at boot
-- [ ] `#[lazy]` on one component excludes only that one
-- [ ] Eager initialization of a cyclic graph reports the cycle through front 04's diagnostics
+- [x] `rakun.main.lazy-initialization=true` constructs nothing at boot — held: `test/context_test.bp` "rakun eager: rakun.main.lazy-initialization=true constructs nothing at boot"
+- [x] `#[lazy]` on one component excludes only that one — held: `test/context_test.bp` "rakun eager: #[lazy] excludes only the bean that carries it"
+- [x] Eager initialization of a cyclic graph reports the cycle through front 04's diagnostics — held: `test/context_test.bp` "rakun eager: a cyclic graph fails the boot through front 04's cycle guard"
 
 ### Step 8 — Shutdown and exit codes
 
 **Acceptance:**
-- [ ] `SIGTERM` runs every `#[preDestroy]` in reverse registration order before the node stops
-- [ ] `#[exitCode]` functions are consulted and the highest value is the process status
+- [x] `SIGTERM` runs every `#[preDestroy]` in reverse registration order before the node stops — held: `modules/rakun-web/test/shutdown_test.bp` "SIGTERM runs the installed hook instead of stopping the node" (`installShutdownHook` = `gracefulShutdown()` then halt) + "the #[preDestroy] pass runs after the drain" + `modules/rakun/test/context_test.bp` "the pre pass runs in reverse order and answers the exit code"
+- [x] `#[exitCode]` functions are consulted and the highest value is the process status — held: `test/context_test.bp` "rakun shutdown: the highest generator wins and none means zero"
 - [ ] With no generator, a clean stop is status 0 and a failed boot is non-zero
-- [ ] A `#[preDestroy]` that raises is logged and does not prevent the remaining ones from running
+- [x] A `#[preDestroy]` that raises is logged and does not prevent the remaining ones from running — held: `test/context_test.bp` "rakun shutdown: a #[preDestroy] that raises is logged and the rest still run"
 
 ### Step 9 — Retire the `rakun.d.bp` stub
 
@@ -335,10 +335,10 @@ says where it lives.
 This front touches nothing else in `rakun.d.bp`.
 
 **Acceptance:**
-- [ ] `behavior Context` is gone from `src/rakun.d.bp` and the docblock no longer calls it unimplemented
-- [ ] `import {Context} from "rakun"` in a consumer resolves to the concrete record, with no ambiguity diagnostic
+- [x] `behavior Context` is gone from `src/rakun.d.bp` and the docblock no longer calls it unimplemented — held: `src/rakun.d.bp` declares nothing; docblock records the stub as removed
+- [x] `import {Context} from "rakun"` in a consumer resolves to the concrete record, with no ambiguity diagnostic — held: `examples/rakun-container/src/main.bp` (`import {Context, Event, event, __rkMake_Context} from "rakun"`), built by the pre-commit examples gate
 - [ ] A consumer that previously named the behavior in a signature still compiles, because the concrete type carries `resolve`/`has` with the same names
-- [ ] `botopink.json`'s `files` list still loads `rakun.d.bp`, and nothing else in it changed
+- [x] `botopink.json`'s `files` list still loads `rakun.d.bp`, and nothing else in it changed — held: `modules/rakun/botopink.json` `files` still lists `rakun.d.bp`
 
 ## Examples
 
@@ -398,15 +398,15 @@ Erlang-only (decision 113).
 
 ## Definition of done
 
-- [ ] `src/context.bp`, `src/events.bp`, `src/lifecycle.bp` exist; `src/sidecars/rakun_context.erl`
-      compiles under `erlc`
-- [ ] `rakun.d.bp`'s declaration-only `Context` is gone and the concrete one is reachable as
-      `import {Context} from "rakun"`
-- [ ] `#[managed]`, `#[provides]`, `#[qualifier]`, `#[primary]`, `#[lazy]`, `#[scope]`, `#[imports]`,
+- [x] `src/context.bp`, `src/events.bp`, `src/lifecycle.bp` exist; `src/sidecars/rakun_context.erl`
+      compiles under `erlc` — held: the three modules exist; `erlc -Werror src/sidecars/rakun_context.erl` is clean
+- [x] `rakun.d.bp`'s declaration-only `Context` is gone and the concrete one is reachable as
+      `import {Context} from "rakun"` — held: `src/rakun.d.bp` empty of declarations; `examples/rakun-container/src/main.bp` imports `Context` from `"rakun"`
+- [x] `#[managed]`, `#[provides]`, `#[qualifier]`, `#[primary]`, `#[lazy]`, `#[scope]`, `#[imports]`,
       `#[postConstruct]`, `#[preDestroy]`, `#[eventListener]`, `#[exitCode]` all exist with placement
-      checks and located failure messages
-- [ ] The eight boot events publish in order, with `ApplicationFailed` replacing the tail on failure
-- [ ] Eager initialization is on by default and turns a misconfiguration into a boot failure
-- [ ] The pre-destroy pass runs in reverse registration order
-- [ ] `repository/rakun/AGENTS.md` documents `#[managed]` and why it stacks rather than replaces
-- [ ] The front's tests are green on its assigned target
+      checks and located failure messages — held: `src/context.bp` / `src/lifecycle.bp` / `src/events.bp` — every marker's body opens with a `decl.fail` placement check
+- [x] The eight boot events publish in order, with `ApplicationFailed` replacing the tail on failure — held: `test/events_test.bp` "rakun events: the eight boot events publish in the documented order" + "ApplicationFailed replaces the tail …"
+- [x] Eager initialization is on by default and turns a misconfiguration into a boot failure — held: `src/context.bp` `bootSequenceFor/1` (eager unless `rakun.main.lazy-initialization`); `test/context_test.bp` "rakun eager: a cyclic graph fails the boot through front 04's cycle guard"
+- [x] The pre-destroy pass runs in reverse registration order — held: `test/context_test.bp` "rakun lifecycle: the pre pass runs in reverse registration order"
+- [x] `repository/rakun/AGENTS.md` documents `#[managed]` and why it stacks rather than replaces — held: `repository/rakun/AGENTS.md` § `#[managed]` stacks, it does not replace
+- [x] The front's tests are green on its assigned target — held: `modules/rakun` `botopink test --target erlang` 310/0
