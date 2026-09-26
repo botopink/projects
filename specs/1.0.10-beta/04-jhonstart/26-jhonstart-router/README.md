@@ -245,14 +245,14 @@ pub fn pairValue(pairs: Array<#(string, string)>, name: string) -> string {
 ```
 
 **Acceptance:**
-- [ ] `RouterState(path: "/blog/hi", params: [#("slug", "hi")], search: [], pattern: "/blog/[slug]", selected: 0).param("slug") == "hi"`
-- [ ] `param` of an absent key is `""`, not a runtime error
+- [x] `RouterState(path: "/blog/hi", params: [#("slug", "hi")], search: [], pattern: "/blog/[slug]", selected: 0).param("slug") == "hi"` — `test/router_test.bp` "router: a param is read by name"
+- [x] `param` of an absent key is `""`, not a runtime error — `test/router_test.bp` "router: an absent param is the empty string, not a runtime error"
 - [ ] `pairValue` is `pub` and is the only pair-list decoder in the package: fronts 28 and 32 import
       it, and `git grep -n "fn pairValue"` finds exactly one definition
-- [ ] `pairValue` of a duplicated key returns the first match, and the test asserts it
-- [ ] `segments()` of `"/blog/[slug]"` is `["blog", "[slug]"]` — the bracket spelling is kept
-- [ ] `segment()` of an out-of-range `selected` is `""`
-- [ ] no field of `RouterState` shares a name with a method of `RouterState`
+- [x] `pairValue` of a duplicated key returns the first match, and the test asserts it — `test/router_test.bp` "router: pairValue answers the FIRST match of a duplicated key"
+- [x] `segments()` of `"/blog/[slug]"` is `["blog", "[slug]"]` — the bracket spelling is kept — `test/router_test.bp` "router: segments keep the bracket spelling and drop the empty parts"
+- [x] `segment()` of an out-of-range `selected` is `""` — `test/router_test.bp` "router: segment answers the layout depth, and out of range is empty"
+- [x] no field of `RouterState` shares a name with a method of `RouterState` — fields `path/params/search/pattern/selected`, methods `param/searchParam/segments/segment`
 
 ### Step 2 — The five host cells and the snapshot builder
 
@@ -285,13 +285,13 @@ pub fn snapshot() -> RouterState {
 
 **Acceptance:**
 - [ ] all five cells are `#[@External.Erlang]`; none is `#[@External.Node]`
-- [ ] `snapshot()` of `("/blog/hi", "slug=hi", "", "/blog/[slug]", 0)` round-trips to the record in step 1
-- [ ] each cell maps to exactly one payload key, and the mapping table is in `docs.md`
-- [ ] an empty params string yields `[]`, not `[#("", "")]`
-- [ ] `snapshot()` of search `q=a%20b` has `searchParam("q") == "a b"` — the value decoded, not
+- [x] `snapshot()` of `("/blog/hi", "slug=hi", "", "/blog/[slug]", 0)` round-trips to the record in step 1 — `test/router_test.bp` "router: the five cells round-trip into the record of step 1"
+- [x] each cell maps to exactly one payload key, and the mapping table is in `docs.md` — `docs.md` § *The snapshot, the five cells and `fill`*
+- [x] an empty params string yields `[]`, not `[#("", "")]` — `test/router_test.bp` "router: an empty params string yields the empty list, not one empty pair"
+- [x] `snapshot()` of search `q=a%20b` has `searchParam("q") == "a b"` — the value decoded, not
       `a%20b` (the landed stand-in's answer) — and `encoding.formStringify([#("q", "a b")])`, the
-      form the router writes back into a URL, is `q=a%20b`; one cell asserts both directions
-- [ ] `snapshot()` performs no `?T` unwrap that can fail
+      form the router writes back into a URL, is `q=a%20b`; one cell asserts both directions — `test/router_test.bp` "router: a percent-encoded search value is decoded, and written back encoded" (jhonstart `0101ad1`)
+- [x] `snapshot()` performs no `?T` unwrap that can fail — `router.bp` `snapshot()`
 
 ### Step 3 — The five hooks
 
@@ -322,11 +322,11 @@ pub fn selectedLayoutSegments() -> @Component<ElementBase, Array<string>> {
 ```
 
 **Acceptance:**
-- [ ] `use pathname()` type-checks inside a `fn … -> @Component<ElementBase, Element>` body — never the doubled `use` + `usePathname()`: the keyword is the activation, the name is the noun; without a `@Component` return the body is `use-without-context-effect` (decisions 118 and 128)
-- [ ] every hook returns `@Component<ElementBase, T>` with the base written (decision 128); `@Component<T>` with one argument is a type-arity error
-- [ ] `pathname()` called WITHOUT `use` also type-checks and returns the string — the server render calls hooks directly, as `jhonstart-counter`'s `StatefulBadge` does
-- [ ] `selectedLayoutSegments()` returns the segments root-first
-- [ ] all six are `pub`
+- [x] `use pathname()` type-checks inside a `fn … -> @Component<ElementBase, Element>` body — never the doubled `use` + `usePathname()`: the keyword is the activation, the name is the noun; without a `@Component` return the body is `use-without-context-effect` (decisions 118 and 128) — `test/router_test.bp` "router: a component activating the hooks renders the server pass"
+- [x] every hook returns `@Component<ElementBase, T>` with the base written (decision 128); `@Component<T>` with one argument is a type-arity error — `router.bp` step 3; the one-argument form is the compiler's arity refusal (front 24)
+- [x] `pathname()` called WITHOUT `use` also type-checks and returns the string — the server render calls hooks directly, as `jhonstart-counter`'s `StatefulBadge` does — `test/router_test.bp` "router: each hook answers the field it names, called without `use`"
+- [x] `selectedLayoutSegments()` returns the segments root-first — `test/router_test.bp` "router: selectedLayoutSegment(s) answer the layout depth, root-first"
+- [x] all six are `pub` — `router.bp` step 3
 
 ### Step 4 — Navigation verbs
 
@@ -349,9 +349,9 @@ callers ignore it.
 
 **Acceptance:**
 - [ ] `__jhNavigate` is the only dual-target cell in the file, and the README says why
-- [ ] `push("/x")` on erlang records a redirect and does not raise
-- [ ] `back()`, `forward()`, `refresh()`, `prefetch()` on erlang are no-ops that return
-- [ ] a test asserts each verb is callable on the erlang target without a host stub crash
+- [x] `push("/x")` on erlang records a redirect and does not raise — `test/router_test.bp` "router: push and replace record what the dispatcher turns into a 307"
+- [x] `back()`, `forward()`, `refresh()`, `prefetch()` on erlang are no-ops that return — `test/router_test.bp` "router: the four server no-ops are callable and return"
+- [x] a test asserts each verb is callable on the erlang target without a host stub crash — `test/router_test.bp` "router: the four server no-ops are callable and return"
 
 ### Step 5 — Module promotion
 
@@ -359,29 +359,29 @@ Delete `router.d.bp`. front 94 owns `src/root.bp` and `botopink.json`'s `files` 
 `router.d.bp` in `files`. `Link` does **not** come along — it moves to front 27's `src/link.bp`.
 
 **Acceptance:**
-- [ ] `router.d.bp` is gone; `git grep -n "router.d.bp"` finds nothing outside the changelog
+- [x] `router.d.bp` is gone; `git grep -n "router.d.bp"` finds nothing outside the changelog — `git grep -n "router.d.bp"` in jhonstart finds only `CHANGELOG.md` / `AGENTS.md` history
 - [ ] `pub mod router;` and the `files` swap are handed to front 94; this front edits neither
       `src/root.bp` nor `botopink.json`
-- [ ] `repository/jhonstart/AGENTS.md` records the promotion in the same commit
+- [x] `repository/jhonstart/AGENTS.md` records the promotion in the same commit — jhonstart `2bb6fd9`
 
 ### Step 6 — `clientApp` (decision 117)
 
 **Acceptance:**
-- [ ] `clientApp(routes, mount, allowedRedirects).start()` renders the route `window.location`
-      matches into `mount`, with the layouts before the page, on `--target commonJS`
-- [ ] a page raising `notFound()` renders the route's not-found boundary into `mount` and leaves
-      `location.pathname` unchanged
-- [ ] a page or layout raising `redirect("/login")`, with `/login` in `routes`, performs
+- [x] `clientApp(routes, mount, allowedRedirects).start()` renders the route `window.location`
+      matches into `mount`, with the layouts before the page, on `--target commonJS` — `test/client_app_test.bp` "clientApp: start renders the matched route into mount, the layout before the page" (jhonstart `9d7f28d`, `client_app.bp`)
+- [x] a page raising `notFound()` renders the route's not-found boundary into `mount` and leaves
+      `location.pathname` unchanged — `test/client_app_test.bp` "clientApp: notFound renders the route's not-found boundary and leaves the URL alone"
+- [x] a page or layout raising `redirect("/login")`, with `/login` in `routes`, performs
       `history.replaceState` and a client navigation to `/login` with no reload; a layout's
-      redirect means the page's function is never called
-- [ ] `redirect("/nowhere")` (not in `routes`) and `redirect("https://evil.example")` with
+      redirect means the page's function is never called — `test/client_app_test.bp` "clientApp: a relative redirect in routes is a replaceState and a client navigation"; the layout-first order is `compose`'s (front 30 "signal: a layout's redirect means the page never runs")
+- [x] `redirect("/nowhere")` (not in `routes`) and `redirect("https://evil.example")` with
       `allowedRedirects` empty fail the render and navigate nowhere; the same absolute target listed
-      in `allowedRedirects` is a `location.replace`
+      in `allowedRedirects` is a `location.replace` — `test/client_app_test.bp` "clientApp: an unlisted target fails the start and navigates nowhere; a listed absolute one is location.replace"
 - [ ] the late-signal function front 30 registers under `globals.signal` and `clientApp` share one
       handler: a `data-jh-g="redirect"` template and a raised `redirect` with the same target take
       the same path
-- [ ] `clientApp` reads the table with `routing`'s `parseTable` and matches with `matchPath`; it
-      defines neither
+- [x] `clientApp` reads the table with `routing`'s `parseTable` and matches with `matchPath`; it
+      defines neither — through `resolveRoute`
 
 ## Examples
 
@@ -435,39 +435,39 @@ type-checked, not executed, exactly as `hooks.bp:104-117` does for `Counter`.
 
 jhonstart names no rakun symbol (decision 113); the matcher is `routing`'s (decision 115).
 
-- [ ] `router.bp` imports `parseTable` and `matchPath` from `"routing"` and defines neither; the
+- [x] `router.bp` imports `parseTable` and `matchPath` from `"routing"` and defines neither; the
       router takes no `match` parameter; no `rakun` identifier appears under
       `modules/jhonstart/src/`, and jhonstart's `botopink.json` lists no `routing` dependency
-      (bundled, like std)
-- [ ] the payload the client half reads is `globals.payload` (front 30's registry), never a literal
-      `__onze`
+      (bundled, like std) — `resolveRoute`; `test/router_test.bp` "router: resolveRoute matches with routing's matchPath over the payload's t"
+- [x] the payload the client half reads is `globals.payload` (front 30's registry), never a literal
+      `__onze` — `hydrate()` / `propsFor` / `readPayload` read `globals().payload` (`__bp0`); no `__onze` literal in the tree
 
 ### Decision 116's spellings
 
-- [ ] `decodePairs` and `encodePairs` (`router.bp:123-162`) are deleted; `router.bp` and front 28's
+- [x] `decodePairs` and `encodePairs` (`router.bp:123-162`) are deleted; `router.bp` and front 28's
       `server.bp` decode with `encoding.formParse` and encode with `encoding.formStringify`, and
-      `git grep -n "fn decodePairs\|fn encodePairs"` under `modules/jhonstart/` is empty
-- [ ] the `a b` cell above is green on erlang (and on commonJS through front 27's row)
-- [ ] an action or refresh envelope's `n` is read with `routing`'s `signalFromWire`; `router.bp`
-      defines no `signalFromWire` and no `"R|"` parser of its own
-- [ ] `refresh()` sends `refreshValue()` imported from `"actions"`; no `"refresh"` header literal
-      under `modules/jhonstart/src/`
+      `git grep -n "fn decodePairs\|fn encodePairs"` under `modules/jhonstart/` is empty — jhonstart `0101ad1`
+- [x] the `a b` cell above is green on erlang (and on commonJS through front 27's row) — both rows
+- [x] an action or refresh envelope's `n` is read with `routing`'s `signalFromWire`; `router.bp`
+      defines no `signalFromWire` and no `"R|"` parser of its own — `navigationFor` / `applySignal`; `test/router_test.bp` "router: the four n forms pick the navigation the router performs"
+- [x] `refresh()` sends `refreshValue()` imported from `"actions"`; no `"refresh"` header literal
+      under `modules/jhonstart/src/` — `test/router_test.bp` "router: refresh() carries actions' refreshValue, spelled nowhere here" (`"refresh"` remains only as the navigation cell's verb name)
 
 ## Definition of done
 
 - [ ] `router.d.bp` removed, `router.bp` in the build tree, its `root.bp` and `files` lines handed
       to front 94
-- [ ] `RouterState`, six hooks, six navigation verbs, `pairValue`, `snapshot` all `pub` and tested
+- [x] `RouterState`, six hooks, six navigation verbs, `pairValue`, `snapshot` all `pub` and tested — `test/router_test.bp`, 24 blocks
 - [ ] `pairValue` is defined once, here, and fronts 28 and 32 cite front 26 for it
-- [ ] the five cells map one-to-one onto payload keys `p`/`m`/`q`/`r` plus the per-layout
-      `selected`, and the mapping table is in `repository/jhonstart/docs.md`
-- [ ] `segments` is derived from `pattern`, never transported
-- [ ] the router has no matcher and no table parser of its own; it imports both from `routing`
-- [ ] the router has no pair codec and no signal-wire decoder of its own: std `encoding` and
-      `routing`'s `navigation` (decision 116)
+- [x] the five cells map one-to-one onto payload keys `p`/`m`/`q`/`r` plus the per-layout
+      `selected`, and the mapping table is in `repository/jhonstart/docs.md` — `docs.md` § *The snapshot, the five cells and `fill`*
+- [x] `segments` is derived from `pattern`, never transported — `RouterState.segments()` = `patternSegments(self.pattern)`
+- [x] the router has no matcher and no table parser of its own; it imports both from `routing` — `router.bp` imports both from `routing`
+- [x] the router has no pair codec and no signal-wire decoder of its own: std `encoding` and
+      `routing`'s `navigation` (decision 116) — std `encoding`, `routing`'s `navigation`
 - [ ] one `#[@External.Node]`-only cell in the file, `__jhMount(selector, html)`, which `clientApp`
       renders through; history goes through `__jhNavigate`, the one dual-target cell
-- [ ] `clientApp` handles `notFound` / `redirect` in a client-only app as front 30's render does on
-      the server, with the same target check (decision 117)
-- [ ] both language gaps appear in a `specs/1.0.10-beta/` spec
-- [ ] the front's tests are green on its assigned target
+- [x] `clientApp` handles `notFound` / `redirect` in a client-only app as front 30's render does on
+      the server, with the same target check (decision 117) — `client_app.bp` `handleSignal`, front 30's `redirectAllowed`
+- [x] both language gaps appear in a `specs/1.0.10-beta/` spec — `language-gaps.md` rows "Declared parameter defaults are never applied" and "No assignment to a `self` field"
+- [x] the front's tests are green on its assigned target — core 187/187 on erlang and commonJS (`router_test.bp` 29, `client_app_test.bp` 4)

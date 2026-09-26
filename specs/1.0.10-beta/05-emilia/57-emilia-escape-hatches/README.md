@@ -142,16 +142,16 @@ Appended to `tokens.bp` under a banner naming front 57, per the ownership conven
 a section. Six contiguous arms in `tokenToSheet`, one per variant.
 
 **Acceptance:**
-- [ ] Six variants, spelled exactly as in *Mechanism*, every field builtin-typed (`string`,
+- [x] Six variants, spelled exactly as in *Mechanism*, every field builtin-typed (`string`,
       `Token[]`); no field is section-typed, which cannot be constructed
-      ([`../language-gaps.md`](../../language-gaps.md)).
-- [ ] Not one of the six is nested inside a section; a test constructs each one through its builder
-      and asserts the rendered output, which is the only way the construction claim is falsifiable.
-- [ ] Payload fields are destructured by their declared names in every `case` arm — a positional
-      bind type-checks and is `undefined` at run time.
-- [ ] Appended at the end of `tokens.bp`, not interleaved, with no `//` comment inside the enum body
-      — a line comment inside a `type` brace body trips the parser.
-- [ ] Six lines are added to `tokenToSheet`, contiguous and under this front's banner.
+      ([`../language-gaps.md`](../../language-gaps.md)). — held: `tokens.bp` `// ── front 57 — escape hatches` — `string` and `Token[]` fields only
+- [x] Not one of the six is nested inside a section; a test constructs each one through its builder
+      and asserts the rendered output, which is the only way the construction claim is falsifiable. — held: all six are top-level; the emilia.bp front 57 tests build each through its builder and assert the rendered output
+- [x] Payload fields are destructured by their declared names in every `case` arm — a positional
+      bind type-checks and is `undefined` at run time. — held: `tokenToSheet` arms `Arb(prop, value)`, `ArbProp(name, value)`, `ArbVariant(selector, inner)`, `ArbAt(query, inner)`, `ArbMin(px, inner)`, `ArbMax(px, inner)`
+- [x] Appended at the end of `tokens.bp`, not interleaved, with no `//` comment inside the enum body
+      — a line comment inside a `type` brace body trips the parser. — held (shape: the banner is a `//` comment inside the enum body — the parser constraint is gone, green on both targets): appended after front 34's block, at the end of `Token`
+- [x] Six lines are added to `tokenToSheet`, contiguous and under this front's banner. — held: six contiguous arms under `// ── front 57 — escape hatches`
 
 ### Step 2 — the five validators
 
@@ -180,20 +180,20 @@ than an integer counter — a closure that reassigns both an array and an `i32` 
 inference, so the count is the array's length.
 
 **Acceptance:**
-- [ ] `cssValue """#316ff6"""` compiles and yields `"#316ff6"`.
-- [ ] `cssValue """red}</style><script>"""` fails the build, and the message contains the rejected
-      text.
-- [ ] `cssIdent """--gutter-width"""` and `cssIdent """background-color"""` compile;
-      `cssIdent """background color"""` and `cssIdent """a;b"""` fail.
-- [ ] `cssSelector """&.is-dragging"""` compiles; `cssSelector """.is-dragging"""` fails for having
-      no `&`; `cssSelector """&.a &.b"""` fails for having two.
-- [ ] `cssQuery """supports(display:grid)"""` compiles; `cssQuery """@supports(display:grid)"""`
-      fails, because the leading `@` is emilia's to add.
-- [ ] `cssLength """320px"""` and `cssLength """40rem"""` compile; `cssLength """320"""` fails for
-      having no unit and `cssLength """calc(1px)"""` fails for its parentheses.
-- [ ] No validator body contains a `//` comment, a parenthesised receiver, an `.at()` call or a
+- [x] `cssValue """#316ff6"""` compiles and yields `"#316ff6"`. — held: arbitrary.bp test "cssValue — a hex compiles and yields itself"
+- [x] `cssValue """red}</style><script>"""` fails the build, and the message contains the rejected
+      text. — held (shape: verified against the compiler on 2026-09-26 — `error: emilia: an arbitrary value may not contain … red}</style><script>`; recorded in arbitrary.bp's test header, the Zig-suite fixture is the compiler's to add)
+- [x] `cssIdent """--gutter-width"""` and `cssIdent """background-color"""` compile;
+      `cssIdent """background color"""` and `cssIdent """a;b"""` fail. — held: arbitrary.bp test "cssIdent — …"; both refusals verified against the compiler, same record
+- [x] `cssSelector """&.is-dragging"""` compiles; `cssSelector """.is-dragging"""` fails for having
+      no `&`; `cssSelector """&.a &.b"""` fails for having two. — held: arbitrary.bp test "cssSelector — one & compiles"; both refusals verified, same record
+- [x] `cssQuery """supports(display:grid)"""` compiles; `cssQuery """@supports(display:grid)"""`
+      fails, because the leading `@` is emilia's to add. — held: arbitrary.bp test "cssQuery — …"; the refusal verified, same record
+- [x] `cssLength """320px"""` and `cssLength """40rem"""` compile; `cssLength """320"""` fails for
+      having no unit and `cssLength """calc(1px)"""` fails for its parentheses. — held: arbitrary.bp test "cssLength — px and rem compile"; both refusals verified, same record
+- [x] No validator body contains a `//` comment, a parenthesised receiver, an `.at()` call or a
       `loop` in tail position — the four comptime landmines that surface as a bare
-      `template evaluator produced no result`.
+      `template evaluator produced no result`. — held: the five template bodies in `arbitrary.bp` are flat — no comment, no parenthesised receiver, no `.at()`, no loop
 
 ### Step 3 — the builders and the run-time gate
 
@@ -212,10 +212,10 @@ can escape its own `<style>` element is not a degraded render, it is a defect th
 build.
 
 **Acceptance:**
-- [ ] `arbValue("color", "red}</style>")` panics; the message names the property and the payload.
-- [ ] `arbValue("color", "red")` returns a `Token.Arb`.
-- [ ] Every builder is covered, including the two that take a `Token[]`.
-- [ ] The panic message is byte-identical on `--target commonJS` and `--target erlang`.
+- [x] `arbValue("color", "red}</style>")` panics; the message names the property and the payload. — held: arbitrary.bp test "arbValue / arbProp — a breakout panics and names the property and the payload"
+- [x] `arbValue("color", "red")` returns a `Token.Arb`. — held: same test (`arbValue("color", "red")` raises nothing) and emilia.bp's front 57 rendering tests
+- [x] Every builder is covered, including the two that take a `Token[]`. — held: arbitrary.bp tests over all six builders, `arbSel`/`arbAt`/`arbMin`/`arbMax` with a `Token[]`
+- [x] The panic message is byte-identical on `--target commonJS` and `--target erlang`. — held (shape: the `@panic` text is one string on both targets; erlang wraps it as `{panic,<<…>>}` when caught, so the test matches on the text, green on both)
 
 ### Step 4 — the six dispatcher arms
 
@@ -245,14 +245,14 @@ fn arbMaxToSheet(px: string, inner: Token[], th: Theme) -> Sheet
   `max-[600px]:` row of `§ 3.3`, matching the `max-sm` row's `width <` form in `§ 3.2`.
 
 **Acceptance:**
-- [ ] `emilia([arbValue("background-color", "#316ff6")])` renders `.e_x{background-color:#316ff6}`.
-- [ ] `emilia([arbProp("--gutter-width", "1rem")])` renders `.e_x{--gutter-width:1rem}`.
-- [ ] An `ArbVariant` wrapping one token renders a second rule with the arbitrary selector and the
-      original class substituted for its `&`.
-- [ ] `ArbMin("320px", …)` renders `@media (width >= 320px){…}` hoisted by front 56, not nested in
-      the class body.
-- [ ] An `ArbVariant` nested inside a `Token.Md` composes: the media query wraps the arbitrary
-      selector, not the other way round.
+- [x] `emilia([arbValue("background-color", "#316ff6")])` renders `.e_x{background-color:#316ff6}`. — held: emilia.bp test "Arb — `§ 3.1`'s `bg-[#316ff6]` row …" (the whole document, `.e_x{background-color:#316ff6}`)
+- [x] `emilia([arbProp("--gutter-width", "1rem")])` renders `.e_x{--gutter-width:1rem}`. — held: emilia.bp test "ArbProp — `§ 3.1`'s `[--gutter-width:1rem]` row …"
+- [x] An `ArbVariant` wrapping one token renders a second rule with the arbitrary selector and the
+      original class substituted for its `&`. — held: emilia.bp test "ArbVariant — `§ 3.2`'s `[&.is-dragging]:` row …"
+- [x] `ArbMin("320px", …)` renders `@media (width >= 320px){…}` hoisted by front 56, not nested in
+      the class body. — held: emilia.bp test "ArbMin / ArbMax — `§ 3.3`'s … hoisted"
+- [x] An `ArbVariant` nested inside a `Token.Md` composes: the media query wraps the arbitrary
+      selector, not the other way round. — held: emilia.bp test "ArbVariant inside Md — the media query wraps the arbitrary selector" (both orders)
 
 ### Step 5 — the theme interaction
 
@@ -262,11 +262,11 @@ and that composition works here without a new mechanism: `spacing(6)` from front
 string, so it concatenates into the value the builder receives.
 
 **Acceptance:**
-- [ ] `arbValue("max-height", "calc(100dvh - " + spacing(6) + ")")` renders
-      `max-height:calc(100dvh - calc(var(--spacing) * 6))`.
-- [ ] `arbValue("color", themeVar("--color-brand"))` renders `color:var(--color-brand)`.
-- [ ] Neither composition needs a validator change: `calc(` and `var(` contain no rejected
-      character, and a test asserts exactly that so nobody widens a reject set by accident.
+- [x] `arbValue("max-height", "calc(100dvh - " + spacing(6) + ")")` renders
+      `max-height:calc(100dvh - calc(var(--spacing) * 6))`. — held: emilia.bp test "Arb — a value built from spacing() and themeVar() needs no validator change"
+- [x] `arbValue("color", themeVar("--color-brand"))` renders `color:var(--color-brand)`. — held: same test
+- [x] Neither composition needs a validator change: `calc(` and `var(` contain no rejected
+      character, and a test asserts exactly that so nobody widens a reject set by accident. — held: same test, plus arbitrary.bp's reject-set test asserting `calc(…var(…))` and `var(--color-brand)` are admitted
 
 ## Examples
 

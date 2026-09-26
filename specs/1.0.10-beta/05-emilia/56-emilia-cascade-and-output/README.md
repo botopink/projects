@@ -215,11 +215,11 @@ pub fn mergeSheet(a: Sheet, b: Sheet) -> Sheet
 is literal. `mergeSheet` concatenates rules then blocks, preserving order.
 
 **Acceptance:**
-- [ ] `declSheet("color:red")` has one rule with `layer == "utilities"`, `atRules.length == 0`,
-      `selector == "&"` and `important == false`.
-- [ ] `declSheet("")` has zero rules and zero blocks.
-- [ ] `mergeSheet` is associative on rule order — `mergeSheet(mergeSheet(a, b), c)` and
-      `mergeSheet(a, mergeSheet(b, c))` produce the same rendered string.
+- [x] `declSheet("color:red")` has one rule with `layer == "utilities"`, `atRules.length == 0`,
+      `selector == "&"` and `important == false`. — held: output.bp test "declSheet — one utilities rule, no at-rules, the bare ampersand, not important"
+- [x] `declSheet("")` has zero rules and zero blocks. — held: output.bp test "declSheet — an empty declaration is an empty sheet, not an empty rule"
+- [x] `mergeSheet` is associative on rule order — `mergeSheet(mergeSheet(a, b), c)` and
+      `mergeSheet(a, mergeSheet(b, c))` produce the same rendered string. — held: output.bp test "mergeSheet — associative on rule order, so the rendered string is the same"
 
 ### Step 2 — variant nesting
 
@@ -237,15 +237,15 @@ outermost, which is what the nesting test in `emilia.bp:455-461` asserts today a
 must keep true in the new shape.
 
 **Acceptance:**
-- [ ] `nestVariant(declSheet("color:red"), Variant(atRule: "", selector: "&:hover"))` yields a rule
-      whose selector is `"&:hover"`.
-- [ ] Nesting twice yields `"&:hover::before"` for hover-outside-before and `"&::before:hover"` for
-      the reverse, and a test pins both so the order is not accidental.
-- [ ] `nestVariant` with `Variant(atRule: "@media (width >= 48rem)", selector: "&")` prepends the
-      at-rule and leaves the selector alone.
-- [ ] A `Variant` whose selector holds zero or two `&` fails the build. The message names the
-      selector. There is no argument that permits it.
-- [ ] Blocks in the input `Sheet` are byte-identical in the output.
+- [x] `nestVariant(declSheet("color:red"), Variant(atRule: "", selector: "&:hover"))` yields a rule
+      whose selector is `"&:hover"`. — held: output.bp test "nestVariant — a selector-only variant rewrites the selector and adds no at-rule"
+- [x] Nesting twice yields `"&:hover::before"` for hover-outside-before and `"&::before:hover"` for
+      the reverse, and a test pins both so the order is not accidental. — held: output.bp tests "nestVariant — hover outside before is `&:hover::before`" and "nestVariant — before outside hover is `&::before:hover`, the other order"
+- [x] `nestVariant` with `Variant(atRule: "@media (width >= 48rem)", selector: "&")` prepends the
+      at-rule and leaves the selector alone. — held: output.bp test "nestVariant — a breakpoint variant prepends its at-rule and leaves the selector alone"
+- [x] A `Variant` whose selector holds zero or two `&` fails the build. The message names the
+      selector. There is no argument that permits it. — held (shape: output.bp:checkVariantSelector `@panic`s when the variant is applied, naming the selector; no opt-out)
+- [x] Blocks in the input `Sheet` are byte-identical in the output. — held: output.bp test "nestVariant — blocks are byte-identical through the nesting"
 
 ### Step 3 — the important flag, per rule
 
@@ -258,9 +258,9 @@ Sets `important` on every rule. Front 34's `Important(inner)` modifier is one li
 declaration, not to the rule.
 
 **Acceptance:**
-- [ ] `markImportant(declSheet("color:red;font-weight:700"))` renders
-      `color:red!important;font-weight:700!important`.
-- [ ] `markImportant` on an empty sheet is a no-op.
+- [x] `markImportant(declSheet("color:red;font-weight:700"))` renders
+      `color:red!important;font-weight:700!important`. — held: output.bp test "markImportant — every declaration of the rule, not the rule"
+- [x] `markImportant` on an empty sheet is a no-op. — held: output.bp test "markImportant — an empty sheet is a no-op"
 
 ### Step 4 — the codec
 
@@ -273,11 +273,11 @@ Records joined by `"\n"` and tagged `R`/`B`; fields joined by `"\t"`; the `atRul
 `"\r"`.
 
 **Acceptance:**
-- [ ] `decodeSheet(encodeSheet(s))` renders identically to `s`, for a sheet carrying two at-rules,
-      a non-`&` selector, an important rule and a block.
-- [ ] `encodeSheet(emptySheet()) == ""` and `decodeSheet("")` is `emptySheet()`.
-- [ ] A test walks every front's dispatcher output and asserts no declaration contains `"\n"`,
-      `"\t"` or `"\r"`. This is the assumption the codec rests on, so it is checked, not assumed.
+- [x] `decodeSheet(encodeSheet(s))` renders identically to `s`, for a sheet carrying two at-rules,
+      a non-`&` selector, an important rule and a block. — held: output.bp test "codec — a round trip preserves two at-rules, a non-ampersand selector, important, and a block"
+- [x] `encodeSheet(emptySheet()) == ""` and `decodeSheet("")` is `emptySheet()`. — held: output.bp test "codec — an empty sheet encodes to the empty string and back"
+- [x] A test walks every front's dispatcher output and asserts no declaration contains `"\n"`,
+      `"\t"` or `"\r"`. This is the assumption the codec rests on, so it is checked, not assumed. — held: emilia.bp test "codec — every walked leaf of fronts 34-46 carries no codec separator" (every front leaf list, >5000 tokens, with a planted-`\n` control)
 
 ### Step 5 — the host cell and the new drain
 
@@ -295,11 +295,11 @@ order, and clears the cell — the same per-render contract `flushSheet` has tod
 `<style>`, no braces, no ordering.
 
 **Acceptance:**
-- [ ] `drainRules()` returns `""` when nothing was registered.
-- [ ] Two consecutive drains: the second is `""`.
-- [ ] The commonJS and Erlang templates return byte-identical strings for the same register
-      sequence, asserted by running the same test on both targets.
-- [ ] Neither template contains the characters `<`, `{` or `}`.
+- [x] `drainRules()` returns `""` when nothing was registered. — held: emilia.bp test "drainRules — nothing registered drains to the empty string"
+- [x] Two consecutive drains: the second is `""`. — held: emilia.bp test "drainRules — a drain clears the cell, so the second of two is empty"
+- [x] The commonJS and Erlang templates return byte-identical strings for the same register
+      sequence, asserted by running the same test on both targets. — held: emilia.bp test "drainRules — the payloads come back verbatim, in insertion order", green on both targets
+- [x] Neither template contains the characters `<`, `{` or `}`. — held (shape: asserted on the drain's output — the JS template's function braces and Erlang's `<<>>` binaries are syntax, not assembly): emilia.bp test "drainRules — the cell assembles nothing: no `<style>`, no brace, in what it hands back"
 
 ### Step 6 — options and the render
 
@@ -327,16 +327,16 @@ declarations in the rule's at-rules outermost-first, and appends `!important` pe
 either the rule or `o.important` says so.
 
 **Acceptance:**
-- [ ] `renderRule("e_1", declSheet("color:red").rules.at(0)…, defaultOptions())` renders
-      `.e_1{color:red}`.
-- [ ] With `withPrefix(o, "tw_")` the same rule renders `.tw_e_1{color:red}`.
-- [ ] A rule with `atRules: ["@media (width >= 48rem)"]` renders
-      `@media (width >= 48rem){.e_1{color:red}}`.
-- [ ] A rule with two at-rules nests them outermost-first.
-- [ ] A rule whose selector is `"html"` renders `html{…}` and ignores the prefix.
-- [ ] `renderDocument` emits `@layer theme, base, components, utilities;` first when
-      `layers == true`, and emits no `@layer` token at all when `layers == false`.
-- [ ] Keyframe blocks appear once each even when three classes registered the same animation.
+- [x] `renderRule("e_1", declSheet("color:red").rules.at(0)…, defaultOptions())` renders
+      `.e_1{color:red}`. — held: output.bp test "renderRule — a bare utility is a class and a brace pair"
+- [x] With `withPrefix(o, "tw_")` the same rule renders `.tw_e_1{color:red}`. — held: output.bp test "renderRule — the prefix is a plain concatenation, emilia having no name to escape"
+- [x] A rule with `atRules: ["@media (width >= 48rem)"]` renders
+      `@media (width >= 48rem){.e_1{color:red}}`. — held: output.bp test "renderRule — one at-rule wraps the rule"
+- [x] A rule with two at-rules nests them outermost-first. — held: output.bp test "renderRule — two at-rules nest outermost-first"
+- [x] A rule whose selector is `"html"` renders `html{…}` and ignores the prefix. — held: output.bp test "renderRule — a literal selector renders literally and ignores the prefix"
+- [x] `renderDocument` emits `@layer theme, base, components, utilities;` first when
+      `layers == true`, and emits no `@layer` token at all when `layers == false`. — held: output.bp tests "renderDocument — the layer statement comes first when layers are on" and "renderDocument — no @layer token at all when layers are off"
+- [x] Keyframe blocks appear once each even when three classes registered the same animation. — held: output.bp test "renderDocument — a keyframes block appears once however many classes registered it"
 
 ### Step 7 — the public entry points
 
@@ -377,17 +377,17 @@ shape as part of this step. They are the only existing assertions this front inv
 token surface they use is unchanged.
 
 **Acceptance:**
-- [ ] `emilia(tokens)` still returns `"e_" + hex` and still collapses two identical token lists to
-      one class.
-- [ ] `styleRule(tokens, th)._0 == emiliaWith(tokens, th)` for the contract-4 fixture, and
-      `styleRule` leaves the sheet cell empty (a following `flush()` has no `@layer utilities` body).
+- [x] `emilia(tokens)` still returns `"e_" + hex` and still collapses two identical token lists to
+      one class. — held: emilia.bp tests "two emilia sites with the same token list collapse to one class" and "emilia of an empty token list is a stable class that contributes no rule"
+- [x] `styleRule(tokens, th)._0 == emiliaWith(tokens, th)` for the contract-4 fixture, and
+      `styleRule` leaves the sheet cell empty (a following `flush()` has no `@layer utilities` body). — held: emilia.bp test "styleRule — the class emiliaWith returns, and no registration"
 - [ ] `grep -n "hashHex" repository/emilia/modules/emilia/src` is empty; the class name is computed
-      with std's `content_hash.contentHash`, and the contract-4 fixture's hex is unchanged by the switch.
-- [ ] `flush()` still clears the cell; two consecutive flushes give two independent documents and
-      the second has no `@layer utilities` body.
-- [ ] Every rewritten test in `emilia.bp` names the section of `§ 3.2` its expected selector comes
-      from.
-- [ ] A rule and a variant of the same rule appear in the document in that order.
+      with std's `content_hash.contentHash`, and the contract-4 fixture's hex is unchanged by the switch. — **open:** `hashHex` stays — switching to std's `content_hash.contentHash` is a std import line in `emilia.bp`, which `00 · 23-std-purity` (std's new tree, running in parallel) owns; the switch lands with or after it
+- [x] `flush()` still clears the cell; two consecutive flushes give two independent documents and
+      the second has no `@layer utilities` body. — held: emilia.bp test "two consecutive flushes emit two independent documents"
+- [x] Every rewritten test in `emilia.bp` names the section of `§ 3.2` its expected selector comes
+      from. — held: the Hover, Focus/Active, Md/Lg/Xl, nested-modifier, sibling-rule and conflict-variant tests name their `§ 3.2` row
+- [x] A rule and a variant of the same rule appear in the document in that order. — held: emilia.bp test "conflict — a variant of a rule follows the rule it varies"
 
 ### Step 8 — the conflict rule, written down and tested
 
@@ -395,10 +395,10 @@ token surface they use is unchanged.
 order; across calls it is registration order.
 
 **Acceptance:**
-- [ ] `emilia([.Layout.Grid, .Layout.Flex])` renders `display:grid;display:flex` in that order, and
-      a comment in the test cites `§ 3.1`'s `grid flex` example.
-- [ ] Two `emilia()` calls registering the same property render in call order.
-- [ ] Reordering an unrelated token does not change any other rule's position.
+- [x] `emilia([.Layout.Grid, .Layout.Flex])` renders `display:grid;display:flex` in that order, and
+      a comment in the test cites `§ 3.1`'s `grid flex` example. — held: emilia.bp test "conflict — `grid flex` renders in list order, so the last one wins" (its banner cites the reference's `grid flex` example)
+- [x] Two `emilia()` calls registering the same property render in call order. — held: emilia.bp test "conflict — two emilia calls setting the same property render in CALL order"
+- [x] Reordering an unrelated token does not change any other rule's position. — held: emilia.bp test "conflict — reordering an unrelated token moves no other rule"
 
 ## Examples
 

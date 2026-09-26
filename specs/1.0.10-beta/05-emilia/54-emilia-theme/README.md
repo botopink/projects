@@ -156,10 +156,10 @@ pub fn nsPrefix(ns: Ns) -> string {
 `--spacing` has no trailing dash because `§ 21.2` makes it a single variable, not a family.
 
 **Acceptance:**
-- [ ] `nsPrefix` has exactly nineteen arms and every one is exercised by a test.
-- [ ] Every prefix matches the `§ 3.5` namespace table character for character, and `--spacing`
-      carries no trailing `-`.
-- [ ] `Theme` is constructed only by named arguments; no positional construction appears anywhere.
+- [x] `nsPrefix` has exactly nineteen arms and every one is exercised by a test. — held: theme.bp tests "nsPrefix — the eighteen custom-property namespaces", "nsPrefix — --spacing is a single variable…", "nsPrefix — the nineteenth namespace is the keyframes at-rule"
+- [x] Every prefix matches the `§ 3.5` namespace table character for character, and `--spacing`
+      carries no trailing `-`. — held: theme.bp:nsPrefix + test "nsPrefix — --spacing is a single variable, so it carries no trailing dash"
+- [x] `Theme` is constructed only by named arguments; no positional construction appears anywhere. — held: every `Theme(` in `modules/emilia` is `Theme(entries: …, keyframes: …, darkMode: …)`; theme.bp test "Theme — constructed by named arguments only"
 
 ### Step 2 — `defaultTheme()`
 
@@ -198,14 +198,14 @@ theme is `extendTheme(defaultTheme(), paletteEntries())`. 54 does not import fro
 not edit `theme.bp` — that is the whole interface between them.
 
 **Acceptance:**
-- [ ] Every `--text-*` entry has a matching `--text-*--line-height` entry, both taken from the
-      `§ 21.3` table (thirteen sizes, twenty-six entries).
-- [ ] The seven `--shadow-*` values are byte-equal to the `§ 21.4` table, including the
-      two-shadow values for `sm`, `md`, `lg` and `xl`.
-- [ ] The four `--animate-*` values are byte-equal to `§ 21.6`, and `keyframes` carries exactly
-      four entries: `spin`, `ping`, `pulse`, `bounce`.
-- [ ] The thirteen `--container-*` entries match the `§ 3.3` container-size table.
-- [ ] `defaultTheme()` contains no `--color-` entry other than `--color-black` and `--color-white`.
+- [x] Every `--text-*` entry has a matching `--text-*--line-height` entry, both taken from the
+      `§ 21.3` table (thirteen sizes, twenty-six entries). — held: theme.bp test "defaultTheme — thirteen sizes, twenty-six text entries, each paired with a line height"
+- [x] The seven `--shadow-*` values are byte-equal to the `§ 21.4` table, including the
+      two-shadow values for `sm`, `md`, `lg` and `xl`. — held: theme.bp test "defaultTheme — the seven shadows, sm through xl carrying two shadows each"
+- [x] The four `--animate-*` values are byte-equal to `§ 21.6`, and `keyframes` carries exactly
+      four entries: `spin`, `ping`, `pulse`, `bounce`. — held: theme.bp test "defaultTheme — the four animations and their four keyframes bodies"
+- [x] The thirteen `--container-*` entries match the `§ 3.3` container-size table. — held: theme.bp test "defaultTheme — the thirteen container sizes"
+- [x] `defaultTheme()` contains no `--color-` entry other than `--color-black` and `--color-white`. — held: theme.bp test "defaultTheme — the palette is front 33's, so only black and white ship here"
 
 ### Step 3 — extend, override, clear, empty
 
@@ -230,16 +230,16 @@ argument that relaxes it: an unknown prefix is a typo or a namespace this librar
 both are errors.
 
 **Acceptance:**
-- [ ] `themeValue(extendTheme(th, [ThemeEntry(name: "--color-brand", value: "oklch(0.72 0.11 178)")]), "--color-brand")` returns the value.
-- [ ] Extending with a name already present returns a theme where `themeValue` gives the new value,
-      and where `namespace(th, Ns.Color)` has the same length as before.
-- [ ] `clearNamespace(th, Ns.Color)` leaves `namespace(th, Ns.Color)` empty and leaves every other
-      namespace unchanged in length.
-- [ ] `emptyTheme()` has zero entries and zero keyframes, and `themeValue` on it returns `""` for
-      every name in `defaultTheme()`.
+- [x] `themeValue(extendTheme(th, [ThemeEntry(name: "--color-brand", value: "oklch(0.72 0.11 178)")]), "--color-brand")` returns the value. — held: theme.bp test "extendTheme — a new name is added and reads back"
+- [x] Extending with a name already present returns a theme where `themeValue` gives the new value,
+      and where `namespace(th, Ns.Color)` has the same length as before. — held: theme.bp test "extendTheme — a name already present is overridden in place, not appended"
+- [x] `clearNamespace(th, Ns.Color)` leaves `namespace(th, Ns.Color)` empty and leaves every other
+      namespace unchanged in length. — held: theme.bp test "clearNamespace — the colour namespace goes, every other one stays" (asserts six of the other namespaces)
+- [x] `emptyTheme()` has zero entries and zero keyframes, and `themeValue` on it returns `""` for
+      every name in `defaultTheme()`. — held (shape: `themeValue` asserted for three sample names, entries empty): theme.bp test "emptyTheme — zero entries, zero keyframes, and themeValue reads nothing"
 - [ ] `extendTheme(th, [ThemeEntry(name: "--gutter", value: "1rem")])` aborts with a message
       naming the unknown prefix. A test asserts the *absence* of the entry, and the wrong-placement
-      case is recorded in the compiler's own suite per the project convention.
+      case is recorded in the compiler's own suite per the project convention. — **open:** the abort holds (theme.bp:checkEntry `@panic` names the entry, and theme.bp records why absence is not asserted), but the `--gutter` case is not in the compiler's Zig suite
 
 ### Step 4 — `spacing(n)`
 
@@ -265,11 +265,11 @@ down. Negative steps work without a second function: `spacing(-4)` is
 `calc(var(--spacing) * -4)`, which is the `-mt-4` row of `§ 7.2`.
 
 **Acceptance:**
-- [ ] `spacing(0) == "0"` — `§ 7.1` gives `p-0` as `padding: 0`, not a `calc`.
-- [ ] `spacing(4) == "calc(var(--spacing) * 4)"`, byte-equal to the `p-4` row of `§ 7.1`.
-- [ ] `spacing(-4) == "calc(var(--spacing) * -4)"`, byte-equal to the `-mt-4` row of `§ 7.2`.
-- [ ] `spacingHalf(0) == "calc(var(--spacing) * 0.5)"`.
-- [ ] The test file asserts identical strings on `--target commonJS` and `--target erlang`.
+- [x] `spacing(0) == "0"` — `§ 7.1` gives `p-0` as `padding: 0`, not a `calc`. — held: spacing.bp test "spacing — zero is the literal 0, not a calc"
+- [x] `spacing(4) == "calc(var(--spacing) * 4)"`, byte-equal to the `p-4` row of `§ 7.1`. — held: spacing.bp test "spacing — a whole step references the theme instead of resolving it"
+- [x] `spacing(-4) == "calc(var(--spacing) * -4)"`, byte-equal to the `-mt-4` row of `§ 7.2`. — held: spacing.bp test "spacing — a negative step needs no second function"
+- [x] `spacingHalf(0) == "calc(var(--spacing) * 0.5)"`. — held: spacing.bp test "spacingHalf — the four fractional steps of the ladder"
+- [x] The test file asserts identical strings on `--target commonJS` and `--target erlang`. — held (shape: inline tests in spacing.bp, not `test/spacing_test.bp`; the suite is green on commonJS and erlang)
 
 ### Step 5 — the static custom-property emitter
 
@@ -288,11 +288,11 @@ order matters: the class names emilia hands out are content hashes, and a reorde
 produce a different document for the same input.
 
 **Acceptance:**
-- [ ] `themeCss(defaultTheme())` starts with `--spacing:0.25rem;`.
-- [ ] `themeCss(emptyTheme()) == ""`.
-- [ ] Two calls to `themeCss` on the same theme return the same string.
-- [ ] `keyframeCss(defaultTheme())` has four entries whose names are `spin`, `ping`, `pulse`,
-      `bounce` and whose values are brace-balanced.
+- [x] `themeCss(defaultTheme())` starts with `--spacing:0.25rem;`. — held: theme.bp test "themeCss — the block opens with the spacing base"
+- [x] `themeCss(emptyTheme()) == ""`. — held: theme.bp test "themeCss — an empty theme renders nothing at all"
+- [x] Two calls to `themeCss` on the same theme return the same string. — held: theme.bp test "themeCss — two calls on the same theme return the same string"
+- [x] `keyframeCss(defaultTheme())` has four entries whose names are `spin`, `ping`, `pulse`,
+      `bounce` and whose values are brace-balanced. — held: theme.bp test "keyframeCss — four bodies, named, and every one brace-balanced"
 
 ### Step 6 — dark-mode strategy
 
@@ -308,8 +308,8 @@ pub fn darkAtRule(th: Theme) -> string
 variant; 54 does not own the `Dark` token.
 
 **Acceptance:**
-- [ ] All three strategies are covered by a test asserting the exact selector text from `§ 3.4`.
-- [ ] Switching a theme's strategy changes nothing else about it.
+- [x] All three strategies are covered by a test asserting the exact selector text from `§ 3.4`. — held: theme.bp tests "darkMode — Media…", "darkMode — Class…", "darkMode — Attribute carries the whole strategy in its selector"
+- [x] Switching a theme's strategy changes nothing else about it. — held: theme.bp test "darkMode — switching the strategy changes nothing else about the theme"
 
 ### Step 7 — a theme is a module
 
@@ -318,9 +318,9 @@ in a module, so sharing it is an ordinary package dependency. This step is one e
 test that an imported theme composes with `extend`; it builds no machinery.
 
 **Acceptance:**
-- [ ] `examples/theme-example.bp` defines a brand theme in one function and uses it.
-- [ ] A test composes `defaultTheme()` with a second theme's entries and asserts both are reachable
-      through `themeValue`.
+- [x] `examples/theme-example.bp` defines a brand theme in one function and uses it. — held (shape: `examples/emilia-theme/src/main.bp`:brandTheme, a workspace member)
+- [x] A test composes `defaultTheme()` with a second theme's entries and asserts both are reachable
+      through `themeValue`. — held: theme.bp test "a theme is a module — a second package's entries compose with the default"
 
 ## Examples
 

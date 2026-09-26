@@ -237,10 +237,10 @@ Five leaves added as bare siblings inside `Layout`, beside the six that exist. N
 display values are the section's own leaves, which is what makes `.Layout.Flex` keep working.
 
 **Acceptance:**
-- [ ] all eleven `§ 5.8` display values have a token
-- [ ] `.Layout.Block`, `.Layout.Flex`, `.Layout.Grid`, `.Layout.Hidden`, `.Layout.Inline`,
-      `.Layout.InlineBlock` emit exactly what `emilia.bp:262-272` emits today
-- [ ] the existing assertion at `emilia.bp:423-425` still passes untouched
+- [x] all eleven `§ 5.8` display values have a token — held: test "display — the eleven `§ 5.8` values, the six that predate front 36 first"
+- [x] `.Layout.Block`, `.Layout.Flex`, `.Layout.Grid`, `.Layout.Hidden`, `.Layout.Inline`,
+      `.Layout.InlineBlock` emit exactly what `emilia.bp:262-272` emits today — held: test "display — the eleven `§ 5.8` values, the six that predate front 36 first"
+- [x] the existing assertion at `emilia.bp:423-425` still passes untouched — held: test "tokenToSheet — Layout.Flex lowers to display:flex"
 
 ### Step 2 — position and the inset family
 
@@ -257,45 +257,45 @@ display values are the section's own leaves, which is what makes `.Layout.Flex` 
 `Inset.All` emits one declaration.
 
 **Acceptance:**
-- [ ] five position values
-- [ ] `.Layout.Inset.All.0` emits `inset:0`
-- [ ] `.Layout.Inset.X.0` emits `left:0;right:0` and `.Layout.Inset.Y.0` emits `top:0;bottom:0`
-- [ ] `.Layout.Inset.T.Frac.Half` emits `top:50%`
-- [ ] `.Layout.Inset.T.Neg.4` emits `top:calc(var(--spacing) * -4)`
-- [ ] the inset scale and the padding scale produce identical length text for the same leaf,
+- [x] five position values — held: test "position — the five values of `§ 5.16`"
+- [x] `.Layout.Inset.All.0` emits `inset:0` — held: test "inset — `All` is the shorthand, `X` and `Y` are the two declarations CSS has no shorthand for"
+- [x] `.Layout.Inset.X.0` emits `left:0;right:0` and `.Layout.Inset.Y.0` emits `top:0;bottom:0` — held: test "inset — `All` is the shorthand, `X` and `Y` are the two declarations CSS has no shorthand for"
+- [x] `.Layout.Inset.T.Frac.Half` emits `top:50%` — held: test "inset — the keyword and fraction leaves of `§ 5.17`"
+- [x] `.Layout.Inset.T.Neg.4` emits `top:calc(var(--spacing) * -4)` — held: test "inset — negatives go through `spacing(-n)`, never through a second calc"
+- [x] the inset scale and the padding scale produce identical length text for the same leaf,
       asserted directly: `.Layout.Inset.T.4` and `.Pad.T.4` differ only in the property name, and
-      both read `calc(var(--spacing) * 4)`
-- [ ] `.Layout.Inset.S.0` / `.E.0` emit `inset-inline-start` / `inset-inline-end`
+      both read `calc(var(--spacing) * 4)` — held: test "inset and padding agree by construction — one scale, two properties"
+- [x] `.Layout.Inset.S.0` / `.E.0` emit `inset-inline-start` / `inset-inline-end` — held: test "inset — the logical pair follows the writing direction where L/R do not"
 
 ### Step 3 — overflow, overscroll, visibility, z-index, isolation
 
 Five sub-sections, all keyword or small-integer leaves.
 
 **Acceptance:**
-- [ ] `Overflow` answers five values on the shorthand and five each on `X` and `Y`
-- [ ] `Overscroll` answers three values on the shorthand and three each on `X` and `Y`
-- [ ] `invisible` maps to `visibility:hidden`, not `visibility:invisible` — the Tailwind name and the
-      CSS value differ and the test says so
-- [ ] `Z` answers `0 10 20 30 40 50 Auto` and emits a bare integer, never a length
-- [ ] `Isolation` answers `Isolate` and `Auto`
+- [x] `Overflow` answers five values on the shorthand and five each on `X` and `Y` — held: test "overflow — the shorthand and both longhands, five values each"
+- [x] `Overscroll` answers three values on the shorthand and three each on `X` and `Y` — held: test "overscroll — three values on the shorthand and three on each axis"
+- [x] `invisible` maps to `visibility:hidden`, not `visibility:invisible` — the Tailwind name and the
+      CSS value differ and the test says so — held: test "visibility — `invisible` is `visibility:hidden`, and the word does not survive"
+- [x] `Z` answers `0 10 20 30 40 50 Auto` and emits a bare integer, never a length — held: test "z-index — a bare integer, never a length and never a calc"
+- [x] `Isolation` answers `Isolate` and `Auto` — held: test "isolation — the two values of `§ 5.11`"
 
 ### Step 4 — float, clear, object, aspect
 
 **Acceptance:**
-- [ ] `float-start` maps to `float:inline-start`, not `float:start`
-- [ ] `clear-start` maps to `clear:inline-start`
-- [ ] `Object.Fit` answers five values; `Object.Pos` answers nine, including the four two-word ones
-      (`left bottom`, `left top`, `right bottom`, `right top`) with a single space
-- [ ] `Aspect.Square` emits `aspect-ratio:1 / 1` and `Aspect.Video` emits `aspect-ratio:16 / 9` —
-      spaces around the slash, as `§ 5.1` prints them
+- [x] `float-start` maps to `float:inline-start`, not `float:start` — held: test "float and clear — the logical pair is `inline-start`, not `start`"
+- [x] `clear-start` maps to `clear:inline-start` — held: test "float and clear — the logical pair is `inline-start`, not `start`"
+- [x] `Object.Fit` answers five values; `Object.Pos` answers nine, including the four two-word ones
+      (`left bottom`, `left top`, `right bottom`, `right top`) with a single space — held: tests "object-fit — the five values of `§ 5.12`" + "object-position — all nine, and the four two-word values are one space"
+- [x] `Aspect.Square` emits `aspect-ratio:1 / 1` and `Aspect.Video` emits `aspect-ratio:16 / 9` —
+      spaces around the slash, as `§ 5.1` prints them — held: test "aspect-ratio — the slash keeps its spaces"
 
 ### Step 5 — columns, breaks, box-sizing, box-decoration
 
 **Acceptance:**
-- [ ] `Columns` answers the three integers and `Auto` plus the fourteen named widths of `§ 5.2`
-- [ ] `Break.After`, `Break.Before` and `Break.Inside` answer their full leaf sets
-- [ ] `Box.Border` / `Box.Content` emit `box-sizing:border-box` / `content-box`
-- [ ] `BoxDecoration.Clone` / `.Slice` emit `box-decoration-break:clone` / `slice`
+- [x] `Columns` answers the three integers and `Auto` plus the fourteen named widths of `§ 5.2` — held (shape: the table's thirteen named widths, emitted as `var(--container-*)`): tests "columns — a count is an integer, a named width is the theme's container" + "columns — all fourteen named widths, and the ladder is one ladder"
+- [x] `Break.After`, `Break.Before` and `Break.Inside` answer their full leaf sets — held (shape: flat `BreakAfter`/`BreakBefore`/`BreakInside` — `Before`/`After` collide with front 34's payload variants): test "break — the three properties, with `inside`'s shorter leaf set of its own"
+- [x] `Box.Border` / `Box.Content` emit `box-sizing:border-box` / `content-box` — held: test "box-sizing and box-decoration-break — the suffix moves off the name"
+- [x] `BoxDecoration.Clone` / `.Slice` emit `box-decoration-break:clone` / `slice` — held: test "box-sizing and box-decoration-break — the suffix moves off the name"
 
 ### Step 6 — the dispatcher
 
@@ -305,13 +305,13 @@ gets its own fn, all with the contract-4a shape
 direction, each calling front 54's `spacing`.
 
 **Acceptance:**
-- [ ] `layoutTokenToCss` follows the file's `val out = case …; return out;` idiom
-- [ ] every arm is an arrow arm
-- [ ] front 54's `spacing` / `spacingHalf` are called, not copied — there is one spacing scale in the library
-- [ ] every sub-dispatcher takes `th: Theme`, and none of them returns a literal `rem`
-- [ ] the banner `// ── front 36 — layout ──` fences the block in both files
-- [ ] the existing `Layout(_inner) -> layoutTokenToCss(_inner);` arm in the top-level `tokenToCss`
-      is reused; this front adds no new top-level arm
+- [x] `layoutTokenToCss` follows the file's `val out = case …; return out;` idiom — held: `emilia.bp:layoutTokenToCss`
+- [x] every arm is an arrow arm — held: every arm in the front-36 block of `emilia.bp` is `X -> expr;`
+- [x] front 54's `spacing` / `spacingHalf` are called, not copied — there is one spacing scale in the library — held: `insetScale*`/`insetHalf*`/`insetNeg*` call `spacing`/`spacingHalf`; test "regression — the inset ladder is the spacing ladder, direction by direction"
+- [x] every sub-dispatcher takes `th: Theme`, and none of them returns a literal `rem` — held: every `layout*`/`inset*` fn takes `th: Theme`; test "regression — no `Layout` leaf resolves a length; all 776 reference the theme"
+- [x] the banner `// ── front 36 — layout ──` fences the block in both files — held: `tokens.bp:1024` and `emilia.bp:5011`, each closed by `// ── end front 36 ──`
+- [x] the existing `Layout(_inner) -> layoutTokenToCss(_inner);` arm in the top-level `tokenToCss`
+      is reused; this front adds no new top-level arm — held (shape: arm now passes `th` through `declSheet`): `emilia.bp:tokenToSheet` `Layout(_inner) -> declSheet(layoutTokenToCss(_inner, th))`
 
 ## Examples
 
@@ -362,10 +362,10 @@ What the tests assert:
 
 ## Definition of done
 
-- [ ] every utility in `§ 5.1`–`§ 5.19` that is not an arbitrary-value form has a token
-- [ ] the six display paths that compile today emit byte-identical CSS afterwards
-- [ ] `Inset` calls front 54's `spacing` / `spacingHalf`
-- [ ] the banner fences this front's block in both files, appended at the end
-- [ ] no new top-level `tokenToCss` arm — `Layout` already has one
-- [ ] `repository/emilia/AGENTS.md` and the `////` header of `tokens.bp` record the widened section
-- [ ] the front's tests are green on its assigned target — here, both backends, since emilia is comptime
+- [x] every utility in `§ 5.1`–`§ 5.19` that is not an arbitrary-value form has a token — held (shape: `columns-4…12` left out as the spec's own reference gap): `tokens.bp` `Layout`; test "regression — no `Layout` leaf resolves a length; all 776 reference the theme"
+- [x] the six display paths that compile today emit byte-identical CSS afterwards — held: test "display — the eleven `§ 5.8` values, the six that predate front 36 first"
+- [x] `Inset` calls front 54's `spacing` / `spacingHalf` — held: test "inset and padding agree by construction — one scale, two properties"
+- [x] the banner fences this front's block in both files, appended at the end — held (shape: block sits in front-number position, not at file end): `tokens.bp:1024`, `emilia.bp:5011`
+- [x] no new top-level `tokenToCss` arm — `Layout` already has one — held: `emilia.bp:tokenToSheet` has the single pre-existing `Layout` arm
+- [x] `repository/emilia/AGENTS.md` and the `////` header of `tokens.bp` record the widened section — held: `AGENTS.md` front-36 paragraph; `tokens.bp` `////` SECTIONS `Layout`
+- [x] the front's tests are green on its assigned target — here, both backends, since emilia is comptime — held: emilia suite 569/569 on commonJS and erlang

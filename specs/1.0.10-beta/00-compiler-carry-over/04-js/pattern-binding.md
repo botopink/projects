@@ -64,11 +64,22 @@ Re-check it when R5 lands — it is [`02-erlang`](../02-erlang/README.md)'s, not
 
 ## Acceptance
 
-- [ ] a fixture destructures a variant in binding position and **runs**, on all four backends
-- [ ] 0 `buildPattern` build sites reachable from `buildParam` / `buildDestructPattern`;
-      `MatchPattern` (`src/codegen/js/js_ast.zig`) and `writeMatchPattern`
-      (`src/codegen/js/js_emitter.zig`) deleted
-- [ ] the row leaves the bridge table in `src/codegen/js/AGENTS.md`
-- [ ] commonJS snapshots otherwise **byte-identical** — this is a shape-only bridge, so a diff
-      outside the removed spelling is a bug found
-- [ ] the decided failure behaviour of a bare `val <Pattern> = e` is written into this file
+- [ ] a fixture destructures a variant in binding position and **runs**, on all four backends —
+      commonJS and wasm run it (`src/codegen/tests/aggregates.zig` `a constructor in binding position
+      is a plain destructure (JS-4)`, two RUN LOGs: `x 2 5 hi! 7`); **erlang does not compile it**
+      (`variable 'R' is unbound` — `destructPatternExpr` binds nothing) and beam was not run: both are
+      [`02-erlang`](../02-erlang/README.md)'s and [`03-beam`](../03-beam/README.md)'s rows, which is why
+      the fixture is two RUN LOGs and not a four-backend snapshot
+- [x] 0 `buildPattern` build sites reachable from `buildParam` / `buildDestructPattern` that write a
+      pattern spelling — `buildPattern` now builds only JS destructuring targets; `MatchPattern`
+      (`src/codegen/js/js_ast.zig`) and `writeMatchPattern` (`src/codegen/js/js_emitter.zig`) deleted
+- [x] the row leaves the bridge table in `src/codegen/js/AGENTS.md` (the table is gone: no bridge left)
+- [x] commonJS snapshots otherwise **byte-identical** — zero moved by this row
+- [x] the decided failure behaviour of a bare `val <Pattern> = e` is written into this file — the
+      section above (01 R5: refutable is a check error, so no run-time test exists)
+
+A parameter never reaches `buildPattern` with a constructor or a list: the parser builds `.list` /
+`.ctor` destructuring only in `val` position (`fn area(Circle(r): Circle)` does not parse). Two
+checker gaps met on the way, for [`01-checker`](../01-checker/README.md): `val [..rest] = xs;` checks
+but leaves `rest` unbound, and a nested constructor (`val Pair(Circle(r), n) = p;`) is refused as
+refutable although neither level can fail.

@@ -1,8 +1,13 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e), three of `00 · 23-std-purity` (23-a…c) and five of front 95's (95-a…e) and five of the rakun track's (03r-a…e). Every other question this milestone raised is answered in
-[`decisions-taken.md`](./decisions-taken.md) — 91, 92, 93 and 97 by decisions 103 and 104, 99 by 108,
-94, 100 and 101 by 113; every number up to 117 is answered — 114 answers the eight seams decision 113 left open, 115 the five points 114 left open, 116 nine more pieces two libraries both run, 117 the nine points 113–116 left, and 118–127 register the maintainer's effect revision (the return type is the annotation, `@Task<T>`, only `@Result` fails, `@Iterator<T>` / `@Stream<T>`, `async { }`, `iter` / `stream` loops, no compatibility mode — front `00 · 24-effects-by-return`), and 128 merges `@Use<C, T>` and `@Component<T>` into `@Component<C, T>`. The next free number is **130**.
+**None open.** Implementation choices wait for the maintainer to confirm or reverse them: six of
+front 24's (24-a…c, 24-e…g), five `01-std` ones (01std-a…e), three of `00 · 23-std-purity` (23-a…c),
+five of front 95's (95-a…e), two of `00 · 16-formatter` (16-a…b), track C's (26-a, 27-a, 30-a…e, 31-a),
+`00 · 04-js` / `05-wasm`'s (0405-a…b) `00 · 02-erlang` / `03-beam`'s (0203-a…b), track D's (05emilia-a…h), track B's (03r-a…e) and `libs-external-methods`' (lem-a…f). Every question
+this milestone raised is answered in [`decisions-taken.md`](./decisions-taken.md) — up to 128 as
+before; 129 the type-alias details, 130 front 24's open point 8 (a failing render's `E`), 131 its open
+point 7 and 24-d (no migration routine), 132 and 133 the formatter's 16-d and 16-c, 134 and 135 front
+24's two documentation boxes. The next free number is **136**.
 
 This file stays because the fronts will fill it again. A front that meets a question it cannot answer
 from the code writes it here rather than guessing, in the shape the others used:
@@ -41,7 +46,7 @@ reverses it. Numbered `24-a` … so they do not collide with the decision number
 ### 24-b · `@Task`'s method set (README open point 4)
 
 > **Raised by:** step E1, 2026-09-25
-> **Measured.** `builtins.d.bp` had `Future.map` / `flatMap` / `await`; decision 120 says "`.map`,
+> **Measured.** The prelude's async wrapper had `map` / `flatMap` / `await`; decision 120 says "`.map`,
 > `.then` and the like, without an error parameter".
 > **Options.** (a) `map` and `then` (the monadic bind under the name the guide uses); (b) add `flatMap` as
 > an alias of `then`.
@@ -65,44 +70,6 @@ reverses it. Numbered `24-a` … so they do not collide with the decision number
 > `yield-label-not-generator`. If the maintainer wants the label of a prefixed `for` to name the generator
 > scope too, the parser moves it to the outer node; nothing else changes.
 > **Blocks.** Nothing.
-
-### 24-d · The codemod needs the old syntax; E2 refuses it at parse time
-
-> **Raised by:** the codemod thread (`front/24-codemod`, E6), 2026-09-25; resolved on
-> `front/24-integration`, 2026-09-26
-> **Measured.** `botopink migrate effects` type-checks the OLD program to decide `await` → `try await`
-> (and the `for` / `.next()` / `case` review marks). At `86609a66` the parser refuses every removed
-> annotation and wrapper (`effect-annotation-removed`, `effect-type-removed`) and stops — there is no AST
-> for the old program, and the checker no longer knows `@Future` / `@ResultGenerator` /
-> `@FutureGenerator`. Merged as written, four of the codemod's seven unit tests fail (every module
-> "does not parse").
-> **Options.** (a) the codemod runs from a binary built at `feat` before E2 (its own copy of the old
-> parser/checker — about 120 000 lines of `compiler-core/src` — shipped only inside `migrate`); (b) a
-> migration-only mode reachable only from `migrate effects`: the parser reads the old annotations and
-> wrappers, the checker types them with their pre-front-24 meaning; (c) the codemod rewrites textually
-> and leaves `await` → `try await` to the E3.9 type-error hint.
-> **Recommendation.** (b), implemented (compiler `9d8331ad`). `comptime.setEffectMigration(files)` is
-> called only by `migrate_effects.run` / `migrate` for their own duration and cleared before they return;
-> it is thread-local, and no flag of `build` / `check` / `test` or the language server reaches it, so
-> every normal compile still refuses the old forms (decision 67 — a unit test pins that the refusal is
-> back once the command returns). While it is on: the **parser** (`parser.effect_migration`) drops a
-> removed `#[@<effect>]` annotation (on a loop it becomes the `iter` / `stream` prefix) and reads a
-> removed wrapper as its new spelling — `@Future<T, E>` → `@Task<@Result<T, E>>`, `@Future<T>` →
-> `@Task<T>`, `@Generator<T>` → `@Iterator<T>`, `@ResultGenerator<T, E>` / `@Iterator<T, E>` →
-> `@Iterator<@Result<T, E>>`, `@FutureGenerator<T, E>` → `@Stream<@Result<T, E>>`, `@Use<C, T>` →
-> `@Component<C, T>`; the **checker** (`infer.effect_migration_files`), only in the files the codemod
-> rewrites and the dependencies that still spell the old surface, gives the old meaning — `await` of a
-> `@Task<@Result<U, E>>` answers `U`, a `for` / `for await` over a sequence of `@Result<T, E>` binds `T`,
-> and `throw` / `try` need no `@Result` layer. The mode is not a second grammar: it is two spellings
-> mapped onto the one AST and three relaxations in the checker (≈ 120 lines), and it dies with the
-> codemod. Measured: the codemod's snapshots are unchanged, and over the 53 packages of jhonstart,
-> rakun, emilia, onze and erika at their pre-front-24 pins its output is byte-identical to the pre-E2
-> codemod binary's (`front/24-crosscheck-libs` `b2985088`). Known imprecision: an old
-> `@Generator<@Result<T, E>>` / `@Future<@Result<T, E>>` reads like a fallible wrapper, so its `for` /
-> `await` would gain a `try` it did not have — none occurs in the five libraries. (a) was the earlier
-> recommendation; it is the heavier of the two by three orders of magnitude and leaves two compilers in
-> one binary.
-> **Blocks.** Nothing — the codemod is merged with its tests green.
 
 ### 24-e · `try` and `await` as operands
 
@@ -135,9 +102,9 @@ reverses it. Numbered `24-a` … so they do not collide with the decision number
 ### 24-g · `std/async`'s shape under a Task that never fails (README open point 3)
 
 > **Raised by:** step E7, 2026-09-25
-> **Measured.** At compiler `f3ad584a`, `std/async` had a thunk surface (`allOf`, `settleOf`, `raceOf`,
-> `timeout` over `fn() -> @Future<T>`) and a started surface (`all`, `allSettled`, `race` over
-> `@Future<T>`), both built on a rejected future being the failure. The guide writes
+> **Measured.** Before front 24, `std/async` had a thunk surface (`allOf`, `settleOf`, `raceOf`,
+> `timeout` over thunks of the old fallible wrapper) and a started surface (`all`, `allSettled`, `race`),
+> both built on a rejected task being the failure. The guide writes
 > `try await async.allOf([fetchUser(1), fetchUser(2)])` — started Tasks whose value is a `@Result` — and
 > the `front/24-cells` suite follows it; the `beam_memory_*` cells need unstarted thunks, because an eager
 > erlang Task has already run by the time a combinator receives it.
@@ -422,102 +389,406 @@ fronts could land; the maintainer confirms or reverses each.
 > qualified import can return to `from "rakun"`; it is left as it is.
 
 ## Open
+## Front 16 (formatter) — choices made in implementation, to confirm
 
-### `botopink migrate` beside `botopink migrate effects` (front 24, open point 7)
+Decided by the implementation of `00-compiler-carry-over/16-formatter` (worktree `.tasks/16-formatter`,
+compiler `0f0be511`…`7af79f44`, 2026-09-26) so C-12 and C-13 could land; the maintainer confirms or
+reverses each. Every number below is measured over scratch copies of the compiler's trees (`libs/std`,
+the three bundled libraries, `examples/`) and the five sibling libraries at their pinned commits — 248
+`.bp` files — formatted by the parent commit's binary and by the new one.
 
-> **Raised by:** `00 · 24-effects-by-return` step E6, 2026-09-25
-> **Measured.** At compiler `82e32e36`, `botopink migrate` (`modules/compiler-cli/src/cli/migrate.zig`)
-> derives the explicit module tree — it prepends `pub mod X;` to `root.bp` / `main.bp` / `mod.bp` —,
-> takes only `--dry-run` and refuses any positional: `botopink migrate src --dry-run` exits 1
-> (`tests/cli_contract.sh` row C8). Front 24's README and guide name the effect codemod
-> `botopink migrate effects`, which is a positional C8 refuses.
-> **Options.** (a) `migrate` alone keeps its module-tree meaning; `effects` is a subcommand,
-> recognised only as the first argument, so `migrate --dry-run effects` stays a usage error and C8
-> holds unchanged. (b) The module tree moves to `migrate modules` and a bare `migrate` becomes a
-> usage error listing the subcommands. (c) A bare `migrate` runs every migration.
-> **Recommendation.** (a) — implemented on `front/24-codemod`, compiler `ba529e09` (`main.zig`, `parseMigrateEffectsOpts`;
-> contract row C8b). Nothing that works today changes meaning, and a word in first position cannot be
-> mistaken for the positional C8 refuses. (b) is the tidier surface but breaks a documented command
-> for no gain in this milestone; (c) makes one command rewrite two unrelated things — the most
-> restrictive reading of decision 67 is that each rewrite is asked for by name.
-> **Blocks.** Nothing: E6 ships (a). The answer decides how E8's `docs.md` presents the command, and
-> whether a later front renames the module-tree form to (b).
+### 16-a · C-12's argument list is enabled **with** the constructs that enclose it
 
-### Front 24 open point 8 — the error a failing render carries, and whether the writers stay infallible
+> **Measured.** Enabled alone (the parked `argument-list.patch`), the list opened ~1 480 of ~2 770
+> lists for what followed them (`) != -1;`, `) + "…"`), because the binary expression around them was
+> pinned — decision 65's wrong middle. The same happens inside a pinned array literal
+> (`[ThemeEntry(` / `…` / `)]`) and after a brace-less `if` condition (`if (absDiff` /
+> `    > tolerance) throw "…"`, the condition breaking for the branch that follows it).
+> **Options.** (a) Enable the enclosing constructs first, the list after them, one commit each;
+> (b) enable the list together with them; (c) keep the list pinned.
+> **Chosen: (b)** — (a)'s intermediate commits are each a wrong middle of their own (a binary run
+> enabled alone breaks *inside* the still-pinned argument list: `doc.indexOf("."` / `+ a` …), so the
+> six trees would be reformatted twice for nothing. One `groupMeasured` each, all-or-nothing, the outer
+> deciding first: a **binary run** (one precedence level) breaks before every operator `+4`; a
+> **brace-less `if`** puts its branch on the next line `+4` (a bare `else` under an `else` line; an
+> `else if` chain breaks at every `else` or at none; a braced `else { … }` stays outside the group);
+> the **argument list** takes decision 61 rule 4's shape; the **array, tuple and behavior literals**
+> the same. `commaList` (generic, parameter, pattern, import, type lists) and the one-step pipeline
+> stay pinned — none of them holds a call.
+> **Cost.** 142 files, +20 835 −7 292 (C-13 included); lines past 80 columns 5 973 → 1 840 (the rest are
+> strings and comments); lines opening with `)` and going on with an operator 192 → 8. A second pass
+> moves nothing, no token or comment is lost, every sibling package `check`s as before and the cells
+> run identically (emilia 569, erika 31, jhonstart 120, onze 4, rakun-web 104 — before and after).
+> Per sibling: emilia 18 files +12 940 −4 663 (mostly its test assertions: `assert doc.indexOf(…)` /
+> `    != -1;`), rakun 47 +4 760 −1 471, jhonstart 19 +784 −231, erika 2 +167 −63, onze 2 +44 −8 —
+> **09's reformat, not committed here**; the compiler's own canonical trees are reformatted
+> (`44ec5e3a`).
+> **Blocks.** 09's reformat of the five libraries; nothing else.
 
-> **Raised by:** `00-compiler-carry-over/24-effects-by-return` step E7 (rakun's half), 2026-09-25
->
-> **Measured.** Decision 117 item 1 says `renderStream` "resolves when the response is closed, and a
-> failed render (rule 1's target check, a plugin's `close`) is the future's error". Under decision
-> 120 a `@Task` has no error, and decision 121's note leaves the `E` and the writers' shape to this
-> step. Decision 120 already respells the pieces around it: `RenderPlugin.close` →
-> `@Task<@Result<void, string>>`, `ChunkWriter.write` / `close` and `PageRenderer` → `@Task<void>`,
-> jhonstart's `Response.write` / `close` → `@Task<void>`. In `repository/rakun` at `feat` `f67c1e8`
-> none of `ChunkWriter`, `PageRenderer`, `page(pattern, render)` or `servePage` exists yet (they are
-> rakun front 23 step 1's, specified in `03-rakun/23-rakun-ssr-pipeline/README.md:78-86`); the
-> render code that does exist — `ssr.bp`'s `render`, `document`, `renderAll`, `missingPage` and the
-> host `rkSsrAll` — neither throws nor tries (`grep -nE 'throw|try ' modules/rakun/src/ssr.bp`
-> over their bodies finds nothing; a miss is the status 404, not an error), so the E7 sweep moved
-> each `@Future<T>` to `@Task<T>` with no `@Result`.
->
-> **Options.**
-> - **(a)** `E = string`, the writers infallible. `renderStream(…) -> @Task<@Result<void, string>>`;
->   `PageRenderer = fn(req: Request, out: ChunkWriter) -> @Task<@Result<void, string>>`, so onze's
->   boot closure stays `return ui.renderStream(…)`; `ChunkWriter.write` / `close` and
->   `Response.write` / `close` stay `@Task<void>` as decision 120 spells them. rakun's dispatch
->   answers an `Error(msg)` like an untagged raise of the renderer: 500 when nothing was written,
->   otherwise the response is closed; the message goes to the log under a correlation digest and
->   never on the wire (rakun-web's rule). A write after `close` and `setStatus` / `setHeader`
->   after the first `write` keep failing the request (a raise, decision 67) — they are misuse, not
->   an outcome. `servePage` stays `@Task<i32>` (the status written).
-> - **(b)** A typed error, `RenderError { TargetRefused(target: string), PluginClose(plugin: string,
->   detail: string), … }`, instead of `string`. Stricter to match on, but `RenderPlugin.close` is
->   already `@Result<void, string>` by decision 120, so (b) re-opens that too, and jhonstart would
->   own a type rakun has to name in `PageRenderer` — the dependency decision 114 item 5 forbids.
-> - **(c)** `renderStream` stays `@Task<void>` and a failed render raises (the request answers 500).
->   Keeps every signature as decision 120 wrote it, but drops the value decision 117 promised and
->   makes the failure uncatchable from `.bp` code (a raise is not catchable, `rakun-web/src/error.bp`).
-> - **(d)** The writers become fallible too, `write: fn(string) -> @Task<@Result<void, string>>`,
->   so a peer that went away is a value. Every chunk then needs a `try await`, and a vanished peer
->   is not something the renderer can act on — rakun already owns the socket and closes it.
->
-> **Recommendation.** (a). It is what decision 120's respelling implies (the one fallible piece of
-> the pipeline, a plugin's `close`, is already `@Result<void, string>`, so the render that forwards
-> it carries the same `E`), it keeps rakun ignorant of jhonstart's types (decision 114 item 5), and
-> it is the strict reading of "a failed render is the future's error": the failure is a value the
-> dispatch must handle, and its handling is fixed (500 / close, digest in the log) with no switch
-> to put the message on the wire (decision 67). The writers stay infallible because their failures
-> are misuse (a raise) or the transport's (rakun's), never the renderer's to handle.
->
-> **Blocks.** rakun front 23 step 1 (`ChunkWriter`, `PageRenderer`, `servePage`); jhonstart front 30
-> (`renderStream`'s signature); onze front 49 (the boot closure); the E8 respelling of
-> `03-rakun/23-rakun-ssr-pipeline/README.md:78-99`. Nothing in `repository/rakun` at `f67c1e8`
-> waits on it — no code there spells these types yet.
+### 16-b · An array literal's open form is one element per line
 
-## 129. The type-alias details decision 118 leaves open
+> **Measured.** Elements written on one source line were kept on one output line. Once the list
+> measures width that is not idempotent (the joined line runs past 80, a call inside it breaks, and the
+> next pass reads a different layout: 3 files of the corpus moved on a second pass), and it makes the
+> output a function of the input's layout, which decision 65 part 2 rules out.
+> **Options.** (a) One element per line in the open form; (b) Wadler's `fill` (as many per line as fit).
+> **Chosen: (a)** — all-or-nothing, as decision 65 part 1 states for every group; (b) is the middle.
+> **Cost.** Part of 16-a's numbers: a long list of short numbers takes one line each.
 
-> **Raised by:** `24-type-alias` (the alias declaration decision 118 rule 1 presupposes), 2026-09-25
-> **Measured.** Decision 118 rule 1 writes `pub type Parser<T> = @Result<T, ParseError>;` and rules
-> that an alias types a function without activating its effect; nothing decides the declaration's
-> edges. The compiler at the `front/24-type-alias` commit implements the restrictive reading of each
-> (parser: `parser/decls.zig` `parseTypeAliasDecl`; checker: `comptime/infer.zig` `expandTypeAlias`
-> / `checkTypeAliasDecl`; tests: `parser/tests/type_alias.zig`, `comptime/tests/type_alias.zig`).
-> **Options.**
-> 1. *A bare generic alias* (`x: Parser` for `type Parser<T> = …`): (a) refused, `type-alias-arity`
->    — implemented; (b) read as `Parser<fresh>` the way a bare generic `type` is.
-> 2. *A parameter default* (`type P<T = i32> = …`): (a) refused at the parse,
->    `type-alias-generic-default` — implemented; (b) allowed, with decision 8's trailing-default rule.
-> 3. *An annotation on the alias* (`#[deprecated] type Id = i32;`): (a) refused,
->    `type-alias-annotated` — implemented; (b) carried like a `type`'s annotations.
-> 4. *`as` on an imported alias* (`import {Parser as P}`): (a) refused like any type,
->    `import-alias-on-type` — implemented, since decision 110's checker-local type alias has not
->    landed; (b) allowed once 110 lands for types, because an alias has no emitted identity at all.
-> 5. *An alias taking the name of a type in scope*: (a) refused, `type-alias-name-taken` —
->    implemented; (b) the alias shadows.
-> 6. *A return alias of a wrapper in the backends*: the backends see `-> Parser<i32>` unexpanded
->    (so none lowers it as an effect) and every other alias expanded (`comptime/alias_erase.zig`).
->    No alternative is proposed; recorded so the effect front reads the same position.
-> **Recommendation.** (a) for 1–5: each is the most restrictive reading (decision 67), and each can be
-> relaxed later without breaking a program that compiles today. For 4, revisit together with 110.
-> **Blocks.** Nothing — the alias ships with the (a) readings; front `24-effects-by-return` reads
-> `Env.aliasedWrapper` for `effect-wrapper-behind-alias`.
+## Track C (jhonstart) — choices made in implementation, to confirm
+
+Decided by the implementation of `04-jhonstart` fronts on `front/04-jhonstart` (worktree
+`.tasks/04-jhonstart`, 2026-09-26) so the fronts could land; the maintainer confirms or reverses
+each.
+
+### 26-a · Every router cell is dual-target, not `#[@External.Erlang]` only
+
+> **Raised by:** `04-jhonstart/26-jhonstart-router` Step 2 / Step 4, 2026-09-26 (landed with jhonstart `2bb6fd9`)
+> **Measured.** A called erlang-only cell reds the commonJS compile of the core member at its call
+> site (`` `__jhRoutePath` has no `#[@External.<Target>(…)]` for the node backend ``); the core is
+> compiled on both rows. The five reads, `fill`, `navigate` and `lastNavigation` therefore carry a
+> `#[@External.Node("./router_runtime.mjs", …)]` twin.
+> **Options.** (a) dual-target cells, one assertion set on both rows (landed); (b) move the router
+> to an erlang-only member, which the core's render (front 30) then imports across a target split.
+> **Recommendation.** (a). Leaves two boxes of the README unticked by design: "all five cells are
+> `#[@External.Erlang]`; none is `#[@External.Node]`" and "`__jhNavigate` is the only dual-target
+> cell in the file".
+> **Blocks.** Nothing.
+
+### 31-a · `notFound()` / `redirect(url)` raise; a boundary captures the raise through one host cell
+
+> **Raised by:** `04-jhonstart/31-jhonstart-error-boundaries` Step 3, 2026-09-26
+> **Measured.** A page, layout or template is a `-> @Component<ElementBase, Element>` body and
+> cannot `throw` (decision 121), so the README's `notFound();` statement form needs the call itself
+> to raise; `throw notFound();` inside a `@Result` thunk must keep working. botopink's `try … catch`
+> unwraps a `@Result` only, so no `.bp` code can observe a raise.
+> **Options.** (a) the two functions raise the `routing` reason through a jhonstart host cell
+> (`__jhRaise`, `signal_runtime.mjs` / `jhonstart_signal.erl`), typed `-> string`, and the boundary
+> runs its child through `__jhCapture`, which answers a raise as `Error(reason)` — implemented;
+> (b) the functions return the reason and a component returns a "signalling tree" the render
+> inspects; (c) a `never` type (the language gap front 63 records).
+> **Recommendation.** (a): the same statement works in a page, a layout, a template and a thunk, a
+> crashing component is caught like one that answered `Error`, and the render (front 30) needs the
+> same capture for its page thunks. `notFoundReason()` / `redirectReason(url)` answer the reason
+> without raising, for a caller that wants it as a value.
+> **Blocks.** Nothing.
+
+### 27-a · A browser cell in a two-target member is dual-target, its erlang twin answering the server's truth
+
+> **Raised by:** `04-jhonstart/27-jhonstart-link` Step 4 and `29-jhonstart-client-directive` Step 4, 2026-09-26 (`modules.md` § 0 (b) / § 4's unsettled `jhonstart-link` row)
+> **Measured.** A CALLED `#[@External.Node]`-only cell reds the erlang compile at its caller; both
+> `jhonstart-link` and the core declare both targets, and `linkStatus()` / `propsFor()` call theirs.
+> **Options.** (a) dual-target cells — `link_runtime.mjs` + `sidecars/jhonstart_link.erl`,
+> `island_runtime.mjs` + `sidecars/jhonstart_island.erl` — whose erlang twins answer what is true on
+> a server (no link in flight, nothing prefetched, nothing hydrated, no props) — implemented;
+> (b) a wrapper nothing on erlang calls (impossible for a hook a server render calls); (c) a
+> commonJS-only member for the cells (splits `link.bp` in two).
+> **Recommendation.** (a). Leaves the Step 4 boxes "every cell in the file is `#[@External.Node]`;
+> there is no `#[@External.Erlang]` cell" of fronts 27 and 29 unticked by design.
+> **Blocks.** Nothing.
+
+### 30-a · The globals are read through `globals()`, not three module-level `pub val`s
+
+> **Raised by:** `04-jhonstart/30-jhonstart-streaming` Step 7, 2026-09-26
+> **Measured.** A `pub val globals = Globals(…)` imported from a sibling module is `undefined` on
+> commonJS (`Cannot read properties of undefined (reading 'payload')`) and an unbound variable on
+> erlang (compiler `f011850c`) — the `language-gaps.md` row "`pub val` of a user record type is
+> unexercised", now measured. Three flat `pub val payload / fill / signal` would shadow front 26's
+> `fill` in a consumer's flat `import {…} from "jhonstart"`.
+> **Options.** (a) `pub fn globals() -> Globals` and `alias(name)` over the registry — implemented;
+> (b) three `pub val`s of `string` with non-clashing names (`payloadGlobal`, …).
+> **Recommendation.** (a): one spelling (`globals().fill`) for the render, `render.mjs` and onze's
+> entry; revisit when a `pub val` of a record crosses modules.
+> **Blocks.** Nothing.
+
+### 30-b · `RenderPlugin` is a record of async functions; `chunk` runs where the boundary resolved
+
+> **Raised by:** `04-jhonstart/30-jhonstart-streaming` Step 6 / Step 9, 2026-09-26
+> **Measured.** An `Array<RenderPlugin>` of two different types implementing a `behavior` does not
+> type (`type mismatch: expected Rec, got Quiet`). On erlang each streamed boundary resolves in its own
+> process, and emilia's stylesheet is per process, so a `chunk(id)` called by the render's process
+> never sees what the boundary registered.
+> **Options.** (a) `RenderPlugin(name, head, chunk, close, payload)` as a record of functions,
+> `payload` answering `Array<#(key, json)>` (`[]` for "nothing", one pair otherwise) instead of
+> `?#(…)`, and `chunk(id)` called in the boundary's own process right after it rendered —
+> implemented; (b) the `behavior` shape once heterogeneous behavior arrays type.
+> **Recommendation.** (a). The four moments and their order are the README's; only where `chunk`
+> executes moves, and the fill still carries its CSS first.
+> **Blocks.** Nothing.
+
+### 30-c · `render` / `renderStream` / `App` live in `streaming.bp`; `compose` takes the page as a thunk
+
+> **Raised by:** `04-jhonstart/30-jhonstart-streaming` Steps 4 and 8, 2026-09-26
+> **Measured.** `resolve` needs `render.bp`'s walker and the entries need `resolve` — the same file
+> pair importing each other. A layout must run before the page for "a layout's redirect means the
+> page is never called", so `compose` cannot take a rendered `page: Element`.
+> **Options.** (a) the walker, `compose`, the payload and the document in `render.bp`; `Chunk` /
+> `resolve` / `fillHtml`, `Response`, `PageInput`, `App`, `render` / `renderStream` in
+> `streaming.bp`; `compose(chain, route, page: fn() -> @Component<…>)` running layouts first over a
+> placeholder child — implemented; (b) one larger module.
+> **Recommendation.** (a). The flat `from "jhonstart"` surface is unchanged. `PageInput` also gains
+> `metadata: Array<Metadata>` / `viewports: Array<Viewport>` (the segments' resolved exports,
+> root-first) so the render merges front 32's head itself.
+> **Blocks.** Nothing.
+
+### 30-d · `Suspense` registers its boundary with the render
+
+> **Raised by:** `04-jhonstart/30-jhonstart-streaming` Step 1, 2026-09-26
+> **Measured.** An `Element` has no field that can carry the thunk, so the render cannot find a
+> hand-written boundary in the tree it composed.
+> **Options.** (a) `Suspense(b)` pushes `b` into the per-render state (`render.mjs` /
+> `jhonstart_render`) as it writes the hole — implemented; (b) a page returns its boundaries beside
+> its tree.
+> **Recommendation.** (a). Leaves the Step 1 box "`Suspense` reaches no host cell" unticked by design.
+> **Blocks.** Nothing.
+
+### 30-e · The segment record is `UiSegment`
+
+> **Raised by:** `04-jhonstart/30-jhonstart-streaming` Step 4, 2026-09-26
+> **Measured.** The bundled `routing` also exports `Segment` (its `segment` module); a consumer's
+> `import {Segment} from "jhonstart"` is then refused as ambiguous.
+> **Options.** (a) `UiSegment`, with `segment(pattern)` / `with*` / `segmentFor` — implemented;
+> (b) keep `Segment` and require consumers to name the module.
+> **Recommendation.** (a).
+> **Blocks.** Nothing.
+
+## Front 00 · 04-js / 05-wasm — choices made in implementation, to confirm
+
+Decided by the implementation on `front/04-05-js-wasm` (worktree `.tasks/04-05-js-wasm`, 2026-09-26);
+the maintainer confirms or reverses each.
+
+### 0405-a · `Array.at` with a negative index is out of range on commonJS
+
+> **Raised by:** `04-js`, C-18's commonJS half (decision 47), 2026-09-26
+> **Measured.** Native `Array.prototype.at` answers `undefined` past the end and counts a negative
+> index from the back (`[10, 20, 30].at(-1)` → `30`). wasm's `$__arr_at` and commonJS's own
+> `__bp_string_char_at` answer absence for a negative index; `String.at(-1)` is `null` on commonJS.
+> **Options.** (a) `__bp_array_at(xs, i)` answers `null` for any `i` outside `0..len` — one rule for
+> both readers and every backend that has a bounds test; (b) keep the native negative reading and only
+> map `undefined` to `null`.
+> **Recommendation.** (a), implemented: the language documents no negative index, and a program that
+> means "the last element" on one backend and "absent" on another is the divergence decision 67 refuses.
+> **Blocks.** Nothing.
+
+### 0405-b · The empty value `?.` answers on commonJS still prints `undefined`
+
+> **Raised by:** `04-js` / `05-wasm`, decision 47, 2026-09-26
+> **Measured.** wasm prints every empty `?T` as `null` now (`$__print_null`), and commonJS's
+> `Array.at` answers `null`. Two commonJS shapes still produce JS's other none: `choose(false)?.kind`
+> (native `?.`) and an `if` with no `else` used as a value (`val r = if (n > 0) { "positive"; };`),
+> and both print `undefined` — `snapshots/codegen/*/commonJS/{optional_fn_return_null_path,if_simple_conditional_in_fn_body}`,
+> where wasm now prints `null`.
+> **Options.** (a) `__bp_show` prints `undefined` as `null` — one branch in the §7 printer, which is
+> written into every module that prints, so the prelude text of every such commonJS snapshot moves
+> (163 per tree); (b) lower `?.` and the else-less `if` to produce `null`, which moves every `?.` site.
+> **Recommendation.** (a), as its own commit: the printer is where the spelling is decided, and it
+> leaves `== null` (already loose on this backend) untouched. Implemented (compiler `d798775b`):
+> 196 commonJS snapshots per tree gained the one prelude line, and the two RUN LOGs above read `null`.
+> **Blocks.** Nothing now — commonJS and wasm both print absence as `null`; erlang and beam are C-18's.
+
+## Fronts 00 · 02-erlang / 03-beam — choices made in implementation, to confirm
+
+Implemented on `front/02-03-erlang-beam` (worktree `.tasks/02-03-erlang-beam`, 2026-09-26).
+
+### 0203-a · A primitive method's host spelling (`toUpperCase`) answers on erlang and beam
+
+> **Measured.** `tests/language/test/string_case_conversion.bp` writes `"abc".toUpperCase()`; the
+> method's name is `toUpper`, and `toUpperCase` is its `#[@External.Node(…)]` spelling. The checker
+> accepts **any** method name on a primitive receiver (`"x".fooBar()` checks), commonJS answers
+> because the name is JavaScript's own, wasm already answers both spellings (`$__str_case`), and
+> erlang emitted `toUpperCase/1 undefined`.
+> **Options.** (a) erlang and beam resolve a `#[@External.Node("<name>")]` spelling to the method it
+> spells, after every other lowering missed — **implemented** (`primNodeAliasIn`, compiler
+> `31b5d2bf`), so the four backends agree; (b) the checker refuses a method no primitive behavior
+> declares, the cell is rewritten to `toUpper`, and the alias leaves erlang, beam and wasm.
+> **Recommendation.** (b) is the restrictive reading (decision 67) and is `01-checker`'s; until it
+> lands, (a) keeps the four backends giving one answer instead of three. Choosing (b) deletes
+> `primNodeAliasIn` and its two call sites.
+
+### 0203-b · A template the BEAM lowering refuses keeps the run-time `'__bp_erl_eval'/2`
+
+> **Measured.** BR5 (compiler `8333aaab`) compiles every `@External.Erlang` template at build time
+> through the comptime runtime's reader and lowering; no beam snapshot carries `'__bp_erl_eval'`.
+> `lower.zig` refuses `receive`, `!`, the old `catch Expr`, `try … of` and `try … after`, and by
+> text at most 6 of `libs/std`'s 159 templates carry one (`async.allOf`/`raceOf`, `encoding`'s
+> percent-decode, one `json` reader, `http.get`, `process`'s run).
+> **Options.** (a) such a template keeps the run-time evaluator, named in `beam/AGENTS.md` —
+> **implemented**; (b) refuse it at build time on beam (a located error naming the construct), so
+> those six std functions stop compiling on beam until (c); (c) teach `lower.zig` the five
+> constructs (a `front 14`/`18` row — the comptime runtime would gain them too).
+> **Recommendation.** (c), and (a) until it lands: decision 67 argues for (b), but (b) turns
+> programs that run correctly today into build errors for a construct the compiler, not the
+> program, cannot yet lower.
+
+## Track D (`05-emilia`) — choices made in implementation, to confirm
+
+Each was implemented with the recommended option on `front/05-emilia`; a different answer is a
+local change in the named front.
+
+### 05emilia-a. The filter reader is an inline chain, not `var(--tw-filter)` (front 42)
+
+> **Raised by:** `42-emilia-filters` step 4, 2026-09-26
+> **Measured.** The spec's reader `filter:var(--tw-filter)` needs `--tw-filter` defined somewhere.
+> `extendTheme` panics on a name in none of `Ns`'s nineteen prefixes, and `--tw-` is in none
+> (front 45 met the same wall). Even as a `:root` rule it would not compose: a custom property's
+> `var()`s are substituted on the element that declares it, so `:root`'s `--tw-filter` would read
+> `:root`'s (unset) families and every element would inherit that empty result. Upstream v4
+> (`utilities.ts`, `cssFilterValue`) writes the chain into every utility:
+> `filter: var(--tw-blur, ) var(--tw-brightness, ) … var(--tw-drop-shadow, )`.
+> **Options.** (a) Inline upstream's chain, spelled once by `filterChain()` / `backdropFilterChain()`.
+> (b) Add a `Tw` namespace to `Ns` so `--tw-filter` is a theme entry — it still would not compose.
+> **Recommendation.** (a) — implemented, emilia `5711732`; the step-4 box is marked superseded.
+
+### 05emilia-b. The backdrop section is `BackdropFilter`, not `Backdrop` (front 42)
+
+> **Raised by:** `42-emilia-filters` step 3, 2026-09-26
+> **Measured.** `Backdrop(inner: Token[])` is front 34's `::backdrop` modifier, a top-level payload
+> variant; a section head of the same name is the collision emilia's `AGENTS.md` records as silently
+> breaking the variant's payload projection.
+> **Options.** (a) `BackdropFilter` (upstream's property name). (b) Rename front 34's modifier.
+> **Recommendation.** (a) — implemented; `BackdropRaw` keeps the spec's name.
+
+### 05emilia-c. `drop-shadow-none` follows upstream (front 42)
+
+> **Raised by:** `42-emilia-filters` step 2, 2026-09-26
+> **Measured.** `TAILWIND_CSS_DOCS.md § 13.1` prints `filter: drop-shadow(none)`, which is not valid
+> CSS (`drop-shadow()` takes a shadow). Upstream's `staticUtility('drop-shadow-none')` writes
+> `--tw-drop-shadow: ` and the reader.
+> **Options.** (a) Upstream's form. (b) The reference's string.
+> **Recommendation.** (a) — implemented, the reference form asserted absent. `blur-none` keeps the
+> reference's `filter:none`, which is valid CSS.
+
+### 05emilia-d. The snap strictness default is a fallback, not a theme entry (front 46)
+
+> **Raised by:** `46-emilia-interactivity` step 6, 2026-09-26
+> **Measured.** The step asks front 54's theme to carry `--tw-scroll-snap-strictness`; `extendTheme`
+> refuses any `--tw-` name (05emilia-a). Upstream registers the variable with `@property` and the
+> initial value `proximity`.
+> **Options.** (a) `scroll-snap-type:x var(--tw-scroll-snap-strictness, proximity)` — front 39's
+> `cssVarOr`. (b) A `Tw` namespace in `Ns`.
+> **Recommendation.** (a) — implemented, emilia `7004c96`: a lone `Snap.Type.X` snaps by proximity,
+> a `Snap.Strictness` token in the same class overrides it.
+
+### 05emilia-e. `fullTheme()` rides on `fullOptions()`, not `defaultOptions()` (front 56, decision 80)
+
+> **Raised by:** `56-emilia-cascade-and-output`, decision 80, 2026-09-26
+> **Measured.** Decision 80 says `defaultOptions()` carries `fullTheme()`. `defaultOptions()` is in
+> `output.bp`; `fullTheme()` composes entries functions that live in `emilia.bp`, and `emilia.bp`
+> imports `output.bp` — the reverse import is a module cycle.
+> **Options.** (a) `fullOptions()` in `emilia.bp` = `withTheme(defaultOptions(), fullTheme())`, and
+> `flush()` renders with it; `defaultOptions()` stays the palette-free baseline. (b) Move every
+> front's entries function into `theme.bp` — five fronts' data in front 54's file.
+> **Recommendation.** (a) — implemented, emilia `bd53968`; a test fails on any undefined `var(--…)`
+> in a flushed document, with `defaultTheme()` as the control that must leave some undefined.
+
+### 05emilia-f. `--inset-shadow-*` entries drop upstream's leading `inset` (front 41)
+
+> **Raised by:** `56-emilia-cascade-and-output` (`fullTheme`), 2026-09-26
+> **Measured.** Front 41 emits the reference's `box-shadow:inset var(--inset-shadow-xs)`; upstream's
+> `theme.css` values already start with `inset`, so the pair would render `inset inset …` — not CSS.
+> **Options.** (a) Entries without the keyword (`effectEntries()`). (b) Upstream's values, and front
+> 41 emits `box-shadow:var(--inset-shadow-*)` — moves a landed front's pinned output.
+> **Recommendation.** (a) — implemented; the rendered shadow equals upstream's.
+
+### 05emilia-g. `space-*` / `divide-*` against upstream (fronts 35, 40)
+
+> **Raised by:** the track-D audit, front 35 step 4, 2026-09-26
+> **Measured.** Upstream `utilities.ts` writes `space-x-*` as `:where(& > :not(:last-child))` with
+> `--tw-space-x-reverse:0` and both logical margins read through it; emilia writes
+> `& > :not(:last-child)` (higher specificity) and the end margin only, so `Space.XReverse` sets a
+> variable nothing reads. `divide-*` calls the same `siblingSelector()`.
+> **Options.** (a) Align both fronts to upstream in one change (selector, reverse-aware margins).
+> (b) Keep emilia's form and document it.
+> **Recommendation.** (a) — implemented later in the same pass, emilia `15465ed`: both fronts'
+> pinned output and the two examples that assert a spaced or divided list moved together.
+
+### 05emilia-h. Sibling modules never import `from "emilia"`; `named()` lives in `emilia.bp` (fronts 55, 57, 58, 59)
+
+> **Raised by:** `59-emilia-custom-utilities-and-variants` step 5, 2026-09-26
+> **Measured.** A sibling module importing `from "emilia"` (the default module `emilia.bp`) passes
+> `botopink test` in `modules/emilia/` and fails in every consumer: `unbound variable 'flushWith'`
+> in `emilia/preflight.bp` when `examples/emilia-cascade` compiles emilia as a dependency. Front 59's
+> step 5 wants `emilia.bp` untouched, but `named()` needs the host cell, and a host cell cannot be
+> imported across modules either.
+> **Options.** (a) Siblings import `tokens`/`theme`/`output`/each other only; `named()` and the
+> read-only `lookupRule` cell live in `emilia.bp`, and each front's rendering tests sit under its
+> banner there. (b) Fix the resolver first (a compiler change — not this track's).
+> **Recommendation.** (a) — implemented, emilia `76da9fb`; the resolver defect is a compiler finding.
+
+## `libs-external-methods` (host functions as methods of their owner) — choices made in implementation, to confirm
+
+Implemented on `front/libs-external-methods` (worktree `.tasks/libs-external-methods`, 2026-09-26),
+compiler `3630b648` + `612280ac`, std `8086c7ea`.
+
+### lem-a · A host method is a real method whose body is the binding, never inlined at the call site
+
+> **Measured.** At `f011850c` a `declare fn` with `#[@External.*]` inside a `type` body parsed and
+> checked, and no backend emitted it (erlang `undef`, commonJS `… is not a function`, beam panicked
+> in `lowerIdentAccess`, wasm wrote an invalid module).
+> **Options.** (a) every backend emits the method as a function of the type (class member, exported
+> function of the type's module) whose body is the binding over its own parameters — the wrapper a
+> `pub` module-level `declare fn` already gets — so `sock.recv(n)` stays an ordinary method call and
+> a method on an imported type is answered by its owner (decision 21) with no new call-site path —
+> **implemented** (`codegen/hostMethods.zig`); (b) additionally render the binding inline at a call
+> site in the owning module, as a module-level template is.
+> **Recommendation.** (a): one lowering, one frame more per call. (b) is an optimisation with a
+> second path to keep in agreement on four backends.
+
+### lem-b · `inline = true` on a method's `External.Erlang` / `External.Beam` changes nothing
+
+> **Measured.** `inline` opts a PRIMITIVE behavior's method out of the dispatch table so a
+> hand-coded shape keeps emitting; a user type has neither the table nor a hand-coded shape.
+> **Options.** (a) accept it (the checker's `refuseUnreadInline` rules still apply) and lower the
+> method the same way — **implemented**, pinned by `run/external_method_local`'s `times`; (b) refuse
+> it on a type-body method as a switch nothing reads (decision 67's reading of front 20 F9).
+> **Recommendation.** (b) is the restrictive reading and is `01-checker`'s to add; (a) until then.
+
+### lem-c · A method with no binding is refused where it is CALLED; wasm refuses every host method
+
+> **Measured.** A module-level host function is refused at its call site (06 C13); a type is
+> declared once and may be compiled for a backend its method has no binding for.
+> **Options.** (a) the method is not emitted and a call through a receiver inference typed
+> (`InstanceLowering.type_`) is refused with `MissingExternal` naming `Type.method` —
+> **implemented** (`hostMethods.missingAt`, `CrossModule.host_methods`); (b) refuse the
+> declaration itself on that backend. On wasm (a) refuses even an `External.Wasm` binding, where a
+> module-level one lowers to `unreachable`; the index is keyed by the TYPE NAME, so two modules
+> declaring one `Type.method` keep the first walked.
+> **Recommendation.** (a); the wasm asymmetry resolves the day wasm has a host (both then refuse
+> or both lower). An untyped receiver (no `.type_` lowering) is not refused and fails at run time as
+> any unknown method does.
+
+### lem-d · The names the collapse chose
+
+> **Measured.** `io.net` had one free function per type and operation; `regex` had
+> `runCompiled(r, input)` because `matches(pattern, input)` held the name.
+> **Options.** (a) one name per operation on every type — `Listener.port/accept/close`,
+> `Socket.recv/send/close/peer`, `TlsListener.port/accept`, `TlsSocket.recv/send/close`,
+> `Regex.matches` — **implemented**; (b) keep the old names as methods (`l.listenerPort()`,
+> `r.runCompiled(s)`).
+> **Recommendation.** (a): the prefixes named the owner, which the receiver now does. Constructors
+> (`listen`, `connect`, `tlsListen`, `tlsConnect`, `regex.compile`) stay module functions.
+
+### lem-e · What stayed free although it takes a type
+
+> **Measured.** `io.net`'s private `tlsEchoOnce(listener, length)` (a test instrument); `validation`'s
+> private `rkvPush(v: Violation)`, `putMessageSource(source)` and `messageSourceOr(fallback)` (a
+> process-global store, not an operation on the value); every other std host function takes
+> primitives, `any` host terms or builtin types (`@Task`), and `routing` / `actions` declare none.
+> **Options.** (a) keep them free — **implemented**: a method is exported from its type's module on
+> erlang and beam, so a private helper would join the type's public surface; (b) move them too.
+> **Recommendation.** (a).
+
+### lem-f · commonJS adopts a host-built record into its class
+
+> **Measured.** A host answer declared as a record stayed a plain object on commonJS — fields read,
+> methods absent (`regex.compile(p).map({ r -> r.matches(s) })`: `r.matches is not a function`),
+> printed as `%O`. erlang has adopted maps since decision 21 (`adoptHostResult`).
+> **Options.** (a) `__bp_adopt(v, C, path)` gives the answer the class's prototype — directly,
+> through `?T`, an array, an `@Result`'s ok side — at the owner's call site, in the exported
+> template wrapper and in a host method's body — **implemented** (compiler `612280ac`, pinned by
+> `run/external_method_on_host_record`); `@Task` is not looked through, and a `(module, symbol)`
+> alias another module imports bypasses it; (b) require templates to build the class
+> (`new Regex(…)`).
+> **Recommendation.** (a): (b) makes a template name an emitted class, and `docs.md` already
+> promised the adoption on every backend. beam still adopts no host map (`external_host_record`'s
+> `.targets`) — a `03-beam` row.

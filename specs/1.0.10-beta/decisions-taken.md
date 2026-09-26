@@ -67,8 +67,15 @@ what was left, now `00-compiler-carry-over`'s order),
 | [124](#124-the-async-block-is-a-closed-expression-worth-taskt) | A Task inside a function | `async { … }`: a closed block worth `@Task<T>` (`@Task<@Result<U, E>>` when it throws or tries); `return` leaves the block; `async` is contextual |
 | [125](#125-iter-and-stream-prefix-a-loop-and-make-it-an-iterator-or-a-stream) | An iterator inside a function | `iter` / `stream` before `loop` / `while` / `for`: a closed expression worth `@Iterator` / `@Stream`, the item `@Result` inferred from `throw` / `try`; replaces `#[@X] loop` |
 | [126](#126-a-host-function-returning-taskresultt-e-turns-a-rejection-into-errore) | A host function that can fail | `#[@External…] … -> @Task<@Result<T, E>>` turns a rejection / `{error, …}` into `Error(e)`; `-> @Task<T>` makes a rejection a fatal host failure |
-| [127](#127-no-coexistence-the-old-annotations-and-wrappers-are-errors-with-a-fix-it-and-a-codemod) | A compatibility window for the old forms? | None (decision 67): `effect-annotation-removed`, `effect-type-removed`, `iterator-error-param-removed`, each with a fix-it, and the codemod `botopink migrate effects` |
+| [127](#127-no-coexistence-the-old-annotations-and-wrappers-are-errors-with-a-fix-it-and-a-codemod) | A compatibility window for the old forms? | None (decision 67): `effect-annotation-removed`, `effect-type-removed`, `iterator-error-param-removed`, each with a fix-it, and the codemod `botopink migrate effects` — **amended by 131** (no codemod) |
 | [128](#128-one-context-wrapper-componentc-t) | `@Use<C, T>` and `@Component<T>`? | Unified into one wrapper, `@Component<C, T>`, for hooks and components alike; the base is always written; `@Use` leaves (`effect-type-removed`); a component is the `@Component<C, T>` whose `T` implements `@Context<C>` — amends 102, 104, 117 item 3 and 118–121 |
+| [129](#129-type-aliases-four-restrictions-stand-as-reaches-an-imported-alias) | The type-alias details 118 leaves open | A bare generic alias, a parameter default, an annotation and a name taken are refused; `as` is legal on an imported type and alias (110) |
+| [130](#130-a-failing-render-carries-e--string-the-writers-stay-infallible) | Which error does a failing render carry? | `renderStream -> @Task<@Result<void, string>>`; `Response.write` / `ChunkWriter.write` stay `@Task<void>`; rakun answers 500 (or closes) and logs under a digest — amends 117 item 1 |
+| [131](#131-no-migration-routine-for-the-effect-change) | A codemod for the effect change? | None — `botopink migrate effects` and its migration-only mode leave; the old forms stay errors with a fix-it; `botopink migrate` keeps the module tree — amends 127 |
+| [132](#132-the--after-a-braced-block-becomes-an-error-once-every-source-is-migrated) | When is `;` after `}` refused? | After every library and `tests/language` run `c13-migrate.py`; then front 15's patch, narrowed to `isBracedBlockStmt` |
+| [133](#133-a-trailing-comma-keeps-a-list-in-its-open-form) | Does a trailing comma still open a list? | Yes — the author's explicit request; amends 65 part 2 |
+| [134](#134-every-example-in-the-guide-and-in-docsmd-is-correct-against-the-compiler) | Guide examples that do not type | Fixed in the text; three checker gaps closed by `01-checker`; decision 117's decorator check written in jhonstart |
+| [135](#135-specs-keep-only-what-still-holds) | Closed fronts spelling removed forms | Condensed to their current outcome; removed spellings only in the record and the removed-names tables |
 
 ## 68. One milestone, the 1.0.9 numbers kept, the drafts deleted
 
@@ -2581,7 +2588,8 @@ The old names that had already left stay gone: `#[@context]` / `@Context<B, R>` 
 
 **Supersedes:** nothing in 95–117 beyond what 118–126 state; it fixes how the change lands.
 Bears on: every library front whose examples spell the old annotations (listed in front 24's README).
-Implements: front 24 steps E2 (the three diagnostics) and E6 (the codemod).
+Implements: front 24 step E2 (the three diagnostics). **Amended by 131:** the codemod and its
+`// TODO(migrate-effects)` marks left before release; the migration is done by hand, from the errors.
 
 ## 128. One context wrapper: `@Component<C, T>`
 
@@ -2642,3 +2650,163 @@ Implements: front [`24-effects-by-return`](./00-compiler-carry-over/24-effects-b
 steps E1 (`Component<C, T> extends Task`, `Use` removed), E2 (`@Use` → `effect-type-removed`), E3
 (the `use` gate and the component-is-called refusal keyed on `T: @Context<C>`), E6 (the two codemod
 rows) and E8 (the spec examples).
+
+## 129. Type aliases: four restrictions stand, `as` reaches an imported alias
+
+**Decided 2026-09-26 by the maintainer** (pending item 129): *"corrigir para alias"* — `as` is legal
+on an imported type and on an imported type alias (decision 110); the other four readings stay as
+implemented. The alias declaration decision 118 rule 1 presupposes
+(`pub type Parser<T> = @Result<T, ParseError>;`) has these edges:
+
+| Written | Answer |
+|---|---|
+| a generic alias without its arguments (`x: Parser` for `type Parser<T> = …`) | refused, `type-alias-arity` — it is never read as `Parser<fresh>` |
+| a parameter default (`type P<T = i32> = Box<T>;`) | refused at the parse, `type-alias-generic-default` |
+| an annotation on the alias (`#[deprecated] type Old = New;`) | refused, `type-alias-annotated` |
+| an alias taking the name of a type in scope (`type Dict = i32;`) | refused, `type-alias-name-taken` — an alias never shadows |
+| `import {Parser as P} from "x"` — `as` on an imported alias or type | **legal** (decision 110 rule 1): `P` is a checker-local name for the alias, which has no emitted identity of its own |
+
+A return spelled through an alias reaches the backends unexpanded (so none lowers it as an effect,
+`effect-wrapper-behind-alias`); every other alias is expanded before codegen
+(`comptime/alias_erase.zig`).
+
+```bp
+type Pair<A, B> = #(A, B);
+val p: Pair = #(1, 2);            // error[type-alias-arity]
+import {Pair as P} from "shapes";
+val q: P<i32, i32> = #(1, 2);     // ✓ — P is Pair in the checker only
+```
+
+**Supersedes:** the `import-alias-on-type` refusal for an alias (decision 110 already removed it for
+a type). Each refused reading can be relaxed later without breaking a program that compiles.
+Implements: the alias declaration (`parser/decls.zig` `parseTypeAliasDecl`, `comptime/infer.zig`
+`expandTypeAlias` / `checkTypeAliasDecl`) for the four refusals, landed; `as` on a type and an alias
+is `00 · 01-checker`'s, with decision 110 rule 1.
+
+## 130. A failing render carries `E = string`; the writers stay infallible
+
+**Decided 2026-09-26 by the maintainer** (front 24 open point 8): option (a). Decision 117 item 1's
+"a failed render is the future's error" is read under decisions 120 and 121:
+
+- `renderStream(…) -> @Task<@Result<void, string>>`; rakun's
+  `PageRenderer = fn(req: Request, out: ChunkWriter) -> @Task<@Result<void, string>>`, so onze's
+  boot closure stays `return ui.renderStream(…)`.
+- `ChunkWriter.write` / `close` and jhonstart's `Response.write` / `close` stay `@Task<void>`, as
+  decision 120 spells them: a write never fails as a value. A write after `close`, and
+  `setStatus` / `setHeader` after the first `write`, are misuse and raise (decision 67).
+- rakun's dispatch answers an `Error(msg)` like an untagged raise of the renderer: status 500 when
+  nothing was written, otherwise the response is closed; the message goes to the log under a
+  correlation digest, never on the wire. `servePage` stays `@Task<i32>` (the status written).
+
+```bp
+fn renderStream(page: Page, out: ChunkWriter) -> @Task<@Result<void, string>> {
+    await out.write(head);            // @Task<void>: nothing to propagate
+    val body = try await renderBody(page);
+    await out.write(body);
+    return;
+}
+```
+
+A typed `RenderError` can come later without breaking code that reads the string: the one fallible
+piece of the pipeline today, `RenderPlugin.close`, is already `@Result<void, string>`, and the render
+forwards the same `E`; rakun names no jhonstart type (decision 114 item 5).
+
+**Amends:** 117 item 1 (the render's failure is a `@Result` value inside the Task).
+Implements: rakun front 23 step 1 (`ChunkWriter`, `PageRenderer`, `servePage`, the dispatch), jhonstart
+front 30 (`renderStream`'s signature), onze front 49 (the boot closure).
+
+## 131. No migration routine for the effect change
+
+**Decided 2026-09-26 by the maintainer** (front 24 open point 7 and pending item 24-d): *"não precisa
+de rotina de migração — estamos em beta"*. The codemod `botopink migrate effects` and the
+migration-only mode it needed leave the compiler:
+
+- **Removed:** the `migrate effects` subcommand (`modules/compiler-cli/src/cli/migrate_effects.zig`,
+  its snapshots, its unit tests and contract row C8b); the migration-only parse
+  (`parser.effect_migration`, which read the removed annotations and wrappers as their new
+  spelling); the checker's legacy typing (`infer.effect_migration_files`); the `ExprTypeLog` hook
+  only the codemod read; `comptime.setEffectMigration`.
+- **Kept:** every old form stays a located compile error with its fix-it —
+  `effect-annotation-removed`, `effect-type-removed`, `iterator-error-param-removed` (decision 127's
+  table) — and `docs.md` § *Migrating from the effect annotations* keeps the old → new table and the
+  four changes that are not a rename. A migration is done by hand, error by error.
+- **`botopink migrate`** keeps its meaning — it derives the module tree (`pub mod X;`) and predates
+  front 24; it takes no subcommand (`botopink migrate effects` is a positional, refused by row C8).
+
+**Amends:** 127 — "and a codemod" and the `// TODO(migrate-effects)` marks leave; the no-coexistence
+rule and the three diagnostics stand. **Answers:** pending 24-d (the mode has nothing left to serve)
+and front 24 open point 7.
+Implements: front 24's closeout (compiler `front/24-closeout`); front 24's README drops step E6 and
+§ *Codemod*.
+
+## 132. The `;` after a braced block becomes an error once every source is migrated
+
+**Decided 2026-09-26 by the maintainer** (pending item 16-d), on the recommendation. A braced
+`if` / loop / `case` statement ends at its `}` (decision 29); the parser accepts the trailing `;`
+and `botopink format` prints none until every tree has dropped it, in this order:
+
+1. each library runs `00-compiler-carry-over/16-formatter/c13-migrate.py` (or `botopink format`) at
+   the end of the threads writing in it (rakun, emilia, onze; jhonstart and erika with their
+   next sweep);
+2. `tests/language` migrates in the language-tests front;
+3. front 15's parked patch lands, narrowed to `Parser.isBracedBlockStmt`
+   (`blockStatementSemicolon`) — from then on the `;` is refused.
+
+Refusing earlier would fail every open thread's tree at once.
+
+**Amends:** 29's "rejected" — it holds from step 3.
+Implements: `00 · 16-formatter` (the optional half, landed), the library fronts and
+`12-language-tests` (steps 1–2), `00 · 15-language-surface` (step 3).
+
+## 133. A trailing comma keeps a list in its open form
+
+**Decided 2026-09-26 by the maintainer** (pending item 16-c): option (a). An array, tuple, argument,
+record field or enum list written with a trailing comma prints open — one element per line — even
+when it fits: the comma is the author's explicit request. A list without the comma is laid out by
+width alone (decision 65 part 2), and the open form always ends with the comma, so the output is
+stable.
+
+```bp
+val p = Point(x: 1, y: 2,);
+// prints
+val p = Point(
+    x: 1,
+    y: 2,
+);
+```
+
+**Amends:** 65 part 2 — the trailing comma is the one input the canonical form reads.
+Implements: nothing to change — `format.zig` does this today.
+
+## 134. Every example in the guide and in `docs.md` is correct against the compiler
+
+**Decided 2026-09-26 by the maintainer** (front 24, acceptance box of step E3): *"atualizar e deixar a
+doc 100% correta"*. Each fence of `24-effects-by-return/guide.md` and of `docs.md` either types (✓)
+or answers exactly the code it names (✗); an example the compiler does not yet accept for a reason
+the language intends is a compiler gap to close, not an example to weaken:
+
+- the guide's slips are fixed in the text — a return type that does not match its body, std
+  functions that do not exist (`io.http.fetch` is the HTTP call; `json.decode` lives in `json`),
+  `async.timeout` taking a thunk (`{ -> fetchUser(4) }`), a tuple bound as `val #(a, b)`, printing
+  an error through what its type declares, and every import spelled against std's tree (decision 106);
+- three checker gaps are closed by `00 · 01-checker`: `try x catch null` into a `?U`, a `null`
+  check whose branch ends in a `noreturn` call narrowing what follows, and a component called in a
+  component's body answering its `T` (`Element`);
+- decision 117 item 3's check is jhonstart's: `#[layout]` / `#[page]` / `#[template]` refuse a
+  function whose return is not `@Component<ElementBase, Element>`, located at the return.
+
+Implements: front 24's closeout (the two documents and jhonstart's decorators), `00 · 01-checker`
+(the three gaps); `zig build test-docs` compiles `docs.md`'s fences.
+
+## 135. Specs keep only what still holds
+
+**Decided 2026-09-26 by the maintainer** (front 24, acceptance box of step E8): *"remover o
+histórico — as specs ficam só com o que ainda vale"*. A closed front's spec is condensed to its
+outcome in today's surface and its remaining open items; status narratives, commit hashes and the
+spellings the language removed leave it (the meta `AGENTS.md` convention, applied to closed fronts
+too). The removed effect spellings appear in `specs/` only where a text is explicitly the record or
+the table of removed names: this file, and the removed-names table of `guide.md` § 9 (as in
+`docs.md` § *Migrating from the effect annotations*).
+
+Implements: front 24's closeout — fronts 19, 20, 21 and 22, front 24's README, guide and status,
+`decisions-pending.md` and `status.md` rewritten to the current state.

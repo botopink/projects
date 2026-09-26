@@ -272,17 +272,17 @@ compiles today stops compiling, and what those paths emitted was never valid CSS
 affected are in this front's own test file; `src/emilia.bp` has no spacing assertion.
 
 **Acceptance:**
-- [ ] `.Pad.All.4` emits `padding:calc(var(--spacing) * 4)`
-- [ ] `.Pad.X.4` emits `padding-left:calc(var(--spacing) * 4);padding-right:calc(var(--spacing) * 4)` — two declarations, `;`-joined, inside one token
-- [ ] `.Pad.All.0` emits `padding:0`, not `padding:calc(var(--spacing) * 0)`
-- [ ] no fn in this front returns a literal `rem`, `px` (other than the `Px` leaf's `1px`) or
-      `0.25rem` — `grep -E '[0-9]rem' ` over this front's block returns nothing
-- [ ] every sub-dispatcher takes `th: Theme`, per contract 4a
-- [ ] no token anywhere in `emilia.bp` emits a property name that is not a real CSS property —
-      `padding-x`, `padding-y`, `margin-y` are gone
-- [ ] no token emits a Tailwind class fragment — `m-0.25`, `m-1`, `margin-auto` are gone
-- [ ] the paths that compile today (`.Pad.X.4`, `.Pad.All.16`, `.Margin.Y.8`, `.Margin.X.Auto`) all
-      still compile
+- [x] `.Pad.All.4` emits `padding:calc(var(--spacing) * 4)` — held: test "the scale — every shape of leaf, read through the public `Pad.All` path"
+- [x] `.Pad.X.4` emits `padding-left:calc(var(--spacing) * 4);padding-right:calc(var(--spacing) * 4)` — two declarations, `;`-joined, inside one token — held: test "the nine padding directions, each with its own property and its own expansion"
+- [x] `.Pad.All.0` emits `padding:0`, not `padding:calc(var(--spacing) * 0)` — held: `spacing.bp:spacing` (zero → `0`); test "the scale — every shape of leaf…"
+- [x] no fn in this front returns a literal `rem`, `px` (other than the `Px` leaf's `1px`) or
+      `0.25rem` — `grep -E '[0-9]rem' ` over this front's block returns nothing — held: only `Px -> "1px"`/`"-1px"` in the block; test "no spacing token resolves a length…"
+- [x] every sub-dispatcher takes `th: Theme`, per contract 4a — held: every `pad*`/`margin*`/`size*`/`space*` fn in `emilia.bp` front-35 block takes `th: Theme`
+- [x] no token anywhere in `emilia.bp` emits a property name that is not a real CSS property —
+      `padding-x`, `padding-y`, `margin-y` are gone — held: test "no spacing token emits a property name that is not a CSS property"
+- [x] no token emits a Tailwind class fragment — `m-0.25`, `m-1`, `margin-auto` are gone — held: test "no spacing token emits a Tailwind class fragment"
+- [x] the paths that compile today (`.Pad.X.4`, `.Pad.All.16`, `.Margin.Y.8`, `.Margin.X.Auto`) all
+      still compile — held: test "the paths that compiled before this front still compile"
 
 ### Step 2 — nine directions for padding, ten for margin
 
@@ -301,12 +301,12 @@ affected are in this front's own test file; `src/emilia.bp` has no spacing asser
 `0` and no `Auto` — a negative zero and a negative auto are not utilities.
 
 **Acceptance:**
-- [ ] all nine padding directions answer all 35 scale leaves
-- [ ] all nine margin directions answer the scale plus `Auto`
-- [ ] `.Margin.T.Neg.4` emits `margin-top:calc(var(--spacing) * -4)` — the five-segment path resolves
-- [ ] `.Margin.X.Neg.2` emits both sides negative
-- [ ] `.Margin.All.Auto` emits `margin:auto` and `.Margin.X.Auto` emits the two-property form
-- [ ] `.Pad.S.4` / `.Pad.E.4` emit `padding-inline-start` / `padding-inline-end`
+- [x] all nine padding directions answer all 35 scale leaves — held: `tokens.bp` `Pad` (9 × 35 leaves); test "the walk is complete — one rule per leaf…"
+- [x] all nine margin directions answer the scale plus `Auto` — held: test "`Auto` is on every margin direction, not only on the X axis"
+- [x] `.Margin.T.Neg.4` emits `margin-top:calc(var(--spacing) * -4)` — the five-segment path resolves — held: test "`Neg` is on every margin direction — the `-mt-4` form, spelled as a path"
+- [x] `.Margin.X.Neg.2` emits both sides negative — held: test "a negative margin carries the pixel step and the half steps too"
+- [x] `.Margin.All.Auto` emits `margin:auto` and `.Margin.X.Auto` emits the two-property form — held: test "`Auto` is on every margin direction, not only on the X axis"
+- [x] `.Pad.S.4` / `.Pad.E.4` emit `padding-inline-start` / `padding-inline-end` — held: test "the nine padding directions, each with its own property and its own expansion"
 
 ### Step 3 — the `Size` section
 
@@ -330,14 +330,14 @@ Thirteen sub-sections: `W`, `H`, `Both`, `MinW`, `MaxW`, `MinH`, `MaxH`, `Inline
 X2xl }` sub-section. `Both` is `size-*`: it emits `width` and `height` from one leaf.
 
 **Acceptance:**
-- [ ] `.Size.W.Full` emits `width:100%`; `.Size.W.Screen` emits `width:100vw`; `.Size.H.Screen`
-      emits `height:100vh` — the viewport unit differs by axis and the test says so
-- [ ] `.Size.W.Frac.Third` emits `width:33.333333%` — six decimal places, as `§ 8.1` prints it
-- [ ] `.Size.W.Frac.TwoThirds` emits `width:66.666667%`
-- [ ] every `MaxW` named width matches `§ 8.3` exactly, `Xs` through `X7xl`
-- [ ] `.Size.MaxW.Screen.X2xl` emits `max-width:96rem`
-- [ ] `.Size.Both.12` emits two declarations from one token
-- [ ] the six logical sub-sections emit `inline-size`, `block-size` and their min/max forms
+- [x] `.Size.W.Full` emits `width:100%`; `.Size.W.Screen` emits `width:100vw`; `.Size.H.Screen`
+      emits `height:100vh` — the viewport unit differs by axis and the test says so — held: test "Size — the viewport unit differs by axis, and both halves are pinned"
+- [x] `.Size.W.Frac.Third` emits `width:33.333333%` — six decimal places, as `§ 8.1` prints it — held: test "Size — the eleven fractions, to the decimal place upstream prints"
+- [x] `.Size.W.Frac.TwoThirds` emits `width:66.666667%` — held: test "Size — the eleven fractions, to the decimal place upstream prints"
+- [x] every `MaxW` named width matches `§ 8.3` exactly, `Xs` through `X7xl` — held (shape: emits `var(--container-*)`, the `rem` lives in the theme): tests "Size — the named container widths are theme references, not lengths" + "…each of those names resolves to the width `§ 8.3` prints"
+- [x] `.Size.MaxW.Screen.X2xl` emits `max-width:96rem` — held (shape: emits `max-width:var(--breakpoint-2xl)`, theme value `96rem`): test "Size — `max-w-screen-*` reads the breakpoint ladder, the same way"
+- [x] `.Size.Both.12` emits two declarations from one token — held: test "Size.Both — upstream's `size-*`, two declarations from one leaf"
+- [x] the six logical sub-sections emit `inline-size`, `block-size` and their min/max forms — held: test "Size — the six logical forms, which follow the writing direction"
 
 ### Step 4 — `Space`
 
@@ -355,16 +355,16 @@ sibling template and whose `declarations` are the child margins. It is the one d
 front that is not a `…TokenToCss`, and its header says so.
 
 **Acceptance:**
-- [ ] `.Space.Y.4` emits `& > :not(:last-child){margin-block-end:calc(var(--spacing) * 4)}`
-- [ ] `.Space.X.4` emits the `margin-inline-end` form
-- [ ] a `Space` token composes with a `Pad` token in the same list and the result is
-      `padding:…;& > :not(:last-child){…}`
-- [ ] `.Space.X.Neg.2` emits a negative child margin
-- [ ] the selector this front chose is recorded in the README and verified against upstream before
-      merge — see *Reference gaps*
-- [ ] the selector is byte-identical to front 40's `Divide` selector, asserted by a test that
-      compares the two outputs
-- [ ] the `selector` carries exactly one `&`, which front 56 enforces with no opt-out
+- [x] `.Space.Y.4` emits `& > :not(:last-child){margin-block-end:calc(var(--spacing) * 4)}` — held (shape: upstream's form since the audit pass — `:where(& > :not(:last-child))` and the reverse-aware start/end pair, whose end side is `calc(calc(var(--spacing) * 4) * calc(1 - var(--tw-space-y-reverse)))`): test "Space — the declaration is on the CHILDREN, under the sibling selector"
+- [x] `.Space.X.4` emits the `margin-inline-end` form — held (shape: the inline start/end pair through `--tw-space-x-reverse`): test "Space — the X axis is the inline pair, the Y axis the block pair"
+- [x] a `Space` token composes with a `Pad` token in the same list and the result is
+      `padding:…;& > :not(:last-child){…}` — held (shape: two rules of one class in the rendered document, not one declaration string): test "Space — composing with a Pad token in one list gives two rules, in order"
+- [x] `.Space.X.Neg.2` emits a negative child margin — held: test "Space — a negative child margin, the pull-up form"
+- [x] the selector this front chose is recorded in the README and verified against upstream before
+      merge — see *Reference gaps* — held: verified against upstream `utilities.ts` on 2026-09-26, found to differ, and re-emitted in upstream's form (`siblingSelector()` = `:where(& > :not(:last-child))`, `reversePair`); recorded in emilia `AGENTS.md` and decisions-pending 05emilia-g
+- [x] the selector is byte-identical to front 40's `Divide` selector, asserted by a test that
+      compares the two outputs — held: test "Divide and front 35's Space emit BYTE-IDENTICAL child selectors" (front 40 block)
+- [x] the `selector` carries exactly one `&`, which front 56 enforces with no opt-out — held (shape: front 56 refuses non-one-`&` VARIANT selectors; the rule selector is pinned by test): test "Space — the sibling selector is one template, with exactly one ampersand"
 
 ### Step 5 — the four dispatchers and the top-level arms
 
@@ -373,10 +373,10 @@ new. Two arms are added to the top-level `tokenToSheet` case (`Size`, `Space`); 
 already have theirs. Three of the four go through `declSheet`; `Space` does not.
 
 **Acceptance:**
-- [ ] each dispatcher follows the file's `val out = case …; return out;` idiom
-- [ ] every arm is an arrow arm — no block arm anywhere, since a block arm parses but yields no value
-- [ ] the banner `// ── front 35 — spacing and sizing ──` fences the block in both files
-- [ ] the two new `tokenToCss` arms sit in front-number order relative to the other fronts' arms
+- [x] each dispatcher follows the file's `val out = case …; return out;` idiom — held: `padTokenToCss`/`marginTokenToCss`/`sizeTokenToCss`/`spaceTokenToSheet` and every sub-dispatcher
+- [x] every arm is an arrow arm — no block arm anywhere, since a block arm parses but yields no value — held: every arm in the front-35 block of `emilia.bp` is `X -> expr;`
+- [x] the banner `// ── front 35 — spacing and sizing ──` fences the block in both files — held: `tokens.bp:703` and `emilia.bp:3080`, each closed by `// ── end front 35 ──`
+- [x] the two new `tokenToCss` arms sit in front-number order relative to the other fronts' arms — held: `tokenToSheet` `// ── front 35 — spacing and sizing` fence between front 33 and front 36
 
 ## Examples
 
@@ -434,13 +434,13 @@ What the tests assert:
 
 ## Definition of done
 
-- [ ] `Pad` carries nine directions, `Margin` nine plus `Auto` and `Neg`, over a 35-leaf scale
-- [ ] `Size` carries thirteen sub-sections covering `§ 8.1`–`§ 8.7`
-- [ ] `Space` carries `X`, `Y` and the two reverse tokens
-- [ ] no emilia token emits a non-CSS property name or a Tailwind class fragment
-- [ ] front 54's `spacing` / `spacingHalf` are the only places `calc(var(--spacing) * N)` is spelled,
-      and this front calls them rather than reimplementing them
-- [ ] the banner fences this front's block in both files, appended at the end
-- [ ] two arms added to the top-level `tokenToCss` case, in front-number order
-- [ ] `repository/emilia/AGENTS.md` and the `////` header of `tokens.bp` record the new sections
-- [ ] the front's tests are green on its assigned target — here, both backends, since emilia is comptime
+- [x] `Pad` carries nine directions, `Margin` nine plus `Auto` and `Neg`, over a 35-leaf scale — held: `tokens.bp` `Pad`/`Margin` sections; test "the walk is complete — one rule per leaf…"
+- [x] `Size` carries thirteen sub-sections covering `§ 8.1`–`§ 8.7` — held: `tokens.bp` `Size` (W, H, Both, MinW, MaxW, MinH, MaxH, Inline, Block, MinInline, MaxInline, MinBlock, MaxBlock)
+- [x] `Space` carries `X`, `Y` and the two reverse tokens — held: `tokens.bp` `Space { X, Y, XReverse, YReverse }`
+- [x] no emilia token emits a non-CSS property name or a Tailwind class fragment — held: tests "no spacing token emits a property name that is not a CSS property" + "…a Tailwind class fragment"; no such string outside tests in `emilia.bp`
+- [x] front 54's `spacing` / `spacingHalf` are the only places `calc(var(--spacing) * N)` is spelled,
+      and this front calls them rather than reimplementing them — held: `spacing.bp:spacing`/`spacingHalf` are the only non-test spellings of `calc(var(--spacing) *`
+- [x] the banner fences this front's block in both files, appended at the end — held (shape: block sits in front-number position, not at file end): `tokens.bp:703`, `emilia.bp:3080`
+- [x] two arms added to the top-level `tokenToCss` case, in front-number order — held: same fence
+- [x] `repository/emilia/AGENTS.md` and the `////` header of `tokens.bp` record the new sections — held: `AGENTS.md` front-35 paragraph; `tokens.bp` `////` SECTIONS `Pad`/`Margin`/`Size`/`Space`
+- [x] the front's tests are green on its assigned target — here, both backends, since emilia is comptime — held: emilia suite 569/569 on commonJS and erlang

@@ -141,8 +141,9 @@ pub fn generateViewport(params) -> @Task<Viewport>
 `sitemap.bp`, `robots.bp`, `manifest.bp` and `opengraph-image.bp` are file routes: a URL, a handler,
 a content type, and for the OG image a rendered PNG. All four are **front 66**'s. What this front
 owes front 66 is the `openGraph.images` list, so that a page pointing at `/og/hello.png` and a file
-route serving `/og/hello.png` agree; the path convention is written down once, in front 66's README,
-and cited here.
+route serving `/og/hello.png` agree; the path convention is written down once, in front 66's README
+([`66-rakun-metadata-file-routes/README.md`](../../03-rakun/66-rakun-metadata-file-routes/README.md) § *Image URLs
+carry a content hash*), and cited here.
 
 The markup for those file routes is this front's, not front 66's (decision 116): rakun resolves the
 icons and images of a pattern as data (`iconsFor`, `imagesFor` — URL, kind, size, content type) and
@@ -204,9 +205,9 @@ pub fn emptyMetadata() -> Metadata {
 The field is `ogType`, not `type`: `type` is a keyword (`modules/compiler-core/src/lexer.zig:721-767`).
 
 **Acceptance:**
-- [ ] `emptyMetadata()` has every string `""` and every list `[]`
-- [ ] no field is named with a keyword
-- [ ] no field is optional; the absence convention is documented in the file header
+- [x] `emptyMetadata()` has every string `""` and every list `[]` — `test/metadata_test.bp` "metadata: emptyMetadata has every string empty and every list empty" (jhonstart `7b9e0fc`)
+- [x] no field is named with a keyword — `ogType`, not `type`
+- [x] no field is optional; the absence convention is documented in the file header — `metadata.bp` header
 
 ### Step 2 — `mergeMetadata`
 
@@ -234,32 +235,32 @@ pub fn applyTemplate(template: string, title: string) -> string {
 `titleTemplate` is the **child's**, so it applies to the next level down and not to this one.
 
 **Acceptance:**
-- [ ] a child with an empty title inherits the parent's, untemplated
-- [ ] a child with a title gets the parent's template applied exactly once
-- [ ] a child with one image replaces the parent's three, and the result has length one
-- [ ] a child with no images inherits the parent's list unchanged
-- [ ] `openGraph.title` from the child and `openGraph.siteName` from the parent survive the same merge
-- [ ] merging three levels applies the template once, not twice
+- [x] a child with an empty title inherits the parent's, untemplated — `test/metadata_test.bp` "metadata: a child with no title inherits the parent's, untemplated"
+- [x] a child with a title gets the parent's template applied exactly once — `test/metadata_test.bp` "metadata: a child with a title gets the parent's template exactly once"
+- [x] a child with one image replaces the parent's three, and the result has length one — `test/metadata_test.bp` "metadata: a list — a non-empty child replaces wholesale, an empty one inherits"
+- [x] a child with no images inherits the parent's list unchanged — `test/metadata_test.bp` "metadata: a list — …"
+- [x] `openGraph.title` from the child and `openGraph.siteName` from the parent survive the same merge — `test/metadata_test.bp` "metadata: a nested record merges field by field"
+- [x] merging three levels applies the template once, not twice — `test/metadata_test.bp` "metadata: three levels apply the template once, not twice"
 
 ### Step 3 — `renderHead`
 
 **Acceptance:**
-- [ ] the tag order is the fixed order in *Mechanism*, and two renders of equal metadata are
-      byte-identical
-- [ ] a `""` field emits no tag at all
-- [ ] a title containing `<` is escaped with `escape.html`; a description containing `"` is escaped
-      with `escape.attribute`
-- [ ] `renderHead(emptyMetadata())` is `""`
-- [ ] one `<meta property="og:image">` per image, in list order
+- [x] the tag order is the fixed order in *Mechanism*, and two renders of equal metadata are
+      byte-identical — `test/metadata_test.bp` "metadata: the root layout's head, in the fixed order", "…two renders of equal metadata are byte-identical"
+- [x] a `""` field emits no tag at all — `test/metadata_test.bp` "metadata: the root layout's head…" (no `og:title` line for the empty field)
+- [x] a title containing `<` is escaped with `escape.html`; a description containing `"` is escaped
+      with `escape.attribute` — `test/metadata_test.bp` "metadata: markup in a title and a quote in a description are escaped"
+- [x] `renderHead(emptyMetadata())` is `""` — `test/metadata_test.bp` "metadata: emptyMetadata has every string empty…"
+- [x] one `<meta property="og:image">` per image, in list order — `test/metadata_test.bp` "metadata: the root layout's head, in the fixed order"
 
 ### Step 4 — `Viewport`, `renderViewport`, `mergeViewport`
 
 **Acceptance:**
-- [ ] `Viewport` is a separate record and a separate export; it is not a field of `Metadata`
-- [ ] `mergeViewport` uses the same `pick` rule
-- [ ] `renderViewport(Viewport(width: "device-width", initialScale: "1", themeColor: "#0b0b0b"))`
-      emits both tags, escaped
-- [ ] an empty `Viewport` renders `""`
+- [x] `Viewport` is a separate record and a separate export; it is not a field of `Metadata` — `metadata.bp`
+- [x] `mergeViewport` uses the same `pick` rule — `test/metadata_test.bp` "metadata: the viewport merge picks the child colour and keeps the parent width"
+- [x] `renderViewport(Viewport(width: "device-width", initialScale: "1", themeColor: "#0b0b0b"))`
+      emits both tags, escaped — `test/metadata_test.bp` "metadata: the viewport renders both tags"; escaped: "…an empty viewport renders nothing"
+- [x] an empty `Viewport` renders `""` — `test/metadata_test.bp` "metadata: an empty viewport renders nothing"
 
 ### Step 5 — The export contract, written down
 
@@ -273,12 +274,12 @@ pub fn applyTemplate(template: string, title: string) -> string {
 | `viewport()` / `generateViewport(params)` | as above | merged independently of `Metadata` |
 
 **Acceptance:**
-- [ ] the table is in `repository/jhonstart/docs.md` and front 30's README cites it
-- [ ] the merge rule table from *Mechanism* is in the same place
+- [x] the table is in `repository/jhonstart/docs.md` and front 30's README cites it — `docs.md` § *Metadata*; front 30's *Depends on* cites 32's `renderHead` / `mergeMetadata`
+- [x] the merge rule table from *Mechanism* is in the same place — `docs.md` § *Metadata*
 - [ ] `pub mod metadata;` and the `metadata.bp` `files` entry are handed to front 94, which owns
       `src/root.bp` and the `files` list; this front edits neither
-- [ ] front 66's README cites the `openGraph.images` path convention, and this README links to it
-- [ ] `repository/jhonstart/AGENTS.md` updated in the same commit
+- [x] front 66's README cites the `openGraph.images` path convention, and this README links to it — 66 § *Image URLs carry a content hash*; linked from § *What this front does not own*
+- [x] `repository/jhonstart/AGENTS.md` updated in the same commit — jhonstart `7b9e0fc`
 
 ## Examples
 
@@ -334,12 +335,12 @@ payload, and asserting that is front 26's and front 68's, not this front's.
 ## Definition of done
 
 - [ ] `metadata.bp` in the build tree, its `root.bp` and `files` lines handed to front 94
-- [ ] the merge rule table is implemented field for field and tested row for row
-- [ ] every rendered value passes through front 01's `escape.html` / `escape.attribute`; this front
-      hand-rolls no escaping
-- [ ] `Viewport` is a separate export and merges independently
-- [ ] `sitemap`, `robots`, `manifest` and `opengraph-image` are **not** in this file, and the README
-      names front 66
-- [ ] the two reference gaps are recorded under *Reference gaps* with their upstream URLs
-- [ ] all three language gaps appear in a `specs/1.0.10-beta/` spec
-- [ ] the front's tests are green on its assigned target
+- [x] the merge rule table is implemented field for field and tested row for row — `test/metadata_test.bp`
+- [x] every rendered value passes through front 01's `escape.html` / `escape.attribute`; this front
+      hand-rolls no escaping — `metadata.bp` `titleTag` / `metaName` / `metaProperty` / `linkRel`
+- [x] `Viewport` is a separate export and merges independently — `mergeViewport`
+- [x] `sitemap`, `robots`, `manifest` and `opengraph-image` are **not** in this file, and the README
+      names front 66 — `metadata.bp` header names front 66
+- [x] the two reference gaps are recorded under *Reference gaps* with their upstream URLs
+- [x] all three language gaps appear in a `specs/1.0.10-beta/` spec — `language-gaps.md` rows "`pub val` of a user record type is unexercised", "No assignment to a `self` field", "Declared parameter defaults…"
+- [x] the front's tests are green on its assigned target — 16 blocks on both rows

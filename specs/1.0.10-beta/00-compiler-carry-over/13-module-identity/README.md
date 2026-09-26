@@ -622,7 +622,10 @@ Touches two literals plus two test assertions (`codegen/tests/comptime_module.zi
       the file, because the owning module's path does not reach `buildModule`: the evaluator is
       handed the `FnDecl` and the template registry of `src/comptime.zig` records no owner, so
       threading it needs `env.TemplateEvalCtx` in `src/comptime/env.zig` and `src/comptime.zig`
-      — **01's, beyond this front's carve-out** (`template_eval.zig`, `comptime_owner`'s comment)
+      — **01's, beyond this front's carve-out** (`template_eval.zig`, `comptime_owner`'s comment).
+      Re-measured at compiler `90ef5afd`: unchanged. The owner is the *declaring* module, which an
+      imported template's registry entry must carry too, and the evaluation site is `infer.zig`'s
+      (in flight on `front/01-checker`), so it is not a small change
 - [x] Re-evaluating an identical body still yields the identical atom (content-addressing intact)
       — the Wyhash of the generated code is the hash segment, unchanged (`template_eval.zig` test
       at `buildModule`)
@@ -835,9 +838,10 @@ tagged tuple in one mechanical commit.
       — decision 23 is newer than policy 3 § 2.2 and wins (`src/codegen/AGENTS.md` § erlang)
 - [x] Two types in one file both declaring `greet/1` compile and run on erlang and beam —
       `tests/language/modules/method_name_collision`
-- [ ] A behavior consumed by three modules has exactly **one** emitted copy of its associated fn —
-      **not under decision 23**: the copy per consumer is what "emit nothing for a behavior" means;
-      the one-copy shape needs the `<package>@<path>@@<Behavior>` module the decision declined. Reopen with the decision
+- [x] ~~A behavior consumed by three modules has exactly **one** emitted copy of its associated fn~~ —
+      **superseded by [decision 23](../../../1.0.5-beta/decisions-taken.md#23-does-a-behavior-need-an-atom)**:
+      the copy per consumer is what "emit nothing for a behavior" means; the one-copy shape needs
+      the `<package>@<path>@@<Behavior>` module the decision declined. Reopen with the decision
 - [x] The 188 re-recorded snapshots classified one by one — which gained a module, which turned a
       local call into a `call_ext`; **no `RUN LOG` should change**, and one that does is a bug —
       25 erlang + 26 beam cells moved (a `type` with no bodied method emits no unit, so the 94/94

@@ -69,7 +69,7 @@ item stands is `status.md`'s.
 | [C-29](./21-effect-chain/README.md) | The effect chain: `@Context<Base>` as the owner marker only; one grant of `use` (decisions 89 and 90 revoked); three generator wrappers over one `YieldStep` (`Iterator`, `Iterable`, `IteratorStep`, `Yield`, `C`, `R` leave); `getContext`; the jhonstart sweep (36 annotations, 24 wrappers) — landed on `feat`, its spelling re-cut by C-32 | decisions [102](../decisions-taken.md#102-contextbase-is-the-context-owner-marker-only-use-answers-usec-t-or-componentt), [103](../decisions-taken.md#103-a-generators-prefix-is-the-level-it-extends-generatort--resultgeneratort-e--futuregeneratort-e), [104](../decisions-taken.md#104-only-use-grants-use--decisions-89-and-90-revoked), [108](../decisions-taken.md#108-getcontex--getcontext); questions 91–93, 97, 99 | **critical** | every hook, component and generator; C-30 (an annotated `loop` answers its wrapper); jhonstart's 36 + 24 sites; ≈ 400 source lines, ≈ 250 snapshots | `21-effect-chain/` (spec); after C-28, one `EffectKind` value per commit |
 | [C-30](./22-loops/README.md) | Loops: `loop { }` · `while (…) { }` · `for (…) { x -> }` · `for await`; the annotated `loop { … }` as a lazy generator expression (`iter loop` / `stream loop` under C-32); `yield` / `break v` only in a generator scope; no loop answers `[v]`; the rakun (231 `loop (`, 2 `break v`) and jhonstart (12) rewrite | decision [105](../decisions-taken.md#105-three-loop-keywords-and-generator-loop-is-a-generator-scope); `docs.md:1400`, `:1014`; supersedes C-06's decision-52/55 rows | **high** | every loop in every library; C-06's `run/loop_*` cells; `while` as a lexer keyword | `22-loops/` (spec); after C-29 |
 | [C-31](./23-std-purity/README.md) | Std purity: a pure root · `io/` · `testing/`; `collections`, `hash`, `encoding` fused; a root module refused from importing `io/`; the embedded std following `pub mod io;`; the import tree `import {a: {b: {c}}, x.y.z, e.t.r*}` with the leaf bound and `as` honoured | decisions [106](../decisions-taken.md#106-std-in-three-categories-a-pure-root-io-and-testing), [107](../decisions-taken.md#107-import-a-dotted-path-and-a-braced-group-are-one-tree-and-only-the-leaf-enters-scope); `language-gaps.md`'s alias row; decision 71 amended in path | **high** | every `from "std"` line; the LSP's project graph; `build.zig`'s `stdPkgFilesFromRoot` | `23-std-purity/` (spec); after C-29 and after `01-std`'s fronts 01/02/03 merge |
-| [C-32](./24-effects-by-return/README.md) | Effects by return type: the wrapper in the return is the annotation (the six effect annotations leave); `@Task<T>` replaces the fallible future and never fails; only `@Result` fails (`@Task<@Result<T, E>>`, `@Iterator<@Result<T, E>>`); `@Iterator<T>` / `@Stream<T>` over `YieldStep<T>`, iterator or factory; `async { }`; `iter` / `stream` before `loop` / `while` / `for`; the host rows; no compatibility mode; the codemod `botopink migrate effects`; the library sweeps and the spec examples | decisions [118–127](../decisions-taken.md#118-the-return-type-is-the-annotation); supersedes parts of 95, 98, 102–105, 114, 117 | **critical** | every effectful body in the compiler, std and the libraries; the examples of 60 library fronts and `02-packaging`; ≈ 885 source, ≈ 160 std, ≈ 930 snapshot matches | `24-effects-by-return/` (spec, with `guide.md`); after C-29 merges or closes and C-30 (landed); alone among the surface fronts |
+| [C-32](./24-effects-by-return/README.md) | Effects by return type: the wrapper in the return is the annotation (the six effect annotations leave); `@Task<T>` replaces the fallible future and never fails; only `@Result` fails (`@Task<@Result<T, E>>`, `@Iterator<@Result<T, E>>`); `@Iterator<T>` / `@Stream<T>` over `YieldStep<T>`, iterator or factory; `async { }`; `iter` / `stream` before `loop` / `while` / `for`; the host rows; no compatibility mode and no codemod (decision 131); the library sweeps and the spec examples | decisions [118–127](../decisions-taken.md#118-the-return-type-is-the-annotation); supersedes parts of 95, 98, 102–105, 114, 117 | **critical** | every effectful body in the compiler, std and the libraries; the examples of 60 library fronts and `02-packaging`; ≈ 885 source, ≈ 160 std, ≈ 930 snapshot matches | `24-effects-by-return/` (spec, with `guide.md`); after C-29 merges or closes and C-30 (landed); alone among the surface fronts |
 | [C-33](./25-gate-perf/README.md) | Gate performance: the same checks in less wall clock — the shell runners (`tests/language/run.sh`, `scripts/check-docs.sh`) on `botopink-lib-test`'s bounded pool, the independent stages of `scripts/gate.sh` side by side with each stage's output one block in order, then `test-libs`' CPU and `zig build test`'s cold runtime cache | `00 · gate-perf` step 1 (the lib-test pool); decision 67 (no check skipped to be fast) | high | every landing's gate; nothing in the language | `25-gate-perf/` (spec); runners and scripts only, beside every compiler front |
 
 **What the 1.0.9 gaps map to.** `xs[0]` on the BEAM → C-02 · declared defaults never applied → C-04 ·
@@ -184,7 +184,8 @@ re-record, no `AGENTS.md`.
 **Acceptance:**
 - [ ] `import { erlang } from "std"` then `erlang.self()` runs under `erl` on erlang and beam — a fixture
       whose RUN LOG is the value run, not the emitted text
-- [ ] 17 step 3b's guarded-init and owner shapes byte-compared and re-run under `erl`
+- [x] 17 step 3b's guarded-init and owner shapes ~~byte-compared and~~ re-run under `erl` — 17's
+      box: the shapes are layer 2's, run by `run/beam_memory_*` on erlang and beam
 - [ ] `out/erl/std@beam.erl` exports the ten primitives; the same on beam through the wired helper
 - [ ] the bare-import route (`import { self } from "std/erlang"` → `undefined` on commonJS, per
       `language-gaps.md`) measured on each backend; fixed here if it is the same predicate, otherwise
@@ -265,8 +266,9 @@ each backend.
 **Depends on:** nothing; 03's tuple/`..`/type-pattern reading (C-07) shares `beam_asm.zig`'s pattern
 code — sequence them.
 **Acceptance:**
-- [ ] `run/case_range_value.bp`'s five probes answer per decision 53 on erlang, beam and wasm; the
-      three lines gone
+- [x] `run/case_range_value.bp`'s five probes answer per decision 53 on erlang, beam and wasm; the
+      three lines gone — re-verified 2026-09-26 on `front/02-03-erlang-beam`: the cell passes on
+      erlang and beam (`run.sh --only`), no `case_range_value` line is left in `expected-failures.txt`
 - [ ] every moved RUN LOG verified by running the program; the header recounted from the file; the
       `KNOWN` notes in `src/codegen/tests/**` that explain the decision-55 cells deleted by C-30 with
       the cells they explain
@@ -286,14 +288,17 @@ model fix); 04 step 2 D2/D3 and 05 step 2 D1–D3, which no commit names. F2–F
 **Partial work:** none.
 **Depends on:** C-01 for anything that tests a named type; C-06 shares beam's pattern code.
 **Acceptance:**
-- [ ] `run/tuple_print.bp` passes on erlang (F1); `run/type_identity_{unknown,union}.bp` and
-      `test/case_unknown.bp` pass on erlang after C-01
+- [x] `run/tuple_print.bp` passes on erlang (F1); `run/type_identity_{unknown,union}.bp` and
+      `test/case_unknown.bp` pass on erlang after C-01 — re-verified 2026-09-26 (the two identity
+      cells live under `test/`): 11 tests of the five cells pass on erlang, and `run/tuple_print`,
+      `print_formatter`, `display_print`, `type_identity_print`, `type_identity_equality`,
+      `case_values`, `case_range_value` pass on beam
 - [ ] every `tests/language` cell naming §2, §4, §5, §6 runs by hand on beam and matches its `.out`,
       each with a beam fixture whose RUN LOG is the value run; the tuple/`..`/type-pattern fixtures
       02 added have beam and wasm twins
 - [ ] §4.1's truth table answered by each §4.2 form on erlang and beam; §11's "erlang: nothing" pinned
-- [ ] 02 step 7 settled: `test/string_case_conversion.bp` run on erlang — the line deleted or the
-      merge's claim corrected
+- [x] 02 step 7 settled: `test/string_case_conversion.bp` run on erlang — the line deleted (compiler
+      `31b5d2bf`; the host spelling resolves to the method it spells, `decisions-pending.md` 0203-a)
 
 ## C-08 — The parser gaps that are inference-side
 
@@ -424,7 +429,10 @@ form already in `format/AGENTS.md` — i.e. both planned commits in one tree. `t
       breaks); one that does not puts every call on its own line, `+4`, never aligned under the
       receiver; a hand-broken chain that fits is joined; `assertFormat`/`assertIdempotent`/`assertLossless`
       cases; the per-tree movement measured against the 44 predicted; the other eight constructs pinned
-- [ ] the comment column recorded and printed; rakun `runtime.bp:13` round-trips
+- [x] the comment column recorded and printed; rakun `runtime.bp:13` round-trips — compiler `0f0be511`
+      (`Doc.markColumn` / `alignToMark`; a top-level comment records its `loc`); rakun's `dcf1938` revision
+      round-trips at lines 10-15. And the argument list is enabled with the constructs that enclose it
+      (`7146d402`, 16's `decisions-pending.md` 16-a)
 - [ ] gate green, reported verbatim
 
 ## C-13 — The optional `;`, and the braced block's trailing `;`
@@ -442,10 +450,14 @@ want, and the formatter cannot pick a side until the parser accepts both.
 **Partial work:** the patch.
 **Depends on:** nothing; strictly ordered inside (parser → printer → migration).
 **Acceptance:**
-- [ ] the parser accepts `if (…) { … }` with and without `;`, no snapshot re-recorded (strictly accepting)
-- [ ] the formatter prints the braced form without `;`, idempotent, lossless
+- [x] the parser accepts `if (…) { … }` with and without `;`, no snapshot re-recorded (strictly accepting)
+      — compiler `a688bfb5`, `Parser.isBracedBlockStmt` (a loop and a `case` too; the closing brace is the test)
+- [x] the formatter prints the braced form without `;`, idempotent, lossless — compiler `6c33c6f4`
 - [ ] the 245 sites migrated one tree per commit (12, `libs/std`, then 09's five siblings), each tree's
-      cells green before and after; `docs.md`'s row moved from "decided, not implemented"
+      cells green before and after; `docs.md`'s row moved from "decided, not implemented" — **the
+      compiler's trees done** (`7af79f44`: `libs/std`, `examples/`, the bundled libraries, `docs.md`'s
+      fences, 213 lines; `docs.md`'s row now says "optional"); left: `tests/language` 275, rakun 454,
+      jhonstart 40, erika 28, onze 1 — `16-formatter/c13-migrate.py`; then the parser refuses the `;`
 
 ## C-14 — Decision 8 in the sources
 
@@ -644,8 +656,13 @@ each costed, one recommended.
 **Partial work:** the branch.
 **Depends on:** C-01 (the emitter is 13's until then).
 **Acceptance:**
-- [ ] a spec under this milestone with the measurement, the options and a recommendation; the branch
-      deleted or restarted from
+- [x] superseded by landing it (compiler `8333aaab`, `front/02-03-erlang-beam`): the structural block
+      — nothing in the compiler read Erlang — went away with front 14's `comptime/runtime/wat/erl_parse.zig`
+      and `comptime/runtime/beam/lower.zig`, which BR5 reuses; no beam snapshot carries
+      `'__bp_erl_eval'`, the refused-construct residue and the re-measured cost are in
+      `src/codegen/beam/AGENTS.md`, the choice in `decisions-pending.md` 0203-b. The parked
+      `wip/br5-beam-templates` branch (an 836-line second Erlang parser) is obsolete — the maintainer's
+      to delete
 
 ## C-25 — The unowned residuals
 

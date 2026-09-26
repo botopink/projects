@@ -168,12 +168,12 @@ an enum section cannot be constructed by any spelling — verified against the r
 builtin-typed fields, and the name keeps the path it would have had, flattened.
 
 **Acceptance:**
-- [ ] The seven preset leaves return the exact strings above, commas and spaces included.
-- [ ] `.Transition.Base` lists eleven properties in the reference's order; a test asserts the whole
-      string, not a `contains`.
-- [ ] `.Transition.None` returns one declaration, not three.
-- [ ] `transitionTokenToCss(t, th)` is exhaustive with no `_` arm and takes the theme per contract
-      `§ 4a`, even though only its `Ease` arms read it.
+- [x] The seven preset leaves return the exact strings above, commas and spaces included. — held: `Transition.None — one declaration…`, `Transition.Base — the eleven properties…`, `Transition — the five narrow presets, whole, with their shared tail`
+- [x] `.Transition.Base` lists eleven properties in the reference's order; a test asserts the whole
+      string, not a `contains`. — held: `Transition.Base — the eleven properties of the bare transition utility`
+- [x] `.Transition.None` returns one declaration, not three. — held: `Transition.None — one declaration, and none of the preset tail`
+- [x] `transitionTokenToCss(t, th)` is exhaustive with no `_` arm and takes the theme per contract
+      `§ 4a`, even though only its `Ease` arms read it. — held: `emilia.bp:transitionTokenToCss` — no `_` arm, `th: Theme`
 
 ### Step 2 — `transition-behavior`
 
@@ -186,7 +186,7 @@ builtin-typed fields, and the name keeps the path it would have had, flattened.
 not match, which is exactly the kind of row that gets written from memory and gets written wrong.
 
 **Acceptance:**
-- [ ] `transitionTokenToCss(.Behavior.Discrete, th)` returns `transition-behavior:allow-discrete`.
+- [x] `transitionTokenToCss(.Behavior.Discrete, th)` returns `transition-behavior:allow-discrete`. — held: `Transition.Behavior — transition-discrete emits allow-discrete, not discrete`
 
 ### Step 3 — `duration`, `ease`, `delay`
 
@@ -221,12 +221,12 @@ pairs a preset with `Ease.Out` emits `var(--ease-out)` twice — harmless, and t
 wins, which is the intent.
 
 **Acceptance:**
-- [ ] All nine duration steps and all nine delay steps carry the `ms` unit, `0ms` included.
-- [ ] `.Transition.Ease.Linear` emits the keyword; the other three emit `var(--ease-…)`, and no
-      `cubic-bezier(` literal appears in any `Ease` arm.
-- [ ] `[.Transition.Colors, .Transition.Duration.300]` produces the preset's three declarations
+- [x] All nine duration steps and all nine delay steps carry the `ms` unit, `0ms` included. — held: `Transition.Duration — the nine steps of § 15.3…`, `Transition.Delay — …`, `regression — every timed declaration carries its ms unit`
+- [x] `.Transition.Ease.Linear` emits the keyword; the other three emit `var(--ease-…)`, and no
+      `cubic-bezier(` literal appears in any `Ease` arm. — held: `Transition.Ease — one CSS keyword and three theme references`, `…no arm resolves a cubic-bezier…`
+- [x] `[.Transition.Colors, .Transition.Duration.300]` produces the preset's three declarations
       followed by `transition-duration:300ms` in `Rule.declarations` — the override is last and
-      therefore wins.
+      therefore wins. — held: `composition — the README's row: Colors then Duration.300`
 
 ### Step 4 — `Animate`
 
@@ -254,20 +254,20 @@ front 47 treats `sr-only` — read from the upstream page in one sitting, pasted
 must be ticked before the front lands, and asserted in the test file as literals.
 
 **Acceptance:**
-- [ ] `animateTokenToSheet(.Pulse, th)` returns a `Sheet` whose rule declaration is
-      `animation:var(--animate-pulse)` and whose `blocks` carries one `@keyframes pulse` block.
-- [ ] `.Animate.None` returns a `Sheet` with an empty `blocks` list, and so does the top-level
-      `Token.AnimateRaw` arm — a token that names no built-in keyframes hoists none.
-- [ ] `Token.AnimateRaw(value: "fade 300ms ease-out")` and
+- [x] `animateTokenToSheet(.Pulse, th)` returns a `Sheet` whose rule declaration is
+      `animation:var(--animate-pulse)` and whose `blocks` carries one `@keyframes pulse` block. — held: `Animate — the four built-ins are a reference plus the theme's keyframes block`
+- [x] `.Animate.None` returns a `Sheet` with an empty `blocks` list, and so does the top-level
+      `Token.AnimateRaw` arm — a token that names no built-in keyframes hoists none. — held: `Animate.None and AnimateRaw — a declaration, and an empty blocks list`
+- [x] `Token.AnimateRaw(value: "fade 300ms ease-out")` and
       `Token.TransitionProperty(value: "width")` **construct** — a test builds both, which is the
-      check that would have failed against the nested spelling.
-- [ ] No section in this front's `tokens.bp` block contains a payload leaf.
-- [ ] Two `Animate` tokens naming the same animation hoist **one** block, not two: `blocks` is
-      deduplicated by header, which front 56 owns and this front asserts.
-- [ ] `animateTokenToSheet` is exhaustive over six leaves with no `_` arm.
-- [ ] The four `--animate-*` theme entries are contributed by this front and named in its `TODO.md`.
-- [ ] The upstream page has been read, the date recorded in the dispatcher comment, and the
-      `TODO.md` checkbox ticked.
+      check that would have failed against the nested spelling. — held: `TransitionProperty and AnimateRaw — both construct, qualified and through the wrapper`
+- [x] No section in this front's `tokens.bp` block contains a payload leaf. — held: `tokens.bp` front 44 block — the two payloads are top-level
+- [x] Two `Animate` tokens naming the same animation hoist **one** block, not two: `blocks` is
+      deduplicated by header, which front 56 owns and this front asserts. — held (shape: `Sheet.blocks` keeps both; `renderDocument`'s `dedupeBlocks` renders one): `Animate — two tokens naming one animation hoist one block, not two`
+- [x] `animateTokenToSheet` is exhaustive over six leaves with no `_` arm. — held (shape: five leaves; `AnimateRaw` is a top-level arm): `emilia.bp:animateTokenToSheet`
+- [x] The four `--animate-*` theme entries are contributed by this front and named in its `TODO.md`. — held (shape: already in front 54's `animateEntries()` inside `defaultTheme()`; this front cites them, AGENTS.md front 44)
+- [x] The upstream page has been read, the date recorded in the dispatcher comment, and the
+      `TODO.md` checkbox ticked. — held (shape: the bodies live in front 54's `keyframeEntries()`, which `animateTokenToSheet` reads; the upstream `theme.css` URL and the 2026-09-26 read are in the comment above it, byte-equal once whitespace is removed; no `TODO.md`)
 
 ### Step 5 — two new arms in `tokenToSheet`
 
@@ -289,10 +289,10 @@ through `animateTokenToSheet`: a custom animation names keyframes this front doe
 hoists no block.
 
 **Acceptance:**
-- [ ] The four arms sit between front 43's arm and front 45's, in front-number order.
-- [ ] The `Animate` arm is the only arm in this front that does not go through `declSheet`, and the
-      `emilia.bp` banner says why in one line.
-- [ ] `tokenToSheet` still has no `_` arm.
+- [x] The four arms sit between front 43's arm and front 45's, in front-number order. — held (shape: front 43 has no arm; the four sit after front 41's and before front 45's)
+- [x] The `Animate` arm is the only arm in this front that does not go through `declSheet`, and the
+      `emilia.bp` banner says why in one line. — held: `emilia.bp:tokenToSheet` comment above the `Animate` arm
+- [x] `tokenToSheet` still has no `_` arm. — held: `emilia.bp:tokenToSheet` has no `_` arm
 
 ## Examples
 
@@ -354,18 +354,18 @@ What the tests assert:
 
 ## Definition of done
 
-- [ ] `Transition` and `Animate` exist as top-level sections, fenced by a `front 44` banner in
-      `tokens.bp` and appended after front 43's block.
-- [ ] `transitionTokenToCss`, `animateTokenToSheet` and their sub-dispatchers are fenced by a
+- [x] `Transition` and `Animate` exist as top-level sections, fenced by a `front 44` banner in
+      `tokens.bp` and appended after front 43's block. — held (shape: front 43 has no block; appended after front 41's): `tokens.bp` front 44 banner
+- [x] `transitionTokenToCss`, `animateTokenToSheet` and their sub-dispatchers are fenced by a
       `front 44` banner in `emilia.bp`, appended after front 43's block, and both take `th: Theme`
-      per contract `§ 4a`.
-- [ ] Two arms added to `tokenToSheet`, in front-number order — `Transition` through `declSheet`,
-      `Animate` directly — and no other line of that `case` moved.
-- [ ] The four `--animate-*` and three `--ease-*` theme entries are contributed to front 54 and no
-      literal for them appears in a dispatcher.
-- [ ] The keyframes gate is closed: upstream page read, date recorded, `TODO.md` ticked, bodies
-      asserted as literals.
-- [ ] `repository/emilia/AGENTS.md` records the two new sections, the `…TokenToSheet` exception and
-      the keyframes gate.
-- [ ] The front's tests are green on its assigned target — here, both `commonJS` and `erlang`,
-      because comptime output must not differ between them.
+      per contract `§ 4a`. — held (shape: appended after front 41's block, front 43 absent): `emilia.bp` front 44 banner; both dispatchers take `th: Theme`
+- [x] Two arms added to `tokenToSheet`, in front-number order — `Transition` through `declSheet`,
+      `Animate` directly — and no other line of that `case` moved. — held (shape: four arms — the two sections and the two `Raw` variants): `emilia.bp:tokenToSheet`
+- [x] The four `--animate-*` and three `--ease-*` theme entries are contributed to front 54 and no
+      literal for them appears in a dispatcher. — held (shape: `--animate-*` were already front 54's; `--ease-*` via `transitionEntries()`, values PROVISIONAL): `regression — no leaf of this front resolves a timing function or an animation`
+- [x] The keyframes gate is closed: upstream page read, date recorded, `TODO.md` ticked, bodies
+      asserted as literals. — held: same comment in `theme.bp` above `keyframeEntries()`; the bodies are asserted as literals
+- [x] `repository/emilia/AGENTS.md` records the two new sections, the `…TokenToSheet` exception and
+      the keyframes gate. — held: AGENTS.md front 44 section ("THE KEYFRAMES GATE … WAS ALREADY CLOSED BY FRONT 54")
+- [x] The front's tests are green on its assigned target — here, both `commonJS` and `erlang`,
+      because comptime output must not differ between them. — held: `modules/emilia` 569/569 on commonJS and erlang (AGENTS.md § Test surface); `determinism — a fixed transitions list hashes to the same class on both targets`

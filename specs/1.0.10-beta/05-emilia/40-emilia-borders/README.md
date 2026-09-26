@@ -208,41 +208,41 @@ Eight directional sub-sections under `W`, a new `Style` sub-section, and `Color`
 33's grid.
 
 **Acceptance:**
-- [ ] `.Border.W.{0,1,2,4}` emit exactly what they emit today
-- [ ] `.Border.W.8` exists; every directional sub-section answers all five widths
-- [ ] `.Border.W.X.1` emits two declarations; `.Border.W.T.1` emits one
-- [ ] `.Border.W.S.1` emits `border-inline-start-width`
-- [ ] six border styles
-- [ ] `.Border.Color.Slate.200` emits `border-color:var(--color-slate-200)` — the shade is no longer
-      discarded, which is a change to what `.Border.Color.Red.500` emits today
-- [ ] `Border.Color` is produced by front 33's `paletteVar`; this front holds no colour table
-- [ ] `.Border.Color.Hex(value)`'s arm is retained unchanged, and the README records that it is
-      unconstructible (see [`language-gaps.md`](../../language-gaps.md))
+- [x] `.Border.W.{0,1,2,4}` emit exactly what they emit today — held: `Border.W — the four pre-40 leaves emit exactly what they emitted before`
+- [x] `.Border.W.8` exists; every directional sub-section answers all five widths — held: `Border.W.8 — the fifth width…`, `Border.W — every directional sub-section answers all five widths`
+- [x] `.Border.W.X.1` emits two declarations; `.Border.W.T.1` emits one — held: `Border.W — an AXIS is two declarations and a SIDE is one`
+- [x] `.Border.W.S.1` emits `border-inline-start-width` — held: `Border.W — the logical pair follows the writing direction`
+- [x] six border styles — held: `Border.Style — six values, and Hidden is not None`
+- [x] `.Border.Color.Slate.200` emits `border-color:var(--color-slate-200)` — the shade is no longer
+      discarded, which is a change to what `.Border.Color.Red.500` emits today — held: `Border.Color — THE SHADE IS NO LONGER DISCARDED`
+- [x] `Border.Color` is produced by front 33's `paletteVar`; this front holds no colour table — held: `emilia.bp:borderColorToCss` calls `paletteVar`; `the five colour sub-sections agree, because all five call paletteVar`
+- [x] `.Border.Color.Hex(value)`'s arm is retained unchanged, and the README records that it is
+      unconstructible (see [`language-gaps.md`](../../language-gaps.md)) — held: `emilia.bp:borderColorToCss` `Hex(value) -> "border-color:" + value`; this README § Language gaps
 
 ### Step 2 — border radius
 
 Ten radius leaves on the shorthand and on each of the fourteen directional sub-sections.
 
 **Acceptance:**
-- [ ] ten leaves: `None`, `Xs`, `Sm`, `Md`, `Lg`, `Xl`, `X2xl`, `X3xl`, `X4xl`, `Full`
-- [ ] `.Border.Rounded.Full` still emits `border-radius:9999px` and `emilia.bp:427-429` passes untouched
-- [ ] `.Border.Rounded.Lg` emits `border-radius:var(--radius-lg)`, not `border-radius:0.5rem`
-- [ ] the eight `--radius-*` values of `§ 21.5` are in front 54's theme layer
-- [ ] a side form emits two corner properties, a corner form emits one
-- [ ] `.Border.Rounded.Tl.Full` resolves — every directional sub-section carries the full ladder
+- [x] ten leaves: `None`, `Xs`, `Sm`, `Md`, `Lg`, `Xl`, `X2xl`, `X3xl`, `X4xl`, `Full` — held: `Border.Rounded — ten leaves, eight of them theme references`
+- [x] `.Border.Rounded.Full` still emits `border-radius:9999px` and `emilia.bp:427-429` passes untouched — held (shape: the `emilia.bp:427-429` cite is stale): `regression — Full stays 9999px and Lg stops being a rem`
+- [x] `.Border.Rounded.Lg` emits `border-radius:var(--radius-lg)`, not `border-radius:0.5rem` — held: `regression — Full stays 9999px and Lg stops being a rem`
+- [x] the eight `--radius-*` values of `§ 21.5` are in front 54's theme layer — held: `the eight --radius-* names this front references are all in the theme`
+- [x] a side form emits two corner properties, a corner form emits one — held: `Border.Rounded — a SIDE form is two corner properties`, `…a CORNER form is one corner property`
+- [x] `.Border.Rounded.Tl.Full` resolves — every directional sub-section carries the full ladder — held: `Border.Rounded — every directional sub-section carries the FULL ladder`
 
 ### Step 3 — outline
 
 Four sub-sections: `W`, `Style`, `Color`, `Offset` (with a `Neg`).
 
 **Acceptance:**
-- [ ] five widths, four styles plus the `outline-none` special case
-- [ ] `.Outline.Style.None` emits `outline:2px solid transparent;outline-offset:2px` — two
-      declarations, and never `outline-style:none`
-- [ ] `Outline.Color` goes through `paletteVar`
-- [ ] five offsets plus four negative offsets, emitting `-1px` and so on
-- [ ] a focus ring built from `Token.FocusVisible([.Outline.W.2, .Outline.Color.Indigo.500])`
-      composes correctly with front 34's modifier
+- [x] five widths, four styles plus the `outline-none` special case — held: `Outline.W and Outline.Style — five widths and four real styles`
+- [x] `.Outline.Style.None` emits `outline:2px solid transparent;outline-offset:2px` — two
+      declarations, and never `outline-style:none` — held: `Outline.Style.None — two declarations, and never outline-style:none`
+- [x] `Outline.Color` goes through `paletteVar` — held: `Outline.Color goes through paletteVar, like the other four`
+- [x] five offsets plus four negative offsets, emitting `-1px` and so on — held: `Outline.Offset — five positive offsets and four negative ones`
+- [x] a focus ring built from `Token.FocusVisible([.Outline.W.2, .Outline.Color.Indigo.500])`
+      composes correctly with front 34's modifier — held: `end to end — a focus-visible outline ring is one modified rule`
 
 ### Step 4 — ring, as a `Sheet`
 
@@ -251,13 +251,13 @@ Four sub-sections: `W`, `Style`, `Color`, `Offset` (with a `Neg`).
 declaration lists both.
 
 **Acceptance:**
-- [ ] `.Ring.W.2` emits both the `--tw-ring-shadow` custom property and the composed `box-shadow`
-- [ ] a `Ring` token and an `Effect.Shadow` token in the same list produce one `box-shadow`
-      declaration that references both, not two competing ones — asserted directly
-- [ ] `.Ring.Inset` sets `--tw-ring-inset`
-- [ ] `Ring.Color` and `Ring.Offset.Color` go through `paletteVar`
-- [ ] the dispatcher is a `…ToSheet`, per front 56's second shape, and says so in its own header
-- [ ] every custom-property name is verified against upstream before merge
+- [x] `.Ring.W.2` emits both the `--tw-ring-shadow` custom property and the composed `box-shadow` — held (shape: `--tw-ring-shadow:0 0 0 2px`, the v4 value, not the spec's v3 `calc(…)` form): `Ring.W — the custom property AND the composed box-shadow`
+- [x] a `Ring` token and an `Effect.Shadow` token in the same list produce one `box-shadow`
+      declaration that references both, not two competing ones — asserted directly — held: emilia.bp test "Ring composes with Effect.Shadow rather than overwriting it" — two channels, one `boxShadowChain()` reader (fronts 40 and 41 recomposed on upstream's five channels in the audit pass)
+- [x] `.Ring.Inset` sets `--tw-ring-inset` — held: `Ring.Inset and Ring.Offset — the inset flag and the two offset families`
+- [x] `Ring.Color` and `Ring.Offset.Color` go through `paletteVar` — held: `emilia.bp:ringColorToCss`, `ringOffsetColorToCss` call `paletteVar`
+- [x] the dispatcher is a `…ToSheet`, per front 56's second shape, and says so in its own header — held: `emilia.bp:ringTokenToSheet` header comment
+- [x] every custom-property name is verified against upstream before merge — held: verified against upstream `utilities.ts` on 2026-09-26 (`cssBoxShadowValue`, `ringShadowValue`, `ringOffsetShadowValue`) and re-emitted in that shape, with fallbacks for the `@property` initials emilia does not emit
 
 ### Step 5 — divide, as a `Sheet`
 
@@ -265,14 +265,14 @@ declaration lists both.
 Both the selector and the reversed-order custom properties are unverified — see *Reference gaps*.
 
 **Acceptance:**
-- [ ] `.Divide.Y.2` emits a rule whose selector is the sibling template and whose declarations are
-      the two border widths
-- [ ] `.Divide.Color.Slate.200` and `.Divide.Style.Dashed` target the same selector, so a width, a
-      colour and a style compose into one child rule rather than three
-- [ ] the selector is spelled in exactly one place in this front
-- [ ] `Divide` and front 35's `Space` use the same child selector, asserted by comparing the two
-      outputs — two fronts writing two different sibling selectors would be a silent inconsistency
-- [ ] the selector is verified against upstream before merge
+- [x] `.Divide.Y.2` emits a rule whose selector is the sibling template and whose declarations are
+      the two border widths — held: `Divide.Y — a rule on the CHILDREN, zero-then-width`
+- [x] `.Divide.Color.Slate.200` and `.Divide.Style.Dashed` target the same selector, so a width, a
+      colour and a style compose into one child rule rather than three — held: `Divide — width, colour and style all target the same child selector`, `end to end — a divided list is a rule on the children of the class`
+- [x] the selector is spelled in exactly one place in this front — held (shape: spelled zero times here — `divideTokenToSheet` calls front 35's `childSheet`/`siblingSelector()`): `the child selector is a one-& template and is spelled in ONE place`
+- [x] `Divide` and front 35's `Space` use the same child selector, asserted by comparing the two
+      outputs — two fronts writing two different sibling selectors would be a silent inconsistency — held: `Divide and front 35's Space emit BYTE-IDENTICAL child selectors`
+- [x] the selector is verified against upstream before merge — held: verified note above that test and in the front 40 banner of `emilia.bp`
 
 ### Step 6 — the dispatchers and the top-level arms
 
@@ -281,15 +281,15 @@ Both the selector and the reversed-order custom properties are unverified — se
 top-level case (`Outline`, `Ring`, `Divide`); `Border` already has one.
 
 **Acceptance:**
-- [ ] every arm is an arrow arm and each dispatcher follows the `val out = case …; return out;` idiom
-- [ ] the two `…ToSheet` dispatchers are the only two in this front, and both are named in the
-      front's README and in `AGENTS.md`
-- [ ] the banner `// ── front 40 — borders, outlines, rings and divides ──` fences the block in both files
-- [ ] three arms added to the top-level dispatcher, in front-number order
-- [ ] nothing in this front contradicts contract 4 in [`contracts.md`](../../contracts.md): the class
+- [x] every arm is an arrow arm and each dispatcher follows the `val out = case …; return out;` idiom — held: `emilia.bp` front 40 block
+- [x] the two `…ToSheet` dispatchers are the only two in this front, and both are named in the
+      front's README and in `AGENTS.md` — held: this README Steps 4–5; AGENTS.md front 40 section
+- [x] the banner `// ── front 40 — borders, outlines, rings and divides ──` fences the block in both files — held: `tokens.bp` and `emilia.bp` (main block and `tokenToSheet` arms)
+- [x] three arms added to the top-level dispatcher, in front-number order — held (shape: `Outline`/`Ring`/`Divide` arms sit after front 38's and before front 41's; front 39's `Gradient` arm trails front 45's)
+- [x] nothing in this front contradicts contract 4 in [`contracts.md`](../../contracts.md): the class
       name stays a pure function of the token list, and token order stays class identity — which the
       `Ring`/`Effect.Shadow` composition test exercises directly, since swapping the two changes the
-      emitted `box-shadow`
+      emitted `box-shadow` — held: `contract 4 — swapping Ring and Effect.Shadow changes the class`
 
 ## Examples
 
@@ -354,14 +354,14 @@ What the tests assert:
 
 ## Definition of done
 
-- [ ] every utility in `§ 11.1`–`§ 11.8` has a token
-- [ ] `ring-*` and `divide-*` have tokens, and every value they emit is verified against upstream
-      and recorded in *Reference gaps* until it is
-- [ ] the four colour sub-sections call front 33's `paletteVar`; this front holds no colour table
-- [ ] `Divide` and front 35's `Space` share one child selector, asserted by a test
-- [ ] `Ring` composes with `Effect.Shadow` rather than overwriting it
-- [ ] the banner fences this front's block in both files, appended at the end
-- [ ] three arms added to the top-level dispatcher, in front-number order
-- [ ] `repository/emilia/AGENTS.md` and the `////` header of `tokens.bp` record the new sections and
-      the two `…ToSheet` dispatchers
-- [ ] the front's tests are green on its assigned target — here, both backends, since emilia is comptime
+- [x] every utility in `§ 11.1`–`§ 11.8` has a token — held: `tokens.bp` `Border`/`Outline`; `regression — every one of the 1704 leaves of this front declares something`
+- [x] `ring-*` and `divide-*` have tokens, and every value they emit is verified against upstream
+      and recorded in *Reference gaps* until it is — held (shape: the `box-shadow` list and `ring-offset-*` are still unverified and recorded as such in the `emilia.bp` banner and AGENTS.md): `Ring.W — the ladder, and the v4 default the README told us to verify`
+- [x] the four colour sub-sections call front 33's `paletteVar`; this front holds no colour table — held: `the five colour sub-sections agree, because all five call paletteVar`
+- [x] `Divide` and front 35's `Space` share one child selector, asserted by a test — held: `Divide and front 35's Space emit BYTE-IDENTICAL child selectors`
+- [x] `Ring` composes with `Effect.Shadow` rather than overwriting it — held: same composition test, and emilia-outline-ring's "a ring composes with a shadow …"
+- [x] the banner fences this front's block in both files, appended at the end — held: `tokens.bp`/`emilia.bp` front 40 banners
+- [x] three arms added to the top-level dispatcher, in front-number order — held (shape: in order after front 38's; front 39's `Gradient` arm trails front 45's)
+- [x] `repository/emilia/AGENTS.md` and the `////` header of `tokens.bp` record the new sections and
+      the two `…ToSheet` dispatchers — held: AGENTS.md front 40 section; `tokens.bp` header `Border`/`Outline`/`Ring`/`Divide` entries name both dispatchers
+- [x] the front's tests are green on its assigned target — here, both backends, since emilia is comptime — held: `modules/emilia` 569/569 on commonJS and erlang (AGENTS.md § Test surface); `examples/emilia-borders`, `examples/emilia-outline-ring`

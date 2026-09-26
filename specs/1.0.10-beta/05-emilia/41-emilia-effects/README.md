@@ -152,16 +152,16 @@ level, with builtin-typed fields. The name keeps the path it would have had, fla
 `EffectShadowRaw`, `EffectTextShadowRaw`, `MaskImageRaw`.
 
 **Acceptance:**
-- [ ] `effectTokenToCss(.Shadow.Md, th)` returns `box-shadow:var(--shadow-md)` — the string
-      `box-shadow:md` appears nowhere in `repository/emilia/src/`.
-- [ ] `Token.EffectShadowRaw(value: "0 0 0 1px red")` **constructs** — a test builds one, which is
-      the check that would have failed against a nested `Effect.Shadow.Raw`.
-- [ ] No section in this front's `tokens.bp` block contains a payload leaf.
-- [ ] No shadow arm contains an `rgb(` literal: the scale's values live in the theme, and a resolved
-      literal inside a dispatcher is the defect this acceptance exists to catch.
-- [ ] All nine bare shadow leaves plus the three inset leaves have an arm in `shadowToCss` / `insetShadowToCss`; the `case` is exhaustive with no `_` arm.
-- [ ] `.Effect.Shadow.Sm`, `.Md`, `.Lg`, `.Xl` still type-check at every existing call site — the leaf names did not move.
-- [ ] Each of the twelve values is character-identical to its row above, which is character-identical to the "Propriedade CSS" column of `TAILWIND_CSS_DOCS.md § 12.1`.
+- [x] `effectTokenToCss(.Shadow.Md, th)` returns `box-shadow:var(--shadow-md)` — the string
+      `box-shadow:md` appears nowhere in `repository/emilia/src/`. — held (shape: since the audit pass the value `var(--shadow-md)` is written into the `--tw-shadow` channel beside the shared `box-shadow` reader, so a ring composes with it — front 40 step 4): `the defect — the four pre-41 shadow leaves emit a theme reference, never a class suffix`
+- [x] `Token.EffectShadowRaw(value: "0 0 0 1px red")` **constructs** — a test builds one, which is
+      the check that would have failed against a nested `Effect.Shadow.Raw`. — held: `the three Raw variants construct, and each reaches its own arm`
+- [x] No section in this front's `tokens.bp` block contains a payload leaf. — held: `tokens.bp` front 41 block — `Effect`/`Blend`/`Mask` are keyword/numeric only; the three payloads are top-level
+- [x] No shadow arm contains an `rgb(` literal: the scale's values live in the theme, and a resolved
+      literal inside a dispatcher is the defect this acceptance exists to catch. — superseded: `Shadow.Inner` is upstream's literal with no `--shadow-inner` (AGENTS.md front 41 row); `regression — exactly one leaf resolves a shadow value, and it is Shadow.Inner`
+- [x] All nine bare shadow leaves plus the three inset leaves have an arm in `shadowToCss` / `insetShadowToCss`; the `case` is exhaustive with no `_` arm. — held: `emilia.bp:shadowToCss`, `insetShadowToCss` — no `_` arm
+- [x] `.Effect.Shadow.Sm`, `.Md`, `.Lg`, `.Xl` still type-check at every existing call site — the leaf names did not move. — held: `the defect — the four pre-41 shadow leaves emit a theme reference, never a class suffix`
+- [x] Each of the twelve values is character-identical to its row above, which is character-identical to the "Propriedade CSS" column of `TAILWIND_CSS_DOCS.md § 12.1`. — held (shape: each value is now the `--tw-shadow` / `--tw-inset-shadow` channel's value beside the shared reader, so `Shadow.None` is the null shadow of its channel rather than `box-shadow:none`, upstream's `0 0 #0000` behaviour): `Effect.Shadow — the seven scale steps are --shadow-* references`, `…None is a keyword and Inner is the reference's own literal`, `Effect.InsetShadow — inset leads the value…`
 
 ### Step 2 — text-shadow
 
@@ -181,9 +181,9 @@ are theme entries a project composes through `extend`. That is the same arrangem
 scale in Step 1, not a weaker one.
 
 **Acceptance:**
-- [ ] `effectTokenToCss(.TextShadow.Sm, th)` returns `text-shadow:var(--text-shadow-sm)`.
-- [ ] `.Effect.TextShadow.None` returns `text-shadow:none` — a keyword, not a theme lookup.
-- [ ] `textShadowToCss` is exhaustive over the seven leaves.
+- [x] `effectTokenToCss(.TextShadow.Sm, th)` returns `text-shadow:var(--text-shadow-sm)`. — held: `Effect.TextShadow — five references and a keyword`
+- [x] `.Effect.TextShadow.None` returns `text-shadow:none` — a keyword, not a theme lookup. — held: `Effect.TextShadow — five references and a keyword`
+- [x] `textShadowToCss` is exhaustive over the seven leaves. — held (shape: six section leaves; the seventh, `EffectTextShadowRaw`, is a top-level arm): `emilia.bp:textShadowToCss`
 
 ### Step 3 — the full opacity scale
 
@@ -212,9 +212,9 @@ matched as `__60` in a `case` pattern — three spellings for one leaf, and the 
 `opacityToCss` at `emilia.bp:373-382` is the model to copy.
 
 **Acceptance:**
-- [ ] Fifteen arms in `opacityToCss`, each matching `__N`.
-- [ ] `effectTokenToCss(.Opacity.60, th)` returns `opacity:0.6` — not `opacity:.6`.
-- [ ] The five pre-existing leaves return exactly what they returned before this front.
+- [x] Fifteen arms in `opacityToCss`, each matching `__N`. — held (shape: 21 arms — six provisional steps 15/35/45/55/65/85 beside § 12.3's fifteen, marked at the arm): `emilia.bp:opacityToCss`
+- [x] `effectTokenToCss(.Opacity.60, th)` returns `opacity:0.6` — not `opacity:.6`. — held: `Effect.Opacity — the ten steps § 12.3 adds, each with a leading zero`
+- [x] The five pre-existing leaves return exactly what they returned before this front. — held: `Effect.Opacity — the five pre-41 leaves emit exactly what they emitted before`
 
 ### Step 4 — blend modes
 
@@ -246,10 +246,10 @@ mix-blend-mode, mas com prefixo `bg-blend-*`").
 | `bg-blend-<rest>` | `.Blend.Bg.<Rest>` | `background-blend-mode:<rest>` — the seventeen values above |
 
 **Acceptance:**
-- [ ] `Blend` has exactly two sub-sections and each has exactly seventeen leaves.
-- [ ] `blendTokenToCss` routes `Mix` and `Bg` to two sub-dispatchers that differ only in the
-      property name they prepend.
-- [ ] `blendTokenToCss(.Mix.PlusLighter, th)` returns `mix-blend-mode:plus-lighter`.
+- [x] `Blend` has exactly two sub-sections and each has exactly seventeen leaves. — held: `tokens.bp` `Blend { Mix, Bg }`, 17 leaves each; `Blend.Mix — the seventeen values…`, `Blend.Bg — …`
+- [x] `blendTokenToCss` routes `Mix` and `Bg` to two sub-dispatchers that differ only in the
+      property name they prepend. — held (shape: `blendTokenToCss` prepends the property; `blendMixValue`/`blendBgValue` are identical value tables): `Blend — the Mix and Bg value tables agree, value for value and in order`
+- [x] `blendTokenToCss(.Mix.PlusLighter, th)` returns `mix-blend-mode:plus-lighter`. — held: `Blend.Mix — the seventeen values of § 12.4`
 
 ### Step 5 — the mask family
 
@@ -280,11 +280,11 @@ mix-blend-mode, mas com prefixo `bg-blend-*`").
 | `mask-type-luminance` | `.Mask.Type.Luminance` | `mask-type:luminance` |
 
 **Acceptance:**
-- [ ] `Mask` has nine sub-sections: `Clip`, `Composite`, `Image`, `Mode`, `Origin`, `Position`,
-      `Repeat`, `Size`, `Type`.
-- [ ] `maskTokenToCss` has nine arms and each routes to a sub-dispatcher with no `_` fallback.
-- [ ] A list of `[.Mask.Clip.Padding, .Mask.Mode.Luminance]` composes to the two declarations
-      `mask-clip:padding-box` and `mask-mode:luminance` in `Rule.declarations`, in list order.
+- [x] `Mask` has nine sub-sections: `Clip`, `Composite`, `Image`, `Mode`, `Origin`, `Position`,
+      `Repeat`, `Size`, `Type`. — held: `tokens.bp` `Mask` nine sub-sections
+- [x] `maskTokenToCss` has nine arms and each routes to a sub-dispatcher with no `_` fallback. — held: `emilia.bp:maskTokenToCss`
+- [x] A list of `[.Mask.Clip.Padding, .Mask.Mode.Luminance]` composes to the two declarations
+      `mask-clip:padding-box` and `mask-mode:luminance` in `Rule.declarations`, in list order. — held: `composition — a list is its declarations, in list order`
 
 ### Step 6 — three arms in `tokenToSheet`
 
@@ -306,12 +306,12 @@ variant is a sibling of `Effect` rather than a leaf inside it. Each destructures
 field name** (`value`) — an arbitrary positional bind type-checks and is `undefined` at run time.
 
 **Acceptance:**
-- [ ] The five new arms sit between front 40's arm and front 42's, in that order.
-- [ ] Each arm is one `declSheet(...)` call; no arm in this front builds a `Rule` or a `Sheet` by
-      hand.
-- [ ] The variant arms remain last in the `case`, and front 34 owns their wrapping — this front adds
-      none.
-- [ ] `tokenToSheet` still has no `_` arm — a token with no arm is a compile error, not a silent `""`.
+- [x] The five new arms sit between front 40's arm and front 42's, in that order. — held (shape: front 42 had no arm yet; the five sit directly after front 40's and before front 44's)
+- [x] Each arm is one `declSheet(...)` call; no arm in this front builds a `Rule` or a `Sheet` by
+      hand. — held: `emilia.bp:tokenToSheet` front 41 arms
+- [x] The variant arms remain last in the `case`, and front 34 owns their wrapping — this front adds
+      none. — held: the front 34 modifier arms close `tokenToSheet`
+- [x] `tokenToSheet` still has no `_` arm — a token with no arm is a compile error, not a silent `""`. — held: `emilia.bp:tokenToSheet` has no `_` arm
 
 ## Examples
 
@@ -366,16 +366,16 @@ What the tests assert:
 
 ## Definition of done
 
-- [ ] `Effect` carries `Shadow`, `InsetShadow`, `TextShadow`, `Opacity`; `Blend` and `Mask` exist as
-      top-level sections; all three blocks are fenced by a `front 41` banner in `tokens.bp`.
-- [ ] `effectTokenToCss`, `blendTokenToCss`, `maskTokenToCss` and their sub-dispatchers are fenced
+- [x] `Effect` carries `Shadow`, `InsetShadow`, `TextShadow`, `Opacity`; `Blend` and `Mask` exist as
+      top-level sections; all three blocks are fenced by a `front 41` banner in `tokens.bp`. — held: `tokens.bp` front 41 block
+- [x] `effectTokenToCss`, `blendTokenToCss`, `maskTokenToCss` and their sub-dispatchers are fenced
       by a `front 41` banner in `emilia.bp`, appended after front 40's block, and every one of them
-      takes `th: Theme` per contract `§ 4a`.
-- [ ] `box-shadow:sm` and its three siblings are gone from the repository.
-- [ ] The shadow, inset-shadow and text-shadow scales are `themeVar(...)` lookups; no `rgb(` literal
-      appears anywhere in this front's block.
-- [ ] Two arms added to `tokenToSheet`, each a `declSheet(...)` call, in front-number order, and no
-      other line of that `case` moved.
-- [ ] `repository/emilia/AGENTS.md` records the three new sections and the shadow-body correction.
-- [ ] The front's tests are green on its assigned target — here, both `commonJS` and `erlang`,
-      because comptime output must not differ between them.
+      takes `th: Theme` per contract `§ 4a`. — held: the three dispatchers and all their sub-dispatchers (`shadowToCss`, `insetShadowToCss`, `textShadowToCss`, `opacityToCss`, `blendMixValue`, `blendBgValue`, the nine `mask*ToCss`) take `th: Theme` since the audit pass
+- [x] `box-shadow:sm` and its three siblings are gone from the repository. — held (shape: survives only in comments, negative asserts and probe controls): `the defect — …never a class suffix`
+- [x] The shadow, inset-shadow and text-shadow scales are `themeVar(...)` lookups; no `rgb(` literal
+      appears anywhere in this front's block. — held (shape: the one `rgb(` is `Shadow.Inner`, upstream's literal — AGENTS.md front 41 row): `emilia.bp:shadowVar`/`insetShadowVar`/`textShadowVar`
+- [x] Two arms added to `tokenToSheet`, each a `declSheet(...)` call, in front-number order, and no
+      other line of that `case` moved. — held (shape: five arms — `Blend`, `Mask` and the three `Raw` variants, as Step 6 counts): `emilia.bp:tokenToSheet`
+- [x] `repository/emilia/AGENTS.md` records the three new sections and the shadow-body correction. — held: AGENTS.md § Surface and the front 41 row
+- [x] The front's tests are green on its assigned target — here, both `commonJS` and `erlang`,
+      because comptime output must not differ between them. — held: `modules/emilia` 569/569 on commonJS and erlang (AGENTS.md § Test surface); `determinism — a fixed effects list hashes to the same class on both targets`

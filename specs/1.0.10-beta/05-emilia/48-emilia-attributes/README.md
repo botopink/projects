@@ -266,15 +266,15 @@ the package and not when emilia is consumed as a dependency — the reason `emil
 gains both — a consumer cannot import a module the manifest does not list.
 
 **Acceptance:**
-- [ ] `styled(tokens, th)._0 == "class"` and `styled(tokens, th)._1 == emilia(tokens, th)` for a
-      fixed list and a fixed theme.
-- [ ] `className(tokens, themeA) != className(tokens, themeB)` when the two themes differ in an
-      entry the tokens read — clause 1's theme half, asserted rather than assumed.
-- [ ] `mergeClass("card", "e_abc") == "card e_abc"`; `mergeClass("", "e_abc") == "e_abc"`;
-      `mergeClass("card", "") == "card"` — one space, never two, never a leading or trailing one.
-- [ ] `mergeClass` does not sort, does not de-duplicate, and does not trim the base's interior
-      spaces: `mergeClass("a  b", "e_x") == "a  b e_x"`.
-- [ ] `repository/emilia/src/root.bp` declares both new modules and `botopink.json` lists both.
+- [x] `styled(tokens, th)._0 == "class"` and `styled(tokens, th)._1 == emilia(tokens, th)` for a
+      fixed list and a fixed theme. — held: emilia.bp test "styled — the attribute pair, and the same class the three names give" (`emiliaWith(tokens, th)` — `emilia(tokens)` takes no theme)
+- [x] `className(tokens, themeA) != className(tokens, themeB)` when the two themes differ in an
+      entry the tokens read — clause 1's theme half, asserted rather than assumed. — held: emilia.bp test "the theme is an input — a moved breakpoint is another class"
+- [x] `mergeClass("card", "e_abc") == "card e_abc"`; `mergeClass("", "e_abc") == "e_abc"`;
+      `mergeClass("card", "") == "card"` — one space, never two, never a leading or trailing one. — held: attributes.bp test "mergeClass — static first, one space, never a leading or trailing one"
+- [x] `mergeClass` does not sort, does not de-duplicate, and does not trim the base's interior
+      spaces: `mergeClass("a  b", "e_x") == "a  b e_x"`. — held: attributes.bp test "mergeClass — no sorting, no de-duplication, interior spaces kept"
+- [x] `repository/emilia/src/root.bp` declares both new modules and `botopink.json` lists both. — held (shape: `attributes.bp` only — the spec's `html_hook.bp` functions are `cls`/`clsWith` in `emilia.bp`, since a sibling cannot import `emilia.bp`; decisions-pending 05emilia-h): `root.bp` `pub mod attributes;`, `botopink.json` `files`
 
 ### Step 2 — the ASCII gate
 
@@ -294,10 +294,10 @@ naming the offending token — rather than emitting a class that renders correct
 mismatches on the other.
 
 **Acceptance:**
-- [ ] A token list whose rule body is pure ASCII passes and produces a class.
-- [ ] A token list carrying a non-ASCII payload is rejected with a message naming the payload.
-- [ ] The rejection is a compile-time or call-time failure, never a silently different class.
-- [ ] The test file asserts both halves of that behaviour.
+- [x] A token list whose rule body is pure ASCII passes and produces a class. — held: emilia.bp test "the ASCII gate — refuses a non-ASCII payload instead of hashing it" (`assertAsciiBody(cardTokens(), th)`)
+- [x] A token list carrying a non-ASCII payload is rejected with a message naming the payload. — held: same test — the panic names the offending text
+- [x] The rejection is a compile-time or call-time failure, never a silently different class. — held: `className` calls `assertAsciiBody` first, which `@panic`s — call-time, never a different class
+- [x] The test file asserts both halves of that behaviour. — held: the same test asserts the pass and the refusal
 
 ### Step 3 — `html_hook.bp`: the `[class]={…}` bridge
 
@@ -322,14 +322,14 @@ mode — a hole with a space in it — surfaces as a parse error inside a templa
 number (`repository/jhonstart/src/html.bp:68-85`).
 
 **Acceptance:**
-- [ ] `cls(tokens, th)` is a `string` beginning `e_` and containing no space, so a pre-bound
+- [x] `cls(tokens, th)` is a `string` beginning `e_` and containing no space, so a pre-bound
       `val c = cls(tokens, th);` sits in a `[class]={c}` hole; the render of that hole is asserted by
-      the `jhonstart-emilia` bridge test, not here.
-- [ ] `cls(tokens, th) == className(tokens, th) == emilia(tokens, th)` for the same list and theme
-      — three names, one value, asserted so a refactor cannot split them.
-- [ ] The docblock shows the pre-bound `val` form first and says that `cls(tokens, th)` written
-      inline in a hole fails, because of the space after the comma.
-- [ ] The docblock states the no-space rule and cites `html.bp:109`.
+      the `jhonstart-emilia` bridge test, not here. — held: emilia.bp test "styled — …" asserts `e_` and no space
+- [x] `cls(tokens, th) == className(tokens, th) == emilia(tokens, th)` for the same list and theme
+      — three names, one value, asserted so a refactor cannot split them. — held: same test (`emiliaWith` for `emilia`, which takes no theme)
+- [x] The docblock shows the pre-bound `val` form first and says that `cls(tokens, th)` written
+      inline in a hole fails, because of the space after the comma. — held (shape: the docblock is `attributes.bp`'s header — there is no `html_hook.bp`): the pre-bound `val card = cls(…)` form and the failing inline call
+- [x] The docblock states the no-space rule and cites `html.bp:109`. — held (shape: same header): cites `html.bp:109`
 
 ### Step 4 — `html_attrs.bp`: jhonstart's half, with no knowledge of emilia
 
@@ -365,12 +365,12 @@ appear in `repository/jhonstart/src/`** — the dependency runs one way, and the
 checkable.
 
 **Acceptance:**
-- [ ] `withAttrs([#("id","x")], [styled(tokens, th)])` returns `[#("id","x"), #("class","e_…")]` — base
-      first, appended, order preserved.
-- [ ] `attrValue(attrs, "class")` returns the class; `attrValue(attrs, "missing")` returns `""`.
-- [ ] `repository/jhonstart/src/html_attrs.bp` imports only `element`.
-- [ ] No file under `repository/jhonstart/src/` names emilia.
-- [ ] `repository/jhonstart/src/root.bp` declares the module and `botopink.json` lists it.
+- [x] `withAttrs([#("id","x")], [styled(tokens, th)])` returns `[#("id","x"), #("class","e_…")]` — base
+      first, appended, order preserved. — held: jhonstart html_attrs.bp test "withAttrs — base first, appended, order preserved" (with `classAttr`, not `styled` — jhonstart may not import emilia; the pair shape is the same)
+- [x] `attrValue(attrs, "class")` returns the class; `attrValue(attrs, "missing")` returns `""`. — held: jhonstart html_attrs.bp tests "withAttrs — …" and "attrValue — a missing name is the empty string, the last duplicate wins"
+- [x] `repository/jhonstart/src/html_attrs.bp` imports only `element`. — held: `modules/jhonstart/src/html_attrs.bp` imports only `element`
+- [ ] No file under `repository/jhonstart/src/` names emilia. — **open:** `html_attrs.bp` names none, but feat's `modules/jhonstart/src/streaming.bp:237` (front 30) names emilia in one comment — front 30's to reword; the bridge test that should assert the absence does not yet
+- [x] `repository/jhonstart/src/root.bp` declares the module and `botopink.json` lists it. — held: jhonstart `root.bp` `pub mod html_attrs;`, `botopink.json` `files`
 
 ### Step 5 — the five ways the halves can disagree, asserted on the class
 
@@ -394,29 +394,29 @@ test "class: the card class is the shared fixture" {
 ```
 
 **Acceptance:**
-- [ ] **Purity.** `className(cardTokens(), th)` called twice in one test returns the same string,
+- [x] **Purity.** `className(cardTokens(), th)` called twice in one test returns the same string,
       and called after an intervening `emilia()` of a different list still returns the same string —
-      no counter leaks in.
-- [ ] **The theme is an input.** `className(cardTokens(), themeA) != className(cardTokens(), themeB)`
+      no counter leaks in. — held: emilia.bp test "purity — the same class twice, and after an unrelated emilia() call"
+- [x] **The theme is an input.** `className(cardTokens(), themeA) != className(cardTokens(), themeB)`
       for two themes differing in one entry the tokens read — clause 1, and the hazard a
-      single-theme test would never show.
-- [ ] **Order is identity.** `className([.Text.Bold, .Color.Black], th) != className([.Color.Black, .Text.Bold], th)`,
-      asserted, so the contract is visible rather than incidental.
-- [ ] **Merge order.** `styledWith("card", tokens, th)._1` starts with `"card "` and ends with the
-      emilia class — asserted with `startsWith` and `endsWith`, in that order.
-- [ ] **Attribute order.** `withAttrs([#("id","x")], [styled(tokens, th)])` keeps `id` before
-      `class`, asserted on the array; the same order in a rendered tag is the bridge test's cell.
-- [ ] **Cross-target agreement.** The class for `cardTokens()` under `defaultTheme()` is asserted
+      single-theme test would never show. — held: emilia.bp test "the theme is an input — a moved breakpoint is another class"
+- [x] **Order is identity.** `className([.Text.Bold, .Color.Black], th) != className([.Color.Black, .Text.Bold], th)`,
+      asserted, so the contract is visible rather than incidental. — held: emilia.bp test "order is identity — two orders, two classes"
+- [x] **Merge order.** `styledWith("card", tokens, th)._1` starts with `"card "` and ends with the
+      emilia class — asserted with `startsWith` and `endsWith`, in that order. — held: emilia.bp test "merge order — styledWith is the static class, one space, then the emilia class"
+- [x] **Attribute order.** `withAttrs([#("id","x")], [styled(tokens, th)])` keeps `id` before
+      `class`, asserted on the array; the same order in a rendered tag is the bridge test's cell. — held (shape: emilia may not import jhonstart, so the emilia test appends to a base array the way `withAttrs` does, and jhonstart's own test covers `withAttrs`): emilia.bp test "attribute order — the slot appends after the base attributes"
+- [x] **Cross-target agreement.** The class for `cardTokens()` under `defaultTheme()` is asserted
       against a **literal hex string**. That one line is the hydration gate: the `commonJS` and
       `erlang` rows run the same assertion, and if the two hashes ever diverge the erlang row goes
       red. The `jhonstart-emilia` bridge test (jhonstart front 30) and front 68's bundle test assert
-      the same literal.
-- [ ] **The flushed sheet carries the class.** `await flush()` after `className(cardTokens(), th)`
-      contains the selector `.<class>` — the stylesheet half of the pair the server ships.
-- [ ] **The literal is regenerated exactly once**, when front 56 lands and the hashed body becomes
+      the same literal. — held: emilia.bp test "class: attributes — the shared fixture" — `e_39b87d03` on both rows
+- [x] **The flushed sheet carries the class.** `await flush()` after `className(cardTokens(), th)`
+      contains the selector `.<class>` — the stylesheet half of the pair the server ships. — held: same test — the flushed sheet carries `.e_39b87d03{` and its `:hover` rule
+- [x] **The literal is regenerated exactly once**, when front 56 lands and the hashed body becomes
       `encodeSheet(tokensToSheet(tokens, th))`; the bridge test and front 68 take the new value in
       the same commit. A second regeneration means something other than 56 changed the encoding,
-      which is a defect rather than a routine update.
+      which is a defect rather than a routine update. — held: the literal was first written after front 56 landed (this front had no earlier fixture), so there was no regeneration
 
 ## Examples
 
@@ -477,24 +477,24 @@ front 68's bundle test assert the same literal for the same token list and theme
 
 ## Definition of done
 
-- [ ] `repository/emilia/src/attributes.bp` and `repository/emilia/src/html_hook.bp` exist, are
-      declared in `emilia/src/root.bp`, and are listed in `emilia/botopink.json`.
-- [ ] `repository/jhonstart/src/html_attrs.bp` exists, is declared in `jhonstart/src/root.bp`, is
-      listed in `jhonstart/botopink.json`, and imports only `element`.
-- [ ] No file under `repository/jhonstart/src/` names emilia, asserted by the bridge test.
-- [ ] No test or example of this front imports jhonstart, and emilia's `botopink.json` names no
-      jhonstart dependency, dev-dependency included.
-- [ ] `mergeClass` has exactly one implementation in the workspace.
-- [ ] The class-name contract — the six clauses, the theme among them — is written in
+- [x] `repository/emilia/src/attributes.bp` and `repository/emilia/src/html_hook.bp` exist, are
+      declared in `emilia/src/root.bp`, and are listed in `emilia/botopink.json`. — held (shape: `attributes.bp` exists and is declared; `html_hook.bp` does not — its functions live in `emilia.bp`, decisions-pending 05emilia-h)
+- [x] `repository/jhonstart/src/html_attrs.bp` exists, is declared in `jhonstart/src/root.bp`, is
+      listed in `jhonstart/botopink.json`, and imports only `element`. — held: `modules/jhonstart/src/html_attrs.bp`, declared, listed, imports only `element`
+- [ ] No file under `repository/jhonstart/src/` names emilia, asserted by the bridge test. — **open:** same — one comment in front 30's `streaming.bp`, and no bridge assertion yet
+- [x] No test or example of this front imports jhonstart, and emilia's `botopink.json` names no
+      jhonstart dependency, dev-dependency included. — held: no front 48 test or example imports jhonstart; the core member's `botopink.json` has no dependency at all (`examples/emilia-card` predates decision 113)
+- [x] `mergeClass` has exactly one implementation in the workspace. — held: `grep -rn 'fn mergeClass'` across `repository/` finds `attributes.bp` only
+- [x] The class-name contract — the six clauses, the theme among them — is written in
       `attributes.bp`'s docblock, not only in this README, and matches `contracts.md § 4` word for
-      word where they overlap.
-- [ ] Every slot function but `mergeClass` takes `th: Theme`, and no call site in the milestone
-      builds a `Theme` inline.
-- [ ] The no-space rule for `[class]={…}` is written in `html_hook.bp`'s docblock with the
-      `html.bp:109` citation.
-- [ ] `repository/emilia/AGENTS.md` and `repository/jhonstart/AGENTS.md` both record the new modules
-      and the cross-repo seam.
+      word where they overlap. — held: `attributes.bp`'s header, contract 4 word for word
+- [x] Every slot function but `mergeClass` takes `th: Theme`, and no call site in the milestone
+      builds a `Theme` inline. — held: `className`, `styled`, `styledWith`, `cls`, `clsWith`, `assertAsciiBody` all take `th: Theme`; no call site in emilia builds a theme inline
+- [x] The no-space rule for `[class]={…}` is written in `html_hook.bp`'s docblock with the
+      `html.bp:109` citation. — held (shape: in `attributes.bp`'s header, with the `html.bp:109` citation)
+- [x] `repository/emilia/AGENTS.md` and `repository/jhonstart/AGENTS.md` both record the new modules
+      and the cross-repo seam. — held: emilia `AGENTS.md` "Front 48 owns **the class slot**" and jhonstart `AGENTS.md`'s tree entry for `html_attrs.bp`
 - [ ] The literal-hex fixture in `attributes_test.bp` is shared with the `jhonstart-emilia` bridge
-      test and front 68 and all three assert it, and it was regenerated exactly once, when 56 landed.
-- [ ] The front's tests are green on its assigned target — here, both `commonJS` and `erlang`,
-      because agreement between the two is the deliverable.
+      test and front 68 and all three assert it, and it was regenerated exactly once, when 56 landed. — **open:** emilia asserts `e_39b87d03`; the `jhonstart-emilia` bridge now exists (6/6 on both rows against this branch's emilia) but asserts no literal yet, and onze front 68 is not written
+- [x] The front's tests are green on its assigned target — here, both `commonJS` and `erlang`,
+      because agreement between the two is the deliverable. — held: `modules/emilia` 722/722 and jhonstart core green on commonJS and erlang

@@ -9,8 +9,8 @@ annotations leave, `@Future<T, E>` becomes `@Task<T>`, which never fails, and
 only `@Result` fails: a fallible task is `@Task<@Result<T, E>>`. Blocks and loops
 gain prefixes — `async { }`, `iter` and `stream` — and hooks and components share
 one wrapper, `@Component<C, T>`. There is no compatibility window (decision 127):
-the old forms are located compile errors with a fix-it, and
-`botopink migrate effects` rewrites them.
+the old forms are located compile errors, each naming its new spelling. There is
+no automatic rewriter (decision 131).
 
 ---
 
@@ -63,10 +63,11 @@ it.
 
 ## Migration Guide
 
-Run `botopink migrate effects` (`--dry-run` reports without writing). It removes
-the annotations, renames the wrappers and loops, and writes `try await` where the
-function's return carries a `@Result`. It marks with `// TODO(migrate-effects)`
-what it cannot decide:
+Compile the project: each old form is a located error whose fix-it names the
+new spelling (`docs.md` § *Migrating from the effect annotations* carries the
+full old → new table). Remove the annotations, rename the wrappers and loops, and
+write `try await` where the function's return carries a `@Result`. Five changes
+are not a rename and need a decision per site:
 
 - an `await` or `throw` in a hook or component whose `T` is not a `@Result` — the
   error has nowhere to go: handle it with `try … catch`, `case` or a navigation

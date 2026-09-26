@@ -204,15 +204,15 @@ hatch for a filter function the token set does not name, so a spelling that does
 close the only door.
 
 **Acceptance:**
-- [ ] All forty-three rows above have an arm; every `case` is exhaustive with no `_`.
-- [ ] `filterTokenToCss(.Brightness.50, th)` returns
-      `--tw-brightness:brightness(.5);filter:var(--tw-filter)` — a leading `0` in `.5` fails.
-- [ ] `filterTokenToCss(.Blur.X2xl, th)` returns `--tw-blur:blur(var(--blur-2xl));filter:var(--tw-filter)`;
-      no `px` literal appears in any `Filter` arm, because the blur scale is a theme entry.
-- [ ] Every non-`None` arm ends in `filter:var(--tw-filter)`, so two filter tokens in one rule
-      compose instead of overwriting.
-- [ ] `.Filter.Grayscale.100`, `.Filter.Invert.100` and `.Filter.Sepia.100` carry the `%` sign;
-      `.Filter.Brightness.100` does not.
+- [x] All forty-three rows above have an arm; every `case` is exhaustive with no `_`. — held: emilia.bp front 42 dispatchers, every `case` exhaustive with no `_` (50 `Filter` leaves); tests "Filter.<family> — every row …"
+- [x] `filterTokenToCss(.Brightness.50, th)` returns
+      `--tw-brightness:brightness(.5);filter:var(--tw-filter)` — a leading `0` in `.5` fails. — held (shape: the reader is upstream's self-contained chain `var(--tw-blur, ) … var(--tw-drop-shadow, )` (`filterChain()`), not `var(--tw-filter)` — see the step-4 box on `--tw-filter`): test "Filter.Brightness — every row of `§ 13.1`" and "Filter — the leading-dot decimals …"
+- [x] `filterTokenToCss(.Blur.X2xl, th)` returns `--tw-blur:blur(var(--blur-2xl));filter:var(--tw-filter)`;
+      no `px` literal appears in any `Filter` arm, because the blur scale is a theme entry. — held (shape: same reader): test "Filter.Blur — the eight rows of `§ 13.1`"; walk "front 42 — 108 leaves … none resolving a length" finds no `px`
+- [x] Every non-`None` arm ends in `filter:var(--tw-filter)`, so two filter tokens in one rule
+      compose instead of overwriting. — held (shape: the reader is `filterChain()`): tests "Filter — blur and grayscale in one list compose instead of overwriting" and the walk's 106 readers
+- [x] `.Filter.Grayscale.100`, `.Filter.Invert.100` and `.Filter.Sepia.100` carry the `%` sign;
+      `.Filter.Brightness.100` does not. — held: test "Filter — the leading-dot decimals and the percent signs of `§ 13.1`"
 
 ### Step 2 — `Filter.DropShadow`
 
@@ -233,9 +233,9 @@ composes through `extend`. The emitted form is the two-declaration shape,
 column shows only the function.
 
 **Acceptance:**
-- [ ] `filterTokenToCss(.DropShadow.Md, th)` returns
-      `--tw-drop-shadow:drop-shadow(var(--drop-shadow-md));filter:var(--tw-filter)`.
-- [ ] `.Filter.DropShadow.None` returns `filter:drop-shadow(none)` — a keyword, not a theme lookup.
+- [x] `filterTokenToCss(.DropShadow.Md, th)` returns
+      `--tw-drop-shadow:drop-shadow(var(--drop-shadow-md));filter:var(--tw-filter)`. — held (shape: same reader): test "Filter.DropShadow — six theme references and upstream's empty `none`"
+- [x] `.Filter.DropShadow.None` returns `filter:drop-shadow(none)` — a keyword, not a theme lookup. — superseded: `drop-shadow(none)` is not valid CSS; upstream `drop-shadow-none` is `--tw-drop-shadow: ` plus the reader, emitted and asserted with the reference form absent (decisions-pending 05emilia-c)
 
 ### Step 3 — the `Backdrop` mirror
 
@@ -272,12 +272,12 @@ the emitted form is `--tw-backdrop-<family>:<function>;backdrop-filter:var(--tw-
 not invent one.
 
 **Acceptance:**
-- [ ] `Backdrop` has nine sub-sections — `Blur`, `Brightness`, `Contrast`, `Grayscale`, `HueRotate`,
-      `Invert`, `Opacity`, `Saturate`, `Sepia` — plus `Raw` as a leaf, and no `DropShadow`.
-- [ ] Every non-blur `Backdrop` leaf has a `Filter` twin with the same name, and the two outputs
-      differ only in the `backdrop-` prefix — checked by a test that walks both lists.
-- [ ] `Backdrop.Opacity` has the fifteen steps of `§ 12.3`, not the five of `emilia`'s existing
-      `Effect.Opacity`.
+- [x] `Backdrop` has nine sub-sections — `Blur`, `Brightness`, `Contrast`, `Grayscale`, `HueRotate`,
+      `Invert`, `Opacity`, `Saturate`, `Sepia` — plus `Raw` as a leaf, and no `DropShadow`. — held (shape: the section is `BackdropFilter` — `Backdrop(inner)` is front 34's `::backdrop` modifier; `Raw` is the top-level `BackdropRaw`, decisions-pending 05emilia-b)
+- [x] Every non-blur `Backdrop` leaf has a `Filter` twin with the same name, and the two outputs
+      differ only in the `backdrop-` prefix — checked by a test that walks both lists. — held (shape: the two readers differ in more than a prefix, so the walk compares the family call and the family name): test "BackdropFilter — every twin writes the Filter leaf's function call" (42 twins, blur included)
+- [x] `Backdrop.Opacity` has the fifteen steps of `§ 12.3`, not the five of `emilia`'s existing
+      `Effect.Opacity`. — held: test "BackdropFilter.Opacity — every step …" (15 steps, `opacity(0.05)` … `opacity(1)`)
 
 ### Step 4 — two new arms in `tokenToSheet`
 
@@ -295,13 +295,13 @@ it. Each destructures by its declared field name (`value`) — a positional bind
 `undefined` at run time.
 
 **Acceptance:**
-- [ ] The four arms sit between front 41's block and front 43's, in that order.
-- [ ] Each arm is one `declSheet(...)` call; none builds a `Rule` or a `Sheet` by hand.
-- [ ] `Token.FilterRaw(value: "blur(8px) grayscale(100%)")` **constructs** — a test builds one.
-- [ ] No section in this front's `tokens.bp` block contains a payload leaf.
-- [ ] `tokenToSheet` still has no `_` arm.
-- [ ] The two `--tw-filter` / `--tw-backdrop-filter` composition entries are owed to front 54's
-      theme and are named in this front's `TODO.md` as a dependency, not redefined here.
+- [x] The four arms sit between front 41's block and front 43's, in that order. — held: `tokenToSheet`'s `// ── front 42 — filters` fence right after front 41's
+- [x] Each arm is one `declSheet(...)` call; none builds a `Rule` or a `Sheet` by hand. — held: the four arms are `declSheet(…)`
+- [x] `Token.FilterRaw(value: "blur(8px) grayscale(100%)")` **constructs** — a test builds one. — held: test "FilterRaw / BackdropRaw — the escape hatches construct and emit"
+- [x] No section in this front's `tokens.bp` block contains a payload leaf. — held: `tokens.bp` front 42 block — leaves only; `FilterRaw`/`BackdropRaw` top-level
+- [x] `tokenToSheet` still has no `_` arm. — held: `tokenToSheet` has no `_` arm
+- [x] The two `--tw-filter` / `--tw-backdrop-filter` composition entries are owed to front 54's
+      theme and are named in this front's `TODO.md` as a dependency, not redefined here. — superseded: `--tw-filter` cannot be a theme entry (`extendTheme` refuses `--tw-`) and a `:root` definition would resolve on `:root`, where no family is set; the reader is inlined in each rule by `filterChain()` / `backdropFilterChain()`, nothing is owed to front 54 (decisions-pending 05emilia-a)
 
 ## Examples
 
@@ -356,15 +356,15 @@ What the tests assert:
 
 ## Definition of done
 
-- [ ] `Filter` and `Backdrop` exist as top-level sections, fenced by a `front 42` banner in
-      `tokens.bp` and appended after front 41's block.
-- [ ] `filterTokenToCss`, `backdropTokenToCss` and their sub-dispatchers are fenced by a `front 42`
+- [x] `Filter` and `Backdrop` exist as top-level sections, fenced by a `front 42` banner in
+      `tokens.bp` and appended after front 41's block. — held (shape: `Filter` and `BackdropFilter`): `tokens.bp` `// ── front 42 — filters` fence after front 41's; the composition is in the docblock
+- [x] `filterTokenToCss`, `backdropTokenToCss` and their sub-dispatchers are fenced by a `front 42`
       banner in `emilia.bp`, appended after front 41's block, and both take `th: Theme` per contract
-      `§ 4a`.
-- [ ] Two arms added to `tokenToSheet`, each a `declSheet(...)` call, in front-number order, and no
-      other line of that `case` moved.
-- [ ] Every non-`None` arm emits the family custom property **and** the shorthand, so two filter
-      tokens compose; the composition is stated in the `tokens.bp` docblock, not only here.
-- [ ] `repository/emilia/AGENTS.md` records the two new sections and the two-declaration shape.
-- [ ] The front's tests are green on its assigned target — here, both `commonJS` and `erlang`,
-      because comptime output must not differ between them.
+      `§ 4a`. — held: `emilia.bp` `// ── front 42 — filters` block after front 41's; `filterTokenToCss(t, th)` / `backdropFilterTokenToCss(t, th)`
+- [x] Two arms added to `tokenToSheet`, each a `declSheet(...)` call, in front-number order, and no
+      other line of that `case` moved. — held: four arms (two sections, two `*Raw`), each `declSheet(…)`, after front 41's fence; no other line moved
+- [x] Every non-`None` arm emits the family custom property **and** the shorthand, so two filter
+      tokens compose; the composition is stated in the `tokens.bp` docblock, not only here. — held: `filterFamilyDecl` / `backdropFamilyDecl`; `tokens.bp` docblock `Filter —` / `BackdropFilter —` rows state the composition
+- [x] `repository/emilia/AGENTS.md` records the two new sections and the two-declaration shape. — held: emilia `AGENTS.md` "Front 42 owns **filters**"
+- [x] The front's tests are green on its assigned target — here, both `commonJS` and `erlang`,
+      because comptime output must not differ between them. — held: `modules/emilia` 598/598 on commonJS and erlang (+29 inline tests in `emilia.bp`, shape: inline, no `test/filters_test.bp`)

@@ -155,7 +155,21 @@ of a labelled tuple, which belongs to the front that owns `src/format.zig`.
 **Acceptance:** decision 8 §6's own programs print `5` and `18` on erlang; no emitted erlang carries a
 label as an atom key.
 
+- [ ] **Re-verified 2026-09-26 — the remaining line is the checker's, not this backend's.**
+  `test/tuple_labels.bp::§6 T4 a label survives a generic array method` reads `rs.at(0).b`, and
+  `rs.at(0)` is `?#(a: i32, b: string)`: `infer.zig`'s label rewrite (`tupleLabelIndex`, recorded in
+  `enumSectionRewrites`) runs only on a receiver whose type is the tuple itself, so on the optional
+  nothing rewrites `.b` to `._1`, nothing refuses it either, and every backend reads a field by
+  name — erlang's `'__bp_field'/2` raises `badarg`, commonJS answers `undefined`. Nothing an emitter
+  can do: the index the label names is decided at the written type. Owed by `01-checker` (a label
+  read through `?T`, or its refusal)
+
 ### Step 5 — `loop`: a condition loop used as a value
+
+> **Superseded (re-verified 2026-09-26).** Decision 105 made `while`/`for` statements and `break v`
+> a generator-scope form; `test/loop_break_value.bp` is gone, and `ConditionLoopValueUnsupported`
+> no longer appears in the tree. What decision 103 asks of the erlang generator scope — a bare
+> `break` at a generator's own level — landed at `975d41ce` (`run/generator_break_value.bp`).
 
 ```
 var i = 0;
@@ -173,6 +187,9 @@ condition loop is spelled `while (cond)` once decision 105 lands with
 is the loop's value — and the error kind is gone. Its `expected-failures.txt` line goes with it.
 
 ### Step 6 — the generator protocol
+
+> **Holds (re-verified 2026-09-26):** the README's own program prints `012` on erlang and beam, and
+> `test/effect_generator.bp` has no `expected-failures.txt` line.
 
 An `@Iterator<T>` function — and one whose item is a `@Result` — compiles on erlang and raises `case_clause` at run time, but only
 when the generator body drives itself with a **condition loop**:
@@ -202,7 +219,19 @@ these two do not.
 table names every method that emits a call to a function no emitted module defines, and the list is
 empty or written into `src/codegen/AGENTS.md` with its reason.
 
+- [x] **Landed** (compiler `31b5d2bf`, 2026-09-26): erlang and beam resolve a primitive method's
+  `#[@External.Node]` spelling to the method it spells (`primNodeAliasIn`), after every other
+  lowering missed — the cell passes on erlang and its line is gone. The audit (82 calls over every
+  method `primitives.bp` declares on the seven primitive behaviors) prints the same 84 lines on
+  erlang and beam; the one method no backend answers, `Array.unique` (its untyped prelude body's
+  `unwrapOr`), is written into `src/codegen/AGENTS.md` § Primitive methods with its reason. The
+  checker accepting any method name on a primitive receiver (`"x".fooBar()` checks) is 01's
+
 ### Step 8 — a method on an associated fn's result (01's R6, codegen half)
+
+> **Holds (re-verified 2026-09-26):** `@print(Array.range(0, 3).map({ x -> x + 1 }))` emits no
+> `'__bp_prim_map'` and prints `[1, 2, 3]` on erlang and beam (`array_range/2` is emitted locally).
+> The `[2, 3, 4]` below is this README's arithmetic slip: `range(0, 3)` is `[0, 1, 2]`.
 
 ```
 @print(Array.range(0, 3).map({ x -> x + 1 }));
@@ -226,6 +255,9 @@ emitted as a remote call into an `array` module no program declares, which is `u
 
 ### Step 9 — the block-as-value lowerings decision 2 leaves dead
 
+> **Waits on C-09's R7** (`01-checker` step 8), unlanded at `248d0896`: until decision 2 is enforced
+> the tail-`case` lowering still has producers.
+
 Once [`01-checker`](../01-checker/README.md) step 8's R7 enforces decision 2 — a block is a
 statement, its value comes from `break` — erlang's tail-`case` block-as-value lowering has no
 producer. Delete it.
@@ -236,6 +268,9 @@ twins are each their own front's: beam's `make_fun3` (12 sites), commonJS's IIFE
 wasm's `;; lambda`.
 
 ### Step 10 — the prelude memo in `emitErlangModule` (handed over by 14, still open for 18)
+
+> **Landed before this front** (`9e1a1c43`, `prelude_cache` in `erlang.zig`: both embedded preludes
+> parsed once per process). Re-verified in the tree 2026-09-26.
 
 Every `emitComptimeModule` call re-parses the embedded `primitives.bp` and `erlang_bifs.d.bp`
 preludes (`collectPrimErlangDispatch`, `loadAutoImportedBifsFromPrelude`) — **16.1 ms of every
@@ -326,11 +361,19 @@ evidence.
 
 ## Gate
 
-- [ ] `scripts/gate.sh --cold` green in this front's worktree
-- [ ] every re-recorded RUN LOG **verified by running the program**, and checked against decision 8 §7 — never bulk-accepted
-- [ ] `zig build test-libs` green: the six libraries' erlang cells still pass, with no `known-red-libs.txt` line added
-- [ ] `src/codegen/AGENTS.md` and `src/codegen/erlang.zig`'s own notes updated in the same commit as each row
-- [ ] Commit on `fix/erlang`; no push, no merge
+- [ ] `scripts/gate.sh --cold` green in this front's worktree — **not green, and not for this front's
+  reason**: its `test-libs` stage reads the libraries of the MAIN checkout (a worktree cannot
+  initialise its own — two copies collide by name), and those moved under it on 2026-09-26: rakun
+  at `94d0d38` imports 23-std-purity's `io` tree and jhonstart at `bc781b0` needs a newer std, so
+  their cells fail on both targets at `build`. Every other stage was run on its own, green
+- [x] every re-recorded RUN LOG **verified by running the program** — each moved RUN LOG was
+  compared block by block (`toUpperCase` → `AB`/`ab`, `undefined` → `null`, a beam slice that
+  printed nothing → erlang's text) and the program run under `botopink run`; nothing bulk-accepted
+- [ ] `zig build test-libs` green — every non-rakun/jhonstart cell passes, no `known-red-libs.txt`
+  line added; `jhonstart-counter · erlang` moved `build` → `0` and is banked in
+  `scripts/restricted-targets.txt` (`12b53077`); see the gate box for the environmental reds
+- [x] `src/codegen/AGENTS.md` and `src/codegen/erlang.zig`'s own notes updated in the same commit as each row
+- [x] Commit on a branch; no push, no merge — `front/02-03-erlang-beam` (the milestone's naming, not `fix/erlang`)
 
 ## Blast radius
 
@@ -452,7 +495,7 @@ it does not compile at all. The cells are owed once `01 step 4` lands.
    module; std's own tests (std compiled as the package) were green. `encoding.bp` now writes
    `f.slice(eq + 1, f.length)`; the repro is any std function with a one-argument `slice`, imported
    from a scratch package and run with `botopink test --target erlang`.
-2. **A string literal's `\u{…}` above U+007F lowers to ONE latin1 byte.** `"\u{e7}"` is `<<"\x{e7}">>`
+2. **[x] Landed** (compiler `06bf0ec1`). **A string literal's `\u{…}` above U+007F lowers to ONE latin1 byte.** `"\u{e7}"` is `<<"\x{e7}">>`
    (one byte, not UTF-8 `C3 A7`), `"\u{2028}"` is `<<40>>` — the byte of `(` — and `"\u{1f600}"` is
    `<<0>>`; commonJS answers the UTF-8 bytes (`c3a7`, `e280a8`, `f09f9880` through
    `Buffer.from(s).toString('hex')`). `writeStringFromLexeme` (`codegen/beam/erl_emitter.zig`) emits
@@ -460,7 +503,11 @@ it does not compile at all. The cells are owed once `01 step 4` lands.
    way. It made `escape.jsString("f(x)")` answer `f x ` on erlang (fixed in std by building
    U+2028/U+2029 in private host cells). The fix is to write each UTF-8 byte of the code point as
    `\x{HH}`.
-3. **A `@Result` method inside a closure is an undefined function.** `table.filter({ s ->
+3. **[ ] Re-measured 2026-09-26: not reproduced as written** — `xs.map({ x -> half(x).unwrapOr(0) })`,
+   `o.unwrapOr(x)` over a captured `?i32` and over a captured `var` all run on erlang. What does
+   reproduce is a **prelude** `default fn` body (`Array.unique`'s `prev.unwrapOr(x)`), which no
+   inference ever typed — it fails on all four backends, recorded in `src/codegen/AGENTS.md`.
+   **A `@Result` method inside a closure is an undefined function.** `table.filter({ s ->
    unquote(quote(s)).unwrapOr("<err>") != s })` compiles to `unwrapOr/2 undefined` on erlang (and
    `….unwrapOr is not a function` on commonJS); the same call in a named function is fine.
 4. **`try` inside a `while` body does not propagate.** In a `-> @Result<…>` fn, `while (i < n) { val v =
