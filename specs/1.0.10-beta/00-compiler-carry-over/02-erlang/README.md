@@ -155,6 +155,15 @@ of a labelled tuple, which belongs to the front that owns `src/format.zig`.
 **Acceptance:** decision 8 §6's own programs print `5` and `18` on erlang; no emitted erlang carries a
 label as an atom key.
 
+- [ ] **Re-verified 2026-09-26 — the remaining line is the checker's, not this backend's.**
+  `test/tuple_labels.bp::§6 T4 a label survives a generic array method` reads `rs.at(0).b`, and
+  `rs.at(0)` is `?#(a: i32, b: string)`: `infer.zig`'s label rewrite (`tupleLabelIndex`, recorded in
+  `enumSectionRewrites`) runs only on a receiver whose type is the tuple itself, so on the optional
+  nothing rewrites `.b` to `._1`, nothing refuses it either, and every backend reads a field by
+  name — erlang's `'__bp_field'/2` raises `badarg`, commonJS answers `undefined`. Nothing an emitter
+  can do: the index the label names is decided at the written type. Owed by `01-checker` (a label
+  read through `?T`, or its refusal)
+
 ### Step 5 — `loop`: a condition loop used as a value
 
 ```
