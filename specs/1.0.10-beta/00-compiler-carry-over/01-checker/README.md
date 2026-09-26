@@ -134,7 +134,7 @@ A union reaches inference as `TypeRef.generic` named `"|"` with its members as a
 | — | the misuse is reported **at the use**, pointing at the branch that widened it (§3.2's diagnostic sketch) |
 
 **Acceptance:**
-- [ ] `val v: i32 | string = 1;` checks; `val n: i32 = v + 1;` reds at the use and names the widening branch — **half**: it checks and reds at the use ("cannot do arithmetic on a `i32 | string`"); naming the widening branch needs a second location on `TypeError`, not built
+- [x] `val v: i32 | string = 1;` checks; `val n: i32 = v + 1;` reds at the use and names the widening branch — it checks and reds at the use; for an INFERRED union the message names the `if`/`case` that widened it (compiler `9475bbf1`; an annotated union has no widening branch to name)
 - [x] `val v = if (c) { 1 } else { "a" };` checks with no error and `v` is `i32 | string` — re-verified at `ffe2db69`
 - [x] `i32[] | string[]` does not unify with `(i32 | string)[]` — re-verified at `ffe2db69` (type mismatch at the value)
 - [x] `test/case_exhaustive.bp` compiles on commonJS and erlang — no line left in `expected-failures.txt`; green in `run.sh --target all`
