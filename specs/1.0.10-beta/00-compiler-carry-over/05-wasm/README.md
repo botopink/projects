@@ -415,7 +415,8 @@ before anything was written.
 | Step 1 F1, F5 | **holds** | `5.0`, `[1, 2]`, `#(1, "a")`; `run/tuple_print.bp` green, its line gone |
 | Step 1 F2, F3 | **holds** (C-01 half 3's descriptor header) | `run/print_formatter.bp` green on wasm |
 | Step 1 F4 (`Display`) | **landed here** | `run/display_print.bp` prints `$5` / `[$1, $2]`; its line deleted |
-| Step 2 D1–D3 | **open** | `x is i32` over an `unknown` traps (`§4.2 is: no run-time test for this type on wasm`) — honest, not a wrong answer |
+| Step 2 D1–D4 | **landed here** (compiler `b11867d6`) | the box, `is` by value, `==` by value, primitive-type `case` arms — `run/unknown_by_value.bp` green on four targets |
+| Step 2 D5 | **holds** — the read path worked, the call path is step 7's (landed) | `tuple_labels_resolve_to_positions_on_every_backend` |
 | Step 3 `Dict` | **holds** | boxes above |
 | Step 4 `break <value>` | **superseded** by decision 105 (C-30) | |
 | Step 5 `==` on tuples | **holds** | `true` / `false` for `#(1, "a")` against `#(1, "a")` / `#(1, "b")` |
@@ -462,3 +463,13 @@ before anything was written.
   payload's record type (`modules/field_name_collision`'s `0`); a `_`-named top-level statement runs
   at load (`run/module_init_order.bp`). Four lines deleted; 8 wasm snapshots per tree moved, three
   RUN LOGs from a trap to the commonJS answer.
+- **Step 2 D1–D4, the box** (compiler `b11867d6`) — designed on C-01's header, as this README asked:
+  a value entering an `unknown` or union slot carries the header a declared value already carries; a
+  primitive is boxed with a `'P' <n> name` descriptor, so one field answers "which primitive" and
+  "which declaration" and 13's named-type tests read an `unknown` value unchanged. `x is T` by value
+  (§4.1), `==` by value (§2.3), `@print` by the box, `if (x is T)` narrowing, primitive-type arms
+  (§5.2). Before, `x is i32` trapped and a type arm matched every value (`number 364`, an address,
+  exit 0). A value whose type nothing proves — a type parameter's slot, since nothing monomorphises —
+  traps rather than being boxed by a guess (`tests/wat.zig` pins it). No snapshot moved; new cell
+  `run/unknown_by_value.bp`. Not in the box: arrays and tuples are boxed with a descriptor but have
+  no printed form and no element-wise `is` through `unknown` (they trap).
