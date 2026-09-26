@@ -551,7 +551,7 @@ non-empty `.d.ts` (no `tsc` in the checkout when 04 closed) and `42.toString()` 
 - [ ] `optional<i32>` and `x?.f` on a `?T` each a located error with the decided text; a cell each
 - [ ] an out-of-range read prints `null` on all four backends, one cell; `tuple_labels.bp::§6 T4` reds
       at `check`
-- [ ] `Env.warnings` exists and one warning renders (the always-false `is` of 01 step 3 is the first)
+- [x] `Env.warnings` exists and one warning renders (the always-false `is` of 01 step 3 is the first) — compiler `bdbbeae6`: `OkData.warnings`, rendered by `botopink check` under `warning:`; §1.4's `[]` birth is the second writer. `build` / `test` / the LSP do not print them yet
 - [ ] `any` gone from the grammar, `erlang.bp`/`beam.bp` re-spelled, or the row re-decided with the
       measurement
 - [ ] `Array.unique` answers on both backends, a `libs/std` test

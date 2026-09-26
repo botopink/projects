@@ -85,7 +85,7 @@ the checker guarantees — exhaustiveness and assignability. Keep them distinct 
 |---|---|---|
 | 4.1 | numbers by **range**: `2.0 is i32` true, `2.5 is i32` false, `x is f64` true for any number. Inside the block the value **is** the tested type — `if (a is i32) { @print(a + 1); }` prints `3` | not typed; the run-time half is each backend's |
 | 4.2 | what may follow `is`: a primitive; a named type's constructor; `#(i32, string)` (arity and each element); `Box<unknown>` — `Box<i32>` is an **error**, the argument is not checkable | the parser accepts all of them into `isType`; nothing checks them |
-| 4.2 | `Option.Some(v)` / `.Some(v)` binding a payload | **refused by the parser** with a located `is-variant-binding` at the `(`, hinting at a `case` arm. Decision D4: does `is` grow a pattern, or does the refusal stand? |
+| 4.2 | `Option.Some(v)` / `.Some(v)` binding a payload | **refused by the parser** with a located `is-variant-binding` at the `(`, hinting at a `case` arm. **Decided** by 1.0.5's decision 25 (b): the refusal stands — `is` answers a `bool` and `case` is the only construct that binds, so the form leaves §4.2 |
 | 4.3 | `a is string` on a statically-known `i32` is a **warning**, always false | no warning |
 
 Narrowing has three entries and they must agree: the `if` condition (through step 10's `&&`

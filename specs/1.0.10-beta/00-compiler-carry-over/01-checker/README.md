@@ -114,11 +114,11 @@ comes out unchecked.
 | 2.5 | there is no `any` |
 
 **Acceptance:**
-- [ ] `val a: unknown = 42;` checks and `val y: i32 = a;` reds with a location naming `is`
-- [ ] `a + 1`, `a.x`, `a[0]`, `a.len()` each red at the operation; `@print(a)` and `a == 2` check
-- [ ] `pub fn f() { … }` whose inferred return contains `unknown` reds; `pub fn parse(s: string) -> unknown` checks
-- [ ] `var out = [];` warns and names `var out: i32[] = [];`
-- [ ] `reject/case_unknown_without_wildcard.bp` and `reject/case_shorthand_on_unknown.bp` are rejected for **their own** reason (step 5 finishes them)
+- [x] `val a: unknown = 42;` checks and `val y: i32 = a;` reds with a location naming `is` — re-verified at `ffe2db69`: "an `unknown` value cannot be used as another type without testing it", hint `if (x is i32) { … }` (`unify.zig`)
+- [x] `a + 1`, `a.x`, `a[0]`, `a.len()` each red at the operation; `@print(a)` and `a == 2` check — re-verified at `ffe2db69` (`a[0]` reds as the method call it is under C-02)
+- [x] `pub fn f() { … }` whose inferred return contains `unknown` reds; `pub fn parse(s: string) -> unknown` checks — compiler `bdbbeae6`: a `pub val` with no written type inferred as containing `unknown` is refused at the value. A `fn`'s return is written, never inferred (§1.1): an unannotated `fn` is `void`, so the `fn` half has nothing to infer — a `return <value>` from an unannotated fn is R7's (decision 2) row
+- [x] `var out = [];` warns and names `var out: i32[] = [];` — compiler `bdbbeae6` (decision 57's channel; `botopink check` prints `warning: … annotate it: `var out: i32[] = [];``). Only the `[]` birth is built; the rest of §1.4 (a type argument never decided by a later use) is not — see `comptime/AGENTS.md`
+- [x] `reject/case_unknown_without_wildcard.bp` and `reject/case_shorthand_on_unknown.bp` are rejected for **their own** reason (step 5 finishes them) — the first by exhaustiveness (already at `ffe2db69`), the second by "`.Some` on an `unknown` value names no enum — write the variant's full name" (compiler `bdbbeae6`; it had come to check clean); its line left `expected-failures.txt`
 
 ### Step 2 — union types (N20, decision 8 §3)
 
@@ -134,10 +134,10 @@ A union reaches inference as `TypeRef.generic` named `"|"` with its members as a
 | — | the misuse is reported **at the use**, pointing at the branch that widened it (§3.2's diagnostic sketch) |
 
 **Acceptance:**
-- [ ] `val v: i32 | string = 1;` checks; `val n: i32 = v + 1;` reds at the use and names the widening branch
-- [ ] `val v = if (c) { 1 } else { "a" };` checks with no error and `v` is `i32 | string`
-- [ ] `i32[] | string[]` does not unify with `(i32 | string)[]`
-- [ ] `test/case_exhaustive.bp` compiles on commonJS and erlang
+- [ ] `val v: i32 | string = 1;` checks; `val n: i32 = v + 1;` reds at the use and names the widening branch — **half**: it checks and reds at the use ("cannot do arithmetic on a `i32 | string`"); naming the widening branch needs a second location on `TypeError`, not built
+- [x] `val v = if (c) { 1 } else { "a" };` checks with no error and `v` is `i32 | string` — re-verified at `ffe2db69`
+- [x] `i32[] | string[]` does not unify with `(i32 | string)[]` — re-verified at `ffe2db69` (type mismatch at the value)
+- [x] `test/case_exhaustive.bp` compiles on commonJS and erlang — no line left in `expected-failures.txt`; green in `run.sh --target all`
 
 ### Step 3 — `is`, narrowing and the always-false warning (N21, decision 8 §4)
 
@@ -152,10 +152,10 @@ the guarded arm's body, and convert an integral `f64` to the tested integer type
 | — | narrowing also applies through `&&` (step 10's grammar), through a `when (…)` guard into that arm's body (§5.3), and through the type-guard fn form `-> x is T`, which already narrows (C5) |
 
 **Acceptance:**
-- [ ] `val b: bool = a is i32;` checks; `if (a is i32) { @print(a + 1); }` checks with `a: unknown`
-- [ ] `val a: i32 = 1; a is string` warns "always false" with a location, and still checks
-- [ ] `x is Box<i32>` reds naming §4.2; `x is Box<unknown>` checks
-- [ ] the `is` residual of §4.2 (a pattern after `is`) is decided and the decision is written in [`decision-8-inference.md`](./decision-8-inference.md)
+- [x] `val b: bool = a is i32;` checks; `if (a is i32) { @print(a + 1); }` checks with `a: unknown` — re-verified at `ffe2db69`
+- [x] `val a: i32 = 1; a is string` warns "always false" with a location, and still checks — compiler `bdbbeae6` (`warnAlwaysFalseIs`, decision 57's channel)
+- [x] `x is Box<i32>` reds naming §4.2; `x is Box<unknown>` checks — re-verified at `ffe2db69` ("`is` cannot test the type argument of `Box`")
+- [x] the `is` residual of §4.2 (a pattern after `is`) is decided and the decision is written in [`decision-8-inference.md`](./decision-8-inference.md) — decision 25 of 1.0.5 (b): `is` answers a `bool`, `case` is the only construct that binds; the parser's `is-variant-binding` refusal stands
 
 ### Step 4 — `case` arm resolution (N22, decision 8 §5, §5.3b)
 
@@ -177,9 +177,9 @@ The parser half of (d) is this front's too: a section body carrying a `fn` does 
 `EnumSection` has no method slot. §5.3b leaves that unimplemented on purpose — do not add it here.
 
 **Acceptance:**
-- [ ] `test/case_tuples.bp`, `test/case_guards.bp`, `test/case_variants.bp`, `run/case_values.bp` and `test/case_sections.bp` compile and run on commonJS and erlang
-- [ ] `reject/case_missing_variant.bp` is rejected **because `Rect` is missing**, not because `.Circle` does not resolve
-- [ ] `reject/case_arity_without_rest.bp` names the missing field
+- [x] `test/case_tuples.bp`, `test/case_guards.bp`, `test/case_variants.bp`, `run/case_values.bp` and `test/case_sections.bp` compile and run on commonJS and erlang — none has a line left; green in `run.sh --target all` at `ffe2db69`
+- [x] `reject/case_missing_variant.bp` is rejected **because `Rect` is missing**, not because `.Circle` does not resolve — "missing variant(s) Rect"
+- [x] `reject/case_arity_without_rest.bp` names the missing field — "missing required field 'height' on type 'Rect'"
 - [ ] `val t: Token.Text = .Bold;` checks, `Token.Text.Bold` checks, and a `case` over `Token.Text` is exhaustive on its own members with no `_`
 
 ### Step 5 — exhaustiveness (decision 8 §5.4)
@@ -197,9 +197,9 @@ an arm the moment its pattern names a variant.
 | a refinement into a section (`Text(Bold)`) | — | does **not** cover `Text` (§5.3b) |
 
 **Acceptance:**
-- [ ] `reject/case_only_guarded_arms.bp` and `reject/case_literals_only.bp` are rejected, each with a located message naming `_`
-- [ ] `reject/case_unknown_without_wildcard.bp` is rejected **by exhaustiveness over `unknown`**, not by assignability
-- [ ] a `case` covering every member of a union needs no `_`; a `case` whose only coverage of a section is a refinement still needs one
+- [x] `reject/case_only_guarded_arms.bp` and `reject/case_literals_only.bp` are rejected, each with a located message naming `_` — re-verified at `ffe2db69`
+- [x] `reject/case_unknown_without_wildcard.bp` is rejected **by exhaustiveness over `unknown`**, not by assignability — "`case` on 'unknown' is not exhaustive"
+- [x] a `case` covering every member of a union needs no `_`; a `case` whose only coverage of a section is a refinement still needs one — re-verified at `ffe2db69` (`Text(Bold)` alone: "missing variant(s) Text")
 
 ### Step 6 — generics §1.1 and §1.2 (N18)
 
@@ -220,10 +220,10 @@ correct (the decorator-application check, `required ≤ args ≤ params.len`) ar
 [`trailing-defaults.md`](./trailing-defaults.md).
 
 **Acceptance:**
-- [ ] a free fn, a record constructor and an instance method each accept a call that omits a trailing default, and the injected argument reaches codegen through `transform.zig`
-- [ ] a missing **required** argument still reds (diagnostic D3)
-- [ ] `type P(x: i32 = 0, y: i32)` then `P(y: 2)` checks and `x` is `0` at run time
-- [ ] `test/fn_defaults.bp` passes on commonJS and erlang
+- [x] a free fn, a record constructor and an instance method each accept a call that omits a trailing default, and the injected argument reaches codegen through `transform.zig` — landed as C-04; re-run at `ffe2db69`: `80` / `0` / `6` on commonJS and erlang
+- [x] a missing **required** argument still reds (diagnostic D3) — "'connect' expects 2 argument(s), got 0"
+- [x] `type P(x: i32 = 0, y: i32)` then `P(y: 2)` checks and `x` is `0` at run time
+- [x] `test/fn_defaults.bp` passes on commonJS and erlang — no line left
 
 ### Step 8 — the rows other fronts handed over, and the checker's own tail
 
