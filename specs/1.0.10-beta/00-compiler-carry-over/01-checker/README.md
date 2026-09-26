@@ -402,14 +402,19 @@ Inside a hook-activating body (a `@Component` return under decision 118) front 2
 Repro: `repository/jhonstart/repro/local-binding-leaks-to-later-decls/` — twelve lines, jhonstart-free.
 
 **Acceptance**
-- [ ] the bare shape is **refused at compile time**, located at the use, naming the function the
-      binding belongs to
-- [ ] the shadowing shape resolves `p` to the exported declaration, and a local named `p` shadows it
-      **only inside the function that declares it**
-- [ ] the `@Component`-body case carries a line and a column — a located message is not optional because
-      the body is a comptime one
-- [ ] cells for both, each proved able to fail by planting the pre-fix behaviour, and the bare one
-      asserted on **both** rows, since today it fails differently on each
+- [x] the bare shape is **refused at compile time**, located at the use, naming the function the
+      binding belongs to — compiler `883b578d`: "unbound variable 'v' — `v` is a local of `holder`, and a
+      local ends with its body"
+- [x] the shadowing shape resolves `p` to the exported declaration, and a local named `p` shadows it
+      **only inside the function that declares it** — `883b578d` (body scopes: `Env.openBodyScope`)
+- [x] the `@Component`-body case carries a line and a column — a located message is not optional because
+      the body is a comptime one — the unlocated mismatch no longer arises: the shadowing is gone, and the one
+      diagnostic left in this family (`unboundAt`) is located at the use in every body
+- [x] cells for both, each proved able to fail by planting the pre-fix behaviour, and the bare one
+      asserted on **both** rows, since today it fails differently on each — `reject/local_binding_escapes`
+      (a `check`-time refusal, so one cell covers every row) and `run/local_shadow_ends_with_body`
+      (`3` / `p:x` on commonJS, erlang and wasm); run with the `feat` binary, the first is accepted and the
+      second reds `expected string, got Thing` on all three
 
 ### Step 14 — decision 112: DSL hygiene (each name resolves in the scope of whoever wrote it)
 
