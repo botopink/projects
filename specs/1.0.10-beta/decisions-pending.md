@@ -4,7 +4,7 @@
 front 24's (24-a…c, 24-g), `01-std`'s (01std-a, 01std-c…e), `00 · 23-std-purity`'s (23-a…c), front 95's
 (95-a…e), `00 · 16-formatter`'s (16-a…b), track C's (26-a, 27-a, 30-b…e, 31-a), `00 · 04-js` /
 `05-wasm`'s (0405-b), `00 · 01-checker`'s (01c-a…b),
-track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…s) and the host methods' (lem-a…f). Two
+track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…u) and the host methods' (lem-a…f). Two
 questions are open: the language-gaps sweep's lg-a and lg-b (§ Open). Every other question raised so far is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 24-f is decision 143 (library resolution stops at the
 enclosing checkout; dependencies are transitive); the next free number is **144**.
@@ -539,6 +539,29 @@ fronts could land; the maintainer confirms or reverses each.
 > in the sidecar.
 > **Recommendation.** (1) — implemented. (2) is an encoder beside the JSON one if a collector ever needs
 > protobuf only.
+
+### 03r-t · Front 76's keys live under `rakun.management.*`, in one module
+
+> **Raised by:** `76-rakun-actuator-security-probes`
+> **Measured.** The front writes `rakun.endpoints.web.exposure.include`, `rakun.endpoint.<id>.access`,
+> `rakun.endpoints.access.max-permitted` and owns six files (`exposure.bp`, `access.bp`, …). Front 11
+> already reads `rakun.management.endpoints.web.base-path`, `…path-mapping.<id>`, `…cors.*` and
+> `rakun.management.endpoint.<id>.cache.time-to-live` — Spring's `management.` prefix.
+> **Options.** (1) every key under `rakun.management.` (`rakun.management.endpoints.web.exposure.include`,
+> `rakun.management.endpoint.<id>.access`, `rakun.management.endpoints.access.default` /
+> `.max-permitted`, `rakun.management.server.*`, `rakun.management.endpoint.<id>.show-values`,
+> `rakun.management.endpoint.health.group.<name>.*`, `…health.probes.enabled`), the front in one
+> `management.bp` plus the `rakun_probes` sidecar; (2) the spec's spellings beside front 11's.
+> **Recommendation.** (1) — implemented; one prefix for the whole actuator, as upstream.
+
+### 03r-u · The liveness group may include only local indicators
+
+> **Raised by:** `76-rakun-actuator-security-probes`
+> **Measured.** "No indicator that reaches a socket may join the liveness group" — but an indicator does
+> not declare whether it reaches a socket.
+> **Options.** (1) an allow-list of local indicators — `livenessState`, `ping`, `diskSpace` — and every
+> other name refuses the boot; (2) an indicator declares itself local at registration.
+> **Recommendation.** (1) — implemented. (2) needs a field on rakun-actuator-api's registration.
 
 ## Open
 
