@@ -20,8 +20,8 @@
 import { Element, text, span, div, renderToString } from "jhonstart";
 // provided by front 94 (`jhonstart-element-surface`, src/elements.bp)
 import { form, button } from "jhonstart";
-import { FormBinding, formAction, formAttrs } from "jhonstart";
-import { FormStatus, formStatus, optimistic, applyOptimistic } from "jhonstart";
+import { FormBinding, formAction, formAttrs } from "jhonstart-forms";
+import { FormStatus, formStatus, optimistic, applyOptimistic } from "jhonstart-forms";
 
 // How one prediction folds into the count. Pure, and the only place the
 // prediction rule lives — the host cell supplies the action list, nothing else.

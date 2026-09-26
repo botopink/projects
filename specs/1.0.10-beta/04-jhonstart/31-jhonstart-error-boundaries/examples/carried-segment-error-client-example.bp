@@ -1,13 +1,13 @@
 // app/blog/error.bp
-#[client]
 import {Element, div, h2, p, button, text} from "jhonstart";
+import {ErrorInfo, resetAttr} from "jhonstart";
 
-pub fn Error(error: string, retry: fn()) -> Element {
+// The retry control is inert in the server HTML; front 29's `hydrate()` binds
+// `data-jh-reset` to front 26's `refresh()`.
+pub fn ErrorPage(info: ErrorInfo) -> Element {
     return div([
         h2([text("Something went wrong!", attrs: [])], attrs: []),
-        p([text(error, attrs: [])], attrs: []),
-        button([text("Try again", attrs: [])], attrs: [
-            #("onClick", "retry"),
-        ]),
+        p([text("Reference " + info.digest, attrs: [])], attrs: []),
+        button([text("Try again", attrs: [])], attrs: [resetAttr("blog")]),
     ], attrs: []);
 }

@@ -24,13 +24,12 @@
 //   https://nextjs.org/docs/app/getting-started/server-and-client-components
 //   https://nextjs.org/docs/app/api-reference/directives/use-client
 
-import { Element, div, ul, li, h1, span, text, renderToString } from "jhonstart";
+import { Element, ElementBase, div, ul, li, h1, h2, span, button, text, renderToString } from "jhonstart";
 import { client, clientProps, clientMount, islandEntry, Island } from "jhonstart";
 import { state } from "jhonstart";
-import { button, h2 } from "jhonstart";
 
-// `button` and `h2` come from front 94 (jhonstart-element-surface). `client`, `clientProps` and `clientMount` are
-// front 29's; `state` is `hooks.bp`.
+// `button` and `h2` are front 94's element surface; `client`, `clientProps` and
+// `clientMount` are front 29's; `state` is `hooks.bp`.
 
 pub type Post(id: string, title: string, likes: i32)
 
@@ -51,7 +50,7 @@ pub fn LikeButton(props: LikeProps) -> @Component<ElementBase, Element> {
         text(c.value.toString() + " likes", attrs: []),
     ], attrs: [
         #("data-jh-on-click", "LikeButton:like"),
-        #("data-onze-post", props.postId),
+        #("data-post", props.postId),
     ]);
 }
 

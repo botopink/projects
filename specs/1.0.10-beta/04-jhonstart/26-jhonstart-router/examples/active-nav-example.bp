@@ -2,8 +2,8 @@
 //
 // A documentation sidebar that marks the section the reader is in.
 //
-// This is a SERVER-rendered component: onze matches the URL with front 22's matcher, front 30's render fills
-// the route snapshot before the render starts, and `pathname` /
+// This is a SERVER-rendered component: front 30's render fills the route
+// snapshot (through `fill`) before the render starts, and `pathname` /
 // `selectedLayoutSegment` read it. The same code re-renders in the browser
 // after a client navigation, from a snapshot the client rebuilt from
 // `window.location` — the component cannot tell which side it is on, which is
@@ -14,13 +14,12 @@
 //   https://nextjs.org/docs/app/api-reference/functions/use-selected-layout-segment
 //   https://nextjs.org/docs/app/getting-started/linking-and-navigating
 
-import { Element, span, ul, li, text, renderToString } from "jhonstart";
+import { Element, ElementBase, span, ul, li, nav, text, renderToString } from "jhonstart";
 import { pathname, selectedLayoutSegment } from "jhonstart";
-import { Link, linkProps } from "jhonstart";
-import { nav } from "jhonstart";
+import { Link, linkProps } from "jhonstart-link";
 
-// `nav` is not one of the eight builders `element.bp` ships. It comes from
-// front 94 (jhonstart-element-surface). `Link`/`linkProps` come from front 27.
+// `nav` is front 94's element surface; `Link`/`linkProps` are front 27's
+// `jhonstart-link` member.
 
 // One row of the sidebar. `active` is decided by the caller, not by the row,
 // so the row stays a pure function of its arguments and is directly testable.

@@ -4,11 +4,8 @@
 // from a header.
 //
 // The request is handed in: onze builds a `RequestData` from rakun's request and
-// passes it to front 30's render, which enters it; `request()` reads it back. It is called
-// plainly here — the server-pass value — so `GreetingBar` and `Page` activate
-// nothing and carry no annotation (decision 104). The hook form, `use request()`
-// inside a `fn … -> @Component<ElementBase, Element>`, is the front README's
-// *Language gaps* row 1 and waits on the effect-chain task (front 19 step 2).
+// passes it to front 30's render, which enters it; `use request()` reads it
+// back inside a `fn … -> @Component<ElementBase, Element>`.
 //
 // Nothing read here may cross to the client. The `authorization` header is the
 // case that matters: it is used to decide what to render and is never handed to
@@ -18,15 +15,9 @@
 //   https://nextjs.org/docs/app/api-reference/functions/cookies
 //   https://nextjs.org/docs/app/api-reference/functions/headers
 
-import { Element, div, span, p, text, renderToString } from "jhonstart";
+import { Element, ElementBase, div, span, p, header, text, renderToString } from "jhonstart";
 import { RequestData, request } from "jhonstart";
-import { pairValue } from "jhonstart";          // provided by front 26
-import { header } from "jhonstart";
-
-// `header` (the HTML element) is not among the eight builders `element.bp`
-// ships — it comes from front 94 (jhonstart-element-surface). `RequestData` and
-// `request` are front 28's; `pairValue` is front 26's, the package's one
-// pair-list decoder; the value `request()` reads is the one the render received.
+import { pairValue } from "jhonstart";          // front 26, the one pair-list decoder
 
 fn greetingFor(locale: string) -> string {
     return case locale {
@@ -48,15 +39,16 @@ pub fn greetingBar(req: RequestData) -> Element {
     ], attrs: [#("class", "bar")]);
 }
 
-// The server component. One call to `request()`, then pure rendering.
-pub fn GreetingBar() -> Element {
-    return greetingBar(request());
+// The server component. One `use request()`, then pure rendering.
+pub fn GreetingBar() -> @Component<ElementBase, Element> {
+    val req = use request();
+    return greetingBar(req);
 }
 
 // A second server component, showing that the request is read once per render
 // and passed down rather than re-read in every child.
-pub fn Page() -> Element {
-    val req = request();
+pub fn Page() -> @Component<ElementBase, Element> {
+    val req = use request();
     return div([
         greetingBar(req),
         p([text("Reading " + req.path, attrs: [])], attrs: []),

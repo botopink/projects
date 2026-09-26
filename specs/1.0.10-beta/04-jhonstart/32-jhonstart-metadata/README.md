@@ -2,70 +2,27 @@
 
 **Track:** C jhonstart
 **Priority:** medium — a page with no `<title>` and no `og:image` is a page that cannot be shared or found; nothing else breaks without it
-**Target:** erlang (server)
+**Target:** erlang (server); the module is pure and its tests run on both rows
 **Wave:** 5
 **Depends on:** 28 · 01 (escaping) · 26 (`pairValue`, the package's one pair-list decoder) · 66 (metadata file routes, read-only)
-**Owns:** `repository/jhonstart/src/metadata.bp`, `repository/jhonstart/test/metadata_test.bp`
-**Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (26), `src/link.bp` (27), `src/server.bp` (28), `src/client.bp` (29), `src/suspense.bp`/`src/streaming.bp` (30), `src/error_boundary.bp` (31), `src/root.bp` and `botopink.json` (front 94)
+**Owns:** `repository/jhonstart/modules/jhonstart/src/metadata.bp`, `modules/jhonstart/test/metadata_test.bp`
 **Reference:** `NEXTJS-DOCS.md § 18. Metadata e OG Images` · https://nextjs.org/docs/app/getting-started/metadata-and-og-images · https://nextjs.org/docs/app/api-reference/functions/generate-metadata
 
 ---
 
-## Problem
+## Outcome
 
-`renderToString` renders a tree of elements, and `<head>` is not one of them. `element.bp` ships
-eight builders and none is `title`, `meta` or `link` (`element.bp:10-53`), so there is no way for a
-page to say what its title is — let alone what its Open Graph image is, or whether the segment it
-sits in has already set one.
+A segment declares its metadata; the metadata of the segment chain merges down it with one rule per
+field kind (`NEXTJS-DOCS.md § 18`); front 30's document splices the merged result into `<head>` as
+escaped markup. `metadata.bp` is pure — no host cell — and hand-rolls no escaping: every value goes
+through std's `escape`.
 
-The absence is not only "no `<title>`". Metadata is the only part of a page whose value is composed
-down the layout chain: a root layout sets the site name and the Twitter card type, a section layout
-sets the section, and the page sets its own title, and the result is one merged object
-(`NEXTJS-DOCS.md § 18`). Nothing in jhonstart composes anything down a chain today; front 30 nests
-layouts for *rendering*, but metadata is not markup and does not nest — it merges, with a rule per
-field kind.
-
-And metadata is the most common place a site injects unescaped attacker text into markup. A post
-title becomes `<meta property="og:title" content="…">`. std has no HTML escaping today at all — that
-is one of the seven absences front 01 closes — so a metadata front written before front 01 would
-have had to hand-roll it.
-
-## Current state
-
-- No metadata of any kind in `repository/jhonstart/src/`. `root.bp:15-17` declares three modules.
-- `element.bp:10-53` — eight builders, none of them a head tag.
-- `libs/std/src/` has nineteen modules and **no escaping**. `escape.html` and `escape.attribute` are
-  front 01's, new, in pure botopink.
-- `pub val` of a primitive is real (`libs/std/src/math.bp:16`, `libs/std/src/path.bp:13`); a `pub val`
-  of a user record type is unexercised anywhere in the tree — which decides the export shape below.
-- `sitemap`, `robots`, `manifest` and `opengraph-image` are **file routes**, and file routes are
-  front 66's (`rakun-metadata-file-routes`). This front owns `generateMetadata` and the head tags it
-  emits, and nothing that is addressed by a URL.
-
-## Mechanism
-
-Upstream gives a segment two ways to declare metadata: a static `export const metadata` and an
-`export async function generateMetadata(props, parent)` for the case where the values come from data
-(`NEXTJS-DOCS.md § 18`). Both produce the same object, and the objects merge down the segment chain.
-
-### Exports are functions, both of them
-
-jhonstart's static form is `pub fn metadata() -> Metadata`, not `pub val metadata: Metadata`. Two
-reasons, and the first is enough: a `pub val` of a user record type is not exercised anywhere in the
-tree, and a spec should not be the first place a construct is tried. The second is that front 30
-resolves a segment's metadata by name, and resolving one name that is always a zero-argument call is
-one code path instead of two.
+### The surface — `metadata.bp`
 
 ```bp
-pub fn metadata() -> Metadata                                  // static
-pub fn generateMetadata(params, parent) -> @Task<Metadata>   // dynamic
-```
-
-A segment may export either. Exporting both is a front-30 render error, not a silent precedence rule.
-
-### The record, and the absence convention
-
-```bp
+pub type OpenGraph(title: string, description: string, url: string, ogType: string, siteName: string, images: string[])
+pub type TwitterCard(card: string, title: string, description: string, images: string[])
+pub type Icons(icon: string, apple: string)
 pub type Metadata(
     title: string,
     titleTemplate: string,
@@ -74,16 +31,38 @@ pub type Metadata(
     twitter: TwitterCard,
     icons: Icons,
 )
+pub type Viewport(width: string, initialScale: string, themeColor: string)
+
+pub fn emptyMetadata() -> Metadata        // also emptyOpenGraph / emptyTwitter / emptyIcons / emptyViewport
+pub fn pick(parent: string, child: string) -> string
+pub fn pickList(parent: string[], child: string[]) -> string[]
+pub fn applyTemplate(template: string, title: string) -> string
+pub fn mergeMetadata(parent: Metadata, child: Metadata) -> Metadata   // mergeOpenGraph / mergeTwitter / mergeIcons per record
+pub fn mergeViewport(parent: Viewport, child: Viewport) -> Viewport
+pub fn renderHead(m: Metadata) -> string
+pub fn renderViewport(v: Viewport) -> string
 ```
 
-There are no optionals. An absent string is `""` and an absent list is `[]`, the same convention
-front 26 and front 28 use for request and route values, and the same one rakun's `Request` uses
-(`repository/rakun/src/http.bp:30-34`). `emptyMetadata()` is the constructor a segment starts from,
-so a page that only sets a title writes one field's worth of difference and not six of `""`.
+There are no optionals: an absent string is `""` and an absent list is `[]`, the convention front 26
+and front 28 use, documented in the file header. `emptyMetadata()` is the constructor a segment
+starts from. The Open Graph type field is `ogType`, because `type` is a keyword.
+
+### Exports are functions, both of them
+
+| Segment export | Kind | Front 30 does |
+|---|---|---|
+| `pub fn metadata() -> Metadata` | static | calls it, merges onto the parent's |
+| `pub fn generateMetadata(params: Array<#(string, string)>) -> @Task<Metadata>` | dynamic | awaits it, merges onto the parent's |
+| both present | error | fails the build with a located message |
+| `pub fn viewport() -> Viewport` / `pub fn generateViewport(params: Array<#(string, string)>) -> @Task<Viewport>` | as above | merged independently of `Metadata` |
+
+The static form is a zero-argument function, not a `pub val` of a record: a `pub val` of a user
+record type is unexercised in the tree, and resolving one name that is always a call is one code path
+instead of two. onze calls `metadata()` / awaits `generateMetadata` per segment and hands the results
+to front 30's render in `PageInput.metadata` / `PageInput.viewports`, root-first, the page's last.
+This table and the merge rule are in `repository/jhonstart/docs.md` § *Metadata*.
 
 ### The merge rule
-
-This is the part with actual semantics. Merging a child segment's metadata onto its parent's:
 
 | Field kind | Rule | Example |
 |---|---|---|
@@ -92,17 +71,15 @@ This is the part with actual semantics. Merging a child segment's metadata onto 
 | nested record | merged field by field, by the same two rules | `openGraph.title` from the page, `openGraph.siteName` from the layout |
 | `titleTemplate` | applied by the parent to the **child's** title, once | parent `"%s | botopink"` + child `"Hello"` → `"Hello | botopink"` |
 
-"Arrays replace, objects merge" is upstream's rule and it is the one people get wrong in the other
-direction: appending images is almost never what a page wants, because the page's image is the
-specific one.
-
-`titleTemplate` is applied at merge time and is not inherited further down: a template that applied
-at every level would compose into `"Hello | Docs | botopink | botopink"`.
+`mergeMetadata(parent, child)` sets `title` to `applyTemplate(parent.titleTemplate,
+pick(parent.title, child.title))`; the result's `titleTemplate` is the **child's**, so it applies to
+the next level down and not to this one — a template that applied at every level would compose into
+`"Hello | Docs | botopink | botopink"`.
 
 ### Rendering the head
 
-`renderHead(m) -> string` produces the tags, in a fixed order so that two renders of the same
-metadata are byte-identical (which is what makes an ETag over the page worth anything):
+`renderHead(m)` writes one tag per line in a fixed order, so two renders of the same metadata are
+byte-identical:
 
 ```
 <title>…</title>
@@ -112,174 +89,49 @@ metadata are byte-identical (which is what makes an ETag over the page worth any
 <link rel="icon" href="…">                  … apple-touch-icon
 ```
 
-Every value goes through front 01: `escape.html` for element text, `escape.attribute` for attribute
-values. A field that is `""` emits no tag — not an empty one. Front 30 splices the returned string
-into the document; this front does not build a document and does not know what one looks like.
+Element text goes through `escape.html`, attribute values through `escape.attribute`. A `""` field
+emits no tag; `renderHead(emptyMetadata())` is `""`. `renderViewport(v)` writes
+`<meta name="viewport" …>` and `<meta name="theme-color" …>`, and `""` for an empty `Viewport`.
+The head is markup, not payload: the payload script's escaping (`contracts.md § 2`, front 30's) does
+not apply here, and using the wrong one is how a `<title>` ends up with `&amp;lt;` in it.
 
-The head is markup, not payload. The payload script's own escaping rule — `<`, `>`, `&`, U+2028 and
-U+2029, so that `</script` is unrepresentable — is `contracts.md § 2` and front 30's; it does not
-apply here and this front must not reimplement it. The two escapings are different problems and
-using the wrong one is how a `<title>` ends up with `&amp;lt;` in it.
-
-### `generateViewport`
-
-Viewport and theme colour are a **second** export upstream, not fields of `Metadata`
-(`generateViewport`). jhonstart keeps them separate for the same reason: they merge, but they merge
-independently, and folding them into `Metadata` would make a page that sets a theme colour inherit a
-title template it never asked for.
-
-```bp
-pub type Viewport(width: string, initialScale: string, themeColor: string)
-pub fn viewport() -> Viewport
-pub fn generateViewport(params) -> @Task<Viewport>
-```
-
-`renderViewport(v) -> string` emits `<meta name="viewport" …>` and `<meta name="theme-color" …>`.
+`Viewport` is a separate record and export (upstream's `generateViewport`): it merges independently,
+so a page that sets a theme colour does not inherit a title template it never asked for.
 
 ### What this front does not own
 
-`sitemap.bp`, `robots.bp`, `manifest.bp` and `opengraph-image.bp` are file routes: a URL, a handler,
-a content type, and for the OG image a rendered PNG. All four are **front 66**'s. What this front
-owes front 66 is the `openGraph.images` list, so that a page pointing at `/og/hello.png` and a file
-route serving `/og/hello.png` agree; the path convention is written down once, in front 66's README
-([`66-rakun-metadata-file-routes/README.md`](../../03-rakun/66-rakun-metadata-file-routes/README.md) § *Image URLs
-carry a content hash*), and cited here.
+`sitemap.bp`, `robots.bp`, `manifest.bp` and `opengraph-image.bp` are file routes and are all **front
+66**'s. What this front owes front 66 is the `openGraph.images` list, so that a page pointing at
+`/og/hello.png` and a file route serving `/og/hello.png` agree; the path convention is written once,
+in [`66-rakun-metadata-file-routes/README.md`](../../03-rakun/66-rakun-metadata-file-routes/README.md)
+§ *Image URLs carry a content hash*.
 
-The markup for those file routes is this front's, not front 66's (decision 116): rakun resolves the
-icons and images of a pattern as data (`iconsFor`, `imagesFor` — URL, kind, size, content type) and
-builds no HTML; onze copies them into the segment's `Metadata` (`icons`, `openGraph.images`) before
-the render, and `renderHead` writes the `<link>` and `<meta>` tags with its own escaping. jhonstart
-names no rakun type — the records reach it as `Metadata` fields.
+The markup for those file routes is this front's (decision 116): rakun resolves the icons and images
+of a pattern as data (`iconsFor`, `imagesFor`) and builds no HTML; onze copies them into the
+segment's `Metadata` (`icons`, `openGraph.images`) before the render, and `renderHead` writes the
+tags with its own escaping. jhonstart names no rakun type.
 
-## Steps
+## Delivered
 
-### Step 1 — The records and `emptyMetadata`
+Held by `modules/jhonstart/test/metadata_test.bp` on both rows:
 
-```bp
-// src/metadata.bp
-import {escape} from "std";
+- the records and `emptyMetadata` (every string `""`, every list `[]`, no keyword field, no optional
+  field) — Step 1;
+- `mergeMetadata`: string inherit and replace, list replace wholesale and inherit, nested records
+  field by field, the template applied once over three levels — Step 2;
+- `renderHead`: the fixed order, byte-identical renders, no tag for `""`, escaping of `<` in a title
+  and `"` in a description, one `og:image` per image in list order — Step 3;
+- `Viewport`, `mergeViewport` (the same `pick` rule), `renderViewport` (both tags, escaped; `""` when
+  empty) — Step 4;
+- `docs.md` § *Metadata* holds the export table and the merge rule; front 66's README carries the
+  image path convention; `repository/jhonstart/AGENTS.md` records the module — Step 5.
 
-pub type OpenGraph(
-    title: string,
-    description: string,
-    url: string,
-    ogType: string,
-    siteName: string,
-    images: string[],
-)
+## Open
 
-pub type TwitterCard(
-    card: string,
-    title: string,
-    description: string,
-    images: string[],
-)
+Step 5 — the export contract:
 
-pub type Icons(icon: string, apple: string)
-
-pub type Metadata(
-    title: string,
-    titleTemplate: string,
-    description: string,
-    openGraph: OpenGraph,
-    twitter: TwitterCard,
-    icons: Icons,
-)
-
-pub fn emptyOpenGraph() -> OpenGraph {
-    return OpenGraph(title: "", description: "", url: "", ogType: "", siteName: "", images: []);
-}
-
-pub fn emptyMetadata() -> Metadata {
-    return Metadata(
-        title: "",
-        titleTemplate: "",
-        description: "",
-        openGraph: emptyOpenGraph(),
-        twitter: TwitterCard(card: "", title: "", description: "", images: []),
-        icons: Icons(icon: "", apple: ""),
-    );
-}
-```
-
-The field is `ogType`, not `type`: `type` is a keyword (`modules/compiler-core/src/lexer.zig:721-767`).
-
-**Acceptance:**
-- [x] `emptyMetadata()` has every string `""` and every list `[]` — `test/metadata_test.bp` "metadata: emptyMetadata has every string empty and every list empty" (jhonstart `7b9e0fc`)
-- [x] no field is named with a keyword — `ogType`, not `type`
-- [x] no field is optional; the absence convention is documented in the file header — `metadata.bp` header
-
-### Step 2 — `mergeMetadata`
-
-```bp
-pub fn pick(parent: string, child: string) -> string {
-    if (child != "") return child;
-    return parent;
-}
-
-pub fn pickList(parent: string[], child: string[]) -> string[] {
-    if (child.length > 0) return child;
-    return parent;
-}
-
-pub fn applyTemplate(template: string, title: string) -> string {
-    if (template == "") return title;
-    if (title == "") return "";
-    return template.replace("%s", title);
-}
-```
-
-`mergeMetadata(parent, child)` applies `pick` to each string, `pickList` to each list, merges
-`openGraph`, `twitter` and `icons` field by field, and sets `title` to
-`applyTemplate(parent.titleTemplate, pick(parent.title, child.title))`. The result's
-`titleTemplate` is the **child's**, so it applies to the next level down and not to this one.
-
-**Acceptance:**
-- [x] a child with an empty title inherits the parent's, untemplated — `test/metadata_test.bp` "metadata: a child with no title inherits the parent's, untemplated"
-- [x] a child with a title gets the parent's template applied exactly once — `test/metadata_test.bp` "metadata: a child with a title gets the parent's template exactly once"
-- [x] a child with one image replaces the parent's three, and the result has length one — `test/metadata_test.bp` "metadata: a list — a non-empty child replaces wholesale, an empty one inherits"
-- [x] a child with no images inherits the parent's list unchanged — `test/metadata_test.bp` "metadata: a list — …"
-- [x] `openGraph.title` from the child and `openGraph.siteName` from the parent survive the same merge — `test/metadata_test.bp` "metadata: a nested record merges field by field"
-- [x] merging three levels applies the template once, not twice — `test/metadata_test.bp` "metadata: three levels apply the template once, not twice"
-
-### Step 3 — `renderHead`
-
-**Acceptance:**
-- [x] the tag order is the fixed order in *Mechanism*, and two renders of equal metadata are
-      byte-identical — `test/metadata_test.bp` "metadata: the root layout's head, in the fixed order", "…two renders of equal metadata are byte-identical"
-- [x] a `""` field emits no tag at all — `test/metadata_test.bp` "metadata: the root layout's head…" (no `og:title` line for the empty field)
-- [x] a title containing `<` is escaped with `escape.html`; a description containing `"` is escaped
-      with `escape.attribute` — `test/metadata_test.bp` "metadata: markup in a title and a quote in a description are escaped"
-- [x] `renderHead(emptyMetadata())` is `""` — `test/metadata_test.bp` "metadata: emptyMetadata has every string empty…"
-- [x] one `<meta property="og:image">` per image, in list order — `test/metadata_test.bp` "metadata: the root layout's head, in the fixed order"
-
-### Step 4 — `Viewport`, `renderViewport`, `mergeViewport`
-
-**Acceptance:**
-- [x] `Viewport` is a separate record and a separate export; it is not a field of `Metadata` — `metadata.bp`
-- [x] `mergeViewport` uses the same `pick` rule — `test/metadata_test.bp` "metadata: the viewport merge picks the child colour and keeps the parent width"
-- [x] `renderViewport(Viewport(width: "device-width", initialScale: "1", themeColor: "#0b0b0b"))`
-      emits both tags, escaped — `test/metadata_test.bp` "metadata: the viewport renders both tags"; escaped: "…an empty viewport renders nothing"
-- [x] an empty `Viewport` renders `""` — `test/metadata_test.bp` "metadata: an empty viewport renders nothing"
-
-### Step 5 — The export contract, written down
-
-`repository/jhonstart/docs.md` gains the contract front 30 resolves against:
-
-| Segment export | Kind | Front 30 does |
-|---|---|---|
-| `metadata()` | static | calls it, merges onto the parent's |
-| `generateMetadata(params, parent)` | `-> @Task<Metadata>` | awaits it, merges onto the parent's |
-| both present | error | fails the build with a located message |
-| `viewport()` / `generateViewport(params)` | as above | merged independently of `Metadata` |
-
-**Acceptance:**
-- [x] the table is in `repository/jhonstart/docs.md` and front 30's README cites it — `docs.md` § *Metadata*; front 30's *Depends on* cites 32's `renderHead` / `mergeMetadata`
-- [x] the merge rule table from *Mechanism* is in the same place — `docs.md` § *Metadata*
 - [ ] `pub mod metadata;` and the `metadata.bp` `files` entry are handed to front 94, which owns
       `src/root.bp` and the `files` list; this front edits neither
-- [x] front 66's README cites the `openGraph.images` path convention, and this README links to it — 66 § *Image URLs carry a content hash*; linked from § *What this front does not own*
-- [x] `repository/jhonstart/AGENTS.md` updated in the same commit — jhonstart `7b9e0fc`
 
 ## Examples
 
@@ -290,8 +142,8 @@ pub fn applyTemplate(template: string, title: string) -> string {
 
 ## Reference gaps
 
-`generateViewport` does not appear in `/home/ericfillipe/develop/nextjs/NEXTJS-DOCS.md` — zero hits;
-the word `viewport` occurs once, as a prefetch trigger in § 8. It is upstream API
+`generateViewport` does not appear in `/home/ericfillipe/develop/nextjs/NEXTJS-DOCS.md`; the word
+`viewport` occurs once, as a prefetch trigger in § 8. It is upstream API
 (https://nextjs.org/docs/app/api-reference/functions/generate-viewport) and this front implements it
 from the upstream page, because theme colour and viewport are the two head tags a mobile site cannot
 ship without and neither has a home in `Metadata`.
@@ -307,40 +159,33 @@ segment, which has the same effect with one field instead of three.
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| A `pub val` of a user record type is unexercised; only primitive `pub val`s exist in the tree (`libs/std/src/math.bp:16`) | the static export is `pub fn metadata() -> Metadata`, not `pub val metadata: Metadata` | a zero-argument function | verify and document a `pub val` of a record, or say it is not supported |
+| A `pub val` of a user record type is unexercised; only primitive `pub val`s exist in the tree | the static export is `pub fn metadata() -> Metadata`, not `pub val metadata: Metadata` | a zero-argument function | verify and document a `pub val` of a record, or say it is not supported |
 | No assignment to a `self` field; a record has no copy-with-update | `mergeMetadata` respells all six fields, and `mergeOpenGraph` all six of its own, to change any of them | a merge function per record | a `Record(base, field: value)` copy-update expression |
 | Declared parameter defaults are never applied | `emptyMetadata()` exists precisely because a six-field constructor cannot default five of them | a constructor per empty record | apply the declared default when an argument is omitted |
 
+All three are rows of `language-gaps.md`.
+
 ## Test plan
 
-`repository/jhonstart/test/metadata_test.bp`, run by `botopink test --target erlang` from
-`repository/jhonstart`, and in the ecosystem gate by
-`zig build test-libs -- --target erlang --lib jhonstart`.
+`modules/jhonstart/test/metadata_test.bp`, run by `botopink test` in `modules/jhonstart/` and by
+`zig build test-libs -- --lib jhonstart`: `emptyMetadata()` and its empty head; one test per row of
+the merge table; a three-level merge applying the template once; the tag order, byte-identical
+across two calls; escaping of a `<script>` title, a `"` description and an `&` image URL, asserting
+both that the dangerous form is absent and that the escaped form is present; `renderViewport`'s two
+tags and the empty case.
 
-Assertions:
-
-1. `emptyMetadata()` — every field empty; `renderHead` of it is `""`.
-2. The merge rule, one test per row of the table: string inherit, string replace, list replace
-   wholesale, list inherit, nested-record field-by-field, template applied once.
-3. A three-level merge (root layout, section layout, page) applying the template exactly once.
-4. `renderHead` tag order, byte-identical across two calls.
-5. Escaping: a title containing `<script>`, a description containing `"`, an image URL containing
-   `&`. Each asserts both that the dangerous form is absent and that the escaped form is present.
-6. `renderViewport` both tags, and the empty case.
-
-There is no js row and none is needed: metadata is produced during the server render and reaches the
-browser as already-rendered head markup. A client navigation updates the title through front 26's
-payload, and asserting that is front 26's and front 68's, not this front's.
+A client navigation updates the title through front 26's payload; asserting that is front 26's and
+front 68's, not this front's.
 
 ## Definition of done
 
 - [ ] `metadata.bp` in the build tree, its `root.bp` and `files` lines handed to front 94
-- [x] the merge rule table is implemented field for field and tested row for row — `test/metadata_test.bp`
+- [x] the merge rule table is implemented field for field and tested row for row
 - [x] every rendered value passes through front 01's `escape.html` / `escape.attribute`; this front
-      hand-rolls no escaping — `metadata.bp` `titleTag` / `metaName` / `metaProperty` / `linkRel`
+      hand-rolls no escaping
 - [x] `Viewport` is a separate export and merges independently — `mergeViewport`
 - [x] `sitemap`, `robots`, `manifest` and `opengraph-image` are **not** in this file, and the README
-      names front 66 — `metadata.bp` header names front 66
+      names front 66
 - [x] the two reference gaps are recorded under *Reference gaps* with their upstream URLs
-- [x] all three language gaps appear in a `specs/1.0.10-beta/` spec — `language-gaps.md` rows "`pub val` of a user record type is unexercised", "No assignment to a `self` field", "Declared parameter defaults…"
-- [x] the front's tests are green on its assigned target — 16 blocks on both rows
+- [x] all three language gaps appear in a `specs/1.0.10-beta/` spec
+- [x] the front's tests are green on its assigned target — on both rows

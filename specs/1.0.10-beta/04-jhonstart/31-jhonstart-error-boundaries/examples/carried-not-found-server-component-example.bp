@@ -1,15 +1,15 @@
 // app/blog/[slug]/page.bp
-import {Element, div, h1, text} from "jhonstart";
+import {Element, ElementBase, PageContext, ctxParam, div, h1, text} from "jhonstart";
 import {notFound} from "jhonstart";
-import {collections.Dict} from "std";
 
-pub fn BlogPost(params: Dict<string, string>) -> @Component<ElementBase, Element> {
-    val slug = params.get("slug");
-    val post = await getPost(slug);
-    if (post == null) {
+#[page("blog/[slug]")]
+pub fn BlogPost(route: PageContext) -> @Component<ElementBase, Element> {
+    val slug = ctxParam(route, "slug");
+    val title = await postTitle(slug);   // "" when there is no such post
+    if (title == "") {
         notFound();
     };
     return div([
-        h1([text(post.title, attrs: [])], attrs: []),
+        h1([text(title, attrs: [])], attrs: []),
     ], attrs: []);
 }

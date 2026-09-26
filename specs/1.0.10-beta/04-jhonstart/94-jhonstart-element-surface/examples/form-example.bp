@@ -6,9 +6,8 @@
 // `action`, `data-jh-a` carrying the action id, and a hidden field whose name
 // onze passes in (`actionField`, decision 114 — `__bp_action` by default) so that a browser with scripting disabled submits the same thing.
 //
-// This file writes no constructor of its own. That is the point of the front:
-// before it, front 24, front 67 and front 53 each built `form`/`input`/`button`
-// through the public `Element` record in their own files.
+// This file writes no constructor of its own: every tag comes from the element
+// surface, so no front keeps a private `form`/`input`/`button`.
 //
 // TARGET: both. These constructors compile to BEAM for front 30's server render
 // and to commonJS for front 68's client rebuild, and every assertion below is a
@@ -23,7 +22,7 @@
 // constructor call below spells `attrs:` — the inner `text(…)` calls included.
 
 import {Element, text, renderToString} from "jhonstart";
-// provided by front 94 (`jhonstart-element-surface`, src/elements.bp).
+// front 94's element surface (`modules/jhonstart/src/elements.bp`).
 import {form, label, input, select, option, button, isVoidTag} from "jhonstart";
 
 // Front 24 derives the action id on the server and the server echoes it into the
@@ -34,9 +33,8 @@ val sampleActionId = "a_9f31c0d7a4b2e5081c6fa3d2";
 // ── the binding, exactly as `contracts.md § 3` pins it ───────────────────────
 //
 // The helpers below are this file's own composition, not another front's
-// API. Front 24 exports `actionForm`/`hiddenField`/`textField`/`submitButton`
-// and front 67 exports `formAttrs`/`hiddenActionField`; what this example shows
-// is what those are made of once the element surface exists.
+// API. Front 67 exports `formAttrs`/`hiddenActionField` (rakun builds no markup,
+// decision 113); what this example shows is what those are made of.
 
 fn actionFormAttrs(actionId: string, pathname: string) -> Array<#(string, string)> {
     return [
@@ -132,7 +130,7 @@ test "a void constructor drops children instead of rendering them" {
 // The surface names the void set; the renderer that acts on it is front 30's
 // `renderNode`. jhonstart's own `renderToString` is frozen and writes a closing
 // tag for every tag, which is why the literals above spell `</input>` — see the
-// front's `## Blocked`. When `element.bp` is unfrozen, the `</input>` assertions
+// front's *Open*. When `element.bp` is unfrozen, the `</input>` assertions
 // are the ones that change.
 test "the surface knows which of its tags are void" {
     assert isVoidTag("input");

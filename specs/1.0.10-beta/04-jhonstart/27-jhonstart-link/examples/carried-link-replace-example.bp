@@ -1,11 +1,12 @@
 // app/settings/page.bp
-#[client]
-import {Link} from "jhonstart";
+// `replace` is a `LinkProps` field: the settings tabs replace the history
+// entry instead of pushing one.
+import {Link, linkProps, withReplace} from "jhonstart-link";
 import {Element, div, text} from "jhonstart";
 
 pub fn SettingsPage() -> Element {
     return div([
-        Link("/settings/profile", [text("Profile", attrs: [])], replace: true),
-        Link("/settings/security", [text("Security", attrs: [])], replace: true),
+        Link(withReplace(linkProps("/settings/profile"), true), [text("Profile", attrs: [])]),
+        Link(withReplace(linkProps("/settings/security"), true), [text("Security", attrs: [])]),
     ], attrs: []);
 }

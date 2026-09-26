@@ -1,14 +1,26 @@
-// NOTE: `html.bp` is frozen and has no `[emilia]` attribute; the class goes through the
-// existing `[class]={c}` hole with `c` pre-bound via front 48's `cls(tokens, th)`. This example keeps the older shape.
+// An emilia class reaches the markup through the `[class]={c}` hole: `html.bp` has
+// no `[emilia]` attribute, and a hole may not contain a space, so each class is
+// bound to a `val` first with emilia's `cls(tokens, th)` (front 48).
 
-import {html, renderToString} from "jhonstart";
+import {html} from "jhonstart-html";
+import {div, h1, p, button, text, renderToString} from "jhonstart";
+import {Token, cls, defaultTheme} from "emilia";
+
+val th = defaultTheme();
+val cardTokens: Token[] = [.Pad.All.8, .Bg.Gray100];
+val titleTokens: Token[] = [.Text.Size.X3xl, .Text.Bold];
+val bodyTokens: Token[] = [.Text.Size.Base, .Color.Gray500];
+val buttonTokens: Token[] = [.Pad.X.4, .Pad.Y.2, .Bg.Blue500, .Hover([.Bg.Blue700])];
+
+val cardClass = cls(cardTokens, th);
+val headingClass = cls(titleTokens, th);
+val bodyClass = cls(bodyTokens, th);
+val actionClass = cls(buttonTokens, th);
 
 val page = html """
-<div [emilia]={[.Pad.All.8, .Bg.Gray100]}>
-  <h1 [emilia]={[.Text.Size.X3xl, .Text.Bold]}>Title</h1>
-  <p [emilia]={[.Text.Size.Base, .Color.Gray500]}>Description</p>
-  <button [emilia]={[.Pad.X.4, .Pad.Y.2, .Bg.Blue500, .Hover([.Bg.Blue700])]}>
-    Click here
-  </button>
+<div [class]={cardClass}>
+  <h1 [class]={headingClass}>Title</h1>
+  <p [class]={bodyClass}>Description</p>
+  <button [class]={actionClass}>Click here</button>
 </div>
 """;

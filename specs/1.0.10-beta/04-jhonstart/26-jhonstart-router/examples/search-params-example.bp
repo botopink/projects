@@ -13,18 +13,19 @@
 //   https://nextjs.org/docs/app/api-reference/functions/use-search-params
 //   https://nextjs.org/docs/app/api-reference/functions/use-router
 
-import { Element, div, span, text, renderToString } from "jhonstart";
+import { Element, ElementBase, div, span, text, renderToString } from "jhonstart";
 import { searchParams, pairValue, replace } from "jhonstart";
-import { Link, linkProps } from "jhonstart";
-import { querystring } from "std";
+import { Link, linkProps } from "jhonstart-link";
+import { encoding } from "std";
 
 // Build the href for a sort order, keeping every other query parameter. The
-// pair list is the same `Array<#(string, string)>` the snapshot carries, so
-// `querystring.stringify` is the only encoder involved on either side.
+// pair list is the same `Array<#(string, string)>` the snapshot carries, and
+// `encoding.formStringify` is the codec the router uses on both sides
+// (decision 116 rule 4). It writes no leading `?`; the caller adds it.
 fn sortHref(current: Array<#(string, string)>, order: string) -> string {
     val kept = current.filter({ p -> p._0 != "sort" });
     val next = kept.append([#("sort", order)]);
-    return "?" + querystring.stringify(next);
+    return "?" + encoding.formStringify(next);
 }
 
 // The label shown for the order currently in the URL.
@@ -55,12 +56,12 @@ pub fn applySort(search: Array<#(string, string)>, order: string) -> i32 {
 }
 
 test "changing the sort keeps every other query parameter" {
-    val current = querystring.parse("q=boots&page=2&sort=asc");
+    val current = encoding.formParse("q=boots&page=2&sort=asc");
     assert sortHref(current, "desc") == "?q=boots&page=2&sort=desc";
 }
 
 test "a URL with no sort yet gains one" {
-    val current = querystring.parse("q=boots");
+    val current = encoding.formParse("q=boots");
     assert sortHref(current, "asc") == "?q=boots&sort=asc";
 }
 

@@ -4,12 +4,10 @@
 // `link`. This is the shape front 31's `global-error.bp` needs — the root error
 // fallback is the one component that owns its whole document, because by the
 // time it runs the layout that would have produced `<html>` is the thing that
-// failed. Front 31 records `global-error.bp` as *Blocked* on this front; the
-// second half of this file is the form that unblocks it.
+// failed. The second half of this file is the shape `global-error.bp` takes.
 //
-// `<html>` is spelled `htmlTag` here: `html` is already a `pub fn` in the same
-// package — the `html """…"""` template DSL (`src/html.bp:94`) — and one package
-// cannot export the name twice.
+// `<html>` is spelled `htmlTag` here: `html` is the `html """…"""` template DSL
+// (`jhonstart-html`), and a consumer imports both names side by side.
 //
 // TARGET: both. Front 30 renders this on BEAM; front 68 rebuilds the body
 // subtree in the browser. The shell itself is server-only in practice, but it is
@@ -26,7 +24,7 @@
 // constructor call below spells `attrs:` — the inner `text(…)` calls included.
 
 import {Element, p, text, renderToString} from "jhonstart";
-// provided by front 94 (`jhonstart-element-surface`, src/elements.bp).
+// front 94's element surface (`modules/jhonstart/src/elements.bp`).
 import {htmlTag, head, body, title, meta, link, main, h2} from "jhonstart";
 
 // ── the shell ───────────────────────────────────────────────────────────────
@@ -120,7 +118,7 @@ test "the root error document owns its whole document and shows only the digest"
 // `contains` on the opening tag, which is true under both renderers; the
 // assertion below is the one that pins today's wrong answer, and it is the one
 // that changes when `element.bp` is unfrozen. Front 30's `renderNode` consults
-// `isVoidTag` and emits neither closing tag. See the front's `## Blocked`.
+// `isVoidTag` and emits neither closing tag. See the front's *Open*.
 test "the frozen renderer still closes a void element — front 30's does not" {
     val markup = renderToString(documentHead("Blog", "/app.css"));
     assert markup.contains("</meta>");

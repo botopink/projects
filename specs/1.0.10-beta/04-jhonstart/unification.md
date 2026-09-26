@@ -1,13 +1,13 @@
 # Track C — jhonstart · unification
 
-How the coordinates the nine READMEs cite resolve in this milestone, the one discrepancy between two
-fronts that is still open, and the Next.js rows no front owns.
+How the coordinates the nine READMEs cite resolve in this milestone, the `renderHead` contract two
+fronts share, the Next.js rows no front owns, and what `use` is not.
 
 ## 1 · Coordinates
 
 Every cross-front and top-level reference in the READMEs is a backticked coordinate in prose
 (`contracts.md § 2`, `23-rakun-ssr-pipeline/README.md:278`, `language-gaps.md`, `fronts.md`), not a
-Markdown link. They resolve as follows:
+Markdown link. From a front's `README.md` they resolve as follows:
 
 | Coordinate as written | Resolves to |
 |---|---|
@@ -20,11 +20,11 @@ Markdown link. They resolve as follows:
 | `specs/1.0.10-beta/` (the "gaps appear in a 1.0.10 spec" acceptance items) | `../../language-gaps.md` — this milestone |
 | `19-use-activation` | `../00-compiler-carry-over/19-use-activation/README.md` — the `use` rule, as decisions 102 and 104 fix it (`README.md § 6` of this directory) |
 
-## 2 · Open discrepancy
+## 2 · `renderHead` returns a string
 
-| Where | What | Disposition |
-|---|---|---|
-| 94 *What the consuming fronts do* row for 32 vs 32 *Mechanism* | 94 says `renderHead` "emits `meta`/`link`/`title` **elements** from this surface rather than a string"; 32 specifies `renderHead(m) -> string` and tests byte-identical output | 32's own README is authoritative for 32: `renderHead -> string`, built from 94's `title`/`meta`/`link` constructors and rendered through the same walker front 23 uses. `test-snap.md § 32` asserts the string. |
+Front 32's `renderHead(m) -> string` writes the head's `title` / `meta` / `link` tags as strings over
+std `escape`; it builds no `Element` from front 94's surface. `test-snap.md § 32` asserts the string,
+and 94's *What the consuming fronts do* row for 32 says the same.
 
 ## 3 · Next.js reference rows no front owns
 
@@ -33,8 +33,8 @@ jhonstart front owns it and no other track's front is named for it.
 
 | `NEXTJS-DOCS.md` | Item | Owner | Status |
 |---|---|---|---|
-| § 7 · § 13 *Streaming de dados com `use`* | React `use(promise)` in a client component — a promise created on the server, awaited in the browser | none | **missed** — botopink's `use` is the hook activation under a `@Component` return (decision 118), not a promise unwrap; `Boundary.child` is a server thunk. Candidate for `../../deferred.md`: needs a serializable pending value crossing the `i` payload. |
-| § 10 *Invocando via event handlers* | calling a server action from `onClick`/`startTransition`, reading its result without a form | 24 (scripted POST, contract 3) · 68 (runtime) | **partly missed** — jhonstart has the `data-jh-on-click` handler id (29) and no hook that awaits an action result outside a form. `actionState()` (67) is form-bound. |
+| § 7 · § 13 *Streaming de dados com `use`* | React `use(promise)` in a client component — a promise created on the server, awaited in the browser | none | **missed** — botopink's `use` is the hook activation under a `@Component` return (decision 118), not a promise unwrap; `Boundary.child` is a server thunk. Candidate for `deferred.md`: needs a serializable pending value crossing the `i` payload. |
+| § 10 *Invocando via event handlers* | calling a server action from `onClick`/`startTransition`, reading its result without a form | 24 (scripted POST, contract 3) · 68 (runtime) | **partly missed** — jhonstart has the `data-jh-on-click` handler id (29) and `invokeAction(actionId, args, actionHeader) -> @Task<ActionState>` (67), the scripted call outside a form; no hook holds its result as component state — `actionState()` (67) is form-bound. |
 | § 14 *Erros em event handlers* · *`startTransition`* | `useTransition`/`startTransition` | 31 (states the semantics), 68 (routes the failure) | **missed as API** — no `transition` hook in `hooks.bp` (frozen) and no front adds one. |
 | § 18 *Memoização de dados* | React `cache()` per-request memoization | 62 | covered by rakun (per-request memoization is 62's) — not a jhonstart surface |
 | § 18 *OG Images dinâmicas (ImageResponse)* · *Metadata Files* | `opengraph-image`, `sitemap`, `robots`, `manifest` | 66 · 70 | covered by rakun/onze; 32 owes `openGraph.images` paths |
@@ -51,3 +51,10 @@ jhonstart front owns it and no other track's front is named for it.
 
 The Next.js names above name Next's API as the reference; the jhonstart spelling is the noun without
 the `use` prefix (`README.md § 6`).
+
+## 4 · `use` is not React's `use(promise)`
+
+botopink's `use` is the hook activation under a `@Component<ElementBase, T>` return (decision 118,
+`README.md § 6`), never a promise unwrap. React's `use(promise)` in a client component — a promise
+created on the server and awaited in the browser — has no jhonstart surface (§ 3, first row): it would
+need a serializable pending value crossing the payload's `i` rows.

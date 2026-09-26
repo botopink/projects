@@ -1,10 +1,11 @@
 // app/search/page.bp
-import {Element, div, h1, ul, li, text} from "jhonstart";
+// A page that reads the request and awaits a loader under one return.
+import {Element, ElementBase, div, h1, ul, li, text} from "jhonstart";
 import {request} from "jhonstart";
 
 pub fn SearchPage() -> @Component<ElementBase, Element> {
     val req = use request();
-    val query = req.query("q");
+    val query = req.queryParam("q");
     val results = await search(query);
     return div([
         h1([text("Results for: " + query, attrs: [])], attrs: []),

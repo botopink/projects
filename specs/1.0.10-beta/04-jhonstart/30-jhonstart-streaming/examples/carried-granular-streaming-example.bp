@@ -1,19 +1,23 @@
 // app/dashboard/page.bp
-import {Element, div, h1, Suspense, text} from "jhonstart";
+import {Element, ElementBase, PageContext, div, h1, text} from "jhonstart";
+import {Boundary, Suspense, holeId} from "jhonstart";
 
-pub fn DashboardPage() -> @Component<ElementBase, Element> {
+#[page("dashboard")]
+pub fn DashboardPage(route: PageContext) -> @Component<ElementBase, Element> {
     return div([
         h1([text("Dashboard", attrs: [])], attrs: []),
         div([
-            Suspense(SuspenseProps(
+            Suspense(Boundary(
+                id: holeId(1),
                 fallback: div([text("Loading stats...", attrs: [])], attrs: []),
-                children: [await StatsPanel()],
+                child: { -> StatsPanel() },
             )),
         ], attrs: []),
         div([
-            Suspense(SuspenseProps(
+            Suspense(Boundary(
+                id: holeId(2),
                 fallback: div([text("Loading data...", attrs: [])], attrs: []),
-                children: [await DataTable()],
+                child: { -> DataTable() },
             )),
         ], attrs: []),
     ], attrs: []);

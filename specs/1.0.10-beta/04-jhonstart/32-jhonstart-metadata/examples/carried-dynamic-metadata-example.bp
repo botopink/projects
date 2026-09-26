@@ -1,23 +1,21 @@
-// NOTE: 32 spells `generateMetadata(params: Array<#(string, string)>, parent)` with `pairValue`,
-// `OpenGraph.type` as `ogType`, and every field (no optionals); this example keeps the older shape.
-
 // app/blog/[slug]/page.bp
-import {Element, div, h1, p, text} from "jhonstart";
-import {Metadata} from "jhonstart";
-import {collections.Dict} from "std";
+import {Element, ElementBase, PageContext, ctxParam, div, h1, p, text} from "jhonstart";
+import {Metadata, OpenGraph, TwitterCard, Icons, pairValue} from "jhonstart";
 
-pub fn generateMetadata(params: Dict<string, string>) -> @Task<Metadata> {
-    val slug = params.get("slug");
+pub fn generateMetadata(params: Array<#(string, string)>) -> @Task<Metadata> {
+    val slug = pairValue(params, "slug");
     val post = await fetchPost(slug);
     return Metadata(
         title: post.title + " — Blog",
+        titleTemplate: "",
         description: post.excerpt,
         openGraph: OpenGraph(
             title: post.title,
             description: post.excerpt,
-            images: ["/og/blog/" + slug + ".png"],
             url: "/blog/" + slug,
-            type: "article",
+            ogType: "article",
+            siteName: "",
+            images: ["/og/blog/" + slug + ".png"],
         ),
         twitter: TwitterCard(
             card: "summary_large_image",
@@ -29,9 +27,9 @@ pub fn generateMetadata(params: Dict<string, string>) -> @Task<Metadata> {
     );
 }
 
-pub fn BlogPost(params: Dict<string, string>) -> @Component<ElementBase, Element> {
-    val slug = params.get("slug");
-    val post = await fetchPost(slug);
+#[page("blog/[slug]")]
+pub fn BlogPost(route: PageContext) -> @Component<ElementBase, Element> {
+    val post = await fetchPost(ctxParam(route, "slug"));
     return div([
         h1([text(post.title, attrs: [])], attrs: []),
         p([text(post.content, attrs: [])], attrs: []),
