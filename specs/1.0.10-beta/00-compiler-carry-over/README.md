@@ -226,15 +226,22 @@ is still an arity error). Deep dive: [`01-checker/trailing-defaults.md`](./01-ch
 front*; this is why every jhonstart call spells `attrs:`, and why `LayoutProps` is one record rather
 than three parameters"; after C-02, `s.slice(1)` is the open-ended slice only if `end: ?i32 = null` is
 applied.
-**Partial work:** none. `libs/std/AGENTS.md` records the limit ("pass both bounds").
 **Depends on:** nothing.
 **Acceptance:**
-- [ ] a free `fn`, a record constructor and an instance method accept an omitted trailing default;
-      `P(y: 2)` checks and `x` is `0` at run time on all four backends
-- [ ] a missing *required* argument still reds with the arity message (D3)
-- [ ] `test/fn_defaults.bp` passes on commonJS and erlang — its two `01 step 7` lines gone, the header
-      recounted from the file
-- [ ] jhonstart's 22 `attrs: []` paddings deletable — measured, not necessarily deleted here (09's tree)
+- [x] a free `fn`, a record constructor and an instance method accept an omitted trailing default;
+      `P(y: 2)` checks and `x` is `0` at run time on all four backends — and an imported function's
+      closed default, a namespace call, a `"std"`-qualified call and a pipeline; a label names its
+      parameter on every call path (`modules/default_argument_across_modules`,
+      `modules/labelled_call_by_label`, `run/pipeline_call_fill`)
+- [x] a missing *required* argument still reds with the arity message (D3); so does an imported
+      function's open default (`modules/default_argument_open_across_modules`)
+- [x] `test/fn_defaults.bp` passes on commonJS and erlang — no line of it in `expected-failures.txt`
+- [x] jhonstart's `attrs: []` paddings deletable — measured: 178 sites, every one a call of an
+      `element.bp` function declaring `attrs: Array<#(string, string)> = []`, a closed default that
+      travels; deleting them is jhonstart's
+- [ ] not reached: an interface ASSOCIATED fn (`Pair.of` — the site holds only a `T.func`); a free
+      `fn` declaring a leading default is `fn-param-default-trailing-only` while a record may declare
+      one (`decisions-pending.md` ck2-c)
 
 ## C-05 — Module-level `var`, and the `@BeamMemory` carrier
 
@@ -339,12 +346,12 @@ parse today, so `run/optional_null_pattern.bp` stands on all four backends.
 **Partial work:** none.
 **Depends on:** nothing; shares `parser/exprs.zig` with 15's sites by name (see `fronts.md` note 17).
 **Acceptance:**
-- [ ] `if (a && b) { … }` parses; `if (x) |_| { … }` parses; `assert e is P;` deleted with its tests or
-      parsing, the choice recorded in `residual-rows.md`; an unnamed payload declaration reds naming
-      `Variant(field: T)`
-- [ ] `case x { null { … } v { … } }` parses and types: `run/optional_null_pattern.bp` passes on all
-      four, `reject/optional_variant_pattern.bp` rejected for its own reason — five lines gone
-- [ ] `reject/case_arity_without_rest.bp` rejected with a caret (the `..` arity rule)
+- [x] `if (a && b) { … }` parses; the optional's binder is `if (x) { _ -> … }` (`docs.md` § narrowing)
+      and parses; `assert e is P;` parses as `assert (e is P)`; an unnamed payload declaration is
+      `field-needs-name` (`reject/variant_payload_without_name`)
+- [x] `case x { null { … } v { … } }` parses and types: `run/optional_null_pattern.bp` passes on all
+      four, `reject/optional_variant_pattern.bp` rejected for its own reason
+- [x] `reject/case_arity_without_rest.bp` rejected with a caret (the `..` arity rule)
 - [ ] 19 parser snapshots stay; new ones classified; no existing snapshot re-recorded
 
 ## C-09 — The residual checker rows and their backend consumers
@@ -364,14 +371,18 @@ library writes the day it destructures a variant.
 **Partial work:** none.
 **Depends on:** nothing.
 **Acceptance:**
-- [ ] `val Circle(r) = s;` binds `r`, runs on all four backends; `buildPattern` unreachable from
+- [ ] `val Circle(r) = s;` binds `r`, runs on all four backends (a refutable one — `Shape` with two
+      variants — is `refutable-val-pattern`, and `val assert Circle(r) = s catch …` is the form;
+      commonJS lowers its bare `Circle` as `instanceof Circle`, `00 · 04-js`'s row); `buildPattern` unreachable from
       `buildParam`/`buildDestructPattern` on JS, `MatchPattern`/`writeMatchPattern` deleted, snapshots
       byte-identical; the failure behaviour of a bare `val <Pattern> = e` written down
-- [ ] `Array.range(0, 3).map({ x -> x + 2 })` prints `[2, 3, 4]` on erlang, no `'__bp_prim_map'`
+- [x] `Array.range(0, 3).map({ x -> x + 2 })` prints `[2, 3, 4]` on erlang
 - [ ] R7: a note to the four backends naming the lowerings that became dead; the erlang tail-`case`
       lowering and the one JS IIFE site deleted, snapshots byte-identical — **checker half landed** (the note is in `01-checker/README.md` step 8); the deletions are 02's and 04's files
-- [ ] the three N25 cells rejected each for its own reason, with a caret; `test/curried_call.bp`
-      passes on commonJS and erlang
+- [x] the N25 cells: `reject/val_assert_after_catch` rejected with a caret; `two_effect_markers` and
+      `wrapper_without_annotation` have no form left to refuse since front 24 (the return is the
+      effect — `reject/effect_annotation_removed_*`); `test/curried_call.bp` passes on commonJS and
+      erlang
 - [x] R1, R2, R4, R8 each reds or checks as `residual-rows.md` states, with a cell — R2 `modules/import_type_closure`, R4 and R8 checker tests (landed earlier on this front), R1 by deletion
 
 ## C-10 — `@BeamMemory` steps 4–8
@@ -576,11 +587,13 @@ non-empty `.d.ts` (no `tsc` in the checkout when 04 closed) and `42.toString()` 
 **Depends on:** nothing.
 **Acceptance:**
 - [x] `optional<i32>` and `x?.f` on a `?T` each a located error with the decided text; a cell each (`x.f` on a `?T` is the error, `x?.f` the spelling; `Option<i32>` refused alike); `reject/member_of_optional` and `comptime/tests/infer_errors.zig` `decision 44:` (the annotation diagnostic has its unit test; a `reject/` cell for 44 is front 12's to add)
-- [ ] an out-of-range read prints `null` on all four backends, one cell; `tuple_labels.bp::§6 T4` reds
-      at `check`
+- [x] an out-of-range read prints `null` on all four backends (`run/index_past_the_end_is_null`);
+      `tuple_labels.bp`'s §6 T4 cells read `rs.at(0)?.b`, the member access on a `?T` being the error
 - [x] `Env.warnings` exists and one warning renders (the always-false `is` of 01 step 3 is the first) — `OkData.warnings`, rendered by `botopink check` under `warning:`; §1.4's `[]` birth is the second writer. `build` / `test` / the LSP do not print them yet
 - [ ] `any` gone from the grammar, `erlang.bp`/`beam.bp` re-spelled, or the row re-decided with the
-      measurement
+      measurement — measured: `any` is still bound as a primitive (`env.zig` — the effect wrappers'
+      `E = any` default reads it), and `val x: any = 1;` reds `expected any, got i32` rather than
+      naming the removed type
 - [x] `Array.unique` answers on both backends, a `libs/std` test (decision 9 (b): the body rewritten; `test/primitives_gaps_test.bp` `array unique drops consecutive duplicates`, commonJS and erlang)
 - [ ] the five documents corrected; `tsc --noEmit` green over every `.d.ts`; `42.toString()` runs on node
 
@@ -707,8 +720,10 @@ library that exports `get`.
 **Partial work:** none.
 **Depends on:** nothing.
 **Acceptance:**
-- [ ] two libraries exporting the same bare name in one build is a located error; a sidecar whose atom
-      an emitted module already owns is a build error, not a skip
+- [ ] two libraries exporting the same bare name in one build is a located error — the checker half
+      holds: an import that reaches both is refused at each use, located, naming both
+      (`ambiguous-import-use`, `modules/import_ambiguous_use`); a sidecar whose atom an emitted
+      module already owns is a build error, not a skip — the CLI's
 - [ ] a re-evaluated declaration is purged before reload, or the row says why not; `botopink clean`
       removes the comptime `.erl` scratch
 - [ ] the stash dropped

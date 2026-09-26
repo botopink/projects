@@ -100,14 +100,13 @@ beam and wasm — honestly, since no test runs there.
 
 **Decorator resolution.** The consumer spelling is `import {testing.mocks} from "std";` and
 `#[mocks.mock]` — the leaf `mocks` is what enters scope (decision 107), and `mocks.when` /
-`mocks.verify` read the same. Today `#[mock]` fires only inside `mocks.bp`: `#[mocks.mock]` parses
-(the annotation name lands as `"mocks.mock"`) but a std import puts nothing into the decorator
-table, so from a consumer the marker does nothing and `mock<Name>()` is unbound; and the emitted body
-writes the bare `invoke`/`key`/`newMock`, which resolve only in `mocks.bp`. A consumer writes the
-double by hand over the qualified runtime (`docs.md` § Tests ---- Mocks). The fix is in the lookup
-and in an emission that is bare inside `mocks.bp` and qualified (`mocks.invoke(self.__id, …)`)
-elsewhere — not a bare re-export, because a bare `import {mock} from "std"` would make `std` the
-first library whose functions are reached unqualified.
+`mocks.verify` read the same. The namespace import registers the module's decorators under the
+handle it binds (`#[mocks.mock]`, `#[m.mock]` after `as m`), and `mock` emits the runtime through
+the prefix of the annotation that fired it — bare inside `mocks.bp`, `mocks.invoke(self.__id, …)`
+in a consumer (`tests/language` `run/std_decorator_through_namespace`). A leaf import of `mock` is
+refused (`std-decorator-leaf-import`): it would leave the emitted code no handle, and a bare
+`import {mock} from "std"` would make `std` the first library whose functions are reached
+unqualified (decisions-pending ck2-e).
 
 ## Removing the repository and reusing the directory
 
@@ -202,4 +201,3 @@ test "mocks: eq(v) stubs only the matching argument" {
 |---|---|---|---|
 | A matched `thenThrow` is a host throw; `try … catch` unwraps only a `@Result` | `mocks.thenThrow` | the test asserts the non-matching path answers the default (old test 7) | typed raise / catch by tag (`language-gaps.md`), or a synthesized method that answers `@Result<R, string>` |
 | No generic `any<T>()` — a matcher must answer a per-type dummy | `mocks.anyInt`, `anyString` only | add `anyBool`, `anyFloat` per type as needed | a `@default<T>()` intrinsic |
-| `#[mocks.mock]` does not fire from a consumer: a std import registers no decorator, and the emitted body's bare `invoke`/`key`/`newMock` resolve only inside `mocks.bp` | every consumer of `#[mocks.mock]` | write the double by hand over the qualified runtime | a decorator lookup that resolves a qualified std name, and an `@emit` that can name its own imports |

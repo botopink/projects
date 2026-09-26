@@ -99,7 +99,7 @@ Decision 106's table: every path a consumer wrote on the flat tree, and where it
 |---|---|---|
 | `testing.asserts` | the `@Result<void, string>` assertions every helper is built on — `asserts-api.md` | all four (STD-001 clean); `matches`/`deepEquals`/`throws`/`throwsWith` need Node or Erlang at run time |
 | `testing.snapshots` | `assertAs(loc, subject, actual)` — the one call an `assert<Subject>` helper makes — `snapshots.md` | commonJS, erlang (the `botopink test` targets) |
-| `testing.mocks` | `when`, `verify`, matchers, and `#[mocks.mock]` once a consumer can reach the decorator (`onze-migration.md` § *Language gaps*) | commonJS, erlang |
+| `testing.mocks` | `when`, `verify`, matchers, and `#[mocks.mock]` (`onze-migration.md` § *Decorator resolution*) | commonJS, erlang |
 
 A `<lib>-test` submodule imports the three as
 
