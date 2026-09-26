@@ -2,12 +2,10 @@
 
 The maintainer's guide to the language **as decided** by the effect revision of 1.0.10-beta
 (decisions [118–128](../../decisions-taken.md#118-the-return-type-is-the-annotation)), in English.
-It replaces the annotations `#[@result]`, `#[@future]`, `#[@use]`, `#[@generator]`,
-`#[@resultGenerator]` and `#[@futureGenerator]` of decisions 95, 98, 102–105 and 113–117, and
-exchanges `@Future<T, E>` for `@Task<T>`. Front 24's step E8 turns this text into `docs.md`
-(§ Effects, § Results, § Iterators, § use, § Loops, § Host bindings); until then it is the reference
-the front's cells are written against. What is left to implement is the front's
-[`README.md`](./README.md).
+The effect of a function is its return type; the forms that left the language are listed in § 9
+*Old names that left*, each a located compile error with a fix-it. `docs.md` carries the same text
+(§ Effects, § Results, § Iterators, § use, § Loops, § Host bindings); what is left open is in the
+front's [`README.md`](./README.md).
 
 ---
 
@@ -66,20 +64,23 @@ The rules that make it all work:
 ## 2. Functions that can fail — `-> @Result<T, E>`
 
 ```bp
-pub type ParseError { Empty, NotANumber(text: string), TooBig(value: i64) }
+pub type ParseError { Empty, NotANumber(text: string), TooBig(value: i32) }
 
 pub fn parsePort(s: string) -> @Result<i32, ParseError> {
-    if (s == "") { throw ParseError.Empty; };
-    val n = try toInt(s);                 // if toInt fails, the error rises from here (propagates)
-    if (n > 65535) { throw ParseError.TooBig(value: n); };
+    if (s == "") { throw ParseError.Empty; }
+    val n = try toInt(s);                  // if toInt fails, the error rises from here (propagates)
+    if (n > 65535) { throw ParseError.TooBig(value: n); }
     return n;                              // becomes Ok(n) automatically
 }
 
-fn toInt(s: string) -> @Result<i64, ParseError> {
-    case (int.parse(s)) {
-        .Ok(n) -> return n;
-        .Error(_) -> throw ParseError.NotANumber(text: s);
+fn toInt(s: string) -> @Result<i32, ParseError> {
+    var n = 0;
+    for (s.chars()) { c ->
+        val digit = c.charCodeAt(0) - 48;
+        if (digit < 0 || digit > 9) { throw ParseError.NotANumber(text: s); }
+        n = n * 10 + digit;
     }
+    return n;
 }
 ```
 
@@ -95,11 +96,11 @@ With `@Task<@Result<U, E>>`, both layers wrap: `return v` with `v: U` becomes a 
 of the whole type passes through.
 
 ```bp
-fn primeiroOk(a: @Result<i32, E>, b: @Result<i32, E>) -> @Result<i32, E> {
-    case (a) {
-        .Ok(_) -> return a;               // passes through: already @Result<i32, E>
-        .Error(_) -> return b;
-    }
+fn firstOk<E>(a: @Result<i32, E>, b: @Result<i32, E>) -> @Result<i32, E> {
+    return case a {
+        Ok(_) -> a;                        // passes through: already @Result<i32, E>
+        Error(_) -> b;
+    };
 }
 ```
 
@@ -113,6 +114,8 @@ fn portOrDefault(s: string) -> i32 {
 
 // 2) try alone — propagates the error; needs a @Result in the return
 //    (@Result<…>, @Task<@Result<…>>, @Component<C, @Result<…>>, …)
+pub type Config(port: i32)
+
 fn loadConfig(text: string) -> @Result<Config, ParseError> {
     val port = try parsePort(text);
     return Config(port: port);
@@ -120,12 +123,12 @@ fn loadConfig(text: string) -> @Result<Config, ParseError> {
 
 // 3) case — looks at both outcomes
 fn describe(s: string) -> string {
-    case (parsePort(s)) {
-        .Ok(p) -> return "port " + p.toString();
-        .Error(.Empty) -> return "empty";
-        .Error(.NotANumber(text: t)) -> return "not a number: " + t;
-        .Error(.TooBig(value: v)) -> return "too big: " + v.toString();
-    }
+    return case parsePort(s) {
+        Ok(p) -> "port " + p.toString();
+        Error(.Empty) -> "empty";
+        Error(.NotANumber(text: t)) -> "not a number: " + t;
+        Error(.TooBig(value: v)) -> "too big: " + v.toString();
+    };
 }
 
 // extra: val assert — fatal if it does not match (for when a failure is a bug, not a use case)
@@ -138,17 +141,17 @@ fn mustParse() {
 ### 2.3 Compile errors
 
 ```bp
-fn semCanal(s: string) -> i32 {
+fn noChannel(s: string) -> i32 {
     return try parsePort(s);      // ✗ effect-try-without-fallible-channel: `try` needs a
 }                                 //   @Result in the return (or use `try … catch`)
 
-fn semAwait() -> @Result<i32, string> {
+fn noTask() -> @Result<i32, string> {
     val x = await fetchCount();   // ✗ effect-await-without-task: `await` needs a @Task
     return x;                     //   return or above
 }
 
 pub type Parser<T> = @Result<T, ParseError>;
-fn porAlias(s: string) -> Parser<i32> {
+fn viaAlias(s: string) -> Parser<i32> {
     throw ParseError.Empty;       // ✗ effect-wrapper-behind-alias: write `@Result<i32, ParseError>`
 }                                 //   in the return to activate the effect
 ```
@@ -162,13 +165,13 @@ operation can go wrong, the value is a `@Result`, and `await` hands over that `@
 propagate the error, combine with `try`:
 
 ```bp
-import {http} from "std";
+import {async, io.http, json} from "std";
 
-pub type User(id: i32, name: string);
+pub type User(id: i32, name: string)
 
 pub fn fetchUser(id: i32) -> @Task<@Result<User, string>> {
-    val res = try await http.get("https://api.exemplo.com/users/" + id.toString());
-    if (res.status == 404) { throw "user " + id.toString() + " does not exist"; };
+    val res = try await http.fetch("https://api.example.com/users/" + id.toString());
+    if (res.status == 404) { throw "user " + id.toString() + " does not exist"; }
     val body = try json.decode(res.body);            // throw/try are legal: the value is @Result
     return userFromJson(body);                       // becomes a Task holding Ok(…)
 }
@@ -180,7 +183,7 @@ pub fn greetingFor(id: i32) -> @Task<@Result<string, string>> {
 
 // a Task that cannot fail: only await, no try
 pub fn delayed(ms: i32) -> @Task<void> {
-    await timer.sleep(ms);
+    await async.delay(ms, 0);
 }
 ```
 
@@ -194,13 +197,14 @@ pub fn delayed(ms: i32) -> @Task<void> {
 | `try await t catch x` | `U` (or `x`) | with an await channel |
 
 ```bp
-// waiting on several in parallel (std/async, front 02)
+// waiting on several at once (std/async)
 import {async} from "std";
 
 pub fn dashboard() -> @Task<@Result<string, string>> {
-    val all = try await async.allOf([fetchUser(1), fetchUser(2), fetchUser(3)]);
-    val slow = try await async.timeout(fetchUser(4), 2000);   // fails if it takes longer than 2 s
-    return all.map(fn(u) { return u.name; }).join(", ");
+    val all = try await async.allOf([fetchUser(1), fetchUser(2), fetchUser(3)]);   // stops at the first Error
+    val fourth = try await async.timeout({ -> fetchUser(4) }, 2000);  // Error("timeout") past 2 s
+    val late = try fourth;                                              // the task's own @Result
+    return all.map({ u -> u.name }).join(", ") + ", " + late.name;
 }
 ```
 
@@ -210,14 +214,16 @@ An `async` block creates a `@Task` without declaring a separate function. It can
 function, ordinary ones included: the block waits for nothing, it **creates** the Task.
 
 ```bp
-fn dispara() -> @Task<@Result<Array<User>, string>> {
+fn launch() -> @Task<@Result<Array<User>, string>> {
     return async.allOf([
         async { return try await fetchUser(1); },              // @Task<@Result<User, string>>
-        async { return (try await fetchUser(2)).withRole("admin"); },
+        async { val u = try await fetchUser(2); return User(id: u.id, name: u.name.toUpper()); },
     ]);
 }
 
-val tique = async { await timer.sleep(100); return 1; };       // @Task<i32>
+fn main() {
+    val tick = async { return await async.delay(100, 1); };  // @Task<i32>, in an ordinary function
+}
 ```
 
 Rules of the block:
@@ -261,71 +267,87 @@ its own body — with `catch`, `case`, `notFound()` or an error screen.
 
 ```bp
 // jhonstart — the type that carries the context tree
-pub type ElementBase {}
-pub type Element(tag: string, attrs: Array<#(string, string)>, children: Array<Element>)
-    implement @Context<ElementBase>;
+pub type ElementBase(root: bool)
+pub type Element(tag: string, value: string, children: Array<Element>, attrs: Array<#(string, string)>)
+    implement @Context<ElementBase>
 
 // a state hook
-pub type State<T>(get: fn() -> T, set: fn(T) -> void);
+pub type State<T>(value: T, set: fn(next: T))
 
-pub fn state<T>(initial: T) -> @Component<ElementBase, State<T>> { … }
+pub fn state<T>(initial: T) -> @Component<ElementBase, State<T>> {
+    return State(value: initial, set: { next -> });   // the server pass; the client rebinds `set`
+}
 
 // a hook reading the request (decision 114, item 8: onze hands the RequestData to the render)
-pub fn cookies() -> @Component<ElementBase, CookieJar> { … }
+// (jhonstart's `RequestData` also carries the method, params, query and headers, and reads
+// them with `param(name)`, `cookie(name)`, …)
+pub type RequestData(path: string, cookies: Array<#(string, string)>)
+
+pub fn request() -> @Component<ElementBase, RequestData> {
+    return RequestData(path: "/", cookies: []);        // jhonstart reads it from the host
+}
 ```
 
 ### 4.2 The application's hooks compose other hooks
 
 ```bp
-import {state, State} from "jhonstart";
+import {ElementBase, state, request} from "jhonstart";
 
-pub fn counter(start: i32) -> @Component<ElementBase, #(i32, fn() -> void)> {
+pub fn counter(start: i32) -> @Component<ElementBase, #(i32, fn())> {
     val s = use state(start);
-    return #(s.get(), fn() { s.set(s.get() + 1); });
+    return #(s.value, { -> s.set(s.value + 1) });
 }
 
 pub fn currentUser() -> @Component<ElementBase, ?User> {
-    val jar = use cookies();
-    val id = jar.get("uid");
-    if (id == null) { return null; };
-    return try await fetchUser(int.parseOrZero(id)) catch null;   // await is legal (Component ⊃ Task)
+    val req = use request();
+    val id = try toInt(req.cookie("uid")) catch 0;
+    if (id == 0) { return null; }
+    return try await fetchUser(id) catch null;       // await is legal (Component ⊃ Task)
 }
 ```
 
 ### 4.3 Components: page, layout and ordinary components
 
 Page, layout and template **are components** (decision 117): `-> @Component<ElementBase, Element>`.
-`#[page]`, `#[layout]` and `#[template]` stay attributes — they are metadata, not effects.
+`#[page(seg)]`, `#[layout(seg)]` and `#[template(seg)]` stay attributes — metadata (the route
+segment the file serves), not effects — and each refuses, at the annotation, a function whose return
+is not `@Component<ElementBase, Element>`. The site imports what a marker emits beside the marker
+(`jhPage` / `jhLayout`, `ctxParam` / `ctxRest`), and jhonstart's builders take their `attrs`
+explicitly (`text("…", [])`, `div([…], [])`).
 
 ```bp
-import {div, h1, p, button, text, redirect, notFound, Element, PageContext, LayoutProps} from "jhonstart";
+import {
+    ElementBase, Element, PageContext, LayoutProps,
+    div, h1, p, span, button, text, redirect, notFound,
+    layout, page, jhLayout, jhPage, ctxParam, ctxRest,
+} from "jhonstart";
 
 // an ordinary component
 pub fn Counter() -> @Component<ElementBase, Element> {
-    val (n, inc) = use counter(0);
-    return div([p([text("Clicks: " + n.toString())]), button(onClick: inc, children: [text("+1")])]);
+    val #(n, inc) = use counter(0);
+    return div([p([text("Clicks: " + n.toString(), [])], []), button([text("+1", [])], [])], []);
 }
 
 // layout: checks the session ONCE for the whole /dashboard/* area
-#[layout]
+#[layout("dashboard")]
 pub fn DashboardLayout(props: LayoutProps) -> @Component<ElementBase, Element> {
     val user = use currentUser();
-    if (user == null) { redirect("/login"); };          // a signal: becomes 307 (or a client navigation)
-    return div([Sidebar(user: user), props.children]);
+    if (user == null) { redirect("/login"); }         // a signal: becomes 307 (or a client navigation)
+    return div([Sidebar(user: user), props.children], []);
 }
 
 // page: await + signals; the error is handled here (the component does not propagate)
-#[page]
+#[page("posts/[id]")]
 pub fn PostPage(ctx: PageContext) -> @Component<ElementBase, Element> {
-    val post = try await loadPost(ctx.param("id")) catch null;
-    if (post == null) { notFound(); };
-    if (post.movedTo != "") { redirect("/posts/" + post.movedTo); };
-    return div([h1([text(post.title)]), Counter()]);   // a component is CALLED, not `use`d
+    val post = try await loadPost(ctxParam(ctx, "id")) catch null;
+    if (post == null) { notFound(); }
+    if (post.movedTo != "") { redirect("/posts/" + post.movedTo); }
+    return div([h1([text(post.title, [])], []), Counter()], []);   // a component is CALLED, not `use`d
 }
 
 // a function that only builds HTML and uses no hook is NOT a component — it returns a plain Element
 pub fn Badge(label: string) -> Element {
-    return span(class: "badge", children: [text(label)]);
+    return span([text(label, [])], [#("class", "badge")]);
 }
 ```
 
@@ -334,13 +356,15 @@ pub fn Badge(label: string) -> Element {
 ```bp
 // rakun — the owner of the request context
 pub type RequestBase {}
-pub type RequestScope(…) implement @Context<RequestBase>;
+pub type RequestScope(id: string) implement @Context<RequestBase>
 
-pub fn requestId() -> @Component<RequestBase, string> { … }
+pub fn requestId() -> @Component<RequestBase, string> {
+    return "req-1";                            // rakun reads it from the request
+}
 
 pub fn tenant() -> @Component<RequestBase, @Result<Tenant, string>> {
-    val id = use requestId();                // same base: ok
-    return try await tenants.byRequest(id);  // try is legal: T is @Result
+    val id = use requestId();                  // same base: ok
+    return try await tenantFor(id);            // try is legal: T is @Result
 }
 ```
 
@@ -348,29 +372,30 @@ pub fn tenant() -> @Component<RequestBase, @Result<Tenant, string>> {
 
 ```bp
 fn Page() -> @Task<Element> {
-    use cookies();                // ✗ use-without-context-effect: `use` requires a
+    use request();                // ✗ use-without-context-effect: `use` requires a
 }                                 //   @Component<…> return
 
-fn Misturado() -> @Component<ElementBase, Element> {
+fn Mixed() -> @Component<ElementBase, Element> {
     val a = use state(0);         // base ElementBase
-    val t = use tenant();         // ✗ two bases in one function (ElementBase and RequestBase) —
-}                                 //   the error points at the second `use` and names both
+    val t = use tenant();         // ✗ context-anchor-violation: two bases in one function (ElementBase
+}                                 //   and RequestBase) — the error points at the second `use` and names both
 
-fn Errado() -> @Component<ElementBase, Element> {
-    return use Counter();         // ✗ a component (its T owns the context) is called (`Counter()`); `use` is for hooks only
-}
+fn Wrong() -> @Component<ElementBase, Element> {
+    return use Counter();         // ✗ use-of-non-context-fn: a component (its T owns the context) is called
+}                                 //   (`Counter()`); `use` is for hooks only
 
-fn Propaga() -> @Component<ElementBase, Element> {
+fn Propagates() -> @Component<ElementBase, Element> {
     val u = try await fetchUser(1);   // ✗ effect-try-without-fallible-channel: Element is not a
 }                                     //   @Result; use `catch`, `case` or `notFound()`
 
-fn foraDoCorpo() {
-    val f = fn() { use state(0); };   // ✗ `use` does not leave the body of the function with the @Component return
-}
+fn outsideTheBody() {
+    val f = { -> use state(0) };      // ✗ use-without-context-effect: `use` does not leave the body
+}                                     //   of the function with the @Component return
 
-#[layout]
-pub fn OldLayout(props: LayoutProps) -> Element { … }   // ✗ decision 117: #[layout] requires
-                                                        //   a @Component<ElementBase, Element> return
+#[layout("")]
+pub fn OldLayout(props: LayoutProps) -> Element {   // ✗ decision 117: #[layout] requires
+    return props.children;                          //   a @Component<ElementBase, Element> return
+}
 ```
 
 **Per backend:** on commonJS, every function with a `@Component` return becomes an
@@ -405,26 +430,26 @@ pub type YieldStep<T> { Yield(value: T), Done }
 ### 5.1 `@Iterator<T>` — any function may iterate one
 
 ```bp
-pub fn fibonacci(limit: i32) -> @Iterator<i64> {
-    var a: i64 = 0;
-    var b: i64 = 1;
+pub fn fibonacci(limit: i32) -> @Iterator<i32> {
+    var a = 0;
+    var b = 1;
     var i = 0;
     while (i < limit) {
         yield a;
         val t = a + b; a = b; b = t;
         i = i + 1;
-    };
+    }
 }
 
 pub fn firstNegative(xs: i32[]) -> @Iterator<i32> {
     for (xs) { x ->
-        if (x < 0) { break x; };      // emits the negative and ends
+        if (x < 0) { break x; }       // emits the negative and ends
         yield x;
-    };
+    }
 }
 
 fn main() {
-    for (fibonacci(10)) { n -> @println(n); };     // ok in an ordinary function
+    for (fibonacci(10)) { n -> @print(n); }        // ok in an ordinary function
 }
 ```
 
@@ -440,9 +465,9 @@ body gains sugar:
 ```bp
 pub fn parseLines(text: string) -> @Iterator<@Result<i32, ParseError>> {
     for (text.split("\n")) { line ->
-        if (line == "") { continue; };
+        if (line == "") { continue; }
         yield try parsePort(line);        // failed → emits Error(e) and ends
-    };
+    }
 }
 ```
 
@@ -452,18 +477,18 @@ Whoever iterates receives the `@Result` and decides. **`for` does no implicit `t
 // stop at the first error: an explicit try, inside a function with @Result in the return
 fn sumPorts(text: string) -> @Result<i32, ParseError> {
     var total = 0;
-    for (parseLines(text)) { r -> total = total + try r; };
+    for (parseLines(text)) { r -> total = total + try r; }
     return total;
 }
 
 // carry on after the error: case, in any function
 fn printPorts(text: string) {
     for (parseLines(text)) { r ->
-        case (r) {
-            .Ok(p) -> @println(p);
-            .Error(e) -> @println("error: " + e.toString());
+        case r {
+            Ok(p) -> @print(p);
+            Error(e) -> @print(e);        // the variant, e.g. NotANumber(text: "x")
         }
-    };
+    }
 }
 ```
 
@@ -475,18 +500,18 @@ The rules of 5.2 hold: with a `@Result` item, a failing `try await` also emits `
 pub fn pages(url: string) -> @Stream<@Result<Array<User>, string>> {
     var next = url;
     while (next != "") {
-        val res = try await http.get(next);       // failed → emits Error(e) and ends
+        val res = try await http.fetch(next);     // failed → emits Error(e) and ends
         val body = try json.decode(res.body);
         yield usersFrom(body);                    // emits Ok(…)
         next = nextLink(body);
-    };
+    }
 }
 
 fn countUsers() -> @Task<@Result<i32, string>> {
     var n = 0;
-    for await (pages("https://api.exemplo.com/users")) { batch ->
+    for await (pages("https://api.example.com/users")) { batch ->
         n = n + (try batch).length;
-    };
+    }
     return n;
 }
 ```
@@ -504,13 +529,13 @@ Mixing `yield` with `return <iterator>` in the same body is an error.
 
 ```bp
 // iterator: has yield
-fn pares(xs: i32[]) -> @Iterator<i32> {
-    for (xs) { x -> if (x % 2 == 0) { yield x; }; };
+fn evens(xs: i32[]) -> @Iterator<i32> {
+    for (xs) { x -> if (x % 2 == 0) { yield x; } }
 }
 
 // factory: no yield; returns an assembled iterator
-fn paresDe(xs: i32[]) -> @Iterator<i32> {
-    return iter for (xs) { x -> if (x % 2 == 0) { yield x; }; };
+fn evensOf(xs: i32[]) -> @Iterator<i32> {
+    return iter for (xs) { x -> if (x % 2 == 0) { yield x; } };
 }
 ```
 
@@ -521,13 +546,13 @@ There is no `Iterable`. The type exposes an ordinary method:
 ```bp
 pub type Grid(cells: i32[]) {
     fn iter(self: Self) -> @Iterator<i32> {
-        for (self.cells) { c -> yield c; };
+        for (self.cells) { c -> yield c; }
     }
 }
 
 fn main() {
     val g = Grid(cells: [1, 2, 3]);
-    for (g.iter()) { c -> @println(c); };
+    for (g.iter()) { c -> @print(c); }
 }
 ```
 
@@ -544,12 +569,12 @@ fn h() -> @Iterator<User> {
 
 fn k(xs: i32[]) -> @Iterator<i32> {
     yield 0;
-    return xs.iter();           // ✗ iter-mixed-yield-return: iterator (yield) and factory
+    return evens(xs);           // ✗ iter-mixed-yield-return: iterator (yield) and factory
 }                               //   (return) in the same body
 
-fn velho() -> @Iterator<i32, ParseError> { … }
-                                // ✗ iterator-error-param-removed: use
-                                //   @Iterator<@Result<i32, ParseError>>
+fn old() -> @Iterator<i32, ParseError> {
+    yield 0;                    // ✗ iterator-error-param-removed: use
+}                               //   @Iterator<@Result<i32, ParseError>>
 ```
 
 ---
@@ -566,20 +591,20 @@ for await (s) { x -> … }    // walks a @Stream (with an await channel)
 ```
 
 ```bp
-fn exemplos(xs: i32[]) {
+fn examples(xs: i32[]) {
     var i = 0;
     loop {
         i = i + 1;
-        if (i == 3) { continue; };
-        if (i > 5) { break; };
-        @println(i);
-    };
+        if (i == 3) { continue; }
+        if (i > 5) { break; }
+        @print(i);
+    }
 
-    while (i > 0) { i = i - 1; };            // counting down: while (there is no .rev())
+    while (i > 0) { i = i - 1; }            // counting down: while (there is no .rev())
 
-    for (0..3) { k -> @println(k); };        // 0 1 2      (.. excludes the end)
-    for (0...3) { k -> @println(k); };       // 0 1 2 3    (... includes the end)
-    for (xs) { x -> @println(x); };
+    for (0..3) { k -> @print(k); }          // 0 1 2      (.. excludes the end)
+    for (0...3) { k -> @print(k); }         // 0 1 2 3    (... includes the end)
+    for (xs) { x -> @print(x); }
 }
 ```
 
@@ -588,11 +613,11 @@ an `iter` / `stream` loop). To collect in an ordinary function, use `xs.map(…)
 `var`:
 
 ```bp
-fn dobro(xs: i32[]) -> i32[] {
-    for (xs) { x -> yield x * 2; };   // ✗ `yield` outside a generator scope
+fn double(xs: i32[]) -> i32[] {
+    for (xs) { x -> yield x * 2; }    // ✗ yield-without-generator: `yield` outside a generator scope
 }
-fn dobroCerto(xs: i32[]) -> i32[] {
-    return xs.map(fn(x) { return x * 2; });
+fn doubleRight(xs: i32[]) -> i32[] {
+    return xs.map({ x -> x * 2 });
 }
 ```
 
@@ -602,28 +627,33 @@ With `iter` or `stream` in front, any of the three loops becomes an **expression
 iterator or the stream:
 
 ```bp
+import {async, io.clock} from "std";
+
 fn main() {
-    val numeros = iter loop {                // @Iterator<i32>
+    val numbers = iter loop {                // @Iterator<i32>
         val n = readNumber();
-        if (n < 0) { break n; };             // emits n and ends
+        if (n < 0) { break n; }              // emits n and ends
         yield n * 2;                         // emits and continues
     };
-    for (numeros) { x -> @println(x); };
+    for (numbers) { x -> @print(x); }
 
-    val contagem = iter while (i > 0) { yield i; i = i - 1; };
+    var i = 3;
+    val countdown = iter while (i > 0) { yield i; i = i - 1; };
 
-    val pares = iter for ([1, 2, 3, 4]) { x -> if (x % 2 == 0) { yield x; }; };
+    val evens = iter for ([1, 2, 3, 4]) { x -> if (x % 2 == 0) { yield x; } };
 
     // the item becomes @Result on its own when the body has throw/try:
-    val lidos = iter loop { yield try parsePort(readLine()); };
+    val parsed = iter loop { yield try parsePort(readLine()); };
                                              // @Iterator<@Result<i32, ParseError>>
-    val remotos = stream for (ids) { id -> yield try await fetchUser(id); };
+    val ids = [1, 2, 3];
+    val remote = stream for (ids) { id -> yield try await fetchUser(id); };
                                              // @Stream<@Result<User, string>>
-    val ticks = stream loop { await timer.sleep(1000); yield now(); };
-                                             // @Stream<Instant>
+    val ticks = stream loop { yield await async.delay(1000, clock.nowMillis()); };
+                                             // @Stream<i64>
 
     // as an argument:
-    @println(soma(iter for (xs) { x -> yield x * x; }));
+    val xs = [1, 2, 3];
+    @print(sum(iter for (xs) { x -> yield x * x; }));
 }
 ```
 
@@ -654,12 +684,12 @@ Decisions 116–117:
 
 ```bp
 // page / layout / template (jhonstart) — always -> @Component<ElementBase, Element>
-#[page]
+#[page("posts/[id]")]
 pub fn Post(ctx: PageContext) -> @Component<ElementBase, Element> {
-    val post = try await loadPost(ctx.param("id")) catch null;
-    if (post == null) { notFound(); };
-    if (post.movedTo != "") { redirect("/posts/" + post.movedTo); };
-    return …;
+    val post = try await loadPost(ctxParam(ctx, "id")) catch null;
+    if (post == null) { notFound(); }
+    if (post.movedTo != "") { redirect("/posts/" + post.movedTo); }
+    return div([h1([text(post.title, [])], [])], []);
 }
 ```
 
@@ -670,14 +700,16 @@ pub fn Post(ctx: PageContext) -> @Component<ElementBase, Element> {
 - a relative target must exist in the route table; an absolute one only if it is listed in
   `jhonstart.app(allowedRedirects: [...])`.
 
-In a **server action** (rakun), the `redirect` is rakun's:
+In a **server action** (rakun), the `redirect` is rakun's. Server actions are rakun's front 24,
+not written yet: the example is the contract that front implements, and it type-checks today only
+against stand-ins for `serverAction`, `ActionResult`, `FormData`, `redirect` and `insertPost`:
 
 ```bp
 import {serverAction, ActionResult, FormData, redirect} from "rakun";
 
 #[serverAction]
 pub fn createPost(form: FormData) -> @Task<@Result<ActionResult, string>> {
-    val id = try await posts.insert(form.get("title"));
+    val id = try await insertPost(form.get("title"));
     return redirect("/posts/" + id);
 }
 ```
@@ -701,7 +733,7 @@ pub declare fn parse(input: string) -> i32;
 pub declare fn shout(text: string) -> string;
 
 // a target with no binding is a compile error of that target:
-//   error: `listToBinary` has no `#[@External.<Target>(…)]` for the wasm backend
+//   error: `shout` has no `#[@External.<Target>(…)]` for the wasm backend (located at the call)
 ```
 
 An external function declared `-> @Task<@Result<T, E>>` turns a rejected Promise (Node) or an

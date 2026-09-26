@@ -302,7 +302,7 @@ test case.
       direction, measured in `decisions-pending.md` 16-a
 - [x] No A row moved to B without the maintainer's decision — a rule that changes how every library
       looks is a decision, and this front proposes it rather than taking it (decisions 61, 65; the
-      choices C-12 needed are 16-a/16-b in `decisions-pending.md`, to confirm, and 16-c is proposed only)
+      choices C-12 needed are 16-a/16-b in `decisions-pending.md`, to confirm; the trailing comma is decision 133)
 
 ### Step 7 — Hand the result over, and say what the exemption is now
 
@@ -551,9 +551,9 @@ only by deleted `;`, and `format(old) == format(new)` for each of the 26 `.bp` f
 
 | Row | State | Waits on |
 |---|---|---|
-| **C-13 — refusing the `;`** | the `;` is optional; refusing it (front 15's parked patch, narrowed to `isBracedBlockStmt`) would fail `tests/language` (**275** sites) and the siblings — rakun **454**, jhonstart **40**, erika **28**, onze **1**, emilia **0** — counted by `c13-migrate.py` on copies ([`decisions-pending.md`](../../decisions-pending.md) 16-d) | 12 and 09 run `c13-migrate.py` (or `botopink format`) over their trees |
+| **C-13 — refusing the `;`** | the `;` is optional; refusing it (front 15's parked patch, narrowed to `isBracedBlockStmt`) would fail `tests/language` (**275** sites) and the siblings — rakun **454**, jhonstart **40**, erika **28**, onze **1**, emilia **0** — counted by `c13-migrate.py` on copies; the order is [decision 132](../../decisions-taken.md#132-the--after-a-braced-block-becomes-an-error-once-every-source-is-migrated) | each library runs `c13-migrate.py` at the end of the threads writing in it, `tests/language` in the language-tests front, then front 15's patch |
 | **The siblings' reformat at C-12's rules** | emilia 18 files +12 940 −4 663, rakun 47 +4 760 −1 471, jhonstart 19 +784 −231, erika 2 +167 −63, onze 2 +44 −8 — compiling, cells equal | 09, after the maintainer confirms 16-a/16-b |
-| **The magic trailing comma** | a trailing comma still opens a list that fits — the one input-layout dependence left ([`decisions-pending.md`](../../decisions-pending.md) 16-c, proposed, not implemented) | the maintainer |
+| **The trailing comma** | a trailing comma opens a list that fits — kept by [decision 133](../../decisions-taken.md#133-a-trailing-comma-keeps-a-list-in-its-open-form) (the author's explicit request) | nothing — closed |
 | still pinned | `commaList` (generic, parameter, pattern, import and type lists) and the one-step pipeline — none holds a call, so none is a wrong middle today | a construct-by-construct decision, as decision 65 part 4 stages them |
 | `while` / `for` / annotated `loop` printer arms | printed (front 22's carve-out); their width is the value constructs' now | — |
 | C-11's two parse defects | **both parse now** (re-run 2026-09-26): `h1 { "my blog" }` and `executar { ok }` (15's R11), and `builtins.d.bp` is in `format-check.sh` (front 20). What is left is this front's: decision 61 rule 3's one-line rule still stops at `arrow_when_empty`, for a parse error that no longer exists, so `h1 { "my blog" }` prints open over three lines | a formatter row — not taken here, it moves every trailing-lambda call in the frontend library |
