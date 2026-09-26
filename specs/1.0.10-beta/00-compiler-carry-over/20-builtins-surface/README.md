@@ -110,17 +110,15 @@ with 21-effect-chain under decisions 103, 108, 102 and 103.
       "every clause here is declared in builtins.d.bp", "builtins.d.bp declares no clause this
       module does not carry" and "every effect wrapper is declared, and no removed one is" are the
       drift tests
-- [ ] `builtins.d.bp` formats — `botopink format --check libs/std/src/builtins.d.bp` refuses the
-      file on two parser rows, neither this front's: (1) an unannotated top-level
-      `[pub] declare fn` is routed by `parser.zig`'s top-level dispatch to
-      `parseShorthandDelegateDecl` (`parser/decls.zig`), which takes no generic parameters, no `_`
-      parameter name and a one-token return type — `field<T, F>` (`:312`) and
-      `getContext<T>(comptime _: type) -> Component<T, any>` (`:395`); (2) a behavior's `val` member
-      takes a one-identifier type (`BehaviorField.typeName`), so `Decl`'s `val fields: Field[];`
-      (`:582–586`) does not parse. With both rows bypassed in a scratch copy the rest of the file
-      parses and the formatter's diff is layout only (the multi-annotation `#[A, B]` split into two
-      `#[…]`, `{ }` → `{}`, trailing-comment alignment, blank lines). Once the file parses,
-      `scanDeclareFnExternal` (commonJS / erlang), which parses this file and `catch return`s today,
-      starts reading its `#[External.*]` declarations — measure the codegen snapshots then
+- [x] `builtins.d.bp` formats — `botopink format --check libs/std/src/builtins.d.bp` passes and
+      `scripts/format-check.sh` holds it (with `builtins_fns.d.bp`). The two parser rows are
+      closed: an unannotated `[pub] declare fn` reads its signature with `parseSignature`
+      (generics, `comptime` / `_` parameters, a whole `-> TypeRef` return), and a behavior `val`
+      member carries a `TypeRef` (`val fields: Field[];`). `_` is a bodyless declaration's
+      placeholder; a function with a body refuses it (`discard-param-with-body`). The file's diff
+      was layout only. `scanDeclareFnExternal` (commonJS / erlang) now reads it and stops on a
+      parse failure instead of `catch return`; what it adds was measured — nothing observable on
+      commonJS, three `'__bp_print'` templates on erlang that `isPrintBuiltin` pre-empts — and no
+      codegen snapshot moved
 - [x] step 4's cell; `libs/std/AGENTS.md` in the same commit
 - [x] Commit on `front/20-builtins-surface`; no push, no merge — landing is the maintainer's step
