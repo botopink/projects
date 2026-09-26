@@ -644,8 +644,13 @@ each costed, one recommended.
 **Partial work:** the branch.
 **Depends on:** C-01 (the emitter is 13's until then).
 **Acceptance:**
-- [ ] a spec under this milestone with the measurement, the options and a recommendation; the branch
-      deleted or restarted from
+- [x] superseded by landing it (compiler `8333aaab`, `front/02-03-erlang-beam`): the structural block
+      — nothing in the compiler read Erlang — went away with front 14's `comptime/runtime/wat/erl_parse.zig`
+      and `comptime/runtime/beam/lower.zig`, which BR5 reuses; no beam snapshot carries
+      `'__bp_erl_eval'`, the refused-construct residue and the re-measured cost are in
+      `src/codegen/beam/AGENTS.md`, the choice in `decisions-pending.md` 0203-b. The parked
+      `wip/br5-beam-templates` branch (an 836-line second Erlang parser) is obsolete — the maintainer's
+      to delete
 
 ## C-25 — The unowned residuals
 

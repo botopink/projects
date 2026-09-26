@@ -153,10 +153,10 @@ array_zip_via_external_node_template             bool_instance_default_fn_method
 ```
 
 **Acceptance:**
-- [ ] no `'__bp_erl_eval'` left in any beam snapshot, **or** each remaining use named with its reason in `src/codegen/beam/AGENTS.md`
-- [ ] every RUN LOG unchanged — this is a lowering change, not a behaviour change
-- [ ] `scripts/beam_export_audit.sh` still assembles every module (315/315 at `c2dd780`)
-- [ ] the measured cost that motivated BR4 (`'__bp_erl_eval'/2` at roughly 50× a direct call, recorded in `src/codegen/beam/AGENTS.md`) is re-measured and the note updated
+- [x] no `'__bp_erl_eval'` left in any beam snapshot, **and** the remaining run-time use named with its reason in `src/codegen/beam/AGENTS.md` — a template `lower.zig` refuses (`receive`, `!`, `try … of`, …; at most 6 of `libs/std`'s 159 by text) — compiler `8333aaab`, which reuses the comptime runtime's Erlang reader (`wat/erl_parse.zig`) and BEAM lowering (`beam/lower.zig`), no second template language (`decisions-pending.md` 0203-b)
+- [x] every RUN LOG unchanged — 15 beam snapshots (both trees) re-record `.S` only, compared RUN LOG by RUN LOG
+- [x] `scripts/beam_export_audit.sh` still assembles every module (475/475 at `8333aaab`)
+- [x] the measured cost re-measured and the note updated: 0.25–0.39 µs per loop iteration through the compiled helper against 0.24–0.34 written directly (1.06–1.16×), was 5.722 against 0.113 (50.6×)
 
 ### Step 2 — the formatter: decision 1a **and** §7, in one landing
 
