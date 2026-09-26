@@ -104,19 +104,19 @@ pub fn armFor(url: string) -> string
 ```
 
 **Acceptance:**
-- [ ] `armFor("amqp://host:5672")` is `"amqp10"`; `armFor("stomp://host:61613")` is `"stomp"`; an unknown scheme is a boot failure naming both supported schemes.
-- [ ] `amqps://` and `stomp+ssl://` resolve their TLS material through front 74's bundle registry and fail at boot when the named bundle does not exist.
-- [ ] Credentials come from configuration and never from the URL in a log line — a test asserts the redacted form is what is logged.
-- [ ] A connection that drops is re-established with backoff, and the listener's subscriptions are re-declared on reconnect.
+- [x] `armFor("amqp://host:5672")` is `"amqp10"`; `armFor("stomp://host:61613")` is `"stomp"`; an unknown scheme is a boot failure naming both supported schemes. — `jms/codec_test` "arms: the URL scheme picks the arm, and an unknown scheme is refused naming both" (the amqp10 arm itself refuses the boot: `amqp10_client` is an OTP application a sidecar cannot load)
+- [x] `amqps://` and `stomp+ssl://` resolve their TLS material through front 74's bundle registry and fail at boot when the named bundle does not exist. — `jms/codec_test` "arms: stomp+ssl names a front 74 bundle that must exist" (the connection takes `rakun_ssl:connect_options/2`; `amqps://` refuses with the amqp10 arm)
+- [x] Credentials come from configuration and never from the URL in a log line — a test asserts the redacted form is what is logged. — `jms/client_test` "jms: the log carries the redacted URL, never the credentials"
+- [x] A connection that drops is re-established with backoff, and the listener's subscriptions are re-declared on reconnect. — `jms/client_test` "jms: a dropped connection is re-dialled and its subscriptions re-declared"
 
 ### Step 2 — The STOMP frame codec
 
 **Acceptance:**
-- [ ] Every one of the ten frames round-trips through encode and decode unchanged, asserted frame by frame.
-- [ ] A frame with a `content-length` header is read by length; one without is read to the NUL terminator.
-- [ ] Header values escape and unescape `\r`, `\n`, `:` and `\` per STOMP 1.2, and a header containing all four round-trips.
-- [ ] Heart-beating negotiates from the `heart-beat` header and a missed beat closes the connection rather than hanging.
-- [ ] A non-text body is refused with a located error naming the byte-type gap.
+- [x] Every one of the ten frames round-trips through encode and decode unchanged, asserted frame by frame. — `jms/codec_test` "codec: each of the ten frames round-trips"
+- [x] A frame with a `content-length` header is read by length; one without is read to the NUL terminator. — `jms/codec_test` "codec: content-length reads by length (a NUL inside the body), otherwise to the NUL"
+- [x] Header values escape and unescape `\r`, `\n`, `:` and `\` per STOMP 1.2, and a header containing all four round-trips. — `jms/codec_test` "codec: header values escape and unescape CR, LF, colon and backslash"
+- [ ] Heart-beating negotiates from the `heart-beat` header and a missed beat closes the connection rather than hanging. — open: implemented (`rakun_jms.erl`: max of the two sides per direction, a missed incoming beat closes), not asserted
+- [x] A non-text body is refused with a located error naming the byte-type gap. — `jms/client_test` "codec: a non-text body is refused naming the byte-type gap"
 
 ### Step 3 — Sending
 
@@ -125,10 +125,10 @@ pub fn jmsSend(destination: Destination, body: string) -> i32
 ```
 
 **Acceptance:**
-- [ ] A queue send reaches exactly one of two competing consumers; a topic send reaches both.
-- [ ] Publishing to a topic with no subscriber is not an error and is not retried.
-- [ ] `jmsSend` goes through front 86's `publishWithRetry` when a retry policy is configured for the destination.
-- [ ] A send to a `Destination.Queue` whose name is empty fails before dialling.
+- [x] A queue send reaches exactly one of two competing consumers; a topic send reaches both. — `jms/client_test` "jms: a queue send reaches one of two competing consumers; a topic send reaches both"
+- [x] Publishing to a topic with no subscriber is not an error and is not retried. — `jms/client_test` "jms: a queue send reaches …" (a send to `/topic/unheard` answers 0)
+- [ ] `jmsSend` goes through front 86's `publishWithRetry` when a retry policy is configured for the destination. — open: front 86 has no `publishWithRetry` (a decorator cannot wrap a body, and the combinator was not written)
+- [x] A send to a `Destination.Queue` whose name is empty fails before dialling. — `jms/client_test` "jms: a send to an empty queue name fails before dialling"
 
 ### Step 4 — `#[jmsListener]`
 
@@ -138,34 +138,34 @@ pub fn onMessage(self: Self, delivery: Delivery) -> Outcome
 ```
 
 **Acceptance:**
-- [ ] `#[jmsListener]` on anything but a method fails with a located message.
-- [ ] The emitted registration is the same shape front 15 emits for its own arms — asserted by reading the registry, not by reading the emitted source.
-- [ ] `Outcome.Retry` and `Outcome.Reject` route through front 86 exactly as they do on the AMQP 0-9-1 arm.
-- [ ] The three acknowledgement modes behave as front 86 documents them, including `Batch` on a STOMP subscription with `ack: client`.
+- [ ] `#[jmsListener]` on anything but a method fails with a located message. — open: listeners register through `jmsListen`; there is no `#[jmsListener]` marker
+- [x] The emitted registration is the same shape front 15 emits for its own arms — asserted by reading the registry, not by reading the emitted source. — `jms/client_test` "jms: the listener is in front 15's registry, under the broker jms" (`jmsListen` registers it; there is no `#[jmsListener]` yet)
+- [ ] `Outcome.Retry` and `Outcome.Reject` route through front 86 exactly as they do on the AMQP 0-9-1 arm. — open: `Reject` dead-letters with front 86's envelope and `Retry` NACKs (`jms/client_test` "jms: Reject dead-letters with the envelope and Retry has the broker redeliver"), but a STOMP redelivery carries no attempt count, so the retry ceiling of front 86 does not apply
+- [ ] The three acknowledgement modes behave as front 86 documents them, including `Batch` on a STOMP subscription with `ack: client`. — open: `auto`, `client` and `client-individual` are handed to the broker; front 86's modes are not mapped
 
 ### Step 5 — Durable subscriptions and selectors
 
 **Acceptance:**
-- [ ] A durable topic subscription receives messages published while the consumer was down.
-- [ ] A durable subscription without a stable client id fails at boot, naming the missing setting.
-- [ ] A selector the broker accepts filters at the broker: the consumer's delivery count for
-      non-matching messages is zero, not "delivered and discarded".
-- [ ] A selector the broker rejects fails the subscription at registration, and the message says that
-      client-side filtering is not a fallback.
+- [x] A durable topic subscription receives messages published while the consumer was down. — `jms/client_test` "durable: a durable subscription receives what was published while it was away"
+- [x] A durable subscription without a stable client id fails at boot, naming the missing setting. — `jms/client_test` "durable: a durable subscription without a client id refuses, naming the setting"
+- [x] A selector the broker accepts filters at the broker: the consumer's delivery count for
+      non-matching messages is zero, not "delivered and discarded". — `jms/client_test` "selectors: the broker filters - a non-matching message is never delivered; …"
+- [x] A selector the broker rejects fails the subscription at registration, and the message says that
+      client-side filtering is not a fallback. — `jms/client_test` "selectors: … a rejected selector fails the subscription"
 
 ### Step 6 — Request/reply
 
 **Acceptance:**
-- [ ] A reply is matched to its request by correlation id, with two requests in flight at once.
-- [ ] A request that times out returns an error rather than blocking the caller's process forever, and the late reply is discarded without crashing the requester.
-- [ ] The temporary reply destination is removed when the requester finishes, including when it raises.
+- [x] A reply is matched to its request by correlation id, with two requests in flight at once. — `jms/client_test` "request/reply: two requests in flight are matched by correlation id; a timeout is an error"
+- [ ] A request that times out returns an error rather than blocking the caller's process forever, and the late reply is discarded without crashing the requester. — open: the timeout is an error (`jms/client_test` "request/reply: …"); the late reply is not asserted
+- [ ] The temporary reply destination is removed when the requester finishes, including when it raises. — open: the reply subscription is removed in an `after` clause; not asserted for a raise
 
 ### Step 7 — Health
 
 **Acceptance:**
-- [ ] A `jms` health indicator reports per configured connection: up, down, and the reason when down.
-- [ ] The indicator checks the connection without sending an application message.
-- [ ] It is registered with front 11 and hidden by default behind front 76's exposure rules.
+- [x] A `jms` health indicator reports per configured connection: up, down, and the reason when down. — `jms/client_test` "health: UP with a live connection, DOWN when it is gone, registered with front 11"
+- [x] The indicator checks the connection without sending an application message. — `jms/client_test` "health: …" (the broker saw no SEND)
+- [ ] It is registered with front 11 and hidden by default behind front 76's exposure rules. — open: registered (`jms/client_test` "health: …"); its visibility is `/actuator/health`'s, not asserted here
 
 ## Examples
 
