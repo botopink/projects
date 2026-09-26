@@ -3,7 +3,7 @@
 The fronts live under `01-std/`, `03-rakun/`, `04-jhonstart/`, `05-emilia/`, `06-onze/` (map in
 [`unification.md`](./unification.md)).
 
-Ninety-six fronts stay coherent only where they agree on a format. This file is the list of those
+The fronts stay coherent only where they agree on a format. This file is the list of those
 agreements. Each one is owned by a single front, consumed by several, and checkable by a test that
 asserts a literal — not by a paragraph asking everyone to be careful.
 
@@ -12,8 +12,7 @@ only one side tests is a contract that drifts.
 
 ## 1 · Route table — owned by front 22
 
-Line-oriented, not JSON, and deliberately so: `std/json` has no structured value and the parser has
-to run on BEAM.
+Line-oriented, not JSON.
 
 ```
 kind|pattern|slot|verb
@@ -114,7 +113,7 @@ id = "a_" + hash.hmacSha256(buildSecret, module + "." + name + ":" + buildId).sl
 ```
 
 Computed only on the server, echoed by the client, never derived in the browser. `hash` is std's
-hashing module under decision 106 (it absorbed `crypto`'s digests).
+hashing module (decision 106).
 
 Form binding, written by jhonstart front 67 with the id onze hands it:
 `<form method="post" action="<pathname>" data-jh-a="<id>">` plus a hidden field named
@@ -169,11 +168,11 @@ Consumed by fronts 67, 26, 31, 68.
 ## 4 · Class-name scheme — owned by front 48
 
 ```
-class = "e_" + content_hash.contentHash(encodeSheet(tokensToSheet(tokens, theme)))
+class = "e_" + hash.contentHash(encodeSheet(tokensToSheet(tokens, theme)))
 ```
 
-`contentHash` is std's djb2 fold (`01-std/03-std-content-hash`); emilia's private `hashHex` is
-deleted (decision 116), so emilia and onze front 68 compute the class with one function.
+`contentHash` is std's djb2 fold in `hash` (`01-std/03-std-content-hash`); emilia and onze front 68
+compute the class with this one function; emilia's private `hashHex` is deleted for it (decision 116).
 
 Lowercase hex, seed 5381, multiplier 33, masked to 32 bits, folded over the encoded rule body, with
 `tokens` in author order. Nothing else enters the hash — no counter, no salt, no request id. With a
@@ -386,10 +385,10 @@ pub type Response(
 // rakun front 23 — what a page renderer is handed
 pub type ChunkWriter(setStatus: fn(code: i32) -> void, setHeader: fn(name: string, value: string) -> void,
                      write: fn(string) -> @Task<void>, close: fn() -> @Task<void>);
-pub type PageRenderer = fn(req: Request, out: ChunkWriter) -> @Task<void>;
+pub type PageRenderer = fn(req: Request, out: ChunkWriter) -> @Task<@Result<void, string>>;
 
 // onze front 49 — the whole adapter; no `case` on a signal
-rakun.page(pattern, fn(req: Request, out: ChunkWriter) -> @Task<void> {
+rakun.page(pattern, fn(req: Request, out: ChunkWriter) -> @Task<@Result<void, string>> {
     return site.renderStream(input(req), requestData(req), Response(
         status: fn(c) { out.setStatus(c); },
         header: fn(n, v) { out.setHeader(n, v); },
@@ -402,8 +401,10 @@ rakun.page(pattern, fn(req: Request, out: ChunkWriter) -> @Task<void> {
 Status and headers are legal only before the first `write`; after it, `status` / `setStatus` and
 `header` / `setHeader` fail — the render on jhonstart's side, the request on rakun's. jhonstart calls
 `close` exactly once on every path (a page, a signal before the first chunk, a late signal); rakun
-closes the response only when the renderer's future resolves with it still open, and any call after
-`close` fails the request. A page with no signal is `200` with `Content-Type: text/html;
+closes the response only when the renderer's Task resolves with it still open, and any call after
+`close` fails the request. A renderer's `Error(msg)` is answered like a raise: `500` when nothing
+was written, otherwise the response is closed; the message goes to the log, never on the wire
+(decision 130). A page with no signal is `200` with `Content-Type: text/html;
 charset=utf-8`, set by the render before its first `write`. Neither type names the other package;
 the literal both sides assert is the byte sequence on the socket for a page, a pre-first-chunk
 `redirect("/login")` (`307`, `location: /login`, empty body) and a pre-first-chunk `notFound()`
@@ -451,8 +452,23 @@ pub type ClientBundleManifest(
 
 On disk: `<outDir>/client-manifest.txt`, `|`-delimited, one record per line — the same shape as
 contract 1 and for the same reason. Kinds `V` version · `E` entry · `S` shared · `C` chunk ·
-`R` route → chunk · `Y` style · `P` public env. Values percent-encoded; an unknown kind byte is
-ignored so 69 and 71 may add records; a `V` line other than `1` is a hard error.
+`H` `beforeInteractive` script (the only tags in `<head>`) · `R` route → chunk · `Y` style · `P`
+public env. A field escapes `%`, `|`, line feed and carriage return as `%25`, `%7C`, `%0A`, `%0D`
+and is read back with std's `encoding.percentDecode`; an unknown kind byte is ignored so 69 and 71
+may add records; a `V` line other than `1` is a hard error.
+
+```
+V|1|<buildId>
+E|entry|/_onze/static/<buildId>/entry.<hash>.js|<hash>|<bytes>
+S|shared|/_onze/static/<buildId>/shared.<hash>.js|<hash>|<bytes>
+C|route:/blog/[slug]|/_onze/static/<buildId>/r1.<hash>.js|<hash>|<bytes>
+H|script:analytics|/a.js|<hash>|<bytes>
+R|/blog/[slug]|route:/blog/[slug]
+Y|styles|/_onze/static/<buildId>/app.<hash>.css|<hash>|<bytes>
+P|ONZE_PUBLIC_API_URL|https://api.example.com
+```
+
+`<hash>` is std's `hash.contentHash` of the linked chunk, eight hex digits.
 `parseManifest(formatManifest(m)) == m` is asserted on both targets with the same literal.
 
 **Emission order** in the document front 30's render writes: 1 `beforeInteractive` chunks in

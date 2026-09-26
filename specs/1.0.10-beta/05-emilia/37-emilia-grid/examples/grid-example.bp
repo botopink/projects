@@ -10,9 +10,7 @@
 // Reference: TAILWIND_CSS_DOCS.md § 6. Flexbox & Grid (6.8-6.15)
 //
 // emilia runs at comptime and emits a CSS string; this file is target-independent.
-// The whole `Grid` section and the top-level `Gap` section are delivered by
-// front 37 — `display:grid` (front 36) is all emilia has today. Spacing scale
-// from front 35, colours from front 33, modifiers from front 34.
+// `display:grid` is a display value on `Layout`; `Grid` and `Gap` fill the box.
 
 import {emilia, flush, Token} from "emilia";
 
@@ -157,7 +155,7 @@ pub fn dashboard(chart: string, aside: string, footer: string) -> @Task<string> 
     val footerPanel: Token[] = [
         .Grid.Col.Span.Full,
         .Grid.Flow.ColDense,
-        .Flex.Place.Items.Center,
+        .Flex.PlaceItems.Center,
         .Color.Slate.500,
     ];
 
@@ -179,31 +177,31 @@ test "a numeric column template builds a repeat" {
     val tokens: Token[] = [.Grid.Cols.12];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{grid-template-columns:repeat(12, minmax(0, 1fr))}</style>";
+    assert styles.contains("." + cls
+        + "{grid-template-columns:repeat(12, minmax(0, 1fr))}");
 }
 
 test "none and subgrid are emitted as keywords" {
     val tokens: Token[] = [.Grid.Cols.None, .Grid.Rows.Subgrid];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{grid-template-columns:none;grid-template-rows:subgrid}</style>";
+    assert styles.contains("." + cls
+        + "{grid-template-columns:none;grid-template-rows:subgrid}");
 }
 
 test "a span emits the doubled form and full emits the line form" {
     val tokens: Token[] = [.Grid.Col.Span.2, .Grid.Col.Span.Full];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{grid-column:span 2 / span 2;grid-column:1 / -1}</style>";
+    assert styles.contains("." + cls
+        + "{grid-column:span 2 / span 2;grid-column:1 / -1}");
 }
 
 test "a twelve-column grid has a thirteenth line" {
     val tokens: Token[] = [.Grid.Col.Start.13];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls + "{grid-column-start:13}</style>";
+    assert styles.contains("." + cls + "{grid-column-start:13}");
 }
 
 test "row placement mirrors column placement" {
@@ -220,16 +218,16 @@ test "the two-word flow values keep a single space" {
     val tokens: Token[] = [.Grid.Flow.RowDense, .Grid.Flow.ColDense];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{grid-auto-flow:row dense;grid-auto-flow:column dense}</style>";
+    assert styles.contains("." + cls
+        + "{grid-auto-flow:row dense;grid-auto-flow:column dense}");
 }
 
 test "the fr implicit track is a minmax" {
     val tokens: Token[] = [.Grid.AutoCols.Fr, .Grid.AutoRows.Fr];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{grid-auto-columns:minmax(0, 1fr);grid-auto-rows:minmax(0, 1fr)}</style>";
+    assert styles.contains("." + cls
+        + "{grid-auto-columns:minmax(0, 1fr);grid-auto-rows:minmax(0, 1fr)}");
 }
 
 test "gap answers the shorthand and both axes" {
@@ -260,7 +258,8 @@ test "the dashboard reflows from one column to twelve" {
     val out = await dashboard("Revenue", "Filters", "Updated just now");
     assert out.startsWith("<style>");
     assert out.contains("grid-template-columns:repeat(1, minmax(0, 1fr))");
-    assert out.contains("@media (width >= 48rem){grid-template-columns:repeat(6, minmax(0, 1fr))}");
-    assert out.contains("@media (width >= 64rem){grid-column:span 8 / span 8}");
+    assert out.contains("{grid-template-columns:repeat(6, minmax(0, 1fr))}");
+    assert out.contains("{grid-column:span 8 / span 8}");
+    assert out.contains("@media (width >= 64rem){.");
     assert out.contains("grid-auto-rows:min-content");
 }

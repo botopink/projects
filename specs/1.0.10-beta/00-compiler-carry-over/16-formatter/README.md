@@ -1,559 +1,97 @@
 # Front 16 — formatter
 
-**Priority:** **high** — raised from the medium decision 18 implied. The standing intent is that
-**everything stays formatted**, and measured, `botopink format` **deletes the `default` keyword**:
-on a package whose handle and handler names differ it silently breaks every consumer, and
-`format --check` then reports the broken file as clean. A gate that rewrites programs cannot be
-turned on. This front answers whether the formatter is sound first.
-**Depends on:** nothing. It can start immediately — steps 1 and 2 edit no source file at all.
-**Owns:** `modules/compiler-core/src/format.zig` · `modules/compiler-core/src/format/**` (the 239
-formatter tests, unowned through 1.0.4-beta) · the four member-trivia and member-order fields of
-`modules/compiler-core/src/ast.zig` and the sites that fill them in
-`modules/compiler-core/src/parser/decls.zig` — **a carve-out of [`01-checker`](../01-checker/README.md)**,
-named in [Rows for `fronts.md`](#rows-for-frontsmd)
-**Does not touch:** `repository/{emilia,erika,jhonstart,onze,rakun}/**`
-([`09-ecosystem-residuals`](../09-ecosystem-residuals/README.md) — this front formats **copies** in a
-scratch directory and never commits a library file) · `modules/compiler-cli/src/cli/format_cmd.zig`
-([`10-cli-residuals`](../../../1.0.5-beta/10-cli-residuals/README.md)) · the rest of `src/parser/**` and all of
-`src/comptime/**` ([`01-checker`](../01-checker/README.md)) · `src/codegen/**` (fronts 02–05)
+**Track:** compiler (carry-over items **C-11**, **C-12**, **C-13**, **G7**)
+**State:** landed. `botopink format` is lossless and idempotent, `format --check` walks the whole
+project, the value constructs measure width, a trailing comma keeps a list open (decision 133), and
+the `;` after a braced block is optional and not printed. Open: refusing that `;` once every source is
+migrated (decision 132), the siblings' reformat, and the rows in § *Open*.
+**Owns:** `modules/compiler-core/src/format.zig` · `modules/compiler-core/src/format/**` (the formatter
+tests) · the member-trivia and member-order fields of `modules/compiler-core/src/ast.zig` and the sites
+that fill them in `src/parser/decls.zig` (`parseEnumItem`, `parseFieldList`, `parseMethodDecl`) — a
+carve-out of [`01-checker`](../01-checker/README.md) · [`c13-migrate.py`](./c13-migrate.py)
+**Does not touch:** `repository/{emilia,erika,jhonstart,onze,rakun}/**` (this front formats copies;
+[`09-ecosystem-residuals`](../09-ecosystem-residuals/README.md) commits) · the rest of `src/parser/**`
+and `src/comptime/**` ([`01-checker`](../01-checker/README.md)) · `src/codegen/**` · the `while` /
+`for` printer arms ([`22-loops`](../22-loops/README.md)'s carve-out)
 
-Paths are relative to `repository/botopink-lang/` unless a row says otherwise. Every count and
-`file:line` below was measured at `botopink-lang` `c2dd780` (2026-09-18) in a scratch worktree — never
-in `repository/botopink-lang`, never in `.tasks/`.
+Paths are relative to `repository/botopink-lang/` unless a row says otherwise.
 
 ---
 
-## Problem
+## What holds
 
-**`format --check` is red on four of five libraries, and the formatter is idempotent** — so the reds
-are disagreements about the canonical form, not instability:
+**Nothing is lost.** Every token of the source — keywords and comments alike — appears in the output:
+`assertLossless` in `src/format/tests/helpers.zig` lexes input and output and asserts token
+containment, with the written-out exemption `droppable_separators`; `assertIdempotent` calls it, so
+idempotence and fidelity cannot come apart (a deletion is idempotent). `src/format/tests/AGENTS.md`
+states the property. Order is not asserted: the canonical form may move a token.
 
-```
-$ for l in emilia erika jhonstart onze rakun; do (cd repository/$l && botopink format --check); done
-emilia     src/emilia.bp  src/root.bp  src/tokens.bp   → error: 3 file(s) would be reformatted
-erika      src/erika.bp   src/root.bp                  → error: 2 file(s) would be reformatted
-jhonstart  src/element.bp src/hooks.bp  src/html.bp    → error: 3 file(s) would be reformatted
-onze       (clean)
-rakun      src/decorators.bp src/runtime.bp            → error: 2 file(s) would be reformatted
-```
+**What the AST records for the printer** (additive optionals, omitted from the JSON dump when empty,
+so no snapshot moves):
 
-Reproduced at `c2dd780`; formatting copies of all five and re-running `format` gives a byte-identical
-second pass in every one, which is the idempotence claim, re-measured.
-
-**But four of the ten red files are not disagreements**, and the sharpest one is not the file
-decision 18 named. Classified file by file in [`reds.md`](./reds.md):
-
-| | The formatter | Files |
-|---|---|---|
-| **D1** | **deletes the `default` keyword** — `pub default mod X;` → `pub mod X;`, `pub default fn f(…)` → `pub fn f(…)` | `emilia/root.bp`, `erika/root.bp`, `erika/erika.bp` — 3 occurrences |
-| **D2** | **reorders declarations** — 13 enum variants hoisted above the sections they were written after, at 4 sites | `emilia/tokens.bp` |
-
-**D1 changes what the program means.** `pub default mod` names the package handle that `import <pkg>`
-resolves to and `pub default fn` names the handler aliased under it (`comptime.zig:914-932`). On a
-package where the library name, the module name and the fn name coincide — which is true of emilia
-and erika — the loss is masked. On one where they differ it is not:
-
-```
-before format:  pub default mod zeta;  ·  pub default fn query(…)   → consumer runs, exit 0
-after  format:  pub mod zeta;          ·  pub fn query(…)           → error: unbound variable 'zeta', exit 1
-```
-
-`botopink format` can break a downstream consumer silently, and `format --check` then reports the
-broken file as clean. **Neither flag is missing from the AST** — `ModDecl.isDefault` (`ast.zig:77`)
-and `FnDecl.isDefault` (`ast.zig:1976`) are both recorded and both read by `comptime.zig`. The
-formatter simply has no arm for them: its only `default` is the unrelated `BehaviorMethod.is_default`
-at `format.zig:1720-1721`. It is a two-arm fix, entirely inside this front's own file.
-
-**And the formatter loses trivia the libraries do not happen to write.** Zero comments are deleted
-across the ten red files — but on constructed input:
-
-| | Probe | Output | What happened |
-|---|---|---|---|
-| a | `type Color { Red, // warm` | `Red,` | the comment is **deleted** |
-| b | `type Point(x: i32, // horizontal` `y: i32, // vertical)` | `x: i32,` `// horizontal` `y: i32,` | the first comment is **re-attached to the next field** — it now says something false — and the second is **deleted** |
-| c | `fn two(…) { … } // trailing` | `fn two(…) { … }` `// trailing` | the comment is **moved below** the member |
-
-Every result here is **idempotent**: format again and nothing changes. So `format --check` goes green
-on a file that has lost a line, which is the property that makes this a front rather than a chore —
-and the reason the scope is the formatter's soundness, with decision 18's four libraries as the
-evidence rather than the boundary.
-
-## Current state
-
-| | Value | How measured |
-|---|---|---|
-| libraries red | **4 of 5** — emilia 3 files, erika 2, jhonstart 3, rakun 2; onze clean | `botopink format --check` per library, read-only, at `c2dd780` |
-| red files | **10** | the listing above |
-| changed lines across the four | **923** — emilia 415, erika 267, jhonstart 211, rakun 30 | `diff -u <lib>/src.orig <lib>/src \| grep -c '^[+-]'` over formatted copies in a scratch directory |
-| idempotent | **yes, all five** | format a copy twice; `diff -rq` between pass 1 and pass 2 is empty for every library |
-| verdicts | **A 4 · B 2 · C 4** files | [`reds.md`](./reds.md) |
-| comments **deleted** in the ten red files | **0** | comment token streams compared lexically, source against formatted |
-| `default` keywords deleted | **3** | `pub default mod` ×2, `pub default fn` ×1 |
-| declarations reordered | **13** variants at 4 sites, all in `emilia/tokens.bp` | |
-| libraries green **before and after** formatting | **5 of 5** — `check` exit 0 and `test` passing in both states (emilia 17, erika 31, jhonstart 2, rakun 4, onze 8) | run, not assumed, on the scratch copies |
-| formatter tests | **239** in 8 files — `declarations` 68, `expressions` 49, `literals` 40, `patterns` 34, `comments` 20, `imports` 16, `idempotent` 12 | `grep -c '^test ' src/format/tests/*.zig` |
-| tests asserting **no information is lost** | **0** | there is `assertFormat` (output equals an expected text) and `assertIdempotent` (pass 2 equals pass 1) in `src/format/tests/helpers.zig`; neither is violated by deleting a comment |
-
-The per-file classification is [`reds.md`](./reds.md); the compiler-side causes and their costs are
-[`parser-gaps.md`](./parser-gaps.md).
-
-## Mechanism
-
-**D1 is the formatter's own.** Nothing is missing: `ModDecl.isDefault` (`ast.zig:74-77`) and
-`FnDecl.isDefault` (`ast.zig:1976`) are set by `parser/decls.zig:281`, `:292` and read by
-`comptime.zig:914`, `:920`. `format.zig` reads neither — `grep -n default format.zig` returns nine
-hits, all of them generic-parameter defaults, field defaults, param defaults, and the one
-`BehaviorMethod.is_default` arm at `:1720-1721`. A keyword the parser records and the printer has no
-arm for is a **printer** defect, and it is the whole of D1.
-
-**G6 is the formatter's too** — a field the parser records and one of the two statement-sequence
-printers does not read. Everything else the formatter cannot print back **is** a field the parser
-does not record. Seven in all, measured, named and costed in
-[`parser-gaps.md`](./parser-gaps.md):
-
-| | Gap | Deciding line | Cost |
-|---|---|---|---|
-| **G1** | the **order** of enum members: `EnumShape { variants, sections }` are two parallel slices with no ordinal | `ast.zig:2135-2141`; the printer at `format.zig:1847-1848` writes all variants then all sections | **3 files, no backend** with the recommended shape |
-| **G2** | a **trailing comment on a record field**: `Field.comments` is leading-only, and `parseFieldList` frees the comments it collected when the next token is `)` | `ast.zig:2091-2094`; the `alloc.free` at `parser/decls.zig:1148-1152` | 3 files |
-| **G3** | **any comment on an enum variant**: `EnumVariant` has no comment field at all | `ast.zig:1576-1588` | 3 files |
-| **G4** | a **trailing comment on a method**: `BehaviorMethod.comments` is leading-only | `ast.zig:1233-1236` | 3 files |
-| **G5** | **blank lines and comments in an `if` then-branch and a lambda body** — two block loops inlined before `parseBlock` grew its options, so neither records `emptyLinesBefore` and a `//` there is a **parse error** | `parser/exprs.zig:162-179` and `:944-951` | 2 call sites in 1 file — **and the parse-error half is [`15-language-surface`](../15-language-surface/README.md)'s** |
-| **G6** | an `if` **else**-branch's blank lines are recorded and **not printed**: there are two statement-sequence printers and only `fmtStmtSeq` reads the field | `format.zig:1116-1126` against `:345-368` | **1 function**, this front's own file |
-| **G7** | a **trailing comment on an array or tuple element** moves to the line below, where it reads as the next element's (09's probe row d, `erika-linq/src/main.bp:111-113`): `commentsPerElem` counts comments *before* each element and records no line | `ast.zig:786-802`; the literal loops in `parser/exprs.zig` | 1 additive field, 2 loops — **the parser half is [`15-language-surface`](../15-language-surface/README.md)'s file**; the printer half is this front's |
-
-`loop (…) { x -> … }`'s body **is** a lambda body, which is why the `loop` case is the one that gets
-noticed. The block-fidelity matrix — which block keeps a blank line, which keeps a comment, and why —
-is in [`parser-gaps.md`](./parser-gaps.md#the-block-fidelity-matrix).
-
-One thing the 1.0.4-beta row claimed does **not** reproduce and must not be carried forward as work:
-blank lines **between members** are preserved — a member's `comments` slice encodes a blank source
-line as `""` (`ast.zig:1233-1236`). The two it named that **do** reproduce are G5 and G6, and neither
-is where it said: a blank line survives a fn body and a `test` body, and dies in an `if` branch or a
-`loop` body.
-
-[`09-ecosystem-residuals`](../09-ecosystem-residuals/README.md)'s R1 already corrected one of them
-from the library side (rakun's continuation comment "loses its padding", it does not move). This front
-corrects the rest from the compiler side, and extends it: on a **member**, a trailing comment does
-move, and on the last member it is deleted.
-
-## Steps
-
-### Step 1 — Reproduce every red, file by file, and classify it
-
-No source change. For each of the 10 red files, diff the committed source against `botopink format`'s
-output **on a copy in a scratch directory** — this front never writes a library file — and give every
-category of change one of three verdicts:
-
-| Verdict | Meaning | Where it goes |
-|---|---|---|
-| **A** | a canonical-form disagreement the **formatter** is right about | [`09-ecosystem-residuals`](../09-ecosystem-residuals/README.md)'s step 1 formats and commits it |
-| **B** | a canonical-form disagreement the **library** is right about | a change to `format.zig`, this front's step 6 |
-| **C** | a **defect** — the formatter changes meaning or loses information | steps 2–4; it names D1 or a gap G1–G6 |
-
-Write the result into [`reds.md`](./reds.md), one section per file, each category with a count and one
-minimal before/after excerpt.
-
-**Acceptance:**
-- [x] All 10 files classified; every category carries a count and an excerpt — [`reds.md`](./reds.md); re-measured 2026-09-26 over the five libraries at their pinned commits (09 has reformatted them since, so the ten are no longer red): two **C** rows no probe had found, added there
-- [x] Every **C** row names D1 or a gap (G1–G6) in [`parser-gaps.md`](./parser-gaps.md) that explains
-      it, or adds a seventh with the same evidence standard — G7 (09's), and 2026-09-26's G8 (a comment before an
-      enum body's or a section's `}`) and D2 (the handler-less `val assert` printed with a `catch`)
-- [x] Every **B** row states what the formatter should print instead, and why the library's spelling
-      is the better one — a B with no argument is an A ([`reds.md`](./reds.md) § B, each row now closed there)
-- [x] The formatted copy of each of the five libraries **compiles**: `botopink check` exit 0, and each
-      library's `botopink test` cell passes. A formatted file that does not compile is a C, whatever
-      its diff looks like — 2026-09-26, compiler `7af79f44`: all 46 packages `check` with the exit they had
-      before formatting (the two rakun fixture packages fail both ways, by design); cells equal before and
-      after — emilia 569, erika 31, jhonstart 120, onze 4, rakun-web 104. At `b6ba65a3` 15 rakun packages
-      did **not** compile after formatting: D2
-- [x] Idempotence re-measured at this front's HEAD, not quoted from here — a second pass moves 0 files in the
-      five libraries and 0 in the 248-file corpus (`7af79f44`)
-- [x] Not one file under `repository/<lib>/` is modified — the copies are `git archive`s of the pinned commits,
-      formatted under `$HOME/.cache/bp-formatter/`
-
-### Step 2 — Re-confirm that the hoist does not change meaning
-
-This is what emilia's exemption is waiting on, and it is a measurement, not an opinion. A section
-desugars into a synthesised inner enum with a mangled name (`ast.zig:2137-2140`); if any backend
-assigned a variant's run-time encoding by its position in the `variants` slice, then hoisting a
-variant past a section would change the program, and `format --check` on `tokens.bp` would be a
-correctness hold rather than a style question.
-
-**Measured at `c2dd780`, it does not.** emilia was built from both orderings on all four targets and
-the emitted output is byte-identical on commonJS, erlang, beam and wasm; `grep -r
-'variantIndex\|tag_index\|ordinal'` over `src/codegen/` returns 0 hits; and the `emilia-card` example
-produces identical HTML and identical content-derived class hashes either way. The evidence is in
-[`reds.md`](./reds.md#emiliasrctokensbp--13-variants-hoisted-above-the-sections).
-
-So the exemption is a **fidelity** hold. This step re-runs the measurement at the front's own HEAD —
-because a backend that starts keying on an ordinal turns a style question into a correctness one
-silently — and then stops.
-
-**Acceptance:**
-- [x] The four-target comparison is re-run at this front's HEAD and the result written into
-      [`parser-gaps.md`](./parser-gaps.md)'s G1 section, with the date (2026-09-26: byte-identical on all four)
-- [x] If it still holds: G1 stays a fidelity fix, and step 4 is what lifts the exemption — it holds; step 4 landed
-- [x] If it no longer holds: G1 becomes the front's first implementation step, ahead of D1, and the
-      exemption is re-recorded as a **correctness** hold in
-      [`09-ecosystem-residuals`](../09-ecosystem-residuals/README.md)'s row — not triggered
-- [x] A one-line assertion is added somewhere a future reader will meet it: nothing in `src/codegen/`
-      may key on a variant's position in `TypeShape.EnumShape.variants` — `parser/AGENTS.md` and
-      `format/AGENTS.md`, corrected 2026-09-26: wasm's all-unit enum *is* a variant's index among
-      `variants`, which the formatter never permutes; what no emitter may read is `order`
-
-### Step 3 — Print `default` (D1)
-
-
-**First, alone, and ahead of everything else**, because it is the only change in this front that fixes
-a program the formatter can currently break, and because it touches one file.
-
-Two arms in `format.zig`: the `mod` printer emits `default ` after `pub ` when `ModDecl.isDefault`,
-and the fn printer does the same for `FnDecl.isDefault`. No parser change, no AST change.
-
-**Acceptance:**
-- [x] `pub default mod X;` and `pub default fn f() {}` round-trip byte-identically (`098a493`)
-- [x] `assertFormat` cases for both, in `src/format/tests/declarations.zig` (`:629-651`)
-- [x] The minimal package whose handle, module and fn names **differ** — the probe in
-      [`reds.md`](./reds.md#emiliasrcrootbp--erikasrcrootbp--erikasrcerikabp--default-is-deleted) —
-      still resolves in a consumer after `botopink format` (proven both ways at landing, § Landed; the
-      package's two files round-trip byte-identically, so the consumer reads the same program)
-- [x] `emilia/src/root.bp`, `erika/src/root.bp` and `erika/src/erika.bp` formatted as copies keep
-      their three `default` keywords — re-measured 2026-09-26 over the whole libraries: emilia 2 → 2,
-      erika 7 → 7
-
-### Step 4 — Record order and trailing trivia (G1–G4), and print what is already recorded (G6)
-
-One parser/AST commit, then one formatter commit — never merged, so the first lands
-snapshot-byte-identical and the second is reviewed as rendered text.
-
-1. **G1 — order.** Add `order: u32` to `EnumVariant` and `EnumSection`; `parseEnumItem`
-   (`parser/decls.zig:811-880`) assigns a running index per body; `format.zig:1847-1848` and
-   `:1889-1892` merge the two lists by it. **Recommended over** replacing the two slices with one
-   `members` list: that shape is the one the language deserves, but it reaches **35 call sites in 9
-   files**, five of which are fronts 02–05's emitters and two are 01's. `order` is additive and every
-   existing reader is untouched — and the formatter asks for a merged list either way, so A can
-   replace B later without the formatter moving again. The full measurement is in
-   [`parser-gaps.md`](./parser-gaps.md#the-cost-measured).
-2. **G2 — a field's trailing comment.** `trailingComment: ?[]const u8 = null` on `Field`, captured in
-   `parseFieldList` after `trailingComma = this.match(.comma)` and gated on the comment token being on
-   the **same line** as the field; the `alloc.free` at `parser/decls.zig:1148-1152` stops destroying
-   it. `Field` already carries an additive optional of this shape (`typeLoc`, 06 N30) — follow it.
-3. **G3 — a variant's comments.** `comments: []const []const u8 = &.{}` and
-   `trailingComment: ?[]const u8 = null` on `EnumVariant`, with the same `""`-means-blank-line
-   convention the other members use.
-4. **G4 — a method's trailing comment.** `trailingComment` on `BehaviorMethod`, captured at
-   `parser/decls.zig:1261` and `:1429`.
-5. **G6 — print an `if` else-branch's blank lines.** No parser change: the field is already there.
-   `fmtBranchStmts` (`format.zig:1116-1126`) joins with `hardline()` and reads neither
-   `emptyLinesBefore` nor the trailing-comment flag, where `fmtStmtSeq` (`:345-368`) reads both.
-   Give it the two arms, or delete it in favour of `fmtStmtSeq` if the diff says they are otherwise
-   the same. **G5 — the `if` then-branch and the lambda body — is not this front's**: those two
-   inlined block loops are a parse error as well as a fidelity loss, and
-   [`15-language-surface`](../15-language-surface/README.md) owns them. This front's G6 fix lands
-   after 15's G5, or the then-branch still has nothing to print.
-
-**Acceptance:**
-- [x] The three probes in [Problem](#problem) round-trip byte-identically through `botopink format` (re-run 2026-09-26)
-- [x] An `if` **else**-branch keeps its blank lines (G6); an `if` then-branch and a `loop` body keep
-      theirs once 15's G5 has landed — asserted, and marked blocked until it has (15's `28e447e` landed;
-      `comments.zig`'s three block cases)
-- [x] The parser/AST commit is **snapshot-byte-identical** — `jsonStringify` writes an optional
-      trivia field only when present (`ast.zig:2108-2110` is the precedent), so no comptime AST
-      snapshot moves (`fed06ac` touches `ast.zig`, `parser/decls.zig`, `parser/AGENTS.md`; so do
-      2026-09-26's `bodyComments` / `trailingPerElem`)
-- [x] `zig build test` green from a cold cache after each commit (the landing's cold gate; this wave's
-      commits each ran `zig build test`, and the last the cold gate)
-- [x] The 35 `.variants()` / `.sections()` call sites are unchanged — `git diff --stat` names
-      `ast.zig`, `parser/decls.zig` and `format.zig` and nothing else (`fed06ac`, `b0cdf94`: those plus
-      `AGENTS.md` and tests)
-
-### Step 5 — A gate that would have caught D1, G2 and G3
-
-The formatter has 239 tests and **not one of them fails when a comment, or the `default` keyword, is
-deleted**: `assertFormat` compares against a text a human wrote, and `assertIdempotent` compares pass
-2 against pass 1 — a deletion is idempotent.
-
-Add `assertLossless(src)` to `src/format/tests/helpers.zig`: lex the input and the output, and assert
-that **every token in the source appears in the output**, in order — comments and keywords alike,
-modulo the separators the canonical form is allowed to add or drop (`;`, `,`, `{`, `}`), which the
-helper lists explicitly so the exemption is reviewable. Run it over every existing
-`assertFormat` and `assertIdempotent` case (they already carry the corpus) plus the four probes above.
-
-**Acceptance:**
-- [x] `assertLossless` exists and is called by every case in `src/format/tests/comments.zig` and
-      `idempotent.zig` (`assertFormatLossless` / through `assertIdempotent`)
-- [x] It **fails** on the pre-step-4 formatter — demonstrated by running it at the parent commit, and
-      the failing count recorded in [`reds.md`](./reds.md) (4 of 5 probes at `4841983`)
-- [x] The property is defined over the **whole token stream**, not over comments alone: D1 is a
-      deleted keyword, and a comments-only property would have missed it
-- [x] `src/format/tests/AGENTS.md` states the property and why idempotence does not imply it
-
-### Step 6 — The canonical form itself: the **B** rows
-
-Only now, with the defects gone, is the canonical form worth arguing about. Implement each **B** row
-from step 1 in `format.zig`, one commit per rule, each with the library excerpt that motivated it as a
-test case.
-
-**Acceptance:**
-- [x] Each B row is implemented or withdrawn with a reason written into [`reds.md`](./reds.md) — all
-      three implemented: decision 61 rules 4 and 2, and C-12's comment column (`0f0be511`)
-- [x] Re-formatting the four libraries' copies after each rule shrinks the 923-line diff, and the new
-      number is recorded — 923 → 890 (§ Landed), 874 (09); 2026-09-26's width rules are the other
-      direction, measured in `decisions-pending.md` 16-a
-- [x] No A row moved to B without the maintainer's decision — a rule that changes how every library
-      looks is a decision, and this front proposes it rather than taking it (decisions 61, 65; the
-      choices C-12 needed are 16-a/16-b in `decisions-pending.md`, to confirm; the trailing comma is decision 133)
-
-### Step 7 — Hand the result over, and say what the exemption is now
-
-`format --check` becoming a repository-wide gate is
-[`09-ecosystem-residuals`](../09-ecosystem-residuals/README.md)'s step 1 and, if it needs a per-file
-exemption mechanism, `modules/compiler-cli/src/cli/format_cmd.zig` — which is
-[`10-cli-residuals`](../../../1.0.5-beta/10-cli-residuals/README.md)'s file. **There is no exemption mechanism today**:
-`format_cmd.zig:50-38` takes either an explicit file list or every `src/**.bp` the scanner's output
-names, with no skip list. Decision 18's exemption therefore has to be *built*, and this front names its shape
-rather than building it.
-
-**Acceptance:**
-- [x] The A rows are listed in a form 09 can apply file by file (09 applied them)
-- [x] The exemption's shape is proposed in one paragraph — recommended: a `botopink.json` key, because
-      the manifest is already the consumer surface and a source pragma would be a language change this
-      front does not own — and handed to [`10-cli-residuals`](../../../1.0.5-beta/10-cli-residuals/README.md)
-      — superseded: decisions 66/67 made the one exemption structural (`reject/**`) and rule a knob out
-- [x] After step 4, emilia's `src/tokens.bp` formats without reordering; the exemption is recorded as
-      **liftable**, and lifting it is 09's commit, not this front's — re-measured 2026-09-26: its ordered
-      token sequence (separators and comments aside) is identical before and after, 8 005 tokens
-
-## Gate
-
-- [ ] `scripts/gate.sh --cold` green in this front's worktree — run at `7af79f44` (2026-09-26): stages 1–7 green (build,
-      format-check, `zig build test`, runtime parity, `test-bpmp`, beam export audit, `test-cli`);
-      **`test-libs` red, not this front's**: from a `.tasks/*` worktree the runner reads the *main
-      checkout's* `repository/rakun`, which is ahead of this compiler (`unknown "std" module testing`,
-      `unbound variable 'bundleConfigured'` — 19 rakun cells); a scratch copy of that rakun fails
-      identically with the pre-front binary. With the worktree's own trees, `test-libs` is 58 / 0
-- [x] `assertLossless` green over the whole formatter corpus (every format test, 342 at `7af79f44`)
-- [x] The parser/AST commit of step 4 lands **snapshot-byte-identical**; the formatter commit
-      re-records only what step 1 classified
-- [x] The five libraries' formatted copies compile and their cells pass — run, not assumed, and never
-      committed from this front (2026-09-26, step 1's fourth box)
-- [x] `AGENTS.md` of every directory touched (`src/format/`, `src/format/tests/`, `src/parser/`),
-      updated in the same commit
-- [x] Commit on `fix/formatter`; no push, no merge — landing is the maintainer's step (`37d3dc7`; this
-      wave on `front/16-formatter`, not pushed, not merged)
-
-## Blast radius
-
-- **Snapshots.** None from the parser/AST commit if the optional-field convention is followed. The
-  formatter commit re-records nothing in `snapshots/**` — the formatter has no snapshot directory; its
-  239 tests carry their expected text inline.
-- **The libraries.** 923 changed lines across four repositories, which 09 commits, not this front.
-  After steps 3 and 4 the number **changes**: three `default` keywords come back and comments that are
-  deleted today start being printed — so 09's step 1 must run **after** step 4, or it commits files
-  that have lost a keyword or a comment. That ordering is the
-  one real dependency this front creates, and it is stated in
-  [Rows for `fronts.md`](#rows-for-frontsmd).
-- **Front 01.** Step 4 edits `parser/decls.zig`, which 01 owns for its step 4 (a section body carrying
-  a `fn`). The sites are disjoint — `parseEnumItem`'s member append and `parseFieldList`'s comment
-  free, against 01's section-body grammar — but they are in the same file, so this is a carve-out to
-  grant or a sequence to schedule.
-- **Fronts 02–05.** Zero, with the recommended G1 shape. With the alternative (`members` as one list)
-  it is five emitters and 35 call sites, which is the reason the recommendation exists.
-- **Front 15.** G5's two inlined block loops are 15's, and this front's G6 is only half a fix without
-  them: the `if` else-branch starts printing its blank lines and the then-branch still does not.
-
-## Notes
-
-- **The front's question is soundness, not tidiness.** Decision 18's four red libraries are its
-  evidence, not its scope: a formatter that is idempotent, has 239 tests, and still deletes a keyword
-  the program's meaning depends on is the finding. It was found by auditing the formatter, not by
-  reading the reds — three of the ten red files carry it and all three still compile and pass, because
-  in emilia and erika the name the keyword would alias is the name that already binds.
-- **Idempotence is not fidelity, and the test suite conflates them.** `assertIdempotent` passes on a
-  formatter that deletes every comment in the file. Step 5 is the smaller half of this front and the
-  half that keeps it from happening again.
-- **One defect is the formatter's, four are the parser's.** D1 is a missing printer arm for a flag the
-  AST already carries — one file, this front's own, and so is G6. G1–G5 are fields the parser does not
-  record, and a front that owned only `format.zig` could not fix one of them, which is why the
-  carve-out is asked for up front rather than discovered mid-step. G5 is not even this front's: it is
-  a parse error too, and [`15-language-surface`](../15-language-surface/README.md) owns it.
-- **A library passing is not evidence the formatter is sound.** All five libraries `check` and `test`
-  green both before and after formatting, D1 included. Whatever gate 09 turns on has to be stronger
-  than "it still compiles".
-- **The exemption is a fidelity hold, measured.** emilia's emitted output is byte-identical on all
-  four backends from either ordering, so `tokens.bp` is exempt because the formatter loses authored
-  grouping, not because it would change the program. Step 2 re-confirms it; step 4 removes the reason
-  for it.
-- **Not done here:** formatting the libraries (09), the `format --check` gate (09), the exemption
-  mechanism (10), and `format.zig`'s idea of a labelled tuple, which
-  [`02-erlang`](../02-erlang/README.md) hands over at its README `:107-108` — it is this front's file
-  but decision 8's semantics, so it lands after
-  [`01-checker`](../01-checker/README.md) types a labelled tuple.
-
----
-
-## Rows for `fronts.md`
-
-**Ownership table:**
-
-```markdown
-| **16** [`formatter`](./README.md) | `modules/compiler-core/src/format.zig` · `modules/compiler-core/src/format/**` · the member-trivia and member-order fields of `modules/compiler-core/src/ast.zig` and the sites that fill them in `src/parser/decls.zig` (`parseEnumItem`, `parseFieldList`, `parseMethodDecl`) — a carve-out of **01**. **Not** `src/parser/exprs.zig`'s two inlined block loops (G5), which are **15**'s | — (the formatter has no snapshot directory; its 239 tests carry their expected text inline) | not started — steps 1–2 edit no source and can start now; step 3 is a two-arm fix in the front's own file; step 4 needs 01's carve-out; **09's format step lands after step 4** |
-```
-
-**Conflict notes** (against the other fifteen fronts):
-
-| With | Verdict | Why |
-|---|---|---|
-| **01 checker** | **seq** — carve-out, or 16 after 01's step 4 | Both edit `src/parser/decls.zig`. The sites are disjoint: 16 takes `parseEnumItem`'s member append (`:811-880`), `parseFieldList`'s comment handling (`:1130-1178`, in particular the `alloc.free` at `:1148-1152`) and the two `method.comments` sites (`:1261`, `:1429`); 01's step 4 takes the section-body grammar. 16 also adds four fields to `src/ast.zig`, which **no front owns**. Recommended: grant 16 the three named functions, as [`14-comptime-on-beam`](../14-comptime-on-beam/README.md) was granted two `infer.zig` call sites |
-| **02 erlang · 03 beam · 04 js · 05 wasm** | yes | No shared file with the recommended G1 shape — `format.zig` and `ast.zig`'s new optional fields against `codegen/**`. The alternative shape (one `members` list) would make this **no** for all four: 35 call sites across the five emitters. That is the measurement behind the recommendation, not a preference |
-| **06 comptime-dedup** | yes | 06 owns `src/comptime/snapshot.zig` and the comptime snapshot layout; this front writes neither. The parser/AST commit is snapshot-byte-identical, so it does not collide with 06's move even if they land together |
-| **07 review-backlog** | yes | 07 owns `src/codegen/tests/**`, `src/comptime/tests/**`, `src/parser/tests/**` and the language server's tests. **`src/format/tests/**` is in none of those lists** — it was unowned through 1.0.4-beta and this front claims it. Worth stating explicitly so step 5 is not read as a carve-out |
-| **08 hygiene** | **no** — 08 after 16 | 08's sweeps touch `AGENTS.md` everywhere, including `src/format/` and `src/format/tests/`, which steps 3–5 rewrite. One commit per owning file, after this front |
-| **09 ecosystem-residuals** | **seq — 16's steps 3–4 before 09's step 1** | 09 formats and commits the four libraries. Run before step 3, it commits three files from which the formatter has **deleted the `default` keyword** (D1) — emilia's and erika's `root.bp` and erika's `erika.bp` — and, before step 4, a `tokens.bp` whose members it has reordered. Run after, it commits a canonical form that is stable and lossless. 09's R1 classification is this front's step-1 input; the three "information-losing classes" 09 registers against [`01-checker`](../01-checker/README.md) move here, per [decision 18](../../../1.0.5-beta/decisions-taken.md#18-emilias-tokensbp-and-format---check). No file is shared at any moment — 16 formats copies in a scratch directory |
-| **10 cli-residuals** | yes, with a handover | `modules/compiler-cli/src/cli/format_cmd.zig` is 10's, and there is no per-file exemption mechanism in it today. Step 7 proposes the exemption's shape and hands it over; this front edits no line of it |
-| **11 tooling** | yes | No shared file. The language server does not call the formatter |
-| **12 language-tests** | yes | No shared file. A `format` round-trip is not a language cell |
-| **13 module-identity** | yes | 13 owns the two emitters, the CLI's output layout and the module-atom sites; none of them is `format.zig`, `ast.zig`'s trivia fields or `parser/decls.zig`'s member sites |
-| **14 comptime-on-beam** | yes | 14 owns `comptime/{template_eval,decorator_eval}.zig`, the eval protocol and one `codegen/erlang.zig` carve-out. No overlap |
-| **15 language-surface** | **seq — 15 before 16, with one gap split down the middle** | They share **no function**: 15 takes `parser/exprs.zig`'s `parsePostfixChain`, the grouped-expression arm and the two inlined block loops (`:162-179`, `:944-951`), plus `parser/types.zig` and the lexer; 16 takes `parser/decls.zig`'s member sites and `format.zig`. **G5 is the split**: those two block loops drop a blank line *and* refuse a `//` comment, and the refusal is a parse error, so 15 fixes the loops and 16 prints the result (G6 is the else-branch's printer half). Separately, 15's step 4 makes forms parse that the formatter has never had to print — `(expr).method`, `#(…)[]`, `adder(3)(4)` — and each needs a `format.zig` printer arm, which is the same class of defect this front found in `pub default mod`. Recommended: **15 first**, each new form arriving with its round-trip confirmed |
-
-**Front-table row (`overview.md`):**
-
-```markdown
-| [`16-formatter`](./README.md) | high | `format --check` is red on four of five libraries and the formatter is **idempotent**, so the reds look like disagreements about the canonical form. Four of the ten red files are not: `botopink format` **deletes the `default` keyword** — `pub default mod` / `pub default fn`, the package handle and its handler — which silently unbinds every consumer of a package whose names differ, and it **reorders 13 enum variants** above the sections they were written after. Both survive `format --check`, because a deletion is idempotent, and none of the 239 formatter tests would notice. The keyword is a missing printer arm for a flag the AST already carries; the order and three trailing-trivia slots are parser fields whose recommended shape touches 3 files and no backend |
-```
-
----
-
-## Landed — 2026-09-18, merged into `feat` as `37d3dc7`
-
-Five commits on `fix/formatter`, cold gate green. Steps 3, 4 and 5 are done; the three
-information-losing classes decision 18 filed here are closed, and the property that would have caught
-them exists.
-
-| Commit | What it fixes |
+| Field | Holds |
 |---|---|
-| `098a493` | **D1** — `format` was **deleting** the `default` keyword. Two missing printer arms for flags `ast.zig` already recorded (`ModDecl.isDefault`, `FnDecl.isDefault`), both read by `comptime.zig:914-932` |
-| `9d1d067` | **G6** — an `if` branch is printed by the one statement-sequence printer, so an else-branch keeps its blank lines |
-| `fed06ac` | **G1–G4, parser half** — a member's written order and its trailing comment are recorded |
-| `b0cdf94` | **G1–G4, printer half** — an enum body is the **merge** of `variants` and `sections` by order, so nothing hoists; a field's trailing comment goes after the comma; a variant's comments print; `withTrailingComment` keeps a comment on its own line |
-| `a23ae79` | **Step 5** — `assertLossless`, the property the 239 tests did not have |
+| `EnumVariant.order`, `EnumSection.order` | the written order of an enum body's members; the printer merges `variants` and `sections` by it, so nothing hoists. No emitter may read `order`; wasm's all-unit enum is a variant's index among `variants`, which the formatter never permutes |
+| `Field.trailingComment` | a record field's same-line comment, printed after the comma |
+| `EnumVariant.comments`, `.trailingComment` | a variant's comments (`""` is a blank line, as on the other members) |
+| `BehaviorMethod.trailingComment` | a method's same-line comment |
+| `EnumSection.bodyComments`, `TypeDecl.bodyComments` | comments before a section's or an enum body's `}` |
+| `trailingPerElem` on array and tuple literals | an element's same-line comment, kept on its line |
 
-**The D1 defect was proven both ways, not argued.** A package whose handle, module and handler have
-*different* names — `pub default mod zeta;`, `pub default fn query(…)`, a consumer doing
-`import zeta` and `zeta "hello"` — ran before formatting and answered `unbound variable 'zeta'` after
-it, while `format --check` reported the corrupted library **clean**. The three real occurrences
-survived only because in those packages the three names coincide: the loss was masked, not absent.
+`ModDecl.isDefault` and `FnDecl.isDefault` are printed (`pub default mod X;`, `pub default fn f`);
+an `if` branch keeps its blank lines (one statement-sequence printer); a comment continuing a trailing
+comment from the same source column prints under the first comment's printed column
+(`Doc.markColumn` / `Doc.alignToMark`); a handler-less `val assert P = e;` prints as written.
 
-**Why 239 tests saw none of it.** `assertFormat` asserts equality with a text a human wrote, and
-`assertIdempotent` asserts pass 2 equals pass 1 — and **a deletion is idempotent**. `assertLossless`
-lexes input and output and asserts token containment, with two written-out exemptions
-(`droppable_separators`, and the pre-1.0.3 `val Name = behavior { … }` binding form in exactly that
-shape). Order is deliberately not asserted: the first draft did, and failed on five idempotent cases
-where the canonical form *moves* a token and loses nothing. Run against this front's parent
-(`4841983`) it fails **4 of 5** probes; after the whole front, 0. `assertIdempotent` now calls it, so
-the pairing cannot come apart again.
+**Width** (C-12, decisions 61 and 65, `decisions-pending.md` 16-a / 16-b): the value constructs —
+binary runs, a brace-less `if`, argument lists, array / tuple / behavior literals — measure width,
+enclosing ones first. A trailing comma opens a list that fits (decision 133).
 
-**The ecosystem diff, measured on scratch copies** (no file under `repository/<lib>/` written):
-923 → **890** changed lines, **13 reordered variants → 0**, **3 deleted `default` keywords → 0**, all
-five libraries still idempotent, `check` exit 0, cells passing (emilia 17, erika 31, jhonstart 2,
-onze 8, rakun 4).
+**The `;` after a braced block** (C-13, decision 29): a braced `if` / loop / `case` statement takes its
+`;` or not (`Parser.isBracedBlockStmt`: the shape and a closing `}` as the last token), and the printer
+writes none. The compiler's own trees are migrated (`libs/std`, `examples/`, the bundled libraries,
+`docs.md`'s fences). [`c13-migrate.py`](./c13-migrate.py) deletes the `;` in a tree `botopink format`
+does not own.
 
-**emilia's `tokens.bp` formats without reordering now** — which is what
-[decision 18](../../../1.0.5-beta/decisions-taken.md#18-emilias-tokensbp-and-format---check) held it back for. Under
-[decision 34](../../../1.0.5-beta/decisions-taken.md)'s (c) there is no exemption mechanism to build or to lift: the
-file is formatted like every other one, and the hoist that would have been excused no longer happens.
+**`format --check`** walks the whole project; `scripts/format-check.sh` holds the compiler's trees.
 
-**Still open here:** steps 1–2 (the classification pass) and the printer arms
-[`15-language-surface`](../15-language-surface/README.md) hands over below, which are new — the forms
-did not parse when this front was written.
+## Open
 
----
+| Row | Waits on |
+|---|---|
+| **C-13 — refusing the `;`.** Front 15's parked [`decision-29-parser-half.patch`](../15-language-surface/decision-29-parser-half.patch), narrowed to `isBracedBlockStmt`, would fail `tests/language` and the siblings until they migrate (rakun, jhonstart, erika and onze still write it; emilia does not) | [decision 132](../../decisions-taken.md#132-the--after-a-braced-block-becomes-an-error-once-every-source-is-migrated): each library runs `c13-migrate.py` at the end of the threads writing in it, `tests/language` in the language-tests front, then the patch |
+| **The siblings' reformat at C-12's rules** — emilia, rakun, jhonstart, erika, onze; compiling, cells equal | 09, after the maintainer confirms 16-a / 16-b |
+| `commaList` (generic, parameter, pattern, import and type lists) and the one-step pipeline are still pinned — none holds a call, so none is a wrong middle today | a construct-by-construct decision, as decision 65 part 4 stages them |
+| Decision 61 rule 3's one-line rule stops at `arrow_when_empty`, so `h1 { "my blog" }` prints open over three lines (the parse error it guarded against is gone) | a formatter row — it moves every trailing-lambda call in the frontend library |
 
-## Handed over by `15-language-surface` (2026-09-18, `109f6c9`)
+- [ ] `scripts/gate.sh --cold` green in this front's worktree — every stage but `test-libs`, which
+      from a `.tasks/*` worktree reads the main checkout's `repository/rakun` (ahead of the worktree's
+      compiler); with the worktree's own trees `test-libs` is green
 
-**Three printer arms, one class: a form parses and `format` does not print it back.** The first two
-lose data, which is the same defect class as `pub default mod` — a deletion is idempotent, so
-`format --check` stays green over it:
+## Delivered
 
-| Written | `format` prints | Why it matters |
-|---|---|---|
-| `(i32 \| string)[]` | `i32 \| string[]` | **a different type** — the parentheses are the array's element boundary |
-| `adder(3)(4)` | `(4)` | **the receiver is dropped** |
-| `xs[0]` | `@[](xs, 0)` | the desugaring leaks; `d["k"]` and `xs[0..2]` are the same node |
-| `a ?? 0` | the desugared `if` | pre-existing class, not new: `x is i32` already prints `@is(x)` |
-
-**And the second half of G6 is now yours alone.** After 15's `28e447e` a blank line inside a `loop`
-body **survives** `format`; inside an `if` branch it still does not, because `fmtBranchStmts` never
-reads `emptyLinesBefore` — the AST has carried it all along.
-
-**Decision 29's other half is written and waiting on you.** 15 holds a 76-line parser patch that
-rejects the trailing `;`; it cannot land alone, because it rejects `libs/std`'s embedded prelude and
-every compile fails. The coordinated landing is: this front stops printing the `;`, 15 applies the
-patch, [`12-language-tests`](../12-language-tests/README.md) migrates its 44 sites, `libs/std` its 51
-and [`09-ecosystem-residuals`](../09-ecosystem-residuals/README.md) the siblings' 145 — **245 sites
-total**, counted by the compiler, against the ~274 the decision estimated (emilia has **0**, not 30).
-
----
+- every red file of the five libraries classified; every information loss found named and fixed; the
+  formatted copies of the five libraries compile and their cells pass as before; a second pass moves
+  nothing
+- `pub default mod` / `pub default fn` round-trip, with `assertFormat` cases in
+  `src/format/tests/declarations.zig`; a package whose handle, module and handler names differ still
+  resolves in its consumer after `format`
+- the probes (an enum variant's comment, a field's trailing comment, a method's trailing comment)
+  round-trip byte-identically; an `if` branch and a loop body keep their blank lines
+- the parser/AST commits snapshot-byte-identical; the `.variants()` / `.sections()` call sites untouched
+- `assertLossless` exists, fails on the pre-fix formatter, is defined over the whole token stream, and
+  runs over the whole formatter corpus
+- each canonical-form disagreement where the library was right implemented (decision 61 rules 4 and 2;
+  C-12's comment column); none moved without the maintainer's decision
+- emilia's `src/tokens.bp` formats without reordering; decisions 66 / 67 made the one exemption
+  structural (`reject/**`), with no knob
+- the printer arms for the forms 15 made parse: `(i32 | string)[]`, `adder(3)(4)`, `xs[0]`, `a ?? 0`
+  print as written
+- `AGENTS.md` of `src/format/`, `src/format/tests/`, `src/parser/` updated
 
 ## Handed over by `09-ecosystem-residuals` (2026-09-18)
 
-**One fidelity loss survived formatting all five libraries** — the only one, after this front's step
-4: `rakun/src/runtime.bp:13`, the continuation line of a trailing comment that was indented to align
-under the first, re-emitted at column 0. The text is intact; the alignment is not. It is the last live
-member of 09's R1 classes, and it belongs to the trivia fields this front now owns.
-
-Everything else came through clean, verified per file by token-stream equality and per project by a
-byte-identical `diff -r` of the emitted output — which is the strongest statement this milestone has
-that the formatter no longer loses anything: 874 changed lines over 8 files, 0 reordered members, 0
-deleted keywords, 11 passed / 0 failed in `test-libs`.
-
-**A second one, found by the reformat after C-12 (2026-09-25, `f58fd392`).** Probe (b)'s class —
-a trailing comment re-attached to the *next* item — reproduces on an **expression list**, not only
-on a member list: an array literal whose elements each carry a trailing comment.
-
-| | Written (`erika/examples/erika-linq/src/main.bp:111-113`) | `format` prints |
-|---|---|---|
-| d | `Box(label: "sq",   w: 4, h: 4),   // w == h, h > 2` `Box(label: "wide", w: 6, h: 2),   // w != h` | `Box(label: "sq", w: 4, h: 4),` `// w == h, h > 2` `Box(label: "wide", w: 6, h: 2),` `// w != h` — each comment now sits **above the element it is false of** |
-
-Idempotent, so `format --check` goes green over it once applied. 09 did **not** apply it: `main.bp`
-is left as written and stays red, with the reason in `erika/AGENTS.md` § Formatting; the file is
-the reproduction until the element's trailing comment is a recorded field and printed on its line.
-`modules/erika/src/erika.bp`, the other file C-12's chain rule touched, was committed formatted —
-ten chain hunks, token-identical, example output byte-identical on both targets.
-
-
----
-
-## Landed — 2026-09-26, on `front/16-formatter` (not pushed, not merged)
-
-Six compiler commits over `feat` `b6ba65a3`; every box above re-verified and ticked with its evidence.
-
-| Commit | What |
-|---|---|
-| `0f0be511` | **Step 1 re-measured**, two losses no probe had found and the two rows the front carried: **G8** — a comment before an enum body's or a section's `}` was deleted (`EnumSection.bodyComments`; the enum's `TypeDecl.bodyComments` was read only by the record path); **D2** — the handler-less `val assert P = e;` printed its desugared `@panic` handler as a `catch` the checker refuses (15 rakun packages stopped compiling after `format`); **C-12's comment column** — a continuation comment starting in its trailing comment's source column prints under that comment's printed column (`Doc.markColumn` / `Doc.alignToMark`); **G7** — an array/tuple element's trailing comment stays on its line (`trailingPerElem`) |
-| `7146d402` | **C-12** — the value constructs measure width, enclosing ones first: binary runs, a brace-less `if`, argument lists, array/tuple/behavior literals ([`decisions-pending.md`](../../decisions-pending.md) 16-a, 16-b) |
-| `44ec5e3a` | the three bundled libraries reformatted at C-12's rules (the trees `format-check.sh` holds) — mechanical, `botopink format` |
-| `a688bfb5` | **C-13, parser** — a braced `if` / loop / `case` statement takes its `;` or not (`Parser.isBracedBlockStmt`: the shape **and** a closing `}` as the last token) |
-| `6c33c6f4` | **C-13, printer** — no `;` after one (`terminated` / `lastChar`, the same closing-brace test on the printed text) |
-| `7af79f44` | **C-13, sources** — the compiler's trees migrated: 213 lines, 27 files (`libs/std`, `examples/`, the bundled libraries, `docs.md`'s fences), by `botopink format` for the canonical trees and [`c13-migrate.py`](./c13-migrate.py) for the rest — re-run it after front 23's tree move rather than rebasing |
-
-**Measured, not assumed.** Over 248 `.bp` files (the compiler's trees and the five libraries at their
-pinned commits, scratch copies): a second pass moves nothing; no token or comment lost (a lexical
-multiset comparison — the only differences are two canonical respellings, `html """…"""` → `"…"` and
-`import {t: {A, B}}` → `{t.A, t.B}`, both compiling); every package `check`s as before; the cells run
-the same (emilia 569, erika 31, jhonstart 120, onze 4, rakun-web 104). `zig build test` 2 512 / 2 512,
-`test-libs` 58 passed, `test-docs` 68 checked / 0 failed, `tests/language/run.sh --target all` 799
-passed / 28 expected / 0 failed, `format-check.sh` green. The C-13 migration: every changed line differs
-only by deleted `;`, and `format(old) == format(new)` for each of the 26 `.bp` files.
-
-## Open (re-measured 2026-09-26)
-
-| Row | State | Waits on |
-|---|---|---|
-| **C-13 — refusing the `;`** | the `;` is optional; refusing it (front 15's parked patch, narrowed to `isBracedBlockStmt`) would fail `tests/language` (**275** sites) and the siblings — rakun **454**, jhonstart **40**, erika **28**, onze **1**, emilia **0** — counted by `c13-migrate.py` on copies; the order is [decision 132](../../decisions-taken.md#132-the--after-a-braced-block-becomes-an-error-once-every-source-is-migrated) | each library runs `c13-migrate.py` at the end of the threads writing in it, `tests/language` in the language-tests front, then front 15's patch |
-| **The siblings' reformat at C-12's rules** | emilia 18 files +12 940 −4 663, rakun 47 +4 760 −1 471, jhonstart 19 +784 −231, erika 2 +167 −63, onze 2 +44 −8 — compiling, cells equal | 09, after the maintainer confirms 16-a/16-b |
-| **The trailing comma** | a trailing comma opens a list that fits — kept by [decision 133](../../decisions-taken.md#133-a-trailing-comma-keeps-a-list-in-its-open-form) (the author's explicit request) | nothing — closed |
-| still pinned | `commaList` (generic, parameter, pattern, import and type lists) and the one-step pipeline — none holds a call, so none is a wrong middle today | a construct-by-construct decision, as decision 65 part 4 stages them |
-| `while` / `for` / annotated `loop` printer arms | printed (front 22's carve-out); their width is the value constructs' now | — |
-| C-11's two parse defects | **both parse now** (re-run 2026-09-26): `h1 { "my blog" }` and `executar { ok }` (15's R11), and `builtins.d.bp` is in `format-check.sh` (front 20). What is left is this front's: decision 61 rule 3's one-line rule still stops at `arrow_when_empty`, for a parse error that no longer exists, so `h1 { "my blog" }` prints open over three lines | a formatter row — not taken here, it moves every trailing-lambda call in the frontend library |
+Both information losses 09 found while formatting the libraries are fixed: `rakun/src/runtime.bp`'s
+continuation comment keeps its column (C-12's comment column), and
+`erika/examples/erika-linq/src/main.bp:111-113`'s array elements keep their trailing comments on their
+lines (`trailingPerElem`).

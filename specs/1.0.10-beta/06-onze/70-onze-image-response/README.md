@@ -10,11 +10,11 @@ the VM
 **Depends on:** 66 (which registers `opengraph-image.bp` as a route) · 32 (the metadata that links the
 card's URL) · 52 (the font files, and the metrics sidecar this front measures with) · 12 (cache — a
 card is rendered once per content hash) · 03 (that content hash) · 49 (`Params`, `RouteContext`) ·
-01 (`process.run`, `fs`, `path`)
+01 (`io.process.run`, `io.fs`, `path`)
 **Owns:** `repository/onze/modules/onze-og/src/**`, `repository/onze/modules/onze-og/test/**`
-**Does not touch:** `repository/onze/src/image.bp` (front 51 — the `Image` component and the
+**Does not touch:** `repository/onze/modules/onze-assets/src/image.bp` (front 51 — the `Image` component and the
 optimizer, a different front for a different problem), `repository/onze/modules/onze-assets/**`
-(front 69), `repository/jhonstart/src/**`, `repository/emilia/src/**`
+(front 69), `repository/jhonstart/**`, `repository/emilia/**`
 **Reference:** `NEXTJS-DOCS.md § 18. Metadata e OG Images` (OG Images dinâmicas — ImageResponse ·
 Metadata Files) ·
 <https://nextjs.org/docs/app/api-reference/functions/image-response> ·
@@ -39,13 +39,12 @@ SVG→PNG — so this front splits there too and is explicit about which half le
 
 ## Current state
 
-- `repository/onze/` does not exist; this front creates `modules/onze-og/` inside it.
+- `repository/onze/modules/` does not exist; this front creates `modules/onze-og/` inside it.
 - Nothing in the workspace emits SVG, measures text, or spawns a rendering process.
-  `grep -rn "svg" repository/*/src/` returns nothing.
-- `repository/jhonstart/src/element.bp:3-8` — `Element(tag, value, children, attrs)` and
-  `element.bp:55-67` — `renderToString`, which emits HTML. An OG card is a different serialization of
+- `repository/jhonstart/modules/jhonstart/src/element.bp` — `Element(tag, value, children, attrs)`
+  and `renderToString`, which emits HTML. An OG card is a different serialization of
   the same tree, which is why this front takes an `Element` and not a private structure.
-- `repository/emilia/src/emilia.bp:46-51` — `emilia(tokens)` returns a class name, and a class name is
+- `repository/emilia/modules/emilia/src/emilia.bp` — `emilia(tokens)` returns a class name, and a class name is
   useless in an SVG: SVG has no stylesheet the crawler will fetch. This front reads a **style record**,
   not a class, and that is a deliberate divergence stated in *Mechanism*.
 - Front 01 records that there is **no byte or binary type** in botopink. That single fact shapes this
@@ -147,7 +146,7 @@ rasterized file's path, stored through front 12. Hashing the SVG rather than the
 to the template invalidates the card without anyone remembering to bump a version. A crawler hitting
 the same URL a hundred times spawns one process.
 
-`@Task` lowers eagerly on erlang (`libs/std/src/http.bp:16-18`), so rendering N cards is sequential
+`@Task` lowers eagerly on erlang, so rendering N cards is sequential
 unless it is handed to front 02's task runner over unstarted tasks. This front does not claim
 parallelism it does not have; the build-time prerender of every card is where front 02 is worth using
 and the README says so rather than implying a future is a thread.
@@ -166,12 +165,12 @@ pub fn imageResponse(tree: Element, size: ImageSize) -> ImageResponse
 ```
 
 **Acceptance:**
-- [ ] `defaultSize()` is 1200×630 and the default content type is `image/png`, matching `§ 18`
+- [x] `defaultSize()` is 1200×630 and the default content type is `image/png`, matching `§ 18`
 - [ ] A route that exports neither `size` nor `contentType` gets both defaults
-- [ ] Whether the exports are `pub val` or `pub fn` is settled with front 32, which has the same
+- [x] Whether the exports are `pub val` or `pub fn` is settled with front 32, which has the same
       question for `metadata`, and both fronts use the same answer
-- [ ] An `ImageResponse` with no fonts and a tree containing text fails the build naming the route
-- [ ] `ImageResponse` carries no bytes — asserted structurally, since there is no byte type to carry
+- [x] An `ImageResponse` with no fonts and a tree containing text fails the build naming the route
+- [x] `ImageResponse` carries no bytes — asserted structurally, since there is no byte type to carry
 
 ### Step 2 — `parseStyle` and the closed property set
 
@@ -183,12 +182,12 @@ pub fn unsupportedProperties(value: string) -> Array<string>
 ```
 
 **Acceptance:**
-- [ ] Every property in the *Supported* column parses into its field
-- [ ] Every property in the *Not supported* column is reported by `unsupportedProperties`
-- [ ] A malformed declaration (`padding:`) is reported, not silently zero
-- [ ] `parseStyle` is total: it never fails, it reports — so one bad card does not take the build's
+- [x] Every property in the *Supported* column parses into its field
+- [x] Every property in the *Not supported* column is reported by `unsupportedProperties`
+- [x] A malformed declaration (`padding:`) is reported, not silently zero
+- [x] `parseStyle` is total: it never fails, it reports — so one bad card does not take the build's
       error reporting with it
-- [ ] Property order does not change the result
+- [x] Property order does not change the result
 
 ### Step 3 — Layout
 
@@ -200,15 +199,15 @@ pub fn wrapText(text: string, widthPx: i32, metrics: FontMetrics, fontSize: i32,
 ```
 
 **Acceptance:**
-- [ ] A row of two children with `justifyContent: space-between` places the first at the left edge and
+- [x] A row of two children with `justifyContent: space-between` places the first at the left edge and
       the second flush right
-- [ ] A column with `gap: 16` separates siblings by exactly 16
-- [ ] `padding` shrinks the content box on all four sides
-- [ ] An absolutely positioned child with `top`/`left` ignores flow and its siblings ignore it
-- [ ] `wrapText` breaks at spaces, never mid-word, and a single word wider than the box overflows
+- [x] A column with `gap: 16` separates siblings by exactly 16
+- [x] `padding` shrinks the content box on all four sides
+- [x] An absolutely positioned child with `top`/`left` ignores flow and its siblings ignore it
+- [x] `wrapText` breaks at spaces, never mid-word, and a single word wider than the box overflows
       rather than being cut — asserted, so the behaviour is chosen instead of accidental
-- [ ] `maxLines` truncates with `…` on the last line and the ellipsis fits inside the width
-- [ ] Layout is deterministic: the same inputs give the same boxes, asserted on a coordinate literal
+- [x] `maxLines` truncates with `…` on the last line and the ellipsis fits inside the width
+- [x] Layout is deterministic: the same inputs give the same boxes, asserted on a coordinate literal
 
 ### Step 4 — SVG emission
 
@@ -217,13 +216,13 @@ pub fn toSvg(box: LayoutBox, size: ImageSize, fonts: Array<FontRef>) -> string
 ```
 
 **Acceptance:**
-- [ ] The document opens with `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">`
-- [ ] A title containing `<script>alert(1)</script>` appears escaped and produces no element —
+- [x] The document opens with `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">`
+- [x] A title containing `<script>alert(1)</script>` appears escaped and produces no element —
       asserted, because a post title is user input and this is a document
-- [ ] A `linear-gradient` background emits one `<defs><linearGradient>` and references it once
-- [ ] Every `<text>` carries an explicit `font-family`, `font-size` and `fill`; nothing inherits from
+- [x] A `linear-gradient` background emits one `<defs><linearGradient>` and references it once
+- [x] Every `<text>` carries an explicit `font-family`, `font-size` and `fill`; nothing inherits from
       a stylesheet that will not exist
-- [ ] Two renders of the same tree are byte-identical — the cache key depends on it
+- [x] Two renders of the same tree are byte-identical — the cache key depends on it
 
 ### Step 5 — Rasterization
 
@@ -235,14 +234,14 @@ pub fn requireRasterizer(contentType: string, r: Rasterizer) -> Array<string>
 ```
 
 **Acceptance:**
-- [ ] `contentType: "image/svg+xml"` needs no rasterizer and `requireRasterizer` returns no error
-- [ ] `contentType: "image/png"` with `kind: "none"` returns one error naming the route and the
+- [x] `contentType: "image/svg+xml"` needs no rasterizer and `requireRasterizer` returns no error
+- [x] `contentType: "image/png"` with `kind: "none"` returns one error naming the route and the
       commands that would satisfy it
-- [ ] There is no fallback: no configuration makes a PNG route serve SVG, and a test asserts the
+- [x] There is no fallback: no configuration makes a PNG route serve SVG, and a test asserts the
       absence
-- [ ] A rasterizer exiting non-zero fails the render with its stderr attached, and the partial file is
+- [x] A rasterizer exiting non-zero fails the render with its stderr attached, and the partial file is
       removed
-- [ ] The NIF interface is declared with the same signature as the port path, and the module compiles
+- [x] The NIF interface is declared with the same signature as the port path, and the module compiles
       with `kind: "nif"` configured and no NIF present — failing at call time, naming it
 
 ### Step 6 — Fonts and metrics
@@ -256,10 +255,10 @@ pub fn measure(m: FontMetrics, text: string, fontSize: i32) -> i32
 ```
 
 **Acceptance:**
-- [ ] `parseMetrics` reads front 52's sidecar format, including `unitsPerEm`
-- [ ] `advanceOf` of a codepoint absent from the table returns the face's `.notdef` advance, not zero
-- [ ] `measure` of the empty string is 0 and is monotonic in the text's length
-- [ ] A font used by an image route with no sidecar fails the build naming the face
+- [x] `parseMetrics` reads front 52's sidecar format, including `unitsPerEm`
+- [x] `advanceOf` of a codepoint absent from the table returns the face's `.notdef` advance, not zero
+- [x] `measure` of the empty string is 0 and is monotonic in the text's length
+- [x] A font used by an image route with no sidecar fails the build naming the face
 - [ ] `measure` agrees with the rasterizer's own layout within 2% on a fixture string — the one test
       that catches a metrics table describing a different font than the one embedded
 
@@ -271,9 +270,9 @@ pub fn cardKey(pattern: string, params: Params, svg: string, fonts: Array<FontRe
 
 **Acceptance:**
 - [ ] The same post renders one file and spawns one process, however many times it is requested
-- [ ] A change to the template changes the key, without a version bump anywhere
-- [ ] A change to the font set changes the key
-- [ ] Two different posts do not collide, asserted on a fixture pair
+- [x] A change to the template changes the key, without a version bump anywhere
+- [x] A change to the font set changes the key
+- [x] Two different posts do not collide, asserted on a fixture pair
 
 ## Examples
 
@@ -316,17 +315,32 @@ The metrics-agreement test (step 6's last item) is the one test that needs both 
 rasterizer. It is worth its cost: it is the only thing that catches a sidecar describing a different
 font than the one embedded, and that failure looks like "the text sometimes overflows".
 
+## Where it stands
+
+Implemented: `modules/onze-og/src/` `card_style` (the README's
+`style.bp` — jhonstart exports a `style` element, and a module named `style` then fails to export
+its own `Style`), `metrics`, `layout`, `svg`, `raster` and `response`; 10 tests on erlang, one
+producing a real PNG through `rsvg-convert` when it is installed. The metrics are front 52's
+`.metrics.txt` sidecar (`key value` lines, optional `codepoint|advance` lines); a missing glyph
+takes `avgCharWidth` as `.notdef`. The route exports are functions (`pub fn size()`), the answer
+front 32 gives `metadata`. `onze-og` no longer lists `onze-assets`: it parses the sidecar itself.
+
+Open: route discovery applying the defaults (rakun front 66), the 2 % agreement with a real
+rasterizer's layout (needs per-glyph advances the sidecar does not carry yet), one render per post
+under concurrent requests (rakun-cache's single-flight), and the README's supported table
+reconciled with `supportedProperties()` (the code adds `margin` and `border`).
+
 ## Definition of done
 
-- [ ] `repository/onze/modules/onze-og/` exists with `botopink.json`, `src/root.bp`,
+- [x] `repository/onze/modules/onze-og/` exists with `botopink.json`, `src/root.bp`,
       `src/style.bp`, `src/layout.bp`, `src/svg.bp`, `src/raster.bp`, `src/metrics.bp`
 - [ ] The supported-property table in this README is the same list the code refuses against — one
       table, cited by the test, not two lists that drift
-- [ ] `image/svg+xml` works with no external tool on a clean machine
-- [ ] `image/png` with no rasterizer fails the build naming the route and the commands, with no
+- [x] `image/svg+xml` works with no external tool on a clean machine
+- [x] `image/png` with no rasterizer fails the build naming the route and the commands, with no
       fallback path anywhere in the source
-- [ ] Front 66 registers the route and front 32 links the URL; this front formats neither
-- [ ] `repository/onze/docs.md` records the rasterizer decision — port by default, NIF opt-in, and
+- [x] Front 66 registers the route and front 32 links the URL; this front formats neither
+- [x] `repository/onze/docs.md` records the rasterizer decision — port by default, NIF opt-in, and
       why — because front 71 has to package whichever one a deployment chose
-- [ ] The front's tests are green on its assigned target — `erlang`
+- [x] The front's tests are green on its assigned target — `erlang`
 

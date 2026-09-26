@@ -36,11 +36,11 @@ what was left, now `00-compiler-carry-over`'s order),
 | [81](#81-important-is-34s-modifier-accentauto-is-a-unit-variant) | `Important` / `accent-auto` | 34 declares `Important(inner)`; `AccentAuto` unit variant |
 | [82](#82-dark-mode-is-tailwinds-default-owned-by-54-breakpoints-read-the-theme) | Dark mode / breakpoints | Tailwind v4 default, 54 owns it; 34 reads breakpoints from the theme |
 | [83](#83-the-resident-comptime-modules-are-beam-bytes-embedded-at-build-time) | The three resident comptime modules | (c) `.beam` bytes produced by `erlc` at `zig build`, embedded in the compiler |
-| [84](#84-the-comptime-runtime-follows-the-targets-vm-beam-by-default) | Default comptime runtime | beam for erlang/beam targets and by default; wat (wasm3) for js/node/wasm targets; server half → beam, client half → wat |
+| [84](#84-the-comptime-runtime-follows-the-targets-vm--beam-by-default) | Default comptime runtime | beam for erlang/beam targets and by default; wat (wasm3) for js/node/wasm targets; server half → beam, client half → wat |
 | [85](#85-the-snapshot-tree-is-doubled-as-asked) | Double the snapshot tree? | (a) as asked — `codegen/{beam,wat}/<target>`, pair equality asserted |
 | [86](#86-opcodes-pinned-to-otp-28-with-the-stable-subset) | OTP opcode table | (a)+(c): OTP 28's table, the subset stable since OTP 24, refusal below the floor |
 | [87](#87-the-boundary-directives-stay-library-decorators--use-never-leaves-a-function-body) | Boundary directives | (a) `#[client]` / `#[server]` / `#[cache]` stay library decorators; `use` is never a module-level directive |
-| [88](#88-use-lowers-transparently-and-a-component-is-context-fn---element) | `use` lowering on commonJS | (a) transparent on every backend; **amended:** a component is `#[@Context] fn … -> Element` and `Element` implements the context behavior |
+| [88](#88-use-lowers-transparently-and-a-component-is-context-fn----element) | `use` lowering on commonJS | (a) transparent on every backend; **amended:** a component is `#[@Context] fn … -> Element` and `Element` implements the context behavior |
 | [89](#89-future-is-unwrapped-for-the-context-owner) | `use` in `-> @Future<Element>` | (a) unwrap `@Future<T>`; `request()` is `-> @Context<Element, Request>` — **revoked by 104** |
 | [102](#102-contextbase-is-the-context-owner-marker-only-use-answers-usec-t-or-componentt) | What is `@Context`, and what does a `use` body return? | `@Context<Base>` is the owner marker only (`Element implement @Context<ElementBase>`); `#[@use]` returns `@Use<C, T>` or `@Component<T>` (≡ `@Use<B, T>`); the bare `-> Element` form leaves — **superseded in part by 118, 120 and 121** |
 | [103](#103-a-generators-prefix-is-the-level-it-extends-generatort--resultgeneratort-e--futuregeneratort-e) | Generator names, channels, and question 97 | `@Generator<T>` (infallible, 97-b) · `@ResultGenerator<T, E>` · `@FutureGenerator<T, E>`; `YieldStep` the one step; `Iterator`, `Iterable`, `IteratorStep`, `Yield`, `C`, `R` leave — **superseded in part by 118, 121, 122 and 123** |
@@ -76,6 +76,13 @@ what was left, now `00-compiler-carry-over`'s order),
 | [133](#133-a-trailing-comma-keeps-a-list-in-its-open-form) | Does a trailing comma still open a list? | Yes — the author's explicit request; amends 65 part 2 |
 | [134](#134-every-example-in-the-guide-and-in-docsmd-is-correct-against-the-compiler) | Guide examples that do not type | Fixed in the text; three checker gaps closed by `01-checker`; decision 117's decorator check written in jhonstart |
 | [135](#135-specs-keep-only-what-still-holds) | Closed fronts spelling removed forms | Condensed to their current outcome; removed spellings only in the record and the removed-names tables |
+| [136](#136-a-primitive-receiver-answers-only-the-methods-it-declares) | A method a primitive interface does not declare (`"abc".toUpperCase()`) | Refused, `unknown-primitive-method`, naming the declared method it is the host spelling of; the backend aliases leave |
+| [137](#137-try-and-await-begin-an-expression-they-are-never-an-operand) | `try` / `await` as operands (pending 24-e)? | Reversed: only where an expression begins; as an operand (operator, unary, group, chain) `try-await-operand` with the fix-it `val x = try …;` |
+| [138](#138-the-empty-record-is-type-x-the-brace-only-form-is-refused) | How is a record with no fields spelled? | `type X()` / `type X() { … }`; `type X {}`, `type X { fn … }` and a bare `type X` are `type-without-field-list`, located where `()` belongs; the formatter prints `()` |
+| [139](#139-a-negative-index-counts-from-the-end-on-every-backend) | `Array.at` with a negative index (pending 0405-a)? | Reversed: counts from the end on every backend — `[1, 2, 3].at(-1)` is `3`, `.at(-3)` is `1`, `.at(-4)` / `.at(3)` absent; `xs[i]` and `String.at` alike; `Dict.at` is by key |
+| [140](#140-a-module-level-pub-val-crosses-modules-and-an-imported-modules-body-runs-first) | A `pub val` of a record imported from a sibling (30-a) | Readable on every backend, of any type; the imported modules' bodies run before the importer's, dependencies first, each once; jhonstart reads `globals.fill` from one `pub val globals` |
+| [141](#141-the-beam-lowering-takes-every-construct-the-templates-use-and-nothing-evaluates-erlang-at-run-time) | A template the BEAM lowering refuses (0203-b) | (c): `receive`, `!`, `catch E`, `try … of`, `try … after` and integer-field binary patterns lowered; `'__bp_erl_eval'/2` deleted — a refused template is a located build error |
+| [142](#142-jsondecode-converts-a-numeral-exactly-in-botopink) | `json.decode`'s numeral through the host `strtod` (01std-b) | (b), made exact: a correctly rounded decimal → `f64` in botopink (fast path + big-integer quotient, ties to even); no host cell left for it |
 
 ## 68. One milestone, the 1.0.9 numbers kept, the drafts deleted
 
@@ -2811,7 +2818,212 @@ the table of removed names: this file, and the removed-names table of `guide.md`
 Implements: front 24's closeout — fronts 19, 20, 21 and 22, front 24's README, guide and status,
 `decisions-pending.md` and `status.md` rewritten to the current state.
 
-## 140. Library resolution stops at the enclosing checkout
+## 136. A primitive receiver answers only the methods it declares
+
+**Decided 2026-09-26 by the maintainer**, answering pending 0203-a with option (b). A method call on
+a builtin-primitive receiver (`string`, `T[]`, `bool`, the integer and float widths) is legal only
+when the receiver's interface in `primitives.bp` — or one it `extends` — declares it: a `fn` method,
+a `val` field, the `len` / `size` spellings of `length`, or a method an `extend` block on the type
+adds. Anything else is refused on every target:
+
+- **`unknown-primitive-method`**, located at the method name: `` `string` has no method `fooBar` ``.
+- **A near name is suggested.** The declared method whose `#[@External.Node("<name>")]` host
+  spelling is the name written comes first (`"abc".toUpperCase()` → *did you mean `toUpper`?*),
+  then one an edit away (`xs.lenght()` → `length`).
+- **A host spelling is not a method.** `#[@External.Node("toUpperCase")]` says how commonJS lowers
+  `toUpper`; it adds no name to the language. The backend aliases that answered the host spelling
+  leave: erlang / beam's `primNodeAliasIn` and its two call sites (0203-a (a)), and wasm's
+  `toUpperCase` / `toLowerCase` rows of `primCallRes` and `lowerStringMethod`.
+
+It used to type as a fresh variable and reach the host under the name written: `"x".fooBar()`
+checked, commonJS answered `toUpperCase` because it is JavaScript's own, wasm answered both
+spellings and erlang emitted `toUpperCase/1 undefined` — three answers for one program. Decision 67:
+refuse.
+
+Implements: front [`01-checker`](./00-compiler-carry-over/01-checker/README.md), compiler `9dfeedf6`
+(`refuseUndeclaredPrimMethod` in `comptime/infer.zig`; `reject/primitive_method_undeclared`,
+`reject/primitive_method_unknown`; `test/string_case_conversion` re-spelled `toUpper` /
+`toLower`). `primNodeAliasIn` exists only on `feat` after this front's base; it is deleted when the
+front merges `feat`.
+
+## 137. `try` and `await` begin an expression; they are never an operand
+
+**Decided 2026-09-26 by the maintainer** (pending item 24-e, reversed): `try` and `await` are legal
+only where an expression begins, and the operand form front 24 implemented is refused —
+*"`val x = try r; total + x`"*. A position where an expression begins is one the grammar reads as a
+whole expression:
+
+- a statement; a `val` / `var` initializer; the right side of `=` (`x = …`, `x.f = …`, `x += …`);
+- the operand of `return`, `yield`, `break v` and `throw`;
+- a call argument (positional, labelled or `..` spread); an element of an array, tuple or record
+  literal;
+- a condition or subject the construct delimits: the `if` / `while` condition, a `case` subject, a
+  `for` iterable;
+- a `catch` handler.
+
+There the keyword takes the whole expression after it — `try a + b` is `try (a + b)`, `try await f()`
+is `try (await f())` — and `try … catch x` stands in the same positions. Everywhere else — the
+operand of a binary operator or `??`, of a unary `-` / `!`, an index or a range bound, and inside
+parentheses (a group exists only to become an operand, so `(try r).length` and
+`(try r catch 0) == 1` are the operand form) — the parser refuses it as `try-await-operand`, located
+at the keyword, with the fix-it "bind it first: `val x = try …;`".
+
+```bp
+fn sum(r: @Result<i32, string>, total: i32) -> @Result<i32, string> {
+    val x = try r;          // not `total + try r`
+    return total + x;
+}
+```
+
+The backends keep the propagation front 24 gave a `try` with no rest of the function to nest in —
+a call argument or a literal's element still has none.
+
+**Amends:** front 24's step E2 (24-e). Implements: `parser/exprs.zig` (`parseExprAtStart`, the
+`tryAwaitOperand` refusal), the guide (§ 2.2, § 5.2, § 5.3), `docs.md` § Results; cells
+`tests/language/run/try_start_positions` and `reject/{try_operand_of_operator,try_in_parentheses,await_operand_of_unary}`.
+
+## 138. The empty record is `type X()`; the brace-only form is refused
+
+**Decided 2026-09-26 by the maintainer**: *"the correct is `pub type RequestBase();` or
+`pub type RequestBase() {};`"*. A record always writes its field list, so the shape of a `type` is
+read off what was written — a field list (`()` included) is a record, braces holding a variant or a
+section are an enum:
+
+```bp
+pub type RequestBase()                 // the empty record
+
+type MathOps() {                       // an empty record with members
+    fn double(self: Self, x: i32) -> i32 { return x * 2; }
+}
+```
+
+The empty field list `()` stops being `type-empty-field-list`. A `type` that ends with neither a field
+list nor a variant — `type X {}`, `type X { fn … }`, a bare `type X`, and the val-form `type {}` — is
+`type-without-field-list`, located where the `()` belongs (after the name and generics), with the
+fix-it `type Name()`. One spelling (decision 67). `botopink format` prints `()` for every record
+with no fields, and an LSP hover card does the same.
+
+**Amends:** decision 12's shape resolution (front 12's `type-grammar.md`: "`type Name { methods }` /
+`type Name` → record with no fields"). Implements: `parser/decls.zig` (`parseTypeDeclRest`,
+`parseFieldList`), `format.zig`, `language-server/src/engine.zig`; every record in the compiler
+repository re-spelled (std's bundled `validation` test, the `tests/language` cells, the unit-test
+sources); cells `run/type_empty_record`, `reject/{type_empty_braces,type_without_field_list}`; the
+guide's § 4.1 / § 4.4 (`pub type ElementBase();`, `pub type RequestBase();`). The libraries re-spell
+their own — the list is in `status.md`.
+
+## 139. A negative index counts from the end, on every backend
+
+**Decided 2026-09-26 by the maintainer** (pending item 0405-a, reversed): a negative position counts
+from the end, the way native `Array.prototype.at` already did on commonJS — and now on all four
+backends, so no program reads "the last element" on one and "absent" on another.
+
+```bp
+val xs = [1, 2, 3];
+xs.at(-1);    // 3
+xs.at(-3);    // 1
+xs.at(-4);    // null — past the front
+xs.at(3);     // null — past the back
+xs[-1];       // 3 — an index is `.at` (decision 63)
+"abc".at(-1); // "c"
+```
+
+The rule is `Array.at` and `String.at` — and therefore `xs[i]` and `s[i]`, which the checker rewrites
+to them. The answer stays decision 47's `?T`: absent past either end. `Dict.at` is by key and has no
+position to count from; a user type's `at` (decision 63's `Index<K, V>`) decides for itself. A
+tuple's constant index is the checker's own case and is unaffected.
+
+Per backend: commonJS `__bp_array_at` / `__bp_string_char_at` are native `.at(i) ?? null`; erlang
+`primitives.bp`'s templates add the length to a negative index (beam evaluates the `String.at` one);
+beam's `'-bp_at-'/2` branches on the sign; wasm's `$__arr_at`, `$__arr_at_box` and `$__str_at` add
+the length before their bounds test.
+
+**Amends:** `00 · 04-js`'s C-18 half (0405-a). Implements: `codegen/js/js_prelude.zig`,
+`libs/std/src/primitives.bp`, `codegen/beam_asm.zig`, `codegen/wat/wat_prelude.zig`,
+`codegen/erlang.zig`'s run-time `'__bp_index'/2`; cell `tests/language/run/index_negative_from_end`;
+the codegen snapshots that carry the helpers re-recorded in both trees (the RUN LOGs unchanged).
+
+## 140. A module-level `pub val` crosses modules, and an imported module's body runs first
+
+**Decided 2026-09-26 by the maintainer** (pending item 30-a): option (b) — module-level values, not
+the `globals()` function. The question was only open because a `pub val` of a record type imported
+from a sibling module did not work (`undefined` on commonJS, an unbound variable on erlang); the
+answer is that it works, for a value of any type, on every backend:
+
+- a `pub val` — a record, an enum, an array, a primitive, a function — is imported like a `pub fn`
+  (`import {globals} from "globals";`, an `as` alias included) and read from any function or method
+  of the importer. commonJS exports it (`exports.<name>`); erlang and beam export its 0-arity
+  reader and the importer calls `owner:name()` (an imported val holding a fun is applied); wasm,
+  which links statically, reaches an aliased one by its declared global;
+- the module body keeps its rule — evaluated **once**, in declaration order, when the module loads,
+  before `main` — across modules too: a program runs the bodies of the modules it imports,
+  transitively, dependencies first, before its own. commonJS's `require` and wasm's linking already
+  did; erlang's and beam's entry now calls each imported module's `'_botopink_init'/0` first
+  (`crossModule.importClosure`), where before an imported module's effectful `val` ran at its first
+  read and its `_` statements never ran;
+- jhonstart's three browser globals are the fields of one `pub val globals` — `globals.payload`,
+  `globals.fill`, `globals.signal`, the README's spelling — and `globals()` leaves. One record rather
+  than three flat values keeps front 26's `fill` unshadowed in a consumer's flat import.
+
+The namespace form (`import {config};` then `config.limit`) for a sibling module is not part of
+this: the checker does not bind a sibling module as a namespace (`unbound variable 'config'`).
+
+Implements: compiler (`commonJS.zig`, `erlang.zig`, `beam_asm.zig`, `wat.zig`, `crossModule.zig`),
+`tests/language/modules/pub_val_across_modules` on all four targets, jhonstart `globals.bp` and its
+four readers; the `language-gaps.md` rows on a `pub val` of a user type.
+
+## 141. The BEAM lowering takes every construct the templates use, and nothing evaluates Erlang at run time
+
+**Decided 2026-09-26 by the maintainer** (pending item 0203-b): option (c), and then the run-time
+path goes. `comptime/runtime/beam/lower.zig` — the lowering the comptime BEAM runtime and the beam
+backend's `@External.Erlang` templates (BR5) share — takes the constructs it refused, within
+decision 86's OTP-24-stable opcodes:
+
+- `receive … [after T -> …] end` is `erlc`'s selective-receive loop (`loop_rec`, the clauses,
+  `remove_message`, `loop_rec_end`, `wait` or `wait_timeout` + `timeout`); `!` is `send`; the old
+  `catch E` is `catch` / `catch_end`; `try … of` matches after `try_end` (no clause is
+  `{try_clause, V}`); `try … after` runs the `after` body on both ways out;
+- a binary pattern of fixed-size unsigned big-endian integer fields (`<<A:32, _:4, B:12>>`,
+  optionally with a `/binary` tail) reads its fields through `binary:decode_unsigned/1` and shifts;
+- a call to any of `erl_internal:bif/2`'s auto-imported functions resolves (`open_port/2` did not).
+
+The beam backend's `'__bp_erl_eval'/2` is deleted (decision 67): a template the reader or the
+lowering refuses is a build error at its call site naming the function and the construct. Before,
+169 of the 177 Erlang templates `libs/std` and the bundled libraries ship lowered and 8 were
+evaluated from source at run time (`async.spawnAll` / `raceOf`, `json.unquote`,
+`encoding.percentDecode`, `io/http.fetch`, `io/random.uuidV4`, `io/process.run`, `validation`'s
+`rkvIsolated`); now all 177 lower, and the five sibling libraries' 29 did before and do now.
+
+Implements: compiler (`beam/lower.zig`, `wat/erl_parse.zig`, `wat/lower.zig` refusing the three
+read-only constructs, `beam_asm.zig`, `asm_text.zig`); `codegen/tests/beam_templates.zig` (every
+shipped template lowers), `program.zig`'s `erlc`-comparison module for each construct,
+`tests/language/run/external_template_refused_on_beam`.
+
+## 142. `json.decode` converts a numeral exactly, in botopink
+
+**Decided 2026-09-26 by the maintainer** (pending item 01std-b): option (b), without its limit — the
+conversion is botopink's own and correctly rounded for every numeral, not only in the fast-path
+range. `libs/std/src/json.bp`'s `numeralValue` reads the validated numeral's digits and exponent from
+the document and answers the `f64` nearest to its exact decimal value, ties to even:
+
+- Clinger's fast path when it is exact — at most 15 significant digits and a decimal exponent in
+  -22…22: the digits and the power of ten are exact `f64`s, so one operation rounds once;
+- otherwise the exact fraction of big integers (15-bit limbs in `Array<i32>`, every product below
+  2^31 on every target): the binary exponent chosen for a 53-bit quotient (the subnormal grid below
+  2^-1022), the quotient found by shift-and-subtract, the remainder rounding it;
+- the `f64` assembled with no integer → float conversion — the quotient's bits accumulate into an
+  `f64`, exact power-of-two multiplications scale it — so no primitive was missing and no host cell
+  remains for it.
+
+An overflow keeps the refusal (`number overflows f64`); a value below half the least subnormal is
+`0.0`. Measured: bit-identical to the host `strtod` for every tested value — the std test's
+boundaries (`1.7976931348623157e308` and the halfway point above it, `5e-324` and the halfway point
+below it, `2.2250738585072014e-308` and the largest subnormal, `0.1`, `1e23`, `9007199254740993`,
+the fast path's edges, overflowing and vanishing exponents) and 3 500 randomized numerals including
+halfway points, on commonJS and erlang.
+
+Implements: `libs/std/src/json.bp` and its test, `libs/std/AGENTS.md`.
+
+## 143. Library resolution stops at the enclosing checkout
 
 **Decided 2026-09-26 by the maintainer** (pending 24-f, option (a)). The walk up from a project that
 finds library roots — `BOTOPINK_LIB_ROOTS`, then for each ancestor `D`: `D` itself when it is a

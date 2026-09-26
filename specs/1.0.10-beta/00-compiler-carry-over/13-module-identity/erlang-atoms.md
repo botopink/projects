@@ -1,7 +1,7 @@
 # Erlang and BEAM — how a module is named today, and what the proposal changes
 
 Paths are relative to `repository/botopink-lang/`. Line numbers were read at `botopink-lang`
-`dfc34a9` (meta `becb30d8`); re-locate by symbol.
+; re-locate by symbol.
 
 ---
 
@@ -159,7 +159,7 @@ that has no collision problem, because a Wyhash of the generated source is the i
 
 ### 1.7 What collides, measured
 
-| Collision | Instances at `dfc34a9` |
+| Collision | Instances |
 |---|---|
 | `root.bp` in every library → `-module(root)` | 6 (`libs/std`, emilia, erika, jhonstart, onze, rakun) |
 | `http.bp` in two places → `-module(http)` | 2 (`libs/std/src/http.bp`, `rakun/src/http.bp`) |

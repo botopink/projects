@@ -10,7 +10,6 @@
 
 import { emilia, flush, Token } from "emilia";
 import { arbValue, arbProp, arbSel, arbAt, arbMin, arbMax, cssValue, cssIdent, cssSelector, cssLength } from "emilia";
-// `spacing` and `themeVar` are provided by front 54.
 import { spacing, themeVar } from "emilia";
 
 // TAILWIND_CSS_DOCS.md § 3.1: bg-[#316ff6]. `Token.Arb(prop, value)` is a top-level
@@ -26,15 +25,12 @@ fn signInButton() -> string {
     return emilia(tokens);
 }
 
-// LANGUAGE GAP: a payload leaf nested inside an enum section cannot be constructed by
-// any spelling, which is why `Arb` is a top-level `Token` variant rather than a section —
-// and why `Color.Hex(value: string)` in today's tokens.bp is dead surface.
-// LANGUAGE GAP: a dot-shorthand path followed by a payload call does not propagate the
-// typed-array context inside an array literal, so `[.Arb(prop: "background-color",
-// value: brand)]` does not parse even with the top-level shape. The builder call above is
-// the nearest valid form, and it is what repository/emilia/src/emilia.bp:498-503 already
-// recommends. Both rows are in ../../language-gaps.md; the rule they imply is stated in
-// ../../contracts.md § 4a.
+// A payload leaf nested inside an enum section cannot be constructed by any
+// spelling, which is why `Arb` is a top-level `Token` variant rather than a section —
+// and why the nested `Color.Hex(value: string)` is declared but unconstructible.
+// A dot-shorthand path followed by a payload call does not carry the typed-array
+// context inside an array literal, so `[.Arb(prop: "background-color", value: brand)]`
+// does not parse. The builder call above is the valid form.
 
 // § 3.1: [--gutter-width:1rem] on a container, read by its children.
 fn gutterContainer() -> string {

@@ -4,7 +4,7 @@
 **Priority:** medium — every application eventually needs something to happen on its own, and today the only way is an external cron calling an HTTP endpoint
 **Target:** erlang (server)
 **Wave:** 4
-**Depends on:** 01 (`clock`), 05 (config), 06 (context), 11 (endpoint host + health registry)
+**Depends on:** 01 (`io.clock`), 05 (config), 06 (context), 11 (endpoint host + health registry)
 **Owns:** `modules/rakun-scheduling/src/**`, `modules/rakun-scheduling/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone
 **Reference:** `07-io.md § Quartz Scheduler` · https://docs.spring.io/spring-boot/reference/io/quartz.html
@@ -26,7 +26,7 @@ each with the arguments it actually needs.
 ## Current state
 
 - `repository/rakun/modules/rakun-scheduling/src/root.bp` — docblock and `// Module contents will be added by the respective fronts.`
-- `libs/std/src/time.bp:56,80,92` — `nowMillis()`, `monotonicMillis()` and `formatIso8601(epochMillis)` all exist today. The scheduler needs both clocks and has both; front 01 ships them as `io.clock` (`now`, `monotonic`, `formatIso8601` — decision 106).
+- `io.clock` (`libs/std/src/io/clock.bp`) — `nowMillis()`, `monotonicMillis()` and `formatIso8601(epochMillis)`. The scheduler needs both clocks and has both.
 - `repository/rakun/src/runtime.bp` — no timer seam of any kind. The only periodic thing in rakun is the HTTP server's accept loop, which front 04 owns.
 - `repository/rakun/src/decorators.bp` — no `#[scheduled]`, and frozen.
 

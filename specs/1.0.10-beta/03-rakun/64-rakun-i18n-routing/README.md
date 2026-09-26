@@ -38,18 +38,16 @@ that exists today, which is wrong the moment a second locale exists.
 
 ## Current state
 
-- `repository/rakun/modules/` — thirteen module directories, none of them `rakun-i18n`. Each holds a
-  `botopink.json` and a `src/root.bp` whose body is the comment *"Module contents will be added by the
-  respective fronts."* This front creates the fourteenth.
+- `repository/rakun/modules/` has no `rakun-i18n`; this front's directory is
+  `modules/rakun-app/src/i18n/**` ([`modules.md`](../modules.md)).
 - `repository/rakun/src/file_router.bp` (front 22) — `SegmentKind.Dynamic` for `[locale]`, the
   `kind|pattern|slot|verb` table of [`contracts.md` § 1](../../contracts.md), and `matchPath`. Nothing
   distinguishes a locale segment from any other dynamic segment.
 - `repository/rakun/modules/rakun-web/src/middleware.bp` (front 07) — the filter chain this front
-  installs one filter into. It does not exist yet either; this front declares the filter and front 07
-  owns the chain.
+  installs one filter into; this front declares the filter and front 07 owns the chain.
 - `libs/std/src/url.bp` and `querystring.bp` exist; neither parses `Accept-Language`, and
-  `querystring.stringify` documents itself as not percent-encoding, which is why front 01 adds
-  `encoding.percentEncode`/`percentDecode` and this front uses those.
+  `querystring.stringify` documents itself as not percent-encoding, which is why this front uses
+  `encoding.percentEncode`/`percentDecode`.
 - `repository/rakun/src/request_context.bp` (front 62) — `headers()` and `cookies()`, which is where
   `Accept-Language` and the locale cookie come from.
 

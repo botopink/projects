@@ -21,7 +21,7 @@ gate · `comptime/diagnostics.zig`'s effect codes · the effect lowering of
 effect, generator and loop cells.
 **Does not touch:** `lexer.zig` (the three words are contextual, decided in the parser) · the loop
 keywords, statements `void`, ranges and labels (22) · `parseImportItem`, `project_graph.zig`,
-`libs/std/src/**` beyond `builtins.d.bp`, `async.bp` and `http.bp`
+`libs/std/src/**` beyond `builtins.d.bp`, `async.bp` and `io/http.bp`
 ([`23-std-purity`](../23-std-purity/README.md)) · `decisions-*.md` · the language server and
 `repository/vscode-extension` (`11-tooling`).
 
@@ -101,7 +101,7 @@ names that left*. There is no codemod and no mode that reads them (decision 131)
 
 ## Steps
 
-Every step has landed; the open boxes are listed under *Open*.
+The open boxes are explained under *Open*.
 
 ### Step E1 — the prelude types
 
@@ -115,7 +115,7 @@ Every step has landed; the open boxes are listed under *Open*.
 `async` before `{` → an `AsyncBlock`; `iter` / `stream` before `loop` / `while` / `for` / `for await`
 → the prefixed loop (`iter for (xs) { … }` is the prefixed `loop { for (xs) { … }; break; }`, the
 written keyword kept for the formatter); the three words are contextual; `try await x` is
-`try (await x)`; `try` and `await` are operands (`total + try r`, `yield try x`); the removed
+`try (await x)`; `try` and `await` begin an expression and are never an operand (decision 137: `yield try x`, `f(try x)`; `total + try r` is `try-await-operand`); the removed
 annotations and wrappers are recognised only to be refused, located.
 
 - [x] every form in [`guide.md`](./guide.md) parses, with `parser/tests/` cases and lossless
@@ -139,7 +139,7 @@ from a `for` item → `try r`, from an inferred value → the `try` / `throw` th
       example without ✗ types — see *Open*
 - [x] the *Return and effect mode*, *`@Task` and failure*, *Chain and `use`*, *`async { }`*,
       *Iterators* and *Prefixed loops* cells green on four targets (`run/async_block_all_of` runs on
-      commonJS and erlang only — `std/async` has no wasm / beam host)
+      commonJS and erlang only — std's `async` has no wasm / beam host)
 - [x] the hint in a `reject/` cell's `.expect` for each of the three sources
 - [x] `comptime/AGENTS.md` current
 
@@ -161,13 +161,13 @@ from a `for` item → `try r`, from an inferred value → the `try` / `throw` th
 
 ### Step E7 — the libraries
 
-`std/async`: started Tasks — `allOf(Array<@Task<@Result<T, E>>>) -> @Task<@Result<Array<T>, E>>`
+`async` (std): started Tasks — `allOf(Array<@Task<@Result<T, E>>>) -> @Task<@Result<Array<T>, E>>`
 (stops at the first `Error`), `all(Array<@Task<T>>) -> @Task<Array<T>>`, `race`; thunks — `runAll`,
 `raceOf`, `timeout(thunk, millis) -> @Task<@Result<T, string>>` answering `Error("timeout")`
 (decisions-pending 24-g). `io.http.fetch -> @Task<@Result<Response, string>>`. jhonstart, rakun,
 emilia, onze and erika are written in the surface.
 
-- [x] `std/async` and `std/http` signatures closed
+- [x] `async` and `io.http` signatures closed
 - [x] `zig build test-libs` green on every row; `scripts/known-red-libs.txt` at its header
 - [x] no library under `repository/{jhonstart,rakun,emilia,onze,erika}` or `libs/` spells a removed
       annotation or wrapper
@@ -179,8 +179,8 @@ emilia, onze and erika are written in the surface.
 - [x] the removed spellings appear in `specs/1.0.10-beta` only in the record and the removed-names
       table (decision 135):
       `grep -rlE '#\[@(result|future|use|generator|resultGenerator|futureGenerator)\]|@(Future|Use)<|@(Result|Future)Generator' specs/1.0.10-beta --include=*.md --include=*.bp`
-      → `specs/1.0.10-beta/00-compiler-carry-over/24-effects-by-return/guide.md` (lines 770–780, § 9
-      *Old names that left*, only) and `specs/1.0.10-beta/decisions-taken.md`
+      → `specs/1.0.10-beta/00-compiler-carry-over/24-effects-by-return/guide.md` (§ 9 *Old names that
+      left* only) and `specs/1.0.10-beta/decisions-taken.md`
 
 ## Diagnostics
 
@@ -268,27 +268,24 @@ where it runs, a `run/` cell on the four targets.
       § *Cells* line in `expected-failures.txt`
 - [x] the `effect_chain.zig` drift test green with `builtins.d.bp` at its final shape
 - [x] `test-cli`, `test-docs` green
-- [ ] `AGENTS.md` of every directory touched, in the same commit as each change — see *Open*
+- [x] `AGENTS.md` of every directory touched, in the same commit as each change — current at the tip, accepted by the maintainer where a later commit carried it
 
 ## Open
 
-- **Guide fences (E3, decision 134).** The guide's slips are fixed and compiled fence by fence
-  (one program per fence, `botopink check`, jhonstart as a path dependency): 21 ✓ fences type, 16 ✗
-  sites answer their code located — `#[layout] … -> Element` answers jhonstart's decision-117
-  refusal (`routes.bp`, pinned by jhonstart's `refusals/` projects). Three fences wait for
+- **Guide fences (E3, decision 134).** Every fence of the guide compiles as one program
+  (`botopink check`, jhonstart as a path dependency): the ✓ fences type, the ✗ sites answer their code
+  located — `#[layout] … -> Element` answers jhonstart's decision-117 refusal (`routes.bp`). Three
+  fences wait for
   `00 · 01-checker`: `try x catch null` into a `?U` (§ 4.2 `currentUser`, § 4.3 `PostPage`, § 7), a
   `null` check whose branch ends in a `noreturn` call (`redirect()`) narrowing what follows (§ 4.3
   `DashboardLayout`), and a component called inside a component's body answering its `T`
   (`Sidebar(…)` / `Counter()`, § 4.3). § 7's server action types against stubs only: rakun has no
   `serverAction` yet. The box ticks when the three type.
-- **`AGENTS.md` per commit** (front 24 box 3, the maintainer's call). It holds at the tip; 10 of the
-  front's 23 commits updated the nearest `AGENTS.md` in a later commit instead of the same one, and
-  the history is not rewritten. The maintainer accepts or not.
 - **The JS interop helper.** Whether an `unwrapOrThrow` (a resolved `Error` turned back into a
   rejection, for JavaScript callers) ships, and where — std or the JS runtime — is not decided.
 - **Confirmations** in `decisions-pending.md`: 24-a (the effect codes), 24-b (`@Task`'s `map` /
-  `then`), 24-c (a prefixed loop's label), 24-e (`try` / `await` as operands), 24-g (`std/async`'s
-  shape). 24-f (`test-libs` from a nested worktree) is decision 140.
+  `then`), 24-c (a prefixed loop's label), 24-g (std's `async` shape). 24-f (`test-libs` from a
+  nested worktree) is decision 143.
 
 ## Risks
 

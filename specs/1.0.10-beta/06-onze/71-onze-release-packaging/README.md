@@ -105,7 +105,7 @@ pub type ReleaseSpec(
 ```
 
 `buildId` comes from front 03 and from nowhere else: `generateBuildId` is
-`content_hash` over the sorted list of every compiled module's own hash plus the client manifest's
+`hash.contentHash` over the sorted list of every compiled module's own hash plus the client manifest's
 hash. Deterministic, so two builds of an unchanged tree produce the same release and a deployment can
 tell whether anything actually changed. `§ 28`'s `generateBuildId` escape hatch — a user-supplied
 function — is honoured as a config value that *replaces* the derivation, with one rule: a supplied id
@@ -204,12 +204,12 @@ pub fn verifyBuildId(spec: ReleaseSpec, manifestBuildId: string, payloadBuildId:
 ```
 
 **Acceptance:**
-- [ ] `generateBuildId` is deterministic: the same inputs give the same id, asserted on a literal
-- [ ] Reordering the module-hash list does not change the id — it is sorted first
-- [ ] Changing one module hash changes the id
-- [ ] `validateBuildId("")`, `validateBuildId("has/slash")` and a 65-character id are each rejected,
+- [x] `generateBuildId` is deterministic: the same inputs give the same id, asserted on a literal
+- [x] Reordering the module-hash list does not change the id — it is sorted first
+- [x] Changing one module hash changes the id
+- [x] `validateBuildId("")`, `validateBuildId("has/slash")` and a 65-character id are each rejected,
       naming the offending id
-- [ ] `verifyBuildId` returns an error when the release, manifest and payload ids are not all equal,
+- [x] `verifyBuildId` returns an error when the release, manifest and payload ids are not all equal,
       and names which two disagree
 
 ### Step 2 — The OTP release
@@ -223,12 +223,12 @@ pub fn assembleRelease(spec: ReleaseSpec) -> @Task<string>
 ```
 
 **Acceptance:**
-- [ ] `relFileText` is a valid Erlang term ending in `.`, names `kernel` and `stdlib` first, and lists
+- [x] `relFileText` is a valid Erlang term ending in `.`, names `kernel` and `stdlib` first, and lists
       every app in `spec.apps`
-- [ ] `vmArgsText` sets a node name and a cookie read from the environment, never a literal cookie —
+- [x] `vmArgsText` sets a node name and a cookie read from the environment, never a literal cookie —
       a baked cookie is a remote shell for anyone who reads the image
-- [ ] `sysConfigText` contains only defaults; a test asserts no value came from `env.read`
-- [ ] `assembleRelease` invokes `systools` through `process.run` and fails with its stderr when the
+- [x] `sysConfigText` contains only defaults; a test asserts no value came from `env.read`
+- [x] `assembleRelease` invokes `systools` through `process.run` and fails with its stderr when the
       script cannot be made
 - [ ] With `includeErts: true` the release contains an `erts-<vsn>` directory; with `false` it does
       not, and the generated Dockerfile's runner base image differs accordingly
@@ -241,13 +241,13 @@ pub fn scanForSecrets(assetTree: Array<#(string, string)>, secrets: Array<string
 ```
 
 **Acceptance:**
-- [ ] Every chunk named by front 68's manifest exists in the packaged tree, and a missing one fails
+- [x] Every chunk named by front 68's manifest exists in the packaged tree, and a missing one fails
       packaging naming the chunk
-- [ ] Every stylesheet named by front 69's `Y` records exists
-- [ ] `public/` is copied verbatim, including files no manifest names
-- [ ] `scanForSecrets` finds a non-public environment value present verbatim in a chunk and fails
+- [x] Every stylesheet named by front 69's `Y` records exists
+- [x] `public/` is copied verbatim, including files no manifest names
+- [x] `scanForSecrets` finds a non-public environment value present verbatim in a chunk and fails
       packaging naming the variable — the last check before the artifact leaves the building
-- [ ] A public (`ONZE_PUBLIC_`-prefixed) value in a chunk is not a finding
+- [x] A public (`ONZE_PUBLIC_`-prefixed) value in a chunk is not a finding
 
 ### Step 4 — The Dockerfile
 
@@ -257,12 +257,12 @@ pub fn generateDockerignore() -> string
 ```
 
 **Acceptance:**
-- [ ] The output has two stages and the runner copies only from the build stage's release directory
-- [ ] The runner declares a non-root `USER`, asserted on the literal
-- [ ] `PORT` is an `ENV` with a default and is read at boot, not baked into a config file
-- [ ] No `COPY` in the runner stage brings in source, the compiler, or `node_modules`
-- [ ] `generateDockerignore` excludes `.git`, the build directory and `test/`
-- [ ] With `includeErts: false` the runner base image is an `erlang:` image, not `alpine`
+- [x] The output has two stages and the runner copies only from the build stage's release directory
+- [x] The runner declares a non-root `USER`, asserted on the literal
+- [x] `PORT` is an `ENV` with a default and is read at boot, not baked into a config file
+- [x] No `COPY` in the runner stage brings in source, the compiler, or `node_modules`
+- [x] `generateDockerignore` excludes `.git`, the build directory and `test/`
+- [x] With `includeErts: false` the runner base image is an `erlang:` image, not `alpine`
 
 ### Step 5 — The boot script and `onze start`
 
@@ -272,8 +272,8 @@ pub fn bootScriptText(spec: ReleaseSpec) -> string
 
 **Acceptance:**
 - [ ] The script runs `verifyBuildId` before starting and exits non-zero when it fails
-- [ ] It honours `PORT`, defaulting to 3000
-- [ ] It execs the OTP boot script rather than backgrounding it, so the container's PID 1 is the VM
+- [x] It honours `PORT`, defaulting to 3000
+- [x] It execs the OTP boot script rather than backgrounding it, so the container's PID 1 is the VM
       and signals reach it
 - [ ] Front 50's `start` calls this script and adds no second start path
 
@@ -291,13 +291,13 @@ pub fn shutdownOrder() -> Array<string>
 described by a comment above a function that could be edited out of agreement with it.
 
 **Acceptance:**
-- [ ] `readinessChecks` lists the route table, the client manifest and each datasource, and readiness
+- [x] `readinessChecks` lists the route table, the client manifest and each datasource, and readiness
       is false until all three answer
-- [ ] Readiness flips to false as step 1 of shutdown, before connections stop being accepted —
+- [x] Readiness flips to false as step 1 of shutdown, before connections stop being accepted —
       asserted on the call order, because the reverse loses requests
-- [ ] `shutdown` drains in-flight renders before front 62's `after()` work
-- [ ] A drain that exceeds its timeout returns `timedOut: true` and the process exits non-zero
-- [ ] A clean drain exits 0 with both counts at zero
+- [x] `shutdown` drains in-flight renders before front 62's `after()` work
+- [x] A drain that exceeds its timeout returns `timedOut: true` and the process exits non-zero
+- [x] A clean drain exits 0 with both counts at zero
 
 ### Step 7 — Static export
 
@@ -306,10 +306,10 @@ pub fn staticExport(spec: ReleaseSpec, prerendered: Array<#(string, string)>) ->
 ```
 
 **Acceptance:**
-- [ ] Every prerendered route is written as `<route>/index.html`
+- [x] Every prerendered route is written as `<route>/index.html`
 - [ ] The static asset tree and `public/` are copied
-- [ ] No boot script and no `releases/` directory are produced
-- [ ] A route front 60 could not prerender fails the export naming the route — never a partial site
+- [x] No boot script and no `releases/` directory are produced
+- [x] A route front 60 could not prerender fails the export naming the route — never a partial site
 
 ## Examples
 
@@ -325,7 +325,7 @@ pub fn staticExport(spec: ReleaseSpec, prerendered: Array<#(string, string)>) ->
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
 | No byte or binary type — also recorded by front 01 | the release tarball and the container image are produced by `systools` and `docker` through `process.run`; nothing archives in botopink | shell out, and keep the generated *text* files (`.rel`, `sys.config`, `vm.args`, `Dockerfile`) in botopink where they can be asserted | a `bytes` primitive plus `fs.readBytes`/`fs.writeBytes` |
-| No bitwise operators and no `toString(radix)` — also recorded by front 01 | the build id is front 03's `content_hash`, whose fold lives in a host template | call front 03 | `&`, `\|`, `^`, `<<`, `>>` and `i32.toString(radix)` |
+| No bitwise operators — also recorded by front 01 | the build id is front 03's `hash.contentHash`, whose fold lives in a host template | call front 03 | `&`, `\|`, `^`, `<<`, `>>` |
 | No assignment to a `self` field | `ReleaseSpec` has `withErts`-style copies rather than setters | return a new record | mutable record fields, or a `with` expression |
 | Tuple labels are lost through generic instantiation | `spec.apps` is `Array<#(string, string)>`, read as `a._0` / `a._1` | read positionally | preserve written labels through instantiation |
 
@@ -352,9 +352,25 @@ The end-to-end claim — `onze build && onze start` serving front 53's blog from
 — is the milestone's exit gate and is checked there, not here. What this front owes that gate is that
 every artifact the gate needs exists and carries the same build id.
 
+## Where it stands
+
+Implemented: `modules/onze-release/src/` `spec`, `otp`, `docker`,
+`package`, `lifecycle` and `static_export` (the README's `export.bp` — `export` reads as a keyword
+risk and the module name says what it is); 9 tests on commonJS **and** erlang, one of which runs the
+real `systools:make_script` against the local OTP (versions read from `erl`) and asserts a bad
+`.rel` fails. The build id is six hex digits of std's `contentHash`. `shutdown` runs its five steps
+over a `Lifecycle` record of the server's cells, so the order is asserted over a recording double;
+the real cells are rakun's (front 11's endpoints, front 62's `after()`), still owed.
+
+Open: the ERTS copy (`includeErts: true` producing `erts-<vsn>/` — the release is not assembled
+end to end until `onze build` is wired), `bin/onze` running `verifyBuildId` itself (the script
+checks `BUILD_ID` against the stamped id; the manifest/payload comparison needs the VM up), static
+export writing the tree to disk, `onze start` calling the script, and the four gate boxes that need
+`onze build` over the blog and a container runtime.
+
 ## Definition of done
 
-- [ ] `repository/onze/modules/onze-release/` exists with `botopink.json`, `src/root.bp`,
+- [x] `repository/onze/modules/onze-release/` exists with `botopink.json`, `src/root.bp`,
       `src/spec.bp`, `src/otp.bp`, `src/docker.bp`, `src/package.bp`, `src/lifecycle.bp`
 - [ ] `onze build` on front 53's example app produces a release directory matching the layout in
       *Mechanism*, and `onze start` boots it with no source tree and no compiler present
@@ -363,8 +379,8 @@ every artifact the gate needs exists and carries the same build id.
 - [ ] The generated Dockerfile builds and the resulting container runs as a non-root user on `PORT`
 - [ ] No environment value is present in the release except the `ONZE_PUBLIC_` table front 68 inlined,
       and `scanForSecrets` proves it
-- [ ] `repository/onze/docs.md` records the release layout and the shutdown order, because front 50
+- [x] `repository/onze/docs.md` records the release layout and the shutdown order, because front 50
       and any operator read them
-- [ ] The front's tests are green on its assigned targets — both for the text generators, `erlang` for
+- [x] The front's tests are green on its assigned targets — both for the text generators, `erlang` for
       packaging
 

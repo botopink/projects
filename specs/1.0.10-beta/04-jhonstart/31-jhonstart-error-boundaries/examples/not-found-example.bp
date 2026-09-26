@@ -10,10 +10,11 @@
 // recognises; front 30's render turns it into a 404 (the not-found document) or
 // a 307 before its first chunk, and into markup after it (decision 117).
 //
-// `notFound()` is jhonstart's own (front 31, `error_boundary.bp`): it builds the
-// `nav:not-found` signal string of `contracts.md § 5b` with the bundled library
+// `notFound()` is jhonstart's own (front 31, `error_boundary.bp`): it raises the
+// `nav:not-found` reason of `contracts.md § 5b`, built with the bundled library
 // `routing`'s `navigation.signalReason` (decision 116), and jhonstart imports
-// nothing from rakun (decision 113).
+// nothing from rakun (decision 113). Inside a `@Result` thunk the form is
+// `throw notFound();`.
 //
 // Upstream:
 //   https://nextjs.org/docs/app/api-reference/file-conventions/not-found
@@ -21,12 +22,12 @@
 
 import { Element, div, p, text, renderToString } from "jhonstart";
 import { ErrorInfo, ErrorBoundary, catchError, renderBoundaryChecked, isSignal } from "jhonstart";
-import { Link, linkProps } from "jhonstart";
+import { Link, linkProps } from "jhonstart-link";
 import { section, h2 } from "jhonstart";
 import { notFound } from "jhonstart";
 
 // `section` and `h2` come from front 94 (jhonstart-element-surface). `Link`/`linkProps` are front 27's; `notFound` is
-// front 31's and builds the signal string — the caller writes the `throw`.
+// front 31's.
 //
 // The page names only jhonstart, and jhonstart alone handles the signal: onze
 // only adapts rakun's response to jhonstart's `Response`.

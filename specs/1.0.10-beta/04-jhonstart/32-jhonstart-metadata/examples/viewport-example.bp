@@ -18,7 +18,7 @@
 // Upstream:
 //   https://nextjs.org/docs/app/api-reference/functions/generate-viewport
 
-import { Viewport, viewport, mergeViewport, renderViewport } from "jhonstart";
+import { Viewport, mergeViewport, renderViewport } from "jhonstart";
 import { RequestData, request } from "jhonstart";
 
 // ── app/layout.bp ───────────────────────────────────────────────────────────

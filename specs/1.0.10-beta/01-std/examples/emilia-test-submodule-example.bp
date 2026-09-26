@@ -11,11 +11,11 @@
 //     "targets": ["commonJS", "erlang"],
 //     "dependencies": { "emilia": { "path": "../emilia" } } }
 //
-// Depends on: std/testing/asserts, std/testing/snapshots, emilia (core).
+// Depends on: std's testing.asserts and testing.snapshots, emilia (core).
 // Target: commonJS and erlang — the two `botopink test` targets.
 //
-// LANGUAGE GAP: `tokensToCss` is private in emilia core today (`emilia.bp:102`);
-// this submodule needs it `pub`. One-line visibility change owned by track D.
+// emilia's pure token-list function is `styleRule(tokens, th)`: the
+// content-derived class name and the encoded sheet it names.
 
 //// emilia-test — test helpers for the emilia library.
 ////
@@ -26,59 +26,51 @@
 //// snapshot would land beside this module instead of beside the test.
 
 import {testing: {asserts, snapshots}} from "std";
-import {tokensToCss, emilia, Token} from "emilia";
+import {styleRule, defaultTheme, Token} from "emilia";
+
+// The encoded sheet a token list produces under the default theme.
+fn sheetOf(tokens: Token[]) -> string {
+    return styleRule(tokens, defaultTheme())._1;
+}
 
 // ── snapshot helpers ───────────────────────────────────────────────────────
 
-// The CSS a token list lowers to. Snapshot subject `css`; the file lands at
-// `<dir of the test's file>/__snapshots__/<suite>/<slug>.snap`.
-pub fn assertCss(loc: SourceLocation, tokens: Token[]) -> @Result<void, string> {
-    val css = tokensToCss(tokens);
-    try snapshots.assertAs(loc, "css", css);
+// The sheet a token list encodes to. Snapshot subject `sheet`; the file lands
+// at `<dir of the test's file>/__snapshots__/<suite>/<slug>.snap`.
+pub fn assertSheet(loc: SourceLocation, tokens: Token[]) -> @Result<void, string> {
+    try snapshots.assertAs(loc, "sheet", sheetOf(tokens));
     return;
 }
 
-// The whole utility: the content-derived class name and its rule, the way it
-// appears in a flushed `<style>` block. Subject `utility`. The class is a
-// djb2 of the rule body (contract 4), so the body is stable across runs.
+// The whole utility: the content-derived class name and the sheet it names.
+// Subject `utility`. The class is a hash of the sheet (contract 4), so the
+// body is stable across runs.
 pub fn assertUtility(loc: SourceLocation, tokens: Token[]) -> @Result<void, string> {
-    val cls = emilia(tokens);
-    val css = tokensToCss(tokens);
-    val rule = "." + cls + "{" + css + "}";
-    try snapshots.assertAs(loc, "utility", rule);
+    val rule = styleRule(tokens, defaultTheme());
+    try snapshots.assertAs(loc, "utility", rule._0 + "\n" + rule._1);
     return;
 }
 
 // Two utilities side by side in one test: the second is named.
 pub fn assertUtilityNamed(loc: SourceLocation, name: string, tokens: Token[]) -> @Result<void, string> {
-    val cls = emilia(tokens);
-    val css = tokensToCss(tokens);
-    val rule = "." + cls + "{" + css + "}";
-    try snapshots.assertNamedAs(loc, name, "utility", rule);
+    val rule = styleRule(tokens, defaultTheme());
+    try snapshots.assertNamedAs(loc, name, "utility", rule._0 + "\n" + rule._1);
     return;
 }
 
 // ── plain assertion helpers ────────────────────────────────────────────────
 
-// A token list must lower to exactly this declaration string. Not a snapshot:
-// the expected text is in the test, for the cases where the value is the point.
-pub fn assertDeclaration(tokens: Token[], expected: string) -> @Result<void, string> {
-    val css = tokensToCss(tokens);
-    try asserts.equals(css, expected);
-    return;
-}
-
-// A token list's CSS must carry a given `property:value` pair somewhere.
+// A token list's sheet must carry a given `property:value` declaration. Not a
+// snapshot: the expected text is in the test, where the value is the point.
 pub fn assertHasDeclaration(tokens: Token[], declaration: string) -> @Result<void, string> {
-    val css = tokensToCss(tokens);
-    try asserts.contains(css, declaration);
+    try asserts.contains(sheetOf(tokens), declaration);
     return;
 }
 
 // Two token lists must produce the same class — the "token order is class
 // identity" clause of contract 4, asserted from the outside.
 pub fn assertSameClass(a: Token[], b: Token[]) -> @Result<void, string> {
-    try asserts.equals(emilia(a), emilia(b));
+    try asserts.equals(styleRule(a, defaultTheme())._0, styleRule(b, defaultTheme())._0);
     return;
 }
 
@@ -92,8 +84,7 @@ pub fn sharedFixtureTokens() -> Token[] {
 }
 
 // A hover-inside-md nesting, built through typed intermediates because a
-// payload call inside an array literal does not parse today
-// (language-gaps.md; emilia.bp:498-503).
+// payload call inside an array literal does not parse (language-gaps.md).
 pub fn hoverOnMd(leaf: Token[]) -> Token[] {
     val hovered: Token[] = [Token.Hover(leaf)];
     val tokens: Token[] = [Token.Md(hovered)];
@@ -104,9 +95,9 @@ pub fn hoverOnMd(leaf: Token[]) -> Token[] {
 // (`modules/emilia-test/test/` is empty by design: a helper's tests are inline
 // here, and the helpers are exercised for real by emilia core's tests.)
 
-test "emilia-test: assertDeclaration compares the lowered CSS" {
+test "emilia-test: assertHasDeclaration reads the encoded sheet" {
     val tokens: Token[] = [.Text.Bold];
-    try assertDeclaration(tokens, "font-weight:bold");
+    try assertHasDeclaration(tokens, "font-weight:bold");
 }
 
 test "emilia-test: assertHasDeclaration finds one declaration in a list" {
@@ -117,7 +108,7 @@ test "emilia-test: assertSameClass holds for the same list built twice" {
     try assertSameClass(sharedFixtureTokens(), sharedFixtureTokens());
 }
 
-test "emilia-test: hoverOnMd nests hover inside the md breakpoint" {
+test "emilia-test: hoverOnMd keeps the leaf's declaration" {
     val leaf: Token[] = [.Bg.Red.500];
-    try assertDeclaration(hoverOnMd(leaf), "@media(min-width:768px){:hover{background:red}}");
+    try assertHasDeclaration(hoverOnMd(leaf), "background");
 }

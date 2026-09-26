@@ -2,7 +2,7 @@
 
 The tests std records as snapshots, written in `.bp` with `@src()` and `\\` line-strings, and the
 exact `.snap` each one produces. std has no `-test` submodule (`modules.md`), so the helpers here
-are `snapshots.assert` and `snapshots.assertAs` called directly, and every test sits inline at the
+are `snapshots.assertText` and `snapshots.assertAs` called directly, and every test sits inline at the
 foot of its own `.bp`. The path rule puts a snapshot beside the file that owns the test, so the
 root modules record under `libs/std/src/__snapshots__/` and the harness's own tests under
 `libs/std/src/testing/__snapshots__/`.
@@ -17,15 +17,14 @@ contract — a failure message, a rendered path, an escaped string, a digest. A 
 The failure message of every assertion is part of its contract (`asserts-api.md` § *Failure message
 format*). Each is recorded once, so a message cannot drift without a `.new` appearing.
 
-The error text is read with `asserts.errorText(r)` — a `pub fn errorText(r: @Result<void, string>)
--> string` this front adds to the module (`asserts-api.md` § *Utility*): a plain `case` over the
-`Ok`/`Error` variants, returning a plain `string`, answering `""` for `Ok`. It is the same helper every
-`-test` submodule uses to snapshot a failure message.
+The error text is read with `asserts.errorText(r)` — `pub fn errorText(r: @Result<void, string>)
+-> string` (`asserts-api.md` § *Utility*): a plain `case` over the `Ok`/`Error` variants, answering
+`""` for `Ok`. It is the same helper every `-test` submodule uses to snapshot a failure message.
 
 ```bp
 test "asserts: message ---- equals" {
     val r = equals("ana", "bob");
-    try snapshots.assert(@src(), errorText(r));
+    try snapshots.assertText(@src(), errorText(r));
 }
 ```
 
@@ -84,7 +83,7 @@ snapshots beside the file.
 ```bp
 test "snapshots: path ---- suite and slug from a test name" {
     val loc = SourceLocation(file: "src/emilia.bp", line: 1, column: 1, fnName: "css: modifiers ---- hover on md breakpoint");
-    try snapshots.assert(@src(), path(loc));
+    try snapshots.assertText(@src(), path(loc));
 }
 ```
 
@@ -101,7 +100,7 @@ src/__snapshots__/css/modifiers_hover_on_md_breakpoint.snap
 ```bp
 test "snapshots: path ---- named second snapshot" {
     val loc = SourceLocation(file: "test/router_test.bp", line: 1, column: 1, fnName: "route: two tables");
-    try snapshots.assert(@src(), pathNamed(loc, "After Merge"));
+    try snapshots.assertText(@src(), pathNamed(loc, "After Merge"));
 }
 ```
 
@@ -113,7 +112,7 @@ test "snapshots: slug ---- punctuation collapses to one underscore" {
     val text =
         \\Modifiers ---- Hover, on (md) breakpoint!
     ;
-    try snapshots.assert(@src(), slugOf(text));
+    try snapshots.assertText(@src(), slugOf(text));
 }
 ```
 
@@ -124,12 +123,12 @@ test "snapshots: slug ---- punctuation collapses to one underscore" {
 test "snapshots: path ---- a name without a suite is refused" {
     val loc = SourceLocation(file: "src/a.bp", line: 1, column: 1, fnName: "no suite here");
     val r = assertAs(loc, "text", "x");
-    try snapshots.assert(@src(), errorText(r));
+    try snapshots.assertText(@src(), errorText(r));
 }
 ```
 
 → `src/testing/__snapshots__/snapshots/path_a_name_without_a_suite_is_refused.snap`, body
-`snapshots: test name needs a suite — write "<suite>: <description>"`.
+`snapshots: test name needs a suite - write "<suite>: <description>"`.
 
 The three filesystem outcomes, each an `asserts` test (no snapshot of a snapshot):
 
@@ -145,12 +144,12 @@ The three filesystem outcomes, each an `asserts` test (no snapshot of a snapshot
 
 ## `src/testing/mocks.bp` — the verify message
 
-The one text the old library produced on failure is worth pinning, because it is the text a person
-reads when a mock's count is wrong, and its two templates were "kept in step by hand"
-(`onze/AGENTS.md`).
+The one text the mocking runtime produces on failure is worth pinning, because it is the text a
+person reads when a mock's count is wrong, and its Node and Erlang templates are kept in step by
+hand. The test sits inside `mocks.bp`, where `#[mock]` fires.
 
 ```bp
-#[mocks.mock]
+#[mock]
 behavior Counter {
     fn tick(self: Self, n: i32) -> i32;
 }
@@ -163,7 +162,7 @@ test "mocks: verify message ---- expected exactly one call" {
         val _v = verify(c, times(1)).tick(eq(1));
         0;
     });
-    try snapshots.assert(@src(), msg);
+    try snapshots.assertText(@src(), msg);
 }
 ```
 
@@ -178,28 +177,26 @@ botopink-snap 1
 test: mocks: verify message ---- expected exactly one call
 subject: text
 
-onze.verify: tick - expected exactly 1 matching call(s), got 2
+mocks.verify: tick - expected exactly 1 matching call(s), got 2
 ```
 
-The body is the Erlang template's wording (`onze.bp:43`: `" - expected "`); the Node one says
-`" — expected "` and appends `[recorded: …]` (`onze.mjs:83-88`). The lift makes the two identical —
-the Erlang form, without the recorded-calls suffix — and the snapshot is what holds them there. The
-prefix stays `onze.verify:` for one milestone so that a grep across old test output still finds it;
-`mocks.verify:` is a follow-up rename this map will re-record.
+The body is the Erlang template's wording. The Node template still appends a recorded-calls suffix
+(` [recorded: …]` / ` [no calls recorded]`); the two are to be identical — the Erlang form, without
+the suffix — and the snapshot recorded on both targets is what holds them there.
 
 ## A handful of std modules
 
 Pure, deterministic, cross-target values whose exact text is the point. Each is one snapshot; the
 module's other tests stay `asserts` calls.
 
-### `src/escape.bp` (01-std-lib-enablement step 1)
+### `src/escape.bp`
 
 ```bp
 test "escape: html ---- ampersand is escaped once" {
     val raw =
         \\<a href="x">&
     ;
-    try snapshots.assert(@src(), html(raw));
+    try snapshots.assertText(@src(), html(raw));
 }
 ```
 
@@ -211,18 +208,18 @@ test "escape: jsString ---- a script close tag cannot survive" {
     val raw =
         \\</script><script>alert(1)</script>
     ;
-    try snapshots.assert(@src(), jsString(raw));
+    try snapshots.assertText(@src(), jsString(raw));
 }
 ```
 
 → `src/__snapshots__/escape/jsstring_a_script_close_tag_cannot_survive.snap`, body
 `\u003c/script>\u003cscript>alert(1)\u003c/script>`.
 
-### `src/hash.bp` — the content-hash half (03-std-content-hash)
+### `src/hash.bp` — the content hashes
 
 ```bp
 test "hash: etag ---- quoted djb2 of hello" {
-    try snapshots.assert(@src(), etag("hello"));
+    try snapshots.assertText(@src(), etag("hello"));
 }
 ```
 
@@ -233,7 +230,7 @@ quotes — they are the value).
 test "hash: cacheKey ---- framing keeps two part lists apart" {
     val a = cacheKey(["user:1", "profile"]);
     val b = cacheKey(["user", "1:profile"]);
-    try snapshots.assert(@src(), a + "\n" + b);
+    try snapshots.assertText(@src(), a + "\n" + b);
 }
 ```
 
@@ -249,31 +246,31 @@ subject: text
 ```
 
 (`62d9003d` = djb2 of `6:user:1|7:profile`, `8aac687d` = djb2 of `4:user|9:1:profile`; the two
-lines differing is the front's reason to exist, and the snapshot pins the values on both targets.)
+lines differing is the reason `cacheKey` frames, and the snapshot pins the values on both targets.)
 
 ```bp
 test "hash: fingerprint ---- extension stays last" {
-    try snapshots.assert(@src(), fingerprint("app.js", "console.log(1)"));
+    try snapshots.assertText(@src(), fingerprint("app.js", "console.log(1)"));
 }
 ```
 
 → `src/__snapshots__/hash/fingerprint_extension_stays_last.snap`, body `app.45ac5e8a.js`.
 
-### `src/encoding.bp` (01-std-lib-enablement step 3)
+### `src/encoding.bp`
 
 ```bp
 test "encoding: percentEncode ---- reserved characters" {
-    try snapshots.assert(@src(), percentEncode("a b&c=d"));
+    try snapshots.assertText(@src(), percentEncode("a b&c=d"));
 }
 ```
 
 → `src/__snapshots__/encoding/percentencode_reserved_characters.snap`, body `a%20b%26c%3Dd`.
 
-### `src/hash.bp` — the hmac half (01-std-lib-enablement step 4)
+### `src/hash.bp` — the base64url digests
 
 ```bp
 test "hash: sha256Base64Url ---- of the empty string" {
-    try snapshots.assert(@src(), sha256Base64Url(""));
+    try snapshots.assertText(@src(), sha256Base64Url(""));
 }
 ```
 
@@ -284,7 +281,7 @@ test "hash: sha256Base64Url ---- of the empty string" {
 
 ```bp
 test "path: normalize ---- dot and dotdot segments" {
-    try snapshots.assert(@src(), normalize("/app/./blog/../page.bp"));
+    try snapshots.assertText(@src(), normalize("/app/./blog/../page.bp"));
 }
 ```
 
@@ -299,7 +296,7 @@ test "path: normalize ---- dot and dotdot segments" {
 | `async` | timings | elapsed-time budgets are `lessThan`, never a literal |
 | `regex` captures | arrays | `deepEquals` against a literal array says the same thing without a file |
 
-## Directory after this front
+## Directory when the map is recorded
 
 ```
 libs/std/src/testing/__snapshots__/

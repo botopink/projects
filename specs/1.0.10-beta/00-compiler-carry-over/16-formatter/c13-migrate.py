@@ -6,8 +6,7 @@ its closing `}`. Nothing else is touched: a binding or `return` whose value is b
 its `;`, as `format.zig`'s `terminated` and the parser's `isBracedBlockStmt` do.
 With --md, only the ```botopink fences of a Markdown file are rewritten.
 
-Front 16's C-13 migration (compiler 7af79f44). Verify a run the way that commit did: every changed
-line differs only by deleted `;`, and `botopink format` of each file before and after is byte-identical
+Front 16's C-13 migration. Verify a run: every changed line differs only by deleted `;`, and `botopink format` of each file before and after is byte-identical
 (the same program). Trees `scripts/format-check.sh` holds canonical are migrated by `botopink format`
 instead."""
 import re, sys

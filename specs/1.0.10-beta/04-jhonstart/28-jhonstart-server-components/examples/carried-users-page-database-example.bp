@@ -1,8 +1,10 @@
 // app/users/page.bp
+// A page awaiting a database loader (front 08's); it activates no hook, so its
+// return is `@Task<Element>`.
 import {Element, div, table, tr, td, text} from "jhonstart";
 import {db} from "@/lib/db";
 
-pub fn UsersPage() -> @Component<ElementBase, Element> {
+pub fn UsersPage() -> @Task<Element> {
     val users = await db.user.findAll();
     return div([
         table(

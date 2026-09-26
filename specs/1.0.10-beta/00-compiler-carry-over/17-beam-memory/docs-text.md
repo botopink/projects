@@ -1,7 +1,7 @@
 # The `docs.md` text — step 6 of front 17
 
 Front 17 writes no `docs.md`; this file is the text it supplies, to be placed by whoever owns
-`docs.md` when they next open it. Two parts: what is **true at `4fe1747e`** (steps 1–3 landed) and
+`docs.md` when they next open it. Two parts: what is **true ** (steps 1–3 landed) and
 can go in now, and the three mode paragraphs, which describe an emission that lands with C-10 and
 must not be published before it — a paragraph saying `hits += 1` is `ets:update_counter` while the
 erlang backend still emits an unbound `Hits` would be the failure decision 41 was taken against.
@@ -56,7 +56,7 @@ Every number below is from the front's measurements (`design.md` §4, §6); none
 > #[@BeamMemory.ProcessDict]        var explicit: i32 = 0;   // the default, said out loud
 > #[@BeamMemory.Ets]                var hits: i32 = 0;
 > #[@BeamMemory.PersistentTerm]     var buildVersion: i32 = 101;
-> #[@BeamMemory.Ets(keyed = true)]  var counts: Dict<string, i32> = dict.empty();
+> #[@BeamMemory.Ets(keyed = true)]  var counts: Dict<string, i32> = Dict.empty();
 >
 > // #[@BeamMemory.Etz] var x: i32 = 0;
 > //   error: unknown member `Etz` in `@BeamMemory` — expected `ProcessDict`, `Ets` or `PersistentTerm`

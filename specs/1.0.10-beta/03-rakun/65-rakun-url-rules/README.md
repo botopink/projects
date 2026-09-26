@@ -54,17 +54,16 @@ table and matches within it. The rules that run *before* a route is matched belo
 
 ## Current state
 
-- `repository/rakun/modules/rakun-web/src/root.bp` — a docblock and a TODO comment. Front 07 will add
-  `middleware.bp`, `cors.bp`, `error.bp`, `filter.bp` and `convention.bp`; `src/rules/` is empty and
-  this front creates it.
+- `repository/rakun/modules/rakun-web/src/` — front 07's `middleware.bp`, `cors.bp`, `error.bp`,
+  `filter.bp` and `convention.bp`; `src/rules/` does not exist and this front creates it.
 - `repository/rakun/src/runtime.bp:76-104` — `rkRegisterRoute`/`rkDispatch`. Matching is
   segment-by-segment with `:name` parameters and no regex, no lookahead, and no notion of a rule that
   runs before matching.
 - `libs/std/src/regex.bp` — `matches`, `replace`, `replaceAll`, `splitOn`, `match`, `matchAll` and a
-  `Match(value, index)` record, already wrapping `re:run/3` on erlang. `compile`, `runCompiled`,
-  `captures`, `namedCaptures` and `escapeLiteral` are added by front 01, and this front is the reason
-  `compile` exists: without it a matcher re-parses its pattern on every request inside the hot path.
-- `libs/std/src/querystring.bp` documents itself as not percent-encoding; front 01's
+  `Match(value, index)` record, wrapping `re:run/3` on erlang; `compile` returns a `Regex` whose
+  methods run the compiled pattern, plus `captures`, `namedCaptures` and `escapeLiteral`. `compile` is
+  what keeps a matcher from re-parsing its pattern on every request inside the hot path.
+- `libs/std/src/querystring.bp` documents itself as not percent-encoding;
   `encoding.percentEncode`/`percentDecode` are what this front uses for interpolation.
 - `repository/rakun/modules/rakun-web/src/rules/` does not exist.
 

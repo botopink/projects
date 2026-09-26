@@ -11,7 +11,7 @@ imports and the browser imports too, so both match with the same code (decision 
 **Depends on:** 01 (the directory walk — `path` is already complete), 05 (`rakun.appDir` as a config
 value), `01-std/04-routing-lib` (the matcher, Steps 1, 3 and 4's code and tests)
 **Owns:** `repository/rakun/modules/rakun-app/src/file_router.bp` (the registry cells and the scan entry),
-`repository/rakun/modules/rakun-app/src/sidecars/rakun_file_router.erl`, `repository/rakun/modules/rakun-app/test/file_router_test.bp` (in the `rakun-app` member since front 95's relocation, `modules.md` § The cut)
+`repository/rakun/modules/rakun-app/src/sidecars/rakun_file_router.erl`, `repository/rakun/modules/rakun-app/test/file_router_test.bp` (the `rakun-app` member, `modules.md` § The cut)
 **Does not touch:** `repository/rakun/src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`,
 `src/runtime.mjs` (frozen for the milestone), and the files owned by 23 · 24 · 25; the UI
 conventions — `#[page]`, `#[layout]`, `#[template]`, `#[defaultView]`, `PageContext`, `LayoutProps`
@@ -52,25 +52,6 @@ file-convention router in botopink therefore has to be registration-driven, and 
 reach the decorator as an argument. That is what this front builds, and the argument is generated and
 checked against the real tree by the CLI (front 50), so a developer still only moves files around.
 
-## Current state
-
-- `repository/rakun/src/decorators.bp:217-244` — the five route-mapping decorators, all method-level,
-  all taking a full path string. No file-convention decorator exists.
-- `repository/rakun/src/runtime.bp:76-104` — `rkRegisterRoute` / `rkDispatch` / `rkDispatchHttp`. A
-  flat `verb + path -> handler` registry; no segment list, no layouts, no params beyond `:name`.
-- `repository/rakun/src/http.bp:35-43` — the `Request` behavior. `param`/`query`/`header`/`body` all
-  return `string`, `""` when absent.
-- jhonstart's router (front 26) keeps no matcher and no table parser of its own: it imports
-  `matchPath` and `parseTable` from the bundled library `routing` (decision 115), as rakun does.
-- `libs/std/src/path.bp:24-179` — `split`, `join`, `basename`, `dirname`, `normalize`, `relative`,
-  `resolve` all exist today; `path` is a complete posix calculator and this front needs nothing added
-  to it. What std does not have is a **directory walk**, which the scan in step 5 needs; front 01
-  closes that.
-- The matcher exists today inside rakun's core member, beside the registry and the scan:
-  `repository/rakun/modules/rakun/src/file_router.bp:49-479` (grammar, wire, matcher) with its tests
-  at `modules/rakun/test/file_router_test.bp:62-332`. `01-std/04-routing-lib` Step 3 moves that range
-  into `libs/routing`; Step 7 below deletes it here.
-
 ## Mechanism
 
 ### What Next.js does
@@ -101,7 +82,8 @@ record, registered by whoever owns the function behind it:
 The UI decorators, `PageContext`, `LayoutProps` and the per-route parameter accessors are jhonstart
 front 30's: they fill jhonstart's UI registry, and onze copies that registry into this front's table
 at boot, so the table the server matches and the payload's `t` are one table (contract 1). A page's
-renderer is opaque here — `fn(req: Request, out: ChunkWriter) -> @Task<void>` (front 23); rakun
+renderer is opaque here — `fn(req: Request, out: ChunkWriter) -> @Task<@Result<void, string>>`
+(front 23, decision 130); rakun
 calls it and never looks inside. A page's `notFound` / `redirect` are jhonstart's and never reach
 this table's dispatch as signals (decision 117 rule 1); an `N` record is the boundary jhonstart's
 render uses for its own 404.
@@ -116,7 +98,7 @@ build emitted (`libs.zig:596`), and rakun emits `rakun/file_router`, so a sideca
 
 **The `appDir` is configuration, not a literal.** `rkProp("rakun.appDir")` (front 05) resolves to
 `app` or `src/app`, `app` when unset; onze writes the key at boot (decision 115) and rakun reads no
-`onze.` key (`modules/rakun/src/file_router.bp:795` reads `onze.appDir` and is renamed by Step 5).
+`onze.` key (`modules/rakun-app/src/file_router.bp` still reads `onze.appDir`; Step 5 renames it).
 The decorator argument is relative to it, so moving the tree between the two
 layouts changes one config line and no source. The host-side scan reads `appDir` to verify that every
 registered segment corresponds to a real directory and that every directory holding a convention file
@@ -344,9 +326,8 @@ its copies once jhonstart front 30 has them, and keeps Step 2's registry.
 ### Step 7 — rakun imports `routing`
 
 The matcher is not rakun's: it is the bundled library `routing` (decision 115), written by
-`01-std/04-routing-lib` from this front's Steps 1, 3 and 4 — the code at
-`modules/rakun/src/file_router.bp:49-479` moved there, with its tests. This step switches rakun to
-it and deletes rakun's copy. rakun lists no dependency for it: `routing` is bundled with the compiler
+`01-std/04-routing-lib` from this front's Steps 1, 3 and 4, with their tests. This step switches
+rakun to it and deletes rakun's copy. rakun lists no dependency for it: `routing` is bundled with the compiler
 and resolves like `std`.
 
 ```bp

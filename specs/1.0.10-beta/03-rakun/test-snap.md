@@ -3120,10 +3120,10 @@ test "static: a page that reads nothing is static" {
         ["app/layout.bp", "app/page.bp", "app/about/page.bp"],
         \\ import {page, ChunkWriter, Request} from "rakun";
         \\ val _homePage = page("", fn(req: Request, out: ChunkWriter) {
-        \\     return out.write("home");
+        \\     await out.write("home");
         \\ });
         \\ val _aboutPage = page("about", fn(req: Request, out: ChunkWriter) {
-        \\     return out.write("about");
+        \\     await out.write("about");
         \\ });
         );
 }
@@ -3143,11 +3143,11 @@ test "static: reading the query marks the route dynamic" {
         ["app/layout.bp", "app/page.bp", "app/search/page.bp"],
         \\ import {page, ChunkWriter, Request} from "rakun";
         \\ val _homePage = page("", fn(req: Request, out: ChunkWriter) {
-        \\     return out.write("home");
+        \\     await out.write("home");
         \\ });
         \\ val _searchPage = page("search", fn(req: Request, out: ChunkWriter) {
         \\     val term = req.query("q");
-        \\     return out.write("Results for " + term);
+        \\     await out.write("Results for " + term);
         \\ });
         );
 }
@@ -3168,7 +3168,7 @@ test "static: reading cookies marks the route dynamic" {
         \\ import {page, ChunkWriter, Request, cookies} from "rakun";
         \\ val _dashboardPage = page("dashboard", fn(req: Request, out: ChunkWriter) {
         \\     val session = cookies().get("session").unwrapOr("");
-        \\     return out.write("signed in as " + session);
+        \\     await out.write("signed in as " + session);
         \\ });
         );
 }
@@ -3188,7 +3188,7 @@ test "static: a dynamic segment without generateStaticParams is dynamic" {
         \\ import {page, ChunkWriter, Request} from "rakun";
         \\ val _blogPostPage = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
         \\     val slug = req.param("slug");
-        \\     return out.write(slug);
+        \\     await out.write(slug);
         \\ });
         );
 }
@@ -3233,13 +3233,13 @@ test "static: generateStaticParams enumerates the paths to prerender" {
         \\ val _docsParams = registerStaticParams("docs/[[...slug]]", docsStaticParams);
         \\ val _blogPostPage = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
         \\     val slug = req.param("slug");
-        \\     return out.write(slug);
+        \\     await out.write(slug);
         \\ });
         \\ val _shopPage = page("shop/[...slug]", fn(req: Request, out: ChunkWriter) {
-        \\     return out.write(req.param("slug"));
+        \\     await out.write(req.param("slug"));
         \\ });
         \\ val _docsPage = page("docs/[[...slug]]", fn(req: Request, out: ChunkWriter) {
-        \\     return out.write(req.param("slug"));
+        \\     await out.write(req.param("slug"));
         \\ });
         );
 }
@@ -3272,7 +3272,7 @@ test "static: forceDynamic wins over generateStaticParams" {
         \\ val _blogParams = registerStaticParams("blog/[slug]", blogStaticParams);
         \\ val _blogPostPage = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
         \\     val slug = req.param("slug");
-        \\     return out.write(slug);
+        \\     await out.write(slug);
         \\ });
         );
 }
@@ -3299,7 +3299,7 @@ test "static: forceStatic with a dynamic read stays static and names the conflic
         \\ ));
         \\ val _dashboardPage = page("dashboard", fn(req: Request, out: ChunkWriter) {
         \\     val session = cookies().get("session").unwrapOr("");
-        \\     return out.write("signed in as " + session);
+        \\     await out.write("signed in as " + session);
         \\ });
         );
 }
@@ -3325,7 +3325,7 @@ test "static: revalidate zero is normalized to forceDynamic" {
         \\     fetchCache: FetchCache.Auto,
         \\ ));
         \\ val _nowPage = page("now", fn(req: Request, out: ChunkWriter) {
-        \\     return out.write("now");
+        \\     await out.write("now");
         \\ });
         );
 }
@@ -3355,11 +3355,11 @@ test "static: a segment inherits revalidate from its layout" {
         \\ }
         \\ val _blogParams = registerStaticParams("blog/[slug]", blogStaticParams);
         \\ val _blogIndexPage = page("blog", fn(req: Request, out: ChunkWriter) {
-        \\     return out.write("blog");
+        \\     await out.write("blog");
         \\ });
         \\ val _blogPostPage = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
         \\     val slug = req.param("slug");
-        \\     return out.write(slug);
+        \\     await out.write(slug);
         \\ });
         );
 }
@@ -3387,7 +3387,7 @@ test "static: dynamicParams false with no rows is static and enumerates nothing"
         \\ ));
         \\ val _blogPostPage = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
         \\     val slug = req.param("slug");
-        \\     return out.write(slug);
+        \\     await out.write(slug);
         \\ });
         );
 }
@@ -3562,7 +3562,7 @@ test "navigation: redirect from a route handler is 307 with location" {
         \\     return HandlerResponse.json("{}");
         \\ }
         \\ val _loginPage = page("login", fn(req: Request, out: ChunkWriter) {
-        \\     return out.write("login");
+        \\     await out.write("login");
         \\ });
         , "GET /api/account");
 }
@@ -3587,7 +3587,7 @@ test "navigation: permanentRedirect is 308" {
         \\     return HandlerResponse.json("{}");
         \\ }
         \\ val _newPage = page("new", fn(req: Request, out: ChunkWriter) {
-        \\     return out.write("new");
+        \\     await out.write("new");
         \\ });
         , "GET /api/old");
 }
@@ -3646,7 +3646,7 @@ test "navigation: a signal crosses two levels of await" {
         \\     return HandlerResponse.json(v);
         \\ }
         \\ val _loginPage = page("login", fn(req: Request, out: ChunkWriter) {
-        \\     return out.write("login");
+        \\     await out.write("login");
         \\ });
         , "GET /api/account");
 }
@@ -3667,7 +3667,7 @@ test "navigation: a signal raised by a page renderer is a failed render" {
         \\ import {notFound, page, ChunkWriter, Request} from "rakun";
         \\ val _blogPostPage = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
         \\     val _gone = notFound();
-        \\     return out.write("never");
+        \\     await out.write("never");
         \\ });
         , "GET /blog/nope");
 }
@@ -3694,7 +3694,7 @@ test "navigation: redirect inside an action is 303 on the progressive path" {
         \\     return ActionResult.done();
         \\ }
         \\ val _blogIndexPage = page("blog", fn(req: Request, out: ChunkWriter) {
-        \\     return out.write("blog");
+        \\     await out.write("blog");
         \\ });
         , "POST /blog/new Origin: https://app.example Host: app.example | __bp_action=createPost&title=x");
 }

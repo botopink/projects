@@ -48,7 +48,7 @@ val _home = page("[locale]", fn(req: Request, out: ChunkWriter) {
         "es" -> "Bienvenido";
         _ -> "Bem-vindo";
     };
-    return out.write(greeting + " (locale: " + locale + ", lang: " + htmlLang() + ")");
+    await out.write(greeting + " (locale: " + locale + ", lang: " + htmlLang() + ")");
 });
 
 // SERVER — the hreflang set jhonstart front 32 renders, handed to it by onze:

@@ -1,6 +1,6 @@
 # Blast radius — what moves when the checker becomes strict
 
-Every number here was measured against `botopink-lang` `c2dd780` on 2026-09-18, from the working
+Every number here was measured, from the working
 tree of a scratch worktree of that commit. The command is beside the number so it can be repeated.
 
 ---
@@ -64,7 +64,7 @@ grep 'TypeError.custom' modules/compiler-core/src/comptime/infer.zig | grep -c w
 thread a `loc` through `unify`'s signature (touches every caller), or make every caller go through
 `unifyAt` (touches the two bare arithmetic call sites and whatever else `grep -n 'unify(' infer.zig`
 turns up). Decide in step 9 and record which; the second is smaller and was already half-done by C3
-(`f6d8ce6`).
+.
 
 ## The codegen directories this front can move — but does not own
 
@@ -82,12 +82,12 @@ that still compiles does not move a byte.
 
 **The rule for this front:** a fixture that a strictness step kills is *reported to the owning
 backend front*, with the program and the diagnostic, and migrated to a program that says what it
-meant — never deleted. That is what C9 did for the three fixtures it killed (`75a6906`), and it is
+meant — never deleted. That is what C9 did for the three fixtures it killed, and it is
 what turned a vacuous test into an assertion each time.
 
 ## Library exposure
 
-`zig build test-libs` at `c2dd780`: **11 cells, 0 failed**, `scripts/known-red-libs.txt` empty.
+`zig build test-libs`: **11 cells, 0 failed**, `scripts/known-red-libs.txt` empty.
 `botopink check` is clean in `libs/std` and in all five sibling repositories.
 
 That is the baseline a strictness step must not break. The rows with a **library** class — the ones

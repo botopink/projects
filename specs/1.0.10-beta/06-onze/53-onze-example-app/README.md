@@ -12,7 +12,7 @@ table and the serialized payload cross
 → 24 · 60 · 63 · 68 → 67 → this
 **Owns:** `examples/blog/**`, `examples/blog/test/**`
 **Does not touch:** anything. This front is read-only against every other repository and against
-`repository/onze/src/**`. A change it needs in a library is filed against that library's front, not
+`repository/onze/modules/**`. A change it needs in a library is filed against that library's front, not
 made here
 **Reference:** `NEXTJS-DOCS.md § 3. Estrutura do Projeto`, `§ 5. Layouts e Páginas`,
 `§ 6. Rotas Dinâmicas`, `§ 9. Busca de Dados`, `§ 10. Mutação de Dados`, `§ 11. Cache`,
@@ -49,8 +49,7 @@ milestone's acceptance script: walk the app file by file, and each file names th
 
 ## Current state
 
-- `repository/onze/examples/blog/` does not exist; `repository/onze/` does not exist until
-  front 49.
+- `repository/onze/examples/blog/` does not exist; the onze package is front 49's.
 - `repository/jhonstart/examples/` and `repository/rakun/examples/` exist as per-library demos. None
   of them crosses a library boundary; the largest, `repository/rakun/test/server_test.bp`, is a
   three-type DI + routing exercise inside one package.
@@ -166,12 +165,12 @@ needs a front beyond 49 and std, so it can be written and tested first, and it i
 stands on.
 
 **Acceptance:**
-- [ ] `listPosts()` returns the three seeded posts, sorted by publication date descending
-- [ ] `readPost("missing")` reds with a message naming the slug
-- [ ] `writePost` then `listPosts` shows four
-- [ ] `tags.bp` renders `<nav>`, `<article>`, `<h2>`, `<a>`, `<form>`, `<label>`, `<input>`,
+- [x] `listPosts()` returns the three seeded posts, sorted by publication date descending
+- [x] `readPost("missing")` reds with a message naming the slug
+- [x] `writePost` then `listPosts` shows four
+- [x] `tags.bp` renders `<nav>`, `<article>`, `<h2>`, `<a>`, `<form>`, `<label>`, `<input>`,
       `<button>`, `<time>` — the nine tags the app needs and jhonstart does not have
-- [ ] The alias `@/lib.db` resolves from `app/blog/[slug]/page.bp`
+- [x] The alias `@/lib.db` resolves from `app/blog/[slug]/page.bp`
 
 ### Step 2 — The read path
 
@@ -180,12 +179,12 @@ stands on.
 `components/nav.bp`.
 
 **Acceptance:**
-- [ ] `/` renders with the hero image, the nav and one `<style>` block
-- [ ] `/blog` lists three posts, each in a `PostCard` carrying one emilia class
+- [x] `/` renders with the hero image, the nav and one `<style>` block
+- [x] `/blog` lists three posts, each in a `PostCard` carrying one emilia class
 - [ ] `/blog/hello-world` renders that post's title and body
 - [ ] `/about` renders — the route group does not appear in the URL
-- [ ] The document has exactly one `<style>` element and it is non-empty
-- [ ] Two consecutive requests both have a non-empty `<style>` — which is the test that catches a
+- [x] The document has exactly one `<style>` element and it is non-empty
+- [x] Two consecutive requests both have a non-empty `<style>` — which is the test that catches a
       sheet flushed once per process instead of once per request
 
 ### Step 3 — Static generation and metadata
@@ -272,17 +271,16 @@ the app file named in its header.
 | [`examples/route-handler-example.bp`](./examples/route-handler-example.bp) | `app/api/posts/route.bp` | 25 · 22 · 12 |
 | [`examples/middleware-example.bp`](./examples/middleware-example.bp) | `middleware.bp` | 07 · 65 · 04 |
 
-There is no `components/tags.bp` example any more. The extra element builders
+There is no `components/tags.bp` example. The extra element builders
 (`nav`, `header`, `main`, `section`, `article`, `h2`, `form`, `input`, `label`, `button`, `timeTag`)
 are imported from `"jhonstart"` and are provided by **front 94 — `jhonstart-element-surface`**, in
-`repository/jhonstart/src/elements.bp`. Building them locally, as an earlier draft of this front did
-through the public `Element` record, would have been a twelfth copy of the same file.
+`repository/jhonstart/modules/jhonstart/src/elements.bp`; the app does not rebuild them through the
+public `Element` record.
 
 ## Assumed API shapes
 
-This front was drafted before the other fronts landed and then reconciled against them once their
-READMEs and examples were on disk. The table separates what is now **verified** against a front's own
-example from what is still **assumed**, because only the second column is a risk.
+The tables separate what is **verified** against a front's own example from what is still
+**assumed**, because only the second is a risk.
 
 ### Verified against the owning front's example
 
@@ -305,7 +303,7 @@ example from what is still **assumed**, because only the second column is a risk
 | 63 · 31 | **in a page, layout or template**: `import {notFound, redirect} from "jhonstart";` (front 31, decision 115) · in a page, layout or template (each a `fn … -> @Component<ElementBase, Element>`, which cannot `throw` — decision 121) both are called — `notFound();`, `redirect("/login");` (front 24's `guide.md` § 7) — and in a `-> @Result<…>` helper both are thrown — `throw notFound();`. jhonstart handles them itself (decision 117): before the first chunk its render answers 404 with the nearest not-found boundary or 307 with `location`, after it they are markup, status 200; onze takes no part. In an action: `import {redirect} from "rakun";` — rakun's `redirect`, written into the envelope's `n`; in a handler: `import {notFound, redirect} from "rakun";` — both diverge and are called as `val _gone = redirect(…);` |
 | 67 | `import {actionState, FormBinding, formAction, formAttrs, useActionState} from "jhonstart";` · `import {state.ActionState, envelope.parseActionState} from "actions";` — the action protocol is the bundled library `actions` (`01-std/05-actions-lib`, decision 116) · `use useActionState(name, initial)` inside a `fn … -> @Component<ElementBase, Element>` (decision 104) read POSITIONALLY (`s.0` state, `s.1` binding, `s.2` pending) · `state.fieldError(name)` |
 | 68 | no call surface — the bundle is produced from front 29's markers; the env prefix is `ONZE_PUBLIC_`, matching front 49 |
-| 94 | `import {nav, header, main, section, article, h2, form, input, label, button, timeTag} from "jhonstart";` — `repository/jhonstart/src/elements.bp` |
+| 94 | `import {nav, header, main, section, article, h2, form, input, label, button, timeTag} from "jhonstart";` — `repository/jhonstart/modules/jhonstart/src/elements.bp` |
 
 ### Still assumed — reconcile these first
 
@@ -316,12 +314,6 @@ example from what is still **assumed**, because only the second column is a risk
 | 30 | emilia's block reaches the head and each streamed chunk, and the payload's `s` key, through the asynchronous `jhonstart-emilia` plugin that front 49 registers (decisions 113, 114) | This front's layout produces the head string and hands it over; it does not call the plugin, so the seam is cited rather than exercised |
 | 12 | `cache.revalidatedPaths()` is a test seam available to an app's own tests | Front 12's example uses it, but it is described there as a seam rather than public surface |
 | 94 | how a void element (`input`, `img`) renders | Front 94 owns `elements.bp` and is settling it; this app's `input` assertions and front 51's `Image` both depend on the answer |
-
-Four rows that were open when this front was drafted have since been settled by their owners — the
-route-handler decorator (`#[getRoute]`), the form binding (`data-jh-a` + the action field), the
-streaming marker (ordinal `data-jh-h`) and the element-surface front number (94). This front's
-examples were already written against the settled form in all four cases; the reasoning is kept under
-*Contradictions*.
 
 ## Language gaps
 
@@ -346,44 +338,33 @@ One gap is new here and is **not** yet in `language-gaps.md`:
 
 ## Contradictions found while writing this front
 
-Each of these is two fronts disagreeing about one thing. None is a defect in this front. The reasoning
-is kept for the rows that have since been settled, because the reasoning is what stops the same
-disagreement recurring; **RESOLVED** marks the ones already fixed on disk by their owners.
+Each of these is a point two fronts must agree on. The settled ones are stated as the rule that
+holds; **OPEN** marks what is still unsettled.
 
-**Two spellings for the route-handler decorator. — RESOLVED.** Front 25 wrote `#[getRoute("api/posts")]`
-and `#[postRoute("api/posts")]`; front 62's example wrote `#[getHandler("api/whoami")]` for the same
-registration. Front 25 owns `route_handler.bp`, so `#[getRoute]` wins and front 62 is being corrected.
-This app's `app/api/posts/route.bp` already uses `#[getRoute]` / `#[postRoute]`.
+**One spelling for the route-handler decorator.** Front 25 owns `route_handler.bp`:
+`#[getRoute("api/posts")]` / `#[postRoute("api/posts")]`. This app's `app/api/posts/route.bp` uses
+them.
 
-**Two form bindings. — RESOLVED.** `contracts.md § 3` and front 24 agree: `data-jh-a="<id>"` plus a
+**One form binding.** `contracts.md § 3` and front 24 agree: `data-jh-a="<id>"` plus a
 hidden action field, the action addressed by an HMAC'd id and never by its name. The field's name
 (and the scripted header's) is passed by onze to both sides — `actionField` / `actionHeader` to
 jhonstart, `rakun.actions.field` / `rakun.actions.header` to rakun — and is `__bp_action` /
-`X-Bp-Action` by onze's default (decision 114). Front 67's
-example had asserted `data-jh-form="createPost"` and `action="/_onze/action/createPost"` — the
-function's own name in both the attribute and the URL, which is exactly what front 24 tests the absence
-of. Front 67 now follows `contracts.md`, and this app's form assertions were already written against it.
+`X-Bp-Action` by onze's default (decision 114). The function's own name appears in neither the
+attribute nor the URL, which is what front 24 tests; front 67 and this app's form assertions follow
+`contracts.md`.
 
-**Two streaming markers. — RESOLVED.** Front 30's example had asserted
-`data-jh-suspense="blog.page"` — a route-derived id. `contracts.md § 2` pins the streaming hole as
-`<div data-jh-h="h0">` with ORDINAL ids assigned by jhonstart's render in shell order. Front 30 now
-emits the ordinal form; `boundaryId` remains front 30's own bookkeeping name and is
-not the wire id, which is the distinction worth keeping written down.
+**One streaming marker.** `contracts.md § 2` pins the streaming hole as `<div data-jh-h="h0">` with
+ORDINAL ids assigned by jhonstart's render in shell order, never a route-derived id; `boundaryId` is
+front 30's own bookkeeping name and is not the wire id.
 
-**The element surface is front 94. — RESOLVED.** Fronts 26–31, 67 and 68 had all cited "the
-element-surface front of track C (number allocated from 54 up)" without naming it. It is
-`94-jhonstart-element-surface`, owning `repository/jhonstart/src/elements.bp`, and those eight fronts
-have been substituted the way this front's examples were.
+**The element surface is front 94.** `94-jhonstart-element-surface` owns
+`repository/jhonstart/modules/jhonstart/src/elements.bp`; fronts 26–31, 67, 68 and this app cite it by
+number.
 
 **Registration is jhonstart's and rakun's, wired by onze.** `#[page("…")]` / `#[layout("…")]` are
 jhonstart front 30's and fill its UI registry; onze's boot (front 49) copies the records into rakun's
 route table and hands rakun one `PageRenderer` per page through `page(pattern, render)` (decision
 114). Nothing in this app calls an onze registry.
-
-**Wave 0 for front 49 is too early for its integration layer.** `fronts.md` puts front 49 in wave 0,
-blocked by nothing, but the wiring it was chartered to deliver reads fronts 22, 23 and 69. Front 49 now
-splits explicitly: package, config, alias map and env rule in wave 0; the wiring is documentation of
-other fronts' seams rather than code of its own.
 
 **`modules/onze-cli/botopink.json` has no owner.** `fronts.md` gives front 50
 `modules/onze-cli/src/**` and `modules/onze-cli/test/**`; a module package also needs its own
@@ -391,16 +372,16 @@ other fronts' seams rather than code of its own.
 `libs/std/src/root.bp`.
 
 **`renderToString` has no void-element table. — OPEN, owned by front 94.** It emits
-`<tag …>children</tag>` for everything (`element.bp:55-67`), so `<img>` and `<input>` render as
+`<tag …>children</tag>` for everything (`element.bp`), so `<img>` and `<input>` render as
 `<img …></img>` and `<input …></input>`. Front 24's example asserts
 `markup.contains("</input>") == false`, which cannot hold through the frozen renderer, and this app's
 `input` fields and front 51's `Image` both hit it. Front 94 owns `elements.bp` and has been asked to
 settle how a void element renders; until it does, this row stays open and the assertion above is the
 one that will fail first.
 
-**Nothing states that `content/` is not served. — RESOLVED.** Front 69 serves `public/`. This app keeps
-its posts in `content/`, read by the server at request time, and relies on that directory not being
-reachable over HTTP. The rule is being written into front 69 rather than left implied by an allowlist.
+**`content/` is not served.** Front 69 serves `public/` only and states that every other project
+directory is unreachable over HTTP. This app keeps its posts in `content/`, read by the server at
+request time, and relies on that rule.
 
 ## Test plan
 
@@ -423,6 +404,37 @@ is what serves.
 contains `like_button` and does not contain `db`, and the document references it. Whether a click
 increments a counter needs a browser, and the milestone has no browser harness; the README says so
 rather than claiming hydration is tested.
+
+## Where it stands
+
+Step 1 implemented: `examples/blog/` with `botopink.json` (the
+alias map), `onze.json`, three seed posts, `src/lib/db.bp` and `test/{db,tags}_test.bp` — 7 tests
+on commonJS and erlang, and the example builds under the workspace's examples gate. The app's
+sources sit under `src/` (`src/app/`, `src/components/`, `src/lib/`; `onze.json`'s `appDir` is
+`"src/app"`, Next's `src/` layout): **finding F5** — a package whose `"src"` is `"."` is not
+honoured: `botopink check` answers `no source files found in src/ or test/`, and a test file cannot
+import a nested module (`import {one} from "lib.db"` → `unbound variable`, where the same tree
+under `"src": "src/"` works; a source module importing `lib.db` does compile). Minimal repro:
+`botopink.json` `{ "name": "p", "src": ".", "entry": "root.bp", "files": ["root.bp"] }`,
+`root.bp` `pub mod lib;`, `lib/mod.bp` `pub mod db;`, `lib/db.bp` `pub fn one() -> i32 { return
+1; }`, `test/a_test.bp` `import {one} from "lib.db"; test "p: x" { assert one() == 1; }`. `components/tags.bp` is not written: front 94's elements are
+jhonstart's, and the step-1 box is asserted on them (through the render's `renderNode`, the one
+that knows the void elements). The `@/lib.db` box is open: the app's map resolves it
+(`tags_test.bp`), but resolving it *from* `app/blog/[slug]/page.bp` is front 50's staging.
+
+Step 2: the root and blog layouts, `/`, `/blog`, `/blog/[slug]`, `/about`
+under `(marketing)`, `components/nav.bp` (front 27's `Link`) and `components/post_card.bp` (one
+emilia class). `test/render_test.bp` renders `/` and `/blog` **in process** through onze's
+`bootSite` (the jhonstart-emilia bridge registered, the chain from jhonstart's UI registry) on both
+rows — 10 blog tests in all. `/blog/[slug]` and `/about` live in directories no `mod` path reaches,
+so they are compiled by `onze build` (which builds the whole tree, the alias `@/lib.db` in the
+`[slug]` page rewritten by the staging) but not rendered by a test yet — their two boxes stay
+open. On erlang an imported module's decorator registrations only run through onze's
+`loadModuleBodies` (front 49's finding F10).
+
+Steps 3–7 wait on rakun (serving, prerender — front 60 —, the middleware, the actions, the cache)
+and on `Onze.run`. The rakun-cache member holds no
+cache surface yet, so `lib/db.bp` reads directly; its `readCount()` is the counter step 3 asserts.
 
 ## Definition of done
 

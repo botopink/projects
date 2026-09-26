@@ -1,11 +1,11 @@
 # Policy 3 — one BEAM module per `type` and per `behavior`
 
-**Decided by the maintainer, 2026-09-17.** Not an option, not "slice when it collides": **every**
+**Decided by the maintainer.** Not an option, not "slice when it collides": **every**
 `type` and `behavior` declaration gets its own BEAM module, named by the
 [A2](./declaration-qualifier.md) rule — `<pathAtom>__t__<decl>`, `__b__<decl>`, `__im__<decl>`.
 
 This document works the consequences. Every number below was measured or run; the commands are
-given so each can be repeated. Line numbers at `botopink-lang` `dfc34a9`.
+given so each can be repeated. Line numbers.
 
 **Bottom line up front:** the policy is mechanically sound on both backends and buys four real
 things (§ 6). It costs **188 snapshots changing shape** (§ 4, against ≈ 20 for A2 alone), it
@@ -288,7 +288,7 @@ Watch the quirk from [E17](./atom-evidence.md#e17): `erlc +from_asm` prints a na
 **exits 0**. With N files per source the chance of a mismatch rises, so the audit must assert on the
 output text, not the exit code.
 
-## 9. Sequencing — **decided 2026-09-17: one front, not two**
+## 9. Sequencing — **decided: one front, not two**
 
 **The maintainer decided that policy 3 runs inside this front** ("16 e 16b fazer junto" — said when
 the front was numbered 16, in 1.0.4-beta; it is **13** in 1.0.5-beta). The steps

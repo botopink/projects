@@ -8,18 +8,14 @@
 // The anchor itself is pure and renders during the SERVER pass (front 30), so
 // this file's assertions run on either target. The prefetching, the click
 // interception and the transition are the BROWSER half: they happen after
-// front 29's hydration entry calls `linkMount()`.
+// front 68's generated entry calls `linkMount()`.
 //
 // Upstream:
 //   https://nextjs.org/docs/app/api-reference/components/link
 //   https://nextjs.org/docs/app/getting-started/linking-and-navigating
 
-import { Element, div, h1, ul, li, span, text, renderToString } from "jhonstart";
-import { Link, linkProps, withPrefetch, withClass, prefetchMode } from "jhonstart";
-import { nav } from "jhonstart";
-
-// `nav` is not one of the eight builders `element.bp` ships. It comes from
-// front 94 (jhonstart-element-surface).
+import { Element, div, h1, ul, li, span, nav, text, renderToString } from "jhonstart";
+import { Link, linkProps, withPrefetch, withClass, prefetchMode } from "jhonstart-link";
 
 pub type Post(slug: string, title: string)
 

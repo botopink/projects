@@ -1,6 +1,6 @@
 # Migration cost
 
-Measured at `botopink-lang` `dfc34a9` / meta `becb30d8`, 2026-09-17. Re-measure before quoting;
+Measured / . Re-measure before quoting;
 the commands are given so the numbers can be reproduced.
 
 ---
@@ -151,7 +151,7 @@ under](../../../1.0.4-beta/overview.md), carried into 1.0.5-beta).
 
 ## 6. Policy 3 on top
 
-[Policy 3](./policy-3-module-per-type.md) (maintainer, 2026-09-17 — one BEAM module per `type` and
+[Policy 3](./policy-3-module-per-type.md) (maintainer — one BEAM module per `type` and
 per `behavior`) is a separate cost on top of everything above, and a different **kind** of cost:
 the numbers in §§ 1–5 are names changing, policy 3 is emitted shape changing.
 
@@ -165,4 +165,4 @@ the numbers in §§ 1–5 are names changing, policy 3 is emitted shape changing
 | Days | ≈ 3.5 | **+5–7** |
 
 Recommendation and the step cut are in
-[`policy-3-module-per-type.md` § 9](./policy-3-module-per-type.md#9-sequencing--decided-2026-09-17-one-front-not-two).
+[`policy-3-module-per-type.md` § 9](./policy-3-module-per-type.md#9-sequencing--decided-one-front-not-two).

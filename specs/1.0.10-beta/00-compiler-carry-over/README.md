@@ -25,11 +25,11 @@ implements against — it is **not** copied; links inside the copied deep dives 
 
 ---
 
-Every open or in-progress item of 1.0.5-beta, one id each, ordered by what it blocks — plus seven
+Every open or in-progress item of 1.0.5-beta, one id each, ordered by what it blocks — plus the
 items that are new fronts rather than carry-over and sit at the end of the table with their own
 directories: C-26 and C-27 (the comptime runtimes; the `use` activation), C-28 (the builtins
-surface), C-29–C-31 (decisions 102–108: the effect chain, the loops, std purity — in that order) and
-C-32 (decisions 118–127: effects by return type, which re-cuts what C-29 and C-30 built).
+surface), C-29–C-31 (decisions 102–108: the effect chain, the loops, std purity), C-32 (decisions
+118–135: effects by return type) and C-33 (gate performance).
 An item's acceptance is the 1.0.5 front's, condensed; the full text is in the README beside this file
 (`<front-dir>/README.md`). Where a `.tasks/*` worktree holds work, the row says which; where each
 item stands is `status.md`'s.
@@ -53,23 +53,23 @@ item stands is `status.md`'s.
 | [C-13](#c-13--the-optional--and-the-braced-blocks-trailing-) | The optional `;`: parser first, printer second, 245 sites third | decisions 29, 60; 15's parked patch; 16 step 6; 12, `libs/std`, 09 migrate | **medium** | every `if`/`loop`/`case` statement in the ecosystem carries a `;` the language does not want | `15-language-surface/decision-29-parser-half.patch` (uncommittable alone) |
 | [C-14](#c-14--decision-8-in-the-sources) | Decision 8 in the sources: `Self<…>`, the five `= []` bindings, `Dict implements Display`, the libraries' `case` arms and section paths | 01 step 11 rest; 09 step 3 (N28) | **medium** | `tests/language/test/case_sections.bp`; emilia's 27 section annotations | none |
 | [C-15](#c-15--generics-carry-all-their-arguments) | A written generic type carries all its arguments; `Self<T>` | 01 step 6 (N18, §1.1/§1.2) | **medium** | two `reject/` cells; the `Box(value: 1).map` → `Box<string>` rule | none |
-| [C-16](#c-16--the-language-suites-residual-cells) | The language suite's residual cells and its tally | 12 steps 4.2–4.4; decision 59 (b); cells for 63–66; the `modules/*` cells of 66 | **medium** | nothing compiles-side; the suite's own claims | landed (`259916e1`, `ca477dec`) and **verified by running at `f58fd392`** (2026-09-25): 4.2–4.4 exist and pass on all four targets, 553 / 42 / 0; the verification found six unlisted beam failures, now listed and handed to 03 |
+| [C-16](#c-16--the-language-suites-residual-cells) | The language suite's residual cells and its tally | 12 steps 4.2–4.4; decision 59 (b); cells for 63–66; the `modules/*` cells of 66 | **medium** | nothing compiles-side; the suite's own claims | landed and **verified by running ** : 4.2–4.4 exist and pass on all four targets, 553 / 42 / 0; the verification found six unlisted beam failures, now listed and handed to 03 |
 | [C-17](#c-17--the-libraries-erlang-cells-after-identity) | Every library's erlang cell re-run after C-01, and `beam.bp`'s header re-spelled | 09 step 4; decision 43's correction | **medium** | the libraries' CI on the target they ship | none; after C-01 |
 | [C-18](#c-18--decided-checker-rows-with-no-step) | Decided checker rows with no step: 44, 45, 47, 57, 31, 9; the document corrections of 1, 2, 10, 25, 32; 04's `tsc` gate and `42.toString()` | 01 rows; decisions named; 04 step 6 gate | **medium** | `optional<i32>` reaches the checker; `x?.f` on a `?T` has no diagnostic naming `?.`; `any` still parses | none |
 | [C-19](#c-19--the-declaration-name-builders-spell-the-103-surface) | The declaration-name builders spell the 1.0.3 surface | 11 step 5 | **low** — ready to land | one LSP snapshot line; 07 step 3's last `uncertain` row | landed |
 | [C-20](#c-20--the-comptime-module-reaches-the-node-as-beam-assembly) | The comptime module reaches the node as BEAM assembly | 14 step 3; decisions 24, 62 | **low** | nothing measurable (≈ 39 ms of 645); the principle | none; after C-01 |
 | [C-21](#c-21--every-error-names-its-file) | Every error names its file: the `.withLoc` sweep | 01 step 9; `blast-radius.md` | **low** — land last | 113 error snapshots without a file name, 22 without a box | none |
 | [C-22](#c-22--the-review-backlog) | The review backlog: waves A and B, the `uncertain` rows, two renames, the audit script | 07 steps 1–5; 06's handovers | **low** | the 1.0.1-beta reports' residual rows; `snap_audit.sh:501` | none |
-| [C-23](#c-23--the-hygiene-sweeps) | The hygiene sweeps left in other fronts' files | 08 steps 2.1, 3.1, 6 | **low** | nothing; 14 stale `primitives.d.bp` comments, 18 `@external(` comments, five test-file sites | none |
+| [C-23](#c-23--the-hygiene-sweeps) | The hygiene sweeps left in other fronts' files | 08 steps 2.1, 3.1, 6 | **low** | nothing; 14 stale `primitives.d.bp` comments, the `@external(<target>, …)` comments in six owners' files, four test-file sites, ten files `zig fmt --check` reds, the transport-error test — each site in [`08-hygiene`](./08-hygiene/README.md#open) | `docs.md`, the links and the libraries' `AGENTS.md` done on `front/sweep-docs` |
 | [C-24](#c-24--br5-as-its-own-spec) | BR5 — the beam backend compiles `@External.Erlang` templates at build time — as its own spec | 03 step 1; decision 62 | **low** | `base64:encode` 0.113 → 5.722 µs per call through `'__bp_erl_eval'` (50.6×) | `wip/br5-beam-templates` (836-line Erlang lexer+parser, does not build) |
 | [C-25](#c-25--the-unowned-residuals) | The unowned residuals: bare-name export collisions, the comptime server's purge, front 10's stash | 13 step 6; 10 step 1's housekeeping | **low** | two libraries exporting `pub fn get` collide silently | none |
-| [C-26](./18-comptime-runtimes/README.md) | Comptime runtimes: `persistent_erl.zig` → `persistent_beam.zig` (a `.beam` emitted directly, no `.erl`), `persistent_wat.zig` on wasm3, one runtime selector, `snapshots/codegen/{beam,wat}/<target>` (the suite recorded twice), and compiler-core built to wasm running 100 % in the browser | the maintainer's request of 2026-09-20; absorbs C-20 (14 step 3); decisions 24, 62 | **high** | the compiler on the web; `erl` off the comptime path; every comptime snapshot's directory | `18-comptime-runtimes/` (spec); nothing in code |
-| [C-27](./19-use-activation/README.md) | The `use` activation: hooks and components (`val c = use state(0)`, the static-prefix rule, the hook and component wrappers of decision 102 — one `@Component<C, T>` under decision 128), destructuring from a `use`, the boundary directives' spelling, and the lowering contract per backend — the grant itself is decision 104's and C-29's | the maintainer's request; `language-gaps.md`'s `use` rows; jhonstart fronts 26–32 · 67 · 94; decisions 87, 88, 96, 102, 104 | **high** | every jhonstart hook and component | `19-use-activation/`: documentation, the static prefix, the transparent lowering and the cells landed; step 3 (tuple destructuring) remains |
+| [C-26](./18-comptime-runtimes/README.md) | Comptime runtimes: `persistent_beam.zig` (a `.beam` emitted directly, no `.erl`), `persistent_wat.zig` on wasm3, one runtime selector, `snapshots/codegen/{beam,wat}/<target>` (the suite recorded twice), and compiler-core built to wasm running in the browser | the maintainer's request; absorbs C-20 (14 step 3); decisions 24, 62 | **high** | the compiler on the web; `erl` off the comptime path; every comptime snapshot's directory | landed; open: the CI matrix run |
+| [C-27](./19-use-activation/README.md) | The `use` activation: hooks and components (`val c = use state(0)`, the static-prefix rule, the hook and component wrappers of decision 102 — one `@Component<C, T>` under decision 128), destructuring from a `use`, the boundary directives' spelling, and the lowering contract per backend — the grant itself is decision 104's and C-29's | the maintainer's request; `language-gaps.md`'s `use` rows; jhonstart fronts 26–32 · 67 · 94; decisions 87, 88, 96, 102, 104 | **high** | every jhonstart hook and component | closed |
 | [C-28](./20-builtins-surface/README.md) | The builtins surface: `builtins.d.bp` agreeing with itself and with `ast.zig`, decision 95's chain as `comptime/effect_chain.zig`, decision 96's one anchor per body; amended by decisions 102–104 and 108, which C-29 lands | the maintainer's review of `builtins.d.bp`; decisions 95, 96, 98 | **high** | every front that writes an effect, a hook or an indexable type reads this file | `20-builtins-surface/`: closed — every step and the gate, `builtins.d.bp` parses and formats |
-| [C-29](./21-effect-chain/README.md) | The effect chain: `@Context<Base>` as the owner marker only; one grant of `use` (decisions 89 and 90 revoked); three generator wrappers over one `YieldStep` (`Iterator`, `Iterable`, `IteratorStep`, `Yield`, `C`, `R` leave); `getContext`; the jhonstart sweep (36 annotations, 24 wrappers) — landed on `feat`, its spelling re-cut by C-32 | decisions [102](../decisions-taken.md#102-contextbase-is-the-context-owner-marker-only-use-answers-usec-t-or-componentt), [103](../decisions-taken.md#103-a-generators-prefix-is-the-level-it-extends-generatort--resultgeneratort-e--futuregeneratort-e), [104](../decisions-taken.md#104-only-use-grants-use--decisions-89-and-90-revoked), [108](../decisions-taken.md#108-getcontex--getcontext); questions 91–93, 97, 99 | **critical** | every hook, component and generator; C-30 (an annotated `loop` answers its wrapper); jhonstart's 36 + 24 sites; ≈ 400 source lines, ≈ 250 snapshots | `21-effect-chain/` (spec); after C-28, one `EffectKind` value per commit |
-| [C-30](./22-loops/README.md) | Loops: `loop { }` · `while (…) { }` · `for (…) { x -> }` · `for await`; the annotated `loop { … }` as a lazy generator expression (`iter loop` / `stream loop` under C-32); `yield` / `break v` only in a generator scope; no loop answers `[v]`; the rakun (231 `loop (`, 2 `break v`) and jhonstart (12) rewrite | decision [105](../decisions-taken.md#105-three-loop-keywords-and-generator-loop-is-a-generator-scope); `docs.md:1400`, `:1014`; supersedes C-06's decision-52/55 rows | **high** | every loop in every library; C-06's `run/loop_*` cells; `while` as a lexer keyword | `22-loops/` (spec); after C-29 |
-| [C-31](./23-std-purity/README.md) | Std purity: a pure root · `io/` · `testing/`; `collections`, `hash`, `encoding` fused; a root module refused from importing `io/`; the embedded std following `pub mod io;`; the import tree `import {a: {b: {c}}, x.y.z, e.t.r*}` with the leaf bound and `as` honoured | decisions [106](../decisions-taken.md#106-std-in-three-categories-a-pure-root-io-and-testing), [107](../decisions-taken.md#107-import-a-dotted-path-and-a-braced-group-are-one-tree-and-only-the-leaf-enters-scope); `language-gaps.md`'s alias row; decision 71 amended in path | **high** | every `from "std"` line; the LSP's project graph; `build.zig`'s `stdPkgFilesFromRoot` | `23-std-purity/` (spec); after C-29 and after `01-std`'s fronts 01/02/03 merge |
-| [C-32](./24-effects-by-return/README.md) | Effects by return type: the wrapper in the return is the annotation (the six effect annotations leave); `@Task<T>` replaces the fallible future and never fails; only `@Result` fails (`@Task<@Result<T, E>>`, `@Iterator<@Result<T, E>>`); `@Iterator<T>` / `@Stream<T>` over `YieldStep<T>`, iterator or factory; `async { }`; `iter` / `stream` before `loop` / `while` / `for`; the host rows; no compatibility mode and no codemod (decision 131); the library sweeps and the spec examples | decisions [118–127](../decisions-taken.md#118-the-return-type-is-the-annotation); supersedes parts of 95, 98, 102–105, 114, 117 | **critical** | every effectful body in the compiler, std and the libraries; the examples of 60 library fronts and `02-packaging`; ≈ 885 source, ≈ 160 std, ≈ 930 snapshot matches | `24-effects-by-return/` (spec, with `guide.md`); after C-29 merges or closes and C-30 (landed); alone among the surface fronts |
+| [C-29](./21-effect-chain/README.md) | The effect chain: `@Context<Base>` as the owner marker only; one grant of `use`; `getContext` — its outcomes hold in C-32's return-type surface | decisions [102](../decisions-taken.md#102-contextbase-is-the-context-owner-marker-only-use-answers-usec-t-or-componentt), [104](../decisions-taken.md#104-only-use-grants-use--decisions-89-and-90-revoked), [108](../decisions-taken.md#108-getcontex--getcontext) | — | — | closed |
+| [C-30](./22-loops/README.md) | Loops: `loop { }` · `while (…) { }` · `for (…) { x -> }` · `for await`; `yield` / `break v` only in a generator scope (an `@Iterator` / `@Stream` function or an `iter` / `stream` loop); no loop answers `[v]`; the libraries swept | decision [105](../decisions-taken.md#105-three-loop-keywords-and-generator-loop-is-a-generator-scope) as amended by 125; supersedes C-06's decision-52/55 rows | — | — | closed |
+| [C-31](./23-std-purity/README.md) | Std purity: a pure root · `io/` · `testing/`; `collections`, `hash`, `encoding` fused; a root module refused from importing `io/`; the embedded std following `pub mod io;`; the import tree `import {a: {b: {c}}, x.y.z, e.t.r*}` with the leaf bound and `as` honoured | decisions [106](../decisions-taken.md#106-std-in-three-categories-a-pure-root-io-and-testing), [107](../decisions-taken.md#107-import-a-dotted-path-and-a-braced-group-are-one-tree-and-only-the-leaf-enters-scope), 110, 111; decision 71 amended in path | **high** | every `from "std"` line; the LSP's project graph | steps 1–5 landed; open: step 6 (decision 110 on the use side, `collections.Dict.empty()` through the namespace) |
+| [C-32](./24-effects-by-return/README.md) | Effects by return type: the wrapper in the return is the annotation; `@Task<T>` never fails; only `@Result` fails (`@Task<@Result<T, E>>`, `@Iterator<@Result<T, E>>`); `@Component<C, T>`; `@Iterator<T>` / `@Stream<T>` over `YieldStep<T>`, iterator or factory; `async { }`; `iter` / `stream` before `loop` / `while` / `for`; the host rows; no compatibility mode | decisions [118–135](../decisions-taken.md#118-the-return-type-is-the-annotation) | **critical** | every effectful body in the compiler, std and the libraries | landed; open: the README's unticked boxes |
 | [C-33](./25-gate-perf/README.md) | Gate performance: the same checks in less wall clock — the shell runners (`tests/language/run.sh`, `scripts/check-docs.sh`) on `botopink-lib-test`'s bounded pool, the independent stages of `scripts/gate.sh` side by side with each stage's output one block in order, then `test-libs`' CPU and `zig build test`'s cold runtime cache | `00 · gate-perf` step 1 (the lib-test pool); decision 67 (no check skipped to be fast) | high | every landing's gate; nothing in the language | `25-gate-perf/` (spec); runners and scripts only, beside every compiler front |
 
 **What the 1.0.9 gaps map to.** `xs[0]` on the BEAM → C-02 · declared defaults never applied → C-04 ·
@@ -96,7 +96,8 @@ prototype *is* the identity, so half 3 has nothing to do there beyond step 19's 
 test until a value knows its declaration; today two records with the same fields are `==` on erlang.
 02 and 03's tails (C-07), 14's step 3 (C-20), 17's modes (C-10) and 09's erlang re-run (C-17) all
 stand behind it, which is why decision 62 released it before the backends closed.
-**Partial work:** none of steps 8–19. `.tasks/identity` (`fix/identity-halves`) holds C-03. Half 1
+**Partial work:** steps 8–19 landed; the
+comptime atom's file half of step 5 landed with 01. `.tasks/identity` (`fix/identity-halves`) holds C-03. Half 1
 (`ModuleId`, `erlDeclAtom`, the collision check, the flat layout, the runner) is in `feat`; step 7 (the
 `-pa` runner) was closed by it.
 **Depends on:** C-03 lands first in the same file (it is one predicate; sequencing it avoids a
@@ -105,34 +106,43 @@ re-record on top of a re-record); 01's N19–N22 for steps 17–18 are landed.
 + 73 beam — **354 cell-writes over 210 distinct files, 144 written twice**, the milestone's largest
 movement. Zero RUN LOGs should move in steps 14–16; a RUN LOG that moves is a defect found, verified by
 running. 142 new atoms ecosystem-wide; +0.372 ns per `call_ext`.
-**Acceptance** (from the front's README and policy 3 §9):
-- [ ] a fixture emitting two files per `.bp` on erlang; commonJS output byte-identical (step 8)
-- [ ] two types in one file both declaring `greet/1` compile and both run on erlang and beam;
+**Acceptance** (from the front's README and policy 3 §9). Re-verified by `01-checker`
+against `13-module-identity/README.md`, whose every box but one is ticked (halves
+2–3 audited); the language suite runs the identity cells
+green (799 / 28 / 0, no `13 step` line left). The last piece of 13's half 1 — the comptime atom
+naming its file — is 01's:
+- [x] a fixture emitting two files per `.bp` on erlang; commonJS output byte-identical (step 8)
+- [x] two types in one file both declaring `greet/1` compile and both run on erlang and beam;
       `recordMethodAtom`, `record_method_collisions`, `isRecordMethodCollision`, `interfaceAssocAtom`
       **deleted, not bypassed** (steps 9–10)
 - [ ] a behavior consumed by three modules has exactly one emitted copy; `libs/std` green on erlang and
       beam (step 10); an imported type's method links to `<package>@<path>@@<Decl>` (decision 109) and executes (step 11);
-      `beam_export_audit.sh` green at its new total (step 12)
-- [ ] the 188 classified: which gained a module, which local call became `call_ext`, which RUN LOG
+      `beam_export_audit.sh` green at its new total (step 12) — **all but the first clause hold**
+      (`13-module-identity/README.md` half 2, audited ); the one-copy clause is answered
+      by decision 23 (a behavior emits nothing, so its associated fn is copied per consumer) and
+      reopens only with that decision
+- [x] the 188 classified: which gained a module, which local call became `call_ext`, which RUN LOG
       changed — none should (step 13)
-- [ ] `typeAtom`/`variantAtom` with unit tests and the `__v__` decoder clause; two declarations
+- [x] `typeAtom`/`variantAtom` with unit tests and the `__v__` decoder clause; two declarations
       rendering the same atom is a located diagnostic (step 14)
-- [ ] two types with identical fields are `!=`, executed; two enums sharing a variant name both `case`,
+- [x] two types with identical fields are `!=`, executed; two enums sharing a variant name both `case`,
       executed; an imported type constructed in a consumer carries the **owner's** atom; the erlang and
       beam cells re-recorded and classified one by one (steps 15–16)
-- [ ] `x is Point`, `x is Option.Some(v)`, `case` over `Person | Car` with no `_` — cells on erlang and
+- [x] `x is Point`, `x is Option.Some(v)`, `case` over `Person | Car` with no `_` — cells on erlang and
       beam, their `expected-failures.txt` lines gone (3 `13 step 15/17` lines today); erlang, beam and
       commonJS agree (step 17)
-- [ ] `@print(Point(x: 1, y: 2))` → `Point(x: 1, y: 2)`, `@print(Shape.Circle(radius: 4))` →
+- [x] `@print(Point(x: 1, y: 2))` → `Point(x: 1, y: 2)`, `@print(Shape.Circle(radius: 4))` →
       `Shape.Circle(radius: 4)` on erlang and beam, `Display` consulted, nested too — the six
-      `run/{display_print,print_formatter,type_identity_print}.bp` lines of 02/03/05 gone (step 18)
-- [ ] the invariant as a test, one cell per backend: two values carry the same identity iff they were
+      `run/{display_print,print_formatter,type_identity_print}.bp` lines of 02/03/05 gone (step 18) —
+      one wasm line stays, `wasm | run/display_print.bp`, re-attributed to `05-wasm` (the record
+      prints; the nested `Display` text is wasm's own)
+- [x] the invariant as a test, one cell per backend: two values carry the same identity iff they were
       built by the same declaration
-- [ ] `scripts/gate.sh --cold` green; `test-libs` at baseline; `AGENTS.md` of `src/codegen/` updated
+- [x] `scripts/gate.sh --cold` green; `test-libs` at baseline; `AGENTS.md` of `src/codegen/` updated
 
 ## C-02 — An index is a method call
 
-**Origin:** decision 63 as amended 2026-09-19 — `xs[k]` **is** `xs.at(k)`, `xs[a..b]` is
+**Origin:** decision 63 as amended — `xs[k]` **is** `xs.at(k)`, `xs[a..b]` is
 `xs.slice(a, b)`, `xs[1..]` is `xs.slice(1, null)`; two ambient behaviors `Index<K, V>` and `Slice<V>` in
 `builtins.d.bp`; the type is whatever the method answers. Six rows: 09's four (`builtins.d.bp`,
 `Array`, `string` with `charAt` → `at`, `Dict` with `lookup` → `at`), 01's rewrite in
@@ -184,7 +194,8 @@ re-record, no `AGENTS.md`.
 **Acceptance:**
 - [ ] `import { erlang } from "std"` then `erlang.self()` runs under `erl` on erlang and beam — a fixture
       whose RUN LOG is the value run, not the emitted text
-- [ ] 17 step 3b's guarded-init and owner shapes byte-compared and re-run under `erl`
+- [x] 17 step 3b's guarded-init and owner shapes ~~byte-compared and~~ re-run under `erl` — 17's
+      box: the shapes are layer 2's, run by `run/beam_memory_*` on erlang and beam
 - [ ] `out/erl/std@beam.erl` exports the ten primitives; the same on beam through the wired helper
 - [ ] the bare-import route (`import { self } from "std/erlang"` → `undefined` on commonJS, per
       `language-gaps.md`) measured on each backend; fixed here if it is the same predicate, otherwise
@@ -217,7 +228,7 @@ applied.
 `buildValDecl` emits `let`, wasm `emitGlobalVal` sets `.mutable`; `#[@BeamMemory.<member>]` is
 validated — three members, the `keyed` argument, `keyed` only on a `Dict` (decisions 41, 51). The
 formatter's `var` arm travels in the same commit (decision 48); the two `infer.zig` diagnostics are a
-carve-out of 01 granted once its step 4 committed (decision 49 — met at `d55a3b87`). 15 measured the
+carve-out of 01 granted once its step 4 committed (decision 49). 15 measured the
 grammar ("trivial; the semantics are the `@BeamMemory` design") and left it to this front.
 **Priority:** high — the annotation's carrier; without it C-10 cannot open, and `val hits = 0;`
 reassigned passes `check` and then throws on node, does not compile on erlang, does not validate on
@@ -231,23 +242,23 @@ uses it), a `jsonStringify` that omits the defaults so no parser snapshot moves,
 **Depends on:** nothing.
 **Acceptance:**
 - [x] `var hits: i32 = 0;` and `#[@BeamMemory.Ets] var …` parse; `val x = 0; x = 1;` is a located error
-      naming `var`, in a `fn` and at module level (`8146d2b6`); `expectError` cases (`37342d95`, which
+      naming `var`, in a `fn` and at module level; `expectError` cases (which
       also moved the annotated-shorthand refusal onto the annotation); **two** parser snapshot
       re-records, not none — `external_keyword_argument_form` and
       `qualified_enum_variant_with_inline_true_flag` gained the `labels` array the parser now keeps
       (17's step 1 row)
-- [x] a module `var` prints `2` on node and under wasmtime — run at `4fe1747e` (17's step 0) and pinned
+- [x] a module `var` prints `2` on node and under wasmtime — run (17's step 0) and pinned
       by `tests/language/run/module_var.bp`; a `val` stays `const` / an immutable global; **no**
       commonJS/wasm cell re-recorded (none writes a module `var`)
 - [ ] unknown member → located error naming `ProcessDict`, `Ets`, `PersistentTerm`; unknown argument →
-      names `keyed`; `keyed` on a scalar or a `List<T>` → "needs a keyed container" (`8146d2b6`); a
-      `reject/` cell per diagnostic **in** the suite (`3cd77667`: five `beam_memory_*` plus the two
+      names `keyed`; `keyed` on a scalar or a `List<T>` → "needs a keyed container"; a
+      `reject/` cell per diagnostic **in** the suite (five `beam_memory_*` plus the two
       `val_assign_*` of decision 38, with `run/module_var` and `test/beam_memory_noop` beside them)
 - [x] the formatter round-trips `#[@BeamMemory.Ets(keyed = true)] var d: Dict<string, i32> = …` —
-      `assertLossless` in `src/format/tests/declarations.zig` (`8146d2b6`, decision 48's arm)
-- [x] the migration count — **not** in `8146d2b6`'s message; carried by `37342d95`'s and by 17's step 0
+      `assertLossless` in `src/format/tests/declarations.zig` (decision 48's arm)
+- [x] the migration count — carried by 17's step 0
       row (447 bare-name assignments over 212 files, 447 to a `var`, 0 to a `val`); `AGENTS.md` of
-      `src/parser/`, `src/comptime/`, `src/format/`, `src/codegen/` in `8146d2b6`; gate green at both
+      `src/parser/`, `src/comptime/`, `src/format/`, `src/codegen/`; gate green at both
 
 ## C-06 — Decision 53 at run time
 
@@ -266,7 +277,7 @@ each backend.
 code — sequence them.
 **Acceptance:**
 - [x] `run/case_range_value.bp`'s five probes answer per decision 53 on erlang, beam and wasm; the
-      three lines gone — re-verified 2026-09-26 on `front/02-03-erlang-beam`: the cell passes on
+      three lines gone — re-verified on `front/02-03-erlang-beam`: the cell passes on
       erlang and beam (`run.sh --only`), no `case_range_value` line is left in `expected-failures.txt`
 - [ ] every moved RUN LOG verified by running the program; the header recounted from the file; the
       `KNOWN` notes in `src/codegen/tests/**` that explain the decision-55 cells deleted by C-30 with
@@ -279,7 +290,7 @@ its type: 02 step 1 F1 (`, ` as §7's separator, nested strings quoted — its o
 rows) and step 2 D1–D3 (`is` by value, `unknown` stores nothing, §2.3 `==` — `2.0 == 2` is `true` with
 an `unknown` operand and exact otherwise); 03 step 3 D1–D3 and the rest of D4 (a tuple pattern
 prepends an empty tag, `..` is never read, a primitive type pattern binds instead of guarding —
-`beam_asm.zig` and `wat.zig` read neither `PatternShape` nor `Pattern.rest`; 02's `fe87db51` is the
+`beam_asm.zig` and `wat.zig` read neither `PatternShape` nor `Pattern.rest`; 02 has the
 model fix); 04 step 2 D2/D3 and 05 step 2 D1–D3, which no commit names. F2–F4 (record, variant,
 `Display` text) are C-01's step 18 and are not repeated here.
 **Priority:** high — the named-type half is behind C-01; the primitive half (`is i32`, tuple patterns,
@@ -288,7 +299,7 @@ model fix); 04 step 2 D2/D3 and 05 step 2 D1–D3, which no commit names. F2–F
 **Depends on:** C-01 for anything that tests a named type; C-06 shares beam's pattern code.
 **Acceptance:**
 - [x] `run/tuple_print.bp` passes on erlang (F1); `run/type_identity_{unknown,union}.bp` and
-      `test/case_unknown.bp` pass on erlang after C-01 — re-verified 2026-09-26 (the two identity
+      `test/case_unknown.bp` pass on erlang after C-01 — re-verified (the two identity
       cells live under `test/`): 11 tests of the five cells pass on erlang, and `run/tuple_print`,
       `print_formatter`, `display_print`, `type_identity_print`, `type_identity_equality`,
       `case_values`, `case_range_value` pass on beam
@@ -297,7 +308,7 @@ model fix); 04 step 2 D2/D3 and 05 step 2 D1–D3, which no commit names. F2–F
       02 added have beam and wasm twins
 - [ ] §4.1's truth table answered by each §4.2 form on erlang and beam; §11's "erlang: nothing" pinned
 - [x] 02 step 7 settled: `test/string_case_conversion.bp` run on erlang — the line deleted (compiler
-      `31b5d2bf`; the host spelling resolves to the method it spells, `decisions-pending.md` 0203-a)
+      ; the host spelling resolves to the method it spells, `decisions-pending.md` 0203-a)
 
 ## C-08 — The parser gaps that are inference-side
 
@@ -343,10 +354,10 @@ library writes the day it destructures a variant.
       byte-identical; the failure behaviour of a bare `val <Pattern> = e` written down
 - [ ] `Array.range(0, 3).map({ x -> x + 2 })` prints `[2, 3, 4]` on erlang, no `'__bp_prim_map'`
 - [ ] R7: a note to the four backends naming the lowerings that became dead; the erlang tail-`case`
-      lowering and the one JS IIFE site deleted, snapshots byte-identical
+      lowering and the one JS IIFE site deleted, snapshots byte-identical — **checker half landed** (the note is in `01-checker/README.md` step 8); the deletions are 02's and 04's files
 - [ ] the three N25 cells rejected each for its own reason, with a caret; `test/curried_call.bp`
       passes on commonJS and erlang
-- [ ] R1, R2, R4, R8 each reds or checks as `residual-rows.md` states, with a cell
+- [x] R1, R2, R4, R8 each reds or checks as `residual-rows.md` states, with a cell — R2 `modules/import_type_closure`, R4 and R8 checker tests (landed earlier on this front), R1 by deletion
 
 ## C-10 — `@BeamMemory` steps 4–8
 
@@ -428,10 +439,10 @@ form already in `format/AGENTS.md` — i.e. both planned commits in one tree. `t
       breaks); one that does not puts every call on its own line, `+4`, never aligned under the
       receiver; a hand-broken chain that fits is joined; `assertFormat`/`assertIdempotent`/`assertLossless`
       cases; the per-tree movement measured against the 44 predicted; the other eight constructs pinned
-- [x] the comment column recorded and printed; rakun `runtime.bp:13` round-trips — compiler `0f0be511`
-      (`Doc.markColumn` / `alignToMark`; a top-level comment records its `loc`); rakun's `dcf1938` revision
+- [x] the comment column recorded and printed; rakun `runtime.bp:13` round-trips
+      (`Doc.markColumn` / `alignToMark`; a top-level comment records its `loc`); rakun's revision
       round-trips at lines 10-15. And the argument list is enabled with the constructs that enclose it
-      (`7146d402`, 16's `decisions-pending.md` 16-a)
+      (16's `decisions-pending.md` 16-a)
 - [ ] gate green, reported verbatim
 
 ## C-13 — The optional `;`, and the braced block's trailing `;`
@@ -442,7 +453,7 @@ decision 60 (b): the parser accepts the `;` as optional first, as its own landin
 (`libs/std` 51, `tests/language` 44, erika 78, rakun 31, jhonstart 35, examples/CLI 5, onze 1). 15's
 parser half is written and parked as
 [`15-language-surface/decision-29-parser-half.patch`](./15-language-surface/decision-29-parser-half.patch)
-(76 lines, `isBlockShapedStmt` + `blockStatementSemicolon`, against `109f6c9`) — uncommittable alone
+(76 lines, `isBlockShapedStmt` + `blockStatementSemicolon`) — uncommittable alone
 because rejecting the `;` rejects `libs/std`'s embedded prelude and every compile fails.
 **Priority:** medium — no program is wrong today; the ecosystem writes a token the language does not
 want, and the formatter cannot pick a side until the parser accepts both.
@@ -450,11 +461,11 @@ want, and the formatter cannot pick a side until the parser accepts both.
 **Depends on:** nothing; strictly ordered inside (parser → printer → migration).
 **Acceptance:**
 - [x] the parser accepts `if (…) { … }` with and without `;`, no snapshot re-recorded (strictly accepting)
-      — compiler `a688bfb5`, `Parser.isBracedBlockStmt` (a loop and a `case` too; the closing brace is the test)
-- [x] the formatter prints the braced form without `;`, idempotent, lossless — compiler `6c33c6f4`
+      — `Parser.isBracedBlockStmt` (a loop and a `case` too; the closing brace is the test)
+- [x] the formatter prints the braced form without `;`, idempotent, lossless
 - [ ] the 245 sites migrated one tree per commit (12, `libs/std`, then 09's five siblings), each tree's
       cells green before and after; `docs.md`'s row moved from "decided, not implemented" — **the
-      compiler's trees done** (`7af79f44`: `libs/std`, `examples/`, the bundled libraries, `docs.md`'s
+      compiler's trees done** (`libs/std`, `examples/`, the bundled libraries, `docs.md`'s
       fences, 213 lines; `docs.md`'s row now says "optional"); left: `tests/language` 275, rakun 454,
       jhonstart 40, erika 28, onze 1 — `16-formatter/c13-migrate.py`; then the parser refuses the `;`
 
@@ -471,8 +482,8 @@ in the trees that teach it.
 **Depends on:** C-15 for `Self<…>`; 01 step 4 (d) for the section paths (part of C-08's parser work or
 its own row).
 **Acceptance:**
-- [ ] no bare `Self` in a generic declaration in `libs/std` or `examples/**`; the five bindings
-      annotated; `Dict` prints through `Display`; `zig build test`, `test-libs`, `test-language` green
+- [x] no bare `Self` in a generic declaration in `libs/std` or `examples/**`; the five bindings
+      annotated; `Dict` prints through `Display`; `zig build test`, `test-libs`, `test-language` green (`01-checker`)
 - [ ] no `pattern -> value;` arm in any library `.bp`; `test/case_sections.bp` passes (its lines
       deleted by 01, not here) before emilia's rewrite starts; every library's cell and examples green
       after each rewrite
@@ -487,8 +498,8 @@ and the rule C-14's `Self<…>` sweep enforces.
 **Partial work:** none.
 **Depends on:** nothing.
 **Acceptance:**
-- [ ] the two `reject/` cells rejected for their own reason; the A1 rule pinned by a `test/` cell
-- [ ] `libs/std` and the examples compile under the rule (the sweep is C-14)
+- [x] the two `reject/` cells rejected for their own reason; the A1 rule pinned by a `test/` cell — the A1 rule is pinned by a checker test (`infer_errors.zig` `generics: …`) rather than a `test/` cell, which is front 12's to add
+- [x] `libs/std` and the examples compile under the rule (the sweep is C-14) — the `libs/std` half of C-14's sweep landed with it; erika's 39 sites landed
 
 ## C-16 — The language suite's residual cells
 
@@ -500,18 +511,18 @@ rewritten a third time (to `null`, `?T`); the three `tests/language/modules/*` c
 this front.
 **Priority:** medium — the suite is the milestone's evidence; a claim the suite does not make is a
 claim.
-**Partial work:** landed at `259916e1` + `ca477dec` (`fix/language-cells`), and **verified at
-`f58fd392` on 2026-09-25 by front 12** (`ls tests/language/modules/` answers `local_dependency`
+**Partial work:** landed and **verified
+by front 12** (`ls tests/language/modules/` answers `local_dependency`
 among nine; `run/panic_aborts`, `run/todo_aborts` with `.exit`; `run/external_erlang_only` with two
-`.<target>.expect`) — [`12-language-tests/README.md`](./12-language-tests/README.md) § Landed —
-2026-09-25 has the table. The `index_an_index_past_the_end_answers_zero` named in Origin is a
+`.<target>.expect`) — [`12-language-tests/README.md`](./12-language-tests/README.md) § Delivered
+has the table. The `index_an_index_past_the_end_answers_zero` named in Origin is a
 `src/codegen/tests` fixture, not a cell of the suite; the suite's statement is
 `run/index_past_the_end_is_null.bp`, renamed when C-02 landed.
 **Depends on:** C-02 for the index cell's new answer; C-11 for the formatted cells.
 **Acceptance:**
 - [x] `zig build test-language` green with the new cells on every declared target; every added
       `expected-failures.txt` line names an existing row here; `AGENTS.md`'s "cannot be tested" list
-      loses the covered entries — 553 / 42 / 0 at `f58fd392`; the list keeps only `@typeInfo` /
+      loses the covered entries — the list keeps only `@typeInfo` /
       `@makeRecord` / `partial` / `omit` / `pick`
 - [x] `run.sh` prints the tally; the header stops carrying a number a human recounts
 - [x] a cell per decision 63–66 — 63 `run/index_*`, 64 `run/std_erlang_node`, 66 the three
@@ -540,7 +551,7 @@ with the `?T` diagnostic), **45** (a member access on a `?T` is an error naming 
 `null` — the `array_at` helper on every backend), **57** (a `warnings` list on the `Env`, rendered like
 a `TypeError`), **31** (`any` deleted — it still parses and checks; `erlang.bp`/`beam.bp` need a host
 vocabulary first), **9** (`Array.unique` rewritten in `libs/std` to avoid a method call on an optional
-inside a `default fn`); the document corrections the record is silent on — **1** (`@AsyncIterator<T>`),
+inside a `default fn`); the document corrections the record is silent on — **1** (the async sequence type — `@Stream<T>` since decision 122),
 **2** (`?T` only), **10** (the `@code` annotation renamed), **25** (`is` does not bind), **32** (no
 `Option.Some` value names); and 04's two unverified rows — the `tsc --noEmit` gate over every
 non-empty `.d.ts` (no `tsc` in the checkout when 04 closed) and `42.toString()` emitting
@@ -549,13 +560,13 @@ non-empty `.d.ts` (no `tsc` in the checkout when 04 closed) and `42.toString()` 
 **Partial work:** none.
 **Depends on:** nothing.
 **Acceptance:**
-- [ ] `optional<i32>` and `x?.f` on a `?T` each a located error with the decided text; a cell each
+- [x] `optional<i32>` and `x?.f` on a `?T` each a located error with the decided text; a cell each (`x.f` on a `?T` is the error, `x?.f` the spelling; `Option<i32>` refused alike); `reject/member_of_optional` and `comptime/tests/infer_errors.zig` `decision 44:` (the annotation diagnostic has its unit test; a `reject/` cell for 44 is front 12's to add)
 - [ ] an out-of-range read prints `null` on all four backends, one cell; `tuple_labels.bp::§6 T4` reds
       at `check`
-- [ ] `Env.warnings` exists and one warning renders (the always-false `is` of 01 step 3 is the first)
+- [x] `Env.warnings` exists and one warning renders (the always-false `is` of 01 step 3 is the first) — `OkData.warnings`, rendered by `botopink check` under `warning:`; §1.4's `[]` birth is the second writer. `build` / `test` / the LSP do not print them yet
 - [ ] `any` gone from the grammar, `erlang.bp`/`beam.bp` re-spelled, or the row re-decided with the
       measurement
-- [ ] `Array.unique` answers on both backends, a `libs/std` test
+- [x] `Array.unique` answers on both backends, a `libs/std` test (decision 9 (b): the body rewritten; `test/primitives_gaps_test.bp` `array unique drops consecutive duplicates`, commonJS and erlang)
 - [ ] the five documents corrected; `tsc --noEmit` green over every `.d.ts`; `42.toString()` runs on node
 
 ## C-19 — The declaration-name builders spell the 1.0.3 surface
@@ -572,17 +583,17 @@ share one generic-parameter renderer and print `type Name<G>(…)`, `behavior Na
 **Acceptance:**
 - [x] `grep -rn 'record {' modules/language-server/snapshots/lsp/` returns nothing
 - [x] hover, completion, signature help and inlay hints print the 1.0.3 surface for `type`/`behavior`
-      — one LSP snapshot each, read (11's Landed — 2026-09-25); signature help over a `type`
+      — one LSP snapshot each, read; signature help over a `type`
       constructor was **null**, `engine.recordCtorSignature` answers it
 - [x] gate green; `AGENTS.md` of `src/comptime/` in the same commit; 07's row struck — the builders
-      landed as `f952bfc6` without their `AGENTS.md` lines; `front/11-tooling` carries them
+      landed without their `AGENTS.md` lines, which `11-tooling` carries
 
 ## C-20 — The comptime module reaches the node as BEAM assembly
 
 **Origin:** 14 step 3 — the per-declaration comptime module goes to the resident node as `.S`
 (`erlc +from_asm`) instead of Erlang source, so no Erlang source is in the compile path (decision 24:
 the principle governs, every step happens; decision 62: after 13). What it needs, from
-[`14-comptime-on-beam/migration.md`](./14-comptime-on-beam/migration.md) stage 3: an untyped lowering
+[`14-comptime-on-beam`](./14-comptime-on-beam/README.md): an untyped lowering
 mode in `beam_asm.zig` (`+` → `'__bp_add'`, `.length` → `'__bp_len'`, located `unsupported_method`),
 the host records without declarations (`Span`, `CustomNode`, `Binding`, `Source`, `Context`, …), a
 `main/1` entry, `writeModule` writing `<module>.S`, the `.erl` path kept as a per-declaration fallback
@@ -601,7 +612,7 @@ x.toUpper() })` — in a comptime body every receiver is untyped.
 
 **Origin:** 01 step 9 — the `.withLoc` sweep: every `TypeError` located, none unlocated from
 `unify.zig`, `effect-missing-wrapper` at the return type, the error snapshot's box names its file.
-Blast radius re-measured at `d55a3b87`: 135 error snapshots, 113 needing a file name, 22 a box — half
+Blast radius 135 error snapshots, 113 needing a file name, 22 a box — half
 the README's. Deep dive: [`01-checker/blast-radius.md`](./01-checker/blast-radius.md).
 **Priority:** low — "land this **last**": it re-records every error snapshot and any checker row that
 lands after it re-records them again.
@@ -630,24 +641,26 @@ C-01/C-07.
 
 ## C-23 — The hygiene sweeps
 
-**Origin:** 08 steps 2.1 (14 of the 19 `primitives.d.bp` comments remain — 11 in `erlang.zig`, the
-rest in `infer`/`env`/`prelude`, `engine.zig`, `tests/hover.zig`), 3.1 (18 `@external(` comments in
-`erlang.zig` name the retired form as current; the `infer_decls.zig:538` fixture note), 6 (five sites in
-07's test files: `narrowing.zig:105`, `wat.zig:86`, `control_flow.zig:73,:76`, `builtins.zig:382`).
-**Priority:** low — comments. Each sweep lands after the owner of the swept file, one commit per file.
-**Partial work:** none.
-**Depends on:** C-01 for `erlang.zig`'s (the file re-records under it anyway).
+**Origin:** 08's open items — every site, by owner, is in
+[`08-hygiene` § Open](./08-hygiene/README.md#open): 14 comments naming `primitives.d.bp` (the file is
+`primitives.bp`), the comments that teach `@external(<target>, …)` / `@[external(…)]` as current,
+four comments in `codegen/tests/**` naming a moved owner or a changed lowering, ten `.zig` files
+`zig fmt --check` reds on an untouched base, and the test that a comptime transport failure reaches
+the user's diagnostic.
+**Priority:** low — comments and one test. Each sweep lands after the owner of the swept file, one
+commit per file.
+**Partial work:** `docs.md` § *Decided, not yet implemented* re-derived and the documents' links
+fixed (`front/sweep-docs`).
+**Depends on:** the owner of each file (`01-checker`, `02-erlang`, `11-tooling`, C-22, C-26).
 **Acceptance:**
-- [ ] `grep -rn 'primitives.d.bp' modules/` returns only the two legitimate mentions;
-      `grep -rn '@external(' modules/compiler-core/src/codegen/erlang.zig` returns nothing that
-      calls the form current; the five test-file comments say what the tests test
+- [ ] `08-hygiene`'s five open boxes
 
 ## C-24 — BR5 as its own spec
 
 **Origin:** 03 step 1 — the beam backend compiles `@External.Erlang` templates at build time instead
 of evaluating Erlang source through `'__bp_erl_eval'` at run time; struck from 1.0.5 by decision 62
 because the block is structural: nothing in this compiler parses Erlang, and the parked attempt is an
-836-line Zig lexer+parser that no longer builds (`wip/br5-beam-templates`, on `440a1d3e`). Cost
+836-line Zig lexer+parser that no longer builds (`wip/br5-beam-templates`). Cost
 re-measured: `base64:encode` 0.113 → 5.722 µs per call, 50.6×; it moves 11 `.S` texts and no RUN LOG.
 **Priority:** low — a spec, not a row: options (parse Erlang in Zig; emit a `.erl` sidecar per template
 and compile it beside the `.S`; restrict templates on beam to what `std/erlang`'s BIF table names),
@@ -655,11 +668,11 @@ each costed, one recommended.
 **Partial work:** the branch.
 **Depends on:** C-01 (the emitter is 13's until then).
 **Acceptance:**
-- [x] superseded by landing it (compiler `8333aaab`, `front/02-03-erlang-beam`): the structural block
+- [x] superseded by landing it (`front/02-03-erlang-beam`): the structural block
       — nothing in the compiler read Erlang — went away with front 14's `comptime/runtime/wat/erl_parse.zig`
       and `comptime/runtime/beam/lower.zig`, which BR5 reuses; no beam snapshot carries
-      `'__bp_erl_eval'`, the refused-construct residue and the re-measured cost are in
-      `src/codegen/beam/AGENTS.md`, the choice in `decisions-pending.md` 0203-b. The parked
+      `'__bp_erl_eval'`, and decision 141 deleted it: every shipped template lowers and a refused one
+      is a located build error (`src/codegen/beam/AGENTS.md` has the counts and the cost). The parked
       `wip/br5-beam-templates` branch (an 836-line second Erlang parser) is obsolete — the maintainer's
       to delete
 

@@ -12,7 +12,7 @@ Upstream features no rakun front covers, verified by `grep -ril` over the 51 REA
 | Feature (upstream) | Nearest front | State |
 |---|---|---|
 | Spring Cloud Vault / encrypted property sources | 05 | out of scope; nowhere restated |
-| `env.vars()` as the environment reader; "configured `server.port` beats `App.port`" | 05 · 04 | 05 names `env.args()` and `env.write` only; 04 names `rakun.server.port` only in its failure table |
+| `io.env`'s `vars()` as the environment reader; "configured `server.port` beats `App.port`" | 05 · 04 | 05 names `io.env`'s `args()` and `write` only; 04 names `rakun.server.port` only in its failure table |
 | `ContextRefreshedEvent`, a shutdown-time event (`ContextClosedEvent`) | 06 | 06's nine-event list has neither; shutdown publishes no event |
 | `SIGINT` handling beside `SIGTERM` | 06 · 07 · 76 · 88 | only `SIGTERM` appears |
 | Request/access logging filter (`CommonsRequestLoggingFilter`), `X-Response-Time` timing filter, per-filter enable keys | 07 · 17 · 75 | 75 ships the `http.server.requests` timer, no header; 07 defines no built-in filter set |

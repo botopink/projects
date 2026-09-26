@@ -15,7 +15,7 @@
 import { Element, text, renderToString } from "jhonstart";
 // provided by front 94 (`jhonstart-element-surface`, src/elements.bp)
 import { form, input, button } from "jhonstart";
-import { SearchFormProps, searchFormProps, searchFormAttrs } from "jhonstart";
+import { SearchFormProps, searchFormProps, searchFormAttrs } from "jhonstart-forms";
 import { querystring } from "std";
 
 // The URL the browser's own GET submit produces, written as a function so the

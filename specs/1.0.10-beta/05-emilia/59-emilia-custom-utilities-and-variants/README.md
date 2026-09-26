@@ -1,263 +1,69 @@
 # Front 59 — emilia custom utilities and variants
 
-**Track:** D emilia
-**Priority:** medium-high — without it a consumer cannot name a reusable bundle or a project-specific variant, so every application re-lists the same twelve tokens at every call site. That is the duplication problem `§ 3.1` is entirely about, and `@apply` and `@utility` are the two most-used extension points in real Tailwind codebases.
-**Target:** comptime
-**Wave:** 3 — 56 lands in wave 1 and 34 in wave 2.
-**Depends on:** 34 (a custom variant is built out of the `Variant` shape front 34 defines for the named ones), 56 (`Variant`, `Sheet`, and the question of where a named utility lands in the cascade)
-**Owns:** `repository/emilia/src/compose.bp`, `repository/emilia/test/compose_test.bp`; the `pub mod compose;` line in `src/root.bp` and its entry in `botopink.json`
-**Does not touch:** `src/tokens.bp` — this front adds **no** `Token` variant and **no** `tokenToSheet` arm, which is what makes it safe beside all twenty other track-D fronts; `src/output.bp`; any other front's dispatcher
-**Reference:** `TAILWIND_CSS_DOCS.md § 3.1 Gerenciando Duplicação`, `§ 3.7 CSS Customizado com @layer`, `§ 3.9 Funções e Diretivas`, `§ 20.3 @custom-variant`, `§ 20.4 @utility`, `§ 20.5 @apply`, `§ 20.7 @variant` · https://tailwindcss.com/docs/functions-and-directives
+**Track:** D emilia · **Priority:** medium-high · **Level:** 3 · **Target:** comptime (commonJS and erlang)
+**Depends on:** 34 (`Variant`-built modifiers), 56 (`Variant`, `Sheet`, the `components` layer), 57 (`arbValue`, `arbSel`, the `cssIdent` reject set)
+**Code:** `repository/emilia/modules/emilia/src/compose.bp` (`scrollbarHidden`, `compose`, `hocus`,
+`selector`, `themeMidnight`; no `declare fn`, no `#[@`, no `comptime`, no `@emit`) · `src/emilia.bp`
+(`// ── front 59 · the named-class escape`: `named`, beside the read-only `lookupRule` cell — here because
+a sibling module cannot import `emilia.bp` and a host cell does not cross modules). No `Token` variant,
+no `tokenToSheet` arm.
+**User docs:** `repository/emilia/docs.md` § *Your own utilities and variants*
+**Reference:** `TAILWIND_CSS_DOCS.md § 3.1`, `§ 3.7`, `§ 3.9`, `§ 20.3 @custom-variant`, `§ 20.4 @utility`, `§ 20.5 @apply`, `§ 20.7 @variant` · https://tailwindcss.com/docs/functions-and-directives
+
+**Open:** none.
 
 ---
 
-## Problem
+## What it delivers
 
-`emilia` has exactly one authoring form: a `Token[]` literal at a call site
-(`repository/emilia/src/emilia.bp:475-511`). There is no way to name a bundle of tokens, no way to
-name a variant, and no way to give a generated class a stable name. A twelve-token button is written
-out twelve tokens at a time wherever a button appears, and the day the button changes, every call
-site changes.
-
-`§ 3.1` calls this out as *the* problem with utility classes and gives four answers: loops,
-multi-cursor editing, components, and `@layer components` with a named class. Botopink already has
-the first three — they are ordinary language features, and the doc's own advice there is editing
-practice, not library surface. The fourth is the one a CSS library has to provide, and `§ 20.4`
-(`@utility`), `§ 20.5` (`@apply`) and `§ 20.3`/`§ 20.7` (`@custom-variant`/`@variant`) are its three
-shapes.
-
-The second half of the problem is narrower and harder to work around. A generated class name is a
-content hash — `"e_" + djb2hex(…)`, pinned as contract 4 in
-[`../contracts.md`](../../contracts.md) — which is exactly right when the class name is an
-implementation detail and exactly wrong when it is part of an API. A component that documents
-`.btn` for consumers to override, a design-system class a QA selector targets, a class a third-party
-script toggles: none of those can be a hash, because the hash changes whenever a token in the bundle
-changes. Today there is no way to opt out.
-
-## Current state
-
-- `pub fn emilia(tokens: Token[]) -> string` (`emilia.bp:46-51`) is the only registration path and it
-  always names its output `"e_" + contentHash(rules)` (std's `content_hash.contentHash`, which
-  replaced emilia's private `hashHex` — decision 116, front 56). There is no second entry point and no parameter
-  that changes the name.
-- There is no composition helper anywhere. `tokensToCss` (`emilia.bp:102-104`) folds a list; nothing
-  builds one.
-- The six modifier variants (`tokens.bp:264-269`) are the complete variant vocabulary, and each is a
-  hard-coded arm in `tokenToCss` (`emilia.bp:85-90`). A project cannot add a seventh without editing
-  emilia.
-- `repository/emilia/examples/emilia-card/src/main.bp` is the only real consumer in the tree, and it
-  is a single component — the duplication this front is about has not been felt yet, and will be the
-  moment front 53's blog is written.
-
-## Mechanism
-
-The whole point of this front is that **none of it needs a compiler change, and none of it needs a
-new `Token` variant.** Tailwind needs three CSS directives here because CSS has no functions.
-Botopink has functions, so:
+Tailwind's extension directives as ordinary functions — botopink has functions, so it needs no
+directive layer and nothing from the compiler.
 
 | Tailwind | botopink |
 |---|---|
-| `@utility scrollbar-hidden { … }` | `pub fn scrollbarHidden() -> Token[]` |
-| `@apply rounded-md px-4 py-2` inside `.btn` | `btn().append(extra)` — array concatenation |
-| `@custom-variant hocus (&:hover, &:focus)` | `pub fn hocus(inner: Token[]) -> Token[]` |
-| `@variant dark { @media … { @slot } }` | a function taking the inner tokens; `@slot` is the parameter |
-| `@layer components { .card { … } }` | `named("card", tokens)` with `layer: "components"` |
+| `@utility scrollbar-hidden { … }` (`§ 20.4`) | `pub fn scrollbarHidden() -> Token[]` — `[arbValue("scrollbar-width", "none"), arbSel("&::-webkit-scrollbar", [arbValue("display", "none")])]` |
+| `@apply rounded-md px-4 py-2` (`§ 20.5`) | `btn().append(extra)`; `compose(bundles: Token[][]) -> Token[]` flattens in order, last wins (`§ 3.1`) |
+| `@custom-variant hocus (&:hover, &:focus)` (`§ 20.3`) | `hocus(inner) -> Token[]` = `[Token.Hover(inner), Token.Focus(inner)]` — a variant returns `Token[]` because a custom variant may be a selector list |
+| `@variant …` / `@slot` (`§ 20.7`) | a function taking the inner tokens; `@slot` is the parameter. General form: `selector(v: Variant, inner) -> Token`; e.g. `themeMidnight(inner)` = `&:where([data-theme="midnight"] *)` |
+| `@layer components { .card { … } }` (`§ 3.7`) | `named(className, tokens) -> string` |
 
-A bundle is a function returning `Token[]`. Composing bundles is `append`. A variant is a function
-from `Token[]` to `Token[]`. The `@slot` of `§ 20.3`/`§ 20.7` — the hole a custom variant wraps — is
-the parameter, which is why this front does not need a `@slot` equivalent and why the audit could
-record "we did not implement `@slot`" as a decision rather than an omission.
+**The named-class escape**, `named(className, tokens)`:
 
-**Why a variant returns `Token[]` and not `Token`.** `§ 20.3`'s own example is
-`@custom-variant hocus (&:hover, &:focus)` — a *selector list*, two selectors for one body. A single
-`Token` cannot carry two selectors, and front 56's `Variant` is deliberately one at-rule and one
-selector template. Two tokens produce two rules with the same declarations, which is what a selector
-list compiles to anyway. So the return type is the list, and the one-selector case is a list of one.
+1. Registers the composed sheet under `className`, its rules moved to the **`components`** layer, and
+   returns `className` — so a utility on the same element always wins. There is no `layer:` argument;
+   a named class that must beat a utility is marked `Important` at the call site.
+2. Never hashes and never changes a hash: `emilia(list)` gives the same class whether or not
+   `named(…, list)` was called. Contract 4 governs the `utilities` layer only.
+3. The name passes front 57's `cssIdent` set and must not start with `e_` (emilia's generated space);
+   a second **different** registration under one name is refused, not last-write-wins.
+4. For front 48 a named class is a static class: it goes on the left of `mergeClass`.
 
-**The named-class escape, and how it coexists with contract 4.** A second registration entry point:
+## Acceptance
 
-```bp
-pub fn named(className: string, tokens: Token[]) -> string
-```
+### Delivered
 
-It registers the composed `Sheet` under `className` instead of under a content hash, places its
-rules in the `components` layer rather than `utilities`, and returns `className`. Four rules keep it
-from undermining contract 4:
-
-1. **It is a different layer.** `§ 3.7` puts named classes in `components` and utilities in
-   `utilities`, and front 56 emits `@layer theme, base, components, utilities;` in that order. A
-   named class therefore always loses to a utility class on the same element, which is what a
-   consumer expects when they write `<div class="btn bg-red-500">`. Contract 4 governs the
-   `utilities` layer; `named` does not put anything there.
-2. **It never enters the hash and never changes one.** `named` does not call `emilia()`, does not
-   compute a hash, and does not register under an `e_` key. A token list passed to both `emilia` and
-   `named` produces two independent registrations; the `e_` one is byte-identical to what it would
-   have been without this front. Contract 4's clause 1 — a pure function of the token list — is
-   untouched because nothing this front does is an input to it.
-3. **The name is validated, and a name in emilia's own space is refused.** A `className` is checked
-   against front 57's `cssIdent` reject set, and additionally refused if it starts with `e_`. That
-   prefix belongs to the generated scheme, and a collision would let a named class silently replace
-   a hashed one in the host cell — which is a single `Map` keyed by name (`emilia.bp:23-25`). Refuse,
-   do not rename: a name that collides is a bug in the caller, and there is no argument that allows
-   it.
-4. **Contract 4 clause 4's merge order still holds.** Front 48 merges a static class and an emilia
-   class as `<static> + " " + <emilia class>`. A `named` result is a static class from front 48's
-   point of view — it is written by the author, not generated per render — so it goes on the left,
-   and nothing in `attributes.bp` changes.
-
-**Where a named utility lands in the cascade, stated once.** `components` for `named()`. A consumer
-who genuinely wants a named class to beat a utility has one honest route: mark it important through
-front 34's modifier, which is visible at the call site. There is no `layer:` argument on `named`,
-because a per-call layer choice is how a cascade stops being predictable.
-
-## Steps
-
-### Step 1 — bundles are functions
-
-No new API. This step is the convention plus one worked example plus the test that pins it.
-
-```bp
-pub fn scrollbarHidden() -> Token[] {
-    val hidden: Token[] = [arbValue("display", "none")];
-    return [
-        arbValue("scrollbar-width", "none"),
-        arbSel("&::-webkit-scrollbar", hidden),
-    ];
-}
-```
-
-That is `§ 20.4`'s `@utility scrollbar-hidden` example, declaration for declaration, written with
-front 57's builders. A bundle is an ordinary `pub fn`, so it is exported, imported, typed, and
-findable by go-to-definition — none of which a CSS `@utility` is.
-
-**Acceptance:**
-- [x] `emilia(scrollbarHidden())` renders `scrollbar-width:none` and a second rule whose selector is
-      the class followed by `::-webkit-scrollbar`. — held: emilia.bp front 59 test "scrollbarHidden — `§ 20.4`'s body …"
-- [x] The bundle function takes no arguments and is callable from another package. — held: `pub fn scrollbarHidden()` in `pub mod compose`; examples/emilia-cascade test "a bundle and a named class from compose.bp, used from another package" (both targets)
-- [x] A test asserts that the emitted declarations match `§ 20.4`'s example body. — held: same emilia.bp test, both declarations asserted
-
-### Step 2 — `@apply` is `append`
-
-```bp
-pub fn compose(bundles: Token[][]) -> Token[]
-```
-
-`compose` flattens a list of bundles in order, so the last one wins on a conflicting property,
-matching `§ 3.1`'s last-rule-wins rule. The two-bundle case needs no helper at all — `btn().append(extra)`
-is the array method — and `compose` exists for the four-or-five-bundle case where nesting `append`
-calls stops being readable.
-
-**Acceptance:**
-- [x] `btn().append(extra)` renders the bundle's declarations followed by the extra ones, in that
-      order. — held: emilia.bp test "append — the bundle's declarations, then the extra ones, in that order"
-- [x] `compose([a(), b(), c()])` equals `a().append(b()).append(c())` by rendered output. — held: emilia.bp test "compose — equals chained append by class, and [] is the empty class" (by class, which is the rendered output's hash)
-- [x] Where two bundles set the same property, the later one is emitted second and the test cites
-      `§ 3.1`. — held: emilia.bp test "compose — two bundles on one property: the later one is emitted second (`§ 3.1`)"
-- [x] `compose([])` renders an empty rule body, the same as `emilia([])` does today
-      (`emilia.bp:465-473`). — held: same test as the equivalence one — `compose([])` gives `emilia([])`'s class
-
-### Step 3 — custom variants are functions over the inner list
-
-```bp
-pub fn hocus(inner: Token[]) -> Token[] {
-    return [Token.Hover(inner), Token.Focus(inner)];
-}
-
-pub fn selector(v: Variant, inner: Token[]) -> Token
-pub fn themeMidnight(inner: Token[]) -> Token[]
-```
-
-`hocus` is `§ 20.3`'s example. `selector(v, inner)` is the general form: it takes a front 56
-`Variant` and wraps the inner tokens with it, which is how a project registers a variant the library
-has never heard of — `§ 3.2`'s `@custom-variant theme-midnight (&:where([data-theme="midnight"] *))`
-becomes a `Variant` with that selector and a one-line function around it.
-
-**Acceptance:**
-- [x] `emilia(hocus(bold))` renders two rules, `:hover` and `:focus`, with identical declarations. — held: emilia.bp test "hocus — `§ 20.3`: two rules, :hover and :focus, one body"
-- [x] A custom variant composes with a built-in one in both nesting orders, and both are asserted. — held: emilia.bp test "a custom variant composes with a built-in one, both orders"
-- [x] `selector(Variant(atRule: "", selector: "&:where([data-theme=\"midnight\"] *)"), inner)`
-      renders that selector with the class substituted for `&`. — held: emilia.bp test "selector — an arbitrary Variant, with the class substituted for `&`" (imported as `customVariant` there)
-- [x] A `Variant` whose selector holds the wrong number of `&` is refused by front 56, and this
-      front adds no path around that check. — held: emilia.bp test "selector — a Variant with the wrong number of `&` is refused, no path around it" (front 57's `arbSel`, then front 56's `nestVariant`)
-
-### Step 4 — the named-class escape
-
-```bp
-pub fn named(className: string, tokens: Token[]) -> string
-```
-
-**Acceptance:**
-- [x] `named("btn", btn())` returns `"btn"` and renders `.btn{…}` inside `@layer components{…}`. — held: emilia.bp test "named — `btn` lands in `@layer components`, beside the hashed class in utilities"
-- [x] The same token list passed to `emilia()` renders inside `@layer utilities{…}` under its hash,
-      and the two rules coexist in one document. — held: same test
-- [x] The hex produced by `emilia()` for a token list is byte-identical whether or not `named()` was
-      called with the same list — the shared fixture from contract 4 is re-run as this front's own
-      test to prove it. — held: emilia.bp test "named — the hashed class of the same list is byte-identical either way" (a literal hex; front 48's shared fixture does not exist yet)
-- [x] `named("e_abc", …)` is refused. So is a name carrying a character outside front 57's
-      `cssIdent` set. — held: emilia.bp test "named — refuses the e_ space, a bad ident, and a second different registration"
-- [x] Calling `named` twice with the same class name and different token lists is refused rather
-      than last-write-wins, because the host cell is keyed by name and the loser would vanish
-      silently. — held: same test
-- [x] A named class and a utility class on one element: the utility wins, and the test asserts the
-      layer order that makes it win rather than the outcome alone. — held: emilia.bp test "named — a named class and a utility on one element: the utilities layer is later"
-
-### Step 5 — the statement that this needs nothing from the compiler
-
-The audit asked for this in writing, and it is the front's reason to exist: everything above is
-functions over `Token[]`, `append`, and two records front 56 already defines. `compose.bp` declares
-no `#[@External]` cell, adds no `Token` variant, adds no `tokenToSheet` arm, and contains no
-comptime block.
-
-**Acceptance:**
-- [x] `compose.bp` contains no `declare fn`, no `#[@`, no `comptime` and no `@emit`. — held: `compose.bp` has no `declare fn`, no `#[@`, no `comptime` and no `@emit`
-- [x] `git diff` for this front touches `tokens.bp` in zero lines and `emilia.bp` in zero lines. — superseded: `tokens.bp` is untouched, but `named()` and the read-only `lookupRule` cell live in `emilia.bp` — a sibling module cannot import `emilia.bp` (it does not resolve when emilia is a dependency) and a host cell does not cross modules; `compose.bp` still adds no `Token` and no arm (decisions-pending 05emilia-h)
-- [x] The front's `## Language gaps` section reads `None`, and that is asserted by the absence of a
-      `// LANGUAGE GAP:` marker in its example. — held: the spec's `examples/compose-example.bp` carries no `// LANGUAGE GAP:` marker
+- [x] `emilia(scrollbarHidden())` renders `scrollbar-width:none` and a second rule on
+      `<class>::-webkit-scrollbar`, matching `§ 20.4`'s body; the bundle is callable from another
+      package (`repository/emilia/examples/emilia-cascade`, both targets).
+- [x] `btn().append(extra)` renders the bundle then the extra declarations; `compose([a(), b(), c()])`
+      equals chained `append`; the later of two bundles on one property is emitted second (`§ 3.1`);
+      `compose([])` gives `emilia([])`'s class.
+- [x] `emilia(hocus(bold))` renders `:hover` and `:focus` rules with one body; a custom variant
+      composes with a built-in one in both orders; `selector(Variant(atRule: "", selector:
+      "&:where([data-theme=\"midnight\"] *)"), inner)` substitutes the class; a wrong `&` count is
+      refused by front 56 with no path around it.
+- [x] `named("btn", btn())` returns `"btn"` and renders `.btn{…}` in `@layer components`, beside the
+      hashed class in `utilities`; the hashed class is byte-identical either way (a literal hex);
+      `named("e_abc", …)`, a bad ident and a second different registration are refused; with a named
+      and a utility class on one element, the test asserts the layer order that makes the utility
+      win.
+- [x] `compose.bp` has no `declare fn`, `#[@`, `comptime` or `@emit`; `tokens.bp` is untouched; the
+      example carries no language-gap marker.
+- [x] `compose.bp` is declared in `root.bp` and listed in `botopink.json`; green on commonJS and
+      erlang.
 
 ## Examples
 
 - [`./examples/compose-example.bp`](./examples/compose-example.bp) — a design system with three
-  bundles, one custom variant, a `@apply`-style override at a call site, and one named class whose
-  name is part of the component's public API.
-
-## Language gaps
-
-None — every construct in the example parses today, and this front needs nothing from the compiler.
-See [`../language-gaps.md`](../../language-gaps.md) for the milestone's list; this front adds no row to
-it, which is the claim step 5 makes testable.
-
-Two design constraints, recorded so they are not mistaken for gaps: a bundle returns `Token[]`
-rather than a new `Token` because a custom variant may expand to a selector *list*
-(`§ 20.3`), and `named()` takes no `layer:` argument because a per-call-site layer choice makes the
-cascade unpredictable — both are decisions, and both are reversible by a later spec that argues
-against them.
-
-## Test plan
-
-`repository/emilia/test/compose_test.bp`, run by `botopink test` at `repository/emilia/` and by
-`zig build test-libs`. Green on `--target commonJS` and `--target erlang`.
-
-Four groups. **Composition**: bundle emission, `append` order, `compose` equivalence, the
-conflicting-property case. **Variants**: `hocus`, the general `selector` form, and both nesting
-orders against a built-in variant. **Naming**: the layer a named class lands in, the refusals
-(`e_` prefix, invalid ident, duplicate name), and coexistence with a hashed class in one document.
-**Contract 4**: the shared fixture's literal hex re-asserted here, so that a change to this front
-which accidentally reached the hash is red in this file rather than in front 23's SSR test three
-waves later.
-
-That last group is the one worth defending in review. This front is the only one in track D that
-registers a class without hashing it, so it is the only place where the class-name contract could be
-broken without a token front noticing.
-
-## Definition of done
-
-- `src/compose.bp` exists, is declared in `src/root.bp`, listed in `botopink.json`, and adds nothing
-  to `tokens.bp` or `emilia.bp`.
-- The three Tailwind directives have their botopink equivalent, each with the `§` it implements
-  written next to it.
-- `named()` exists, lands in `components`, validates its name, refuses the `e_` prefix and refuses a
-  duplicate.
-- Contract 4 is re-asserted from this front's own test file, with the same literal hex the shared
-  fixture uses.
-- The front's tests are green on its assigned target — for track D, both of them.
-
+  bundles, one custom variant, an `@apply`-style override, and a named class that is part of a
+  component's public API.

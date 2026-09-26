@@ -1,41 +1,34 @@
 # Front 72 — rakun Auto-Configuration
 
-> **Amended 2026-09-21, on landing (rakun `10b6898`, 302 → 346 · 300 → 344).** Five corrections the
-> front measured rather than assumed. Three are substantive.
+> **As built.** Where the code differs from the text below, the code holds:
 >
-> **1 · "erlang-only, and the lib test runner is told so" is not satisfiable.** There is no per-file
-> target gate. `botopink test` compiles every `test/*.bp` on **both** rows
-> (`compiler-cli/src/cli/test_cmd.zig`), and the only whitelist is per-**lib** (`botopink.json`
-> `targets`, `lib-test-runner/src/discovery.zig`), which for rakun core is `["commonJS"]`. An
-> erlang-only host cell would therefore red the node row *and* never run in the gate — the § Test
-> plan and the host-seam table are amended to front 06's precedent: both halves shipped.
+> **1 · Both host halves ship.** There is no per-file target gate: `botopink test` compiles every
+> `test/*.bp` on both rows (`compiler-cli/src/cli/test_cmd.zig`), and the only whitelist is per-lib
+> (`botopink.json` `targets`, `lib-test-runner/src/discovery.zig`), which for rakun core is
+> `["commonJS"]`. § Test plan and the host-seam table follow front 06's precedent.
 >
 > **2 · `rkAutoApply` / `rkAutoMatched` / `rkAutoReport` / `rkModulePresent` are botopink, not host
-> cells.** Names and signatures are unchanged. Nothing this front stores is a fun — four strings per
-> row — so by front 06's own measurement the host is an append-only table, and the sort, the
-> evaluator, the refusals and the renderer are one implementation compiled twice. Read "a new kind of
-> condition adds a branch in `rakun_autoconfig:evaluate/2`" as "a branch in `conditions.bp`'s
-> `evaluateRecord`".
+> cells**, with the names and signatures below. Nothing this front stores is a fun — four strings per
+> row — so the host is an append-only table, and the sort, the evaluator, the refusals and the
+> renderer are one implementation compiled twice. "A new kind of condition adds a branch in
+> `rakun_autoconfig:evaluate/2`" reads as "a branch in `conditions.bp`'s `evaluateRecord`".
 >
-> **3 · The registration signature was missing a datum.** A `#[bean]` method's *provided type* is not
-> derivable from `Type.method`, so an applied configuration would be invisible to a later
-> `#[conditionalOnMissingBean]`. It landed as a separate cell (`rkAutoProvides(name, typeName)` /
-> `rkAutoProvided(name)`) rather than a sixth letter in the `M|P|B|X|F` blob, specifically so
-> `rkAutoConditions` stays byte-equal to what this document's examples assert.
+> **3 · A `#[bean]` method's provided type is a separate cell** (`rkAutoProvides(name, typeName)` /
+> `rkAutoProvided(name)`), since it is not derivable from `Type.method` and a later
+> `#[conditionalOnMissingBean]` must see it; `rkAutoConditions` keeps the `M|P|B|X|F` blob the examples
+> assert.
 >
-> **4 · `examples/override-and-report-example.bp` contradicts its own acceptance.** Its middle tests
-> call `autoConfigure()` again expecting re-evaluation after a property change; its last test asserts
-> idempotence. The acceptance won — `rkAutoUnseal()` exists for a test that wants a second pass.
+> **4 · `autoConfigure()` is idempotent**; `rkAutoUnseal()` exists for a test that wants a second pass.
+> `examples/override-and-report-example.bp`'s middle tests, which expect re-evaluation from a second
+> `autoConfigure()`, contradict that.
 >
-> **5 · `examples/mail-auto-configuration-example.bp` will not compile as written.**
+> **5 · `examples/mail-auto-configuration-example.bp` does not compile as written.**
 > `RakunMailAutoConfiguration` and `RakunMailDevAutoConfiguration` both declare
 > `#[bean] mailSender -> MailSender`, which emits two `pub fn __rkMake_MailSender` in one module.
 >
-> One narrowing, recorded in the library's `AGENTS.md` and not a spec error: `#[profile]` cannot gate
-> `__rkMake_<Type>` while `decorators.bp` is frozen — it emits the factory unconditionally. The
-> marker therefore leaves the component **unbuilt** (`rkBuildCount` stays 0, asserted) and emits a
-> raiser carrying the diagnosis, rather than a duplicate factory. It goes away when `decorators.bp`
-> unfreezes.
+> **`#[profile]` leaves the component unbuilt** while `decorators.bp` is frozen (it emits
+> `__rkMake_<Type>` unconditionally): `rkBuildCount` stays 0 and the marker emits a raiser carrying the
+> diagnosis. It goes away when `decorators.bp` unfreezes.
 
 **Track:** B rakun
 **Priority:** critical — without it every `rakun-*` module must be wired by hand in every application, and "add the module, it configures itself" — the single promise that distinguishes Spring Boot from Spring — is absent from the port
@@ -72,25 +65,6 @@ not, and the reason for each (`02 § Descobrindo o que esta sendo auto-configura
 serves the same data at `conditions`. Without it, conditional registration is a black box: a bean that
 was not created is indistinguishable from a bean that was created and then overwritten, and the
 developer's only tool is deleting code until something changes.
-
-## Current state
-
-| Piece | Where it is today |
-|---|---|
-| Component markers, all unconditional | `src/decorators.bp:48-193` — six near-identical bodies, duplicated because a decorator body cannot call a sibling fn |
-| Field-level annotation reading (the pattern this front reuses) | `src/decorators.bp:52-53` — `f.annotations.forEach({ a -> if (a.name == "value") … })` |
-| Method-level annotation reading (the pattern for `#[bean]`) | `src/decorators.bp:108-193` — `#[controller]` walks `decl.methods` looking for `#[getMapping]` |
-| The reflection handle | `libs/std/src/builtins.d.bp:465-477` — `kind`, `name`, `fields`, `variants`, `methods`, `returnType`, `annotations`, `fail`, `failAt` |
-| What is registered at run time | `rkScan`/`rkScannedNames`/`rkScannedCount` (`src/runtime.bp:19-26`) — a flat ordered list of names |
-| Conditions | none |
-| Ordering between configurations | none — registration order is module load order and nothing controls it |
-| `conditions` actuator endpoint | nothing behind it; front 11 lists the endpoint |
-| `#[profile]` | does not exist |
-
-`rkScannedNames()` is the one piece worth naming precisely, because this front is built on it: it
-already returns every registered component name, comma-joined in declaration order. That is exactly
-the input `#[conditionalOnBean]` and `#[conditionalOnMissingBean]` need, and it means the bean-presence
-predicate costs no new registry — only a decision about *when* it is evaluated.
 
 ## Mechanism
 

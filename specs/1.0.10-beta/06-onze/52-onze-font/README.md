@@ -9,7 +9,7 @@ the metric-adjusted fallback, and emitting the `<link rel="preload">` tags into 
 **js (client)** — the behaviour those bytes describe: the browser paints with the adjusted fallback,
 swaps to the real face when it arrives, and the swap moves nothing
 **Wave:** 8
-**Depends on:** 49 (config, `outDir`, `publicDir`), 01 (`process` spawner for the fetch and the
+**Depends on:** 49 (config, `outDir`, `publicDir`), 01 (`io.process` spawner for the fetch and the
 metrics probe, `path`), 03 (content hash for the self-hosted filename), 69 (the asset manifest the files are listed in and
 `public/` serving) — the CSS reaches the head through jhonstart's `RenderHooks.headExtra`, which
 front 49 fills
@@ -35,21 +35,21 @@ reading, which is the worst possible moment for one.
 a fallback face with different metrics, and then reflows — that is not "zero layout shift".
 
 Nothing in the workspace addresses fonts at all. `emilia`'s `Font` token section
-(`repository/emilia/src/tokens.bp:59-70`) offers `Sans`, `Serif`, `Mono` and five weights — three
-generic stacks, no webfont, no `@font-face`, and no mechanism that could produce one, because emilia
-emits declarations and a font is a file.
+(`repository/emilia/modules/emilia/src/tokens.bp`) offers `Sans`, `Serif`, `Mono` (each a
+`var(--font-*)` reference) and nine weights — no webfont, no `@font-face`, and no mechanism that could
+produce one, because emilia emits declarations and a font is a file.
 
 ## Current state
 
-- `repository/onze/src/font.bp` does not exist; `repository/onze/` does not exist until front 49.
-- `repository/emilia/src/tokens.bp:59-70` — `Font { Sans, Serif, Mono }` plus
-  `Font.Weight { Light, Normal, Medium, Bold, Black }`. These map to generic CSS stacks. This front
+- `repository/onze/modules/onze-assets/src/font.bp` does not exist; the submodule is front 69's.
+- `repository/emilia/modules/emilia/src/tokens.bp` — `Font { Sans, Serif, Mono }` plus
+  `Font.Weight { … }`. These map to the theme's `--font-*` stacks. This front
   does not extend them and does not need to: a font produced here is applied by its own class name,
-  the way `next/font` applies one, and emilia's `Font` section keeps meaning "a generic stack".
-- `libs/std/src/fs.bp` reads and writes text, not bytes (`fs.bp:33`, `:42`). A `.woff2` file never
-  passes through botopink — see *Mechanism*.
-- `libs/std/src/http.bp:55` declares `fetch(url) -> @Task<Response>`; front 01's process spawner is
-  what actually pulls the font files, for the reason below.
+  the way `next/font` applies one, and emilia's `Font` section keeps meaning "a theme stack".
+- std's `io.fs` reads and writes text, not bytes. A `.woff2` file never passes through botopink — see
+  *Mechanism*.
+- std's `io.http` declares `fetch(url) -> @Task<@Result<Response, string>>`; `io.process`'s spawner
+  is what actually pulls the font files, for the reason below.
 
 ## Mechanism
 
@@ -159,17 +159,17 @@ pub fn googleFont(family: string, opts: GoogleFontOptions) -> @Task<Font>
 ```
 
 **Acceptance:**
-- [ ] `css` contains one `@font-face` per requested weight × style
-- [ ] Every `src:` URL in `css` is a local path under `<outDir>/static/fonts/`; no
+- [x] `css` contains one `@font-face` per requested weight × style
+- [x] Every `src:` URL in `css` is a local path under `<outDir>/static/fonts/`; no
       `fonts.googleapis.com` or `fonts.gstatic.com` string survives into the output — asserted by a
       substring check, because this is the privacy property
-- [ ] `display` reaches `font-display:` verbatim; `"swap"` is the default and anything outside the
+- [x] `display` reaches `font-display:` verbatim; `"swap"` is the default and anything outside the
       four values reds
-- [ ] `subsets: []` reds, naming the option — an unsubsetted font is a 300 kB font
-- [ ] `variable: "--font-inter"` emits a `:root` rule defining it; `variable: ""` emits none
-- [ ] `preload: true` emits one `<link rel="preload" as="font" type="font/woff2" crossorigin>` per
+- [x] `subsets: []` reds, naming the option — an unsubsetted font is a 300 kB font
+- [x] `variable: "--font-inter"` emits a `:root` rule defining it; `variable: ""` emits none
+- [x] `preload: true` emits one `<link rel="preload" as="font" type="font/woff2" crossorigin>` per
       preloaded file; `preload: false` emits `""`
-- [ ] A family not in the metrics table with `adjustFontFallback: true` reds naming the family,
+- [x] A family not in the metrics table with `adjustFontFallback: true` reds naming the family,
       rather than silently emitting an unadjusted fallback
 
 ### Step 2 — The adjusted fallback
@@ -187,14 +187,14 @@ pub fn fallbackFace(family: string, localFamily: string, real: FontMetrics, fall
 ```
 
 **Acceptance:**
-- [ ] `fallbackFace` emits `size-adjust`, `ascent-override`, `descent-override` and
+- [x] `fallbackFace` emits `size-adjust`, `ascent-override`, `descent-override` and
       `line-gap-override`, each as a percentage with two decimals
-- [ ] `ascent-override` equals `ascent / unitsPerEm` as a percentage — asserted against a
+- [x] `ascent-override` equals `ascent / unitsPerEm` as a percentage — asserted against a
       hand-computed value for Inter, so the formula is pinned, not paraphrased
-- [ ] `size-adjust` equals the ratio of the two fonts' `avgCharWidth`, normalized by `unitsPerEm`
-- [ ] Identical metrics produce `size-adjust: 100.00%` and three `0.00%`/exact overrides, and the
+- [x] `size-adjust` equals the ratio of the two fonts' `avgCharWidth`, normalized by `unitsPerEm`
+- [x] Identical metrics produce `size-adjust: 100.00%` and three `0.00%`/exact overrides, and the
       generated CSS still parses
-- [ ] `adjustFontFallback: false` omits the whole block and the family list falls back to `opts.fallback`
+- [x] `adjustFontFallback: false` omits the whole block and the family list falls back to `opts.fallback`
 
 ### Step 3 — `localFont`
 
@@ -218,11 +218,11 @@ pub fn localFont(family: string, opts: LocalFontOptions) -> @Task<Font>
 ```
 
 **Acceptance:**
-- [ ] Each source file is copied to `<outDir>/static/fonts/` under its content hash and referenced
+- [x] Each source file is copied to `<outDir>/static/fonts/` under its content hash and referenced
       from there
-- [ ] A source path that normalizes outside the project root reds, naming the path
-- [ ] A missing source file reds naming the file, at build time, not at first request
-- [ ] With the metrics probe absent and `adjustFontFallback: true`, the build logs once and emits the
+- [x] A source path that normalizes outside the project root reds, naming the path
+- [x] A missing source file reds naming the file, at build time, not at first request
+- [x] With the metrics probe absent and `adjustFontFallback: true`, the build logs once and emits the
       unadjusted face — and the log names the family, so the degradation is attributable
 
 ### Step 4 — Head output
@@ -235,9 +235,9 @@ Concatenates every font's `preload` then every font's `css`, deduplicating ident
 blocks so two components asking for the same family emit one.
 
 **Acceptance:**
-- [ ] Preload links precede all font CSS in the output
-- [ ] Two `Font` values for the same family and weight produce one `@font-face`
-- [ ] The output is a string `headExtra` can carry without re-parsing it
+- [x] Preload links precede all font CSS in the output
+- [x] Two `Font` values for the same family and weight produce one `@font-face`
+- [x] The output is a string `headExtra` can carry without re-parsing it
 
 ## Examples
 
@@ -251,7 +251,6 @@ blocks so two components asking for the same family emit one.
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
 | Declared parameter defaults are never applied | `GoogleFontOptions` has eight fields and every call writes all eight; `defaultGoogleFontOptions` exists only for that | a `default*` constructor plus `with*` copies | apply the declared default at the call site (ground truth §2.24) |
-| The effect annotation is required beside any `@Task<T>` return until front 24 lands decision 118 | `googleFont` and `localFont` (a layout that awaits them is `fn … -> @Component<ElementBase, Element>`, decision 117) | write the marker | infer the effect from the return type |
 | No assignment to a `self` field | option records are copied, never mutated | return a new record | mutable record fields |
 
 ## Test plan
@@ -273,11 +272,26 @@ therefore the one most worth a test that can fail.
 Coverage this front does not have: whether the swap is actually invisible in a browser. That is a
 visual property and the test asserts the four descriptors that cause it, not the pixels.
 
+## Where it stands
+
+Implemented: `modules/onze-assets/src/font.bp` and
+`font_metrics.bp` (the member cut of `modules.md`, not core), 7 tests on commonJS **and** erlang
+over a fixture Google CSS and a download seam — the suite never reaches the network. Faces live
+under `<outDir>/static/<buildId>/fonts/` (the fingerprinted static root front 69 declares), each
+with the `.metrics.txt` sidecar front 70 reads (`unitsPerEm`, `ascent`, `descent`, `lineGap`,
+`avgCharWidth`, one per line). `googleFont` takes the build id and out dir and answers a
+`@Result` (the build seam can fail); the percentages are computed by a host cell per row
+(`toFixed(2)` / `float_to_binary(…, [{decimals, 2}])`) and agree on both rows.
+
+Open: the metrics table's generator — the rows are transcribed (provenance in the file's header),
+so the box asking for "the script that generated it" stays open (52-a); and the local-font metrics
+probe itself (`localFont` takes it as a function; none is bound yet).
+
 ## Definition of done
 
-- [ ] `src/font.bp` and `test/font_test.bp` exist; the `pub mod font;` line is handed to front 49
+- [x] `src/font.bp` and `test/font_test.bp` exist; the `pub mod font;` line is handed to front 49
 - [ ] The metrics table is committed, with the script that generated it and the date it was generated
-- [ ] No output of this front references a Google host at request time
-- [ ] `docs.md` states the probe-absent degradation and names it as a degradation
-- [ ] Front 70's README can point at this front for glyph metrics without this front changing shape
-- [ ] The front's tests are green on its assigned target — both, here
+- [x] No output of this front references a Google host at request time
+- [x] `docs.md` states the probe-absent degradation and names it as a degradation
+- [x] Front 70's README can point at this front for glyph metrics without this front changing shape
+- [x] The front's tests are green on its assigned target — both, here

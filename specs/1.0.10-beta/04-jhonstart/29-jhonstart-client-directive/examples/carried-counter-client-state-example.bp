@@ -1,14 +1,14 @@
 // components/counter.bp
-#[client]
-import {Element, div, button, p, text} from "jhonstart";
-import {state} from "jhonstart";
+import {Element, ElementBase, div, button, p, text} from "jhonstart";
+import {client, state} from "jhonstart";
 
+#[client]
 pub fn Counter() -> @Component<ElementBase, Element> {
     val count = use state(0);
     return div([
         p([text("Count: " + count.value.toString(), attrs: [])], attrs: []),
         button([text("+1", attrs: [])], attrs: [
-            #("onClick", "increment"),
+            #("data-jh-on-click", "Counter:increment"),
         ]),
     ], attrs: []);
 }

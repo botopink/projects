@@ -14,7 +14,7 @@
 ## Problem
 
 rakun has a property table and no way to fill it. `rkSetProp`/`rkProp`/`rkPropInt`
-(`src/runtime.bp:56-63`, backed by `runtime.mjs:84-97`) are a flat string-to-string `Map` that
+(`src/runtime.bp`, backed by front 04's ETS table) are a flat string-to-string `Map` that
 something else is expected to seed, and nothing does: the example application
 (`examples/rakun/src/config.bp:21-31`) declares `#[value("app.timezone")]` and the value it reads is
 whatever a test called `rkSetProp` with, or `""`. There is no file loader, no environment mapping, no
@@ -22,7 +22,7 @@ profile, no ordering, no typed binding, and no defaults.
 
 The practical shape of the problem is that `#[value]` is a promise the framework does not keep. A
 developer who writes `#[value("server.port")] port: i32` gets `0`, silently, and the application binds
-port 0. `rkPropInt` answers `0` for both "absent" and "unparsable" (`runtime.mjs:93-97`), so there is
+port 0. `rkPropInt` answers `0` for both "absent" and "unparsable", so there is
 not even a way to tell the two apart — which is why one of this front's deliverables is a boot-time
 refusal rather than a better default.
 
@@ -30,25 +30,6 @@ Spring's configuration surface is large and most of it is not decoration: orderi
 what makes a container deployment work, activation conditions are what make one artifact serve dev and
 prod, and `@ConfigurationProperties` is what makes a typo in a key a startup failure instead of a
 runtime surprise. This front is the largest of the rakun core fronts for that reason.
-
-## Current state
-
-| Piece | Where | State |
-|---|---|---|
-| Property storage | `runtime.mjs:84-97`, ETS after front 04 | exists, empty |
-| `#[value("key")]` injection | `decorators.bp:53-57` reads the field annotation and emits `rkProp`/`rkPropInt` | works, frozen, string and `i32` only |
-| File loading | — | none |
-| Environment mapping | — | none |
-| Profiles | — | none |
-| Typed binding | — | none |
-| Ordering between sources | — | none; there is one source |
-| `std` pieces this front stands on | `libs/std/src/fs.bp:33,61`, `env.bp:24,44,57` (`io.fs`, `io.env` after decision 106), `path`/`io.random` from front 01 | `fs`/`env` exist today; `path`/`io.random` are front 01's |
-| JSON decoding | `libs/std/src/json.bp:36-45` returns `@Result<string, string>` — **there is no structured walker** (`json.bp:9-16`) | insufficient in botopink; decoding happens in the sidecar over OTP's `json` module |
-
-That last row decides the shape of the front. Flattening `{"server": {"port": 8080}}` into
-`server.port=8080` cannot be written in botopink today, because std's `json` gives back a string and
-nothing to walk. It can be written in ten lines of Erlang over OTP 27's `json:decode/1`. So the parse
-and flatten step lives in the sidecar, and the botopink half is resolution, ordering and binding.
 
 ## Mechanism
 
@@ -90,8 +71,8 @@ The sidecar reads three:
 - **`.json`** — std's `json.decode(text) -> @Result<Json, string>` (`01-std/01-std-lib-enablement`,
   decision 117), then the `Json` tree flattened to dot keys: an `Obj` field extends the key, an `Arr`
   becomes indexed keys (`spring.profiles.include[0]`), matching Spring's own relaxed list binding,
-  and a `Str` / `Num` / `Bool` is the value. The landed reader is a hand scanner in botopink
-  (`modules/rakun/src/config.bp`); it and its string reader (`config.bp:394-433`, `jsonString` /
+  and a `Str` / `Num` / `Bool` is the value. The hand scanner in `modules/rakun/src/config.bp`
+  and its string reader (`config.bp:394-433`, `jsonString` /
   `jsonUnquote` / `unescape`, which misreads `\b`, `\f`, `\/` and `\u`) are deleted for std
   (decisions 116 and 117) — no token is sliced by hand.
 - **`.yaml` / `.yml`** — a **subset** decoder in the sidecar: block mappings, block sequences, plain
@@ -205,7 +186,7 @@ expected forms — never a zero.
 
 ### Validation at boot
 
-The constraints are the bundled library `validation` (decision 116; front 14's landed member moved).
+The constraints are the bundled library `validation` (decision 116).
 Front 05 owns the *moment*: after binding and before the first component is constructed, every
 `#[configurationProperties]` record marked `#[validated]` (imported `from "validation"`) is run through
 its emitted `validate<TypeName>`, the refusal text is front 14's `config_check.bp`, and a violation halts the boot with the full report — key, value, constraint, and the file
@@ -341,7 +322,6 @@ The milestone register is [`language-gaps.md`](../../language-gaps.md); the rows
 |---|---|---|---|
 | Declared parameter and field defaults are never applied at a call site (`tests/language/expected-failures.txt`, `fn_defaults.bp`; `docs.md:502-505`). A `#[configurationProperties]` record therefore cannot carry its defaults where a reader would look for them. | `examples/typed-config-example.bp` — every default is written in the decorator's emitted reader (`rkPropBool(key, false)`) instead of on the field | Pass the default as the second argument of the typed reader, and declare it in `#[default("…")]` on the field so the catalogue can report it | Apply declared defaults at the call site. Then `enabled: bool = false` is both the default and the documentation |
 | A decorator body cannot accumulate state across invocations — each is lowered alone into its own eval script (`decorators.bp:44-46`), so there is no comptime catalogue of every configuration key in the build. | The catalogue is a run-time registry (`rkRegisterConfigKeys`) dumped from a headless boot | The run-time registry, which is what this front ships | A comptime accumulator (`@collect`/`@registry`) visible to a build-final step, which would also let front 72 order auto-configurations without a run-time pass |
-| std's `json` returns `@Result<string, string>` with no structured walker (`libs/std/src/json.bp:9-16`), so nested configuration cannot be flattened in botopink. | The `.json` and `.yaml` readers are Erlang, in `rakun_config.erl` | Do the decoding in the sidecar over OTP's `json` module | A `JsonValue` sum type and walker in std — this is front 01's territory and is named here because front 05 is the first front it blocks |
 
 ## Test plan
 
@@ -350,17 +330,14 @@ The milestone register is [`language-gaps.md`](../../language-gaps.md); the rows
 
 Fixture documents live under `test/fixtures/config/` and are read by path, so ordering tests set
 `rakun.config.location` at the top of the test rather than depending on the working directory. The
-environment-variable and cloud-platform tests set variables through `env.write` (`libs/std/src/env.bp:30`)
+environment-variable and cloud-platform tests set variables through `io.env`'s `write` (`libs/std/src/io/env.bp:30`)
 and clear them afterwards, so they do not leak between test blocks — which matters, because the
 property table is process-global by design.
 
 The ordering tests are the ones that earn their keep: eight rows means eight "beats the row below"
 assertions plus one full-stack test that sets the same key in all eight and asserts the single winner.
 
-This front is erlang-only. The commonJS row is not covered and does not need to be: the property
-table's commonJS half is front 04's pre-existing `runtime.mjs`, and no configuration source is
-implemented for it. This front ships no Node file: the property table's commonJS half is front 04's
-pre-existing `runtime.mjs`, and a second Node file here would be new Node surface in a BEAM front.
+This front is erlang-only and ships no Node file (decision 113).
 
 ## Adjacent fronts
 
@@ -376,16 +353,11 @@ pre-existing `runtime.mjs`, and a second Node file here would be new Node surfac
 
 ## Contradictions with fronts.md
 
-Both of this front's original contradictions have been resolved by the coordinator and are recorded
-here only so the reasoning survives:
-
-1. **`src/config.mjs` was removed from this front's ownership.** A server front on the erlang target
-   must not carry a Node cell, and the Node half of the property table already exists in the frozen
-   `runtime.mjs`.
+1. **No Node cell.** A server front on the erlang target carries no `.mjs` file.
 2. **The sidecar is `src/sidecars/rakun_config.erl`, not `src/config.erl`.** The atom `config` collides
    with the emitted `rakun/config` module, so `shipErlSidecars` skips it (`libs.zig:596`) and the
    failure is silent. `fronts.md` now mandates the `src/sidecars/rakun_<name>.erl` form everywhere.
-3. **Resolved:** `src/root.bp` and `botopink.json` belong to **front 04**. This front's
+3. `src/root.bp` and `botopink.json` belong to **front 04**. This front's
    `pub mod config;` and `pub mod profiles;` lines are appended in front-number order, never
    reordering an existing line — the same rule track A uses for `libs/std/src/root.bp`.
 

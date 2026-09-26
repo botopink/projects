@@ -2,9 +2,9 @@
 //
 // Signing and verifying an HS256 token, deriving an ETag, and putting a signed
 // value on a URL. These are the three things fronts 10 (security), 18 (session)
-// and 03 (content hash) bottom out in, and none of them can be written against
-// std as it stands: `hash.hmacSha256` answers hex, RFC 7515 wants base64url of
-// the raw digest, and nothing in std compares two signatures in constant time.
+// and 03 (content hash) bottom out in: RFC 7515 wants base64url of the raw
+// digest (`hash.hmacSha256` answers hex), and two signatures are compared in
+// constant time.
 //
 // Upstream: https://datatracker.ietf.org/doc/html/rfc7519  (JWT)
 //           https://datatracker.ietf.org/doc/html/rfc7515  (JWS — base64url)
@@ -51,8 +51,8 @@ pub fn verifyHs256(key: string, token: string) -> bool {
 }
 
 // The claims half of a verified token, still base64url-encoded on the way in.
-// `base64UrlDecode` is total on well-formed input and answers "" otherwise, so a
-// tampered token reads as an empty claim set rather than a crash.
+// `base64UrlDecode` answers an `Error` on malformed input, read here as "", so
+// a tampered token reads as an empty claim set rather than a crash.
 pub fn claimsOf(key: string, token: string) -> string {
     val valid = verifyHs256(key, token);
     if (valid == false) {
@@ -60,11 +60,11 @@ pub fn claimsOf(key: string, token: string) -> string {
     };
     val parts = token.split(".");
     val payload = parts.at(1).unwrapOr("");
-    return encoding.base64UrlDecode(payload);
+    return encoding.base64UrlDecode(payload).unwrapOr("");
 }
 
-// A strong ETag for a rendered body. Front 03 wraps this as `hash.etag`;
-// the primitive underneath is a digest plus a base64url rendering.
+// A strong ETag over a SHA-256 digest, for a body at a trust boundary.
+// `hash.etag` is the fast djb2 form (front 03).
 pub fn etagOf(body: string) -> string {
     val digest = hash.sha256Base64Url(body);
     return "\"" + digest + "\"";

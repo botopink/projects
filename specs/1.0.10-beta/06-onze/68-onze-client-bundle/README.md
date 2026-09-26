@@ -11,7 +11,7 @@ server reads it back to emit script tags
 **Wave:** 6
 **Depends on:** 29 (the boundary marker, the `server-only` marker and the hydrate entry point) · 49
 (config, `outDir`, and the `ONZE_PUBLIC_` rule this front enforces) · 03 (content hashes) · 50 (the
-CLI that invokes it) · 01 (`path.walk`, `path.glob`, `process.run`, `fs`) · 30 (jhonstart's render:
+CLI that invokes it) · 01 (`io.fs` — `walk`, `glob`, `readText`, `writeText` — and `io.process.run`) · 30 (jhonstart's render:
 the payload, the globals registry — `globals.fill` and `globals.signal` — and the `RenderHooks` head and body fields its tags fill) · 27 (the link runtime the entry mounts) · 48 (the class names the
 tree carries) · 56 (emilia's `styleRule`, which the build-time rule evaluation calls — decision
 116) · `01-std/06-validation-lib` (`setMessageSource`, which the entry calls) · 20 (the websocket the
@@ -25,10 +25,10 @@ the payload and the globals registry are jhonstart front 30's, the island marker
 entry imports nothing from the bundled library `routing`: jhonstart's router and `Link` import it
 themselves (decision 115), the navigation vocabulary included (`routing`'s `navigation`, decision
 116) — the entry keeps no copy of it. Build-time rule evaluation calls emilia's `styleRule` (emilia
-front 56) directly and the hash-parity check calls std's `content_hash.contentHash` (decision 116)
+front 56) directly and the hash-parity check calls std's `hash.contentHash` (decision 116)
 **Does not touch:** `repository/onze/modules/onze/**` (front 49), `repository/onze/modules/onze-cli/**`
-(front 50), `repository/onze/modules/onze-assets/**` (front 69), `repository/jhonstart/src/**`,
-`repository/rakun/src/**`, `repository/emilia/src/**`
+(front 50), `repository/onze/modules/onze-assets/**` (front 69), `repository/jhonstart/**`,
+`repository/rakun/**`, `repository/emilia/**`
 **Reference:** `NEXTJS-DOCS.md § 7. Server e Client Components` (Regras fundamentais · Protegendo
 código server-only · `NEXT_PUBLIC_`), `§ 2. Instalação e Configuração` (scripts), `§ 25. Referência de
 Componentes` (`<Script>`), `§ 28. Configuração` (`env`, `generateBuildId`), `§ 29. CLI` (`next build`,
@@ -38,7 +38,6 @@ scheme, front 48) ·
 <https://nextjs.org/docs/app/guides/environment-variables> ·
 <https://nextjs.org/docs/app/api-reference/components/script> ·
 <https://nextjs.org/docs/app/api-reference/cli/next>
-the milestone
 
 ---
 
@@ -67,21 +66,18 @@ in a file served to the public.
 
 ## Current state
 
-- `repository/onze/` does not exist. Front 49 creates it; `modules/onze-bundler/` is created by
-  this front inside it.
+- `repository/onze/modules/` does not exist. Front 49 creates the package; `modules/onze-bundler/`
+  is created by this front inside it.
 - Nothing in the workspace computes a module graph. The compiler resolves imports to compile them
   (`pub mod` declarations plus `from "<lib>"`), and exposes none of that: `@Decl` gives a
-  declaration's kind, name, fields, methods and annotations (`libs/std/src/builtins.d.bp:425-477`)
+  declaration's kind, name, fields, methods and annotations (`libs/std/src/builtins.d.bp`)
   and says nothing about what a module imports.
 - A decorator body runs in a minimal eval prelude with no filesystem and cannot call a sibling
-  function (`repository/rakun/src/decorators.bp:44-46`), so a comptime graph walk is not available
-  and was never the plan.
-- `botopink build` emits one `.js` file per module under `out/` — visible in the checkout at
-  `repository/jhonstart/out/element.js`, `hooks.js`, `html.js`, `root.js`. That is the compiler
-  output this front concatenates; it is not a bundle and there is no entry point among those files.
-- `repository/jhonstart/examples/jhonstart-counter/out/` shows the shape a consumer gets today: the
-  app's own `main.js` beside a copied `jhonstart/` directory of `require`-linked modules. A browser
-  cannot load that: there is no `require`.
+  function, so a comptime graph walk is not available.
+- `botopink build` emits one `.js` file per module under `out/`. That is the compiler output this
+  front concatenates; it is not a bundle and there is no entry point among those files.
+- A consumer's build output is the app's own `main.js` beside a copied directory of
+  `require`-linked library modules. A browser cannot load that: there is no `require`.
 - No `<script>` tag is emitted by anything in the milestone, because nothing has a URL to put in one.
 
 ## Mechanism
@@ -95,7 +91,7 @@ The audit records the plugin surfaces as deliberately deferred.
 ### Step 0 of everything — the graph is walked over files, not at comptime
 
 The compiler exposes no module-graph API, so the walk is textual and happens at build time inside the
-CLI, where `path.walk` and `fs.readText` (front 01) exist. `importsOf(source) -> Array<ImportRef>`
+CLI, where `fs.walk` and `fs.readText` (std's `io.fs`) exist. `importsOf(source) -> Array<ImportRef>`
 reads the `import { … } from "…";` and `pub mod …;` lines of one `.bp` file. This is a real design
 cost and it is stated plainly rather than hidden: a dynamically constructed import would be invisible
 to it, and botopink has none — every import is a literal line at the top of a file, which is what
@@ -159,8 +155,8 @@ Four things enforce it, and they are this front's:
 
 1. **Same input, same function.** Clause 3 of `contracts.md § 4` is the ASCII restriction: the JS cell
    folds UTF-16 units and the erlang cell folds codepoints, and they diverge above U+10000. The
-   function is std's `content_hash.contentHash` — emilia's class name and this check call the same
-   one, compiled for two targets (decision 116; emilia's private `hashHex` duplicate is gone). The
+   function is std's `hash.contentHash` — emilia's class name and this check call the same
+   one, compiled for two targets (decision 116). The
    bundler **recomputes both hashes for every rule body reachable from the client graph and fails the
    build when they differ**, naming the token list. It is the second line of defence behind front
    48's payload-leaf gate, and it costs nothing.
@@ -232,8 +228,7 @@ pub fn scriptTags(m: ClientBundleManifest, route: string) -> string
 ```
 
 The on-disk form is `<outDir>/client-manifest.txt`, a line-oriented `|`-delimited table — the same
-shape front 22 uses for the route table, and for the same reason: `libs/std/src/json.bp:36,45` is
-`parse`/`stringify` over strings with no structured walker, so there is no JSON object to decode.
+shape front 22 uses for the route table: one record per line, split the same way on both targets.
 
 ```
 V|1|<buildId>
@@ -294,7 +289,7 @@ invent a marker; it consumes that one. The entry:
 1. reads the payload through `readPayload(globals.payload)` — the global jhonstart's render wrote
    last in `<body>`, named by jhonstart's globals registry (`__bp0`), never by a hand-written string,
 2. reads the `i` triples, `props` being form-urlencoded and parsed with `querystring.parse`
-   (`libs/std/src/querystring.bp:35`),
+   (std's `querystring`),
 3. queries `[data-jh-i]` in document order,
 4. pairs each element with the triple whose id matches, and calls front 29's hydrate entry point for
    that component,
@@ -347,13 +342,13 @@ pub fn moduleIdOf(packageRoot: string, filePath: string) -> string
 ```
 
 **Acceptance:**
-- [ ] `import { div, text } from "jhonstart";` yields one ref, spec `"jhonstart"`, two names
-- [ ] `import { perimeter };` — the sibling shorthand — yields a ref with an empty spec and
+- [x] `import { div, text } from "jhonstart";` yields one ref, spec `"jhonstart"`, two names
+- [x] `import { perimeter };` — the sibling shorthand — yields a ref with an empty spec and
       `isModDecl: false`
-- [ ] `pub mod tokens;` yields a ref with `isModDecl: true`
-- [ ] A commented-out import is not an edge
-- [ ] An `import` line the scanner cannot parse fails the scan, naming the file and the line
-- [ ] `moduleIdOf` is stable across platforms: a backslash path and a slash path give the same id
+- [x] `pub mod tokens;` yields a ref with `isModDecl: true`
+- [x] A commented-out import is not an edge
+- [x] An `import` line the scanner cannot parse fails the scan, naming the file and the line
+- [x] `moduleIdOf` is stable across platforms: a backslash path and a slash path give the same id
 
 ### Step 2 — `clientGraph`
 
@@ -366,11 +361,11 @@ pub fn chainOf(graph: ClientGraph, moduleId: string) -> Array<string>
 ```
 
 **Acceptance:**
-- [ ] A module imported only by a server module is absent from the graph
-- [ ] A module imported by a client root is present even though it carries no marker
-- [ ] A module imported by two roots appears once, with the chain of the first root that reached it
-- [ ] An import cycle terminates and each module appears once
-- [ ] `chainOf` of a module three levels below a root returns four ids, root first
+- [x] A module imported only by a server module is absent from the graph
+- [x] A module imported by a client root is present even though it carries no marker
+- [x] A module imported by two roots appears once, with the chain of the first root that reached it
+- [x] An import cycle terminates and each module appears once
+- [x] `chainOf` of a module three levels below a root returns four ids, root first
 
 ### Step 3 — the three refusals
 
@@ -385,18 +380,18 @@ pub fn refusalMessage(r: BuildRefusal) -> string
 ```
 
 **Acceptance:**
-- [ ] `checkServerOnly` refuses a graph containing front 29's marker and the message contains every
+- [x] `checkServerOnly` refuses a graph containing front 29's marker and the message contains every
       id of the chain, root first
-- [ ] `checkEnvReads` passes `ONZE_PUBLIC_API_URL` and refuses `DATABASE_URL`, `onze_public_x`,
+- [x] `checkEnvReads` passes `ONZE_PUBLIC_API_URL` and refuses `DATABASE_URL`, `onze_public_x`,
       a non-literal name, `env.vars()`, `env.write` and `env.clear`
-- [ ] The refusal message names the variable **and** the chain — asserted on the string, because a
+- [x] The refusal message names the variable **and** the chain — asserted on the string, because a
       message that names only the module is a message that does not fix the problem
-- [ ] No configuration value, decorator or CLI flag changes any of these outcomes — asserted by a
+- [x] No configuration value, decorator or CLI flag changes any of these outcomes — asserted by a
       test that builds with every config field set adversarially and still gets the refusal
 - [ ] `checkEmiliaCalls` refuses a non-literal token list, a `flush()` reference, and a rule body
-      whose commonJS and erlang hashes differ; both hashes are `content_hash.contentHash`, and the
+      whose commonJS and erlang hashes differ; both hashes are `hash.contentHash`, and the
       class a `styleMap` entry records equals `styleRule(tokens, th)._0` for the contract-4 fixture
-- [ ] A build with more than one refusal reports all of them, not the first
+- [x] A build with more than one refusal reports all of them, not the first
 
 ### Step 4 — chunking and emission
 
@@ -406,32 +401,32 @@ pub fn emitChunk(plan: ChunkPlan, compiledDir: string) -> @Task<ChunkRef>
 ```
 
 Compilation is `process.run` (front 01) over `botopink build --target commonJS`; concatenation is
-`fs.readText`/`fs.writeText` plus the module-registry prelude. `@Task` lowers eagerly on erlang
-(`libs/std/src/http.bp:16-18`), so chunk emission is sequential unless it is handed to front 02's
+`fs.readText`/`fs.writeText` plus the module-registry prelude. `@Task` lowers eagerly on erlang,
+so chunk emission is sequential unless it is handed to front 02's
 task runner over unstarted tasks — the parallel path is front 02's, and this front does not fake it.
 
 **Acceptance:**
-- [ ] A module reached by two routes lands in `shared` and in no route chunk
-- [ ] A module reached by one route lands in that route's chunk only
-- [ ] Two builds of an unchanged tree produce identical chunk hashes — the build is reproducible
-- [ ] A chunk's URL contains its own hash, and changing one byte of one module changes exactly the
+- [x] A module reached by two routes lands in `shared` and in no route chunk
+- [x] A module reached by one route lands in that route's chunk only
+- [x] Two builds of an unchanged tree produce identical chunk hashes — the build is reproducible
+- [x] A chunk's URL contains its own hash, and changing one byte of one module changes exactly the
       chunks containing it
-- [ ] The prelude resolves a `require` between two concatenated modules without a network fetch
+- [x] The prelude resolves a `require` between two concatenated modules without a network fetch
 
 ### Step 5 — the manifest
 
 As specified under *The bundle contract*.
 
 **Acceptance:**
-- [ ] `parseManifest(formatManifest(m))` equals `m` for a manifest with every field populated —
+- [x] `parseManifest(formatManifest(m))` equals `m` for a manifest with every field populated —
       asserted on `commonJS` **and** on `erlang`, with the same literal
-- [ ] A `V` line with version `2` is an error naming the version
-- [ ] An unknown record kind is ignored, so a front-69 `Y` line does not break a front-68 reader
-- [ ] A value containing `|` round-trips, because it is percent-encoded
-- [ ] `scriptTags` emits `shared`, then the route chunk, then the entry, and nothing else
-- [ ] `headScriptTags` emits only `beforeInteractive` chunks, and never a `defer` attribute
-- [ ] `scriptTags` for a route with no route chunk emits shared and entry, never an empty `src`
-- [ ] Neither function emits the payload script (`window.__bp0 = …`) — the payload is jhonstart
+- [x] A `V` line with version `2` is an error naming the version
+- [x] An unknown record kind is ignored, so a front-69 `Y` line does not break a front-68 reader
+- [x] A value containing `|` round-trips, because it is percent-encoded
+- [x] `scriptTags` emits `shared`, then the route chunk, then the entry, and nothing else
+- [x] `headScriptTags` emits only `beforeInteractive` chunks, and never a `defer` attribute
+- [x] `scriptTags` for a route with no route chunk emits shared and entry, never an empty `src`
+- [x] Neither function emits the payload script (`window.__bp0 = …`) — the payload is jhonstart
       front 30's render and this front formats no part of it
 
 ### Step 6 — the hydration entry
@@ -449,24 +444,24 @@ entry names — `globals.payload`, `globals.fill` — come from jhonstart's regi
 render that writes them and the entry that reads them cannot diverge (decision 113).
 
 **Acceptance:**
-- [ ] `islandAttr(0)` is `#("data-jh-i", "i0")`, matching `contracts.md § 2` — asserted here
+- [x] `islandAttr(0)` is `#("data-jh-i", "i0")`, matching `contracts.md § 2` — asserted here
       against front 29's definition, not against a local one
-- [ ] `parseIslands` of the payload's `i` key returns one `Island` per triple, props parsed
-- [ ] The generated entry compiles: `botopink build` over `<outDir>/client/` succeeds
-- [ ] An island id present in the DOM and absent from the payload raises, with the id in the message
-- [ ] An island id present in the payload and absent from the DOM raises, with the id in the message
-- [ ] A hole id in the payload's `h` key with no `[data-jh-h]` element raises, with the id
-- [ ] The fill function is registered under `globals.fill` before the first streamed chunk can
+- [x] `parseIslands` of the payload's `i` key returns one `Island` per triple, props parsed
+- [x] The generated entry compiles: `botopink build` over `<outDir>/client/` succeeds
+- [x] An island id present in the DOM and absent from the payload raises, with the id in the message
+- [x] An island id present in the payload and absent from the DOM raises, with the id in the message
+- [x] A hole id in the payload's `h` key with no `[data-jh-h]` element raises, with the id
+- [x] The fill function is registered under `globals.fill` before the first streamed chunk can
       arrive — asserted by generating an entry for a route with holes and checking the registration
       precedes the island loop
-- [ ] `linkMount` and `formMount` are called exactly once each, after the last island, and
+- [x] `linkMount` and `formMount` are called exactly once each, after the last island, and
       `formMount` receives the configured `actionHeader`, not a literal of the bundler's own
-- [ ] The entry registers `globals.signal` before the first streamed chunk can arrive, next to
+- [x] The entry registers `globals.signal` before the first streamed chunk can arrive, next to
       `globals.fill`, with the configured `allowedRedirects` — `[]` by default, never a literal of
       the bundler's own
-- [ ] The entry calls `setMessageSource` from `"validation"` before the first island mounts, and the
+- [x] The entry calls `setMessageSource` from `"validation"` before the first island mounts, and the
       client graph contains no `rakun` package
-- [ ] The entry imports nothing from `routing` and hands the router no `match`; it contains no
+- [x] The entry imports nothing from `routing` and hands the router no `match`; it contains no
       matcher and no table parser, and the bundle's client graph reaches `routing` compiled for
       commonJS only through jhonstart's router and `Link`
 - [ ] The generated entry contains no hand-written `__`-prefixed name: every global it reads is
@@ -484,12 +479,12 @@ pub fn scriptPlacement(strategy: string) -> string
 ```
 
 **Acceptance:**
-- [ ] `beforeInteractive` is a blocking tag in `<head>`, before the payload
-- [ ] `afterInteractive` is scheduled by the entry after hydration completes
-- [ ] `lazyOnload` is scheduled after the load event
-- [ ] `worker` produces a worker chunk and a `Worker` construction in the entry; a `worker` script
+- [x] `beforeInteractive` is a blocking tag in `<head>`, before the payload
+- [x] `afterInteractive` is scheduled by the entry after hydration completes
+- [x] `lazyOnload` is scheduled after the load event
+- [x] `worker` produces a worker chunk and a `Worker` construction in the entry; a `worker` script
       that also declares `onLoad` is refused, naming the script, because the callback cannot run
-- [ ] An unknown strategy is refused, naming it and listing the four
+- [x] An unknown strategy is refused, naming it and listing the four
 
 ### Step 8 — dev rebuild
 
@@ -498,11 +493,11 @@ pub fn rebuild(graph: ClientGraph, changed: string) -> @Task<#(ClientGraph, Arra
 ```
 
 **Acceptance:**
-- [ ] A change to a module body rebuilds only the chunks containing it
-- [ ] A change to an import line re-walks the graph
-- [ ] A change that introduces a `server-only` import fails dev with the same message `build` gives
-- [ ] A change that introduces a non-public env read fails dev with the same message `build` gives
-- [ ] The manifest on disk is rewritten before the websocket push, so a reload during a rebuild
+- [x] A change to a module body rebuilds only the chunks containing it
+- [x] A change to an import line re-walks the graph
+- [x] A change that introduces a `server-only` import fails dev with the same message `build` gives
+- [x] A change that introduces a non-public env read fails dev with the same message `build` gives
+- [x] The manifest on disk is rewritten before the websocket push, so a reload during a rebuild
       never serves a URL the manifest does not name
 
 ## Examples
@@ -520,7 +515,7 @@ pub fn rebuild(graph: ClientGraph, changed: string) -> @Task<#(ClientGraph, Arra
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| No bitwise operators and no `toString(radix)` — also recorded by front 01 | chunk and build-id hashing in `emitChunk` | front 03's `content_hash`, whose fold lives in a host template | `&`, `|`, `^`, `<<`, `>>` on `i32`, and `i32.toString(radix)` |
+| No bitwise operators and no `toString(radix)` — also recorded by front 01 | chunk and build-id hashing in `emitChunk` | std's `hash.contentHash`, whose fold lives in a host template | `&`, `|`, `^`, `<<`, `>>` on `i32`, and `i32.toString(radix)` |
 | No byte or binary type — also recorded by front 01 | `ChunkRef.bytes` counts characters, not octets; a font or image asset is copied by `process.run`, never read into botopink | keep binary assets out of botopink and move them with the filesystem | a `bytes` primitive with indexing and a length, and `fs.readBytes` |
 | No module-graph reflection: `@Decl` exposes declarations, not imports | `importsOf` is a textual scan of `import`/`pub mod` lines | scan the source text; fail loudly on an unparsable line | a comptime `@Module` with `imports()`, so the graph is the compiler's answer and not a parallel parser |
 | No array or tuple destructuring in a binding — also recorded by front 01 | `rebuild`'s `#(ClientGraph, Array<string>)` result is read as `r.0` / `r.1` | one `val` per element, read by index | `val #(graph, dirty) = rebuild(…);` |
@@ -549,25 +544,52 @@ the filesystem and the compiler through `libs/std` (fronts 01 and 03), which is 
 *reuse std* rule and also the reason the erlang cell of `manifest_test.bp` is green rather than
 skipped.
 
+## Where it stands
+
+Implemented: `modules/onze-bundler/src/`
+`manifest`, `scan`, `graph`, `refusal`, `chunk`, `entry`, `script`, `rebuild`, `hooks` (the tags as
+jhonstart's `RenderHooks`) and `fixture` (the frozen fixture app every track-E suite reads); six
+suites, **37 tests, all on commonJS and on erlang** (the build half is pure and runs on both rows;
+the prelude's `require` test evaluates the chunk under node and answers `no-js-engine` on erlang).
+The generated entry is compiled by `onze build` (front 50) inside the staged client package,
+and linked by file (`link.bp`: the relative-`require` closure, `.mjs` sidecars as factories,
+jhonstart's `hooks` → `client_runtime` substitution); the scaffold's bundle boots under node.
+Route-level splitting at the file level is not done — the entry imports every client component,
+so every island's closure lands in `shared` — until the entry starts islands lazily.
+
+Open, and why:
+
+- the `styleMap` class (`styleRule(tokens, th)._0`) and the runtime `s` check: emilia front 56's
+  `styleRule` does not exist yet, so a literal call records its token text; the hash-parity rule
+  is enforced statically — a non-ASCII token list is refused (`emilia-hash-split`), which is
+  contract 4 clause 3 and covers the astral divergence the two `contentHash` cells have;
+- "no hand-written `__` name": the island starters go into `globalThis.__jhIslandStarters`,
+  jhonstart's table outside its globals registry — jhonstart owes a registry entry (or a
+  `registerStarter`) for it;
+- `onze build` over the blog, and the tags handed over by `Onze.run` (fronts 50 and 49's rakun
+  half).
+
+Choices recorded in `../../decisions-pending.md` 68-a…c.
+
 ## Definition of done
 
-- [ ] `repository/onze/modules/onze-bundler/` exists with `botopink.json`, `src/root.bp` and the
+- [x] `repository/onze/modules/onze-bundler/` exists with `botopink.json`, `src/root.bp` and the
       modules named in *Steps*
 - [ ] `onze build` on front 53's example app writes `<outDir>/client-manifest.txt`, a chunk tree
       under `<outDir>/client/`, and a generated `entry.bp` that compiles
 - [ ] The bundle's script tags reach the document through jhonstart's `RenderHooks.headExtra` /
       `bodyExtra`, handed over by `Onze.run`; no other front formats one, and jhonstart's render
       keeps its own payload script per `contracts.md § 2`
-- [ ] `repository/onze/modules/onze-bundler/` names jhonstart in its `botopink.json`, and jhonstart
+- [x] `repository/onze/modules/onze-bundler/` names jhonstart in its `botopink.json`, and jhonstart
       does not name `onze` — the seam is one-directional (decision 113)
-- [ ] `contracts.md § 6` is filled in from this front's *The bundle contract* section, verbatim
-- [ ] The three refusals are covered by a test each **and** by an adversarial-config test proving no
+- [x] `contracts.md § 6` is filled in from this front's *The bundle contract* section, verbatim
+- [x] The three refusals are covered by a test each **and** by an adversarial-config test proving no
       setting relaxes them
-- [ ] `islandAttr` is defined by front 29 and imported by this front's entry generator — one
+- [x] `islandAttr` is defined by front 29 and imported by this front's entry generator — one
       definition, in jhonstart, cited in both READMEs
-- [ ] The emilia hash-parity check runs on every build, not only on request
-- [ ] `repository/onze/docs.md` carries the manifest format and the script-tag order verbatim,
+- [x] The emilia hash-parity check runs on every build, not only on request
+- [x] `repository/onze/docs.md` carries the manifest format and the script-tag order verbatim,
       because fronts 30, 49, 50, 53, 69 and 71 all read them
-- [ ] The front's tests are green on its assigned targets — `commonJS` for the build half, and
+- [x] The front's tests are green on its assigned targets — `commonJS` for the build half, and
       `erlang` for `manifest_test.bp`
 

@@ -1,10 +1,19 @@
-// NOTE: the frozen `html.bp` has no `[emilia]` attribute; bind `cls(tokens, th)` to a `val`
-// and use `[class]={c}`. This example keeps the older shape.
+// Responsive modifiers are emilia tokens; the markup only carries the class
+// through the `[class]={c}` hole, bound to a `val` with `cls(tokens, th)`.
+
+import {html} from "jhonstart-html";
+import {div, h2, text} from "jhonstart";
+import {Token, cls, defaultTheme} from "emilia";
+
+val th = defaultTheme();
+val boxTokens: Token[] = [.Pad.All.4, .Md([.Pad.All.8]), .Lg([.Pad.All.16])];
+val headingTokens: Token[] = [.Text.Size.Xl, .Md([.Text.Size.X2xl]), .Lg([.Text.Size.X3xl])];
+
+val boxClass = cls(boxTokens, th);
+val headingClass = cls(headingTokens, th);
 
 val card = html """
-<div [emilia]={[.Pad.All.4, .Md([.Pad.All.8]), .Lg([.Pad.All.16])]}>
-  <h2 [emilia]={[.Text.Size.Xl, .Md([.Text.Size.X2xl]), .Lg([.Text.Size.X3xl])]}>
-    Responsive
-  </h2>
+<div [class]={boxClass}>
+  <h2 [class]={headingClass}>Responsive</h2>
 </div>
 """;

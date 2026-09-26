@@ -181,7 +181,7 @@ emission site — `beam/erl_emitter.zig:652`, every `call_ext` target in `beam_a
 The `.` also makes the name un-greppable next to the record and float syntax.
 
 Prior art, **dropped, not verified** (no `elixir` on `PATH` when the option was weighed, nor on
-2026-09-25 when the front closed step 0): Elixir is said to compile module `MyApp.User` to the atom
+ when the front closed step 0): Elixir is said to compile module `MyApp.User` to the atom
 `:"Elixir.MyApp.User"` and the file `Elixir.MyApp.User.beam` in a flat `ebin/`. Were it right, option
 C would be the industrial-strength version of the maintainer's proposal and option P would be option
 C plus a `#` suffix. It was the only argument that could have moved the recommendation from A to C;

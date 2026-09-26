@@ -423,10 +423,10 @@ Erlang-only. There is no client half: a browser reads these endpoints over HTTP 
    (`exposure.bp`, `access.bp`, `management_listener.bp`, `probes.bp`, `sanitize.bp`). The rows
    overlap; F11's should be narrowed to the files it actually owns, or 76's carved out by
    sub-directory as F07/F20 do.
-3. **Resolved:** the sidecars are `modules/rakun-actuator-api/src/sidecars/rakun_actuator_api.erl`
+3. The sidecars are `modules/rakun-actuator-api/src/sidecars/rakun_actuator_api.erl`
    (the three registries and the span emitter) and `modules/rakun-actuator/src/sidecars/rakun_actuator.erl`
    (the host), per the mandated `src/sidecars/rakun_<name>.erl` form.
-4. **Resolved:** the decorators and the registration contract moved to `modules/rakun-actuator-api/`,
+4. The decorators and the registration contract live in `modules/rakun-actuator-api/`,
    a wave-1 module with no dependencies, owned by this front alongside the host. Fronts 08, 09, 12,
    15–18, 77 and 85 depend on the API module, not on the host, so the wave table has no cycle.
 

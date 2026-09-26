@@ -1,7 +1,7 @@
 # The design — module-level `var` and `@BeamMemory`
 
 The argument behind [front 17](./README.md), with the evidence that produced it. Every number here was
-measured on 2026-09-18 at `botopink-lang` `bef762b`, in a detached scratch worktree — OTP 29 /
+measured, in a detached scratch worktree — OTP 29 /
 erts 17.0.6, node v25.8.0, wasmtime 45.0.0, 16 cores. Where something was **not** measured, the line
 says so.
 
@@ -47,7 +47,7 @@ the process heap, ETS is memory off the heap, `persistent_term` is node-global m
 uses for `@External.Erlang`: **family = the concern, member = the specific**.
 
 **The spelling already parses.** `#[@BeamMemory.Ets(keyed = true)]` on a `fn` checks clean at
-`bef762b`: `parser.zig:900` builds the `Family.Member` name and `parser.zig:962` accepts
+: `parser.zig:900` builds the `Family.Member` name and `parser.zig:962` accepts
 `keyed = true` as a labelled argument. What does not exist is the **carrier**: `#[…]` before a
 top-level `val` is `unexpected '#'` (the annotated-declaration `switch` at `parser.zig:450` has no
 `.val` arm), and `var` at module level is `unexpected 'var'`. `ast.ValDecl` (`ast.zig:1891-1909`) has
@@ -138,9 +138,9 @@ truth lives.**
 `keyed` is an **argument of the member**, optional, **default `false`**:
 
 ```botopink
-#[@BeamMemory.Ets]                var config: Dict<string, string> = dict.empty();  // = keyed false
-#[@BeamMemory.Ets(keyed = false)] var config: Dict<string, string> = dict.empty();  // the same, written
-#[@BeamMemory.Ets(keyed = true)]  var counts: Dict<string, i32>    = dict.empty();
+#[@BeamMemory.Ets]                var config: Dict<string, string> = Dict.empty();  // = keyed false
+#[@BeamMemory.Ets(keyed = false)] var config: Dict<string, string> = Dict.empty();  // the same, written
+#[@BeamMemory.Ets(keyed = true)]  var counts: Dict<string, i32>    = Dict.empty();
 ```
 
 | | `keyed = false` | `keyed = true` |

@@ -17,11 +17,11 @@
 // Both hooks are specified from upstream React: neither appears in
 // NEXTJS-DOCS.md. See the README's `Reference gaps`.
 
-import { Element, text, span, div, renderToString } from "jhonstart";
+import { Element, ElementBase, text, span, div, renderToString } from "jhonstart";
 // provided by front 94 (`jhonstart-element-surface`, src/elements.bp)
 import { form, button } from "jhonstart";
-import { FormBinding, formAction, formAttrs } from "jhonstart";
-import { FormStatus, formStatus, optimistic, applyOptimistic } from "jhonstart";
+import { FormBinding, formAction, formAttrs } from "jhonstart-forms";
+import { FormStatus, formStatus, optimistic, applyOptimistic } from "jhonstart-forms";
 
 // How one prediction folds into the count. Pure, and the only place the
 // prediction rule lives — the host cell supplies the action list, nothing else.
@@ -60,9 +60,8 @@ fn likeWidget(binding: FormBinding, shown: i32, status: FormStatus) -> Element {
 // The component. `push(1)` is called by the submit interceptor, not from here:
 // the prediction is recorded against the submit that is starting.
 fn LikeWidget(serverCount: i32) -> @Component<ElementBase, Element> {
-    // LANGUAGE GAP: `val #(shown, push) = use …` parses and lowers, but the elements
-    // are fresh type vars (`infer.zig:8194-8196`) — `shown` is typed only because
-    // `likeWidget` takes an `i32`. Upstream: `const [shown, push] = useOptimistic(...)`.
+    // Each element takes its type from the hook's tuple (decision 67): `shown` is
+    // the `i32` of `T`. Upstream: `const [shown, push] = useOptimistic(...)`.
     val #(shown, push) = use optimistic(serverCount, addLike);
     val status = use formStatus();
     return likeWidget(formAction("a_likePost", "/blog/hello", "__bp_action"), shown, status);

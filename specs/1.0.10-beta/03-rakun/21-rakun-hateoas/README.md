@@ -30,7 +30,7 @@ writable.
 
 - `repository/rakun/modules/rakun-hateoas/src/root.bp` — docblock and `// Module contents will be added by the respective fronts.`
 - `repository/rakun/src/http.bp:45-73` — `Response` has six builders: `ok`, `json`, `created`, `withStatus`, `notFound`, `badRequest`. No header surface, so the `application/hal+json` content type is set through front 07's response-header mechanism.
-- `libs/std/src/json.bp:36,45` — `parse` and `stringify` both take and return `string`. There is no structured JSON value in the ecosystem ([`../../language-gaps.md`](../../language-gaps.md), *Unowned surface*), which decides this front's whole serialization strategy.
+- `libs/std/src/json.bp` — `parse` and `stringify` take and return `string`; `json.decode` reads a document into a `Json` tree (decision 117), and `json.quote` / `json.array` / `json.object` write one. Nothing serializes an arbitrary record at run time ([`../../language-gaps.md`](../../language-gaps.md), *Unowned surface*), which decides this front's whole serialization strategy.
 - `repository/rakun/src/runtime.bp:88-92` — `rkRouteCount()` and `rkRoutePaths()` exist. The route table holds a verb, a path and a handler closure and **does not hold the controller or method name** (`repository/rakun/src/runtime.bp:78-86`), which decides `linkTo`'s shape.
 
 ## Mechanism
@@ -210,7 +210,7 @@ pub fn halResponse(body: string) -> Response
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| There is no structured JSON value in std (`libs/std/src/json.bp:36,45`), so nothing can serialize an arbitrary record at run time. Recorded in [`../../language-gaps.md`](../../language-gaps.md) under *Unowned surface*. | `examples/hal-resource-example.bp`, every `…ToHal` call and `halCollection` | Reflect the record at comptime with `#[halResource]` and emit a concrete renderer; refuse a field type the renderer does not know. Collections take already-rendered strings. | A `JsonValue` sum type in std with a writer, which would also let `halCollection` take records |
+| std's `Json` tree (`libs/std/src/json.bp`) has a reader (`json.decode`) and no writer, and a record cannot be reflected at run time, so nothing can serialize an arbitrary record. Recorded in [`../../language-gaps.md`](../../language-gaps.md) under *Unowned surface*. | `examples/hal-resource-example.bp`, every `…ToHal` call and `halCollection` | Reflect the record at comptime with `#[halResource]` and emit a concrete renderer; refuse a field type the renderer does not know. Collections take already-rendered strings. | A writer for std's `Json`, which would also let `halCollection` take records |
 | Declared parameter defaults are never applied, so `Link` cannot have optional attributes the way HAL's model does. | `link(rel, href)` in the example | A named constructor for the common case and the full constructor otherwise. | Apply declared defaults at call sites |
 
 ## Test plan

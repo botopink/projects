@@ -9,7 +9,6 @@
 
 import { emilia, flush, Token } from "emilia";
 import { preflightRules, preflight } from "emilia";
-// `defaultOptions`, `withBase` and `flushWith` are provided by front 56.
 import { defaultOptions, withBase, flushWith } from "emilia";
 
 fn heading() -> string {
@@ -47,7 +46,7 @@ test "headings lose the browser margin the utilities assume is gone" {
     val opts = withBase(defaultOptions(), preflightRules());
     val css = await flushWith(opts);
     assert css.contains("h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit;margin:0}");
-    assert css.contains("." + cls + "{font-size:1.5rem");
+    assert css.contains("." + cls + "{font-size:var(--text-2xl)");
 }
 
 test "the pseudo-element default is in place before any utility can override it" {

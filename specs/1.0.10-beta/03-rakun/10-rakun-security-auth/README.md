@@ -39,7 +39,7 @@ ship is `crypto:pbkdf2_hmac/5`, and that decides the default encoder — see *Pa
 | The chain to register into | front 07, order band −300 reserved for security | available once 07 lands |
 | Per-request state | front 06's `Request` scope, front 04's process dictionary | available |
 | Reply headers (`WWW-Authenticate`) | front 04's `rkSetReplyHeader` | available |
-| HMAC, base64url, constant-time compare | front 01's `hmac` and `encoding` modules | front 01's deliverable |
+| HMAC, base64url, constant-time compare | std's `hash` and `encoding` | available |
 | `crypto:pbkdf2_hmac/5`, `crypto:hash/2`, `crypto:strong_rand_bytes/1` | OTP `crypto` | available, no dependency |
 | bcrypt / scrypt / Argon2 | — | NIFs; not loadable from a run-time-compiled sidecar |
 | `modules/rakun-security/` | — | does not exist |

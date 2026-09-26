@@ -239,9 +239,10 @@ None new. This front is bitten by three already recorded in
 
 - **No bodyless method in a `type` body** — decides the `#[documentQuery]` shape, exactly as it decides
   front 08's `#[query]`.
-- **A std JSON walker does not exist** — decides that documents are strings and that there is no typed
-  document model in this front.
-- **A function cannot forward a `@Result`** — decides the doubled raising / `try*` surface.
+- **Documents are strings, with no typed document model in this front.** std's structured `json.Json`
+  and `json.decode` exist (decision 117); a typed model over them is open.
+- **The doubled raising / `try*` surface** is front 08's, kept for readability; a `-> @Result`
+  function forwards a received `@Result` with `return r` (decision 119).
 
 ## Test plan
 
@@ -275,7 +276,7 @@ covered rather than reading a green run as full coverage.
 1. The ownership row does not name a sidecar. The arms live in
    `modules/rakun-data/src/sidecars/rakun_nosql.erl`; it must be allocated to this front or it cannot
    ship.
-2. **Resolved:** `modules/rakun-data/src/root.bp` belongs to **front 08**, the lowest-numbered front
+2. `modules/rakun-data/src/root.bp` belongs to **front 08**, the lowest-numbered front
    in that module, and this front appends its `pub mod nosql;` line in front-number order without
    reordering anything. The two fronts land in different waves, so the append is the whole of the
    interaction.

@@ -1,86 +1,40 @@
-# Unification — 1.0.10-beta: where every 1.0.6 / 1.0.7 / 1.0.8 / 1.0.9 document went
+# Unification — where every 1.0.6 / 1.0.7 / 1.0.8 / 1.0.9 document lives in 1.0.10-beta
 
 1.0.9-beta absorbed three drafts (1.0.6 rakun, 1.0.7 onze13, 1.0.8 emilia) into one milestone of
-ninety-five fronts. 1.0.10-beta re-cuts that milestone by **library** — `01-std/`, `03-rakun/`,
-`04-jhonstart/`, `05-emilia/`, `06-onze/` — adds the compiler carry-over (`00-compiler-carry-over/`)
-and the cross-cutting package restructure (`02-packaging/`), and keeps every front number. This file
-is the proof that the re-cut lost nothing: every top-level document of the four earlier milestones
-has a row saying where its content is now, and every front number 01–96 has a row saying where its
-directory is now.
-
-Two levels of proof. This file covers the **top-level** documents and the **front-number map**. The
-**per-front** proof — which sections of each old front README were carried, appended or superseded —
-is each library's own `unification.md`: [`01-std/unification.md`](./01-std/unification.md),
-[`03-rakun/unification.md`](./03-rakun/unification.md), [`04-jhonstart/unification.md`](./04-jhonstart/unification.md),
-[`05-emilia/unification.md`](./05-emilia/unification.md), [`06-onze/unification.md`](./06-onze/unification.md).
+ninety-five fronts; 1.0.10-beta cuts that milestone by **library** — `01-std/`, `03-rakun/`,
+`04-jhonstart/`, `05-emilia/`, `06-onze/` — beside the compiler carry-over
+(`00-compiler-carry-over/`) and the package restructure (`02-packaging/`), and keeps every front
+number. The earlier milestone directories are deleted (decision 68); this file maps their documents
+and their front numbers to where the content is now. The per-front map is each library's own
+`unification.md`: [`03-rakun/unification.md`](./03-rakun/unification.md),
+[`04-jhonstart/unification.md`](./04-jhonstart/unification.md),
+[`05-emilia/unification.md`](./05-emilia/unification.md),
+[`06-onze/unification.md`](./06-onze/unification.md).
 
 ## Top-level documents
 
-`carried` = the content is in the named 1.0.10 file, links rewritten · `carried + added` = the same,
-plus a `## Carried from 1.0.X-beta` section or new rows named in the last column · `per-lib` = the
-content is front-level and the library's `unification.md` is its proof · `superseded` = replaced by a
-stated 1.0.9 or 1.0.10 rule, with the replacement named.
-
-### 1.0.9-beta
-
-| Document | Held | Where in 1.0.10 | Status |
-|---|---|---|---|
-| `overview.md` | the merge table, the audit table, numbering rule, tracks A–F with every front row, order (waves 0–5), rules, *Which target runs what*, source mapping | [`overview.md`](./overview.md) (coordinator) for the milestone text; the track tables are re-homed per library — `03-rakun/README.md`, `04-jhonstart/README.md`, `05-emilia/README.md`, `06-onze/README.md`, `01-std/README.md`; the blocking order and target table in [`fronts.md`](./fronts.md) | carried |
-| `fronts.md` | ownership rows of tracks A–F, sidecar rule, shared-file rules (rakun `src/root.bp` + `botopink.json`, emilia `tokens.bp`/`emilia.bp` banners, jhonstart `root.bp`), frozen files, conflict exceptions, waves 0–7, exit gate | [`fronts.md`](./fronts.md) — every row, re-sectioned as `00` / `01-std` / `02-packaging` / tracks B–E; the per-lib `modules.md` files copy their own rows | carried + added (the `00` section, the `01-std` `@src()` carve-out, the packaging rows, a section-level *who may run together* matrix, *Rules for a front* from 1.0.6/7/8) |
-| `contracts.md` | contracts 1–6a | [`contracts.md`](./contracts.md) | carried + added (contract 7 from `tracks/README.md`; 1.0.8's dispatcher rules under 4a) |
-| `deferred.md` | Spring / Next / Tailwind deferrals, out-of-scope | [`deferred.md`](./deferred.md) | carried + added (*Deferred — ecosystem*: the old `onze` mocking runtime front 95 promised to record and never did) |
-| `language-gaps.md` | 42 confirmed gaps, 4 toolchain gaps, unowned surface | [`language-gaps.md`](./language-gaps.md) | carried + added (the *1.0.10 owner* column pointing compiler rows at `00`; the *Compiler-front gaps* table; `@src()` owned by `01-std/src-builtin.md`; three packaging toolchain rows) |
-| `tracks/README.md` | the per-track file plan (`modules.md`, `unification.md`, `test-snap.md`, `test-snap-examples.md`, `reference-coverage.md`, std's `asserts.md`/`snapshots.md`) and the test contract (`@src()`, `snapshots.path`, `.new`, no update flag) | the file plan **is** the 1.0.10 layout: `0N-<lib>/{README,modules,unification,test-snap,test-snap-examples}.md`, `05-emilia/reference-coverage.md`, `01-std/{asserts-api,snapshots,src-builtin}.md`; the test contract is [`contracts.md § 7`](./contracts.md#7--test-and-snapshot-contract--owned-by-01-std-consumed-by-every--test-submodule) | carried. None of the `tracks/<lib>/*.md` files it announced was ever written in 1.0.9; they are written here for the first time |
-| `tracks/README.md`'s front `96-src-builtin-and-snapshots` | never written | [`01-std/src-builtin.md`](./01-std/src-builtin.md) · [`01-std/snapshots.md`](./01-std/snapshots.md) · [`01-std/asserts-api.md`](./01-std/asserts-api.md) | carried as three documents, no front number |
-| `95-ecosystem-package-restructure/` | the restructure front + 2 examples | [`02-packaging/95-ecosystem-package-restructure/`](./02-packaging/95-ecosystem-package-restructure/README.md) verbatim (one provenance line prepended); its rules generalised in [`02-packaging/README.md`](./02-packaging/README.md); its std/asserts half in `01-std/` | carried + split |
-| `NN-<front>/` (01–94) | the fronts | see the front-number map below | per-lib |
-
-### 1.0.8-beta (emilia)
-
-| Document | Held | Where in 1.0.10 | Status |
-|---|---|---|---|
-| `overview.md` — front table (F01–F15) | fifteen emilia fronts | fronts 33–47 under `05-emilia/` (map below) | per-lib |
-| `overview.md` — Order (phases 1–4) and the three *why first* paragraphs (palette, modifiers, spacing) | palette/modifiers/spacing before the rest | superseded by 1.0.9's waves: 33/34/35 sit in wave 0–2 **after** 54 (theme) and 56 (cascade), for the reason stated in `fronts.md` § Waves ("four copies of the spacing ladder already drifted") | superseded — the 1.0.9 order is stricter and states why |
-| `overview.md` — Regras: emilia-only · token enum expansion · **exhaustive dispatch, no `_`** · Tailwind parity · dual-target · **naming (camelCase / PascalCase / `__50`)** · no breaking changes · one in-file test per section | rules | emilia-only → `fronts.md` (one repo per front); token expansion → `fronts.md` banner convention; Tailwind parity → `overview.md` § Rules (byte-equality); dual-target → superseded (emilia is comptime, target-independent); no breaking changes → `overview.md` § Rules (*additive only*); one test per section → `fronts.md` track D. **Exhaustive dispatch** and **naming** were absent from 1.0.9 and are now [`contracts.md § 4a`](./contracts.md) *Carried from 1.0.8-beta*; the `__50` leaf spelling is recorded there as superseded by bare digits | carried + added |
-| `overview.md` — *Mapeamento emilia → Tailwind* (current coverage per section) | the pre-milestone coverage table | [`05-emilia/reference-coverage.md`](./05-emilia/reference-coverage.md) | per-lib |
-| `fronts.md` — ownership (section + dispatcher + test file per front) | F01–F15 rows | `fronts.md` track D rows (renumbered 33–47), unchanged in substance | carried |
-| `fronts.md` — conflict matrix + notes (all fronts touch `tokens.bp`/`emilia.bp`, manual merge) | the shared-file problem | superseded by the **banner convention** in `fronts.md` (one variant block + one sub-dispatcher per front, arms in front-number order) — a rule, where 1.0.8 had a warning | superseded |
-| `fronts.md` — Rules for a Front | worktree, only-your-sections, exhaustive case, Tailwind values, dual-target, verify by running, land | `fronts.md` § *Carried from 1.0.6/1.0.7/1.0.8-beta — Rules for a front* (merged with 1.0.6's and 1.0.7's) | carried + added |
-| `tailwind-mapping.md` | the utility → token table | [`05-emilia/tailwind-mapping.md`](./05-emilia/tailwind-mapping.md) (carried as its own file) with the section-by-section walk in [`05-emilia/reference-coverage.md`](./05-emilia/reference-coverage.md) | carried (per-lib) |
-
-### 1.0.7-beta (onze13)
-
-| Document | Held | Where in 1.0.10 | Status |
-|---|---|---|---|
-| `overview.md` — front table (F01–F22) | 22 fronts across onze13, jhonstart, rakun, emilia, std | fronts 49–53 (onze), 26–32 (jhonstart), 22–25 + 07 + 12 (rakun), 48 (emilia), 02–03 (std) — map below | per-lib |
-| `overview.md` — Order (phases 1–4) and *why 01 / 14 first* | onze13 stand-up first; file router before SSR | `overview.md` § Order and `fronts.md` § Waves (49 and 22 are wave 0/1; "why 22 before 23" is stated) | carried |
-| `overview.md` — Regras: multi-repo · compiler-unaware · dual-target · std reuse · **convention over configuration** · no breaking changes · test coverage | rules | multi-repo → `overview.md` § Rules (*one repo per front*, 48 the exception); compiler-unaware → *the compiler knows none of this*; dual-target → superseded by *target is assigned, not chosen*; std reuse → *reuse std*; no breaking changes → *additive only*. **Convention over configuration** was absent from 1.0.9 and is now [`02-packaging/README.md`](./02-packaging/README.md) § *Carried from 1.0.7-beta* (it is a packaging rule: the file conventions are the API) | carried + added |
-| `overview.md` — *Arquitetura onze13* diagram | the orchestrator over jhonstart/rakun/emilia/std | [`06-onze/README.md`](./06-onze/README.md) | per-lib |
-| `overview.md` — *Mapeamento Next.js → onze13* (which library owns each Next feature) | feature → library | [`02-packaging/README.md`](./02-packaging/README.md) § *Carried from 1.0.7-beta*, re-stated with 1.0.9's front numbers and the `onze` name; per-feature detail in `06-onze/unification.md` | carried + added |
-| `overview.md` — *Estrutura de um projeto onze13* (the `app/` tree, `onze13.json`) | the app layout | fronts 49 (config) and 53 (the blog) under `06-onze/`; `onze13.json` is `modules/onze/src/config.bp`'s concern | per-lib |
-| `fronts.md` — ownership + conflict matrix + notes (F02↔F03 router/link, F09↔F14 runtime.bp, F15↔F16 emilia) | ownership | `fronts.md` tracks B/C/D rows; F09↔F14 dissolved by the frozen-file rule (`runtime.mjs` frozen, 22 and 23 own one file each); F15+F16 merged into 48 | carried / superseded |
-| `fronts.md` — Rules for a Front | as 1.0.6 plus "from the submodule that owns the code" | `fronts.md` § *Carried from 1.0.6/1.0.7/1.0.8-beta* | carried + added |
-| `fronts.md` — **Cross-repo Coordination** (interface contracts in READMEs · dependency order `onze → jhonstart, rakun, emilia`, `emilia → jhonstart` · `requires.<lib> = "feat"` + `bpmp sync` · F22 as the integration test) | the inter-library dependency graph | interface contracts → [`contracts.md`](./contracts.md); the **dependency direction between libraries** was absent from 1.0.9's top-level documents and is now [`02-packaging/README.md`](./02-packaging/README.md) § *Dependency direction*; version pinning → the same file § *Manifests* (`"branch": "feat"` is what every example manifest already does); F22 → front 53, wave 7 | carried + added |
-| `examples-bp.md` | one code example per front, from the developer's point of view (22 sections) | per-front `examples/*.bp` under `03-rakun/`, `04-jhonstart/`, `05-emilia/`, `06-onze/` — 1.0.9 turned the single file into per-front example files; each library's `unification.md` maps its sections | per-lib |
-
-### 1.0.6-beta (rakun)
-
-| Document | Held | Where in 1.0.10 | Status |
-|---|---|---|---|
-| `overview.md` — front table (F01–F20, with module column) | twenty rakun fronts | fronts 04–21 under `03-rakun/` (F09+F19 → 13, F11+F16 → 15; map below) | per-lib |
-| `overview.md` — Order (phases 1–3) and *why 01 / 02 first* | runtime and config first | `overview.md` § Order ("why 04 still comes before the rest of track B") and `fronts.md` § Waves | carried |
-| `overview.md` — Regras: multi-module · **Erlang-first (every module has `runtime.erl`, not only `.mjs`)** · decorator-based · IoC integration · test coverage on both targets · no compiler changes · std reuse | rules | multi-module → `02-packaging/README.md` + `03-rakun/modules.md`; Erlang-first → strengthened into *Erlang/BEAM is the server* (`overview.md` § Which target runs what) and the sidecar rule (`src/sidecars/rakun_<name>.erl`, `fronts.md`); decorator-based and IoC integration → `03-rakun/README.md`; both-target tests → superseded by *target is assigned*; no compiler changes → `overview.md` § Rules; std reuse → the same | carried / superseded |
-| `overview.md` — *Estrutura de Módulos* (`repository/rakun/src` + `modules/rakun-*` + `examples/`) | the module tree | [`02-packaging/README.md`](./02-packaging/README.md) (the generalised rule and the thirteen scaffolded submodules) and [`03-rakun/modules.md`](./03-rakun/modules.md) (the rakun cut) | carried |
-| `overview.md` — *Mapeamento Spring Boot 4 → Rakun* (Spring area → rakun module → front) | the starter ↔ module table | [`02-packaging/README.md`](./02-packaging/README.md) § *Carried from 1.0.6-beta* — the module ↔ Spring starter table, re-pointed at 1.0.9 front numbers; `repository/rakun/modules/README.md` carries the same table at HEAD | carried + added |
-| `fronts.md` — ownership (module + source + tests per front) | F01–F20 rows | `fronts.md` track B rows (renumbered), substance unchanged | carried |
-| `fronts.md` — conflict matrix + notes (F01↔F03 `runtime.bp`; F04↔F06/F14/F18 middleware; F05↔F17 `rakun-data`; F09↔F19 `rakun-client`; F11↔F16 `rakun-messaging`) | five sequenced pairs | `fronts.md` § Conflict rules: F01↔F03 dissolved (04 appends one block to `runtime.bp`, 06 does not touch it); middleware pairs → *07 · 20 · 82* and the *07 owns the chain* rule; F05↔F17 → *08 · 09 · 77 · 78 · 83*; F09+F19 and F11+F16 merged into single fronts | carried / superseded |
-| `fronts.md` — Rules for a Front | worktree, never edit unowned, verify by running, Erlang + commonJS, land | `fronts.md` § *Carried from 1.0.6/1.0.7/1.0.8-beta* | carried + added |
-| `examples/01…10-*-example.bp` | ten example files for F01–F10 | the per-front `examples/` of fronts 04, 05, 06, 07, 08, 10, 11, 12, 13, 14 under `03-rakun/`; [`03-rakun/unification.md`](./03-rakun/unification.md) maps each | per-lib |
+| Earlier document | Where it is now |
+|---|---|
+| 1.0.9 `overview.md` (tracks, order, rules, *Which target runs what*) | [`overview.md`](./overview.md); the track tables in each library's `README.md`; the blocking order and target table in [`fronts.md`](./fronts.md) |
+| 1.0.9 `fronts.md` (ownership, shared-file rules, frozen files, waves, exit gate) | [`fronts.md`](./fronts.md); each library's `modules.md` for its own rows |
+| 1.0.9 `contracts.md` (contracts 1–6a) | [`contracts.md`](./contracts.md), plus contract 7 (tests and snapshots) and 1.0.8's dispatcher rules under 4a |
+| 1.0.9 `deferred.md` | [`deferred.md`](./deferred.md) |
+| 1.0.9 `language-gaps.md` | [`language-gaps.md`](./language-gaps.md) |
+| 1.0.9 `tracks/README.md` (the per-track file plan and the test contract) | the layout `0N-<lib>/{README,modules,unification,test-snap,test-snap-examples}.md`; the test contract is [`contracts.md` § 7](./contracts.md#7--test-and-snapshot-contract--owned-by-01-std-consumed-by-every--test-submodule) |
+| 1.0.9 front 96 `src-builtin-and-snapshots` | [`01-std/src-builtin.md`](./01-std/src-builtin.md) · [`01-std/snapshots.md`](./01-std/snapshots.md) · [`01-std/asserts-api.md`](./01-std/asserts-api.md) |
+| 1.0.9 `95-ecosystem-package-restructure/` | [`02-packaging/95-ecosystem-package-restructure/`](./02-packaging/95-ecosystem-package-restructure/README.md); its rules generalised in [`02-packaging/README.md`](./02-packaging/README.md) |
+| 1.0.8 `overview.md` (fronts F01–F15, rules, the emilia → Tailwind coverage) | fronts 33–47 under `05-emilia/`; exhaustive dispatch and naming in [`contracts.md` § 4a](./contracts.md); the coverage in [`05-emilia/reference-coverage.md`](./05-emilia/reference-coverage.md) |
+| 1.0.8 `tailwind-mapping.md` | [`05-emilia/tailwind-mapping.md`](./05-emilia/tailwind-mapping.md) |
+| 1.0.7 `overview.md` (fronts F01–F22, architecture, Next.js → library map, project layout) | the fronts under `06-onze/`, `04-jhonstart/`, `03-rakun/`, `05-emilia/48`, `01-std/02`–`03`; *convention over configuration* and the Next.js → library map in [`02-packaging/README.md`](./02-packaging/README.md); the architecture in [`06-onze/README.md`](./06-onze/README.md) |
+| 1.0.7 `fronts.md` (cross-repo coordination) | interface contracts in [`contracts.md`](./contracts.md); the dependency direction in [`02-packaging/README.md`](./02-packaging/README.md) |
+| 1.0.7 `examples-bp.md` | the per-front `examples/*.bp` |
+| 1.0.6 `overview.md` (fronts F01–F20, module tree, Spring Boot 4 → rakun map) | fronts 04–21 under `03-rakun/`; the module tree and the starter map in [`02-packaging/README.md`](./02-packaging/README.md) and [`03-rakun/modules.md`](./03-rakun/modules.md) |
+| 1.0.6 `examples/01…10-*-example.bp` | the per-front `examples/` of fronts 04–14 under `03-rakun/` |
+| *Rules for a front* (1.0.6 / 1.0.7 / 1.0.8 `fronts.md`) | [`fronts.md`](./fronts.md) |
 
 ## Front-number map — 01 … 96
 
-A front number is an identifier and never moves (`overview.md` § How fronts are numbered). The
-directory moves once, here. Paths are relative to `specs/1.0.10-beta/`.
+A front number is an identifier and never moves. Paths are relative to `specs/1.0.10-beta/`.
 
 | # | 1.0.9 directory | 1.0.10 path | Came from |
 |---|---|---|---|
@@ -132,7 +86,7 @@ directory moves once, here. Paths are relative to `specs/1.0.10-beta/`.
 | 46 | `46-emilia-interactivity/` | `05-emilia/46-emilia-interactivity/` | 1.0.8 F12 |
 | 47 | `47-emilia-svg-accessibility/` | `05-emilia/47-emilia-svg-accessibility/` | 1.0.8 F13 |
 | 48 | `48-emilia-attributes/` | `05-emilia/48-emilia-attributes/` | 1.0.7 F15 + F16 |
-| 49 | `49-onze-stand-up/` (was `onze13-stand-up`) | `06-onze/49-onze-stand-up/` | 1.0.7 F01 |
+| 49 | `49-onze-stand-up/` | `06-onze/49-onze-stand-up/` | 1.0.7 F01 |
 | 50 | `50-onze-cli/` | `06-onze/50-onze-cli/` | 1.0.7 F19 |
 | 51 | `51-onze-image/` | `06-onze/51-onze-image/` | 1.0.7 F20 |
 | 52 | `52-onze-font/` | `06-onze/52-onze-font/` | 1.0.7 F21 |
@@ -178,24 +132,9 @@ directory moves once, here. Paths are relative to `specs/1.0.10-beta/`.
 | 92 | `92-rakun-rsocket/` | `03-rakun/92-rakun-rsocket/` | 1.0.9 audit |
 | 93 | `93-rakun-soap-webservices/` | `03-rakun/93-rakun-soap-webservices/` | 1.0.9 audit |
 | 94 | `94-jhonstart-element-surface/` | `04-jhonstart/94-jhonstart-element-surface/` | 1.0.9 audit |
-| 95 | `95-ecosystem-package-restructure/` | `02-packaging/95-ecosystem-package-restructure/` (verbatim) · generalised in `02-packaging/README.md` · std half in `01-std/` | 1.0.9 audit |
-| 96 | *(announced by `tracks/README.md`, never written)* | `01-std/src-builtin.md` · `01-std/snapshots.md` · `01-std/asserts-api.md` | 1.0.9 `tracks/README.md` |
+| 95 | `95-ecosystem-package-restructure/` | `02-packaging/95-ecosystem-package-restructure/` · generalised in `02-packaging/README.md` · std half in `01-std/` | 1.0.9 audit |
+| 96 | — | `01-std/src-builtin.md` · `01-std/snapshots.md` · `01-std/asserts-api.md` | 1.0.9 `tracks/README.md` |
 
 The 1.0.5-beta compiler fronts (`01-checker` … `17-beam-memory`) keep **their own** numbering inside
 [`00-compiler-carry-over/`](./00-compiler-carry-over/README.md); they are cited as `00 · 13-module-identity`
 and never as a bare number, so a bare number in this milestone is always a library front.
-
-## Link rewrite rule
-
-Every relative link carried from `specs/1.0.9-beta/` was rewritten by this table. Any link that still
-reads `../NN-<name>/` at the top level of `specs/1.0.10-beta/` is a defect.
-
-| 1.0.9 form | 1.0.10 form |
-|---|---|
-| `./NN-<name>/README.md` (top-level file) | `./0T-<lib>/NN-<name>/README.md`, `0T` from the map above |
-| `../NN-<name>/README.md` (from inside a front) | `../NN-<name>/README.md` when the target is in the same library directory; `../../0T-<lib>/NN-<name>/README.md` otherwise |
-| `../96-src-builtin-and-snapshots/README.md` | `../01-std/src-builtin.md` (+ `snapshots.md`, `asserts-api.md`) |
-| `./tracks/std/asserts.md`, `./tracks/std/snapshots.md` | `./01-std/asserts-api.md`, `./01-std/snapshots.md` |
-| `./tracks/<lib>/modules.md` etc. | `./0T-<lib>/modules.md` etc. |
-| `../1.0.8-beta/closure.md` (cited by `tracks/README.md`; the file does not exist) | `./05-emilia/reference-coverage.md` |
-| `./fronts.md`, `./contracts.md`, `./deferred.md`, `./language-gaps.md` | unchanged (same level) — from inside a front, `../../<file>.md` |

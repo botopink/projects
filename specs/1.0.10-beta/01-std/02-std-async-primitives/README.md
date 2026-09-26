@@ -4,265 +4,128 @@
 **Priority:** high — a server-rendered page that issues three reads one after another is three round
 trips deep before it renders its first byte
 **Target:** both — std is the floor under both halves
-**Wave:** 0
-**Depends on:** none
 **Owns:** `src/async.bp` — at the pure root (decision 106): combinators over `@Task`, no I/O of its own
 **Does not touch:** every other std module, including `io/http.bp` — this front adds combinators over
-`@Task`, it does not change what produces one. `src/root.bp` belongs to front 01; this front lands
-first and its commit appends the one line `pub mod async;` there, because a module `root.bp` does not
-name is not embedded and its inline tests never run (measured before step 1 — see § Step 6). Front
-01's `root.bp` commit inherits the line. `00-compiler-carry-over/23-std-purity` moves nothing of this
-front's.
-**Reference:** `NEXTJS-DOCS.md § 9. Busca de Dados (Fetching)` · [Fetching Data — parallel](https://nextjs.org/docs/app/getting-started/fetching-data) · [`Promise.all`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all) · [`Promise.allSettled`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled) · [Erlang processes](https://www.erlang.org/doc/system/ref_man_processes.html)
+`@Task`, it does not change what produces one
+**Reference:** `NEXTJS-DOCS.md § 9. Busca de Dados (Fetching)` · [Fetching Data — parallel](https://nextjs.org/docs/app/getting-started/fetching-data) · [`Promise.all`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all) · [Erlang processes](https://www.erlang.org/doc/system/ref_man_processes.html) · decisions 120 and 121 (a Task never fails) · `decisions-pending.md` 24-g (the module's shape)
 
 ---
 
 ## Problem
 
-`await` in botopink waits for one thing. A server component that needs the user, their posts and the
-site-wide stats writes three `await`s and pays for all three serially, which is the shape Next.js
-documents as the thing not to do. There is no `all`, no `allSettled`, no `race`, no timeout and no
-delay anywhere in std.
+`await` waits for one thing. A server component that needs the user, their posts and the site-wide
+stats writes three `await`s and pays for all three serially — the shape Next.js documents as the
+thing not to do.
 
-`@Task<T>` **lowers eagerly on the erlang backend** — `libs/std/src/http.bp:16-18`: "Erlang is
-eager: `@Task<T>` resolves to `T` in the eager-lowering arm documented in `codegen/erlang.zig`, so
-the caller's `await fetch(url)` is identity on that backend." By the time an `Array<@Task<T>>`
-reaches an `all` on erlang, every element has already run, in list order, serially. `all` over it is
-a map over finished values; `race` over it answers the first element rather than the fastest; a
-timeout over it cannot fire. On erlang — the target every server front in this milestone compiles
-for — a surface over started futures buys nothing. The primary surface therefore takes **unstarted
-tasks**, not started futures.
+`@Task<T>` **lowers eagerly on the erlang backend**: a `-> @Task` fn is a plain function, `await` is
+identity, and a Task is a value that has already run (`codegen/erlang.zig`, the `@Task — eager
+lowering` arm; `io/http.bp` says the same for `http.fetch`). By the time an `Array<@Task<T>>` reaches
+a combinator on erlang, every element has already run, in list order, serially. A surface over
+started Tasks therefore buys no concurrency on erlang — the target every server front compiles for —
+so the module also takes **unstarted tasks**.
 
-## Current state
+## The module
 
-- **`src/async.bp` exists** on `std/02-async-primitives` (505 lines): both surfaces, the two
-  instruments (`delay`, `failed`), `timeout`, the public reader `errorText` (the `Error` side of a
-  settled element — `@Result` has no builtin for it, and a caller that can see *that* a widget failed
-  but never *why* is the shape decision 67 refuses), and 25 inline tests — `botopink test [--target
-  erlang] --filter async` reads `25 passed, 0 failed` on both rows. `root.bp` names it as its
-  twenty-fifth module and `libs/std/AGENTS.md` names the file. Every acceptance box below is ticked
-  against that file. Still open: the merge into `feat`, which front 01's `root.bp` commit follows.
-- **`allOf`/`all` do not stop at the first failure** the way `Promise.all` does: every task is
-  settled and the one rejection names every task that failed (`async.allOf: 2 of 3 tasks failed: [0]
-  down; [2] boom`), through a private `unwrapAll` cell shared by both surfaces. `raceOf` re-raises a
-  winning failure and drops a loser's — the one loss in the module, asserted by its own test.
-- **The erlang cells tag every reply with a `make_ref()` unique to the call**, so an expired
-  `timeout` task or a `raceOf` loser that answers later cannot land in a later combinator's gather in
-  the same process — pinned by `async: timeout ---- an expired task cannot corrupt a later answer`.
-- **`await` works.** A `-> @Task<T>` return grants it and it unwraps inside the body (real use at
-  `repository/emilia/src/emilia.bp:62-65`), and `await` is legal directly inside a `test` block
-  (`emilia.bp:475-480`). `src/async.bp` and `http.bp` are still written in the effect spelling
-  decisions 118–128 replace; front 24 step E7 re-spells both over `@Task` — a fallible task is
-  `@Task<@Result<T, E>>`, `await` answers the `@Result` and `try await` propagates it — and settles the
-  shapes this front's signatures below are written in (its Notes, open point 3).
-- **The only std producer of a future is `http.fetch`** (`http.bp:55`). `emilia.flush()` is the only
-  other one in the workspace.
-- **Node keeps the Promise live across `await`** (`http.bp:41-43`), so the commonJS lowering has real
-  concurrency available to it.
-- **Erlang does not.** `http.bp:16-18`, quoted above. There is no lazy task, no `async/await`
-  scheduler, and no cancellation surface anywhere in the language.
-
-## Mechanism
-
-Two surfaces, and the README is explicit about which one a server front may rely on.
-
-**The task surface — `allOf`, `raceOf`, `settleOf` — takes `Array<fn() -> @Task<T>>`** (a task that
-can fail is `fn() -> @Task<@Result<T, E>>`, decision 120). Because the
-elements are unstarted, the erlang cell can start them: `spawn` one process per task, tag each by
-index, gather the replies into the original order. That is real BEAM concurrency, it is what the
-platform is good at, and it is what the server half of this milestone needs. The commonJS cell calls
-each thunk and hands the resulting Promises to `Promise.all`. Same semantics, both targets, actually
-concurrent on both.
-
-**The future surface — `all`, `allSettled`, `race` — takes `Array<@Task<T>>`** and exists for
-parity with the JavaScript the client half is written against. On commonJS it is `Promise.all` and
-friends. On erlang it is honest rather than concurrent: `all` is the identity map, `allSettled` wraps
-each already-resolved value in `Ok`, and `race` answers element zero. The module docblock says so and
-the tests assert it, because a primitive whose guarantee silently differs by target is worse than one
-that does not exist.
-
-The split is not cosmetic: `race` on the future surface has no timing meaning on erlang and no server
-front may depend on one. `raceOf` on the task surface does, because the tasks are unstarted when
-`raceOf` receives them.
-
-Two supporting functions round it out. `delay(millis, value)` is the test instrument — without a
-future that takes a known amount of time, none of the combinators above can be tested for ordering.
-`timeout(task, millis)` answers `@Result<T, string>` rather than failing, so a slow dependency
-degrades a page instead of taking it down; it is built on `raceOf` over the task and a `delay`.
-
-Everything here is a `declare fn` with one cell per target, in the `fs.bp` shape. There is no sidecar
-`.mjs`: std ships exactly one (`src/sidecars/random.mjs`), for a case where the template genuinely
-could not carry the state. These templates can.
-
-## Steps
-
-### Step 1 — `delay` and the module skeleton
-
-The instrument first, because nothing after it is testable without a future of known duration.
+`src/async.bp`, `import {async} from "std";`. A Task never fails (decision 120): a fallible operation
+is `@Task<@Result<T, E>>`, `await` answers the `@Result`, and `try await` propagates it.
 
 ```bp
-//// std/async — combinators over `@Task<T>`.
-////
-//// Two surfaces. `allOf`/`raceOf`/`settleOf` take UNSTARTED tasks and are
-//// concurrent on both targets. `all`/`allSettled`/`race` take started futures,
-//// are concurrent on commonJS, and are sequential on erlang because
-//// `@Task<T>` lowers eagerly there (`libs/std/src/http.bp:16-18`).
+// instruments
+pub declare fn delay<T>(millis: i32, value: T) -> @Task<T>
+pub fn failed<T>(message: string) -> @Task<@Result<T, string>>
+pub fn errorText<T>(settled: @Result<T, string>) -> string          // the Error side, "" for Ok
 
-#[@External.Node("""new Promise(__r => setTimeout(() => __r($1), $0))""")]
-#[@External.Erlang("""(fun(__M, __V) -> timer:sleep(__M), __V end)($0, $1)""")]
-pub declare fn delay<T>(millis: i32, value: T) -> @Task<T>;
+// started tasks — concurrent on commonJS, already run on erlang
+pub fn allOf<T, E>(tasks: Array<@Task<@Result<T, E>>>) -> @Task<@Result<Array<T>, E>>
+pub fn all<T>(tasks: Array<@Task<T>>) -> @Task<Array<T>>
+pub declare fn race<T>(tasks: Array<@Task<T>>) -> @Task<T>
 
-// The second instrument: a task that fails. `settleOf` and `timeout` cannot
-// be tested without one, and a test that reaches an unreachable host to get a
-// failure is a test that fails on a laptop with no network. A `@Task` never
-// fails (decision 120): the failure is the `Error` inside it. The host boundary
-// turns the rejected Promise and the `{error, …}` tuple into that `Error`.
-#[@External.Node("""Promise.reject(new Error($0))""")]
-#[@External.Erlang("""{error, $0}""")]
-pub declare fn failed<T>(message: string) -> @Task<@Result<T, string>>;
+// unstarted tasks — concurrent on both targets
+pub fn runAll<T>(tasks: Array<fn() -> @Task<T>>) -> @Task<Array<T>>
+pub declare fn raceOf<T>(tasks: Array<fn() -> @Task<T>>) -> @Task<T>
+pub fn timeout<T>(task: fn() -> @Task<T>, millis: i32) -> @Task<@Result<T, string>>
 ```
 
-**Acceptance:**
-- [x] `await delay(20, "x")` answers `"x"` on both targets
-- [x] the call takes at least 20 monotonic milliseconds on both targets
-- [x] `delay` type-checks with `T` bound to a record as well as to a `string`
-- [x] `failed("down")` inside a `settleOf` answers an `Error` element rather than taking the suite down, on both targets
+**Started tasks — `allOf`, `all`, `race`** take `Array<@Task<…>>`, the shape a caller writes
+(`async.allOf([fetchUser(1), fetchUser(2)])`). On commonJS each Task is a live Promise and the call
+only waits. On erlang the module is honest rather than concurrent: `allOf` / `all` read values in
+order and `race` answers **element zero** rather than the fastest. No server front may depend on
+`race`'s timing. `allOf` answers the values in input order or the **first** `Error` in input order;
+`allOf([])` answers `Ok([])`.
 
-### Step 2 — `allOf`, the concurrent form
+**Unstarted tasks — `runAll`, `raceOf`, `timeout`** take `fn() -> @Task<T>` thunks. Nothing has run
+when the combinator receives them, so the erlang cell `spawn`s one process per task and gathers the
+replies by index, and the commonJS cell calls each thunk into `Promise.all` / `Promise.race` — real
+concurrency on both targets. `runAll` answers values in input order; over `@Task<@Result<…>>` thunks
+each slot holds its task's own `@Result`, so `runAll` of fallible tasks is the settled view. Every
+erlang reply is tagged with a `make_ref()` unique to the call, so an expired `timeout` task or a
+`raceOf` loser that answers later cannot land in a later combinator's gather in the same process.
+A task that crashes is re-raised, not left to block the gather.
 
-```bp
-// Run every task concurrently and answer their results in the ORDER OF THE
-// INPUT, not the order they finished. Answers `Error` if any task answers one —
-// `Promise.all` semantics, and the right default for a page that cannot render
-// without all of its data. Over infallible tasks the same combinator answers
-// `@Task<Array<T>>` (front 24 step E7 closes the pair).
-#[@External.Node("""Promise.all($0.map(__f => __f()))""")]
-#[@External.Erlang("""(fun(__Ts) -> __Me = self(), __N = length(__Ts), lists:foreach(fun(__I) -> spawn(fun() -> __Me ! {__I, (lists:nth(__I, __Ts))()} end) end, lists:seq(1, __N)), [receive {__I, __V} -> __V end || __I <- lists:seq(1, __N)] end)($0)""")]
-pub declare fn allOf<T, E>(tasks: Array<fn() -> @Task<@Result<T, E>>>) -> @Task<@Result<Array<T>, E>>;
-```
+**`timeout(task, millis)`** answers `Ok(value)` inside the budget and `Error("timeout")` past it,
+expressed over `raceOf` and `delay`. A task over a `@Result` keeps its own failure inside the `Ok`
+(`Ok(Error(e))`): the budget and the task's outcome are two answers and neither hides the other.
+There is no fallback parameter — the caller's `unwrapOr` is the fallback.
 
-The erlang cell's collection loop receives by index, so a task that finishes first does not take
-another task's slot. A task that never answers blocks the gather — that is what `timeout` in step 5
-is for.
+**No cancellation.** `raceOf`'s losers and `timeout`'s expired task keep running to completion.
 
-**Acceptance:**
-- [x] `allOf` of three tasks delaying 60, 20 and 40 ms answers `["a", "b", "c"]` in input order on both targets
-- [x] the whole call completes in under 120 ms on both targets — proving it did not run them serially
-- [x] `allOf([])` answers `[]` rather than blocking
-- [x] a task that fails makes the call answer `Error` on both targets, and the error reaches the caller's `try … catch`
+**`race([])` and `raceOf([])`** are programming errors, fatal on both targets
+(`async.race: empty task list`, `async.raceOf: empty task list`) rather than blocking forever.
 
-### Step 3 — `settleOf` and `raceOf`
-
-```bp
-// Never fails. Each element is the task's own `@Result<T, E>`, so a page can render
-// the widgets that answered and omit the ones that did not.
-pub declare fn settleOf<T, E>(tasks: Array<fn() -> @Task<@Result<T, E>>>) -> @Task<Array<@Result<T, E>>>;
-
-// The first task to ANSWER, not the first in the list. The losers are left
-// running — there is no cancellation surface in botopink (see Language gaps).
-pub declare fn raceOf<T>(tasks: Array<fn() -> @Task<T>>) -> @Task<T>;
-```
-
-**Acceptance:**
-- [x] `settleOf` of one succeeding and one failing task answers a two-element array with one `Ok` and one `Error`, in input order, on both targets
-- [x] `settleOf` never propagates a failure to its caller
-- [x] `raceOf` of tasks delaying 80 and 10 ms answers the 10 ms one on both targets — the assertion the future-surface `race` cannot make
-- [x] `raceOf([])` answers an error rather than blocking forever
-
-### Step 4 — the future surface, with its erlang behaviour written down
-
-```bp
-// `Promise.all` parity for the client half. On erlang the futures have already
-// resolved by the time this is called, in list order: the result is correct and
-// the concurrency is absent. Use `allOf` on the server.
-#[@External.Node("""Promise.all($0)""")]
-#[@External.Erlang("""$0""")]
-pub declare fn all<T>(futures: Array<@Task<T>>) -> @Task<Array<T>>;
-```
-
-**Acceptance:**
-- [x] `all` answers results in input order on both targets
-- [x] `allSettled` answers one `@Result` per input on both targets and never fails
-- [x] `race` answers the fastest on commonJS and element zero on erlang, and BOTH behaviours are asserted by the test file rather than one being treated as a bug
-- [x] the module docblock states the erlang divergence, and each of the three functions repeats it in its own comment
-
-### Step 5 — `timeout`
-
-```bp
-// `Ok(value)` when the task answered inside the budget, `Error("timeout")` when
-// it did not. The task keeps running; the caller stops waiting.
-pub fn timeout<T>(task: fn() -> @Task<T>, millis: i32) -> @Task<@Result<T, string>>;
-```
-
-No `fallback` parameter: the answer is already a `@Result`, so the fallback is the caller's
-`unwrapOr`, and a third outcome is kept rather than folded — a task that fails *inside* the budget
-answers `Error(<its own message>)`, not `Error("timeout")`. The 50 ms budget is asserted as `elapsed
-< 150` rather than a tighter bound because the suite runs under `zig build test-libs` beside every
-other library's cells.
-
-**Acceptance:**
-- [x] a 10 ms task under a 100 ms budget answers `Ok`
-- [x] a 200 ms task under a 50 ms budget answers `Error("timeout")` in roughly 50 ms, on both targets
-- [x] the timed-out task's later completion does not corrupt the caller's answer
-- [x] `timeout` is expressed over `raceOf` + `delay` rather than a third host cell
-
-### Step 6 — export line and docs
-
-`pub mod async;` handed to front 01 (which owns `src/root.bp`), and the `libs/std/AGENTS.md` tree
-listing gains `async.bp`. The module stays at the root of the tree in `../modules.md`.
-
-**Acceptance:**
-- [x] `import {async} from "std";` resolves from a consumer package — `async` is not a keyword
-      (`modules/compiler-core/src/lexer.zig:721-767`), so the module name is legal; measured with a
-      scratch package (`"dependencies": {}`) calling `async.allOf`, `async.delay`, `async.timeout`
-      and `async.errorText`, 2 tests green on commonJS and erlang
-- [x] `libs/std/AGENTS.md` names the file in the same commit that adds it
-- [x] `root.bp` carries the line — in THIS front's commit, not front 01's: measured before step 1,
-      a module `root.bp` does not name is not embedded in the std build and `botopink test --filter
-      async` runs zero tests. Front 01's `root.bp` commit inherits it.
+Everything host-side is a `declare fn` with one cell per target, in the `io/fs.bp` shape; there is no
+sidecar. A root module may not import from `io/`, so the module keeps its own private monotonic-clock
+cell for its tests.
 
 ## Examples
 
 - [`examples/parallel-fetch-example.bp`](./examples/parallel-fetch-example.bp) — a server-rendered
-  dashboard that issues three reads together, degrades when an optional widget is down, and puts a
-  budget on a slow dependency.
+  dashboard that issues three reads together, renders without the optional widgets when they are
+  down, and puts a budget on a slow dependency.
 
 ## Language gaps
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| No array destructuring in a binding — `val [a, b, c] = xs;` does not parse | every `all`/`allOf` call site reading its results | `val a = xs.at(0).unwrapOr(…);` per element | destructuring patterns in `val`/`var` bindings, at least for arrays and tuples |
-| `@Task<T>` lowers eagerly on the erlang backend | the whole future surface — `all` is a map, `race` is element zero, `timeout` cannot fire | take unstarted `fn() -> @Task<T>` tasks and `spawn` them in the host cell | a lazy `@Task` lowering on erlang, or a `@Task<T>` type that is explicitly unstarted on both targets |
+| No array destructuring in a binding — `val [a, b, c] = xs;` does not parse | every `allOf`/`runAll` call site reading its results | `val a = xs.at(0).unwrapOr(…);` per element | destructuring patterns in `val`/`var` bindings, at least for arrays and tuples |
+| `@Task<T>` lowers eagerly on the erlang backend | the started surface — `all` is a map, `race` is element zero | take unstarted `fn() -> @Task<T>` thunks and `spawn` them in the host cell | a lazy `@Task` lowering on erlang, or a `@Task<T>` type that is explicitly unstarted on both targets |
 | No cancellation | `raceOf`'s losers and `timeout`'s expired task keep running | leave them running and document it | a cancellation token threaded through a `@Task` body, or `@Task.cancel` |
-| A generic parameter typed `Array<fn() -> @Task<T>>` is unverified | `allOf`, `settleOf`, `raceOf` signatures | if it does not check, drop to `Array<fn() -> T>` and lose the future element type | pin fn-typed elements inside a generic array in the inference tests |
 
 ## Test plan
 
-Inline `test` blocks at the bottom of `src/async.bp`, the way every std module does it, run by
-`botopink test --target commonJS` and `--target erlang` from `libs/std/`, and by `zig build
-test-libs` as part of the ecosystem gate. `await` works directly inside a `test` block
-(`repository/emilia/src/emilia.bp:475-480`), so no harness wrapper is needed.
+Inline `test` blocks at the foot of `src/async.bp`, run by `botopink test --target commonJS` and
+`--target erlang` from `libs/std/`, and by `zig build test-libs`. `await` works directly inside a
+`test` block. Three kinds of assertion:
 
-The tests assert three kinds of thing, and the middle one is what makes this front falsifiable:
+- **Results and order** — `allOf`, `all` and `runAll` answer input order, not completion order;
+  `allOf` stops at the first error in input order; `runAll` of fallible tasks keeps each `@Result`
+  in its slot. Deterministic on both targets.
+- **Elapsed time** — `runAll` of three delayed tasks completes in roughly the longest one's time.
+  The only assertion that can tell concurrency from a sequential map; the budget is about double
+  the longest task.
+- **Documented divergence** — `race` is asserted as fastest-wins on commonJS and element zero on
+  erlang, so a backend change that makes erlang lazy reds a test and forces the docblock to change.
 
-- **Results and order** — `allOf` of three different delays answers input order; `settleOf` answers
-  one element per input with the failures in place. Deterministic on both targets.
-- **Elapsed time** — `allOf` of 60/20/40 ms tasks completes in under 120 ms. This is the only
-  assertion that can tell concurrency from a sequential map, so it is the one that has to exist. It
-  is wall-clock and therefore the flakiest test in track A; the budget is set at roughly double the
-  longest task rather than at the theoretical minimum.
-- **Documented divergence** — the future surface's `race` is asserted as fastest-wins on commonJS and
-  first-element on erlang. The suite encodes the difference so that a future backend change that
-  makes erlang lazy fails a test and forces the docblock to be updated, rather than silently making
-  the documentation wrong.
+`async` is not snapshotted (`../test-snap.md`): an elapsed-time budget is a `<`, never a literal.
+
+## Delivered
+
+The front's steps (`delay` and the skeleton, the started surface, the unstarted surface, `timeout`,
+the export line) hold, re-spelled over `@Task` by front 24 step E7; `allSettled` and `settleOf` left
+with 24-g — a Task has no failure to settle, and a `@Result` element is the settled outcome. The
+inline tests name each behaviour: `delay` answers its value, takes at least the requested time and
+binds `T` to a record as well as to a string; `failed` answers an `Error` value and does not reject;
+`allOf` answers input order, stops at the first error and answers no values for no tasks; `all`
+answers input order; `race` is fastest on commonJS and element zero on erlang; `runAll` answers
+input order, runs concurrently and keeps a fallible task's `@Result` in its slot; `raceOf` answers
+the fastest task and drops a loser's answer; `timeout` answers `Ok` inside the budget, `Error
+timeout` past it, and an expired task cannot corrupt a later answer.
 
 ## Definition of done
 
 - `src/async.bp` exists with both surfaces, and the module docblock states the erlang divergence at
   the top rather than in a footnote.
-- `allOf` is demonstrably concurrent on both targets by an elapsed-time assertion.
-- No server front in this milestone is left depending on the future surface's `race`.
-- `pub mod async;` is handed to front 01 and appears in `src/root.bp`.
-- `libs/std/AGENTS.md` names `async.bp`.
+- The unstarted surface is demonstrably concurrent on both targets by an elapsed-time assertion.
+- No server front in this milestone is left depending on the started surface's `race`.
+- `pub mod async;` appears in `src/root.bp`; `libs/std/AGENTS.md` names `async.bp`.
 - Every `// LANGUAGE GAP:` marker in the example appears in the table above.
-- The front's tests are green on its assigned target — here, both.
+- The front's tests are green on both targets.

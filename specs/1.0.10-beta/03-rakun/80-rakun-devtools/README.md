@@ -4,7 +4,7 @@
 **Priority:** high — without it every source edit costs a full server restart, on the one runtime where that is unnecessary; the developer-experience gap here is larger than the Spring one it ports
 **Target:** erlang (server)
 **Wave:** 2
-**Depends on:** 04 (the registry the reload has to invalidate), 05 (profiles, and the property source a global settings file merges into), 01 (`fs`, `path`, `process`, `clock`)
+**Depends on:** 04 (the registry the reload has to invalidate), 05 (profiles, and the property source a global settings file merges into), 01 (`io.fs`, `path`, `io.process`, `io.clock`)
 **Owns:** `modules/rakun-devtools/botopink.json`, `modules/rakun-devtools/src/**` · `modules/rakun-devtools/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone. It reads front 04's registry through the `rk*` cells and adds none of its own to `src/runtime.bp`
 **Reference:** `02-desenvolvendo-com-spring-boot.md § Developer Tools (DevTools)` (all sub-sections) · `01-primeiros-passos.md § Executando o Exemplo · Debug Remoto` · `05-data.md § H2 Web Console` · <https://docs.spring.io/spring-boot/reference/using/devtools.html>

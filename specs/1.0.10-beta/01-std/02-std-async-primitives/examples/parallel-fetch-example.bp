@@ -9,10 +9,10 @@
 //           https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all
 //
 // SERVER SIDE. This runs on the erlang target with the rest of the render half.
-// The `*Of` combinators take UNSTARTED tasks — `{ -> fetchBody(url) }` closures
-// rather than `fetchBody(url)` calls — because `@Task<T>` lowers eagerly on
-// erlang: a future that is already a value cannot be run in parallel with
-// anything. See the README's Mechanism section.
+// `runAll`, `raceOf` and `timeout` take UNSTARTED tasks — `{ -> fetchBody(url) }`
+// thunks rather than `fetchBody(url)` calls — because `@Task<T>` lowers eagerly
+// on erlang: a Task that is already a value cannot be run in parallel with
+// anything. See the README's *The module*.
 
 import {async, io: {http, clock}} from "std";
 
@@ -24,29 +24,34 @@ fn fetchBody(url: string) -> @Task<@Result<string, string>> {
     return resp.body;
 }
 
-// The three reads the dashboard cannot render without. `allOf` starts all three
-// and answers them in input order; if any one fails the whole page fails, which
-// is what we want for required data.
+// The three reads the dashboard cannot render without. `runAll` starts all
+// three and answers each one's `@Result` in input order; if any one failed the
+// whole page fails, which is what we want for required data.
 //
 // LANGUAGE GAP: no array destructuring in a binding — `val [users, posts, stats]
-// = parts;` does not parse. Read positionally with `.at(i).unwrapOr(…)`.
+// = bodies;` does not parse. Read positionally with `.at(i).unwrapOr(…)`.
 pub fn dashboardBody() -> @Task<@Result<string, string>> {
-    val parts = try await async.allOf([
+    val parts = await async.runAll([
         { -> fetchBody("https://api.example.com/users") },
         { -> fetchBody("https://api.example.com/posts") },
         { -> fetchBody("https://api.example.com/stats") },
     ]);
-    val users = parts.at(0).unwrapOr("");
-    val posts = parts.at(1).unwrapOr("");
-    val stats = parts.at(2).unwrapOr("");
+    val errors = parts.map({ r -> async.errorText(r) }).filter({ e -> e != "" });
+    if (errors.length > 0) {
+        throw errors.join("; ");
+    };
+    val bodies = parts.map({ r -> r.unwrapOr("") });
+    val users = bodies.at(0).unwrapOr("");
+    val posts = bodies.at(1).unwrapOr("");
+    val stats = bodies.at(2).unwrapOr("");
     return users + posts + stats;
 }
 
-// Two optional widgets from two independent services. `settleOf` never fails:
-// each element is the task's own `@Result`, so the page renders whichever
-// answered. Nothing propagates, so the return is a plain `@Task<string>`.
+// Two optional widgets from two independent services. Each slot of `runAll`
+// is the task's own `@Result`, so the page renders whichever answered. Nothing
+// propagates, so the return is a plain `@Task<string>`.
 pub fn widgetStrip() -> @Task<string> {
-    val settled = await async.settleOf([
+    val settled = await async.runAll([
         { -> fetchBody("https://a.example.com/widget") },
         { -> fetchBody("https://b.example.com/widget") },
     ]);
@@ -56,7 +61,7 @@ pub fn widgetStrip() -> @Task<string> {
 
 // Two mirrors of the same asset, first ANSWER wins — not first in the list.
 // `raceOf` can make that promise because the tasks are unstarted when it
-// receives them; the future-surface `race` cannot, and no server function here
+// receives them; the started-task `race` cannot, and no server function here
 // uses it.
 pub fn fastestMirror() -> @Task<@Result<string, string>> {
     return await async.raceOf([
@@ -65,25 +70,25 @@ pub fn fastestMirror() -> @Task<@Result<string, string>> {
     ]);
 }
 
+// The report, or its placeholder when the service answered an error.
+fn reportOrPlaceholder() -> @Task<string> {
+    val r = await fetchBody("https://slow.example.com/report");
+    return r.unwrapOr("<p>report unavailable</p>");
+}
+
 // A report service that is sometimes slow. Two seconds is the page's whole
-// budget for it; past that the section renders a placeholder and the page still
-// ships. The task keeps running — there is no cancellation in botopink today.
-// `answered` is the task's own `@Result` with the timeout's `Error` joined in.
+// budget for it; past that the section renders the placeholder and the page
+// still ships. The task keeps running — there is no cancellation.
 pub fn reportSection() -> @Task<string> {
-    val answered = await async.timeout(
-        { -> fetchBody("https://slow.example.com/report") },
-        2000,
-        "",
-    );
+    val answered = await async.timeout({ -> reportOrPlaceholder() }, 2000);
     return answered.unwrapOr("<p>report unavailable</p>");
 }
 
-// The whole page: the optional sections started together, then the required
-// reads (three tasks started together themselves). The optional ones never
-// fail, so their `allOf` answers `@Task<Array<string>>`; the required one is the
-// only error that reaches the page.
+// The whole page: the optional sections run together, then the required reads
+// (three tasks run together themselves). The optional ones never fail; the
+// required one is the only error that reaches the page.
 pub fn renderDashboard() -> @Task<@Result<string, string>> {
-    val optional = await async.allOf([
+    val optional = await async.runAll([
         { -> widgetStrip() },
         { -> reportSection() },
     ]);
@@ -92,11 +97,15 @@ pub fn renderDashboard() -> @Task<@Result<string, string>> {
 }
 
 // ── tests ────────────────────────────────────────────────────────────────────
-// `delay` is the instrument: without a future of known duration there is no way
-// to tell a concurrent `allOf` from a sequential map.
+// `delay` is the instrument: without a task of known duration there is no way
+// to tell a concurrent `runAll` from a sequential map.
 
-test "allOf answers input order, not completion order" {
-    val out = await async.allOf([
+fn okAfter(millis: i32, value: string) -> @Task<@Result<string, string>> {
+    return await async.delay(millis, value);
+}
+
+test "runAll answers input order, not completion order" {
+    val out = await async.runAll([
         { -> async.delay(60, "a") },
         { -> async.delay(20, "b") },
         { -> async.delay(40, "c") },
@@ -104,9 +113,9 @@ test "allOf answers input order, not completion order" {
     assert out.join(",") == "a,b,c";
 }
 
-test "allOf runs its tasks concurrently" {
+test "runAll runs its tasks concurrently" {
     val start = clock.nowMillis();
-    val out = await async.allOf([
+    val out = await async.runAll([
         { -> async.delay(60, "a") },
         { -> async.delay(60, "b") },
         { -> async.delay(60, "c") },
@@ -124,12 +133,11 @@ test "raceOf answers the fastest task" {
     assert first == "fast";
 }
 
-test "settleOf keeps one slot per input and never fails" {
-    val settled = await async.settleOf([
-        { -> async.delay(10, Ok("ok")) },
+test "runAll keeps each fallible task's @Result in its slot" {
+    val settled = await async.runAll([
+        { -> okAfter(10, "ok") },
         { -> async.failed("down") },
     ]);
     assert settled.length == 2;
-    assert settled.at(0).map({ r -> r.isOk() }).unwrapOr(false);
-    assert settled.at(1).map({ r -> r.isError() }).unwrapOr(false);
+    assert settled.map({ r -> async.errorText(r) }).join("|") == "|down";
 }

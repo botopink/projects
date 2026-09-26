@@ -1,54 +1,27 @@
 # Front 07 — The Filter Chain: Middleware, CORS, Problem Details
 
-> **Amended 2026-09-21, on landing (rakun `3243f4b`, `modules/rakun-web` 0 → 83/0 on both rows).**
-> Steps 1, 2, 3, 3b and 4 landed. Three deviations, each **forced** and each measured; two judgement
-> calls upheld; one step re-routed.
+> **As built (Steps 1, 2, 3, 3b and 4).** Where the code differs from the text below, the code holds:
 >
-> **Forced — `#[order("-100")]`, not `#[order(-100)]`.** A negative integer literal does not parse as
-> a decorator argument: `#[mark(20)]` compiles, `#[mark(-20)]` reds `this token cannot appear here ·
-> unexpected ``20``` with the caret on the **digits**. Every order in this front's band below zero was
-> therefore unwritable. The marker takes a `string` and parses it through front 05's `toI32`; when
-> the parser accepts the sign, the parameter becomes `n: i32` and the `toI32(` wrapper is deleted and
-> nothing else in the library moves. Filed as `00 · 15-language-surface` step 4b.
+> - **`#[order("-100")]`, not `#[order(-100)]`.** A negative integer literal does not parse as a
+>   decorator argument, so the marker takes a `string` and parses it through front 05's `toI32`; when
+>   the parser accepts the sign (`00 · 15-language-surface` step 4b), the parameter becomes `n: i32`
+>   and the `toI32(` wrapper is deleted.
+> - **`Filter.handle(self, req: WebRequest, chain: Chain)`, not `Request`.** A method on a
+>   host-supplied `behavior` does not dispatch on erlang, so the chain carries its own `WebRequest`
+>   built from the same scalars, reading through front 62's `headerLookup`/`headerNames`/`headerPresent`.
+> - **Erlang-only host cells ship both host halves** (see § Test plan): there is no per-file target
+>   gate, and the only whitelist is per-lib.
+> - **`withHeaders` takes `#(string, string)[]`**, which makes a name with no value unrepresentable.
+>   `#[crossOrigin("https://a.test", "GET,POST")]` keeps its comma-joined strings.
+> - **A preflight from a disallowed origin answers 403 + `Vary: Origin`** (decision 67).
+> - **The matcher refuses `*`, `(`, `[`, `?`, `{`** with a message naming front 65.
+> - **Step 10's graceful shutdown belongs to front 04**: closing the listening socket while keeping
+>   connection processes alive is `rakun_runtime.erl`'s socket, in `modules/rakun/`. Front 76's
+>   `readinessDrained()` is the soft half.
 >
-> **Forced — `Filter.handle(self, req: WebRequest, chain: Chain)`, not `Request`.** A method on a
-> host-supplied `behavior` does not dispatch on erlang (`{badkey,param}` / `{badfun, …}` — front 04's
-> own two core reds), and a chain that cannot read a header cannot do CORS. The chain carries its own
-> `WebRequest` built from the same scalars, reading through front 62's
-> `headerLookup`/`headerNames`/`headerPresent`.
->
-> **Forced — the erlang-only host cells in § Test plan.** There is no per-file target gate: `botopink
-> test` compiles every `test/*.bp` on both rows and the only whitelist is per-**lib**. Both host
-> halves ship, as fronts 06, 26 and 28 already do.
->
-> **Corrected after measurement — `withHeaders` takes `#(string, string)[]`.** It shipped as a flat
-> `["name","value",…]` array on the reasoning that a decorator argument cannot carry a tuple-array
-> literal. That reasoning was borrowed from the `#[crossOrigin]` row and does not apply:
-> `withHeaders` is a free function and is never written inside an annotation. Measured: the
-> tuple-array **parameter type**, the **array literal of pair literals** and the **`.0`/`.1` reads**
-> all compile and answer correctly on both rows. The pair type makes *a name with no value*
-> **unrepresentable**, where the flat form could only refuse an odd-length array at run time — so
-> that `@panic` and its cell are gone. `#[crossOrigin("https://a.test", "GET,POST")]` keeps its
-> comma-joined strings; there the rule is real.
->
-> **Upheld — a preflight from a disallowed origin answers 403 + `Vary: Origin`**, not a bare 204.
-> The spec pins the no-route case and the allowed case and not this one; 403 is decision 67's
-> reading.
->
-> **Upheld — the matcher refuses `*`, `(`, `[`, `?`, `{`** with a message naming front 65, rather
-> than guessing a semantics front 65 has not defined. It executes exactly the three forms both
-> READMEs use in their own examples.
->
-> **Re-routed — step 10's graceful shutdown is *not* blocked on front 76.** Front 76's
-> `readinessDrained()` is the soft half this spec says to land without. The hard half — "close the
-> listening socket, keep connection processes alive" — is `rakun_runtime.erl`'s socket, in
-> `modules/rakun/`, which is **front 04's**. Front 07 established the distinction rather than
-> reaching across, and step 10 now belongs to front 04.
->
-> **Steps 5–9 not reached**, each with what it needs: 5 wants file IO from `src/` plus step 6's
-> `Accept` branch (its resolution order is already fixed in `convention.bp`); 6 wants a
-> `MessageConverter` behavior, a q-value parser and a media-type registry, with no blocker; 7 wants
-> step 6's registry first; 8 and 9 have no blocker.
+> **Open:** Step 5 needs file IO from `src/` plus Step 6's `Accept` branch (its resolution order is
+> fixed in `convention.bp`); Step 6 needs a `MessageConverter` behavior, a q-value parser and a
+> media-type registry; Step 7 needs Step 6's registry; Steps 8 and 9 have no blocker.
 
 **Track:** B rakun
 **Priority:** high — every cross-cutting concern in track B enters here; without a chain, security, metrics, compression, error shape and API versioning each need their own hook into a frozen dispatcher
@@ -83,13 +56,13 @@ redirect written each way, which is the honest way to make the claim checkable.
 
 ## Problem
 
-rakun's request path is: match a route, call the handler, write what it returns
-(`runtime.mjs:188-196`). Nothing else happens. There is no place to put anything that is not a route
+rakun's bare request path is: match a route, call the handler, write what it returns, in
+front 04's `dispatch_http/5`. Nothing else happens. There is no place to put anything that is not a route
 handler, and the frozen bootstrap (`src/bootstrap.bp:33-35`) hardcodes the dispatcher, so nothing can
 be wrapped from outside either.
 
 The consequences are concrete. A browser cannot call a rakun API from another origin, because no CORS
-header is ever set. An error is a raw `500` with the reason as the body (`runtime.mjs:222-224`) — no
+header is ever set. An error is a raw `500` with the reason as the body — no
 content type, no structure, and RFC 9457 has been the expected shape since 2023. There is no way to
 add a request id, time a request, or refuse one before the handler runs. And `Response` is
 `(status, body)` with no header field and no builder (`src/http.bp:45-73`), so even a filter that
@@ -97,22 +70,6 @@ wanted to set a header had nowhere to put it until front 04's per-request accumu
 
 Shutdown is the least visible and the most expensive: a `SIGTERM` today drops in-flight requests. A
 rolling deploy loses the requests in flight at every instance, every time.
-
-## Current state
-
-| Piece | Where | State |
-|---|---|---|
-| Request path | `runtime.mjs:188-196`; front 04's `dispatch_http/5` | match, call, write — no hook of its own |
-| The one seam | front 04's `rakun_chain:run/6` branch in `dispatch_http/5` | front 04 delivers it; front 07 is the module it names |
-| Reply headers | front 04's `rkSetReplyHeader`/`rkReplyHeaders` | delivered by 04, first consumed here |
-| `Response` | `src/http.bp:45-73` — `ok/json/created/withStatus/notFound/badRequest` | frozen; **no** `withHeader`, no fluent builder |
-| CORS | — | none |
-| Error shape | 500 with the raw reason as the body | none |
-| `#[filter]`, `#[order]`, `#[controllerAdvice]`, `#[exceptionHandler]` | — | none |
-| `middleware.bp` convention | — | none |
-| Content negotiation | — | none; every handler builds its own string |
-| Graceful shutdown | — | none |
-| `modules/rakun-web/` | — | the directory does not exist |
 
 ## Mechanism
 
@@ -190,8 +147,8 @@ the decorator, so there is one mechanism and the file convention is a discovery 
 `#[matcher(...)]` restricts the entry to matching paths. **The `:param` grammar is the bundled library
 `routing`'s** (`pattern`: `parsePattern`, `matchPattern`, `patternProblem` — `01-std/04-routing-lib`
 Step 8, decision 116): a literal segment, `:param` and a trailing `:param*`, anything else refused by
-name, parsed once at startup. The landed matcher (`modules/rakun-web/src/middleware.bp:60-110`,
-`checkMatcher` / `matcherMatches`) and the CORS preflight's `routeMatches`
+name, parsed once at startup. The matcher in `modules/rakun-web/src/middleware.bp`
+(`checkMatcher` / `matcherMatches`) and the CORS preflight's `routeMatches`
 (`modules/rakun-web/src/filter.bp:545-565`) are the two copies that grammar replaces; both become
 calls into `pattern` and are deleted. Globs and the negative-lookahead form of §20's example stay
 front 65's rule engine, which front 07 executes; front 07 defines no pattern syntax of its own.
@@ -304,7 +261,7 @@ than pretending otherwise.
 The error entry sits at order −100 with a `try`/`catch` around `chain.next(req)`:
 
 - a tagged raise → the matching handler's `ProblemDetail`, serialized as `application/problem+json`
-  with std's `json.quote` / `json.object` (decision 116 — the landed private `jsonEscape`,
+  with std's `json.quote` / `json.object` (decision 116 — the private `jsonEscape`,
   `modules/rakun-web/src/error.bp:131`, escapes no control character but `\n` `\r` `\t` and is
   deleted);
 - an untagged raise → a 500 problem detail carrying a correlation digest, with the full reason logged
@@ -595,16 +552,15 @@ convention has no client half — front 27's `Link` prefetch reads the route tab
   a list of lines because `withHeader` replaces by name.
 - **20-rakun-websocket** owns `modules/rakun-web/src/websocket/**` and adds no chain entry — an
   upgrade leaves the HTTP chain before the handler.
-- The bundled library `validation` (`01-std/06-validation-lib`, formerly front 14's
-  `rakun-validation`) supplies the violation report that the problem-detail entry renders as a 422.
+- The bundled library `validation` (`01-std/06-validation-lib`) supplies the violation report that the problem-detail entry renders as a 422.
 
 ## Contradictions with fronts.md
 
-1. **Resolved:** `modules/rakun-web/botopink.json` and `src/root.bp` belong to **F07**, the
+1. `modules/rakun-web/botopink.json` and `src/root.bp` belong to **F07**, the
    lowest-numbered front in that module. F20 appends its `pub mod websocket;` line and F65 its
    `pub mod rules;`, in front-number order, reordering nothing.
-2. **Resolved:** the chain host cells live in `modules/rakun-web/src/sidecars/rakun_chain.erl`, per the
-   now-mandated `src/sidecars/rakun_<name>.erl` form.
+2. The chain host cells live in `modules/rakun-web/src/sidecars/rakun_chain.erl`, per the
+   mandated `src/sidecars/rakun_<name>.erl` form.
 3. The row lists `convention.bp` but not the `middleware.bp` *file* convention's scanner hook, which
    lives in front 22. Front 07 assumes front 22 compiles a root `middleware.bp`; if that is not front
    22's reading, the two need to agree before either lands.

@@ -1,7 +1,7 @@
 # Reference coverage — Tailwind CSS v4 against the emilia fronts
 
-Reference: `/home/ericfillipe/develop/tailwindcss/TAILWIND_CSS_DOCS.md` (Tailwind v4.3, § 3–§ 21 plus the *Referência Rápida*), walked against the 22 emilia fronts 33–48 and 54–59 in this directory.
-Status: `covered` — the front's token surface delivers the row byte-equal to the reference (or to what the reference prints); `partial` — a named subset, a value the front itself flags as unverified, or a mechanism split across fronts that neither claims; `missing` — no front declares it; `n/a` — a build-time or scanner concern emilia has no counterpart for (emilia hashes per call site and has no scanner).
+Reference: `/home/ericfillipe/develop/tailwindcss/TAILWIND_CSS_DOCS.md` (Tailwind v4.3, § 3–§ 21 plus the *Referência Rápida*), walked against the 22 emilia fronts 33–48 and 54–59 as they ship.
+Status: `covered` — the front's token surface delivers the row byte-equal to the reference (or to what the reference prints); `partial` — a named subset, or a row only an escape hatch reaches; `missing` — no front declares it; `n/a` — a build-time or scanner concern emilia has no counterpart for (emilia hashes per call site and has no scanner).
 
 ## Summary
 
@@ -9,7 +9,7 @@ Status: `covered` — the front's token surface delivers the row byte-equal to t
 |---|---|---|---|---|---|---|
 | § 1 Introdução | — | 1 | 0 | 0 | 0 | 1 |
 | § 2 Instalação | — | 1 | 0 | 0 | 0 | 1 |
-| § 3 Conceitos fundamentais (3.1–3.9) | [33](./33-emilia-color-palette/README.md) [34](./34-emilia-modifiers/README.md) [35](./35-emilia-spacing-sizing/README.md) [36](./36-emilia-layout/README.md) [38](./38-emilia-typography/README.md) [40](./40-emilia-borders/README.md) [41](./41-emilia-effects/README.md) [42](./42-emilia-filters/README.md) [44](./44-emilia-transitions/README.md) [45](./45-emilia-transforms/README.md) [48](./48-emilia-attributes/README.md) [54](./54-emilia-theme/README.md) [56](./56-emilia-cascade-and-output/README.md) [57](./57-emilia-escape-hatches/README.md) [58](./58-emilia-container-queries/README.md) [59](./59-emilia-custom-utilities-and-variants/README.md) | 80 | 60 | 16 | 1 | 3 |
+| § 3 Conceitos fundamentais (3.1–3.9) | [33](./33-emilia-color-palette/README.md) [34](./34-emilia-modifiers/README.md) [35](./35-emilia-spacing-sizing/README.md) [36](./36-emilia-layout/README.md) [38](./38-emilia-typography/README.md) [40](./40-emilia-borders/README.md) [41](./41-emilia-effects/README.md) [42](./42-emilia-filters/README.md) [44](./44-emilia-transitions/README.md) [45](./45-emilia-transforms/README.md) [48](./48-emilia-attributes/README.md) [54](./54-emilia-theme/README.md) [56](./56-emilia-cascade-and-output/README.md) [57](./57-emilia-escape-hatches/README.md) [58](./58-emilia-container-queries/README.md) [59](./59-emilia-custom-utilities-and-variants/README.md) | 80 | 64 | 12 | 1 | 3 |
 | § 4 Preflight | [55](./55-emilia-preflight/README.md) | 2 | 2 | 0 | 0 | 0 |
 | § 5 Layout | [36](./36-emilia-layout/README.md) | 19 | 19 | 0 | 0 | 0 |
 | § 6 Flexbox & Grid | [37](./37-emilia-grid/README.md) | 24 | 24 | 0 | 0 | 0 |
@@ -19,17 +19,17 @@ Status: `covered` — the front's token surface delivers the row byte-equal to t
 | § 10 Backgrounds | [39](./39-emilia-backgrounds/README.md) [33](./33-emilia-color-palette/README.md) [57](./57-emilia-escape-hatches/README.md) | 8 | 7 | 1 | 0 | 0 |
 | § 11 Bordas (+ `ring-*`, `divide-*`) | [40](./40-emilia-borders/README.md) | 10 | 10 | 0 | 0 | 0 |
 | § 12 Efeitos | [41](./41-emilia-effects/README.md) | 6 | 5 | 1 | 0 | 0 |
-| § 13 Filtros | [42](./42-emilia-filters/README.md) [56](./56-emilia-cascade-and-output/README.md) | 11 | 10 | 1 | 0 | 0 |
+| § 13 Filtros | [42](./42-emilia-filters/README.md) [56](./56-emilia-cascade-and-output/README.md) | 11 | 11 | 0 | 0 | 0 |
 | § 14 Tabelas | [43](./43-emilia-tables/README.md) | 4 | 4 | 0 | 0 | 0 |
-| § 15 Transições & Animação | [44](./44-emilia-transitions/README.md) | 6 | 5 | 1 | 0 | 0 |
-| § 16 Transforms | [45](./45-emilia-transforms/README.md) | 11 | 9 | 2 | 0 | 0 |
+| § 15 Transições & Animação | [44](./44-emilia-transitions/README.md) | 6 | 6 | 0 | 0 | 0 |
+| § 16 Transforms | [45](./45-emilia-transforms/README.md) | 11 | 10 | 1 | 0 | 0 |
 | § 17 Interatividade | [46](./46-emilia-interactivity/README.md) | 20 | 20 | 0 | 0 | 0 |
 | § 18 SVG | [47](./47-emilia-svg-accessibility/README.md) | 3 | 3 | 0 | 0 | 0 |
-| § 19 Acessibilidade | [47](./47-emilia-svg-accessibility/README.md) | 2 | 1 | 1 | 0 | 0 |
+| § 19 Acessibilidade | [47](./47-emilia-svg-accessibility/README.md) | 2 | 2 | 0 | 0 | 0 |
 | § 20 Funções e Diretivas | [54](./54-emilia-theme/README.md) [56](./56-emilia-cascade-and-output/README.md) [59](./59-emilia-custom-utilities-and-variants/README.md) | 9 | 8 | 0 | 0 | 1 |
-| § 21 Temas e Customização | [54](./54-emilia-theme/README.md) [33](./33-emilia-color-palette/README.md) [35](./35-emilia-spacing-sizing/README.md) [38](./38-emilia-typography/README.md) [40](./40-emilia-borders/README.md) [44](./44-emilia-transitions/README.md) | 7 | 6 | 1 | 0 | 0 |
+| § 21 Temas e Customização | [54](./54-emilia-theme/README.md) [33](./33-emilia-color-palette/README.md) [35](./35-emilia-spacing-sizing/README.md) [38](./38-emilia-typography/README.md) [40](./40-emilia-borders/README.md) [44](./44-emilia-transitions/README.md) | 7 | 7 | 0 | 0 | 0 |
 | Referência Rápida | — | 1 | 0 | 0 | 0 | 1 |
-| **Total** | 22 fronts | **267** | **235** | **24** | **1** | **7** |
+| **Total** | 22 fronts | **267** | **244** | **15** | **1** | **7** |
 
 ## Main table
 
@@ -41,19 +41,19 @@ Status: `covered` — the front's token surface delivers the row byte-equal to t
 | § 3.1 arbitrary values `bg-[#316ff6]` | [57](./57-emilia-escape-hatches/README.md) | covered | `Token.Arb(prop, value)` via `arbValue`, gated by `cssValue`/`cssIdent`; composes with `spacing(6)` and `themeVar`. |
 | § 3.1 arbitrary CSS properties `[--gutter-width:1rem]` | [57](./57-emilia-escape-hatches/README.md) | covered | `Token.ArbProp(name, value)` via `arbProp`. |
 | § 3.1 managing duplication (`@layer components { .btn-primary }`) | [59](./59-emilia-custom-utilities-and-variants/README.md) | covered | Bundles are `pub fn … -> Token[]`; `named("card", tokens)` lands in `@layer components`. |
-| § 3.1 style conflicts (last rule wins) | [56](./56-emilia-cascade-and-output/README.md) | covered | Step 8: within a class, token order; across calls, registration order; unconditioned rules before at-rule rules. |
-| § 3.1 important modifier `bg-red-500!` (per utility) | [56](./56-emilia-cascade-and-output/README.md) · [34](./34-emilia-modifiers/README.md) | partial | 56 ships `markImportant(Sheet)` and says "Front 34's `Important(inner)` modifier is one line on top of it"; 34's token surface declares no `Important` variant. The per-utility token is unplaced. |
+| § 3.1 style conflicts (last rule wins) | [56](./56-emilia-cascade-and-output/README.md) | covered | Within a class, token order; across calls, registration order; unconditioned rules before at-rule rules. |
+| § 3.1 important modifier `bg-red-500!` (per utility) | [34](./34-emilia-modifiers/README.md) · [56](./56-emilia-cascade-and-output/README.md) | covered | `Token.Important(inner)` — `markImportant` on the inner sheet (decision 81). |
 | § 3.1 important flag (`@import "tailwindcss" important`) | [56](./56-emilia-cascade-and-output/README.md) | covered | `Options.important` / `withImportant`; `!important` appended per declaration. |
 | § 3.1 prefix (`prefix(tw)`) | [56](./56-emilia-cascade-and-output/README.md) | covered | `withPrefix(o, "tw_")` renders `.tw_e_1`; plain concatenation, no escaped `.tw\:` form — stated divergence. |
-| § 3.2 pseudo-classes hover / focus / focus-within / focus-visible / active / visited / target | [34](./34-emilia-modifiers/README.md) | covered | `Hover` emits `@media (hover: hover){&:hover{…}}`; six pre-existing modifiers corrected to the v4.3 form. |
+| § 3.2 pseudo-classes hover / focus / focus-within / focus-visible / active / visited / target | [34](./34-emilia-modifiers/README.md) | covered | `Hover` is `@media (hover: hover)` + `&:hover`; the others are `&:<state>`. |
 | § 3.2 structural first / last / only / odd / even / *-of-type / empty | [34](./34-emilia-modifiers/README.md) | covered | Nine `selector`-only variants. |
-| § 3.2 `nth-*` / `nth-last-*` | [34](./34-emilia-modifiers/README.md) · [57](./57-emilia-escape-hatches/README.md) | covered | `Nth(index: i32, inner)`, `NthLast(index, inner)`; a formula (`nth-[2n+1]`) goes through 57 `ArbVariant`. |
+| § 3.2 `nth-*` / `nth-last-*` | [34](./34-emilia-modifiers/README.md) · [57](./57-emilia-escape-hatches/README.md) | covered | `Nth(index: i32, inner)`, `NthLast(index, inner)`; a formula (`nth-[2n+1]`) goes through `arbSel`. |
 | § 3.2 form states disabled / enabled / checked / indeterminate / default / optional / required / valid / invalid / user-valid / user-invalid / in-range / out-of-range / placeholder-shown / autofill / read-only | [34](./34-emilia-modifiers/README.md) | covered | Sixteen variants, selectors verbatim from the reference table. |
-| § 3.2 `:has()` (`has-checked:`, `has-[…]`) | [57](./57-emilia-escape-hatches/README.md) | partial | No named `Has*` token; 34 defers "arbitrary variant … on the escape-hatch front" and 57 does not name `has`. Expressible as `ArbVariant("&:has(:checked)", inner)`. |
-| § 3.2 `:not()` (`hover:not-focus:`, `not-[…]`) | [57](./57-emilia-escape-hatches/README.md) | partial | Same shape as `:has()`: only through `ArbVariant("&:not(:focus)", inner)`. |
-| § 3.2 parent state `group-*` | [34](./34-emilia-modifiers/README.md) | partial | `GroupHover/Focus/Active/Disabled/Open` from the `&:is(:where(.group) … *)` template; other states via 57 `ArbVariant`. Named groups (`group/item`): "out of scope for this front". |
-| § 3.2 sibling state `peer-*` | [34](./34-emilia-modifiers/README.md) | partial | `PeerHover/Focus/Checked/Invalid/Disabled/PlaceholderShown`; named peers out of scope (same note). |
-| § 3.2 `in-[…]` (`:where(…) &`) | [57](./57-emilia-escape-hatches/README.md) | partial | Not named by 34 or 57; the selector has one `&`, so `ArbVariant` carries it. |
+| § 3.2 `:has()` (`has-checked:`, `has-[…]`) | [57](./57-emilia-escape-hatches/README.md) | partial | No named `Has*` token; expressible as `arbSel("&:has(:checked)", inner)`. |
+| § 3.2 `:not()` (`hover:not-focus:`, `not-[…]`) | [57](./57-emilia-escape-hatches/README.md) | partial | Same shape: `arbSel("&:not(:focus)", inner)` only. |
+| § 3.2 parent state `group-*` | [34](./34-emilia-modifiers/README.md) | partial | `GroupHover/Focus/Active/Visited/Disabled/Open` from the `&:is(:where(.group) … *)` template; other states via `arbSel`. Named groups (`group/item`) are not declared. |
+| § 3.2 sibling state `peer-*` | [34](./34-emilia-modifiers/README.md) | partial | `PeerHover/Focus/Active/Checked/Invalid/Required/Disabled/PlaceholderShown`; named peers not declared. |
+| § 3.2 `in-[…]` (`:where(…) &`) | [57](./57-emilia-escape-hatches/README.md) | partial | No named form; the selector has one `&`, so `arbSel` carries it. |
 | § 3.2 pseudo-elements before / after / first-letter / first-line / placeholder / file / marker / selection / backdrop | [34](./34-emilia-modifiers/README.md) | covered | Nine variants; `Marker`/`Selection` keep the reference's `& ::` space; `Before`/`After` pair with 38's `Text.Content.*`. |
 | § 3.2 media: responsive `md:` | [34](./34-emilia-modifiers/README.md) | covered | See § 3.3 rows. |
 | § 3.2 media: `dark:` | [34](./34-emilia-modifiers/README.md) | covered | `@media (prefers-color-scheme: dark)`; class/attribute strategies see § 3.4. |
@@ -62,71 +62,71 @@ Status: `covered` — the front's token surface delivers the row byte-equal to t
 | § 3.2 media: `print:` | [34](./34-emilia-modifiers/README.md) | covered | `Print` → `@media print`. |
 | § 3.2 media: `supports-[…]:` | [57](./57-emilia-escape-hatches/README.md) | covered | `ArbAt("supports(display:grid)", inner)` → `@supports(display:grid){…}`; `cssQuery` refuses a leading `@`. |
 | § 3.2 media: `portrait:` / `landscape:` | [34](./34-emilia-modifiers/README.md) | covered | `Portrait`, `Landscape`. |
-| § 3.2 ARIA (`aria-checked:`, `aria-[…]`) | [57](./57-emilia-escape-hatches/README.md) | partial | No named `Aria*` token in any front; `ArbVariant("&[aria-checked=\"true\"]", inner)` only. |
-| § 3.2 data attributes (`data-active:`, `data-[size=large]:`) | [57](./57-emilia-escape-hatches/README.md) | partial | Same: `ArbVariant("&[data-size=large]", inner)` only. |
+| § 3.2 ARIA (`aria-checked:`, `aria-[…]`) | [57](./57-emilia-escape-hatches/README.md) | partial | No named `Aria*` token; `arbSel("&[aria-checked=\"true\"]", inner)` only. |
+| § 3.2 data attributes (`data-active:`, `data-[size=large]:`) | [57](./57-emilia-escape-hatches/README.md) | partial | Same: `arbSel("&[data-size=large]", inner)` only. |
 | § 3.2 `rtl:` / `ltr:` | [34](./34-emilia-modifiers/README.md) | covered | `[dir="rtl"] &` — `&` at the end. |
-| § 3.2 `open:` / `inert:` | [34](./34-emilia-modifiers/README.md) | covered | `Open` → `&:open, &:popover-open`; `Inert` → `&:is([inert], [inert] *)`. |
-| § 3.2 child selectors `*:` / `**:` | [34](./34-emilia-modifiers/README.md) | covered | `Children` → `:is(& > *)`, `Descendants` → `:is(& *)`; `**:data-avatar:` is `Descendants([ArbVariant(…)])`. |
-| § 3.2 arbitrary variants `[&.is-dragging]:` / `[@supports(…)]:` | [57](./57-emilia-escape-hatches/README.md) | covered | `ArbVariant(selector, inner)` (`cssSelector` requires exactly one `&`), `ArbAt(query, inner)`. |
+| § 3.2 `open:` / `inert:` | [34](./34-emilia-modifiers/README.md) | partial | `Open` → `&:is(:open, :popover-open)` (one `&`; the reference's `&:open, &:popover-open` has two); `Inert` → `&:is([inert], [inert] *)`. Upstream v4 also matches the legacy `[open]` attribute (`&:is([open], :popover-open, :open)`), which the next change to this row adds. |
+| § 3.2 child selectors `*:` / `**:` | [34](./34-emilia-modifiers/README.md) | covered | `Children` → `:is(& > *)`, `Descendants` → `:is(& *)`; `**:data-avatar:` is `Descendants([arbSel(…)])`. |
+| § 3.2 arbitrary variants `[&.is-dragging]:` / `[@supports(…)]:` | [57](./57-emilia-escape-hatches/README.md) | covered | `arbSel(selector, inner)` (`ArbVariant`; exactly one `&`), `arbAt(query, inner)`. |
 | § 3.2 registering custom variants (`@custom-variant theme-midnight`) | [59](./59-emilia-custom-utilities-and-variants/README.md) | covered | A custom variant is `fn (inner: Token[]) -> Token[]`; `selector(Variant(atRule: "", selector: "&:where([data-theme=\"midnight\"] *)"), inner)`. |
-| § 3.2 full variant reference table (72 rows) | [34](./34-emilia-modifiers/README.md) · [57](./57-emilia-escape-hatches/README.md) | partial | Every non-bracket row has a token in 34. The five bracket-template rows `has-[…]`, `group-[…]`, `peer-[…]`, `in-[…]`, `not-[…]` have no named form and route through 57 `ArbVariant`. |
-| § 3.3 default breakpoints sm / md / lg / xl / 2xl | [34](./34-emilia-modifiers/README.md) | covered | `Sm … X2xl` → `@media (width >= 40rem)` … `96rem`, rem not px. |
+| § 3.2 full variant reference table (72 rows) | [34](./34-emilia-modifiers/README.md) · [57](./57-emilia-escape-hatches/README.md) | partial | Every non-bracket row has a token in 34 (82 `Variant` fns + `Important`). The bracket-template rows `has-[…]`, `group-[…]`, `peer-[…]`, `in-[…]`, `not-[…]` route through `arbSel`. |
+| § 3.3 default breakpoints sm / md / lg / xl / 2xl | [34](./34-emilia-modifiers/README.md) · [54](./54-emilia-theme/README.md) | covered | `Sm … X2xl` → `@media (width >= 40rem)` … `96rem`, read from `--breakpoint-*`. |
 | § 3.3 mobile-first | [34](./34-emilia-modifiers/README.md) | covered | `width >=` queries; 56 orders unconditioned rules before at-rule rules. |
 | § 3.3 breakpoint range `md:max-xl:` | [34](./34-emilia-modifiers/README.md) | covered | Nesting: `Md([MaxXl(inner)])`. |
 | § 3.3 `max-*` breakpoints | [34](./34-emilia-modifiers/README.md) | covered | `MaxSm … MaxX2xl` → `@media (width < …)`. |
-| § 3.3 custom breakpoints (`--breakpoint-xs: 30rem`) | [54](./54-emilia-theme/README.md) · [34](./34-emilia-modifiers/README.md) | partial | 54 validates the `--breakpoint-*` namespace, but 34's ten variant fns return literal queries (`mdVariant()` = `@media (width >= 48rem)`) and read no theme; a theme entry adds no variant and moves none. |
-| § 3.3 removing breakpoints (`--breakpoint-2xl: initial`) | [54](./54-emilia-theme/README.md) · [34](./34-emilia-modifiers/README.md) | partial | `clearNamespace(th, Ns.Breakpoint)` empties the entries; `Token.X2xl` still exists and still emits `96rem`. |
+| § 3.3 custom breakpoints (`--breakpoint-xs: 30rem`) | [54](./54-emilia-theme/README.md) · [34](./34-emilia-modifiers/README.md) | partial | Overriding an existing `--breakpoint-*` moves its query and the class hash (decision 82). A new name adds no variant — `arbMin`/`arbMax` cover an extra width. |
+| § 3.3 removing breakpoints (`--breakpoint-2xl: initial`) | [54](./54-emilia-theme/README.md) · [34](./34-emilia-modifiers/README.md) | partial | `clearNamespace(th, Ns.Breakpoint)` empties the entries, but `Token.X2xl` then emits `@media (width >= )` rather than being refused, unlike 58's container sizes. |
 | § 3.3 arbitrary breakpoints `min-[320px]:` / `max-[600px]:` | [57](./57-emilia-escape-hatches/README.md) | covered | `ArbMin(px, inner)` / `ArbMax(px, inner)`, gated by `cssLength`. |
 | § 3.3 container queries `@container` + `@3xs … @7xl` | [58](./58-emilia-container-queries/README.md) | covered | `.Container.Inline/Normal/Size`; `containerAtMd(inner)` → `@container (width >= 28rem){…}`; the thirteen sizes read `--container-*` from the theme and panic on an empty value. |
-| § 3.3 named containers `@container/main`, `@sm/main:` | [58](./58-emilia-container-queries/README.md) | covered | `ContainerNamed(name)` emits `container-type` + `container-name`; `containerNamed(size, name, inner)` → `@container main (width >= 24rem){…}`. |
+| § 3.3 named containers `@container/main`, `@sm/main:` | [58](./58-emilia-container-queries/README.md) | covered | `containerName(name)` emits `container-type` + `container-name`; `containerNamed(size, name, inner)` → `@container main (width >= 24rem){…}`. |
 | § 3.4 dark mode via `prefers-color-scheme` | [34](./34-emilia-modifiers/README.md) | covered | `Dark(inner)`. |
-| § 3.4 class-based dark (`@custom-variant dark (&:where(.dark, .dark *))`) | [54](./54-emilia-theme/README.md) · [34](./34-emilia-modifiers/README.md) | partial | 54 Step 6 ships `DarkMode.Class("dark")`, `darkSelector`, `darkAtRule` and says "Front 34 reads both and builds the variant"; 34 Step 3 says the class and attribute forms "are out of scope and named as such in *Reference gaps*". Neither wires `Dark` to the strategy. |
-| § 3.4 data-attribute dark (`[data-theme=dark]`) | [54](./54-emilia-theme/README.md) · [34](./34-emilia-modifiers/README.md) | partial | Same split: `DarkMode.Attribute("data-theme", "dark")` exists in 54; not consumed by 34. |
+| § 3.4 class-based dark (`@custom-variant dark (&:where(.dark, .dark *))`) | [54](./54-emilia-theme/README.md) · [34](./34-emilia-modifiers/README.md) | covered | `withDarkMode(th, DarkMode.Class("dark"))`; `Dark` reads `darkAtRule`/`darkSelector` → `&:where(.dark, .dark *)`. |
+| § 3.4 data-attribute dark (`[data-theme=dark]`) | [54](./54-emilia-theme/README.md) · [34](./34-emilia-modifiers/README.md) | covered | `DarkMode.Attribute("data-theme", "dark")` → `&:where([data-theme=dark], [data-theme=dark] *)`. |
 | § 3.4 JavaScript toggle | — | n/a | Runtime script, outside the stylesheet. |
-| § 3.5 theme variables (`@theme { --color-mint-500 }`) | [54](./54-emilia-theme/README.md) | covered | `Theme(entries, keyframes, darkMode)`, `ThemeEntry`, `extend`, `themeVar`, `themeValue`; utilities emit `var(--…)` references. A new entry adds a variable, never a token — new utilities come from 57 `Arb` + `themeVar`. |
-| § 3.5 namespace `--color-*` | [33](./33-emilia-color-palette/README.md) · [54](./54-emilia-theme/README.md) | covered | `paletteEntries()` (286 entries) composed by `extend`; `--color-white`/`--color-black` in `defaultTheme()`. |
-| § 3.5 namespace `--font-*` | [38](./38-emilia-typography/README.md) · [54](./54-emilia-theme/README.md) | covered | `.Font.Sans` → `font-family:var(--font-sans)`. |
+| § 3.5 theme variables (`@theme { --color-mint-500 }`) | [54](./54-emilia-theme/README.md) | covered | `Theme(entries, keyframes, darkMode)`, `ThemeEntry`, `extendTheme`, `themeVar`, `themeValue`; utilities emit `var(--…)` references. A new entry adds a variable, never a token — new utilities come from `arbValue` + `themeVar`. |
+| § 3.5 namespace `--color-*` | [33](./33-emilia-color-palette/README.md) · [54](./54-emilia-theme/README.md) | covered | `paletteEntries()` (286 entries) composed into `fullTheme()`; `--color-white`/`--color-black` in `defaultTheme()`. |
+| § 3.5 namespace `--font-*` | [38](./38-emilia-typography/README.md) · [54](./54-emilia-theme/README.md) | covered | `.Font.Sans` → `font-family:var(--font-sans)`; the three stacks come from `typographyEntries()`. |
 | § 3.5 namespace `--text-*` | [38](./38-emilia-typography/README.md) · [54](./54-emilia-theme/README.md) | covered | `.Text.Size.*` emits the `--text-*` / `--text-*--line-height` pair; 54 carries both entries. |
 | § 3.5 namespace `--font-weight-*` | [38](./38-emilia-typography/README.md) · [54](./54-emilia-theme/README.md) | covered | Entries contributed by 38; the utility emits the literal `font-weight:700`, which is what § 9.5 prints. |
 | § 3.5 namespace `--tracking-*` | [38](./38-emilia-typography/README.md) · [54](./54-emilia-theme/README.md) | covered | `letter-spacing:var(--tracking-wide)`. |
 | § 3.5 namespace `--leading-*` | [38](./38-emilia-typography/README.md) · [54](./54-emilia-theme/README.md) | covered | `line-height:var(--leading-tight)`; `leading-none` is the literal `1`, as § 9.11 prints. |
-| § 3.5 namespace `--breakpoint-*` | [54](./54-emilia-theme/README.md) · [34](./34-emilia-modifiers/README.md) | partial | Validated prefix only; see § 3.3 custom breakpoints. |
-| § 3.5 namespace `--container-*` | [58](./58-emilia-container-queries/README.md) · [54](./54-emilia-theme/README.md) | covered | Thirteen entries in `defaultTheme()`, read by 58; 35's `.Size.MaxW.Md` emits the literal `28rem` that § 8.3 prints. |
+| § 3.5 namespace `--breakpoint-*` | [54](./54-emilia-theme/README.md) · [34](./34-emilia-modifiers/README.md) | covered | Read by every breakpoint variant; see § 3.3 for new and removed names. |
+| § 3.5 namespace `--container-*` | [58](./58-emilia-container-queries/README.md) · [54](./54-emilia-theme/README.md) · [35](./35-emilia-spacing-sizing/README.md) | covered | Thirteen entries in `defaultTheme()`, read by 58's container queries and by 35's `.Size.MaxW.*` / 36's `.Layout.Columns.*` (`var(--container-md)`). |
 | § 3.5 namespace `--spacing-*` | [54](./54-emilia-theme/README.md) · [35](./35-emilia-spacing-sizing/README.md) | covered | `--spacing:0.25rem` (single variable, per § 21.2); `spacing(n)` → `calc(var(--spacing) * n)`, `spacing(0)` → `0`. |
 | § 3.5 namespace `--radius-*` | [40](./40-emilia-borders/README.md) · [54](./54-emilia-theme/README.md) | covered | `border-radius:var(--radius-lg)`; `rounded-full` stays the literal `9999px`. |
-| § 3.5 namespace `--shadow-*` | [41](./41-emilia-effects/README.md) · [54](./54-emilia-theme/README.md) | covered | `box-shadow:var(--shadow-md)`; seven values byte-equal to § 21.4. |
-| § 3.5 namespace `--inset-shadow-*` | [41](./41-emilia-effects/README.md) · [54](./54-emilia-theme/README.md) | covered | `box-shadow:inset var(--inset-shadow-sm)`; literals are theme entries ("Closed by front 54"). |
+| § 3.5 namespace `--shadow-*` | [41](./41-emilia-effects/README.md) · [54](./54-emilia-theme/README.md) | covered | `--tw-shadow:var(--shadow-md)` plus the shared `box-shadow` reader; seven values byte-equal to § 21.4. |
+| § 3.5 namespace `--inset-shadow-*` | [41](./41-emilia-effects/README.md) · [54](./54-emilia-theme/README.md) | covered | `--tw-inset-shadow:inset var(--inset-shadow-sm)` plus the reader; the values are `effectEntries()`. |
 | § 3.5 namespace `--drop-shadow-*` | [42](./42-emilia-filters/README.md) · [54](./54-emilia-theme/README.md) | covered | `filter:drop-shadow(var(--drop-shadow-md))`. |
-| § 3.5 namespace `--blur-*` | [42](./42-emilia-filters/README.md) · [54](./54-emilia-theme/README.md) | covered | `blur(var(--blur-sm))`, shared by `Filter` and `Backdrop`. |
+| § 3.5 namespace `--blur-*` | [42](./42-emilia-filters/README.md) · [54](./54-emilia-theme/README.md) | covered | `blur(var(--blur-sm))`, shared by `Filter` and `BackdropFilter`; the values are `filterEntries()`. |
 | § 3.5 namespace `--perspective-*` | [45](./45-emilia-transforms/README.md) · [54](./54-emilia-theme/README.md) | covered | `perspective:var(--perspective-near)` (`300px` in the theme). |
 | § 3.5 namespace `--aspect-*` | [54](./54-emilia-theme/README.md) · [36](./36-emilia-layout/README.md) | covered | Validated prefix in 54; `.Layout.Aspect.Video` emits the literal `aspect-ratio:16 / 9` that § 5.1 prints — no theme lookup. |
-| § 3.5 namespace `--ease-*` | [44](./44-emilia-transitions/README.md) · [54](./54-emilia-theme/README.md) | covered | `transition-timing-function:var(--ease-in)`; `ease-linear` is the keyword. |
+| § 3.5 namespace `--ease-*` | [44](./44-emilia-transitions/README.md) · [54](./54-emilia-theme/README.md) | covered | `transition-timing-function:var(--ease-in)`; `ease-linear` is the keyword; the values (`transitionEntries()`) are provisional — the reference prints only the names. |
 | § 3.5 namespace `--animate-*` | [44](./44-emilia-transitions/README.md) · [54](./54-emilia-theme/README.md) | covered | `animation:var(--animate-spin)`; four values byte-equal to § 21.6. |
-| § 3.5 extending the theme | [54](./54-emilia-theme/README.md) | covered | `extend(th, entries)`; an entry outside the nineteen prefixes fails the build, no relaxing argument. |
-| § 3.5 overriding the theme | [54](./54-emilia-theme/README.md) | covered | `extend` with an existing name replaces the value. |
+| § 3.5 extending the theme | [54](./54-emilia-theme/README.md) | covered | `extendTheme(th, entries)`; an entry outside the nineteen prefixes panics, no relaxing argument. |
+| § 3.5 overriding the theme | [54](./54-emilia-theme/README.md) | covered | `extendTheme` with an existing name replaces the value in place. |
 | § 3.5 replacing a namespace (`--color-*: initial`) | [54](./54-emilia-theme/README.md) | covered | `clearNamespace(th, Ns.Color)`. |
 | § 3.5 fully custom theme (`--*: initial`) | [54](./54-emilia-theme/README.md) | covered | `emptyTheme()`. |
-| § 3.5 custom animations (`@keyframes` inside `@theme`) | [54](./54-emilia-theme/README.md) · [44](./44-emilia-transitions/README.md) · [56](./56-emilia-cascade-and-output/README.md) | covered | `Theme.keyframes` entries; `Block(header, body)` hoisted by `renderDocument`, deduplicated by header; `Token.AnimateRaw` names the animation. |
+| § 3.5 custom animations (`@keyframes` inside `@theme`) | [54](./54-emilia-theme/README.md) · [44](./44-emilia-transitions/README.md) · [56](./56-emilia-cascade-and-output/README.md) | covered | `Theme.keyframes` entries; `Block(header, body)` hoisted by `renderDocument`, deduplicated by header; `Token.AnimateRaw` / `rawAnimate` names the animation. |
 | § 3.5 `@theme inline` | — | missing | No front mentions it. emilia always emits `var(--x)` references; the inline (value-resolving) form has no equivalent. |
-| § 3.5 `@theme static` | [54](./54-emilia-theme/README.md) | covered | emilia's always-on behaviour: "emilia's behaviour is `@theme static`, always, and the tree-shaken form is out of scope for this milestone". |
+| § 3.5 `@theme static` | [54](./54-emilia-theme/README.md) | covered | emilia always emits the whole theme; tree-shaking would need a whole-program pass over every `emilia()` site. |
 | § 3.6 default palette (26 families × 11 shades, black, white) | [33](./33-emilia-color-palette/README.md) | covered | `.Color.<Family>.<Shade>` and `.Bg.Color.…`; plus `Transparent`, `Current`, `Inherit`. |
-| § 3.6 OKLCH values | [33](./33-emilia-color-palette/README.md) | partial | The reference prints two values (`red-500`, `blue-500`); the other 284 must be "transcribed from upstream `packages/tailwindcss/theme.css`" — front's own reference gap. |
+| § 3.6 OKLCH values | [33](./33-emilia-color-palette/README.md) | covered | 286 values transcribed from upstream `tailwindcss` 4.3.2 `theme.css`; the reference's two anchors (`red-500`, `blue-500`) match in upstream's `%` spelling. |
 | § 3.6 colour opacity `bg-red-500/50` | [33](./33-emilia-color-palette/README.md) | covered | `Token.Alpha(percent, inner)` → `color-mix(in oklab, var(--color-red-500) 50%, transparent)`; `in oklab` flagged for upstream check. |
 | § 3.7 arbitrary values | [57](./57-emilia-escape-hatches/README.md) | covered | Same as § 3.1. |
-| § 3.7 arbitrary variants `[&>[data-active]+span]:` | [57](./57-emilia-escape-hatches/README.md) | covered | `ArbVariant`. |
-| § 3.7 custom CSS with `@layer components` / `@layer utilities` | [59](./59-emilia-custom-utilities-and-variants/README.md) | partial | `named()` always lands in `components`; a named class in `utilities` (`.text-balance`) is not possible: "`named()` takes no `layer:` argument because a per-call-site layer choice makes the …" (design constraint). Unnamed bundles land in `utilities` under their hash. |
+| § 3.7 arbitrary variants `[&>[data-active]+span]:` | [57](./57-emilia-escape-hatches/README.md) | covered | `arbSel`. |
+| § 3.7 custom CSS with `@layer components` / `@layer utilities` | [59](./59-emilia-custom-utilities-and-variants/README.md) | partial | `named()` always lands in `components` (no per-call layer, by design); unnamed bundles land in `utilities` under their hash. A named class in `utilities` (`.text-balance`) is not expressible. |
 | § 3.8 detecting classes in source files | — | n/a | emilia hashes per call site and has no scanner; the class exists because the call ran. |
 | § 3.9 functions and directives | — | n/a | Duplicate of § 20; see those rows. |
-| § 4 preflight resets (eight bullets) | [55](./55-emilia-preflight/README.md) | covered | `preflightRules()` — eleven `layer: "base"` rules; parity with the eight bullets, "explicitly **does not** claim byte-equality with upstream `preflight.css`". Adds `border-style:solid` beside `border-width:0`, stated as a decision. |
-| § 4 disabling preflight (`@source not "tailwindcss/preflight"`) | [55](./55-emilia-preflight/README.md) | covered | Inverted: off by default, on via `withBase(defaultOptions(), preflightRules())`; "no function, field, file or environment variable … turns preflight on without passing it". |
-| § 5.1 aspect-ratio | [36](./36-emilia-layout/README.md) | covered | `Aspect.Auto/Square/Video`; `aspect-[4/3]` → 57. |
-| § 5.2 columns | [36](./36-emilia-layout/README.md) | covered | `1, 2, 3, Auto` + fourteen named widths; `columns-4…12` not declared ("must be confirmed against upstream"). |
-| § 5.3 break-after | [36](./36-emilia-layout/README.md) | covered | Seven leaves. |
-| § 5.4 break-before | [36](./36-emilia-layout/README.md) | covered | Same leaf set. |
-| § 5.5 break-inside | [36](./36-emilia-layout/README.md) | covered | `Auto/Avoid/AvoidPage/AvoidColumn`. |
+| § 4 preflight resets (eight bullets) | [55](./55-emilia-preflight/README.md) | covered | `preflightRules()` — eleven `layer: "base"` rules; parity with the eight bullets, not byte-equality with upstream `preflight.css`. Adds `border-style:solid` beside `border-width:0`, a stated decision. |
+| § 4 disabling preflight (`@source not "tailwindcss/preflight"`) | [55](./55-emilia-preflight/README.md) | covered | Inverted: off by default, on via `withBase(defaultOptions(), preflightRules())`; no ambient switch exists. |
+| § 5.1 aspect-ratio | [36](./36-emilia-layout/README.md) | covered | `Aspect.Auto/Square/Video`; `aspect-[4/3]` → `arbValue`. |
+| § 5.2 columns | [36](./36-emilia-layout/README.md) | covered | `1, 2, 3, Auto` + thirteen named widths as `var(--container-*)`; `columns-4…12` not declared (upstream resolves them through the bare-integer rule). |
+| § 5.3 break-after | [36](./36-emilia-layout/README.md) | covered | `BreakAfter.*`, seven leaves. |
+| § 5.4 break-before | [36](./36-emilia-layout/README.md) | covered | `BreakBefore.*`, same leaf set. |
+| § 5.5 break-inside | [36](./36-emilia-layout/README.md) | covered | `BreakInside.Auto/Avoid/AvoidPage/AvoidColumn`. |
 | § 5.6 box-decoration-break | [36](./36-emilia-layout/README.md) | covered | `BoxDecoration.Clone/Slice`. |
 | § 5.7 box-sizing | [36](./36-emilia-layout/README.md) | covered | `Box.Border/Content`. |
-| § 5.8 display | [36](./36-emilia-layout/README.md) | covered | Eleven leaves; the six existing paths keep their bytes. |
+| § 5.8 display | [36](./36-emilia-layout/README.md) | covered | Eleven leaves, `Layout`'s own. |
 | § 5.9 float | [36](./36-emilia-layout/README.md) | covered | `float-start` → `float:inline-start`. |
 | § 5.10 clear | [36](./36-emilia-layout/README.md) | covered | Six leaves. |
 | § 5.11 isolation | [36](./36-emilia-layout/README.md) | covered | `Isolate`, `Auto`. |
@@ -135,24 +135,24 @@ Status: `covered` — the front's token surface delivers the row byte-equal to t
 | § 5.14 overflow | [36](./36-emilia-layout/README.md) | covered | Shorthand + `X` + `Y`, five values each. |
 | § 5.15 overscroll-behavior | [36](./36-emilia-layout/README.md) | covered | Shorthand + `X` + `Y`, three values each. |
 | § 5.16 position | [36](./36-emilia-layout/README.md) | covered | Five leaves. |
-| § 5.17 top / right / bottom / left / inset | [36](./36-emilia-layout/README.md) | covered | `Inset.All/X/Y/T/R/B/L/S/E` over the spacing scale + `Auto`, `Full`, `Frac`, `Neg`; `top-[17px]` → 57. |
+| § 5.17 top / right / bottom / left / inset | [36](./36-emilia-layout/README.md) | covered | `Inset.All/X/Y/T/R/B/L/S/E` over the spacing scale + `Auto`, `Full`, `Frac`, `Neg`; `top-[17px]` → `arbValue`. |
 | § 5.18 visibility | [36](./36-emilia-layout/README.md) | covered | `invisible` → `visibility:hidden`. |
-| § 5.19 z-index | [36](./36-emilia-layout/README.md) | covered | `0 10 20 30 40 50 Auto`; `z-[999]` → 57. |
+| § 5.19 z-index | [36](./36-emilia-layout/README.md) | covered | `0 10 20 30 40 50 Auto`; `z-[999]` → `arbValue`. |
 | § 6.1 flex-basis | [37](./37-emilia-grid/README.md) | covered | Scale + `Auto`, `Full`, three fractions (the three the reference prints). |
 | § 6.2 flex-direction | [37](./37-emilia-grid/README.md) | covered | `Row/RowReverse/Col/ColReverse`. |
 | § 6.3 flex-wrap | [37](./37-emilia-grid/README.md) | covered | `Wrap/WrapReverse/NoWrap`. |
 | § 6.4 flex | [37](./37-emilia-grid/README.md) | covered | `Flex.Value.One/Auto/Initial/None` (`Value` because a section cannot carry a sub-section of its own name). |
 | § 6.5 flex-grow | [37](./37-emilia-grid/README.md) | covered | `Grow.0/1`. |
 | § 6.6 flex-shrink | [37](./37-emilia-grid/README.md) | covered | `Shrink.0/1`. |
-| § 6.7 order | [37](./37-emilia-grid/README.md) | covered | `1–12`, `First/Last/None`; 3–11 "by interpolation; confirm the set against upstream". |
-| § 6.8 grid-template-columns | [37](./37-emilia-grid/README.md) | covered | `Cols.1–12/None/Subgrid`; 7–11 by interpolation (same note). |
+| § 6.7 order | [37](./37-emilia-grid/README.md) | covered | `1–12`, `First/Last/None`; the reference prints `1`, `2` and the keywords. |
+| § 6.8 grid-template-columns | [37](./37-emilia-grid/README.md) | covered | `Cols.1–12/None/Subgrid` via `gridRepeat(n)`; the reference prints 1–6 and 12. |
 | § 6.9 grid-column | [37](./37-emilia-grid/README.md) | covered | `Col.Auto`, `Col.Span.*`/`Full`, `Col.Start.*`, `Col.End.*`. |
 | § 6.10 grid-template-rows | [37](./37-emilia-grid/README.md) | covered | `Rows.*/None/Subgrid`. |
 | § 6.11 grid-row | [37](./37-emilia-grid/README.md) | covered | `Row.Auto/Span/Start/End`. |
 | § 6.12 grid-auto-flow | [37](./37-emilia-grid/README.md) | covered | Five leaves. |
 | § 6.13 grid-auto-columns | [37](./37-emilia-grid/README.md) | covered | `Auto/Min/Max/Fr`. |
 | § 6.14 grid-auto-rows | [37](./37-emilia-grid/README.md) | covered | `Auto/Min/Max/Fr`. |
-| § 6.15 gap | [37](./37-emilia-grid/README.md) | covered | `Gap.All/X/Y` over the spacing scale + `Px`; legacy `.Flex.Gap.*` kept. |
+| § 6.15 gap | [37](./37-emilia-grid/README.md) | covered | `Gap.All/X/Y` over the spacing scale + `Px`; `.Flex.Gap.{1,2,4,8}` emit the same declarations. |
 | § 6.16 justify-content | [37](./37-emilia-grid/README.md) | covered | Eight leaves, `flex-start`/`flex-end` asymmetry copied. |
 | § 6.17 justify-items | [37](./37-emilia-grid/README.md) | covered | Four leaves. |
 | § 6.18 justify-self | [37](./37-emilia-grid/README.md) | covered | Five leaves. |
@@ -162,12 +162,12 @@ Status: `covered` — the front's token surface delivers the row byte-equal to t
 | § 6.22 place-content | [37](./37-emilia-grid/README.md) | covered | Seven leaves. |
 | § 6.23 place-items | [37](./37-emilia-grid/README.md) | covered | Four leaves. |
 | § 6.24 place-self | [37](./37-emilia-grid/README.md) | covered | Five leaves. |
-| § 7.1 padding | [35](./35-emilia-spacing-sizing/README.md) | covered | Nine directions incl. `S`/`E` over 35 leaves; `padding-x:` defect removed. |
+| § 7.1 padding | [35](./35-emilia-spacing-sizing/README.md) | covered | Nine directions incl. `S`/`E` over 35 leaves. |
 | § 7.2 margin | [35](./35-emilia-spacing-sizing/README.md) | covered | Nine directions + `Auto` + `Neg`. |
-| § 7 `space-x-*` / `space-y-*` (not in the reference) | [35](./35-emilia-spacing-sizing/README.md) | covered | Beyond the reference: `.Space.X/Y` as `& > :not(:last-child){margin-inline-end:…}`; "a proposal, not a transcription", must match 40's `Divide` selector. |
-| § 8.1 width | [35](./35-emilia-spacing-sizing/README.md) | covered | Scale, `Px`, eleven fractions, `Full/Screen/Svw/Lvw/Dvw/Min/Max/Fit/Auto`; fractions beyond the three printed "must be checked against upstream". |
+| § 7 `space-x-*` / `space-y-*` (not in the reference) | [35](./35-emilia-spacing-sizing/README.md) | covered | Beyond the reference: `.Space.X/Y` as a rule on `:where(& > :not(:last-child))` with upstream's reverse-aware start/end margins (read from upstream `utilities.ts`); byte-identical selector to 40's `Divide`. |
+| § 8.1 width | [35](./35-emilia-spacing-sizing/README.md) | covered | Scale, `Px`, eleven fractions, `Full/Screen/Svw/Lvw/Dvw/Min/Max/Fit/Auto`; fractions beyond the three printed follow upstream. |
 | § 8.2 min-width | [35](./35-emilia-spacing-sizing/README.md) | covered | Five leaves. |
-| § 8.3 max-width | [35](./35-emilia-spacing-sizing/README.md) | covered | `Xs…X7xl`, `Screen.Sm…X2xl`, `None/Full/0`. |
+| § 8.3 max-width | [35](./35-emilia-spacing-sizing/README.md) | covered | `X3xs…X7xl` → `var(--container-*)`, `Screen.Sm…X2xl` → `var(--breakpoint-*)`, `None/Full/0`. |
 | § 8.4 height | [35](./35-emilia-spacing-sizing/README.md) | covered | `vh`/`svh`/`lvh`/`dvh` per axis. |
 | § 8.5 min-height | [35](./35-emilia-spacing-sizing/README.md) | covered | Seven leaves. |
 | § 8.6 max-height | [35](./35-emilia-spacing-sizing/README.md) | covered | Eight leaves. |
@@ -183,7 +183,7 @@ Status: `covered` — the front's token surface delivers the row byte-equal to t
 | § 9.9 letter-spacing | [38](./38-emilia-typography/README.md) | covered | Six `var(--tracking-*)`. |
 | § 9.10 line-clamp | [38](./38-emilia-typography/README.md) | covered | `Clamp.1–6/None`, four-declaration bodies. |
 | § 9.11 line-height | [38](./38-emilia-typography/README.md) | covered | Five `var(--leading-*)` + `None` → `1`. |
-| § 9.12 list-style-image | [38](./38-emilia-typography/README.md) · [57](./57-emilia-escape-hatches/README.md) | covered | `List.ImageNone`; `list-image-[url(…)]` → 57. |
+| § 9.12 list-style-image | [38](./38-emilia-typography/README.md) · [57](./57-emilia-escape-hatches/README.md) | covered | `List.ImageNone`; `list-image-[url(…)]` → `arbValue`. |
 | § 9.13 list-style-position | [38](./38-emilia-typography/README.md) | covered | `Inside/Outside`. |
 | § 9.14 list-style-type | [38](./38-emilia-typography/README.md) | covered | `None/Disc/Decimal` — the three printed. |
 | § 9.15 text-align | [38](./38-emilia-typography/README.md) | covered | Six leaves. |
@@ -196,35 +196,35 @@ Status: `covered` — the front's token surface delivers the row byte-equal to t
 | § 9.22 text-transform | [38](./38-emilia-typography/README.md) | covered | Four leaves. |
 | § 9.23 text-overflow | [38](./38-emilia-typography/README.md) | covered | `Truncate` (three declarations), `Overflow.Ellipsis/Clip`. |
 | § 9.24 text-wrap | [38](./38-emilia-typography/README.md) | covered | `Wrap/Nowrap/Balance/Pretty`. |
-| § 9.25 text-indent | [38](./38-emilia-typography/README.md) | covered | `Indent.*` → `calc(var(--spacing) * N)`; form "inferred from § 21.2; confirm before merge". |
+| § 9.25 text-indent | [38](./38-emilia-typography/README.md) | covered | `Indent.{0,1,2,4,8}` → `calc(var(--spacing) * N)`. |
 | § 9.26 tab-size | [38](./38-emilia-typography/README.md) | covered | `0/2/4/8`. |
 | § 9.27 vertical-align | [38](./38-emilia-typography/README.md) | covered | Eight leaves. |
 | § 9.28 white-space | [38](./38-emilia-typography/README.md) | covered | Six leaves. |
-| § 9.29 word-break | [38](./38-emilia-typography/README.md) | covered | `Break.Normal/Words/All/Keep`. |
+| § 9.29 word-break | [38](./38-emilia-typography/README.md) | covered | `Text.Break.Normal/Words/All/Keep`. |
 | § 9.30 overflow-wrap | [38](./38-emilia-typography/README.md) | covered | `OverflowWrap.Normal/BreakWord/Anywhere`. |
 | § 9.31 hyphens | [38](./38-emilia-typography/README.md) | covered | Three leaves. |
-| § 9.32 content | [38](./38-emilia-typography/README.md) · [57](./57-emilia-escape-hatches/README.md) | covered | `Content.None/Empty`; `content-['Hello']` → 57. |
+| § 9.32 content | [38](./38-emilia-typography/README.md) · [57](./57-emilia-escape-hatches/README.md) | covered | `Content.None/Empty`; `content-['Hello']` → `arbValue`. |
 | § 10.1 background-attachment | [39](./39-emilia-backgrounds/README.md) | covered | `Bg.Attachment.Fixed/Local/Scroll`. |
 | § 10.2 background-clip | [39](./39-emilia-backgrounds/README.md) | covered | Four leaves incl. `Text`. |
 | § 10.3 background-color | [33](./33-emilia-color-palette/README.md) | covered | `.Bg.Color.*` → `background-color:`; legacy `.Bg.Red` keeps `background:`. |
-| § 10.4 background-image | [39](./39-emilia-backgrounds/README.md) · [57](./57-emilia-escape-hatches/README.md) | partial | `Bg.Image.None` + eight `Gradient.To.*` covered. `Gradient.From/Via/Stop` declared but their CSS is "inferred … must be checked against upstream". Stop positions, radial/conic gradients and interpolation modifiers: "not declared by this front". `bg-[url(…)]` → 57. |
+| § 10.4 background-image | [39](./39-emilia-backgrounds/README.md) · [57](./57-emilia-escape-hatches/README.md) | partial | `Bg.Image.None`, the eight `Gradient.To.*` and the `Gradient.From/Via/Stop` stops (property names checked against upstream; `transparent` fallbacks in place of `@property`) covered. Stop positions, radial/conic gradients and interpolation modifiers are not declared. `bg-[url(…)]` → `arbValue`. |
 | § 10.5 background-origin | [39](./39-emilia-backgrounds/README.md) | covered | Three leaves. |
 | § 10.6 background-position | [39](./39-emilia-backgrounds/README.md) | covered | Nine leaves under `Bg.Pos`. |
 | § 10.7 background-repeat | [39](./39-emilia-backgrounds/README.md) | covered | Six leaves; `Repeat.None` for `no-repeat`. |
-| § 10.8 background-size | [39](./39-emilia-backgrounds/README.md) | covered | `Auto/Cover/Contain`; `bg-size-[…]` → 57. |
-| § 11.1 border-radius | [40](./40-emilia-borders/README.md) | covered | Ten leaves × fourteen directions; eight logical corners are "not in the local reference" and specified from upstream. |
+| § 10.8 background-size | [39](./39-emilia-backgrounds/README.md) | covered | `Auto/Cover/Contain`; `bg-size-[…]` → `arbValue`. |
+| § 11.1 border-radius | [40](./40-emilia-borders/README.md) | covered | Ten leaves × fourteen directions; the six logical corners follow upstream. |
 | § 11.2 border-width | [40](./40-emilia-borders/README.md) | covered | `W.0/1/2/4/8` + eight directional sub-sections. |
 | § 11.3 border-color | [40](./40-emilia-borders/README.md) | covered | `Border.Color.<Family>.<Shade>` + named. |
 | § 11.4 border-style | [40](./40-emilia-borders/README.md) | covered | Six leaves. |
 | § 11.5 outline-width | [40](./40-emilia-borders/README.md) | covered | `0/1/2/4/8`. |
 | § 11.6 outline-color | [40](./40-emilia-borders/README.md) | covered | `Outline.Color.*`. |
-| § 11.7 outline-style | [40](./40-emilia-borders/README.md) | covered | `outline-none` emits the two-declaration transparent form; `outline-hidden` "not declared by this front". |
+| § 11.7 outline-style | [40](./40-emilia-borders/README.md) | covered | `outline-none` emits the two-declaration transparent form; `outline-hidden` not declared. |
 | § 11.8 outline-offset | [40](./40-emilia-borders/README.md) | covered | `0/1/2/4/8` + `Neg`. |
-| § 11 `ring-*` (not in the reference) | [40](./40-emilia-borders/README.md) | covered | Beyond the reference: `Ring.W/Color/Offset/Inset` via `--tw-ring-*`; "must be verified before implementation". |
-| § 11 `divide-*` (not in the reference) | [40](./40-emilia-borders/README.md) | covered | Beyond the reference: `Divide.X/Y/Color/Style/XReverse/YReverse` as a `Sheet`; selector must equal 35's `Space`. |
-| § 12.1 box-shadow | [41](./41-emilia-effects/README.md) | partial | Nine leaves + three `InsetShadow` + `EffectShadowRaw` covered. `shadow-red-500/50` deferred: "A reference gap, not a mechanism gap, and it reopens the moment a row exists." |
+| § 11 `ring-*` (not in the reference) | [40](./40-emilia-borders/README.md) | covered | Beyond the reference: `Ring.W/Color/Offset/Inset` via `--tw-ring-*` and the five-channel `box-shadow` reader; property names and the v4 1px default checked against upstream, the composed list and `ring-offset-*` not confirmed there. |
+| § 11 `divide-*` (not in the reference) | [40](./40-emilia-borders/README.md) | covered | Beyond the reference: `Divide.X/Y/Color/Style/XReverse/YReverse` as a rule on `:where(& > :not(:last-child))`, byte-identical to 35's `Space`. |
+| § 12.1 box-shadow | [41](./41-emilia-effects/README.md) | partial | Nine leaves + three `InsetShadow` + `EffectShadowRaw` covered. `shadow-red-500/50`: the reference gives no property/value row. |
 | § 12.2 text-shadow | [41](./41-emilia-effects/README.md) | covered | Six leaves + `EffectTextShadowRaw`. |
-| § 12.3 opacity | [41](./41-emilia-effects/README.md) | covered | Fifteen steps; `opacity:0.6`, not `.6`. |
+| § 12.3 opacity | [41](./41-emilia-effects/README.md) | covered | Fifteen steps (+ six provisional); `opacity:0.6`, not `.6`. |
 | § 12.4 mix-blend-mode | [41](./41-emilia-effects/README.md) | covered | Seventeen leaves. |
 | § 12.5 background-blend-mode | [41](./41-emilia-effects/README.md) | covered | Seventeen leaves under `Blend.Bg`. |
 | § 12.6 mask utilities | [41](./41-emilia-effects/README.md) | covered | Twenty leaves across nine sub-sections + `MaskImageRaw`. |
@@ -237,10 +237,10 @@ Status: `covered` — the front's token surface delivers the row byte-equal to t
 | § 13.1 filter: invert | [42](./42-emilia-filters/README.md) | covered | `0/100`. |
 | § 13.1 filter: saturate | [42](./42-emilia-filters/README.md) | covered | Five steps. |
 | § 13.1 filter: sepia | [42](./42-emilia-filters/README.md) | covered | `0/100`. |
-| § 13.1 filter composition (`blur-sm grayscale brightness-110`) | [42](./42-emilia-filters/README.md) · [56](./56-emilia-cascade-and-output/README.md) | partial | Mechanism: each leaf writes `--tw-<family>` + `filter:var(--tw-filter)` in one `Rule.declarations`. The Step 1 table still prints single-declaration bodies (`filter:brightness(.5)`); the two halves of the README disagree and one must be corrected before tests are written. `--tw-filter` composition entry owed to 54. |
-| § 13.2 backdrop-filter | [42](./42-emilia-filters/README.md) | covered | Nine families incl. `Opacity` (fifteen steps from § 12.3), no `DropShadow` (matches the reference); `BackdropRaw`. |
+| § 13.1 filter composition (`blur-sm grayscale brightness-110`) | [42](./42-emilia-filters/README.md) · [56](./56-emilia-cascade-and-output/README.md) | covered | Each leaf writes `--tw-<family>` plus one inlined chain reader (`var(--tw-blur, ) … var(--tw-drop-shadow, )`), so families compose in one rule. |
+| § 13.2 backdrop-filter | [42](./42-emilia-filters/README.md) | covered | `BackdropFilter`: nine families incl. `Opacity` (fifteen steps from § 12.3), no `DropShadow` (matches the reference); `BackdropRaw`. |
 | § 14.1 border-collapse | [43](./43-emilia-tables/README.md) | covered | `Table.Collapse/Separate`. |
-| § 14.2 border-spacing | [43](./43-emilia-tables/README.md) | covered | `Spacing/SpacingX/SpacingY` emit `calc(var(--spacing) * 2)` where § 14.2 prints the resolved `0.5rem`; front states the resolved literal "is wrong" under a retuned theme. `TableSpacingRaw`. |
+| § 14.2 border-spacing | [43](./43-emilia-tables/README.md) | covered | `Spacing/SpacingX/SpacingY` emit `calc(var(--spacing) * 2)`, which resolves to the `0.5rem` § 14.2 prints under the default theme; `TableSpacingRaw`. |
 | § 14.3 table-layout | [43](./43-emilia-tables/README.md) | covered | `Layout.Auto/Fixed`. |
 | § 14.4 caption-side | [43](./43-emilia-tables/README.md) | covered | `Caption.Top/Bottom`. |
 | § 15.1 transition-property | [44](./44-emilia-transitions/README.md) | covered | `None/Base/All/Colors/Opacity/Shadow/Transform` with the timing/duration pair; `TransitionProperty(value)`. |
@@ -248,17 +248,17 @@ Status: `covered` — the front's token surface delivers the row byte-equal to t
 | § 15.3 transition-duration | [44](./44-emilia-transitions/README.md) | covered | Nine steps. |
 | § 15.4 transition-timing-function | [44](./44-emilia-transitions/README.md) | covered | `Linear` keyword + three `var(--ease-*)`. |
 | § 15.5 transition-delay | [44](./44-emilia-transitions/README.md) | covered | Nine steps. |
-| § 15.6 animation | [44](./44-emilia-transitions/README.md) | partial | `Animate.None/Spin/Ping/Pulse/Bounce` + `AnimateRaw`, keyframes hoisted via 56. The four `@keyframes` bodies "are absent from the reference and are gated"; `@starting-style` deferred ("not in the reference"). |
+| § 15.6 animation | [44](./44-emilia-transitions/README.md) | covered | `Animate.None/Spin/Ping/Pulse/Bounce` + `AnimateRaw`; the four `@keyframes` bodies are read from the theme (upstream `theme.css`) and hoisted. `@starting-style` is not declared. |
 | § 16.1 backface-visibility | [45](./45-emilia-transforms/README.md) | covered | `Backface.Visible/Hidden`. |
 | § 16.2 perspective | [45](./45-emilia-transforms/README.md) | covered | `None` keyword + five `var(--perspective-*)`. |
 | § 16.3 perspective-origin | [45](./45-emilia-transforms/README.md) | covered | Five leaves. |
-| § 16.4 rotate | [45](./45-emilia-transforms/README.md) | covered | `Rotate.0/1/45/90/180` + `Neg`; `TransformRotateRaw`. `rotate-x/y/z` deferred ("not in the reference"). |
+| § 16.4 rotate | [45](./45-emilia-transforms/README.md) | covered | `Rotate.0/1/45/90/180` + `Neg`; `TransformRotateRaw`. `rotate-x/y/z` not declared. |
 | § 16.5 scale | [45](./45-emilia-transforms/README.md) | covered | Ten steps + `ScaleX`/`ScaleY`; no `z` (matches the reference). |
-| § 16.6 skew | [45](./45-emilia-transforms/README.md) | partial | Transcribed as `skew-x:`/`skew-y:` — the reference's column; front flags "no browser applies it … pending a check against the upstream page". |
-| § 16.7 transform | [45](./45-emilia-transforms/README.md) | covered | `Shorthand.None/Cpu/Gpu` verbatim. |
+| § 16.6 skew | [45](./45-emilia-transforms/README.md) | covered | `transform:skewX(3deg)` — upstream's property; the reference's `skew-x:` column is not CSS and is never emitted. |
+| § 16.7 transform | [45](./45-emilia-transforms/README.md) | covered | `Shorthand.None/Cpu/Gpu` verbatim; `Cpu`/`Gpu` read `--tw-*` variables no emilia token sets, and are marked inert. |
 | § 16.8 transform-origin | [45](./45-emilia-transforms/README.md) | covered | Nine leaves. |
 | § 16.9 transform-style | [45](./45-emilia-transforms/README.md) | covered | `Flat/Preserve3d`. |
-| § 16.10 translate | [45](./45-emilia-transforms/README.md) | partial | Emits `--tw-translate-x:…;translate:var(--tw-translate-x) var(--tw-translate-y)` where § 16.10 prints `translate: 0 var(--tw-translate-y)` — not byte-equal to the row. `-translate-y-2` (shown in the HTML) has no token: "every negative utility has no direct token" beyond `Rotate.Neg`. `TransformTranslateRaw`. |
+| § 16.10 translate | [45](./45-emilia-transforms/README.md) | partial | `TranslateX/Y` emit one declaration, `translate:50% var(--tw-translate-y, 0)` (the reference row plus a `0` fallback); `Translate.*` and `rawTranslate` move both axes. Negative translate (`-translate-y-2`) has no token. |
 | § 16.11 zoom | [45](./45-emilia-transforms/README.md) | covered | Seven steps. |
 | § 17.1 accent-color | [46](./46-emilia-interactivity/README.md) | covered | `Token.InteractAccent(value)` with `paletteVar(family, shade)`; top-level payload per contract 4a. |
 | § 17.2 appearance | [46](./46-emilia-interactivity/README.md) | covered | `None/Auto`. |
@@ -276,7 +276,7 @@ Status: `covered` — the front's token surface delivers the row byte-equal to t
 | § 17.14 scroll-padding | [46](./46-emilia-interactivity/README.md) | covered | `P/Px/Py/Pt/Pr/Pb/Pl`. |
 | § 17.15 scroll-snap-align | [46](./46-emilia-interactivity/README.md) | covered | Four leaves. |
 | § 17.16 scroll-snap-stop | [46](./46-emilia-interactivity/README.md) | covered | `Normal/Always`. |
-| § 17.17 scroll-snap-type | [46](./46-emilia-interactivity/README.md) | covered | `Type.None/X/Y/Both` + `Strictness.Mandatory/Proximity` through `--tw-scroll-snap-strictness`. |
+| § 17.17 scroll-snap-type | [46](./46-emilia-interactivity/README.md) | covered | `Type.None/X/Y/Both` + `Strictness.Mandatory/Proximity` through `--tw-scroll-snap-strictness` (fallback `proximity`). |
 | § 17.18 touch-action | [46](./46-emilia-interactivity/README.md) | covered | Ten leaves. |
 | § 17.19 user-select | [46](./46-emilia-interactivity/README.md) | covered | Four leaves. |
 | § 17.20 will-change | [46](./46-emilia-interactivity/README.md) | covered | Four leaves. |
@@ -284,7 +284,7 @@ Status: `covered` — the front's token surface delivers the row byte-equal to t
 | § 18.2 stroke | [47](./47-emilia-svg-accessibility/README.md) | covered | `Svg.Stroke.Current/None` + `Token.SvgStroke(value)`. |
 | § 18.3 stroke-width | [47](./47-emilia-svg-accessibility/README.md) | covered | `0/1/2` + `SvgStrokeWidthRaw`. |
 | § 19.1 forced-color-adjust | [47](./47-emilia-svg-accessibility/README.md) | covered | `A11y.ForcedColorAdjust.Auto/None`. |
-| § 19.2 screen readers `sr-only` / `not-sr-only` | [47](./47-emilia-svg-accessibility/README.md) | partial | Tokens declared, bodies gated: "not in the reference — confirm against https://tailwindcss.com/docs/screen-readers before landing". |
+| § 19.2 screen readers `sr-only` / `not-sr-only` | [47](./47-emilia-svg-accessibility/README.md) | covered | Upstream's bodies (`utilities.ts`), asserted as literals; `not-sr-only` restores eight of nine properties, as upstream. |
 | § 20.1 `@import "tailwindcss"` (and layered partial imports) | [56](./56-emilia-cascade-and-output/README.md) | covered | `renderDocument` emits `@layer theme, base, components, utilities;` then the four layers; `withLayers(o, false)` drops the `@layer` tokens; `withBase` supplies the base layer. |
 | § 20.2 `@theme` | [54](./54-emilia-theme/README.md) | covered | See § 3.5 rows; `inline` is missing, `static` is the default. |
 | § 20.3 `@custom-variant` (incl. `@slot`) | [59](./59-emilia-custom-utilities-and-variants/README.md) | covered | `fn hocus(inner: Token[]) -> Token[]`; "`@slot` … is the parameter". |
@@ -294,125 +294,71 @@ Status: `covered` — the front's token surface delivers the row byte-equal to t
 | § 20.7 `@variant` | [59](./59-emilia-custom-utilities-and-variants/README.md) | covered | Same shape as `@custom-variant`: a function over the inner list. |
 | § 20.8 `--spacing()` | [54](./54-emilia-theme/README.md) | covered | `spacing(n)` / `spacingHalf(n)`; identical strings on both targets. |
 | § 20.9 `theme()` | [54](./54-emilia-theme/README.md) | covered | `themeValue(th, name)` returns the value, `themeVar(name)` the `var(…)` reference. |
-| § 21.1 default colour palette | [33](./33-emilia-color-palette/README.md) | partial | Same gap as § 3.6: 284 OKLCH values transcribed from upstream, not from the reference. |
+| § 21.1 default colour palette | [33](./33-emilia-color-palette/README.md) | covered | Same as § 3.6: 286 values from upstream 4.3.2. |
 | § 21.2 spacing scale | [54](./54-emilia-theme/README.md) · [35](./35-emilia-spacing-sizing/README.md) | covered | `--spacing:0.25rem`; every spacing utility is a `calc(var(--spacing) * n)`. |
 | § 21.3 default typography | [54](./54-emilia-theme/README.md) · [38](./38-emilia-typography/README.md) | covered | Thirteen `--text-*` + `--text-*--line-height` pairs from the table. |
 | § 21.4 default shadows | [54](./54-emilia-theme/README.md) | covered | Seven `--shadow-*` byte-equal. |
 | § 21.5 default border radius | [54](./54-emilia-theme/README.md) · [40](./40-emilia-borders/README.md) | covered | Eight `--radius-*`; 40 follows § 21.5's longer list over § 11.1's. |
-| § 21.6 default animations | [54](./54-emilia-theme/README.md) · [44](./44-emilia-transitions/README.md) | covered | Four `--animate-*` shorthands byte-equal; keyframes bodies are the § 15.6 gap. |
+| § 21.6 default animations | [54](./54-emilia-theme/README.md) · [44](./44-emilia-transitions/README.md) | covered | Four `--animate-*` shorthands byte-equal; the four keyframes bodies from upstream `theme.css`. |
 | § 21.7 sharing themes between projects | [54](./54-emilia-theme/README.md) | covered | "a theme is a function in a module, so sharing it is an ordinary package dependency". |
 | Referência Rápida de Utilitários | — | n/a | Index of the sections above; no new utilities except `ring`/`divide`/`space`/`sr-only`, handled in their rows. |
 
 ## Missing and partial rows, consolidated
 
-Category: (a) 1.0.10 follow-up for an existing front · (b) intentionally out of scope, in the front's own words · (c) unplaced — no front claims it.
+Category: (a) follow-up for an existing front · (b) out of scope by design · (c) unplaced — no front claims it.
 
 | Row | Status | Owner | Category | Detail |
 |---|---|---|---|---|
-| § 3.1 important modifier per utility (`bg-red-500!`) | partial | [34](./34-emilia-modifiers/README.md) | (c) | 56 attributes `Important(inner)` to 34; 34's surface and *Definition of done* do not mention it. Either 34 adds the variant on top of `markImportant` or 56 owns it. |
-| § 3.2 `:has()` named forms | partial | [34](./34-emilia-modifiers/README.md) / [57](./57-emilia-escape-hatches/README.md) | (a) | 34: "omit; use a named variant … `Token.Variant(selector: string, inner: Token[])` on the escape-hatch front". 57 ships `ArbVariant` but no `has`/`not`/`aria`/`data`/`in` recipes or named tokens. |
-| § 3.2 `:not()` named forms | partial | same | (a) | Same. |
-| § 3.2 ARIA variants | partial | same | (a) | Same. |
-| § 3.2 data-attribute variants | partial | same | (a) | Same. |
-| § 3.2 `in-[…]` | partial | same | (a) | Same. |
-| § 3.2 `group-*` beyond five states; named groups | partial | [34](./34-emilia-modifiers/README.md) | (a) states · (b) named | "Named groups and peers (`group/item`, `peer//name`) … out of scope for this front". |
-| § 3.2 `peer-*` beyond six states; named peers | partial | [34](./34-emilia-modifiers/README.md) | (a) states · (b) named | Same quote. |
-| § 3.2 full variant table — five bracket rows | partial | [34](./34-emilia-modifiers/README.md) / [57](./57-emilia-escape-hatches/README.md) | (a) | Aggregate of the five rows above. |
-| § 3.3 custom breakpoints | partial | [34](./34-emilia-modifiers/README.md) · [54](./54-emilia-theme/README.md) | (a) | 34's variant fns take no `Theme`; the `--breakpoint-*` namespace 54 validates feeds nothing. Follow-up: `smVariant(th)` reading `themeValue(th, "--breakpoint-sm")`, the pattern 58 already uses for `--container-*`. |
-| § 3.3 removing breakpoints | partial | same | (a) | Same fix; an emptied namespace should make the variant panic as 58's sizes do. |
-| § 3.4 class-based dark mode | partial | [34](./34-emilia-modifiers/README.md) | (a) | 54 provides `DarkMode.Class` + `darkSelector`/`darkAtRule` and expects 34 to consume them; 34 declares the class/attribute forms out of scope. One README must change; 54's mechanism is the smaller delta. |
-| § 3.4 data-attribute dark mode | partial | same | (a) | Same. |
-| § 3.5 `--breakpoint-*` namespace | partial | same as § 3.3 | (a) | Same. |
-| § 3.5 `@theme inline` | missing | — | (c) | No front names it; 54's model always emits `var(--x)`. Either declare it out of scope in 54 or add a `themeInline` render mode. |
-| § 3.6 / § 21.1 OKLCH palette values | partial | [33](./33-emilia-color-palette/README.md) | (a) | "transcribe from upstream `packages/tailwindcss/theme.css`, record the commit in `test/colors_test.bp`'s header". |
-| § 3.7 named class in `@layer utilities` | partial | [59](./59-emilia-custom-utilities-and-variants/README.md) | (b) | "`named()` takes no `layer:` argument because a per-call-site layer choice makes the …"; `components` only. |
-| § 10.4 gradient stops CSS | partial | [39](./39-emilia-backgrounds/README.md) | (a) | "verify `--tw-gradient-from`, `--tw-gradient-via`, `--tw-gradient-to` and the `--tw-gradient-stops` composition against upstream". |
-| § 10.4 stop positions, radial/conic, interpolation | partial | [39](./39-emilia-backgrounds/README.md) | (b) | "not declared by this front … specifying it from memory would be guessing". |
-| § 12.1 `shadow-<color>/<opacity>` | partial | [41](./41-emilia-effects/README.md) | (b) | "A reference gap, not a mechanism gap, and it reopens the moment a row exists." |
-| § 13.1 filter composition — README inconsistency | partial | [42](./42-emilia-filters/README.md) | (a) | Mechanism says two declarations per leaf; Step 1/2 tables print one. Align the tables, and land the `--tw-filter` / `--tw-backdrop-filter` entries in 54 ("What front 42 still owes front 54"). |
-| § 15.6 keyframes bodies | partial | [44](./44-emilia-transitions/README.md) | (a) | Gated on the upstream page, "the way front 47 gates `sr-only`". |
-| § 15.6 `@starting-style` | partial | [44](./44-emilia-transitions/README.md) | (b) | "A token for it would be written from memory, which this milestone does not do." |
-| § 16.6 skew property names | partial | [45](./45-emilia-transforms/README.md) | (a) | "Flagged, transcribed, and pending a check against the upstream page." |
-| § 16.10 translate row shape | partial | [45](./45-emilia-transforms/README.md) | (a) | Front emits the `--tw-translate-x` writer + shorthand reader; the reference row is `translate: 0 var(--tw-translate-y)`. Pick one and state the divergence if the writer form stays. |
-| § 16.10 negative translate (`-translate-y-2`) | partial | [45](./45-emilia-transforms/README.md) | (a) | Language-gap row names it; a `Neg` sub-section under `TranslateX`/`TranslateY`, as `Rotate.Neg` does. |
-| § 16.4 `rotate-x/y/z`, `translate-z`, `scale-z` | — | [45](./45-emilia-transforms/README.md) | (b) | "Not in the reference … Tokens for them would be written from memory." Listed for completeness; not a reference row. |
-| § 19.2 `sr-only` / `not-sr-only` bodies | partial | [47](./47-emilia-svg-accessibility/README.md) | (a) | "read from the upstream page, dated in the dispatcher comment, ticked in `TODO.md`, and asserted as a literal in the test file". |
-| § 11.7 `outline-hidden` | — | [40](./40-emilia-borders/README.md) | (b) | "absent … not declared by this front". Not a reference row. |
-| § 5.2 `columns-4…12`, § 6.7/6.8 interpolated integers, § 8.1 fractions beyond three | — | [36](./36-emilia-layout/README.md) / [37](./37-emilia-grid/README.md) / [35](./35-emilia-spacing-sizing/README.md) | (a) | Rows are `covered` against what the reference prints; each front asks that the extent be "confirmed against upstream before merge". |
+| § 3.2 `:has()`, `:not()`, ARIA, data-attribute and `in-[…]` named forms | partial | [34](./34-emilia-modifiers/README.md) / [57](./57-emilia-escape-hatches/README.md) | (c) | Reachable only through `arbSel`; no named tokens or recipes. |
+| § 3.2 `group-*` / `peer-*` beyond the declared states; named groups and peers | partial | [34](./34-emilia-modifiers/README.md) | (c) | Six group and eight peer states are named; `group/item`, `peer/name` are not declared. |
+| § 3.2 `open:` legacy `[open]` attribute | partial | [34](./34-emilia-modifiers/README.md) | (a) | Upstream v4 is `&:is([open], :popover-open, :open)`; emilia emits the reference's two pseudo-classes. The test pins the current spelling so the addition shows as a change. |
+| § 3.2 full variant table — five bracket rows | partial | [34](./34-emilia-modifiers/README.md) / [57](./57-emilia-escape-hatches/README.md) | (c) | Aggregate of the rows above. |
+| § 3.3 custom breakpoints — a new name | partial | [34](./34-emilia-modifiers/README.md) · [54](./54-emilia-theme/README.md) | (b) | Overrides move the query; a new `--breakpoint-*` name adds no variant (use `arbMin`/`arbMax`). |
+| § 3.3 removing breakpoints | partial | [34](./34-emilia-modifiers/README.md) | (c) | A cleared `--breakpoint-*` makes the variant emit `@media (width >= )`; refusing it, as 58 does for container sizes, is unowned. |
+| § 3.5 `@theme inline` | missing | — | (c) | emilia always emits `var(--x)` references; no inline (value-resolving) render mode. |
+| § 3.7 named class in `@layer utilities` | partial | [59](./59-emilia-custom-utilities-and-variants/README.md) | (b) | `named()` takes no `layer:` argument; `components` only. |
+| § 10.4 stop positions, radial/conic, interpolation | partial | [39](./39-emilia-backgrounds/README.md) | (b) | Not in the reference; not declared. |
+| § 12.1 `shadow-<color>/<opacity>` | partial | [41](./41-emilia-effects/README.md) | (b) | The reference gives the class and no property/value row. |
+| § 16.10 negative translate (`-translate-y-2`) | partial | [45](./45-emilia-transforms/README.md) | (c) | A `Neg` sub-section under `TranslateX`/`TranslateY`, as `Rotate.Neg` does, is not declared. |
+| § 16.4 `rotate-x/y/z`, `translate-z`, `scale-z` | — | [45](./45-emilia-transforms/README.md) | (b) | Not in the reference; not a reference row. |
+| § 11.7 `outline-hidden`, § 15.6 `@starting-style` | — | [40](./40-emilia-borders/README.md) / [44](./44-emilia-transitions/README.md) | (b) | Not in the reference; not declared. |
 
-## Deviations from Tailwind stated by the fronts
+## Deviations from Tailwind the library states
 
-- **Preflight is opt-in, not opt-out.** `defaultOptions()` has `base: []`; the reset arrives only through `withBase(defaultOptions(), preflightRules())`. "That inverts Tailwind's default, and the inversion is deliberate" — [55](./55-emilia-preflight/README.md). Parity is with § 4's eight bullets, not with upstream `preflight.css`; `border-style:solid` is added beside `border-width:0` so `Border.W.*` is not inert.
-- **`@theme static` is always on; no tree-shaking.** "emilia's behaviour is `@theme static`, always, and the tree-shaken form is out of scope for this milestone" — [54](./54-emilia-theme/README.md). Every theme variable is emitted into `:root` in the `theme` layer regardless of use.
-- **The theme is a flat entry list, not one field per namespace.** "one deliberate deviation from the audit's brief … The flat set is what CSS actually has" — [54](./54-emilia-theme/README.md). Extending the theme adds a variable; it never adds a token. New utilities are reached through [57](./57-emilia-escape-hatches/README.md) `Arb` + `themeVar`.
-- **Class names are content hashes.** `e_<hex>` = std `content_hash.contentHash` (djb2) of `encodeSheet(tokensToSheet(tokens, theme))`; "a pure function of the token list *and the theme*"; order is identity; ASCII only — [48](./48-emilia-attributes/README.md), [56](./56-emilia-cascade-and-output/README.md). There are no literal utility names to scan (§ 3.8 n/a) and no scanner (§ 20.6 n/a).
-- **Class prefix is plain concatenation.** `withPrefix(o, "tw_")` → `.tw_e_1`; "Tailwind's escaped `.tw\:text-red-500` form has no analogue here" — [56](./56-emilia-cascade-and-output/README.md).
-- **`!important` is per declaration, via `markImportant` or `Options.important`;** the per-utility `!` suffix has no declared token (see consolidated table) — [56](./56-emilia-cascade-and-output/README.md).
-- **Declarations are written `prop:value` with no space after the colon.** "The **value** is byte-equal to the reference; the separator is emilia's" — [41](./41-emilia-effects/README.md), [42](./42-emilia-filters/README.md).
-- **`hover` and the five other pre-existing modifiers change their emitted CSS** to the v4.3 form (`@media (hover: hover){&:hover{…}}`, `@media (width >= 48rem)`); "the one non-additive change in the front, and it is deliberate" — [34](./34-emilia-modifiers/README.md). Same for `Text.Size.*`, `Font.*`, `Text.Underline` in [38](./38-emilia-typography/README.md) and `Border.Rounded.Sm/Md/Lg` in [40](./40-emilia-borders/README.md).
-- **Breakpoint ranges are nesting, not a variant:** `md:max-xl:` is `Md([MaxXl(inner)])` — [34](./34-emilia-modifiers/README.md). Breakpoint queries are literals, not theme lookups (see consolidated table).
-- **Named containers emit both halves.** `ContainerNamed(name)` writes `container-type:inline-size;container-name:<name>` in one rule; sizes come from `--container-*` and an emptied namespace panics rather than emitting `@container (width >= )` — [58](./58-emilia-container-queries/README.md).
-- **Arbitrary values are validated, and a rejected payload fails the build or panics;** "There is no option to allow it" for a selector with the wrong number of `&`; media range syntax is unreachable through `cssQuery` by design, `ArbMin`/`ArbMax` carry it — [57](./57-emilia-escape-hatches/README.md), [56](./56-emilia-cascade-and-output/README.md).
-- **Payload-carrying tokens are top-level `Token` variants, never section leaves** (`EffectShadowRaw`, `FilterRaw`, `InteractAccent`, `SvgFill`, `ContainerAt`, `Arb`…), because a nested payload leaf cannot be constructed (`language-gaps.md` row 52) — every front from 41 onward.
-- **Token names diverge from class names where the class prefix is overloaded:** `.Gradient.To.*` is direction, `.Gradient.Stop.*` is the terminal stop ([39](./39-emilia-backgrounds/README.md)); `.Text.Decoration.Thickness.2` vs `.Text.Decoration.Color.Red.500` ([38](./38-emilia-typography/README.md)); `.Bg.Pos` vs `.Layout.Position` ([39](./39-emilia-backgrounds/README.md)); `.Flex.Value.One` for `flex-1` ([37](./37-emilia-grid/README.md)); `.Interact.Cursor.Standard` for `cursor-default` ([46](./46-emilia-interactivity/README.md)); `Preserve3d` for `transform-3d` ([45](./45-emilia-transforms/README.md)).
-- **Negative utilities are a `Neg` sub-section** (`.Margin.T.Neg.4`, `.Transform.Rotate.Neg.12`, `.Outline.Offset.Neg.1`) because a numeric leaf has no signed spelling — [35](./35-emilia-spacing-sizing/README.md), [45](./45-emilia-transforms/README.md), [40](./40-emilia-borders/README.md).
-- **`border-spacing` emits `calc(var(--spacing) * n)`** where § 14.2 prints the resolved `0.5rem`; "that is wrong" under a retuned theme — [43](./43-emilia-tables/README.md).
-- **`@apply` is array concatenation and `@utility` is a function;** `named()` writes only to `@layer components`, never to `utilities`, and refuses `e_`-prefixed or colliding names — [59](./59-emilia-custom-utilities-and-variants/README.md).
+- **Preflight is opt-in, not opt-out.** `defaultOptions()` has `base: []`; the reset arrives only through `withBase(defaultOptions(), preflightRules())` — [55](./55-emilia-preflight/README.md). Parity is with § 4's eight bullets, not with upstream `preflight.css`; `border-style:solid` is added beside `border-width:0` so `Border.W.*` is not inert.
+- **`@theme static` is always on; no tree-shaking.** Every theme variable is emitted into `:root` in the `theme` layer regardless of use — [54](./54-emilia-theme/README.md).
+- **The theme is a flat entry list, not one field per namespace** — [54](./54-emilia-theme/README.md). Extending the theme adds a variable; it never adds a token. New utilities are reached through [57](./57-emilia-escape-hatches/README.md)'s `arbValue` + `themeVar`.
+- **Class names are content hashes.** `e_<hex>`, the djb2 fold (std `hash.contentHash`'s) of `encodeSheet(tokensToSheet(tokens, theme))`; a pure function of the token list *and the theme*; order is identity; ASCII only — [48](./48-emilia-attributes/README.md), [56](./56-emilia-cascade-and-output/README.md). There are no literal utility names to scan (§ 3.8 n/a) and no scanner (§ 20.6 n/a).
+- **Class prefix is plain concatenation.** `withPrefix(o, "tw_")` → `.tw_e_1`; there is no escaped `.tw\:` form — [56](./56-emilia-cascade-and-output/README.md).
+- **`!important`** is per declaration, via `Token.Important(inner)` or `Options.important` — [34](./34-emilia-modifiers/README.md), [56](./56-emilia-cascade-and-output/README.md).
+- **Declarations are written `prop:value` with no space after the colon**; the value is the reference's.
+- **Breakpoint ranges are nesting, not a variant:** `md:max-xl:` is `Md([MaxXl(inner)])`; breakpoint queries read `--breakpoint-*` from the theme — [34](./34-emilia-modifiers/README.md).
+- **Named containers emit both halves.** `containerName(name)` writes `container-type:inline-size;container-name:<name>` in one rule; sizes come from `--container-*` and an emptied namespace panics rather than emitting `@container (width >= )` — [58](./58-emilia-container-queries/README.md).
+- **Arbitrary values are validated, and a rejected payload fails the build or panics;** media range syntax is unreachable through `cssQuery` by design, `arbMin`/`arbMax` carry it — [57](./57-emilia-escape-hatches/README.md).
+- **Payload-carrying tokens are top-level `Token` variants, never section leaves** (`EffectShadowRaw`, `FilterRaw`, `InteractAccent`, `SvgFill`, `ContainerAt`, `Arb`…), because a nested payload leaf cannot be constructed ([`../language-gaps.md`](../language-gaps.md)).
+- **`--tw-*` readers carry inline fallbacks** (`var(--tw-translate-y, 0)`, `var(--tw-scroll-snap-strictness, proximity)`, the filter chain's empty fallbacks, the gradient stops' `transparent`) in place of upstream's `@property` registrations, which emilia does not emit — [39](./39-emilia-backgrounds/README.md), [42](./42-emilia-filters/README.md), [45](./45-emilia-transforms/README.md), [46](./46-emilia-interactivity/README.md).
+- **Token names diverge from class names where the class prefix is overloaded:** `.Gradient.To.*` is direction, `.Gradient.Stop.*` the terminal stop ([39](./39-emilia-backgrounds/README.md)); `.Bg.Pos` vs `.Layout.Position` ([39](./39-emilia-backgrounds/README.md)); `.Flex.Value.One` for `flex-1` and `.Flex.AlignSelf` for `self-*` ([37](./37-emilia-grid/README.md)); `.BackdropFilter` for `backdrop-*` ([42](./42-emilia-filters/README.md)); `.Interact.Cursor.Standard` for `cursor-default` ([46](./46-emilia-interactivity/README.md)); `.Transition.Base` for `transition` ([44](./44-emilia-transitions/README.md)); `Preserve3d` for `transform-3d` ([45](./45-emilia-transforms/README.md)).
+- **Negative utilities are a `Neg` sub-section** (`.Margin.T.Neg.4`, `.Transform.Rotate.Neg.12`, `.Outline.Offset.Neg.1`) because a numeric leaf has no signed spelling.
+- **`@apply` is array concatenation and `@utility` is a function;** `named()` writes only to `@layer components` and refuses `e_`-prefixed or colliding names — [59](./59-emilia-custom-utilities-and-variants/README.md).
 - **`.group` / `.peer` marker classes are the consumer's responsibility;** emilia does not emit them — [34](./34-emilia-modifiers/README.md).
-- **`transform`/`transform-cpu` are one token** (`Shorthand.Cpu`) because § 16.7 gives them the same value — [45](./45-emilia-transforms/README.md).
-- **Keyframes are hoisted outside every layer and deduplicated by header;** placement "is written down here so it is not re-litigated" — [56](./56-emilia-cascade-and-output/README.md).
+- **`transform`/`transform-cpu` are one token** (`Shorthand.Cpu`) because § 16.7 gives them the same value, and it is inert — [45](./45-emilia-transforms/README.md).
+- **Keyframes are hoisted outside every layer and deduplicated by header** — [56](./56-emilia-cascade-and-output/README.md).
 
 ## Ordering
 
-Three fronts are foundation: the palette (33) is transversal — borders, backgrounds, text, shadows,
-drop-shadows all name a colour; the modifiers (34) wrap tokens of every section, so without
-`Sm`/`2Xl`/`Dark`/`GroupHover` nothing added later is usable responsively or in a state; and
-`Width`/`Height`/`Gap`/`Pad`/`Margin` (35) are in every layout, so the full scale precedes layout and
-grid.
+54 theme is the root: every value ladder resolves through `spacing(n)` and the theme. 56
+cascade-and-output comes next: every front emits through its rule model, and `@media` beside
+`@layer`, `@keyframes`, `group-*`, `peer-*`, `rtl`, `space-*` and `divide-*` all need a selector or
+at-rule outside the class body. The palette (33), the modifiers (34) and spacing/sizing (35) are the
+transversal level after them. The resulting levels are the table in [`README.md`](./README.md).
 
-Two fronts come *in front of them*: 54 theme, because four copies of the spacing ladder already exist
-in `emilia.bp` and have drifted (`marginScaleX` emits `m-0.25`, which is not CSS), so every front
-admitted before a theme would add a fifth; and 56 cascade-and-output, because the nested class body
-emilia emits cannot carry `@media` beside `@layer`, cannot hold `@keyframes`, and cannot express
-`group-*`, `peer-*`, `rtl`, `space-*` or `divide-*` — fronts 34, 40, 44, 55 and 58 all emit through it,
-and building them first means building them twice. 54 lands before 56 inside that pair:
-`Options.theme` is a `Theme` and `defaultOptions()` calls `defaultTheme()`. The resulting levels are
-the table in [`README.md`](./README.md).
+## The shared files
 
-All fronts touch `tokens.bp` and `emilia.bp`; each adds only its own section and dispatcher, and the
-shared-file rule below is what makes that mergeable.
-
-## The shared files — sixteen fronts, one enum
-
-The rule for the shared files:
-
-> **How eighteen fronts share `tokens.bp` and `emilia.bp`.** They do not merge into the same lines.
-> The rule is one variant block per front in `tokens.bp` and one sub-dispatcher per front in
-> `emilia.bp`, each fenced by a comment banner naming its front, and each appended at the end of its
-> file rather than interleaved. The only genuinely shared lines are the arms each front adds to the
-> top-level `tokenToCss` `case` — **one contiguous block per front**, added in front-number order. A
-> front adds one arm per top-level section it owns *and one arm per top-level payload variant it
-> owns* — payload-carrying tokens must be top-level variants (contract 4a), so fronts 33, 34, 40, 46,
-> 47, 57 and 58 add several arms each (57 adds six, 58 adds four). The arms sit together under the
-> front's banner, which is the property the convention exists for; front-number ordering still makes
-> the merged result deterministic. A front that has to edit another front's block has found a design
-> error, not a merge conflict, and files it as such.
-
-> **Three track-D files are append-only, and here is who appends.** `root.bp` (the `pub mod` lines)
-> and `botopink.json` (the `files` list) are touched by every front that adds a module — 54, 55, 56,
-> 57, 58, 59 and 48 — and a banner cannot fence a `pub mod` line or a JSON array element. The rule
-> is the same as for std's `root.bp`: **append in front-number order, never reorder, never edit
-> another front's line.** A merge conflict on either file is resolved by re-sorting, not by choosing
-> a side.
-
-The three exceptions for track D: **33 · 39** share the `Bg { … }` section (33 owns
-`Bg.Color`, 39 everything else under `Bg`; 33 lands first and 39 appends after its block);
-**35 · 40** share the sibling selector for `space-*` and `divide-*` (neither is documented upstream;
-both READMEs require a cross-front test asserting the two selectors are byte-identical); **56** owns
-the `flush`/`register` half of `emilia.bp` under its own banner while 33–48 append sub-dispatchers.
-
-What 1.0.10 changes is where the sub-dispatchers live — one file per front under
-`modules/emilia/src/utilities/`, so `emilia.bp` shrinks to the cells, the entry points and the
-`tokenToSheet` arms — and adds one shared line per contributing front to `fullTheme()`. The enum
-body itself stays one file by language constraint. [`modules.md`](./modules.md) has the full
-resolution.
+Every utility front writes one banner-fenced block in `tokens.bp` and one in `emilia.bp`
+(`// ── front NN — <domain> ──` … `// ── end front NN ──`); the only lines genuinely shared are the
+arms of the top-level `tokenToSheet` `case`, one contiguous block per front — one arm per top-level
+section the front owns and one per top-level payload variant (57 adds six, 58 four). A front that
+has to edit another front's block has found a design error. `root.bp` and `botopink.json` are
+append-only in front-number order. Two sections are shared by design: `Bg { … }` (33 owns
+`Bg.Color`, 39 the rest) and the child selector of `space-*` / `divide-*` (35 and 40, one
+`siblingSelector()`). [`modules.md`](./modules.md) has the layout.

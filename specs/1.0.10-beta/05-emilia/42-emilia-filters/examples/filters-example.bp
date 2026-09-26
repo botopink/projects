@@ -1,8 +1,8 @@
 // Front 42 — emilia filters.
 //
-// The Filter and Backdrop catalogues as typed `Token[]` lists, the
-// one-Filter-per-list rule shown as working code and as the `Raw` composition
-// that replaces it, then a frosted navigation bar over a dimmed hero image.
+// The Filter and BackdropFilter catalogues as typed `Token[]` lists, filter
+// composition in one list, the `Raw` escape hatch, then a frosted navigation
+// bar over a dimmed hero image.
 //
 // Upstream:
 //   https://tailwindcss.com/docs/filter
@@ -15,9 +15,9 @@
 //   grayscale(100%), not grayscale(1)
 //
 // Each filter leaf emits TWO declarations — its own `--tw-<family>` custom
-// property and the one `filter:var(--tw-filter)` shorthand that reads every
-// family back. Front 56's `Rule.declarations` keeps both in one rule, so two
-// filter tokens in a list compose instead of overwriting.
+// property and one `filter:` reader that chains every family back
+// (`var(--tw-blur, ) var(--tw-brightness, ) …`), so two filter tokens in a list
+// compose instead of overwriting.
 
 import {emilia, flush, Token} from "emilia";
 
@@ -96,9 +96,8 @@ val sepiaSteps: Token[] = [
 
 // ── filter: drop-shadow ──────────────────────────────────────────────────────
 //
-// `themeVar("drop-shadow-md")` lookups from front 54; the literals are theme
-// entries a project composes through `extend`. The reference never gives them
-// and the dispatcher never needs them. `None` is a keyword, not a lookup.
+// `drop-shadow(var(--drop-shadow-md))` — theme references; the values are
+// `filterEntries()`, composed into `fullTheme()`. `None` empties the family.
 
 val dropShadows: Token[] = [
     .Filter.DropShadow.None,
@@ -113,50 +112,47 @@ val dropShadows: Token[] = [
 // ── backdrop-filter ──────────────────────────────────────────────────────────
 
 val backdropBlurScale: Token[] = [
-    .Backdrop.Blur.None,
-    .Backdrop.Blur.Sm,
-    .Backdrop.Blur.Md,
-    .Backdrop.Blur.Lg,
-    .Backdrop.Blur.Xl,
-    .Backdrop.Blur.X2xl,
-    .Backdrop.Blur.X3xl,
+    .BackdropFilter.Blur.None,
+    .BackdropFilter.Blur.Sm,
+    .BackdropFilter.Blur.Md,
+    .BackdropFilter.Blur.Lg,
+    .BackdropFilter.Blur.Xl,
+    .BackdropFilter.Blur.X2xl,
+    .BackdropFilter.Blur.X3xl,
 ];
 
 val backdropAdjust: Token[] = [
-    .Backdrop.Brightness.110,
-    .Backdrop.Contrast.125,
-    .Backdrop.Grayscale.100,
-    .Backdrop.HueRotate.90,
-    .Backdrop.Invert.100,
-    .Backdrop.Saturate.150,
-    .Backdrop.Sepia.100,
+    .BackdropFilter.Brightness.110,
+    .BackdropFilter.Contrast.125,
+    .BackdropFilter.Grayscale.100,
+    .BackdropFilter.HueRotate.90,
+    .BackdropFilter.Invert.100,
+    .BackdropFilter.Saturate.150,
+    .BackdropFilter.Sepia.100,
 ];
 
 val backdropOpacitySteps: Token[] = [
-    .Backdrop.Opacity.0,
-    .Backdrop.Opacity.50,
-    .Backdrop.Opacity.100,
+    .BackdropFilter.Opacity.0,
+    .BackdropFilter.Opacity.50,
+    .BackdropFilter.Opacity.100,
 ];
 
 // ── composition ──────────────────────────────────────────────────────────────
 //
 // CSS `filter` does not accumulate: two `filter:` declarations and the second
 // wins. Upstream, `blur-sm grayscale` works because each utility writes a
-// `--tw-*` custom property that one `filter` declaration reads back, and front
-// 56's `Rule.declarations` gives emilia the same shape: the list below writes
-// `--tw-blur`, `--tw-grayscale` and one idempotent `filter:var(--tw-filter)`
-// into a single rule, and both families survive.
+// `--tw-*` custom property that one `filter` declaration reads back; emilia
+// does the same: the list below writes `--tw-blur`, `--tw-grayscale` and one
+// idempotent chain reader into a single rule, and both families survive.
 
 val composesThroughTheChain: Token[] = [.Filter.Blur.Sm, .Filter.Grayscale.100];
 
-// LANGUAGE GAP: a payload leaf nested inside an enum section cannot be
-// constructed by any spelling (language-gaps.md row 52), so these are TOP-LEVEL
-// `Token` variants — `FilterRaw`, not `Filter.Raw`. Contract § 4a states it.
-//
-// LANGUAGE GAP: and even at top level, a dot-shorthand path followed by a
-// payload call does not propagate the typed-array context (row 51), so
-// `[.FilterRaw("blur(8px)")]` trips the parser and construction goes through
-// a fn.
+// A payload leaf nested inside an enum section cannot be constructed, so the
+// escape hatches are TOP-LEVEL `Token` variants — `FilterRaw`, not `Filter.Raw`.
+// A dot-shorthand path followed by a payload call does not carry the
+// typed-array context (`[.FilterRaw("blur(8px)")]` does not parse), so
+// construction goes through a fn — emilia exports `rawFilter` and
+// `rawBackdropFilter`; these local ones are the same.
 fn rawFilter(v: string) -> Token {
     return Token.FilterRaw(value: v);
 }
@@ -181,21 +177,20 @@ fn heroImageTokens() -> Token[] {
 }
 
 fn frostedBarTokens() -> Token[] {
-    val hovered: Token[] = [.Backdrop.Brightness.110];
+    val hovered: Token[] = [.BackdropFilter.Brightness.110];
     val bar: Token[] = [
-        .Backdrop.Blur.Md,
+        .BackdropFilter.Blur.Md,
         Token.Hover(hovered),
     ];
     return bar;
 }
 
 fn frostedBarSaturationTokens() -> Token[] {
-    // `Backdrop.Blur` and `Backdrop.Saturate` each write their own
-    // `--tw-backdrop-<family>` property plus the shared
-    // `backdrop-filter:var(--tw-backdrop-filter)` shorthand, so both survive in
-    // one rule. `rawBackdrop` is still there for a function the tokens do not
+    // `BackdropFilter.Blur` and `BackdropFilter.Saturate` each write their own
+    // `--tw-backdrop-<family>` property plus the shared `backdrop-filter:`
+    // chain reader, so both survive in one rule. `rawBackdrop` is still there for a function the tokens do not
     // name.
-    val sat: Token[] = [.Backdrop.Blur.Md, .Backdrop.Saturate.150];
+    val sat: Token[] = [.BackdropFilter.Blur.Md, .BackdropFilter.Saturate.150];
     return sat;
 }
 

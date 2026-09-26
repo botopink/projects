@@ -45,7 +45,7 @@ After policy 3 lands, `Person(name: "Ana", age: 30)` is still the bare map `#{na
 and `Shape.Dot` is still the bare atom `'Dot'`. Every row below is half 3's, and none of it exists in
 steps 1–13.
 
-| Half 3 adds (steps 14–18) | Sites at `26d4fdc`; at `c2dd780` they have drifted by roughly +115 |
+| Half 3 adds (steps 14–18) | Sites (line numbers drift; re-locate by symbol) |
 |---|---|
 | the `'__bp_type'` key in a record term | `erlang.zig:4702-4708`; `beam_asm.zig:4516-4536` |
 | the type qualifier on a variant tag | `erlang.zig:5073-5076` + its four call sites (`:4194-4199`, `:4776-4782`, `:5030`, `:5038-5048`); `beam_asm.zig:1684-1689` + `:6212-6225`, `:3300-3315`, `:5272-5286`, `:5333` |
@@ -59,7 +59,7 @@ steps 1–13.
 **Measured overlap of the two halves' snapshot sets** — the 188 files policy 3 re-records are those
 carrying a `%% type` / `%% behavior` / `%% implement` marker; half 3's 130 are those that also *build*
 a record or a variant. They are largely the same files (62 of the 130 are erlang, and 81 erlang files
-carried the marker at `26d4fdc`; **98 at `c2dd780`**), which is the whole reason the two halves
+carried the marker; **98 **), which is the whole reason the two halves
 cannot land in one commit: a diff in one of those
 files would carry a module split **and** a value reshaping at once, and
 [the rule 1.0.4-beta ran under](../../../1.0.4-beta/overview.md), carried into 1.0.5-beta,
@@ -71,7 +71,7 @@ classified.
 | Reason | Detail |
 |---|---|
 | **1. The helper is half 1's** | Step 14 is a consumer of `erlDeclAtom`. Writing it twice creates two spellings of one atom |
-| **2. The files** | Steps 7–13 own `erlang.zig` and `beam_asm.zig` **wholesale** ([§ 9](./policy-3-module-per-type.md#9-sequencing--decided-2026-09-17-one-front-not-two)). Half 3 edits eight functions in each. The two cannot be in flight at once |
+| **2. The files** | Steps 7–13 own `erlang.zig` and `beam_asm.zig` **wholesale** ([§ 9](./policy-3-module-per-type.md#9-sequencing--decided-one-front-not-two)). Half 3 edits eight functions in each. The two cannot be in flight at once |
 | **3. The snapshots** | 188 (half 2) and 130 (half 3) overlap heavily. Sequencing keeps one reason per diff; overlapping them makes classification impossible |
 | **4. The formatter** | writing step 18 before policy 3 means emitting a per-program dispatch table and then deleting it when policy 3 makes the tag a module |
 | **5. `botopink run`** | policy 3's opening step fixes `cli/run.zig` to `erl -pa` ([E25](./atom-evidence.md#e25--botopink-run-breaks-under-policy-3)). Half 3's `tests/language/` acceptance cells run programs through the CLI; they need that fix to exist |

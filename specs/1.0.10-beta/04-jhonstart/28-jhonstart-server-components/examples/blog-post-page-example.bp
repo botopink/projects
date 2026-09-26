@@ -12,27 +12,23 @@
 //
 // The two awaits are sequential on purpose: the comments cannot be loaded until
 // the post's id is known. Sequential is also what they would be anyway — on the
-// erlang backend `@Task<T>` is EAGER (`libs/std/src/http.bp:16-18`), so two
-// futures do not overlap just by being futures. When two loaders ARE
+// erlang backend `@Task<T>` is EAGER (decision 120), so two tasks do not
+// overlap just by being tasks. When two loaders ARE
 // independent, the parallel form is front 02's spawn-and-gather over UNSTARTED
-// tasks (`[{ -> loadPost(s) }, { -> loadSidebar() }]`), not a map over futures.
+// tasks (`[{ -> loadPost(s) }, { -> loadSidebar() }]`), not a map over tasks.
 //
 // The post body and every comment are attacker-influenced text, and
-// `renderToString` writes `value` out unescaped (`element.bp:56`). They go
-// through `escape.html`, which front 01 adds to std.
+// `renderToString` writes `value` out unescaped. They go through std's
+// `escape.html`.
 //
 // Upstream:
 //   https://nextjs.org/docs/app/getting-started/fetching-data
 //   https://nextjs.org/docs/app/api-reference/file-conventions/page
 
-import { Element, div, h1, p, ul, li, span, text, renderToString } from "jhonstart";
-import { pairValue } from "jhonstart";          // provided by front 26
-import { article, section, h2 } from "jhonstart";
+import { Element, ElementBase, div, h1, p, ul, li, span, text, renderToString } from "jhonstart";
+import { pairValue } from "jhonstart";          // front 26
+import { article, section, h2 } from "jhonstart";  // front 94
 import { escape } from "std";
-
-// `article`, `section` and `h2` are not among the eight builders `element.bp`
-// ships. They come from front 94 (jhonstart-element-surface). `pairValue` is
-// front 26's; `escape` is front 01's.
 
 pub type Post(id: string, title: string, body: string)
 

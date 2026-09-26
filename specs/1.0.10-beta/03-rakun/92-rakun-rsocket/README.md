@@ -4,7 +4,7 @@
 **Priority:** low — an elegant protocol with modest adoption, and nothing else in the milestone depends on it
 **Target:** erlang (server) — the browser half would be a client front and is out of this scope
 **Wave:** 6
-**Depends on:** 20 (the WebSocket transport and its upgrade path), 07 (the filter chain the WebSocket mapping path sits behind), 15 (the listener registry `#[messageMapping]` registers on), 86 (the outcome contract for fire-and-forget), 02 (the thunk-and-gather pattern a requester needs, because `@Task` carries no concurrency on BEAM), 01 (`net`), 74 (TLS)
+**Depends on:** 20 (the WebSocket transport and its upgrade path), 07 (the filter chain the WebSocket mapping path sits behind), 15 (the listener registry `#[messageMapping]` registers on), 86 (the outcome contract for fire-and-forget), 02 (the thunk-and-gather pattern a requester needs, because `@Task` carries no concurrency on BEAM), 01 (`io.net`), 74 (TLS)
 **Owns:** `modules/rakun-rsocket/src/**`, `modules/rakun-rsocket/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone. `modules/rakun-web/src/websocket/**` is front 20's and is consumed read-only.
 **Reference:** `06-messaging.md § RSocket` (Server, Client) · `§ Spring Integration · RSocket com Integration` · https://docs.spring.io/spring-boot/reference/messaging/rsocket.html · https://rsocket.io/about/protocol

@@ -17,8 +17,7 @@
 import {path, io: {fs, process}} from "std";
 
 // Every `page.bp` under `root`. `fs.walk` is the recursive directory walk
-// front 22 cannot exist without — today std can read a directory but not
-// descend into it.
+// front 22 cannot exist without.
 fn pageFiles(root: string) -> string[] {
     val walked = fs.walk(root);
     val all = walked.unwrapOr([]);
@@ -96,8 +95,8 @@ pub fn discoverAndBuild(projectRoot: string) -> i32 {
     return answer;
 }
 
-// `process.cwd()` and `process.platform` are already in std today; the CLI reads
-// both to resolve a relative project argument and to pick the shipped binary.
+// The CLI reads `process.cwd()` and `process.platform()` to resolve a relative
+// project argument and to pick the shipped binary.
 pub fn resolveProject(argument: string) -> string {
     val absolute = path.isAbsolute(argument);
     val here = process.cwd();

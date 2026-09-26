@@ -8,7 +8,7 @@ all read what this front writes
 **Target:** erlang (server)
 **Wave:** 2 — and it must land before `23` (wave 5), because `23` parses `searchParams` and has
 to mark the render dynamic through this front
-**Depends on:** 01 (`hmac`, `clock`, `random`, `encoding`), 04 (the supervision tree, the connection
+**Depends on:** 01 (`hash`, `io.clock`, `io.random`, `encoding`), 04 (the supervision tree, the connection
 process and `rkSetReplyHeader`)
 **Owns:** `repository/rakun/src/request_context.bp`, `repository/rakun/src/request_memo.bp`,
 `repository/rakun/src/sidecars/rakun_request_context.erl`,
@@ -50,22 +50,6 @@ Eleven rows of the Next.js coverage audit trace back to this one absent mechanis
 `cookies()`, `draftMode()`, `connection()`, `after()`, request memoization, `React.cache`, the preload
 pattern, `generateMetadata`/page dedup, cookies in server actions, and the request accessors on route
 handlers. This front is that mechanism, and it is the only front that builds it.
-
-## Current state
-
-- `repository/rakun/src/http.bp:30-43` — `behavior Request`. Four accessors, all returning plain
-  `string` (`""` when absent, never `?string`), reachable only from a dispatched handler.
-- `repository/rakun/src/runtime.bp:56-66` — `rkSetProp`/`rkProp`/`rkPropInt`. Global, process-wide
-  configuration. Not request scope: no lifetime, no isolation, no teardown.
-- `libs/std/src/beam.bp:72-103` — `pdGet`/`pdPut` as `any → any`. The primitive exists; there is no
-  frame discipline over it, no epoch, no teardown, and no typed surface.
-- Front 04 delivers `rkSetReplyHeader(name, value)` and `rkReplyHeaders()`, writing into the
-  connection process's dictionary. A later write to the same name **replaces** the earlier one, so it
-  cannot carry two `Set-Cookie` values. That matters below.
-- Front 04 also fixes the process model this front stands on: one process per connection under
-  `rakun_conn_sup` (`simple_one_for_one`), and the acceptor clears the reply-header dictionary entry
-  between requests on a keep-alive connection.
-- `repository/rakun/src/request_context.bp` does not exist. Neither does `request_memo.bp`.
 
 ## Mechanism
 
@@ -161,8 +145,8 @@ front therefore queues fully-serialized `Set-Cookie` values on the frame and han
 `endRequest()`; the dispatcher appends each one to the response as a separate header line. Cookie
 serialization (`Path`, `Domain`, `Max-Age`, `HttpOnly`, `Secure`, `SameSite`, and the percent-encoding
 of the value through front 01's `encoding.percentEncode`) is pure botopink in `request_context.bp`, so
-it is unit-testable without a socket. The landed private codec (`request_context.bp:507-610`,
-`percentEncode` / `hexValue` / `percentDecode`) is deleted when front 01 lands: std's `encoding`
+it is unit-testable without a socket. The private codec in `request_context.bp`
+(`percentEncode` / `hexValue` / `percentDecode`) is deleted for std: std's `encoding`
 (`percentEncode`, `percentDecode`, `formParse`, `formStringify`) is the one percent and form codec,
 used by rakun here and by jhonstart's router on the other side of the same payload (decision 116).
 
@@ -470,9 +454,8 @@ val setCookies = endRequest();
 
 Three gaps front 01 already recorded are load-bearing here and are cited rather than re-filed: there is
 no byte/binary type, so the signed draft cookie marshals through `string` at the host boundary; a std
-module cannot call another std module, which is why `hmac.bp` re-declares its digest rather than
-calling `crypto.bp`, and why this front imports `hmac` and `encoding` directly instead of reaching
-them through one façade; and there is no array destructuring in a binding, so every wire blob is
+module cannot call another std module, which is why this front imports `hash` and `encoding`
+directly instead of reaching them through one façade; and there is no array destructuring in a binding, so every wire blob is
 parsed with `split` and indexed with `.at(i)`.
 
 ## Test plan

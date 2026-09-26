@@ -4,7 +4,7 @@
 **Priority:** high — nothing in the milestone produces a deployable artefact; fronts 04–25 are libraries an application has to be assembled from by hand
 **Target:** erlang (server)
 **Wave:** 6
-**Depends on:** 04 (the release boots front 04's application and supervision tree), 05 (`sys.config` is where front 05's property file lands on a real deployment), 01 (`fs`, `path`), 76 (the probe paths the Kubernetes fragments point at), 11 (serves the SBOM this front emits)
+**Depends on:** 04 (the release boots front 04's application and supervision tree), 05 (`sys.config` is where front 05's property file lands on a real deployment), 01 (`io.fs`, `path`), 76 (the probe paths the Kubernetes fragments point at), 11 (serves the SBOM this front emits)
 **Owns:** `modules/rakun-release/botopink.json`, `modules/rakun-release/src/**`, `modules/rakun-release/templates/**` · `modules/rakun-release/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone. It generates files; it changes no running code
 **Reference:** `08-container-images.md § Imagens Eficientes · Layering`, `§ Dockerfiles`, `§ Cloud Native Buildpacks`, `§ Reproducao e Cache` · `10-otimizacao-producao.md § Deployments Eficientes`, `§ Checkpoint e Restore (CRaC)` · `11-topicos-avancados.md § Deploy de Aplicacoes`, `§ Servico de SO`, `§ Apendice · Executable Jars` · `09-actuator.md § SBOM` · <https://docs.spring.io/spring-boot/reference/packaging/container-images/index.html> · <https://docs.spring.io/spring-boot/reference/packaging/efficient.html> · <https://docs.spring.io/spring-boot/how-to/deployment/installing.html>

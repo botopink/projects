@@ -8,7 +8,7 @@ runs on a developer's machine before any server exists. `create` drives neither 
 `build` drive both (the erlang half is the compiled server, the js half is the client bundle front 68
 emits); `start` drives only the erlang half, since by then the js half is a directory of files
 **Wave:** 9
-**Depends on:** 49 (config, alias map, registry), 01 (`process`, `path`), 22 (the route table the
+**Depends on:** 49 (config, alias map, registry), 01 (`io.process`, `path`), 22 (the route table the
 generated manifest registers into), 26 · 48 (per the wave table), 68 (the client bundle `build`
 drives), 71 (the release `start` runs), 60 (the prerender pass `build` invokes)
 **Owns:** `modules/onze-cli/src/**`, `modules/onze-cli/test/**`
@@ -39,18 +39,19 @@ they do.
 
 ## Current state
 
-- `repository/onze/modules/` does not exist. `repository/rakun/modules/` does, and is the shape to
+- `repository/onze/modules/` does not exist. `repository/rakun/modules/` is the shape to
   copy: each module has its own `botopink.json` with a `dependencies` map pointing at `../../`, plus
   `src/root.bp` (`repository/rakun/modules/rakun-web/botopink.json`).
-- `libs/std/src/process.bp` today declares `exit`, `cwd`, `platform`, `arch`, `pid` — introspection
-  only, no spawner (`process.bp:28-62`). Front 01 adds the spawn surface this front needs.
-- `libs/std/src/path.bp` already has `join`, `normalize`, `dirname`, `basename`, `extname`,
-  `relative`, `resolve`, `split`, `isAbsolute` (`path.bp:24-179`). This front adds nothing to it.
-- `libs/std/src/fs.bp` already has `readText`, `writeText`, `exists`, `list`, `mkdir`, `rm`, `copy`
-  and `stat` — and `stat` returns `FileStat(size, mtime, isDir)` with `mtime` in epoch milliseconds
-  (`fs.bp:20-24`, `:99`). The dev watcher is built on that, not on a new `fs.watch`.
+- std's `io.process` (`libs/std/src/io/process.bp`) declares `exit`, `cwd`, `platform`, `arch`,
+  `pid` and the spawner this front drives: `run(cmd, args) -> @Result<Exit, string>` (no shell,
+  `Exit(status, stdout, stderr)`) and `runShell(cmd) -> string`.
+- std's `path` (`libs/std/src/path.bp`) has `join`, `normalize`, `dirname`, `basename`, `extname`,
+  `relative`, `resolve`, `split`, `isAbsolute`. This front adds nothing to it.
+- std's `io.fs` (`libs/std/src/io/fs.bp`) has `readText`, `writeText`, `exists`, `list`, `mkdir`,
+  `rm`, `copy` and `stat` — and `stat` returns `FileStat(size, mtime, isDir)` with `mtime` in epoch
+  milliseconds. The dev watcher is built on that, not on a new `fs.watch`.
 - `botopink` itself provides `build`, `check` and `test` with a `--target` flag
-  (`modules/compiler-cli/AGENTS.md:273`). The CLI wraps them; it does not replace them.
+  (`modules/compiler-cli/AGENTS.md`). The CLI wraps them; it does not replace them.
 
 ## Mechanism
 
@@ -150,9 +151,9 @@ rule track A uses for `libs/std/src/root.bp`. The coordinator is told rather tha
 silently.
 
 **Acceptance:**
-- [ ] `botopink build` succeeds in `modules/onze-cli/`
-- [ ] `onze` with no arguments prints the command list and exits non-zero
-- [ ] An unknown command names itself in the error and exits non-zero
+- [x] `botopink build` succeeds in `modules/onze-cli/`
+- [x] `onze` with no arguments prints the command list and exits non-zero
+- [x] An unknown command names itself in the error and exits non-zero
 
 ### Step 2 — `resolve`: project root, config, aliases
 
@@ -170,11 +171,11 @@ Walk up from `startDir` to the first directory containing `botopink.json`. Missi
 not an error — `defaultConfig()` covers it; a malformed one is, and the error names the file.
 
 **Acceptance:**
-- [ ] `resolveProject` from a nested directory finds the root
-- [ ] A directory with no `botopink.json` above it reds with a message naming `botopink.json`
-- [ ] A project with no `onze.json` resolves to `defaultConfig()` with `name` taken from
+- [x] `resolveProject` from a nested directory finds the root
+- [x] A directory with no `botopink.json` above it reds with a message naming `botopink.json`
+- [x] A project with no `onze.json` resolves to `defaultConfig()` with `name` taken from
       `botopink.json`
-- [ ] An `alias` entry whose target escapes the root reds, naming the entry
+- [x] An `alias` entry whose target escapes the root reds, naming the entry
 
 ### Step 3 — `scan`: the `app/` walk
 
@@ -203,16 +204,16 @@ The classification rules, all from `NEXTJS-DOCS.md § 3`:
 | `_components` | skipped entirely, with everything under it |
 
 **Acceptance:**
-- [ ] `app/blog/[slug]/page.bp` scans to `pattern "/blog/:slug"`, `kind "page"`
-- [ ] `app/(marketing)/about/page.bp` scans to `"/about"` — the group does not appear
-- [ ] `app/_components/card.bp` produces no entry
-- [ ] A segment holding both `page.bp` and `route.bp` reds, naming the segment (fold-in 7 is front
+- [x] `app/blog/[slug]/page.bp` scans to `pattern "/blog/:slug"`, `kind "page"`
+- [x] `app/(marketing)/about/page.bp` scans to `"/about"` — the group does not appear
+- [x] `app/_components/card.bp` produces no entry
+- [x] A segment holding both `page.bp` and `route.bp` reds, naming the segment (fold-in 7 is front
       22's to enforce at registration; `scan` catches it earlier, and both tests exist)
-- [ ] Every convention file carries the decorator its kind requires, and the scan names the file when
+- [x] Every convention file carries the decorator its kind requires, and the scan names the file when
       one is missing
-- [ ] `authoredPath` round-trips: every error the CLI prints names the authored path, never the staged
+- [x] `authoredPath` round-trips: every error the CLI prints names the authored path, never the staged
       one, and `scan_test.bp` asserts the mapping for each row of the staging table
-- [ ] `[slug]` and a literal `d_slug` sibling reds, naming both directories
+- [x] `[slug]` and a literal `d_slug` sibling reds, naming both directories
 
 ### Step 4 — `generate`: the module tree, and the check
 
@@ -242,14 +243,14 @@ pub fn checkTree(files: AppFile[], declared: Array<#(string, string)>) -> TreeEr
 build naming the **authored** path, never the staged one — the developer has never seen `d_slug`.
 
 **Acceptance:**
-- [ ] The generated module begins with a `// GENERATED by onze build — do not edit.` banner
-- [ ] `pub mod` lines are sorted, so two builds of an unchanged tree produce byte-identical output —
+- [x] The generated module begins with a `// GENERATED by onze build — do not edit.` banner
+- [x] `pub mod` lines are sorted, so two builds of an unchanged tree produce byte-identical output —
       which is what makes front 03's build id stable
-- [ ] `app/blog/[slug]/page.bp` carrying `#[page("posts/[slug]")]` fails the build, naming
+- [x] `app/blog/[slug]/page.bp` carrying `#[page("posts/[slug]")]` fails the build, naming
       `app/blog/[slug]/page.bp`, `blog/[slug]` and `posts/[slug]`
-- [ ] A convention file with no decorator at all fails the build, naming the file and the decorator it
+- [x] A convention file with no decorator at all fails the build, naming the file and the decorator it
       needs
-- [ ] The generated text compiles: `generate_test.bp` writes it to a temp directory and runs
+- [x] The generated text compiles: `generate_test.bp` writes it to a temp directory and runs
       `botopink check` over it
 
 ### Step 5 — `create`, with flags and an interactive path
@@ -287,12 +288,12 @@ my-app/
 ```
 
 **Acceptance:**
-- [ ] `onze create my-app --yes` creates the tree above and exits zero
-- [ ] `onze create my-app --yes --src-dir` writes `appDir: "src/app"` and puts `app/` under `src/`
-- [ ] `onze create my-app --yes --import-alias "~/"` writes `~/components` into the alias map
-- [ ] `create` into a non-empty directory refuses and names the directory; `--yes` does not override
+- [x] `onze create my-app --yes` creates the tree above and exits zero
+- [x] `onze create my-app --yes --src-dir` writes `appDir: "src/app"` and puts `app/` under `src/`
+- [x] `onze create my-app --yes --import-alias "~/"` writes `~/components` into the alias map
+- [x] `create` into a non-empty directory refuses and names the directory; `--yes` does not override
       that, because the flag means "take the defaults", not "overwrite my files"
-- [ ] The scaffolded app passes `botopink check` immediately after `create`, with no edits
+- [x] The scaffolded app passes `botopink check` immediately after `create`, with no edits
 
 ### Step 6 — `dev`
 
@@ -334,11 +335,11 @@ prerender pass → write `<outDir>/`:
 
 **Acceptance:**
 - [ ] `onze build` on the scaffolded app exits zero and produces the five entries above
-- [ ] Two builds of an unchanged tree produce the same `build-id`
-- [ ] A client module reading a non-`ONZE_PUBLIC_` variable fails the build, naming the variable and
+- [x] Two builds of an unchanged tree produce the same `build-id`
+- [x] A client module reading a non-`ONZE_PUBLIC_` variable fails the build, naming the variable and
       the module (the rule is front 49's, the enforcement front 68's, and the *failure* is this
       command's exit code)
-- [ ] `build` does not start a server and does not open a port
+- [x] `build` does not start a server and does not open a port
 
 ### Step 8 — `start`
 
@@ -383,10 +384,10 @@ the OTP version from the runtime, and it prints the **resolved** config — the 
 `onze.json` and the environment — not the file's contents.
 
 **Acceptance:**
-- [ ] `onze info` runs outside a project and prints the tool versions with `project (none)`
-- [ ] Inside a project it prints the resolved config, and a value overridden by the environment is
+- [x] `onze info` runs outside a project and prints the tool versions with `project (none)`
+- [x] Inside a project it prints the resolved config, and a value overridden by the environment is
       marked as such
-- [ ] Every library listed is one this front actually resolved; a missing dependency prints
+- [x] Every library listed is one this front actually resolved; a missing dependency prints
       `(not found)` rather than being omitted
 
 ## Examples
@@ -428,12 +429,42 @@ by front 53's app, which is compiled and served by these commands.
 not by unit tests here — a unit test for "boots a BEAM node" is a slower, less honest version of the
 gate that already exists.
 
+## Where it stands
+
+Implemented: `resolve`, `scan`, `generate`,
+`create`, `info`, `main` and `AGENTS.md`; 19 tests on commonJS, two of which run the real
+`botopink check` — over a staged tree and over a fresh scaffold. `examples/scaffold/` is the
+committed `create` output.
+
+Read with these differences: a pattern is the bundled `routing`'s spelling (`/blog/[slug]`, the
+contract-1 table's), not `/:slug` (decision 115 moved the grammar into `routing`); the scaffold is
+always the `src/` layout and `--no-src-dir` is refused, because the compiler does not honour a
+package whose `"src"` is `"."` (`botopink check` answers "no source files found in src/ or test/",
+and a test there cannot import a nested module — front 53's finding F5); the staged package lives
+at `<outDir>/src/` with its own `botopink.json`; `create` takes `--libs <dir>` to depend on a local
+checkout by path (git `feat` otherwise); `loading` / `error` / `not-found` need no decorator —
+the generated `onze_routes.bp` registers them with jhonstart's `jhLoading` / `jhError` /
+`jhNotFound`.
+
+`build` runs the whole pipeline — scan, check, refusals, CSS-module accessors,
+the staged server package compiled for erlang (`server/` holds the emitted `.erl`; no `erlc` pass
+yet), the staged client package plus the generated entry compiled for commonJS and linked by
+file, the stylesheet, the build id, `static/<buildId>/`, `client-manifest.txt`, `build-id`; the
+committed scaffold builds twice to the same id and its bundle boots under node (23 tests).
+`<outDir>/` holds `src/` (the staged tree — the README's `app_tree.bp` + `app/`), `server/`,
+`client/`, `client-js/`, `static/`, `client-manifest.txt` and `build-id`, but no `prerender/`
+(rakun front 60), so the "five entries" box stays open.
+
+Open: `dev` and `start` (rakun's server boot — rakun fronts 04 and 23), `prerender/`, route-level
+chunk splitting (lazy starters), `--example`, the prompts (no TTY reader in std), and the docs
+table generated from the one defaults record.
+
 ## Definition of done
 
 - [ ] `modules/onze-cli/` exists with the nine source modules and four test modules above
 - [ ] `onze create`, `dev`, `build`, `start`, `info` all run against the scaffolded app
 - [ ] The defaults table in step 5 is reproduced in `docs.md` and in `onze create --help`, generated
       from one source so the three cannot drift
-- [ ] `modules/onze-cli/AGENTS.md` written, per the standing rule that a layout change updates the
+- [x] `modules/onze-cli/AGENTS.md` written, per the standing rule that a layout change updates the
       matching `AGENTS.md` in the same commit
-- [ ] The front's tests are green on its assigned target — commonJS, for the reason stated above
+- [x] The front's tests are green on its assigned target — commonJS, for the reason stated above

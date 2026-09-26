@@ -11,7 +11,6 @@
 
 import { emilia, flush, Token } from "emilia";
 import { compose, named, hocus, selector } from "emilia";
-// `Variant` comes from front 56; `arbValue` and `arbSel` from front 57.
 import { Variant, arbValue, arbSel } from "emilia";
 
 // TAILWIND_CSS_DOCS.md § 20.4 — the `@utility scrollbar-hidden` example, declaration
@@ -39,8 +38,8 @@ pub fn primarySkin() -> Token[] {
 }
 
 // § 3.2 — `@custom-variant theme-midnight (&:where([data-theme="midnight"] *))`.
-// A project registers a variant emilia has never heard of by building front 56's
-// `Variant` and wrapping the inner tokens with it.
+// A project registers a variant emilia has never heard of by building a `Variant`
+// and wrapping the inner tokens with it (emilia's `compose` exports this one too).
 pub fn themeMidnight(inner: Token[]) -> Token[] {
     val v = Variant(atRule: "", selector: "&:where([data-theme=\"midnight\"] *)");
     return [selector(v, inner)];
@@ -92,7 +91,7 @@ test "a project variant the library never heard of needs only a Variant value" {
     val white: Token[] = [.Color.White];
     val cls = emilia(themeMidnight(white));
     val css = await flush();
-    assert css.contains("." + cls + ":where([data-theme=\"midnight\"] *){color:#ffffff}");
+    assert css.contains("." + cls + ":where([data-theme=\"midnight\"] *){color:var(--color-white)}");
 }
 
 test "a named class lands in components and a utility class still beats it" {
@@ -108,7 +107,7 @@ test "a named class lands in components and a utility class still beats it" {
     assert componentsAt < utilitiesAt;
 }
 
-// Contract 4 (../../contracts.md § 4): the class scheme is a pure function of the token
+// Contract 4: the class scheme is a pure function of the token
 // list. `named` registers under an author-chosen name and never computes a hash, so a
 // list passed to both entry points still produces the same `e_` class it always did.
 test "naming a bundle does not disturb the hashed class for the same tokens" {

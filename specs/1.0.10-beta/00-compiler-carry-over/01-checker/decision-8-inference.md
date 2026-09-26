@@ -1,12 +1,12 @@
 # Decision 8's inference, row by row
 
 The grammar of [decision 8](../../../1.0.4-beta/08-review-backlog/decision-8-language.md) sections 2, 3,
-4 and 5 landed on `botopink-lang` `d0c27f6`. Nothing types it. This file states what the checker owes
-each section, in the decision's own words, with the probe that shows the gap at `c2dd780` and the
+4 and 5 landed. Nothing types it. This file states what the checker owes
+each section, in the decision's own words, with the probe that shows the gap and the
 site that decides it.
 
 Every probe is `zig-out/bin/botopink check` on a one-module project built from `botopink new`, run
-2026-09-18 against `botopink-lang` `c2dd780`. Paths are relative to
+ . Paths are relative to
 `repository/botopink-lang/modules/compiler-core/src/`.
 
 ---
@@ -19,10 +19,10 @@ Each grammar commit says so at the definition site, and each gives the same reas
 
 | Form | How it reaches inference | Commit |
 |---|---|---|
-| `unknown` | `TypeRef.named` under the reserved spelling `ast.unknown_type_name`; `unknown` is a lexer keyword and `isReservedWord` refuses it as a name, so no source can mean anything else | `6c849ae` |
-| `A \| B` | `TypeRef.generic` under the reserved name `ast.union_type_name` (`"\|"`), members as arguments, read back with `unionMembers()`. `\|` is the loosest type operator, so `i32 \| string[]` is `i32` or `string[]` and `(i32 \| string)[]` is the array of the union | `4a3449f` |
-| `x is T` | the `is` builtin call (`ast.is_builtin_name`) with the value as its only argument and the type in the call's `isType` slot. `parseIsExpr` is the tightest level of the expression grammar, so `a is i32 == b` is `(a is i32) == b` | `3b491e3` |
-| `Pattern { body }`, `when (…)`, `1...9`, `.Variant`, labels, `..`, `#(…)` | `ast.PatternShape` plus two new fields on the existing `variant` node; the decision-8 arm body lands as the **lambda node** the older block arm already produced | `dff3446` |
+| `unknown` | `TypeRef.named` under the reserved spelling `ast.unknown_type_name`; `unknown` is a lexer keyword and `isReservedWord` refuses it as a name, so no source can mean anything else | |
+| `A \| B` | `TypeRef.generic` under the reserved name `ast.union_type_name` (`"\|"`), members as arguments, read back with `unionMembers()`. `\|` is the loosest type operator, so `i32 \| string[]` is `i32` or `string[]` and `(i32 \| string)[]` is the array of the union | |
+| `x is T` | the `is` builtin call (`ast.is_builtin_name`) with the value as its only argument and the type in the call's `isType` slot. `parseIsExpr` is the tightest level of the expression grammar, so `a is i32 == b` is `(a is i32) == b` | |
+| `Pattern { body }`, `when (…)`, `1...9`, `.Variant`, labels, `..`, `#(…)` | `ast.PatternShape` plus two new fields on the existing `variant` node; the decision-8 arm body lands as the **lambda node** the older block arm already produced | |
 
 Promoting each to a real type kind is a rename away once both halves are in one tree — which is what
 this front is.
@@ -37,7 +37,7 @@ this front is.
 | **Where** | `comptime/unify.zig` compares two `.named` types by name; `unknown` is `.named "unknown"`, so only `unknown` unifies with it — the exact opposite of §2.1 |
 | **Correct** | a one-way rule in `unify`: every type is assignable **to** `unknown`; `unknown` is assignable only to `unknown`. The reverse direction is the located error §2.1 sketches, and its hint names `is` |
 
-| § | Obligation | State at `c2dd780` |
+| § | Obligation | State |
 |---|---|---|
 | 2.1 | every value goes in; nothing comes out unchecked | nothing goes in |
 | 2.2 | allowed: `@print(x)`, `x == y`, `x != y`, assignment to `unknown`, passing to a generic. Refused: arithmetic, field access, indexing, method calls | unreachable — 2.1 reds first |
@@ -62,7 +62,7 @@ the full name" instead, which is why step 1 and step 5 share them.
 
 | § | Obligation | Note |
 |---|---|---|
-| 3.1 | the syntax, at any depth | parses already; the binding is right (`4a3449f`'s three snapshots pin it) |
+| 3.1 | the syntax, at any depth | parses already; the binding is right ('s three snapshots pin it) |
 | 3.2 | inferred from array literals, `if` branches and `case` arms **with no error**; a `return`/`throw`/`break` branch does not contribute; `1` and `null` give `?i32`; `[1, 2.5]` gives `f64[]` | this is [decision 5 / D5](./README.md#decisions-the-maintainer-owes) — the mismatched-arm policy |
 | 3.3 | a use is allowed only when every member allows it; a `case` covering every member needs no `_` | feeds step 5 |
 | 3.4 | `Option<A> \| Option<B>` → `Option<A\|B>`; same for `Box`, `@Result`, `Dict` (key and value); **arrays never join**. A user `type` joins when its parameter is only read | the "only read" test is a member-signature walk: no member takes a `T` |
@@ -85,12 +85,12 @@ the checker guarantees — exhaustiveness and assignability. Keep them distinct 
 |---|---|---|
 | 4.1 | numbers by **range**: `2.0 is i32` true, `2.5 is i32` false, `x is f64` true for any number. Inside the block the value **is** the tested type — `if (a is i32) { @print(a + 1); }` prints `3` | not typed; the run-time half is each backend's |
 | 4.2 | what may follow `is`: a primitive; a named type's constructor; `#(i32, string)` (arity and each element); `Box<unknown>` — `Box<i32>` is an **error**, the argument is not checkable | the parser accepts all of them into `isType`; nothing checks them |
-| 4.2 | `Option.Some(v)` / `.Some(v)` binding a payload | **refused by the parser** with a located `is-variant-binding` at the `(`, hinting at a `case` arm. Decision D4: does `is` grow a pattern, or does the refusal stand? |
+| 4.2 | `Option.Some(v)` / `.Some(v)` binding a payload | **refused by the parser** with a located `is-variant-binding` at the `(`, hinting at a `case` arm. **Decided** by 1.0.5's decision 25 (b): the refusal stands — `is` answers a `bool` and `case` is the only construct that binds, so the form leaves §4.2 |
 | 4.3 | `a is string` on a statically-known `i32` is a **warning**, always false | no warning |
 
 Narrowing has three entries and they must agree: the `if` condition (through step 10's `&&`
 widening), a `when (…)` guard into that arm's body (§5.3), and the type-guard fn form `-> x is T`,
-which already narrows since C5 (`2b03e41`). The narrowing machinery at the `if`-condition path
+which already narrows since C5. The narrowing machinery at the `if`-condition path
 (`infer.zig`, `env.typeGuardFns`) is the one to extend, not a second one.
 
 ---
@@ -121,7 +121,7 @@ case s { .Circle(r) { r } .Rect(w) { w } }   →  missing variant(s) Circle, Rec
 ```
 
 The leading `.` stays inside the pattern's name — that is what tells a variant path from a binding
-(`dff3446`). The variant table is matched against the literal text, so `.Circle` matches nothing and
+. The variant table is matched against the literal text, so `.Circle` matches nothing and
 every variant reads as missing. P8: on a typed subject the enum comes from the matched value's type;
 on `unknown` the full name is required, and the diagnostic must say so (that is
 `reject/case_shorthand_on_unknown.bp`'s own reason).
@@ -142,7 +142,7 @@ Token.Text.Bold            →  unknown field 'Bold' on type 'Token'
 val t: Token.Text = .Bold; →  unbound variable 'Bold'
 ```
 
-`9242b66` landed the type side against emilia's own spelling; the two forms above still red. §5.3b
+Front 01 landed the type side against emilia's own spelling; the two forms above still red. §5.3b
 asks for both: `Token`, `Token.Text` and `Token.Text.Size` resolve **in type position**, and a value
 is written with the same path its type uses. No compiler-invented flat name (`TokenText`).
 
@@ -161,7 +161,7 @@ it here.
 Exhaustiveness *is* checked, over enum variants, and an arm counts the moment its pattern names a
 variant. §5.4 is a different rule.
 
-| Situation | `c2dd780` | §5.4 |
+| Situation | | §5.4 |
 |---|---|---|
 | every enum variant / union member / `true`+`false` covered | no `_` needed (variants only) | no `_` |
 | a type covered whole (`i32 { … }` on an `i32`) | not modelled | no `_` |

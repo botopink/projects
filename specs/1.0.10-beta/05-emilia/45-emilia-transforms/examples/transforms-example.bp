@@ -16,9 +16,10 @@
 //   scale-50 -> scale:.5      (no leading zero, § 16.5)
 //   zoom-50  -> zoom:0.5      (leading zero,    § 16.11)
 //
-// Perspective keywords are themeVar lookups (front 54), and each axis token
-// writes its own `--tw-*` variable plus the shorthand that reads both back, so
-// two axis tokens in one rule compose (front 56's `Rule.declarations`).
+// Perspective keywords are theme references (`transformEntries()`). A one-axis
+// translate token is ONE `translate:` declaration carrying the other axis as
+// `var(--tw-translate-<other>, 0)`, so two axis tokens in one rule do not
+// compose — the last wins; `.Transform.Translate.*` moves both axes.
 
 import {emilia, flush, Token} from "emilia";
 
@@ -32,9 +33,9 @@ val rotateSteps: Token[] = [
     .Transform.Rotate.180,
 ];
 
-// LANGUAGE GAP: a numeric enum leaf is declared as bare digits and there is no
-// spelling for a negative one, so `-rotate-12` has no direct token. The `Neg`
-// sub-section holds the magnitudes and the dispatcher prepends the sign.
+// A numeric enum leaf is a digit run and there is no spelling for a negative
+// one, so `-rotate-12` is `Rotate.Neg.12`: the `Neg` sub-section holds the
+// magnitudes and the dispatcher prepends the sign.
 val rotateNegSteps: Token[] = [
     .Transform.Rotate.Neg.1,
     .Transform.Rotate.Neg.12,
@@ -43,14 +44,11 @@ val rotateNegSteps: Token[] = [
     .Transform.Rotate.Neg.180,
 ];
 
-// LANGUAGE GAP: a payload leaf nested inside an enum section cannot be
-// constructed by any spelling (language-gaps.md row 52), so these are TOP-LEVEL
-// `Token` variants — `TransformRotateRaw`, not `Transform.Rotate.Raw`.
-// Contract § 4a states the rule.
-//
-// LANGUAGE GAP: and even at top level, a dot-shorthand path followed by a
-// payload call does not propagate the typed-array context (row 51), so every
-// arbitrary value goes through a fn.
+// A payload leaf nested inside an enum section cannot be constructed, so the
+// escape hatches are TOP-LEVEL `Token` variants — `TransformRotateRaw`, not
+// `Transform.Rotate.Raw`. A dot-shorthand path followed by a payload call does
+// not carry the typed-array context, so every arbitrary value goes through a fn
+// (emilia exports `rawRotate` and `rawTranslate`).
 fn rawRotate(v: string) -> Token {
     return Token.TransformRotateRaw(value: v);
 }
@@ -83,11 +81,9 @@ val scaleAxes: Token[] = [
 
 // ── translate ────────────────────────────────────────────────────────────────
 //
-// Each leaf writes its own `--tw-translate-x` or `--tw-translate-y` AND the
-// shared `translate:var(--tw-translate-x) var(--tw-translate-y)` shorthand, so
-// a list carrying both axes composes: front 56's `Rule.declarations` keeps
-// writer and reader in one rule, and front 54's theme carries the identity
-// defaults so a lone axis token still renders.
+// `TranslateX.Half` is `translate:50% var(--tw-translate-y, 0)` — one
+// declaration, the other axis read with a `0` fallback so a lone axis token
+// renders. Two axis tokens are two declarations of one property: last wins.
 
 val translateXSteps: Token[] = [
     .Transform.TranslateX.0,
@@ -110,10 +106,9 @@ val centred: Token[] = [rawTranslate("-50% -50%")];
 
 // ── skew ─────────────────────────────────────────────────────────────────────
 //
-// FLAGGED. The reference's column names the property `skew-x` / `skew-y`, and
-// neither is a registered CSS property. These tokens transcribe the reference
-// faithfully and emit a declaration no browser applies. Confirm against
-// https://tailwindcss.com/docs/skew before this front lands.
+// Upstream's property, not the reference file's `skew-x:` column (which is not
+// CSS): `.Transform.SkewX.3` is `transform:skewX(3deg)`. Both axes write
+// `transform`, so two skews in one rule do not compose — the second wins.
 
 val skewXSteps: Token[] = [
     .Transform.SkewX.0,
@@ -150,9 +145,8 @@ val origins: Token[] = [
 // ── the 3-D surface the reference actually covers ────────────────────────────
 //
 // `transform-style`, `backface-visibility`, `perspective` and
-// `perspective-origin` are all in § 16 and all ship here. The axis variants the
-// brief asks about — rotate-x/y/z, translate-z, scale-z — are NOT in § 16 and
-// are not invented.
+// `perspective-origin` are all in § 16 and all ship here. The axis variants
+// rotate-x/y/z, translate-z, scale-z are NOT in § 16 and are not declared.
 
 val threeD: Token[] = [
     .Transform.Style.Flat,
@@ -192,9 +186,9 @@ val zoomSteps: Token[] = [
 
 // ── the transform shorthand ──────────────────────────────────────────────────
 //
-// These resolve: the axis tokens write the `--tw-*` variables and front 54's
-// theme carries the identity defaults, so `transform-gpu` alongside a rotate
-// composes the way it does upstream.
+// INERT. `Cpu` and `Gpu` are § 16.7's strings verbatim, but the six `--tw-*`
+// variables they read are set by no emilia token (rotate/scale/translate write
+// their own properties, skew its own `transform`). Only `None` does anything.
 
 val shorthands: Token[] = [
     .Transform.Shorthand.None,
@@ -208,8 +202,8 @@ val shorthands: Token[] = [
 // 180 degrees when its panel is open. `rotate` and `scale` are independent CSS
 // properties in v4, so two of them in one list compose without the shorthand.
 //
-// The transition tokens come from front 44; without them the motion is a single
-// frame and the transform is invisible.
+// Without the transition tokens the motion is a single frame and the transform
+// is invisible.
 //
 // `flush()` returns a `@Task<string>`, so the caller must return a `@Task` too (or be a `test`) and must
 // `await` it.

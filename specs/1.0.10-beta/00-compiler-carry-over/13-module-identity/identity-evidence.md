@@ -1,7 +1,7 @@
 # Evidence — runtime type identity on erlang
 
 Every claim in [`README.md`](./README.md) that is not a `file:line` was run here. OTP **29**,
-`erl` / `erlc` from `/usr/bin`, 2026-09-17. Each block is reproducible: write the fixture, compile,
+`erl` / `erlc` from `/usr/bin`. Each block is reproducible: write the fixture, compile,
 run.
 
 The tag used throughout is `models@user__t__pessoa` — [option A](./atom-options.md)'s
@@ -188,10 +188,10 @@ paid for in 2 words of space; T2 keeps it in both and costs a mechanical rewrite
 
 ---
 
-# Part 2 — measured 2026-09-18, against the compiler
+# Part 2 — measured, against the compiler
 
-Part 1 above was measured with hand-written erlang fixtures at OTP 29 (2026-09-17). Everything from
-here was measured **against the compiler's own output** at `botopink-lang` `26d4fdc`, same OTP 29 /
+Part 1 above was measured with hand-written erlang fixtures at OTP 29. Everything from
+here was measured **against the compiler's own output**, same OTP 29 /
 erts 17.0.6, plus `node` and `wasmtime`. Where Part 2 contradicts Part 1 it says so and the
 correction stands.
 
@@ -428,7 +428,7 @@ variant names declared in 2+ files: 7
 the 54 record types or for 7 of the 88 variants — not hypothetically, in the code that exists.
 
 The atom-table cost of the recommended scheme: 54 + 88 = **142 new atoms** for the whole ecosystem,
-against 10 397 in a bare node and a 1 048 576 limit (E7 re-measured at OTP 29 on 2026-09-18:
+against 10 397 in a bare node and a 1 048 576 limit (E7 re-measured at OTP 29:
 `atom_count` 10 397).
 
 <a id="e15--the-qualified-variant-tag"></a>
@@ -599,7 +599,7 @@ wrong: no snapshot in any backend prints a record or a variant, so steps 15–16
 at all**, and a `RUN LOG` that moves is a bug. The evidence for decision 8 §7's new printed form has
 to be written as new `tests/language/` cells, because no existing snapshot can carry it.
 
-Library baseline at `26d4fdc`, 2026-09-18 (`zig build test-libs`):
+Library baseline (`zig build test-libs`):
 
 ```
 test-libs: 9 passed, 0 failed, 0 known red, 3 skipped, 2 without tests

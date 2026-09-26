@@ -8,7 +8,8 @@
 // `FAIL <name> (<message>) at <file>:<line>`.
 //
 // Runs on commonJS and erlang under `botopink test`. Pure botopink apart from
-// the two private host cells `asserts` keeps for `matches`/`throws`.
+// the private host cells `asserts` keeps for `matches`, `deepEquals` and the
+// `throws` pair.
 
 import {testing.asserts} from "std";
 
