@@ -407,7 +407,7 @@ before anything was written.
 |---|---|---|
 | Step 1 F1, F5 | **holds** | `5.0`, `[1, 2]`, `#(1, "a")`; `run/tuple_print.bp` green, its line gone |
 | Step 1 F2, F3 | **holds** (C-01 half 3's descriptor header) | `run/print_formatter.bp` green on wasm |
-| Step 1 F4 (`Display`) | **open** | `run/display_print.bp` prints `Money(cents: 5)` where `$5` is owed |
+| Step 1 F4 (`Display`) | **landed here** | `run/display_print.bp` prints `$5` / `[$1, $2]`; its line deleted |
 | Step 2 D1–D3 | **open** | `x is i32` over an `unknown` traps (`§4.2 is: no run-time test for this type on wasm`) — honest, not a wrong answer |
 | Step 3 `Dict` | **holds** | boxes above |
 | Step 4 `break <value>` | **superseded** by decision 105 (C-30) | |
@@ -435,3 +435,9 @@ before anything was written.
   reworded to the `Dict` half that is left. 12 wasm snapshots per tree moved: the helper's bytes, and
   five RUN LOGs `undefined` → `null` (one is `if_simple_conditional_in_fn_body`, an `if` with no
   `else` used as a value — commonJS still prints `undefined` there, see status.md).
+- **Step 1 F4, `Display`** — `$__print_tagged_raw` asks `$__display_of(v)` first; the prelude's
+  `display_of` group answers `0` (so every group still renders alone) and `wat.zig` substitutes the
+  module's dispatch, one descriptor compare per record type declaring `display(self) -> string`,
+  written after lowering (a table index interned into the descriptor would shift as lambdas are
+  lifted — the reason the old line gave for leaving it). `run/display_print.bp`'s wasm line deleted;
+  5 wasm snapshots per tree moved, helper text only.
