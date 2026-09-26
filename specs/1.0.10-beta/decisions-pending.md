@@ -287,6 +287,39 @@ local change in the named front.
 > **Recommendation.** (a) — implemented, emilia `7004c96`: a lone `Snap.Type.X` snaps by proximity,
 > a `Snap.Strictness` token in the same class overrides it.
 
+### 05emilia-e. `fullTheme()` rides on `fullOptions()`, not `defaultOptions()` (front 56, decision 80)
+
+> **Raised by:** `56-emilia-cascade-and-output`, decision 80, 2026-09-26
+> **Measured.** Decision 80 says `defaultOptions()` carries `fullTheme()`. `defaultOptions()` is in
+> `output.bp`; `fullTheme()` composes entries functions that live in `emilia.bp`, and `emilia.bp`
+> imports `output.bp` — the reverse import is a module cycle.
+> **Options.** (a) `fullOptions()` in `emilia.bp` = `withTheme(defaultOptions(), fullTheme())`, and
+> `flush()` renders with it; `defaultOptions()` stays the palette-free baseline. (b) Move every
+> front's entries function into `theme.bp` — five fronts' data in front 54's file.
+> **Recommendation.** (a) — implemented, emilia `bd53968`; a test fails on any undefined `var(--…)`
+> in a flushed document, with `defaultTheme()` as the control that must leave some undefined.
+
+### 05emilia-f. `--inset-shadow-*` entries drop upstream's leading `inset` (front 41)
+
+> **Raised by:** `56-emilia-cascade-and-output` (`fullTheme`), 2026-09-26
+> **Measured.** Front 41 emits the reference's `box-shadow:inset var(--inset-shadow-xs)`; upstream's
+> `theme.css` values already start with `inset`, so the pair would render `inset inset …` — not CSS.
+> **Options.** (a) Entries without the keyword (`effectEntries()`). (b) Upstream's values, and front
+> 41 emits `box-shadow:var(--inset-shadow-*)` — moves a landed front's pinned output.
+> **Recommendation.** (a) — implemented; the rendered shadow equals upstream's.
+
+### 05emilia-g. `space-*` / `divide-*` against upstream (fronts 35, 40)
+
+> **Raised by:** the track-D audit, front 35 step 4, 2026-09-26
+> **Measured.** Upstream `utilities.ts` writes `space-x-*` as `:where(& > :not(:last-child))` with
+> `--tw-space-x-reverse:0` and both logical margins read through it; emilia writes
+> `& > :not(:last-child)` (higher specificity) and the end margin only, so `Space.XReverse` sets a
+> variable nothing reads. `divide-*` calls the same `siblingSelector()`.
+> **Options.** (a) Align both fronts to upstream in one change (selector, reverse-aware margins).
+> (b) Keep emilia's form and document it.
+> **Recommendation.** (a), as a follow-up — not done in this pass because it moves two landed fronts'
+> pinned output together and every example that asserts a divided or spaced list.
+
 ## Front 23 (`00 · 23-std-purity`) — choices made in implementation, to confirm
 
 Decided by the implementation of steps 3 and 5 (worktree `.tasks/23-std-purity`, 2026-09-26) so the

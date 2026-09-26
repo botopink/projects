@@ -276,8 +276,8 @@ Records joined by `"\n"` and tagged `R`/`B`; fields joined by `"\t"`; the `atRul
 - [x] `decodeSheet(encodeSheet(s))` renders identically to `s`, for a sheet carrying two at-rules,
       a non-`&` selector, an important rule and a block. — held: output.bp test "codec — a round trip preserves two at-rules, a non-ampersand selector, important, and a block"
 - [x] `encodeSheet(emptySheet()) == ""` and `decodeSheet("")` is `emptySheet()`. — held: output.bp test "codec — an empty sheet encodes to the empty string and back"
-- [ ] A test walks every front's dispatcher output and asserts no declaration contains `"\n"`,
-      `"\t"` or `"\r"`. This is the assumption the codec rests on, so it is checked, not assumed. — **open:** emilia.bp test "codec — no declaration any dispatcher produces carries a codec separator" walks 14 sample tokens; the leaf walks of fronts 35–45 (and 33's grid) do not assert `carriesSeparator == false`
+- [x] A test walks every front's dispatcher output and asserts no declaration contains `"\n"`,
+      `"\t"` or `"\r"`. This is the assumption the codec rests on, so it is checked, not assumed. — held: emilia.bp test "codec — every walked leaf of fronts 34-46 carries no codec separator" (every front leaf list, >5000 tokens, with a planted-`\n` control)
 
 ### Step 5 — the host cell and the new drain
 
@@ -379,14 +379,14 @@ token surface they use is unchanged.
 **Acceptance:**
 - [x] `emilia(tokens)` still returns `"e_" + hex` and still collapses two identical token lists to
       one class. — held: emilia.bp tests "two emilia sites with the same token list collapse to one class" and "emilia of an empty token list is a stable class that contributes no rule"
-- [ ] `styleRule(tokens, th)._0 == emiliaWith(tokens, th)` for the contract-4 fixture, and
-      `styleRule` leaves the sheet cell empty (a following `flush()` has no `@layer utilities` body). — **open:** `styleRule` does not exist in emilia.bp
+- [x] `styleRule(tokens, th)._0 == emiliaWith(tokens, th)` for the contract-4 fixture, and
+      `styleRule` leaves the sheet cell empty (a following `flush()` has no `@layer utilities` body). — held: emilia.bp test "styleRule — the class emiliaWith returns, and no registration"
 - [ ] `grep -n "hashHex" repository/emilia/modules/emilia/src` is empty; the class name is computed
-      with std's `content_hash.contentHash`, and the contract-4 fixture's hex is unchanged by the switch. — **open:** emilia.bp still declares and calls `hashHex`; no `content_hash.contentHash` import
+      with std's `content_hash.contentHash`, and the contract-4 fixture's hex is unchanged by the switch. — **open:** `hashHex` stays — switching to std's `content_hash.contentHash` is a std import line in `emilia.bp`, which `00 · 23-std-purity` (std's new tree, running in parallel) owns; the switch lands with or after it
 - [x] `flush()` still clears the cell; two consecutive flushes give two independent documents and
       the second has no `@layer utilities` body. — held: emilia.bp test "two consecutive flushes emit two independent documents"
-- [ ] Every rewritten test in `emilia.bp` names the section of `§ 3.2` its expected selector comes
-      from. — **open:** the Hover/Focus/Active/Md-Lg-Xl tests name the variant-table row in prose but cite no `§ 3.2`; the nested-modifier and sibling-rule tests name no row
+- [x] Every rewritten test in `emilia.bp` names the section of `§ 3.2` its expected selector comes
+      from. — held: the Hover, Focus/Active, Md/Lg/Xl, nested-modifier, sibling-rule and conflict-variant tests name their `§ 3.2` row
 - [x] A rule and a variant of the same rule appear in the document in that order. — held: emilia.bp test "conflict — a variant of a rule follows the rule it varies"
 
 ### Step 8 — the conflict rule, written down and tested

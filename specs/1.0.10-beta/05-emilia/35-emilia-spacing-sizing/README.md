@@ -361,7 +361,7 @@ front that is not a `…TokenToCss`, and its header says so.
       `padding:…;& > :not(:last-child){…}` — held (shape: two rules of one class in the rendered document, not one declaration string): test "Space — composing with a Pad token in one list gives two rules, in order"
 - [x] `.Space.X.Neg.2` emits a negative child margin — held: test "Space — a negative child margin, the pull-up form"
 - [ ] the selector this front chose is recorded in the README and verified against upstream before
-      merge — see *Reference gaps* — **open:** `space-*` selector/property unverified against upstream — `emilia.bp:siblingSelector` comment calls it a proposal, and no upstream check is recorded
+      merge — see *Reference gaps* — **open:** verified against upstream `utilities.ts` on 2026-09-26 and it DIFFERS — upstream writes `:where(& > :not(:last-child))` (zero specificity) and sets both `margin-inline-start`/`-end` through `--tw-space-x-reverse`; emilia writes `& > :not(:last-child)` and only the end margin, so `Space.XReverse` sets a variable nothing reads. Aligning moves fronts 35 and 40 together (decisions-pending 05emilia-g)
 - [x] the selector is byte-identical to front 40's `Divide` selector, asserted by a test that
       compares the two outputs — held: test "Divide and front 35's Space emit BYTE-IDENTICAL child selectors" (front 40 block)
 - [x] the `selector` carries exactly one `&`, which front 56 enforces with no opt-out — held (shape: front 56 refuses non-one-`&` VARIANT selectors; the rule selector is pinned by test): test "Space — the sibling selector is one template, with exactly one ampersand"

@@ -266,8 +266,8 @@ must be ticked before the front lands, and asserted in the test file as literals
       deduplicated by header, which front 56 owns and this front asserts. — held (shape: `Sheet.blocks` keeps both; `renderDocument`'s `dedupeBlocks` renders one): `Animate — two tokens naming one animation hoist one block, not two`
 - [x] `animateTokenToSheet` is exhaustive over six leaves with no `_` arm. — held (shape: five leaves; `AnimateRaw` is a top-level arm): `emilia.bp:animateTokenToSheet`
 - [x] The four `--animate-*` theme entries are contributed by this front and named in its `TODO.md`. — held (shape: already in front 54's `animateEntries()` inside `defaultTheme()`; this front cites them, AGENTS.md front 44)
-- [ ] The upstream page has been read, the date recorded in the dispatcher comment, and the
-      `TODO.md` checkbox ticked. — **open:** closed by citing front 54's `keyframeEntries()`; no upstream URL or read date is recorded in `animateTokenToSheet` or `theme.bp`
+- [x] The upstream page has been read, the date recorded in the dispatcher comment, and the
+      `TODO.md` checkbox ticked. — held (shape: the bodies live in front 54's `keyframeEntries()`, which `animateTokenToSheet` reads; the upstream `theme.css` URL and the 2026-09-26 read are in the comment above it, byte-equal once whitespace is removed; no `TODO.md`)
 
 ### Step 5 — two new arms in `tokenToSheet`
 
@@ -363,8 +363,8 @@ What the tests assert:
       `Animate` directly — and no other line of that `case` moved. — held (shape: four arms — the two sections and the two `Raw` variants): `emilia.bp:tokenToSheet`
 - [x] The four `--animate-*` and three `--ease-*` theme entries are contributed to front 54 and no
       literal for them appears in a dispatcher. — held (shape: `--animate-*` were already front 54's; `--ease-*` via `transitionEntries()`, values PROVISIONAL): `regression — no leaf of this front resolves a timing function or an animation`
-- [ ] The keyframes gate is closed: upstream page read, date recorded, `TODO.md` ticked, bodies
-      asserted as literals. — **open:** bodies are asserted as literals (`Animate — the four keyframes bodies, as literals, through the dispatcher`), but no upstream read date is recorded
+- [x] The keyframes gate is closed: upstream page read, date recorded, `TODO.md` ticked, bodies
+      asserted as literals. — held: same comment in `theme.bp` above `keyframeEntries()`; the bodies are asserted as literals
 - [x] `repository/emilia/AGENTS.md` records the two new sections, the `…TokenToSheet` exception and
       the keyframes gate. — held: AGENTS.md front 44 section ("THE KEYFRAMES GATE … WAS ALREADY CLOSED BY FRONT 54")
 - [x] The front's tests are green on its assigned target — here, both `commonJS` and `erlang`,
