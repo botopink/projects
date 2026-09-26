@@ -508,11 +508,11 @@ Create the module (`botopink.json` with `"target": "erlang"`, `src/root.bp`), th
 ### Step 8 — API versioning
 
 **Acceptance:**
-- [ ] `use.header=X-Version` resolves the version from that header
-- [ ] `use.path-segment=1` resolves `/v2/users` to version `2` and matches the route as `/users`
-- [ ] A request with no version gets `apiversion.default`
-- [ ] An unknown version answers 400 naming the known versions
-- [ ] A deprecated version's response carries `Deprecation` and `Sunset`
+- [x] `use.header=X-Version` resolves the version from that header — held: `modules/rakun-web/test/apiversion_test.bp` "use.header resolves the version from that header"
+- [x] `use.path-segment=1` resolves `/v2/users` to version `2` and matches the route as `/users` — held: `modules/rakun-web/test/apiversion_test.bp` "use.path-segment=1 resolves /v2/users to 2 and routes /users"
+- [x] A request with no version gets `apiversion.default` — held: `modules/rakun-web/test/apiversion_test.bp` "a request with no version gets the default"
+- [x] An unknown version answers 400 naming the known versions — held: `modules/rakun-web/test/apiversion_test.bp` "an unknown version answers 400 naming the known versions" (known = `rakun.web.apiversion.supported`; rakun `a476251`)
+- [x] A deprecated version's response carries `Deprecation` and `Sunset` — held: `modules/rakun-web/test/apiversion_test.bp` "a deprecated version carries Deprecation and Sunset"
 
 ### Step 9 — Compression and server identification
 
