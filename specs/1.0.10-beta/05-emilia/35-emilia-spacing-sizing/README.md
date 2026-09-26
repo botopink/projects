@@ -376,7 +376,7 @@ already have theirs. Three of the four go through `declSheet`; `Space` does not.
 - [x] each dispatcher follows the file's `val out = case …; return out;` idiom — held: `padTokenToCss`/`marginTokenToCss`/`sizeTokenToCss`/`spaceTokenToSheet` and every sub-dispatcher
 - [x] every arm is an arrow arm — no block arm anywhere, since a block arm parses but yields no value — held: every arm in the front-35 block of `emilia.bp` is `X -> expr;`
 - [x] the banner `// ── front 35 — spacing and sizing ──` fences the block in both files — held: `tokens.bp:703` and `emilia.bp:3080`, each closed by `// ── end front 35 ──`
-- [x] the two new `tokenToCss` arms sit in front-number order relative to the other fronts' arms — held (shape: pre-existing section arms keep their old slots): `emilia.bp:tokenToSheet` — `Size`/`Space` after `Pad`/`Margin`, before front 36's `Layout`
+- [x] the two new `tokenToCss` arms sit in front-number order relative to the other fronts' arms — held: `tokenToSheet` `// ── front 35 — spacing and sizing` fence between front 33 and front 36
 
 ## Examples
 
@@ -441,6 +441,6 @@ What the tests assert:
 - [x] front 54's `spacing` / `spacingHalf` are the only places `calc(var(--spacing) * N)` is spelled,
       and this front calls them rather than reimplementing them — held: `spacing.bp:spacing`/`spacingHalf` are the only non-test spellings of `calc(var(--spacing) *`
 - [x] the banner fences this front's block in both files, appended at the end — held (shape: block sits in front-number position, not at file end): `tokens.bp:703`, `emilia.bp:3080`
-- [x] two arms added to the top-level `tokenToCss` case, in front-number order — held (shape: pre-existing section arms keep their old slots): `emilia.bp:tokenToSheet` `Size`/`Space` arms
+- [x] two arms added to the top-level `tokenToCss` case, in front-number order — held: same fence
 - [x] `repository/emilia/AGENTS.md` and the `////` header of `tokens.bp` record the new sections — held: `AGENTS.md` front-35 paragraph; `tokens.bp` `////` SECTIONS `Pad`/`Margin`/`Size`/`Space`
 - [x] the front's tests are green on its assigned target — here, both backends, since emilia is comptime — held: emilia suite 569/569 on commonJS and erlang

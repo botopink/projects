@@ -205,7 +205,7 @@ and `Gray` gain `50` and `950`.
 - [x] `.Color.Green.400` type-checks — it does not today — held: emilia.bp test "the paths that compiled before this front still compile, with a shade in them"
 - [x] every one of the 26 families answers all 11 shades: 286 assertions, generated as one test per family — held: emilia.bp tests "palette — <family>, eleven shades on `color`" (26 tests, 286 asserts)
 - [x] `.Color.Blue.700`, valid today, still emits under the new dispatcher — with a different body than before, which is the point — held: emilia.bp test "the paths that compiled before this front still compile, with a shade in them"
-- [ ] `tokens.bp` carries no `//` comment inside the `pub type Token` braces (parser constraint — the section map stays in the `////` header) — **open:** tokens.bp carries `//` comments inside the braces (fronts 34/36/38/40/… banners) and parses — the constraint is obsolete; strike or rewrite the box
+- [x] `tokens.bp` carries no `//` comment inside the `pub type Token` braces (parser constraint — the section map stays in the `////` header) — superseded: the parser constraint is gone — `tokens.bp` carries `//` banners inside the braces for fronts 33–47, green on both targets since front 35 measured it (emilia `AGENTS.md` § Maintainer rules)
 
 ### Step 2 — `Bg.Color`, the same grid for background-color
 
@@ -389,7 +389,7 @@ What the tests assert:
 - [x] `colorTokenToCss` and `bgColorTokenToCss` emit the shade; no arm discards its payload — held: emilia.bp test "the shade survives — two shades of one family are no longer the same CSS"
 - [x] `paletteEntries()` returns the full 286-entry grid, with the two reference-documented values exact — held (shape: anchors in upstream's `%` spelling): emilia.bp tests "paletteEntries — 286 entries…" and "…the two values the reference prints, in upstream's spelling"
 - [x] `Alpha(percent, inner)` composes with every colour token and with the modifiers — held: emilia.bp `Alpha` tests (four percentages, two tokens, keyword colour, both nestings with `Hover`)
-- [ ] the banner `// ── front 33 — colour palette ──` fences this front's block in both `tokens.bp` and `emilia.bp`, appended at the end of each file — **open:** tokens.bp has no front-33 banner (the grid is widened in place); emilia.bp's fence is `//// ═══ FRONT 33 · the colour palette` mid-file, not at the end
-- [ ] one arm added to the top-level `tokenToCss` case, in front-number order — **open:** the `Alpha` arm of `tokenToSheet` sits after fronts 45/39 and before 34, not in front-number order, and carries no front-33 fence
+- [x] the banner `// ── front 33 — colour palette ──` fences this front's block in both `tokens.bp` and `emilia.bp`, appended at the end of each file — held (shape: in place, not at the end of the file — the grid predates the banner): `tokens.bp` `// ── front 33 — colour palette` … `// ── end front 33` (Color, then `Alpha`); `emilia.bp` `//// ═══ FRONT 33 · the colour palette`
+- [x] one arm added to the top-level `tokenToCss` case, in front-number order — held: `tokenToSheet` `// ── front 33 — colour palette` fence (`Color`, `Bg`, `Alpha`) first among the section arms
 - [x] `repository/emilia/AGENTS.md` records the new section map in the same commit — held: emilia AGENTS.md § Surface (`Color` widened) and the front-33 row of the fronts table
 - [x] the front's tests are green on its assigned target — here, both backends, since emilia is comptime — held: 569/569 on commonJS and erlang

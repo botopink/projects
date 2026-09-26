@@ -109,15 +109,15 @@ stays in the ordinary form.
 tokens that use it are the only place this front writes a value the reference does not print.
 
 **Acceptance:**
-- [ ] `svgTokenToCss(.Fill.Current, th)` returns `fill:currentcolor`.
-- [ ] `Token.SvgStroke(value: paletteVar("blue", 500))` **constructs** and its arm returns
+- [x] `svgTokenToCss(.Fill.Current, th)` returns `fill:currentcolor`. — held: test "Svg.Fill / Svg.Stroke — currentcolor and none"
+- [x] `Token.SvgStroke(value: paletteVar("blue", 500))` **constructs** and its arm returns
       `stroke:var(--color-blue-500)` — construction is the check that would have failed against a
-      nested `Svg.Stroke.Color`.
-- [ ] No hex literal appears in any test or example of this front.
-- [ ] No section in this front's `tokens.bp` block contains a payload leaf.
-- [ ] `svgTokenToCss` and its sub-dispatchers are exhaustive with no `_` arm.
-- [ ] The `tokens.bp` docblock records that `currentcolor` is derived from the class suffix, not
-      transcribed.
+      nested `Svg.Stroke.Color`. — held: test "SvgFill / SvgStroke / SvgStrokeWidthRaw — construct and emit" (shade as a string: `paletteVar(family, shade: string)`)
+- [x] No hex literal appears in any test or example of this front. — held: every colour in the tests is `paletteVar(…)`; the walk's control is an `oklch()` string
+- [x] No section in this front's `tokens.bp` block contains a payload leaf. — held: `tokens.bp` front 47 block — leaves only; the three payload variants are top-level
+- [x] `svgTokenToCss` and its sub-dispatchers are exhaustive with no `_` arm. — held: `svgTokenToCss` and its three sub-dispatchers have no `_` arm
+- [x] The `tokens.bp` docblock records that `currentcolor` is derived from the class suffix, not
+      transcribed. — held: `tokens.bp` docblock `Svg —` row
 
 ### Step 2 — `stroke-width`
 
@@ -136,10 +136,10 @@ The value is unitless — `stroke-width:2`, not `2px`. That is what `stroke-widt
 coordinate system and what the class suffix says.
 
 **Acceptance:**
-- [ ] `svgTokenToCss(.StrokeWidth.2, th)` returns `stroke-width:2`, with no unit.
-- [ ] `Token.SvgStrokeWidthRaw(value: "3")` **constructs** and its arm returns `stroke-width:3`.
-- [ ] `.Svg.StrokeWidth.0` and `.Svg.Stroke.None` are two different tokens emitting two different
-      declarations, and a test asserts both so the distinction survives review.
+- [x] `svgTokenToCss(.StrokeWidth.2, th)` returns `stroke-width:2`, with no unit. — held: test "Svg.StrokeWidth — unitless, and zero is not none"
+- [x] `Token.SvgStrokeWidthRaw(value: "3")` **constructs** and its arm returns `stroke-width:3`. — held: test "SvgFill / SvgStroke / SvgStrokeWidthRaw — construct and emit"
+- [x] `.Svg.StrokeWidth.0` and `.Svg.Stroke.None` are two different tokens emitting two different
+      declarations, and a test asserts both so the distinction survives review. — held: test "Svg.StrokeWidth — unitless, and zero is not none"
 
 ### Step 3 — `sr-only` and `not-sr-only` — the gated pair
 
@@ -166,14 +166,14 @@ What the front commits to instead:
 44's transition presets — no new machinery.
 
 **Acceptance:**
-- [ ] The upstream page has been read, the date recorded in the dispatcher comment, and the
-      `TODO.md` checkbox ticked.
-- [ ] `a11yTokenToCss(.SrOnly, th)` is asserted against a literal in the test file.
-- [ ] `sr-only` is a `;`-joined declaration string on the element's own class, **not** a
+- [x] The upstream page has been read, the date recorded in the dispatcher comment, and the
+      `TODO.md` checkbox ticked. — held (shape: read from upstream's `utilities.ts` (`staticUtility('sr-only')`), which is what the docs page renders; the URL and 2026-09-26 are in the `emilia.bp` front 47 banner; no `TODO.md` — the box is this one)
+- [x] `a11yTokenToCss(.SrOnly, th)` is asserted against a literal in the test file. — held: test "A11y.SrOnly / NotSrOnly — upstream's bodies, whole"
+- [x] `sr-only` is a `;`-joined declaration string on the element's own class, **not** a
       `…TokenToSheet` return: it needs no selector outside the class, which is the test contract
-      `§ 4a` sets for that choice.
-- [ ] `.A11y.NotSrOnly` restores every property `.A11y.SrOnly` sets — the two declaration lists name
-      the same properties, checked by reading them side by side, and a test asserts both whole.
+      `§ 4a` sets for that choice. — held: `a11yTokenToCss` answers a string; the arm is `declSheet(a11yTokenToCss(…))`
+- [x] `.A11y.NotSrOnly` restores every property `.A11y.SrOnly` sets — the two declaration lists name
+      the same properties, checked by reading them side by side, and a test asserts both whole. — superseded: upstream's `not-sr-only` restores eight of the nine — it leaves `border-width` — and the front follows upstream; test "A11y.NotSrOnly — restores eight of sr-only's nine properties, as upstream" reads the two lists side by side
 
 ### Step 4 — `forced-color-adjust`
 
@@ -223,8 +223,8 @@ pub type Token {
 ```
 
 **Acceptance:**
-- [ ] `a11yTokenToCss(.ForcedColorAdjust.None, th)` returns `forced-color-adjust:none`.
-- [ ] `a11yTokenToCss` is exhaustive over `SrOnly`, `NotSrOnly` and `ForcedColorAdjust`, with no `_`.
+- [x] `a11yTokenToCss(.ForcedColorAdjust.None, th)` returns `forced-color-adjust:none`. — held: test "A11y.ForcedColorAdjust — the two rows of `§ 19.1`"
+- [x] `a11yTokenToCss` is exhaustive over `SrOnly`, `NotSrOnly` and `ForcedColorAdjust`, with no `_`. — held: `a11yTokenToCss` has no `_` arm
 
 ### Step 5 — five new arms in `tokenToSheet`
 
@@ -240,11 +240,11 @@ and each top-level payload variant needs its own arm.
 ```
 
 **Acceptance:**
-- [ ] The five arms sit after front 46's four and are the last section arms in the `case`, before
-      the variant arms front 34 owns.
-- [ ] Each arm is one `declSheet(...)` call; none builds a `Rule` or a `Sheet` by hand.
-- [ ] Every payload arm destructures by its declared field name (`value`).
-- [ ] `tokenToSheet` still has no `_` arm.
+- [x] The five arms sit after front 46's four and are the last section arms in the `case`, before
+      the variant arms front 34 owns. — held: `tokenToSheet`'s `// ── front 47 — svg and accessibility` fence is the last section fence, right before front 34's
+- [x] Each arm is one `declSheet(...)` call; none builds a `Rule` or a `Sheet` by hand. — held: the five arms are `declSheet(…)`
+- [x] Every payload arm destructures by its declared field name (`value`). — held: `SvgFill(value)`, `SvgStroke(value)`, `SvgStrokeWidthRaw(value)`
+- [x] `tokenToSheet` still has no `_` arm. — held: `tokenToSheet` has no `_` arm
 
 ## Examples
 
@@ -312,19 +312,19 @@ What the tests assert:
 
 ## Definition of done
 
-- [ ] `Svg` and `A11y` exist as top-level sections with **no payload leaf**, fenced by a `front 47`
-      banner in `tokens.bp` and appended after front 46's block.
-- [ ] `Token.SvgFill`, `Token.SvgStroke` and `Token.SvgStrokeWidthRaw` exist as top-level variants
-      with `string` fields, in the same banner.
-- [ ] `svgTokenToCss`, `a11yTokenToCss` and their sub-dispatchers are fenced by a `front 47` banner
-      in `emilia.bp`, appended after front 46's block, and take `th: Theme` per contract `§ 4a`.
-- [ ] Five arms added to `tokenToSheet`, each a `declSheet(...)` call, in front-number order, and no
-      other line of that `case` moved.
-- [ ] No hex literal appears in this front's block or tests.
-- [ ] The `sr-only` gate is closed: upstream page read, date recorded in the dispatcher comment,
-      `TODO.md` checkbox ticked, body asserted as a literal.
-- [ ] The `currentcolor` derivation and the `paletteVar` rule are stated in the `tokens.bp`
-      docblock, not only here.
-- [ ] `repository/emilia/AGENTS.md` records the two new sections and both notes.
-- [ ] The front's tests are green on its assigned target — here, both `commonJS` and `erlang`,
-      because comptime output must not differ between them.
+- [x] `Svg` and `A11y` exist as top-level sections with **no payload leaf**, fenced by a `front 47`
+      banner in `tokens.bp` and appended after front 46's block. — held: `tokens.bp` `// ── front 47 — svg and accessibility` fence after front 46's
+- [x] `Token.SvgFill`, `Token.SvgStroke` and `Token.SvgStrokeWidthRaw` exist as top-level variants
+      with `string` fields, in the same banner. — held: same banner
+- [x] `svgTokenToCss`, `a11yTokenToCss` and their sub-dispatchers are fenced by a `front 47` banner
+      in `emilia.bp`, appended after front 46's block, and take `th: Theme` per contract `§ 4a`. — held: `emilia.bp` `// ── front 47` block after front 46's; `svgTokenToCss(t, th)` / `a11yTokenToCss(t, th)`
+- [x] Five arms added to `tokenToSheet`, each a `declSheet(...)` call, in front-number order, and no
+      other line of that `case` moved. — held: five arms after front 46's fence
+- [x] No hex literal appears in this front's block or tests. — held: walk "front 47 — 11 leaves and two palette payloads well-formed, no resolved colour"
+- [x] The `sr-only` gate is closed: upstream page read, date recorded in the dispatcher comment,
+      `TODO.md` checkbox ticked, body asserted as a literal. — held: see the step-3 boxes
+- [x] The `currentcolor` derivation and the `paletteVar` rule are stated in the `tokens.bp`
+      docblock, not only here. — held: `tokens.bp` docblock `Svg —` / `A11y —` rows
+- [x] `repository/emilia/AGENTS.md` records the two new sections and both notes. — held: emilia `AGENTS.md` "Front 47 owns **SVG and accessibility**"
+- [x] The front's tests are green on its assigned target — here, both `commonJS` and `erlang`,
+      because comptime output must not differ between them. — held: `modules/emilia` 643/643 on commonJS and erlang at the front's landing (+10 inline tests; shape: inline, no `test/svg_a11y_test.bp`)

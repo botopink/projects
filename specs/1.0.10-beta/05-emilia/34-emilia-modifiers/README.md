@@ -267,9 +267,9 @@ sees them before the merge rather than in it.
 - [x] this front contains no string concatenation that builds a `{` or a `}` — wrapping is front 56's — held: emilia.bp test "the walk — this front builds no brace, and every at-rule is an at-rule"
 - [x] `Token.Hover([.Text.Bold])` renders `@media (hover: hover){&:hover{font-weight:bold}}` — held (shape: rendered on a class, `.x:hover`): emilia.bp test "interaction state — the CSS each row renders around one declaration"
 - [x] `Token.Md([.Text.Bold])` emits `@media (width >= 48rem){font-weight:bold}` — held (shape: rendered on a class, `.x{…}`): emilia.bp test "breakpoints, min-width — the CSS each row renders around one declaration"
-- [ ] the five assertions in `src/emilia.bp` are updated, and no sixth assertion anywhere in the
+- [x] the five assertions in `src/emilia.bp` are updated, and no sixth assertion anywhere in the
       repository still expects the old spelling (`grep -R ':hover{' repository/emilia` returns only
-      the new form) — **open:** the assertions are updated, but `grep -R ':hover{'` still hits emilia `README.md:60` (`Token.Hover([Token.ColorRed500]), // :hover{color:#ef4444}`), the old nested form
+      the new form) — held: the assertions are updated, emilia `README.md`'s quickstart now uses the V1 paths, and `grep -R ':hover{'` hits only the new `…:hover{` rule form or comments that describe the pre-56 form as history
 
 ### Step 2 — breakpoints, both directions
 
@@ -303,7 +303,7 @@ has no equivalent of; they are out of scope and named as such in *Reference gaps
 **Acceptance:**
 - [x] `Token.Dark([.Bg.Color.Slate.900])` emits `@media (prefers-color-scheme: dark){background-color:var(--color-slate-900)}` — held: emilia.bp test "end to end — a light background and its dark override, as one document"
 - [x] `Print`, `Portrait`, `Landscape`, `MotionSafe`, `MotionReduce`, `ContrastMore`, `ContrastLess`, `ForcedColors` each emit their reference query — held: emilia.bp test "dark mode and the other media features — the CSS each row renders around one declaration"
-- [ ] `Dark` nests with a breakpoint in both orders and the blocks come out in source order — **open:** only dark-outside-md is pinned ("three deep — `dark:md:hover:`…"); no test nests `Dark` inside a breakpoint
+- [x] `Dark` nests with a breakpoint in both orders and the blocks come out in source order — held: tests "three deep — `dark:md:hover:` comes out in source order" and "`md:dark:` — Dark inside a breakpoint, the breakpoint outermost"
 
 ### Step 4 — state, structural and form variants
 
@@ -365,7 +365,7 @@ per the shared-file convention in `fronts.md`.
       `@media (prefers-color-scheme: dark){@media (width >= 48rem){@media (hover: hover){&:hover{font-weight:bold}}}}` — held: emilia.bp test "three deep — `dark:md:hover:` comes out in source order"
 - [x] a modifier whose inner list is empty produces an empty `Sheet`, which front 56's `declSheet`
       contract already drops — the front states the behaviour and tests it — held: emilia.bp tests "a modifier whose inner list is empty produces an empty sheet, and is dropped" and "an empty modifier beside a real token leaves exactly the real rule"
-- [ ] `tokens.bp` carries no `//` comment inside the `pub type Token` braces — **open:** tokens.bp carries `//` comments inside the braces — this front's own `// ── front 34 — modifiers ──` fence among them — and parses; the constraint is obsolete
+- [x] `tokens.bp` carries no `//` comment inside the `pub type Token` braces — superseded: same — the constraint the box guarded was lifted; the banners inside the braces are green on both targets
 - [x] the modifier block is appended at the end of `tokens.bp`, after every section, matching the
       position the six existing modifiers occupy — held: tokens.bp `// ── front 34 — modifiers ──` … `// ── end front 34 ──` closes `pub type Token`
 
@@ -430,6 +430,6 @@ surface and the regression that the old surface now emits the v4.3 form.
 - [x] the six pre-existing modifiers emit the v4.3 form, and the five affected assertions in
       `src/emilia.bp` are updated in the same commit — held: emilia.bp tests "Hover — the `hover` row is …", "Focus and Active — …", "Md, Lg and Xl — …"
 - [x] the banner `// ── front 34 — modifiers ──` fences this front's block in both files — held: tokens.bp and the `tokenToSheet` arms carry `// ── front 34 — modifiers ──`; the variant fns sit under `//// ═══ FRONT 34 ·`
-- [ ] one arm added to the top-level `tokenToCss` case, in front-number order — **open:** the front-34 block of `tokenToSheet` comes after fronts 38/40/41/44/45/39, not in front-number order
+- [x] one arm added to the top-level `tokenToCss` case, in front-number order — held (shape: the modifier arms follow every section arm, the slot front 47 step 5 fixes for them): `tokenToSheet` `// ── front 34 — modifiers` fence
 - [x] `repository/emilia/AGENTS.md` and the `////` header of `tokens.bp` record the new modifier map — held: AGENTS.md (front-34 paragraph) and tokens.bp `//// MODIFIERS — front 34's table`
 - [x] the front's tests are green on its assigned target — here, both backends, since emilia is comptime — held: 569/569 on commonJS and erlang

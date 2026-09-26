@@ -216,7 +216,7 @@ top-level `case` for `Gradient`; `Bg` already has one.
       this front emits no selector and adds no `…TokenToSheet` — held: every `bg*TokenToCss`/`gradient*TokenToCss` is `(…, th: Theme) -> string`; no `…TokenToSheet`
 - [x] the banner `// ── front 39 — backgrounds ──` fences this front's block in both files — held: `tokens.bp` (inside `Bg`, before `Gradient`) and `emilia.bp` (`bgTokenToCss` arms, `tokenToSheet` arm, main block)
 - [x] the `Bg` sub-sections are appended after front 33's `Bg.Color` block, not interleaved with it — held: `tokens.bp` `Bg` — after `Color` and the legacy leaves
-- [ ] one arm added to the top-level `tokenToCss` / `tokenToSheet` case, in front-number order — **open:** the `Gradient` arm sits after front 45's arms in `tokenToSheet`, not between front 38's and front 40's
+- [x] one arm added to the top-level `tokenToCss` / `tokenToSheet` case, in front-number order — held: `tokenToSheet` `// ── front 39 — backgrounds` fence between front 38 and front 40
 
 ## Examples
 
@@ -284,6 +284,6 @@ What the tests assert:
 - [x] the eight direction phrases are spelled once — held: `emilia.bp:gradientToTokenToCss`
 - [x] the legacy `Bg` leaves emit byte-identical CSS afterwards — held: `the legacy Bg leaves are byte-identical after this front`
 - [x] the banner fences this front's block in both files, appended at the end — held: front 39 blocks close `Bg` and follow front 45 in `tokens.bp`; last block of `emilia.bp`
-- [ ] one arm added to the top-level dispatcher, in front-number order — **open:** `Gradient` arm trails front 45's in `tokenToSheet`
+- [x] one arm added to the top-level dispatcher, in front-number order — held: same fence
 - [x] `repository/emilia/AGENTS.md` and the `////` header of `tokens.bp` record the new sections — held: AGENTS.md front 39 row + § Test surface; `tokens.bp` header `Bg` and `Gradient` entries
 - [x] the front's tests are green on its assigned target — here, both backends, since emilia is comptime — held: `modules/emilia` 569/569 on commonJS and erlang (AGENTS.md § Test surface); `examples/emilia-backgrounds`
