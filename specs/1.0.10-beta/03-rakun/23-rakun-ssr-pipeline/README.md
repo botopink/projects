@@ -150,9 +150,9 @@ nothing in rakun serialises a payload.
       call; the status already on the wire does not change.
 - [ ] A renderer that raises a `nav:` reason (front 63's `notFound()`, say) is answered 500 as a
       failed render, not 404 — a page signal is jhonstart's (decision 117 rule 1).
-- [ ] The whole call runs inside one request scope from front 62, with `setPhase(RequestPhase.Render)`
+- [x] The whole call runs inside one request scope from front 62, with `setPhase(RequestPhase.Render)`
       entered before the renderer and the previous phase restored after its future resolves. A
-      `cookies().set(...)` from inside the renderer raises, per the phase table in `contracts.md § 5`.
+      `cookies().set(...)` from inside the renderer raises, per the phase table in `contracts.md § 5`. — held: `modules/rakun-app/test/ssr_test.bp` "the render runs in phase Render, where a cookie write raises", "the previous phase is restored after a render" (`ssr.bp` `render` sets and restores the phase)
 - [ ] A read of the request's query from the renderer calls `markDynamic("searchParams")`; front
       60's prerenderer with `strict` set then raises instead of marking, which is how a static export
       fails the build.
@@ -197,7 +197,7 @@ table and escaping, the island and hole ordinals, the fill protocol and their ac
       jhonstart's (`render.mjs`).
 - [ ] `rtk proxy grep -rn 'from "jhonstart' repository/rakun/src` and
       `rtk proxy grep -rni 'onze' repository/rakun/src` are both empty — the grep is part of the gate.
-- [ ] `modules/rakun-app/botopink.json` lists neither `jhonstart` nor `emilia`.
+- [x] `modules/rakun-app/botopink.json` lists neither `jhonstart` nor `emilia`. — held: `modules/rakun-app/botopink.json` depends on `rakun` only
 - [ ] A `PageRenderer` registered through `page(pattern, render)` is the only way HTML enters a
       rakun response on the page path; `RenderedPage`, `setPageRender` and `toResponse` are gone from
       `ssr.bp` (decision 114).
