@@ -4,106 +4,48 @@ The front-number → directory map is in [`unification.md`](./unification.md).
 
 The overview says *what* each front delivers; this says *who owns which file*. A front is one
 worktree (`.tasks/<name>`), one branch, one `todo.md`, one owner. Two fronts may run at the same
-time only when they share no source file and no snapshot directory. Two traps in this milestone, both
-handled below and neither by hoping: `repository/emilia/src/tokens.bp`, which eighteen fronts write
-to, and `repository/rakun/src/`, which fourteen fronts write to. A third trap is new: the compiler is
-being changed **while** the libraries are written, by `00-compiler-carry-over` — so the rule that no
-library front touches `repository/botopink-lang/modules/**` is stated first, and the two compiler
-items the libraries cannot be verified without are pulled ahead.
+time only when they share no source file and no snapshot directory. Two traps, both
+handled below and neither by hoping: emilia's `tokens.bp`, which eighteen fronts write to, and
+rakun's core `src/`, which fourteen fronts write to. A third: the compiler changes **while** the
+libraries are written, by `00-compiler-carry-over` — so the rule that no library front touches
+`repository/botopink-lang/modules/**` is stated first.
 
 Paths are relative to the repository named in the section or row.
 
 ## Blocking order
 
 ```
-wave 0    01-std ──────────────────────────────┐   asserts.bp · snapshots.bp · @src() · the
-          (std enablement 01/02/03 as before;  │   old onze dir removed · onze13 → onze rename
-           01 also json writers + json.decode) │
-          01-std/04-routing-lib ───────────────┤   libs/routing: the matcher and the routing
-                                               │   wires rakun 22 and jhonstart 26 import
-          01-std/05-actions-lib ───────────────┤   libs/actions: the action protocol (24 · 67)
-          01-std/06-validation-lib ────────────┤   libs/validation: rakun-validation, moved
+wave 0    01-std ──────────────────────────────┐   asserts · snapshots · mocks · @src() ·
+          std enablement 01/02/03              │   the onze takeover (old onze dir removed,
+          01-std/04-routing-lib ───────────────┤   onze13 → onze)
+          01-std/05-actions-lib ───────────────┤   the bundled routing / actions / validation
+          01-std/06-validation-lib ────────────┤   libraries
                                                │
-wave 1    02-packaging ────────────────────────┤   lands ALONGSIDE each library's first front:
+wave 1    02-packaging ────────────────────────┤   alongside each library's first front:
           modules/<lib>/ · modules/<lib>-test/ │   rakun 04 · jhonstart 94 · emilia 54 · onze 49
-          examples/<project>/ · test-libs      │   (each library's modules.md refines the cut)
-          discovery                            │
+          examples/<project>/ · workspaces     │   (each library's modules.md refines the cut)
                                                ▼
 waves 1–10 03-rakun · 04-jhonstart · 05-emilia · 06-onze  — the levels of § Waves, computed
                                                             from the fronts' `Depends on` lines
 
-beside    00-compiler-carry-over — the open 1.0.5-beta compiler fronts, on their own order;
-          two items PULLED AHEAD of wave 1:
-            · 13-module-identity   (every erlang cell re-runs after it — land it before the
-                                    server fronts have cells to re-run)
-            · @src()               (contract 7: no snapshot test is writable without it; specified
-                                    by 01-std, landed through 00's named carve-out)
-          three surface fronts, one at a time, in this order:
-            · 21-effect-chain → 22-loops → 23-std-purity   (decisions 102–108; 23 opens only
-                                    after 01-std's fronts 01/02/03 merge, because it moves
-                                    their modules)
-          then, alone:
-            · 24-effects-by-return (decisions 118–127: re-cuts what 21 and 22 built; opens
-                                    once 21 is merged or closed; its E7 sweep rewrites every
-                                    library's effect annotations, its E8 every library
-                                    front's examples)
+beside    00-compiler-carry-over — the open compiler items, on their own order
 ```
 
 Why this order and not another: `01-std` first because every `-test` submodule imports
-`std/asserts` and `std/snapshots`, and the `onze` name cannot be taken while the mocking library
-holds it. `02-packaging` second because it is the directory every library front writes *into*; a
+`testing.asserts` and `testing.snapshots`, and the `onze` name cannot be taken while the mocking
+library holds it. `02-packaging` second because it is the directory every library front writes *into*; a
 front that lands before its library's `modules/` tree exists creates files in a path the next commit
-moves. The compiler beside, not ahead: `00` is months of work and the libraries do not wait on all
-of it — they wait on the two items named, which is why those two are listed and the rest is not.
+moves. The compiler beside, not ahead: the libraries do not wait on `00`; a missing compiler feature
+is a row in [`language-gaps.md`](./language-gaps.md) and a workaround.
 
 ## Ownership
 
 ### `00-compiler-carry-over` (`repository/botopink-lang/modules/**`)
 
-Six sub-fronts own paths no 1.0.5 front named. **18-comptime-runtimes** (C-26) owns
-`src/comptime/runtime/**` (`persistent_beam.zig` / `persistent_wat.zig` and the selector), the
-comptime halves of `src/codegen/beam_asm.zig` and `src/codegen/wat.zig`, `src/codegen/snapshot.zig` +
-`src/comptime/snapshot.zig` (directory selection) and the whole of `snapshots/codegen/**` for the
-`{beam,wat}/<target>` re-layout — so it must land its layout step **before** any other `00` item
-re-records a codegen snapshot, or after all of them, never between. **19-use-activation** (C-27) owns
-the `use` rules in `parser.zig` (activation statement, `useAfterBranchGuard`), the `use` functions of
-`comptime/infer.zig`, the `use`-expression lowering arm of each emitter and the `docs.md` section —
-a carve-out of C-08's parser rows and C-01's emitter rows. **20-builtins-surface** (C-28) owns
-`libs/std/src/builtins.d.bp`, `comptime/effect_chain.zig`, the effect-legality checks in `infer.zig`
-and `EffectKind` in `ast.zig`.
-
-Three fronts follow decisions 102–108 and run **one at a time, 21 → 22 → 23** — 21 and 22 both
-rewrite `parser/decls.zig`, `comptime/infer.zig` and the four codegens, and 23 shares
-`parser/decls.zig` with 21. **21-effect-chain** (C-29) owns `libs/std/src/builtins.d.bp`, `ast.zig`'s
-`EffectKind`, `comptime/effect_chain.zig`, the annotation names, `parseAnnotations`' keyword
-acceptance and the post-return label in `parser/decls.zig`, the effect legality and `use` owner rules
-in `comptime/infer.zig`, `comptime/stdlib/prelude.zig`'s `getContext` entry, the name mappings in
-`codegen/{typescript,wat}.zig`, `fnKeyword` in `codegen/commonJS.zig`, `docs.md` § effects /
-generators / use, `comptime/AGENTS.md`, and — through `scripts/known-red-libs.txt` — jhonstart's
-`element.bp`, 36 annotations and 24 wrappers. **22-loops** (C-30) owns `lexer.zig` (`while`), the loop
-forms in `parser/exprs.zig`, the loop typing and generator-scope gating in `infer.zig`, the loop
-lowering of the four codegens, the `while`/`for` printer arms in `format.zig` (a carve-out of 16),
-`docs.md` § loops, the `tests/language` loop cells, and the rakun/jhonstart `loop (` rewrite.
-**23-std-purity** (C-31) owns `parseImportItem` in `parser/decls.zig`, the import binding in
-`infer.zig` and the four `emitUse`, `modules/language-server/src/project_graph.zig` (a carve-out of
-11), `build.zig`'s `stdPkgFilesFromRoot`, `libs/std/src/**` (the tree of decision 106, `root.bp`
-included), `libs/std/AGENTS.md`, `docs.md` § imports / std, and the consumers' `from "std"` lines;
-it opens only after `01-std`'s fronts 01, 02 and 03 have merged, because it moves their modules.
-
-**24-effects-by-return** (C-32) follows decisions 118–127 and runs **alone** among the surface
-fronts — it rewrites what 21 and 22 wrote (`builtins.d.bp`, `EffectKind`, `effect_chain.zig`,
-`parser/{decls,exprs}.zig`, `comptime/infer.zig`, the four codegens) and opens once 21 is merged or
-closed (its README, open point 1). It owns the effect behaviors in `builtins.d.bp`, `EffectKind` and
-the new `AsyncBlock` / `GenLoop` nodes in `ast.zig`, `comptime/effect_chain.zig`, the annotation
-refusals in `parser/decls.zig`, the `async` / `iter` / `stream` prefixes in `parser/exprs.zig`, the
-effect legality, `return` and `await` typing and the `use` gate in `comptime/infer.zig`, the effect
-codes in `comptime/diagnostics.zig`, the effect lowering of the four codegens and
-`codegen/typescript.zig`'s mapping, the three prefix printer arms in `format.zig` (a carve-out of
-16), `docs.md`
-§ Loops / use / Effects / Results / Iterators / Host bindings, E7's signatures in
-`libs/std/src/{async,http}.bp` (shared with `01-std/02` and 23 — below), and, through
-`scripts/known-red-libs.txt`, every effect annotation and wrapper in jhonstart, rakun, emilia, onze
-and erika.
+The surface fronts `19-use-activation`, `20-builtins-surface`, `21-effect-chain`, `22-loops` and
+`24-effects-by-return` are closed; their files belong to the sub-fronts in the table below
+(`builtins.d.bp`, `EffectKind` and `comptime/effect_chain.zig` to 01-checker; each backend's effect
+and loop lowering to that backend; `docs.md`'s sections to their owners).
 
 **The compiler fronts are the only fronts that touch the compiler.** No library front, no packaging
 step and no std front edits a file under `repository/botopink-lang/modules/**` — with one named
@@ -133,28 +75,20 @@ The sub-areas, so that a library front can name the one its gap belongs to:
 | **16-formatter** | `format.zig` · `format/**` · the trivia/member-order fields of `ast.zig` and their fill sites in `parser/decls.zig` | — (inline expectations) |
 | **17-beam-memory** | `parser.zig`'s top-level dispatch (not the `ParseErrorType` enum) · `ast.zig`'s `ValDecl` · two `infer.zig` diagnostics · one emission site per backend · a new `Form` variant in `codegen/beam/erl_ast.zig` | only cells its step 2 makes legal |
 | **18-comptime-runtimes** | `comptime/runtime/**` · the comptime halves of `codegen/{beam_asm,wat}.zig` · `codegen/snapshot.zig`, `comptime/snapshot.zig` · root `build.zig` (the resident step, the wasm build) · `modules/wasm3/**` | `snapshots/codegen/**` (the `{beam,wat}/<target>` re-layout) |
-| **19-use-activation** | the `use` rules in `parser.zig` · the `use` functions of `comptime/infer.zig` · the `useHook` arm of each emitter · `docs.md` § use | the `codegen_use_*` cells |
-| **20-builtins-surface** | `libs/std/src/builtins.d.bp` · `comptime/effect_chain.zig` · the effect-legality checks in `comptime/infer.zig` · `EffectKind` in `ast.zig` | the effect cells of `comptime/tests` and `tests/language` |
-| **21-effect-chain** | `libs/std/src/builtins.d.bp` · `ast.zig`'s `EffectKind` · `comptime/effect_chain.zig` · the annotation names, `parseAnnotations` and the post-return label in `parser/decls.zig` · the effect legality and `use` owner rules in `comptime/infer.zig` · `comptime/stdlib/prelude.zig` (`getContext`) · the name mappings in `codegen/{typescript,wat}.zig` · `fnKeyword` in `codegen/commonJS.zig` · `docs.md` § effects / generators / use · `scripts/known-red-libs.txt` (during the jhonstart sweep) | every snapshot spelling an effect name (≈ 250) |
-| **22-loops** | `lexer.zig` (`while`) · the loop forms in `parser/exprs.zig` · the loop typing and generator scope in `comptime/infer.zig` · the loop lowering of the four codegens · the `while`/`for` printer arms in `format.zig` (carve-out of 16) · `docs.md` § loops · `tests/language`'s loop cells · `scripts/known-red-libs.txt` (during the rakun/jhonstart sweep) | the loop snapshots of four backends |
-| **23-std-purity** | `parseImportItem` in `parser/decls.zig` · the import binding in `comptime/infer.zig` · the four `emitUse` · `modules/language-server/src/project_graph.zig` (carve-out of 11) · `build.zig`'s `stdPkgFilesFromRoot` · `libs/std/src/**`, `libs/std/AGENTS.md` · `docs.md` § imports / std · `scripts/known-red-libs.txt` (during the consumer sweep) | every snapshot carrying a std module name |
-| **24-effects-by-return** | `libs/std/src/builtins.d.bp` · `ast.zig`'s `EffectKind`, `AsyncBlock`, `GenLoop` · `comptime/effect_chain.zig` · the annotation refusals in `parser/decls.zig` · the `async` / `iter` / `stream` prefixes in `parser/exprs.zig` · the effect legality, `return`, `await` and `use` rules in `comptime/infer.zig` · the effect codes in `comptime/diagnostics.zig` · the effect lowering of the four codegens and `codegen/typescript.zig`'s mapping · the prefix printer arms in `format.zig` (carve-out of 16) · `docs.md` § effects / results / iterators / use / loops / host bindings · `libs/std/src/{async,http}.bp` (E7 signatures) · `scripts/known-red-libs.txt` (during the library sweeps) | every snapshot spelling an effect name or an effect's lowering (≈ 930 matches at `0beaa1f9`) |
+| **23-std-purity** (step 6 open) | `parseImportItem` in `parser/decls.zig` · the import binding in `comptime/infer.zig` · the four `emitUse` · `modules/language-server/src/project_graph.zig` (carve-out of 11) · `build.zig`'s `stdPkgFilesFromRoot` · `libs/std/src/**`, `libs/std/AGENTS.md` · `docs.md` § imports / std · `scripts/known-red-libs.txt` (during the consumer sweep) | every snapshot carrying a std module name |
 | **25-gate-perf** (C-33) | `scripts/{gate.sh,check-docs.sh,test-libs.sh,lib/pool.sh}` · the runner `tests/language/run.sh` (not its cells, not `expected-failures.txt`) · `modules/lib-test-runner/**` | none |
 
-Two items are **pulled ahead** of the library waves: `13-module-identity` (its halves 2–3 re-record
-the erlang/beam corpus and change the record representation every server front's erlang cell runs
-against) and `@src()` (contract 7). Everything else in `00` runs beside the libraries on `00`'s own
-order.
+`00` runs beside the libraries on its own order.
 
 ### `01-std` (`repository/botopink-lang/libs/std/` — and one carve-out in the compiler)
 
-The Track A rows below are carried unchanged. `01-std` additionally owns the three files the whole
-test story stands on, and one compiler carve-out.
+`01-std` owns the files the whole test story stands on, the std modules of track A below, and one
+compiler carve-out.
 
 | Front / item | Source it owns | Tests it owns |
 |---|---|---|
-| **asserts** ([`01-std/asserts-api.md`](./01-std/asserts-api.md)) | `libs/std/src/testing/asserts.bp` (expands the existing module; front 95's function table; every existing function byte-unchanged) | inline `test` blocks in `asserts.bp` |
-| **snapshots** ([`01-std/snapshots.md`](./01-std/snapshots.md)) | `libs/std/src/testing/snapshots.bp` (new: `path(loc)`, the `.snap` writer/reader, the `.new` refusal) · its `pub mod` line in `libs/std/src/root.bp` (appended under the F01 rule) | inline `test` blocks in `snapshots.bp`, plus one `__snapshots__/` fixture beside `libs/std/src/` |
+| **asserts** ([`01-std/asserts-api.md`](./01-std/asserts-api.md)) | `libs/std/src/testing/asserts.bp` | inline `test` blocks in `asserts.bp` |
+| **snapshots** ([`01-std/snapshots.md`](./01-std/snapshots.md)) | `libs/std/src/testing/snapshots.bp` (`path(loc)`, the `.snap` writer/reader, the `.new` refusal) | inline `test` blocks in `snapshots.bp`, plus one `__snapshots__/` fixture beside `libs/std/src/` |
 | **`@src()`** ([`01-std/src-builtin.md`](./01-std/src-builtin.md)) | the `SourceLocation` record and `@src` entry in `libs/std/src/builtins.d.bp`; **by carve-out from `00`**: the builtin's typing site in `comptime/infer.zig` and the literal lowering in each of the four backends — named file by file in `src-builtin.md`, granted in `00`'s README before the work opens | one `tests/language/` cell per backend (coordinated with `00 · 12-language-tests`, which owns that directory) |
 | **old `onze` removal + `onze13 → onze`** | `repository/onze/**` (the mocking library — removed; its assertions live in `asserts.bp` from this milestone on) · every `onze13` in a directory name, an `**Owns:**` line or a manifest under `specs/1.0.10-beta/**` (the history rows of `unification.md` and the carried front 95 excepted) | `grep -rl onze13 repository` answers nothing |
 
@@ -162,9 +96,9 @@ test story stands on, and one compiler carve-out.
 
 | Front | Source it owns | Tests it owns |
 |---|---|---|
-| **F01 std-lib-enablement** | `src/net.bp`, `src/process.bp`, `src/path.bp`, `src/clock.bp`, `src/random.bp`, `src/regex.bp`, `src/encoding.bp`, `src/hmac.bp`, `src/escape.bp` (with `scriptJson`), `src/root.bp` (exports only) · `src/json.bp`'s additions only — `quote`, `unquote`, `array`, `object`, `Json` and `decode`, at the foot; `parse` / `stringify` untouched (decisions 116, 117) | inline `test` blocks at the foot of each `src/*.bp` it owns |
+| **F01 std-lib-enablement** | `src/io/net.bp`, `src/io/process.bp`, `src/path.bp`, `src/io/clock.bp`, `src/io/random.bp`, `src/regex.bp`, `src/encoding.bp`, `src/hash.bp` (HMAC), `src/escape.bp` (with `scriptJson`) · `src/json.bp`'s additions — `quote`, `unquote`, `array`, `object`, `Json` and `decode`; `parse` / `stringify` untouched (decisions 116, 117) | inline `test` blocks at the foot of each file it owns |
 | **F02 std-async-primitives** | `src/async.bp` | inline `test` blocks in `src/async.bp` |
-| **F03 std-content-hash** | `src/content_hash.bp` | inline `test` blocks in `src/content_hash.bp` |
+| **F03 std-content-hash** | `contentHash` in `src/hash.bp` | inline `test` blocks in `src/hash.bp` |
 
 The bundled `routing` library is `01-std`'s too, in its own directory beside `libs/std/` (decision
 115). Its directory number is its index inside `01-std`, not a milestone front number (front 04 is
@@ -179,26 +113,12 @@ rakun's erlang runtime):
 The bundled libraries ship `.bp` files only: target-native code is an inline `#[@External]`
 template, and no `.erl` / `.mjs` sidecar exists under `libs/` (decision 117).
 
-`src/root.bp` is the one shared file in track A. F01 owns it; F02 and F03 hand F01 their export
-lines rather than editing it, and F01 lands last of the three.
-
-Nineteen of the fifty primitives the milestone needs already exist — `path.bp` is a complete posix
-calculator, `regex.bp` wraps `re:run/3`, `crypto.bp` has SHA-256/512 and HMAC-SHA256, `time.bp` has
-both clocks and RFC-3339 formatting, `base64.bp` has the url-safe alphabet. Front 01 **extends**
-those files rather than shipping parallel copies beside them, which is why they appear in its
-ownership row. Seven absences block the milestone: no socket at all, no directory walk, no child
-process, no percent-encoding, no constant-time compare, no base64url of a raw digest, and no HTML
-escaping.
+`src/root.bp` (and `io/mod.bp`, `testing/mod.bp`) list the std modules (decision 106); a front
+that adds a module appends its `pub mod` line.
 
 std tests are **inline**, not in `test/`: `test/` compiles against the ambient global environment
 with no module import path (`libs/std/AGENTS.md`), so a file there cannot reach the module it would
 be testing. Every std test sits in a `test` block at the foot of its own `src/*.bp`.
-
-`libs/std/src/root.bp` has **two** appenders beyond F01 in this milestone: `snapshots` (01-std) and
-nothing else — F02 and F03 hand F01 their lines, and `snapshots` is appended by 01-std under the
-same rule. Fronts 01, 02 and 03 land their files **flat** at `src/<name>.bp`; the tree of decision
-106 (`io/`, `testing/`, the `collections` / `hash` / `encoding` merges) is `00 · 23-std-purity`'s
-`git mv` after all three merge.
 
 ### `02-packaging` (every repository, structurally) — [`02-packaging/README.md`](./02-packaging/README.md)
 
@@ -212,7 +132,7 @@ shape and the discovery mechanism that finds it.
 | **emilia tree** | `repository/emilia/botopink.json` · `modules/emilia/{botopink.json,src/root.bp}` · `modules/emilia-test/{botopink.json,src/root.bp}` (skeleton; F33's snapshot helper is the first content) · the moves `src/{tokens,emilia}.bp → modules/emilia/src/` | inline tests green at the new paths |
 | **onze tree** | `repository/onze/botopink.json` (`"name": "onze"`, the five submodules) · `modules/{onze,onze-test,onze-cli,onze-bundler,onze-assets,onze-release}/{botopink.json,src/root.bp}` skeletons — F49 owns the *content* of `modules/onze/src/**` | `zig build test-libs` does not red on the empty modules |
 | **examples** | `repository/<lib>/examples/<project>/botopink.json` for every example project that exists today (`rakun/examples/rakun`, `jhonstart/examples/{jhonstart-app,jhonstart-counter,jhonstart-html,jhonstart-todo}`, `emilia/examples/emilia-card`) — re-pointed from `"git"` + `"branch": "feat"` to the **path form** so the example builds against the checkout; `examples/README.md` per library | each example compiles under `zig build test-libs` on its declared target |
-| **discovery** | `repository/botopink-lang/scripts/test-libs.sh` (the `BOTOPINK_LIB_ROOTS` it exports: every `repository/<lib>/modules` and `repository/<lib>/examples`) · `repository/botopink-lang/scripts/known-red-libs.txt` (rows for the cells that go red at their new paths, each naming its front) · **by carve-out from `00 · 10-cli-residuals`**: `modules/lib-test-runner/src/discovery.zig`'s nested discovery, if the env route proves insufficient (README § Discovery states both routes and which is preferred) · `docs/botopink-json.md` (absent from this checkout — written here, documenting the object form of `dependencies`) | `modules/lib-test-runner/src/discovery.zig`'s unit tests for the nested case; `tests/cli_contract.sh` unchanged |
+| **discovery** | `repository/botopink-lang/scripts/test-libs.sh` (the `BOTOPINK_LIB_ROOTS` it exports: every `repository/<lib>/modules` and `repository/<lib>/examples`) · `repository/botopink-lang/scripts/known-red-libs.txt` (rows for the cells that go red at their new paths, each naming its front) · **by carve-out from `00 · 10-cli-residuals`**: `modules/lib-test-runner/src/discovery.zig`'s nested discovery, if the env route proves insufficient (README § Discovery states both routes and which is preferred) · `docs/botopink-json.md` (the object form of `dependencies`, workspaces) | `modules/lib-test-runner/src/discovery.zig`'s unit tests for the nested case; `tests/cli_contract.sh` unchanged |
 | **`AGENTS.md`** | every `AGENTS.md` of a directory it moves (`repository/{rakun,jhonstart,emilia,onze}/AGENTS.md`, `src/AGENTS.md` where present) — in the same commit as the move | — |
 
 `02-packaging` moves directories and edits manifests. It does not rewrite behaviour in any library,
@@ -222,7 +142,7 @@ it.
 
 ### Track B — rakun (`repository/rakun/`) — `03-rakun/`
 
-Rows carried as written in 1.0.9: rakun-core paths read `src/…` because that is where the core lives at HEAD. `02-packaging` adds `modules/rakun/` as a re-exporting core and [`03-rakun/modules.md`](./03-rakun/modules.md) decides when the core files move under it; when they do, the rakun agent re-points these rows and the *Module* column, and this file follows. The `modules/rakun-*` paths are already final. A `src/…` path in a row is relative to the member its *Module* column names (`rakun-core` is `modules/rakun/`); fronts 22–25, 60, 61, 63 and 66 read `rakun-app` — the member front 95 created when it relocated 22's `file_router.bp` and 23's `ssr.bp` out of the core (`03-rakun/modules.md` § The cut).
+A `src/…` path in a row is relative to the member its *Module* column names (`rakun-core` is `modules/rakun/`); fronts 22–25, 60, 61, 63 and 66 read `rakun-app`, the member holding 22's `file_router.bp` and 23's `ssr.bp` ([`03-rakun/modules.md`](./03-rakun/modules.md) § The cut).
 
 | Front | Module | Source it owns | Tests it owns |
 |---|---|---|---|
@@ -236,7 +156,7 @@ Rows carried as written in 1.0.9: rakun-core paths read `src/…` because that i
 | **F11 actuator** | rakun-actuator | `modules/rakun-actuator-api/src/**`, `modules/rakun-actuator-api/test/**` · `modules/rakun-actuator/src/*.bp`, `modules/rakun-actuator/src/sidecars/rakun_actuator.erl`, `modules/rakun-actuator/test/**` | `modules/rakun-actuator/test/**` |
 | **F12 cache** | rakun-cache | `modules/rakun-cache/src/**`, `modules/rakun-cache/test/**` | `modules/rakun-cache/test/**` |
 | **F13 http-clients** | rakun-client | `modules/rakun-client/src/**`, `modules/rakun-client/test/**` | `modules/rakun-client/test/**` |
-| **F14 validation** | rakun-core | landed as `modules/rakun-validation`; the library moves to the bundled `libs/validation` (`01-std/06-validation-lib`, decision 116) and this front's Step 7 deletes the member, moves `boot.bp` to `src/config_check.bp` with `test/config_check_test.bp`, and sets the message source at boot | `test/config_check_test.bp` |
+| **F14 validation** | rakun-core | `modules/rakun-validation`, whose library moves to the bundled `libs/validation` (`01-std/06-validation-lib`, decision 116) and this front's Step 7 deletes the member, moves `boot.bp` to `src/config_check.bp` with `test/config_check_test.bp`, and sets the message source at boot | `test/config_check_test.bp` |
 | **F15 messaging** | rakun-messaging | `modules/rakun-messaging/src/**`, `modules/rakun-messaging/test/**` | `modules/rakun-messaging/test/**` |
 | **F16 scheduling** | rakun-scheduling | `modules/rakun-scheduling/src/**`, `modules/rakun-scheduling/test/**` | `modules/rakun-scheduling/test/**` |
 | **F17 logging** | rakun-logging | `modules/rakun-logging/src/**`, `modules/rakun-logging/test/**` | `modules/rakun-logging/test/**` |
@@ -424,7 +344,6 @@ files by design and are made disjoint by the banner convention above.
 
 | Pair | Shared file | Resolution |
 |---|---|---|
-| F01 · F02 · F03 | `libs/std/src/root.bp` | F01 owns it; F02 and F03 land first and hand F01 their export lines |
 | F07 · F20 | `modules/rakun-web/` | F07 owns `src/*.bp`; F20 owns `src/websocket/**` only and adds no arm to F07's chain |
 | F08 · F09 | `modules/rakun-data/` | F08 owns `src/sql/**` and `datasource.bp`; F09 owns `src/nosql/**` and consumes `datasource.bp` read-only |
 | F22 · F23 · F24 · F25 | `repository/rakun/src/` | One file each, named in the table; none reads another's internals, all four go through `context` from F06 |
@@ -443,19 +362,11 @@ files by design and are made disjoint by the banner convention above.
 | F56 | the `flush`/`register` half of `emilia/src/emilia.bp` | Fenced under its own banner. F33–F48 append sub-dispatchers; F56 rewrites the emitter they feed |
 | F53 | everything, read-only | Consumes all fronts, writes only under `examples/blog/` |
 | F95 → `02-packaging` | every repository, structurally | Cross-cutting: directory moves, `botopink.json` edits and empty `modules/<lib>-test/` skeletons only. Its std/asserts half moved to `01-std`. The restructure of a library lands **alongside that library's first front** (04 for rakun, 94 for jhonstart, 54 for emilia, 49 for onze), so no front creates files in an old path; `02-packaging` sequences before 49 because 49 creates files in the `modules/onze/` tree it establishes |
-| `01-std` · `02-packaging` | `repository/onze/` | `01-std` removes the old mocking library (its assertions are now `std/asserts`); `02-packaging` creates the orchestrator tree under the same path. The removal lands first; the two never hold the directory at the same time |
-| `00` · `01-std` | the compiler files of `@src()` | `@src()` is a builtin: `01-std` specifies it and lands it through a **named carve-out** of `00`'s files (the builtin table in `comptime/`, the four backends' lowering of a `SourceLocation` literal). `00` grants the carve-out in its README or `@src()` does not open; `00`'s other rows do not wait on it |
+| `01-std` · `02-packaging` | `repository/onze/` | `01-std` removes the old mocking library (its assertions are `testing.asserts`, its mocks `testing.mocks`); `02-packaging` creates the orchestrator tree under the same path. The removal lands first; the two never hold the directory at the same time |
+| `00` · `01-std` | the compiler files of `@src()` and the bundled-package registry | `01-std`'s two **named carve-outs** of `00`'s files (the `@src()` builtin and its lowering; the bundled-package registry in `build.zig`) |
 | `00` · every library track | `repository/{emilia,erika,jhonstart,onze,rakun}/**` | 1.0.5's `09-ecosystem-residuals` owned the library trees. Here it does not: the trees are tracks B–E's. `09` keeps `repository/erika/**` (no track) and the meta submodule pointers, and its "re-run every library's erlang cell after 13" is an exit-gate step, run by each track after `00 · 13-module-identity` lands |
-| `00 · 13-module-identity` · every erlang front | the erlang/beam emitters, ≈318 re-recorded cells | No shared file, but every server front's erlang cell re-runs after 13 (the module atom and the record representation change under it). A server front that lands before 13 re-verifies after; one that lands after never sees the old shape. This is why 13 is **pulled ahead** |
-| `00 · 21-effect-chain` · `00 · 22-loops` · `00 · 23-std-purity` · `00 · 24-effects-by-return` · `00 · 15` / `16` / `01` / `04` and the backend fronts | `parser/{decls,exprs}.zig`, `lexer.zig`, `format.zig`, `comptime/infer.zig`, the four codegens | 21 and 22 rewrite the parser and every codegen, 23 the import path through parser, checker, codegens and the LSP: they run **one at a time, 21 → 22 → 23**, then **24 alone**, and never beside 15-language-surface, 16-formatter, 01-checker or a backend front. The `format.zig` printer arms are 16's carve-out to 22; `project_graph.zig` is 11's carve-out to 23 |
-| `00 · 23-std-purity` · `01-std` | `libs/std/src/**`, `root.bp`, `build.zig`'s `stdPkgFilesFromRoot` | 23 moves the modules fronts 01/02/03 land flat; it opens only after all three are merged, and `libs/std/src/**` is 23's from then until it lands |
-| `00 · 23-std-purity` · `01-std/04-routing-lib` | `build.zig`'s package registry, the `emitUse` of each backend, the CLI resolver's `"std"` exemption | routing-lib's bundling step is a **named carve-out** of `00`'s files, granted like `@src()`'s, and opens after 23 lands; its library steps (`libs/routing/**`) share nothing and run from wave 0 |
-| `01-std/04-routing-lib` · `05-actions-lib` · `06-validation-lib` | the bundled-package list in `build.zig` | 04 introduces the list (`std`, `routing`); 05 and 06 each add one name after 04's Step 2, under the same carve-out; their `libs/<name>/**` share nothing |
-| `00 · 23-std-purity` · F01's JSON steps | `libs/std/src/json.bp`, `escape.bp` | the writers, `scriptJson` and `json.decode` (decision 117, folded into F01) land before 23 opens or after 23 lands, never while 23 holds `libs/std/src/**`; both files keep their root path through the move |
-| `00 · 21` / `22` / `23` · `03-rakun` · `04-jhonstart` · every `-test` member | jhonstart's context-annotation and `@Context<B, R>` sites (21), rakun's and jhonstart's `loop (` sites (22), every `from "std"` line (23) | Each is a named sweep landed through `scripts/known-red-libs.txt`: the compiler commit lands with the library in the ledger, the library sweep follows, the ledger line is deleted in the next compiler commit — adjacent commits, never a standing red |
-| `00 · 24-effects-by-return` · `00 · 21-effect-chain` · `00 · 22-loops` | `builtins.d.bp`, `EffectKind`, `effect_chain.zig`, `parser/{decls,exprs}.zig`, `comptime/infer.zig`, the four codegens, the effect / generator / loop cells | 24 re-cuts 21's generators and use annotation and 22's annotated loop: it opens after 21 is merged into `feat` or closed unmerged (the maintainer's call, 24's open point 1), never while 21 holds a worktree; 22 has landed and 24 re-keys its annotated-loop lowering to `GenLoop` |
-| `00 · 24-effects-by-return` · `01-std` · `00 · 23-std-purity` | `libs/std/src/async.bp`, `http.bp` | 24's E7 respells `std/async` and `std/http` to `@Task`; `01-std/02-std-async-primitives` owns `async.bp`'s behaviour and 23 moves `http.bp` to `io/`: E7's signature commit lands after 02 merges and before or after 23 holds `libs/std/src/**`, never during |
-| `00 · 24-effects-by-return` · `03-rakun` · `04-jhonstart` · `05-emilia` · `06-onze` · `01-std` · `02-packaging` | every effect annotation and wrapper in the libraries (E7); every library front's examples (E8) | the libraries' sources through `scripts/known-red-libs.txt` as 21/22's sweeps; the spec examples are rewritten by 24's codemod in E8 — E8 has rewritten every library front's examples, so a library front that lands after it writes the new spelling |
+| `00 · 13-module-identity` · every erlang front | the erlang/beam emitters | No shared file; a change to the module atom or the record representation re-runs every server front's erlang cell |
+| `01-std/04-routing-lib` · `05-actions-lib` · `06-validation-lib` | the bundled-package list in `build.zig` | the list holds `std`, `routing`, `actions`, `validation`; a new bundled library adds its name under the same carve-out; their `libs/<name>/**` share nothing |
 
 
 ## Who may run together — section level
@@ -474,23 +385,19 @@ above applies.
 | **05 emilia** | seq³ | yes | seq⁶ | yes | no⁹ | — | seq⁸ |
 | **06 onze** | seq³ | seq⁵ | seq⁶ | seq⁸ | seq⁸ | seq⁸ | — |
 
-1. `@src()`: `01-std` specifies it and lands it in `00`'s files by carve-out. Sequence: `00` grants
-   the carve-out in its README, `01-std` lands the builtin, `00`'s owning sub-fronts (01-checker and
-   the four backends) re-verify their corpus after. The other shared files are `libs/std/src/**`
-   and `root.bp`, which `00 · 23-std-purity` takes over once `01-std`'s fronts 01/02/03 have merged
-   (§ Ownership).
+1. `01-std` works in `00`'s files only through its two named carve-outs (`@src()`, the
+   bundled-package registry); `libs/std/src/**` is shared with `00 · 23-std-purity` (step 6)
+   and `00 · 01-checker` (`builtins.d.bp`).
 2. `02-packaging` needs `modules/lib-test-runner/src/discovery.zig` only if the `BOTOPINK_LIB_ROOTS`
    route in `scripts/test-libs.sh` proves insufficient; if it does, that is a carve-out of
    `00 · 10-cli-residuals`, granted the same way as note 1.
-3. A library compiles against the compiler: no shared file, but every library's erlang cells re-run
-   after `00 · 13-module-identity`, every `format --check` row re-runs after `00 · 16-formatter`, and
-   `00 · 21` / `22` / `23` / `24` each rewrite library sources in a named sweep (jhonstart's effect
-   annotations, the `loop (` sites, the `from "std"` lines, every library's effect annotations and
-   wrappers) through `scripts/known-red-libs.txt`.
-   The order is *13 first*, which is why it is pulled ahead.
+3. A library compiles against the compiler: no shared file, but a compiler change that rewrites
+   library sources lands as a named sweep through `scripts/known-red-libs.txt` — the compiler commit
+   with the library in the ledger, the library sweep next, the ledger line deleted in the next
+   compiler commit; never a standing red.
 4. `repository/onze/`: `01-std` removes the mocking library, `02-packaging` creates the orchestrator
    tree at the same path. Removal first; never both in flight.
-5. Every `-test` submodule imports `std/asserts` and `std/snapshots`, and every server front imports
+5. Every `-test` submodule imports `testing.asserts` and `testing.snapshots`, and every server front imports
    what front 01 adds to std. `01-std` lands first (wave 0); after that the tracks read std and never
    write it — a std need is a row handed to F01, not an edit.
 6. `02-packaging` establishes the tree a library's fronts write into; the library's **first** front
@@ -503,7 +410,7 @@ above applies.
    application — a library's own examples use that library only, with no dev-dependency on another
    (decision 114); front 53 consumes everything read-only. No shared file; the waves carry the order.
 9. Front 48's `html_attrs.bp` (note 7), and the shared literal of contract 4 asserted on both sides
-   (emilia `test/attributes_test.bp`, the `jhonstart-emilia` bridge test of F30, onze 68) — regenerated once when 56 lands.
+   (emilia `test/attributes_test.bp`, the `jhonstart-emilia` bridge test of F30, onze 68).
 
 ## Waves
 
@@ -514,9 +421,7 @@ seven corrections of its `modules.md`), [`05-emilia/README.md`](./05-emilia/READ
 [`04-jhonstart/README.md`](./04-jhonstart/README.md) and
 [`06-onze/README.md`](./06-onze/README.md) — lifted here by the cross-track edges, which a
 track-internal level cannot see: a track level is a lower bound, and this table is the milestone
-level. `00-compiler-carry-over` runs beside every wave (its own order is in its README), with
-`13-module-identity` and `@src()` pulled ahead of wave 1 because the erlang fronts and the snapshot
-tests respectively cannot be verified without them.
+level. `00-compiler-carry-over` runs beside every wave (its own order is in its README).
 
 Three `Depends on` pairs are mutual and would make the graph cyclic; each is resolved by the
 citation rule below and the resolution is recorded here rather than left to the reader: **24 ↔ 67**
@@ -530,7 +435,7 @@ land in wave 1; the wave below is its host half, which is what the fronts citing
 
 | Wave | Fronts | Blocked by |
 |---|---|---|
-| **0** | 01 · 02 · 03 · 54 · 94 · `02-packaging` (was 95) · `01-std`'s asserts/snapshots/`@src()` · `01-std/04-routing-lib` · `05-actions-lib` · `06-validation-lib` (the libraries) | nothing — except `@src()`, which needs `00`'s carve-out granted, and the bundling steps of 04 / 05 / 06, which wait on `00 · 23-std-purity` (05 also waits on F01's `encoding`, JSON writers and `json.decode`) |
+| **0** | 01 · 02 · 03 · 54 · 94 · `02-packaging` · `01-std`'s asserts/snapshots/`@src()` · `01-std/04-routing-lib` · `05-actions-lib` · `06-validation-lib` | nothing |
 | **1** | 04 · 05 · 26 · 56 | 01 · 54 · 94 · routing-lib |
 | **2** | 06 · 22 · 27 · 28 · 33 · 34 · 35 · 55 · 57 · 58 · 62 · 74 · 80 | 04 · 05 · 26 · 56 · routing-lib |
 | **3** | 07 · 08 · 11 · 13 · 14 · 15 · 19 · 21 · 23 · 29 · 31 · 32 · 36 · 37 · 38 · 39 · 40 · 41 · 42 · 43 · 44 · 45 · 46 · 47 · 59 · 72 | 06 · 22 · 28 · 33 · 34 · 35 · 62 |
@@ -591,10 +496,9 @@ The milestone closes when, on `feat`, all of the following hold at once:
 - every front's own test file green on **its assigned target** — erlang for the server fronts, js
   for the client fronts, both for the boundary fronts named in their READMEs and for track A
 - no server front carries a **new** `@External.Node` cell, and no client front carries an
-  `#[@external(erlang)]` cell; the target split in the overview is checked, not assumed. Two things
+  `#[@External.Erlang]` cell; the target split in the overview is checked, not assumed. Two things
   are not violations: an **explicit refusal cell** — a host cell that exists only to return an error
-  naming the target it does not serve, as std's `io.net` does on commonJS — and the **seventeen
-  pre-existing Node forms in `rakun/src/runtime.bp`** until front 04 closes, when they leave with
+  naming the target it does not serve, as std's `io.net` does on commonJS — and the **pre-existing Node forms in rakun's `modules/rakun/src/runtime.bp`** until front 04 closes, when they leave with
   `runtime.mjs` (decision 113)
 - every erlang sidecar is named `src/sidecars/rakun_<name>.erl`, and no `.mjs` file exists in a
   server front
@@ -607,9 +511,7 @@ The milestone closes when, on `feat`, all of the following hold at once:
   have a BEAM path during implementation gets a front, not a silent carry-forward
 - no `__snapshots__/**/*.snap.new` file exists in any repository — a `.new` is a snapshot nobody
   accepted (contract 7), and it is never committed
-- `botopink format --check` is clean in every library, submodule and example — the three
-  `examples/jhonstart-app` files the formatter refuses today are either rewritten or `00 · 16-formatter`
-  has landed the fix, and the gate does not pass with the refusal in place
+- `botopink format --check` is clean in every library, submodule and example
 - every library's `modules.md` ownership table and this file agree row for row — the per-lib file is
   the source; a row that differs here is corrected here
 - `00-compiler-carry-over`'s own gate (`scripts/gate.sh --cold` in `repository/botopink-lang`) is

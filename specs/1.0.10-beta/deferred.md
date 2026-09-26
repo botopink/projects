@@ -40,7 +40,7 @@ exist first, so that a later milestone can pick it up rather than rediscover it.
 | `turbopack` config / `--webpack` | `§ 2`, `§ 28`, `§ 29` | Configuration for two bundlers, neither of which exists here | As above | As above |
 | `transpilePackages` | `§ 28` | Transpiles npm dependencies published as untranspiled ESM; botopink libraries are compiled from source already | An npm-interop story for client-side botopink libraries | 1.0.11+ if npm interop becomes a goal |
 | `serverExternalPackages` | `§ 28` | Marks Node native modules to keep out of the server bundle. The BEAM server has no npm graph to exclude from. | A Node-side server, which this architecture rejects | Never under this architecture |
-| `reactCompiler: true` | `§ 28` | An auto-memoizing compiler pass. This milestone forbids compiler changes, and `#[@external]` plus comptime cannot rewrite call sites. | A language-gap spec and a compiler milestone | 1.1.x, as a compiler front — not a library front |
+| `reactCompiler: true` | `§ 28` | An auto-memoizing compiler pass. Library fronts make no compiler changes, and `#[@External]` plus comptime cannot rewrite call sites. | A language-gap spec and a compiler milestone | 1.1.x, as a compiler front — not a library front |
 | CSS-in-JS runtime (styled-components) | `§ 15` | A JS-runtime style-injection library plus a Babel plugin; both are npm artefacts with no botopink counterpart | An npm-interop story | Unlikely — `emilia` is the answer. Only the server-insertion seam is ported, as front 69 |
 | SWR / React Query client cache | `§ 9` | Third-party npm libraries; nothing here provides an npm dependency path for the client half | Front 68 plus npm interop for client bundles | 1.0.11+, or replaced by a small native client cache |
 | `next telemetry` | `§ 29` | Vendor usage reporting to one company's endpoint | Nothing — a product decision, not a technical one | Never |
@@ -68,14 +68,14 @@ path in a comptime library whose token set is closed and typed.
 | One static `.css` file per build | `§ 1`, `§ 2.3` | `flush()` is per-render by contract; a static file needs a stage that runs once | The same `onze build` CSS stage | Front 50 or later |
 | Tree-shaking unused theme values | `§ 3.5` | Requires knowing the whole program's token usage | Whole-program aggregation, as above | As above |
 | `@custom-variant` bodies using `@slot` | `§ 20.3`, `§ 20.7` | `@slot` is CSS-in-CSS templating; the botopink equivalent — a function over `Token[]` — covers the intent but not the literal syntax | Nothing. Recorded so that "we did not implement `@slot`" is a decision rather than an oversight | Closed by front 59's function form |
-| Arbitrary values validated against CSS grammar | `§ 3.1` | emilia can splice any string but cannot tell a valid `calc()` from a typo | A comptime CSS value parser | Front 57 ships refuse-on-`}`/`<` safety now; full validation waits on a parser |
-| `color-mix()` / P3 fallback chains | not in doc | Emitting the colours is easy; a correct fallback cascade needs front 56's `@supports` hoisting plus an OKLCH→sRGB converter | Front 56, plus the converter | After 56 lands. The single-value form is already a fold-in to front 33 |
+| Arbitrary values validated against CSS grammar | `§ 3.1` | emilia can splice any string but cannot tell a valid `calc()` from a typo | A comptime CSS value parser | Front 57 refuses `}` and `<`; full validation waits on a parser |
+| `color-mix()` / P3 fallback chains | not in doc | Emitting the colours is easy; a correct fallback cascade needs front 56's `@supports` hoisting plus an OKLCH→sRGB converter | An OKLCH→sRGB converter (front 56's `@supports` hoisting exists) | When the converter exists. The single-value form is front 33's |
 | Automatic vendor prefixing | implied by `§ 2.2` | Tailwind delegates this to PostCSS; emilia has no plugin pipeline | A PostCSS-style transform stage | Only if a browser-support matrix is ever declared; hand-written prefixes cover today's needs |
 
 ## Deferred — ecosystem
 
 Rows produced by the package restructure itself, not by a reference document. The mocking surface
-is not deferred: it is `std/mocks` (decision 71; `testing.mocks` under decision 106).
+is not deferred: it is `testing.mocks` (decisions 71 and 106).
 
 | Feature | Source | Why it is not re-homed now | What would have to exist first | Revisit |
 |---|---|---|---|---|
@@ -105,8 +105,7 @@ Not runtime or authoring features at all. Listed so the audit is closed rather t
 Two things.
 
 First, so that "we did not do X" is a recorded decision with a reason, rather than something a
-reader has to infer from absence. An audit that finds 152 gaps and reports 22 fronts owes an account
-of the other 130.
+reader has to infer from absence.
 
 Second, so that the exit gate in [`fronts.md`](./fronts.md) can be honest. A milestone claiming
 Spring Boot 4, Next.js and Tailwind CSS parity is making a checkable claim only if the exceptions
