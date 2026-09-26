@@ -192,12 +192,12 @@ the package, so "the value of `slug`, or the empty string" cannot mean two diffe
 duplicated key.
 
 **Acceptance:**
-- [ ] each accessor returns `""` for an absent key and never raises
-- [ ] `pairValue` is imported from front 26's `router` module; this file defines no decoder of its own
-- [ ] no field of `RequestData` shares a name with one of its methods
-- [ ] `RequestData` is constructible in a test with no host present
-- [ ] the body is the empty string nowhere: there is no `body` field, because a render never reads
-      one — form bodies are front 24's and route-handler bodies are front 25's
+- [x] each accessor returns `""` for an absent key and never raises — `test/server_test.bp` "server: an absent key is the empty string, not a runtime error"
+- [x] `pairValue` is imported from front 26's `router` module; this file defines no decoder of its own — `server.bp` imports it from `"router"`
+- [x] no field of `RequestData` shares a name with one of its methods — `test/server_test.bp` "server: the fields are readable beside the methods that never shadow them"
+- [x] `RequestData` is constructible in a test with no host present — `test/server_test.bp` "server: the same page renders from an explicit request, with no host"
+- [x] the body is the empty string nowhere: there is no `body` field, because a render never reads
+      one — form bodies are front 24's and route-handler bodies are front 25's — `RequestData` has six fields and no `body`
 
 ### Step 2 — Binding the request context
 
@@ -257,16 +257,16 @@ grant of `use`. See *Language gaps* for what it becomes then: `fn request() -> @
 RequestData>`, activated as `use request()` inside a `fn … -> @Component<ElementBase, Element>` body.
 
 **Acceptance:**
-- [ ] every cell is dual-target — `#[@External.Erlang("jhonstart_server", …)]` with its
+- [x] every cell is dual-target — `#[@External.Erlang("jhonstart_server", …)]` with its
       `#[@External.Node]` twin in `./server_runtime.mjs`; there is no erlang-only cell in the file,
-      and the member compiles on both rows
+      and the member compiles on both rows — `server.bp` six cells + `fill`, twins in `server_runtime.mjs` / `sidecars/jhonstart_server.erl`; 120/120 on both rows
 - [ ] `enterRequest` is the only writer and `leaveRequest` its pair; outside `server.bp` and front
       30's `render.bp` nothing calls either (grep in the gate)
-- [ ] `cookies()` and `headers()` are the only two shortcuts; `after`, `connection`, `draftMode` and
-      memoization are front 62's, not re-declared here and not called from jhonstart
+- [x] `cookies()` and `headers()` are the only two shortcuts; `after`, `connection`, `draftMode` and
+      memoization are front 62's, not re-declared here and not called from jhonstart — `server.bp`
 - [ ] `request()` after `enterRequest(req)` reconstructs the six fields of `req`
-- [ ] no cell in `server.bp` names a rakun module, and `grep -rn rakun modules/jhonstart/src` is
-      empty
+- [x] no cell in `server.bp` names a rakun module, and `grep -rn rakun modules/jhonstart/src` is
+      empty — `grep -rn rakun modules/jhonstart/src` names rakun only in comments
 
 ### Step 3 — The server-component convention
 
@@ -286,16 +286,16 @@ pub fn renderServerComponent(component: fn() -> @Component<ElementBase, Element>
 ```
 
 **Acceptance:**
-- [ ] a `fn … -> @Component<ElementBase, Element>` that awaits a loader compiles on erlang
-- [ ] a body that awaits under a plain `-> Element` return is a compile error
-      (`effect-await-without-task`), and the test suite records the expected message
-- [ ] a component body that writes `try await loader()` without a `catch` is a compile error
-      (`effect-try-without-fallible-channel`: `Element` is not a `@Result`)
-- [ ] on commonJS every `@Component` body is emitted as `async function` (decision 104), so
-      `renderServerComponent`'s `await component()` is a real await there
-- [ ] `renderServerComponent` awaits exactly once and renders synchronously afterwards
-- [ ] a component that awaits two loaders in sequence compiles and both awaits are at statement
-      level, not inside a closure
+- [x] a `fn … -> @Component<ElementBase, Element>` that awaits a loader compiles on erlang — `test/server_test.bp` "server: a @Component component activates a hook and awaits a loader"
+- [x] a body that awaits under a plain `-> Element` return is a compile error
+      (`effect-await-without-task`), and the test suite records the expected message — `test/server_test.bp` header records `effect-await-without-task`
+- [x] a component body that writes `try await loader()` without a `catch` is a compile error
+      (`effect-try-without-fallible-channel`: `Element` is not a `@Result`) — `test/server_test.bp` header records `effect-try-without-fallible-channel`
+- [x] on commonJS every `@Component` body is emitted as `async function` (decision 104), so
+      `renderServerComponent`'s `await component()` is a real await there — the commonJS row runs `test/server_test.bp`'s awaiting tests green
+- [x] `renderServerComponent` awaits exactly once and renders synchronously afterwards — `test/server_test.bp` "server: renderServerComponent awaits once and then is renderToString"
+- [x] a component that awaits two loaders in sequence compiles and both awaits are at statement
+      level, not inside a closure — `test/server_test.bp` "server: two sequential awaits at statement level, then a sync render"
 
 ### Step 4 — The loader convention
 
@@ -326,9 +326,9 @@ not a `map` over futures, which would simply run them in order. This front's doc
 not provide a second answer.
 
 **Acceptance:**
-- [ ] the convention is written in `repository/jhonstart/docs.md` with the rule about lambdas
-- [ ] the test suite contains a component with two sequential awaits at statement level
-- [ ] `server.bp` exports no `awaitAll`-style helper, and the README says front 02 owns that
+- [x] the convention is written in `repository/jhonstart/docs.md` with the rule about lambdas — `docs.md` § *The loader convention*
+- [x] the test suite contains a component with two sequential awaits at statement level — `test/server_test.bp` "server: two sequential awaits at statement level, then a sync render"
+- [x] `server.bp` exports no `awaitAll`-style helper, and the README says front 02 owns that — `server.bp`; `docs.md` names front 02
 - [ ] the doc names the erlang eager-`@Task` fact and cites `libs/std/src/http.bp:16-18`
 
 ### Step 5 — Module promotion
@@ -338,9 +338,9 @@ Delete `server.d.bp`. front 94 owns `src/root.bp` and `botopink.json`'s `files` 
 along.
 
 **Acceptance:**
-- [ ] `server.d.bp` is gone; `git grep -n "server.d.bp"` finds nothing outside the changelog
+- [x] `server.d.bp` is gone; `git grep -n "server.d.bp"` finds nothing outside the changelog — jhonstart `6d6c007`
 - [ ] `pub mod server;` and the `files` swap are handed to front 94; this front edits neither file
-- [ ] `repository/jhonstart/AGENTS.md` records the promotion and the dropped `Http` base
+- [x] `repository/jhonstart/AGENTS.md` records the promotion and the dropped `Http` base — `AGENTS.md` § *Front 28 — the request*
 
 ## Examples
 
@@ -382,14 +382,14 @@ erlang, and makes every other assertion construct its `RequestData` explicitly.
 
 - [ ] `server.d.bp` removed, `server.bp` in the build tree, its `root.bp` and `files` lines handed
       to front 94
-- [ ] `RequestData`, four accessors, `request`, `cookies`, `headers` all `pub` and tested
-- [ ] every cell is dual-target; no erlang-only cell in the file
+- [x] `RequestData`, four accessors, `request`, `cookies`, `headers` all `pub` and tested — `test/server_test.bp`
+- [x] every cell is dual-target; no erlang-only cell in the file — `server.bp`
 - [ ] `enterRequest` / `leaveRequest`, their one caller (front 30's render) and the `k=v&k=v`
       encoding are written down in `repository/jhonstart/docs.md`
-- [ ] the `Http` phantom base and the `Request` behavior are gone, and `AGENTS.md` says why
+- [x] the `Http` phantom base and the `Request` behavior are gone, and `AGENTS.md` says why — `AGENTS.md` § *The `Http` base, and why it is gone*
 - [ ] every untrusted value in an example passes through front 01's `escape.html` /
       `escape.attribute`; this front hand-rolls no escaping
 - [ ] the erlang eager-`@Task` fact is stated in the README and in `repository/jhonstart/docs.md`,
       and every multi-loader example routes through front 02's unstarted-task list
-- [ ] all three language gaps appear in a `specs/1.0.10-beta/` spec
+- [x] all three language gaps appear in a `specs/1.0.10-beta/` spec — `language-gaps.md` rows "Declared parameter defaults…", "`xs[0]` silently drops the index…"; the `@Component` grant landed with `00 · 24`
 - [ ] the front's tests are green on its assigned target
