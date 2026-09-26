@@ -49,18 +49,27 @@ the rejection is a 403, and there is no setting that turns it off.
 
 ## Current state
 
-- `repository/rakun/src/decorators.bp:222-244` — five route-mapping decorators, method-level, no
-  function-level marker of any kind and no `'use server'` equivalent.
-- `repository/rakun/src/http.bp:35-43` — `Request.body()` returns the whole body as one `string`.
-  There is no incremental reader, so "enforce the size limit while reading" has to be done in the
-  host cell, not in botopink.
-- `repository/rakun/src/http.bp:45-73` — `Response` carries no headers, so no `Set-Cookie`, which is
-  what a session-writing action needs. Frozen; see *Blocked*.
-- `hash` (`libs/std/src/hash.bp`) has `hmacSha256` and `equalsConstantTime`, so the id derivation
-  and its check need no new primitive.
-- `libs/std/src/querystring.bp` and `encoding`'s `percentEncode` / `percentDecode` / `formParse`
-  cover a form body.
-- `repository/rakun/src/actions.bp` does not exist.
+Landed in `modules/rakun-app/src/actions.bp` with `src/sidecars/rakun_actions.erl`
+(`repository/rakun/AGENTS.md` § Server actions): 31 cells in `test/actions_test.bp` and 4 in
+`test/actions_build_test.bp`, which also runs a consumer of rakun-app and rakun-cache
+(`test/fixtures/actions-cache`) for the revalidation ordering and the phase's negative half.
+
+Where it differs from the text below:
+
+- **The checks run before the body is read** through a hook front 04's listener now asks with the
+  request head (`rakun_body_hook`); the limit is decided on `Content-Length`, so a refused body is never
+  read at all. The dispatcher repeats the three checks for a request that did not come over a socket.
+- **`dispatchAction` takes the header's value** as a sixth argument (its presence is the scripted
+  path).
+- **`FormData` and `ActionResult` hold arrays of pairs**, not `Dict`s (a `Dict` built in another module
+  does not dispatch its methods on erlang); the reader is `formValue(form, name)`, since rakun-app
+  already exports front 25's `formField(req, name)`. `ActionResult.saying(message)` carries a
+  form-level message.
+- **Inside an action, `revalidatePath` / `revalidateTag` expire** the rows (rakun-cache), so the
+  re-render reads the refilled cache (03r-m). A JSON-RPC argument is a form-encoded `name=value` list
+  (03r-n). The action secret is `rakun.actions.secret`.
+- **Open:** the file-level directive (onze front 50), the comptime refusal of a `@Task` of the wrong
+  type (reflection keeps only the head), and the contract-2 parse of the refresh payload (onze 53).
 
 ## Mechanism
 
@@ -273,16 +282,20 @@ field that is empty are the same thing to a validator, and optional unwrapping a
 nothing. `ActionResult.state` is a `Dict` in botopink and is querystring-encoded on the wire.
 
 **Acceptance:**
-- [ ] `#[serverAction]` on a `fn(form: FormData) -> @Task<ActionResult>`, and on one that can fail
+- [x] `#[serverAction]` on a `fn(form: FormData) -> @Task<ActionResult>`, and on one that can fail
       (`-> @Task<@Result<ActionResult, E>>`, whose `Error` the dispatcher answers as a failed action), compiles and
-      registers.
-- [ ] `#[serverAction]` on a type fails with `#[serverAction] must annotate a function`.
+      registers. — `test/actions_test.bp` "#[serverAction] registers a @Task<ActionResult> fn and a fallible one, and nothing unmarked", "a validation failure is state, and a throwing action is ok false with status 200"; `test/actions_build_test.bp` "a well-formed action builds, and so does a fallible one"
+- [x] `#[serverAction]` on a type fails with `#[serverAction] must annotate a function`. — `actions_build_test.bp` "#[serverAction] on a type fails saying it must annotate a function"
 - [ ] `#[serverAction]` on a function whose return is neither of those two fails, naming the required return
-      type — an action is always a `@Task`, so the dispatcher always awaits it.
+      type — an action is always a `@Task`, so the dispatcher always awaits it. — open: a non-`@Task`
+      return is refused at build time naming both types (`actions_build_test.bp` "an action whose
+      return is not a @Task fails naming the required return type"), but `@Decl` reflects only a
+      type's head (`Task`), so a `@Task` of anything else is refused at its first dispatch, not at comptime
 - [ ] A file carrying `pub val useServer = true;` produces, for each of its `pub fn`s, the same
       registration record as the hand-written decorator — compared field by field, not by eyeball.
-- [ ] A `pub fn` in a file without the directive and without the decorator is not registered, and
-      POSTing its name produces 404, not 500.
+      — open: the directive is attached by `onze build` (onze front 50), which does not exist yet
+- [x] A `pub fn` in a file without the directive and without the decorator is not registered, and
+      POSTing its name produces 404, not 500. — `test/actions_test.bp` "an unmarked pub fn is not reachable - POSTing its name or an id derived for it is 404"
 
 ### Step 2 — Action ids
 
@@ -297,30 +310,30 @@ pub declare fn rkRegisterAction(
 ```
 
 **Acceptance:**
-- [ ] `actionId` is deterministic: the same three inputs give the same id in two processes.
-- [ ] Changing the build id changes every id.
-- [ ] The id is 26 characters, `a_` plus 24 hex, and contains no character that needs escaping in an
-      HTML attribute.
-- [ ] Two functions with the same name in different modules get different ids.
-- [ ] The function's name alone does not resolve: POSTing `__bp_action=createPost` (the field
-      configured as `__bp_action`) is a 404.
-- [ ] With `rakun.actions.field` or `rakun.actions.header` unset, the dispatcher refuses to start and
+- [x] `actionId` is deterministic: the same three inputs give the same id in two processes. — `test/actions_test.bp` "the id is deterministic, a_ plus 24 hex, and changes with the build id and the module" (a pure function of the three inputs and the configured secret)
+- [x] Changing the build id changes every id. — same test
+- [x] The id is 26 characters, `a_` plus 24 hex, and contains no character that needs escaping in an
+      HTML attribute. — same test
+- [x] Two functions with the same name in different modules get different ids. — same test
+- [x] The function's name alone does not resolve: POSTing `__bp_action=createPost` (the field
+      configured as `__bp_action`) is a 404. — `test/actions_test.bp` "the function's name alone does not resolve"
+- [x] With `rakun.actions.field` or `rakun.actions.header` unset, the dispatcher refuses to start and
       the message names the missing key; no name is spelled in `src/actions.bp`, checked by grep for
-      `__bp_action`, `X-Bp-Action`, `__onze`, `X-Onze` and `onze-action` in the gate.
-- [ ] With the field configured as `__x`, a POST carrying `__x=<id>` dispatches and one carrying
-      `__bp_action=<id>` does not — the configured name is the only one read.
+      `__bp_action`, `X-Bp-Action`, `__onze`, `X-Onze` and `onze-action` in the gate. — `test/actions_test.bp` "with the field or the header unset the dispatcher refuses to start naming the key" (the grep is in the same cell)
+- [x] With the field configured as `__x`, a POST carrying `__x=<id>` dispatches and one carrying
+      `__bp_action=<id>` does not — the configured name is the only one read. — `test/actions_test.bp` "only the configured field name is read"
 
 ### Step 3 — The id a form carries
 
 **Acceptance:**
-- [ ] `actionIdOf("createPost")` returns the same id `actionId` derives for the registered function,
-      and that id dispatches when POSTed under the configured field.
-- [ ] `actionIdOf` of a name that is not registered raises with the function name in the message — a
-      form pointing at nothing is a bug that should not reach a browser.
-- [ ] This front declares no element constructor and imports nothing from `jhonstart`, checked by
-      grep in its own gate; the form markup is jhonstart front 67's.
-- [ ] The progressive path is tested by driving the raw POST a scripting-disabled browser would send
-      (`__bp_action=<id>&…` with the field configured as `__bp_action`), not by rendering a form.
+- [x] `actionIdOf("createPost")` returns the same id `actionId` derives for the registered function,
+      and that id dispatches when POSTed under the configured field. — `test/actions_test.bp` "actionIdOf answers the id that dispatches, and an unknown name raises naming it"
+- [x] `actionIdOf` of a name that is not registered raises with the function name in the message — a
+      form pointing at nothing is a bug that should not reach a browser. — same test
+- [x] This front declares no element constructor and imports nothing from `jhonstart`, checked by
+      grep in its own gate; the form markup is jhonstart front 67's. — `test/actions_test.bp` "this module builds no element and imports nothing from jhonstart"
+- [x] The progressive path is tested by driving the raw POST a scripting-disabled browser would send
+      (`__bp_action=<id>&…` with the field configured as `__bp_action`), not by rendering a form. — every progressive cell of `test/actions_test.bp` posts `__bp_action=<id>&…` bodies
 
 ### Step 4 — Dispatch, and the checks that come before it
 
@@ -335,58 +348,61 @@ pub fn dispatchAction(
 ```
 
 **Acceptance:**
-- [ ] `Origin` whose host differs from `Host` gives 403, and the test asserts the body was never read.
-- [ ] A POST with no `Origin` header gives 403.
-- [ ] `Origin` equal to `Host` proceeds.
-- [ ] There is no configuration key, environment variable or decorator argument that disables either
-      check. Asserted by the absence of the key in front 05's schema, which is a test, not a promise.
-- [ ] A body over the limit is refused at the limit: the connection is closed after at most
-      `limit + 8 KiB` bytes have been read, measured in `src/sidecars/rakun_actions.erl`'s own suite.
-- [ ] The limit defaults to 1 MiB (1048576), can be raised by `rakun.actions.bodyLimit`, and cannot be set below
-      4 KiB; `grep -rn '"onze\.' repository/rakun` is empty.
-- [ ] An unknown id gives 404 with an empty body — not a message naming known ids.
-- [ ] The id from the request is compared against the registry with front 01's constant-time compare.
-- [ ] `Content-Type: multipart/form-data` gives 415. botopink has no byte type — every host cell
+- [x] `Origin` whose host differs from `Host` gives 403, and the test asserts the body was never read. — `test/actions_test.bp` "over the socket a cross-origin POST is 403 and its body is never read" (the core's body hook answers before the read; the admitted-body count does not move)
+- [x] A POST with no `Origin` header gives 403. — `test/actions_test.bp` "an Origin whose host differs from Host is 403, and so is a POST with no Origin"
+- [x] `Origin` equal to `Host` proceeds. — same test
+- [x] There is no configuration key, environment variable or decorator argument that disables either
+      check. Asserted by the absence of the key in front 05's schema, which is a test, not a promise. — `test/actions_test.bp` "no configuration key reaches the Origin check" (every key `actions.bp` reads, none about origin, host or csrf)
+- [x] A body over the limit is refused at the limit: the connection is closed after at most
+      `limit + 8 KiB` bytes have been read, measured in `src/sidecars/rakun_actions.erl`'s own suite. — `test/actions_test.bp` "a body over the limit is refused at the limit, the connection closed within limit plus 8 KiB" — refused on `Content-Length` before any body byte is read; the socket's received bytes (`rakun.server.last-refused-bytes`) are asserted
+- [x] The limit defaults to 1 MiB (1048576), can be raised by `rakun.actions.bodyLimit`, and cannot be set below
+      4 KiB; `grep -rn '"onze\.' repository/rakun` is empty. — `test/actions_test.bp` "the body limit defaults to 1 MiB, is raisable, and cannot go below 4 KiB", "no onze. key is read anywhere in rakun"
+- [x] An unknown id gives 404 with an empty body — not a message naming known ids. — `test/actions_test.bp` "an unknown id is 404 with an empty body"
+- [x] The id from the request is compared against the registry with front 01's constant-time compare. — `test/actions_test.bp` "the id from a request is compared with the constant-time compare, never with =="
+- [x] `Content-Type: multipart/form-data` gives 415. botopink has no byte type — every host cell
       marshals through `string` — so a multipart body cannot be read without corrupting its binary
-      parts, and this front refuses it rather than mangling it. File upload is a 1.0.10-beta item.
+      parts, and this front refuses it rather than mangling it. File upload is a 1.0.10-beta item. — `test/actions_test.bp` "multipart/form-data is 415"
 
 ### Step 5 — The envelope, revalidation and redirect
 
 **Acceptance:**
-- [ ] A successful action returns `ok: true` and its state in `state`.
-- [ ] An action that throws returns `ok: false`, a `state` carrying the message, and status 200 — a
-      validation failure is a rendered form, not an HTTP error.
-- [ ] `setPhase(RequestPhase.Action)` is entered before the action body and the previous phase is
+- [x] A successful action returns `ok: true` and its state in `state`. — `test/actions_test.bp` "a successful scripted action answers ok with its state"
+- [x] An action that throws returns `ok: false`, a `state` carrying the message, and status 200 — a
+      validation failure is a rendered form, not an HTTP error. — `test/actions_test.bp` "a validation failure is state, and a throwing action is ok false with status 200"
+- [x] `setPhase(RequestPhase.Action)` is entered before the action body and the previous phase is
       restored before front 23 re-renders. The test that proves it removes the call and asserts that
-      `revalidatePath` then raises — the negative half is the one that catches a regression.
-- [ ] `cookies().set(...)` inside an action succeeds and its value reaches the response; the same
-      call inside the re-render that follows raises.
-- [ ] `revalidatePath("/blog")` inside an action puts `/blog` in `revalidated`.
-- [ ] On the progressive path, the re-render observes the invalidation: an action that writes a value
+      `revalidatePath` then raises — the negative half is the one that catches a regression. — `test/actions_test.bp` "the action runs in phase Action and the re-render in phase Render"; the negative half is `actions_build_test.bp`'s rakun-cache consumer, "without phase Action the same action body raises at revalidatePath"
+- [x] `cookies().set(...)` inside an action succeeds and its value reaches the response; the same
+      call inside the re-render that follows raises. — `test/actions_test.bp` "a cookie set inside an action reaches the response, and one set during the re-render raises"
+- [x] `revalidatePath("/blog")` inside an action puts `/blog` in `revalidated`. — the rakun-cache consumer, "the envelope echoes what the action revalidated" (run by `actions_build_test.bp`)
+- [x] On the progressive path, the re-render observes the invalidation: an action that writes a value
       and revalidates its path produces a document containing the new value, and the same test with
-      revalidation removed produces the old one. That negative half is what proves the ordering.
-- [ ] `redirect("/blog")` inside an action gives 303 with `Location: /blog` on the progressive path
+      revalidation removed produces the old one. That negative half is what proves the ordering. — the rakun-cache consumer, "the re-render reads the refilled cache after revalidatePath" and "without revalidation the re-render reads the entry the mutation left stale" (inside an action rakun-cache expires rather than marks stale, 03r-m)
+- [x] `redirect("/blog")` inside an action gives 303 with `Location: /blog` on the progressive path
       and `n: "R|307|/blog"` in the envelope on the scripted path, from one raise (front 63).
-      `redirect` is derived from `n`, never set on its own.
-- [ ] `notFound()` inside an action gives `n: "N"` and status 404 on the progressive path.
-- [ ] A redirect target containing a `|` reaches the envelope's `n` unchanged (the codec is
-      `routing`'s and its round trip is asserted there).
-- [ ] The envelope is `actions`' `writeEnvelope` of the `ActionEnvelope` this front builds, and its
+      `redirect` is derived from `n`, never set on its own. — `test/actions_test.bp` "redirect is 303 with Location on the progressive path and n R|307 in the envelope, from one raise"
+- [x] `notFound()` inside an action gives `n: "N"` and status 404 on the progressive path. — `test/actions_test.bp` "notFound is n N in the envelope and 404 on the progressive path"
+- [x] A redirect target containing a `|` reaches the envelope's `n` unchanged (the codec is
+      `routing`'s and its round trip is asserted there). — `test/actions_test.bp` "a redirect target containing a bar reaches n unchanged"
+- [x] The envelope is `actions`' `writeEnvelope` of the `ActionEnvelope` this front builds, and its
       `state` is `writeState` of the action's result: `grep -n 'json\.\|"{\\"v' src/actions.bp` finds no
-      JSON written by hand. The key order (`v` first) and the literals are asserted in `libs/actions`.
+      JSON written by hand. The key order (`v` first) and the literals are asserted in `libs/actions`. — `test/actions_test.bp` "no JSON is written by hand in actions.bp"
 
 ### Step 6 — The JSON-RPC entry point and `router.refresh()`
 
 **Acceptance:**
-- [ ] `{"v":1,"id":"a_…","args":["x"]}` invokes the same function as the equivalent form POST and
-      produces the same `state`.
-- [ ] The RPC path runs the same CSRF and size checks — asserted by the same test bodies, parameterised
-      over the two encodings, so the paths cannot drift.
-- [ ] An RPC body `actions`' `parseRpcBody` refuses (an unknown `v`, no `id`, `args` not an array of
-      strings, text that is not JSON) is a 400.
+- [x] `{"v":1,"id":"a_…","args":["x"]}` invokes the same function as the equivalent form POST and
+      produces the same `state`. — `test/actions_test.bp` "an RPC body invokes the same action as the form POST and gives the same state" (each argument a form-encoded `name=value` list, 03r-n)
+- [x] The RPC path runs the same CSRF and size checks — asserted by the same test bodies, parameterised
+      over the two encodings, so the paths cannot drift. — `test/actions_test.bp` "both encodings meet the same Origin and size checks"
+- [x] An RPC body `actions`' `parseRpcBody` refuses (an unknown `v`, no `id`, `args` not an array of
+      strings, text that is not JSON) is a 400. — `test/actions_test.bp` "an RPC body parseRpcBody refuses is 400"
 - [ ] The header set to `refreshValue()` (`X-Bp-Action: refresh` with the header configured as
       `X-Bp-Action`) returns an envelope whose `payload` parses as a contract-2 payload with the
-      current pathname, and whose `state` is empty.
+      current pathname, and whose `state` is empty. — open: `actions_test.bp` "the refresh value
+      re-renders the current route into the payload with an empty state" holds the envelope, the empty
+      state and the re-render of the current pathname; a contract-2 payload is what jhonstart front 30's
+      renderer writes, so parsing it waits on the onze round trip (front 53)
 
 ## Examples
 

@@ -4,7 +4,7 @@
 front 24's (24-a…c, 24-f…g), `01-std`'s (01std-a, 01std-c…e), `00 · 23-std-purity`'s (23-a…c), front 95's
 (95-a…e), `00 · 16-formatter`'s (16-a…b), track C's (26-a, 27-a, 30-b…e, 31-a), `00 · 04-js` /
 `05-wasm`'s (0405-b), `00 · 01-checker`'s (01c-a…b),
-track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…l) and the host methods' (lem-a…f). Every question raised so far is answered in
+track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…n) and the host methods' (lem-a…f). Every question raised so far is answered in
 [`decisions-taken.md`](./decisions-taken.md); the next free number is **143**.
 
 This file stays because the fronts will fill it again. A front that meets a question it cannot answer
@@ -469,6 +469,29 @@ fronts could land; the maintainer confirms or reverses each.
 > `manual` on Redis still refuses the boot); (2) a container argument on every marker; (3) keep `auto`
 > as the Redis default, so every Redis listener needs a configuration line to boot.
 > **Recommendation.** (1) — implemented; the stream example now reads `listener.audit-stream.*`.
+
+### 03r-m · Inside a server action, revalidatePath and revalidateTag expire rather than mark stale
+
+> **Raised by:** `24-rakun-server-actions` step 5 (against `12-rakun-cache` step 5)
+> **Measured.** Front 12 makes `revalidateTag` / `revalidatePath` mark rows stale: the next read serves
+> the old value once and refreshes in the background. Front 24 requires the action's own re-render to
+> be "built from the invalidated-and-refilled cache", and asserts the new value in the document.
+> **Options.** (1) in phase `action` both verbs expire the rows at once (as `updateTag` does); (2)
+> front 24 calls `updateTag` itself for every recorded path; (3) the re-render waits for the refreshes.
+> **Recommendation.** (1) — implemented in rakun-cache (`revalidate_test.bp` "inside a server action
+> revalidateTag and revalidatePath expire"). It is Next's behaviour for a revalidation inside an
+> action; outside one the stale-then-fresh rule stands.
+
+### 03r-n · A JSON-RPC argument is a form-encoded field list
+
+> **Raised by:** `24-rakun-server-actions` step 6
+> **Measured.** The RPC body is `{"v":1,"id":…,"args":["…"]}`, an action takes a `FormData`, and step 6
+> requires an RPC call and "the equivalent form POST" to give the same state. Nothing says how
+> positional strings become named fields.
+> **Options.** (1) each argument is a form-encoded `name=value` list, read in order into one form; (2)
+> argument `i` is the field named `i`; (3) the first argument is the whole form body.
+> **Recommendation.** (1) — implemented. It keeps the field names the form uses, so front 67 can write
+> `args: [formStringify(fields)]` and get exactly the form POST's state.
 
 ## Open
 ## Front 16 (formatter) — choices made in implementation, to confirm
