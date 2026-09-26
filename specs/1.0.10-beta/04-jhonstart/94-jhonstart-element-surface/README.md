@@ -269,12 +269,12 @@ pub fn isRawTextTag(tag: string) -> bool {
 ```
 
 **Acceptance:**
-- [ ] `renderToString(el("figure", [text("x", attrs: [])], attrs: [])) == "<figure>x</figure>"`
-- [ ] `voidEl("wbr", []).children` renders as the empty string — `renderToString` of it is
-      `"<wbr></wbr>"`, with nothing between the tags
-- [ ] `isVoidTag` answers true for all fourteen and false for `"div"`, `"span"`, `"form"` and `""`
-- [ ] `isRawTextTag("script")` and `isRawTextTag("style")` are true; `isRawTextTag("title")` and
-      `isRawTextTag("textarea")` are false — escapable raw text is not raw text
+- [x] `renderToString(el("figure", [text("x", attrs: [])], attrs: [])) == "<figure>x</figure>"` — `modules/jhonstart/src/elements.bp` test "el builds a tag the named surface does not carry"
+- [x] `voidEl("wbr", []).children` renders as the empty string — `renderToString` of it is
+      `"<wbr></wbr>"`, with nothing between the tags — `modules/jhonstart/src/elements.bp` test "voidEl stores no children"
+- [x] `isVoidTag` answers true for all fourteen and false for `"div"`, `"span"`, `"form"` and `""` — `modules/jhonstart/src/elements.bp` test "isVoidTag answers the HTML spec's list and nothing else"
+- [x] `isRawTextTag("script")` and `isRawTextTag("style")` are true; `isRawTextTag("title")` and
+      `isRawTextTag("textarea")` are false — escapable raw text is not raw text — `modules/jhonstart/src/elements.bp` test "isRawTextTag is script and style"
 - [ ] The fourteen tags of `isVoidTag` are the same fourteen front 30's walker treats as void, and
       front 30's `render.bp` calls the predicate rather than restating the list
 
@@ -298,17 +298,17 @@ pub fn nav(children: Children, attrs: Array<#(string, string)> = []) -> Element 
 ```
 
 **Acceptance:**
-- [ ] Every constructor's declaration is byte-identical to `element.bp`'s apart from the name and the
-      tag string — same parameter names, same order, same types, same declared default
-- [ ] `renderToString(section([h2([text("Posts", attrs: [])], attrs: [])], attrs: []))` is
-      `"<section><h2>Posts</h2></section>"`
-- [ ] A constructor whose name differs from its tag renders the tag: `htmlTag(…).tag == "html"`,
-      `timeTag(…).tag == "time"`
-- [ ] Attribute order is preserved: `renderToString(a([text("x", attrs: [])], attrs: [#("href",
+- [x] Every constructor's declaration is byte-identical to `element.bp`'s apart from the name and the
+      tag string — same parameter names, same order, same types, same declared default — `modules/jhonstart/src/elements.bp`, every constructor is `(children: Children, attrs: Array<#(string, string)> = []) -> Element`
+- [x] `renderToString(section([h2([text("Posts", attrs: [])], attrs: [])], attrs: []))` is
+      `"<section><h2>Posts</h2></section>"` — `modules/jhonstart/src/elements.bp` test "a constructor renders its tag, nested"
+- [x] A constructor whose name differs from its tag renders the tag: `htmlTag(…).tag == "html"`,
+      `timeTag(…).tag == "time"` — `modules/jhonstart/src/elements.bp` test "a renamed constructor still renders the HTML tag"
+- [x] Attribute order is preserved: `renderToString(a([text("x", attrs: [])], attrs: [#("href",
       "/p"), #("rel", "next")]))` is `"<a href=\"/p\" rel=\"next\">x</a>"` — array order is the
-      rendered order, which is what `contracts.md § 4` clause 5 depends on
-- [ ] An attribute value is stored verbatim: an `href` of `/a&b` renders `/a&b`, not `/a&amp;b`.
-      Escaping belongs to front 30
+      rendered order, which is what `contracts.md § 4` clause 5 depends on — `modules/jhonstart/src/elements.bp` test "attribute order is the array order"
+- [x] An attribute value is stored verbatim: an `href` of `/a&b` renders `/a&b`, not `/a&amp;b`.
+      Escaping belongs to front 30 — `modules/jhonstart/src/elements.bp` test "an attribute value is stored verbatim"
 
 ### Step 3 — the void constructors
 
@@ -321,12 +321,12 @@ pub fn input(_children: Children, attrs: Array<#(string, string)> = []) -> Eleme
 ```
 
 **Acceptance:**
-- [ ] `input([], attrs: [#("name", "title")])` type-checks with a bare `[]` and no annotation
-- [ ] `input([text("x", attrs: [])], attrs: []).children` is empty — a void element handed children
-      drops them, and the rendered markup contains no `x`
-- [ ] `isVoidTag` is true for the tag of each of the six
-- [ ] `renderToString(input([], attrs: []))` is `"<input></input>"` — the frozen renderer's answer,
-      asserted so the *Blocked* item below is a failing literal and not a paragraph
+- [x] `input([], attrs: [#("name", "title")])` type-checks with a bare `[]` and no annotation — `modules/jhonstart/src/elements.bp` test "a void constructor type-checks with a bare empty children list"
+- [x] `input([text("x", attrs: [])], attrs: []).children` is empty — a void element handed children
+      drops them, and the rendered markup contains no `x` — `modules/jhonstart/src/elements.bp` test "a void element handed children drops them"
+- [x] `isVoidTag` is true for the tag of each of the six — `modules/jhonstart/src/elements.bp` test "every void constructor's tag is in the void set"
+- [x] `renderToString(input([], attrs: []))` is `"<input></input>"` — the frozen renderer's answer,
+      asserted so the *Blocked* item below is a failing literal and not a paragraph — `modules/jhonstart/src/elements.bp` tests "a void constructor type-checks…" and "renderToString closes a void element"
 
 ### Step 4 — the `html """…"""` resolution test
 
@@ -343,24 +343,24 @@ test "a tag from the element surface resolves inside an html template" {
 ```
 
 **Acceptance:**
-- [ ] A single-root template over a tag from `elements.bp` renders identically to the equivalent
-      constructor call
-- [ ] A nested template mixing an `element.bp` tag with an `elements.bp` tag
-      (`<section><p>hi</p></section>`) resolves both
-- [ ] A bracket-prop attribute reaches `attrs` on an `elements.bp` tag:
-      `html """<nav [class]={c}><span>x</span></nav>"""` renders `class="card"`
-- [ ] The README states the import a consumer writes, and the test file is that import
+- [x] A single-root template over a tag from `elements.bp` renders identically to the equivalent
+      constructor call — `modules/jhonstart-html/test/elements_test.bp` test 1
+- [x] A nested template mixing an `element.bp` tag with an `elements.bp` tag
+      (`<section><p>hi</p></section>`) resolves both — `modules/jhonstart-html/test/elements_test.bp` test 2
+- [x] A bracket-prop attribute reaches `attrs` on an `elements.bp` tag:
+      `html """<nav [class]={c}><span>x</span></nav>"""` renders `class="card"` — `modules/jhonstart-html/test/elements_test.bp` test 3
+- [x] The README states the import a consumer writes, and the test file is that import — `elements_test.bp`'s two import lines; `docs.md` § *The element surface*
 
 ### Step 5 — `root.bp`, `botopink.json`, `docs.md`, `AGENTS.md`
 
 **Acceptance:**
 - [ ] `pub mod elements;` appended to `src/root.bp` after every other front's line
-- [ ] `"elements.bp"` appended to `botopink.json`'s `files`
-- [ ] `docs.md` gains the constructor table, the three renamed tags with their reasons, and the
-      `main` caveat
-- [ ] `AGENTS.md`'s "the `Element` model has no **attribute** slot" line is corrected, and
-      `elements.bp` appears in the tree diagram
-- [ ] `zig build test-libs --lib jhonstart` green on `commonJS` and on `erlang`
+- [x] `"elements.bp"` appended to `botopink.json`'s `files` — `modules/jhonstart/botopink.json` `files`
+- [x] `docs.md` gains the constructor table, the three renamed tags with their reasons, and the
+      `main` caveat — `docs.md` § *The element surface* (*The tags*, *Three names that could not be the obvious one*)
+- [x] `AGENTS.md`'s "the `Element` model has no **attribute** slot" line is corrected, and
+      `elements.bp` appears in the tree diagram — `AGENTS.md` § *Compiler prerequisites* ("(closed) the `Element` model **does** carry an `attrs` slot") and the tree diagram
+- [x] `zig build test-libs --lib jhonstart` green on `commonJS` and on `erlang` — core 120/120 on commonJS and erlang (`botopink test` per member, compiler `248d0896`)
 
 ## Examples
 
@@ -434,17 +434,17 @@ absences are stated above rather than papered over.
 
 ## Definition of done
 
-- [ ] `repository/jhonstart/src/elements.bp` exists with thirty-eight constructors, `el`, `voidEl`,
-      `isVoidTag` and `isRawTextTag`, and touches no frozen file
-- [ ] Every constructor's signature is identical in shape to the eight in `element.bp`
-- [ ] The six void constructors store no children, and a test asserts the drop
-- [ ] `test/elements_test.bp` proves a tag from this file resolves inside an `html """…"""` template,
-      and the README states the import that makes it resolve
+- [x] `repository/jhonstart/src/elements.bp` exists with thirty-eight constructors, `el`, `voidEl`,
+      `isVoidTag` and `isRawTextTag`, and touches no frozen file — 32 non-void + 6 void, `el`, `voidEl`, both predicates
+- [x] Every constructor's signature is identical in shape to the eight in `element.bp`
+- [x] The six void constructors store no children, and a test asserts the drop — `modules/jhonstart/src/elements.bp` test "a void element handed children drops them"
+- [x] `test/elements_test.bp` proves a tag from this file resolves inside an `html """…"""` template,
+      and the README states the import that makes it resolve — `modules/jhonstart-html/test/elements_test.bp`
 - [ ] `pub mod elements;` and the `botopink.json` entry are appended in front-number order, and the
       lines fronts 26–32 and 67 hand this front are appended alongside them
 - [ ] Fronts 26, 27, 28, 29, 30, 31, 32, 53 and 67 import from `"jhonstart"` and define no
       element constructor locally; front 31's *Blocked* entry for `global-error.bp` is removed
-- [ ] The `language-gaps.md` row "New jhonstart element constructors" moves out of *Unowned surface*
-      and names this front
+- [x] The `language-gaps.md` row "New jhonstart element constructors" moves out of *Unowned surface*
+      and names this front — the row is no longer in `language-gaps.md` § *Unowned surface*
 - [ ] Front 30's `renderNode` calls `isVoidTag` and `isRawTextTag` rather than holding its own lists
-- [ ] The front's tests are green on both of its assigned targets
+- [x] The front's tests are green on both of its assigned targets — 120/120 on both rows
