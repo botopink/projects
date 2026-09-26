@@ -70,9 +70,7 @@ Four rules make it a stable API rather than a convenience:
   header by hand — front 18's tests need them on every request.
 - **Builders, not defaults.** `fakeGet(path)` and `fakePost(path, body)` start it, and
   `.withQuery(n, v)`, `.withHeader(n, v)`, `.withCookie(n, v)`, `.withParam(n, v)` each return a new
-  value. Declared parameter defaults are never applied
-  ([`../../language-gaps.md`](../../language-gaps.md)), so a seven-argument constructor at every call site is the
-  alternative, and it is worse.
+  value, so a test names only what it sets.
 
 ### 2. Response assertions
 

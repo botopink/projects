@@ -257,7 +257,6 @@ that precedence and tests it; it does not implement a second CORS policy.
 |---|---|---|---|
 | No byte or binary type — every host cell marshals through `string` | a file download, an image endpoint, a `multipart/form-data` upload | text responses only; binary bodies are refused (415 in, unsupported out) rather than corrupted | a `bytes` type and `@External` cells that marshal a binary |
 | `@Task<T>` lowers eagerly on erlang (stated in full in front 23), so streaming cannot be driven by a list of futures | `streamed` | the source is `Array<fn() -> @Task<string>>`, spawned per thunk by front 30's flush primitive | a scheduler behind `@Task` on erlang, or an explicitly unstarted task type |
-| Declared parameter defaults are never applied | every builder call that would otherwise take an optional header list | pass every argument explicitly | apply declared defaults at call sites |
 
 ## Blocked
 

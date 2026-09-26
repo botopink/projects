@@ -449,7 +449,7 @@ val setCookies = endRequest();
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| Declared parameter defaults are never applied (`tests/language/expected-failures.txt`, `docs.md:502-505`), so `cookies().set(name, value)` cannot fall back to `cookieDefaults()` and every call site repeats it | `request-context-example.bp`, every `.set(...)` call | pass `cookieDefaults()` explicitly, or a record built from it | apply a declared default at the call site when the argument is omitted |
+| Only a closed default (a literal, an array or tuple of literals) crosses a module boundary; an open one — a call such as `cookieDefaults()` — leaves an imported function's short call an arity error, so `cookies().set(name, value)` cannot fall back to `cookieDefaults()` and every call site repeats it | `request-context-example.bp`, every `.set(...)` call | pass `cookieDefaults()` explicitly, or a record built from it | apply a declared default at the call site when the argument is omitted |
 | A record field cannot be assigned (`self.field = x` appears nowhere in the real libs and every record is immutable), so the frame cannot be a botopink value and must live in the host process dictionary | the whole `Mechanism` — every accessor is a host cell rather than a method on a `RequestFrame` record | keep the frame in `rakun_request_context.erl` and pass an epoch | a mutable binding form, or an explicit `@Cell<T>` builtin |
 
 Three gaps front 01 already recorded are load-bearing here and are cited rather than re-filed: there is

@@ -226,7 +226,6 @@ pub fn graphOf(pipeline: Pipeline) -> Array<#(string, string)>
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
 | Tuple labels are lost through generic instantiation (`hooks.bp:75-77`, ground truth §2.39), so a stage cannot hand the next stage a labelled `#(key: …, count: …)` and have it read by name. A typed, heterogeneous pipeline needs exactly that. | `examples/windowed-counts-example.bp`, the aggregate step | Carry one payload type — a string — and read any pair positionally (`pair.0`, `pair.1`) at the edges. | Preserve labels through generic instantiation |
-| Declared parameter defaults are never applied, so a stage constructor cannot offer an optional name or an optional window. | `examples/order-pipeline-example.bp`, every stage constructor | Pass every argument; a stage name is always written. | Apply declared defaults at call sites (`docs.md:502-505`) |
 
 ## Test plan
 

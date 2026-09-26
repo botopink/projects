@@ -266,7 +266,6 @@ GET /actuator/httpexchanges
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
 | A record cannot be mutated — there is no assignment to a `self` field anywhere in the real libraries, and every record in the ecosystem is immutable. A bounded buffer, which is by definition a value that changes in place, cannot be a field. | `examples/audit-events-example.bp`, `RedactingAuditRepository` | Keep the buffer in an `#[@External.Erlang]` ETS cell and let the record hold only the table name; a custom repository wraps another rather than accumulating. | Assignment to a `self` field in a method declared to mutate, or a first-class mutable cell type |
-| Declared parameter defaults are never applied, so `find` cannot offer "any" as an omitted argument the way Spring's endpoint offers an omitted query parameter. | `examples/audit-events-example.bp`, every `find` call | Pass every argument; `""` and `0` are the documented "any" values. | Apply declared defaults at call sites (`docs.md:502-505`) |
 
 ## Test plan
 

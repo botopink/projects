@@ -63,9 +63,7 @@ test "a reviewer finds one principal's failures without reading everyone's" {
     val _b = repo.record(AuditEvent(atMs: now, principal: "bob", kind: "AUTHENTICATION_FAILURE", data: []));
     val _c = repo.record(AuditEvent(atMs: now, principal: "ana", kind: "AUTHENTICATION_SUCCESS", data: []));
 
-    // LANGUAGE GAP: declared parameter defaults are never applied, so "any" cannot be an
-    // omitted argument the way it is an omitted query parameter upstream. Nearest valid
-    // form: pass every argument, with "" and 0 as the documented "any" values.
+    // "" and 0 are the documented "any" values.
     val anaFailures = repo.find("ana", 0, "AUTHENTICATION_FAILURE");
     assert anaFailures.length == 1;
 

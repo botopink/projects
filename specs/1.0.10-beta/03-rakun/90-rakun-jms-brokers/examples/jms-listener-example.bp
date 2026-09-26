@@ -34,7 +34,7 @@ fn classifyShipment(delivery: Delivery) -> Outcome {
     return Outcome.Done;
 }
 
-// LANGUAGE GAP: declared parameter defaults are never applied, so the decorator cannot
+// LANGUAGE GAP: a decorator argument's declared default is not applied, so the decorator cannot
 // carry `selector:` or `durable:` as optional arguments. Nearest valid form below: one
 // destination argument, and the rest under `rakun.messaging.listener.shipping.*`.
 #[service]

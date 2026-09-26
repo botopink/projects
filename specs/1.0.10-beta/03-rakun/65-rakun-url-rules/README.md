@@ -384,8 +384,7 @@ pub fn urlRulesFilter(compiled: CompiledRules) -> Filter
 ## Language gaps
 
 Every gap this front hits is already in [`language-gaps.md`](../../language-gaps.md) and is cited rather
-than re-filed: **declared parameter defaults are never applied** (so `UrlRules` is written out in full
-at every construction and `matcher` takes its source explicitly), **no array destructuring in a
+than re-filed: **no array destructuring in a
 binding** (so the redirect blob is parsed with `split` and `.at(i)`), and **no byte or binary type**
 (so the external rewrite's relayed body marshals through `string`, which means this front's proxy is
 correct for text and, like front 25's body readers, cannot carry an arbitrary binary payload today —

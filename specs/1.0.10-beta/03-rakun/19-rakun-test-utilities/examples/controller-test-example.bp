@@ -125,9 +125,7 @@ test "GET /api/users/:id returns 404 for an unknown id" {
 test "a request carries query, headers and cookies through the real dispatch path" {
     val _reset = resetSingletons();
 
-    // Builders rather than a seven-argument constructor: declared parameter
-    // defaults are never applied, so every omitted field would otherwise have to
-    // be written out at every call site.
+    // Builders: each names only what the request carries.
     val req = fakeGet("/api/users/")
         .withQuery("page", "2")
         .withHeader("Accept", "application/json")

@@ -49,7 +49,7 @@ pub type RakunMailAutoConfiguration(
     #[value("rakun.mail.port")] port: i32,
 ) {
     // `"*"` on the marker above means "set and non-empty". It is spelled out
-    // because declared parameter defaults are never applied at a call site, so a
+    // because a decorator argument's declared default is not applied, so a
     // decorator cannot have an optional argument.
     #[bean]
     #[conditionalOnMissingBean("MailSender")]

@@ -156,6 +156,9 @@ nothing in rakun serialises a payload.
       call; the status already on the wire does not change. — held: `modules/rakun-app/test/ssr_test.bp` "setStatus after the first write fails the request and the status stays"
 - [x] A renderer that raises a `nav:` reason (front 63's `notFound()`, say) is answered 500 as a
       failed render, not 404 — a page signal is jhonstart's (decision 117 rule 1). — held: `modules/rakun-app/test/ssr_test.bp` "a raised navigation reason is a failed render, 500 - not 404"
+- [x] A renderer whose Task resolves `Error(msg)` is a failed render: 500 when nothing was written,
+      the response closed after the first chunk, `msg` in the log under a correlation digest and never
+      on the wire (decision 130). — held: `modules/rakun-app/test/ssr_test.bp` "a renderer's Error before the first chunk is a 500, its message never on the wire" + "a renderer's Error after the first chunk closes the response it began"
 - [x] The whole call runs inside one request scope from front 62, with `setPhase(RequestPhase.Render)`
       entered before the renderer and the previous phase restored after its future resolves. A
       `cookies().set(...)` from inside the renderer raises, per the phase table in `contracts.md § 5`. — held: `modules/rakun-app/test/ssr_test.bp` "the render runs in phase Render, where a cookie write raises", "the previous phase is restored after a render" (`ssr.bp` `render` sets and restores the phase)

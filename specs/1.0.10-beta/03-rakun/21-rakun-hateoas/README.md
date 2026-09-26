@@ -211,7 +211,6 @@ pub fn halResponse(body: string) -> Response
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
 | std's `Json` tree (`libs/std/src/json.bp`) has a reader (`json.decode`) and no writer, and a record cannot be reflected at run time, so nothing can serialize an arbitrary record. Recorded in [`../../language-gaps.md`](../../language-gaps.md) under *Unowned surface*. | `examples/hal-resource-example.bp`, every `…ToHal` call and `halCollection` | Reflect the record at comptime with `#[halResource]` and emit a concrete renderer; refuse a field type the renderer does not know. Collections take already-rendered strings. | A writer for std's `Json`, which would also let `halCollection` take records |
-| Declared parameter defaults are never applied, so `Link` cannot have optional attributes the way HAL's model does. | `link(rel, href)` in the example | A named constructor for the common case and the full constructor otherwise. | Apply declared defaults at call sites |
 
 ## Test plan
 

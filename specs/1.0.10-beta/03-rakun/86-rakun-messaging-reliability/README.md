@@ -110,7 +110,7 @@ mechanism refusing to impersonate another is the whole reason this front and 83 
 
 **Why the settings are configuration rather than decorator arguments.** `#[rabbitListener("orders",
 maxAttempts: 3, ackMode: "manual", concurrency: 4)]` is the natural surface and it is not writable:
-declared parameter defaults are never applied (ground truth §2.24), so every listener in the codebase
+a decorator argument's declared default is not applied (the comptime call fails), so every listener in the codebase
 would have to spell every argument. The policy is therefore looked up by listener name from
 configuration — `rakun.messaging.listener.<name>.retry.max-attempts` — with a module-level default,
 and the decorator keeps its single destination argument. This is a language gap, recorded below, and
@@ -297,7 +297,7 @@ pub fn withProducerTransaction(prefix: string, body: fn() -> i32) -> i32
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| Declared parameter defaults are never applied (ground truth §2.24), so a decorator cannot carry optional arguments. `#[rabbitListener("orders", maxAttempts: 3)]` would force every listener in the codebase to spell every setting. | `examples/retry-and-dlq-example.bp`, the `#[rabbitListener]` line | One required argument on the decorator; every other setting is a configuration key looked up by listener name. | Apply declared defaults at call sites (`docs.md:502-505`) |
+| A decorator argument's declared default is not applied (the comptime call fails), so a decorator cannot carry optional arguments. `#[rabbitListener("orders", maxAttempts: 3)]` would force every listener in the codebase to spell every setting. | `examples/retry-and-dlq-example.bp`, the `#[rabbitListener]` line | One required argument on the decorator; every other setting is a configuration key looked up by listener name. | Apply declared defaults at call sites (`docs.md:502-505`) |
 | A decorator cannot replace or wrap the body of the declaration it annotates — `@Decl` is read-only and `@emit` only appends new module-level declarations. Publish-side retry therefore cannot be `#[retryable]` on a method. | `examples/publish-reliability-example.bp`, every `publishWithRetry` call | Call the combinator in the body: `publishWithRetry(dest, body, policy)`. | `decl.replaceBody(src)`, or an `@emit` whose output shadows the annotated declaration |
 
 ## Test plan

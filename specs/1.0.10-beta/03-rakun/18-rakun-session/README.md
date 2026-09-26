@@ -222,7 +222,6 @@ monitoring dashboard.
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
 | There is no assignment to a `self` field, so `session.setAttribute("cart", v)` has no spelling and a mutation cannot be self-persisting. | `examples/session-cart-example.bp`, every `withAttribute` call | Return a new `Session` and save it explicitly: `val next = s.withAttribute(k, v); store.save(next);`. Forgetting the save is a bug the compiler cannot catch. | Mutable record fields, or a handle type whose methods write through to the store |
-| Declared parameter defaults are never applied, so the cookie builder cannot default its attributes the way a fluent `ResponseCookie.from(name, value)` does. | `sessionCookieHeader(...)` in the example | One call, every argument named. | Apply declared defaults at call sites (`docs.md:502-505`) |
 
 ## Test plan
 

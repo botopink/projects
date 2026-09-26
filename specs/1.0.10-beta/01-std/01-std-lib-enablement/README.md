@@ -339,14 +339,14 @@ These steps delete nothing outside std; they are done when each consumer has swi
 | emilia | — | holds no JSON code: its one codec (`output.bp` `encodeSheet` / `decodeSheet`) is a tab/newline record format, not JSON |
 | `rakun-web/src/error.bp` `jsonEscape` | `json.quote`, `json.object` | gone (rakun 07) |
 | `rakun/src/config.bp`'s hand scanner (`jsonString`, `jsonStringEnd`) | `json.decode` | gone (rakun 05) |
-| rakun, still open (rakun's fronts) | `json.quote` / `json.decode` | `rakun-data/src/sql/health.bp:37` `jsonText` (a hand escaper); `rakun/src/autoconfig_registry.bp:150-195` (`endOfQuoted`, `quotedAt`, `openerAfter` — a hand scanner of `botopink.json`'s `dependencies`); `rakun-actuator/src/health.bp:47` `rkActuatorJsonObject` (a `json:decode` host cell, `rakun_actuator.erl:154`) |
+| rakun's three sites: `rakun-data/src/sql/health.bp` `jsonText`, `rakun/src/autoconfig_registry.bp`'s `dependencies` scanner, `rakun-actuator/src/health.bp` `rkActuatorJsonObject` | `json.object` / `json.quote`, `json.decode` | gone — `dbHealth` writes with the std writers, `manifestDependencies` and `isJsonObject` read with `json.decode` |
 
 **Acceptance:**
 - [x] `grep -rn "fn jsonString\|fn jsonEscape\|fn jsonStrings\|fn jsonPairs\|fn jsonTriples\|fn payloadEscape" --include=*.bp repository/`
       is empty — and so is `JSON.parse` / `JSON.stringify` in jhonstart's and emilia's `.bp` and
       `.mjs` sources
-- [ ] no hand-written JSON reader or writer is left under `repository/` — **open:** rakun's three
-      sites in the table
+- [x] no hand-written JSON reader or writer is left under `repository/` — rakun's three sites went
+      to std's `json` (the table)
 - [x] jhonstart and emilia green on both rows — `zig build test-libs`
 
 ### Test plan (Steps 11–14)

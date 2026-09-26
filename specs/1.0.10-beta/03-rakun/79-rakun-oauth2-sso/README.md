@@ -328,9 +328,7 @@ window, the audience restriction and the `InResponseTo` correlation.
 
 ## Language gaps
 
-| Gap | Where | Nearest valid form today | Proposed surface |
-|---|---|---|---|
-| Declared parameter defaults are never applied, so an API with optional arguments has to be a record constructor or force every caller to write every argument. | `examples/oidc-login-example.bp`, `OAuth2Provider(...)` — seven named fields where four would do | Record construction with every field written | Apply declared defaults at the call site, which would let `OAuth2Provider` default `pkce`, `scopes` and `redirectPath` |
+No open gap: a record field's closed default (`pkce: bool = true`) applies at the call site across a module boundary.
 
 ## Test plan
 

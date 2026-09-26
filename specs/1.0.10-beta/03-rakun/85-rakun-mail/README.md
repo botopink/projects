@@ -235,10 +235,8 @@ and never passes through a botopink value.
 
 ## Language gaps
 
-No new rows. This front meets three that [`../language-gaps.md`](../../language-gaps.md) already
-records — **no byte or binary type** (an attachment is a path, and the file is encoded by a host cell),
-and **declared parameter defaults are never applied** (`Mail` is a record with every field written, which
-is why the example spells `cc`, `bcc` and `replyTo` even when they are empty).
+No new rows. This front meets one that [`../language-gaps.md`](../../language-gaps.md) already
+records — **no byte or binary type** (an attachment is a path, and the file is encoded by a host cell).
 
 ## Test plan
 

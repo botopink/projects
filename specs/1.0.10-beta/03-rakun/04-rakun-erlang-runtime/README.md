@@ -357,6 +357,9 @@ without spawning). Front 74 supplies the TLS options when a bundle is named.
 - [x] A handler that raises answers 500 and the next request on a new connection still answers 200 — held: `test/erlang_runtime_server_test.bp` "a handler that raises answers 500 and the next connection still answers 200"
 - [x] Killing a connection process mid-request does not affect any other in-flight request — held: `test/erlang_runtime_server_test.bp` "killing a connection process mid-request leaves another in-flight request alone"
 - [x] With `rakun.server.max-connections=1`, the second concurrent connection is answered 503 and closed — held: `test/erlang_runtime_server_test.bp` "over max-connections the next connection is answered 503 and closed"
+- [x] Graceful shutdown's socket half: `rkStopAccepting()` closes the listening socket — a new
+      connection is refused — and keeps every connection process alive; `rkDrain(ms)` leaves no live
+      connection (front 07 orders the sequence) — held: `test/erlang_runtime_server_test.bp` "stop accepting closes the listening socket and keeps the open connections"
 - [x] With `rakun.server.idle-timeout=200`, an idle keep-alive connection is closed within 500 ms — held: `test/erlang_runtime_server_test.bp` "an idle keep-alive connection is closed after rakun.server.idle-timeout"
 
 ### Step 7 — Boot options: banner, headless, keep-alive, PID and port files

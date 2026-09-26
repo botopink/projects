@@ -131,8 +131,7 @@ here in writing.
 | `#[pastDate]` / `#[futureDate]` | epoch millis | compared against front 01's `clock` |
 | `#[constraint(name)]` | any field | the registered constraint named `name` returns `""` |
 
-`#[sizeBetween]` takes both bounds because declared parameter defaults are never applied
-(`docs.md:502-505`); Spring's single `@Size(min=…, max=…)` with either half optional has no botopink
+`#[sizeBetween]` takes both bounds because a decorator argument's declared default is not applied (the comptime call fails); Spring's single `@Size(min=…, max=…)` with either half optional has no botopink
 spelling, and pretending otherwise would produce a decorator that silently drops an argument.
 
 ### The constraint SPI
@@ -334,7 +333,7 @@ After `01-std/06-validation-lib` Steps 1–4. rakun keeps what names rakun and n
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| Declared parameter defaults are never applied, so a constraint decorator cannot have optional arguments. Spring's `@Size(min = 8)` omits `max`; `#[sizeBetween]` cannot. | `#[sizeBetween(2, 50)]` in both examples | One decorator per shape, every argument passed. | Apply declared defaults at call sites (`docs.md:502-505`) |
+| A decorator argument's declared default is not applied (the comptime call fails), so a constraint decorator cannot have optional arguments. Spring's `@Size(min = 8)` omits `max`; `#[sizeBetween]` cannot. | `#[sizeBetween(2, 50)]` in both examples | One decorator per shape, every argument passed. | Apply declared defaults at call sites (`docs.md:502-505`) |
 | There is no assignment to a `self` field, so a binder record cannot accumulate violations as it goes. This shapes the design rather than appearing as a marked line: the accumulator was moved to the host instead. | *Mechanism · Typed coercion*; no example line is blocked by it | Keep the accumulator in the host, keyed on the request process, and read it once with `bindingReport()`. | Mutable record fields, or a linear binder value threaded through each call |
 
 ## Test plan

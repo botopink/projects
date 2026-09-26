@@ -27,10 +27,6 @@ import {secured} from "rakun-security";
 // The in-process fixture provider and router this front ships for its own tests.
 import {fixtureRequest, fixtureDispatch} from "rakun-security";
 
-// LANGUAGE GAP: declared parameter defaults are never applied, so `OAuth2Provider`
-// is a record with every field written at the call site. With defaults applied,
-// `scopes`, `pkce` and `redirectPath` would all be omitted below.
-
 // ---- the provider ------------------------------------------------------------
 //
 // `issuerUri` is enough on its own: the front fetches
