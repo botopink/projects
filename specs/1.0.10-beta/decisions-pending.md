@@ -4,7 +4,7 @@
 front 24's (24-a…c, 24-f…g), `01-std`'s (01std-a, 01std-c…e), `00 · 23-std-purity`'s (23-a…c), front 95's
 (95-a…e), `00 · 16-formatter`'s (16-a…b), track C's (26-a, 27-a, 30-b…e, 31-a), `00 · 04-js` /
 `05-wasm`'s (0405-b), `00 · 01-checker`'s (01c-a…b),
-track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…n) and the host methods' (lem-a…f). Every question raised so far is answered in
+track D's (05emilia-a…h), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…o) and the host methods' (lem-a…f). Every question raised so far is answered in
 [`decisions-taken.md`](./decisions-taken.md); the next free number is **143**.
 
 This file stays because the fronts will fill it again. A front that meets a question it cannot answer
@@ -492,6 +492,18 @@ fronts could land; the maintainer confirms or reverses each.
 > argument `i` is the field named `i`; (3) the first argument is the whole form body.
 > **Recommendation.** (1) — implemented. It keeps the field names the form uses, so front 67 can write
 > `args: [formStringify(fields)]` and get exactly the form POST's state.
+
+### 03r-o · A segment config field equal to the default is the undeclared one
+
+> **Raised by:** `60-rakun-static-generation` step 1
+> **Measured.** `configFor` must override an ancestor's config "field by field, not wholesale — a
+> segment that sets only `revalidate` keeps the ancestor's `dynamic`", but `SegmentConfig` is a record:
+> every field is always set, and declared parameter defaults are not applied, so a registration writes
+> all four fields.
+> **Options.** (1) a field equal to `defaultSegmentConfig()`'s is inherited, any other overrides; (2) a
+> second record of optional fields for registration; (3) wholesale replacement.
+> **Recommendation.** (1) — implemented. The one thing it cannot say is "reset this field to the
+> default below an ancestor that changed it"; (2) is the shape once optional record fields exist.
 
 ## Open
 ## Front 16 (formatter) — choices made in implementation, to confirm

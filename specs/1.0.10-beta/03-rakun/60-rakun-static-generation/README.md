@@ -52,20 +52,21 @@ does nothing is worse than one that is missing.
 
 ## Current state
 
-- `repository/rakun/src/file_router.bp` (front 22) — the route table: a line-oriented
-  `kind|pattern|slot|verb` blob, `parseTable`, `matchPath`, `layoutChain`. No route kind, no
-  revalidation deadline, no per-segment configuration.
-- `repository/rakun/src/ssr.bp` (front 23) — renders a matched route to HTML plus the client payload.
-  One entry point, one mode.
-- `repository/rakun/modules/rakun-cache/src/**` (front 12) — `CachePolicy`, `CacheLife(stale,
-  revalidate, expire)`, `cacheThrough`, `revalidateTag`/`revalidatePath`, an ETS-backed store owned by
-  rakun's supervisor. Everything this front needs to *store* an entry exists; nothing produces a page-
-  sized one.
-- `repository/rakun/src/request_context.bp` (front 62) — `isDynamic()`, `dynamicReason()`, and the
-  `strict` frame flag that makes a dynamic read raise during a prerender.
-- `libs/std/src/path.bp` — the posix calculator; `io.fs`'s `walk` and `glob` (`libs/std/src/io/fs.bp`)
-  walk the tree, and this front is one of their two consumers (front 66 is the other).
-- `repository/rakun/src/static_gen.bp` does not exist. Neither does `segment_config.bp`.
+Landed in `modules/rakun-app/src/static_gen.bp`, `segment_config.bp`, `static_host.bp` over
+`src/sidecars/rakun_static_gen.erl` (`repository/rakun/AGENTS.md` § Static generation): 6 cells in
+`test/segment_config_test.bp`, 23 in `test/static_gen_test.bp`. rakun-app now depends on rakun-cache —
+the prerendered entries live in its store — and lists rakun-cache's own chain.
+
+Where it differs from the text below:
+
+- **Field-wise override** reads a field equal to `defaultSegmentConfig()`'s as "not declared" — a record
+  has no unset field (03r-o).
+- **The store**: an entry is JSON written with rakun-cache's new `cacheStore` into the framework cache
+  `rakun.prerender`, which rakun-cache keeps on ETS whatever `rakun.cache.type` says (a `rakun.` cache
+  is the framework's own, not application data). `payload` is `""` — the payload is the HTML library's.
+- **The export's payload file** is `payload.json` beside each `index.html`.
+- **Open:** a failed regeneration is logged to standard error and `regenerationFailures()`, not through
+  front 17.
 
 ## Mechanism
 
@@ -249,14 +250,14 @@ pub fn configFor(pattern: string) -> SegmentConfig
 `export const revalidate` on a layout reaches the pages below it.
 
 **Acceptance:**
-- [ ] `defaultSegmentConfig()` is `Auto`, `dynamicParams: true`, `revalidate: -1`, `FetchCache.Auto`.
-- [ ] `configFor("/blog/[slug]")` inherits a `revalidate` declared at `/blog` and not at `/blog/[slug]`.
-- [ ] A config declared at `/blog/[slug]` overrides the one at `/blog` field by field, not wholesale —
-      a segment that sets only `revalidate` keeps the ancestor's `dynamic`.
-- [ ] `revalidate: 0` is normalized to `DynamicMode.ForceDynamic` at registration, and `configFor`
-      answers the normalized value.
-- [ ] `registerSegmentConfig` for a pattern that is not in front 22's table raises, naming the pattern.
-- [ ] Registering two configs for one pattern raises rather than taking the last one.
+- [x] `defaultSegmentConfig()` is `Auto`, `dynamicParams: true`, `revalidate: -1`, `FetchCache.Auto`. — `test/segment_config_test.bp` "the default is Auto, dynamicParams, never revalidate, fetch cache Auto"
+- [x] `configFor("/blog/[slug]")` inherits a `revalidate` declared at `/blog` and not at `/blog/[slug]`. — `test/segment_config_test.bp` "a revalidate declared at /blog reaches /blog/[slug], which declares nothing"
+- [x] A config declared at `/blog/[slug]` overrides the one at `/blog` field by field, not wholesale —
+      a segment that sets only `revalidate` keeps the ancestor's `dynamic`. — `test/segment_config_test.bp` "a child overrides field by field, keeping what it leaves at the default" (a field equal to the default is the undeclared one, 03r-o)
+- [x] `revalidate: 0` is normalized to `DynamicMode.ForceDynamic` at registration, and `configFor`
+      answers the normalized value. — `test/segment_config_test.bp` "revalidate 0 is normalised to ForceDynamic at registration"
+- [x] `registerSegmentConfig` for a pattern that is not in front 22's table raises, naming the pattern. — `test/segment_config_test.bp` "a pattern the table does not hold is refused, naming it"
+- [x] Registering two configs for one pattern raises rather than taking the last one. — `test/segment_config_test.bp` "a second config for one pattern is refused, not taken"
 
 ### Step 2 — The static/dynamic decision
 
@@ -279,14 +280,14 @@ Pure, total, five inputs, and the five numbered rules of *Mechanism* in that ord
 the point: the rule table is a truth table and it is tested as one.
 
 **Acceptance:**
-- [ ] The full truth table is asserted — thirty-two rows over the five inputs, with the expected kind
-      and reason for each. Not a sample.
-- [ ] `ForceDynamic` wins over a registered `generateStaticParams`.
-- [ ] `ForceStatic` with `touchedDynamic: true` answers `Static` and a reason naming the conflict; the
-      raise for that case happens in front 62's `strict` frame, not here.
-- [ ] A dynamic pattern with no params and `dynamicParams: false` answers `Static` — the route exists
-      only for the paths that were enumerated, and there are none.
-- [ ] `reason` is `""` exactly when the kind is `Static` by rule 5.
+- [x] The full truth table is asserted — thirty-two rows over the five inputs, with the expected kind
+      and reason for each. Not a sample. — `test/static_gen_test.bp` "the decision's full truth table, every row" — 64 literal rows: the four modes × `dynamicParams` × the three flags
+- [x] `ForceDynamic` wins over a registered `generateStaticParams`. — `test/static_gen_test.bp` "ForceDynamic wins over generateStaticParams, and ForceStatic over a dynamic read names the conflict"
+- [x] `ForceStatic` with `touchedDynamic: true` answers `Static` and a reason naming the conflict; the
+      raise for that case happens in front 62's `strict` frame, not here. — same test
+- [x] A dynamic pattern with no params and `dynamicParams: false` answers `Static` — the route exists
+      only for the paths that were enumerated, and there are none. — `test/static_gen_test.bp` "a dynamic pattern with no params and dynamicParams false is Static, and reason is empty only by rule 5"
+- [x] `reason` is `""` exactly when the kind is `Static` by rule 5. — same test, and every row of the truth table
 
 ### Step 3 — Enumeration
 
@@ -299,16 +300,16 @@ pub fn expandParams(pattern: string, rows: StaticParams[]) -> string[]
 ```
 
 **Acceptance:**
-- [ ] `expandParams("/blog/[slug]", [one row binding slug=hello])` answers `["/blog/hello"]`.
-- [ ] `expandParams("/shop/[...slug]", [one row binding slug="a/b"])` answers `["/shop/a/b"]`.
-- [ ] `expandParams("/docs/[[...slug]]", [one row binding slug=""])` answers `["/docs"]`.
-- [ ] A row that binds no `slug` for `/blog/[slug]` raises, naming the pattern and `slug`.
-- [ ] A row that binds a name the pattern does not have raises, naming the extra binding.
-- [ ] A value containing `/` in a `[slug]` (not catch-all) segment raises — it would produce a path the
-      router matches to a different route.
-- [ ] Two rows producing the same path raise, naming the path — a duplicate would be prerendered twice
-      and served nondeterministically.
-- [ ] `expandParams` is pure: the test calls it with literal rows and never starts a build.
+- [x] `expandParams("/blog/[slug]", [one row binding slug=hello])` answers `["/blog/hello"]`. — `test/static_gen_test.bp` "expandParams builds the paths of a segment, a catch-all and an optional catch-all"
+- [x] `expandParams("/shop/[...slug]", [one row binding slug="a/b"])` answers `["/shop/a/b"]`. — same test
+- [x] `expandParams("/docs/[[...slug]]", [one row binding slug=""])` answers `["/docs"]`. — same test
+- [x] A row that binds no `slug` for `/blog/[slug]` raises, naming the pattern and `slug`. — `test/static_gen_test.bp` "a row missing a binding, carrying an extra one, or putting a slash in a segment is refused"
+- [x] A row that binds a name the pattern does not have raises, naming the extra binding. — same test
+- [x] A value containing `/` in a `[slug]` (not catch-all) segment raises — it would produce a path the
+      router matches to a different route. — same test
+- [x] Two rows producing the same path raise, naming the path — a duplicate would be prerendered twice
+      and served nondeterministically. — `test/static_gen_test.bp` "two rows producing one path are refused, naming it"
+- [x] `expandParams` is pure: the test calls it with literal rows and never starts a build. — the three `expandParams` cells above
 
 ### Step 4 — The prerender pass
 
@@ -335,18 +336,18 @@ pub fn lookupPrerendered(path: string) -> ?PrerenderEntry
 ```
 
 **Acceptance:**
-- [ ] `prerenderAll(false)` over a table with one static page and one cookie-reading page stores one
-      entry and reports one `skippedDynamic`, with the skipped route's `dynamicReason()` in `lines`.
-- [ ] The fan-out uses front 02's unstarted-task form, and a test asserts that prerendering N routes
+- [x] `prerenderAll(false)` over a table with one static page and one cookie-reading page stores one
+      entry and reports one `skippedDynamic`, with the skipped route's `dynamicReason()` in `lines`. — `test/static_gen_test.bp` "prerenderAll stores the static page and skips the cookie-reading one with its reason"
+- [x] The fan-out uses front 02's unstarted-task form, and a test asserts that prerendering N routes
       whose renderers each sleep `d` completes in well under `N * d` — the assertion that catches an
-      accidental `await` in a loop, which the eager `@Task` lowering makes invisible otherwise.
-- [ ] Concurrency never exceeds `rakun.static.concurrency`, asserted by a renderer that records its own
-      high-water mark in ETS.
-- [ ] `prerenderPath` for a path whose route does not exist raises, naming the path.
-- [ ] `buildHash` is stable across two prerenders of the same unchanged route and differs when the
-      rendered HTML differs by one byte.
-- [ ] Entries are readable through front 12's store under `CacheScope.Shared` and namespace
-      `rakun.prerender`, asserted through front 12's own API rather than by reaching into ETS.
+      accidental `await` in a loop, which the eager `@Task` lowering makes invisible otherwise. — `test/static_gen_test.bp` "the fan-out renders concurrently, not one after another" (six 300 ms renders in under 1200 ms)
+- [x] Concurrency never exceeds `rakun.static.concurrency`, asserted by a renderer that records its own
+      high-water mark in ETS. — `test/static_gen_test.bp` "concurrency never exceeds rakun.static.concurrency"
+- [x] `prerenderPath` for a path whose route does not exist raises, naming the path. — `test/static_gen_test.bp` "prerendering a path no route answers raises, naming it"
+- [x] `buildHash` is stable across two prerenders of the same unchanged route and differs when the
+      rendered HTML differs by one byte. — `test/static_gen_test.bp` "the build hash is stable for unchanged output and moves with one byte"
+- [x] Entries are readable through front 12's store under `CacheScope.Shared` and namespace
+      `rakun.prerender`, asserted through front 12's own API rather than by reaching into ETS. — `test/static_gen_test.bp` "entries are read through front 12's store, shared scope, namespace rakun.prerender" (`cachePeek`)
 
 ### Step 5 — Revalidation and single flight
 
@@ -357,20 +358,20 @@ pub fn regenerate(path: string) -> i32
 ```
 
 **Acceptance:**
-- [ ] A fresh entry is served with no regeneration started.
-- [ ] A stale entry is served **immediately** — the response does not wait for the regeneration,
-      asserted by a regenerating renderer that sleeps longer than the test's own budget.
-- [ ] Fifty concurrent requests for one stale path start exactly one regeneration, asserted by a
-      counter in the renderer.
-- [ ] After the regeneration completes, the next request is served the new entry and `isStale` is
-      false.
+- [x] A fresh entry is served with no regeneration started. — `test/static_gen_test.bp` "a fresh entry is served with no regeneration"
+- [x] A stale entry is served **immediately** — the response does not wait for the regeneration,
+      asserted by a regenerating renderer that sleeps longer than the test's own budget. — `test/static_gen_test.bp` "a stale entry is served at once while one regeneration runs, and then the new one is served"
+- [x] Fifty concurrent requests for one stale path start exactly one regeneration, asserted by a
+      counter in the renderer. — `test/static_gen_test.bp` "fifty concurrent requests for one stale path start one regeneration"
+- [x] After the regeneration completes, the next request is served the new entry and `isStale` is
+      false. — the stale-entry cell above
 - [ ] A regeneration that raises leaves the stale entry in place, logs once through front 17, and does
-      not prevent a later regeneration from succeeding.
-- [ ] `revalidateTag` (front 12) over a tag an entry carries marks it stale, so the two revalidation
-      paths meet in one store rather than two.
-- [ ] `revalidate: -1` never goes stale, whatever the clock says.
-- [ ] Draft mode (front 62) bypasses `serveStatic` entirely: a draft request renders fresh and stores
-      nothing.
+      not prevent a later regeneration from succeeding. — open: `test/static_gen_test.bp` "a regeneration that raises keeps the stale entry, is logged once, and a later one succeeds" holds the stale entry and the later success; the line goes to the node's standard error and `regenerationFailures()`, not through front 17 — rakun-app does not depend on rakun-logging
+- [x] `revalidateTag` (front 12) over a tag an entry carries marks it stale, so the two revalidation
+      paths meet in one store rather than two. — `test/static_gen_test.bp` "revalidateTag over a tag the entry carries marks it stale - one store"
+- [x] `revalidate: -1` never goes stale, whatever the clock says. — `test/static_gen_test.bp` "revalidate -1 never goes stale"
+- [x] Draft mode (front 62) bypasses `serveStatic` entirely: a draft request renders fresh and stores
+      nothing. — `test/static_gen_test.bp` "a draft request bypasses serveStatic and stores nothing" (`draftBypass()`)
 
 ### Step 6 — The route-kind blob
 
@@ -406,16 +407,16 @@ pub fn staticExport(outDir: string) -> PrerenderReport
 ```
 
 **Acceptance:**
-- [ ] `staticExport` writes `outDir/index.html` for `/` and `outDir/blog/hello/index.html` for
-      `/blog/hello`.
-- [ ] The payload is written beside each HTML file under a fixed name, so a client can reconnect to an
-      exported page.
-- [ ] A route that reaches `cookies()` fails the export with a message naming the route and `cookies`.
-      The message comes from front 62's `strict` frame and is asserted verbatim here.
-- [ ] A route with a `route.bp` handler (kind `R`) fails the export, naming it — an endpoint cannot be
-      a file.
-- [ ] The export refuses to write outside `outDir`, checked with front 01's `path.isInside`.
-- [ ] Re-running the export over an unchanged tree produces byte-identical files.
+- [x] `staticExport` writes `outDir/index.html` for `/` and `outDir/blog/hello/index.html` for
+      `/blog/hello`. — `test/static_gen_test.bp` "the export writes index.html per path and the payload beside it, byte-identical on a re-run"
+- [x] The payload is written beside each HTML file under a fixed name, so a client can reconnect to an
+      exported page. — same test (`payload.json`)
+- [x] A route that reaches `cookies()` fails the export with a message naming the route and `cookies`.
+      The message comes from front 62's `strict` frame and is asserted verbatim here. — `test/static_gen_test.bp` "a route reaching cookies() fails the export with front 62's strict message"
+- [x] A route with a `route.bp` handler (kind `R`) fails the export, naming it — an endpoint cannot be
+      a file. — `test/static_gen_test.bp` "a route handler fails the export, naming it"
+- [x] The export refuses to write outside `outDir`, checked with front 01's `path.isInside`. — `test/static_gen_test.bp` "the export refuses to write outside its directory" (every write goes through `path.isInside(outDir, file)`)
+- [x] Re-running the export over an unchanged tree produces byte-identical files. — the first export cell
 
 ## Deferred
 
