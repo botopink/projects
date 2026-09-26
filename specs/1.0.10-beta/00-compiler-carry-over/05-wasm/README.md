@@ -417,7 +417,7 @@ before anything was written.
 | Step 8 dead block-as-value | **struck** — measured: no such lowering (`wat/AGENTS.md`) | |
 | Step 9 row 1 (tail calls) | **holds** (`1914ea21`, in `feat`) | `run/tail_self_call.bp` green on four targets |
 | Step 9 row 2 (`es.map({ e -> e.key })`) | **holds** | `run/map_record_field_length.bp` prints `3` on wasm |
-| Step 9 row 3 (`?.` chain, second method) | **open** | |
+| Step 9 row 3 (`?.` chain, second method) | **landed here** | `run/optional_chain_method.bp` green on commonJS and wasm; erlang and beam listed for 02 / 03 (the method runs on `undefined`) |
 | Step 9 row 4 (beam) | **moved to 03** — `1380a66e` closed `modules/{field,method}_name_collision` on beam | |
 
 **Landed here** (compiler commit in `status.md`):
@@ -441,3 +441,9 @@ before anything was written.
   written after lowering (a table index interned into the descriptor would shift as lambdas are
   lifted — the reason the old line gave for leaving it). `run/display_print.bp`'s wasm line deleted;
   5 wasm snapshots per tree moved, helper text only.
+- **Step 9's `?.` row** — a primitive method on the rest of a `?.` chain runs under the chain's guard
+  (`lowerChainedCall`): absent stays absent, present unboxes the receiver and boxes a scalar result.
+  Before, `es.at(9)?.key.length()` read a length from address 0 at exit 0 and `….toString()` trapped
+  `unresolved call`. New cell `run/optional_chain_method.bp`; no snapshot moved.
+- **`x is Token.Num`** (status.md's `x is <Enum>.<Variant>` row, wasm half) — tests the one variant's
+  descriptor; it trapped. A leading-dot variant two enums declare keeps the trap.
