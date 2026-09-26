@@ -317,8 +317,8 @@ local change in the named front.
 > variable nothing reads. `divide-*` calls the same `siblingSelector()`.
 > **Options.** (a) Align both fronts to upstream in one change (selector, reverse-aware margins).
 > (b) Keep emilia's form and document it.
-> **Recommendation.** (a), as a follow-up — not done in this pass because it moves two landed fronts'
-> pinned output together and every example that asserts a divided or spaced list.
+> **Recommendation.** (a) — implemented later in the same pass, emilia `15465ed`: both fronts'
+> pinned output and the two examples that assert a spaced or divided list moved together.
 
 ### 05emilia-h. Sibling modules never import `from "emilia"`; `named()` lives in `emilia.bp` (fronts 55, 57, 58, 59)
 

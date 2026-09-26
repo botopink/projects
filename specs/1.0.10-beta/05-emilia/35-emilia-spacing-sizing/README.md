@@ -355,13 +355,13 @@ sibling template and whose `declarations` are the child margins. It is the one d
 front that is not a `…TokenToCss`, and its header says so.
 
 **Acceptance:**
-- [x] `.Space.Y.4` emits `& > :not(:last-child){margin-block-end:calc(var(--spacing) * 4)}` — held (shape: a `Rule` with selector + declarations, rendered nested): test "Space — the declaration is on the CHILDREN, under the sibling selector"
-- [x] `.Space.X.4` emits the `margin-inline-end` form — held: test "Space — the X axis is the inline end, the Y axis the block end"
+- [x] `.Space.Y.4` emits `& > :not(:last-child){margin-block-end:calc(var(--spacing) * 4)}` — held (shape: upstream's form since the audit pass — `:where(& > :not(:last-child))` and the reverse-aware start/end pair, whose end side is `calc(calc(var(--spacing) * 4) * calc(1 - var(--tw-space-y-reverse)))`): test "Space — the declaration is on the CHILDREN, under the sibling selector"
+- [x] `.Space.X.4` emits the `margin-inline-end` form — held (shape: the inline start/end pair through `--tw-space-x-reverse`): test "Space — the X axis is the inline pair, the Y axis the block pair"
 - [x] a `Space` token composes with a `Pad` token in the same list and the result is
       `padding:…;& > :not(:last-child){…}` — held (shape: two rules of one class in the rendered document, not one declaration string): test "Space — composing with a Pad token in one list gives two rules, in order"
 - [x] `.Space.X.Neg.2` emits a negative child margin — held: test "Space — a negative child margin, the pull-up form"
-- [ ] the selector this front chose is recorded in the README and verified against upstream before
-      merge — see *Reference gaps* — **open:** verified against upstream `utilities.ts` on 2026-09-26 and it DIFFERS — upstream writes `:where(& > :not(:last-child))` (zero specificity) and sets both `margin-inline-start`/`-end` through `--tw-space-x-reverse`; emilia writes `& > :not(:last-child)` and only the end margin, so `Space.XReverse` sets a variable nothing reads. Aligning moves fronts 35 and 40 together (decisions-pending 05emilia-g)
+- [x] the selector this front chose is recorded in the README and verified against upstream before
+      merge — see *Reference gaps* — held: verified against upstream `utilities.ts` on 2026-09-26, found to differ, and re-emitted in upstream's form (`siblingSelector()` = `:where(& > :not(:last-child))`, `reversePair`); recorded in emilia `AGENTS.md` and decisions-pending 05emilia-g
 - [x] the selector is byte-identical to front 40's `Divide` selector, asserted by a test that
       compares the two outputs — held: test "Divide and front 35's Space emit BYTE-IDENTICAL child selectors" (front 40 block)
 - [x] the `selector` carries exactly one `&`, which front 56 enforces with no opt-out — held (shape: front 56 refuses non-one-`&` VARIANT selectors; the rule selector is pinned by test): test "Space — the sibling selector is one template, with exactly one ampersand"
