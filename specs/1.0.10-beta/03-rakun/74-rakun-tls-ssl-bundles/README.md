@@ -202,11 +202,11 @@ is plaintext and nothing in this front runs.
 
 **Acceptance:**
 - [x] With no bundle named, the listener is `gen_tcp` and byte-for-byte the same behaviour front 04 tests — held: `modules/rakun-web/test/tls_test.bp` "with no bundle named the listener is gen_tcp and nothing else runs" (front 04's acceptor is unedited)
-- [ ] With a bundle named, a TLS 1.3 client completes a handshake and receives the handler's body
-- [ ] `protocols=tlsv1.2` refuses a TLS 1.3-only client, and the refusal is logged with the bundle name
-- [ ] The handshake runs in the connection process: a client that opens a socket and sends nothing does not delay the acceptance of a second connection
-- [ ] `rakun.ssl.handshake-timeout=200` closes such a connection within 500 ms
-- [ ] A handshake failure is logged once, with the peer address and the reason, and does not crash the acceptor
+- [x] With a bundle named, a TLS 1.3 client completes a handshake and receives the handler's body — held: `modules/rakun/test/tls_listener_test.bp` "with a bundle named, a TLS 1.3 client completes a handshake and receives the body" (rakun `70af1ff`)
+- [x] `protocols=tlsv1.2` refuses a TLS 1.3-only client, and the refusal is logged with the bundle name — held: `modules/rakun/test/tls_listener_test.bp` "protocols=tlsv1.2 refuses a TLS 1.3-only client and logs the refusal with the bundle"
+- [x] The handshake runs in the connection process: a client that opens a socket and sends nothing does not delay the acceptance of a second connection — held: `modules/rakun/test/tls_listener_test.bp` "the handshake runs in the connection process, so a silent client delays nobody"
+- [x] `rakun.ssl.handshake-timeout=200` closes such a connection within 500 ms — held: `modules/rakun/test/tls_listener_test.bp` "rakun.ssl.handshake-timeout=200 closes a silent connection within 500 ms"
+- [x] A handshake failure is logged once, with the peer address and the reason, and does not crash the acceptor — held: `modules/rakun/test/tls_listener_test.bp` "protocols=tlsv1.2 refuses…" (the line names the peer and the bundle; the next handshake on the same listener succeeds)
 
 ### Step 3 — mutual TLS
 
@@ -215,11 +215,11 @@ trust store. The peer's subject is made available to the handler through the req
 authenticate on it.
 
 **Acceptance:**
-- [ ] `client-auth=none` accepts a client presenting no certificate and one presenting an untrusted certificate
-- [ ] `client-auth=want` accepts a client presenting none, and rejects one presenting a certificate the trust store does not verify
-- [ ] `client-auth=need` rejects a client presenting none
-- [ ] A handler can read the verified peer subject, and reads `""` when there was none
-- [ ] The peer subject is never read from an unverified certificate — `want` with an unverified peer is a rejected connection, not an empty subject
+- [x] `client-auth=none` accepts a client presenting no certificate and one presenting an untrusted certificate — held: `modules/rakun/test/tls_listener_test.bp` "client-auth=none accepts no certificate and an untrusted one, and reads no subject"
+- [x] `client-auth=want` accepts a client presenting none, and rejects one presenting a certificate the trust store does not verify — held: `modules/rakun/test/tls_listener_test.bp` "client-auth=want accepts none, rejects an unverified certificate, and reads a verified subject"
+- [x] `client-auth=need` rejects a client presenting none — held: `modules/rakun/test/tls_listener_test.bp` "client-auth=need rejects a client presenting no certificate"
+- [x] A handler can read the verified peer subject, and reads `""` when there was none — held: `modules/rakun/test/tls_listener_test.bp` "client-auth=want …reads a verified subject" + "client-auth=none …reads no subject" (`rkPeerSubject()`)
+- [x] The peer subject is never read from an unverified certificate — `want` with an unverified peer is a rejected connection, not an empty subject — held: `modules/rakun/test/tls_listener_test.bp` "client-auth=want …rejects an unverified certificate" — the connection is rejected, not served with an empty subject
 
 ### Step 4 — client-side bundles
 
@@ -239,7 +239,7 @@ configuration names.
 `sslReload(name)` and the mtime watcher. A failed reload keeps the previous material and is recorded.
 
 **Acceptance:**
-- [ ] `sslReload` after replacing both files on disk makes the next handshake present the new certificate
+- [x] `sslReload` after replacing both files on disk makes the next handshake present the new certificate — held: `modules/rakun/test/tls_listener_test.bp` "sslReload after replacing both files makes the next handshake present the new certificate"
 - [ ] A connection established before the reload continues with the old material and is not dropped
 - [x] A reload whose certificate and key do not match keeps the old material and returns false — held: `modules/rakun/test/ssl_bundle_test.bp` "a broken rotation keeps the previous material and is recorded"
 - [x] `rkSslLastError` names the reason for the last failed reload and is `""` after a successful one — held: `modules/rakun/test/ssl_bundle_test.bp` "a broken rotation keeps the previous material…" (reason, then `""` after a good reload)
@@ -252,7 +252,7 @@ Implement the `ssl` key for front 11's two SPIs.
 
 **Acceptance:**
 - [x] A certificate expiring in 30 days with a 14-day threshold reports `UP` — held: `modules/rakun/test/ssl_bundle_test.bp` "the four verdicts one bundle can have" — `sslHealthOf(30, "", 14)` is `UP` (synthetic days; no 30-day certificate)
-- [ ] A certificate expiring in 3 days reports `OUT_OF_SERVICE` and names the bundle and the days remaining
+- [x] A certificate expiring in 3 days reports `OUT_OF_SERVICE` and names the bundle and the days remaining — held: `modules/rakun/test/tls_listener_test.bp` "a certificate expiring in 3 days is OUT_OF_SERVICE, naming the bundle and the days"
 - [x] An already-expired certificate reports `DOWN` — held: `modules/rakun/test/ssl_bundle_test.bp` "the indicator names the bundle, the days and the reason" (the expired fixture is `DOWN`)
 - [x] A bundle whose last reload failed reports `DOWN` with the reload error as the detail — held: `modules/rakun/test/ssl_bundle_test.bp` "a failed resolve is DOWN with the reason as the detail" + "the four verdicts…"
 - [x] The info contribution carries subject, issuer, not-before, not-after and days remaining per bundle, and no key material — held: `modules/rakun/test/ssl_bundle_test.bp` "the indicator names the bundle, the days and the reason" (`sslInfo`, no `PRIVATE`/`password`)
