@@ -267,7 +267,7 @@ plus the document boundaries, and `read_tree/1` for `configtree:`.
 - [x] With `dev,prod` active, `application-prod.yaml` beats `application-dev.yaml` — held: `test/config_test.bp` "rakun config: with dev and prod active the later profile wins"
 - [x] `rkSetProp` loses to every file source and wins over a declared field default — held: `test/config_test.bp` "rakun config: row 6 beats row 7 — a configuration tree beats rkSetProp"; `test/typed_config_test.bp` "#[nested] composes two levels down" (rkSetProp over `#[defaultValue]`)
 - [x] `RAKUN_APPLICATION_JSON` beats the environment variables beside it — held: `test/config_test.bp` "rakun config: row 2 beats row 3 — RAKUN_APPLICATION_JSON beats the variables beside it"
-- [ ] Each of the eight rows in the source table has one test asserting it beats the row below it
+- [x] Each of the eight rows in the source table has one test asserting it beats the row below it — held: `test/config_test.bp` "row 1 beats row 2" … "row 7 beats row 8" (rakun `0a8deef`)
 
 ### Step 4 — Placeholders and random values
 
@@ -391,10 +391,10 @@ here only so the reasoning survives:
 
 ## Definition of done
 
-- [ ] `src/config.bp` and `src/profiles.bp` exist; `src/sidecars/rakun_config.erl` compiles under `erlc`
-- [ ] All eight sources resolve in the documented order, each with its own test
+- [x] `src/config.bp` and `src/profiles.bp` exist; the readers are botopink, so there is no `src/sidecars/rakun_config.erl` (`decisions-pending.md` 03r-c) — held: `modules/rakun/src/{config,profiles}.bp`
+- [x] All eight sources resolve in the documented order, each with its own test — held: `test/config_test.bp` the seven "row N beats row N+1" cells + "the full stack — one key in six sources, one winner"
 - [x] `.properties`, `.json` and the documented YAML subset all load; an unsupported YAML construct is a located error — held: `test/config_test.bp` step-1 reader tests (anchor refusal names `file:line`)
-- [ ] a `.json` value holding `\u0041`, `\b` and `\/` loads as `A`, U+0008 and `/`; a malformed document is refused with `json.decode`'s `Error` message, naming the file; `grep -n "fn jsonString\|fn jsonUnquote\|json\.unquote\|json\.parse" src/config.bp` is empty
+- [x] a `.json` value holding `\u0041`, `\b` and `\/` loads as `A`, U+0008 and `/`; a malformed document is refused with `json.decode`'s `Error` message, naming the file; `grep -n "fn jsonString\|fn jsonUnquote\|json\.unquote\|json\.parse" src/config.bp` is empty — held: `test/config_test.bp` "a .json value's escapes are decoded by std's json.decode" + "a malformed .json is refused with json.decode's message, naming the file"; the grep is empty (rakun `b742a4c`)
 - [x] `#[configurationProperties]` binds nested records, `Duration` and `DataSize` — held: `test/typed_config_test.bp` "binds every field from the prefix" + "#[nested] composes two levels down"
 - [x] A missing non-optional location, an unresolvable placeholder, a placeholder cycle, a profile-group cycle and an unparsable typed value each fail the boot with a message naming the input — held: `test/config_test.bp` (non-optional location, `${missing}`, placeholder cycle, group cycle, unparsable typed value tests)
 - [x] `#[validated]` configuration refuses the boot on a violation — held: `test/config_check_test.bp` "an invalid configuration halts the boot before any component is constructed"

@@ -445,8 +445,8 @@ val setCookies = endRequest();
       asserted by a second request on the same process seeing a clean frame. — held: `test/request_context_test.bp` "rakun request: endRequest runs on the failure path and the next request is clean"
 - [x] The `Set-Cookie` blob splits on `\n` into whole header values, and a cookie value containing a
       newline is impossible because `serializeCookie` percent-encodes it. — held: `test/request_context_test.bp` "rakun request: the three-line contract, end to end" + "a queued cookie value can never split the blob"
-- [ ] `grep -n "fn percentEncode\|fn percentDecode\|fn hexValue" src/request_context.bp` is empty —
-      the codec is std's `encoding`.
+- [x] `grep -n "fn percentEncode\|fn percentDecode\|fn hexValue" src/request_context.bp` is empty —
+      the codec is std's `encoding`. — held: rakun `98a5090` — `encoding.percentEncode` / `decodeComponent` over `encoding.percentDecode` (`decisions-pending.md` 03r-e)
 - [x] Fronts 23, 24, 25 and 07 each call `beginRequest` with the phase their table row names; the
       assertion lives in this front's test as a table of phase-to-permission, so those fronts inherit
       it rather than restating it. — held: `test/request_context_test.bp` "rakun request: the phase-to-permission table, written down once"

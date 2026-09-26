@@ -317,7 +317,7 @@ the storage and the defaults.
 
 **Acceptance:**
 - [x] `rkProp("absent") == ""` and `rkPropInt("absent") == 0` — held: `test/erlang_runtime_test.bp` "rakun runtime: an absent property reads empty, never undefined"
-- [x] `rkPropInt` of `"8080"` is `8080`; of `"not a number"` is `0`; of `"12abc"` is `12` — a leading integer wins (`parseInt`'s rule, which front 05's `toI32` states for every typed reader, so `#[value]` and a bound record never disagree) — held: `test/erlang_runtime_test.bp` "propInt is parseInt, and unparsable is zero"
+- [x] `rkPropInt` of `"8080"` is `8080`; of `"not a number"` is `0`; of `"12abc"` is `12` (`decisions-pending.md` 03r-b) — a leading integer wins (`parseInt`'s rule, which front 05's `toI32` states for every typed reader, so `#[value]` and a bound record never disagree) — held: `test/erlang_runtime_test.bp` "propInt is parseInt, and unparsable is zero"
 - [x] A `#[value("app.timezone")] timezone: string` field resolves through `prop/1` on the erlang row with the same value the commonJS row gives — held: `test/scopes_test.bp` "rakun value: #[value] fills a field from config, not the DI graph" (both rows)
 
 ### Step 4 — Router

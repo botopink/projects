@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e), three of `00 · 23-std-purity` (23-a…c) and five of front 95's (95-a…e). Every other question this milestone raised is answered in
+**Three open** — front 24's open points 7 and 8, and 129 (type-alias details), below; plus five `01-std` implementation choices to confirm (01std-a…e), three of `00 · 23-std-purity` (23-a…c) and five of front 95's (95-a…e) and five of the rakun track's (03r-a…e). Every other question this milestone raised is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 91, 92, 93 and 97 by decisions 103 and 104, 99 by 108,
 94, 100 and 101 by 113; every number up to 117 is answered — 114 answers the eight seams decision 113 left open, 115 the five points 114 left open, 116 nine more pieces two libraries both run, 117 the nine points 113–116 left, and 118–127 register the maintainer's effect revision (the return type is the annotation, `@Task<T>`, only `@Result` fails, `@Iterator<T>` / `@Stream<T>`, `async { }`, `iter` / `stream` loops, no compatibility mode — front `00 · 24-effects-by-return`), and 128 merges `@Use<C, T>` and `@Component<T>` into `@Component<C, T>`. The next free number is **130**.
 
@@ -356,6 +356,70 @@ Decided by `02-packaging/95-ecosystem-package-restructure` (worktree `.tasks/95-
 > 116 moves rakun's codec to std `encoding`, which would retire the duplicate).
 > **Recommendation.** (1) now; (2) is the decision-116 work of rakun front 62, after which the line
 > can go back to `from "rakun"` or drop the name.
+
+## Track B (03-rakun) — choices made in implementation, to confirm
+
+Decided by the rakun track (worktree `.tasks/03-rakun`, branch `front/03-rakun`, 2026-09-26) so the
+fronts could land; the maintainer confirms or reverses each.
+
+### 03r-a · Every rakun manifest `["erlang"]` now, with the examples not runnable until the compiler ships sidecars
+
+> **Raised by:** `04-rakun-erlang-runtime` step 10, 2026-09-26
+> **Measured.** With `request/6` fixed the core is 310/0 on erlang; decision 117 rule 9 puts every
+> manifest on `["erlang"]` and decision 113 deletes `runtime.mjs`. But a BUILT erlang program neither
+> ships nor loads its `.erl` sidecars (`shipErlSidecars` runs only from `test_cmd.zig`;
+> `__bp_load_siblings/0` is emitted only under the test flag): `botopink run` in `examples/rakun`
+> dies with `undef rakun_runtime:serve/2`, in `examples/rakun-ssr` with `undef
+> rakun_file_router:register_layout/2`. The three examples build; none runs. The compiler
+> repository's `scripts/restricted-targets.txt` pins the old matrix, so `test-libs` reds on stale
+> lines until that ledger is edited.
+> **Options.** (1) move now (rakun `99b8049`) and owe the run to `00 · 10-cli-residuals` and the
+> ledger to the compiler repository; (2) keep the examples on commonJS with a node twin kept alive
+> for them only; (3) wait for the compiler.
+> **Recommendation.** (1) — implemented. (2) is the second runtime decision 113 retires; (3) leaves
+> the two reds and the node twin for a milestone. The ledger edit: delete the `rakun`,
+> `rakun-example`, `rakun-container-example`, `rakun-ssr-example` erlang lines; add a commonJS
+> `build` line for `rakun`, `rakun-app`, `rakun-test` and the three examples; `rakun-web commonJS 0`
+> becomes `build` (`test-libs` names each).
+
+### 03r-b · `rkPropInt("12abc")` is `12`, not `0`
+
+> **Raised by:** the track audit of `04-rakun-erlang-runtime` step 3, 2026-09-26
+> **Measured.** The box says `0`; `rakun_runtime.erl` and `test/erlang_runtime_test.bp` "propInt is
+> parseInt, and unparsable is zero" say `12` — `parseInt(v, 10)`'s leading-integer rule, which
+> front 05's `toI32` states for every typed reader so `#[value]` and a bound record never disagree.
+> **Options.** (1) keep `12`, amend the box; (2) make both refuse trailing text.
+> **Recommendation.** (1) — the box text is amended. (2) is the stricter reading and would be a
+> behaviour change across fronts 04 and 05 at once; say so and it is one function in each.
+
+### 03r-c · Front 05's readers stay botopink; there is no `rakun_config.erl`
+
+> **Raised by:** the track audit of `05-rakun-config-profiles`'s Definition of done, 2026-09-26
+> **Measured.** The DoD asks for `src/sidecars/rakun_config.erl`; front 05 wrote the readers over
+> std's `fs` / `env`, and `.json` now reads through std's `json.decode` (rakun `b742a4c`).
+> **Options.** (1) no sidecar — amend the box; (2) port the readers to Erlang.
+> **Recommendation.** (1). A reader in botopink has no host half to keep in step.
+
+### 03r-d · The configuration check runs in `bootSequenceFor`, lazy initialization included
+
+> **Raised by:** `05-rakun-config-profiles` step 9 / `14-rakun-validation` step 6, 2026-09-26
+> **Measured.** `Rakun.run` (`bootstrap.bp`) is frozen; the boot that constructs components is front
+> 06's `bootSequenceFor`. rakun `c8f185c` registers one check per `#[configurationProperties]` +
+> `#[validated]` record at module load and runs them all after event 3 and before the eager pass.
+> **Options.** (1) there, with lazy initialization too; (2) at the record's first injection only.
+> **Recommendation.** (1) — implemented: an invalid configuration must not wait for the request that
+> first injects it, and `lazy-initialization` is about construction, not about validation.
+
+### 03r-e · A cookie or query component never decodes into a control character
+
+> **Raised by:** `62-rakun-request-context` step 7, 2026-09-26
+> **Measured.** std's `encoding.percentDecode("%0A")` answers a newline; front 62's own decoder
+> kept `%0A` as written ("a decoder that can produce a newline is how a newline reaches a header").
+> rakun `98a5090` reads through `decodeComponent`: std's decode, but an input std refuses (`%zz`,
+> `100%`) or one that would decode to a control character stays exactly as written.
+> **Options.** (1) `decodeComponent` as above; (2) std's decode verbatim.
+> **Recommendation.** (1) — the restrictive default. With rakun's `percentDecode` gone, 95-e's
+> qualified import can return to `from "rakun"`; it is left as it is.
 
 ## Open
 
