@@ -10,11 +10,11 @@ the VM
 **Depends on:** 66 (which registers `opengraph-image.bp` as a route) · 32 (the metadata that links the
 card's URL) · 52 (the font files, and the metrics sidecar this front measures with) · 12 (cache — a
 card is rendered once per content hash) · 03 (that content hash) · 49 (`Params`, `RouteContext`) ·
-01 (`process.run`, `fs`, `path`)
+01 (`io.process.run`, `io.fs`, `path`)
 **Owns:** `repository/onze/modules/onze-og/src/**`, `repository/onze/modules/onze-og/test/**`
-**Does not touch:** `repository/onze/src/image.bp` (front 51 — the `Image` component and the
+**Does not touch:** `repository/onze/modules/onze-assets/src/image.bp` (front 51 — the `Image` component and the
 optimizer, a different front for a different problem), `repository/onze/modules/onze-assets/**`
-(front 69), `repository/jhonstart/src/**`, `repository/emilia/src/**`
+(front 69), `repository/jhonstart/**`, `repository/emilia/**`
 **Reference:** `NEXTJS-DOCS.md § 18. Metadata e OG Images` (OG Images dinâmicas — ImageResponse ·
 Metadata Files) ·
 <https://nextjs.org/docs/app/api-reference/functions/image-response> ·
@@ -39,13 +39,12 @@ SVG→PNG — so this front splits there too and is explicit about which half le
 
 ## Current state
 
-- `repository/onze/` does not exist; this front creates `modules/onze-og/` inside it.
+- `repository/onze/modules/` does not exist; this front creates `modules/onze-og/` inside it.
 - Nothing in the workspace emits SVG, measures text, or spawns a rendering process.
-  `grep -rn "svg" repository/*/src/` returns nothing.
-- `repository/jhonstart/src/element.bp:3-8` — `Element(tag, value, children, attrs)` and
-  `element.bp:55-67` — `renderToString`, which emits HTML. An OG card is a different serialization of
+- `repository/jhonstart/modules/jhonstart/src/element.bp` — `Element(tag, value, children, attrs)`
+  and `renderToString`, which emits HTML. An OG card is a different serialization of
   the same tree, which is why this front takes an `Element` and not a private structure.
-- `repository/emilia/src/emilia.bp:46-51` — `emilia(tokens)` returns a class name, and a class name is
+- `repository/emilia/modules/emilia/src/emilia.bp` — `emilia(tokens)` returns a class name, and a class name is
   useless in an SVG: SVG has no stylesheet the crawler will fetch. This front reads a **style record**,
   not a class, and that is a deliberate divergence stated in *Mechanism*.
 - Front 01 records that there is **no byte or binary type** in botopink. That single fact shapes this
@@ -147,7 +146,7 @@ rasterized file's path, stored through front 12. Hashing the SVG rather than the
 to the template invalidates the card without anyone remembering to bump a version. A crawler hitting
 the same URL a hundred times spawns one process.
 
-`@Task` lowers eagerly on erlang (`libs/std/src/http.bp:16-18`), so rendering N cards is sequential
+`@Task` lowers eagerly on erlang, so rendering N cards is sequential
 unless it is handed to front 02's task runner over unstarted tasks. This front does not claim
 parallelism it does not have; the build-time prerender of every card is where front 02 is worth using
 and the README says so rather than implying a future is a thread.

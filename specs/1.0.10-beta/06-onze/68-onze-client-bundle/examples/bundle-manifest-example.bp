@@ -4,10 +4,8 @@
 // against: the build host writes the manifest, the BEAM server reads it back on
 // every render and turns it into the `<script>` tags of the matched route.
 //
-// It is a `|`-delimited text table rather than JSON because std's json module is
-// `parse`/`stringify` over strings with no structured walker
-// (libs/std/src/json.bp:36,45) — there is no JSON object to decode into a
-// record. The same reason gave front 22's route table the same shape.
+// It is a `|`-delimited text table, one record per line — the shape of front
+// 22's route table.
 //
 // This file compiles for BOTH targets, and the round-trip test below is run on
 // both. That is the whole justification for this front not being js-only: two

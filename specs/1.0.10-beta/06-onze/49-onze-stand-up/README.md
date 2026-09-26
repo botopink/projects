@@ -42,8 +42,8 @@ same three places every time: the route table has no idea a `page.bp` file exist
 has no idea which layouts wrap a page, and `emilia`'s stylesheet is flushed either before the tree is
 built (giving `<style></style>`) or twice (giving one real block and one empty one).
 
-`repository/onze/` does not exist. Nothing in the tree references it — `grep -r onze repository/`
-returns nothing outside `specs/`.
+The orchestrator has no code: `repository/onze/` holds only the retired mocking library, which
+front 01-std removes ([`../../01-std/onze-migration.md`](../../01-std/onze-migration.md)).
 
 The consequence is not that onze is missing a feature. It is that fronts 50–53 have no package to
 write into, and fronts 22, 23, 24 and 25 have no consumer — they will build a file router, an SSR
@@ -52,17 +52,14 @@ reliable way to build four things that do not fit together.
 
 ## Current state
 
-- `repository/onze/` does not exist. The five libraries in the workspace are `emilia`, `erika`,
-  `jhonstart`, `onze` (the mocking library — unrelated, and the name collision is worth noting) and
-  `rakun`, plus `libs/std`.
-- `repository/jhonstart/src/element.bp:3-8` — `Element(tag, value, children, attrs)`, and
-  `element.bp:55-67` — `renderToString`. This is the whole render surface that exists today, and it
-  is enough for onze's render seam.
-- `repository/emilia/src/emilia.bp:46-51` — `emilia(tokens: Token[]) -> string` registers a rule and
-  returns a class name; `emilia.bp:62-65` — `flush() -> @Task<string>` serializes the
-  sheet **and clears it**. `emilia.bp:53-56` is the reason ordering matters: a second flush emits
-  `<style></style>`.
-- `repository/rakun/src/http.bp:75-78` — `App(port, basePath)`; `src/bootstrap.bp:28-37` —
+- `repository/onze/` holds only the mocking library (`src/onze.bp`), which front 01-std removes;
+  the orchestrator's modules do not exist.
+- `repository/jhonstart/modules/jhonstart/src/element.bp` — `Element(tag, value, children, attrs)`
+  and `renderToString`.
+- `repository/emilia/modules/emilia/src/emilia.bp` — `emilia(tokens: Token[]) -> string` registers a
+  rule and returns a class name; `flush() -> @Task<string>` serializes the sheet **and clears it**,
+  which is why ordering matters: a second flush emits no rules.
+- `repository/rakun/modules/rakun/src/http.bp` — `App(port, basePath)`; `src/bootstrap.bp` —
   `Rakun.run(app)`. There is no `app/` convention, no layout chain, no page concept.
 - `repository/rakun/modules/` shows the shape a module package takes in this ecosystem: a
   `botopink.json` with a `dependencies` map pointing at `../../`, and a `src/root.bp`. onze copies
@@ -131,7 +128,7 @@ from the other (decision 113):
 
   ```bp
   // onze/src/integration.bp — `site` is jhonstart's `App`, `input` the jhonstart page input for `route`
-  rakun.page(route, fn(req: Request, out: ChunkWriter) -> @Task<void> {
+  rakun.page(route, fn(req: Request, out: ChunkWriter) -> @Task<@Result<void, string>> {
       return site.renderStream(input(req), requestData(req), Response(
           status: fn(c) { out.setStatus(c); },
           header: fn(n, v) { out.setHeader(n, v); },
@@ -180,7 +177,7 @@ value in the stack is a translation layer and a class of bugs.
 **Seam 3 — how emilia's classes reach the HTML.**
 
 `emilia(tokens)` registers a rule on a process-local sheet and returns a class name; `flush()`
-serialises the sheet **and clears it** (`emilia.bp:53-56`). The moments at which it is flushed —
+serialises the sheet **and clears it**. The moments at which it is flushed —
 once into the head after the shell, once per streamed boundary inside that boundary's fill
 `<template>`, and nothing left at the end — are jhonstart's: front 30 declares the `RenderPlugin`
 point, whose methods are asynchronous, and awaits it; the `jhonstart-emilia` bridge awaits emilia's
@@ -393,7 +390,7 @@ because an app author reads onze's docs and not rakun's internals.
       no matcher. Any other onze file reaching for
       the seam means the seam is in the wrong place, and the front says so under *Blocked* rather
       than adding a second wiring point
-- [ ] Nothing under `repository/onze/src/` calls emilia's `flush()`, and no onze file defines a style
+- [ ] Nothing under `repository/onze/modules/` calls emilia's `flush()`, and no onze file defines a style
       sink — the flush moments are jhonstart front 30's and the adaptation is the bridge's
 - [ ] The renderer handed to rakun maps `Response.status` / `header` / `write` / `close` onto
       `out.setStatus` / `setHeader` / `write` / `close` one to one and resolves when jhonstart's
@@ -417,7 +414,7 @@ Written down so the question is answered before it is asked.
 | `RouteSegmentConfig(dynamic, revalidate)` | Front 60's `SegmentConfig(dynamic, dynamicParams, revalidate, fetchCache)` |
 
 **Acceptance:**
-- [ ] `repository/onze/src/` contains no type whose name also exists in rakun or jhonstart
+- [ ] `repository/onze/modules/onze/src/` contains no type whose name also exists in rakun or jhonstart
 - [ ] `docs.md` carries this table, so the question is answered before it is asked
 
 ### Step 6 — The import alias map

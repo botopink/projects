@@ -11,7 +11,7 @@ server reads it back to emit script tags
 **Wave:** 6
 **Depends on:** 29 (the boundary marker, the `server-only` marker and the hydrate entry point) · 49
 (config, `outDir`, and the `ONZE_PUBLIC_` rule this front enforces) · 03 (content hashes) · 50 (the
-CLI that invokes it) · 01 (`path.walk`, `path.glob`, `process.run`, `fs`) · 30 (jhonstart's render:
+CLI that invokes it) · 01 (`io.fs` — `walk`, `glob`, `readText`, `writeText` — and `io.process.run`) · 30 (jhonstart's render:
 the payload, the globals registry — `globals.fill` and `globals.signal` — and the `RenderHooks` head and body fields its tags fill) · 27 (the link runtime the entry mounts) · 48 (the class names the
 tree carries) · 56 (emilia's `styleRule`, which the build-time rule evaluation calls — decision
 116) · `01-std/06-validation-lib` (`setMessageSource`, which the entry calls) · 20 (the websocket the
@@ -25,10 +25,10 @@ the payload and the globals registry are jhonstart front 30's, the island marker
 entry imports nothing from the bundled library `routing`: jhonstart's router and `Link` import it
 themselves (decision 115), the navigation vocabulary included (`routing`'s `navigation`, decision
 116) — the entry keeps no copy of it. Build-time rule evaluation calls emilia's `styleRule` (emilia
-front 56) directly and the hash-parity check calls std's `content_hash.contentHash` (decision 116)
+front 56) directly and the hash-parity check calls std's `hash.contentHash` (decision 116)
 **Does not touch:** `repository/onze/modules/onze/**` (front 49), `repository/onze/modules/onze-cli/**`
-(front 50), `repository/onze/modules/onze-assets/**` (front 69), `repository/jhonstart/src/**`,
-`repository/rakun/src/**`, `repository/emilia/src/**`
+(front 50), `repository/onze/modules/onze-assets/**` (front 69), `repository/jhonstart/**`,
+`repository/rakun/**`, `repository/emilia/**`
 **Reference:** `NEXTJS-DOCS.md § 7. Server e Client Components` (Regras fundamentais · Protegendo
 código server-only · `NEXT_PUBLIC_`), `§ 2. Instalação e Configuração` (scripts), `§ 25. Referência de
 Componentes` (`<Script>`), `§ 28. Configuração` (`env`, `generateBuildId`), `§ 29. CLI` (`next build`,
@@ -38,7 +38,6 @@ scheme, front 48) ·
 <https://nextjs.org/docs/app/guides/environment-variables> ·
 <https://nextjs.org/docs/app/api-reference/components/script> ·
 <https://nextjs.org/docs/app/api-reference/cli/next>
-the milestone
 
 ---
 
@@ -67,21 +66,18 @@ in a file served to the public.
 
 ## Current state
 
-- `repository/onze/` does not exist. Front 49 creates it; `modules/onze-bundler/` is created by
-  this front inside it.
+- `repository/onze/modules/` does not exist. Front 49 creates the package; `modules/onze-bundler/`
+  is created by this front inside it.
 - Nothing in the workspace computes a module graph. The compiler resolves imports to compile them
   (`pub mod` declarations plus `from "<lib>"`), and exposes none of that: `@Decl` gives a
-  declaration's kind, name, fields, methods and annotations (`libs/std/src/builtins.d.bp:425-477`)
+  declaration's kind, name, fields, methods and annotations (`libs/std/src/builtins.d.bp`)
   and says nothing about what a module imports.
 - A decorator body runs in a minimal eval prelude with no filesystem and cannot call a sibling
-  function (`repository/rakun/src/decorators.bp:44-46`), so a comptime graph walk is not available
-  and was never the plan.
-- `botopink build` emits one `.js` file per module under `out/` — visible in the checkout at
-  `repository/jhonstart/out/element.js`, `hooks.js`, `html.js`, `root.js`. That is the compiler
-  output this front concatenates; it is not a bundle and there is no entry point among those files.
-- `repository/jhonstart/examples/jhonstart-counter/out/` shows the shape a consumer gets today: the
-  app's own `main.js` beside a copied `jhonstart/` directory of `require`-linked modules. A browser
-  cannot load that: there is no `require`.
+  function, so a comptime graph walk is not available.
+- `botopink build` emits one `.js` file per module under `out/`. That is the compiler output this
+  front concatenates; it is not a bundle and there is no entry point among those files.
+- A consumer's build output is the app's own `main.js` beside a copied directory of
+  `require`-linked library modules. A browser cannot load that: there is no `require`.
 - No `<script>` tag is emitted by anything in the milestone, because nothing has a URL to put in one.
 
 ## Mechanism
@@ -95,7 +91,7 @@ The audit records the plugin surfaces as deliberately deferred.
 ### Step 0 of everything — the graph is walked over files, not at comptime
 
 The compiler exposes no module-graph API, so the walk is textual and happens at build time inside the
-CLI, where `path.walk` and `fs.readText` (front 01) exist. `importsOf(source) -> Array<ImportRef>`
+CLI, where `fs.walk` and `fs.readText` (std's `io.fs`) exist. `importsOf(source) -> Array<ImportRef>`
 reads the `import { … } from "…";` and `pub mod …;` lines of one `.bp` file. This is a real design
 cost and it is stated plainly rather than hidden: a dynamically constructed import would be invisible
 to it, and botopink has none — every import is a literal line at the top of a file, which is what
@@ -159,8 +155,8 @@ Four things enforce it, and they are this front's:
 
 1. **Same input, same function.** Clause 3 of `contracts.md § 4` is the ASCII restriction: the JS cell
    folds UTF-16 units and the erlang cell folds codepoints, and they diverge above U+10000. The
-   function is std's `content_hash.contentHash` — emilia's class name and this check call the same
-   one, compiled for two targets (decision 116; emilia's private `hashHex` duplicate is gone). The
+   function is std's `hash.contentHash` — emilia's class name and this check call the same
+   one, compiled for two targets (decision 116). The
    bundler **recomputes both hashes for every rule body reachable from the client graph and fails the
    build when they differ**, naming the token list. It is the second line of defence behind front
    48's payload-leaf gate, and it costs nothing.
@@ -232,8 +228,7 @@ pub fn scriptTags(m: ClientBundleManifest, route: string) -> string
 ```
 
 The on-disk form is `<outDir>/client-manifest.txt`, a line-oriented `|`-delimited table — the same
-shape front 22 uses for the route table, and for the same reason: `libs/std/src/json.bp:36,45` is
-`parse`/`stringify` over strings with no structured walker, so there is no JSON object to decode.
+shape front 22 uses for the route table: one record per line, split the same way on both targets.
 
 ```
 V|1|<buildId>
@@ -294,7 +289,7 @@ invent a marker; it consumes that one. The entry:
 1. reads the payload through `readPayload(globals.payload)` — the global jhonstart's render wrote
    last in `<body>`, named by jhonstart's globals registry (`__bp0`), never by a hand-written string,
 2. reads the `i` triples, `props` being form-urlencoded and parsed with `querystring.parse`
-   (`libs/std/src/querystring.bp:35`),
+   (std's `querystring`),
 3. queries `[data-jh-i]` in document order,
 4. pairs each element with the triple whose id matches, and calls front 29's hydrate entry point for
    that component,
@@ -394,7 +389,7 @@ pub fn refusalMessage(r: BuildRefusal) -> string
 - [ ] No configuration value, decorator or CLI flag changes any of these outcomes — asserted by a
       test that builds with every config field set adversarially and still gets the refusal
 - [ ] `checkEmiliaCalls` refuses a non-literal token list, a `flush()` reference, and a rule body
-      whose commonJS and erlang hashes differ; both hashes are `content_hash.contentHash`, and the
+      whose commonJS and erlang hashes differ; both hashes are `hash.contentHash`, and the
       class a `styleMap` entry records equals `styleRule(tokens, th)._0` for the contract-4 fixture
 - [ ] A build with more than one refusal reports all of them, not the first
 
@@ -406,8 +401,8 @@ pub fn emitChunk(plan: ChunkPlan, compiledDir: string) -> @Task<ChunkRef>
 ```
 
 Compilation is `process.run` (front 01) over `botopink build --target commonJS`; concatenation is
-`fs.readText`/`fs.writeText` plus the module-registry prelude. `@Task` lowers eagerly on erlang
-(`libs/std/src/http.bp:16-18`), so chunk emission is sequential unless it is handed to front 02's
+`fs.readText`/`fs.writeText` plus the module-registry prelude. `@Task` lowers eagerly on erlang,
+so chunk emission is sequential unless it is handed to front 02's
 task runner over unstarted tasks — the parallel path is front 02's, and this front does not fake it.
 
 **Acceptance:**
@@ -520,7 +515,7 @@ pub fn rebuild(graph: ClientGraph, changed: string) -> @Task<#(ClientGraph, Arra
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| No bitwise operators and no `toString(radix)` — also recorded by front 01 | chunk and build-id hashing in `emitChunk` | front 03's `content_hash`, whose fold lives in a host template | `&`, `|`, `^`, `<<`, `>>` on `i32`, and `i32.toString(radix)` |
+| No bitwise operators and no `toString(radix)` — also recorded by front 01 | chunk and build-id hashing in `emitChunk` | std's `hash.contentHash`, whose fold lives in a host template | `&`, `|`, `^`, `<<`, `>>` on `i32`, and `i32.toString(radix)` |
 | No byte or binary type — also recorded by front 01 | `ChunkRef.bytes` counts characters, not octets; a font or image asset is copied by `process.run`, never read into botopink | keep binary assets out of botopink and move them with the filesystem | a `bytes` primitive with indexing and a length, and `fs.readBytes` |
 | No module-graph reflection: `@Decl` exposes declarations, not imports | `importsOf` is a textual scan of `import`/`pub mod` lines | scan the source text; fail loudly on an unparsable line | a comptime `@Module` with `imports()`, so the graph is the compiler's answer and not a parallel parser |
 | No array or tuple destructuring in a binding — also recorded by front 01 | `rebuild`'s `#(ClientGraph, Array<string>)` result is read as `r.0` / `r.1` | one `val` per element, read by index | `val #(graph, dirty) = rebuild(…);` |

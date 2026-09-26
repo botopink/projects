@@ -105,7 +105,7 @@ pub type ReleaseSpec(
 ```
 
 `buildId` comes from front 03 and from nowhere else: `generateBuildId` is
-`content_hash` over the sorted list of every compiled module's own hash plus the client manifest's
+`hash.contentHash` over the sorted list of every compiled module's own hash plus the client manifest's
 hash. Deterministic, so two builds of an unchanged tree produce the same release and a deployment can
 tell whether anything actually changed. `§ 28`'s `generateBuildId` escape hatch — a user-supplied
 function — is honoured as a config value that *replaces* the derivation, with one rule: a supplied id
@@ -325,7 +325,7 @@ pub fn staticExport(spec: ReleaseSpec, prerendered: Array<#(string, string)>) ->
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
 | No byte or binary type — also recorded by front 01 | the release tarball and the container image are produced by `systools` and `docker` through `process.run`; nothing archives in botopink | shell out, and keep the generated *text* files (`.rel`, `sys.config`, `vm.args`, `Dockerfile`) in botopink where they can be asserted | a `bytes` primitive plus `fs.readBytes`/`fs.writeBytes` |
-| No bitwise operators and no `toString(radix)` — also recorded by front 01 | the build id is front 03's `content_hash`, whose fold lives in a host template | call front 03 | `&`, `\|`, `^`, `<<`, `>>` and `i32.toString(radix)` |
+| No bitwise operators — also recorded by front 01 | the build id is front 03's `hash.contentHash`, whose fold lives in a host template | call front 03 | `&`, `\|`, `^`, `<<`, `>>` |
 | No assignment to a `self` field | `ReleaseSpec` has `withErts`-style copies rather than setters | return a new record | mutable record fields, or a `with` expression |
 | Tuple labels are lost through generic instantiation | `spec.apps` is `Array<#(string, string)>`, read as `a._0` / `a._1` | read positionally | preserve written labels through instantiation |
 

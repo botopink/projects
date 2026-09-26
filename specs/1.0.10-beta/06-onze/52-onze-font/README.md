@@ -9,7 +9,7 @@ the metric-adjusted fallback, and emitting the `<link rel="preload">` tags into 
 **js (client)** — the behaviour those bytes describe: the browser paints with the adjusted fallback,
 swaps to the real face when it arrives, and the swap moves nothing
 **Wave:** 8
-**Depends on:** 49 (config, `outDir`, `publicDir`), 01 (`process` spawner for the fetch and the
+**Depends on:** 49 (config, `outDir`, `publicDir`), 01 (`io.process` spawner for the fetch and the
 metrics probe, `path`), 03 (content hash for the self-hosted filename), 69 (the asset manifest the files are listed in and
 `public/` serving) — the CSS reaches the head through jhonstart's `RenderHooks.headExtra`, which
 front 49 fills
@@ -35,21 +35,21 @@ reading, which is the worst possible moment for one.
 a fallback face with different metrics, and then reflows — that is not "zero layout shift".
 
 Nothing in the workspace addresses fonts at all. `emilia`'s `Font` token section
-(`repository/emilia/src/tokens.bp:59-70`) offers `Sans`, `Serif`, `Mono` and five weights — three
-generic stacks, no webfont, no `@font-face`, and no mechanism that could produce one, because emilia
-emits declarations and a font is a file.
+(`repository/emilia/modules/emilia/src/tokens.bp`) offers `Sans`, `Serif`, `Mono` (each a
+`var(--font-*)` reference) and nine weights — no webfont, no `@font-face`, and no mechanism that could
+produce one, because emilia emits declarations and a font is a file.
 
 ## Current state
 
-- `repository/onze/src/font.bp` does not exist; `repository/onze/` does not exist until front 49.
-- `repository/emilia/src/tokens.bp:59-70` — `Font { Sans, Serif, Mono }` plus
-  `Font.Weight { Light, Normal, Medium, Bold, Black }`. These map to generic CSS stacks. This front
+- `repository/onze/modules/onze-assets/src/font.bp` does not exist; the submodule is front 69's.
+- `repository/emilia/modules/emilia/src/tokens.bp` — `Font { Sans, Serif, Mono }` plus
+  `Font.Weight { … }`. These map to the theme's `--font-*` stacks. This front
   does not extend them and does not need to: a font produced here is applied by its own class name,
-  the way `next/font` applies one, and emilia's `Font` section keeps meaning "a generic stack".
-- `libs/std/src/fs.bp` reads and writes text, not bytes (`fs.bp:33`, `:42`). A `.woff2` file never
-  passes through botopink — see *Mechanism*.
-- `libs/std/src/http.bp:55` declares `fetch(url) -> @Task<Response>`; front 01's process spawner is
-  what actually pulls the font files, for the reason below.
+  the way `next/font` applies one, and emilia's `Font` section keeps meaning "a theme stack".
+- std's `io.fs` reads and writes text, not bytes. A `.woff2` file never passes through botopink — see
+  *Mechanism*.
+- std's `io.http` declares `fetch(url) -> @Task<@Result<Response, string>>`; `io.process`'s spawner
+  is what actually pulls the font files, for the reason below.
 
 ## Mechanism
 
@@ -251,7 +251,6 @@ blocks so two components asking for the same family emit one.
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
 | Declared parameter defaults are never applied | `GoogleFontOptions` has eight fields and every call writes all eight; `defaultGoogleFontOptions` exists only for that | a `default*` constructor plus `with*` copies | apply the declared default at the call site (ground truth §2.24) |
-| The effect annotation is required beside any `@Task<T>` return until front 24 lands decision 118 | `googleFont` and `localFont` (a layout that awaits them is `fn … -> @Component<ElementBase, Element>`, decision 117) | write the marker | infer the effect from the return type |
 | No assignment to a `self` field | option records are copied, never mutated | return a new record | mutable record fields |
 
 ## Test plan
@@ -275,7 +274,7 @@ visual property and the test asserts the four descriptors that cause it, not the
 
 ## Definition of done
 
-- [ ] `src/font.bp` and `test/font_test.bp` exist; the `pub mod font;` line is handed to front 49
+- [ ] `src/font.bp` and `test/font_test.bp` exist; the `pub mod font;` line is handed to front 69
 - [ ] The metrics table is committed, with the script that generated it and the date it was generated
 - [ ] No output of this front references a Google host at request time
 - [ ] `docs.md` states the probe-absent degradation and names it as a degradation
