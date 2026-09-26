@@ -349,10 +349,10 @@ library writes the day it destructures a variant.
       byte-identical; the failure behaviour of a bare `val <Pattern> = e` written down
 - [ ] `Array.range(0, 3).map({ x -> x + 2 })` prints `[2, 3, 4]` on erlang, no `'__bp_prim_map'`
 - [ ] R7: a note to the four backends naming the lowerings that became dead; the erlang tail-`case`
-      lowering and the one JS IIFE site deleted, snapshots byte-identical
+      lowering and the one JS IIFE site deleted, snapshots byte-identical — **checker half landed** (compiler `ddeb887f`; the note is in `01-checker/README.md` step 8); the deletions are 02's and 04's files
 - [ ] the three N25 cells rejected each for its own reason, with a caret; `test/curried_call.bp`
       passes on commonJS and erlang
-- [ ] R1, R2, R4, R8 each reds or checks as `residual-rows.md` states, with a cell
+- [x] R1, R2, R4, R8 each reds or checks as `residual-rows.md` states, with a cell — R2 `modules/import_type_closure`, R4 and R8 checker tests (landed earlier on this front), R1 by deletion (`ddeb887f`)
 
 ## C-10 — `@BeamMemory` steps 4–8
 
