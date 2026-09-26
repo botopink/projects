@@ -2810,3 +2810,31 @@ the table of removed names: this file, and the removed-names table of `guide.md`
 
 Implements: front 24's closeout — fronts 19, 20, 21 and 22, front 24's README, guide and status,
 `decisions-pending.md` and `status.md` rewritten to the current state.
+
+## 140. Library resolution stops at the enclosing checkout
+
+**Decided 2026-09-26 by the maintainer** (pending 24-f, option (a)). The walk up from a project that
+finds library roots — `BOTOPINK_LIB_ROOTS`, then for each ancestor `D`: `D` itself when it is a
+workspace, `D/repository/botopink-lang/libs`, `D/repository`, `D/libs` — stops after the first `D`
+that holds `repository/`: the enclosing checkout, which is the meta workspace, a worktree of it under
+`.tasks/<name>`, or CI's `botopink-lang` checkout with the libraries cloned into `repository/`. An
+ancestor of that directory belongs to another checkout. A worktree nested in the meta checkout used
+to see the main checkout's `repository/*` as well, every library was "declared by two libraries",
+and `test-libs` / `scripts/gate.sh` could only run from a copy of the tree outside it. The rule is one
+predicate, `manifest.isCheckoutRoot`, used by the three walk-ups — the compiler's loader
+(`compiler-cli` `libs.zig`), `botopink-lib-test` (`discovery.zig`) and the language server
+(`project_graph.zig`) — so the three see the same libraries. No flag widens it: a library outside the
+checkout is reached through `BOTOPINK_LIB_ROOTS`, `--lib-root` or a `path` dependency, as before.
+
+The same resolution was not transitive, and a second defect of it is decided with this one: the
+loader (`compiler-cli` `libs.zig`) loaded only the project's own `dependencies`, in the order the
+manifest lists them, so a package outside the jhonstart workspace that depends on `jhonstart-forms`
+compiled `jhonstart-forms/form` with `from "jhonstart"` and `from "jhonstart-link"` unbound — neither
+was loaded, and listing both after it still failed on the order. Dependencies are now transitive:
+each dependency's own entries resolve from its manifest and directory (`{ "workspace": true }` from
+its workspace, `path` from its directory, `git` across the roots — as when it builds itself), every
+package loads once by import name, after every package it depends on. Refused, located on the entry
+that brought it in: one import name that two packages of a build resolve to two directories (one
+`<name>/` prefix cannot hold both), and a cycle between packages.
+
+Implements: `00 · 25-gate-perf` step 4; `test-libs` and the gate run in place in a worktree.

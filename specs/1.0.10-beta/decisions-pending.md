@@ -1,13 +1,14 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**None open.** Implementation choices wait for the maintainer to confirm or reverse them: six of
-front 24's (24-a…c, 24-e…g), five `01-std` ones (01std-a…e), three of `00 · 23-std-purity` (23-a…c),
+**None open.** Implementation choices wait for the maintainer to confirm or reverse them: five of
+front 24's (24-a…c, 24-e, 24-g), five `01-std` ones (01std-a…e), three of `00 · 23-std-purity` (23-a…c),
 five of front 95's (95-a…e), two of `00 · 16-formatter` (16-a…b), track C's (26-a, 27-a, 30-a…e, 31-a),
 `00 · 04-js` / `05-wasm`'s (0405-a…b) `00 · 02-erlang` / `03-beam`'s (0203-a…b), track D's (05emilia-a…h) and `libs-external-methods`' (lem-a…f). Every question
 this milestone raised is answered in [`decisions-taken.md`](./decisions-taken.md) — up to 128 as
 before; 129 the type-alias details, 130 front 24's open point 8 (a failing render's `E`), 131 its open
 point 7 and 24-d (no migration routine), 132 and 133 the formatter's 16-d and 16-c, 134 and 135 front
-24's two documentation boxes. The next free number is **136**.
+24's two documentation boxes, 140 its 24-f (library resolution stops at the enclosing checkout;
+dependencies are transitive). The next free number is **141**.
 
 This file stays because the fronts will fill it again. A front that meets a question it cannot answer
 from the code writes it here rather than guessing, in the shape the others used:
@@ -85,19 +86,6 @@ reverses it. Numbered `24-a` … so they do not collide with the decision number
 > call site, wasm as before; inside a sequence whose item is a `@Result`, the failing `try` emits the
 > Error as the last item and ends (decision 122).
 > **Blocks.** Nothing.
-
-### 24-f · `test-libs` cannot be measured from a worktree nested in the meta checkout
-
-> **Raised by:** step E7, 2026-09-25
-> **Measured.** `zig build test-libs` from `.tasks/24-effects-by-return/repository/botopink-lang` sees
-> every sibling library twice (`.tasks/…/repository/<lib>` and the main checkout's
-> `repository/<lib>`) and every cell except std fails with "`<lib>` is declared by two libraries".
-> **Options.** (a) the lib-test-runner stops walking up past the first `repository/` ancestor;
-> (b) run `test-libs` only from a non-nested checkout.
-> **Recommendation.** (a), as a `lib-test-runner` fix outside this front. Until then front 24's ledger
-> lines (`scripts/known-red-libs.txt`, `restricted-targets.txt`) were written from a static reading of
-> which libraries spell the pre-118 surface, not from a measured run.
-> **Blocks.** The E7 acceptance box "test-libs green on every row".
 
 ### 24-g · `std/async`'s shape under a Task that never fails (README open point 3)
 
