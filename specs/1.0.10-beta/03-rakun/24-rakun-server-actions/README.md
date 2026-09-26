@@ -68,8 +68,8 @@ Where it differs from the text below:
 - **Inside an action, `revalidatePath` / `revalidateTag` expire** the rows (rakun-cache), so the
   re-render reads the refilled cache (03r-m). A JSON-RPC argument is a form-encoded `name=value` list
   (03r-n). The action secret is `rakun.actions.secret`.
-- **Open:** the file-level directive (onze front 50), the comptime refusal of a `@Task` of the wrong
-  type (reflection keeps only the head), and the contract-2 parse of the refresh payload (onze 53).
+- **Open:** the file-level directive (onze front 50) and the contract-2 parse of the refresh payload
+  (onze 53).
 
 ## Mechanism
 
@@ -286,11 +286,9 @@ nothing. `ActionResult.state` is a `Dict` in botopink and is querystring-encoded
       (`-> @Task<@Result<ActionResult, E>>`, whose `Error` the dispatcher answers as a failed action), compiles and
       registers. — `test/actions_test.bp` "#[serverAction] registers a @Task<ActionResult> fn and a fallible one, and nothing unmarked", "a validation failure is state, and a throwing action is ok false with status 200"; `test/actions_build_test.bp` "a well-formed action builds, and so does a fallible one"
 - [x] `#[serverAction]` on a type fails with `#[serverAction] must annotate a function`. — `actions_build_test.bp` "#[serverAction] on a type fails saying it must annotate a function"
-- [ ] `#[serverAction]` on a function whose return is neither of those two fails, naming the required return
-      type — an action is always a `@Task`, so the dispatcher always awaits it. — open: a non-`@Task`
-      return is refused at build time naming both types (`actions_build_test.bp` "an action whose
-      return is not a @Task fails naming the required return type"), but `@Decl` reflects only a
-      type's head (`Task`), so a `@Task` of anything else is refused at its first dispatch, not at comptime
+- [x] `#[serverAction]` on a function whose return is neither of those two fails, naming the required return
+      type — an action is always a `@Task`, so the dispatcher always awaits it. — `actions_build_test.bp` "an action whose
+      return is not a @Task fails naming the required return type", "a @Task of anything but ActionResult fails at build, naming it"
 - [ ] A file carrying `pub val useServer = true;` produces, for each of its `pub fn`s, the same
       registration record as the hand-written decorator — compared field by field, not by eyeball.
       — open: the directive is attached by `onze build` (onze front 50), which does not exist yet
