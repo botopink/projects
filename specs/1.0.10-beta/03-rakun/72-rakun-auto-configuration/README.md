@@ -274,11 +274,11 @@ type RakunMailAutoConfiguration(
 ```
 
 **Acceptance:**
-- [ ] `#[autoConfiguration]` on a `fn`, a `behavior`, a field or an enum-shaped `type` fails with a located message naming the placement rule
-- [ ] The emitted `__rkMake_<Name>` is byte-identical in shape to the one `#[configuration]` emits, so a `#[value]` field and an injected field behave the same way in both
-- [ ] A type with no condition annotations registers with an empty condition blob and always matches
-- [ ] `rkAutoRegister` is emitted exactly once per annotated type, and its first argument is `decl.name`
-- [ ] A property key or type name containing `;` or `|` fails at comptime, at the annotation, rather than emitting an unparsable blob
+- [x] `#[autoConfiguration]` on a `fn`, a `behavior`, a field or an enum-shaped `type` fails with a located message naming the placement rule — held: `src/autoconfig.bp` `autoConfiguration` — `decl.fail` off `DeclKind.Type` and on an enum (code; a compile failure has no cell)
+- [x] The emitted `__rkMake_<Name>` is byte-identical in shape to the one `#[configuration]` emits, so a `#[value]` field and an injected field behave the same way in both — held: `src/autoconfig.bp` emits the same `__rkMake_<Name>` body as `src/decorators.bp` `configuration` (code)
+- [x] A type with no condition annotations registers with an empty condition blob and always matches — held: `test/conditions_test.bp` "a type with no condition registers an always-matching blob"
+- [x] `rkAutoRegister` is emitted exactly once per annotated type, and its first argument is `decl.name` — held: `src/autoconfig.bp` `autoConfiguration` — one `rkAutoRegister("<decl.name>", …)` line per type (code)
+- [x] A property key or type name containing `;` or `|` fails at comptime, at the annotation, rather than emitting an unparsable blob — held: `src/autoconfig.bp` `autoConfiguration` + each marker in `src/conditions.bp` `decl.fail` on `;`/`|` (code)
 
 ### Step 2 — the condition set
 
@@ -304,11 +304,11 @@ and no escape hatch: a configuration that needs a disjunction splits into two co
 also the form that reads correctly in the report.
 
 **Acceptance:**
-- [ ] Each marker on a wrong declaration kind fails with a message naming the marker and the kinds it accepts
+- [x] Each marker on a wrong declaration kind fails with a message naming the marker and the kinds it accepts — held: `src/conditions.bp` — each marker `decl.fail`s naming itself and the kinds it accepts (code)
 - [ ] `#[conditionalOnProperty("k")]` — one argument — is rejected by the compiler's own arity check, with no code in this front
 - [ ] `#[conditionalOnProperty("k", 1)]` is rejected by the type check, with no code in this front
-- [ ] Three conditions on one type produce three records in the blob, in source order
-- [ ] A condition marker used without `#[autoConfiguration]` on the same declaration fails, naming the missing marker — a condition that nothing reads is a silent no-op otherwise
+- [x] Three conditions on one type produce three records in the blob, in source order — held: `test/conditions_test.bp` "three conditions produce three records, in source order"
+- [x] A condition marker used without `#[autoConfiguration]` on the same declaration fails, naming the missing marker — a condition that nothing reads is a silent no-op otherwise — held: `src/conditions.bp` companion check ("needs #[autoConfiguration], a stereotype or #[bean]…") — widened to stereotypes/`#[bean]` for `#[profile]` (code)
 
 ### Step 3 — the apply pass: order, then evaluate
 
@@ -329,13 +329,13 @@ also the form that reads correctly in the report.
 sorted order, which is the whole reason the sort happens first.
 
 **Acceptance:**
-- [ ] `autoConfigure()` is idempotent: a second call re-evaluates nothing and returns the same report
-- [ ] `A` declaring `#[autoConfigureAfter("B")]` is evaluated after `B`, whatever order the modules loaded in
-- [ ] An `#[autoConfigureAfter]` naming an unregistered configuration is ignored and does not appear as a failure reason
-- [ ] `A` after `B` and `B` after `A` halts at startup naming both, rather than picking one
-- [ ] A configuration whose `#[conditionalOnMissingBean("DataSource")]` is true only because it ran before the configuration that provides `DataSource` is a test in this front, and it asserts the *ordered* answer
-- [ ] A bean factory belonging to an unmatched configuration raises when called, naming the configuration and the condition that failed — it does not return a half-built value
-- [ ] `autoConfigure()` never called: `rkAutoMatched` answers false for everything and the report says "not applied", rather than reporting an empty table
+- [x] `autoConfigure()` is idempotent: a second call re-evaluates nothing and returns the same report — held: `test/autoconfig_test.bp` "the pass is idempotent - a second call re-evaluates nothing"
+- [x] `A` declaring `#[autoConfigureAfter("B")]` is evaluated after `B`, whatever order the modules loaded in — held: `test/autoconfig_test.bp` "the pass sorts first, so `after` beats module load order"
+- [x] An `#[autoConfigureAfter]` naming an unregistered configuration is ignored and does not appear as a failure reason — held: `test/autoconfig_test.bp` "an ordering edge naming an unregistered configuration is dropped"
+- [x] `A` after `B` and `B` after `A` halts at startup naming both, rather than picking one — held: `test/autoconfig_test.bp` "a cycle halts the pass and names both members"
+- [x] A configuration whose `#[conditionalOnMissingBean("DataSource")]` is true only because it ran before the configuration that provides `DataSource` is a test in this front, and it asserts the *ordered* answer — held: `test/autoconfig_test.bp` "the ordered answer, not the registration-order one" + "the sort runs BEFORE the evaluation…"
+- [x] A bean factory belonging to an unmatched configuration raises when called, naming the configuration and the condition that failed — it does not return a half-built value — held: `test/autoconfig_test.bp` "an applied bean builds and an unapplied one raises"
+- [x] `autoConfigure()` never called: `rkAutoMatched` answers false for everything and the report says "not applied", rather than reporting an empty table — held: `test/autoconfig_test.bp` "with no pass run, nothing matches and the report says why"
 
 ### Step 4 — exclusion
 
@@ -349,10 +349,10 @@ in an exclusion silently disables nothing and leaves the developer believing the
 
 **Acceptance:**
 - [ ] `rakun.autoconfigure.exclude=RakunMailAutoConfiguration` leaves the mail configuration unapplied and its beans unbuildable
-- [ ] `autoConfigureExcept(["RakunMailAutoConfiguration"])` has the same effect with no property set
-- [ ] Both together are a union, not a conflict
+- [x] `autoConfigureExcept(["RakunMailAutoConfiguration"])` has the same effect with no property set — held: `test/autoconfig_test.bp` "autoConfigureExcept does the same with no property set"
+- [x] Both together are a union, not a conflict — held: `test/autoconfig_test.bp` "the two channels are a union, not a conflict"
 - [ ] `rakun.autoconfigure.exclude=Nonexistent` halts at startup naming the value and listing the registered names
-- [ ] An excluded configuration's conditions are not evaluated at all — a property read it would have done does not appear in the report
+- [x] An excluded configuration's conditions are not evaluated at all — a property read it would have done does not appear in the report — held: `test/autoconfig_test.bp` "an excluded configuration's conditions are never evaluated"
 
 ### Step 5 — the condition report
 
@@ -366,11 +366,11 @@ is a restatement of the source. "did not match: `P|rakun.mail.host|*` — proper
 diagnosis.
 
 **Acceptance:**
-- [ ] Every registered configuration appears in exactly one of the three blocks
-- [ ] A failed row names the failing condition record and the value seen (the property's value, the module list, the bean name)
+- [x] Every registered configuration appears in exactly one of the three blocks — held: `test/autoconfig_test.bp` "every registered name is in exactly one of the three blocks"
+- [x] A failed row names the failing condition record and the value seen (the property's value, the module list, the bean name) — held: `test/autoconfig_test.bp` "a failed row names the record and the value observed"
 - [ ] Only the *first* failing condition is reported per configuration — evaluation short-circuits, and the report says so rather than implying the rest passed
-- [ ] The report is stable across runs given the same inputs: the sorted order, not a hash order
-- [ ] `rakun.main.debug=false` prints nothing at boot and `rkAutoReport()` still returns the full table
+- [x] The report is stable across runs given the same inputs: the sorted order, not a hash order — held: `test/autoconfig_test.bp` "the report is stable across runs…" (Kahn's walk, ties by registration order)
+- [x] `rakun.main.debug=false` prints nothing at boot and `rkAutoReport()` still returns the full table — held: `test/autoconfig_test.bp` "…and debug only gates the printing"
 
 ### Step 6 — `#[profile]` on an ordinary component
 
@@ -384,10 +384,10 @@ The profile set itself is front 05's (`rakun.profiles.active`, `rakun.profiles.d
 `rakun.profiles.include`, and groups). This front reads it and does not define it.
 
 **Acceptance:**
-- [ ] `#[profile("prod")]` on a `#[service]` type leaves it unbuilt when `rakun.profiles.active=dev`
-- [ ] The same type appears in the condition report's "not applied" block with `F|prod` as the reason and the active set as the value observed
-- [ ] `#[profile]` with no active profile set at all uses front 05's default profile, and the report names which
-- [ ] Two `#[profile]` markers on one type are conjunctive and therefore unsatisfiable — this is rejected at comptime with a message saying to use one marker
+- [x] `#[profile("prod")]` on a `#[service]` type leaves it unbuilt when `rakun.profiles.active=dev` — held: `test/autoconfig_test.bp` "a #[profile] component off its profile is left unbuilt" + `test/conditions_test.bp` "F reads front 05's set…" (`dev,local` misses `F|prod`)
+- [x] The same type appears in the condition report's "not applied" block with `F|prod` as the reason and the active set as the value observed — held: `test/autoconfig_test.bp` "a failed row names the record and the value observed" + `test/conditions_test.bp` "F reads front 05's set…" (observed `active profiles: dev,local`)
+- [x] `#[profile]` with no active profile set at all uses front 05's default profile, and the report names which — held: `test/conditions_test.bp` "a named default profile is the one the report names"
+- [x] Two `#[profile]` markers on one type are conjunctive and therefore unsatisfiable — this is rejected at comptime with a message saying to use one marker — held: `src/conditions.bp` `profile` — `seen > 1` → `decl.fail("two #[profile] markers … Use one marker…")` (code)
 
 ## Examples
 
