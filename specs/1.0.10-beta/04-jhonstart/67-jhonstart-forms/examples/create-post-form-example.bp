@@ -23,7 +23,7 @@ import { form, input, label, button } from "jhonstart";
 // The protocol is the bundled library `actions` (decision 116) — rakun front 24
 // writes the envelope with it, this file reads it with it.
 import { state: {ActionState, newActionState, writeState}, envelope: {ActionEnvelope, writeEnvelope, parseActionState} } from "actions";
-import { FormBinding, formAction, formAttrs, hiddenActionField, actionState } from "jhonstart";
+import { FormBinding, formAction, formAttrs, hiddenActionField, actionState } from "jhonstart-forms";
 
 // Front 24 derives the action id and the server echoes it into the markup; this
 // file never constructs one. `contracts.md § 3` pins its shape.
@@ -40,7 +40,7 @@ val failedEnvelope = writeEnvelope(ActionEnvelope(
 ));
 
 fn binding() -> FormBinding {
-    return formAction(sampleActionId, "/blog/new");
+    return formAction(sampleActionId, "/blog/new", "__bp_action");
 }
 
 // The error line for one field. Pure, so "does the message reach the field"
@@ -87,9 +87,9 @@ fn CreatePostForm(actionId: string) -> @Component<ElementBase, Element> {
     // LANGUAGE GAP: tuple labels are lost through generic instantiation — this
     // would read `s.state` / `s.action` / `s.pending`; positional below.
     val s = use actionState(actionId, newActionState(""));
-    val state = s.0;
-    val binding = s.1;
-    val pending = s.2;
+    val state = s._0;
+    val binding = s._1;
+    val pending = s._2;
     return createPostForm(binding, state, pending);
 }
 

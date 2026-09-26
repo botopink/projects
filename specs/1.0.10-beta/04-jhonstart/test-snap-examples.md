@@ -2,7 +2,7 @@
 
 The same map as [`test-snap.md`](./test-snap.md) for `repository/jhonstart/examples/**` — the five projects `modules.md § 8` creates. Contract, helpers and style rules are `test-snap.md § 0`; nothing is restated here. Each project has `botopink.json` (dependencies as listed), `src/` or `app/`, `test/`, and `test/__snapshots__/` beside its tests. The paths under each case are relative to `repository/jhonstart/examples/<project>/test/`.
 
-The v0 projects `jhonstart-counter/`, `jhonstart-markup/` (was `jhonstart-html/`), `jhonstart-todo/` keep their inline `assert` tests and gain no snapshots; `jhonstart-app/` is removed when `blog-ssr` lands (its three aspirational files are what `blog-ssr/app/` makes real).
+The v0 projects `jhonstart-counter/`, `jhonstart-markup/`, `jhonstart-todo/` keep their inline `assert` tests and gain no snapshots; `jhonstart-app/` is removed when `blog-ssr` lands (its three aspirational files are what `blog-ssr/app/` makes real).
 
 ---
 
@@ -195,7 +195,7 @@ segment: blog
 
 ---
 
-## `examples/nav-shell/` — fronts 26 · 27 · 94 — depends on `jhonstart`, `jhonstart-link`, `jhonstart-test` — target both (link gate commonJS)
+## `examples/nav-shell/` — fronts 26 · 27 · 94 — depends on `jhonstart`, `jhonstart-link`, `jhonstart-test` — target both
 
 ```
 src/
@@ -633,4 +633,4 @@ test "shell: the main caveat ---- el keeps a module that declares main" {
 | `forms` | 7 | 67 binding, field message, pending, optimistic + nested status, GET form · 94 `form`/`input`/`label`/`button`/`select`/`option` · 26/27 by the search form's navigation (asserted as the URL) |
 | `document-shell` | 4 | 94 document builders, doctype prefix, `main` caveat · DSL parity |
 
-The browser-side behaviour none of these can reach — hydration, click interception, `__bp1` adoption, submit interception, `redirectTo → push` — is `../../06-onze/53-onze-example-app/`'s, the first project with a browser in the loop.
+The browser-side behaviour none of these can reach — hydration, click interception, `__bp1` adoption, submit interception, `redirectTo → push` — is `../06-onze/53-onze-example-app/`'s, the first project with a browser in the loop.

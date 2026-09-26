@@ -61,9 +61,9 @@ needs the route tree — which front 22 has and front 32 does not.
 - `repository/rakun/src/http.bp:45-73` — `Response.ok/json/created/withStatus/notFound/badRequest`.
   There is no `Response` builder with a content type, which is why every route this front registers
   sets its content type through front 04's `rkSetReplyHeader`.
-- `libs/std/src/path.bp` — the posix calculator. `walk` and `glob` are added by front 01 and this front
-  is one of their two consumers (front 60 is the other); `escape.attribute` is likewise new in front 01
-  and is what keeps a `<`-bearing title out of an XML attribute.
+- `libs/std/src/path.bp` — the posix calculator. `io.fs`'s `walk` and `glob` walk the tree, and this
+  front is one of their two consumers (front 60 is the other); `escape.attribute` is what keeps a
+  `<`-bearing title out of an XML attribute.
 - `repository/rakun/src/metadata_routes.bp` does not exist.
 
 ## Mechanism

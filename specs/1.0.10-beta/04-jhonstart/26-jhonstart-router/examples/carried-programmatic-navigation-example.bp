@@ -1,15 +1,15 @@
 // components/login-form.bp
-// Under the `use` rule (00-compiler-carry-over/19, decision 104):
-// `fn … -> @Component<ElementBase, Element>`, `use router()`, and the binding never
-// reuses the hook's name.
-#[client]
+// A client component that navigates programmatically: `use router()` under a
+// `@Component<ElementBase, Element>` return; the binding never reuses the
+// hook's name.
 import {router} from "jhonstart";
-import {Element, form, input, button, text} from "jhonstart";
+import {Element, ElementBase, form, input, button, text} from "jhonstart";
 
+#[client]
 pub fn LoginForm() -> @Component<ElementBase, Element> {
     val r = use router();
     return form([
-        input([attrs: [#("type", "email"), #("name", "email")]]),
+        input([], attrs: [#("type", "email"), #("name", "email")]),
         button([text("Sign in", attrs: [])], attrs: [
             #("onClick", "handleLogin"),
         ]),

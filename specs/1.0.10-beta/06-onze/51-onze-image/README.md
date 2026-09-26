@@ -10,13 +10,13 @@ allowlist check, the resize/re-encode call, the cache lookup and the `/_onze/ima
 swapped for the decoded image, and the `sizes`-driven `srcset` selection. The component itself renders
 on the server and emits markup both halves agree on
 **Wave:** 8
-**Depends on:** 49 (config, `publicDir`, `outDir`), 01 (`process` spawner, `path`), 03 (content hash
+**Depends on:** 49 (config, `publicDir`, `outDir`), 01 (`io.process` spawner, `path`), 03 (content hash
 for the cache key and the asset name), 12 (the cache store the optimized bytes live in), 25 (the route
 handler shape), 69 (the asset manifest and `public/` serving)
 **Owns:** `modules/onze-assets/src/image.bp`, `modules/onze-assets/src/image_handler.bp`, `modules/onze-assets/test/image_test.bp` (the member cut of [`../modules.md`](../modules.md))
 **Does not touch:** `repository/onze/modules/onze/**` (F49), `repository/onze/modules/onze-assets/src/root.bp` and its `botopink.json`
 (F69 — except the `pub mod image; pub mod image_handler;` lines, handed to F69), `modules/onze-assets/src/font.bp` (F52),
-`repository/onze/modules/onze-og/**` (F70), `repository/jhonstart/src/element.bp` (frozen),
+`repository/onze/modules/onze-og/**` (F70), `repository/jhonstart/**`,
 every other repository
 **Reference:** `NEXTJS-DOCS.md § 16. Otimização de Imagens`, `§ 28. Configuração (next.config.js)`
 (`images.remotePatterns`, `images.formats`) ·
@@ -39,22 +39,21 @@ server can reach. Next.js answers this with `images.remotePatterns` and refuses 
 that is not listed (`NEXTJS-DOCS.md § 28`). An app cannot add that control afterwards, because by then
 the fetch has already happened.
 
-Nothing in the workspace addresses either. `repository/jhonstart/src/element.bp:10-53` has eight
-element constructors and `img` is not among them, so there is not even a way to emit an `<img>` tag
-through the builder API today.
+Nothing in the workspace addresses either. jhonstart's `img(_children, attrs)`
+(`repository/jhonstart/modules/jhonstart/src/elements.bp`) emits a bare void `<img>` with the
+attributes it is given and computes nothing.
 
 ## Current state
 
-- `repository/onze/src/image.bp` does not exist; `repository/onze/` does not exist until front 49.
-- `repository/jhonstart/src/element.bp` is **frozen** for this milestone (`fronts.md`, track C). It
-  provides `text, fragment, div, span, p, h1, ul, li` and no `img`. What it does provide is the
-  `Element` record itself — `pub type Element(tag, value, children, attrs)` at `element.bp:3-8` — so
+- `repository/onze/modules/onze-assets/src/image.bp` does not exist; the submodule is front 69's.
+- `repository/jhonstart/modules/jhonstart/src/element.bp` has the public `Element` record —
+  `pub type Element(tag, value, children, attrs)` — so
   `Element(tag: "img", value: "", children: [], attrs: […])` is a legal, public construction, and that
-  is what this front uses. No front adds `img` to jhonstart, and this front does not ask for one.
-- `libs/std/src/process.bp:28-62` is introspection only — no spawner. Front 01 adds it.
-- `libs/std/src/fs.bp` has `readText`/`writeText`/`stat`, all string-oriented. There is no binary read
+  is what this front uses; jhonstart's `img` builder (`elements.bp`) is the same void element.
+- std's `io.process` has the spawner: `run(cmd, args) -> @Result<Exit, string>`, no shell.
+- std's `io.fs` has `readText`/`writeText`/`stat`, all string-oriented. There is no binary read
   in std and this front does not need one: the bytes never enter botopink (see *Mechanism*).
-- `libs/std/src/path.bp:95` has `normalize`, which is what the traversal check is built on.
+- std's `path` has `normalize`, which is what the traversal check is built on.
 
 ## Mechanism
 
@@ -290,7 +289,7 @@ key and the response headers.
 
 ## Definition of done
 
-- [ ] `src/image.bp` and `test/image_test.bp` exist; the `pub mod image;` line is handed to front 49
+- [ ] `src/image.bp` and `test/image_test.bp` exist; the `pub mod image;` line is handed to front 69
 - [ ] `defaultImageConfig()` has an empty `remotePatterns`, and the README of the example app says so
 - [ ] Every prop in `NEXTJS-DOCS.md § 16`'s table is honoured or explicitly listed as out of scope
 - [ ] `docs.md` documents the pass-through degradation and the no-NIF rule

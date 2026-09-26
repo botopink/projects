@@ -1,14 +1,13 @@
 # rakun's migration onto `@BeamMemory` — step 8 of front 17, handed to `03-rakun`
 
-Front 17 edits no library. This is the migration, written against rakun at submodule commit
-`10c63974` and emilia at `9c19e22` (the pins of `.tasks/17-beam-memory` on 2026-09-25), with the
+Front 17 edits no library. This is the migration, written against rakun and emilia, with the
 line ranges re-derived there rather than carried from the README. It is registered against
 [decision 17](../../../1.0.5-beta/decisions-taken.md#17-rakuns-erlang-story)'s container-and-router
 half and opens the moment C-10 lands the three modes; nothing here can be done before that.
 
 ## What moved since the README was measured
 
-Two facts changed between `bef762b` and `10c63974`, and one of them changes the shape of the payoff:
+Two facts changed between, and one of them changes the shape of the payoff:
 
 1. **The paths.** `rakun/src/runtime.mjs` is `modules/rakun/src/runtime.mjs` (the 1.0.10 packaging
    made rakun a workspace). It is **still 231 lines** and the five registry ranges are unchanged.

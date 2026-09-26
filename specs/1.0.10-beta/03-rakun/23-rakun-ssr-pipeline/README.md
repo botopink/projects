@@ -12,7 +12,7 @@ chain), 06 (scopes), 62 (request context — the request scope, `setPhase`, `mar
 this front — not the reverse
 **Owns:** `repository/rakun/modules/rakun-app/src/ssr.bp` — `ChunkWriter`, `PageRenderer`, `page(pattern, render)`
 through which onze hands it one renderer per page pattern, and the page dispatch —
-`repository/rakun/modules/rakun-app/src/sidecars/rakun_ssr.erl` (the chunk writer), `repository/rakun/modules/rakun-app/test/ssr_test.bp` (in the `rakun-app` member since front 95's relocation, `modules.md` § The cut)
+`repository/rakun/modules/rakun-app/src/sidecars/rakun_ssr.erl` (the chunk writer), `repository/rakun/modules/rakun-app/test/ssr_test.bp` (the `rakun-app` member, `modules.md` § The cut)
 **Does not touch:** `repository/rakun/src/http.bp`, `src/decorators.bp`, `src/bootstrap.bp`
 (frozen), the files owned by 22 · 24 · 25, and every file outside `repository/rakun/` — rakun
 builds no HTML and imports nothing from `jhonstart`, `emilia` or `onze` (decision 113). The walker,
@@ -47,13 +47,13 @@ else about them. A navigation signal raised by a page is jhonstart's to turn int
 
 - `repository/rakun/src/http.bp:45-78` — `Response` has `status` and `body` and nothing else. No
   headers, no streaming body, no cookie jar.
-- `repository/rakun/src/ssr.bp` exists and carries the render as well as the dispatch: the escaping
+- `repository/rakun/modules/rakun-app/src/ssr.bp` carries the render as well as the dispatch: the escaping
   walker (`renderNode`, `raw`), `compose`, `Payload` / `writePayload` / `payloadEscape` / `document`,
   the `RenderHooks` record with `defaultHooks` / `setHooks`, island and hole ordinals, and
   `render` / `renderStreaming`, the JSON helpers the payload writer uses (`ssr.bp:641-676`,
   `jsonString` / `jsonBool` / `jsonStrings` / `jsonPairs` / `jsonTriples`, which escape no control
   character but `\n` `\r` `\t`), and the dispatch's first seam, `RenderedPage` and
-  `setPageRender(fn(PageContext) -> @Task<RenderedPage>)`. `repository/rakun/src/ssr.mjs` carries
+  `setPageRender(fn(PageContext) -> @Task<RenderedPage>)`. `modules/rakun-app/src/ssr.mjs` carries
   the fill function and the payload reader. The render is jhonstart's under decision 113 and leaves
   rakun in Step 5; the seam becomes `ChunkWriter` / `PageRenderer` in Steps 1–2 (decision 114).
 
@@ -77,7 +77,7 @@ imports what fills them (decision 114):
 ```bp
 pub type ChunkWriter(setStatus: fn(code: i32) -> void, setHeader: fn(name: string, value: string) -> void,
                      write: fn(string) -> @Task<void>, close: fn() -> @Task<void>);
-pub type PageRenderer = fn(req: Request, out: ChunkWriter) -> @Task<void>;
+pub type PageRenderer = fn(req: Request, out: ChunkWriter) -> @Task<@Result<void, string>>;
 
 pub fn page(pattern: string, render: PageRenderer) -> i32     // front 22's rkAppRegisterPage
 pub fn servePage(req: Request, out: ChunkWriter) -> @Task<i32>   // the status written
@@ -88,7 +88,7 @@ into jhonstart's `Response`, which onze builds over `out` field by field (decisi
 
 ```bp
 // onze, at boot — not rakun code
-rakun.page(route, fn(req: Request, out: ChunkWriter) -> @Task<void> {
+rakun.page(route, fn(req: Request, out: ChunkWriter) -> @Task<@Result<void, string>> {
     return ui.renderStream(input(req), requestData(req), Response(
         status: fn(c) { out.setStatus(c); },
         header: fn(n, v) { out.setHeader(n, v); },
@@ -113,6 +113,12 @@ A URL that matches no page is this front's 404, answered before any renderer run
 reason raised out of a page renderer is **not** translated into a status: page signals are
 jhonstart's (decision 117 rule 1), so the raise is an error of that request and answers 500, like
 any other failure of the renderer. rakun names no jhonstart signal.
+
+**A failed render** (decision 130). A renderer whose future resolves `Error(msg)` is answered like an
+untagged raise: status 500 when nothing was written, otherwise the response is closed; `msg` goes to
+the log under a correlation digest and never on the wire. `out.write` / `out.close` are `@Task<void>`
+— a write never fails as a value; a write after `close`, and `setStatus` / `setHeader` after the
+first `write`, are misuse and raise (decision 67). `servePage` is `@Task<i32>`, the status written.
 
 **The phase word.** The dispatch calls front 62's `setPhase(RequestPhase.Render)` before the renderer
 runs and restores the previous phase when its future resolves. That is not bookkeeping: it is the

@@ -1,7 +1,6 @@
 // Front 47 — emilia SVG and accessibility.
 //
-// The `Svg` and `A11y` catalogues, the gated `sr-only` pair marked at its
-// declaration site, then an icon-only close button whose visible glyph is a
+// The `Svg` and `A11y` catalogues, then an icon-only close button whose visible glyph is a
 // stroked SVG and whose label is `sr-only`.
 //
 // Upstream:
@@ -19,7 +18,7 @@
 
 import {emilia, flush, Token} from "emilia";
 
-// `paletteVar(family, shade)` comes from front 33 and returns
+// `paletteVar(family, shade)` returns
 // `var(--color-red-500)`. Every colour in this file goes through it, so
 // `fill-red-500` and `bg-red-500` read one theme entry and cannot drift.
 import {paletteVar} from "emilia";
@@ -52,18 +51,12 @@ val strokeWidths: Token[] = [
     .Svg.StrokeWidth.2,
 ];
 
-// LANGUAGE GAP: a payload leaf nested inside an enum section cannot be
-// constructed by any spelling (language-gaps.md row 52) — verified against the
-// real compiler. So these are TOP-LEVEL `Token` variants: `SvgFill`, not
-// `Svg.Fill.Color`. Contract § 4a states the rule.
-//
-// LANGUAGE GAP: their fields are `string` and not a colour section type,
-// because a section-typed value cannot be constructed standalone either
-// (row 53). The value is front 33's `paletteVar(...)` result.
-//
-// LANGUAGE GAP: and even at top level, a dot-shorthand path followed by a
-// payload call does not propagate the typed-array context (row 51), so
-// construction goes through a fn.
+// A payload leaf nested inside an enum section cannot be constructed, so these
+// are TOP-LEVEL `Token` variants: `SvgFill`, not `Svg.Fill.Color`. Their fields
+// are `string` and carry a `paletteVar(...)` result. A dot-shorthand path
+// followed by a payload call does not carry the typed-array context, so
+// construction goes through a fn (emilia exports `fillColor`, `strokeColor`
+// and `rawStrokeWidth`).
 fn fillColor(v: string) -> Token {
     return Token.SvgFill(value: v);
 }
@@ -77,18 +70,16 @@ fn rawStrokeWidth(v: string) -> Token {
 }
 
 val brandIcon: Token[] = [
-    fillColor(paletteVar("red", 500)),
-    strokeColor(paletteVar("blue", 500)),
+    fillColor(paletteVar("red", "500")),
+    strokeColor(paletteVar("blue", "500")),
     rawStrokeWidth("1.5"),
 ];
 
 // ── accessibility ────────────────────────────────────────────────────────────
 //
-// GATED. § 19.2 gives two HTML examples and no CSS: no property list, no
-// values, not even a count of declarations. These two tokens are declared here
-// and their bodies come from the upstream page, read in one sitting, with the
-// URL and the date recorded in the dispatcher comment in emilia.bp and a
-// checkbox in the front's TODO.md that must be ticked before the front lands.
+// § 19.2 gives two HTML examples and no CSS. The bodies are upstream's
+// (`utilities.ts`, `staticUtility('sr-only')`): `sr-only` is nine declarations
+// and `not-sr-only` restores eight of them — every one but `border-width`.
 //
 // `.A11y.SrOnly` is a multi-declaration body and composes through the same `;`
 // join every other token uses.
@@ -119,7 +110,7 @@ val forcedColors: Token[] = [
 // `await` it.
 
 fn closeIconTokens() -> Token[] {
-    val hovered: Token[] = [strokeColor(paletteVar("red", 500))];
+    val hovered: Token[] = [strokeColor(paletteVar("red", "500"))];
     val icon: Token[] = [
         .Svg.Fill.None,
         .Svg.Stroke.Current,

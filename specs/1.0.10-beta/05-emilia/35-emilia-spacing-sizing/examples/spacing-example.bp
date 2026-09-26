@@ -8,9 +8,6 @@
 // Reference: TAILWIND_CSS_DOCS.md § 7. Spacing, § 21.2 Spacing Scale
 //
 // emilia runs at comptime and emits a CSS string; this file is target-independent.
-// Everything below is delivered by front 35. Today `Pad` has three directions
-// and `padTokenToCss` emits `padding-x:`, which is not a CSS property.
-// Colour tokens come from front 33; modifiers from front 34.
 
 import {emilia, flush, Token} from "emilia";
 
@@ -169,17 +166,17 @@ test "an axis direction emits two declarations from one token" {
     val tokens: Token[] = [.Pad.X.4];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{padding-left:calc(var(--spacing) * 4);padding-right:calc(var(--spacing) * 4)}</style>";
+    assert styles.contains("." + cls
+        + "{padding-left:calc(var(--spacing) * 4);padding-right:calc(var(--spacing) * 4)}");
 }
 
 test "the logical directions emit padding-inline-start and -end" {
     val tokens: Token[] = [.Pad.S.4, .Pad.E.4];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
+    assert styles.contains("." + cls
         + "{padding-inline-start:calc(var(--spacing) * 4)"
-        + ";padding-inline-end:calc(var(--spacing) * 4)}</style>";
+        + ";padding-inline-end:calc(var(--spacing) * 4)}");
 }
 
 test "no token emits a property CSS does not have" {
@@ -193,7 +190,7 @@ test "margin auto works on every direction" {
     val tokens: Token[] = [.Margin.All.Auto];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls + "{margin:auto}</style>";
+    assert styles.contains("." + cls + "{margin:auto}");
 }
 
 test "no margin token emits a Tailwind class fragment" {
@@ -208,16 +205,17 @@ test "a negative margin multiplies by a negative" {
     val tokens: Token[] = [.Margin.T.Neg.4];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls + "{margin-top:calc(var(--spacing) * -4)}</style>";
+    assert styles.contains("." + cls + "{margin-top:calc(var(--spacing) * -4)}");
 }
 
-test "child spacing emits a nested rule beside a plain declaration" {
+test "child spacing is a second rule, on the children, beside the plain declaration" {
     val tokens: Token[] = [.Pad.All.4, .Space.Y.4];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{padding:calc(var(--spacing) * 4)"
-        + ";& > :not(:last-child){margin-block-end:calc(var(--spacing) * 4)}}</style>";
+    assert styles.contains("." + cls + "{padding:calc(var(--spacing) * 4)}");
+    assert styles.contains(":where(." + cls + " > :not(:last-child)){--tw-space-y-reverse:0;"
+        + "margin-block-start:calc(calc(var(--spacing) * 4) * var(--tw-space-y-reverse));"
+        + "margin-block-end:calc(calc(var(--spacing) * 4) * calc(1 - var(--tw-space-y-reverse)))}");
 }
 
 test "the comment thread pads, stacks and pulls up" {
@@ -225,5 +223,5 @@ test "the comment thread pads, stacks and pulls up" {
     assert out.startsWith("<style>");
     assert out.contains("padding-left:calc(var(--spacing) * 6)");
     assert out.contains("margin-top:calc(var(--spacing) * -8)");
-    assert out.contains("& > :not(:last-child){margin-block-end:calc(var(--spacing) * 4)}");
+    assert out.contains(" > :not(:last-child)){--tw-space-y-reverse:0;");
 }

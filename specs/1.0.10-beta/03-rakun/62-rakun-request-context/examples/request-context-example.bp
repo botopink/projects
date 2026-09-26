@@ -30,10 +30,11 @@ val _dashboard = page("dashboard", fn(req: Request, out: ChunkWriter) {
     if (session == "") {
         out.setStatus(307);
         out.setHeader("location", "/login");
-        return out.close();
+        await out.close();
+        return;
     };
     val theme = cookies().get("theme").unwrapOr("system");
-    return out.write("signed in as " + session + "; theme: " + theme);
+    await out.write("signed in as " + session + "; theme: " + theme);
 });
 
 // SERVER — a server action. The phase is Action, so a cookie write is legal.

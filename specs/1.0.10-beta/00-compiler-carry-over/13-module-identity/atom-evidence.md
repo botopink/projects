@@ -514,7 +514,7 @@ winner. No file or directory in the seven repositories uses `__` today.
 
 The five experiments below were added for
 [policy 3](./policy-3-module-per-type.md) — one BEAM module per `type` and per `behavior`, decided
-by the maintainer on 2026-09-17.
+by the maintainer.
 
 <a id="e22--four-sibling-s-modules-from-one-source-file"></a>
 

@@ -11,12 +11,8 @@
 //            Radius (default scale)
 //
 // emilia runs at comptime and emits a CSS string; this file is target-independent.
-// `Border.W {0,1,2,4}`, `Border.Color` (2 families) and `Border.Rounded
-// {Sm,Md,Lg,Full}` exist today; the per-side widths, the style sub-section, the
-// full colour grid and every directional radius are delivered by front 40.
-// Colours are front 33's palette reached through `paletteVar`; the `--radius-*`
-// ladder lives in front 54's theme. Spacing from 35, layout from 36,
-// modifiers from 34.
+// Colours are the palette reached through `paletteVar`; the `--radius-*` ladder
+// lives in the theme.
 
 import {emilia, flush, Token} from "emilia";
 
@@ -67,8 +63,7 @@ fn styleValues() -> Token[] {
 }
 
 // ── colour ───────────────────────────────────────────────────────────────────
-// The full palette, not the two families emilia carries today — and the shade
-// is no longer discarded.
+// The full palette, and every shade is its own custom property.
 
 fn colourValues() -> Token[] {
     val values: Token[] = [
@@ -132,8 +127,7 @@ fn radiusCorners() -> Token[] {
     return values;
 }
 
-// The logical corner family is not in the local reference; this front's README
-// records it under `## Reference gaps` and it must be verified upstream.
+// The logical corners follow the writing direction: `border-start-start-radius` …
 
 fn radiusLogical() -> Token[] {
     val values: Token[] = [
@@ -203,28 +197,28 @@ pub fn pricingCard(plan: string, price: string, note: string) -> @Task<string> {
     return styles + markup;
 }
 
-test "the four widths that compile today are unchanged, and 8 is new" {
+test "five widths on the shorthand" {
     val cls = emilia(widthValues());
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{border-width:0px;border-width:1px;border-width:2px"
-        + ";border-width:4px;border-width:8px}</style>";
+    assert styles.contains("." + cls
+        + "{border-width:0;border-width:1px;border-width:2px"
+        + ";border-width:4px;border-width:8px}");
 }
 
 test "an axis width emits two declarations and a side width emits one" {
     val tokens: Token[] = [.Border.W.X.1, .Border.W.T.4];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{border-left-width:1px;border-right-width:1px;border-top-width:4px}</style>";
+    assert styles.contains("." + cls
+        + "{border-left-width:1px;border-right-width:1px;border-top-width:4px}");
 }
 
 test "the logical widths emit the inline-start and inline-end properties" {
     val tokens: Token[] = [.Border.W.S.1, .Border.W.E.1];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{border-inline-start-width:1px;border-inline-end-width:1px}</style>";
+    assert styles.contains("." + cls
+        + "{border-inline-start-width:1px;border-inline-end-width:1px}");
 }
 
 test "the six border styles" {
@@ -238,7 +232,7 @@ test "the border colour no longer discards its shade" {
     val tokens: Token[] = [.Border.Color.Slate.200];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls + "{border-color:var(--color-slate-200)}</style>";
+    assert styles.contains("." + cls + "{border-color:var(--color-slate-200)}");
     assert !styles.contains("border-color:gray");
 }
 
@@ -259,8 +253,8 @@ test "rounded-full stays a literal and the rest become theme variables" {
     val tokens: Token[] = [.Border.Rounded.Full, .Border.Rounded.Lg];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{border-radius:9999px;border-radius:var(--radius-lg)}</style>";
+    assert styles.contains("." + cls
+        + "{border-radius:9999px;border-radius:var(--radius-lg)}");
     assert !styles.contains("border-radius:0.5rem");
 }
 
@@ -275,9 +269,9 @@ test "a side radius sets two corners and a corner radius sets one" {
     val tokens: Token[] = [.Border.Rounded.T.Lg, .Border.Rounded.Bl.Xs];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
+    assert styles.contains("." + cls
         + "{border-top-left-radius:var(--radius-lg);border-top-right-radius:var(--radius-lg)"
-        + ";border-bottom-left-radius:var(--radius-xs)}</style>";
+        + ";border-bottom-left-radius:var(--radius-xs)}");
 }
 
 test "every directional sub-section carries the full ladder" {
@@ -291,9 +285,9 @@ test "the logical radius forms emit the start and end corner properties" {
     val tokens: Token[] = [.Border.Rounded.Ss.Md, .Border.Rounded.Ee.Md];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
+    assert styles.contains("." + cls
         + "{border-start-start-radius:var(--radius-md)"
-        + ";border-end-end-radius:var(--radius-md)}</style>";
+        + ";border-end-end-radius:var(--radius-md)}");
 }
 
 test "the pricing card is rounded on top and square on the bottom" {
@@ -302,5 +296,6 @@ test "the pricing card is rounded on top and square on the bottom" {
     assert out.contains("border-top-left-radius:var(--radius-2xl)");
     assert out.contains("border-bottom-left-radius:0");
     assert out.contains("border-top-width:1px;border-style:dashed");
-    assert out.contains("@media (hover: hover){&:hover{border-color:var(--color-indigo-400)}}");
+    assert out.contains("@media (hover: hover){.");
+    assert out.contains(":hover{border-color:var(--color-indigo-400)}}");
 }

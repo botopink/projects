@@ -8,17 +8,17 @@ hook, and nothing tells rakun-web's static server (front 82) to serve `public/`
 **Depends on:** 49 (config, `publicDir`, `outDir`, and the boot that fills jhonstart's
 `RenderHooks.headExtra` and registers the static roots) · 03 (fingerprints) · 68 (the manifest it
 appends `Y` records to) · 82 (rakun-web's static-file server, which serves the roots this front
-declares — decision 116) · 01 (`escape.html`, `escape.attribute`, `process.run`, `fs`, `path`)
+declares — decision 116) · 01 (`escape.html`, `escape.attribute`, `io.process.run`, `io.fs`, `path`)
 **Owns:** `repository/onze/modules/onze-assets/src/**`,
 `repository/onze/modules/onze-assets/test/**` — CSS modules, the global stylesheet and its
 fingerprint, the `Y` manifest records, the two static roots handed to rakun-web front 82, the
 preprocessor hook
-**Does not touch:** `repository/emilia/src/**` (emilia's `flush()` contract is not called here at
+**Does not touch:** `repository/emilia/**` (emilia's `flush()` contract is not called here at
 all), `repository/jhonstart/**` — the moments emilia's sheet is flushed into the document are
 jhonstart front 30's `RenderPlugin` calls, and the adaptation to `flush()` is the
 `jhonstart-emilia` bridge's (decision 113) — `repository/onze/modules/onze-bundler/src/manifest.bp`
 (front 68 owns the record and the parser; this front hands it the style records),
-`repository/onze/src/integration.bp` (front 49, which registers the bridge plugin at boot),
+`repository/onze/modules/onze/src/integration.bp` (front 49, which registers the bridge plugin at boot),
 `repository/rakun/**` — the static-file server is rakun-web front 82's
 **Reference:** `NEXTJS-DOCS.md § 15. Estilização (CSS)` (CSS Modules · Global CSS · Sass ·
 `useServerInsertedHTML`), `§ 3. Estrutura do Projeto` (`public/`) · `../../contracts.md § 4`
@@ -45,7 +45,7 @@ jhonstart. onze's only part in it is front 49 registering the bridge at boot.
 
 ## Current state
 
-- `repository/onze/` does not exist; `modules/onze-assets/` is created by this front inside it.
+- `repository/onze/modules/` does not exist; `modules/onze-assets/` is created by this front inside it.
 - Nothing in the workspace reads or serves a `.css` file. `grep -rn "text/css" repository/` is empty.
 
 ## Mechanism

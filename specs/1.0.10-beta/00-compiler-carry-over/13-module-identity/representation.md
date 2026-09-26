@@ -1,9 +1,9 @@
 # How a value is represented today, per backend
 
-Measured 2026-09-18 at `botopink-lang` `26d4fdc` by compiling one scratch program with the installed
+Measured by compiling one scratch program with the installed
 CLI and executing every backend. The program, the commands and the raw output are
-[`evidence.md` § E11](./identity-evidence.md#e11--one-program-five-backends). Line numbers are at `26d4fdc`
-— the [previous reading](./README.md) was taken at `0e5ff66` and every number in it has drifted by
+[`evidence.md` § E11](./identity-evidence.md#e11--one-program-five-backends). Line numbers are
+— the [previous reading](./README.md) was taken and every number in it has drifted by
 roughly +200 lines; re-locate by symbol, not by line.
 
 The program:
@@ -28,7 +28,7 @@ type Shape { Circle(radius: i32), Dot }   // one payload variant, one unit varia
 | `Color.Red` (all-unit enum) | `'Red'` | `{atom,'Red'}` | `"Red"` | `enum Color` member | `i32.const 0` — **no allocation at all** |
 | Can the value answer "what type am I?" | **no** for a record; **partly** for a variant (the variant's own name, unqualified) | same | **yes** for a record (`instanceof`); **yes** for a payload variant (`.tag`); **no** for a unit variant | n/a — types are erased at run time | **no**, for anything |
 
-Nothing below is a proposal. It is what `26d4fdc` emits.
+Nothing below is a proposal. It is what emits.
 
 ---
 
@@ -235,7 +235,7 @@ Each row is the **minimum** the value must carry for that feature alone.
 | **§7 one source-shaped formatter per type** | the tag must **name the formatter** | A tag is enough if the backend also emits a lookup table. It is *more* than enough if the tag is the A2 atom under [policy 3](./policy-3-module-per-type.md), because the atom is then a loadable module holding the type's functions: the formatter is `(maps:get('__bp_type', V)):format(V)`, one `call_ext`, no table, and a crash inside it names the type in the stack trace. **This is the only one of the four that forces the identity to be the module atom rather than any injective tag** — see [`halves-and-ordering.md`](./halves-and-ordering.md) § 2 |
 | §2.1 nothing leaves `unknown` unchecked | the check it needs is §4.2's | — |
 
-Sequencing note carried forward and re-verified at `26d4fdc`: `is` is a lexer token
+Sequencing note carried forward and `is` is a lexer token
 (`lexer.zig`) parsed **only** as a type-guard return annotation (`parser/decls.zig`); there is no
 `x is T` expression. [`../01-checker/`](../01-checker/README.md) N21 lands it, N20 the unions, N22
 the `case` arms, N19 `unknown`. This front supplies what those expressions lower to.

@@ -9,7 +9,7 @@ only after their files' owners
 
 Paths are relative to `repository/botopink-lang/`. Item numbers are 1.0.1-beta's
 [`05-repo-hygiene.md`](../../../1.0.1-beta/05-repo-hygiene.md) groups, kept so old references
-resolve. Every fact below was measured at the compiler `front/sweep-docs` builds (2026-09-26).
+resolve.
 
 ---
 

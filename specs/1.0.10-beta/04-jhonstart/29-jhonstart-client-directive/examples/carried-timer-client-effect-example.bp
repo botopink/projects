@@ -1,15 +1,16 @@
 // components/timer.bp
-#[client]
-import {Element, div, p, text} from "jhonstart";
-import {state, effect} from "jhonstart";
+// `effect(setup: fn(), deps)` — the setup runs in the browser only; on the
+// server pass `effect` is a no-op.
+import {Element, ElementBase, div, p, text} from "jhonstart";
+import {client, state, effect} from "jhonstart";
 
+#[client]
 pub fn Timer() -> @Component<ElementBase, Element> {
     val seconds = use state(0);
-    use effect({ ->
-        val interval = setInterval({ ->
+    val ticking = use effect({ ->
+        setInterval({ ->
             seconds.set(seconds.value + 1);
         }, 1000);
-        return { -> clearInterval(interval); };
     }, []);
     return div([
         p([text("Time: " + seconds.value.toString() + "s", attrs: [])], attrs: []),

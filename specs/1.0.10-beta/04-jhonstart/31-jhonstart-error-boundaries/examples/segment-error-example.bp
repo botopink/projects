@@ -9,8 +9,8 @@
 //
 // The reader never sees the error message. `infoFor` hands the fallback a
 // digest and an empty message; `serverInfoFor` hands front 17's logger the full
-// text under the same digest. The reader reports `a3f19c2b`, the operator greps
-// for `a3f19c2b`.
+// text under the same digest. The reader reports the digest, the operator greps
+// the log for it.
 //
 // The export is `ErrorPage`, not `Error`: `Error(error: E)` is the `@Result`
 // variant, and a module-level `pub fn Error` would shadow it.

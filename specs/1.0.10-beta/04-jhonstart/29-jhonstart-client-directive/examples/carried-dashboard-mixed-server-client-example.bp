@@ -1,12 +1,17 @@
 // app/dashboard/page.bp
-import {Element, div, h1} from "jhonstart";
+// A server page mixing a client component and a server component. A
+// `@Component` is called, never `use`d, and awaited (a Promise on commonJS,
+// decision 104); every `await` stands at statement level.
+import {Element, ElementBase, div, h1, text} from "jhonstart";
 import {Counter} from "@/components/counter";    // client component
 import {RecentPosts} from "@/components/posts";   // server component
 
 pub fn DashboardPage() -> @Component<ElementBase, Element> {
+    val counter = await Counter();                // hydrated on the client
+    val posts = await RecentPosts();              // rendered on the server
     return div([
-        h1([text("Dashboard")], attrs: []),
-        Counter(),               // hydrated on the client
-        await RecentPosts(),     // rendered on the server
+        h1([text("Dashboard", attrs: [])], attrs: []),
+        counter,
+        posts,
     ], attrs: []);
 }

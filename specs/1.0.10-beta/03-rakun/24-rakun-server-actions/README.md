@@ -56,10 +56,10 @@ the rejection is a 403, and there is no setting that turns it off.
   host cell, not in botopink.
 - `repository/rakun/src/http.bp:45-73` — `Response` carries no headers, so no `Set-Cookie`, which is
   what a session-writing action needs. Frozen; see *Blocked*.
-- `libs/std/src/crypto.bp:38` — `hmacSha256(key, data) -> string` already exists, so the id
-  derivation needs no new primitive. What does not exist is a constant-time compare; front 01 adds it.
-- `libs/std/src/querystring.bp` exists; percent-encoding of a form body does not, and front 01 adds
-  that too.
+- `hash` (`libs/std/src/hash.bp`) has `hmacSha256` and `equalsConstantTime`, so the id derivation
+  and its check need no new primitive.
+- `libs/std/src/querystring.bp` and `encoding`'s `percentEncode` / `percentDecode` / `formParse`
+  cover a form body.
 - `repository/rakun/src/actions.bp` does not exist.
 
 ## Mechanism
@@ -98,12 +98,11 @@ val __rkAction_createPost = rkRegisterAction("createPost", createPost);
 **The action id.** `rkRegisterAction` computes it on the server:
 
 ```
-id = "a_" + crypto.hmacSha256(buildSecret, module + "." + name + ":" + buildId).slice(0, 24)
+id = "a_" + hash.hmacSha256(buildSecret, module + "." + name + ":" + buildId).slice(0, 24)
 ```
 
-`hash.hmacSha256` exists in std today as `crypto.hmacSha256` (`libs/std/src/crypto.bp:38`; `hash` after decision 106) and needs nothing from front 01;
-what this front does need from front 01 is the **constant-time compare** used when the id from a
-request is checked against the registry, so that id lookup does not leak a prefix through timing.
+`hash.hmacSha256` (`libs/std/src/hash.bp`) derives it, and `hash.equalsConstantTime` is the
+**constant-time compare** used when the id from a request is checked against the registry, so that id lookup does not leak a prefix through timing.
 `buildId` is front 03's content hash of the build, and `buildSecret` is a per-deployment secret from
 front 05's config. The properties that matter:
 

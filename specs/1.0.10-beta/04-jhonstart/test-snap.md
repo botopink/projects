@@ -1,6 +1,6 @@
 # Track C — jhonstart · snapshot-test map (modules)
 
-The preventive snapshot map of `repository/jhonstart/modules/**`: the `jhonstart-test` helpers, then per front the `.bp` test cases and the exact `.snap` each produces. Written before the code so that every acceptance criterion in the nine READMEs has a literal it must reproduce. The contract is `../../01-std/{src-builtin,snapshots,asserts-api}.md`.
+The preventive snapshot map of `repository/jhonstart/modules/**`: the `jhonstart-test` helpers, then per front the `.bp` test cases and the exact `.snap` each produces. Written before the code so that every acceptance criterion in the nine READMEs has a literal it must reproduce. The contract is `../01-std/{src-builtin,snapshots,asserts-api}.md`.
 
 ## 0 · Contract and helpers
 
@@ -47,7 +47,7 @@ All in `modules/jhonstart-test/src/`. Every helper serialises and calls `snapsho
 | `assertOptimistic(loc, base: i32, actions: i32[])` (`assert_form.bp`) | `base`, `actions` (space-joined), `value` = `applyOptimistic(base, actions, { c, a -> c + a })` |
 | `stubEnvelope(ok: bool, state: string, redirect: string) -> string` (`harness.bp`) | the JSON envelope `__jhFormSubmit` returns unparsed, written with `actions`' `writeEnvelope` (`n` = `R\|307\|<redirect>` when `redirect` is not `""`) — decision 116 |
 
-Three facts the map relies on and states rather than assumes silently: `renderToString` is the frozen renderer, so a void element renders `<input …></input>` in every snapshot below (front 94 *Blocked*; front 30's `renderNode` is the shipping renderer and has its own section below, § 30 · render); `renderHead`/`renderViewport` write their own tags and emit no closing tag for `meta`/`link`; a fixture standing in for a server component is `fn … -> @Component<ElementBase, Element>` even when it awaits nothing, because that is the thunk type `Boundary.child` and `renderServerComponent` take (decision 104), while a component that activates nothing is a bare `fn … -> Element` (question 92-b).
+Three facts the map relies on and states rather than assumes silently: `renderToString` is the frozen renderer, so a void element renders `<input …></input>` in every snapshot below (front 94 *Open*; front 30's `renderNode` is the shipping renderer and has its own section below, § 30 · render); `renderHead`/`renderViewport` write their own tags and emit no closing tag for `meta`/`link`; a fixture standing in for a server component is `fn … -> @Component<ElementBase, Element>` even when it awaits nothing, because that is the thunk type `Boundary.child` and `renderComponent` take (decision 104; `renderServerComponent` takes a `fn() -> @Task<Element>` thunk), while a component that activates nothing is a bare `fn … -> Element` (`README.md § 6` rule 6).
 
 Style rules every case follows: `if` is an expression and carries an `else`; no `//` inside a closure, template or enum body; `(expr).method()` is not written; a compound condition is bound to a `val` first; every constructor call spells `attrs:`; multiline text is leading-`\\` lines.
 
@@ -329,7 +329,7 @@ param=hi
 search=
 ```
 
-Not snapshotted here: `snapshot()` over the five `#[@External.Erlang]` cells and the six navigation verbs — they need a stubbed `jhonstart_router` erlang module beside the test and assert only that they return (items 2 and 5 of the front's test plan, plain `assert`).
+Not snapshotted here: `snapshot()` over the five route cells and the six navigation verbs — they run over the shipped host halves (`router_runtime.mjs` / `sidecars/jhonstart_router.erl`) and assert only what they return (items 2 and 5 of the front's test plan, plain `assert`).
 
 ---
 
@@ -801,8 +801,8 @@ The eager-`@Task` assertion ("constructing a `Boundary` runs nothing") is the fi
 
 The escaping walker, the composition order, the document and the payload (`contracts.md § 2`) —
 the render decision 113 places in jhonstart. rakun front 23's `ssr` cases (`../03-rakun/test-snap.md`
-§ 23) are the same expectations written against rakun's copy of this code; when front 30 lands they
-become cases of this file, rendered through `render` with a `PageInput` fixture instead of a request.
+§ 23) are the same expectations; they are cases of this file, rendered through `render` with a
+`PageInput` fixture instead of a request.
 
 ```bp
 import { Element, div, p, input, style, text } from "jhonstart";
@@ -1370,7 +1370,7 @@ Not snapshotted: `__jhFormSubmit`/`__jhFormPending`/`__jhFormState`/`__jhFormMou
 | Front | Criteria answered by a snapshot above | Left to plain `assert` or another front |
 |---|---|---|
 | 94 | signature parity (tag/attrs), attribute order, verbatim attribute, void drop + frozen `</input>`, renamed tags, `el`, both predicates, DSL resolution ×3 | escaping (01/30), self-closing in markup (frozen) |
-| 26 | `RouterState` accessors, absent key, first-match, `segments` bracket spelling, out-of-range `segment`, active nav ×2, search round-trip | `snapshot()` over the stub module, verbs return, `use` type-check |
+| 26 | `RouterState` accessors, absent key, first-match, `segments` bracket spelling, out-of-range `segment`, active nav ×2, search round-trip | `snapshot()` over the host halves, verbs return, `use` type-check |
 | 27 | seven attribute rows, `linkProps` defaults, `with*`, `prefetchMode` ×5, `layoutKey`/`layoutKeys`, `sharedDepth` ×3, idle `linkStatus` | mount idempotence, island mount count, route-kind flag read |
 | 28 | `RequestData` accessors present/absent, two sequential awaits, escaping at entry, `renderServerComponent` | `request()` over the filled context, the `await`-under-`-> Element` compile error |
 | 29 | emitted marker, placeholder id-only, payload rows, `serverSlot` hole, children unmodified, `serverOnly` | decorator rejections (compile), `propsFor`, `hydrate` |

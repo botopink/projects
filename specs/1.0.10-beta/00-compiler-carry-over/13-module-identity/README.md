@@ -107,9 +107,9 @@ wants 02 or 03 open beside it, that half is a carve-out rather than a stall.
 - **[`../01-checker/`](../01-checker/README.md)** for two things: the carve-out of the module-atom
   lines and the `buildModule` signatures of `src/comptime/{template_eval,decorator_eval}.zig`
   (step 5), and **N19–N22** for steps 17–19. In 1.0.4-beta the latter was front 06.
-  **Narrowed at `c2dd780`:** the *grammar* half has landed — `unknown` as a keyword (`6c849ae`),
-  `A | B` union types (`4a3449f`), `x is T` as an expression (`3b491e3`) and decision 8's `case`
-  arms (`dff3446`), merged as `d0c27f6`. What steps 17–19 still wait for is the **checker** half.
+  **Narrowed :** the *grammar* half has landed — `unknown` as a keyword,
+  `A | B` union types, `x is T` as an expression and decision 8's `case`
+  arms, merged as. What steps 17–19 still wait for is the **checker** half.
 - **[`../02-erlang/`](../02-erlang/README.md) and [`../03-beam/`](../03-beam/README.md)** — not as
   blockers under this order, but as the two fronts this one **stalls**: it shares `erlang.zig`,
   `beam_asm.zig` and `snapshots/codegen/{erlang,beam}/` with them and owns both files wholesale for
@@ -150,8 +150,8 @@ front's `erlDeclAtom(owner_path, .tpl, decl_name, hash)` wants.
 
 Paths are relative to `repository/botopink-lang/modules/compiler-core/` unless they start with
 `modules/compiler-cli/`, `modules/`, `libs/`, `scripts/` or `tests/`, which are relative to
-`repository/botopink-lang/`. Line numbers for halves 1–2 were read at `botopink-lang` `dfc34a9` and
-for half 3 at `26d4fdc`; **re-locate by symbol**. At `c2dd780` they had drifted again — the
+`repository/botopink-lang/`. Line numbers for halves 1–2 were read and
+for half 3; **re-locate by symbol** — the
 `-module` form is at `erlang.zig:999`, `moduleBasename` at `beam_asm.zig:930`, `variantTag` at
 `erlang.zig:5189` and `beam_asm.zig:1707` — and the suite has grown to **315** erlang and **314**
 beam cells, 2 573 in all, so ≈ 20 / 188 / 130 are floors, not current counts. Re-measure before
@@ -222,7 +222,7 @@ math:pi()   = {'EXIT',{undef,[{math,pi,[],[]},…]}}
 
 ### A2 — current state
 
-Measured at `dfc34a9`. Full trace in [`erlang-atoms.md` § 1](./erlang-atoms.md#1-current-state).
+Measured. Full trace in [`erlang-atoms.md` § 1](./erlang-atoms.md#1-current-state).
 
 | | Today |
 |---|---|
@@ -237,7 +237,7 @@ Measured at `dfc34a9`. Full trace in [`erlang-atoms.md` § 1](./erlang-atoms.md#
 | Collisions live in the tree | 6 × `-module(root)`, 2 × `-module(http)`, 11 OTP names |
 | Snapshots recording a non-`main` atom | **9** of 313 erlang (303 are `-module(main)`), 9 of 312 beam |
 
-> **Re-measured at `c2dd780` (2026-09-18), carrying into 1.0.5-beta.** The suite has grown: **315**
+> **Re-measured , carrying into 1.0.5-beta.** The suite has grown: **315**
 > erlang and **314** beam cells, of which **305** record `-module(main).`, out of **2 573** snapshots
 > in all. The shape of every claim above is unchanged — the counts are not. Re-measure before quoting
 > a number in a commit message; the ratios (≈ 20 for the rename, 188 for policy 3) are the
@@ -346,7 +346,7 @@ convention, `escript` names its synthesised module `whoami_escript__escript__178
 
 ### B1 — decided: one module per `type` and per `behavior`
 
-**Maintainer, 2026-09-17.** Not "slice when it collides" and not today's inlining: **every** `type`
+**Maintainer.** Not "slice when it collides" and not today's inlining: **every** `type`
 and `behavior` declaration gets its own BEAM module, named by A2 —
 `<package>@<path>@@<Decl>` ([decision 109](../../decisions-taken.md#109-a-module-atom-starts-with-its-package-and-the-declaration-boundary-is-); a behavior emits none, decision 23). The full working-out, each claim measured or
 run, is [`policy-3-module-per-type.md`](./policy-3-module-per-type.md). In summary:
@@ -365,12 +365,12 @@ is a *code generation* front — 188 snapshots each gaining whole emitted sectio
 dispatch path and a `codegenEmit` signature change. Landing them together makes every one of those
 188 diffs carry two reasons at once, and a re-recorded snapshot must be **classified, not
 bulk-accepted** ([the rule 1.0.4-beta ran under](../../../1.0.4-beta/overview.md)).
-**Decided 2026-09-17 by the maintainer: one front, not two.** Policy 3 runs inside this front as
+**Decided by the maintainer: one front, not two.** Policy 3 runs inside this front as
 steps 7–13, and the estimate goes from ≈ 3.5 days to **≈ 9** for halves 1 + 2. The classification problem is met by
 ordering rather than by splitting: the atom rename lands first and alone (steps 1–6, ≈ 20 snapshots,
 names only), the emitter split after it (steps 7–13, 188 snapshots, shapes), so no commit and no
 re-recorded snapshot ever carries both reasons. The steps are in
-[`policy-3-module-per-type.md` § 9](./policy-3-module-per-type.md#9-sequencing--decided-2026-09-17-one-front-not-two).
+[`policy-3-module-per-type.md` § 9](./policy-3-module-per-type.md#9-sequencing--decided-one-front-not-two).
 
 ---
 
@@ -404,7 +404,7 @@ Decision 8 §7 asks for `Person(name: "Ana", age: 30)` on all four. `'__bp_show'
 
 Kept because the first draft asserted them and they are wrong.
 
-| First draft said | Measured at `26d4fdc` |
+| First draft said | Measured |
 |---|---|
 | "commonJS already has the identity — this is an erlang/beam gap" (§ 1.4) | **Two thirds true.** A record is a class and a payload variant carries `.tag`, but a **unit** variant is the bare string `"Dot"` (`commonJS.zig:1563-1566`), so `d is string` would answer `true` for an enum value, and the emitted `.d.ts` declares `{ tag: "Dot" }` for the same value ([E12](./identity-evidence.md#e12--the-dts-contradicts-the-js-for-a-unit-variant)) — a live `.js`/`.d.ts` contradiction with **0** snapshots covering it |
 | "Every record `RUN LOG` and construct line moves — the largest item" (§ 2.4) | **The `RUN LOG` half is zero.** Across all 1 254 snapshots and 997 non-empty `RUN LOG` lines, none prints a record, a tagged tuple, a unit variant atom, a JS class instance or a `tag:` object ([E19](./identity-evidence.md#e19--the-snapshot-blast-radius)). Steps 15–16 change **no `RUN LOG`**, and one that moves is a bug |
@@ -523,9 +523,9 @@ maintainer's dotted form and the quoting cost is a known, paid-for cost elsewher
       ([decision 6](../../../1.0.5-beta/decisions-taken.md#6-the-erlang-output-layout--with-the-two-trees-written-out)):
       `out/erl/<atom>.erl` and `out/beam/<atom>.S`, one flat directory per BEAM target; commonJS and
       wasm keep `out/<module path><ext>` (`crossModule.outputStem`, `cli/build.zig`)
-- [x] The split is rejected — policy 3 is this front's steps 7–13 (maintainer, 2026-09-17)
+- [x] The split is rejected — policy 3 is this front's steps 7–13 (maintainer)
 - [x] The Elixir claim is verified or explicitly dropped — **dropped**: `elixir` is not installed
-      here (re-checked 2026-09-25), option A is chosen, and the sentence in
+      here (re-checked), option A is chosen, and the sentence in
       [`atom-options.md`](./atom-options.md) now says so instead of asking to be confirmed
 
 ### Step 1 — one canonical identity, one renderer per backend
@@ -547,7 +547,7 @@ chosen rule, `RESERVED` (the OTP module names, frozen as a source list), and
 - [x] **A collision check over the rendered atoms** in `crossModule.build` (`crossModule.zig:86`):
       a duplicate atom, a `RESERVED` hit or a name over 250 bytes is a located diagnostic, not a
       silent winner — this is the check whose absence is the whole front
-      ([`declaration-qualifier.md` § 4](./declaration-qualifier.md#4-__-is-reserved-and-what-that-costs))
+      ([`declaration-qualifier.md` § 4](./declaration-qualifier.md#4-why-the-package-and-why-))
 
 ### Step 2 — the output layout follows the atom
 
@@ -559,7 +559,7 @@ program ([`js-modules.md` § 2](./js-modules.md#2-what-the-erlang-decision-impli
 
 **Acceptance:**
 - [x] `botopink build --target erlang` on `examples/modules` writes one flat directory; every
-      `.erl` basename equals its `-module` atom — re-run 2026-09-25: `out/erl/{geometry,main,
+      `.erl` basename equals its `-module` atom — re-run: `out/erl/{geometry,main,
       shapes,shapes@circle,shapes@helpers}.erl`, five of five equal
 - [x] `erlc -o ebin out/erl/*.erl` compiles every module with no overwrite (five `.beam`)
 - [x] `botopink build --target commonJS` output tree is byte-identical to before this front —
@@ -576,7 +576,7 @@ stripping, and note that `erlc +from_asm` prints a name-mismatch error but **exi
 ([E17](./atom-evidence.md#e17)), so the check cannot read the exit code alone.
 
 **Acceptance:**
-- [x] `scripts/beam_export_audit.sh` at 295/295 — **453/453** at `4fe1747e` (policy 3's units
+- [x] `scripts/beam_export_audit.sh` at 295/295 — **453/453** (policy 3's units
       assemble too)
 - [x] A harness test: two aux modules with the same atom fail loudly instead of overwriting — one
       per backend in `runtime.zig`, and writing it found the refusal reading a freed key (`seen`
@@ -599,7 +599,7 @@ nothing currently red turns green. Add the cells that can see it.
 - [x] A library cell that builds `libs/std` and one sibling library into one erlang output
       directory with no filename collision — every erlang cell of `zig build test-libs` is one:
       `botopink test --target erlang` writes the library, its `std` dependency and every type unit
-      flat into one test output, named by atom (`test_cmd.zig`); 38 passed at `4fe1747e`
+      flat into one test output, named by atom (`test_cmd.zig`); 38 passed
 
 ### Step 5 — comptime modules into the same shape
 
@@ -618,7 +618,7 @@ Touches two literals plus two test assertions (`codegen/tests/comptime_module.zi
 - [x] `zig build test` green with `snapshots/comptime/**` byte-identical
 - [x] A template evaluation's module atom names its file and its template:
       `bp@comptime@jhonstart@html__tpl__html__<hash>`, not `template_<hash>` — closed by 01
-      (compiler `89ac5cdf`): `Env.comptimeOwners` records the declaring module's path keyed by the
+: `Env.comptimeOwners` records the declaring module's path keyed by the
       declaration's body address (the declaring module in `registerFnSignatures`, an importer in
       `comptime.zig` `resolveImports`), and `template_eval.ownerId` renders it under the compiler's
       own `bp` namespace, so the atom decodes to package `bp`, path `comptime/<owner>`. The namespace
@@ -642,7 +642,7 @@ Record, do not fix:
 - ~~`botopink run --target erlang` is `escript out/<mod>.erl` with no `-pa`~~ — **promoted to a
   blocker by policy 3** ([E25](./atom-evidence.md#e25--botopink-run-breaks-under-policy-3)): every
   type-bearing program becomes multi-module, so this must be fixed before policy 3 lands. It is
-  **step 7** of this front ([the second half](./policy-3-module-per-type.md#9-sequencing--decided-2026-09-17-one-front-not-two)),
+  **step 7** of this front ([the second half](./policy-3-module-per-type.md#9-sequencing--decided-one-front-not-two)),
   not a residual.
 - The comptime server never purges a loaded module (`runtime/persistent_erl.zig:63-73`, no
   `code:purge/1`) and never deletes `.botopinkbuild/tmp/{template,decorator}/*.erl`. Unbounded in a
@@ -657,7 +657,7 @@ Record, do not fix:
 ### Half 2 — policy 3 (steps 7–13)
 
 The seven steps, each with its acceptance, are in
-[`policy-3-module-per-type.md` § 9](./policy-3-module-per-type.md#9-sequencing--decided-2026-09-17-one-front-not-two).
+[`policy-3-module-per-type.md` § 9](./policy-3-module-per-type.md#9-sequencing--decided-one-front-not-two).
 **Step 7 is the `botopink run --target erlang` `-pa` fix**, which opens this half because policy 3
 breaks that command for every type-bearing program until it lands
 ([E25](./atom-evidence.md#e25--botopink-run-breaks-under-policy-3)).
@@ -704,7 +704,7 @@ pattern sites (`:5030`, `:5038-5048`) at once. Access, destructuring and `case` 
       (E13 pins this on real emitted output) — under decision 21's **T2** the record is
       `{TypeAtom, F1, …}` and those sites were rewritten with it, not kept; every cell re-run
 - [x] The 62 erlang cells re-recorded and classified one by one; **no `RUN LOG` moves** — 519 of
-      535 byte-identical, the 16 that moved each explained in `2dbd88bc`/`a8087490` (defects the
+      535 byte-identical, the 16 that moved each explained in / (defects the
       runs found, fixed on the way)
 - [x] An imported type constructed in a consumer carries the **owner's** atom, executed — the tag is
       `typeAtom` of the module that **declares** the type (`src/codegen/AGENTS.md` § erlang), pinned
@@ -720,7 +720,7 @@ spelling **no arity and no opcode changes** — only the atom the tests compare 
 **Acceptance:**
 - [x] `scripts/beam_export_audit.sh` green at its current total — 453/453
 - [x] The erlang and beam `RUN LOG`s of every shared fixture agree, line for line
-- [x] The 68 beam cells re-recorded and classified; no `RUN LOG` moves (`2ee4848c`)
+- [x] The 68 beam cells re-recorded and classified; no `RUN LOG` moves
 - [x] `grep -c is_tagged_tuple` over `snapshots/codegen/beam/` is unchanged, and no
       `is_tagged_tuple` arity argument differs from before — the check that the free spelling was
       actually taken — the variant tag is qualified in place; under T2 the record gained
@@ -736,7 +736,7 @@ named-type half — the split the maintainer still owes (§ *Decisions*, and
 
 **Acceptance:**
 - [x] `tests/language/` cells for `x is Point`, `x is Option.Some(v)`, and a `case` over
-      `Person | Car` with **no `_`**, passing on erlang and beam (`b6ac051e`)
+      `Person | Car` with **no `_`**, passing on erlang and beam
 - [x] The matching lines leave `tests/language/expected-failures.txt` — 13 lines green by running;
       what still names `13 step 17` there is decision 8's numeric half (`is i32` matching `3.0` by
       value), re-classified to C-07
@@ -781,10 +781,10 @@ Two ways out, and this front does not choose unilaterally because `commonJS.zig`
 **Acceptance (either way):**
 - [x] The `.js` and the `.d.ts` of the same program agree — a new fixture with a `pub` mixed enum,
       which no snapshot has today — taken with the first way: a unit variant is a class instance
-      whose `prototype.tag` is its name (`a71786b3`, "a variant's identity is its tag, not its
+      whose `prototype.tag` is its name ("a variant's identity is its tag, not its
       class"), so the `.d.ts`'s `{ tag: "Dot" }` is true
 - [x] `x is string` answers `false` for a unit variant on commonJS, as it does on erlang —
-      `run/type_identity_equality.bp` runs on commonJS too (`5b61297d`)
+      `run/type_identity_equality.bp` runs on commonJS too
 
 ### Step 20 — decide T2
 
@@ -795,10 +795,10 @@ tagged tuple in one mechanical commit.
 **Acceptance:**
 - [x] A maintainer decision recorded here, whichever way it goes, with the re-measured numbers —
       **not** E10's, which do not survive (E18) — **T2**, [decision 21](../../../1.0.5-beta/decisions-taken.md#21-t1-or-t2-for-the-erlang-record)
-      (2026-09-18): the tagged tuple `{TypeAtom, F1, …}`, chosen for the shape and against the
+      : the tagged tuple `{TypeAtom, F1, …}`, chosen for the shape and against the
       recommendation; the price recorded with it — 66 erlang + 73 beam cells rewriting construct,
       access, destructure and patterns, 354 cell-writes over 210 files across halves 2–3 — and
-      landed (`2dbd88bc`, `2ee4848c`). What E10 claimed (2.5×) is withdrawn; what survives is
+      landed. What E10 claimed (2.5×) is withdrawn; what survives is
       6 words per record against T1's 2, and the maintainer's call is the shape, not the benchmark
 
 
@@ -809,7 +809,7 @@ tagged tuple in one mechanical commit.
 - [x] `scripts/gate.sh --cold` green in this front's worktree (zig build · cold `zig build test` ·
       `test-bpmp` · beam export audit · `test-cli` · `test-libs` · `test-language`) — every commit
       of this front runs it through the pre-commit hook (`--staged`); half 1 and half 2 each closed
-      on a cold run (`154f3bc9`, `cbd5f1ec`)
+      on a cold run
 - [x] `scripts/beam_export_audit.sh` 295/295 — 453/453 with policy 3's units
 - [x] The 303 `-module(main).` erlang snapshots and their 302 beam twins **byte-identical**; each of
       the ≈ 20 that moved classified in the commit message (atom rename vs. behaviour change) and
@@ -818,7 +818,7 @@ tagged tuple in one mechanical commit.
       `src/comptime/` — `src/codegen/AGENTS.md` now documents `erlAtom` / `erlDeclAtom` /
       `typeAtom` / `variantAtom` / `outputStem` and keeps `moduleBasename` for source-level names only
 - [x] Every library still builds (`zig build test-libs`, `scripts/known-red-libs.txt` still empty) —
-      38 passed / 1 known red / 19 restricted at `4fe1747e` (the known red is registered against
+      38 passed / 1 known red / 19 restricted (the known red is registered against
       its own front, not this one)
 - [x] The stale comment at `erlang.zig:5359` is corrected — it claims the associated fn is quoted
       `'Array_range'`; `interfaceAssocAtom:1410` lowercases the first character, so the emitted atom
@@ -844,14 +844,14 @@ tagged tuple in one mechanical commit.
 - [x] The 188 re-recorded snapshots classified one by one — which gained a module, which turned a
       local call into a `call_ext`; **no `RUN LOG` should change**, and one that does is a bug —
       25 erlang + 26 beam cells moved (a `type` with no bodied method emits no unit, so the 94/94
-      survey over-counted), all 51 `RUN LOG`s byte-identical (`cbd5f1ec`)
+      survey over-counted), all 51 `RUN LOG`s byte-identical
 
 ### Half 3
 
-- [x] `scripts/gate.sh --cold` green in this front's worktree (`a8087490`)
+- [x] `scripts/gate.sh --cold` green in this front's worktree
 - [x] `zig build test-libs` at its baseline — `9 passed, 0 failed, 0 known red, 3 skipped, 2 without
-      tests` (measured at `26d4fdc`); `scripts/known-red-libs.txt` still empty (re-checked at `c2dd780`: header comments only)
-      — the suite grew since: **38 passed / 1 known red / 19 restricted** at `4fe1747e`, the known
+      tests` (measured); `scripts/known-red-libs.txt` still empty (re-checked: header comments only)
+      — the suite grew since: **38 passed / 1 known red / 19 restricted**, the known
       red registered by its own front in `scripts/known-red-libs.txt`, none against this one
 - [x] `scripts/beam_export_audit.sh` green at its current total — 453/453
 - [x] Every re-recorded snapshot classified (construct line / variant atom / nothing else); **no
@@ -860,7 +860,7 @@ tagged tuple in one mechanical commit.
 - [x] erlang, beam and commonJS agree on `is`, on a union `case`, and on §7's print text
 - [x] The invariant, as a test: **two values carry the same identity if and only if they were built
       by the same declaration** — one cell per backend — `run/type_identity_equality.bp`, RUN on
-      all four (`5b61297d`)
+      all four
 - [x] `AGENTS.md` of every directory touched, updated in the same commit
 - [x] The same branch, `fix/module-identity`; no push, no merge — `fix/identity-half3`, merged to
       `feat` by the maintainer
@@ -884,7 +884,7 @@ tagged tuple in one mechanical commit.
 
 The breakdown, with the commands that produced each number, is in
 [`migration.md`](./migration.md). Estimated **≈ 3.5 days** for option A + A2 and **+5–7 days** for policy 3 — **≈ 9 days** for the
-front, which is how it runs (decided 2026-09-17: one front, not two).
+front, which is how it runs (decided: one front, not two).
 
 Two risks worth naming. First, the naming half fixes **latent** failures: nothing red today turns
 green, so step 4's new cells are the only evidence the work did anything. Second, policy 3 is the
@@ -916,7 +916,7 @@ or a snapshot directory, sequence them · `seq` = no shared file, but the milest
 
 | Against | | Why |
 |---|---|---|
-| **01** checker | **no** | 01 owns `src/comptime/**`; this front needs the module-atom lines and the `buildModule` signatures of `{template_eval,decorator_eval}.zig` as a carve-out (step 5). 01 may also re-record all four codegen directories. Steps 17–19 additionally *depend* on 01's N19–N22 — the checker half; the grammar half landed at `c2dd780` |
+| **01** checker | **no** | 01 owns `src/comptime/**`; this front needs the module-atom lines and the `buildModule` signatures of `{template_eval,decorator_eval}.zig` as a carve-out (step 5). 01 may also re-record all four codegen directories. Steps 17–19 additionally *depend* on 01's N19–N22 — the checker half; the grammar half landed |
 | **02** erlang | **no** | shares `src/codegen/erlang.zig` and `snapshots/codegen/erlang/`. Steps 1–6 are a four-site carve-out that changes no shape; **steps 7–20 own the file wholesale, and under the maintainer's order 02 stalls while they run** — then opens against a value that already knows its type, so its decision-8 rows D8-1/D8-2/D8-3/D8-5 need no split |
 | **03** beam | **no** | the same, for `src/codegen/beam_asm.zig`, `src/codegen/beam/**` and `snapshots/codegen/beam/`: **03 stalls while halves 2–3 run** |
 | **04** js | **yes**, except step 19 | JS output layout does not change ([`js-modules.md`](./js-modules.md)). Step 19 edits `commonJS.zig:1563-1566` and `typescript.zig:115-127` and re-records 13 cells — only if the maintainer assigns it here rather than to 04 |
@@ -1034,7 +1034,7 @@ or a snapshot directory, sequence them · `seq` = no shared file, but the milest
 8. **Does a `behavior` need an atom too?** Nothing in decision 8 asks to test "implements `Show`" at
    run time. Were it given one, it would be `<package>@<path>@@<Behavior>` (decision 109); this front does not use it for an identity.
 9. **The Elixir claim** (step 0), verified or explicitly dropped. `elixir` is still **not installed**
-   in this environment (re-checked at `c2dd780`), so the sentence in
+   in this environment (re-checked ), so the sentence in
    [`atom-options.md`](./atom-options.md) is still unverified. It no longer changes the
    recommendation.
 
@@ -1065,7 +1065,7 @@ carry the old numbers 16 and 19. Paste the three below; this front edits neither
 - **13 × 01 (checker).** 13 takes the module-atom lines and the `buildModule` signatures of
   `src/comptime/{template_eval,decorator_eval}.zig` as a carve-out of 01, which owns
   `src/comptime/**`; 01 may also re-record all four codegen directories. Steps 17–19 additionally
-  *depend* on 01's N19–N22 — the checker half; decision 8's grammar landed at `c2dd780`.
+  *depend* on 01's N19–N22 — the checker half; decision 8's grammar has landed.
 - **13 × 04 and 13 × 05.** Unaffected by the stall — both run in parallel with 13 throughout.
 - **13 × 04.** `yes`, except step 19 (the commonJS unit-variant hole, 13 cells), which 13 takes only
   if the maintainer assigns it here rather than to 04.
@@ -1103,7 +1103,7 @@ is **step 7's blocker**: under policy 3 every type-bearing program is multi-modu
 
 ---
 
-## Handed over by `14-comptime-on-beam` (2026-09-18, `bef762b`)
+## Handed over by `14-comptime-on-beam`
 
 **Step 3 of front 14 waits on this front, and its blocker is measurable here today.** The untyped
 comptime mode on beam cannot be written while the **typed** backend fails the same case:

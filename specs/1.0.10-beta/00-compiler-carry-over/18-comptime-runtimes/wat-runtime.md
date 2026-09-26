@@ -1,6 +1,6 @@
 # The wat comptime runtime
 
-**Decided (84, 2026-09-20): this runtime is the comptime runtime of every build whose target is `commonJS`, `typescript` or `wasm`, and of the client half of a split project; erlang/beam targets and a build with no target use beam. No flag.**
+**Decision 84: this runtime is the comptime runtime of every build whose target is `commonJS`, `typescript` or `wasm`, and of the client half of a split project; erlang/beam targets and a build with no target use beam. No flag.**
 
 What a comptime body needs at run time, how the wat runtime gives it, how it is embedded, and the
 wire encodings. Code: `modules/compiler-core/src/comptime/runtime/` (`runtime.zig`,
@@ -10,15 +10,14 @@ wire encodings. Code: `modules/compiler-core/src/comptime/runtime/` (`runtime.zi
 
 A decorator or template body is lowered once, by `codegen/erlang.zig` `emitComptimeModule`, into an
 Erlang module (untyped mode: `'__bp_add'`, `'__bp_len'`, `maps:get`, `'__bp_prim_<m>'` shims, a
-`main/1` taking an ETF argument). The BEAM runtime compiles that text. **The wat runtime runs that
-same text**: it parses it back, lowers it to wasm and runs the result. There is no second lowering of
-the botopink AST (an earlier design gave `wat.zig` a "dynamic-term mode"; it was not built): with one
-program, the two runtimes can only disagree where a BIF is implemented twice — `rt.zig` against OTP —
+`main/1` taking an ETF argument). Both runtimes read that text back: the BEAM runtime lowers it to
+BEAM bytes (front 14), **the wat runtime** lowers it to wasm and runs the result. There is no second
+lowering of the botopink AST: with one program, the two runtimes can only disagree where a BIF is implemented twice — `rt.zig` against OTP —
 and that is what the parity check measures (§ 6).
 
 ```
-FnDecl ─ emitComptimeModule ─ Erlang text ─┬─ erlc/cmd 2 ─ BEAM (persistent_erl.zig)
-                                           └─ wat/erl_parse ─ wat/lower ─ wat/link(+ rt.wasm) ─ wasm3 (persistent_wat.zig)
+FnDecl ─ emitComptimeModule ─ Erlang text ─ wat/erl_parse ─┬─ beam/lower ─ beam_file ─ cmd 4 ─ BEAM (persistent_beam.zig)
+                                                             └─ wat/lower ─ wat/link(+ rt.wasm) ─ wasm3 (persistent_wat.zig)
 ```
 
 ## 2. Reading the Erlang back — `wat/erl_parse.zig`
@@ -28,8 +27,7 @@ the host templates of `libs/std/src/primitives.bp` (`raw` nodes): attributes, fu
 guard sequences, `case`/`if`/`try … of … catch`/`begin`, `fun` (anonymous, named, `fun f/A`,
 `fun m:f/A`), list comprehensions with list and binary generators, maps and map updates, binaries
 with segment types and sizes, strings as code points (as `erlc` reads a UTF-8 source), the operator
-table. `receive`, records, macros and the old-style `catch E` are refused by name. It parses every
-comptime module on disk when it was written: 420 (the compiler's tests and the five libraries).
+table. `receive`, records, macros and the old-style `catch E` are refused by name.
 
 ## 3. The term heap and the runtime library — `wat/rt.zig`
 
@@ -71,7 +69,7 @@ its `"rt"` imports resolve to the runtime's exports. The program's function bodi
 `codegen/wat/wasm_binary_emitter.zig` against the merged index spaces. The result is one module that
 **imports nothing**. `wat/program.zig` caches it per module atom (the atom is the content hash of the
 text). The `.wat` rendering of the lowered program is the listing a `COMPTIME WAT` snapshot section
-shows (step 4).
+shows.
 
 ## 5. Encodings
 
@@ -100,7 +98,7 @@ file. A body's `io:format` goes to a buffer in the module's own memory — it ca
 compiler's stdout. wasm3 is vendored in `modules/wasm3/` (v0.5.0, `-fwrapv -fno-sanitize=undefined`:
 wasm integer arithmetic wraps).
 
-**The browser build: the page's engine** (step 5). On `wasm32` the same export sequence runs behind
+**The browser build: the page's engine.** On `wasm32` the same export sequence runs behind
 three host imports `modules/compiler-web/glue.js` serves (`bp_host.run_module`, `result_len`,
 `result_copy`), with `WebAssembly.Instance`.
 

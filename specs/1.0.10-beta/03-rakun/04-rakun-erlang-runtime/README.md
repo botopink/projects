@@ -5,7 +5,7 @@
 **Target:** erlang (server)
 **Wave:** 1
 **Depends on:** 01
-**Owns:** `src/sidecars/rakun_runtime.erl`, `src/runtime.bp` (the `#[@external(erlang)]` block, and the removal of every `#[@External.Node]` form in Step 10), the deletion of `src/runtime.mjs` (Step 10), `src/root.bp`, `botopink.json` (the core's `target` / `targets`) · `test/erlang_runtime_test.bp`
+**Owns:** `src/sidecars/rakun_runtime.erl`, `src/runtime.bp` (the `#[@External.Erlang(…)]` forms, and the removal of every `#[@External.Node]` form in Step 10), the deletion of `src/runtime.mjs` (Step 10), `src/root.bp`, `botopink.json` (the core's `target` / `targets`) · `test/erlang_runtime_test.bp`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp` — frozen for the milestone
 **Reference:** `02-desenvolvendo-com-spring-boot.md § Beans e Injecao de Dependencias` · `03-recursos-principais.md § SpringApplication` · `04-web.md § Container Servlet Embutido` · <https://docs.spring.io/spring-boot/reference/using/spring-beans-and-dependency-injection.html> · <https://docs.spring.io/spring-boot/reference/features/spring-application.html> · <https://docs.spring.io/spring-boot/reference/web/servlet.html>
 
@@ -33,26 +33,6 @@ JavaScript, and this front's job is to reproduce them in Erlang term-for-term so
 once passes on both rows. Second, "reproduce them" is not literal: Node has one process and a module
 global; the BEAM has a scheduler, a supervision tree and per-process state, and the honest port uses
 them rather than emulating a single-threaded runtime on top of them.
-
-## Current state
-
-| Piece | Where it lives today | Erlang counterpart today |
-|---|---|---|
-| Component scan (`rkScan`/`rkScannedNames`/`rkScannedCount`) | `runtime.mjs:20-31`, a module-level array | none |
-| Cycle guard (`rkEnter`/`rkDone`/`rkBuildCount`) | `runtime.mjs:40-62`, a `Set` + a `Map` | none |
-| Singleton cache (`rkSingleton`) | `runtime.mjs:71-78`, a `Map` | none |
-| Properties (`rkSetProp`/`rkProp`/`rkPropInt`) | `runtime.mjs:84-97`, a `Map` | none |
-| Router (`rkRegisterRoute`/`rkRouteCount`/`rkRoutePaths`/`rkDispatch`/`rkDispatchHttp`) | `runtime.mjs:107-196`, an array + `:name` segment matching | none |
-| HTTP server (`rkServe`) | `runtime.mjs:206-231`, `node:http` `createServer` | none |
-| Request value handed to a handler | `runtime.mjs:146-161`, a plain object with four closures | none |
-| `.erl` sidecar shipping | `modules/compiler-cli/src/cli/libs.zig:564-635` — **already implemented** | works |
-| `.erl` sibling loading in a test run | `modules/compiler-core/src/codegen/erlang.zig:1649-1678` — **already implemented** | works for `test`, not for `build`/`run` |
-| BEAM primitives in std | `libs/std/src/beam.bp:72-103` — process dictionary, ETS, persistent_term, all `any`-typed | exists, insufficient |
-
-`libs/std/src/beam.bp` is worth naming precisely because it is close and still not enough: it gives
-`etsNew`/`etsGet`/`etsPut`/`pdGet`/`pdPut` as `any → any` declarations. It has no supervision, no
-socket, no way to own a table across a crash, and no typed surface. rakun needs a host module, not a
-pile of `any`.
 
 ## Mechanism
 
@@ -456,7 +436,6 @@ The milestone register is [`language-gaps.md`](../../language-gaps.md); the rows
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
 | A sidecar `.erl` is loaded only for a `test` entry point. `__bp_load_siblings/0` is emitted under the test flag (`codegen/erlang.zig:1650-1670`); a `build`/`run` entry point emits no loader, so a built rakun program dies with `undefined function rakun_runtime:serve/2`. | `examples/minimal-app-example.bp` — the whole file is testable but not yet runnable on the erlang row | Run the example through `botopink test --target erlang`, which loads siblings | Emit the same sibling loader (or a `-pa` code-path entry) for `build`/`run` outputs. A toolchain gap, not a language one; recorded here because it decides whether front 04's *serve* half can be demonstrated at all |
-| A `fn` cannot forward a `@Result` value it received: inside a `-> @Result<…>` fn `return v` wraps `v` in `Ok`, so returning an already-wrapped value double-wraps — until front 24 lands decision 119 (`return r` with `r` already a `@Result` passes through). | Not used in this front's examples — avoided by keeping the runtime cells total. Bites fronts 08–10. | `.map` / `.flatMap` / `.unwrapOr`, or return the unwrapped value and `throw` on the error path | A forwarding return (`return! r;`) or an implicit-forward rule when the returned expression is already `@Result<D, E>` |
 
 ## Test plan
 
@@ -499,11 +478,11 @@ files still run on the commonJS row, and the acceptance criteria above are writt
 
 Recorded here because `fronts.md` must stay true; this front does not edit it.
 
-1. **Resolved:** the sidecar is `src/sidecars/rakun_runtime.erl`, not `src/runtime.erl` — the atom
+1. The sidecar is `src/sidecars/rakun_runtime.erl`, not `src/runtime.erl` — the atom
    `runtime` collides with rakun's own emitted `rakun/runtime` module and `shipErlSidecars` skips it
-   (`libs.zig:596`), silently. `fronts.md` now mandates the `src/sidecars/rakun_<name>.erl` form
+   (`libs.zig:596`), silently. `fronts.md` mandates the `src/sidecars/rakun_<name>.erl` form
    everywhere; the cowboy adapter seam, if built, is `src/sidecars/rakun_cowboy.erl`.
-2. **Resolved:** `src/root.bp` and `botopink.json` are this front's, under the append-only rule above.
+2. `src/root.bp` and `botopink.json` are this front's, under the append-only rule above.
    Fronts 05, 06 and 22–25 append their `pub mod` lines; none reorders one.
 
 ## Definition of done

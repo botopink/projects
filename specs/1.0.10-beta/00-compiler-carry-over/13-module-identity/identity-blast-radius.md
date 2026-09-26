@@ -1,6 +1,6 @@
 # Blast radius — measured
 
-Everything below was counted at `botopink-lang` `26d4fdc`, 2026-09-18, from
+Everything below was counted, from
 `modules/compiler-core/snapshots/codegen/`. Every count is a command you can re-run.
 
 **The headline correction.** [`README.md`](./README.md) § 2.4 records "**every** record `RUN LOG` and
@@ -127,7 +127,7 @@ beam. No snapshot exercises it; a new cell must.
 | Libraries that start compiling | **0** — this half fixes latent failures, exactly as [halves 1–2 do](./README.md#blast-radius); its new cells are the only evidence the work did anything |
 
 `scripts/known-red-libs.txt` is empty and must stay empty. `zig build test-libs` is the front's
-gate row for this; the **baseline to hold**, run at `26d4fdc` on 2026-09-18:
+gate row for this; the **baseline to hold**, run:
 
 ```
 test-libs: 9 passed, 0 failed, 0 known red, 3 skipped, 2 without tests

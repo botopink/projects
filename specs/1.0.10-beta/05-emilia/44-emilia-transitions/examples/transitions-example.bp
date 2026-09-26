@@ -34,14 +34,12 @@ val transitionPresets: Token[] = [
     .Transition.Transform,
 ];
 
-// LANGUAGE GAP: a payload leaf nested inside an enum section cannot be
-// constructed by any spelling (language-gaps.md row 52), so these are TOP-LEVEL
-// `Token` variants — `TransitionProperty` and `AnimateRaw`, not
-// `Transition.Property` and `Animate.Raw`. Contract § 4a states the rule.
-//
-// LANGUAGE GAP: and even at top level, a dot-shorthand path followed by a
-// payload call does not propagate the typed-array context (row 51), so
-// construction goes through a fn.
+// A payload leaf nested inside an enum section cannot be constructed, so the
+// escape hatches are TOP-LEVEL `Token` variants — `TransitionProperty` and
+// `AnimateRaw`, not `Transition.Property` and `Animate.Raw`. A dot-shorthand
+// path followed by a payload call does not carry the typed-array context, so
+// construction goes through a fn (emilia exports `rawTransitionProperty` and
+// `rawAnimate`).
 fn transitionProperty(v: string) -> Token {
     return Token.TransitionProperty(value: v);
 }
@@ -78,9 +76,8 @@ val durationScale: Token[] = [
 
 // ── transition-timing-function ───────────────────────────────────────────────
 //
-// `Linear` is the only one with a literal in the reference. The other three
-// emit `var(--ease-in)` and friends verbatim and stay inert until a theme
-// preamble defines them.
+// `Linear` is CSS's own keyword. The other three emit `var(--ease-in)` and
+// friends; their values are `transitionEntries()`, composed into `fullTheme()`.
 
 val easings: Token[] = [
     .Transition.Ease.Linear,
@@ -118,12 +115,12 @@ val slowColorFade: Token[] = [
 
 // ── animation ────────────────────────────────────────────────────────────────
 //
-// These emit `animation:var(--animate-spin)` and friends — themeVar lookups
-// from front 54, whose entries carry § 21.6's literals. Each also hoists its
-// `@keyframes` block through front 56's `blockSheet(header, body)`, which
-// `renderDocument` lifts to the top of the emitted stylesheet. `Animate` is the
-// one sub-dispatcher in this front that returns a `Sheet` rather than a
-// declaration string, because a keyframes block is not a class rule.
+// These emit `animation:var(--animate-spin)` and friends — theme references
+// whose entries carry § 21.6's values. Each also hoists its `@keyframes` block
+// (read from the theme) through `blockSheet(header, body)`, which
+// `renderDocument` lifts out of every layer to the end of the stylesheet.
+// `Animate` returns a `Sheet` rather than a declaration string, because a
+// keyframes block is not a class rule.
 
 val builtInAnimations: Token[] = [
     .Animate.None,

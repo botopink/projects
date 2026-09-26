@@ -24,8 +24,8 @@ printing to whatever the application's stdout happens to be.
 
 - `repository/rakun/modules/rakun-logging/src/root.bp` — docblock and `// Module contents will be added by the respective fronts.`
 - `repository/rakun/` — every diagnostic in the tree is `@print`. The decorators, the runtime and the bootstrap all emit nothing at all.
-- `libs/std/src/time.bp:92` — `formatIso8601(epochMillis) -> string` already exists, so timestamps do not need a new primitive.
-- `libs/std/src/` has no content-hash module; front 03 delivers it as `hash.contentHash` (decision 106) and the error digest is one of its first consumers.
+- `io.clock`'s `formatIso8601(epochMillis) -> string` (`libs/std/src/io/clock.bp`) covers timestamps; no new primitive.
+- std's `hash.contentHash` (`libs/std/src/hash.bp`) computes the error digest.
 - OTP's `logger` is present in every BEAM release and is what this front configures; nothing in rakun touches it today.
 
 ## Mechanism

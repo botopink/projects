@@ -21,23 +21,23 @@ Five rules, each with its reason:
    The caller writes `try asserts.equals(a, b);` and a failure propagates to the enclosing
    `test` body, which ends as `FAIL <name> (<message>) at <file>:<line>` (`src-builtin.md` § *The
    test body as a fallible context*). A `-test` helper that is itself `-> @Result<void, string>`
-   composes it with `try` and nothing else. The old module's `@panic` could do none of that.
+   composes it with `try` and nothing else. Nothing in the module panics.
 2. **`actual` first, `expected` second**, everywhere — `equals(actual, expected)`,
-   `contains(actual, needle)`, `matches(actual, pattern)`, `lengthIs(actual, expected)`. The old
-   `matches(pattern, actual)` was the one function with the other order; it flips.
+   `contains(actual, needle)`, `matches(actual, pattern)`, `lengthIs(actual, expected)`.
 3. **One literal message per function**, `asserts.<fn>: <what>`. No string interpolation of the
    values: a generic `T` has no `toString`, and rendering it needs a host cell — which would put a
    `declare fn` on the pure path and break rule 5. The call site's `@src()` and the runner's
    `at <file>:<line>` say where; the message says which check.
-4. **Pure botopink on the path that runs everywhere.** `!=`, `==`, `.negate()`, `.length()`,
-   `.contains()`, `.startsWith()`, `.endsWith()`, `.isOk()`, `.isError()`, `.at()`, `!= null` —
-   the same primitives `hash.bp` and `path.bp` compose.
-5. **No `pub declare fn` in the file.** STD-001 (`comptime/tests/std_target_gating.zig`,
-   `infer.zig:85-93`) rejects an `import {…} from "std"` on a target where a *`pub`* `declare fn`
-   has no `@External` cell; private cells are not gated. The four functions that need a host —
-   `matches`, `deepEquals`, `throws`, `throwsWith` — keep their cells private, exactly as
-   `asserts.bp:72` (`tryCatch`) and `:85` (`regexMatches`) do today, and the module docblock names
-   them as commonJS/erlang at run time.
+4. **Pure botopink on the path that runs everywhere.** `==`, `!=`, `== false`, `.length`,
+   `.contains()`, `.startsWith()`, `.endsWith()`, `.indexOf()`, `.isOk()`, `.isError()`, `!= null`
+   — host-backed primitives only. A primitive `default fn` (`Bool.negate`, `Array.contains`) is not
+   lowered when a std module is compiled as a consumer's embedded import, so none is used
+   (`libs/std/AGENTS.md`).
+5. **No `pub declare fn` in the file.** STD-001 (`comptime/tests/std_target_gating.zig`) rejects an
+   `import {…} from "std"` on a target where a *`pub`* `declare fn` has no `@External` cell; private
+   cells are not gated. The four functions that need a host — `matches`, `deepEquals`, `throws`,
+   `throwsWith` — sit on the private cells `regexMatches`, `canonical` and `tryCatch`, and the
+   module docblock names them as commonJS/erlang at run time.
 
 ## The surface
 
@@ -62,9 +62,8 @@ commonJS (`===`) and structural on erlang (`=:=`). `equals` on two arrays theref
 and fails on commonJS — `libs/std/AGENTS.md` § *Conventions* already says "array equality in
 assertions uses `.join(...)`". `deepEquals` is the cross-target answer: it renders both sides with
 the private `canonical<T>(v: T) -> string` cell — `JSON.stringify($0)` on Node,
-`iolist_to_binary(io_lib:format("~0tp", [$0]))` on Erlang — lifted verbatim from the old
-`onze.bp:39-41` (`onzeKey`), where it was the key of the call log for exactly this reason. Both
-sides render on the same target, so key order is the same on both.
+`iolist_to_binary(io_lib:format("~0tp", [$0]))` on Erlang — the same renderer `mocks.key` uses
+as the key of the call log. Both sides render on the same target, so key order is the same on both.
 
 ### Nil
 
@@ -82,9 +81,9 @@ sides render on the same target, so key order is the same on both.
 | `isOk` | `<T, E>(result: @Result<T, E>)` | `result.isError()` | `asserts.isOk: result was Error` |
 | `isError` | `<T, E>(result: @Result<T, E>)` | `result.isOk()` | `asserts.isError: result was Ok` |
 
-The payload is read by the caller with the builtin methods `builtins.d.bp:33-40` documents:
-`try asserts.equals(r.unwrapOr(0), 42);`. A `case` over `Ok(v)`/`Error(e)` inside a `@Result`-returning
-body is not exercised anywhere in the tree today, so the module does not depend on it.
+The payload is read by the caller with the builtin methods `builtins.d.bp` documents:
+`try asserts.equals(r.unwrapOr(0), 42);`. The module does not rely on a `case` over `Ok(v)`/`Error(e)`
+inside a `@Result`-returning body.
 
 ### String
 
@@ -96,22 +95,22 @@ body is not exercised anywhere in the tree today, so the module does not depend 
 | `endsWith` | `(actual: string, suffix: string)` | `actual.endsWith(suffix) == false` | `asserts.endsWith: suffix does not match` |
 | `matches` | `(actual: string, pattern: string)` | the private `regexMatches` cell answers false | `asserts.matches: pattern did not match` |
 
-`matches` keeps the cell it has (`asserts.bp:85-88`, byte-identical to `regex.matches`): PCRE-ish on
-both targets, `new RegExp($0).test($1)` / `re:run($1, $0) =/= nomatch`. Argument order flips to
-actual-first; the template's `$0`/`$1` swap with it.
+`matches` sits on the private `regexMatches` cell, the template of `regex.matches` with the
+arguments actual-first: PCRE-ish on both targets, `new RegExp(pattern).test(actual)` /
+`re:run(actual, pattern) =/= nomatch`.
 
 ### Collection
 
 | Function | Signature | Fails when | Message |
 |---|---|---|---|
-| `isEmpty` | `<T>(actual: T[])` | `actual.length() != 0` | `asserts.isEmpty: array was not empty` |
-| `isNotEmpty` | `<T>(actual: T[])` | `actual.length() == 0` | `asserts.isNotEmpty: array was empty` |
-| `lengthIs` | `<T>(actual: T[], expected: i32)` | `actual.length() != expected` | `asserts.lengthIs: length differs` |
-| `includes` | `<T>(actual: T[], element: T)` | `actual.contains(element) == false` (`primitives.bp:435`) | `asserts.includes: element not found` |
-| `notIncludes` | `<T>(actual: T[], element: T)` | `actual.contains(element)` | `asserts.notIncludes: element found` |
+| `isEmpty` | `<T>(actual: T[])` | `actual.length != 0` | `asserts.isEmpty: array was not empty` |
+| `isNotEmpty` | `<T>(actual: T[])` | `actual.length == 0` | `asserts.isNotEmpty: array was empty` |
+| `lengthIs` | `<T>(actual: T[], expected: i32)` | `actual.length != expected` | `asserts.lengthIs: length differs` |
+| `includes` | `<T>(actual: T[], element: T)` | `element` not found in `actual` | `asserts.includes: element not found` |
+| `notIncludes` | `<T>(actual: T[], element: T)` | `element` found in `actual` | `asserts.notIncludes: element found` |
 
-`Array.contains` is `==` per element (`primitives.bp:435`), so `includes` on an array of records is
-reference equality on commonJS — the same caveat as `equals`, and the same remedy (`deepEquals` on
+Membership is `==` per element, so `includes` on an array of records is reference equality on
+commonJS — the same caveat as `equals`, and the same remedy (`deepEquals` on
 the element you extracted with `.at(i)`).
 
 ### Numeric
@@ -133,11 +132,9 @@ separate functions.
 | `throws` | `(body: fn() -> i32)` | `body` completes normally | `asserts.throws: body did not raise` |
 | `throwsWith` | `(body: fn() -> i32, needle: string)` | `body` completes, **or** the caught message does not contain `needle` | `asserts.throwsWith: body did not raise` · `asserts.throwsWith: message does not contain needle` |
 
-Both sit on the private `tryCatch` cell `asserts.bp:72-78` has today (an IIFE `try/catch`
-answering `{ok: 0}`/`{error: msg}` on Node; `try … catch __C:__E` on Erlang). The `i32` sentinel
-stays for the reason the current file gives: a closure whose only statement is `@panic` does not
-unify with `unit`, so callers end the body with `0;`. The old `throws(body, message)` accepted a
-message and ignored it (`asserts.bp:73-76`); the new pair makes the check real and the name say so.
+Both sit on the private `tryCatch` cell (an IIFE `try/catch` answering `{ok: 0}`/`{error: msg}` on
+Node; `try … catch __C:__E` on Erlang). The body is `fn() -> i32` because a closure whose only
+statement is `@panic` does not unify with `unit`, so callers end the body with `0;`.
 
 To assert that a **`@Result`-returning** body fails, `throws` is the wrong tool — that is
 `isError(body())`. `throws` is for a `@panic` or a host throw from code that does not return a `@Result`.
@@ -152,8 +149,8 @@ To assert that a **`@Result`-returning** body fails, `throws` is the wrong tool 
 `fail` is the one function whose message carries caller text; it is the escape for a branch the
 test asserts is unreachable. `errorText` is how a test reads a failure message to snapshot it
 (`test-snap.md`): a plain `case r { Ok(v) -> ""; Error(e) -> e; }` — matching over the builtin
-`Result` enum (`builtins.d.bp:23-26`) in a function that does not itself return a `@Result`, which is the
-one place the checker's manual-construction rule (`infer.zig:8214`) does not apply.
+`Result` enum in a function that does not itself return a `@Result`, which is the one place the
+checker's manual-construction rule does not apply.
 
 ## Failure message format
 
@@ -186,32 +183,29 @@ the file has no `pub declare fn`. `beam` and `wasm` are not `botopink test` targ
 (`compiler-cli/AGENTS.md` § *`botopink test` output format*), so no test executes there; the
 guarantee that matters is that a library compiled for beam/wasm can still import the module.
 
-## Migration table — old onze and old `asserts.bp` → `std/testing/asserts`
+## Migration table — old names → `testing.asserts` / `testing.mocks`
 
-Every symbol the two old surfaces exported, and where it is now. "Behaviour" is byte-for-byte unless
-the row says otherwise.
+The names the old `asserts.bp` and the old `onze` exported, and what a caller writes today.
 
-| Old | Where | New | Behaviour |
-|---|---|---|---|
-| `truthy(condition)` | `asserts.bp:14` | `isTrue(condition)` | returns `Error` instead of panicking; message `asserts.isTrue: condition was false` (was `asserts.truthy: …`) |
-| `falsy(condition)` | `asserts.bp:22` | `isFalse(condition)` | same change |
-| `equal(a, b)` | `asserts.bp:30` | `equals(actual, expected)` | same change; same `!=` test |
-| `notEqual(a, b)` | `asserts.bp:40` | `notEquals(actual, expected)` | same change |
-| `approxEqual(a, b, tolerance)` | `asserts.bp:50` | `approxEquals(actual, expected, tolerance)` | same change; same inline `abs` |
-| `contains(haystack, needle)` | `asserts.bp:60` | `contains(actual, needle)` | same change; same `.contains()` |
-| `matches(pattern, actual)` | `asserts.bp:90` | `matches(actual, pattern)` | **argument order flips**; cell byte-identical |
-| `throws(body, message)` | `asserts.bp:73` | `throws(body)` · `throwsWith(body, needle)` | `message` was ignored; `throwsWith` checks it |
-| `type AssertError(message, file, line)` | `asserts.bp:57` | **removed** | constructed only by its own test; `@src()` now supplies file/line and the `@Result` channel carries the message |
-| `tryCatch` (private) | `asserts.bp:72` | `tryCatch` (private) | unchanged |
-| `regexMatches` (private) | `asserts.bp:85` | `regexMatches` (private) | unchanged |
-| `eq(v)` | `onze.bp:66` | `mocks.eq(v)` | a **matcher**, not an assertion — it pushes onto the matcher stack and belongs with the runtime that reads it |
-| `anyInt()` / `anyString()` | `onze.bp:73-81` | `mocks.anyInt()` / `mocks.anyString()` | matchers — same reason |
-| `atLeastOnce()` / `times(n)` / `never()` | `onze.bp:87-97` | `mocks.atLeastOnce()` … | verification specs — `onze-migration.md` |
-| `onzeKey<T>(v)` | `onze.bp:39` | `asserts.canonical` (private) **and** `mocks.key` (`pub declare fn`) | the same two templates in two files, because a std module cannot call another |
-| — | — | `deepEquals`, `startsWith`, `endsWith`, `isEmpty`, `isNotEmpty`, `lengthIs`, `includes`, `between`, `isOk`, `isError`, `fail` | new; names follow the `is`/`Is` convention this document fixes |
-| — | — | `positive`, `negative` | **not shipped** — `greaterThan(x, 0)` / `lessThan(x, 0)` |
-| — | — | `isOkAnd`, `throwsType`, `typeOf` | **not shipped** — need a `case` over `@Result` inside a result body, a typed catch, and a type-name intrinsic respectively; none exists (`language-gaps.md`) |
-| — | — | `setup`, `teardown`, `setupAll`, `teardownAll` | **not shipped** — runner hooks are a toolchain gap (`README.md` § *Not in this front*) |
+| Old | Today | Note |
+|---|---|---|
+| `truthy(condition)` · `falsy(condition)` | `isTrue` · `isFalse` | answers `Error` instead of panicking |
+| `equal(a, b)` · `notEqual(a, b)` · `approxEqual(a, b, tolerance)` | `equals` · `notEquals` · `approxEquals` | same tests, actual first |
+| `contains(haystack, needle)` | `contains(actual, needle)` | |
+| `matches(pattern, actual)` | `matches(actual, pattern)` | argument order is actual-first |
+| `throws(body, message)` | `throws(body)` · `throwsWith(body, needle)` | `throwsWith` checks the message |
+| `type AssertError(message, file, line)` | removed | `@src()` supplies file/line and the `@Result` channel carries the message |
+| `eq(v)` · `anyInt()` · `anyString()` | `mocks.eq` · `mocks.anyInt` · `mocks.anyString` | matchers, not assertions — they push onto the matcher stack `mocks` reads |
+| `atLeastOnce()` · `times(n)` · `never()` | `mocks.atLeastOnce` · `mocks.times` · `mocks.never` | verification specs — `onze-migration.md` |
+| `onzeKey<T>(v)` | `asserts`' private `canonical` and `mocks.key` (`pub declare fn`) | the same two templates in two files, because a std module cannot call another |
+
+Not shipped:
+
+| Name | Why |
+|---|---|
+| `positive`, `negative` | `greaterThan(x, 0)` / `lessThan(x, 0)` |
+| `isOkAnd`, `throwsType`, `typeOf` | need a `case` over `@Result` inside a result body, a typed catch, and a type-name intrinsic respectively; none exists (`language-gaps.md`) |
+| `setup`, `teardown`, `setupAll`, `teardownAll` | runner hooks are a toolchain gap (`README.md` § *Not in this front*) |
 
 ## The inline tests
 
@@ -232,7 +226,6 @@ a message cannot drift without a `.new` file appearing).
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| `-> @Result<void, string>` with an empty `return;` is unexercised in the tree | every function here | `@Result<i32, string>` and `return 0;` — what `asserts.bp:72` does today | verify or fix in step 1 (`src-builtin.md` § acceptance) — the contract is written for `void` |
 | A function cannot forward a `@Result` (`return r` re-wraps) | `snapshots.assertAs` calling `asserts`; every `-test` helper | `try inner(); return;` | a `return` that passes a `@Result` through |
 | No structural equality | `deepEquals` | render both sides through a private host cell | a compiler-builtin structural `==` that reports the first differing path |
 | No value rendering for a generic `T` | every message | literal messages | `Display` on every primitive and a derived one on records (decision 8 § 7, `libs/std/AGENTS.md`) |

@@ -60,7 +60,7 @@ pub fn homeCopy(locale: string) -> HomeCopy {
 // SERVER — the page, an opaque renderer writing plain text (front 23).
 val _home = page("[locale]", fn(req: Request, out: ChunkWriter) {
     val copy = homeCopy(localeOf());
-    return out.write(copy.title + "\n" + copy.description + "\n" + copy.readMore);
+    await out.write(copy.title + "\n" + copy.description + "\n" + copy.readMore);
 });
 
 test "every declared locale supplies every field" {

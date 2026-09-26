@@ -1,53 +1,40 @@
 # Front 14 — Rakun Validation
 
-> **Amended 2026-09-21, on landing (rakun `af933f7`, `modules/rakun-validation` 0 → 54/0 on both
-> rows).** Five corrections and two things this front could not reach.
+> **As built (Steps 1–5, `modules/rakun-validation`).** Where the code differs from the text below,
+> the code holds:
 >
-> **`registerConstraint(name: string, c: Constraint)` does not compile.** A record that
-> `implement`s a behavior does not coerce to the behavior type — `type mismatch: expected Greeter,
-> got En` on both rows, for a parameter, a `val` and a return position alike (the return variant
-> prints the behavior body and truncates it). Shipped as `registerConstraint(name, code, check)`.
-> The `behavior Constraint` is still declared and application types still `implement` it, so the
-> shape stays compiler-checked. This is the **second** independent measurement of that refusal in
-> one day; see `status.md`.
+> - **`registerConstraint(name, code, check)`, not `registerConstraint(name: string, c: Constraint)`.**
+>   A record that `implement`s a behavior does not coerce to the behavior type (`type mismatch:
+>   expected Greeter, got En`, in parameter, `val` and return positions). `behavior Constraint` is
+>   still declared and application types still `implement` it, so the shape stays compiler-checked.
+> - **`#[minValue]` / `#[maxValue]` on `i64` are refused** with a located message: an integer literal
+>   does not widen to `i64` in arithmetic and there is no `i64` literal spelling. `#[positive]` /
+>   `#[positiveOrZero]` work on `i64` (a comparison against `0` widens); `#[pastDate]` /
+>   `#[futureDate]` are `i64`-only.
+> - **`#[notNull]` is admitted only where `typeName == ""`**, which covers `?T` and `T[]` alike,
+>   because `@Decl.Field.typeName` cannot tell them apart. `Array<T>` spelled the long way renders
+>   `"Array"` and is refused.
+> - **The helper names are `v*`, not the examples' `check*`.** The mapping is 1:1 apart from
+>   `checkRange`, which merges `#[minValue]` and `#[maxValue]`; the constraint table keeps them
+>   separate (`#[minValue(18)]` alone has no `max`).
+> - **Both § Examples programs use forms the compiler refuses or the tree forbids**:
+>   `!report.isValid()` (the tree writes `== false`), `id.toString()` on an `i32`,
+>   `registerConstraint("cpf", CpfConstraint())` (above), and `digits.split("")` +
+>   `digits.slice(0, 1)` (`String.slice`/`chars` break the commonJS module). They do not compile as
+>   written.
 >
-> **`#[minValue]` / `#[maxValue]` on `i64` are refused**, with a located message. An integer literal
-> does not widen to `i64` in arithmetic (`x - 1000` where `x: i64` reds `expected i64, got i32`, and
-> *that* diagnostic has no line or column), and there is no `i64` literal spelling at all.
-> `#[positive]` / `#[positiveOrZero]` do work on `i64`, because a comparison against `0` widens, and
-> `#[pastDate]` / `#[futureDate]` are `i64`-only.
+> **Open.** Step 6's boot call: **front 05 owes it** (`validate<TypeName>(bound)` +
+> `refuseInvalidConfig(typeName, prefix, report)`, after binding and before the first component);
+> the name `rkConfigValidate` in front 05's `config.bp` does not exist. The halt itself:
+> `refuseInvalidConfig` aborts the process, so the refusal *text* is asserted directly and the abort
+> needs front 19's `rakun-test` subprocess harness.
 >
-> **`#[notNull]` is admitted only where `typeName == ""`**, which covers `?T` *and* `T[]`, because
-> `@Decl.Field.typeName` cannot tell them apart. `Array<T>` spelled the long way renders `"Array"`
-> and is refused outright; spelling the array form as `Array<T>` is the honest workaround and is
-> documented in the library.
->
-> **The helper names are `v*`, not the examples' `check*`, deliberately.** The mapping is 1:1 apart
-> from `checkRange`, which merges `#[minValue]` and `#[maxValue]` into one call while the Mechanism's
-> constraint table keeps them as separate markers — `#[minValue(18)]` alone has no `max` to pass.
-> Renaming requires changing the table first, which is a decision, not a rename.
->
-> **Both § Examples programs use forms the compiler refuses or the tree forbids**: `!report.isValid()`
-> (the tree writes `== false`), `id.toString()` on an `i32`, `registerConstraint("cpf",
-> CpfConstraint())` (above), and `digits.split("")` + `digits.slice(0, 1)` — `String.slice`/`chars`
-> make the commonJS backend emit a self-recursive `String.prototype.charCodeAt` patch that kills the
-> module before a test runs, which `config.bp`'s own header already records. They will not compile as
-> written and were correctly left untouched.
->
-> **Not reached.** Step 6's boot call: front 05's `config.bp` names `rkConfigValidate`, which does
-> not exist, and `modules/rakun/**` is not this front's — everything the call site needs is here and
-> exercised, and **front 05 owes the call** (`validate<TypeName>(bound)` +
-> `refuseInvalidConfig(typeName, prefix, report)`, after binding and before the first component).
-> And the halt itself: `refuseInvalidConfig` aborts the process, which a test cannot observe and
-> survive, so the refusal *text* is asserted directly and the abort needs front 19's `rakun-test`
-> subprocess harness.
->
-> **Name collision, for whoever reads this next.** Front 05 declares a placement-only `#[validated]`
-> in `modules/rakun/src/config.bp`. This front's is a different decorator in a different package; an
-> application must import `validated` from `validation` (the bundled library, decision 116 — the
-> landed member was `rakun-validation`) and **must not import both names into one module**. Importing front 05's leaves `validate<TypeName>` undefined and the red lands at the
-> **call site as an unbound variable**, nowhere near the annotation. Whether front 05's should be
-> deleted once this landed is an open question for `03-rakun`.
+> **Name collision.** Front 05 declares a placement-only `#[validated]` in
+> `modules/rakun/src/config.bp`. This front's is a different decorator in a different package; an
+> application imports `validated` from `validation` (the bundled library, decision 116) and **must
+> not import both names into one module**: importing front 05's leaves `validate<TypeName>` undefined
+> and the red lands at the **call site as an unbound variable**. Whether front 05's is deleted is an
+> open question for `03-rakun`.
 
 **Track:** B rakun
 **Priority:** medium — it is the only front that both halves of the stack run, and front 05 cannot refuse a bad configuration at boot without it
@@ -57,7 +44,7 @@ source rakun hands the library, both server code
 **Wave:** 3
 **Depends on:** 01 (`regex`), 05 (config, and the boot-time contract below), 06 (context),
 `01-std/06-validation-lib` (the library, for Step 7)
-**Owns:** landed as `modules/rakun-validation/src/**` and `test/**`, which Step 7 deletes; from Step 7
+**Owns:** `modules/rakun-validation/src/**` and `test/**`, which Step 7 deletes; from Step 7
 on, `modules/rakun/src/config_check.bp` (`boot.bp` moved), `modules/rakun/test/config_check_test.bp`
 (`config_test.bp` moved) and the `setMessageSource` call at rakun's boot
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone
@@ -73,7 +60,7 @@ A rakun controller receives strings. `Request.param`, `Request.query`, `Request.
 absent (`repository/rakun/src/http.bp:30-43`). A handler that wants an integer parses it by hand; a
 handler that wants to know whether a field was missing or empty cannot tell the difference; a handler
 that wants to reject three bad fields at once and report all three has to write the accumulation loop
-itself. `modules/rakun-validation/` is a `botopink.json` and a `src/root.bp` holding a TODO comment.
+itself.
 
 A `Validator` as a `#[service]` with a bodyless generic method inside a `type` body does not parse
 (`docs.md:567`), and a `#[valid]` applied to a controller method *parameter* would hook into route
@@ -83,21 +70,12 @@ Neither can be built.
 The temporal constraints are `#[pastDate]` and `#[futureDate]`; a decorator named `#[future]` would
 read as the removed effect annotation, which front 24 refuses with a fix-it (`effect-annotation-removed`).
 
-## Current state
-
-- `repository/rakun/modules/rakun-validation/src/root.bp` — docblock and a TODO comment. No code.
-- `repository/rakun/src/http.bp:30-43` — `Request`'s four accessors, all `-> string`, all `""` when absent. The file's own comment says this is deliberate so handlers do not deal in optionals.
-- `repository/rakun/src/decorators.bp` — no `#[valid]`, no constraint markers, and frozen.
-- `libs/std/src/regex.bp` already wraps `re:run/3` and returns a `Match` record. `#[pattern]` uses what is there rather than asking front 01 for a second matcher; front 01 extends that file, it does not replace it.
-- `libs/std/src/time.bp:56` — `nowMillis` exists, so `#[pastDate]` and `#[futureDate]` have a clock today.
-- Nothing in the tree validates configuration. `rkProp`/`rkPropInt` return a value or a default; a misconfigured application starts and fails later, at the first request that touches the bad key.
-
 ## Mechanism
 
 **Where it lives.** Everything below from *Why this front is a boundary front* to *The violation report
-on the wire* is the library's behaviour, landed in `modules/rakun-validation` and moved unchanged —
+on the wire* is the library's behaviour, in `modules/rakun-validation` today; Step 7 moves it unchanged —
 but for the injected message source and std's JSON writer — to the bundled library `validation`
-(`libs/validation`, `01-std/06-validation-lib`, decision 116). The member imported `rkProp` from
+(`libs/validation`, `01-std/06-validation-lib`, decision 116). The member imports `rkProp` from
 rakun's core (`messages.bp:22`), which is erlang-only since decision 113, so a browser build could not
 reach it. rakun keeps the boot refusal (`config_check.bp`) and hands the library its message source;
 applications, rakun and onze `import {…} from "validation"`.
@@ -361,7 +339,7 @@ After `01-std/06-validation-lib` Steps 1–4. rakun keeps what names rakun and n
 
 ## Test plan
 
-Landed as `modules/rakun-validation/test/` on both targets. Step 7 moves the six files below that do
+`modules/rakun-validation/test/`, on both targets. Step 7 moves the six files below that do
 not name rakun to `libs/validation/test/` (`01-std/06-validation-lib` Step 2, both targets, their
 `rkSetProp` lines replaced by a test `MessageSource`); `config_test.bp` becomes rakun's
 `modules/rakun/test/config_check_test.bp`, erlang only.

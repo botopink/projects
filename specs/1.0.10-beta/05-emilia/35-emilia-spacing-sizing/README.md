@@ -1,446 +1,88 @@
-# Front 35 — emilia-spacing-sizing
+# Front 35 — emilia spacing and sizing
 
-**Track:** D emilia
-**Priority:** critical — padding, margin and width are the three utilities every component uses first. Thirteen padding values and one width token exist today; nothing can be laid out with that.
-**Target:** comptime — `emilia` runs at comptime and emits a CSS string. It is neither erlang- nor js-specific, and this front compiles for neither target in particular.
-**Wave:** 2
-**Depends on:** 54 (`Theme`, `spacing(n)`, `spacingHalf(n)`, `themeVar`), 56 (`declSheet` for `Pad`/`Margin`/`Size`; `Sheet` for `Space`)
-**Owns:** `repository/emilia/src/tokens.bp` (the `Pad`, `Margin`, `Size` and `Space` sections) · `repository/emilia/src/emilia.bp` (`padTokenToCss`, `marginTokenToCss`, `sizeTokenToCss`, `spaceTokenToSheet`) · `repository/emilia/test/spacing_test.bp`
-**Does not touch:** `Gap` — it belongs to front 37, next to the flex and grid containers it spaces; `Layout.Inset` — front 36, which spaces a positioned box rather than a flowed one
-**Reference:** `TAILWIND_CSS_DOCS.md § 7. Espaçamento`, `§ 8. Dimensionamento`, `§ 21.2 Escala de Espaçamento` · https://tailwindcss.com/docs/padding
+**Track:** D emilia · **Priority:** critical · **Level:** 2 · **Target:** comptime (commonJS and erlang)
+**Depends on:** 54 (`spacing(n)`, `spacingHalf(n)`, `themeVar`, `--container-*`, `--breakpoint-*`), 56 (`declSheet`; `Sheet` for `Space`)
+**Code:** `repository/emilia/modules/emilia/src/tokens.bp` (`// ── front 35 — spacing and sizing` block:
+`Pad`, `Margin`, `Size`, `Space`) · `src/emilia.bp` (front-35 block: `padTokenToCss`, `marginTokenToCss`,
+`sizeTokenToCss`, `spaceTokenToSheet`, `siblingSelector`, and their sub-dispatchers)
+**Does not own:** `Gap` (front 37), `Layout.Inset` (front 36)
+**User docs:** `repository/emilia/docs.md` § *Pad and Margin*, § *Size*, § *Space*
+**Reference:** `TAILWIND_CSS_DOCS.md § 7`, `§ 8`, `§ 21.2` · https://tailwindcss.com/docs/padding
+
+**Open:** none.
 
 ---
 
-## Problem
+## What it delivers
 
-`Pad` today (`tokens.bp:140-161`) offers three directions — `X`, `Y`, `All` — over a five-value
-scale `{1, 2, 4, 8, 16}`. Tailwind offers nine directions over an open multiplier scale (`§ 7.1`,
-`§ 21.2`). There is no `p-0`, no per-side padding at all, and no logical `ps-*`/`pe-*`.
+Padding, margin, sizing and child spacing over one scale. **No leaf resolves a length**: every step
+is front 54's `spacing(n)` / `spacingHalf(n)` (`calc(var(--spacing) * n)`), every named width is a
+theme reference. Every sub-dispatcher takes `th: Theme`.
 
-`Margin` (`tokens.bp:163-183`) is the same shape minus `16`, plus an `Auto` that only exists on the
-`X` axis. There is no negative margin, which is the form `-mt-4` — one of the few Tailwind utilities
-with no alternative spelling.
+**The scale** (every direction of `Pad`, `Margin`, `Space`, and the numeric part of `Size`):
+`0 1 2 3 4 5 6 7 8 9 10 11 12 14 16 20 24 28 32 36 40 44 48 52 56 60 64 72 80 96`, `Px`, and
+`Half { 0, 1, 2, 3 }` (`0.5`, `1.5`, `2.5`, `3.5` — a numeric leaf is a digit run, so `0.5` cannot be
+one).
 
-The dispatchers do not emit CSS. `padTokenToCss` (`emilia.bp:181-188`) emits `"padding-x:" + …` and
-`"padding-y:" + …`. There is no `padding-x` property in CSS; that declaration is discarded by every
-browser. `marginScaleX` (`emilia.bp:231-240`) is worse: it returns `"m-0.25"`, `"m-1"`,
-`"margin-auto"` — Tailwind class fragments, emitted into a CSS rule body where they are not
-declarations at all. Three of emilia's ten sections currently emit text that is not CSS, and all
-three are in this front.
-
-Sizing does not exist. There is no `Size` section, so no width, height, min or max token of any
-kind. A component cannot be given a width today.
-
-## Current state
-
-| What | Where | State |
+| Shape | Token | CSS |
 |---|---|---|
-| `Pad { X{1,2,4,8,16}, Y{1,2,4,8}, All{1,2,4,8,16} }` | `tokens.bp:140-161` | 3 directions, no `0` |
-| `Margin { X{Auto,1,2,4,8}, Y{1,2,4,8}, All{1,2,4,8} }` | `tokens.bp:163-183` | `Auto` on `X` only, no negatives |
-| `padTokenToCss` | `emilia.bp:181-188` | emits `padding-x:` / `padding-y:` — not CSS properties |
-| `padScaleX/Y/All` | `emilia.bp:190-220` | correct `rem` values, wrong property |
-| `marginScaleX` | `emilia.bp:231-240` | emits `m-0.25`, `m-1`, `margin-auto` — class fragments, not declarations |
-| `marginScaleY/All` | `emilia.bp:242-260` | `rem` values under a `margin-y:` property that does not exist |
-| width / height / min / max | — | no section |
-| `space-x` / `space-y` | — | no section |
+| zero | `.Pad.All.0` | `padding:0` |
+| step | `.Pad.All.4` | `padding:calc(var(--spacing) * 4)` |
+| half step | `.Pad.All.Half.1` | `padding:calc(var(--spacing) * 1.5)` |
+| pixel | `.Pad.All.Px` | `padding:1px` |
 
-## Mechanism
-
-Tailwind v4 computes every spacing value from one variable (`§ 21.2`): `--spacing` is `0.25rem` and
-each utility is a multiplier, `calc(var(--spacing) * N)`. The scale is open — any integer works. A
-`Token` enum is closed, so this front declares the multipliers Tailwind's own default theme names
-and the escape-hatch front carries the rest.
-
-Front 54 owns that fn, and this front does not write a second one. Per contract 4a in
-[`contracts.md`](../../contracts.md), **`spacing(n)` returns `calc(var(--spacing) * n)` and never a
-resolved `rem`**; `spacingHalf(n)` covers the half steps. Every direction dispatcher calls one of the
-two and prefixes the property, so `calc(var(--spacing) * N)` is spelled once in the library and
-thirty-odd places consume it. A dispatcher in this front that emits `"1rem"` is wrong by contract,
-not by taste — and `1rem` is exactly what `padScaleAll` emits today (`emilia.bp:211-220`).
-
-Four leaf shapes appear under every scale:
-
-| Shape | Spelling | Built by | Emits |
-|---|---|---|---|
-| integer multiplier | `.Pad.All.4` | `spacing(4)` | `calc(var(--spacing) * 4)` |
-| zero | `.Pad.All.0` | literal | `0` — `§ 7.1` shows `p-0` as `padding: 0`, not a `calc` |
-| half step | `.Pad.All.Half.1` | `spacingHalf(1)` | `calc(var(--spacing) * 1.5)` |
-| the pixel step | `.Pad.All.Px` | literal | `1px` |
-
-The half-step spelling exists because `0.5` cannot be an enum leaf: a numeric leaf is a run of
-digits. `Half.1` reads "one and a half" and covers Tailwind's `0.5`, `1.5`, `2.5`, `3.5` as
-`Half.0`, `Half.1`, `Half.2`, `Half.3`.
-
-Negative values take the same route. `-mt-4` becomes `.Margin.T.Neg.4`, a `Neg` sub-section under
-each direction whose dispatcher emits `calc(var(--spacing) * -4)`. A five-segment path
-(`.Margin.T.Neg.4`) was verified to resolve before this spec was written.
-
-Fractions cannot be leaves either — `1/2` is not an identifier and not a digit run — so `Size.W`
-carries a `Frac` sub-section with named leaves.
-
-`space-x` / `space-y` are not declarations on the element; they are declarations on its children. A
-token that needs a selector outside the class is the second shape contract 4a defines, so `Space`
-is the one section here whose dispatcher is
-`fn spaceTokenToSheet(t: Token.Space, th: Theme) -> Sheet` — it returns a `Rule` whose `selector` is
-a sibling template rather than the bare `"&"`. `Pad`, `Margin` and `Size` keep the ordinary
-`fn <section>TokenToCss(t, th: Theme) -> string` shape that `declSheet` adapts.
-
-Front 40's `Divide` family has the same requirement and the same selector; the two fronts must agree
-on it, and a test asserts they do.
-
-## Token surface
-
-### The scale
-
-Leaves shared by every direction under `Pad`, `Margin`, `Space` and the numeric part of `Size`:
-
-`0 1 2 3 4 5 6 7 8 9 10 11 12 14 16 20 24 28 32 36 40 44 48 52 56 60 64 72 80 96`, plus `Px` and
-`Half { 0, 1, 2, 3 }`.
-
-| Tailwind utility | emilia token | CSS emitted |
+| Family | Tokens | CSS |
 |---|---|---|
-| `p-0` | `.Pad.All.0` | `padding:0` |
-| `p-1` | `.Pad.All.1` | `padding:calc(var(--spacing) * 1)` |
-| `p-4` | `.Pad.All.4` | `padding:calc(var(--spacing) * 4)` |
-| `p-96` | `.Pad.All.96` | `padding:calc(var(--spacing) * 96)` |
-| `p-0.5` | `.Pad.All.Half.0` | `padding:calc(var(--spacing) * 0.5)` |
-| `p-1.5` | `.Pad.All.Half.1` | `padding:calc(var(--spacing) * 1.5)` |
-| `p-px` | `.Pad.All.Px` | `padding:1px` |
+| Padding (`§ 7.1`) | `Pad.{All, X, Y, T, R, B, L, S, E}` | `padding`, `padding-left`+`padding-right`, `padding-top`+`padding-bottom`, `padding-top` … `padding-inline-start`, `padding-inline-end` |
+| Margin (`§ 7.2`) | `Margin.{All, X, Y, T, R, B, L, S, E}` + `Auto` and `Neg { … }` on every direction | as padding with `margin-*`; `.Margin.X.Auto` → `margin-left:auto;margin-right:auto`; `.Margin.T.Neg.4` → `margin-top:calc(var(--spacing) * -4)` (no negative `0`/`Auto`) |
+| Width / height (`§ 8.1`, `§ 8.4`) | `Size.W`, `Size.H`: the scale, `Frac { Half, Third, TwoThirds, Quarter, ThreeQuarters, Fifth, TwoFifths, ThreeFifths, FourFifths, Sixth, FiveSixths }`, `Full`, `Screen`, `Svw/Lvw/Dvw` (`Svh/Lvh/Dvh` on `H`), `Min`, `Max`, `Fit`, `Auto` | `width:33.333333%`, `width:66.666667%` (upstream's decimals); `Screen` is `100vw` on `W` and `100vh` on `H` |
+| Min / max (`§ 8.2`, `8.3`, `8.5`, `8.6`) | `Size.MinW`, `MaxW`, `MinH`, `MaxH` | `MaxW` named widths `X3xs`…`X7xl` → `max-width:var(--container-*)`; `MaxW.Screen.{Sm…X2xl}` → `max-width:var(--breakpoint-*)` |
+| Logical (`§ 8.7`) | `Size.Inline`, `Block`, `MinInline`, `MaxInline`, `MinBlock`, `MaxBlock` | `inline-size`, `block-size` and their min/max forms |
+| `size-*` | `Size.Both` | `width:…;height:…` from one leaf |
+| Child spacing | `Space.X`, `Space.Y` (scale incl. `Neg`), `XReverse`, `YReverse` | a second rule on `:where(& > :not(:last-child))`: `--tw-space-y-reverse:0;margin-block-start:calc(<step> * var(--tw-space-y-reverse));margin-block-end:calc(<step> * calc(1 - var(--tw-space-y-reverse)))` (inline pair for `X`); the reverse tokens set the flag to `1` |
 
-### Padding — `§ 7.1`
+`Space` is the one section here that returns a `Sheet` (`spaceTokenToSheet`), because its
+declarations sit on the children; its selector comes from `siblingSelector()` and is byte-identical
+to front 40's `Divide`. The form is upstream v4's, read from upstream `utilities.ts` (the local
+reference omits `space-*`).
 
-| Tailwind utility | emilia token | CSS emitted |
-|---|---|---|
-| `p-4` | `.Pad.All.4` | `padding:calc(var(--spacing) * 4)` |
-| `px-4` | `.Pad.X.4` | `padding-left:calc(var(--spacing) * 4);padding-right:calc(var(--spacing) * 4)` |
-| `py-4` | `.Pad.Y.4` | `padding-top:calc(var(--spacing) * 4);padding-bottom:calc(var(--spacing) * 4)` |
-| `pt-4` | `.Pad.T.4` | `padding-top:calc(var(--spacing) * 4)` |
-| `pr-4` | `.Pad.R.4` | `padding-right:calc(var(--spacing) * 4)` |
-| `pb-4` | `.Pad.B.4` | `padding-bottom:calc(var(--spacing) * 4)` |
-| `pl-4` | `.Pad.L.4` | `padding-left:calc(var(--spacing) * 4)` |
-| `ps-4` | `.Pad.S.4` | `padding-inline-start:calc(var(--spacing) * 4)` |
-| `pe-4` | `.Pad.E.4` | `padding-inline-end:calc(var(--spacing) * 4)` |
+## Acceptance
 
-### Margin — `§ 7.2`
+### Delivered
 
-| Tailwind utility | emilia token | CSS emitted |
-|---|---|---|
-| `m-0` | `.Margin.All.0` | `margin:0` |
-| `m-4` | `.Margin.All.4` | `margin:calc(var(--spacing) * 4)` |
-| `m-auto` | `.Margin.All.Auto` | `margin:auto` |
-| `mx-4` | `.Margin.X.4` | `margin-left:calc(var(--spacing) * 4);margin-right:calc(var(--spacing) * 4)` |
-| `mx-auto` | `.Margin.X.Auto` | `margin-left:auto;margin-right:auto` |
-| `my-4` | `.Margin.Y.4` | `margin-top:calc(var(--spacing) * 4);margin-bottom:calc(var(--spacing) * 4)` |
-| `mt-4` | `.Margin.T.4` | `margin-top:calc(var(--spacing) * 4)` |
-| `mr-4` | `.Margin.R.4` | `margin-right:calc(var(--spacing) * 4)` |
-| `mb-4` | `.Margin.B.4` | `margin-bottom:calc(var(--spacing) * 4)` |
-| `ml-4` | `.Margin.L.4` | `margin-left:calc(var(--spacing) * 4)` |
-| `ms-4` | `.Margin.S.4` | `margin-inline-start:calc(var(--spacing) * 4)` |
-| `me-4` | `.Margin.E.4` | `margin-inline-end:calc(var(--spacing) * 4)` |
-| `-mt-4` | `.Margin.T.Neg.4` | `margin-top:calc(var(--spacing) * -4)` |
-| `-mx-2` | `.Margin.X.Neg.2` | `margin-left:calc(var(--spacing) * -2);margin-right:calc(var(--spacing) * -2)` |
+- [x] `.Pad.All.4` → `padding:calc(var(--spacing) * 4)`; `.Pad.X.4` → the two-declaration form;
+      `.Pad.All.0` → `padding:0`.
+- [x] No fn in the block returns a literal length except the `Px` leaf's `1px`/`-1px`; no token emits
+      a non-CSS property (`padding-x`, `padding-y`, `margin-y`) or a Tailwind class fragment
+      (`m-1`, `m-0.25`, `margin-auto`); every sub-dispatcher takes `th: Theme`.
+- [x] The earlier paths (`.Pad.X.4`, `.Pad.All.16`, `.Margin.Y.8`, `.Margin.X.Auto`) still compile.
+- [x] Nine padding directions × 35 leaves; nine margin directions with `Auto` and `Neg` each;
+      `.Margin.T.Neg.4` and `.Margin.X.Neg.2` negative; `.Pad.S.4`/`.Pad.E.4` logical.
+- [x] `Size`: `W.Full` → `width:100%`, `W.Screen` → `width:100vw`, `H.Screen` → `height:100vh`; the
+      eleven fractions at upstream's decimals; named `MaxW` widths are `var(--container-*)` references
+      whose theme values match `§ 8.3`; `MaxW.Screen.X2xl` → `max-width:var(--breakpoint-2xl)`;
+      `Both.12` emits two declarations; the six logical forms.
+- [x] `Space.Y.4`/`Space.X.4` emit upstream's reverse-aware block/inline pair under
+      `:where(& > :not(:last-child))`; composing with a `Pad` token gives two rules of one class in
+      order; `Space.X.Neg.2` pulls up; the selector carries one `&` and is byte-identical to
+      `Divide`'s.
+- [x] Every dispatcher uses the `val out = case …; return out;` idiom with arrow arms only; the
+      front-35 banners fence both blocks, in front-number position, with arms between fronts 33
+      and 36; `repository/emilia/AGENTS.md` and the `tokens.bp` header record the sections.
+- [x] `spacing`/`spacingHalf` are the only spellings of `calc(var(--spacing) *` outside tests.
+- [x] Green on commonJS and erlang.
 
-### Width — `§ 8.1`
+## Reference notes
 
-| Tailwind utility | emilia token | CSS emitted |
-|---|---|---|
-| `w-0` | `.Size.W.0` | `width:0` |
-| `w-1` | `.Size.W.1` | `width:calc(var(--spacing) * 1)` |
-| `w-64` | `.Size.W.64` | `width:calc(var(--spacing) * 64)` |
-| `w-px` | `.Size.W.Px` | `width:1px` |
-| `w-1/2` | `.Size.W.Frac.Half` | `width:50%` |
-| `w-1/3` | `.Size.W.Frac.Third` | `width:33.333333%` |
-| `w-2/3` | `.Size.W.Frac.TwoThirds` | `width:66.666667%` |
-| `w-full` | `.Size.W.Full` | `width:100%` |
-| `w-screen` | `.Size.W.Screen` | `width:100vw` |
-| `w-svw` | `.Size.W.Svw` | `width:100svw` |
-| `w-lvw` | `.Size.W.Lvw` | `width:100lvw` |
-| `w-dvw` | `.Size.W.Dvw` | `width:100dvw` |
-| `w-min` | `.Size.W.Min` | `width:min-content` |
-| `w-max` | `.Size.W.Max` | `width:max-content` |
-| `w-fit` | `.Size.W.Fit` | `width:fit-content` |
-| `w-auto` | `.Size.W.Auto` | `width:auto` |
-
-### Height — `§ 8.4`
-
-| Tailwind utility | emilia token | CSS emitted |
-|---|---|---|
-| `h-0` | `.Size.H.0` | `height:0` |
-| `h-1` | `.Size.H.1` | `height:calc(var(--spacing) * 1)` |
-| `h-1/2` | `.Size.H.Frac.Half` | `height:50%` |
-| `h-full` | `.Size.H.Full` | `height:100%` |
-| `h-screen` | `.Size.H.Screen` | `height:100vh` |
-| `h-svh` | `.Size.H.Svh` | `height:100svh` |
-| `h-lvh` | `.Size.H.Lvh` | `height:100lvh` |
-| `h-dvh` | `.Size.H.Dvh` | `height:100dvh` |
-| `h-min` | `.Size.H.Min` | `height:min-content` |
-| `h-max` | `.Size.H.Max` | `height:max-content` |
-| `h-fit` | `.Size.H.Fit` | `height:fit-content` |
-| `h-auto` | `.Size.H.Auto` | `height:auto` |
-
-### Min and max — `§ 8.2`, `§ 8.3`, `§ 8.5`, `§ 8.6`
-
-| Tailwind utility | emilia token | CSS emitted |
-|---|---|---|
-| `min-w-0` | `.Size.MinW.0` | `min-width:0` |
-| `min-w-full` | `.Size.MinW.Full` | `min-width:100%` |
-| `min-w-min` | `.Size.MinW.Min` | `min-width:min-content` |
-| `min-w-max` | `.Size.MinW.Max` | `min-width:max-content` |
-| `min-w-fit` | `.Size.MinW.Fit` | `min-width:fit-content` |
-| `max-w-0` | `.Size.MaxW.0` | `max-width:0` |
-| `max-w-none` | `.Size.MaxW.None` | `max-width:none` |
-| `max-w-xs` | `.Size.MaxW.Xs` | `max-width:20rem` |
-| `max-w-sm` | `.Size.MaxW.Sm` | `max-width:24rem` |
-| `max-w-md` | `.Size.MaxW.Md` | `max-width:28rem` |
-| `max-w-lg` | `.Size.MaxW.Lg` | `max-width:32rem` |
-| `max-w-xl` | `.Size.MaxW.Xl` | `max-width:36rem` |
-| `max-w-2xl` | `.Size.MaxW.X2xl` | `max-width:42rem` |
-| `max-w-3xl` | `.Size.MaxW.X3xl` | `max-width:48rem` |
-| `max-w-4xl` | `.Size.MaxW.X4xl` | `max-width:56rem` |
-| `max-w-5xl` | `.Size.MaxW.X5xl` | `max-width:64rem` |
-| `max-w-6xl` | `.Size.MaxW.X6xl` | `max-width:72rem` |
-| `max-w-7xl` | `.Size.MaxW.X7xl` | `max-width:80rem` |
-| `max-w-full` | `.Size.MaxW.Full` | `max-width:100%` |
-| `max-w-screen-sm` | `.Size.MaxW.Screen.Sm` | `max-width:40rem` |
-| `max-w-screen-md` | `.Size.MaxW.Screen.Md` | `max-width:48rem` |
-| `max-w-screen-lg` | `.Size.MaxW.Screen.Lg` | `max-width:64rem` |
-| `max-w-screen-xl` | `.Size.MaxW.Screen.Xl` | `max-width:80rem` |
-| `max-w-screen-2xl` | `.Size.MaxW.Screen.X2xl` | `max-width:96rem` |
-| `min-h-0` | `.Size.MinH.0` | `min-height:0` |
-| `min-h-full` | `.Size.MinH.Full` | `min-height:100%` |
-| `min-h-screen` | `.Size.MinH.Screen` | `min-height:100vh` |
-| `min-h-svh` | `.Size.MinH.Svh` | `min-height:100svh` |
-| `min-h-lvh` | `.Size.MinH.Lvh` | `min-height:100lvh` |
-| `min-h-dvh` | `.Size.MinH.Dvh` | `min-height:100dvh` |
-| `min-h-fit` | `.Size.MinH.Fit` | `min-height:fit-content` |
-| `max-h-0` | `.Size.MaxH.0` | `max-height:0` |
-| `max-h-none` | `.Size.MaxH.None` | `max-height:none` |
-| `max-h-full` | `.Size.MaxH.Full` | `max-height:100%` |
-| `max-h-screen` | `.Size.MaxH.Screen` | `max-height:100vh` |
-| `max-h-svh` | `.Size.MaxH.Svh` | `max-height:100svh` |
-| `max-h-lvh` | `.Size.MaxH.Lvh` | `max-height:100lvh` |
-| `max-h-dvh` | `.Size.MaxH.Dvh` | `max-height:100dvh` |
-| `max-h-fit` | `.Size.MaxH.Fit` | `max-height:fit-content` |
-
-### Logical size — `§ 8.7`
-
-| Tailwind utility | emilia token | CSS emitted |
-|---|---|---|
-| `inline-size-4` | `.Size.Inline.4` | `inline-size:calc(var(--spacing) * 4)` |
-| `min-inline-size-full` | `.Size.MinInline.Full` | `min-inline-size:100%` |
-| `max-inline-size-md` | `.Size.MaxInline.Md` | `max-inline-size:28rem` |
-| `block-size-4` | `.Size.Block.4` | `block-size:calc(var(--spacing) * 4)` |
-| `min-block-size-full` | `.Size.MinBlock.Full` | `min-block-size:100%` |
-| `max-block-size-full` | `.Size.MaxBlock.Full` | `max-block-size:100%` |
-| `size-12` | `.Size.Both.12` | `width:calc(var(--spacing) * 12);height:calc(var(--spacing) * 12)` |
-| `size-full` | `.Size.Both.Full` | `width:100%;height:100%` |
-
-### Child spacing
-
-`space-x-*` and `space-y-*` are not in the local reference — see *Reference gaps*.
-
-| Tailwind utility | emilia token | CSS emitted |
-|---|---|---|
-| `space-x-4` | `.Space.X.4` | `& > :not(:last-child){margin-inline-end:calc(var(--spacing) * 4)}` |
-| `space-y-4` | `.Space.Y.4` | `& > :not(:last-child){margin-block-end:calc(var(--spacing) * 4)}` |
-| `space-x-reverse` | `.Space.XReverse` | `& > :not(:last-child){--tw-space-x-reverse:1}` |
-| `space-y-reverse` | `.Space.YReverse` | `& > :not(:last-child){--tw-space-y-reverse:1}` |
-
-## Steps
-
-### Step 1 — delete seven local ladders, and correct `padding-x`
-
-```bp
-fn padTokenToCss(t: Token.Pad, th: Theme) -> string {
-    val out = case t {
-        All(_inner) -> "padding:" + padScale(_inner, th);
-        X(_inner) -> "padding-left:" + padScaleX(_inner, th) + ";padding-right:" + padScaleX(_inner, th);
-        T(_inner) -> "padding-top:" + padScaleT(_inner, th);
-    };
-    return out;
-}
-```
-
-Each leaf dispatcher answers `spacing(n)` or `spacingHalf(n)` from front 54 and never a literal
-length. The six local ladders — `padScaleX`, `padScaleY`, `padScaleAll`, `marginScaleX`,
-`marginScaleY`, `marginScaleAll` (`emilia.bp:190-220`, `:231-260`) — are deleted, not widened;
-`padTokenToCss` stops emitting `padding-x:` and emits the two real properties; `marginScaleX` stops
-emitting `m-1` and `margin-auto`.
-
-This changes the CSS four existing tokens emit. It is a correction, not a rename: no path that
-compiles today stops compiling, and what those paths emitted was never valid CSS. The assertions
-affected are in this front's own test file; `src/emilia.bp` has no spacing assertion.
-
-**Acceptance:**
-- [x] `.Pad.All.4` emits `padding:calc(var(--spacing) * 4)` — held: test "the scale — every shape of leaf, read through the public `Pad.All` path"
-- [x] `.Pad.X.4` emits `padding-left:calc(var(--spacing) * 4);padding-right:calc(var(--spacing) * 4)` — two declarations, `;`-joined, inside one token — held: test "the nine padding directions, each with its own property and its own expansion"
-- [x] `.Pad.All.0` emits `padding:0`, not `padding:calc(var(--spacing) * 0)` — held: `spacing.bp:spacing` (zero → `0`); test "the scale — every shape of leaf…"
-- [x] no fn in this front returns a literal `rem`, `px` (other than the `Px` leaf's `1px`) or
-      `0.25rem` — `grep -E '[0-9]rem' ` over this front's block returns nothing — held: only `Px -> "1px"`/`"-1px"` in the block; test "no spacing token resolves a length…"
-- [x] every sub-dispatcher takes `th: Theme`, per contract 4a — held: every `pad*`/`margin*`/`size*`/`space*` fn in `emilia.bp` front-35 block takes `th: Theme`
-- [x] no token anywhere in `emilia.bp` emits a property name that is not a real CSS property —
-      `padding-x`, `padding-y`, `margin-y` are gone — held: test "no spacing token emits a property name that is not a CSS property"
-- [x] no token emits a Tailwind class fragment — `m-0.25`, `m-1`, `margin-auto` are gone — held: test "no spacing token emits a Tailwind class fragment"
-- [x] the paths that compile today (`.Pad.X.4`, `.Pad.All.16`, `.Margin.Y.8`, `.Margin.X.Auto`) all
-      still compile — held: test "the paths that compiled before this front still compile"
-
-### Step 2 — nine directions for padding, ten for margin
-
-```bp
-    Pad {
-        All { 0, 1, …, 96, Px, Half { 0, 1, 2, 3 } }
-        X { … }  Y { … }  T { … }  R { … }  B { … }  L { … }  S { … }  E { … }
-    }
-    Margin {
-        All { 0, …, 96, Auto, Px, Half { … }, Neg { 1, …, 96, Px, Half { … } } }
-        X { … }  Y { … }  T { … }  R { … }  B { … }  L { … }  S { … }  E { … }
-    }
-```
-
-`Auto` is on every margin direction, not only `X`. `Neg` is on every margin direction and carries no
-`0` and no `Auto` — a negative zero and a negative auto are not utilities.
-
-**Acceptance:**
-- [x] all nine padding directions answer all 35 scale leaves — held: `tokens.bp` `Pad` (9 × 35 leaves); test "the walk is complete — one rule per leaf…"
-- [x] all nine margin directions answer the scale plus `Auto` — held: test "`Auto` is on every margin direction, not only on the X axis"
-- [x] `.Margin.T.Neg.4` emits `margin-top:calc(var(--spacing) * -4)` — the five-segment path resolves — held: test "`Neg` is on every margin direction — the `-mt-4` form, spelled as a path"
-- [x] `.Margin.X.Neg.2` emits both sides negative — held: test "a negative margin carries the pixel step and the half steps too"
-- [x] `.Margin.All.Auto` emits `margin:auto` and `.Margin.X.Auto` emits the two-property form — held: test "`Auto` is on every margin direction, not only on the X axis"
-- [x] `.Pad.S.4` / `.Pad.E.4` emit `padding-inline-start` / `padding-inline-end` — held: test "the nine padding directions, each with its own property and its own expansion"
-
-### Step 3 — the `Size` section
-
-Thirteen sub-sections: `W`, `H`, `Both`, `MinW`, `MaxW`, `MinH`, `MaxH`, `Inline`, `Block`,
-`MinInline`, `MaxInline`, `MinBlock`, `MaxBlock`.
-
-```bp
-    Size {
-        W {
-            0, 1, …, 96, Px,
-            Frac { Half, Third, TwoThirds, Quarter, ThreeQuarters,
-                   Fifth, TwoFifths, ThreeFifths, FourFifths,
-                   Sixth, FiveSixths },
-            Full, Screen, Svw, Lvw, Dvw, Min, Max, Fit, Auto,
-        }
-        // …
-    }
-```
-
-`MaxW` additionally carries the named container widths `Xs … X7xl` and a `Screen { Sm, Md, Lg, Xl,
-X2xl }` sub-section. `Both` is `size-*`: it emits `width` and `height` from one leaf.
-
-**Acceptance:**
-- [x] `.Size.W.Full` emits `width:100%`; `.Size.W.Screen` emits `width:100vw`; `.Size.H.Screen`
-      emits `height:100vh` — the viewport unit differs by axis and the test says so — held: test "Size — the viewport unit differs by axis, and both halves are pinned"
-- [x] `.Size.W.Frac.Third` emits `width:33.333333%` — six decimal places, as `§ 8.1` prints it — held: test "Size — the eleven fractions, to the decimal place upstream prints"
-- [x] `.Size.W.Frac.TwoThirds` emits `width:66.666667%` — held: test "Size — the eleven fractions, to the decimal place upstream prints"
-- [x] every `MaxW` named width matches `§ 8.3` exactly, `Xs` through `X7xl` — held (shape: emits `var(--container-*)`, the `rem` lives in the theme): tests "Size — the named container widths are theme references, not lengths" + "…each of those names resolves to the width `§ 8.3` prints"
-- [x] `.Size.MaxW.Screen.X2xl` emits `max-width:96rem` — held (shape: emits `max-width:var(--breakpoint-2xl)`, theme value `96rem`): test "Size — `max-w-screen-*` reads the breakpoint ladder, the same way"
-- [x] `.Size.Both.12` emits two declarations from one token — held: test "Size.Both — upstream's `size-*`, two declarations from one leaf"
-- [x] the six logical sub-sections emit `inline-size`, `block-size` and their min/max forms — held: test "Size — the six logical forms, which follow the writing direction"
-
-### Step 4 — `Space`
-
-```bp
-    Space {
-        X { 0, 1, …, 96, Px, Half { … }, Neg { … } }
-        Y { … }
-        XReverse,
-        YReverse,
-    }
-```
-
-`spaceTokenToSheet(t: Token.Space, th: Theme) -> Sheet` returns a `Rule` whose `selector` is the
-sibling template and whose `declarations` are the child margins. It is the one dispatcher in this
-front that is not a `…TokenToCss`, and its header says so.
-
-**Acceptance:**
-- [x] `.Space.Y.4` emits `& > :not(:last-child){margin-block-end:calc(var(--spacing) * 4)}` — held (shape: upstream's form since the audit pass — `:where(& > :not(:last-child))` and the reverse-aware start/end pair, whose end side is `calc(calc(var(--spacing) * 4) * calc(1 - var(--tw-space-y-reverse)))`): test "Space — the declaration is on the CHILDREN, under the sibling selector"
-- [x] `.Space.X.4` emits the `margin-inline-end` form — held (shape: the inline start/end pair through `--tw-space-x-reverse`): test "Space — the X axis is the inline pair, the Y axis the block pair"
-- [x] a `Space` token composes with a `Pad` token in the same list and the result is
-      `padding:…;& > :not(:last-child){…}` — held (shape: two rules of one class in the rendered document, not one declaration string): test "Space — composing with a Pad token in one list gives two rules, in order"
-- [x] `.Space.X.Neg.2` emits a negative child margin — held: test "Space — a negative child margin, the pull-up form"
-- [x] the selector this front chose is recorded in the README and verified against upstream before
-      merge — see *Reference gaps* — held: verified against upstream `utilities.ts` on 2026-09-26, found to differ, and re-emitted in upstream's form (`siblingSelector()` = `:where(& > :not(:last-child))`, `reversePair`); recorded in emilia `AGENTS.md` and decisions-pending 05emilia-g
-- [x] the selector is byte-identical to front 40's `Divide` selector, asserted by a test that
-      compares the two outputs — held: test "Divide and front 35's Space emit BYTE-IDENTICAL child selectors" (front 40 block)
-- [x] the `selector` carries exactly one `&`, which front 56 enforces with no opt-out — held (shape: front 56 refuses non-one-`&` VARIANT selectors; the rule selector is pinned by test): test "Space — the sibling selector is one template, with exactly one ampersand"
-
-### Step 5 — the four dispatchers and the top-level arms
-
-`padTokenToCss` and `marginTokenToCss` are rewritten; `sizeTokenToCss` and `spaceTokenToSheet` are
-new. Two arms are added to the top-level `tokenToSheet` case (`Size`, `Space`); `Pad` and `Margin`
-already have theirs. Three of the four go through `declSheet`; `Space` does not.
-
-**Acceptance:**
-- [x] each dispatcher follows the file's `val out = case …; return out;` idiom — held: `padTokenToCss`/`marginTokenToCss`/`sizeTokenToCss`/`spaceTokenToSheet` and every sub-dispatcher
-- [x] every arm is an arrow arm — no block arm anywhere, since a block arm parses but yields no value — held: every arm in the front-35 block of `emilia.bp` is `X -> expr;`
-- [x] the banner `// ── front 35 — spacing and sizing ──` fences the block in both files — held: `tokens.bp:703` and `emilia.bp:3080`, each closed by `// ── end front 35 ──`
-- [x] the two new `tokenToCss` arms sit in front-number order relative to the other fronts' arms — held: `tokenToSheet` `// ── front 35 — spacing and sizing` fence between front 33 and front 36
+- The `--tw-space-*-reverse` names are upstream-internal; they are pinned by a test so a change is
+  visible.
+- Fractions beyond `1/2`, `1/3`, `2/3`, the 30 multiplier keys and the `px` step are not printed in
+  the local reference; they follow upstream's default theme.
 
 ## Examples
 
-- `./examples/spacing-example.bp` — the scale, all nine padding directions, margin with `Auto` and
-  negatives, and child spacing; ends with a stacked comment thread that uses `Space.Y` and a
+- [`./examples/spacing-example.bp`](./examples/spacing-example.bp) — the scale, nine padding
+  directions, margin with `Auto` and negatives, child spacing; a comment thread using `Space.Y` and a
   negative pull-up.
-- `./examples/sizing-example.bp` — width, height, fractions, viewport units, intrinsic sizes, min and
-  max, the logical forms; ends with a centred article shell with a max width and a full-bleed header.
-
-## Language gaps
-
-None — every construct in this front's examples parses today. Three shapes were verified against
-`zig-out/bin/botopink` before the spec was written, because each is load-bearing here:
-
-| Shape | Result |
-|---|---|
-| numeric leaf in expression position (`.Pad.All.4`) | resolves; `__4` is the pattern spelling only |
-| a five-segment path (`.Margin.T.Neg.4`) | resolves |
-| a `Neg` sub-section holding numeric leaves | resolves and destructures |
-
-## Reference gaps
-
-| Item | Why it is missing | What implementation must do |
-|---|---|---|
-| `space-x-*` / `space-y-*` | absent from `TAILWIND_CSS_DOCS.md` entirely — not in `§ 7`, not in the *Referência Rápida* | verify the child selector and the property against upstream `tailwindcss.com/docs/margin#adding-space-between-children`; this spec's `& > :not(:last-child)` and `margin-inline-end` are a proposal, not a transcription |
-| `space-x-reverse` / `space-y-reverse` | likewise absent | the `--tw-space-*-reverse` custom property name is upstream-internal and must be confirmed |
-| Fractions beyond `1/2`, `1/3`, `2/3` | `§ 8.1` prints only those three; quarters, fifths, sixths and twelfths are not documented locally | `Frac.Quarter` and below are declared by this front but their percentages must be checked against upstream before merge |
-| The full spacing multiplier set | `§ 21.2` says the scale is multiplicative and open, and `§ 7.1` prints only `0`, `1`, `2`, `4` | the 30 multipliers this front declares are Tailwind's default theme keys; confirm the list against upstream `theme.css` |
-| `p-px`, `w-px` | not printed in `§ 7` or `§ 8` | `1px` is the only sensible value but it is not documented locally |
-
-## Test plan
-
-`repository/emilia/test/spacing_test.bp`, flat, bare-importing across `src`. Run with
-`botopink test` from `repository/emilia` and under `zig build test-libs -- --lib emilia`.
-
-emilia has no target split, so the suite runs on **both** backends: `botopink test` (commonJS) and
-`botopink test --target erlang`.
-
-What the tests assert:
-
-1. **The scale, once** — `0`, `1`, `4`, `96`, `Half.1`, `Px`, exercised through `.Pad.All.*` so it
-   is tested via the public surface, plus one assert that no output contains a literal `rem`.
-2. **One test per padding direction** — nine tests, each asserting the property name and the
-   two-property expansion where there is one.
-3. **One test per margin direction**, plus `Auto` on each and `Neg` on each.
-4. **The regression this front is here for** — explicit asserts that the emitted text contains
-   neither `padding-x`, `padding-y`, `margin-y`, nor `m-1`, `m-0.25`, `margin-auto`.
-5. **Width and height** — numeric, fractional, viewport, intrinsic, `auto`, with the `vw`/`vh` split
-   asserted directly.
-6. **Min and max** — every named `MaxW` width against `§ 8.3`, and the `Screen` sub-section.
-7. **Logical sizes** — six properties.
-8. **`Space`** — the nested-rule shape, and its composition with a plain declaration in one class.
-9. **End to end** — `emilia([.Size.MaxW.X3xl, .Margin.X.Auto, .Pad.X.6])` then `await flush()`,
-   asserting the whole `<style>` block.
-
-## Definition of done
-
-- [x] `Pad` carries nine directions, `Margin` nine plus `Auto` and `Neg`, over a 35-leaf scale — held: `tokens.bp` `Pad`/`Margin` sections; test "the walk is complete — one rule per leaf…"
-- [x] `Size` carries thirteen sub-sections covering `§ 8.1`–`§ 8.7` — held: `tokens.bp` `Size` (W, H, Both, MinW, MaxW, MinH, MaxH, Inline, Block, MinInline, MaxInline, MinBlock, MaxBlock)
-- [x] `Space` carries `X`, `Y` and the two reverse tokens — held: `tokens.bp` `Space { X, Y, XReverse, YReverse }`
-- [x] no emilia token emits a non-CSS property name or a Tailwind class fragment — held: tests "no spacing token emits a property name that is not a CSS property" + "…a Tailwind class fragment"; no such string outside tests in `emilia.bp`
-- [x] front 54's `spacing` / `spacingHalf` are the only places `calc(var(--spacing) * N)` is spelled,
-      and this front calls them rather than reimplementing them — held: `spacing.bp:spacing`/`spacingHalf` are the only non-test spellings of `calc(var(--spacing) *`
-- [x] the banner fences this front's block in both files, appended at the end — held (shape: block sits in front-number position, not at file end): `tokens.bp:703`, `emilia.bp:3080`
-- [x] two arms added to the top-level `tokenToCss` case, in front-number order — held: same fence
-- [x] `repository/emilia/AGENTS.md` and the `////` header of `tokens.bp` record the new sections — held: `AGENTS.md` front-35 paragraph; `tokens.bp` `////` SECTIONS `Pad`/`Margin`/`Size`/`Space`
-- [x] the front's tests are green on its assigned target — here, both backends, since emilia is comptime — held: emilia suite 569/569 on commonJS and erlang
+- [`./examples/sizing-example.bp`](./examples/sizing-example.bp) — width, height, fractions, viewport
+  and intrinsic sizes, min/max, logical forms; a centred article shell with a full-bleed header.

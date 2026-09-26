@@ -9,13 +9,12 @@
 // https://tailwindcss.com/docs/adding-custom-styles
 
 import { emilia, flush, Token } from "emilia";
-import { Theme, ThemeEntry, Ns, defaultTheme, extend, clearNamespace, themeValue, themeVar, spacing } from "emilia";
-// `defaultOptions`, `withTheme` and `flushWith` are provided by front 56.
+import { Theme, ThemeEntry, Ns, defaultTheme, extendTheme, clearNamespace, themeValue, themeVar, spacing } from "emilia";
 import { defaultOptions, withTheme, flushWith } from "emilia";
 
 // The brand theme of TAILWIND_CSS_DOCS.md § 21.7: start from emilia's defaults,
 // throw the stock colour namespace away, and declare four variables of our own.
-// `extend` refuses a name outside the nineteen known namespaces, so a typo such
+// `extendTheme` refuses a name outside the nineteen known namespaces, so a typo such
 // as `--colour-lagoon` fails the build instead of silently doing nothing.
 fn brandTheme() -> Theme {
     val stripped = clearNamespace(defaultTheme(), Ns.Color);

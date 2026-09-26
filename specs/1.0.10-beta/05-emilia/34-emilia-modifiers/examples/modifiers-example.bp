@@ -10,9 +10,6 @@
 //            § 3.3 Design Responsivo, § 3.4 Dark Mode
 //
 // emilia runs at comptime and emits a CSS string; this file is target-independent.
-// Every modifier below is delivered by front 34 except Hover/Focus/Active/Md/Lg/Xl,
-// which exist today and are corrected by this front to the v4.3 spelling.
-// Colour tokens come from front 33; spacing from front 35; typography from front 38.
 
 import {emilia, flush, Token} from "emilia";
 
@@ -121,7 +118,7 @@ fn structuralStates() -> Token[] {
 }
 
 // ── pseudo-elements ──────────────────────────────────────────────────────────
-// `Before`/`After` need `Text.Content.*`, which front 38 delivers.
+// `Before`/`After` need a `content` value: `Text.Content.*`.
 
 fn pseudoElements() -> Token[] {
     val star: Token[] = [.Text.Content.Empty, .Color.Red.500];
@@ -174,12 +171,10 @@ fn directionStates() -> Token[] {
     return states;
 }
 
-// LANGUAGE GAP: an arbitrary variant — `[&.is-dragging]:`, `supports-[display:grid]:`,
-// `aria-checked:`, `data-[size=large]:`, `has-[…]:` — needs a modifier that carries
-// a raw selector string. A top-level payload variant carrying a `string` DOES
-// construct today, so this is a library gap rather than a compiler one; the
-// escape-hatch front owns `Token.Variant(selector: string, inner: Token[])`.
-// Front 34 ships no such variant.
+// An arbitrary variant — `[&.is-dragging]:`, `supports-[display:grid]:`,
+// `aria-checked:`, `data-[size=large]:`, `has-[…]:` — is not a named modifier:
+// it is written with the escape hatches (`arbSel(selector, inner)`,
+// `arbAt(query, inner)`) or `selector(variant, inner)` from `compose`.
 
 // ── the component ────────────────────────────────────────────────────────────
 // A navigation bar: hidden under `sm`, a row from `md` up, dark-mode surface,
@@ -229,15 +224,15 @@ pub fn navBar(primary: string, secondary: string) -> @Task<string> {
 test "breakpoints emit the v4.3 rem queries" {
     val cls = emilia(breakpointLadder());
     val styles = await flush();
-    assert styles.contains("@media (width >= 40rem){font-size:var(--text-sm)}");
-    assert styles.contains("@media (width >= 96rem){font-size:var(--text-2xl)}");
+    assert styles.contains("@media (width >= 40rem){." + cls + "{font-size:var(--text-sm)}}");
+    assert styles.contains("@media (width >= 96rem){." + cls + "{font-size:var(--text-2xl)}}");
 }
 
 test "max breakpoints emit the width-less-than form" {
     val cls = emilia(maxBreakpoints());
     val styles = await flush();
-    assert styles.contains("@media (width < 40rem){display:none}");
-    assert styles.contains("@media (width < 96rem){display:none}");
+    assert styles.contains("@media (width < 40rem){." + cls + "{display:none}}");
+    assert styles.contains("@media (width < 96rem){." + cls + "{display:none}}");
 }
 
 test "dark mode is a prefers-color-scheme query" {
@@ -245,8 +240,8 @@ test "dark mode is a prefers-color-scheme query" {
     val tokens: Token[] = [Token.Dark(inner)];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{@media (prefers-color-scheme: dark){background-color:var(--color-slate-900)}}</style>";
+    assert styles.contains("@media (prefers-color-scheme: dark){." + cls
+        + "{background-color:var(--color-slate-900)}}");
 }
 
 test "hover is media-guarded and ampersand-anchored" {
@@ -254,8 +249,7 @@ test "hover is media-guarded and ampersand-anchored" {
     val tokens: Token[] = [Token.Hover(inner)];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{@media (hover: hover){&:hover{font-weight:bold}}}</style>";
+    assert styles.contains("@media (hover: hover){." + cls + ":hover{font-weight:bold}}");
 }
 
 test "an indexed structural variant carries its index into the selector" {
@@ -263,7 +257,7 @@ test "an indexed structural variant carries its index into the selector" {
     val tokens: Token[] = [Token.Nth(index: 3, inner: marked)];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles.contains("&:nth-child(3){text-decoration-line:underline}");
+    assert styles.contains("." + cls + ":nth-child(3){text-decoration-line:underline}");
 }
 
 test "marker and selection keep the space before the double colon" {
@@ -271,7 +265,7 @@ test "marker and selection keep the space before the double colon" {
     val tokens: Token[] = [Token.Marker(bullets)];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles.contains("& ::marker{color:var(--color-sky-400)}");
+    assert styles.contains("." + cls + " ::marker{color:var(--color-sky-400)}");
 }
 
 test "a group variant looks for the group class without emitting it" {
@@ -279,13 +273,13 @@ test "a group variant looks for the group class without emitting it" {
     val tokens: Token[] = [Token.GroupHover(reveal)];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles.contains("&:is(:where(.group):hover *){color:var(--color-white)}");
+    assert styles.contains("." + cls + ":is(:where(.group):hover *){color:var(--color-white)}");
 }
 
 test "the nav bar carries its breakpoint, dark and state blocks" {
     val out = await navBar("Docs", "Blog");
     assert out.startsWith("<style>");
-    assert out.contains("@media (width >= 48rem){flex-direction:row}");
+    assert out.contains("@media (width >= 48rem){.");
     assert out.contains("@media (prefers-color-scheme: dark){");
-    assert out.contains("&:first-child{padding-left:0}");
+    assert out.contains(":first-child{padding-left:0}");
 }

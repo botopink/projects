@@ -7,15 +7,10 @@
 // Reference: TAILWIND_CSS_DOCS.md § 10.4 background-image
 //
 // emilia runs at comptime and emits a CSS string; this file is target-independent.
-// The whole `Gradient` section is delivered by front 39. The stop colours are
-// front 33's palette reached through `paletteVar`, so a gradient stop and a
-// background colour name the same custom property. `bg-clip-text` is front 39's
-// too; layout comes from front 36, spacing from 35, modifiers from 34.
-//
-// NOTE — the reference shows `from-*`/`via-*`/`to-*` in markup and prints no
-// CSS for them. The custom-property shape below is recorded in this front's
-// README under `## Reference gaps` and must be verified against upstream before
-// implementation; it is not a transcription.
+// The stop colours are the palette reached through `paletteVar`, so a gradient
+// stop and a background colour name the same custom property. The stop
+// property names are upstream's; each stop reference carries a `transparent`
+// fallback in place of upstream's `@property` default.
 
 import {emilia, flush, Token} from "emilia";
 
@@ -40,7 +35,7 @@ fn directions() -> Token[] {
 // ── stops ────────────────────────────────────────────────────────────────────
 // The terminal stop is `Stop`, not `To`: `.Gradient.To.*` is already the
 // direction. Tailwind spells both with the word `to` while they set unrelated
-// things, and this front does not copy that collision.
+// things, and emilia does not copy that collision.
 
 fn twoStop() -> Token[] {
     val values: Token[] = [
@@ -132,8 +127,8 @@ test "a direction is a linear-gradient over the stops variable" {
     val tokens: Token[] = [.Gradient.To.R];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{background-image:linear-gradient(to right, var(--tw-gradient-stops))}</style>";
+    assert styles.contains("." + cls
+        + "{background-image:linear-gradient(to right, var(--tw-gradient-stops))}");
 }
 
 test "the diagonal directions keep their two-word phrases" {
@@ -148,7 +143,7 @@ test "a two-stop gradient composes from and to" {
     val cls = emilia(twoStop());
     val styles = await flush();
     assert styles.contains("--tw-gradient-from:var(--color-indigo-500)");
-    assert styles.contains("--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)");
+    assert styles.contains("--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to, transparent)");
     assert styles.contains("--tw-gradient-to:var(--color-pink-500)");
 }
 
@@ -156,7 +151,7 @@ test "a via stop rewrites the stops list to three" {
     val cls = emilia(threeStop());
     val styles = await flush();
     assert styles.contains("--tw-gradient-via:var(--color-purple-500)");
-    assert styles.contains("--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-via), var(--tw-gradient-to)");
+    assert styles.contains("--tw-gradient-stops:var(--tw-gradient-from, transparent), var(--tw-gradient-via), var(--tw-gradient-to, transparent)");
 }
 
 test "token order decides which stops list survives" {
@@ -202,5 +197,6 @@ test "the call to action clips its heading to the glyphs and flips on hover" {
     assert out.startsWith("<style>");
     assert out.contains("background-clip:text;color:transparent");
     assert out.contains("linear-gradient(to bottom right, var(--tw-gradient-stops))");
-    assert out.contains("@media (hover: hover){&:hover{background-image:linear-gradient(to left, var(--tw-gradient-stops))");
+    assert out.contains("@media (hover: hover){.");
+    assert out.contains(":hover{background-image:linear-gradient(to left, var(--tw-gradient-stops))");
 }

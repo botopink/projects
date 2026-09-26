@@ -66,7 +66,7 @@ val _blogParams = registerStaticParams("blog/[slug]", blogStaticParams);
 // leaves `isDynamic()` false and the output is stored as a prerendered entry.
 val _blogPage = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
     val post = findPost(req.param("slug"));
-    return out.write(post.title + " — /blog/" + post.slug);
+    await out.write(post.title + " — /blog/" + post.slug);
 });
 
 // ── the route that stays dynamic ────────────────────────────────────────────
@@ -78,5 +78,5 @@ val _searchPage = page("search", fn(req: Request, out: ChunkWriter) {
     val term = req.query("q");
     val hits = allPosts().filter({ post -> post.title.contains(term) });
     val titles = hits.map({ post -> post.title });
-    return out.write("Results for " + term + ": " + titles.join(", "));
+    await out.write("Results for " + term + ": " + titles.join(", "));
 });

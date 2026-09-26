@@ -29,7 +29,7 @@ Ordered by the level each front occupies in the dependency graph; *(ro)* = read-
 | **32** | [`32-jhonstart-metadata`](./32-jhonstart-metadata/README.md) | medium | 3 | `jhonstart` | 28 · 26 (`pairValue`) | 01 std (`escape`) · 66 rakun metadata-file-routes *(ro)* | erlang |
 | **67** | [`67-jhonstart-forms`](./67-jhonstart-forms/README.md) | high | 7 | `jhonstart-forms` | 29 · 94 · 26 (`push`) · 27 (prefetch) · 31 *(ro)* | std `05-actions-lib` (`ActionState`, envelope, RPC body) · 24 rakun server-actions *(ro — wire names handed in by onze)* · std `06-validation-lib` *(ro — the application imports it)* · 63 *(ro)* · 01 std (percent encoding) | commonJS |
 
-Cross-track fronts that deliver **into** this repo or consume it: 48 emilia-attributes (owns `modules/jhonstart-html/src/html_attrs.bp`; depends on 26); 23 rakun-ssr-pipeline (puts on the socket the status, headers and chunks front 30's render writes through the `Response` onze adapts over rakun's `ChunkWriter` — it imports nothing from jhonstart); 24 rakun-server-actions (owns the action id and envelope that 67's form carries, through onze, with the wire names onze passes both sides); 49 onze-stand-up (registers the `jhonstart-emilia` plugin, registers one rakun `PageRenderer` per page over front 30's `renderStream`, and wires jhonstart to rakun); 68 onze-client-bundle (generated entry calls 29's `hydrate()`, 27's `linkMount()`, 67's `formMount()`); 53 onze-example-app (the browser-in-the-loop proof).
+Cross-track fronts that deliver **into** this repo or consume it: 48 emilia-attributes (owns `modules/jhonstart/src/html_attrs.bp`; depends on 26); 23 rakun-ssr-pipeline (puts on the socket the status, headers and chunks front 30's render writes through the `Response` onze adapts over rakun's `ChunkWriter` — it imports nothing from jhonstart); 24 rakun-server-actions (owns the action id and envelope that 67's form carries, through onze, with the wire names onze passes both sides); 49 onze-stand-up (registers the `jhonstart-emilia` plugin, registers one rakun `PageRenderer` per page over front 30's `renderStream`, and wires jhonstart to rakun); 68 onze-client-bundle (generated entry calls 29's `hydrate()`, 27's `linkMount()`, 67's `formMount()`); 53 onze-example-app (the browser-in-the-loop proof).
 
 ## 2 · Critical path
 
@@ -69,7 +69,7 @@ Cross-track fronts that deliver **into** this repo or consume it: 48 emilia-attr
                               actionState, formStatus,
                               optimistic, <Form>)
 
-   48 emilia-attributes ──► html_attrs.bp (jhonstart-html)
+   48 emilia-attributes ──► html_attrs.bp (core)
    30 ──► jhonstart-emilia (bridge: RenderPlugin over emilia's flush(); payload `s`)
    rakun and onze are not in this graph: onze imports jhonstart, rakun imports neither way
 ```
@@ -86,7 +86,7 @@ Every front's tests assert string literals so that a divergence between the two 
 
 ## 5 · Frozen for the milestone
 
-`modules/jhonstart/src/element.bp`, `modules/jhonstart/src/hooks.bp`, `modules/jhonstart-html/src/html.bp` — content frozen; the one relocation edit each of `html.bp` and 48's `html_attrs.bp` needs is listed in `modules.md § 1.3`. The consequences that shape every front: `renderToString` neither escapes nor knows void elements (front 30's `renderNode` does both; 94's `isVoidTag`/`isRawTextTag` feed it); declared parameter defaults are never applied, so every constructor call spells `attrs:`; a self-closing tag cannot be authored inside `html """…"""`.
+`modules/jhonstart/src/element.bp`, `modules/jhonstart/src/hooks.bp`, `modules/jhonstart-html/src/html.bp` — content frozen (`html.bp` imports `Element` from `"jhonstart"`, `modules.md § 1.3`). The consequences that shape every front: `renderToString` neither escapes nor knows void elements (front 30's `renderNode` does both; 94's `isVoidTag`/`isRawTextTag` feed it); declared parameter defaults are never applied, so every constructor call spells `attrs:`; a self-closing tag cannot be authored inside `html """…"""`.
 
 ## 6 · Written with `use`, under a `@Component` return
 
@@ -103,5 +103,3 @@ Every hook and every component in this track follows decisions 118–128 (front
 7. Called without `use` a hook is an ordinary call — the server-pass value; that is what every `test` uses, since a `test` body has no `@Component` return.
 8. The binding never reuses the hook's name (`val r = use router()`); type constructors stay PascalCase (`RouterState`, `LinkStatus`, `FormStatus`, `ActionState`) and helpers take a verb (`newActionState`, `parseActionState`). The Next.js names appear only where a text names Next's API as the reference.
 9. On the commonJS target every `@Component` body is emitted as `async function` (decision 104): a component and a hook return a Promise there, and a caller `await`s. On erlang `@Task` is eager and `await` is identity.
-
-Rules 2–5 and 9 are written in the specs and land with front 24 (E1–E5 in the compiler, E7 in this library); until then the library compiles against the effect annotations front 24 removes, front 28's `request()` is a plain function and every hook in the tree is called, not `use`d.

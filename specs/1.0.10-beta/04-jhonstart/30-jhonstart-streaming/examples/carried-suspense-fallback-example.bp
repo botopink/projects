@@ -1,12 +1,15 @@
 // app/blog/page.bp
-import {Element, div, h1, Suspense, text} from "jhonstart";
+import {Element, ElementBase, PageContext, div, h1, text} from "jhonstart";
+import {Boundary, Suspense, holeId} from "jhonstart";
 
-pub fn BlogPage() -> @Component<ElementBase, Element> {
+#[page("blog")]
+pub fn BlogPage(route: PageContext) -> @Component<ElementBase, Element> {
     return div([
         h1([text("Blog", attrs: [])], attrs: []),
-        Suspense(SuspenseProps(
+        Suspense(Boundary(
+            id: holeId(1),
             fallback: div([text("Loading posts...", attrs: [])], attrs: []),
-            children: [await PostList()],
+            child: { -> PostList() },
         )),
     ], attrs: []);
 }

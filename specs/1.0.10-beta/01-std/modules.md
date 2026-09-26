@@ -26,27 +26,27 @@ repository/botopink-lang/libs/std/
     │   ── pure root: same input, same output; no clock, disk, network or entropy; imports nothing from io/
     ├── collections.bp       Dict, Set, Queue, Order
     ├── math.bp  path.bp  url.bp  querystring.bp  json.bp  regex.bp  unicode.bp  string_builder.bp
-    ├── encoding.bp          base64 + hex, percent and the form codec        01-std-lib-enablement (codec half)
-    ├── hash.bp              sha256, sha512, md5, hmacSha256 + the hmac half (01) + the content-hash half (03)
-    ├── escape.bp            01-std-lib-enablement
-    ├── async.bp             02-std-async-primitives
+    ├── encoding.bp          base64Encode/Decode, base64UrlEncode/Decode, hexEncode/Decode, percentEncode/Decode, formStringify, formParse
+    ├── hash.bp              sha256, sha512, md5, hmacSha256 · hmacSha256Base64Url, sha1Base64, sha256Base64Url, equalsConstantTime · contentHash, strongHash, cacheKey, strongCacheKey, etag, weakEtag, matches, fingerprint
+    ├── escape.bp            html, attribute, unescapeHtml, jsString, scriptJson
+    ├── async.bp             delay, failed, errorText, allOf, all, race, runAll, raceOf, timeout
     ├── erlang.bp  beam.bp   target surface — outside the criterion
     │
     ├── io/                  talks to the world; may import from the root
     │   ├── mod.bp           pub mod fs; pub mod http; pub mod net; pub mod clock; pub mod random; pub mod os; pub mod env; pub mod process;
     │   ├── fs.bp            readText, writeText, exists, list, mkdir, rm, absolutePath, walk, glob
     │   ├── http.bp
-    │   ├── net.bp           TCP/TLS sockets — server-only            01-std-lib-enablement (new)
-    │   ├── clock.bp         nowMillis, monotonicMillis, formatIso8601, measureMillis + parse, civil, Duration, sleep (01)
-    │   ├── random.bp        the rand-backed eight + randomBytes + secureToken, uuidV4 (01)
+    │   ├── net.bp           TCP/TLS sockets (Listener, Socket, TlsListener, TlsSocket, Peer) — server-only
+    │   ├── clock.bp         nowMillis, monotonicMillis, formatIso8601, measureMillis, parseIso8601, toCivil, offsetMinutes, Duration, sleep, deadline, isExpired
+    │   ├── random.bp        the rand-backed eight, randomBytes, secureToken, uuidV4
     │   ├── os.bp  env.bp
-    │   └── process.bp       exit, cwd, platform, arch, pid + run, runShell (01)
+    │   └── process.bp       exit, cwd, platform, arch, pid, run, runShell
     │
     ├── testing/             the harness — impure by nature, enters only under `botopink test`
     │   ├── mod.bp           pub mod asserts; pub mod snapshots; pub mod mocks;
-    │   ├── asserts.bp       step 2 — rewritten
-    │   ├── snapshots.bp     step 3 — new
-    │   └── mocks.bp         step 4 — new, lifted from the old onze
+    │   ├── asserts.bp       asserts-api.md
+    │   ├── snapshots.bp     snapshots.md
+    │   └── mocks.bp         onze-migration.md — lifted from the old onze
     └── sidecars/random.mjs
 ```
 
@@ -59,22 +59,21 @@ leaves.
 
 ### Old → new
 
-Decision 106's table: every path a consumer writes on the flat tree, and where it is after
-`00-compiler-carry-over/23-std-purity` lands.
+Decision 106's table: every path a consumer wrote on the flat tree, and where it is.
 
 | Before | After |
 |---|---|
 | `dict`, `sets`, `queue`, `order` | `collections` (`Dict`, `Set`, `Queue`, `Order`) |
 | `math` (without `random`) | `math` |
 | `random`, `crypto.randomBytes` | `io.random` |
-| `crypto` (the hashes), `hmac` (01), `content_hash` (03) | `hash` |
-| `base64` (as `base64Encode`, `base64Decode`, `base64UrlEncode`, `base64UrlDecode` — front 01's names), `encoding` (01) | `encoding` |
-| `json`, `regex`, `unicode`, `string_builder`, `url`, `querystring`, `escape` (01), `async` (02) | unchanged, at the root |
+| `crypto` (the hashes), `hmac`, `content_hash` | `hash` |
+| `base64` (as `base64Encode`, `base64Decode`, `base64UrlEncode`, `base64UrlDecode`), `encoding` | `encoding` |
+| `json`, `regex`, `unicode`, `string_builder`, `url`, `querystring`, `escape`, `async` | unchanged, at the root |
 | `path` (minus `absolutePath`) | `path` |
-| `path.absolutePath`, `path.walk` / `path.glob` (01 — they read the disk), `fs` | `io.fs` |
+| `path.absolutePath`, `path.walk` / `path.glob` (they read the disk), `fs` | `io.fs` |
 | `http` | `io.http` |
-| `net` (01) | `io.net` |
-| `time`, `clock` (01) | `io.clock` |
+| `net` | `io.net` |
+| `time`, `clock` | `io.clock` |
 | `os`, `env`, `process` | `io.os`, `io.env`, `io.process` |
 | `asserts`, `snapshots`, `mocks` | `testing.asserts`, `testing.snapshots`, `testing.mocks` (decision 71: name and uniqueness kept; only the path changes) |
 | `erlang`, `beam` | unchanged |
@@ -100,7 +99,7 @@ Decision 106's table: every path a consumer writes on the flat tree, and where i
 |---|---|---|
 | `testing.asserts` | the `@Result<void, string>` assertions every helper is built on — `asserts-api.md` | all four (STD-001 clean); `matches`/`deepEquals`/`throws`/`throwsWith` need Node or Erlang at run time |
 | `testing.snapshots` | `assertAs(loc, subject, actual)` — the one call an `assert<Subject>` helper makes — `snapshots.md` | commonJS, erlang (the `botopink test` targets) |
-| `testing.mocks` | `#[mocks.mock]`, `when`, `verify`, matchers — `onze-migration.md` | commonJS, erlang |
+| `testing.mocks` | `when`, `verify`, matchers, and `#[mocks.mock]` once a consumer can reach the decorator (`onze-migration.md` § *Language gaps*) | commonJS, erlang |
 
 A `<lib>-test` submodule imports the three as
 
@@ -118,22 +117,12 @@ consumer would then have two `equals` with two messages.
 
 | Front | Directory / files | Tests it owns |
 |---|---|---|
-| **01-std** step 1 | `modules/compiler-core/src/…` (see README **Owns**) | `snapshots/codegen/*/src_*.snap.md`, `codegen/tests/builtins.zig` additions |
+| **01-std** step 1 | `modules/compiler-core/src/…` (see README **Owns**) | `snapshots/codegen/*/*/src_*.snap.md`, `codegen/tests/builtins.zig` additions |
 | **01-std** steps 2–4 | `src/testing/asserts.bp`, `snapshots.bp`, `mocks.bp`; `src/testing/mod.bp` | inline, at the foot of each |
-| **01-std** step 6 → `01-std-lib-enablement` | the content of `io/net.bp` and `escape.bp` (new files); the hmac half of `hash.bp`; the codec half of `encoding.bp`; the additions to `path.bp`, `io/fs.bp` (`walk`, `glob`), `io/clock.bp`, `io/random.bp`, `regex.bp`, `io/process.bp`; the export lines in `root.bp` and `io/mod.bp` | inline |
+| `01-std-lib-enablement` | `io/net.bp`, `escape.bp`; the base64url digests of `hash.bp`; the codec half of `encoding.bp`; the functions it added to `path.bp`, `io/fs.bp` (`walk`, `glob`), `io/clock.bp`, `io/random.bp`, `regex.bp`, `io/process.bp`; `json.bp`'s writers, `Json` and `decode` | inline |
 | `02-std-async-primitives` | `async.bp`, at the root | inline |
-| `03-std-content-hash` | the content-hash half of `hash.bp` (`contentHash`, `strongHash`, `cacheKey`, `strongCacheKey`, `etag`, `weakEtag`, `matches`, `fingerprint`) | inline |
-| `00-compiler-carry-over/23-std-purity` | the move itself, after 01/02/03 and steps 2–4 have merged: `io/` and `testing/` with their `mod.bp`; `collections.bp`; the merges into `hash.bp` and `encoding.bp`; `absolutePath`, `walk`, `glob` into `io/fs.bp`; `randomBytes` into `io/random.bp`; `root.bp` rewritten to the registry above; `build.zig` `stdPkgFilesFromRoot` following `pub mod io;` into `io/mod.bp`; the root-does-not-import-`io/` check; the import grammar of decision 107 (`parser/decls.zig` `parseImportItem`, `project_graph.zig`, `emitUse` in the four codegens) | the compiler tests of the check and of the grammar; every std inline test green at the new paths; every `from "std"` line in the sibling libraries rewritten per the table above |
-
-Fronts 01/02/03 own their modules' *content*; the *paths* are 23's. Their files land at
-`src/<name>.bp` when they merge and 23 moves them: `net.bp`, `clock.bp` → `io/`; `hmac.bp` and
-`content_hash.bp` → `hash.bp`; `encoding.bp` absorbs `base64.bp`; `escape.bp` and `async.bp` stay
-at the root. Each sub-front's README names its modules by the final path, so the move is a
-`git mv` plus the merges.
-
-`src/root.bp` is the shared file. `01-std-lib-enablement` commits it last among the sub-fronts,
-carrying every line handed over at that point (its five, `async`, `content_hash`, `snapshots`,
-`mocks`); 23 then replaces those lines with the registry above.
+| `03-std-content-hash` | the content hashes of `hash.bp` (`contentHash`, `strongHash`, `cacheKey`, `strongCacheKey`, `etag`, `weakEtag`, `matches`, `fingerprint`) | inline |
+| `00-compiler-carry-over/23-std-purity` | the tree: `io/` and `testing/` with their `mod.bp`, the merged files, `root.bp`'s registry, `build.zig` `stdPkgFilesFromRoot` following `pub mod io;` into `io/mod.bp`, the root-does-not-import-`io/` check, the import grammar of decision 107 | the compiler tests of the check and of the grammar |
 
 ## Snapshot directories
 

@@ -26,13 +26,11 @@ repeating a computation whose answer cannot differ).
 
 ## Current state
 
-`botopink-lib-test` already runs its cells on a bounded pool (front `00 · gate-perf` step 1, landed:
-one worker per CPU bounded by `MemAvailable / 768 MiB`, a cell admitted only while `procs_running` ≤
-CPUs, cells emitted in discovery order). `botopink test --target erlang` already compiles every
-`.erl` of a run once (`test_cmd.zig` `precompileErlang`), and `libs.shipErlSidecars` already asks
-`sidecarOwner` once per library and probes each (owner, qualifier) pair once per run — the two
-erlang items the step-1 line listed as next are landed; what they still cost is part of the
-`test-libs` CPU below.
+`botopink-lib-test` runs its cells on a bounded pool (one worker per CPU bounded by
+`MemAvailable / 768 MiB`, a cell admitted only while `procs_running` ≤ CPUs, cells emitted in
+discovery order). `botopink test --target erlang` compiles every `.erl` of a run once (`test_cmd.zig`
+`precompileErlang`), and `libs.shipErlSidecars` asks `sidecarOwner` once per library and probes each
+(owner, qualifier) pair once per run; what they still cost is part of the `test-libs` CPU below.
 
 ### How it was measured
 
@@ -54,7 +52,7 @@ agents were running their own gates and `zig build test` on the same machine thr
 average 7–38 during the baseline); every number below is under that load, and a row is comparable
 with another only as "same machine, similar load".
 
-### Baseline per stage (compiler `82e32e36`, 2026-09-26)
+### Baseline per stage
 
 | Stage | warm wall s | warm CPU s | cold wall s | cold CPU s | fresh wall s |
 |---|---:|---:|---:|---:|---:|
@@ -70,20 +68,11 @@ with another only as "same machine, similar load".
 | 10 `zig build test-docs` | 8.4 | 8.3 | 9.5 | 9.3 | 8.6 |
 | **total** | **144.3** | **1044.8** | **264.8** | **1284.9** | **283.6** |
 
-Verdicts of that baseline, which every step must reproduce: every stage green except
-`test-libs`, red at this compiler with the sibling checkouts of this worktree — four known reds that
-now pass (`emilia-card·commonJS`, `jhonstart-html·commonJS`, `jhonstart-html·erlang`,
-`jhonstart-todo·commonJS`) and two pinned counts that moved (`emilia-card·erlang`,
-`jhonstart-todo·erlang`, `build→0`). That red is **real on `feat` at this pin, not an artifact of
-the copy**: the meta commit pins jhonstart at its decision-102–104/128 sweep (`0c32c7b`, `9339f3f`),
-which is what the "21-effect-chain window" lines of `scripts/known-red-libs.txt` waited for, and the
-lines were not deleted when it landed — the landing front's edit, not this one's. The copy resolves
-each library once (no ancestor of `~/.cache/bp-gateperf/copy` holds a `repository/` or `libs/`).
-The stage's timing is valid all the same: `botopink-lib-test` runs every cell and the wrapper
-decides the verdict after the last one, so a red `test-libs` did all of a green one's work.
-`test-docs`' exit 1 in the step-1 comparison logs is the red fixture those runs were given on
-purpose; on the real docs it exits 0 in every run. `test-language`: 644 passed, 29 expected failures,
-0 failed. `test-docs`: 72 fences — 59 checked, 5 skipped, 0 failed.
+Every step reproduces the baseline's verdicts. A red `test-libs` does all of a green one's work
+(`botopink-lib-test` runs every cell and the wrapper decides the verdict after the last one), so its
+timing holds either way; the copy resolves each library once (no ancestor of
+`~/.cache/bp-gateperf/copy` holds a `repository/` or `libs/`). `test-language`: 644 passed, 29
+expected failures, 0 failed. `test-docs`: 72 fences — 59 checked, 5 skipped, 0 failed.
 
 Reading the table:
 
@@ -166,13 +155,13 @@ admit by `procs_running`, so two of them side by side share the CPUs instead of 
 - [x] same stage blocks, same order, same exit status as the serial gate — compared on one copy of
       the tree with colours, random ids, seeds and timings stripped: identical with `test-libs` red
       (stage 8, both exit 1), all green (both exit 0 — the copy's `known-red-libs.txt` and
-      `restricted-targets.txt` aligned with its libraries for the run, § Current state), a red
+      `restricted-targets.txt` aligned with its libraries for the run), a red
       language cell planted (stage 9, exit 1) and a red docs fence planted (stage 10, exit 1)
 - [x] § Measurements row
 
 ### Step 4 — `test-libs`' erlang cells (open)
 
-With steps 1–3 landed, `test-libs` is the gate's critical path: ~55–63 s of wall clock and ~690 of
+With steps 1–3 in, `test-libs` is the gate's critical path: ~55–63 s of wall clock and ~690 of
 its ~1100 CPU-seconds, running beside everything else. Measured cell by cell with
 `botopink-lib-test --include-unsupported --jobs 1` (the stderr header of each cell timestamped;
 the copy at `~/.cache/bp-gateperf/libs/`): **356 s serial, 257 s of it the erlang cells** against
@@ -213,12 +202,12 @@ way to open a worktree. A `post-checkout` hook cannot do it: it would itself hav
 One row per landed step, cumulative. Wall and CPU in seconds; "rest" is stages 2, 3, 4b, 5 and 6.
 Δ is the warm total against the baseline.
 
-| Row | Date | Compiler | Warm total | Cold total | CPU warm | `zig build test` | `test-libs` | `test-language` | `test-cli` | `test-docs` | rest | Δ vs baseline (warm) | Load |
-|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| baseline | 2026-09-26 | `82e32e36` | 144.3 | 264.8 | 1044.8 | 25.9 / 138.0 cold | 52.6 | 28.9 | 16.9 | 8.4 | 11.6 | — | other agents' gates; load 22–27 (cold run 22–24) |
-| step 1 — the shell runners on the pool | 2026-09-26 | `112d248a` | 130.1 | 292.2 | 1071.0 | 23.6 / 154.4 cold | 56.5 | 19.9 | 17.5 | 1.5 | 11.3 | −14.2 s (−9.8 %) | other agents' gates; load 34–37 (cold run 7→37) |
-| step 2 — compiler-core as 8 shards | 2026-09-26 | `49cc56aa` | 125.0 | 160.9 | 1099.5 | 6.8 / 33.7 cold | 63.5 | 21.4 | 18.5 | 1.8 | 13.0 | −19.3 s (−13.4 %); cold −103.9 s (−39.2 %) | other agents' gates; load 36–43 (cold run 11→36) |
-| step 3 — stages 4b–10 side by side | 2026-09-26 | `9724b417` | 89.4 | 116.0 | 1119.7 | side by side | side by side | side by side | side by side | side by side | side by side | −54.9 s (−38.0 %); cold −148.8 s (−56.2 %) | other agents' gates; load 46–52, the heaviest of the four rows |
+| Row | Warm total | Cold total | CPU warm | `zig build test` | `test-libs` | `test-language` | `test-cli` | `test-docs` | rest | Δ vs baseline (warm) | Load |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| baseline | 144.3 | 264.8 | 1044.8 | 25.9 / 138.0 cold | 52.6 | 28.9 | 16.9 | 8.4 | 11.6 | — | other agents' gates; load 22–27 (cold run 22–24) |
+| step 1 — the shell runners on the pool | 130.1 | 292.2 | 1071.0 | 23.6 / 154.4 cold | 56.5 | 19.9 | 17.5 | 1.5 | 11.3 | −14.2 s (−9.8 %) | other agents' gates; load 34–37 (cold run 7→37) |
+| step 2 — compiler-core as 8 shards | 125.0 | 160.9 | 1099.5 | 6.8 / 33.7 cold | 63.5 | 21.4 | 18.5 | 1.8 | 13.0 | −19.3 s (−13.4 %); cold −103.9 s (−39.2 %) | other agents' gates; load 36–43 (cold run 11→36) |
+| step 3 — stages 4b–10 side by side | 89.4 | 116.0 | 1119.7 | side by side | side by side | side by side | side by side | side by side | side by side | −54.9 s (−38.0 %); cold −148.8 s (−56.2 %) | other agents' gates; load 46–52, the heaviest of the four rows |
 
 Step 3's row is `scripts/gate.sh` itself timed whole (stages 4b–10 overlap, so they have no wall
 clock of their own), on the copy with its `test-libs` ledger aligned so every stage runs. Back to
@@ -234,9 +223,7 @@ The cold total of step 1 is higher than the baseline's because the machine was: 
 does not touch moved by +16 s (`zig build test` cold) and +7 s (`test-libs`) between the two runs.
 Per stage, step 1 is `test-language` 28.9 → 19.9 s warm (−31 %) and `test-docs` 8.4 → 1.5 s warm
 (−82 %), at +1 % gate CPU-seconds (`test-language` 189.5 → 215.2 CPU-s; more of its cells overlap,
-each a little slower). The earlier measurement that kept `--jobs 4` (`11-tooling`, "one job per CPU
-moved nothing measurable") was without the admission rule and under a different load; the
-comparisons above ran the three variants back to back on one tree.
+each a little slower).
 
 ## Gate
 
@@ -258,8 +245,6 @@ with since step 1 of `00 · gate-perf`.
   `libs/std`'s `async: delay ---- takes at least the requested time` (`async.bp:265`, commonJS)
   failed once in the unchanged serial gate and passed on every other run — a wall-clock assertion
   that reds under load. The tests front owns it.
-- `scripts/known-red-libs.txt` / `scripts/restricted-targets.txt` are stale at this pin (§ Current
-  state); the comparisons that needed a green `test-libs` aligned them in the measurement copy only.
 - Files touched outside `scripts/` and the runners: `build.zig` (the compiler-core test step, step
   2), the new `modules/test-shard/`, and the `AGENTS.md` of the root, `modules/`, `scripts/` and
   `tests/language/`.

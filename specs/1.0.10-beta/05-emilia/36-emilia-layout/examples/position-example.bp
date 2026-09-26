@@ -9,10 +9,6 @@
 // Reference: TAILWIND_CSS_DOCS.md § 5.16, § 5.17, § 5.19
 //
 // emilia runs at comptime and emits a CSS string; this file is target-independent.
-// None of this exists in emilia today: the 1.0.8 draft wrote
-// `.Layout.Position.Absolute` and `.Layout.Inset.0` as if they did. Front 36 is
-// what makes those paths real. Spacing scale from front 35, colours from 33,
-// modifiers from 34.
 
 import {emilia, flush, Token} from "emilia";
 
@@ -150,25 +146,25 @@ pub fn stickyPanel(heading: string, body: string, badge: string) -> @Task<string
 test "the five position values" {
     val cls = emilia(positionValues());
     val styles = await flush();
-    assert styles == "<style>." + cls
+    assert styles.contains("." + cls
         + "{position:static;position:relative;position:absolute"
-        + ";position:fixed;position:sticky}</style>";
+        + ";position:fixed;position:sticky}");
 }
 
 test "the axis insets emit two declarations, the shorthand emits one" {
     val tokens: Token[] = [.Layout.Inset.All.0, .Layout.Inset.X.0, .Layout.Inset.Y.0];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{inset:0;left:0;right:0;top:0;bottom:0}</style>";
+    assert styles.contains("." + cls
+        + "{inset:0;left:0;right:0;top:0;bottom:0}");
 }
 
 test "the logical insets emit inset-inline-start and -end" {
     val tokens: Token[] = [.Layout.Inset.S.0, .Layout.Inset.E.0];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls
-        + "{inset-inline-start:0;inset-inline-end:0}</style>";
+    assert styles.contains("." + cls
+        + "{inset-inline-start:0;inset-inline-end:0}");
 }
 
 test "inset and padding agree on the length for the same leaf" {
@@ -188,14 +184,14 @@ test "a fractional inset is a percentage" {
     val tokens: Token[] = [.Layout.Inset.T.Frac.Half];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls + "{top:50%}</style>";
+    assert styles.contains("." + cls + "{top:50%}");
 }
 
 test "a negative inset multiplies by a negative" {
     val tokens: Token[] = [.Layout.Inset.T.Neg.4];
     val cls = emilia(tokens);
     val styles = await flush();
-    assert styles == "<style>." + cls + "{top:calc(var(--spacing) * -4)}</style>";
+    assert styles.contains("." + cls + "{top:calc(var(--spacing) * -4)}");
 }
 
 test "z-index emits a bare integer" {

@@ -1,14 +1,19 @@
 // app/blog/page.bp
+// A page that fetches its data. `io.http`'s `fetch` is fallible
+// (`@Task<@Result<Response, string>>`), and a page never propagates
+// (decision 121): the failure is handled on the spot with `catch`.
 import {Element, div, h1, ul, li, p, text} from "jhonstart";
+import {io.http} from "std";
 
-pub fn BlogPage() -> @Component<ElementBase, Element> {
-    val posts = await fetch("https://api.example.com/posts").then({ r -> r.json() });
+pub fn BlogPage() -> @Task<Element> {
+    val resp = try await http.fetch("https://api.example.com/posts") catch http.Response(status: 0, body: "");
+    val titles = resp.body.split("\n").filter({ t -> t != "" });
     return div([
         h1([text("Blog", attrs: [])], attrs: []),
         ul(
-            posts.map({ post ->
+            titles.map({ title ->
                 li([
-                    p([text(post.title, attrs: [])], attrs: []),
+                    p([text(title, attrs: [])], attrs: []),
                 ], attrs: [])
             }),
             attrs: [],

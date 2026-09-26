@@ -8,7 +8,7 @@ runs on a developer's machine before any server exists. `create` drives neither 
 `build` drive both (the erlang half is the compiled server, the js half is the client bundle front 68
 emits); `start` drives only the erlang half, since by then the js half is a directory of files
 **Wave:** 9
-**Depends on:** 49 (config, alias map, registry), 01 (`process`, `path`), 22 (the route table the
+**Depends on:** 49 (config, alias map, registry), 01 (`io.process`, `path`), 22 (the route table the
 generated manifest registers into), 26 · 48 (per the wave table), 68 (the client bundle `build`
 drives), 71 (the release `start` runs), 60 (the prerender pass `build` invokes)
 **Owns:** `modules/onze-cli/src/**`, `modules/onze-cli/test/**`
@@ -39,18 +39,19 @@ they do.
 
 ## Current state
 
-- `repository/onze/modules/` does not exist. `repository/rakun/modules/` does, and is the shape to
+- `repository/onze/modules/` does not exist. `repository/rakun/modules/` is the shape to
   copy: each module has its own `botopink.json` with a `dependencies` map pointing at `../../`, plus
   `src/root.bp` (`repository/rakun/modules/rakun-web/botopink.json`).
-- `libs/std/src/process.bp` today declares `exit`, `cwd`, `platform`, `arch`, `pid` — introspection
-  only, no spawner (`process.bp:28-62`). Front 01 adds the spawn surface this front needs.
-- `libs/std/src/path.bp` already has `join`, `normalize`, `dirname`, `basename`, `extname`,
-  `relative`, `resolve`, `split`, `isAbsolute` (`path.bp:24-179`). This front adds nothing to it.
-- `libs/std/src/fs.bp` already has `readText`, `writeText`, `exists`, `list`, `mkdir`, `rm`, `copy`
-  and `stat` — and `stat` returns `FileStat(size, mtime, isDir)` with `mtime` in epoch milliseconds
-  (`fs.bp:20-24`, `:99`). The dev watcher is built on that, not on a new `fs.watch`.
+- std's `io.process` (`libs/std/src/io/process.bp`) declares `exit`, `cwd`, `platform`, `arch`,
+  `pid` and the spawner this front drives: `run(cmd, args) -> @Result<Exit, string>` (no shell,
+  `Exit(status, stdout, stderr)`) and `runShell(cmd) -> string`.
+- std's `path` (`libs/std/src/path.bp`) has `join`, `normalize`, `dirname`, `basename`, `extname`,
+  `relative`, `resolve`, `split`, `isAbsolute`. This front adds nothing to it.
+- std's `io.fs` (`libs/std/src/io/fs.bp`) has `readText`, `writeText`, `exists`, `list`, `mkdir`,
+  `rm`, `copy` and `stat` — and `stat` returns `FileStat(size, mtime, isDir)` with `mtime` in epoch
+  milliseconds. The dev watcher is built on that, not on a new `fs.watch`.
 - `botopink` itself provides `build`, `check` and `test` with a `--target` flag
-  (`modules/compiler-cli/AGENTS.md:273`). The CLI wraps them; it does not replace them.
+  (`modules/compiler-cli/AGENTS.md`). The CLI wraps them; it does not replace them.
 
 ## Mechanism
 

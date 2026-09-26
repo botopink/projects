@@ -53,9 +53,9 @@ in its own file and converts at the boundary.
 - `repository/rakun/src/http.bp:35-43` — `Request`: `method`, `path`, `param`, `query`, `header`,
   `body`, all returning `string`.
 - `repository/rakun/src/http.bp:45-73` — `Response`: `status` and `body`, six builders, no headers.
-- `libs/std/src/json.bp:36-45` — `parse` and `stringify` are both `string -> @Result<string, string>`.
-  There is no structured JSON value and no walker, and no front in this milestone delivers one.
-- `libs/std/src/querystring.bp` — exists; percent-decoding does not, and front 01 adds it.
+- `libs/std/src/json.bp` — `parse` and `stringify` are both `string -> @Result<string, string>`;
+  `json.decode` reads a document into a `Json` tree (decision 117).
+- `libs/std/src/querystring.bp` and `encoding`'s `percentDecode` / `formParse`.
 - `repository/rakun/src/route_handler.bp` does not exist.
 
 ## Mechanism
@@ -107,15 +107,12 @@ pub fn bodyJson(req: Request) -> @Result<string, string>
 pub fn queryAll(req: Request) -> Dict<string, string>
 ```
 
-`bodyJson` validates through `std/json` and returns the **raw text**, not a structured value, because
-`std/json` is `string -> @Result<string, string>` with no walker (`libs/std/src/json.bp:36`). A handler
-that needs fields reads them with `regex` or hands the text to a typed decoder its own application
-supplies. This is a real limitation and it is written down rather than papered over; a JSON walker is
-std's to own and nothing in this milestone delivers one.
+`bodyJson` validates through `std/json` and returns the **raw text**, not a structured value. A
+handler that needs fields reads the text with `json.decode` into a `Json` tree (decision 117).
 
-`bodyForm` decodes `application/x-www-form-urlencoded` with `querystring` plus front 01's
-percent-decode. `multipart/form-data` is refused with 415, for the same reason front 24 refuses it:
-botopink has no byte type, every `#[@external]` cell marshals through `string`, and a multipart body
+`bodyForm` decodes `application/x-www-form-urlencoded` with `querystring` plus `encoding`'s
+`percentDecode`. `multipart/form-data` is refused with 415, for the same reason front 24 refuses it:
+botopink has no byte type, every host cell marshals through `string`, and a multipart body
 read as UTF-8 is a corrupted upload rather than an upload.
 
 **The phase word.** A handler runs with front 62's `setPhase(RequestPhase.Handler)` entered before it
@@ -268,8 +265,6 @@ that precedence and tests it; it does not implement a second CORS policy.
   `HandlerResponse` lives in this front's file and `toResponse` converts. When `http.bp` unfreezes,
   `HandlerResponse` should replace `Response` rather than sit beside it — two response types is a
   cost this milestone accepts and 1.0.10-beta should pay off.
-- `std/json` has no structured value and no walker, so `bodyJson` can only validate. This is not this
-  front's to fix and no front in the milestone owns it; it should be a 1.0.10-beta std front.
 
 ## Test plan
 

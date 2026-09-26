@@ -114,9 +114,8 @@ pub fn appliedMigrations() -> Migration[];                        // in installe
 pub fn migrationReport() -> string;                               // front 11's endpoint body
 ```
 
-`migrate` raises and `tryMigrate` returns a `@Result` because a function cannot forward a `@Result`
-value ([`language-gaps.md`](../../language-gaps.md)); this is the same doubled surface front 08 ships for
-`query`/`tryQuery`, and it is doubled for the same reason rather than by preference.
+`migrate` raises and `tryMigrate` returns a `@Result` — the same doubled surface front 08 ships for
+`query`/`tryQuery`.
 
 ### Checksum validation, and why it is an error
 
@@ -294,12 +293,11 @@ schema" has no good default answer.
 
 ## Language gaps
 
-None new — every construct in the examples parses today. Three rows already in
+None new — every construct in the examples parses today. The rows already in
 [`language-gaps.md`](../../language-gaps.md) shape this front and are not restated here:
 
-- *A function cannot forward a `@Result`* — so `migrate()` raises and `tryMigrate()` returns
-  `@Result<MigrationReport, string>`, the same doubled surface front 08 ships for `query`/`tryQuery`
-  and for the same reason.
+- `migrate()` raises and `tryMigrate()` returns `@Result<MigrationReport, string>`, front 08's
+  doubled surface (a `@Result` is forwarded with `return r` since decision 119).
 - *No bodyless method in a `type` body* — not hit here; this front has no generated methods.
 - *`xs[0]` silently drops the index on the BEAM backend* — the version comparator walks components with
   `.at(i)` and `.slice(…)` throughout, never an index expression.
