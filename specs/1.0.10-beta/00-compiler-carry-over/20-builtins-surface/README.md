@@ -49,6 +49,16 @@ line it sits on and where it stands:
 
 ## Current state
 
+> **Superseded surface.** The effect names below (`@Future`, `@Use`, `@Generator` and its two
+> prefixed forms, `#[@<effect>]` annotations) are the pre-118 surface this front landed.
+> Decisions [118–128](../../decisions-taken.md#118-the-return-type-is-the-annotation), landed by
+> [`24-effects-by-return`](../24-effects-by-return/README.md), replaced them: the return type is the
+> annotation, and `builtins.d.bp` now declares `Task`, `Component<C, T>` (extends `Task`),
+> `Iterator`, `Stream` (extends `Task`) and `YieldStep<T>`. `comptime/effect_chain.zig` and its drift
+> tests follow that file. What this front built — the chain as `effect_chain.zig` asked by every
+> capability check, the two-way drift test, one anchor per body, `External`'s `inline` table —
+> still stands under the new names.
+
 `EffectKind` has six values (`result`, `future`, `generator`, `iterator`, `futureGenerator`,
 `context`), each with an annotation spelling and a required return wrapper (`ast.zig`); R5 allows
 one effect annotation per fn (`parser/decls.zig:407`). The chain is `comptime/effect_chain.zig`,
@@ -93,6 +103,24 @@ with 21-effect-chain under decisions 103, 108, 102 and 103.
 
 ## Gate
 
-- [ ] `zig build test` green from a cold cache; `builtins.d.bp` formats; the drift test green
+- [x] `zig build test` green from a cold cache; the drift test green — measured at compiler
+      `0cd949a4` (post-24 `builtins.d.bp`) with `.zig-cache`, `zig-out` and
+      `modules/compiler-core/.botopinkbuild/runtime-cache` deleted: 23/23 steps, 2474/2474 tests
+      (compiler-core 2075); `zig build test -Dtest-filter="effect chain"` 6/6 in compiler-core —
+      "every clause here is declared in builtins.d.bp", "builtins.d.bp declares no clause this
+      module does not carry" and "every effect wrapper is declared, and no removed one is" are the
+      drift tests
+- [ ] `builtins.d.bp` formats — `botopink format --check libs/std/src/builtins.d.bp` refuses the
+      file on two parser rows, neither this front's: (1) an unannotated top-level
+      `[pub] declare fn` is routed by `parser.zig`'s top-level dispatch to
+      `parseShorthandDelegateDecl` (`parser/decls.zig`), which takes no generic parameters, no `_`
+      parameter name and a one-token return type — `field<T, F>` (`:312`) and
+      `getContext<T>(comptime _: type) -> Component<T, any>` (`:395`); (2) a behavior's `val` member
+      takes a one-identifier type (`BehaviorField.typeName`), so `Decl`'s `val fields: Field[];`
+      (`:582–586`) does not parse. With both rows bypassed in a scratch copy the rest of the file
+      parses and the formatter's diff is layout only (the multi-annotation `#[A, B]` split into two
+      `#[…]`, `{ }` → `{}`, trailing-comment alignment, blank lines). Once the file parses,
+      `scanDeclareFnExternal` (commonJS / erlang), which parses this file and `catch return`s today,
+      starts reading its `#[External.*]` declarations — measure the codegen snapshots then
 - [x] step 4's cell; `libs/std/AGENTS.md` in the same commit
-- [x] Commit on `fix/effect-chain`; no push, no merge — landing is the maintainer's step
+- [x] Commit on `front/20-builtins-surface`; no push, no merge — landing is the maintainer's step
