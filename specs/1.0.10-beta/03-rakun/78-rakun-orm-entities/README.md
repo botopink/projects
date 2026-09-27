@@ -40,11 +40,8 @@ parse is a compile error rather than a startup exception.
 | `#[query("…")]` with a real body calling `__rkQuery_<name>()` | front 08 |
 | `#[repository]`, `#[transactional]` | front 08 (`#[transactional]` as a type-level proxy emitter) |
 | Constraint decorators and the violation report | front 14 |
-| Any entity mapping, identity, generated key or relation | none |
-| Any derived query | none |
-| Any `Page`/`Sort`/`Slice` | none |
-| Audit columns or revision history | none |
-| Schema generation from entities | front 77 consumes what this front produces; neither exists yet |
+| Entities, derived queries, paging, relations, the builder, revisions | `modules/rakun-data/src/orm/{entity,query,repository}.bp` + `src/orm_host.bp` / `src/sidecars/rakun_orm.erl` |
+| Schema generation from entities | front 77's `ddl-auto` reads the registered metadata (`ddlValidateOn`, `ddlCreateOn`) |
 
 ## Mechanism
 
@@ -292,83 +289,83 @@ implications, and the framework should not pretend otherwise.
 ### Step 1 — `#[entity]` and the mapper pair
 
 **Acceptance:**
-- [ ] `camelCase` fields map to `snake_case` columns; `#[column("x")]` overrides
-- [ ] An entity with no `#[id]`, or with two, is a compile error naming the entity
-- [ ] `#[transient]` fields appear in neither the column list nor the params
-- [ ] `__rkEntity_<T>_fromRow` and `__rkEntity_<T>_params` round-trip a record: `fromRow(rowOf(params(c))) == c`
-- [ ] A `#[version]` field on a non-integer type is a compile error
-- [ ] The emitted table name is the decorator's argument, and an entity with an empty table name is a compile error
+- [x] `camelCase` fields map to `snake_case` columns; `#[column("x")]` overrides — `modules/rakun-data/test/orm_test.bp` "orm: camelCase fields map to snake_case columns, #[column] overrides, #[transient] is no column"
+- [x] An entity with no `#[id]`, or with two, is a compile error naming the entity — `modules/rakun-data/test/orm_build_test.bp` "orm build: an entity with no #[id], or two, fails naming it"
+- [x] `#[transient]` fields appear in neither the column list nor the params — `modules/rakun-data/test/orm_test.bp` "orm: camelCase fields map to snake_case columns, #[column] overrides, #[transient] is no column"
+- [x] `__rkEntity_<T>_fromRow` and `__rkEntity_<T>_params` round-trip a record: `fromRow(rowOf(params(c))) == c` — `modules/rakun-data/test/orm_test.bp` "orm: fromRow of the params' row round-trips a record"
+- [x] A `#[version]` field on a non-integer type is a compile error — `modules/rakun-data/test/orm_build_test.bp` "orm build: a non-integer #[version] and an empty table name fail"
+- [x] The emitted table name is the decorator's argument, and an entity with an empty table name is a compile error — same test; `modules/rakun-data/test/orm_test.bp` "orm: camelCase fields map to snake_case columns, #[column] overrides, #[transient] is no column"
 
 ### Step 2 — the name grammar and its comptime check
 
 **Acceptance:**
-- [ ] `findByName` derives `select … from cities where name = :name`
-- [ ] `findByNameAndStateAllIgnoringCase` lowers both sides of both terms
-- [ ] `findByPopulationBetween` consumes two parameters and a method declaring one is a compile error naming both counts
-- [ ] `findByNameIsNull` consumes zero parameters
-- [ ] `countBy…` returns `i32`, `existsBy…` returns `bool`, `deleteBy…` returns rows affected
-- [ ] `findFirstByStateOrderByNameDesc` produces `order by name desc limit 1` and returns `?City`
-- [ ] `findByCiudad` is a compile error naming the entity and listing its fields
-- [ ] `And`/`Or` bind left to right with no precedence, asserted against a literal expected statement
-- [ ] Every derived statement is asserted against a literal string, not against "contains"
+- [x] `findByName` derives `select … from cities where name = :name` — `modules/rakun-data/test/orm_test.bp` "orm: every derived statement, as a literal" (placeholders are `:p0`, `:p1`, …)
+- [x] `findByNameAndStateAllIgnoringCase` lowers both sides of both terms — same test
+- [x] `findByPopulationBetween` consumes two parameters and a method declaring one is a compile error naming both counts — same test; `modules/rakun-data/test/orm_build_test.bp` "orm build: a predicate consuming a different parameter count fails naming both counts"
+- [x] `findByNameIsNull` consumes zero parameters — `modules/rakun-data/test/orm_test.bp` "orm: every derived statement, as a literal"
+- [x] `countBy…` returns `i32`, `existsBy…` returns `bool`, `deleteBy…` returns rows affected — same test; `modules/rakun-data/test/orm_test.bp` "orm: save, the derived reads and the writes run on the ETS arm"
+- [x] `findFirstByStateOrderByNameDesc` produces `order by name desc limit 1` and returns `?City` — `modules/rakun-data/test/orm_test.bp` "orm: every derived statement, as a literal"
+- [ ] `findByCiudad` is a compile error naming the entity and listing its fields — open: the build fails at the emitted `CityCol().ciudad` read, naming `CityColumns` and `ciudad` (`orm_build_test.bp` "orm build: a field the entity does not have is a compile error at the emitted column read"), but a decorator cannot reflect another type's fields, so the message does not list them
+- [x] `And`/`Or` bind left to right with no precedence, asserted against a literal expected statement — `modules/rakun-data/test/orm_test.bp` "orm: every derived statement, as a literal" (`findByNameOrStateAndPopulation`)
+- [x] Every derived statement is asserted against a literal string, not against "contains" — same test
 
 ### Step 3 — paging, slicing and sorting
 
 **Acceptance:**
-- [ ] A `Pageable` last parameter with a `Page<City>` return produces two statements; the count statement carries the same `where` and no `order by`
-- [ ] `Page.totalPages` rounds up and `hasNext` is false on the last page
-- [ ] A `Slice<City>` return fetches `size + 1` rows, returns `size`, and reports `hasNext` from the extra
-- [ ] `Sort` fields are appended in order, each with its own direction
-- [ ] A `Sort` field that is not a column fails at run time naming the field and is never spliced into the statement
-- [ ] `size = 0` is refused with a message rather than producing `limit 0`
+- [x] A `Pageable` last parameter with a `Page<City>` return produces two statements; the count statement carries the same `where` and no `order by` — `modules/rakun-data/test/orm_test.bp` "orm: a Page runs the page and a count statement with the same where and no order by"
+- [x] `Page.totalPages` rounds up and `hasNext` is false on the last page — same test
+- [x] A `Slice<City>` return fetches `size + 1` rows, returns `size`, and reports `hasNext` from the extra — `modules/rakun-data/test/orm_test.bp` "orm: a Slice fetches size + 1 rows, answers size, and hasNext from the extra"
+- [x] `Sort` fields are appended in order, each with its own direction — `modules/rakun-data/test/orm_test.bp` "orm: sort fields append in order with their directions; a non-column fails and is never spliced; size 0 is refused"
+- [x] A `Sort` field that is not a column fails at run time naming the field and is never spliced into the statement — same test
+- [x] `size = 0` is refused with a message rather than producing `limit 0` — same test
 
 ### Step 4 — writes, identity and optimistic locking
 
 **Acceptance:**
-- [ ] `save` on a `#[generated]` id omits the column and returns a record carrying the assigned value
-- [ ] `save` on a non-generated id sends the caller's value
-- [ ] `update` increments `#[version]` and returns the new record; the caller's record is unchanged
-- [ ] `update` with a stale version affects zero rows and raises, naming the table, the id, the expected version and the stored one
-- [ ] `delete` returns rows affected and is version-checked when the entity has a `#[version]`
-- [ ] `#[createdAt]` is written only on insert; `#[updatedAt]` on both
-- [ ] `#[createdBy]`/`#[updatedBy]` take front 10's principal, and are written as `""` outside a request rather than failing
+- [x] `save` on a `#[generated]` id omits the column and returns a record carrying the assigned value — `modules/rakun-data/test/orm_test.bp` "orm: save, the derived reads and the writes run on the ETS arm" (`INSERT … RETURNING id`; the ETS arm assigns the next integer)
+- [x] `save` on a non-generated id sends the caller's value — `modules/rakun-data/test/orm_test.bp` "orm: a non-generated id is sent as given; audit columns are stamped by the mapper"
+- [x] `update` increments `#[version]` and returns the new record; the caller's record is unchanged — `modules/rakun-data/test/orm_test.bp` "orm: update increments the version and leaves the caller's record alone; a stale one raises naming everything"
+- [x] `update` with a stale version affects zero rows and raises, naming the table, the id, the expected version and the stored one — same test
+- [x] `delete` returns rows affected and is version-checked when the entity has a `#[version]` — same test
+- [x] `#[createdAt]` is written only on insert; `#[updatedAt]` on both — `modules/rakun-data/test/orm_test.bp` "orm: a non-generated id is sent as given; audit columns are stamped by the mapper"
+- [x] `#[createdBy]`/`#[updatedBy]` take front 10's principal, and are written as `""` outside a request rather than failing — same test (the principal comes from front 10's context; the test sets it through the sidecar's seam)
 
 ### Step 5 — relations
 
 **Acceptance:**
-- [ ] `#[belongsTo]` naming a field that is not a field of the owning entity is a compile error
-- [ ] `#[belongsTo]` naming an entity that carries no `#[entity]` is a compile error
-- [ ] A method returning the joined record produces one statement with a join, asserted against a literal
-- [ ] Nothing is fetched that the method did not name — a test asserts the statement count for a fetch of 100 joined rows is 1
-- [ ] A left join is expressible and produces an optional half rather than a fabricated empty record
+- [x] `#[belongsTo]` naming a field that is not a field of the owning entity is a compile error — `modules/rakun-data/test/orm_build_test.bp` "orm build: belongsTo naming an unknown field or a non-entity fails"
+- [x] `#[belongsTo]` naming an entity that carries no `#[entity]` is a compile error — same test
+- [x] A method returning the joined record produces one statement with a join, asserted against a literal — `modules/rakun-data/test/orm_test.bp` "orm: a join is one statement, and a left join's missing half is null"
+- [ ] Nothing is fetched that the method did not name — a test asserts the statement count for a fetch of 100 joined rows is 1 — open: the ETS arm has no JOIN, so a 100-row joined fetch cannot run in the suite; the statement is one (asserted as a literal) and nothing else is issued
+- [x] A left join is expressible and produces an optional half rather than a fabricated empty record — `modules/rakun-data/test/orm_test.bp` "orm: a join is one statement, and a left join's missing half is null"
 
 ### Step 6 — the typed query builder
 
 **Acceptance:**
-- [ ] `City.state` is an emitted constant and renaming the field breaks every call site at compile time
-- [ ] `where`/`and`/`or`/`orderBy`/`limit`/`offset` compose into one statement, asserted against a literal
-- [ ] Values go through `Param`, never into the statement text — a test passes `'; drop table cities; --` as a value and asserts the table still exists
-- [ ] An operator outside the accepted set is a compile error, not a spliced string
-- [ ] The builder and a derived query for the same predicate produce byte-identical SQL
+- [x] `City.state` is an emitted constant and renaming the field breaks every call site at compile time — `modules/rakun-data/test/orm_build_test.bp` "orm build: renaming a field breaks every CityCol() read, and an operator outside Op does not compile" (`CityCol()` is a function, not a `pub val` — language-gaps.md)
+- [x] `where`/`and`/`or`/`orderBy`/`limit`/`offset` compose into one statement, asserted against a literal — `modules/rakun-data/test/orm_test.bp` "orm: the builder composes one statement, the same bytes a derived query produces"
+- [x] Values go through `Param`, never into the statement text — a test passes `'; drop table cities; --` as a value and asserts the table still exists — `modules/rakun-data/test/orm_test.bp` "orm: a builder value never reaches the statement text"
+- [x] An operator outside the accepted set is a compile error, not a spliced string — `modules/rakun-data/test/orm_build_test.bp` "orm build: renaming a field breaks every CityCol() read, and an operator outside Op does not compile" (the operator is the enum `Op`)
+- [x] The builder and a derived query for the same predicate produce byte-identical SQL — `modules/rakun-data/test/orm_test.bp` "orm: the builder composes one statement, the same bytes a derived query produces"
 
 ### Step 7 — revision history
 
 **Acceptance:**
-- [ ] Without `#[revisions]`, no revision table is generated and no revision row is written
-- [ ] With it, insert, update and delete each append exactly one row with the right `revision_type`
-- [ ] The revision row is written in the same transaction as the write: a rolled-back write leaves no revision
-- [ ] `revisionsOf(id)` returns rows in revision-number order
-- [ ] `revisionAt(id, timestamp)` returns the state as of that instant, and the empty optional before the first revision
-- [ ] A repository whose entity is not audited has none of the three methods, and calling one is a compile error
-- [ ] `revision_author` is front 10's principal, `""` outside a request
-- [ ] There is no restore operation, and a test asserts the surface has exactly the three read methods
+- [x] Without `#[revisions]`, no revision table is generated and no revision row is written — `modules/rakun-data/test/orm_test.bp` "orm: an unaudited entity has no revision table in the metadata"
+- [x] With it, insert, update and delete each append exactly one row with the right `revision_type` — `modules/rakun-data/test/orm_test.bp` "orm: an audited write appends exactly one revision per insert, update and delete, with the author"
+- [x] The revision row is written in the same transaction as the write: a rolled-back write leaves no revision — `modules/rakun-data/test/orm_test.bp` "orm: a rolled-back write leaves no revision"
+- [x] `revisionsOf(id)` returns rows in revision-number order — `modules/rakun-data/test/orm_test.bp` "orm: an audited write appends exactly one revision per insert, update and delete, with the author"
+- [x] `revisionAt(id, timestamp)` returns the state as of that instant, and the empty optional before the first revision — `modules/rakun-data/test/orm_test.bp` "orm: revisionAt answers the state as of an instant, and null before the first revision"
+- [x] A repository whose entity is not audited has none of the three methods, and calling one is a compile error — `modules/rakun-data/test/orm_build_test.bp` "orm build: an unaudited entity has no revision reads" (the three reads are emitted by `#[entity]` as `__rkEntity_<T>_revisionsOf/_revisionAt/_revisionNumbers`, which a repository method forwards to)
+- [x] `revision_author` is front 10's principal, `""` outside a request — `modules/rakun-data/test/orm_test.bp` "orm: an audited write appends exactly one revision per insert, update and delete, with the author"
+- [x] There is no restore operation, and a test asserts the surface has exactly the three read methods — `modules/rakun-data/test/orm_build_test.bp` "orm build: the revision surface is exactly three reads and no restore"
 
 ### Step 8 — metadata for front 77
 
 **Acceptance:**
-- [ ] `entityNames()`, `entityTable(entity)`, `entityColumns(table)` and `entityColumnType(table, column)` are exported and cover every `#[entity]` in the build. `entityColumns` is keyed by **table** name, returns the pipe-joined column list, and answers `""` for a table nothing declared — which is how the absence of a revision table is checkable
-- [ ] Front 77's `ddl-auto=validate` can detect a missing column, an extra column and a type mismatch from this metadata alone
-- [ ] A `#[revisions]` entity contributes its revision table to the same metadata, so `validate` covers it too
+- [x] `entityNames()`, `entityTable(entity)`, `entityColumns(table)` and `entityColumnType(table, column)` are exported and cover every `#[entity]` in the build. `entityColumns` is keyed by **table** name, returns the pipe-joined column list, and answers `""` for a table nothing declared — which is how the absence of a revision table is checkable — `modules/rakun-data/test/orm_test.bp` "orm: every entity's table, columns and column types are in the metadata"
+- [x] Front 77's `ddl-auto=validate` can detect a missing column, an extra column and a type mismatch from this metadata alone — `modules/rakun-data/test/orm_test.bp` "orm ddl: validate names the table and the column of a missing, extra or retyped column"
+- [x] A `#[revisions]` entity contributes its revision table to the same metadata, so `validate` covers it too — `modules/rakun-data/test/orm_test.bp` "orm: an unaudited entity has no revision table in the metadata"; `modules/rakun-data/test/orm_test.bp` "orm ddl: create recreates every entity table under a dev profile"
 
 ## Examples
 

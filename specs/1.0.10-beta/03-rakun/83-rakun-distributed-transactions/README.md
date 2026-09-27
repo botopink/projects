@@ -47,11 +47,11 @@ front 08. The moment a second resource is involved — a broker, a second databa
 
 | Piece | Where it is today |
 |---|---|
-| `modules/rakun-tx/` | does not exist — this front creates it |
-| `#[transactional]` | front 08 delivers it; it does not exist today either (`src/decorators.bp` has fifteen decorators and none of them is it) |
-| A publisher | front 15 delivers it |
-| Any outbox, saga, dedupe store or decision log | nothing, in rakun or in std |
-| Migrations for the tables these need | front 77 |
+| `modules/rakun-tx/` | `outbox` (outbox, relay, inbox, path choice), `saga`, `twopc`; 32 tests on erlang |
+| The local transaction | rakun-data's `sqlTemplate(ds).transaction(...)` (front 08) — what `publishAfterCommit` and `consumeOnce` enrol in |
+| A publisher | a `fn(topic, key, payload) -> string` the relay is given — front 15's in-process broker or any other |
+| Any outbox, saga, dedupe store or decision log | `rakun_outbox`, `rakun_inbox`, `rakun_saga`, `rakun_2pc`, created by `installOutbox` / `installSagas` / `install2pc` |
+| The tables | created by the `install*` functions with `CREATE TABLE IF NOT EXISTS`, so they also run as a front 77 migration |
 | Broker-native transactions | Kafka's producer transactions and Pulsar's transactions are named by the doc set; neither front 15 nor front 91 claims them |
 
 ## Mechanism
@@ -164,31 +164,31 @@ pub fn publishAfterCommit(m: OutboxMessage) -> i32
 ```
 
 **Acceptance:**
-- [ ] A message enrolled inside a transaction that commits appears in the outbox exactly once
-- [ ] A message enrolled inside a transaction that rolls back appears nowhere
-- [ ] `publishAfterCommit` outside a transaction fails with a message naming the method, and publishes nothing
-- [ ] Two messages for one aggregate carry increasing `seq`
-- [ ] The payload round-trips a value containing a quote, a newline and a four-byte UTF-8 character
+- [x] A message enrolled inside a transaction that commits appears in the outbox exactly once — `outbox_test` "a message enrolled in a committed transaction is stored with the business row"
+- [x] A message enrolled inside a transaction that rolls back appears nowhere — `outbox_test` "a rolled-back transaction leaves neither the business row nor the message"
+- [x] `publishAfterCommit` outside a transaction fails with a message naming the method, and publishes nothing — `outbox_test` "publishAfterCommit outside a transaction refuses"
+- [x] Two messages for one aggregate carry increasing `seq` — `outbox_test` "the rows of one aggregate carry increasing seq"
+- [x] The payload round-trips a value containing a quote, a newline and a four-byte UTF-8 character — `outbox_test` "a payload with a quote, a newline and a four-byte character round-trips"
 
 ### Step 2 — The relay
 
 **Acceptance:**
-- [ ] A pending row is published and marked sent
-- [ ] Two relays on two nodes never publish the same row — asserted with `SKIP LOCKED` under a concurrent run
-- [ ] A relay killed between publish and mark re-publishes on restart: the row is still pending, and the duplicate is the documented at-least-once behaviour
-- [ ] Messages for one aggregate are published in `seq` order under concurrency
-- [ ] A publish that fails is retried with backoff and does not block other aggregates
-- [ ] A row that exceeds its retry ceiling moves to `failed` with its last error, and the relay continues
-- [ ] Sent rows are pruned after a configured retention, and the prune is bounded per tick
+- [x] A pending row is published and marked sent — `outbox_test` "the relay publishes pending rows in seq order per aggregate and marks them sent"
+- [x] Two relays on two nodes never publish the same row — asserted with `SKIP LOCKED` under a concurrent run — `outbox_test` "two relays running together publish every row once, each aggregate in seq order" and "a claimed row is published by exactly one relay" — two relay processes, the claim a conditional UPDATE (03r-x)
+- [x] A relay killed between publish and mark re-publishes on restart: the row is still pending, and the duplicate is the documented at-least-once behaviour — `outbox_test` "a relay killed between publish and mark leaves the row reclaimable - at-least-once" — the row is `claimed`, `reclaimStale` makes it pending
+- [x] Messages for one aggregate are published in `seq` order under concurrency — `outbox_test` "two relays running together publish every row once, each aggregate in seq order"
+- [x] A publish that fails is retried with backoff and does not block other aggregates — `outbox_test` "a failed publish backs off, blocks only its aggregate, and fails past max-attempts", "a failed publish waits out its backoff before the next attempt"
+- [x] A row that exceeds its retry ceiling moves to `failed` with its last error, and the relay continues — `outbox_test` "a failed publish backs off, blocks only its aggregate, and fails past max-attempts"
+- [x] Sent rows are pruned after a configured retention, and the prune is bounded per tick — `outbox_test` "pruning deletes only old sent rows, at most batch per call"
 
 ### Step 3 — The inbox and effectively-once consumption
 
 **Acceptance:**
-- [ ] A message delivered twice runs its handler once
-- [ ] A handler that raises rolls back its writes *and* the inbox row, and the redelivery runs it again
-- [ ] Two consumer groups each process the same message once, independently
-- [ ] The inbox is pruned after a retention that is longer than the broker's own redelivery window, and the front states the relationship rather than leaving an operator to discover it
-- [ ] A duplicate is acked, not left to redeliver forever
+- [x] A message delivered twice runs its handler once — `outbox_test` "inbox: a redelivered message is acknowledged without running the handler again"
+- [x] A handler that raises rolls back its writes *and* the inbox row, and the redelivery runs it again — `outbox_test` "inbox: a handler that raises rolls back its writes and the inbox row, so the redelivery runs"
+- [x] Two consumer groups each process the same message once, independently — `outbox_test` "inbox: a redelivered message is acknowledged without running the handler again" (groups `billing` and `audit`)
+- [x] The inbox is pruned after a retention that is longer than the broker's own redelivery window, and the front states the relationship rather than leaving an operator to discover it — `outbox_test` "inbox: pruning deletes old rows, bounded per call, and refuses a retention inside the redelivery window", "inbox: a retention shorter than the redelivery window is refused, naming both"
+- [x] A duplicate is acked, not left to redeliver forever — `outbox_test` "inbox: a redelivered message is acknowledged without running the handler again" — `consumeOnce` answers `duplicate` and returns normally, so the consumer acks
 
 ### Step 4 — The saga coordinator
 
@@ -211,31 +211,31 @@ pub fn sagaState(id: string) -> SagaState
 ```
 
 **Acceptance:**
-- [ ] A three-step saga where every step succeeds ends `completed`, with three forward entries and no compensation
-- [ ] A failure at step 3 compensates 2 then 1, in that order, and ends `compensated`
-- [ ] A failure at step 1 compensates nothing and ends `compensated`
-- [ ] A coordinator killed between steps 2 and 3 resumes at step 3 after restart
-- [ ] A compensation that fails is retried to the configured ceiling and then parks in `needs_attention` with the full history — it never ends `completed` and never stops being visible
-- [ ] Two sagas of the same definition run concurrently without sharing state
-- [ ] The persisted history is readable through `sagaState` for an operator, including the failure reason
+- [x] A three-step saga where every step succeeds ends `completed`, with three forward entries and no compensation — `saga_test` "every step runs in order and the saga completes with its history"
+- [x] A failure at step 3 compensates 2 then 1, in that order, and ends `compensated` — `saga_test` "a failed step compensates the completed ones in reverse and runs no later step"
+- [x] A failure at step 1 compensates nothing and ends `compensated` — `saga_test` "a failure at step 1 compensates nothing and ends compensated"
+- [x] A coordinator killed between steps 2 and 3 resumes at step 3 after restart — `saga_test` "a coordinator killed between steps 2 and 3 resumes at step 3, the step it had not finished" — `exit(Pid, kill)` while step 3 runs, then `resumeSagas`
+- [x] A compensation that fails is retried to the configured ceiling and then parks in `needs_attention` with the full history — it never ends `completed` and never stops being visible — `saga_test` "a compensation that keeps failing is retried then parks in needs_attention with its history"
+- [x] Two sagas of the same definition run concurrently without sharing state — `saga_test` "two runs of one definition keep separate state"
+- [x] The persisted history is readable through `sagaState` for an operator, including the failure reason — `saga_test` "a failed step compensates the completed ones in reverse and runs no later step" (the history names `sg2.ship refused`), "startSaga and sagaState use rakun.tx.datasource"
 
 ### Step 5 — Two-phase commit
 
 **Acceptance:**
-- [ ] Two participants that both prepare successfully both commit
-- [ ] A participant that refuses prepare causes every participant to abort
-- [ ] The decision is durable before any participant is told it — asserted by killing the coordinator between the log write and the first commit message, and observing a commit after recovery
-- [ ] A coordinator killed *before* the decision is logged aborts on recovery
-- [ ] A participant that does not acknowledge is retried until it does, and the transaction is not considered finished before then
-- [ ] The README states the blocking window, and the front's own defaults prefer the outbox
+- [x] Two participants that both prepare successfully both commit — `saga_test` "2pc: every participant prepares, the decision is logged, and all commit"
+- [x] A participant that refuses prepare causes every participant to abort — `saga_test` "2pc: one participant voting no aborts every participant"
+- [x] The decision is durable before any participant is told it — asserted by killing the coordinator between the log write and the first commit message, and observing a commit after recovery — `saga_test` "2pc: a coordinator killed after logging commit and before the first commit message commits on recovery"
+- [x] A coordinator killed *before* the decision is logged aborts on recovery — `saga_test` "2pc: a coordinator killed before logging a decision aborts on recovery"
+- [x] A participant that does not acknowledge is retried until it does, and the transaction is not considered finished before then — `saga_test` "2pc: a participant that does not acknowledge is retried until it does", "2pc: a transaction whose participant never acknowledges stays open for recovery"
+- [x] The README states the blocking window, and the front's own defaults prefer the outbox — `repository/rakun/AGENTS.md` § Distributed transactions and `twopc.bp`'s header state the window; `publishTransactional` defaults to the outbox
 
 ### Step 6 — Broker-native transactions
 
 **Acceptance:**
-- [ ] With a Kafka broker configured for producer transactions, a publish enrolled in a transaction goes through the broker's transaction and writes no outbox row
-- [ ] The same application code works against a broker without them, through the outbox, with no source change
-- [ ] A rolled-back transaction leaves no message readable by a consumer in `read_committed` mode
-- [ ] The choice of path is observable — a metric and a log line name which one ran, so an operator can tell which guarantee is in force
+- [ ] With a Kafka broker configured for producer transactions, a publish enrolled in a transaction goes through the broker's transaction and writes no outbox row — open: no Kafka broker here, and no Kafka arm in front 15 (the broker path itself, minus the broker, is `outbox_test` "path choice: broker transactions skip the outbox…")
+- [x] The same application code works against a broker without them, through the outbox, with no source change — `outbox_test` "path choice: one call site takes the broker or the outbox path by configuration alone"
+- [ ] A rolled-back transaction leaves no message readable by a consumer in `read_committed` mode — open: needs a real Kafka broker
+- [x] The choice of path is observable — a metric and a log line name which one ran, so an operator can tell which guarantee is in force — `outbox_test` "path choice: broker transactions skip the outbox, otherwise the outbox is used, and each is counted and logged"
 
 ## Examples
 
@@ -279,18 +279,18 @@ transaction to enrol in.
 
 ## Definition of done
 
-- [ ] `modules/rakun-tx/` exists with its manifest and module tree
-- [ ] `publishAfterCommit` inside a rolled-back transaction publishes nothing, and inside a committed
-      one publishes exactly once per relay pass
-- [ ] Two relays on two nodes never publish the same row
-- [ ] A duplicated delivery runs its handler once
-- [ ] A saga compensates in reverse, resumes after a coordinator crash, and parks rather than
-      abandoning a failed compensation
-- [ ] The 2PC decision is durable before any participant hears it, and boot recovery carries out or
-      aborts every logged transaction
+- [x] `modules/rakun-tx/` exists with its manifest and module tree — `botopink.json`, `root.bp` · `outbox` · `saga` · `twopc`
+- [x] `publishAfterCommit` inside a rolled-back transaction publishes nothing, and inside a committed
+      one publishes exactly once per relay pass — steps 1 and 2
+- [x] Two relays on two nodes never publish the same row — two relay processes on one node (step 2, 03r-x)
+- [x] A duplicated delivery runs its handler once — step 3
+- [x] A saga compensates in reverse, resumes after a coordinator crash, and parks rather than
+      abandoning a failed compensation — step 4
+- [x] The 2PC decision is durable before any participant hears it, and boot recovery carries out or
+      aborts every logged transaction — step 5
 - [ ] Broker-native transactions are used where available, through the same API, and which path ran is
-      observable
-- [ ] `repository/rakun/AGENTS.md` records the boundary with front 08: one resource is front 08, more
-      than one is here
-- [ ] The front's tests are green on its assigned target
+      observable — the same API and the observability hold; no broker offers transactions yet (step 6)
+- [x] `repository/rakun/AGENTS.md` records the boundary with front 08: one resource is front 08, more
+      than one is here — § Distributed transactions
+- [x] The front's tests are green on its assigned target — rakun-tx 32/0 on erlang
 

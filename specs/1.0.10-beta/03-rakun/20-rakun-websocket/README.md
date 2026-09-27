@@ -41,10 +41,23 @@ directory, which is exactly the shape `overview.md` forbids.
 
 ## Current state
 
-- `repository/rakun/modules/rakun-web/src/` holds front 07's chain; the `websocket/` subtree does not exist.
-- `repository/rakun/src/runtime.bp:110-117` — `rkServe(port, dispatcher)` takes a dispatcher over five scalars and returns a `Response`. There is no upgrade path through it: a 101 response has no body and keeps the socket, which that signature cannot express. The upgrade is handled by front 04's BEAM listener before dispatch, not by returning a special `Response`.
-- `repository/rakun/src/http.bp:12-20` — `HttpMethod` has seven variants and none of them is relevant; an upgrade is a GET with headers.
-- Nothing in the tree tracks a long-lived connection. Every rakun process today lives for one request.
+Landed as the member `modules/rakun-websocket/` (erlang; `repository/rakun/AGENTS.md` § WebSocket), not
+under `rakun-web/src/websocket/`: `modules.md` splits `rakun-websocket` out of `rakun-web`, and a test
+file in a subdirectory of `test/` does not run on erlang (`language-gaps.md`), so the tests are flat.
+`ws.bp`, `endpoint.bp`, `ws_host.bp` over `src/sidecars/rakun_websocket.erl`; 27 tests on erlang
+across six files, over a real socket with the sidecar's own client. No JavaScript, no `.mjs`, no
+`@External.Node` cell.
+
+Where it differs from the text below:
+
+- **No cowboy.** Front 04's listener is `gen_tcp` (cowboy is an external OTP application a sidecar
+  cannot load). Its connection process now hands an `Upgrade: websocket` request, after the dispatcher
+  has answered it, to a hook this member installs (`rakun_upgrade_hook`), and becomes the WebSocket
+  connection. So front 07's chain and front 10's security decide the upgrade by answering the
+  endpoint's own `GET <path>` route: 101 is a handshake, 401/403 a handshake closed with `1008`.
+- **The idle close is `1001`** (going away); the wire-contract table names no code for it.
+- **Backpressure** is measured on the socket driver's unsent bytes, and the socket's high watermark is
+  raised, so a peer that stops reading never parks the connection process in a `send`.
 
 ## Mechanism
 
@@ -146,38 +159,38 @@ sidecar, and the exit gate checks it.
 ### Step 1 — Upgrade and the connection process
 
 **Acceptance:**
-- [ ] A GET with the four upgrade headers on a registered path answers 101 and keeps the socket.
-- [ ] The same request on an unregistered path answers 404 and closes.
-- [ ] An upgrade that front 10 refuses closes with `1008` and never reaches a handler.
-- [ ] One connection is one supervised process; a handler that raises closes that connection with `1011` and leaves every other connection open.
-- [ ] `max-connections` is enforced at upgrade with 503, not by closing an accepted socket.
+- [x] A GET with the four upgrade headers on a registered path answers 101 and keeps the socket. — `test/upgrade_test.bp` "a registered path answers 101 and keeps the socket for frames both ways"
+- [x] The same request on an unregistered path answers 404 and closes. — `upgrade_test.bp` "an unregistered path answers 404 and closes"
+- [x] An upgrade that front 10 refuses closes with `1008` and never reaches a handler. — `upgrade_test.bp` "an upgrade front 10 refuses closes with 1008 and never reaches a handler; an authorized one carries the principal"
+- [x] One connection is one supervised process; a handler that raises closes that connection with `1011` and leaves every other connection open. — `upgrade_test.bp` "one connection is one supervised process, and a raising handler closes only its own with 1011" (each session's process is a child of `rakun_conn_sup`)
+- [x] `max-connections` is enforced at upgrade with 503, not by closing an accepted socket. — `upgrade_test.bp` "max-connections is enforced at upgrade with 503"
 
 ### Step 2 — `#[wsEndpoint]` and the handler
 
 **Acceptance:**
-- [ ] `#[wsEndpoint]` on anything but a record-shaped type fails with a located message.
-- [ ] A type without `onMessage` is refused at comptime, naming the missing method.
-- [ ] Missing `onOpen` and `onClose` are emitted as no-ops.
-- [ ] The emitted registration builds the component through `__rkMake_<Type>()`, so one instance serves every connection and a stacked `#[service]` shares it with the rest of the application.
-- [ ] Two endpoints on the same path are refused at boot with both type names in the message.
+- [x] `#[wsEndpoint]` on anything but a record-shaped type fails with a located message. — `test/build_test.bp` "#[wsEndpoint] anywhere but on a record-shaped type fails with a located message"
+- [x] A type without `onMessage` is refused at comptime, naming the missing method. — `build_test.bp` "a type without onMessage is refused naming the missing method"
+- [x] Missing `onOpen` and `onClose` are emitted as no-ops. — `test/endpoint_test.bp` "a missing onOpen and onClose are no-ops"
+- [x] The emitted registration builds the component through `__rkMake_<Type>()`, so one instance serves every connection and a stacked `#[service]` shares it with the rest of the application. — `endpoint_test.bp` "one component instance serves every connection" (`rkBuildCount` 1)
+- [x] Two endpoints on the same path are refused at boot with both type names in the message. — `endpoint_test.bp` "two endpoints on one path are refused at boot naming both types"
 
 ### Step 3 — Sessions, topics and broadcast
 
 **Acceptance:**
-- [ ] `session.send` reaches exactly that connection.
-- [ ] `broadcast(topic, msg)` reaches every subscriber and returns the count.
-- [ ] A closed session is removed from every topic without the broadcaster noticing.
-- [ ] `broadcast` on a two-node cluster reaches subscribers on both nodes.
-- [ ] `subscribe` twice on the same topic is idempotent.
+- [x] `session.send` reaches exactly that connection. — `test/broadcast_test.bp` "session.send reaches exactly that connection"
+- [x] `broadcast(topic, msg)` reaches every subscriber and returns the count. — `broadcast_test.bp` "reaches every subscriber, returns the count, and skips the rest"
+- [x] A closed session is removed from every topic without the broadcaster noticing. — `broadcast_test.bp` "a closed session leaves every topic without the broadcaster noticing"
+- [x] `broadcast` on a two-node cluster reaches subscribers on both nodes. — `broadcast_test.bp` "on a two-node cluster it reaches the subscriber on the other node" — a `peer` node joins the topic and receives the frame (the cell reports `skipped:` on a runner that cannot start a distributed peer)
+- [x] `subscribe` twice on the same topic is idempotent. — `broadcast_test.bp` "subscribing twice is idempotent"
 
 ### Step 4 — Backpressure, heartbeats and limits
 
 **Acceptance:**
-- [ ] A connection that stops reading is closed with `1013` once its queue passes the cap, and the cap is reached in bounded memory.
-- [ ] A connection that does not answer a ping is closed after the idle timeout.
-- [ ] A frame over `max-frame-bytes` closes with `1009`.
-- [ ] A binary frame is refused with a named error rather than decoded.
-- [ ] Every close code in the wire-contract table is produced by a test that triggers its condition.
+- [x] A connection that stops reading is closed with `1013` once its queue passes the cap, and the cap is reached in bounded memory. — `test/limits_test.bp` "a connection that stops reading is closed with 1013, its queue never past the cap"
+- [x] A connection that does not answer a ping is closed after the idle timeout. — `limits_test.bp` "a connection that does not answer a ping is closed after the idle timeout" (`1001`)
+- [x] A frame over `max-frame-bytes` closes with `1009`. — `limits_test.bp` "a frame over max-frame-bytes closes with 1009"
+- [x] A binary frame is refused with a named error rather than decoded. — `limits_test.bp` "a binary frame is refused with a named error, not decoded" (`1003`)
+- [x] Every close code in the wire-contract table is produced by a test that triggers its condition. — `1000`, `1011`, `4001` in `limits_test.bp` "every close code of the wire contract is produced by its condition"; `1008` in `upgrade_test.bp`; `1013`, `1009` and the idle `1001` in their own cells; the literals in "the wire contract's literals"
 
 ### Step 5 — Health
 
@@ -187,8 +200,8 @@ pub fn websocketHealth() -> HealthReport
 ```
 
 **Acceptance:**
-- [ ] The report carries open connections, topic count, and connections refused by the cap since boot.
-- [ ] It is DOWN when the listener is not accepting upgrades and UP otherwise.
+- [x] The report carries open connections, topic count, and connections refused by the cap since boot. — `test/health_test.bp` "the report carries open connections, topics and upgrades refused by the cap"
+- [x] It is DOWN when the listener is not accepting upgrades and UP otherwise. — `health_test.bp` "DOWN while upgrades are not accepted, UP again once they are"
 
 ## Examples
 

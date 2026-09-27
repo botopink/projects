@@ -4,7 +4,7 @@
 front 24's (24-a…c, 24-g), `01-std`'s (01std-a, 01std-c…e, std-a…c), `00 · 23-std-purity`'s (23-a…c), front 95's
 (95-a…e), `00 · 16-formatter`'s (16-a…b), track C's (26-a…b, 27-a, 30-b…e, 31-a), `00 · 04-js` /
 `05-wasm`'s (0405-b), `00 · 01-checker`'s (01c-a…b), `checker-rows-2`'s (ck2-a, ck2-b, ck2-d, ck2-e), `residual-checker-3`'s (rc3-a…c),
-track D's (05emilia-a…l), track E's (49-a, 49-c…e, 50-a, 52-a, 53-a, 68-a, 68-c, 68-d, 69-a, 69-b), track B's (03r-a…e) and the host methods' (lem-a…f). The
+track D's (05emilia-a…l), track E's (49-a, 49-c…e, 50-a, 52-a, 53-a, 68-a, 68-c, 68-d, 69-a, 69-b), track B's (03r-a…x) and the host methods' (lem-a…f). The
 open questions are the language-gaps sweeps' lg-a, lg-b and lg2-a…w, and `checker-rows-2`'s ck2-c (§ Open). Every other question raised so far is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 24-f is decision 143 (library resolution stops at the
 enclosing checkout; dependencies are transitive); the next free number is **144**.
@@ -559,6 +559,224 @@ fronts could land; the maintainer confirms or reverses each.
 > **Options.** (1) `decodeComponent` as above; (2) std's decode verbatim.
 > **Recommendation.** (1) — the restrictive default. With rakun's `percentDecode` gone, 95-e's
 > qualified import can return to `from "rakun"`; it is left as it is.
+
+### 03r-f · A cache key hashes with `hash.strongCacheKey`, not `contentHash`
+
+> **Raised by:** `12-rakun-cache` step 1
+> **Measured.** The README writes `namespace + ":" + contentHash(parts.join("\u{1f}"))`. A join lets
+> `["a\u{1f}b"]` equal `["a", "b"]` (the step's own first box), and std documents `contentHash` as a
+> djb2 fold that is trivial to collide on purpose — a key carries request input and, in the private
+> scope, a session id. std's `hash.strongCacheKey(parts)` length-frames every part and hashes with
+> SHA-256 truncated to 32 hex.
+> **Options.** (1) `namespace + ":" + hash.strongCacheKey(parts)`; (2) the README's form.
+> **Recommendation.** (1) — implemented. A cache that collides across a user boundary serves one user
+> another's page.
+
+### 03r-g · A private-scope read with no session runs the loader and stores nothing
+
+> **Raised by:** `12-rakun-cache` step 1
+> **Measured.** `CacheScope.Private` keys on the session id; a request may carry none, and the README
+> does not say what then happens. rakun-cache reads `optionalSession()` (front 18).
+> **Options.** (1) bypass: run the loader, store nothing; (2) create a session to key on; (3) raise.
+> **Recommendation.** (1) — implemented (`key_test.bp`). (2) makes a cache read create sessions and
+> cookies; (3) makes an anonymous page fail for a cache annotation.
+
+### 03r-h · A twin's key is `[method, args…]`, and `#[cacheEvict(name, false)]` evicts that key under every reader
+
+> **Raised by:** `12-rakun-cache` step 4
+> **Measured.** The README's `peekCachedProduct` reads `cacheKey("products", ["productJson", id])`, so
+> a `#[cacheable]` row is keyed by the method name and its arguments. "The key built from the
+> method's arguments" for `#[cacheEvict(name, false)]` then matches nothing unless it is built under
+> a reader's name.
+> **Options.** (1) evict `[m, args…]` for every `#[cacheable(name)]` method `m` of the behavior;
+> (2) key rows by arguments only (Spring's default key — two readers of one cache then share rows).
+> **Recommendation.** (1) — implemented (fixture `twin`, "removes only the rows its arguments key").
+
+### 03r-i · The Redis provider: rakun-session's wire, no stale window, a miss when Redis is down
+
+> **Raised by:** `12-rakun-cache` step 3
+> **Measured.** The README names front 13's client as the Redis transport; `rakun-client` speaks HTTP
+> only, and rakun-session already carries a RESP wire (`rkSessRedis`). Redis expires rows itself and
+> has no "serve once, then refresh" state.
+> **Options.** (1) reuse `rkSessRedis`; on Redis `revalidateTag` deletes; an unreachable Redis runs the
+> loader uncached (health reports DOWN); (2) a RESP client in `rakun-client`; (3) keep the stale
+> marker in a Redis hash.
+> **Recommendation.** (1) — implemented; `modules.md`'s `rakun-client` edge is not taken.
+
+### 03r-j · Outside a request `revalidateTag` / `revalidatePath` are legal and `updateTag` raises; `none` beats a per-cache type
+
+> **Raised by:** `12-rakun-cache` steps 3 and 5
+> **Measured.** The legality table has three columns (action, handler, render); a scheduled job or a
+> boot hook runs with no request frame. Separately, `rakun.cache.type=none` with
+> `rakun.cache.<name>.type=ets` is not settled.
+> **Options.** (1) no frame reads as phase `none`: the two revalidations are legal, `updateTag`
+> (read-your-own-writes, meaningless without a request) raises; the global `none` disables every
+> cache whatever its own type; (2) refuse all three outside a request; per-cache type wins.
+> **Recommendation.** (1) — implemented (`revalidate_test.bp`, `store_test.bp`): the kill switch is
+> Spring's `spring.cache.type=none` and must not be defeated by one line of configuration.
+
+### 03r-k · Every messaging arm runs on the in-process broker; a real address refuses the boot
+
+> **Raised by:** `15-rakun-messaging` steps 1–6
+> **Measured.** The README's drivers — `amqp_client`, `brod`, `rabbitmq_stream_client` — are OTP
+> applications, and a sidecar loads only the `.erl` files beside the emitted module (the
+> `language-gaps.md` row on external OTP applications). A hand-written AMQP 0-9-1, Kafka or Streams
+> client over `gen_tcp` is a front of its own per protocol.
+> **Options.** (1) one in-process broker behind all four arms (`transport=memory`), and an address key
+> without it refuses the boot naming the driver; (2) the same, but fall back to the in-process broker
+> silently; (3) hand-roll the wires now.
+> **Recommendation.** (1) — implemented. (2) lets an application believe it reaches RabbitMQ while its
+> messages never leave the node. The integration cells wait on (3) or on the sidecar gap.
+
+### 03r-l · A container is named after its destination, and Redis defaults to ack-mode none
+
+> **Raised by:** `15-rakun-messaging` steps 3–4
+> **Measured.** The markers carry no container name; the README's examples configure
+> `rakun.messaging.listener.orders.*` for the queue `orders` but `listener.audit.*` for the stream
+> `audit-stream`. The ack-mode default is `auto` for every arm, and Redis accepts only `none`.
+> **Options.** (1) the container is the destination; Redis defaults to `none` (an explicit `auto` or
+> `manual` on Redis still refuses the boot); (2) a container argument on every marker; (3) keep `auto`
+> as the Redis default, so every Redis listener needs a configuration line to boot.
+> **Recommendation.** (1) — implemented; the stream example now reads `listener.audit-stream.*`.
+
+### 03r-m · Inside a server action, revalidatePath and revalidateTag expire rather than mark stale
+
+> **Raised by:** `24-rakun-server-actions` step 5 (against `12-rakun-cache` step 5)
+> **Measured.** Front 12 makes `revalidateTag` / `revalidatePath` mark rows stale: the next read serves
+> the old value once and refreshes in the background. Front 24 requires the action's own re-render to
+> be "built from the invalidated-and-refilled cache", and asserts the new value in the document.
+> **Options.** (1) in phase `action` both verbs expire the rows at once (as `updateTag` does); (2)
+> front 24 calls `updateTag` itself for every recorded path; (3) the re-render waits for the refreshes.
+> **Recommendation.** (1) — implemented in rakun-cache (`revalidate_test.bp` "inside a server action
+> revalidateTag and revalidatePath expire"). It is Next's behaviour for a revalidation inside an
+> action; outside one the stale-then-fresh rule stands.
+
+### 03r-n · A JSON-RPC argument is a form-encoded field list
+
+> **Raised by:** `24-rakun-server-actions` step 6
+> **Measured.** The RPC body is `{"v":1,"id":…,"args":["…"]}`, an action takes a `FormData`, and step 6
+> requires an RPC call and "the equivalent form POST" to give the same state. Nothing says how
+> positional strings become named fields.
+> **Options.** (1) each argument is a form-encoded `name=value` list, read in order into one form; (2)
+> argument `i` is the field named `i`; (3) the first argument is the whole form body.
+> **Recommendation.** (1) — implemented. It keeps the field names the form uses, so front 67 can write
+> `args: [formStringify(fields)]` and get exactly the form POST's state.
+
+### 03r-o · A segment config field equal to the default is the undeclared one
+
+> **Raised by:** `60-rakun-static-generation` step 1
+> **Measured.** `configFor` must override an ancestor's config "field by field, not wholesale — a
+> segment that sets only `revalidate` keeps the ancestor's `dynamic`", but `SegmentConfig` is a record:
+> every field is always set, and declared parameter defaults are not applied, so a registration writes
+> all four fields.
+> **Options.** (1) a field equal to `defaultSegmentConfig()`'s is inherited, any other overrides; (2) a
+> second record of optional fields for registration; (3) wholesale replacement.
+> **Recommendation.** (1) — implemented. The one thing it cannot say is "reset this field to the
+> default below an ancestor that changed it"; (2) is the shape once optional record fields exist.
+
+### 03r-p · A slot belongs to the nearest layout above it, and only one slot can conflict with itself
+
+> **Raised by:** `61-rakun-parallel-intercepting-routes` steps 1–2
+> **Measured.** Front 22's record drops the `@slot` segment (`dashboard/@team/settings` is
+> `P|/dashboard/settings|team`), so which layout a slot folder sits under is not in the table. And
+> step 2's "two slots claiming the same URL under one layout" fail the scan — but `§ 21`'s own
+> dashboard has `@analytics` and `@team` both rendering at `/dashboard`, which is the feature.
+> **Options.** (1) the owner is the nearest `L` at or above the slot's shortest entry; the conflict is
+> two pages of ONE slot at one URL (two route groups inside `@team`); (2) add the slot depth to front
+> 22's record; (3) read the conflict as written and refuse `§ 21`'s example.
+> **Recommendation.** (1) — implemented. (2) changes contract 1, which front 22 owns.
+
+### 03r-q · Locale routing lives in rakun-app, not a new rakun-i18n member
+
+> **Raised by:** `64-rakun-i18n-routing`
+> **Measured.** The front's README owns `modules/rakun-i18n/**`; `modules.md` § The cut puts "i18n
+> negotiation" in `rakun-app` and the track table names `rakun-app` as front 64's submodule. The module
+> needs rakun-app's neighbours anyway (the chain, the cache, front 63's navigation).
+> **Options.** (1) `rakun-app/src/i18n.bp`; (2) a new member `rakun-i18n`.
+> **Recommendation.** (1) — implemented; the examples import `from "rakun-app"`. (2) is one move of one
+> file if a Spring-style service ever wants locales without the app router.
+
+### 03r-r · Starters name their sibling modules `{ "workspace": true }`, not `path`
+
+> **Raised by:** `73-rakun-starters`
+> **Measured.** The front's step 1 writes `"rakun-web": { "path": "../../modules/rakun-web" }`. With
+> `starters/*` in rakun's `workspaces`, the loader refuses that entry ("path points at the sibling member
+> `rakun` — use { "workspace": true }"); outside the workspace the starters would not be `test-libs`
+> cells. `onze` is outside the repository and stays a `path`.
+> **Options.** (1) starters are workspace members and name siblings `{ "workspace": true }`; (2) keep
+> `starters/` out of `workspaces` and write `path`.
+> **Recommendation.** (1) — implemented. The runtime resolver (`resolvedModuleListIn`) follows both
+> forms, so a consumer's `path` to a starter still reaches every module.
+
+### 03r-s · OTLP is pushed as HTTP/JSON, not HTTP/protobuf
+
+> **Raised by:** `75-rakun-observability-metrics`
+> **Measured.** The front says "HTTP/protobuf push". Neither OTP nor std has a protobuf encoder, and a
+> hand-written one for the OTLP metrics and trace messages is a large surface to keep correct. OTLP/HTTP
+> accepts `application/json` with the same messages (the protobuf JSON mapping) on the same `/v1/metrics`
+> and `/v1/traces` paths, and every collector that takes protobuf takes JSON.
+> **Options.** (1) OTLP/HTTP-JSON built by `rakun_metrics.erl` with `json:encode`; (2) a protobuf encoder
+> in the sidecar.
+> **Recommendation.** (1) — implemented. (2) is an encoder beside the JSON one if a collector ever needs
+> protobuf only.
+
+### 03r-t · Front 76's keys live under `rakun.management.*`, in one module
+
+> **Raised by:** `76-rakun-actuator-security-probes`
+> **Measured.** The front writes `rakun.endpoints.web.exposure.include`, `rakun.endpoint.<id>.access`,
+> `rakun.endpoints.access.max-permitted` and owns six files (`exposure.bp`, `access.bp`, …). Front 11
+> already reads `rakun.management.endpoints.web.base-path`, `…path-mapping.<id>`, `…cors.*` and
+> `rakun.management.endpoint.<id>.cache.time-to-live` — Spring's `management.` prefix.
+> **Options.** (1) every key under `rakun.management.` (`rakun.management.endpoints.web.exposure.include`,
+> `rakun.management.endpoint.<id>.access`, `rakun.management.endpoints.access.default` /
+> `.max-permitted`, `rakun.management.server.*`, `rakun.management.endpoint.<id>.show-values`,
+> `rakun.management.endpoint.health.group.<name>.*`, `…health.probes.enabled`), the front in one
+> `management.bp` plus the `rakun_probes` sidecar; (2) the spec's spellings beside front 11's.
+> **Recommendation.** (1) — implemented; one prefix for the whole actuator, as upstream.
+
+### 03r-u · The liveness group may include only local indicators
+
+> **Raised by:** `76-rakun-actuator-security-probes`
+> **Measured.** "No indicator that reaches a socket may join the liveness group" — but an indicator does
+> not declare whether it reaches a socket.
+> **Options.** (1) an allow-list of local indicators — `livenessState`, `ping`, `diskSpace` — and every
+> other name refuses the boot; (2) an indicator declares itself local at registration.
+> **Recommendation.** (1) — implemented. (2) needs a field on rakun-actuator-api's registration.
+
+### 03r-v · The typed builder's operator is an enum `Op`, not a string
+
+> **Raised by:** `78-rakun-orm-entities`
+> **Measured.** The front writes `.where(CityCol.state, "=", "CA")` and asks that "an operator outside the
+> accepted set is a compile error, not a spliced string" — a string argument is never a compile error.
+> **Options.** (1) `Op.Eq | Ne | Lt | Gt | Le | Ge | Like`, so an unknown operator is an unknown variant;
+> (2) strings checked at run time.
+> **Recommendation.** (1) — implemented (`queryOf(CityMeta()).where(CityCol().state, Op.Eq, "CA")`).
+
+### 03r-w · OAuth2's explicit endpoints are provider fields, and client credentials are a function
+
+> **Raised by:** `79-rakun-oauth2-sso`
+> **Measured.** The front's `OAuth2Provider` has no field for "the four endpoints set explicitly" its
+> non-OIDC case needs, and `#[clientCredentials("id")]` on a front-13 client field would have to wrap
+> every call the client makes — a decorator cannot rewrite a body it does not own.
+> **Options.** (1) `authorizationUri`, `tokenUri`, `userinfoUri`, `jwksUri` on `OAuth2Provider`
+> (`oidcProvider(...)` fills them empty), and `withClientToken(id, call)` running a call with the token
+> and retrying once on 401; (2) a separate `ProviderEndpoints` argument and a client interceptor seam in
+> front 13.
+> **Recommendation.** (1) — implemented. (2) needs a request-interceptor hook in rakun-client.
+
+### 03r-x · The relay claims by conditional UPDATE, and the coordinators are resumed, not supervised
+
+> **Raised by:** `83-rakun-distributed-transactions`, `84-rakun-persistent-jobs`
+> **Measured.** rakun-data's embedded `ets:memory` arm — the datasource the front's tests run on —
+> has no `FOR UPDATE SKIP LOCKED`, and a botopink module cannot declare a `gen_statem`.
+> **Options.** (1) The relay claims each row with `UPDATE … SET status = 'claimed' WHERE id = :id AND
+> status = 'pending'` (one winner per row on every arm), a crashed relay's claims come back through
+> `reclaimStale`; the saga and 2PC coordinators persist every transition and are resumed by
+> `resumeSagas` / `recover2pc` at boot; the job store claims a due trigger and takes over an expired
+lease the same way (`… WHERE name = :n AND state = 'waiting'` / `AND owner = :old`); (2) a `SKIP LOCKED` arm per driver and supervised
+> `gen_statem` sidecars.
+> **Recommendation.** (1) — implemented. (2) is an optimisation for the Postgres arm; the durable
+> state, not the process, is what recovery reads.
 
 ## Open
 

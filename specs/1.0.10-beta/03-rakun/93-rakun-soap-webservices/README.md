@@ -106,19 +106,19 @@ pub fn soapBody(envelopeXml: string) -> string
 ```
 
 **Acceptance:**
-- [ ] A 1.1 envelope carries the `http://schemas.xmlsoap.org/soap/envelope/` namespace and a 1.2 envelope carries `http://www.w3.org/2003/05/soap-envelope`; neither is written into the other's document.
-- [ ] `soapBody(soapEnvelope(v, x))` returns `x` for both versions, including when the body contains a nested element named `Body`.
-- [ ] `&`, `<`, `>`, `"` and `'` are escaped exactly once at leaf values and never in element names.
-- [ ] A document with a prefix other than `soap:` — `s11:`, `env:`, none at all — is read correctly; the prefix is not assumed.
+- [x] A 1.1 envelope carries the `http://schemas.xmlsoap.org/soap/envelope/` namespace and a 1.2 envelope carries `http://www.w3.org/2003/05/soap-envelope`; neither is written into the other's document. — `envelope_test` "envelope: each version carries its own namespace and never the other's"
+- [x] `soapBody(soapEnvelope(v, x))` returns `x` for both versions, including when the body contains a nested element named `Body`. — `envelope_test` "envelope: the body round-trips for both versions, a nested element named Body included"
+- [x] `&`, `<`, `>`, `"` and `'` are escaped exactly once at leaf values and never in element names. — `envelope_test` "envelope: leaf values are escaped exactly once, element names never"
+- [x] A document with a prefix other than `soap:` — `s11:`, `env:`, none at all — is read correctly; the prefix is not assumed. — `envelope_test` "envelope: the prefix is not assumed - s11:, env: and a default namespace read the same"
 
 ### Step 2 — The schema subset and its refusals
 
 **Acceptance:**
-- [ ] Every construct in the *targeted* table generates, asserted by a fixture schema exercising each one.
-- [ ] Every construct in the *refused* list produces a located error naming the construct and the element it appeared in — thirteen refusals, thirteen tests.
-- [ ] `minOccurs="0"` becomes `?T` and `maxOccurs="unbounded"` becomes `T[]`; both together become `?T[]` with the documented reading.
-- [ ] An enumeration becomes an enum-shaped `type`, and an unknown value in a response is an error rather than a silent empty.
-- [ ] A recursive type beyond the configured depth is refused, not expanded until the generator runs out of memory.
+- [ ] Every construct in the *targeted* table generates, asserted by a fixture schema exercising each one. — open: the WSDL/XSD generator (the schema subset, its refusals, `rakun ws generate`) is not written
+- [ ] Every construct in the *refused* list produces a located error naming the construct and the element it appeared in — thirteen refusals, thirteen tests. — open: the WSDL/XSD generator (the schema subset, its refusals, `rakun ws generate`) is not written
+- [ ] `minOccurs="0"` becomes `?T` and `maxOccurs="unbounded"` becomes `T[]`; both together become `?T[]` with the documented reading. — open: the WSDL/XSD generator (the schema subset, its refusals, `rakun ws generate`) is not written
+- [ ] An enumeration becomes an enum-shaped `type`, and an unknown value in a response is an error rather than a silent empty. — open: the WSDL/XSD generator (the schema subset, its refusals, `rakun ws generate`) is not written
+- [ ] A recursive type beyond the configured depth is refused, not expanded until the generator runs out of memory. — open: the WSDL/XSD generator (the schema subset, its refusals, `rakun ws generate`) is not written
 
 ### Step 3 — The generator
 
@@ -127,10 +127,10 @@ rakun ws generate --wsdl billing.wsdl --out src/billing/
 ```
 
 **Acceptance:**
-- [ ] The generated tree compiles with `botopink build --target erlang` and its own generated tests pass, with no hand edits.
-- [ ] Re-running the generator over an unchanged WSDL produces byte-identical output — a generator whose output churns cannot be reviewed in a diff.
-- [ ] Generated files carry a header naming the source WSDL and its content hash, so a stale generation is visible.
-- [ ] A WSDL with an `xsd:import` pointing at a network URL is refused; a local relative import is followed.
+- [ ] The generated tree compiles with `botopink build --target erlang` and its own generated tests pass, with no hand edits. — open: the WSDL/XSD generator (the schema subset, its refusals, `rakun ws generate`) is not written
+- [ ] Re-running the generator over an unchanged WSDL produces byte-identical output — a generator whose output churns cannot be reviewed in a diff. — open: the WSDL/XSD generator (the schema subset, its refusals, `rakun ws generate`) is not written
+- [ ] Generated files carry a header naming the source WSDL and its content hash, so a stale generation is visible. — open: the WSDL/XSD generator (the schema subset, its refusals, `rakun ws generate`) is not written
+- [ ] A WSDL with an `xsd:import` pointing at a network URL is refused; a local relative import is followed. — open: the WSDL/XSD generator (the schema subset, its refusals, `rakun ws generate`) is not written
 
 ### Step 4 — The client
 
@@ -141,10 +141,10 @@ pub fn wsCall(client: WsClient, action: string, bodyXml: string) -> @Result<stri
 ```
 
 **Acceptance:**
-- [ ] The `SOAPAction` header is sent for 1.1 and folded into the `Content-Type` `action` parameter for 1.2.
-- [ ] A 200 with a normal body returns `Ok`; a 500 with a `soap:Fault` body returns `Error` carrying the decoded fault; a 500 with a non-XML body returns `Error` carrying a transport fault, distinguishably.
-- [ ] A connection timeout is a transport error and never a fault.
-- [ ] TLS material comes from front 74's bundle registry.
+- [x] The `SOAPAction` header is sent for 1.1 and folded into the `Content-Type` `action` parameter for 1.2. — `client_test` "client: 1.1 sends SOAPAction, 1.2 folds the action into the Content-Type"
+- [x] A 200 with a normal body returns `Ok`; a 500 with a `soap:Fault` body returns `Error` carrying the decoded fault; a 500 with a non-XML body returns `Error` carrying a transport fault, distinguishably. — `client_test` "client: 200 is Ok, a 500 fault is the decoded fault, a 500 that is not a fault is a transport fault"
+- [x] A connection timeout is a transport error and never a fault. — `client_test` "client: a timeout is a transport error, never a fault"
+- [ ] TLS material comes from front 74's bundle registry. — open: front 13's client takes a bundle, but `WsClient` passes none yet
 
 ### Step 5 — Faults
 
@@ -160,25 +160,25 @@ pub fn parseFault(bodyXml: string) -> ?SoapFault
 ```
 
 **Acceptance:**
-- [ ] `parseFault` returns `null` for a normal response body and a filled record for a fault, matched as `case f { null { … } fault { … } }`.
-- [ ] Both the 1.1 shape (`faultcode`/`faultstring`/`faultactor`) and the 1.2 shape (`Code/Value`, `Reason/Text`, `Role`) decode into the same record.
-- [ ] `detail` preserves the raw detail element, so an application can read an endpoint-specific error code the generator never saw.
+- [x] `parseFault` returns `null` for a normal response body and a filled record for a fault, matched as `case f { null { … } fault { … } }`. — `envelope_test` "faults: a normal body is null; the 1.1 and 1.2 shapes decode into one record; detail stays raw"
+- [x] Both the 1.1 shape (`faultcode`/`faultstring`/`faultactor`) and the 1.2 shape (`Code/Value`, `Reason/Text`, `Role`) decode into the same record. — `envelope_test` "faults: …"
+- [x] `detail` preserves the raw detail element, so an application can read an endpoint-specific error code the generator never saw. — `envelope_test` "faults: …; detail stays raw"
 
 ### Step 6 — Publishing an endpoint
 
 **Acceptance:**
-- [ ] A generated endpoint mounts at its configured path through front 07 and dispatches on the wrapped element name.
-- [ ] `<path>?wsdl` serves the source WSDL unmodified, and the served document's content hash matches the one in the generated header.
-- [ ] A request whose wrapped element matches no operation is answered with a `soap:Fault` — a client sending the wrong document must get a fault, not a 404.
-- [ ] A malformed envelope is answered with a client fault and does not crash the handler process.
+- [x] A generated endpoint mounts at its configured path through front 07 and dispatches on the wrapped element name. — `client_test` "endpoint: dispatches on the wrapped element and serves the WSDL unmodified" (`publishEndpoint` mounts front 04 routes, which front 07's chain fronts; the endpoint is hand-written, not generated)
+- [ ] `<path>?wsdl` serves the source WSDL unmodified, and the served document's content hash matches the one in the generated header. — open: the WSDL is served unmodified (`client_test` "endpoint: dispatches on the wrapped element and serves the WSDL unmodified"); there is no generated header to compare the hash with
+- [x] A request whose wrapped element matches no operation is answered with a `soap:Fault` — a client sending the wrong document must get a fault, not a 404. — `client_test` "endpoint: no matching operation, a malformed envelope and a raising operation each answer a fault"
+- [x] A malformed envelope is answered with a client fault and does not crash the handler process. — `client_test` "endpoint: …" (the next request is served)
 
 ### Step 7 — WS-Security UsernameToken
 
 **Acceptance:**
-- [ ] The outgoing header carries `Username`, `PasswordText`, a fresh `Nonce` and a `Created` timestamp.
-- [ ] The nonce differs between two calls, asserted by capturing both.
-- [ ] Sending a `PasswordText` token over plain HTTP is refused at boot unless an explicitly named override is set, and the override is named in the README as a development-only setting.
-- [ ] An incoming token is verified against the configured credentials on a published endpoint, and a replayed nonce within the configured window is rejected.
+- [x] The outgoing header carries `Username`, `PasswordText`, a fresh `Nonce` and a `Created` timestamp. — `client_test` "security: a UsernameToken carries username, PasswordText, a fresh nonce and Created; two calls differ"
+- [x] The nonce differs between two calls, asserted by capturing both. — `client_test` "security: …; two calls differ"
+- [x] Sending a `PasswordText` token over plain HTTP is refused at boot unless an explicitly named override is set, and the override is named in the README as a development-only setting. — `client_test` "security: PasswordText over plain HTTP is refused unless the development override is set" (`wsClientProblem`, which every call raises); AGENTS.md names `rakun.ws.security.allow-plain-http` as development-only
+- [x] An incoming token is verified against the configured credentials on a published endpoint, and a replayed nonce within the configured window is rejected. — `client_test` "endpoint: an incoming UsernameToken is verified, and a replayed nonce is rejected"
 
 ## Examples
 

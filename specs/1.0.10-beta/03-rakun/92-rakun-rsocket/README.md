@@ -94,11 +94,11 @@ ships no JavaScript.
 ### Step 1 — The frame codec
 
 **Acceptance:**
-- [ ] All twelve frame types encode and decode, asserted against captured frames checked into the test directory.
-- [ ] A frame split across TCP segments is reassembled; a frame exceeding the configured maximum closes the connection with a named error.
-- [ ] The metadata and data split is preserved exactly, including an empty metadata section and an empty data section.
-- [ ] `RESUME` in a `SETUP` is answered with a rejection naming resumption as unsupported, not ignored.
-- [ ] No byte or bit manipulation appears in the botopink sources of this front.
+- [ ] All twelve frame types encode and decode, asserted against captured frames checked into the test directory. — open: all twelve round-trip (`codec_test` "codec: all twelve frame types encode and decode"), but no captured frames from another implementation exist here to assert against
+- [x] A frame split across TCP segments is reassembled; a frame exceeding the configured maximum closes the connection with a named error. — `codec_test` "codec: a split frame waits for the rest; an oversized one is refused naming the limit" (the responder answers CONNECTION_ERROR and closes)
+- [x] The metadata and data split is preserved exactly, including an empty metadata section and an empty data section. — `codec_test` "codec: the metadata and data split is exact, empty sections included"
+- [x] `RESUME` in a `SETUP` is answered with a rejection naming resumption as unsupported, not ignored. — `interaction_test` "setup: RESUME is answered with a rejection naming resumption, …"
+- [x] No byte or bit manipulation appears in the botopink sources of this front. — `codec_test` "codec: no byte or bit manipulation in the botopink sources"
 
 ### Step 2 — Transports
 
@@ -109,35 +109,35 @@ rakun.rsocket.server.transport = tcp | websocket
 ```
 
 **Acceptance:**
-- [ ] The TCP transport binds its own port, separate from the HTTP listener, and is absent when unconfigured.
-- [ ] The WebSocket transport mounts at the mapping path through front 20 and shares the HTTP listener.
-- [ ] Both transports run the same connection process — asserted by running the same interaction test twice, once per transport.
-- [ ] TLS material comes from front 74's bundle registry, and a missing bundle fails at boot.
+- [x] The TCP transport binds its own port, separate from the HTTP listener, and is absent when unconfigured. — `interaction_test` "server: the TCP transport binds its own port, and none when unconfigured"
+- [ ] The WebSocket transport mounts at the mapping path through front 20 and shares the HTTP listener. — open: the websocket transport is refused at boot - front 20's mount is not wired
+- [ ] Both transports run the same connection process — asserted by running the same interaction test twice, once per transport. — open: TCP only
+- [ ] TLS material comes from front 74's bundle registry, and a missing bundle fails at boot. — open: the TCP transport has no TLS arm yet
 
 ### Step 3 — Setup, keep-alive and lease
 
 **Acceptance:**
-- [ ] `SETUP` negotiates the keep-alive interval and the max lifetime, and a missed keep-alive closes the connection within the negotiated lifetime.
-- [ ] A responder configured with a lease grants budget, and a requester that exceeds the budget is rejected locally without a frame on the wire.
-- [ ] A connection closed by either side terminates every stream process it owned, asserted by process count.
+- [x] `SETUP` negotiates the keep-alive interval and the max lifetime, and a missed keep-alive closes the connection within the negotiated lifetime. — `interaction_test` "keep-alive: silence past the negotiated lifetime closes the connection and its streams"
+- [x] A responder configured with a lease grants budget, and a requester that exceeds the budget is rejected locally without a frame on the wire. — `interaction_test` "lease: a request past the responder's budget is rejected locally, writing nothing"
+- [x] A connection closed by either side terminates every stream process it owned, asserted by process count. — `interaction_test` "close: closing the connection terminates every stream process it owned", "keep-alive: …"
 
 ### Step 4 — The four interaction models
 
 **Acceptance:**
-- [ ] Fire-and-forget returns nothing on the wire and the handler's `Outcome.Reject` reaches front 86's dead-letter path.
-- [ ] Request/response returns exactly one `PAYLOAD` and the requester's `@Task` resolves to it.
-- [ ] Request/stream emits no more than the credit granted: with `request(2)` the producer emits two and stops, and emits the third only after `request(1)`.
-- [ ] `CANCEL` stops the producer process and no further `PAYLOAD` is sent.
-- [ ] Channel carries demand in both directions independently: a slow consumer on one side does not stop the other.
-- [ ] An error in a handler becomes an `ERROR` frame on that stream and leaves the connection and the other streams alive.
+- [x] Fire-and-forget returns nothing on the wire and the handler's `Outcome.Reject` reaches front 86's dead-letter path. — `interaction_test` "fire-and-forget: nothing comes back, it returns at once, and a Reject reaches the dead-letter path" (a raise is the Reject)
+- [x] Request/response returns exactly one `PAYLOAD` and the requester's `@Task` resolves to it. — `interaction_test` "request/response: one PAYLOAD resolves the requester's task; …"
+- [x] Request/stream emits no more than the credit granted: with `request(2)` the producer emits two and stops, and emits the third only after `request(1)`. — `interaction_test` "request/stream: no more than the credit; the rest after request(1); CANCEL stops it"
+- [x] `CANCEL` stops the producer process and no further `PAYLOAD` is sent. — `interaction_test` "request/stream: …; CANCEL stops it"
+- [ ] Channel carries demand in both directions independently: a slow consumer on one side does not stop the other. — open: REQUEST_CHANNEL is decoded, not served
+- [x] An error in a handler becomes an `ERROR` frame on that stream and leaves the connection and the other streams alive. — `interaction_test` "request/response: …; an error frame leaves the connection alive"
 
 ### Step 5 — Routing and `#[messageMapping]`
 
 **Acceptance:**
-- [ ] `#[messageMapping]` on anything but a method fails with a located message.
-- [ ] The route tag is encoded and parsed as a length-prefixed entry in the composite metadata, and a request with no routing metadata is answered with an `ERROR` naming the missing route.
-- [ ] Two handlers claiming the same route fail at comptime, naming both declarations.
-- [ ] The registration is visible in front 15's registry and in `rakun routes`.
+- [ ] `#[messageMapping]` on anything but a method fails with a located message. — open: routes register through `rsocketRoute`; there is no `#[messageMapping]`
+- [x] The route tag is encoded and parsed as a length-prefixed entry in the composite metadata, and a request with no routing metadata is answered with an `ERROR` naming the missing route. — `codec_test` "routing: the route is a length-prefixed tag in the composite metadata"; `interaction_test` "setup: … a request without routing metadata with an ERROR naming the route"
+- [ ] Two handlers claiming the same route fail at comptime, naming both declarations. — open: a second registration is refused at load, naming the route (`interaction_test` "routing: a route declared twice is refused naming it"), not at comptime
+- [ ] The registration is visible in front 15's registry and in `rakun routes`. — open: visible in front 15's registry (`interaction_test` "routing: each route is a row in front 15's registry …"); `rakun routes` lists HTTP routes only
 
 ### Step 6 — The requester
 
@@ -148,10 +148,10 @@ pub fn requestResponse(requester: Requester, route: string, data: string) -> @Ta
 ```
 
 **Acceptance:**
-- [ ] A requester connects over either transport from one URL scheme (`tcp://`, `ws://`, `wss://`).
-- [ ] Several concurrent calls are issued as front 02 thunks and gathered by index; a test asserts the results are in request order regardless of completion order.
-- [ ] A request whose connection drops mid-flight fails that request and does not take the caller down.
-- [ ] `fireAndForget` returns as soon as the frame is written and never blocks on a response.
+- [ ] A requester connects over either transport from one URL scheme (`tcp://`, `ws://`, `wss://`). — open: `tcp://` only
+- [x] Several concurrent calls are issued as front 02 thunks and gathered by index; a test asserts the results are in request order regardless of completion order. — `interaction_test` "requester: concurrent calls as thunks gather in request order whatever the completion order"
+- [ ] A request whose connection drops mid-flight fails that request and does not take the caller down. — open: not asserted
+- [x] `fireAndForget` returns as soon as the frame is written and never blocks on a response. — `interaction_test` "fire-and-forget: …, it returns at once, …"
 
 ## Examples
 

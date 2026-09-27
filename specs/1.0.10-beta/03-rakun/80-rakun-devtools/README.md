@@ -37,7 +37,7 @@ application; rakun ships nothing, and the actuator (front 11) is deliberately no
 
 | Piece | Where it is today |
 |---|---|
-| `modules/rakun-devtools/` | does not exist — this front creates it, `botopink.json` and `src/root.bp` included |
+| `modules/rakun-devtools/` | the member: `devtools.bp` (settings, watcher, reload, defaults, remote, trace), `db_console.bp`, `src/sidecars/rakun_devtools.erl` |
 | Hot code loading | nothing in rakun calls `code:load_file/1`, `code:load_binary/3` or `nl/1` |
 | A file watcher | nothing. `libs/std/src/fs.bp` has `stat(path) -> @Result<FileStat, string>` and `list(path) -> @Result<string[], string>`, which is enough to poll |
 | The registry a reload must invalidate | front 04's four ETS tables: scan list, singleton cache, property map, route table. `rkRegisterRoute` **appends** — `runtime.mjs:113-121` — so reloading a controller twice registers its routes twice |
@@ -167,11 +167,11 @@ pub type DevtoolsSettings(
 ```
 
 **Acceptance:**
-- [ ] With no files anywhere, `settings()` answers the documented defaults: roots `["src"]`, poll 300 ms, enabled `true`, trigger file `""`, remote secret `""`, db console `false`
-- [ ] A value set only in the global file is used
-- [ ] A value set in both files takes the project's
-- [ ] A value set in the global file, the project file and an environment variable takes the environment variable — devtools settings do not escape front 05's priority order
-- [ ] A malformed global file is a named warning at boot and the defaults stand; it is not a boot failure, because a developer's home directory must not be able to break a colleague's checkout
+- [x] With no files anywhere, `settings()` answers the documented defaults: roots `["src"]`, poll 300 ms, enabled `true`, trigger file `""`, remote secret `""`, db console `false` — `modules/rakun-devtools/test/devtools_test.bp` "settings: with no file anywhere the documented defaults hold"
+- [x] A value set only in the global file is used — `modules/rakun-devtools/test/devtools_test.bp` "settings: global file < project < environment"
+- [x] A value set in both files takes the project's — same test
+- [x] A value set in the global file, the project file and an environment variable takes the environment variable — devtools settings do not escape front 05's priority order — same test
+- [x] A malformed global file is a named warning at boot and the defaults stand; it is not a boot failure, because a developer's home directory must not be able to break a colleague's checkout — `modules/rakun-devtools/test/devtools_test.bp` "settings: a malformed global file is a named warning and the defaults stand"
 
 ### Step 2 — The watcher
 
@@ -180,12 +180,12 @@ project-relative path. With a trigger file configured, changes accumulate and ar
 the trigger file's mtime moves.
 
 **Acceptance:**
-- [ ] Touching a file under a root produces exactly one reload, not one per `stat`
-- [ ] Two files changed inside one interval produce one reload cycle covering both
-- [ ] A file matching an `exclude` pattern produces none
-- [ ] With a trigger file configured, changing a source file produces none until the trigger file is touched, and then produces one covering every accumulated change
-- [ ] The watcher does not start when no dev profile is active, and `enabled=false` stops it in a dev profile
-- [ ] Killing the watcher restarts it with no reload and no duplicated registration
+- [x] Touching a file under a root produces exactly one reload, not one per `stat` — `modules/rakun-devtools/test/devtools_test.bp` "watcher: one touched file is one reload; two in one interval are one cycle covering both"
+- [x] Two files changed inside one interval produce one reload cycle covering both — same test
+- [x] A file matching an `exclude` pattern produces none — `modules/rakun-devtools/test/devtools_test.bp` "watcher: an excluded file produces no reload"
+- [x] With a trigger file configured, changing a source file produces none until the trigger file is touched, and then produces one covering every accumulated change — `modules/rakun-devtools/test/devtools_test.bp` "watcher: with a trigger file changes wait for the trigger, then reload once covering all"
+- [x] The watcher does not start when no dev profile is active, and `enabled=false` stops it in a dev profile — `modules/rakun-devtools/test/devtools_test.bp` "watcher: no dev profile, or enabled=false, runs no watcher"
+- [x] Killing the watcher restarts it with no reload and no duplicated registration — `modules/rakun-devtools/test/devtools_test.bp` "watcher: a killed watcher is restarted with no reload"
 
 ### Step 3 — Compile and load
 
@@ -194,11 +194,11 @@ for the erlang target, and the resulting module is loaded. A compile failure rep
 own error text and leaves the running code exactly as it was.
 
 **Acceptance:**
-- [ ] A successful edit is serving new behaviour on the next request, with no process restart
-- [ ] A compile error leaves the previous version answering requests, and the error text reaches the console unmodified
-- [ ] A reload during an in-flight request lets that request finish on the code it started with
-- [ ] An open keep-alive connection survives a reload
-- [ ] A second reload within the purge window reports that a process was still running old code rather than killing it silently
+- [x] A successful edit is serving new behaviour on the next request, with no process restart — `modules/rakun-devtools/test/devtools_test.bp` "reload: an edit serves on the next call; a compile error keeps the old code and prints the compiler's text"
+- [x] A compile error leaves the previous version answering requests, and the error text reaches the console unmodified — same test
+- [x] A reload during an in-flight request lets that request finish on the code it started with — `modules/rakun-devtools/test/devtools_test.bp` "reload: a call in flight finishes on the code it started with"
+- [x] An open keep-alive connection survives a reload — `modules/rakun-devtools/test/devtools_test.bp` "reload: an open keep-alive connection survives a reload"
+- [x] A second reload within the purge window reports that a process was still running old code rather than killing it silently — `modules/rakun-devtools/test/devtools_test.bp` "reload: a second reload while a process still runs the old code reports it instead of killing it"
 
 ### Step 4 — Invalidating what the old module registered
 
@@ -206,11 +206,11 @@ own error text and leaves the running code exactly as it was.
 a no-op reload as before it, which is the single assertion that proves this step.
 
 **Acceptance:**
-- [ ] Reloading an unchanged controller twice leaves `rkRouteCount()` unchanged
-- [ ] Reloading a controller whose route path changed leaves exactly one route, the new one
-- [ ] Reloading a `#[service]` discards its cached singleton, and the next resolution runs the new constructor — `rkBuildCount` increments
-- [ ] A singleton *injected into* a component that was not reloaded is rebuilt too, or the front documents precisely why it is not
-- [ ] `rkDevDropModule` on a module that registered nothing answers 0 and changes nothing
+- [x] Reloading an unchanged controller twice leaves `rkRouteCount()` unchanged — `modules/rakun-devtools/test/devtools_test.bp` "reload: an unchanged controller reloaded twice keeps the route count; a moved route leaves only the new one"
+- [x] Reloading a controller whose route path changed leaves exactly one route, the new one — same test
+- [x] Reloading a `#[service]` discards its cached singleton, and the next resolution runs the new constructor — `rkBuildCount` increments — `modules/rakun-devtools/test/devtools_test.bp` "reload: a reloaded service's singleton is discarded and rebuilt; dropping an idle module is 0"
+- [x] A singleton *injected into* a component that was not reloaded is rebuilt too, or the front documents precisely why it is not — documented (`devtools.bp`, `repository/rakun/AGENTS.md`): a component holding an injected singleton keeps its instance until its own module reloads, because the container resolves a dependency once, at construction
+- [x] `rkDevDropModule` on a module that registered nothing answers 0 and changes nothing — `modules/rakun-devtools/test/devtools_test.bp` "reload: a reloaded service's singleton is discarded and rebuilt; dropping an idle module is 0"
 
 ### Step 5 — Dev property defaults
 
@@ -218,34 +218,34 @@ The six-row table above, applied as the lowest-priority property source when thi
 and a dev profile is active.
 
 **Acceptance:**
-- [ ] With the module present and the `dev` profile active, `rkProp("rakun.web.error.include-message")` reads `always`
-- [ ] With the same setup and `rakun.web.error.include-message: never` in `application.yaml`, it reads `never`
-- [ ] With the module present and no dev profile, none of the six is applied
-- [ ] Removing the module from the manifest removes all six, with no other change to the application
+- [x] With the module present and the `dev` profile active, `rkProp("rakun.web.error.include-message")` reads `always` — `modules/rakun-devtools/test/devtools_test.bp` "defaults: a dev profile applies the six below everything else; no dev profile applies none"
+- [x] With the same setup and `rakun.web.error.include-message: never` in `application.yaml`, it reads `never` — same test
+- [x] With the module present and no dev profile, none of the six is applied — same test
+- [x] Removing the module from the manifest removes all six, with no other change to the application — by construction: the six are written only by `installDevDefaults()` of this module (no other module names them); without the module nothing calls it
 
 ### Step 6 — The dev-profile database console
 
 A read-only query endpoint at `/devtools/db`, the H2-console analogue, over front 08's datasource.
 
 **Acceptance:**
-- [ ] The endpoint is not registered at all outside a dev profile — it answers 404 because it does not exist, not 403
-- [ ] A `SELECT` runs and renders its rows
-- [ ] An `INSERT`, `UPDATE`, `DELETE` or `DROP` is refused with a message naming the statement kind; the check is a parse of the statement, not a substring search
-- [ ] The connection it uses is the application's datasource, so a query sees the same schema the application sees
-- [ ] A query is bounded by a row cap and a timeout, both configuration, both with finite defaults
+- [x] The endpoint is not registered at all outside a dev profile — it answers 404 because it does not exist, not 403 — `modules/rakun-devtools/test/db_console_test.bp` "console: outside a dev profile it does not exist"
+- [x] A `SELECT` runs and renders its rows — `modules/rakun-devtools/test/db_console_test.bp` "console: a SELECT renders rows from the application's datasource, capped"
+- [x] An `INSERT`, `UPDATE`, `DELETE` or `DROP` is refused with a message naming the statement kind; the check is a parse of the statement, not a substring search — `modules/rakun-devtools/test/db_console_test.bp` "console: writes are refused naming the parsed kind"
+- [x] The connection it uses is the application's datasource, so a query sees the same schema the application sees — `modules/rakun-devtools/test/db_console_test.bp` "console: a SELECT renders rows from the application's datasource, capped"
+- [x] A query is bounded by a row cap and a timeout, both configuration, both with finite defaults — same test (`consoleLimits()` is `100|5000` by default)
 
 ### Step 7 — Remote loading and tracing
 
 `nl/1`-based remote load behind the four guards above, and `traceCalls` with its mandatory limit.
 
 **Acceptance:**
-- [ ] Remote loading is refused with a named reason when no dev profile is active
-- [ ] Refused when `rakun.devtools.remote.secret` is unset or empty
-- [ ] Refused when the transport is not TLS
-- [ ] A wrong secret is refused, and the comparison is constant-time
-- [ ] There is no configuration key that bypasses any of the four checks — asserted by a test that greps the module's own property table
-- [ ] `traceCalls` without a limit does not compile; with one, the trace stops itself at the limit
-- [ ] `repository/rakun/AGENTS.md` documents `erl -remsh` as the debugging path and names the cookie and node-name settings it needs
+- [x] Remote loading is refused with a named reason when no dev profile is active — `modules/rakun-devtools/test/devtools_test.bp` "remote: refused without a dev profile, without a secret, without TLS, with a wrong secret; no key bypasses"
+- [x] Refused when `rakun.devtools.remote.secret` is unset or empty — same test
+- [x] Refused when the transport is not TLS — same test
+- [x] A wrong secret is refused, and the comparison is constant-time — same test
+- [x] There is no configuration key that bypasses any of the four checks — asserted by a test that greps the module's own property table — same test
+- [x] `traceCalls` without a limit does not compile; with one, the trace stops itself at the limit — `modules/rakun-devtools/test/devtools_test.bp` "trace: a trace stops by itself at its limit", "trace: a call without the limit does not compile"
+- [x] `repository/rakun/AGENTS.md` documents `erl -remsh` as the debugging path and names the cookie and node-name settings it needs — `repository/rakun/AGENTS.md` § DevTools (`erl -sname`/`-name`, `-setcookie`, `-remsh`)
 
 ## Examples
 
@@ -281,14 +281,14 @@ of this module would be an empty shell that claims a feature it cannot have.
 
 ## Definition of done
 
-- [ ] `modules/rakun-devtools/` exists with its manifest, its `root.bp` and its module tree
-- [ ] A source edit is answered by new code on the next request, with no restart, no dropped
-      connection and no doubled route
-- [ ] Settings merge in the documented order, with the global home-directory file below project
-      configuration
-- [ ] The six dev defaults apply below every other property source and are absent without the module
-- [ ] The database console exists only under a dev profile and refuses every non-`SELECT`
-- [ ] Remote loading carries all four guards and no bypass
-- [ ] `repository/rakun/AGENTS.md` documents the reload sequence and the `erl -remsh` debugging path
-- [ ] The front's tests are green on its assigned target
+- [x] `modules/rakun-devtools/` exists with its manifest, its `root.bp` and its module tree — `modules/rakun-devtools/botopink.json`, `src/root.bp`, `devtools.bp`, `db_console.bp`
+- [x] A source edit is answered by new code on the next request, with no restart, no dropped
+      connection and no doubled route — `modules/rakun-devtools/test/devtools_test.bp` "reload: an edit serves on the next call; a compile error keeps the old code and prints the compiler's text", the keep-alive and the controller cells
+- [x] Settings merge in the documented order, with the global home-directory file below project
+      configuration — `modules/rakun-devtools/test/devtools_test.bp` "settings: global file < project < environment"
+- [x] The six dev defaults apply below every other property source and are absent without the module — `modules/rakun-devtools/test/devtools_test.bp` "defaults: a dev profile applies the six below everything else; no dev profile applies none"
+- [x] The database console exists only under a dev profile and refuses every non-`SELECT` — `modules/rakun-devtools/test/db_console_test.bp` "console: writes are refused naming the parsed kind"
+- [x] Remote loading carries all four guards and no bypass — `modules/rakun-devtools/test/devtools_test.bp` "remote: refused without a dev profile, without a secret, without TLS, with a wrong secret; no key bypasses"
+- [x] `repository/rakun/AGENTS.md` documents the reload sequence and the `erl -remsh` debugging path — `repository/rakun/AGENTS.md` § DevTools
+- [x] The front's tests are green on its assigned target — 21 tests (erlang)
 

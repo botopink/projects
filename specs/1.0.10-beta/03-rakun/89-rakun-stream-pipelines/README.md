@@ -34,8 +34,7 @@ no error message.
 
 ## Current state
 
-- `repository/rakun/modules/` holds no `rakun-stream`. The directory this front owns does not exist
-  yet.
+- `repository/rakun/modules/rakun-stream/` — `pipeline`, `state`, `runtime` and the sidecar `rakun_stream.erl`.
 - `repository/rakun/modules/rakun-messaging/src/root.bp` — a stub; fronts 15 and 86 fill it, and this
   front consumes their source and sink arms rather than dialling a broker of its own.
 - `repository/rakun/src/runtime.bp:19-117` — no process-topology surface of any kind. The only
@@ -131,11 +130,11 @@ pub fn runStages(stages: Array<Stage>, items: Array<string>) -> Array<string>
 ```
 
 **Acceptance:**
-- [ ] `runStages([], items)` returns `items` unchanged.
-- [ ] A `Filter` that keeps nothing produces an empty array and does not raise.
-- [ ] A `Split` producing three items feeds three items to the next stage, asserted by a following `Transform` that counts.
-- [ ] Stage order matters: filter-then-transform and transform-then-filter over the same input produce different results, and both are asserted.
-- [ ] Every stage carries a name, and two stages with the same name in one pipeline fail at registration.
+- [x] `runStages([], items)` returns `items` unchanged. — `stages_test` "stages: no stages leaves the items unchanged"
+- [x] A `Filter` that keeps nothing produces an empty array and does not raise. — `stages_test` "stages: a filter that keeps nothing answers an empty array"
+- [x] A `Split` producing three items feeds three items to the next stage, asserted by a following `Transform` that counts. — `stages_test` "stages: a split of three feeds three items to the next stage"
+- [x] Stage order matters: filter-then-transform and transform-then-filter over the same input produce different results, and both are asserted. — `stages_test` "stages: filter-then-transform and transform-then-filter differ"
+- [x] Every stage carries a name, and two stages with the same name in one pipeline fail at registration. — `stages_test` "stages: two stages of one name are refused at registration" (`pipelineProblem`, which `startPipeline` raises)
 
 ### Step 2 — Sources, sinks and demand
 
@@ -153,18 +152,18 @@ pub type Sink {
 ```
 
 **Acceptance:**
-- [ ] A source never delivers more than the demand the first stage asked for — asserted by a slow stage and a fast source, measuring the queue depth rather than the wall clock.
-- [ ] Killing a middle stage does not lose the events already accepted downstream of it.
-- [ ] `Sink.Collect` accumulates into a named store for tests, so a pipeline is assertable end to end without a broker.
-- [ ] Back-pressure reaches the broker: with `Queue(prefetch: 1)` and a blocked pipeline, the second message is not fetched.
+- [x] A source never delivers more than the demand the first stage asked for — asserted by a slow stage and a fast source, measuring the queue depth rather than the wall clock. — `runtime_test` "runtime: a slow stage is never offered more than its demand" (each stage's peak buffer)
+- [x] Killing a middle stage does not lose the events already accepted downstream of it. — `runtime_test` "runtime: killing a middle stage restarts it alone and loses nothing already downstream"
+- [x] `Sink.Collect` accumulates into a named store for tests, so a pipeline is assertable end to end without a broker. — `runtime_test` "runtime: Collect accumulates into a named store, end to end from a queue"
+- [ ] Back-pressure reaches the broker: with `Queue(prefetch: 1)` and a blocked pipeline, the second message is not fetched. — open: back-pressure reaches the broker (`runtime_test` "runtime: with prefetch 1 and a blocked pipeline, the broker holds the rest": one message unsettled, the rest held), but the stage accepted the first, so the second is the one the source holds - it is fetched, the third is not
 
 ### Step 3 — Pollers and the metadata store
 
 **Acceptance:**
-- [ ] The cursor is written after the sink confirms, never before; a test that fails the sink asserts the cursor did not move.
-- [ ] Restarting the poller resumes from the stored cursor rather than from the beginning.
-- [ ] Two nodes running the same poller do not both fetch — the cursor row is the lease.
-- [ ] `everyMs` is honoured as a fixed *delay* after completion, matching `spring.integration.poller.fixed-delay`, and the README says so rather than leaving fixed-rate ambiguity.
+- [x] The cursor is written after the sink confirms, never before; a test that fails the sink asserts the cursor did not move. — `state_test` "poller: the cursor is written after the sink confirms, never before"
+- [x] Restarting the poller resumes from the stored cursor rather than from the beginning. — `state_test` "poller: a restarted poller resumes from the stored cursor" (the cursor is the SQL row each pass reads)
+- [x] Two nodes running the same poller do not both fetch — the cursor row is the lease. — `state_test` "poller: two nodes do not both fetch - the cursor row is the lease"
+- [x] `everyMs` is honoured as a fixed *delay* after completion, matching `spring.integration.poller.fixed-delay`, and the README says so rather than leaving fixed-rate ambiguity. — `state_test` "poller: everyMs is a fixed delay after each pass completes"; `runtime.bp`'s header and AGENTS.md say so
 
 ### Step 4 — Keyed state
 
@@ -177,10 +176,10 @@ pub behavior StateStore {
 ```
 
 **Acceptance:**
-- [ ] A key written by one stage is readable by the same stage after a restart when the SQL arm is used, and is empty with the ETS arm — both asserted, so the trade is visible.
-- [ ] Choosing the ETS arm logs one line at boot naming what is lost on a rebalance.
-- [ ] `lookup` returns `null` for an absent key, matched as `case v { null { … } s { … } }` and never as a sentinel string.
-- [ ] State keys are prefixed per pipeline, so two topologies cannot collide on `"count"`.
+- [x] A key written by one stage is readable by the same stage after a restart when the SQL arm is used, and is empty with the ETS arm — both asserted, so the trade is visible. — `state_test` "state: the SQL arm keeps a key across a restart, the ETS arm does not"
+- [x] Choosing the ETS arm logs one line at boot naming what is lost on a rebalance. — `state_test` "state: choosing ETS logs one line naming what a rebalance loses"
+- [x] `lookup` returns `null` for an absent key, matched as `case v { null { … } s { … } }` and never as a sentinel string. — `state_test` "state: an absent key is null, not a sentinel string"
+- [x] State keys are prefixed per pipeline, so two topologies cannot collide on `"count"`. — `state_test` "state: keys are prefixed per pipeline"
 
 ### Step 5 — Windows
 
@@ -190,17 +189,17 @@ pub fn windowKey(key: string, start: i64) -> string
 ```
 
 **Acceptance:**
-- [ ] `windowStart` is exact at a boundary: an event at exactly `start + windowMs` belongs to the next window.
-- [ ] Two events in the same window produce one emission with the combined aggregate; two events across a boundary produce two.
-- [ ] A late event arriving within the lateness allowance updates its window's emission; one arriving after it goes to the late branch and is counted.
-- [ ] A sliding window of width W and step S writes each event into exactly `W / S` windows.
+- [x] `windowStart` is exact at a boundary: an event at exactly `start + windowMs` belongs to the next window. — `stages_test` "windows: an event at start + windowMs belongs to the next window"
+- [ ] Two events in the same window produce one emission with the combined aggregate; two events across a boundary produce two. — open: the running `Aggregate` counts per key per window in the state store and emits the running count on each event; a per-window emission on a watermark is not implemented
+- [ ] A late event arriving within the lateness allowance updates its window's emission; one arriving after it goes to the late branch and is counted. — open: no watermark, lateness allowance or late branch
+- [x] A sliding window of width W and step S writes each event into exactly `W / S` windows. — `stages_test` "windows: a sliding window of width W and step S writes an event into W / S windows"
 
 ### Step 6 — Rebalance and restart
 
 **Acceptance:**
-- [ ] A partition moving between nodes carries its keys: the new owner's first aggregate for an existing key continues the count rather than restarting it (SQL arm).
-- [ ] A stage crash restarts that stage only; the supervisor tree is asserted by process count, not by absence of an error.
-- [ ] A poison event exits through front 86's dead-letter path with the stage name in the envelope, and the pipeline keeps running.
+- [x] A partition moving between nodes carries its keys: the new owner's first aggregate for an existing key continues the count rather than restarting it (SQL arm). — `state_test` "rebalance: a new owner reading the SQL state continues the count"
+- [x] A stage crash restarts that stage only; the supervisor tree is asserted by process count, not by absence of an error. — `runtime_test` "runtime: killing a middle stage restarts it alone …" (three stage pids, only the killed one replaced)
+- [x] A poison event exits through front 86's dead-letter path with the stage name in the envelope, and the pipeline keeps running. — `runtime_test` "runtime: a poison event goes to the dead-letter destination with its stage, and the pipeline keeps running"
 
 ### Step 7 — The graph endpoint
 
@@ -209,9 +208,9 @@ pub fn graphOf(pipeline: Pipeline) -> Array<#(string, string)>
 ```
 
 **Acceptance:**
-- [ ] The edge list is `source → stage1 → … → sink` with one edge per adjacent pair, in order.
-- [ ] A registered pipeline appears at `/actuator/integrationgraph`, and is absent unless front 76's exposure list names the endpoint.
-- [ ] Adding a stage changes the rendered graph with no other edit — the graph is derived, not maintained.
+- [x] The edge list is `source → stage1 → … → sink` with one edge per adjacent pair, in order. — `stages_test` "graph: source, each stage and the sink, one edge per adjacent pair, derived from the value"
+- [x] A registered pipeline appears at `/actuator/integrationgraph`, and is absent unless front 76's exposure list names the endpoint. — `runtime_test` "graph endpoint: a registered pipeline appears at /actuator/integrationgraph, only when exposed"
+- [x] Adding a stage changes the rendered graph with no other edit — the graph is derived, not maintained. — `stages_test` "graph: …, derived from the value"
 
 ## Examples
 

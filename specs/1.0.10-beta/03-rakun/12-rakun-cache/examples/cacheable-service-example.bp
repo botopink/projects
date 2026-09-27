@@ -18,8 +18,11 @@ import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute, rkProp} from "rak
 // Provided by front 12. `#[cached]` splices the twin type and its factory into
 // this module too, and the twin's body calls the store cells — same rule.
 import {cached, cacheable, cacheEvict} from "rakun-cache";
-import {cacheThrough, cachePolicy, cacheLife, CacheScope, cacheKey} from "rakun-cache";
-import {rkCacheEnabled, rkCacheLookup, rkCachePut, rkCacheEvict, rkCacheClear} from "rakun-cache";
+import {cacheThrough, cachePolicy, cacheLife, CacheScope} from "rakun-cache";
+// LANGUAGE GAP: `cacheKey` from "rakun-cache" is refused as ambiguous with
+// std's `hash.cacheKey`; its module names it.
+import {cacheKey} from "rakun-cache/cache";
+import {cacheMethod, cacheEvictAll, cacheEvictKeys} from "rakun-cache";
 
 // ── the contract ────────────────────────────────────────────────────────────
 //

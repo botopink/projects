@@ -34,13 +34,11 @@ dashboard full of zeros and would leave out everything an operator actually page
 
 | Piece | Where it is today |
 |---|---|
-| `rakun-metrics` module | does not exist |
-| Metrics endpoint | front 11, `modules/rakun-actuator/src/**` — names and values, no registry model |
-| HTTP request timing | front 11 ships `http.server.requests`; it has nowhere to send it |
-| Any exporter | none |
-| Any tracing | none — no context propagation, no span, no sampler |
-| `:telemetry` | not a dependency, and not in OTP |
-| Erlang VM statistics | available in OTP (`erlang:memory/0`, `erlang:statistics/1`, `erlang:process_info/2`) and unused |
+| `rakun-metrics` module | `modules/rakun-metrics/` — registry, bus, VM meters, endpoints, OTLP/StatsD, tracing; 41 tests |
+| HTTP request timing | the core router executes `[rakun, http, request, stop]` with the registered route; `http.server.requests` is this module's timer over it |
+| Exporters | Prometheus (`/actuator/prometheus`), OTLP/HTTP-JSON through front 13's client, StatsD over UDP |
+| Tracing | front 11 propagates `traceparent` with its flag byte; this module samples at the edge and exports sampled spans |
+| `:telemetry` | not a dependency: `rakun_telemetry` carries its three functions and delegates to it when loaded |
 | HTTP client for pushing to a collector | front 13 |
 | TLS for that client | front 74 |
 
@@ -211,8 +209,8 @@ pub fn parentSpanId() -> string;   // "" when this span is the root
 pub fn sampled() -> bool;
 pub fn traceparent() -> string;    // the header to send onward
 pub fn adoptTraceparent(header: string) -> bool;   // used by the filter and by tests
-pub fn startSpan(name: string) -> string;          // returns the new span id
-pub fn endSpan(span: string) -> i32;
+pub fn openSpan(name: string) -> string;           // returns the new span id
+pub fn closeSpan(span: string) -> i32;
 pub fn exportedSpanCount() -> i32;                 // test and diagnostics only
 ```
 
@@ -261,82 +259,82 @@ is resolved once at registration and the handle is a pointer into ETS, so increm
 it is the same record and the same storage under a different constructor.
 
 **Acceptance:**
-- [ ] Two registrations of the same name and tag set return the same meter, and the second does not reset it
-- [ ] Tag order does not create a second series: `[a, b]` and `[b, a]` are one meter
-- [ ] A counter incremented from 1000 processes concurrently ends at exactly 1000
-- [ ] A gauge's closure is not called during registration, and is called once per scrape
-- [ ] `timed` returns the value the closure returned, and records a sample even when the closure raises — the sample is tagged `outcome=error`
-- [ ] A meter name containing a character the exposition format cannot carry is rejected at registration, naming the character
+- [x] Two registrations of the same name and tag set return the same meter, and the second does not reset it — `modules/rakun-metrics/test/registry_test.bp` "registry: one name and tag set is one meter, and registering again does not reset it"
+- [x] Tag order does not create a second series: `[a, b]` and `[b, a]` are one meter — `modules/rakun-metrics/test/registry_test.bp` "registry: tag order does not create a second series"
+- [x] A counter incremented from 1000 processes concurrently ends at exactly 1000 — `modules/rakun-metrics/test/registry_test.bp` "registry: a counter incremented from 1000 processes ends at exactly 1000"
+- [x] A gauge's closure is not called during registration, and is called once per scrape — `modules/rakun-metrics/test/registry_test.bp` "registry: a gauge is not read at registration, and is read once per scrape"
+- [x] `timed` returns the value the closure returned, and records a sample even when the closure raises — the sample is tagged `outcome=error` — `modules/rakun-metrics/test/registry_test.bp` "registry: timed answers the closure's value and records a raise under outcome=error"
+- [x] A meter name containing a character the exposition format cannot carry is rejected at registration, naming the character — `modules/rakun-metrics/test/registry_test.bp` "registry: a name the exposition format cannot carry is refused, naming the character"
 
 ### Step 2 — the telemetry bus and the automatic meters
 
 `rakun_telemetry` plus the subscriptions that turn each event into a meter.
 
 **Acceptance:**
-- [ ] `execute/3` with no attached handler costs one ETS lookup and does not allocate a message
-- [ ] A handler that raises is detached, logged once with the event name, and does not affect the emitting process
-- [ ] With the real `telemetry` module loadable, `attach/4` delegates and a handler attached through either path receives the event exactly once
-- [ ] `http.server.requests` is recorded with the matched route pattern, not the concrete path — `/api/users/:name`, never `/api/users/ana`, or cardinality is unbounded
-- [ ] A subsystem whose front has not landed produces no series at all
-- [ ] Every event name is `[rakun, <subsystem>, <operation>, start|stop|exception]`, asserted against the list above
+- [x] `execute/3` with no attached handler costs one ETS lookup and does not allocate a message — `modules/rakun-metrics/test/bus_test.bp` "bus: an event nobody attached to sends no message and wakes no process" (the bus owner's reductions and the caller's mailbox are unchanged over 1000 executes)
+- [x] A handler that raises is detached, logged once with the event name, and does not affect the emitting process — `modules/rakun-metrics/test/bus_test.bp` "bus: a handler that raises is detached, logged once, and the emitter never sees it"
+- [x] With the real `telemetry` module loadable, `attach/4` delegates and a handler attached through either path receives the event exactly once — `modules/rakun-metrics/test/bus_test.bp` "bus: with telemetry loadable, a handler attached through either path receives the event once" (a `telemetry` module compiled into the node for the test)
+- [x] `http.server.requests` is recorded with the matched route pattern, not the concrete path — `/api/users/:name`, never `/api/users/ana`, or cardinality is unbounded — `modules/rakun-metrics/test/bus_test.bp` "bus: http.server.requests carries the registered route pattern, never the concrete path" — the core router executes the event with the registered pattern
+- [x] A subsystem whose front has not landed produces no series at all — `modules/rakun-metrics/test/bus_test.bp` "bus: a subsystem that emits nothing has no series"
+- [x] Every event name is `[rakun, <subsystem>, <operation>, start|stop|exception]`, asserted against the list above — `modules/rakun-metrics/test/bus_test.bp` "bus: every automatic event is rakun.<subsystem>.<operation>.<phase>"; the table is `automaticMeters()` (front 08's `sql` and front 16's `scheduled` rows wait on those fronts emitting)
 
 ### Step 3 — BEAM VM metrics
 
 **Acceptance:**
-- [ ] Every meter in the VM table above is present after boot, with a plausible value
-- [ ] `beam.memory.*` areas sum to `beam.memory.total` within the rounding OTP itself reports
-- [ ] `beam.schedulers.utilization` is absent unless `rakun.metrics.beam.scheduler-utilization=true`, and enabling it turns on `scheduler_wall_time` exactly once
-- [ ] `beam.messages.queue_max` is computed by sampling, and sampling 100k processes does not block the scrape for more than the configured budget
-- [ ] No JVM-named meter exists: a test asserts that no registered name begins with `jvm.`
+- [x] Every meter in the VM table above is present after boot, with a plausible value — `modules/rakun-metrics/test/vm_test.bp` "vm: every VM meter is present after boot with a plausible value"
+- [x] `beam.memory.*` areas sum to `beam.memory.total` within the rounding OTP itself reports — `modules/rakun-metrics/test/vm_test.bp` "vm: the memory areas sum to the total OTP reports" (`processes + system = total`, the named system areas within `system`)
+- [x] `beam.schedulers.utilization` is absent unless `rakun.metrics.beam.scheduler-utilization=true`, and enabling it turns on `scheduler_wall_time` exactly once — `modules/rakun-metrics/test/vm_test.bp` "vm: utilization is absent unless asked for, and asking turns scheduler_wall_time on once"
+- [x] `beam.messages.queue_max` is computed by sampling, and sampling 100k processes does not block the scrape for more than the configured budget — `modules/rakun-metrics/test/vm_test.bp` "vm: sampling 100 000 processes stays within the budget"
+- [x] No JVM-named meter exists: a test asserts that no registered name begins with `jvm.` — `modules/rakun-metrics/test/vm_test.bp` "vm: no JVM-named meter exists"
 
 ### Step 4 — the Prometheus exporter
 
 **Acceptance:**
-- [ ] The rendered text parses as valid exposition format, asserted with a literal expected block for a fixed registry
-- [ ] A counter renders as `_total` with type `counter`; a gauge as `gauge`; a timer as `_seconds_count`, `_seconds_sum` and `_seconds_bucket` with type `histogram`
-- [ ] Histogram buckets are cumulative and the last bucket is `+Inf` with the total count
-- [ ] Tag values containing `"`, `\` or a newline are escaped per the format
-- [ ] Scraping twice in a row produces identical output for counters and identical-or-advanced output for gauges
-- [ ] The endpoint is registered with front 11 and is default-denied by front 76 until exposed
+- [x] The rendered text parses as valid exposition format, asserted with a literal expected block for a fixed registry — `modules/rakun-metrics/test/endpoints_test.bp` "prometheus: a fixed registry renders the exact exposition block"
+- [x] A counter renders as `_total` with type `counter`; a gauge as `gauge`; a timer as `_seconds_count`, `_seconds_sum` and `_seconds_bucket` with type `histogram` — same test
+- [x] Histogram buckets are cumulative and the last bucket is `+Inf` with the total count — same test; `modules/rakun-metrics/test/registry_test.bp` "registry: SLO buckets sort ascending whatever the property's order, plus +Inf"
+- [x] Tag values containing `"`, `\` or a newline are escaped per the format — `modules/rakun-metrics/test/endpoints_test.bp` "prometheus: a label value's quote, backslash and newline are escaped"
+- [x] Scraping twice in a row produces identical output for counters and identical-or-advanced output for gauges — `modules/rakun-metrics/test/endpoints_test.bp` "prometheus: two scrapes in a row agree on counters and never go back on a gauge"
+- [x] The endpoint is registered with front 11 and is default-denied by front 76 until exposed — `modules/rakun-metrics/test/endpoints_test.bp` "endpoints: prometheus, processes and vm are default-denied until exposed"
 
 ### Step 5 — OTLP and StatsD
 
 **Acceptance:**
-- [ ] OTLP export uses front 13's client and front 74's bundle when the endpoint is `https`
-- [ ] A collector that is unreachable causes one logged failure per interval, not per meter, and does not accumulate unbounded memory
-- [ ] `step` controls the interval, and setting it to zero disables the push without disabling the registry
-- [ ] StatsD datagrams are fire-and-forget: a closed UDP socket does not raise into the caller
-- [ ] Metrics and spans share one OTLP connection
+- [x] OTLP export uses front 13's client and front 74's bundle when the endpoint is `https` — `modules/rakun-metrics/test/export_test.bp` "otlp: a push sends the metrics and the sampled spans through front 13's client"; `modules/rakun-metrics/test/export_test.bp` "otlp: an https endpoint uses the configured SSL bundle, an http one none" (OTLP is HTTP/JSON — 03r-s)
+- [x] A collector that is unreachable causes one logged failure per interval, not per meter, and does not accumulate unbounded memory — `modules/rakun-metrics/test/export_test.bp` "otlp: an unreachable collector is one failure per push, and the span buffer stays bounded"
+- [x] `step` controls the interval, and setting it to zero disables the push without disabling the registry — `modules/rakun-metrics/test/export_test.bp` "otlp: step drives the push, and step 0 disables it without disabling the registry"
+- [x] StatsD datagrams are fire-and-forget: a closed UDP socket does not raise into the caller — `modules/rakun-metrics/test/export_test.bp` "statsd: a push is one datagram of lines, and a dead target never raises"
+- [ ] Metrics and spans share one OTLP connection — open: front 13's client opens one connection per request and closes it (`transport.bp`), so a push is two requests on two connections; sharing one needs a keep-alive pool in front 13
 
 ### Step 6 — common tags, filters, distribution
 
 **Acceptance:**
-- [ ] `rakun.metrics.tags.region=us-east-1` appears on every series, including the BEAM ones
-- [ ] `rakun.metrics.enable.http.client=false` removes those series entirely — they are not registered, not registered-and-hidden
-- [ ] A renamed tag key appears renamed in every exporter
-- [ ] `slo=100ms,200ms,500ms,1s` produces four buckets plus `+Inf`, in ascending order, whatever order the property listed them in
-- [ ] An SLO value the duration parser does not understand fails at boot naming the property and the value
-- [ ] A common tag whose key collides with a meter's own tag is a boot failure, not a silent overwrite
+- [x] `rakun.metrics.tags.region=us-east-1` appears on every series, including the BEAM ones — `modules/rakun-metrics/test/registry_test.bp` "registry: common tags reach every series; one colliding with a meter's own tag is refused" (a meter's series and `beam.processes.count`)
+- [x] `rakun.metrics.enable.http.client=false` removes those series entirely — they are not registered, not registered-and-hidden — `modules/rakun-metrics/test/registry_test.bp` "registry: a denied prefix is never registered and its writes are no-ops"
+- [x] A renamed tag key appears renamed in every exporter — `modules/rakun-metrics/test/registry_test.bp` "registry: a renamed tag key appears renamed" — the rename applies at registration, so every exporter reads the renamed tag list
+- [x] `slo=100ms,200ms,500ms,1s` produces four buckets plus `+Inf`, in ascending order, whatever order the property listed them in — `modules/rakun-metrics/test/registry_test.bp` "registry: SLO buckets sort ascending whatever the property's order, plus +Inf"
+- [x] An SLO value the duration parser does not understand fails at boot naming the property and the value — `modules/rakun-metrics/test/registry_test.bp` "registry: an SLO the duration parser does not understand fails naming the property and the value" (`installMetrics` runs the check at boot)
+- [x] A common tag whose key collides with a meter's own tag is a boot failure, not a silent overwrite — `modules/rakun-metrics/test/registry_test.bp` "registry: common tags reach every series; one colliding with a meter's own tag is refused"
 
 ### Step 7 — process and VM diagnostics
 
 **Acceptance:**
-- [ ] `/actuator/processes?sort=reductions&limit=20` returns twenty rows, each with pid, registered name, initial call, current function, reductions, memory and message-queue length
-- [ ] `sort=memory` and `sort=message_queue_len` order by those, and an unknown sort is a 400 naming the accepted values
-- [ ] The endpoint does not call `erlang:process_info/1` (the whole-info form) on every process — it asks for the specific keys, because the whole form on a large heap is expensive
-- [ ] `/actuator/vm` reports the same totals `erlang:memory/0` does
-- [ ] Both endpoints are default-denied and require front 76's explicit exposure
+- [x] `/actuator/processes?sort=reductions&limit=20` returns twenty rows, each with pid, registered name, initial call, current function, reductions, memory and message-queue length — `modules/rakun-metrics/test/endpoints_test.bp` "endpoints: processes answers the top rows sorted by the asked key, with every field"
+- [x] `sort=memory` and `sort=message_queue_len` order by those, and an unknown sort is a 400 naming the accepted values — same test
+- [x] The endpoint does not call `erlang:process_info/1` (the whole-info form) on every process — it asks for the specific keys, because the whole form on a large heap is expensive — `modules/rakun-metrics/test/endpoints_test.bp` "endpoints: the sidecar never asks a process for its whole info"
+- [x] `/actuator/vm` reports the same totals `erlang:memory/0` does — `modules/rakun-metrics/test/endpoints_test.bp` "endpoints: vm reports the areas erlang:memory/0 does"
+- [x] Both endpoints are default-denied and require front 76's explicit exposure — `modules/rakun-metrics/test/endpoints_test.bp` "endpoints: prometheus, processes and vm are default-denied until exposed"
 
 ### Step 8 — tracing
 
 **Acceptance:**
-- [ ] A request with a valid `traceparent` continues the trace: same trace id, new span id, parent set to the incoming span id
-- [ ] A request with a malformed `traceparent` starts a new trace and does not fail the request
-- [ ] The sampled flag is honoured: an incoming `00` flag produces no exported span even when the local probability would have sampled it
-- [ ] `probability=0` exports nothing and still propagates the header
-- [ ] `probability=1` exports exactly one server span per request and one client span per outbound call
-- [ ] `traceId()` inside a handler equals the id in the outgoing `traceparent` of a client call made from that handler
-- [ ] Front 17's log line carries the same trace id, asserted from this front's test against front 17's formatter
+- [x] A request with a valid `traceparent` continues the trace: same trace id, new span id, parent set to the incoming span id — `modules/rakun-metrics/test/tracing_test.bp` "tracing: a valid traceparent continues the trace with a new span parented on the inbound one"
+- [x] A request with a malformed `traceparent` starts a new trace and does not fail the request — `modules/rakun-metrics/test/tracing_test.bp` "tracing: a malformed traceparent starts a new trace and the request still answers"
+- [x] The sampled flag is honoured: an incoming `00` flag produces no exported span even when the local probability would have sampled it — `modules/rakun-metrics/test/tracing_test.bp` "tracing: an inbound 00 flag exports nothing even at probability 1"
+- [x] `probability=0` exports nothing and still propagates the header — `modules/rakun-metrics/test/tracing_test.bp` "tracing: probability 0 exports nothing and still propagates the header"
+- [x] `probability=1` exports exactly one server span per request and one client span per outbound call — `modules/rakun-metrics/test/tracing_test.bp` "tracing: probability 1 exports one server span per request and one client span per call, on one trace"
+- [x] `traceId()` inside a handler equals the id in the outgoing `traceparent` of a client call made from that handler — same test
+- [ ] Front 17's log line carries the same trace id, asserted from this front's test against front 17's formatter — open: front 17's correlation id takes the trace id from an inbound `traceparent`, but for a trace minted at the edge it mints its own id instead of reading `traceId()`; wiring that is front 17's
 
 ## Examples
 

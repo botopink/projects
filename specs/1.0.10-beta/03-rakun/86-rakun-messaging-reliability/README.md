@@ -33,8 +33,7 @@ policy. This front is that policy, expressed as values a test can check without 
 
 ## Current state
 
-- `repository/rakun/modules/rakun-messaging/src/root.bp` — a four-line docblock and the comment
-  *"Module contents will be added by the respective fronts."* No code, no `pub mod` line.
+- `repository/rakun/modules/rakun-messaging/` — front 15's registry, containers and in-process broker; `src/reliability/` (`policy`, `dispatch`, `transaction`) is this front's.
 - `repository/rakun/modules/rakun-messaging/botopink.json` — `"targets": ["commonJS", "erlang"]` (the
   scaffold's; the module's lowest-numbered front corrects it to `["erlang"]`, decision 113),
   depends on `rakun` by relative path. That is the whole module.
@@ -153,10 +152,10 @@ pub fn nextDelay(policy: RetryPolicy, attempt: i32) -> i32 {
 ```
 
 **Acceptance:**
-- [ ] `nextDelay(p, 1)` is `initialMs` for every policy, including one whose `initialMs` exceeds `maxMs` — in which case it is `maxMs`.
-- [ ] With `multiplierPercent: 200`, delays 1…5 are `2000, 4000, 8000, 16000, 30000` for `initialMs: 2000, maxMs: 30000`.
-- [ ] `multiplierPercent: 100` produces a constant delay, and `multiplierPercent: 0` is rejected at construction rather than producing a zero-delay hot loop.
-- [ ] The function is pure: no clock read, no host cell, callable from a test with no broker and no node.
+- [x] `nextDelay(p, 1)` is `initialMs` for every policy, including one whose `initialMs` exceeds `maxMs` — in which case it is `maxMs`. — `reliability/backoff_test` "attempt 1 is initialMs, or maxMs when initialMs exceeds it"
+- [x] With `multiplierPercent: 200`, delays 1…5 are `2000, 4000, 8000, 16000, 30000` for `initialMs: 2000, maxMs: 30000`. — `reliability/backoff_test` "doubling from 2000 under a 30000 ceiling is 2000, 4000, 8000, 16000, 30000"
+- [x] `multiplierPercent: 100` produces a constant delay, and `multiplierPercent: 0` is rejected at construction rather than producing a zero-delay hot loop. — `reliability/backoff_test` "100 percent is constant, and 0 is refused at construction"
+- [x] The function is pure: no clock read, no host cell, callable from a test with no broker and no node. — `reliability/backoff_test` "nextDelay is a pure function of its two arguments" (`policy.bp` declares no host cell)
 
 ### Step 2 — Outcomes, and the decision function
 
@@ -186,10 +185,10 @@ fn retryOrDeadLetter(policy: RetryPolicy, attempt: i32) -> string {
 ```
 
 **Acceptance:**
-- [ ] `Reject` returns `"dead-letter"` at attempt 1, whatever `maxAttempts` says — a rejection consumes no attempts.
-- [ ] `Retry` at `attempt == maxAttempts` returns `"dead-letter"`; at `maxAttempts - 1` it returns `"retry"`.
-- [ ] `Done` returns `"ack"` and the attempt is irrelevant.
-- [ ] The three-by-three table of (outcome × attempt position) is a test with nine cells.
+- [x] `Reject` returns `"dead-letter"` at attempt 1, whatever `maxAttempts` says — a rejection consumes no attempts. — `reliability/decision_test` "Reject dead-letters at attempt 1 whatever maxAttempts is"
+- [x] `Retry` at `attempt == maxAttempts` returns `"dead-letter"`; at `maxAttempts - 1` it returns `"retry"`. — `reliability/decision_test` "Retry at maxAttempts - 1 retries, at maxAttempts dead-letters"
+- [x] `Done` returns `"ack"` and the attempt is irrelevant. — `reliability/decision_test` "the nine cells of outcome x attempt position"
+- [x] The three-by-three table of (outcome × attempt position) is a test with nine cells. — `reliability/decision_test` "the nine cells of outcome x attempt position"
 
 ### Step 3 — The attempt carrier
 
@@ -209,10 +208,10 @@ and it is private. The walk is copied rather than imported, and the module READM
 copy of it in the tree is the signal that front 01 should promote one.
 
 **Acceptance:**
-- [ ] A delivery with no `x-rakun-attempt` header is attempt 1.
-- [ ] A redelivery published by this front carries `x-rakun-attempt` one higher than the delivery that failed.
-- [ ] Killing the consumer process between two deliveries does not reset the count — the assertion is made by restarting the listener supervisor mid-test and reading the header on the next delivery.
-- [ ] A non-numeric header value is treated as attempt 1 and logged once, rather than raising inside the dispatcher.
+- [x] A delivery with no `x-rakun-attempt` header is attempt 1. — `reliability/attempt_test` "a delivery without x-rakun-attempt is attempt 1"
+- [x] A redelivery published by this front carries `x-rakun-attempt` one higher than the delivery that failed. — `reliability/attempt_test` "a redelivery carries x-rakun-attempt one higher than the failed delivery" — on the in-process broker, which publishes no per-message headers, the headers ride in a payload prefix the dispatcher strips
+- [x] Killing the consumer process between two deliveries does not reset the count — the assertion is made by restarting the listener supervisor mid-test and reading the header on the next delivery. — `reliability/attempt_test` "the count survives killing the consumers between deliveries" (the container is killed while attempt 2 is in flight and restarted; the redelivery reads attempt 2)
+- [x] A non-numeric header value is treated as attempt 1 and logged once, rather than raising inside the dispatcher. — `reliability/attempt_test` "a non-numeric header counts as attempt 1 and is logged once"
 
 ### Step 4 — The dead-letter destination and its envelope
 
@@ -231,10 +230,10 @@ pub fn deadLetterName(destination: string) -> string {
 ```
 
 **Acceptance:**
-- [ ] The envelope carries the original destination, not the dead-letter destination, in its `destination` field.
-- [ ] The original message is acknowledged only after the dead-letter publish is confirmed; a test that fails the dead-letter publish asserts the original is still unacknowledged.
-- [ ] `rakun.messaging.listener.<name>.dead-letter` overrides the `.dlq` suffix.
-- [ ] A dead-lettered message is not re-consumed by the same listener — the DLQ is not subscribed by the listener that fills it.
+- [x] The envelope carries the original destination, not the dead-letter destination, in its `destination` field. — `reliability/attempt_test` "dlq: exhausted retries publish the envelope to <destination>.dlq with the original destination"; `reliability/decision_test` "the dead letter carries the original destination, not the dlq"
+- [x] The original message is acknowledged only after the dead-letter publish is confirmed; a test that fails the dead-letter publish asserts the original is still unacknowledged. — `reliability/attempt_test` "dlq: a failed dead-letter publish leaves the original unacknowledged, and it is redelivered"
+- [x] `rakun.messaging.listener.<name>.dead-letter` overrides the `.dlq` suffix. — `reliability/attempt_test` "dlq: the dead-letter destination is configurable, and the listener does not consume it"
+- [x] A dead-lettered message is not re-consumed by the same listener — the DLQ is not subscribed by the listener that fills it. — `reliability/attempt_test` "dlq: the dead-letter destination is configurable, and the listener does not consume it"
 
 ### Step 5 — Acknowledgement modes
 
@@ -247,10 +246,10 @@ pub type AckMode {
 ```
 
 **Acceptance:**
-- [ ] `Auto`: a `Done` acknowledges, a `Retry` does not.
-- [ ] `Manual`: nothing is acknowledged by the dispatcher; a listener returning `Done` without acking logs a warning naming the listener.
-- [ ] `Batch(size)`: acknowledgement happens every `size` messages and on listener shutdown, and the test asserts the replay window after a crash is at most `size - 1` messages.
-- [ ] An unknown ack mode in configuration fails at boot with a located message, not at the first message.
+- [ ] `Auto`: a `Done` acknowledges, a `Retry` does not. — open: a `Done` acknowledges (`reliability/ack_test` "ack: auto settles a Done once"), but a `Retry` publishes the redelivery carrying the next attempt and then settles the original — front 15's in-process broker has no reject-without-requeue, and a requeued original would carry the old count
+- [x] `Manual`: nothing is acknowledged by the dispatcher; a listener returning `Done` without acking logs a warning naming the listener. — `reliability/ack_test` "ack: manual settles nothing for the handler, and a Done without an ack warns naming the listener"
+- [ ] `Batch(size)`: acknowledgement happens every `size` messages and on listener shutdown, and the test asserts the replay window after a crash is at most `size - 1` messages. — open: every `size` messages and the `size - 1` replay window hold (`reliability/ack_test` "ack: batch settles every size messages, and a crash replays at most size - 1"); the flush on shutdown does not — front 15's worker loop takes no message but a delivery, so a stopping worker cannot be asked to settle its held batch (it is redelivered)
+- [x] An unknown ack mode in configuration fails at boot with a located message, not at the first message. — `reliability/ack_test` "ack: an unknown ack mode fails at boot naming the key" (`startReliability()`)
 
 ### Step 6 — Concurrency and prefetch
 
@@ -260,10 +259,10 @@ pub type AckMode {
 ```
 
 **Acceptance:**
-- [ ] `concurrency: 4` starts four consumer processes under one supervisor, verified by counting children.
-- [ ] Killing one consumer leaves the other three consuming, and the killed one is replaced.
-- [ ] `prefetch` limits unacknowledged messages per consumer process; a test with `prefetch: 1` and a blocked handler asserts the second message is not delivered.
-- [ ] The module README states that this sizes processes, not threads.
+- [x] `concurrency: 4` starts four consumer processes under one supervisor, verified by counting children. — `reliability/ack_test` "concurrency: four consumers, one killed and replaced while the others consume" (front 15's container)
+- [x] Killing one consumer leaves the other three consuming, and the killed one is replaced. — `reliability/ack_test` "concurrency: four consumers, one killed and replaced while the others consume"
+- [x] `prefetch` limits unacknowledged messages per consumer process; a test with `prefetch: 1` and a blocked handler asserts the second message is not delivered. — `reliability/ack_test` "prefetch: with prefetch 1 and a blocked handler the second message is not delivered"
+- [x] The module README states that this sizes processes, not threads. — `repository/rakun/AGENTS.md` § Messaging reliability (rakun-messaging has no README of its own, and front 15's `registry_test` keeps the word out of the module's source)
 
 ### Step 7 — Producer transactions, and the handoff
 
@@ -272,17 +271,17 @@ pub fn withProducerTransaction(prefix: string, body: fn() -> i32) -> i32
 ```
 
 **Acceptance:**
-- [ ] On Kafka, a body that raises leaves no message visible to a `read_committed` consumer.
-- [ ] On Kafka, a body that returns commits all its sends atomically.
-- [ ] On AMQP, the call raises with a message naming front 83's outbox, and the module README repeats the reason.
-- [ ] The transaction id prefix reaches the producer configuration, matching `spring.kafka.producer.transaction-id-prefix`.
+- [x] On Kafka, a body that raises leaves no message visible to a `read_committed` consumer. — `reliability/transaction_test` "a body that raises leaves nothing for a read_committed reader" — front 15's in-process Kafka arm (no Kafka wire this milestone)
+- [x] On Kafka, a body that returns commits all its sends atomically. — `reliability/transaction_test` "a body that returns commits all its sends at once" — the in-process arm
+- [x] On AMQP, the call raises with a message naming front 83's outbox, and the module README repeats the reason. — `reliability/transaction_test` "an AMQP send in a producer transaction refuses, naming front 83's outbox"; the reason is in AGENTS.md § Messaging reliability
+- [x] The transaction id prefix reaches the producer configuration, matching `spring.kafka.producer.transaction-id-prefix`. — `reliability/transaction_test` "a body that returns commits all its sends at once" (`lastTransactionalId()` is `<prefix><n>`) — the in-process arm's producer
 
 ### Step 8 — What the operator sees
 
 **Acceptance:**
-- [ ] Counters registered with front 75: deliveries, retries, dead-letters and handler duration, each tagged by listener name.
-- [ ] A `messaging` health indicator registered with front 11 reporting broker connectivity per configured listener.
-- [ ] Every dead-letter emits one log record at warn with the listener name, the reason and the attempt count — and exactly one, not one per retry.
+- [x] Counters registered with front 75: deliveries, retries, dead-letters and handler duration, each tagged by listener name. — `reliability/ack_test` "observe: deliveries, retries, dead-letters and handler duration are counted per listener" (`rakun.messaging.dead_letters`: front 75 refuses `-` in a meter name)
+- [x] A `messaging` health indicator registered with front 11 reporting broker connectivity per configured listener. — `reliability/ack_test` "observe: the messaging health indicator reports each listener's broker connection"
+- [x] Every dead-letter emits one log record at warn with the listener name, the reason and the attempt count — and exactly one, not one per retry. — `reliability/ack_test` "observe: deliveries, retries, dead-letters …" (one warn line); `reliability/attempt_test` "dlq: exhausted retries …"
 
 ## Examples
 

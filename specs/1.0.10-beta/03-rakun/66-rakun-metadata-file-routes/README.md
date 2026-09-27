@@ -64,7 +64,9 @@ needs the route tree — which front 22 has and front 32 does not.
 - `libs/std/src/path.bp` — the posix calculator. `io.fs`'s `walk` and `glob` walk the tree, and this
   front is one of their two consumers (front 60 is the other); `escape.attribute` is what keeps a
   `<`-bearing title out of an XML attribute.
-- `repository/rakun/src/metadata_routes.bp` does not exist.
+- `repository/rakun/modules/rakun-app/src/metadata_routes.bp` + `src/sidecars/rakun_metadata_routes.erl`
+  implement the six steps; 22 tests in `modules/rakun-app/test/metadata_routes_test.bp`. The two boxes
+  left open are front 32's (jhonstart) side of the hand-over.
 
 ## Mechanism
 
@@ -178,18 +180,18 @@ closed and small and a string compared against a fixed list in one validation fu
 than four enum types. An out-of-vocabulary value fails at registration.
 
 **Acceptance:**
-- [ ] `renderSitemap` of two entries answers the exact XML document, asserted as a literal including
-      the declaration and the `urlset` namespace — a crawler parses bytes, so the test does too.
-- [ ] An entry whose `loc` contains `&` renders `&amp;` and the document stays well-formed.
-- [ ] An entry whose `lastModified` is `""` omits the element rather than emitting an empty one.
-- [ ] `changeFrequency: "sometimes"` fails at registration, naming the value and the accepted set.
-- [ ] `priority: "1.5"` fails at registration.
-- [ ] `shardEntries` of 50 001 entries answers two shards; of 50 000 answers one.
-- [ ] With more than one shard, `/sitemap.xml` renders the index and `/sitemap/0.xml` renders the first
-      shard; with one shard, `/sitemap.xml` renders the shard itself and no index exists.
-- [ ] The bound is not readable from a property: a test asserts there is no configuration key that
-      raises it.
-- [ ] The response carries `Content-Type: application/xml`.
+- [x] `renderSitemap` of two entries answers the exact XML document, asserted as a literal including
+      the declaration and the `urlset` namespace — a crawler parses bytes, so the test does too. — `modules/rakun-app/test/metadata_routes_test.bp` "metadata: the sitemap renders the exact document, & escaped, empty lastmod omitted"
+- [x] An entry whose `loc` contains `&` renders `&amp;` and the document stays well-formed. — same test
+- [x] An entry whose `lastModified` is `""` omits the element rather than emitting an empty one. — same test
+- [x] `changeFrequency: "sometimes"` fails at registration, naming the value and the accepted set. — `modules/rakun-app/test/metadata_routes_test.bp` "metadata: an unknown changeFrequency and a priority above 1 fail at registration"
+- [x] `priority: "1.5"` fails at registration. — same test
+- [x] `shardEntries` of 50 001 entries answers two shards; of 50 000 answers one. — `modules/rakun-app/test/metadata_routes_test.bp` "metadata: 50 001 entries shard in two, 50 000 in one, and the bound has no key"
+- [x] With more than one shard, `/sitemap.xml` renders the index and `/sitemap/0.xml` renders the first
+      shard; with one shard, `/sitemap.xml` renders the shard itself and no index exists. — `modules/rakun-app/test/metadata_routes_test.bp` "metadata: above the bound /sitemap.xml is the index and /sitemap/0.xml the first shard", "metadata: with one shard /sitemap.xml is the shard itself and no index exists"
+- [x] The bound is not readable from a property: a test asserts there is no configuration key that
+      raises it. — same test
+- [x] The response carries `Content-Type: application/xml`. — `modules/rakun-app/test/metadata_routes_test.bp` "metadata: above the bound /sitemap.xml is the index and /sitemap/0.xml the first shard"
 
 ### Step 2 — `robots.bp`
 
@@ -211,15 +213,15 @@ pub fn renderRobots(r: Robots) -> string
 ```
 
 **Acceptance:**
-- [ ] `renderRobots` answers the exact text, asserted as a literal with `\n` line endings.
-- [ ] A rule with an empty `allow` and one `disallow` emits only the `Disallow:` line.
-- [ ] `sitemap: ""` omits the `Sitemap:` line.
-- [ ] A user agent or path containing a newline fails at registration — an injected line is an injected
-      rule.
-- [ ] The response carries `Content-Type: text/plain`.
-- [ ] With no `registerRobots`, `/robots.txt` answers 404 rather than an empty file: an empty
+- [x] `renderRobots` answers the exact text, asserted as a literal with `\n` line endings. — `modules/rakun-app/test/metadata_routes_test.bp` "metadata: robots.txt renders the exact text"
+- [x] A rule with an empty `allow` and one `disallow` emits only the `Disallow:` line. — same test
+- [x] `sitemap: ""` omits the `Sitemap:` line. — same test
+- [x] A user agent or path containing a newline fails at registration — an injected line is an injected
+      rule. — `modules/rakun-app/test/metadata_routes_test.bp` "metadata: a line break in a robots value fails at registration"
+- [x] The response carries `Content-Type: text/plain`. — `modules/rakun-app/test/metadata_routes_test.bp` "metadata: robots.txt is text/plain, and 404 when nothing registered it"
+- [x] With no `registerRobots`, `/robots.txt` answers 404 rather than an empty file: an empty
       `robots.txt` means "crawl everything" and inventing that answer is a policy decision this front
-      does not get to make.
+      does not get to make. — same test
 
 ### Step 3 — `manifest.bp`
 
@@ -245,16 +247,16 @@ pub fn renderManifest(m: WebManifest) -> string
 ```
 
 **Acceptance:**
-- [ ] `renderManifest` answers the exact JSON, asserted as a literal — built by string composition,
+- [x] `renderManifest` answers the exact JSON, asserted as a literal — built by string composition,
       because `std/json` has no structured value ([`language-gaps.md`](../../language-gaps.md), *Unowned
-      surface*).
-- [ ] A name containing `"` is escaped and the document stays parseable.
-- [ ] `display: "fullscreen-ish"` fails at registration, naming the accepted set.
-- [ ] An empty `icons` array renders `"icons": []` rather than omitting the key.
-- [ ] The route is `/manifest.webmanifest` and carries
-      `Content-Type: application/manifest+json`.
+      surface*). — `modules/rakun-app/test/metadata_routes_test.bp` "metadata: the manifest is the exact JSON, a quote escaped, empty icons kept"
+- [x] A name containing `"` is escaped and the document stays parseable. — same test
+- [x] `display: "fullscreen-ish"` fails at registration, naming the accepted set. — `modules/rakun-app/test/metadata_routes_test.bp` "metadata: an unknown display fails at registration; the route is /manifest.webmanifest"
+- [x] An empty `icons` array renders `"icons": []` rather than omitting the key. — same test
+- [x] The route is `/manifest.webmanifest` and carries
+      `Content-Type: application/manifest+json`. — same test
 - [ ] Front 32 emits `<link rel="manifest" href="/manifest.webmanifest">` when a manifest is
-      registered and nothing when one is not.
+      registered and nothing when one is not. — open: front 32 is jhonstart's; this front answers the records (`manifestHref`, `imagesFor`, `iconsFor`) it consumes
 
 ### Step 4 — The icon family
 
@@ -272,16 +274,16 @@ pub fn iconsFor(pattern: string) -> Array<IconRef>
 ```
 
 **Acceptance:**
-- [ ] `favicon.ico` in `app/` is served at `/favicon.ico` with `image/x-icon`.
-- [ ] `icon.png` in `app/` is served at `/icon.png` with a content hash in the query and a one-year
-      cache header.
-- [ ] `apple-icon.png` produces an `IconRef(kind: IconKind.AppleIcon, href: "/apple-icon.png?<hash>",
+- [x] `favicon.ico` in `app/` is served at `/favicon.ico` with `image/x-icon`. — `modules/rakun-app/test/metadata_routes_test.bp` "metadata: favicon, icon and apple-icon are served and resolved as data"
+- [x] `icon.png` in `app/` is served at `/icon.png` with a content hash in the query and a one-year
+      cache header. — same test
+- [x] `apple-icon.png` produces an `IconRef(kind: IconKind.AppleIcon, href: "/apple-icon.png?<hash>",
       contentType: "image/png", sizes: "180x180")` — the data jhonstart front 32 writes as
-      `<link rel="apple-touch-icon" sizes="180x180">`.
-- [ ] `iconsFor` answers the resolved set at a pattern as records; `grep -n "<link\|<meta\|escape\."
-      src/metadata_routes.bp` finds nothing but the sitemap's XML escaping — no HTML is built here.
-- [ ] A registered file that does not exist under `appDir` fails the scan, naming the file.
-- [ ] A registration whose `file` escapes `appDir` fails, checked with `path.isInside` (front 01).
+      `<link rel="apple-touch-icon" sizes="180x180">`. — same test
+- [x] `iconsFor` answers the resolved set at a pattern as records; `grep -n "<link\|<meta\|escape\."
+      src/metadata_routes.bp` finds nothing but the sitemap's XML escaping — no HTML is built here. — same test
+- [x] A registered file that does not exist under `appDir` fails the scan, naming the file. — `modules/rakun-app/test/metadata_routes_test.bp` "metadata: a missing file and a file outside the app directory fail"
+- [x] A registration whose `file` escapes `appDir` fails, checked with `path.isInside` (front 01). — same test
 
 ### Step 5 — `opengraph-image` and `twitter-image`
 
@@ -314,24 +316,24 @@ pub fn imagesFor(pathname: string, pattern: string) -> Array<ImageMeta>
 declared parameter default is never applied ([`language-gaps.md`](../../language-gaps.md)).
 
 **Acceptance:**
-- [ ] An `opengraph-image` registered at `blog/[slug]` overrides one registered at the root, for
-      `/blog/hello` and not for `/about`.
-- [ ] With no registration at any ancestor, `resolveImage` answers `null` and `imagesFor` answers no
-      `OpenGraph` entry — an absent card is better than one pointing at a 404.
-- [ ] `imageUrlFor(OpenGraph, "/blog/hello")` answers `/blog/hello/opengraph-image?<hash>`, and the
-      hash changes when the underlying file or rendered body changes by one byte.
-- [ ] `imagesFor("/blog/hello", "blog/[slug]")` answers `ImageMeta(kind: OpenGraph, url:
+- [x] An `opengraph-image` registered at `blog/[slug]` overrides one registered at the root, for
+      `/blog/hello` and not for `/about`. — `modules/rakun-app/test/metadata_routes_test.bp` "metadata: an image at blog/[slug] overrides the root's for /blog/hello and not for /about"
+- [x] With no registration at any ancestor, `resolveImage` answers `null` and `imagesFor` answers no
+      `OpenGraph` entry — an absent card is better than one pointing at a 404. — `modules/rakun-app/test/metadata_routes_test.bp` "metadata: with no registration there is no card"
+- [x] `imageUrlFor(OpenGraph, "/blog/hello")` answers `/blog/hello/opengraph-image?<hash>`, and the
+      hash changes when the underlying file or rendered body changes by one byte. — `modules/rakun-app/test/metadata_routes_test.bp` "metadata: the image URL carries a hash that moves with one byte of the file or the body"
+- [x] `imagesFor("/blog/hello", "blog/[slug]")` answers `ImageMeta(kind: OpenGraph, url:
       "/blog/hello/opengraph-image?<hash>", width: 1200, height: 630, contentType: "image/png")` — every
       field front 32 needs for `og:image`, `og:image:width`, `og:image:height` and `og:image:type`, and
-      for `twitter:image` / `twitter:card` from a `Twitter` entry; the tag names are front 32's.
-- [ ] A dynamic image route with no renderer set (front 70 absent) answers 501 with a body naming
-      front 70; its `ImageMeta` is still answered, so the failure is one route and not a missing head.
-- [ ] A dynamic image route with a renderer set answers the bytes the renderer wrote, with the
+      for `twitter:image` / `twitter:card` from a `Twitter` entry; the tag names are front 32's. — `modules/rakun-app/test/metadata_routes_test.bp` "metadata: imagesFor answers every field front 32 needs"
+- [x] A dynamic image route with no renderer set (front 70 absent) answers 501 with a body naming
+      front 70; its `ImageMeta` is still answered, so the failure is one route and not a missing head. — `modules/rakun-app/test/metadata_routes_test.bp` "metadata: a dynamic image with no renderer answers 501 naming front 70, and its meta still exists"
+- [x] A dynamic image route with a renderer set answers the bytes the renderer wrote, with the
       registered content type; `setImageRenderer` for a route that was never registered fails,
-      naming the segment.
-- [ ] A static image file is served with its own bytes and a one-year cache header.
+      naming the segment. — `modules/rakun-app/test/metadata_routes_test.bp` "metadata: a dynamic image with a renderer answers its bytes; setting one for an unregistered route fails"
+- [x] A static image file is served with its own bytes and a one-year cache header. — same test
 - [ ] Front 32 consumes `imagesFor` and `iconsFor` (handed over by onze) and writes the tags; the
-      resolution rule is cited from here and implemented once.
+      resolution rule is cited from here and implemented once. — open: front 32 is jhonstart's; this front answers the records (`manifestHref`, `imagesFor`, `iconsFor`) it consumes
 
 ### Step 6 — Route registration and the scan
 
@@ -341,17 +343,17 @@ pub fn scanMetadataFiles(appDir: string) -> string[]
 ```
 
 **Acceptance:**
-- [ ] Every registration adds exactly one `R` entry with verb `GET` to front 22's table, and
+- [x] Every registration adds exactly one `R` entry with verb `GET` to front 22's table, and
       [`contracts.md` § 1](../../contracts.md)'s four-field format is unchanged — asserted by round-tripping
-      the table through `parseTable`/`writeTable` with these entries in it.
-- [ ] A metadata route and an application `route.bp` claiming the same URL fail the scan, naming both —
+      the table through `parseTable`/`writeTable` with these entries in it. — `modules/rakun-app/test/metadata_routes_test.bp` "metadata: every registration is one GET R entry and the table round-trips"
+- [x] A metadata route and an application `route.bp` claiming the same URL fail the scan, naming both —
       front 22 already fails a segment holding both `page.bp` and `route.bp`, and this is the same rule
-      reaching the synthetic routes.
-- [ ] `scanMetadataFiles` uses `path.glob` and `path.walk` (front 01) and finds an `icon.png` nested
-      three directories deep.
-- [ ] A metadata file inside a `_private` folder is not registered — front 22 excludes those from
-      routing and a synthetic route must not smuggle one back in.
-- [ ] Registering two sitemaps, two robots or two manifests raises rather than taking the last one.
+      reaching the synthetic routes. — `modules/rakun-app/test/metadata_routes_test.bp` "metadata: a metadata route and an application route.bp at one URL fail, naming both"
+- [x] `scanMetadataFiles` uses `path.glob` and `path.walk` (front 01) and finds an `icon.png` nested
+      three directories deep. — `modules/rakun-app/test/metadata_routes_test.bp` "metadata: the scan finds a nested icon and skips a private folder" (std's `io.fs.glob`; `walk` is not needed — the glob answers the nested hit)
+- [x] A metadata file inside a `_private` folder is not registered — front 22 excludes those from
+      routing and a synthetic route must not smuggle one back in. — same test
+- [x] Registering two sitemaps, two robots or two manifests raises rather than taking the last one. — `modules/rakun-app/test/metadata_routes_test.bp` "metadata: a second sitemap, robots or manifest is refused"
 
 ## Examples
 

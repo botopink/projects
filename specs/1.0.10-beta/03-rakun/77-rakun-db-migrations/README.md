@@ -37,13 +37,12 @@ boot.
 | Piece | Where it is today |
 |---|---|
 | `DataSource`, pool, `SqlTemplate`, `Param`, `transaction<T>` | front 08, `modules/rakun-data/src/sql/**` |
-| Any schema management | none |
-| Any schema history | none |
+| Schema migrations and their history | `modules/rakun-data/src/migration/migrate.bp` + `src/sidecars/rakun_migration.erl`; `migrationBoot()` at boot |
 | Filesystem reads | `libs/std/src/fs.bp` — `readText` (`:33`), `list` (`:61`), `exists` (`:53`) |
 | Content hashing | front 03, `hash.contentHash` (decision 106) |
 | Entity metadata to generate a schema from | front 78 |
-| `flyway`/`liquibase` actuator endpoints | listed upstream; nothing behind them |
-| Cluster coordination | nothing; front 04's supervision tree is per node |
+| The `migrations` actuator endpoint | registered by `migrationBoot()` / `registerMigrationsEndpoint()` |
+| Cluster coordination | OTP `global` lock per datasource |
 
 ## Mechanism
 
@@ -216,71 +215,71 @@ schema" has no good default answer.
 ### Step 1 — discovery and ordering
 
 **Acceptance:**
-- [ ] `V1__init.sql`, `V1.1__add_index.sql`, `V2__seed.sql`, `R__views.sql` are discovered and ordered `1`, `1.1`, `2`, then repeatables
-- [ ] `V10__x.sql` sorts after `V9__x.sql` — the comparison is component-wise integer, not lexicographic
-- [ ] A file named `init.sql` is a boot failure naming the file and the two accepted shapes
-- [ ] Two files declaring version `2` fail at boot naming both paths
-- [ ] `locations` with two directories merges them and still detects a duplicate version across them
-- [ ] An empty or absent migration directory with `enabled` unset disables the front silently; with `enabled=true` it is a boot failure
+- [x] `V1__init.sql`, `V1.1__add_index.sql`, `V2__seed.sql`, `R__views.sql` are discovered and ordered `1`, `1.1`, `2`, then repeatables — `modules/rakun-data/test/migration_test.bp` "migration: V1, V1.1, V2 then the repeatable, and V10 after V9"
+- [x] `V10__x.sql` sorts after `V9__x.sql` — the comparison is component-wise integer, not lexicographic — same test
+- [x] A file named `init.sql` is a boot failure naming the file and the two accepted shapes — `modules/rakun-data/test/migration_test.bp` "migration: a misnamed file and a duplicate version refuse the boot, naming them"
+- [x] Two files declaring version `2` fail at boot naming both paths — same test
+- [x] `locations` with two directories merges them and still detects a duplicate version across them — same test
+- [x] An empty or absent migration directory with `enabled` unset disables the front silently; with `enabled=true` it is a boot failure — `modules/rakun-data/test/migration_test.bp` "migration: an empty location disables migrations unless enabled=true, which refuses"
 
 ### Step 2 — the history table and the lock
 
 **Acceptance:**
-- [ ] The history table is created inside the lock, so N nodes booting together create it once
-- [ ] Two nodes started simultaneously against an empty database apply each migration exactly once — asserted with real concurrent processes, which is cheap on this runtime
-- [ ] A node that cannot take the lock within `lock-timeout` fails to boot naming the timeout
-- [ ] A node holding the lock that dies releases it — for the advisory-lock arm, by session end; for the `global` arm, by the lock owner's exit
-- [ ] A driver with no advisory lock and no cluster logs the unlocked warning exactly once, naming the driver
-- [ ] Replicas that find everything applied proceed without waiting for the full timeout
+- [x] The history table is created inside the lock, so N nodes booting together create it once — `modules/rakun-data/test/migration_test.bp` "migration: two nodes booting together apply each migration once, and the history table once"
+- [x] Two nodes started simultaneously against an empty database apply each migration exactly once — asserted with real concurrent processes, which is cheap on this runtime — same test (two processes contending for the one lock)
+- [x] A node that cannot take the lock within `lock-timeout` fails to boot naming the timeout — `modules/rakun-data/test/migration_test.bp` "migration: a node that cannot take the lock in time refuses to boot naming the timeout"
+- [ ] A node holding the lock that dies releases it — for the advisory-lock arm, by session end; for the `global` arm, by the lock owner's exit — open: the `global` arm is tested ("migration: the lock holder's death releases the lock"); there is no advisory-lock arm — every driver takes the `global` lock, and a standalone node warns that it is node-local
+- [x] A driver with no advisory lock and no cluster logs the unlocked warning exactly once, naming the driver — `modules/rakun-data/test/migration_test.bp` "migration: a standalone node warns once, naming the driver, that the lock is node-local"
+- [x] Replicas that find everything applied proceed without waiting for the full timeout — `modules/rakun-data/test/migration_test.bp` "migration: a replica that finds everything applied proceeds without waiting"
 
 ### Step 3 — applying, transactionally
 
 **Acceptance:**
-- [ ] A migration and its history row commit together: killing the node between them leaves neither
-- [ ] A failing migration records `success=false`, stops the run, and fails the boot
-- [ ] A later migration is not attempted after a failure
-- [ ] `-- rakun:no-transaction` runs the file outside a transaction and still records a row
-- [ ] `execution_time` is recorded in milliseconds and is non-zero for a migration that does real work
-- [ ] `installed_rank` is contiguous and ascending across a run
+- [x] A migration and its history row commit together: killing the node between them leaves neither — `modules/rakun-data/test/migration_test.bp` "migration: killing the node between a migration and its history row leaves neither"
+- [x] A failing migration records `success=false`, stops the run, and fails the boot — `modules/rakun-data/test/migration_test.bp` "migration: a failing migration records success=false, stops the run and raises"
+- [x] A later migration is not attempted after a failure — same test
+- [x] `-- rakun:no-transaction` runs the file outside a transaction and still records a row — `modules/rakun-data/test/migration_test.bp` "migration: no-transaction runs outside a transaction and still records a row"
+- [x] `execution_time` is recorded in milliseconds and is non-zero for a migration that does real work — `modules/rakun-data/test/migration_test.bp` "migration: execution time is recorded in milliseconds and ranks are contiguous"
+- [x] `installed_rank` is contiguous and ascending across a run — same test
 
 ### Step 4 — validation and repeatables
 
 **Acceptance:**
-- [ ] Editing an applied migration fails the next boot naming the script and both checksums
-- [ ] No property downgrades that failure; a test enumerates the keys this front reads and asserts none of them does
-- [ ] A repeatable migration re-runs when its checksum changes and does not when it has not
-- [ ] Repeatables run after all pending versioned migrations, in filename order
-- [ ] `validate-on-migrate=false` skips the check and is documented as a development-only setting
-- [ ] `repair` rewrites the checksum of a named script and records that it did, and is reachable only as an explicit operation
+- [x] Editing an applied migration fails the next boot naming the script and both checksums — `modules/rakun-data/test/migration_test.bp` "migration: editing an applied migration fails the next boot naming the script and both checksums"
+- [x] No property downgrades that failure; a test enumerates the keys this front reads and asserts none of them does — `modules/rakun-data/test/migration_test.bp` "migration: no key downgrades a checksum mismatch"
+- [x] A repeatable migration re-runs when its checksum changes and does not when it has not — `modules/rakun-data/test/migration_test.bp` "migration: a repeatable re-runs when its checksum changes, after the versioned ones"
+- [x] Repeatables run after all pending versioned migrations, in filename order — same test
+- [x] `validate-on-migrate=false` skips the check and is documented as a development-only setting — `modules/rakun-data/test/migration_test.bp` "migration: editing an applied migration fails the next boot naming the script and both checksums"; documented as development-only in `migrate.bp` and `repository/rakun/AGENTS.md`
+- [x] `repair` rewrites the checksum of a named script and records that it did, and is reachable only as an explicit operation — `modules/rakun-data/test/migration_test.bp` "migration: editing an applied migration fails the next boot naming the script and both checksums" (`repairMigration(script)`, a function, never a key)
 
 ### Step 5 — baseline, out-of-order and dry-run
 
 **Acceptance:**
-- [ ] `baseline-on-migrate=true` with `baseline-version=3` against a populated database marks 1–3 applied without running them and runs 4 onward
-- [ ] Baseline against an empty database is a boot failure — baselining nothing is always a mistake
-- [ ] `out-of-order=false` fails when a version lower than the highest applied appears; `true` applies it and records the true order in `installed_rank`
-- [ ] `dry-run=true` changes nothing, prints the plan, and exits non-zero when anything is pending
-- [ ] `dry-run=true` with nothing pending exits zero
-- [ ] A dry run takes and releases the lock, so it cannot report a plan that another node is concurrently invalidating
+- [x] `baseline-on-migrate=true` with `baseline-version=3` against a populated database marks 1–3 applied without running them and runs 4 onward — `modules/rakun-data/test/migration_test.bp` "migration: baseline 3 marks 1-3 applied on a populated database and runs 4"
+- [x] Baseline against an empty database is a boot failure — baselining nothing is always a mistake — `modules/rakun-data/test/migration_test.bp` "migration: baselining an empty database refuses the boot"
+- [x] `out-of-order=false` fails when a version lower than the highest applied appears; `true` applies it and records the true order in `installed_rank` — `modules/rakun-data/test/migration_test.bp` "migration: a lower version after a higher one fails, or is applied in true order with out-of-order"
+- [x] `dry-run=true` changes nothing, prints the plan, and exits non-zero when anything is pending — `modules/rakun-data/test/migration_test.bp` "migration: a dry run changes nothing, exits 1 with work pending and 0 without, under the lock" (`dryRunOn` answers the code `migrationBoot` exits with)
+- [x] `dry-run=true` with nothing pending exits zero — same test
+- [x] A dry run takes and releases the lock, so it cannot report a plan that another node is concurrently invalidating — same test
 
 ### Step 6 — the actuator endpoint
 
 **Acceptance:**
-- [ ] `/actuator/migrations` lists applied, pending and failed, each with version, description, checksum, installed-on and execution time
-- [ ] The endpoint is default-denied and requires front 76's explicit exposure
-- [ ] Checksums are shown in full — they are not secrets and truncating them makes them useless for comparison
-- [ ] The endpoint reads the history table, not an in-memory copy, so it is correct after another node migrated
+- [x] `/actuator/migrations` lists applied, pending and failed, each with version, description, checksum, installed-on and execution time — `modules/rakun-data/test/migration_test.bp` "migration: the report lists applied, pending and failed with full checksums, read from the table"
+- [x] The endpoint is default-denied and requires front 76's explicit exposure — `modules/rakun-data/test/migration_test.bp` "migration: the endpoint is default-denied and answers the history once exposed"
+- [x] Checksums are shown in full — they are not secrets and truncating them makes them useless for comparison — `modules/rakun-data/test/migration_test.bp` "migration: the report lists applied, pending and failed with full checksums, read from the table"
+- [x] The endpoint reads the history table, not an in-memory copy, so it is correct after another node migrated — same test (a row another node wrote appears)
 
 ### Step 7 — `ddl-auto` and the production refusal
 
 **Acceptance:**
-- [ ] `ddl-auto=validate` fails the boot naming the table and column when an entity and the live schema disagree
-- [ ] `ddl-auto=create` with active profile `dev` recreates every entity table
-- [ ] `ddl-auto=create` with active profile `prod` is a **boot failure** naming the profile, the property and the value
-- [ ] `ddl-auto=create-drop` with `production-profiles=staging` and active profile `staging` is refused the same way
-- [ ] No property lifts the refusal; a test enumerates this front's configuration keys and asserts that none of them does
-- [ ] `ddl-auto=create` with migration files present is a boot failure naming both, whatever the profile
-- [ ] `ddl-auto=validate` is permitted under a production profile, and is the value the documentation recommends there
+- [x] `ddl-auto=validate` fails the boot naming the table and column when an entity and the live schema disagree — `modules/rakun-data/test/orm_test.bp` "orm ddl: validate names the table and the column of a missing, extra or retyped column" (`migrationBoot` → `ddlAutoOn` raises it)
+- [x] `ddl-auto=create` with active profile `dev` recreates every entity table — `modules/rakun-data/test/orm_test.bp` "orm ddl: create recreates every entity table under a dev profile"
+- [x] `ddl-auto=create` with active profile `prod` is a **boot failure** naming the profile, the property and the value — `modules/rakun-data/test/migration_test.bp` "migration: ddl-auto create or create-drop under a production profile refuses the boot, naming all three"
+- [x] `ddl-auto=create-drop` with `production-profiles=staging` and active profile `staging` is refused the same way — same test
+- [x] No property lifts the refusal; a test enumerates this front's configuration keys and asserts that none of them does — `modules/rakun-data/test/migration_test.bp` "migration: no key lifts the ddl-auto refusal, create beside migration files refuses, validate is allowed in prod"
+- [x] `ddl-auto=create` with migration files present is a boot failure naming both, whatever the profile — same test
+- [x] `ddl-auto=validate` is permitted under a production profile, and is the value the documentation recommends there — same test
 
 ## Examples
 

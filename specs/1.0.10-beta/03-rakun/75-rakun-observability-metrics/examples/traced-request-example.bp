@@ -23,14 +23,14 @@
 //           endpoint: https://collector.internal:4318
 //           step: 10s
 //
-// `traceId`, `spanId`, `sampled`, `traceparent` and `startSpan` are delivered by
+// `traceId`, `spanId`, `sampled`, `traceparent` and `openSpan` are delivered by
 // this front. The filter that parses the incoming header is registered into front
 // 07's chain; `RestClient` is front 13; the log formatter is front 17.
 
 import {service, restController, route, getMapping} from "rakun";
 import {Request, Response} from "rakun";
 import {rkScan, rkSingleton, rkEnter, rkDone, rkProp, rkPropInt, rkRegisterRoute} from "rakun";
-import {traceId, spanId, parentSpanId, sampled, traceparent, startSpan, endSpan} from "rakun-metrics";
+import {traceId, spanId, parentSpanId, sampled, traceparent, openSpan, closeSpan} from "rakun-metrics";
 import {adoptTraceparent, exportedSpanCount} from "rakun-metrics";
 import {RestClient} from "rakun-client";
 
@@ -56,9 +56,9 @@ pub type QuoteController(
         // request arrived, and the filter in front 07's chain set the ids. A nested
         // span is explicit because there is no way to wrap a method body — see
         // front 12's language gap, which is the same one.
-        val span = startSpan("quote.assemble");
+        val span = openSpan("quote.assemble");
         val body = self.pricing.quote(req.param("sku"));
-        val _ = endSpan(span);
+        val _ = closeSpan(span);
         return Response.json(body);
     }
 
@@ -102,8 +102,8 @@ test "the outgoing header carries the current trace and the current span" {
 test "a nested span is a child of the request span and closes in order" {
     val _ = adoptTraceparent("00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01");
     val outer = spanId();
-    val span = startSpan("quote.assemble");
+    val span = openSpan("quote.assemble");
     assert parentSpanId() == outer;
-    val _e = endSpan(span);
+    val _e = closeSpan(span);
     assert spanId() == outer;
 }

@@ -33,8 +33,7 @@ the boundary is written down in step 7 rather than discovered when both are inst
 
 ## Current state
 
-- `repository/rakun/modules/` holds thirteen module stubs and no `rakun-cli`. The directory this
-  front owns does not exist yet.
+- `repository/rakun/modules/rakun-cli/` — `args`, `plugins`, `cli` and `templates/{plain,library,full-stack}`.
 - `repository/rakun/examples/rakun/` is the only starting point that exists, and it is an example,
   not a template — it has no substitution points and no manifest generation.
 - `repository/rakun/src/bootstrap.bp:28-37` — `Rakun.run(app)` calls `rkServe` and blocks. There is
@@ -118,11 +117,11 @@ pub fn commandOf(args: Array<string>) -> string
 ```
 
 **Acceptance:**
-- [ ] `commandOf([])` is `""` and the CLI prints the table and exits 2.
-- [ ] `flagValue(["run", "--profile", "dev"], "--profile", "default")` is `"dev"`; with the flag absent it is `"default"`; with the flag last and no value it is a usage error, not the fallback.
-- [ ] `--profile=dev` and `--profile dev` both parse to `"dev"`.
-- [ ] `hasFlag` is true only for an exact match, so `--watchdog` does not enable `--watch`.
-- [ ] Every command in the table has a non-empty summary and usage, asserted by a test that walks the table.
+- [x] `commandOf([])` is `""` and the CLI prints the table and exits 2. — `args_test` "args: an empty argv is no command, and the CLI prints the table and exits 2"
+- [x] `flagValue(["run", "--profile", "dev"], "--profile", "default")` is `"dev"`; with the flag absent it is `"default"`; with the flag last and no value it is a usage error, not the fallback. — `args_test` "args: flagValue reads the value, falls back when absent, and refuses a trailing flag"
+- [x] `--profile=dev` and `--profile dev` both parse to `"dev"`. — `args_test` "args: --profile=dev and --profile dev both parse"
+- [x] `hasFlag` is true only for an exact match, so `--watchdog` does not enable `--watch`. — `args_test` "args: hasFlag matches exactly - --watchdog is not --watch"
+- [x] Every command in the table has a non-empty summary and usage, asserted by a test that walks the table. — `args_test` "table: every command has a summary and a usage, names are unique, help renders them all"
 
 ### Step 2 — `rakun new`
 
@@ -131,12 +130,12 @@ rakun new <name> [--template plain|full-stack|library]
 ```
 
 **Acceptance:**
-- [ ] `rakun new orders` creates `orders/botopink.json`, `orders/src/main.bp`, `orders/application.yaml`, a health endpoint and one passing test.
-- [ ] `botopink test --target erlang` in the generated project is green with no edits — the scaffold is verified by running it, not by counting files.
-- [ ] Every `@@name@@` in every template file is substituted; a test greps the generated tree for `@@` and fails on a hit.
-- [ ] `rakun new orders` into an existing non-empty `orders/` refuses and exits 2 rather than merging.
-- [ ] `--template library` generates no `Rakun.run` and no listener configuration.
-- [ ] `--template full-stack` generates a project whose documented dev command is `onze dev`, and refuses with a usage error when onze is not available.
+- [x] `rakun new orders` creates `orders/botopink.json`, `orders/src/main.bp`, `orders/application.yaml`, a health endpoint and one passing test. — `scaffold_test` "new: a plain project has its manifest, main, configuration, health endpoint and one test, and its tests pass"
+- [x] `botopink test --target erlang` in the generated project is green with no edits — the scaffold is verified by running it, not by counting files. — `scaffold_test` "new: a plain project … and its tests pass", "new: --template library …, and its test passes"
+- [x] Every `@@name@@` in every template file is substituted; a test greps the generated tree for `@@` and fails on a hit. — `scaffold_test` "new: a plain project …" and "new: --template full-stack …" (grep for `@@`)
+- [x] `rakun new orders` into an existing non-empty `orders/` refuses and exits 2 rather than merging. — `scaffold_test` "new: an existing non-empty directory is refused with exit 2"
+- [x] `--template library` generates no `Rakun.run` and no listener configuration. — `scaffold_test` "new: --template library has no Rakun.run and no listener configuration, and its test passes"
+- [x] `--template full-stack` generates a project whose documented dev command is `onze dev`, and refuses with a usage error when onze is not available. — `scaffold_test` "new: --template full-stack documents onze dev, and refuses without onze"
 
 ### Step 3 — `rakun run`
 
@@ -145,28 +144,28 @@ rakun run [--profile <name>] [--watch] [--port <n>]
 ```
 
 **Acceptance:**
-- [ ] The active profile reaches front 05 and a `#[value]` binding in the running app reflects it.
-- [ ] `--port` overrides the configured port, and the precedence matches front 05's documented order (CLI above environment above file).
-- [ ] `--watch` without front 80 present is a usage error naming the missing module.
-- [ ] With `--watch`, editing a source file reloads the module and an in-flight connection is not dropped — the same assertion front 80 makes, made again from the CLI's side.
-- [ ] SIGTERM reaches the graceful-shutdown path rather than killing the node.
+- [ ] The active profile reaches front 05 and a `#[value]` binding in the running app reflects it. — open: `rakun run` sets `RAKUN_PROFILES_ACTIVE` and runs `botopink run`, and a built erlang program cannot load its sidecars (toolchain row), so no running app is asserted
+- [ ] `--port` overrides the configured port, and the precedence matches front 05's documented order (CLI above environment above file). — open: `--port` becomes `RAKUN_SERVER_PORT` (the environment row); not asserted against a running app, for the same toolchain row
+- [x] `--watch` without front 80 present is a usage error naming the missing module. — `scaffold_test` "run: --watch without rakun-devtools is a usage error naming it"
+- [ ] With `--watch`, editing a source file reloads the module and an in-flight connection is not dropped — the same assertion front 80 makes, made again from the CLI's side. — open: needs a running app (toolchain row)
+- [ ] SIGTERM reaches the graceful-shutdown path rather than killing the node. — open: needs a running app (toolchain row)
 
 ### Step 4 — `rakun build` and `rakun test`
 
 **Acceptance:**
-- [ ] `rakun build` produces the artefact front 81 defines and exits 0; a failed build exits 1 with the builder's message unmodified.
-- [ ] `rakun test` defaults to `--target erlang`, forwards `--filter`, and returns the runner's exit status unchanged.
-- [ ] Neither command reimplements its delegate: a test asserts the subprocess is invoked, rather than asserting on its output.
-- [ ] A project that does not compile exits 3 from both.
+- [ ] `rakun build` produces the artefact front 81 defines and exits 0; a failed build exits 1 with the builder's message unmodified. — open: the artefact and exit 0 hold (`scaffold_test` "build: the release artefact is front 81's tarball, and exit 0"); a failing release build (exit 1, the message unmodified) is not asserted
+- [x] `rakun test` defaults to `--target erlang`, forwards `--filter`, and returns the runner's exit status unchanged. — `scaffold_test` "new: a plain project …" (the invocation is `test --target erlang`) and "test: forwards --filter and the runner's status; …"
+- [x] Neither command reimplements its delegate: a test asserts the subprocess is invoked, rather than asserting on its output. — `scaffold_test` "new: a plain project …" and "test: forwards --filter …" assert the recorded `botopink test` invocation; `build` runs `botopink build` then front 81's `buildTarball`
+- [x] A project that does not compile exits 3 from both. — `scaffold_test` "test: forwards --filter and the runner's status; a project that does not compile is exit 3" (test and build)
 
 ### Step 5 — `rakun routes`, `rakun beans`, `rakun config`
 
 **Acceptance:**
-- [ ] All three complete on a project whose database URL is wrong — no pool is opened before the answer is printed.
-- [ ] `rakun routes` prints one line per registered route with verb, path and handler, sorted by path, and the count matches `rkRouteCount()`.
-- [ ] `rakun beans` prints one line per registered component with its type and the fields it is injected from.
-- [ ] `rakun config` prints the resolved configuration with the active profiles and, for each key, the source that won — and applies front 76's sanitization, so a password is masked in a terminal exactly as it is in the endpoint.
-- [ ] Each command exits 0 on success and 3 when the project does not compile; none of them binds a port, asserted by running two of them at once.
+- [x] All three complete on a project whose database URL is wrong — no pool is opened before the answer is printed. — `inspect_test` "inspect: routes and beans answer on a project whose database is unreachable, binding nothing", "inspect: config prints …" (the same unreachable URL)
+- [x] `rakun routes` prints one line per registered route with verb, path and handler, sorted by path, and the count matches `rkRouteCount()`. — `inspect_test` "inspect: routes and beans answer …" (`GET /health`, `1 routes` — the count of the registry's `rkRoutePaths()`), "inspect: route lines are verb, path and handler order sorted by path" — the handler is not printed: the route table holds a closure, not a name
+- [ ] `rakun beans` prints one line per registered component with its type and the fields it is injected from. — open: one line per component (`inspect_test` "inspect: routes and beans …"); the scan registry records the name only, so the injected fields are not printed
+- [x] `rakun config` prints the resolved configuration with the active profiles and, for each key, the source that won — and applies front 76's sanitization, so a password is masked in a terminal exactly as it is in the endpoint. — `inspect_test` "inspect: config prints the active profiles and each key's winning source, masking secrets"
+- [ ] Each command exits 0 on success and 3 when the project does not compile; none of them binds a port, asserted by running two of them at once. — open: 0 and 3 hold (`inspect_test`); the inspect path calls no serve, but two concurrent runs are not asserted
 
 ### Step 6 — Plugin commands
 
@@ -176,11 +175,11 @@ pub fn seed(self: Self, args: Array<string>) -> i32 { … }
 ```
 
 **Acceptance:**
-- [ ] `#[cliCommand]` on anything but a method fails with a located message.
-- [ ] The annotated method appears in `rakun help` with its summary, and `rakun seed` runs it.
-- [ ] It runs in inspect mode with the container wired, so it may inject a repository and may not assume a listener.
-- [ ] Its return value is the process exit code, and a raise becomes exit 1 with the reason printed.
-- [ ] Two commands claiming the same name fail at comptime, naming both declarations.
+- [x] `#[cliCommand]` on anything but a method fails with a located message. — `command_decorator_test` "plugin build: #[cliCommand] on anything but a method is a located error"
+- [x] The annotated method appears in `rakun help` with its summary, and `rakun seed` runs it. — `command_decorator_test` "plugin: an annotated method is in rakun help with its summary, and rakun seed runs it"
+- [x] It runs in inspect mode with the container wired, so it may inject a repository and may not assume a listener. — `command_decorator_test` "plugin: the component is wired - the command reads an injected repository - and its answer is the exit code"
+- [x] Its return value is the process exit code, and a raise becomes exit 1 with the reason printed. — `command_decorator_test` "plugin: the component is wired …" (exit 4), "plugin: a raise is exit 1 with the reason printed"
+- [ ] Two commands claiming the same name fail at comptime, naming both declarations. — open: within one type at build (`command_decorator_test` "plugin build: two commands of one name in a type …"); across types the refusal comes when the second registers at load ("plugin: a second registration of one name is refused, naming both declarations")
 
 ### Step 7 — The boundary with front 50
 
@@ -198,9 +197,9 @@ CLI in the other direction. A `--template full-stack` project documents `onze de
 command precisely so that two tools do not both claim the dev loop.
 
 **Acceptance:**
-- [ ] `modules/rakun-cli/` contains no bundler, no asset pipeline and no reference to `repository/onze/`.
-- [ ] `rakun help` states in one line which CLI to use for a full-stack project.
-- [ ] Front 50's README carries the mirror of the table above; if it does not, this front's exit is blocked until it does.
+- [x] `modules/rakun-cli/` contains no bundler, no asset pipeline and no reference to `repository/onze/`. — `scaffold_test` "boundary: rakun-cli carries no bundler, no asset pipeline and no reference to onze's repository"
+- [x] `rakun help` states in one line which CLI to use for a full-stack project. — `args_test` "boundary: help names the CLI of a full-stack project"
+- [ ] Front 50's README carries the mirror of the table above; if it does not, this front's exit is blocked until it does. — open: `06-onze/50-onze-cli/README.md` does not carry the table - onze track's file
 
 ## Examples
 

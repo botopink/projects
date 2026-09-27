@@ -31,12 +31,28 @@ the same ETS row under the same key and are invalidated by the same `revalidateT
 
 ## Current state
 
-- `repository/rakun/modules/rakun-cache/botopink.json` — package metadata only, `"targets": ["erlang"]` (decision 113).
-- `repository/rakun/modules/rakun-cache/src/root.bp` — a docblock and a TODO comment. No `pub mod` line, no code.
-- `repository/rakun/src/runtime.bp:56-66` — the only key/value surface that exists in rakun today is the property store (`rkSetProp`/`rkProp`/`rkPropInt`), which is configuration, not cache: no expiry, no tags, no scope.
-- `repository/rakun/src/decorators.bp` — fifteen decorators, none of them `#[cacheable]`. The file is frozen; every decorator this front adds lives in `modules/rakun-cache/src/`.
-- std's `hash.contentHash` (`libs/std/src/hash.bp`) is the hash this front's key protocol uses; this front is its first consumer.
-- `io.clock` (`libs/std/src/io/clock.bp`) has `nowMillis`, `monotonicMillis` and `formatIso8601`. Freshness arithmetic uses the monotonic clock, not the system one, so a clock step does not resurrect an expired entry.
+Landed in `modules/rakun-cache/` (erlang; `repository/rakun/AGENTS.md` § Caching): `cache.bp` (keys,
+lifetimes, settings and the customizer fold, `cacheThrough` / `cacheFn` / `cacheWith`, the three verbs
+and their seams), `cached.bp` (`#[cached]` / `#[cacheable]` / `#[cacheEvict]`), `cache_endpoint.bp`
+(`installCache`, the `caches` endpoint, the `cache` indicator), `cache_host.bp` over
+`src/sidecars/rakun_cache.erl` (one ETS table owned by `rakun_cache_owner`, single flight, background
+refresh, the clock, the log, a RESP double). 55 tests on erlang across seven files; the twin and the
+import spellings are exercised by consumer projects under `test/fixtures/`.
+
+Where it differs from the text below:
+
+- **Keys** hash with std's `hash.strongCacheKey` (length-framed parts, SHA-256 truncated), not
+  `contentHash` (03r-f). One ETS table keyed `{name, key}` replaces a table per cache name.
+- **Customizers** are `CacheCustomizer` values (`registerCustomizer`) or bare functions
+  (`registerCacheCustomizer`).
+- **Redis** reuses rakun-session's wire (`rkSessRedis`) rather than front 13's client, has no stale
+  window (`revalidateTag` deletes there) and runs the loader when it does not answer (03r-i).
+- **The private scope** with no session runs the loader and stores nothing (03r-g).
+- **Inside a server action** `revalidateTag` / `revalidatePath` expire the rows rather than mark them
+  stale, so front 24's re-render reads the refilled cache (03r-m); inside any request every verb also
+  appends to the frame's `revalidated` slot, which front 24's envelope echoes.
+- **Single flight** — concurrent misses on one key run one loader — is in; onze's image routes use it.
+- **Open:** none of this front's boxes; front 24's mutation test over `revalidatedPaths()` is its own.
 
 ## Mechanism
 
@@ -254,10 +270,10 @@ pub fn cacheKey(namespace: string, parts: Array<string>) -> string {
 ```
 
 **Acceptance:**
-- [ ] `cacheKey("p", ["a", "b"])` and `cacheKey("p", ["a\u{1f}b"])` differ — the separator cannot be forged from a part.
-- [ ] The same `(namespace, parts)` produces the same key on two runs of the same binary.
-- [ ] `CacheScope.Private` keys built under two different session ids differ, and neither read returns the other's value.
-- [ ] Every host cell in the module is `#[@External.Erlang]`; a grep for `External.Node` under `modules/rakun-cache/src` returns nothing.
+- [x] `cacheKey("p", ["a", "b"])` and `cacheKey("p", ["a\u{1f}b"])` differ — the separator cannot be forged from a part. — `test/key_test.bp` "a part cannot forge the boundary between two parts" (parts are length-framed by std's `hash.strongCacheKey`, 03r-f)
+- [x] The same `(namespace, parts)` produces the same key on two runs of the same binary. — `key_test.bp` "the same namespace and parts give the same fixed-width key on every run" (a pinned literal)
+- [x] `CacheScope.Private` keys built under two different session ids differ, and neither read returns the other's value. — `key_test.bp` "private keys under two session ids differ, and neither read returns the other's value"; with no session the loader runs and nothing is stored (03r-g)
+- [x] Every host cell in the module is `#[@External.Erlang]`; a grep for `External.Node` under `modules/rakun-cache/src` returns nothing. — `key_test.bp` "every host cell is External.Erlang - no External.Node under src"
 
 ### Step 2 — Lifetimes
 
@@ -281,11 +297,11 @@ pub fn cacheLifeOf(stale: i32, revalidate: i32, expire: i32) -> CacheLife {
 ```
 
 **Acceptance:**
-- [ ] The six profiles return exactly the table above.
-- [ ] An entry older than `revalidate` but younger than `stale + revalidate` is returned AND scheduled for refresh.
-- [ ] An entry older than `expire` is not returned, whatever its `stale` window.
-- [ ] An unknown profile name falls back to a one-hour expiry rather than raising — a typo must not take the server down.
-- [ ] A policy that carries no explicit `expire` inherits `rakun.cache.<name>.ttl-seconds`.
+- [x] The six profiles return exactly the table above. — `test/life_test.bp` "the six profiles are exactly the table"
+- [x] An entry older than `revalidate` but younger than `stale + revalidate` is returned AND scheduled for refresh. — `life_test.bp` "older than revalidate but inside the stale window is served AND refreshed", "the freshness table"
+- [x] An entry older than `expire` is not returned, whatever its `stale` window. — `life_test.bp` "older than expire is never served, whatever its stale window"
+- [x] An unknown profile name falls back to a one-hour expiry rather than raising — a typo must not take the server down. — `life_test.bp` "an unknown profile falls back to a one-hour expiry instead of raising"
+- [x] A policy that carries no explicit `expire` inherits `rakun.cache.<name>.ttl-seconds`. — `life_test.bp` "a policy with no explicit expire inherits rakun.cache.<name>.ttl-seconds" (`expire <= 0` inherits; `revalidate <= 0` is the expiry)
 
 ### Step 3 — `cacheThrough`, the provider switch and the kill switch
 
@@ -308,12 +324,12 @@ pub fn cacheThrough(policy: CachePolicy, keys: Array<string>, load: fn() -> stri
 ```
 
 **Acceptance:**
-- [ ] With `rakun.cache.type=none`, the loader runs on every call and the store stays empty — for `cacheThrough`, for `cacheFn` and for every `#[cached]` twin.
-- [ ] With a provider set, a second call with the same keys does not run the loader.
-- [ ] Two calls with different keys both run the loader.
-- [ ] A `CacheScope.Remote` policy reaches Redis even when the default provider is `ets`.
-- [ ] `max-entries` is honoured: the `max-entries + 1`-th distinct key evicts one entry under the configured policy and the cache's size stops growing.
-- [ ] A registered `CacheCustomizer` changes the settings a cache is created with, and cannot re-enable a cache the kill switch disabled.
+- [x] With `rakun.cache.type=none`, the loader runs on every call and the store stays empty — for `cacheThrough`, for `cacheFn` and for every `#[cached]` twin. — `test/store_test.bp` "rakun.cache.type=none runs the loader on every call and keeps nothing"; the twin in `test/consumer_test.bp` (fixture `twin`: "with rakun.cache.type=none the twin delegates straight through")
+- [x] With a provider set, a second call with the same keys does not run the loader. — `store_test.bp` "with a provider, a second call with the same keys does not run the loader"
+- [x] Two calls with different keys both run the loader. — `store_test.bp` "two calls with different keys both run the loader"
+- [x] A `CacheScope.Remote` policy reaches Redis even when the default provider is `ets`. — `store_test.bp` "a Remote policy reaches Redis even when the default provider is ets", against the sidecar's recording RESP double (`GET`, `SET … EX 120`, `SADD` of the tag); no live-Redis cell
+- [x] `max-entries` is honoured: the `max-entries + 1`-th distinct key evicts one entry under the configured policy and the cache's size stops growing. — `store_test.bp` "max-entries under lru …", "… under lfu …", "… under ttl-only …" (the row just written is never the one evicted)
+- [x] A registered `CacheCustomizer` changes the settings a cache is created with, and cannot re-enable a cache the kill switch disabled. — `store_test.bp` "a customizer changes the settings a cache is created with, in registration order", "a customizer cannot re-enable a cache the kill switch turned off" (registered as a function, `registerCacheCustomizer`: a behavior-typed value does not dispatch on erlang)
 
 ### Step 4 — `#[cached]`, `#[cacheable]`, `#[cacheEvict]`
 
@@ -334,12 +350,12 @@ name; the type-level decorator does every emit, because that is the only shape t
 methods at once.
 
 **Acceptance:**
-- [ ] `#[cacheable]` on anything but a method fails with a located message.
-- [ ] Annotations written on a `behavior`'s method signatures reach `#[cached]` as `m.annotations`. If the reflection does not carry them, this front stops and files it rather than working around it.
-- [ ] The emitted twin implements the behavior: a field declared `catalog: ProductCatalog` accepts it.
-- [ ] A method with no cache annotation is delegated unchanged and never touches the store.
-- [ ] `#[cacheEvict(name, true)]` clears the whole cache after the method returns; `#[cacheEvict(name, false)]` removes only the key built from the method's arguments.
-- [ ] Eviction runs *after* the delegate returns, so a delegate that raises leaves the cache alone.
+- [x] `#[cacheable]` on anything but a method fails with a located message. — `consumer_test.bp` "#[cacheable] and #[cacheEvict] anywhere but on a method fail with a located message"
+- [x] Annotations written on a `behavior`'s method signatures reach `#[cached]` as `m.annotations`. If the reflection does not carry them, this front stops and files it rather than working around it. — they do: every twin cell of `consumer_test.bp` (fixture `twin`) depends on it
+- [x] The emitted twin implements the behavior: a field declared `catalog: ProductCatalog` accepts it. — fixture `twin` "a field declared ProductCatalog is injected with the caching twin" (the bean returns the imported `cachedProductCatalog(self.real)`)
+- [x] A method with no cache annotation is delegated unchanged and never touches the store. — fixture `twin` "a method with no cache annotation is delegated and never touches the store"
+- [x] `#[cacheEvict(name, true)]` clears the whole cache after the method returns; `#[cacheEvict(name, false)]` removes only the key built from the method's arguments. — fixture `twin` "cacheEvict(name, true) clears the whole cache after the delegate returns", "cacheEvict(name, false) removes only the rows its arguments key" (the key `[m, args…]` under every `#[cacheable(name)]` method `m`, 03r-h)
+- [x] Eviction runs *after* the delegate returns, so a delegate that raises leaves the cache alone. — fixture `twin` "a delegate that raises leaves the cache alone"
 
 ### Step 5 — Tags, and the three revalidation verbs
 
@@ -370,12 +386,12 @@ pub fn revalidatePath(path: string) -> i32 {
 ```
 
 **Acceptance:**
-- [ ] The legality table above is a test with six cells, not a paragraph.
-- [ ] After `updateTag("t")`, a read in the same request runs the loader.
-- [ ] After `revalidateTag("t")`, the next read returns the previous value and the refresh runs; the read after that returns the new value.
-- [ ] An entry carrying two tags is invalidated by either.
-- [ ] `revalidatedPaths()` and `revalidatedTags()` report exactly what the request invalidated, in call order, and `clearRevalidated()` empties them.
-- [ ] Both import spellings in *Package, module and import spellings* resolve, asserted by two test files that import differently.
+- [x] The legality table above is a test with six cells, not a paragraph. — `test/revalidate_test.bp`: all nine verb × phase cells ("in a server action …", "in a route handler …", "during render all three verbs raise") plus outside a request (03r-j)
+- [x] After `updateTag("t")`, a read in the same request runs the loader. — `revalidate_test.bp` "after updateTag a read in the same request runs the loader"
+- [x] After `revalidateTag("t")`, the next read returns the previous value and the refresh runs; the read after that returns the new value. — `revalidate_test.bp` "revalidateTag serves the stale value once, refreshes, and the read after that is fresh" (the trace pins miss → revalidate → hit)
+- [x] An entry carrying two tags is invalidated by either. — `revalidate_test.bp` "an entry carrying two tags is invalidated by either"
+- [x] `revalidatedPaths()` and `revalidatedTags()` report exactly what the request invalidated, in call order, and `clearRevalidated()` empties them. — `revalidate_test.bp` "the seams report what was invalidated, in call order, and clear only on request"
+- [x] Both import spellings in *Package, module and import spellings* resolve, asserted by two test files that import differently. — `consumer_test.bp` "the qualified and the bare import forms both resolve" (fixture `imports`: `qualified_test.bp` and `bare_test.bp`); `cacheKey` alone is imported `from "rakun-cache/cache"`, since `from "rakun-cache"` is ambiguous with std's `hash.cacheKey` (`language-gaps.md`)
 
 ### Step 6 — The function-wrapping entry point
 
@@ -389,8 +405,8 @@ pub fn cacheFn(name: string, keys: Array<string>, life: CacheLife, tags: Array<s
 ```
 
 **Acceptance:**
-- [ ] `cacheFn` and an equivalent `cacheThrough` call produce the same key and share the same row.
-- [ ] `cacheFn` honours the kill switch.
+- [x] `cacheFn` and an equivalent `cacheThrough` call produce the same key and share the same row. — `test/granularity_test.bp` "cacheFn and the equivalent cacheThrough share one key and one row"
+- [x] `cacheFn` honours the kill switch. — `granularity_test.bp` "cacheFn honours the kill switch"
 
 ### Step 7 — Granularity
 
@@ -401,8 +417,8 @@ spelling and is a language gap; the nearest valid form is a module-level `val` h
 policy.
 
 **Acceptance:**
-- [ ] A data-level and a UI-level cache over the same underlying data hold two rows, not one, and `revalidateTag` on a shared tag invalidates both.
-- [ ] The module-level fallback policy is picked up by a `cacheThrough` in the same module that passes no policy of its own.
+- [x] A data-level and a UI-level cache over the same underlying data hold two rows, not one, and `revalidateTag` on a shared tag invalidates both. — `granularity_test.bp` "a data-level and a UI-level cache over one datum hold two rows and one tag reaches both"
+- [x] The module-level fallback policy is picked up by a `cacheThrough` in the same module that passes no policy of its own. — `granularity_test.bp` "the module-level fallback policy is picked up by a call that passes none" (`val cached = cacheWith(policy)`, then `cached(keys, load)`)
 
 ### Step 8 — The `caches` endpoint and the health indicator
 
@@ -426,10 +442,10 @@ sits behind front 11's access control with no separate opt-out of its own. Front
 reach `/actuator`; this front does not get a second answer.
 
 **Acceptance:**
-- [ ] `GET /actuator/caches` lists every cache named in `rakun.cache.names` plus every cache created on first use, with its provider and entry count.
-- [ ] `DELETE /actuator/caches/{name}` empties exactly that cache and returns 204; an unknown name returns 404.
-- [ ] Both routes are refused with front 11's standard response when the caller is not authorized, and there is no configuration key in this module that changes that.
-- [ ] `cacheHealth()` reports DOWN with the provider named when Redis is configured and unreachable, and UP when the provider is `ets`.
+- [x] `GET /actuator/caches` lists every cache named in `rakun.cache.names` plus every cache created on first use, with its provider and entry count. — `test/endpoint_test.bp` "GET lists the configured caches and the ones created on first use, with provider and size"
+- [x] `DELETE /actuator/caches/{name}` empties exactly that cache and returns 204; an unknown name returns 404. — `endpoint_test.bp` "DELETE of one cache empties exactly it with 204, and an unknown name is 404", "DELETE of the collection empties every cache"
+- [x] Both routes are refused with front 11's standard response when the caller is not authorized, and there is no configuration key in this module that changes that. — `endpoint_test.bp` "unexposed, every route answers the host's 404 and nothing is cleared", "no key of this module opens the endpoint" (the access rule itself is front 76's)
+- [x] `cacheHealth()` reports DOWN with the provider named when Redis is configured and unreachable, and UP when the provider is `ets`. — `endpoint_test.bp` "health is UP on ets and DOWN naming redis when Redis does not answer"
 
 ## Examples
 
@@ -442,6 +458,7 @@ reach `/actuator`; this front does not get a second answer.
 |---|---|---|---|
 | A decorator cannot replace or wrap the body of the declaration it annotates. `@Decl` is read-only and `@emit` appends new module-level declarations only, so a transparent `'use cache'` / `#[useCache]` on a plain function is not expressible. | `examples/use-cache-example.bp`, every `cacheThrough` call | Write the combinator in the body: `cacheThrough(policy, keys, { -> load() })`. For methods, the `#[cached]` behavior twin avoids the gap entirely. | `decl.replaceBody(src)`, or an `@emit` whose output shadows the annotated declaration |
 | botopink has no module-level annotation, so a file-level directive (`'use cache'` as the first line of a file) has no spelling. | `examples/use-cache-example.bp`, the module-level policy | A module-level `val` holding the default `CachePolicy`, read by every combinator in the module. | An inner attribute at module scope, e.g. `#![useCache]` |
+| `import {cacheKey} from "rakun-cache"` is refused as ambiguous with std's `hash.cacheKey`, although the package is named | `cacheable-service-example.bp` | `import {cacheKey} from "rakun-cache/cache"` | A named package's export wins over std's |
 | Declared parameter defaults are never applied, so a decorator cannot have an optional argument. Spring writes `@CacheEvict("users")` and `@CacheEvict(value = "users", allEntries = true)` from one annotation. | `#[cacheEvict("products", true)]` in both examples | Pass every argument explicitly, always. | Apply declared defaults at call sites (`docs.md:502-505`) |
 
 ## Test plan

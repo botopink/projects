@@ -33,7 +33,7 @@ import {
     registerRobots,
     registerManifest,
     registerIconFile,
-} from "rakun";
+} from "rakun-app/metadata_routes";
 
 pub type Post(
     slug: string,

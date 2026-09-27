@@ -39,7 +39,7 @@ production" — currently has no answer that is not a person reading manifests.
 
 | Piece | Where it is today |
 |---|---|
-| `modules/rakun-release/` | does not exist — this front creates it |
+| `modules/rakun-release/` | `release.bp` (the renders, the tarball, the deployment files, the appup), `sbom.bp`, `src/sidecars/rakun_release.erl` |
 | A release descriptor of any kind | nothing, in rakun or in botopink |
 | `botopink.json` | `{name, version, description, src, target, targets, files}` for rakun; module manifests add `entry` and a `dependencies` map (`modules/rakun-security/botopink.json`) |
 | What `botopink build` emits for erlang | `.erl` sources plus the sibling `.erl` sidecars `shipErlSidecars` copies flat (`modules/compiler-cli/src/cli/libs.zig:564-635`) — a directory of sources, not a release |
@@ -165,12 +165,12 @@ Templates are built by joining line arrays with `"\n"` rather than as triple-quo
 depend on it holding anywhere else.
 
 **Acceptance:**
-- [ ] `renderRel` lists `kernel` and `stdlib` first, in that order, whatever order the application named them
-- [ ] An application listed twice is an error naming it, not a duplicate line
-- [ ] `renderVmArgs` emits `-mode embedded` unless `embedded` is false
-- [ ] The cookie is emitted as a reference to `cookieEnv`, never as a literal — a cookie in a generated file is a cookie in a git repository
-- [ ] `renderSysConfig` round-trips a property containing a quote, a newline and a UTF-8 character
-- [ ] Two renders of the same `Release` produce byte-identical output
+- [x] `renderRel` lists `kernel` and `stdlib` first, in that order, whatever order the application named them — `modules/rakun-release/test/release_test.bp` "release: the .rel puts kernel and stdlib first; a duplicate application is refused naming it"
+- [x] An application listed twice is an error naming it, not a duplicate line — same test
+- [x] `renderVmArgs` emits `-mode embedded` unless `embedded` is false — `modules/rakun-release/test/release_test.bp` "release: vm.args is embedded unless asked, and the cookie is a reference, never a value"
+- [x] The cookie is emitted as a reference to `cookieEnv`, never as a literal — a cookie in a generated file is a cookie in a git repository — same test
+- [x] `renderSysConfig` round-trips a property containing a quote, a newline and a UTF-8 character — `modules/rakun-release/test/release_test.bp` "release: sys.config round-trips a quote, a newline and UTF-8, and renders the same bytes twice"
+- [x] Two renders of the same `Release` produce byte-identical output — same test
 
 ### Step 2 — The tarball
 
@@ -179,10 +179,10 @@ release is built for a host without Erlang installed — packed with normalised 
 entries.
 
 **Acceptance:**
-- [ ] Two builds from the same source produce byte-identical tarballs, including mtimes and entry order
-- [ ] The tarball contains no source file, no `.botopinkbuild/`, and no file outside the declared applications
-- [ ] Unpacking it and running `bin/<name> foreground` starts the node (gated by *Blocked* below)
-- [ ] A release naming an application that is not on the code path fails the build, naming it — not at boot
+- [x] Two builds from the same source produce byte-identical tarballs, including mtimes and entry order — `modules/rakun-release/test/release_test.bp` "release: two builds in two directories are the same bytes, with no source and nothing outside the applications"
+- [x] The tarball contains no source file, no `.botopinkbuild/`, and no file outside the declared applications — same test
+- [ ] Unpacking it and running `bin/<name> foreground` starts the node (gated by *Blocked* below) — open: blocked (see Blocked) — a built erlang program cannot load its `.erl` sidecars
+- [x] A release naming an application that is not on the code path fails the build, naming it — not at boot — `modules/rakun-release/test/release_test.bp` "release: an application with no directory fails the build naming it"
 
 ### Step 3 — The Dockerfile
 
@@ -190,11 +190,11 @@ Multi-stage: a builder stage that compiles and assembles, a runtime stage that c
 change-rate order. The runtime stage runs as a non-root user and declares no shell entry point.
 
 **Acceptance:**
-- [ ] The generated Dockerfile has exactly four `COPY` instructions from the builder stage, in ERTS → OTP → framework → application order
-- [ ] Changing one application source file changes only the last layer's content hash
-- [ ] The runtime stage contains no compiler, no source and no build tool
-- [ ] `USER` is set to a non-root user and `WORKDIR` is the release root
-- [ ] The image's entry point is the release boot script, not `sh -c`
+- [x] The generated Dockerfile has exactly four `COPY` instructions from the builder stage, in ERTS → OTP → framework → application order — `modules/rakun-release/test/release_test.bp` "release: the Dockerfile copies four layers in change-rate order into a non-root runtime with the release script as entry"
+- [x] Changing one application source file changes only the last layer's content hash — `modules/rakun-release/test/release_test.bp` "release: changing one application file changes only the application layer's hash"
+- [x] The runtime stage contains no compiler, no source and no build tool — `modules/rakun-release/test/release_test.bp` "release: the Dockerfile copies four layers in change-rate order into a non-root runtime with the release script as entry"
+- [x] `USER` is set to a non-root user and `WORKDIR` is the release root — same test
+- [x] The image's entry point is the release boot script, not `sh -c` — same test
 
 ### Step 4 — systemd unit and Kubernetes fragments
 
@@ -203,11 +203,11 @@ and readiness probes pointing at front 76's paths, plus the `terminationGracePer
 front 07's request draining needs to be true.
 
 **Acceptance:**
-- [ ] The unit's `ExecStart` is the release's `foreground` script, so systemd supervises the node directly rather than a daemonising wrapper
-- [ ] `Restart=on-failure` and a documented `RestartSec`
-- [ ] The unit runs as the configured user and group and does not require root
-- [ ] The readiness probe path is exactly front 76's readiness path — asserted by importing that front's constant, not by repeating the string
-- [ ] `terminationGracePeriodSeconds` is greater than front 07's configured shutdown timeout, and generation fails when it is not
+- [x] The unit's `ExecStart` is the release's `foreground` script, so systemd supervises the node directly rather than a daemonising wrapper — `modules/rakun-release/test/release_test.bp` "release: the systemd unit runs the foreground script as its user, restarting on failure"
+- [x] `Restart=on-failure` and a documented `RestartSec` — same test
+- [x] The unit runs as the configured user and group and does not require root — same test
+- [x] The readiness probe path is exactly front 76's readiness path — asserted by importing that front's constant, not by repeating the string — `modules/rakun-release/test/release_test.bp` "release: the Deployment's probes are front 76's paths, and a grace period inside the drain is refused" (`readinessPath()` / `livenessPath()` imported from rakun-actuator's `management`)
+- [x] `terminationGracePeriodSeconds` is greater than front 07's configured shutdown timeout, and generation fails when it is not — same test
 
 ### Step 5 — Release upgrades
 
@@ -217,32 +217,32 @@ transformation, and refuses to generate when a `gen_server`'s state shape change
 transformation was declared.
 
 **Acceptance:**
-- [ ] Upgrading a release whose only change is a function body generates a load-only `appup`
-- [ ] A changed supervisor child specification generates a supervisor-aware plan, not a load
-- [ ] A changed `gen_server` state with no declared transformation **fails generation**, naming the module
-- [ ] An upgrade applied to a running node serves every request during the switch-over — asserted by a request loop across the upgrade with zero failures
-- [ ] A downgrade to the previous version exists, is generated at the same time, and is tested on the same node
-- [ ] The README states that this is the answer to CRaC's operational goal and that CRaC itself is deferred
+- [x] Upgrading a release whose only change is a function body generates a load-only `appup` — `modules/rakun-release/test/release_test.bp` "release: a body change loads, a supervisor updates as one, a state change without code_change refuses"
+- [x] A changed supervisor child specification generates a supervisor-aware plan, not a load — same test
+- [x] A changed `gen_server` state with no declared transformation **fails generation**, naming the module — same test
+- [ ] An upgrade applied to a running node serves every request during the switch-over — asserted by a request loop across the upgrade with zero failures — open: the appup is generated; applying it to a running node needs a booting release (Blocked) and `release_handler`
+- [ ] A downgrade to the previous version exists, is generated at the same time, and is tested on the same node — open: the downgrade instructions are generated beside the upgrade (`renderAppup`), untested on a node for the same reason
+- [x] The README states that this is the answer to CRaC's operational goal and that CRaC itself is deferred — this README, § Release upgrades, and the CRaC question
 
 ### Step 6 — SBOM
 
 CycloneDX 1.5 JSON over the transitively resolved dependency set.
 
 **Acceptance:**
-- [ ] Every dependency in the manifest tree appears exactly once, with name, version and source
-- [ ] A path dependency carries a hash of its source tree, so two builds against a moved sibling differ
-- [ ] The document validates against the CycloneDX 1.5 schema — asserted against a checked-in schema, with no network access
-- [ ] Front 11 serves the file at `/actuator/sbom` unmodified, with the media type the endpoint declares
-- [ ] A build with no dependencies produces a valid document with an empty component list, not an empty file
+- [x] Every dependency in the manifest tree appears exactly once, with name, version and source — `modules/rakun-release/test/release_test.bp` "release: the SBOM names every dependency once, hashes a path dependency's tree, and is valid when empty"
+- [x] A path dependency carries a hash of its source tree, so two builds against a moved sibling differ — same test (the hash moves with the sibling's content)
+- [ ] The document validates against the CycloneDX 1.5 schema — asserted against a checked-in schema, with no network access — open: std has no JSON-schema validator; the document carries CycloneDX 1.5's required fields (`bomFormat`, `specVersion`, `version`, components with `type`/`name`/`version`), asserted field by field
+- [x] Front 11 serves the file at `/actuator/sbom` unmodified, with the media type the endpoint declares — `modules/rakun-release/test/release_test.bp` "release: front 11 serves the SBOM file unmodified with its media type"
+- [x] A build with no dependencies produces a valid document with an empty component list, not an empty file — `modules/rakun-release/test/release_test.bp` "release: the SBOM names every dependency once, hashes a path dependency's tree, and is valid when empty"
 
 ### Step 7 — Reproducibility
 
 Normalised mtimes, sorted entries, and the `use-last-modified=false` default the doc calls for.
 
 **Acceptance:**
-- [ ] Building the same commit twice, an hour apart, in two directories, produces identical bytes
-- [ ] The generated configuration sets `rakun.web.static.use-last-modified=false`
-- [ ] Front 82's ETag path is unaffected and still answers 304 for an unchanged asset
+- [x] Building the same commit twice, an hour apart, in two directories, produces identical bytes — `modules/rakun-release/test/release_test.bp` "release: two builds in two directories are the same bytes, with no source and nothing outside the applications" (mtime 0 in every entry, so the hour between builds cannot show)
+- [x] The generated configuration sets `rakun.web.static.use-last-modified=false` — `modules/rakun-release/test/release_test.bp` "release: sys.config round-trips a quote, a newline and UTF-8, and renders the same bytes twice"
+- [x] Front 82's ETag path is unaffected and still answers 304 for an unchanged asset — `modules/rakun-web/test/static_test.bp` "static: a first request is 200 with an ETag, and If-None-Match answers 304", "static: Last-Modified is emitted and honoured only with useLastModified"
 
 ## Examples
 
@@ -287,14 +287,14 @@ This front is erlang-only and has no client half: a release is a BEAM artefact.
 
 ## Definition of done
 
-- [ ] `modules/rakun-release/` exists with its manifest, `src/` and `templates/`
-- [ ] A `Release` value renders `.rel`, `vm.args`, `sys.config`, a Dockerfile, a systemd unit and the
-      Kubernetes fragments, all deterministically
-- [ ] Two builds of one commit produce byte-identical tarballs
-- [ ] The Dockerfile splits four layers in change-rate order and the runtime stage carries no build tool
-- [ ] `relup` generation refuses a changed `gen_server` state with no declared transformation
-- [ ] A CycloneDX SBOM is emitted at build time and served unmodified by front 11
-- [ ] The README states the CRaC position: the mechanism is deferred, the operational goal is step 5
-- [ ] `repository/rakun/AGENTS.md` documents the release layout and the layer split
-- [ ] The front's tests are green on its assigned target
+- [ ] `modules/rakun-release/` exists with its manifest, `src/` and `templates/` — open: the member has its manifest and `src/`; there is no `templates/` — every file is rendered from line arrays in `release.bp` (the front's own rule)
+- [x] A `Release` value renders `.rel`, `vm.args`, `sys.config`, a Dockerfile, a systemd unit and the
+      Kubernetes fragments, all deterministically — `release_test.bp` (every render asserted twice-equal where it matters)
+- [x] Two builds of one commit produce byte-identical tarballs — `modules/rakun-release/test/release_test.bp` "release: two builds in two directories are the same bytes, with no source and nothing outside the applications"
+- [x] The Dockerfile splits four layers in change-rate order and the runtime stage carries no build tool — `modules/rakun-release/test/release_test.bp` "release: the Dockerfile copies four layers in change-rate order into a non-root runtime with the release script as entry"
+- [x] `relup` generation refuses a changed `gen_server` state with no declared transformation — `modules/rakun-release/test/release_test.bp` "release: a body change loads, a supervisor updates as one, a state change without code_change refuses" (the appup; a relup is not generated)
+- [x] A CycloneDX SBOM is emitted at build time and served unmodified by front 11 — `modules/rakun-release/test/release_test.bp` "release: front 11 serves the SBOM file unmodified with its media type"
+- [x] The README states the CRaC position: the mechanism is deferred, the operational goal is step 5 — this README, § Release upgrades, and the CRaC question
+- [x] `repository/rakun/AGENTS.md` documents the release layout and the layer split — `repository/rakun/AGENTS.md` § Packaging and release
+- [x] The front's tests are green on its assigned target — 12 tests (erlang)
 
