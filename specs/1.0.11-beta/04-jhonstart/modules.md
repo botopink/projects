@@ -31,9 +31,9 @@ closed on tick).
 | `islands/` | like-button island, theme provider over server children, the payload `i` rows | 28 · 29 · 94 | both | missing |
 | `forms/` | create-post form, optimistic like with nested `formStatus`, GET search form | 67 · 29 · 26 · 27 · 94 | both | missing — and `src/like.bp:23` spells `"__bp_action"` (front 67 step 4) |
 | `document-shell/` | the document once with constructors, once with `html """…"""` | 94 · DSL | both | missing |
-| `jhonstart-counter/` | v0: `state` counter re-rendered under `client.mjs` | v0 | `["commonJS"]` (a stale restriction — `00-gate`) | missing |
+| `jhonstart-counter/` | v0: `state` counter re-rendered under `client.mjs` | v0 | both (101 dropped the stale restriction) | missing |
 | `jhonstart-markup/` | v0: the DSL cross-module | v0 | both | missing |
-| `jhonstart-todo/` | v0: pure client | v0 | `["commonJS"]` (stale — `00-gate`) | missing |
+| `jhonstart-todo/` | v0: pure client | v0 | both (101 dropped the stale restriction) | missing |
 
 The five planned projects hold 32 snapshots through `jhonstart-test`. `refusals/` and `repro/`
 are not members (no manifest; the 1.0.10 repros are closed in the compiler).

@@ -178,5 +178,7 @@ moves no snapshot (the chunks are byte-identical; only the gatherer changes). St
 
 - 31-b (a) keeps the render free of any logger type; `07-f` may later replace the *default* with
   a bundled `log`'s digest, which lands in `106-log` after this front.
-- The `dom-test` erlang cell stays a `00-gate` matter; this front adds cases to `dom_test.bp` on
-  commonJS only.
+- The `dom-test` erlang cell is decided by `00-gate/101-gate-jhonstart` (gate-d, § Current state):
+  the member's `"targets": ["commonJS"]` is structural — `botopink build --target erlang` refuses it
+  at `src/root.bp:37` — and there is no erlang row. This front adds cases to `dom_test.bp` on
+  commonJS only, calling the registered functions through `callFill` / `callSignal`.
