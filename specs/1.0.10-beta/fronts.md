@@ -319,7 +319,7 @@ no token section and no dispatcher, which is what makes it safe to run alongside
 
 | Front | Source it owns | Tests it owns |
 |---|---|---|
-| **F49 stand-up** | `botopink.json` (content; the skeleton is `02-packaging`'s), `modules/onze/src/root.bp`, `modules/onze/src/types.bp`, `modules/onze/src/config.bp`, `modules/onze/src/integration.bp`, | `modules/onze/test/config_test.bp`, `modules/onze/test/types_test.bp` |
+| **F49 stand-up** | `botopink.json` (content; the skeleton is `02-packaging`'s), `modules/onze/src/root.bp`, `modules/onze/src/types.bp`, `modules/onze/src/config.bp`, `modules/onze/src/integration.bp`, `modules/onze-server/**` (49-e) | `modules/onze/test/config_test.bp`, `modules/onze/test/types_test.bp` · `modules/onze-server/test/server_test.bp` |
 | **F50 cli** | `modules/onze-cli/src/**`, `modules/onze-cli/test/**` | `modules/onze-cli/test/**` |
 | **F51 image** | `modules/onze-assets/src/image.bp`, `modules/onze-assets/test/image_test.bp` | `modules/onze-assets/test/image_test.bp` |
 | **F52 font** | `modules/onze-assets/src/font.bp`, `modules/onze-assets/test/font_test.bp` | `modules/onze-assets/test/font_test.bp` |

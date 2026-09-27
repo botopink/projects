@@ -355,9 +355,13 @@ logged.
 
 **Acceptance:**
 - [ ] `onze build && onze start` serves the same routes `onze dev` served
-- [ ] `onze start` with no `<outDir>/` exits non-zero naming the missing directory
-- [ ] `PORT` in the environment overrides `config.port`, and `-p` overrides both — one documented
-      precedence, asserted
+- [x] `onze start` with no `<outDir>/` exits non-zero naming the missing directory —
+      `start_test.bp` "a project never built": a fresh `onze create` app, `run(app, ["start"])`
+      exits 1 naming `<app>/.onze` and "run `onze build` first"
+- [x] `PORT` in the environment overrides `config.port`, and `-p` overrides both — one documented
+      precedence, asserted — `startPort` (`start_test.bp` "the port"; `docs.md` § The commands);
+      `onze start` passes the port to the server as `PORT`, which the generated main reads over
+      the configured one
 - [ ] A `SIGTERM` drains in-flight renders before exiting (front 71 owns the drain; this command owns
       forwarding the signal)
 
@@ -431,33 +435,36 @@ gate that already exists.
 
 ## Where it stands
 
-Implemented: `resolve`, `scan`, `generate`,
-`create`, `info`, `main` and `AGENTS.md`; 19 tests on commonJS, two of which run the real
-`botopink check` — over a staged tree and over a fresh scaffold. `examples/scaffold/` is the
-committed `create` output.
+Implemented: `resolve`, `scan`, `generate`, `create`, `info`, `build`, `start`, `main` and
+`AGENTS.md`; the suites `scan_test`, `generate_test`, `create_test`, `build_test` and `start_test`
+on commonJS, several of which run the real `botopink check` / `onze build` / `onze start`.
+`examples/scaffold/` is the committed `create` output.
 
 Read with these differences: a pattern is the bundled `routing`'s spelling (`/blog/[slug]`, the
-contract-1 table's), not `/:slug` (decision 115 moved the grammar into `routing`); the scaffold is
-always the `src/` layout and `--no-src-dir` is refused, because the compiler does not honour a
-package whose `"src"` is `"."` (`botopink check` answers "no source files found in src/ or test/",
-and a test there cannot import a nested module — front 53's finding F5); the staged package lives
-at `<outDir>/src/` with its own `botopink.json`; `create` takes `--libs <dir>` to depend on a local
-checkout by path (git `feat` otherwise); `loading` / `error` / `not-found` need no decorator —
-the generated `onze_routes.bp` registers them with jhonstart's `jhLoading` / `jhError` /
-`jhNotFound`.
+contract-1 table's), not `/:slug` (decision 115 moved the grammar into `routing`); the staged
+package lives at `<outDir>/src/` with its own `botopink.json` (relative `path` dependencies made
+absolute against the project root, so an `outDir` may sit anywhere); `create` takes `--libs <dir>`
+to depend on a local checkout by path (git `feat` otherwise); the app sits at the project root
+unless `--src-dir` (F5 is closed — `onze build` skips hidden directories and, at the root, `test/`);
+the scaffold depends on what it imports and on `onze` (dependencies load transitively, decision
+143); `loading` / `error` / `not-found` need no decorator — the generated `onze_routes.bp`
+registers them with jhonstart's `jhLoading` / `jhError` / `jhNotFound`, and imports every decorated
+convention file so a program importing it runs their registrations first (decision 140).
 
-`build` runs the whole pipeline — scan, check, refusals, CSS-module accessors,
-the staged server package compiled for erlang (`server/` holds the emitted `.erl`; no `erlc` pass
-yet), the staged client package plus the generated entry compiled for commonJS and linked by
-file, the stylesheet, the build id, `static/<buildId>/`, `client-manifest.txt`, `build-id`; the
-committed scaffold builds twice to the same id and its bundle boots under node (23 tests).
-`<outDir>/` holds `src/` (the staged tree — the README's `app_tree.bp` + `app/`), `server/`,
-`client/`, `client-js/`, `static/`, `client-manifest.txt` and `build-id`, but no `prerender/`
-(rakun front 60), so the "five entries" box stays open.
+`build` runs the whole pipeline — scan, check, refusals, CSS-module accessors, the staged server
+package (the app, `onze_main.bp`, a dependency on `onze-server`) compiled for erlang into
+`server/erl/` and by `erlc` into `server/beam/`, the staged client package plus the generated entry
+compiled for commonJS and linked by file, the styleMap evaluated under node and under erl (front
+68's 68-d), the stylesheet, the build id, `static/<buildId>/`, `client-manifest.txt`, `build-id`.
+`start` serves that build with `erl` from the project root (50-a): the scaffold's `/` and the
+blog's `/blog/hello-world` and `/about` over a real socket (`start_test.bp`).
 
-Open: `dev` and `start` (rakun's server boot — rakun fronts 04 and 23), `prerender/`, route-level
-chunk splitting (lazy starters), `--example`, the prompts (no TTY reader in std), and the docs
-table generated from the one defaults record.
+Open, and why: `dev` — the build `start` serves, with changed modules reloaded into the running
+node, is not written, so step 6, "`build && start` serves what `dev` served", the nine-module DoD
+box and "all five commands run" stay open; `prerender/` (rakun front 60), so the "five entries" box
+stays open; forwarding `SIGTERM` to the node (`start` waits on `process.run`, which forwards no
+signal; front 71 owns the drain); route-level chunk splitting (lazy starters), `--example`, the
+prompts (no TTY reader in std), and the docs table generated from the one defaults record.
 
 ## Definition of done
 

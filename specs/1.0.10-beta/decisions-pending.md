@@ -4,7 +4,7 @@
 front 24's (24-a…c, 24-g), `01-std`'s (01std-a, 01std-c…e, std-a…c), `00 · 23-std-purity`'s (23-a…c), front 95's
 (95-a…e), `00 · 16-formatter`'s (16-a…b), track C's (26-a…b, 27-a, 30-b…e, 31-a), `00 · 04-js` /
 `05-wasm`'s (0405-b), `00 · 01-checker`'s (01c-a…b), `checker-rows-2`'s (ck2-a, ck2-b, ck2-d, ck2-e),
-track D's (05emilia-a…l), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…e) and the host methods' (lem-a…f). The
+track D's (05emilia-a…l), track E's (49-a, 49-c…e, 50-a, 52-a, 53-a, 68-a, 68-c, 68-d, 69-a, 69-b), track B's (03r-a…e) and the host methods' (lem-a…f). The
 open questions are the language-gaps sweeps' lg-a, lg-b and lg2-a…w, and `checker-rows-2`'s ck2-c (§ Open). Every other question raised so far is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 24-f is decision 143 (library resolution stops at the
 enclosing checkout; dependencies are transitive); the next free number is **144**.
@@ -1339,23 +1339,6 @@ reverses each.
 > (`snapshots.slugOf`: `_` separators), not the `-` `test-snap.md` spells.
 > **Blocks.** Nothing.
 
-### 49-b · The boot's rakun half is data and adapters until rakun 23 / 04 / 82 land
-
-> **Raised by:** `06-onze/49-onze-stand-up` step 4, 2026-09-26
-> **Measured.** At rakun `2a01ea5` there is no `ChunkWriter`, `PageRenderer`, `page(pattern,
-> render)` or `registerStaticRoot`; `modules/rakun` is `["commonJS"]` and `rakun-web` `["erlang"]`,
-> so a both-target member cannot import them together.
-> **Options.** (a) `integration.bp` imports jhonstart, `jhonstart-forms` and the bridge now and
-> hands rakun `rakunEntries(config, i18nExclude)` (the five `rakun.*` keys as pairs) and
-> `responseOver(setStatus, setHeader, write, close)`; `Onze.run` lands with rakun's pieces —
-> implemented; (b) write `Onze.run` against rakun's commonJS core now and make the core
-> commonJS-only.
-> **Recommendation.** (a): the jhonstart half is exercised on both rows today (a render through
-> the bridge, a 307 through the writer), and (b) would pin the core to the row rakun is leaving.
-> The core's `integration_test.bp` imports jhonstart and emilia — the one suite of the core that
-> is not std-only, because the boot is the seam it tests.
-> **Blocks.** Step 4's `Onze.run` boxes; rakun owes front 23 step 1, 04 and 82.
-
 ### 49-c · `onze.json` refuses an unknown key; the config table has every field
 
 > **Raised by:** `06-onze/49-onze-stand-up` step 2, 2026-09-26
@@ -1394,13 +1377,14 @@ reverses each.
 ### 53-a · The blog's sources sit under `src/`
 
 > **Raised by:** `06-onze/53-onze-example-app` step 1, 2026-09-26
-> **Measured.** A package whose `"src"` is `"."` cannot reach a nested module (finding F5 of front
-> 53: `lib/mod.bp` + `lib/db.bp` under `"src": "."` answer `unbound variable`; the same tree under
-> `"src": "src/"` imports as `from "lib.db"`).
-> **Options.** (a) `src/app/`, `src/components/`, `src/lib/` with `onze.json`'s `appDir:
-> "src/app"` — Next's own `src/` layout — implemented; (b) keep the root layout and wait for the
-> compiler.
-> **Recommendation.** (a): the acceptance script's rows read `src/<path>`; nothing else changes.
+> **Measured.** The blog was written under `src/` while a package whose `"src"` was `"."` could not
+> reach a nested module (front 49's F5). F5 is closed (`modules/src_at_package_root`): `onze
+> create` writes the root layout by default (front 50's table) and `--src-dir` the `src/` one, and
+> `botopink check` accepts both (`create_test.bp`).
+> **Options.** (a) keep `src/app/`, `src/components/`, `src/lib/` with `onze.json`'s `appDir:
+> "src/app"` — Next's own `src/` layout, which `onze build` stages like the other; (b) move the
+> blog to the root layout.
+> **Recommendation.** (a): both layouts build; the acceptance script's rows read `src/<path>`.
 > **Blocks.** Nothing.
 
 ### 68-a · A manifest field escapes four characters, not the whole value
@@ -1415,46 +1399,98 @@ reverses each.
 > and (a) is exactly that, round-trip asserted on both targets.
 > **Blocks.** Nothing.
 
-### 68-b · The emilia rules without `styleRule`: token text in the `styleMap`, an ASCII-only refusal
-
-> **Raised by:** `06-onze/68-onze-client-bundle` step 3, 2026-09-26
-> **Measured.** emilia front 56's `styleRule(tokens, th)` is not in `repository/emilia` at
-> `4cac151`; a token list read from source text cannot be evaluated without it.
-> **Options.** (a) the `styleMap` records the literal token text per call site, and the
-> hash-parity rule is the static one — a non-ASCII token list is `emilia-hash-split` (std's two
-> `contentHash` cells differ only above U+FFFF, and contract 4 clause 3 makes rule text ASCII) —
-> implemented; (b) wait for front 56.
-> **Recommendation.** (a) now; when `styleRule` lands the build generates a program over the
-> recorded token texts and records the class and body, and the runtime `s` check follows.
-> **Blocks.** Step 3's `styleRule` half, step 6's `s` box — onze's to adopt: `styleRule` is in
-> emilia's `emilia.bp`.
-
-### 68-c · Island starters decode `#[clientProps]` from source into `__jhIslandStarters`
+### 68-c · Island starters decode `#[clientProps]` from the component's source
 
 > **Raised by:** `06-onze/68-onze-client-bundle` step 6, 2026-09-26
-> **Measured.** jhonstart's `hydrate()` starts `globalThis.__jhIslandStarters[component](el,
-> props)`; `@Decl` has no parameters, so no decorator can build a props decoder.
+> **Measured.** `@Decl` has no parameters, so no decorator can build a props decoder; jhonstart's
+> `registerStarter(name, start)` takes a `start(raw, commit)` over the island's encoded props (29-a).
 > **Options.** (a) the generator reads `#[client] pub fn Name(props: T)` and `T`'s fields from the
 > source, generates `startName(raw, commit)` decoding the four whitelisted types, and registers it
-> through a generated host cell writing `__jhIslandStarters` — implemented; (b) jhonstart grows a
-> starter API.
-> **Recommendation.** (a), with jhonstart asked for a registry-owned name for the table so the
-> entry writes no `__` name by hand. The document/payload check is generated into the entry as
-> the twin of the bundler's `islandMismatches` (asserted equal), because the entry imports nothing
-> of onze.
-> **Blocks.** The "no hand-written `__` name" box — onze's to adopt: jhonstart's `registerStarter` /
-> `registerRouteStarters` over `globals.starters` (29-a) replace the generated cell.
+> with jhonstart's `registerStarter` — implemented; (b) jhonstart grows a decorator-built decoder.
+> **Recommendation.** (a). The document/payload check and the payload-`s` class check are generated
+> into the entry as twins of the bundler's `islandMismatches` / `classNamesIn` / `unknownClasses`
+> (asserted equal), because the entry imports nothing of onze.
+> **Blocks.** Nothing.
 
-### 69-a · The static roots are onze's `AssetRoot` until rakun-web front 82 lands `StaticRoot`
+### 68-d · The styleMap is evaluated by a probe compiled into both packages
+
+> **Raised by:** `06-onze/68-onze-client-bundle` step 3, 2026-09-26
+> **Measured.** The bundler reads a literal token list as source text; `styleRule(tokens, th)` (emilia
+> front 56) needs it as a `Token[]` value, and the hash-parity rule needs it evaluated by both
+> backends' `contentHash`. The build already compiles a client package for commonJS and a server
+> package for erlang (and, now, to BEAM).
+> **Options.** (a) `onze build` stages `onze_styles.bp` — one `probe(site, <tokens as written>)` per
+> styleMap entry over `styleRule(tokens, defaultTheme())` (the theme `emilia(tokens)` uses) and
+> `hash.contentHash` of the rule body — into both packages, runs it under node and under erl, and
+> refuses a site whose class or hash differs (`emilia-hash-split`) or that one backend did not answer
+> (`emilia-unevaluated`) — implemented; the static non-ASCII refusal stays in front of it; (b) a
+> bundler-side interpreter of token text; (c) the static rule only.
+> **Recommendation.** (a): the class is emilia's own function's, computed by the two compilers the
+> page runs on — the contract-4 fixture's list gives `e_39b87d03` through it (`build_test.bp`).
+> A build whose client graph calls `emilia(…)` needs `node` and `erl` on `PATH`, which `onze build`
+> already needs.
+> **Blocks.** Nothing.
+
+### 69-a · onze-assets keeps its `AssetRoot`; onze-server converts it to front 82's `StaticRoot`
 
 > **Raised by:** `06-onze/69-onze-styling-pipeline` step 3, 2026-09-26
-> **Measured.** `grep -rn "StaticRoot\|registerStaticRoot" repository/rakun` is empty at `2a01ea5`.
-> **Options.** (a) `AssetRoot(pattern, directory, immutable, cacheSeconds)` in `onze-assets`, the
-> README's four fields, replaced by an import of front 82's record when it exists — implemented;
-> (b) wait.
-> **Recommendation.** (a); the swap is one import and one type name. A CSS module's generated
-> accessors are `pub fn` rather than `pub val` for the same reason as 49's constants (finding F1).
-> **Blocks.** Step 3's registration box; rakun owes front 82.
+> **Measured.** rakun-web front 82 has `StaticRoot(pattern, directory, indexFile, cacheSeconds,
+> immutable, useLastModified, precompressed)` and `registerStaticRoot`, and every rakun member is
+> `["erlang"]`; `onze-assets` runs on both rows, and a commonJS build that loads rakun-web is refused
+> (its host cells have no node binding).
+> **Options.** (a) `staticRoots` answers onze's `AssetRoot(pattern, directory, immutable,
+> cacheSeconds)` on both rows, and `onze-server`'s `staticRootOf` gives front 82's record field for
+> field — `indexFile: ""` (no directory index), `useLastModified: false`, `precompressed: false` —
+> implemented; (b) make `onze-assets` erlang-only.
+> **Recommendation.** (a): the build half of `onze-assets` runs under the CLI, on node.
+> **Blocks.** Nothing.
+
+### 69-b · The public root and rakun-web's first-match rule
+
+> **Raised by:** `06-onze/69-onze-styling-pipeline` step 3, 2026-09-26
+> **Measured.** rakun-web front 82 stops the chain on a request its root's pattern admits and
+> answers 404 when the file is missing (`serveFrom`, `static.bp`) — the rule its README states: "a
+> request matching a static pattern is answered and the chain stops". Front 69's second root is
+> `/**` → `public/`, so registering it would answer every page URL: `serveFrom` gives
+> `Response.notFound()` when no root holds the file, and never hands the request on.
+> **Options.** (a) rakun-web lets a miss in a root fall through to the chain (Next's order: a public
+> file first, the routes otherwise) — rakun's change; (b) onze registers one root per top-level entry
+> of `public/` at boot (`/images/**`); a top-level file cannot be a `/**` pattern; (c) `public/` under
+> a prefix (`/public/**`), unlike Next.
+> **Recommendation.** (a), stated as a rule of front 82 with no flag. Until it is answered, `Onze.run`
+> registers the fingerprinted root only (`servedRoots`) and front 69's registration box stays open.
+> **Blocks.** Front 69's registration box, front 49 step 4's third box.
+
+### 49-e · The rakun half of the boot is its own erlang member, `onze-server`
+
+> **Raised by:** `06-onze/49-onze-stand-up` step 4, 2026-09-26
+> **Measured.** Every rakun member is `["erlang"]` (decision 117), and a package on both rows that
+> imports rakun does not build for commonJS (`rakun-app`'s host cells have no node binding). The core
+> is on both rows, and `onze-cli` (commonJS) and `onze-bundler` depend on it.
+> **Options.** (a) a member `modules/onze-server/` (`["erlang"]`) holds `Onze.run`, `requestData`,
+> `responseFor`, the page and root registration; the core keeps the jhonstart half
+> (`integration.bp`) and hands onze-server `SiteRender`, the booted app's render as a function value
+> — implemented; (b) the core becomes `["erlang"]` and the CLI and the bundler stop depending on it;
+> (c) wait for a rakun member on both rows.
+> **Recommendation.** (a): the core's vocabulary is what the build half reads, and a release that
+> serves loads `onze-server`, which the CLI never does. `integration.bp` is then not "the only file
+> that imports jhonstart, rakun and the bridge together": the bridge is imported by the core, rakun
+> by `onze-server`, and no file imports all three — step 4's box names one file.
+> **Blocks.** Front 49 step 4's third box (its wording).
+
+### 50-a · `onze build` stages a server main; `onze start` runs it with `erl`
+
+> **Raised by:** `06-onze/50-onze-cli` step 8, 2026-09-26
+> **Measured.** The staged server package is a library; the compiler emits `.erl` and no run
+> command keeps a server alive (`botopink run` ends with `halt()`).
+> **Options.** (a) `build` stages `onze_main.bp` (the resolved `OnzeConfig` as a literal, `PORT` over
+> its port, `Onze.run`) and a dependency on the `onze-server` beside the project's `onze`, compiles
+> the package to BEAM with `erlc`, and `start` runs `erl -noshell -pa <outDir>/server/beam -eval
+> '<package>@onze_main':main()` from the project root, the output in `<outDir>/server.log`, the port
+> `-p` over `PORT` over `onze.json` — implemented; (b) `start` runs front 71's release boot script.
+> **Recommendation.** (a) until front 71's `bin/onze` exists; step 8 then says `start` calls that
+> script, and (a)'s command is what the script runs.
+> **Blocks.** Nothing.
 
 ### ck-host · A function around a host call with no binding for the target
 

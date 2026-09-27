@@ -3,8 +3,9 @@
 **Track:** E onze
 **Priority:** critical — no other track-E front has a package to land in, and nothing in the milestone
 joins rakun's server to jhonstart's tree to emilia's stylesheet until this front says where the joint is
-**Target:** both — the config value and the route registry are read by the BEAM server half and by the
-JS build half; the render seam runs on erlang, the registry it reads is built by the js half
+**Target:** both for the core — the config value and the route registry are read by the BEAM server
+half and by the JS build half; the rakun half of the boot (`Onze.run`) is the erlang member
+`onze-server`, because every rakun member is `["erlang"]` (decision 117; decision pending 49-e)
 **Wave:** 5 — after jhonstart front 30, whose render and bridge the boot wires (decision 113)
 **Depends on:** 30 (jhonstart's render: `app`, `renderStream`, `Response`, `RenderPlugin`, `RenderHooks`, the UI
 registry the `#[page]` / `#[layout]` decorators fill, and the `jhonstart-emilia` bridge member whose
@@ -16,7 +17,7 @@ registry the boot hands one renderer per page) · 22 (rakun's route table and `r
 of the boot) · 82 (rakun-web's `registerStaticRoot`, which the boot calls with front 69's
 `staticRoots` — decision 116)
 **Owns:** `repository/onze/botopink.json` (the workspace), `modules/onze/botopink.json`, `modules/onze/src/root.bp`, `modules/onze/src/types.bp`, `modules/onze/src/config.bp`, `modules/onze/src/integration.bp`,
-`modules/onze/test/config_test.bp`, `modules/onze/test/types_test.bp` — the member cut of [`../modules.md`](../modules.md)
+`modules/onze/test/config_test.bp`, `modules/onze/test/types_test.bp`, and `modules/onze-server/**` (49-e) — the member cut of [`../modules.md`](../modules.md)
 **Does not touch:** `repository/jhonstart/**` (the render, `RenderHooks`, `RenderPlugin` and the
 `jhonstart-emilia` bridge are jhonstart front 30's), `repository/rakun/src/**`,
 `repository/emilia/src/**`, `libs/std/src/**`, `repository/onze/modules/onze-assets/src/image.bp` (F51),
@@ -282,8 +283,8 @@ pub default mod integration;
 
 `onze.json` is the project's configuration file, the analogue of `next.config.js`
 (`NEXTJS-DOCS.md § 28`). It is read by the CLI, not by the library: `OnzeConfig` is a plain record,
-`defaultConfig()` supplies every field the file omits, and the `with*` fns return new records because
-botopink records are immutable.
+`defaultConfig()` supplies every field the file omits, and the `with*` fns return new records — the
+update form `OnzeConfig(..base, port: port)` — because botopink records are immutable.
 
 ```bp
 pub type OnzeConfig(
@@ -296,6 +297,7 @@ pub type OnzeConfig(
     dev: bool,
     actionsBodyLimit: i32,           // bytes; written into rakun.actions.bodyLimit at boot
     allowedRedirects: Array<string>, // absolute redirect targets jhonstart accepts; handed to app(…)
+    lang: string,                    // the document's <html lang>; handed to app(lang: …)
 ) {
     pub fn origin(self: Self) -> string {
         return "http://localhost:" + self.port.toString();
@@ -310,7 +312,8 @@ pub fn withDev(base: OnzeConfig, dev: bool) -> OnzeConfig { … }
 **Acceptance:**
 - [x] `defaultConfig()` returns `port: 3000`, `basePath: ""`, `appDir: "app"`, `publicDir: "public"`,
       `outDir: ".onze"`, `dev: false`, `actionsBodyLimit: 1048576` (rakun front 24's 1 MiB default,
-      decision 117), `allowedRedirects: []` — the values the CLI's scaffold writes into `onze.json`
+      decision 117), `allowedRedirects: []`, `lang: "en"` — the values the CLI's scaffold writes into
+      `onze.json`
 - [x] `withPort(defaultConfig(), 4000).appDir == defaultConfig().appDir` — the copy carries every
       other field
 - [x] `withPort(defaultConfig(), 4000).origin() == "http://localhost:4000"`
@@ -374,8 +377,15 @@ duplicate one of them.
 because an app author reads onze's docs and not rakun's internals.
 
 **Acceptance:**
-- [ ] `Onze.run(defaultConfig())` starts a listener on 3000 and answers `/` from the app's `#[page("")]`
-- [ ] `basePath: "/docs"` is passed through to `App` unchanged; onze does not reimplement prefixing
+- [x] `Onze.run(defaultConfig())` starts a listener on 3000 and answers `/` from the app's `#[page("")]`
+      — `onze-server/test/server_test.bp` "Onze.run listens on 3000 and answers / from
+      #[page("")]": `defaultConfig()`'s port, base path and app dir, with `outDir` / `publicDir`
+      under the run's scratch directory (where the suite writes the build `Onze.run` reads); a raw
+      socket GET answers `HTTP/1.1 200` with the page inside its `#[layout("")]`
+- [x] `basePath: "/docs"` is passed through to `App` unchanged; onze does not reimplement prefixing
+      — `rakunApp(config)` is `App(port: config.port, basePath: config.basePath)`, asserted in
+      `server_test.bp` "basePath reaches rakun's App unchanged"; `Onze.run` calls
+      `Rakun.run(rakunApp(config))`
 - [ ] `integration.bp` is the only file in onze that imports jhonstart, rakun and
       `jhonstart-emilia` together (decision 113): it builds `app(plugins: [emiliaPlugin()],
       allowedRedirects: config.allowedRedirects)`, fills
@@ -484,7 +494,10 @@ caller passes one.
 - [x] `isPublicEnvName("onze_public_x")` is false — the prefix is case-sensitive, asserted, because a
       case-insensitive match is how a secret named `Onze_Public_Secret` would leak
 - [x] `publicEnv(["ONZE_PUBLIC_A", "SECRET_B"])` returns at most one entry, never two
-- [ ] The README of front 68 cites this front for the rule and does not restate the prefix
+- [x] The README of front 68 cites this front for the rule and does not restate the prefix — its
+      header, *Refusal 2* and the bundle contract name front 49's rule; the prefix appears there
+      only inside example values (`ONZE_PUBLIC_API_URL` in the manifest sample and the acceptance
+      literal)
 
 ## Examples
 
@@ -525,42 +538,49 @@ live with the examples.
 
 ## Where it stands
 
-Implemented (the orchestrator's workspace, before the decision-79 takeover):
-`modules/onze/src/{config,types,integration}.bp`, `test/{config,types,integration}_test.bp`
-(21 tests, commonJS and erlang, `botopink test` and `botopink-lib-test` rows), `docs.md`, and
-`modules/onze-test/src/{core,fixtures}.bp` with its 7 tests. The file cut is `modules.md`'s:
-`repository/onze/src/…` in this README reads `repository/onze/modules/onze/src/…`, and step 1's
-`botopink build` runs in the member (the workspace root refuses it, decision 75).
+Implemented: the core `modules/onze/src/{config,types,integration}.bp` with
+`test/{config,types,integration}_test.bp` (22 tests, commonJS and erlang), `docs.md`,
+`modules/onze-test/src/{core,fixtures}.bp` (7 tests, both rows), and the rakun half,
+`modules/onze-server/src/server.bp` (erlang, 10 tests over a real listener). The file cut is
+`modules.md`'s: `repository/onze/src/…` in this README reads `repository/onze/modules/onze/src/…`.
 
-**Blocked on rakun** (the boxes left open in step 4): rakun's `ChunkWriter` with `setStatus` /
-`setHeader`, `PageRenderer` and `page(pattern, render)` (front 23 step 1), the core on
-`["erlang"]` (front 04 — today `modules/rakun` is `["commonJS"]` and `rakun-web` `["erlang"]`, so
-no both-target member can import the pair), `registerStaticRoot` (front 82) and a library-side way
-to apply configuration entries do not exist in rakun today. The boot therefore hands rakun
-data and adapters — `rakunEntries(config, i18nExclude)` (the five `rakun.*` keys),
-`responseOver(setStatus, setHeader, write, close)`, `chainFor(patterns)` over the ancestor
-patterns rakun's layout chain names — and `Onze.run` (`Rakun.run(App(port, basePath))` after the
-boot), the per-page renderer registration and `requestData(req)` from rakun's `Request` land
-when those do. The `__bp_action` box stays open because `jhonstart-forms/test/form_test.bp`
-passes the two names in as literals (a test of the setter, not a default). Step 7's last box stays
-open: front 68's README names the prefix while citing this front.
+The boot is two files, because the core runs on both rows and every rakun member is `["erlang"]`
+(decision 117): `integration.bp` is the jhonstart half — `bootSite` (`app(plugins:
+[emiliaPlugin()], allowedRedirects)`, the `RenderHooks`, `setWireNames`), `siteRender`,
+`rakunEntries`, `responseOver`, `chainFor`, `pageInput` — and `onze-server`'s `server.bp` the rakun
+half: `Onze.run(config)` reads `<outDir>/build-id` and `client-manifest.txt`, writes the five
+`rakun.*` keys with rakun's `rkSetProp`, boots the app with the bundle's tags (onze-assets'
+`pageRenderHooks`), copies jhonstart's UI table (`uiTable()`) into rakun's — every record but a
+page as written, every page through rakun's `page(pattern, render)` with one opaque renderer —,
+registers the fingerprinted static root, installs rakun-web's static entry and `bootWeb`, the page
+path (`servePages`), and calls `Rakun.run(rakunApp(config))`. The renderer builds `RequestData`
+from rakun's `Request` (`requestData`) and wraps rakun's `ChunkWriter` in jhonstart's `Response`
+(`responseFor`); a page's `redirect("/login")` answers `307` with `location: /login` over the
+socket with no onze code on the path. Choices: `decisions-pending.md` 49-a, 49-c…e.
 
-**Choices** recorded in `../../decisions-pending.md` 49-a…d.
+Open, and why:
 
-### Compiler findings (each repro is the whole program, inline)
+- step 4's third box — the wiring is two files (49-e), front 69's public root is not registered
+  (69-b), and `RequestData.query` / `.headers` are empty: rakun's page `Request` answers `param`,
+  `query(name)` and `header(name)` and enumerates neither (`status.md`, rakun row);
+- step 4's fifth box — nothing in rakun reads `rakun.actions.field` / `rakun.actions.header` yet
+  (rakun front 24's action dispatcher), so "rakun refuses to start its action dispatcher naming
+  the key" has no dispatcher to refuse; the mapping and the 307 are asserted;
+- step 4's last box — `jhonstart-forms/test/form_test.bp` and jhonstart's `examples/forms` spell
+  `__bp_action` / `X-Bp-Action` as literals (jhonstart's).
 
-| # | Finding | Minimal repro | Workaround in onze |
-|---|---|---|---|
-| F1 | **Closed** (the erlang test runner loads the sibling a `pub val` is read from; `tests/language/modules/pub_val_in_a_test`). A `pub val` imported from a sibling module is `undefined` on commonJS and fails the erlang compile (`escript: There were compilation errors`) | `src/a.bp`: `pub val greeting: string = "hi";` · `test/a_test.bp`: `import {greeting} from "a"; test "r: x" { assert greeting == "hi"; }` | every constant is a `pub fn` |
-| F2 | **Closed** (the type closure also reads the types the declaring module imports; `tests/language/modules/import_type_closure_across_modules`). Importing a record type from another package does not bring the types its fields or methods name from the package's *other* modules: `unknown type 'Other'`, located at the dependency's line in the consumer's file | lib `a.bp`: `pub type Other(y: i32)`; lib `c.bp`: `import {Other} from "a"; pub type Outer(others: Array<Other>) {…} pub fn outer() -> Outer {…}`; app: `import {Outer, outer} from "lib"; pub fn seven() -> Outer { return outer(); }` | `integration.bp` imports `RenderPlugin`, `RequestData`, `ErrorInfo`, `LayoutProps`, `PageContext`, `OpenGraph`, `TwitterCard`, `Icons` beside `App` / `PageInput` / `UiSegment` |
-| F3 | **Closed** by decision 143 — a dependency's own `dependencies` load transitively, each package once, after the packages it depends on; a name on two directories and a cycle are refused on the manifest entry |
-| F4 | **Closed** (method bodies receive the `@Option` / `@Result` method lowerings; `tests/language/run/unwrap_or_positions.bp`). `xs.at(i).unwrapOr(d)` inside a record method is not lowered: commonJS `__bp_array_at(...).unwrapOr is not a function`, erlang module does not compile; the same body in a free function works | `pub type Box(items: Array<R>) { pub fn firstV(self: Self) -> string { val hit: Array<R> = self.items.filter({ r -> r.v != "" }); return hit.at(0).unwrapOr(R(v: "")).v; } }` | the method calls a free function |
-| F5 | **Closed** (`build`, `check` and `test` read the manifest's `src`; `tests/language/modules/src_at_package_root`). A package whose `"src"` is `"."` is not honoured: `botopink check` answers "no source files found in src/ or test/", and a test cannot import a nested module | `{ "src": ".", "entry": "root.bp" }`, `root.bp` `pub mod lib;`, `lib/mod.bp` `pub mod db;`, `lib/db.bp` `pub fn one() -> i32 { return 1; }`, `test/a_test.bp` `import {one} from "lib.db"; test "p: x" { assert one() == 1; }` | the blog and the scaffold keep their sources under `src/` |
-| F6 | **Closed** (every expression statement of an `if` branch is walked by the transform; `tests/language/run/string_slice_in_if_branch.bp`). On erlang, a one-argument `s.slice(1)` as an `if`-expression branch lowers to an undefined `string_slice/2` in a module with no statement-form one-argument slice | `pub fn tail(s: string) -> string { return if (s == "/") "index.html" else s.slice(1) + "/index.html"; }` | `s.slice(1, s.length())` |
-| F7 | **Closed** (integer `/` truncates toward zero on every backend; `tests/language/run/integer_division_truncates.bp`). `i32 / i32` divides as a float on commonJS (`7 / 2` is `3.5`) and as an integer on erlang (`3`) | `pub fn half(n: i32) -> i32 { return n / 2; }` with `assert half(7) == 3` — fails on commonJS only | an `idiv` host cell (`Math.trunc` / `div`) |
-| F8 | **Closed** (an import from a module that does not lex or parse reports that module's located error; `tests/language/modules/lexer_error_in_imported_module`). A lexer error inside an imported module is not printed; the importer reports "imported symbol is not exported by the named module" | a module whose triple-quoted template holds `\.` ("bad string escape"), imported by a sibling | `[.]` in the regex; `botopink test` on the module alone shows the real error |
-| F9 | **Closed** (a parenthesised expression is walked like the one it holds; `tests/language/run/unwrap_or_positions.bp`). F4 widens: `xs.at(i).unwrapOr(d)` is emitted as a call to an undefined `unwrapOr` also as an `if`-expression branch followed by a field read, nested inside another `unwrapOr`, or over a `map` result whose element type is not annotated (commonJS `is not a function`, erlang `unwrapOr/2 undefined`) | `val sizes = xs.map({ x -> #(1, 2) }); for (xs) { x -> val z = sizes.at(0).unwrapOr(#(0, 0)); }` | a `val` per step and an annotated `Array<…>` |
-| F10 | **Closed** by decision 140 (the entry runs each imported module's `'_botopink_init'/0`, dependencies first, in a build and in a test runner; `tests/language/modules/pub_val_across_modules`). On erlang a module-level `val` with an effect is the module's `'_botopink_init'/0`, and nothing calls it for a module that is only imported — a `#[page]` / `#[layout]` registration in `app/layout.bp` never runs when a test (or a server) imports it; on node the require runs it | `lib/a.bp`: `val _r = register("x");` (any effectful call), imported by a test that reads the registry | onze core's `loadModuleBodies(atoms)` calls each module's init; the boot owes the call for the staged app |
+### Compiler findings
+
+F1–F10 are closed (`status.md` § Done, the `onze F…` rows) and onze carries none of their
+workarounds: constants are `pub val`s, the boot runs no module body by hand (decision 140),
+integer `/` replaces the `idiv` cells, a one-argument `slice` is written as such, record methods
+use `at(i).unwrapOr(d)`, a member lists only what it imports (decision 143), and the scaffold may
+put its app at the project root (`onze create --no-src-dir`). Met while adopting, recorded in
+`../language-gaps.md`: calling a record value (`g()`) type-checks and fails at run time; an `as`
+alias of an imported type still binds the declared name, so one module cannot hold rakun's `App`
+and jhonstart's (`onze-server` holds jhonstart's as the core's `SiteRender` function value); a
+package handle narrowed nothing, so rakun's and jhonstart's modules refused each other's names in
+one build — fixed in the compiler (`tests/language/modules/import_same_name_from_two_packages`).
 
 ## Definition of done
 
