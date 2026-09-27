@@ -47,7 +47,7 @@ the grep stage before any test.
 - [ ] `00-gate/99-gate-rakun` — critical · blocked on nothing (`gate-g` confirms `rc3-a`; the migration proceeds under the recommendation)
 - [ ] `00-gate/100-gate-onze` — critical · blocked on nothing
 - [x] `00-gate/101-gate-jhonstart` — done: 29/29 cells, hook and CI hard, `repro/` gone, PK-5 reformat but for `link.bp` (the formatter mangles `..p` — `112`)
-- [ ] `00-gate/108-gate-erika` — medium · blocked on nothing
+- [x] `00-gate/108-gate-erika` — done: 6/6 cells (`erika-linq` widened to erlang), hook and CI hard, no `beam` row, guard files byte-identical to jhonstart's
 - [ ] `00-gate/109-gate-emilia` — medium · blocked on nothing
 - [ ] `00-gate/114-gate-docs-and-ci` — high · any time · `gate-e`, `gate-f`, `gate-j`
 - [ ] `02-std-and-packaging/97-std-dedupe` — high · after `00-gate` · blocked on nothing
