@@ -15,8 +15,9 @@ closest `AGENTS.md` in each directory you touch.
 | `repository/botopink-lang/` | Compiler (`modules/compiler-core`), CLI, language server, lib-test-runner, `libs/std` |
 | `repository/{emilia,erika,jhonstart,onze,rakun}/` | Libraries written in botopink |
 | `repository/vscode-extension/` | VS Code extension |
-| `specs/1.0.10-beta/` | Current milestone (compiler carry-over · std · packaging · rakun · jhonstart · emilia · onze): index in `overview.md`, ownership in `fronts.md`, per-library `modules.md` / `test-snap.md`; new fronts start from `specs/__template.md` |
-| `specs/1.0.5-beta/` | Closed compiler milestone (`closure.md`); its open work is `specs/1.0.10-beta/00-compiler-carry-over/`. The `.tasks/*` worktrees are its fronts, still to be merged or continued |
+| `specs/1.0.11-beta/` | Current milestone: `00-gate` first (a 100 % green gate in every repository, zero tolerated reds, cut one front per repository / compiler area, plus a gate-performance front), then `01-compiler` · `02-std-and-packaging` · `03-rakun` · `04-jhonstart` · `05-emilia` · `06-onze` · `07-bundled-libs` (what the frameworks copy from each other, extracted under decisions 115–117). Index in `overview.md`, ownership and the parallel groups in `fronts.md`, the living checklist in `status.md`, the 1.0.10 → 1.0.11 map in `carried.md` and each track's `carried.md`; new fronts start from `specs/__template.md`. A carried front keeps its global number; decisions continue at 144 |
+| `specs/1.0.10-beta/` | Closed ecosystem milestone (`closure.md`, measured at the close); frozen — every open item moved to `specs/1.0.11-beta/` with the deep dives it still needs copied beside it |
+| `specs/1.0.5-beta/` | Closed compiler milestone (`closure.md`); its open work went to 1.0.10-beta's `00-compiler-carry-over/` and now lives in `specs/1.0.11-beta/01-compiler/` |
 | `specs/1.0.0-beta/` … `1.0.4-beta/` | Closed. 1.0.6–1.0.9-beta were absorbed into 1.0.10-beta and deleted (decision 68); the mapping in `specs/1.0.10-beta/unification.md` |
 | `todo.md` | Live plan of the task in the current checkout/worktree — git-ignored, never committed |
 | `architecture.md` | Comptime evaluation pipeline, current state |

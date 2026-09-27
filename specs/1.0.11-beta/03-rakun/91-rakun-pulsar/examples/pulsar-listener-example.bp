@@ -1,0 +1,109 @@
+// Front 91 — rakun Pulsar: a listener, a reader, and the decisions that are values.
+//
+// Server-side file. The Pulsar binary protocol itself is not in this file and cannot
+// be: with no byte type and no bitwise operators, the frame codec lives entirely in an
+// `#[@External.Erlang]` module and botopink holds the façade. What is left here — topic
+// names, cursors, subscription types, the outcome contract — is the part an application
+// author touches, and all of it is assertable without a broker.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/messaging/pulsar.html
+//   https://pulsar.apache.org/docs/next/developing-binary-protocol/
+
+import {service} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
+import {Delivery, Outcome} from "rakun-messaging";
+import {TopicName, parseTopic, renderTopic, pulsarSend, pulsarListener, pulsarReader, startCursor, subscriptionType} from "rakun-messaging";
+
+// `Delivery` and `Outcome` come from fronts 15 and 86.
+
+// LANGUAGE GAP: no byte or binary type and no bitwise operators, so the varint, length
+// prefix and CRC32C of a Pulsar frame cannot be written in botopink. Nearest valid form:
+// the codec is one Erlang cell and nothing below touches a byte.
+
+fn classifyInvoice(delivery: Delivery) -> Outcome {
+    val tenant = delivery.header("tenant");
+    if (tenant == "") {
+        return Outcome.Reject(reason: "message published outside a tenant");
+    };
+    val body = delivery.body;
+    if (body == "") {
+        return Outcome.Retry(reason: "empty payload");
+    };
+    return Outcome.Done;
+}
+
+#[service]
+type InvoiceListener {
+    #[pulsarListener("persistent://acme/billing/invoices")]
+    pub fn onInvoice(self: Self, delivery: Delivery) -> Outcome {
+        return classifyInvoice(delivery);
+    }
+}
+
+#[service]
+type InvoiceBacklog {
+    #[pulsarReader("persistent://acme/billing/invoices", "earliest")]
+    pub fn replay(self: Self, delivery: Delivery) -> i32 {
+        @print("replayed ${delivery.body}");
+        return 0;
+    }
+}
+
+#[service]
+type InvoicePublisher {
+    pub fn issue(self: Self, id: string) -> i32 {
+        return pulsarSend("persistent://acme/billing/invoices", "invoice:" + id);
+    }
+}
+
+test "a bare topic name fills the persistent, public and default parts" {
+    val bare = parseTopic("orders");
+    assert bare.persistence == "persistent";
+    assert bare.tenant == "public";
+    assert bare.namespace == "default";
+    assert bare.topic == "orders";
+    assert renderTopic(bare) == "persistent://public/default/orders";
+}
+
+test "a fully qualified topic keeps every part it was given" {
+    val full = parseTopic("non-persistent://acme/billing/invoices");
+    assert full.persistence == "non-persistent";
+    assert full.tenant == "acme";
+    assert full.namespace == "billing";
+    assert full.topic == "invoices";
+    assert renderTopic(full) == "non-persistent://acme/billing/invoices";
+}
+
+test "a reader cursor is one of three positions and an unknown one is refused" {
+    assert startCursor("earliest") == "earliest";
+    assert startCursor("latest") == "latest";
+    assert startCursor("(3,7,-1)") == "(3,7,-1)";
+    assert startCursor("yesterday") == "";
+}
+
+test "key_shared is the only subscription type that keeps per-key order" {
+    assert subscriptionType("exclusive") == "exclusive";
+    assert subscriptionType("shared") == "shared";
+    assert subscriptionType("failover") == "failover";
+    assert subscriptionType("key_shared") == "key_shared";
+    assert subscriptionType("round_robin") == "";
+}
+
+test "a message published outside a tenant is rejected, an empty payload is retried" {
+    val untenanted = Delivery(destination: "invoices", body: "invoice:1", headers: []);
+    val rejected = case classifyInvoice(untenanted) {
+        Done -> "done";
+        Retry(reason) -> "retry";
+        Reject(reason) -> "reject";
+    };
+    assert rejected == "reject";
+
+    val empty = Delivery(destination: "invoices", body: "", headers: [#("tenant", "acme")]);
+    val retried = case classifyInvoice(empty) {
+        Done -> "done";
+        Retry(reason) -> "retry";
+        Reject(reason) -> "reject";
+    };
+    assert retried == "retry";
+}

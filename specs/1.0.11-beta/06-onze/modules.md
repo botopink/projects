@@ -1,0 +1,62 @@
+# Modules — `repository/onze` as it is on disk
+
+Measured with `find repository/onze -name '*.bp'` and the members' `botopink.json` at the opening
+of this milestone. The 1.0.10 `modules.md` argued for eight members and this is what landed, with
+the file names the fronts chose where they differ from the plan (each difference has its reason in
+the front's 1.0.10 *Where it stands*).
+
+## Members — eight
+
+| Member | `src/` | `test/` | Targets | Depends on |
+|---|---|---|---|---|
+| **`onze`** (core) | `root.bp`, `config.bp` (with `lang`, `parsePort`, the `pub` Json accessors at `:98-130`), `types.bp` (`AppFile`, `AliasMap`, the segment classification at `:101-127`), `integration.bp` (`bootSite`, `siteRender`, `rakunEntries`, `responseOver`, `chainFor`, `pageInput`) | `config_test`, `types_test`, `integration_test` (22 tests, both rows) | inherits `["commonJS", "erlang"]` | `jhonstart`, `jhonstart-forms`, `jhonstart-emilia`, `emilia` (by `path`) |
+| **`onze-server`** | `root.bp`, `server.bp` (`Onze.run`, `requestData` — `query: []`, `headers: []` at `:76-77`, `cookiePairs` at `:61` —, `responseFor`, `staticRootOf`, `servedRoots`, `servePages`) | `server_test` (10 tests over a real listener) | `["erlang"]` — imports rakun; the commonJS cell is a ledger line (`00-gate`) | `rakun`, `rakun-app`, `rakun-web` (by `path`), `onze`, `onze-assets` |
+| **`onze-test`** | `root.bp`, `core.bp` (`assertConfig`, `assertAppFiles`, `assertAlias`, `assertPublicEnv`), `fixtures.bp` (`Fixture`, `fixtureTree`) | `helpers_test` (7) | inherits | `onze` — a helper group for another member needs that member added (front 49 step 1) |
+| **`onze-cli`** | `root.bp`, `main.bp` (`dev` prints "not available yet" at `:101`), `resolve.bp`, `scan.bp` (`:54` the segment walk), `generate.bp`, `create.bp` (`:84` the flag parser), `info.bp`, `build.bp`, `start.bp` — no `dev.bp` | `scan_test`, `generate_test`, `create_test`, `build_test`, `start_test` — no `resolve_test` | `["commonJS"]` — the erlang cell is a ledger line (`00-gate`) | `onze`, `onze-bundler`, `onze-assets`, `onze-release` |
+| **`onze-bundler`** | `root.bp`, `manifest.bp`, `scan.bp`, `graph.bp`, `refusal.bp`, `chunk.bp` (`:30-33` the segment read), `fixture.bp` (the frozen fixture app every suite reads), `entry.bp` (`:182` the Json accessor), `script.bp`, `rebuild.bp`, `hooks.bp` (the tags as jhonstart's `RenderHooks`), `link.bp` | `manifest_test` (both), `graph_test`, `refusal_test`, `entry_test`, `chunk_test`, `link_test`, `rebuild_test` (42 tests, both rows) | inherits | `jhonstart` (by `path`), `emilia`, `onze` |
+| **`onze-assets`** | `root.bp`, `style_module.bp`, `stylesheet.bp`, `assets.bp`, `preprocess.bp`, `head.bp` (`pageRenderHooks`), `font_metrics.bp` (the transcribed table), `font.bp`, `image.bp`, `image_handler.bp` (`:92-99` the MIME table) | `style_module_test`, `stylesheet_test`, `preprocess_test`, `font_test`, `image_test` — no `assets_test` (its cases are in `stylesheet_test`) | inherits | `jhonstart` (by `path`), `onze-bundler` |
+| **`onze-og`** | `root.bp`, `card_style.bp` (the plan's `style.bp` — jhonstart exports a `style` element), `metrics.bp` (`:12` a number parser), `layout.bp`, `svg.bp` (`:19` a number parser), `raster.bp`, `response.bp` | `og_test` (one file, 10 tests) | `["erlang"]` — the commonJS cell is a ledger line (`00-gate`) | `jhonstart` (by `path`); it parses front 52's sidecar itself — no `onze-assets` edge |
+| **`onze-release`** | `root.bp`, `spec.bp`, `otp.bp` (`:58-59` the boot script's `BUILD_ID` check), `docker.bp`, `package.bp`, `lifecycle.bp`, `static_export.bp` (the plan's `export.bp`) | `build_id_test` (both), `release_text_test` (both), `package_test` — no `dockerfile_test` (its cases are in `release_text_test`) | inherits | `onze`, `onze-bundler` |
+
+The workspace `botopink.json` is `name onze`, targets `["commonJS", "erlang"]`, workspaces
+`["modules/*", "examples/*"]`.
+
+## Examples — two members (a third planned)
+
+| Example | Front | What | `README.md` |
+|---|---|---|---|
+| `blog/` | 53 | the acceptance app under `src/` (53-a): `app/{layout,page,not-found}.bp`, `app/blog/**`, `app/dashboard/**`, `components/{nav,post_card,like_button}.bp`, `lib/db.bp`; tests `db_test`, `render_test`, `tags_test` (both rows) | missing |
+| `scaffold/` | 50 | `onze create --yes`'s committed output at the project root (`app/`, `root.bp`; `"src": "."`), targets both | missing |
+| `static-site/` | 71 | `output: export` — **does not exist** (71 step 4) | — |
+
+`examples/README.md` (directory-level) describes the three; it is not an example's README.
+
+## Front → files, in this milestone
+
+Four fronts run together on disjoint files; the fifth is read-only against them.
+
+| Front | Owns | Hand-offs |
+|---|---|---|
+| **49** (carries 69) | `modules/onze/**`, `modules/onze-server/**`, `modules/onze-test/{botopink.json,src/root.bp,src/core.bp,src/fixtures.bp}` and the group stubs it creates (`src/{cli,bundler,assets,og,release,e2e}.bp` — empty modules with their `pub mod` lines, so no later front touches `root.bp`), `docs.md`, `AGENTS.md` | 50 · 51 · 71 · 53 fill the group file each owns |
+| **50** (carries 68) | `modules/onze-cli/**`, `modules/onze-bundler/**`, `examples/scaffold/**`, `modules/onze-test/src/{cli,bundler}.bp` | step 5 consumes 71's `bin/onze` |
+| **51** (carries 52 · 70) | `modules/onze-assets/**` (its `root.bp` and `botopink.json` included — the lowest-numbered front owning the member here; 69's items moved to 49, which touches only `onze-server`), `modules/onze-og/**`, `modules/onze-test/src/{assets,og}.bp` | the `/_onze/image` route's registration line in `onze-server/src/server.bp` is handed to 49 (one line, one commit, 49's) |
+| **71** | `modules/onze-release/**`, `examples/static-site/**` (new), `modules/onze-test/src/release.bp` | `onze-cli/src/{build,start}.bp`'s two lines (`includeErts` passed; `start` execs `bin/onze`) are 50 step 5's |
+| **53** | `examples/blog/**`, `modules/onze-test/src/e2e.bp`, `examples/blog/test/serve.sh` | read-only elsewhere; a needed change is reported to its owner |
+
+Files a `07-bundled-libs` front owns for the duration of its landing, never edited at the same
+time: `onze/src/types.bp:101-127`, `onze-cli/src/scan.bp:54`, `onze-bundler/src/chunk.bp:30-33`
+(`102-routing-conventions`); `onze-server/src/server.bp:61`, `onze-assets/src/image_handler.bp:92-99`
+(`104-http`); `onze-release/src/{otp,docker,spec}.bp` (`107-release`, after 71).
+
+## Targets and the three restricted cells
+
+`onze-cli` (`["commonJS"]`), `onze-og` and `onze-server` (`["erlang"]`) are restricted by the
+same reasons as in 1.0.10; the ledger lines the gate needs are in [`README.md`](./README.md)
+§ Handed to 00-gate. Every other member runs both rows.
+
+## Relations
+
+Unchanged from 1.0.10's cut: onze imports jhonstart, rakun (through `onze-server` only) and the
+bridge; nothing imports onze; onze defines no style sink; onze reads no navigation signal. New in
+this milestone: `onze-server` sets jhonstart's `RenderHooks.onError` to rakun-logging's digest
+(49 step 3); `types.bp` consumes `routing.conventions` once `102` lands (49-d amended).
