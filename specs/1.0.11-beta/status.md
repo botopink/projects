@@ -1,7 +1,8 @@
 # Status — 1.0.11-beta
 
-**Updated:** 2026-09-26 · **Progress:** ~0 % (0 of 65 fronts landed; the milestone opened today at
-1.0.10-beta's close — [`closure.md`](../1.0.10-beta/closure.md))
+**Updated:** 2026-09-27 · **Progress:** ~1 % (0 of 65 fronts landed, 1 in analysis with 3 of 4
+steps done; the milestone opened 2026-09-26 at 1.0.10-beta's close —
+[`closure.md`](../1.0.10-beta/closure.md))
 
 Count: `00-gate` 11 · `01-compiler` 17 · `02-std-and-packaging` 2 · `03-rakun` 19 · `04-jhonstart` 3 ·
 `05-emilia` 2 · `06-onze` 5 · `07-bundled-libs` 6. A front in analysis counts for its ticked steps.
@@ -21,7 +22,7 @@ the grep stage before any test.
 
 ## In analysis
 
-- (none)
+- [ ] `00-gate/112-gate-format` — steps 1 and 4 done; step 2: the two examples and `compiler-cli/tests` reformatted and in `TREES`, `libs/std` waits on the 26 snapshots that quote its source (re-recorded with its reformat, after 110); step 3: the gate-c exemption and 36 of 37 `tests/language/modules` files landed, the tree waits on four `.expect` lines of one cell (`01-compiler/12-language-tests`), and `tests/language/{run,test}` on two printer defects handed to `01-compiler/16-formatter` (record-constructor spread printed `..: x`; `try ` inserted before a bare `catch`) — [README](./00-gate/112-gate-format/README.md) § Current state
 
 ## Pending
 
@@ -43,7 +44,6 @@ the grep stage before any test.
 
 ## Open
 
-- [ ] `00-gate/112-gate-format` — critical · lands first inside wave 0 · blocked on nothing
 - [ ] `00-gate/110-gate-wasm` — critical · blocked on `ck-host` for its last step only
 - [ ] `00-gate/99-gate-rakun` — critical · blocked on nothing (`gate-g` confirms `rc3-a`; the migration proceeds under the recommendation)
 - [ ] `00-gate/100-gate-onze` — critical · blocked on nothing
