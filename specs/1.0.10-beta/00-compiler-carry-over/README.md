@@ -238,9 +238,11 @@ applied.
 - [x] jhonstart's `attrs: []` paddings deletable — measured: 178 sites, every one a call of an
       `element.bp` function declaring `attrs: Array<#(string, string)> = []`, a closed default that
       travels; deleting them is jhonstart's
-- [ ] not reached: an interface ASSOCIATED fn (`Pair.of` — the site holds only a `T.func`); a free
-      `fn` declaring a leading default is `fn-param-default-trailing-only` while a record may declare
-      one (`decisions-pending.md` ck2-c)
+- [x] a behavior's ASSOCIATED fn (`Scale.by(2)`) — the site holds only a `T.func`, so the parameters
+      as written come from the behavior's declaration (`run/associated_fn_default`,
+      `reject/associated_fn_missing_required`)
+- [ ] a free `fn` declaring a leading default is `fn-param-default-trailing-only` while a record may
+      declare one (`decisions-pending.md` ck2-c, with the maintainer)
 
 ## C-05 — Module-level `var`, and the `@BeamMemory` carrier
 
@@ -589,10 +591,10 @@ non-empty `.d.ts` (no `tsc` in the checkout when 04 closed) and `42.toString()` 
 - [x] an out-of-range read prints `null` on all four backends (`run/index_past_the_end_is_null`);
       `tuple_labels.bp`'s §6 T4 cells read `rs.at(0)?.b`, the member access on a `?T` being the error
 - [x] `Env.warnings` exists and one warning renders (the always-false `is` of 01 step 3 is the first) — `OkData.warnings`, rendered by `botopink check` under `warning:`; §1.4's `[]` birth is the second writer. `build` / `test` / the LSP do not print them yet
-- [ ] `any` gone from the grammar, `erlang.bp`/`beam.bp` re-spelled, or the row re-decided with the
-      measurement — measured: `any` is still bound as a primitive (`env.zig` — the effect wrappers'
-      `E = any` default reads it), and `val x: any = 1;` reds `expected any, got i32` rather than
-      naming the removed type
+- [x] `any` gone: no longer bound, a written `any` is `any-type-removed` at the annotation naming
+      `unknown` (`reject/any_type_removed`); `erlang.bp`, `beam.bp`, `io.net`, `regex`,
+      `builtins.d.bp`, jhonstart's hooks and rakun's three handles re-spelled `unknown`, which takes
+      any value (`run/host_unknown_parameter` — `erlang.element(1, t)` on erlang and beam)
 - [x] `Array.unique` answers on both backends, a `libs/std` test (decision 9 (b): the body rewritten; `test/primitives_gaps_test.bp` `array unique drops consecutive duplicates`, commonJS and erlang)
 - [ ] the five documents corrected; `tsc --noEmit` green over every `.d.ts`; `42.toString()` runs on node
 
@@ -646,8 +648,12 @@ lands after it re-records them again.
 **Partial work:** none.
 **Depends on:** every other 01 row here (C-02, C-04, C-08, C-09, C-14, C-15, C-18).
 **Acceptance:**
-- [ ] 0 unlocated `TypeError`; every error snapshot's box names its file; the re-records read one by
-      one, source-only diffs apart from output diffs
+- [x] 0 unlocated `TypeError`, measured: `comptime/tests/located_errors.zig` walks every
+      `tests/language/reject` cell through `comptime.compile` (114 type errors, 0 unlocated), the
+      checker's test harness refuses an unlocated error in every unit test, and the runner requires
+      every reject cell to pin its location. Two raisers were unlocated and are located (a decorator
+      argument of the wrong kind — `reject/decorator_argument_kind` — and `@comptimeError()`); every
+      error snapshot's box names its file (01 step 9)
 
 ## C-22 — The review backlog
 

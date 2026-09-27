@@ -3,7 +3,7 @@
 **Twenty-six questions are open** (lg-a, lg-b, lg2-a…w, ck2-c). Implementation choices wait for the maintainer to confirm or reverse them:
 front 24's (24-a…c, 24-g), `01-std`'s (01std-a, 01std-c…e, std-a…c), `00 · 23-std-purity`'s (23-a…c), front 95's
 (95-a…e), `00 · 16-formatter`'s (16-a…b), track C's (26-a…b, 27-a, 30-b…e, 31-a), `00 · 04-js` /
-`05-wasm`'s (0405-b), `00 · 01-checker`'s (01c-a…b), `checker-rows-2`'s (ck2-a, ck2-b, ck2-d, ck2-e),
+`05-wasm`'s (0405-b), `00 · 01-checker`'s (01c-a…b), `checker-rows-2`'s (ck2-a, ck2-b, ck2-d, ck2-e), `residual-checker-3`'s (rc3-a…c),
 track D's (05emilia-a…l), track E's (49-a…d, 52-a, 53-a, 68-a…c, 69-a), track B's (03r-a…e) and the host methods' (lem-a…f). The
 open questions are the language-gaps sweeps' lg-a, lg-b and lg2-a…w, and `checker-rows-2`'s ck2-c (§ Open). Every other question raised so far is answered in
 [`decisions-taken.md`](./decisions-taken.md) — 24-f is decision 143 (library resolution stops at the
@@ -313,6 +313,63 @@ reverses each. Numbered `ck2-a` … so they do not collide with the decisions.
 > resolved in the decorator's module (decision 112's hygiene extended to `@emit`).
 > **Recommendation.** (a) now; (b) is the general answer for every library's decorator and needs
 > decision 112 to say it covers `@emit`.
+> **Blocks.** Nothing.
+
+## `residual-checker-3` — choices made in implementation, to confirm
+
+Decided by `front/residual-checker-3` so its rows could land; the maintainer confirms or reverses
+each. Numbered `rc3-a` … so they do not collide with the decisions.
+
+### rc3-a · An `if` expression is never an operand, parenthesised or not
+
+> **Raised by:** `residual-checker-3`, the status row "`1 + if (c) { 2 } else { 3 }` is the generic
+> `this token cannot appear here`"
+> **Measured.** `docs.md` teaches `if` as a value only as a `val` initializer (§ If / else, and the
+> `ternary-absent` row's `val x = if (c) { a } else { b };`); nothing documents it as usable
+> anywhere. The parser read it only in `parseExpr`'s prefix arm — the positions decision 137 lists
+> for `try` / `await` — so under an operator or a unary it was the catch-all, and inside parentheses
+> (`(if (c) a else b).v`) it parsed. The repository wrote the parenthesised form in six places:
+> `libs/std/src/testing/snapshots.bp`, `tests/language/run/unwrap_or_positions.bp` (twice) and four
+> rakun files (`rakun-logging/src/endpoints.bp`, `rakun-session/test/rotation_test.bp`,
+> `rakun/src/config.bp`, `rakun-data/src/sql/params.bp`), each rewritten to bind the value first.
+> **Options.** (a) decision 137's reading, parentheses included: `if-operand` at the `if` under an
+> operator, a unary, `??`, an index and inside a group (implemented; `reject/if_operand_of_operator`,
+> `reject/if_in_parentheses`, `reject/if_operand_of_unary`); (b) as (a), but a parenthesised `if`
+> is legal — the group is the delimiter a reader expects; (c) `if` is an operand anywhere, as in
+> Rust or Kotlin.
+> **Recommendation.** (a) — the most restrictive, and the same rule for every expression that begins
+> with a keyword; (b) reopens decision 137's own argument that a group exists only to become an
+> operand.
+> **Blocks.** Nothing.
+
+### rc3-b · `unknown` is the host vocabulary's spelling once `any` is deleted
+
+> **Raised by:** `residual-checker-3`, C-18's `any` row and the status row "a parameter typed `any`
+> refuses an `i32`"
+> **Measured.** Decision 31 deleted `any` and its correction said the deletion owes the host
+> declarations a replacement spelling: 51 declarations of `std/erlang`, 10 of `std/beam`, the
+> handles of `io.net` and `regex`, `builtins.d.bp`'s `getContext`, jhonstart's `deps: any[]` and
+> three rakun handles. `any` was a closed type — `erlang.element(1, t)` refused an `i32`.
+> **Options.** (a) `unknown` (decision 8 §2): it takes any value and is tested with `is` before use
+> (implemented; `run/host_unknown_parameter`); (b) a dedicated opaque host type (`HostTerm`) that
+> takes nothing a botopink value is, keeping `any`'s closedness under a new name; (c) a botopink
+> type per declaration (`abs(n: i64) -> i64`, `element(n: i32, t: unknown) -> unknown`).
+> **Recommendation.** (a) — the language already has the type that holds any value; (c) is the
+> refinement a host vocabulary can grow into one declaration at a time.
+> **Blocks.** Nothing.
+
+### rc3-c · A narrowed `var` is assigned its declared type, and the assignment ends the narrowing
+
+> **Raised by:** `residual-checker-3`, the `&&` / `while` narrowing row
+> **Measured.** `if (x != null) { x = x.next; }` (a `var x: ?Node`) was `expected Node, got ?Node`:
+> the branch rebound `x` to the payload and the assignment was checked against it — which is why a
+> `while (x != null)` body was never narrowed.
+> **Options.** (a) the assignment checks against the declared type and the name takes that type
+> back for the rest of the scope (implemented; `reject/narrow_ends_at_assignment`); (b) flow typing:
+> the name takes the ASSIGNED value's type (`x = Node(…)` keeps it narrowed); (c) a narrowed `var`
+> may not be assigned inside the narrowed scope.
+> **Recommendation.** (a) — sound with no flow analysis; (b) is the refinement, (c) refuses the
+> linked-list walk every library writes.
 > **Blocks.** Nothing.
 
 ## Front 23 (`00 · 23-std-purity`) — choices made in implementation, to confirm
