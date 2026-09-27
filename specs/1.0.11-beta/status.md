@@ -1,6 +1,6 @@
 # Status — 1.0.11-beta
 
-**Updated:** 2026-09-27 · **Progress:** ~3 % (2 of 65 fronts landed, 99 and 110 at 2 of 3 steps; the milestone opened today at
+**Updated:** 2026-09-27 · **Progress:** ~5 % (4 of 65 fronts landed: 99-rakun, 100-onze, 112-format, 114-docs-and-ci; 110 at 2 of 3 steps; the milestone opened today at
 1.0.10-beta's close — [`closure.md`](../1.0.10-beta/closure.md))
 
 Count: `00-gate` 11 · `01-compiler` 17 · `02-std-and-packaging` 2 · `03-rakun` 19 · `04-jhonstart` 3 ·
