@@ -1,6 +1,11 @@
 # Status — 1.0.10-beta
 
-**Updated:** · **Progress:** ~23 % (29 of 127 work items landed)
+> **Closed 2026-09-26.** This file is frozen as it stood at the close; the measured record is
+> [`closure.md`](./closure.md) and the live plan is [`../1.0.11-beta/status.md`](../1.0.11-beta/status.md).
+> Every Pending / In-analysis / Open line below has a 1.0.11-beta front (map: each track's
+> `carried.md`). Nothing here is updated again.
+
+**Updated:** 2026-09-26 (frozen) · **Progress:** ~23 % (29 of 127 work items landed)
 
 Count: 32 compiler carry-over items (`00`, C-01…C-32) · `01-std` (6 steps + 3 carried std fronts + the bundled `routing`, `actions` and `validation` libraries) ·
 `02-packaging` · 51 rakun · 9 jhonstart · 22 emilia · 9 onze fronts. The percentage weighs items

@@ -1,0 +1,147 @@
+// Front 78 — rakun entities: the reference's own City example, carried through.
+//
+// `05-data.md § JPA e Spring Data JPA` shows a `City` entity and a repository with
+// `Page<City> findAll(Pageable)` and `City findByNameAndStateAllIgnoringCase(...)`.
+// This is that, in botopink: the mapping declared once on the record, the queries
+// declared by method name, and the SQL produced at compile time.
+//
+// Server side — every declaration below compiles to BEAM.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/data/sql.html#data.sql.jpa-and-spring-data
+//   https://docs.spring.io/spring-boot/reference/data/sql.html#data.sql.jooq
+//
+// `#[entity]`, `#[id]`, `#[generated]`, `#[column]`, `#[derived]`,
+// `#[entityRepository]`, `Page`, `Pageable`, `Sort` and `queryOf` are delivered by
+// this front. `SqlTemplate`, `#[repository]` and `param` are front 08's.
+
+import {repository, service} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkProp, rkPropInt} from "rakun";
+import {SqlTemplate, Row, param} from "rakun-data";
+import {entity, id, generated, column, derived, entityRepository} from "rakun-data";
+import {Page, Pageable, Sort, queryOf, derivedSql} from "rakun-data";
+
+// `CityCol` and `CityMeta`, used further down, are NOT imported: `#[entity]`
+// emits them into this module, as sibling values rather than as members of
+// `City`, because a decorator cannot add a member to the type it annotates.
+
+#[entity("cities")]
+pub type City(
+    #[id]
+    #[generated]
+    id: i32,
+
+    name: string,
+
+    // `state` would derive the column `state`; the table calls it `state_name`.
+    #[column("state_name")]
+    state: string,
+
+    population: i32,
+)
+
+#[repository]
+#[entityRepository("City")]
+pub type CityRepo(
+    sql: SqlTemplate,
+) {
+    // LANGUAGE GAP: no bodyless method in a `type` body — with abstract methods
+    // this line would be `#[derived] pub fn findByNameAndStateAllIgnoringCase(self: Self, name: string, state: string) -> City[];`
+    // and the forwarder below would not exist.
+    #[derived]
+    pub fn findByNameAndStateAllIgnoringCase(self: Self, name: string, state: string) -> City[] {
+        return __rkDerived_CityRepo_findByNameAndStateAllIgnoringCase(self.sql, name, state);
+    }
+
+    // LANGUAGE GAP: no bodyless method in a `type` body — same shape, same reason.
+    #[derived]
+    pub fn findByPopulationBetween(self: Self, low: i32, high: i32) -> City[] {
+        return __rkDerived_CityRepo_findByPopulationBetween(self.sql, low, high);
+    }
+
+    // LANGUAGE GAP: no bodyless method in a `type` body — same shape, same reason.
+    #[derived]
+    pub fn findFirstByStateOrderByPopulationDesc(self: Self, state: string) -> ?City {
+        return __rkDerived_CityRepo_findFirstByStateOrderByPopulationDesc(self.sql, state);
+    }
+
+    // LANGUAGE GAP: no bodyless method in a `type` body — same shape, same reason.
+    #[derived]
+    pub fn countByState(self: Self, state: string) -> i32 {
+        return __rkDerived_CityRepo_countByState(self.sql, state);
+    }
+
+    // LANGUAGE GAP: no bodyless method in a `type` body — same shape, same reason.
+    #[derived]
+    pub fn findAllByState(self: Self, state: string, page: Pageable) -> Page<City> {
+        return __rkDerived_CityRepo_findAllByState(self.sql, state, page);
+    }
+
+    // Derivation cannot express this one — a disjunction with a grouped term — so
+    // it takes the typed builder instead of a string. `CityCol.name` is a field
+    // read on an emitted record, so renaming the field breaks this line.
+    pub fn searchLargeOrNamed(self: Self, fragment: string, floor: i32) -> City[] {
+        return queryOf(CityMeta)
+            .where(CityCol.population, ">=", floor.toString())
+            .or(CityCol.name, "like", "%" + fragment + "%")
+            .orderBy(CityCol.population, true)
+            .limit(50)
+            .fetch(self.sql);
+    }
+}
+
+#[service]
+pub type CityService(
+    cities: CityRepo,
+) {
+    pub fn biggestIn(self: Self, state: string) -> string {
+        var name = "none";
+        if (self.cities.findFirstByStateOrderByPopulationDesc(state)) { c -> name = c.name; };
+        return name;
+    }
+}
+
+test "a single-term predicate derives the obvious statement" {
+    assert derivedSql("CityRepo", "countByState")
+        == "select count(*) from cities where state_name = :state";
+}
+
+test "AllIgnoringCase lowers both sides of every term" {
+    assert derivedSql("CityRepo", "findByNameAndStateAllIgnoringCase")
+        == "select id, name, state_name, population from cities where lower(name) = lower(:name) and lower(state_name) = lower(:state)";
+}
+
+test "Between consumes two parameters" {
+    assert derivedSql("CityRepo", "findByPopulationBetween")
+        == "select id, name, state_name, population from cities where population between :low and :high";
+}
+
+test "FirstBy plus OrderBy produces a limit and an optional return" {
+    assert derivedSql("CityRepo", "findFirstByStateOrderByPopulationDesc")
+        == "select id, name, state_name, population from cities where state_name = :state order by population desc limit 1";
+}
+
+test "a Pageable method derives two statements and the count carries no order by" {
+    assert derivedSql("CityRepo", "findAllByState")
+        == "select id, name, state_name, population from cities where state_name = :state order by id asc limit :limit offset :offset";
+    assert derivedSql("CityRepo", "findAllByState.count")
+        == "select count(*) from cities where state_name = :state";
+}
+
+test "a column override reaches the derived statement, not the field name" {
+    val sql = derivedSql("CityRepo", "countByState");
+    assert sql.contains("state_name") == true;
+    assert sql.contains("where state =") == false;
+}
+
+test "the builder and a derived query agree on the same predicate" {
+    val built = queryOf(CityMeta).where(CityCol.state, "=", "CA").toSql();
+    assert built == "select id, name, state_name, population from cities where state_name = :p0";
+}
+
+test "a page reports its own arithmetic" {
+    val empty: City[] = [];
+    val page = Page(content: empty, page: 2, size: 20, totalElements: 45);
+    assert page.totalPages() == 3;
+    assert page.hasNext() == false;
+}
