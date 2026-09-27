@@ -1,151 +1,127 @@
 # Front 114 — gate-docs-and-ci: no `skip` fence, no soft CI row, the meta workflow measured
 
-**Priority:** high — stage 10 is green with 8 of 93 fences unchecked, two of them claims about
-refusals that nothing verifies; the compiler's CI has a row that cannot fail; the meta
-repository's hook-integrity workflow does not exist at the open.
+**Priority:** high — stage 10 was green with 8 of 93 fences unchecked, two of them claims about
+refusals that nothing verified; the compiler's CI had a row that could not fail; the meta
+repository's hook-integrity workflow did not exist at the open.
 **Depends on:** none — group D, independent files. `115` measures stage 10 after it.
-**Owns:** `scripts/check-docs.sh` · the 9 marker lines of `docs.md` (`:223,235,684,736,773,809,1137,1351,1765`)
-and the fence lines immediately after them (a fence language change or a `project` manifest fence —
-no prose edit: `docs.md`'s text is `../../01-compiler/08-hygiene`'s) · `.github/workflows/test.yml`
-of botopink-lang (the windows row `:44-54,159,178`; the `libs` job comment is 113's) · the meta
-repository's `.github/workflows/**` (new) · the snapshot-capture normalisation for windows (the
-framework's capture in `modules/compiler-core/src/codegen/tests/helpers.zig` and
-`modules/test-scratch/**` — measure where CRLF and separators enter; if it is the emitters, it is
-not this front's and the row stays deleted).
+**Owns:** `scripts/check-docs.sh` · the marker lines of `docs.md` and the fence lines after them
+(a fence language change, a `project` manifest fence, a refusal fence's own code — no prose edit:
+`docs.md`'s text is `../../01-compiler/08-hygiene`'s) · `.github/workflows/test.yml` of
+botopink-lang (the `test` job's rows and the erika checkout its `test-docs` step needs; the `libs`
+job comment is 113's) · the meta repository's `.github/workflows/**` and its `AGENTS.md` § CI ·
+the snapshot-capture normalisation for windows (not measured — see step 3).
 **Does not touch:** `docs.md` prose; `README.md`'s one fence (green); the library repositories'
-workflows (99–109's); `scripts/gate.sh` (115's).
+workflows (99–109's); `scripts/gate.sh` (115's); `build.zig`.
 
 ---
 
-## Problem
+## Current state
 
 ```
 $ bash scripts/check-docs.sh
-  — docs.md:1351  skipped: a call the compiler must REFUSE; compiling it is the opposite of the claim
-  — docs.md:1765  skipped: bodies the compiler must REFUSE; compiling them is the opposite of the claim
+self-test: 9 fences — 9 verdicts as expected
 …
-docs: 93 fences — 77 checked, 8 skipped, 0 failed
+docs: 94 fences — 94 checked, 0 skipped, 0 failed      # was 93 — 77 checked, 8 skipped at the open
 ```
 
-Measured at the open (report A stage 10; `grep -n "docs-check: skip" docs.md`: 9 markers, 8
-skipped fences in the run — one marker precedes a fence the extractor does not count as
-`botopink`; step 1 re-measures). `check-docs.sh:26` calls `skip` "the only escape".
+Measured in this front's worktree, botopink-lang at the `feat` tip plus this front's tree. The
+count moved by −3 (three tables are ```` ```text ````), +3 (`:1765` split into four `reject`
+fences) and +1 (the `project` manifest fence); `checked` now counts every fence — a project's
+verdict is credited to each fence written into it, so `checked + failed = fences` (at the open the
+eleven project files counted as three checks, which is why `77 + 8 ≠ 93`).
 
-## Current state
+| Marker (at the open) | Now | Verdict |
+|---|---|---|
+| `:223` `import {of, erika} from "erika"` | `project library src/main.bp` + a ```` ```json ```` fence `project library botopink.json` declaring `"erika": { "git": …, "branch": "feat" }` — resolved **by name** through the roots the harness sets (`libs/`, `<repo>/..`, `<repo>/repository`), no path rewrite | ✓ (3 modules) |
+| `:235` bundled imports | a plain module fence, no marker — the bundled packages resolve by name | ✓ (23 modules) |
+| `:684` literal table · `:773` operator table · `:809` layout sample | ```` ```text ````, no marker | not code |
+| `:736` the two ambient behaviors | a plain module fence, no marker — they type-check | ✓ |
+| `:1137` grammar | the fence had no language; the marker is gone | not code |
+| `:1351` `connect();` | `reject 'connect' expects 2 argument(s), got 0`; the call sits in `fn main() { … }` — a module-level statement is a parse error and a nested `fn` is `nested-fn-decl`, so neither the bare fence nor `body` reaches the arity check | ✓ refused |
+| `:1765` four refusals | four `reject` fences (`effect-try-without-fallible-channel`, `iter-await`, `iter-mixed-yield-return`, `iterator-error-param-removed`); `old()` has the body `{ yield 0; }` — `…` was a lexer error, which is not the claim | ✓ refused, each |
 
-| Marker | Fence | Kind | Answer (gate-e) |
-|---|---|---|---|
-| `docs.md:223` | `import {of, erika} from "erika";` — a library dependency | real program, unchecked | `project` fence with a manifest fence that declares `erika` (the harness resolves `repository/erika` through `libs.zig`'s roots, the way `test-libs` does) |
-| `:235` | `import {match.matchPath, …} from "routing"; … "actions"; … "validation"` | real program, unchecked | `project` fence; the bundled packages resolve by name (`build.zig` `bundled_packages`) — no manifest entry needed; the harness's scratch project gets them |
-| `:684` | a table of literal forms | not a module | the fence stops being ```` ```botopink ```` (a table is `text`); no marker |
-| `:736` | the two behaviors as `libs/std` declares them | not a module | same, or a `body` fence if it type-checks — measure |
-| `:773` | an operator table | not a module | `text` fence |
-| `:809` | a layout sample | not a program | `text` fence |
-| `:1137` | a grammar | not a module | `text` fence |
-| `:1351` | `connect();` with a trailing default — must refuse | a refusal claim | `reject <error-id>` fence: `botopink check` must fail with the named id |
-| `:1765` | `fn g() -> @Iterator<i32> { throw "x"; }` and siblings — must refuse | refusal claims | `reject` fence(s), one per named error id (`effect-try-without-fallible-channel`, …) |
+`check-docs.sh`: `reject [body] <expectation>` — the rest of the comment, verbatim, must appear in
+the first `error` line of a non-zero `botopink check`; the two diagnostic shapes the compiler
+prints (`error[<id>]: …` and `error: <id>: …`) both carry it. One refusal per fence: the checker
+stops at the first failing module (measured: two refusing functions in one module print one
+diagnostic). `skip` is gone; a directive on a non-`botopink` fence (`project` excepted), a `reject`
+with no expectation and an unknown directive fail. Every run judges nine synthetic fences first
+(`--self-test` runs only them): a `reject` that compiles ✗, refused with another diagnostic ✗, the
+right one ✓, `reject body` ✓, `skip` ✗, a red module ✗, a green one ✓, `reject` with no
+expectation ✗, `body` on a ```` ```text ```` fence ✗.
 
-CI (`.github/workflows/test.yml`): `windows-2022` `allow_fail: true` (`:51-52`, "CRLF /
-path-separator drift"); the row skips `beam export audit` (`:159`) and `test-language` (`:178`)
-though it installs OTP (`:75-85`). The meta repository: **no `.github/` directory at the open**
-(`ls .github` at the meta root: no such file; `grep -rn hook-integrity` across the checkout,
-`.tasks/` excluded: 0; report L confirms) — the "hook-integrity workflow" the track brief names
-does not exist, so nothing in CI checks that a submodule bump points at a pushed `feat` commit or
-that the layout `AGENTS.md` describes is the one on disk.
+CI (`.github/workflows/test.yml`): `allow_fail` and `continue-on-error` are gone; the matrix is
+`[ubuntu-22.04, macos-14]` and every row runs every step (`beam export audit` and `test-language`
+no longer conditional). The `test` job checks out erika under `repository/erika` before
+`test-docs` — the docs' `project` fence resolves it there, as the `libs` job's layout does.
 
-Report L's per-repository CI facts this front does *not* own but sequences with: emilia, erika,
-jhonstart and rakun CI test the core member only (`--lib <name>`); onze's loop omits `onze-server`
-and the examples; examples build only on the commonJS row; rakun's `erlang` rows are soft and its
-`beam` rows (and erika's) vacuous — all gate-j, owned by 99, 100, 101, 108, 109. The compiler's
-`libs` job (`test.yml:195-246`) runs every library through `zig build test-libs` and is complete;
-only its header comment (`:13-23`, the ledger sentences) moves, with 113.
+The meta repository: `.github/workflows/hook-integrity.yml`, one job on push/PR to `feat`/`main`,
+checkout with submodules, five hard checks in plain bash (each runnable locally from the meta root
+— the meta `AGENTS.md` § CI lists them). Run against this front's worktree:
 
-## Mechanism
+| Check | Local result |
+|---|---|
+| 1 every submodule pointer on its remote `feat` | ✓ ×7 · a pointer moved to a dangling commit → ✗ |
+| 2 every § Layout path exists (first backticked path per row, `{a,b}` expanded, the git-ignored `todo.md` row excluded) | ✓ ×13 · `CHANGELOG.md` moved away → ✗ |
+| 3 no tracked `*.snap.new` / `*.snap.md.new` / `todo.md` (meta + 7 submodules) | ✓ ×8 · a `git add -f x.snap.new` → ✗ |
+| 4 the five libraries' `pre-commit` + `runner-standalone.sh` byte-identical (jhonstart the reference), `.gitignore` names both candidate patterns, no `known-broken-examples.txt`, `AGENTS.md` names `core.hooksPath` | erika ✓; **emilia** (runner, `.gitignore`, `known-broken-examples.txt`) → 109; **onze** (runner, `.gitignore`) → 100; **rakun** (runner, `.gitignore`) → 99 |
+| 5 `scripts/language-gap-markers.sh` exits 0 | the script does not exist yet → 113 step 4c |
 
-`check-docs.sh:173-207` dispatches on the directive: none → module, `body` → wrapped in `main`,
-`project <name> <path>` → one file of a scratch project, `skip <reason>` → counted and not run.
-A `reject` directive is the same extraction with the opposite verdict: `botopink check` must
-exit non-zero and its first diagnostic must carry the named error id (the ids `tests/language/reject/*.expect`
-already assert; `docs.md` names them in the comments beside the code — `:1351` "expects 2
-argument(s), got 0", `:1765` `effect-try-without-fallible-channel`).
+Checks 4 and 5 go green when 99, 100, 109 and 113 land; nothing here is soft meanwhile.
 
 ## Steps
 
-### Step 1 — `reject` and `project` replace `skip` (gate-e)
+### Step 1 — `reject` and `project` replace `skip` (gate-e) — done
 
-`check-docs.sh`: add `<!-- docs-check: reject <error-id> [<error-id>…] -->` — extract as a module
-(or `body`, a second word), run `botopink check`, pass only when it fails and every named id
-appears; a `reject` that compiles fails the run ("the doc claims a refusal the compiler does not
-make"). Delete the `skip` arm (`:203-207`) — an unknown directive already fails (`:32`). `docs.md`:
-the nine markers rewritten as the table says; the five non-programs lose the `botopink` fence
-language and their marker. The two `project` fences get a manifest fence (`project deps botopink.json`)
-declaring `erika` as a path dependency the harness rewrites to the checkout's `repository/erika`
-(`--lib-root`, the same roots `libs.zig:88` resolves).
+- [x] `bash scripts/check-docs.sh` → `docs: 94 fences — 94 checked, 0 skipped, 0 failed`
+- [x] `grep -c "docs-check: skip" docs.md README.md` = 0; `grep -c '"skip"\|skip)' scripts/check-docs.sh` = 0
+- [x] the harness's self-test (nine synthetic fences, run first on every run; `--self-test`)
+- [x] `--list` prints `reject` for the five refusal fences and `project library …` for the two files
 
-**Acceptance:**
-- [ ] `bash scripts/check-docs.sh` → `docs: 93 fences — 93 checked, 0 skipped, 0 failed` (or 88 checked if the five become `text` and the extractor no longer counts them — state which; `0 skipped` either way)
-- [ ] `grep -c "docs-check: skip" docs.md README.md` = 0; `grep -c '"skip"\|skip)' scripts/check-docs.sh` = 0
-- [ ] a synthetic doc in `scripts/`' own test (`modules/compiler-cli/tests/*.sh` or a `check-docs.sh --self-test`): a `reject` fence that compiles → exit 1; one that refuses with the wrong id → exit 1; the right id → ✓
-- [ ] `--list` prints `reject` and `project` for the rewritten fences
+### Step 2 — `scripts/AGENTS.md` § check-docs.sh — done
 
-### Step 2 — `scripts/AGENTS.md` § check-docs.sh
+- [x] the directive table: `reject` added, `skip` gone; `grep -c "only escape" scripts/AGENTS.md AGENTS.md` = 0
 
-The directive table (`:330-337`): `reject` added, `skip` gone, the sentence "the only escape"
-deleted.
+### Step 3 — the windows row is hard or absent (gate-f) — the row is deleted
 
-**Acceptance:**
-- [ ] `grep -c "only escape" scripts/AGENTS.md` = 0
+The drift was not measured: no windows runner or checkout was available to this front, and a
+normalisation of `helpers.zig`'s capture that no run verified would be a snapshot re-recorded for
+a value nobody saw. Under gate-f's recommendation the row is deleted, not soft; `../../status.md`
+lists the gap. What remains: run the `test` job's steps on a windows runner, list the failing
+snapshot tests by cause (CRLF in captured stdout; `\` in captured paths); if the capture can be
+normalised in `modules/compiler-core/src/codegen/tests/helpers.zig` without touching an emitter,
+do it and restore the row hard, running every stage the ubuntu row runs (OTP, node and wasmtime
+install there; `erlef/setup-beam` supports windows).
 
-### Step 3 — the windows row is hard or absent (gate-f)
-
-Measure the drift: run the `test` job's steps on a windows runner (or a local windows checkout) and
-list the failing snapshot tests by cause (CRLF in captured stdout; `\` in captured paths). If the
-capture can be normalised in the test framework (`helpers.zig`'s RUN LOG capture: normalise line
-endings; paths rendered with `/`) without touching an emitter, do it, run every stage the ubuntu
-row runs (beam export audit and test-language included — OTP and node install there), and set the
-row `allow_fail: false`. If the drift is in the emitters or the row cannot be made hard in this
-milestone, **delete the row** and write the gap in `../../status.md` (a soft row is a tolerance; a
-missing row is a gap).
-
-**Acceptance:**
-- [ ] `grep -c "allow_fail" .github/workflows/test.yml` = 0 (the key is gone; every row is hard by absence of the key), and either the windows row runs every step (`grep -c "matrix.runner != 'windows-2022'"` = 0) or there is no windows row
+- [x] `grep -c "allow_fail" .github/workflows/test.yml` = 0; `grep -c "windows-2022"` = 0
 - [ ] the workflow green on `feat` after the maintainer's push
 
-### Step 4 — the meta repository's workflow
+### Step 4 — the meta repository's workflow — done
 
-The meta checkout gates nothing in CI today (no `.github/`). Recommendation (report L's, adopted):
-the meta CI **is** a front step — one job, `.github/workflows/hook-integrity.yml` at the meta root,
-on push/PR to `feat`, checkout with submodules, every check hard:
-
-1. every submodule pointer is an ancestor of (or equal to) its remote `feat` — a bump never points
-   at an unpushed commit (`git -C repository/<sub> merge-base --is-ancestor HEAD origin/feat`);
-2. every path in the meta `AGENTS.md` § Layout table exists on disk (`repository/<sub>/`, the
-   `specs/<version>/` directories it names, `architecture.md`, `CHANGELOG.md`);
-3. no `*.snap.new` / `*.snap.md.new` / `todo.md` is tracked in the meta repository or any
-   submodule (`git ls-files` of each);
-4. the five libraries' `runner-standalone.sh` guard clauses are identical (113 step 5's check, made
-   continuous) and each library's `AGENTS.md` names `git config core.hooksPath scripts/git-hooks`;
-5. `scripts/language-gap-markers.sh` (113 step 4c) exits 0 — every `// LANGUAGE GAP` marker has a
-   row.
-
-**Acceptance:**
-- [ ] `.github/workflows/hook-integrity.yml` exists at the meta root; a synthetic tracked `x.snap.new`, a submodule pointer moved to an unpushed commit, and a deleted layout path each fail it (three synthetic runs on a branch)
-- [ ] the meta `AGENTS.md` names the workflow and its five checks
+- [x] `.github/workflows/hook-integrity.yml` at the meta root; the three synthetic runs fail it (table above)
+- [x] the meta `AGENTS.md` names the workflow (§ Layout row) and its five checks (§ CI)
+- [ ] checks 4 and 5 green on `feat` — after 99, 100, 109, 113
 
 ## Gate
 
-- [ ] `zig build test-docs` green with `0 skipped`; `zig build test` green (a `check-docs.sh` self-test, if written as a CLI contract, under `test-cli`)
-- [ ] `scripts/gate.sh --cold` green in this front's worktree
-- [ ] `scripts/AGENTS.md`, the meta `AGENTS.md` updated in the same commit
-- [ ] commits on `fix/gate-docs-and-ci` in `repository/botopink-lang` and `front/gate-docs-and-ci` in the meta repository; no push, no merge
+- [x] `zig build test-docs` green with `0 skipped`; no Zig touched
+- [ ] `scripts/gate.sh --cold` green in this front's worktree — stage 8 `test-libs` is red at the
+      `feat` tip (rakun 25 cells, onze 11 cells — 99's and 100's), so the botopink-lang commits
+      wait, staged, for their landing
+- [x] `scripts/AGENTS.md`, the root and the meta `AGENTS.md` in the same change
+
+## Handed out
+
+| Item | To | Why |
+|---|---|---|
+| `docs.md:5` — "a fence that is not a module … says so in a `docs-check` comment" is stale: a table is ```` ```text ```` now and carries no comment | `../../01-compiler/08-hygiene` (prose) | this front edits fence and marker lines only |
+| `build.zig:567-570` — the `test-docs` comment still describes the `skip` directive | `build.zig`'s owner | not this front's file |
+| the windows drift measurement and the capture normalisation | carried (this README, step 3) | no windows runner in this milestone |
 
 ## Blast radius
 
-- `../../01-compiler/08-hygiene` owns `docs.md`'s prose (the `@BeamMemory` text, C-18's
-  corrections): this front changes fence languages and marker lines only, and lands first; 08
-  rebases.
+- `../../01-compiler/08-hygiene` owns `docs.md`'s prose: this front changed fence languages,
+  marker lines and the code of two refusal fences only, and lands first; 08 rebases.
 - `../../01-compiler/18-comptime-runtimes` "CI matrix run test.yml (ubuntu/macos/windows)" is
-  the same file: its rows are the maintainer's after the push; this front's edit is the windows
-  row only.
-- 99–109's workflows are theirs; this front's windows normalisation, if it lands, lets their
-  windows rows stay hard (they are hard today).
+  the same file: there is no windows row until step 3's measurement lands.
+- 99–109's workflows are theirs; their windows rows stay hard on their own.
