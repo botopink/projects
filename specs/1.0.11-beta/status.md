@@ -1,6 +1,6 @@
 # Status — 1.0.11-beta
 
-**Updated:** 2026-09-26 · **Progress:** ~1 % (0 of 65 fronts landed, 110 at 2 of 3 steps; the milestone opened today at
+**Updated:** 2026-09-27 · **Progress:** ~3 % (2 of 65 fronts landed, 110 at 2 of 3 steps; the milestone opened today at
 1.0.10-beta's close — [`closure.md`](../1.0.10-beta/closure.md))
 
 Count: `00-gate` 11 · `01-compiler` 17 · `02-std-and-packaging` 2 · `03-rakun` 19 · `04-jhonstart` 3 ·
@@ -17,7 +17,7 @@ the grep stage before any test.
 
 ## Done
 
-- (none)
+- [x] `00-gate/109-gate-emilia` — 34/34 cells, 15/15 examples build; hook fails without a compiler and refuses `*.snap.new`, skip list deleted, CI every member and example on every row with no `allow_fail`; runner and `.gitignore` byte-identical to jhonstart's
 
 ## In analysis
 
@@ -48,7 +48,6 @@ the grep stage before any test.
 - [ ] `00-gate/100-gate-onze` — critical · blocked on nothing
 - [x] `00-gate/101-gate-jhonstart` — done: 29/29 cells, hook and CI hard, `repro/` gone, PK-5 reformat but for `link.bp` (the formatter mangles `..p` — `112`)
 - [x] `00-gate/108-gate-erika` — done: 6/6 cells (`erika-linq` widened to erlang), hook and CI hard, no `beam` row, guard files byte-identical to jhonstart's
-- [ ] `00-gate/109-gate-emilia` — medium · blocked on nothing
 - [ ] `00-gate/114-gate-docs-and-ci` — high · any time · `gate-e`, `gate-f`, `gate-j`
 - [ ] `02-std-and-packaging/97-std-dedupe` — high · after `00-gate` · blocked on nothing
 - [ ] `01-compiler/01-checker` · `02-erlang` · `03-beam` · `04-js` · `05-wasm` · `14-comptime-on-beam` · `26-cli-tooling` — group A · after `00-gate`
