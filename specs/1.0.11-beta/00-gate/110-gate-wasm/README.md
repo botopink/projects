@@ -1,11 +1,13 @@
-# Front 110 — gate-wasm: the link loop drops colliding types, and 18 sites degrade silently
+# Front 110 — gate-wasm: the link loop mangles every colliding declaration, and no lowering degrades silently
 
 **Priority:** critical — stage 9's one red cell, and the only class of defect in the compiler that
 prints a wrong value at exit 0.
 **Depends on:** none to start; `112` reformats `libs/std/src/testing/asserts.bp` — this front
 rebases its restructure over that commit. `111` starts from this front's landing.
-**Owns:** `modules/compiler-core/src/codegen/wat.zig` (the link loop `:633-700`, the 18 sites
-below, `collectHostBound` `:1445`) · `modules/compiler-core/snapshots/codegen/wasm/**` ·
+**Owns:** `modules/compiler-core/src/codegen/wat.zig` (the link loop, the refusal path
+`Emitter.refuse`, `collectHostBound`) · the wasm snapshots
+`modules/compiler-core/snapshots/codegen/<runtime>/wasm/**` (`<runtime>` is `beam` and `wat`; the
+runtime-parity audit keeps the pair equal) · `src/codegen/tests/wat.zig` (the backend's fixtures) ·
 `libs/std/src/testing/asserts.bp` (the ck-host restructure, gate-b) · the single `wasm |` line of
 `tests/language/expected-failures.txt` (`:243` — the file is 111's; this front's only edit to it is
 deleting that line, and 111 starts from the result) · new `tests/language/run/*.bp` and
@@ -18,143 +20,127 @@ traps, C-07 twins); `tests/language/run.sh` (111's); `beam_asm.zig`, `erlang.zig
 
 ## Problem
 
-```
-$ bash tests/language/run.sh --target wasm modules/import_same_name_from_two_packages
-FAIL     [wasm] modules/import_same_name_from_two_packages — exit 0; stdout: 200\n0\n
-                                                             expected: 200\n<p>\n
-language tests: … 1 failed
-```
-
-The cell links two packages that both declare `type Response` (`web`: `Response(status: i32)`;
-`ui/stream`: `Response(html: string)`); on wasm the program prints `0` for `ok().html` and exits 0.
-Measured at the open (`par/6.out`): `1244 passed, 1 expected failures, 1 failed` on `--target all`.
+Two habits, one consequence: a name collision the link loop did not resolve (every colliding
+declaration but a `fn` or a `val` was dropped, `wat.zig`'s `else => {}`), and a lowering that could
+not resolve a name emitting `i32.const 0` with a `;; note` and going on (18 sites, plus the
+catch-all arms of the same shape). Together, a wrong program was indistinguishable from a right one
+at the exit code — the failure mode the gate exists to catch, and the one a snapshot cannot (the
+wasm snapshot of a stub is the stub). Measured at the open (`par/6.out`): `1244 passed, 1 expected
+failures, 1 failed` on `--target all`; `run.sh --target wasm`: `374 passed, 1 expected failures,
+1 failed` (`modules/import_same_name_from_two_packages` printed `200\n0\n` for `200\n<p>\n`).
 
 ## Current state
 
-- **The link loop** (`wat.zig:642-700`): wasm links statically into one namespace. When a linked
-  module declares a name this module also declares, a `fn` is mangled `<module>/<name>`
-  (`:662-670`, calls rewritten by `renameLinkedCalls`) and a `val` likewise (`:671-679`); **every
-  other declaration hits `else => {}` (`:680`) and is dropped**. `ui/stream`'s `type Response` is
-  never registered; `web`'s is the only `Response` the record registry knows. The linked
-  `$ui/stream/ok` builds a record with `web`'s descriptor (offset 260) and stores `i32.const 0` for
-  `html`; `ui`'s data segment (`<p>` at 280) is never merged. In `main`, `ok().html` →
-  `lowerFieldAccess` → `fieldOffsetIn(web Response, "html")` fails, `uniqueFieldOffset` fails, and
-  `:9299` emits `zero` with a note.
-- **18 silent-degradation sites** — a lowering that cannot proceed emits `i32.const 0` (`emitCf(zero,
-  …)`) or a `;; note` and continues, so the program runs and prints a wrong value. Measured at the
-  open (`sed -n <line>p wat.zig`):
-
-| Line | Site |
-|---|---|
-| 2679 | `note("unsupported param destructure pattern")` |
-| 4156 | `note("field assign (unknown receiver type)")` |
-| 4217 | `note("unsupported destructure pattern")` |
-| 4228 | `note("unsupported destructure pattern")` |
-| 4423 | `emitCf(zero, "unbound identifier {s}")` |
-| 4432 | `emitCf(zero, ".{s}")` (a bare `.Variant` with no context) |
-| 4513 | `emitCf(zero, "unresolved pipeline target {s}")` |
-| 4566 | `note("continue outside a loop")` |
-| 4957 | `note("builtin stub")` |
-| 5186 | `note("map/flatMap needs a literal closure on WASM — receiver passed through")` |
-| 5277 | same |
-| 5669 | `emitCf(zero, "unknown variant pattern: {s}")` |
-| 5827 | `emitCf(zero, "no descriptor for variant {s}")` |
-| 6240 | `note("note: array spread not lowered")` |
-| 6310 | `emitCf(zero, "unresolved dispatch: {s}")` |
-| 6329 | `emitCf(zero, "unresolved dispatch: {s}")` |
-| 9296 | `emitCf(zero, "optional field access .{s} (unknown receiver type)")` |
-| 9299 | `emitCf(zero, "field access .{s} (unknown receiver type)")` |
-
-- **ck-host** (gate-b): `wasm | run/external_wrapper_keeps_refusal.bp` (`expected-failures.txt:243`)
-  — the strict rule (`docs.md` § host bindings: a wrapper around a host call with no wasm binding
-  is refused even if nothing calls it) meets `collectHostBound` (`wat.zig:1445`), which drops such
-  a function and refuses only a call to it — written so that `testing.asserts` builds on wasm:
-  `deepEquals` (`asserts.bp:105`) reaches `canonical` (`:99-101`), which has Node and Erlang
-  templates only. wasm accepts the cell and prints `up`; commonJS refuses it. Open question
-  `specs/1.0.10-beta/decisions-pending.md` § ck-host, recommendation (a): strict everywhere.
-
-## Mechanism
-
-Two habits, one consequence: a name collision the link loop does not resolve, and a lowering that
-cannot resolve a name emitting `0` instead of an error. Together, a wrong program is indistinguishable
-from a right one at the exit code — which is the failure mode the gate exists to catch, and the
-one a snapshot cannot (the wasm snapshot of a stub is the stub).
+- **The link loop** (`wat.zig` `emitWat`): a linked `type` (record or enum), `behavior`, `implement`
+  or `extend` block whose name an earlier declaration took is registered as `<module>/<Name>`
+  (`link_mangled_types`), the way a `fn` and a `val` already were, and every reference its module
+  and its importers write is renamed in a copy of their declarations (`linkTypeRenames`,
+  `renameLinkedTypes`: a type in a signature, an annotation or a type argument, a constructor call,
+  an `Enum.Variant` read or call, a `case` arm's path, an `extend`/`implement` target). The
+  registries stay keyed by that name; the text a value prints under is the bare name again
+  (`displayTypeName`); a method call whose receiver inference named by the bare name goes to the
+  receiver's own module's method (`ownerAmongTwins`). The `else => {}` arm is gone. Cells:
+  `modules/import_same_name_from_two_packages` (`200\n<p>\n`), `modules/import_same_enum_name_from_two_packages`
+  (two `Signal` enums with different variants, matched by `case` in each — four targets),
+  `modules/type_name_collision` (the method axis).
+- **No silent degradation** (`Emitter.refuse(loc, …)` → `error.WasmLoweringRefused` → a located
+  `Diagnostic` the driver reports beside `MissingExternal`'s): the 18 sites of the open, the
+  `emitC(zero, …)` arms of the same class (a pattern naming no variant, a record with no descriptor,
+  a label the record does not declare, a range bound that is not a number literal, a pipeline into
+  anything but a named function, a range expression), the `lowerExpr` / comptime catch-alls, the
+  `Result`/`Option` op with no lowering and the binary operator with no opcode (it dropped the right
+  operand) are refusals. `grep -c "emitCf(zero" wat.zig` = 0; the three `emitC(zero, …)` left are
+  the `0` a `null` IS (`?.` on an absent receiver, an absent optional compared or propagated);
+  `self.note("` = 0 (`noteF("extra argument {d} ignored")` survives: a checker arity gap, not a
+  value — see § Left). An array literal's trailing spread is lowered (`$__arr_concat`); it was the
+  one stub a wasm snapshot recorded (`array_prepend_with_identifier`), and
+  `run/array_spread_literal` pins the values on commonJS, erlang and wasm.
+- **The print path** treats a plain call of a function declared to answer an enum as that enum's
+  value (`enumReturnedBy`): `@print(stop())` over a linked `fn stop() -> Signal` printed the value's
+  address at exit 0 (single-module `@print(Signal.Red)` was already right). A `?Enum` return keeps
+  the optional path.
+- **Measured after** (this worktree, sibling libraries at their `feat` tips): `zig build test` green;
+  `scripts/snap_audit.sh --mode=runtime-parity`: 1431 pairs, 0 differing; `run.sh --target wasm`:
+  `377 passed, 1 expected failures, 0 failed` (the 2 new cells included).
+- **ck-host** (gate-b) — measured, not closed: `libs/std/src/testing/asserts.bp` has THREE host
+  cells with Node and Erlang templates only — `canonical` (`deepEquals`), `regexMatches`
+  (`matches`), `tryCatch` (`throws`, `throwsWith`, `:286-288`). The strict rule (a) refuses a
+  function whose body reaches a cell with no wasm binding where it is declared, so under (a) the
+  module does not build on wasm until all three have a wasm lowering: `canonical` can have one (a
+  structural stringify over the value's descriptor, the print path's); `regexMatches` (no regex
+  engine on wasm) and `tryCatch` (`@panic` is `unreachable` on wasm — there is nothing to catch)
+  cannot. Two language cells pin today's lazy rule on wasm: `run/std_asserts_on_every_target`
+  (the import builds) and `run/std_asserts_host_cell_on_wasm` (the call is refused, `.wasm.expect`).
+  `libs/std` `botopink build --target wasm` is red today for two reasons outside `asserts`:
+  `querystring` (`std-unsupported-on-target: std/encoding.percentEncode`) and `testing/mocks`
+  (`thenReturnCell` called in a method body, refused) — `02-std-and-packaging`'s. The wasm backend
+  reads `@External.Wasm` nowhere (`docs.md` § host bindings: "nothing declares one today"), so a
+  wasm binding for `canonical` is a compiler feature (`../../01-compiler/05-wasm`) before it is a
+  std template.
 
 ## Steps
 
-### Step 1 — the link loop mangles every colliding declaration, or the registries are keyed by module
+### Step 1 — the link loop mangles every colliding declaration — done
 
-Options: (a) extend the `:661-681` switch: a colliding `type`, `enum` (and any other named
-declaration) is mangled `<module>/<name>` like a `fn`, and every reference — constructor calls,
-patterns, `is`, field access resolution, the record registry — is renamed the way
-`renameLinkedCalls` renames calls; (b) key the record/enum registries by `(module, name)` and
-resolve a reference from the module it is written in. **Recommend (b)**: it is the model the other
-three backends already have (a module is a namespace), it needs no renaming pass over patterns,
-and it removes the `else => {}` arm instead of widening it. The data segment of every linked
-module is merged (the `<p>` at 280 today is not).
+- [x] `bash tests/language/run.sh --target wasm --only modules/import_same_name_from_two_packages` → `passed`, stdout `200\n<p>\n`
+- [x] `modules/import_same_enum_name_from_two_packages` — two linked packages declaring the same `enum` name with different variants, matched by `case` in each — passes on commonJS, erlang, wasm and beam
+- [x] `else => {}` is gone from the link loop (`sed -n 630,760p wat.zig | grep -c "else => {}"` = 0)
 
-**Acceptance:**
-- [ ] `bash tests/language/run.sh --target wasm modules/import_same_name_from_two_packages` → `passed`, stdout `200\n<p>\n`
-- [ ] a second cell: two linked packages declaring the same `enum` name with different variants, matched by `case` in each — passes on all four targets (commonJS, erlang, beam already resolve per module; the wasm twin is the regression test)
-- [ ] `:680`'s `else => {}` is gone (`grep -n "else => {}" wat.zig` in the link loop range: 0)
+### Step 2 — every silent-degradation site is a hard error — done
 
-### Step 2 — the 18 sites become hard errors
+- [x] `grep -c "emitCf(zero" wat.zig` = 0; the `;; note` survivors and the three `emitC(zero, …)` are listed above with their reason
+- [x] step 2a measured at the open: 1 wasm snapshot hit a stub (`array_prepend_with_identifier`, `;; note: array spread not lowered`); the three `std_package_*` matches were source comments. Re-recorded: the four `array_prepend_*` fixtures (both runtimes), whose text now calls `$__arr_concat` — the value is `run/array_spread_literal`'s (`4 1 4 3 40 0`, run on wasm); their `RUN LOG` is empty (no `main`)
+- [x] `wat: unknown ---- a field read on a type parameter's slot is refused` (`tests/wat.zig`, `.refused_on_wasm`): the wasm snapshot records the diagnostic where `v.length` used to be `i32.const 0`; commonJS, erlang and beam record `3`. The sibling trap test keeps its literal arm
+- [x] `scripts/snap_audit.sh --mode=runtime-parity` green; `zig build test` green
+- [x] `tests/language/run.sh --target wasm` → `0 failed`
 
-Each `emitCf(zero, …)` / `note(…)` in the table becomes a located compile error
-(`self.fail(loc, "…")` or the emitter's diagnostic path — the one `wat.zig` uses for
-`external_missing`), so `botopink build --target wasm` exits non-zero with the message and the
-`.wat` is not written. Budget for more reds: every fixture that reached one of these stubs prints
-today's `0` in its snapshot `RUN LOG`; each becomes a refusal or a real lowering. Measure first —
-step 2a: grep the wasm snapshots for the 18 messages
-(`grep -rl "field access\|unresolved dispatch\|unbound identifier\|unknown variant\|no descriptor\|builtin stub\|not lowered\|destructure pattern\|pipeline target\|continue outside\|receiver passed through" modules/compiler-core/snapshots/codegen/wasm/`)
-and list them here with the site each hits; step 2b: for each, either the lowering exists on the
-other backends and the wasm half is written here, or it is an `01-compiler/05-wasm` row and the
-fixture is re-recorded as the refusal (a snapshot of a diagnostic is evidence; a snapshot of `0`
-is not).
+### Step 3 — ck-host (a): `collectHostBound` strict, `asserts` restructured — blocked on ck-host
 
-**Acceptance:**
-- [ ] `grep -c "emitCf(zero" wat.zig` = 0; `grep -c 'self.note("' wat.zig` = 0 for the 18 messages (a `;; note` that documents a *correct* lowering may stay — list each survivor with its reason)
-- [ ] every re-recorded wasm snapshot's `RUN LOG` is either the value the other backends print or a located refusal — no `0` where commonJS prints something else (`scripts/snap_audit.sh --mode=runtime-parity` green, `zig build test` green)
-- [ ] `tests/language/run.sh --target wasm` → `0 failed`
+The measurement above is what ck-host must decide with. (a) as recommended is not "one std
+restructuring": `matches`, `throws` and `throwsWith` have no possible wasm lowering, so (a) means
+either the `asserts` module does not build on wasm at all (every wasm program importing it is
+refused; `run/std_asserts_on_every_target` and `run/std_asserts_host_cell_on_wasm` flip to
+refusals at the import) or the three functions leave `asserts` for a module of their own — an API
+change of `asserts-api.md` (decision 74) the std track owns, not this front. (c) — strict for the
+root package, lazy for a dependency's functions — closes `run/external_wrapper_keeps_refusal`
+(the wrapper is the root's) and keeps `asserts` importable; (b) keeps today's behaviour and rewrites
+`docs.md` § host bindings. Until the maintainer answers, `collectHostBound` is unchanged and
+`expected-failures.txt:243` stays.
 
-### Step 3 — ck-host (a): `collectHostBound` strict, `asserts` restructured
-
-`collectHostBound` (`:1445`) stops dropping a function whose body reaches a host call with no wasm
-binding: the function is refused where it is declared (the strict rule, `docs.md` § host
-bindings). `libs/std/src/testing/asserts.bp`: `deepEquals` no longer reaches `canonical` on wasm —
-either `canonical` gets a wasm lowering (a structural stringify over the value's descriptor, which
-`wat_runtime`'s print path already has for `@print`), or `deepEquals` is restructured to compare
-structurally without a string. Recommend the wasm lowering of `canonical` (one template, and
-`deepEquals`'s message keeps its shape on every target). Then delete `expected-failures.txt:243`.
-
-**Acceptance:**
-- [ ] `bash tests/language/run.sh --target wasm run/external_wrapper_keeps_refusal.bp` → `passed` (the cell's `.expect` is the refusal)
-- [ ] `zig build test-libs -- --lib std --target wasm` — not runnable (`botopink test` refuses wasm); the check is `botopink build --target wasm` in `libs/std` → exit 0, and `deepEquals` exercised by a `run/` cell on wasm that prints a structured mismatch message
+- [ ] `bash tests/language/run.sh --target wasm --only run/external_wrapper_keeps_refusal.bp` → `passed` (the cell's `.expect` is the refusal)
+- [ ] `botopink build --target wasm` in `libs/std` → exit 0 (needs `querystring` and `testing/mocks` first — `02-std-and-packaging`)
 - [ ] `expected-failures.txt` has no `wasm |` line; `run.sh --target all` prints `0 expected` for wasm
 
-## Gate
+## Left
 
-- [ ] `zig build test` from a cold runtime cache, green, in this front's worktree
-- [ ] `scripts/snap_audit.sh --mode=runtime-parity` green; every re-recorded wasm snapshot listed in the commit message with the value it was verified against (running under `wasmtime`)
-- [ ] `bash tests/language/run.sh --target all` → `0 failed` on wasm (the two beam lines remain until 111)
-- [ ] `modules/compiler-core/src/codegen/AGENTS.md` (the wat section: no silent degradation; the link model), `libs/std/AGENTS.md` (`canonical` on wasm) updated in the same commit
-- [ ] commit on `fix/gate-wasm` in `repository/botopink-lang`; no push, no merge
+- ck-host, as above; then the `asserts` restructure the answer implies and the line's deletion.
+- `noteF("extra argument {d} ignored")` / `"missing argument"` in `lowerPlainCall`: an arity the
+  checker did not refuse reaches codegen; the honest shape is a checker refusal
+  (`../../01-compiler/01-checker`), and until then wasm pads or drops arguments where the other
+  backends do the same.
+- beam drops an array literal's trailing spread (`run/array_spread_literal` prints `2 1 null 1
+  null 0` on beam) — `beam_asm.zig`, `../../01-compiler/03-beam` / 111 (beam joins `--target
+  all` there).
+- `..<call>()` in an array literal is a parse error (`list-spread-not-last`): the parser reads
+  `..` + identifier as the spread name and refuses the `(` after it — `../../01-compiler/01-checker`'s
+  parser rows.
+- `modules/import_same_name_from_two_packages/botopink.json` declares `"targets": ["commonJS",
+  "erlang"]` and `modules/type_name_collision` likewise; both pass on wasm now — 111 step 5 (gate-d)
+  deletes the narrowing.
 
 ## Blast radius
 
-- wasm snapshots: the count re-recorded is step 2a's measurement (unknown at the open; the 18
-  messages appear in the snapshot text where a stub fired). Every one is re-recorded against a
-  value verified by running, or against a refusal.
-- `../../01-compiler/05-wasm` starts from this landing: its rows (`Array.unique` trap, the pinned
-  primitive-method traps, `==` by word) are lowerings, and after step 2 a missing lowering is a
-  refusal rather than a `0` — 05's fixtures may move from "prints wrong" to "refused"; that is the
-  intended direction.
-- `../../02-std-and-packaging/97-std-dedupe` rebases over `asserts.bp`.
-- `111` deletes what is left of `expected-failures.txt` after this front removes its line.
+- wasm snapshots: 4 fixtures re-recorded (both runtimes), 1 added (both runtimes, four backends).
+- `../../01-compiler/05-wasm` starts from this landing: a missing lowering is a refusal rather than
+  a `0`; 05's fixtures may move from "prints wrong" to "refused" — the intended direction. A
+  `@External.Wasm` template reader is the prerequisite of any std wasm binding (ck-host (a)).
+- `../../02-std-and-packaging/97-std-dedupe` rebases over `asserts.bp` only if ck-host lands a
+  restructure.
+- `111` deletes what is left of `expected-failures.txt` after ck-host removes this front's line.
 
 ## Notes
 
-- A `;; note` in the emitted `.wat` is a comment; the acceptance is about what the emitter *does*
-  after writing it — continue with `0` — not about the comment.
+- A `;; note` in the emitted `.wat` is a comment; the rule is about what the emitter *does* after
+  writing it. A note that documents a correct lowering may stay; none documents a `0` any more.
 - The compiler knows no library: `asserts.bp` is std, and the restructure is a std change this
   front owns only because the ck-host line cannot close without it.
