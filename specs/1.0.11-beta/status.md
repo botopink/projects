@@ -1,6 +1,6 @@
 # Status — 1.0.11-beta
 
-**Updated:** 2026-09-26 · **Progress:** ~0 % (0 of 65 fronts landed; the milestone opened today at
+**Updated:** 2026-09-26 · **Progress:** ~1 % (0 of 65 fronts landed, 110 at 2 of 3 steps; the milestone opened today at
 1.0.10-beta's close — [`closure.md`](../1.0.10-beta/closure.md))
 
 Count: `00-gate` 11 · `01-compiler` 17 · `02-std-and-packaging` 2 · `03-rakun` 19 · `04-jhonstart` 3 ·
@@ -21,7 +21,7 @@ the grep stage before any test.
 
 ## In analysis
 
-- (none)
+- [ ] `00-gate/110-gate-wasm` — critical · steps 1–2 done (the link loop mangles every colliding declaration; every silent-degradation site refuses; `run.sh --target wasm` 0 failed) · step 3 blocked on `ck-host` — measured: `asserts` has three host cells (`canonical`, `regexMatches`, `tryCatch`), two with no possible wasm lowering, so (a) as recommended does not build `asserts` on wasm
 
 ## Pending
 
@@ -44,7 +44,6 @@ the grep stage before any test.
 ## Open
 
 - [ ] `00-gate/112-gate-format` — critical · lands first inside wave 0 · blocked on nothing
-- [ ] `00-gate/110-gate-wasm` — critical · blocked on `ck-host` for its last step only
 - [ ] `00-gate/99-gate-rakun` — critical · blocked on nothing (`gate-g` confirms `rc3-a`; the migration proceeds under the recommendation)
 - [ ] `00-gate/100-gate-onze` — critical · blocked on nothing
 - [x] `00-gate/101-gate-jhonstart` — done: 29/29 cells, hook and CI hard, `repro/` gone, PK-5 reformat but for `link.bp` (the formatter mangles `..p` — `112`)
