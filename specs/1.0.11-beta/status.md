@@ -21,6 +21,7 @@ the grep stage before any test.
 
 ## In analysis
 
+- [ ] `00-gate/114-gate-docs-and-ci` — high · steps 1–4 done in the front's worktree: `check-docs.sh` has `reject`/`project` and no `skip` (`docs: 94 fences — 94 checked, 0 skipped, 0 failed`, self-tested), the windows row of botopink-lang's `test.yml` is deleted (gate-f: the drift was not measured — no windows runner; the row returns hard or not at all), the meta `hook-integrity.yml` exists with five hard checks · the botopink-lang commits wait, staged, on a green gate (stage 8 `test-libs` red at the `feat` tip — 99, 100) · checks 4 and 5 of the meta workflow go green with 99, 100, 109, 113
 - [ ] `00-gate/110-gate-wasm` — critical · steps 1–2 done (the link loop mangles every colliding declaration; every silent-degradation site refuses; `run.sh --target wasm` 0 failed) · step 3 blocked on `ck-host` — measured: `asserts` has three host cells (`canonical`, `regexMatches`, `tryCatch`), two with no possible wasm lowering, so (a) as recommended does not build `asserts` on wasm
 
 ## Pending
@@ -49,7 +50,6 @@ the grep stage before any test.
 - [x] `00-gate/101-gate-jhonstart` — done: 29/29 cells, hook and CI hard, `repro/` gone, PK-5 reformat but for `link.bp` (the formatter mangles `..p` — `112`)
 - [x] `00-gate/108-gate-erika` — done: 6/6 cells (`erika-linq` widened to erlang), hook and CI hard, no `beam` row, guard files byte-identical to jhonstart's
 - [ ] `00-gate/109-gate-emilia` — medium · blocked on nothing
-- [ ] `00-gate/114-gate-docs-and-ci` — high · any time · `gate-e`, `gate-f`, `gate-j`
 - [ ] `02-std-and-packaging/97-std-dedupe` — high · after `00-gate` · blocked on nothing
 - [ ] `01-compiler/01-checker` · `02-erlang` · `03-beam` · `04-js` · `05-wasm` · `14-comptime-on-beam` · `26-cli-tooling` — group A · after `00-gate`
 - [ ] `01-compiler/12-language-tests` · `18-comptime-runtimes` · `23-std-purity` · `24-effects-by-return` · `25-gate-perf` — group B · after `00-gate`
@@ -60,6 +60,9 @@ the grep stage before any test.
 
 ## Deferred out of this milestone
 
+- botopink-lang CI on windows: the row is deleted (114, gate-f), so nothing measures the compiler on
+  windows until the snapshot capture's CRLF / path-separator drift is measured on a windows runner and
+  normalised in the test framework (114 step 3, carried); the libraries' own windows rows stay hard.
 - `03-rakun/91-rakun-pulsar`'s data plane → a decision (`03r-ad`, recommendation: defer until a
   broker double exists); the front carries the codec and admin arm only.
 - `03-rakun/79`'s SAML ACS → `03r-ae` (no Exclusive XML c14n on OTP or std).

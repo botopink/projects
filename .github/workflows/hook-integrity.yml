@@ -1,0 +1,160 @@
+# hook-integrity — the meta repository's CI (1.0.11-beta 00-gate, front 114 step 4).
+#
+# The meta repository holds no code: it pins the compiler and the libraries as
+# submodules and keeps the planning documents. What can go wrong here is a
+# pointer, a path or a guard — so one job, every check hard, on every push and
+# pull request to `feat` and `main`:
+#
+#   1. every submodule pointer is an ancestor of (or equal to) its remote `feat`
+#      — a bump never points at a commit that is not pushed;
+#   2. every path the meta AGENTS.md § Layout table names exists on disk (the
+#      first backticked path of each row, `{a,b}` expanded; a row the table
+#      itself calls git-ignored is the plan file, not a layout path);
+#   3. no `*.snap.new`, `*.snap.md.new` or `todo.md` is tracked, in the meta
+#      repository or in any submodule;
+#   4. the five libraries' pre-commit guards are one text: `pre-commit` and
+#      `lib/runner-standalone.sh` byte-identical across emilia, erika,
+#      jhonstart, onze and rakun (113 step 5's check, made continuous), each
+#      `.gitignore` naming `*.snap.new` and `*.snap.md.new`, no
+#      `scripts/known-broken-examples.txt`, and each AGENTS.md naming
+#      `git config core.hooksPath scripts/git-hooks`;
+#   5. `scripts/language-gap-markers.sh` (113 step 4c) exits 0 — every
+#      `// LANGUAGE GAP` marker has a row in the milestone's language-gaps.md.
+#
+# Every step is plain bash over the checkout, so the same commands run locally
+# from the meta root (`python3 -c` + `yaml` extracts them, or copy the block).
+name: hook-integrity
+
+on:
+  push:
+    branches: [feat, main]
+  pull_request:
+    branches: [feat, main]
+
+concurrency:
+  group: hook-integrity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hook-integrity:
+    name: submodule pointers, layout, tracked candidates, library guards, gap markers
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout with submodules
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: 1. every submodule pointer is on its remote feat
+        shell: bash
+        run: |
+          set -euo pipefail
+          bad=0
+          for sub in $(git config --file .gitmodules --get-regexp '^submodule\..*\.path$' | awk '{ print $2 }'); do
+            [ -d "$sub/.git" ] || [ -f "$sub/.git" ] || { echo "  ✗ $sub: not checked out"; bad=1; continue; }
+            head="$(git -C "$sub" rev-parse HEAD)"
+            git -C "$sub" fetch --quiet origin feat
+            if git -C "$sub" merge-base --is-ancestor "$head" FETCH_HEAD; then
+              echo "  ✓ $sub $head is on origin/feat"
+            else
+              echo "  ✗ $sub $head is not on origin/feat — the bump points at a commit feat does not have"
+              bad=1
+            fi
+          done
+          [ "$bad" -eq 0 ] || { echo "hook-integrity: a submodule pointer is off its remote feat"; exit 1; }
+
+      - name: 2. every path in the meta AGENTS.md layout table exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          expand() { # one {a,b,c} group
+            local p="$1" pre rest body post b
+            case "$p" in
+              *\{*\}*)
+                pre="${p%%\{*}"; rest="${p#*\{}"; body="${rest%%\}*}"; post="${rest#*\}}"
+                local IFS=','
+                for b in $body; do printf '%s\n' "$pre$b$post"; done ;;
+              *) printf '%s\n' "$p" ;;
+            esac
+          }
+          bad=0 n=0
+          while IFS= read -r row; do
+            case "$row" in *git-ignored*) continue ;; esac
+            p="$(printf '%s\n' "$row" | sed -n 's/^| `\([^`]*\)`.*/\1/p')"
+            [ -n "$p" ] || continue
+            for q in $(expand "$p"); do
+              n=$((n + 1))
+              if [ -e "$q" ]; then echo "  ✓ $q"; else echo "  ✗ $q — named by AGENTS.md § Layout, absent on disk"; bad=1; fi
+            done
+          done < <(awk '/^## Layout/ { on = 1; next } /^## / { on = 0 } on && /^\| `/' AGENTS.md)
+          [ "$n" -gt 0 ] || { echo "hook-integrity: AGENTS.md § Layout names no path"; exit 1; }
+          [ "$bad" -eq 0 ] || { echo "hook-integrity: the layout AGENTS.md describes is not the one on disk"; exit 1; }
+
+      - name: 3. no snapshot candidate or todo.md is tracked anywhere
+        shell: bash
+        run: |
+          set -euo pipefail
+          pattern='(\.snap\.new|\.snap\.md\.new|(^|/)todo\.md)$'
+          bad=0
+          check() { # <label> <dir>
+            local hits
+            hits="$(git -C "$2" ls-files | grep -E "$pattern" || true)"
+            if [ -n "$hits" ]; then
+              echo "  ✗ $1 tracks:"; printf '%s\n' "$hits" | sed 's/^/      /'; bad=1
+            else
+              echo "  ✓ $1"
+            fi
+          }
+          check meta .
+          for sub in $(git config --file .gitmodules --get-regexp '^submodule\..*\.path$' | awk '{ print $2 }'); do
+            check "$sub" "$sub"
+          done
+          [ "$bad" -eq 0 ] || { echo "hook-integrity: a snapshot candidate or a todo.md is tracked"; exit 1; }
+
+      - name: 4. the five libraries' pre-commit guards are one text
+        shell: bash
+        run: |
+          set -euo pipefail
+          libs="emilia erika jhonstart onze rakun"
+          ref=jhonstart
+          bad=0
+          for f in scripts/git-hooks/pre-commit scripts/git-hooks/lib/runner-standalone.sh; do
+            for lib in $libs; do
+              [ "$lib" = "$ref" ] && continue
+              if [ ! -f "repository/$lib/$f" ]; then
+                echo "  ✗ $lib: no $f"; bad=1
+              elif cmp -s "repository/$ref/$f" "repository/$lib/$f"; then
+                echo "  ✓ $lib: $f identical to $ref's"
+              else
+                echo "  ✗ $lib: $f differs from $ref's — the guard clauses are not one text"; bad=1
+              fi
+            done
+          done
+          for lib in $libs; do
+            for pat in '*.snap.new' '*.snap.md.new'; do
+              if grep -qxF -- "$pat" "repository/$lib/.gitignore" 2>/dev/null; then
+                echo "  ✓ $lib: .gitignore names $pat"
+              else
+                echo "  ✗ $lib: .gitignore does not name $pat"; bad=1
+              fi
+            done
+            if [ -e "repository/$lib/scripts/known-broken-examples.txt" ]; then
+              echo "  ✗ $lib: scripts/known-broken-examples.txt exists — a list of examples allowed to fail (gate-i)"; bad=1
+            else
+              echo "  ✓ $lib: no known-broken-examples.txt"
+            fi
+            if grep -qF 'git config core.hooksPath scripts/git-hooks' "repository/$lib/AGENTS.md" 2>/dev/null; then
+              echo "  ✓ $lib: AGENTS.md names core.hooksPath"
+            else
+              echo "  ✗ $lib: AGENTS.md does not name git config core.hooksPath scripts/git-hooks"; bad=1
+            fi
+          done
+          [ "$bad" -eq 0 ] || { echo "hook-integrity: the library guards differ (each repository's gate front owns its copy)"; exit 1; }
+
+      - name: 5. every LANGUAGE GAP marker has a row
+        shell: bash
+        run: |
+          set -euo pipefail
+          [ -f scripts/language-gap-markers.sh ] || { echo "  ✗ scripts/language-gap-markers.sh is missing (113 step 4c)"; exit 1; }
+          bash scripts/language-gap-markers.sh

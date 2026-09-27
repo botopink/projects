@@ -19,9 +19,30 @@ closest `AGENTS.md` in each directory you touch.
 | `specs/1.0.10-beta/` | Closed ecosystem milestone (`closure.md`, measured at the close); frozen — every open item moved to `specs/1.0.11-beta/` with the deep dives it still needs copied beside it |
 | `specs/1.0.5-beta/` | Closed compiler milestone (`closure.md`); its open work went to 1.0.10-beta's `00-compiler-carry-over/` and now lives in `specs/1.0.11-beta/01-compiler/` |
 | `specs/1.0.0-beta/` … `1.0.4-beta/` | Closed. 1.0.6–1.0.9-beta were absorbed into 1.0.10-beta and deleted (decision 68); the mapping in `specs/1.0.10-beta/unification.md` |
+| `.github/workflows/` | The meta repository's CI: `hook-integrity.yml`, one job on push/PR to `feat`/`main` — see § CI |
 | `todo.md` | Live plan of the task in the current checkout/worktree — git-ignored, never committed |
 | `architecture.md` | Comptime evaluation pipeline, current state |
 | `CHANGELOG.md` | Release log |
+
+## CI
+
+`.github/workflows/hook-integrity.yml` is the one job of this repository (1.0.11-beta
+00-gate, front 114), every check hard, plain bash over a checkout with submodules:
+
+1. every submodule pointer is an ancestor of (or equal to) its remote `feat` — a bump never
+   points at an unpushed commit (`git -C repository/<sub> merge-base --is-ancestor HEAD FETCH_HEAD`);
+2. every path in § Layout above exists on disk (the first backticked path of each row, `{a,b}`
+   expanded; the git-ignored `todo.md` row is excluded);
+3. no `*.snap.new`, `*.snap.md.new` or `todo.md` is tracked in this repository or any submodule;
+4. the five libraries' pre-commit guards are one text — `scripts/git-hooks/pre-commit` and
+   `scripts/git-hooks/lib/runner-standalone.sh` byte-identical across emilia, erika, jhonstart,
+   onze and rakun, each `.gitignore` naming `*.snap.new` and `*.snap.md.new`, no
+   `scripts/known-broken-examples.txt`, each `AGENTS.md` naming `git config core.hooksPath
+   scripts/git-hooks`;
+5. `scripts/language-gap-markers.sh` exits 0 — every `// LANGUAGE GAP` marker has a row in the
+   milestone's `language-gaps.md`.
+
+A red check names the repository and the front that owns the fix; nothing here is soft.
 
 ## Worktrees
 
