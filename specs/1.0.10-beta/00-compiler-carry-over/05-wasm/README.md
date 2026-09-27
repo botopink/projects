@@ -97,12 +97,11 @@ Measured: wasm has no such lowering (`src/codegen/wat/AGENTS.md`).
 | Shape | State |
 |---|---|
 | **Self-recursion** — `return f(args)` inside `fn f` | delivered: re-binds the parameters and `br`s to a `(loop $__tail …)` wrapping the body; `run/tail_self_call.bp` green on four targets. Only the explicit `return f(…)` spelling is recognised (`src/codegen/wat/AGENTS.md`) |
-| **`es.map({ e -> e.key })` as a string array** — `ks.at(0)?.length()` | wasm prints `3`; the commonJS half (`.length` renamed on an unresolved element type) is [`04-js`](../04-js/README.md)'s `run/map_record_field_length.bp` line |
-| **A primitive method on the rest of a `?.` chain** — `es.at(9)?.key.length()` | wasm: runs under the chain's guard (`lowerChainedCall`) — absent stays absent, present unboxes the receiver and boxes a scalar result; `run/optional_chain_method.bp` green on commonJS and wasm; the erlang and beam lines are [`02-erlang`](../02-erlang/README.md)'s and [`03-beam`](../03-beam/README.md)'s |
+| **`es.map({ e -> e.key })` as a string array** — `ks.at(0)?.length()` | `run/map_record_field_length.bp` green on four targets: `map<U>`'s `U` is the lambda's return, so commonJS renames `.length` |
+| **A primitive method on the rest of a `?.` chain** — `es.at(9)?.key.length()` | wasm: runs under the chain's guard (`lowerChainedCall`) — absent stays absent, present unboxes the receiver and boxes a scalar result; `run/optional_chain_method.bp` green on four targets (erlang's `chainedCallNode`, beam's guarded `lowerCall`) |
 | **beam: `modules/field_name_collision`, `modules/method_name_collision`** | moved to 03, which closed them |
 
-**Acceptance:** one `run/` cell per row on four targets, green by running — open while the commonJS,
-erlang and beam lines above stand.
+**Acceptance:** one `run/` cell per row on four targets, green by running — held.
 
 ### Rows no step named — delivered
 
@@ -129,8 +128,6 @@ with a result leaves with the neutral value.
   `modules/method_on_unimported_type`: `Dict.at` finds a string key only when both sides are one
   interned literal; nothing monomorphises (`src/codegen/wat/AGENTS.md` § the generic-parameter
   limit).
-- **`val assert` over a record's constructor** — `run/val_assert_record_pattern.bp`: the pattern is
-  neither tested nor bound.
 
 ## Dependencies
 
@@ -147,8 +144,7 @@ with a result leaves with the neutral value.
 - [x] no new `RUN LOG` answers a value with exit 0 that another backend answers differently — a shape
   wasm cannot do is a `RUNTIME TRAP`, never a wrong number
 - [x] the `RUNTIME TRAP` fixtures are re-read: each is still a shape wasm cannot do, or it is fixed —
-  those left are the program's own `@todo()`, a fatal `assert` outside test mode, and a
-  module-level `val` two linked modules declare
+  those left are the program's own `@todo()` and a fatal `assert` outside test mode
 - [x] `src/codegen/AGENTS.md` and `src/codegen/wat/AGENTS.md` updated in the same commit as each row
 - [x] Commit on a branch; no push, no merge — `front/04-05-js-wasm`
 

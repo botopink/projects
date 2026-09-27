@@ -123,10 +123,6 @@ a `try` inside a `while`, a leading-dot variant and a function-valued record fie
 
 ### Open rows with no numbered step
 
-- **`run/map_record_field_length.bp`** (the commonJS half of [`05-wasm`](../05-wasm/README.md) step
-  9's `map` row) — `ks.at(...)?.length is not a function`, exit 1: with nothing between
-  `es.map({ e -> e.key })` and `ks.at(0)?.length()` the element type is unresolved at the rename of
-  `.length`.
 - **`status.md` § Pending** carries further commonJS rows, each with its repro: an `if` block that
   `await`s without returning, in a `@Task` body, is lowered into a non-`async` arrow (and the test
   runner then prints no summary for the module yet counts it as run); a single-target

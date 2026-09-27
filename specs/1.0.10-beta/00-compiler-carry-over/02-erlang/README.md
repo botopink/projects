@@ -125,9 +125,6 @@ compiled as a dependency keeps its default-fn shims.
 - **JS-4's erlang twin** — `val Circle(r) = s;` checks, and erlang does not compile it:
   `variable 'R' is unbound` (`destructPatternExpr` binds nothing for a `.ctor` pattern). See
   [`04-js/pattern-binding.md`](../04-js/pattern-binding.md).
-- **A method after a `?.` link** — `run/optional_chain_method.bp`: `es.at(9)?.key.length() ?? 42`
-  raises `{bp_unsupported_method, <<"length">>, 0, undefined}` in `'__bp_prim_length'/1`: the method
-  after the `?.` link is called on the absent value instead of being skipped.
 - [ ] **A `@Result` method inside a closure** (handed over by `01-std/01-std-lib-enablement`). Not
   reproduced as first written — `xs.map({ x -> half(x).unwrapOr(0) })`, `o.unwrapOr(x)` over a
   captured `?i32` and over a captured `var` all run on erlang. What does reproduce is a **prelude**

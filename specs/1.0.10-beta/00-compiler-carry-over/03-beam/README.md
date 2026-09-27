@@ -97,9 +97,6 @@ std's template instead of `string:split/3` (`run/string_split_empty_separator`, 
   matches its `.out`, each with a beam fixture whose RUN LOG is the value run; the tuple / `..` /
   type-pattern fixtures [`02-erlang`](../02-erlang/README.md) added have beam twins; §4.1's truth
   table answered by each §4.2 form on beam.
-- **A method after a `?.` link** — `run/optional_chain_method.bp`: the erlang shape through
-  `erlc +from_asm` — `2`, `3`, then the run fails at the absent probe (the method after the `?.` link
-  is called on the absent value).
 - **JS-4's beam twin** — `val Circle(r) = s;` checks and assembles, and the run aborts with
   `{unresolved_identifier, r}`: the `.ctor` destructure binds nothing. See
   [`04-js/pattern-binding.md`](../04-js/pattern-binding.md).
@@ -122,8 +119,7 @@ std's template instead of `string:split/3` (`run/string_split_empty_separator`, 
   `erlc +from_asm` and `erl` itself; each moved block compared by hand; BR5 and the `@todo` reason
   moved no RUN LOG
 - [x] every `tests/language` cell this front's rows touch run on beam and matched against its
-  `.out` (`run.sh --target beam`); the beam lines left are the `*` reject cells of `01` and
-  `run/optional_chain_method.bp`
+  `.out` (`run.sh --target beam`); the beam lines left are the `*` reject cells of `01`
 - [x] `src/codegen/AGENTS.md` and `src/codegen/beam/AGENTS.md` updated in the same commit as each row
 - [x] Commit on a branch; no push, no merge — `front/02-03-erlang-beam`
 
