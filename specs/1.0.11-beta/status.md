@@ -1,6 +1,6 @@
 # Status — 1.0.11-beta
 
-**Updated:** 2026-09-26 · **Progress:** ~0 % (0 of 65 fronts landed; the milestone opened today at
+**Updated:** 2026-09-27 · **Progress:** ~1 % (0 of 65 fronts landed, 99 in analysis with every step done, its landing pending; the milestone opened today at
 1.0.10-beta's close — [`closure.md`](../1.0.10-beta/closure.md))
 
 Count: `00-gate` 11 · `01-compiler` 17 · `02-std-and-packaging` 2 · `03-rakun` 19 · `04-jhonstart` 3 ·
@@ -21,7 +21,7 @@ the grep stage before any test.
 
 ## In analysis
 
-- (none)
+- [ ] `00-gate/99-gate-rakun` — critical · steps 1–7 done on `front/99-gate-rakun` (rakun submodule): 25 / 25 modules green under `botopink test` erlang with the pinned compiler (1,817 / 0), 3 / 3 examples build, hook and CI are refusals only, `modules/{rakun,rakun-app}` format-clean; left: the workflow green on `feat` (the landing step) and the meta gate's stage 8 (113 reads it)
 
 ## Pending
 
@@ -45,7 +45,6 @@ the grep stage before any test.
 
 - [ ] `00-gate/112-gate-format` — critical · lands first inside wave 0 · blocked on nothing
 - [ ] `00-gate/110-gate-wasm` — critical · blocked on `ck-host` for its last step only
-- [ ] `00-gate/99-gate-rakun` — critical · blocked on nothing (`gate-g` confirms `rc3-a`; the migration proceeds under the recommendation)
 - [ ] `00-gate/100-gate-onze` — critical · blocked on nothing
 - [ ] `00-gate/101-gate-jhonstart` — high · blocked on nothing
 - [ ] `00-gate/108-gate-erika` — medium · blocked on nothing

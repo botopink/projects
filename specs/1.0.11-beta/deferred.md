@@ -82,6 +82,7 @@ is not deferred: it is `testing.mocks` (decisions 71 and 106).
 | Feature | Source | Why it is not re-homed now | What would have to exist first | Revisit |
 |---|---|---|---|---|
 | The `Request`/`MockMvc` double as a *shared* helper across libraries | 1.0.9 `language-gaps.md` § Unowned surface | Closed as front 19's, rakun-only; jhonstart and onze tests reach the server through `onze-test`, which depends on `rakun-test` (dependency direction in [`02-packaging/README.md`](../1.0.10-beta/02-packaging/README.md)) | Nothing | Never as a shared helper |
+| The Redis arm of `rakun-session`'s store suite against a real server | `rakun-session/test/store_test.bp` (the cell that read `RAKUN_TEST_REDIS_URL`, printed `SKIPPED` and passed — deleted by `00-gate/99`, decision gate-h) | A cell that needs a service outside the process is not a gate cell, and no CI job provides a Redis; the RESP double that would stand in for the server (`03-rakun/12` § the double, `19-rakun-test-utilities` step 1) does not exist yet | `rakun-test`'s RESP2 double on a loopback port; the suite then runs its third arm against it in the gate | when `03-rakun/19` lands the double — the real-driver arm stays out unless a CI job provides the service (`gate-h`: no `--integration` flag without a job) |
 
 ## Out of scope
 
