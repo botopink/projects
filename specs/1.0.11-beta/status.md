@@ -1,6 +1,6 @@
 # Status — 1.0.11-beta
 
-**Updated:** 2026-09-27 · **Progress:** ~3 % (2 of 65 fronts landed, 110 at 2 of 3 steps; the milestone opened today at
+**Updated:** 2026-09-27 · **Progress:** ~3 % (2 of 65 fronts landed, 99 and 110 at 2 of 3 steps; the milestone opened today at
 1.0.10-beta's close — [`closure.md`](../1.0.10-beta/closure.md))
 
 Count: `00-gate` 11 · `01-compiler` 17 · `02-std-and-packaging` 2 · `03-rakun` 19 · `04-jhonstart` 3 ·
@@ -17,11 +17,11 @@ the grep stage before any test.
 
 ## Done
 
-- [x] `00-gate/109-gate-emilia` — 34/34 cells, 15/15 examples build; hook fails without a compiler and refuses `*.snap.new`, skip list deleted, CI every member and example on every row with no `allow_fail`; runner and `.gitignore` byte-identical to jhonstart's
+- (none)
 
 ## In analysis
 
-- [ ] `00-gate/110-gate-wasm` — critical · steps 1–2 done (the link loop mangles every colliding declaration; every silent-degradation site refuses; `run.sh --target wasm` 0 failed) · step 3 blocked on `ck-host` — measured: `asserts` has three host cells (`canonical`, `regexMatches`, `tryCatch`), two with no possible wasm lowering, so (a) as recommended does not build `asserts` on wasm
+- [ ] `00-gate/99-gate-rakun` — critical · steps 1–7 done on `front/99-gate-rakun` (rakun submodule): 25 / 25 modules green under `botopink test` erlang with the pinned compiler (1,817 / 0), 3 / 3 examples build, hook and CI are refusals only, `modules/{rakun,rakun-app}` format-clean; left: the workflow green on `feat` (the landing step) and the meta gate's stage 8 (113 reads it)
 
 ## Pending
 
@@ -44,10 +44,11 @@ the grep stage before any test.
 ## Open
 
 - [ ] `00-gate/112-gate-format` — critical · lands first inside wave 0 · blocked on nothing
-- [ ] `00-gate/99-gate-rakun` — critical · blocked on nothing (`gate-g` confirms `rc3-a`; the migration proceeds under the recommendation)
+- [ ] `00-gate/110-gate-wasm` — critical · blocked on `ck-host` for its last step only
 - [ ] `00-gate/100-gate-onze` — critical · blocked on nothing
-- [x] `00-gate/101-gate-jhonstart` — done: 29/29 cells, hook and CI hard, `repro/` gone, PK-5 reformat but for `link.bp` (the formatter mangles `..p` — `112`)
-- [x] `00-gate/108-gate-erika` — done: 6/6 cells (`erika-linq` widened to erlang), hook and CI hard, no `beam` row, guard files byte-identical to jhonstart's
+- [ ] `00-gate/101-gate-jhonstart` — high · blocked on nothing
+- [ ] `00-gate/108-gate-erika` — medium · blocked on nothing
+- [ ] `00-gate/109-gate-emilia` — medium · blocked on nothing
 - [ ] `00-gate/114-gate-docs-and-ci` — high · any time · `gate-e`, `gate-f`, `gate-j`
 - [ ] `02-std-and-packaging/97-std-dedupe` — high · after `00-gate` · blocked on nothing
 - [ ] `01-compiler/01-checker` · `02-erlang` · `03-beam` · `04-js` · `05-wasm` · `14-comptime-on-beam` · `26-cli-tooling` — group A · after `00-gate`
