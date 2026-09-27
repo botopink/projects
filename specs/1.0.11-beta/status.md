@@ -1,6 +1,6 @@
 # Status — 1.0.11-beta
 
-**Updated:** 2026-09-26 · **Progress:** ~0 % (0 of 65 fronts landed; the milestone opened today at
+**Updated:** 2026-09-26 · **Progress:** ~1 % (0 of 65 fronts landed, 100 in analysis with 3 of 4 steps done; the milestone opened today at
 1.0.10-beta's close — [`closure.md`](../1.0.10-beta/closure.md))
 
 Count: `00-gate` 11 · `01-compiler` 17 · `02-std-and-packaging` 2 · `03-rakun` 19 · `04-jhonstart` 3 ·
@@ -21,7 +21,7 @@ the grep stage before any test.
 
 ## In analysis
 
-- (none)
+- [ ] `00-gate/100-gate-onze` — steps 1, 3, 4 done; step 2 at 17 of 19 cells green (both `onze-cli` cells wait on a checker row — a named import refused as `ambiguous-import-use` when another module declares the name —, on 99's landing and on a BEAM `enoent` in `onze build`); the hook reaches the 4th of 8 members; the workflow rewritten, unrun
 
 ## Pending
 
@@ -46,7 +46,6 @@ the grep stage before any test.
 - [ ] `00-gate/112-gate-format` — critical · lands first inside wave 0 · blocked on nothing
 - [ ] `00-gate/110-gate-wasm` — critical · blocked on `ck-host` for its last step only
 - [ ] `00-gate/99-gate-rakun` — critical · blocked on nothing (`gate-g` confirms `rc3-a`; the migration proceeds under the recommendation)
-- [ ] `00-gate/100-gate-onze` — critical · blocked on nothing
 - [ ] `00-gate/101-gate-jhonstart` — high · blocked on nothing
 - [ ] `00-gate/108-gate-erika` — medium · blocked on nothing
 - [ ] `00-gate/109-gate-emilia` — medium · blocked on nothing
