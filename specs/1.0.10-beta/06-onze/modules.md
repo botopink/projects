@@ -18,7 +18,8 @@ no parser drops a token — the shape `onze-cli` copies).
 repository/onze/
 ├── botopink.json                 { "name": "onze", … }  — lists the seven submodules
 ├── modules/
-│   ├── onze/                     core — config, project vocabulary, alias map, env rule, boot adapter
+│   ├── onze/                     core — config, project vocabulary, alias map, env rule, the boot's jhonstart half
+│   ├── onze-server/              the boot's rakun half — `Onze.run` (erlang; 49-e)
 │   ├── onze-test/                assert<Subject>(loc, …) helpers, fixtures, the E2E runner
 │   ├── onze-cli/                 create · dev · build · start · info
 │   ├── onze-bundler/             client module graph, refusals, chunks, manifest, hydration entry
@@ -31,14 +32,17 @@ repository/onze/
     └── static-site/              `output: export` proof — every route prerenderable
 ```
 
-Seven submodules. Front 95 proposed five (`onze`, `onze-test`, `onze-cli`, `onze-bundler`,
-`onze-assets`); the front READMEs drifted to seven. The verdicts below reconcile them.
+Eight submodules. Front 95 proposed five (`onze`, `onze-test`, `onze-cli`, `onze-bundler`,
+`onze-assets`); the front READMEs drifted to seven, and `onze-server` is the eighth (decision
+pending 49-e): every rakun member is `["erlang"]` (decision 117), so nothing on both rows can
+import rakun. The verdicts below reconcile them.
 
 ## Verdicts on every candidate
 
 | Candidate | Proposed by | Verdict | Reason |
 |---|---|---|---|
-| `onze` (core) | 95 · 49 | **keep** | The vocabulary the three libraries do not share: `OnzeConfig`, `OnzeProject`, `AppFile`, `AliasMap`/`resolveAlias`, `publicEnvPrefix`/`isPublicEnvName`/`publicEnv`, `Onze.run`. Its `test/` imports only `std` (49 *Test plan*), so nothing heavier may live here |
+| `onze` (core) | 95 · 49 | **keep** | The vocabulary the three libraries do not share: `OnzeConfig`, `OnzeProject`, `AppFile`, `AliasMap`/`resolveAlias`, `publicEnvPrefix`/`isPublicEnvName`/`publicEnv`, and the boot's jhonstart half (`integration.bp`). Its `config` / `types` tests import only `std` (49 *Test plan*); `Onze.run` is `onze-server`'s |
+| `onze-server` | 49 (49-e) | **keep** | The rakun half of the boot: `Onze.run`, the page and root registration, `RequestData` from rakun's `Request`, `ChunkWriter` → `Response`. erlang only, because rakun is; the core it builds on stays on both rows for the CLI and the bundler, and a process that serves loads this member while the CLI never does |
 | `onze-core` | — | **drop** (renamed) | 95's pattern names the core after the package: `modules/onze/` |
 | `onze-test` | 95 | **keep** | Every library has one; this one also owns the E2E runner (`bootApp`, `request`) because booting a built app and hitting routes is what onze's tests are |
 | `onze-cli` | 95 · 50 | **keep** | Runs on a developer's machine before any BEAM node exists (commonJS only); a production deploy never loads it. Copies `compiler-cli`'s shape: `main.bp` dispatch + one file per command + pure option parsers |
@@ -55,6 +59,7 @@ Seven submodules. Front 95 proposed five (`onze`, `onze-test`, `onze-cli`, `onze
 | Submodule | Target | Split, by file |
 |---|---|---|
 | `onze` | both | plain records; both backends must agree on them (49) |
+| `onze-server` | erlang | imports rakun, rakun-app and rakun-web (49-e) |
 | `onze-test` | both | snapshot writers both; `bootApp`/`request` erlang (that is what serves) |
 | `onze-cli` | commonJS | the process; its *artifacts* are tested on erlang by `examples/blog` |
 | `onze-bundler` | both | `manifest.bp` both; `scan.bp`, `graph.bp`, `refusal.bp`, `chunk.bp`, `entry.bp`, `script.bp`, `rebuild.bp` commonJS (68 *Test plan*) |
@@ -82,24 +87,24 @@ Edges, with the file that creates each:
 
 | From | To | Because |
 |---|---|---|
-| `onze` | `rakun` | `integration.bp`: `Rakun.run(App(port, basePath))`, the UI records copied into rakun's route table, one `PageRenderer` per page through `page(pattern, render)` over rakun's `ChunkWriter`, and `rakun.appDir`, `rakun.actions.field`, `rakun.actions.header`, `rakun.actions.bodyLimit` and `rakun.i18n.exclude` set in rakun's configuration (decisions 114, 115, 116, 117); rakun's `ChunkWriter` (`setStatus`, `setHeader`, `write`, `close`) wrapped in jhonstart's `Response` — onze reads no navigation signal (decision 117) |
+| `onze-server` | `rakun` · `rakun-app` | `server.bp` (49-e): `Rakun.run(App(port, basePath))`, the UI records copied into rakun's route table, one `PageRenderer` per page through `page(pattern, render)` over rakun's `ChunkWriter`, and `rakun.appDir`, `rakun.actions.field`, `rakun.actions.header`, `rakun.actions.bodyLimit` and `rakun.i18n.exclude` set in rakun's configuration (decisions 114, 115, 116, 117); rakun's `ChunkWriter` (`setStatus`, `setHeader`, `write`, `close`) wrapped in jhonstart's `Response` — onze reads no navigation signal (decision 117) |
 | `onze` | `jhonstart` · `jhonstart-emilia` | `integration.bp`: `app(plugins: [emiliaPlugin()], allowedRedirects: …)`, the `RenderHooks` tag fields, `renderStream` handed `RequestData` built from rakun's `Request` and a `Response` over rakun's `ChunkWriter`, `actionField` / `actionHeader` (decisions 113, 114, 117) |
 | `onze-bundler` | `jhonstart` | `entry.bp` generates a client entry importing `readPayload`, `registerFill`, `registerSignal`, `globals` and the islands; it builds no matcher and no signal decoder — jhonstart's router imports the bundled `routing` itself (decisions 115, 116) |
 | `onze-bundler` | `emilia` | `refusal.bp` / the `styleMap` build call emilia's `styleRule(tokens, th)` (emilia front 56) for every client `emilia(...)` call; the hash-parity check calls std's `content_hash.contentHash`, the function emilia's class name is. onze may import emilia directly — it is the package that knows every library (decision 113) — and the `jhonstart-emilia` bridge stays the render plugin only (decision 116) |
 | `onze-bundler` | `validation` (bundled) | `entry.bp` sets the browser's `MessageSource` with `setMessageSource` (`01-std/06-validation-lib`, decision 116). Bundled, so not in `dependencies` |
-| `onze` | `rakun-web` | `integration.bp` registers `onze-assets`' two `staticRoots` with front 82's `registerStaticRoot`; onze serves no file itself (decision 116) |
+| `onze-server` | `rakun-web` · `onze-assets` | `server.bp` registers `onze-assets`' fingerprinted root with front 82's `registerStaticRoot` (the public one waits on 69-b) and installs its static entry and chain; onze serves no file itself (decision 116) |
 | `onze-bundler` | `onze` | `refusal.bp` calls `isPublicEnvName` — one definition of the prefix (49 · 68) |
 | `onze-assets` | `onze-bundler` | `stylesheet.bp` emits `Y` records `parseManifest` reads back; `image.bp`'s `data-src` swap is documented against the entry |
-| `onze-assets` | `jhonstart` · `rakun` · `rakun-cache` | `Element` · `Request`/`HandlerResponse` (25) · the optimizer cache (12) |
-| `onze-og` | `onze-assets` | `metrics.bp` reads 52's `<face>.metrics.txt` sidecar |
-| `onze-release` | `onze-bundler` · `onze-assets` | `package.bp` verifies every chunk and `Y` record exists; copies `public/` |
+| `onze-assets` | `jhonstart` | `Element`. The `/_onze/image` handler's rakun route (25) and the optimizer cache (12) are not wired: the member runs on both rows and every rakun member is erlang-only (49-e) |
+| `onze-og` | `jhonstart` | the card is a jhonstart `Element` tree; `metrics.bp` parses front 52's `<face>.metrics.txt` sidecar text itself, so there is no `onze-assets` edge |
+| `onze-release` | `onze` · `onze-bundler` | `package.bp` verifies every chunk and `Y` record exists; copies `public/` |
 | `onze-cli` | everything | `build.bp` drives the bundler, the stylesheet build, the release; `start.bp` runs `bin/onze` |
 
 ### The seams, and where each lives (decision 113)
 
 onze is the only package that imports jhonstart, rakun and the `jhonstart-emilia` bridge together.
 jhonstart and rakun never import each other, emilia imports no library, and neither jhonstart nor rakun
-names onze; every value that crosses is handed across by `Onze.run` (core `integration.bp`, front 49):
+names onze; every value that crosses is handed across by the boot (the core's `integration.bp` and `onze-server`'s `server.bp`, `Onze.run` — front 49):
 
 | Seam | Direction it must not have | Where it lives |
 |---|---|---|

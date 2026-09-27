@@ -181,8 +181,11 @@ stands on.
 **Acceptance:**
 - [x] `/` renders with the hero image, the nav and one `<style>` block
 - [x] `/blog` lists three posts, each in a `PostCard` carrying one emilia class
-- [ ] `/blog/hello-world` renders that post's title and body
-- [ ] `/about` renders — the route group does not appear in the URL
+- [x] `/blog/hello-world` renders that post's title and body — `onze-cli/test/start_test.bp` (the
+      blog built by `onze build` and served by `onze start`): 200, `<h1>Hello, world</h1>` and the
+      body's first paragraph
+- [x] `/about` renders — the route group does not appear in the URL — the same test: `/about` is
+      200 with the page's text, `/marketing/about` is 404
 - [x] The document has exactly one `<style>` element and it is non-empty
 - [x] Two consecutive requests both have a non-empty `<style>` — which is the test that catches a
       sheet flushed once per process instead of once per request
@@ -204,10 +207,12 @@ stands on.
 
 **Acceptance:**
 - [ ] A deliberately slow `loadPosts` flushes the shell and the fallback before the list
-- [ ] `/blog/does-not-exist` renders `app/blog/[slug]/not-found.bp`, with status 404
+- [x] `/blog/does-not-exist` renders `app/blog/[slug]/not-found.bp`, with status 404 —
+      `start_test.bp`: 404 and "No such post."
 - [ ] A page that throws renders `app/error.bp`, with status 500, and the response contains the digest
       and not the message
-- [ ] The nearest boundary wins: the post's `not-found.bp` is used, not the root's
+- [x] The nearest boundary wins: the post's `not-found.bp` is used, not the root's — the same
+      response carries none of `app/not-found.bp`'s text
 
 ### Step 5 — The write path
 
@@ -216,11 +221,15 @@ stands on.
 **Acceptance:**
 - [ ] `/dashboard` with no session cookie redirects to `/login` from the middleware, before the layout
       runs
-- [ ] The layout is the gate inside the render: rendering `/dashboard/posts/new` in process with a
+- [x] The layout is the gate inside the render: rendering `/dashboard/posts/new` in process with a
       `RequestData` that carries no session cookie answers 307 with `location: /login` through the
       `Response`, writes no chunk, and never invokes `newPostPage` — the redirect comes from
-      `app/dashboard/layout.bp`, and no page under `/dashboard` checks the session (decision 117)
-- [ ] `/dashboard` with a session cookie renders
+      `app/dashboard/layout.bp`, and no page under `/dashboard` checks the session (decision 117) —
+      `examples/blog/test/render_test.bp` "the dashboard layout is the gate": `status 307`,
+      `header location`, no `write`, `newPostRenders()` unchanged, on both rows
+- [x] `/dashboard` with a session cookie renders — `render_test.bp` (in process, `session=s1`) and
+      `start_test.bp` (`Cookie: session=s1` over the socket: 200, "Your posts"; without it, 307 to
+      `/login` from the layout)
 - [ ] Submitting the new-post form with an empty title re-renders the form with the message beside the
       field and creates nothing
 - [ ] Submitting a valid form writes the file, and the next request to `/blog` shows the new post —
@@ -233,20 +242,24 @@ stands on.
 `components/like_button.bp`, `components/nav.bp`.
 
 **Acceptance:**
-- [ ] `onze build` emits a client chunk containing `like_button` and not containing `lib/db.bp`
-- [ ] The rendered page carries a `<script>` tag pointing at a content-hashed chunk
+- [x] `onze build` emits a client chunk containing `like_button` and not containing `lib/db.bp` —
+      `start_test.bp`: the `shared` chunk holds `components/like_button` and no `lib/db`
+- [x] The rendered page carries a `<script>` tag pointing at a content-hashed chunk — `start_test.bp`:
+      `/blog/hello-world` names `/_onze/static/<buildId>/entry.<hash>.js`, which is served
 - [ ] Clicking the like button increments without a request — the hook is live, so hydration happened
 - [ ] `Link` navigation between `/blog` and `/blog/<slug>` does not re-request the document, and the
       blog layout is not remounted
-- [ ] The build fails if `like_button.bp` imports `lib/db.bp` — the server-only module must not reach
-      the client graph
+- [x] The build fails if `like_button.bp` imports `lib/db.bp` — the server-only module must not reach
+      the client graph — `onze-cli/test/build_test.bp`: a copy of the blog whose `like_button.bp`
+      imports `@/lib.db` fails with "server-only module lib.db reached from client root
+      components.like_button" (`lib/db.bp` imports jhonstart's `serverOnly`)
 
 ### Step 7 — The gate
 
 **Acceptance:**
 - [ ] `onze dev` serves every route in the acceptance script
 - [ ] `onze build && onze start` serves the same bytes for every static route
-- [ ] `examples/blog/test/` is green on both targets
+- [x] `examples/blog/test/` is green on both targets
 - [ ] Every `// front NN` comment in the app names a front that exists and delivers what the comment
       says it delivers — checked by a script, because fifty-two fronts is too many to check by reading
 
@@ -407,34 +420,26 @@ rather than claiming hydration is tested.
 
 ## Where it stands
 
-Step 1 implemented: `examples/blog/` with `botopink.json` (the
-alias map), `onze.json`, three seed posts, `src/lib/db.bp` and `test/{db,tags}_test.bp` — 7 tests
-on commonJS and erlang, and the example builds under the workspace's examples gate. The app's
-sources sit under `src/` (`src/app/`, `src/components/`, `src/lib/`; `onze.json`'s `appDir` is
-`"src/app"`, Next's `src/` layout): **finding F5** — a package whose `"src"` is `"."` is not
-honoured: `botopink check` answers `no source files found in src/ or test/`, and a test file cannot
-import a nested module (`import {one} from "lib.db"` → `unbound variable`, where the same tree
-under `"src": "src/"` works; a source module importing `lib.db` does compile). Minimal repro:
-`botopink.json` `{ "name": "p", "src": ".", "entry": "root.bp", "files": ["root.bp"] }`,
-`root.bp` `pub mod lib;`, `lib/mod.bp` `pub mod db;`, `lib/db.bp` `pub fn one() -> i32 { return
-1; }`, `test/a_test.bp` `import {one} from "lib.db"; test "p: x" { assert one() == 1; }`. `components/tags.bp` is not written: front 94's elements are
-jhonstart's, and the step-1 box is asserted on them (through the render's `renderNode`, the one
-that knows the void elements). The `@/lib.db` box is open: the app's map resolves it
-(`tags_test.bp`), but resolving it *from* `app/blog/[slug]/page.bp` is front 50's staging.
+`examples/blog/` — `botopink.json` (the alias map), `onze.json` (`appDir: "src/app"`, 53-a), three
+seed posts, `src/lib/db.bp` (the store; it imports jhonstart's `serverOnly`),
+`src/components/{nav,post_card,like_button}.bp`, and `src/app/`: the root and blog layouts, `/`,
+`/blog`, `/blog/[slug]` (a `LikeButton` island through `mountIsland`), `/about` under
+`(marketing)`, the not-found boundaries of `/` and `/blog/[slug]`, `/login`, and `/dashboard` with
+its gating layout and `/dashboard/posts/new`. `test/{db,tags,render}_test.bp` — 12 tests on
+commonJS and erlang: the store, the tags, `/` and `/blog` rendered in process through onze's
+`bootSite`, and the dashboard's gate. `onze build` builds the whole tree and `onze start` serves it
+(`onze-cli/test/start_test.bp`): `/blog/hello-world`, `/about`, the post's not-found boundary with
+404, the dashboard behind its layout, the bundle's tags and chunk. The imported modules' bodies —
+the `#[page]` / `#[layout]` registrations — run on both rows with no help (decision 140).
 
-Step 2: the root and blog layouts, `/`, `/blog`, `/blog/[slug]`, `/about`
-under `(marketing)`, `components/nav.bp` (front 27's `Link`) and `components/post_card.bp` (one
-emilia class). `test/render_test.bp` renders `/` and `/blog` **in process** through onze's
-`bootSite` (the jhonstart-emilia bridge registered, the chain from jhonstart's UI registry) on both
-rows — 10 blog tests in all. `/blog/[slug]` and `/about` live in directories no `mod` path reaches,
-so they are compiled by `onze build` (which builds the whole tree, the alias `@/lib.db` in the
-`[slug]` page rewritten by the staging) but not rendered by a test yet — their two boxes stay
-open. On erlang an imported module's decorator registrations only run through onze's
-`loadModuleBodies` (front 49's finding F10).
-
-Steps 3–7 wait on rakun (serving, prerender — front 60 —, the middleware, the actions, the cache)
-and on `Onze.run`. The rakun-cache member holds no
-cache surface yet, so `lib/db.bp` reads directly; its `readCount()` is the counter step 3 asserts.
+Open, and why: step 3 — prerendering is rakun front 60's, not on rakun's `feat`, and the post page
+has no `generateMetadata` (onze passes no metadata to the render yet); step 4 — `app/loading.bp`,
+`app/error.bp` and the slow list are not written (a streamed fallback needs a timing read of the
+chunks, and a thrown page's status is jhonstart front 31's to settle); step 5 — the middleware
+(rakun-web's `#[middleware]` lives on erlang, the blog is on both rows), the form and the actions
+(rakun front 24), `revalidateTag` (rakun-cache, front 12, not on rakun's `feat`); step 6 — a
+click and a client navigation need a browser; step 7 — `onze dev` (front 50), the byte-for-byte
+`dev` / `start` comparison, and the `// front NN` checker.
 
 ## Definition of done
 

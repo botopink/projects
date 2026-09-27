@@ -10,7 +10,7 @@ side (under `onze build`, on BEAM); the artifact they produce is the js client h
 server reads it back to emit script tags
 **Wave:** 6
 **Depends on:** 29 (the boundary marker, the `server-only` marker and the hydrate entry point) · 49
-(config, `outDir`, and the `ONZE_PUBLIC_` rule this front enforces) · 03 (content hashes) · 50 (the
+(config, `outDir`, and the public-environment rule this front enforces) · 03 (content hashes) · 50 (the
 CLI that invokes it) · 01 (`io.fs` — `walk`, `glob`, `readText`, `writeText` — and `io.process.run`) · 30 (jhonstart's render:
 the payload, the globals registry — `globals.fill` and `globals.signal` — and the `RenderHooks` head and body fields its tags fill) · 27 (the link runtime the entry mounts) · 48 (the class names the
 tree carries) · 56 (emilia's `styleRule`, which the build-time rule evaluation calls — decision
@@ -59,7 +59,7 @@ The second problem is a security one, and it is why this front's failures are ha
 `NEXTJS-DOCS.md § 7` states two rules: only `NEXT_PUBLIC_`-prefixed variables are available on the
 client, and a module that imports `server-only` fails the build when it reaches a client component.
 Both rules are enforced *by the bundler* — they are statements about what ends up in the file the
-browser downloads. Front 49 declares the prefix (`ONZE_PUBLIC_`, and it does not restate it here);
+browser downloads. Front 49 declares the prefix and this front does not restate it;
 front 29 declares the marker. Neither can enforce anything: enforcement is the graph walk, and the
 graph walk is this front. A miss here does not produce a bug report, it produces a database password
 in a file served to the public.
@@ -132,7 +132,7 @@ enforcement. During the walk, every environment read in a client module is class
 
 | What the module wrote | Outcome |
 |---|---|
-| `env.read("ONZE_PUBLIC_…")` | inlined — the value goes into the manifest's public table and the read is rewritten to a table lookup |
+| `env.read("<name>")`, the name one front 49's `isPublicEnvName` accepts | inlined — the value goes into the manifest's public table and the read is rewritten to a table lookup |
 | `env.read("ANYTHING_ELSE")` | **build fails**, naming the variable, the module, and the chain from the client root |
 | `env.read(someExpression)` | **build fails** — a name the bundler cannot read is a name it cannot clear |
 | `env.vars()` | **build fails** — it returns every variable, and filtering it would still publish the names of the ones it filtered |
@@ -217,7 +217,7 @@ pub type ClientBundleManifest(
     chunks: Array<ChunkRef>,                // every route chunk and script chunk
     routes: Array<#(string, string)>,       // route pattern -> chunk id
     styles: Array<ChunkRef>,                // filled by front 69, carried in the same manifest
-    publicEnv: Array<#(string, string)>,    // every ONZE_PUBLIC_ name and its value, and nothing else
+    publicEnv: Array<#(string, string)>,    // every public name (front 49's rule) and its value, and nothing else
 )
 
 pub fn parseManifest(text: string) -> ClientBundleManifest
@@ -388,9 +388,13 @@ pub fn refusalMessage(r: BuildRefusal) -> string
       message that names only the module is a message that does not fix the problem
 - [x] No configuration value, decorator or CLI flag changes any of these outcomes — asserted by a
       test that builds with every config field set adversarially and still gets the refusal
-- [ ] `checkEmiliaCalls` refuses a non-literal token list, a `flush()` reference, and a rule body
+- [x] `checkEmiliaCalls` refuses a non-literal token list, a `flush()` reference, and a rule body
       whose commonJS and erlang hashes differ; both hashes are `hash.contentHash`, and the
       class a `styleMap` entry records equals `styleRule(tokens, th)._0` for the contract-4 fixture
+      — `refusal_test.bp` ("emilia" and "the styleMap probe": `styleParity` refuses a split and
+      an unanswered site), and `onze-cli/test/build_test.bp` ("the contract-4 fixture's class"): a
+      client `emilia([.Bg.White, .Pad.All.__4, .Text.Bold, Token.Hover([.Bg.Color.Gray.__100])])`
+      is evaluated by `onze build` under node and under erl and records `e_39b87d03` (68-d)
 - [x] A build with more than one refusal reports all of them, not the first
 
 ### Step 4 — chunking and emission
@@ -464,10 +468,15 @@ render that writes them and the entry that reads them cannot diverge (decision 1
 - [x] The entry imports nothing from `routing` and hands the router no `match`; it contains no
       matcher and no table parser, and the bundle's client graph reaches `routing` compiled for
       commonJS only through jhonstart's router and `Link`
-- [ ] The generated entry contains no hand-written `__`-prefixed name: every global it reads is
-      `globals.<name>` from jhonstart's registry
-- [ ] Every class name the entry's islands compute is present in the payload's `s` key — the runtime
-      half of the class-name check, failing loudly in dev
+- [x] The generated entry contains no hand-written `__`-prefixed name: every global it reads is
+      `globals.<name>` from jhonstart's registry — `entry_test.bp` "generated": the source holds no
+      `__`, registers its starters with jhonstart's `registerStarter` (`globals.starters`) and
+      declares no starter cell; "islandAttr is jhonstart's": `globals.starters == "__bp3"`
+- [x] Every class name the entry's islands compute is present in the payload's `s` key — the runtime
+      half of the class-name check, failing loudly in dev — each starter checks the markup it is
+      about to commit (`classNamesIn` → `unknownClasses` against `payloadIds(globals.payload, "s")`)
+      and raises naming the class, in every build, not only in dev; `entry_test.bp` "the runtime
+      class check" and "generated" (the check precedes the commit)
 
 ### Step 7 — `<Script>` and its four strategies
 
@@ -547,43 +556,37 @@ skipped.
 ## Where it stands
 
 Implemented: `modules/onze-bundler/src/`
-`manifest`, `scan`, `graph`, `refusal`, `chunk`, `entry`, `script`, `rebuild`, `hooks` (the tags as
-jhonstart's `RenderHooks`) and `fixture` (the frozen fixture app every track-E suite reads); six
-suites, **37 tests, all on commonJS and on erlang** (the build half is pure and runs on both rows;
-the prelude's `require` test evaluates the chunk under node and answers `no-js-engine` on erlang).
-The generated entry is compiled by `onze build` (front 50) inside the staged client package,
-and linked by file (`link.bp`: the relative-`require` closure, `.mjs` sidecars as factories,
-jhonstart's `hooks` → `client_runtime` substitution); the scaffold's bundle boots under node.
-Route-level splitting at the file level is not done — the entry imports every client component,
-so every island's closure lands in `shared` — until the entry starts islands lazily.
+`manifest`, `scan`, `graph`, `refusal` (with the styleMap probe and `styleParity`), `chunk`,
+`entry`, `script`, `rebuild`, `hooks` (the tags as jhonstart's `RenderHooks`) and `fixture` (the
+frozen fixture app every track-E suite reads); seven suites, **42 tests, on commonJS and on
+erlang**. The generated entry registers its starters with jhonstart's `registerStarter`
+(`globals.starters`, 29-a), reads `globals.<name>`, spells no `__` name, and checks every emilia
+class an island computes against the payload's `s` before committing its markup. `onze build`
+(front 50) evaluates the styleMap with emilia's `styleRule` under node and under erl and refuses a
+split (68-d); it compiles the generated entry inside the staged client package and links it by
+file; the blog's bundle is served by `onze start` and its tags reach the document through
+`Onze.run`'s `pageRenderHooks`.
 
-Open, and why:
+Open, and why: route-level splitting at the file level — the entry imports every client
+component, so every island's closure lands in `shared`, until the entry starts islands lazily
+through `registerRouteStarters`.
 
-- the `styleMap` class (`styleRule(tokens, th)._0`) and the runtime `s` check: emilia's side is
-  there — `styleRule(tokens, th) -> #(className, encodedSheet)` in `emilia.bp`, pure, the class
-  contract 4's fixture pins (`e_39b87d03`) — and the bundler still records a literal call's token
-  text; the hash-parity rule is enforced statically — a non-ASCII token list is refused
-  (`emilia-hash-split`), which is contract 4 clause 3 and covers the astral divergence the two
-  `contentHash` cells have;
-- "no hand-written `__` name": jhonstart's side is there — the starter table is the registry's
-  `globals.starters` (`__bp3`), filled by `registerStarter(name, start)` and, for a route split,
-  `registerRouteStarters(pattern, load)` (front 29, `decisions-pending.md` 29-a) — and the generated
-  entry still declares its own cell writing `globalThis.__jhIslandStarters`, which `hydrate()` no
-  longer reads;
-- `onze build` over the blog, and the tags handed over by `Onze.run` (fronts 50 and 49's rakun
-  half).
-
-Choices recorded in `../../decisions-pending.md` 68-a…c.
+Choices recorded in `../../decisions-pending.md` 68-a, 68-c, 68-d.
 
 ## Definition of done
 
 - [x] `repository/onze/modules/onze-bundler/` exists with `botopink.json`, `src/root.bp` and the
       modules named in *Steps*
-- [ ] `onze build` on front 53's example app writes `<outDir>/client-manifest.txt`, a chunk tree
-      under `<outDir>/client/`, and a generated `entry.bp` that compiles
-- [ ] The bundle's script tags reach the document through jhonstart's `RenderHooks.headExtra` /
+- [x] `onze build` on front 53's example app writes `<outDir>/client-manifest.txt`, a chunk tree
+      under `<outDir>/client/`, and a generated `entry.bp` that compiles — `onze-cli/test/start_test.bp`
+      (the blog): `client-manifest.txt`, `client/src/onze_entry.bp` and its compiled
+      `client-js/onze_entry.js`
+- [x] The bundle's script tags reach the document through jhonstart's `RenderHooks.headExtra` /
       `bodyExtra`, handed over by `Onze.run`; no other front formats one, and jhonstart's render
-      keeps its own payload script per `contracts.md § 2`
+      keeps its own payload script per `contracts.md § 2` — `Onze.run` boots the app with
+      onze-assets' `pageRenderHooks(manifest)`; `start_test.bp`: `/blog/hello-world` served by
+      `onze start` carries the entry chunk's and the stylesheet's `/_onze/static/<buildId>/` URLs,
+      and the entry chunk is served
 - [x] `repository/onze/modules/onze-bundler/` names jhonstart in its `botopink.json`, and jhonstart
       does not name `onze` — the seam is one-directional (decision 113)
 - [x] `contracts.md § 6` is filled in from this front's *The bundle contract* section, verbatim

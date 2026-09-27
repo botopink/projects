@@ -242,14 +242,17 @@ Implemented: `modules/onze-assets/src/`
 `style_module`, `stylesheet`, `assets`, `preprocess` and `head` (`pageRenderHooks`: the stylesheet
 links, then front 68's head scripts, and the body tags), 12 tests on erlang **and** commonJS (the
 functions are pure or go through std's `process` / `fs`, which answer on both rows). The gate test
-walks every `modules/*/src/*.bp` and finds no `flush()` call and no sink.
+walks every `modules/*/src/*.bp` and finds no `flush()` call and no sink. `onze build` generates the
+accessors into the staged tree as `styles.<file>` — `pub val`s — and compiles them (front 50's
+`build_test`).
 
-`onze build` generates the accessors into the staged tree as `styles.<file>` and compiles them
-(front 50's `build_test`). Open: the two roots **registered** with rakun-web
-front 82, whose `StaticRoot` / `registerStaticRoot` do not exist in rakun today: the roots are
-onze's `AssetRoot(pattern, directory, immutable, cacheSeconds)`, field for field what the README
-gives front 82's record, and the boot registers them when front 82 lands (69-a). The generated
-module's accessors are `pub fn`, not the README's `pub val` (front 49's finding F1).
+The roots: `staticRoots` answers onze's `AssetRoot(pattern, directory, immutable, cacheSeconds)` on
+both rows, and `onze-server` converts each to rakun-web front 82's `StaticRoot` field for field
+(`staticRootOf`, 69-a) and registers it with `registerStaticRoot`; `Onze.run` installs front 82's
+static entry and chain. The fingerprinted root is registered and serves a chunk (`onze-server`'s
+`server_test.bp`, and the blog's entry chunk through `onze start`). Open: the public root. Front 82
+answers every request its pattern admits and a miss is a 404, so `/**` → `public/` would answer
+every page's URL; it waits on 69-b, and the registration box stays open.
 
 ## Definition of done
 
