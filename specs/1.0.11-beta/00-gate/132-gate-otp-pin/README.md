@@ -51,32 +51,32 @@ decision 227. The emitter wrote `erlang:element(2, C)(9)`, accepted by OTP 29 an
 ### Step 1 — the constant, `--version`, and the run-time check
 
 **Acceptance:**
-- [ ] `botopink --version` prints `otp: 28`
-- [ ] with OTP 29 first on `PATH`, `botopink build --target erlang` and `--target beam` exit 1 with
+- [x] `botopink --version` prints `otp: 28`
+- [x] with OTP 29 first on `PATH`, `botopink build --target erlang` and `--target beam` exit 1 with
       the message above, before any `.erl` is written; with 28, they build
-- [ ] `cli_contract.sh`: both cases, with a fake `erl` on `PATH` answering 29 and 28
+- [x] `cli_contract.sh`: both cases, with a fake `erl` on `PATH` answering 29 and 28
 
 ### Step 2 — the manifest field
 
 **Acceptance:**
-- [ ] `"otp": "26"` → `error: botopink emits Erlang for OTP 28; "otp" names 26` located at the value
-- [ ] a closure where `rakun` says `"28"` and a dependency says `"29"` → refused, naming both files
-- [ ] the field documented in `docs.md` § the manifest; the five libraries' root manifests say `"otp": "28"`
+- [x] `"otp": "26"` → `error: botopink emits Erlang for OTP 28; "otp" names 26` located at the value
+- [x] a closure where `rakun` says `"28"` and a dependency says `"29"` → refused, naming both files
+- [x] the field documented in `docs.md` § the manifest; the five libraries' root manifests say `"otp": "28"`
 
 ### Step 3 — the gate and the seven workflows
 
 **Acceptance:**
-- [ ] `scripts/gate.sh --cold` with OTP 29 on `PATH` stops before stage 2 with the message
-- [ ] every workflow's install step takes the release from the compiler (or the root manifest); its
+- [x] `scripts/gate.sh --cold` with OTP 29 on `PATH` stops before stage 2 with the message
+- [x] every workflow's install step takes the release from the compiler (or the root manifest); its
       "Assert Erlang/OTP" step compares against the same value (decision 227's literal `28` goes)
-- [ ] the meta `hook-integrity` check 4 still finds the five library workflows' shared steps identical
+- [x] the meta `hook-integrity` check 4 still finds the five library workflows' shared steps identical
 
 ## Gate
 
 - [ ] `scripts/gate.sh --cold` green **with OTP 28 on `PATH`** — this machine installs it first
       (`mise install erlang@28` and `mise use`, or kerl; OTP 29 stays installed but not first on `PATH`)
-- [ ] every `AGENTS.md` of a touched directory updated in the same commit
-- [ ] commits on `front/132-gate-otp-pin`; no push, no merge — landing is the coordinator's step
+- [x] every `AGENTS.md` of a touched directory updated in the same commit
+- [x] commits on `front/132-gate-otp-pin`; no push, no merge — landing is the coordinator's step
 
 ## Blast radius
 
