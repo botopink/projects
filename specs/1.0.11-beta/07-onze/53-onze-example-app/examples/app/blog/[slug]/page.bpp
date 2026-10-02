@@ -26,7 +26,7 @@ import {notFound} from "jhonstart";
 import {Metadata, OpenGraph, TwitterCard, Icons, pairValue} from "jhonstart";
 import {emilia, Token} from "emilia";
 import {registerSegmentConfig, registerStaticParams, SegmentConfig, DynamicMode, FetchCache, StaticParams, ParamBinding} from "rakun";
-import {Post, findPost, listPosts, missingPost} from "@/lib.db";
+import {lib.db.Post, lib.db.findPost, lib.db.listPosts, lib.db.missingPost};
 
 fn titleTokens() -> Token[] {
     return [.Text.Size.X3xl, .Text.Bold, .Color.Gray.900];

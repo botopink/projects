@@ -28,7 +28,7 @@ import {redirect} from "rakun";                                 // front 63 — 
 import {cache} from "rakun-cache";                              // front 12
 import {collections.Dict} from "std";
 // app-local
-import {writePost, listPosts} from "@/lib.db";
+import {lib.db.writePost, lib.db.listPosts};
 
 fn slugify(title: string) -> string {
     val lowered = title.toLower().trim();

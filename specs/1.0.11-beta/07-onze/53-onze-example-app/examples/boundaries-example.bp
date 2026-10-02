@@ -24,7 +24,7 @@ import {ErrorInfo, ErrorBoundary, catchError, renderBoundaryChecked, isSignal} f
 import {styled, Token} from "emilia";                   // front 48
 import {notFound} from "jhonstart";                     // front 31 — a page's signals are jhonstart's (decisions 115, 117)
 // app-local
-import {Post, findPost, missingPost} from "@/lib.db";
+import {lib.db.Post, lib.db.findPost, lib.db.missingPost};
 
 fn panelTokens() -> Token[] {
     return [.Pad.All.8, .Bg.Gray.100, .Border.Rounded.Md];

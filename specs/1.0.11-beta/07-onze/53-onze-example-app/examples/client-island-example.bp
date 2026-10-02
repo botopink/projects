@@ -33,7 +33,7 @@ import {emilia, Token} from "emilia";
 import {io.env} from "std";
 // app-local — TYPES only. `Post` is a record; importing `lib/db.bp`'s readers
 // here would put the filesystem in the client graph and fail front 68's build.
-import {Post} from "@/lib.db";
+import {lib.db.Post};
 
 // front 49's prefix rule, front 68's enforcement: `ONZE_PUBLIC_` names are
 // inlined into the bundle's public table. Any other name read from a client

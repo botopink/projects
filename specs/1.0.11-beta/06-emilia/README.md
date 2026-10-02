@@ -73,7 +73,7 @@ the owners (decision 189).
 ## Maintainer decisions
 
 Ids kept from 1.0.10 (`specs/1.0.10-beta/decisions-pending.md` § Track D, `05emilia-a…l`); new
-questions continue the sequence. Numbered decisions continue from 214 when answered.
+questions continue the sequence. Numbered decisions continue from 225 when answered.
 
 ### To confirm
 

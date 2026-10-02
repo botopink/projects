@@ -81,7 +81,7 @@ of 26, 27 or 67:
 
 | Hand-off | Where | Decision |
 |---|---|---|
-| the type jhonstart calls `Children` is renamed `JhonstartNode` — the node type: text, a number, a `bool`, a component of the same base, a list of them | `modules/jhonstart/src/element.bp` and every signature that spells `Children` | 193 |
+| the type jhonstart calls `Children` is renamed `Node` (decision 223) — the node type: text, a number, a `bool`, a component of the same base, a list of them | `modules/jhonstart/src/element.bp` and every signature that spells `Children` | 193 |
 | a component that takes `(props, children)` moves the children into its props: the first parameter's type declares a `children` field, and the second parameter goes away | every component in `modules/jhonstart*/` and `examples/` | 193 |
 | a component's attributes are the fields of its first parameter's type | the components written as functions of labelled parameters | 192 |
 
@@ -98,7 +98,7 @@ of 26, 27 or 67:
 ## Maintainer decisions
 
 Ids kept from 1.0.10 (`specs/1.0.10-beta/decisions-pending.md` § Track C); new questions continue
-the per-front letter sequence. Numbered decisions continue from 214 when answered.
+the per-front letter sequence. Numbered decisions continue from 225 when answered.
 
 ### To confirm
 

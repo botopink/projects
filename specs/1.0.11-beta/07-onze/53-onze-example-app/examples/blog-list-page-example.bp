@@ -20,8 +20,8 @@ import {styled, Token} from "emilia";                     // front 48
 import {page, layout, PageContext, LayoutProps} from "jhonstart";          // front 30
 import {collections.Dict} from "std";
 // app-local
-import {Post, listPosts} from "@/lib.db";
-import {PostCard} from "@/components.post_card";
+import {lib.db.Post, lib.db.listPosts};
+import {components.post_card.PostCard};
 
 fn titleTokens() -> Token[] {
     return [.Text.Size.X2xl, .Text.Bold];

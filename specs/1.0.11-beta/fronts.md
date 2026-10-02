@@ -292,5 +292,4 @@ Points raised by applying decisions 187 and 192–200 that have no id yet, each 
 the member count of decision 187 against its own list (128, before step 1); the
 `rakun-websocket` edge R92-1 would add to `rakun-messaging` (92 step 2); how a named slot and a
 native tag's attributes follow decisions 192 and 193 (118 steps 1 and 4); and, for 116, the
-opening fence, the unfolded function's name and return type, how an app-file kind gets its
-route and decorator, and `Node` against `JhonstartNode` (116 § Notes; steps 2 and 6).
+unfolded function's return type (116 § Notes; step 2).

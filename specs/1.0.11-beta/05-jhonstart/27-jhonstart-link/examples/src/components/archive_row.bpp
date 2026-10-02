@@ -16,7 +16,7 @@
 
 import {li} from "jhonstart";
 import {Link, linkProps, withPrefetch} from "jhonstart-link";
-import {Post} from "@/lib.blog";
+import {lib.blog.Post};
 
 type Props(post: Post)
 

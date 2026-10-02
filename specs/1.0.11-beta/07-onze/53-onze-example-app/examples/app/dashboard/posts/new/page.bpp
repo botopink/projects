@@ -11,7 +11,7 @@
 // Upstream: https://nextjs.org/docs/app/getting-started/updating-data
 
 import {div, h1} from "jhonstart";
-import {NewPostForm} from "@/components.new_post_form";
+import {components.new_post_form.NewPostForm};
 ---
 <div>
   <h1>New post</h1>

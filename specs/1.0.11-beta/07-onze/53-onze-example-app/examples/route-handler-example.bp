@@ -26,7 +26,7 @@ import {rkAppRegisterHandler} from "rakun";                            // front 
 import {cache} from "rakun-cache";                                     // front 12
 import {collections.Dict} from "std";
 // app-local
-import {Post, listPosts, findPost, writePost} from "@/lib.db";
+import {lib.db.Post, lib.db.listPosts, lib.db.findPost, lib.db.writePost};
 
 // `Request` is a BEHAVIOR, so a test cannot construct one and has to implement
 // it. Front 19 (test utilities) should own this type; it is written out here so

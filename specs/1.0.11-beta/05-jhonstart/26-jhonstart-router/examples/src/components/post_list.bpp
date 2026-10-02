@@ -13,7 +13,7 @@
 //   https://nextjs.org/docs/app/guides/streaming
 
 import {li, span, ul} from "jhonstart";
-import {recentPosts} from "@/lib.blog";
+import {lib.blog.recentPosts};
 
 val posts = recentPosts();
 ---

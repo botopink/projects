@@ -25,7 +25,7 @@
 //   https://nextjs.org/docs/app/api-reference/file-conventions/page
 
 import {article, h1, h2, li, p, section, span, ul} from "jhonstart";
-import {loadPost, loadComments} from "@/lib.blog";
+import {lib.blog.loadPost, lib.blog.loadComments};
 
 val post = await loadPost(params.slug);
 val comments = await loadComments(post.id);

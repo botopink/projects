@@ -258,9 +258,7 @@ with no `pub default fn` taking `comptime _: @Expr<string>`: an error at the key
      Step 6, and `117-bpp-routing` step 1.
   2. *The return type.* `-> Element`, while a header statement may `await` a loader or call a
      hook with `use`, which today need `-> @Component<ElementBase, Element>`. Step 2.
-  3. *The node type's name.* Decision 199 writes `children: Node`; decision 193 names the type
-     `JhonstartNode`.
-  4. *Header statements other than `val` and `use`* — step 0's list.
+  3. *Header statements other than `val` and `use`* — step 0's list.
 - **`examples/bpp-template-function-example.bp`** shows the mechanism decision 198 replaced — a
   library function named `bpp` that emits the module through `template.emit` and
   `template.slice`. Nothing in this README refers to it; it is to be deleted.

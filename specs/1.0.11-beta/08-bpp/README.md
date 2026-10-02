@@ -171,7 +171,7 @@ Found by the reanalysis, owned elsewhere. Each is a row of `surface.md` in the *
 
 ## Decisions the maintainer owes
 
-Lettered `08-a…`; each takes the next free number (214 onward,
+Lettered `08-a…`; each takes the next free number (225 onward,
 [`../decisions-pending.md`](../decisions-pending.md)) when answered. Answered: `08-a` and `08-i`
 (decision 198), `08-a2` (199), `08-a3` (200), `08-c` (190, with 191–193 for what it leaves to the
 library), `08-g` (202, on decision 186). Open: `08-b`, `08-d`, `08-e`, `08-f`, `08-h`.
@@ -209,7 +209,7 @@ page.
 | 190 | The library decides which types an embedded expression may have and refuses the others with a comptime error located at the expression; the compiler provides the means — an embedded expression of any type reaches the template function with its type readable at comptime and its position, and the function can raise a located error (a `language-gaps.md` row, owner `01-compiler`). The surface is `{expr}`. Until the means exist, the template function reads `{expr}` out of the literal's raw text and re-emits it through `build`, where a wrong type is the checker's error at the template call | 118 step 2 |
 | 191 | A template of jhonstart's `html` accepts in `{expr}` a closed list: a `string`; a number of any numeric type and a `bool`, each written as its `toString()` text, the same on every target; a component of the same base context as the template (`Element`, base `ElementBase`); a list of such components; and the node type, which names exactly that set. A record, an optional, a function, a component of another base: a comptime error located at the expression | 118 step 2 |
 | 192 | On a component tag the attributes are the fields of the type of the **first parameter** of the component's function: each name must be one of those fields, each value has that field's type. An undeclared attribute, a value of another type, and a field with no default left unwritten are comptime errors located at the attribute. Native HTML tags are not covered by the decision | 118 steps 1 and 4 |
-| 193 | A component takes children only when the type of its first parameter declares a `children` field, whose type says what is acceptable — `children: JhonstartNode`, the node type (decision 191's set; the type jhonstart calls `Children` today takes this name). Content inside the tag of a component whose props declare no `children` is a comptime error at the tag; a second `children` parameter beside the props goes away | 118 step 4; hand-offs to `05-jhonstart` |
+| 193 | A component takes children only when the type of its first parameter declares a `children` field, whose type says what is acceptable — `children: Node`, the node type (decision 191's set; the type jhonstart calls `Children` today takes this name). Content inside the tag of a component whose props declare no `children` is a comptime error at the tag; a second `children` parameter beside the props goes away | 118 step 4; hand-offs to `05-jhonstart` |
 
 ### 08-d · Who scopes CSS
 

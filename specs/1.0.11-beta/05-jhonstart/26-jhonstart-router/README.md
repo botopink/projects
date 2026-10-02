@@ -240,7 +240,7 @@ moves no snapshot (the chunks are byte-identical; only the gatherer changes). St
 
 - The render stays free of any framework's logger: `log` is a bundled package, and
   rakun-logging reaches the render only as the sink onze installs (decision 195).
-- Decisions 191–193 rename `Children` to `JhonstartNode` and move a component's children into
+- Decisions 191–193 and 223 rename `Children` to `Node` and move a component's children into
   its props; those edits reach this member as hand-offs from `08-bpp/118`
   ([`../README.md`](../README.md) § Handed to this track by `08-bpp/118`), not as steps here.
 - The `dom-test` erlang cell is decided by `00-gate/101-gate-jhonstart` (gate-d, § Current state):

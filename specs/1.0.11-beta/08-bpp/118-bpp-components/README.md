@@ -108,7 +108,7 @@ of those fields and each value — a literal or `{expr}` — has that field's ty
 parameter does not declare, a value of another type, and a field with no default left unwritten
 are comptime errors located at the attribute. **Children go through the props** (decision 193):
 a component takes children only when that type declares a `children` field, whose type says what
-is acceptable — `children: JhonstartNode`, the node type (the set of decision 191; the type
+is acceptable — `children: Node`, the node type (the set of decision 191; the type
 jhonstart calls `Children` today takes this name). Content inside the tag of a component whose
 props declare no `children` is a comptime error located at the tag, a `children` field of a
 narrower type refuses what it does not name, and a second `children` parameter beside the props
@@ -237,7 +237,7 @@ record, an optional, a function, a component of another base), and its second bo
 A component tag lowers to a call whose first argument is the props value built from the tag's
 attributes (decision 192), and the content inside the tag is the props' `children` field
 (decision 193): a component whose props declare no `children` and is given content fails at the
-tag, and `children: JhonstartNode` accepts the set of decision 191. The acceptance below predates
+tag, and `children: Node` accepts the set of decision 191. The acceptance below predates
 the two decisions — it needs a case for content given to a component without a `children` field,
 one for a `children` field of a narrower type, and its slot boxes wait on how a named slot maps
 onto the props (§ Notes — open).
@@ -302,7 +302,7 @@ directive is a `keyword`, an expression region is left to the host language.
   `<slot name="footer">`) maps onto the props: decision 193 names the `children` field and no
   other. (3) Whether `{...expr}` on a component becomes legal now that its attributes are the
   fields of one record — step 1 refuses it for a reason decision 192 removes. (4) The rename of
-  `Children` to `JhonstartNode` and the move of a component's children into its props touch
+  `Children` to `Node` and the move of a component's children into its props touch
   `modules/jhonstart/src/element.bp` (frozen) and every component of the track's members: they
   are hand-offs to `05-jhonstart` ([`../../05-jhonstart/README.md`](../../05-jhonstart/README.md)
   § Handed to this track by `08-bpp/118`), not steps of this front.

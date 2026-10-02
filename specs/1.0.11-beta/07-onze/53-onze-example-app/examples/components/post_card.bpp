@@ -15,7 +15,7 @@
 import {article, h2, p, span} from "jhonstart";
 import {Link, linkProps} from "jhonstart";
 import {emilia, Token} from "emilia";
-import {Post} from "@/lib.db";
+import {lib.db.Post};
 
 type Props(post: Post)
 

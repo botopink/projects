@@ -24,7 +24,7 @@ import {article, h2} from "jhonstart";                  // provided by front 94
 import {Link, linkProps} from "jhonstart";              // front 27
 import {styled, styledWith, withAttrs, Token} from "emilia";   // front 48
 // app-local
-import {Post} from "@/lib.db";
+import {lib.db.Post};
 
 // front 33 (palette) · front 35 (spacing) · front 40 (borders)
 fn cardTokens() -> Token[] {

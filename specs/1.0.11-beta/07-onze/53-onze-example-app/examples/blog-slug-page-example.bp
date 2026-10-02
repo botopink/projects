@@ -33,7 +33,7 @@ import {Metadata, OpenGraph, TwitterCard, Icons} from "jhonstart";   // front 32
 import {mergeMetadata, pairValue} from "jhonstart";                  // front 32
 import {collections.Dict} from "std";
 // app-local
-import {Post, findPost, listPosts, missingPost} from "@/lib.db";
+import {lib.db.Post, lib.db.findPost, lib.db.listPosts, lib.db.missingPost};
 
 fn titleTokens() -> Token[] {
     return [.Text.Size.X3xl, .Text.Bold, .Color.Gray.900];

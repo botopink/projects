@@ -24,7 +24,7 @@
 
 import {div, h1, header, section} from "jhonstart";
 import {Boundary, Suspense, boundaryId} from "jhonstart";
-import {PostList} from "@/components.post_list";
+import {components.post_list.PostList};
 
 // The fallback: what the reader sees while the list is in flight.
 fn skeleton() -> Element {

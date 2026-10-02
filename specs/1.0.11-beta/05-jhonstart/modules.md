@@ -52,7 +52,7 @@ are not members (no manifest; the 1.0.10 repros are closed in the compiler).
 | **67** | `modules/jhonstart-forms/**` except `src/form.bp:117-121` (`03-bundled-libs/103-actions-id`), `examples/forms/src/**`, `modules/jhonstart-dom-test/test/forms_dom_test.bp` (new; `fake_dom.mjs` is 26's — 67 stops and reports if it needs a primitive it lacks) | `assert_form.bp` (`assertActionState` over a `-test` envelope) |
 
 Files no front of this track edits: `element.bp`, `hooks.bp` (frozen — the `Children` →
-`JhonstartNode` rename of decision 193 reaches `element.bp` as a hand-off from `08-bpp/118`),
+`Node` rename of decision 193 reaches `element.bp` as a hand-off from `08-bpp/118`),
 `html_attrs.bp` (emilia's), `routes.bp:178-195` (`03-bundled-libs/102-routing-conventions`),
 `render.bp:453` (`isLangTag` — `105-i18n`). `error_boundary.bp:77` is 26 step 4's, against
 `106-log`'s package.

@@ -435,9 +435,9 @@ snapshots. One of them is a snapshot:
 
 ```bp
 import {Reply, assertResponse} from "onze-test";
-import {postMetadata, mergeMetadata, rootMetadata} from "@/app.blog.d_slug.page";
+import {app.blog.d_slug.page.postMetadata, app.blog.d_slug.page.mergeMetadata, app.blog.d_slug.page.rootMetadata};
 import {renderHead} from "jhonstart";
-import {readPost} from "@/lib.db";
+import {lib.db.readPost};
 
 test "metadata: merged head ---- the post over the root layout" {
     val post = readPost("hello-world").unwrapOr(missingPost("hello-world"));

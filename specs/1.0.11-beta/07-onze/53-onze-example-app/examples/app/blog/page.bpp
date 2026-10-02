@@ -15,8 +15,8 @@
 
 import {li, ul} from "jhonstart";
 import {emilia, Token} from "emilia";
-import {listPosts} from "@/lib.db";
-import {PostCard} from "@/components.post_card";
+import {lib.db.listPosts};
+import {components.post_card.PostCard};
 
 fn listTokens() -> Token[] {
     return [.Layout.Flex, .Flex.Col, .Flex.Gap.4];

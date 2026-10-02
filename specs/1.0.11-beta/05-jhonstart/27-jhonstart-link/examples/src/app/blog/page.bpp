@@ -18,8 +18,8 @@
 
 import {div, h1, nav, span, ul} from "jhonstart";
 import {Link, linkProps, withClass} from "jhonstart-link";
-import {ArchiveRow} from "@/components.archive_row";
-import {listPosts} from "@/lib.blog";
+import {components.archive_row.ArchiveRow};
+import {lib.blog.listPosts};
 
 val posts = await listPosts();
 ---

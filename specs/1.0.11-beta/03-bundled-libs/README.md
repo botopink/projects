@@ -124,7 +124,7 @@ Measured against the criterion, not against size alone:
 
 ## Decisions the maintainer owes
 
-Lettered `07-a` … continuing; each becomes a number (next free **214**, allocated by the
+Lettered `07-a` … continuing; each becomes a number (next free **225**, allocated by the
 milestone's `decisions-pending.md`) when answered.
 
 Answered, and written into the fronts — the text is in
