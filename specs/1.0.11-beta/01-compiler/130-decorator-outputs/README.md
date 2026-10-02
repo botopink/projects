@@ -46,7 +46,9 @@ Choices recorded under decision 216 (the spellings are the decision's):
   the `__Owner__Name` of an enum section, which the backends read as "a section of the enum
   `Owner`" and tag with the outer enum's module (measured: `Greeter.Mock` on erlang was
   `undef`). `comptime/assoc_types.zig` rewrites every `Owner.Name` on the parsed program and adds
-  the import item an importer needs. Only a decorator declares one (no hand-written nested type).
+  the import item an importer needs; a value prints under the owner's path (`City.Columns(…)`,
+  `City.Size.Small` — `TypeDecl.displayName`, read by every backend's display). Only a decorator
+  declares one (no hand-written nested type).
 - **`@typeinfo.all`.** Answers a `Declared<T>(name, module, meta: DeclaredMeta[], value: T)` array:
   `value` is the function itself, or for a type a thunk `{ -> T.<member>() }`; one kind per query.
   **What it sees:** every module of the build — the root package, its dependencies, std — that does
@@ -75,9 +77,10 @@ Cells (all four targets where they run):
 
 ### Step 5 — migrate the 119 sites
 
-Migrated: std `#[mocks.mock]` → `<Name>.Mock` + `<Name>.mock()`; validation `#[validated]` →
-`v.validate()` + `T.constraints()` (rakun's `#[configurationProperties]` boot check moved with it).
-Remaining, by site:
+Migrated (5 of 119): std `#[mocks.mock]` → `<Name>.Mock` + `<Name>.mock()`; validation
+`#[validated]` → `v.validate()` + `T.constraints()` (rakun's `#[configurationProperties]` boot check
+moved with it, its hook green); jhonstart `#[client]` → the meta `component`
+(`@typeinfo(X).meta.client.component`, its hook green). Remaining, by site:
 
 | File | Sites | Generated today | New form |
 |---|---|---|---|
@@ -87,7 +90,6 @@ Remaining, by site:
 | `rakun-data/src/orm/{entity,repository}.bp`, `sql/query.bp` | ~29 | `pub fn __rkEntity_<T>_<op>`, `__rkJoin_`, `__rkDerivedCount_`, `__rkQuery_`, `pub type <T>Columns`, `val __rkEntityReg_`/`__rkQueryReg_` | members (`City.fromRow(r)`), associated types (`City.Columns`), meta (`table`), registrations as above |
 | `rakun-cache/src/cached.bp`, `rakun-client/src/exchange.bp`, `rakun-hateoas/src/hal.bp`, `transactional`, `method_security` | ~8 | `pub type Cached<T>` / `Http<T>` twins, `pub fn cached<T>()` / `http<T>()` | associated type `T.Cached` / `T.Http` + member factory |
 | jhonstart `routes.bp` | 5 | `val __jhPage_X = jhPage(seg, …)` (+ layout/template/default), `pub fn <X>Params(route)` | meta `seg` + `@typeinfo.all(with: page)` passed to jhonstart's registration; `<X>Params` has no place (open question 1) |
-| jhonstart `client.bp` | 1 | `pub fn __jhClient_<X>()` | meta `client` read through `@typeinfo(X)` / `@typeinfo.all(with: client)` |
 
 **Acceptance:** each library's hook green on this compiler; `rtk grep '@emit(' --include=*.bp` in
 `repository/` answers only `tests/language` cells about `@emit` itself.
@@ -122,8 +124,12 @@ validation and rakun's config check, migrated together).
 2. **`@typeinfo` beside `@typeInfo`.** Two builtins differing by case; the older `@typeInfo(T)`
    (structural `TypeInfo`) has no library caller. Recommendation: retire `@typeInfo`, or fold its
    structural answer into `@typeinfo(T)`.
-3. **Printing an associated type's value** shows its declared name (`City__Columns(…)`), not
-   `City.Columns(…)`. Recommendation: the backends' record display reads the owner path.
-4. **wasm: a function read from a generic record's field and called through an untyped local prints
+3. **wasm: a function read from a generic record's field and called through an untyped local prints
    its pointer** (`Box<T>(value: T)` alone, independent of 216) — `typeinfo_all_registration` calls
    through a typed local; the gap belongs to `05-wasm`.
+4. **One query answers one decorator.** rakun's stereotypes (`#[component]`, `#[service]`,
+   `#[repository]`, `#[controller]`, `#[filter]`, …) are one kind of thing — a managed singleton —
+   under several decorators, so its boot would write one `@typeinfo.all` per stereotype. Options:
+   (a) one query per decorator (today); (b) `with: [service, repository, …]`, the union in one
+   order; (c) a stereotype decorator delegates to one shared marker the query names.
+   Recommendation (a) for 216's migration, (b) only if rakun's boot measures it worth a rule.
