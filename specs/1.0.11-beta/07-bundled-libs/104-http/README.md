@@ -42,47 +42,55 @@ Every site above is pure `.bp` or a `.erl` table; none needs a byte type. `hash.
 ### Step 1 — `cookie`
 
 `parse(header) -> Array<#(string, string)>` (first-wins, RFC 6265 § 5.4 — `07-d`), `get(header, name) -> ?string`,
-`serialize(name, value, CookieAttrs) -> string`. Percent-decoding as `request_context` does today;
-a control character in a value is refused (`07-d`).
+`serialize(name, value, CookieAttributes) -> string` (`maxAge: ?i32`, `null` omits `Max-Age`),
+`formatHeader(pairs)` (a request `Cookie` header). Percent-decoding as `request_context` does
+today; a value outside cookie-octet, a malformed escape or one decoding to a control character
+is refused, and a refused first occurrence still claims its name (`07-d`). The record is
+`CookieAttributes`, not `CookieAttrs`: rakun exports `CookieAttrs` (decision 163).
 
 **Acceptance:**
-- [ ] `libs/http/test/cookie_test.bp`: tossing (`a=1; a=2` → `1`), an undecodable value refused,
+- [x] `libs/http/test/cookie_test.bp`: tossing (`a=1; a=2` → `1`), an undecodable value refused,
       `serialize` byte-identical to today's `sessionCookieHeader` for the same attributes
 - [ ] rakun-session's `cookieFromHeader` deleted; its store tests green with first-wins asserted
 
 ### Step 2 — `accept`
 
-`qValue(text) -> i32` per mille (`07-e` strict), `parseAccept`, `mediaQuality`, `negotiateMedia`,
-`negotiateToken` (encodings), `parseAcceptLanguage`.
+`qValue(text) -> i32` per mille (`07-e` strict), `parseAccept -> Array<MediaRange>`,
+`mediaQuality`, `negotiateMedia`, `tokenQuality` / `negotiateToken` (encodings, `identity`
+acceptable unless excluded), `parseAcceptLanguage -> Array<LanguageRange>`.
 
 **Acceptance:**
-- [ ] known-answer tests over the RFC 9110 § 12 examples on both rows
+- [x] known-answer tests over the RFC 9110 § 12 examples on both rows
 - [ ] `negotiation.rangeQ`, `compression.qMillis`, `i18n.qPerMille` deleted; the three members'
       tests green (the negotiation tests that relied on leniency are rewritten to refuse, per `07-e`)
 
-### Step 3 — `mime`, `status`, `date`, `range`, `cacheControl`
+### Step 3 — `mime`, `status`, `date`, `byteRange`, `cacheControl`
 
-`mime.contentTypeOf(pathOrExt)`, `mime.isText`; `status.reasonPhrase(code)`;
-`date.formatHttpDate(epochMillis)` and `parseHttpDate` (pure, over std `clock.toCivil` and a
-days-from-civil function — no bitwise); `range.parseRange(header, size)`; a `cacheControl` builder.
+`mime.contentTypeOf(pathOrExt)`, `mime.extensionOf`, `mime.isText`; `status.reasonPhrase(code)`
+(`""` for an unregistered code); `date.formatHttpDate(epochMillis: i64)` and
+`parseHttpDate(text, nowMillis: i64) -> @Result<i64, string>` (pure, over std `clock.toCivil` and
+a days-from-civil function — no bitwise; `nowMillis` only places an RFC 850 two-digit year);
+`byteRange.parseRange(header, size: i64) -> ByteRange(status, first, last)` and `contentRange`
+(the module is `byteRange`: erika exports `range`, decision 163); a `cacheControl` builder
+(`directives()`, `with*`, `render`, `staticFile`).
 
 **Acceptance:**
 - [ ] one MIME table: `image_handler.bp` and `static.bp` import it; `static.bp` drops
       `etagMatches` for std `hash.matches`
-- [ ] `formatHttpDate(0)` is `Thu, 01 Jan 1970 00:00:00 GMT` on both rows; `parseHttpDate` reads
+- [x] `formatHttpDate(0)` is `Thu, 01 Jan 1970 00:00:00 GMT` on both rows; `parseHttpDate` reads
       the three RFC 9110 § 5.6.7 forms
 - [ ] `error.bp:86`'s table deleted; the sidecars receive the phrase from the `.bp` side (Notes)
 
 ### Step 4 — registration and the consumer sweep
 
-- [ ] `build.zig` lists `http` after `routing`; `libs/AGENTS.md` row; `scripts/format-check.sh` tree
+- [x] `build.zig` lists `http` after `routing`; `libs/AGENTS.md` row; `scripts/format-check.sh` tree
 - [ ] every consumer file above imports `http`; `grep -rn "cookieFromHeader\|rangeQ\|qMillis\|qPerMille\|bracketToColon" repository/{rakun,onze}/modules` is empty
 
 ## Gate
 
-- [ ] `zig build test` cold, green; `zig build test-libs` green, no new ledger line
-- [ ] `libs/http/AGENTS.md` written; every touched `AGENTS.md` updated in the same commit
-- [ ] Commit on `front/104-http`
+- [ ] `zig build test` cold, green (package half: green); `zig build test-libs` green, no new ledger line (package half: the `http` cells green)
+- [x] `libs/http/AGENTS.md` written; every touched `AGENTS.md` updated in the same commit
+- [x] Commit on `front/104-http` (package half)
 
 ## Blast radius
 
