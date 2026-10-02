@@ -94,8 +94,8 @@ Tolerances, all deleted:
   `GLIBC_2.36 not found` on ubuntu-22.04).
 - `rakun-websocket` depends on the machine: alone on an idle machine it is 27 / 0; under load
   `test/limits_test.bp:48` reads an outbound queue of 51 against the cap of 50 (26 / 1 — measured
-  twice, 2026-10-01 inside the hook at load 40–110 and 2026-10-02 alone at load 106). The hook's one
-  end-to-end run was 35 of 36 cells for that reason. Owner: `../../03-rakun/` (the cap's enforcement
+  twice, 2026-10-01 inside the hook at load 40–110 and 2026-10-02 alone at load 106). One hook run was
+  35 of 36 cells for that reason; the next was 36 / 36. Owner: `../../03-rakun/` (the cap's enforcement
   in the websocket runtime, or the test's bound) — a library row, not a compiler one.
 - `scripts/gate.sh --cold` in `repository/botopink-lang` with this rakun checkout — the meta gate's
   stage 8 reads the erlang lines; this front did not run the compiler's gate (compiler fronts share
@@ -139,9 +139,9 @@ examples build.
 - [x] `botopink build` of the 3 examples: 3 / 3
 - [x] the hook's refusals verified one by one (missing compiler, staged `*.snap.new`, synthetic
   `from "onze"`, synthetic `Element` in code; comment-only `onze` and `xmlElement` pass)
-- [ ] `(cd repository/rakun && scripts/git-hooks/pre-commit)` green end to end in one run — measured
-  2026-10-01 on a loaded machine: 35 of 36 cells, 3 / 3 builds, exit 1 on `rakun-websocket` 26 / 1
-  (§ What is left); every other cell and stage green in that run
+- [x] `(cd repository/rakun && scripts/git-hooks/pre-commit)` green end to end in one run — 2026-10-02,
+  as the hook of the gate-repair commit: 36 / 36 cells, 3 / 3 builds, the greps, exit 0 (an earlier run
+  on a loaded machine was 35 / 36 on `rakun-websocket`, § What is left)
 - [ ] `scripts/gate.sh --cold` in `repository/botopink-lang` with this rakun checkout: no rakun
   erlang line but `pass` / `no tests` (the commonJS lines disappear with 113)
 - [ ] the workflow green on `feat` after the push
