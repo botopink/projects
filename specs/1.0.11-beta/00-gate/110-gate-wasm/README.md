@@ -2,16 +2,15 @@
 
 **Priority:** critical — stage 9's one red cell, and the only class of defect in the compiler that
 prints a wrong value at exit 0.
-**Depends on:** none to start; `112` reformats `libs/std/src/testing/asserts.bp` — this front
-rebases its restructure over that commit. `111` starts from this front's landing.
+**Depends on:** none. `111` step 4 (the deletion of `expected-failures.txt`) landed with this
+front's step 3.
 **Owns:** `modules/compiler-core/src/codegen/wat.zig` (the link loop, the refusal path
-`Emitter.refuse`, `collectHostBound`) · the wasm snapshots
+`Emitter.refuse`, the host-binding refusal) · the wasm snapshots
 `modules/compiler-core/snapshots/codegen/<runtime>/wasm/**` (`<runtime>` is `beam` and `wat`; the
 runtime-parity audit keeps the pair equal) · `src/codegen/tests/wat.zig` (the backend's fixtures) ·
-`libs/std/src/testing/asserts.bp` (the ck-host restructure, gate-b) · the single `wasm |` line of
-`tests/language/expected-failures.txt` (`:243` — the file is 111's; this front's only edit to it is
-deleting that line, and 111 starts from the result) · new `tests/language/run/*.bp` and
-`modules/*` cells for wasm only.
+the `<cell>.wasm.expect` files decision 146 flips · new `tests/language/run/*.bp` and `modules/*`
+cells for wasm only. `libs/std/src/testing/asserts.bp` is NOT restructured here (its header comment
+alone was corrected): which of its functions wasm may import is the std track's question, § Left.
 **Does not touch:** `wat_prelude.zig`, `wat_runtime.zig`, `codegen/wat/**` beyond what a hard error
 needs (`../../01-compiler/05-wasm` owns wasm's lowering rows — `Array.unique`, the primitive-method
 traps, C-07 twins); `tests/language/run.sh` (111's); `beam_asm.zig`, `erlang.zig`, `commonJS.zig`.
@@ -59,24 +58,55 @@ failures, 1 failed` on `--target all`; `run.sh --target wasm`: `374 passed, 1 ex
   value (`enumReturnedBy`): `@print(stop())` over a linked `fn stop() -> Signal` printed the value's
   address at exit 0 (single-module `@print(Signal.Red)` was already right). A `?Enum` return keeps
   the optional path.
-- **Measured after** (this worktree, sibling libraries at their `feat` tips): `zig build test` green;
-  `scripts/snap_audit.sh --mode=runtime-parity`: 1431 pairs, 0 differing; `run.sh --target wasm`:
-  `377 passed, 1 expected failures, 0 failed` (the 2 new cells included).
-- **ck-host** (gate-b) — measured, not closed: `libs/std/src/testing/asserts.bp` has THREE host
-  cells with Node and Erlang templates only — `canonical` (`deepEquals`), `regexMatches`
-  (`matches`), `tryCatch` (`throws`, `throwsWith`, `:286-288`). The strict rule (a) refuses a
-  function whose body reaches a cell with no wasm binding where it is declared, so under (a) the
-  module does not build on wasm until all three have a wasm lowering: `canonical` can have one (a
-  structural stringify over the value's descriptor, the print path's); `regexMatches` (no regex
-  engine on wasm) and `tryCatch` (`@panic` is `unreachable` on wasm — there is nothing to catch)
-  cannot. Two language cells pin today's lazy rule on wasm: `run/std_asserts_on_every_target`
-  (the import builds) and `run/std_asserts_host_cell_on_wasm` (the call is refused, `.wasm.expect`).
-  `libs/std` `botopink build --target wasm` is red today for two reasons outside `asserts`:
-  `querystring` (`std-unsupported-on-target: std/encoding.percentEncode`) and `testing/mocks`
-  (`thenReturnCell` called in a method body, refused) — `02-std-and-packaging`'s. The wasm backend
-  reads `@External.Wasm` nowhere (`docs.md` § host bindings: "nothing declares one today"), so a
-  wasm binding for `canonical` is a compiler feature (`../../01-compiler/05-wasm`) before it is a
-  std template.
+- **ck-host (a), decision 146 — strict on every target.** `collectHostBound`, `host_bound` and
+  `MissingExternal.via` are gone from `wat.zig` / `moduleOutput.zig`. Every bodied function is
+  emitted (`emitDecl`), so a body that calls a host function with no wasm binding is refused at
+  that call by `lowerPlainCall` — the rule lives where it lives on the other three backends, in
+  the call's lowering, and prints their diagnostic. The wrapper program
+  (`run/external_wrapper_keeps_refusal.bp`), measured on four targets: commonJS
+  `` `otpRelease` has no `#[@External.<Target>(…)]` for the node backend `` at `src/main.bp:14:12`;
+  wasm the same line "for the wasm backend" at `14:12`; erlang and beam print `up` (they bind it).
+  The mirror (`#[@External.Node]` only, wrapped, never called): commonJS runs, erlang, wasm and
+  beam refuse it at the call inside the wrapper, each naming its backend.
+- **A behavior's associated `default fn` with no type parameter** is queued at registration
+  (`registerSymbols`) instead of when a call reaches it, for the same reason
+  (`run/external_wrapper_associated_default.bp`: commonJS and wasm refuse, erlang and beam run).
+- **A refused module is reported in its own file, and each consumer at its import**
+  (`codegenEmit`'s `relocateLinkedRefusals`, `Linked.via`). wasm emits a linked module's
+  declarations into the consumer, so the consumer met the same refusal and the driver printed the
+  dependency's location against the consumer's file (`--> src/main.bp:101:9`, a line `main.bp`
+  does not have). Now: `std/testing/asserts.bp:101:9` for the module, and for the consumer
+  `` `canonical` has no `#[@External.<Target>(…)]` for the wasm backend — in `std/testing/asserts`,
+  which this import links `` at the import item (`src/main.bp:10:9`).
+- **What (a) costs, measured against the lazy rule** (one program per std module,
+  `import {<m>} from "std"` and a `main` that prints):
+  - three std modules were importable on wasm and are refused now — `testing.asserts`
+    (`canonical` ← `deepEquals`; `regexMatches` ← `matches`; `tryCatch` ← `throws` /
+    `throwsWith`), `testing.snapshots` (`writeFile`) and `escape` (`lineSeparator`). The other
+    twenty-three answer as before: `collections`, `path`, `url`, `string_builder` build; the
+    rest were already refused at the import by STD-001 or by a call in a method body;
+  - `tests/language`: two cells ran on wasm and are refused there, by `.wasm.expect` at the import —
+    `run/std_asserts_on_every_target` and `modules/labelled_call_by_label` (the cell's `"std"`
+    call path is `asserts.greaterThan`; its associated, imported and namespace paths lose their
+    wasm verdict with it); `run/std_asserts_host_cell_on_wasm` was refused at the call of
+    `deepEquals` and is refused at the import; `run/std_decorator_through_namespace` pins the
+    import's STD-001 line (`testing.mocks` now names `pushMatcher` first, not `thenReturnCell`);
+  - codegen snapshots: none recorded the lazy drop — `zig build test` is green with no fixture
+    re-recorded, `scripts/snap_audit.sh --mode=runtime-parity`: 1431 pairs, 0 differing;
+  - `botopink build --target wasm` in `libs/std`: exit 1, fifteen modules refused where it was two
+    (`querystring`, `testing/mocks`) — `async` (`gateOpen`), `encoding` (`base64Encode`),
+    `escape` (`lineSeparator`), `hash` (`contentHash`), `io/clock` (`systemTimeWithUnit`), `io/fs`
+    (`mkdir`), `io/http` (`fetch`), `io/random` (`float`), `json` (`quote`), `math` (`floor`),
+    `querystring` (STD-001 on `std/encoding.percentEncode`), `testing/asserts` (`canonical`),
+    `testing/mocks` (`pushMatcher`), `testing/snapshots` (`writeFile`), `unicode`
+    (`firstCodepointOrZero`). Each is a bodied function calling a host cell with no wasm binding.
+- **Measured after** (this worktree): `zig build test` green from a cold runtime cache;
+  `run.sh --target all`: `language tests: 1483 passed, 0 failed` (four targets);
+  `--target wasm`: `380 passed, 0 failed`; `--target beam`: `395 passed, 0 failed`.
+- **The neighbouring rows did not move.** commonJS still accepts a host function IMPORTED from
+  another module with no node binding and dies at run time (`04-js`'s row), and erlang still
+  answers "the OTP compiler refused emitted erlang" for the mirror (`02-erlang`'s row): this
+  front changed `wat.zig` and `moduleOutput.zig` only.
 
 ## Steps
 
@@ -94,26 +124,32 @@ failures, 1 failed` on `--target all`; `run.sh --target wasm`: `374 passed, 1 ex
 - [x] `scripts/snap_audit.sh --mode=runtime-parity` green; `zig build test` green
 - [x] `tests/language/run.sh --target wasm` → `0 failed`
 
-### Step 3 — ck-host (a): `collectHostBound` strict, `asserts` restructured — blocked on ck-host
+### Step 3 — ck-host (a), decision 146: wasm refuses a function that reaches a host cell, called or not — done
 
-The measurement above is what ck-host must decide with. (a) as recommended is not "one std
-restructuring": `matches`, `throws` and `throwsWith` have no possible wasm lowering, so (a) means
-either the `asserts` module does not build on wasm at all (every wasm program importing it is
-refused; `run/std_asserts_on_every_target` and `run/std_asserts_host_cell_on_wasm` flip to
-refusals at the import) or the three functions leave `asserts` for a module of their own — an API
-change of `asserts-api.md` (decision 74) the std track owns, not this front. (c) — strict for the
-root package, lazy for a dependency's functions — closes `run/external_wrapper_keeps_refusal`
-(the wrapper is the root's) and keeps `asserts` importable; (b) keeps today's behaviour and rewrites
-`docs.md` § host bindings. Until the maintainer answers, `collectHostBound` is unchanged and
-`expected-failures.txt:243` stays.
-
-- [ ] `bash tests/language/run.sh --target wasm --only run/external_wrapper_keeps_refusal.bp` → `passed` (the cell's `.expect` is the refusal)
-- [ ] `botopink build --target wasm` in `libs/std` → exit 0 (needs `querystring` and `testing/mocks` first — `02-std-and-packaging`)
-- [ ] `expected-failures.txt` has no `wasm |` line; `run.sh --target all` prints `0 expected` for wasm
+- [x] `bash tests/language/run.sh --target wasm --only run/external_wrapper_keeps_refusal.bp` → `passed` (the cell's `.wasm.expect` is the refusal, `14:12`)
+- [x] `expected-failures.txt` had no live line left and is deleted (111 step 4); `run.sh --target all` prints `language tests: 1483 passed, 0 failed`
+- [ ] `botopink build --target wasm` in `libs/std` → exit 0 — **not reachable under (a) as std stands**: exit 1, fifteen modules refused (§ Current state). It closes when every std module either has a wasm lowering for its host cells or is out of a wasm build; neither is this front's (§ Left)
 
 ## Left
 
-- ck-host, as above; then the `asserts` restructure the answer implies and the line's deletion.
+- **std on wasm under decision 146** — for the maintainer, `02-std-and-packaging`:
+  `testing.asserts`, `testing.snapshots` and `escape` are no longer importable on wasm, and
+  `libs/std` does not build there. For `asserts` the choice is (1) it stays unimportable on wasm;
+  (2) `matches`, `throws`, `throwsWith` (and `deepEquals` while `canonical` has no wasm lowering)
+  move to a module of their own, so the pure assertions import on wasm — an API change of
+  `asserts-api.md` (decision 74); (3) the three cells gain wasm lowerings — `canonical` can (a
+  structural stringify over the value's descriptor, the print path's), `regexMatches` cannot
+  without a regex engine in the wasm prelude, `tryCatch` cannot while `@panic` is `unreachable`
+  on wasm, and the wasm backend reads `@External.Wasm` nowhere yet (`../../01-compiler/05-wasm`).
+- **A generic behavior's associated `default fn` is still lowered only when a call reaches it**
+  (`behavior Probe<A> { default fn f(x: A) -> string { return otpRelease(); } }`, never called:
+  commonJS refuses, wasm prints `up`). Queueing those too emits the primitive behaviors'
+  (`Array.range`, `Array.repeat`, `Pair.of`, …) into every module that carries the behavior —
+  measured: 14 wasm fixtures change (both runtimes) and a two-line `flatMap` program's `.wat`
+  goes from 12 to 17 functions. `../../01-compiler/05-wasm`'s to weigh.
+- `modules/labelled_call_by_label` has no wasm verdict for its labelled-call paths while its
+  `"std"` path is `testing.asserts`; a std function that builds on wasm in that position gives it
+  back (`111` / `01-checker`'s cell).
 - `noteF("extra argument {d} ignored")` / `"missing argument"` in `lowerPlainCall`: an arity the
   checker did not refuse reaches codegen; the honest shape is a checker refusal
   (`../../01-compiler/01-checker`), and until then wasm pads or drops arguments where the other
@@ -130,17 +166,19 @@ root package, lazy for a dependency's functions — closes `run/external_wrapper
 
 ## Blast radius
 
-- wasm snapshots: 4 fixtures re-recorded (both runtimes), 1 added (both runtimes, four backends).
+- wasm snapshots: 4 fixtures re-recorded (both runtimes), 1 added (both runtimes, four backends)
+  by steps 1–2; step 3 moved none.
 - `../../01-compiler/05-wasm` starts from this landing: a missing lowering is a refusal rather than
   a `0`; 05's fixtures may move from "prints wrong" to "refused" — the intended direction. A
-  `@External.Wasm` template reader is the prerequisite of any std wasm binding (ck-host (a)).
-- `../../02-std-and-packaging/97-std-dedupe` rebases over `asserts.bp` only if ck-host lands a
-  restructure.
-- `111` deletes what is left of `expected-failures.txt` after ck-host removes this front's line.
+  `@External.Wasm` template reader is the prerequisite of any std wasm binding.
+- `../../02-std-and-packaging`: three std modules stopped importing on wasm (§ Current state);
+  `asserts.bp` changed in its header comment only, so `97-std-dedupe` has nothing to rebase over.
+- A library that builds for wasm and imports `escape`, `testing.asserts` or `testing.snapshots`
+  is refused at that import; no gate stage builds a sibling library for wasm.
 
 ## Notes
 
 - A `;; note` in the emitted `.wat` is a comment; the rule is about what the emitter *does* after
   writing it. A note that documents a correct lowering may stay; none documents a `0` any more.
-- The compiler knows no library: `asserts.bp` is std, and the restructure is a std change this
-  front owns only because the ck-host line cannot close without it.
+- The compiler knows no library: the strict rule names no module, and which std functions sit on
+  a host cell is std's to arrange.

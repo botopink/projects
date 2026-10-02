@@ -100,15 +100,23 @@ is audited (step 5): the cell has no host binding, so the narrowing is *not* str
 - [ ] a `modules/` cell with `"targets": ["erlang"]` and a host-only binding runs on erlang alone (a new cell pins it); one without `targets` runs on four
 - [ ] `grep -l '"targets"' tests/language/modules/*/botopink.json` lists only cells step 5's audit keeps
 
-### Step 4 — `expected-failures.txt` is deleted (gate-b)
+### Step 4 — `expected-failures.txt` is deleted (gate-b, decision 154) — done
 
-With 110's line and step 1's two lines gone the file has no live line. Delete it; delete `run.sh`'s
-reader (the tally line, the three key shapes, the `\|` escape, the "expected" verdict); the
-`AGENTS.md` § Status quote of the tally line goes with it. A red language cell is red.
+The file had no live line once 110 step 3 closed wasm's (decision 146). It is deleted, and with it
+`run.sh`'s reader: the header block, the parser of the three key shapes and the `\|` escape, the
+tally line, the `expected` verdict. `run.sh` reports `<target>\t<key>\t<ok|fail|audit>` lines and
+nothing else; the self-test's required tally is `13 passed, 11 failed`. `tests/language/AGENTS.md`
+has § A red cell is red where it had the file's section, and its record of earlier fronts' tallies
+(each a quote of the three-number line and of the file's count) is gone. The lines that named the
+file elsewhere — `scripts/gate.sh` (header, stage 9), `scripts/AGENTS.md` (the stage list),
+`.github/workflows/test.yml` (the `test-language` step's comment), `build.zig` (the step's
+comment), the root `AGENTS.md` (stage 9), `codegen/AGENTS.md`, `codegen/wat/AGENTS.md`,
+`codegen/tests/control_flow.zig` and five cells' header comments — say what is true now. A red
+language cell is red.
 
 **Acceptance:**
-- [ ] `test ! -e tests/language/expected-failures.txt`; `grep -c "expected-failures" tests/language/run.sh tests/language/AGENTS.md scripts/*.sh .github/workflows/test.yml` = 0
-- [ ] `run.sh` prints `language tests: <n> passed, <m> failed` — two numbers
+- [x] `test ! -e tests/language/expected-failures.txt`; `grep -c "expected-failures" tests/language/run.sh tests/language/AGENTS.md scripts/*.sh .github/workflows/test.yml build.zig AGENTS.md docs.md README.md` = 0 in every file
+- [x] `bash tests/language/run.sh --target all` prints `language tests: 1483 passed, 0 failed` — two numbers, four targets; `bash tests/language/run.sh --self-test` exits 0
 
 ### Step 5 — the 17 `.targets` and the modules/ manifests audited (gate-d)
 
