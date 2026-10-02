@@ -1,104 +1,121 @@
 # Front 111 — gate-beam-and-targets: the beam build ships its sidecars, beam joins `--target all`, every narrowing is honoured and audited, `expected-failures.txt` is deleted
 
-**Priority:** critical — the two remaining expected-failure lines, a target no gate stage runs, and
-a `modules/` cell whose manifest `targets` the runner ignores (the wasm red of stage 9 ran on a
-target the cell excludes).
-**Depends on:** `110` (its wasm line deleted; its link fix landed — `modules/import_same_name_from_two_packages`
-is then green on wasm *and* excluded from it by manifest, two independent truths) · `112` (the
-`tests/language` reformat landed — this front's new cells are written formatted, and the tree is in
-`TREES`). `115` starts from this front's `run.sh`.
+**Priority:** critical — the two beam expected-failure lines, a target no gate stage ran, and a
+`modules/` cell whose manifest `targets` the runner ignored.
+**Depends on:** `110` (its wasm line; the link fix) · `112` (the `tests/language` reformat). `110`'s
+last step waits on `ck-host`, and so does this front's step 4. `115` starts from this front's
+`run.sh`.
 **Owns:** `modules/compiler-cli/src/cli/{build,run,test_cmd,libs}.zig` (the beam path of sidecar
-shipping) · `modules/compiler-core/src/codegen/beam_asm.zig`, `codegen/beam/**` (the
-`__bp_load_siblings` twin) · `tests/language/run.sh` · `tests/language/expected-failures.txt`
-(deleted) · the 17 `tests/language/run/*.targets` · every `tests/language/modules/*/botopink.json`
-`targets` · `tests/language/AGENTS.md` · beam snapshots the sidecar loader changes
-(`modules/compiler-core/snapshots/codegen/beam/**`).
-**Does not touch:** `wat.zig` (110's); `erlang.zig` (`../../01-compiler/02-erlang`'s — the erlang
-loader `:2405-2415` is read, not edited); `scripts/format-check.sh` (112's); `scripts/test-libs.sh`,
-`lib-test-runner/**` (113's); `scripts/gate.sh` (115's, after this front).
+shipping) · `modules/compiler-core/src/codegen/beam_asm.zig`, `codegen/beam/**` ·
+`tests/language/run.sh` · `tests/language/expected-failures.txt` · the 17
+`tests/language/run/*.targets` · every `tests/language/modules/*/botopink.json` `targets` ·
+`tests/language/AGENTS.md` · the beam snapshots the emitter change re-records
+(`modules/compiler-core/snapshots/codegen/{beam,wat}/beam/**`).
+**Does not touch:** `wat.zig` (110's); `erlang.zig`, `commonJS.zig` (read, not edited — two rows
+handed to them below); `scripts/format-check.sh` (112's); `scripts/test-libs.sh`,
+`lib-test-runner/**` (113's); `scripts/gate.sh`, `build.zig` (115's — § Left for other owners).
 
 ---
 
-## Problem
-
-```
-$ bash tests/language/run.sh --target beam modules/erlang_host_sidecar_shipped
-expected [beam] modules/erlang_host_sidecar_shipped — 03-beam: … the beam build ships no host module: the `.S` output calls `lt_greeter:hello/1` and the run dies with `undef`
-language tests: 382 passed, 2 expected failures, 0 failed
-$ bash tests/language/run.sh --target all        # beam is not run: run.sh:155  all) targets=(commonJS erlang wasm)
-```
-
-Measured at the open (`lang_beam.txt`, `par/6.out`): beam `382 / 2 expected / 0 failed`; `all` =
-three targets, `1244 / 1 / 1`. The two beam lines are exercised by no gate stage.
-
 ## Current state
 
-| Item | Where | Measured |
-|---|---|---|
-| EF-1, EF-2: the beam build ships no `.erl` sidecar | `cli/build.zig:390-407` — `shipMjsSidecars` under `target == .commonJS`, `shipErlSidecars` under `target == .erlang`, nothing for `.beam`; `libs.zig:1063` `shipErlSidecars` is erlang-only; `run.zig`, `test_cmd.zig` the same; `erlang.zig:2405-2415` emits `__bp_load_siblings` for the erlang module and `beam_asm.zig` has no twin | `modules/erlang_host_sidecar_shipped` (`lt_greeter:hello/1` undef), `modules/erlang_sidecar_named_like_a_module` (`text:shout/1` undef) — `expected-failures.txt:236-237` |
-| beam not in `--target all` | `run.sh:148-155` ("scheduling, not doubt: front 13's policy 3 … do it as 13's closing step" — 13 is closed) | `all) targets=(commonJS erlang wasm)` |
-| `test/` cells never on wasm/beam; `modules/` test-kind cells never on wasm/beam | `run.sh:410-415`, `:426-434` | `botopink test` refuses wasm and beam — structural today, stays until the CLI runs tests there (not this milestone) |
-| 17 `run/<name>.targets` narrowings | `run.sh:416-425` honours them | commonJS+erlang: `async_block_all_of`, `external_host_record`, `external_method_on_host_record`, `std_default_fn_in_a_std_module` · erlang+beam: `beam_memory_ets`, `beam_memory_persistent_term`, `beam_memory_process_dict`, `external_template_refused_on_beam`, `host_unknown_parameter` · commonJS+erlang+beam: `behavior_method_host_value`, `external_template_escaped_quote`, `std_template_host_fns_across_modules` · erlang: `external_erlang_host_module_missing`, `host_erlang_task_result` · commonJS: `host_array_slice_without_start`, `host_node_task_result`, `task_throw_resolves_error` |
-| a `modules/` cell's manifest `targets` ignored | `run.sh:426-434` | `import_same_name_from_two_packages/botopink.json` declares `["commonJS","erlang"]`; the cell ran on wasm |
+Measured in the front's worktree, compiler at `feat` + 110 (steps 1–2) + 112 + 114, OTP 28, node
+v25, 16 CPUs under a load of 60–80 (other threads' suites).
+
+```
+$ bash tests/language/run.sh --target all
+self-test: 8 malformed or unbacked narrowings refused, 3 backed ones scheduled on their declared targets alone
+expected-failures.txt: 1 lines, 1 exercised by --target commonJS,erlang,wasm,beam — by target: wasm 1; …
+expected [wasm] run/external_wrapper_keeps_refusal.bp — 05-wasm: … decisions-pending ck-host
+narrowings: 30 exclusions audited — each stands on a host binding the target does not have
+language tests: 1474 passed, 1 expected failures, 0 failed          # exit 0
+
+$ bash tests/language/run.sh --target beam
+narrowings: 3 exclusions audited — each stands on a host binding the target does not have
+language tests: 393 passed, 0 expected failures, 0 failed           # exit 0
+```
+
+Before this front: `all` = three targets, `1251 / 1 / 0`; `--target beam` = `383 / 2 / 1` (the
+third was `run/array_spread_literal`, red on beam with no line).
+
+| Item | State |
+|---|---|
+| the beam build ships `.erl` sidecars; the assembled entry loads them | landed — step 1 |
+| `botopink run --target beam` runs the program | landed — step 1 (it printed an `erlc +from_asm` hint and exited 0) |
+| beam in `--target all` | landed — step 2 |
+| a `modules/` cell's manifest `targets` honoured | landed — step 3 |
+| every narrowing audited on every run; the runner proves its own audit | landed — step 5 |
+| `expected-failures.txt` and its reader deleted | **open** — step 4, one `wasm |` line left, 110's, on `ck-host` |
 
 ## Mechanism
 
-Sidecars: `botopink build --target erlang` copies every `#[@External.Erlang("host", …)]` module's
-`host.erl` beside the emitted modules (`out/erl/`) and the erlang program's `__bp_load_siblings`
-compiles and loads them at start; the beam path writes `.S` files that `erlc +from_asm` assembles
-and calls the same `host:fn/N`, which nothing shipped or loaded. The fix is the same shipping call
-under `.beam` (into `out/beam/`) and a loader twin in the assembled module — or `run.sh`'s beam
-runner compiling the sidecars the way `botopink run --target erlang` does, if the beam program's
-entry is what loads siblings. Both cells then print what erlang prints (`hello, sidecar`,
-`HELLO, SIDECAR`).
+**Sidecars.** `libs.shipErlSidecars` reads the host modules out of either emitted text
+(`HostText`): `host:fn(…)` in erlang source, `{extfunc, host, fn, N}` in BEAM assembly. `build.zig`
+calls it for `.erlang` and `.beam` with the target's own directory (`out/erl/`, `out/beam/`), so a
+host module that is neither shipped nor on the Erlang code path is the same located refusal on
+both. `beam_asm.zig` emits `'__bp_load_siblings'/0` + `'-bp_load_sibling-'/1` into the entry of a
+build in which some module declares a BEAM host binding of its own (`buildBindsBeamHost`: a
+`declare fn`, or a `type` or one of its methods, under `#[@External.Erlang]` / `#[@External.Beam]`
+— the prelude's behavior bindings, which name OTP alone, are not read): first thing in
+`'_botopink_main'/0` it compiles and loads every `.erl` beside the module's own `.beam`
+(`code:which/1` → `<dir>/*.erl` → `code:ensure_loaded/1`, else `compile:file/2` +
+`code:load_binary/3`); a module that does not compile refuses the run (`halt(1)`, the compiler's
+diagnostic on stderr). `run.zig` `runBeam` assembles every `.S` beside itself
+(`erlc +from_asm -o out/beam`) and runs `erl -noshell -pa out/beam -eval "'<entry>':main([]),
+halt()."` — it compiles no sidecar; the program does, so it runs the same way outside the command.
 
-Targets: `run.sh` decides a cell's targets by cell kind and `.targets`; the manifest is read by
-`botopink` for the build but not by `run.sh` for the matrix. gate-d: both are honoured and both are
-audited.
+**Targets.** `run.sh` § the targets of a cell: a cell runs on every target its kind has unless it
+narrows itself (`run/<name>.targets`, or `"targets"` in a `modules/<name>/botopink.json`); for each
+target of the run a cell excludes, `botopink build --target <t>` in the cell must refuse the program
+on a host binding (`` has no `#[@External.<Target>(…)]` `` · `std-unsupported-on-target:`). A target
+the build accepts, or refuses for another reason, fails the run naming the cell; so does a narrowing
+that names an unknown target, a target the kind does not have, a target twice, or every target of
+the kind. `--self-test` runs a synthetic suite through the same script (`--suite`) and requires
+each refusal's line; a whole run of the suite starts with it.
 
 ## Steps
 
 ### Step 1 — the beam build ships every `.erl` sidecar the erlang build ships
 
-`cli/build.zig:390-407`: the `.erlang` arm becomes `.erlang, .beam` with the target's subdirectory
-(`out/beam/`); `libs.zig:1063` `shipErlSidecars` takes the target's directory (it already takes
-`erl_dir`); `run.zig` and `test_cmd.zig` the same for `botopink run --target beam`. `beam_asm.zig`
-emits the `__bp_load_siblings` twin of `erlang.zig:2405-2415` (compile-and-load every `.erl` beside
-the module at start, in the assembled module's `_botopink_main`/0 or the module body), *or* the
-beam runner in `run.sh` compiles `out/beam/*.erl` with `erlc` before `erl` — choose the first: a
-built beam program must run outside the test runner, and the toolchain row "a built erlang
-program cannot load its `.erl` sidecars outside test mode" (`../../01-compiler/README.md` § 26)
-says the loader must not be test-only on either target.
-
 **Acceptance:**
-- [ ] `bash tests/language/run.sh --target beam modules/erlang_host_sidecar_shipped modules/erlang_sidecar_named_like_a_module` → both `passed`, stdout `hello, sidecar` / `HELLO, SIDECAR`
-- [ ] `botopink build --target beam` in each cell writes `out/beam/lt_greeter.erl` (`text.erl`) beside the `.S`; `botopink run --target beam` runs it with no `undef`
-- [ ] the beam snapshots that gain the loader are re-recorded and listed; `scripts/beam_export_audit.sh` green (488 + the new functions)
-- [ ] the two lines deleted from `expected-failures.txt`
+- [x] `bash tests/language/run.sh --target beam --only modules/erlang_host_sidecar_shipped --only modules/erlang_sidecar_named_like_a_module` → `2 passed, 0 expected failures, 0 failed`; `botopink run --target beam` in each prints `hello, sidecar` / `HELLO, SIDECAR`
+- [x] `botopink build --target beam` in each cell writes `out/beam/lt_greeter.erl` (`out/beam/text.erl`) beside the `.S`; `botopink run --target beam` exits 0 with no `undef`. Also run by hand: a sidecar that does not compile → `error: …/out/beam/lt_greeter.erl does not compile - refusing to run`, exit 1; a sidecar compiled by hand and its `.erl` removed → `hello, sidecar`; the sidecar deleted from `src/` → the erlang build's located refusal, exit 1
+- [x] the beam snapshots that gain the loader are re-recorded, each with an unchanged RUN LOG — 13 under `snapshots/codegen/beam/beam/` and their 13 twins under `…/wat/beam/`: `external_1_arg_host_expression_declare_fn_renders_at_the_call_site`, `external_a2_chained_host_call_renders_verbatim`, `external_a2_method_on_global_template_keeps_receiver_bound`, `external_a3_result_template_owned_declare_fn`, `external_a_host_backed_method_on_a_local_type_is_a_method_of_the_type`, `external_a_host_backed_method_on_an_imported_type_is_answered_by_its_owner`, `external_a_host_backed_method_with_no_binding_for_the_backend_is_refused_at_the_call`, `external_an_imported_host_backed_declare_fn_is_wrapped_by_its_owner`, `external_call_emits_module_symbol`, `external_global_math`, `external_import_binds_symbol`, `external_target_mixed_with_external_in_one_decl`, `external_target_template_equivalent_to_external_target_template`. `scripts/beam_export_audit.sh` → `490/490 modules assembled`; `scripts/snap_audit.sh --mode=runtime-parity` → `1431 pairs, 0 differing or missing`
+- [x] the two `beam |` lines deleted from `expected-failures.txt`
 
 ### Step 2 — beam joins `--target all`
 
-`run.sh:155` → `all) targets=(commonJS erlang wasm beam)`; the `:148-153` comment deleted; the
-`erlc`/`erl` pre-flight (`:159-163`) now fires on `all` — a machine without them fails the run
-(never skips beam: decision 67). `tests/language/AGENTS.md` § the targets updated (`:1319`'s stale
-decision-29 row and the "Open rows 1..9" bullet — `../../01-compiler/12-language-tests` names them —
-are corrected here since this front owns the file this milestone).
+`run.sh`: `all) targets=(commonJS erlang wasm beam)`; the `erlc`/`erl` pre-flight fires on `all`
+(a machine without them fails the run, never skips beam); `exec_run` is `botopink run` on every
+target. `zig build test-language` runs `run.sh` with its default, so stage 9 runs the four targets
+with no change to `build.zig` or `gate.sh`.
+
+Three beam reds met on the way, each a `beam_asm.zig` defect, fixed and pinned by the cell that
+found it:
+
+| Cell | On beam before | Fix |
+|---|---|---|
+| `run/array_spread_literal` | `2 1 null 1 null 0` at exit 0 — a trailing spread written as a bare name (`[1, 2, ..rest]`) was dropped | `lowerArrayLit` reads `spread` as well as `spreadExpr` |
+| `run/external_host_record` | `badarith` — `+` over two host-built maps | `'__bp_adopt'/3` (`hostAdoption`, `ensureAdoptHelper`): a host answer is adopted into the record its declaration names, at `lowerExternalCall` and in the `pub` wrapper — the erlang backend's helper, in assembly |
+| `run/external_method_on_host_record` | `badarg` from `element/2` on a map, then `length/1` on a record — an untyped lambda-parameter receiver called the FILE's `at/2` | the adoption above; and a method exactly one type of the file declares takes an untyped receiver's call (`soleOwnTypeOfMethod` — erlang's `method_owners` rule) |
 
 **Acceptance:**
-- [ ] `bash tests/language/run.sh --target all` → `language tests: 1630 passed, 0 expected failures, 0 failed` (1246 + 384 at the open's cell count; re-derive after 110 and step 5)
-- [ ] `zig build test-language` (stage 9) runs `all` — the four targets — and `scripts/gate.sh --cold` stage 9 is green with beam in it
+- [x] `bash tests/language/run.sh --target all` → `language tests: 1474 passed, 1 expected failures, 0 failed` on four targets (the `1` is step 4's)
+- [ ] `zig build test-language` and `scripts/gate.sh --cold` stage 9 green with beam in it — `zig build test-language` measured green here; `gate.sh --cold` is the landing step (it is red at stage 8 until 113 lands)
 
 ### Step 3 — `modules/` cells honour their manifest `targets` (gate-d)
 
-`run.sh:426-434`: a `modules/<cell>/botopink.json` with `"targets"` narrows the cell the way
-`.targets` narrows a `run/` cell; a `modules/` cell without `targets` runs on every target its kind
-allows. `import_same_name_from_two_packages` then runs on commonJS and erlang — and its manifest
-is audited (step 5): the cell has no host binding, so the narrowing is *not* structural and the
-`targets` line is deleted; the cell runs on wasm (green after 110) and beam.
+Measured before changing anything: 47 of the 59 manifests carried `"targets"` and none of the
+lists was a claim — `["commonJS", "erlang", "wasm"]` in 33 cells and `["commonJS", "erlang"]` in
+14, written when the suite had three targets, while the runner ignored the field and every one of
+those cells ran (and passed) on wasm and on beam. Honoured as written the field would have taken
+beam away from 33 passing cells and the wasm refusal pins (`wasm.expect`) away from two. So the 47
+lists are deleted, a project that must be refused on a target keeps saying so with `<t>.expect`,
+and the field means what `.targets` means.
 
 **Acceptance:**
-- [ ] a `modules/` cell with `"targets": ["erlang"]` and a host-only binding runs on erlang alone (a new cell pins it); one without `targets` runs on four
-- [ ] `grep -l '"targets"' tests/language/modules/*/botopink.json` lists only cells step 5's audit keeps
+- [x] a `modules/` cell with `"targets"` and a host-only binding runs on its declared targets alone: `modules/manifest_targets_host_binding` (`["erlang", "beam"]`, `#[@External.Erlang("erlang", "abs")]`) → `2 passed`, `2 exclusions audited`; the self-test's `modules/manifest_backed` asserts the same on every whole run. A cell without `"targets"` runs on four
+- [x] `grep -l '"targets"' tests/language/modules/*/botopink.json` → `modules/manifest_targets_host_binding/botopink.json`, the one the audit keeps
 
 ### Step 4 — `expected-failures.txt` is deleted (gate-b, decision 154) — done
 
@@ -120,44 +137,113 @@ language cell is red.
 
 ### Step 5 — the 17 `.targets` and the modules/ manifests audited (gate-d)
 
-For each narrowing: `botopink build --target <excluded>` in the cell must refuse with a host-binding
-error (`has no #[@External.<Target>]`, `external_missing`, "host module … missing") — the reason a
-cell *structurally* has no row there. Anything else is a gap: the `.targets` file is deleted, the
-cell runs there, and if it is red the defect is a compiler row (`../../01-compiler/` — 05-wasm for
-wasm, 03-beam for beam) that this front reports as a blocker rather than re-narrowing. Expected
-from the names alone (verify by running): `async_block_all_of` and `std_default_fn_in_a_std_module`
-exclude wasm and beam for no host reason — likely wasm/beam gaps; the `beam_memory_*` and
-`external_template_refused_on_beam` cells are host-shaped; the `host_*`/`task_*` cells are
-host-shaped. `run.sh` then enforces the audit on every run: a `.targets` file (or manifest
-`targets`) whose excluded target does not refuse on a host binding fails the run naming the cell —
-the audit is the runner's, not a one-time sweep.
+Each narrowing, each excluded target, and what `botopink build --target <t>` answers in the cell
+(first `error` line; every one exits 1):
+
+| Cell | Runs on | Excluded | The refusal |
+|---|---|---|---|
+| `run/async_block_all_of` | commonJS erlang beam | wasm | ``std-unsupported-on-target: std/async has no `@external` for target 'wasm' (for delay, race, raceOf)`` |
+| `run/beam_memory_ets` | commonJS erlang beam | wasm | the same `std/async` line |
+| `run/beam_memory_persistent_term` | commonJS erlang beam | wasm | the same `std/async` line |
+| `run/beam_memory_process_dict` | erlang beam | wasm | the same `std/async` line |
+| | | commonJS | none — exit 0; the cell declares `#[@BeamMemory.ProcessDict]` (§ Notes, decision 43) |
+| `run/behavior_method_host_value` | commonJS erlang beam | wasm | `` `makeGreeter` has no `#[@External.<Target>(…)]` for the wasm backend `` |
+| `run/external_erlang_host_module_missing` | erlang beam (both by `.expect`) | commonJS | `` `total` has no `#[@External.<Target>(…)]` for the node backend `` |
+| | | wasm | `` `total` has no `#[@External.<Target>(…)]` for the wasm backend `` |
+| `run/external_host_record` | commonJS erlang beam | wasm | `` `hostPoint` has no `#[@External.<Target>(…)]` for the wasm backend `` |
+| `run/external_method_on_host_record` | commonJS erlang beam | wasm | `` `Pair.at` has no `#[@External.<Target>(…)]` for the wasm backend `` |
+| `run/external_template_escaped_quote` | commonJS erlang beam | wasm | `` `say` has no `#[@External.<Target>(…)]` for the wasm backend `` |
+| `run/external_template_refused_on_beam` | erlang beam | commonJS | `` `moduleNamed` has no `#[@External.<Target>(…)]` for the node backend `` |
+| | | wasm | `` `moduleNamed` has no `#[@External.<Target>(…)]` for the wasm backend `` |
+| `run/host_array_slice_without_start` | commonJS | erlang · wasm · beam | `` `copyAll` has no `#[@External.<Target>(…)]` for the erlang / wasm / beam backend `` |
+| `run/host_erlang_task_result` | erlang beam | commonJS | `` `hostDouble` has no `#[@External.<Target>(…)]` for the node backend `` |
+| | | wasm | `` `run` calls `hostDouble`, which has no `#[@External.<Target>(…)]` for the wasm backend `` |
+| `run/host_node_task_result` | commonJS | erlang · beam | `` `hostDouble` has no `#[@External.<Target>(…)]` for the erlang / beam backend `` |
+| | | wasm | `` `run` calls `hostDouble`, which has no `#[@External.<Target>(…)]` for the wasm backend `` |
+| `run/host_unknown_parameter` | erlang beam | commonJS | ``std-unsupported-on-target: std/erlang.element has no `@external` for target 'node'`` |
+| | | wasm | ``std-unsupported-on-target: std/erlang.element has no `@external` for target 'wasm'`` |
+| `run/std_default_fn_in_a_std_module` | commonJS erlang beam | wasm | ``std-unsupported-on-target: std/encoding.percentEncode has no `@external` for target 'wasm'`` |
+| `run/std_template_host_fns_across_modules` | commonJS erlang beam | wasm | ``std-unsupported-on-target: std/io/fs.exists has no `@external` for target 'wasm'`` |
+| `run/task_throw_resolves_error` | commonJS | erlang · wasm · beam | `` `observe` has no `#[@External.<Target>(…)]` for the erlang / wasm / beam backend `` |
+| `modules/manifest_targets_host_binding` | erlang beam | commonJS | `` `magnitude` has no `#[@External.<Target>(…)]` for the node backend `` |
+| | | wasm | `` `magnitude` has no `#[@External.<Target>(…)]` for the wasm backend `` |
+
+Thirty exclusions. What the audit changed, cell by cell:
+
+| Cell | Was | Excluded with no host reason | Now |
+|---|---|---|---|
+| `run/async_block_all_of` | commonJS erlang | beam — builds, prints the `.out` | + beam, green |
+| `run/host_erlang_task_result` | erlang | beam — builds, prints the `.out` | + beam, green |
+| `run/std_default_fn_in_a_std_module` | commonJS erlang | beam — builds, prints the `.out` | + beam, green |
+| `run/beam_memory_ets`, `run/beam_memory_persistent_term` | erlang beam | commonJS — builds, prints the `.out` (decision 43: the annotation is a no-op there and the numbers are the same) | + commonJS, green |
+| `run/external_erlang_host_module_missing` | erlang | beam — refused, but for the cell's own subject (the host module is missing), which is a claim, not a narrowing | + beam, pinned by `.beam.expect` |
+| `run/external_host_record`, `run/external_method_on_host_record` | commonJS erlang | beam — builds, crashed at run time | + beam, green after step 2's two fixes |
+| 47 `modules/*/botopink.json` | boilerplate `"targets"` the runner ignored | — | the field deleted (step 3) |
 
 **Acceptance:**
-- [ ] a table in this README: cell · excluded targets · the refusal line per excluded target, for all 17 + the modules/ cells
-- [ ] `run.sh` fails a synthetic cell whose `.targets` excludes a target it builds on (a `reject`-style self-test of the runner, `tests/language/run.sh --self-test` or a `compiler-cli/tests/*.sh` contract)
-- [ ] every deleted narrowing's cell green on the target it now runs on, or a named compiler row and this front's `status.md` line saying so
+- [x] the table above: cell · excluded targets · the refusal line per excluded target, for the 17 `.targets` and the one narrowed `modules/` cell
+- [x] `bash tests/language/run.sh --self-test` → `self-test: 8 malformed or unbacked narrowings refused, 3 backed ones scheduled on their declared targets alone`, exit 0; with the audit's refusal test replaced by `true` (a copy of the script) it prints `self-test: the report lacks: …` and exits 1. A whole run of the suite starts with it
+- [x] every deleted narrowing's cell green on the target it now runs on (the second table)
 
 ## Gate
 
-- [ ] `zig build test` from a cold runtime cache, green
-- [ ] `bash tests/language/run.sh --target all` → `0 failed`, four targets, no expected column
-- [ ] `scripts/beam_export_audit.sh` green; `scripts/snap_audit.sh --mode=runtime-parity` green
-- [ ] `scripts/gate.sh --cold` green in this front's worktree (stage 9 now runs beam)
-- [ ] `modules/compiler-cli/AGENTS.md`, `modules/compiler-core/src/codegen/AGENTS.md`, `tests/language/AGENTS.md` updated in the same commit
-- [ ] commit on `fix/gate-beam-and-targets` in `repository/botopink-lang`; no push, no merge
+- [x] `zig build test` from a cold runtime cache — exit 0
+- [x] `bash tests/language/run.sh --target all` → `0 failed`, four targets
+- [ ] … no expected column — step 4
+- [x] `scripts/beam_export_audit.sh` → `490/490 modules assembled`; `scripts/snap_audit.sh --mode=runtime-parity` → `1431 pairs, 0 differing or missing`
+- [x] `bash scripts/format-check.sh` exit 0; `zig fmt --check modules` exit 0; `zig build test-cli` exit 0 (`cli contract: OK`, `backend-execution parity: OK`)
+- [ ] `scripts/gate.sh --cold` green in this front's worktree — the landing step, after 113
+- [x] `modules/compiler-cli/AGENTS.md`, `modules/compiler-cli/src/cli/AGENTS.md`, `modules/compiler-core/src/codegen/AGENTS.md`, `tests/language/AGENTS.md`, the root `AGENTS.md` (stage 9), `README.md` and `docs.md` (the Backends table: beam's runner) updated in the same change
+- [ ] commit on `front/111-gate-beam-and-targets` in `repository/botopink-lang` — under a green gate, after 113
+
+## Rows handed to other fronts
+
+Each was found by the audit refusing a narrowing this front tried to write; neither is in a file
+this front owns, and no cell stands on them.
+
+| Row | Reproduction | Owner |
+|---|---|---|
+| commonJS accepts an IMPORTED host function with no node binding | `src/host.bp`: `#[@External.Erlang("erlang", "abs")] pub declare fn magnitude(n: i32) -> i32;` · `src/main.bp`: `pub mod host; import {magnitude} from "host"; pub fn main() { @print(magnitude(0 - 7)); }` → `botopink build --target commonJS` exits 0 and emits `// external fn magnitude (no node target)`; `botopink run` dies with `TypeError: magnitude is not a function`. Declared in `main.bp` itself the same function is refused (`` `magnitude` has no `#[@External.<Target>(…)]` for the node backend ``), and wasm refuses both | `01-compiler/04-js` (`commonJS.zig`) |
+| erlang does not locate the same refusal | the mirror: `#[@External.Node("""Math.abs($0)""")] pub declare fn magnitude…` imported the same way → `botopink build --target erlang` answers `error: the OTP compiler refused emitted erlang — the build is not a program`; beam and wasm answer the located `` `magnitude` has no `#[@External.<Target>(…)]` `` | `01-compiler/02-erlang` (`erlang.zig`) |
+
+## Left for other owners
+
+- `scripts/gate.sh:36-38` (115) — the stage 9 comment says "on commonJS and erlang"; the stage itself needs no change.
+- `build.zig:551-555` — the `test-language` comment says the same; the step runs `run.sh`'s default and needs no change.
+- `.github/workflows/test.yml:166` (114) — names `expected-failures.txt` (step 4).
+- `modules/compiler-cli/tests/cli_contract.sh` has no owner in this track and pins `build.zig`: its "build emits without running the program" row was edited here — `build --target beam` with a failing `erl` first on `PATH` now exits 1 (the host-module probe cannot run), and the erlang and the beam build each account for one allowed `erl` spawn. `mutual_recursion.sh`'s beam comment no longer says `botopink run --target beam` only writes the `.S`.
 
 ## Blast radius
 
-- `../../01-compiler/03-beam` and `26-cli-tooling` start from this landing (`beam_asm.zig`,
-  `cli/**`, `libs.zig`); their *Does not touch until 00-gate lands* rows EF-1/EF-2 close.
-- `../../01-compiler/12-language-tests` step 1 ("beam joins `--target all`") closes here; its
-  `--cold` no-new-tool check stays 12's.
-- `115` measures stage 9 with four targets: +384 cells (~28 s serial at the open) counted in the
-  budget, never narrowed back.
-- Stage 9's wall clock grows; nothing is skipped to pay for it (decision 67).
+- `botopink build --target beam` spawns one `erl` (the host-module probe every erlang build already
+  ran): about a quarter of a second per beam build, and a beam build with no `erl` on `PATH` is
+  refused. The comptime pass of a beam build already ran on `erl`.
+- `botopink run --target beam` writes `.beam` files beside the `.S` under `out/beam/`.
+- Stage 9 runs 220 more cells and 30 audit builds, after an eight-second self-test; under this
+  machine's load the whole run measured 942 s. `115` budgets it; nothing is skipped to pay for it.
+- `01-compiler/03-beam` and `26-cli-tooling` start from this landing; their EF-1/EF-2 rows are
+  closed, and 03-beam's "beam adopts no host map" and "a named trailing spread" are closed with them.
+- `01-compiler/12-language-tests` step 1 closes here, and the decision-29 row of its step 3 is
+  struck in `tests/language/AGENTS.md`.
 
 ## Notes
 
+- **`#[@BeamMemory]` is the one host binding the compiler does not refuse.** gate-d's test is "the
+  build refuses on a host binding". `run/beam_memory_process_dict` excludes commonJS, where the
+  program builds — decision 43 makes the annotation a silent no-op off the BEAM — and prints
+  something else (`[5]` / `99` against the BEAM's `[0]` / `5`: one value per process is the cell's
+  subject). The audit therefore accepts one more piece of evidence, read off the cell's own source:
+  a cell that declares a module `var` under `#[@BeamMemory.<mode>]` may exclude commonJS and wasm,
+  never erlang or beam. It is a structural rule (no list, no flag), it is exercised by the
+  self-test in both directions, and one cell uses it; `test/beam_memory_noop` pins the no-op. The
+  alternatives, if the maintainer reads gate-d more strictly: a per-target expected output
+  (`<name>.<t>.out`), so the cell also runs on commonJS and pins decision 43's output there; or
+  commonJS refusing the annotation, which decision 43 decided against.
+- **The loader is emitted only where it can matter.** Every entry carrying it would have re-recorded
+  219 beam snapshots (twice, for the two comptime runtimes) for programs that bind no host; the
+  rule reads the build's own declarations instead, and 13 snapshots changed.
+- **A sidecar is loaded from beside the `.beam`.** `erlc +from_asm -o out out/beam/x.S` (the
+  `.beam` one directory up) leaves the sidecars unreached; `botopink run --target beam` assembles
+  beside the `.S`, and `modules/compiler-cli/AGENTS.md` says so.
 - `test/` cells and `modules/` test-kind cells stay off wasm and beam because `botopink test`
-  refuses those targets — a CLI capability, not a tolerance; the day the CLI runs tests there,
-  `run.sh:410-415,426-434` lose their arms and no line in any file has to move.
+  refuses those targets — a CLI capability, not a tolerance.

@@ -37,23 +37,27 @@ marker goes first), and when a row here names a file with no marker. No flag exe
 |---|---|---|
 | `repository/rakun/modules/rakun-cache/src/cache.bp` | 1 | **No module-level annotation** |
 | `repository/rakun/modules/rakun-cache/test/granularity_test.bp` | 1 | **No module-level annotation** |
-| `specs/1.0.11-beta/03-rakun/04-rakun-erlang-runtime/examples/context-lifecycle-example.bp` | 1 | **No `@typeName<T>()`** |
-| `specs/1.0.11-beta/03-rakun/08-rakun-data-sql/examples/audit-and-revisions-example.bp` | 2 | **A bodyless method in a `type` body is only a host-backed method** · **No assignment to a `self` field — by design.** |
-| `specs/1.0.11-beta/03-rakun/08-rakun-data-sql/examples/city-entity-example.bp` | 5 | **A bodyless method in a `type` body is only a host-backed method** |
-| `specs/1.0.11-beta/03-rakun/13-rakun-http-clients/examples/hal-resource-example.bp` | 1 | **No `record ↔ Json` derivation** |
-| `specs/1.0.11-beta/03-rakun/13-rakun-http-clients/examples/http-exchange-example.bp` | 1 | **No `record ↔ Json` derivation** |
-| `specs/1.0.11-beta/03-rakun/15-rakun-messaging/examples/jms-listener-example.bp` | 1 | **No byte or binary type** |
-| `specs/1.0.11-beta/03-rakun/15-rakun-messaging/examples/order-listeners-example.bp` | 1 | **No byte or binary type** |
-| `specs/1.0.11-beta/03-rakun/15-rakun-messaging/examples/publish-reliability-example.bp` | 1 | **A decorator cannot rewrite or wrap the body it annotates** |
-| `specs/1.0.11-beta/03-rakun/15-rakun-messaging/examples/saga-example.bp` | 2 | **A decorator cannot read the body of the declaration it annotates** · **No assignment to a `self` field — by design.** |
-| `specs/1.0.11-beta/03-rakun/22-rakun-file-routing/examples/route-handler-example.bp` | 2 | **`@Task<T>` lowers eagerly on erlang** · **No byte or binary type** |
-| `specs/1.0.11-beta/03-rakun/22-rakun-file-routing/examples/verb-exports-carried-example.bp` | 1 | **No reflection over a module's exports** · **`@Decl` carries no source location** |
-| `specs/1.0.11-beta/03-rakun/81-rakun-packaging-release/examples/release-manifest-example.bp` | 1 | **No comptime reflection over the project** |
-| `specs/1.0.11-beta/03-rakun/91-rakun-pulsar/examples/pulsar-listener-example.bp` | 1 | **No byte or binary type** · **No bitwise operators — by design.** |
-| `specs/1.0.11-beta/03-rakun/92-rakun-rsocket/examples/rsocket-service-example.bp` | 2 | **No byte or binary type** · **No bitwise operators — by design.** · **`@Task<T>` lowers eagerly on erlang** |
-| `specs/1.0.11-beta/03-rakun/93-rakun-soap-webservices/examples/soap-client-example.bp` | 1 | **A comptime body has no filesystem access** |
-| `specs/1.0.11-beta/06-onze/53-onze-example-app/examples/app-tree-example.bp` | 1 | **`@Decl` carries no source location** |
-| `specs/1.0.11-beta/06-onze/53-onze-example-app/examples/blog-slug-page-example.bp` | 1 | **The navigation signals do not return `noreturn`** |
+| `specs/1.0.11-beta/03-bundled-libs/125-validation-zod/examples/derived-types-example.bp` | 1 | **A derived record type has no name a decorator can be attached to** |
+| `specs/1.0.11-beta/03-bundled-libs/125-validation-zod/examples/enums-and-unions-example.bp` | 2 | **A decorator argument is a raw lexeme** · **`Decl.variants` carries a variant's name and not its payload fields or its annotations** |
+| `specs/1.0.11-beta/03-bundled-libs/125-validation-zod/examples/object-policy-example.bp` | 1 | **`Field` reflects no default** |
+| `specs/1.0.11-beta/08-bpp/127-bpp-actions/examples/typed-action-example.bp` | 1 | **A method's own `@Decl` has no parameter list** |
+| `specs/1.0.11-beta/04-rakun/04-rakun-erlang-runtime/examples/context-lifecycle-example.bp` | 1 | **No `@typeName<T>()`** |
+| `specs/1.0.11-beta/04-rakun/08-rakun-data-sql/examples/audit-and-revisions-example.bp` | 2 | **A bodyless method in a `type` body is only a host-backed method** · **No assignment to a `self` field — by design.** |
+| `specs/1.0.11-beta/04-rakun/08-rakun-data-sql/examples/city-entity-example.bp` | 5 | **A bodyless method in a `type` body is only a host-backed method** |
+| `specs/1.0.11-beta/04-rakun/13-rakun-http-clients/examples/hal-resource-example.bp` | 1 | **No `record ↔ Json` derivation** |
+| `specs/1.0.11-beta/04-rakun/13-rakun-http-clients/examples/http-exchange-example.bp` | 1 | **No `record ↔ Json` derivation** |
+| `specs/1.0.11-beta/04-rakun/15-rakun-messaging/examples/jms-listener-example.bp` | 1 | **No byte or binary type** |
+| `specs/1.0.11-beta/04-rakun/15-rakun-messaging/examples/order-listeners-example.bp` | 1 | **No byte or binary type** |
+| `specs/1.0.11-beta/04-rakun/15-rakun-messaging/examples/publish-reliability-example.bp` | 1 | **A decorator cannot rewrite or wrap the body it annotates** |
+| `specs/1.0.11-beta/04-rakun/15-rakun-messaging/examples/saga-example.bp` | 2 | **A decorator cannot read the body of the declaration it annotates** · **No assignment to a `self` field — by design.** |
+| `specs/1.0.11-beta/04-rakun/22-rakun-file-routing/examples/route-handler-example.bp` | 2 | **`@Task<T>` lowers eagerly on erlang** · **No byte or binary type** |
+| `specs/1.0.11-beta/04-rakun/22-rakun-file-routing/examples/verb-exports-carried-example.bp` | 1 | **No reflection over a module's exports** · **`@Decl` carries no source location** |
+| `specs/1.0.11-beta/04-rakun/81-rakun-packaging-release/examples/release-manifest-example.bp` | 1 | **No comptime reflection over the project** |
+| `specs/1.0.11-beta/04-rakun/91-rakun-pulsar/examples/pulsar-listener-example.bp` | 1 | **No byte or binary type** · **No bitwise operators — by design.** |
+| `specs/1.0.11-beta/04-rakun/92-rakun-rsocket/examples/rsocket-service-example.bp` | 2 | **No byte or binary type** · **No bitwise operators — by design.** · **`@Task<T>` lowers eagerly on erlang** |
+| `specs/1.0.11-beta/04-rakun/93-rakun-soap-webservices/examples/soap-client-example.bp` | 1 | **A comptime body has no filesystem access** |
+| `specs/1.0.11-beta/07-onze/53-onze-example-app/examples/app-tree-example.bp` | 1 | **`@Decl` carries no source location** |
+| `specs/1.0.11-beta/07-onze/53-onze-example-app/examples/blog-slug-page-example.bp` | 1 | **The navigation signals do not return `noreturn`** |
 
 `blog-slug-page-example.bp:84` ("no bottom type") is listed while it exists: `06-onze/53` deletes it
 with its copy (`@panic` / `@todo` answer `noreturn`; what is left of the question is lg2-l).

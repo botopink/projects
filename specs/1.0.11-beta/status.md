@@ -1,6 +1,6 @@
 # Status — 1.0.11-beta
 
-**Updated:** 2026-10-02 · **Progress:** ~0 % landed (0 of 78 fronts done — no front of this
+**Updated:** 2026-10-02 · **Progress:** ~0 % landed (0 of 79 fronts done — no front of this
 milestone is on every remote `feat` under a green gate; 15 are in analysis and count for their
 ticked steps; the milestone opened at 1.0.10-beta's close — [`closure.md`](../1.0.10-beta/closure.md))
 
@@ -9,15 +9,15 @@ Count: `00-gate` 11 · `01-compiler` 17 · `02-std-and-packaging` 2 · `03-bundl
 Order inside each list follows [`overview.md`](./overview.md) § Order (most blocking first); for
 tracks 03–08 the waves are [`fronts.md`](./fronts.md) § Execution order of tracks 03–08.
 
-**The gate now** (2026-10-02). Nothing of 1.0.11 is on a remote `feat` except the jhonstart, erika
-and emilia tips of fronts 101, 108 and 109. The compiler fronts of `00-gate` — 110, 111, 112,
-113, 114 — with the checker's import fix and a std `fs.walk` fix are committed on local branches
-and merged into one local integration branch; one `scripts/gate.sh --cold` on that tip is what
-is waited on before anything is pushed. Measured on it: `test-language` on four targets `1483
-passed, 0 failed` with `expected-failures.txt` deleted; `test-libs` `117 passed, 2 failed … 38
-restrictions audited` with both ledgers deleted — the two reds are `onze-cli`'s cells, measured
-before the import fix and the `fs.walk` fix that target them. The libraries' own GitHub CI is red
-on jhonstart, erika and emilia.
+**The gate now** (2026-10-02). `scripts/gate.sh --cold` is green on botopink-lang `9395ea30` —
+every stage: `test-libs` `119 passed, 0 failed, 15 without tests, 38 restrictions audited`,
+`test-language` `1515 passed, 0 failed` on four targets, with `expected-failures.txt` and both
+ledgers deleted — and that tip is on the remote `feat`, with rakun `bb5f32a`, onze `f15952b`,
+jhonstart `0b4bf5c`, erika `6270467` and emilia `8e9705d`: the five libraries share one pre-commit
+hook and one CI shape, each library's hook green end to end on that compiler. The libraries' first
+GitHub runs on the new workflows are what `Done` still waits on. The next integration
+(`gate-integration-3`: 97, 104, 106, 26, 04-js and the checker's shorthand-import fix) was red on
+one cell — a module named like the bundled `log` — which decision 206 answers (front 129).
 
 **The gate at the open** (measured 2026-09-26, `scripts/gate.sh --cold` forced past reds): 8 of 10
 stages green; `test-libs` 84 passed / **36 failed** (rakun 25, onze 11); `test-language` 1244 / 1
@@ -29,19 +29,20 @@ the grep stage before any test.
 
 ## Done
 
-- (none) — a front is done when it is on its repository's remote `feat` with that repository's
-  gate and CI green
+- (none yet) — a front is done when it is on its repository's remote `feat` with that
+  repository's gate and CI green. On the remote `feat` under a green cold gate, each library's own
+  CI run pending: `00-gate` 99 · 100 · 101 · 108 · 109 · 110 · 111 · 112 · 113 · 114 (below)
 
 ## In analysis
 
-- [ ] `00-gate/112-gate-format` — critical · committed on a local branch, in the local integration branch: every tracked `.bp` is under `format-check` · the landing recorded on 2026-09-27 was not in the pointed tree · waits on the integration tip's `gate.sh --cold`
-- [ ] `00-gate/110-gate-wasm` — critical · steps 1–3 committed, in the integration branch (the strict rule of decision 146 on wasm) · waits on the same gate run
-- [ ] `00-gate/111-gate-beam-and-targets` — critical · steps 1–5 committed, in the integration branch: `expected-failures.txt` deleted, beam in `--target all`, `test-language` on four targets `1483 passed, 0 failed` · waits on the same gate run
-- [ ] `00-gate/113-gate-ledger-and-scripts` — critical · committed, in the integration branch: both ledgers deleted, `test-libs` `117 passed, 2 failed … 38 restrictions audited` measured before the two fixes that target the reds · waits on the same gate run
-- [ ] `00-gate/114-gate-docs-and-ci` — high · committed, in the integration branch · the landing recorded on 2026-09-27 was incomplete · waits on the same gate run
-- [ ] `00-gate/99-gate-rakun` — critical · steps 1–7 on `front/99-gate-rakun`; the library tip is not on its remote; its audit is still running
-- [ ] `00-gate/100-gate-onze` — critical · on `front/100-gate-onze`; the library tip is not on its remote; `onze-cli`'s two cells are red until the checker's import fix and the `fs.walk` fix reach it
-- [ ] `00-gate/101-gate-jhonstart` · `108-gate-erika` · `109-gate-emilia` — tips on their remote `feat`, cells green; each repository's GitHub CI is red and is being fixed together with the one hook text across the five libraries (decision 161)
+- [ ] `00-gate/112-gate-format` — on the remote `feat` under the green cold gate of `9395ea30`; waits only on the first GitHub run of its repository's workflow
+- [ ] `00-gate/110-gate-wasm` — on the remote `feat` under the green cold gate of `9395ea30`; waits only on the first GitHub run of its repository's workflow
+- [ ] `00-gate/111-gate-beam-and-targets` — on the remote `feat` under the green cold gate of `9395ea30`; waits only on the first GitHub run of its repository's workflow
+- [ ] `00-gate/113-gate-ledger-and-scripts` — on the remote `feat` under the green cold gate of `9395ea30`; waits only on the first GitHub run of its repository's workflow
+- [ ] `00-gate/114-gate-docs-and-ci` — on the remote `feat` under the green cold gate of `9395ea30`; waits only on the first GitHub run of its repository's workflow
+- [ ] `00-gate/99-gate-rakun` — on the remote `feat` under the green cold gate of `9395ea30`; waits only on the first GitHub run of its repository's workflow
+- [ ] `00-gate/100-gate-onze` — on the remote `feat` under the green cold gate of `9395ea30`; waits only on the first GitHub run of its repository's workflow
+- [ ] `00-gate/101-gate-jhonstart` · `108-gate-erika` · `109-gate-emilia` — on the remote `feat` with the unified hook and workflow (OTP and Node on every row, linux on ubuntu-24.04, no windows row); each hook green end to end; waits on the first GitHub run
 - [ ] `01-compiler/01-checker` — the import fix is committed and in the integration branch (decision 170: an import that names its module is never ambiguous; aliases); the front's other steps are open
 - [ ] `02-std-and-packaging/97-std-dedupe` — high · the `fs.walk` fix, step 1 and step 2 committed on its branch · steps 3–5 and 8 in progress · steps 3 and 5 land after the checker's import fix (decision 170)
 - [ ] `03-bundled-libs/102-routing-conventions` — steps 1–2 (the package), `kindLetter` and the wrap order of `fileKinds()` (decisions 171–173) committed on `front/102-routing-conventions` · step 3 (the consumers) goes first when the gate is green and 97 has landed (decision 188)
