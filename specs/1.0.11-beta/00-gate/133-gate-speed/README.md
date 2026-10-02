@@ -65,6 +65,11 @@ itself. Three cold runs on an idle machine (the median), and the same with a war
       beam) and per cell kind (`run/`, `test/`, `modules/`, `reject/`, audits); `test-libs` per
       library; each cell's compile / spawn / run split for a sample of 50 cells per target
 - [ ] the three biggest CPU sinks named, each with its share of the total
+- [ ] the compiler's own throughput: `botopink build` of rakun's whole workspace and of `libs/std`
+      per target, cold and warm Zig cache — lines of `.bp` per second for check and for emit, peak
+      memory — beside the same measure for comparable compilers on comparable code where one can be
+      run here (Gleam on a project of similar size, `tsc --noEmit` on the emitted `.d.ts`), each with
+      its version and command, so the comparison can be repeated
 
 ### Step 2 — cold under 5 minutes
 
