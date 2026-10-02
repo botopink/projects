@@ -22,6 +22,54 @@ A row gated on a maintainer question names it (`lg-a`, `lg-b`, `lg2-a…w`, `ck-
 opens no front: the recommendation everywhere is the most restrictive reading — the feature stays
 out and the nearest form is the design.
 
+## Marker index
+
+Checked on every push by the meta repository's `scripts/language-gap-markers.sh` (the
+`hook-integrity` workflow, check 5): a **marker** is the literal `// LANGUAGE GAP` in a tracked
+`.bp` file of any repository under `repository/`, or of this repository outside the closed
+milestones' spec trees. One row per file that holds a marker — its path from the meta root, how
+many markers it holds, and the gap row(s) of the tables below that those markers name, each spelled
+as the table spells its bold title. The script fails when a file with a marker has no row here, when
+a count differs from the file's, when a named gap row is gone from the tables (the gap closed: the
+marker goes first), and when a row here names a file with no marker. No flag exempts a file.
+
+| File | Markers | Gap rows named |
+|---|---|---|
+| `repository/rakun/modules/rakun-cache/src/cache.bp` | 1 | **No module-level annotation** |
+| `repository/rakun/modules/rakun-cache/test/granularity_test.bp` | 1 | **No module-level annotation** |
+| `specs/1.0.11-beta/03-rakun/04-rakun-erlang-runtime/examples/context-lifecycle-example.bp` | 1 | **No `@typeName<T>()`** |
+| `specs/1.0.11-beta/03-rakun/08-rakun-data-sql/examples/audit-and-revisions-example.bp` | 2 | **A bodyless method in a `type` body is only a host-backed method** · **No assignment to a `self` field — by design.** |
+| `specs/1.0.11-beta/03-rakun/08-rakun-data-sql/examples/city-entity-example.bp` | 5 | **A bodyless method in a `type` body is only a host-backed method** |
+| `specs/1.0.11-beta/03-rakun/13-rakun-http-clients/examples/hal-resource-example.bp` | 1 | **No `record ↔ Json` derivation** |
+| `specs/1.0.11-beta/03-rakun/13-rakun-http-clients/examples/http-exchange-example.bp` | 1 | **No `record ↔ Json` derivation** |
+| `specs/1.0.11-beta/03-rakun/15-rakun-messaging/examples/jms-listener-example.bp` | 1 | **No byte or binary type** |
+| `specs/1.0.11-beta/03-rakun/15-rakun-messaging/examples/order-listeners-example.bp` | 1 | **No byte or binary type** |
+| `specs/1.0.11-beta/03-rakun/15-rakun-messaging/examples/publish-reliability-example.bp` | 1 | **A decorator cannot rewrite or wrap the body it annotates** |
+| `specs/1.0.11-beta/03-rakun/15-rakun-messaging/examples/saga-example.bp` | 2 | **A decorator cannot read the body of the declaration it annotates** · **No assignment to a `self` field — by design.** |
+| `specs/1.0.11-beta/03-rakun/22-rakun-file-routing/examples/route-handler-example.bp` | 2 | **`@Task<T>` lowers eagerly on erlang** · **No byte or binary type** |
+| `specs/1.0.11-beta/03-rakun/22-rakun-file-routing/examples/verb-exports-carried-example.bp` | 1 | **No reflection over a module's exports** · **`@Decl` carries no source location** |
+| `specs/1.0.11-beta/03-rakun/81-rakun-packaging-release/examples/release-manifest-example.bp` | 1 | **No comptime reflection over the project** |
+| `specs/1.0.11-beta/03-rakun/91-rakun-pulsar/examples/pulsar-listener-example.bp` | 1 | **No byte or binary type** · **No bitwise operators — by design.** |
+| `specs/1.0.11-beta/03-rakun/92-rakun-rsocket/examples/rsocket-service-example.bp` | 2 | **No byte or binary type** · **No bitwise operators — by design.** · **`@Task<T>` lowers eagerly on erlang** |
+| `specs/1.0.11-beta/03-rakun/93-rakun-soap-webservices/examples/soap-client-example.bp` | 1 | **A comptime body has no filesystem access** |
+| `specs/1.0.11-beta/06-onze/53-onze-example-app/examples/app-tree-example.bp` | 1 | **`@Decl` carries no source location** |
+| `specs/1.0.11-beta/06-onze/53-onze-example-app/examples/blog-slug-page-example.bp` | 1 | **The navigation signals do not return `noreturn`** |
+
+`blog-slug-page-example.bp:84` ("no bottom type") is listed while it exists: `06-onze/53` deletes it
+with its copy (`@panic` / `@todo` answer `noreturn`; what is left of the question is lg2-l).
+
+**Notes that are not markers.** The milestone's opening audit (report L) listed five notes in
+library code "without a row". None of them is a `// LANGUAGE GAP` marker — each is prose that says
+"language gap" — so the script does not read them; each has a row below, by content:
+
+| Note | Says | Gap row | Owner |
+|---|---|---|---|
+| `repository/emilia/modules/emilia/src/tokens.bp:2190-2195` | `Neg` is a sub-section and not a sign: `Rotate { -12 }` does not parse | **No spelling for a negative numeric enum leaf** | `01-compiler/15-language-surface` — lg2-t |
+| `repository/rakun/modules/rakun/src/conditions.bp:280-284` | a type is named by a string, because a decorator argument is an ordinary value | **A decorator argument cannot name a type** | `01-compiler/01-checker` — lg2-f |
+| `repository/rakun/modules/rakun-session/src/session.bp:4-8` | the session value is immutable; a forgotten `save` after `withAttribute` is a bug the compiler cannot catch | **No assignment to a `self` field — by design.** | — (by design) |
+| `repository/rakun/modules/rakun-data/src/sql/query.bp:33` | a method-level `@Decl` exposes no parameter list | **A method-level `@Decl` carries no owner and no parameter list** · **A method's own `@Decl` has no parameter list** | `01-compiler/15-language-surface` — lg2-e |
+| `repository/rakun/modules/rakun-client/src/exchange.bp:47-49,78` | std has no derivation from its `Json` value to a record, so an exchange method's parameters and return are `string` | **No `record ↔ Json` derivation** | `01-compiler/01-checker` after lg2-e |
+
 ## Confirmed gaps
 
 | Gap | Bites | Nearest valid form today | Proposed surface | Owner in 1.0.11-beta |
@@ -49,6 +97,7 @@ out and the nearest form is the design.
 | **A bodyless method in a `type` body is only a host-backed method** — `pub declare fn` inside a type body is the `#[@External.*]` method form (one with no binding at all is refused at every call); nothing lets a decorator supply the body | 08 · 09 · 78 | Give the method a body that calls a generated helper | A decorator-supplied body for a declared method, the natural shape for `#[query]`-style decorators | [`00`](../1.0.10-beta/00-compiler-carry-over/README.md) · 15-language-surface — **waits on [decisions-pending lg2-r](./decisions-pending.md#lg2-r--a-body-a-decorator-supplies-for-a-declared-method)** |
 | **A section-typed value cannot be constructed standalone** — `val a: Tok.Alpha = .50;` → `this token cannot appear here` — so a payload variant cannot take a section-typed field | 33 | Payload fields are builtin-typed (`i32`, `string`, `Token[]`): `Token.Alpha(percent: 50, inner: xs)` | Dot-shorthand rooted at the parameter's declared section type | [`00`](../1.0.10-beta/00-compiler-carry-over/README.md) · 01-checker |
 | **No module-graph reflection** — `@Decl` exposes declarations, not imports | 68 | `importsOf` is a textual scan that fails loudly on an unparsable line | An `imports` field on the module `@Decl` | **waits on [decisions-pending lg2-s](./decisions-pending.md#lg2-s--module-graph-reflection)** |
+| **No reflection over a module's exports** — nothing lets a decorator or a comptime body read the names a module exports, so a `pub fn GET` in a `route.bp` cannot register itself | rakun 22 (`verb-exports-carried-example.bp:4`) | The verb is a decorator on the handler: `#[getRoute("api/posts")]` / `#[deleteRoute("api/posts/[id]")]` | An `exports` field on the module `@Decl` — the declaration half of lg2-s's `imports` | `01-compiler` — a stub: the marker had no row of its own (written by `00-gate` 113 step 4c); the substance, and whether it folds into lg2-s, is the owner's |
 | **No spelling for a negative numeric enum leaf** — numeric leaves are bare digits, so `-rotate-12`, `-translate-y-2` and every negative utility have no direct token | 35 · 36 · 45 | A `Neg { … }` sub-section convention (front 45 ships it) | A signed numeric leaf, or a unary `-` on enum paths | [`00`](../1.0.10-beta/00-compiler-carry-over/README.md) · 15-language-surface — **waits on [decisions-pending lg2-t](./decisions-pending.md#lg2-t--a-negative-numeric-enum-leaf)** |
 | **No expression-position decorator** — a decorator is `@Decl`-first and annotates a declaration, so `#[emilia([.Pad.All.4])] div(…)` cannot exist; compounded by the sibling-fn rule, since a decorator body cannot call `emilia()` | 48 | Plain function calls | Expression-position decorators, or a comptime call form that runs in the eval script | **waits on [decisions-pending lg2-u](./decisions-pending.md#lg2-u--an-expression-position-decorator)** |
 | **A method's own `@Decl` has no parameter list** — `Decl` carries `returnType` but no `params` (`comptime/decorator_eval.zig` builds `params` only for the entries of `decl.methods`), so a method-level decorator cannot check its method's parameters: `decl.params` is "unknown field 'params' on type 'Decl'" | 84 (`#[persistentJob]`) | The type-level decorator (`#[jobs]`) walks `decl.methods` and checks each marked method's parameters, reporting at the type and naming the method | `params` on `Decl` for a method or fn declaration | [`00`](../1.0.10-beta/00-compiler-carry-over/README.md) · 15-language-surface |
