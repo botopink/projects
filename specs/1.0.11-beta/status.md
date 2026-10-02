@@ -43,6 +43,7 @@ the grep stage before any test.
 - [ ] `00-gate/99-gate-rakun` — on the remote `feat` under the green cold gate of `9395ea30`; waits only on the first GitHub run of its repository's workflow
 - [ ] `00-gate/100-gate-onze` — on the remote `feat` under the green cold gate of `9395ea30`; waits only on the first GitHub run of its repository's workflow
 - [ ] `00-gate/101-gate-jhonstart` · `108-gate-erika` · `109-gate-emilia` — on the remote `feat` with the unified hook and workflow (OTP and Node on every row, linux on ubuntu-24.04, no windows row); each hook green end to end; waits on the first GitHub run
+- [ ] `00-gate/115-gate-perf` — steps 3–6 and the stage times, plan counts and budget line committed on `front/115-gate-perf` (botopink-lang, the five libraries, meta): the cold gate 56m43s → 9–11 min on the shared machine, every tally unchanged · open: the idle-machine runs (steps 1 and 5) and whether the Zig closure cache of step 2 is still wanted
 - [ ] `01-compiler/01-checker` — the import fix is committed and in the integration branch (decision 170: an import that names its module is never ambiguous; aliases); the front's other steps are open
 - [ ] `02-std-and-packaging/97-std-dedupe` — high · the `fs.walk` fix, step 1 and step 2 committed on its branch · steps 3–5 and 8 in progress · steps 3 and 5 land after the checker's import fix (decision 170)
 - [ ] `03-bundled-libs/102-routing-conventions` — steps 1–2 (the package), `kindLetter` and the wrap order of `fileKinds()` (decisions 171–173) committed on `front/102-routing-conventions` · step 3 (the consumers) goes first when the gate is green and 97 has landed (decision 188)
@@ -51,7 +52,6 @@ the grep stage before any test.
 
 ## Pending
 
-- [ ] `00-gate/115-gate-perf` — not started · waits on every other `00-gate` front (it times a green gate)
 - [ ] `03-bundled-libs/106-log` — high · ready: no open question (decisions 194, 195) · waits on `00-gate` green and 97 · precedes 26 step 4, 17 and 49 step 3
 - [ ] `03-bundled-libs/104-http` — ready: no open question (decision 196) · the package half (steps 1–4) waits on `00-gate` green and 97 · the consumer sweep (step 5) waits on 04, 65, 123, 79, 12, 19, 22, 49, 51
 - [ ] `03-bundled-libs/105-i18n` — waits on 104, both halves, and on 22 and 26 (decision 180 answered its question)

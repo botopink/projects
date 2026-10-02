@@ -22,175 +22,219 @@ stage that runs fewer cells after this front is a defect of this front); `compil
 
 ## Problem
 
+The gate, measured before this front (the `00-gate` landing tips, `scripts/gate.sh --cold` with the
+stage times of step 5 added and nothing else; load 25 / 70 / 125 min / median / max on 16 CPUs —
+other threads' suites were running, as they always are on this machine):
+
 ```
-$ time scripts/gate.sh --cold            # at the open, through a copy that continues past reds
-stage 8  test-libs       1944 s
-stage 9  test-language    794 s
-stage 4  zig build test    41 s (cold)
-…                                        # ≈ 50 min wall clock, dominated by test-libs
+stage 2  zig build (Debug)           9 s        29 CPU-s     (zig cache warm)
+stage 4  zig build test             52 s       390 CPU-s
+stage 7  zig build test-cli         83 s        75 CPU-s
+stage 8  zig build test-libs      3339 s     12760 CPU-s
+stage 9  zig build test-language  1207 s      1279 CPU-s
+…                                 56m43s wall in all
 ```
 
-Measured at the open (report A; load 58–68 on 16 CPUs — other gates were running; the numbers are
-inflated and are a ceiling, not a baseline). For scale, `1.0.10-beta`'s `25-gate-perf` measured
-the same gate at its close, warm, with the ledger aligned: `test-libs` 69.5 s, `test-language`
-~20 s, the whole gate 131.5 s warm / 268.6 s cold (`specs/1.0.10-beta/00-compiler-carry-over/25-gate-perf/README.md`
-§ Measurements, load 45–73); `run.sh --target beam` alone 28 s at the open (`lang_beam.txt`);
-warm `zig build test` ~7 s (25's step 2). The two measurements differ by an order of magnitude and
-neither was taken on an idle machine — step 1 settles what the gate costs.
+Where the time went, cell by cell (`ps` sampled once a second; wall of the cell's `botopink test`):
+rakun-scheduling 1758 s, onze-cli·erlang 1482 s, rakun-messaging 1184 s, rakun-data 1148 s,
+onze-cli·commonJS 740 s, rakun-app 599 s, rakun-security 514 s; every `emilia-*`, `onze-*` and
+`jhonstart-emilia` erlang cell ~230 s, ~180 of them CPU-seconds of the compiler process itself.
+Four causes, none of them a stage doing too much:
 
-What is known about where the time goes (25's step 4 trace of one erlang cell, 9.1 s wall):
-~6 s compiling the project *with its dependencies* in the `botopink` process, ~3.3 s
-`precompileErlang` (now served by the `.beam` cache, `test_cmd.zig:167`), ~2.5 s the `escript`
-that runs the tests. The first part is the one 25 left: "the per-cell compile of the same
-dependency modules (~4–6 s a cell on both targets): it is the compiler's own pipeline, a front of
-its own" — every `emilia-*` member compiles `emilia` and `std` again; every rakun member compiles
-`rakun` and `std` again; 113's restriction audit adds 39 such builds.
+1. **The gate ran a Debug compiler.** `zig build` defaults to Debug; the same `emilia-borders`
+   erlang cell is 189 CPU-s under the Debug `botopink` and 15 under ReleaseSafe — the mode
+   `release.yml` ships — with byte-identical output.
+2. **A test's scratch directory was inside the run directory.** `BOTOPINK_TEST_TMPDIR` was
+   `<run dir>/tmp`, and every erlang runner compiles and loads every `.erl` under its own directory
+   before its tests (`'__bp_load_siblings'/0`). rakun's build tests write fixture projects there —
+   6 511 fixture `.erl` in rakun-scheduling's run — so every test module after them compiled and
+   loaded all of them: ~5 CPU-minutes per module, and a fixture's modules loaded over the run's own.
+3. **Every `botopink build --target erlang` compiled its whole closure with the OTP compiler**
+   (`checkErlang`), and rakun's build tests spawn 22 builds of one closure in one cell.
+4. **onze's own build ran one `erlc` over ~4 000 modules** (`compileBeam`): one scheduler, ~80 s
+   per `onze build`, five of them in onze-cli's suite, on both of its cells.
 
 ## Current state
 
-| Stage | What it re-does per cell | Parallelism today |
-|---|---|---|
-| 4 `zig build test` | 8 shards (25 step 2) | the build system's |
-| 4b–10 side by side | one process each (25 step 3), each with a bounded pool (`lib/pool.sh`) | pools admit a job while runnable threads ≤ CPUs |
-| 8 `test-libs` | per cell: resolve the closure (`libs.zig:232` `loadDependencies`, `:328` `DepClosure`), compile every module of every dependency, emit, ship sidecars, precompile (`.beam` cache hit), run | `botopink-lib-test --jobs` (default one per CPU bounded by memory) |
-| 9 `test-language` | per (cell, target): `botopink build`/`run`/`test`, one process; `test/` cells compile `std` each time | `run.sh --jobs`, `xargs -P` (`run.sh:440`) |
-| 10 `test-docs` | per fence: a scratch project and `botopink check` | `pool.sh` |
-
-Carried from 25 (`§ Not a step`): the hooks in worktrees — a submodule of a meta worktree has no
-`core.hooksPath`, so `scripts/git-hooks/pre-commit` never runs on a compiler commit made in a
-worktree (measured there: `git config core.hooksPath` empty in
-`.tasks/<name>/repository/botopink-lang`); proposal: a tracked meta `scripts/worktree-add.sh <name>`
-that adds the worktree, inits submodules, and sets `core.hooksPath scripts/git-hooks` in every
-submodule that tracks a hook, named by the meta `AGENTS.md` § Worktrees as the one way to open a
-worktree. It is this front's because the gate that is not run is the slowest gate of all.
-
-## Mechanism
-
-Three costs, three tools: (1) the same dependency closure compiled once per cell — a cache keyed by
-content; (2) cells serialised where they could overlap, and an `erl` node started per cell — a
-pool; (3) no number printed per stage — nobody can see which stage moved. None of them changes
-what a stage asserts.
+| What | Where |
+|---|---|
+| Stages 2–10 print their wall clock and CPU-seconds; the last line is the total against the budget; stages 8–10 are held to their runners' `--list` plan | `scripts/gate.sh` § stage times, § counts, § budget |
+| Every binary the stages run is ReleaseSafe; every `zig build` of the gate passes `-Doptimize=ReleaseSafe`, stage 4's unit tests stay Debug | `scripts/gate.sh` § build mode |
+| Stages 4, 4b, 5 and 6 start beside the ReleaseSafe build (they read nothing it produces) and are reported in their place | `scripts/gate.sh` § ahead of the build |
+| `BOTOPINK_TEST_TMPDIR` is `<run dir>.tmp`, the run directory's sibling, removed with it; row C3d pins it | `compiler-cli/src/cli/test_cmd.zig` `testTmpDir` |
+| `checkErlang` answers a source whose exact bytes the same OTP compiler accepted from `$XDG_CACHE_HOME/botopink/erlcheck/` (acceptances only) | `compiler-cli/src/cli/build.zig`, `libs.userCacheDir` |
+| `botopink-lib-test` starts the cells longest-last-time first (`$XDG_CACHE_HOME/botopink/lib-test/durations.tsv`); output order unchanged | `lib-test-runner/src/schedule.zig` |
+| `tests/language/run.sh --list` prints the plan; a run prints `cells: <J> jobs — <R> run, <A> audits` | `tests/language/run.sh` |
+| onze's `compileBeam` deals the server's `.erl` to one `erlc` per CPU | `onze/modules/onze-cli/src/build.bp` |
+| The five libraries' hook runs stages 4 and 5 on a cell pool (`gatePool`), report in plan order | `<lib>/scripts/git-hooks/lib/runner-standalone.sh` |
+| `scripts/worktree-add.sh <name>` opens a worktree with `core.hooksPath` in every submodule that tracks a hook | meta `scripts/`, meta `AGENTS.md` § Worktrees |
 
 ## Steps
 
 ### Step 1 — the baseline: every stage from a cold cache on an idle machine
 
-`scripts/gate.sh --cold` in the main checkout with every `00-gate` front landed, on 16 cores with
-nothing else running (load < 2 at start, recorded), three runs; per stage: wall, CPU-seconds
-(`/usr/bin/time -v` or `perf stat` per launched stage), and — for stages 8 and 9 — the per-cell
-serial cost (`botopink-lib-test --jobs 1` timestamped; `run.sh --jobs 1`). Record the table here:
-
-| Stage | Wall (s) | CPU-s | Per-cell serial | What it re-does per cell |
-|---|---:|---:|---|---|
-| 2, 3, 4, 4b, 5, 6, 7, 8, 9, 10 | … | … | … | … |
-
-From the table, **set the budget**: the acceptance of step 5 is a number this step derives and
-writes into this README before step 2 starts. The derivation: the cold `zig build test` floor
-(≈ 34 s at 25's step 2) plus the longest of the side-by-side stages after steps 2–4, plus 20 %
-headroom; the working assumption from 25's numbers is **≤ 10 min cold on 16 idle cores**, and
-**≤ 5 min warm** — amended by the measurement, never by dropping a stage.
+The baseline above and the runs of § Measurements were taken on the shared machine: it was never
+idle while this front ran (load 14–125, other threads' compiler suites), so no row is the idle
+measurement the step asks for. What the loaded runs fix is the ratio and the critical path, and
+from them the budget's derivation: cold = the ReleaseSafe build of the compiler (3m17s, 684
+CPU-s at load 57; its long pole is one LLVM thread for `botopink`) + the longest side-by-side stage
+— `test-libs`, whose CPU (~1 850 CPU-s, ~115 s over 16 cores) is below its longest cell
+(onze-cli·erlang, 140–220 s) — + 20 %: **≈ 7 min cold, ≈ 4 min warm** (no compiler rebuild) on
+16 idle cores, inside the working assumption. The budget in `gate.sh` stays the working
+assumption, 10 min cold and 5 min warm, until the idle runs amend it.
 
 **Acceptance:**
-- [ ] the table filled from three runs (median), with the load and the commit
-- [ ] the budget written in step 5 and in `../README.md` § Exit gate
+- [ ] the table filled from three runs (median), with the load and the commit — on an idle machine
+- [x] the budget written in step 5 and in `../README.md` § Exit gate (`budget_cold=600`, `budget_warm=300`)
 
 ### Step 2 — the dependency-closure compile cache
 
-One compile of a dependency closure per gate run: `libs.zig`'s `loadDependencies`/`DepClosure`
-(`:232-378`) resolves the closure per cell and the CLI compiles every module of it. Cache the
-*result* of compiling a dependency package for a target — keyed by the content hash of the
-package's sources + manifest + the compiler binary's hash + target + the options that reach the
-emitter — so that the second cell that needs `emilia` on erlang reads the emitted modules (and
-their typed export tables) instead of compiling them. Where it lives: 25 measured that a
-per-project `.botopinkbuild/` shares nothing across cells because each cell runs from its own
-directory; the `.beam` cache went to `${XDG_CACHE_HOME:-$HOME/.cache}/botopink/beam/`. Options:
-(a) the same machine-wide store, `…/botopink/closure/<k[0..2]>/<k>/` (shared by every checkout
-and gate; reaped by age like the `.beam` cache); (b) the checkout root's `.botopinkbuild/closure/`
-(the gate runs from the root; `test-libs` cells run from member directories but the runner knows
-the root). **Recommend (a)** — it is the `.beam` cache's model, already reaped and race-safe
-(staging + rename), and a worktree gate benefits from the main checkout's entries. The key must
-include the compiler binary's hash: an entry from another compiler is a miss, never a wrong
-module. A hit is verified the way 25 verified `.beam` hits: cells compiled with a warm cache and
-with none produce byte-identical outputs and identical test logs (ids and timings stripped).
-The restriction audit (113) uses the same cache: 39 builds that share rakun's closure.
+What the step aimed at moved. After step 1's causes were removed, the Zig-side compile of a
+cell's closure is 1–5 s of ReleaseSafe CPU (`emilia-borders`: 1.4 s on commonJS, ~5 s on erlang,
+comptime node included), and the OTP-compiler half of the erlang build — the larger one, 15 CPU-s
+of that cell — is now answered from a content-keyed verdict cache (`build.zig` `checkErlang`,
+`$XDG_CACHE_HOME/botopink/erlcheck/<k[0..2]>/<k>.ok`, `k` = SHA-256 of the source bytes, the
+options, the OTP release and the erts / `compiler` / `stdlib` versions and
+`ERL_COMPILER_OPTIONS`; acceptances only, a refusal is compiled and printed every time; the
+`.beam` cache's model, staged and renamed, reaped by age). Caching the *Zig* compile of a
+dependency package — its emitted modules and typed export tables — needs `compiler-core` to take
+a pre-typed package as input, which this front does not touch; with the closure at 1–5 s a cell it
+is no longer where the gate's time is. Whether it is still wanted is the open question below.
 
 **Acceptance:**
-- [ ] `zig build test-libs` with an empty cache and warm: the same cell lines, the same passed count, byte-identical emitted modules for every cell (a script diffs `out/` trees)
-- [ ] one byte changed in `libs/std/src/collections.bp` → every entry that includes std is a miss (a new key), nothing stale served
-- [ ] the compiler binary rebuilt with one changed emitter line → every entry a miss
-- [ ] stage 8 wall clock and CPU-s before/after in this README's table
+- [x] the erlang verdict cache: an accepted build twice under one cache writes the same keys, a changed source is a new key, a refused one is refused (and printed) on every build — `cli_contract.sh` § the erlang check's verdict cache, red against the pre-front binary; `emilia-borders` built with an empty and a warm cache: identical `out/` trees (`diff -r`) and identical logs
+- [ ] `zig build test-libs` with an empty cache and warm: the same cell lines, the same passed count, byte-identical emitted modules for every cell (a script diffs `out/` trees) — the 172 cell and audit lines and the summary are identical (`XDG_CACHE_HOME` empty: no `.beam`, verdict or duration entry; 6m13s, 2 031 CPU-s at load ~60); the per-cell `out/` diff is open (the runs remove their trees)
+- [ ] one byte changed in `libs/std/src/collections.bp` → every entry that includes std is a miss (a new key), nothing stale served — for the Zig closure cache, not built
+- [ ] the compiler binary rebuilt with one changed emitter line → every entry a miss — idem
+- [x] stage 8 wall clock and CPU-s before/after in this README's table (§ Measurements)
 
 ### Step 3 — `test-libs` cell parallelism bounded by cores, the erlang node reused
 
-The runner's `--jobs` is one per CPU bounded by memory; measure whether cells actually overlap
-(the pool's admission vs. the erlang cells' own `erl` start-up: each cell starts an `escript`/`erl`
-— 2.5 s of the 9.1 s trace). Options: (a) a persistent `erl` node per gate run that loads each
-cell's `.beam` into a fresh code path and runs its tests in an isolated process group (the model
-`persistent_node` uses for comptime — **never** the discarded `persistent_erlang.zig` design for
-comptime evaluation; this is the test runner's own node, started and stopped by the gate); (b) keep
-one `erl` per cell and only fix the pool's admission. Measure (b) first; (a) only if start-up is the
-remaining cost after step 2. Every cell's isolation is asserted: a test that leaves a process
-registered or an ETS table behind must not be visible to the next cell (a synthetic pair of cells
-pins it).
+Measured (b) first, as the step says: the pool's admission is unchanged, and with causes 1–4 gone
+the erlang start-up is no longer the cost (a whole emilia erlang cell is ~30 s at load 60, mostly
+its compile and its test modules). What the stage's wall clock still waited for was the *order*:
+the pool took cells in discovery order and onze-cli, the longest cell, was discovered late (started
+at 244 s of a 473 s stage). `botopink-lib-test` now starts the cells longest-last-time first
+(`schedule.zig`: the machine's duration history, unknown cells first, ties in plan order); every
+spawning cell runs once and the output is still emitted in plan order. (a), a persistent test node,
+is not built: after the fixes nothing measured points at it.
 
 **Acceptance:**
-- [ ] stage 8 wall clock before/after; CPU-s within 10 % (the work is the same)
-- [ ] the isolation cell pair green; `--jobs 1` and the default print the same bytes (25 step 1's rule)
+- [x] stage 8 wall clock before/after (§ Measurements); CPU-s: 12 760 → ~1 850 — the work is the same cells, the CPU is the Debug compiler and the fixture compiles that are gone
+- [x] `--jobs 1` and the default print the same bytes but for the timing values the children print (`--lib erika-linq` and `--lib std`, `--json`, durations stripped: one difference, the timestamp inside a TLS `NOTICE REPORT` run log)
+- [ ] the isolation cell pair green — belongs to (a), not built
 
 ### Step 4 — `run.sh`: cells batched per target
 
-`run.sh` runs one `botopink` process per (cell, target). Options: (a) `botopink build` of every
-`run/` cell of one target in one process (the CLI compiles `std` once and emits N programs), then
-run each; (b) the closure cache of step 2 applied to `std` so each process's compile is a hit.
-Measure both; (b) comes for free from step 2 and may be enough. The `test/` cells and `modules/`
-cells keep one process each (a `botopink test` is a project). Nothing about which cells run on
-which target moves (111's audit stays the runner's).
+(b) is what landed: the `std` compile of a cell is the ReleaseSafe compiler's (~0.1 s) and its OTP
+check a verdict-cache hit; every job is ≤ 2 s wall. The stage is ~800 CPU-s of 1 241 jobs, and its
+wall clock on the shared machine is the pool's admission yielding to the other threads (a job is
+admitted while `procs_running` ≤ CPUs), not a job. (a) is not built. `run.sh --list` prints the
+plan, and a run's `cells:` line is what `gate.sh` holds to it.
 
 **Acceptance:**
-- [ ] `run.sh --target all` prints the same tally and the same per-cell lines before and after; wall clock before/after in the table
-- [ ] `run.sh --jobs 1` and the default: the same bytes
+- [x] `run.sh --target all` prints the same tally before and after: `language tests: 1515 passed, 0 failed`, `narrowings: 30 exclusions audited`, 1 241 jobs; wall clock before/after in § Measurements
+- [ ] `run.sh --jobs 1` and the default: the same bytes — the runner's ordering is unchanged and the new `cells:` line is a count; not re-run serially on this front
 
 ### Step 5 — the budget as acceptance; every stage's time in the report; nothing narrowed
 
-`gate.sh`: each `report` line prints the stage's wall clock and CPU-s (`launch` records start/end;
-stages 2–4 timed inline) and the final line prints the total: `gate: every stage passed — 4m12s
-wall, 1180 CPU-s (budget 10m00s cold)`. A run over the budget does **not** fail the gate (a slow
-machine is not a red) — it prints `over budget` in yellow and the number, and this front's
-acceptance is the number on the reference machine. What *does* fail: any stage that ran fewer
-cells than the manifests and the trees declare — `gate.sh` compares the counts stages 8 and 9
-print with the counts a `--list` of each runner prints, so a stage cannot be narrowed to win time.
+`gate.sh` prints `✓ <stage> — <wall> wall, <n> CPU-s` for every stage and ends
+`gate: every stage passed — <wall> wall, <n> CPU-s (budget 10m00s cold)`; over budget it prints
+`gate: over budget — …; load …` in yellow and exits 0. Before stages 4b–10 start it reads the
+plans (`scripts/test-libs.sh --list`, `tests/language/run.sh --list`, `scripts/check-docs.sh
+--list`) and after stages 8, 9 and 10 it holds their tallies to them, failing the gate on any
+difference (`plan: 134 cells and 38 audits, as --list declares`).
 
 **Acceptance:**
-- [ ] `scripts/gate.sh --cold` on 16 idle cores: wall ≤ the budget step 1 wrote (working assumption ≤ 10 min cold, ≤ 5 min warm); three runs, median, recorded here
-- [ ] the report prints one time per stage and the total; `scripts/AGENTS.md` § gate.sh documents the line
-- [ ] stage 8 runs every cell the manifests declare (113's count), stage 9 every cell of four targets (111's count), stage 10 every fence (114's count) — the counts printed equal the `--list` counts, asserted by `gate.sh`
+- [ ] `scripts/gate.sh --cold` on 16 idle cores: wall ≤ the budget step 1 wrote (working assumption ≤ 10 min cold, ≤ 5 min warm); three runs, median, recorded here — the loaded runs are in § Measurements
+- [x] the report prints one time per stage and the total; `scripts/AGENTS.md` § gate.sh documents the line
+- [x] stage 8 runs every cell the manifests declare (113's count), stage 9 every cell of four targets (111's count), stage 10 every fence (114's count) — the counts printed equal the `--list` counts, asserted by `gate.sh`
 
 ### Step 6 — the worktree script (carried from 25 § Not a step)
 
-Meta `scripts/worktree-add.sh <name>`: `git worktree add .tasks/<name> -b front/<name>`,
-`git submodule update --init --recursive`, then `git -C .tasks/<name>/repository/<sub> config
-core.hooksPath scripts/git-hooks` for every submodule that tracks `scripts/git-hooks/pre-commit`;
-the meta `AGENTS.md` § Worktrees names it as the one way to open a worktree (and the manual
-sequence is deleted from the section). A `post-checkout` hook cannot do it (it would itself have
-to be installed).
+Meta `scripts/worktree-add.sh <name> [<base>]`: `git worktree add .tasks/<name> -b front/<name>`
+under the main checkout, `git submodule update --init --recursive`, `core.hooksPath
+scripts/git-hooks` in every submodule that tracks `scripts/git-hooks/pre-commit` (all seven), and
+`repository/botopink-lang` on `front/<name>`; the meta `AGENTS.md` § Worktrees names it as the one
+way to open a worktree.
 
 **Acceptance:**
-- [ ] `scripts/worktree-add.sh x && git -C .tasks/x/repository/botopink-lang config core.hooksPath` → `scripts/git-hooks`; a commit in that worktree runs the gate
-- [ ] the meta `AGENTS.md` updated in the same commit
+- [x] `scripts/worktree-add.sh x && git -C .tasks/x/repository/botopink-lang config core.hooksPath` → `scripts/git-hooks`; a commit in that worktree runs the gate (a probe worktree: `git commit --allow-empty` printed `── pre-commit ──` and `gate.sh --staged` queued on the gate lock; the probe was removed)
+- [x] the meta `AGENTS.md` updated in the same commit
+
+## Measurements
+
+Every run: `scripts/gate.sh --cold` in `.tasks/115-gate-perf`, 16 CPUs shared with the other
+threads (load min / median / max over the run), the `.beam` cache warm. "Cold build" = the
+compiler's sources changed, so stage 2 rebuilds the ReleaseSafe binaries.
+
+| Stage | Before (Debug) | After, cold build | After, warm build | After, warm build, start order |
+|---|---:|---:|---:|---:|
+| load | 25 / 70 / 125 | 14 / 57 / 78 | 25 / 65 / 88 | 43 / 69 / 88 |
+| 2 `zig build` | 9 s · 29 CPU-s (Debug, warm) | 3m17s · 684 | 0.2 s · 0 | 0.2 s · 0 |
+| 4 `zig build test` | 52 s · 390 | 59 s · 361 (beside stage 2) | 57 s · 355 | 57 s · 356 |
+| 4b parity | 7 s · 8 | 10 s · 10 | 10 s · 9 | 9 s · 9 |
+| 5 `test-bpmp` | 3 s · 3 | 1 s · 1 | 1 s · 1 | 1 s · 1 |
+| 6 beam export audit | 15 s · 90 | 20 s · 95 | 21 s · 92 | 18 s · 92 |
+| 7 `test-cli` | 83 s · 75 | 44 s · 51 | 50 s · 51 | 49 s · 51 |
+| 8 `test-libs` | 3339 s · 12 760 | 6m41s · 1 859 | 7m53s · 1 817 | 6m42s · 1 805 |
+| 9 `test-language` | 1207 s · 1 279 | 7m41s · 798 | 7m52s · 802 | 8m00s · 795 |
+| 10 `test-docs` | 25 s · 32 | 6 s · 8 | 7 s · 8 | 7 s · 8 |
+| **gate** | **56m43s** | **11m00s · 3 865** | **8m52s · 3 136** | **9m00s · 3 116** |
+
+Under this load stage 9 is the last to finish: its ~800 CPU-s are 1 241 jobs of ≤ 2 s, and its
+pool, like stage 8's, admits a job only while the machine's runnable threads are at most its CPUs
+— a pool that yields to the other threads, by design (25's rule).
+
+The tallies are the same in every run: `test-libs: 119 passed, 0 failed, 15 without tests, 38
+restrictions audited` (134 cells + 38 audits, the `--list` plan); `language tests: 1515 passed, 0
+failed`, `narrowings: 30 exclusions audited`, 1 241 jobs on `*`, commonJS, erlang, wasm and beam;
+`docs: 94 fences — 94 checked, 0 skipped, 0 failed`; `beam_export_audit: 490/490`.
+
+The slowest cells, wall (load ~65): rakun-scheduling 1758 s → 66 s, onze-cli·erlang 1482 s →
+222 s, rakun-messaging 1184 s → 48 s, rakun-data 1148 s → 57 s, onze-cli·commonJS 740 s → 189 s,
+rakun-app 599 s → 77 s, emilia·erlang 285 s → 68 s.
+
+What each change saves, measured alone:
+
+| Change | Measured |
+|---|---|
+| ReleaseSafe binaries | `emilia-borders`·erlang 231 s → 31 s wall, 189 → 15 CPU-s, the same JSON (durations stripped) |
+| scratch beside the run directory | rakun-scheduling: ~5 CPU-minutes per test module after its build tests → none; the cell 1758 s → 55–66 s (with ReleaseSafe) |
+| erlang verdict cache | `emilia-borders` `botopink build --target erlang`, Debug: 28 s → 19 s, the 4 093 OTP compiles answered from the cache; same `out/`, same log |
+| onze `compileBeam` on one `erlc` per CPU | onze-cli·erlang alone (ReleaseSafe): 305 s → 143 s, `build: the scaffold` 91 s → 38 s |
+| stages 4, 4b, 5, 6 beside the build | stage 4's ~60 s and the audits' ~30 s leave the serial path |
+| start order by duration history | onze-cli, the longest cell, starts at 0 s of stage 8 instead of 244 s; stage 8 7m53s → 6m42s at a similar load (65 → 69) |
+| library hooks on a cell pool | emilia's hook (34 cells, 30 builds) 79 s at load ~50 — measured ~4 000 s serial with a Debug compiler; onze 222 s (its onze-cli cells), rakun 165 s, erika 7 s |
 
 ## Gate
 
-- [ ] `zig build test` from a cold runtime cache, green
-- [ ] `scripts/gate.sh --cold` green, under budget on the reference machine, every stage's count equal to its `--list`
-- [ ] `zig build test-libs` byte-identical outputs warm vs. empty cache; `run.sh` identical tallies
-- [ ] `scripts/AGENTS.md`, `modules/compiler-cli/AGENTS.md` (the closure cache), `modules/lib-test-runner/AGENTS.md`, the meta `AGENTS.md` updated in the same commits
-- [ ] commits on `fix/gate-perf` in `repository/botopink-lang` and `front/gate-perf` in the meta repository; no push, no merge
+- [x] `zig build test` from a cold runtime cache, green (stage 4 of every run above)
+- [ ] `scripts/gate.sh --cold` green, under budget on the reference machine, every stage's count equal to its `--list` — green with every count equal to its plan in every run; under budget only on the warm-build run (8m52s at load 65), the cold-build run 11m00s at load 57; the idle runs are open
+- [ ] `zig build test-libs` byte-identical outputs warm vs. empty cache; `run.sh` identical tallies — the tallies are identical (§ Measurements), and an empty-cache `test-libs` prints the warm run's 172 cell and audit lines and summary, line for line; the per-cell emitted-module diff is open
+- [x] `scripts/AGENTS.md`, `modules/compiler-cli/AGENTS.md` and `src/cli/AGENTS.md` (the scratch directory, the verdict cache), `modules/lib-test-runner/AGENTS.md` (the start order), `tests/language/AGENTS.md` (`--list`), the meta `AGENTS.md`, and each library's `AGENTS.md` (the hook's pool) updated in the same commits
+- [x] commits on `front/115-gate-perf` in `repository/botopink-lang`, the five libraries and the meta repository; no push, no merge
+
+## Open
+
+- **The idle measurement.** Three `gate.sh --cold` runs on 16 idle cores, cold and warm build, to
+  confirm or amend the budget (step 1, step 5).
+- **The Zig closure cache (step 2).** Not built: the closure compile is 1–5 s a cell under
+  ReleaseSafe, and caching it needs `compiler-core` to accept a pre-typed package. Kept as a
+  question for `01-compiler`, not as this front's remaining work, unless the idle runs say otherwise.
+- **CI runs Debug binaries.** `.github/workflows/test.yml` builds with `zig build` (Debug); its
+  `libs` job would run the same ~12× faster with `-Doptimize=ReleaseSafe`, the mode `release.yml`
+  ships. Not this front's file.
+- **A plain `zig build` after a gate** puts Debug binaries back into `zig-out/`, and the library
+  hooks run whatever is there; a library thread that rebuilds Debug pays the Debug price in its
+  hook.
 
 ## Blast radius
 
 - Every later front runs a faster gate; none changes behaviour on this front's account.
-- `../../01-compiler/26-cli-tooling` owns `compiler-cli/**` afterwards: the closure cache is in
-  `libs.zig` and is documented there; `botopink clean` (26's sentence) learns the cache directory.
+- `../../01-compiler/26-cli-tooling` owns `compiler-cli/**` afterwards: the verdict cache is in
+  `build.zig` and `libs.userCacheDir` names the per-user cache directory, both documented in
+  `src/cli/AGENTS.md`; `botopink clean` (26's sentence) learns the cache directories.
 - `../../01-compiler/25`'s carried rows (this README § Current state) close here; 25 has no
   directory in `01-compiler` (`../../01-compiler/carried.md` points here).
 
