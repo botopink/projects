@@ -5,7 +5,7 @@
 decisions 146–149). Every `lg2-*` row of [`language-gaps.md`](./language-gaps.md) is a
 feature the language does not have; the recommendation is always the most restrictive reading
 (decision 67) — the feature stays out and the row's nearest form is the design — and no front opens
-on one until it is answered. **The next free decision number is 225** ([`decisions-taken.md`](./decisions-taken.md)).
+on one until it is answered. **The next free decision number is 228** ([`decisions-taken.md`](./decisions-taken.md)).
 
 Beside the open questions, every track carries **implementation choices awaiting confirmation** —
 a choice a front made, recommended and implemented, that the maintainer confirms or reverses. The
@@ -32,7 +32,7 @@ letter ids are never renumbered; their full text lives where they were raised:
 
 Two items the milestone's own cut raised are written here rather than in a track, because they
 cross tracks (`gate-a…j`, the zero-tolerance policy of `00-gate`, were answered: decisions 153–162),
-and three that the audit of the `00-gate` fronts on the integrated `feat` raised (`gate-k…m`):
+and three that the audit of the `00-gate` fronts on the integrated `feat` raised (`gate-k…m`, answered: decisions 225–227):
 
 ### std-e · Test lifecycle hooks
 
@@ -53,41 +53,6 @@ Not a question — a row allocated here so the id exists: `emilia/modules/emilia
 works around a commonJS prelude method that calls itself on a non-ASCII input. Owner
 [`01-compiler/04-js`](./01-compiler/04-js/README.md); the cell to write is
 `tests/language/run/string_char_code_non_ascii.bp`.
-
-### gate-k · The Zig closure cache of 115 step 2
-
-> **Raised by:** `00-gate/115-gate-perf` (step 2 built the erlang verdict cache; the closure cache was
-> not built).
-> **Measured.** The cold gate went from 56m43s to 9–11 min on the shared machine without it, inside
-> the 10 min cold budget. Each `botopink test` of a library member re-checks its whole dependency
-> closure (std, validation, rakun, … for every rakun member).
-> **Options.** (a) build it — a front in `01-compiler`: `compiler-core` accepts a pre-typed package,
-> keyed by the sources' bytes and the compiler version; (b) drop it from 115 — 115 closes on the
-> erlang verdict cache, and the question returns if an idle-machine cold gate exceeds its budget.
-> **Recommendation.** (b) — the gate is within budget; a type cache is one more place a stale entry
-> can hide a red, which is what `--cold` exists to refuse.
-> **Blocks.** Closing 115.
-
-### gate-l · The build mode of botopink-lang's CI
-
-> **Raised by:** `00-gate/115-gate-perf` (the audit) — `scripts/gate.sh` builds with
-> `-Doptimize=ReleaseSafe`, the shipped mode; `.github/workflows/test.yml` builds Debug, so CI and
-> the gate run the same suites over different binaries.
-> **Options.** (a) ReleaseSafe in `test.yml`, as the gate (the unit-test stage `zig build test` stays
-> Debug in both); (b) Debug in CI, the local gate covering ReleaseSafe.
-> **Recommendation.** (a) — CI tests what is shipped and what the gate tests; ReleaseSafe keeps the
-> safety checks.
-> **Blocks.** Nothing; one file of `114`'s.
-
-### gate-m · OTP 28 on the macOS rows of the library workflows
-
-> **Raised by:** the audit of `101`, `108`, `109` — the one workflow shape says Erlang/OTP 28 on every
-> row; the linux rows pin it (`setup-beam`, `otp-version: '28'`), the macOS rows run
-> `brew install erlang`, whatever Homebrew ships.
-> **Options.** (a) `brew install erlang@28` (and `brew link --force erlang@28`) in the five
-> workflows, one text; (b) keep `brew install erlang`.
-> **Recommendation.** (a) — the rule as written; an unpinned version turns a row red with no commit.
-> **Blocks.** The "OTP 28 on every row" box of 101, 108 and 109.
 
 ---
 

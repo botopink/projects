@@ -99,13 +99,14 @@ options, the OTP release and the erts / `compiler` / `stdlib` versions and
 `.beam` cache's model, staged and renamed, reaped by age). Caching the *Zig* compile of a
 dependency package — its emitted modules and typed export tables — needs `compiler-core` to take
 a pre-typed package as input, which this front does not touch; with the closure at 1–5 s a cell it
-is no longer where the gate's time is. Whether it is still wanted is the open question below.
+is no longer where the gate's time is. Decision 225 answered the question: the closure cache is
+built by `131-gate-build-cache`, which also moves this step's verdict cache, the `.beam` cache and
+the cell durations under `.botopinkbuild/cache/`.
 
 **Acceptance:**
 - [x] the erlang verdict cache: an accepted build twice under one cache writes the same keys, a changed source is a new key, a refused one is refused (and printed) on every build — `cli_contract.sh` § the erlang check's verdict cache, red against the pre-front binary; `emilia-borders` built with an empty and a warm cache: identical `out/` trees (`diff -r`) and identical logs
 - [ ] `zig build test-libs` with an empty cache and warm: the same cell lines, the same passed count, byte-identical emitted modules for every cell (a script diffs `out/` trees) — the 172 cell and audit lines and the summary are identical (`XDG_CACHE_HOME` empty: no `.beam`, verdict or duration entry; 6m13s, 2 031 CPU-s at load ~60); the per-cell `out/` diff is open (the runs remove their trees)
-- [ ] one byte changed in `libs/std/src/collections.bp` → every entry that includes std is a miss (a new key), nothing stale served — for the Zig closure cache, not built
-- [ ] the compiler binary rebuilt with one changed emitter line → every entry a miss — idem
+- the closure cache's own boxes (a changed std byte, a rebuilt compiler, each a miss) are `131-gate-build-cache` step 3's
 - [x] stage 8 wall clock and CPU-s before/after in this README's table (§ Measurements)
 
 ### Step 3 — `test-libs` cell parallelism bounded by cores, the erlang node reused
@@ -224,9 +225,8 @@ The front's code is on `feat`; what is left is measurement and one question:
 - **The per-cell `out/` diff.** `zig build test-libs` with an empty and a warm cache, every cell's
   emitted modules diffed (step 2) — the cell lines and the summary are already identical.
 - **`run.sh --jobs 1`** against the default, byte for byte (step 4).
-- **The Zig closure cache (step 2).** Not built: the closure compile is 1–5 s a cell under
-  ReleaseSafe, and caching it needs `compiler-core` to accept a pre-typed package. Kept as a
-  question for `01-compiler`, not as this front's remaining work, unless the idle runs say otherwise.
+- **The Zig closure cache (step 2).** Moved to `131-gate-build-cache` (decision 225), with the
+  stores this front put under `$XDG_CACHE_HOME/botopink`.
 - **CI runs Debug binaries.** `.github/workflows/test.yml` builds with `zig build` (Debug); its
   `libs` job would run the same ~12× faster with `-Doptimize=ReleaseSafe`, the mode `release.yml`
   ships. Not this front's file.
