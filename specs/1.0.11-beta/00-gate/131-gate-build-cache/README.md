@@ -47,6 +47,16 @@ much of that is the repeated closure is not measured — step 1 measures it.
 - The three stores above exist and are content-keyed (a key mismatch is a miss, never a wrong
   answer); none is under `.botopinkbuild/`.
 - No closure cache exists: `compiler-core` takes sources only; there is no pre-typed package input.
+- A dependency's emitted modules are not a function of the package alone: `crossModule.CrossModule`
+  is built over the whole program, and an owner exports only what another module of the build
+  imports (`imported` — a record's assoc fns, an erlang `externalWrapperForm` for an imported
+  `pub declare fn`). The same rakun module emitted for two members that import different names
+  differs in its export list, so an emitted-module entry keyed by the package alone would serve
+  bytes an uncached build does not write.
+- The typed export tables a consumer reads are in-memory graphs of the session arena
+  (`comptime.compile`'s registries: `*T.Type` per export, the `ast.DeclKind` of each type, the
+  `ast.FnDecl` bodies of templates and decorators, `ImplementDecl`s, the decorator reflection and
+  the default DSL); none has a serialized form.
 
 ## Steps
 
@@ -57,8 +67,39 @@ For `test-libs` on the gate's tip: per cell, the wall and CPU-seconds of the dep
 prints or a counter added for the run. The table goes in this README.
 
 **Acceptance:**
-- [ ] the table (rakun members, onze-cli, onze-server, jhonstart, emilia, validation) with the load
+- [x] the table (rakun members, onze-cli, onze-server, jhonstart, emilia, validation) with the load
       and the commit; the share of `test-libs` CPU that is a repeated closure
+
+**Measured.** `zig build test-libs -Doptimize=ReleaseSafe` (both targets, 123 cells passed) on
+botopink-lang `e5ac9a21`, rakun `9471a03`, onze `72dfbe1`, emilia `29548a6`, jhonstart `22df151`;
+16 CPUs, load average 22 at the start and 57 at the end (a shared machine). The stage took 5m37s
+wall and 2 233 CPU-s (every child: `botopink`, `erl`, `node`). A counter added for the run (not
+kept) timed each module's check (`comptime.compile`'s per-module body, transform included) and emit
+(each backend's per-module loop) with the thread's CPU clock, and split them by whether the module
+is one of the cell's own (`src/` + `test/`) or of its closure (std, bundled packages, dependencies).
+"Processes" counts every `botopink` the cell spawned (rakun's and onze-cli's build tests spawn
+`botopink build` per fixture); a row sums both targets.
+
+| Cell | `botopink` processes | closure check + emit, CPU-s | own check + emit, CPU-s | closure, wall-s | `botopink` process CPU-s |
+|---|---|---|---|---|---|
+| onze-cli | 26 | 34.3 | 2.7 | 43.7 | 59.9 |
+| onze-server | 2 | 2.8 | 0.0 | 3.3 | 9.8 |
+| rakun members (36 rows) | 189 | 58.0 | 4.1 | 103.9 | 97.0 |
+| — rakun-scheduling | 29 | 10.4 | 0.5 | 22.6 | 17.4 |
+| — rakun-data | 25 | 8.5 | 0.6 | 20.0 | 14.2 |
+| — rakun-messaging | 14 | 5.1 | 0.3 | 11.8 | 8.4 |
+| jhonstart | 2 | 0.2 | 0.2 | 0.2 | 0.6 |
+| jhonstart-emilia | 2 | 2.0 | 0.1 | 2.5 | 8.7 |
+| emilia | 2 | 0.0 | 1.7 | 0.0 | 8.3 |
+| an `emilia-*` example (each of 15) | 2 | 1.7–2.0 | 0.1 | 2.0–2.5 | 7.9–8.6 |
+| validation | 2 | 0.1 | 0.3 | 0.1 | 0.6 |
+| **stage total** (313 processes) | | **144.2** (check 99.2, emit 45.0) | **12.3** | | **378.3** |
+
+348 distinct closure modules; compiling each once per target costs ~4 CPU-s, so the **repeated
+closure is ~140 CPU-s, 6.3 % of the stage's 2 233 CPU-s** (and 37 % of the compiler's own 378
+CPU-s). Its wall share is smaller still: the cells run side by side, and onze-cli (the stage's long
+pole) spends 43.7 s of its wall in the closure. The rest of the stage is the programs and the OTP
+compile (`erl`, `node`, `precompileErlang`), which a closure cache does not touch.
 
 ### Step 2 — every store under `.botopinkbuild/cache/`
 
@@ -79,11 +120,35 @@ rm -rf repository/rakun/.botopinkbuild               # every cache of rakun gone
 ```
 
 **Acceptance:**
-- [ ] `git grep -n 'XDG_CACHE_HOME\|\.cache/botopink' modules` names only the `bpmp` store
-- [ ] `cli_contract.sh`: a build writes its verdicts under `<root>/.botopinkbuild/cache/erlcheck/`;
+- [ ] `git grep -n 'XDG_CACHE_HOME\|\.cache/botopink' modules` names only the `bpmp` store — it
+      also names the language server's `~/.cache/botopink-lsp/{template,std}` (`server.zig`: the
+      editor's template-eval scratch and materialized std, outside this front's ownership) and
+      `cli_contract.sh`'s rows that point `HOME`/`XDG_CACHE_HOME` at a scratch directory to assert
+      nothing is written there; no compiler or runner store reads either variable
+- [x] `cli_contract.sh`: a build writes its verdicts under `<root>/.botopinkbuild/cache/erlcheck/`;
       after `rm -rf <root>/.botopinkbuild` the next build compiles every module again (no hit)
-- [ ] `botopink clean` leaves no `.botopinkbuild/` and no file under `$HOME/.cache/botopink`
-- [ ] `gate.sh --cold` prints the cache roots it deleted
+- [x] `botopink clean` leaves no `.botopinkbuild/` and no file under `$HOME/.cache/botopink`
+- [x] `gate.sh --cold` prints the cache roots it deleted
+
+**Built.** `libs.cacheRoot` / `libs.cacheDir` (`compiler-cli/src/cli/libs.zig`) answer
+`<root>/.botopinkbuild/cache/<store>`, `<root>` the enclosing workspace's directory
+(`ProjectConfig.workspace`) else the project's; `libs.userCacheDir` is gone. `build.zig`'s
+`checkErlang` reads `cache/erlcheck`, `test_cmd.zig`'s `beamCacheDir` `cache/beam`. The runner's
+`schedule.zig` keeps one `cache/lib-test/durations.tsv` per cache root (`schedule.cacheRoot`: the
+cell's library's workspace root, else the library), reads them all before ordering and writes each
+root's own cells back. `botopink clean` deletes `out/` and `.botopinkbuild/` and, in a workspace
+member, the workspace root's `.botopinkbuild/cache/` (printed as its own `Removed` line).
+`gate.sh --cold` deletes every `.botopinkbuild/cache/` under the compiler checkout and each sibling
+`repository/*`, printing `gate: --cold deleted <dir>` for each. `cli_contract.sh` runs the
+verdict-cache rows with `HOME`/`XDG_CACHE_HOME` on a scratch directory and adds the workspace row
+(a member's verdicts under the workspace root, none under the member; `clean` in the member deletes
+both). `test-libs --lib validation|rakun|onze-cli` with an empty cache and warm: green, same counts
+(2 / 1 + 1 audit / 2 passed); each root then holds `cache/beam` and `cache/lib-test`.
+
+A fixture project a library's tests build under `BOTOPINK_TEST_TMPDIR` (rakun's and onze-cli's
+`botopink build` per fixture) is a project of its own outside any workspace, so its cache root is
+the fixture directory: the verdict cache no longer carries across those builds, which the
+machine-wide store did.
 
 ### Step 3 — the dependency closure, typed once
 
