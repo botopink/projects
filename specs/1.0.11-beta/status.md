@@ -1,11 +1,11 @@
 # Status — 1.0.11-beta
 
-**Updated:** 2026-10-02 · **Progress:** ~0 % landed (0 of 79 fronts done — no front of this
-milestone is on every remote `feat` under a green gate; 15 are in analysis and count for their
+**Updated:** 2026-10-02 · **Progress:** ~0 % landed (0 of 80 fronts done — no front of this
+milestone is on every remote `feat` under a green gate; 16 are in analysis and count for their
 ticked steps; the milestone opened at 1.0.10-beta's close — [`closure.md`](../1.0.10-beta/closure.md))
 
-Count: `00-gate` 11 · `01-compiler` 17 · `02-std-and-packaging` 2 · `03-bundled-libs` 7 · `04-rakun` 20 ·
-`05-jhonstart` 3 · `06-emilia` 2 · `07-onze` 5 · `08-bpp` 11 — 78. A front in analysis counts for its ticked steps.
+Count: `00-gate` 11 · `01-compiler` 18 · `02-std-and-packaging` 2 · `03-bundled-libs` 7 · `04-rakun` 20 ·
+`05-jhonstart` 3 · `06-emilia` 2 · `07-onze` 5 · `08-bpp` 11 — 79. A front in analysis counts for its ticked steps.
 Order inside each list follows [`overview.md`](./overview.md) § Order (most blocking first); for
 tracks 03–08 the waves are [`fronts.md`](./fronts.md) § Execution order of tracks 03–08.
 
@@ -43,6 +43,7 @@ the grep stage before any test.
 - [ ] `00-gate/99-gate-rakun` — on the remote `feat` under the green cold gate of `9395ea30`; waits only on the first GitHub run of its repository's workflow
 - [ ] `00-gate/100-gate-onze` — on the remote `feat` under the green cold gate of `9395ea30`; waits only on the first GitHub run of its repository's workflow
 - [ ] `00-gate/101-gate-jhonstart` · `108-gate-erika` · `109-gate-emilia` — on the remote `feat` with the unified hook and workflow (OTP and Node on every row, linux on ubuntu-24.04, no windows row); each hook green end to end; waits on the first GitHub run
+- [ ] `01-compiler/130-decorator-outputs` — steps 1–4 built (the four places, 52 cells, `test-language` 1567/0), step 5 begun (std `#[mocks.mock]`, validation `#[validated]`, rakun's config check); jhonstart's and rakun's registrations wait on the migration and on open question 1 · worktree `.tasks/130-decorator-outputs`
 - [ ] `01-compiler/01-checker` — the import fix is committed and in the integration branch (decision 170: an import that names its module is never ambiguous; aliases); the front's other steps are open
 - [ ] `02-std-and-packaging/97-std-dedupe` — high · the `fs.walk` fix, step 1 and step 2 committed on its branch · steps 3–5 and 8 in progress · steps 3 and 5 land after the checker's import fix (decision 170)
 - [ ] `03-bundled-libs/102-routing-conventions` — steps 1–2 (the package), `kindLetter` and the wrap order of `fileKinds()` (decisions 171–173) committed on `front/102-routing-conventions` · step 3 (the consumers) goes first when the gate is green and 97 has landed (decision 188)
