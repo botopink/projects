@@ -8,11 +8,11 @@ FC-4 — `tests/language` reformatted by the gate and in `TREES`) · `25-gate-pe
 step 1's one-line flip at `run.sh:155` is a named carve-out) · the area fronts, whose cells land in
 their commits under the owner rule below.
 **Owns:** `repository/botopink-lang/tests/language/**` — the cells, their `.out` / `.expect` /
-`.exit` / `.targets` files, `expected-failures.txt` (delete-only, shared with every front), `AGENTS.md` ·
-by carve-out from 25: the `all)` line of `tests/language/run.sh` (`:155`)
+`.exit` / `.targets` files, `AGENTS.md`, and `run.sh`'s report (the per-target line) · by carve-out
+from 25: the `all)` line of `tests/language/run.sh` (landed by 111)
 **Does not touch:** any compiler source, `libs/std/**`, `examples/**`, any snapshot directory,
-`build.zig`, `scripts/**`, the rest of `run.sh` (25). A cell that fails is recorded as an expected
-failure naming the front that owns the fix, **never** fixed here.
+`build.zig`, `scripts/**`, the rest of `run.sh` (25). A cell that fails is red until the front that
+owns the fix lands it — **never** fixed here, never tolerated (the suite keeps no list).
 **Does not touch until 00-gate lands:** every existing cell's text (FC-4's reformat lands first; a
 cell added by this front before it is formatted at birth).
 
@@ -29,17 +29,21 @@ cell added by this front before it is formatted at birth).
 
 ## The suite today
 
-| Kind | What a cell is | Runs on |
-|---|---|---|
-| `test/` (64) | `test "…" { assert … }` blocks | commonJS, erlang (`botopink test` refuses beam and wasm) |
-| `run/` (370) | a whole program; stdout (and, with a `.exit`, the exit status) is the assertion | commonJS, erlang, wasm; beam with `--target beam` |
-| `reject/` (346) | must not compile; `.expect` names the code and the location | once (`check` is target-independent) |
-| `modules/` (58) | a whole project with its own `botopink.json`, a local dependency included | commonJS, erlang, wasm; beam with `--target beam` |
+| Kind | What a cell is | Runs on | `ls … \| wc -l` |
+|---|---|---|---|
+| `test/` | `test "…" { assert … }` blocks | commonJS, erlang (`botopink test` refuses beam and wasm) | 64 |
+| `run/` | a whole program; stdout (and, with a `.exit`, the exit status) is the assertion | commonJS, erlang, wasm, beam | 171 (17 `.targets`, 25 `.<target>.expect`, 2 `.exit`) |
+| `reject/` | must not compile; `.expect` names the code and the location | once (`check` is target-independent) | 174 |
+| `modules/` | a whole project with its own `botopink.json`, a local dependency included | commonJS, erlang, wasm, beam (the 4 test-kind projects: commonJS, erlang) | 68 (33 `<target>.expect`, 1 `"targets"`) |
 
-Counts by `ls | wc -l` at the open. `run.sh --target all` is commonJS, erlang and wasm
-(`run.sh:155`); `--target beam` is 382 / 2 / 0. `expected-failures.txt` has three live lines (two
-beam, one wasm — 00-gate's), each naming its 1.0.10 sub-front; the owner-row spellings the file
-documents (`01 step 4`, `C-02`) resolve against the 1.0.10 record, which is frozen.
+`run.sh --target all` is the four targets; `expected-failures.txt` is deleted (111, decision 154).
+`zig build test-language` at this front's tip:
+
+```
+narrowings: 30 exclusions audited — each stands on a host binding the target does not have
+by target: commonJS 449/449 · erlang 452/452 · wasm 217/217 · beam 232/232 · * 174/174
+language tests: 1524 passed, 0 failed
+```
 
 ## Steps
 
@@ -51,9 +55,9 @@ After EF-1/EF-2: `all) targets=(commonJS erlang wasm beam)` (`run.sh:155`, 25's 
 before stays green — verified by running, not by reading.
 
 **Acceptance:**
-- [ ] `run.sh --target all` runs four targets; `zig build test-language` reads `0 failed` with no beam line
-- [ ] `--cold` verified on a runner with the pre-existing tool set; `tests/language/AGENTS.md`'s target table updated
-- [ ] 03's note "a front that adds a `run/` cell runs `--target beam` once by hand" deleted from the READMEs that carry it
+- [x] `run.sh --target all` runs four targets; `zig build test-language` reads `0 failed` with no beam line — `all) targets=(commonJS erlang wasm beam)` (111); `beam 232/232`, `1524 passed, 0 failed`
+- [ ] `--cold` verified on a runner with the pre-existing tool set; `tests/language/AGENTS.md`'s target table updated — the suite's half holds: `env -i HOME=… LANG=C.UTF-8 PATH=/usr/bin:/bin:<wasmtime>` runs the four targets green (`1524 passed, 0 failed`; node, erl, erlc, wasmtime — no zig, nothing new), and § The targets says so. Open: `scripts/gate.sh --cold` itself is the landing run's, not this front's; and with no `LANG` (or `LANG=C`) `run/string_split_empty_separator` is red on erlang and beam (`erl` writes `é` as latin-1 `0xE9`) — a backend row, § Open questions
+- [x] 03's note "a front that adds a `run/` cell runs `--target beam` once by hand" deleted from the READMEs that carry it — no README carries it word for word; the two that still said beam is outside `--target all` (`03-beam` § Current state and § Does not touch, `01-compiler/README.md` § Not handed) say what holds
 
 ### Step 2 — the owner rule for the new cells
 
@@ -77,8 +81,8 @@ that each exists and names no `expected-failures.txt` line:
 | `run/try_in_for_writing_var` | this front | T10 — no longer reproduces; the cell pins it (`var i = 0; for (xs) { x -> try f(x); i = i + 1; }` prints the count on four targets) |
 
 **Acceptance:**
-- [ ] every cell above exists at the close, passes on every target it declares, and was red on the parent binary (the front's commit message says so)
-- [ ] `run/try_in_for_writing_var` added by this front, green on four targets
+- [ ] every cell above exists at the close, passes on every target it declares, and was red on the parent binary (the front's commit message says so) — the rule is `tests/language/AGENTS.md` § Who adds a cell; at this front's tip none of the ten area-front cells exists yet (audited by path)
+- [x] `run/try_in_for_writing_var` added by this front, green on four targets — a pin: `4 passed, 0 failed` on the parent binary and at the tip (count `3`/`0`, a `throw` → `99`, and the same through a `val v = try …` sum)
 
 ### Step 3 — `AGENTS.md` matches the suite
 
@@ -88,8 +92,8 @@ bullet of the 1.0.10 README is not carried (the cell writes `1...9`). The covera
 re-derived; the classification line quotes the runner's tally.
 
 **Acceptance:**
-- [ ] `AGENTS.md` names no shape that parses; the counts equal `ls | wc -l` per directory with the command
-- [ ] the owner-row rule names this milestone's fronts (`specs/1.0.11-beta/01-compiler/<front>/`) beside the frozen 1.0.10 spellings
+- [x] `AGENTS.md` names no shape that parses; the counts equal `ls | wc -l` per directory with the command — every row re-measured (`1..9` is `pattern-range-exclusive` at the `..`, now `reject/pattern_range_exclusive`; `42.toString()` prints `42` on four, now `run/method_on_number_literal`); 64 / 171 / 174 / 68 with the commands in § Status
+- [x] the owner-row rule names this milestone's fronts (`specs/1.0.11-beta/01-compiler/<front>/`) beside the frozen 1.0.10 spellings — § Who adds a cell
 
 ### Step 4 — C-06 / C-07 bookkeeping
 
@@ -98,21 +102,34 @@ confirms the boxes and closes them); every cell naming §2, §4, §5, §6 has a 
 1's `all`.
 
 **Acceptance:**
-- [ ] the two 1.0.10 boxes closed with the run that proves them (`run.sh --target all` after step 1)
+- [ ] the two 1.0.10 boxes closed with the run that proves them (`run.sh --target all` after step 1) — the suite's halves hold: C-06's six wasm RUN LOGs were compared by running (C-16's record) and `run/case_range_value` passes on four; C-07's 18 `run/` cells naming §2/§4/§5/§6 are in beam's `232/232` (none narrowed, none refused). Open: C-06's stale `KNOWN` note (`src/codegen/tests/control_flow.zig:528-533` says `[20]`, the RUN LOG reads `20`) is 02's; C-07's 21 `test/` cells naming those sections cannot reach beam (`botopink test` refuses it) — § Open questions
 
 ## Gate
 
-- [ ] `zig build test-language` green on every target the suite declares, from the meta worktree
-- [ ] `tests/language/AGENTS.md` updated in the same commit as any cell or owner-row change
-- [ ] Commit on `fix/12-language-tests`; no push, no merge
+- [x] `zig build test-language` green on every target the suite declares, from the meta worktree — `1524 passed, 0 failed`
+- [x] `tests/language/AGENTS.md` updated in the same commit as any cell or owner-row change
+- [x] Commit on `front/12-language-tests`; no push, no merge
 
 ## Notes
 
 - **Tests describe the language, not today's compiler.** A scenario the compiler gets wrong stays
-  as written and is listed in `expected-failures.txt` — and in this milestone the list must be
-  empty at the close: a cell that cannot pass names the front that owes it, and that front's step
-  is the milestone's.
+  as written and is red: the suite keeps no list, so a cell that cannot pass lands with the fix of
+  the front that owes it, or a decision deletes it.
 - `test/case_arrow_arms.bp` is the transition guard beside `test/case_arms.bp`: both arm forms
   parse, and the suite pins both; C-14's answer (09 item 2) is how a removal would be noticed.
 - A cell that needs a git dependency stays out of scope — `zig build test-libs`' job; this suite
   must not need the network.
+
+## Open questions
+
+- **`botopink test` on beam, for C-07's `test/` half.** Measured: 21 `test/` cells name §2/§4/§5/§6
+  (`case_*`, `tuple_*`, `type_identity*`, `type_suffix`, `contextual_words`, `yield_step_next`) and
+  run on commonJS and erlang only. Options: (a) a `run/` twin per cell, its `.out` the assertions'
+  answers — 21 new cells here; (b) `botopink test --target beam` (26's CLI, 03's runner) so the cells
+  reach beam as written; (c) C-07's box reads "every `run/` and `modules/` cell". Recommendation:
+  (b) — one source per scenario, no twin to drift; (c) would narrow a box to fit the tool.
+- **A program's stdout depends on the host locale on erlang and beam.** Measured: under `LANG=C`
+  `@print` of `é` writes `0xE9`; commonJS and wasm write UTF-8. Options: (a) the emitted program sets
+  `standard_io` to `{encoding, unicode}` before `main` (02 / 03); (b) `botopink run` passes it to
+  `erl` (26); (c) the runner pins `LANG`. Recommendation: (a) — the built program is what ships;
+  (c) hides the defect and is refused (decision 67).
