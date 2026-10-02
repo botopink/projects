@@ -149,6 +149,20 @@ A fixture project a library's tests build under `BOTOPINK_TEST_TMPDIR` (rakun's 
 the fixture directory: the verdict cache no longer carries across those builds, which the
 machine-wide store did.
 
+### Step 2b — the language server's cache (decision 233)
+
+The language server keeps state in `~/.cache/botopink-lsp`. It moves to
+`<root>/.botopinkbuild/cache/lsp/`, `<root>` the workspace root of the opened project (else the
+project root), on the same `cacheRoot` step 2 built; a file opened outside any project gets no cache
+(nothing written to `$HOME`).
+
+**Acceptance:**
+- [ ] `git grep -n 'XDG_CACHE_HOME\|\.cache/botopink' modules` names only the `bpmp` store (the box
+      above closes with this step)
+- [ ] the language server's tests: the cache is written under the project's `.botopinkbuild/cache/lsp/`;
+      after `rm -rf .botopinkbuild` it starts with no stale state; a file outside a project writes nothing
+- [ ] `modules/language-server/AGENTS.md` updated in the same commit
+
 ### Step 3 — dropped (decision 232)
 
 The typed dependency-closure cache is not built. Step 1 measured the repeated closure at ~140 of
