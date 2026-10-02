@@ -54,35 +54,43 @@ that owns one of those members and runs after they have landed (decision 188).
 ### Step 1 — `cookie` (package half)
 
 `parse(header) -> Array<#(string, string)>` (first-wins, RFC 6265 § 5.4 — decision 181), `get(header, name) -> ?string`,
-`serialize(name, value, CookieAttrs) -> string`. Percent-decoding as `request_context` does today;
-a control character in a value is refused.
+`serialize(name, value, CookieAttributes) -> string` (`maxAge: ?i32`, `null` omits `Max-Age`),
+`formatHeader(pairs)` (a request `Cookie` header). Percent-decoding as `request_context` does
+today; a value outside cookie-octet, a malformed escape or one decoding to a control character
+is refused, and a refused first occurrence still claims its name (decision 181). The record is
+`CookieAttributes`, not `CookieAttrs`: rakun exports `CookieAttrs` (decision 163).
 
 **Acceptance:**
-- [ ] `libs/http/test/cookie_test.bp`: tossing (`a=1; a=2` → `1`), an undecodable value refused,
+- [x] `libs/http/test/cookie_test.bp`: tossing (`a=1; a=2` → `1`), an undecodable value refused,
       `serialize` byte-identical to today's `sessionCookieHeader` for the same attributes
 
 ### Step 2 — `accept` (package half)
 
 `qValue(text) -> i32` per mille (decision 182: strict — at most three decimals, digits only,
-anything malformed reads as 0), `parseAccept`, `mediaQuality`, `negotiateMedia`,
-`negotiateToken` (encodings), `parseAcceptLanguage`.
+anything malformed reads as 0), `parseAccept -> Array<MediaRange>`, `mediaQuality`,
+`negotiateMedia`, `tokenQuality` / `negotiateToken` (encodings, `identity` acceptable unless
+excluded), `parseAcceptLanguage -> Array<LanguageRange>`.
 
 **Acceptance:**
-- [ ] known-answer tests over the RFC 9110 § 12 examples on both rows
+- [x] known-answer tests over the RFC 9110 § 12 examples on both rows
 
-### Step 3 — `mime`, `status`, `date`, `range`, `cacheControl` (package half)
+### Step 3 — `mime`, `status`, `date`, `byteRange`, `cacheControl` (package half)
 
-`mime.contentTypeOf(pathOrExt)`, `mime.isText`; `status.reasonPhrase(code)`;
-`date.formatHttpDate(epochMillis)` and `parseHttpDate` (pure, over std `clock.toCivil` and a
-days-from-civil function — no bitwise); `range.parseRange(header, size)`; a `cacheControl` builder.
+`mime.contentTypeOf(pathOrExt)`, `mime.extensionOf`, `mime.isText`; `status.reasonPhrase(code)`
+(`""` for an unregistered code); `date.formatHttpDate(epochMillis: i64)` and
+`parseHttpDate(text, nowMillis: i64) -> @Result<i64, string>` (pure, over std `clock.toCivil` and
+a days-from-civil function — no bitwise; `nowMillis` only places an RFC 850 two-digit year);
+`byteRange.parseRange(header, size: i64) -> ByteRange(status, first, last)` and `contentRange`
+(the module is `byteRange`: erika exports `range`, decision 163); a `cacheControl` builder
+(`directives()`, `with*`, `render`, `staticFile`).
 
 **Acceptance:**
-- [ ] `formatHttpDate(0)` is `Thu, 01 Jan 1970 00:00:00 GMT` on both rows; `parseHttpDate` reads
+- [x] `formatHttpDate(0)` is `Thu, 01 Jan 1970 00:00:00 GMT` on both rows; `parseHttpDate` reads
       the three RFC 9110 § 5.6.7 forms
 
 ### Step 4 — registration (package half)
 
-- [ ] `build.zig` lists `http` after `routing`; `libs/AGENTS.md` row; `scripts/format-check.sh` tree
+- [x] `build.zig` lists `http` after `routing`; `libs/AGENTS.md` row; `scripts/format-check.sh` tree
 
 ### Step 5 — the consumer sweep
 
@@ -100,9 +108,9 @@ One commit per member, after the front that owns the member has landed.
 
 ## Gate
 
-- [ ] `zig build test` cold, green; `zig build test-libs` green, no new ledger line
-- [ ] `libs/http/AGENTS.md` written; every touched `AGENTS.md` updated in the same commit
-- [ ] Commit on `front/104-http`
+- [ ] `zig build test` cold, green (package half: green); `zig build test-libs` green, no new ledger line (package half: the `http` cells green)
+- [x] `libs/http/AGENTS.md` written; every touched `AGENTS.md` updated in the same commit
+- [x] Commit on `front/104-http` (package half)
 
 ## Blast radius
 
