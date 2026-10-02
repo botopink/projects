@@ -5,7 +5,7 @@
 decisions 146–149). Every `lg2-*` row of [`language-gaps.md`](./language-gaps.md) is a
 feature the language does not have; the recommendation is always the most restrictive reading
 (decision 67) — the feature stays out and the row's nearest form is the design — and no front opens
-on one until it is answered. **The next free decision number is 228** ([`decisions-taken.md`](./decisions-taken.md)).
+on one until it is answered. **The next free decision number is 229** ([`decisions-taken.md`](./decisions-taken.md)).
 
 Beside the open questions, every track carries **implementation choices awaiting confirmation** —
 a choice a front made, recommended and implemented, that the maintainer confirms or reverses. The
@@ -32,7 +32,7 @@ letter ids are never renumbered; their full text lives where they were raised:
 
 Two items the milestone's own cut raised are written here rather than in a track, because they
 cross tracks (`gate-a…j`, the zero-tolerance policy of `00-gate`, were answered: decisions 153–162),
-and three that the audit of the `00-gate` fronts on the integrated `feat` raised (`gate-k…m`, answered: decisions 225–227):
+and three that the audit of the `00-gate` fronts on the integrated `feat` raised (`gate-k…n`, answered: decisions 225–228):
 
 ### std-e · Test lifecycle hooks
 

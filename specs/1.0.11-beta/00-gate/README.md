@@ -97,13 +97,13 @@ diagnostic file attribution); 99 applies the library workaround (import `CacheLi
 | Document | Holds |
 |---|---|
 | [`carried.md`](./carried.md) | every report-A chunk (C1–C9) and every other track's *Handed to 00-gate* item, mapped to the front that owns it |
-| `NN-gate-<name>/README.md` | the twelve fronts, template shape |
+| `NN-gate-<name>/README.md` | the thirteen fronts, template shape |
 
 ## The fronts
 
 Global front numbers are identifiers and are never reassigned: 97 and 98 (std dedupe, packaging
 tail) and 102–107 (bundled libraries) are taken by other tracks; this track uses **99, 100, 101,
-108–115 and 131**.
+108–115, 131 and 132**.
 
 | Front | Priority | Owns (repository · files) | Parallel group |
 |---|---|---|---|
@@ -119,6 +119,7 @@ tail) and 102–107 (bundled libraries) are taken by other tracks; this track us
 | [`114-gate-docs-and-ci/`](./114-gate-docs-and-ci/README.md) | high | `scripts/check-docs.sh` (a `reject` fence kind), the 9 marker lines of `docs.md`, `.github/workflows/test.yml` of botopink-lang (the windows row), the meta repository's `.github/workflows/` (the `hook-integrity` workflow — measured absent at the open) | D — any time |
 | [`115-gate-perf/`](./115-gate-perf/README.md) | high | `scripts/gate.sh`, `scripts/test-libs.sh`, `tests/language/run.sh` (after 111), `modules/compiler-cli/src/cli/libs.zig` (the dependency-closure cache), `modules/lib-test-runner/**` (after 113), the meta `scripts/` | E — after every other front |
 | [`131-gate-build-cache/`](./131-gate-build-cache/README.md) | high | `compiler-cli/src/cli/{libs,build,test_cmd,clean}.zig` (every build cache under `.botopinkbuild/cache/`, `userCacheDir` deleted) · the dependency-closure cache and `compiler-core`'s pre-typed package entry · `lib-test-runner/src/schedule.zig` · `scripts/gate.sh` (`--cold`) — decision 225 | E |
+| [`132-gate-otp-pin/`](./132-gate-otp-pin/README.md) | high | the compiler's supported-OTP constant and its check in `compiler-cli/src/cli/{build,run,test_cmd}.zig`, `botopink --version`, the manifest's `"otp"` (`modules/manifest/src/root.zig`), `scripts/gate.sh`, the seven workflows' OTP install — decision 228 | E |
 
 ## Order
 
@@ -137,6 +138,7 @@ tail) and 102–107 (bundled libraries) are taken by other tracks; this track us
 
 115-gate-perf                           (group E: last — it optimises a green gate)
      └──► 131-gate-build-cache          (after 115: moves its stores, adds the closure cache)
+132-gate-otp-pin                        (any time after the gate is green: the OTP check)
 ```
 
 Why group A is first: nothing later can be *verified* before it. `113` cannot state the number of
