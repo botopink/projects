@@ -6,7 +6,7 @@ continues from [1.0.10-beta's record](../1.0.10-beta/decisions-taken.md), which 
 other decisions and are used, not free) — a number is never reused or renumbered across
 milestones. Questions are raised in [`decisions-pending.md`](./decisions-pending.md) with a lettered
 id (`07-a`, `03r-y`, `lg2-a` …) and move here with the next free number when answered. **The next
-free number is 233.**
+free number is 234.**
 
 **Inherited by reference, not copied.** The earlier records stay where they are; these standing
 principles govern this milestone and are cited by number throughout:
@@ -133,3 +133,4 @@ maintainer can reverse any of them:
 | 230 | gate-o — 110's last box, `libs/std` building on wasm | **(a) it leaves 110** (the maintainer): groups 1 and 2 (the `@External.Wasm` template reader, the WASI imports) are `01-compiler/05-wasm` step 5; group 3 (`io/http`, `async`, `testing/mocks`, `testing/asserts`) is `02-std-and-packaging` § From 00-gate. 110 closes: a std module wasm cannot build is a located refusal, which is what the gate guarantees; making it build is feature work. |
 | 231 | gate-p — `test-web` in the gate | **(a) it is a gate stage** (the maintainer): `scripts/gate.sh` runs `zig build test-web` side by side with stages 7–11 (≈62 s wall, ≈51 CPU-s — inside the critical path of `test-language`); the `test.yml` comment "`test-web` is not a gate" goes. A CI step the gate does not run is a red the gate cannot see. |
 | 232 | gate-q — 131's step 3, the typed dependency-closure cache | **(a) dropped; 131 closes on step 2** (the maintainer). Amends decision 225: every build cache stays under `.botopinkbuild/cache/` and the package under test is never served from one, but no closure cache is built — measured, the repeated closure is ~140 of test-libs' 2 233 CPU-s (6.3 %), a dependency's emitted bytes depend on its importers (a package-keyed entry would serve different bytes than an uncached build), and caching a typed package needs a serializer for the AST and the type graph. It returns only if a measurement shows it pays. |
+| 233 | gate-r — the language server's cache | **(a) under `.botopinkbuild/cache/lsp/` of the opened project** (the maintainer): decision 225's rule holds for every cache the toolchain writes, the editor's included — deleting `.botopinkbuild/` leaves nothing behind in `$HOME`. `~/.cache/botopink-lsp` goes. Front `00-gate/131-gate-build-cache` step 2b. |
