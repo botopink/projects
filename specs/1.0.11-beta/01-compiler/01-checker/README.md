@@ -278,11 +278,38 @@ carries the library workaround (import `CacheLife` into rakun-metrics) until thi
       `reject/generic_index_answers_optional`, `run/generic_index_optional_return`; a declared type
       parameter is still a flexible variable inside its body (`fn f<T>(x: T) -> T { return 1; }`
       checks)
+- [x] decision 205's reach — every block and `case` arm of the function (see step 5)
+
+### Step 16 — an inline parameter type (decision 207)
+
+`fn link(props: type(href: string, label: string, external: bool = false))` — the field grammar of
+`type Name(…)`, no name, a top-level `fn`'s parameter only. The call builds it from its own labelled
+arguments (`link(href: "/a", label: "A")`), each naming a field; a value of the type is passed as the
+parameter. Diagnostics name it by its owner (``the props of `link` ``).
+
+- [x] `run/inline_param_type` on four targets
+- [x] refused as a return, a field and a `val` annotation (`inline-type-outside-parameter`) —
+      `reject/inline_type_in_{return,field,val_annotation}`
+- [x] refused on a method's parameter, twice on one fn, with a field named like another parameter —
+      `reject/inline_type_{on_method_param,twice_on_one_fn,field_named_like_param}`
+- [x] a missing field and an unknown field named by the owner —
+      `reject/inline_type_{missing_field,unknown_field}`
+- [x] a call from another module writing the fields is refused (the type is not exported) —
+      `modules/inline_type_across_modules`; building it across modules is not built (it needs an
+      import of the synthesised record, the import resolver's — front 129's file)
+
+### Decisions 208 and 209
+
+- [x] `Ok(…)` / `Error(…)` are never constructors — `reject/result_{ok,error}_constructor`; the
+      `docs.md` passage asking for an explicit `Ok(…)` is gone
+- [x] an integer literal under an expected `f64` is that `f64` everywhere but `==` / `!=` (decision
+      B2) — `run/integer_literal_fits_f64`; an `i32` value never widens —
+      `reject/i32_value_never_widens`
 
 ## Gate
 
 - [x] `zig build test` from a **cold** runtime cache, green, in this front's worktree
-- [x] `tests/language/run.sh --target all` and `--target beam` green with the new cells; every cell above **proved able to fail** by running it on the parent binary — 1 617 / 0 at the front's tip; each new cell was run on the parent binary (the ones that pass there are named as pins)
+- [x] `tests/language/run.sh --target all` and `--target beam` green with the new cells; every cell above **proved able to fail** by running it on the parent binary — 1 640 / 0 at the front's tip; each new cell was run on the parent binary (the ones that pass there are named as pins)
 - [x] every re-recorded `snapshots/comptime/**` file read for expected/found orientation; the four `snapshots/codegen/**` directories byte-identical except for a fixture a step newly refuses, which is reported to its backend front, never deleted here — moved only where a step's fixture changed source (`throw inside nested fn …`, `test body ---- try on an Error …`, `narrow ---- case enum area with print`, `access variant-specific field after matching`), each by its own source line
 - [ ] `libs/std` and every `examples/` project `botopink check` clean; `zig build test-libs` at baseline — a library that reds gets a migration plan in the commit — `botopink check` of every package of the seven repositories identical to the parent binary; `libs/std` tests 442 / 0 on commonJS; `test-libs` is the coordinator's
 - [x] `AGENTS.md` of `src/comptime/` and `src/parser/` in the same commit as each step
