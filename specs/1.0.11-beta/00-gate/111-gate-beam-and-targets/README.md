@@ -45,7 +45,7 @@ third was `run/array_spread_literal`, red on beam with no line).
 | beam in `--target all` | landed — step 2 |
 | a `modules/` cell's manifest `targets` honoured | landed — step 3 |
 | every narrowing audited on every run; the runner proves its own audit | landed — step 5 |
-| `expected-failures.txt` and its reader deleted | **open** — step 4, one `wasm |` line left, 110's, on `ck-host` |
+| `expected-failures.txt` and its reader deleted | landed — step 4 |
 
 ## Mechanism
 
@@ -115,7 +115,7 @@ and the field means what `.targets` means.
 
 **Acceptance:**
 - [x] a `modules/` cell with `"targets"` and a host-only binding runs on its declared targets alone: `modules/manifest_targets_host_binding` (`["erlang", "beam"]`, `#[@External.Erlang("erlang", "abs")]`) → `2 passed`, `2 exclusions audited`; the self-test's `modules/manifest_backed` asserts the same on every whole run. A cell without `"targets"` runs on four
-- [x] `grep -l '"targets"' tests/language/modules/*/botopink.json` → `manifest_targets_host_binding`, the one this step's audit kept, and three cells added since — `erlang_host_sidecar_in_a_test` (`["erlang"]`), `import_bundled_package_beside_own_module` and `shorthand_import_beside_bundled_package` (`["commonJS", "erlang", "beam"]`), whose rows step 5 still reads
+- [x] `grep -l '"targets"' tests/language/modules/*/botopink.json` → `manifest_targets_host_binding`, the one this step's audit kept, and three cells added since — `erlang_host_sidecar_in_a_test` (`["erlang", "beam"]`), `import_bundled_package_beside_own_module` and `shorthand_import_beside_bundled_package` (`["commonJS", "erlang", "beam"]`), each audited in step 5's table
 
 ### Step 4 — `expected-failures.txt` is deleted (gate-b, decision 154) — done
 
@@ -138,41 +138,45 @@ language cell is red.
 ### Step 5 — the 18 `.targets` and the modules/ manifests audited (gate-d)
 
 Each narrowing, each excluded target, and what `botopink build --target <t>` answers in the cell
-(first `error` line; every one exits 1):
+(the first `error` line and where it points; every one exits 1 — measured with the
+`ReleaseSafe` compiler at `feat` 3e1fd6ea, one build per exclusion):
 
 | Cell | Runs on | Excluded | The refusal |
 |---|---|---|---|
-| `run/async_block_all_of` | commonJS erlang beam | wasm | ``std-unsupported-on-target: std/async has no `@external` for target 'wasm' (for delay, race, raceOf)`` |
-| `run/beam_memory_ets` | commonJS erlang beam | wasm | the same `std/async` line |
-| `run/beam_memory_persistent_term` | commonJS erlang beam | wasm | the same `std/async` line |
-| `run/beam_memory_process_dict` | erlang beam | wasm | the same `std/async` line |
+| `run/async_block_all_of` | commonJS erlang beam | wasm | `` `gateOpen` has no `#[@External.<Target>(…)]` for the wasm backend `` at `std/async.bp:120:5` (then ``std-unsupported-on-target: std/async has no `@external` for target 'wasm' (for delay, race, raceOf)``) |
+| `run/beam_memory_ets` | commonJS erlang beam | wasm | the same `gateOpen` line |
+| `run/beam_memory_persistent_term` | commonJS erlang beam | wasm | the same `gateOpen` line |
+| `run/beam_memory_process_dict` | erlang beam | wasm | the same `gateOpen` line |
 | | | commonJS | none — exit 0; the cell declares `#[@BeamMemory.ProcessDict]` (§ Notes, decision 43) |
-| `run/behavior_method_host_value` | commonJS erlang beam | wasm | `` `makeGreeter` has no `#[@External.<Target>(…)]` for the wasm backend `` |
-| `run/external_erlang_host_module_missing` | erlang beam (both by `.expect`) | commonJS | `` `total` has no `#[@External.<Target>(…)]` for the node backend `` |
-| | | wasm | `` `total` has no `#[@External.<Target>(…)]` for the wasm backend `` |
-| `run/external_host_record` | commonJS erlang beam | wasm | `` `hostPoint` has no `#[@External.<Target>(…)]` for the wasm backend `` |
-| `run/external_method_on_host_record` | commonJS erlang beam | wasm | `` `Pair.at` has no `#[@External.<Target>(…)]` for the wasm backend `` |
-| `run/external_template_escaped_quote` | commonJS erlang beam | wasm | `` `say` has no `#[@External.<Target>(…)]` for the wasm backend `` |
-| `run/external_template_refused_on_beam` | erlang beam | commonJS | `` `moduleNamed` has no `#[@External.<Target>(…)]` for the node backend `` |
-| | | wasm | `` `moduleNamed` has no `#[@External.<Target>(…)]` for the wasm backend `` |
-| `run/host_array_slice_without_start` | commonJS | erlang · wasm · beam | `` `copyAll` has no `#[@External.<Target>(…)]` for the erlang / wasm / beam backend `` |
-| `run/host_erlang_task_result` | erlang beam | commonJS | `` `hostDouble` has no `#[@External.<Target>(…)]` for the node backend `` |
-| | | wasm | `` `run` calls `hostDouble`, which has no `#[@External.<Target>(…)]` for the wasm backend `` |
-| `run/host_node_task_result` | commonJS | erlang · beam | `` `hostDouble` has no `#[@External.<Target>(…)]` for the erlang / beam backend `` |
-| | | wasm | `` `run` calls `hostDouble`, which has no `#[@External.<Target>(…)]` for the wasm backend `` |
-| `run/host_unknown_parameter` | erlang beam | commonJS | ``std-unsupported-on-target: std/erlang.element has no `@external` for target 'node'`` |
-| | | wasm | ``std-unsupported-on-target: std/erlang.element has no `@external` for target 'wasm'`` |
-| `run/std_default_fn_in_a_std_module` | commonJS erlang beam | wasm | ``std-unsupported-on-target: std/encoding.percentEncode has no `@external` for target 'wasm'`` |
-| `run/std_template_host_fns_across_modules` | commonJS erlang beam | wasm | ``std-unsupported-on-target: std/io/fs.exists has no `@external` for target 'wasm'`` |
-| `run/task_throw_resolves_error` | commonJS | erlang · wasm · beam | `` `observe` has no `#[@External.<Target>(…)]` for the erlang / wasm / beam backend `` |
-| `modules/manifest_targets_host_binding` | erlang beam | commonJS | `` `magnitude` has no `#[@External.<Target>(…)]` for the node backend `` |
-| | | wasm | `` `magnitude` has no `#[@External.<Target>(…)]` for the wasm backend `` |
-| `run/host_template_binding_inside_while` | erlang beam | commonJS · wasm | to be audited — added after this table was measured |
-| `modules/erlang_host_sidecar_in_a_test` (test kind) | erlang | commonJS · beam | to be audited — added after this table was measured |
-| `modules/import_bundled_package_beside_own_module` | commonJS erlang beam | wasm | to be audited — added after this table was measured |
-| `modules/shorthand_import_beside_bundled_package` | commonJS erlang beam | wasm | to be audited — added after this table was measured |
+| `run/behavior_method_host_value` | commonJS erlang beam | wasm | `` `makeGreeter` has no `#[@External.<Target>(…)]` for the wasm backend `` at `src/main.bp:32:13` |
+| `run/external_erlang_host_module_missing` | erlang beam (both by `.expect`) | commonJS | `` `total` has no `#[@External.<Target>(…)]` for the node backend `` at `src/main.bp:23:12` |
+| | | wasm | `` `total` has no `#[@External.<Target>(…)]` for the wasm backend `` at `src/main.bp:23:12` |
+| `run/external_host_record` | commonJS erlang beam | wasm | `` `hostPoint` has no `#[@External.<Target>(…)]` for the wasm backend `` at `src/main.bp:50:16` |
+| `run/external_method_on_host_record` | commonJS erlang beam | wasm | `` `Pair.at` has no `#[@External.<Target>(…)]` for the wasm backend `` at `src/main.bp:40:27` |
+| `run/external_template_escaped_quote` | commonJS erlang beam | wasm | `` `say` has no `#[@External.<Target>(…)]` for the wasm backend `` at `src/main.bp:23:12` |
+| `run/external_template_refused_on_beam` | erlang beam | commonJS | `` `moduleNamed` has no `#[@External.<Target>(…)]` for the node backend `` at `src/main.bp:13:12` |
+| | | wasm | `` `moduleNamed` has no `#[@External.<Target>(…)]` for the wasm backend `` at `src/main.bp:13:12` |
+| `run/host_array_slice_without_start` | commonJS | erlang · wasm · beam | `` `copyAll` has no `#[@External.<Target>(…)]` for the erlang / wasm / beam backend `` at `src/main.bp:20:12` |
+| `run/host_erlang_task_result` | erlang beam | commonJS | `` `hostDouble` has no `#[@External.<Target>(…)]` for the node backend `` at `src/main.bp:22:16` |
+| | | wasm | `` `hostDouble` has no `#[@External.<Target>(…)]` for the wasm backend `` at `src/main.bp:22:16` |
+| `run/host_node_task_result` | commonJS | erlang · wasm · beam | `` `hostDouble` has no `#[@External.<Target>(…)]` for the erlang / wasm / beam backend `` at `src/main.bp:24:16` |
+| `run/host_template_binding_inside_while` | erlang beam | commonJS | `` `bump` has no `#[@External.<Target>(…)]` for the node backend `` at `src/main.bp:15:17` |
+| | | wasm | `` `bump` has no `#[@External.<Target>(…)]` for the wasm backend `` at `src/main.bp:15:17` |
+| `run/host_unknown_parameter` | erlang beam | commonJS | ``std-unsupported-on-target: std/erlang.element has no `@external` for target 'node'`` at `src/main.bp:10:24` |
+| | | wasm | ``std-unsupported-on-target: std/erlang.element has no `@external` for target 'wasm'`` at `src/main.bp:10:24` |
+| `run/std_default_fn_in_a_std_module` | commonJS erlang beam | wasm | `` `base64Encode` has no `#[@External.<Target>(…)]` for the wasm backend `` at `std/encoding.bp:41:15` (then ``std-unsupported-on-target: std/encoding.percentEncode has no `@external` for target 'wasm'``) |
+| `run/std_template_host_fns_across_modules` | commonJS erlang beam | wasm | the same `base64Encode` line (then `quote`, `pbkdf2Derive`, `mkdir` and ``std-unsupported-on-target: std/io/fs.exists has no `@external` for target 'wasm'``) |
+| `run/task_throw_resolves_error` | commonJS | erlang · wasm · beam | `` `observe` has no `#[@External.<Target>(…)]` for the erlang / wasm / beam backend `` at `src/main.bp:33:5` |
+| `modules/manifest_targets_host_binding` | erlang beam | commonJS | `` `magnitude` has no `#[@External.<Target>(…)]` for the node backend `` at `src/main.bp:20:18` |
+| | | wasm | `` `magnitude` has no `#[@External.<Target>(…)]` for the wasm backend `` at `src/main.bp:20:18` |
+| `modules/erlang_host_sidecar_in_a_test` (test kind; wasm is not of the kind) | erlang beam | commonJS | `` `hello` has no `#[@External.<Target>(…)]` for the node backend `` at `src/greet.bp:8:29` |
+| `modules/import_bundled_package_beside_own_module` | commonJS erlang beam | wasm | `` `quote` has no `#[@External.<Target>(…)]` for the wasm backend `` at `std/json.bp:80:38` (then `pbkdf2Derive`, `std/hash.bp:89:12`) |
+| `modules/shorthand_import_beside_bundled_package` | commonJS erlang beam | wasm | `` `base64Encode` has no `#[@External.<Target>(…)]` for the wasm backend `` at `std/encoding.bp:41:15` (then ``std-unsupported-on-target: std/encoding.percentDecode has no `@external` for target 'wasm'``) |
 
-Thirty exclusions measured; the last four rows add six more, still to be read. What the audit
+Thirty-five exclusions over 22 cells: thirty-four stand on a located host-binding refusal, one
+(`beam_memory_process_dict` on commonJS) on decision 43's `#[@BeamMemory]` rule (§ Notes). No
+excluded target builds, so no narrowing is widened by this read. `run.sh --target all` over the 22
+cells → `narrowings: 35 exclusions audited`, `language tests: 52 passed, 0 failed`. What the audit
 changed, cell by cell:
 
 | Cell | Was | Excluded with no host reason | Now |
@@ -186,7 +190,7 @@ changed, cell by cell:
 | 47 `modules/*/botopink.json` | boilerplate `"targets"` the runner ignored | — | the field deleted (step 3) |
 
 **Acceptance:**
-- [ ] the table above: cell · excluded targets · the refusal line per excluded target, for the 18 `.targets` and the four narrowed `modules/` cells — the 17 `.targets` and `manifest_targets_host_binding` read; `host_template_binding_inside_while` and the three later manifests to be read (the runner's audit checks every one on every run)
+- [x] the table above: cell · excluded targets · the refusal line per excluded target, for the 18 `.targets` and the four narrowed `modules/` cells — 35 exclusions, 34 on a located host-binding refusal and one on decision 43 (§ Notes); none builds, none widened. `bash tests/language/run.sh --target all` with an `--only` per narrowed cell → `narrowings: 35 exclusions audited`, `language tests: 52 passed, 0 failed`, exit 0
 - [x] `bash tests/language/run.sh --self-test` → `self-test: 8 malformed or unbacked narrowings refused, 3 backed ones scheduled on their declared targets alone`, exit 0; with the audit's refusal test replaced by `true` (a copy of the script) it prints `self-test: the report lacks: …` and exits 1. A whole run of the suite starts with it
 - [x] every deleted narrowing's cell green on the target it now runs on (the second table)
 
@@ -194,7 +198,7 @@ changed, cell by cell:
 
 - [x] `zig build test` from a cold runtime cache — exit 0
 - [x] `bash tests/language/run.sh --target all` → `0 failed`, four targets
-- [ ] … no expected column — step 4
+- [x] … no expected column — step 4: `run.sh` prints `language tests: <n> passed, <m> failed`, and `tests/language/expected-failures.txt` does not exist
 - [x] `scripts/beam_export_audit.sh` → `490/490 modules assembled`; `scripts/snap_audit.sh --mode=runtime-parity` → `1431 pairs, 0 differing or missing`
 - [x] `bash scripts/format-check.sh` exit 0; `zig fmt --check modules` exit 0; `zig build test-cli` exit 0 (`cli contract: OK`, `backend-execution parity: OK`)
 - [ ] `scripts/gate.sh --cold` green in this front's worktree — the landing step, after 113
