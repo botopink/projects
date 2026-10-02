@@ -247,6 +247,9 @@ Each pinned by `codegen/tests/erlang.zig` (the backend's own fixtures) or a `tes
 - [x] `throw` inside a `case` arm of a `-> @Result` fn, arrow and block form — the `{ok, …}` goes into the arms that do not leave (beam's block form still throws: 03's row)
 - [x] erlang stdout followed the host locale (`LANG=C`: `é` as `0xE9`) — an entry point sets `standard_io` to unicode itself
 - [x] the sibling loader under `build` — step 9
+- [x] a lambda's parameter or `val` over a name of the enclosing function (decision 205) did not compile — each takes a fresh version and the enclosing names come back after the fun; `run/lambda_binds_name_of_enclosing_fn` (red on wasm: 05's row)
+- [x] a `default fn` two types adopt (or one adopts while another declares it) was emitted by neither, `twice/1` undefined — each adopter emits it into its own module, a call two types answer dispatches on the value; `run/behavior_default_adopted_by_two_types` (red on beam until 03's adopted-defaults commit lands, and on wasm)
+- [x] a `test/` module calling a sidecar function it declares itself died `{error,undef}` — the runner loads its siblings when the build binds a host; `modules/erlang_host_sidecar_in_a_test`
 
 ## Gate
 
