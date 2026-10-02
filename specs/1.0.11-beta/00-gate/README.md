@@ -126,13 +126,17 @@ $ scripts/gate.sh --cold
 gate: every stage passed                        # exit 0; ten stages, each printed green
 
 $ zig build test-libs
-test-libs: <N> passed, 0 failed, 0 skipped, <M> without tests
-                                                # no "known red", no "restricted" column: the
-                                                # two files are gone (gate-a, 113); N is the number
-                                                # of cells the manifests declare — 123 at the open
-                                                # (84 green + 36 red today + erika-linq·erlang,
-                                                # jhonstart-counter·erlang, jhonstart-todo·erlang);
-                                                # M = 9 (members with sources and no test block)
+test-libs: <N> passed, 0 failed, <M> without tests, <A> restrictions audited
+                                                # no "known red", no "restricted", no "skipped"
+                                                # column: the two files are gone (gate-a, 113) and
+                                                # an excluded target is not a cell. N + M is the
+                                                # number of cells the manifests declare (`zig build
+                                                # test-libs -- --list`, the `cell:*` lines) and A
+                                                # the excluded (member, target) pairs, each audited
+                                                # structural (gate-d). Measured by 113 on the five
+                                                # landed library tips: 134 cells (N = 119, M = 15)
+                                                # and A = 38; "<X> restrictions not structural" is
+                                                # appended only when X > 0, and fails the run
 
 $ bash tests/language/run.sh --target all       # all = commonJS erlang wasm beam (111)
 language tests: <X> passed, 0 expected failures, 0 failed
@@ -146,7 +150,7 @@ $ zig fmt --check modules; echo $?
 0                                               # no file listed
 
 $ bash scripts/check-docs.sh
-docs: 93 fences — 93 checked, 0 skipped, 0 failed   # (114): 9 skips → 7 reject/project fences,
+docs: 94 fences — 94 checked, 0 skipped, 0 failed   # (114): 9 skips → 7 reject/project fences,
                                                      # 2 tables/grammars are no longer ```botopink
 
 $ time scripts/gate.sh --cold                   # (115): under the budget its step 1 fixes, on 16
