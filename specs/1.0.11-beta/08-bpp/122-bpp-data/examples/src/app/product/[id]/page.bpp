@@ -1,0 +1,66 @@
+---
+// Front 122 — bpp data · examples/src/app/product/[id]/page.bpp
+//
+// Demonstrates: the `Astro` global, member by member, in a `.bpp` page. There
+// is no object: the fence is the body of `Page(route)`, so it has the
+// parameter `route`, the hooks (`use request()`, `use cookies()`), the
+// navigation signals (`redirect`, `notFound`, `rewrite`) and the two response
+// hooks (`responseStatus`, `responseHeader`).
+//
+//   ---
+//   export const prerender = false;
+//   const product = await getProduct(Astro.params.id);
+//   if (!product) { Astro.response.status = 404; }
+//   if (!product.isAvailable) { return Astro.redirect("/products", 301); }
+//   Astro.response.headers.set("Cache-Control", "public, max-age=3600");
+//   const cookie = Astro.request.headers.get("cookie");
+//   ---
+//
+// AN EARLY `return`. The fence is a function body, so a `return` leaves it
+// before the template is reached — Astro's `return Astro.redirect(…)`. A page
+// that answers other markup returns it with `html`: the module jhonstart's
+// `bpp` function emits imports it (front 116 § Notes).
+//
+// The `.bp` form of this page, with its tests: `response-control-example.bp` at
+// the root of `examples/`.
+//
+// Upstream: astro-docs/21-on-demand-rendering.md (Cookies, `Response`, `Request`)
+//           astro-docs/08-routing.md (Redirecionamentos Dinâmicos, Rewrites)
+//           https://docs.astro.build/en/guides/on-demand-rendering/
+
+import {h1, p} from "jhonstart";
+import {request, cookies, pairValue} from "jhonstart";
+import {redirect, rewrite} from "jhonstart";
+import {responseStatus, responseHeader} from "jhonstart";
+import {absoluteUrl} from "jhonstart";
+import {lib.products.Product, lib.products.findProduct};
+
+// Astro.params
+val id = params.id;
+
+// Astro.rewrite — serve another route under this URL. A legacy id form.
+if (id.startsWith("sku-")) { val _r = rewrite("/product/" + id.slice(4, id.length())); }
+
+val found = await findProduct(id);
+
+// Astro.response.status — the page still renders, with a 404 status.
+if (found == null) {
+    val _s = responseStatus(404);
+    return html """<h1>No such product</h1>""";
+}
+val product = found ?? Product(id: "", name: "", available: false);
+
+// Astro.redirect(url, 301)
+if (product.available == false) { val _g = redirect("/products"); }
+
+// Astro.response.headers.set
+val _h = responseHeader("Cache-Control", "public, max-age=3600");
+
+// Astro.request.headers, Astro.cookies
+val req = use request();
+val jar = use cookies();
+val returning = pairValue(jar, "seen") != "";
+---
+<h1>{product.name}</h1>
+<p>{if (returning) { "Welcome back." } else { "First visit." }}</p>
+<p>Canonical: {absoluteUrl(route.pathname)}</p>

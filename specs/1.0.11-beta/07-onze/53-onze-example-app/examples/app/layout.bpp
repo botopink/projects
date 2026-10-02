@@ -1,0 +1,47 @@
+---
+// Front 53 — onze example app · examples/app/layout.bpp
+//
+// The root layout of `app-layout-example.bp`, as a `.bpp` file (1.0.11-beta
+// `08-bpp/116`). The application's `botopink.json` says `"bpp": "jhonstart"`;
+// for a file named `layout.bpp` jhonstart's `bpp` function emits
+// `#[layout("")] pub fn Layout(props: LayoutProps)` — the route is this file's
+// directory below `app/`, the root — around the fence, so the decorator
+// argument front 50's scan checks against the location cannot disagree with it.
+//
+// `props.children` is the subtree the router already built. A layout returns
+// the BODY subtree only: the document shell and the moment the head is written
+// belong to jhonstart's render.
+//
+// Token lists stay in named functions — a `fn` in the fence is a function of
+// the module — because the server and the client must build the SAME list in
+// the SAME order: token order is class identity (contracts.md § 4).
+// `class="onze-font-inter" class:list={[…]}` is `styledWith`: the static class
+// first, the emilia class second, one space apart.
+//
+// `Link(props, children)` takes a record, so it is called in a hole; `SiteNav`
+// would be a tag.
+//
+// Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/layout
+
+import {div, header, main, nav} from "jhonstart";
+import {Link, linkProps, withClass} from "jhonstart";
+import {emilia, Token} from "emilia";
+
+fn pageTokens() -> Token[] {
+    return [.Bg.White, .Color.Gray.900, .Pad.All.4];
+}
+
+fn navTokens() -> Token[] {
+    return [.Layout.Flex, .Flex.Gap.4, .Pad.Y.2];
+}
+---
+<div class="onze-font-inter" class:list={[emilia(pageTokens())]}>
+  <header>
+    <nav class={emilia(navTokens())}>
+      {Link(linkProps("/"), ["Home"])}
+      {Link(withClass(linkProps("/blog"), "nav-item"), ["Blog"])}
+      {Link(linkProps("/about"), ["About"])}
+    </nav>
+  </header>
+  <main>{props.children}</main>
+</div>

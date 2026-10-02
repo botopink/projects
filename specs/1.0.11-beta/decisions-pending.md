@@ -1,11 +1,11 @@
 # Decisions the maintainer owes — 1.0.11-beta
 
-**Twenty-seven questions are open** — the twenty-six of 1.0.10-beta's § Open (`ck2-c`, `lg-a`,
-`lg-b`, `lg2-a…w`), carried verbatim below with their ids unchanged, plus `ck-host`, which 1.0.10
-raised and never counted. Every `lg2-*` row of [`language-gaps.md`](./language-gaps.md) is a
+**Twenty-four questions are open** — `ck2-c` and `lg2-a…w`, carried verbatim below from 1.0.10-beta's
+§ Open with their ids unchanged (`ck-host`, `lg-a`, `lg-b` and this milestone's `01c-e` were answered:
+decisions 146–149). Every `lg2-*` row of [`language-gaps.md`](./language-gaps.md) is a
 feature the language does not have; the recommendation is always the most restrictive reading
 (decision 67) — the feature stays out and the row's nearest form is the design — and no front opens
-on one until it is answered. **The next free decision number is 144** ([`decisions-taken.md`](./decisions-taken.md)).
+on one until it is answered. **The next free decision number is 214** ([`decisions-taken.md`](./decisions-taken.md)).
 
 Beside the open questions, every track carries **implementation choices awaiting confirmation** —
 a choice a front made, recommended and implemented, that the maintainer confirms or reverses. The
@@ -14,40 +14,24 @@ letter ids are never renumbered; their full text lives where they were raised:
 | Ids | Raised by | Full text |
 |---|---|---|
 | 24-a, 24-b, 24-c, 24-g · 23-a, 23-b, 23-c · 01c-a, 01c-b · ck2-a, ck2-b, ck2-d, ck2-e · rc3-a, rc3-b, rc3-c · 16-a, 16-b · 0405-b | the 1.0.10 compiler fronts | [1.0.10-beta `decisions-pending.md`](../1.0.10-beta/decisions-pending.md); confirmations listed in [`01-compiler/README.md`](./01-compiler/README.md) § Decisions |
-| 01c-c, 01c-d, 01c-e · 0405-c · 16-c, 16-d · 17-a · 23-d · 24-h · 26-a | `01-compiler` (new) | [`01-compiler/README.md`](./01-compiler/README.md) § Decisions (`01c-e`: structural `==` — below) |
+| 24-h · 26-a | `01-compiler` (new) | [`01-compiler/README.md`](./01-compiler/README.md) § Decisions (`D5`, `01c-c`, `01c-d`, `01c-e`, `0405-c`, `16-c`, `16-d`, `17-a`, `23-d` were answered: decisions 150, 151, 152, 149, 164, 165, 166, 168, 169) |
 | 01std-a, 01std-c, 01std-d, 01std-e · std-a, std-b, std-c · 95-a…e | 1.0.10's `01-std` / `02-packaging` | [1.0.10-beta](../1.0.10-beta/decisions-pending.md); confirmations in [`02-std-and-packaging/README.md`](./02-std-and-packaging/README.md) |
 | 01std-f · std-d · std-e · 95-f | `02-std-and-packaging` (new) | [`02-std-and-packaging/README.md`](./02-std-and-packaging/README.md) § Decisions (`std-e`: test lifecycle hooks — below) |
-| 03r-a…x | 1.0.10's `03-rakun` | [1.0.10-beta](../1.0.10-beta/decisions-pending.md); confirmations in [`03-rakun/README.md`](./03-rakun/README.md) |
-| 03r-y…am (15) | `03-rakun` (new) | [`03-rakun/README.md`](./03-rakun/README.md) § Decisions |
-| 26-a, 26-b, 27-a, 29-a, 30-b…g, 31-a, 31-b | 1.0.10's `04-jhonstart` | [1.0.10-beta](../1.0.10-beta/decisions-pending.md); confirmations in [`04-jhonstart/README.md`](./04-jhonstart/README.md) (`31-b` stays open, recommendation (a)) |
-| 30-h · 67-a | `04-jhonstart` (new) | [`04-jhonstart/README.md`](./04-jhonstart/README.md) § Decisions |
-| 05emilia-a…l | 1.0.10's `05-emilia` | [1.0.10-beta](../1.0.10-beta/decisions-pending.md); confirmations in [`05-emilia/README.md`](./05-emilia/README.md) |
-| 05emilia-m, 05emilia-n | `05-emilia` (new) | [`05-emilia/README.md`](./05-emilia/README.md) § Decisions |
-| 49-a, 49-c, 49-d, 49-e · 50-a · 52-a · 53-a · 68-a, 68-c, 68-d · 69-a · 69-b | 1.0.10's `06-onze` | [1.0.10-beta](../1.0.10-beta/decisions-pending.md); confirmations in [`06-onze/README.md`](./06-onze/README.md) (`49-d` and `50-a` amended there) |
-| 49-f · 50-b · 53-b | `06-onze` (new) | [`06-onze/README.md`](./06-onze/README.md) § Decisions |
-| 07-a…i | `07-bundled-libs` (new) | [`07-bundled-libs/README.md`](./07-bundled-libs/README.md) § Decisions |
-| gate-a…h | `00-gate` (new) — the zero-tolerance policy | [`00-gate/README.md`](./00-gate/README.md) § Decisions |
+| 03r-a…x | 1.0.10's `03-rakun` | [1.0.10-beta](../1.0.10-beta/decisions-pending.md); confirmations in [`04-rakun/README.md`](./04-rakun/README.md) |
+| 03r-ab · 03r-ad · 03r-ae · 03r-af · 03r-ag · 03r-ak · 03r-al · 03r-am (8 of the 15 raised) | `04-rakun` (new) | [`04-rakun/README.md`](./04-rakun/README.md) § What the maintainer must decide (answered: `03r-y` — 184, superseded by 187; `03r-z` — 185; `03r-aa` — 160; `03r-ac` — 187; `03r-ah` — 153; `03r-ai` — 186; `03r-aj` — 187) |
+| 26-a, 26-b, 27-a, 29-a, 30-b…g, 31-a | 1.0.10's `04-jhonstart` | [1.0.10-beta](../1.0.10-beta/decisions-pending.md); confirmations in [`05-jhonstart/README.md`](./05-jhonstart/README.md) (`31-b` was answered: decision 194, with 195) |
+| 30-h · 67-a | `05-jhonstart` (new) | [`05-jhonstart/README.md`](./05-jhonstart/README.md) § Decisions |
+| 05emilia-a…l | 1.0.10's `05-emilia` | [1.0.10-beta](../1.0.10-beta/decisions-pending.md); confirmations in [`06-emilia/README.md`](./06-emilia/README.md) |
+| 05emilia-m, 05emilia-n | `06-emilia` (new) | [`06-emilia/README.md`](./06-emilia/README.md) § Decisions |
+| 49-a, 49-c, 49-d, 49-e · 50-a · 52-a · 53-a · 68-a, 68-c, 68-d · 69-a | 1.0.10's `06-onze` | [1.0.10-beta](../1.0.10-beta/decisions-pending.md); confirmations in [`07-onze/README.md`](./07-onze/README.md) (`49-d` and `50-a` amended there; `69-b` was answered: decision 201) |
+| 50-b · 53-b | `07-onze` (new) | [`07-onze/README.md`](./07-onze/README.md) § Decisions (`49-f` was answered: decision 186) |
+| 07-b · 07-g · 07-h | `03-bundled-libs` (new) | [`03-bundled-libs/README.md`](./03-bundled-libs/README.md) § Decisions (answered: `07-a` — 196; `07-c` — 180; `07-d` — 181; `07-e` — 182; `07-f` — 195; `07-i` — 163) |
+| 07-j · 07-n | `03-bundled-libs/125-validation-zod` (new) — how much of Zod, where `Schema<T>` lives (`07-k`, `07-l` and `07-m` are decisions 145, 144 and 183) | [`03-bundled-libs/125-validation-zod/README.md`](./03-bundled-libs/125-validation-zod/README.md) § Decisions the maintainer owes |
+| 08-b · 08-d · 08-e · 08-f · 08-h | `08-bpp` (new) — one routing convention or two, who scopes CSS, server-island props, where Markdown and YAML live, the config file and the commands | [`08-bpp/README.md`](./08-bpp/README.md) § Decisions the maintainer owes (answered: `08-a` and `08-i` — 198; `08-a2` — 199; `08-a3` — 200; `08-c` — 190, with 191–193; `08-g` — 202) |
 | lem-a…f | `libs-external-methods` (1.0.10) | [1.0.10-beta](../1.0.10-beta/decisions-pending.md) |
 
-Three questions the milestone's own cut raised are written here rather than in a track, because
-they cross tracks:
-
-### 01c-e · Is `==` structural on records and arrays?
-
-> **Raised by:** the 1.0.11-beta cut — `testing.asserts` ships `deepEquals` / `canonical` because
-> `==` on an array is reference equality, and that pair is what keeps `asserts` off wasm under
-> `ck-host` (a) (`canonical` has no wasm binding).
-> **Measured.** `[1] == [1]` is `false` on every target; `Point(1, 2) == Point(1, 2)` compares by
-> value on erlang / beam (a tuple) and by reference on commonJS / wasm — the targets disagree today.
-> **Options.** (a) `==` stays reference equality on arrays and records everywhere, and the commonJS /
-> erlang disagreement on records is a bug fixed towards reference (refuse `==` on a record: a
-> `behavior Eq` is the only way); (b) `==` is structural on records and arrays, derived by the
-> compiler; (c) structural on records, refused on arrays.
-> **Recommendation.** (a) — the most restrictive: no silent deep walk, one behaviour on four targets,
-> `asserts.deepEquals` stays the one explicit deep comparison. The cost is the `Eq` behavior for
-> records that want it.
-> **Blocks.** `language-gaps.md` row "No structural `==`"; `01-compiler/01-checker`'s record `==` row;
-> `05-wasm`'s `asserts` restructure under `ck-host`.
+Two items the milestone's own cut raised are written here rather than in a track, because they
+cross tracks (`gate-a…j`, the zero-tolerance policy of `00-gate`, were answered: decisions 153–162):
 
 ### std-e · Test lifecycle hooks
 
@@ -92,47 +76,6 @@ row's nearest form is the design — and the cost of that reading is named where
 > **Recommendation.** (a) — the most restrictive that breaks nothing written: (c) would refuse
 > `docs.md`'s own `Port` and the libraries' records with a leading default.
 > **Blocks.** Nothing.
-
-### lg-a · Where a `try` inside a lambda may appear
-
-> **Raised by:** the language-gaps sweep, row "`try` inside a lambda does not propagate", 2026-09-26
-> **Measured.** `fn each() -> @Result<i32, string> { [1, 2].forEach({ x -> try bad(); }); return 2; }`
-> answers `Ok(2)` on commonJS and erlang: the checker gives every lambda body `throwContext =
-> .unchecked` (`inferFunctionExprExpected`), so the `try` type-checks, the lambda's `Error` is its
-> own value and `forEach` drops it. `docs.md` § Tests says "a `try` inside a lambda is the lambda's",
-> and decision 121 says `try` is legal only where a `@Result` is in some layer of the return — but no
-> rule says what a lambda's return is when nothing annotates it, nor whether a `@Result` a callee
-> discards is an error. An assertion written through a lambda passes vacuously.
-> **Options.** (1) The lambda's return is its expected type's (`fn(x: T)` → `void`): `try` there is
-> `effect-try-without-fallible-channel`, and an unannotated lambda with no expected type takes the
-> same refusal; (2) as (1), but a lambda with no expected type becomes `-> @Result<…>` on its own;
-> (3) keep today's reading and refuse only a `@Result` a statement discards.
-> **Recommendation.** (1) — the most restrictive, and 121's rule applied to lambdas as written: a
-> lambda that must fail declares it (`{ x -> … }` under an expected `fn(x: T) -> @Result<U, E>`).
-> Every library lambda with a `try` today is then located by the checker.
-> **Blocks.** The language-gaps row; front 08's assertion helpers.
-
-### lg-b · What a lambda's write to a captured `var` means on the BEAM
-
-> **Raised by:** the language-gaps sweep, row "A `var` mutated inside a lambda body (outside a
-> `for`) does not lower on erlang", 2026-09-26
-> **Measured.** `fn run(f: fn() -> i32, x: i32) -> i32 { return f() + x; }` ·
-> `var n = 0; val r = run({ -> n = n + 1; 1; }, 0); @print(n);` prints `1` on commonJS; erlang does
-> not compile (`variable 'N@1' is unbound`); **beam prints `0` at exit 0**. `test/closure_capture.bp`
-> pins that a write threads out of the lambda `forEach` runs (lowered as a fold), and a local
-> closure called at statement position threads through its arguments — but a lambda handed to an
-> arbitrary function has no value to thread through, and the BEAM has no mutable local. Every
-> lowering is a semantic choice: a process-dictionary cell per activation (never erased — an
-> escaping closure still needs it — and invisible to a process `async.runAll` spawns), an ETS cell
-> (shared across processes, needs an owner), or a refusal.
-> **Options.** (1) Refuse at check time a write to a captured `var` from a lambda that is neither a
-> `forEach` body nor a local closure called at statement position (every target, located at the
-> write); (2) a process-dictionary cell on erlang and beam, documented as per-process; (3) an ETS
-> cell like decision 39's `Ets` module var.
-> **Recommendation.** (1) — the most restrictive: the one form each backend threads stays, and the
-> program that meant a shared counter says so with a module-level `var` and its `#[@BeamMemory]`
-> mode (decisions 38–43), which already answers the per-process question.
-> **Blocks.** The language-gaps row; beam's silent `0` stays until the answer lands.
 
 ### lg2-a · A byte type
 
@@ -403,19 +346,3 @@ row's nearest form is the design — and the cost of that reading is named where
 > runtime the target selected (decision 84).
 > **Blocks.** The row; front 16 (`#[scheduled]`) and every decorator that would reuse std.
 
-### ck-host · A function around a host call with no binding for the target
-
-> **Raised by:** the merge of `checker-rows` and `beam-std-rows`, 2026-09-26
-> **Measured.** `checker-rows` wrote the strict rule into `docs.md` § host bindings and pinned it
-> with `run/external_wrapper_keeps_refusal`: `fn linkStatus() { return otpRelease(); }`, where
-> `otpRelease` names only `@External.Erlang`, is refused on commonJS and wasm even though nothing
-> calls `linkStatus`. `beam-std-rows` made wasm drop such a function (`collectHostBound`) and refuse
-> only a call to it — which is what lets `testing.asserts` build on wasm (`deepEquals` reaches
-> `canonical`, which has no wasm binding). Together, wasm accepts the cell; commonJS still refuses it.
-> **Options.** (a) the strict rule everywhere: `asserts` does not build on wasm until `canonical` has
-> a wasm lowering (restructure `deepEquals` without it); (b) the lazy rule everywhere: a function is
-> refused only when called, and `docs.md` says so; (c) strict for the root package, lazy for a
-> dependency's functions (a library ships functions no consumer calls).
-> **Recommendation.** (a) — the most restrictive (decision 67), and the one `docs.md` states; the
-> cost is one std restructuring.
-> **Blocks.** The wasm line of `run/external_wrapper_keeps_refusal`.

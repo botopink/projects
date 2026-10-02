@@ -2,8 +2,8 @@
 
 **Priority:** medium — closes `02-packaging` steps 3 and 4 and front 95; nothing compiles
 differently when it lands, but the gate cannot claim the packaging rule holds until it does
-**Depends on:** the library tracks' `-test` and example-README steps (`04-jhonstart/26` step 6,
-`05-emilia/33` steps 1–2, `06-onze/50` step 8 and `53` step 1, the `03-rakun` track's `rakun-test`
+**Depends on:** the library tracks' `-test` and example-README steps (`05-jhonstart/26` step 6,
+`06-emilia/33` steps 1–2, `07-onze/50` step 8 and `53` step 1, the `04-rakun` track's `rakun-test`
 front) · maintainer decisions `95-f` (the takeover as it is) and `lg2-v` (step 4) · `00-gate` for
 PK-1 and PK-5
 **Owns:** `repository/erika/modules/erika-test/**`, `repository/erika/examples/erika-linq/README.md`,

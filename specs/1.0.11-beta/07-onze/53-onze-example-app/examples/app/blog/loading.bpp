@@ -1,0 +1,15 @@
+---
+// Front 53 — onze example app · examples/app/blog/loading.bpp
+//
+// The segment's loading UI of `blog-list-page-example.bp`, as a `.bpp` file.
+// The scan discovers the file and jhonstart's render builds the boundary around
+// `app/blog/page.bpp` with it: the shell shows this, and the list streams in
+// behind it.
+//
+// Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/loading
+
+import {div, span} from "jhonstart";
+---
+<div class="skeleton">
+  <span class="skeleton-line">Loading the blog…</span>
+</div>

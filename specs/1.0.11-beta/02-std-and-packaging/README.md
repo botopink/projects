@@ -18,7 +18,7 @@ kinds:
    loops, two duration parsers, no `pbkdf2Sha256`, and std's own snapshot engine carrying private
    `readFile` / `writeFile` / `exists` / `removeTree` / `tmpDir` cells (`snapshots.bp:4-38`) that
    `io/fs` and `path` already provide. That is front [`97-std-dedupe`](./97-std-dedupe/README.md),
-   and it lands **before** `07-bundled-libs` wave 1 (extraction decision D10): the consumer edits
+   and it lands **before** `03-bundled-libs` wave 1 (extraction decision D10): the consumer edits
    in library files are "consume std X" steps of the library front that owns the file.
 2. **The packaging rule is not yet checked everywhere it applies.** A `-test` member with no
    `assert<Subject>(loc, …)` helper (erika, rakun, emilia), examples without a `README.md` (30 of
@@ -33,15 +33,15 @@ theirs is closed on tick, closed on a decision confirmation, or a step of 97 (`c
 
 | Front | Priority | Carries | Parallel group | What |
 |---|---|---|---|---|
-| [`97-std-dedupe/`](./97-std-dedupe/README.md) | **high** — `07-bundled-libs` wave 1 and every library's "consume std" step wait on it | `01-std/01-std-lib-enablement` step 14 · `01-std` step 3's engine cells · the std-level cleanup of the extraction analysis | A (runs alone: it edits `libs/std/src/**`, which every other front compiles against) | `string.parseInt` / `parseFloat`, the `Json` accessors as methods, `hash.pbkdf2Sha256`, `clock.parseDuration`, `async.RetryPolicy`, the snapshot engine on `io/fs`; the bundled libraries' own copies deleted; the std snapshot map (conditional on `01std-f`) |
+| [`97-std-dedupe/`](./97-std-dedupe/README.md) | **high** — `03-bundled-libs` wave 1 and every library's "consume std" step wait on it | `01-std/01-std-lib-enablement` step 14 · `01-std` step 3's engine cells · the std-level cleanup of the extraction analysis | A (runs alone: it edits `libs/std/src/**`, which every other front compiles against) | `string.parseInt` / `parseFloat`, the `Json` accessors as methods, `hash.pbkdf2Sha256`, `clock.parseDuration`, `async.RetryPolicy`, the snapshot engine on `io/fs`; the bundled libraries' own copies deleted; the std snapshot map (conditional on `01std-f`) |
 | [`98-packaging-tail/`](./98-packaging-tail/README.md) | medium — closes `02-packaging` steps 3 and 4 across the repositories | `02-packaging` steps 2–4 and gate · `95` step 2 (as a confirmation) · `-test` helpers of the libraries that have no track (erika) | B (after every library track's `-test` and `README.md` steps; alone, because it reads all seven repositories) | The cross-repository check of the packaging rule; `erika-test`'s first helper and `erika-linq`'s README; the manifest `subdir` field if lg2-v is answered (2); `docs/botopink-json.md` |
 
 ## Order
 
 ```
 97-std-dedupe ──────────┐   (alone: libs/std/src/** is every front's dependency)
-                        ├──► 07-bundled-libs wave 1 (routing · actions · http)
-                        ├──► 03-rakun / 04-jhonstart / 05-emilia / 06-onze "consume std" steps
+                        ├──► 03-bundled-libs wave 1 (routing · actions · http)
+                        ├──► 04-rakun / 05-jhonstart / 06-emilia / 07-onze "consume std" steps
                         │
    library tracks' -test helpers and example READMEs ──► 98-packaging-tail   (last: it verifies)
 ```
@@ -68,7 +68,7 @@ without a row. The gate track owns the files; this track's fronts depend on the 
 
 Confirmations of choices 1.0.10 implemented (ids kept; the text is in
 `specs/1.0.10-beta/decisions-pending.md`), and the questions this track adds, continuing each
-sequence. Numbered decisions continue from 144 when the maintainer answers.
+sequence. Numbered decisions continue from 146 when the maintainer answers.
 
 ### To confirm
 

@@ -1,7 +1,7 @@
 # Front 99 — gate-rakun: every rakun cell green on the target rakun declares, and the repository's own gate runs
 
 **Priority:** critical — 25 of the gate's 36 red `test-libs` cells are rakun's erlang cells, the
-repository's own pre-commit fails before it runs a single test, and every `03-rakun` front waits
+repository's own pre-commit fails before it runs a single test, and every `04-rakun` front waits
 on this one.
 **Depends on:** none to start (gate-g's recommendation is the starting assumption; the front stops
 if the maintainer answers rc3-a otherwise). `113` lands after it.
@@ -137,10 +137,10 @@ examples build.
 
 ## Blast radius
 
-- Every `03-rakun` front (`04`, `08`, `09`, `11`, `12`, `13`, `15`, `17`, `19`, `22`, `65`, `73`,
+- Every `04-rakun` front (`04`, `08`, `09`, `11`, `12`, `13`, `15`, `17`, `19`, `22`, `65`, `73`,
   `74`, `79`, `81`, `88`, `91`, `92`, `93`) starts from this front's landing — they share
   `rakun-data/src/orm/**`, `rakun-messaging/src/**`, `rakun-app/src/**`, the starters' manifests
-  and the test files above. `03-rakun/README.md` already says so.
+  and the test files above. `04-rakun/README.md` already says so.
 - `onze-server·erlang` (100) compiles only when `rakun-data` and `rakun-scheduling` do: 100 verifies
   its `onze-server` cell against this front's tree.
 - `113` deletes the 18 + 17 rakun ledger lines in the commit that lands the manifest rule — this

@@ -1,0 +1,36 @@
+---
+// Front 27 — jhonstart-link · examples/src/app/blog/page.bpp
+//
+// The blog index of `post-list-links-example.bp`, as a `.bpp` page. The two
+// header links prefetch as usual — they are the links a reader almost always
+// follows — and the rows of the archive do not (`components/archive_row.bpp`).
+//
+// `Link(props, children)` is called in a hole; `<ArchiveRow post={post} />` is
+// a tag, because `ArchiveRow`'s parameter is the attribute.
+//
+// The anchors render during the SERVER pass, so this page is plain markup on
+// either target; the prefetching, the click interception and the transition
+// are the browser half, after the generated entry calls `linkMount()`.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/api-reference/components/link
+//   https://nextjs.org/docs/app/getting-started/linking-and-navigating
+
+import {div, h1, nav, span, ul} from "jhonstart";
+import {Link, linkProps, withClass} from "jhonstart-link";
+import {ArchiveRow} from "@/components.archive_row";
+import {listPosts} from "@/lib.blog";
+
+val posts = await listPosts();
+---
+<div class="page">
+  <nav class="site-header">
+    {Link(withClass(linkProps("/"), "brand"), ["botopink"])}
+    {Link(linkProps("/blog"), ["Blog"])}
+  </nav>
+  <h1>Archive</h1>
+  <span class="count">{posts.length.toString()} posts</span>
+  <ul class="archive">
+    {posts.map({ post -> <ArchiveRow post={post} /> })}
+  </ul>
+</div>

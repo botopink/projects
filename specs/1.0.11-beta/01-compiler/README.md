@@ -34,7 +34,7 @@ among the carried fronts and four open rows live there. The closed 1.0.10 sub-fr
 | wasm | the primitive-method traps (`Array.unique` among them); `==` between type-parameter values; C-07's wasm twins; the host-wrapper rule (00-gate's) | [`05-wasm/`](./05-wasm/README.md) |
 | comptime | three fixtures (a located `unsupported_method`, the N=200 slope, the ETF round trip per shape); an emitted `pub val` invisible (T15); a reflection type shadowed by an import (T17); lg2-w/j/o | [`14-comptime-on-beam/`](./14-comptime-on-beam/README.md) · [`18-comptime-runtimes/`](./18-comptime-runtimes/README.md) |
 | formatter | C-13 step 3 (the siblings' migration, then the parser refuses the `;`); the siblings' reformat at C-12's rules; `arrow_when_empty`; `commaList` and the one-step pipeline | [`16-formatter/`](./16-formatter/README.md) |
-| BEAM memory | `keyed = true` row-per-key `Dict`; the `docs.md` text (08's to place); rakun's migration (03-rakun's) | [`17-beam-memory/`](./17-beam-memory/README.md) |
+| BEAM memory | `keyed = true` row-per-key `Dict`; the `docs.md` text (08's to place); rakun's migration (04-rakun's) | [`17-beam-memory/`](./17-beam-memory/README.md) |
 | tooling | the beam sidecar's CLI half; a sidecar named like an emitted atom (C-25); `shipErlSidecars` reading a folder as a package (T16); a transitively reached package not importable (T4, 26-a); `botopink clean`; `Env.warnings` printed by `build` / `test` / the LSP | [`26-cli-tooling/`](./26-cli-tooling/README.md) |
 | std purity | the gate's rows (four targets, the LSP cells, five `AGENTS.md`); 23-a/b/c confirmed | [`23-std-purity/`](./23-std-purity/README.md) |
 | effects | the guide's three fences (E3); 24-a/b/c/g confirmed; `unwrapOrThrow` (24-h); the `@Result`-per-item cost measured | [`24-effects-by-return/`](./24-effects-by-return/README.md) |
@@ -60,7 +60,7 @@ among the carried fronts and four open rows live there. The closed 1.0.10 sub-fr
 | [`23-std-purity/`](./23-std-purity/README.md) | low | 23's gate rows · 23-a/b/c, std-c confirmations | B |
 | [`24-effects-by-return/`](./24-effects-by-return/README.md) | medium | E3's three fences · 24-a/b/c/g · 24-h · the per-item cost | B |
 | [`25-gate-perf/`](./25-gate-perf/README.md) | low | the per-cell dependency compile (measured row) · the hooks in worktrees (meta) | B |
-| [`17-beam-memory/`](./17-beam-memory/README.md) | medium | C-10's `keyed = true` (17-a) · pointers to the text (08) and rakun's migration (03-rakun) | after 02 and 03 |
+| [`17-beam-memory/`](./17-beam-memory/README.md) | medium | C-10's `keyed = true` (17-a) · pointers to the text (08) and rakun's migration (04-rakun) | after 02 and 03 |
 | [`16-formatter/`](./16-formatter/README.md) | medium | C-13 step 3 · 16-a/b then the siblings' reformat · 16-c · 16-d · C-11's trailing-lambda boxes | after 00-gate and the library tracks' migrations |
 | [`07-review-backlog/`](./07-review-backlog/README.md) | low | C-22 whole | after 02–05 |
 | [`08-hygiene/`](./08-hygiene/README.md) | low | C-23 items 1–4 (after each owner) · 17's `docs-text.md` · C-18's documents | after every owner |
@@ -120,7 +120,7 @@ is at its header (measured: no line).
 ## Decisions the maintainer owes
 
 The lettered ids are 1.0.10's and are not renumbered; the answers move to
-[`../decisions-taken.md`](../decisions-taken.md) with the next free number (**144**). New questions
+[`../decisions-taken.md`](../decisions-taken.md) with the next free number (**146**). New questions
 continue each front's series. Every recommendation is the most restrictive behaviour with no
 configuration that bypasses it (decision 67).
 

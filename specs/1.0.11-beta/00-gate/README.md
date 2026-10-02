@@ -4,7 +4,7 @@
 for every library and everything inside every repository — zero tolerated reds* — and the work is
 cut so that each part is fixed in a different worktree, in parallel.
 **Depends on:** nothing. Every other track of `1.0.11-beta` depends on this one (their READMEs say
-"`00-gate` green" in *Depends on*; the library fronts of `03-rakun` and `06-onze` start from the
+"`00-gate` green" in *Depends on*; the library fronts of `04-rakun` and `07-onze` start from the
 gate fronts that touch their files).
 
 The gate is `repository/botopink-lang/scripts/gate.sh` (stages 1–10, `scripts/gate.sh:10-38`) run
@@ -179,11 +179,11 @@ meta .github/workflows/hook-integrity.yml       exists (114 step 4 — measured 
 
 Each in the `decisions-pending.md` shape. The recommendation is always the most restrictive option,
 with no configuration that bypasses it (decision 67). The letters are this track's; they move to
-`../decisions-taken.md` with the next free number (144 upward) when answered.
+`../decisions-taken.md` with the next free number (146 upward) when answered.
 
 ### gate-a · The restricted-targets ledger: a pinned count is a tolerated red
 
-**Raised by:** this track, for `113-gate-ledger-and-scripts` (and `03-rakun`'s 03r-ah, which asks
+**Raised by:** this track, for `113-gate-ledger-and-scripts` (and `04-rakun`'s 03r-ah, which asks
 the same from rakun's side).
 **Measured.** `scripts/restricted-targets.txt` holds 21 lines (`:53-82`), each pinning the *failed*
 count of a cell a member's `"targets"` excludes; `scripts/test-libs.sh:326` always passes
@@ -316,16 +316,16 @@ maintainer answers otherwise.
 
 ### gate-h · A cell that needs an external service is not a gate cell
 
-**Raised by:** this track, for `99-gate-rakun` (the cells `03-rakun`'s README names).
+**Raised by:** this track, for `99-gate-rakun` (the cells `04-rakun`'s README names).
 **Measured.** `repository/rakun/modules/rakun-session/test/store_test.bp:68-71` — "the suite runs on
 the Redis arm when `RAKUN_TEST_REDIS_URL` is set": with the variable unset it prints `SKIPPED` and
 passes; `rakun-websocket/test/broadcast_test.bp:102` accepts `out.startsWith("skipped: ")` when the
-runner cannot start a peer node. Both are green on every gate and assert nothing. `03-rakun` names
+runner cannot start a peer node. Both are green on every gate and assert nothing. `04-rakun` names
 the never-written integration suites (`RAKUN_TEST_AMQP_URL`, `RAKUN_TEST_KAFKA_BROKERS`) and
 answers them the same way (03r-aa).
 **Options.** (a) keep env-gated cells; document the variable. (b) a cell that needs an external
 service is deleted from the gate: it is replaced by an in-process double (the RESP double
-`03-rakun` 12 specifies; a same-node `pg` broadcast for websocket) so the *behaviour* is asserted
+`04-rakun` 12 specifies; a same-node `pg` broadcast for websocket) so the *behaviour* is asserted
 in the gate; the real-driver arm, if wanted, lives behind an explicit `botopink test --integration`
 flag that CI runs only in a job that provides the service, and a `--integration` cell that cannot
 reach its service **fails** — "skipped" is never "passed". (c) as (b) without the `--integration`
@@ -381,11 +381,11 @@ row) applied to the libraries.
 |---|---|---|
 | `01-compiler` | `expected-failures.txt` is gone (03-beam, 05-wasm no longer delete lines); `wat.zig` (110), `beam_asm.zig` + `cli/**` + `libs.zig` (111), `format_cmd.zig` (112), the 11 `zig fmt` files (112) are edited first; `tests/language` and `libs/std` are reformatted (112); two rows handed *to* it: report L's R3 (an imported type's field type unresolved at the import site, diagnostic attributed to the wrong file — `01-checker`) and the five library `// LANGUAGE GAP` notes 113 lists (`language-gaps.md` rows) | its fronts list these under *Does not touch until 00-gate lands* and start from the gate's landing; a red cell it wants to pin is a decision to delete the cell, never a line |
 | `02-std-and-packaging` | `libs/std/src/**` reformatted (112); `asserts.bp` restructured (110); STD-1/EM-6 guards land per repository (99–109) and are verified by 113; PK-1's three onze lines are not written — the ledger is deleted (gate-a) | `97-std-dedupe` rebases over the reformat and the `asserts.bp` restructure; PK-5's reformat is done by 99 and 101 |
-| `03-rakun` | 99 rewrites 42 sites across `rakun-data`, `rakun-messaging`, `rakun-app`, `rakun-ws`, `rakun-release`, `rakun-scheduling`, `rakun-devtools`, `rakun-security`, `rakun-web` and their tests; edits `rakun-starter-test/botopink.json`; reformats `modules/{rakun,rakun-app}`; replaces the two `SKIPPED` cells; rewrites the CI matrix | every `03-rakun` front starts from 99's landing (its README says so); 03r-ah is answered by gate-a; 03r-aa by gate-h |
-| `04-jhonstart` | 101 drops `targets` from two example manifests, decides the `dom-test` erlang cell, reformats `modules/{jhonstart,jhonstart-link}` | `26-jhonstart-router` and `67-jhonstart-forms` start from 101's landing |
-| `05-emilia` | 109 adds the guard and deletes `known-broken-examples.txt` | nothing else moves |
-| `06-onze` | 100 rewrites 23 sites across `onze-assets`, `onze-bundler`, `onze-cli`, `onze-og`, `onze-release` and their tests; rewrites the CI loop | every `06-onze` front starts from 100's landing |
-| `07-bundled-libs` | none of its files; it depends on "`00-gate` green" | starts after the track's exit gate |
+| `04-rakun` | 99 rewrites 42 sites across `rakun-data`, `rakun-messaging`, `rakun-app`, `rakun-ws`, `rakun-release`, `rakun-scheduling`, `rakun-devtools`, `rakun-security`, `rakun-web` and their tests; edits `rakun-starter-test/botopink.json`; reformats `modules/{rakun,rakun-app}`; replaces the two `SKIPPED` cells; rewrites the CI matrix | every `04-rakun` front starts from 99's landing (its README says so); 03r-ah is answered by gate-a; 03r-aa by gate-h |
+| `05-jhonstart` | 101 drops `targets` from two example manifests, decides the `dom-test` erlang cell, reformats `modules/{jhonstart,jhonstart-link}` | `26-jhonstart-router` and `67-jhonstart-forms` start from 101's landing |
+| `06-emilia` | 109 adds the guard and deletes `known-broken-examples.txt` | nothing else moves |
+| `07-onze` | 100 rewrites 23 sites across `onze-assets`, `onze-bundler`, `onze-cli`, `onze-og`, `onze-release` and their tests; rewrites the CI loop | every `07-onze` front starts from 100's landing |
+| `03-bundled-libs` | none of its files; it depends on "`00-gate` green" | starts after the track's exit gate |
 
 ## Rules
 

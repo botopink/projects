@@ -8,7 +8,7 @@ time — emilia's CI checks out jhonstart for it (`.github/workflows/test.yml`, 
 **Owns:** `repository/emilia/**` for the duration of the front — `.gitignore`, `scripts/git-hooks/**`,
 `scripts/known-broken-examples.txt` (deleted), `.github/workflows/test.yml`, `AGENTS.md`.
 **Does not touch:** `repository/botopink-lang/**`; `src/**`, `modules/**`, `examples/**` of emilia
-(`../../05-emilia/` owns them — nothing there is red).
+(`../../06-emilia/` owns them — nothing there is red).
 
 ---
 
@@ -78,12 +78,12 @@ The CI command shape, in the workflow's layout (`botopink-lang/{libs,repository/
 
 | Item | Owner |
 |---|---|
-| `language-gaps.md:52` (**No spelling for a negative numeric enum leaf**, bites 35 · 36 · 45) is the row for the note at `repository/emilia/modules/emilia/src/tokens.bp:2194` (front 45, `Transform.Rotate.Neg`: "`Rotate { -12 }` does not parse; `-rotate-12` is `.Transform.Rotate.Neg.__12`") — the row exists but cites no file, and `113`'s check matches by path. Text to add to the row's *Bites* cell: `45 (emilia modules/emilia/src/tokens.bp:2194, Transform.Rotate.Neg)`. The note carries no literal `// LANGUAGE GAP` marker (`grep -rn "LANGUAGE GAP" modules examples` → 0 in emilia; the comment reads "the language gap is recorded rather than worked around"), so a marker grep finds it only case-insensitively; making it literal is a one-line edit of `tokens.bp` | `113` (the row), `../../05-emilia/` (`tokens.bp`) |
+| `language-gaps.md:52` (**No spelling for a negative numeric enum leaf**, bites 35 · 36 · 45) is the row for the note at `repository/emilia/modules/emilia/src/tokens.bp:2194` (front 45, `Transform.Rotate.Neg`: "`Rotate { -12 }` does not parse; `-rotate-12` is `.Transform.Rotate.Neg.__12`") — the row exists but cites no file, and `113`'s check matches by path. Text to add to the row's *Bites* cell: `45 (emilia modules/emilia/src/tokens.bp:2194, Transform.Rotate.Neg)`. The note carries no literal `// LANGUAGE GAP` marker (`grep -rn "LANGUAGE GAP" modules examples` → 0 in emilia; the comment reads "the language gap is recorded rather than worked around"), so a marker grep finds it only case-insensitively; making it literal is a one-line edit of `tokens.bp` | `113` (the row), `../../06-emilia/` (`tokens.bp`) |
 | `botopink-lib-test` has no workspace selector (`--lib` takes one project name), so "every member a row" in CI is the whole checkout — `std`, the bundled libs and jhonstart's members ride along | `113` / `115` (`modules/lib-test-runner/**`) |
 | The workflow's first green run on the pushed branch | the landing |
 
 ## Blast radius
 
-- None on `../../05-emilia/` sources. The five repositories share the same
+- None on `../../06-emilia/` sources. The five repositories share the same
   `runner-standalone.sh` text — 99, 100, 101, 108 make the same edit in their repository;
   113 verifies all five are identical in the guard clauses (`diff` of the function bodies).

@@ -1,0 +1,217 @@
+// Front 116 — bpp file format · examples/bpp-template-function-example.bp
+// Library file: jhonstart/modules/jhonstart/src/bpp.bp
+//
+// Demonstrates: step 4 — the SYNTAX of a `.bpp` file, which is this function
+// and nothing else. An application's manifest says `"bpp": "jhonstart"`; for
+// each `X.bpp` the toolchain builds the call `bpp """<the file's bytes>"""`;
+// what the function emits is the module. No tool knows a fence, a tag, `Props`
+// or `page` — a library that wanted another syntax for the extension would
+// write another function.
+//
+// It is a template function, the mechanism `html` is and with `html`'s
+// signature. The file is the literal, so a span of the literal is a span of the
+// file: `template.failAt` underlines the `.bpp`, and the overlay it returns is
+// what the editor shows in it.
+//
+// The function does four things:
+//   1. find the two fence lines;
+//   2. cut the frontmatter into items, and sort them: a declaration goes to the
+//      module, a statement to the body;
+//   3. pick the function's header from the file's name;
+//   4. emit — every piece of the author's text as a `template.slice`, so an
+//      error in it is reported where the author wrote it.
+//
+// What it emits for `post_card.bpp` is `post_card-desugared-example.bp`.
+//
+// `template.emit`, `template.slice` and `template.path` are step 2's: a
+// template body has none of the three today.
+//
+// Target: comptime — a template function runs in the compiler's evaluator.
+
+import {Element, fragment} from "element";
+
+// One item of the frontmatter: where it is, and which side of the split.
+type Item(start: i32, end: i32, declaration: bool)
+
+// The words that begin a declaration. Anything else is a statement.
+fn declares(first: string) -> bool {
+    return ["import", "pub", "type", "fn", "behavior", "test"].contains(first);
+}
+
+fn firstWord(line: string) -> string {
+    return line.split(" ").at(0).unwrapOr("").split("(").at(0).unwrapOr("");
+}
+
+// How far a line moves the bracket depth. A bracket inside a string or a
+// comment is text, so the scan skips both.
+fn depthAfter(line: string, depth: i32) -> i32 {
+    val chars = line.split("");
+    var d = depth;
+    var inString = false;
+    var i = 0;
+    while (i < chars.length) {
+        val c = chars.at(i).unwrapOr("");
+        val next = chars.at(i + 1).unwrapOr("");
+        if (inString) {
+            if (c == "\\") i = i + 1 else if (c == "\"") inString = false;
+        } else if (c == "/" && next == "/") i = chars.length else if (c == "\"") inString = true else if (c == "(" || c == "[" || c == "{") d = d + 1 else if (c == ")" || c == "]" || c == "}") d = d - 1;
+        i = i + 1;
+    }
+    return d;
+}
+
+// The items of the frontmatter `text[from..to]`: an item begins at a line that
+// starts at column 1 while every bracket is closed.
+fn itemsOf(text: string, from: i32, to: i32) -> Array<Item> {
+    val lines = text.slice(from, to).split("\n");
+    var items: Array<Item> = [];
+    var offset = from;
+    var start = from;
+    var depth = 0;
+    var open = false;
+    var declaration = false;
+    var n = 0;
+    while (n < lines.length) {
+        val line = lines.at(n).unwrapOr("");
+        val atColumnOne = line != "" && line.startsWith(" ") == false && line.startsWith("//") == false;
+        if (depth == 0 && atColumnOne) {
+            if (open) items = items.append([Item(start: start, end: offset, declaration: declaration)]);
+            start = offset;
+            open = true;
+            declaration = line.startsWith("#[") || declares(firstWord(line));
+        }
+        depth = depthAfter(line, depth);
+        offset = offset + line.length() + 1;
+        n = n + 1;
+    }
+    if (open) items = items.append([Item(start: start, end: to, declaration: declaration)]);
+    return items;
+}
+
+// `post_card` → `PostCard`.
+fn pascal(stem: string) -> string {
+    return stem
+        .split("_")
+        .map({ word -> word.slice(0, 1).toUpperCase() + word.slice(1, word.length()) })
+        .join("");
+}
+
+// `app/blog/[slug]/page.bpp` → `blog/[slug]`; `app/page.bpp` → ``.
+fn routeOf(dirs: Array<string>) -> string {
+    return dirs.slice(dirs.indexOf("app") + 1, dirs.length).join("/");
+}
+
+pub fn bpp(comptime template: @Expr<string>) -> @ExprCustom<Element> {
+    val text = template.text();
+    val fence = "---\n";
+    val close = text.indexOf("\n" + fence, fence.length());
+    if (text.startsWith(fence) == false)
+        template.failAt(Span(0, 1, 1), "a .bpp file begins with a `---` line");
+    if (close < 0)
+        template.failAt(Span(0, 3, 1), "the opening `---` has no closing `---` line");
+
+    // `components/post_card.bpp` → the directories, and the name without `.bpp`
+    val segments = template.path().split("/");
+    val dirs = segments.slice(0, segments.length - 1);
+    val stem = segments.at(segments.length - 1).unwrapOr("").replaceAll(".bpp", "");
+
+    val items = itemsOf(text, fence.length(), close + 1);
+    val markupStart = close + 1 + fence.length();
+
+    // `type Props(…)` is the parameter list of a component.
+    val props = items.filter({ it -> text.slice(it.start, it.end).startsWith("type Props(") });
+    if (props.length > 1) {
+        val second = props.at(1).unwrapOr(Item(start: 0, end: 0, declaration: true));
+        template.failAt(Span(second.start, second.start + 10, 1), "a component declares one `type Props`");
+    }
+
+    // The app files that hold markup: the name is the kind (`routes.bp`'s table).
+    val appKinds = ["page", "layout", "template", "default", "loading", "error", "not-found"];
+    val isAppFile = appKinds.contains(stem);
+    if (isAppFile && dirs.contains("app") == false)
+        template.failAt(Span(0, 3, 1), "`" + stem + ".bpp` is a file of the `app/` tree");
+    val route = routeOf(dirs);
+
+    // The library's own text: the names the headers spell, and `html` for the
+    // last line of the body.
+    template.emit("import {Element, ElementBase, Children, PageContext, LayoutProps, ErrorInfo, page, layout, template, defaultView} from \"jhonstart\";");
+    template.emit("import {html} from \"jhonstart-html\";");
+
+    // declarations → the module, each at its own place in the file
+    items.filter({ it -> it.declaration }).forEach({ it ->
+        template.emit(template.slice(Span(it.start, it.end, 1)));
+    });
+
+    // The header, from the file's name. A function under a decorator is not
+    // named like the decorator: `#[page] pub fn page` is declared twice on
+    // commonJS.
+    val component = "@Component<ElementBase, Element>";
+    val header = if (stem == "page")
+        "#[page(\"" + route + "\")] pub fn Page(route: PageContext) -> " + component
+    else if (stem == "layout")
+        "#[layout(\"" + route + "\")] pub fn Layout(props: LayoutProps) -> " + component
+    else if (stem == "template")
+        "#[template(\"" + route + "\")] pub fn Template(props: LayoutProps) -> " + component
+    else if (stem == "default")
+        "#[defaultView(\"" + route + "\")] pub fn DefaultView(props: LayoutProps) -> Element"
+    else if (stem == "loading")
+        "pub fn Loading() -> Element"
+    else if (stem == "error")
+        "pub fn ErrorPage(info: ErrorInfo) -> Element"
+    else if (stem == "not-found")
+        "pub fn NotFound() -> Element"
+    else {
+        // the fields of `Props`, as the author wrote them: between its parentheses
+        val fields = props.map({ it ->
+            template.slice(Span(it.start + "type Props(".length(), text.lastIndexOf(")", it.end), 1));
+        });
+        "pub fn " + pascal(stem) + "(" + fields.join("") + ") -> " + component;
+    };
+
+    // `params` — Astro's `Astro.params` — for a page whose route has a bracket
+    // segment: the accessor `#[page]` emits is named after the function.
+    val binds = if (stem == "page" && route.contains("[")) "val params = PageParams(route);\n" else "";
+
+    // statements → the body, in order, each at its own place in the file; then
+    // every byte after the closing fence, handed to `html`
+    val body = items
+        .filter({ it -> it.declaration == false })
+        .map({ it -> template.slice(Span(it.start, it.end, 1)) })
+        .join("");
+    val markup = template.slice(Span(markupStart, text.length(), 1));
+    template.emit(header + " {\n" + binds + body + "return html \"\"\"\n" + markup + "\"\"\";\n}");
+
+    // The overlay: the fence lines, each item and the markup, as the editor's
+    // tokens. The call's value is read by nothing — a `.bpp` file is its
+    // declarations.
+    val nodes = items.map({ it ->
+        CustomNode(kind: if (it.declaration) "declaration" else "statement", span: Span(it.start, it.end, 1), label: "none", ref: null, children: []);
+    });
+    val root = CustomNode(kind: "bpp", span: Span(0, text.length(), 1), label: "none", ref: null, children: nodes);
+    return template.custom(root, template.build("fragment([])"));
+}
+
+// What the function refuses, and where the error lands in the `.bpp`:
+//
+//   <div>no fence</div>
+//     error: a .bpp file begins with a `---` line                 line 1
+//
+//   ---
+//   val x = 1;
+//   <p>{x.toString()}</p>
+//     error: the opening `---` has no closing `---` line          line 1
+//
+//   type Props(a: string)
+//   type Props(b: string)
+//     error: a component declares one `type Props`                at the second
+//
+//   src/components/page.bpp
+//     error: `page.bpp` is a file of the `app/` tree              line 1
+//
+// What the TOOLCHAIN refuses, before this function runs (front 116 § Mechanism):
+//
+//   a `.bpp` file, and no `bpp` key in botopink.json
+//     error: post_card.bpp: no library reads `.bpp` files — set "bpp" in botopink.json
+//
+//   "bpp": "emilia"            emilia has no template function `bpp`
+//     error: botopink.json: "bpp": `emilia` has no `pub fn bpp(comptime template: @Expr<string>)`

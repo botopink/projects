@@ -114,7 +114,7 @@ listener over HTTP and TLS; 328 / 0 on the core from a cold cache before the las
 Not realised: the snapshot map (`test-snap.md`, 11 647 lines, 57 helpers — 0 `.snap` files); 7 of
 the 10 reference examples; `modules.md` differs from the tree in 20 rows (no `rakun-pulsar`,
 `rakun-ws` never renamed `rakun-soap`, `rakun-starter-app` missing). Two `// LANGUAGE GAP:` markers
-without a row (13, 21). → `1.0.11-beta/03-rakun` (19 fronts), the migration off `(if …)` operands →
+without a row (13, 21). → `1.0.11-beta/04-rakun` (19 fronts), the migration off `(if …)` operands →
 `00-gate`.
 
 ### `04-jhonstart` (9 fronts) — **partial, close to done**
@@ -124,7 +124,7 @@ without a row (13, 21). → `1.0.11-beta/03-rakun` (19 fronts), the migration of
 written) · 30 render/streaming (siblings through `__jhEachCompleted`, not `async.runAll`; two tests
 missing) · 31 error boundaries (the digest, 31-b) · 67 forms (the four DOM-side boxes). 204 tests on
 both rows; no `// LANGUAGE GAP:` marker in code; the module-level snapshot map not realised. Two
-dead ledger lines (`jhonstart-counter`, `jhonstart-todo` on erlang pass). → `1.0.11-beta/04-jhonstart`
+dead ledger lines (`jhonstart-counter`, `jhonstart-todo` on erlang pass). → `1.0.11-beta/05-jhonstart`
 (3 fronts), `00-gate`.
 
 ### `05-emilia` (22 fronts) — **done but one box**
@@ -135,7 +135,7 @@ Tailwind 4.3.2 (05emilia-a…l; `reference-coverage.md` 244 / 267). Five familie
 form (transition presets, `backdrop-opacity`, `border-spacing`, `-webkit-backdrop-filter`,
 `divide-*`'s style var); `emilia-card` depends on jhonstart against decision 114; the per-front
 snapshot suites and eight cross-front examples not written; three stale gap markers in frozen
-examples. → `1.0.11-beta/05-emilia` (2 fronts).
+examples. → `1.0.11-beta/06-emilia` (2 fronts).
 
 ### `06-onze` (9 fronts) — **partial; 68 done**
 
@@ -145,7 +145,7 @@ read path of the blog, the boundaries, the gate; no write path, no E2E runner, n
 69 styling 23 / 24 (the public root waits on rakun 69-b) · 70 image response 39 / 43 · 71 release
 33 / 41 (no bootable tarball verified). 8 members (`onze-server` is the eighth the specs did not
 count); the three restricted cells have no ledger line — **the onze test-libs row is red for it**
-before any code defect. → `1.0.11-beta/06-onze` (5 fronts), `00-gate`.
+before any code defect. → `1.0.11-beta/07-onze` (5 fronts), `00-gate`.
 
 ---
 

@@ -10,7 +10,7 @@ every library track's merge into its own `feat` (the pointers last).
 **Owns:** `repository/erika/**` (with `02-std-and-packaging/98-packaging-tail`, which owns
 `erika/modules/erika-test/**`, `examples/erika-linq/README.md` and `erika/AGENTS.md` — this front
 owns the sources and the manifests) · the meta submodule pointers **only**. The other four library
-trees are their tracks' (`03-rakun`, `04-jhonstart`, `05-emilia`, `06-onze`); a row below that names
+trees are their tracks' (`04-rakun`, `05-jhonstart`, `06-emilia`, `07-onze`); a row below that names
 one of them is that track's.
 **Does not touch:** `repository/botopink-lang/**` (the ledger is `00-gate`'s; `c13-migrate.py` is
 16's — run, not edited) · `repository/vscode-extension/**`.

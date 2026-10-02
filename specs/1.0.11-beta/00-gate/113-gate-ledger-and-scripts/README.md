@@ -145,7 +145,7 @@ The five notes report L found in library code, none with a `language-gaps.md` ro
 by string), `rakun-session/src/session.bp:7`, `rakun-data/src/orm/query.bp:33` (method `@Decl`
 params), `rakun-client/src/exchange.bp:48,78` (no JSON value model). The check the track brief
 names — a grep for `// LANGUAGE GAP` over every repository, `specs/1.0.10-beta/**` excluded
-(`../../02-std-and-packaging/README.md` STD-10, `../../04-jhonstart/README.md` the spec markers) —
+(`../../02-std-and-packaging/README.md` STD-10, `../../05-jhonstart/README.md` the spec markers) —
 is written as a meta-level script (`scripts/language-gap-markers.sh` in the meta repository, run by
 114's meta workflow) that prints every marker and fails when one has no row in this milestone's
 `../../language-gaps.md` (matched by file path). This front writes the five rows' *stubs* (file,
@@ -179,7 +179,7 @@ front (99, 100, 101, 108, 109) — this front does not edit it.
 
 - `../../02-std-and-packaging/98-packaging-tail` step 4 ("this front's script does not read
   `restricted-targets.txt`") and PK-1 close: there is no ledger to read or write.
-- `../../03-rakun` 03r-ah is answered by gate-a; `04-jhonstart/modules.md:18,34,36` rows close.
+- `../../04-rakun` 03r-ah is answered by gate-a; `05-jhonstart/modules.md:18,34,36` rows close.
 - Each library's own CI (99, 100, 101, 108, 109 rewrote the matrices) runs
   `zig build test-libs -- --lib <m> --target <t>` for declared targets only; a workflow row on an
   excluded target now produces no cell and the row is wrong — those fronts deleted such rows.

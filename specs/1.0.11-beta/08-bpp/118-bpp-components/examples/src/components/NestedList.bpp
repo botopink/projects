@@ -1,0 +1,37 @@
+---
+// Front 118 — bpp components · examples/src/components/NestedList.bpp
+//
+// Demonstrates: step 4 in a `.bpp` component — recursion. The component's name
+// is the file's name in PascalCase — `nested_list.bpp` is `NestedList` — and the
+// template calls it: there is no `Astro.self`.
+//
+//   <ul class="nested-list">
+//     {items.map((item) => (
+//       <li>{Array.isArray(item) ? <Astro.self items={item} /> : item}</li>
+//     ))}
+//   </ul>
+//
+// `pub type Tree` is a declaration, so it is a type of the module, importable by
+// the page that builds the tree: `import {NestedList, Tree} from
+// "@/components.NestedList";`.
+//
+// The `.bp` form, with its tests: `NestedList` in
+// `components-and-slots-example.bp`.
+//
+// Upstream: astro-docs/13-astro-syntax.md (`Astro.self`)
+//           https://docs.astro.build/en/reference/astro-syntax/#astroself
+
+import {li, ul} from "jhonstart";
+
+pub type Tree(label: string, kids: Array<Tree>)
+
+type Props(items: Array<Tree>)
+---
+<ul class="nested-list">
+  {items.map({ item ->
+    <li>
+      {item.label}
+      {if (item.kids.length > 0) { <NestedList items={item.kids} /> }}
+    </li>
+  })}
+</ul>

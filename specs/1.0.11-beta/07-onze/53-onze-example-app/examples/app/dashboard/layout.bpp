@@ -1,0 +1,32 @@
+---
+// Front 53 — onze example app · examples/app/dashboard/layout.bpp
+//
+// The auth gate of `new-post-form-example.bp`, as a `.bpp` file:
+// `#[layout("dashboard")]`, from this file's directory.
+//
+// The layout reads the session cookie with `use cookies()`. Reading it marks
+// the render dynamic, so front 60 will not prerender anything under
+// `/dashboard`. No session means `redirect("/login")`, raised from the LAYOUT:
+// a layout renders before the page, so the signal leaves before the first
+// chunk and the page never runs. The check is written once, here.
+//
+// A cookie WRITE here would raise — the render phase forbids it.
+//
+// Upstream: https://nextjs.org/docs/app/guides/authentication
+
+import {p, section} from "jhonstart";
+import {cookies, pairValue, redirect} from "jhonstart";
+import {emilia, Token} from "emilia";
+
+fn panelTokens() -> Token[] {
+    return [.Pad.All.8, .Bg.White, .Border.Rounded.Md];
+}
+
+val jar = use cookies();
+val session = pairValue(jar, "session");
+if (session == "") { redirect("/login"); }
+---
+<section class={emilia(panelTokens())}>
+  <p>signed in as {session}</p>
+  {props.children}
+</section>

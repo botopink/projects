@@ -57,13 +57,13 @@ this track hands *out* (a compiler row) is in the last table. Measured at the mi
 | `02-std-and-packaging` · STD-4 (the `01-std` Gate boxes, "seven remotes unified") | the track's exit gate is their definition | `README.md` § Exit gate |
 | `02-std-and-packaging` · 95 ("step 2 closed with the onze rows") | closes with 100 + 113 | 100 · 113 |
 | `02-std-and-packaging` · STD-11 (compiler rows: `io.process` shadows `process`; non-ASCII literal on erlang) | not gate items — `language-gaps.md` rows for `../01-compiler/` (04-js, 02-erlang) | handed out |
-| `03-rakun` · 03r-ah (the eighteen commonJS ledger lines structurally absent) | gate-a answered as recommended | 113 |
-| `03-rakun` · the env-gated cells (`RAKUN_TEST_REDIS_URL`, `broadcast_test.bp:102`; 03r-aa) | gate-h; step 4 | 99 |
-| `03-rakun` · "rakun line in `known-red-libs.txt`: none" | the file is deleted | 113 |
-| `04-jhonstart` · JH-LEDGER (`counter`, `todo` at `0`; `dom-test` at `1`) | step 1 (widen), step 2 (dom-test: structural under gate-d) | 101 |
-| `04-jhonstart` · PK-5, STD-1 | steps 4, 3 | 101 |
-| `04-jhonstart` · the spec markers under `67/examples` (frozen; the copies carry none) | the marker script excludes `specs/1.0.10-beta/**` | 113 step 4c |
-| `07-bundled-libs` · "`00-gate` green before any cross-repository refactor" | the track's exit gate | `README.md` § Exit gate |
+| `04-rakun` · 03r-ah (the eighteen commonJS ledger lines structurally absent) | gate-a answered as recommended | 113 |
+| `04-rakun` · the env-gated cells (`RAKUN_TEST_REDIS_URL`, `broadcast_test.bp:102`; 03r-aa) | gate-h; step 4 | 99 |
+| `04-rakun` · "rakun line in `known-red-libs.txt`: none" | the file is deleted | 113 |
+| `05-jhonstart` · JH-LEDGER (`counter`, `todo` at `0`; `dom-test` at `1`) | step 1 (widen), step 2 (dom-test: structural under gate-d) | 101 |
+| `05-jhonstart` · PK-5, STD-1 | steps 4, 3 | 101 |
+| `05-jhonstart` · the spec markers under `67/examples` (frozen; the copies carry none) | the marker script excludes `specs/1.0.10-beta/**` | 113 step 4c |
+| `03-bundled-libs` · "`00-gate` green before any cross-repository refactor" | the track's exit gate | `README.md` § Exit gate |
 
 ## Handed out of this track
 

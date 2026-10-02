@@ -1,11 +1,23 @@
 # Status — 1.0.11-beta
 
-**Updated:** 2026-09-27 · **Progress:** ~5 % (4 of 65 fronts landed: 99-rakun, 100-onze, 112-format, 114-docs-and-ci; 110 at 2 of 3 steps; the milestone opened today at
-1.0.10-beta's close — [`closure.md`](../1.0.10-beta/closure.md))
+**Updated:** 2026-10-02 · **Progress:** ~0 % landed (0 of 78 fronts done — no front of this
+milestone is on every remote `feat` under a green gate; 15 are in analysis and count for their
+ticked steps; the milestone opened at 1.0.10-beta's close — [`closure.md`](../1.0.10-beta/closure.md))
 
-Count: `00-gate` 11 · `01-compiler` 17 · `02-std-and-packaging` 2 · `03-rakun` 19 · `04-jhonstart` 3 ·
-`05-emilia` 2 · `06-onze` 5 · `07-bundled-libs` 6. A front in analysis counts for its ticked steps.
-Order inside each list follows [`overview.md`](./overview.md) § Order (most blocking first).
+Count: `00-gate` 11 · `01-compiler` 17 · `02-std-and-packaging` 2 · `03-bundled-libs` 7 · `04-rakun` 20 ·
+`05-jhonstart` 3 · `06-emilia` 2 · `07-onze` 5 · `08-bpp` 11 — 78. A front in analysis counts for its ticked steps.
+Order inside each list follows [`overview.md`](./overview.md) § Order (most blocking first); for
+tracks 03–08 the waves are [`fronts.md`](./fronts.md) § Execution order of tracks 03–08.
+
+**The gate now** (2026-10-02). Nothing of 1.0.11 is on a remote `feat` except the jhonstart, erika
+and emilia tips of fronts 101, 108 and 109. The compiler fronts of `00-gate` — 110, 111, 112,
+113, 114 — with the checker's import fix and a std `fs.walk` fix are committed on local branches
+and merged into one local integration branch; one `scripts/gate.sh --cold` on that tip is what
+is waited on before anything is pushed. Measured on it: `test-language` on four targets `1483
+passed, 0 failed` with `expected-failures.txt` deleted; `test-libs` `117 passed, 2 failed … 38
+restrictions audited` with both ledgers deleted — the two reds are `onze-cli`'s cells, measured
+before the import fix and the `fs.walk` fix that target them. The libraries' own GitHub CI is red
+on jhonstart, erika and emilia.
 
 **The gate at the open** (measured 2026-09-26, `scripts/gate.sh --cold` forced past reds): 8 of 10
 stages green; `test-libs` 84 passed / **36 failed** (rakun 25, onze 11); `test-language` 1244 / 1
@@ -17,52 +29,67 @@ the grep stage before any test.
 
 ## Done
 
-- (none)
+- (none) — a front is done when it is on its repository's remote `feat` with that repository's
+  gate and CI green
 
 ## In analysis
 
-- [ ] `00-gate/99-gate-rakun` — critical · steps 1–7 done on `front/99-gate-rakun` (rakun submodule): 25 / 25 modules green under `botopink test` erlang with the pinned compiler (1,817 / 0), 3 / 3 examples build, hook and CI are refusals only, `modules/{rakun,rakun-app}` format-clean; left: the workflow green on `feat` (the landing step) and the meta gate's stage 8 (113 reads it)
+- [ ] `00-gate/112-gate-format` — critical · committed on a local branch, in the local integration branch: every tracked `.bp` is under `format-check` · the landing recorded on 2026-09-27 was not in the pointed tree · waits on the integration tip's `gate.sh --cold`
+- [ ] `00-gate/110-gate-wasm` — critical · steps 1–3 committed, in the integration branch (the strict rule of decision 146 on wasm) · waits on the same gate run
+- [ ] `00-gate/111-gate-beam-and-targets` — critical · steps 1–5 committed, in the integration branch: `expected-failures.txt` deleted, beam in `--target all`, `test-language` on four targets `1483 passed, 0 failed` · waits on the same gate run
+- [ ] `00-gate/113-gate-ledger-and-scripts` — critical · committed, in the integration branch: both ledgers deleted, `test-libs` `117 passed, 2 failed … 38 restrictions audited` measured before the two fixes that target the reds · waits on the same gate run
+- [ ] `00-gate/114-gate-docs-and-ci` — high · committed, in the integration branch · the landing recorded on 2026-09-27 was incomplete · waits on the same gate run
+- [ ] `00-gate/99-gate-rakun` — critical · steps 1–7 on `front/99-gate-rakun`; the library tip is not on its remote; its audit is still running
+- [ ] `00-gate/100-gate-onze` — critical · on `front/100-gate-onze`; the library tip is not on its remote; `onze-cli`'s two cells are red until the checker's import fix and the `fs.walk` fix reach it
+- [ ] `00-gate/101-gate-jhonstart` · `108-gate-erika` · `109-gate-emilia` — tips on their remote `feat`, cells green; each repository's GitHub CI is red and is being fixed together with the one hook text across the five libraries (decision 161)
+- [ ] `01-compiler/01-checker` — the import fix is committed and in the integration branch (decision 170: an import that names its module is never ambiguous; aliases); the front's other steps are open
+- [ ] `02-std-and-packaging/97-std-dedupe` — high · the `fs.walk` fix, step 1 and step 2 committed on its branch · steps 3–5 and 8 in progress · steps 3 and 5 land after the checker's import fix (decision 170)
+- [ ] `03-bundled-libs/102-routing-conventions` — steps 1–2 (the package), `kindLetter` and the wrap order of `fileKinds()` (decisions 171–173) committed on `front/102-routing-conventions` · step 3 (the consumers) goes first when the gate is green and 97 has landed (decision 188)
+- [ ] `03-bundled-libs/103-actions-id` — step 1 (the package) committed on `front/103-actions-id` · step 2 (the consumers) goes first when the gate is green
+- [ ] `03-bundled-libs/125-validation-zod` — steps 0–2 on `front/125-validation-zod` (worktree `.tasks/125-validation-zod`), written against the recommendation of `07-n`, which is open · they land with the gate, after 97 · steps 3–10 follow
 
 ## Pending
 
-- [ ] `00-gate/111-gate-beam-and-targets` — ready · waits on 110 and 112 (`run.sh`, the wasm line)
-- [ ] `00-gate/113-gate-ledger-and-scripts` — ready · waits on 99–109, 111, 112 (the counts) and on `gate-a`, `gate-b`, `gate-d`
-- [ ] `00-gate/115-gate-perf` — ready · waits on every other `00-gate` front (it times a green gate)
-- [ ] `07-bundled-libs/102-routing-conventions` · `103-actions-id` · `104-http` — ready · wait on `00-gate` green and `97-std-dedupe`; 104 on `07-a`, `07-d`, `07-e`
-- [ ] `07-bundled-libs/105-i18n` — waits on 104 and `07-c`
-- [ ] `07-bundled-libs/106-log` · `107-release` — wait on `07-f` / `07-g` (conditional fronts)
-- [ ] `03-rakun` group B (13 · 17 · 22 · 12 · 11 · 65 · 09 · 91 · 92 · 73) — wait on `99-gate-rakun` and group A's `04` step 1
-- [ ] `03-rakun` group C (88 · 19 steps 3–5) — wait on group B
-- [ ] `04-jhonstart/67-jhonstart-forms` — waits on 26 (the fake DOM) and 103 (`form.bp`)
-- [ ] `05-emilia/33-emilia-color-palette` steps 3–4 — wait on `05emilia-m` and on 34
-- [ ] `06-onze/53-onze-example-app` — waits on 49 · 50 · 51 · 71 and on `03-rakun` 22 / 65 (the write path, the public root)
+- [ ] `00-gate/115-gate-perf` — not started · waits on every other `00-gate` front (it times a green gate)
+- [ ] `03-bundled-libs/106-log` — high · ready: no open question (decisions 194, 195) · waits on `00-gate` green and 97 · precedes 26 step 4, 17 and 49 step 3
+- [ ] `03-bundled-libs/104-http` — ready: no open question (decision 196) · the package half (steps 1–4) waits on `00-gate` green and 97 · the consumer sweep (step 5) waits on 04, 65, 123, 79, 12, 19, 22, 49, 51
+- [ ] `03-bundled-libs/105-i18n` — waits on 104, both halves, and on 22 and 26 (decision 180 answered its question)
+- [ ] `03-bundled-libs/107-release` — conditional on `07-g` · waits on 71 and 81
+- [ ] `04-rakun/128-rakun-consolidation` — critical · first front of the track (decision 187) · waits on `99-gate-rakun` landed and pushed, and on the rakun consumer commits of 102 step 3 and 103 step 2
+- [ ] `04-rakun` group B (13 · 17 · 22 · 12 · 11 · 65 · 09 · 91 · 92) — wait on 128 and the group A step each names: `04` step 1 (13, 12), `04` step 5 (22), `19` step 1 (12, 09), 106 (17)
+- [ ] `04-rakun` group C (88 · 19 steps 2–5) — wait on group B
+- [ ] `05-jhonstart/67-jhonstart-forms` — waits on 26 (the fake DOM), 103 step 2 (`form.bp`) and `67-a`
+- [ ] `06-emilia/33-emilia-color-palette` steps 3–4 — wait on `05emilia-m` and on 34
+- [ ] `07-onze/53-onze-example-app` — waits on 49 · 50 · 51 · 71 steps 1–4, on 26 and 67, and on `04-rakun` 22 · 12 · 65 (the write path, the public root)
 - [ ] `02-std-and-packaging/98-packaging-tail` — waits on every library track (it verifies across seven repositories)
-- [ ] `01-compiler/17-beam-memory` — waits on 02, 03 and `17-a`
+- [ ] `01-compiler/17-beam-memory` — waits on 02, 03 (decisions 167, 168 and 174 answered `111-a` and `17-a`)
 - [ ] `01-compiler/16-formatter` — waits on `00-gate` (112), the libraries' migrations and 01's parser rows
 - [ ] `01-compiler/07-review-backlog` · `08-hygiene` · `09-ecosystem-residuals` — wait on 02–05, on every owner, on 16
 
 ## Open
 
-- [ ] `00-gate/112-gate-format` — critical · lands first inside wave 0 · blocked on nothing
-- [ ] `00-gate/110-gate-wasm` — critical · blocked on `ck-host` for its last step only
-- [ ] `00-gate/100-gate-onze` — critical · blocked on nothing
-- [ ] `00-gate/101-gate-jhonstart` — high · blocked on nothing
-- [ ] `00-gate/108-gate-erika` — medium · blocked on nothing
-- [ ] `00-gate/109-gate-emilia` — medium · blocked on nothing
-- [ ] `00-gate/114-gate-docs-and-ci` — high · any time · `gate-e`, `gate-f`, `gate-j`
-- [ ] `02-std-and-packaging/97-std-dedupe` — high · after `00-gate` · blocked on nothing
-- [ ] `01-compiler/01-checker` · `02-erlang` · `03-beam` · `04-js` · `05-wasm` · `14-comptime-on-beam` · `26-cli-tooling` — group A · after `00-gate`
+- [ ] `01-compiler/02-erlang` · `03-beam` · `04-js` · `05-wasm` · `14-comptime-on-beam` · `26-cli-tooling` — group A · after `00-gate`
 - [ ] `01-compiler/12-language-tests` · `18-comptime-runtimes` · `23-std-purity` · `24-effects-by-return` · `25-gate-perf` — group B · after `00-gate`
-- [ ] `03-rakun` group A: `04-rakun-erlang-runtime` (critical) · `74-rakun-tls-ssl-bundles` · `08-rakun-data-sql` · `15-rakun-messaging` · `79-rakun-oauth2-sso` · `81-rakun-packaging-release` · `93-rakun-soap-webservices` · `19-rakun-test-utilities` step 1 — after `99-gate-rakun`
-- [ ] `04-jhonstart/26-jhonstart-router` (high) · `27-jhonstart-link` — after `101-gate-jhonstart`
-- [ ] `05-emilia/34-emilia-modifiers` (high) · `33-emilia-color-palette` steps 1–2 — after `109-gate-emilia` and 97 (`contentHash`)
-- [ ] `06-onze/49-onze-stand-up` (critical) · `50-onze-cli` · `51-onze-image` · `71-onze-release-packaging` — after `100-gate-onze`
+- [ ] `04-rakun` group A: `04-rakun-erlang-runtime` (critical) · `74-rakun-tls-ssl-bundles` · `08-rakun-data-sql` · `15-rakun-messaging` · `79-rakun-oauth2-sso` · `81-rakun-packaging-release` · `93-rakun-soap-webservices` · `73-rakun-starters` · `19-rakun-test-utilities` step 1 — after 128
+- [ ] `05-jhonstart/26-jhonstart-router` (high) · `27-jhonstart-link` — after `101-gate-jhonstart`; 26 after 102 step 3's `routes.bp` commit and after 118 (its step 0 merges `jhonstart-html` into the core — decision 200); its step 4 after 106; its step 8 on the checker capability of decision 186
+- [ ] `06-emilia/34-emilia-modifiers` (high) · `33-emilia-color-palette` steps 1–2 — after `109-gate-emilia` and 118 step 1's carve-outs
+- [ ] `07-onze/49-onze-stand-up` (critical) · `50-onze-cli` · `51-onze-image` · `71-onze-release-packaging` — after `100-gate-onze`; 49 and 50 after 102 step 3's onze commits; 49 step 4 after `04-rakun/65` step 1 (decision 201); 50 step 2 on `50-b`, steps 4 and 7 on `std-d`
+- [ ] `08-bpp/118-bpp-components` (critical) — after `101-gate-jhonstart` · no open question (decisions 190–193)
+- [ ] `08-bpp/121-bpp-content` — steps 1–3 after `100-gate-onze` (step 3 on `08-f`) · steps 4–5 after 125 steps 0–2 · step 6 after 118 and 117 · step 7 after 53
+- [ ] `08-bpp/119-bpp-styling` — on `08-d` · after 118 and 26
+- [ ] `08-bpp/123-bpp-middleware` — after `04-rakun` 04 and 65 (decision 189)
+- [ ] `08-bpp/117-bpp-routing` · `120-bpp-islands` · `122-bpp-data` · `126-bpp-view-transitions` · `127-bpp-actions` — after 118 and the front of track 03 / 04 / 05 / 07 each names (`08-bpp/README.md` § Who else owns the files), one at a time where they append to one file; 117 on `08-b` (decision 202 answered `08-g`); 120 step 4 on `08-e`; 127 after 125 steps 0–2 and 6
+- [ ] `08-bpp/116-bpp-file-format` — after 118, `05-jhonstart/26` step 0 (`jhonstart-html` merged into the core, decision 200) and `01-compiler/26` · no open question (decisions 198–200)
+- [ ] `08-bpp/124-bpp-cli` — last in track 08 · after `07-onze/50`, 71 and every front above · `08-h`
 
 ## Deferred out of this milestone
 
-- `03-rakun/91-rakun-pulsar`'s data plane → a decision (`03r-ad`, recommendation: defer until a
+- `04-rakun/91-rakun-pulsar`'s data plane → a decision (`03r-ad`, recommendation: defer until a
   broker double exists); the front carries the codec and admin arm only.
-- `03-rakun/79`'s SAML ACS → `03r-ae` (no Exclusive XML c14n on OTP or std).
-- The snapshot maps of rakun, jhonstart, emilia, std → one answer for all (`03r-ag`, `30-h`,
-  `05emilia-m`, `01std-f`; recommendation: retire, keep the helpers a contract needs).
+- `04-rakun/79`'s SAML ACS → `03r-ae` (no Exclusive XML c14n on OTP or std).
+- The snapshot maps of rakun, jhonstart, emilia, onze, std → one answer for all (`03r-ag`, `30-h`,
+  `05emilia-m`, `53-b`, `01std-f`; recommendation: retire, keep the helpers a contract needs and
+  onze's § 71 release text).
+- The windows CI row → deleted until the snapshot capture normalises CRLF and path separators
+  (decision 158).
 - Everything in [`deferred.md`](./deferred.md), carried.

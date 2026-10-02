@@ -11,7 +11,7 @@ the file).
 `modules/jhonstart/**` and `modules/jhonstart-link/**`.
 **Does not touch:** `repository/botopink-lang/**` (`scripts/restricted-targets.txt` is 113's);
 `repository/onze/**`, `repository/rakun/**`; `modules/jhonstart-router`, `-forms`, `-link` source
-beyond the reformat (`../../04-jhonstart/` fronts 26, 27, 67 own them).
+beyond the reformat (`../../05-jhonstart/` fronts 26, 27, 67 own them).
 
 ---
 
@@ -46,7 +46,7 @@ version of this README quoted was `botopink test`'s. The member now calls a node
 compiled code — `src/root.bp` exposes `callFill(name, id)` and `callSignal(name)` over the raw
 `call` cell (module-private), and `test/dom_test.bp` calls the registered functions through them
 — so the restriction is what gate-d means by structural: the module cannot exist on the BEAM.
-The alternative the 04-jhonstart README offered (widen, and have the erlang row assert the erlang
+The alternative the 05-jhonstart README offered (widen, and have the erlang row assert the erlang
 twins' empty answers) is not writable: the language has no target query and no per-target test
 block, so one `dom_test.bp` cannot assert a markup on commonJS and an empty string on erlang
 (see *Language gaps* below).
@@ -76,7 +76,7 @@ Tolerances in this repository, all removed:
 ### Step 2 — `jhonstart-dom-test` on erlang — done, (a) made structural
 
 - [x] the audit table above
-- [x] `26-jhonstart-router` (`../../04-jhonstart/26-jhonstart-router/README.md` § Notes) points here
+- [x] `26-jhonstart-router` (`../../05-jhonstart/26-jhonstart-router/README.md` § Notes) points here
 
 ### Step 3 — the repository's own gate — done
 
@@ -137,10 +137,10 @@ Each of the four was run before deletion: `erlang-imported-fn-field` 2/2 on both
 
 ## Blast radius
 
-- `26-jhonstart-router`, `27-jhonstart-link`, `67-jhonstart-forms` (`../../04-jhonstart/`) start
+- `26-jhonstart-router`, `27-jhonstart-link`, `67-jhonstart-forms` (`../../05-jhonstart/`) start
   from this front's landing (the reformat of `modules/jhonstart` and `modules/jhonstart-link`
   touches every file they own; `link.bp` is the one file untouched).
-- `113` deletes `restricted-targets.txt:53-55` with the file; `04-jhonstart/modules.md:34,36`
+- `113` deletes `restricted-targets.txt:53-55` with the file; `05-jhonstart/modules.md:34,36`
   (the "stale restriction — `00-gate`" cells) close on this landing.
 - `emilia`'s examples depend on jhonstart (`repository/emilia/.github/workflows/test.yml:136`
   checks out jhonstart for the examples gate) — 109 verifies against this tree; jhonstart's CI now

@@ -18,7 +18,7 @@ carve-out of the std track, named in the commit — the layer-1 half of decision
 [`../08-hygiene/beam-memory-docs-text.md`](../08-hygiene/beam-memory-docs-text.md)) ·
 `repository/rakun/**` (the rakun track — the migration is 1.0.10's
 [`17-beam-memory/rakun-migration.md`](../../../1.0.10-beta/00-compiler-carry-over/17-beam-memory/rakun-migration.md),
-handed to `03-rakun`; a pointer only here).
+handed to `04-rakun`; a pointer only here).
 
 Paths are relative to `repository/botopink-lang/modules/compiler-core/src/` unless a row says
 otherwise.

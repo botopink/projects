@@ -1,0 +1,50 @@
+---
+// Front 53 — onze example app · examples/components/post_card.bpp
+//
+// The card of `post-card-example.bp`, as a `.bpp` component: emilia styling in
+// markup. `class={emilia(tokens)}` is `styled(tokens)` — the class the token
+// list encodes to. Each list lives in a named function: both halves must build
+// the SAME list in the SAME order, because token order is class identity, and
+// one shared function guarantees that where two inline copies do not.
+//
+// `type Props(post: Post)` is the parameter: `<PostCard post={p} />` in
+// `app/blog/page.bpp` is the call `PostCard(post: p)`.
+//
+// Upstream: https://nextjs.org/docs/app/getting-started/css
+
+import {article, h2, p, span} from "jhonstart";
+import {Link, linkProps} from "jhonstart";
+import {emilia, Token} from "emilia";
+import {Post} from "@/lib.db";
+
+type Props(post: Post)
+
+fn cardTokens() -> Token[] {
+    return [
+        .Bg.White,
+        .Pad.All.4,
+        .Border.W.1,
+        .Border.Color.Gray.100,
+        .Border.Rounded.Md,
+    ];
+}
+
+fn cardTitleTokens() -> Token[] {
+    return [.Text.Size.Lg, .Text.Bold, .Color.Gray.900];
+}
+
+fn cardMetaTokens() -> Token[] {
+    return [.Text.Size.Sm, .Color.Gray.500];
+}
+
+fn cardBodyTokens() -> Token[] {
+    return [.Pad.Y.2, .Color.Gray.700];
+}
+---
+<article class={emilia(cardTokens())}>
+  <h2 class={emilia(cardTitleTokens())}>
+    {Link(linkProps("/blog/" + post.slug), [post.title])}
+  </h2>
+  <span class={emilia(cardMetaTokens())}>{post.published}</span>
+  <p class={emilia(cardBodyTokens())}>{post.excerpt}</p>
+</article>

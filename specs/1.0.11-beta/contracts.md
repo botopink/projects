@@ -1,10 +1,10 @@
 # Cross-front contracts — 1.0.11-beta
 
 Carried from 1.0.10-beta unchanged in substance: a contract is not per milestone. The owning
-fronts now live under `02-std-and-packaging/`, `03-rakun/`, `04-jhonstart/`, `05-emilia/`,
-`06-onze/` and `07-bundled-libs/` of this milestone (a carried front keeps its number — front 22
-is still `03-rakun/22-rakun-file-routing/`); the 1.0.10-beta → 1.0.11-beta map is
-[`carried.md`](./carried.md). A contract whose owner lands in `07-bundled-libs` (the action id,
+fronts now live under `02-std-and-packaging/`, `04-rakun/`, `05-jhonstart/`, `06-emilia/`,
+`07-onze/` and `03-bundled-libs/` of this milestone (a carried front keeps its number — front 22
+is still `04-rakun/22-rakun-file-routing/`); the 1.0.10-beta → 1.0.11-beta map is
+[`carried.md`](./carried.md). A contract whose owner lands in `03-bundled-libs` (the action id,
 the segment grammar, the cookie and q-value readers) is then asserted from the bundled package's
 own tests as well as both consumers'.
 

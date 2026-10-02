@@ -1,6 +1,6 @@
 # Front 97 — std dedupe: one place for every shared primitive
 
-**Priority:** high — `07-bundled-libs` wave 1 (routing conventions, actions id, http) and every
+**Priority:** high — `03-bundled-libs` wave 1 (routing conventions, actions id, http) and every
 library front's "consume std X" step are written against the surface this front lands; a primitive
 landed after its consumers were rewritten is rewritten twice
 **Depends on:** none for steps 1–5 · maintainer decision `01std-f` for step 7 · `std-d` for step 6 ·
@@ -12,7 +12,7 @@ landed after its consumers were rewritten is rewritten twice
 `docs.md` § std where it lists the surface · `libs/std/src/__snapshots__/**` (step 7 only)
 **Does not touch:** `repository/botopink-lang/modules/**` (the compiler — a new method on a primitive
 is declared in `libs/std/src/primitives.bp`, whose declarations the checker reads; if a backend
-needs a lowering the front stops and reports it) · `libs/routing/**` (`07-bundled-libs`) · any file
+needs a lowering the front stops and reports it) · `libs/routing/**` (`03-bundled-libs`) · any file
 under `repository/{rakun,jhonstart,emilia,onze,erika}` — the copies there are deleted by the front
 that owns the file (§ Consumers) · `scripts/restricted-targets.txt`, `.gitignore`, the hooks
 (`00-gate`)
@@ -106,7 +106,7 @@ one unit, digits only, refused otherwise — the stricter of the two rakun parse
 **Acceptance:**
 - [ ] `pbkdf2Sha256("password", "salt", 1, 32)` equals RFC 6070's vector on both targets
 - [ ] `parseDuration("30s")` is `Ok(30000)`; `"1.5s"`, `"30"`, `"30 s"`, `"30S"` are `Error`
-- [ ] the `03-rakun` track's `config.parseDuration` / `jwt.skewOf` rows name this function as
+- [ ] the `04-rakun` track's `config.parseDuration` / `jwt.skewOf` rows name this function as
       their replacement (a "consume std" step there)
 
 ### Step 4 — the snapshot engine on `io/fs` and `path`
@@ -133,7 +133,7 @@ shape (24-g): the last `Error` is answered, never rejected. No jitter without a 
 - [ ] `nextDelay(RetryPolicy(3, 100, 2.0, 1000), 1..4)` answers `100`, `200`, `400`, `null`
 - [ ] `retry` over a work that fails twice then succeeds answers `Ok` after three calls, on both
       targets; over one that always fails answers the last `Error` after `maxAttempts`
-- [ ] the four rakun loops are named as "consume std" rows in the `03-rakun` track
+- [ ] the four rakun loops are named as "consume std" rows in the `04-rakun` track
 
 ### Step 6 — conditional on `std-d`: `io.process` signals and a line reader
 
@@ -174,11 +174,11 @@ the grep in the last column.
 
 | Copy | Owner front | Step | Measured by |
 |---|---|---|---|
-| `emilia.bp:95-97` `hashHex` | `05-emilia/34-emilia-modifiers` step 1 | `import {hash} from "std"`, `hash.contentHash`, fixture `e_39b87d03` unchanged | `grep -n hashHex repository/emilia/modules/emilia/src` empty |
-| `onze/src/config.bp:98-130` (`pub` accessors) | `06-onze/49-onze-stand-up` step 1 | receiver swap; the `pub` copies deleted (no consumer outside `onze`) | `grep -rn "fn membersOf\|fn strOf\|fn isObject\|fn kindName" repository/onze/modules/onze/src` empty |
-| `onze-cli/src/{build,info}.bp`, `onze-bundler/src/entry.bp:182`, the `parseInt` in `entry.bp` | `06-onze/50-onze-cli` step 1 | receiver swap | the same grep over `onze-cli/src` and `onze-bundler/src` empty |
-| `onze-og/src/svg.bp:19`, `metrics.bp:12` | `06-onze/51-onze-image` step 1 | `parseInt` / `parseFloat` | `grep -n "fn parse" repository/onze/modules/onze-og/src` empty |
-| rakun's eleven copies (the table in § Problem) | the `03-rakun` track's fronts, by file | one row each | the `03-rakun` track's greps |
+| `emilia.bp:95-97` `hashHex` | `06-emilia/34-emilia-modifiers` step 1 | `import {hash} from "std"`, `hash.contentHash`, fixture `e_39b87d03` unchanged | `grep -n hashHex repository/emilia/modules/emilia/src` empty |
+| `onze/src/config.bp:98-130` (`pub` accessors) | `07-onze/49-onze-stand-up` step 1 | receiver swap; the `pub` copies deleted (no consumer outside `onze`) | `grep -rn "fn membersOf\|fn strOf\|fn isObject\|fn kindName" repository/onze/modules/onze/src` empty |
+| `onze-cli/src/{build,info}.bp`, `onze-bundler/src/entry.bp:182`, the `parseInt` in `entry.bp` | `07-onze/50-onze-cli` step 1 | receiver swap | the same grep over `onze-cli/src` and `onze-bundler/src` empty |
+| `onze-og/src/svg.bp:19`, `metrics.bp:12` | `07-onze/51-onze-image` step 1 | `parseInt` / `parseFloat` | `grep -n "fn parse" repository/onze/modules/onze-og/src` empty |
+| rakun's eleven copies (the table in § Problem) | the `04-rakun` track's fronts, by file | one row each | the `04-rakun` track's greps |
 
 ## Gate
 

@@ -1,7 +1,7 @@
 # Front 100 — gate-onze: every onze cell green on the targets its members declare
 
 **Priority:** critical — 11 of the gate's 36 red `test-libs` cells were onze's at the open, on both
-targets, and every `06-onze` front waits on this one.
+targets, and every `07-onze` front waits on this one.
 **Depends on:** none to start (gate-g's recommendation was the starting assumption).
 `onze-server·erlang` and `onze-cli`'s fixture-build tests compile rakun's `rakun-data`,
 `rakun-scheduling` and `rakun-app` — they are green only on a tree that has `99`'s migration.
@@ -101,7 +101,7 @@ Five red tests, all in `onze-cli`, none fixable in `repository/onze/**`:
 | Test | Targets | Cause | Owner |
 |---|---|---|---|
 | `start: the blog through onze build && onze start` (`test/start_test.bp`) | both | the staged blog holds `app/not_found.bp` and `app/blog/d_slug/not_found.bp`, both `pub fn NotFound` (jhonstart's convention); every import of either — `import {NotFound} from "app.blog.d_slug.not_found"`, which does say which — is refused with `ambiguous-import-use: NotFound is imported from two declarations — declared pub by app/blog/d_slug/not_found and by app/not_found — and this use does not say which`. Reproduction: two modules `a/nf.bp`, `b/nf.bp` each `pub fn NotFound() -> string`, a third with `import {NotFound} from "a.nf"; NotFound()` → refused on both targets. The docs (`docs.md:146-149`) say the `from` item is the way out; here it is not. | `../01-compiler/01-checker` — a named import from a spelled module must resolve to that module |
-| `start: onze build && onze start serves the scaffold's /` | commonJS | the staged scaffold builds and `onze start` listens, but `GET /` answers `404` with an empty body, on 99's working tree of rakun (`rakun-app` is mid-migration there, its route files rewritten); `onze-server`'s own test "Onze.run listens on 3000 and answers / from `#[page("")]`" passes on the same tree; the staged `onze_routes.bp` imports `home as onze_app_page` and a probe shows an aliased, unused import runs the module body on both targets | re-measure on 99's landed tree; if it stays red it is onze-server's (a `06-onze` row), not a gate tolerance |
+| `start: onze build && onze start serves the scaffold's /` | commonJS | the staged scaffold builds and `onze start` listens, but `GET /` answers `404` with an empty body, on 99's working tree of rakun (`rakun-app` is mid-migration there, its route files rewritten); `onze-server`'s own test "Onze.run listens on 3000 and answers / from `#[page("")]`" passes on the same tree; the staged `onze_routes.bp` imports `home as onze_app_page` and a probe shows an aliased, unused import runs the module body on both targets | re-measure on 99's landed tree; if it stays red it is onze-server's (a `07-onze` row), not a gate tolerance |
 | `build: the scaffold ---- the staged server, its BEAM …` and `start: … serves the scaffold's /` | erlang | the whole `onze build` on the BEAM throws a bare `enoent` (an Erlang exception escaping a std host binding, not a `@Result`); every `io.fs` / `io.process` function answers a `@Result` for a missing path in a probe, `process.cwd()` is the member directory inside the test, and the scaffold's manifest reads — so the throw is inside the build's compile-and-link half on the BEAM; not localised yet (the erlang runner prints no stack) | first `botopink build --target erlang` of `onze-cli` driven by `erl` to get the stack; then either a std erlang binding row (`../02-std-and-packaging`) or an onze-cli fix |
 | `build: a client emilia call is evaluated by both backends` and `build: a CSS module's generated accessors compile …` | erlang (on `feat`'s rakun; green on 99's tree) | rakun's `if-operand` cascade in the staged server | 99 |
 
@@ -187,7 +187,7 @@ and stays. A closure whose body was one such expression became a loop or a named
 
 ## Blast radius
 
-- Every `06-onze` front starts from this front's landing: `onze-bundler/src/**`, `onze-cli/src/**`,
+- Every `07-onze` front starts from this front's landing: `onze-bundler/src/**`, `onze-cli/src/**`,
   `onze-assets/src/**`, `onze-og/src/**`, `onze-release/src/**` are rewritten here, and `onze-cli`
   and `onze-og` are two-row members now.
 - `rakun-starter-test` (99 step 3) depends on an onze member — 99 verifies its cell against this

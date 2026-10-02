@@ -1,0 +1,29 @@
+---
+// Front 53 — onze example app · examples/app/blog/page.bpp
+//
+// The blog index of `blog-list-page-example.bp`, as a `.bpp` file: a server
+// component that loads data, the load cached under the `"posts"` tag a mutation
+// will later expire.
+//
+// `listPosts()` is a blocking call, not a future: on the BEAM a render is a
+// process, so a loader does not have to be coloured async to be concurrent.
+//
+// `<PostCard post={post} />` is the call `PostCard(post: post)` — the component
+// is `components/post_card.bpp`, whose `Props` is that parameter.
+//
+// Upstream: https://nextjs.org/docs/app/getting-started/fetching-data
+
+import {li, ul} from "jhonstart";
+import {emilia, Token} from "emilia";
+import {listPosts} from "@/lib.db";
+import {PostCard} from "@/components.post_card";
+
+fn listTokens() -> Token[] {
+    return [.Layout.Flex, .Flex.Col, .Flex.Gap.4];
+}
+
+val posts = listPosts();
+---
+<ul class={emilia(listTokens())}>
+  {posts.map({ post -> <li><PostCard post={post} /></li> })}
+</ul>
