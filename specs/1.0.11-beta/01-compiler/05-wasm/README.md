@@ -107,6 +107,22 @@ that no other function is dropped silently (the audit of the wrong-answer class 
 - [ ] `run/external_wrapper_keeps_refusal` refused on wasm by the documented rule; no wasm line in `expected-failures.txt`
 - [ ] `zig build test-libs` — `std`'s wasm-reachable cells at baseline
 
+### Step 5 — std on wasm: the `@External.Wasm` template reader and the WASI imports (decision 230)
+
+Moved from `00-gate/110-gate-wasm`. `botopink build --target wasm` in `libs/std` exits 1 with
+fifteen modules refused, because the wasm backend reads `@External.Wasm` nowhere: no host function
+can be bound. This step owns two of the three groups (the third is `02-std-and-packaging`'s):
+
+| Group | Modules | What it needs |
+|---|---|---|
+| 1 | `math`, `unicode`, `json`, `escape`, `encoding` (and so `querystring`), `hash` | the `@External.Wasm` template reader: a host cell lowered to wasm opcodes (`math`: `f64.floor` …) or to a prelude helper / pure `.bp` body |
+| 2 | `io/clock`, `io/random`, `io/fs` (and so `testing/snapshots`) | WASI imports (`clock_time_get`, `random_get`, `path_open` …) bound through the same reader |
+
+**Acceptance:**
+- [ ] `botopink build --target wasm` in `libs/std` refuses only group 3's modules (each with its located message)
+- [ ] `zig build test-libs` — `std · wasm` cells for groups 1 and 2 pass (wasmtime), the same answers as commonJS
+- [ ] `wat/AGENTS.md` § Where this backend refuses to answer lists only group 3
+
 ## Gate
 
 - [ ] `zig build test` from a **cold** runtime cache, green, in this front's worktree

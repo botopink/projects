@@ -128,7 +128,7 @@ failures, 1 failed` on `--target all`; `run.sh --target wasm`: `374 passed, 1 ex
 
 - [x] `bash tests/language/run.sh --target wasm --only run/external_wrapper_keeps_refusal.bp` → `passed` (the cell's `.wasm.expect` is the refusal, `14:12`)
 - [x] `expected-failures.txt` had no live line left and is deleted (111 step 4); `run.sh --target all` prints `language tests: 1483 passed, 0 failed`
-- [ ] `botopink build --target wasm` in `libs/std` → exit 0 — **not reachable under (a) as std stands**: exit 1, fifteen modules refused (§ Current state). It closes when every std module either has a wasm lowering for its host cells or is out of a wasm build; neither is this front's (§ Left)
+- `botopink build --target wasm` in `libs/std` → exit 0 — moved out of this front by decision 230: groups 1 and 2 (the `@External.Wasm` template reader, the WASI imports) are `../../01-compiler/05-wasm/` step 5, group 3 (`io/http`, `async`, `testing/mocks`, `testing/asserts`) is `../../02-std-and-packaging/` § From 00-gate. Today: exit 1, fifteen modules refused, each with a located refusal.
 
 ## Left
 

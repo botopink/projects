@@ -49,6 +49,17 @@ theirs is closed on tick, closed on a decision confirmation, or a step of 97 (`c
 97 is first because a std primitive that lands after its consumers were rewritten is rewritten
 twice; 98 is last because its acceptance is a grep over files other fronts write.
 
+## From 00-gate
+
+Moved here by decision 230 from `00-gate/110-gate-wasm`: the std modules whose wasm build is not a
+compiler question (groups 1 and 2 are `01-compiler/05-wasm` step 5).
+
+- [ ] **std on wasm, group 3** — `io/http` (`fetch`), `async` (`gateHandle`), `testing/mocks`
+      (`pushMatcher`), `testing/asserts` (`canonical`, decision 146): for each module, decide and
+      do one of (a) out of a wasm build — the manifest or the module refuses wasm with a located
+      message, as it does today, recorded as the design; or (b) restructured so no host cell is
+      reachable on wasm. A question per module goes to `decisions-pending.md` before it is done.
+
 ## Handed to 00-gate
 
 Items that are today a tolerated red, a stale or missing ledger line, a missing guard or a marker
