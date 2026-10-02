@@ -16,7 +16,7 @@ created if absent) · [`pattern-binding.md`](./pattern-binding.md) · the cells 
 **Does not touch:** `src/comptime/**`, `src/parser/**` (01, 14, 18) · `src/codegen/erlang.zig`,
 `crossModule.zig`, `beam/{erl_ast,erl_emitter}.zig` (02) · `commonJS.zig`, `typescript.zig`, `js/**`
 (04) · `wat.zig`, `wat/**` (05) · `modules/compiler-cli/**` (26 — the sidecar's CLI half) ·
-`tests/language/run.sh:155` (12's carve-out of 25's runner: the `all` flip)
+`tests/language/run.sh`'s `all)` line (12's carve-out of 25's runner: the `all` flip, landed by 111)
 **Does not touch until 00-gate lands:** `beam_asm.zig`'s module prologue (`main`, the init
 order) — EF-1/EF-2 add a `__bp_load_siblings` twin there; this front's steps 1–3 edit the pattern
 and call lowerings only, and rebase on the gate's commit.
@@ -50,7 +50,9 @@ the open).
 ## Current state
 
 `run.sh --target beam`: 382 passed, 2 expected failures (the sidecar), 0 failed, measured at the
-open. beam is outside `--target all` (`run.sh:155`; 12's step 1 after EF-1/EF-2). The 1.0.10
+open; since 111 landed EF-1/EF-2 beam is one of `--target all`'s four targets and the suite keeps no
+list of expected failures, so every `run/` and `modules/` cell a front adds runs on beam with the
+rest. The 1.0.10
 README's steps 1–5 and the "rows no step named" hold; `beam_export_audit.sh` assembles every
 module. `zig fmt` is green on this front's files.
 
