@@ -113,6 +113,8 @@ so the critical path ends with the rest.
       count equal to its `--list` plan
 - [ ] every cell's output byte-identical to the pre-front run (a script diffs every cell's printed
       result and every emitted module) — consistency is measured, not assumed
+      (first part: every printed result of stages 8 and 9 equal to feat's, § Measurements; emitted
+      modules not yet diffed)
 - [ ] the isolation pair of each target green (a cell that would see another's state fails it)
 
 ### Step 3 — the cell-result store and warm under 1 minute
@@ -273,6 +275,50 @@ botopink's cold check runs at Gleam's rate; Gleam's warm run is 10× faster thro
 cache, and its erlang build spends its time in `erlc` as botopink's cells spend theirs in `erl`.
 `tsc` exits 2 on std's `.d.ts`: `testing/snapshots.d.ts` names `SourceLocation` without declaring
 it (std is outside `tsc-check.sh`'s project set).
+
+### Step 2, first part — no busy wait, one compile `erl` per command
+
+Compiler `cef162a6` (on feat `0041d38c`). Two changes, nothing else:
+
+- **Flags.** Every `erl` the compiler starts carries `+sbwt none +sbwtdcpu none +sbwtdio none`
+  (`compiler-core/src/otp.zig` `QUIET_FLAGS`), on the argv — or prepended to `ERL_AFLAGS` for a
+  child whose argv the compiler does not write (`escript` runners, `erlc +from_asm`), so a user's
+  `ERL_FLAGS` still wins. VMs that compile or answer a question get few schedulers (the probe
+  `+S 1:1`, `erlc` `+S 1:1`, the session `+S 8:1` with each job bringing `ceil(files/32)` ≤ 8
+  online); VMs that run user code — `run`'s program, `test`'s runners, the comptime node, the RUN
+  LOG programs — keep the default count (`std/io/os.bp` reads `schedulers_online`).
+- **The session** (`compiler-cli/src/cli/otp.zig`). The OTP check starts the command's one compile
+  `erl`, which prints its release first (the refusal still comes before anything is written) and then
+  runs, in order, every compile job of the command — `build`'s check, the host-module lookup,
+  `run`'s compile, `test`'s precompile — each its old `-eval` text in a fresh process. Closed when
+  the command returns: inside the cell's own process, nothing persists. VMs per cell: erlang `run`
+  4 → 2, beam `run` 3 → 2, erlang `test` 3 → 2 plus one per test module. Kept apart: the program
+  (user code, a clean VM), the comptime node (user comptime code, default schedulers), `test`'s
+  `erlc +from_asm` (its `.beam` records `erlc`'s options).
+
+**Consistency.** A logging stand-in for `botopink` (`run.sh --compiler`, `BOTOPINK_BIN`) recorded
+every invocation's exit code, stdout and stderr, for the feat binary and this one; the diff
+compares them per cell after removing timings, dates, ports, OS pids, random directory names and,
+in `--json` test events, `run_log`/`duration` (keeping module, name, status). Stage 9: 1 644
+invocations, **0 differ** (twice). Stage 8: 319 invocations, **0 differ**; raw, 15 differed only in
+timestamps, ports and timing-dependent logger reports a passing test captured (rakun's TLS and
+supervisor tests, std's TLS test). Both reports are byte-equal (`2061 passed, 0 failed`;
+`123 passed, 0 failed, 15 without tests, 38 restrictions audited`). The emitters did not change, so
+emitted modules were not diffed.
+
+**CPU-s, loaded** (user + sys of the stage command and its children, wrapper included on both
+sides; load1 min / median / max):
+
+| Stage | feat `0041d38c` | this change |
+|---|---:|---:|
+| 9 `test-language`, pair 1 | 1500 (15 / 38 / 47), wall 3m40s | 1028 (6 / 13 / 17), wall 1m36s |
+| 9 `test-language`, pair 2 (back to back) | 1499 (14 / 60 / 79), wall 5m10s | 580 (39 / 63 / 72), wall 5m06s |
+| 8 `test-libs` | 2152 (14 / 83 / 103), wall 4m06s | 1474 (10 / 21 / 24), wall 4m05s |
+
+Stage 9 −31 % to −61 %, stage 8 −32 %. The machine was shared with other worktree threads and the
+load moved between runs; the machine-wide `beam` / `erlcheck` caches were warm for both sides.
+**Needs an idle machine:** every number of this table (three runs each, the median), and the walls
+— the spread of the two stage-9 pairs is the load, not the change.
 
 ### What 5 minutes cold needs
 
