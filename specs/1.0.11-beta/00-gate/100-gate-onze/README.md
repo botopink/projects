@@ -114,7 +114,7 @@ No ledger line was written anywhere.
 ## What is left
 
 The `onze-cli` tests that were red, none fixable in `repository/onze/**`, each covered by a fix
-on `feat` and pending the cold gate on the integrated tip:
+on `feat`; both `onze-cli` cells are green under the cold gate on the integrated tip:
 
 | Test | Targets | Cause | Covered by |
 |---|---|---|---|
@@ -175,8 +175,8 @@ and stays. A closure whose body was one such expression became a loop or a named
 - [x] every member but `onze-cli` `pass` / `no tests`, `0 failed`, on its declared targets
 - [x] `(cd examples/blog && botopink build --out $(mktemp -d))` exit 0; the examples gate builds
       `blog` and `scaffold` on both targets
-- [ ] `onze-cli` on both targets — every cause is covered by a fix on `feat` (§ What is left);
-      to be re-measured by the cold gate on the integrated tip
+- [x] `onze-cli` on both targets — every cause is covered by a fix on `feat` (§ What is left);
+      green on both targets under the `scripts/gate.sh --cold` green on the integrated `feat` (2026-10-02), no `FAILED cells:` line
 
 ### Step 3 — the restrictions are structural (gate-d)
 
@@ -191,12 +191,11 @@ and stays. A closure whose body was one such expression became a loop or a named
 
 ## Gate
 
-- [ ] every onze cell `pass` / `no tests` on its declared targets, `0 failed` — to be re-measured
-      by the cold gate on the integrated tip
-- [ ] `scripts/gate.sh --cold` in `repository/botopink-lang` with this onze checkout and rakun at
-      `feat`: stage 8 has no onze red — to be re-measured on the integrated tip
-- [ ] `(cd repository/onze && scripts/git-hooks/pre-commit)` green — to be re-measured with the
-      cells; the workflow's first GitHub run is pending
+- [x] every onze cell `pass` / `no tests` on its declared targets, `0 failed` — `scripts/gate.sh --cold` green on the integrated `feat` (2026-10-02): `test-libs: 123 passed, 0 failed, 15 without tests, 38 restrictions audited`, no `FAILED cells:` line
+- [x] `scripts/gate.sh --cold` in `repository/botopink-lang` with this onze checkout and rakun at
+      `feat`: stage 8 has no onze red — `scripts/gate.sh --cold` green on the integrated `feat` (2026-10-02); onze's `test` workflow green on GitHub on the remote `feat`
+- [ ] `(cd repository/onze && scripts/git-hooks/pre-commit)` green — waits on one end-to-end run of
+      the hook on the integrated tip
 - [x] `repository/onze/AGENTS.md` updated; the work is on onze's `feat`
 
 ## Blast radius

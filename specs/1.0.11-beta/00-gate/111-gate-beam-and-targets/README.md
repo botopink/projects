@@ -101,7 +101,7 @@ found it:
 
 **Acceptance:**
 - [x] `bash tests/language/run.sh --target all` → `language tests: 1474 passed, 1 expected failures, 0 failed` on four targets (the `1` is step 4's)
-- [ ] `zig build test-language` and `scripts/gate.sh --cold` stage 9 green with beam in it — `zig build test-language` measured green here; `gate.sh --cold` is the landing step (it is red at stage 8 until 113 lands)
+- [x] `zig build test-language` and `scripts/gate.sh --cold` stage 9 green with beam in it — `scripts/gate.sh --cold` green on the integrated `feat` (2026-10-02): `language tests: 2061 passed, 0 failed` on commonJS, erlang, wasm and beam
 
 ### Step 3 — `modules/` cells honour their manifest `targets` (gate-d)
 
@@ -201,9 +201,9 @@ changed, cell by cell:
 - [x] … no expected column — step 4: `run.sh` prints `language tests: <n> passed, <m> failed`, and `tests/language/expected-failures.txt` does not exist
 - [x] `scripts/beam_export_audit.sh` → `490/490 modules assembled`; `scripts/snap_audit.sh --mode=runtime-parity` → `1431 pairs, 0 differing or missing`
 - [x] `bash scripts/format-check.sh` exit 0; `zig fmt --check modules` exit 0; `zig build test-cli` exit 0 (`cli contract: OK`, `backend-execution parity: OK`)
-- [ ] `scripts/gate.sh --cold` green in this front's worktree — the landing step, after 113
+- [x] `scripts/gate.sh --cold` green in this front's worktree — satisfied by the landing: `scripts/gate.sh --cold` green on the integrated `feat` (2026-10-02), every stage passed
 - [x] `modules/compiler-cli/AGENTS.md`, `modules/compiler-cli/src/cli/AGENTS.md`, `modules/compiler-core/src/codegen/AGENTS.md`, `tests/language/AGENTS.md`, the root `AGENTS.md` (stage 9), `README.md` and `docs.md` (the Backends table: beam's runner) updated in the same change
-- [ ] commit on `front/111-gate-beam-and-targets` in `repository/botopink-lang` — under a green gate, after 113
+- [x] commit on `front/111-gate-beam-and-targets` in `repository/botopink-lang` — satisfied by the landing: on botopink-lang's remote `feat` under the green cold gate
 
 ## Rows handed to other fronts
 

@@ -146,8 +146,8 @@ quotes (a snapshot, an `.expect` location) carries that with it in the same comm
 - [x] `bash scripts/format-check.sh` → every tree ✓; `zig fmt --check modules` → exit 0
 - [x] `bash tests/language/run.sh --target all` and `--target beam`: tallies unchanged by this front
 - [x] `bash scripts/check-docs.sh`: 94 fences, 94 checked, 0 failed, before and after
-- [ ] `scripts/gate.sh --cold` green in this front's worktree — waits on `113` (stage 8)
-- [ ] commits on `front/112-gate-format` in `repository/botopink-lang`, pushed — after the line above
+- [x] `scripts/gate.sh --cold` green in this front's worktree — satisfied by the landing: `scripts/gate.sh --cold` green on the integrated `feat` (2026-10-02), zig fmt and format-check stages green
+- [x] commits on `front/112-gate-format` in `repository/botopink-lang`, pushed — satisfied by the landing: on botopink-lang's remote `feat` under the green cold gate
 
 ## Blast radius
 

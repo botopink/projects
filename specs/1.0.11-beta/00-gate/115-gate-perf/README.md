@@ -84,7 +84,7 @@ CPU-s at load 57; its long pole is one LLVM thread for `botopink`) + the longest
 assumption, 10 min cold and 5 min warm, until the idle runs amend it.
 
 **Acceptance:**
-- [ ] the table filled from three runs (median), with the load and the commit — on an idle machine
+- the idle three-run table (median, load, commit) → `133-gate-speed` step 1 (decision 229 amends the budget)
 - [x] the budget written in step 5 and in `../README.md` § Exit gate (`budget_cold=600`, `budget_warm=300`)
 
 ### Step 2 — the dependency-closure compile cache
@@ -105,7 +105,7 @@ the cell durations under `.botopinkbuild/cache/`.
 
 **Acceptance:**
 - [x] the erlang verdict cache: an accepted build twice under one cache writes the same keys, a changed source is a new key, a refused one is refused (and printed) on every build — `cli_contract.sh` § the erlang check's verdict cache, red against the pre-front binary; `emilia-borders` built with an empty and a warm cache: identical `out/` trees (`diff -r`) and identical logs
-- [ ] `zig build test-libs` with an empty cache and warm: the same cell lines, the same passed count, byte-identical emitted modules for every cell (a script diffs `out/` trees) — the 172 cell and audit lines and the summary are identical (`XDG_CACHE_HOME` empty: no `.beam`, verdict or duration entry; 6m13s, 2 031 CPU-s at load ~60); the per-cell `out/` diff is open (the runs remove their trees)
+- the per-cell `out/` diff, empty vs warm cache → `131-gate-build-cache` step 3's first box; measured here: the 172 cell and audit lines and the summary are identical (`XDG_CACHE_HOME` empty: no `.beam`, verdict or duration entry; 6m13s, 2 031 CPU-s at load ~60)
 - the closure cache's own boxes (a changed std byte, a rebuilt compiler, each a miss) are `131-gate-build-cache` step 3's
 - [x] stage 8 wall clock and CPU-s before/after in this README's table (§ Measurements)
 
@@ -123,7 +123,7 @@ is not built: after the fixes nothing measured points at it.
 **Acceptance:**
 - [x] stage 8 wall clock before/after (§ Measurements); CPU-s: 12 760 → ~1 850 — the work is the same cells, the CPU is the Debug compiler and the fixture compiles that are gone
 - [x] `--jobs 1` and the default print the same bytes but for the timing values the children print (`--lib erika-linq` and `--lib std`, `--json`, durations stripped: one difference, the timestamp inside a TLS `NOTICE REPORT` run log)
-- [ ] the isolation cell pair green — belongs to (a), not built
+- the isolation cell pair → `133-gate-speed` step 2 (the isolation pair of each target)
 
 ### Step 4 — `run.sh`: cells batched per target
 
@@ -135,7 +135,7 @@ plan, and a run's `cells:` line is what `gate.sh` holds to it.
 
 **Acceptance:**
 - [x] `run.sh --target all` prints the same tally before and after: `language tests: 1515 passed, 0 failed`, `narrowings: 30 exclusions audited`, 1 241 jobs; wall clock before/after in § Measurements
-- [ ] `run.sh --jobs 1` and the default: the same bytes — the runner's ordering is unchanged and the new `cells:` line is a count; not re-run serially on this front
+- `run.sh --jobs 1` against the default, byte for byte → `133-gate-speed` step 2 (every cell's output byte-identical); here the runner's ordering is unchanged and the `cells:` line is a count
 
 ### Step 5 — the budget as acceptance; every stage's time in the report; nothing narrowed
 
@@ -147,7 +147,7 @@ plans (`scripts/test-libs.sh --list`, `tests/language/run.sh --list`, `scripts/c
 difference (`plan: 134 cells and 38 audits, as --list declares`).
 
 **Acceptance:**
-- [ ] `scripts/gate.sh --cold` on 16 idle cores: wall ≤ the budget step 1 wrote (working assumption ≤ 10 min cold, ≤ 5 min warm); three runs, median, recorded here — the loaded runs are in § Measurements
+- the idle-core runs under budget → `133-gate-speed` step 2 and § Gate (≤ 5 min cold, ≤ 1 min warm, decision 229); the loaded runs are in § Measurements
 - [x] the report prints one time per stage and the total; `scripts/AGENTS.md` § gate.sh documents the line
 - [x] stage 8 runs every cell the manifests declare (113's count), stage 9 every cell of four targets (111's count), stage 10 every fence (114's count) — the counts printed equal the `--list` counts, asserted by `gate.sh`
 
@@ -211,20 +211,20 @@ What each change saves, measured alone:
 ## Gate
 
 - [x] `zig build test` from a cold runtime cache, green (stage 4 of every run above)
-- [ ] `scripts/gate.sh --cold` green, under budget on the reference machine, every stage's count equal to its `--list` — green with every count equal to its plan in every run; under budget only on the warm-build run (8m52s at load 65), the cold-build run 11m00s at load 57; the idle runs are open
-- [ ] `zig build test-libs` byte-identical outputs warm vs. empty cache; `run.sh` identical tallies — the tallies are identical (§ Measurements), and an empty-cache `test-libs` prints the warm run's 172 cell and audit lines and summary, line for line; the per-cell emitted-module diff is open
+- [x] `scripts/gate.sh --cold` green, every stage's count equal to its `--list` — green with every count equal to its plan in every run, and on the integrated `feat` 2026-10-02 (12m16s at load, printed yellow over budget; 9m31s on the run before)
+- under budget on the reference machine → `133-gate-speed` § Gate (idle runs)
+- [x] `run.sh` identical tallies — identical in every run (§ Measurements); an empty-cache `test-libs` prints the warm run's 172 cell and audit lines and summary, line for line
+- the per-cell emitted-module diff, warm vs empty cache → `131-gate-build-cache` step 3
 - [x] `scripts/AGENTS.md`, `modules/compiler-cli/AGENTS.md` and `src/cli/AGENTS.md` (the scratch directory, the verdict cache), `modules/lib-test-runner/AGENTS.md` (the start order), `tests/language/AGENTS.md` (`--list`), the meta `AGENTS.md`, and each library's `AGENTS.md` (the hook's pool) updated in the same commits
 - [x] the work is on `feat` in `repository/botopink-lang`, the five libraries and the meta repository
 
 ## Open
 
-The front's code is on `feat`; what is left is measurement and one question:
+The front's code is on `feat`; its open measurements are carried:
 
-- **The idle measurement.** Three `gate.sh --cold` runs on 16 idle cores, cold and warm build, to
-  confirm or amend the budget (step 1, step 5).
-- **The per-cell `out/` diff.** `zig build test-libs` with an empty and a warm cache, every cell's
-  emitted modules diffed (step 2) — the cell lines and the summary are already identical.
-- **`run.sh --jobs 1`** against the default, byte for byte (step 4).
+- **The idle measurement** (steps 1, 5) → `133-gate-speed` steps 1–2, against decision 229's budget.
+- **The per-cell `out/` diff** (step 2) → `131-gate-build-cache` step 3.
+- **`run.sh --jobs 1`** and the isolation pair (steps 3, 4) → `133-gate-speed` step 2.
 - **The Zig closure cache (step 2).** Moved to `131-gate-build-cache` (decision 225), with the
   stores this front put under `$XDG_CACHE_HOME/botopink`.
 - **CI runs Debug binaries.** `.github/workflows/test.yml` builds with `zig build` (Debug); its

@@ -68,17 +68,15 @@ manifests' target set on the runners the compiler is gated on: no member narrows
       `botopink-lib-test --target commonJS --strict` → 3 passed, 0 failed (`erika`, `erika-linq`,
       `erika-test` and no other row); `--target erlang --strict` → 3 passed, 0 failed; the hook-stages
       step → 1 build on each target
-- [ ] the workflow green on GitHub: at the landed tip it was red on 4 of 5 rows (`erlc: FileNotFound` at
-      `zig build install` on the three commonJS rows; `GLIBC_2.36 not found` on `ubuntu-22.04 · erlang`);
-      the repaired workflow triggers on `feat` / `master` / `main` and on pull requests only, so its
-      first run is the landing
+- [x] the workflow green on GitHub — its `test` workflow green on GitHub on the remote `feat`, every row (the repaired workflow; the earlier tip was red on 4 of 5
+      rows: `erlc: FileNotFound`, `GLIBC_2.36 not found`)
 
 ## Gate
 
 - [x] every erika cell `pass` on commonJS and erlang — 6/6 (above)
 - [x] `(cd repository/erika && scripts/git-hooks/pre-commit)` green: 6/6 cells (three members on both
       targets), 2/2 example builds; the workflow's command shape verified as in step 2
-- [ ] the workflow green on GitHub (step 2's open box — the landing)
+- [x] the workflow green on GitHub — its `test` workflow green on GitHub on the remote `feat`, every row
 - [x] `repository/erika/AGENTS.md` updated; commits on `front/108-gate-erika` in the erika submodule
 
 ## What is left
@@ -86,7 +84,6 @@ manifests' target set on the runners the compiler is gated on: no member narrows
 | Item | Owner |
 |---|---|
 | `restricted-targets.txt`'s `erika-linq erlang 0` line is stale (the cell runs) | `113` (deletes the file) |
-| The workflow's first green run. It triggers on push / PR to `feat`, `master`, `main` only; at the landed tip it was red on 4 of 5 rows, and the repaired file is unrun until it is on `feat` | the landing |
 | The linux rows are `ubuntu-24.04` because nothing built from botopink-lang starts on `ubuntu-22.04` (`build.zig:745` pins glibc 2.38 → `arc4random_buf`, GLIBC_2.36; 22.04 ships 2.35) — 101's README has the row | `114` / `../../01-compiler/` (`build.zig`) |
 | No windows row until the compiler's returns (gate-f) | `114` |
 | `botopink-lib-test` has no workspace selector; the workflow gets "this workspace's members and nothing else" from a scratch working directory plus `BOTOPINK_LIB_ROOTS` | `113` / `115` (`modules/lib-test-runner/**`) — optional; 101 filed the same row |

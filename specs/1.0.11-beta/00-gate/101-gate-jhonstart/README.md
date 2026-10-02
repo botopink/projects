@@ -88,10 +88,8 @@ Tolerances in this repository, all removed:
       `botopink-lib-test --target commonJS --strict` → 15 passed, 0 failed (the fifteen jhonstart rows and no
       other); `--target erlang --strict` → 14 passed, 0 failed, 1 skipped (`jhonstart-dom-test`, by its
       manifest); the hook-stages step → 8 builds and 3 refusals on each target
-- [ ] the workflow green on GitHub: at the landed tip it was red on 4 of 5 rows (`erlc: FileNotFound` at
-      `zig build install` on the three commonJS rows; `GLIBC_2.36 not found` on `ubuntu-22.04 · erlang`);
-      the repaired workflow triggers on `feat` / `master` / `main` and on pull requests only, so its
-      first run is the landing
+- [x] the workflow green on GitHub — its `test` workflow green on GitHub on the remote `feat`, every row (the repaired workflow; the earlier tip was red on 4 of 5
+      rows: `erlc: FileNotFound`, `GLIBC_2.36 not found`)
 
 ### Step 3b — delete the stale `repro/**` — done
 
@@ -121,7 +119,7 @@ Each of the four was run before deletion: `erlang-imported-fn-field` 2/2 on both
 - [x] `(cd repository/jhonstart && scripts/git-hooks/pre-commit)` green: 29/29 cells (fourteen members on
       both targets, `jhonstart-dom-test` on commonJS), 16/16 example builds, 3/3 refusals; the workflow's
       command shape verified as in step 3
-- [ ] the workflow green on GitHub (step 3's open box — the landing)
+- [x] the workflow green on GitHub — its `test` workflow green on GitHub on the remote `feat`, every row
 - [x] `repository/jhonstart/AGENTS.md` updated; commits on `front/101-gate-jhonstart` in the jhonstart
       submodule
 
@@ -130,7 +128,6 @@ Each of the four was run before deletion: `erlang-imported-fn-field` 2/2 on both
 | Item | Owner |
 |---|---|
 | `restricted-targets.txt:53-55` — the three `jhonstart-*` lines are stale (two cells now run, one member now refuses the build) | `113` (deletes the file) |
-| The workflow's first green run. It triggers on push / PR to `feat`, `master`, `main` only; at the landed tip it was red on 4 of 5 rows, and the repaired file is unrun until it is on `feat` | the landing |
 | The linux rows are `ubuntu-24.04` because nothing built from botopink-lang starts on `ubuntu-22.04`: `build.zig:745` pins the bundled glibc at 2.38, Zig's std then calls `arc4random_buf` (glibc ≥ 2.36), and 22.04 ships 2.35 (`version 'GLIBC_2.36' not found`). The compiler's own `ubuntu-22.04` row is red for the same reason. A pin ≤ 2.35 at that line lets either runner work | `114` / `../../01-compiler/` (`build.zig`) |
 | No windows row: botopink-lang has none (gate-f), and `manifest` / `lib-test-runner` discovery tests were red on windows in its last windows run. A library row returns with the compiler's | `114` |
 | `botopink-lib-test` has no workspace selector (`--lib` takes one member name). The workflow gets "this workspace's members and nothing else" from a scratch working directory plus `BOTOPINK_LIB_ROOTS`; a `--workspace <dir>` flag would say it directly | `113` / `115` (`modules/lib-test-runner/**`) — optional |

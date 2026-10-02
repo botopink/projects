@@ -145,8 +145,7 @@ classifier read an id instead.
 - [x] the passed count and the excluded set recorded in this README (§ Current state): 117 passed,
   15 without tests, 38 excluded pairs; `zig build test-libs -- --list` → 172 lines = 134 `cell:*` +
   38 `audit`, and the 38 are exactly the pairs the ledger-era run reported as restricted
-- [ ] the run's `FAILED cells:` line is absent — it names `onze-cli·commonJS onze-cli·erlang`
-  (§ Current state); it goes when the two defects outside this front are fixed
+- [x] the run's `FAILED cells:` line is absent — `scripts/gate.sh --cold` green on the integrated `feat` (2026-10-02): `test-libs: 123 passed, 0 failed, 15 without tests, 38 restrictions audited`, no `FAILED cells:` line
 
 ### Step 2 — the runner: manifest rule and restriction audit (gate-a, gate-d)
 
@@ -172,7 +171,7 @@ classifier read an id instead.
   only when not zero, and each fails the run); measured `test-libs: 117 passed, 2 failed, 15 without tests, 38 restrictions audited`
 - [x] `grep -rn "restricted-targets\|known-red-libs\|include-unsupported" scripts .github
   modules/lib-test-runner docs.md README.md` → 0
-- [ ] `0 failed` — waits on the two `onze-cli` cells
+- [x] `0 failed` — `scripts/gate.sh --cold` green on the integrated `feat` (2026-10-02): `test-libs: 123 passed, 0 failed`
 
 ### Step 4 — `scripts/AGENTS.md` and `modules/lib-test-runner/AGENTS.md`
 
@@ -254,14 +253,11 @@ scripts/git-hooks`.
 
 - [x] `zig build test` from a cold runtime cache, green — stage 4 of `scripts/gate.sh --cold` ✓; `zig build test --summary all`:
   33/33 steps, 2597/2597 tests (`lib-test-runner`: 63)
-- [ ] `zig build test-libs` → `0 failed`, no ledger column, every audit `ok` — no ledger column and
-  38 of 38 audits `ok`; `2 failed` (`onze-cli`, both targets)
-- [ ] `scripts/gate.sh --cold` green in this front's worktree with the five library checkouts at
-  their landed tips — measured once at this front's tip: stages 1, 2, 3, 4, 4b, 5, 6, 7 ✓;
-  stage 8 ✗ on exactly the two `onze-cli` cells (`test-libs: 117 passed, 2 failed, 15 without tests,
-  38 restrictions audited`); the gate prints nothing after its first red stage, so 9 and 10 were run
-  on their own: `language tests: 1251 passed, 1 expected failures, 0 failed` and
-  `docs: 94 fences — 94 checked, 0 skipped, 0 failed`, both exit 0
+- [x] `zig build test-libs` → `0 failed`, no ledger column, every audit `ok` — `scripts/gate.sh --cold` green on the integrated `feat` (2026-10-02): `test-libs: 123 passed, 0 failed, 15 without tests, 38 restrictions audited`, no `FAILED cells:` line,
+  plan 138 cells / 38 audits
+- [x] `scripts/gate.sh --cold` green in this front's worktree with the five library checkouts at
+  their landed tips — satisfied by the landing: `scripts/gate.sh --cold` green on the integrated `feat` (2026-10-02), every stage passed; `test-language`
+  `2061 passed, 0 failed`, `test-docs` `100 fences — 100 checked, 0 skipped, 0 failed`
 - [x] `scripts/AGENTS.md`, `modules/lib-test-runner/AGENTS.md` updated in the same commit as the code
 - [x] commit on `front/113-gate-ledger-and-scripts` in `repository/botopink-lang` and in the meta
   repository; no push, no merge
@@ -270,7 +266,6 @@ scripts/git-hooks`.
 
 | Item | Owner | State |
 |---|---|---|
-| `onze-cli·commonJS`, `onze-cli·erlang` red at this front's measurement | the checker row (`ambiguous-import-use` on two modules exporting one name; decision 170) and std's erlang `fs.walk` (a root ending in `/.`) | both fixes are on `feat` (`compiler-core/src/comptime/tests/infer_decls.zig` § import source; `libs/std/src/io/fs.bp:106-123`); stage 8 and the three open boxes above are re-measured by the cold gate on the integrated tip |
 | the missing-host-binding refusal has no error id | `01-compiler` (`codegen/moduleOutput.zig`, `MissingExternal.diagnostic`) | the audit reads its fixed text; with an id the classifier reads the id — one line in `runner.zig`, one in `test_tooling.sh` |
 | `rakun-client/test/exchange_build_test.bp:26` ends its shell prelude with `exit 0` when no compiler is found | `04-rakun` | with `BOTOPINK_BIN` exported by `botopink test` the branch is unreachable under `botopink test`; the `exit 0` is a skip that reads as a pass and goes |
 | `modules/compiler-cli/tests/test_tooling.sh` prints `SKIPPED` and exits 0 when `node` is not on `PATH` | `01-compiler/26-cli-tooling` | not this front's; a skip that reads as a pass |

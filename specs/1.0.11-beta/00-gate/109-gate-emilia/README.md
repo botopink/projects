@@ -65,17 +65,15 @@ hook-stages step → 15 builds on each target.
 - [x] `grep -c "allow_fail: true" .github/workflows/test.yml` = 0 (the key and `continue-on-error`
       are gone); four rows (`commonJS`/`erlang` × ubuntu-24.04, macos-14 — the manifests' target
       set; no windows row, gate-f); YAML parses; the command shape verified above
-- [ ] the workflow green on GitHub: at the landed tip it was red on 4 of 5 rows (`erlc: FileNotFound` at
-      `zig build install` on the three commonJS rows; `GLIBC_2.36 not found` on `ubuntu-22.04 · erlang`);
-      the repaired workflow triggers on `feat` / `master` / `main` and on pull requests only, so its
-      first run is the landing
+- [x] the workflow green on GitHub — its `test` workflow green on GitHub on the remote `feat`, every row (the repaired workflow; the earlier tip was red on 4 of 5
+      rows: `erlc: FileNotFound`, `GLIBC_2.36 not found`)
 
 ## Gate
 
 - [x] every emilia cell `pass` on both targets — 34/34 (above); every example builds — 15/15
 - [x] `(cd repository/emilia && scripts/git-hooks/pre-commit)` green with the compiler built:
       34/34 cells (17 members on both targets), 30/30 example builds, no `refusals/`
-- [ ] the workflow green on GitHub (step 2's open box — the landing)
+- [x] the workflow green on GitHub — its `test` workflow green on GitHub on the remote `feat`, every row
 - [x] `repository/emilia/AGENTS.md` updated (tree, § Local gate, the CI paragraph); commits on
       `front/109-gate-emilia` in the emilia submodule
 
@@ -84,7 +82,6 @@ hook-stages step → 15 builds on each target.
 | Item | Owner |
 |---|---|
 | `language-gaps.md:52` (**No spelling for a negative numeric enum leaf**, bites 35 · 36 · 45) is the row for the note at `repository/emilia/modules/emilia/src/tokens.bp:2194` (front 45, `Transform.Rotate.Neg`: "`Rotate { -12 }` does not parse; `-rotate-12` is `.Transform.Rotate.Neg.__12`") — the row exists but cites no file, and `113`'s check matches by path. Text to add to the row's *Bites* cell: `45 (emilia modules/emilia/src/tokens.bp:2194, Transform.Rotate.Neg)`. The note carries no literal `// LANGUAGE GAP` marker (`grep -rn "LANGUAGE GAP" modules examples` → 0 in emilia; the comment reads "the language gap is recorded rather than worked around"), so a marker grep finds it only case-insensitively; making it literal is a one-line edit of `tokens.bp` | `113` (the row), `../../06-emilia/` (`tokens.bp`) |
-| The workflow's first green run. It triggers on push / PR to `feat`, `master`, `main` only; at the landed tip it was red on 4 of 5 rows, and the repaired file is unrun until it is on `feat` | the landing |
 | The linux rows are `ubuntu-24.04` because nothing built from botopink-lang starts on `ubuntu-22.04` (`build.zig:745` pins glibc 2.38 → `arc4random_buf`, GLIBC_2.36; 22.04 ships 2.35) — 101's README has the row | `114` / `../../01-compiler/` (`build.zig`) |
 | No windows row until the compiler's returns (gate-f) | `114` |
 | `botopink-lib-test` has no workspace selector; the workflow gets "this workspace's members and nothing else" from a scratch working directory plus `BOTOPINK_LIB_ROOTS` | `113` / `115` (`modules/lib-test-runner/**`) — optional; 101 filed the same row |

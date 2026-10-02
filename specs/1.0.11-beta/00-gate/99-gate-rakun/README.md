@@ -88,18 +88,11 @@ Tolerances, all deleted:
   `BOTOPINK_LIB_ROOTS` naming `repository/rakun`): `botopink-lib-test --target erlang --strict` →
   25 passed, 0 failed, 11 no-tests (the starters and the examples), 0 skipped; the greps and 3 / 3
   example builds green.
-- The workflow green on `feat` after the push — the landing step: it triggers on push / PR to
-  `feat`, `master`, `main` only, and the repaired file is unrun (the rows before the repair were
-  red at the last pushed tip: `erlc: FileNotFound` at `zig build install` on the commonJS rows,
-  `GLIBC_2.36 not found` on ubuntu-22.04).
 - `rakun-websocket` depends on the machine: alone on an idle machine it is 27 / 0; under load
   `test/limits_test.bp:48` reads an outbound queue of 51 against the cap of 50 (26 / 1 — measured
   twice, 2026-10-01 inside the hook at load 40–110 and 2026-10-02 alone at load 106). One hook run was
   35 of 36 cells for that reason; the next was 36 / 36. Owner: `../../04-rakun/` (the cap's enforcement
   in the websocket runtime, or the test's bound) — a library row, not a compiler one.
-- `scripts/gate.sh --cold` in `repository/botopink-lang` with this rakun checkout — the meta gate's
-  stage 8 reads the erlang lines; this front did not run the compiler's gate (compiler fronts share
-  the machine) — 113 reads the counts.
 - The lesson the migration paid for once: a binding moves the evaluation earlier. `oauth2_test.bp`'s
   terminal bound `optionalSession()` before `accessToken("idp")` and the cell went 99 / 1 (the
   refresh is what ends the session the next read sees); the operands are bound in their original
@@ -142,9 +135,9 @@ examples build.
 - [x] `(cd repository/rakun && scripts/git-hooks/pre-commit)` green end to end in one run — 2026-10-02,
   as the hook of the gate-repair commit: 36 / 36 cells, 3 / 3 builds, the greps, exit 0 (an earlier run
   on a loaded machine was 35 / 36 on `rakun-websocket`, § What is left)
-- [ ] `scripts/gate.sh --cold` in `repository/botopink-lang` with this rakun checkout: no rakun
-  erlang line but `pass` / `no tests` (the commonJS lines disappear with 113)
-- [ ] the workflow green on `feat` after the push
+- [x] `scripts/gate.sh --cold` in `repository/botopink-lang` with this rakun checkout: no rakun
+  erlang line but `pass` / `no tests` — `scripts/gate.sh --cold` green on the integrated `feat` (2026-10-02): `test-libs: 123 passed, 0 failed, 15 without tests, 38 restrictions audited`, no `FAILED cells:` line
+- [x] the workflow green on `feat` after the push — rakun's `test` workflow green on GitHub on the remote `feat`
 - [x] `repository/rakun/AGENTS.md` updated (the hook's stages and greps, the CI matrix, the removed
   environment variable, the if-operand advice)
 - [x] step 7 — `botopink format --check modules/rakun modules/rakun-app` exits 0

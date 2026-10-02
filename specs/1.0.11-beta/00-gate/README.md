@@ -35,7 +35,7 @@ front, by file ownership; the policy questions that decide *how* are `gate-a` �
 each recommended at its most restrictive reading with no configuration that bypasses it
 (decision 67).
 
-## Current state · per repository (report L, measured at the open)
+## Current state · per repository (measured 2026-10-02)
 
 Each repository's *own* gate: its `test` workflow's step (at the open `zig build test-libs -- --lib
 <core> --target <t>`; now one `botopink-lib-test --target <t> --strict` over the workspace's
@@ -43,18 +43,19 @@ members), its pre-commit hook (`runStandaloneGate` — at the open `botopink tes
 `modules/*` member on its default target and `botopink build` of every example; now every
 workspace member on every declared target, every example built on every declared target,
 jhonstart's refusal cases, rakun's grep stage), and for the extension `npm test` / `npm run
-compiler-check`. The emilia, erika and jhonstart rows are re-measured after their fronts and the
-library-gate repair (2026-10-01, compiler `29cfffc8`); the others are as their fronts left them.
+compiler-check`. The CI column is GitHub's `test` workflow on each remote `feat` (meta: `hook-integrity`),
+and the cells are the cold gate's on botopink-lang's remote `feat` (2026-10-02); botopink-lang's own CI
+is not green yet (front 114).
 
 | Repository | Own CI verdict | Cells | Pre-commit | What is wrong besides the reds |
 |---|---|---|---|---|
-| emilia | **red on GitHub at the landed tip** — 4 of 5 rows: the three commonJS rows fail `zig build install` (`erlc: FileNotFound`), `ubuntu-22.04 · erlang` fails `GLIBC_2.36 not found`, `macos-14 · erlang` passes. Repaired (below), unrun until it is on `feat` | 34/34 (17 members × 2) | 34/34 cells, 30/30 example builds | left: the workflow's first run on `feat` (the landing) |
-| erika | **red on GitHub at the landed tip** — the same 4 of 5 rows, the same two causes. Repaired (below), unrun until it is on `feat` | 6/6 (`erika` 31/0, `erika-test` 1/0, `erika-linq` 9/0, each on both targets) | 6/6 cells, 2/2 example builds | left: the workflow's first run on `feat` (the landing) |
-| jhonstart | **red on GitHub at the landed tip** — the same 4 of 5 rows, the same two causes. Repaired (below), unrun until it is on `feat` | 29/29 (`jhonstart` 204/0, link 38/0, test 21/0, forms 15/0, emilia 10/0, html 5/0 and the 8 examples on both targets; dom-test 9/0 on commonJS) | 29/29 cells, 16/16 example builds, 3/3 refusals | left: the workflow's first run on `feat` (the landing) |
-| vscode-extension | **green, 100 %** | `npm test` 49/49; `compiler-check` passed (18 primitive types) | n/a | nothing measured red |
-| onze | **red, ~89 %** after 100 (was ~29 %) | 15 pass, 2 no-tests, 2 FAIL of 19 (`onze-cli` on both rows — its `targets` line and `onze-og`'s were deleted under gate-d; `onze-server·erlang` green on 99's tree) | stops at the 4th of 8 members (`onze-cli`); `blog` and `scaffold` build on both targets | the five `onze-cli` reds are a checker row (`ambiguous-import-use` on a named import from a spelled module), 99's landing, and a BEAM `enoent` inside `onze build` (100's README § What is left); CI rewritten to the runner's discovery, every row hard, unrun |
-| rakun | **green with the pinned compiler** (99) | 25 of 25 modules green under `botopink test` erlang (1,817 tests / 0 failed); 3 / 3 examples build; 8 starters linted | the greps read code and whole identifiers (`codeLines`); a missing compiler and a staged `*.snap.new` fail; no known-broken list | CI: `erlang` × 2 runners (ubuntu-24.04, macos-14 — the repair below), every row hard, no `commonJS` / `beam` row, every member and example through the runner's discovery; the R3 workaround is the seven-name closure import in `rakun-metrics/test/export_test.bp` (row in `language-gaps.md`); PK-5's reformat of `modules/{rakun,rakun-app}` landed (`format --check` exits 0); left: the workflow green on `feat` (the landing step) and the meta gate's stage 8 read by 113 |
-| meta | **no CI** | — | — | no `.github/` directory: the hook-integrity workflow does not exist |
+| emilia | **green on GitHub** on the remote `feat` (the repaired workflow, every row) | 34/34 (17 members × 2) | 34/34 cells, 30/30 example builds | nothing measured red |
+| erika | **green on GitHub** on the remote `feat` (the repaired workflow, every row) | 6/6 (`erika` 31/0, `erika-test` 1/0, `erika-linq` 9/0, each on both targets) | 6/6 cells, 2/2 example builds | nothing measured red |
+| jhonstart | **green on GitHub** on the remote `feat` (the repaired workflow, every row) | 29/29 (`jhonstart` 204/0, link 38/0, test 21/0, forms 15/0, emilia 10/0, html 5/0 and the 8 examples on both targets; dom-test 9/0 on commonJS) | 29/29 cells, 16/16 example builds, 3/3 refusals | nothing measured red |
+| vscode-extension | **green on GitHub** on the remote `feat` | `npm test` 49/49; `compiler-check` passed (18 primitive types) | n/a | nothing measured red |
+| onze | **green on GitHub** on the remote `feat` | every cell green on its declared targets under the cold gate of 2026-10-02, `onze-cli` on both (no `FAILED cells:` line) | not re-run end to end on the integrated tip | left: one end-to-end hook run (100) |
+| rakun | **green on GitHub** on the remote `feat` (`erlang` × ubuntu-24.04, macos-14, every row hard) | every member green under the cold gate of 2026-10-02 (25 of 25 under `botopink test` erlang at 99); 3 / 3 examples build | 36 / 36 cells, 3 / 3 builds, the greps (`codeLines`), exit 0 | the R3 workaround in `rakun-metrics/test/export_test.bp` (row in `language-gaps.md`); `rakun-websocket`'s load-dependent cap (99 § What is left) |
+| meta | **green on GitHub** on the remote `feat` — `hook-integrity`, five hard checks | — | — | nothing measured red |
 
 **The five library gates, as repaired.** The fronts above marked each library's own gate done on a
 local measurement; on GitHub three of them were red at their landed tips and the other two had

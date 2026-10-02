@@ -1,21 +1,22 @@
 # Status — 1.0.11-beta
 
-**Updated:** 2026-10-02 · **Progress:** ~0 % landed (0 of 83 fronts done — no front of this
-milestone is on every remote `feat` under a green gate; 16 are in analysis and count for their
-ticked steps; the milestone opened at 1.0.10-beta's close — [`closure.md`](../1.0.10-beta/closure.md))
+**Updated:** 2026-10-02 · **Progress:** ~13 % landed (10 of 83 fronts done — the ten `00-gate`
+fronts in § Done, on the remote `feat` under the green cold gate with no open box; 8 are in analysis and
+count for their ticked steps; the milestone opened at 1.0.10-beta's close — [`closure.md`](../1.0.10-beta/closure.md))
 
 Count: `00-gate` 11 · `01-compiler` 18 · `02-std-and-packaging` 2 · `03-bundled-libs` 7 · `04-rakun` 20 ·
 `05-jhonstart` 3 · `06-emilia` 2 · `07-onze` 5 · `08-bpp` 11 — 79. A front in analysis counts for its ticked steps.
 Order inside each list follows [`overview.md`](./overview.md) § Order (most blocking first); for
 tracks 03–08 the waves are [`fronts.md`](./fronts.md) § Execution order of tracks 03–08.
 
-**The gate now** (2026-10-02). `scripts/gate.sh --cold` is green on botopink-lang `9395ea30` —
-every stage: `test-libs` `119 passed, 0 failed, 15 without tests, 38 restrictions audited`,
-`test-language` `1515 passed, 0 failed` on four targets, with `expected-failures.txt` and both
-ledgers deleted — and that tip is on the remote `feat`, with rakun `bb5f32a`, onze `f15952b`,
-jhonstart `0b4bf5c`, erika `6270467` and emilia `8e9705d`: the five libraries share one pre-commit
-hook and one CI shape, each library's hook green end to end on that compiler. The libraries' first
-GitHub runs on the new workflows are what `Done` still waits on. The next integration
+**The gate now** (2026-10-02). `scripts/gate.sh --cold` is green on botopink-lang `0041d38c`, on the
+remote `feat`, with OTP 28 on `PATH` — every stage: `test-libs` `123 passed, 0 failed, 15 without
+tests, 38 restrictions audited` (no `FAILED cells:` line), `test-language` `2061 passed, 0 failed`
+on commonJS, erlang, wasm and beam, `test-docs` `100 fences — 100 checked, 0 skipped, 0 failed`;
+12m16s on a loaded machine (over the 10-min budget, printed yellow). GitHub CI is green on the
+remote `feat` of rakun, onze, jhonstart, erika, emilia and vscode-extension, and the meta
+`hook-integrity` is green; botopink-lang's own CI is not (test-web wasm32 and `test-libs.sh` under
+macOS bash 3.2, both fixed on an unlanded branch). The next integration
 (`gate-integration-3`: 97, 104, 106, 26, 04-js and the checker's shorthand-import fix) was red on
 one cell — a module named like the bundled `log` — which decision 206 answers (front 129).
 
@@ -29,21 +30,19 @@ the grep stage before any test.
 
 ## Done
 
-- (none yet) — a front is done when it is on its repository's remote `feat` with that
-  repository's gate and CI green. On the remote `feat` under a green cold gate, each library's own
-  CI run pending: `00-gate` 99 · 100 · 101 · 108 · 109 · 110 · 111 · 112 · 113 · 114 (below)
+- [x] `00-gate/99-gate-rakun` — rakun's `(if …)` operand sites migrated, hook and CI hard; its cells green under the cold gate, its CI green
+- [x] `00-gate/101-gate-jhonstart` · `108-gate-erika` · `109-gate-emilia` — one hook and one CI shape per library, every cell green; each CI green
+- [x] `00-gate/112-gate-format` — every tree under `format-check` and `zig fmt` green
+- [x] `00-gate/110-gate-wasm` — every wasm lowering that cannot proceed is a located refusal; std on wasm leaves 110 (decision 230)
+- [x] `00-gate/111-gate-beam-and-targets` — beam in `--target all`, cells honour manifest `targets`, `expected-failures.txt` gone
+- [x] `00-gate/113-gate-ledger-and-scripts` — both ledgers deleted, restrictions audited structurally; `test-libs` `0 failed`
+- [x] `00-gate/132-gate-otp-pin` — the compiler declares OTP 28 and refuses another `erl`; the gate and the workflows read it
+- [x] `00-gate/115-gate-perf` — the cold gate 56m43s → 9–12 min on the shared machine, every tally unchanged; its idle runs and diffs carried by 133 and 131
 
 ## In analysis
 
-- [ ] `00-gate/112-gate-format` — on the remote `feat` under the green cold gate of `9395ea30`; waits only on the first GitHub run of its repository's workflow
-- [ ] `00-gate/110-gate-wasm` — on the remote `feat` under the green cold gate of `9395ea30`; waits only on the first GitHub run of its repository's workflow
-- [ ] `00-gate/111-gate-beam-and-targets` — on the remote `feat` under the green cold gate of `9395ea30`; waits only on the first GitHub run of its repository's workflow
-- [ ] `00-gate/113-gate-ledger-and-scripts` — on the remote `feat` under the green cold gate of `9395ea30`; waits only on the first GitHub run of its repository's workflow
-- [ ] `00-gate/114-gate-docs-and-ci` — on the remote `feat` under the green cold gate of `9395ea30`; waits only on the first GitHub run of its repository's workflow
-- [ ] `00-gate/99-gate-rakun` — on the remote `feat` under the green cold gate of `9395ea30`; waits only on the first GitHub run of its repository's workflow
-- [ ] `00-gate/100-gate-onze` — on the remote `feat` under the green cold gate of `9395ea30`; waits only on the first GitHub run of its repository's workflow
-- [ ] `00-gate/101-gate-jhonstart` · `108-gate-erika` · `109-gate-emilia` — on the remote `feat` with the unified hook and workflow (OTP and Node on every row, linux on ubuntu-24.04, no windows row); each hook green end to end; waits on the first GitHub run
-- [ ] `00-gate/115-gate-perf` — steps 3–6 and the stage times, plan counts and budget line on `feat` (botopink-lang, the five libraries, meta): the cold gate 56m43s → 9–11 min on the shared machine, every tally unchanged · open: the idle-machine runs (steps 1 and 5), the per-cell `out/` diff with an empty vs a warm cache (step 2), `run.sh --jobs 1` against the default (step 4) · the Zig closure cache moved to 131 (decision 225)
+- [ ] `00-gate/114-gate-docs-and-ci` — on the remote `feat` under the green cold gate of `0041d38c`, meta checks 4 and 5 green; waits on botopink-lang's CI green (test-web wasm32, `test-libs.sh` under macOS bash 3.2 — fixed on an unlanded branch)
+- [ ] `00-gate/100-gate-onze` — every onze cell green under the cold gate of `0041d38c`, onze's CI green; waits on one end-to-end run of `scripts/git-hooks/pre-commit`
 - [ ] `01-compiler/130-decorator-outputs` — steps 1–4 built (the four places, 52 cells, `test-language` 1567/0), step 5 begun (5 of 119 sites: std `#[mocks.mock]`, validation `#[validated]` with rakun's config check, jhonstart `#[client]`); rakun's 108 and jhonstart's 5 remaining sites wait on the migration and on the front's open questions 1 and 4
 - [ ] `01-compiler/01-checker` — the import fix is committed and in the integration branch (decision 170: an import that names its module is never ambiguous; aliases); the front's other steps are open
 - [ ] `02-std-and-packaging/97-std-dedupe` — high · the `fs.walk` fix, step 1 and step 2 committed on its branch · steps 3–5 and 8 in progress · steps 3 and 5 land after the checker's import fix (decision 170)
@@ -53,9 +52,8 @@ the grep stage before any test.
 
 ## Pending
 
-- [ ] `00-gate/131-gate-build-cache` — high · ready: decision 225 · every build cache under `.botopinkbuild/cache/` (the erlang verdict cache, the `.beam` cache and the cell durations leave `~/.cache/botopink`), and the dependency closure typed once with the package under test never cached · waits on the gate green on `feat`
-- [ ] `00-gate/132-gate-otp-pin` — high · ready: decision 228 · the compiler declares OTP 28 and refuses another `erl` on erlang and beam; `botopink.json` may pin `"otp"`; the gate and the seven workflows read it from the compiler · this machine installs OTP 28 first (it has 29) · waits on the gate green on `feat`
-- [ ] `00-gate/133-gate-speed` — high · ready: decision 229 · the cold gate ≤ 5 min and a warm run ≤ 1 min on 16 idle cores, a cell answered from a stored pass only on an equal content key · step 1 (measure) may start now; steps 2–3 after 131
+- [ ] `00-gate/131-gate-build-cache` — high · ready: decision 225 · every build cache under `.botopinkbuild/cache/` (the erlang verdict cache, the `.beam` cache and the cell durations leave `~/.cache/botopink`), and the dependency closure typed once with the package under test never cached · ready to start: the cold gate is green on `feat`; carries 115's per-cell `out/` diff (step 3)
+- [ ] `00-gate/133-gate-speed` — high · ready: decision 229 · the cold gate ≤ 5 min and a warm run ≤ 1 min on 16 idle cores, a cell answered from a stored pass only on an equal content key · step 1 (measure) may start now; steps 2–3 after 131 · carries 115's idle runs, `run.sh --jobs 1` and the isolation pair
 - [ ] `03-bundled-libs/106-log` — high · ready: no open question (decisions 194, 195) · waits on `00-gate` green and 97 · precedes 26 step 4, 17 and 49 step 3
 - [ ] `03-bundled-libs/104-http` — ready: no open question (decision 196) · the package half (steps 1–4) waits on `00-gate` green and 97 · the consumer sweep (step 5) waits on 04, 65, 123, 79, 12, 19, 22, 49, 51
 - [ ] `03-bundled-libs/105-i18n` — waits on 104, both halves, and on 22 and 26 (decision 180 answered its question)

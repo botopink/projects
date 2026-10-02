@@ -73,8 +73,8 @@ decision 227. The emitter wrote `erlang:element(2, C)(9)`, accepted by OTP 29 an
 
 ## Gate
 
-- [ ] `scripts/gate.sh --cold` green **with OTP 28 on `PATH`** — this machine installs it first
-      (`mise install erlang@28` and `mise use`, or kerl; OTP 29 stays installed but not first on `PATH`)
+- [x] `scripts/gate.sh --cold` green **with OTP 28 on `PATH`** — `scripts/gate.sh --cold` green on the integrated `feat` (2026-10-02): the OTP 28 check stage and
+      every other stage passed
 - [x] every `AGENTS.md` of a touched directory updated in the same commit
 - [x] commits on `front/132-gate-otp-pin`; no push, no merge — landing is the coordinator's step
 

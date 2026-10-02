@@ -94,20 +94,19 @@ do it and restore the row hard, running every stage the ubuntu row runs (OTP, no
 install there; `erlef/setup-beam` supports windows).
 
 - [x] `grep -c "allow_fail" .github/workflows/test.yml` = 0; `grep -c "windows-2022"` = 0
-- [ ] the workflow green on `feat` after the maintainer's push
+- [ ] the workflow green on `feat` after the maintainer's push — waits on botopink-lang's CI: test-web (wasm32) and `test-libs.sh` under macOS bash 3.2 are red on `feat`, fixed on an unlanded branch
 
 ### Step 4 — the meta repository's workflow — done
 
 - [x] `.github/workflows/hook-integrity.yml` at the meta root; the three synthetic runs fail it (table above)
 - [x] the meta `AGENTS.md` names the workflow (§ Layout row) and its five checks (§ CI)
-- [ ] checks 4 and 5 green on `feat` — after 99, 100, 109, 113
+- [x] checks 4 and 5 green on `feat` — the meta `hook-integrity` workflow green on the remote `feat`
 
 ## Gate
 
 - [x] `zig build test-docs` green with `0 skipped`; no Zig touched
-- [ ] `scripts/gate.sh --cold` green in this front's worktree — stage 8 `test-libs` is red at the
-      `feat` tip (rakun 25 cells, onze 11 cells — 99's and 100's), so the botopink-lang commits
-      wait, staged, for their landing
+- [x] `scripts/gate.sh --cold` green in this front's worktree — satisfied by the landing: `scripts/gate.sh --cold` green on the integrated `feat` (2026-10-02),
+      `test-docs` `100 fences — 100 checked, 0 skipped, 0 failed`
 - [x] `scripts/AGENTS.md`, the root and the meta `AGENTS.md` in the same change
 
 ## Handed out
