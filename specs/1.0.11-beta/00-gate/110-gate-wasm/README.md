@@ -54,6 +54,31 @@ failures, 1 failed` on `--target all`; `run.sh --target wasm`: `374 passed, 1 ex
   value — see § Left). An array literal's trailing spread is lowered (`$__arr_concat`); it was the
   one stub a wasm snapshot recorded (`array_prepend_with_identifier`), and
   `run/array_spread_literal` pins the values on commonJS, erlang and wasm.
+- **No lowering gap is a run-time trap.** The `unreachable` sites that stood for a shape wasm
+  could not lower (26 `emitC`/`emitCf` at the audit, six added by `05-wasm` — `flatMap`,
+  `flatten`, `unique`, the untyped lambda parameter — plus `lowerPlainCall`'s "unresolved call"
+  and the bodyless-`declare fn` trap) are located refusals: `is` with no descriptor, the
+  `unknown` box nothing types, an all-unit enum with no printed form, a comptime-only builtin in
+  a program, index/slice on an untyped receiver, an unresolved call, a bodyless `declare fn`
+  with no external, a primitive method with no lowering, a higher-order method given a function
+  value, `flatMap`/`flatten`/`unique` over unknown shapes, `.next()` without `YieldStep`,
+  `pop`/`push` on a receiver that cannot be rebound, a loop over a non-array iterable, an untyped
+  lambda parameter (at the lambda), and dispatch by value over an all-unit enum implementer.
+  `pop` on a record field is lowered (as `push`'s is). What keeps an `unreachable` is the
+  program's own semantics — `assert`, `@panic`/`@todo`, an uncaught `throw`, a rejected
+  `#[@future]` — and the dispatcher's end, which the dispatch refusal makes unreachable
+  (`grep -c '\.@"unreachable"' wat.zig` = 6, the sixth `refuseUnlessTemplate`'s).
+- **A generic body traps only where no execution meets it.** In the one generic body of a
+  generic `fn` / method / lambda, a construct a bound type parameter would lower is an
+  `unreachable` that marks the body; every unspecialised call into a generic body is recorded
+  (plain, associated, record method, fn value, behavior dispatch, `@print` of a generic `type`
+  declaring `display`), and the first concrete call that reaches a marked body is refused there —
+  `@print(Box(value: 1))` over `Box<T>.display`, `d.display()` on a `Dict<string, i32>`.
+  `x is T` over a parameter asks for a specialised copy, so `shown(1)` / `shown("s")` answer.
+  A refusal inside another module's code is located at the consumer's import or call.
+  Fixtures: `tests/wat.zig` `wat: refusal ---- …` (six) and the three former trap fixtures, by
+  `assertWasmRefusedAt` (message + `line:col`); no `tests/language` cell relied on a trap — `run.sh
+  --target wasm`: `494 passed, 0 failed` (272/272 wasm cells).
 - **The print path** treats a plain call of a function declared to answer an enum as that enum's
   value (`enumReturnedBy`): `@print(stop())` over a linked `fn stop() -> Signal` printed the value's
   address at exit 0 (single-module `@print(Signal.Red)` was already right). A `?Enum` return keeps
@@ -94,12 +119,13 @@ failures, 1 failed` on `--target all`; `run.sh --target wasm`: `374 passed, 1 ex
   - codegen snapshots: none recorded the lazy drop — `zig build test` is green with no fixture
     re-recorded, `scripts/snap_audit.sh --mode=runtime-parity`: 1431 pairs, 0 differing;
   - `botopink build --target wasm` in `libs/std`: exit 1, fifteen modules refused where it was two
-    (`querystring`, `testing/mocks`) — `async` (`gateOpen`), `encoding` (`base64Encode`),
-    `escape` (`lineSeparator`), `hash` (`contentHash`), `io/clock` (`systemTimeWithUnit`), `io/fs`
+    (`querystring`, `testing/mocks`) — `async` (`gateHandle`), `encoding` (`base64Encode`),
+    `escape` (`lineSeparator`), `hash` (`pbkdf2Derive`), `io/clock` (`systemTimeWithUnit`), `io/fs`
     (`mkdir`), `io/http` (`fetch`), `io/random` (`float`), `json` (`quote`), `math` (`floor`),
     `querystring` (STD-001 on `std/encoding.percentEncode`), `testing/asserts` (`canonical`),
-    `testing/mocks` (`pushMatcher`), `testing/snapshots` (`writeFile`), `unicode`
-    (`firstCodepointOrZero`). Each is a bodied function calling a host cell with no wasm binding.
+    `testing/mocks` (`pushMatcher`), `testing/snapshots` (STD-001 on `std/io/fs.exists`),
+    `unicode` (`firstCodepointOrZero`). Each is a bodied function calling a host cell with no
+    wasm binding; the refusals rule added none (`collections` still builds).
 - **Measured after** (this worktree): `zig build test` green from a cold runtime cache;
   `run.sh --target all`: `language tests: 1483 passed, 0 failed` (four targets);
   `--target wasm`: `380 passed, 0 failed`; `--target beam`: `395 passed, 0 failed`.
@@ -123,6 +149,10 @@ failures, 1 failed` on `--target all`; `run.sh --target wasm`: `374 passed, 1 ex
 - [x] `wat: unknown ---- a field read on a type parameter's slot is refused` (`tests/wat.zig`, `.refused_on_wasm`): the wasm snapshot records the diagnostic where `v.length` used to be `i32.const 0`; commonJS, erlang and beam record `3`. The sibling trap test keeps its literal arm
 - [x] `scripts/snap_audit.sh --mode=runtime-parity` green; `zig build test` green
 - [x] `tests/language/run.sh --target wasm` → `0 failed`
+- [x] every lowering that cannot proceed is a located refusal: `grep -c '\.@"unreachable"' wat.zig`
+  = 6 (assert, `@panic`/`@todo`, uncaught `throw`, rejected `#[@future]`, the dispatcher's end,
+  `refuseUnlessTemplate`); each refusal has a `tests/wat.zig` fixture; `run.sh --target wasm` →
+  `494 passed, 0 failed`
 
 ### Step 3 — ck-host (a), decision 146: wasm refuses a function that reaches a host cell, called or not — done
 
@@ -132,6 +162,19 @@ failures, 1 failed` on `--target all`; `run.sh --target wasm`: `374 passed, 1 ex
 
 ## Left
 
+- **`@print` of a value whose static type nothing names** reaches `$__display_of` unrecorded:
+  when that dispatch lands in a marked generic `display`, it still traps inside it. The proper
+  lowering — a print of a generic `type` calling the specialised `display` — is
+  `../../01-compiler/05-wasm`'s (monomorphisation), as is `d.display()` / `@print(d)` on a
+  `Dict<string, i32>`, refused now.
+- **What closing `libs/std` on wasm takes, per module** (measured; not contained in `wat.zig`
+  and std without a new mechanism): the wasm backend reads `@External.Wasm` nowhere, so no host
+  cell can be bound. With a template reader (`05-wasm`): `math` (`floor` & co. are `f64`
+  opcodes), `unicode`, `json`, `escape`, `encoding` (→ `querystring`), `hash` as prelude helpers
+  or pure-bp bodies; `io/clock`, `io/random`, `io/fs` (→ `testing/snapshots`) need WASI imports
+  (`clock_time_get`, `random_get`, `path_open`); `io/http`, `async` (gates are processes),
+  `testing/mocks` (process state) and `testing/asserts` (decision 146's choice) are the std
+  track's to place out of a wasm build or restructure.
 - **std on wasm under decision 146** — for the maintainer, `02-std-and-packaging`:
   `testing.asserts`, `testing.snapshots` and `escape` are no longer importable on wasm, and
   `libs/std` does not build there. For `asserts` the choice is (1) it stays unimportable on wasm;
