@@ -60,7 +60,7 @@ Tolerances in this repository, all removed:
 | no `*.snap.new` guard | `.gitignore`, the hook's staged-files stage | both suffixes ignored and a staged one refused (`git add -f x.snap.new` → exit 1, verified) |
 | CI: core member only (`--lib jhonstart`), examples on the commonJS row, `allow_fail` key; OTP on the erlang rows only; `ubuntu-22.04`; a windows row | `.github/workflows/test.yml` | rows `{ubuntu-24.04, macos-14} × {commonJS, erlang}`, every row hard; Erlang/OTP 28 and Node 20 on every row (building the compiler runs `erlc`); one `botopink-lib-test --target <t> --strict` per row from a scratch directory with `BOTOPINK_LIB_ROOTS` naming the repository, so the workspace's fifteen members are the rows and nothing else is (emilia, checked out under `botopink-lang/repository/emilia` for `jhonstart-emilia`'s `path` dependency, is a dependency, not a row); then the hook's other stages (examples on the row's target, refusals) from the hook's own runner; no windows row (gate-f) |
 | `repro/**` — four reproductions, none reproducing | `repro/` | deleted; every line that named it states the closed defect instead |
-| `botopink format --check` drift | `modules/jhonstart/**`, `modules/jhonstart-link/**` | reformatted, one commit, 28 files; `modules/jhonstart-link/src/link.bp` left as it was (below) |
+| `botopink format --check` drift | `modules/jhonstart/**`, `modules/jhonstart-link/**` | reformatted: 28 files in one commit, `modules/jhonstart-link/src/link.bp` in a second once `112`'s printer printed its record-update spreads back |
 
 ## Steps
 
@@ -102,19 +102,18 @@ Each of the four was run before deletion: `erlang-imported-fn-field` 2/2 on both
 
 - [x] `test ! -e repository/jhonstart/repro`; `AGENTS.md` no longer names the directory
 
-### Step 4 — PK-5 — done but for one file
+### Step 4 — PK-5
 
 - [x] `zig build test-libs -- --lib jhonstart` and `-- --lib jhonstart-link` on both targets →
       pass (204/204, 38/38, measured with `botopink test` in each member after the reformat; a second
       `botopink format` changes nothing)
-- [ ] `botopink format --check modules/jhonstart modules/jhonstart-link` → exit 0. **Exit 1 for one
-      file**: the formatter rewrites the five record-update spreads in `modules/jhonstart-link/src/link.bp`
-      (`LinkProps(..p, prefetch: prefetch)`, `:76,80,84,88,92`) to `LinkProps(..: p, …)`, which the parser
-      refuses (``this token cannot appear here — unexpected `:` `` at `link.bp:76:24`), and the member no
-      longer compiles. The file is left unformatted. Owner: `112-gate-format` (the printer of the
-      record-update spread, `modules/compiler-cli/src/cli/format_cmd.zig` and the printer it calls) —
-      this is the "1 that cannot be formatted" the track's open counted. Rewriting `link.bp` without the
-      spread would be a source change of `27-jhonstart-link` and a workaround of a compiler defect.
+- [x] `botopink format --check modules/jhonstart modules/jhonstart-link` → exit 0 (33 files
+      unchanged). `link.bp`'s five record-update spreads (`LinkProps(..p, prefetch: prefetch)`) print
+      back as written since the printer prints the spread argument as `..base`
+      (`modules/compiler-core/src/format.zig`, `fmtCallWithReceiverDoc`, front `112`); `botopink format
+      modules/jhonstart-link/src/link.bp` changed only the one-statement `if`s and the stacked
+      attributes, a second run changes nothing, and `jhonstart-link` stays 38/38 with `botopink test`
+      on commonJS and erlang
 
 ## Gate
 
@@ -130,7 +129,6 @@ Each of the four was run before deletion: `erlang-imported-fn-field` 2/2 on both
 
 | Item | Owner |
 |---|---|
-| `link.bp`'s record-update spread through `botopink format` (step 4's open box); once the printer is fixed, `botopink format modules/jhonstart-link/src/link.bp` is the remaining PK-5 commit | `112-gate-format` |
 | `restricted-targets.txt:53-55` — the three `jhonstart-*` lines are stale (two cells now run, one member now refuses the build) | `113` (deletes the file) |
 | The workflow's first green run. It triggers on push / PR to `feat`, `master`, `main` only; at the landed tip it was red on 4 of 5 rows, and the repaired file is unrun until it is on `feat` | the landing |
 | The linux rows are `ubuntu-24.04` because nothing built from botopink-lang starts on `ubuntu-22.04`: `build.zig:745` pins the bundled glibc at 2.38, Zig's std then calls `arc4random_buf` (glibc ≥ 2.36), and 22.04 ships 2.35 (`version 'GLIBC_2.36' not found`). The compiler's own `ubuntu-22.04` row is red for the same reason. A pin ≤ 2.35 at that line lets either runner work | `114` / `../../01-compiler/` (`build.zig`) |
@@ -142,14 +140,13 @@ Each of the four was run before deletion: `erlang-imported-fn-field` 2/2 on both
 | Gap | Where it bit | What would close it |
 |---|---|---|
 | No target query at comptime or run time, and no per-target `test` block: one test file cannot assert different values on commonJS and erlang | `modules/jhonstart-dom-test/test/dom_test.bp:25` (a markup on commonJS; the erlang twins of `registerFill` / `payloadText` answer `0` / `""`, `sidecars/jhonstart_render.erl:143-145`) | a `#[target(commonJS)]`-style attribute on `test`, or a comptime target constant; until then a host-bound member restricts `targets` and the build refusal is the audit |
-| `botopink format` mangles the record-update spread `T(..p, k: v)` into `T(..: p, k: v)` | `modules/jhonstart-link/src/link.bp:76` | the printer emits `..p` as parsed |
 | A `#[@External.Node]`-only cell that is declared and never called from compiled code builds on erlang, so a test-only member with no compiled call site passes `botopink build --target erlang` and fails only `botopink test` | `modules/jhonstart-dom-test/src/root.bp` at the open | by design (`docs.md` § Every cell carries both targets); the gate-d audit should say so: a member whose only call sites are test blocks is audited by `botopink test`'s refusal, or restructures as this one did |
 
 ## Blast radius
 
 - `26-jhonstart-router`, `27-jhonstart-link`, `67-jhonstart-forms` (`../../05-jhonstart/`) start
   from this front's landing (the reformat of `modules/jhonstart` and `modules/jhonstart-link`
-  touches every file they own; `link.bp` is the one file untouched).
+  touches every file they own).
 - `113` deletes `restricted-targets.txt:53-55` with the file; `05-jhonstart/modules.md:34,36`
   (the "stale restriction — `00-gate`" cells) close on this landing.
 - `emilia`'s examples depend on jhonstart (`repository/emilia/.github/workflows/test.yml:136`
