@@ -1,8 +1,7 @@
 # Front 131 — gate-build-cache: every build cache inside `.botopinkbuild/`, and the dependency closure typed once
 
-**Priority:** high — decision 225: a cache is wiped by deleting `.botopinkbuild/`, the package under
-test is never served from one, and a dependency closure is type-checked once per run instead of once
-per member.
+**Priority:** high — decisions 225 and 232: a cache is wiped by deleting `.botopinkbuild/`, and the package under
+test is never served from one.
 **Depends on:** `115-gate-perf` (its erlang verdict cache, `.beam` cache and cell schedule are the
 stores this front moves), and the gate green on `feat` (a red cell's time is not the gate's time).
 **Owns:** `modules/compiler-cli/src/cli/libs.zig` (`userCacheDir` — deleted), `compiler-cli/src/cli/build.zig`
@@ -150,29 +149,15 @@ A fixture project a library's tests build under `BOTOPINK_TEST_TMPDIR` (rakun's 
 the fixture directory: the verdict cache no longer carries across those builds, which the
 machine-wide store did.
 
-### Step 3 — the dependency closure, typed once
+### Step 3 — dropped (decision 232)
 
-A dependency package (never the package under test, never a `path`/workspace member being edited
-in the same run — see the rule below) is checked and emitted once per run and stored under
-`<root>/.botopinkbuild/cache/closure/<k>/`: its emitted modules and its typed export tables. `k` is
-the SHA-256 of the package's source bytes (every file its manifest lists), of the keys of its own
-dependencies (so a change in std is a new key for every package above it), of the compiler binary's
-build id and of the target. `compiler-core` gains the entry that takes a pre-typed package as input
-in place of its sources; the checker reads its export tables as it reads a checked module today.
-
-**The rule (decision 225).** The package under test is always compiled from its sources: its
-`.botopinkbuild/cache/closure/` entry is neither read nor written. Only what it depends on is
-served from the cache.
-
-**Acceptance:**
-- [ ] `zig build test-libs` with an empty cache and warm: the same cell lines, the same passed
-      count, and byte-identical emitted modules for every cell (a script diffs the `out/` trees)
-- [ ] one byte changed in `libs/std/src/collections.bp` → every entry that includes std is a miss,
-      nothing stale served
-- [ ] the compiler rebuilt with one changed emitter line → every entry a miss
-- [ ] the package under test edited between two runs → its own result reflects the edit with no
-      cache entry involved (a cell asserting a value the edit changes)
-- [ ] `test-libs` CPU-seconds against step 1's table, on the same machine and load class
+The typed dependency-closure cache is not built. Step 1 measured the repeated closure at ~140 of
+test-libs' 2 233 CPU-s (6.3 %); a dependency's emitted bytes depend on its importers (an owner
+exports only the names another module imports — associated fns, erlang's `externalWrapperForm`),
+so a package-keyed entry would serve bytes an uncached build does not emit; and caching a typed
+package needs a serializer for the AST and the type graph, which exist only in memory. It returns
+only if a measurement shows it pays. The per-cell `out/` diff with an empty and a warm cache
+(carried from `115`) is step 2's: the stores it moved are the only caches left.
 
 ## Gate
 
