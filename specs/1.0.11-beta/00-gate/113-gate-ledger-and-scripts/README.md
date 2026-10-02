@@ -270,7 +270,7 @@ between the three. The behaviour is the same in all five; the texts are not, and
 | `onze-cli·commonJS`, `onze-cli·erlang` red | the checker row (`ambiguous-import-use` on two modules exporting one name) and std's erlang `fs.walk` (a root ending in `/.`) | outside this front; stage 8 and the three open boxes above close with them |
 | `runner-standalone.sh` is three texts | 100 (onze), 99 (rakun) — the library-infra unification | step 5's last column; re-measure on the unified tips |
 | the missing-host-binding refusal has no error id | `01-compiler` (`codegen/moduleOutput.zig`, `MissingExternal.diagnostic`) | the audit reads its fixed text; with an id the classifier reads the id — one line in `runner.zig`, one in `test_tooling.sh` |
-| `rakun-client/test/exchange_build_test.bp:26` ends its shell prelude with `exit 0` when no compiler is found | `03-rakun` | with `BOTOPINK_BIN` exported by `botopink test` the branch is unreachable under `botopink test`; the `exit 0` is a skip that reads as a pass and goes |
+| `rakun-client/test/exchange_build_test.bp:26` ends its shell prelude with `exit 0` when no compiler is found | `04-rakun` | with `BOTOPINK_BIN` exported by `botopink test` the branch is unreachable under `botopink test`; the `exit 0` is a skip that reads as a pass and goes |
 | `modules/compiler-cli/tests/test_tooling.sh` prints `SKIPPED` and exits 0 when `node` is not on `PATH` | `01-compiler/26-cli-tooling` | not this front's; a skip that reads as a pass |
 
 ## Blast radius

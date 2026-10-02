@@ -56,9 +56,12 @@ step 3, so both run on both rows):
 (§ What is left). No `if-operand` diagnostic is left in any onze cell's log; `onze-og`'s "unknown
 type" was the cascade of its own two sites and is gone.
 
-The hook (`scripts/git-hooks/pre-commit`): stages 1–3 green (conflict markers, no staged
-`*.snap.new`, the compiler found), stage 4 runs `onze`, `onze-assets`, `onze-bundler` on both
-targets green and stops at `onze-cli` — the fourth of eight members (was: the second).
+The hook (`scripts/git-hooks/pre-commit`, the one text of the five library repositories):
+stages 1–3 green (no staged `*.snap.new`, no conflict marker, the compiler found), then every
+stage runs and every red is listed — measured 2026-10-02 with the compiler built from
+botopink-lang `29cfffc8`: 17 of 19 cells, 4 / 4 example builds, exit 1 on `onze-cli` commonJS
+(30 / 1) and erlang (28 / 3) and on nothing else (was: stopped at the second of eight members,
+then at the fourth).
 
 ### Step 3 — the restrictions, audited (gate-d)
 
@@ -74,13 +77,15 @@ No ledger line was written anywhere.
 
 ### Step 4 — the repository's own gate (gate-i, gate-j)
 
-- `scripts/git-hooks/lib/runner-standalone.sh`: the compiler is a stage and its absence fails the
-  gate (the message names `BOTOPINK_BIN`, an ancestor `zig-out/bin`, `PATH`); a staged
-  `*.snap.new` / `*.snap.md.new` is refused; `known-broken-examples.txt` and its branch are gone;
-  every member runs on every target its manifest declares (`manifestTargets` — the member's
-  `targets`, else the workspace's), every example builds on every declared target;
-  `BOTOPINK_BIN` is exported to the suites. `.gitignore` lists both scratch suffixes
-  (`grep -c snap.new`: `.gitignore` 1, the runner 4).
+- `scripts/git-hooks/lib/runner-standalone.sh` — one text in the five library repositories
+  (`sha256sum` equal ×5; the meta `hook-integrity` check 4): the compiler is a stage and its
+  absence fails the gate (the message names `BOTOPINK_BIN`, the enclosing checkout's `zig-out/bin`,
+  `PATH`; a `BOTOPINK_BIN` that is not an executable fails too); a staged `*.snap.new` /
+  `*.snap.md.new` is refused; `known-broken-examples.txt` and its branch are gone; every workspace
+  member — the eight modules and the two examples — runs on every target its manifest declares
+  (`manifestTargets` — the member's `targets`, else the workspace's), every example builds on
+  every declared target; `BOTOPINK_BIN` is exported to the suites. `.gitignore` lists both scratch
+  suffixes.
 - `.github/workflows/test.yml`: the member loop is gone. One `botopink-lib-test --target <t>` per
   runner × workspace target, from a scratch cwd with `BOTOPINK_LIB_ROOTS` naming this repository,
   so the runner discovers every member and example from the root and nothing else (the walk-up
@@ -89,7 +94,16 @@ No ledger line was written anywhere.
   and rakun are checked out as the `path` dependencies the manifests declare (the old workflow
   checked out neither and could not have compiled `modules/onze`); both hosts on every row (the
   cli's fixture builds run `erlc` and `node` on either row); the examples gate runs on every row.
-  The workflow is written, not run: nothing in this checkout executes GitHub Actions.
+  Rows `{ubuntu-24.04, macos-14} × {commonJS, erlang}`: `ubuntu-24.04` because of the compiler's
+  glibc pin and no windows row because the compiler has none (101's README has both rows);
+  `--strict`. The workflow is written, not run: it triggers on push / PR to `feat`, `master`,
+  `main` only.
+  Its command shape is measured in a scratch layout of its checkout
+  (`botopink-lang/{libs,repository/{onze,jhonstart,emilia,rakun}}`): `botopink-lib-test --target
+  commonJS --strict` → 7 passed, 1 failed (`onze-cli`), 1 no-tests (`scaffold`), 1 skipped
+  (`onze-server`, by its manifest); `--target erlang --strict` → 8 passed, 1 failed (`onze-cli`),
+  1 no-tests; the examples step → 2 builds on each target. The rows are onze's ten members and no
+  other.
 - `onze-cli`'s fixture suites (`build`, `create`, `generate`, `start` tests) read `BOTOPINK_BIN`
   before walking up to a `repository/botopink-lang/zig-out/bin/botopink` — in a worktree the
   walk-up reached the main checkout's compiler; in CI's layout it reaches none.
@@ -181,8 +195,8 @@ and stays. A closure whose body was one such expression became a loop or a named
 - [ ] `scripts/gate.sh --cold` in `repository/botopink-lang` with this onze checkout and 99's rakun:
       stage 8 has no onze red — not run by this front (the compiler fronts share the machine); the
       per-cell measurement above is the same runner's
-- [ ] `(cd repository/onze && scripts/git-hooks/pre-commit)` green — reaches `onze-cli`; the
-      workflow is unrun
+- [ ] `(cd repository/onze && scripts/git-hooks/pre-commit)` green — 17 of 19 cells and 4 / 4
+      builds in one run, exit 1 on the two `onze-cli` cells; the workflow is unrun
 - [x] `repository/onze/AGENTS.md` updated; the work is on `front/100-gate-onze` in the onze submodule
 
 ## Blast radius

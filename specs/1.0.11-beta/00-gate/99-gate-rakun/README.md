@@ -76,15 +76,27 @@ Tolerances, all deleted:
 |---|---|
 | `rakun-session/test/store_test.bp` Redis arm (`RAKUN_TEST_REDIS_URL`, `SKIPPED`) | deleted — no RESP double exists yet (`rakun-test/src` holds none); `../../deferred.md` row; `saveCommand` keeps its own cell; `grep -rn "SKIPPED\|skipped: \|RAKUN_TEST_" modules --include=*.bp` → 0 hits (the `migrate.bp` record field aside) |
 | `rakun-websocket/test/broadcast_test.bp` `skipped:` | replaced by a same-node `pg` broadcast to two subscriber processes (`rkWsPgBroadcast` / `pg_broadcast/2`; `two_node_broadcast/2`, `remote_subscriber/2`, `wait_members/2` deleted) — asserts `2|<payload>|<payload>` |
-| CI `allow_fail: true`, `commonJS` and `beam` rows, core member only | `erlang` × {ubuntu-22.04, macos-14, windows-2022}, every row hard; `botopink-lib-test --target erlang --strict` with no `--lib` (the runner's discovery covers every module, starter and example — a `--lib rakun` would be the core member alone); examples built on every row; `BOTOPINK_BIN` exported from the built binary; windows OTP 28 via `erlef/setup-beam`. `grep -c "allow_fail: true"` → 0; `grep -c "target: commonJS\|target: beam"` → 0 |
-| pre-commit warns and skips without a compiler; `known-broken-examples.txt` branch | a missing compiler **fails** the gate (message says how to provide one); the walk for it stops at the enclosing checkout's `repository/botopink-lang/` (a worktree nested under the main checkout never borrows the main checkout's binary); the known-broken branch is gone |
+| CI `allow_fail: true`, `commonJS` and `beam` rows, core member only | `erlang` × {ubuntu-24.04, macos-14}, every row hard; Erlang/OTP 28 on every row; one `botopink-lib-test --target erlang --strict` per row from a scratch directory with `BOTOPINK_LIB_ROOTS` naming the repository — the runner's discovery covers every module, starter and example (a `--lib rakun` would be the core member alone) and nothing outside the workspace; onze, jhonstart and emilia checked out under `botopink-lang/repository/` as dependencies (`rakun-starter-test` depends on `onze` and `onze-test` by `path`; the workflow had no such checkout); the hook's other stages (the greps, the examples) on every row; `BOTOPINK_BIN` exported from the built binary. `grep -c "allow_fail: true"` → 0; `grep -c "target: commonJS\|target: beam"` → 0. No windows row (gate-f: the compiler has none), `ubuntu-24.04` because of the compiler's glibc pin (101's README has the row) |
+| pre-commit warns and skips without a compiler; `known-broken-examples.txt` branch; a runner text of rakun's own | `scripts/git-hooks/lib/runner-standalone.sh` is one text in the five library repositories (`sha256sum` equal ×5; the meta `hook-integrity` check 4): a missing compiler **fails** the gate (message says how to provide one; a `BOTOPINK_BIN` that is not an executable fails too); the walk for it stops at the enclosing checkout's `repository/botopink-lang/` (a worktree nested under the main checkout never borrows the main checkout's binary); the known-broken branch is gone; `botopink test --target erlang` in every workspace member — the 25 modules, the 8 starters, the 3 examples: 36 cells. The greps are rakun's own stage in `scripts/git-hooks/repository-stages.sh`, run by the shared runner in a child process (it can add a red, never skip a shared stage) and read with `grep … >/dev/null` (a `grep -q` under `pipefail` could report a match as none) |
 | no `*.snap.new` guard | `.gitignore` lists `*.snap.new` and `*.snap.md.new`; the hook refuses a staged one (verified: a staged `x.snap.new` exits 1) |
 | `botopink format --check` drift in `modules/rakun`, `modules/rakun-app` (PK-5) | reformatted, one reformat-only commit; `--check` exits 0; both members green after it (374 / 0, 204 / 0). The one source-shape lint (`actions_test.bp`, `writeEnvelope(ActionEnvelope(`) reads a whitespace-free copy of the file |
 
 ## What is left
 
-- The workflow green on `feat` after the push — the maintainer's landing step (the matrix runs on
-  GitHub's runners; nothing here can run it).
+- The workflow's command shape is measured in a scratch layout of its checkout
+  (`botopink-lang/{libs,repository/{rakun,onze,jhonstart,emilia}}`, a scratch working directory,
+  `BOTOPINK_LIB_ROOTS` naming `repository/rakun`): `botopink-lib-test --target erlang --strict` →
+  25 passed, 0 failed, 11 no-tests (the starters and the examples), 0 skipped; the greps and 3 / 3
+  example builds green.
+- The workflow green on `feat` after the push — the landing step: it triggers on push / PR to
+  `feat`, `master`, `main` only, and the repaired file is unrun (the rows before the repair were
+  red at the last pushed tip: `erlc: FileNotFound` at `zig build install` on the commonJS rows,
+  `GLIBC_2.36 not found` on ubuntu-22.04).
+- `rakun-websocket` depends on the machine: alone on an idle machine it is 27 / 0; under load
+  `test/limits_test.bp:48` reads an outbound queue of 51 against the cap of 50 (26 / 1 — measured
+  twice, 2026-10-01 inside the hook at load 40–110 and 2026-10-02 alone at load 106). One hook run was
+  35 of 36 cells for that reason; the next was 36 / 36. Owner: `../../04-rakun/` (the cap's enforcement
+  in the websocket runtime, or the test's bound) — a library row, not a compiler one.
 - `scripts/gate.sh --cold` in `repository/botopink-lang` with this rakun checkout — the meta gate's
   stage 8 reads the erlang lines; this front did not run the compiler's gate (compiler fronts share
   the machine) — 113 reads the counts.
@@ -127,7 +139,9 @@ examples build.
 - [x] `botopink build` of the 3 examples: 3 / 3
 - [x] the hook's refusals verified one by one (missing compiler, staged `*.snap.new`, synthetic
   `from "onze"`, synthetic `Element` in code; comment-only `onze` and `xmlElement` pass)
-- [ ] `(cd repository/rakun && scripts/git-hooks/pre-commit)` green end to end in one run
+- [x] `(cd repository/rakun && scripts/git-hooks/pre-commit)` green end to end in one run — 2026-10-02,
+  as the hook of the gate-repair commit: 36 / 36 cells, 3 / 3 builds, the greps, exit 0 (an earlier run
+  on a loaded machine was 35 / 36 on `rakun-websocket`, § What is left)
 - [ ] `scripts/gate.sh --cold` in `repository/botopink-lang` with this rakun checkout: no rakun
   erlang line but `pass` / `no tests` (the commonJS lines disappear with 113)
 - [ ] the workflow green on `feat` after the push

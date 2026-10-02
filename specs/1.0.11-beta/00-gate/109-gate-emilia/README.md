@@ -27,26 +27,27 @@ command shape in the workflow's layout.
 | `examples/emilia-{outline-ring,spacing,text-decoration,theme,transforms,transitions,typography}` | 13 · 12 · 11 · 10 · 18 · 14 · 11 |
 
 **34/34** cells green (17 members × 2 — every manifest inherits the workspace's
-`["commonJS", "erlang"]`; `emilia-test` declares no `targets`); **15/15** examples build.
+`["commonJS", "erlang"]`; `emilia-test` declares no `targets`); **15/15** examples build on both targets.
 
 Tolerances in this repository, all removed:
 
 | Was | Where | Now |
 |---|---|---|
-| pre-commit warned and returned 0 when the compiler was not found (`⚠ … skipping .bp gate`; scratch clone with `PATH=/usr/bin:/bin`: exit 0) | `scripts/git-hooks/lib/runner-standalone.sh` (`locateBotopink` miss, workspace and single-package arms) | `requireBotopink` fails the gate with the way out (`zig build install` in a botopink-lang checkout, or `BOTOPINK_BIN`); scratch clone: exit 1 |
+| pre-commit warned and returned 0 when the compiler was not found (`⚠ … skipping .bp gate`; scratch clone with `PATH=/usr/bin:/bin`: exit 0); it ran a bare `botopink test` in `modules/*` — each manifest's default `target`, so no erlang cell and no example's tests | `scripts/git-hooks/lib/runner-standalone.sh` | one text in the five library repositories (`sha256sum` equal ×5; the meta `hook-integrity` check 4): `requireBotopink` fails the gate with the way out (`zig build install` in a botopink-lang checkout, or `BOTOPINK_BIN`; a `BOTOPINK_BIN` that is not an executable fails too); `botopink test --target <t>` in every workspace member on every target its manifest declares and `botopink build --target <t>` of every example on every declared target — 34 cells, 30 builds |
 | `scripts/known-broken-examples.txt` (0 entries, 3 comment lines) and the branch of `runExamplesGate` that read it | the file and the runner | deleted; an example that does not build fails the gate; `grep -c known-broken runner-standalone.sh` = 0 |
 | no `*.snap.new` guard (`grep -c snap.new` = 0 in `.gitignore` and both hook files; a staged `x.snap.new` passed the hook: exit 0) | `.gitignore`, the hook's staged-files stage | both suffixes ignored (`git status --ignored` → `!!`) and a staged one refused before any other stage (`git add -f x.snap.new` → exit 1 naming the candidate; `y.snap.md.new` the same, with and without a compiler) |
-| CI: core member only (`--lib emilia`), the examples gate on the commonJS row only, `allow_fail` key + `continue-on-error` on every row | `.github/workflows/test.yml` | `botopink-lib-test --target <t>` over the whole checkout on every row (every member and every example a row), no `allow_fail` / `continue-on-error` (`grep -c "allow_fail:"` = 0), the examples and refusals gates on every row, jhonstart checked out under `botopink-lang/repository/jhonstart` (the `emilia-card` dependency) |
+| CI: core member only (`--lib emilia`), the examples gate on the commonJS row only, `allow_fail` key + `continue-on-error` on every row; OTP on the erlang rows only; `ubuntu-22.04`; a windows row | `.github/workflows/test.yml` | rows `{ubuntu-24.04, macos-14} × {commonJS, erlang}`, every row hard (`grep -c "allow_fail:"` = 0); Erlang/OTP 28 and Node 20 on every row (building the compiler runs `erlc`); one `botopink-lib-test --target <t> --strict` per row from a scratch directory with `BOTOPINK_LIB_ROOTS` naming the repository, so the workspace's 17 members are the rows and nothing else is (jhonstart, checked out under `botopink-lang/repository/jhonstart` for `emilia-card`, is a dependency, not a row); then the hook's other stages (the examples on the row's target) from the hook's own runner; no windows row (gate-f) |
 
-`scripts/git-hooks/lib/runner-standalone.sh`, `scripts/git-hooks/pre-commit` and `.gitignore`
-are jhonstart's (`101`) byte for byte (`cmp` = identical), so the five libraries' guard clauses
-read the same (`113` diffs them). The refusals stage the runner carries (`runRefusalsGate`,
-`refusals/*/`) is empty in emilia — no `refusals/` directory — and returns before any work.
+`scripts/git-hooks/lib/runner-standalone.sh` and `scripts/git-hooks/pre-commit` are one text in
+the five library repositories (`cmp` = identical; the meta `hook-integrity` check 4 compares
+them on every push). The refusals stage the runner carries (`runRefusalsGate`, `refusals/*/`) is
+absent in emilia — no `refusals/` directory — and returns before any work.
 
-The CI command shape, in the workflow's layout (`botopink-lang/{libs,repository/emilia,repository/jhonstart}`):
-`botopink-lib-test --target commonJS` → **36 passed, 0 failed, 0 skipped** (the 17 emilia rows,
-15 jhonstart rows, `std`, `actions`, `routing`, `validation`); `--target erlang` → **35 passed,
-0 failed, 1 skipped** (`jhonstart-dom-test`, by its manifest — 101's structural restriction).
+The CI command shape, in the workflow's layout (`botopink-lang/{libs,repository/emilia,repository/jhonstart}`),
+from a scratch directory with `BOTOPINK_LIB_ROOTS` naming `repository/emilia`:
+`botopink-lib-test --target commonJS --strict` → **17 passed, 0 failed, 0 skipped** (the 17 emilia
+rows and no other); `--target erlang --strict` → **17 passed, 0 failed, 0 skipped**; the
+hook-stages step → 15 builds on each target.
 
 ## Steps
 
@@ -62,15 +63,19 @@ The CI command shape, in the workflow's layout (`botopink-lang/{libs,repository/
 ### Step 2 — CI (gate-j) — done
 
 - [x] `grep -c "allow_fail: true" .github/workflows/test.yml` = 0 (the key and `continue-on-error`
-      are gone); five rows (`commonJS`/`erlang` × ubuntu, macos; `commonJS` × windows — the
-      manifests' target set; the windows row subject to gate-f); YAML parses; the command shape
-      verified above. The workflow itself runs on push
+      are gone); four rows (`commonJS`/`erlang` × ubuntu-24.04, macos-14 — the manifests' target
+      set; no windows row, gate-f); YAML parses; the command shape verified above
+- [ ] the workflow green on GitHub: at the landed tip it was red on 4 of 5 rows (`erlc: FileNotFound` at
+      `zig build install` on the three commonJS rows; `GLIBC_2.36 not found` on `ubuntu-22.04 · erlang`);
+      the repaired workflow triggers on `feat` / `master` / `main` and on pull requests only, so its
+      first run is the landing
 
 ## Gate
 
 - [x] every emilia cell `pass` on both targets — 34/34 (above); every example builds — 15/15
 - [x] `(cd repository/emilia && scripts/git-hooks/pre-commit)` green with the compiler built:
-      2/2 members, 15/15 examples, 0 refusals
+      34/34 cells (17 members on both targets), 30/30 example builds, no `refusals/`
+- [ ] the workflow green on GitHub (step 2's open box — the landing)
 - [x] `repository/emilia/AGENTS.md` updated (tree, § Local gate, the CI paragraph); commits on
       `front/109-gate-emilia` in the emilia submodule
 
@@ -79,11 +84,13 @@ The CI command shape, in the workflow's layout (`botopink-lang/{libs,repository/
 | Item | Owner |
 |---|---|
 | `language-gaps.md:52` (**No spelling for a negative numeric enum leaf**, bites 35 · 36 · 45) is the row for the note at `repository/emilia/modules/emilia/src/tokens.bp:2194` (front 45, `Transform.Rotate.Neg`: "`Rotate { -12 }` does not parse; `-rotate-12` is `.Transform.Rotate.Neg.__12`") — the row exists but cites no file, and `113`'s check matches by path. Text to add to the row's *Bites* cell: `45 (emilia modules/emilia/src/tokens.bp:2194, Transform.Rotate.Neg)`. The note carries no literal `// LANGUAGE GAP` marker (`grep -rn "LANGUAGE GAP" modules examples` → 0 in emilia; the comment reads "the language gap is recorded rather than worked around"), so a marker grep finds it only case-insensitively; making it literal is a one-line edit of `tokens.bp` | `113` (the row), `../../06-emilia/` (`tokens.bp`) |
-| `botopink-lib-test` has no workspace selector (`--lib` takes one project name), so "every member a row" in CI is the whole checkout — `std`, the bundled libs and jhonstart's members ride along | `113` / `115` (`modules/lib-test-runner/**`) |
-| The workflow's first green run on the pushed branch | the landing |
+| The workflow's first green run. It triggers on push / PR to `feat`, `master`, `main` only; at the landed tip it was red on 4 of 5 rows, and the repaired file is unrun until it is on `feat` | the landing |
+| The linux rows are `ubuntu-24.04` because nothing built from botopink-lang starts on `ubuntu-22.04` (`build.zig:745` pins glibc 2.38 → `arc4random_buf`, GLIBC_2.36; 22.04 ships 2.35) — 101's README has the row | `114` / `../../01-compiler/` (`build.zig`) |
+| No windows row until the compiler's returns (gate-f) | `114` |
+| `botopink-lib-test` has no workspace selector; the workflow gets "this workspace's members and nothing else" from a scratch working directory plus `BOTOPINK_LIB_ROOTS` | `113` / `115` (`modules/lib-test-runner/**`) — optional; 101 filed the same row |
 
 ## Blast radius
 
-- None on `../../06-emilia/` sources. The five repositories share the same
-  `runner-standalone.sh` text — 99, 100, 101, 108 make the same edit in their repository;
-  113 verifies all five are identical in the guard clauses (`diff` of the function bodies).
+- None on `../../06-emilia/` sources. The five repositories share one
+  `runner-standalone.sh` text; a change to it lands in all five together, and the meta
+  `hook-integrity` check 4 compares the bytes.

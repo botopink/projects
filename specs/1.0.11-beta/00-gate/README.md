@@ -37,20 +37,54 @@ each recommended at its most restrictive reading with no configuration that bypa
 
 ## Current state · per repository (report L, measured at the open)
 
-Each repository's *own* gate: its `test` workflow's step (`zig build test-libs -- --lib <core>
---target <t>`), its pre-commit hook (`runStandaloneGate`: `botopink test` in every `modules/*`
-member, `botopink build` of every example, jhonstart's refusal greps, rakun's grep stage), and
-for the extension `npm test` / `npm run compiler-check`.
+Each repository's *own* gate: its `test` workflow's step (at the open `zig build test-libs -- --lib
+<core> --target <t>`; now one `botopink-lib-test --target <t> --strict` over the workspace's
+members), its pre-commit hook (`runStandaloneGate` — at the open `botopink test` in every
+`modules/*` member on its default target and `botopink build` of every example; now every
+workspace member on every declared target, every example built on every declared target,
+jhonstart's refusal cases, rakun's grep stage), and for the extension `npm test` / `npm run
+compiler-check`. The emilia, erika and jhonstart rows are re-measured after their fronts and the
+library-gate repair (2026-10-01, compiler `29cfffc8`); the others are as their fronts left them.
 
 | Repository | Own CI verdict | Cells | Pre-commit | What is wrong besides the reds |
 |---|---|---|---|---|
-| emilia | **green, 100 %** | 34/34 (17 members × 2) | 2/2 members, 15/15 examples | CI tests the core member only (`--lib emilia`); examples gate only on the commonJS row; `known-broken-examples.txt` (0 lines); no `*.snap.new` guard; one `// LANGUAGE GAP` note without a row (`tokens.bp:2194`) |
-| erika | **green, 100 %** | 5/5 (`erika` 31/0, `erika-test` 1/0, `erika-linq` commonJS 9/0) | 2/2, 1/1 | `erika-linq·erlang` restricted at `0`; two vacuous `beam` CI rows (`botopink test` cannot run beam — "skipped" passes); core member only in CI |
-| jhonstart | **green, 100 %** | 27/27 (`jhonstart` 204/0, link 38/0, test 21/0, forms 15/0, emilia 10/0, html 5/0, dom-test 9/0, 8 examples) | 7/7 members, 8/8 examples, 3/3 refusals | `jhonstart-counter·erlang`, `jhonstart-todo·erlang` restricted at `0`; `repro/**` stale (four repros, none reproduces — its README says delete each when the fix lands); core member only in CI |
+| emilia | **red on GitHub at the landed tip** — 4 of 5 rows: the three commonJS rows fail `zig build install` (`erlc: FileNotFound`), `ubuntu-22.04 · erlang` fails `GLIBC_2.36 not found`, `macos-14 · erlang` passes. Repaired (below), unrun until it is on `feat` | 34/34 (17 members × 2) | 34/34 cells, 30/30 example builds | left: the workflow's first run on `feat` (the landing) |
+| erika | **red on GitHub at the landed tip** — the same 4 of 5 rows, the same two causes. Repaired (below), unrun until it is on `feat` | 6/6 (`erika` 31/0, `erika-test` 1/0, `erika-linq` 9/0, each on both targets) | 6/6 cells, 2/2 example builds | left: the workflow's first run on `feat` (the landing) |
+| jhonstart | **red on GitHub at the landed tip** — the same 4 of 5 rows, the same two causes. Repaired (below), unrun until it is on `feat` | 29/29 (`jhonstart` 204/0, link 38/0, test 21/0, forms 15/0, emilia 10/0, html 5/0 and the 8 examples on both targets; dom-test 9/0 on commonJS) | 29/29 cells, 16/16 example builds, 3/3 refusals | left: the workflow's first run on `feat` (the landing); `modules/jhonstart-link/src/link.bp` through `botopink format` (`112`) |
 | vscode-extension | **green, 100 %** | `npm test` 49/49; `compiler-check` passed (18 primitive types) | n/a | nothing measured red |
 | onze | **red, ~89 %** after 100 (was ~29 %) | 15 pass, 2 no-tests, 2 FAIL of 19 (`onze-cli` on both rows — its `targets` line and `onze-og`'s were deleted under gate-d; `onze-server·erlang` green on 99's tree) | stops at the 4th of 8 members (`onze-cli`); `blog` and `scaffold` build on both targets | the five `onze-cli` reds are a checker row (`ambiguous-import-use` on a named import from a spelled module), 99's landing, and a BEAM `enoent` inside `onze build` (100's README § What is left); CI rewritten to the runner's discovery, every row hard, unrun |
-| rakun | **green with the pinned compiler** (99) | 25 of 25 modules green under `botopink test` erlang (1,817 tests / 0 failed); 3 / 3 examples build; 8 starters linted | the greps read code and whole identifiers (`codeLines`); a missing compiler and a staged `*.snap.new` fail; no known-broken list | CI: `erlang` × 3 runners, every row hard, no `commonJS` / `beam` row, every member and example through the runner's discovery; the R3 workaround is the seven-name closure import in `rakun-metrics/test/export_test.bp` (row in `language-gaps.md`); PK-5's reformat of `modules/{rakun,rakun-app}` landed (`format --check` exits 0); left: the workflow green on `feat` (the landing step) and the meta gate's stage 8 read by 113 |
+| rakun | **green with the pinned compiler** (99) | 25 of 25 modules green under `botopink test` erlang (1,817 tests / 0 failed); 3 / 3 examples build; 8 starters linted | the greps read code and whole identifiers (`codeLines`); a missing compiler and a staged `*.snap.new` fail; no known-broken list | CI: `erlang` × 2 runners (ubuntu-24.04, macos-14 — the repair below), every row hard, no `commonJS` / `beam` row, every member and example through the runner's discovery; the R3 workaround is the seven-name closure import in `rakun-metrics/test/export_test.bp` (row in `language-gaps.md`); PK-5's reformat of `modules/{rakun,rakun-app}` landed (`format --check` exits 0); left: the workflow green on `feat` (the landing step) and the meta gate's stage 8 read by 113 |
 | meta | **no CI** | — | — | no `.github/` directory: the hook-integrity workflow does not exist |
+
+**The five library gates, as repaired.** The fronts above marked each library's own gate done on a
+local measurement; on GitHub three of them were red at their landed tips and the other two had
+never run, and the pre-commit runner had drifted into three texts. What holds now, measured
+2026-10-01 with the compiler built from botopink-lang `29cfffc8`:
+
+- **One hook text.** `scripts/git-hooks/pre-commit` and `scripts/git-hooks/lib/runner-standalone.sh`
+  are byte-identical in emilia, erika, jhonstart, onze and rakun (the meta `hook-integrity` check 4
+  exits 0 over the five trees). Stages: staged files (no `*.snap.new` / `*.snap.md.new`, no
+  conflict marker) · the compiler (absent, or a `BOTOPINK_BIN` that is not an executable →
+  refused) · the repository's own stages · `botopink test --target <t>` in every workspace member
+  on every target its manifest declares · `botopink build --target <t>` of every example on every
+  declared target · every `refusals/*/` case. No flag, variable or list skips a stage; the last
+  three all run and every red is listed. Before, emilia, erika and jhonstart ran each member on
+  its manifest's default `target` only — no erlang cell under a green pre-commit.
+- **One extension point.** `scripts/git-hooks/repository-stages.sh` (rakun's front 22/23 greps are
+  the only one) runs in a child process whose exit status is all the runner reads: it can add a
+  red, it cannot remove or skip a shared stage.
+- **One workflow shape.** Rows = the manifests' targets × {`ubuntu-24.04`, `macos-14`}, every row
+  hard; Erlang/OTP 28 on every row (building the compiler runs `erlc` — the commonJS rows had
+  none); one `botopink-lib-test --target <t> --strict` from a scratch directory with
+  `BOTOPINK_LIB_ROOTS` naming the repository, so a workflow's rows are its own workspace's members
+  and a sibling library's red is not its red; then the hook's other stages from the hook's runner.
+- **What it rests on that is the compiler's.** `build.zig:745` pins the bundled glibc at 2.38; the
+  compiler links libc, Zig's std then calls `arc4random_buf` (glibc ≥ 2.36), and `ubuntu-22.04`
+  ships 2.35 — nothing built from botopink-lang starts there (`version 'GLIBC_2.36' not found`),
+  botopink-lang's own `ubuntu-22.04` row included. The library rows run on `ubuntu-24.04`, which
+  works with the pin as it is and with a lower one; the compiler's row needs a pin ≤ 2.35 at that
+  line, or `ubuntu-24.04` (owner: `114` / `../01-compiler/`). No library has a windows row until the
+  compiler's returns (gate-f).
 
 Report L's R3 is the one compiler row this track hands *out*: `rakun-metrics/src/export.bp` imports
 `RestClient` from `rakun-client`; at the import site the checker re-checks `RestClient`'s

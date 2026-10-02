@@ -29,7 +29,7 @@ as the runner's only root.
 
 **6/6 cells green** (the milestone's open counted 5 and one restricted at `0`; the restricted one
 is a cell now). `botopink build` of the example exits 0 on both targets (3 files on commonJS, 10
-on erlang). Pre-commit: 2/2 members, 1/1 example.
+on erlang). Pre-commit: 6/6 cells, 2/2 example builds.
 
 Tolerances in this repository, all removed:
 
@@ -37,17 +37,18 @@ Tolerances in this repository, all removed:
 |---|---|---|
 | `"targets": ["commonJS"]` on a cell that passes on erlang | `examples/erika-linq/botopink.json` | deleted (gate-a / gate-d: a restriction with no host reason is deleted); 9/9 on erlang measured before and after |
 | two `beam` CI rows — `botopink test` cannot run beam, the runner printed `skipped` and the row passed | `.github/workflows/test.yml` | deleted; `grep -c "target: beam"` = 0. A `beam` row returns when a library cell can run there (`111`) |
-| `allow_fail` key on every row, `continue-on-error` on the job | same file | both keys gone (`grep -c allow_fail:` = 0); every row hard |
-| CI tested the core member only (`--lib erika`), examples on the commonJS row | same file | `botopink-lib-test --target <t>` over the whole checkout on every row (every member and every example a row; `--lib erika` selects the core member only, so the workspace is one call without it and `std` rides along — the runner has no workspace selector); the examples and refusals gates on every row |
-| pre-commit warned and returned 0 when the compiler was not found | `scripts/git-hooks/lib/runner-standalone.sh` | `requireBotopink` fails the gate with the way out (`zig build install`, or `BOTOPINK_BIN`); verified in a scratch repository: hook exit 1, `git commit` exit 1 |
+| `allow_fail` key on every row, `continue-on-error` on the job; OTP on the erlang rows only; `ubuntu-22.04`; a windows row | same file | both keys gone (`grep -c allow_fail:` = 0); rows `{ubuntu-24.04, macos-14} × {commonJS, erlang}`, every row hard; Erlang/OTP 28 and Node 20 on every row (building the compiler runs `erlc`); no windows row (gate-f) |
+| CI tested the core member only (`--lib erika`), examples on the commonJS row | same file | one `botopink-lib-test --target <t> --strict` per row from a scratch directory with `BOTOPINK_LIB_ROOTS` naming the repository: the workspace's three members are the rows and nothing else is (`std` does not ride along); then the hook's other stages (the example built on the row's target) from the hook's own runner |
+| pre-commit warned and returned 0 when the compiler was not found; it ran a bare `botopink test` in `modules/*` — each manifest's default `target`, commonJS for all three members, so no erlang cell | `scripts/git-hooks/lib/runner-standalone.sh` | one text in the five library repositories (`sha256sum` equal ×5; the meta `hook-integrity` check 4): a missing compiler fails the gate with the way out (`zig build install`, or `BOTOPINK_BIN`; a `BOTOPINK_BIN` that is not an executable fails too) — scratch clone: hook exit 1, `git commit` exit 1; `botopink test --target <t>` in every workspace member on every target its manifest declares and `botopink build --target <t>` of the example on both — 6 cells, 2 builds |
 | `scripts/known-broken-examples.txt` branch of `runExamplesGate` | same file | deleted; an example that does not build fails |
 | no `*.snap.new` guard | `.gitignore`, the hook's staged-files stage | both suffixes ignored and a staged one refused (`git add -f x.snap.new y.snap.md.new` → exit 1, verified); `grep -c snap.new` → 1 and 5 |
 
-`scripts/git-hooks/lib/runner-standalone.sh`, `scripts/git-hooks/pre-commit` and `.gitignore`
-are byte-identical to jhonstart's (101's landing), refusals stage included (a no-op until erika
-has a `refusals/` case); `.github/workflows/test.yml` differs from jhonstart's in `LIB_NAME` and
-the absent emilia-checkout step only. The matrix is the manifests' target set: no member narrows
-`targets`, so `{ubuntu-22.04, macos-14} × {commonJS, erlang}` + `windows-2022 × commonJS`.
+`scripts/git-hooks/lib/runner-standalone.sh` and `scripts/git-hooks/pre-commit` are one text in
+the five library repositories, refusals stage included (absent until erika has a `refusals/`
+directory); `.github/workflows/test.yml` differs from jhonstart's in `LIB_NAME`, the header's
+sentence about the manifests and the absent emilia-checkout step only. The rows are the
+manifests' target set on the runners the compiler is gated on: no member narrows `targets`, so
+`{ubuntu-24.04, macos-14} × {commonJS, erlang}`.
 
 ## Steps
 
@@ -62,18 +63,22 @@ the absent emilia-checkout step only. The matrix is the manifests' target set: n
 - [x] `grep -c "target: beam" .github/workflows/test.yml` = 0; `grep -c "allow_fail: true"` = 0 (the key is gone)
 - [x] `grep -c snap.new .gitignore scripts/git-hooks/lib/runner-standalone.sh` → 1 and 5; the hook without a
       compiler binary → exit 1 with the build hint; a staged `x.snap.new` → exit 1
-- [x] the CI command shape verified with the front's `repository/` as the only root:
-      `botopink-lib-test --target commonJS` lists `erika`, `erika-linq`, `erika-test` as passing rows
-      (37 passed, 5 failed, 38 skipped over the root — the reds are rakun's and onze's, fronts 99 and 100);
-      on erlang the whole-root run exceeds 15 minutes (rakun's erlang cells), so each erika row was
-      measured by name — `--lib erika` 31/0, `--lib erika-test` 1/0, `--lib erika-linq` 9/0, each
-      `1 passed, 0 skipped` (the widened example is a row, not a skip)
+- [x] the CI command shape verified in the workflow's layout (`botopink-lang/repository/erika` + `libs`),
+      from a scratch directory with `BOTOPINK_LIB_ROOTS` naming `repository/erika`:
+      `botopink-lib-test --target commonJS --strict` → 3 passed, 0 failed (`erika`, `erika-linq`,
+      `erika-test` and no other row); `--target erlang --strict` → 3 passed, 0 failed; the hook-stages
+      step → 1 build on each target
+- [ ] the workflow green on GitHub: at the landed tip it was red on 4 of 5 rows (`erlc: FileNotFound` at
+      `zig build install` on the three commonJS rows; `GLIBC_2.36 not found` on `ubuntu-22.04 · erlang`);
+      the repaired workflow triggers on `feat` / `master` / `main` and on pull requests only, so its
+      first run is the landing
 
 ## Gate
 
 - [x] every erika cell `pass` on commonJS and erlang — 6/6 (above)
-- [x] `(cd repository/erika && scripts/git-hooks/pre-commit)` green; the workflow's command shape verified as
-      in step 2 (the workflow itself runs on push)
+- [x] `(cd repository/erika && scripts/git-hooks/pre-commit)` green: 6/6 cells (three members on both
+      targets), 2/2 example builds; the workflow's command shape verified as in step 2
+- [ ] the workflow green on GitHub (step 2's open box — the landing)
 - [x] `repository/erika/AGENTS.md` updated; commits on `front/108-gate-erika` in the erika submodule
 
 ## What is left
@@ -81,11 +86,14 @@ the absent emilia-checkout step only. The matrix is the manifests' target set: n
 | Item | Owner |
 |---|---|
 | `restricted-targets.txt`'s `erika-linq erlang 0` line is stale (the cell runs) | `113` (deletes the file) |
-| `botopink-lib-test` has no workspace selector, so "every member a row" in CI is the whole checkout (`std` rides along) | `113` / `115` (`modules/lib-test-runner/**`) — 101 filed the same row |
+| The workflow's first green run. It triggers on push / PR to `feat`, `master`, `main` only; at the landed tip it was red on 4 of 5 rows, and the repaired file is unrun until it is on `feat` | the landing |
+| The linux rows are `ubuntu-24.04` because nothing built from botopink-lang starts on `ubuntu-22.04` (`build.zig:745` pins glibc 2.38 → `arc4random_buf`, GLIBC_2.36; 22.04 ships 2.35) — 101's README has the row | `114` / `../../01-compiler/` (`build.zig`) |
+| No windows row until the compiler's returns (gate-f) | `114` |
+| `botopink-lib-test` has no workspace selector; the workflow gets "this workspace's members and nothing else" from a scratch working directory plus `BOTOPINK_LIB_ROOTS` | `113` / `115` (`modules/lib-test-runner/**`) — optional; 101 filed the same row |
 
 ## Blast radius
 
 - `113` deletes the `erika-linq erlang 0` line with the file; `../../01-compiler/carried.md` RT-1 and
   `09-ecosystem-residuals`' "lift erika-linq targets" row close on this landing.
-- No other track owns erika files this milestone. Emilia's and onze's `runner-standalone.sh` are
-  the file erika's was before this front; 109 and 100 land the same copy.
+- No other track owns erika files this milestone. `runner-standalone.sh` is one text in the five
+  library repositories; a change to it lands in all five together (the meta `hook-integrity` check 4).
