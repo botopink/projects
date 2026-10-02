@@ -302,14 +302,15 @@ parameter. Diagnostics name it by its owner (``the props of `link` ``).
 
 - [x] `Ok(…)` / `Error(…)` are never constructors — `reject/result_{ok,error}_constructor`; the
       `docs.md` passage asking for an explicit `Ok(…)` is gone
-- [x] an integer literal under an expected `f64` is that `f64` everywhere but `==` / `!=` (decision
-      B2) — `run/integer_literal_fits_f64`; an `i32` value never widens —
-      `reject/i32_value_never_widens`
+- [x] an integer literal under an expected `f64` is that `f64` — `run/integer_literal_fits_f64`; an
+      `i32` value never widens — `reject/i32_value_never_widens`; `==` / `!=` between an `f64` and an
+      integer literal is refused at the literal (decision 215) —
+      `reject/f64_{equals,not_equals}_integer_literal`
 
 ## Gate
 
 - [x] `zig build test` from a **cold** runtime cache, green, in this front's worktree
-- [x] `tests/language/run.sh --target all` and `--target beam` green with the new cells; every cell above **proved able to fail** by running it on the parent binary — 1 640 / 0 at the front's tip; each new cell was run on the parent binary (the ones that pass there are named as pins)
+- [x] `tests/language/run.sh --target all` and `--target beam` green with the new cells; every cell above **proved able to fail** by running it on the parent binary — 1 642 / 0 at the front's tip; each new cell was run on the parent binary (the ones that pass there are named as pins)
 - [x] every re-recorded `snapshots/comptime/**` file read for expected/found orientation; the four `snapshots/codegen/**` directories byte-identical except for a fixture a step newly refuses, which is reported to its backend front, never deleted here — moved only where a step's fixture changed source (`throw inside nested fn …`, `test body ---- try on an Error …`, `narrow ---- case enum area with print`, `access variant-specific field after matching`), each by its own source line
 - [ ] `libs/std` and every `examples/` project `botopink check` clean; `zig build test-libs` at baseline — a library that reds gets a migration plan in the commit — `botopink check` of every package of the seven repositories identical to the parent binary; `libs/std` tests 442 / 0 on commonJS; `test-libs` is the coordinator's
 - [x] `AGENTS.md` of `src/comptime/` and `src/parser/` in the same commit as each step
