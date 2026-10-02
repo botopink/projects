@@ -71,10 +71,12 @@ code).
 imports in 477 files — botopink-lang 166 / 106, rakun 707 / 262, onze 128 / 57, jhonstart 135 /
 46, emilia 30 / 6, erika 0. No file changed canonical state under `botopink format --check`
 (the non-canonical sets of rakun 285, onze 85, jhonstart 54, emilia 26 files are the ones at the
-tip, byte for byte as lists). Six imports the codemod reports UNDECIDED were edited by hand: four
-named a decorator-emitted name (`__jhClient_*`, `__rkQuery_*`), two named a module that does not
-declare the item (`registerRoute` is `route_handler`'s, the middleware names are `middleware`'s —
-the old `from` reached them through the whole program). Generators that write an import of a
+tip, byte for byte as lists). Seven imports the codemod reports UNDECIDED were edited by hand:
+five named a decorator-emitted name (`__jhClient_*`, `__rkQuery_*`, `__rkMake_*` — one of them in
+rakun-cache's `test/fixtures/twin`, a `*.bp.fixture` project the codemod reads), two named a module
+that does not declare the item (`registerRoute` is `route_handler`'s, the middleware names are
+`middleware`'s — the old `from` reached them through the whole program). onze's `build_test`
+fixture strings (`app.card`, `app.widget`, `styles.app_home`) were edited by hand too. Generators that write an import of a
 module of the package were changed by hand too: `rakun-cli`'s `inspectSource`, onze's
 `routesModule`, `serverMainSource`, the bundler's client entry, the alias staging
 (`rewriteImports` stages `from "@/lib.x"` as `import {lib.x.…};`) and the bundler graph (a dotted
