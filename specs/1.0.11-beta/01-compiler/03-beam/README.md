@@ -49,10 +49,15 @@ the open).
 
 ## Current state
 
-`run.sh --target beam`: 382 passed, 2 expected failures (the sidecar), 0 failed, measured at the
-open. beam is outside `--target all` (`run.sh:155`; 12's step 1 after EF-1/EF-2). The 1.0.10
-README's steps 1–5 and the "rows no step named" hold; `beam_export_audit.sh` assembles every
-module. `zig fmt` is green on this front's files.
+`botopink test --target beam` runs (test blocks, a runner compiled at build time, the CLI's
+`erlc +from_asm` + `erl` half), and `run.sh` schedules `test/` and test-kind `modules/` cells on
+beam: all 68 pass. A constructor or list pattern in binding position binds its names, list
+patterns in `case` bind and test every element, a lambda ending a `case` arm is its value, a type
+adopts its behavior's `default fn`s, `?.` through a tuple label answers absent, `-x` is the unary
+minus, a capitalised imported fn is a call, a bare `break` ends a `for`, the keyword form of an
+`@External.Erlang` template compiles, and a tuple type in `is` tests each element. Pinned by
+`codegen/tests/beam.zig` and three cells. `beam_export_audit.sh` assembles all 490 modules. Steps
+1–4 are done; step 5 waits on `17-beam-memory`.
 
 ## Mechanism
 
@@ -74,9 +79,9 @@ recursively; a spread-only list pattern binds `rest` (01 step 13's checker gaps 
 reaches here).
 
 **Acceptance:**
-- [ ] `run/ctor_pattern_in_val_binding` — `val Label(t, w) = Tag.Label(t: 2, w: 5); @print(t + w)` prints `7` on four targets (erlang's `destructPatternExpr` twin: measured landed or added by 02 — the cell's erlang column says which)
-- [ ] `codegen/tests/aggregates.zig:482`'s fixture gains its beam RUN LOG (`x 2 5 hi! 7`), the four-backend snapshot it was written to be
-- [ ] `run/val_nested_ctor_pattern` and `run/val_spread_only_list_pattern` (01 step 13's cells) pass on beam
+- [x] `run/ctor_pattern_in_val_binding` — `val Label(t, w) = Tag.Label(t: 2, w: 5); @print(t + w)` prints `7` on four targets (erlang's `destructPatternExpr` twin: measured landed or added by 02 — the cell's erlang column says which)
+- [x] `codegen/tests/aggregates.zig:482`'s fixture gains its beam RUN LOG (`x 2 5 hi! 7`), the four-backend snapshot it was written to be
+- [ ] `run/val_nested_ctor_pattern` and `run/val_spread_only_list_pattern` (01 step 13's cells) pass on beam — **open:** the beam lowering is in (`emitPatternDestruct`); the checker still refuses both programs (`refutable-val-pattern`, `rest` unbound), so neither cell exists yet
 
 ### Step 2 — C-07's beam tails
 
@@ -86,9 +91,9 @@ LOG that is the value run; §4.1's truth table answered by each §4.2 form on be
 (`run/is_truth_table`'s beam column, 02 step 7's shared `.out`).
 
 **Acceptance:**
-- [ ] `run/is_truth_table`, `run/unknown_stores_nothing` green on beam
-- [ ] one beam fixture per tuple / `..` / type-pattern shape, RUN LOG verified by running (`erlc +from_asm` + `erl`)
-- [ ] `beam_export_audit.sh` green at its new total
+- [ ] `run/is_truth_table`, `run/unknown_stores_nothing` green on beam — **open:** both are 02 step 7's cells, not landed; 02's `test/is_truth_table` passes on beam, and `codegen/tests/beam.zig` pins its table and `unknown` by value
+- [x] one beam fixture per tuple / `..` / type-pattern shape, RUN LOG verified by running (`erlc +from_asm` + `erl`)
+- [x] `beam_export_audit.sh` green at its new total
 
 ### Step 3 — the sidecar's `.S` half (after 00-gate)
 
@@ -98,8 +103,8 @@ emits it for (02 step 9's `build` case included) and that `beam_export_audit.sh`
 every module with the prologue.
 
 **Acceptance:**
-- [ ] the two cells green on beam under `botopink test` and on a built program by hand
-- [ ] no beam line in `expected-failures.txt`; 12's step 1 (beam in `all`) can open
+- [x] the two cells green on beam under `botopink test` and on a built program by hand
+- [x] no beam line in `expected-failures.txt`; 12's step 1 (beam in `all`) can open
 
 ### Step 4 — the captured-`var` write (T6, lg-b)
 
@@ -109,7 +114,7 @@ silent `0` is left: `run/closure_capture_statement_position` on beam. Under (2)/
 twin of 02 step 8.
 
 **Acceptance:**
-- [ ] `test/closure_capture.bp`'s shapes as a `run/` cell green on beam; the exit-0 stale value gone (either refused before beam or written back)
+- [x] `test/closure_capture.bp`'s shapes as a `run/` cell green on beam; the exit-0 stale value gone (either refused before beam or written back)
 
 ### Step 5 — `keyed = true` in assembly (C-10, after 17 step 1)
 
@@ -122,11 +127,11 @@ owner of decision 39); this front emits the same in `.S`, byte-compared against 
 
 ## Gate
 
-- [ ] `zig build test` from a **cold** runtime cache, green, in this front's worktree
-- [ ] `scripts/beam_export_audit.sh` assembles every module, before and after each step
-- [ ] every re-recorded RUN LOG **verified by running the program** (the harness runs `erlc +from_asm` and `erl`; each moved block compared by hand)
-- [ ] `tests/language/run.sh --target beam` green with the new cells; every cell proved able to fail on the parent binary
-- [ ] `src/codegen/AGENTS.md` and `src/codegen/beam/AGENTS.md` in the same commit as each step
+- [x] `zig build test` from a **cold** runtime cache, green, in this front's worktree
+- [x] `scripts/beam_export_audit.sh` assembles every module, before and after each step
+- [x] every re-recorded RUN LOG **verified by running the program** (the harness runs `erlc +from_asm` and `erl`; each moved block compared by hand)
+- [x] `tests/language/run.sh --target beam` green with the new cells; every cell proved able to fail on the parent binary
+- [x] `src/codegen/AGENTS.md` and `src/codegen/beam/AGENTS.md` in the same commit as each step
 - [ ] Commit on `fix/03-beam`; no push, no merge
 
 ## Blast radius

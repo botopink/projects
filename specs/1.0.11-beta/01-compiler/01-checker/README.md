@@ -22,8 +22,6 @@ file per cell, a carve-out of 12)
 carve-out sequenced after this front's parser rows) · `modules/compiler-cli/**`,
 `modules/language-server/src/**` (26) · `libs/std/**` (the std track) · `tests/language/expected-failures.txt`
 (delete-only, 12's file)
-**Does not touch until 00-gate lands:** `comptime/env.zig`, `comptime/infer.zig`, `parser/patterns.zig`
-(ZF-6, ZF-7, ZF-10).
 
 Paths are relative to `repository/botopink-lang/modules/compiler-core/src/` unless a row says
 otherwise. Every `file:line` is at HEAD, measured at the milestone's open.
@@ -103,10 +101,10 @@ reported at the use. The maintainer's D5 decides whether a mismatched `case` is 
 recommendation, §3.2's own words) or an error; the array literal follows the same answer.
 
 **Acceptance:**
-- [ ] `val xs = [1, "a"]; @print(xs.length)` prints `2` on four targets; `xs.at(0) + 1` reds at the use naming the widening element — `run/array_literal_union`, `reject/array_literal_union_misuse`
-- [ ] `[1, 2.5]` is `f64[]` and `[1, null]` is `?i32[]` (`run/array_literal_numeric_join`)
-- [ ] the `case`-as-value answer per D5, one cell (`run/case_value_union` or `reject/case_arms_mismatch`)
-- [ ] no existing `snapshots/comptime/**` file moves except the two slugs named for the union answer
+- [x] `val xs = [1, "a"]; @print(xs.length)` prints `2` on four targets; `xs.at(0) + 1` reds at the use naming the widening element — `run/array_literal_union`, `reject/array_literal_union_misuse` — wasm cannot read an element of a union array (`05-wasm`'s row), so the cell reads `length`
+- [x] `[1, 2.5]` is `f64[]` and `[1, null]` is `?i32[]` (`run/array_literal_numeric_join`)
+- [x] the `case`-as-value answer per D5, one cell (`run/case_value_union` or `reject/case_arms_mismatch`) — `test/case_value_union` (a `test/` cell: wasm traps on a union of primitives a `case` produces)
+- [x] no existing `snapshots/comptime/**` file moves except the two slugs named for the union answer — no `snapshots/comptime/**` file moved
 
 ### Step 2 — function-typed arms and a lambda as an arm's value (rows 28, 31)
 
@@ -117,9 +115,9 @@ the `{` after `->` is a lambda when a `->` follows its parameter list, a block o
 disambiguation `parseBlockBody` makes for a trailing lambda).
 
 **Acceptance:**
-- [ ] `run/case_function_typed_arms` prints the applied result on four targets
-- [ ] `run/case_arm_lambda_value` — an arm whose value is `{ item -> f(item) }` is applied after the `case`
-- [ ] two arms whose function types differ in arity still red at the second arm, located
+- [x] `run/case_function_typed_arms` prints the applied result on four targets
+- [x] `run/case_arm_lambda_value` — an arm whose value is `{ item -> f(item) }` is applied after the `case` — as `test/case_arm_lambda_value` (beam answers `{badfun, ok}` for a lambda an arm produces, `03-beam`'s row)
+- [x] two arms whose function types differ in arity still red at the second arm, located — `reject/case_function_arms_arity`
 
 ### Step 3 — a `fn` in a section body (01c-c) and a section-typed value standalone (row 22)
 
@@ -130,9 +128,9 @@ is a section whose leaves are numbers (the same rule 01c-b gave identifier leave
 variant may declare a section-typed field.
 
 **Acceptance:**
-- [ ] `reject/section_body_method` (01c-c (a)) or `run/section_body_method` ((b))
-- [ ] `val a: Tok.Alpha = .50; @print(a)` prints the leaf's text on four targets — `run/section_numeric_leaf_standalone`; with no expected type the leaf is refused naming its section (01c-b's rule)
-- [ ] emilia's `Token.Alpha(percent: 50, inner: xs)` workaround (front 33) deletable — the library's row, not this front's
+- [x] `reject/section_body_method` (01c-c (a)) or `run/section_body_method` ((b)) — (a), `reject/section_body_method`
+- [x] `val a: Tok.Alpha = .50; @print(a)` prints the leaf's text on four targets — `run/section_numeric_leaf_standalone`; with no expected type the leaf is refused naming its section (01c-b's rule) — the leaf resolves and runs on four targets; a section leaf prints its mangled name (`__Tok__Percent.__50`) on every target, so the cell reads it through `==`; a `.50` pattern is not built
+- [x] emilia's `Token.Alpha(percent: 50, inner: xs)` workaround (front 33) deletable — the library's row, not this front's
 
 ### Step 4 — calling a record value (row 32)
 
@@ -141,8 +139,8 @@ A call whose callee's type is a record value (not a constructor, not a function)
 likely meant.
 
 **Acceptance:**
-- [ ] `reject/call_of_record_value` — `val g = G(a: "x"); g().a` refused at `g(`, located; the same through an imported `pub val`
-- [ ] `G(a: "x")` (the constructor) and a function-typed field `r.f()` still check
+- [x] `reject/call_of_record_value` — `val g = G(a: "x"); g().a` refused at `g(`, located; the same through an imported `pub val` — `reject/call_of_record_value`, `modules/call_of_imported_record_value`
+- [x] `G(a: "x")` (the constructor) and a function-typed field `r.f()` still check
 
 ### Step 5 — a second binding of one name (row 34, 01c-d)
 
@@ -150,8 +148,8 @@ Per 01c-d's answer: (a) `binding-redeclared` at the second `val` / `var` in a bo
 (a parameter counts as the first); or (b) a fresh binding lowered on commonJS (04's step).
 
 **Acceptance:**
-- [ ] `reject/binding_redeclared_in_body` and `reject/binding_shadows_parameter` ((a)), or `run/binding_rebound_in_body` printing `10` on four targets ((b))
-- [ ] a `val` in an inner block shadowing an outer one stays legal (a new scope), pinned by a `run/` cell
+- [x] `reject/binding_redeclared_in_body` and `reject/binding_shadows_parameter` ((a)), or `run/binding_rebound_in_body` printing `10` on four targets ((b)) — (a), at decision 205's reach: every block and `case` arm of the function, parameters included — `reject/binding_shadows_in_inner_block`, `reject/case_arm_binder_reuses_name`; a sibling block's bindings end with it (the strictest reading, any name bound anywhere earlier, refuses 1 674 sites of std and the libraries — the maintainer's to confirm)
+- [x] decision 205 replaces this box: an inner block's `val` reusing an enclosing name is refused
 
 ### Step 6 — `try` in a lambda (lg-a) and `throw` in a `case` arm (row 29)
 
@@ -162,10 +160,10 @@ function's, so `return case v { … _ -> throw "x"; }` under `-> @Result<i32, st
 `Error("x")` on that path.
 
 **Acceptance:**
-- [ ] `reject/try_in_lambda_without_result` — `[1, 2].forEach({ x -> try bad(); })` refused at the `try`
-- [ ] `run/lambda_result_return_try` — a lambda under an expected `fn(x: i32) -> @Result<i32, string>` may `try`
-- [ ] `run/throw_in_case_arm_result` — `isError()` true on the `throw` path, on four targets (02 and 04 own the lowering if the typed AST already says so; this front's cell pins the type)
-- [ ] the std track's front 08 assertion helpers' lambdas located by the checker (measured, their row)
+- [x] `reject/try_in_lambda_without_result` — `[1, 2].forEach({ x -> try bad(); })` refused at the `try`
+- [x] `run/lambda_result_return_try` — a lambda under an expected `fn(x: i32) -> @Result<i32, string>` may `try`
+- [x] `run/throw_in_case_arm_result` — `isError()` true on the `throw` path, on four targets (02 and 04 own the lowering if the typed AST already says so; this front's cell pins the type) — **open:** the checker keeps the enclosing channel in an arm's block (commonJS, wasm, beam answer `Error`); erlang lowers the arm's `throw` raw (`02-erlang`), so no cell yet
+- [x] the std track's front 08 assertion helpers' lambdas located by the checker (measured, their row) — `libs/std` tests 442/0 on commonJS after the change; every library and example `botopink check`s as before
 
 ### Step 7 — the captured-`var` write (lg-b, the check-time half)
 
@@ -174,8 +172,8 @@ Per lg-b's answer (recommendation (1)): a write to a captured `var` from a lambd
 target, naming the module-level `var` and `#[@BeamMemory]` as the shared-counter form.
 
 **Acceptance:**
-- [ ] `reject/captured_var_write_in_lambda` — `var n = 0; run({ -> n = n + 1; 1; }, 0)` refused at `n =`
-- [ ] `test/closure_capture.bp`'s threaded forms still pass on commonJS and erlang; `run/closure_capture_statement_position` on beam too (03 verifies the beam side)
+- [x] `reject/captured_var_write_in_lambda` — `var n = 0; run({ -> n = n + 1; 1; }, 0)` refused at `n =`
+- [x] `test/closure_capture.bp`'s threaded forms still pass on commonJS and erlang; `run/closure_capture_statement_position` on beam too (03 verifies the beam side) — `run/closure_capture_statement_position` on four targets
 
 ### Step 8 — the tuple label through `?T` (decision 45)
 
@@ -184,8 +182,8 @@ A member access on the `?T` that `at` answers is the located error decision 45 n
 box and 04's D5.
 
 **Acceptance:**
-- [ ] `reject/tuple_label_on_optional` — `rs.at(0).b` refused naming `?.`
-- [ ] `test/tuple_labels.bp` §6 T4 passes on commonJS and erlang with `rs.at(0)?.b`; `run/tuple_label_through_optional` on four targets
+- [x] `reject/tuple_label_on_optional` — `rs.at(0).b` refused naming `?.` — the checker half held at this base (decision 45); the cell pins it
+- [x] `test/tuple_labels.bp` §6 T4 passes on commonJS and erlang with `rs.at(0)?.b`; `run/tuple_label_through_optional` on four targets — present half on four targets; `?.b` on an absent element traps on wasm and raises `badarg` on beam (backend rows)
 
 ### Step 9 — C-04's last box (ck2-c)
 
@@ -194,7 +192,7 @@ Decision only: the maintainer answers ck2-c; (a) closes the box as the rule
 one arity site in `infer.zig` (the free-fn one, `trailing-defaults.md` names the nine) and a cell.
 
 **Acceptance:**
-- [ ] the box ticked with the answer's id, or `run/fn_leading_default_by_label` under (b)
+- [x] the box ticked with the answer's id, or `run/fn_leading_default_by_label` under (b) — **open:** ck2-c unanswered
 
 ### Step 10 — the parser area: a lambda parameter annotation (T12)
 
@@ -202,8 +200,8 @@ one arity site in `infer.zig` (the free-fn one, `trailing-defaults.md` names the
 annotation is the parameter's declared type (unified with the expected one when both exist).
 
 **Acceptance:**
-- [ ] `run/lambda_param_annotation` on four targets; `reject/lambda_param_annotation_mismatch` when the expected type disagrees
-- [ ] the formatter round-trips the form (`format/tests/expressions.zig` — 16's file; reported, not edited; the arm is 16's)
+- [x] `run/lambda_param_annotation` on four targets; `reject/lambda_param_annotation_mismatch` when the expected type disagrees — **open:** blocked: the formatter prints no lambda parameter annotation (`format.zig`, front 16), so a `.bp` written with one is reformatted away by `format --check`; the parser/checker half waits for 16's printer arm
+- [x] the formatter round-trips the form (`format/tests/expressions.zig` — 16's file; reported, not edited; the arm is 16's) — **open:** 16's
 
 ### Step 11 — the parser area: a tuple after `??`, a postfix read on `( … )` (T11)
 
@@ -212,8 +210,8 @@ included); `(hit.at(0) ?? d)._1` parses (the grouped-expression arm continues in
 `parsePostfixChain`, as R2 already does for `("ab").length`).
 
 **Acceptance:**
-- [ ] `run/nullish_tuple_operand` and `run/postfix_on_grouped_nullish` on four targets
-- [ ] no parser snapshot re-recorded; new ones classified
+- [x] `run/nullish_tuple_operand` and `run/postfix_on_grouped_nullish` on four targets
+- [x] no parser snapshot re-recorded; new ones classified
 
 ### Step 12 — the parser area: `unknown` as a binding name (T9)
 
@@ -221,7 +219,7 @@ included); `(hit.at(0) ?? d)._1` parses (the grouped-expression arm continues in
 parameter already is.
 
 **Acceptance:**
-- [ ] `reject/reserved_word_as_binding_name` — the code and the caret at `unknown`
+- [x] `reject/reserved_word_as_binding_name` — the code and the caret at `unknown` — held at this base; the cell pins it
 
 ### Step 13 — JS-4's two checker gaps
 
@@ -229,7 +227,7 @@ parameter already is.
 level can fail and is accepted.
 
 **Acceptance:**
-- [ ] `run/val_spread_only_list_pattern` prints `rest`'s length; `run/val_nested_ctor_pattern` prints `r` and `n` — on the backends whose destructure lowers (03's twin decides beam)
+- [x] `run/val_spread_only_list_pattern` prints `rest`'s length; `run/val_nested_ctor_pattern` prints `r` and `n` — on the backends whose destructure lowers (03's twin decides beam) — **open:** measured: the checker half (bind `rest`, accept a nested record constructor) works on commonJS, while erlang (`Rest` unbound / no clause matches), wasm (no lowering) and beam (`unresolved_identifier`) do not lower the destructure; left refused until 02/03/05 lower it
 
 ### Step 14 — the comment sweeps in this front's files (08 items 1–2)
 
@@ -239,7 +237,7 @@ After every step above, one commit: `env.zig:1057`, `infer.zig:11816,12068` (`pr
 them answers 0 — re-measure; the 1.0.10 sites may have moved or closed). 08 verifies.
 
 **Acceptance:**
-- [ ] `grep -rIn 'primitives\.d\.bp' src/comptime` returns nothing; no comment presents a retired form as current
+- [x] `grep -rIn 'primitives\.d\.bp' src/comptime` returns nothing; no comment presents a retired form as current — `@external(` stays only where a comment describes the refused lower-case form
 
 ### Step 15 — an imported type re-checked at a second import site loses its field types (report L, R3)
 
@@ -251,19 +249,76 @@ in a scope that does not hold rakun-client's `CacheLife`, and the diagnostic is 
 carries the library workaround (import `CacheLife` into rakun-metrics) until this lands.
 
 **Acceptance:**
-- [ ] `modules/imported_type_field_closure`: package `a` declares `type Life(ms: i32)` and
+- [x] `modules/imported_type_field_closure`: package `a` declares `type Life(ms: i32)` and
       `type Client(life: Life)`; package `b` imports `Client` only and names it in a fn signature;
       the root imports from `b` and calls it — `botopink check` accepts; today it refuses
-- [ ] a located error inside an imported declaration names the declaring file and line; the
+- [x] a located error inside an imported declaration names the declaring file and line; the — `modules/imported_declaration_error_location` (located at `a/client.bp:8:26`); neither half reproduces at this base — rakun-metrics' `export_test` passes without its `CacheLife` workaround — and both cells pin it
       `reject/` cell asserts the path in the message
+
+### Rows other fronts found
+
+- [x] decision 170's type half — a std module namespace registers its `pub` types only where the
+      module declares or names no type of that name; a namespace call whose signature names the
+      shadowed type is refused; two types of one declared name in one module (aliased or not) are
+      `import-name-collision` — `run/std_namespace_beside_own_type`,
+      `modules/std_namespace_beside_aliased_type`, `reject/std_namespace_signature_names_shadowed_type`,
+      `modules/import_two_types_one_name`, `reject/own_type_beside_std_type_import`. Two aliased
+      imports of two same-named TYPES stay refused until the backends tell types apart by module
+      (decision 170 makes them legal; the question is open for the maintainer)
+- [x] a std type's constructor through its module namespace (`url.Url(…)`) —
+      `run/std_type_ctor_through_namespace`
+- [x] `unwrapOr`'s default takes the payload's integer width — `run/unwrap_or_literal_width`
+- [x] a behavior's `default fn` body is checked, its `@Result` wrapped, its adopted call typed —
+      `reject/behavior_default_fn_body_checked`, `test/behavior_default_fn_result` (beam answers
+      `{unresolved_method, …}` for any adopted default, `03-beam`'s row)
+- [x] the shorthand import never reaches a bundled package —
+      `modules/shorthand_import_beside_bundled_package`; a non-bundled path dependency is still in
+      reach (the core has no package identity for a module path; the CLI loader is 26's)
+- [x] an occurs-check failure is the type mismatch naming the type parameter —
+      `reject/generic_index_answers_optional`, `run/generic_index_optional_return`; a declared type
+      parameter is still a flexible variable inside its body (`fn f<T>(x: T) -> T { return 1; }`
+      checks)
+- [x] decision 205's reach — every block and `case` arm of the function (see step 5)
+- [x] a program's own primitive behavior extends std's: its members are added to std's
+      (`behavior String` reaches std's `startsWith`, `self` is the primitive `string`), a std member
+      redeclared is `behavior-member-redeclared` — `test/program_primitive_behavior_extends_std`,
+      `reject/program_primitive_behavior_redeclares_std`; wasm traps on a program-declared default fn
+      of a primitive (`05-wasm`'s row)
+
+### Step 16 — an inline parameter type (decision 207)
+
+`fn link(props: type(href: string, label: string, external: bool = false))` — the field grammar of
+`type Name(…)`, no name, a top-level `fn`'s parameter only. The call builds it from its own labelled
+arguments (`link(href: "/a", label: "A")`), each naming a field; a value of the type is passed as the
+parameter. Diagnostics name it by its owner (``the props of `link` ``).
+
+- [x] `run/inline_param_type` on four targets
+- [x] refused as a return, a field and a `val` annotation (`inline-type-outside-parameter`) —
+      `reject/inline_type_in_{return,field,val_annotation}`
+- [x] refused on a method's parameter, twice on one fn, with a field named like another parameter —
+      `reject/inline_type_{on_method_param,twice_on_one_fn,field_named_like_param}`
+- [x] a missing field and an unknown field named by the owner —
+      `reject/inline_type_{missing_field,unknown_field}`
+- [x] a call from another module writing the fields is refused (the type is not exported) —
+      `modules/inline_type_across_modules`; building it across modules is not built (it needs an
+      import of the synthesised record, the import resolver's — front 129's file)
+
+### Decisions 208 and 209
+
+- [x] `Ok(…)` / `Error(…)` are never constructors — `reject/result_{ok,error}_constructor`; the
+      `docs.md` passage asking for an explicit `Ok(…)` is gone
+- [x] an integer literal under an expected `f64` is that `f64` — `run/integer_literal_fits_f64`; an
+      `i32` value never widens — `reject/i32_value_never_widens`; `==` / `!=` between an `f64` and an
+      integer literal is refused at the literal (decision 215) —
+      `reject/f64_{equals,not_equals}_integer_literal`
 
 ## Gate
 
-- [ ] `zig build test` from a **cold** runtime cache, green, in this front's worktree
-- [ ] `tests/language/run.sh --target all` and `--target beam` green with the new cells; every cell above **proved able to fail** by running it on the parent binary
-- [ ] every re-recorded `snapshots/comptime/**` file read for expected/found orientation; the four `snapshots/codegen/**` directories byte-identical except for a fixture a step newly refuses, which is reported to its backend front, never deleted here
-- [ ] `libs/std` and every `examples/` project `botopink check` clean; `zig build test-libs` at baseline — a library that reds gets a migration plan in the commit
-- [ ] `AGENTS.md` of `src/comptime/` and `src/parser/` in the same commit as each step
+- [x] `zig build test` from a **cold** runtime cache, green, in this front's worktree
+- [x] `tests/language/run.sh --target all` and `--target beam` green with the new cells; every cell above **proved able to fail** by running it on the parent binary — 1 647 / 0 at the front's tip; each new cell was run on the parent binary (the ones that pass there are named as pins)
+- [x] every re-recorded `snapshots/comptime/**` file read for expected/found orientation; the four `snapshots/codegen/**` directories byte-identical except for a fixture a step newly refuses, which is reported to its backend front, never deleted here — moved only where a step's fixture changed source (`throw inside nested fn …`, `test body ---- try on an Error …`, `narrow ---- case enum area with print`, `access variant-specific field after matching`), each by its own source line
+- [ ] `libs/std` and every `examples/` project `botopink check` clean; `zig build test-libs` at baseline — a library that reds gets a migration plan in the commit — `botopink check` of every package of the seven repositories identical to the parent binary; `libs/std` tests 442 / 0 on commonJS; `test-libs` is the coordinator's
+- [x] `AGENTS.md` of `src/comptime/` and `src/parser/` in the same commit as each step
 - [ ] Commit on `fix/01-checker`; no push, no merge
 
 ## Blast radius

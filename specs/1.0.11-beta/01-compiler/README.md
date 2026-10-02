@@ -65,6 +65,7 @@ among the carried fronts and four open rows live there. The closed 1.0.10 sub-fr
 | [`07-review-backlog/`](./07-review-backlog/README.md) | low | C-22 whole | after 02–05 |
 | [`08-hygiene/`](./08-hygiene/README.md) | low | C-23 items 1–4 (after each owner) · 17's `docs-text.md` · C-18's documents | after every owner |
 | [`09-ecosystem-residuals/`](./09-ecosystem-residuals/README.md) | low | erika-linq's `targets` · C-14's `->` arms · the pointers' sweep | after 16 and 00-gate |
+| [`130-decorator-outputs/`](./130-decorator-outputs/README.md) | high | decision 216: a decorator's four places (`decl.addMember`, `decl.setMeta` + `@typeinfo`, `decl.addType`, `@typeinfo.all`), the 119 library sites, then module-level `@emit` removed | new · beside A (its compiler files are `comptime/`'s decision-216 parts; the library migration rebases on 129) |
 
 **Group A** shares no source file and no snapshot directory across its seven fronts, with the
 carve-outs each README names (the C-07 twins in per-backend test files; `codegen/beam/{erl_ast,erl_emitter}.zig`
@@ -113,8 +114,8 @@ lists the item under *Does not touch until 00-gate lands*. Measured at the miles
 | **FC-4** — `tests/language` outside `TREES`: 199 files would reformat (the `;` after a braced block that the printer no longer writes — C-13's `tests/language` migration, `botopink format` being the migrator for a tree the formatter owns) and 1 cannot format — `modules/lexer_error_in_imported_module/src/pattern.bp`, a deliberate lexer error | `scripts/format-check.sh`, `tests/language/{test,run,modules}/**` (`reject/**` is exempt structurally) | `botopink format` over the three directories, every cell green before and after on `--target all` and `--target beam`; the one cannot-format cell exempted **structurally** (a cell whose `.expect` names a lexer error, or the directory's own rule — never a skip list, decision 67); `tests/language` in `TREES`; C-13's `tests/language` count (275 in the 1.0.10 record, 199 files now) closes with it | [`12-language-tests`](./12-language-tests/README.md) (the cells) · [`16-formatter`](./16-formatter/README.md) (C-13 step 3 loses this tree) |
 | **RT-1…3** — `scripts/restricted-targets.txt` lines that outlived their reason: `erika-linq erlang 0`, `jhonstart-counter erlang 0`, `jhonstart-todo erlang 0` — each pinned at `0` failed, so the restriction restricts nothing | `scripts/restricted-targets.txt`; `repository/erika/examples/erika-linq/botopink.json`, `repository/jhonstart/examples/{counter,todo}/botopink.json` (`"targets": ["commonJS"]`) | drop `"targets"` in the three manifests and delete the three lines in one landing (the runner refuses a stale line and a restriction with no line alike); `jhonstart-dom-test erlang 1` stays until its front closes the red | [`09-ecosystem-residuals`](./09-ecosystem-residuals/README.md) (erika, the pointers) · the jhonstart track (its two manifests) |
 
-Not handed: beam outside `run.sh --target all` (`run.sh:155`) is a coverage gap, not a red — it is
-12's step 1, sequenced after EF-1/EF-2 so that joining `all` adds no line. `scripts/known-red-libs.txt`
+beam is one of `run.sh --target all`'s four targets (111, after EF-1/EF-2; 12's step 1).
+`scripts/known-red-libs.txt`
 is at its header (measured: no line).
 
 ## Decisions the maintainer owes

@@ -46,34 +46,49 @@ the record. No `RenderHooks.onError` exists.
 
 ### Step 1 — the package
 
-`Level`, `LogRecord`, `render(format, record)` for ECS / GELF / logstash / plain (pure; the two
-timestamp cells replaced by std `clock`), `errorDigest(module, class, message, frames)` (moved from
-`digest.bp:63-70`), a `Logger` whose sink is injected (`setSink`; default sink erlang `logger` /
-node `console`, as inline templates), and the error-logging function that writes one record
-through the sink and answers its digest.
+`repository/botopink-lang/libs/log` (`levels`, `formats`, `digest`, `sink`, `logging`; its
+`AGENTS.md` holds the surface): `Level`, `LogRecord`, the `Format` enum and
+`renderRecord(format, record)` for ECS / GELF / logstash / plain (the two timestamp cells are botopink
+over std `clock.toCivil`), `parseFormat(name) -> @Result<Format, string>`,
+`errorDigest(module, errorClass, message, topFrames)` (moved from `digest.bp:63-70`),
+`LogSink(enabled, write)` with `setSink` / `defaultSink` (OTP `logger` / node `console`, inline
+templates), a `Logger(name)` over the sink in force, and `Logger.logError(module, errorClass,
+message, topFrames, fields) -> string`, which writes one error record and answers its digest.
+`import {errorDigest, Logger} from "log";` resolves as written.
 
 **Acceptance:**
-- [ ] the four renderers byte-identical to rakun-logging's for one fixed record, both rows
-- [ ] `errorDigest` known-answer, both rows
+- [x] the four renderers byte-identical to rakun-logging's for one fixed record, both rows —
+  rakun's four pinned `format_test.bp` lines, plus a record taking every optional branch
+- [x] `errorDigest` known-answer, both rows — `90e4cc2a07abe1fb` (rakun's fixture) and
+  `be5be69f55e91af2` (four empty parts), each the SHA-256 of the documented input
+- [x] the error-logging function writes one record through the injected sink and answers the
+  digest, also when the sink takes no errors
+- [x] every target the package runs on: erlang and commonJS tested; beam runs it from a consumer
+  (same digest); wasm is refused at the first std cell the package reaches without a wasm binding
+  (`` `quote` has no `#[@External.<Target>(…)]` for the wasm backend ``)
+- [x] registered as its own commit: `build.zig` `bundled_packages`, `libs/AGENTS.md`,
+  `scripts/format-check.sh` `TREES`
 
 ### Step 2 — consumers
 
 The first two boxes are landed by the fronts that own the members and ticked here when they are;
-the `problem_digest` cell is this front's own commit.
+the `problem_digest` cell is this front's own commit, after `04-rakun/65`.
 
 - [ ] rakun-logging imports the package for the pure half; its cells untouched; tests green
 - [ ] jhonstart `error_boundary.bp` digests through `log.errorDigest`; `05-jhonstart` 31's box closes
+- [ ] rakun-web's `problem_digest` cell (`error.bp:56-57`, `:199`, `rakun_chain.erl:461-462,480-481`)
+  deleted for `errorDigest`
 
 ## Gate
 
-- [ ] `zig build test` cold, green; `zig build test-libs` green
-- [ ] `libs/log/AGENTS.md` written; touched `AGENTS.md` files updated
-- [ ] Commit on `front/106-log`
+- [ ] `zig build test` cold, green; `zig build test-libs` green — measured on the branch:
+  `zig build test` cold and `test-libs -- --lib log` green; the full `test-libs` is the landing gate's
+- [x] `libs/log/AGENTS.md` written; touched `AGENTS.md` files updated
+- [x] Commit on `front/106-log`
 
 ## Notes
 
-- `import {errorDigest, Logger} from "log";` is the import decision 195 writes; every exported
-  name is checked against std's and the frameworks' roots (decision 163).
-- The acceptance of steps 1 and 2 predates decisions 194 and 195: it has no box for the
-  error-logging function, for the fixture on every target (wasm included), or for the
-  `problem_digest` cell. The front writes them when it opens.
+- Every exported name is checked against std's and the frameworks' roots (decision 163): none is
+  std's; the sink type is `LogSink` (rakun-stream has a `Sink`) and the dispatch `renderRecord`
+  (rakun-actuator has a `render`); `Level`, `LogRecord`, `Logger`, `errorDigest`, `clientErrorBody`
+  are rakun-logging's own copies, which step 2 deletes for these.

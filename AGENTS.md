@@ -20,7 +20,7 @@ closest `AGENTS.md` in each directory you touch.
 | `specs/1.0.5-beta/` | Closed compiler milestone (`closure.md`); its open work went to 1.0.10-beta's `00-compiler-carry-over/` and now lives in `specs/1.0.11-beta/01-compiler/` |
 | `specs/1.0.0-beta/` … `1.0.4-beta/` | Closed. 1.0.6–1.0.9-beta were absorbed into 1.0.10-beta and deleted (decision 68); the mapping in `specs/1.0.10-beta/unification.md` |
 | `.github/workflows/` | The meta repository's CI: `hook-integrity.yml`, one job on push/PR to `feat`/`main` — see § CI |
-| `scripts/` | The meta repository's own checks: `language-gap-markers.sh` — every `// LANGUAGE GAP` marker in a tracked `.bp` file (the repositories under `repository/`, and this one outside the closed milestones' spec trees) against the `## Marker index` of the milestone's `language-gaps.md`; CI check 5 |
+| `scripts/` | The meta repository's own tools: `worktree-add.sh <name> [<base>]` — opens a task worktree (§ Worktrees); `language-gap-markers.sh` — every `// LANGUAGE GAP` marker in a tracked `.bp` file (the repositories under `repository/`, and this one outside the closed milestones' spec trees) against the `## Marker index` of the milestone's `language-gaps.md`; CI check 5 |
 | `todo.md` | Live plan of the task in the current checkout/worktree — git-ignored, never committed |
 | `architecture.md` | Comptime evaluation pipeline, current state |
 | `CHANGELOG.md` | Release log |
@@ -51,12 +51,24 @@ A red check names the repository and the front that owns the fix; nothing here i
 
 Parallel tasks run in git worktrees of this repository under `.tasks/<name>` (next to
 the main checkout), one branch per task (`git worktree list` shows the active ones).
+A worktree is opened one way:
+
+```sh
+scripts/worktree-add.sh <name> [<base>]   # base defaults to feat
+```
+
+It adds `.tasks/<name>` on a new branch `front/<name>` (under the main checkout,
+from whichever worktree it runs), runs `git submodule update --init --recursive`
+there, sets `core.hooksPath scripts/git-hooks` in every submodule that tracks
+`scripts/git-hooks/pre-commit`, and puts `repository/botopink-lang` on a branch
+`front/<name>`. The hooks step is the reason the script exists: a submodule of a
+worktree is a repository of its own, so nothing configured in the main checkout's
+submodules reaches it, and without the step a commit there runs no gate at all.
 
 Inside a worktree, edit files under that worktree's path only — never the main
-checkout. Work in `repository/botopink-lang` on a branch with the same name as the
-meta branch (check out or create it if the submodule is on a detached HEAD). Commit in
-the submodule first, then commit the submodule bump in the meta repo.
-Run `git submodule update --init --recursive` if a sibling submodule is empty.
+checkout. Work in `repository/botopink-lang` on the branch the script created (a
+library on a branch of the same name, when the task commits there). Commit in the
+submodule first, then commit the submodule bump in the meta repo.
 
 ## Build and test
 

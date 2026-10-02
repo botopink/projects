@@ -63,8 +63,8 @@ Measured at the open with the compiler at the milestone's HEAD; the rakun repros
 serves on the BEAM (rakun front 81's "the tarball starts and serves").
 
 **Acceptance:**
-- [ ] `modules/erlang_host_sidecar_shipped` passes as a **built** program on erlang and beam (`build`, then `erl -pa out/<target>`), pinned by a `test-cli` contract script (`compiler-cli/tests/cli_contract.sh` gains the case)
-- [ ] language-gaps T1 closes with 02 step 9
+- [x] `modules/erlang_host_sidecar_shipped` passes as a **built** program on erlang and beam (`build`, then `erl -pa out/<target>`), pinned by a `test-cli` contract script (`compiler-cli/tests/cli_contract.sh` gains the case) — beam assembles the `.S` and the entry's loader compiles the shipped `.erl`; erlang compiles every `.erl` of `out/erl/`
+- [ ] language-gaps T1 closes with 02 step 9 — what is left is the emitter's: a plain erlang build carries no sibling loader, so compiling only the entry leaves the shipped sidecar `undef` (the CLI ships it on both targets)
 
 ### Step 2 — a nested module's sidecar, and a sidecar named like an atom (T16, C-25)
 
@@ -75,8 +75,8 @@ sidecar whose file is named like an emitted module's atom is a located build err
 one predicate away from `crossModule.zig`'s collision check.
 
 **Acceptance:**
-- [ ] `modules/sidecar_called_from_folder_module` — a sidecar called only from `src/orm/entity.bp` runs on erlang and beam
-- [ ] `modules/sidecar_named_like_emitted_atom` — `.expect` names the collision (a project cell that must not build)
+- [x] `modules/sidecar_called_from_folder_module` — a sidecar called only from `src/orm/entity.bp` runs on erlang and beam (the cell's own `libs/orm/` is the library root carrying a package named like the folder — the shape that reproduced; with no such package the folder already fell back to the project's `src`)
+- [x] `modules/sidecar_named_like_emitted_atom` — `.expect` names the collision (a project cell that must not build)
 - [ ] rakun fronts 77/78's `src/orm_host.bp` workaround deletable — the rakun track's row
 
 ### Step 3 — a transitively reached package (T4, 26-a)
@@ -90,7 +90,8 @@ filed as its own row here.
 
 **Acceptance:**
 - [ ] `modules/transitive_package_import` — `.expect` with the named diagnostic ((a)) or a run ((b)), on four targets
-- [ ] the jhonstart-forms shape re-measured; a cell if it still reproduces
+- [x] the jhonstart-forms shape re-measured: a package outside the jhonstart workspace declaring only `jhonstart-forms` (by name) builds and runs on commonJS and erlang — `jhonstart` and `jhonstart-link` load first (decision 143); no cell
+- 26-a is open (`../README.md` § Decisions): `import {linkPrefetch} from "jhonstart-link"` from that package is still `unresolved import source` (`src/main.bp:1:28`) — nothing is implemented before the answer
 
 ### Step 4 — `Env.warnings` reach every driver
 
@@ -98,7 +99,8 @@ filed as its own row here.
 does (`warning:` lines; the LSP as diagnostics of severity warning).
 
 **Acceptance:**
-- [ ] a `test-cli` contract case: `build` and `test` print the `var out = [];` warning; one `lsp/` snapshot with the warning diagnostic
+- [x] one `lsp/` snapshot with the warning diagnostic (`diagnostics_checker_warning`, severity Warning)
+- [ ] a `test-cli` contract case: `build` and `test` print the `var out = [];` warning — blocked on compiler-core: `codegen.generateWith` drops the comptime session (`OkData.warnings`) before it returns and `ModuleOutput` has no warnings field; the CLI half is a renderer call once it has one (`diagnostics.renderOutcome`'s `.ok` arm)
 - [ ] C-18's box 3 ticked
 
 ### Step 5 — `botopink clean` and the C-24 branch
@@ -108,7 +110,7 @@ the CLI documents `clean`; the `wip/br5-beam-templates` branch is the maintainer
 note in this README's close, not a step).
 
 **Acceptance:**
-- [ ] the sentence in `docs.md` (08 places) and `botopink clean --help`; C-25 box 2 ticked
+- [x] the sentence in `docs.md` (§ Backends; 08 may move it) and `botopink clean --help` (`<command> --help` prints the help); C-25 box 2 ticked — measured: `.botopinkbuild/tmp/` holds only the persistent `erl`'s stderr logs, and `clean` removes `.botopinkbuild/` whole, `deps/` included
 
 ### Step 6 — lg2-v's resolver half (decision-gated)
 
@@ -137,3 +139,4 @@ the measured shape, and the row's workaround (declare both) already holds.
   listed there by T-number.
 - `project_graph.zig` is shared with 23 (the import-tree cells) and `src/tests/**` with 07; both
   are named carve-outs, sequenced by commit.
+- The `wip/br5-beam-templates` branch (C-24) is the maintainer's to delete.

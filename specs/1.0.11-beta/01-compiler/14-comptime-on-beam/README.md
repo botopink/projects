@@ -45,11 +45,11 @@ re-parse per `emitComptimeModule`) closed by `erlang.zig:328`'s `prelude_cache`.
 
 | Row | Program | Answer at the open |
 |---|---|---|
-| box 1 | a template body calling `.foo(…)` no primitive type and no host function provides | `codegen/tests/comptime_module.zig:322` ("a method nothing answers is a located error, not an undefined function") exists — verify the diagnostic is **located** at the call in the body (the 1.0.10 box asks for the compiler's own message, not a runtime's) and tick |
-| box 2 | the generated N=200 call-site project | slope and total unmeasured since `prelude_cache` landed; the budget is ≤ 1 ms per evaluation, N=200 build ≤ 600 ms |
-| box 3 | the term round trip per shape | `runtime/etf.zig` has scalar / container / capture encoders only; no fixture for a holed template (`${…}` parts), an `@ExprCustom` return with its reference tree, or a `@Decl` handle carrying fields, methods, variants and annotations |
-| T15 | `@emit("pub val FooCol = …")` | emitted functions read it; the module's own source gets `unbound variable 'FooCol'`, an importer "not exported" — unverified by the audit, the rakun repro is `$HOME/.cache/bp-rakun/emitval` |
-| T17 | a decorator module importing `sql/params`' `Param` | `m.params` of a `@Decl` reads that `Param` (`unknown field 'typeName' on type 'Param'`) — unverified by the audit |
+| box 1 | a decorator body calling `.foo(…)` no primitive type and no host function provides | the compiler's own refusal, before any runtime runs: the message names the call by `line:col` in the body, the caret is the annotation that ran it (`reject/comptime_method_nothing_answers`). The message does not name the body's **file**: the evaluator receives the owner's module path, not its display path, and the location is set by `infer.zig` `decoratorError` at the annotation (01). A template body is typed: the checker refuses the same call as `unknown-primitive-method` at the call in the body |
+| box 2 | the generated N=200 call-site project | over budget (§ Step 2) |
+| box 3 | the term round trip per shape | closed (§ Step 3) |
+| T15 | `@emit("pub val FooCol = …")` | holds, re-measured on four targets. The module's own source: a module `val` is not visible before its declaration (a hand-written `pub fn main() { @print(later); } pub val later = 5;` is refused the same way) and contributions are merged after the module's own declarations (`comptime.zig` `parseAndMergeContributions`), so no own body sees an emitted `val`. The importer: `compiler-cli` `resolver.zig` `collectModuleRefs` reads a module's exports off its source text before comptime runs, so an emitted `pub val` **and an emitted `pub fn`** are `imported symbol is not exported` (26) |
+| T17 | a decorator module importing a user `Param` | holds, re-measured on four targets: `unknown field 'name' on type 'Param'` at `p.name` of `m.params` — the reflection model is resolved by name in the module's scope (`infer.zig` / `env.zig`, 01) |
 
 ## Steps
 
@@ -60,7 +60,11 @@ body, the body's file named); if it asserts the message only, add the location. 
 twin: `reject/comptime_method_nothing_answers` with the `.expect` at the call.
 
 **Acceptance:**
-- [ ] the fixture asserts `file:L:C`; the `reject/` cell names the code and the caret
+- [ ] the fixture asserts `file:L:C`; the `reject/` cell names the code and the caret — `L:C` and the
+      caret are asserted (`comptime_module.zig`, `decorator_invocation.zig`, `templates.zig`,
+      `reject/comptime_method_nothing_answers`); the body's file is not named (box 1): it needs
+      `infer.zig` to hand the evaluator the owner's display path, or to locate the error at the body
+      call when the decorator is the module's own (01)
 
 ### Step 2 — the N=200 slope (box 2)
 
@@ -68,8 +72,35 @@ twin: `reject/comptime_method_nothing_answers` with the `.expect` at the call.
 total recorded in 18's table (18 step 3); if the budget is still unmet, the stage that costs it
 named with its owner.
 
+A comptime module is emitted once per declaration and plan (`template_eval.zig` `emitKey`), not once
+per call site: `emitComptimeModule` re-lexes and re-parses `builtins.d.bp` and `primitives.bp` on
+every emit (`erlang.zig` `collectBuiltinErlangDispatch` — `prelude_cache` does not cover it), which
+was 55 % of an N=200 build's samples.
+
+Measured with the generated project (`conf "cfg-<i>"`, a debug build, best of 5, on a host shared with
+other builds — load average 25–45 on 16 cores):
+
+| target (runtime) | N=0 | N=100 | N=200 | N=400 | slope 0→200 |
+|---|---|---|---|---|---|
+| commonJS (wat) | 205 ms | 425 ms | 918 ms | 2730 ms | 3.6 ms/eval |
+| erlang (BEAM) | 605 ms | 1286 ms | 2036 ms | 4176 ms | 7.2 ms/eval |
+
+The cost per evaluation still grows with N. Where an N=200 build spends it (stack samples):
+
+| stage | commonJS | erlang | owner |
+|---|---|---|---|
+| the runtime's evaluation — wat: a fresh wasm3 environment, parse and load of the linked module per evaluation (`persistent_wat.zig`); BEAM: the frame round trip | 45 % | 29 % | 18 |
+| the trace listing — `main/1`'s argument rendered as text per evaluation (`listingWithArgument`, `runtime.listingOf`) for `comptime_traces`, which every backend renders (`trace.renderAlloc`) and only the snapshot harness and the browser build read | 42 % | 32 % | 14 (the listing) · whoever owns `trace.zig` and the codegen `comptime_trace` field (a build that reads no trace need not render one) |
+| the ETF encode of the argument | 5 % | — | 14 |
+| `erlc` checks and sidecars in the CLI | — | 24 % | 26 |
+
+The growth is the capture's `bindings`: every module-level `val` in scope is in every capture
+(`captureToTerm`), so the argument — encoded, decoded by the runtime and rendered into the trace — is
+O(N) per evaluation and O(N²) per build. Sending the scope only to a body that reads it
+(`bindings`, `lookup`, `ref`, `context`) is a design question, not a measurement.
+
 **Acceptance:**
-- [ ] slope ≤ 1 ms per evaluation, N=200 ≤ 600 ms — or the row names the stage and the front (`prelude_cache` is landed; the next candidate is the per-call ETF encode of the capture map)
+- [ ] slope ≤ 1 ms per evaluation, N=200 ≤ 600 ms — unmet; the stages and their owners are the table above
 
 ### Step 3 — the round-trip fixtures (box 3)
 
@@ -80,13 +111,23 @@ declaration of another module; a decorator whose `@Decl` handle carries fields, 
 and annotations, each read back in the body.
 
 **Acceptance:**
-- [ ] three fixtures, `COMPTIME REPLY` byte-identical on beam and wat; `runtime/AGENTS.md` names the encoded shapes
+- [x] three fixtures, `COMPTIME REPLY` byte-identical on beam and wat; `runtime/AGENTS.md` names the encoded shapes
+      — `comptime: round trip ---- …` (`templates.zig`, two) and `decorator invocation: round trip ---- …`
+      (`decorator_invocation.zig`), each asserting the replies equal across runtimes
+      (`helpers.repliesIdenticalAcrossRuntimes`) beside its `comptime/runtime/{beam,wat}/` pair
 
 ### Step 4 — an emitted `pub val` in scope and exported (T15)
 
 Re-measure the repro; if it holds, an emitted `pub val` enters the module's binding list and its
 export list like an emitted `pub fn` (the `@emit` merge in `decorator_eval.zig` /
 `parseAndMergeContributions`).
+
+Re-measured: holds (T15 row). The fix is outside this front's files on both halves — the merge order
+and a `val`'s visibility before its declaration (`comptime.zig`, `infer.zig`: 01) and the
+pre-comptime export check (`compiler-cli` `resolver.zig`: 26). Open question for the maintainer: is an
+emitted declaration visible to the whole module (merged ahead of the module's own declarations, so an
+emitted `val` whose initializer reads one of the module's own `val`s is refused instead), or only
+after the declaration whose annotation emitted it?
 
 **Acceptance:**
 - [ ] `modules/emitted_pub_val_visible` — the module's own source reads it, an importer imports it, on four targets
@@ -96,6 +137,8 @@ export list like an emitted `pub fn` (the `@emit` merge in `decorator_eval.zig` 
 Re-measure; if it holds, `Decl`, `Param`, `Field`, `Method` and the rest of the reflection model
 resolve inside a decorator body by their own identity (`bp@…`), not by name in the importing
 scope, so an import named `Param` does not shadow them.
+
+Re-measured: holds (T17 row). The resolution is the checker's (`infer.zig` / `env.zig`: 01).
 
 **Acceptance:**
 - [ ] `modules/reflection_type_not_shadowed_by_import` — a decorator module importing a user `Param` reads `m.params` of a `@Decl`
