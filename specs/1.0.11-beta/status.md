@@ -1,6 +1,6 @@
 # Status — 1.0.11-beta
 
-**Updated:** 2026-10-02 · **Progress:** ~0 % landed (0 of 82 fronts done — no front of this
+**Updated:** 2026-10-02 · **Progress:** ~0 % landed (0 of 83 fronts done — no front of this
 milestone is on every remote `feat` under a green gate; 16 are in analysis and count for their
 ticked steps; the milestone opened at 1.0.10-beta's close — [`closure.md`](../1.0.10-beta/closure.md))
 
@@ -55,6 +55,7 @@ the grep stage before any test.
 
 - [ ] `00-gate/131-gate-build-cache` — high · ready: decision 225 · every build cache under `.botopinkbuild/cache/` (the erlang verdict cache, the `.beam` cache and the cell durations leave `~/.cache/botopink`), and the dependency closure typed once with the package under test never cached · waits on the gate green on `feat`
 - [ ] `00-gate/132-gate-otp-pin` — high · ready: decision 228 · the compiler declares OTP 28 and refuses another `erl` on erlang and beam; `botopink.json` may pin `"otp"`; the gate and the seven workflows read it from the compiler · this machine installs OTP 28 first (it has 29) · waits on the gate green on `feat`
+- [ ] `00-gate/133-gate-speed` — high · ready: decision 229 · the cold gate ≤ 5 min and a warm run ≤ 1 min on 16 idle cores, a cell answered from a stored pass only on an equal content key · step 1 (measure) may start now; steps 2–3 after 131
 - [ ] `03-bundled-libs/106-log` — high · ready: no open question (decisions 194, 195) · waits on `00-gate` green and 97 · precedes 26 step 4, 17 and 49 step 3
 - [ ] `03-bundled-libs/104-http` — ready: no open question (decision 196) · the package half (steps 1–4) waits on `00-gate` green and 97 · the consumer sweep (step 5) waits on 04, 65, 123, 79, 12, 19, 22, 49, 51
 - [ ] `03-bundled-libs/105-i18n` — waits on 104, both halves, and on 22 and 26 (decision 180 answered its question)
