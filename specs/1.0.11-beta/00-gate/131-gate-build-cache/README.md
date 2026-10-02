@@ -119,11 +119,10 @@ rm -rf repository/rakun/.botopinkbuild               # every cache of rakun gone
 ```
 
 **Acceptance:**
-- [ ] `git grep -n 'XDG_CACHE_HOME\|\.cache/botopink' modules` names only the `bpmp` store — it
-      also names the language server's `~/.cache/botopink-lsp/{template,std}` (`server.zig`: the
-      editor's template-eval scratch and materialized std, outside this front's ownership) and
-      `cli_contract.sh`'s rows that point `HOME`/`XDG_CACHE_HOME` at a scratch directory to assert
-      nothing is written there; no compiler or runner store reads either variable
+- [x] `git grep -n 'XDG_CACHE_HOME\|\.cache/botopink' modules` names only the `bpmp` store (its
+      code, `bpmp/AGENTS.md` and `libs.resolveBpmpStoreRoot` with its tests) and `cli_contract.sh`'s
+      rows that point `HOME`/`XDG_CACHE_HOME` at a scratch directory to assert nothing is written
+      there; no compiler, runner or language-server store reads either variable (closed by step 2b)
 - [x] `cli_contract.sh`: a build writes its verdicts under `<root>/.botopinkbuild/cache/erlcheck/`;
       after `rm -rf <root>/.botopinkbuild` the next build compiles every module again (no hit)
 - [x] `botopink clean` leaves no `.botopinkbuild/` and no file under `$HOME/.cache/botopink`
@@ -157,11 +156,24 @@ project root), on the same `cacheRoot` step 2 built; a file opened outside any p
 (nothing written to `$HOME`).
 
 **Acceptance:**
-- [ ] `git grep -n 'XDG_CACHE_HOME\|\.cache/botopink' modules` names only the `bpmp` store (the box
+- [x] `git grep -n 'XDG_CACHE_HOME\|\.cache/botopink' modules` names only the `bpmp` store (the box
       above closes with this step)
-- [ ] the language server's tests: the cache is written under the project's `.botopinkbuild/cache/lsp/`;
+- [x] the language server's tests: the cache is written under the project's `.botopinkbuild/cache/lsp/`;
       after `rm -rf .botopinkbuild` it starts with no stale state; a file outside a project writes nothing
-- [ ] `modules/language-server/AGENTS.md` updated in the same commit
+- [x] `modules/language-server/AGENTS.md` updated in the same commit
+
+**Built.** The root resolution moved to the `manifest` module (`CACHE_DIR`, `cacheRoot`,
+`findCacheRoot`, `cacheDir`), which the CLI (`libs.cacheRoot` / `libs.cacheDir`), the runner
+(`schedule.cacheRoot`) and the language server share. `ProjectGraph` resolves each project's cache
+root once (`Resolved.cache_root`); `Server.lspCacheDir(arena, uri, sub)` answers
+`<root>/.botopinkbuild/cache/lsp/{template,std}` per request, so a deleted `.botopinkbuild/` is
+recreated empty by the next write, and null for a document with no `botopink.json` above it — no
+template expansion and no std jump there, nothing written. `computeTemplateRoot` and its `$HOME` /
+cwd fallbacks are gone. `language-server/src/tests/lsp_cache.zig` covers a member, a lone package
+and a loose file with `HOME` on a scratch directory; `cli_contract.sh` drives `botopink-lsp` over
+the workspace row (std jump under the workspace root, none under the member, back after
+`rm -rf .botopinkbuild`) and a loose file (`null`, nothing written), and its HOME rows also count
+`~/.cache/botopink-lsp`.
 
 ### Step 3 — dropped (decision 232)
 
