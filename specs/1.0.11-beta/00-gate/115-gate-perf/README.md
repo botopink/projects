@@ -164,7 +164,7 @@ way to open a worktree.
 
 ## Measurements
 
-Every run: `scripts/gate.sh --cold` in `.tasks/115-gate-perf`, 16 CPUs shared with the other
+Every run: `scripts/gate.sh --cold` on this front's tree, 16 CPUs shared with the other
 threads (load min / median / max over the run), the `.beam` cache warm. "Cold build" = the
 compiler's sources changed, so stage 2 rebuilds the ReleaseSafe binaries.
 
@@ -213,12 +213,17 @@ What each change saves, measured alone:
 - [ ] `scripts/gate.sh --cold` green, under budget on the reference machine, every stage's count equal to its `--list` — green with every count equal to its plan in every run; under budget only on the warm-build run (8m52s at load 65), the cold-build run 11m00s at load 57; the idle runs are open
 - [ ] `zig build test-libs` byte-identical outputs warm vs. empty cache; `run.sh` identical tallies — the tallies are identical (§ Measurements), and an empty-cache `test-libs` prints the warm run's 172 cell and audit lines and summary, line for line; the per-cell emitted-module diff is open
 - [x] `scripts/AGENTS.md`, `modules/compiler-cli/AGENTS.md` and `src/cli/AGENTS.md` (the scratch directory, the verdict cache), `modules/lib-test-runner/AGENTS.md` (the start order), `tests/language/AGENTS.md` (`--list`), the meta `AGENTS.md`, and each library's `AGENTS.md` (the hook's pool) updated in the same commits
-- [x] commits on `front/115-gate-perf` in `repository/botopink-lang`, the five libraries and the meta repository; no push, no merge
+- [x] the work is on `feat` in `repository/botopink-lang`, the five libraries and the meta repository
 
 ## Open
 
+The front's code is on `feat`; what is left is measurement and one question:
+
 - **The idle measurement.** Three `gate.sh --cold` runs on 16 idle cores, cold and warm build, to
   confirm or amend the budget (step 1, step 5).
+- **The per-cell `out/` diff.** `zig build test-libs` with an empty and a warm cache, every cell's
+  emitted modules diffed (step 2) — the cell lines and the summary are already identical.
+- **`run.sh --jobs 1`** against the default, byte for byte (step 4).
 - **The Zig closure cache (step 2).** Not built: the closure compile is 1–5 s a cell under
   ReleaseSafe, and caching it needs `compiler-core` to accept a pre-typed package. Kept as a
   question for `01-compiler`, not as this front's remaining work, unless the idle runs say otherwise.

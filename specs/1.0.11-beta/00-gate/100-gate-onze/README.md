@@ -33,35 +33,38 @@ eight members; `examples/blog` did not build.
 
 ## Current state
 
-Measured with `botopink test --target <t>` in every member on every target its manifest declares
-and `botopink build --target <t>` of every example, compiler `botopink-lang` `eec364de`, on this
-front's tree (rakun at `feat`) and, for the cells whose closure holds rakun, on a tree with 99's
-working copy of rakun beside it. 19 cells (the `targets` lines of `onze-cli` and `onze-og` are gone,
-step 3, so both run on both rows):
+What the code on `feat` shows:
+
+- No parenthesised `if` operand is left in any onze member (step 1's 26 sites); an `if` that begins
+  a call argument (`push(if …)`, `quote(if …)`, `attr(if …)`, `scanFiles(if …)`) is not an operand
+  and stays.
+- `modules/onze-cli/botopink.json` and `modules/onze-og/botopink.json` carry no `targets` line, so
+  both members run on both rows of the workspace's `["commonJS", "erlang"]`; `onze-server` keeps
+  `["erlang"]` (step 3).
+- The two causes outside onze that the `onze-cli` reds were traced to are fixed on `feat`:
+  - the checker: an import that names its module is never ambiguous (decision 170) —
+    `compiler-core/src/comptime/tests/infer_decls.zig` § import source (a dotted module path names
+    its module among same-named `pub fn`s; a path below the importer's package; a project's own
+    module over a dependency's);
+  - std's erlang `fs.walk` on a root ending in `/.` — `libs/std/src/io/fs.bp:106-123` builds each
+    relative path from the names it descended through, and answers the same paths however the root
+    is spelled. `onze-cli/src/build.bp` walks `path.join([p.root, src])`, which is `<root>/.` when
+    `src` is `.`; no onze-side workaround is wanted.
+
+The per-cell counts are **to be re-measured by the cold gate on the integrated tip**. Cells (the
+member × the targets its manifest declares):
 
 | Cell | commonJS | erlang |
 |---|---|---|
-| `onze` | pass 23 | pass 23 |
-| `onze-assets` | pass 26 | pass 26 |
-| `onze-bundler` | pass 41 | pass 41 |
-| `onze-cli` | **FAIL** 29 / 2 (99's tree; on `feat`'s rakun 25 / 6, the four more are rakun's `if-operand`) | **FAIL** 28 / 3 (99's tree) |
-| `onze-og` | pass 10 | pass 10 |
-| `onze-release` | pass 9 | pass 9 |
-| `onze-server` | — (`["erlang"]`, structural) | pass 10 on 99's tree; on `feat`'s rakun the run passes 10 / 0 and exits 1 on rakun's seven `if-operand` modules |
-| `onze-test` | pass 7 | pass 7 |
-| `blog` | pass 12 · builds | pass 12 · builds |
+| `onze` · `onze-assets` · `onze-bundler` · `onze-og` · `onze-release` · `onze-test` | cell | cell |
+| `onze-cli` | cell | cell |
+| `onze-server` | — (`["erlang"]`, structural) | cell |
+| `blog` | cell · builds | cell · builds |
 | `scaffold` | no tests · builds | no tests · builds |
 
-17 of 19 cells green; the two `onze-cli` cells stay red on five tests, none of them an onze red
-(§ What is left). No `if-operand` diagnostic is left in any onze cell's log; `onze-og`'s "unknown
-type" was the cascade of its own two sites and is gone.
-
-The hook (`scripts/git-hooks/pre-commit`, the one text of the five library repositories):
-stages 1–3 green (no staged `*.snap.new`, no conflict marker, the compiler found), then every
-stage runs and every red is listed — measured 2026-10-02 with the compiler built from
-botopink-lang `29cfffc8`: 17 of 19 cells, 4 / 4 example builds, exit 1 on `onze-cli` commonJS
-(30 / 1) and erlang (28 / 3) and on nothing else (was: stopped at the second of eight members,
-then at the fourth).
+The hook (`scripts/git-hooks/pre-commit`, the one text of the five library repositories): stages
+1–3 (no staged `*.snap.new`, no conflict marker, the compiler found), then every stage runs and
+every red is listed; its end-to-end verdict is re-measured with the cells.
 
 ### Step 3 — the restrictions, audited (gate-d)
 
@@ -110,24 +113,22 @@ No ledger line was written anywhere.
 
 ## What is left
 
-Five red tests, all in `onze-cli`, none fixable in `repository/onze/**`:
+The `onze-cli` tests that were red, none fixable in `repository/onze/**`, each covered by a fix
+on `feat` and pending the cold gate on the integrated tip:
 
-| Test | Targets | Cause | Owner |
+| Test | Targets | Cause | Covered by |
 |---|---|---|---|
-| `start: the blog through onze build && onze start` (`test/start_test.bp`) | both | the staged blog holds `app/not_found.bp` and `app/blog/d_slug/not_found.bp`, both `pub fn NotFound` (jhonstart's convention); every import of either — `import {NotFound} from "app.blog.d_slug.not_found"`, which does say which — is refused with `ambiguous-import-use: NotFound is imported from two declarations — declared pub by app/blog/d_slug/not_found and by app/not_found — and this use does not say which`. Reproduction: two modules `a/nf.bp`, `b/nf.bp` each `pub fn NotFound() -> string`, a third with `import {NotFound} from "a.nf"; NotFound()` → refused on both targets. The docs (`docs.md:146-149`) say the `from` item is the way out; here it is not. | `../01-compiler/01-checker` — a named import from a spelled module must resolve to that module |
-| `start: onze build && onze start serves the scaffold's /` | commonJS | the staged scaffold builds and `onze start` listens, but `GET /` answers `404` with an empty body, on 99's working tree of rakun (`rakun-app` is mid-migration there, its route files rewritten); `onze-server`'s own test "Onze.run listens on 3000 and answers / from `#[page("")]`" passes on the same tree; the staged `onze_routes.bp` imports `home as onze_app_page` and a probe shows an aliased, unused import runs the module body on both targets | re-measure on 99's landed tree; if it stays red it is onze-server's (a `07-onze` row), not a gate tolerance |
-| `build: the scaffold ---- the staged server, its BEAM …` and `start: … serves the scaffold's /` | erlang | the whole `onze build` on the BEAM throws a bare `enoent` (an Erlang exception escaping a std host binding, not a `@Result`); every `io.fs` / `io.process` function answers a `@Result` for a missing path in a probe, `process.cwd()` is the member directory inside the test, and the scaffold's manifest reads — so the throw is inside the build's compile-and-link half on the BEAM; not localised yet (the erlang runner prints no stack) | first `botopink build --target erlang` of `onze-cli` driven by `erl` to get the stack; then either a std erlang binding row (`../02-std-and-packaging`) or an onze-cli fix |
-| `build: a client emilia call is evaluated by both backends` and `build: a CSS module's generated accessors compile …` | erlang (on `feat`'s rakun; green on 99's tree) | rakun's `if-operand` cascade in the staged server | 99 |
+| `start: the blog through onze build && onze start` (`test/start_test.bp`) | both | the staged blog holds `app/not_found.bp` and `app/blog/d_slug/not_found.bp`, both `pub fn NotFound` (jhonstart's convention); an import of either that names its module was refused `ambiguous-import-use` | the checker fix (decision 170, § Current state) |
+| `build: the scaffold ---- the staged server, its BEAM …` and `start: … serves the scaffold's /` | erlang | `onze build` on the BEAM threw a bare `enoent` inside the build's compile-and-link half | std's `fs.walk` fix for a root ending in `/.` (§ Current state); if a red stays, the first `botopink build --target erlang` of `onze-cli` driven by `erl` gives the stack |
+| `start: onze build && onze start serves the scaffold's /` | commonJS | `GET /` answered `404` on a tree with rakun mid-migration (99) | 99's landed rakun; if it stays red it is onze-server's (a `07-onze` row), not a gate tolerance |
+| `build: a client emilia call is evaluated by both backends` and `build: a CSS module's generated accessors compile …` | erlang | rakun's `if-operand` cascade in the staged server | 99's landed rakun |
 
-Two compiler rows this front hands out besides the checker one above:
+One compiler row this front hands out:
 
 - `../01-compiler/02-erlang`: `indexOf` answers a byte offset and `slice` counts code points once a
   non-ASCII character precedes the match (`"//// `/about` — group.\n#[page(\"(marketing)/about\")]"`:
   `indexOf` 23 on node, 25 on the BEAM; the slice loses `(m`). `onze-cli/src/scan.bp`
   `declaredArgument` reads with `split` now.
-- `../01-compiler/26-cli-tooling` or `113`: `botopink test` does not export `BOTOPINK_BIN` to a
-  suite that builds fixtures (the track README's rakun-client row); onze's hook and workflow
-  export it themselves.
 
 ## Mechanism
 
@@ -174,8 +175,8 @@ and stays. A closure whose body was one such expression became a loop or a named
 - [x] every member but `onze-cli` `pass` / `no tests`, `0 failed`, on its declared targets
 - [x] `(cd examples/blog && botopink build --out $(mktemp -d))` exit 0; the examples gate builds
       `blog` and `scaffold` on both targets
-- [ ] `onze-cli` on both targets — blocked on the checker row, 99's landing and the BEAM `enoent`
-      (§ What is left); the hook then runs all eight members to the end
+- [ ] `onze-cli` on both targets — every cause is covered by a fix on `feat` (§ What is left);
+      to be re-measured by the cold gate on the integrated tip
 
 ### Step 3 — the restrictions are structural (gate-d)
 
@@ -190,14 +191,13 @@ and stays. A closure whose body was one such expression became a loop or a named
 
 ## Gate
 
-- [ ] every onze cell `pass` / `no tests` on its declared targets, `0 failed` — 17 of 19; the two
-      `onze-cli` cells wait on § What is left
-- [ ] `scripts/gate.sh --cold` in `repository/botopink-lang` with this onze checkout and 99's rakun:
-      stage 8 has no onze red — not run by this front (the compiler fronts share the machine); the
-      per-cell measurement above is the same runner's
-- [ ] `(cd repository/onze && scripts/git-hooks/pre-commit)` green — 17 of 19 cells and 4 / 4
-      builds in one run, exit 1 on the two `onze-cli` cells; the workflow is unrun
-- [x] `repository/onze/AGENTS.md` updated; the work is on `front/100-gate-onze` in the onze submodule
+- [ ] every onze cell `pass` / `no tests` on its declared targets, `0 failed` — to be re-measured
+      by the cold gate on the integrated tip
+- [ ] `scripts/gate.sh --cold` in `repository/botopink-lang` with this onze checkout and rakun at
+      `feat`: stage 8 has no onze red — to be re-measured on the integrated tip
+- [ ] `(cd repository/onze && scripts/git-hooks/pre-commit)` green — to be re-measured with the
+      cells; the workflow's first GitHub run is pending
+- [x] `repository/onze/AGENTS.md` updated; the work is on onze's `feat`
 
 ## Blast radius
 

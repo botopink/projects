@@ -112,7 +112,7 @@ tail) and 102–107 (bundled libraries) are taken by other tracks; this track us
 | [`101-gate-jhonstart/`](./101-gate-jhonstart/README.md) | high | `repository/jhonstart/**` — `examples/{jhonstart-counter,jhonstart-todo}/botopink.json` (`targets`), `modules/jhonstart-dom-test/**`, `.github/workflows/test.yml`, `.gitignore` + `scripts/git-hooks/**`, the PK-5 reformat of `modules/{jhonstart,jhonstart-link}` | A |
 | [`108-gate-erika/`](./108-gate-erika/README.md) | medium | `repository/erika/**` — `examples/erika-linq/botopink.json` (`targets`), `.github/workflows/test.yml`, `.gitignore` + `scripts/git-hooks/**` | A |
 | [`109-gate-emilia/`](./109-gate-emilia/README.md) | medium | `repository/emilia/**` — `.gitignore` + `scripts/git-hooks/**`, `scripts/known-broken-examples.txt`, `.github/workflows/test.yml` | A |
-| [`110-gate-wasm/`](./110-gate-wasm/README.md) | critical | `modules/compiler-core/src/codegen/wat.zig` (the link loop, the 18 silent-degradation sites, `collectHostBound`) · `modules/compiler-core/snapshots/codegen/wasm/**` · `libs/std/src/testing/asserts.bp` (the ck-host restructure) · the one `wasm \|` line of `tests/language/expected-failures.txt` | A |
+| [`110-gate-wasm/`](./110-gate-wasm/README.md) | critical | `modules/compiler-core/src/codegen/wat.zig` (the link loop, the 18 silent-degradation sites, `collectHostBound`) · `modules/compiler-core/snapshots/codegen/<runtime>/wasm/**` · the `<cell>.wasm.expect` files decision 146 flips. Not `libs/std/src/testing/asserts.bp`: the ck-host restructure of decision 146 — which of its functions wasm may import — is `02-std-and-packaging`'s question; `expected-failures.txt` is gone (`111` step 4, with this front's step 3) | A |
 | [`112-gate-format/`](./112-gate-format/README.md) | high | `scripts/format-check.sh` · `modules/compiler-cli/src/cli/format_cmd.zig` (the structural exemption) · the 11 `zig fmt` files · `libs/std/src/**` (reformat only), `examples/{generic-loader-binding,stdlib-tour}/**`, `modules/compiler-cli/tests/**/*.bp`, `tests/language/{test,run,modules}/**/*.bp` (reformat only) · stage 1 of `scripts/gate.sh` (`zig fmt --check modules`) | A |
 | [`111-gate-beam-and-targets/`](./111-gate-beam-and-targets/README.md) | critical | `modules/compiler-cli/src/cli/{build,run,test_cmd,libs}.zig` (beam sidecar shipping) · `modules/compiler-core/src/codegen/beam_asm.zig` and `codegen/beam/**` (the `__bp_load_siblings` twin) · `tests/language/run.sh` · `tests/language/expected-failures.txt` (deleted) · the 17 `run/*.targets` and every `modules/*/botopink.json` `targets` · `tests/language/AGENTS.md` | B — after 110 and 112 |
 | [`113-gate-ledger-and-scripts/`](./113-gate-ledger-and-scripts/README.md) | critical | `scripts/restricted-targets.txt` (deleted), `scripts/known-red-libs.txt` (deleted), `scripts/test-libs.sh`, `modules/lib-test-runner/**` (the manifest rule and the restriction audit), `scripts/AGENTS.md`; verifies the five repositories' `*.snap.new` guards | C — after 99, 100, 101, 108, 109 |
@@ -124,8 +124,8 @@ tail) and 102–107 (bundled libraries) are taken by other tracks; this track us
 ```
 99-rakun ──┐
 100-onze ──┤  (group A: seven worktrees, no shared file — the library repositories are
-101-jhon ──┤   disjoint; 110 owns wat.zig + wasm snapshots + asserts.bp; 112 owns the
-108-erika ─┤   formatter side and only *reformats* the trees it touches)
+101-jhon ──┤   disjoint; 110 owns wat.zig + wasm snapshots; 112 owns the formatter side
+108-erika ─┤   and only *reformats* the trees it touches)
 109-emilia ┤
 110-wasm ──┼──► 111-beam-and-targets   (group B: run.sh + expected-failures.txt deleted;
 112-format ┘                             starts from 110's and 112's landings)
@@ -143,9 +143,8 @@ cells the manifests declare until rakun and onze compile; `111` cannot delete
 (a red `test-libs` cell costs the whole dependency closure compile and then fails — its time is not
 the gate's time). Group A's fronts share no file: the five library fronts each own one repository;
 `110` and `112` split the compiler by file (`wat.zig` and wasm snapshots vs. `format-check.sh`,
-`format_cmd.zig` and reformat-only commits). `112`'s `libs/std` reformat and `110`'s `asserts.bp`
-edit are the one near-miss: `112` reformats `asserts.bp` as it stands at the open; `110` rebases
-its restructure over the reformat (a formatter commit rebases in one step).
+`format_cmd.zig` and reformat-only commits). `110` corrects `asserts.bp`'s header comment only;
+its restructure under decision 146 is `02-std-and-packaging`'s, after `112`'s `libs/std` reformat.
 
 ## Exit gate of the track
 
@@ -421,7 +420,7 @@ row) applied to the libraries.
 | Track | What moves when this track lands | What it must do |
 |---|---|---|
 | `01-compiler` | `expected-failures.txt` is gone (03-beam, 05-wasm no longer delete lines); `wat.zig` (110), `beam_asm.zig` + `cli/**` + `libs.zig` (111), `format_cmd.zig` (112), the 11 `zig fmt` files (112) are edited first; `tests/language` and `libs/std` are reformatted (112); two rows handed *to* it: report L's R3 (an imported type's field type unresolved at the import site, diagnostic attributed to the wrong file — `01-checker`) and the five library `// LANGUAGE GAP` notes 113 lists (`language-gaps.md` rows) | its fronts list these under *Does not touch until 00-gate lands* and start from the gate's landing; a red cell it wants to pin is a decision to delete the cell, never a line |
-| `02-std-and-packaging` | `libs/std/src/**` reformatted (112); `asserts.bp` restructured (110); STD-1/EM-6 guards land per repository (99–109) and are verified by 113; PK-1's three onze lines are not written — the ledger is deleted (gate-a) | `97-std-dedupe` rebases over the reformat and the `asserts.bp` restructure; PK-5's reformat is done by 99 and 101 |
+| `02-std-and-packaging` | `libs/std/src/**` reformatted (112); `asserts.bp`'s header comment corrected (110) — its restructure under decision 146 (which of its functions wasm may import) is this track's question; `testing.asserts`, `testing.snapshots` and `escape` are no longer importable on wasm (110); STD-1/EM-6 guards land per repository (99–109) and are verified by 113; PK-1's three onze lines are not written — the ledger is deleted (gate-a) | `97-std-dedupe` rebases over the reformat; PK-5's reformat is done by 99 and 101 |
 | `04-rakun` | 99 rewrites 42 sites across `rakun-data`, `rakun-messaging`, `rakun-app`, `rakun-ws`, `rakun-release`, `rakun-scheduling`, `rakun-devtools`, `rakun-security`, `rakun-web` and their tests; edits `rakun-starter-test/botopink.json`; reformats `modules/{rakun,rakun-app}`; replaces the two `SKIPPED` cells; rewrites the CI matrix | every `04-rakun` front starts from 99's landing (its README says so); 03r-ah is answered by gate-a; 03r-aa by gate-h |
 | `05-jhonstart` | 101 drops `targets` from two example manifests, decides the `dom-test` erlang cell, reformats `modules/{jhonstart,jhonstart-link}` | `26-jhonstart-router` and `67-jhonstart-forms` start from 101's landing |
 | `06-emilia` | 109 adds the guard and deletes `known-broken-examples.txt` | nothing else moves |

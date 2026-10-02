@@ -74,8 +74,9 @@ On `front/112-gate-format` (each line re-measured on the working tree it describ
   8 files, every hunk one of the two shapes (25 spreads, 2 `catch`). No third defect.
 - **Every tracked `.bp` of the checkout is canonical and under `TREES`**, or structurally exempt:
   `TREES` = `examples`, `libs/std`, `libs/routing`, `libs/actions`, `libs/validation`,
-  `modules/compiler-cli/tests`, `modules/manifest/tests`, `tests/language`; `format-check.sh` →
-  every tree ✓ (508 files walked; the 173 `reject/` cells and `pattern.bp` are outside the walk
+  `libs/log`, `libs/http`, `modules/compiler-cli/tests`, `modules/manifest/tests`, `tests/language`
+  (`libs/log` and `libs/http` joined with their packages); `format-check.sh` →
+  every tree ✓ (at this front's measurement, before `libs/log` and `libs/http`: 508 files walked; the 173 `reject/` cells and `pattern.bp` are outside the walk
   by structure — 682 tracked `.bp` in all). Reformat-only, per tree:
   - `examples` — 2 files (`generic-loader-binding`, `stdlib-tour`); `modules/compiler-cli/tests`
     — 5 fixtures; `modules/manifest/tests` — 5 fixtures (`import { core }` → `import {core}`).
@@ -122,7 +123,7 @@ quotes (a snapshot, an `.expect` location) carries that with it in the same comm
 ### Step 2 — reformat and add to `TREES`: `libs/std`, the examples, the fixtures
 
 **Acceptance:**
-- [x] `TREES` lists `examples`, `libs/std`, `libs/routing`, `libs/actions`, `libs/validation`, `modules/compiler-cli/tests`, `modules/manifest/tests`; `bash scripts/format-check.sh` → every line ✓
+- [x] `TREES` lists `examples`, `libs/std`, `libs/routing`, `libs/actions`, `libs/validation`, `modules/compiler-cli/tests`, `modules/manifest/tests` (and `libs/log`, `libs/http` since their packages); `bash scripts/format-check.sh` → every line ✓
 - [x] `botopink test` in `libs/std` on commonJS and erlang: 433 passed before and after; `zig build test-libs -- --lib std` green; `zig build test-cli` green
 - [x] the 26 snapshots that quote std source re-recorded with the reformat, each differing by the quoted text (or its line) alone
 

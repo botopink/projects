@@ -53,7 +53,8 @@ libraries × `commonJS`, `erlang` = 172 (library, target) pairs.
 The two red cells are `onze-cli·commonJS` (1 test) and `onze-cli·erlang` (3 tests). Neither is this
 front's and neither is hidden, restricted or skipped: a checker defect (`ambiguous-import-use` when
 two modules each export a `pub fn` of one name and a third imports one) and std's erlang `fs.walk`
-on a root ending in `/.` — both owned outside these files. Stage 8 is green the moment they are.
+on a root ending in `/.` — both owned outside these files and both fixed on `feat` since; stage 8
+is re-measured by the cold gate on the integrated tip.
 
 - **The manifest decides the matrix.** `discovery.libSupportsTarget` is the one rule that says
   whether a (library, target) pair is a cell (`main.zig`, `Cell.Kind.of`). No flag, variable or file
@@ -199,9 +200,10 @@ runners' environment when the variable is unset; a value the caller set passes t
 
 `scripts/language-gap-markers.sh` (meta repository; `hook-integrity` check 5). A marker is the
 literal `// LANGUAGE GAP` in a tracked `.bp` file of a repository under `repository/` or of the meta
-repository outside the closed milestones' spec trees. Measured: **27 markers in 19 files** — 2 in
-library code (`rakun-cache/src/cache.bp:540`, `rakun-cache/test/granularity_test.bp:20`) and 25 in
-17 example files under `specs/1.0.11-beta/{04-rakun,07-onze}/**/examples/`. The five notes report L
+repository outside the closed milestones' spec trees. Measured: **33 markers in 24 files** — 3 in
+library code (`rakun-cache/src/cache.bp:540`, `rakun-cache/test/granularity_test.bp:20`,
+botopink-lang `libs/validation/src/schemas.bp:323`) and 30 in 21 example files under
+`specs/1.0.11-beta/{03-bundled-libs,04-rakun,07-onze,08-bpp}/**/examples/`. The five notes report L
 listed are **not** markers: each is prose that says "language gap" (emilia `tokens.bp:2194`, rakun
 `conditions.bp:283`, `session.bp:7`, `sql/query.bp:33`, `exchange.bp:48`), and each already has a row
 by content. `parallel-fetch-example.bp:31` has no copy under `specs/1.0.11-beta`.
@@ -211,12 +213,12 @@ path from the meta root, marker count, the gap rows named — and the script fai
 row, a count that differs, a named gap row that is gone, and a row for a file with no marker.
 
 **Acceptance:**
-- [x] `scripts/language-gap-markers.sh` prints the 27 and exits 0
-  (`language-gap-markers: 27 marker(s) in 19 file(s), every one names a row of
+- [x] `scripts/language-gap-markers.sh` prints the 33 and exits 0, every submodule checked out
+  (`language-gap-markers: 33 marker(s) in 24 file(s), every one names a row of
   specs/1.0.11-beta/language-gaps.md`); deleting an index row → exit 1 naming the file and its
   markers; deleting the gap row a marker names → exit 1; a count that differs → exit 1; a row for a
   file with no marker → exit 1
-- [x] rows in `../../language-gaps.md`: the 19 index rows; one stub gap row, **No reflection over a
+- [x] rows in `../../language-gaps.md`: the 24 index rows; one stub gap row, **No reflection over a
   module's exports** (owner `01-compiler` — the half of `verb-exports-carried-example.bp:4` that had
   no row of its own); the five notes mapped to their existing rows, owner named
 
@@ -232,20 +234,21 @@ staged and no compiler reachable.
 | emilia | ✓ | ✓ exit 1 | ✓ exit 1 | ✓ | text A |
 | erika | ✓ | ✓ exit 1 | ✓ exit 1 | ✓ | text A |
 | jhonstart | ✓ | ✓ exit 1 | ✓ exit 1 | ✓ | text A |
-| onze | ✓ | ✓ exit 1 | ✓ exit 1 | ✓ | ✗ text B |
-| rakun | ✓ | ✓ exit 1 | ✓ exit 1 | ✓ | ✗ text C |
+| onze | ✓ | ✓ exit 1 | ✓ exit 1 | ✓ | ✓ text A |
+| rakun | ✓ | ✓ exit 1 | ✓ exit 1 | ✓ | ✓ text A |
 
-`scripts/git-hooks/pre-commit` is one text in the five. `lib/runner-standalone.sh` is **three**:
-emilia = erika = jhonstart (217 lines), onze (203), rakun (222), and the guard clauses themselves —
-`locateBotopink` / the no-compiler refusal, and stage 1's candidate refusal — differ in wording
-between the three. The behaviour is the same in all five; the texts are not, and the meta
-`hook-integrity` check 4 (byte-identical) is red on them.
+`scripts/git-hooks/pre-commit` and `lib/runner-standalone.sh` are each one text in the five
+(`sha256sum repository/{emilia,erika,jhonstart,onze,rakun}/scripts/git-hooks/pre-commit
+repository/{emilia,erika,jhonstart,onze,rakun}/scripts/git-hooks/lib/runner-standalone.sh`: one hash
+per file, five times; `runner-standalone.sh` is 480 lines), so the guard clauses — `locateBotopink`
+/ the no-compiler refusal and stage 1's candidate refusal — are the same bytes in all five, and the
+meta `hook-integrity` check 4 holds on them. Each `.gitignore` names both suffixes, no
+`scripts/known-broken-examples.txt` exists, and each `AGENTS.md` names `git config core.hooksPath
+scripts/git-hooks`.
 
 **Acceptance:**
-- [ ] a five-row table, all ✓ — four columns are ✓ in all five; "identical clauses" is ✗ for onze
-  and rakun. Reported to the library fronts (100, 99); the unification is theirs, and this table is
-  re-measured on the unified tips (the commands are the paragraph above plus
-  `sha256sum repository/*/scripts/git-hooks/lib/runner-standalone.sh`)
+- [x] a five-row table, all ✓ — the behaviour columns were measured per repository; the texts are
+  now one, so onze's and rakun's guards are the measured text
 
 ## Gate
 
@@ -267,8 +270,7 @@ between the three. The behaviour is the same in all five; the texts are not, and
 
 | Item | Owner | State |
 |---|---|---|
-| `onze-cli·commonJS`, `onze-cli·erlang` red | the checker row (`ambiguous-import-use` on two modules exporting one name) and std's erlang `fs.walk` (a root ending in `/.`) | outside this front; stage 8 and the three open boxes above close with them |
-| `runner-standalone.sh` is three texts | 100 (onze), 99 (rakun) — the library-infra unification | step 5's last column; re-measure on the unified tips |
+| `onze-cli·commonJS`, `onze-cli·erlang` red at this front's measurement | the checker row (`ambiguous-import-use` on two modules exporting one name; decision 170) and std's erlang `fs.walk` (a root ending in `/.`) | both fixes are on `feat` (`compiler-core/src/comptime/tests/infer_decls.zig` § import source; `libs/std/src/io/fs.bp:106-123`); stage 8 and the three open boxes above are re-measured by the cold gate on the integrated tip |
 | the missing-host-binding refusal has no error id | `01-compiler` (`codegen/moduleOutput.zig`, `MissingExternal.diagnostic`) | the audit reads its fixed text; with an id the classifier reads the id — one line in `runner.zig`, one in `test_tooling.sh` |
 | `rakun-client/test/exchange_build_test.bp:26` ends its shell prelude with `exit 0` when no compiler is found | `04-rakun` | with `BOTOPINK_BIN` exported by `botopink test` the branch is unreachable under `botopink test`; the `exit 0` is a skip that reads as a pass and goes |
 | `modules/compiler-cli/tests/test_tooling.sh` prints `SKIPPED` and exits 0 when `node` is not on `PATH` | `01-compiler/26-cli-tooling` | not this front's; a skip that reads as a pass |

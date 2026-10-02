@@ -7,7 +7,7 @@ last step waits on `ck-host`, and so does this front's step 4. `115` starts from
 `run.sh`.
 **Owns:** `modules/compiler-cli/src/cli/{build,run,test_cmd,libs}.zig` (the beam path of sidecar
 shipping) · `modules/compiler-core/src/codegen/beam_asm.zig`, `codegen/beam/**` ·
-`tests/language/run.sh` · `tests/language/expected-failures.txt` · the 17
+`tests/language/run.sh` · `tests/language/expected-failures.txt` · the 18
 `tests/language/run/*.targets` · every `tests/language/modules/*/botopink.json` `targets` ·
 `tests/language/AGENTS.md` · the beam snapshots the emitter change re-records
 (`modules/compiler-core/snapshots/codegen/{beam,wat}/beam/**`).
@@ -115,7 +115,7 @@ and the field means what `.targets` means.
 
 **Acceptance:**
 - [x] a `modules/` cell with `"targets"` and a host-only binding runs on its declared targets alone: `modules/manifest_targets_host_binding` (`["erlang", "beam"]`, `#[@External.Erlang("erlang", "abs")]`) → `2 passed`, `2 exclusions audited`; the self-test's `modules/manifest_backed` asserts the same on every whole run. A cell without `"targets"` runs on four
-- [x] `grep -l '"targets"' tests/language/modules/*/botopink.json` → `modules/manifest_targets_host_binding/botopink.json`, the one the audit keeps
+- [x] `grep -l '"targets"' tests/language/modules/*/botopink.json` → `manifest_targets_host_binding`, the one this step's audit kept, and three cells added since — `erlang_host_sidecar_in_a_test` (`["erlang"]`), `import_bundled_package_beside_own_module` and `shorthand_import_beside_bundled_package` (`["commonJS", "erlang", "beam"]`), whose rows step 5 still reads
 
 ### Step 4 — `expected-failures.txt` is deleted (gate-b, decision 154) — done
 
@@ -135,7 +135,7 @@ language cell is red.
 - [x] `test ! -e tests/language/expected-failures.txt`; `grep -c "expected-failures" tests/language/run.sh tests/language/AGENTS.md scripts/*.sh .github/workflows/test.yml build.zig AGENTS.md docs.md README.md` = 0 in every file
 - [x] `bash tests/language/run.sh --target all` prints `language tests: 1483 passed, 0 failed` — two numbers, four targets; `bash tests/language/run.sh --self-test` exits 0
 
-### Step 5 — the 17 `.targets` and the modules/ manifests audited (gate-d)
+### Step 5 — the 18 `.targets` and the modules/ manifests audited (gate-d)
 
 Each narrowing, each excluded target, and what `botopink build --target <t>` answers in the cell
 (first `error` line; every one exits 1):
@@ -167,8 +167,13 @@ Each narrowing, each excluded target, and what `botopink build --target <t>` ans
 | `run/task_throw_resolves_error` | commonJS | erlang · wasm · beam | `` `observe` has no `#[@External.<Target>(…)]` for the erlang / wasm / beam backend `` |
 | `modules/manifest_targets_host_binding` | erlang beam | commonJS | `` `magnitude` has no `#[@External.<Target>(…)]` for the node backend `` |
 | | | wasm | `` `magnitude` has no `#[@External.<Target>(…)]` for the wasm backend `` |
+| `run/host_template_binding_inside_while` | erlang beam | commonJS · wasm | to be audited — added after this table was measured |
+| `modules/erlang_host_sidecar_in_a_test` (test kind) | erlang | commonJS · beam | to be audited — added after this table was measured |
+| `modules/import_bundled_package_beside_own_module` | commonJS erlang beam | wasm | to be audited — added after this table was measured |
+| `modules/shorthand_import_beside_bundled_package` | commonJS erlang beam | wasm | to be audited — added after this table was measured |
 
-Thirty exclusions. What the audit changed, cell by cell:
+Thirty exclusions measured; the last four rows add six more, still to be read. What the audit
+changed, cell by cell:
 
 | Cell | Was | Excluded with no host reason | Now |
 |---|---|---|---|
@@ -181,7 +186,7 @@ Thirty exclusions. What the audit changed, cell by cell:
 | 47 `modules/*/botopink.json` | boilerplate `"targets"` the runner ignored | — | the field deleted (step 3) |
 
 **Acceptance:**
-- [x] the table above: cell · excluded targets · the refusal line per excluded target, for the 17 `.targets` and the one narrowed `modules/` cell
+- [ ] the table above: cell · excluded targets · the refusal line per excluded target, for the 18 `.targets` and the four narrowed `modules/` cells — the 17 `.targets` and `manifest_targets_host_binding` read; `host_template_binding_inside_while` and the three later manifests to be read (the runner's audit checks every one on every run)
 - [x] `bash tests/language/run.sh --self-test` → `self-test: 8 malformed or unbacked narrowings refused, 3 backed ones scheduled on their declared targets alone`, exit 0; with the audit's refusal test replaced by `true` (a copy of the script) it prints `self-test: the report lacks: …` and exits 1. A whole run of the suite starts with it
 - [x] every deleted narrowing's cell green on the target it now runs on (the second table)
 
@@ -245,5 +250,7 @@ this front owns, and no cell stands on them.
 - **A sidecar is loaded from beside the `.beam`.** `erlc +from_asm -o out out/beam/x.S` (the
   `.beam` one directory up) leaves the sidecars unreached; `botopink run --target beam` assembles
   beside the `.S`, and `modules/compiler-cli/AGENTS.md` says so.
-- `test/` cells and `modules/` test-kind cells stay off wasm and beam because `botopink test`
-  refuses those targets — a CLI capability, not a tolerance.
+- `test/` cells and `modules/` test-kind cells run on commonJS, erlang and beam
+  (`botopink test --target beam` assembles the run's modules and runs each test module with
+  `erl -pa`; `run.sh --target all` includes beam) and stay off wasm alone, because `botopink test`
+  refuses that target — a CLI capability, not a tolerance.
