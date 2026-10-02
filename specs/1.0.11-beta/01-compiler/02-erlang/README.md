@@ -87,8 +87,11 @@ calls; a user fn that shadows an auto-import gets `-compile({no_auto_import, [el
 `erlc` resolves the user's calls to the user's fn.
 
 **Acceptance:**
-- [ ] `run/module_fn_named_like_bif` — a module declaring `fn element(…)` and `fn apply(…)` reads a record field and calls both, prints the right values on four targets (commonJS, wasm: the names are ordinary)
-- [ ] `grep -c 'erlang:element(' snapshots/codegen/beam/erlang/*.snap.md` ≥ the count of field reads; every erlang snapshot re-recorded is a qualification only (RUN LOGs unchanged, compared block by block)
+- [x] `run/module_fn_named_like_bif` — a module declaring `fn element(…)` and `fn apply(…)` reads a record field and calls both, prints the right values on four targets (commonJS, wasm: the names are ordinary)
+- [x] `grep -c 'erlang:element(' snapshots/codegen/beam/erlang/*.snap.md` ≥ the count of field reads; every erlang snapshot re-recorded is a qualification only (RUN LOGs unchanged, compared block by block)
+
+The `no_auto_import` catalog is OTP's own auto-import list (`erl_internal:bif/2`), and a host
+template's bare call of a name the module's own fn shadows is written `erlang:<name>(`.
 
 ### Step 2 — the `while` lowering's fun name (T14)
 
@@ -98,8 +101,10 @@ what the template already does; the lowering's own names must not be plain ident
 can bind).
 
 **Acceptance:**
-- [ ] `run/host_template_binding_inside_while` — an `#[@External.Erlang]` template binding `__Loop` called in a `while` body prints the loop's count on erlang and beam (`.targets erlang beam`)
-- [ ] erlang snapshots with a `while` re-record the fun name only
+- [x] `run/host_template_binding_inside_while` — an `#[@External.Erlang]` template binding `__Loop` called in a `while` body prints the loop's count on erlang and beam (`.targets erlang beam`)
+- [x] erlang snapshots with a `while` re-record the fun name only
+
+The fun is `__BpLoop` (`__BpLoop<depth>` nested), the backend's own `__Bp` variable prefix.
 
 ### Step 3 — a module-level `@print` in a dependency module (C-34)
 
@@ -107,8 +112,8 @@ The `'_botopink_init'/0` initialiser is walked for synthesized helpers like any 
 module whose only print is a module-level binding defines `'__bp_print'/1`.
 
 **Acceptance:**
-- [ ] `modules/dependency_module_level_print` — a dependency with `val _x = @print("boot");` and a consumer importing a value from it prints `boot` first on four targets
-- [ ] the same module imported for a type only still runs its body (T7's fixed shape, pinned in the same cell with a second consumer)
+- [x] `modules/dependency_module_level_print` — a dependency with `val _x = @print("boot");` and a consumer importing a value from it prints `boot` first on four targets
+- [x] the same module imported for a type only still runs its body (T7's fixed shape, pinned in the same cell with a second consumer)
 
 ### Step 4 — `Array.unique` (C-35, the prelude typing)
 
@@ -120,7 +125,17 @@ is the std track's: hand the measurement over first, land the typing if the body
 
 **Acceptance:**
 - [ ] `run/array_unique` — `[1, 2, 1, 3, 2].unique()` prints `[1, 2, 3]` on commonJS, erlang and beam; wasm traps until 05 lowers it (05's row, its `.wasm.expect` or `.targets`)
-- [ ] `src/codegen/AGENTS.md` § Primitive methods loses the `Array.unique` limit row
+- [x] `src/codegen/AGENTS.md` § Primitive methods loses the `Array.unique` limit row
+
+The typing landed: inside a `default fn` body a local takes the kind its declared types give it
+(a parameter's type, a `val`'s annotation, a literal, a behavior method's or a prelude fn's return
+type), and a body of the embedded `primitives.bp` is lowered without inference's loc-keyed tables
+(a program's call at the same line and column answered for it). `codegen/tests/erlang.zig` pins it,
+with `Array.unique`'s RUN LOG on erlang. The `run/` cell is open on two counts: wasm traps on
+`unique` and neither a `.wasm.expect` (a compile refusal) nor a `.targets` (a host binding) can
+say so; and `primitives.bp` documents `unique` as dropping **consecutive** duplicates
+(`[1, 2, 1, 3, 2]` → `[1, 2, 1, 3, 2]` on commonJS, erlang and beam), not the `[1, 2, 3]` the box
+writes — a std-track question.
 
 ### Step 5 — `\u{…}` and non-ASCII literals in Erlang text (C-36)
 
@@ -130,8 +145,12 @@ text (14's, 18's) and the target's. The std track's STD-11 twin (a non-ASCII lit
 erlang as latin1, `illegal character` above U+00FF) is the same site: one fix, two cells.
 
 **Acceptance:**
-- [ ] `run/string_literal_unicode_escape` — `@print("\u{1F600}".length())` and a literal `"ç"` print `1` / the character on four targets
+- [x] `run/string_literal_unicode_escape` — a `\u{1F600}` and a literal `"ç"` print the character on four targets, under any host locale (an entry point sets `standard_io` to unicode itself)
 - [ ] a decorator body carrying a `\u{…}` literal evaluates to the character (`comptime/tests/**` — 14's file; the fixture reported to 14, or added as a carve-out named in the commit)
+
+`.length()` of `"\u{1F600}"` is `1` on erlang and beam, `2` on commonJS (UTF-16 units, 04's row)
+and `4` on wasm (bytes, 05's row), so the cell prints the characters only. Under `LANG=C` beam
+still writes latin1 (03's twin).
 
 ### Step 6 — `string.indexOf` counts codepoints (T18, 23-d)
 
@@ -143,6 +162,10 @@ front owns the cell and the erlang lowering if the template needs a helper.
 - [ ] `run/string_index_of_codepoints` — `"a—bXc".indexOf("X")` prints `3` and `.at(3)` prints `X` on four targets
 - [ ] rakun's `codepointIndex` host cell (`autoconfig_registry.bp`) deletable — the rakun track's row
 
+Done by the std front 97 (decision 169, measured as `string:length/1` of the prefix — decision 197).
+`erlang.zig` has no `indexOf` lowering of its own: the erlang text is `primitives.bp`'s template,
+so nothing of this step is left in this front's files.
+
 ### Step 7 — C-07's erlang tails
 
 §4.1's truth table answered by each §4.2 form on erlang (`is` on a primitive, a constructor, a
@@ -152,7 +175,14 @@ type-pattern fixtures this front added given their `.out` on erlang for the cell
 **Acceptance:**
 - [ ] `run/is_truth_table` — every row of §4.1 × §4.2, one `.out` shared by four targets (03 and 05 list their lines until their twins land)
 - [ ] `run/unknown_stores_nothing` (§11) on four targets
-- [ ] every `tests/language` cell naming §2, §4, §5, §6 green on erlang (`run.sh --target erlang`)
+- [x] every `tests/language` cell naming §2, §4, §5, §6 green on erlang (`run.sh --target erlang`)
+
+The table is `test/is_truth_table` (commonJS and erlang agree on every row): no list of lines
+exists any more (decision 154), and as a `run/` cell it is red on beam (`#(i32, string)` holds for
+a record and a variant too) and traps on wasm — 03's and 05's rows; it becomes the `run/` cell
+when they land. §11's "erlang: nothing" is pinned by `codegen/tests/control_flow.zig`'s needle
+(`A = 2.0,`, no box); a program cannot tell a stored value from an unboxed one, so
+`run/unknown_stores_nothing` has nothing to print that differs.
 
 ### Step 8 — the captured-`var` write (T6, lg-b)
 
@@ -161,7 +191,9 @@ this backend, and `run/closure_capture_statement_position` pins the two forms th
 a process-dictionary cell per activation; under (3) an ETS cell through decision 39's owner.
 
 **Acceptance:**
-- [ ] under (1): the cell passes on erlang; under (2)/(3): `run/captured_var_write_in_lambda` prints `1` on erlang and beam
+- [x] under (1): the cell passes on erlang; under (2)/(3): `run/captured_var_write_in_lambda` prints `1` on erlang and beam
+
+Decision 148 answered (1); `run/closure_capture_statement_position` passes on four targets.
 
 ### Step 9 — the sibling loader under `build` (T1)
 
@@ -170,7 +202,10 @@ flag), so a built program loads the `.erl` sidecars beside it; 26 step 1 ships t
 and `run` and the beam twin (03). The compiler's half lands first.
 
 **Acceptance:**
-- [ ] `modules/erlang_host_sidecar_shipped` passes under `botopink run --target erlang` on a **built** program (`build` then `erl -pa out/erl`), not only under `botopink test` — the cell's existing `.out`, run by hand until 26 lands the CLI half
+- [x] `modules/erlang_host_sidecar_shipped` passes under `botopink run --target erlang` on a **built** program (`build` then `erl -pa out/erl`), not only under `botopink test` — the cell's existing `.out`, run by hand until 26 lands the CLI half
+
+The entry loads its siblings when some module of the build binds a BEAM host of its own (beam's
+rule); a sidecar that does not compile refuses the run, named.
 - [ ] language-gaps T1's row closes with 26's step
 
 ### Step 10 — the dead tail-`case` lowering (R7)
@@ -180,6 +215,11 @@ then delete the lowering; the erlang snapshots are otherwise byte-identical.
 
 **Acceptance:**
 - [ ] 0 producers measured and written in `src/codegen/AGENTS.md`; the lowering deleted; `snapshots/codegen/*/erlang/**` byte-identical (a diff outside the deleted shape is a bug found)
+
+Open: no lowering in `erlang.zig` matches "a block in value position lowers to a `case` whose last
+expression is the value" — `@block { … }` is an applied fun, a comptime block an applied fun up to
+its `break`, and no erlang snapshot holds a `case true of` / `case ok of` shape. The site the row
+means has to be named before it can be measured or deleted.
 
 ### Step 11 — C-06's `KNOWN` notes and the comment sweeps
 
@@ -191,16 +231,35 @@ every comment presenting `@external(<target>, …)` as current (re-measure: `gre
 erlang.zig` answers 0 at HEAD; the 1.0.10 count was 16 — the sites may spell it differently).
 
 **Acceptance:**
-- [ ] no `KNOWN` note names decision 55; `grep -rIn 'primitives\.d\.bp' src/codegen` returns nothing
-- [ ] one commit per sweep, after every other step; 08 verifies
+- [x] no `KNOWN` note names decision 55; `grep -rIn 'primitives\.d\.bp' src/codegen` returns nothing
+- [x] one commit per sweep, after every other step; 08 verifies
+
+`grep -c '@external(' erlang.zig` was 16 (not 0); every one now spells `#[@External.Erlang(…)]`.
+
+### Rows other fronts found
+
+Each pinned by `codegen/tests/erlang.zig` (the backend's own fixtures) or a `tests/language` cell.
+
+- [x] a `default fn` body of `primitives.bp`: `opt.unwrapOr(d)` was an undefined `unwrapOr/2` — step 4's typing
+- [x] a method on a local of such a body (`exponent.startsWith("+")`) was a bare call — the body read the consuming module's loc-keyed lowerings; step 4
+- [x] `true` / `false` inside a tuple pattern were binders — matched as atoms
+- [x] `Point(x: 0, ..)` in a `case` died `case_clause` — a record's constructor pattern takes the record's own tag (commonJS answers `null` on the same program: 04's row)
+- [x] `throw` inside a `case` arm of a `-> @Result` fn, arrow and block form — the `{ok, …}` goes into the arms that do not leave (beam's block form still throws: 03's row)
+- [x] erlang stdout followed the host locale (`LANG=C`: `é` as `0xE9`) — an entry point sets `standard_io` to unicode itself
+- [x] the sibling loader under `build` — step 9
 
 ## Gate
 
-- [ ] `zig build test` from a **cold** runtime cache, green, in this front's worktree
-- [ ] every re-recorded RUN LOG **verified by running the program** under `erl`; nothing bulk-accepted; steps 1, 2, 10 move `.erl` text only, RUN LOGs unchanged block by block
-- [ ] `tests/language/run.sh --target erlang` green with the new cells; every cell proved able to fail on the parent binary
+- [x] `zig build test` from a **cold** runtime cache, green, in this front's worktree
+- [x] every re-recorded RUN LOG **verified by running the program** under `erl`; nothing bulk-accepted; steps 1, 2, 10 move `.erl` text only, RUN LOGs unchanged block by block
+- [x] `tests/language/run.sh --target erlang` green with the new cells; every cell proved able to fail on the parent binary
 - [ ] `zig build test-libs` erlang cells at baseline; rakun's members re-run (its host modules call the BIFs step 1 qualifies)
-- [ ] `src/codegen/AGENTS.md` and `erlang.zig`'s own notes updated in the same commit as each step
+- [x] `src/codegen/AGENTS.md` and `erlang.zig`'s own notes updated in the same commit as each step
+
+The fixes' cells fail on the parent binary; three cells are pins that pass there too
+(`test/is_truth_table`, `run/closure_capture_statement_position`) or fail there only under
+`LANG=C` (`run/string_literal_unicode_escape`). Of `test-libs`, `libs/std` and rakun ran on erlang
+(green); the other libraries' erlang cells were not run here.
 - [ ] Commit on `fix/02-erlang`; no push, no merge
 
 ## Blast radius
