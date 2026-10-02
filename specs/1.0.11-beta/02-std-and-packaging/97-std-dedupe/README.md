@@ -45,10 +45,15 @@ std's. Measured on the trees at `repository/` (the extraction analysis, re-check
 - `01-std-lib-enablement` step 14 ("no JSON copy left in jhonstart, emilia, rakun") was ticked in
   1.0.10 against a grep for the *writers*; the *readers* over `json.Json` were copied eight times
   after decision 117 introduced the type. Reopened here.
-- **Landed (steps 0–2):** `fs.walk`'s relative paths on erlang, `string.parseInt()` /
-  `string.parseFloat()` and the `Json` readers — `libs/std` reads 456 passed / 0 failed on commonJS
-  and on erlang (433 before). The consumer edits in `libs/actions` and `libs/validation` and steps
-  3, 4, 5 and 8 are not started; steps 6 and 7 wait on `std-d` and `01std-f`.
+- **Landed (steps 0–5, 8, 9):** `fs.walk`'s relative paths on erlang and its dangling-link `Error`
+  (decision 178), `fs.glob`'s one rule (177), `string.parseInt()` / `parseFloat()`, the index unit
+  of `indexOf` / `lastIndexOf` on erlang (169), the `Json` readers, `hash.pbkdf2Sha256` (175),
+  `clock.parseDuration`, the snapshot engine on `io/fs` and `path`, `async.RetryPolicy` /
+  `nextDelay` / `retry` (170), `Dict.ofEntries` (174) and the documentation — `libs/std` reads
+  491 passed / 0 failed on commonJS and on erlang (433 before).
+- **Open:** the consumer edits in `libs/actions` and `libs/validation` (step 1 box 3, step 2 boxes
+  2–3) and every "consume std" row of § Consumers — each the step of the front that owns the file;
+  steps 6 and 7 wait on `std-d` and `01std-f`; the compiler residuals of § Compiler residuals.
 - `libs/std/src/async.bp` carries `allOf`, `all`, `race`, `runAll`, `raceOf`, `timeout`, `failed`
   (24-g's shape); no retry policy.
 - `libs/std/src/hash.bp` carries `contentHash`, `strongHash`, `sha256`, the base64url digests,
@@ -75,23 +80,33 @@ On erlang the template cut the root off each full path by the root's written len
 ending in `/.` (what `path.join([dir, "."])` answers) lost the first two characters of every path
 (`app/layout.bp` → `p/layout.bp`), and onze's `onze build` of a project whose `src` is `"."` read
 `enoent`. The Erlang template walks `file:list_dir/1` itself and builds each relative path from the
-names it descends through; the Node template reads `statSync` with `throwIfNoEntry: false` (a
-dangling link made the whole walk an `ENOENT` there while erlang skipped it).
+names it descends through. A dangling link under the root is an `Error` naming it —
+`fs.walk: dangling link "<relative path>"`, the same text on both targets, the first in sorted
+order when there are several (decision 178; the hosts used to disagree: Node failed the whole walk
+with its own `ENOENT`, erlang skipped the link).
+
+`fs.glob` reads ONE rule on both targets (decision 177), as one walk over the pattern's segments in
+both cells: `**` is zero or more directories, a segment with `*` `?` `[…]` `{a,b}` matches the names
+of one directory, any other segment is a name; a wildcard does not match a name starting with `.`
+unless the segment itself starts with the dot; `**` and a wildcard segment continue into real
+directories only — the link is still listed as a name, and a segment that names it goes through it.
+Only the match of one segment against one directory is the host's. `fs.removeTree(path)` is public
+(step 4).
 
 **Acceptance:**
 - [x] one inline test per spelling — `dir`, `dir/`, `dir/.`, `dir/./sub`, `//dir//`, `dir/sub/..`,
-      relative, relative with a leading `./` — plus links (file, directory, dangling) and a file
-      root, green on commonJS and erlang
+      relative, relative with a leading `./` — plus links (file, directory), the dangling-link
+      `Error` and its sorted-first rule, and a file root, green on commonJS and erlang
 - [x] `tests/language` `run/std_fs_walk_root_spellings` from a consumer on commonJS, erlang and
       beam (wasm refuses the import); planting the old template reds it on erlang and beam only
-- [x] `glob` and `list` carry no prefix arithmetic (measured: `filelib:wildcard/2` and
-      `file:list_dir/1` answer relative names by construction for every spelling); `path.join`
-      keeps a `.` segment and `path.normalize` drops it, on both targets alike
+- [x] `glob`: eight inline tests over a tree with a dot file, a dot directory, a link to a
+      directory, a link to a file and a dangling link, green on commonJS and erlang; ten patterns
+      print the same lines from a consumer on commonJS, erlang and beam
+- [x] `path.join` keeps a `.` segment and `path.normalize` drops it, on both targets alike
 
-Left, not this front's: `fs.glob`'s MATCHING differs between the hosts — `filelib:wildcard` matches
-a dot name with `*` / `**` and descends through a link to a directory, `fs.globSync` does neither
-(`**/*.txt` over `.hid/h.txt`, `lnk -> sub`, `sub/s.txt`: three paths on erlang, one on commonJS);
-`fs.list` answers the host's order.
+Left: `fs.list` answers the host's order (sorted on Node, directory order on Erlang). Not pinned in
+`glob`: an alternative holding a `/` (the pattern is split first), a `..` segment (read as a name),
+backslash escapes.
 
 ### Step 1 — `string.parseInt()` and `string.parseFloat()`
 
@@ -111,13 +126,17 @@ two backends agree on every input — decision 142's rule for numerals).
       `libs/validation`'s 54 tests unchanged
 
 As landed: both are `default fn`s of `behavior String` (`libs/std/test/primitives_test.bp`, six
-tests). `parseInt` refuses a numeral beyond ±9007199254740991 — an `i64` is a JavaScript number on
-commonJS, and past 2^53 `Number` rounds where Erlang is exact, so the range is the one both count
-exactly. `parseFloat` refuses an overflow and answers `0.0` for an underflow. They run on commonJS,
-erlang and beam; on wasm a call traps, as every template-only `String` method does. Two emitter gaps
-met in a `default fn` of `primitives.bp`, worked around in std and recorded in `libs/std/AGENTS.md`
-§ String numerals: commonJS emits `Ok(…)` / `Error(…)` as written, erlang emits `opt.unwrapOr(d)`
-as a call to an undefined `unwrapOr/2`.
+tests). `parseInt` refuses a numeral beyond ±9007199254740991 (decision 176) — the range commonJS
+and the BEAM count alike. `parseFloat` refuses an overflow and answers `0.0` for an underflow. They
+run on commonJS, erlang and beam; on wasm a call traps, as every template-only `String` method
+does. The bodies call a method on `self` only and reach the rest through free cells — § Compiler
+residuals 1–3.
+
+`indexOf` / `lastIndexOf` (decision 169): on erlang both answer `string:length/1` of the text before
+the match — the unit `at`, `slice` and `length` count in there — where they answered its byte
+offset; three tests over a string built from code points, green on commonJS and erlang. commonJS is
+untouched. A library that hands an erlang `indexOf` to a byte-indexed host cell now reads a
+character index.
 
 ### Step 2 — the `Json` accessors as methods on `json.Json`
 
@@ -150,10 +169,19 @@ deleted by its owner at its own pace.
 one unit, digits only, refused otherwise — the stricter of the two rakun parsers).
 
 **Acceptance:**
-- [ ] `pbkdf2Sha256("password", "salt", 1, 32)` equals RFC 6070's vector on both targets
-- [ ] `parseDuration("30s")` is `Ok(30000)`; `"1.5s"`, `"30"`, `"30 s"`, `"30S"` are `Error`
+- [x] `pbkdf2Sha256("password", "salt", 1, 32)` equals RFC 6070's inputs under SHA-256 on both
+      targets (`Eg-2z_z4syxD5yJSVsT4N6hlSMkszDVICAWYfLcL4Xs` — the RFC's own vectors are
+      PBKDF2-HMAC-SHA1), with the 2- and 4096-round and 40-byte ones, and RFC 7914 §11's two
+      PBKDF2-HMAC-SHA-256 vectors
+- [x] `parseDuration("30s")` is `Ok(30000)`; `"1.5s"`, `"30"`, `"30 s"`, `"30S"` are `Error`
 - [ ] the `03-rakun` track's `config.parseDuration` / `jwt.skewOf` rows name this function as
       their replacement (a "consume std" step there)
+
+As landed: the salt is text (decision 175); `iterations` or `length` below 1 is a panic with one
+text on both targets, where each host raised its own. `parseDuration` also refuses a sign, two
+units, and a duration beyond 2^53 − 1 milliseconds. It does not read rakun's ISO `PT…` form nor a
+bare number under a default unit — `config.parseDuration(raw, unit, key)` keeps those two and calls
+std for the suffix form.
 
 ### Step 4 — the snapshot engine on `io/fs` and `path`
 
@@ -163,10 +191,19 @@ one unit, digits only, refused otherwise — the stricter of the two rakun parse
 `Ok` and a stale `.new` deleted on match, no update path.
 
 **Acceptance:**
-- [ ] `grep -n "External" libs/std/src/testing/snapshots.bp` is empty; the `engine ----` tests
+- [x] `grep -n "External" libs/std/src/testing/snapshots.bp` is empty; the `engine ----` tests
       green on both targets; `grep -rn "SNAP_CREATE\|update" snapshots.bp` still finds the header only
 - [ ] `zig build test-libs` reads every member's row at its previous count (the engine is what every
-      `-test` member stands on)
+      `-test` member stands on) — measured here for `std`, `routing`, `actions` and `validation`
+      only (the worktree holds no sibling library), and from a scratch consumer package on commonJS
+      and erlang: a missing snapshot writes its `.new` under a `__snapshots__/<suite>/` the engine
+      had to create and answers `Error`; renamed, the next run answers `Ok`. The libraries' rows are
+      the landing's check
+
+As landed: `fs.removeTree(path) -> @Result<i32, string>` is public (it was `fs.bp`'s private test
+cell); the scratch directory is `bpsnap-<pid>-<n>` under `BOTOPINK_TEST_TMPDIR`, since `io/random`
+cannot be imported by a module a consumer embeds (§ Compiler residuals 6); `import
+{testing.snapshots}` is refused on wasm now (STD-001 through `io/fs`).
 
 ### Step 5 — `async.RetryPolicy` and `nextDelay`
 
@@ -176,10 +213,15 @@ one unit, digits only, refused otherwise — the stricter of the two rakun parse
 shape (24-g): the last `Error` is answered, never rejected. No jitter without a decision.
 
 **Acceptance:**
-- [ ] `nextDelay(RetryPolicy(3, 100, 2.0, 1000), 1..4)` answers `100`, `200`, `400`, `null`
-- [ ] `retry` over a work that fails twice then succeeds answers `Ok` after three calls, on both
+- [x] `nextDelay(RetryPolicy(3, 100, 2.0, 1000), 1..4)` answers `100`, `200`, `400`, `null`
+- [x] `retry` over a work that fails twice then succeeds answers `Ok` after three calls, on both
       targets; over one that always fails answers the last `Error` after `maxAttempts`
 - [ ] the four rakun loops are named as "consume std" rows in the `03-rakun` track
+
+As landed: a policy is usable only with `maxAttempts` ≥ 1, both delays ≥ 0, `maxMillis` ≤
+2147483647 and `multiplier` ≥ 1.0; `nextDelay` answers `null` for one that is not, and `retry` over
+one is fatal on both targets, like `race([])`. The delay is rounded down. The names are the README's
+(decision 170), which `rakun-messaging/reliability/policy.bp` also declares until its own step.
 
 ### Step 6 — conditional on `std-d`: `io.process` signals and a line reader
 
@@ -208,10 +250,20 @@ recommendation — the four existing files stay and the map is retired with a no
 ### Step 8 — the surface documented
 
 **Acceptance:**
-- [ ] `libs/std/AGENTS.md` and `docs.md` list `parseInt`, `parseFloat`, the `Json` methods,
-      `pbkdf2Sha256`, `parseDuration`, `RetryPolicy` / `nextDelay` / `retry`
-- [ ] `libs/AGENTS.md` records that a shared primitive lands in std first and the copies are
+- [x] `libs/std/AGENTS.md` and `docs.md` list `parseInt`, `parseFloat`, the `Json` methods,
+      `pbkdf2Sha256`, `parseDuration`, `RetryPolicy` / `nextDelay` / `retry` — `docs.md` with one
+      compiled fence whose printed values were checked by running it on commonJS and erlang
+- [x] `libs/AGENTS.md` records that a shared primitive lands in std first and the copies are
       deleted by the file's owner
+
+### Step 9 — `Dict.ofEntries` (decision 174)
+
+`Dict.ofEntries(entries: Array<#(K, V)>) -> Dict<K, V>` in `collections.bp`: inserted in order, so a
+repeated key keeps its last value at the place of that last entry, as a chain of `insert` does.
+
+**Acceptance:**
+- [x] three inline tests on commonJS and erlang (order, a repeated key against the `insert` chain,
+      no entries and a non-string key)
 
 ## Consumers — "consume std X" steps this front hands to the library fronts
 
@@ -226,40 +278,26 @@ the grep in the last column.
 | `onze-og/src/svg.bp:19`, `metrics.bp:12` | `06-onze/51-onze-image` step 1 | `parseInt` / `parseFloat` | `grep -n "fn parse" repository/onze/modules/onze-og/src` empty |
 | rakun's eleven copies (the table in § Problem) | the `03-rakun` track's fronts, by file | one row each | the `03-rakun` track's greps |
 
-## Questions the maintainer owes
+## Compiler residuals — met here, worked around in std, owned elsewhere
 
-### 97-a · The names of steps 3 and 5 are names rakun already exports
+| # | What | Reproduction | Owner |
+|---|---|---|---|
+| 1 | commonJS emits `Ok(x)` / `Error(e)` of a `default fn` of `primitives.bp` as written — `ReferenceError: Ok is not defined` | `return Ok(1);` in a new `default fn` of `behavior String`, called from a scratch project | the commonJS emitter |
+| 2 | in such a body commonJS emits `self.length()` as written (`self.length is not a function`) and erlang emits `opt.unwrapOr(d)` as a call to an undefined `unwrapOr/2` | `val x = self.split(".").at(0).unwrapOr("");` / `self.length()` in the same place | both emitters |
+| 3 | erlang lowers a method called on a LOCAL of such a body through a lookup another module's text changes: `exponent.startsWith("+")` came out as the bare `startsWith(Exponent, <<"+">>)` — `function startsWith/2 undefined` | `parseFloat`'s body as first landed, with the three "one unit for every string index" tests appended to `test/primitives_test.bp` | the erlang emitter |
+| 4 | a TYPE a module imports from a sibling (`import {RetryPolicy} from "reliability/policy"`, aliased or not) resolves to std's type of the same name when the same module also imports the std module that declares it (`import {async} from "std"`): `` `RetryPolicy` has no parameter named `initialMs` `` — functions are told apart, and so is a type when only ANOTHER module of the program loads the std module | a dependency with `reliability/policy.bp` (`pub type RetryPolicy(initialMs: i32, …)`) and `reliability/dispatch.bp` importing it beside `{async}` | `01-compiler/01-checker` (the import fix covers functions) |
+| 5 | a record cannot be built through a std module namespace: `async.RetryPolicy(3, 100, 2.0, 1000)` is `this "std" module has no such public function`; the leaf import works | `import {async} from "std";` and that call | `01-compiler/01-checker` |
+| 6 | a consumer outside the checkout cannot import `io/random` on commonJS: `module 'std/io/random' requires "./sidecars/random.mjs", but its library 'std' resolves to no package directory` | `import {io.random} from "std"` in a package under `/tmp` | `02-std-and-packaging` (packaging) |
+| 7 | `nextDelay(policy, 1).unwrapOr(0)` is `type mismatch: expected i32, got i64` — a literal widens to `i64` as an argument and as a field, not as `unwrapOr`'s default | that expression | `01-compiler/01-checker` |
 
-**Measured.** rakun declares `pub fn parseDuration(raw, unit, key)` (`rakun/src/config.bp:1537`),
-`pub type RetryPolicy` and `pub fn nextDelay(policy, attempt)`
-(`rakun-messaging/src/reliability/policy.bp:12`, `:34`), imported by sibling path
-(`reliability/dispatch.bp:50`, `test/config_test.bp:21`). On this compiler a dependency's module
-that imports `{x} from "<sibling path>"` is refused as soon as the program loads a std module that
-also declares `pub x` — "`x` is declared `pub` by `std/io/clock` and by `<pkg>/<module>`, and this
-import does not say which" — for a type, and for a function whatever its arity (reproduced with
-`Duration`, `add/2` and `seconds/3` against `std/io/clock`); when the same module imports both, a
-type resolves to std's without a diagnostic. The same import inside the package's own build is not
-refused.
-**Options.** (a) the README's names — std lands them only together with rakun deleting its copies,
-or after the import-resolution gap of `language-gaps.md` closes; (b) names no library exports
-(decision 163's rule, applied to std), renamed never; (c) hold steps 3's `parseDuration` and 5.
-**Recommendation.** (b) for the three colliding names, chosen with the `03-rakun` track so its
-"consume std" rows name them; `pbkdf2Sha256` and `retry` collide with nothing.
-**Blocks.** step 3's `parseDuration`, step 5.
+Two places outside `libs/` quote std's text and moved with it, nothing else in `modules/` did: the
+codegen and LSP snapshots that print the `String` prelude, `collections.bp` or a template's
+lowering, and one literal of `codegen/tests/comptime_module.zig`, which pins `indexOf`'s Erlang
+template verbatim.
 
-### 97-b · `pbkdf2Sha256`'s salt is text; rakun's cell decodes it
-
-**Measured.** `rakun_security.erl`'s `pbkdf2/3` derives over `base64:decode(SaltText, urlsafe)` —
-the salt's 16 raw bytes — and stores `{pbkdf2}<iterations>$<salt>$<hash>`. Step 3's function takes
-the salt as a `string` (its UTF-8 bytes — there is no byte type), and its acceptance vector
-(`"salt"`) fixes that reading; the same stored salt therefore derives a different hash. RFC 6070's
-vectors are PBKDF2-HMAC-SHA1: `("password", "salt", 1, 32)` under SHA-256 is
-`120fb6cf…0be17b` (`Eg-2z_z4syxD5yJSVsT4N6hlSMkszDVICAWYfLcL4Xs` in base64url, identical on Node
-`pbkdf2Sync` and `crypto:pbkdf2_hmac/5`); RFC 7914 §11 carries the published SHA-256 vectors.
-**Options.** (a) text salt as written — rakun hashes stored under the old cell stop verifying;
-(b) a second function over a base64url salt; (c) the salt always base64url.
-**Recommendation.** (a) if no stored hash has to survive (rakun is unreleased), else (b).
-**Blocks.** step 3's `pbkdf2Sha256`; `03-rakun`'s password row.
+No rakun module that names `RetryPolicy` imports `std/async` today, and none that names
+`parseDuration` reads std's, so residual 4 breaks nothing at this landing; it is what a rakun step
+meets if it imports both before deleting its copy.
 
 ## Gate
 
