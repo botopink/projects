@@ -45,8 +45,10 @@ std's. Measured on the trees at `repository/` (the extraction analysis, re-check
 - `01-std-lib-enablement` step 14 ("no JSON copy left in jhonstart, emilia, rakun") was ticked in
   1.0.10 against a grep for the *writers*; the *readers* over `json.Json` were copied eight times
   after decision 117 introduced the type. Reopened here.
-- `libs/std/src/primitives.bp` declares the string methods the checker admits (decision 136: a
-  primitive answers only the methods it declares); `parseInt` / `parseFloat` are not among them.
+- **Landed (steps 0–2):** `fs.walk`'s relative paths on erlang, `string.parseInt()` /
+  `string.parseFloat()` and the `Json` readers — `libs/std` reads 456 passed / 0 failed on commonJS
+  and on erlang (433 before). The consumer edits in `libs/actions` and `libs/validation` and steps
+  3, 4, 5 and 8 are not started; steps 6 and 7 wait on `std-d` and `01std-f`.
 - `libs/std/src/async.bp` carries `allOf`, `all`, `race`, `runAll`, `raceOf`, `timeout`, `failed`
   (24-g's shape); no retry policy.
 - `libs/std/src/hash.bp` carries `contentHash`, `strongHash`, `sha256`, the base64url digests,
@@ -66,6 +68,31 @@ where the receiver is a primitive (`"42".parseInt()`), a method on the type wher
 
 ## Steps
 
+### Step 0 — `fs.walk` answers the same relative paths however the root is spelled
+
+On erlang the template cut the root off each full path by the root's written length, while
+`filelib:fold_files/5` builds those paths with `filename:join/2`, which drops a `.` segment: a root
+ending in `/.` (what `path.join([dir, "."])` answers) lost the first two characters of every path
+(`app/layout.bp` → `p/layout.bp`), and onze's `onze build` of a project whose `src` is `"."` read
+`enoent`. The Erlang template walks `file:list_dir/1` itself and builds each relative path from the
+names it descends through; the Node template reads `statSync` with `throwIfNoEntry: false` (a
+dangling link made the whole walk an `ENOENT` there while erlang skipped it).
+
+**Acceptance:**
+- [x] one inline test per spelling — `dir`, `dir/`, `dir/.`, `dir/./sub`, `//dir//`, `dir/sub/..`,
+      relative, relative with a leading `./` — plus links (file, directory, dangling) and a file
+      root, green on commonJS and erlang
+- [x] `tests/language` `run/std_fs_walk_root_spellings` from a consumer on commonJS, erlang and
+      beam (wasm refuses the import); planting the old template reds it on erlang and beam only
+- [x] `glob` and `list` carry no prefix arithmetic (measured: `filelib:wildcard/2` and
+      `file:list_dir/1` answer relative names by construction for every spelling); `path.join`
+      keeps a `.` segment and `path.normalize` drops it, on both targets alike
+
+Left, not this front's: `fs.glob`'s MATCHING differs between the hosts — `filelib:wildcard` matches
+a dot name with `*` / `**` and descends through a link to a directory, `fs.globSync` does neither
+(`**/*.txt` over `.hid/h.txt`, `lnk -> sub`, `sub/s.txt`: three paths on erlang, one on commonJS);
+`fs.list` answers the host's order.
+
 ### Step 1 — `string.parseInt()` and `string.parseFloat()`
 
 Declared in `libs/std/src/primitives.bp` as methods of `string`, answering
@@ -75,12 +102,22 @@ templates (`Number` / `list_to_integer` with the refusal spelled in botopink ove
 two backends agree on every input — decision 142's rule for numerals).
 
 **Acceptance:**
-- [ ] `"42".parseInt()` is `Ok(42)`, `"-0".parseInt()` is `Ok(0)`, `"4 2"`, `""`, `"42x"`, `"0x2A"`
+- [x] `"42".parseInt()` is `Ok(42)`, `"-0".parseInt()` is `Ok(0)`, `"4 2"`, `""`, `"42x"`, `"0x2A"`
       are `Error` naming the input — inline tests green on commonJS and erlang
-- [ ] `"1e3".parseFloat()` is `Ok(1000.0)` and agrees bit-for-bit with `json.decode`'s numeral on
-      the boundary values it pins (`5e-324`, `1.7976931348623157e308`)
+- [x] `"1e3".parseFloat()` is `Ok(1000.0)` and agrees bit-for-bit with `json.decode`'s numeral on
+      the boundary values it pins (`5e-324`, `1.7976931348623157e308`) — `json.bp`'s agreement test
+      runs both over decision 142's whole boundary list
 - [ ] `libs/validation/src/binding.bp:144` calls `parseInt` and its hand-rolled parser is gone;
       `libs/validation`'s 54 tests unchanged
+
+As landed: both are `default fn`s of `behavior String` (`libs/std/test/primitives_test.bp`, six
+tests). `parseInt` refuses a numeral beyond ±9007199254740991 — an `i64` is a JavaScript number on
+commonJS, and past 2^53 `Number` rounds where Erlang is exact, so the range is the one both count
+exactly. `parseFloat` refuses an overflow and answers `0.0` for an underflow. They run on commonJS,
+erlang and beam; on wasm a call traps, as every template-only `String` method does. Two emitter gaps
+met in a `default fn` of `primitives.bp`, worked around in std and recorded in `libs/std/AGENTS.md`
+§ String numerals: commonJS emits `Ok(…)` / `Error(…)` as written, erlang emits `opt.unwrapOr(d)`
+as a call to an undefined `unwrapOr/2`.
 
 ### Step 2 — the `Json` accessors as methods on `json.Json`
 
@@ -91,10 +128,19 @@ copies' (`membersOf` → `members`, `fieldOf` → `field`, `strOf` → `str`, `i
 consumer's edit is a receiver swap.
 
 **Acceptance:**
-- [ ] each method has an inline test per `Json` variant, green on both targets
+- [x] each method has an inline test per `Json` variant, green on both targets
 - [ ] `libs/actions/src/envelope.bp:56-103` and `rpc.bp:26-66` call the methods and declare none;
       `libs/actions`' tests unchanged; the envelope and RPC literals byte-identical
 - [ ] `grep -rn "fn membersOf\|fn strOf\|fn itemsOf\|fn fieldOf\|fn kindName" libs/` is empty
+      (today: the ten private copies of `libs/actions`, and `libs/routing/src/segment.bp:77`
+      `pub fn kindName(k: SegmentKind)` — a different function over another type, which the grep
+      has to exclude)
+
+As landed: `field(key)` reads the value itself (`v.field(k)`, where the copies wrote
+`fieldOf(membersOf(v), k)`). A consumer's free `pub fn kindName(v: Json)` / `isObject` keeps
+compiling and answering beside the methods — measured from a dependency whose modules import the
+copies by sibling path in a program that loads `std/json`, on commonJS and erlang — so each copy is
+deleted by its owner at its own pace.
 
 ### Step 3 — `hash.pbkdf2Sha256` and `clock.parseDuration`
 
@@ -179,6 +225,41 @@ the grep in the last column.
 | `onze-cli/src/{build,info}.bp`, `onze-bundler/src/entry.bp:182`, the `parseInt` in `entry.bp` | `06-onze/50-onze-cli` step 1 | receiver swap | the same grep over `onze-cli/src` and `onze-bundler/src` empty |
 | `onze-og/src/svg.bp:19`, `metrics.bp:12` | `06-onze/51-onze-image` step 1 | `parseInt` / `parseFloat` | `grep -n "fn parse" repository/onze/modules/onze-og/src` empty |
 | rakun's eleven copies (the table in § Problem) | the `03-rakun` track's fronts, by file | one row each | the `03-rakun` track's greps |
+
+## Questions the maintainer owes
+
+### 97-a · The names of steps 3 and 5 are names rakun already exports
+
+**Measured.** rakun declares `pub fn parseDuration(raw, unit, key)` (`rakun/src/config.bp:1537`),
+`pub type RetryPolicy` and `pub fn nextDelay(policy, attempt)`
+(`rakun-messaging/src/reliability/policy.bp:12`, `:34`), imported by sibling path
+(`reliability/dispatch.bp:50`, `test/config_test.bp:21`). On this compiler a dependency's module
+that imports `{x} from "<sibling path>"` is refused as soon as the program loads a std module that
+also declares `pub x` — "`x` is declared `pub` by `std/io/clock` and by `<pkg>/<module>`, and this
+import does not say which" — for a type, and for a function whatever its arity (reproduced with
+`Duration`, `add/2` and `seconds/3` against `std/io/clock`); when the same module imports both, a
+type resolves to std's without a diagnostic. The same import inside the package's own build is not
+refused.
+**Options.** (a) the README's names — std lands them only together with rakun deleting its copies,
+or after the import-resolution gap of `language-gaps.md` closes; (b) names no library exports
+(decision 163's rule, applied to std), renamed never; (c) hold steps 3's `parseDuration` and 5.
+**Recommendation.** (b) for the three colliding names, chosen with the `03-rakun` track so its
+"consume std" rows name them; `pbkdf2Sha256` and `retry` collide with nothing.
+**Blocks.** step 3's `parseDuration`, step 5.
+
+### 97-b · `pbkdf2Sha256`'s salt is text; rakun's cell decodes it
+
+**Measured.** `rakun_security.erl`'s `pbkdf2/3` derives over `base64:decode(SaltText, urlsafe)` —
+the salt's 16 raw bytes — and stores `{pbkdf2}<iterations>$<salt>$<hash>`. Step 3's function takes
+the salt as a `string` (its UTF-8 bytes — there is no byte type), and its acceptance vector
+(`"salt"`) fixes that reading; the same stored salt therefore derives a different hash. RFC 6070's
+vectors are PBKDF2-HMAC-SHA1: `("password", "salt", 1, 32)` under SHA-256 is
+`120fb6cf…0be17b` (`Eg-2z_z4syxD5yJSVsT4N6hlSMkszDVICAWYfLcL4Xs` in base64url, identical on Node
+`pbkdf2Sync` and `crypto:pbkdf2_hmac/5`); RFC 7914 §11 carries the published SHA-256 vectors.
+**Options.** (a) text salt as written — rakun hashes stored under the old cell stop verifying;
+(b) a second function over a base64url salt; (c) the salt always base64url.
+**Recommendation.** (a) if no stored hash has to survive (rakun is unreleased), else (b).
+**Blocks.** step 3's `pbkdf2Sha256`; `03-rakun`'s password row.
 
 ## Gate
 
