@@ -36,26 +36,29 @@ otherwise; programs run with `botopink run --target wasm` (wasmtime).
 
 | Row | Program | wasm answers |
 |---|---|---|
-| traps | `"a\nb".lines()`, `xs.pop()`, `xs.flatMap(…)`, `xs.flatten()`, `xs.flat()`, `xs.chunked(2)`, `xs.sliding(2)`, `xs.fill(0)`, `xs.unique()` | `RUNTIME TRAP` — each pinned by `codegen/tests/wat.zig:1122` (`a primitive method with no wasm lowering traps, never answers`); commonJS and erlang answer |
-| type-param `==` | `modules/method_on_unimported_type`: `Dict.at` with a string key through a type parameter | finds the key only when both sides are one interned literal (`src/codegen/wat/AGENTS.md:219`, the generic-parameter limit) — re-measure: the audit notes the AGENTS row may be stale after the `?T` carrier work |
-| EF-3 | `run/external_wrapper_keeps_refusal` | the cell **passes** on wasm (the lazy `collectHostBound` drops the wrapper) while the strict rule says refuse — listed as an expected failure because the strict rule is the documented one |
-| C-07 | the tuple / `..` / type-pattern fixtures | no wasm twin with a RUN LOG |
+| traps | `"a\nb".lines()`, `xs.flatMap(…)`, `xs.flatten()`, `xs.flat()`, `xs.chunked(2)`, `xs.sliding(2)`, `xs.fill(0)`, `xs.unique()` | lowered (step 1); what has no answer traps by name — `unique` over records (commonJS `2`, erlang `1`), `flatMap` whose function answers no array, `flatten` over elements no shape says are arrays |
+| type-param `==` | a string bound to a type parameter | compared by content wherever the binding is visible (step 2); the one generic body — reached only by a call nothing types (a generic fn in a field or an unannotated `val`, a parameter type `bindParam` does not read) — still compares words |
+| C-07 | the tuple / `..` / type / list pattern shapes | one wasm fixture per shape (step 3); `run/is_truth_table` and `run/unknown_stores_nothing` do not exist yet (`02-erlang` step 7) |
+| shadow | a block's `val x` over an outer `x` (decision 152: legal, a new scope) | a local of its own, aliased until the block ends (`wat/AGENTS.md` § A binding in an inner block); erlang and beam refuse the program (02's, 03's rows) |
 
 ## Current state
 
-`run.sh --target wasm` green with the one line above; every `RUNTIME TRAP` fixture re-read at
-1.0.10's close is still a shape wasm cannot do or is the program's own `@todo()` / fatal `assert`.
-The 1.0.10 status rows for wasm (a multi-subject `case`, an all-unit enum printed through a name,
-a named fn handed to `map`) closed with their cells. `zig fmt` green on this front's files.
-Measured at the open.
+Steps 1–3 are done; the cells `run/string_lines_words`, `run/array_flat_forms`,
+`run/array_windows`, `run/array_fill` and `run/generic_string_equality` pass on four targets. The
+step-1 cells also closed five shape rows that printed a container's element as its word at exit 0
+(`wat/AGENTS.md` § Shapes a container carries), and step 3 closed two pattern rows that matched
+wrongly at exit 0 (every list pattern irrefutable, `true`/`false` binders in a tuple pattern). A binding in an inner
+block no longer overwrites the outer one (a `val`, a loop's, a HOF's and a `case` binder).
+`run/array_unique` (02's cell) is not written: `[3, 1, 1, 3].unique()` answers `[3, 1, 3]` on all
+four targets at this tip, so C-35's wasm half is done and its cell is 02's to add.
 
 ## Mechanism
 
 | Row | Deciding site | What it decides |
 |---|---|---|
-| traps | `wat.zig`'s primitive method table (`src/codegen/wat/AGENTS.md` § The primitive method table): a method with no entry lowers to `unreachable` | a trap instead of a wrong value |
-| type-param `==` | string equality on wasm compares words when the declared type is a type parameter — no shape exists to compare by (`wat/AGENTS.md:219`); nothing monomorphises | two equal strings from different allocations are `!=` |
-| EF-3 | `collectHostBound` (`wat.zig:1445`) walks the program for host-bound functions and drops a function whose only body is a host call with no wasm binding; the call site is refused instead | the wrapper is accepted although the documented rule refuses it |
+| traps | `primCallRes` and the prelude groups `str_lines` … `arr_fill` (`wat/AGENTS.md` § The primitive method table); `newArrShape` for the results' shapes | a lowering, or a named trap |
+| type-param `==` | `specializedCallee` / `specializeMethod` / `specializeByFnType`, `ctorTypeRef`, `fieldSub` / `recvTypeArg` (`wat/AGENTS.md`, the generic-parameter limit) | which calls reach a copy with the type substituted |
+| C-07 | `emitTuplePatternTest`, `emitListPatternTest`, `noteSubjectShape`, `patternIsIrrefutable` | the test and the binders each shape emits |
 
 ## Steps
 
@@ -69,8 +72,9 @@ lowering). The trap fixture at `codegen/tests/wat.zig:1122` loses each method as
 is deleted when empty.
 
 **Acceptance:**
-- [ ] `run/array_unique` (02's cell) green on wasm; one `run/` cell per method group (`run/string_lines_words`, `run/array_pop`, `run/array_flat_forms`, `run/array_windows`, `run/array_fill`), each `.out` shared by four targets
-- [ ] `src/codegen/wat/AGENTS.md` § The primitive method table lists no method as "trap"
+- [ ] `run/array_unique` (02's cell) green on wasm — the cell does not exist; the program answers `[3, 1, 3]` on four targets
+- [x] one `run/` cell per method group (`run/string_lines_words`, `run/array_flat_forms`, `run/array_windows`, `run/array_fill`; `pop` is `run/array_pop_removes`), each `.out` shared by four targets
+- [x] `src/codegen/wat/AGENTS.md` § The primitive method table lists no method as "trap"
 
 ### Step 2 — `==` between type-parameter values
 
@@ -80,8 +84,8 @@ as the `?T` carrier and the boxed `unknown` already do — `wat/AGENTS.md` § th
 so no monomorphisation is needed for equality.
 
 **Acceptance:**
-- [ ] `modules/method_on_unimported_type` prints the present value with a computed key on wasm; `run/generic_string_equality` on four targets
-- [ ] `wat/AGENTS.md`'s generic-parameter limit re-derived (equality leaves it; what stays is written)
+- [x] `modules/method_on_unimported_type` prints the present value with a computed key on wasm; `run/generic_string_equality` on four targets
+- [x] `wat/AGENTS.md`'s generic-parameter limit re-derived (equality leaves it; what stays is written)
 
 ### Step 3 — C-07's wasm twins
 
@@ -90,8 +94,8 @@ with a RUN LOG; `run/is_truth_table` and `run/unknown_stores_nothing` (02 step 7
 wasm — a row wasm cannot answer traps and its `.wasm.expect` says so.
 
 **Acceptance:**
-- [ ] one wasm fixture per shape, RUN LOG verified under wasmtime and equal to commonJS's for the same program
-- [ ] the two cells green on wasm
+- [x] one wasm fixture per shape, RUN LOG verified under wasmtime and equal to erlang's and beam's for the same program (commonJS answers differently on three rows, each named at its fixture — `04-js`'s)
+- [ ] the two cells green on wasm — blocked: neither cell exists (`02-erlang` step 7)
 
 ### Step 4 — after 00-gate: the strict host-wrapper rule holds
 
