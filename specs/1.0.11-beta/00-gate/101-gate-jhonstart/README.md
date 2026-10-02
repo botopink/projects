@@ -55,10 +55,10 @@ Tolerances in this repository, all removed:
 
 | Was | Where | Now |
 |---|---|---|
-| pre-commit warned and returned 0 when the compiler was not found | `scripts/git-hooks/lib/runner-standalone.sh` | `requireBotopink` fails the gate with the way out (`zig build install`, or `BOTOPINK_BIN`); verified in a scratch clone: exit 1 |
+| pre-commit warned and returned 0 when the compiler was not found; it ran a bare `botopink test` in `modules/*` — each manifest's default `target`, so no erlang cell and no example's tests | `scripts/git-hooks/lib/runner-standalone.sh` | one text in the five library repositories (`sha256sum` equal ×5; the meta `hook-integrity` check 4): a missing compiler fails the gate with the way out (`zig build install`, or `BOTOPINK_BIN`; a `BOTOPINK_BIN` that is not an executable fails too) — scratch clone: exit 1; `botopink test --target <t>` in every workspace member on every target its manifest declares and `botopink build --target <t>` of every example on every declared target — 29 cells, 16 builds, 3 refusals |
 | `scripts/known-broken-examples.txt` branch of `runExamplesGate` | same file | deleted; an example that does not build fails |
 | no `*.snap.new` guard | `.gitignore`, the hook's staged-files stage | both suffixes ignored and a staged one refused (`git add -f x.snap.new` → exit 1, verified) |
-| CI: core member only (`--lib jhonstart`), examples on the commonJS row, `allow_fail` key | `.github/workflows/test.yml` | `botopink-lib-test --target <t>` over the whole checkout on every row (every member and every example a row), no `allow_fail` / `continue-on-error`, the examples and refusals gates on every row; emilia checked out under `botopink-lang/repository/emilia` (where `jhonstart-emilia`'s `path` dependency resolves — without it that cell is the one red of the matrix) |
+| CI: core member only (`--lib jhonstart`), examples on the commonJS row, `allow_fail` key; OTP on the erlang rows only; `ubuntu-22.04`; a windows row | `.github/workflows/test.yml` | rows `{ubuntu-24.04, macos-14} × {commonJS, erlang}`, every row hard; Erlang/OTP 28 and Node 20 on every row (building the compiler runs `erlc`); one `botopink-lib-test --target <t> --strict` per row from a scratch directory with `BOTOPINK_LIB_ROOTS` naming the repository, so the workspace's fifteen members are the rows and nothing else is (emilia, checked out under `botopink-lang/repository/emilia` for `jhonstart-emilia`'s `path` dependency, is a dependency, not a row); then the hook's other stages (examples on the row's target, refusals) from the hook's own runner; no windows row (gate-f) |
 | `repro/**` — four reproductions, none reproducing | `repro/` | deleted; every line that named it states the closed defect instead |
 | `botopink format --check` drift | `modules/jhonstart/**`, `modules/jhonstart-link/**` | reformatted, one commit, 28 files; `modules/jhonstart-link/src/link.bp` left as it was (below) |
 
@@ -83,10 +83,15 @@ Tolerances in this repository, all removed:
 - [x] `grep -c snap.new .gitignore scripts/git-hooks/lib/runner-standalone.sh` → 1 and 5; a staged
       `x.snap.new` → hook exit 1; the hook without a compiler binary → exit 1 with the build hint
 - [x] `grep -c "allow_fail: true" .github/workflows/test.yml` = 0 (the key is gone)
-- [x] the CI command shape verified in the workflow's layout (`botopink-lang/repository/{jhonstart,emilia}` + `libs`):
-      `botopink-lib-test --target commonJS` → 36 passed, 0 failed (15 jhonstart rows, 17 emilia rows, `std`,
-      `actions`, `routing`, `validation`); `--target erlang` → 35 passed, 0 failed, 1 skipped
-      (`jhonstart-dom-test`, by its manifest)
+- [x] the CI command shape verified in the workflow's layout (`botopink-lang/repository/{jhonstart,emilia}` + `libs`),
+      from a scratch directory with `BOTOPINK_LIB_ROOTS` naming `repository/jhonstart`:
+      `botopink-lib-test --target commonJS --strict` → 15 passed, 0 failed (the fifteen jhonstart rows and no
+      other); `--target erlang --strict` → 14 passed, 0 failed, 1 skipped (`jhonstart-dom-test`, by its
+      manifest); the hook-stages step → 8 builds and 3 refusals on each target
+- [ ] the workflow green on GitHub: at the landed tip it was red on 4 of 5 rows (`erlc: FileNotFound` at
+      `zig build install` on the three commonJS rows; `GLIBC_2.36 not found` on `ubuntu-22.04 · erlang`);
+      the repaired workflow triggers on `feat` / `master` / `main` and on pull requests only, so its
+      first run is the landing
 
 ### Step 3b — delete the stale `repro/**` — done
 
@@ -114,8 +119,10 @@ Each of the four was run before deletion: `erlang-imported-fn-field` 2/2 on both
 ## Gate
 
 - [x] every jhonstart cell `pass` on its declared targets — 29/29 (above)
-- [x] `(cd repository/jhonstart && scripts/git-hooks/pre-commit)` green: 7/7 members, 8/8 examples,
-      3/3 refusals; the workflow's command shape verified as in step 3 (the workflow itself runs on push)
+- [x] `(cd repository/jhonstart && scripts/git-hooks/pre-commit)` green: 29/29 cells (fourteen members on
+      both targets, `jhonstart-dom-test` on commonJS), 16/16 example builds, 3/3 refusals; the workflow's
+      command shape verified as in step 3
+- [ ] the workflow green on GitHub (step 3's open box — the landing)
 - [x] `repository/jhonstart/AGENTS.md` updated; commits on `front/101-gate-jhonstart` in the jhonstart
       submodule
 
@@ -125,7 +132,10 @@ Each of the four was run before deletion: `erlang-imported-fn-field` 2/2 on both
 |---|---|
 | `link.bp`'s record-update spread through `botopink format` (step 4's open box); once the printer is fixed, `botopink format modules/jhonstart-link/src/link.bp` is the remaining PK-5 commit | `112-gate-format` |
 | `restricted-targets.txt:53-55` — the three `jhonstart-*` lines are stale (two cells now run, one member now refuses the build) | `113` (deletes the file) |
-| `botopink-lib-test` has no workspace selector: `--lib` takes one name and `--lib jhonstart` selects the core member, so "every member a row" in CI is the whole checkout (`std`, the bundled libs and the emilia checkout ride along). A `--lib <workspace>` that expands to its members, or a `--workspace <dir>`, would make the library's CI its own verdict | `113` / `115` (`modules/lib-test-runner/**`) |
+| The workflow's first green run. It triggers on push / PR to `feat`, `master`, `main` only; at the landed tip it was red on 4 of 5 rows, and the repaired file is unrun until it is on `feat` | the landing |
+| The linux rows are `ubuntu-24.04` because nothing built from botopink-lang starts on `ubuntu-22.04`: `build.zig:745` pins the bundled glibc at 2.38, Zig's std then calls `arc4random_buf` (glibc ≥ 2.36), and 22.04 ships 2.35 (`version 'GLIBC_2.36' not found`). The compiler's own `ubuntu-22.04` row is red for the same reason. A pin ≤ 2.35 at that line lets either runner work | `114` / `../../01-compiler/` (`build.zig`) |
+| No windows row: botopink-lang has none (gate-f), and `manifest` / `lib-test-runner` discovery tests were red on windows in its last windows run. A library row returns with the compiler's | `114` |
+| `botopink-lib-test` has no workspace selector (`--lib` takes one member name). The workflow gets "this workspace's members and nothing else" from a scratch working directory plus `BOTOPINK_LIB_ROOTS`; a `--workspace <dir>` flag would say it directly | `113` / `115` (`modules/lib-test-runner/**`) — optional |
 
 ## Language gaps
 
