@@ -187,8 +187,11 @@ $ bash scripts/check-docs.sh
 docs: 94 fences — 94 checked, 0 skipped, 0 failed   # (114): 9 skips → 7 reject/project fences,
                                                      # 2 tables/grammars are no longer ```botopink
 
-$ time scripts/gate.sh --cold                   # (115): under the budget its step 1 fixes, on 16
-                                                # idle cores; every stage's wall clock printed
+$ time scripts/gate.sh --cold                   # (115): every stage's wall clock and CPU-s printed,
+gate: every stage passed — <w> wall, <c> CPU-s (budget 10m00s cold)
+                                                # w ≤ 10 min cold / 5 min warm on 16 idle cores
+                                                # (`budget_cold` / `budget_warm`); stages 8–10 held
+                                                # to their `--list` plans
 ```
 
 For each repository's own CI (fronts 99, 100, 101, 108, 109, 114):
