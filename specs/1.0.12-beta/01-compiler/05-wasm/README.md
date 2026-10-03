@@ -1,199 +1,114 @@
-# Front 05 — wasm
+# Front 05 — wasm: no wrong answer at exit 0, and std builds on wasm
 
-**Priority:** high — wasm is the backend that can answer a wrong value with exit 0 and no
-diagnostic; the rule this front holds is that a shape wasm cannot do traps, and the open rows are
-the traps that should be lowerings.
-**Depends on:** `00-gate` (EF-3 — `run/external_wrapper_keeps_refusal`'s wasm line is fixed by the
-gate in `wat.zig`'s `collectHostBound` under ck-host (a); this front rebases on it) · `02-erlang`
-step 4 (C-35's typing) and step 7 (the C-07 cells' `.out`) · maintainer decision ck-host (the gate's
-item; confirmed before the gate lands it).
+**Priority:** high · **State:** partial: steps 1–4 on feat (step 1's and step 3's last boxes wait on
+02's cells); step 5 under way — the vocabulary, the codepoint unit, `math`, `escape`, `hash`,
+`io/random` build; decisions 259–263 to build
+**Depends on:** `02-erlang` steps 4 and 7 (the cells) · `02-std-and-packaging` (the std bodies of
+decisions 259, 260, 262) · `18-comptime-runtimes` (decision 261's two opcodes in the binary emitter)
 **Owns:** `modules/compiler-core/src/codegen/wat.zig` · `src/codegen/wat/**` except
-`wasm_binary_emitter.zig` (18's) · the wasm snapshots under `snapshots/codegen/<runtime>/wasm/**`
-and `snapshots/codegen/<runtime>/errors/wasm/**` · `src/codegen/tests/wat.zig` (its fixtures) ·
-the cells its steps add
+`wasm_binary_emitter.zig` (18's) · the wasm snapshots under `snapshots/codegen/<runtime>/wasm/**` and
+`snapshots/codegen/<runtime>/errors/wasm/**` · `src/codegen/tests/wat.zig` · the cells its steps add
 **Does not touch:** `src/comptime/**`, `src/parser/**` (01, 14, 18) · `erlang.zig`, `crossModule.zig`,
 `beam/{erl_ast,erl_emitter}.zig` (02) · `beam_asm.zig`, `beam/**` (03) · `commonJS.zig`,
-`typescript.zig`, `js/**` (04) · `modules/compiler-cli/**` (26) · `libs/std/**` (the std track —
-`asserts.bp`'s restructure under ck-host is theirs, with the gate) · `modules/wasm3/**`,
-`comptime/runtime/wat/**` (18)
-**Does not touch until 00-gate lands:** `wat.zig`'s `collectHostBound` (`:1445`) and the
-host-binding walk around it (EF-3).
+`typescript.zig`, `js/**` (04) · `modules/compiler-cli/**` (26) · `libs/std/**` (the std track) ·
+`modules/wasm3/**`, `comptime/runtime/wat/**` (18)
 
-Paths are relative to `repository/botopink-lang/modules/compiler-core/src/` unless a row says
-otherwise; programs run with `botopink run --target wasm` (wasmtime).
+Paths are relative to `repository/botopink-lang/modules/compiler-core/src/`; programs run with
+`botopink run --target wasm` (wasmtime).
 
-## Carried from 1.0.10
+## Goal
 
-| Item | 1.0.10 spec | Heading |
-|---|---|---|
-| the pinned primitive-method traps | `05-wasm/README.md` | § Step 6, box 2 (`String.lines`/`words`, `Array.pop`/`flatMap`/`flatten`/`flat`/`chunked`/`sliding`/`fill`/`unique`) |
-| `==` between type-parameter values | `05-wasm/README.md` | § Open rows |
-| C-07's wasm twins | `00/README.md` | § C-07, box 2 (the tuple / `..` / type-pattern fixtures' wasm twins) |
-| `run/external_wrapper_keeps_refusal` | `tests/language/expected-failures.txt` (the line names `05-wasm`) · `decisions-pending.md` ck-host | — |
-| C-35's trap | this milestone's [`carried.md`](../carried.md) | § New C-items |
-
-## Problem
-
-| Row | Program | wasm answers |
-|---|---|---|
-| traps | `"a\nb".lines()`, `xs.flatMap(…)`, `xs.flatten()`, `xs.flat()`, `xs.chunked(2)`, `xs.sliding(2)`, `xs.fill(0)`, `xs.unique()` | lowered (step 1); what has no answer traps by name — `unique` over records (commonJS `2`, erlang `1`), `flatMap` whose function answers no array, `flatten` over elements no shape says are arrays |
-| type-param `==` | a string bound to a type parameter | compared by content wherever the binding is visible (step 2); the one generic body — reached only by a call nothing types (a generic fn in a field or an unannotated `val`, a parameter type `bindParam` does not read) — still compares words |
-| C-07 | the tuple / `..` / type / list pattern shapes | one wasm fixture per shape (step 3); `run/is_truth_table` and `run/unknown_stores_nothing` do not exist yet (`02-erlang` step 7) |
-| shadow | a block's `val x` over an outer `x` (decision 152: legal, a new scope) | a local of its own, aliased until the block ends (`wat/AGENTS.md` § A binding in an inner block); erlang and beam refuse the program (02's, 03's rows) |
-
-## Current state
-
-Steps 1–4 are done (step 1's and step 3's last boxes wait on 02's cells); step 5 is under way (the vocabulary, the codepoint unit, `math`, `escape`, `hash` and `io/random` build on wasm; `unicode`, `json`, `encoding`, `querystring` wait on `05w-f` — table in § Step 5); the cells `run/string_lines_words`, `run/array_flat_forms`,
-`run/array_windows`, `run/array_fill` and `run/generic_string_equality` pass on four targets. The
-step-1 cells also closed five shape rows that printed a container's element as its word at exit 0
-(`wat/AGENTS.md` § Shapes a container carries), and step 3 closed two pattern rows that matched
-wrongly at exit 0 (every list pattern irrefutable, `true`/`false` binders in a tuple pattern). A binding in an inner
-block no longer overwrites the outer one (a `val`, a loop's, a HOF's and a `case` binder).
-`run/array_unique` (02's cell) is not written: `[3, 1, 1, 3].unique()` answers `[3, 1, 3]` on all
-four targets at this tip, so C-35's wasm half is done and its cell is 02's to add.
+A shape wasm cannot do traps or is refused, never answers a wrong value at exit 0; `botopink build
+--target wasm` in `libs/std` refuses only decision 241's group 3 (`io/clock`, `io/fs`,
+`testing/snapshots`), and std's `math` and `hash` answer commonJS's bits on every target.
 
 ## Mechanism
 
-| Row | Deciding site | What it decides |
+- **The primitive method table** — `primCallRes` and the prelude groups `str_lines` … `arr_fill`
+  (`wat/AGENTS.md` § The primitive method table); `newArrShape` for the results' shapes.
+- **Host bindings** (decision 238) — `op:<wasm opcode>` (typed against the signature), `fn:<a
+  private botopink fn of the same module>`, `wasi:<adapter>` (WASI preview1, the list in `docs.md`
+  § Host bindings), the arguments the declared parameters in order, anything else a located error —
+  `codegen/wat/host_binding.zig` (`parse`, `findOp`, `adapters`), `wat.zig` `checkHostBindings` /
+  `emitHostBinding`. A wasm binding is read on a wasm build only; reading it on every target is the
+  checker's walk over `external_variants` (`01-checker`).
+- **Numbers** (`wat/AGENTS.md` § Numbers) — a float's text is commonJS's; every float in a 4-byte
+  slot is the address of its `f64` cell, an `i64` is an `i64`; `+ - *` trap where the result leaves
+  its type (`int_chk`); nothing narrows silently (`lowerCoerced` / `emitConvert` refuse, located).
+
+## Done
+
+- Step 1, boxes 2–3 — the primitive-method traps lowered (`run/string_lines_words`, `run/array_flat_forms`, `run/array_windows`, `run/array_fill`, `run/array_pop_removes`); no method listed as "trap"
+- Step 2 — `==` between type-parameter values compares strings by content (`run/generic_string_equality`)
+- Step 3, box 1 — one wasm fixture per tuple / `..` / type-pattern shape
+- Step 4 — the strict host-wrapper rule holds (decision 146; `run/external_wrapper_keeps_refusal`)
+- Step 5, boxes 1–4 — the `@External.Wasm` vocabulary (decision 238); codepoint indices (decision 240); `math`, `escape`, `hash`, `io/random` build (`run/std_{math,escape,hash_digests,hash_macs,hash_content,random}_on_every_target`)
+- Floats, `i64` and integer overflow: `Float.toString` writes V8's shortest digits, a float slot keeps its `f64`, `i64` full width, overflow traps (`run/float_shortest_text`, `run/float_slot_keeps_f64`, `run/i64_full_width`; decision 264 for wasm)
+- `val g = greet; g()` typed by the function's declaration (`run/fn_value_bound_by_val`)
+
+## Open
+
+### Step 1 — `Array.unique` on wasm (box 1)
+
+`[3, 1, 1, 3].unique()` answers on four targets at feat; the cell is 02's.
+
+- [ ] `run/array_unique` (`02-erlang` step 4) green on wasm
+
+### Step 3 — C-07's cells on wasm (box 2)
+
+The truth table as a program is refused on wasm (`cannot box this value as unknown`) — the row
+that keeps `02-erlang` step 7's four-target `.out` from landing.
+
+- [ ] `run/is_truth_table` and `run/unknown_stores_nothing` green on wasm, or a row wasm cannot
+      answer traps and its `.wasm.expect` says so
+
+### Step 5 — the rest of std on wasm (decisions 259–263)
+
+| Item | Decision | What to build |
 |---|---|---|
-| traps | `primCallRes` and the prelude groups `str_lines` … `arr_fill` (`wat/AGENTS.md` § The primitive method table); `newArrShape` for the results' shapes | a lowering, or a named trap |
-| type-param `==` | `specializedCallee` / `specializeMethod` / `specializeByFnType`, `ctorTypeRef`, `fieldSub` / `recvTypeArg` (`wat/AGENTS.md`, the generic-parameter limit) | which calls reach a copy with the type substituted |
-| C-07 | `emitTuplePatternTest`, `emitListPatternTest`, `noteSubjectShape`, `patternIsIrrefutable` | the test and the binders each shape emits |
+| heap growth | 261 | every allocation through a helper that calls `memory.grow` when the bump pointer passes `memory.size` (a failed grow traps); `wat_ast` gains `memory.size` / `memory.grow`, `wasm_binary_emitter.zig` its two opcodes (18). Today one 64 KiB page, `min_pages = 1` (`wat/AGENTS.md` § Host bindings, the limits table): `pbkdf2Sha256(…, 9, 32)` traps, the hash cells are three, not one |
+| `String.fromCodepoint(cp: i32) -> string` | 262 | a primitive in `primitives.bp` (std's) — Node `String.fromCodePoint`, erlang `<<Cp/utf8>>`, wasm a prelude helper writing the UTF-8 bytes; `unicode.fromCodepoint` becomes a `fn:` over it. Unblocks `unicode`, `json`, `encoding` (and so `querystring`), each of which answers text built from code points |
+| `pow` | 259 | std's private botopink port of glibc's `pow` (the algorithm since glibc 2.28, its 128-entry `log` and `exp` tables) replaces the double-double `powBody`; under 263 it is `pow` on every target, commonJS included |
+| `contentHash` above U+FFFF | 260 | the code points: `contentHash("🎉")` is `djb2([127881])` on every target; the wasm body (`contentHashBody`) drops its surrogate step, the Node template folds `Array.from(s)` (std's) |
+| one `math` on every OS | 263 | the transcendental functions call std's private bodies on erlang and beam too (`02-erlang` step 12, `03-beam` step 7); nothing left on wasm but 259's `pow` |
 
-## Steps
+- [ ] `memory.grow`: an allocation past 64 KiB succeeds; `run/std_hash_*` may merge into one cell;
+      `pbkdf2Sha256(…, 9, 32)` runs
+- [ ] `String.fromCodepoint` lowered on wasm; `botopink build --target wasm` in `libs/std` refuses
+      only group 3's modules
+- [ ] a `run/` cell per remaining module family (`unicode`, `json`, `encoding`, `querystring`) on
+      four targets, the commonJS answers
+- [ ] `run/std_math_on_every_target` with decision 259's `pow`, green on `ubuntu-22.04` and `macos-14`
+- [ ] `contentHash` of astral text equal on four targets (a row in `run/std_hash_content_on_every_target`)
+- [ ] `wat/AGENTS.md` § Where this backend refuses to answer lists only group 3; the limits table
+      loses the one-page row
 
-### Step 1 — the primitive-method traps become lowerings
+### Rows found by other fronts
 
-One lowering per pinned method in `wat.zig` / `wat_prelude.zig`, each with a fixture whose RUN LOG
-is the value commonJS answers for the same program: `String.lines`, `String.words`, `Array.pop`
-(`?T`), `Array.flatMap`, `Array.flatten`, `Array.flat`, `Array.chunked`, `Array.sliding`,
-`Array.fill`, `Array.unique` (C-35 — after 02 step 4 types the prelude body, or as its own wasm
-lowering). The trap fixture at `codegen/tests/wat.zig:1122` loses each method as it is lowered and
-is deleted when empty.
+Each re-measured at the step that takes it; a row that holds traps or is refused by name.
 
-**Acceptance:**
-- [ ] `run/array_unique` (02's cell) green on wasm — the cell does not exist; the program answers `[3, 1, 3]` on four targets
-- [x] one `run/` cell per method group (`run/string_lines_words`, `run/array_flat_forms`, `run/array_windows`, `run/array_fill`; `pop` is `run/array_pop_removes`), each `.out` shared by four targets
-- [x] `src/codegen/wat/AGENTS.md` § The primitive method table lists no method as "trap"
+- [ ] `Array.range` / `Array.repeat` recurse once per element through a spread (`primitives.bp`),
+      O(n²) memory — `Array.repeat(0, 128)` exhausts the page; the bodies double an array instead
+      (std's file; the limits table's open row)
+- [ ] an element read of a union array (`run/array_literal_union` reads `length` only), a union of
+      primitives a `case` produces (`test/case_value_union` is a `test/` cell for it), a
+      program-declared `default fn` of a primitive (`test/program_primitive_behavior_extends_std`),
+      `?.b` on an absent element (`run/tuple_label_through_optional` keeps to the present half) —
+      registered by `01-checker`
+- [ ] a function read from a generic record's field and called through an untyped local prints its
+      pointer (`Box<T>(value: T)`; `modules/typeinfo_all_registration` calls through a typed local —
+      registered by `130-decorator-outputs`)
 
-### Step 2 — `==` between type-parameter values
-
-Re-measure `modules/method_on_unimported_type` at the open; if the word comparison still holds, a
-string held in a type-parameter slot compares by content (the value's header says it is a string,
-as the `?T` carrier and the boxed `unknown` already do — `wat/AGENTS.md` § the carrier of a `?T`),
-so no monomorphisation is needed for equality.
-
-**Acceptance:**
-- [x] `modules/method_on_unimported_type` prints the present value with a computed key on wasm; `run/generic_string_equality` on four targets
-- [x] `wat/AGENTS.md`'s generic-parameter limit re-derived (equality leaves it; what stays is written)
-
-### Step 3 — C-07's wasm twins
-
-The tuple / `..` / type-pattern fixtures 02 added get wasm twins in `codegen/tests/wat.zig`, each
-with a RUN LOG; `run/is_truth_table` and `run/unknown_stores_nothing` (02 step 7's cells) green on
-wasm — a row wasm cannot answer traps and its `.wasm.expect` says so.
-
-**Acceptance:**
-- [x] one wasm fixture per shape, RUN LOG verified under wasmtime and equal to erlang's and beam's for the same program (commonJS answers differently on three rows, each named at its fixture — `04-js`'s)
-- [ ] the two cells green on wasm — blocked: neither cell exists (`02-erlang` step 7)
-
-### Step 4 — after 00-gate: the strict host-wrapper rule holds
-
-The gate lands EF-3 (`collectHostBound` strict; `asserts.bp` restructured). This front verifies
-afterwards that `wat/AGENTS.md` § Where this backend refuses to answer states the strict rule and
-that no other function is dropped silently (the audit of the wrong-answer class re-run).
-
-**Acceptance:**
-- [x] `run/external_wrapper_keeps_refusal` refused on wasm by the documented rule (`wat/AGENTS.md` § Where this backend refuses to answer, "refused where the call is written, called or not"; the cell's `.wasm.expect` is the refusal at `14:12`); `expected-failures.txt` is deleted (111 step 4)
-- [x] `zig build test-libs -Doptimize=ReleaseSafe -- --lib std` — `2 passed, 0 failed` (`std · commonJS`, `std · erlang`); `std` has no wasm leg, since `botopink test` refuses wasm, so no wasm-reachable cell moved
-
-### Step 5 — std on wasm: the `@External.Wasm` vocabulary and the WASI adapters (decisions 230, 238, 240, 241)
-
-`botopink build --target wasm` in `libs/std` refused fifteen modules, because the wasm backend
-read `@External.Wasm` nowhere. Decision 238 fixes what a binding names — `op:<wasm opcode>` (typed
-against the signature), `fn:<a private botopink fn of the same module>`, `wasi:<adapter>` (WASI
-preview1, the list in `docs.md` § Host bindings), the arguments the declared parameters in order,
-anything else a located error; decision 241 keeps `io/clock`, `io/fs` and `testing/snapshots`
-refused (group 3, `02-std-and-packaging`'s); decision 240 makes wasm count string indices in
-codepoints.
-
-| Group | Modules | State |
-|---|---|---|
-| 1 | `math`, `escape` | **build on wasm** — `math`: six `op:`, the rest `fn:` bodies porting the fdlibm Node's V8 runs (bit-identical to commonJS on 6 539 fuzzed inputs) and a double-double `pow` (`05w-c`); `escape`: two `fn:` literals |
-| 1 | `hash` | **builds on wasm** — every cell a `fn:` body: SHA-256, SHA-512, SHA-1, MD5, HMAC, PBKDF2, base64 and the djb2 fold in exact `f64` arithmetic; identical to commonJS on a 180-input fuzz of all eleven cells (1 987 lines, astral text included — `contentHash` there copies commonJS's answer, `05w-d`) |
-| 2 | `io/random` | **builds on wasm** — `float` `wasi:random_f64`; `seed` / `seededFloat` the adapters `wasi:seed_u32` / `wasi:seeded_f64` (the commonJS sidecar's Mulberry32; 400 seeded draws over ten seeds equal the sidecar's bit for bit); `shuffle<T>`, `secureToken`, `uuidV4`, `randomBytes` `fn:` bodies over `random_get` |
-| 1 | `unicode`, `json`, `encoding` (and so `querystring`) | still refused — **blocked on `05w-f`**: each answers text built from code points (`fromCodepoint`, a normalisation's output, a parsed `\u` escape, a decoded byte string), and nothing a wasm body can call makes a string from a code point |
-
-**Acceptance:**
-- [x] the vocabulary: `codegen/wat/host_binding.zig` (`parse`, `findOp`, `adapters`), `wat.zig`
-      `checkHostBindings` / `emitHostBinding`; `codegen/tests/wat.zig` "host binding" fixtures — the
-      three forms run, and an unknown form, opcode, opcode type, `fn:` name, `pub` or differently
-      typed `fn:`, and adapter are each refused at the annotation; the adapter list is held to
-      `docs.md` by a test
-- [x] decision 240: `length`, `at`, `slice`, `indexOf`, `lastIndexOf`, `s[i]`, `s[a..b]` count
-      codepoints (`str_cp_*` helpers); `run/string_index_of_codepoints` on four targets
-- [x] `run/std_math_on_every_target`, `run/std_escape_on_every_target` on four targets, the
-      commonJS answers
-- [x] `hash` and `io/random` build on wasm; `run/std_hash_digests_on_every_target`,
-      `run/std_hash_macs_on_every_target`, `run/std_hash_content_on_every_target` (three cells, not
-      one: a wasm program has one 64 KiB heap page, `05w-e`) and `run/std_random_on_every_target` on
-      four targets, the commonJS answers; `codegen/tests/wat.zig` holds the seed adapters to the
-      sidecar's draws
-- [ ] `botopink build --target wasm` in `libs/std` refuses only group 3's modules — `unicode`,
-      `json`, `encoding`, `querystring` are left (`05w-f`)
-- [ ] a `run/` cell per remaining module family on four targets
-- [ ] `wat/AGENTS.md` § Where this backend refuses to answer lists only group 3
-- [ ] `05w-c` answered (how exactly `math` agrees with the hosts)
-- [ ] `05w-g` answered (whether `math` answers the same bits on every OS — erlang/beam
-      `run/std_math_on_every_target` is red on `macos-14` until then)
-
-**Handoff.** A wasm binding is read on a wasm build only; reading it on every target (a misspelt
-`op:` in a library no wasm build reaches) is the checker's walk over `external_variants`
-(`comptime/infer.zig`, `01-checker`), with `host_binding.parse` as the reader.
-
-**Found while binding `hash` and `io/random`** (`wat/AGENTS.md` § Host bindings, the limits
-table). Fixed: an integer `if` in a function answering `f64` was `(if (result f64)` around two
-`i32`s (`ifValueType`); a `fn:` target with a type of its module (`shuffle<T>(xs: Array<T>)`) was
-refused in every importer, because linking qualifies the `pub` declaration's types
-(`sameSignature` drops the module's own qualification); a `wasi:` adapter answering nothing under a
-`-> void` declaration was invalid code. Open, each a wasm row this front owns: **one 64 KiB page of
-memory, never grown** (`05w-e` — `pbkdf2Sha256(…, 9, 32)` already traps); **`i64` lowered as
-`i32`** (`val a: i64 = 4294967295` prints `-1` — a wrong value at exit 0); a float in an array kept
-as its `f32`, and `xs.at(i).unwrapOr(0.0)` on an `Array<f64>` invalid code; `Float.toString` writing
-six fraction digits and trapping at 2^31; `Array.range` / `Array.repeat` recursing once per element
-(O(n²) memory). Outside this front: a module with a module-level `val` initialised by a call
-(`val t = "a b".split(" ")`) fails a commonJS build with a bare `TypeError` when any function of it
-calls `Float.floor` (comptime), and a std module's module-level `var` lowers to
-`std@beam` on erlang, which the module does not import.
-
-**Found beside it (the coordinator's row).** `val g = greet; g()` printed the string's address on
-wasm; the local (and a module-level `val`) is now typed by the function's declaration —
-`run/fn_value_bound_by_val` on four targets. A module-level `val g = greet` called as `g()` prints
-`#Fun<…>` on beam (`03-beam`'s row; the cell keeps to locals).
-
-## Gate
-
-- [ ] `zig build test` from a **cold** runtime cache, green, in this front's worktree
-- [ ] every re-recorded RUN LOG **verified by running the program** under wasmtime and compared with commonJS's for the same fixture
-- [ ] no new RUN LOG answers a value with exit 0 that another backend answers differently — a shape wasm cannot do is a `RUNTIME TRAP`, never a wrong number
-- [ ] the `RUNTIME TRAP` fixtures re-read: each is still a shape wasm cannot do, or it is fixed
-- [ ] `src/codegen/AGENTS.md` and `src/codegen/wat/AGENTS.md` in the same commit as each step
-- [ ] Commit on `fix/05-wasm`; no push, no merge
-
-## Blast radius
-
-Step 1 moves the wasm snapshots of every fixture calling one of the ten methods (the trap fixture
-and any program that avoided them — few) and the wasm column of the `std` cells that use them;
-step 2 moves the wasm snapshots of generic string comparisons; step 3 adds fixtures. Step 4 (the
-gate's) reds any library function that wraps a wasm-less host call — measured by the gate before
-it lands (std's `deepEquals` is the known one).
+**Gate:** standard (fronts.md § Gate) + every re-recorded RUN LOG verified under wasmtime and
+compared with commonJS's for the same fixture · no new RUN LOG answers a value with exit 0 that
+another backend answers differently · the `RUNTIME TRAP` fixtures re-read: each is still a shape
+wasm cannot do, or it is fixed
 
 ## Notes
 
-- **wasm must not answer wrongly and silently.** Where wasm cannot do a shape, it traps; a wrong
-  value with exit 0 is a bug even when a fixture records it.
 - **`botopink test` refuses wasm**, so only `run/` and `modules/` cells reach it.
-- **This front moves only wasm snapshots.** If a change here moves erlang, beam or commonJS
-  snapshots, something crossed a boundary — stop and report.
-- The comptime wat runtime's four non-parity items (`wat-runtime.md` §7) are 18's limits, not this
-  target's.
+- **This front moves only wasm snapshots.** A change that moves erlang, beam or commonJS snapshots
+  crossed a boundary — stop and report.
+- The comptime wat runtime's non-parity items are `18-comptime-runtimes`' limits, not this target's.
+</content>
+</invoke>

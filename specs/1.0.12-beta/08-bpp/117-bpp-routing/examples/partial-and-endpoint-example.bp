@@ -48,8 +48,9 @@ pub fn clicked(route: PageContext) -> @Component<ElementBase, Element> {
 // and the response's content type follows it. With the segment prerendered, the
 // build writes the body to `<outDir>/builtwith.json` — a file a static host
 // serves with no server behind it. There is no `pub val prerender` (decision
-// 202); how a route handler, which `#[page]` does not decorate, is prerendered
-// is not stated by the decision (front 117 README, step 4).
+// 202). Decision 222 rules that a route handler is always server and never
+// prerendered, so the static export here contradicts it; pending the maintainer
+// (front 117 README, step 4).
 
 #[getRoute("builtwith.json")]
 pub fn builtWith(req: Request) -> @Task<HandlerResponse> {

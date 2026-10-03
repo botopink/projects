@@ -47,7 +47,7 @@ members (no manifest).
 |---|---|---|
 | **26** | `modules/jhonstart/**` (the core, its tests, `src/AGENTS.md`), `modules/jhonstart-dom-test/**`, `docs.md`, `examples/*/README.md` (eight), and — step 7 only — every member's `test/__snapshots__/` | nothing new; `harness.bp` gains a recording `log` sink if step 4 needs it |
 | **27** | `modules/jhonstart-link/**` | `assert_link.bp` (`assertNavigation` over the driver's decision) |
-| **67** | `modules/jhonstart-forms/**` except `src/form.bp:117-121` (`03-bundled-libs/103-actions-id`), `examples/forms/src/**` and `test/**`, `modules/jhonstart-dom-test/test/forms_dom_test.bp` (new; `fake_dom.mjs` is 26's — 67 stops and reports if it needs a primitive it lacks) | `assert_form.bp` (`assertActionState` over a `-test` envelope) |
+| **67** | `modules/jhonstart-forms/**` except `src/form.bp:117-121` (`03-bundled-libs/103-actions-id`), `examples/forms/src/**` and `test/**`, `modules/jhonstart-dom-test/test/forms_dom_test.bp` (new; `fake_dom.mjs` is 26's — 67 stops and reports if it needs a primitive it lacks) | `assert_form.bp` (`assertActionState` over a `-test` envelope); `harness.bp`'s `stubWireNames()` (step 4) |
 
 Files no front of this track edits: `element.bp`, `hooks.bp` (frozen — the `Children` → `Node`
 rename of decisions 193 and 223 reaches `element.bp` as a hand-off from `08-bpp/118`),

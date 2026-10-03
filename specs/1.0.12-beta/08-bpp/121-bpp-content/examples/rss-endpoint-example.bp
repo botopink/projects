@@ -26,8 +26,9 @@ import {site} from "onze";                 // `site` in onze.json — front 124;
 import {content.blog};
 import {io.clock} from "std";
 
-// No `pub val prerender` (decision 202); how this route handler — which `#[page]`
-// does not decorate — is written to a static file is not stated (117 step 4).
+// No `pub val prerender` (decision 202). Decision 222 rules that a route handler
+// is always server and never prerendered, so writing this feed to a static file
+// contradicts it; pending the maintainer (117 step 4).
 
 #[getRoute("rss.xml")]
 pub fn feed(req: Request) -> @Task<HandlerResponse> {
