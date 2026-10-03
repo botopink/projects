@@ -43,7 +43,7 @@ otherwise; programs run with `botopink run --target wasm` (wasmtime).
 
 ## Current state
 
-Steps 1–4 are done (step 1's and step 3's last boxes wait on 02's cells); step 5 waits on `05w-a` / `05w-b`; the cells `run/string_lines_words`, `run/array_flat_forms`,
+Steps 1–4 are done (step 1's and step 3's last boxes wait on 02's cells); step 5 is under way (the vocabulary, the codepoint unit, `math` and `escape` — table in § Step 5); the cells `run/string_lines_words`, `run/array_flat_forms`,
 `run/array_windows`, `run/array_fill` and `run/generic_string_equality` pass on four targets. The
 step-1 cells also closed five shape rows that printed a container's element as its word at exit 0
 (`wat/AGENTS.md` § Shapes a container carries), and step 3 closed two pattern rows that matched
@@ -107,35 +107,46 @@ that no other function is dropped silently (the audit of the wrong-answer class 
 - [x] `run/external_wrapper_keeps_refusal` refused on wasm by the documented rule (`wat/AGENTS.md` § Where this backend refuses to answer, "refused where the call is written, called or not"; the cell's `.wasm.expect` is the refusal at `14:12`); `expected-failures.txt` is deleted (111 step 4)
 - [x] `zig build test-libs -Doptimize=ReleaseSafe -- --lib std` — `2 passed, 0 failed` (`std · commonJS`, `std · erlang`); `std` has no wasm leg, since `botopink test` refuses wasm, so no wasm-reachable cell moved
 
-### Step 5 — std on wasm: the `@External.Wasm` template reader and the WASI imports (decision 230)
+### Step 5 — std on wasm: the `@External.Wasm` vocabulary and the WASI adapters (decisions 230, 238, 240, 241)
 
-Moved from `00-gate/110-gate-wasm`. `botopink build --target wasm` in `libs/std` exits 1 with
-fifteen modules refused (re-measured at this front's tip: `async`, `encoding`, `escape`, `hash`,
-`io/clock`, `io/fs`, `io/http`, `io/random`, `json`, `math`, `querystring`, `testing/asserts`,
-`testing/mocks`, `testing/snapshots`, `unicode`), because the wasm backend reads `@External.Wasm`
-nowhere: no host function can be bound, and no binding in the ecosystem writes one. This step owns
-two of the three groups (the third is `02-std-and-packaging`'s):
+`botopink build --target wasm` in `libs/std` refused fifteen modules, because the wasm backend
+read `@External.Wasm` nowhere. Decision 238 fixes what a binding names — `op:<wasm opcode>` (typed
+against the signature), `fn:<a private botopink fn of the same module>`, `wasi:<adapter>` (WASI
+preview1, the list in `docs.md` § Host bindings), the arguments the declared parameters in order,
+anything else a located error; decision 241 keeps `io/clock`, `io/fs` and `testing/snapshots`
+refused (group 3, `02-std-and-packaging`'s); decision 240 makes wasm count string indices in
+codepoints.
 
-| Group | Modules | What it needs |
+| Group | Modules | State |
 |---|---|---|
-| 1 | `math`, `unicode`, `json`, `escape`, `encoding` (and so `querystring`), `hash` | the `@External.Wasm` template reader: a host cell lowered to wasm opcodes (`math`: `f64.floor` …) or to a prelude helper / pure `.bp` body |
-| 2 | `io/clock`, `io/random`, `io/fs` (and so `testing/snapshots`) | WASI imports (`clock_time_get`, `random_get`, `path_open` …) bound through the same reader |
-
-**Blocked on two questions** ([`decisions-pending.md`](../../decisions-pending.md)): `05w-a` — what
-an `@External.Wasm` binding names (a WAT expression, a closed `op:` / `fn:` / `wasi:` vocabulary, or
-no algorithm binding at all) and WASI preview1; `05w-b` — the three cells preview1 has no answer for
-(`io/clock.offsetMinutes`, `io/fs.workingDir`, `io/fs.scratchDir`, each refusing its whole module
-under decision 146) and the directory `wasmtime run` pre-opens (none today, so every `path_open`
-would fail). `05w-a` blocks the whole step; `05w-b` blocks group 2 but `io/random`. What group 1
-needs beyond the form: `math` is opcodes (`f64.floor`/`sqrt`/`min`/`max`/`abs`/`trunc`; not `round`:
-`f64.nearest` rounds half to even, `Math.round(2.5)` is `3`) plus algorithms wasm has no instruction for (`exp`, `ln`, `pow`, the trigonometry); `hash`, `json`,
-`unicode` (four normalisations), `encoding`, `escape` and `io/clock`'s ISO-8601 / civil arithmetic
-are algorithms.
+| 1 | `math`, `escape` | **build on wasm** — `math`: six `op:`, the rest `fn:` bodies porting the fdlibm Node's V8 runs (bit-identical to commonJS on 6 539 fuzzed inputs) and a double-double `pow` (`05w-c`); `escape`: two `fn:` literals |
+| 1 | `unicode`, `json`, `encoding` (and so `querystring`), `hash` | still refused — each needs its algorithms as private `fn:` bodies (normalisation tables, the JSON validator, base64 / hex / percent codecs, SHA-256 / SHA-512 / MD5 / HMAC / PBKDF2 / djb2) |
+| 2 | `io/random` | still refused — `float` has its adapter (`wasi:random_f64`), `seed` / `seededFloat` need state, `shuffle<T>` a generic body, `secureToken` / `uuidV4` random bytes as text |
 
 **Acceptance:**
-- [ ] `botopink build --target wasm` in `libs/std` refuses only group 3's modules (each with its located message)
-- [ ] `std · wasm` cells for groups 1 and 2 pass (wasmtime), the same answers as commonJS — `zig build test-libs` has no wasm leg today (`botopink test` refuses wasm), so these are `tests/language` `run/` cells importing each module, one per module, on four targets
+- [x] the vocabulary: `codegen/wat/host_binding.zig` (`parse`, `findOp`, `adapters`), `wat.zig`
+      `checkHostBindings` / `emitHostBinding`; `codegen/tests/wat.zig` "host binding" fixtures — the
+      three forms run, and an unknown form, opcode, opcode type, `fn:` name, `pub` or differently
+      typed `fn:`, and adapter are each refused at the annotation; the adapter list is held to
+      `docs.md` by a test
+- [x] decision 240: `length`, `at`, `slice`, `indexOf`, `lastIndexOf`, `s[i]`, `s[a..b]` count
+      codepoints (`str_cp_*` helpers); `run/string_index_of_codepoints` on four targets
+- [x] `run/std_math_on_every_target`, `run/std_escape_on_every_target` on four targets, the
+      commonJS answers
+- [ ] `botopink build --target wasm` in `libs/std` refuses only group 3's modules — `unicode`,
+      `json`, `encoding`, `querystring`, `hash`, `io/random` are left (table above)
+- [ ] a `run/` cell per remaining module family on four targets
 - [ ] `wat/AGENTS.md` § Where this backend refuses to answer lists only group 3
+- [ ] `05w-c` answered (how exactly `math` agrees with the hosts)
+
+**Handoff.** A wasm binding is read on a wasm build only; reading it on every target (a misspelt
+`op:` in a library no wasm build reaches) is the checker's walk over `external_variants`
+(`comptime/infer.zig`, `01-checker`), with `host_binding.parse` as the reader.
+
+**Found beside it (the coordinator's row).** `val g = greet; g()` printed the string's address on
+wasm; the local (and a module-level `val`) is now typed by the function's declaration —
+`run/fn_value_bound_by_val` on four targets. A module-level `val g = greet` called as `g()` prints
+`#Fun<…>` on beam (`03-beam`'s row; the cell keeps to locals).
 
 ## Gate
 
