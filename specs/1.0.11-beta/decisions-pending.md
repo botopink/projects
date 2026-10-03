@@ -5,7 +5,7 @@
 decisions 146–149). Every `lg2-*` row of [`language-gaps.md`](./language-gaps.md) is a
 feature the language does not have; the recommendation is always the most restrictive reading
 (decision 67) — the feature stays out and the row's nearest form is the design — and no front opens
-on one until it is answered. **The next free decision number is 244** ([`decisions-taken.md`](./decisions-taken.md)).
+on one until it is answered. **The next free decision number is 245** ([`decisions-taken.md`](./decisions-taken.md)).
 
 Beside the open questions, every track carries **implementation choices awaiting confirmation** —
 a choice a front made, recommended and implemented, that the maintainer confirms or reverses. The
@@ -58,20 +58,6 @@ Questions the language-gaps sweeps (`front/compiler-gaps-rakun`, the rakun rows 
 `docs.md` or the decisions taken. Each `lg2-*` row of `language-gaps.md` is a feature the language does
 not have; the recommendation is always the most restrictive reading — the feature stays out and the
 row's nearest form is the design — and the cost of that reading is named where it is high.
-
-### ck2-c · A leading default on a free `fn`
-
-> **Raised by:** `checker-rows-2`, C-04's remaining reach
-> **Measured.** `fn lead(a: i32 = 1, b: i32)` is `fn-param-default-trailing-only`, while
-> `type Port(number: i32 = 80, host: string)` is legal and `Port(host: "a")` fills `number`
-> (`docs.md` § defaults). Since a label names its parameter on every call path, `lead(b: 2)` would
-> fill `a` by the same rule the record uses.
-> **Options.** (a) keep the asymmetry: a free `fn` declares trailing defaults only; (b) a free `fn` may
-> declare a leading default, reached by labelling what follows it, as a record's field; (c) refuse the
-> leading default on a record too.
-> **Recommendation.** (a) — the most restrictive that breaks nothing written: (c) would refuse
-> `docs.md`'s own `Port` and the libraries' records with a leading default.
-> **Blocks.** Nothing.
 
 ### lg2-a · A byte type
 

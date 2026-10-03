@@ -6,7 +6,7 @@ continues from [1.0.10-beta's record](../1.0.10-beta/decisions-taken.md), which 
 other decisions and are used, not free) — a number is never reused or renumbered across
 milestones. Questions are raised in [`decisions-pending.md`](./decisions-pending.md) with a lettered
 id (`07-a`, `03r-y`, `lg2-a` …) and move here with the next free number when answered. **The next
-free number is 244.**
+free number is 245.**
 
 **Inherited by reference, not copied.** The earlier records stay where they are; these standing
 principles govern this milestone and are cited by number throughout:
@@ -144,3 +144,4 @@ maintainer can reverse any of them:
 | 241 | 05w-b — the std cells WASI preview1 cannot answer | **(a) refused on wasm** (the maintainer): `io/clock.offsetMinutes`, `io/fs.workingDir` and `io/fs.scratchDir` have no wasm binding, so under decision 146 `io/clock`, `io/fs` and `testing/snapshots` stay refused on wasm and join group 3 (`02-std-and-packaging` § From 00-gate). A value WASI does not define is refused, never invented. Which directory a wasm program sees (pre-open the project, or none) is moot while `io/fs` is refused; it returns with a std restructure. |
 | 242 | 26-a — is a transitively reached package importable | **(a) only a direct dependency** (the maintainer): `import {rkProp} from "rakun";` with only `rakun-starter-web` declared is `error: unresolved import source "rakun" — declare it in botopink.json "dependencies"`. Front `01-compiler/26-cli-tooling` step 3; the rakun starters declare what they import. |
 | 243 | 16-d (scope) — does decision 166's trailing comma reach call arguments and tuples | **(a) every delimited list** (the maintainer): a trailing `,` keeps the list open, one item per line — generics, parameters, patterns, imports, types, arrays, record fields, enum bodies, call arguments and tuples alike; without it, the width rules (`16-a` / `16-b`) decide. A one-step pipeline has no comma and stays horizontal. Extends decision 166. Front `01-compiler/16-formatter` step 6. |
+| 244 | ck2-c — a leading default | **(c) a default is trailing everywhere** (the maintainer: "fn, record — default parameters must always be declared at the end"): a parameter or field with a default may only be followed by others with defaults, in a free `fn`, a method, a record type's fields and a variant's payload alike — `type Port(number: i32 = 80, host: string)` is refused like `fn lead(a: i32 = 1, b: i32)` already is (`fn-param-default-trailing-only`, extended to records). Reverses the record's exemption; `docs.md` and every library record with a leading default migrate (reorder the fields; named construction keeps call sites valid). Front `01-compiler/01-checker`. |
