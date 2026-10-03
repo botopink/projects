@@ -36,7 +36,8 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 16 s8 — the lambda annotation's printer arm · none — lands before 01 s10
 - [ ] 01-checker s13 — JS-4's two checker gaps · 05 lowering a nested constructor in a `val`
 - [ ] 01-checker s18 — numeric literal suffixes (247) · ctr-j (the `l` literal rule)
-- [ ] 01-checker s19 — the `.bpp` prelude scope (270) · 116 hands the prelude list
+- [ ] 01-checker s21 — `comptime` evaluated at compile time everywhere (266; ck4-a (c))
+- [ ] 01-checker s22 — the `.bpp` prelude scope (270) · 116 hands the prelude list
 - [ ] 01-checker s20 — type application and `comptime <expr>` (255) · none — 130's rakun DI (256's registry) waits on it
 - [ ] 01-checker rows — the `@block` tail refusal, the `$stringify` parser refusal (239), `primitive-type-name-taken`, the comptime body's file, T17, a package's module namespace, two aliased same-named types (imp-a), `@External.Wasm` read on every target, the template memo key, row 33 · the first two unblock 04 s1–2 and 02 s10
 - [ ] 04-js s1 — the `@block` tail-form IIFE · 01's `@block` tail refusal
@@ -128,7 +129,7 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 - [ ] 122 (W9) — page-side status and headers, `rewrite`, `site` · 26 · 49 · 102 · 118 · 120
 - [ ] 126 (W9) — view transitions · 27 · 118 · 120
 - [ ] 127 (W10) — actions typed by a schema · 125 s6 · 103 · 22 · 67 · 49 · 117 · 120 · 126 · s4: 123
-- [ ] 116 (W5 at the earliest) — the `.bpp` file kind · 118 · 26 s0 · 01-compiler/26 · with 01-checker s19 · s2: bpp-f, ctr-e, ctr-g · s6: bpp-g
+- [ ] 116 (W5 at the earliest) — the `.bpp` file kind · 118 · 26 s0 · 01-compiler/26 · with 01-checker s22 · s2: bpp-f, ctr-e, ctr-g · s6: bpp-g
 - [ ] 105 (W9) — bundled `i18n` · 104 s5 · 22 · 26 · 03r-q confirmed
 - [ ] 107 (W9) — bundled `release` · 07-g · 71 · 81
 - [ ] 124 s1–4 (W10) · s5 (W11) — the commands, the config keys, the `.bpp` scaffold · 08-h · s1, s3: 08-e2, ctr-a · every other 08 front · s5: 116, 53

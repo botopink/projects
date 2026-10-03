@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**62 questions and 23 contradictions are open, and 97 implementation choices await confirmation.**
+**64 questions and 23 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -172,6 +172,18 @@ owning front lists the row under *Depends on*.
 - **Options.** (a) Refuse `@is(…)` as a call (`unknown-builtin`, naming `x is T`). (b) Declare `is(value: unknown) -> bool`.
 - **Recommendation.** (a).
 - **Blocks.** The last undeclared builtin-call row of 134 step 1.
+
+#### 130-b · Two `#[provides]` of one type in a registry keyed by type name (decisions 254, 256)
+- **Measured.** 256's snippet keys a provider by `b.returnTypeName`. Two qualified providers of one type (`#[provides] #[qualifier("fast")] fn fastDye() -> Dye` beside `#[qualifier("slow")]`), and a `#[primary]` beside a plain one, collide on `"Dye"` → refused as a duplicate, where `__rkMake_Dye` let the unqualified or `#[primary]` one own the injection and kept the others reachable by `ctx.resolveNamed("Dye", "fast")` (`rakun/test/context_test.bp`, `examples/rakun-container`).
+- **Options.** (a) A qualified provider is keyed `Type@qualifier` (the decorator records `setMeta("qualifier", …)`); the plain name is the unqualified or `#[primary]` one; two owners of the plain name are the duplicate (`d = d.insert(rkBeanKey(b), b.value)`). (b) The registry holds only what injection by type reads; qualified providers stay in the context table their load-time registration fills. (c) The snippet as written: any two providers of one type are a duplicate.
+- **Recommendation.** (a): one registry, every bean in it, the old ownership rule kept, a duplicate still a build error; needs `rkBeanKey` callable in the block (decision 266).
+- **Blocks.** rakun's `#[provides]` / `#[qualifier]` / `#[primary]` migration (130 step 5: `context.bp`, its test, rakun-container).
+
+#### 130-c · A `#[configuration]`'s `#[bean]` methods in the registry (decision 234)
+- **Measured.** 234 fills the context from `@TypeInfo.all(with: provides)` / the `#[bean]` methods, but `@TypeInfo.all` answers top-level declarations and a `#[bean]` is a method of a `#[configuration]` type. Today `#[configuration]` emits `__rkMake_<ReturnType>()` per `#[bean]` (rakun `autoconfig.bp`, `conditions.bp`, `config.bp`, rakun-client `settings.bp`, rakun-security `oauth2/provider.bp`, `examples/rakun`).
+- **Options.** (a) `#[bean]` methods become `#[provides]` free functions (the configuration record keeps its `#[value]` fields; a provider reads them through `rkResolve`). (b) The configuration records each bean as meta and adds a member `Config.bean(name) -> unknown`; the entry adds a third loop. (c) `@TypeInfo.all` gains `methods: true`.
+- **Recommendation.** (a): one way to provide a bean, already in the registry's loop, no new reflection.
+- **Blocks.** rakun's `#[configuration]` migration and every `__rkMake_` a `#[bean]` defines (130 step 5).
 
 #### imp-a · Two aliased imports of two same-named types (*proposed*)
 - **Measured.** Decision 170 makes `import {m1.T as A}; import {m2.T as B};` legal; the checker refuses it for types (`import-name-collision`, `modules/import_two_types_one_name`) because backends do not tell types apart by module (`01-checker/README.md`, rows other fronts found).

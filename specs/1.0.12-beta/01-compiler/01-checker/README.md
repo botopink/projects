@@ -3,7 +3,7 @@
 **Priority:** high · **State:** partial: steps 1–9, 11, 12, 14–17 on feat; step 6 box 3, steps 10,
 13, 18–20 and ten rows open
 **Depends on:** `04-js` step 6 (step 6 box 3) · `16-formatter` step 8 (step 10) · `05-wasm` nested
-constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 19) · decision-gated rows lg2-a, lg2-f, lg2-q, lg2-e, lg2-m, lg2-r, lg2-t — each a step here only once
+constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated rows lg2-a, lg2-f, lg2-q, lg2-e, lg2-m, lg2-r, lg2-t — each a step here only once
 answered.
 **Owns:** `modules/compiler-core/src/comptime/{infer,types,unify,env,transform,eval,error,diagnostics}.zig`
 · `src/parser/**`, `src/parser.zig`, `src/print.zig`, `src/lexer.zig`, `src/lexer/**` · `src/ast.zig`
@@ -81,7 +81,45 @@ representation of `i64` / `u64` / `f32` the backends'. Lexer has no suffix handl
 - [ ] the suffixes lex and type, the uppercase and the unsuffixed-mismatch refusals located — one
       `run/` and one `reject/` cell each; the `language-gaps.md` row "`f32` has no literal" closes
 
-### Step 19 — the prelude scope (decision 270)
+### Step 19 — a type application before a member (decision 255 (1)) — done
+
+`Dict<string, unknown>.empty()`: a type name with explicit type arguments followed by `.` or `(` is a
+type application (1.0.10 decision 8 §1.3 extended to a type's member); elsewhere `<` is a comparison.
+The list goes to the chain's first link (`receiverTypeArgs`); the checker binds the type's parameters
+(`applyReceiverTypeArgs`). Built: `run/type_application_static_member` on four targets,
+`reject/type_application_{argument_mismatch,argument_count,variant_payload_mismatch,on_a_field}`,
+`botopink format` round-trip (`parser/tests/decision255.zig`, `format.zig` `typeArgsDoc`), `docs.md`
+§ Generics.
+
+- [ ] a type application through a module namespace (`collections.Dict<K, V>.empty()` — the head is a
+      value's name, so the list is a comparison there): built, or refused with a located message
+
+### Step 20 — `comptime <expr>` (decision 255 (2)) — done (measured and pinned)
+
+`comptime <expr>` is `comptime { break <expr>; }`: parser, checker, evaluator (`eval.zig`) and gate
+(`validateComptime`) read it as the block. Built: `run/comptime_expression_is_block`,
+`run/comptime_expression_static_call` (commonJS, erlang, beam; wasm `.wasm.expect`),
+`reject/comptime_expression_type_mismatch`, format round-trip. What it *means* was question `ck4-a`,
+answered by decision 266 (step 21).
+
+### Step 21 — `comptime` evaluated at compile time everywhere (decision 266, `ck4-a` (c))
+
+Measured: at module level `validateComptime` refuses any call ("'call' is a runtime identifier"); in a
+body nothing is evaluated (`val a = comptime two();` lowers as `const a = two();`), and wasm lowers no
+comptime construct in a body. Decision 266: a `comptime <expr>` is built at compilation wherever it is
+written, a record value (`Dict`) included, the registry hoisted.
+
+- [ ] `val d: Dict<string, unknown> = comptime Dict.empty();` built at compile time at module level and
+      in a body, on four targets (each backend emits the record's construction)
+- [ ] a call in a `comptime` is evaluated by the comptime runtime; a body's `comptime` goes through the
+      same gate and fold as a module-level one
+- [ ] the libraries' bodies that write `comptime` around a call counted and green
+- [ ] found by step 20: a module-level `comptime` `val` after an import is dropped on commonJS
+      (`ReferenceError: short is not defined`) and refused on wasm — `import {collections.Dict} from
+      "std"; val short = comptime 2 + 3;` (`comptime.zig` `evaluateComptime` against the backends —
+      with `14-comptime-on-beam` / `04-js`)
+
+### Step 22 — the prelude scope (decision 270)
 
 `compiler-core` takes, with a module, a list of import items (`element.Element`,
 `elements.article`, aliases allowed) as the module's **last scope**: only for names the module does
@@ -95,18 +133,6 @@ item of another package, an activation, default function's name bound by the hea
       `article` — transformed program imports `elements.article`, not `Element`; a self-declared
       name resolves to its own declaration; nothing in `src/` names a library
 - [ ] `src/comptime/AGENTS.md` states the scope order
-
-### Step 20 — two expression forms (decision 255)
-
-(1) Type name + explicit type arguments + `.member` or `(` = type application —
-`Dict<string, unknown>.empty()` (1.0.10 decision 8 §1.3, `Box<i32>(value: 1)`, extended to a static
-member). Else `<` is comparison: type-argument list tried only after a type name and only if `>` is
-followed by `.` or `(`; not parsing as types → comparison. (2) `comptime <expr>` = `comptime { break
-<expr>; }` (`val x = comptime 10 + 5;` already parses — `test/comptime_template.bp`). Decision 256's
-bean registry uses both.
-
-- [ ] `run/type_application_static_member` (`Dict<string, unknown>.empty()`, `a < b > (c)` still a
-      comparison) on four targets; `comptime <expr>` pinned equal to its block form
 
 ### Rows other fronts found
 

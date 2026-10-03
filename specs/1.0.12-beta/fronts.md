@@ -102,7 +102,7 @@ that must edit one names it as a carve-out in its commit, and no two open fronts
 - **116 against `01-compiler`**: it edits `compiler-cli/**` and `language-server/**` (26's),
   `lib-test-runner/**` (no owner) and `docs.md` § Modules (07's prose); it never edits
   compiler-core (decision 198). It opens after `01-compiler/26`, 26 step 0 and 118, never beside
-  26-cli-tooling; its prelude list and `01-checker` step 19 land in sequence.
+  26-cli-tooling; its prelude list and `01-checker` step 22 land in sequence.
 - **Inside `01-compiler`**: its README § Ownership; 16 step 8 before 01 step 10; 07 steps 1 and 4
   after 02–05 land; 16 step 3 after every tree is migrated.
 - **The dynamic mark** (decision 186): 22 step 4 and 49 step 5 land the run-time bridge; 26 step 8
@@ -174,7 +174,7 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 | **122** | 26 · 49 · 102 · 118 · 120 | 124 |
 | **126** | 27 · 118 · 120 | 127 · 124 |
 | **127** | 125 s6 · 103 · 22 · 67 · 49 · 117 · 120 · 126 · s4: 123 | 124 |
-| **116** | 118 · 26 s0 · `01-compiler/26` · with `01-checker` s19 · decisions 198–200, 212, 213, 221, 270 · s2: bpp-f, ctr-e, ctr-g, 213 against 221 for `not-found.bpp` (no id) · s6: bpp-g | 124 s5 |
+| **116** | 118 · 26 s0 · `01-compiler/26` · with `01-checker` s22 · decisions 198–200, 212, 213, 221, 270 · s2: bpp-f, ctr-e, ctr-g, 213 against 221 for `not-found.bpp` (no id) · s6: bpp-g | 124 s5 |
 | **124** | 08-h · 50 · 71 · every other `08` front · s1, s3: 08-e2, ctr-a · s5: 116, 53 | — |
 | **98** | every library track's `-test` and README steps · s3: 95-f · s4: lg2-v | — |
 | **135** | snap-a · s4: 34 · s1–4: the owning fronts' other steps | s5: 53 s2–6 |

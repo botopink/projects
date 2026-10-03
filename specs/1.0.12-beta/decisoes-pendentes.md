@@ -60,13 +60,14 @@ Os ids das decisões não mudaram com a renumeração das trilhas: `07-*` são d
 
 Ordem, do que mais destrava para o que menos:
 
-1. **own-a** — quem é dono dos scripts de teste · segura 07-residuals passo 12 e 114 passos 5 e 7 (Parte 2)
-2. **134-d** — `@is(…)` escrito à mão · trava a última linha do inventário da 134 (Parte 3)
-3. **17-b** — incremento por linha no `keyed` · trava a quarta caixa do passo 1 da 17 (Parte 3)
-4. **ctr-i**, **ctr-j** — unidade de string no erlang; faixa do `i64` · seguram células de 02/03/04/05 (Parte 1)
-5. **ctr-h**, **ctr-n**, **ctr-o**, **ctr-s** — só registro: decisões antigas que outras já mudaram (Parte 1)
-6. **imp-a** — dois tipos com o mesmo nome importados com alias (Parte 3)
-7. **17-c** — não trava nada hoje (Parte 3)
+1. **130-b**, **130-c** — o registro de beans do rakun (qualificador; `#[bean]` de configuração) · seguram o passo 5 da 130, que está rodando ⏳ (Parte 3)
+2. **own-a** — quem é dono dos scripts de teste · segura 07-residuals passo 12 e 114 passos 5 e 7 (Parte 2)
+3. **134-d** — `@is(…)` escrito à mão · trava a última linha do inventário da 134 (Parte 3)
+4. **17-b** — incremento por linha no `keyed` · trava a quarta caixa do passo 1 da 17 (Parte 3)
+5. **ctr-i**, **ctr-j** — unidade de string no erlang; faixa do `i64` · seguram células de 02/03/04/05 (Parte 1)
+6. **ctr-h**, **ctr-n**, **ctr-o**, **ctr-s** — só registro: decisões antigas que outras já mudaram (Parte 1)
+7. **imp-a** — dois tipos com o mesmo nome importados com alias (Parte 3)
+8. **17-c** — não trava nada hoje (Parte 3)
 
 ---
 
@@ -400,6 +401,38 @@ do passo 1 da 123; toda leitura de request do rakun que uma página alcança.
 ## Parte 3 — Destravam uma frente ou um passo
 
 Cada uma abre uma frente, um passo ou uma onda.
+
+### 130-b · Dois `#[provides]` do mesmo tipo num registro chaveado pelo nome do tipo (decisões 254, 256)
+O trecho da 256 chaveia um provider por `b.returnTypeName`. Dois providers qualificados do mesmo tipo — e um `#[primary]` ao lado de um comum — colidem em `"Dye"`, e o registro os recusa como duplicata. Antes, o `__rkMake_Dye` deixava o sem qualificador (ou o `#[primary]`) ser o injetado e mantinha os outros por `ctx.resolveNamed("Dye", "fast")`.
+```bp
+#[provides] #[qualifier("fast")] fn fastDye() -> Dye { … }
+#[provides] #[qualifier("slow")] fn slowDye() -> Dye { … }     // hoje: duplicata de "Dye"
+```
+- [ ] **(a)** Provider qualificado é chaveado `Tipo@qualificador`; o nome puro é o sem qualificador ou o `#[primary]`; dois donos do nome puro são a duplicata:
+```bp
+for (@TypeInfo.all(with: provides)) { b ->
+    d = d.insert(rkBeanKey(b), b.value);   // "Dye@fast", "Dye@slow", "Dye" para o primary
+}
+```
+- [ ] **(b)** O registro guarda só o que a injeção por tipo lê; os qualificados ficam na tabela do contexto que o registro em load preenche (`resolveNamed` a lê).
+- [ ] **(c)** O trecho como está: dois providers de um tipo são sempre duplicata; qualificador só nomeia bean de tipo com um provider.
+
+**Recomendação: (a)** — um registro, todo bean nele, a regra antiga de dono mantida e duplicata continua erro de build; precisa do `rkBeanKey` chamável no bloco (decisão 266). **Bloqueia:** a migração de `#[provides]` / `#[qualifier]` / `#[primary]` do rakun (130 passo 5).
+
+### 130-c · Os métodos `#[bean]` de um `#[configuration]` no registro (decisão 234)
+A 234 preenche o contexto "a partir do `@TypeInfo.all(with: provides)` / dos métodos `#[bean]`", mas o `@TypeInfo.all` responde declarações de topo, e um `#[bean]` é método de um tipo `#[configuration]`: nenhuma consulta o alcança. Hoje o `#[configuration]` emite `__rkMake_<Tipo>()` por `#[bean]` (`autoconfig.bp`, `conditions.bp`, `config.bp`, `settings.bp` do rakun-client, `oauth2/provider.bp` do rakun-security, `examples/rakun`).
+- [ ] **(a)** Métodos `#[bean]` viram funções livres `#[provides]` (o record de configuração fica com os campos `#[value]`; o provider os lê por `rkResolve`):
+```bp
+#[provides]
+pub fn dataSource() -> DataSource { return DataSource(url: rkResolve<DbConfig>("DbConfig").url); }
+```
+- [ ] **(b)** A configuração grava cada bean como meta e ganha um membro `Config.bean(name) -> unknown`; o ponto de entrada faz um terceiro laço sobre `@TypeInfo.all(with: configuration)`.
+- [ ] **(c)** O `@TypeInfo.all` ganha `methods: true`:
+```bp
+for (@TypeInfo.all(with: bean, methods: true)) { b -> d = d.insert(b.returnTypeName, b.value); }
+```
+
+**Recomendação: (a)** — um jeito só de fornecer bean, já no laço do registro, sem reflexão nova; o `@Bean` do Spring é o que o `#[provides]` já é numa linguagem com funções livres. **Bloqueia:** a migração do `#[configuration]` do rakun e todo `__rkMake_` que um `#[bean]` define.
 
 ### 134-d · `@is(…)` escrito à mão
 `x is T` é lido como a chamada builtin `is` levando o tipo testado; o lexer também faz de `@is(1)` essa chamada, sem tipo testado — tipa como `bool` e não baixa nada com sentido. É alcançável e não declarado:
