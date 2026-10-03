@@ -317,9 +317,9 @@ owning front lists the row under *Depends on*.
 ### 07-onze
 
 #### 50-b · What `onze dev` does on a change
-- **Measured.** `onze build` compiles the server to BEAM, `onze start` runs `erl -noshell -pa <outDir>/server/beam -eval …`; `onze-bundler/src/rebuild.bp` computes invalidated modules; the BEAM can `code:load_file/1`, but a new route file needs `onze_routes.bp` regenerated and the table rebuilt.
-- **Options.** (a) Restart the node on every change (`build` + `start` looped over a file watcher, 1–3 s per edit). (b) Hot-load changed modules; regenerate and reload `onze_routes` when the app tree changes. (c) (b), falling back to (a) when a convention file changed. Browser island state lost either way.
-- **Recommendation.** (a): one code path, the same bytes `start` serves.
+- **Measured.** `onze build` compiles the server to BEAM (`server/beam/`), `onze start` runs `erl -noshell -pa <outDir>/server/beam -eval …` (50-a); `onze-bundler/src/rebuild.bp` computes invalidated modules; the BEAM can `code:load_file/1`; UI registry and route table fill at module load (decision 140): a reloaded page re-registers, a new route file needs `onze_routes.bp` regenerated and the table rebuilt.
+- **Options.** (a) Restart the node on every change (`build` + `start` looped over a file watcher — same bytes as `start`, 1–3 s per edit). (b) Hot-load changed modules; regenerate and reload `onze_routes` when the app tree changes. (c) (b), falling back to (a) when a convention file changed. Browser island state lost either way (Fast Refresh a non-goal, `07-onze/reference-holes.md` § 29).
+- **Recommendation.** (a): one code path, the same bytes `start` serves; (b) later, if (a) measures too slow on the blog.
 - **Blocks.** 50 step 2; 53 step 5.
 
 ### 08-bpp

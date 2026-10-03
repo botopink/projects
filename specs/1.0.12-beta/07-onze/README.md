@@ -55,33 +55,15 @@ each front's letter sequence. Open: `50-b` (below), `std-d` (`02-std-and-packagi
 
 ### To confirm
 
-| Id | Choice | Closes |
-|---|---|---|
-| 49-a | the core's suites render through the core's `describe*`; `onze-test` wraps | — |
-| 49-c | `onze.json` refuses an unknown key | — |
-| 49-d | `chainFor` takes the ancestor patterns; onze imports nothing from `routing` — **amended by `03-bundled-libs/102`** (`types.bp`'s segment classification consumes `routing.conventions`) | 49 |
-| 49-e | the rakun half of the boot is `onze-server` | 49 step 2 (the wording box) |
-| 50-a | `onze build` stages a server main; `onze start` runs it — **amended**: `start` calls 71's `bin/onze` (71 step 2; 50 step 5) | 50 |
-| 52-a | the metrics table transcribed, its generator owed | 51 step 4 |
-| 53-a | the blog under `src/` | — |
-| 68-a · 68-c · 68-d | manifest escaping; starters decode `#[clientProps]` from source; the styleMap probe in both packages | — |
-| 69-a | `AssetRoot` converted to rakun-web's `StaticRoot` in `onze-server` | — |
+Built as recommended; full rows in [`decisions-pending.md`](../decisions-pending.md) § Implementation
+choices / 07-onze: `49-a` · `49-c` · `49-d` (amended by `03-bundled-libs/102`; closes 49) · `49-e`
+(closes 49 step 2's wording box) · `50-a` (amended: `start` calls 71's `bin/onze`; closes 50) ·
+`52-a` (closes 51 step 4) · `53-a` · `68-a` · `68-c` · `68-d` · `69-a`.
 
 ### 50-b · What `onze dev` does on a change — reload into the running node, or restart it
 
-> **Raised by:** front 50, step 2
-> **Facts.** `onze build` compiles the server package to BEAM (`server/beam/`); `onze start` runs
-> `erl -noshell -pa <outDir>/server/beam -eval …` (50-a). `onze-bundler/src/rebuild.bp` computes
-> which modules a changed file invalidates. The BEAM can `code:load_file/1` a recompiled module;
-> UI registry and route table fill at module load (decision 140): a reloaded page re-registers, a
-> *new* route file needs `onze_routes.bp` regenerated and the table rebuilt.
-> **Options.** (a) restart the node on every change: `dev` = `build` + `start` looped over a file
-> watcher — same bytes as `start`, 1–3 s restart per edit;
-> (b) hot-load changed modules, regenerate + reload `onze_routes` when the app tree changes
-> (island state lost either way; Fast Refresh a non-goal, `reference-holes.md` § 29);
-> (c) (b), falling back to (a) when the changed set includes a convention file.
-> **Recommendation.** (a) — one code path, cannot drift from `start`; (b) later, if (a) measures
-> too slow on the blog.
-> **Blocks.** 50 step 2 (written for (a)); 53 step 6 ("`dev` serves every route").
+Raised by front 50 step 2; full question in [`decisions-pending.md`](../decisions-pending.md) § 50-b.
+Recommendation (a): restart the node per change (`build` + `start` over a file watcher).
+**Blocks.** 50 step 2 (written for (a)); 53 step 6 ("`dev` serves every route").
 
 Module-level snapshot maps of §§ 50 · 51 · 52 · 70 · 71 and 53's runner: [`decisions-pending.md`](../decisions-pending.md) `snap-a`, worked by [`20-snap`](../20-snap/README.md) step 5.
