@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.11-beta
 
-**These questions are open** — `bpp-f`, `bpp-g` (raised by `08-bpp/116`, decision 266), `lg2-a…w`, `02e-a` (raised by `01-compiler/02-erlang`), `05w-c…f` (raised by `01-compiler/05-wasm` step 5), `05w-g` (raised by `00-gate` on `macos-14`) and `17-b`, `17-c` (raised by `01-compiler/17-beam-memory`), `134-a…d` (raised by `01-compiler/134-builtins-declared`); `ck2-c` was answered (decision 244); the `lg2-*` rows are carried verbatim below from 1.0.10-beta's
+**These questions are open** — `130-b`, `130-c` (raised by `01-compiler/130-decorator-outputs` step 5), `bpp-f`, `bpp-g` (raised by `08-bpp/116`, decision 266), `lg2-a…w`, `02e-a` (raised by `01-compiler/02-erlang`), `05w-c…f` (raised by `01-compiler/05-wasm` step 5), `05w-g` (raised by `00-gate` on `macos-14`) and `17-b`, `17-c` (raised by `01-compiler/17-beam-memory`), `134-a…d` (raised by `01-compiler/134-builtins-declared`); `ck2-c` was answered (decision 244); the `lg2-*` rows are carried verbatim below from 1.0.10-beta's
 
 **Twenty-seven questions are open** — `ck2-c`, `lg2-a…w`, `02e-a` (raised by `01-compiler/02-erlang`), `dec-e` (raised by `01-compiler/130-decorator-outputs` step 5) and `gw-a` (raised by `front/gate-wasm-wrong-answers`); the first twenty-four carried verbatim below from 1.0.10-beta's
 § Open with their ids unchanged (`ck-host`, `lg-a`, `lg-b` and this milestone's `01c-e` were answered:
@@ -565,3 +565,58 @@ row's nearest form is the design — and the cost of that reading is named where
 > **Recommendation.** (a): the toolchain copies what the package's manifest says, as 221 already
 > does, and no generic code builds a type it does not know.
 > **Blocks.** 116 step 6, 117 step 1.
+
+### 130-b · Two `#[provides]` of one type in a registry keyed by type name (decisions 254, 256)
+
+> **Raised by:** `01-compiler/130-decorator-outputs` step 5.
+> **Measured.** 256's snippet keys a provider by `b.returnTypeName`. Two qualified providers of one
+> type (`#[provides] #[qualifier("fast")] fn fastDye() -> Dye` beside `#[qualifier("slow")]`) — and a
+> `#[primary]` beside a plain one — collide on `"Dye"`, so the registry refuses them as a duplicate,
+> where `__rkMake_Dye` let the unqualified or `#[primary]` one own the injection and kept the others
+> reachable by `ctx.resolveNamed("Dye", "fast")` (`rakun/test/context_test.bp`,
+> `examples/rakun-container`).
+> **Options.**
+> (a) a qualified provider is keyed `Type@qualifier` (the decorator records `setMeta("qualifier",
+> …)`); the plain name is the unqualified or `#[primary]` one; two owners of the plain name are the
+> duplicate:
+> ```botopink
+> for (@TypeInfo.all(with: provides)) { b ->
+>     d = d.insert(rkBeanKey(b), b.value);   // "Dye@fast", "Dye@slow", "Dye" for the primary
+> }
+> ```
+> (b) the registry holds only what injection by type reads (unqualified or `#[primary]`); qualified
+> providers stay in the context table their load-time registration fills (`resolveNamed` reads it).
+> (c) the snippet as written: any two providers of one type are a duplicate; a qualifier only names
+> a bean of a type that has one provider.
+> **Recommendation.** (a) — one registry, every bean in it, the old ownership rule kept and a
+> duplicate still a build error; it needs `rkBeanKey` callable in the block (decision 266's comptime calls).
+> **Blocks.** rakun's `#[provides]` / `#[qualifier]` / `#[primary]` migration (context.bp, its test,
+> rakun-container).
+
+### 130-c · A `#[configuration]`'s `#[bean]` methods in the registry (decision 234)
+
+> **Raised by:** `01-compiler/130-decorator-outputs` step 5.
+> **Measured.** 234 fills the context "from `@TypeInfo.all(with: provides)` / the `#[bean]` methods",
+> but `@TypeInfo.all` answers top-level declarations, and a `#[bean]` is a method of a
+> `#[configuration]` type: no query reaches it. Today `#[configuration]` emits
+> `__rkMake_<ReturnType>()` per `#[bean]` (rakun `autoconfig.bp`, `conditions.bp`, `config.bp`,
+> rakun-client `settings.bp`, rakun-security `oauth2/provider.bp`, `examples/rakun`).
+> **Options.**
+> (a) `#[bean]` methods become `#[provides]` free functions (the configuration record keeps its
+> `#[value]` fields; a provider reads them through `rkResolve`):
+> ```botopink
+> #[provides]
+> pub fn dataSource() -> DataSource { return DataSource(url: rkResolve<DbConfig>("DbConfig").url); }
+> ```
+> (b) the configuration records each bean as meta (`setMeta("beans", "dataSource:DataSource,…")`)
+> and adds a member `Config.bean(name: string) -> unknown`; the entry adds a third loop over
+> `@TypeInfo.all(with: configuration)` splitting the meta.
+> (c) `@TypeInfo.all` gains `methods: true` (method-level declarations carrying the decorator, `value`
+> a thunk `{ -> Owner.make().m() }`, `returnTypeName` the method's):
+> ```botopink
+> for (@TypeInfo.all(with: bean, methods: true)) { b -> d = d.insert(b.returnTypeName, b.value); }
+> ```
+> **Recommendation.** (a) — one way to provide a bean, already in the registry's loop, no new
+> reflection; Spring's `@Bean` method is what `#[provides]` already is in a language with free
+> functions.
+> **Blocks.** rakun's `#[configuration]` migration and every `__rkMake_` a `#[bean]` defines.
