@@ -1,13 +1,13 @@
 # Decisions the maintainer owes — 1.0.11-beta
 
-**These questions are open** — `lg2-a…w`, `02e-a` (raised by `01-compiler/02-erlang`), `05w-c…f` (raised by `01-compiler/05-wasm` step 5), `05w-g` (raised by `00-gate` on `macos-14`) and `17-b`, `17-c` (raised by `01-compiler/17-beam-memory`), `134-a…d` (raised by `01-compiler/134-builtins-declared`); `ck2-c` was answered (decision 244); the `lg2-*` rows are carried verbatim below from 1.0.10-beta's
+**These questions are open** — `bpp-f`, `bpp-g` (raised by `08-bpp/116`, decision 266), `lg2-a…w`, `02e-a` (raised by `01-compiler/02-erlang`), `05w-c…f` (raised by `01-compiler/05-wasm` step 5), `05w-g` (raised by `00-gate` on `macos-14`) and `17-b`, `17-c` (raised by `01-compiler/17-beam-memory`), `134-a…d` (raised by `01-compiler/134-builtins-declared`); `ck2-c` was answered (decision 244); the `lg2-*` rows are carried verbatim below from 1.0.10-beta's
 
 **Twenty-seven questions are open** — `ck2-c`, `lg2-a…w`, `02e-a` (raised by `01-compiler/02-erlang`), `dec-e` (raised by `01-compiler/130-decorator-outputs` step 5) and `gw-a` (raised by `front/gate-wasm-wrong-answers`); the first twenty-four carried verbatim below from 1.0.10-beta's
 § Open with their ids unchanged (`ck-host`, `lg-a`, `lg-b` and this milestone's `01c-e` were answered:
 decisions 146–149). Every `lg2-*` row of [`language-gaps.md`](./language-gaps.md) is a
 feature the language does not have; the recommendation is always the most restrictive reading
 (decision 67) — the feature stays out and the row's nearest form is the design — and no front opens
-on one until it is answered. **The next free decision number is 266** ([`decisions-taken.md`](./decisions-taken.md)).
+on one until it is answered. **The next free decision number is 267** ([`decisions-taken.md`](./decisions-taken.md)).
 
 Beside the open questions, every track carries **implementation choices awaiting confirmation** —
 a choice a front made, recommended and implemented, that the maintainer confirms or reverses. The
@@ -490,3 +490,42 @@ row's nearest form is the design — and the cost of that reading is named where
 > is the loosest reading.
 > **Blocks.** The last undeclared builtin-call row of step 1.
 
+
+### bpp-f · The return type of the function a `.bpp` file unfolds to
+
+> **Raised by:** `08-bpp/116-bpp-file-format` § Notes (point 2), restated at decision 266.
+> **Measured.** The unfold writes `pub default fn <Name>(…) -> Element`. `Element` is jhonstart's
+> name, which the toolchain cannot spell (decision 113): decision 266 brings the *name* into scope
+> through the prelude, but not the *annotation*. 116 step 2's fixture package answers the literal's
+> length, so its unfolded function returns `i32`. A header statement that `await`s a loader or calls
+> a hook with `use` (decision 199 allows both) needs `-> @Component<ElementBase, Element>` today, not
+> `-> Element`.
+> **Options.**
+> (a) the return type is the `R` of the default function's declared `@ExprCustom<R>`, read from its
+> signature; a header with `await` or `use` is refused at that line (this narrows decision 199).
+> (b) as (a), and the wrapper follows the header's statements under the effects-by-return rule
+> (`01-compiler/24`): no `await` or `use`, `-> R`; otherwise the wrapper that rule names, which
+> 116 step 0 measures.
+> (c) the header writes the return type itself, on a `-> T` line before the closing `---`.
+> **Recommendation.** (b): it keeps 199's hooks, and every name it writes comes from the default
+> function's signature or the language, never from a library.
+> **Blocks.** 116 step 2.
+
+### bpp-g · How a `page.bpp` gets its `route: PageContext` and its `params`
+
+> **Raised by:** `08-bpp/116-bpp-file-format/examples/page.bpp` (`params.slug`), restated at
+> decision 266.
+> **Measured.** Decision 221 gives a `page.bpp` its decorator (from the file name or the header).
+> The unfold answers `fn <Name>(props: Props)` or `fn <Name>()`. A `.bp` page takes
+> `route: PageContext` and binds its segments with `paramsOf(…meta.page.seg, route)` (decision 236).
+> jhonstart's router calls a page with a `PageContext`, so it cannot build an application's `Props`.
+> **Options.**
+> (a) a `bppKinds` entry names the parameter as well as the decorator
+> (`"page": {"decorator": "page", "parameter": "route: PageContext"}`): the unfold writes
+> `pub default fn page(route: PageContext)`, the header's statements read `route`, and the prelude
+> brings `PageContext` and a `params(route)` helper.
+> (b) the header declares `type Props(route: PageContext)`, and the router requires that shape.
+> (c) `#[page]`'s decorator output adds the parameter (`01-compiler/130`).
+> **Recommendation.** (a): the toolchain copies what the package's manifest says, as 221 already
+> does, and no generic code builds a type it does not know.
+> **Blocks.** 116 step 6, 117 step 1.

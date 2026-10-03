@@ -4,8 +4,10 @@
 track is reachable from a `.bp` module (`118`).
 **Depends on:** decisions 198 (what the file is), 199 (`type Props`, the function it unfolds to)
 and 200 (`html` is the `pub default fn` of the core member `jhonstart`; the manifest reads
-`"bpp": "jhonstart"`) — no open question blocks the front; § Notes lists what the three leave
-unstated · `05-jhonstart/26` step 0 (it merges `jhonstart-html` into the core and makes `html`
+`"bpp": "jhonstart"`), 212 (the header between two `---`), 213 (the name), 221 (the app-file
+kinds) and 266 (the package's `prelude.bp`) · open: `bpp-f` (the return type, step 2) and `bpp-g`
+(a page's `route` and `params`, step 6) · `01-compiler`'s prelude scope (decision 266: a module's
+last scope, a list of import items, imported only when used) · `05-jhonstart/26` step 0 (it merges `jhonstart-html` into the core and makes `html`
 its default function) · `118-bpp-components` (the template language the literal is written in) ·
 `01-compiler/26-cli-tooling` landed — it owns `compiler-cli/**` and `language-server/**` in this
 milestone (`fronts.md` § Conflict rules).
@@ -50,6 +52,7 @@ function, the function header, and the `return html """` around the markup. Astr
 is those lines removed:
 
 ```bpp
+---
 import {lib.db.Post};
 
 type Props(post: Post, featured: bool = false)
@@ -127,6 +130,23 @@ returns is the file's tokens, hover and go-to-definition in the editor.
 module back to the position in the `.bpp` it came from, and a type error in the header is
 reported at its own line and column of the file.
 
+**The package's prelude** (decision 266). When the package the manifest names has a module
+`prelude` (`src/prelude.bp`), a `.bpp` file reaches what that module imports without writing it —
+`Element`, the builders its tags name. The prelude holds `import` items of the package's own
+modules only (no other package, no activation; an alias is allowed) and is compiled and tested
+with the package. It is not pasted into the module: the unfold hands `compiler-core` the items as
+the module's last scope, and an item becomes an import only when a name of the file resolves
+through it, so the module of a file that is only `<article></article>` imports `html`, `Element`
+and `article` and nothing else. The header wins by scope order; a header that binds the default
+function's name is an error at its line.
+
+```bp
+// jhonstart/modules/jhonstart/src/prelude.bp
+import {element.Element};
+import {element: {text, fragment, div, span, p, h1, ul, li}};
+import {elements: {article, h2, header, footer, main, title, timeTag as time}};
+```
+
 **Seven lists learn one extension.** The sites of § Current state read one shared list instead
 of spelling `.bp`. The CLI, the test runner and the language server unfold the file the same way
 and hand compiler-core the same module, with `srcPath` the `.bpp` path. `mod PostCard;` and
@@ -177,6 +197,12 @@ with no `pub default fn` taking `comptime _: @Expr<string>`: an error at the key
       statement reads `props`
 - [ ] `X.bp` beside `X.bpp`, and a `.bpp` file with no key — each refused with the message of
       § Mechanism
+- [ ] the prelude (decision 266): a fixture package with a `prelude.bp` — a `.bpp` that is markup
+      only compiles; its module and its emitted code import only the items the file uses; a header
+      name beats the prelude's; `prelude.bp` holding a `fn`, an item of another package or an
+      activation is refused at its line; a header binding the default function's name is refused
+      at its line. The scope itself (`compiler-core`: a module's last scope, a list of import
+      items) is `01-compiler/01-checker`'s, handed to it by this front
 - [ ] `grep -riE 'rakun|jhonstart|erika|emilia|onze'` over `modules/compiler-core/src` and the
       edited `compiler-cli` files is empty
 
@@ -250,15 +276,15 @@ with no `pub default fn` taking `comptime _: @Expr<string>`: an error at the key
   syntax the compiler owns for one library's files; a syntax a library function reads needs that
   function to write the module. A header that is botopink and a literal that is the rest of the
   file need neither.
-- **Unstated by decisions 198–200**, and to be stated before the step named:
-  1. *The app-file kinds.* A `page.bpp`, `layout.bpp` or `error.bpp` needs the decorator and the
-     parameters jhonstart's routes take (`#[page("<route>")]`, `route: PageContext`, `params`).
-     The unfold names no library and answers `pub default fn <name>(props: Props) -> Element` or
-     `pub default fn <name>() -> Element`; how a page gets its route and its decorator is not said.
-     Step 6, and `117-bpp-routing` step 1.
+- **Still to be stated**, before the step named:
+  1. *A page's parameter.* Decision 221 gives a `page.bpp` its decorator; its `route: PageContext`
+     and its `params` are question `bpp-g`. Step 6, and `117-bpp-routing` step 1.
   2. *The return type.* `-> Element`, while a header statement may `await` a loader or call a
-     hook with `use`, which today need `-> @Component<ElementBase, Element>`. Step 2.
+     hook with `use`, which today need `-> @Component<ElementBase, Element>` — question `bpp-f`.
+     Step 2.
   3. *Header statements other than `val` and `use`* — step 0's list.
+  4. *`Children`.* The examples of the track write `children: Children = []`; jhonstart declares
+     no type `Children` (`element.bp`, `elements.bp`). 118 adds it, and the prelude imports it.
 - **`examples/bpp-template-function-example.bp`** shows the mechanism decision 198 replaced — a
   library function named `bpp` that emits the module through `template.emit` and
   `template.slice`. Nothing in this README refers to it; it is to be deleted.

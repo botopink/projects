@@ -315,3 +315,8 @@ directive is a `keyword`, an expression region is left to the host language.
 - **Hygiene.** A tag name and an expression come from the literal and resolve in the caller's
   scope; `fragment`, `raw`, `el`, `classIf` are written by the library and resolve in the library
   (decision 112) — so a page imports the builders and components it names, and nothing else.
+  In a `.bpp` file the builders come from jhonstart's `prelude.bp` (decision 266): the caller's
+  scope ends in the prelude, so `<article>` resolves without a header import and only the builders
+  a file names are imported. This front writes `jhonstart/modules/jhonstart/src/prelude.bp` (a
+  carve-out of `05-jhonstart/26`'s member) and the type `Children` the track's examples use, which
+  jhonstart does not declare today.
