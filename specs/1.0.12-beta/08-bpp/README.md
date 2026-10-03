@@ -59,7 +59,7 @@ All eleven **not started**.
 |---|---|---|---|---|
 | [`118-bpp-components/`](./118-bpp-components/README.md) | **critical** — all markup goes through it | not started · ready to open | `{expr}` of any renderable type, rendering attributes, components with props, slots, fragments, markup in `if` / `case` / lambdas, `set:html`, `class:list`, `<style>` / `<script>` to sinks; jhonstart's `prelude.bp` and node type | — |
 | [`121-bpp-content/`](./121-bpp-content/README.md) | **high** — largest new code | not started · steps 1–2 ready to open | New member `onze-content`: Markdown (CommonMark + GFM) to `Element`, frontmatter, collections with `Schema<T>`, `getCollection` / `getEntry` / `render`, `.md` pages, RSS | `08-f` (step 3) · 118, 117 (step 6) · `07-onze/53` (step 7) |
-| [`120-bpp-islands/`](./120-bpp-islands/README.md) | **high** | not started | `client:idle` / `visible` / `media` / `only`; `server:defer` with fallback slot, sealed props | 118 · 119 · 117 · `05-jhonstart/26` · `04-rakun/22` · `07-onze/49`, `50` · `08-e2` (step 4) |
+| [`120-bpp-islands/`](./120-bpp-islands/README.md) | **high** | not started | `client:idle` / `visible` / `media` / `only`; `server:defer` with fallback slot, sealed props | 118 · 119 · 117 · `05-jhonstart/26` · `04-rakun/22` · `07-onze/49`, `50` |
 | [`117-bpp-routing/`](./117-bpp-routing/README.md) | high | not started | `.bpp` / `.md` / `.html` app files, `staticPaths` with data, `paginate`, partials, static endpoints, eight priority rules as tests | `03-bundled-libs/102` · `04-rakun/22` · `07-onze/49`, `50` · 121 steps 1–2 · `bpp-g` (step 1) |
 | [`119-bpp-styling/`](./119-bpp-styling/README.md) | medium | not started · blocked by `08-d` | Scoped `<style>`, `is:global`, `:global()`, `define:vars`, cascade order | `08-d` (every step) · 118, `05-jhonstart/26` (step 2) |
 | [`127-bpp-actions/`](./127-bpp-actions/README.md) | medium | not started | Action typed by a `#[schema]` record: JSON/form input, `ActionError`, typed client call | 125 step 6 · `03-bundled-libs/103` · `04-rakun/22` · `05-jhonstart/67` · `07-onze/49` · 117 · 120 · 126 · 123 (step 4) |
@@ -67,7 +67,7 @@ All eleven **not started**.
 | [`123-bpp-middleware/`](./123-bpp-middleware/README.md) | medium | not started | `locals`, `sequence`, response rewritten after `next`, `actionContext` | `04-rakun/04` · `04-rakun/65` |
 | [`126-bpp-view-transitions/`](./126-bpp-view-transitions/README.md) | low | not started | `transition:name` / `animate` / `persist`, `navigate`, five lifecycle events, route announcer | `05-jhonstart/27` · 118 · 120 |
 | [`116-bpp-file-format/`](./116-bpp-file-format/README.md) | medium | not started | `.bpp` kind: `"bpp": "jhonstart"` in the app manifest; header between two `---` is botopink, rest the `html` literal; the package's prelude | 118 · `05-jhonstart/26` step 0 · `01-compiler/26` · `01-compiler`'s prelude scope · `bpp-f` (step 2) · `bpp-g` (step 6) |
-| [`124-bpp-cli/`](./124-bpp-cli/README.md) | high — last | not started · blocked by `08-h` | `onze sync`, `onze create-key`, config keys, component `<script>` bundling, built style sheet, `.bpp` scaffold | `08-h` · `08-e2` (steps 1, 3) · `07-onze/50`, `71` · every other front · `07-onze/53` (step 5) |
+| [`124-bpp-cli/`](./124-bpp-cli/README.md) | high — last | not started · blocked by `08-h` | `onze sync`, `onze create-key`, config keys, component `<script>` bundling, built style sheet, `.bpp` scaffold | `08-h` · `07-onze/50`, `71` · every other front · `07-onze/53` (step 5) |
 
 ## Order
 
@@ -159,7 +159,7 @@ No relative imports: same package `import {components.card.Card};`, a package `i
 
 ## Decisions the maintainer owes
 
-Open: `08-d`, `08-e2`, `08-f`, `08-h` (below) and `08-j`, `bpp-f`, `bpp-g`, `props-d`, `props-e`,
+Open: `08-d`, `08-f`, `08-h` (below) and `08-j`, `bpp-f`, `bpp-g`, `props-d`, `props-e`,
 `props-f` ([`../decisions-pending.md`](../decisions-pending.md)); contradictions `ctr-c` (117), `ctr-e`, `ctr-f`, `ctr-g`, `ctr-t` (116).
 
 - `08-j` — how rakun's `local()` carries jhonstart's `#[serverOnly]`. Blocks 123 step 1's third box.
@@ -175,15 +175,6 @@ Open: `08-d`, `08-e2`, `08-f`, `08-h` (below) and `08-j`, `bpp-f`, `bpp-g`, `pro
 beside the module renamer; (c) jhonstart's `html` scopes its own `<style>`.
 **Recommendation.** (a). (c) puts a CSS parser in the HTML library; (b) excludes jhonstart apps without onze.
 **Blocks.** All of 119.
-
-### 08-e2 · Which modes the islands props setting may name
-
-**Raised by** decision 224 (default `sealed`, other values open; decision 67 forbids a weakening setting).
-**Options.** (a) `sealed` only — one-valued key (or dropped); (b) + `signed` (readable,
-tamper-proof — 08-e's former (b)); (c) (b) + `server` (server-side under a random id, nothing in
-the URL, shell not cacheable across instances — 08-e's former (c)).
-**Recommendation.** (a): per 67, publishing page-passed data or defeating caching weakens the rule.
-**Blocks.** 120 step 4 (what `seal` / `unseal` dispatch on); 124 steps 1, 3 (config key, what `create-key` serves).
 
 ### 08-f · Where Markdown and YAML live
 

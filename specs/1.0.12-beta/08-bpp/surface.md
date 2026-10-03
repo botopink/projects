@@ -208,7 +208,7 @@ are on disk, so most of Astro is there, or there and unwired.
 |---|---|---|
 | `server:defer` | not found | add · 120 |
 | `slot="fallback"` | `Boundary.fallback`, same idea within one response | add · 120 |
-| props serialised, encrypted, in the query; `POST` past 2 048 bytes | not found | add · 120 (decision 224: sealed by default; `08-e2` open) |
+| props serialised, encrypted, in the query; `POST` past 2 048 bytes | not found | add · 120 (decisions 224, 272: `sealed` by default, or `server`) |
 | `Cache-Control` on the island response | not found | add · 120 |
 | the page URL through `Referer` | — | add · 120 |
 | `astro create-key`, `ASTRO_KEY` | not found | add · 124 |

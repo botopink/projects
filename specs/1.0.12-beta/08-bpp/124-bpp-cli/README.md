@@ -2,9 +2,7 @@
 
 **Priority:** high — last; no feature of its own, makes the others part of `onze build`. ·
 **State:** not started · blocked by `08-h`
-**Depends on:** open: [`08-h`](../README.md#08-h--the-config-file-and-the-commands) (whole front),
-[`08-e2`](../README.md#08-e2--which-modes-the-islands-props-setting-may-name) (islands key, steps 1
-and 3) · `07-onze/50-onze-cli` (owns `onze-cli`, `onze-bundler`; `onze dev` its open box) ·
+**Depends on:** open: [`08-h`](../README.md#08-h--the-config-file-and-the-commands) (whole front) · `07-onze/50-onze-cli` (owns `onze-cli`, `onze-bundler`; `onze dev` its open box) ·
 `07-onze/71` (static export to disk, ONZ-71-7) · every track front · 116 and `07-onze/53` (step 5).
 Written against decisions 202, 224.
 **Owns:** in `repository/onze/modules`: `onze-cli/src/{main.bp, build.bp}` (commands, build
@@ -69,7 +67,7 @@ no library reads `onze.json`.
 | `trailingSlash`: `"always"` \| `"never"` \| `"ignore"` | `trailingSlash` | `routing/url_rules` `canonicalize` |
 | `redirects`: `{ "/old": "/new" }` | `redirects` | the redirect table of `routing/url_rules` |
 | `markdown`: `{ "smartPunctuation": bool }` | `markdown.*` | 121's `MarkdownOptions` |
-| `islands`: `{ "props": "sealed" }` — the server-island props mode (224; the modes are `08-e2`'s) | `ASTRO_KEY` (here fixed: `ONZE_KEY`) | 120's `seal` |
+| `islands`: `{ "props": "sealed" }` — the server-island props mode (224; `"sealed"` default or `"server"`, decision 272) | `ASTRO_KEY` (here fixed: `ONZE_KEY`) | 120's `seal` |
 
 The key is always the environment variable `ONZE_KEY` (decision 271): no key names it otherwise.
 
@@ -92,7 +90,7 @@ counter (same in prerendered markup), minified; under a threshold inlined, else 
 
 ## Open
 
-### Step 1 — The config keys (the islands key waits on `08-e2` and the row above)
+### Step 1 — The config keys
 
 - [ ] § Mechanism keys read and validated; unknown key still refused; `docs.md`'s table generated
       from the one source `--help` and `create` read (ONZ-50-DoD's "defaults table from one source")
@@ -125,7 +123,6 @@ counter (same in prerendered markup), minified; under a threshold inlined, else 
 ## Decisions
 
 - `08-h` — config file and commands: (a) `onze.json` + `onze <command>` recommended. Whole front.
-- `08-e2` — which modes `"islands": {"props": …}` may name. Steps 1 and 3.
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `onze-cli`, `onze-bundler`, `onze`

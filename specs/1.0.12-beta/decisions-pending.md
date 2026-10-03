@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**64 questions and 22 contradictions are open, and 97 implementation choices await confirmation.**
+**63 questions and 21 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271.
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 ## Open questions
@@ -326,12 +326,6 @@ owning front lists the row under *Depends on*.
 - **Recommendation.** (a): (c) puts a CSS parser in the HTML library; (b) leaves scoped styles unavailable without onze.
 - **Blocks.** 119, every step — on the critical chain 118 → 119 → 120 → 126 → 127 → 124.
 
-#### 08-e2 · Which modes `islands.props` may name (*proposed*, raised by decision 224)
-- **Measured.** 224 makes the mode a per-project `onze.json` setting (`"islands": {"props": "sealed"}`), default `sealed`, naming no other mode; 67 forbids a configuration bypassing the most restrictive behaviour (`ctr-b`).
-- **Options.** (a) `sealed` only: setting moot, the key goes (or accepts `"sealed"` alone). (b) `sealed` or `signed` (an HMAC: readable by the visitor, tamper-proof). (c) `sealed`, `signed` or `server` (props kept server-side under a random id; shell no longer cacheable across instances).
-- **Recommendation.** (a) — decision 67; (b) publishes whatever a page passes.
-- **Blocks.** 120 step 4; 124 step 3.
-
 #### 08-f · Where Markdown and YAML live
 - **Measured.** No Markdown code anywhere; one YAML-subset reader, in rakun's `config.bp`; `03-bundled-libs` sends config readers to std "when a second consumer appears".
 - **Options.** (a) Both in a new member `onze-content`. (b) Markdown in `onze-content`; YAML in std as `yaml`, rakun's reader deleted by rakun's front. (c) A bundled `markdown` package.
@@ -420,11 +414,6 @@ owning front lists the row under *Depends on*.
 
 Rule pairs that cannot both hold, or a later rule changing an earlier one silently. Decision text
 left as recorded; the maintainer picks the resolution.
-
-#### ctr-b · Decision 224's setting against decision 67
-- **Rules.** 224: "Configurable … The mode is chosen in `onze.json`". 67: "no configuration that bypasses" the most restrictive behaviour.
-- **Recommendation.** Answer `08-e2` (a).
-- **Blocks.** As `08-e2`.
 
 #### ctr-c · Decision 222 against front 117 step 4
 - **Rules.** 222: "a route handler is always server … never prerendered at comptime". 117 step 4's box: "`app/rss.xml/route.bp` exports to `<outDir>/rss.xml`".

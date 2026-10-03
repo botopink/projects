@@ -1,7 +1,7 @@
 # Decisões pendentes — 1.0.12-beta (só o que está em aberto, por ordem de importância)
 
 Atualizado em 2026-10-03. Só o que ainda espera resposta sua: o que já foi respondido está em
-`specs/1.0.12-beta/decisions-taken.md` (decisões 144–271; próximo número livre: **272**) e saiu daqui.
+`specs/1.0.12-beta/decisions-taken.md` (decisões 144–272; próximo número livre: **273**) e saiu daqui.
 Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 234–236 (injeção do rakun,
 `@TypeInfo.all` com lista, decorador de função), 237 (captura do template pelo texto), 238–243
 (`@External.Wasm`, `$stringify`, codepoints no wasm, células sem WASI, dependência direta, vírgula final),
@@ -9,7 +9,7 @@ Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 2
 minúsculos; a 209 revertida), 248 (um builtin só, `@typeInfo`), 249 (o compilador separado por backend na
 chave do cache), 250 (`io.random.bool()` removido), 252 (todo builtin declarado), 253 (`@TypeInfo.all`),
 254 (o catálogo responde `unknown`; `is fn() -> T`), 255 (`Tipo<…>.membro` e `comptime <expr>`), 256 (o
-registro de beans em comptime no ponto de entrada), 257 (`Schema<T>` na `validation`), 258 (`--lib` múltiplo), 259–263 (`pow` da glibc, `contentHash` por code point, heap do wasm crescendo, `String.fromCodepoint`, `std/math` igual em todo sistema), 264 (estouro de inteiro é erro em todo target), 265 (orçamento do gate frio em 7m30s nesta versão; os 5 min ficam para a próxima), 266 (`comptime` avaliado em compilação em todo lugar, registro içado), 267 (parâmetro variádico `..values: T[]`; `@print` declarado com ele), 268 (tipo builtin `Decorator` no `with:` do `@TypeInfo.all`), 269 (`@getContext(T)` é hook, chamado atrás de `use`), 270 (o prelúdio do `.bpp`: o `src/prelude.bp` do pacote, só imports do próprio pacote, importado só quando usado; o cabeçalho vence), 271 (`ctr-a`: não existe `islandKeyEnv`; a chave da island é sempre `ONZE_KEY`; as chaves da 124 são `trailingSlash`, `redirects`, `markdown`, `islands`). A 245 e a 251 foram registradas cedo demais e retiradas.
+registro de beans em comptime no ponto de entrada), 257 (`Schema<T>` na `validation`), 258 (`--lib` múltiplo), 259–263 (`pow` da glibc, `contentHash` por code point, heap do wasm crescendo, `String.fromCodepoint`, `std/math` igual em todo sistema), 264 (estouro de inteiro é erro em todo target), 265 (orçamento do gate frio em 7m30s nesta versão; os 5 min ficam para a próxima), 266 (`comptime` avaliado em compilação em todo lugar, registro içado), 267 (parâmetro variádico `..values: T[]`; `@print` declarado com ele), 268 (tipo builtin `Decorator` no `with:` do `@TypeInfo.all`), 269 (`@getContext(T)` é hook, chamado atrás de `use`), 270 (o prelúdio do `.bpp`: o `src/prelude.bp` do pacote, só imports do próprio pacote, importado só quando usado; o cabeçalho vence), 271 (`ctr-a`: não existe `islandKeyEnv`; a chave da island é sempre `ONZE_KEY`; as chaves da 124 são `trailingSlash`, `redirects`, `markdown`, `islands`), 272 (`08-e2` e `ctr-b`: os modos das props da server island são só `"sealed"`, o padrão, ou `"server"` — nenhum expõe as props). A 245 e a 251 foram registradas cedo demais e retiradas.
 
 > **Numeração.** O prelúdio do `.bpp` tinha sido registrado como 266 no commit `84aa028`, sem saber
 > que 266–269 já existiam no seu registro local. Na 1.0.12 ele é a **270**; as 266–269 estão em
@@ -78,50 +78,6 @@ Ordem, do que mais destrava para o que menos:
 
 Pares de regras que não valem juntas, ou uma decisão posterior que mudou outra sem dizer. O texto das
 decisões ficou como foi gravado; a escolha é sua. Marque a recomendação ou escreva a sua.
-
-### ctr-b · A configuração da 224 × decisão 67
-
-**Contexto.** Uma *server island* é um pedaço da página renderizado depois, buscado pelo navegador em
-`GET /_island/<Nome>?p=…`; as props do componente viajam nessa URL. A decisão 224 tornou o modo dessas
-props configurável por projeto no `onze.json`, com o mais seguro por padrão (**seladas**: AES-256-GCM
-com a chave `ONZE_KEY`, o visitante não lê nem altera). A decisão 67 diz que nenhuma configuração pode
-contornar o comportamento mais restritivo — e uma chave que aceite um modo mais fraco é exatamente isso.
-A resposta sai junto com a `08-e2` (Parte 3), que diz quais modos a chave aceita.
-
-**Hoje:**
-```json
-// onze.json — o único modo que a 224 nomeia
-{ "islands": { "props": "sealed" } }
-
-// o que o navegador pede
-GET /_island/Profile?p=<AES-256-GCM>      // ninguém lê nem altera as props
-```
-
-- [ ] **(a)** Só modos que mantêm as props secretas (`"sealed"` ou `"server"`), como a (a) da `08-e2`
-  na Parte 3 — a 67 fica de pé; a escolha real é cache entre instâncias × nada na URL.
-  ```json
-  { "islands": { "props": "server" } }
-  // GET /_island/Profile?id=9f3a…          as props ficam guardadas no servidor
-  { "islands": { "props": "signed" } }
-  // error: islands.props aceita "sealed" ou "server" (decisão 67)
-  ```
-- [ ] **(b)** Ler a 224 ao pé da letra: a chave aceita qualquer modo, inclusive `"signed"` — a 67 cede
-  neste ponto e o visitante passa a ler as props.
-  ```json
-  { "islands": { "props": "signed" } }
-  // GET /_island/Profile?p=eyJ1c2VySWQiOjQyfQ.<hmac>
-  // base64 → {"userId":42}: legível por quem abre a URL, só não alterável
-  ```
-- [ ] **(c)** Só `"sealed"`: a configuração não tem o que escolher; a chave sai, ou aceita só o padrão
-  (é a recomendação da versão inglesa da `08-e2`).
-  ```json
-  { "islands": { "props": "server" } }
-  // error: islands.props só aceita "sealed"
-  ```
-
-**Recomendação: (a).** É a resposta recomendada para a `08-e2` na Parte 3: dá uma escolha real sem
-nenhum modo que exponha as props; um `"signed"` é justamente a configuração que afrouxa a regra que a 67
-proíbe. **Bloqueia:** o mesmo que a `08-e2` (120 passo 4; 124 passos 1 e 3).
 
 ### ctr-c · Decisão 222 × 117 passo 4
 
@@ -1414,41 +1370,6 @@ import {errorDigest} from "log";          // o próprio pacote log — compila
 **Recomendação: (a).** O teste lê o pacote como um usuário de fora o lê — pela superfície pública —, que
 é o que um teste de pacote deve exercitar; (b) faria o teste ver também o que não é exportado.
 **Bloqueia:** nada (o caso está como item do passo 8 da `01-compiler/26`).
-
-### 08-e2 · Quais modos a configuração das props da server island pode escolher
-
-**Contexto.** Uma server island é um pedaço da página que o navegador busca depois, por uma URL como
-`GET /_island/Profile?…`, levando as props do componente. Você respondeu (decisão 224): configurável, com
-o mais seguro por padrão — **seladas** (`?p=<AES-256-GCM>`, ninguém lê nem altera; a chave é sempre
-`ONZE_KEY`, decisão 271). Falta dizer o que mais a chave `"islands": {"props": …}` do `onze.json`
-aceita. Isso esbarra na sua regra de sempre (decisão 67): nenhuma configuração que afrouxe uma regra (ver
-`ctr-b`). (A spec inglesa ainda recomenda só `"sealed"` — aqui a (c); este registro recomenda a (a).)
-
-**Hoje:**
-```json
-{ "islands": { "props": "sealed" } }     // padrão — GET /_island/Profile?p=<AES-256-GCM>
-```
-
-- [ ] **(a)** `"sealed"` ou `"server"`: as duas mantêm as props secretas. `"server"` não põe nada na URL
-  (`?id=9f3a…`, as props ficam guardadas no servidor), ao custo de o shell não ser cacheável entre
-  instâncias. `"signed"` não existe.
-  ```json
-  { "islands": { "props": "server" } }   // GET /_island/Profile?id=9f3a…
-  { "islands": { "props": "signed" } }   // error: islands.props: "signed" não é um modo — "sealed" ou "server"
-  ```
-- [ ] **(b)** `"sealed"`, `"server"` ou `"signed"`: com `"signed"` o visitante lê as props (base64 do
-  JSON), mas não altera.
-  ```json
-  { "islands": { "props": "signed" } }   // GET /_island/Profile?p=eyJ1c2VySWQiOjQyfQ.<hmac> — legível
-  ```
-- [ ] **(c)** Só `"sealed"`: a chave existe para o futuro, mas hoje só aceita o padrão.
-  ```json
-  { "islands": { "props": "server" } }   // error: islands.props aceita só "sealed"
-  ```
-
-**Recomendação: (a).** Dá a escolha real (cache entre instâncias × nada na URL) sem nenhum modo que
-exponha as props; um `"signed"` é exatamente a configuração que afrouxa a regra. **Bloqueia:** 120 passo
-4; 124 passos 1 e 3.
 
 ### 08-d · Quem faz o escopo do CSS
 

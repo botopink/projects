@@ -132,7 +132,7 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 - [ ] 119 (W3) — scoped `<style>` · 08-d · s2: 118, 26
 - [ ] 117 (W7) — `.bpp` / `.md` app files, `staticPaths`, `paginate`, partials · 102 · 22 · 49 · 50 · 121 s1–2 · s1: bpp-g, ctr-g · s4: ctr-c
 - [ ] 123 (W7) — `locals`, `sequence`, `actionContext` · 04 · 65 · s1 box 3: 08-j
-- [ ] 120 (W8) — hydration strategies, server islands · 118 · 119 · 117 · 26 · 22 · 49 · 50 · s4: 08-e2
+- [ ] 120 (W8) — hydration strategies, server islands · 118 · 119 · 117 · 26 · 22 · 49 · 50
 - [ ] 121 s3–6 (W9) · s7 (W10) — frontmatter, collections, references and RSS, `.md` pages; the blog reads Markdown · s3: 08-f · s6: 118, 117 · s7: 53
 - [ ] 122 (W9) — page-side status and headers, `rewrite`, `site` · 26 · 49 · 102 · 118 · 120
 - [ ] 126 (W9) — view transitions · 27 · 118 · 120
@@ -140,7 +140,7 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 - [ ] 116 (W5 at the earliest) — the `.bpp` file kind · 118 · 26 s0 · 01-compiler/26 · with 01-checker s22 · s2: bpp-f, ctr-e, ctr-g · s6: bpp-g
 - [ ] 105 (W9) — bundled `i18n` · 104 s5 · 22 · 26 · 03r-q confirmed
 - [ ] 107 (W9) — bundled `release` · 07-g · 71 · 81
-- [ ] 124 s1–4 (W10) · s5 (W11) — the commands, the config keys, the `.bpp` scaffold · 08-h · s1, s3: 08-e2 · every other 08 front · s5: 116, 53
+- [ ] 124 s1–4 (W10) · s5 (W11) — the commands, the config keys, the `.bpp` scaffold · 08-h · every other 08 front · s5: 116, 53
 - [ ] 98 (W11) — packaging checked everywhere · every library track's `-test` and README steps · s3: 95-f · s4: lg2-v
 - [ ] 16 s1–7 — the `;` re-count, migration and refusal, C-12's reformat, 165, 166/243, C-11 · s2: each library track runs the script · s4: 16-a/b · s6: ctr-s · s3 last, after every tree is migrated
 - [ ] 18 — the CI matrix, the four limits, the bench table, the transport test, `memory.grow` (261) · s1: the maintainer's push
@@ -172,7 +172,6 @@ last section.
 - [ ] 05emilia-n — 34 s4
 - [ ] 50-b — 50 s2 · 53 s6
 - [ ] 08-d — 119 every step
-- [ ] 08-e2 — 120 s4 · 124 s1, s3
 - [ ] 08-f — 121 s3
 - [ ] 08-h — 124 whole
 - [ ] 08-j — 123 s1 box 3
@@ -183,7 +182,7 @@ last section.
 - [ ] lg2-a … lg2-w — none opens a front; each opens a step when answered: 01-checker (a, e, f, m, q, r, t), 14 s6 (j, o, w), 26 s6 / 98 s4 / 73 (v); the rakun boxes that name them — 04 (e, g, j), 08 (e, f), 13 · 65 · 09 · 91 · 92 (a, b), 15 (w), 22 (q), 88 (j), 93 (o)
 - [ ] C-14 — 07-residuals s9 (a 1.0.10 id)
 - [ ] confirmations a step waits on — 49-d (102 s3) · 49-e (49 s2) · 05emilia-l (34 s2) · 52-a (51 s4) · 29-a (26 s5) · 27-a (27) · 03r-q (105) · 16-a/b (16 s4) · 23-a/b/c, std-c (23) · 24-a/b/c/g (24; 24-g also 97 s5's surface)
-- [ ] ctr-b — as 08-e2 · ctr-c — 117 s4
+- [ ] ctr-c — 117 s4
 - [ ] ctr-d — 91 · 128's member list · ctr-k — 17 · 128 · 106 s2
 - [ ] ctr-e — 116 s2 · ctr-f — the 116 and 118 READMEs · ctr-g — 116 s2 · 117 s1 · bpp-g
 - [ ] ctr-i — 05's string lowering · 02's codepoint cell · ctr-j — 04 s8 · 02 s13 · 03 s8 · 01 s18

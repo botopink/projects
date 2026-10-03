@@ -6,8 +6,7 @@ are for; the tree has neither. · **State:** not started
 (previous arm in `html.bp`) · `05-jhonstart/26` (owns the core, carries front 29's island work) ·
 `07-onze/50` (ONZ-68-split: lazy starters — without them deferred code still downloads up front)
 · `07-onze/49` (island route in `onze-server`) · `04-rakun/22` (rakun-app), 117 before it on that
-member · open: [`08-e2`](../README.md#08-e2--which-modes-the-islands-props-setting-may-name)
-(step 4). Written against decision 224.
+member · Written against decisions 224, 271, 272.
 **Owns:** in `repository/jhonstart/modules/jhonstart/src`: new `island_strategy.bp`,
 `deferred.bp`; the step-named lines of `client.bp`, `render.bp:218`, `island_runtime.mjs` · new
 `repository/rakun/modules/rakun-app/src/server_islands.bp` + `sidecars/` cell (after
@@ -100,7 +99,7 @@ the function `#[clientProps]` emits, reached by name `<Component>Props` (as `par
 **Sealing** (224): mode per project in `onze.json` (`"islands": {"props": "sealed"}`), no
 per-request/per-environment override; default **sealed** — AES-256-GCM over the encoded props; key
 `ONZE_KEY` or build-generated (`onze create-key`, 124) into the server bundle. Cipher: one Erlang
-host cell in rakun-app (erlang-only by manifest, no node twin). Other modes: `08-e2` (decision 67).
+host cell in rakun-app (erlang-only by manifest, no node twin). Modes (decision 272): `"sealed"` (default) or `"server"` — the props stored server-side under a random id, nothing in the URL (`?id=9f3a…`), the shell not cacheable across instances; no mode exposes the props (no `"signed"`); anything else is a config error.
 The variable is always `ONZE_KEY` (decision 271).
 
 **Prefix is onze's.** rakun-app exposes `serveIslands(prefix)`; onze-server passes `/_onze/island`
@@ -137,7 +136,7 @@ The variable is always `ONZE_KEY` (decision 271).
       (`entry.bp`) with its name — never a mount that starts nothing
 - [ ] two `client:` directives on one tag fail at the second
 
-### Step 4 — Server islands (the modes beside `sealed` wait on `08-e2`)
+### Step 4 — Server islands (modes `sealed` and `server`, decision 272)
 
 - [ ] `examples/server-island-example.bp` passes on erlang
 - [ ] `server_islands.bp`: `serveIslands(prefix)`, `seal` / `unseal`; tampered or truncated `p` answers 400, renders nothing
@@ -146,6 +145,9 @@ The variable is always `ONZE_KEY` (decision 271).
 - [ ] `server:defer` on a non-`#[deferred]` component fails at boot, naming it
 - [ ] `seal` / `unseal` take the mode as a plain value — `onze.json`'s `"islands": {"props": …}`,
       read by onze's config (124) — default `sealed` (224)
+- [ ] mode `server`: the props stored server-side under a random id, the URL carries only `?id=…`;
+      an unknown or expired id answers 400 and renders nothing; two instances without a shared
+      store do not serve each other's ids (stated in `AGENTS.md`)
 
 ### Step 5 — The network (waits on ONZ-68-split)
 
@@ -154,7 +156,7 @@ The variable is always `ONZE_KEY` (decision 271).
 
 ## Decisions
 
-- `08-e2` — which modes `"islands": {"props": …}` may name besides `sealed`. Step 4; 124.
+None open (224, 271, 272 answered the server-island ones).
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `modules/jhonstart`; on commonJS in `jhonstart-dom-test`; on erlang in `rakun-app`

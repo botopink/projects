@@ -170,12 +170,12 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 | **119** | 08-d · s2: 118, 26 | 120 |
 | **123** | 04 · 65 · s1: 08-j | 127 s4 · 104 s5 |
 | **117** | 102 · 22 · 49 · 50 · 121 s1–2 · s1: bpp-g, ctr-g · s4: ctr-c | 120 · 127 · 121 s6 · 124 |
-| **120** | 118 · 119 · 117 · 26 · 22 · 49 · 50 · s4: 08-e2 | 122 · 126 · 127 · 124 |
+| **120** | 118 · 119 · 117 · 26 · 22 · 49 · 50 | 122 · 126 · 127 · 124 |
 | **122** | 26 · 49 · 102 · 118 · 120 | 124 |
 | **126** | 27 · 118 · 120 | 127 · 124 |
 | **127** | 125 s6 · 103 · 22 · 67 · 49 · 117 · 120 · 126 · s4: 123 | 124 |
 | **116** | 118 · 26 s0 · `01-compiler/26` · with `01-checker` s22 · decisions 198–200, 212, 213, 221, 270 · s2: bpp-f, ctr-e, ctr-g, 213 against 221 for `not-found.bpp` (no id) · s6: bpp-g | 124 s5 |
-| **124** | 08-h · 50 · 71 · every other `08` front · s1, s3: 08-e2 · s5: 116, 53 | — |
+| **124** | 08-h · 50 · 71 · every other `08` front · s5: 116, 53 | — |
 | **98** | every library track's `-test` and README steps · s3: 95-f · s4: lg2-v | — |
 | **135** | snap-a · s4: 34 · s1–4: the owning fronts' other steps | s5: 53 s2–6 |
 
