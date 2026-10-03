@@ -1,7 +1,8 @@
 # Front 01 — checker: every program `botopink check` accepts runs the same on four targets
 
-**Priority:** high · **State:** partial: steps 1–9, 11, 12, 14–17 on feat; step 6 box 3, steps 10,
-13, 18–20 and ten rows open
+**Priority:** high · **State:** partial: steps 1–9, 11, 12, 14–17, 19, 20 on feat; step 18 built on
+feat (botopink-lang `49455602` merges `19d59508`, `6185db3c`) with one box open; step 6 box 3, steps
+10, 13, 21, 22 and ten rows open
 **Depends on:** `04-js` step 6 (step 6 box 3) · `16-formatter` step 8 (step 10) · `05-wasm` nested
 constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated rows lg2-a, lg2-f, lg2-q, lg2-e, lg2-m, lg2-r, lg2-t — each a step here only once
 answered.
@@ -70,18 +71,27 @@ constructor; keep the nested refusal until wasm lowers it. Contract: `../03-beam
 - [ ] `run/val_spread_only_list_pattern` prints `rest`'s length; `run/val_nested_ctor_pattern`
       prints `r` and `n` — four targets
 
-### Step 18 — numeric literal suffixes (decision 247)
+### Step 18 — numeric literal suffixes (decision 247) — built (`19d59508`, on feat through `49455602`)
 
 Kotlin's, lowercase, every numeric type: `1.5f` `f32`, `1.5d` `f64`, `42l` `i64`, `42u` `u32`,
 `42ul` `u64`, `42i8`, `42i16`, `42u8`, `42u16`, `42isize`, `42usize`. Uppercase = located error
 naming the lowercase; unsuffixed never changes type to fit (`val x: f64 = 1` refused — 209 reversed;
-215 stands). Lexer rule (hex digits vs suffixes, exponent, member access on a literal) here; target
-representation of `i64` / `u64` / `f32` the backends'. Lexer has no suffix handling today.
+215 stands). Built: the suffix kept in the
+number's token (`lexer.zig` `splitNumber`, `numberSuffixType`, `numberBackendText`; hex digits vs
+`f`/`d`, exponent, member access on a literal — `parser/tests/decision247.zig`);
+`run/numeric_literal_suffixes` (every suffix, a suffixed number pattern);
+`reject/number_suffix_{uppercase,unknown,float_on_radix,integer_on_float}`,
+`reject/number_exponent_without_digits`, `reject/integer_suffix_out_of_range`,
+`reject/number_pattern_{of_another_type,suffix_disagrees}`; the unsuffixed mismatch
+`reject/integer_literal_{never_fits_f64,operand_of_f64,beside_float_in_array}`,
+`reject/float_literal_never_fits_f32` (`run/integer_literal_fits_f64` deleted); an `l` literal past
+2^53 refused on commonJS (`run/wide_literal_past_js_safe_integer.commonJS.expect`); `docs.md` §
+Numeric literals.
 
-- [ ] the suffixes lex and type, the uppercase and the unsuffixed-mismatch refusals located — one
-      `run/` and one `reject/` cell each; the `language-gaps.md` row "`f32` has no literal" closes
+- [ ] `language-gaps.md`'s rows "`f32` has no literal" and "An `i64` has no literal" lose their
+      literal half; a cold gate green on `49455602` (no gate has run on the merge)
 
-### Step 19 — a type application before a member (decision 255 (1)) — built on `front/01-checker` (botopink-lang `6185db3c`), not on `feat`
+### Step 19 — a type application before a member (decision 255 (1)) — built (`6185db3c`, on feat through `49455602`)
 
 `Dict<string, unknown>.empty()`: a type name with explicit type arguments followed by `.` or `(` is a
 type application (1.0.10 decision 8 §1.3 extended to a type's member); elsewhere `<` is a comparison.
@@ -94,7 +104,7 @@ The list goes to the chain's first link (`receiverTypeArgs`); the checker binds 
 - [ ] a type application through a module namespace (`collections.Dict<K, V>.empty()` — the head is a
       value's name, so the list is a comparison there): built, or refused with a located message
 
-### Step 20 — `comptime <expr>` (decision 255 (2)) — measured and pinned on `front/01-checker` (`6185db3c`), not on `feat`
+### Step 20 — `comptime <expr>` (decision 255 (2)) — measured and pinned (`6185db3c`, on feat through `49455602`)
 
 `comptime <expr>` is `comptime { break <expr>; }`: parser, checker, evaluator (`eval.zig`) and gate
 (`validateComptime`) read it as the block. Built: `run/comptime_expression_is_block`,

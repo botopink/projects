@@ -1,10 +1,10 @@
 # Front 97 — std dedupe: one place for every shared primitive
 
 **Priority:** high — every library's "consume std X" step is written against this surface ·
-**State:** partial: steps 0–5, 8–10 on feat; residue of steps 1, 2, 4, step 6 (conditional), 11, 12
-open; step 7 → 20-snap
-**Depends on:** `std-d` (step 6) · `24-g` confirmed (step 5) · decision 230 (step 11) · decisions
-259, 260, 262, 263 (step 12)
+**State:** partial: steps 0–5, 8–10, 12 (but `unicode`) on feat; residue of steps 1, 2, 4, 12, step 6
+(conditional), 11 open; step 7 → 20-snap
+**Depends on:** `std-d` (step 6) · `24-g` confirmed (step 5) · decision 230 (step 11) · decision
+262 (step 12)
 **Owns:** `repository/botopink-lang/libs/std/src/**`, `libs/std/AGENTS.md`, `libs/std/test/**` ·
 consumer edits `libs/actions/src/{envelope,rpc}.bp`, `libs/validation/src/binding.bp` ·
 `libs/AGENTS.md` · `docs.md` § std where it lists the surface
@@ -37,6 +37,13 @@ function in the concept's module. Each library copy deleted by its file's front.
 - Step 9 — `Dict.ofEntries` (decision 174)
 - Step 10 — `Array.join` without `$stringify`, `Array.unique` keeps first occurrences, `random.bool`
   dropped (decisions 239, 217, 250)
+- Step 12 — `String.fromCodepoint(cp: i32)` in `primitives.bp` (Node `String.fromCodePoint` behind a
+  scalar-value check, erlang `<<Cp/utf8>>`), `json` / `encoding` build text with it; `math.pow` is
+  `powBody`, glibc's `pow` ported, on four targets (`pow(158.42161580281933, 2.853827476501465)` row
+  of `run/std_math_on_every_target`); transcendentals `fn:` bodies on erlang and beam, exact ops
+  host calls (decisions 259, 262, 263 — `d71b89f5`, `a443f52d`); `contentHash` folds code points
+  on every target (`Array.from(s)`, `hash.contentHash folds a code point above U+FFFF once`; decision
+  260 — `d71b89f5`)
 
 Facts the open rows rely on:
 - `parseInt` answers `i64`, refuses beyond ±(2^53 − 1); on wasm a template-only `String` method traps.
@@ -91,25 +98,12 @@ with a located message, recorded as the design; or (b) restructured so no host c
 - [ ] each of the four modules refuses wasm with a located message (recorded in `libs/std/AGENTS.md`
       as the design) or builds on wasm with no host cell reachable
 
-### Step 12 — the std bodies `01-compiler/05-wasm` step 5 waits on (decisions 259, 260, 262, 263)
+### Step 12 — `unicode.fromCodepoint` over the primitive (decision 262)
 
-Std half of 05-wasm step 5 (lowering, cells, heap growth — decision 261 — are 05-wasm's). Not on
-feat: no `String.fromCodepoint` in `primitives.bp`; `math.pow` still double-double `powBody`;
-`contentHash`'s Node template folds UTF-16 units; transcendentals bind `math:*` on erlang and beam.
+Std half of 05-wasm step 5. `unicode.bp`'s `fromCodepoint` is still a Node / Erlang template
+(`String.fromCodePoint($0)`, `unicode:characters_to_binary([$0], utf8)`) with no wasm binding.
 
-- [ ] `String.fromCodepoint(cp: i32) -> string` in `primitives.bp` — Node `String.fromCodePoint`,
-      erlang `<<Cp/utf8>>`, wasm a prelude helper (05-wasm); `unicode.fromCodepoint` a `fn:` over it;
-      `unicode`, `json`, `encoding`, `querystring` build text with it (decision 262)
-- [ ] `math.pow` is std's private botopink port of glibc's `pow` (algorithm since glibc 2.28, its
-      128-entry `log` and `exp` tables) on every target, commonJS included:
-      `math.pow(158.42161580281933, 2.853827476501465)` is `1896229.4525711867` everywhere
-      (decisions 259, 263)
-- [ ] `hash.contentHash` folds code points on every target: `contentHash("🎉")` is
-      `djb2([127881])`; Node template folds `Array.from(s)` (decision 260); emilia's fixture
-      `e_39b87d03` (ASCII) unchanged
-- [ ] `std/math`'s transcendentals call std's private botopink bodies on erlang and beam too
-      (`#[@External.Erlang("fn:tanBody")]` / `Beam`, needs decision 238's `fn:` there); `sqrt`,
-      `floor`, `abs` and other IEEE-754-exact operations stay host calls (decision 263)
+- [ ] `unicode.fromCodepoint` a `fn:` over `String.fromCodepoint`; `unicode` builds its text with it
 
 ## Consumers — "consume std X" rows handed to the library fronts
 

@@ -1,6 +1,6 @@
 # Front 04 — js: commonJS keeps no dead lowering and no marker std alone may write
 
-**Priority:** medium · **State:** partial: steps 3, 4, 5, 7 and C-37 on feat; steps 1, 2, 6, 8 open
+**Priority:** medium · **State:** partial: steps 3, 4, 5, 7, 8 and C-37 on feat; steps 1, 2, 6 open
 **Depends on:** `01-checker`'s `@block` tail-form refusal (step 1), `$stringify` parser refusal (step
 2), step 6's typed AST (step 6)
 **Owns:** `modules/compiler-core/src/codegen/commonJS.zig` · `src/codegen/typescript.zig` ·
@@ -26,7 +26,11 @@ Step 3 `scripts/tsc-check.sh` (gate stage 11, `tsc` 7.0.2 via `npx`, every emitt
 `run/sibling_blocks_bind_one_name` · 5 no `unwrapOrThrow` ships (179), in `js/AGENTS.md` · 7
 `default fn` body lowered without the checker: `self` as the primitive, `Ok`/`Error` as the object ·
 1 box 1 `@block` IIFE producers measured (`js/AGENTS.md` § The IIFE build sites) · C-37
-`charCodeAt` prelude patch calls `codePointAt`, never itself.
+`charCodeAt` prelude patch calls `codePointAt`, never itself · 8 an integer out of its type aborts
+(264): `__bp_int` (`intChecked`, `js_prelude` `int_check`), `i64` range ±(2^53−1)
+(`ArithKind.rangeExactDouble`), `/`·`%` by zero `integer division by zero` — 02 step 13's cells with
+`.commonJS.stderr`, `run/int_overflow_mul_i64` past both bounds, `run/int_division_by_zero`
+(`48a096ea`).
 
 ## Open
 
@@ -53,14 +57,6 @@ Typed AST marks the arm's `throw` as the enclosing function's (today `JumpInValu
 codegen); the arm emits `return {Error: e}`.
 
 - [ ] `run/throw_in_case_arm_result` green on commonJS; `isError()` true on the throw path
-
-### Step 8 — an integer that leaves its type aborts (decision 264)
-
-Range check + abort after `+`, `-`, `*`, unary `-`, compound assignments of every integer type;
-`i64` range is ±(2^53−1) (`docs.md` cap; decision 247 refuses an `l` literal beyond it), so beyond
-it aborts too, never rounds.
-
-- [ ] the cells of `02-erlang` step 13 green on commonJS, an `i64` past ±(2^53−1) included
 
 ### Rows found by other fronts
 

@@ -29,7 +29,7 @@ em `specs/1.0.11-beta/`, com as auditorias em `closure-audit/`). O `00-gate` tem
 fechadas; a 114 segura o resto do gate (CI verde do botopink-lang na `feat`, `budget_cold` 300 contra
 os 450 da decisão 265, vscode-extension em OTP 24, nenhum gate frio gravado na ponta atual). No
 `01-compiler`, a 129 está pronta e 01, 02, 03, 04, 05, 12, 14, 17, 26, 130 e 134 estão parciais na
-`feat`. Das bibliotecas: 104 e 106 (metade do pacote) e 125 passos 0–2 entraram; **102 e 103 só existem
+`feat`; entraram as decisões 263 e 264 (um `math` em todo sistema; estouro de inteiro aborta — no wasm ainda faltam `u32` e os tipos estreitos), e o 01-checker (decisão 255 e sufixos de literal) e o 130-rakun-di foram mergeados no botopink-lang e no rakun sem gate frio. Das bibliotecas: 104 e 106 (metade do pacote) e 125 passos 0–2 entraram; **102 e 103 só existem
 em branches não publicados** e seguram o 128, que abre a trilha do rakun. A trilha `20-snap` (frente
 135) reúne os mapas de snapshot, reavaliados caso a caso. Status completo, em cinco linhas de trabalho:
 `specs/1.0.12-beta/status.md`.

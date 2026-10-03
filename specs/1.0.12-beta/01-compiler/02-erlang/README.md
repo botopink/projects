@@ -1,9 +1,9 @@
 # Front 02 — erlang: the erlang target answers what decision 8 says, on every shape
 
-**Priority:** high · **State:** partial: steps 1–3, 5 (box 1), 6, 8, 9, 11 on feat; steps 4, 7, 10,
-12, 13 open
+**Priority:** high · **State:** partial: steps 1–3, 5 (box 1), 6, 8, 9, 11–13 on feat; steps 4, 7,
+10 open
 **Depends on:** `05-wasm` (step 7's wasm column) · `01-checker`'s `@block` tail-form refusal (step
-10) · `02-std-and-packaging` (step 12's private `math` bodies)
+10)
 **Owns:** `modules/compiler-core/src/codegen/erlang.zig` · `src/codegen/crossModule.zig` ·
 `src/codegen/beam/{erl_ast,erl_emitter}.zig` (Erlang-text renderer, carve-out from 03; erlang target
 and comptime module text both use it) · `snapshots/codegen/<runtime>/erlang/**`,
@@ -32,7 +32,14 @@ box 1 `\u{…}` and non-ASCII literals in Erlang text; entry point sets `standar
 6 `string.indexOf` counts codepoints (decisions 169, 240): `run/string_index_of_codepoints`, one
 `.out` · 8 captured-`var` write: nothing lowers here (148) · 9 sibling loader under `build` (T1, with
 `26-cli-tooling` step 1) · 10 box 1 block-as-value producers measured (`src/codegen/AGENTS.md`) · 11
-C-06's `KNOWN` notes and `primitives.d.bp` / `@external(` sweep in `erlang.zig`. Rows from other
+C-06's `KNOWN` notes and `primitives.d.bp` / `@external(` sweep in `erlang.zig` · 12 one `math`
+(263): `fn:` read on `@External.Erlang` (`codegen/hostFnBinding.zig`, `tests/externals.zig`'s
+`erlang: … fn: binds a declare fn to a private body`), `std/math`'s transcendentals and `pow` run
+std's bodies, exact ops host calls — `run/std_math_on_every_target` with the `pow` row (`a443f52d`) ·
+13 an integer out of its type aborts (264): `intChecked` / `'__bp_int'/4` after `+ - * /`, unary `-`,
+`+=` — `run/int_overflow_{add_i32,add_i8,sub_u32,mul_i64,negate_i32,plus_assign}`,
+`run/int_division_min_by_minus_one` (`.exit` + `.erlang.stderr`), `run/int_arith_at_bounds` in
+range; erlang snapshots move by the check only (`48a096ea`). Rows from other
 fronts: `default fn` body's `unwrapOr`/method calls, `true`/`false` in a tuple pattern,
 `Point(x: 0, ..)`, `throw` in a `case` arm of a `-> @Result` fn, host locale, lambda over an
 enclosing name (205), a `default fn` two types adopt, `[..all]` alone, `test/` module calling its own
@@ -71,24 +78,6 @@ same `fun`. Nothing in `erlang.zig` deleted.
 
 - [ ] `@block { 1 + 2 }` refused by the checker (`01-checker` row) — `snapshots/codegen/*/erlang/**`
       then byte-identical
-
-### Step 12 — one `math` on every OS (decision 263)
-
-`std/math` transcendentals call std's private botopink bodies (fdlibm port) on erlang too —
-`#[@External.Erlang("fn:tanBody")]`; `pow` = decision 259's glibc port; `sqrt`, `floor`, `abs` and
-other exact ops stay host calls. Needs decision 238's `fn:` form on erlang (today `math.bp` binds
-`math:pow`, `math:tan`, …).
-
-- [ ] `fn:` form read on `@External.Erlang`; `run/std_math_on_every_target` green on erlang on
-      `ubuntu-22.04` and `macos-14` with its exact values
-
-### Step 13 — an integer that leaves its type aborts (decision 264)
-
-`+`, `-`, `*`, unary `-`, compound assignments of `i32` / `i64` / `u32` / `u64` (and narrower) check
-the result against the declared range and abort as wasm's `int_chk`. No wrap, no wider number.
-
-- [ ] a `run/` cell per operator family whose overflow aborts on erlang as on wasm (`.exit`), and a
-      result in range unchanged; erlang snapshots move by the range test only
 
 ### Rows found by other fronts
 

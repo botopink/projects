@@ -1,10 +1,11 @@
 # Front 05 — wasm: no wrong answer at exit 0, and std builds on wasm
 
 **Priority:** high · **State:** partial: steps 1–4 on feat (step 1's and step 3's last boxes wait on
-02's cells); step 5 under way — vocabulary, codepoint unit, `math`, `escape`, `hash`, `io/random`
-build; decisions 259–263 to build
-**Depends on:** `02-erlang` steps 4, 7 (cells) · `02-std-and-packaging` (std bodies of decisions
-259, 260, 262) · `18-comptime-runtimes` (decision 261's two opcodes in the binary emitter)
+02's cells); step 5 under way — vocabulary, codepoint unit, `math`, `escape`, `hash`, `io/random`,
+heap growth, `String.fromCodepoint`, `pow`, astral `contentHash` on feat; `unicode`, `json`'s two
+cells, the family cells and `wat/AGENTS.md` open
+**Depends on:** `02-erlang` steps 4, 7 (cells) · `02-std-and-packaging` (`unicode.fromCodepoint`
+over `String.fromCodepoint`, decision 262)
 **Owns:** `modules/compiler-core/src/codegen/wat.zig` · `src/codegen/wat/**` except
 `wasm_binary_emitter.zig` (18) · `snapshots/codegen/<runtime>/wasm/**`,
 `snapshots/codegen/<runtime>/errors/wasm/**` · `src/codegen/tests/wat.zig` · its cells
@@ -42,11 +43,25 @@ std's `math` and `hash` answer commonJS's bits on every target.
 - Step 2 — `==` between type-parameter values compares strings by content (`run/generic_string_equality`)
 - Step 3 box 1 — one wasm fixture per tuple / `..` / type-pattern shape
 - Step 4 — strict host-wrapper rule (decision 146; `run/external_wrapper_keeps_refusal`)
-- Step 5 boxes 1–4 — `@External.Wasm` vocabulary (238); codepoint indices (240); `math`, `escape`, `hash`, `io/random` build (`run/std_{math,escape,hash_digests,hash_macs,hash_content,random}_on_every_target`)
+- Step 5 boxes 1–4 — `@External.Wasm` vocabulary (238); codepoint indices (240); `math`, `escape`, `hash`, `io/random` build (`run/std_{math,escape,hash,random}_on_every_target`)
+- Step 5 — heap growth (261): every allocation through `$__alloc`, which calls `memory.grow` past `memory.size` and traps on a refused grow; `memory_size` / `memory_grow` in `wat_ast` and `wasm_binary_emitter.zig` (`run/heap_grows_past_one_page`; the hash cells one, `run/std_hash_on_every_target`, `pbkdf2Sha256(…, 9, 32)` in it) — `d71b89f5`
+- Step 5 — `String.fromCodepoint` lowered (262): `$__str_from_cp`, a non-scalar value traps (`run/string_from_codepoint`, `run/string_from_codepoint_surrogate`); `json` and `encoding` build text with it through `fn:` bodies — `d71b89f5`
+- Step 5 — `pow` is std's glibc port on four targets, transcendentals one body on every OS (259, 263): `run/std_math_on_every_target`'s `pow(158.42161580281933, 2.853827476501465)` row — `a443f52d`
+- Step 5 — `contentHash` folds code points (260): `contentHashBody` without its surrogate step; `contentHash("🎉")`, `contentHash("a🎉b")` rows of `run/std_hash_on_every_target` — `d71b89f5`
 - Floats, `i64`, overflow: `Float.toString` = V8's shortest digits, float slot keeps its `f64`, `i64` full width, overflow traps (`run/float_shortest_text`, `run/float_slot_keeps_f64`, `run/i64_full_width`; decision 264 for wasm)
 - `val g = greet; g()` typed by the function's declaration (`run/fn_value_bound_by_val`)
 
 ## Open
+
+### Step 8 — overflow for the unsigned and narrow integer types (decision 264)
+
+`wat.zig` `emitArith` checks only `i32` / `i64`: `run/int_overflow_sub_u32` and
+`run/int_overflow_add_i8` are red on wasm (`tests/language/AGENTS.md` says so), though d71b89f5
+claims `i8` and `u32`.
+
+- [ ] `u32`, `u64` and the narrow types (`i8`, `i16`, `u8`, `u16`) checked after `+`, `-`, `*`, unary
+      `-` and `+=` on wasm; both cells green on wasm
+
 
 ### Step 1 — `Array.unique` on wasm (box 1)
 
@@ -62,24 +77,19 @@ Truth-table program refused on wasm (`cannot box this value as unknown`) — blo
 - [ ] `run/is_truth_table` and `run/unknown_stores_nothing` green on wasm, or a row wasm cannot
       answer traps and its `.wasm.expect` says so
 
-### Step 5 — the rest of std on wasm (decisions 259–263)
+### Step 5 — the rest of std on wasm (decisions 262, 241)
 
-| Item | Decision | What to build |
-|---|---|---|
-| heap growth | 261 | every allocation via a helper calling `memory.grow` when the bump pointer passes `memory.size` (failed grow traps); `wat_ast` gains `memory.size` / `memory.grow`, `wasm_binary_emitter.zig` its two opcodes (18). Today one 64 KiB page, `min_pages = 1` (`wat/AGENTS.md` § Host bindings, limits table): `pbkdf2Sha256(…, 9, 32)` traps, hash cells are three, not one |
-| `String.fromCodepoint(cp: i32) -> string` | 262 | primitive in `primitives.bp` (std's) — Node `String.fromCodePoint`, erlang `<<Cp/utf8>>`, wasm a prelude helper writing UTF-8 bytes; `unicode.fromCodepoint` becomes a `fn:` over it. Unblocks `unicode`, `json`, `encoding` (hence `querystring`) |
-| `pow` | 259 | std's private port of glibc's `pow` (algorithm since glibc 2.28, 128-entry `log` and `exp` tables) replaces double-double `powBody`; under 263 it is `pow` on every target, commonJS included |
-| `contentHash` above U+FFFF | 260 | code points: `contentHash("🎉")` = `djb2([127881])` everywhere; wasm `contentHashBody` drops its surrogate step, Node template folds `Array.from(s)` (std's) |
-| one `math` on every OS | 263 | transcendentals call std's private bodies on erlang and beam too (`02-erlang` step 12, `03-beam` step 7); nothing left on wasm but 259's `pow` |
+`unicode` binds nothing on wasm (`fromCodepoint`, `codepoints`, the four `normalize*` cells are Node /
+Erlang templates; `unicode.fromCodepoint` a `fn:` over `String.fromCodepoint` is std's, decision
+262); `json.parse` / `json.stringify` have no `@External.Wasm`. `run/std_module_imports_std_module`
+keeps its `.wasm.expect`, `run/std_template_host_fns_across_modules` and
+`run/std_default_fn_in_a_std_module` their `.targets`, though `encoding` now binds every cell on wasm.
+The limits table of `wat/AGENTS.md` still carries the one-page row.
 
-- [ ] `memory.grow`: an allocation past 64 KiB succeeds; `run/std_hash_*` may merge into one cell;
-      `pbkdf2Sha256(…, 9, 32)` runs
-- [ ] `String.fromCodepoint` lowered on wasm; `botopink build --target wasm` in `libs/std` refuses
-      only group 3's modules
+- [ ] `botopink build --target wasm` in `libs/std` refuses only group 3's modules (`unicode`,
+      `json.parse` / `json.stringify` bound)
 - [ ] a `run/` cell per remaining module family (`unicode`, `json`, `encoding`, `querystring`) on
       four targets, the commonJS answers
-- [ ] `run/std_math_on_every_target` with decision 259's `pow`, green on `ubuntu-22.04` and `macos-14`
-- [ ] `contentHash` of astral text equal on four targets (a row in `run/std_hash_content_on_every_target`)
 - [ ] `wat/AGENTS.md` § Where this backend refuses to answer lists only group 3; limits table loses
       the one-page row
 

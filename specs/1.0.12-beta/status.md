@@ -1,8 +1,8 @@
 # Status — 1.0.12-beta
 
-**Date:** 2026-10-03 · **Base** (each repository's `feat`): botopink-lang `1659f50d` (decisions 263,
-264 landed: `a443f52d`, `48a096ea`, `d71b89f5`) · rakun
-`fac248b` · jhonstart `eddd681` · emilia `42d51ec` · onze `b1a3110` · erika `0a463f5` ·
+**Date:** 2026-10-03 · **Base** (each repository's `feat`): botopink-lang `49455602` (decisions 263,
+264 landed: `a443f52d`, `48a096ea`, `d71b89f5`; 01-checker and 130-rakun-di merged) · rakun
+`a19340b` · jhonstart `eddd681` · emilia `42d51ec` · onze `b1a3110` · erika `0a463f5` ·
 vscode-extension `7993f96`
 
 **Fronts:** 69 — **1 done** (129) · **18 partial** · **50 not started** (102 and 103 count as not
@@ -20,10 +20,10 @@ started: their done steps are on unpushed branches only).
 **Gate:** a green `scripts/gate.sh --cold` was last recorded on botopink-lang `0041d38c`; no cold
 gate is recorded on the current tip — [`00-gate/114`](./00-gate/114-gate-docs-and-ci/README.md)
 
-**Meta CI red until pushed:** the meta `feat` pins botopink-lang `292b1227`, which is on no remote
-(check 1 of `hook-integrity.yml`); botopink-lang's own `feat` is `1659f50d`. The 01-checker work
-(`6185db3c` steps 19–20, `19d59508` numeric literals) is on `origin/front/01-checker` only, not
-merged into `feat`.
+**Merged without a gate run:** botopink-lang `49455602` (`front/01-checker`: decision 255, numeric
+literal suffixes; `front/130-rakun-di`: `x is fn(…) -> T` narrowing) and rakun `a19340b`
+(`front/130-rakun-di`: `T.make()` factories) were merged into `feat` without `gate.sh --cold` —
+114 step 7 runs it.
 step 7. botopink-lang's GitHub CI still owes a green run on `feat` (114 step 3).
 
 Each line: `front/step — what is left · blocker`. Lanes: **L1** finish what is on `feat` · **L2**
@@ -41,23 +41,24 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 01-checker s10 — a lambda parameter annotation (T12) · 16 s8
 - [ ] 16 s8 — the lambda annotation's printer arm · none — lands before 01 s10
 - [ ] 01-checker s13 — JS-4's two checker gaps · 05 lowering a nested constructor in a `val`
-- [ ] 01-checker s18 — numeric literal suffixes (247) · ctr-j (the `l` literal rule)
+- [ ] 01-checker s18 — numeric literal suffixes (247): built on feat (`49455602`); left: the two `language-gaps.md` literal halves, a cold gate · ctr-j (the `l` literal rule)
 - [ ] 01-checker s21 — `comptime` evaluated at compile time everywhere (266; ck4-a (c))
 - [ ] 01-checker s22 — the `.bpp` prelude scope (270) · 116 hands the prelude list
-- [ ] 01-checker s20 — type application and `comptime <expr>` (255) · none — 130's rakun DI (256's registry) waits on it
+- [x] 01-checker s19–s20 — type application and `comptime <expr>` (255): on feat (`49455602`)
 - [ ] 01-checker rows — the `@block` tail refusal, the `$stringify` parser refusal (239), `primitive-type-name-taken`, the comptime body's file, T17, a package's module namespace, two aliased same-named types (imp-a), `@External.Wasm` read on every target, the template memo key, row 33 · the first two unblock 04 s1–2 and 02 s10
 - [ ] 04-js s1 — the `@block` tail-form IIFE · 01's `@block` tail refusal
 - [ ] 04-js s2 — `$stringify` in a template (164, 239); `render`'s arm and `emitStringify*` deleted · 01's parser refusal
 - [ ] 04-js s6 — `throw` in a `case` arm · 01 s6
-- [ ] 04-js s8 — an integer that leaves its type aborts (264) · ctr-j
+- [x] 04-js s8 — an integer that leaves its type aborts (264): on feat (`48a096ea`) · ctr-j still open
 - [ ] 05-wasm s1 box 1 · s3 box 2 — `Array.unique` and C-07's cells on wasm · 02 s4, s7
-- [ ] 05-wasm s5 — the rest of std on wasm: heap growth (261), `String.fromCodepoint` (262), `pow` (259), `contentHash` (260), one `math` (263) · 97 s12 (std bodies) · 18 s5 (261's opcodes) · ctr-i
+- [ ] 05-wasm s5 — the rest of std on wasm: heap growth, `pow`, astral `contentHash` done (`d71b89f5`, `a443f52d`); left: std-wide wasm build (`unicode`, `json` bindings), a four-target cell per family, `wat/AGENTS.md` limits row · 97 s12 box 1
+- [ ] 05-wasm s8 — overflow for `u32`/`u64` and the narrow integer types on wasm (264): `run/int_overflow_sub_u32`, `run/int_overflow_add_i8` red on wasm (261's opcodes) · ctr-i
 - [ ] 02-erlang s4 — `run/array_unique` (C-35) · with 05 s1
 - [ ] 02-erlang s5 box 2 — a decorator body carrying `\u{…}` (cell: 14 s7) · none
 - [ ] 02-erlang s7 — C-07's erlang tails as `run/` cells · 05's wasm column
 - [ ] 02-erlang s10 — the block-as-value lowering (R7) · 01's `@block` tail refusal
-- [ ] 02-erlang s12 · 03-beam s7 — one `math` on every OS (263) · 97 s12
-- [ ] 02-erlang s13 · 03-beam s8 — an integer that leaves its type aborts (264) · ctr-j
+- [x] 02-erlang s12 · 03-beam s7 — one `math` on every OS (263): on feat (`a443f52d`)
+- [x] 02-erlang s13 · 03-beam s8 — an integer that leaves its type aborts (264): on feat (`48a096ea`) · ctr-j still open
 - [ ] 03-beam s1 box 3 — the checker's two binding shapes on beam · 01 s13
 - [ ] 03-beam s2 box 1 — C-07's `run/` cells on beam · 02 s7 · 05
 - [ ] 12 s1 box 2 — `--cold` with the pre-existing tool set · 114 s7
@@ -85,7 +86,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 97 s3 · s5 residue — rakun's `parseDuration`, `skewOf` and four retry loops as "consume std" rows · no 04-rakun front carries them yet
 - [ ] 97 s4 residue — the engine under every `-test` member, `test-libs` counts · none
 - [ ] 97 s11 — std on wasm, group 3 (230) · none — sequenced with 05 s5
-- [ ] 97 s12 — the std bodies of 259, 260, 262, 263 · none — before 05 s5's and 02/03's `math` steps
+- [ ] 97 s12 — boxes 2–4 done (`powBody`, `fn:` transcendentals, code-point `contentHash`); left: `unicode.fromCodepoint` as a `fn:` over `String.fromCodepoint`
 - [ ] 104 s5 — the consumer sweep · 04, 65, 79, 12, 19, 22, `08-bpp/123`, 49, 51 landed (188)
 - [ ] 106 s2 — consumers: 17's and 26 s4's boxes; rakun-web's `problem_digest` commit · 65 landed · ctr-k
 - [ ] 125 s0 residue — the `f32` and `url.parse` platform facts as tests · none

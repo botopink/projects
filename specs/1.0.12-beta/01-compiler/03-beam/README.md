@@ -1,9 +1,8 @@
 # Front 03 — beam: the assembled target answers what erlang answers
 
-**Priority:** high · **State:** partial: steps 1–6 on feat (every owned lowering); step 1 box 3 and
-step 2 box 1 wait on other fronts' cells; steps 7–9 open
-**Depends on:** `01-checker` step 13 (step 1) · `02-erlang` step 7 and `05-wasm` (step 2) ·
-`02-std-and-packaging` (step 7's private `math` bodies)
+**Priority:** high · **State:** partial: steps 1–8 on feat (every owned lowering); step 1 box 3 and
+step 2 box 1 wait on other fronts' cells; step 9 open
+**Depends on:** `01-checker` step 13 (step 1) · `02-erlang` step 7 and `05-wasm` (step 2)
 **Owns:** `modules/compiler-core/src/codegen/beam_asm.zig` · `src/codegen/beam/**` except
 `{erl_ast,erl_emitter}.zig` (02), `beam_file.zig` / `opcodes.zig` / `gen_opcodes.sh` (18),
 `asm_text.zig` (14) · `snapshots/codegen/<runtime>/beam/**`, `snapshots/codegen/<runtime>/errors/beam/**`
@@ -31,7 +30,12 @@ Steps: 1 boxes 1–2 JS-4 beam twin: constructor in a `val` binds (`emitPatternD
 `run/ctor_pattern_in_val_binding`) · 2 boxes 2–3 one beam fixture per tuple / `..` / type-pattern
 shape; `beam_export_audit.sh` green · 3 sidecar's `.S` half (with 00-gate/111) · 4 captured-`var`
 write (148): threaded forms answer · 5 `keyed = true` in assembly (`17-beam-memory`'s) · 6 entry
-point sets `standard_io` unicode (`emitUnicodeStdio`).
+point sets `standard_io` unicode (`emitUnicodeStdio`) · 7 one `math` (263): `fn:` read on
+`@External.Beam` (or `Erlang` without one; `hostFnBinding.Lowering.apply(…, .beam)`,
+`tests/externals.zig`'s `beam: … fn: binds a declare fn to a private body`) —
+`run/std_math_on_every_target` (`a443f52d`) · 8 an integer out of its type aborts (264):
+`emitIntCheck` (two `is_ge` + inline `erlang:error({integer_overflow, …})`) — 02 step 13's cells with
+`.beam.stderr`; beam snapshots move by the check and its labels only (`48a096ea`).
 
 ## Open
 
@@ -49,22 +53,6 @@ n) = p` as `3 4`, nested one-variant enums as `7 x 9`, `val [..rest] = [1, 2, 3]
 ten lines on commonJS, erlang, beam.
 
 - [ ] `run/is_truth_table`, `run/unknown_stores_nothing` (`02-erlang` step 7's cells) green on beam
-
-### Step 7 — one `math` on every OS (decision 263)
-
-`02-erlang` step 12 on the `.S` side: `#[@External.Beam("fn:tanBody")]`, decision 259's `pow` body;
-exact ops stay host calls.
-
-- [ ] the `fn:` form read on `@External.Beam`; `run/std_math_on_every_target` green on beam on
-      `ubuntu-22.04` and `macos-14`
-
-### Step 8 — an integer that leaves its type aborts (decision 264)
-
-`02-erlang` step 13 in assembly: range test after `+`, `-`, `*`, unary `-`, compound assignments of
-every integer type, aborting as wasm's `int_chk`.
-
-- [ ] the cells of `02-erlang` step 13 green on beam; `beam_export_audit.sh` green; beam snapshots
-      move by the range test only
 
 ### Step 9 — a lambda produced by a `case` arm (`language-gaps.md` row 28)
 
