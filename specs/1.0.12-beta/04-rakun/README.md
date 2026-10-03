@@ -39,7 +39,7 @@ true in code: 74, 15, 81, 12, 65, 73 (each front says which).
 | [`11`](./11-rakun-actuator/README.md) | medium | not started | `rakun-actuator` · `rakun/src/actuator_api/**` | B | 128 · 22 (R11-7) |
 | [`65`](./65-rakun-url-rules/README.md) | high | not started (rule 2 of decision 201 in code) | `rakun-web` (not `tls.bp`) · one line of `rakun-data/src/devtools/devtools.bp` | B | 128 · decision 201 |
 | [`09`](./09-rakun-data-nosql/README.md) | low | not started | `rakun-data/src/nosql/**` | B | 19 step 1 · 13 · 03r-ab · lg2-a |
-| [`91`](./91-rakun-pulsar/README.md) | low | not started | `rakun-messaging/src/pulsar/**` (→ `rakun-pulsar` under 03r-ad (a)/(b)) | B | 15 · 03r-ad · lg2-a |
+| [`91`](./91-rakun-pulsar/README.md) | low | not started | `rakun-messaging/src/pulsar/**` (stays; data plane deferred — 274) | B | 15 · lg2-a |
 | [`92`](./92-rakun-rsocket/README.md) | low | partial: step 1 on `feat` | `rakun-messaging/src/rsocket/**` | B | 74 · 15 · 03r-an · lg2-a |
 | [`88`](./88-rakun-cli/README.md) | medium | not started | `rakun-cli` (not `release/**`) | C | 81 · 93 · 92 · 04 step 4 · 73's re-measure · lg2-j · onze 50 |
 
@@ -149,7 +149,7 @@ A cell is a hard assertion or does not exist (decision 160):
 | 15's three integration suites | 15 | never written: the in-process broker (03r-k) is the gate arm for every messaging cell; real drivers are `deferred.md` rows under the toolchain row "a sidecar cannot reach an external OTP application" |
 | 09's six opt-in suites | 09 | four arms in the gate (ETS, Mnesia, Redis on the double, Elasticsearch on an HTTP double); the four binary-protocol stores are boot refusals naming lg2-a (03r-ab) |
 | 83's Kafka producer transaction | 15 | 83's outbox path enrols in 86's producer transaction (`reliability/transaction.bp` `withProducerTransaction`, `read_committed` hold/drop); real broker a `deferred.md` row (03r-al) |
-| 91's data plane | 91 | 03r-ad; no gated cell under any option |
+| 91's data plane | 91 | deferred (274): a boot refusal cell, one `deferred.md` row |
 | the "toolchain row" boxes (R04, R81-1/2, R88-1) | 73 · 81 · 88 | re-measure: `botopink run` of the three examples after `botopink build --target erlang` (73); the release already compiles every `.erl` of an application directory into `ebin` (`rakun_release.erl` `compile_dir/1`) — 81 measures whether `out/erl` is among them |
 
 ## What the maintainer must decide
@@ -161,7 +161,7 @@ A cell is a hard assertion or does not exist (decision 160):
 reading (decision 67). Answered: 03r-y (184, superseded by 187), 03r-z (185), 03r-aa (160), 03r-ac
 (187), 03r-ah (153), 03r-ai (186), 03r-aj (187).
 
-**Open:** `03r-ab`, `03r-ad`, `03r-ae`, `03r-af`, `03r-ak`, `03r-al`, `03r-am`, `03r-an`, `03r-ao` (the 130 rule, § Order).
+**Open:** `03r-ab`, `03r-ae`, `03r-af`, `03r-ak`, `03r-al`, `03r-am`, `03r-an`, `03r-ao` (the 130 rule, § Order).
 
 ### 03r-ab · Front 09 ships four arms; the binary-protocol stores are boot refusals until lg2-a
 
@@ -175,21 +175,6 @@ and 7's 12 boxes become the refusal cells + one `deferred.md` row each. (b) the 
 sidecar, a front each. (c) defer 09 whole.
 **Recommendation.** (a): refusal naming the gap is restrictive; ETS fallback under a Mongo URL is what 09 forbids.
 **Blocks.** 09 step 5 (and the scope of steps 1–4).
-
-### 03r-ad · Pulsar: the member split and where the data plane goes
-
-**Measured.** 91's 20 open boxes are the binary data plane (CONNECT, LOOKUP, producers, consumers,
-flow, transactions) over `gen_tcp`, each "there is no Pulsar broker here". Codec's byte half
-blocked by lg2-a in botopink; an Erlang sidecar has binaries. On disk: `rakun-messaging/src/pulsar/**`;
-`pulsar.bp` the member's only `rakun-client` importer (`rakun-client` stays transitive through `rakun-metrics`).
-**Options.** (a) split now (`modules/rakun-pulsar/`, depends on `rakun`, `rakun-messaging`,
-`rakun-client`, `rakun-security`, `rakun-data` — `rakun-tx` before 128), data plane deferred whole
-to one `deferred.md` row; 91 = the split + refusal cell "a `pulsar://` listener refuses the boot
-naming the data plane". (b) split + data plane against a fixture-broker sidecar
-(`rakun_pulsar_fixture.erl`) — weeks, the track's largest. (c) neither: stays in `rakun-messaging`.
-**Recommendation.** (a): a day, removes the direct `rakun-client` edge from `rakun-messaging`; no
-broker to capture frames from means a protocol written blind.
-**Blocks.** 91 whole.
 
 ### 03r-ae · SAML 2.0 ACS: Exclusive XML Canonicalisation in a sidecar, or the SP retired
 
@@ -272,7 +257,7 @@ member edge (decision 185). (c) retire the WebSocket transport: R92-1's two boxe
 | RX-4 | the closed `status.md` L82 rows (static root, `Request` query/headers) | 65 (R82-4) · 04 (R62-3) |
 | RX-5 | the snapshot layer | `20-snap` step 2 (`snap-a`) |
 | RX-6 | the seven example projects | 73 (03r-af) |
-| RX-7 | `modules.md` vs the tree | 128 (the nine merges) · 91 (03r-ad) |
+| RX-7 | `modules.md` vs the tree | 128 (the nine merges) |
 | RX-10 | "consume std" (`02-std-and-packaging/97` § Consumers): `config.parseDuration` (`rakun/src/config.bp`) and `jwt.skewOf` (`rakun-security/src/jwt.bp`) → `clock.parseDuration` (one unit, digits only — not ISO `PT…`); number parsers answering a `@Result` (`rakun-metrics/src/registry.bp`, `rakun-scheduling/src/cron.bp`, `rakun/src/config.bp`) → `parseInt` / `parseFloat`; `Json` accessors (`jwt.bp`, `rakun/src/autoconfig_registry.bp`) → the `Json` methods; `rakun_security.erl`'s `pbkdf2` → `hash.pbkdf2Sha256` (salt as text, decision 175) | 04 (`config.bp`, `autoconfig_registry.bp`) · 79 (`jwt.bp`, `rakun_security.erl`) · 17 (`rakun-metrics`) · 15 (`cron.bp`) |
 | RX-11 | "consume std": the four retry loops → `async.RetryPolicy` / `retry` — `rakun-messaging/src/reliability/policy.bp` (own `RetryPolicy` / `nextDelay`, decision 170; mind 97's residual 4), the outbox (`rakun-tx/src/outbox.bp`, `rakun-data/src/tx/` after 128), `rakun-scheduling/src/jobstore/scheduler.bp`, the `rakun-mail` sidecar | 15 (the first three) · `rakun-mail`: **unowned** (no open front) |
 | RX-12 | "consume std": constant-time equality (`rakun/src/request_context.bp`) → `hash.equalsConstantTime`; `sha256` (`rakun-ws/src/ws.bp`, `rakun-client/src/ws/` after 128) → `hash.sha256`; `xmlEscape` (`config.bp`) → `escape.attribute`; `cron.rkFormatUtc`, the logger's `rkLogIso` → `clock.formatIso8601` | 04 · 93 · 15 · 17 |

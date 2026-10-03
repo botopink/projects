@@ -98,7 +98,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 103 s1 — `id.bp` (`deriveActionId`, `isActionId`), done on unpushed `front/103-actions-id` · push, gate, land
 - [ ] 102 s3 (W2) — consumers, one commit per member, rakun's first (`rakun-app`, `rakun-hateoas`), then jhonstart `routes.bp`, onze `types.bp`, `scan.bp`, `chunk.bp` · 102 s1–2 landed · 49-d confirmed as amended
 - [ ] 103 s2 (W2) — consumers: rakun-app `actions.bp`, jhonstart-forms `form.bp` · 103 s1 landed · the `deriveActionId` / rakun-app `actionId` wrapper choice to confirm
-- [ ] 128 (W3) — the nine merges, alone in rakun · the rakun commits of 102 s3 and 103 s2 · ctr-d (member list) · ctr-k
+- [ ] 128 (W3) — the nine merges, alone in rakun · the rakun commits of 102 s3 and 103 s2 · ctr-k
 - [ ] 130 ↔ 128 — 128 does not wait on 130; no 130 rakun commit while 128 is open; after it, each is a decision-188 consumer commit · **to confirm** (no id)
 - [ ] rakun group A (W4–W5) — 04 (s1, the tag epoch, first) · 74 · 08 (s1 after 04 s4) · 15 · 79 · 81 · 93 · 73 · 19 s1 · 128 landed
 - [ ] rakun group B (W5–W7) — 13 (04 s1) · 12 (04 s1, 19 s1) · 22 (04 s5) · 17 (13 s2) · 11 (22) · 65 · 09 (19 s1, 13) · 91 (15) · 92 (74, 15) · the A step each names
@@ -161,7 +161,6 @@ last section.
 - [ ] 07-g — 107 whole
 - [ ] 07-j — 125 s3–10 (size)
 - [ ] 03r-ab — 09 s5 (and the scope of s1–4)
-- [ ] 03r-ad — 91 whole
 - [ ] 03r-ae — 79 s3
 - [ ] 03r-af — 73 s3
 - [ ] 03r-ak — 81 s3
@@ -182,7 +181,7 @@ last section.
 - [ ] lg2-a … lg2-w — none opens a front; each opens a step when answered: 01-checker (a, e, f, m, q, r, t), 14 s6 (j, o, w), 26 s6 / 98 s4 / 73 (v); the rakun boxes that name them — 04 (e, g, j), 08 (e, f), 13 · 65 · 09 · 91 · 92 (a, b), 15 (w), 22 (q), 88 (j), 93 (o)
 - [ ] C-14 — 07-residuals s9 (a 1.0.10 id)
 - [ ] confirmations a step waits on — 49-d (102 s3) · 49-e (49 s2) · 05emilia-l (34 s2) · 52-a (51 s4) · 29-a (26 s5) · 27-a (27) · 03r-q (105) · 16-a/b (16 s4) · 23-a/b/c, std-c (23) · 24-a/b/c/g (24; 24-g also 97 s5's surface)
-- [ ] ctr-d — 91 · 128's member list · ctr-k — 17 · 128 · 106 s2
+- [ ] ctr-k — 17 · 128 · 106 s2
 - [ ] ctr-e — 116 s2 · ctr-f — the 116 and 118 READMEs · ctr-g — 116 s2 · 117 s1 · bpp-g
 - [ ] ctr-i — 05's string lowering · 02's codepoint cell · ctr-j — 04 s8 · 02 s13 · 03 s8 · 01 s18
 - [ ] ctr-l — 26 s8's refusal list · ctr-q — 130 s5 · ctr-r — 118's carve-outs, 34 / 33 opening first · ctr-s — 16 s6

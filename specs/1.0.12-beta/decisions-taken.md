@@ -4,7 +4,7 @@ The rules the fronts implement against. Numbers continue from
 [1.0.10-beta's record](../1.0.10-beta/decisions-taken.md) (which stopped at 143; 91–94, 97 and
 99–101 are used) and are never renumbered or reused. A question is raised in
 [`decisions-pending.md`](./decisions-pending.md) under a lettered id and moves here with the next
-free number. **The next free number is 274.**
+free number. **The next free number is 275.**
 
 Each row: number · the id it answered · the rule in force · the fronts it binds. A row amended by a
 later one states only what is in force and cites the amendment; a row fully replaced is one line.
@@ -32,7 +32,7 @@ behaviour; shared logic in std) — the maintainer may reverse it.
 164, 167, 168, 170, 205–211, 214, 215, 239, 242, 244, 245, 247, 255, 264 · Comptime, reflection &
 decorator outputs: 216, 234–237, 248, 251–254, 256, 266–269 · Formatter: 165, 166, 243 · Backends: 169,
 179, 238, 240, 241, 259–263 · std: 174–178, 197, 217, 250 · Bundled libraries: 144, 145, 163,
-171–173, 180–183, 194–196, 257 · rakun: 184, 185, 187, 201 · Track ordering: 188, 189 ·
+171–173, 180–183, 194–196, 257 · rakun: 184, 185, 187, 201, 274 · Track ordering: 188, 189 ·
 jhonstart & templates: 186, 190–193, 200, 202, 204, 220, 223 · onze: 218 · bpp: 198, 199, 203,
 212, 213, 221, 222, 224, 270, 271, 272, 273. No decision of this milestone is emilia's alone.
 
@@ -180,6 +180,7 @@ jhonstart & templates: 186, 190–193, 200, 202, 204, 220, 223 · onze: 218 · b
 | 185 | 03r-z | When one rakun member has to tell or ask another and an edge between them would be a cycle or drag a member into consumers that never configured it, the core defines the extension point and the members plug into it — no member-to-member edge (for what is optional; 187). For `rakun-cache` ↔ `rakun-client`: the core keeps a per-tag epoch (`rkTagEpoch` / `rkBumpTag`); `revalidateTag` bumps it; `rakun-client` stores the epochs of a request's tags beside the cached response and treats a changed epoch as a miss | 04 step 1 · 13 step 1 · 12 step 3 |
 | 187 | rk-uni | rakun's 25 members become 16 (a module another always needs is not a plugin): the core absorbs `rakun-actuator-api` and `rakun-logging`; `rakun-tx` and `rakun-devtools` move into `rakun-data`, `rakun-release` into `rakun-cli`, `rakun-hateoas` into `rakun-web`, `rakun-ws` (SOAP) into `rakun-client` (merged, not renamed — `03r-ac`), `rakun-rsocket` and `rakun-stream` into `rakun-messaging`; `web` and `actuator` stay members. With logging in the core, the core calls its own logger and no failure-report plugin exists (replaces 184). The span API is the core's; `rakun-app` reaches it through the dependency it has (`03r-aj`). The consolidation is 04-rakun's first front, before `04` step 1 (`ctr-d`, `ctr-k`) | 04-rakun/128 |
 | 201 | 69-b | A static root's miss falls through, as Next and `express.static` do: a static root is tried first; when no root resolves an existing file the entry answers `chain.next()` and the routes run (`GET /robots.txt` is the file, `GET /blog` the page); only `GET` and `HEAD` are served from a root, any other method goes to the chain; a refusal stays final at the entry (400 for a bad decode, 404 for a refused segment). `Onze.run` registers `public/` at `/**` before the routes, beside the fingerprinted root; no per-entry root and no `/public` prefix | 04-rakun/65 · 07-onze/49 step 4 |
+| 274 | 03r-ad · ctr-d | Pulsar is not split: it stays in `rakun-messaging/src/pulsar/` and rakun keeps 16 members. A split would remove no edge — `rakun-client` stays transitive through `rakun-metrics`, `rakun-messaging` already depends on `rakun-data` after 128, and `rakun-security` / transactions arrive only with a data plane. Front 91 is the admin arm, settings checks and codec that exist, a cell where a `pulsar://` listener refuses the boot naming the deferred data plane, and one `deferred.md` row for the binary protocol (a fixture-broker sidecar the way to write it, lg2-a). A split is asked again only when a data plane brings an edge no other messaging arm loads | 91 · 128 · `modules.md` |
 
 ## Track ordering
 

@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**63 questions and 20 contradictions are open, and 97 implementation choices await confirmation.**
+**62 questions and 19 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273.
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 ## Open questions
@@ -28,7 +28,7 @@ owning front lists the row under *Depends on*.
 - **Measured.** No primitive, std type or literal holds bytes (`val b: Bytes = "a";` mismatches everywhere); every host cell marshals via `string`.
 - **Options.** (1) None: a binary payload refused where it enters. (2) A `Bytes` primitive with an explicit, fallible boundary (`Bytes.fromUtf8`, `toUtf8 -> @Result`), no implicit conversion. (3) `string` also carries raw bytes.
 - **Recommendation.** (1). Cost: every upload, download, image endpoint; under (2) no conversion without a fallible call; (3) stays refused (how `Socket.recv` mangles UTF-8 today).
-- **Blocks.** The row; rakun 01, 13, 15, 24, 25, 70, 71; `03r-ab`, `03r-ad`.
+- **Blocks.** The row; rakun 01, 13, 15, 24, 25, 70, 71; `03r-ab`.
 
 #### lg2-b · What `@Task<T>` means on the BEAM
 - **Measured.** On erlang and beam a Task body runs to completion where created: two `async.delay(300, …)` created before either is awaited take ≥ 600 ms (under 600 ms on commonJS).
@@ -246,12 +246,6 @@ owning front lists the row under *Depends on*.
 - **Recommendation.** (a): never a fallback to ETS under a Mongo URL.
 - **Blocks.** 09 steps 4 and 7.
 
-#### 03r-ad · Pulsar: the member split and the data plane
-- **Measured.** 91 has 6 of 27 boxes; the 20 open are the binary data plane (CONNECT, LOOKUP, producers, consumers, flow, transactions) over `gen_tcp`, no broker to test against; Pulsar is `rakun-messaging/src/pulsar/**`, whose `pulsar.bp` is messaging's only `rakun-client` importer.
-- **Options.** (a) Split `modules/rakun-pulsar/` now (depending on `rakun`, `rakun-messaging`, `rakun-client`, `rakun-security`, `rakun-tx` — `ctr-d`), defer the data plane whole to one `deferred.md` row; the front = the split + the refusal cell "a `pulsar://` listener refuses the boot naming the data plane". (b) Split and write the data plane against a fixture-broker sidecar (weeks). (c) Neither: Pulsar stays inside `rakun-messaging`.
-- **Recommendation.** (a): the split removes three edges from every messaging consumer; a protocol written blind cannot be gated.
-- **Blocks.** 91 whole (step 1, the split, holds only under (a) or (b)).
-
 #### 03r-ae · SAML 2.0 ACS
 - **Measured.** Verifying an IdP signature needs Exclusive XML Canonicalisation, which neither OTP's `xmerl` nor std provides; `saml2/saml2.bp` answers 501.
 - **Options.** (a) exc-c14n over `xmerl`'s tree in `src/sidecars/rakun_saml2.erl` (~300 lines), the three boxes closed by a fixture signed with a checked-in key. (b) Retire the SP: the three boxes go, `saml2/` keeps 501 with a `deferred.md` row. (c) Leave them open.
@@ -414,12 +408,6 @@ owning front lists the row under *Depends on*.
 
 Rule pairs that cannot both hold, or a later rule changing an earlier one silently. Decision text
 left as recorded; the maintainer picks the resolution.
-
-#### ctr-d · Question `03r-ad` (a) against decision 187
-- **Rules.** `03r-ad` (a): "`modules/rakun-pulsar/`, depends on `rakun`, `rakun-messaging`, `rakun-client`, `rakun-security`, `rakun-tx`". 187: "`rakun-tx` and `rakun-devtools` into `rakun-data`"; "25 members become 16".
-- **Also.** (a) lists `rakun-security` and `rakun-data` as edges from the split, but front 91's mechanism adds them only with the data plane, which (a) defers.
-- **Recommendation.** Under (a) the member depends on `rakun-data` for transactions; the record states 17 members after the split.
-- **Blocks.** 91; 128's member list.
 
 #### ctr-e · Decisions 199 and 213's `-> Element` against decisions 113 and 198
 - **Rules.** 199: "`card.bpp` is `pub fn card(props: Props) -> Element`"; 213: "`pub default fn PostCard(props: Props) -> Element`". 198: the toolchain uses the package's default function, "naming no library itself" (113). `Element` is jhonstart's type; 199's `use` / `await` header statements need `-> @Component<…>`.

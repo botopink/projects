@@ -52,7 +52,7 @@ Each merge, four edits:
 4. **The split's seams go**: no failure-report plugin; the span API is the core's.
 
 Resulting members and graph: [`../modules.md`](../modules.md) § Members, § The graph; step 0's
-baseline: § On disk until 128 lands. `rakun-pulsar` (03r-ad, 91) untouched: `pulsar/**` stays.
+baseline: § On disk until 128 lands. Pulsar stays in `rakun-messaging/src/pulsar/` (274): `pulsar/**` moves with nothing.
 
 ## Open
 

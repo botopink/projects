@@ -1,7 +1,7 @@
 # Decisões pendentes — 1.0.12-beta (só o que está em aberto, por ordem de importância)
 
 Atualizado em 2026-10-03. Só o que ainda espera resposta sua: o que já foi respondido está em
-`specs/1.0.12-beta/decisions-taken.md` (decisões 144–273; próximo número livre: **274**) e saiu daqui.
+`specs/1.0.12-beta/decisions-taken.md` (decisões 144–274; próximo número livre: **275**) e saiu daqui.
 Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 234–236 (injeção do rakun,
 `@TypeInfo.all` com lista, decorador de função), 237 (captura do template pelo texto), 238–243
 (`@External.Wasm`, `$stringify`, codepoints no wasm, células sem WASI, dependência direta, vírgula final),
@@ -9,7 +9,7 @@ Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 2
 minúsculos; a 209 revertida), 248 (um builtin só, `@typeInfo`), 249 (o compilador separado por backend na
 chave do cache), 250 (`io.random.bool()` removido), 252 (todo builtin declarado), 253 (`@TypeInfo.all`),
 254 (o catálogo responde `unknown`; `is fn() -> T`), 255 (`Tipo<…>.membro` e `comptime <expr>`), 256 (o
-registro de beans em comptime no ponto de entrada), 257 (`Schema<T>` na `validation`), 258 (`--lib` múltiplo), 259–263 (`pow` da glibc, `contentHash` por code point, heap do wasm crescendo, `String.fromCodepoint`, `std/math` igual em todo sistema), 264 (estouro de inteiro é erro em todo target), 265 (orçamento do gate frio em 7m30s nesta versão; os 5 min ficam para a próxima), 266 (`comptime` avaliado em compilação em todo lugar, registro içado), 267 (parâmetro variádico `..values: T[]`; `@print` declarado com ele), 268 (tipo builtin `Decorator` no `with:` do `@TypeInfo.all`), 269 (`@getContext(T)` é hook, chamado atrás de `use`), 270 (o prelúdio do `.bpp`: o `src/prelude.bp` do pacote, só imports do próprio pacote, importado só quando usado; o cabeçalho vence), 271 (`ctr-a`: não existe `islandKeyEnv`; a chave da island é sempre `ONZE_KEY`; as chaves da 124 são `trailingSlash`, `redirects`, `markdown`, `islands`), 272 (`08-e2` e `ctr-b`: os modos das props da server island são só `"sealed"`, o padrão, ou `"server"` — nenhum expõe as props), 273 (`ctr-c`: um route handler nunca é exportado no build; `app/rss.xml/route.bp` é servido a cada request — a 222 fica inteira). A 245 e a 251 foram registradas cedo demais e retiradas.
+registro de beans em comptime no ponto de entrada), 257 (`Schema<T>` na `validation`), 258 (`--lib` múltiplo), 259–263 (`pow` da glibc, `contentHash` por code point, heap do wasm crescendo, `String.fromCodepoint`, `std/math` igual em todo sistema), 264 (estouro de inteiro é erro em todo target), 265 (orçamento do gate frio em 7m30s nesta versão; os 5 min ficam para a próxima), 266 (`comptime` avaliado em compilação em todo lugar, registro içado), 267 (parâmetro variádico `..values: T[]`; `@print` declarado com ele), 268 (tipo builtin `Decorator` no `with:` do `@TypeInfo.all`), 269 (`@getContext(T)` é hook, chamado atrás de `use`), 270 (o prelúdio do `.bpp`: o `src/prelude.bp` do pacote, só imports do próprio pacote, importado só quando usado; o cabeçalho vence), 271 (`ctr-a`: não existe `islandKeyEnv`; a chave da island é sempre `ONZE_KEY`; as chaves da 124 são `trailingSlash`, `redirects`, `markdown`, `islands`), 272 (`08-e2` e `ctr-b`: os modos das props da server island são só `"sealed"`, o padrão, ou `"server"` — nenhum expõe as props), 273 (`ctr-c`: um route handler nunca é exportado no build; `app/rss.xml/route.bp` é servido a cada request — a 222 fica inteira), 274 (`03r-ad` e `ctr-d`: o Pulsar não vira membro — fica em `rakun-messaging/src/pulsar/`; o plano de dados é recusado no boot e adiado). A 245 e a 251 foram registradas cedo demais e retiradas.
 
 > **Numeração.** O prelúdio do `.bpp` tinha sido registrado como 266 no commit `84aa028`, sem saber
 > que 266–269 já existiam no seu registro local. Na 1.0.12 ele é a **270**; as 266–269 estão em
@@ -78,54 +78,6 @@ Ordem, do que mais destrava para o que menos:
 
 Pares de regras que não valem juntas, ou uma decisão posterior que mudou outra sem dizer. O texto das
 decisões ficou como foi gravado; a escolha é sua. Marque a recomendação ou escreva a sua.
-
-### ctr-d · A opção (a) da `03r-ad` × decisão 187
-
-**Contexto.** O Pulsar hoje vive dentro do `rakun-messaging/src/pulsar/**`. A `03r-ad` (Parte 3) pergunta
-se ele vira um membro próprio, `modules/rakun-pulsar/`, com o plano de dados (o protocolo binário)
-adiado. A opção (a) lista como dependências `rakun`, `rakun-messaging`, `rakun-client`,
-`rakun-security` e `rakun-tx` — mas a 187 (consolidação do rakun, 25 membros → 16) funde o `rakun-tx`
-dentro do `rakun-data`, então esse membro deixa de existir. E a (a) já lista `rakun-security` e a parte
-de transação desde a divisão, embora o mecanismo da frente 91 só as acrescente junto com o plano de
-dados, que a própria (a) adia.
-
-**Hoje:**
-```json
-// modules/rakun-pulsar/botopink.json, como a (a) da 03r-ad foi gravada
-"dependencies": {
-  "rakun": {"workspace": true}, "rakun-messaging": {"workspace": true},
-  "rakun-client": {"workspace": true}, "rakun-security": {"workspace": true},
-  "rakun-tx": {"workspace": true}          // 187: rakun-tx não existe mais, está dentro de rakun-data
-}
-```
-
-- [ ] **(a)** Sob a (a), o membro depende de `rakun-data` para transação; o registro diz **17** membros
-  depois da divisão (os 16 da 187 + `rakun-pulsar`).
-  ```json
-  "dependencies": {
-    "rakun": {"workspace": true}, "rakun-messaging": {"workspace": true},
-    "rakun-client": {"workspace": true}, "rakun-security": {"workspace": true},
-    "rakun-data": {"workspace": true}
-  }
-  ```
-- [ ] **(b)** Ler a (a) ao pé da letra: o `rakun-tx` continua membro para o Pulsar depender dele — a 187
-  cede neste ponto; 18 membros.
-  ```text
-  modules/rakun-tx/      (volta a existir, fora do rakun-data)
-  modules/rakun-pulsar/  → rakun, rakun-messaging, rakun-client, rakun-security, rakun-tx
-  ```
-- [ ] **(c)** Dividir só com as arestas que o código de hoje usa; `rakun-security` e `rakun-data` entram
-  com o plano de dados, pelo mecanismo da 91; 17 membros.
-  ```json
-  "dependencies": {
-    "rakun": {"workspace": true}, "rakun-messaging": {"workspace": true},
-    "rakun-client": {"workspace": true}
-  }
-  // boot refused: a `pulsar://` listener needs the data plane (deferred)
-  ```
-
-**Recomendação: (a).** Corrige o nome que a 187 apagou sem reabrir a consolidação; a contagem de 17 é a
-que o 128 precisa listar. **Bloqueia:** 91; a lista de membros do 128.
 
 ### ctr-e · O `-> Element` das 199 e 213 × decisões 113 e 198
 
@@ -805,7 +757,7 @@ ponto de extensão do core, sem aresta entre membros.
 Um "mapa de snapshot" é uma lista, herdada da 1.0.10, dos casos que cada biblioteca deveria gravar como
 arquivo `.snap` (a saída esperada guardada em disco). Os nove mapas foram reavaliados caso a caso na
 trilha `20-snap` (frente 135): **473 casos** — 27 obsoletos (renomeados, apagados ou mudados pelas
-decisões 186, 194, 200, 218, pelo 34 passo 2, pela 50-a, ou adiados pela `03r-ad`), 418 já verificados
+decisões 186, 194, 200, 218, pelo 34 passo 2, pela 50-a, ou adiados pela 274), 418 já verificados
 hoje por um teste inline ou por um `.snap` que existe, e 21 que nada verifica e valem um teste simples.
 Os literais gravados nos mapas são anteriores ao código (separador de slug, ordem do `_links`,
 `normalize`, classes da emilia) e não servem de valor esperado. O contrato 7, a regra 3 do
@@ -1551,42 +1503,6 @@ RAKUN_DATA_URL=mongodb://localhost/app
 **Recomendação: (a)** — nunca cair para ETS debaixo de uma URL do Mongo; o braço Elasticsearch sem aresta
 para o `rakun-client` (ver `ctr-w`). **Bloqueia:** 09 passos 4 e 7.
 
-### 03r-ad · Pulsar: divisão do membro e o plano de dados
-
-**Contexto.** O Pulsar mora hoje em `rakun-messaging/src/pulsar/**`, e o `pulsar.bp` dele é o único
-import do `rakun-client` dentro do messaging — todo consumidor de messaging carrega o `rakun-client` por
-causa dele. A frente 91 tem 6 de 27 caixas; as 20 abertas são o plano de dados binário (CONNECT, LOOKUP,
-produtores, consumidores, fluxo, transações) sobre `gen_tcp`, sem broker para testar contra.
-
-**Hoje:**
-```text
-modules/rakun-messaging/src/pulsar/pulsar.bp   import … from "rakun-client"   ← único no messaging
-front 91: 6 de 27 caixas; as abertas são o plano de dados binário, sem broker para comparar
-```
-
-- [ ] **(a)** Dividir agora e adiar o plano de dados (uma linha de `deferred.md`); a frente = a divisão
-  mais a célula de recusa. Dependências: `rakun`, `rakun-messaging`, `rakun-client` — e `rakun-data`
-  (não `rakun-tx`, que a 187 funde; ver `ctr-d`). Separar o Pulsar tira só a aresta direta para o
-  `rakun-client`; ela continua transitiva pelo `rakun-metrics`.
-  ```text
-  modules/rakun-pulsar/                  # nomes de tópico, admin, checagens, codec CRC32C
-  boot refused: a `pulsar://` listener needs the data plane (deferred)
-  ```
-- [ ] **(b)** Dividir e escrever o plano de dados contra `rakun_pulsar_fixture.erl` (CONNECT, LOOKUP,
-  produtores, consumidores, transações — semanas, protocolo escrito sem broker para comparar).
-  ```text
-  modules/rakun-pulsar/src/sidecars/rakun_pulsar_fixture.erl   # broker de mentira
-  $ botopink test     # em modules/rakun-pulsar: producer → fixture → consumer
-  ```
-- [ ] **(c)** Deixar dentro do `rakun-messaging`.
-  ```text
-  modules/rakun-messaging/src/pulsar/**   # fica; todo consumidor de messaging segue carregando o rakun-client
-  ```
-
-**Recomendação: (a).** A divisão tira arestas de todo consumidor de messaging; um protocolo escrito às
-cegas não pode ser verificado no gate. **Bloqueia:** 91 inteira (o passo 1, a divisão, só vale sob (a) ou
-(b)).
-
 ### 03r-ae · SAML 2.0 ACS
 
 **Contexto.** O ACS é o endpoint do service provider SAML que recebe a assertion assinada do provedor de
@@ -2231,7 +2147,7 @@ val chunk = sock.recv();                  // string: bytes que não são UTF-8 c
 **Recomendação: (1).** Um payload binário é recusado onde entra, nunca lido com perda. Se você
 escolher a (2): nenhuma conversão sem uma chamada que pode falhar; a (3) continua recusada.
 **Bloqueia:** a linha "No byte or binary type"; rakun 01, 13, 15, 24, 25, 70, 71; `03r-ab`,
-`03r-ad` (todos seguem com `string` + recusa 415 até a resposta).
+o plano de dados do Pulsar (adiado pela 274) (todos seguem com `string` + recusa 415 até a resposta).
 
 ### lg2-b · O que `@Task<T>` significa no BEAM
 

@@ -132,7 +132,7 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 | **106** s2 | 17 · 26 s4 · 65 · ctr-k | — |
 | **107** | 07-g (a) · 71 · 81 | — |
 | **125** s3–10 | 07-j · s6: decision 183 | 127 (s6) |
-| **128** | the rakun commits of 102 s3 and 103 s2 · the 130 rule · ctr-d, ctr-k | every rakun front |
+| **128** | the rakun commits of 102 s3 and 103 s2 · the 130 rule · ctr-k | every rakun front |
 | **04** | 128 | 13 · 12 (s1) · 22 (s5) · 08 s1 · 19 s2–5 · 88 (s4) · 123 · 104 s5 · 71 s3 |
 | **74** | 128 | 92 |
 | **08** | 128 · s1: 04 s4 | — |
@@ -150,7 +150,7 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 | **11** | 128 · 22 (R11-7) | 71 s3 |
 | **65** | 128 · s1: decision 201 | 49 s4 · 53 · 123 · 104 s5 · 106 s2 |
 | **09** | 19 s1 · 13 · s5: 03r-ab | — |
-| **91** | 15 · 03r-ad · ctr-d | — |
+| **91** | 15 · decision 274 | — |
 | **92** | 74 · 15 · s2: 03r-an | 88 |
 | **88** | 81 · 93 · 92 · 04 s4 · 73 | — |
 | **26** | 118 · 102 s3's `routes.bp` · s5: 29-a · s8: the checker's hooks capability, ctr-l | 67 · 49 s3 · 53 · 119 s2 · 120 · 122 · 116 · 105 |
@@ -194,7 +194,7 @@ for the carve-outs named above.
 | 3 | 128 · 26 · 49 s2 · 50 s2–3, s7 · 71 s1–2 · 119 | 102 s3 / 103 s2's rakun commits (128); 118 and `routes.bp` (26); `types.bp` (49); `scan.bp`, `chunk.bp` (50); 49 s6 (71); 08-d and 118 (119) |
 | 4 | 04 (s1 first) · 19 s1 · 15 · 74 · 81 · 67 | 128 landed (rakun); 26 and 103 s2 (67) |
 | 5 | 08 · 79 · 93 · 73 · 13 · 12; 116 at the earliest | 128; 04 s4 (08 s1); 04 s1 (13, 12); 19 s1 (12); 118, 26 s0, `01-compiler/26` (116) |
-| 6 | 22 · 65 · 17 · 09 · 92 · 91 | 04 s5 (22); 13 s2 (17); 19 s1 and 13 (09); 74 and 15 (92); 15 and 03r-ad (91) |
+| 6 | 22 · 65 · 17 · 09 · 92 · 91 | 04 s5 (22); 13 s2 (17); 19 s1 and 13 (09); 74 and 15 (92); 15 (91) |
 | 7 | 11 · 123 · 117 · 49 s3–5 · 51 s2–6 · 71 s3–4 · 27 s1 box 2 · 135 s5 | 22 (11, 117, 51, 49 s5, 71 s4, 27); 04 and 65 (123); 26 s4 and 17 (49 s3); 65 s1 (49 s4); 11, 04, 81 (71 s3); snap-a (135 s5, before 53) |
 | 8 | 88 · 19 s2–5 · 120 · 53 · 104 s5 · 106 s2 · 50 s5–6 | 81, 93, 92, 04 s4, 73 (88); 15 s1, 04 s4 (19); 117, 119 (120); every front 53 names; every owner of 104's consumer files; 65, 17, 26 s4 (106); 71 s2, 27 s1 (50) |
 | 9 | 122 · 126 · 121 s3–6 · 105 · 107 | 120 (122, 126); 08-f, 117 (121); 104 s5 (105); 07-g, 71, 81 (107) |

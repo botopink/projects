@@ -35,11 +35,7 @@ its sidecar keeps its name.
 | `rakun-websocket` | — | `rakun`, `rakun-web`, `rakun-data`, `rakun-security` | — (closed) |
 | `rakun-app` | — | `rakun`, `rakun-web`, `rakun-cache` | [`22`](./22-rakun-file-routing/README.md) |
 
-Only under `03r-ad` (a)/(b) (front 91): a 17th member `rakun-pulsar` (from
-`rakun-messaging/src/pulsar/**`, `pulsar_host.bp`, `rakun_pulsar.erl`) on `rakun`,
-`rakun-messaging`, `rakun-client`, plus, as 03r-ad (a) lists, `rakun-security` and `rakun-data`
-(91's mechanism adds those two only with the data plane); `rakun-messaging` loses its direct
-`rakun-client` edge (transitive through `rakun-metrics`).
+No 17th member: Pulsar stays in `rakun-messaging/src/pulsar/` (decision 274).
 
 ## The graph
 
@@ -51,7 +47,7 @@ L1  rakun-web (+ hateoas) ◄ rakun      rakun-test ◄ rakun      rakun-client 
 L2  rakun-actuator ◄ web
 L3  rakun-data (+ tx, devtools) ◄ actuator      rakun-metrics ◄ web·client·actuator      rakun-cli (+ release) ◄ web·actuator
 L4  rakun-scheduling ◄ web·actuator·data      rakun-mail ◄ data      rakun-messaging (+ rsocket, stream) ◄ metrics·client·actuator·data
-L5  rakun-session ◄ web·actuator·data·scheduling      [rakun-pulsar ◄ messaging·client, 03r-ad — L7 with security]
+L5  rakun-session ◄ web·actuator·data·scheduling
 L6  rakun-security ◄ web·data·client·session      rakun-cache ◄ web·actuator·session
 L7  rakun-websocket ◄ web·data·security      rakun-app ◄ web·cache
 ```
@@ -152,7 +148,7 @@ every member while open.
 | 79 | `modules/rakun-security/**` | — |
 | 81 | `modules/rakun-cli/src/release/**`, `test/release/**`, `src/sidecars/rakun_release.erl` | the rest of `rakun-cli` |
 | 88 | `modules/rakun-cli/**` except 81's files | `rakun-client/src/ws/**` |
-| 91 | `modules/rakun-messaging/src/pulsar/**`, `src/pulsar_host.bp`, `src/sidecars/rakun_pulsar.erl`, `test/pulsar/**`; under 03r-ad (a)/(b) `modules/rakun-pulsar/**` and the removal lines in `rakun-messaging/{botopink.json,src/root.bp}` after 15 lands | the rest of `rakun-messaging` |
+| 91 | `modules/rakun-messaging/src/pulsar/**`, `src/pulsar_host.bp`, `src/sidecars/rakun_pulsar.erl`, `test/pulsar/**`; `test/pulsar/refusal_test.bp` (no member — 274) | the rest of `rakun-messaging` |
 | 92 | `modules/rakun-messaging/src/rsocket/**`, `test/rsocket/**`, `src/sidecars/rakun_rsocket.erl` | the rest of `rakun-messaging`; `rakun-websocket` |
 | 93 | `modules/rakun-client/src/ws/**`, `test/ws/**`, `src/sidecars/rakun_ws.erl`, its `modules/README.md` row, `AGENTS.md` § SOAP | the rest of `rakun-client`; `rakun-cli` |
 
