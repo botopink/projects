@@ -45,12 +45,9 @@ pub fn clicked(route: PageContext) -> @Component<ElementBase, Element> {
 // ── src/app/builtwith.json/route.bp ─────────────────────────────────────────
 
 // The directory's name carries the extension, so the route is `/builtwith.json`
-// and the response's content type follows it. With the segment prerendered, the
-// build writes the body to `<outDir>/builtwith.json` — a file a static host
-// serves with no server behind it. There is no `pub val prerender` (decision
-// 202). Decision 222 rules that a route handler is always server and never
-// prerendered, so the static export here contradicts it; pending the maintainer
-// (front 117 README, step 4).
+// and the response's content type follows it. A route handler is always server
+// (decisions 222, 273): it runs per request and the build writes no file for it.
+// A feed that must be a static file is a page-kind file, prerendered by 202.
 
 #[getRoute("builtwith.json")]
 pub fn builtWith(req: Request) -> @Task<HandlerResponse> {
@@ -65,7 +62,7 @@ test "a partial is the markup and nothing around it" {
     assert renderToString(await clicked(route)) == "<li>I'm a partial!</li>";
 }
 
-test "the endpoint answers the document a static export writes to disk" {
+test "the endpoint answers its document per request" {
     val res = await builtWith(rkTestRequest("GET", "/builtwith.json"));
     assert res.status == 200;
     assert res.body == "{\"name\":\"onze\",\"url\":\"https://botopink.dev/\"}";
@@ -74,5 +71,5 @@ test "the endpoint answers the document a static export writes to disk" {
 // The E2E half is 07-onze/53's runner (`bootApp`, `request`):
 //
 //   GET /partials/clicked   → body starts with "<li>", no "<!DOCTYPE", no "data-jh-root"
-//   onze build              → .onze/prerender/builtwith.json exists, same bytes
+//   onze build              → no .onze/prerender/builtwith.json; GET runs the handler
 //   HEAD /builtwith.json    → 200, empty body (rakun's GET fallback, route_handler.bp:495)

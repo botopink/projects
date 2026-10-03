@@ -160,7 +160,7 @@ No relative imports: same package `import {components.card.Card};`, a package `i
 ## Decisions the maintainer owes
 
 Open: `08-d`, `08-f`, `08-h` (below) and `08-j`, `bpp-f`, `bpp-g`, `props-d`, `props-e`,
-`props-f` ([`../decisions-pending.md`](../decisions-pending.md)); contradictions `ctr-c` (117), `ctr-e`, `ctr-f`, `ctr-g`, `ctr-t` (116).
+`props-f` ([`../decisions-pending.md`](../decisions-pending.md)); contradictions `ctr-e`, `ctr-f`, `ctr-g`, `ctr-t` (116).
 
 - `08-j` — how rakun's `local()` carries jhonstart's `#[serverOnly]`. Blocks 123 step 1's third box.
 - `bpp-f` — return type of the unfolded function (`-> Element` vs a header that `await`s/`use`s). Blocks 116 step 2.

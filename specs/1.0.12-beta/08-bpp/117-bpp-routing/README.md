@@ -24,7 +24,7 @@ The `app/` tree (decision 203) gains:
 | `getStaticPaths` returning `props` beside `params` | a `StaticParams` row binds parameters only (`static_gen.bp`, `registerStaticParams`) |
 | `paginate(items, { pageSize })` and the `page` prop | not found |
 | a page partial (`export const partial = true`) | not found: every page composed with layout chain and document shell (`jhonstart/src/render.bp`) |
-| an endpoint built into a static file (`rss.xml.ts` → `/rss.xml`) | `staticExport` writes `<path>/index.html`, `payload.json` for pages (`static_gen.bp`); decision 222: route handler never prerendered (step 4) |
+| an endpoint built into a static file (`rss.xml.ts` → `/rss.xml`) | not added (decisions 222, 273): a route handler is served per request; a static feed is a page-kind file prerendered by 202 |
 | two parameters in one segment (`[lang]-[version]`) | `parseSegment` reads one parameter named `lang]-[version` (`libs/routing/src/segment.bp`) |
 | eight documented priority rules | `matchPath` (`libs/routing/src/match.bp`) — order is whatever the code does; no test |
 
@@ -79,8 +79,8 @@ pub type PageUrls(current: string, prev: ?string, next: ?string, first: ?string,
 ```
 
 **Endpoint with an extension in its directory.** `app/rss.xml/route.bp` answers `/rss.xml` with
-its extension's content type. Exporting a prerendered `GET` body to `rss.xml` (not
-`rss.xml/index.html`) **contradicts decision 222**; pending the maintainer (step 4).
+its extension's content type, **per request** — never exported by the build (decisions 222, 273). A
+feed that must be a static file is a page-kind file, prerendered by 202.
 
 ## Open
 
@@ -113,11 +113,11 @@ Per decision 202 (no `prerender` export).
       `/astronauts/2`; `url.prev` `null` on the first, `url.next` on the last
 - [ ] data survives `staticExport` and a restart: exported page renders without calling the loader
 
-### Step 4 — Partials and static endpoints
+### Step 4 — Partials and endpoints with an extension
 
 - [ ] partial response = page markup alone — no `<!DOCTYPE`, no `data-jh-root`, no payload script
-- [ ] `app/rss.xml/route.bp` exports to `<outDir>/rss.xml` — **contradicts decision 222**; kept,
-      pending the maintainer
+- [ ] `app/rss.xml/route.bp` is served per request with its extension's content type; `onze build`
+      writes no `<outDir>/rss.xml` (decisions 222, 273)
 - [ ] `examples/partial-and-endpoint-example.bp` passes
 
 ### Step 5 — Two parameters in a segment, and the priority rules
@@ -129,7 +129,6 @@ Per decision 202 (no `prerender` export).
 ## Decisions
 
 - `bpp-g` — how a `page.bpp` gets `route: PageContext` and `params`. Step 1.
-- `ctr-c` — step 4's static endpoint vs decision 222.
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `libs/routing`, on erlang in `rakun-app`

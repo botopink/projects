@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**63 questions and 21 contradictions are open, and 97 implementation choices await confirmation.**
+**63 questions and 20 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272.
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 ## Open questions
@@ -414,11 +414,6 @@ owning front lists the row under *Depends on*.
 
 Rule pairs that cannot both hold, or a later rule changing an earlier one silently. Decision text
 left as recorded; the maintainer picks the resolution.
-
-#### ctr-c · Decision 222 against front 117 step 4
-- **Rules.** 222: "a route handler is always server … never prerendered at comptime". 117 step 4's box: "`app/rss.xml/route.bp` exports to `<outDir>/rss.xml`".
-- **Recommendation.** Drop the box, or rewrite as "`app/rss.xml/route.bp` is served per request"; a static feed would be a page-kind file.
-- **Blocks.** 117 step 4.
 
 #### ctr-d · Question `03r-ad` (a) against decision 187
 - **Rules.** `03r-ad` (a): "`modules/rakun-pulsar/`, depends on `rakun`, `rakun-messaging`, `rakun-client`, `rakun-security`, `rakun-tx`". 187: "`rakun-tx` and `rakun-devtools` into `rakun-data`"; "25 members become 16".

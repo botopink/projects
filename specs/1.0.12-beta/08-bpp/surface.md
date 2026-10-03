@@ -169,7 +169,7 @@ are on disk, so most of Astro is there, or there and unwired.
 |---|---|---|
 | `GET` / `POST` / … / `ALL` exported from a file | one decorated function per verb in `route.bp` | have |
 | `HEAD` answered from `GET` | dispatcher falls back to `GET` (`route_handler.bp:16`, `:495`) | have |
-| static file endpoints (`data.json.ts` built into a file) | `staticExport` writes pages only | add · 117 — contradicts decision 222 (route handler never prerendered); pending the maintainer |
+| static file endpoints (`data.json.ts` built into a file) | `staticExport` writes pages only | n/a — decisions 222, 273: a route handler is served per request; a static file is a page-kind file (117) |
 | `params`, `request`, `redirect` in an endpoint | `Request`, `HandlerResponse` (`route_handler.bp:45`) | have |
 | `src/middleware.ts`, `onRequest(context, next)` | `middleware.bp`, `#[middleware]` + `#[matcher]`, `Next.pass / redirect / rewrite` (`rakun-web/src/middleware.bp:41-83`) | have |
 | `context.locals` | **not found** | add · 123 |
