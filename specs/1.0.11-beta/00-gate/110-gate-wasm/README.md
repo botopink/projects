@@ -207,6 +207,23 @@ failures, 1 failed` on `--target all`; `run.sh --target wasm`: `374 passed, 1 ex
   "erlang"]` and `modules/type_name_collision` likewise; both pass on wasm now — 111 step 5 (gate-d)
   deletes the narrowing.
 
+- **Wrong answers at exit 0 closed by `front/gate-wasm-wrong-answers`** (`wat/AGENTS.md`
+  § Numbers): a float's text is V8's shortest round-trip digits (it wrote six fraction digits);
+  every float slot holds its `f64` cell (it was narrowed to `f32`); an `i64` is an `i64` in
+  locals, parameters, returns, record fields, `?i64` and captures (it was an `i32`); integer
+  `+`/`-`/`*` trap instead of wrapping (`gw-a`); a float or `i64` that would be narrowed into a
+  word, and arithmetic over a boxed `?T` (`xs[i] + 1`), are located refusals. What remains
+  refused, each with no wide reader yet: an `i64` element of an array or a tuple, an `i64` in a
+  variant payload, a float or `i64` in a `@Result` payload, a function value's float or `i64`
+  argument or answer (the indirect call is one `i32` word each), `Option.map` over or to a float
+  or an `i64`, integer methods over an `i64` but `toString`, a float pushed into an array no type
+  says holds floats (`var xs = []`), a float in a field or payload typed by a type parameter, a
+  float or `i64` inside a container argument of an unspecialised generic `fn` (each needs a reader
+  that knows the cell: monomorphisation, `../../01-compiler/05-wasm`). Not wasm's: erlang and beam spell
+  a float's exponent forms otherwise (`1.0e21`, `5.0e-324`, `1.152921504606847e18` for
+  `1152921504606846976.0`) and print `5.0.toString()` as `5.0` where commonJS prints `5`;
+  commonJS prints a bare `-0.0` argument as `-0` (unshaped) and an `i64` past `2^53` inexactly.
+
 ## Blast radius
 
 - wasm snapshots: 4 fixtures re-recorded (both runtimes), 1 added (both runtimes, four backends)

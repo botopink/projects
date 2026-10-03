@@ -1,6 +1,8 @@
 # Decisions the maintainer owes — 1.0.11-beta
 
 **These questions are open** — `lg2-a…w`, `02e-a` (raised by `01-compiler/02-erlang`), `dec-e` (raised by `01-compiler/130-decorator-outputs` step 5), `05w-c…f` (raised by `01-compiler/05-wasm` step 5), `05w-g` (raised by `00-gate` on `macos-14`) and `17-b`, `17-c` (raised by `01-compiler/17-beam-memory`); `ck2-c` was answered (decision 244); the `lg2-*` rows are carried verbatim below from 1.0.10-beta's
+
+**Twenty-seven questions are open** — `ck2-c`, `lg2-a…w`, `02e-a` (raised by `01-compiler/02-erlang`), `dec-e` (raised by `01-compiler/130-decorator-outputs` step 5) and `gw-a` (raised by `front/gate-wasm-wrong-answers`); the first twenty-four carried verbatim below from 1.0.10-beta's
 § Open with their ids unchanged (`ck-host`, `lg-a`, `lg-b` and this milestone's `01c-e` were answered:
 decisions 146–149). Every `lg2-*` row of [`language-gaps.md`](./language-gaps.md) is a
 feature the language does not have; the recommendation is always the most restrictive reading
@@ -532,3 +534,42 @@ row's nearest form is the design — and the cost of that reading is named where
 > UTF-8 reachable from safe code, and (c) makes an index's validity depend on the text.
 > **Blocks.** `02-erlang` step 6's cell on four targets (until then it cannot be written: wasm
 > accepts the program, so no `.targets` may leave it out); the `05-wasm` row it would open.
+
+
+### gw-a · What an integer that leaves its type is
+
+> **Raised by:** `front/gate-wasm-wrong-answers` (the wasm wrong-answer sweep; `wat/AGENTS.md`
+> § Numbers).
+> **Measured.** No document says what `i32` / `i64` arithmetic does past the type's range, and the
+> four targets answer four ways for `val big: i32 = 2147483647; @print(big + 1)`: commonJS
+> `2147483648` (a JS number, never wrapped; an `i64` past `2^53` loses digits —
+> `9223372036854775807` prints `9223372036854776000`), erlang and beam `2147483648` (bignums: an
+> `i64` never overflows either), wasm `-2147483648` (two's complement) — a wrong value at exit 0.
+> The sweep made wasm **trap** on an `i32` / `i64` `+`, `-`, `*` (and a negation, a `+=`) whose
+> result leaves the type (`int_chk`), the one choice that is not a wrong number with exit 0; the
+> other targets still answer the wide value, so the four disagree by an abort rather than a value.
+> **Options.**
+> (a) overflow is a program error on every target — commonJS and erlang check the result against
+> the declared type's range and raise, as wasm traps now:
+> ```botopink
+> val big: i32 = 2147483647;
+> @print(big + 1);   // aborts on commonJS, erlang, beam, wasm
+> val w: i64 = 4611686018427387904;
+> @print(w * 2);     // aborts everywhere (2^63 is not an i64)
+> ```
+> (b) integers wrap at their width on every target — commonJS `(a + b) | 0` (and a `BigInt.asIntN`
+> path for `i64`), erlang/beam a `band` and sign fold, wasm its native ops (the checks dropped):
+> ```botopink
+> @print(big + 1);   // -2147483648 everywhere
+> ```
+> (c) integers are unbounded (the declared width is advisory) — erlang's answer; commonJS needs
+> `BigInt` for every `i64`, and wasm cannot hold the result in a word, so it keeps trapping there:
+> ```botopink
+> @print(big + 1);   // 2147483648 on commonJS, erlang, beam; wasm aborts
+> ```
+> **Recommendation.** (a) — the most restrictive reading (decision 67): the value the program
+> asked for does not exist in its declared type, so no target invents one; it is what wasm does
+> now, and the checks on commonJS / erlang are a range test per operation. (b) makes `+` disagree
+> with arithmetic every user expects; (c) leaves wasm permanently divergent.
+> **Blocks.** A four-target cell for integer overflow (today only `tests/wat.zig`'s RUN LOG pins
+> wasm's trap); `01-compiler/04-js` and `02-erlang` / `03-beam`'s range checks under (a).
