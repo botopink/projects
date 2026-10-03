@@ -33,7 +33,7 @@ letter ids are never renumbered; their full text lives where they were raised:
 Two items the milestone's own cut raised are written here rather than in a track, because they
 cross tracks (`gate-a…j`, the zero-tolerance policy of `00-gate`, were answered: decisions 153–162),
 and three that the audit of the `00-gate` fronts on the integrated `feat` raised (`gate-k…p`, answered: decisions 225–228, 230, 231), and two that `01-compiler/05-wasm` step 5
-raised, because their answer reaches std (`05w-a`, `05w-b`, answered: decisions 238, 241), and one that `01-compiler/14-comptime-on-beam`
+raised, because their answer reaches std (`05w-a`, `05w-b`, answered: decisions 238, 241; `05w-c`, open — below), and one that `01-compiler/14-comptime-on-beam`
 step 2 raised, because its answer changes what a template body receives (`14-a`, answered: decision 237):
 
 ### std-e · Test lifecycle hooks
@@ -48,6 +48,28 @@ step 2 raised, because its answer changes what a template body receives (`14-a`,
 > **Recommendation.** (a) — nothing implicit runs around a test; the runner stays a list of bodies.
 > The cost is one line per test, which the libraries already pay.
 > **Blocks.** `language-gaps.md` row "No test lifecycle hooks".
+
+### 05w-c · How exactly wasm's `std/math` agrees with the hosts
+
+> **Raised by:** `01-compiler/05-wasm` step 5 (decision 238's `fn:` bodies of `math.bp`).
+> **Measured.** Node 25.8 (V8 14.1) answers `Math.exp`/`log`/`log2`/`log10`/`sin`/`cos`/`tan`/
+> `asin`/`acos`/`atan`/`atan2`/`sinh`/`cosh`/`tanh` with fdlibm (not correctly rounded: 212 of 2 000
+> random `exp` inputs differ from the correctly rounded value) and `Math.pow` with the C library's
+> `pow` (`v8_flags.use_std_math_pow`; glibc, ≤ 0.52 ulp). erlang and beam call glibc for all of them,
+> so commonJS and erlang already differ in the last bit for ~10 % of `exp` inputs. wasm today ports
+> fdlibm (bit-identical to commonJS on 6 539 fuzzed inputs, 1 200 of them `pow`) and computes `pow`
+> in double-double, correctly rounded — which differs from glibc's for ~1 input in 450:
+> `math.pow(158.42161580281933, 2.853827476501465)` is `1896229.4525711867` on commonJS and erlang,
+> `1896229.4525711865` on wasm.
+> **Options.** (a) wasm's contract is commonJS bit for bit: port glibc's `pow` too (a fixed algorithm
+> since glibc 2.28, with its 128-entry `log` and `exp` tables); (b) correctly rounded wherever wasm
+> has no instruction: replace the fdlibm port with double-double — wasm then differs from commonJS on
+> ~10 % of `exp` inputs; (c) keep today's split and record the ~0.2 % `pow` difference as a
+> `language-gaps.md` row.
+> **Recommendation.** (a) — the strictest reading of "the same answers as commonJS"; no cell compares
+> a `pow` at an input where (a) and (c) differ. The commonJS × erlang divergence (fdlibm × glibc) is a
+> row of its own, not this question's.
+> **Blocks.** Nothing today; it decides `math.bp`'s `powBody`.
 
 ---
 
