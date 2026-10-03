@@ -144,6 +144,8 @@ codepoints.
 - [ ] a `run/` cell per remaining module family on four targets
 - [ ] `wat/AGENTS.md` § Where this backend refuses to answer lists only group 3
 - [ ] `05w-c` answered (how exactly `math` agrees with the hosts)
+- [ ] `05w-g` answered (whether `math` answers the same bits on every OS — erlang/beam
+      `run/std_math_on_every_target` is red on `macos-14` until then)
 
 **Handoff.** A wasm binding is read on a wasm build only; reading it on every target (a misspelt
 `op:` in a library no wasm build reaches) is the checker's walk over `external_variants`

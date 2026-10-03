@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.11-beta
 
-**These questions are open** — `lg2-a…w`, `02e-a` (raised by `01-compiler/02-erlang`), `dec-e` (raised by `01-compiler/130-decorator-outputs` step 5), `05w-c…f` (raised by `01-compiler/05-wasm` step 5) and `17-b`, `17-c` (raised by `01-compiler/17-beam-memory`); `ck2-c` was answered (decision 244); the `lg2-*` rows are carried verbatim below from 1.0.10-beta's
+**These questions are open** — `lg2-a…w`, `02e-a` (raised by `01-compiler/02-erlang`), `dec-e` (raised by `01-compiler/130-decorator-outputs` step 5), `05w-c…f` (raised by `01-compiler/05-wasm` step 5), `05w-g` (raised by `00-gate` on `macos-14`) and `17-b`, `17-c` (raised by `01-compiler/17-beam-memory`); `ck2-c` was answered (decision 244); the `lg2-*` rows are carried verbatim below from 1.0.10-beta's
 § Open with their ids unchanged (`ck-host`, `lg-a`, `lg-b` and this milestone's `01c-e` were answered:
 decisions 146–149). Every `lg2-*` row of [`language-gaps.md`](./language-gaps.md) is a
 feature the language does not have; the recommendation is always the most restrictive reading
@@ -33,7 +33,7 @@ letter ids are never renumbered; their full text lives where they were raised:
 Two items the milestone's own cut raised are written here rather than in a track, because they
 cross tracks (`gate-a…j`, the zero-tolerance policy of `00-gate`, were answered: decisions 153–162),
 and three that the audit of the `00-gate` fronts on the integrated `feat` raised (`gate-k…p`, answered: decisions 225–228, 230, 231), and two that `01-compiler/05-wasm` step 5
-raised, because their answer reaches std (`05w-a`, `05w-b`, answered: decisions 238, 241; `05w-c`, `05w-d`, `05w-e`, `05w-f`, open — below), and one that `01-compiler/14-comptime-on-beam`
+raised, because their answer reaches std (`05w-a`, `05w-b`, answered: decisions 238, 241; `05w-c`, `05w-d`, `05w-e`, `05w-f`, `05w-g`, open — below), and one that `01-compiler/14-comptime-on-beam`
 step 2 raised, because its answer changes what a template body receives (`14-a`, answered: decision 237):
 
 ### std-e · Test lifecycle hooks
@@ -133,6 +133,38 @@ step 2 raised, because its answer changes what a template body receives (`14-a`,
 > name the backend owns (decision 238's rule) but a member of `String` with an answer on every
 > target, as `charCodeAt` is.
 > **Blocks.** `unicode`, `json`, `encoding`, `querystring` on wasm (step 5's last group-1 box).
+
+### 05w-g · Whether `std/math` answers the same bits on every OS
+
+> **Raised by:** `00-gate` (`gate-macos-cells`), CI run 37092813045, job `macos-14`: `[erlang]` and
+> `[beam] run/std_math_on_every_target` print `false` on lines 15 and 16 — `math.tan(1.0) ==
+> 1.5574077246549023` and `math.asin(0.5) == 0.5235987755982989 && math.acos(0.5) ==
+> 1.0471975511965979`; Ubuntu and the local gate print `true`. 05w-c's "commonJS × erlang row of its
+> own", now across operating systems.
+> **Measured.** erlang and beam bind `math.tan`/`asin`/`acos`/… to `math:tan/1`…, which OTP answers
+> with the platform C library: glibc on Linux, Apple's libm on macOS. The three expected values are
+> the correctly rounded doubles (mpmath, 200 bits): `tan(1)` = 1.5574077246549022305…, 0.28 ulp from
+> it; `asin(0.5)` = π/6 and `acos(0.5)` = π/3 lie 0.48 ulp from theirs — almost a tie, where a libm
+> that is faithful (< 1 ulp) but not correctly rounded may return the neighbour (`0.5235987755982988`,
+> `1.0471975511965976`). IEEE 754-2019 §9.2 recommends correct rounding for these functions and C
+> Annex F does not require it; only `sqrt` and the basic operations are required to be correctly
+> rounded. glibc happens to round these inputs correctly, Apple's libm does not; commonJS answers
+> fdlibm on both (V8 ships its own `ieee754` code) except `Math.pow`, which is the platform `pow`
+> (05w-c), and wasm answers std's own fdlibm port on both.
+> **Options.** (a) `std/math` is one function on every target and every OS: erlang and beam call the
+> same private botopink bodies wasm calls through `fn:` (`tanBody`, `asinBody`, … — the fdlibm port,
+> already bit-identical to commonJS on 6 539 inputs), and `pow` is the body 05w-c chooses on every
+> target, commonJS included; `sqrt`, `floor`, `abs`… stay host calls, since IEEE 754 makes them
+> exact everywhere; the cell stays as it is; (b) the platform libm is the contract: the cell asserts
+> only what every IEEE 754 libm guarantees (exact `sqrt`, `floor`, `2^10`; transcendentals within
+> 1 ulp of the reference), and a program's last bit depends on the OS it runs on; (c) the cell keeps
+> exact values and erlang/beam on macOS are excluded from it (a per-OS exception in the matrix).
+> **Recommendation.** (a) — one std answer per input, whatever target or OS runs it, is the reading
+> the wasm port already chose; (b) turns a wrong last bit into a passing cell, and (c) is a
+> tolerated red by another name (decisions 153–162). Cost: erlang/beam run botopink bodies instead of
+> one C call for the transcendentals.
+> **Blocks.** `[erlang]`/`[beam] run/std_math_on_every_target` on `macos-14` (red until answered);
+> a `run/` cell comparing any other transcendental at a near-tie input.
 
 ### dec-e · How the boot registers beans whose types differ (decision 234)
 
