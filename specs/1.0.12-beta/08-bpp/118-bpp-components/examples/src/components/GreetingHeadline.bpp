@@ -1,0 +1,28 @@
+---
+// Front 118 — bpp components · examples/src/components/GreetingHeadline.bpp
+//
+// Demonstrates: step 4 in a `.bpp` component — props. `type Props` is the
+// component's parameter list (front 116 § The syntax): a field is a parameter, a
+// field's default is the parameter's default, and both names are in scope below
+// the fence.
+//
+//   ---
+//   interface Props { name: string; greeting?: string }
+//   const { greeting = "Hello", name } = Astro.props;
+//   ---
+//   <h2>{greeting}, {name}!</h2>
+//
+// The `.bp` form, with its tests: `GreetingHeadline` in
+// `components-and-slots-example.bp` at the root of `examples/`.
+//
+// Upstream: astro-docs/09-astro-components.md (Props do Componente)
+//           https://docs.astro.build/en/basics/astro-components/#component-props
+
+import {h2} from "jhonstart";
+
+type Props(
+    name: string,
+    greeting: string = "Hello",
+)
+---
+<h2>{greeting}, {name}!</h2>

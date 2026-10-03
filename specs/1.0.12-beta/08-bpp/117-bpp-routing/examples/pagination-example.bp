@@ -1,0 +1,100 @@
+// Front 117 — bpp routing · examples/pagination-example.bp
+// App file: src/app/astronauts/[page]/page.bp
+//
+// Demonstrates: step 3 — `paginate` and `Page<T>`. Pagination is a function
+// over static paths: it answers one path per page, binding the segment `page`
+// to 1 … n and carrying that page's slice as the path's data.
+//
+//   export const getStaticPaths = (({ paginate }) => {
+//     const astronautPages = [{ astronaut: "Neil Armstrong" }, …];
+//     return paginate(astronautPages, { pageSize: 2 });
+//   }) satisfies GetStaticPaths;
+//   const { page } = Astro.props;
+//   <h1>Page {page.currentPage}</h1>
+//   <ul>{page.data.map(({ astronaut }) => <li>{astronaut}</li>)}</ul>
+//
+// Upstream: astro-docs/08-routing.md (Paginação · O prop `page`)
+//           https://docs.astro.build/en/guides/routing/#pagination
+//
+// Target: erlang (server).
+
+import html, {page, PageContext, Element, ElementBase, renderToString} from "jhonstart";
+import {a, h1, li, nav, ul} from "jhonstart";
+import {StaticPath, Page, PageUrls, paginate, pageOf} from "onze";
+import {decorators.schema} from "validation";
+import {schemas, schemas.Schema, report.ValidationReport, report.Violation} from "validation";
+import {collections.Dict, json.Json} from "std";
+
+#[schema]
+pub type Astronaut(name: string)
+
+fn astronauts() -> Array<Astronaut> {
+    return [
+        Astronaut(name: "Neil Armstrong"),
+        Astronaut(name: "Buzz Aldrin"),
+        Astronaut(name: "Sally Ride"),
+        Astronaut(name: "John Glenn"),
+    ];
+}
+
+// Two per page → /astronauts/1 and /astronauts/2. The base path is the
+// directory's own; `paginate` fills the `page` segment.
+pub fn staticPaths() -> @Task<Array<StaticPath>> {
+    return paginate(astronauts(), 2, "/astronauts", schemaOfAstronaut());
+}
+
+#[page("astronauts/[page]")]
+pub fn Page(route: PageContext) -> @Component<ElementBase, Element> {
+    val current = try pageOf(route, schemaOfAstronaut()) catch Page.empty();
+    return html """
+      <h1>Page {current.currentPage.toString()} of {current.lastPage.toString()}</h1>
+      <ul>
+        {current.data.map({ who -> <li>{who.name}</li> })}
+      </ul>
+      <nav>
+        {if (current.url.prev) { href -> <a href={href} rel="prev">Previous</a> }}
+        {if (current.url.next) { href -> <a href={href} rel="next">Next</a> }}
+      </nav>
+    """;
+}
+
+fn routeOf(path: StaticPath) -> PageContext {
+    val number = path.params.at(0).unwrapOr(#("page", "1"))[1];
+    return PageContext(
+        pathname: "/astronauts/" + number,
+        pattern: "/astronauts/[page]",
+        params: Dict.empty().insert("page", number),
+        rest: [],
+        data: path.data,
+    );
+}
+
+test "four items, two per page, two paths" {
+    val paths = await staticPaths();
+    assert paths.length == 2;
+}
+
+test "the first page has no previous link and the last no next" {
+    val paths = await staticPaths();
+    val first = try pageOf(routeOf(paths.at(0).unwrapOr(StaticPath.none())), schemaOfAstronaut());
+    assert first.currentPage == 1;
+    assert first.start == 0;
+    assert first.end == 1;
+    assert first.total == 4;
+    assert first.url.prev == null;
+    assert first.url.next == "/astronauts/2";
+
+    val last = try pageOf(routeOf(paths.at(1).unwrapOr(StaticPath.none())), schemaOfAstronaut());
+    assert last.url.next == null;
+    assert last.url.first == "/astronauts/1";
+}
+
+test "the page renders its slice and nothing else" {
+    val paths = await staticPaths();
+    val markup = renderToString(await Page(routeOf(paths.at(1).unwrapOr(StaticPath.none()))));
+    assert markup.contains("<h1>Page 2 of 2</h1>");
+    assert markup.contains("<li>Sally Ride</li><li>John Glenn</li>");
+    assert markup.contains("Neil Armstrong") == false;
+    assert markup.contains("rel=\"prev\"");
+    assert markup.contains("rel=\"next\"") == false;
+}

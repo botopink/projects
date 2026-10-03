@@ -1,0 +1,129 @@
+// Front 120 — bpp islands · examples/server-island-example.bp
+// App files: src/app/product/[id]/page.bp · src/components/avatar.bp
+//
+// Demonstrates: step 4 — a server island. The product page is the same for
+// every visitor, so it is prerendered and cacheable. The avatar depends on the
+// visitor's session, so it is NOT in the page: the page carries a fallback and
+// the browser fetches the avatar from its own endpoint, where `cookies()` is
+// that request's.
+//
+//   ---
+//   import Avatar from "../components/Avatar.astro";
+//   import GenericAvatar from "../components/GenericAvatar.astro";
+//   ---
+//   <Avatar server:defer>
+//     <GenericAvatar slot="fallback" />
+//   </Avatar>
+//
+//   // Avatar.astro
+//   const userSession = Astro.cookies.get("session");
+//   const avatarURL = await getUserAvatar(userSession);
+//
+// Upstream: astro-docs/22-server-islands.md
+//           https://docs.astro.build/en/guides/server-islands/
+//
+// Target: erlang (server). The swap in the browser is `island_runtime.mjs`'s,
+// asserted in `jhonstart-dom-test`.
+
+import html, {page, PageContext, Element, ElementBase, Children, renderToString} from "jhonstart";
+import {div, h1, img, p, span} from "jhonstart";
+import {cookies, pairValue, dynamicReason, responseHeader} from "jhonstart";
+import {clientProps, deferred} from "jhonstart";
+import {serveIslands, renderIsland, seal, unseal} from "rakun-app";
+import {rkTestRequest, rkTestRequestAuthed} from "rakun-web";
+import {collections.Dict, json.Json} from "std";
+
+// ── src/components/avatar.bp ────────────────────────────────────────────────
+
+// The props cross the network, so they are a `#[clientProps]` record: only what
+// can be serialised can be passed. A function cannot.
+#[clientProps]
+pub type AvatarProps(size: i32)
+
+fn avatarFor(session: string) -> @Task<string> {
+    return "/avatars/" + session + ".png";
+}
+
+// `#[deferred]` registers the component under its name, so the island endpoint
+// can render it. Inside, the request is the ISLAND's request: its cookies, its
+// headers — and `Referer` is the page that asked.
+#[deferred]
+pub fn Avatar(props: AvatarProps) -> @Component<ElementBase, Element> {
+    val jar = use cookies();
+    val session = pairValue(jar, "session");
+    val src = await avatarFor(session);
+    // The island's response is the component's to cache (`responseHeader` is
+    // front 122's: a header set from a render, before the first byte).
+    val _h = responseHeader("Cache-Control", "private, max-age=60");
+    return html """<img alt="Your avatar" src={src} width={props.size.toString()} />""";
+}
+
+pub fn GenericAvatar(size: i32) -> Element {
+    return html """<span class="avatar generic" style={"width:" + size.toString() + "px"}></span>""";
+}
+
+// ── src/app/product/[id]/page.bp ────────────────────────────────────────────
+
+// No stage is declared (decision 202): the page reaches no `#[serverOnly]` hook,
+// so `#[page]` prerenders it at comptime.
+
+#[page("product/[id]")]
+pub fn Page(route: PageContext) -> @Component<ElementBase, Element> {
+    val id = PageParams(route).id;
+    return html """
+      <h1>Product {id}</h1>
+      <Avatar size={48} server:defer>
+        <GenericAvatar size={48} slot="fallback" />
+      </Avatar>
+    """;
+}
+
+fn routeFor(id: string) -> PageContext {
+    return PageContext(pathname: "/product/" + id, pattern: "/product/[id]", params: Dict.empty().insert("id", id), rest: [], data: Json.Null);
+}
+
+test "the page renders the fallback and a placeholder, not the component" {
+    val markup = renderToString(await Page(routeFor("7")));
+    assert markup.contains("<span class=\"avatar generic\"");
+    assert markup.contains("data-jh-d=\"");
+    assert markup.contains("data-jh-src=\"/_onze/island/Avatar?p=");
+    assert markup.contains("Your avatar") == false;
+}
+
+test "the page reads nothing from the request, so it stays prerendered" {
+    val _markup = renderToString(await Page(routeFor("7")));
+    assert dynamicReason() == "";
+}
+
+test "the props in the URL are sealed, not readable and not editable" {
+    val sealed = seal("size=48");
+    assert sealed.contains("48") == false;
+    assert unseal(sealed).isOk();
+    assert unseal(sealed + "x").isError();
+}
+
+test "the island endpoint renders the component with the island request's cookies" {
+    val sealed = seal("size=48");
+    val res = await renderIsland("Avatar", sealed, rkTestRequestAuthed("GET", "/_onze/island/Avatar"));
+    assert res.status == 200;
+    assert res.body.contains("<img alt=\"Your avatar\" src=\"/avatars/");
+    assert res.body.contains("<!DOCTYPE") == false;
+}
+
+test "a tampered payload is 400 and renders nothing" {
+    val res = await renderIsland("Avatar", "not-sealed", rkTestRequest("GET", "/_onze/island/Avatar"));
+    assert res.status == 400;
+    assert res.body == "";
+}
+
+test "an island that is not registered is 404, by name" {
+    val res = await renderIsland("Nope", seal(""), rkTestRequest("GET", "/_onze/island/Nope"));
+    assert res.status == 404;
+}
+
+// The E2E half (07-onze/53's runner):
+//
+//   onze build                         → .onze/prerender/product/7/index.html exists
+//   GET /product/7                     → served from the prerendered file, no cookie read
+//   GET /_onze/island/Avatar?p=…       → 200, Cache-Control: private, max-age=60
+//   props over 2 048 bytes             → the element carries data-jh-body; the runtime POSTs

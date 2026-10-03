@@ -1,0 +1,43 @@
+---
+// Front 119 — bpp styling · examples/src/components/Post.bpp
+//
+// Demonstrates: step 2 in a `.bpp` component — the two ways out of a scope.
+// `:global(…)` leaves ONE selector unscoped inside a scoped rule; `is:global`
+// leaves the whole sheet unscoped.
+//
+//   <style>
+//     .title { font-size: 2rem; }
+//     article :global(p) { line-height: 1.6; }
+//   </style>
+//   <style is:global> h1 { margin: 0; } </style>
+//
+// The `.title` rule matches this component's `<h1 class="title">` and no other
+// component's `.title`: two components may use one class name.
+//
+// The `.bp` form, with its tests: `Post` in `scoped-style-example.bp`.
+//
+// Upstream: astro-docs/11-styling.md (Estilos Globais, Ordem de Cascata)
+//           https://docs.astro.build/en/guides/styling/#global-styles
+
+import {article, h1} from "jhonstart";
+import {scopedStyle} from "jhonstart-emilia";
+
+type Props(
+    title: string,
+    children: Children = [],
+)
+---
+<article>
+  <h1 class="title">{title}</h1>
+  <slot />
+</article>
+
+<style>
+  .title { font-size: 2rem; }
+  /* the slotted content is another component's; reach it on purpose */
+  article :global(p) { line-height: 1.6; }
+</style>
+
+<style is:global>
+  h1 { margin: 0; }
+</style>

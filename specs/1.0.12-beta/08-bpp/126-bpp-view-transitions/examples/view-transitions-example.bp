@@ -1,0 +1,118 @@
+// Front 126 — bpp view transitions · examples/view-transitions-example.bp
+// App files: src/layouts/base.bp · src/app/blog/page.bp · src/app/blog/[slug]/page.bp
+//
+// Demonstrates: the transition directives, as markup. `<ViewTransitions />` in
+// the head turns the animation on; a `transition:` directive on an element is a
+// data attribute the navigation runtime reads when it swaps the document.
+//
+//   <head><ClientRouter /></head>
+//   <aside transition:name="hero">
+//   <main transition:animate="slide">
+//   <header transition:animate={fade({ duration: "0.4s" })}>
+//   <video controls transition:persist>
+//   <Counter client:load transition:persist initialCount={5} />
+//   <a href="/articles/emperor-penguins" data-astro-reload>
+//
+// Upstream: astro-docs/20-view-transitions.md
+//           https://docs.astro.build/en/guides/view-transitions/
+//
+// Target: both — the markup is rendered on the server; the animation is the
+// browser's, asserted against a `startViewTransition` double in
+// `jhonstart-dom-test`.
+
+import html, {Element, ElementBase, Children, renderToString} from "jhonstart";
+import {a, article, body, h1, head, header, htmlTag, img, main, title, video} from "jhonstart";
+import {ViewTransitions, fade, slide, TransitionAnimation} from "jhonstart-link";
+
+// ── src/layouts/base.bp ─────────────────────────────────────────────────────
+
+pub fn BaseLayout(pageTitle: string, children: Children = []) -> Element {
+    return html """
+      <htmlTag lang="en" transition:animate="none">
+        <head>
+          <title>{pageTitle}</title>
+          <ViewTransitions />
+        </head>
+        <body>
+          <header transition:animate={fade(duration: "0.4s")}>
+            <a href="/blog">Blog</a>
+            <!-- a full document load, on purpose -->
+            <a href="/legacy" data-jh-reload>Legacy</a>
+            <!-- replaces the history entry instead of adding one -->
+            <a href="/blog?sort=new" data-jh-history="replace">Newest</a>
+          </header>
+
+          <!-- keeps playing across navigations: the node is moved, not replaced -->
+          <video controls muted transition:persist="player" src="/intro.mp4"></video>
+
+          <main transition:animate="slide"><slot /></main>
+        </body>
+      </htmlTag>
+    """;
+}
+
+// ── src/app/blog/page.bp and src/app/blog/[slug]/page.bp ────────────────────
+
+// The same `transition:name` on both pages pairs the two elements: the browser
+// morphs the list's thumbnail into the post's hero image.
+pub fn ListItem(slug: string, heading: string) -> Element {
+    return html """
+      <article>
+        <img src={"/covers/" + slug + ".png"} alt="" transition:name={"cover-" + slug} />
+        <a href={"/blog/" + slug}>{heading}</a>
+      </article>
+    """;
+}
+
+pub fn PostHero(slug: string, heading: string) -> Element {
+    return html """
+      <img class="hero" src={"/covers/" + slug + ".png"} alt="" transition:name={"cover-" + slug} />
+      <h1>{heading}</h1>
+    """;
+}
+
+test "ViewTransitions writes the stylesheet and the flag" {
+    val markup = renderToString(BaseLayout("Blog"));
+    assert markup.contains("@keyframes jh-fade-in");
+    assert markup.contains("@media (prefers-reduced-motion: reduce)");
+}
+
+test "a named transition is the same name on both pages" {
+    val list = renderToString(ListItem("hello", "Hello"));
+    val post = renderToString(PostHero("hello", "Hello"));
+    assert list.contains("data-jh-vt-name=\"cover-hello\"");
+    assert post.contains("data-jh-vt-name=\"cover-hello\"");
+}
+
+test "a built-in animation is an attribute; a customised one carries its values" {
+    val markup = renderToString(BaseLayout("Blog"));
+    assert markup.contains("<html lang=\"en\" data-jh-vt-animate=\"none\">");
+    assert markup.contains("<main data-jh-vt-animate=\"slide\">");
+    assert markup.contains("<header data-jh-vt-animate=\"fade\" style=\"--jh-vt-duration: 0.4s\">");
+}
+
+test "a persisted element is marked with its name" {
+    val markup = renderToString(BaseLayout("Blog"));
+    assert markup.contains("data-jh-vt-persist=\"player\"");
+}
+
+test "the per-link attributes are plain attributes" {
+    val markup = renderToString(BaseLayout("Blog"));
+    assert markup.contains("<a href=\"/legacy\" data-jh-reload>");
+    assert markup.contains("data-jh-history=\"replace\"");
+}
+
+// What does not compile:
+//
+//   <main transition:animate="spin">
+//     error: unknown animation `spin` — fade, slide, none, initial, or a
+//            TransitionAnimation value                          at the directive
+//
+// In the browser (`jhonstart-dom-test/test/transitions_dom_test.bp`):
+//
+//   click <a href="/blog/hello">    → startViewTransition called once; the events
+//                                     jh:before-preparation, jh:after-preparation,
+//                                     jh:before-swap, jh:after-swap, jh:page-load
+//                                     fire in that order
+//   the <video> after the swap      → the same node as before it
+//   a browser with no View Transition API → the swap happens, nothing is animated

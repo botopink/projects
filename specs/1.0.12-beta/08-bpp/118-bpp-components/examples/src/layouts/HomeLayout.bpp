@@ -1,0 +1,29 @@
+---
+// Front 118 — bpp components · examples/src/layouts/HomeLayout.bpp
+//
+// Demonstrates: step 4 in a `.bpp` component — a slot handed on. `HomeLayout`
+// reads its own `headExtra` slot and fills `BaseLayout`'s with it.
+//
+//   <BaseLayout>
+//     <slot name="head" slot="head" />
+//     <main><slot /></main>
+//   </BaseLayout>
+//
+// The `.bp` form, with its tests: `HomeLayout` in
+// `components-and-slots-example.bp`.
+//
+// Upstream: astro-docs/09-astro-components.md (Transferindo Slots)
+//           astro-docs/10-layouts.md (Layouts Aninhados)
+
+import {main} from "jhonstart";
+import {layouts.BaseLayout};
+
+type Props(
+    children: Children = [],
+    headExtra: Children = [],
+)
+---
+<BaseLayout>
+  <slot name="headExtra" slot="headExtra" />
+  <main><slot /></main>
+</BaseLayout>

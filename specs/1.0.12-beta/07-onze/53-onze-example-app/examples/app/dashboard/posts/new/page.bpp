@@ -1,0 +1,19 @@
+---
+// Front 53 — onze example app · examples/app/dashboard/posts/new/page.bpp
+//
+// The write path's page of `new-post-form-example.bp`, as a `.bpp` file. The
+// SERVER renders what the CLIENT submits: the page places the form, and the
+// form (`components/new_post_form.bpp`) owns the action state.
+//
+// The auth gate is not here. It is `app/dashboard/layout.bpp`, which renders
+// first; no page under `/dashboard` repeats it.
+//
+// Upstream: https://nextjs.org/docs/app/getting-started/updating-data
+
+import {div, h1} from "jhonstart";
+import {components.new_post_form.NewPostForm};
+---
+<div>
+  <h1>New post</h1>
+  <NewPostForm />
+</div>

@@ -1,0 +1,31 @@
+---
+// Front 123 — bpp middleware · examples/src/app/orders/page.bpp
+//
+// Demonstrates: step 1 in a `.bpp` page — reading what middleware stored.
+// `local(currentUser())` is `Astro.locals.user`: the key carries the type, so
+// `user` is a `?User` with no cast, and it is null when no middleware set it.
+//
+//   ---
+//   const title = Astro.locals.welcomeTitle();
+//   const orders = Array.from(Astro.locals.orders.entries());
+//   ---
+//   <h1>{title}</h1>
+//
+// The middleware itself is `src/middleware.bp` — a `.bp` module: it answers a
+// `Response` and has no template. The text `PRIVATE INFO` below is what its
+// `redact` step replaces in the finished page.
+//
+// The `.bp` form of this page, with its tests: `page` in
+// `locals-and-sequence-example.bp` at the root of `examples/`.
+//
+// Upstream: astro-docs/17-middleware.md (Armazenando dados em `context.locals`)
+//           https://docs.astro.build/en/guides/middleware/#storing-data-in-contextlocals
+
+import {h1, p} from "jhonstart";
+import {local} from "rakun";
+import {middleware.currentUser};
+
+val user = local(currentUser());
+---
+<h1>{if (user) { u -> "Welcome back " + u.name } else { "Welcome" }}</h1>
+<p>Card on file: PRIVATE INFO</p>

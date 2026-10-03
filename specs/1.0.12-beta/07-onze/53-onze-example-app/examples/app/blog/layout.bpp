@@ -1,0 +1,21 @@
+---
+// Front 53 — onze example app · examples/app/blog/layout.bpp
+//
+// The segment layout of `blog-list-page-example.bp`, as a `.bpp` file:
+// `#[layout("blog")]`, from this file's directory. It wraps `/blog` and
+// everything under it, and is NOT re-rendered when the client navigates between
+// two routes that share it.
+//
+// Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/layout
+
+import {h1, section} from "jhonstart";
+import {emilia, Token} from "emilia";
+
+fn titleTokens() -> Token[] {
+    return [.Text.Size.X2xl, .Text.Bold];
+}
+---
+<section>
+  <h1 class={emilia(titleTokens())}>All posts</h1>
+  {props.children}
+</section>

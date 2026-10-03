@@ -1,0 +1,117 @@
+// Front 122 — bpp data · examples/response-control-example.bp
+// App file: src/app/product/[id]/page.bp
+//
+// Demonstrates: the `Astro` global, member by member, as a page here writes it.
+// There is no object: a page has a parameter (`route`), hooks (`use request()`,
+// `use cookies()`), navigation signals (`redirect`, `notFound`, `rewrite`) and
+// two response hooks (`responseStatus`, `responseHeader`).
+//
+//   ---
+//   export const prerender = false;
+//   const product = await getProduct(Astro.params.id);
+//   if (!product) { Astro.response.status = 404; Astro.response.statusText = "Not found"; }
+//   if (!product.isAvailable) { return Astro.redirect("/products", 301); }
+//   Astro.response.headers.set("Cache-Control", "public, max-age=3600");
+//   const cookie = Astro.request.headers.get("cookie");
+//   ---
+//
+// Upstream: astro-docs/21-on-demand-rendering.md (Cookies, `Response`, `Request`)
+//           astro-docs/08-routing.md (Redirecionamentos Dinâmicos, Rewrites)
+//           https://docs.astro.build/en/guides/on-demand-rendering/
+//
+// Target: erlang (server).
+
+import html, {page, PageContext, Element, ElementBase, renderToString} from "jhonstart";
+import {h1, p} from "jhonstart";
+import {request, cookies, pairValue} from "jhonstart";                      // Astro.request, Astro.cookies
+import {redirect, notFound, rewrite} from "jhonstart";                      // Astro.redirect, a 404, Astro.rewrite
+import {responseStatus, responseHeader, recordedStatus, recordedHeaders} from "jhonstart";   // Astro.response
+import {site, absoluteUrl, isPrerendered, dynamicReason} from "jhonstart";  // Astro.site, Astro.isPrerendered
+import {captureSignals} from "jhonstart-test";
+import {collections.Dict, json.Json} from "std";
+
+type Product(id: string, name: string, available: bool)
+
+fn findProduct(id: string) -> @Task<?Product> {
+    if (id == "7") return Product(id: "7", name: "Lamp", available: true);
+    if (id == "8") return Product(id: "8", name: "Desk", available: false);
+    return null;
+}
+
+#[page("product/[id]")]
+pub fn Page(route: PageContext) -> @Component<ElementBase, Element> {
+    // Astro.params
+    val id = PageParams(route).id;
+
+    // Astro.rewrite — serve another route under this URL. A legacy id form.
+    if (id.startsWith("sku-")) { val _r = rewrite("/product/" + id.slice(4, id.length())); }
+
+    val found = await findProduct(id);
+
+    // Astro.response.status — the page still renders, with a 404 status.
+    if (found == null) {
+        val _s = responseStatus(404);
+        return html """<h1>No such product</h1>""";
+    }
+    val product = found ?? Product(id: "", name: "", available: false);
+
+    // Astro.redirect(url, 301)
+    if (product.available == false) { val _g = redirect("/products"); }
+
+    // Astro.response.headers.set
+    val _h = responseHeader("Cache-Control", "public, max-age=3600");
+
+    // Astro.request.headers, Astro.cookies
+    val req = use request();
+    val jar = use cookies();
+    val returning = pairValue(jar, "seen") != "";
+
+    return html """
+      <h1>{product.name}</h1>
+      <p>{if (returning) { "Welcome back." } else { "First visit." }}</p>
+      <p>Canonical: {absoluteUrl(route.pathname)}</p>
+    """;
+}
+
+fn routeFor(id: string) -> PageContext {
+    return PageContext(pathname: "/product/" + id, pattern: "/product/[id]", params: Dict.empty().insert("id", id), rest: [], data: Json.Null);
+}
+
+test "a found product renders with a cache header and the default status" {
+    val markup = renderToString(await Page(routeFor("7")));
+    assert markup.contains("<h1>Lamp</h1>");
+    assert recordedStatus() == 200;
+    assert recordedHeaders().join(";") == "Cache-Control: public, max-age=3600";
+}
+
+test "a missing product renders its own markup with a 404" {
+    val markup = renderToString(await Page(routeFor("999")));
+    assert markup.contains("No such product");
+    assert recordedStatus() == 404;
+}
+
+test "an unavailable product redirects — the signal leaves before anything renders" {
+    val signals = captureSignals({ -> Page(routeFor("8")) });
+    assert signals.join(",") == "nav:redirect:/products";
+}
+
+test "a rewrite names the route to render under this URL" {
+    val signals = captureSignals({ -> Page(routeFor("sku-7")) });
+    assert signals.join(",") == "nav:rewrite:/product/7";
+}
+
+test "reading the request or setting the response makes the page dynamic" {
+    val _m = renderToString(await Page(routeFor("7")));
+    assert dynamicReason() != "";
+    assert isPrerendered() == false;
+}
+
+// What is refused, and when:
+//
+//   val _h = responseHeader("X-Late", "1");     inside a Suspense fill
+//     error at run time, in the render's log and as the boundary's error:
+//     responseHeader was called after the response head was written
+//
+//   val jar = use cookies(); jar.set("seen", "1")
+//     there is no `set` on a render's cookie jar: a cookie is written by
+//     middleware, a route handler or an action (the render phase forbids it)

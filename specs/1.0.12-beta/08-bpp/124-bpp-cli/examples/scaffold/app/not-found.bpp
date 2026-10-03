@@ -1,0 +1,21 @@
+---
+// Front 124 — bpp CLI · examples/scaffold/app/not-found.bpp
+//
+// Demonstrates: step 5 — the root not-found boundary of the scaffold. The
+// file's name is its kind: for `not-found.bpp`, the unfold (front 116) gives
+// the function its decorator through jhonstart's `bppKinds` (decision 221).
+// onze's generated routes table imports `NotFound` from a not-found module
+// (`onze-cli/src/generate.bp`); decision 213 names the function after the file,
+// and `not-found` is not a function name — open (front 116 README § Notes).
+// It takes no parameter, so the fence has no `route`.
+//
+// A fence may be empty of statements: the imports are declarations, and the
+// body of `NotFound` is the template alone.
+//
+// Upstream: astro-docs/07-astro-pages.md (Página de Erro 404 Personalizada)
+//           https://docs.astro.build/en/basics/astro-pages/#custom-404-error-page
+
+import {a, h1, p} from "jhonstart";
+---
+<h1>Nothing lives at this address.</h1>
+<p><a href="/">Back to the start</a></p>

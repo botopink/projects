@@ -1,0 +1,40 @@
+---
+// Front 116 — bpp file format · examples/PostCard.bpp
+// App file: src/components/PostCard.bpp
+//
+// Demonstrates: a component as a single file. The application's manifest says
+// `"bpp": "jhonstart"` (`app-botopink-json-example.json`), so the toolchain
+// unfolds this file onto jhonstart's `pub default fn`, `html` (decisions 198,
+// 200): the header — between the two `---` lines (decision 212) — is ordinary
+// botopink, its declarations staying at module level and its statements becoming
+// the body of the function the file unfolds to; everything after the second
+// `---` line is the literal handed to `html`.
+//
+// `type Props` is the convention (decision 199): with it the file is
+// `pub default fn PostCard(props: Props) -> Element`, the header's statements read
+// `props`, and the attributes a caller writes are the fields of `Props`
+// (decision 192).
+//
+// Upstream: astro-docs/09-astro-components.md (Estrutura do Componente)
+//           https://docs.astro.build/en/basics/astro-components/
+//
+// What this file unfolds to is `PostCard-desugared-example.bp`, beside it.
+
+import {article, h2, p, timeTag, footer} from "jhonstart";
+import {lib.db.Post};
+
+type Props(
+    post: Post,
+    featured: bool = false,
+    children: Children = [],
+)
+
+val date = props.post.published;
+val kind = if (props.featured) { "card featured" } else { "card" };
+---
+<article class={kind}>
+  <h2>{props.post.title}</h2>
+  <timeTag datetime={date}>{date}</timeTag>
+  <p>{props.post.excerpt}</p>
+  <footer><slot>Read more</slot></footer>
+</article>

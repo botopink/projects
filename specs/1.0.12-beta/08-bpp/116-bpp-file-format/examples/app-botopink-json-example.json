@@ -1,0 +1,28 @@
+{
+  "name": "notes",
+  "version": "0.0.1",
+  "description": "Front 116 — an application's manifest. `bpp` is the whole configuration of the file kind: it names the ONE dependency whose `pub default fn` — a template function, jhonstart's `html` (decisions 198, 200) — this project's `.bpp` files unfold onto. For each file the toolchain copies the header between the two `---` lines into the module as written and hands everything after the second `---` to that function as its literal; it knows no tag and no library. A `.bpp` file is listed in `files` like any module.",
+  "src": "src/",
+  "entry": "root.bp",
+  "target": "erlang",
+  "bpp": "jhonstart",
+  "files": [
+    "root.bp",
+    "lib/mod.bp",
+    "lib/db.bp",
+    "components/mod.bp",
+    "components/PostCard.bpp",
+    "layouts/mod.bp",
+    "layouts/BaseLayout.bpp",
+    "app/mod.bp",
+    "app/layout.bpp",
+    "app/page.bpp",
+    "app/not-found.bpp",
+    "app/blog/mod.bp",
+    "app/blog/[slug]/page.bpp"
+  ],
+  "dependencies": {
+    "jhonstart": { "path": "../../jhonstart/modules/jhonstart" },
+    "onze": { "path": "../../onze/modules/onze" }
+  }
+}
