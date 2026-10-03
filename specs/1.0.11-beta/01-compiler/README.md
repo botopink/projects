@@ -196,6 +196,40 @@ Answered: decision 239 (`../decisions-taken.md`).
 **Recommendation.** (a) — no new syntax; the seed of a row-per-key table is its rows, and an empty table needs none. (b) is a language change for one annotation; (c) leaves the argument decision 51 defined with nothing it can be written on.
 **Blocks.** 17 step 1.
 
+### 17-b. The per-row increment of a `keyed = true` `Dict`
+
+**Raised by:** `17-beam-memory` step 1 (the README's "`+=` through `counts.at(k)` … is
+`ets:update_counter`").
+**Measured.** The row write is `counts = counts.insert(k, v)`; a row computed from the var's own
+rows (`counts.insert(k, counts.at(k) …)`) is decision 40's §5(b) refusal. No surface reaches the
+counter: `counts.at(k)` is a `?V` (`?V + 1` does not type, the language has no `??`), and
+`counts.at(k) += 1` / `counts[k] += 1` are no assignment targets (a target is a name or a field).
+**Options.** (a) none — a keyed row is written whole; a per-key counter is refused, and a counter
+that several processes bump is one `#[@BeamMemory.Ets] var n: i32` each (decision 40's increment);
+(b) a std method `Dict.bump(key, by) -> Dict<K, V>` (`V` an integer; an absent key counts from 0),
+an ordinary method on a plain `Dict`, lowered under `keyed = true` to
+`ets:update_counter(T, K, By, {K, 0})`: `counts = counts.bump(k, 1);`; (c) an index assignment
+`counts[k] += 1` in the grammar, lowered the same way.
+**Recommendation.** (a) — no new method or grammar for one annotation; (b) adds a `Dict` method
+whose atomicity exists only under `keyed = true`, (c) a target form the language does not have.
+**Blocks.** `17-beam-memory` step 1's fourth box.
+
+### 17-c. What else names a `keyed = true` var
+
+**Raised by:** `17-beam-memory` step 1.
+**Measured.** Built: the var is named only as `counts.at(k)` (`ets:lookup`) and
+`counts = counts.insert(k, v)` (`ets:insert`); everything else — `counts[k]`, `counts.hasKey(k)`,
+`counts.delete(k)`, `counts.size()`, passing `counts` on — is refused at the identifier
+("`counts` is a `keyed = true` var: it is read one row at a time, as `counts.at(key)`"), and a
+keyed var is never `pub`. Decision 63 defines `d[k]` as `d.at(k)`, so the index form is refused
+although it means the lowered read.
+**Options.** (a) the two forms only, as built; (b) (a) plus `counts[k]`, read as the `counts.at(k)`
+decision 63 says it is; (c) (b) plus `hasKey` (`ets:member`) and `delete` (`ets:delete`) as row
+operations, each a new `std/beam` primitive.
+**Recommendation.** (a) — one spelling per row operation; (b) costs nothing but a second spelling
+of the read, (c) widens the surface the checker and two emitters must keep in step.
+**Blocks.** nothing — the built surface stands until widened.
+
 ### 23-d. One unit for every string index
 
 **Raised by:** `02-erlang` step 6 (language-gaps row T18).
