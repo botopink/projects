@@ -33,7 +33,8 @@ letter ids are never renumbered; their full text lives where they were raised:
 Two items the milestone's own cut raised are written here rather than in a track, because they
 cross tracks (`gate-a…j`, the zero-tolerance policy of `00-gate`, were answered: decisions 153–162),
 and three that the audit of the `00-gate` fronts on the integrated `feat` raised (`gate-k…p`, answered: decisions 225–228, 230, 231), and two that `01-compiler/05-wasm` step 5
-raised, because their answer reaches std (`05w-a`, `05w-b`, open):
+raised, because their answer reaches std (`05w-a`, `05w-b`, open), and one that `01-compiler/14-comptime-on-beam`
+step 2 raised, because its answer changes what a template body receives (`14-a`, open):
 
 ### std-e · Test lifecycle hooks
 
@@ -134,6 +135,45 @@ raised, because their answer reaches std (`05w-a`, `05w-b`, open):
 > group 3 and the modules (a) moved there".
 > **Blocks.** `05-wasm` step 5's group 2 (`io/clock`, `io/fs`, `testing/snapshots`); `io/random`
 > is not blocked by it.
+
+### 14-a · Which bindings a template capture carries
+
+> **Raised by:** `01-compiler/14-comptime-on-beam` step 2 (the N=200 slope).
+> **Measured.** Every capture a template receives carries the whole scope of its call site as
+> `bindings` — one `#{name, kind, identity, local}` per module-level declaration in scope
+> (`template_eval.zig` `captureToTerm`) — whether the body reads it or not. With N call sites in one
+> module the scope has ≈ N entries, so each evaluation encodes, decodes and lists O(N) and a build
+> O(N²): the slope grows with N on both runtimes (step 2's table). Only two capture functions read
+> the list: `capture.bindings()` and `capture.lookup(name)` (`runtime/prelude.zig`); `context`,
+> `source`, `text`, `parts` and `ref` do not. The readers today are jhonstart's `html` and erika's
+> query template (`lookup`) and one `tests/language/modules` cell.
+> **Options.**
+> (a) Every capture carries the whole scope (today) — the slope stays O(N) per evaluation:
+> ```
+> %% Arg0 = #{'__bp_capture' => <<"q">>, …, bindings => [#{local => <<"c0">>, …}, … 200 entries]}
+> ```
+> (b) A capture carries the scope only when the module its body lowered to calls `bindings/1` or
+> `lookup/2`; any other body receives `bindings => []`. Decided by the compiler from the generated
+> module, so the same declaration always gets the same answer; a body cannot observe the difference
+> through the capture API. Any other use of the capture variable — handed to a helper, to `@expr(…)`
+> (which serialises the whole map), compared — counts as a read too, so only a body that touches the
+> capture through `text`, `parts`, `source`, `context`, `ref`, `build`, `custom`, `fail` or `failAt`
+> alone receives the empty list:
+> ```
+> %% Arg0 = #{'__bp_capture' => <<"q">>, …, bindings => []}      % conf/1 never reads bindings
+> ```
+> (c) `lookup(name)` resolved by the compiler before the run: a body may only look up literal names,
+> and the capture carries those entries alone — a body computing the name (`lookup(t.1)`, jhonstart's
+> `html.bp:206`) is refused:
+> ```
+> error: `lookup` takes a string literal in a template body
+> ```
+> **Recommendation.** (b) — no program changes meaning and no reader is refused; the cost is one
+> rule in the evaluator (which calls count as a read), pinned by a fixture whose body reads nothing
+> and whose `COMPTIME REPLY` is unchanged on both runtimes. (c) is stricter but breaks the two
+> library readers.
+> **Blocks.** `14-comptime-on-beam` step 2's acceptance (the slope); the trace listing's share of it
+> is a separate ownership question (step 2).
 
 ---
 
