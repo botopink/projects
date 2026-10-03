@@ -162,34 +162,6 @@ list argument, wasm as one array.
       rows of `comptime/builtins.zig` held to `declaration`; the four cells that pass two arguments
       unchanged and green
 
-### Step 5 — the `Decorator` type, and `with:` declared with it (decision 268)
-
-`Decorator` is a builtin type declared in `builtins.d.bp`: a name has it when it names a function
-whose first parameter is `comptime _: @Decl` (further arguments included); nothing else is
-assignable to it, and it cannot be constructed. `TypeInfo.all` declares
-`with: Decorator | Decorator[]`, and the generic check holds it.
-
-**Acceptance:**
-- [ ] `builtins.d.bp` declares `Decorator` and `all(with: Decorator | Decorator[], member: ?string = null)`;
-      the drift test green on the new signature
-- [ ] `@TypeInfo.all(with: 42)` and `with: someOrdinaryFn` refused as the ordinary mismatch, located
-      at the argument (`reject/` cells); `typeinfo-all-not-decorator` removed with its cell moved
-- [ ] a decorator with arguments, a single decorator and a list of them accepted (`run/` cell on the
-      four targets)
-
-### Step 6 — `@getContext(T)` is a hook (decision 269)
-
-`builtins.d.bp` declares `getContext<T>(comptime _: type) -> Component<T, T>`; the checker's RC3
-arm types the call as that declaration instead of `T`. `use @getContext(T)` reads the context as a
-`T`; the bare call is refused.
-
-**Acceptance:**
-- [ ] `val ctx = use @getContext(BasePagamento);` types `ctx` as `BasePagamento` (`run/` cell on the
-      four targets, inside a `-> @Component<…>` body)
-- [ ] `@getContext(BasePagamento)` without `use` refused, located, naming `use` (`reject/` cell)
-- [ ] the three existing `context-getcontext-*` refusals unchanged; the drift test green on the new
-      signature; `docs.md` § Builtins shows the `use` form
-
 ## Gate
 
 - [ ] `scripts/gate.sh --cold` green on the integrated branch

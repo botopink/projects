@@ -1,14 +1,14 @@
 # Decisions the maintainer owes — 1.0.11-beta
 
 **These questions are open** — `lg2-a…w`, `17-b`, `17-c` (raised by `01-compiler/17-beam-memory`) and
-`134-a…d` (raised by `01-compiler/134-builtins-declared`); `ck4-a` (decision 266), `gw-a` (264),
+`134-b…d` (raised by `01-compiler/134-builtins-declared`); `134-a` (decision 267), `ck4-a` (266), `gw-a` (264),
 `02e-a` (240) and `05w-a…g` (238, 241, 259–263) were answered. The `lg2-*` rows are carried verbatim
 below from 1.0.10-beta's
 § Open with their ids unchanged (`ck-host`, `lg-a`, `lg-b` and this milestone's `01c-e` were answered:
 decisions 146–149). Every `lg2-*` row of [`language-gaps.md`](./language-gaps.md) is a
 feature the language does not have; the recommendation is always the most restrictive reading
 (decision 67) — the feature stays out and the row's nearest form is the design — and no front opens
-on one until it is answered. **The next free decision number is 267** ([`decisions-taken.md`](./decisions-taken.md)).
+on one until it is answered. **The next free decision number is 268** ([`decisions-taken.md`](./decisions-taken.md)).
 
 Beside the open questions, every track carries **implementation choices awaiting confirmation** —
 a choice a front made, recommended and implemented, that the maintainer confirms or reverses. The
@@ -331,33 +331,6 @@ row's nearest form is the design — and the cost of that reading is named where
 > runtime the target selected (decision 84).
 > **Blocks.** The row; front 16 (`#[scheduled]`) and every decorator that would reuse std.
 
-
-### 134-a · `@print`, `@println` and `@debug` take any number of arguments
-
-> **Raised by:** `01-compiler/134-builtins-declared` step 2 (decision 252).
-> **Measured.** The three accept any number of arguments of any type: `@print(a, b)` is written in
-> four `tests/language/run` cells (`float_record_field`, `string_literal_unicode_escape`,
-> `beam_memory_ets_keyed` twice) and lowers to `console.log(a, b)` / `'__bp_print'([A, B])`. No
-> declaration spells a variadic parameter, so `builtins.d.bp` declares the closest honest
-> `print(value: unknown)` and the compiler's table holds the three as an open question — their
-> arguments are not checked.
-> **Options.**
-> (a) one argument — the declaration as it stands is held at the call, `@print(a, b)` is
-> `builtin-arguments`, and the four cells print one value per call:
-> ```botopink
-> @print(x * 3.0);
-> @print(n);          // was @print(x * 3.0, n)
-> ```
-> (b) the language gains a variadic parameter, and the declaration spells it:
-> ```botopink
-> pub declare fn print(..values: unknown[]);
-> @print(x * 3.0, n);   // accepted, checked against unknown[]
-> ```
-> (c) the three stay outside the check (today).
-> **Recommendation.** (a) — the most restrictive reading (decision 67): one value per call is what
-> decision 8 §7's formatter defines, the multi-argument form is four test lines, and (b) is a
-> language feature for one builtin family.
-> **Blocks.** The three rows of `comptime/builtins.zig` held `declaration`.
 
 ### 134-b · The type of `@TypeInfo.all`'s `with:`
 
