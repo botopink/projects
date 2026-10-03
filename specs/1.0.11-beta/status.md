@@ -66,13 +66,14 @@ the grep stage before any test.
 - [ ] `07-onze/53-onze-example-app` — waits on 49 · 50 · 51 · 71 steps 1–4, on 26 and 67, and on `04-rakun` 22 · 12 · 65 (the write path, the public root)
 - [ ] `02-std-and-packaging/98-packaging-tail` — waits on every library track (it verifies across seven repositories)
 - [ ] `01-compiler/05-wasm` step 5 (std on wasm, decision 230) — waits on `05w-a` (what an `@External.Wasm` binding names) and, for group 2, `05w-b` (the cells WASI preview1 cannot answer, the pre-opened directory); steps 1–4 done but the two cells 02 step 7 and C-35 owe
+- [ ] `01-compiler/14-comptime-on-beam` — step 3 closed and step 1's located fixtures in; step 1's last half (the body's file in the message) and step 5 (T17, re-measured: holds) wait on 01 (`infer.zig` / `env.zig`); step 2 (the N=200 slope, re-measured 6.6 / 9.2 ms per evaluation) waits on `14-a` (which bindings a capture carries) and on an owner for the trace rendering; step 4 (T15) is decision 216's, closing with 130 step 6; step 6 waits on lg2-j/o/w
 - [ ] `01-compiler/17-beam-memory` — waits on 02, 03 (decisions 167, 168 and 174 answered `111-a` and `17-a`)
 - [ ] `01-compiler/16-formatter` — waits on `00-gate` (112), the libraries' migrations and 01's parser rows
 - [ ] `01-compiler/07-review-backlog` · `08-hygiene` · `09-ecosystem-residuals` — wait on 02–05, on every owner, on 16
 
 ## Open
 
-- [ ] `01-compiler/02-erlang` · `03-beam` · `04-js` · `05-wasm` · `14-comptime-on-beam` · `26-cli-tooling` — group A · after `00-gate`
+- [ ] `01-compiler/02-erlang` · `03-beam` · `04-js` · `05-wasm` · `26-cli-tooling` — group A · after `00-gate`
 - [ ] `01-compiler/12-language-tests` · `18-comptime-runtimes` · `23-std-purity` · `24-effects-by-return` · `25-gate-perf` — group B · after `00-gate`
 - [ ] `04-rakun` group A: `04-rakun-erlang-runtime` (critical) · `74-rakun-tls-ssl-bundles` · `08-rakun-data-sql` · `15-rakun-messaging` · `79-rakun-oauth2-sso` · `81-rakun-packaging-release` · `93-rakun-soap-webservices` · `73-rakun-starters` · `19-rakun-test-utilities` step 1 — after 128
 - [ ] `05-jhonstart/26-jhonstart-router` (high) · `27-jhonstart-link` — after `101-gate-jhonstart`; 26 after 102 step 3's `routes.bp` commit and after 118 (its step 0 merges `jhonstart-html` into the core — decision 200); its step 4 after 106; its step 8 on the checker capability of decision 186

@@ -48,7 +48,7 @@ re-parse per `emitComptimeModule`) closed by `erlang.zig:328`'s `prelude_cache`.
 | box 1 | a decorator body calling `.foo(…)` no primitive type and no host function provides | the compiler's own refusal, before any runtime runs: the message names the call by `line:col` in the body, the caret is the annotation that ran it (`reject/comptime_method_nothing_answers`). The message does not name the body's **file**: the evaluator receives the owner's module path, not its display path, and the location is set by `infer.zig` `decoratorError` at the annotation (01). A template body is typed: the checker refuses the same call as `unknown-primitive-method` at the call in the body |
 | box 2 | the generated N=200 call-site project | over budget (§ Step 2) |
 | box 3 | the term round trip per shape | closed (§ Step 3) |
-| T15 | `@emit("pub val FooCol = …")` | holds, re-measured on four targets. The module's own source: a module `val` is not visible before its declaration (a hand-written `pub fn main() { @print(later); } pub val later = 5;` is refused the same way) and contributions are merged after the module's own declarations (`comptime.zig` `parseAndMergeContributions`), so no own body sees an emitted `val`. The importer: `compiler-cli` `resolver.zig` `collectModuleRefs` reads a module's exports off its source text before comptime runs, so an emitted `pub val` **and an emitted `pub fn`** are `imported symbol is not exported` (26) |
+| T15 | `@emit("pub val FooCol = …")` | holds, re-measured on four targets; answered by decision 216 (`@emit` leaves the language, step 4) — closes with 130 step 6. The module's own source: a module `val` is not visible before its declaration (a hand-written `pub fn main() { @print(later); } pub val later = 5;` is refused the same way) and contributions are merged after the module's own declarations (`comptime.zig` `parseAndMergeContributions`), so no own body sees an emitted `val`. The importer: `compiler-cli` `resolver.zig` `collectModuleRefs` reads a module's exports off its source text before comptime runs, so an emitted `pub val` **and an emitted `pub fn`** are `imported symbol is not exported` (26) |
 | T17 | a decorator module importing a user `Param` | holds, re-measured on four targets: `unknown field 'name' on type 'Param'` at `p.name` of `m.params` — the reflection model is resolved by name in the module's scope (`infer.zig` / `env.zig`, 01) |
 
 ## Steps
@@ -78,12 +78,13 @@ every emit (`erlang.zig` `collectBuiltinErlangDispatch` — `prelude_cache` does
 was 55 % of an N=200 build's samples.
 
 Measured with the generated project (`conf "cfg-<i>"`, a debug build, best of 5, on a host shared with
-other builds — load average 25–45 on 16 cores):
+other builds — load average 20–34 on 16 cores; re-measured after 133 step 2, one compile `erl` per
+command):
 
 | target (runtime) | N=0 | N=100 | N=200 | N=400 | slope 0→200 |
 |---|---|---|---|---|---|
-| commonJS (wat) | 205 ms | 425 ms | 918 ms | 2730 ms | 3.6 ms/eval |
-| erlang (BEAM) | 605 ms | 1286 ms | 2036 ms | 4176 ms | 7.2 ms/eval |
+| commonJS (wat) | 377 ms | 752 ms | 1689 ms | 3995 ms | 6.6 ms/eval |
+| erlang (BEAM) | 724 ms | 1460 ms | 2565 ms | 5247 ms | 9.2 ms/eval |
 
 The cost per evaluation still grows with N. Where an N=200 build spends it (stack samples):
 
@@ -97,7 +98,10 @@ The cost per evaluation still grows with N. Where an N=200 build spends it (stac
 The growth is the capture's `bindings`: every module-level `val` in scope is in every capture
 (`captureToTerm`), so the argument — encoded, decoded by the runtime and rendered into the trace — is
 O(N) per evaluation and O(N²) per build. Sending the scope only to a body that reads it
-(`bindings`, `lookup`, `ref`, `context`) is a design question, not a measurement.
+(`bindings/1`, `lookup/2` — `ref` and `context` do not read the list) is question `14-a`
+(`decisions-pending.md`); nothing is built before it is answered. The trace listing's share needs an
+owner for `trace.zig` and for the four backends' `comptime_trace` field (`infer.zig` passes
+`env.comptimeTraces` to every evaluation; 01) before a build that reads no trace can skip rendering one.
 
 **Acceptance:**
 - [ ] slope ≤ 1 ms per evaluation, N=200 ≤ 600 ms — unmet; the stages and their owners are the table above
@@ -116,21 +120,15 @@ and annotations, each read back in the body.
       (`decorator_invocation.zig`), each asserting the replies equal across runtimes
       (`helpers.repliesIdenticalAcrossRuntimes`) beside its `comptime/runtime/{beam,wat}/` pair
 
-### Step 4 — an emitted `pub val` in scope and exported (T15)
+### Step 4 — T15 is answered by decision 216, not built here
 
-Re-measure the repro; if it holds, an emitted `pub val` enters the module's binding list and its
-export list like an emitted `pub fn` (the `@emit` merge in `decorator_eval.zig` /
-`parseAndMergeContributions`).
-
-Re-measured: holds (T15 row). The fix is outside this front's files on both halves — the merge order
-and a `val`'s visibility before its declaration (`comptime.zig`, `infer.zig`: 01) and the
-pre-comptime export check (`compiler-cli` `resolver.zig`: 26). Open question for the maintainer: is an
-emitted declaration visible to the whole module (merged ahead of the module's own declarations, so an
-emitted `val` whose initializer reads one of the module's own `val`s is refused instead), or only
-after the declaration whose annotation emitted it?
-
-**Acceptance:**
-- [ ] `modules/emitted_pub_val_visible` — the module's own source reads it, an importer imports it, on four targets
+Decision 216 removes module-level `@emit` from the language once the library sites are migrated and
+names this row among the gaps it closes: a decorator's outputs are a member of the annotated type, a
+comptime meta entry, an associated type or a `@typeinfo.all` registration, each carried with the type
+to every importer, so no emitted `pub val` exists to be in scope or exported. The row closes with
+[`130-decorator-outputs`](../130-decorator-outputs/README.md) step 6 (`@emit` a named error;
+`language-gaps.md` closes the row there). This front builds nothing for it: an emitted `val` made
+visible now would be a feature the language is about to refuse (decision 67).
 
 ### Step 5 — the reflection model's types resolve by identity (T17)
 
@@ -138,7 +136,10 @@ Re-measure; if it holds, `Decl`, `Param`, `Field`, `Method` and the rest of the 
 resolve inside a decorator body by their own identity (`bp@…`), not by name in the importing
 scope, so an import named `Param` does not shadow them.
 
-Re-measured: holds (T17 row). The resolution is the checker's (`infer.zig` / `env.zig`: 01).
+Re-measured: holds (T17 row), and for `Field` as for `Param`: a decorator module that imports a user
+`Field` reads `f.name` of `decl.fields` as `unknown field 'name' on type 'Field'` on commonJS and
+erlang; without the import it compiles. The resolution is the checker's (`infer.zig` / `env.zig`: 01),
+so the step waits for 01 to take it — this front owns no file the fix touches.
 
 **Acceptance:**
 - [ ] `modules/reflection_type_not_shadowed_by_import` — a decorator module importing a user `Param` reads `m.params` of a `@Decl`
@@ -155,7 +156,7 @@ answers; nothing is built before.
 - [ ] `scripts/snap_audit.sh --mode=runtime-parity` green; every re-recorded listing classified, never bulk-accepted; `COMPTIME REPLY` byte-identical at every step
 - [ ] `scripts/beam_export_audit.sh` green (the comptime listings included)
 - [ ] `AGENTS.md` of `src/comptime/`, `src/comptime/runtime/` in the same commit as each step
-- [ ] Commit on `fix/14-comptime-on-beam`; no push, no merge
+- [ ] Commit on `front/14-comptime-on-beam`; no push, no merge
 
 ## Blast radius
 
