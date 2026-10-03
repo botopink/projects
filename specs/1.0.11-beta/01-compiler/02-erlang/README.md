@@ -152,8 +152,9 @@ erlang as latin1, `illegal character` above U+00FF) is the same site: one fix, t
 - [ ] a decorator body carrying a `\u{…}` literal evaluates to the character (`comptime/tests/**` — 14's file; the fixture reported to 14, or added as a carve-out named in the commit)
 
 `.length()` of `"\u{1F600}"` is `1` on erlang and beam, `2` on commonJS (UTF-16 units, 04's row)
-and `4` on wasm (bytes, 05's row), so the cell prints the characters only. Under `LANG=C` beam
-still writes latin1 (03's twin).
+and `4` on wasm (bytes — `decisions-pending.md` 02e-a), so the cell prints the characters only.
+Under `LANG=C` beam wrote latin1: `03-beam`'s twin (an entry point setting `standard_io` to
+unicode), landing with the next integration.
 
 ### Step 6 — `string.indexOf` counts codepoints (T18, 23-d)
 
@@ -185,9 +186,9 @@ type-pattern fixtures this front added given their `.out` on erlang for the cell
 - [x] every `tests/language` cell naming §2, §4, §5, §6 green on erlang (`run.sh --target erlang`)
 
 The table is `test/is_truth_table` (commonJS and erlang agree on every row): no list of lines
-exists any more (decision 154), and as a `run/` cell it is red on beam (`#(i32, string)` holds for
-a record and a variant too) and traps on wasm — 03's and 05's rows; it becomes the `run/` cell
-when they land. §11's "erlang: nothing" is pinned by `codegen/tests/control_flow.zig`'s needle
+exists any more (decision 154), and as a `run/` cell it waits on beam's `#(i32, string)` test (it
+held for a record and a variant too — `03-beam`'s fix, landing with the next integration) and
+traps on wasm (05's row); it becomes the `run/` cell when both land. §11's "erlang: nothing" is pinned by `codegen/tests/control_flow.zig`'s needle
 (`A = 2.0,`, no box); a program cannot tell a stored value from an unboxed one, so
 `run/unknown_stores_nothing` has nothing to print that differs.
 
@@ -262,6 +263,7 @@ Each pinned by `codegen/tests/erlang.zig` (the backend's own fixtures) or a `tes
 - [x] the sibling loader under `build` — step 9
 - [x] a lambda's parameter or `val` over a name of the enclosing function (decision 205) did not compile — each takes a fresh version and the enclosing names come back after the fun; `run/lambda_binds_name_of_enclosing_fn` (red on wasm: 05's row)
 - [x] a `default fn` two types adopt (or one adopts while another declares it) was emitted by neither, `twice/1` undefined — each adopter emits it into its own module, a call two types answer dispatches on the value; `run/behavior_default_adopted_by_two_types` (red on beam until 03's adopted-defaults commit lands, and on wasm)
+- [x] a spread alone in a list pattern (`[..all]`) was written `[All]`, a one-element list — a `case` arm died `case_clause`, `val assert [..all]` panicked; and `val [..rest] = xs;` lowered to the value alone, `Rest` unbound (03's measurement) — the whole list, bound (`Rest = Xs`); `run/list_pattern_spread_alone` on four targets. The plain `val` form cannot run here yet: this branch's checker answers `unbound variable 'rest'` — `01-checker` step 13's cell `run/val_spread_only_list_pattern` proves it end to end when that half lands
 - [x] a `test/` module calling a sidecar function it declares itself died `{error,undef}` — the runner loads its siblings when the build binds a host; `modules/erlang_host_sidecar_in_a_test`
 
 ## Gate
