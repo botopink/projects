@@ -49,11 +49,14 @@ std's. Measured on the trees at `repository/` (the extraction analysis, re-check
   (decision 178), `fs.glob`'s one rule (177), `string.parseInt()` / `parseFloat()`, the index unit
   of `indexOf` / `lastIndexOf` on erlang (169), the `Json` readers, `hash.pbkdf2Sha256` (175),
   `clock.parseDuration`, the snapshot engine on `io/fs` and `path`, `async.RetryPolicy` /
-  `nextDelay` / `retry` (170), `Dict.ofEntries` (174) and the documentation — `libs/std` reads
-  491 passed / 0 failed on commonJS and on erlang (433 before).
-- **Open:** the consumer edits in `libs/actions` and `libs/validation` (step 1 box 3, step 2 boxes
-  2–3) and every "consume std" row of § Consumers — each the step of the front that owns the file;
-  steps 6 and 7 wait on `std-d` and `01std-f`; the compiler residuals of § Compiler residuals.
+  `nextDelay` / `retry` (170), `Dict.ofEntries` (174), the documentation, `libs/actions` on the
+  `Json` methods, `libs/validation`'s `i64` binder on `parseInt`, and step 10 (`Array.join`
+  without `$stringify`, `Array.unique`'s body, `random.bool` dropped) — `libs/std` reads 491
+  passed / 0 failed on commonJS and on erlang (433 before).
+- **Open:** `libs/validation`'s `i32` binder (step 1, last box) and the `schemas.bp` accessors
+  (step 2, last box — `125-validation-zod`'s), every "consume std" row of § Consumers — each the
+  step of the front that owns the file; steps 6 and 7 wait on `std-d` and `01std-f`; the compiler
+  residuals of § Compiler residuals.
 - `libs/std/src/async.bp` carries `allOf`, `all`, `race`, `runAll`, `raceOf`, `timeout`, `failed`
   (24-g's shape); no retry policy.
 - `libs/std/src/hash.bp` carries `contentHash`, `strongHash`, `sha256`, the base64url digests,
@@ -122,8 +125,12 @@ two backends agree on every input — decision 142's rule for numerals).
 - [x] `"1e3".parseFloat()` is `Ok(1000.0)` and agrees bit-for-bit with `json.decode`'s numeral on
       the boundary values it pins (`5e-324`, `1.7976931348623157e308`) — `json.bp`'s agreement test
       runs both over decision 142's whole boundary list
-- [ ] `libs/validation/src/binding.bp:144` calls `parseInt` and its hand-rolled parser is gone;
-      `libs/validation`'s 54 tests unchanged
+- [x] `libs/validation/src/binding.bp`'s `bindEpochMillis` reads its `i64` with
+      `raw.trim().parseInt()`; the host cell `rawToI64` and `parseI64` are gone; `libs/validation`
+      green on commonJS and erlang (98 tests, one added: a trimmed numeral, and one beyond
+      2^53 − 1 is a `typeMismatch`)
+- [ ] `bindInt`'s `i32` reads std too — std has no `i64` → `i32` narrowing, so `parseI32` (a digit
+      fold that does not check the `i32` range) stays until one exists
 
 As landed: both are `default fn`s of `behavior String` (`libs/std/test/primitives_test.bp`, six
 tests). `parseInt` refuses a numeral beyond ±9007199254740991 (decision 176) — the range commonJS
@@ -148,12 +155,14 @@ consumer's edit is a receiver swap.
 
 **Acceptance:**
 - [x] each method has an inline test per `Json` variant, green on both targets
-- [ ] `libs/actions/src/envelope.bp:56-103` and `rpc.bp:26-66` call the methods and declare none;
-      `libs/actions`' tests unchanged; the envelope and RPC literals byte-identical
+- [x] `libs/actions/src/envelope.bp` and `rpc.bp` call the methods and declare none;
+      `libs/actions`' 19 tests unchanged and green on commonJS and erlang; the envelope and RPC
+      literals byte-identical (the writers are untouched)
 - [ ] `grep -rn "fn membersOf\|fn strOf\|fn itemsOf\|fn fieldOf\|fn kindName" libs/` is empty
-      (today: the ten private copies of `libs/actions`, and `libs/routing/src/segment.bp:77`
-      `pub fn kindName(k: SegmentKind)` — a different function over another type, which the grep
-      has to exclude)
+      (today: `libs/validation/src/schemas.bp` — private `itemsOf` / `membersOf` and `pub fn
+      fieldOf(input, name) -> Json`, which `#[schema]`'s emitted code calls; `125-validation-zod`
+      owns the file (§ Consumers) — and `libs/routing/src/segment.bp:77` `pub fn kindName(k:
+      SegmentKind)`, a different function over another type, which the grep has to exclude)
 
 As landed: `field(key)` reads the value itself (`v.field(k)`, where the copies wrote
 `fieldOf(membersOf(v), k)`). A consumer's free `pub fn kindName(v: Json)` / `isObject` keeps
@@ -265,6 +274,31 @@ repeated key keeps its last value at the place of that last entry, as a chain of
 - [x] three inline tests on commonJS and erlang (order, a repeated key against the `insert` chain,
       no entries and a non-string key)
 
+### Step 10 — std's own residue (decisions 239, 217, 250)
+
+`Array.join`'s Erlang template spells the value-as-text call out —
+`iolist_to_binary(io_lib:format("~p", [__E]))` where it wrote `$stringify(__E)` (decision 239: the
+marker is refused in every template, std included). `Array.unique` drops every duplicate and keeps
+each value's first occurrence, compared with `==` (decision 217), where it dropped consecutive ones.
+`io.random`'s `bool()`, an alias of `coin()`, is dropped (decision 250): a declaration named like a
+primitive type is the refusal `01-checker` parked on it.
+
+**Acceptance:**
+- [x] `grep -rn '$stringify' libs/std/src/*.bp` finds no template; a program joining integers,
+      strings, floats, booleans, records, enum variants, nested arrays, tuples, `null`, an empty
+      array and non-ASCII text prints the same bytes before and after on erlang and on beam (the
+      `.beam` assembly is byte-identical; the `.erl` text loses the `erlang:` qualifier of
+      `iolist_to_binary`, the only change in the erlang codegen snapshots)
+- [x] `[1, 2, 1, 3, 2].unique()` is `[1, 2, 3]`, strings keep first occurrences, records compare by
+      value — `libs/std/test/primitives_gaps_test.bp`, green on commonJS and erlang; the compiler's
+      erlang row over `unique` reads the new body (`codegen/tests/erlang.zig`)
+- [x] `grep -rn "fn bool()" libs/std` is empty; nothing in the seven repositories called it
+
+Left: on erlang, `[[1, 2], [3]].join("+")` prints the bytes `\x01\x02+\x03` (a list element is
+taken as an iolist) where beam prints `[1,2]+[3]` — `primJoin` renders a list through `~p`. The two
+backends disagreed before this step and still do; the template is the erlang backend's
+(`01-compiler/02-erlang`).
+
 ## Consumers — "consume std X" steps this front hands to the library fronts
 
 Not this front's files. Each row is a step in the named 1.0.11-beta front; the deletion is measured by
@@ -276,6 +310,7 @@ the grep in the last column.
 | `onze/src/config.bp:98-130` (`pub` accessors) | `07-onze/49-onze-stand-up` step 1 | receiver swap; the `pub` copies deleted (no consumer outside `onze`) | `grep -rn "fn membersOf\|fn strOf\|fn isObject\|fn kindName" repository/onze/modules/onze/src` empty |
 | `onze-cli/src/{build,info}.bp`, `onze-bundler/src/entry.bp:182`, the `parseInt` in `entry.bp` | `07-onze/50-onze-cli` step 1 | receiver swap | the same grep over `onze-cli/src` and `onze-bundler/src` empty |
 | `onze-og/src/svg.bp:19`, `metrics.bp:12` | `07-onze/51-onze-image` step 1 | `parseInt` / `parseFloat` | `grep -n "fn parse" repository/onze/modules/onze-og/src` empty |
+| `libs/validation/src/schemas.bp` `itemsOf`, `membersOf`, `pub fn fieldOf` | `03-bundled-libs/125-validation-zod` step 2 | receiver swap (`input.items()`, `input.members()`); `#[schema]`'s emitted `schemas.fieldOf(input, "…")` becomes `input.field("…") ?? Json.Null` or keeps a function under a name the grep does not match | `grep -n "fn itemsOf\|fn membersOf\|fn fieldOf" libs/validation/src` empty |
 | rakun's eleven copies (the table in § Problem) | the `04-rakun` track's fronts, by file | one row each | the `04-rakun` track's greps |
 
 ## Compiler residuals — met here, worked around in std, owned elsewhere
@@ -304,9 +339,11 @@ meets if it imports both before deleting its copy.
 - [ ] `zig build test` from a **cold** runtime cache, green, in this front's worktree
 - [ ] `botopink test` and `botopink test --target erlang` green in `libs/std`, `libs/actions`,
       `libs/validation`; `zig build test-libs` every row at its previous count
-- [ ] `snapshots/codegen/**` byte-identical (no compiler file changed)
+- [ ] `snapshots/codegen/**` byte-identical except the snapshots that print std's text (step 10:
+      `Array.join`'s Erlang template and `Array.unique`'s body); no compiler source changed — the
+      one test edit is `codegen/tests/erlang.zig`'s two rows over `unique`
 - [ ] `AGENTS.md` of every directory touched, updated in the same commit
-- [ ] Commit on `fix/97-std-dedupe`; no push, no merge — landing is the maintainer's step
+- [ ] Commit on `front/97-std-dedupe`; no push, no merge — landing is the maintainer's step
 
 ## Blast radius
 
