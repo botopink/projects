@@ -71,5 +71,3 @@ cell or owner-row change
   parse; C-14's answer (`07-residuals` step 9) is how a removal would be noticed.
 - A cell that needs a git dependency stays out — `zig build test-libs`' job; this suite must not
   need the network.
-</content>
-</invoke>

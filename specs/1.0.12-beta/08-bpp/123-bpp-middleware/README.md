@@ -1,11 +1,12 @@
 # Front 123 — bpp middleware: `locals`, `sequence`, and a response read after `next`
 
 **Priority:** medium — the middleware itself exists; `locals` is the one member of the reference's
-context that has no equivalent, and it is what authentication examples are written with.
-**Depends on:** `04-rakun/04-rakun-erlang-runtime` landed (the core and its per-request frame —
-`locals.bp` is a new file in its member) · `04-rakun/65-rakun-url-rules` landed (it owns
-`rakun-web`; this front runs after it — decision 189) · decision 186 for what a `local` read
-does to the page's stage (it answers `49-f`).
+context that has no equivalent, and it is what authentication examples are written with. ·
+**State:** not started
+**Depends on:** `04-rakun/04-rakun-erlang-runtime` (the core and its per-request frame —
+`locals.bp` is a new file in its member) · `04-rakun/65-rakun-url-rules` (it owns `rakun-web`;
+this front runs after it — decision 189). Written against decision 186 (what a `local` read does
+to the page's stage).
 **Owns:** new `repository/rakun/modules/rakun/src/locals.bp` · the lines of
 `rakun/modules/rakun-web/src/{middleware.bp, filter.bp}` named in the steps · their tests
 **Does not touch:** `rakun-app` (`actions.bp` is `04-rakun/22`'s — step 4 reads from it and adds
@@ -13,7 +14,11 @@ nothing); jhonstart; onze.
 
 Reference: `astro-docs/17-middleware.md`, `25-actions.md` § Controlando Actions do Middleware.
 
----
+## Goal
+
+Middleware can hand typed per-request data to pages, handlers and actions (`locals`), compose as a
+value (`sequence`), read and replace a finished response (`nextBuffered`), and tell how an action
+was called (`actionContext`); whether it runs around 404 and 500 is stated and tested.
 
 ## Problem
 
@@ -31,16 +36,14 @@ Four things in the reference have no counterpart:
 | `const response = await next(); … response.text()` — read and replace the body | `Response` is a frozen record and a page response is a stream |
 | `getActionContext(context)` — is this request an action, and how was it called | not found |
 
-## Current state
-
-Measured 2026-10-01:
+## What exists
 
 - `#[middleware]`, `#[matcher]`, `#[filter]`, `#[order]`, `#[crossOrigin]`, `#[controllerAdvice]`
   live in `rakun-web/src/convention.bp` (`rakun/AGENTS.md:197-200`).
 - A reply header is set through a per-request accumulator (`rkSetReplyHeader`), "because the
   frozen `Response` record has no header field of its own"
   (`07-onze/53/examples/middleware-example.bp:35-37`).
-- Per-request state lives in the serving process's dictionary — the frame of 1.0.10's front 62
+- Per-request state lives in the serving process's dictionary — the request frame
   (`language-gaps.md`, the "No assignment to a `self` field" row).
 - Whether middleware runs for a 404 and before a 500 page is not measured.
 
@@ -82,7 +85,7 @@ send. Buffering is asked for by name, per middleware; nothing buffers by default
 `CalledFrom { Rpc, Form }`, read from the action field and header onze configures
 (decision 114) — so a gate can treat a scripted call and a form post differently.
 
-## Steps
+## Open
 
 ### Step 0 — Measure
 
@@ -116,13 +119,9 @@ send. Buffering is asked for by name, per middleware; nothing buffers by default
 - [ ] step 0's measurement becomes two tests; if middleware does not run for a 404 today, it does
       after this step
 
-## Gate
-
+**Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test --target erlang` green in `modules/rakun` and `modules/rakun-web`
 - [ ] `zig build test-libs`: rakun, onze green; the blog's dashboard gate unchanged
-- [ ] `scripts/gate.sh --cold` green
-- [ ] `AGENTS.md` of every directory touched
-- [ ] Commit on `front/123-bpp-middleware`; landing is the maintainer's step
 
 ## Blast radius
 

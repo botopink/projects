@@ -388,16 +388,16 @@ grammar. None reaches a host cell.
 
 ## Count
 
-205 rows, counted by the first word of the Box column (a row that is partly shipped counts for
-what it already is):
+211 rows, counted by the first word of the Box column (a row that is partly shipped counts for
+what it already is), after steps 0–2:
 
 | Box | Rows |
 |---|---|
-| native | 10 |
-| have | 17 |
-| add (this front) | 151 |
+| native | 11 |
+| have | 37 |
+| add (this front) | 134 |
 | gap (nearest form shipped, row filed) | 7 |
-| n/a | 18 |
+| n/a | 20 |
 | consumer or out of the reference's core (`—`) | 2 |
 
 The seven gaps: `i64` bounds, wire names on variants, payload fields of variants, `.extend` on an

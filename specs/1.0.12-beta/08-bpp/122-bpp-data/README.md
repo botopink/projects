@@ -72,8 +72,8 @@ if (product == null) { val _s = responseStatus(404); }
 val _h = responseHeader("Cache-Control", "public, max-age=3600");
 ```
 
-Calling either marks the render dynamic, like any read of the request — a page that sets a status
-per request is not a prerendered page.
+Either is a request-time hook, like any read of the request: under decisions 186 and 202 it is
+`#[serverOnly]`, so a page that reaches one is rendered per request, never prerendered.
 
 **A rewrite is a navigation signal.** `rewrite(path)` raises `nav:rewrite:<path>` beside
 `nav:redirect` and `nav:not-found` in `libs/routing`'s `navigation`; the server matches `path` and

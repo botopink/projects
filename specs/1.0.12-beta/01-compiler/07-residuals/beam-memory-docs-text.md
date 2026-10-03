@@ -109,5 +109,3 @@ are stated here, where the default is documented, and nowhere else.
 > reload.
 
 If `17-b` or `17-c` widens the keyed surface, the `keyed = true` sentence follows the answer.
-</content>
-</invoke>

@@ -110,5 +110,3 @@ wasm cannot do, or it is fixed
 - **This front moves only wasm snapshots.** A change that moves erlang, beam or commonJS snapshots
   crossed a boundary — stop and report.
 - The comptime wat runtime's non-parity items are `18-comptime-runtimes`' limits, not this target's.
-</content>
-</invoke>

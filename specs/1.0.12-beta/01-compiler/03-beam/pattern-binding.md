@@ -31,5 +31,3 @@ matched tuple's element register (`beam_asm.zig` `emitPatternDestruct`). The fix
 
 `01-checker` step 13: `val [..rest] = xs;` checks but leaves `rest` unbound on erlang, and a nested
 constructor (`val Pair(Circle(r), n) = p;`) is refused as refutable although no level can fail.
-</content>
-</invoke>

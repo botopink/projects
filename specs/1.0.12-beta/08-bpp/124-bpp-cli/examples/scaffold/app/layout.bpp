@@ -4,8 +4,9 @@
 // Demonstrates: step 5 — what `onze create --example bpp` writes. This is the
 // root layout of the scaffolded project, as a `.bpp` file.
 //
-// The file's name is its kind: for `layout.bpp`, jhonstart's `bpp` function
-// (front 116) emits `#[layout("<route>")] pub fn Layout(props: LayoutProps)`.
+// The file's name is its kind: for `layout.bpp`, the unfold (front 116) gives
+// the function `#[layout]` through jhonstart's `bppKinds` (decision 221) and
+// names it after the file (decision 213); it takes `props: LayoutProps`.
 // The route is the empty path — this file is at the root of `app/` — so the
 // layout wraps every route. `props.children` is the page (or the nearer layout)
 // it wraps; `props.route` is the request's `PageContext`.

@@ -290,3 +290,7 @@ with no `pub default fn` taking `comptime _: @Expr<string>`: an error at the key
      no type `Children` (`element.bp`, `elements.bp` use the name). 118 adds it, and the prelude
      imports it. Decision 223 names jhonstart's node type `Node` and says every spec and example
      writes `Node`; the examples have not followed.
+  5. *An app-file kind whose name is not a function name.* Decision 213 names the function after
+     the file and refuses a file name that is not a valid function name; decision 221 maps kinds
+     by file name, and `not-found.bpp` (`124-bpp-cli/examples/scaffold/app/`) is one of them. No
+     id yet. Step 2.

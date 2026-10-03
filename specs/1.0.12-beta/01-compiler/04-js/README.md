@@ -82,5 +82,3 @@ under `node`, checked against decision 8 §7 · `zig build test-libs` commonJS c
 - **`typescript.zig` cannot be separated from `commonJS.zig`** for snapshot purposes: the typedef
   is a section of the commonJS snapshot.
 - **This front moves only commonJS snapshots** (step 2's deletion excepted, which moves none).
-</content>
-</invoke>

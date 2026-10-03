@@ -2,8 +2,9 @@
 // Front 121 — bpp content · examples/src/app/blog/page.bpp
 //
 // Demonstrates: step 4 in a `.bpp` page — the list of a collection. `await` in
-// the fence is an await of the generated `Page(route)`, whose return type is an
-// await channel; it is not module-level `await`.
+// the fence is an await in the body of the function the file unfolds to (front
+// 116), whose return type is an await channel (open question `bpp-f`); it is not
+// module-level `await`.
 //
 //   ---
 //   const posts = await getCollection("blog", ({ data }) => data.draft !== true);

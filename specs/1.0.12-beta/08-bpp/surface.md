@@ -2,15 +2,15 @@
 
 The reference is the Astro documentation transcribed under
 `/home/ericfillipe/develop/astro/astro-docs/` (25 pages, `01-why-astro.md` … `25-actions.md`). This
-file walks it page by page. The botopink side was measured on 2026-10-01 against the six
-repositories under `repository/`; paths below are relative to that directory, and a "not found"
-means a search of the tree, not of memory.
+file walks it page by page. The botopink side is the six repositories under `repository/`; paths
+below are relative to that directory, and a "not found" means a search of the tree, not of
+memory.
 
 ## How to read it
 
 The stack is already a port of a file-routed, server-first framework: decision 113 gives jhonstart
-the HTML, rakun the service, emilia the CSS and onze the wiring, and 1.0.10-beta landed their
-Next.js-shaped halves. So most of Astro is not new work — it is either there, or there and not
+the HTML, rakun the service, emilia the CSS and onze the wiring, and their Next.js-shaped halves
+are on disk. So most of Astro is not new work — it is either there, or there and not
 connected. Each row falls in one box:
 
 | Box | Meaning |
@@ -56,7 +56,7 @@ connected. Each row falls in one box:
 
 | Astro | The stack today | Box | Owner |
 |---|---|---|---|
-| `src/pages/` | `app/` (`appDir`), one directory per route, eight file kinds: `page layout template default loading error not-found route` (`onze/src/types.bp` `appFileKinds`) | have | decision `08-b` |
+| `src/pages/` | `app/` (`appDir`), one directory per route, eight file kinds: `page layout template default loading error not-found route` (`onze/src/types.bp` `appFileKinds`) | have | decision 203 (one convention) |
 | `src/components/`, `src/layouts/`, `src/styles/` | free directories; layouts are `layout.bp` files in the route tree | have | — |
 | `public/` | `publicDir`, not registered yet — `/**` before the routes once rakun-web's miss falls through (decision 201) | wire | `07-onze/49` |
 | `src/content.config.ts` | not found | add · 121 | 121 |
@@ -173,7 +173,7 @@ connected. Each row falls in one box:
 |---|---|---|---|
 | `GET` / `POST` / … / `ALL` exported from a file | one decorated function per verb in `route.bp` | have | — |
 | `HEAD` answered from `GET` | the dispatcher falls back to the `GET` handler (`route_handler.bp:16`, `:495`) | have | — |
-| static file endpoints (`data.json.ts` built into a file) | `staticExport` writes pages only | add · 117 | 117 |
+| static file endpoints (`data.json.ts` built into a file) | `staticExport` writes pages only | add · 117 | 117 — contradicts decision 222 (a route handler is never prerendered); pending the maintainer |
 | `params`, `request`, `redirect` in an endpoint | `Request`, `HandlerResponse` (`route_handler.bp:45`) | have | — |
 | `src/middleware.ts`, `onRequest(context, next)` | `middleware.bp`, `#[middleware]` + `#[matcher]`, `Next.pass / redirect / rewrite` (`rakun-web/src/middleware.bp:41-83`) | have | — |
 | `context.locals` | **not found** | add · 123 | 123 |
@@ -212,7 +212,7 @@ connected. Each row falls in one box:
 |---|---|---|---|
 | `server:defer` | not found | add · 120 | 120 |
 | `slot="fallback"` | `Boundary.fallback` is the same idea inside one response | add · 120 | 120 |
-| props serialised, encrypted, in the query; `POST` past 2 048 bytes | not found | add · 120 | 120 (decision `08-e`) |
+| props serialised, encrypted, in the query; `POST` past 2 048 bytes | not found | add · 120 | 120 (decision 224: sealed by default; `08-e2` open) |
 | `Cache-Control` on the island response | not found | add · 120 | 120 |
 | the page URL through `Referer` | — | add · 120 | 120 |
 | `astro create-key`, `ASTRO_KEY` | not found | add · 124 | 124 |
@@ -258,19 +258,19 @@ connected. Each row falls in one box:
 
 ## Count
 
-160 rows. By the first word of the Box column (a row that is partly there counts for what it
+161 rows. By the first word of the Box column (a row that is partly there counts for what it
 already is):
 
 | Box | Rows |
 |---|---|
-| have | 60 |
+| have | 59 |
 | wire (another track's front owns the connection) | 14 |
 | add (this track) | 70 |
 | gap | 3 |
-| n/a | 13 |
+| n/a | 15 |
 
 More than a third of the reference is already on disk, and one row in eleven is on disk and not
 connected. The additions are not spread evenly — counting each front a row names: the template
 language (118) 14, islands (120) 13, content (121) 11, routing (117) 7, middleware (123) and view
 transitions (126) 6 each, the CLI (124) 5, styling (119) and actions (127) 4 each, the request
-surface (122) 3, the file kind (116) 2, and 2 land in `03-bundled-libs/125`.
+surface (122) 4, the file kind (116) 2, and 2 land in `03-bundled-libs/125`.

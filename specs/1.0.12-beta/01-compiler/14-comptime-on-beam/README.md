@@ -82,5 +82,3 @@ re-recorded listing classified, `COMPTIME REPLY` byte-identical at every step ·
 - **The resident node stays.** What left the compile path is the Erlang compiler, not `erl`; a
   commonJS / typescript / wasm build evaluates on the wat runtime and spawns nothing (decision 84).
 - One lowering of Erlang per runtime (BEAM here, wasm in 18), cross-checked by parity.
-</content>
-</invoke>

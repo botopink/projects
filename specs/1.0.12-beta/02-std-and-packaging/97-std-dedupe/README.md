@@ -2,9 +2,9 @@
 
 **Priority:** high — every library front's "consume std X" step is written against the surface this
 front lands · **State:** partial: steps 0–5, 8–10 on feat; the residue of steps 1–5, steps 6–7
-(conditional) and step 11 open
+(conditional), 11 and 12 open
 **Depends on:** `std-d` (step 6) · `01std-f` (step 7) · `24-g` confirmed (step 5's surface) ·
-decision 230 (step 11)
+decision 230 (step 11) · decisions 259, 260, 262, 263 (step 12)
 **Owns:** `repository/botopink-lang/libs/std/src/**`, `libs/std/AGENTS.md`, `libs/std/test/**` ·
 the bundled libraries' consumer edits: `libs/actions/src/{envelope,rpc}.bp`,
 `libs/validation/src/binding.bp` · `libs/AGENTS.md` · `docs.md` § std where it lists the surface ·
@@ -13,7 +13,9 @@ the bundled libraries' consumer edits: `libs/actions/src/{envelope,rpc}.bp`,
 is declared in `libs/std/src/primitives.bp`; if a backend needs a lowering the front stops and
 reports it) · `libs/routing/**`, `libs/validation/src/schemas.bp` (`03-bundled-libs`) · any file under
 `repository/{rakun,jhonstart,emilia,onze,erika}` — the copies there are deleted by the front that
-owns the file (§ Consumers) · `.gitignore`, the hooks
+owns the file (§ Consumers) · `.gitignore`, the hooks · `01-compiler/05-wasm` step 5 is the wasm half
+of step 12's decisions and also touches std's wasm bodies (`fn:…Body`) — the two are sequenced,
+never run together
 
 ## Goal
 
@@ -56,11 +58,11 @@ pace. `import {testing.snapshots}` is refused on wasm (STD-001 through `io/fs`).
 
 ### Step 2 residue — no `Json` accessor copy left in `libs/`
 
-- [ ] `grep -rn "fn membersOf\|fn strOf\|fn itemsOf\|fn fieldOf" libs/` is empty — today
-      `libs/validation/src/schemas.bp` holds private `itemsOf` / `membersOf` and `pub fn
-      fieldOf(input, name) -> Json`, which `#[schema]`'s emitted code calls; `125-validation-zod`
-      owns the file (§ Consumers). `libs/routing/src/segment.bp`'s `pub fn kindName(k: SegmentKind)`
-      is another function over another type and is excluded
+- [ ] `grep -rn "fn membersOf\|fn strOf\|fn itemsOf\|fn fieldOf\|fn kindName" libs/` finds only
+      `libs/routing/src/segment.bp`'s `pub fn kindName(k: SegmentKind)` (another function over
+      another type) — today it also finds `libs/validation/src/schemas.bp`'s private `itemsOf` /
+      `membersOf` and `pub fn fieldOf(input, name) -> Json`, which `#[schema]`'s emitted code
+      calls; `125-validation-zod` owns the file (its step 2 residue)
 
 ### Step 3 and 5 residue — the rakun copies named as "consume std" rows
 
@@ -109,6 +111,28 @@ the design; or (b) restructured so no host cell is reachable on wasm.
       is done
 - [ ] each of the four modules either refuses wasm with a located message, recorded in
       `libs/std/AGENTS.md` as the design, or builds on wasm with no host cell reachable
+
+### Step 12 — the std bodies `01-compiler/05-wasm` step 5 waits on (decisions 259, 260, 262, 263)
+
+The std half of 05-wasm step 5; the wasm lowering, the cells and the heap growth (decision 261) are
+05-wasm's. Not started on feat: `String.fromCodepoint` is not in `primitives.bp`, `math.pow` is
+still the double-double `powBody`, `contentHash`'s Node template folds UTF-16 units, the
+transcendental functions bind `math:*` on erlang and beam.
+
+- [ ] `String.fromCodepoint(cp: i32) -> string` in `primitives.bp` — Node `String.fromCodePoint`,
+      erlang `<<Cp/utf8>>`, wasm a prelude helper (05-wasm); `unicode.fromCodepoint` a `fn:` over it;
+      `unicode`, `json`, `encoding` and `querystring` build text with it (decision 262)
+- [ ] `math.pow` is std's private botopink port of glibc's `pow` (the algorithm since glibc 2.28,
+      its 128-entry `log` and `exp` tables) on every target, commonJS included:
+      `math.pow(158.42161580281933, 2.853827476501465)` is `1896229.4525711867` everywhere
+      (decisions 259, 263)
+- [ ] `hash.contentHash` folds code points on every target: `contentHash("🎉")` is
+      `djb2([127881])`; the Node template folds `Array.from(s)` (decision 260); emilia's fixture
+      `e_39b87d03` (ASCII) unchanged
+- [ ] `std/math`'s transcendental functions call std's private botopink bodies on erlang and beam
+      too (`#[@External.Erlang("fn:tanBody")]` / `Beam`, which needs decision 238's `fn:` on those
+      bindings); `sqrt`, `floor`, `abs` and the other operations IEEE 754 makes exact stay host
+      calls (decision 263)
 
 ## Consumers — "consume std X" rows handed to the library fronts
 

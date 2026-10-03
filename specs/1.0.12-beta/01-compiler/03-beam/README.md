@@ -79,5 +79,3 @@ and after each step · every re-recorded RUN LOG verified by running (`erlc +fro
   02's shared Erlang-text renderer — stop and report.
 - A module-level `val g = greet` called as `g()` prints `#Fun<…>` on beam (found by `05-wasm`;
   `run/fn_value_bound_by_val` keeps to locals) — re-measure, and a step here if it holds.
-</content>
-</invoke>

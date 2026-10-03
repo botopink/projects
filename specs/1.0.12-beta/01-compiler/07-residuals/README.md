@@ -139,7 +139,7 @@ into § Bindings, part 2 as § `@BeamMemory`.
 
 - [ ] `docs.md` § Bindings carries part 1 and § `@BeamMemory` part 2 (`grep -c BeamMemory docs.md` > 0); `zig build test-docs` green with the new fences
 
-### Step 7 — C-18's five document corrections, and `docs.md:5`
+### Step 7 — C-18's five document corrections, `docs.md:5` and § Imports
 
 Decision 1 (the async sequence type is `@Stream<T>`), 2 (`?T` only — `Option.None` / `Some(1)` are
 unbound), 10 (the `@code` annotation renamed), 25 (`is` does not bind), 32 (no `Option.Some` value
@@ -147,10 +147,12 @@ names): each row of `docs.md` and `README.md` that still writes the old form cor
 running the fence. At feat no fence spells `Option.Some` / `Option.None` / `AsyncIterator`
 (`docs.md`'s migration table names them as retired). And `docs.md:5` — "a fence that is not a
 module … says so in a `docs-check` comment" — is stale: a table is a ```` ```text ```` fence, no
-comment (handed by `00-gate/114`).
+comment (handed by `00-gate/114`). And `docs.md` § Imports says "there is no formatter rule that
+converts one into the other" (dot and group), while `botopink format` flattens a group into dotted
+leaves — the codemod and the fix-it write the formatter's spelling (from `129-import-without-from`).
 
 - [ ] no `docs.md` / `README.md` fence spells `Option.Some`, `Option.None`, `AsyncIterator`, `AsyncGenerator`, the old `@code` annotation or `is` binding a payload; `test-docs` green
-- [ ] `docs.md:5` states the `text` fence rule
+- [ ] `docs.md:5` states the `text` fence rule; `docs.md` § Imports says the formatter flattens a group into dotted leaves
 
 ### Step 8 — the lib-agnostic gate names every library (handed by `08-bpp`)
 
@@ -229,5 +231,3 @@ the pointers on the meta branch of the same name
   `tests/language/run.sh`, `modules/test-shard/**`, `modules/lib-test-runner/**`) have no open owner
   since 00-gate's 115 and 133 closed (`scripts/check-docs.sh` and `gate.sh`'s budget lines are
   `00-gate/114`'s); a front that must edit one names it as a carve-out in its commit.
-</content>
-</invoke>

@@ -12,9 +12,9 @@
 //   <InteractiveModal client:only="svelte" />
 //
 // THE ISLANDS ARE `.bp` MODULES. `#[client]` is a decorator and sits on a
-// function; jhonstart's `bpp` function writes a component's function header
-// itself and writes no decorator on it (front 116 § Notes). It is the split
-// Astro has:
+// function; the unfold of a `.bpp` file (front 116) writes its function header
+// itself, and a decorator reaches it only from the header's last line or the
+// file's name (decision 221). It is the split Astro has:
 // an `.astro` page places the island, and the island is a component of another
 // kind. `LikeButton`, `Carousel` and `MobileNav` are the three `#[client]`
 // functions of `hydration-directives-example.bp`.

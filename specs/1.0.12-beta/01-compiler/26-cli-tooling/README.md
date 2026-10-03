@@ -1,142 +1,91 @@
-# Front 26 — cli-tooling
+# Front 26 — cli-tooling: a program built by the CLI serves on the BEAM, and every driver speaks
 
-**Priority:** high — the toolchain rows of the rakun sweep (`language-gaps.md` T1, T4, T16) and the
-beam sidecar are what stand between a library that is green under `botopink test` and a program
-that serves on the BEAM; no carried front owned `compiler-cli/**`, `bpmp/**` or
-`language-server/src/**`, so this number is new (the 1.0.10 series stopped at 25).
-**Depends on:** `00-gate` (EF-1, EF-2 — the sidecar's CLI half is the gate's fix in this front's
-files; ZF-1…5, ZF-11 — `bpmp/src/**` ×4, `cli/test_cmd.zig`, `language-server/src/engine.zig` are
-six of the eleven `zig fmt` files; FC-3 — `compiler-cli/tests` reformatted) · `02-erlang` step 9
-(the sibling loader under `build`; this front ships the sidecars for the same entry points) ·
-maintainer decision 26-a (step 3) · decision-gated lg2-v (a git subdirectory — the manifest side is
-`../02-std-and-packaging/98-packaging-tail/` step 4; the `bpmp` resolver half opens here when
-answered) · `23-std-purity` step 2 (23-c's two `botopink test` fixes confirmed — they are this
-front's files).
+**Priority:** high · **State:** partial: steps 1, 2 (boxes 1–2), 3 (box 2), 4 (box 1) and 5 on feat;
+steps 2 (box 3), 3, 4, 6, 7, 8 open
+**Depends on:** `compiler-core`'s `ModuleOutput` carrying the warnings (step 4 — a `codegen.zig`
+carve-out named in the commit) · decision-gated lg2-v (a git subdirectory — the manifest side is
+`../../02-std-and-packaging/98-packaging-tail/` step 4; the `bpmp` resolver half opens here when
+answered) · `23-std-purity` step 2 (23-c's two `botopink test` fixes confirmed — this front's files)
 **Owns:** `modules/compiler-cli/**` (`src/cli/{build,run,test_cmd,libs,sources,config,resolver}.zig`,
-the rest, `tests/**`) · `modules/bpmp/**` except `src/manifest.zig` under 98's step 4 · `modules/language-server/src/**`
-except `src/tests/**` (07) and `project_graph.zig`'s import-tree cells (23) · `modules/language-server/snapshots/lsp/**`
-· `repository/vscode-extension/**` · `scripts/test-vscode.sh` · the cells its steps add
-**Does not touch:** `modules/compiler-core/**` (every other front's — a CLI row that needs the
-emitter is 02's or 03's step, named) · `scripts/gate.sh` (25) · `scripts/{known-red-libs,restricted-targets}.txt`
-(00-gate) · `modules/manifest/**` (98).
-**Does not touch until 00-gate lands:** `cli/{build,run,test_cmd}.zig` and `cli/libs.zig` (EF-1/EF-2
-land there; this front's steps 1–4 rebase on the gate's commit) · `bpmp/src/commands/{self_uninstall,self_update}.zig`,
-`bpmp/src/{registry,storage}.zig`, `cli/test_cmd.zig`, `language-server/src/engine.zig` (ZF) ·
-`compiler-cli/tests/**/*.bp` (FC-3).
+the rest, `tests/**`) · `modules/bpmp/**` except `src/manifest.zig` under 98's step 4 ·
+`modules/language-server/src/**` except `src/tests/**` (07) and `project_graph.zig`'s import-tree
+cells (23) · `modules/language-server/snapshots/lsp/**` · `repository/vscode-extension/**` ·
+`scripts/test-vscode.sh` · root `build.zig` except 18's `render-resident` / `compiler-web` steps
+(decision 219) · the cells its steps add
+**Does not touch:** `modules/compiler-core/**` (a CLI row that needs the emitter is 02's or 03's
+step, named) · `scripts/gate.sh`, `scripts/check-docs.sh` (`00-gate/114`) · `modules/manifest/**` (98)
 
 Paths are relative to `repository/botopink-lang/modules/` unless a row says otherwise.
 
-## Carried from 1.0.10
+## Goal
 
-| Item | 1.0.10 spec | Heading |
-|---|---|---|
-| the beam sidecar's CLI half | `tests/language/expected-failures.txt` (the two beam lines) · `03-beam/README.md` | § Open rows |
-| C-25's sidecar half and `botopink clean` | `00/README.md` | § C-25, boxes 1–2 |
-| T1, T4, T16 | `language-gaps.md` | "A built erlang program cannot load its `.erl` sidecars" · "A package reached only transitively loads but cannot be imported" · "`shipErlSidecars` reads a nested module's folder as a dependency name" |
-| lg2-v | `language-gaps.md` · `decisions-pending.md` | "`DepSpec` has no subdirectory field" |
-| `Env.warnings` not printed | `00/README.md` | § C-18, box 3 ("`build` / `test` / the LSP do not print them yet") |
-| the transitive workspace dependency | `19-use-activation/README.md` | § Notes, first bullet (jhonstart-forms → jhonstart-link) |
-| the `wip/br5-beam-templates` branch | `00/README.md` | § C-24 (the maintainer deletes it — noted, not a step) |
-| 23-c's two fixes | `decisions-pending.md` | 23-c (landed in `test_cmd.zig` / `libs.zig`; confirmed by 23 step 2) |
+`botopink build` / `run` ship and load every sidecar `test` does, on erlang and beam; an import
+names only a declared dependency (decision 242); `build`, `test` and the LSP print the checker's
+warnings as `check` does.
 
-## Problem
+## Done
 
-| Row | Program | Answer at the open |
-|---|---|---|
-| EF-1/2 | `botopink build --target beam` of a project with `src/sidecars/lt_greeter.erl` | the `.erl` is not shipped to `out/beam/` (`cli/build.zig`'s beam path calls no `shipErlSidecars`); `text:shout/1` is `undef` |
-| T1 | `botopink build --target erlang` then `erl -pa out/erl` on a program calling a sidecar | `undef` — the loader is emitted under the test flag only (02 step 9) and `build` / `run` ship the sidecar only under `test` (`libs.shipErlSidecars` is reached from `test_cmd.zig`; verify `build.zig`'s path) |
-| T16 | a project whose modules sit in `src/orm/*.bp` calling a sidecar | never shipped — `libs.zig`'s `sidecarOwner` (`:1099` at HEAD) reads `orm/entity`'s first segment as package `orm` |
-| C-25 | a sidecar file named like an emitted module's ATOM (`<pkg>@<path>.erl`) | never consulted — `shipErlSidecars` matches emitted module atoms against basenames only; a sidecar whose atom an emitted module already owns should be a build error, not a skip |
-| T4 | an application declaring `rakun-starter-web` only, importing `from "rakun"` | "unresolved import source" (`cli/sources.zig:52,104`, `proj.dependencyNames`) while decision 143 loads `rakun` |
-| `Env.warnings` | `var out = [];` under `botopink build`, `botopink test`, the LSP | no warning printed; only `botopink check` renders `OkData.warnings` |
-| `botopink clean` | `.botopinkbuild/tmp/{template,decorator}/*.erl` | 14's step 3 deleted the staging; `clean` removes `.botopinkbuild/` whole — verify and write the sentence in `docs.md` / the CLI's help (C-25 box 2) |
+- Step 1 — the sidecars ship for `build` and `run`, on erlang and beam; with `02-erlang` step 9 the T1 row closes (`modules/erlang_host_sidecar_shipped` as a built program, `compiler-cli/tests/cli_contract.sh`)
+- Step 2, boxes 1–2 — a nested module's sidecar and a sidecar named like an emitted atom (T16, C-25: `modules/sidecar_called_from_folder_module`, `modules/sidecar_named_like_emitted_atom`)
+- Step 3, box 2 — the jhonstart-forms shape re-measured: a package declaring only `jhonstart-forms` builds and runs (decision 143)
+- Step 4, box 1 — the LSP renders a checker warning (`diagnostics_checker_warning`, severity Warning)
+- Step 5 — `botopink clean` removes `.botopinkbuild/` whole, written in `docs.md` § Backends and `clean --help`
 
-Measured at the open with the compiler at the milestone's HEAD; the rakun repros are the sweep's
-(`$HOME/.cache/bp-rakun/*`).
+## Open
 
-## Steps
+### Step 2 — rakun's workaround (box 3)
 
-### Step 1 — the sidecars ship for `build` and `run`, on erlang and beam (after 00-gate)
+- [ ] rakun fronts 77/78's `src/orm_host.bp` workaround deletable — the rakun track's row, noted
+      so it sees the fix
 
-00-gate lands EF-1/EF-2 (the beam path ships and loads). This front makes the erlang and beam
-`build` / `run` paths ship every sidecar `test` ships (with 02 step 9's loader), so a built program
-serves on the BEAM (rakun front 81's "the tarball starts and serves").
+### Step 3 — only a direct dependency is importable (T4, decision 242)
 
-**Acceptance:**
-- [x] `modules/erlang_host_sidecar_shipped` passes as a **built** program on erlang and beam (`build`, then `erl -pa out/<target>`), pinned by a `test-cli` contract script (`compiler-cli/tests/cli_contract.sh` gains the case) — beam assembles the `.S` and the entry's loader compiles the shipped `.erl`; erlang compiles every `.erl` of `out/erl/`
-- [ ] language-gaps T1 closes with 02 step 9 — what is left is the emitter's: a plain erlang build carries no sibling loader, so compiling only the entry leaves the shipped sidecar `undef` (the CLI ships it on both targets)
+`import {rkProp} from "rakun";` with only `rakun-starter-web` declared is `error: unresolved import
+source "rakun" — declare it in botopink.json "dependencies"` (`cli/sources.zig`,
+`proj.dependencyNames`); the rakun starters declare what they import. `import {linkPrefetch} from
+"jhonstart-link"` from a package declaring only `jhonstart-forms` is the same refusal.
 
-### Step 2 — a nested module's sidecar, and a sidecar named like an atom (T16, C-25)
+- [ ] `modules/transitive_package_import` — `.expect` with the named diagnostic, on four targets
 
-`sidecarOwner` tells the project's own modules from a dependency's by the build's module table
-(a module whose source is under the project's `src/` is the project's, whatever its folder — the
-rule 23-c already wrote for `botopink test`), so `src/orm/*.bp` ships `sidecars/orm_host.erl`; and a
-sidecar whose file is named like an emitted module's atom is a located build error naming both,
-one predicate away from `crossModule.zig`'s collision check.
+### Step 4 — `Env.warnings` reach `build` and `test`
 
-**Acceptance:**
-- [x] `modules/sidecar_called_from_folder_module` — a sidecar called only from `src/orm/entity.bp` runs on erlang and beam (the cell's own `libs/orm/` is the library root carrying a package named like the folder — the shape that reproduced; with no such package the folder already fell back to the project's `src`)
-- [x] `modules/sidecar_named_like_emitted_atom` — `.expect` names the collision (a project cell that must not build)
-- [ ] rakun fronts 77/78's `src/orm_host.bp` workaround deletable — the rakun track's row
+`codegen.generateWith` drops the comptime session (`OkData.warnings`) before it returns and
+`ModuleOutput` has no warnings field; the CLI half is a renderer call once it has one
+(`diagnostics.renderOutcome`'s `.ok` arm).
 
-### Step 3 — a transitively reached package (T4, 26-a)
-
-Per 26-a (a): only direct dependencies are importable, and the diagnostic names the package to
-declare ("`rakun` is loaded for `rakun-starter-web` but not declared by this project — add it to
-`dependencies`"); or (b): every resolved package is an import source. Either way the 19-use
-note (a package outside the jhonstart workspace depending on `jhonstart-forms` does not resolve
-`jhonstart-link` — `DepClosure` in `libs.zig`) is re-measured under decision 143 and closed or
-filed as its own row here.
-
-**Acceptance:**
-- [ ] `modules/transitive_package_import` — `.expect` with the named diagnostic ((a)) or a run ((b)), on four targets
-- [x] the jhonstart-forms shape re-measured: a package outside the jhonstart workspace declaring only `jhonstart-forms` (by name) builds and runs on commonJS and erlang — `jhonstart` and `jhonstart-link` load first (decision 143); no cell
-- 26-a is open (`../README.md` § Decisions): `import {linkPrefetch} from "jhonstart-link"` from that package is still `unresolved import source` (`src/main.bp:1:28`) — nothing is implemented before the answer
-
-### Step 4 — `Env.warnings` reach every driver
-
-`botopink build`, `botopink test` and the language server render `OkData.warnings` as `check`
-does (`warning:` lines; the LSP as diagnostics of severity warning).
-
-**Acceptance:**
-- [x] one `lsp/` snapshot with the warning diagnostic (`diagnostics_checker_warning`, severity Warning)
-- [ ] a `test-cli` contract case: `build` and `test` print the `var out = [];` warning — blocked on compiler-core: `codegen.generateWith` drops the comptime session (`OkData.warnings`) before it returns and `ModuleOutput` has no warnings field; the CLI half is a renderer call once it has one (`diagnostics.renderOutcome`'s `.ok` arm)
-- [ ] C-18's box 3 ticked
-
-### Step 5 — `botopink clean` and the C-24 branch
-
-Verify `clean` removes `.botopinkbuild/` whole (14's delivered row) and write the sentence where
-the CLI documents `clean`; the `wip/br5-beam-templates` branch is the maintainer's to delete (a
-note in this README's close, not a step).
-
-**Acceptance:**
-- [x] the sentence in `docs.md` (§ Backends; 08 may move it) and `botopink clean --help` (`<command> --help` prints the help); C-25 box 2 ticked — measured: `.botopinkbuild/tmp/` holds only the persistent `erl`'s stderr logs, and `clean` removes `.botopinkbuild/` whole, `deps/` included
+- [ ] a `test-cli` contract case: `build` and `test` print the `var out = [];` warning; C-18's box 3 closed
 
 ### Step 6 — lg2-v's resolver half (decision-gated)
 
 When lg2-v is answered with a `subdir` field, `bpmp`'s resolver checks the dependency out at the
 subdirectory (98 step 4 owns the manifest model); nothing before.
 
-## Gate
+### Step 7 — the `build.zig` `test-docs` comment (handed by `00-gate/114`)
 
-- [ ] `zig build test` from a **cold** runtime cache, green, in this front's worktree
-- [ ] `zig build test-cli`, `test-bpmp`, `test-vscode` green; the language-server tests green with the new snapshot
-- [ ] `zig build test-libs` at baseline (rakun's members exercise every sidecar path)
-- [ ] `AGENTS.md` of `compiler-cli/`, `bpmp/`, `language-server/` in the same commit as each step
-- [ ] Commit on `fix/26-cli-tooling`; no push, no merge
+`build.zig`'s `test-docs` comment (near `:574`) still describes `<!-- docs-check: skip <reason> -->`,
+which decision 157 deleted.
 
-## Blast radius
+- [ ] the comment describes `check-docs.sh`'s `reject` / `project` / `body` directives
 
-Step 1 changes what every erlang / beam build writes to `out/` (sidecars copied); step 2 reds a
-project whose sidecar collides with an emitted atom (none measured); step 3 (a) reds an
-application importing from an undeclared transitive package — the rakun starters' consumers are
-the measured shape, and the row's workaround (declare both) already holds.
+### Step 8 — decision 206's residuals (from `129-import-without-from`)
+
+The language server runs no import-source check (F4 or `module-import-with-from`): an editor shows
+`from "<own module>"` as resolving until `botopink check` refuses it. And `from "<own package
+name>"` inside the package itself (a bundled library's own tests: `log` 1, `routing` 1,
+`validation` 2, `std` 8 files) still reads the package's own modules — measure whether that is the
+rule (the package is its own name) or a leftover, and write the answer.
+
+- [ ] the LSP reports `module-import-with-from` and `unresolved import source` as `check` does — one
+      `lsp/` snapshot each
+- [ ] a package importing itself by name: the rule written in `docs.md` § Imports (07 places it) and
+      pinned by a `resolver.zig` unit test, or the imports migrated and refused
+
+**Gate:** standard (fronts.md § Gate) + `zig build test-cli`, `test-bpmp`, `test-vscode` green; the
+language-server tests green with the new snapshots · `zig build test-libs` at baseline (rakun's
+members exercise every sidecar path)
 
 ## Notes
 
-- The 1.0.10 `10-cli-residuals` sub-front was 1.0.5's and had no 1.0.10 directory; its rows
-  reached this milestone through `language-gaps.md`'s toolchain table, which is why they are
-  listed there by T-number.
-- `project_graph.zig` is shared with 23 (the import-tree cells) and `src/tests/**` with 07; both
-  are named carve-outs, sequenced by commit.
+- `project_graph.zig` is shared with 23 (the import-tree cells) and `src/tests/**` with 07; both are
+  named carve-outs, sequenced by commit.
 - The `wip/br5-beam-templates` branch (C-24) is the maintainer's to delete.

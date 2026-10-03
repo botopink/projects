@@ -1,14 +1,15 @@
 # Front 124 — bpp CLI: what the build has to learn
 
 **Priority:** high — last. It adds no feature of its own; it makes the other fronts' features part
-of `onze build`.
-**Depends on:** `07-onze/50-onze-cli` (it owns `onze-cli` and `onze-bundler`, and `onze dev` is its
-open box) · `07-onze/71` (static export to disk, ONZ-71-7) · every front of this track ·
-decision [`08-h`](../README.md#08-h--the-config-file-and-the-commands).
+of `onze build`. · **State:** not started · blocked by `08-h`
+**Depends on:** open: [`08-h`](../README.md#08-h--the-config-file-and-the-commands) (the whole
+front) and [`08-e2`](../README.md#08-e2--which-modes-the-islands-props-setting-may-name) (the
+islands key, steps 1 and 3) · `07-onze/50-onze-cli` (it owns `onze-cli` and `onze-bundler`, and
+`onze dev` is its open box) · `07-onze/71` (static export to disk, ONZ-71-7) · every front of this
+track · 116 and `07-onze/53` (step 5). Written against decisions 202 and 224.
 **Owns:** in `repository/onze/modules`: `onze-cli/src/{main.bp, build.bp}` — the commands and
-build steps named below; new `onze-cli/src/{sync.bp, key.bp}`; `onze/src/config.bp` — four keys
-(`trailingSlash`, `redirects`, `markdown`, `islandKeyEnv`): the fifth of § Mechanism's table,
-`site`, is added by 122 (decision 189);
+build steps named below; new `onze-cli/src/{sync.bp, key.bp}`; `onze/src/config.bp` — every key
+of § Mechanism's table but `site`, which 122 adds (decision 189);
 `onze-bundler/src/` — new `component_script.bp`, `style_sheet.bp` · `onze/examples/scaffold/**` ·
 `onze/docs.md` § Configuration, § CLI
 **Does not touch:** `onze dev` (50's); `onze-release` (71's); `repository/botopink-lang/**`.
@@ -16,7 +17,12 @@ build steps named below; new `onze-cli/src/{sync.bp, key.bp}`; `onze/src/config.
 Reference: `astro-docs/03-install-and-setup.md`, `05-develop-and-build.md`,
 `06-configuring-astro.md`, `23-client-side-scripts.md`, `11-styling.md` § Produção.
 
----
+## Goal
+
+`onze build` runs the other fronts' features: `onze sync` loads and checks content, `onze
+create-key` serves the island key, the config keys reach the libraries as plain values, component
+`<script>`s and scoped sheets are bundled, and `onze create --example bpp` scaffolds a `.bpp`
+project that passes `07-onze/53`'s acceptance script.
 
 ## Problem
 
@@ -40,12 +46,10 @@ The framework's CLI already exists and is a botopink program:
 | `astro add` | — | n/a — a dependency is a line of `botopink.json` |
 | `astro.config.mjs` | `onze.json` | real; refuses an unknown key (49-c) |
 
-So this front is small: two commands, five config keys, and three build steps the other fronts
+So this front is small: two commands, the config keys, and three build steps the other fronts
 need.
 
-## Current state
-
-Measured 2026-10-01:
+## What exists
 
 - `onze.json` keys: `name port basePath appDir publicDir outDir dev actionsBodyLimit
   allowedRedirects lang` (`onze/src/config.bp:192-193`); defaults port 3000, `appDir` `app`,
@@ -73,6 +77,12 @@ uses it as a plain value — no library reads `onze.json`.
 | `markdown`: `{ "smartPunctuation": bool }` | `markdown.*` | 121's `MarkdownOptions` |
 | `islandKeyEnv`: the environment variable that holds the server-island key | `ASTRO_KEY` | 120's `seal` |
 
+**This row contradicts decision 224** — flagged, not resolved here. 224 fixes the key in
+`ONZE_KEY` (or one generated at build, `onze create-key`), with no configurable variable name,
+and puts the island props mode in `onze.json` as `"islands": {"props": "sealed"}` (which modes it
+may name is `08-e2`). Whether the table keeps `islandKeyEnv`, replaces it by `islands`, or both,
+is the maintainer's; `examples/onze-json-example.json` still writes `"islandKeyEnv": "ONZE_KEY"`.
+
 `base` is `basePath`; there is no `output` key and no `prerender` key — `#[page]` decides each
 page's stage at comptime (decisions 186, 202); `image.domains` is `07-onze/51`'s.
 
@@ -81,10 +91,10 @@ references, and writes `<outDir>/content/<name>.json` and `<name>.schema.json`. 
 `<file>: <path>: <message>` and exits 1. `onze build` runs it first; `onze dev` runs it on a
 content file's change (50's watcher).
 
-**`onze create-key`.** Prints a fresh 256-bit key, base64, for the variable `islandKeyEnv` names.
-Without the variable, `onze build` generates a key and writes it into the server bundle; with
-several instances behind one cache the key must be the same on all of them, which is what the
-command is for.
+**`onze create-key`.** Prints a fresh 256-bit key, base64, for `ONZE_KEY` (decision 224; the
+`islandKeyEnv` row above names the variable otherwise). Without the variable, `onze build`
+generates a key and writes it into the server bundle; with several instances behind one cache the
+key must be the same on all of them, which is what the command is for.
 
 **Component scripts.** A `<script>` in a template with no attribute but `src` is a module script:
 the build collects it, bundles each distinct script once per page that renders its component, and
@@ -96,11 +106,11 @@ botopink; typed client code is an island (120).
 replaced by a counter in declaration order (the same in the markup the build prerenders), and
 minified; a route's sheet under a threshold is inlined, otherwise linked.
 
-## Steps
+## Open
 
-### Step 1 — The config keys
+### Step 1 — The config keys (the islands key waits on `08-e2` and the row above)
 
-- [ ] the five keys read and validated; an unknown key still refused; `docs.md`'s table generated
+- [ ] the keys of § Mechanism read and validated; an unknown key still refused; `docs.md`'s table generated
       from the one source `--help` and `create` read (ONZ-50-DoD's "defaults table from one
       source")
 - [ ] `trailingSlash: "always"` redirects `/about` to `/about/` with 308; `"never"` the reverse
@@ -135,13 +145,17 @@ minified; a route's sheet under a threshold is inlined, otherwise linked.
 - [ ] `07-onze/53`'s acceptance script runs against it — the same routes, the same assertions, as
       against `examples/blog`
 
-## Gate
+## Decisions
 
+- `08-h` — the config file and the commands: (a) `onze.json` and `onze <command>` recommended.
+  The whole front.
+- `08-e2` — which modes `"islands": {"props": …}` may name. Steps 1 and 3.
+- `islandKeyEnv` against decision 224 (§ Mechanism) — no id; the maintainer's to settle.
+
+**Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `onze-cli`, `onze-bundler`, `onze`
 - [ ] `zig build test-libs`: onze green; `examples/blog` builds unchanged
-- [ ] `scripts/gate.sh --cold` green
-- [ ] `AGENTS.md` of every directory touched; `onze/docs.md`
-- [ ] Commit on `front/124-bpp-cli`; landing is the maintainer's step
+- [ ] `onze/docs.md` § Configuration, § CLI
 
 ## Blast radius
 

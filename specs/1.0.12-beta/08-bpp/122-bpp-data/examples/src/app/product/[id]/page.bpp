@@ -2,8 +2,8 @@
 // Front 122 — bpp data · examples/src/app/product/[id]/page.bpp
 //
 // Demonstrates: the `Astro` global, member by member, in a `.bpp` page. There
-// is no object: the fence is the body of `Page(route)`, so it has the
-// parameter `route`, the hooks (`use request()`, `use cookies()`), the
+// is no object: the fence is the body of the function the file unfolds to
+// (front 116), so it has the parameter `route` (open question `bpp-g`), the hooks (`use request()`, `use cookies()`), the
 // navigation signals (`redirect`, `notFound`, `rewrite`) and the two response
 // hooks (`responseStatus`, `responseHeader`).
 //
@@ -18,8 +18,8 @@
 //
 // AN EARLY `return`. The fence is a function body, so a `return` leaves it
 // before the template is reached — Astro's `return Astro.redirect(…)`. A page
-// that answers other markup returns it with `html`: the module jhonstart's
-// `bpp` function emits imports it (front 116 § Notes).
+// that answers other markup returns it with `html`: the unfolded module imports
+// it (front 116, decision 198).
 //
 // The `.bp` form of this page, with its tests: `response-control-example.bp` at
 // the root of `examples/`.

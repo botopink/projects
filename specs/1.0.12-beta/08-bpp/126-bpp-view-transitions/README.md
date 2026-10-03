@@ -1,19 +1,24 @@
 # Front 126 — bpp view transitions
 
-**Priority:** low — a page works without an animation between itself and the next one; nothing
-else in the track waits on this.
+**Priority:** low — a page works without an animation between itself and the next one; only 127
+and 124 wait on it (`fronts.md`). · **State:** not started
 **Depends on:** `05-jhonstart/27-jhonstart-link` (JH-27-3b: the transition driver `reconcile()`
 has no body — there is no swap to animate until it has one) · `118-bpp-components` (the
-`transition:` directives are a template arm).
+`transition:` directives are a template arm) · 120 (the arm before this one in `html.bp`, and
+`fake_dom.mjs` before this front).
 **Owns:** in `repository/jhonstart/modules/jhonstart-link/src`: new `transitions.bp`,
 `sidecars/transitions_runtime.mjs`; the two call sites in `link_runtime.mjs` named in step 2 ·
 `jhonstart-link/test/transitions_test.bp` · `jhonstart-dom-test` — the `startViewTransition`
-double · one arm appended to `jhonstart-html/src/html.bp`
+double · one arm appended to `html.bp` (`jhonstart/src/html.bp`, after 120's)
 **Does not touch:** `reconcile.bp` (27's); `link.bp`'s `Link` and prefetch; the core member.
 
 Reference: `astro-docs/20-view-transitions.md`.
 
----
+## Goal
+
+A layout that renders `<ViewTransitions />` gets animated client-side navigations through the View
+Transition API: `transition:name` / `animate` / `persist`, `navigate()`, the five lifecycle
+events and a route announcer — and nothing changes for an application that does not.
 
 ## Problem
 
@@ -31,9 +36,9 @@ The second job does not exist at all: no file in the six repositories calls
 `startViewTransition`. `05-jhonstart/27` is the reconciler and says nothing about animation, so
 no existing front covers it.
 
-## Current state
+## What exists
 
-Measured 2026-10-01 at `repository/jhonstart/modules/jhonstart-link/src/`:
+At `repository/jhonstart/modules/jhonstart-link/src/`:
 
 | | |
 |---|---|
@@ -79,7 +84,7 @@ click — a `<select>` changing, an action that finished.
 element: the `<title>`, else the first `<h1>`, else the pathname. Under
 `prefers-reduced-motion: reduce` every transition animation is disabled by the stylesheet.
 
-## Steps
+## Open
 
 ### Step 1 — `transitions.bp` and the stylesheet
 
@@ -112,16 +117,12 @@ element: the `<title>`, else the first `<h1>`, else the pathname. Under
       four built-ins
 - [ ] the announcer's text for a page with a title, without one, and with neither
 
-## Gate
-
+**Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `jhonstart-link`; on commonJS in
       `jhonstart-dom-test`
 - [ ] `zig build test-libs`: jhonstart, onze green
 - [ ] in `07-onze/53`'s browser run: two pages sharing a `transition:name` animate, and a page
       load is not triggered
-- [ ] `scripts/gate.sh --cold` green
-- [ ] `AGENTS.md` of every directory touched
-- [ ] Commit on `front/126-bpp-view-transitions`; landing is the maintainer's step
 
 ## Blast radius
 

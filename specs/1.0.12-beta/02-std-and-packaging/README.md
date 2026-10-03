@@ -8,8 +8,9 @@ The track owes two things:
 
 1. **std is the one place a shared primitive lives** — `parseInt` / `parseFloat`, the `Json`
    accessors, `pbkdf2Sha256`, `parseDuration`, `RetryPolicy` and the snapshot engine on `io/fs` are
-   on feat; what is left is the `i32` binder, the conditional steps, std on wasm (group 3) and the
-   rows that hand each library copy to the front that owns its file. Front
+   on feat; what is left is the `i32` binder, the conditional steps, std on wasm (group 3), the std
+   bodies `01-compiler/05-wasm` step 5 waits on (decisions 259–263) and the rows that hand each
+   library copy to the front that owns its file. Front
    [`97-std-dedupe`](./97-std-dedupe/README.md).
 2. **The packaging rule is checked everywhere it applies** — a `-test` member with an
    `assert<Subject>(loc, …)` helper in every library, a `README.md` beside every example (29 of 29
@@ -21,7 +22,7 @@ The track owes two things:
 
 | Front | Priority | State | What | Depends on |
 |---|---|---|---|---|
-| [`97-std-dedupe/`](./97-std-dedupe/README.md) | high | partial: steps 0–5, 8–10 on feat; step 1 box 4, step 2 box 3, step 3 box 3, step 4 box 2, step 5 box 3, steps 6, 7, 11 open | the shared primitives in std; the consumer rows; std on wasm group 3 (decision 230) | `std-d` (step 6) · `01std-f` (step 7) · `24-g` confirmed |
+| [`97-std-dedupe/`](./97-std-dedupe/README.md) | high | partial: steps 0–5, 8–10 on feat; step 1 box 4, step 2 box 3, step 3 box 3, step 4 box 2, step 5 box 3, steps 6, 7, 11, 12 open | the shared primitives in std; the consumer rows; std on wasm group 3 (decision 230); the std bodies of decisions 259, 260, 262, 263 | `std-d` (step 6) · `01std-f` (step 7) · `24-g` confirmed |
 | [`98-packaging-tail/`](./98-packaging-tail/README.md) | medium | not started | `erika-test`'s first helper and `erika-linq`'s README; `scripts/check-packaging.sh`; `docs/botopink-json.md`; the manifest `subdir` field if lg2-v is answered (2) | every library track's `-test` and example-README steps · `95-f` · `lg2-v` |
 
 ## Order
@@ -48,7 +49,7 @@ latin1, and a code point above U+00FF is `illegal character` (`01-compiler/02-er
 ### To confirm
 
 Choices 1.0.10 implemented; the text is in
-[`../1.0.10-beta/decisions-pending.md`](../1.0.10-beta/decisions-pending.md).
+[1.0.10-beta `decisions-pending.md`](../../1.0.10-beta/decisions-pending.md).
 
 | Id | Choice | Closes on it |
 |---|---|---|

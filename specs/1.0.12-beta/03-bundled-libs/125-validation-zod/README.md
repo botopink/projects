@@ -14,7 +14,7 @@ to `i18n` by `105-i18n`, whose commit lands between two steps of this front, nev
 bundled packages; any consumer file in rakun, jhonstart or onze — a consumer that wants a marker
 imports it, in its own front
 
-The full feature map — all 205 rows of the reference, with the box each one falls in — is
+The full feature map — all 211 rows of the reference, with the box each one falls in — is
 [`surface.md`](./surface.md). The code each step is aiming at is under [`examples/`](./examples/).
 
 ## Goal
@@ -104,6 +104,7 @@ one marker — `#[with("slugSchema")] slug: string` — and that is the whole se
 
 `Schema<T>` is also what another library takes when it must accept "any schema": a content
 collection's `schema:` and an action's `input:` are parameters of that type.
+
 **What the platform fixes about the shape** (measured on erlang and commonJS; each is a line of
 `libs/validation/AGENTS.md` § Language notes and, where a test can hold it, a case of
 `test/platform_test.bp`; the compiler rows are in `language-gaps.md`):
@@ -125,6 +126,7 @@ collection's `schema:` and an action's `input:` are parameters of that type.
   commonJS and 1 on erlang, so no length marker may be written against `length()`.
 - **`f32` has no literal** (`val f: f32 = 1.5;` is a mismatch) and std has no `f64` → integer
   conversion: an `i32` / `i64` field is produced by three host cells in `schemas.bp`.
+
 ## Done
 
 - Step 0 — six of the eight platform facts are cases of `test/platform_test.bp` (a generic record
@@ -186,7 +188,7 @@ the length markers on `Array`, `Dict` and `Set`. Each is a predicate in `constra
 
 `#[schema]` on a payload-less enum (the variant name is the wire value); `#[literal]`, `#[oneOf]`;
 fields typed `A | B`, `#(A, B)`, `Dict<K, V>`, `Set<T>`; `schemas.union2…5`, `xor2…5`, `both`,
-`tuple2…5`, `tupleRest`, `dict`, `set`, `never`; a tagged enum whose variants name `#[schema]`
+`tuple2…5`, `tupleRest`, `dict`, `set`, `never`, `nil` (`Json.Null` only, for unions); a tagged enum whose variants name `#[schema]`
 records (`#[tag("status")]`).
 
 - [ ] `examples/enums-and-unions-example.bp` and `collections-example.bp` pass on both targets
@@ -266,8 +268,8 @@ twelve recipes.
 
 ### 07-j · How much of Zod is the front
 
-**Measured.** `surface.md`: 205 reference rows; 10 native, 38 have, 130 add, 7 need a compiler row,
-18 have no meaning here, 2 out of the reference's core.
+**Measured.** `surface.md`: 211 reference rows; 11 native, 37 have, 134 add, 7 need a compiler row,
+20 have no meaning here, 2 out of the reference's core.
 **Options.** (a) the markers only — §§ 4.3, 4.4, 4.6 (step 3 alone); (b) steps 0–2 and 3:
 `parse<T>` for flat records plus the markers; (c) every step.
 **Recommendation.** (c), landed in step order. (a) leaves the library without the function Zod is

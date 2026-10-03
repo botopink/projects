@@ -1,13 +1,13 @@
 # Front 127 — bpp actions: an action typed by a schema
 
 **Priority:** medium — actions exist and run; what they lack is the part the reference leads
-with: an input the framework validates and types.
-**Depends on:** `03-bundled-libs/125-validation-zod` steps 0–2 and 6 (`Schema<T>`, `bind<T>` —
-step 6 is written against decision 183 and waits on no question) ·
+with: an input the framework validates and types. · **State:** not started
+**Depends on:** `03-bundled-libs/125-validation-zod` step 6 (`bind<T>`, written against decision
+183; steps 0–2, `Schema<T>`, are merged into botopink-lang `feat`) ·
 `03-bundled-libs/103-actions-id` (it owns `libs/actions` in this milestone) · `04-rakun/22`
 (rakun-app), and 117 and 120 before it on that member's `botopink.json` and `root.bp` ·
 `05-jhonstart/67` (jhonstart-forms) · `07-onze/49` (ONZ-49-4.5: `serveActions` is not
-installed by onze yet) · 123 for step 4 (`actionContext`) · the test file step 3 adds to
+installed by onze yet) · 126 (`fronts.md`) · 123 for step 4 (`actionContext`) · the test file step 3 adds to
 `jhonstart-dom-test` is this front's own; `fake_dom.mjs` stays `05-jhonstart/26`'s (decision 189).
 **Owns:** in `repository/rakun/modules/rakun-app/src`: new `typed_action.bp`; the one registration
 line of `actions.bp` it calls · in `repository/botopink-lang/libs/actions/src`: new `outcome.bp` ·
@@ -17,7 +17,11 @@ the envelope's existing fields (`libs/actions/src/envelope.bp`); `form.bp`'s hoo
 
 Reference: `astro-docs/25-actions.md`.
 
----
+## Goal
+
+An action is described once by two schemas, implemented once on the server, validated and typed
+for its author — form or JSON input, an `ActionOutcome` on both sides, a typed client call — beside
+the existing `#[serverAction]`.
 
 ## Problem
 
@@ -41,11 +45,10 @@ para você" — an `input:` schema, a typed `handler`, a typed `data` on the cli
 The pieces for that exist separately and nothing joins them: the action protocol
 (`libs/actions`: `ActionState` with per-field errors, `ActionEnvelope`, `RpcCall`), the action
 registry and HMAC ids (`rakun-app/src/actions.bp`), the form hooks (`jhonstart-forms/src/form.bp`:
-`actionState`, `formStatus`, `optimistic`), and — after 125 — `bind<T>` and `parse<T>`.
+`actionState`, `formStatus`, `optimistic`), and 125's `parse<T>` (the `#[schema]` decorator emits
+it) and — after its step 6 — `bind<T>`.
 
-## Current state
-
-Measured 2026-10-01:
+## What exists
 
 | | Where |
 |---|---|
@@ -123,7 +126,7 @@ The client imports the description module, never the implementation: the impleme
 server-only code, and the bundler already refuses it in the client graph
 (`onze-bundler/src/refusal.bp:55-138`).
 
-## Steps
+## Open
 
 ### Step 0 — Measure
 
@@ -159,14 +162,10 @@ server-only code, and the bundler already refuses it in the client graph
 
 - [ ] 123's `actionContext(req)` names a typed action and how it was called
 
-## Gate
-
+**Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `libs/actions` and `jhonstart-forms`; on erlang in
       `rakun-app`
 - [ ] `zig build test-libs`: rakun, jhonstart, onze green; `#[serverAction]`'s tests unchanged
-- [ ] `scripts/gate.sh --cold` green
-- [ ] `AGENTS.md` of every directory touched
-- [ ] Commit on `front/127-bpp-actions`; landing is the maintainer's step
 
 ## Blast radius
 
