@@ -170,24 +170,7 @@ configuration that bypasses it (decision 67).
 
 ### 0405-d. Does std's own `$stringify` stay, under decision 164?
 
-**Raised by:** `04-js` step 2 (decision 164 answered 0405-c (a): "refused in every user template").
-**Measured.** One `.bp` in the seven repositories writes the marker: std's `primitives.bp`
-`Array.join`, `#[@External.Erlang("""… true -> $stringify(__E) end …""")]` — erlang and beam render
-it (`~p` text), and `builtins.d.bp`'s `External` comment lists `$stringify(...)` beside `$N` as a
-template marker. The located refusal of a marker lives in the parser (`parser/template_markers.zig`,
-01's), which parses std like any other source; `primOpTemplate.render` runs at codegen, after
-`check`, with no location and no way to tell std's template from a user's. Whether std is a "user"
-under decision 164 decides which fronts move.
-**Options.** (a) std keeps it: 01 adds `template-stringify-marker` with an exemption for the
-embedded std's parse (a parser flag its parse sites set), `primitives.bp` is untouched, `render`'s
-arm stays for std alone; (b) no exemption: the std track rewrites `Array.join`'s Erlang template
-without the marker (the `~p` text written out, or a call of a std `fn`), 01 refuses the marker in
-every template std's included, and `render`'s `$stringify` arm and the backends' `emitStringify*`
-go; (c) as (b), but the arm stays dead in `render` for a later primitive.
-**Recommendation.** (b) — one rule for every template and no parser flag (decision 67: an
-exemption only where it is structural, and a marker no one may write is no surface at all); (c)
-keeps code no input reaches.
-**Blocks.** 04 step 2 (the `reject/` cell) · 01's parser kind · the std track's `Array.join` line.
+Answered: decision 239 (`../decisions-taken.md`).
 
 ### 16-c. Decision 61 rule 3's one-line rule past `arrow_when_empty`
 
@@ -231,11 +214,7 @@ keeps code no input reaches.
 
 ### 26-a. Is a transitively reached package importable?
 
-**Raised by:** `26-cli-tooling` step 3 (language-gaps row T4).
-**Measured.** The import-source check (`compiler-cli/src/cli/sources.zig:52,104`, `proj.dependencyNames`) admits the manifest's own dependencies only; decision 143 loads every package the build resolves. An application declaring only `rakun-starter-web` gets "unresolved import source" for `import {rkProp} from "rakun"` although `rakun` is loaded for it.
-**Options.** (a) only direct dependencies are importable — a starter is a version set, not a dependency line, and every package a module imports from is declared; (b) every resolved package is an import source.
-**Recommendation.** (a) — the most restrictive, and the one where reading a manifest tells the reader what a module may import; (b) makes an import depend on a dependency's dependency list. The diagnostic names the package to declare.
-**Blocks.** 26 step 3; the rakun track's starter fronts read the answer.
+Answered: decision 242 (`../decisions-taken.md`).
 
 ### The decision-gated rows (lg2-*)
 
