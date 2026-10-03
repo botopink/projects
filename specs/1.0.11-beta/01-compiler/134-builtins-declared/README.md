@@ -177,6 +177,19 @@ assignable to it, and it cannot be constructed. `TypeInfo.all` declares
 - [ ] a decorator with arguments, a single decorator and a list of them accepted (`run/` cell on the
       four targets)
 
+### Step 6 — `@getContext(T)` is a hook (decision 269)
+
+`builtins.d.bp` declares `getContext<T>(comptime _: type) -> Component<T, T>`; the checker's RC3
+arm types the call as that declaration instead of `T`. `use @getContext(T)` reads the context as a
+`T`; the bare call is refused.
+
+**Acceptance:**
+- [ ] `val ctx = use @getContext(BasePagamento);` types `ctx` as `BasePagamento` (`run/` cell on the
+      four targets, inside a `-> @Component<…>` body)
+- [ ] `@getContext(BasePagamento)` without `use` refused, located, naming `use` (`reject/` cell)
+- [ ] the three existing `context-getcontext-*` refusals unchanged; the drift test green on the new
+      signature; `docs.md` § Builtins shows the `use` form
+
 ## Gate
 
 - [ ] `scripts/gate.sh --cold` green on the integrated branch

@@ -1,14 +1,14 @@
 # Decisions the maintainer owes — 1.0.11-beta
 
 **These questions are open** — `lg2-a…w`, `17-b`, `17-c` (raised by `01-compiler/17-beam-memory`) and
-`134-c`, `134-d` (raised by `01-compiler/134-builtins-declared`); `134-b` (decision 268), `134-a` (267), `ck4-a` (266), `gw-a` (264),
+`134-d` (raised by `01-compiler/134-builtins-declared`); `134-c` (decision 269), `134-b` (268), `134-a` (267), `ck4-a` (266), `gw-a` (264),
 `02e-a` (240) and `05w-a…g` (238, 241, 259–263) were answered. The `lg2-*` rows are carried verbatim
 below from 1.0.10-beta's
 § Open with their ids unchanged (`ck-host`, `lg-a`, `lg-b` and this milestone's `01c-e` were answered:
 decisions 146–149). Every `lg2-*` row of [`language-gaps.md`](./language-gaps.md) is a
 feature the language does not have; the recommendation is always the most restrictive reading
 (decision 67) — the feature stays out and the row's nearest form is the design — and no front opens
-on one until it is answered. **The next free decision number is 269** ([`decisions-taken.md`](./decisions-taken.md)).
+on one until it is answered. **The next free decision number is 270** ([`decisions-taken.md`](./decisions-taken.md)).
 
 Beside the open questions, every track carries **implementation choices awaiting confirmation** —
 a choice a front made, recommended and implemented, that the maintainer confirms or reverses. The
@@ -331,26 +331,6 @@ row's nearest form is the design — and the cost of that reading is named where
 > runtime the target selected (decision 84).
 > **Blocks.** The row; front 16 (`#[scheduled]`) and every decorator that would reuse std.
 
-
-### 134-c · What `@getContext(T)` answers
-
-> **Raised by:** `01-compiler/134-builtins-declared` step 1 (decision 252).
-> **Measured.** The checker types `@getContext(T)` as `T` (`infer.zig` RC3 arm), while
-> `builtins.d.bp` declared `-> Component<T, unknown>` and its comment shows
-> `val ctx = use getContext(T)` — which the checker refuses (`use-of-non-context-fn: 'T' is not a
-> hook`). No `.bp` file calls it. The declaration now says `-> T`, what the compiler does.
-> **Options.**
-> (a) `-> T`, called without `use` (today, declared):
-> ```botopink
-> val ctx = @getContext(BasePagamento);
-> ```
-> (b) `-> Component<T, T>`, called behind `use` as the old comment said:
-> ```botopink
-> val ctx = use @getContext(BasePagamento);
-> ```
-> **Recommendation.** (a) — it is what the checker and every backend implement; (b) changes a
-> builtin's typing for a form nothing writes.
-> **Blocks.** Nothing.
 
 ### 134-d · `@is(…)` written by hand
 
