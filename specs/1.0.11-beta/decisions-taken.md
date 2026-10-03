@@ -6,7 +6,7 @@ continues from [1.0.10-beta's record](../1.0.10-beta/decisions-taken.md), which 
 other decisions and are used, not free) — a number is never reused or renumbered across
 milestones. Questions are raised in [`decisions-pending.md`](./decisions-pending.md) with a lettered
 id (`07-a`, `03r-y`, `lg2-a` …) and move here with the next free number when answered. **The next
-free number is 253.**
+free number is 254.**
 
 **Inherited by reference, not copied.** The earlier records stay where they are; these standing
 principles govern this milestone and are cited by number throughout:
@@ -153,3 +153,4 @@ maintainer can reverse any of them:
 | 250 | std's `io.random.bool()` — the declaration `01-checker`'s refusal of a primitive-named declaration was parked on | **Dropped, not renamed** (decided under the library-method delegation, decision 174's note): `bool()` was an alias of `coin()` with no caller in any repository, and one name per operation is the strictest surface; `coin()` is the boolean draw. `02-std-and-packaging/97` step 10 · `01-compiler/01-checker` (the refusal unparks when 97 lands) |
 | 251 | — | **Withdrawn — recorded before the maintainer decided.** `dec-e` (how the boot registers beans whose types differ) is open again in `decisions-pending.md`; the number stays used. |
 | 252 | every builtin declared | **Every builtin reachable from a program is declared in `builtins.d.bp` — its type, its static and its instance methods — and the compiler is held to the declarations** (the maintainer: "put it to always declare"). A function as `pub declare fn`, a type as `pub type` with its fields and its methods (static ones as `declare fn` inside the type); a unit test walks the compiler's builtin table against the parsed declarations, so a builtin the declarations omit, or a signature that differs, is red. `docs.md` documents each builtin from its declaration. Front `01-compiler/134-builtins-declared`. |
+| 253 | the name of the program's catalogue | **`@TypeInfo.all(…)`, a static method of the builtin type `TypeInfo`** (the maintainer: "change `@typeInfo.all` to `@TypeInfo.all`"; amends 248's catalogue name only). `@typeInfo(T)` stays the function answering a `TypeInfo<T>` (instance: `name`, `module`, `fields`, `methods`, `meta`); `@TypeInfo.all(with: …, member: …)` is declared as a static `declare fn all` inside `pub type TypeInfo<T>` in `builtins.d.bp` (decision 252). `@typeInfo.all` becomes a located error naming `@TypeInfo.all`. What `all` answers waits on `dec-e`. Front `01-compiler/134-builtins-declared`. |
