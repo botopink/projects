@@ -162,7 +162,7 @@ function's, so `return case v { … _ -> throw "x"; }` under `-> @Result<i32, st
 **Acceptance:**
 - [x] `reject/try_in_lambda_without_result` — `[1, 2].forEach({ x -> try bad(); })` refused at the `try`
 - [x] `run/lambda_result_return_try` — a lambda under an expected `fn(x: i32) -> @Result<i32, string>` may `try`
-- [x] `run/throw_in_case_arm_result` — `isError()` true on the `throw` path, on four targets (02 and 04 own the lowering if the typed AST already says so; this front's cell pins the type) — **open:** the checker keeps the enclosing channel in an arm's block (commonJS, wasm, beam answer `Error`); erlang lowers the arm's `throw` raw (`02-erlang`), so no cell yet
+- [x] `run/throw_in_case_arm_result` — `isError()` true on the `throw` path, on four targets (02 and 04 own the lowering if the typed AST already says so; this front's cell pins the type) — **open:** the checker keeps the enclosing channel in an arm's block; erlang, wasm and beam answer `Error`, while commonJS refuses the program at code generation (`JumpInValuePosition`, `04-js`'s row), so no cell yet
 - [x] the std track's front 08 assertion helpers' lambdas located by the checker (measured, their row) — `libs/std` tests 442/0 on commonJS after the change; every library and example `botopink check`s as before
 
 ### Step 7 — the captured-`var` write (lg-b, the check-time half)
@@ -192,7 +192,7 @@ Decision only: the maintainer answers ck2-c; (a) closes the box as the rule
 one arity site in `infer.zig` (the free-fn one, `trailing-defaults.md` names the nine) and a cell.
 
 **Acceptance:**
-- [x] the box ticked with the answer's id, or `run/fn_leading_default_by_label` under (b) — **open:** ck2-c unanswered
+- [x] the box ticked with the answer's id, or `run/fn_leading_default_by_label` under (b) — ck2-c answered by decision 244 ((c), a default is trailing everywhere): step 17
 
 ### Step 10 — the parser area: a lambda parameter annotation (T12)
 
@@ -227,7 +227,7 @@ parameter already is.
 level can fail and is accepted.
 
 **Acceptance:**
-- [x] `run/val_spread_only_list_pattern` prints `rest`'s length; `run/val_nested_ctor_pattern` prints `r` and `n` — on the backends whose destructure lowers (03's twin decides beam) — **open:** measured: the checker half (bind `rest`, accept a nested record constructor) works on commonJS, while erlang (`Rest` unbound / no clause matches), wasm (no lowering) and beam (`unresolved_identifier`) do not lower the destructure; left refused until 02/03/05 lower it
+- [x] `run/val_spread_only_list_pattern` prints `rest`'s length; `run/val_nested_ctor_pattern` prints `r` and `n` — on the backends whose destructure lowers (03's twin decides beam) — **open:** measured: the checker half (bind `rest`, accept a nested record constructor) works on commonJS and beam (measured by `03-beam` with the refusal lifted), while erlang leaves `Rest` unbound (erlc refuses; `val assert [..rest] = xs` panics — `02-erlang`) and wasm refuses the nested pattern (`05-wasm`); left refused until 02 and 05 lower it
 
 ### Step 14 — the comment sweeps in this front's files (08 items 1–2)
 
@@ -285,6 +285,32 @@ carries the library workaround (import `CacheLife` into rakun-metrics) until thi
       `reject/program_primitive_behavior_redeclares_std`; wasm traps on a program-declared default fn
       of a primitive (`05-wasm`'s row)
 
+- [x] a value typed by a type parameter widens to that parameter's optional at a return
+      (`fn some<T>(v: T) -> ?T { return v; }`, the `language-gaps.md` row "A generic value cannot be
+      returned as its optional"; `unify.zig`'s `.named` arm) — `run/generic_value_widens_to_optional`,
+      `reject/generic_optional_never_narrows`; validation's `present` / `absent` workaround deleted
+- [x] a std module's `pub type` in a type position (`fn f() -> collections.Dict<string, i32>`) and
+      its `pub fn` in value position (`apply(path.basename, p)`) through the module namespace
+      (`std_namespace.zig`); a dotted name in a generic type position is never a nominal type —
+      `run/std_namespace_type_in_signature`, `run/std_namespace_fn_as_value`,
+      `reject/std_namespace_type_beside_own_type`. **Open:** the same through a package's module
+      namespace (`import {report} from "validation"`, the rows' own sites) — its exports are known
+      only to `comptime.zig`'s `resolveImports`
+- [x] a module-level `fn` / `val` named like an item the module imports is `import-name-collision`
+      at the name (the row "A function named like the imported decorator applied to it is declared
+      twice on commonJS") — `reject/fn_named_like_import`, `reject/val_named_like_import`;
+      `FnDecl.nameLoc` / `ValDecl.nameLoc` carry the name's location
+- [ ] a module-level `fn` / `val` / `var` named like a primitive type is `primitive-type-name-taken`
+      at the name (the row "A function named like a primitive type shadows the type in its module") —
+      built and parked: std's own `pub fn bool()` (`io/random.bp`, an alias of `coin()`) is such a
+      declaration; it lands when the std track drops or renames it
+- [ ] a comptime body's diagnostic names the body's file: `infer.zig` hands the evaluator the
+      display path, not only the owner's module path (`14-comptime-on-beam`'s box 1;
+      `comptime_module.zig:322`, `decorator_invocation.zig` assert it)
+- [ ] T17 — the reflection model (`Decl`, `Param`, `Field`, `Method`) resolves inside a decorator
+      body by its own identity, so an import named `Param` does not shadow it
+      (`modules/reflection_type_not_shadowed_by_import`; moved here from 14's step 5)
+
 ### Step 16 — an inline parameter type (decision 207)
 
 `fn link(props: type(href: string, label: string, external: bool = false))` — the field grammar of
@@ -312,6 +338,33 @@ parameter. Diagnostics name it by its owner (``the props of `link` ``).
       integer literal is refused at the literal (decision 215) —
       `reject/f64_{equals,not_equals}_integer_literal`
 
+### Step 17 — a default is trailing everywhere (decision 244)
+
+A parameter or field with a default may only be followed by others with defaults — in a free `fn`
+(as today), a method, a record type's fields and a variant's payload. `type Port(number: i32 = 80,
+host: string)` is refused at `host`, as `fn lead(a: i32 = 1, b: i32)` is at `b`. Closes ck2-c and
+step 9. `docs.md` and every library record with a leading default migrate by reordering the fields
+(a named construction keeps its call sites; a positional one is rewritten).
+
+- [x] `reject/record_field_default_not_trailing`, `reject/variant_payload_default_not_trailing`,
+      `reject/method_param_default_not_trailing`, `reject/fn_param_default_not_trailing` (the free
+      `fn`'s refusal, pinned) — a field's is `field-default-trailing-only` (`parseFieldList`)
+- [x] the fallout measured (every `.bp` of the seven repositories parsed): no library or example
+      declares a leading default; four `tests/language` cells did and are reordered, `docs.md`'s
+      `Port` is `Port(host: string, number: i32 = 80)` (`test-docs` 100/0), and three unit fixtures
+      moved — one of them `format/tests/declarations.zig`, 16's file, the fixture line only
+
+### Step 18 — numeric literal suffixes (decision 247)
+
+Kotlin's suffixes, lowercase, for every numeric type: `1.5f` is `f32`, `1.5d` `f64`, `42l` `i64`,
+`42u` `u32`, `42ul` `u64`, `42i8`, `42i16`, `42u8`, `42u16`, `42isize`, `42usize`; an uppercase
+suffix is a located error naming the lowercase one; a literal without a suffix never changes type
+to fit (`val x: f64 = 1` is refused — decision 209 reversed; 215 stands). The lexer's rule (hex
+digits against suffixes, the exponent, a member access on a literal) is this front's, against the
+decision's audit; the targets' representation of `i64` / `u64` / `f32` is the backends'.
+
+- [ ] not started — the `language-gaps.md` row "`f32` has no literal" closes with it
+
 ## Gate
 
 - [x] `zig build test` from a **cold** runtime cache, green, in this front's worktree
@@ -319,7 +372,7 @@ parameter. Diagnostics name it by its owner (``the props of `link` ``).
 - [x] every re-recorded `snapshots/comptime/**` file read for expected/found orientation; the four `snapshots/codegen/**` directories byte-identical except for a fixture a step newly refuses, which is reported to its backend front, never deleted here — moved only where a step's fixture changed source (`throw inside nested fn …`, `test body ---- try on an Error …`, `narrow ---- case enum area with print`, `access variant-specific field after matching`), each by its own source line
 - [ ] `libs/std` and every `examples/` project `botopink check` clean; `zig build test-libs` at baseline — a library that reds gets a migration plan in the commit — `botopink check` of every package of the seven repositories identical to the parent binary; `libs/std` tests 442 / 0 on commonJS; `test-libs` is the coordinator's
 - [x] `AGENTS.md` of `src/comptime/` and `src/parser/` in the same commit as each step
-- [ ] Commit on `fix/01-checker`; no push, no merge
+- [ ] Commit on `front/01-checker`; no push, no merge
 
 ## Blast radius
 
