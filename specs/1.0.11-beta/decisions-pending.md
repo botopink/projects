@@ -7,7 +7,7 @@
 decisions 146–149). Every `lg2-*` row of [`language-gaps.md`](./language-gaps.md) is a
 feature the language does not have; the recommendation is always the most restrictive reading
 (decision 67) — the feature stays out and the row's nearest form is the design — and no front opens
-on one until it is answered. **The next free decision number is 258** ([`decisions-taken.md`](./decisions-taken.md)).
+on one until it is answered. **The next free decision number is 264** ([`decisions-taken.md`](./decisions-taken.md)).
 
 Beside the open questions, every track carries **implementation choices awaiting confirmation** —
 a choice a front made, recommended and implemented, that the maintainer confirms or reverses. The
@@ -50,123 +50,6 @@ step 2 raised, because its answer changes what a template body receives (`14-a`,
 > **Recommendation.** (a) — nothing implicit runs around a test; the runner stays a list of bodies.
 > The cost is one line per test, which the libraries already pay.
 > **Blocks.** `language-gaps.md` row "No test lifecycle hooks".
-
-### 05w-c · How exactly wasm's `std/math` agrees with the hosts
-
-> **Raised by:** `01-compiler/05-wasm` step 5 (decision 238's `fn:` bodies of `math.bp`).
-> **Measured.** Node 25.8 (V8 14.1) answers `Math.exp`/`log`/`log2`/`log10`/`sin`/`cos`/`tan`/
-> `asin`/`acos`/`atan`/`atan2`/`sinh`/`cosh`/`tanh` with fdlibm (not correctly rounded: 212 of 2 000
-> random `exp` inputs differ from the correctly rounded value) and `Math.pow` with the C library's
-> `pow` (`v8_flags.use_std_math_pow`; glibc, ≤ 0.52 ulp). erlang and beam call glibc for all of them,
-> so commonJS and erlang already differ in the last bit for ~10 % of `exp` inputs. wasm today ports
-> fdlibm (bit-identical to commonJS on 6 539 fuzzed inputs, 1 200 of them `pow`) and computes `pow`
-> in double-double, correctly rounded — which differs from glibc's for ~1 input in 450:
-> `math.pow(158.42161580281933, 2.853827476501465)` is `1896229.4525711867` on commonJS and erlang,
-> `1896229.4525711865` on wasm.
-> **Options.** (a) wasm's contract is commonJS bit for bit: port glibc's `pow` too (a fixed algorithm
-> since glibc 2.28, with its 128-entry `log` and `exp` tables); (b) correctly rounded wherever wasm
-> has no instruction: replace the fdlibm port with double-double — wasm then differs from commonJS on
-> ~10 % of `exp` inputs; (c) keep today's split and record the ~0.2 % `pow` difference as a
-> `language-gaps.md` row.
-> **Recommendation.** (a) — the strictest reading of "the same answers as commonJS"; no cell compares
-> a `pow` at an input where (a) and (c) differ. The commonJS × erlang divergence (fdlibm × glibc) is a
-> row of its own, not this question's.
-> **Blocks.** Nothing today; it decides `math.bp`'s `powBody`.
-
-### 05w-d · What `hash.contentHash` folds for a character above U+FFFF
-
-> **Raised by:** `01-compiler/05-wasm` step 5 (`hash.bp`'s `contentHashBody`).
-> **Measured.** The three hosts answer three values for `contentHash("🎉")` (U+1F389). erlang folds
-> the code point: `djb2([127881])`. The Node cell loops over UTF-16 indices calling `charCodeAt`,
-> which the commonJS runtime answers with the code point there, so it folds the code point and then
-> the low surrogate: `djb2([127881, 57225])` = `9aae77`. `hash.bp`'s own comment says two UTF-16
-> units (`djb2([55356, 57225])` = `76298a`), which no target answers. wasm's body copies commonJS
-> (`9aae77`); a 180-input fuzz is then identical to commonJS on every cell.
-> **Options.** (a) the code points, as decision 169 counts a string: erlang's answer; the Node cell
-> folds `Array.from(s)`'s code points; wasm's body drops the surrogate step — every `contentHash`
-> over astral text changes on commonJS; (b) the UTF-16 units the comment names: the Node cell reads
-> the native `charCodeAt` (`String.prototype.charCodeAt.call`), erlang and wasm split a code point
-> into its surrogates — erlang's answers change; (c) keep commonJS's fold as the contract (wasm
-> already answers it) and port it to erlang.
-> **Recommendation.** (a) — one rule for every string index, and the djb2 of text is a function of
-> its characters; a cached key over astral text changes once.
-> **Blocks.** Nothing on wasm today (it answers commonJS); a `run/` cell over astral text on four
-> targets.
-
-### 05w-e · How much memory a wasm program has
-
-> **Raised by:** `01-compiler/05-wasm` step 5 (`std/hash` on wasm).
-> **Measured.** Every module declares `(memory (export "memory") 1)` — one 64 KiB page — and the heap
-> is a bump pointer that never frees and never grows (no `memory.grow` anywhere). A program traps
-> (`out of bounds memory access`) once it has allocated ~60 KiB: `s = s + "ab"` 2 000 times traps;
-> one program cannot print every `std/hash` digest (the cell is three cells), and
-> `hash.pbkdf2Sha256("password", "salt", 9, 32)` already traps where commonJS answers (8 iterations fit). A trap is not a wrong value, but
-> the ceiling is the backend's, not the program's.
-> **Options.** (a) the heap grows: every bump (`$__alloc`, `$__str_concat`, `$__str_slice`,
-> `allocSlots`, `allocResultPair`) goes through one helper that calls `memory.grow` when the new
-> pointer passes `memory.size` (a failed grow traps) — two new `Instr`s, `memory.size` and
-> `memory.grow`, which `wasm_binary_emitter.zig` (front 18's file) must encode in two lines; every
-> wasm snapshot (652 of 710) changes its helpers' text; (b) a larger fixed memory
-> (`(memory … 256)`, 16 MiB) — one line per snapshot, no new instruction, a higher ceiling of the
-> same kind; (c) keep one page.
-> **Recommendation.** (a) — a program's memory is bounded by the host, as on the other three
-> targets; (b) moves the trap, it does not remove it.
-> **Blocks.** PBKDF2 at a real iteration count on wasm; any std body over text longer than a few
-> KiB; one `run/` cell per module instead of three for `hash`.
-
-### 05w-f · How a wasm body makes text from a code point
-
-> **Raised by:** `01-compiler/05-wasm` step 5 (`unicode`, `json`, `encoding`, `querystring`).
-> **Measured.** A `fn:` body reads a string's code points (`charCodeAt`, `chars`), but nothing it can
-> call makes a string from one: no primitive member does (`String` has `charCodeAt`, no inverse), a
-> string literal escape is `\u{…}` of a fixed code point, and decision 238 gives the vocabulary no
-> form that answers a string (`op:` is numeric, an adapter's slots are numbers). `unicode`
-> (`fromCodepoint`, every normalisation's output), `json` (`codepointText`, a parsed `\u` escape),
-> `encoding` (`base64Decode`, `hexDecode`, `percentDecode` answer the text of decoded bytes) and so
-> `querystring` all need it; a wasm build importing any of them is refused (STD-001).
-> **Options.** (a) a primitive: `String.fromCodepoint(cp: i32) -> string` in `primitives.bp` (Node
-> `String.fromCodePoint`, erlang `<<Cp/utf8>>`, a wasm prelude lowering writing the UTF-8 bytes),
-> `charCodeAt`'s inverse on every target; the four modules' bodies build text from it, and
-> `unicode.fromCodepoint` becomes `fn:` over it; (b) an adapter answering a string —
-> `wasi:codepoint_text` (no WASI call), with string slots added to the adapter signatures —
-> bound by each module's private `codepointText` cell; (c) leave the four modules refused on wasm
-> (they join group 3).
-> **Recommendation.** (a) — the language reads a code point and should write one; it is no std
-> name the backend owns (decision 238's rule) but a member of `String` with an answer on every
-> target, as `charCodeAt` is.
-> **Blocks.** `unicode`, `json`, `encoding`, `querystring` on wasm (step 5's last group-1 box).
-
-### 05w-g · Whether `std/math` answers the same bits on every OS
-
-> **Raised by:** `00-gate` (`gate-macos-cells`), CI run 37092813045, job `macos-14`: `[erlang]` and
-> `[beam] run/std_math_on_every_target` print `false` on lines 15 and 16 — `math.tan(1.0) ==
-> 1.5574077246549023` and `math.asin(0.5) == 0.5235987755982989 && math.acos(0.5) ==
-> 1.0471975511965979`; Ubuntu and the local gate print `true`. 05w-c's "commonJS × erlang row of its
-> own", now across operating systems.
-> **Measured.** erlang and beam bind `math.tan`/`asin`/`acos`/… to `math:tan/1`…, which OTP answers
-> with the platform C library: glibc on Linux, Apple's libm on macOS. The three expected values are
-> the correctly rounded doubles (mpmath, 200 bits): `tan(1)` = 1.5574077246549022305…, 0.28 ulp from
-> it; `asin(0.5)` = π/6 and `acos(0.5)` = π/3 lie 0.48 ulp from theirs — almost a tie, where a libm
-> that is faithful (< 1 ulp) but not correctly rounded may return the neighbour (`0.5235987755982988`,
-> `1.0471975511965976`). IEEE 754-2019 §9.2 recommends correct rounding for these functions and C
-> Annex F does not require it; only `sqrt` and the basic operations are required to be correctly
-> rounded. glibc happens to round these inputs correctly, Apple's libm does not; commonJS answers
-> fdlibm on both (V8 ships its own `ieee754` code) except `Math.pow`, which is the platform `pow`
-> (05w-c), and wasm answers std's own fdlibm port on both.
-> **Options.** (a) `std/math` is one function on every target and every OS: erlang and beam call the
-> same private botopink bodies wasm calls through `fn:` (`tanBody`, `asinBody`, … — the fdlibm port,
-> already bit-identical to commonJS on 6 539 inputs), and `pow` is the body 05w-c chooses on every
-> target, commonJS included; `sqrt`, `floor`, `abs`… stay host calls, since IEEE 754 makes them
-> exact everywhere; the cell stays as it is; (b) the platform libm is the contract: the cell asserts
-> only what every IEEE 754 libm guarantees (exact `sqrt`, `floor`, `2^10`; transcendentals within
-> 1 ulp of the reference), and a program's last bit depends on the OS it runs on; (c) the cell keeps
-> exact values and erlang/beam on macOS are excluded from it (a per-OS exception in the matrix).
-> **Recommendation.** (a) — one std answer per input, whatever target or OS runs it, is the reading
-> the wasm port already chose; (b) turns a wrong last bit into a passing cell, and (c) is a
-> tolerated red by another name (decisions 153–162). Cost: erlang/beam run botopink bodies instead of
-> one C call for the transcendentals.
-> **Blocks.** `[erlang]`/`[beam] run/std_math_on_every_target` on `macos-14` (red until answered);
-> a `run/` cell comparing any other transcendental at a near-tie input.
 
 ---
 
