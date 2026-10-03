@@ -1,7 +1,7 @@
 # Decisions the maintainer owes — 1.0.11-beta
 
-**Twenty-four questions are open** — `ck2-c` and `lg2-a…w`, carried verbatim below from 1.0.10-beta's
-§ Open with their ids unchanged (`ck-host`, `lg-a`, `lg-b` and this milestone's `01c-e` were answered:
+**Twenty-seven questions are open** — `dec-a`, `dec-b` and `dec-d` (front 130's migration), then
+`ck2-c` and `lg2-a…w`, carried verbatim below from 1.0.10-beta's § Open with their ids unchanged (`ck-host`, `lg-a`, `lg-b` and this milestone's `01c-e` were answered:
 decisions 146–149). Every `lg2-*` row of [`language-gaps.md`](./language-gaps.md) is a
 feature the language does not have; the recommendation is always the most restrictive reading
 (decision 67) — the feature stays out and the row's nearest form is the design — and no front opens
@@ -77,6 +77,62 @@ row's nearest form is the design — and the cost of that reading is named where
 > **Recommendation.** (a) — the most restrictive that breaks nothing written: (c) would refuse
 > `docs.md`'s own `Port` and the libraries' records with a leading default.
 > **Blocks.** Nothing.
+
+### dec-a · Where a function's decorator puts per-function code
+
+> **Raised by:** `01-compiler/130-decorator-outputs` step 5 (its open question 1)
+> **Measured.** Decision 216's four places hang off a type; `decl.addMember` from a `fn`'s decorator
+> is `decorator-member-without-type`. jhonstart's `#[page]` writes `pub fn <Page>Params(route)` per
+> page (`routes.bp`), rakun's `#[middleware]` a gate lambda per function.
+> **Options.** (a) a page becomes a type (`#[page] pub type BlogPost(route: Route) { pub fn
+> render(self: Self) -> Element { … } }`), and `BlogPost.Params` is an associated type; (b) the
+> per-function code becomes library code written once, fed by meta (`decl.setMeta("seg",
+> "[slug]")`, `paramsOf(@typeinfo(BlogPost).meta.page.seg, route)`); (c) a fifth place, a member
+> hung on a function.
+> **Recommendation.** (b) — no fifth mechanism, the page is written as today, and the helper is
+> code the library owns instead of code generated per page.
+> **Blocks.** jhonstart `routes.bp` (5 sites), rakun's `#[middleware]`, step 6 of front 130.
+
+### dec-b · One `@typeinfo.all` over several decorators
+
+> **Raised by:** `01-compiler/130-decorator-outputs` step 5 (its open question 4)
+> **Measured.** A query answers one decorator. rakun's stereotypes (`#[component]`, `#[service]`,
+> `#[repository]`, `#[controller]`, `#[configuration]`, …) are one kind of thing — a managed
+> singleton — and its registrations (`__rkScan_`, `__rkRoute_`, `__rkEntityReg_`, `__rkQueryReg_`,
+> … ~45 sites) all move to a catalogue an entry point builds.
+> **Options.** (a) one query per decorator, concatenated by the entry point; (b) `with: [component,
+> service, repository]`, one answer in the one order (module path, then declaration order), a
+> declaration carrying two of them answered once; (c) each stereotype delegates to one shared marker
+> the query names.
+> **Recommendation.** (b) — with (a) the catalogue's order is the order of the concatenations, not
+> the rule the query states.
+> **Blocks.** Every rakun registration site (~45) and jhonstart's four registrations.
+
+### dec-d · What a constructor-injected field resolves through
+
+> **Raised by:** `01-compiler/130-decorator-outputs` step 5 (rakun's DI factories)
+> **Measured.** A stereotype emits `pub fn __rkMake_<T>()` and injects each field with
+> `__rkMake_<FieldType>()`, so the factory's NAME is the injection contract — and three other
+> decorators write or name a factory for a type they do not annotate: `#[provides] fn systemClock()
+> -> Clock` (a `fn`), `#[bean]` (a method of a `#[configuration]` type) and `#[imports("A,B")]`
+> (Spring's `@Import`, naming `__rkMake_A`). With
+> decision 216 a stereotyped type's factory is the member `T.make()`, but a provider cannot add a
+> member to `Clock` (`decorator-member-without-type`; a member joins the annotated type only), and
+> the stereotype that writes `clock: Clock`'s injection cannot tell a stereotyped `Clock` from a
+> provided one. 29 `__rkMake_` emit sites, ~120 references in 36 rakun files.
+> **Options.** (a) a field resolves through the type: `Clock.make()`; a provider is refused (no
+> `#[provides]` / `#[bean]` for a type the application does not own); (b) a field resolves through
+> the context by type name (`clock: rkResolve("Clock")`, the field's type fixing the answer's), the
+> context filled at boot from `@typeinfo.all(with: component, member: "make")` and
+> `@typeinfo.all(with: provides)`; (c) a fifth place: a provider adds `make()` to the type it
+> returns (dec-a's (c), across declarations).
+> **Recommendation.** (b) — Spring's own model, no generated name is a contract, and the two-providers
+> case (`#[qualifier]`, `#[primary]`) becomes a rule of the context instead of a collision on one
+> function name; the cost is that a missing bean is a boot failure, not an unbound-function build
+> error (the boot already refuses the cycle and the ambiguity there).
+> **Blocks.** The 29 `__rkMake_` sites and everything that injects through them: `#[transactional]`'s
+> and `#[methodSecurity]`'s proxies, the route, scheduler, listener and endpoint registrations that
+> call `__rkMake_<T>()`.
 
 ### lg2-a · A byte type
 
