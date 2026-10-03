@@ -30,7 +30,7 @@ pub default fn PostCard(props: Props) -> Element {
     val date = props.post.published;
     val kind = if (props.featured) { "card featured" } else { "card" };
 
-    // [the literal] — the bytes after the `---` line, at their own offset
+    // [the literal] — the bytes after the second `---` line, at their own offset
     return html """
 <article class={kind}>
   <h2>{props.post.title}</h2>

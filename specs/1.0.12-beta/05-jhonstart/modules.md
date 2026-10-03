@@ -60,7 +60,7 @@ landed and one at a time (`../fronts.md` § Execution order of tracks 03–08):
 | Member | Front | Files |
 |---|---|---|
 | `jhonstart-html` (until 26 step 0), then the core's `src/html.bp` | `08-bpp/118` (in `jhonstart-html`, before 26 step 0), then one lowering arm each from 119, 120, 126 (in the core) | `html.bp`, its tests |
-| `jhonstart` (core) | `08-bpp/118` before 26 opens; then 120, then 122; 116 | 118: `src/prelude.bp` (new, decision 266), the type `Children`, the bracket attributes of the two files that use the DSL · 120: new `island_strategy.bp`, `deferred.bp`, lines of `client.bp`, `render.bp`, `island_runtime.mjs` · 122: new `response.bp`, lines of `server.bp`, `error_boundary.bp` · 116: new `bpp.bp`, `test/bpp_test.bp` |
+| `jhonstart` (core) | `08-bpp/118` before 26 opens; then 120, then 122; 116 | 118: `src/prelude.bp` (new, decision 266), the type `Children`, its step-1 bracket-attribute lines (comments only in the core) · 120: new `island_strategy.bp`, `deferred.bp`, lines of `client.bp`, `render.bp`, `island_runtime.mjs` · 122: new `response.bp`, lines of `server.bp`, `error_boundary.bp` · 116: new `bpp.bp`, `test/bpp_test.bp` |
 | `jhonstart-link` | `08-bpp/126` (after 27) | new `transitions.bp`, `sidecars/transitions_runtime.mjs`, two call sites of `link_runtime.mjs` |
 | `jhonstart-forms` | `08-bpp/127` (after 67 and 103) | new `typed_call.bp` |
 | `jhonstart-emilia` | `08-bpp/119` | the whole member (`scopedStyle`, the sink) |

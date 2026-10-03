@@ -5,10 +5,10 @@
 // Demonstrates: a component as a single file. The application's manifest says
 // `"bpp": "jhonstart"` (`app-botopink-json-example.json`), so the toolchain
 // unfolds this file onto jhonstart's `pub default fn`, `html` (decisions 198,
-// 200): the header — everything before the `---` line — is ordinary botopink,
-// its declarations staying at module level and its statements becoming the body
-// of the function the file unfolds to; everything after the `---` line is the
-// literal handed to `html`.
+// 200): the header — between the two `---` lines (decision 212) — is ordinary
+// botopink, its declarations staying at module level and its statements becoming
+// the body of the function the file unfolds to; everything after the second
+// `---` line is the literal handed to `html`.
 //
 // `type Props` is the convention (decision 199): with it the file is
 // `pub default fn PostCard(props: Props) -> Element`, the header's statements read

@@ -1,47 +1,48 @@
-# Front 103 — `actions` gains `id`
+# Front 103 — actions id: `actions` gains `id`
 
 **Priority:** high — the action id is a security boundary derived in one place and re-checked in
-another; two grammars for it is one too many.
-**Depends on:** `00-gate` green · `07-i`.
+another; two grammars for it is one too many · **State:** not on feat; step 1 reported done on an
+unpushed branch `front/103-actions-id` — push it
+**Depends on:** the branch pushed and landed (step 1)
 **Owns:** `repository/botopink-lang/libs/actions/src/id.bp` (new), `libs/actions/test/id_test.bp`,
 `libs/actions/AGENTS.md`, `libs/actions/botopink.json` (`files`) · consumers:
-`repository/rakun/modules/rakun-app/src/actions.bp` (lines 199-203 only),
-`repository/jhonstart/modules/jhonstart-forms/src/form.bp` (lines 117-121 only).
-**Does not touch:** anything else in rakun-app or jhonstart-forms (`04-rakun` 24 and `05-jhonstart`
-67 own the rest) · `build.zig`, `libs/AGENTS.md`, `scripts/format-check.sh`.
+`repository/rakun/modules/rakun-app/src/actions.bp` (`actionId` and its callers `actionIdOf`,
+`resolveAction` only), `repository/jhonstart/modules/jhonstart-forms/src/form.bp` (the `wellFormed`
+check of `formAction` only)
+**Does not touch:** anything else in rakun-app or jhonstart-forms (`04-rakun` 22 and `05-jhonstart`
+67 own the rest) · `build.zig`, `libs/AGENTS.md`, `scripts/format-check.sh`
 
----
+## Goal
 
-## Problem
+rakun-app's `actionId(module, name, buildId)` (`actions.bp`) computes `"a_" +
+hash.hmacSha256(rkProp("rakun.actions.secret"), module + "." + name + ":" + buildId).slice(0, 24)`.
+jhonstart-forms' `formAction` re-checks the shape independently — `a_` prefix, no `/`, space or
+quote — which is looser than the derivation: a 23-hex id passes jhonstart and can never match
+rakun. When the front lands, both read one derivation and one grammar from `actions.id`.
 
-rakun-app computes `"a_" + hmacSha256(secret, module + "." + name + ":" + buildId).slice(0, 24)`
-(`actions.bp:199-203`). jhonstart-forms independently re-checks the shape — `a_` prefix, no `/`,
-space or quote (`form.bp:117-121`). The check is looser than the derivation: a 23-hex id passes
-jhonstart and can never match rakun.
+**Name.** The package function is `deriveActionId`: rakun-app already exports `actionId`, and
+decision 163 forbids a bundled package exporting a name a framework exports. rakun-app's own
+`actionId` (read by its tests and by `actionIdOf` / `resolveAction`) keeps its name and becomes a
+call of `deriveActionId` with the secret it reads.
 
-## Steps
+## Open
 
 ### Step 1 — `id.bp`
 
-`actionId(secret, module, name, buildId) -> string` (the exact derivation above, over std
+`deriveActionId(secret, module, name, buildId) -> string` (the derivation above, over std
 `hash.hmacSha256`), `isActionId(id) -> bool` (`a_` followed by exactly 24 lowercase hex digits).
-The secret is a parameter; the package never reads `rakun.actions.secret`.
+The secret is a parameter; the package never reads `rakun.actions.secret`. std's `hmacSha256`
+answers lowercase hex on both targets (Node `digest('hex')`, Erlang `~2.16.0b`); the test pins it.
 
-**Acceptance:**
-- [ ] known-answer test: one fixed `(secret, module, name, buildId)` → one fixed id, on both rows
+- [ ] known-answer test: one fixed `(secret, module, name, buildId)` → one fixed id, on both rows;
+      the id is lowercase, so `isActionId(deriveActionId(…))` holds
 - [ ] `isActionId` refuses 23 and 25 digits, uppercase, and the empty suffix
 
 ### Step 2 — consumers
 
-- [ ] rakun-app `resolveAction` calls `actionId`; its constant-time comparison is untouched
-- [ ] jhonstart-forms calls `isActionId`; its form tests green on both rows
+- [ ] rakun-app's `actionId` calls `actions.id.deriveActionId` (the derivation and its `slice` gone
+      from rakun-app); `resolveAction`'s constant-time comparison is untouched; rakun-app's
+      `actions_test.bp` green unchanged
+- [ ] jhonstart-forms' `formAction` calls `isActionId`; its form tests green on both rows
 
-## Gate
-
-- [ ] `zig build test` cold, green; `zig build test-libs` green
-- [ ] `libs/actions/AGENTS.md` updated in the same commit
-- [ ] Commit on `front/103-actions-id`
-
-## Blast radius
-
-Two files outside `libs/`. No snapshot.
+**Gate:** standard (fronts.md § Gate) + `libs/actions/AGENTS.md` names `id`

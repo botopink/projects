@@ -9,12 +9,11 @@
 // reaches no `#[serverOnly]` hook (decision 202) — and its statements become the body of the
 // function the file unfolds to, ahead of `return html """…""";` (decision 199).
 //
-// How a `page.bpp` gets what a `.bp` page writes by hand — `#[page("blog/[slug]")]`,
-// its `route: PageContext` parameter and the `params` bound from the bracket
-// segment — is not stated by decisions 198–200: the unfold names no library and
-// answers `pub fn <name>(props: Props) -> Element` or `pub fn <name>() -> Element`
-// (README § Notes, point 3). `params.slug` below is written against the answer
-// still owed.
+// What a `.bp` page writes by hand: `#[page("blog/[slug]")]` comes from the
+// file's name through jhonstart's `bppKinds`, or from a decorator on the header's
+// last line (decision 221). Its `route: PageContext` parameter and the `params`
+// bound from the bracket segment are open question `bpp-g` (README § Notes,
+// point 1); `params.slug` below is written against that answer.
 //
 // Upstream: astro-docs/07-astro-pages.md · astro-docs/08-routing.md (Rotas
 //           dinâmicas) — https://docs.astro.build/en/guides/routing/

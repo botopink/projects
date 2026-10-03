@@ -75,8 +75,8 @@ Lines 118 reports to the owner, not steps of 26, 27 or 67:
 | a component that takes `(props, children)` moves the children into its props: the first parameter's type declares a `children` field, the second parameter goes | every component in `modules/jhonstart*/` and `examples/` | 193 |
 | a component's attributes are the fields of its first parameter's type | the components written as functions of labelled parameters | 192 |
 
-118 also writes, as carve-outs in the core landed before 26 opens: the bracket attributes of the
-two core files that use the DSL, the core's `src/prelude.bp` (what every `.bpp` file imports
+118 also writes, as carve-outs in the core landed before 26 opens: its step-1 bracket-attribute
+lines (in the core only comments of `root.bp` / `elements.bp` name the DSL), the core's `src/prelude.bp` (what every `.bpp` file imports
 without writing it — decision 266) and the type `Children` the track's examples use.
 
 ## Decisions

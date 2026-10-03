@@ -1,69 +1,67 @@
-# Front 71 — onze release packaging tail
+# Front 71 — onze release packaging tail: the release assembled, verified and booted end to end
 
-**Priority:** medium — the release is the deploy artifact; four of its DoD boxes have never been
-run against a real release because `onze build` was not wired to it
-**Depends on:** `07-onze/50` step 5 (the two lines in `build.bp` / `start.bp` — this front
-writes `bin/onze`, 50 calls it) · the `04-rakun` track: `81-rakun-packaging-release` (the
-sidecar-loading toolchain row, "a built erlang program cannot load its `.erl` sidecars" — the
-release boots only when it closes), `11-rakun-actuator` and `04-rakun-erlang-runtime` carrying 62
-(the shutdown cells `lifecycle.bp` records against) · the `22-rakun-file-routing` front carrying
-60 (static export reads its prerender) · maintainer `53-b` (step 6) · `03-bundled-libs/107-release`
-runs **after** this front (it extracts `otp.bp` / `docker.bp` / `spec.bp`'s renderers)
+**Priority:** medium — the release is the deploy artifact; four of its DoD boxes have never run
+against a real release · **State:** not started (step 6's snapshots are on disk)
+**Depends on:** `07-onze/49` step 6 (`onze-test/src/release.bp`) · step 3: `04-rakun`
+`11-rakun-actuator` and `04-rakun-erlang-runtime` carrying 62 (the shutdown cells) and
+`81-rakun-packaging-release` (the sidecar-loading row, "a built erlang program cannot load its
+`.erl` sidecars" — the release boots only when it closes) · step 4: `04-rakun/22` carrying 60
+(static export reads its prerender) · step 5: `07-onze/50` (`build` wired) and `07-onze/53` (the
+blog complete) · maintainer `53-b` (step 6)
+**Feeds:** `07-onze/50` step 5 (`start` calls `bin/onze`, after step 2) ·
+`03-bundled-libs/107-release` runs **after** this front (it extracts `otp.bp` / `docker.bp` /
+`spec.bp`'s renderers; the texts here are what it must reproduce)
 **Owns:** `repository/onze/modules/onze-release/**`, `examples/static-site/**` (new),
 `modules/onze-test/src/release.bp` · this directory
-**Does not touch:** `modules/onze-cli/**` (50) · `modules/onze/**`, `modules/onze-server/**` (49)
-· `examples/blog/**` (53 — the release gate boxes run over it read-only) · a container runtime's
-configuration (the gate's environment)
-**Carried from 1.0.10:** `71-onze-release-packaging/README.md` § Step 2 box 3 (`includeErts`),
-§ Step 5 boxes 1 and 4, § Step 7 box 2, § Definition of done boxes 2–5, § Where it stands ·
-`modules.md` § examples (`static-site`) · `test-snap.md` § 71 (copied as
-[`test-snap.md`](./test-snap.md), conditional on 53-b) · `examples/{boot-and-shutdown,release-descriptor}-example.bp`
-(copied)
+**Does not touch:** `modules/onze-cli/**` (50 — `build.bp` / `start.bp`'s two lines are 50
+step 5's) · `modules/onze/**`, `modules/onze-server/**` (49) · `examples/blog/**` (53 — step 5
+runs over it read-only) · a container runtime's configuration (the gate's environment)
 
----
+## Goal
 
-## Problem
-
-1. `includeErts: true` does not produce `erts-<vsn>/` in the release, and the Dockerfile's
-   runner base image does not differ by it — the release is not assembled end to end until
-   `onze build` drives it.
-2. `bin/onze` checks `BUILD_ID` against the stamped id but does not run `verifyBuildId` across
-   the release, the client manifest and the payload (the manifest/payload comparison needs the
-   VM up); `onze start` does not call the script (50 step 5).
-3. `static_export.bp` computes the export tree and writes nothing to disk; `examples/static-site/`
-   does not exist.
-4. The four gate boxes — the release boots with no source tree and no compiler; the build id is
-   derived once and verified in three places; the container runs as non-root on `PORT`;
-   `scanForSecrets` over the real release finds only the `ONZE_PUBLIC_` table — have never run.
-
-## Current state
-
-`onze-release` 9 tests on both rows (one running the real `systools:make_script`); `spec`, `otp`,
-`docker`, `package`, `lifecycle`, `static_export` exist; the build id is six hex of
-`contentHash`; `shutdown` runs its five steps over a recording `Lifecycle` double.
+`onze build` assembles a release that carries its ERTS when asked, `bin/onze` verifies the build
+id before booting, static export writes to disk and `examples/static-site/` proves it, and the
+blog's real release boots with no source and no compiler, as non-root in a container, with no
+secret inside.
 
 ## Mechanism
 
-`package.bp`'s `assembleRelease` takes the `ReleaseSpec` and the built tree; `includeErts` is a
-copy of `$ERL_ROOT/erts-<vsn>` into the release and a `--include-erts` flag to `systools`.
-`bin/onze` is a shell script the release ships: it reads `PORT`, runs the VM's `verifyBuildId`
-entry (an `-eval` that loads the manifest and the stamped id and exits non-zero on a mismatch)
-and then `exec`s the OTP boot script. Static export writes `<route>/index.html` per prerendered
-route plus the asset tree and `public/` into `<outDir>/export/`.
+- **Today.** `spec.bp`'s `ReleaseSpec.includeErts` (default `true`) reaches `otp.bp`'s boot
+  script (`erts-<vsn>/bin/erl` vs `erl`) and `docker.bp` (runner `alpine:3.20` with ERTS,
+  `erlang:<otpRelease>-alpine` without — recorded in
+  `release/dockerfile_two_stages_non_root_erts_bundled_and_not.snap`), but `package.bp`'s
+  `assembleRelease` copies no ERTS. The boot script compares `BUILD_ID` with the stamped id
+  (`otp.bp` `bootScriptText`); `verifyBuildId` (`spec.bp`) is a pure function nothing runs.
+  `static_export.bp` computes the export tree and writes nothing; `examples/static-site/` does
+  not exist. `lifecycle.bp`'s `shutdown` runs its five steps over a recording `Lifecycle` double.
+- **ERTS.** `assembleRelease` copies `$ERL_ROOT/erts-<vsn>` into the release and passes
+  `--include-erts` to `systools`.
+- **`bin/onze`** is a shell script the release ships: it reads `PORT`, runs the VM's
+  `verifyBuildId` entry (an `-eval` that loads the manifest and the stamped id and exits non-zero
+  on a mismatch) and then `exec`s the OTP boot script.
+- **Static export** writes `<route>/index.html` per prerendered route plus the asset tree and
+  `public/` into `<outDir>/export/`.
+- Configuration at boot, not at build: no environment value enters the release (step 5's last
+  box proves it).
 
-## Steps
+## Done
 
-### Step 1 — `includeErts`
+- Step 6 — the release texts (`.rel` / `sys.config` / `vm.args` / boot script), the Dockerfile,
+  the build id, the shutdown and the static export recorded as five `.snap` under
+  `modules/onze-release/test/__snapshots__/release/`, on both rows (53-b (c)); its open box below
 
-**Acceptance:**
+## Open
+
+### Step 1 — `includeErts` copies the runtime
+
 - [ ] `package_test.bp`: with `includeErts: true` the release holds `erts-<vsn>/bin/erl`; with
-      `false` it does not; `release_text_test.bp`: the Dockerfile's runner stage is
-      `debian:bookworm-slim` with the ERTS copied, or the `erlang:<vsn>-slim` image without it —
-      the two texts differ only there
+      `false` it does not
+- [ ] `release_text_test.bp` asserts the two Dockerfile texts differ only in the runner `FROM`
+      line (`alpine:3.20` with ERTS, `erlang:<otpRelease>-alpine` without — the images
+      `docker.bp` and its snapshot use)
 
 ### Step 2 — `bin/onze`
 
-**Acceptance:**
 - [ ] the script runs `verifyBuildId` before the boot script and exits non-zero naming the
       mismatch when the manifest's id, the stamped id or the payload's differ (`package_test.bp`
       tampers each in a scratch release)
@@ -73,14 +71,12 @@ route plus the asset tree and `public/` into `<outDir>/export/`.
 
 ### Step 3 — the shutdown against real cells
 
-**Acceptance:**
 - [ ] `lifecycle.bp`'s five steps run over rakun's real cells (readiness down, the listener's
       stop/drain — rakun 11 and 62's `after()`) once they land; until then the recording double
       stays and the box is open, named "rakun 11 / 62 / 81"
 
 ### Step 4 — static export to disk and `examples/static-site/`
 
-**Acceptance:**
 - [ ] `static_export.bp` writes `<outDir>/export/<route>/index.html` for every prerendered route,
       the static asset tree under `_onze/static/<buildId>/` and `public/` copied; no boot script,
       no `releases/`
@@ -91,44 +87,27 @@ route plus the asset tree and `public/` into `<outDir>/export/`.
 
 ### Step 5 — the four gate boxes over the blog
 
-Run after 50 (`build` wired) and 53 (the blog complete); asserted by `package_test.bp` over the
-blog's real release in the gate's environment (a container runtime present).
+Run after 50 and 53; asserted by `package_test.bp` over the blog's real release in the gate's
+environment (a container runtime present).
 
-**Acceptance:**
-- [ ] `onze build` on the blog produces the release layout of 1.0.10's § Mechanism and `onze
-      start` boots it from a directory holding no source tree and no `botopink` binary, answering
-      `/` — hard failure while the sidecar-loading row is open, named as such
+- [ ] `onze build` on the blog produces the release layout of `docs.md` and `onze start` boots
+      it from a directory holding no source tree and no `botopink` binary, answering `/` — hard
+      failure while the sidecar-loading row is open, named as such
 - [ ] the build id is derived once and `verifyBuildId` passes across the release, the client
       manifest and the payload
 - [ ] the Dockerfile builds and the container runs as a non-root user on `PORT` (the gate's
       environment provides `docker` or `podman`; `00-gate` decides how a missing runtime reads)
 - [ ] `scanForSecrets` over the real release finds only the `ONZE_PUBLIC_` table 68 inlined
 
-### Step 6 — conditional on `53-b` (b) or (c): `release_text_test.bp` as snapshots
+### Step 6 — the release snapshots as `107-release`'s contract (53-b (c))
 
-Under (c) — the recommendation — the `.rel`, `vm.args`, `sys.config`, boot script and
-Dockerfile texts are recorded as `.snap` through `assertReleaseText` (the § 71 map), so
-`107-release` has a byte-for-byte contract to keep.
-
-**Acceptance:**
-- [ ] under (c): five `.snap` files under `modules/onze-release/test/__snapshots__/release/`,
-      identical on both rows; `107-release`'s README names them
-
-## Gate
-
-- [ ] `zig build test-libs` — `onze-release` 9+ on both rows; `static-site` green
-- [ ] `AGENTS.md` of every directory touched, updated in the same commit
-- [ ] Commit on `fix/71-onze-release-packaging`; no push, no merge — landing is the maintainer's
-      step
-
-## Blast radius
-
-Step 1 changes the Dockerfile text (`release_text_test` re-asserts). `107-release` extracts the
-renderers after this front, so the texts here are what it must reproduce.
+- [ ] `03-bundled-libs/107-release`'s README names the five `release/*.snap` as the text it must
+      reproduce (a hand-off: 107's file)
 
 ## Notes
 
-- Configuration at boot, not at build: no environment value enters the release (the 1.0.10
-  rule; step 5's last box proves it).
-- The ERTS copy is the reason the runner image can be distroless; without it the image is the
-  OTP one.
+- Step 1 changes `package.bp` only; the Dockerfile text and its snapshot stay. The map of § 71
+  is [`test-snap.md`](./test-snap.md).
+
+**Gate:** standard (fronts.md § Gate) +
+- [ ] `zig build test-libs` — `onze-release` 9+ on both rows; `static-site` green
