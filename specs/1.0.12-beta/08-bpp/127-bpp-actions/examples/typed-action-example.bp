@@ -1,0 +1,153 @@
+// Front 127 — bpp actions · examples/typed-action-example.bp
+// App files: src/actions/newsletter_api.bp (both targets) · src/actions/newsletter.bp (server)
+//            · src/components/newsletter.bp (the form)
+//
+// Demonstrates: an action whose input is validated and typed before the
+// function runs, from a form and from a scripted call, and whose answer is one
+// typed outcome on both sides.
+//
+//   export const server = {
+//     newsletter: defineAction({
+//       accept: "form",
+//       input: z.object({ email: z.email(), terms: z.boolean() }),
+//       handler: async ({ email, terms }, ctx) => {
+//         if (!ctx.cookies.has("user-session")) throw new ActionError({ code: "UNAUTHORIZED" });
+//         return { subscribed: email };
+//       },
+//     }),
+//   };
+//   const { data, error } = await actions.newsletter(formData);
+//   if (isInputError(error)) error.fields.email?.join(", ");
+//   <form method="POST" action={actions.newsletter}>
+//
+// Upstream: astro-docs/25-actions.md
+//           https://docs.astro.build/en/guides/actions/
+//
+// Target: the description is both; the implementation is erlang; the tests run
+// the server half.
+
+import html, {Element, ElementBase, renderToString} from "jhonstart";
+import {button, form, input, label, p} from "jhonstart";
+import {formAction, formAttrs, actionResult} from "jhonstart-forms";
+import {action, ActionContext, runAction, formCall, rpcCall} from "rakun-app";
+import {outcome: {ActionRef, ActionOutcome, ActionError, ActionErrorCode, actionRef}} from "actions";
+import {decorators: {schema, validated, email, trim, lowercased, stringbool}} from "validation";
+import {schemas, schemas.Schema, constraints, report.ValidationReport, report.Violation} from "validation";
+import {collections.Dict, json.Json} from "std";
+
+// ── src/actions/newsletter_api.bp — the description, both targets ───────────
+
+#[schema]
+#[validated]
+pub type Signup(
+    #[trim] #[lowercased] #[email] email: string,
+    // a checkbox: present as "on", absent when unchecked
+    #[stringbool] terms: bool,
+)
+
+#[schema]
+pub type Subscribed(email: string)
+
+// `actions.newsletter` — a name and two schemas. The browser imports this and
+// nothing of the implementation.
+pub fn newsletterAction() -> ActionRef<Signup, Subscribed> {
+    return actionRef("newsletter", schemaOfSignup(), schemaOfSubscribed());
+}
+
+// ── src/actions/newsletter.bp — the implementation, server only ─────────────
+
+// LANGUAGE GAP: a method's own `@Decl` has no parameter list — a decorator on
+// a function reads its return type and not its parameters, so it cannot read
+// `input`'s type; the type's name is the decorator's argument.
+#[action("Signup")]
+pub fn newsletter(input: Signup, ctx: ActionContext) -> @Task<@Result<Subscribed, ActionError>> {
+    // `ctx.cookies.has("user-session")`
+    if (ctx.cookie("user-session") == "") {
+        throw ActionError(code: ActionErrorCode.Unauthorized, message: "User must be logged in.");
+    }
+    if (input.terms == false) {
+        throw ActionError(code: ActionErrorCode.BadRequest, message: "The terms must be accepted.");
+    }
+    return Subscribed(email: input.email);
+}
+
+// ── src/components/newsletter.bp — the form ─────────────────────────────────
+
+// `<form method="POST" action={actions.newsletter}>` — works with scripting off.
+// After the post, the page reads the outcome: `Astro.getActionResult(...)`.
+pub fn NewsletterForm() -> @Component<ElementBase, Element> {
+    val result = use actionResult(newsletterAction());
+    val binding = formAction(newsletterAction());
+    return html """
+      <form {...formAttrs(binding)}>
+        <label for="email">E-mail</label>
+        <input id="email" required type="email" name="email" />
+        {if (result) { outcome -> <p class="status">{describe(outcome)}</p> }}
+        <label><input required type="checkbox" name="terms" /> I agree to the terms</label>
+        <button>Sign up</button>
+      </form>
+    """;
+}
+
+// `if (error) … else data` — exhaustive.
+fn describe(outcome: ActionOutcome<Subscribed>) -> string {
+    return case outcome {
+        Data(value) -> "Subscribed " + value.email;
+        InputError(fields) -> "Check: " + fields.keys().join(", ");
+        Failed(error) -> error.message;
+    };
+}
+
+// ── the server half, tested ─────────────────────────────────────────────────
+
+fn loggedIn() -> ActionContext {
+    return ActionContext.forTest(Dict.empty().insert("user-session", "s1"));
+}
+
+fn anonymous() -> ActionContext {
+    return ActionContext.forTest(Dict.empty());
+}
+
+test "a form post is bound, transformed and checked before the function runs" {
+    val out = await runAction(newsletterAction(), formCall("email=+Ana%40Example.com+&terms=on&__bp_action=a_1"), loggedIn());
+    assert describe(out) == "Subscribed ana@example.com";
+}
+
+test "a scripted call decodes the same type from JSON" {
+    val out = await runAction(newsletterAction(), rpcCall("""{"email": "ana@example.com", "terms": true}"""), loggedIn());
+    assert describe(out) == "Subscribed ana@example.com";
+}
+
+test "an invalid input is an InputError and the function is not called" {
+    val out = await runAction(newsletterAction(), formCall("email=nope&terms=on"), anonymous());
+    // anonymous() would make the function answer Unauthorized — it never ran.
+    val fields = case out { InputError(fields) -> fields.at("email").unwrapOr([]).join("|"); _ -> "not an input error"; };
+    assert fields == "must be a well-formed email address";
+}
+
+test "the framework's own form fields are not unknown keys" {
+    // `__bp_action` is dropped before `bindSignup` sees the pairs; a field the
+    // FORM invented is still refused (decision 144).
+    val out = await runAction(newsletterAction(), formCall("email=a%40b.c&terms=on&coupon=x"), loggedIn());
+    assert describe(out) == "Check: coupon";
+}
+
+fn codeName(code: ActionErrorCode) -> string {
+    return case code {
+        Unauthorized -> "unauthorized";
+        BadRequest -> "bad-request";
+        _ -> "other";
+    };
+}
+
+test "an ActionError carries its code to the caller" {
+    val out = await runAction(newsletterAction(), formCall("email=a%40b.c&terms=on"), anonymous());
+    val code = case out { Failed(error) -> codeName(error.code); _ -> "none"; };
+    assert describe(out) == "User must be logged in.";
+    assert code == "unauthorized";
+}
+
+test "an unchecked checkbox is false, and the function decides what that means" {
+    val out = await runAction(newsletterAction(), formCall("email=a%40b.c"), loggedIn());
+    assert describe(out) == "The terms must be accepted.";
+}

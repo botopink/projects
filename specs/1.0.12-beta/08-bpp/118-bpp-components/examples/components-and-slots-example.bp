@@ -1,0 +1,167 @@
+// Front 118 — bpp components · examples/components-and-slots-example.bp
+//
+// Demonstrates: step 4 — components, props, slots. There is no props object and
+// no `Astro.props`: a component is a function, an attribute is a labelled
+// argument, a prop default is a parameter default, and a slot is a parameter of
+// type `Children`.
+//
+//   ---
+//   interface Props { name: string; greeting?: string }
+//   const { greeting = "Hello", name } = Astro.props;
+//   ---
+//   <h2>{greeting}, {name}!</h2>
+//
+//   <div id="content-wrapper">
+//     <slot name="after-header" />
+//     <slot />
+//     <slot name="after-footer"><p>fallback</p></slot>
+//   </div>
+//
+// Upstream: astro-docs/09-astro-components.md (Props do Componente, Slots,
+//           Slots Nomeados, Conteúdo de Fallback, Transferindo Slots)
+//           astro-docs/10-layouts.md (Layouts Aninhados)
+//           https://docs.astro.build/en/basics/astro-components/
+//
+// Target: both.
+
+import html, {hasContent, Element, ElementBase, Children, renderToString} from "jhonstart";
+import {article, aside, body, div, footer, h1, h2, head, header, htmlTag, li, main, p, small, title, ul} from "jhonstart";
+
+// ── props ───────────────────────────────────────────────────────────────────
+
+// `greeting?: string` with a default is a parameter with a default.
+pub fn GreetingHeadline(name: string, greeting: string = "Hello") -> Element {
+    return html """<h2>{greeting}, {name}!</h2>""";
+}
+
+pub fn ButtonGroup() -> Element {
+    // `<GreetingHeadline name="Partner" />` is `GreetingHeadline(name: "Partner")`.
+    return html """
+      <div>
+        <GreetingHeadline name="Partner" />
+        <GreetingHeadline greeting="Howdy" name="Partner" />
+      </div>
+    """;
+}
+
+// ── slots ───────────────────────────────────────────────────────────────────
+
+// `children` is the default slot. A named slot is a parameter of its name. A
+// slot's fallback is what the `<slot>` tag wraps.
+pub fn Wrapper(
+    heading: string,
+    children: Children = [],
+    afterHeader: Children = [],
+    afterFooter: Children = [],
+) -> Element {
+    return html """
+      <div id="content-wrapper">
+        <header><h1>{heading}</h1></header>
+        <slot name="afterHeader" />
+        <slot />
+        <footer>
+          <slot name="afterFooter"><small>no footer given</small></slot>
+        </footer>
+        {if (hasContent(afterHeader)) { <aside>this page has a sub-header</aside> }}
+      </div>
+    """;
+}
+
+pub fn Page() -> Element {
+    // A child with `slot="afterHeader"` goes to that parameter; every other
+    // child goes to `children`. Slot names are parameter names, so camelCase.
+    return html """
+      <Wrapper heading="Fred's Page">
+        <p slot="afterHeader">All about Fred</p>
+        <h2>All about Fred</h2>
+        <p>Here is some stuff about Fred.</p>
+      </Wrapper>
+    """;
+}
+
+// ── nested layouts: a slot handed on ────────────────────────────────────────
+
+pub fn BaseLayout(children: Children = [], headExtra: Children = []) -> Element {
+    return html """
+      <htmlTag lang="en">
+        <head><title>Site</title><slot name="headExtra" /></head>
+        <body><slot /></body>
+      </htmlTag>
+    """;
+}
+
+pub fn HomeLayout(children: Children = [], headExtra: Children = []) -> Element {
+    // Astro: `<slot name="head" slot="head" />` — read my slot, fill theirs.
+    return html """
+      <BaseLayout>
+        <slot name="headExtra" slot="headExtra" />
+        <main><slot /></main>
+      </BaseLayout>
+    """;
+}
+
+// ── recursion: Astro.self ───────────────────────────────────────────────────
+
+type Tree(label: string, kids: Array<Tree>)
+
+// A component calls itself by its own name; there is no `Astro.self`.
+pub fn NestedList(items: Array<Tree>) -> Element {
+    return html """
+      <ul class="nested-list">
+        {items.map({ item ->
+          <li>
+            {item.label}
+            {if (item.kids.length > 0) { <NestedList items={item.kids} /> }}
+          </li>
+        })}
+      </ul>
+    """;
+}
+
+test "a prop left out takes the parameter's default" {
+    val markup = renderToString(ButtonGroup());
+    assert markup == "<div><h2>Hello, Partner!</h2><h2>Howdy, Partner!</h2></div>";
+}
+
+test "named children go to their slot, the rest to the default slot" {
+    val markup = renderToString(Page());
+    assert markup.indexOf("<p>All about Fred</p>") < markup.indexOf("<h2>All about Fred</h2>");
+    assert markup.contains("<aside>this page has a sub-header</aside>");
+}
+
+test "an empty slot renders its fallback" {
+    val markup = renderToString(Page());
+    assert markup.contains("<footer><small>no footer given</small></footer>");
+}
+
+test "a slot is handed through two layouts" {
+    val page = html """
+      <HomeLayout>
+        <title slot="headExtra">Home</title>
+        <p>content</p>
+      </HomeLayout>
+    """;
+    val markup = renderToString(page);
+    assert markup.contains("<head><title>Site</title><title>Home</title></head>");
+    assert markup.contains("<body><main><p>content</p></main></body>");
+}
+
+test "a component renders itself to any depth" {
+    val tree = [
+        Tree(label: "A", kids: []),
+        Tree(label: "B", kids: [Tree(label: "B1", kids: []), Tree(label: "B2", kids: [])]),
+    ];
+    val markup = renderToString(NestedList(tree));
+    assert markup.contains("<li>B<ul class=\"nested-list\"><li>B1</li><li>B2</li></ul></li>");
+}
+
+// What does not compile:
+//
+//   <Wrapper heading="x"><p slot="sidebar">…</p></Wrapper>
+//     error: 'Wrapper' has no parameter 'sidebar'       the checker's own error, at the tag
+//
+//   <div><p slot="footer">…</p></div>
+//     error: `slot` names a parameter of a component; `div` is an element
+//
+//   <Missing />
+//     error: unbound name 'Missing'                     at the tag

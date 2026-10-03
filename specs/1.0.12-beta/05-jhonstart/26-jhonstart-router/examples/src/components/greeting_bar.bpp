@@ -1,0 +1,38 @@
+---
+// Front 26 — jhonstart-router · examples/src/components/greeting_bar.bpp
+//
+// The greeting bar of `request-scope-example.bp`, as a `.bpp` component: it
+// reads the reader's locale from a cookie and whether they are signed in from a
+// header.
+//
+// `use request()` is a statement of the fence, so it is a statement of the
+// emitted `GreetingBar()` — a component, where a hook may be used. `greetingFor`
+// is a `fn`, so it is a function of the module.
+//
+// Nothing read here may cross to the client: the `authorization` header decides
+// what to render and is never handed to a client component as a prop.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/api-reference/functions/cookies
+//   https://nextjs.org/docs/app/api-reference/functions/headers
+
+import {header, span} from "jhonstart";
+import {request} from "jhonstart";
+
+fn greetingFor(locale: string) -> string {
+    return case locale {
+        "pt-BR" -> "Bem-vindo";
+        "es" -> "Bienvenido";
+        _ -> "Welcome";
+    };
+}
+
+val req = use request();
+val signedIn = req.header("authorization") != "";
+val greeting = greetingFor(req.cookie("locale"));
+val label = if (signedIn) { greeting + " back" } else { greeting };
+---
+<header class="bar">
+  <span class="greeting">{label}</span>
+  <span class="crumb">{req.path}</span>
+</header>

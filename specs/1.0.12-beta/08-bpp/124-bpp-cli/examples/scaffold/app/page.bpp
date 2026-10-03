@@ -1,0 +1,25 @@
+---
+// Front 124 — bpp CLI · examples/scaffold/app/page.bpp
+//
+// Demonstrates: step 5 — the home page `onze create --example bpp` writes. The
+// scaffold's posts are a content collection (front 121), so the page that lists
+// them is four lines of fence and a template.
+//
+// `onze build` counts this file in its `scan` line (the shape of
+// `sync-and-build-session-example.md`), and `onze start` serves it at `/`.
+//
+// Upstream: astro-docs/03-install-and-setup.md · astro-docs/04-project-structure.md
+//           https://docs.astro.build/en/install-and-setup/
+
+import {a, h1, li, p, ul} from "jhonstart";
+import {collections: {getCollectionWhere}} from "onze-content";
+import {site} from "onze";
+import {content.blog};
+
+val posts = await getCollectionWhere(blog(), { entry -> entry.data.draft == false });
+---
+<h1>Notes</h1>
+<p>Served from {site()}.</p>
+<ul>
+  {posts.map({ post -> <li><a href={"/blog/" + post.id}>{post.data.title}</a></li> })}
+</ul>

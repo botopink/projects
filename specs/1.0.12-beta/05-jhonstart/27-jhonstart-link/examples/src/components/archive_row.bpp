@@ -1,0 +1,27 @@
+---
+// Front 27 — jhonstart-link · examples/src/components/archive_row.bpp
+//
+// One row of the archive of `post-list-links-example.bp`, as a `.bpp`
+// component. `Link` takes a `LinkProps` record and its children, so it is
+// called in a hole — a component TAG is a call with labelled arguments, and
+// `Link`'s parameters are not attributes. The props are built in the fence.
+//
+// `withPrefetch(…, false)` is the point of the row. Two hundred of these in a
+// viewport would queue two hundred route requests, which is the case the
+// upstream doc names; the server renders `data-jh-prefetch="0"` and the browser
+// half leaves the link alone.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/api-reference/components/link
+
+import {li} from "jhonstart";
+import {Link, linkProps, withPrefetch} from "jhonstart-link";
+import {lib.blog.Post};
+
+type Props(post: Post)
+
+val to = withPrefetch(linkProps("/blog/" + post.slug), false);
+---
+<li class="archive-row">
+  {Link(to, [post.title])}
+</li>

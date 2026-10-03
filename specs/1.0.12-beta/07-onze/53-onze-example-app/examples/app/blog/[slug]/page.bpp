@@ -1,0 +1,92 @@
+---
+// Front 53 — onze example app · examples/app/blog/[slug]/page.bpp
+//
+// The dynamic segment of `blog-slug-page-example.bp`, as a `.bpp` file — where
+// five fronts meet on one value. The route `blog/[slug]` is this file's
+// directory; `params` is bound because it has a bracket segment.
+//
+// What is a DECLARATION here stays at module level, where the fronts that read
+// it look:
+//   - `pub val segment` — front 60's segment configuration;
+//   - `pub fn blogStaticParams` and `pub val staticParams` — every value the
+//     segment can take, called once at build time;
+//   - `pub fn generateMetadata` / `pub fn postMetadata` — front 32's head.
+// What is a STATEMENT is the page's body: find the post, raise the 404, render.
+//
+// `notFound()` unwinds to the nearest boundary — `not-found.bpp`, beside this
+// file. LANGUAGE GAP: there is no bottom type, so a value is still owed after
+// the `if`; `missingPost` is that value and is unreachable.
+//
+// Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/dynamic-routes
+//           https://nextjs.org/docs/app/api-reference/functions/generate-static-params
+//           https://nextjs.org/docs/app/api-reference/functions/not-found
+
+import {article, h1, p, timeTag} from "jhonstart";
+import {notFound} from "jhonstart";
+import {Metadata, OpenGraph, TwitterCard, Icons, pairValue} from "jhonstart";
+import {emilia, Token} from "emilia";
+import {registerSegmentConfig, registerStaticParams, SegmentConfig, DynamicMode, FetchCache, StaticParams, ParamBinding} from "rakun";
+import {lib.db.Post, lib.db.findPost, lib.db.listPosts, lib.db.missingPost};
+
+fn titleTokens() -> Token[] {
+    return [.Text.Size.X3xl, .Text.Bold, .Color.Gray.900];
+}
+
+fn metaTokens() -> Token[] {
+    return [.Text.Size.Sm, .Color.Gray.500];
+}
+
+fn bodyTokens() -> Token[] {
+    return [.Pad.Y.4, .Color.Gray.700];
+}
+
+// front 60 — the seeded posts are prerendered at build time and refreshed
+// hourly; a slug that appears later is rendered on demand.
+pub val segment = registerSegmentConfig("blog/[slug]", SegmentConfig(
+    dynamic: DynamicMode.Auto,
+    dynamicParams: true,
+    revalidate: 3600,
+    fetchCache: FetchCache.Auto,
+));
+
+pub fn blogStaticParams() -> @Task<StaticParams[]> {
+    return listPosts().map({ post ->
+        StaticParams(bindings: [ParamBinding(name: "slug", value: post.slug)]);
+    });
+}
+
+pub val staticParams = registerStaticParams("blog/[slug]", blogStaticParams);
+
+// front 32 — the head for this route, merged over the root layout's.
+pub fn generateMetadata(params: Array<#(string, string)>) -> @Task<Metadata> {
+    val slug = pairValue(params, "slug");
+    return postMetadata(findPost(slug).first().unwrapOr(missingPost(slug)));
+}
+
+pub fn postMetadata(post: Post) -> Metadata {
+    return Metadata(
+        title: post.title,
+        titleTemplate: "",
+        description: post.excerpt,
+        openGraph: OpenGraph(
+            title: post.title,
+            description: post.excerpt,
+            url: "https://example.dev/blog/" + post.slug,
+            ogType: "article",
+            siteName: "",
+            images: ["/blog/" + post.slug + "/opengraph-image"],
+        ),
+        twitter: TwitterCard(card: "summary_large_image", title: post.title, description: post.excerpt, images: []),
+        icons: Icons(icon: "", apple: ""),
+    );
+}
+
+val found = findPost(params.slug);
+if (found.isEmpty()) { notFound(); }
+val post = found.first().unwrapOr(missingPost(params.slug));
+---
+<article>
+  <h1 class={emilia(titleTokens())}>{post.title}</h1>
+  <timeTag datetime={post.published} class={emilia(metaTokens())}>{post.published}</timeTag>
+  <p class={emilia(bodyTokens())}>{post.body}</p>
+</article>

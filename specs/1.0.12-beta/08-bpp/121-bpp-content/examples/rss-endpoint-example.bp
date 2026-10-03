@@ -1,0 +1,69 @@
+// Front 121 — bpp content · examples/rss-endpoint-example.bp
+// App file: src/app/rss.xml/route.bp
+//
+// Demonstrates: step 5 — a feed, as a static file endpoint. The directory's name
+// carries the extension (front 117 step 4), so the route is `/rss.xml` and a
+// prerendered build writes `rss.xml` to disk.
+//
+//   // src/pages/rss.xml.js
+//   export async function GET(context) {
+//     const posts = await getCollection("blog");
+//     return rss({ title: "…", description: "…", site: context.site,
+//                  items: posts.map((post) => ({ title: post.data.title, link: `/blog/${post.id}/` })) });
+//   }
+//
+// Upstream: astro-docs/04-project-structure.md (`src/pages/rss.xml.js`)
+//           astro-docs/16-endpoints.md (Endpoints de Arquivo Estático)
+//           https://docs.astro.build/en/recipes/rss/
+//
+// Target: erlang (server).
+
+import {Request} from "rakun";
+import {getRoute, HandlerResponse} from "rakun";
+import {rkTestRequest} from "rakun-web";
+import {collections: {getCollection}, feeds: {RssFeed, RssItem, rssFeed}} from "onze-content";
+import {site} from "onze";                 // `site` in onze.json — front 124; `https://example.dev` in these tests
+import {content.blog};
+import {io.clock} from "std";
+
+// No `pub val prerender` (decision 202). Decision 222 rules that a route handler
+// is always server and never prerendered, so writing this feed to a static file
+// contradicts it; pending the maintainer (117 step 4).
+
+#[getRoute("rss.xml")]
+pub fn feed(req: Request) -> @Task<HandlerResponse> {
+    val posts = await getCollection(blog());
+    val items = posts.map({ post ->
+        RssItem(
+            title: post.data.title,
+            description: post.data.description,
+            link: site() + "/blog/" + post.id,
+            pubDate: clock.formatIso8601(post.data.pubDate),
+        );
+    });
+    val body = rssFeed(RssFeed(
+        title: "Notes",
+        description: "A blog about <rendering> & such",
+        site: site(),
+        items: items,
+    ));
+    val res = HandlerResponse.withStatus(200, body);
+    return res.withHeader("content-type", "application/rss+xml; charset=utf-8");
+}
+
+test "content: the feed is one channel with one item per entry" {
+    val res = await feed(rkTestRequest("GET", "/rss.xml"));
+    assert res.status == 200;
+    assert res.body.startsWith("<?xml version=\"1.0\" encoding=\"UTF-8\"?><rss version=\"2.0\">");
+    assert res.body.split("<item>").length - 1 == 2;
+}
+
+test "content: text is escaped — a description cannot close its element" {
+    val res = await feed(rkTestRequest("GET", "/rss.xml"));
+    assert res.body.contains("<description>A blog about &lt;rendering&gt; &amp; such</description>");
+}
+
+test "content: links are absolute, from the configured site" {
+    val res = await feed(rkTestRequest("GET", "/rss.xml"));
+    assert res.body.contains("<link>https://example.dev/blog/hello-world</link>");
+}

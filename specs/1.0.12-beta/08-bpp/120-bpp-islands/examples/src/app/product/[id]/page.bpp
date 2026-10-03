@@ -1,0 +1,36 @@
+---
+// Front 120 — bpp islands · examples/src/app/product/[id]/page.bpp
+//
+// Demonstrates: step 4 in a `.bpp` page — a server island. The page is the same
+// for every visitor, so it is prerendered; the avatar depends on the visitor's
+// session, so it is NOT in the page. `server:defer` leaves the fallback in the
+// markup and the browser fetches the component from its own endpoint.
+//
+//   <Avatar server:defer>
+//     <GenericAvatar slot="fallback" />
+//   </Avatar>
+//
+// The page reads nothing from the request — `cookies()` is called inside
+// `Avatar`, in the ISLAND's request — so the page reaches no `#[serverOnly]`
+// hook and `#[page]` prerenders it at comptime (decision 202).
+//
+// `Avatar` is a `.bp` module: `#[deferred]` is a decorator on its function (see
+// `src/app/page.bpp` of this tree for why). `GenericAvatar` needs none, and is a
+// `.bpp` component.
+//
+// The `.bp` form of this page, with its tests: `page` in
+// `server-island-example.bp` at the root of `examples/`.
+//
+// Upstream: astro-docs/22-server-islands.md
+//           https://docs.astro.build/en/guides/server-islands/
+
+import {h1} from "jhonstart";
+import {components.Avatar};
+import {components.GenericAvatar};
+
+val id = params.id;
+---
+<h1>Product {id}</h1>
+<Avatar size={48} server:defer>
+  <GenericAvatar size={48} slot="fallback" />
+</Avatar>

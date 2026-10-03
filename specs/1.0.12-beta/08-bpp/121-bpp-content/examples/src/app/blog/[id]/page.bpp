@@ -1,0 +1,64 @@
+---
+// Front 121 — bpp content · examples/src/app/blog/[id]/page.bpp
+//
+// Demonstrates: steps 4–5 in a `.bpp` page — one entry, rendered. `render(post)`
+// answers an `Element` tree, and an `Element` in a hole is spliced as it is:
+// `{rendered.content}` is Astro's `<Content />`.
+//
+//   ---
+//   export async function getStaticPaths() {
+//     const posts = await getCollection("blog");
+//     return posts.map((post) => ({ params: { id: post.id }, props: { post } }));
+//   }
+//   const { post } = Astro.props;
+//   const { Content } = await render(post);
+//   ---
+//   <h1>{post.data.title}</h1>
+//   <Content />
+//
+// `staticPaths` is `pub`, so it stays at module level for the scan; `missing`
+// is a `fn`, so it is a function of the module too. Everything from `val found`
+// down is the body of the function the file unfolds to (front 116; its `route`
+// parameter is open question `bpp-g`).
+//
+// The `.bp` form of this page, with its tests: `blogPost` in
+// `content-collection-example.bp` at the root of `examples/`.
+//
+// Upstream: astro-docs/15-content-collections.md (Gerando Rotas a partir de
+//           Conteúdo, Renderizando conteúdo do body)
+//           https://docs.astro.build/en/guides/content-collections/#generating-routes-from-content
+
+import {a, article, h1, p} from "jhonstart";
+import {notFound} from "jhonstart";
+import {collections: {Entry, getCollection, getEntry, render}} from "onze-content";
+import {StaticPath, staticPath} from "onze";
+import {content.blog, content.authors, content.BlogPost};
+import {json.Json, io.clock} from "std";
+
+pub fn staticPaths() -> @Task<Array<StaticPath>> {
+    val posts = await getCollection(blog());
+    return posts.map({ post -> staticPath([#("id", post.id)], Json.Null) });
+}
+
+fn missing() -> Entry<BlogPost> {
+    return Entry(
+        id: "",
+        collection: "blog",
+        data: BlogPost(title: "", description: "", pubDate: clock.nowMillis(), updatedDate: null, draft: true, author: ""),
+        body: "",
+        filePath: "",
+    );
+}
+
+val found = await getEntry(blog(), params.id);
+if (found == null) { notFound(); }
+val post = found ?? missing();
+val rendered = render(post);
+// `reference("authors")` — the id in the frontmatter, resolved to its entry.
+val by = await getEntry(authors(), post.data.author);
+---
+<article>
+  <h1>{post.data.title}</h1>
+  {if (by) { author -> <p>By <a href={author.data.portfolio}>{author.data.name}</a></p> }}
+  {rendered.content}
+</article>

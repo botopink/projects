@@ -1,0 +1,26 @@
+---
+// Front 117 — bpp routing · examples/src/app/partials/clicked/page.bpp
+//
+// Demonstrates: step 4 in a `.bpp` page — a page partial. It is routed like any
+// page (`/partials/clicked`) and rendered WITHOUT its layout chain and without
+// the document shell: no doctype, no <head>, no payload script. The response is
+// the markup below and nothing around it.
+//
+//   ---
+//   export const partial = true;
+//   ---
+//   <li>I'm a partial!</li>
+//
+// The `.bp` form of this page, with its tests: `partial-and-endpoint-example.bp`
+// at the root of `examples/`. The endpoint of that example has no `.bpp` form:
+// a `route.bp` answers a `HandlerResponse`, and has no template to put after a
+// fence.
+//
+// Upstream: astro-docs/07-astro-pages.md (Page Partials)
+//           https://docs.astro.build/en/basics/astro-pages/#page-partials
+
+import {li} from "jhonstart";
+
+pub val partial = true;
+---
+<li>I'm a partial!</li>

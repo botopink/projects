@@ -1,0 +1,162 @@
+// Front 53 — onze example app · examples/app-tree-example.bp
+// App files: app/layout.bp · app/page.bp · app/blog/** · app/(marketing)/about/page.bp
+//
+// A realistic `app/` tree, and the `layout.bp` / `page.bp` bodies that populate it.
+// Everything below runs on BEAM: a layout and a page are server render functions.
+// The decorators, `PageContext` and `LayoutProps` are jhonstart front 30's; at
+// boot onze (front 49) copies the UI records into rakun front 22's route table
+// and hands rakun one renderer per page (decision 114). The route table is the
+// one artifact that also reaches the browser, matched there by the bundled
+// library `routing` (decision 115) — the same matcher rakun runs.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/getting-started/project-structure
+//   https://nextjs.org/docs/app/getting-started/layouts-and-pages
+//   https://nextjs.org/docs/app/api-reference/file-conventions/dynamic-routes
+//   https://nextjs.org/docs/app/api-reference/file-conventions/route-groups
+//
+// The tree this file stands in for — `appDir` is config (front 05), so it is
+// `app/` or `src/app/`, and the decorator argument is relative to whichever:
+//
+//   app/
+//   |-- layout.bp                 -> #[layout("")]                  wraps everything
+//   |-- page.bp                   -> #[page("")]                    /
+//   |-- blog/
+//   |   |-- layout.bp             -> #[layout("blog")]              wraps /blog and below
+//   |   |-- page.bp               -> #[page("blog")]                /blog
+//   |   |-- [slug]/
+//   |   |   `-- page.bp           -> #[page("blog/[slug]")]         /blog/:slug
+//   |   `-- _drafts/              private: skipped by the scan, never registered
+//   `-- (marketing)/
+//       `-- about/
+//           `-- page.bp           -> #[page("(marketing)/about")]   /about
+//
+// Each of those files is one botopink module; the CLI (front 50) generates the
+// `pub mod` lines and the decorator argument from the file's own location, and
+// fails the scan when the two disagree. They are gathered into one file here so
+// the example is one compilable unit.
+
+import {Element, bracketPair, div, h1, p, ul, li, text, renderToString} from "jhonstart";
+import {page, layout, PageContext, LayoutProps} from "jhonstart";   // front 30
+import {collections.Dict} from "std";
+
+// LANGUAGE GAP: `@Decl` carries no source location, so a decorator cannot read the file it
+// annotates; the app-relative directory has to be passed as an argument. With `decl.source()`
+// these would all be a bare `#[page]` / `#[layout]`.
+
+// ---- app/layout.bp — the root layout ------------------------------------------
+//
+// The root layout is the one segment every request passes through. `props.children`
+// is the subtree the router already rendered: the next layout down, or the page.
+
+#[layout("")]
+pub fn rootLayout(props: LayoutProps) -> @Component<ElementBase, Element> {
+    val header = div([h1([text("onze", attrs: [])], attrs: [])], attrs: [
+        bracketPair("data-jh-chrome", "header"),
+    ]);
+    return div([header, props.children], attrs: [bracketPair("data-jh-root", "")]);
+}
+
+// ---- app/blog/layout.bp — a segment layout ------------------------------------
+//
+// Wraps /blog and everything under it. It is NOT re-rendered when the client
+// navigates between two routes that share it — that is the difference between
+// `layout.bp` and `template.bp`, and jhonstart front 30 owns the distinction.
+
+#[layout("blog")]
+pub fn blogLayout(props: LayoutProps) -> @Component<ElementBase, Element> {
+    val crumb = p([text("Blog", attrs: [])], attrs: []);
+    return div([crumb, props.children], attrs: [bracketPair("data-jh-seg", "blog")]);
+}
+
+// ---- app/page.bp — the home page ----------------------------------------------
+//
+// Every page, layout and template is `fn … -> @Component<ElementBase, Element>`
+// (decision 117): jhonstart's registry pins one shape, and the marker refuses any
+// other at compile time. A page that needs no data awaits nothing and costs nothing.
+
+fn recentSlugs() -> @Task<string[]> {
+    return ["hello-world", "beam-renders-the-server"];
+}
+
+#[page("")]
+pub fn homePage(route: PageContext) -> @Component<ElementBase, Element> {
+    val slugs = await recentSlugs();
+    val items = slugs.map({ s -> li([text(s, attrs: [])], attrs: []) });
+    return div([
+        h1([text("Recent posts", attrs: [])], attrs: []),
+        ul(items, attrs: []),
+    ], attrs: []);
+}
+
+// ---- app/blog/page.bp — the blog index ----------------------------------------
+
+#[page("blog")]
+pub fn blogIndexPage(route: PageContext) -> @Component<ElementBase, Element> {
+    val slugs = await recentSlugs();
+    val items = slugs.map({ s -> li([text(s, attrs: [])], attrs: []) });
+    return ul(items, attrs: [bracketPair("data-jh-list", "posts")]);
+}
+
+// ---- app/blog/[slug]/page.bp — a dynamic segment ------------------------------
+//
+// `blogPostPageParams` is emitted by the `#[page]` decorator from the bracket
+// segments of its own argument — the `PageProps<'/blog/[slug]'>` equivalent.
+
+fn postBody(slug: string) -> @Task<string> {
+    return "The body of " + slug + ", loaded on the server.";
+}
+
+#[page("blog/[slug]")]
+pub fn blogPostPage(route: PageContext) -> @Component<ElementBase, Element> {
+    val params = blogPostPageParams(route);
+    val body = await postBody(params.slug);
+    return div([
+        h1([text(params.slug, attrs: [])], attrs: []),
+        p([text(body, attrs: [])], attrs: []),
+    ], attrs: [bracketPair("data-jh-seg", "post")]);
+}
+
+// ---- app/(marketing)/about/page.bp — a route group ----------------------------
+//
+// `(marketing)` is transparent to the URL: this page answers `/about`, not
+// `/marketing/about`. The group still owns its own layout subtree, which is how
+// `§ 5. Multiple Root Layouts` is expressed.
+
+#[page("(marketing)/about")]
+pub fn aboutPage(route: PageContext) -> @Component<ElementBase, Element> {
+    return div([
+        h1([text("About", attrs: [])], attrs: []),
+        p([text("Rendered on BEAM, like every page in this tree.", attrs: [])], attrs: []),
+    ], attrs: []);
+}
+
+// ---- what the tree renders ------------------------------------------------------
+//
+// The table records these decorators produce reach rakun at boot (onze front 49);
+// rakun front 22's `page-registry-example.bp` asserts the table itself. Here the
+// jhonstart side is asserted: the page and the layouts render as the router
+// composes them.
+
+fn route(pattern: string, slug: string) -> PageContext {
+    return PageContext(
+        pathname: "/blog/" + slug,
+        pattern: pattern,
+        params: Dict.empty().insert("slug", slug),
+        rest: [],
+    );
+}
+
+test "a dynamic page reads its segment through the emitted accessor" {
+    val tree = await blogPostPage(route("/blog/[slug]", "hello-world"));
+    assert renderToString(tree).contains("hello-world");
+}
+
+test "the root layout wraps the blog layout, which wraps the page" {
+    val leaf = await blogPostPage(route("/blog/[slug]", "hello-world"));
+    val inner = await blogLayout(LayoutProps(route: route("/blog/[slug]", "hello-world"), children: leaf, slots: Dict.empty()));
+    val outer = await rootLayout(LayoutProps(route: route("/blog/[slug]", "hello-world"), children: inner, slots: Dict.empty()));
+    val markup = renderToString(outer);
+    assert markup.indexOf("onze") < markup.indexOf("Blog");
+    assert markup.indexOf("Blog") < markup.indexOf("hello-world");
+}

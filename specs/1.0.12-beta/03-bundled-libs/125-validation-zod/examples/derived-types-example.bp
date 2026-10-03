@@ -1,0 +1,90 @@
+// Front 125 — validation: Zod's feature set · examples/derived-types-example.bp
+//
+// Demonstrates: step 5 — `.pick`, `.omit`, `.partial`, `.required` and
+// `.extend`. In Zod these answer a new schema at run time. Here a marker on the
+// source type makes the decorator EMIT the derived record, with its own
+// `#[schema]` functions, so the derived type is a type like any other: it is
+// imported, constructed and matched by name.
+//
+//   const JustTheTitle  = Recipe.pick({ title: true });
+//   const NoDescription = Recipe.omit({ description: true });
+//   const RecipePatch   = Recipe.partial();
+//   const DogWithBreed  = Dog.extend({ breed: z.string() });
+//
+// Upstream: ZOD_DOCUMENTATION.md § 4.17 (`.extend()`, `.pick()` / `.omit()`,
+//           `.partial()`, `.required()`) — https://zod.dev/api#objects
+//
+// Target: both.
+
+import {decorators: {schema, pick, omit, partial, extending}} from "validation";
+import {schemas, schemas.Schema, report.ValidationReport, report.Violation} from "validation";
+
+#[schema]
+#[pick("RecipeTitle", "title")]
+#[omit("RecipeBrief", "description")]
+#[partial("RecipePatch")]
+pub type Recipe(
+    title: string,
+    description: ?string,
+    ingredients: Array<string>,
+)
+
+// What the three markers emit, written out:
+//
+//   #[schema] pub type RecipeTitle(title: string)
+//   #[schema] pub type RecipeBrief(title: string, ingredients: Array<string>)
+//   #[schema] pub type RecipePatch(title: ?string, description: ?string, ingredients: ?Array<string>)
+//
+// each with its own parse / decode / schemaOf functions.
+
+// `.extend({ breed })`. The language's `mergeRecords(Dog, Breed)` answers an
+// anonymous record type, which no decorator can annotate.
+//
+// LANGUAGE GAP: a derived record type has no name a decorator can be attached
+// to, so the wider record is declared in full and `#[extending]` checks that it
+// repeats every field of the one it extends, with the same type.
+#[schema]
+pub type Dog(name: string, age: ?i32)
+
+#[schema]
+#[extending("Dog")]
+pub type DogWithBreed(name: string, age: ?i32, breed: string)
+
+// A PATCH handler is where a partial type earns its place: only the keys the
+// client sent are applied, with the record's own update form.
+pub fn applyPatch(recipe: Recipe, patch: RecipePatch) -> Recipe {
+    val title = patch.title ?? recipe.title;
+    val ingredients = patch.ingredients ?? recipe.ingredients;
+    return Recipe(..recipe, title: title, ingredients: ingredients);
+}
+
+test "validation: a picked type declares only what was picked" {
+    val t = try decodeRecipeTitle("""{"title": "Feijoada"}""");
+    assert t.title == "Feijoada";
+    assert decodeRecipeTitle("""{"title": "Feijoada", "ingredients": []}""").isError();
+}
+
+test "validation: an omitted field is gone from the type and from the decoder" {
+    val brief = try decodeRecipeBrief("""{"title": "Feijoada", "ingredients": ["feijão"]}""");
+    assert brief.ingredients.length == 1;
+}
+
+test "validation: every field of a partial type may be absent" {
+    val patch = try decodeRecipePatch("""{"title": "Feijoada completa"}""");
+    assert patch.title == "Feijoada completa";
+    assert patch.ingredients == null;
+}
+
+test "validation: a patch changes what it names and nothing else" {
+    val before = Recipe(title: "Feijoada", description: null, ingredients: ["feijão"]);
+    val patch = try decodeRecipePatch("""{"title": "Feijoada completa"}""");
+    val after = applyPatch(before, patch);
+    assert after.title == "Feijoada completa";
+    assert after.ingredients.length == 1;
+}
+
+test "validation: the extended record decodes the base's fields and its own" {
+    val dog = try decodeDogWithBreed("""{"name": "Yeller", "breed": "mix"}""");
+    assert dog.breed == "mix";
+    assert dog.age == null;
+}

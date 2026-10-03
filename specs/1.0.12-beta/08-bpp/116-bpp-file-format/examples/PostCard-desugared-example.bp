@@ -1,0 +1,63 @@
+// Front 116 — bpp file format · examples/PostCard-desugared-example.bp
+//
+// Demonstrates: what `PostCard.bpp` IS. This module is what the toolchain
+// unfolds it to (decisions 198, 199), written by hand so it can be read and
+// compiled; the two files compile to the same thing. Nothing here is syntax
+// the parser does not already have: the marked pieces are what the unfold
+// adds — the import of the default function, the function header, the
+// `return html """ … """;` — and the rest is the author's header and markup,
+// each at its own place in the `.bpp`.
+//
+// Target: both.
+
+// [the unfold: the default function of the package the manifest names] -------
+import html, {Element, Children, renderToString} from "jhonstart";
+
+// [the header's declarations → the module, as written] -----------------------
+import {article, h2, p, timeTag, footer} from "jhonstart";
+import {lib.db.Post};
+
+type Props(
+    post: Post,
+    featured: bool = false,
+    children: Children = [],
+)
+
+// [the unfold: the function] — named after the file; it takes `Props` because
+// the header declares one (decision 199).
+pub default fn PostCard(props: Props) -> Element {
+    // [the header's statements → the body, in order, at their own places]
+    val date = props.post.published;
+    val kind = if (props.featured) { "card featured" } else { "card" };
+
+    // [the literal] — the bytes after the second `---` line, at their own offset
+    return html """
+<article class={kind}>
+  <h2>{props.post.title}</h2>
+  <timeTag datetime={date}>{date}</timeTag>
+  <p>{props.post.excerpt}</p>
+  <footer><slot>Read more</slot></footer>
+</article>
+""";
+}
+
+fn sample() -> Post {
+    return Post(slug: "hello", title: "Hello", published: "2026-01-04", excerpt: "First.", body: "");
+}
+
+test "the component renders its props" {
+    val markup = renderToString(PostCard(Props(post: sample())));
+    assert markup.contains("<article class=\"card\">");
+    assert markup.contains("<h2>Hello</h2>");
+}
+
+test "a prop left out takes Props' default, and the slot its fallback" {
+    val markup = renderToString(PostCard(Props(post: sample())));
+    assert markup.contains("<footer>Read more</footer>");
+}
+
+test "a caller fills the default slot" {
+    val markup = renderToString(PostCard(Props(post: sample(), featured: true, children: ["Continue"])));
+    assert markup.contains("class=\"card featured\"");
+    assert markup.contains("<footer>Continue</footer>");
+}

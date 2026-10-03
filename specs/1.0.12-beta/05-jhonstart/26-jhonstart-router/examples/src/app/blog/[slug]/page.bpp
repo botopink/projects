@@ -1,0 +1,47 @@
+---
+// Front 26 — jhonstart-router · examples/src/app/blog/[slug]/page.bpp
+//
+// The `/blog/[slug]` page of `blog-post-page-example.bp`, as a `.bpp` file
+// (1.0.11-beta `08-bpp/116`): the application's manifest says
+// `"bpp": "jhonstart"`, and this file is the module jhonstart's `bpp` function
+// emits — `#[page("blog/[slug]")] pub fn Page(route: PageContext)` around the
+// statements below, with the markup as its return.
+//
+// What does not change: everything here runs on the BEAM, once, while the
+// request is in flight. The two awaits are sequential on purpose — the comments
+// cannot be loaded until the post's id is known — and nothing ships to the
+// browser but HTML.
+//
+// What does: the tree is written as markup. A `{…}` hole holding a `string` is
+// escaped by the template, so the `escape.html` calls of the `.bp` form — where
+// `text(value)` is written out as it is — are gone, and a comment body that
+// looks like markup is still text.
+//
+// `params` is bound because the route has a bracket segment; `loadPost` and
+// `loadComments` are the loaders of the `.bp` form, in a module of their own.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/getting-started/fetching-data
+//   https://nextjs.org/docs/app/api-reference/file-conventions/page
+
+import {article, h1, h2, li, p, section, span, ul} from "jhonstart";
+import {lib.blog.loadPost, lib.blog.loadComments};
+
+val post = await loadPost(params.slug);
+val comments = await loadComments(post.id);
+---
+<article class="post">
+  <h1>{post.title}</h1>
+  <p class="body">{post.body}</p>
+  <section>
+    <h2>{comments.length.toString()} comments</h2>
+    <ul class="comments">
+      {comments.map({ c ->
+        <li class="comment">
+          <span class="author">{c.author}</span>
+          <p>{c.body}</p>
+        </li>
+      })}
+    </ul>
+  </section>
+</article>

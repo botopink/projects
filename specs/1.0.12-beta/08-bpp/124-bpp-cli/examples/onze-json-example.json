@@ -1,0 +1,21 @@
+{
+  "name": "notes",
+  "port": 3000,
+  "basePath": "",
+  "appDir": "src/app",
+  "publicDir": "public",
+  "outDir": ".onze",
+  "lang": "en",
+
+  "site": "https://example.dev",
+  "trailingSlash": "never",
+  "redirects": {
+    "/old-page": "/new-page",
+    "/blog/feed": "/rss.xml",
+    "/docs": "https://docs.example.dev/"
+  },
+  "markdown": {
+    "smartPunctuation": true
+  },
+  "islandKeyEnv": "ONZE_KEY"
+}

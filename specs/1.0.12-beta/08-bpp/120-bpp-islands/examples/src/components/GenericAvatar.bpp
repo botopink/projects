@@ -1,0 +1,18 @@
+---
+// Front 120 — bpp islands · examples/src/components/GenericAvatar.bpp
+//
+// Demonstrates: the fallback of a server island. It is an ordinary component —
+// no directive, no decorator — rendered into the prerendered page, and replaced
+// in the browser when the island's own response arrives.
+//
+// The `.bp` form: `GenericAvatar` in `server-island-example.bp`.
+//
+// Upstream: astro-docs/22-server-islands.md (Conteúdo de Fallback de Server Island)
+
+import {span} from "jhonstart";
+
+type Props(size: i32)
+
+val box = "width:" + size.toString() + "px";
+---
+<span class="avatar generic" style={box}></span>

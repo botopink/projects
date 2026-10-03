@@ -1,0 +1,52 @@
+---
+// Front 117 — bpp routing · examples/src/app/dogs/[dog]/page.bpp
+//
+// Demonstrates: steps 1–3 in a `.bpp` page — the three names a page may export,
+// and data travelling with a static path.
+//
+// The route is the directory. `#[page("dogs/[dog]")]` is not written: the
+// unfold (front 116) gives the function `#[page]` from the file's name, through
+// jhonstart's `bppKinds` (decision 221). `route` and `params` are open question
+// `bpp-g`; the body below is written against its answer.
+//
+// `staticPaths` is `pub`, so it is a declaration of the module, where the scan
+// reads it — the same name, in the same place, as in a `page.bp`. The two `val`s
+// after it are statements: they are the body of the function the file unfolds
+// to.
+//
+// The `.bp` form of this page, with its tests: `static-paths-example.bp` at the
+// root of `examples/`.
+//
+// Upstream: astro-docs/08-routing.md (Rotas dinâmicas · Modo Estático)
+//           https://docs.astro.build/en/guides/routing/#dynamic-routes
+
+import {div, p} from "jhonstart";
+import {StaticPath, staticPath, pageData} from "onze";
+import {decorators.schema} from "validation";
+import {schemas, schemas.Schema, report.ValidationReport, report.Violation} from "validation";
+import {json.Json} from "std";
+
+#[schema]
+pub type DogInfo(breed: string)
+
+// `export const prerender = true` has no counterpart (decision 202): the page
+// reaches no `#[serverOnly]` hook, so `#[page]` prerenders it at comptime.
+
+// `export function getStaticPaths()` — each row binds `[dog]` and carries the
+// page's data, Astro's `props`.
+pub fn staticPaths() -> @Task<Array<StaticPath>> {
+    return [
+        staticPath([#("dog", "clifford")], try encodeDogInfo(DogInfo(breed: "red")) catch Json.Null),
+        staticPath([#("dog", "rover")], try encodeDogInfo(DogInfo(breed: "mix")) catch Json.Null),
+    ];
+}
+
+// `const { dog } = Astro.params;`
+val dog = params.dog;
+// `const { breed } = Astro.props;` — decoded with the type's own schema.
+val info = try pageData(route, schemaOfDogInfo()) catch DogInfo(breed: "unknown");
+---
+<div>
+  <p>Good dog, {dog}!</p>
+  <p>A {info.breed} one.</p>
+</div>

@@ -1,0 +1,38 @@
+---
+// Front 118 — bpp components · examples/src/components/Box.bpp
+//
+// Demonstrates: step 5 in a `.bpp` component — the directives this front owns.
+// `class:list` merges after the static `class` and drops what is empty;
+// `set:text` is the escaped twin of a `{value}` child; `is:raw` keeps its body
+// as text; `set:html` writes its value unescaped, as the element's only child.
+//
+//   <div class:list={["box", { red: isRed }]}><slot /></div>
+//   <article set:html={content} />
+//
+// There is no object literal: the list is an `Array<string>`, and
+// `classIf(cond, name)` answers the name or "".
+//
+// The `.bp` form, with its tests: `Box`, `Quoted`, `Snippet` and `Rendered` in
+// `directives-example.bp` at the root of `examples/`.
+//
+// Upstream: astro-docs/11-styling.md (Combinando classes com `class:list`)
+//           astro-docs/13-astro-syntax.md (`set:html`)
+//           https://docs.astro.build/en/reference/directives-reference/
+
+import {article, code, div, p, pre} from "jhonstart";
+import {classIf} from "jhonstart";
+
+type Props(
+    isRed: bool,
+    caption: string,
+    trusted: string = "",
+    extra: string = "",
+    children: Children = [],
+)
+---
+<div class="box" class:list={[classIf(isRed, "red"), extra]}>
+  <p set:text={caption} />
+  <slot />
+  <article set:html={trusted} />
+  <pre><code is:raw>{items.map({ x -> <li>{x}</li> })}</code></pre>
+</div>

@@ -1,0 +1,40 @@
+---
+// Front 118 — bpp components · examples/src/components/Menu.bpp
+//
+// Demonstrates: steps 1–3 in a `.bpp` component — what a `{…}` hole may hold. A
+// hole is a botopink expression; markup may begin a lambda body, an `if` /
+// `else` block or a `case` arm. Several roots need no wrapper element.
+//
+//   <ul>{items.map((item) => <li>{item}</li>)}</ul>
+//   {visible && <p>Show me!</p>}
+//   {visible ? <p>Show me!</p> : <p>Else show me!</p>}
+//
+// A value computed in the fence (`count`) is in scope in the template; a number
+// is written out with `toString()` — a hole holds `Children`, and an `i32` is
+// not one.
+//
+// The `.bp` form, with its tests: `Menu` in `template-expressions-example.bp`
+// at the root of `examples/`.
+//
+// Upstream: astro-docs/13-astro-syntax.md (Expressões tipo JSX, HTML Dinâmico)
+//           https://docs.astro.build/en/reference/astro-syntax/
+
+import {em, li, p, span, ul} from "jhonstart";
+
+pub type Status { Draft, Live }
+
+type Props(
+    items: Array<string>,
+    visible: bool,
+    status: Status,
+)
+
+val count = items.length;
+---
+<p data-kind="count">{count.toString()} items</p>
+<ul>
+  {items.map({ item -> <li>{item}</li> })}
+</ul>
+{if (visible) { <p>Show me!</p> }}
+{if (visible) { <p>Show me!</p> } else { <p>Else show me!</p> }}
+{case status { Draft -> <em>draft</em>; Live -> <span>live</span>; }}
