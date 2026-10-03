@@ -2,20 +2,19 @@
 
 **Repo:** `repository/rakun` · **Workspace:** `botopink.json` → `"workspaces": ["modules/*", "starters/*", "examples/*"]`, `"targets": ["erlang"]`
 
-§ Members and § The graph are the cut front [`128-rakun-consolidation`](./128-rakun-consolidation/README.md)
-leaves (decision 187: 25 members become 16), and every front of the track is written against them.
-§ On disk until 128 lands holds the 25-member facts 128 step 0 measures from; 128 step 10 deletes it.
+§ Members and § The graph: the cut [`128-rakun-consolidation`](./128-rakun-consolidation/README.md)
+leaves (decision 187: 25 → 16); every front is written against them. § On disk until 128 lands:
+the 25-member facts 128 step 0 measures from; 128 step 10 deletes it.
 
-Every member is `"target": "erlang"`, `"targets": ["erlang"]` (decisions 113, 117). `std` and the
-bundled `routing`, `actions`, `validation` are implicit and never listed. *Depends on* is the
-manifest's `dependencies`, every one `{ "workspace": true }`. Sidecars are `src/sidecars/rakun_<name>.erl`;
-a `_fixture` file is a test-only host module playing the remote side of a wire. No `.mjs` file
-exists under `repository/rakun`.
+Every member `"target": "erlang"`, `"targets": ["erlang"]` (decisions 113, 117). `std` and bundled
+`routing`, `actions`, `validation` implicit, never listed. *Depends on* = manifest `dependencies`,
+all `{ "workspace": true }`. Sidecars `src/sidecars/rakun_<name>.erl`; `_fixture` = test-only host
+module playing a wire's remote side. No `.mjs` under `repository/rakun`.
 
 ## Members (16, after 128)
 
-A merged member's files sit in a sub-directory of the absorbing member's `src/` and `test/` named
-after it; its sidecar keeps its name.
+A merged member's files sit in a same-named sub-directory of the absorber's `src/` and `test/`;
+its sidecar keeps its name.
 
 | Member | Absorbs | Depends on | Fronts |
 |---|---|---|---|
@@ -36,15 +35,15 @@ after it; its sidecar keeps its name.
 | `rakun-websocket` | — | `rakun`, `rakun-web`, `rakun-data`, `rakun-security` | — (closed) |
 | `rakun-app` | — | `rakun`, `rakun-web`, `rakun-cache` | [`22`](./22-rakun-file-routing/README.md) |
 
-Only under `03r-ad` (a) or (b) — front 91 — a seventeenth member: `rakun-pulsar` (from
-`rakun-messaging/src/pulsar/**`, `pulsar_host.bp`, `rakun_pulsar.erl`), depending on `rakun`,
-`rakun-messaging`, `rakun-client`, and as 03r-ad (a) lists them `rakun-security` and `rakun-data`
-(91's mechanism adds those two only with the data plane); `rakun-messaging` then loses its
-direct `rakun-client` edge (it stays transitive through `rakun-metrics`).
+Only under `03r-ad` (a)/(b) (front 91): a 17th member `rakun-pulsar` (from
+`rakun-messaging/src/pulsar/**`, `pulsar_host.bp`, `rakun_pulsar.erl`) on `rakun`,
+`rakun-messaging`, `rakun-client`, plus, as 03r-ad (a) lists, `rakun-security` and `rakun-data`
+(91's mechanism adds those two only with the data plane); `rakun-messaging` loses its direct
+`rakun-client` edge (transitive through `rakun-metrics`).
 
 ## The graph
 
-Every edge points at a lower level; the graph is acyclic.
+Every edge points lower; acyclic.
 
 ```
 L0  rakun (+ actuator_api, logging)
@@ -57,17 +56,16 @@ L6  rakun-security ◄ web·data·client·session      rakun-cache ◄ web·actu
 L7  rakun-websocket ◄ web·data·security      rakun-app ◄ web·cache
 ```
 
-What 128 changes in the edges: it adds `rakun-cli → rakun-web` (from `rakun-release`) and
-`rakun-messaging → rakun-actuator`, `→ rakun-data` (from `rakun-stream`), so every consumer of
-`rakun-messaging` loads the data member; it removes every edge to `rakun-actuator-api`,
-`rakun-logging` and `rakun-tx`. `rakun-cache` and `rakun-client` stay separate and meet through the
-core's tag epoch (decision 185). Edges still owed or in question: `rakun-test`'s test-only edges
-(03r-am, front 19), `rakun-cli → rakun-client` for `rakun ws generate` (front 88, after 93),
-`rakun-messaging → rakun-websocket` for RSocket's WebSocket transport (03r-an, front 92).
+128 adds `rakun-cli → rakun-web` (from `rakun-release`), `rakun-messaging → rakun-actuator`, `→
+rakun-data` (from `rakun-stream`; every `rakun-messaging` consumer loads the data member); removes
+every edge to `rakun-actuator-api`, `rakun-logging`, `rakun-tx`. `rakun-cache` and `rakun-client`
+stay separate, meet through the core's tag epoch (decision 185). Owed or in question:
+`rakun-test`'s test-only edges (03r-am, 19), `rakun-cli → rakun-client` for `rakun ws generate`
+(88, after 93), `rakun-messaging → rakun-websocket` for RSocket's WebSocket transport (03r-an, 92).
 
 ## On disk until 128 lands (25 members)
 
-What 128 step 0 measures from (manifests on `feat`). Merged by 128: the nine marked `→`.
+128 step 0's baseline (manifests on `feat`); `→` = merged by 128.
 
 | Member | Depends on (`rakun` omitted) | Sidecars | `*_test.bp` |
 |---|---|---|---|
@@ -97,13 +95,13 @@ What 128 step 0 measures from (manifests on `feat`). Merged by 128: the nine mar
 | `rakun-websocket` | api, web, data, security | `websocket` | 6 |
 | `rakun-app` | web, cache | `file_router`, `ssr`, `actions`, `navigation`, `static_gen`, `metadata_routes` | 13 + `fixtures/` |
 
-`rakun-actuator-api` is a dependency of 14 members (every one above naming `api`). The core
-already merged the old `rakun-validation` (`config_check.bp`, decision 116).
+`rakun-actuator-api`: dependency of 14 members (each naming `api`). The core already merged the
+old `rakun-validation` (`config_check.bp`, decision 116).
 
 ## Starters (8) — `repository/rakun/starters/`
 
-A starter is a manifest and a `src/root.bp` that re-exports; `{ "workspace": true }` to every
-sibling (03r-r). Asserted by `modules/rakun/test/starter_manifest_test.bp` and `version_set_test.bp`.
+Manifest + re-exporting `src/root.bp`; `{ "workspace": true }` to every sibling (03r-r). Asserted
+by `modules/rakun/test/starter_manifest_test.bp`, `version_set_test.bp`.
 
 | Starter | Brings |
 |---|---|
@@ -117,7 +115,7 @@ sibling (03r-r). Asserted by `modules/rakun/test/starter_manifest_test.bp` and `
 | `rakun-starter-test` | `rakun-starter`, `rakun-test` — and `onze`, `onze-test` by path (`../../../onze/modules/<name>`), allow-listed by the starter lint; front 73 removes both |
 | `rakun-starter-app` (to add, front 73) | `rakun-starter-web`, `rakun-app`, `rakun-cache` |
 
-No `starters/test/`: the manifest cells are the two core tests above.
+No `starters/test/`: the two core tests are the manifest cells.
 
 ## Examples (3) — `repository/rakun/examples/`
 
@@ -127,13 +125,13 @@ No `starters/test/`: the manifest cells are the two core tests above.
 | `examples/rakun-container` | `rakun-container-example` | `rakun` | `main.bp` | erlang `build` |
 | `examples/rakun-ssr` | `rakun-ssr-example` | `rakun`, `rakun-app` | `main.bp` | erlang `build` |
 
-No example has a test file or a `README.md`. The seven projects of the closed cut are 03r-af.
+No example has a test file or `README.md`. The closed cut's seven projects: 03r-af.
 
 ## Front → directory ownership
 
-Every front owns whole files; two fronts in one member own disjoint files and test files. A shared
-member's `botopink.json` and `src/root.bp` belong to the lowest-numbered front; the others append.
-128 runs first and alone, and owns every member while it is open.
+Fronts own whole files; two in one member own disjoint files and tests. Shared member's
+`botopink.json`, `src/root.bp`: lowest-numbered front; others append. 128 runs first, alone, owns
+every member while open.
 
 | Front | Owns | Does not touch |
 |---|---|---|
@@ -158,5 +156,5 @@ member's `botopink.json` and `src/root.bp` belong to the lowest-numbered front; 
 | 92 | `modules/rakun-messaging/src/rsocket/**`, `test/rsocket/**`, `src/sidecars/rakun_rsocket.erl` | the rest of `rakun-messaging`; `rakun-websocket` |
 | 93 | `modules/rakun-client/src/ws/**`, `test/ws/**`, `src/sidecars/rakun_ws.erl`, its `modules/README.md` row, `AGENTS.md` § SOAP | the rest of `rakun-client`; `rakun-cli` |
 
-`repository/rakun/AGENTS.md` and `modules/README.md` are shared: each front edits its own section
-in the same commit as the code, never another front's.
+`repository/rakun/AGENTS.md`, `modules/README.md` shared: each front edits its own section, in the
+code's commit, never another's.

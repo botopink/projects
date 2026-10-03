@@ -1,8 +1,8 @@
 # Front 18 — comptime runtimes: BEAM direct, WAT, and the browser build — the evidence and the limits
 
-**Priority:** low · **State:** not started (the `test-web` wasm32 fix and gate stage 12 are on feat)
-**Depends on:** the maintainer (the CI runs after a push) · `14-comptime-on-beam` step 2 (the bench
-numbers this front records) · `05-wasm` step 5 (decision 261's opcodes)
+**Priority:** low · **State:** not started (`test-web` wasm32 fix and gate stage 12 on feat)
+**Depends on:** maintainer (CI runs after a push) · `14-comptime-on-beam` step 2 (bench numbers
+recorded here) · `05-wasm` step 5 (decision 261's opcodes)
 **Owns:** `modules/compiler-core/src/comptime/runtime/**` except `beam/**`, `etf.zig`, `prelude.zig`
 (14) — `server_source.zig`, `render_resident.zig`, `persistent_beam.zig`, `persistent_wat.zig`,
 `wat/**`, `runtime.zig`, `parity.zig`, `reply_order.zig` · `src/codegen/beam/{beam_file,opcodes}.zig`,
@@ -10,67 +10,63 @@ numbers this front records) · `05-wasm` step 5 (decision 261's opcodes)
 `src/comptime/snapshot.zig`, `src/utils/snap.zig`'s directory selection (07 renames files) · root
 `build.zig`'s `render-resident` + `erlc` step and `compiler-web` build · `modules/compiler-web/**` ·
 `modules/wasm3/**` · `release.yml`'s matrix · `scripts/comptime_bench.sh`'s table (14 measures)
-**Does not touch:** the run-time halves of `beam_asm.zig`, `erlang.zig`, `wat.zig`, `commonJS.zig`
+**Does not touch:** run-time halves of `beam_asm.zig`, `erlang.zig`, `wat.zig`, `commonJS.zig`
 (02–05) · the libraries · `src/comptime/eval.zig`, `infer.zig` (01) · `template_eval.zig`,
 `decorator_eval.zig`, `runtime/beam/**` (14) · `test.yml` (`00-gate/114`)
 
-Paths are relative to `repository/botopink-lang/modules/compiler-core/src/` unless they start with
-`modules/`, `scripts/` or `.github/`, which are relative to `repository/botopink-lang/`.
+Paths relative to `repository/botopink-lang/modules/compiler-core/src/`; those starting `modules/`,
+`scripts/`, `.github/` relative to `repository/botopink-lang/`.
 
 ## Goal
 
-Every CI row is green after the push, the wat runtime's limits are written down with a fixture
-each, the comptime bench has its table, the transport error has a test, the comptime evaluation
-meets 14's budget, and the binary emitter carries `memory.size` / `memory.grow`.
+Every CI row green after the push; wat runtime limits written with a fixture each; comptime bench
+table; transport error tested; comptime evaluation within 14's budget; binary emitter has
+`memory.size` / `memory.grow`.
 
 ## Mechanism
 
-Decision 84: the comptime runtime follows the target's VM, beam by default, no flag. The BEAM
-runtime loads assembled bytes through cmd 4; the wat runtime runs the same program on wasm3
-in-process; `runtime.parity` on every fixture; the doubled snapshot tree
-(`snapshots/codegen/{beam,wat}/<target>/`) audited pair by pair; the browser build within budget
-(`botopink.wasm` ReleaseSmall ≤ 8 MB, ≤ 2.5 MB gzip).
+Decision 84: comptime runtime follows the target's VM, beam by default, no flag. BEAM runtime loads
+assembled bytes via cmd 4; wat runtime runs the same program on wasm3 in-process; `runtime.parity`
+on every fixture; doubled snapshot tree (`snapshots/codegen/{beam,wat}/<target>/`) audited pair by
+pair; browser build within budget (`botopink.wasm` ReleaseSmall ≤ 8 MB, ≤ 2.5 MB gzip).
 
 ## Open
 
 ### Step 1 — the CI matrix (the maintainer's, after the push)
 
-`test.yml`'s jobs on `ubuntu-22.04` and `macos-14` (`zig build test`, `test-web` a step — decision
-231; the windows row is deleted until the snapshot capture normalises CRLF and path separators —
-decision 158); `release.yml`'s `zig build -Doptimize=ReleaseSafe -Dtarget=${{ matrix.zigtarget }}`
-on its five rows.
+`test.yml` jobs: `../../00-gate/README.md` § Rules 5, 13 (decisions 231, 158); `release.yml`'s `zig
+build -Doptimize=ReleaseSafe -Dtarget=${{ matrix.zigtarget }}` on its five rows.
 
 - [ ] every row green on the CI after the milestone's first push; a red row is a step of this front
-      (a runner-specific fix in `build.zig` or a workflow), never a skipped row
+      (runner-specific fix in `build.zig` or a workflow), never a skipped row
 
 ### Step 2 — the four limits, written
 
 `wat-runtime.md` §7 ([1.0.10](../../../1.0.10-beta/00-compiler-carry-over/18-comptime-runtimes/wat-runtime.md))
-restated in `src/comptime/runtime/AGENTS.md` (no § Limits today), each with the behaviour a body
-meets: `safe_call`'s isolation and its 10 s timeout (a runaway body is a runaway wasm3 call — no
-generated module spawns, receives or touches ETS); `~p`'s line breaking past 80 columns (a long
-term prints on one line); Unicode case mapping (`string:uppercase` / `lowercase` of a non-ASCII
-letter raises `{bp_wat_runtime, …}`); integers beyond 64 bits (raise). The BEAM runtime is the
-reference; a difference parity finds is fixed in `rt.zig`.
+restated in `src/comptime/runtime/AGENTS.md` (no § Limits today), each with what a body meets:
+`safe_call`'s isolation and 10 s timeout (runaway body = runaway wasm3 call; no generated module
+spawns, receives or touches ETS); `~p` line breaking past 80 columns (long term prints on one line);
+Unicode case mapping (`string:uppercase` / `lowercase` of a non-ASCII letter raises `{bp_wat_runtime,
+…}`); integers beyond 64 bits (raise). BEAM runtime is the reference; a parity difference is fixed
+in `rt.zig`.
 
 - [ ] `runtime/AGENTS.md` § Limits carries the four with a fixture each pinning the raise (the second with none — its text says why)
 
 ### Step 3 — the bench table, and the evaluation's cost
 
-`scripts/comptime_bench.sh` re-run (14 step 2) and its table recorded here, per milestone open and
-close, on the runner's machine, with the load noted. The runtime's evaluation is the largest stage
-left per evaluation (wat: a fresh wasm3 environment, parse and load of the linked module per
-evaluation, `persistent_wat.zig`; BEAM: the frame round trip — 45 % / 29 % of an N=200 build
-before decision 237).
+`scripts/comptime_bench.sh` re-run (14 step 2), table recorded here at milestone open and close, on
+the runner's machine, load noted. Runtime evaluation = largest remaining per-evaluation stage (wat:
+fresh wasm3 environment, parse and load of the linked module, `persistent_wat.zig`; BEAM: frame round
+trip — 45 % / 29 % of an N=200 build before decision 237).
 
 - [ ] a table with the open's row; the close's row added by the last front to land
 - [ ] the runtime's evaluation brought within 14's budget (≤ 1 ms per evaluation), or what remains named
 
 ### Step 4 — the transport test
 
-A test beside `evalBeam` (`runtime/runtime.zig`) drives a comptime body past the 16 MiB frame cap
-and asserts the diagnostic quotes `lastTransportError()`'s message, not `EvalFailed`; the
-`erl`-missing case stays `EvalFailed` with the `PATH` hint.
+Beside `evalBeam` (`runtime/runtime.zig`): drive a comptime body past the 16 MiB frame cap, assert
+the diagnostic quotes `lastTransportError()`'s message, not `EvalFailed`; `erl` missing stays
+`EvalFailed` with the `PATH` hint.
 
 - [ ] the test in `runtime/**`'s test file
 
@@ -85,6 +81,5 @@ within budget
 
 ## Notes
 
-- The erlang and beam run-time targets still need `erl`; `node` / `wasmtime` stay for the commonJS /
-  wasm RUN LOGs. `erlc` (OTP 28+) is a dependency of building the compiler; a user's machine needs
-  `erl` only.
+- erlang/beam run-time targets still need `erl`; `node` / `wasmtime` stay for commonJS / wasm RUN
+  LOGs. `erlc` (OTP 28+) needed to build the compiler; a user's machine needs `erl` only.

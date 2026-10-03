@@ -1,43 +1,42 @@
 # Front 17 — beam-memory: `keyed = true` row per key, and `@BeamMemory` refused off the BEAM
 
 **Priority:** medium · **State:** partial: step 1 on feat but its fourth box (17-b); step 2 open
-**Depends on:** 17-b (step 1 box 4) · `07-residuals` step 6 (the text into `docs.md`) · the rakun
-track (the migration)
-**Owns:** the module-`var` read/write lowering under `#[@BeamMemory.Ets(keyed = true)]` in
+**Depends on:** 17-b (step 1 box 4) · `07-residuals` step 6 (text into `docs.md`) · rakun track
+(migration)
+**Owns:** module-`var` read/write lowering under `#[@BeamMemory.Ets(keyed = true)]` in
 `codegen/erlang.zig` and `codegen/beam_asm.zig` (`keyedSeedRows`, `emitKeyedRowRead`,
-`emitKeyedRowWrite`, `emitKeyedHelpers` — a carve-out of 02 and 03 granted by name) ·
-`libs/std/src/beam.bp`'s keyed primitives (a carve-out of the std track, named in the commit) · the
-`beam_memory_*` cells · this directory
+`emitKeyedRowWrite`, `emitKeyedHelpers` — carve-out of 02 and 03 by name) · `libs/std/src/beam.bp`'s
+keyed primitives (std-track carve-out, named in the commit) · `beam_memory_*` cells · this directory
 **Does not touch:** `src/parser/**`, `src/ast.zig`, `src/comptime/**` beyond `validateMemoryAnnotations`
-(01) · the rest of `erlang.zig` / `beam_asm.zig` (02, 03) · `docs.md` (07 — the text is
+(01) · rest of `erlang.zig` / `beam_asm.zig` (02, 03) · `docs.md` (07 — text in
 [`../07-residuals/beam-memory-docs-text.md`](../07-residuals/beam-memory-docs-text.md)) ·
-`repository/rakun/**` (the rakun track)
+`repository/rakun/**` (rakun track)
 
-Paths are relative to `repository/botopink-lang/modules/compiler-core/src/`.
+Paths relative to `repository/botopink-lang/modules/compiler-core/src/`.
 
 ## Goal
 
-A `#[@BeamMemory.Ets(keyed = true)] var counts: Dict<K, V>` is one ETS row per key on erlang and
-beam, so concurrent writers of different keys never lose a write; the per-key increment has the
-surface 17-b decides; off the BEAM the annotation is refused (decision 167); `docs.md` documents it.
+`#[@BeamMemory.Ets(keyed = true)] var counts: Dict<K, V>` = one ETS row per key on erlang and beam
+(concurrent writers of different keys lose nothing); per-key increment per 17-b; refused off the
+BEAM (decision 167); documented in `docs.md`.
 
 ## Mechanism
 
-- **Off the BEAM** (decision 167): `validateMemoryAnnotations` (`comptime/infer.zig`) records the
-  first annotation of a module whose target is neither erlang nor beam, and `reportOffBeamMemory`
-  refuses it at the annotation: ``error: `#[@BeamMemory]` has no meaning on the <target> backend``.
-- **`keyed = true`** (decisions 168, 174): `Ets`'s argument alone, never on a `pub` var; the seed is
+- **Off the BEAM** (decision 167): `validateMemoryAnnotations` (`comptime/infer.zig`) records a
+  module's first annotation when the target is neither erlang nor beam; `reportOffBeamMemory`
+  refuses at the annotation: ``error: `#[@BeamMemory]` has no meaning on the <target> backend``.
+- **`keyed = true`** (decisions 168, 174): `Ets`'s only argument, never on a `pub` var; seed
   `Dict.empty()` or `Dict.ofEntries([…])` of literal `#(key, value)` entries (`isKeyedSeed`), folded
-  into the table's rows (`keyedSeedRows`; a repeated key keeps its last value). The var is named
-  only as the receiver of `counts.at(k)` (`'__bp_ets_at'(Name, Rows, K)` — `ets:lookup`, `null`
-  without a row) and of `counts = counts.insert(k, v)` (`'__bp_ets_row'(Name, Rows, {K, V})` —
-  `ets:insert` of the one row); a row computed from the var's own rows is decision 40's §5(b)
-  refusal, any other read or write is refused naming the one form. `std/beam` has `etsLookup`.
+  into rows (`keyedSeedRows`; repeated key keeps its last value). The var appears only as receiver
+  of `counts.at(k)` (`'__bp_ets_at'(Name, Rows, K)` — `ets:lookup`, `null` without a row) and
+  `counts = counts.insert(k, v)` (`'__bp_ets_row'(Name, Rows, {K, V})` — `ets:insert` of one row); a
+  row computed from the var's own rows = decision 40 §5(b) refusal; any other read/write refused
+  naming the one form. `std/beam` has `etsLookup`.
 
 ## Done
 
-- Step 1, boxes 1–3 and 5 — `keyed = true` row per key on erlang and beam (decisions 168, 174: `run/beam_memory_ets_keyed`, `reject/beam_memory_ets_keyed_{seed,recompose,whole_read}`); `#[@BeamMemory]` refused off the BEAM (decision 167: `run/beam_memory_off_beam`)
-- The text's two sentences that step 1 changed are applied in `../07-residuals/beam-memory-docs-text.md`
+- Step 1, boxes 1–3 and 5 — `keyed = true` row per key on erlang and beam (decisions 168, 174: `run/beam_memory_ets_keyed`, `reject/beam_memory_ets_keyed_{seed,recompose,whole_read}`); `#[@BeamMemory]` refused off the BEAM (167: `run/beam_memory_off_beam`)
+- The text's two sentences step 1 changed applied in `../07-residuals/beam-memory-docs-text.md`
 
 ## Open
 
@@ -56,36 +55,22 @@ surface 17-b decides; off the BEAM the annotation is refused (decision 167); `do
 
 ## Decisions
 
+Measured / options / blocks in [`../../decisions-pending.md`](../../decisions-pending.md).
+
 ### 17-b. The per-row increment of a `keyed = true` `Dict`
 
-The row write is `counts = counts.insert(k, v)`. `??` exists (`run/nullish_tuple_operand`), so
-`counts = counts.insert(k, (counts.at(k) ?? 0) + 1)` types — but it is a row computed from the
-var's own rows, decision 40's §5(b) refusal (two processes running it lose a write), and no surface
-reaches `ets:update_counter`: `counts.at(k) += 1` / `counts[k] += 1` are no assignment targets (a
-target is a name or a field).
-**Options.** (a) none — a keyed row is written whole; a per-key counter is refused, and a counter
-several processes bump is one `#[@BeamMemory.Ets] var n: i32` each (decision 40's increment);
-(b) a std method `Dict.bump(key, by) -> Dict<K, V>` (`V` an integer; an absent key counts from 0),
-an ordinary method on a plain `Dict`, lowered under `keyed = true` to
-`ets:update_counter(T, K, By, {K, 0})`: `counts = counts.bump(k, 1);`; (c) an index assignment
-`counts[k] += 1` in the grammar, lowered the same way.
-**Recommendation.** (a) — no new method or grammar for one annotation.
+Recommendation (a): keyed rows written whole, per-key counter refused — no new method or grammar for
+one annotation.
 
 ### 17-c. What else names a `keyed = true` var
 
-Built: only `counts.at(k)` and `counts = counts.insert(k, v)`; `counts[k]`, `counts.hasKey(k)`,
-`counts.delete(k)`, `counts.size()`, passing `counts` on are refused at the identifier, and a keyed
-var is never `pub`. Decision 63 defines `d[k]` as `d.at(k)`, so the index form is refused although
-it means the lowered read.
-**Options.** (a) the two forms only, as built; (b) (a) plus `counts[k]`; (c) (b) plus `hasKey`
-(`ets:member`) and `delete` (`ets:delete`) as row operations, each a new `std/beam` primitive.
-**Recommendation.** (a). **Blocks** nothing — the built surface stands until widened.
+Recommendation (a): the two built forms only. Blocks nothing — built surface stands until widened.
 
-**Gate:** standard (fronts.md § Gate) + the per-mode cells (`run/beam_memory_{process_dict,ets,persistent_term}`)
+**Gate:** standard (fronts.md § Gate) + per-mode cells (`run/beam_memory_{process_dict,ets,persistent_term}`)
 green on erlang and beam, a new cell's `.out` what `erl` printed · `scripts/beam_export_audit.sh` green
 
 ## Notes
 
-- Decisions 38–43 hold: `val` immutable, the registered owner, `+=` integer-only under `Ets`, a
-  misspelled annotation an error, `keyed` unwritten on a `Dict` no warning, two layers.
-- No library writes `#[@BeamMemory]` or `keyed = true` (the rakun migration is what will).
+- Decisions 38–43 hold: `val` immutable, registered owner, `+=` integer-only under `Ets`, misspelled
+  annotation an error, `keyed` unwritten on a `Dict` no warning, two layers.
+- No library writes `#[@BeamMemory]` or `keyed = true` yet (the rakun migration will).

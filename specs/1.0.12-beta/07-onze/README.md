@@ -1,15 +1,13 @@
 # Track 07 — onze
 
-**Repo:** `repository/onze` · **Reference:** Next.js docs, the framework half · the tree on disk
-is [`modules.md`](./modules.md); the Next.js rows no front covers are
-[`reference-holes.md`](./reference-holes.md).
+**Repo:** `repository/onze` · **Reference:** Next.js docs, framework half · tree on disk:
+[`modules.md`](./modules.md) · uncovered Next.js rows: [`reference-holes.md`](./reference-holes.md).
 
-onze wires (decision 113): it is the one package that imports jhonstart, rakun and the
-`jhonstart-emilia` bridge together, and where the libraries meet in an example (decision 114).
-Its eight members and the blog (`examples/blog`, served by `onze build && onze start`) exist.
-What this track owes: the wiring that waited on rakun, `onze dev`, the release end to end, the
-image/font/OG tails, and the second half of the blog's acceptance script. Five fronts, cut by
-member.
+onze wires (decision 113): the one package importing jhonstart, rakun and the `jhonstart-emilia`
+bridge together; where the libraries meet in an example (decision 114). Its eight members and the
+blog (`examples/blog`, `onze build && onze start`) exist. Owed: the wiring that waited on rakun,
+`onze dev`, the release end to end, the image/font/OG tails, the blog acceptance script's second
+half. Five fronts, cut by member.
 
 ## Fronts
 
@@ -21,12 +19,12 @@ member.
 | [`71-onze-release-packaging/`](./71-onze-release-packaging/README.md) | medium | not started (step 6's snapshots on disk) | `onze-release`, `examples/static-site`: the ERTS copy, `bin/onze`, the shutdown over real cells, static export, the four gate boxes over a real release | 49 step 6; `04-rakun` 11 · 04 (62) · 81 (step 3); 50 · 53 (step 5) |
 | [`53-onze-example-app/`](./53-onze-example-app/README.md) | **high** — the proof of the whole stack; last | not started | `examples/blog/**`: the acceptance script's second half, the browser (the E2E runner `onze-test/src/e2e.bp` is `20-snap` step 5's) | every front above; `20-snap` step 5; jhonstart 26 · 27 · 67; `04-rakun` 22 (24 · 25 · 60 · 66) · 12 · 65 |
 
-The "consume std" first steps of 49, 50 and 51 are unblocked (`97` is on `feat`), and so is 49
-step 3's half that needs the bundled `log` (`106` is on `feat`).
+Unblocked: the "consume std" first steps of 49, 50, 51 (`97` on `feat`); 49 step 3's half needing
+the bundled `log` (`106` on `feat`).
 
-Handed in by `01-compiler/129`: decision 218 (onze's `@/` alias goes; an application writes
-`import {lib.db.findPost};`) is not built — `50` step 9 (the bundler's `AliasMap`, the scaffold,
-`docs.md`) and `53` step 1 (the blog's `botopink.json`).
+Handed in by `01-compiler/129`: decision 218 (onze's `@/` alias goes; an app writes
+`import {lib.db.findPost};`), not built — `50` step 9 (bundler `AliasMap`, scaffold, `docs.md`),
+`53` step 1 (the blog's `botopink.json`).
 
 ## Order
 
@@ -47,9 +45,8 @@ outbound: 03-bundled-libs/104's consumer sweep (onze-server/server.bp `cookiePai
           08-bpp 117 · 120 · 121 · 122 · 124 — each after the front that owns the member (modules.md)
 ```
 
-49 is first because a request's query and headers, the action dispatcher and the error digest
-are what 53's write path and error pages read; 51 and 71 are independent members; 53 is
-read-only against every other member and asserts what the four fronts land.
+49 first: query, headers, action dispatcher and error digest are what 53's write path and error
+pages read. 51, 71: independent members. 53: read-only against every other member.
 
 ## Decisions
 
@@ -76,17 +73,15 @@ each front's letter sequence. Open: `50-b` (below), `std-d` (`02-std-and-packagi
 > **Facts.** `onze build` compiles the server package to BEAM (`server/beam/`); `onze start` runs
 > `erl -noshell -pa <outDir>/server/beam -eval …` (50-a). `onze-bundler/src/rebuild.bp` computes
 > which modules a changed file invalidates. The BEAM can `code:load_file/1` a recompiled module;
-> jhonstart's UI registry and rakun's route table are filled at module load (decision 140), so a
-> reloaded page module re-registers, but a *new* route file needs `onze_routes.bp` regenerated
-> and the table rebuilt.
-> **Options.** (a) restart the node on every change: `dev` is `build` + `start` in a loop over a
-> file watcher — the same bytes `start` serves by construction, a 1–3 s restart per edit;
-> (b) hot-load changed modules and regenerate + reload `onze_routes` when the app tree changes
-> (island state is lost either way; Fast Refresh is a non-goal, `reference-holes.md` § 29);
-> (c) (b) with a fallback to (a) when the changed set includes a convention file.
-> **Recommendation.** (a) — one code path, nothing that can drift from `start`; (b) is a later
-> optimisation once (a) is measured too slow on the blog.
+> UI registry and route table fill at module load (decision 140): a reloaded page re-registers, a
+> *new* route file needs `onze_routes.bp` regenerated and the table rebuilt.
+> **Options.** (a) restart the node on every change: `dev` = `build` + `start` looped over a file
+> watcher — same bytes as `start`, 1–3 s restart per edit;
+> (b) hot-load changed modules, regenerate + reload `onze_routes` when the app tree changes
+> (island state lost either way; Fast Refresh a non-goal, `reference-holes.md` § 29);
+> (c) (b), falling back to (a) when the changed set includes a convention file.
+> **Recommendation.** (a) — one code path, cannot drift from `start`; (b) later, if (a) measures
+> too slow on the blog.
 > **Blocks.** 50 step 2 (written for (a)); 53 step 6 ("`dev` serves every route").
 
-The module-level snapshot maps of §§ 50 · 51 · 52 · 70 · 71 and 53's runner are [`decisions-pending.md`](../decisions-pending.md) `snap-a`, worked by [`20-snap`](../20-snap/README.md) step 5.
-
+Module-level snapshot maps of §§ 50 · 51 · 52 · 70 · 71 and 53's runner: [`decisions-pending.md`](../decisions-pending.md) `snap-a`, worked by [`20-snap`](../20-snap/README.md) step 5.

@@ -1,7 +1,6 @@
 # The `-test` helper contract
 
-Front 98 checks every `<lib>-test` member against it; the helpers themselves are written by each
-library track.
+Front 98 checks every `<lib>-test` member against it; each library track writes its helpers.
 
 ## The API
 
@@ -21,26 +20,21 @@ pub fn assertNamed(loc: SourceLocation, name: string, actual: string)           
 pub fn assertNamedAs(loc: SourceLocation, name: string, subject: string, actual: string)
 ```
 
-The plain entry point is `assertText`, not `assert`: `assert` is a reserved keyword statement (the
-reason the module beside this one is `asserts`), and `assertText` is the `assert<Subject>` spelling
-for the subject the header records. The wrappers use the `try inner(); return;` shape every `-test`
-helper uses, because `return r` inside a `@Result`-returning body re-wraps (`language-gaps.md`).
-
-**The filesystem.** The engine reaches the disk through `io/fs` and `path` (front 97 step 4); its
-scratch directory is `bpsnap-<pid>-<n>` under `BOTOPINK_TEST_TMPDIR`. `import {testing.snapshots}`
-is refused on wasm (STD-001 through `io/fs`).
-
-**No panic anywhere.** The engine's failure channel is the `@Result` it answers; a host error
-inside a cell is an `Error` string, never a throw. That is what lets a test record two snapshots
-and see both `.new` files in one run.
+- Plain entry is `assertText`, not `assert` (reserved keyword statement — hence the sibling module
+  `asserts`); it is the `assert<Subject>` spelling for the header's subject.
+- Wrappers use `try inner(); return;` like every `-test` helper: `return r` in a `@Result` body
+  re-wraps (`language-gaps.md`).
+- **Filesystem:** through `io/fs` and `path` (front 97 step 4); scratch dir `bpsnap-<pid>-<n>` under
+  `BOTOPINK_TEST_TMPDIR`. `import {testing.snapshots}` refused on wasm (STD-001 through `io/fs`).
+- **No panic anywhere:** failure is the answered `@Result`; a host error in a cell is an `Error`
+  string, never a throw — so one test can record two snapshots and see both `.new` files in one run.
 
 ## How a library exposes `assert<Subject>` helpers
 
-The contract: every `<lib>-test` submodule exposes `assert<Subject>(loc, …) -> @Result<void,
-string>` helpers, and each is a thin wrapper that (a) turns the domain value into a string, (b)
-calls `snapshots.assertAs(loc, "<subject>", text)`. The `loc` **must be the caller's `@src()`**,
-taken inside the `test` body — a `@src()` written inside the helper would name the helper, and every
-snapshot would land in `__snapshots__/<helper's suite>/…` beside the helper's own file.
+Every `<lib>-test` submodule exposes `assert<Subject>(loc, …) -> @Result<void, string>` helpers, each
+a thin wrapper: (a) domain value → string, (b) `snapshots.assertAs(loc, "<subject>", text)`. `loc`
+**must be the caller's `@src()`**, taken in the `test` body — a `@src()` inside the helper names the
+helper, landing every snapshot in `__snapshots__/<helper's suite>/…`.
 
 ```bp
 //// emilia-test — modules/emilia-test/src/root.bp
@@ -63,7 +57,7 @@ pub fn assertUtility(loc: SourceLocation, tokens: Token[]) -> @Result<void, stri
 }
 ```
 
-The same shape for every track:
+Same shape per track:
 
 | Track | `-test` | Helper | Subject | Body |
 |---|---|---|---|---|
@@ -73,11 +67,10 @@ The same shape for every track:
 | E onze | `onze-test` | `assertManifest(loc, m)` · `assertPayload(loc, p)` | `manifest` · `payload` | `formatManifest(m)` (contract 6) · the payload JSON (contract 2, `globals.payload`) |
 | the compiler, written in botopink | — | `assertJsSingle(loc, source)` | `js` | the JavaScript the source lowers to — the `.bp` twin of `codegen/tests/helpers.zig` `assertJsSingle` |
 
-The table shows the shape. Which helpers each library actually writes is `snap-a` (4) in
+Shape only; which helpers each library writes is `snap-a` (4) in
 [`../../decisions-pending.md`](../../decisions-pending.md), worked by [`20-snap`](../../20-snap/README.md):
-`emilia-test`'s `assertClassName` · `assertCss`, `rakun-test`'s `assertResponse`, and jhonstart's and
+`emilia-test`'s `assertClassName` · `assertCss`, `rakun-test`'s `assertResponse`, jhonstart's and
 onze's existing helpers.
 
-A helper never calls `readFile`/`writeFile` itself and never computes a path itself. If it needs a
-second snapshot per test it calls `assertNamedAs`.
-
+A helper never calls `readFile`/`writeFile` nor computes a path; a second snapshot per test →
+`assertNamedAs`.

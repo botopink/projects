@@ -1,8 +1,8 @@
 # The `docs.md` text for `@BeamMemory` — supplied by front 17, placed by front 07 (step 6)
 
-Front 17 writes no `docs.md`; this file is the text it supplies. Both parts are true on feat
-(17 step 1: `keyed = true`, decision 167's refusal off the BEAM). The figures are 1.0.10's
-`17-beam-memory/design.md` §4, §6 and `run/beam_memory_ets_keyed`; none is a promise.
+Front 17's text for `docs.md` (17 writes none). Both parts true on feat (17 step 1: `keyed = true`,
+decision 167's refusal off the BEAM). Figures from 1.0.10's `17-beam-memory/design.md` §4, §6 and
+`run/beam_memory_ets_keyed`; none a promise. Quoted blocks are the text to place, verbatim.
 
 ---
 
@@ -71,9 +71,8 @@ Front 17 writes no `docs.md`; this file is the text it supplies. Both parts are 
 
 ## Part 2 — the three modes (`docs.md` § `@BeamMemory`)
 
-The second paragraph carries decision 42: `keyed` unwritten on a `Dict` is **not** a warning —
-replacing the whole container is a thing authors legitimately want — so the behaviour and the cost
-are stated here, where the default is documented, and nowhere else.
+Second paragraph carries decision 42: `keyed` unwritten on a `Dict` is **not** a warning; behaviour
+and cost stated here, where the default is documented, nowhere else.
 
 > **`ProcessDict`** — one value per BEAM process, in the process dictionary: no setup, no owner,
 > erased when the process ends. It is what a bare `var` means, and the spelling exists so that a
@@ -108,4 +107,4 @@ are stated here, where the default is documented, and nowhere else.
 > function value: a `fun` belongs to the module version that created it and dies with it on
 > reload.
 
-If `17-b` or `17-c` widens the keyed surface, the `keyed = true` sentence follows the answer.
+If `17-b` or `17-c` widens the keyed surface, the `keyed = true` sentence follows.

@@ -1,22 +1,20 @@
 # Track 02 — std and packaging
 
-**Repos:** `repository/botopink-lang/libs/std` (and the bundled libraries' consumer edits 97 names) ·
+**Repos:** `repository/botopink-lang/libs/std` (+ the bundled libraries' consumer edits 97 names) ·
 every `repository/<lib>/botopink.json` and `modules/<lib>-test/` skeleton · the manifest carve-out
 (`modules/manifest/**`, decision 75).
 
-The track owes two things:
+Owes:
 
-1. **std is the one place a shared primitive lives** — `parseInt` / `parseFloat`, the `Json`
-   accessors, `pbkdf2Sha256`, `parseDuration`, `RetryPolicy` and the snapshot engine on `io/fs` are
-   on feat; what is left is the `i32` binder, the conditional steps, std on wasm (group 3), the std
-   bodies `01-compiler/05-wasm` step 5 waits on (decisions 259–263) and the rows that hand each
-   library copy to the front that owns its file. Front
-   [`97-std-dedupe`](./97-std-dedupe/README.md).
-2. **The packaging rule is checked everywhere it applies** — a `-test` member with an
-   `assert<Subject>(loc, …)` helper in every library, a `README.md` beside every example (29 of 29
-   lack one), the `git`-dependency subdirectory question (lg2-v) and the takeover's amended decision
-   79 (95-f). Front [`98-packaging-tail`](./98-packaging-tail/README.md), which runs after the library
-   tracks have written their helpers and READMEs.
+1. **std is the one place a shared primitive lives** — `parseInt` / `parseFloat`, `Json` accessors,
+   `pbkdf2Sha256`, `parseDuration`, `RetryPolicy`, the snapshot engine on `io/fs` are on feat. Left:
+   the `i32` binder, the conditional steps, std on wasm (group 3), the std bodies
+   `01-compiler/05-wasm` step 5 waits on (decisions 259–263), the rows handing each library copy to
+   its file's front. Front [`97-std-dedupe`](./97-std-dedupe/README.md).
+2. **The packaging rule checked everywhere** — a `-test` member with an `assert<Subject>(loc, …)`
+   helper per library, a `README.md` beside every example (29 of 29 lack one), the `git`-dependency
+   subdirectory question (lg2-v), amended decision 79 (95-f). Front
+   [`98-packaging-tail`](./98-packaging-tail/README.md), after the library tracks' helpers and READMEs.
 
 ## Fronts
 
@@ -34,15 +32,14 @@ The track owes two things:
    library tracks' -test helpers and example READMEs ──► 98-packaging-tail   (last: it verifies)
 ```
 
-97 runs alone because a std primitive landed after its consumers were rewritten is rewritten twice;
-98 is last because its acceptance is a grep over files other fronts write.
+97 alone: a primitive landed after its consumers means rewriting them twice. 98 last: its acceptance
+greps files other fronts write.
 
 ## Decisions
 
 ### To confirm
 
-Choices 1.0.10 implemented; the text is in
-[1.0.10-beta `decisions-pending.md`](../../1.0.10-beta/decisions-pending.md).
+Implemented in 1.0.10; text in [1.0.10-beta `decisions-pending.md`](../../1.0.10-beta/decisions-pending.md).
 
 | Id | Choice | Closes on it |
 |---|---|---|
@@ -58,32 +55,29 @@ Choices 1.0.10 implemented; the text is in
 ### 95-f · The onze takeover happened without the orphan branch and the archive — amend decision 79
 
 > **Measured.** `repository/onze` is the orchestrator's workspace (`"name": "onze"`,
-> `"workspaces": ["modules/*", "examples/*"]`, eight members with `files`), built on the tag
-> `mocking-lib-final` in the **same** repository history and remote — not the orphan branch
-> `front/95-onze-orchestrator` decision 79 and 95-d described; nothing was archived or renamed.
-> `.gitmodules` has one `repository/onze` entry; `grep -rn '"onze"' --include=botopink.json
-> repository/` finds only the orchestrator's members.
-> **Options.** (1) confirm the tree: a new decision amends 79 — the old library lives as the tagged
-> history of the same repository, nothing is archived; (2) rewrite the remote to the orphan branch
-> and archive the old history (destructive: every checkout of `repository/onze` re-clones).
-> **Recommendation.** (1): the name resolves to the orchestrator, the tag resolves, the mocking
-> surface lives in std's `testing.mocks`; (2) buys nothing `git log` does not show and costs every
-> consumer a re-clone.
+> `"workspaces": ["modules/*", "examples/*"]`, eight members with `files`), built on tag
+> `mocking-lib-final` in the **same** history and remote — not the orphan branch
+> `front/95-onze-orchestrator` of decision 79 / 95-d; nothing archived or renamed. `.gitmodules` has
+> one `repository/onze` entry; `grep -rn '"onze"' --include=botopink.json repository/` finds only the
+> orchestrator's members.
+> **Options.** (1) confirm the tree: a new decision amends 79 — the old library is the tagged history
+> of the same repository, nothing archived; (2) rewrite the remote to the orphan branch and archive
+> the old history (destructive: every checkout of `repository/onze` re-clones).
+> **Recommendation.** (1): name and tag resolve, mocking lives in std's `testing.mocks`; (2) buys
+> nothing `git log` lacks and costs every consumer a re-clone.
 > **Blocks.** 98 step 3.
 
 ### std-d · `io.process` signals and a TTY reader — add, or refuse the callers
 
 > **Raised by** 97, for onze front 50 (`onze start` forwarding `SIGTERM`; `onze create`'s prompts).
-> **Measured.** `libs/std/src/io/process.bp` runs and spawns; it neither registers a signal handler
-> nor forwards one to a child, and std has no line reader over a TTY. onze 50's `start` waits on
-> `process.run`, so `SIGTERM` to the CLI leaves the node running; `create` without `--yes` has no
-> prompt to fall back to.
-> **Options.** (a) std gains `process.onSignal(name, fn)`, `process.forwardSignals(child)` and
+> **Measured.** `libs/std/src/io/process.bp` runs and spawns; no signal handler, no forwarding to a
+> child, no TTY line reader. onze 50's `start` waits on `process.run`, so `SIGTERM` to the CLI leaves
+> the node running; `create` without `--yes` has no prompt.
+> **Options.** (a) std gains `process.onSignal(name, fn)`, `process.forwardSignals(child)`,
 > `io.stdin.readLine()` — three host cells on two targets; (b) no std change: `onze start` execs the
-> node (front 71's `bin/onze` is PID 1 and receives the signal), and `onze create` without `--yes`
-> is refused naming the flags it needs.
-> **Recommendation.** (b), the most restrictive: no interactive path to get wrong, and the signal
-> reaches the process that must drain it. (a) is additive later if a second consumer appears.
+> node (front 71's `bin/onze` is PID 1 and receives the signal), `onze create` without `--yes` is
+> refused naming the flags it needs.
+> **Recommendation.** (b), most restrictive; (a) additive later if a second consumer appears.
 > **Blocks.** onze 50's `SIGTERM` and prompt boxes; 97 step 6.
 
-`std-e` (test lifecycle hooks) is written in [`../decisions-pending.md`](../decisions-pending.md).
+`std-e` (test lifecycle hooks) is in [`../decisions-pending.md`](../decisions-pending.md).

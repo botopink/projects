@@ -1,38 +1,31 @@
 # Front 118 — bpp components: the template language
 
-**Priority:** critical — every other front of the track writes markup through it, and it is the
-only one none of them can be tested without. · **State:** not started · ready to open
-**Depends on:** nothing open (`00-gate/101-gate-jhonstart` is done). Written against decisions
-190 (the library decides the types of an embedded expression; the surface is `{expr}`), 191 (the
-closed list jhonstart's `html` accepts), 192 (a component's attributes are the fields of its first
-parameter's type), 193 and 223 (children go through the props, typed `Node`), 204 (a `?T` hole is
-refused), 207 (an inline props type), 200 (`html` becomes the core's `pub default fn`), 266 (the
-`.bpp` prelude) and 189 (the carve-outs).
+**Priority:** critical — every other front writes markup through it; none is testable without it.
+· **State:** not started · ready to open
+**Depends on:** nothing open (`00-gate/101-gate-jhonstart` done). Written against decisions 190,
+191, 192, 193 and 223, 204, 207, 200, 266, 189.
 **Owns:** `repository/jhonstart/modules/jhonstart-html/**` (`src/html.bp`, `src/root.bp`,
-`test/**`, `botopink.json`, `src/AGENTS.md`) — the front lands there, and `05-jhonstart/26`
-step 0 then merges the member into the core, `html` becoming the core's `pub default fn`
-(decision 200); the appends of 119, 120 and 126 are to `jhonstart/src/html.bp` ·
-`repository/jhonstart/examples/jhonstart-markup/**` except its `README.md` (`05-jhonstart/26`
-step 6) · new `jhonstart/modules/jhonstart/src/prelude.bp` and the declaration of the node type
-`Node` in the core (decision 223; carve-outs of `05-jhonstart/26`'s member, decision 266) · the
-`Children` → `Node` rewrite of this track's `examples/**` · the one-line carve-outs of step 1:
-each `[name]={expr}` attribute outside this member — `jhonstart-emilia`'s bridge test (119's),
-`examples/document-shell`, and the comment lines of the core that name the DSL (`root.bp`,
-`elements.bp`, `05-jhonstart/26`'s) — rewritten by this front, one commit per repository, landed
-before the owning front opens (decision 189)
-**Does not touch:** `modules/jhonstart/**` beyond those lines (`05-jhonstart/26`'s — a need there
-is a hand-off, § Notes); the compiler; emilia — its `[class]={…}` lines are comments, reworded by
-`06-emilia/34` step 1, and `examples/emilia-card`'s by `06-emilia/33` step 2. Fronts 119, 120 and 126 each
-**append** one lowering arm to `html.bp` after this front lands, in that order (`fronts.md` rule 2).
+`test/**`, `botopink.json`, `src/AGENTS.md`) — lands there; `05-jhonstart/26` step 0 then merges
+it into the core, `html` the core's `pub default fn` (200); 119, 120, 126 append to
+`jhonstart/src/html.bp` · `repository/jhonstart/examples/jhonstart-markup/**` except its
+`README.md` (`05-jhonstart/26` step 6) · new `jhonstart/modules/jhonstart/src/prelude.bp` and the
+core's node type `Node` (223; carve-outs of `05-jhonstart/26`'s member, 266) · the `Children` →
+`Node` rewrite of this track's `examples/**` · step 1's one-line carve-outs: each `[name]={expr}`
+attribute outside this member — `jhonstart-emilia`'s bridge test (119's),
+`examples/document-shell`, the core's comment lines naming the DSL (`root.bp`, `elements.bp`,
+`05-jhonstart/26`'s) — one commit per repository, landed before the owning front opens (189)
+**Does not touch:** `modules/jhonstart/**` beyond those lines (`05-jhonstart/26`'s — a need is a
+hand-off, § Notes); the compiler; emilia — its `[class]={…}` lines are comments, reworded by
+`06-emilia/34` step 1, `examples/emilia-card`'s by `06-emilia/33` step 2. 119, 120, 126 each
+**append** one lowering arm to `html.bp` after this front, in that order (`fronts.md` rule 2).
 
 Reference: `astro-docs/09-astro-components.md`, `10-layouts.md`, `13-astro-syntax.md`.
 
 ## Goal
 
-A page, a layout and a component can be written in `html """…"""`: every attribute renders, a
-hole takes any renderable type, a component tag is a call with its props, children and slots go
-through the props, markup may sit inside `if` / `case` / lambdas, and directives are checked
-against a table. Today a page cannot be written in it:
+Pages, layouts, components in `html """…"""`: every attribute renders, holes take any renderable
+type, a component tag is a call with its props, children and slots via props, markup inside `if`
+/ `case` / lambdas, directives checked against a table. Today:
 
 ```bp
 val cls = "card";
@@ -41,36 +34,35 @@ val page = html """<div class="card" [id]={cls}><p>${name}</p><br/></div>""";
 
 | What the author wrote | What happens | Where |
 |---|---|---|
-| `class="card"` | dropped — a static attribute goes to the editor overlay and never to the `Element` | `html.bp:138-146`, `:233-234` |
-| `[id]={cls}` | the one attribute form that renders | `html.bp:117-136`, `:241` |
-| `title="two words"` | the tag body is split on single spaces, so the value is cut | `html.bp:110` |
-| `${name}` | lowered to `text(name)` — a hole is a string; an `Element`, a list, an `if` cannot be one | `html.bp:189` |
-| `<br/>` | stored and emitted after the loop, at the root, not inside `<div>` | `html.bp:212-217`, `:250-253` — read, not run |
+| `class="card"` | dropped — static attribute reaches the editor overlay, never the `Element` | `html.bp:138-146`, `:233-234` |
+| `[id]={cls}` | the one rendering attribute form | `html.bp:117-136`, `:241` |
+| `title="two words"` | tag body split on single spaces; value cut | `html.bp:110` |
+| `${name}` | `text(name)` — a hole is a string; no `Element`, list or `if` | `html.bp:189` |
+| `<br/>` | stored, emitted after the loop at the root, not inside `<div>` | `html.bp:212-217`, `:250-253` — read, not run |
 | `<Card title="x"/>` | lowered like any tag: `Card([…], attrs: […])` | `html.bp:231`; "`<Component/>` lookup stays a future layer" (`:30`) |
 | a comment, a fragment, a slot, a loop, a condition | not in the grammar | — |
 
-So every page in the tree is written with builders (`onze/examples/blog/src/app/blog/[slug]/page.bp`).
+So every page is builders (`onze/examples/blog/src/app/blog/[slug]/page.bp`).
 
 ## Mechanism
 
-**Where it stands** (`repository/jhonstart/modules/jhonstart-html/`): `src/html.bp` is 270 lines,
-one function, `pub fn html(comptime template: @Expr<string>) -> @ExprCustom<Element>`; `test/` is
-two files; 12 files use `html """` (jhonstart-html 4, jhonstart 2, document-shell 2,
-jhonstart-markup 1, jhonstart-emilia 1, emilia 1, erika-linq 1); `[name]={expr}` has 10 uses in 7
-files outside the parser. The body is written under the rules its header states (`html.bp:56-75`:
-no optional, no array index, no comment inside the body, a counter reassigned only in the flat
-loop, the token tuple read positionally) — written for an evaluator since replaced (comptime runs
-on the BEAM and wat runtimes); step 0 finds which still hold. The lowering targets exist in the
-core member: `Element(tag, value, children, attrs)` (`jhonstart/src/element.bp`), `el(tag,
-children, attrs)` and `voidEl(tag, attrs)` (`elements.bp`), `fragment` (`element.bp`), `raw(html)`
-(`render.bp`), and `Children` — used by `element.bp` and `elements.bp` as the children type,
-coercing from a list, one `Element` or a `string`, declared by no jhonstart module: the checker
-knows it by name (`compiler-core/src/comptime/env.zig`'s known names, `infer.zig`'s `Children`
-coercion). Decision 223 names it `Node`; this front declares `Node` (step 6). The
-renderer escapes text and attributes and refuses `</script` inside a raw-text body (`render.bp`).
+**Where it stands** (`repository/jhonstart/modules/jhonstart-html/`): `src/html.bp` 270 lines, one
+function `pub fn html(comptime template: @Expr<string>) -> @ExprCustom<Element>`; `test/` two
+files; 12 files use `html """` (jhonstart-html 4, jhonstart 2, document-shell 2, jhonstart-markup
+1, jhonstart-emilia 1, emilia 1, erika-linq 1); `[name]={expr}` 10 uses in 7 files outside the
+parser. Body rules in its header (`html.bp:56-75`: no optional, no array index, no comment in the
+body, a counter reassigned only in the flat loop, token tuple read positionally) were for a
+replaced evaluator (comptime now on BEAM and wat); step 0 checks which hold. Lowering targets in
+the core: `Element(tag, value, children, attrs)` (`jhonstart/src/element.bp`), `el(tag, children,
+attrs)`, `voidEl(tag, attrs)` (`elements.bp`), `fragment` (`element.bp`), `raw(html)`
+(`render.bp`), and `Children` — children type of `element.bp`/`elements.bp`, coercing from a list,
+one `Element` or a `string`, declared by no jhonstart module (checker knows it by name:
+`compiler-core/src/comptime/env.zig` known names, `infer.zig`'s `Children` coercion); 223 renames
+it `Node`, declared here (step 6). Renderer escapes text and attributes, refuses `</script` in a
+raw-text body (`render.bp`).
 
-The function keeps its shape — lex, parse, lower twice (code and `CustomNode` overlay), return
-`q.custom(overlay, q.build(code))` — and its grammar grows to this:
+Shape kept — lex, parse, lower twice (code and `CustomNode` overlay), return
+`q.custom(overlay, q.build(code))`; grammar becomes:
 
 ```
 template  := node*
@@ -83,29 +75,18 @@ hole      := '{' expr '}'  |  '${' expr '}'
 expr      := botopink, in which markup may start a lambda body, an if / else block or a case arm
 ```
 
-**A hole is one of a closed list** (decisions 190, 191, 204). The template function decides which
-types an embedded `{expr}` may have and refuses the others with a comptime error located at the
-expression. It accepts: a `string`; a number of any numeric type and a `bool`, each written as its
-`toString()` text, the same on every target; a component of the same base context (an `Element`,
-base `ElementBase`); a list of such components; and the node type, which names exactly that set.
-A record, an optional (`error: a hole of type ?string — write {subtitle ?? ""}`), a function and a
-component of another base are refused. `{expr}` is the surface; `${expr}` keeps working, keeps its
-meaning — text — and the located diagnostics a real hole has. The compiler owes the means — an
-embedded expression of any type reaching the template function with its type readable at comptime
-and its position (`language-gaps.md`, owner `01-compiler`); until then `{expr}` is read out of the
-literal's raw text and re-emitted through `build`, where a wrong type is the checker's own error
-at the template call, and the function moves to the typed form without changing the surface.
+**Holes** (190, 191, 204): accepted set per 191 (`string`; number/`bool` as `toString()`; same-base component — `Element`, base `ElementBase`; a list of them; the node type); refused `?T` message `error: a hole
+of type ?string — write {subtitle ?? ""}`; record, function, other-base component refused at the
+expression. `{expr}` is the surface; `${expr}` keeps meaning text, with real-hole diagnostics.
+Compiler owes typed, positioned embedded expressions (`language-gaps.md`, owner `01-compiler`);
+meanwhile `{expr}` is read from the raw text and re-emitted through `build` (a wrong type = the
+checker's error at the template call); the move to the typed form keeps the surface.
 
-**A component tag is a call with one props value** (decisions 192, 193, 207, 223). The attributes
-written on `<Comp …>` are the fields of the type of the **first parameter** of `Comp`'s function
-— a named type, or an inline `type(…)` (decision 207): each name must be one of those fields and
-each value — a literal or `{expr}` — has that field's type. An undeclared attribute, a value of
-another type, and a field with no default left unwritten are comptime errors located at the
-attribute. A component takes children only when that type declares a `children` field, whose type
-says what is acceptable — `children: Node`, the node type (decision 223; the examples' `Children`
-is rewritten by step 6). Content inside the tag of a component whose props declare no `children` is a comptime
-error at the tag, a `children` field of a narrower type refuses what it does not name, and a
-second `children` parameter beside the props goes away:
+**Component tag = call with one props value** (192, 193, 207, 223). Attributes on `<Comp …>` are fields of the
+**first parameter**'s type of `Comp` (named or inline `type(…)`); undeclared attribute, wrong type, missing
+non-default field: comptime error at the attribute. Children only via a `children: Node` field
+(examples' `Children` rewritten in step 6); content in a component without one: error at the tag;
+a narrower `children` type refuses what it does not name; a second `children` parameter goes away.
 
 | Markup | Lowering |
 |---|---|
@@ -113,10 +94,8 @@ second `children` parameter beside the props goes away:
 | `<Card title="Hi"><p>body</p></Card>` | the same, with `children: [p(["body"])]` among the fields |
 
 **Slots.** `<slot />` reads `children`; `<slot name="footer">fallback</slot>` renders the fallback
-when its content is empty. How a **named** slot (`<p slot="footer">` on the caller,
-`<slot name="footer">` in the component) maps onto the props is not stated by decision 193, which
-names the `children` field only (`props-e`). The surface the examples aim at — `footer` as a
-field of the props is one reading of that open point, not a decision:
+when empty. Named-slot mapping (`<p slot="footer">` / `<slot name="footer">`) is open (`props-e`);
+`footer` as a props field below is one reading, not a decision:
 
 ```bp
 pub default fn Card(props: type(title: string, children: Node = [], footer: Node = [])) -> Element {
@@ -130,10 +109,9 @@ pub default fn Card(props: type(title: string, children: Node = [], footer: Node
 }
 ```
 
-**Markup inside an expression.** Astro writes `{items.map((x) => <li>{x}</li>)}`,
-`{cond && <p/>}` and `{cond ? <a/> : <b/>}`. The language has no ternary and no `&&` value; it has
-lambdas, and `if` and `case` are expressions. So markup may begin exactly where one of those
-yields its value:
+**Markup inside an expression.** No ternary, no `&&` value; markup begins where a lambda, `if` or
+`case` yields its value (Astro's `{items.map((x) => <li>{x}</li>)}`, `{cond && <p/>}`,
+`{cond ? <a/> : <b/>}`):
 
 ```
 {items.map({ x -> <li>{x}</li> })}
@@ -142,160 +120,128 @@ yields its value:
 {case status { Draft -> <em>draft</em>; _ -> <span>live</span>; }}
 ```
 
-**A directive is checked against a table.** `prefix:name` on a tag is looked up; one the table
-does not hold is a compile error at its span — it never falls through to a rendered attribute.
-This front fills the `set:`, `class:` and `is:raw` rows; 119 adds `is:global` and `define:`, 120
-`client:` and `server:`, 126 `transition:`.
+**Directive table.** `prefix:name` looked up; unknown = compile error at its span, never a rendered
+attribute. This front: `set:`, `class:`, `is:raw`; 119 `is:global`, `define:`; 120 `client:`,
+`server:`; 126 `transition:`.
 
-**Hygiene and the prelude.** A tag name and an expression come from the literal and resolve in the
-caller's scope; `fragment`, `raw`, `el`, `classIf` are written by the library and resolve in the
-library (decision 112) — so a page imports the builders and components it names, and nothing
-else. In a `.bpp` file the builders come from jhonstart's `prelude.bp` (decision 266): the
-caller's scope ends in the prelude, so `<article>` resolves without a header import and only the
-builders a file names are imported. This front writes `jhonstart/modules/jhonstart/src/prelude.bp`
-and the node type the track's examples use, which jhonstart does not declare today.
+**Hygiene, prelude.** Tag names and expressions resolve in the caller's scope; `fragment`, `raw`,
+`el`, `classIf` resolve in the library (decision 112) — a page imports only what it names. In a
+`.bpp` the caller's scope ends in jhonstart's `prelude.bp` (266): `<article>` resolves without a
+header import, only named builders imported. This front writes
+`jhonstart/modules/jhonstart/src/prelude.bp` and the node type (undeclared today).
 
 ## Open
 
 ### Step 0 — Measure the body's language, and pin the defects as red tests
 
-- [ ] `test/platform_test.bp`: from a template body — call a bodied private function of the
-      module; recurse; read `xs.at(i)`; bind a `?T`; reassign an `i32` inside a nested lambda;
-      write a `//` comment. Each is one test that passes or names the refusal
-- [ ] `src/AGENTS.md` § Comptime constraints rewritten from the six results; `html.bp:56-75`
-      keeps only what is still true
-- [ ] four red tests, one per row of § Goal that is a defect: the dropped static attribute, the
-      attribute value with a space, the nested self-closing tag, the element-valued hole
+- [ ] `test/platform_test.bp`, from a template body: call a bodied private function of the module;
+      recurse; read `xs.at(i)`; bind a `?T`; reassign an `i32` in a nested lambda; write a `//`
+      comment — one test each, passing or naming the refusal
+- [ ] `src/AGENTS.md` § Comptime constraints rewritten from the six results; `html.bp:56-75` keeps only what holds
+- [ ] four red tests, one per § Goal defect row: dropped static attribute, attribute value with a
+      space, nested self-closing tag, element-valued hole
 
-A parser for the grammar wants recursion. If the body cannot recurse, the grammar is parsed by the
-explicit stack the function already uses, and `language-gaps.md` gets the row.
+No recursion → parse with the function's explicit stack, plus a `language-gaps.md` row.
 
 ### Step 1 — Attributes render
 
-`name="text"` (any text up to the closing quote), `name={expr}`, a bare `name`, kebab-case names.
-A `bool` expression renders the bare attribute when true and nothing when false; a `?string`
-renders nothing when null. `{...expr}` on an **element** appends an `Array<#(string, string)>` —
-the list `formAttrs(binding)` and `styled(tokens)` already answer; on a component it is refused
-(`props-f`). `[name]={expr}` is refused with a message naming `name={expr}`, and its
-uses in code are rewritten in the same landing — `jhonstart-html`'s `html_test.bp` and
-`elements_test.bp`, and outside this member, as the one-line carve-outs § Owns names,
-`jhonstart-emilia`'s `bridge_test.bp` and `document-shell`'s `shell_dsl.bp`, each landed before the
-front that owns the file opens (decision 189).
-On a **component** tag an attribute is a field of the props (decision 192), checked as
-§ Mechanism says. The rule for the attributes of a **native** tag
-(`fn <tag>(children: Children, attrs: Array<#(string, string)> = [])`) is still to be stated
-(`props-d`).
+`name="text"` (to the closing quote), `name={expr}`, bare `name`, kebab-case. `bool`: bare
+attribute when true, nothing when false; `?string`: nothing when null. `{...expr}` on an
+**element** appends an `Array<#(string, string)>` (what `formAttrs(binding)`, `styled(tokens)`
+answer); on a component refused (`props-f`). `[name]={expr}` refused with a message naming
+`name={expr}`; its code uses rewritten in the same landing — `jhonstart-html`'s `html_test.bp`,
+`elements_test.bp`, and the § Owns carve-outs `jhonstart-emilia`'s `bridge_test.bp`,
+`document-shell`'s `shell_dsl.bp`, each before the owning front opens (189). Component attributes
+per 192 (§ Mechanism). Native-tag attributes (`fn <tag>(children: Children, attrs: Array<#(string,
+string)> = [])`): `props-d`.
 
-- [ ] `<a href="/a b" title={t} hidden={off} data-x="1">` renders all four as written, escaped by
-      `escape.attribute`
+- [ ] `<a href="/a b" title={t} hidden={off} data-x="1">` renders all four as written, escaped by `escape.attribute`
 - [ ] `<form {...formAttrs(binding)}>` renders the pairs in order, after the written attributes
-- [ ] the four red tests of step 0 that concern attributes are green
+- [ ] step 0's attribute red tests green
 - [ ] `grep -rn '\]={' repository/*/` over `.bp` files finds no bracket attribute
 
 ### Step 2 — Holes of any renderable type, and the tag-shaped corners
 
-`{expr}` under decisions 190, 191 and 204 — read from the raw text and re-emitted through `build`
-until the compiler provides typed embedded expressions; void and self-closing tags in place;
-`<>…</>` and `<Fragment>`; `<!-- … -->` (rendered); a doctype; raw-text elements (`script`,
-`style`, `textarea`, `title`) whose body is not parsed; `is:raw` on any element.
+`{expr}` under 190, 191, 204 (raw text via `build` until typed embedded expressions); void and
+self-closing tags in place; `<>…</>`, `<Fragment>`; `<!-- … -->` (rendered); doctype; raw-text
+elements (`script`, `style`, `textarea`, `title`) unparsed; `is:raw` on any element.
 
 - [ ] `examples/template-expressions-example.bp` passes on both targets
-- [ ] `{n}` for an `i32` renders the number's `toString()` text, the same on both targets
-      (decision 191 — the box once asked for a refusal)
-- [ ] a record, an optional, a function and a component of another base in a hole are each
-      refused, located at the expression
+- [ ] `{n}` for an `i32` renders its `toString()` text, same on both targets (191 — the box once asked for a refusal)
+- [ ] record, optional, function, other-base component in a hole each refused at the expression
 - [ ] `<br/>` inside `<p>` renders inside `<p>`
 
 ### Step 3 — Markup inside `if`, `case` and lambdas
 
-- [ ] the four forms of § Mechanism render; an `if` without `else` renders nothing when false
-- [ ] markup in any other expression position (`{1 + <p/>}`, an argument that is not a lambda body)
-      fails at the `<`, naming the three positions that allow it
-- [ ] three levels of nesting — a list of lists of conditionals — in one template
+- [ ] § Mechanism's four forms render; `if` without `else` renders nothing when false
+- [ ] markup elsewhere (`{1 + <p/>}`, a non-lambda-body argument) fails at the `<`, naming the three allowed positions
+- [ ] three nesting levels — list of lists of conditionals — in one template
 
 ### Step 4 — Components and slots
 
-A component tag lowers to a call whose first argument is the props value built from the tag's
-attributes (decision 192), and the content inside the tag is the props' `children` field
-(decisions 193, 223). The slot boxes wait on how a named slot maps onto the props (`props-e`).
+Tag → call with props from attributes (192); tag content = `children` (193, 223). Slot boxes wait on `props-e`.
 
 - [ ] `examples/components-and-slots-example.bp` passes on both targets
-- [ ] a tag whose name starts upper-case and resolves to nothing in the caller's scope fails at
-      the tag, as an unbound name
-- [ ] content given to a component whose props declare no `children` fails at the tag; a
-      `children` field of a narrower type refuses what it does not name
+- [ ] upper-case tag resolving to nothing in the caller's scope fails at the tag, as an unbound name
+- [ ] content to a component without `children` fails at the tag; a narrower `children` type refuses what it does not name
 - [ ] `slot="x"` on a child of an **element** (not a component) is a compile error
 - [ ] slot transfer (`<slot name="head" slot="head" />`) through two layouts
 
 ### Step 5 — `set:html`, `set:text`, `class:list`, and the directive table
 
-`set:html={s}` is `raw(s)` as the element's only child — children beside it are a compile error;
-`set:text={s}` is the escaped form; `class:list={[…]}` takes an `Array<string>`, drops empty
-strings and joins with one space, merged after a static `class`. `classIf(cond, name)` answers the
-name or `""`.
+`set:html={s}` = `raw(s)` as only child (siblings: compile error); `set:text={s}` escaped;
+`class:list={[…]}` takes `Array<string>`, drops empty strings, joins with one space, merged after a
+static `class`. `classIf(cond, name)` answers the name or `""`.
 
 - [ ] `examples/directives-example.bp` passes on both targets
-- [ ] `<div foo:bar="1">` fails at `foo:bar` with the list of known prefixes
+- [ ] `<div foo:bar="1">` fails at `foo:bar` with the known prefixes
 - [ ] `<div set:html={s}>x</div>` fails at the child
 
 ### Step 6 — The overlay, and the prelude
 
-Every token the grammar adds reaches the `CustomNode` tree: a component tag carries its `Binding`
-(go-to-definition lands on the function), an attribute name of a component is a `property`, a
-directive is a `keyword`, an expression region is left to the host language. jhonstart's
-`prelude.bp` (decision 266) is written, compiled and tested with the core member.
+Every new token reaches the `CustomNode` tree: component tag carries its `Binding`
+(go-to-definition → the function), component attribute name = `property`, directive = `keyword`,
+expression region left to the host language. jhonstart's `prelude.bp` (266) written, compiled,
+tested with the core.
 
-- [ ] the language server's `@ExprCustom` snapshot for a template with a component, a slot and a
-      directive (`language-server/snapshots/lsp/` — the snapshot is recorded by this front and
-      owned by `01-compiler/26`; it becomes a hand-off if the directory is closed to a library
-      front)
-- [ ] a mismatched close tag underlines the tag, not the template
-- [ ] the core declares the node type `Node` (decision 223) — 191's set: text, a number, a
-      `bool`, a component of the same base, a list of them — importable as
-      `import {Node} from "jhonstart";`, and a `children: Node` field coerces as `Children` does
-      today (the checker's coercion is keyed on the name `Children`: if it must learn `Node`, that
-      is a hand-off to `01-compiler/01-checker`, named here before the box closes)
+- [ ] language server's `@ExprCustom` snapshot for a template with a component, a slot, a
+      directive (`language-server/snapshots/lsp/` — recorded here, owned by `01-compiler/26`; a
+      hand-off if closed to a library front)
+- [ ] mismatched close tag underlines the tag, not the template
+- [ ] core declares `Node` (223) — 191's set — importable `import {Node} from "jhonstart";`; a
+      `children: Node` field coerces as `Children` does (coercion keyed on the name `Children`: if
+      it must learn `Node`, hand-off to `01-compiler/01-checker`, named here before closing)
 - [ ] `jhonstart/src/prelude.bp` holds `import` items of the core's own modules only (`Element`,
-      the builders, `Node`) and compiles with the member
-- [ ] the examples' `Children` is rewritten to `Node`: `grep -rnw Children 08-bpp/*/examples`
-      (33 lines in 16 files today) is empty
+      builders, `Node`), compiles with the member
+- [ ] examples' `Children` → `Node`: `grep -rnw Children 08-bpp/*/examples` (33 lines in 16 files today) is empty
 
 ## Decisions
 
-- `props-d` — the attributes of a **native** HTML tag (decision 192 covers component tags only) — steps 1, 4
-- `props-e` — how a **named slot** maps onto the props (decision 193 names `children` only) — step 4
+- `props-d` — attributes of a **native** HTML tag (192 covers components only) — steps 1, 4
+- `props-e` — **named slot** onto props (193 names `children` only) — step 4
 - `props-f` — `{...expr}` on a component — step 1
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test --target commonJS` and `--target erlang` green in `modules/jhonstart-html`
-- [ ] `zig build test-libs`: jhonstart, emilia, erika and onze — the 12 files that use the DSL —
-      green
+- [ ] `zig build test-libs`: jhonstart, emilia, erika, onze — the 12 DSL files — green
 
 ## Blast radius
 
-- **12 files use the DSL; four bracket attributes in code are rewritten** (this member's two
-  tests, `jhonstart-emilia`'s bridge test, `document-shell`); emilia's are comments (34, 33).
-- **A template that has a static attribute changes its output.** Today the attribute is silently
-  absent from the HTML; after step 1 it is there. Every snapshot or literal that pinned the
-  absence moves — step 1 lists them before it changes them.
-- **`html.bp` grows several times over**, inside a comptime body. Its speed is part of the gate:
-  step 6 reports the template-evaluation time of `jhonstart-markup` before and after.
-- **Fronts 119, 120, 126 append to `html.bp`.** They land after this front and one at a time.
+- **12 DSL files; four bracket attributes in code rewritten** (this member's two tests,
+  `jhonstart-emilia`'s bridge test, `document-shell`); emilia's are comments (34, 33).
+- **Templates with static attributes change output** (absent today, present after step 1); pinned
+  snapshots/literals move — step 1 lists them first.
+- **`html.bp` grows several-fold in a comptime body**; speed is gated: step 6 reports
+  `jhonstart-markup` template-evaluation time before/after.
+- **119, 120, 126 append to `html.bp`**, after this front, one at a time.
 
 ## Notes
 
-- **Open, after decisions 190–193.** (1) The attributes of a **native** HTML tag
-  (`fn <tag>(children: Children, attrs: Array<#(string, string)> = [])`) — `props-d`. (2) How a
-  **named slot** (`<p slot="footer">`, `<slot name="footer">`) maps onto the props — `props-e`.
-  (3) `{...expr}` on a component — `props-f`. (4) This front declares `Node` (decision 223), its
-  prelude imports it, and the track's examples' `Children` is rewritten to `Node` (step 6). The
-  rename of every signature that spells `Children` (`element.bp`, `elements.bp`) and the move of a
-  component's children into its props, in every component of the track's members, are hand-offs
-  to `05-jhonstart` ([`../../05-jhonstart/README.md`](../../05-jhonstart/README.md) § Handed to
-  this track by `08-bpp/118`), not steps of this front.
-- **What is not added.** Dynamic tags (`<Element>` from a variable): `{el(tag, children, attrs)}`
-  in a hole is the form, and it is ordinary code. `.html` and `.svg` files as components: a
-  comptime body cannot read a file (`language-gaps.md` lg2-o); the markup is pasted into a
-  component.
-- **`Astro.self`** is the function's own name; **`Astro.props`** is its props parameter;
-  **`Astro.slots.has("x")`** is `hasContent(x)`.
+- **Hand-offs.** Renaming every
+  `Children` signature (`element.bp`, `elements.bp`) and moving children into props in every track
+  member component are hand-offs to `05-jhonstart`
+  ([`../../05-jhonstart/README.md`](../../05-jhonstart/README.md) § Handed to this track by
+  `08-bpp/118`), not steps here.
+- **Not added.** Dynamic tags (`<Element>` from a variable): `{el(tag, children, attrs)}` in a hole. `.html`/`.svg` components:
+  comptime cannot read a file (lg2-o); paste the markup.
+- **`Astro.self`** = own name; **`Astro.props`** = props parameter; **`Astro.slots.has("x")`** = `hasContent(x)`.

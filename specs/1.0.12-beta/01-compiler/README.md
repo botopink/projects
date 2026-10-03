@@ -1,18 +1,16 @@
 # Track 01 — compiler
 
-**Repos:** `repository/botopink-lang/modules/**` (compiler-core, compiler-cli, bpmp, language-server,
-lib-test-runner, test-shard, wasm3), `repository/botopink-lang/tests/language/**`,
-`repository/botopink-lang/scripts/**` (the runners and audits), `repository/botopink-lang/docs.md`,
-the compiler's `AGENTS.md` files, and erika (`07-residuals`).
+**Repos:** in `repository/botopink-lang/`: `modules/**` (compiler-core, compiler-cli, bpmp,
+language-server, lib-test-runner, test-shard, wasm3), `tests/language/**`, `scripts/**` (runners,
+audits), `docs.md`, the compiler's `AGENTS.md` files; erika (`07-residuals`).
 
 ## Goal
 
-Every program `botopink check` accepts runs with the same answer on commonJS, erlang, wasm and beam,
-or is refused located, by name; the toolchain ships what `test` ships; std builds on wasm; every
-builtin is declared and held to its declaration; a decorator writes into the four places of
-decision 216 and `@emit` leaves the language; the ecosystem stops writing the `;` after a braced
-block and the parser refuses it. Every open row is stated in its front as behaviour with a cell,
-cut by file ownership so the fronts can run side by side.
+Every program `botopink check` accepts runs the same on commonJS, erlang, wasm, beam, or is refused
+located, by name; toolchain ships what `test` ships; std builds on wasm; every builtin declared and
+held to it; decorators write into decision 216's four places, `@emit` leaves; the `;` after a braced
+block leaves the ecosystem and the parser refuses it. Each open row = behaviour + cell in its front,
+cut by file ownership so fronts run in parallel.
 
 ## Fronts
 
@@ -38,59 +36,47 @@ cut by file ownership so the fronts can run side by side.
 
 ## Ownership
 
-Each front's README names what it owns; two fronts share no source file and no snapshot directory,
-except by a named carve-out with a sequence:
+Fronts share no source file or snapshot directory except by named, sequenced carve-out:
 
-- `codegen/beam/{erl_ast,erl_emitter}.zig` (the Erlang-text renderer) is 02's; the keyed-`Ets`
-  functions of `erlang.zig` and `beam_asm.zig` are 17's; `codegen/beam/asm_text.zig` is 14's;
-  `beam_file.zig`, `opcodes.zig` and `wat/wasm_binary_emitter.zig` are 18's.
-- `codegen/tests/**`, `comptime/tests/**`, `parser/tests/**`, `language-server/src/tests/**` are 07's,
-  with the per-backend fixture files to their backends (`erlang.zig` 02, `beam.zig` 03,
-  `commonjs.zig` 04, `wat.zig` 05) and 14's `comptime_module.zig` fixtures.
-- `parser.zig`'s `isBracedBlockStmt` and the `blockStatementSemicolon` kind are 16's for its step 3,
-  after 01's parser rows; 16 step 8 (the annotation's printer arm) lands before 01 step 10.
-- `docs.md`'s prose is 07's (23, 24 and 26 supply text for their sections); its marker and fence
-  lines, `scripts/check-docs.sh`, `test.yml` and `gate.sh`'s budget lines are `00-gate/114`'s;
-  `release.yml` is 18's; root `build.zig` is 26's except 18's `render-resident` / `compiler-web` steps.
-- The runners (`scripts/{gate.sh,test-libs.sh,lib/pool.sh}`, `tests/language/run.sh` beyond 12's
-  report and `all)` line, `modules/test-shard/**`, `modules/lib-test-runner/**`) have no open owner
-  since `25-gate-perf` and 00-gate's 115 and 133 closed: a front that must edit one names it as a
-  carve-out in its commit.
-- `libs/std/**` is the std track's (`../02-std-and-packaging/`): a std row a compiler front measures
-  is handed over with its cell; 17's `beam.bp` primitives and 130/134's `builtins.d.bp` parts are
-  named carve-outs.
-- 07's steps 1 and 4 re-derive and rename in the backends' snapshot directories: after 02–05 land.
+- `codegen/beam/{erl_ast,erl_emitter}.zig` (Erlang-text renderer) 02 · keyed-`Ets` functions of
+  `erlang.zig` and `beam_asm.zig` 17 · `codegen/beam/asm_text.zig` 14 · `beam_file.zig`,
+  `opcodes.zig`, `wat/wasm_binary_emitter.zig` 18.
+- `codegen/tests/**`, `comptime/tests/**`, `parser/tests/**`, `language-server/src/tests/**` 07;
+  per-backend fixtures to their backends (`erlang.zig` 02, `beam.zig` 03, `commonjs.zig` 04,
+  `wat.zig` 05); 14's `comptime_module.zig` fixtures.
+- `parser.zig`'s `isBracedBlockStmt` and `blockStatementSemicolon` kind: 16 for step 3, after 01's
+  parser rows; 16 step 8 (annotation printer arm) before 01 step 10.
+- `docs.md` prose 07 (23, 24, 26 supply section text); its marker/fence lines,
+  `scripts/check-docs.sh`, `test.yml`, `gate.sh` budget lines `00-gate/114`; `release.yml` 18; root
+  `build.zig` 26 except 18's `render-resident` / `compiler-web` steps.
+- Runners (`scripts/{gate.sh,test-libs.sh,lib/pool.sh}`, `tests/language/run.sh` beyond 12's report
+  and `all)` line, `modules/test-shard/**`, `modules/lib-test-runner/**`): no open owner (since
+  `25-gate-perf`, 115, 133 closed) — an editing front names the carve-out in its commit.
+- `libs/std/**`: std track (`../02-std-and-packaging/`); a std row a compiler front measures is
+  handed over with its cell; carve-outs: 17's `beam.bp` primitives, 130/134's `builtins.d.bp` parts.
+- 07 steps 1 and 4 (re-derive/rename in backend snapshot dirs): after 02–05.
 
 ## Decisions
 
-Open ids this track waits on (the full statements in [`../decisions-pending.md`](../decisions-pending.md)
-or, for the 1.0.10 confirmations, [1.0.10's](../../1.0.10-beta/decisions-pending.md)):
+Open ids waited on — statements in [`../decisions-pending.md`](../decisions-pending.md); 1.0.10
+choices to confirm (16-a/b, 23-b/c, std-c, 24-a/b/c/g, 01c-a/b, 0405-b) in
+[1.0.10's](../../1.0.10-beta/decisions-pending.md); front in parentheses:
+**17-b, 17-c** ([`17-beam-memory`](./17-beam-memory/README.md) § Decisions) · **134-a … 134-d**
+(134) · **C-14** (07 step 9) · **16-a, 16-b** (16) · **23-b, 23-c, std-c** (23) · **24-a, 24-b,
+24-c, 24-g** (24) · **01c-a, 01c-b** (01) · **0405-b** (04) · **imp-a** (01) · **lg2-a … lg2-w**
+(`lg2-k` answered by 216): none opens a front until answered, each then a step — 01 lg2-a/e/f/q +
+parser rows lg2-m/r/t, 14 lg2-j/o/w, 26 lg2-v; `lg2-l` maybe de facto (`@panic` / `@todo`
+`noreturn`, a branch ending in one narrows): maintainer confirms, row closes.
 
-- **17-b, 17-c** — the per-row increment of a `keyed = true` `Dict`; what else names one
-  ([`17-beam-memory`](./17-beam-memory/README.md) § Decisions)
-- **134-a … 134-d** — `@print`'s arity, `with:`'s type, `@getContext`'s answer, `@is` by hand (134)
-- **C-14** — whether the `->` `case` arm leaves the language (07 step 9)
-- **16-a, 16-b** — C-12's argument list with its enclosing constructs; one element per line — to confirm (16)
-- **23-b, 23-c, std-c** — to confirm (23) · **24-a, 24-b, 24-c, 24-g** — to confirm (24)
-- **01c-a, 01c-b** — the comptime module's atom; a section leaf's shorthand — to confirm (01) ·
-  **0405-b** — commonJS prints `undefined` as `null` — to confirm (04)
-- **imp-a** — two aliased imports of two same-named types (decision 170 makes them legal; the
-  backends do not tell types apart by module) (01)
-- **lg2-a … lg2-w** (`lg2-k` answered by 216) — the rakun sweep's language questions: none opens a front until answered; each
-  opens a step in its front's README — 01 for lg2-a/e/f/q and the parser rows lg2-m/r/t, 14 for
-  lg2-j/o/w, 26 for lg2-v. `lg2-l` may be answered de facto (`@panic` / `@todo` are `noreturn` and a
-  branch ending in one narrows); the maintainer confirms and the row closes.
-
-Every recommendation is the most restrictive behaviour with no configuration that bypasses it
-(decision 67).
+Every recommendation: most restrictive behaviour, nothing configurable bypasses it (decision 67).
 
 ## Rules
 
-- A backend builds a model and an emitter renders it; a snapshot is evidence, not a baseline —
-  re-record only a value verified by running.
-- The gate runs from a cold runtime cache; no check is skipped to be fast (decision 67), no
-  configuration bypasses a refusal, and no list of tolerated reds exists.
-- The compiler knows no library: a library's need is a `language-gaps.md` row with a front here, and
-  a workaround in the library until the front lands.
-- A cell an area front adds lands in that front's commit, one file per cell, proved able to fail on
-  the parent binary (`tests/language/AGENTS.md` § Who adds a cell).
+- Backend builds a model, emitter renders it; a snapshot is evidence, not baseline — re-record only
+  a value verified by running.
+- Gate runs from a cold runtime cache; nothing skipped for speed (decision 67), no bypass of a
+  refusal, no tolerated-red list.
+- Compiler knows no library: a library need = a `language-gaps.md` row + a front here, workaround in
+  the library meanwhile.
+- An area front's cell lands in its commit, one file per cell, proved able to fail on the parent
+  binary (`tests/language/AGENTS.md` § Who adds a cell).

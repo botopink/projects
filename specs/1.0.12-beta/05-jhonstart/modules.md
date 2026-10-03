@@ -1,7 +1,7 @@
 # Modules — `repository/jhonstart` as it is on disk
 
-The tree on `feat` (`find repository/jhonstart -name '*.bp' -o -name '*.mjs' -o -name '*.erl'`),
-and what each front of this track owns in it.
+The tree on `feat` (`find repository/jhonstart -name '*.bp' -o -name '*.mjs' -o -name '*.erl'`) and
+what each front owns in it.
 
 ## Members — seven
 
@@ -15,15 +15,15 @@ and what each front of this track owns in it.
 | **`jhonstart-test`** | `root.bp`, `harness.bp`, `assert_html.bp`, `assert_route.bp`, `assert_link.bp`, `assert_server.bp`, `assert_island.bp`, `assert_stream.bp`, `assert_render.bp`, `assert_error_boundary.bp`, `assert_metadata.bp`, `assert_form.bp` | `helpers_test` (20 tests, 7 accepted snapshots) | inherits | `jhonstart`, `jhonstart-link`, `jhonstart-forms`, std |
 | **`jhonstart-dom-test`** | `root.bp`, `fake_dom.mjs` | `dom_test` (8) | `["commonJS"]` — structural: no DOM on the BEAM (30-g), `botopink build --target erlang` refuses it at `src/root.bp:37`; no erlang row | `jhonstart` |
 
-Decision 200 deletes `jhonstart-html`: front 26 step 0 moves `html.bp` and its two tests into the
-core, `html` becomes the core's `pub default fn` (`import html, {Element, renderToString} from
-"jhonstart";`), and `jhonstart-emilia`, `examples/jhonstart-markup` and `examples/document-shell`
-import from the core — six members after it. Before that, `08-bpp/118` adds the core's
-`src/prelude.bp` (decision 266) as a carve-out.
-
-Every browser cell has an erlang twin answering the server's truth (27-a); `jhonstart-dom-test`
-is the one member that needs a document. The core's `botopink.json` lists `files` in dependency
-order and its `root.bp` the `pub mod` lines in front order.
+- Decision 200 deletes `jhonstart-html`: 26 step 0 moves `html.bp` and its two tests into the core,
+  `html` becomes the core's `pub default fn` (`import html, {Element, renderToString} from
+  "jhonstart";`), `jhonstart-emilia`, `examples/jhonstart-markup`, `examples/document-shell` import
+  from the core — six members after. Before that, `08-bpp/118` adds the core's `src/prelude.bp`
+  (decision 266) as a carve-out.
+- Every browser cell has an erlang twin answering the server's truth (27-a); `jhonstart-dom-test` is
+  the one member needing a document.
+- The core's `botopink.json` lists `files` in dependency order; its `root.bp` the `pub mod` lines in
+  front order.
 
 ## Examples — eight members
 
@@ -38,8 +38,7 @@ order and its `root.bp` the `pub mod` lines in front order.
 | `jhonstart-markup/` | v0: the DSL cross-module | v0 | both | missing |
 | `jhonstart-todo/` | v0: pure client | v0 | both | missing |
 
-The examples hold 32 snapshots through `jhonstart-test`. `refusals/` and `repro/` are not
-members (no manifest).
+32 snapshots through `jhonstart-test`. `refusals/` and `repro/` are not members (no manifest).
 
 ## Front → files
 
@@ -49,13 +48,13 @@ members (no manifest).
 | **27** | `modules/jhonstart-link/**` | `assert_link.bp` (`assertNavigation` over the driver's decision) |
 | **67** | `modules/jhonstart-forms/**` except `src/form.bp:117-121` (`03-bundled-libs/103-actions-id`), `examples/forms/src/**` and `test/**`, `modules/jhonstart-dom-test/test/forms_dom_test.bp` (new; `fake_dom.mjs` is 26's — 67 stops and reports if it needs a primitive it lacks) | `assert_form.bp` (`assertActionState` over a `-test` envelope); `harness.bp`'s `stubWireNames()` (step 4) |
 
-Files no front of this track edits: `element.bp`, `hooks.bp` (frozen — the `Children` → `Node`
-rename of decisions 193 and 223 reaches `element.bp` as a hand-off from `08-bpp/118`),
-`html_attrs.bp` (emilia's), the segment walk in `routes.bp`'s `page` (`:233-251`,
+No front of this track edits: `element.bp`, `hooks.bp` (frozen — decisions 193/223's `Children` →
+`Node` rename reaches `element.bp` as a hand-off from `08-bpp/118`), `html_attrs.bp` (emilia-facing,
+front 48's, closed), `routes.bp`'s `page` segment walk (`:233-251`,
 `03-bundled-libs/102-routing-conventions`), `render.bp:539` (`isLangTag` — `105-i18n`).
 
-Files another track's front edits in these members, each after the front that owns the member has
-landed and one at a time (`../fronts.md` § Execution order of tracks 03–08):
+Other tracks' fronts editing these members, each after the member's owner landed, one at a time
+(`../fronts.md` § Execution order of tracks 03–08):
 
 | Member | Front | Files |
 |---|---|---|
@@ -69,7 +68,7 @@ landed and one at a time (`../fronts.md` § Execution order of tracks 03–08):
 
 ## Relations
 
-jhonstart and rakun never import each other; onze is the one package that names both; emilia
-enters through `jhonstart-emilia` only; the bundled `routing` and `actions` are imported like
-std. The core will import the bundled `log` (decision 195, 26 step 4): the boundary logs and
-digests through it, and onze hands in the sink, like `allowedRedirects`; no rakun type crosses.
+jhonstart and rakun never import each other; onze alone names both; emilia enters only through
+`jhonstart-emilia`; bundled `routing` and `actions` imported like std. The core will import bundled
+`log` (decision 195, 26 step 4): the boundary logs and digests through it, onze hands in the sink
+(like `allowedRedirects`); no rakun type crosses.

@@ -1,7 +1,7 @@
 # Modules — `repository/onze` as it is on disk
 
-The members' `src/` and `test/` files and their `botopink.json`, as on `feat`. Prefer the
-function names below to line numbers; the file names differ from the 1.0.10 plan where noted.
+Members' `src/`, `test/`, `botopink.json`, as on `feat`. Cite function names, not line numbers;
+file names differing from the 1.0.10 plan are noted.
 
 ## Members — eight
 
@@ -16,7 +16,7 @@ function names below to line numbers; the file names differ from the 1.0.10 plan
 | **`onze-og`** | `root.bp`, `card_style.bp` (the plan's `style.bp` — jhonstart exports a `style` element), `metrics.bp` (a local `intOf` cell), `layout.bp`, `svg.bp` (a local `intOf` cell), `raster.bp`, `response.bp` | `og_test` (one file, 10 tests) | inherits | `jhonstart` (by `path`); it parses front 52's sidecar itself — no `onze-assets` edge |
 | **`onze-release`** | `root.bp`, `spec.bp`, `otp.bp` (`bootScriptText`'s `BUILD_ID` check), `docker.bp`, `package.bp`, `lifecycle.bp`, `static_export.bp` (the plan's `export.bp`) | `build_id_test` (both), `release_text_test` (both), `package_test` — no `dockerfile_test` (its cases are in `release_text_test`); 9 tests, five `.snap` under `__snapshots__/release/` | inherits | `onze`, `onze-bundler` |
 
-The workspace `botopink.json` is `name onze`, targets `["commonJS", "erlang"]`, workspaces
+Workspace `botopink.json`: `name onze`, targets `["commonJS", "erlang"]`, workspaces
 `["modules/*", "examples/*"]`.
 
 ## Examples — two members (a third planned)
@@ -27,27 +27,26 @@ The workspace `botopink.json` is `name onze`, targets `["commonJS", "erlang"]`, 
 | `scaffold/` | 50 | `onze create --yes`'s committed output at the project root (`app/`, `root.bp`; `"src": "."`), targets both | missing |
 | `static-site/` | 71 | `output: export` — **does not exist** (71 step 4) | — |
 
-`examples/README.md` (directory-level) describes the three; it is not an example's README.
+`examples/README.md` (directory-level) describes the three; not an example's README.
 
 ## Front → files, in this milestone
 
-Four fronts run together on disjoint files; the fifth is read-only against them.
+Four fronts run in parallel on disjoint files; the fifth is read-only against them.
 
 | Front | Owns | Hand-offs |
 |---|---|---|
-| **49** (carries 69) | `modules/onze/**`, `modules/onze-server/**`, `modules/onze-test/{botopink.json,src/root.bp,src/core.bp,src/fixtures.bp}` and the group stubs it creates (`src/{cli,bundler,assets,og,release,e2e}.bp` — empty modules with their `pub mod` lines, so no later front touches `root.bp`), `docs.md`, `AGENTS.md` | 50 · 51 · 71 · 53 fill the group file each owns |
+| **49** (carries 69) | `modules/onze/**`, `modules/onze-server/**`, `modules/onze-test/{botopink.json,src/root.bp,src/core.bp,src/fixtures.bp}` and the group stubs it creates (`src/{cli,bundler,assets,og,release,e2e}.bp` — empty modules + `pub mod` lines; no later front touches `root.bp`), `docs.md`, `AGENTS.md` | 50 · 51 · 71 · 53 fill the group file each owns |
 | **50** (carries 68) | `modules/onze-cli/**`, `modules/onze-bundler/**`, `examples/scaffold/**`, `modules/onze-test/src/{cli,bundler}.bp` | step 5 consumes 71's `bin/onze` |
-| **51** (carries 52 · 70) | `modules/onze-assets/**` (its `root.bp` and `botopink.json` included — the lowest-numbered front owning the member here; 69's items moved to 49, which touches only `onze-server`), `modules/onze-og/**`, `modules/onze-test/src/{assets,og}.bp` | the `/_onze/image` route's registration line in `onze-server/src/server.bp` is handed to 49 (one line, one commit, 49's) |
+| **51** (carries 52 · 70) | `modules/onze-assets/**` (its `root.bp`, `botopink.json` included — lowest-numbered owning front; 69's items moved to 49, which touches only `onze-server`), `modules/onze-og/**`, `modules/onze-test/src/{assets,og}.bp` | the `/_onze/image` registration line in `onze-server/src/server.bp` handed to 49 (one line, one commit, 49's) |
 | **71** | `modules/onze-release/**`, `examples/static-site/**` (new), `modules/onze-test/src/release.bp` | `onze-cli/src/{build,start}.bp`'s two lines (`includeErts` passed; `start` execs `bin/onze`) are 50 step 5's |
 | **53** | `examples/blog/**`, `examples/blog/test/serve.sh` (`modules/onze-test/src/e2e.bp` is `20-snap` step 5's) | read-only elsewhere; a needed change is reported to its owner |
 
-Files a `03-bundled-libs` front owns for the duration of its landing, never edited at the same
-time: `onze/src/types.bp`'s segment classification, `onze-cli/src/scan.bp`'s segment walk, `onze-bundler/src/chunk.bp`'s segment read
-(`102-routing-conventions` step 3 — before 49 and 50 open, decision 188); `onze-server/src/server.bp`'s `cookiePairs`,
-`onze-assets/src/image_handler.bp`'s MIME table (`104-http`'s consumer sweep — after 49 and 51 have
-landed); `onze-release/src/{otp,docker,spec}.bp` (`107-release`, after 71).
+Owned by a `03-bundled-libs` front while it lands (never edited concurrently):
+- `onze/src/types.bp`'s segment classification, `onze-cli/src/scan.bp`'s segment walk, `onze-bundler/src/chunk.bp`'s segment read — `102-routing-conventions` step 3, before 49 and 50 open (decision 188)
+- `onze-server/src/server.bp`'s `cookiePairs`, `onze-assets/src/image_handler.bp`'s MIME table — `104-http`'s consumer sweep, after 49 and 51 land
+- `onze-release/src/{otp,docker,spec}.bp` — `107-release`, after 71
 
-Files an `08-bpp` front adds or edits here, each after the front that owns the member has landed:
+Added/edited by an `08-bpp` front, each after the member's owning front lands:
 
 | Member | `08-bpp` front | Files | After |
 |---|---|---|---|
@@ -60,13 +59,12 @@ Files an `08-bpp` front adds or edits here, each after the front that owns the m
 
 ## Targets
 
-A manifest's `targets` is the single source of truth (decision 153): `onze-server` is
-`["erlang"]` (it imports rakun); every other member and both examples run both rows.
+Manifest `targets` is the single source of truth (decision 153): `onze-server` `["erlang"]`
+(imports rakun); every other member and both examples run both rows.
 
 ## Relations
 
-Unchanged from 1.0.10's cut: onze imports jhonstart, rakun (through `onze-server` only) and the
-bridge; nothing imports onze; onze defines no style sink; onze reads no navigation signal. New in
-this milestone: `onze-server` sets the bundled `log`'s sink to rakun's logger and nothing else
-(49 step 3; decisions 194, 195); `types.bp` consumes `routing.conventions` once `102` lands
-(49-d amended).
+- As in 1.0.10: onze imports jhonstart, rakun (via `onze-server` only), the bridge; nothing imports
+  onze; no style sink; reads no navigation signal.
+- New: `onze-server` sets the bundled `log`'s sink to rakun's logger, nothing else (49 step 3;
+  decisions 194, 195); `types.bp` consumes `routing.conventions` once `102` lands (49-d amended).

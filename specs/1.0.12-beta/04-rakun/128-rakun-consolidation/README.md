@@ -1,29 +1,27 @@
 # Front 128 — rakun consolidation: nine members move in with the member that needs them
 
-**Priority:** critical — the first front of the track (decision 187); every other rakun front edits
-a member this one moves, an import it rewrites or a manifest it changes · **State:** not started
-**Depends on:** the rakun consumer commits of `03-bundled-libs/102` step 3
+**Priority:** critical — first of the track (decision 187); every other rakun front edits a member
+it moves, an import it rewrites or a manifest it changes · **State:** not started
+**Depends on:** rakun consumer commits of `03-bundled-libs/102` step 3
 (`rakun-app/src/{file_router,static_gen}.bp`, `rakun-hateoas/src/hal.bp`) and `103` step 2
-(`rakun-app/src/actions.bp`), landed before it opens (decision 188) — not landed ·
-no `01-compiler/130` rakun commit in flight while it is open ([`../README.md`](../README.md) § Order,
-the 130 rule, to confirm)
-**Owns:** while open, every member of `repository/rakun/modules/**`, `starters/**`, `examples/**`, the
-workspace `botopink.json`, `modules/README.md`, `repository/rakun/AGENTS.md`, `.github/workflows/`
-and `scripts/git-hooks/` where they list members · [`../modules.md`](../modules.md) · this directory
-**Does not touch:** what any file *does* — a move changes a path, a `pub mod` line, a manifest and an
-import, never a body · `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp` of the core (frozen) ·
+(`rakun-app/src/actions.bp`) landed first (decision 188) — not landed · no `01-compiler/130` rakun
+commit in flight while open ([`../README.md`](../README.md) § Order, the 130 rule, to confirm)
+**Owns:** while open, every member of `repository/rakun/modules/**`, `starters/**`, `examples/**`,
+the workspace `botopink.json`, `modules/README.md`, `repository/rakun/AGENTS.md`,
+`.github/workflows/` and `scripts/git-hooks/` where they list members · [`../modules.md`](../modules.md) · this directory
+**Does not touch:** what any file *does* — a move changes a path, a `pub mod` line, a manifest, an
+import, never a body · the core's `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp` (frozen) ·
 `repository/botopink-lang/**`, `repository/{onze,jhonstart}/**`
 
-No other rakun front holds a worktree while this one is open.
+No other rakun front holds a worktree while this is open.
 
 ## Goal
 
-The 25 members become 16 (decision 187): the core absorbs `rakun-actuator-api` and `rakun-logging`;
-`rakun-tx` and `rakun-devtools` move into `rakun-data`, `rakun-release` into `rakun-cli`,
-`rakun-hateoas` into `rakun-web`, `rakun-ws` (SOAP) into `rakun-client`, `rakun-rsocket` and
-`rakun-stream` into `rakun-messaging`. With logging and the span API in the core, the core calls its
-own logger (no failure-report plugin — 187 over 184) and `rakun-app` opens spans through the
-dependency it has (03r-aj). `rakun-web` and `rakun-actuator` stay members. No test is lost.
+25 members → 16 (decision 187): core absorbs `rakun-actuator-api`, `rakun-logging`; `rakun-tx`,
+`rakun-devtools` → `rakun-data`; `rakun-release` → `rakun-cli`; `rakun-hateoas` → `rakun-web`;
+`rakun-ws` (SOAP) → `rakun-client`; `rakun-rsocket`, `rakun-stream` → `rakun-messaging`. The core
+calls its own logger (no failure-report plugin — 187 over 184); `rakun-app` opens spans through
+its existing dependency (03r-aj). `rakun-web`, `rakun-actuator` stay members. No test lost.
 
 ## Mechanism
 
@@ -39,27 +37,26 @@ dependency it has (03r-aj). `rakun-web` and `rakun-actuator` stay members. No te
 | `rakun-rsocket` | `rakun-messaging` | `modules/rakun-messaging/src/rsocket/**`, `test/rsocket/**`, `src/sidecars/rakun_rsocket.erl` |
 | `rakun-stream` | `rakun-messaging` | `modules/rakun-messaging/src/stream/**`, `test/stream/**`, `src/sidecars/rakun_stream.erl` |
 
-Each merge is the same four edits:
+Each merge, four edits:
 
-1. **The files move** into a sub-directory named after the merged member — the shape `sql/`,
-   `pulsar/`, `jms/` already have (the tree's convention, not the decision's; step 0's export
-   measurement can refuse it). A sidecar keeps its file name and atom, so no `#[@External.Erlang]`
-   template changes. `rakun-ws` keeps `ws/` (merged, not renamed).
-2. **The absorbing member's `botopink.json` and `src/root.bp`** gain the `files` entries and `pub mod`
-   lines, appended after its own, and the merged member's dependencies it lacks (`rakun-cli` gains
-   `rakun-web`; `rakun-messaging` gains `rakun-actuator` and `rakun-data`). The merged directory and
-   manifest are deleted.
-3. **Every dependant's manifest** drops the merged name; every `import … from "rakun-<merged>"` names
-   the absorbing member.
-4. **The seams the split forced go with it**: no failure-report plugin; the span API is the core's.
+1. **Files move** into a sub-directory named after the merged member — the shape of `sql/`,
+   `pulsar/`, `jms/` (the tree's convention, not the decision's; step 0's export measurement can
+   refuse it). Sidecar keeps file name and atom, so no `#[@External.Erlang]` template changes.
+   `rakun-ws` keeps `ws/` (merged, not renamed).
+2. **Absorber's `botopink.json` and `src/root.bp`** gain the `files` entries and `pub mod` lines,
+   appended after its own, plus the merged member's missing dependencies (`rakun-cli` gains
+   `rakun-web`; `rakun-messaging` gains `rakun-actuator`, `rakun-data`). Merged directory and
+   manifest deleted.
+3. **Every dependant's manifest** drops the merged name; every `import … from "rakun-<merged>"`
+   names the absorber.
+4. **The split's seams go**: no failure-report plugin; the span API is the core's.
 
-The resulting members and graph are [`../modules.md`](../modules.md) § Members and § The graph; the
-on-disk facts step 0 starts from are § On disk until 128 lands. The `rakun-pulsar` question (03r-ad,
-91) is untouched: `pulsar/**` stays where it is.
+Resulting members and graph: [`../modules.md`](../modules.md) § Members, § The graph; step 0's
+baseline: § On disk until 128 lands. `rakun-pulsar` (03r-ad, 91) untouched: `pulsar/**` stays.
 
 ## Open
 
-One step per merge, in dependency order; each lands green on its own.
+One step per merge, dependency order; each lands green alone.
 
 ### Step 0 — Measure
 
@@ -144,13 +141,10 @@ One step per merge, in dependency order; each lands green on its own.
 
 ## Blast radius
 
-- Every rakun front sequences after this one and names its files at the new paths
-  ([`../README.md`](../README.md) § Where a merged member's front works).
-- Nine `test-libs` cells disappear; their tests run in the absorbing member's cell; the restriction
-  audit loses nine rows.
-- `03-bundled-libs`' consumer files move: the logging files 17 switches to `log` are
+- Every rakun front sequences after this, at the new paths ([`../README.md`](../README.md) § Where a merged member's front works).
+- Nine `test-libs` cells disappear (tests run in the absorber's cell); the restriction audit loses nine rows.
+- `03-bundled-libs`' consumer files move: 17's logging files switched to `log` are
   `modules/rakun/src/logging/**`; `107-release` edits `modules/rakun-cli/src/release/release.bp`;
-  102's `hal.bp` commit lands before this front and moves with the file. 130's landed edits in
-  `rakun-hateoas` move the same way.
-- `rakun-messaging` gains `rakun-actuator` and `rakun-data`, so every messaging consumer loads the
-  data member; `rakun-cli` gains `rakun-web`.
+  102's `hal.bp` commit lands first and moves with the file; 130's landed `rakun-hateoas` edits likewise.
+- `rakun-messaging` gains `rakun-actuator`, `rakun-data` (every messaging consumer loads the data
+  member); `rakun-cli` gains `rakun-web`.

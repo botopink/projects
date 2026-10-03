@@ -1,32 +1,31 @@
 # Track 05 — jhonstart
 
-**Repo:** `repository/jhonstart` · **Reference:** Next.js docs, the React half · the tree on disk
-is [`modules.md`](./modules.md).
+**Repo:** `repository/jhonstart` · **Reference:** Next.js docs, the React half · tree on disk:
+[`modules.md`](./modules.md).
 
-jhonstart writes the HTML (decision 113): the render, the document, the payload, islands,
-streaming, links, hydration, the client router, the navigation signals and the UI file
-conventions. All of it exists and is green (`jhonstart` 204 tests on both rows, seven members,
-eight example members, no `// LANGUAGE GAP` marker in the code). What is left is a tail of code
-items and spec items, cut into three fronts by the member each edits.
+jhonstart writes the HTML (decision 113): render, document, payload, islands, streaming, links,
+hydration, client router, navigation signals, UI file conventions. All exist and are green
+(`jhonstart` 204 tests on both rows, seven members, eight example members, no `// LANGUAGE GAP`
+marker). Left: a tail of code and spec items, three fronts by the member each edits.
 
 ## What jhonstart still owes
 
 | Id | Item | Where | Front |
 |---|---|---|---|
-| JH-26-6 | the late-signal handler exists twice: `registerSignal` in `render.mjs:199` (`globals().signal`, its `replaceState` at `:213`) and `handleSignal` in `client_app.bp:219` | core | 26 step 2 |
-| JH-30-4 | 26 lines naming rakun in the core's `src/` (`grep -rni rakun modules/jhonstart/src`): `router.bp:59,103,164,313,373,375,404`, `server.bp:23,34,49,50,115,116,187,307`, `streaming.bp:18`, `metadata.bp:12,34,35`, `client.bp:87`, `src/AGENTS.md:44,45,62`, and the sidecars `sidecars/jhonstart_server.erl:17,26` and `sidecars/jhonstart_router.erl:20` | core | 26 step 1 |
-| JH-30-8a | a boundary that resolves before the shell is written produces no hole and no fill — untested | core | 26 step 3 |
-| JH-30-8b | sibling server components are gathered by the render's own `__jhEachCompleted` (`streaming.bp:136,810,834`), not std `async.runAll`; no erlang timing test; no regression for an already-started `@Task` | core | 26 step 3 |
-| JH-31-digest | `digestOf(message)` (`error_boundary.bp:77`) is `contentHash` (8 hex) and no log line carries it. Decisions 194, 195: `digestOf` is deleted; the boundary digests and logs through the bundled `log` (landed) | core | 26 step 4 |
-| JH-stage | the dynamic mark is written at run time (`markDynamic`: `router.bp:186,198,276`, `server.bp:87,254`, `streaming.bp:52,703`). Decision 186: the stage is a compile-time fact — `#[serverOnly]` / `#[clientOnly]` on the hooks, validated in `#[page]` / `#[client]` | core | 26 step 8 |
-| JH-29-doc | `docs.md:371,393` say "front 23" for the payload envelope (jhonstart 30's since decision 117); the starter-table row of 29-a; the `islandAttr` wording | `docs.md` | 26 step 5 |
+| JH-26-6 | late-signal handler twice: `registerSignal` in `render.mjs:199` (`globals().signal`, `replaceState` at `:213`) and `handleSignal` in `client_app.bp:219` | core | 26 step 2 |
+| JH-30-4 | 26 lines naming rakun in the core's `src/` (`grep -rni rakun modules/jhonstart/src`): `router.bp:59,103,164,313,373,375,404`, `server.bp:23,34,49,50,115,116,187,307`, `streaming.bp:18`, `metadata.bp:12,34,35`, `client.bp:87`, `src/AGENTS.md:44,45,62`, sidecars `sidecars/jhonstart_server.erl:17,26` and `sidecars/jhonstart_router.erl:20` | core | 26 step 1 |
+| JH-30-8a | a boundary resolving before the shell is written produces no hole and no fill — untested | core | 26 step 3 |
+| JH-30-8b | sibling server components gathered by the render's own `__jhEachCompleted` (`streaming.bp:136,810,834`), not std `async.runAll`; no erlang timing test; no regression for an already-started `@Task` | core | 26 step 3 |
+| JH-31-digest | `digestOf(message)` (`error_boundary.bp:77`) is `contentHash` (8 hex), on no log line. Decisions 194, 195: `digestOf` deleted; the boundary digests and logs through bundled `log` (landed) | core | 26 step 4 |
+| JH-stage | dynamic mark written at run time (`markDynamic`: `router.bp:186,198,276`, `server.bp:87,254`, `streaming.bp:52,703`). Decision 186: stage is compile-time — `#[serverOnly]` / `#[clientOnly]` on the hooks, validated in `#[page]` / `#[client]` | core | 26 step 8 |
+| JH-29-doc | `docs.md:371,393` say "front 23" for the payload envelope (jhonstart 30's since decision 117); 29-a's starter-table row; `islandAttr` wording | `docs.md` | 26 step 5 |
 | JH-28-ex | `request-scope-example.bp` (escaping) and `blog-post-page-example.bp` (sequential awaits) break the README's own rules | `26/examples/` | 26 step 6 |
 | PK-2 | the eight example members have no `README.md` | `examples/*/` | 26 step 6 |
-| JH-SNAP | the module-level snapshot layer (`snap-a`) | every member's `test/` | `20-snap` step 3 |
-| JH-27-3b | the reconciler decision `reconcile(current, target)` has no driver: a shared layout's islands are re-hydrated on every transition; the route-kind flag is not read | `jhonstart-link` | 27 step 1 |
-| JH-27-4 | `use linkStatus()` inside a `fn … -> @Component<ElementBase, Element>` is not tested | `jhonstart-link` | 27 step 2 |
-| JH-67-dom | the five DOM-side forms boxes (1.0.10's 3a, 3b, 4, 5): `fieldError` after `__jhFormState`, an `ok: false` envelope re-rendering in place, `pending` / `actionId` for two forms at once, optimistic commit and roll-back, `push` after the envelope | `jhonstart-forms` | 67 steps 1–3 |
-| JH-49-4.6 | `__bp_action` / `X-Bp-Action` spelled as literals — onze's defaults, which neither library spells (decision 114): `jhonstart-forms/test/form_test.bp` (18 lines), `examples/forms/src/like.bp:23`, `examples/forms/src/main.bp:14`, `examples/forms/test/forms_test.bp:16,21,30,36` and four recorded `.snap` files under `examples/forms/test/__snapshots__/forms/` | `jhonstart-forms`, `examples/forms` | 67 step 4 |
+| JH-SNAP | module-level snapshot layer (`snap-a`) | every member's `test/` | `20-snap` step 3 |
+| JH-27-3b | `reconcile(current, target)` has no driver: a shared layout's islands re-hydrate on every transition; route-kind flag unread | `jhonstart-link` | 27 step 1 |
+| JH-27-4 | `use linkStatus()` inside a `fn … -> @Component<ElementBase, Element>` untested | `jhonstart-link` | 27 step 2 |
+| JH-67-dom | five DOM-side forms boxes (1.0.10's 3a, 3b, 4, 5): `fieldError` after `__jhFormState`, `ok: false` envelope re-rendering in place, `pending` / `actionId` for two forms at once, optimistic commit and roll-back, `push` after the envelope | `jhonstart-forms` | 67 steps 1–3 |
+| JH-49-4.6 | `__bp_action` / `X-Bp-Action` as literals — onze's defaults, spelled by neither library (decision 114): `jhonstart-forms/test/form_test.bp` (18 lines), `examples/forms/src/like.bp:23`, `examples/forms/src/main.bp:14`, `examples/forms/test/forms_test.bp:16,21,30,36`, four recorded `.snap` files under `examples/forms/test/__snapshots__/forms/` | `jhonstart-forms`, `examples/forms` | 67 step 4 |
 
 ## Fronts
 
@@ -56,13 +55,8 @@ inbound (08-bpp, after the owning front, one at a time): 116 · 120 · 122 in th
 
 ## Ownership notes
 
-- `modules/jhonstart-dom-test` is 26's. A front that needs the fake document adds a test file of
-  its own there and owns it (67, and `08-bpp`'s 119, 120, 126, 127); `fake_dom.mjs` stays 26's
-  and is edited by one front at a time after 26 has landed (decision 189).
-- Frozen, edited by no front of this track: `element.bp`, `hooks.bp`. `html_attrs.bp` is
-  emilia-facing (front 48's, closed). `routes.bp`'s segment walk in `page` (`:233-251`) is
-  `03-bundled-libs/102`'s; `render.bp:539` `isLangTag` is `105-i18n`'s; `form.bp:117-121`
-  (`formAction`'s id check) is `103-actions-id`'s.
+Files per front, frozen files, `jhonstart-dom-test`'s rule and other tracks' edits:
+[`modules.md`](./modules.md) § Front → files.
 
 ### Handed to this track by `08-bpp/118`
 
@@ -70,15 +64,15 @@ Lines 118 reports to the owner, not steps of 26, 27 or 67:
 
 | Hand-off | Where | Decision |
 |---|---|---|
-| the type jhonstart calls `Children` is renamed `Node`: text, a number, a `bool`, a component of the same base, a list of them | `modules/jhonstart/src/element.bp` and every signature that spells `Children` | 193, 223 |
-| a component that takes `(props, children)` moves the children into its props: the first parameter's type declares a `children` field, the second parameter goes | every component in `modules/jhonstart*/` and `examples/` | 193 |
-| a component's attributes are the fields of its first parameter's type | the components written as functions of labelled parameters | 192 |
+| `Children` renamed `Node`: text, a number, a `bool`, a component of the same base, a list of them | `modules/jhonstart/src/element.bp` and every signature spelling `Children` | 193, 223 |
+| a `(props, children)` component moves children into its props: the first parameter's type declares a `children` field, the second parameter goes | every component in `modules/jhonstart*/` and `examples/` | 193 |
+| a component's attributes are the fields of its first parameter's type | components written as functions of labelled parameters | 192 |
 
-118 also writes, as carve-outs in the core landed before 26 opens: its step-1 bracket-attribute
-lines (in the core only comments of `root.bp` / `elements.bp` name the DSL), the core's `src/prelude.bp` (what every `.bpp` file imports
-without writing it — decision 266) and the declaration of the node type `Node` (decision 223) the
-prelude imports; 118 also rewrites its examples' `Children` to `Node`. The rename of the core's own
-signatures that spell `Children` stays the hand-off above.
+118 also writes, as core carve-outs landed before 26 opens: its step-1 bracket-attribute lines (in
+the core only comments of `root.bp` / `elements.bp` name the DSL), the core's `src/prelude.bp`
+(imported by every `.bpp` file implicitly — decision 266), the `Node` declaration (decision 223) the
+prelude imports; and rewrites its examples' `Children` to `Node`. The core's own `Children`
+signatures stay the hand-off above.
 
 ## Decisions
 
@@ -92,20 +86,18 @@ Confirmations kept from 1.0.10 ([`../../1.0.10-beta/decisions-pending.md`](../..
 | 30-b … 30-g | `RenderPlugin` as a record of async functions; `render` / `App` in `streaming.bp`; `Suspense` registers with the render; `UiSegment`; `app(…, lang:)`; the browser half in `jhonstart-dom-test` | — |
 | 31-a | `notFound()` / `redirect(url)` raise through one host cell | — |
 
-The module-level snapshot map is [`decisions-pending.md`](../decisions-pending.md) `snap-a`, worked by [`20-snap`](../20-snap/README.md) step 3.
+Module-level snapshot map: [`decisions-pending.md`](../decisions-pending.md) `snap-a`, worked by [`20-snap`](../20-snap/README.md) step 3.
 
 ### 67-a · Where the DOM-side forms boxes are asserted
 
 > **Raised by:** front 67, from its five DOM-side boxes (1.0.10's 3a, 3b, 4, 5).
-> **Measured.** `fieldError` after `__jhFormState`, the in-place re-render on `ok: false`, two
-> forms' `pending`, and optimistic commit / roll-back all read `document` and `FormData`; `botopink
-> test` runs on node and on the BEAM; `jhonstart-dom-test` (`fake_dom.mjs`, commonJS only — 30-g)
-> covers the render's browser half, and the forms' browser half has the same need. No browser is
-> in the loop before onze 53.
-> **Options.** (a) extend `fake_dom.mjs` with `<form>` / `<input>` / `FormData` / `submit` and
-> assert the boxes in `jhonstart-dom-test/test/forms_dom_test.bp` now, and again in onze 53's
-> browser; (b) leave them to onze 53's browser only (jhonstart's own gate never runs them);
-> (c) a real DOM library as a dev dependency.
-> **Recommendation.** (a) — the boxes are asserted in jhonstart's own gate against the markup
-> its writers produce, with no dependency; 53 proves them in a browser besides.
-> **Blocks.** 67 steps 1–3's shape (their acceptance is written for (a)).
+> **Measured.** `fieldError` after `__jhFormState`, in-place re-render on `ok: false`, two forms'
+> `pending`, optimistic commit / roll-back all read `document` and `FormData`; `botopink test` runs
+> on node and the BEAM; `jhonstart-dom-test` (`fake_dom.mjs`, commonJS only — 30-g) covers the
+> render's browser half; the forms' half has the same need. No browser before onze 53.
+> **Options.** (a) extend `fake_dom.mjs` with `<form>` / `<input>` / `FormData` / `submit`, assert
+> in `jhonstart-dom-test/test/forms_dom_test.bp` now and again in onze 53's browser; (b) onze 53's
+> browser only (jhonstart's gate never runs them); (c) a real DOM library as a dev dependency.
+> **Recommendation.** (a) — asserted in jhonstart's own gate against its writers' markup, no
+> dependency; 53 proves them in a browser besides.
+> **Blocks.** 67 steps 1–3's shape (acceptance written for (a)).
