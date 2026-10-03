@@ -17,5 +17,7 @@
   "markdown": {
     "smartPunctuation": true
   },
-  "islandKeyEnv": "ONZE_KEY"
+  "islands": {
+    "props": "sealed"
+  }
 }

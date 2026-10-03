@@ -175,7 +175,7 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 | **126** | 27 · 118 · 120 | 127 · 124 |
 | **127** | 125 s6 · 103 · 22 · 67 · 49 · 117 · 120 · 126 · s4: 123 | 124 |
 | **116** | 118 · 26 s0 · `01-compiler/26` · with `01-checker` s22 · decisions 198–200, 212, 213, 221, 270 · s2: bpp-f, ctr-e, ctr-g, 213 against 221 for `not-found.bpp` (no id) · s6: bpp-g | 124 s5 |
-| **124** | 08-h · 50 · 71 · every other `08` front · s1, s3: 08-e2, ctr-a · s5: 116, 53 | — |
+| **124** | 08-h · 50 · 71 · every other `08` front · s1, s3: 08-e2 · s5: 116, 53 | — |
 | **98** | every library track's `-test` and README steps · s3: 95-f · s4: lg2-v | — |
 | **135** | snap-a · s4: 34 · s1–4: the owning fronts' other steps | s5: 53 s2–6 |
 

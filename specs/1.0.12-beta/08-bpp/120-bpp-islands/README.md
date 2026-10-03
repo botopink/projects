@@ -101,8 +101,7 @@ the function `#[clientProps]` emits, reached by name `<Component>Props` (as `par
 per-request/per-environment override; default **sealed** — AES-256-GCM over the encoded props; key
 `ONZE_KEY` or build-generated (`onze create-key`, 124) into the server bundle. Cipher: one Erlang
 host cell in rakun-app (erlang-only by manifest, no node twin). Other modes: `08-e2` (decision 67).
-124's README still names the key variable via config key `islandKeyEnv` (default `ASTRO_KEY`),
-not matching 224 — flagged there, unresolved.
+The variable is always `ONZE_KEY` (decision 271).
 
 **Prefix is onze's.** rakun-app exposes `serveIslands(prefix)`; onze-server passes `/_onze/island`
 (as with action field/header names, decision 114).

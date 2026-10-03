@@ -69,12 +69,9 @@ no library reads `onze.json`.
 | `trailingSlash`: `"always"` \| `"never"` \| `"ignore"` | `trailingSlash` | `routing/url_rules` `canonicalize` |
 | `redirects`: `{ "/old": "/new" }` | `redirects` | the redirect table of `routing/url_rules` |
 | `markdown`: `{ "smartPunctuation": bool }` | `markdown.*` | 121's `MarkdownOptions` |
-| `islandKeyEnv`: the environment variable that holds the server-island key | `ASTRO_KEY` | 120's `seal` |
+| `islands`: `{ "props": "sealed" }` — the server-island props mode (224; the modes are `08-e2`'s) | `ASTRO_KEY` (here fixed: `ONZE_KEY`) | 120's `seal` |
 
-**This row contradicts decision 224** (`ctr-a`) — flagged, unresolved: 224 fixes `ONZE_KEY` (or a
-build-generated key, `onze create-key`), no configurable name, and the props mode in `onze.json`
-`"islands": {"props": "sealed"}` (modes: `08-e2`). Keep `islandKeyEnv`, replace by `islands`, or
-both: the maintainer's; `examples/onze-json-example.json` still writes `"islandKeyEnv": "ONZE_KEY"`.
+The key is always the environment variable `ONZE_KEY` (decision 271): no key names it otherwise.
 
 `base` is `basePath`; no `output`, no `prerender` key — `#[page]` decides each stage at comptime (186, 202); `image.domains` is `07-onze/51`'s.
 
@@ -82,8 +79,7 @@ both: the maintainer's; `examples/onze-json-example.json` still writes `"islandK
 `<outDir>/content/<name>.json` and `<name>.schema.json`. Violation: prints `<file>: <path>:
 <message>`, exits 1. Run first by `onze build`; by `onze dev` on a content change (50's watcher).
 
-**`onze create-key`.** Prints a fresh 256-bit base64 key for `ONZE_KEY` (224; the `islandKeyEnv`
-row names it otherwise). Unset: `onze build` generates one into the server bundle; several
+**`onze create-key`.** Prints a fresh 256-bit base64 key for `ONZE_KEY` (224, 271). Unset: `onze build` generates one into the server bundle; several
 instances behind one cache need the same key — the command's purpose.
 
 **Component scripts.** A template `<script>` with no attribute but `src` is a module script:
@@ -130,7 +126,6 @@ counter (same in prerendered markup), minified; under a threshold inlined, else 
 
 - `08-h` — config file and commands: (a) `onze.json` + `onze <command>` recommended. Whole front.
 - `08-e2` — which modes `"islands": {"props": …}` may name. Steps 1 and 3.
-- `ctr-a` — `islandKeyEnv` vs decision 224 (§ Mechanism).
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `onze-cli`, `onze-bundler`, `onze`
