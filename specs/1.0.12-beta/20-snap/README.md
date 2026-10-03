@@ -76,9 +76,10 @@ fits. RETIRE cites the existing test, no sketch. KEEP/CONVERT say whether the va
    70 · 71): 24 `.snap` exist via `snapshots.assertAs` directly (onze-cli 5, onze-assets 10,
    onze-og 4, onze-release 5); 71 step 6 (c) almost met.
 3. **98 check (2) conflicts with retiring rakun's helpers** — resolved by R-K (§ 2).
-4. **Recorded values contradict landed code** (R2 HAL order, S8 `normalize`, § 4
-   `assertClassName` theme, § 9 resolved colours `#fff` vs `var(--color-…)`). Maps predate code;
-   their literals are not expected values.
+4. **Recorded values contradict landed code:** HAL `_links` first vs last at `hal_test.bp:55`
+   (R2); `normalize` `..` (S8); `assertClassName` "under `fullTheme()`" though `emilia()` uses
+   `defaultTheme()` and `e_39b87d03` is `className(cardTokens(), defaultTheme())` (§ 4); onze 53's
+   `#fff` vs emilia's `var(--color-…)` (§ 9). Maps predate code; literals are not expected values.
 5. **Miscounts:** rakun's question said 57 helpers, `test-snap-helpers.md` lists 60; jhonstart's
    said `helpers_test.bp` holds 21 tests, it holds 20 (7 `.snap`). Correct: std ~40 files (4
    existing), jhonstart 32 example snapshots, emilia 610 inline tests in `emilia.bp`.
@@ -147,7 +148,7 @@ Map: 60 `assert<Subject>(loc, …)` helpers in `rakun-test`, each with a renderi
 (`02-std-and-packaging/98-packaging-tail` § Mechanism: every `modules/*-test/src` holds ≥ 1
 `pub fn assert[A-Z]…(loc: SourceLocation` handing `loc` to `snapshots.`), contract 7
 (`contracts.md:545-570`) and `snapshots.md` rule 3 ("every library … exposes, from `<lib>-test`,
-the `assert<Subject>` helpers") all fail under "the member ships no snapshot helpers"; contract
+the `assert<Subject>` helpers") all fail under "the member ships no snapshot helpers" (each needs an `assert<Subject>` writing through `snapshots`); contract
 7's table names rakun's subjects `route` and `response`. Proposal: the response half of
 `assertRoute` as `assertResponse` over `MockMvc.perform`'s `Response(status, body)` — form (4),
 over `mockmvc.bp`; +1 helper, +1 accepted `.snap` in a `helpers_test.bp`, no member box
@@ -243,7 +244,7 @@ test "css: helpers ---- red 500 text" { try assertCss(@src(), [.Color.Red.500], 
 | E54 theme / E55 preflight / E56 cascade and output | 7 + 3 + 14 | `theme.bp` (37), `preflight.bp` (14), `output.bp` (47), `drainRules` ×5, `two flushes are independent` | **RETIRE** |
 | E57 escape hatches / E58 container / E59 compose | 7 + 7 + 10 | `arbitrary.bp` (9), `container.bp` (6) plus `ContainerAt*` (`:16226-16276`), `named —` ×4, `hocus`, `scrollbarHidden`, `a custom variant composes …` | **RETIRE** |
 
-Retired groups' form: (1), and (3) where a family already runs as one table 
+Retired groups' form: (1), and (3) where a family already runs as one table
 (`palette — red, eleven shades`). 34 step 2 needs nothing from the map: its moved families have inline literals, no
 snapshot to re-record.
 
@@ -391,15 +392,15 @@ test "gate: dev vs start ---- the same bytes for every static route" {
 
 | File | Cases | OBSOLETE | RETIRE | KEEP | CONVERT |
 |---|---|---|---|---|---|
-| std `97` | 47 (40 `.snap` + 7 asserts) | 1 | 41 | 4 (existing) | 1 |
-| rakun `19` | 60 helpers (~1 900 implied `.snap`) | 3 | 56 | 1 (`assertRoute` → `assertResponse`) | 0 |
-| jhonstart `26` | 92 + helper group | 5 (DSL ×3 by 200, digest by 194, `serverOnly` by 186) | 87 | helpers (exist) | 0 |
+| std `97/test-snap.md` | 47 (40 `.snap` + 7 asserts) | 1 | 41 | 4 (existing) | 1 |
+| rakun `19/test-snap-helpers.md` | 60 helpers (~1 900 implied `.snap`) | 3 | 56 | 1 (`assertRoute` → `assertResponse`) | 0 |
+| jhonstart `26/test-snap.md` | 92 + helper group | 5 (DSL ×3 by 200, digest by 194, `serverOnly` by 186) | 87 | helpers (exist) | 0 |
 | emilia `33/test-snap.md` | 185 + 8 helpers | 10 cases (34 step 2) | 175 cases + 5 helpers | 2 helpers | 1 helper (folded) |
 | emilia `33/test-snap-examples.md` | 39 | 0 | 34 | 0 | 5 |
-| onze `50` | 11 | 8 | 3 | 0 | 0 |
-| onze `51` | 12 | 0 | 12 | 0 | 0 |
-| onze `53` | 21 + runner (12 fns) | 0 | 7 (B5, B8, B9) | harness (5 fns) | 14 cases; 7 writers dropped |
-| onze `71` | 6 | 0 | 3 | 2 (exist) | 1 |
+| onze `50/test-snap.md` | 11 | 8 | 3 | 0 | 0 |
+| onze `51/test-snap.md` | 12 | 0 | 12 | 0 | 0 |
+| onze `53/test-snap-examples.md` | 21 + runner (12 fns) | 0 | 7 (B5, B8, B9) | harness (5 fns) | 14 cases; 7 writers dropped |
+| onze `71/test-snap.md` | 6 | 0 | 3 | 2 (exist) | 1 |
 | **Total** (278.1 KB) | **473 cases** (plus helper tables: emilia 8, jhonstart § 0.2, onze runner 12) | **27** | **418** (plus 5 emilia helpers) | **7 cases** (6 existing `.snap` + rakun's reduced `assertRoute`); helpers: emilia 2, jhonstart's set, onze harness 5 | **21 cases** (plus `assertCssWith` folded, onze's 7 writers dropped) |
 
 **Newly** recorded snapshots: 3 — `emilia-test` (`assertClassName`, `assertCss`), `rakun-test`

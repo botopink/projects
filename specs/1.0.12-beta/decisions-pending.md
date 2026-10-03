@@ -447,7 +447,7 @@ left as recorded; the maintainer picks the resolution.
 - **Blocks.** Nothing; the record.
 
 #### ctr-i · Codepoints (169, 240) against `string:length/1` (197)
-- **Rules.** 169: erlang's `indexOf` answers "the codepoint index, as `at` / `slice` / `length` already do"; 240: wasm counts "codepoints, as erlang and beam", walking UTF-8 sequences. 197 (1): erlang answers "`string:length/1` of the text before the match". OTP's `string:length/1` and `string:slice/3` (used by `primitives.bp`'s `length`, `at`, `slice`, `indexOf`) count grapheme clusters: `"é"` has length 1 on erlang, 2 under a UTF-8 walk.
+- **Rules.** 169: erlang's `indexOf` answers "the codepoint index, as `at` / `slice` / `length` already do"; 240: wasm counts "codepoints, as erlang and beam", walking UTF-8 sequences. 197 (1): erlang answers "`string:length/1` of the text before the match". OTP's `string:length/1` and `string:slice/3` (used by `primitives.bp`'s `length`, `at`, `slice`, `indexOf`) count grapheme clusters: `"é"` has length 1 on erlang, 2 under a UTF-8 walk.
 - **Recommendation.** One unit: (a) codepoints — erlang's templates count codepoints, a cell with a combining mark pins four targets; or (b) grapheme clusters — 169 / 240 restated, wasm needs a segmenter. (a) is what 169 and 240 say and what 260 hashes.
 - **Blocks.** 02-erlang step 6's cell; 05-wasm's string lowering.
 
