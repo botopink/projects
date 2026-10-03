@@ -1,7 +1,7 @@
 # Front 133 — gate-speed: 5 minutes cold, 1 minute warm, nothing skipped but by equal content
 
-**Priority:** high — decision 229: the cold gate (the run that decides a landing) under 5 minutes on
-16 idle cores, and a warm run under 1 minute, with test consistency untouched.
+**Priority:** high — decisions 229 and 265: the cold gate (the run that decides a landing) within 7m30s for
+1.0.11 (5 minutes on 16 idle cores deferred to the next milestone), and a warm run under 1 minute, with test consistency untouched.
 **Depends on:** `115-gate-perf` (the stage times, plan counts and budget it built), `131-gate-build-cache`
 (every cache under `.botopinkbuild/cache/`; this front's cell-result store lives beside it and follows
 the same rules), the gate green on `feat`.
@@ -90,7 +90,7 @@ compiler (check, emit), the runtime spawn (`erl` start, `node` start, wasm runne
 itself. Three cold runs on an idle machine (the median), and the same with a warm Zig cache.
 
 **Acceptance:**
-- [ ] the table above re-measured idle, plus: `test-language` per target (commonJS, erlang, wasm,
+- deferred (decision 265): the table above re-measured idle, plus: `test-language` per target (commonJS, erlang, wasm,
       beam) and per cell kind (`run/`, `test/`, `modules/`, `reject/`, audits); `test-libs` per
       library; each cell's compile / spawn / run split for a sample of 50 cells per target
 - [x] the three biggest CPU sinks named, each with its share of the total
@@ -111,13 +111,13 @@ asserted by an isolation pair per target); the order cells start (the longest fi
 so the critical path ends with the rest.
 
 **Acceptance:**
-- [ ] `scripts/gate.sh --cold` ≤ 5 min wall on 16 idle cores, three runs, median, every stage's
+- deferred (decision 265): `scripts/gate.sh --cold` ≤ 5 min wall on 16 idle cores, three runs, median, every stage's
       count equal to its `--list` plan
 - [x] every cell's output byte-identical to the pre-front run (a script diffs every cell's printed
       result and every emitted module) — consistency is measured, not assumed
       (first part: every printed result of stages 8 and 9 equal to feat's, § Measurements; emitted
       modules not yet diffed)
-- [ ] the isolation pair of each target green (a cell that would see another's state fails it)
+- deferred (decision 265): the isolation pair of each target — only needed if cells share a runtime process; step 2 folds VM starts within one command, never across cells
 
 ### Step 3 — the cell-result store and warm under 1 minute
 
@@ -403,9 +403,9 @@ and after the empty-store run, identical) — so no key moved under a run.
 
 ## Gate
 
-- [ ] `scripts/gate.sh --cold` green and ≤ 5 min idle; a warm `scripts/gate.sh` ≤ 1 min idle
-- [ ] every `AGENTS.md` of a touched directory updated in the same commit
-- [ ] commits on `front/133-gate-speed`; no push, no merge — landing is the coordinator's step
+- deferred (decision 265): `scripts/gate.sh --cold` green and ≤ 5 min idle; a warm `scripts/gate.sh` ≤ 1 min idle
+- [x] every `AGENTS.md` of a touched directory updated in the same commit
+- [x] commits on `front/133-gate-speed`; landed on `feat` under the green cold gate
 
 ## Blast radius
 
