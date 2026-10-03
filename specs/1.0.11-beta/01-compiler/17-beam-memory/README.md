@@ -69,7 +69,7 @@ compares).
 - [ ] `run/beam_memory_ets_keyed` (`.targets erlang beam`) — two spawned processes writing **different** keys 20 000 times each print `20000 20000` (the `keyed = false` twin is the measurement, not a cell — a test that fails by chance is not a test)
 - [ ] `reject/beam_memory_ets_keyed_seed` — a seed that is neither `Dict.empty()` nor a literal-rowed `fromList` is refused naming the accepted forms
 - [ ] any other read-modify-write on a row refused with decision 40's 5(b) diagnostic; `reject/beam_memory_ets_keyed_recompose`
-- [ ] `test/beam_memory_noop` gains the keyed `Dict` back on commonJS and wasm (off the BEAM the annotation is a no-op — every test writes and reads back)
+- [ ] off the BEAM `#[@BeamMemory]` is refused (decision 167, confirmed for wasm by `111-a`): `botopink build --target commonJS` and `--target wasm` of `run/beam_memory_process_dict` exit 1 with `error: \`#[@BeamMemory]\` has no meaning on the <target> backend`, located at the annotation — measured 2026-10-03, commonJS still builds it with exit 0; `test/beam_memory_noop` (the no-op reading) is deleted or narrowed to the BEAM
 
 ### Step 2 — the text and the migration handed over
 
