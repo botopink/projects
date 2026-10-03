@@ -194,7 +194,7 @@ and stays. A closure whose body was one such expression became a loop or a named
 - [x] every onze cell `pass` / `no tests` on its declared targets, `0 failed` — `scripts/gate.sh --cold` green on the integrated `feat` (2026-10-02): `test-libs: 123 passed, 0 failed, 15 without tests, 38 restrictions audited`, no `FAILED cells:` line
 - [x] `scripts/gate.sh --cold` in `repository/botopink-lang` with this onze checkout and rakun at
       `feat`: stage 8 has no onze red — `scripts/gate.sh --cold` green on the integrated `feat` (2026-10-02); onze's `test` workflow green on GitHub on the remote `feat`
-- [ ] `(cd repository/onze && scripts/git-hooks/pre-commit)` green — waits on one end-to-end run of
+- [x] `(cd repository/onze && scripts/git-hooks/pre-commit)` green — green end to end on the integrated feat with OTP 28: 19 cells (every member on every declared target, 0 failed) and 4 example builds
       the hook on the integrated tip
 - [x] `repository/onze/AGENTS.md` updated; the work is on onze's `feat`
 
