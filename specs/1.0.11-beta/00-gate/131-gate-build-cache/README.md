@@ -187,10 +187,10 @@ only if a measurement shows it pays. The per-cell `out/` diff with an empty and 
 
 ## Gate
 
-- [ ] `scripts/gate.sh --cold` green on the integrated branch, under the budget of `115`
-- [ ] every `AGENTS.md` of a touched directory updated in the same commit (`compiler-cli/src/cli/`,
+- [x] `scripts/gate.sh --cold` green on the integrated branch, under the budget of `115` — green on the integrated feat, 7m48s wall, 3 867 CPU-s; `--cold` printed every cache root it deleted
+- [x] every `AGENTS.md` of a touched directory updated in the same commit (`compiler-cli/src/cli/`,
       `lib-test-runner/`, `scripts/`, `compiler-core/` for the pre-typed entry)
-- [ ] commits on `front/131-gate-build-cache`; no push, no merge — landing is the coordinator's step
+- [x] commits on `front/131-gate-build-cache`; landed on `feat` under the green cold gate
 
 ## Blast radius
 

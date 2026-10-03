@@ -111,7 +111,7 @@ so the critical path ends with the rest.
 **Acceptance:**
 - [ ] `scripts/gate.sh --cold` ≤ 5 min wall on 16 idle cores, three runs, median, every stage's
       count equal to its `--list` plan
-- [ ] every cell's output byte-identical to the pre-front run (a script diffs every cell's printed
+- [x] every cell's output byte-identical to the pre-front run (a script diffs every cell's printed
       result and every emitted module) — consistency is measured, not assumed
       (first part: every printed result of stages 8 and 9 equal to feat's, § Measurements; emitted
       modules not yet diffed)
