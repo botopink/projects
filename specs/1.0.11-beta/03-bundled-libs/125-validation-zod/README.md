@@ -6,7 +6,7 @@ take a `Schema<T>` and cannot start without it; medium for the rest.
 `02-std-and-packaging/97-std-dedupe` (its `Json` accessors and `parseFloat` are what steps 2 and 6
 read with). Step 6 is written against decision 183 (`07-m`: a grammar per target type); the
 undeclared-key rule against decision 144 and the emitted names against decision 145. Open:
-`07-n` (step 2) and `07-j` (the front's size).
+`07-j` (the front's size); `07-n` was answered by decision 257 (step 2).
 **Owns:** `libs/validation/src/**` · `libs/validation/test/**` · `libs/validation/AGENTS.md` ·
 `libs/validation/botopink.json` — but for one line: `src/messages.bp:96` (`interpolate`) is moved
 to `i18n` by `105-i18n`, whose commit lands between two steps of this front, never during one
@@ -388,10 +388,7 @@ state `language-gaps.md` already records as a cost.
 
 ### 07-n · Where `Schema<T>` lives
 
-**Options.** (a) `libs/validation` (`schemas.bp`); (b) std, beside `json`.
-**Recommendation.** (a). It reports through `ValidationReport` and messages through
-`MessageSource`; in std it would either drag both along or report a second way.
-**Blocks.** step 2.
+Answered: decision 257 — in `validation`, one package with one report (`ValidationReport`).
 
 ## Notes
 

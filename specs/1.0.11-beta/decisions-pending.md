@@ -7,7 +7,7 @@
 decisions 146–149). Every `lg2-*` row of [`language-gaps.md`](./language-gaps.md) is a
 feature the language does not have; the recommendation is always the most restrictive reading
 (decision 67) — the feature stays out and the row's nearest form is the design — and no front opens
-on one until it is answered. **The next free decision number is 257** ([`decisions-taken.md`](./decisions-taken.md)).
+on one until it is answered. **The next free decision number is 258** ([`decisions-taken.md`](./decisions-taken.md)).
 
 Beside the open questions, every track carries **implementation choices awaiting confirmation** —
 a choice a front made, recommended and implemented, that the maintainer confirms or reverses. The
@@ -28,7 +28,7 @@ letter ids are never renumbered; their full text lives where they were raised:
 | 49-a, 49-c, 49-d, 49-e · 50-a · 52-a · 53-a · 68-a, 68-c, 68-d · 69-a | 1.0.10's `06-onze` | [1.0.10-beta](../1.0.10-beta/decisions-pending.md); confirmations in [`07-onze/README.md`](./07-onze/README.md) (`49-d` and `50-a` amended there; `69-b` was answered: decision 201) |
 | 50-b · 53-b | `07-onze` (new) | [`07-onze/README.md`](./07-onze/README.md) § Decisions (`49-f` was answered: decision 186) |
 | 07-b · 07-g · 07-h | `03-bundled-libs` (new) | [`03-bundled-libs/README.md`](./03-bundled-libs/README.md) § Decisions (answered: `07-a` — 196; `07-c` — 180; `07-d` — 181; `07-e` — 182; `07-f` — 195; `07-i` — 163) |
-| 07-j · 07-n | `03-bundled-libs/125-validation-zod` (new) — how much of Zod, where `Schema<T>` lives (`07-k`, `07-l` and `07-m` are decisions 145, 144 and 183) | [`03-bundled-libs/125-validation-zod/README.md`](./03-bundled-libs/125-validation-zod/README.md) § Decisions the maintainer owes |
+| 07-j | `03-bundled-libs/125-validation-zod` (new) — how much of Zod (`07-n`, where `Schema<T>` lives, was answered: decision 257) (`07-k`, `07-l` and `07-m` are decisions 145, 144 and 183) | [`03-bundled-libs/125-validation-zod/README.md`](./03-bundled-libs/125-validation-zod/README.md) § Decisions the maintainer owes |
 | 08-b · 08-d · 08-e · 08-f · 08-h | `08-bpp` (new) — one routing convention or two, who scopes CSS, server-island props, where Markdown and YAML live, the config file and the commands | [`08-bpp/README.md`](./08-bpp/README.md) § Decisions the maintainer owes (answered: `08-a` and `08-i` — 198; `08-a2` — 199; `08-a3` — 200; `08-c` — 190, with 191–193; `08-g` — 202) |
 | lem-a…f | `libs-external-methods` (1.0.10) | [1.0.10-beta](../1.0.10-beta/decisions-pending.md) |
 
