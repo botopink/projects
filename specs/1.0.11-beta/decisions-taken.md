@@ -6,7 +6,7 @@ continues from [1.0.10-beta's record](../1.0.10-beta/decisions-taken.md), which 
 other decisions and are used, not free) — a number is never reused or renumbered across
 milestones. Questions are raised in [`decisions-pending.md`](./decisions-pending.md) with a lettered
 id (`07-a`, `03r-y`, `lg2-a` …) and move here with the next free number when answered. **The next
-free number is 243.**
+free number is 244.**
 
 **Inherited by reference, not copied.** The earlier records stay where they are; these standing
 principles govern this milestone and are cited by number throughout:
@@ -143,3 +143,4 @@ maintainer can reverse any of them:
 | 240 | 02e-a — the unit wasm counts a string's index in | **(a) codepoints, as erlang and beam** (the maintainer): `length`, `at`, `slice`, `indexOf`, `lastIndexOf` walk UTF-8 sequences on wasm; `run/string_index_of_codepoints` has one `.out` for the four targets. Decision 169 applied to the fourth target. Fronts `01-compiler/05-wasm` (the lowering) and `02-erlang` step 6 (the cell). |
 | 241 | 05w-b — the std cells WASI preview1 cannot answer | **(a) refused on wasm** (the maintainer): `io/clock.offsetMinutes`, `io/fs.workingDir` and `io/fs.scratchDir` have no wasm binding, so under decision 146 `io/clock`, `io/fs` and `testing/snapshots` stay refused on wasm and join group 3 (`02-std-and-packaging` § From 00-gate). A value WASI does not define is refused, never invented. Which directory a wasm program sees (pre-open the project, or none) is moot while `io/fs` is refused; it returns with a std restructure. |
 | 242 | 26-a — is a transitively reached package importable | **(a) only a direct dependency** (the maintainer): `import {rkProp} from "rakun";` with only `rakun-starter-web` declared is `error: unresolved import source "rakun" — declare it in botopink.json "dependencies"`. Front `01-compiler/26-cli-tooling` step 3; the rakun starters declare what they import. |
+| 243 | 16-d (scope) — does decision 166's trailing comma reach call arguments and tuples | **(a) every delimited list** (the maintainer): a trailing `,` keeps the list open, one item per line — generics, parameters, patterns, imports, types, arrays, record fields, enum bodies, call arguments and tuples alike; without it, the width rules (`16-a` / `16-b`) decide. A one-step pipeline has no comma and stays horizontal. Extends decision 166. Front `01-compiler/16-formatter` step 6. |
