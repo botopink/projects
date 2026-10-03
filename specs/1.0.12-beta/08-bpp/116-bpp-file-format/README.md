@@ -5,8 +5,8 @@ from a `.bp` module (118). · **State:** not started
 **Depends on:** `118-bpp-components` (the literal's template language) · `05-jhonstart/26` step 0
 (merges `jhonstart-html` into the core, `html` its default function, decision 200) ·
 `01-compiler/26-cli-tooling` (owns `compiler-cli/**`, `language-server/**` this milestone; 116
-opens after it) · `01-compiler`'s prelude scope (decision 266) · open: `bpp-f` (step 2), `bpp-g`
-(step 6). Written against decisions 198, 199, 200, 212, 213, 221, 266.
+opens after it) · `01-compiler`'s prelude scope (decision 270) · open: `bpp-f` (step 2), `bpp-g`
+(step 6). Written against decisions 198, 199, 200, 212, 213, 221, 270.
 **Owns:** in `repository/botopink-lang`: `modules/manifest/src/root.zig` (one key),
 `modules/compiler-cli/src/cli/{scanner,resolver,libs,format_cmd,migrate}.zig` (extension lists,
 unfold, formatter's view), `modules/lib-test-runner/src/discovery.zig`,
@@ -83,7 +83,7 @@ declarations or keeps an origin. The literal *is* the file: a literal span is a 
 tokens, hover, go-to-definition. Header is copied, so the unfold maps module positions back; a
 header type error reports at its own line and column.
 
-**The package's prelude** (266). Module `prelude` (`src/prelude.bp`, listed in `files`) gives a `.bpp` what it imports (`Element`, the builders its tags name): `import` items of the
+**The package's prelude** (270). Module `prelude` (`src/prelude.bp`, listed in `files`) gives a `.bpp` what it imports (`Element`, the builders its tags name): `import` items of the
 package's own modules only (no other package — decision 242; no activation `X*`; alias allowed),
 compiled and tested with the package; no manifest key names/overrides it. Handed to
 `compiler-core` as the module's last scope (generic import-item list, no library); an item becomes
@@ -155,7 +155,7 @@ error at the key. `X.bp` + `X.bpp` in one directory: error naming both.
 - [ ] decorator (221): one before the closing `---` annotates the function; else the fixture's
       `bppKinds` gives it from the file name; mismatch refused at the header line
 - [ ] `X.bp` beside `X.bpp`, and `.bpp` with no key — each refused with § Mechanism's message
-- [ ] prelude (266): fixture with `prelude.bp` — markup-only `.bpp` compiles; module and emitted
+- [ ] prelude (270): fixture with `prelude.bp` — markup-only `.bpp` compiles; module and emitted
       code import only used items; header name beats prelude's; `prelude.bp` holding a `fn`, another
       package's item or an activation refused at its line; header binding the default function's
       name refused at its line. The scope (`compiler-core`: last scope, import-item list) is

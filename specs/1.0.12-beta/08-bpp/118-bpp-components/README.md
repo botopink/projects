@@ -3,13 +3,13 @@
 **Priority:** critical — every other front writes markup through it; none is testable without it.
 · **State:** not started · ready to open
 **Depends on:** nothing open (`00-gate/101-gate-jhonstart` done). Written against decisions 190,
-191, 192, 193 and 223, 204, 207, 200, 266, 189.
+191, 192, 193 and 223, 204, 207, 200, 270, 189.
 **Owns:** `repository/jhonstart/modules/jhonstart-html/**` (`src/html.bp`, `src/root.bp`,
 `test/**`, `botopink.json`, `src/AGENTS.md`) — lands there; `05-jhonstart/26` step 0 then merges
 it into the core, `html` the core's `pub default fn` (200); 119, 120, 126 append to
 `jhonstart/src/html.bp` · `repository/jhonstart/examples/jhonstart-markup/**` except its
 `README.md` (`05-jhonstart/26` step 6) · new `jhonstart/modules/jhonstart/src/prelude.bp` and the
-core's node type `Node` (223; carve-outs of `05-jhonstart/26`'s member, 266) · the `Children` →
+core's node type `Node` (223; carve-outs of `05-jhonstart/26`'s member, 270) · the `Children` →
 `Node` rewrite of this track's `examples/**` · step 1's one-line carve-outs: each `[name]={expr}`
 attribute outside this member — `jhonstart-emilia`'s bridge test (119's),
 `examples/document-shell`, the core's comment lines naming the DSL (`root.bp`, `elements.bp`,
@@ -126,7 +126,7 @@ attribute. This front: `set:`, `class:`, `is:raw`; 119 `is:global`, `define:`; 1
 
 **Hygiene, prelude.** Tag names and expressions resolve in the caller's scope; `fragment`, `raw`,
 `el`, `classIf` resolve in the library (decision 112) — a page imports only what it names. In a
-`.bpp` the caller's scope ends in jhonstart's `prelude.bp` (266): `<article>` resolves without a
+`.bpp` the caller's scope ends in jhonstart's `prelude.bp` (270): `<article>` resolves without a
 header import, only named builders imported. This front writes
 `jhonstart/modules/jhonstart/src/prelude.bp` and the node type (undeclared today).
 
@@ -201,7 +201,7 @@ static `class`. `classIf(cond, name)` answers the name or `""`.
 
 Every new token reaches the `CustomNode` tree: component tag carries its `Binding`
 (go-to-definition → the function), component attribute name = `property`, directive = `keyword`,
-expression region left to the host language. jhonstart's `prelude.bp` (266) written, compiled,
+expression region left to the host language. jhonstart's `prelude.bp` (270) written, compiled,
 tested with the core.
 
 - [ ] language server's `@ExprCustom` snapshot for a template with a component, a slot, a

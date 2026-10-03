@@ -70,7 +70,7 @@ Lines 118 reports to the owner, not steps of 26, 27 or 67:
 
 118 also writes, as core carve-outs landed before 26 opens: its step-1 bracket-attribute lines (in
 the core only comments of `root.bp` / `elements.bp` name the DSL), the core's `src/prelude.bp`
-(imported by every `.bpp` file implicitly — decision 266), the `Node` declaration (decision 223) the
+(imported by every `.bpp` file implicitly — decision 270), the `Node` declaration (decision 223) the
 prelude imports; and rewrites its examples' `Children` to `Node`. The core's own `Children`
 signatures stay the hand-off above.
 

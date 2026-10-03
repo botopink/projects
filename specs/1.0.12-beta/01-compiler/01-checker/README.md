@@ -20,7 +20,7 @@ Paths relative to `repository/botopink-lang/modules/compiler-core/src/`.
 ## Goal
 
 Accepted ⇒ every backend gives decision 8's answer; refused ⇒ located, by name. Open rows become
-four-target cells; checker gains decisions 266 (prelude scope), 247 (suffixes), 255 (two forms).
+four-target cells; checker gains decisions 270 (prelude scope), 247 (suffixes), 255 (two forms).
 
 ## Done
 
@@ -81,7 +81,7 @@ representation of `i64` / `u64` / `f32` the backends'. Lexer has no suffix handl
 - [ ] the suffixes lex and type, the uppercase and the unsuffixed-mismatch refusals located — one
       `run/` and one `reject/` cell each; the `language-gaps.md` row "`f32` has no literal" closes
 
-### Step 19 — the prelude scope (decision 266)
+### Step 19 — the prelude scope (decision 270)
 
 `compiler-core` takes, with a module, a list of import items (`element.Element`,
 `elements.article`, aliases allowed) as the module's **last scope**: only for names the module does

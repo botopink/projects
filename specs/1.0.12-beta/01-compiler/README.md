@@ -16,7 +16,7 @@ cut by file ownership so fronts run in parallel.
 
 | Front | Priority | State | What | Depends on |
 |---|---|---|---|---|
-| [`01-checker/`](./01-checker/README.md) | high | partial: steps 1–9, 11, 12, 14–17 on feat; 6 (box 3), 10, 13, 18–20 and ten rows open | the checker and parser rows; numeric suffixes (247), type application and `comptime <expr>` (255), the prelude scope (266), the `@block` tail and `$stringify` refusals | 04 step 6 · 16 step 8 · 05 (step 13) · `08-bpp/116` (the prelude list) |
+| [`01-checker/`](./01-checker/README.md) | high | partial: steps 1–9, 11, 12, 14–17 on feat; 6 (box 3), 10, 13, 18–20 and ten rows open | the checker and parser rows; numeric suffixes (247), type application and `comptime <expr>` (255), the prelude scope (270), the `@block` tail and `$stringify` refusals | 04 step 6 · 16 step 8 · 05 (step 13) · `08-bpp/116` (the prelude list) |
 | [`02-erlang/`](./02-erlang/README.md) | high | partial: steps 1–3, 5, 6, 8, 9, 11 on feat; 4, 7, 10, 12, 13 open | `run/array_unique`, C-07's `run/` cells, one `math` (263), overflow aborts (264) | 05 · 01 (`@block`) · the std track (263) |
 | [`03-beam/`](./03-beam/README.md) | high | partial: steps 1–6 on feat; 1 (box 3), 2 (box 1), 7, 8, 9 open | 01 step 13's and 02 step 7's cells on beam; 263, 264 in assembly; row 28's `{badfun, ok}` | 01 · 02 · 05 · the std track |
 | [`04-js/`](./04-js/README.md) | medium | partial: steps 3, 4, 5, 7 and C-37 on feat; 1, 2, 6, 8 open | the `@block` tail IIFE, `$stringify` (239), `throw` in a `case` arm, overflow aborts (264) | 01 |
@@ -61,7 +61,7 @@ Fronts share no source file or snapshot directory except by named, sequenced car
 Open ids waited on — statements in [`../decisions-pending.md`](../decisions-pending.md); 1.0.10
 choices to confirm (16-a/b, 23-b/c, std-c, 24-a/b/c/g, 01c-a/b, 0405-b) in
 [1.0.10's](../../1.0.10-beta/decisions-pending.md); front in parentheses:
-**17-b, 17-c** ([`17-beam-memory`](./17-beam-memory/README.md) § Decisions) · **134-a … 134-d**
+**17-b, 17-c** ([`17-beam-memory`](./17-beam-memory/README.md) § Decisions) · **134-d**
 (134) · **C-14** (07 step 9) · **16-a, 16-b** (16) · **23-b, 23-c, std-c** (23) · **24-a, 24-b,
 24-c, 24-g** (24) · **01c-a, 01c-b** (01) · **0405-b** (04) · **imp-a** (01) · **lg2-a … lg2-w**
 (`lg2-k` answered by 216): none opens a front until answered, each then a step — 01 lg2-a/e/f/q +

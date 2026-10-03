@@ -19,7 +19,7 @@ what each front owns in it.
   `html` becomes the core's `pub default fn` (`import html, {Element, renderToString} from
   "jhonstart";`), `jhonstart-emilia`, `examples/jhonstart-markup`, `examples/document-shell` import
   from the core — six members after. Before that, `08-bpp/118` adds the core's `src/prelude.bp`
-  (decision 266) as a carve-out.
+  (decision 270) as a carve-out.
 - Every browser cell has an erlang twin answering the server's truth (27-a); `jhonstart-dom-test` is
   the one member needing a document.
 - The core's `botopink.json` lists `files` in dependency order; its `root.bp` the `pub mod` lines in
@@ -59,7 +59,7 @@ Other tracks' fronts editing these members, each after the member's owner landed
 | Member | Front | Files |
 |---|---|---|
 | `jhonstart-html` (until 26 step 0), then the core's `src/html.bp` | `08-bpp/118` (in `jhonstart-html`, before 26 step 0), then one lowering arm each from 119, 120, 126 (in the core) | `html.bp`, its tests |
-| `jhonstart` (core) | `08-bpp/118` before 26 opens; then 120, then 122; 116 | 118: `src/prelude.bp` (new, decision 266), the declaration of the node type `Node` (decision 223), its step-1 bracket-attribute lines (comments only in the core) · 120: new `island_strategy.bp`, `deferred.bp`, lines of `client.bp`, `render.bp`, `island_runtime.mjs` · 122: new `response.bp`, lines of `server.bp`, `error_boundary.bp` · 116: new `bpp.bp`, `test/bpp_test.bp` |
+| `jhonstart` (core) | `08-bpp/118` before 26 opens; then 120, then 122; 116 | 118: `src/prelude.bp` (new, decision 270), the declaration of the node type `Node` (decision 223), its step-1 bracket-attribute lines (comments only in the core) · 120: new `island_strategy.bp`, `deferred.bp`, lines of `client.bp`, `render.bp`, `island_runtime.mjs` · 122: new `response.bp`, lines of `server.bp`, `error_boundary.bp` · 116: new `bpp.bp`, `test/bpp_test.bp` |
 | `jhonstart-link` | `08-bpp/126` (after 27) | new `transitions.bp`, `sidecars/transitions_runtime.mjs`, two call sites of `link_runtime.mjs` |
 | `jhonstart-forms` | `08-bpp/127` (after 67 and 103) | new `typed_call.bp` |
 | `jhonstart-emilia` | `08-bpp/119` | the whole member (`scopedStyle`, the sink) |

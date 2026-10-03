@@ -36,7 +36,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 16 s8 — the lambda annotation's printer arm · none — lands before 01 s10
 - [ ] 01-checker s13 — JS-4's two checker gaps · 05 lowering a nested constructor in a `val`
 - [ ] 01-checker s18 — numeric literal suffixes (247) · ctr-j (the `l` literal rule)
-- [ ] 01-checker s19 — the `.bpp` prelude scope (266) · 116 hands the prelude list
+- [ ] 01-checker s19 — the `.bpp` prelude scope (270) · 116 hands the prelude list
 - [ ] 01-checker s20 — type application and `comptime <expr>` (255) · none — 130's rakun DI (256's registry) waits on it
 - [ ] 01-checker rows — the `@block` tail refusal, the `$stringify` parser refusal (239), `primitive-type-name-taken`, the comptime body's file, T17, a package's module namespace, two aliased same-named types (imp-a), `@External.Wasm` read on every target, the template memo key, row 33 · the first two unblock 04 s1–2 and 02 s10
 - [ ] 04-js s1 — the `@block` tail-form IIFE · 01's `@block` tail refusal
@@ -68,7 +68,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 26 s8 — 206's residuals: the LSP's import check, a package importing itself · none
 - [ ] 130 s5 — the remaining decorator sites (34 of 119 done, plus `#[schema]`'s 5) · rakun's DI on 01 s20 · rakun sites under the 130↔128 rule · rakun-client's on the behavior-member gap · ctr-q
 - [ ] 130 s6 — module-level `@emit` removed · 130 s5 · 216 against `#[schema]`'s free functions (no id)
-- [ ] 134 s2 — the type functions, the `result` namespace, the `@Result` / `?T` methods, `@is` · 134-a, 134-d
+- [ ] 134 s2 — the type functions, the `result` namespace, the `@Result` / `?T` methods, `@is`; decisions 267–269 to build · 134-d
 - [ ] 07-residuals s3, s5–s8, s12, s13 — `uncertain` rows, test comments, the `@BeamMemory` text, C-18's corrections + `docs.md:5` + § Imports, the lib-agnostic gate names every library, the per-cell compile row, the `async` delay flake · none (s8's comments after 02)
 - [ ] 07-residuals s1, s2, s4 — the codegen and comptime report waves, three renames · 02–05 landed · 01 landed
 - [ ] 07-residuals s9 · s10 · s11 — `->` arms · erika's C-13 migration · the pointers' sweep (last) · C-14 · 16 s1–2 · every library merged
@@ -146,7 +146,7 @@ Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.
 last section.
 
 - [ ] 17-b — 17 s1 box 4
-- [ ] 134-a · 134-d — 134 s2 (the `@print` rows; `@is`)
+- [ ] 134-d — 134 s2 (`@is`)
 - [ ] std-d — 97 s6 · 50 s4, s7
 - [ ] 95-f — 98 s3
 - [ ] 07-g — 107 whole

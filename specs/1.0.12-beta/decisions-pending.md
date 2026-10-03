@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**60 questions and 23 contradictions are open, and 90 implementation choices await confirmation.**
+**62 questions and 23 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -12,6 +12,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `05w-f` → 262 · `05w-g` → 263 · `gw-a` → 264 · `ck2-c` → 244 · `dec-e` → 254 · `lg2-k` → 216 ·
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
+Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 ## Open questions
@@ -165,24 +166,6 @@ owning front lists the row under *Depends on*.
 - **Options.** (a) The two forms, as built. (b) (a) plus `counts[k]`. (c) (b) plus `hasKey` (`ets:member`) and `delete` (`ets:delete`), each a new `std/beam` primitive.
 - **Recommendation.** (a).
 - **Blocks.** Nothing — the built surface stands until widened.
-
-#### 134-a · `@print`, `@println` and `@debug` take any number of arguments
-- **Measured.** Any count and type accepted; `@print(a, b)` in four `tests/language/run` cells; no declaration spells a variadic parameter → `builtins.d.bp` declares `print(value: unknown)`, the compiler's table holds the three unchecked.
-- **Options.** (a) One argument: declaration held at the call, `@print(a, b)` is `builtin-arguments`, the four cells print one value per call. (b) A variadic parameter (`pub declare fn print(..values: unknown[]);`). (c) The three stay outside the check.
-- **Recommendation.** (a): one value per call is what 1.0.10's 8 §7 formatter defines.
-- **Blocks.** The three rows of `comptime/builtins.zig` held `declaration`.
-
-#### 134-b · The type of `@TypeInfo.all`'s `with:`
-- **Measured.** `with:` names a decorator or a list; no type spells "a decorator" → declaration reads `all(with: unknown, member: ?string = null) -> Declared<unknown>[]` and the catalogue's rule (`typeinfo-all-arguments`, `typeinfo-all-not-decorator`) checks.
-- **Options.** (a) `with: unknown` plus the rule (today). (b) A builtin type `Decorator` only a decorator's name has: `with: Decorator | Decorator[]`. (c) The decorator's function type `fn(comptime _: Decl)` (a decorator with arguments does not fit).
-- **Recommendation.** (b): the declaration then says what it accepts.
-- **Blocks.** Nothing.
-
-#### 134-c · What `@getContext(T)` answers
-- **Measured.** Checker types it `T`; the old declaration said `-> Component<T, unknown>` behind `use`, which the checker refuses; no `.bp` file calls it; the declaration now says `-> T`.
-- **Options.** (a) `-> T`, called without `use` (today). (b) `-> Component<T, T>`, called behind `use`.
-- **Recommendation.** (a).
-- **Blocks.** Nothing.
 
 #### 134-d · `@is(…)` written by hand
 - **Measured.** `x is T` parses as builtin call `is` carrying the tested type; the lexer also makes `@is(1)` that call with no tested type — checks as `bool`, lowers to nothing meaningful.
@@ -355,7 +338,7 @@ owning front lists the row under *Depends on*.
 - **Blocks.** 123 step 1's third box; any rakun request-time read a page reaches.
 
 #### bpp-f · The return type of the function a `.bpp` file unfolds to
-- **Measured.** The unfold writes `-> Element`, a jhonstart name the toolchain cannot spell (113, 198); 266 brings the name into scope, not the annotation (`ctr-e`). 116 step 2's fixture package answers the literal's length (`i32`). A header statement that `await`s or calls a hook with `use` (199) needs `-> @Component<ElementBase, Element>` today.
+- **Measured.** The unfold writes `-> Element`, a jhonstart name the toolchain cannot spell (113, 198); 270 brings the name into scope, not the annotation (`ctr-e`). 116 step 2's fixture package answers the literal's length (`i32`). A header statement that `await`s or calls a hook with `use` (199) needs `-> @Component<ElementBase, Element>` today.
 - **Options.** (a) Return type = the `R` of the default function's declared `@ExprCustom<R>`; a header with `await` or `use` refused at that line (narrows 199). (b) As (a), and the wrapper follows the header's statements under the effects-by-return rule (01-compiler/24): no `await` / `use` → `-> R`, otherwise the wrapper that rule names (116 step 0 measures it). (c) The header writes the return type on a `-> T` line before the closing `---`.
 - **Recommendation.** (b): keeps 199's hooks; every name comes from the default function's signature or the language.
 - **Blocks.** 116 step 2.
@@ -383,6 +366,26 @@ owning front lists the row under *Depends on*.
 - **Options.** (a) Still refused: the attributes are the form. (b) `{...p}` with `p` of the props type, explicit attributes overriding.
 - **Recommendation.** (a).
 - **Blocks.** 118 step 1.
+
+### From the maintainer's Portuguese record (`decisoes-pendentes.md`)
+
+#### pkg-b · A package importing itself by name
+- **Measured.** 206 is built (129): `from` names a package only. 12 test files import their own package by name (log 1, routing 1, validation 2, std 8), e.g. `libs/log/test/digest_test.bp`: `import {errorDigest} from "log";`.
+- **Options.** (a) Legal: it is a package and `from` names packages. (b) Refused: inside the package it is `import {digest.errorDigest};`.
+- **Recommendation.** (a): a package test reads the public surface as an outside user does.
+- **Blocks.** Nothing (an item of `01-compiler/26` step 8).
+
+#### 07-i (revision) · Whether 163's ban on repeated names in bundled packages survives 170's alias
+- **Measured.** 163 bans a bundled package exporting a name std or a framework exports "until the toolchain line closes"; 170 (an import naming its module is never ambiguous; alias when both are needed) closes it.
+- **Options.** (a) Still banned: a new bundled package picks a non-colliding name (`cookie`, `deriveActionId`). (b) Ban lifted: natural names, importers alias.
+- **Recommendation.** (a).
+- **Blocks.** Nothing; 102 and 103 already chose free names.
+
+#### 110-a · `testing.asserts` on wasm under the strict rule (146)
+- **Measured.** A wasm program importing `testing.asserts` is refused: 4 of its 27 functions reach host cells with no wasm binding (`deepEquals → canonical`, `matches → regexMatches`, `throws`/`throwsWith → tryCatch`); uses: throwsWith 280, throws 4, deepEquals 2, matches 1; 133 files import the module.
+- **Options.** (1) ★ As is: not importable on wasm. (2) The four move to their own module; the other 23 import on wasm (changes decision 74's API). (3) The three cells gain wasm versions (a regex engine in the wasm prelude; a catchable `@panic`).
+- **Recommendation.** (1) now; (2) if wasm must run asserts.
+- **Blocks.** Nothing in the gate; "std compiles on wasm" (05-wasm step 5, 97 step 11).
 
 ### Ownership
 
@@ -437,7 +440,7 @@ left as recorded; the maintainer picks the resolution.
 - **Blocks.** The 116 and 118 READMEs.
 
 #### ctr-g · Decision 213 against decision 221: one name bound twice
-- **Rules.** 213: function named after the file → `page.bpp` → `pub default fn page`. 221: `"bppKinds": {"page": "page", "layout": "layout", …}` — jhonstart's decorator `page` (`pub fn page(comptime decl: @Decl, seg: string)`, 202) annotates that function in the same module. 152 / 205 refuse a second binding of one name; 266 makes a header binding the default function's name an error.
+- **Rules.** 213: function named after the file → `page.bpp` → `pub default fn page`. 221: `"bppKinds": {"page": "page", "layout": "layout", …}` — jhonstart's decorator `page` (`pub fn page(comptime decl: @Decl, seg: string)`, 202) annotates that function in the same module. 152 / 205 refuse a second binding of one name; 270 makes a header binding the default function's name an error.
 - **Recommendation.** One yields: (a) the toolchain applies a `bppKinds` decorator via a qualified reference binding no name in the module; (b) a route file's function takes a name other than its file's; (c) the decorators take names distinct from the file kinds. (a) changes no library surface.
 - **Blocks.** 116 step 2; 117 step 1; `bpp-g`.
 
@@ -646,3 +649,15 @@ local change in the named place). Full 1.0.10 text under the same id in
 | 68-c | Island starters decode `#[clientProps]` from the component's source | bundler |
 | 68-d | The styleMap is evaluated by a probe compiled into both packages (`emilia-hash-split`, `emilia-unevaluated`) | bundler |
 | 69-a | onze-assets keeps `AssetRoot`; onze-server converts it to rakun-web's `StaticRoot` | assets · server |
+
+### Choices made by the 00-gate threads and the consolidation (7) — see `decisoes-pendentes.md` Parte 5
+
+| Id | ★ implemented | Where |
+|---|---|---|
+| 111-b | the beam sidecar loader is emitted only when the build binds a host function (13 snapshots changed) | botopink-lang `codegen/beam_asm.zig` |
+| 111-c | `botopink build --target beam` runs the host-module probe and exits 1 when `erl` fails | `compiler-cli` build |
+| 113-a | a target `botopink test` cannot run is `NOT RUNNABLE` and fails `test-libs` | `scripts/test-libs.sh` |
+| 113-b | the restriction audit matches the refusal by its text (alternative, recommended: give the refusal an id — 07-residuals) | `lib-test-runner` |
+| 110-b | the count history left `tests/language/AGENTS.md` | `tests/language/AGENTS.md` |
+| 112-a | `format-check`'s `TREES` holds `examples` as one entry plus `modules/manifest/tests` | `scripts/format-check.sh` |
+| 103-a | the package function is `deriveActionId`; rakun-app's `actionId` wraps it | `03-bundled-libs/103` |

@@ -48,7 +48,7 @@ Paths in `repository/rakun` are the tree `04-rakun/128` leaves (decision 187;
 | `05-jhonstart` | `modules/jhonstart/**` and `jhonstart-dom-test/**` (26 — `fake_dom.mjs` stays 26's; a front owns the test file it adds there); `jhonstart-link/**` (27); `jhonstart-forms/**`, `jhonstart-dom-test/test/forms_dom_test.bp`, the harness's `stubWireNames()` (67) | rakun; `element.bp`, `hooks.bp` (frozen); `routes.bp`'s segment walk (102), `render.bp`'s `isLangTag` (105), `form.bp`'s `formAction` check (103) while those fronts are open |
 | `06-emilia` | `modules/emilia/src/**` and its comment carve-outs from 118 (34); `examples/emilia-card/**` and the fifteen example READMEs (33) | jhonstart; `src/scoped.bp` and `jhonstart-emilia/**` (`08-bpp/119`) |
 | `07-onze` | `onze/**` + `onze-server/**` + `onze-test`'s root and group files (49); `onze-cli/**` + `onze-bundler/**` (50); `onze-assets/**` + `onze-og/**` (51); `onze-release/**` + `examples/static-site/**` (71); `examples/blog/**` (53) | rakun, jhonstart; the lines 102 names in `types.bp`, `scan.bp`, `chunk.bp`, 104's in `server.bp` and `image_handler.bp`, 107's in `otp.bp` / `docker.bp` / `spec.bp`, while that front is open |
-| `08-bpp` | `jhonstart-html/**` (118; after 26 step 0, `jhonstart/src/html.bp`, to which 119, 120 and 126 each append one arm), the core's `src/prelude.bp` (118, decision 266); the new member `onze-content` (121); `emilia/src/scoped.bp` + `jhonstart-emilia/**` (119); new files and named lines in the jhonstart core, `jhonstart-link`, `jhonstart-forms`, rakun, `rakun-app`, `libs/actions`, `onze`, `onze-cli`, `onze-bundler` (117 · 120 · 122 · 123 · 124 · 126 · 127, each README § Owns); in botopink-lang, **116 only**: the manifest key, the extension lists and the unfold in `compiler-cli` / `language-server` / `lib-test-runner`, and `vscode-extension` | `modules/compiler-core/**`, every `codegen/*.zig`; a file a front of track 03–07 owns, until it has landed ([`08-bpp/README.md`](./08-bpp/README.md) § Who else owns the files) |
+| `08-bpp` | `jhonstart-html/**` (118; after 26 step 0, `jhonstart/src/html.bp`, to which 119, 120 and 126 each append one arm), the core's `src/prelude.bp` (118, decision 270); the new member `onze-content` (121); `emilia/src/scoped.bp` + `jhonstart-emilia/**` (119); new files and named lines in the jhonstart core, `jhonstart-link`, `jhonstart-forms`, rakun, `rakun-app`, `libs/actions`, `onze`, `onze-cli`, `onze-bundler` (117 · 120 · 122 · 123 · 124 · 126 · 127, each README § Owns); in botopink-lang, **116 only**: the manifest key, the extension lists and the unfold in `compiler-cli` / `language-server` / `lib-test-runner`, and `vscode-extension` | `modules/compiler-core/**`, every `codegen/*.zig`; a file a front of track 03–07 owns, until it has landed ([`08-bpp/README.md`](./08-bpp/README.md) § Who else owns the files) |
 | `20-snap` (135) | the snapshot steps of 97 s7, 19 s6, 26 s7, 33 s1/s3/s4, 50 s8, 51 s7, 53's runner, 71 s6; `modules/emilia-test/**` (s4) and the helper it names in `rakun-test`; onze's E2E runner `onze-test/src/e2e.bp` (s5) | every test and `.snap` that exists today |
 | meta repo | `.github/` (114); `specs/**` — a front's README is that front's, the top-level files the coordinator's | — |
 
@@ -93,7 +93,7 @@ that must edit one names it as a carve-out in its commit, and no two open fronts
   and 102 before 117 and 124; 49 before 117's `paginate.bp`, 122's `site` key and `onze-server`'s
   lines; 04 and 65 before 123 (decision 189); 22 before 117, 120 and 127. **118 goes first**: its
   bracket-attribute carve-outs land before the owning front opens (189 org-3), and it writes the
-  core's `prelude.bp` and the node type before 26 opens (266). In emilia the carve-out is comments
+  core's `prelude.bp` and the node type before 26 opens (270). In emilia the carve-out is comments
   only, and 34 step 1 and 33 step 2 take it over and open now — this departs from the letter of 189
   (flagged as `ctr-r`).
 - **Files several fronts append to, one at a time** (decision 189): `html.bp` 119 → 120 → 126;
@@ -174,7 +174,7 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 | **122** | 26 · 49 · 102 · 118 · 120 | 124 |
 | **126** | 27 · 118 · 120 | 127 · 124 |
 | **127** | 125 s6 · 103 · 22 · 67 · 49 · 117 · 120 · 126 · s4: 123 | 124 |
-| **116** | 118 · 26 s0 · `01-compiler/26` · with `01-checker` s19 · decisions 198–200, 212, 213, 221, 266 · s2: bpp-f, ctr-e, ctr-g, 213 against 221 for `not-found.bpp` (no id) · s6: bpp-g | 124 s5 |
+| **116** | 118 · 26 s0 · `01-compiler/26` · with `01-checker` s19 · decisions 198–200, 212, 213, 221, 270 · s2: bpp-f, ctr-e, ctr-g, 213 against 221 for `not-found.bpp` (no id) · s6: bpp-g | 124 s5 |
 | **124** | 08-h · 50 · 71 · every other `08` front · s1, s3: 08-e2, ctr-a · s5: 116, 53 | — |
 | **98** | every library track's `-test` and README steps · s3: 95-f · s4: lg2-v | — |
 | **135** | snap-a · s4: 34 · s1–4: the owning fronts' other steps | s5: 53 s2–6 |

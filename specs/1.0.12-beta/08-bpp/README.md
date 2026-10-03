@@ -46,7 +46,7 @@ val title = "Blog";
 ```
 
 Header = module declarations + statements of the unfolded function (198, 199, 212, 213); markup =
-literal of jhonstart's default `html` (200); unbound names via jhonstart's `prelude.bp` (266); `{…}`
+literal of jhonstart's default `html` (200); unbound names via jhonstart's `prelude.bp` (270); `{…}`
 is botopink (lambda, `if`; no arrow, no ternary); `<PostCard post={post} />` is a call with props
 field `post` (192); `<style>` scoped by emilia. The `.bp` form (`return html """…""";`) compiles
 identically; fronts 117–127 are built and tested on it.
@@ -80,7 +80,7 @@ Waves (cross-track numbers: [`../fronts.md`](../fronts.md) § Execution order of
   `04-rakun/22`, `07-onze/49`, `50` · 120 ◄ `05-jhonstart/26`, `07-onze/50` (lazy starters), 117
   (rakun-app) · 122 ◄ 26, 49, 120 (core) · 126 ◄ `05-jhonstart/27` (reconcile driver), 120
   (`html.bp`) · 119 step 2 · 121 steps 4–6 · 127 · 116 ◄ 118, 26, `01-compiler/26` (decisions
-  198–200, 212, 213, 221, 266).
+  198–200, 212, 213, 221, 270).
 - **C**: 124 ◄ `07-onze/50`, every front above; 124 step 5 = second example app, the blog as
   `.bpp`, under 07-onze/53's acceptance script.
 
@@ -100,7 +100,7 @@ Every front but 121 edits files owned by another track's front; sequenced, never
 | This front edits | Also owned by | Sequence |
 |---|---|---|
 | `[name]={expr}` attributes outside `html.bp` — emilia's `attributes.bp`, `emilia.bp`, `examples/emilia-card`, the core's two files, `jhonstart-emilia`'s bridge test, `document-shell` (118 step 1) | `06-emilia/34`; `06-emilia/33`; `05-jhonstart/26`; 119 | named one-line carve-outs by 118, each landed before the owner opens (189) |
-| `jhonstart/src/prelude.bp` (new, 118) | `05-jhonstart/26` | carve-out of 26's member, by 118 (266) |
+| `jhonstart/src/prelude.bp` (new, 118) | `05-jhonstart/26` | carve-out of 26's member, by 118 (270) |
 | `jhonstart/src/{client.bp, render.bp, island_runtime.mjs}` (120) · `server.bp`, `error_boundary.bp` (122) | `05-jhonstart/26` | after 26; 120 then 122, one at a time on the member's `botopink.json`, `root.bp` |
 | `jhonstart-link/**` — new files, plus two lines of `link_runtime.mjs` (126) | `05-jhonstart/27` | after 27 |
 | `jhonstart-forms/src` — new `typed_call.bp` (127) | `05-jhonstart/67`, `03-bundled-libs/103` | after both |
@@ -148,7 +148,7 @@ Labels only; text in [`../decisions-taken.md`](../decisions-taken.md).
 | 213 | `pub default fn` named after the file (`components/PostCard.bpp` → `pub default fn PostCard(props: Props) -> Element`, `import {components.PostCard};`); non-function file name is an error | 116 · 118 |
 | 200 | `html` = `pub default fn` of core `jhonstart` (`import html, {Element} from "jhonstart";`); `jhonstart-html` deleted; manifest `"bpp": "jhonstart"` | `05-jhonstart/26` step 0 · 116 · 118 |
 | 221 | `page.bpp` decorator from the header (line before the closing `---`) or the file name via `"bppKinds"` in the `bpp` package's `botopink.json`; mismatch is an error | 116 step 2 · 117 step 1 |
-| 266 | `bpp` package's `src/prelude.bp` (own modules only) is the last scope; imported only when a name resolves through it; header wins; binding the default function's name is an error; 118 writes jhonstart's | 116 · 118 |
+| 270 | `bpp` package's `src/prelude.bp` (own modules only) is the last scope; imported only when a name resolves through it; header wins; binding the default function's name is an error; 118 writes jhonstart's | 116 · 118 |
 | 186 · 202 | Stage is comptime: `#[page]` prerenders unless it reaches a `#[serverOnly]` hook; no `prerender` export, no `output` key | 117 step 2 · 123 · 124 |
 | 203 | One convention: `app/` tree, directory per route; `.bpp` where `page.bp` is; no `pages/` | 117 step 1 |
 | 222 | Route handler (`route.bp`, every method) always server, never prerendered | 117 step 4 · 121 step 5 |
@@ -208,7 +208,7 @@ config readers go to std "when a second consumer appears".
 ## Rules for this track
 
 - **The compiler knows no library.** Only 116 edits `repository/botopink-lang`: a manifest key,
-  `.bpp` in the tools' lists, the unfold (198), the prelude as generic last scope (266) — no
+  `.bpp` in the tools' lists, the unfold (198), the prelude as generic last scope (270) — no
   library name, no syntax. Markup meaning is jhonstart's `html`.
 - **A library front never touches `modules/**`.** A need = a [`language-gaps.md`](../language-gaps.md) row + nearest form.
 - **Libraries keep their concerns** (113): template jhonstart, CSS emilia, request/route table rakun, wiring onze. No fifth library.

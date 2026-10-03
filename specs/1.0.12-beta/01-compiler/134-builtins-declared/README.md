@@ -2,7 +2,7 @@
 
 **Priority:** high · **State:** partial: steps 1 and 3 on feat; step 2 partial (builtin calls
 declared; type functions, `result` namespace, `@Result` / `?T` methods and `@is` open)
-**Depends on:** 134-a, 134-b, 134-c, 134-d (open questions)
+**Depends on:** 134-d (open question) · answered: 134-a → 267, 134-b → 268, 134-c → 269
 **Owns:** `libs/std/src/builtins.d.bp`, `libs/std/src/builtins_fns.d.bp` (with 130 for the `Decl`
 surface) · compiler's builtin table and the check tying it to the declarations
 (`modules/compiler-core/src/comptime/builtins.zig`, `Env.builtinDecls`, `comptime.zig`
@@ -39,8 +39,8 @@ differences — `@ExprCustom<T>` declared as `CustomExpr<T>`, mirror's `Annotati
 
 ## Decisions
 
-134-a (`@print`/`@println`/`@debug` arity — four `tests/language/run` cells write `@print(a, b)`) ·
-134-b (`@TypeInfo.all`'s `with:` type, declared `unknown`) · 134-c (`@getContext(T)`'s answer,
-declared `-> T`) · 134-d (`@is(…)` by hand) — in [`../../decisions-pending.md`](../../decisions-pending.md).
+134-d (`@is(…)` by hand) — in [`../../decisions-pending.md`](../../decisions-pending.md). Answered,
+to build in step 2: 267 (`@print`/`@println`/`@debug` declared variadic, `..values: T[]`), 268
+(`with:` takes the builtin type `Decorator`), 269 (`@getContext(T)` is a hook, behind `use`).
 
 **Gate:** standard (fronts.md § Gate) + `zig build test-language`, `test-docs`, `test-libs`, `tsc-check` green

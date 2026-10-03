@@ -59,6 +59,7 @@ The track number is the blocking order. A front keeps its global number and dire
 |---|---|
 | [`status.md`](./status.md) | The only status: the fronts in five lanes — finish what is on `feat`, the libraries' critical path, ready now, later waves, blocked on a decision |
 | [`fronts.md`](./fronts.md) | The rules for a front, ownership by track, the conflict rules, the execution order, and § Gate (the standard landing every README cites) |
+| [`decisoes-pendentes.md`](./decisoes-pendentes.md) | The pending decisions in Portuguese, ordered by what each unblocks, with an example per option — the page the maintainer answers on; `decisions-pending.md` stays the source |
 | [`decisions-taken.md`](./decisions-taken.md) | The numbered decisions in force (the next free number lives only there) |
 | [`decisions-pending.md`](./decisions-pending.md) | The open questions, the contradictions (`ctr-*`), the 1.0.10 choices awaiting confirmation |
 | [`language-gaps.md`](./language-gaps.md) | Every compiler gap a library front meets, with its nearest form, owner and the Marker index |

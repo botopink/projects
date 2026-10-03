@@ -5,7 +5,7 @@ is what `07-onze/49` step 3 completes; "no rakun in `modules/jhonstart/src`" is 
 today · **State:** not started
 **Depends on:** `08-bpp/118` landed before opening (step 0 moves its member — decision 200), with its
 carve-outs here: bracket-attribute step-1 lines (only comments of `root.bp` / `elements.bp` name the
-DSL; no `[name]={` in `src/`), `src/prelude.bp` (decision 266), the `Node` declaration (decision
+DSL; no `[name]={` in `src/`), `src/prelude.bp` (decision 270), the `Node` declaration (decision
 223) · `03-bundled-libs/102` step 3's `routes.bp` commit, landed before opening (decision 188) ·
 `01-compiler/01-checker`'s capability (hooks a function activates through `use`, readable from its
 `@Decl` — `language-gaps.md`) for step 8 (decision 186) · `29-a` confirmed (step 5's starter-table row)
