@@ -1,4 +1,7 @@
-# The `-test` helper contract — `01-std/snapshots.md` §§ The API · How a library exposes `assert<Subject>` helpers (1.0.10). Front 98 checks every `<lib>-test` member against it; the helpers themselves are written by each library track.
+# The `-test` helper contract
+
+Front 98 checks every `<lib>-test` member against it; the helpers themselves are written by each
+library track.
 
 ## The API
 
@@ -23,21 +26,9 @@ reason the module beside this one is `asserts`), and `assertText` is the `assert
 for the subject the header records. The wrappers use the `try inner(); return;` shape every `-test`
 helper uses, because `return r` inside a `@Result`-returning body re-wraps (`language-gaps.md`).
 
-**Host cells — private, Node and Erlang.** `snapshots.bp` re-declares private cells in the
-`io/fs.bp` shape and writes `dirname`/`join` inline over `String.split`/`join`; a std module may
-import another now, so moving them onto `io/fs` and `path` is open:
-
-| Private cell | Node | Erlang |
-|---|---|---|
-| `readFile(p) -> @Result<string, string>` | `fs.readFileSync(p, 'utf8')` in an IIFE try/catch | `file:read_file/1` |
-| `writeFile(p, text) -> @Result<i32, string>` | `fs.mkdirSync(dirname, {recursive: true}); fs.writeFileSync(p, text)` | `filelib:ensure_dir/1` + `file:write_file/2` |
-| `removeFile(p) -> @Result<i32, string>` | `fs.rmSync(p, {force: true})` | `file:delete/1`, `enoent` is `ok` |
-| `exists(p) -> bool` | `fs.existsSync(p)` | `file:read_file_info/1` (a path of any kind) |
-
-Two more private cells serve the engine's own tests: `removeTree` and `tmpDir`. Private, so STD-001
-does not fire and `import {testing.snapshots} from "std"` type-checks on beam and wasm; the four
-`assert*` are unresolved there at lowering, which does not matter because no test runs there. The
-docblock says so.
+**The filesystem.** The engine reaches the disk through `io/fs` and `path` (front 97 step 4); its
+scratch directory is `bpsnap-<pid>-<n>` under `BOTOPINK_TEST_TMPDIR`. `import {testing.snapshots}`
+is refused on wasm (STD-001 through `io/fs`).
 
 **No panic anywhere.** The engine's failure channel is the `@Result` it answers; a host error
 inside a cell is an `Error` string, never a throw. That is what lets a test record two snapshots

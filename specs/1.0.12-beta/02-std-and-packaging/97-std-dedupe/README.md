@@ -1,317 +1,138 @@
 # Front 97 — std dedupe: one place for every shared primitive
 
-**Priority:** high — `03-bundled-libs` wave 1 (routing conventions, actions id, http) and every
-library front's "consume std X" step are written against the surface this front lands; a primitive
-landed after its consumers were rewritten is rewritten twice
-**Depends on:** none for steps 1–5 · maintainer decision `01std-f` for step 7 · `std-d` for step 6 ·
-`24-g` confirmed (step 5 builds on `std/async`'s started/unstarted surface as implemented)
-**Owns:** `repository/botopink-lang/libs/std/src/{primitives,json,hash,async}.bp`,
-`libs/std/src/io/{clock,fs,process}.bp`, `libs/std/src/testing/snapshots.bp`, `libs/std/AGENTS.md`,
-`libs/std/test/**` and the inline tests of the files named · the bundled libraries' consumer edits:
-`libs/actions/src/{envelope,rpc}.bp`, `libs/validation/src/binding.bp` · `libs/AGENTS.md` ·
-`docs.md` § std where it lists the surface · `libs/std/src/__snapshots__/**` (step 7 only)
+**Priority:** high — every library front's "consume std X" step is written against the surface this
+front lands · **State:** partial: steps 0–5, 8–10 on feat; the residue of steps 1–5, steps 6–7
+(conditional) and step 11 open
+**Depends on:** `std-d` (step 6) · `01std-f` (step 7) · `24-g` confirmed (step 5's surface) ·
+decision 230 (step 11)
+**Owns:** `repository/botopink-lang/libs/std/src/**`, `libs/std/AGENTS.md`, `libs/std/test/**` ·
+the bundled libraries' consumer edits: `libs/actions/src/{envelope,rpc}.bp`,
+`libs/validation/src/binding.bp` · `libs/AGENTS.md` · `docs.md` § std where it lists the surface ·
+`libs/std/src/__snapshots__/**` (step 7 only)
 **Does not touch:** `repository/botopink-lang/modules/**` (the compiler — a new method on a primitive
-is declared in `libs/std/src/primitives.bp`, whose declarations the checker reads; if a backend
-needs a lowering the front stops and reports it) · `libs/routing/**` (`03-bundled-libs`) · any file
-under `repository/{rakun,jhonstart,emilia,onze,erika}` — the copies there are deleted by the front
-that owns the file (§ Consumers) · `scripts/restricted-targets.txt`, `.gitignore`, the hooks
-(`00-gate`)
-**Carried from 1.0.10:** `01-std/01-std-lib-enablement/README.md` § Step 14 (the copies are
-deletable — reopened, see § Current state) · `01-std/README.md` § Step 3 (the engine's private
-cells, `snapshots.bp`) · `01-std/test-snap.md` (step 7, conditional) · the *Std-level cleanup*
-section of the bundled-libs extraction analysis (the source of steps 1–5)
+is declared in `libs/std/src/primitives.bp`; if a backend needs a lowering the front stops and
+reports it) · `libs/routing/**`, `libs/validation/src/schemas.bp` (`03-bundled-libs`) · any file under
+`repository/{rakun,jhonstart,emilia,onze,erika}` — the copies there are deleted by the front that
+owns the file (§ Consumers) · `.gitignore`, the hooks
 
----
+## Goal
 
-## Problem
-
-The same primitive is written in several libraries, each copy slightly different, and none is
-std's. Measured on the trees at `repository/` (the extraction analysis, re-checked by `grep`):
-
-| Primitive | Copies | Where |
-|---|---|---|
-| a string → integer / float parser answering a `@Result` | 21 files | `libs/validation/src/binding.bp:144`, `onze-og/src/svg.bp:19`, `onze-og/src/metrics.bp:12`, `onze-bundler/src/entry.bp`, rakun `rakun-metrics/src/registry.bp:102`, `rakun-scheduling/src/cron.bp:126`, `rakun/src/config.bp:79`, … |
-| `Json` accessors `membersOf` / `isObject` / `fieldOf` / `strOf` / `itemsOf` / `kindName` | 8 | `libs/actions/src/envelope.bp:56-103`, `libs/actions/src/rpc.bp:26-66`, `onze/src/config.bp:98-130` (`pub`), `onze-cli/src/build.bp:42`, `onze-cli/src/info.bp:11`, `onze-bundler/src/entry.bp:182`, rakun `rakun-security/src/jwt.bp:117-168`, `rakun/src/autoconfig_registry.bp:164-178` |
-| retry with backoff | 4 | rakun `rakun-messaging/src/reliability/policy.bp:34`, `rakun-tx/src/outbox.bp:107`, the mail sidecar, `rakun-scheduling/src/jobstore/scheduler.bp` |
-| a duration parser (`"30s"`, `"5m"`) | 2 | rakun `config.parseDuration`, `jwt.skewOf` |
-| PBKDF2-SHA256 | 1 host cell, no std | `rakun_security.erl` (`pbkdf2`) / Node `crypto.pbkdf2Sync` |
-| an argv flag parser | 3 | rakun `rakun-cli/src/args.bp`, `config.cliEntries:568`, `onze-cli/src/create.bp:84` |
-| a djb2 content hash | 1 copy of std's | emilia `emilia.bp:95-97` (`hashHex`) = `hash.contentHash` |
-| constant-time equality, `sha256`, `xmlEscape`, `uuidV4`, an ISO-8601 formatter | 1 each | rakun `request_context.bp:797`, `rakun-ws/src/ws.bp:51`, `rakun/src/config.bp:1194`, `cron.rkFormatUtc`, `rakun-logging`'s `rkLogIso` — std has each already (`hash.equalsConstantTime`, `hash.sha256`, `escape.attribute`, `io.random.uuidV4`, `clock.formatIso8601`) |
-| file cells inside the snapshot engine | 5 | `libs/std/src/testing/snapshots.bp:4-38` — private `readFile`, `writeFile`, `removeFile`, `exists`, `removeTree`, `tmpDir` host templates beside `io/fs.bp`'s |
-
-## Current state
-
-- `01-std-lib-enablement` step 14 ("no JSON copy left in jhonstart, emilia, rakun") was ticked in
-  1.0.10 against a grep for the *writers*; the *readers* over `json.Json` were copied eight times
-  after decision 117 introduced the type. Reopened here.
-- **Landed (steps 0–5, 8, 9):** `fs.walk`'s relative paths on erlang and its dangling-link `Error`
-  (decision 178), `fs.glob`'s one rule (177), `string.parseInt()` / `parseFloat()`, the index unit
-  of `indexOf` / `lastIndexOf` on erlang (169), the `Json` readers, `hash.pbkdf2Sha256` (175),
-  `clock.parseDuration`, the snapshot engine on `io/fs` and `path`, `async.RetryPolicy` /
-  `nextDelay` / `retry` (170), `Dict.ofEntries` (174), the documentation, `libs/actions` on the
-  `Json` methods, `libs/validation`'s `i64` binder on `parseInt`, and step 10 (`Array.join`
-  without `$stringify`, `Array.unique`'s body, `random.bool` dropped) — `libs/std` reads 491
-  passed / 0 failed on commonJS and on erlang (433 before).
-- **Open:** `libs/validation`'s `i32` binder (step 1, last box) and the `schemas.bp` accessors
-  (step 2, last box — `125-validation-zod`'s), every "consume std" row of § Consumers — each the
-  step of the front that owns the file; steps 6 and 7 wait on `std-d` and `01std-f`; the compiler
-  residuals of § Compiler residuals.
-- `libs/std/src/async.bp` carries `allOf`, `all`, `race`, `runAll`, `raceOf`, `timeout`, `failed`
-  (24-g's shape); no retry policy.
-- `libs/std/src/hash.bp` carries `contentHash`, `strongHash`, `sha256`, the base64url digests,
-  `equalsConstantTime`, `etag` / `weakEtag` / `matches`; no PBKDF2.
-- `libs/std/src/io/clock.bp` carries `formatIso8601`, `toCivil`; no duration parser.
-- `libs/std/src/testing/snapshots.bp` reaches the filesystem through its own six templates rather
-  than `io/fs` and `path` (measured: `sed -n '1,40p'` shows the `declare fn` block).
-
-## Mechanism
-
-Each copy exists because the primitive was needed by a library front while std was frozen for it
-(the 1.0.10 rule: a library front gets no compiler change and writes the nearest form). The rule
-that replaces it is decision 115/116's: **what is generic goes to std** — `.bp` only, both targets,
-a `#[@External.<Target>]` template where a host is needed, no sidecar. A std addition is a method
+Every primitive two libraries need lives once, in std — `.bp` only, both targets, a
+`#[@External.<Target>]` template where a host is needed, no sidecar (decisions 115/116). A method
 where the receiver is a primitive (`"42".parseInt()`), a method on the type where one exists
-(`Json`), and a free function in the module that owns the concept otherwise.
+(`Json`), a free function in the module that owns the concept otherwise. Each library copy is then
+deleted by the front that owns its file.
 
-## Steps
+## Done
 
-### Step 0 — `fs.walk` answers the same relative paths however the root is spelled
+- Step 0 — `fs.walk` answers the same relative paths however the root is spelled; a dangling link
+  is an `Error` naming it; `fs.glob` reads one rule on both targets (decisions 177, 178)
+- Step 1 — `string.parseInt()` / `parseFloat()` (decision 176); erlang `indexOf` / `lastIndexOf` in
+  code points (decisions 169, 197); `libs/validation`'s `i64` binder on `parseInt`
+- Step 2 — the `Json` accessors as methods (`kindName`, `isObject`, `members`, `field`, `str`,
+  `items`); `libs/actions` calls them
+- Step 3 — `hash.pbkdf2Sha256` (decision 175) and `clock.parseDuration`
+- Step 4 — the snapshot engine on `io/fs` and `path`; `fs.removeTree` public
+- Step 5 — `async.RetryPolicy` / `nextDelay` / `retry` (decisions 170, 197)
+- Step 8 — the surface documented in `libs/std/AGENTS.md`, `docs.md` and `libs/AGENTS.md`
+- Step 9 — `Dict.ofEntries` (decision 174)
+- Step 10 — std's own residue: `Array.join` without `$stringify`, `Array.unique` keeps first
+  occurrences, `random.bool` dropped (decisions 239, 217, 250)
 
-On erlang the template cut the root off each full path by the root's written length, while
-`filelib:fold_files/5` builds those paths with `filename:join/2`, which drops a `.` segment: a root
-ending in `/.` (what `path.join([dir, "."])` answers) lost the first two characters of every path
-(`app/layout.bp` → `p/layout.bp`), and onze's `onze build` of a project whose `src` is `"."` read
-`enoent`. The Erlang template walks `file:list_dir/1` itself and builds each relative path from the
-names it descends through. A dangling link under the root is an `Error` naming it —
-`fs.walk: dangling link "<relative path>"`, the same text on both targets, the first in sorted
-order when there are several (decision 178; the hosts used to disagree: Node failed the whole walk
-with its own `ENOENT`, erlang skipped the link).
+Facts the open rows rely on: `parseInt` answers `i64` and refuses beyond ±(2^53 − 1); on wasm a call
+to a template-only `String` method traps. `parseDuration` reads one unit (`ms`, `s`, `m`, `h`, `d`),
+digits only, no sign — not rakun's ISO `PT…` form nor a bare number under a default unit, which
+`config.parseDuration(raw, unit, key)` keeps while calling std for the suffix form. A consumer's free
+`kindName(v: Json)` / `isObject` keeps compiling beside the methods, so each copy goes at its owner's
+pace. `import {testing.snapshots}` is refused on wasm (STD-001 through `io/fs`).
 
-`fs.glob` reads ONE rule on both targets (decision 177), as one walk over the pattern's segments in
-both cells: `**` is zero or more directories, a segment with `*` `?` `[…]` `{a,b}` matches the names
-of one directory, any other segment is a name; a wildcard does not match a name starting with `.`
-unless the segment itself starts with the dot; `**` and a wildcard segment continue into real
-directories only — the link is still listed as a name, and a segment that names it goes through it.
-Only the match of one segment against one directory is the host's. `fs.removeTree(path)` is public
-(step 4).
+## Open
 
-**Acceptance:**
-- [x] one inline test per spelling — `dir`, `dir/`, `dir/.`, `dir/./sub`, `//dir//`, `dir/sub/..`,
-      relative, relative with a leading `./` — plus links (file, directory), the dangling-link
-      `Error` and its sorted-first rule, and a file root, green on commonJS and erlang
-- [x] `tests/language` `run/std_fs_walk_root_spellings` from a consumer on commonJS, erlang and
-      beam (wasm refuses the import); planting the old template reds it on erlang and beam only
-- [x] `glob`: eight inline tests over a tree with a dot file, a dot directory, a link to a
-      directory, a link to a file and a dangling link, green on commonJS and erlang; ten patterns
-      print the same lines from a consumer on commonJS, erlang and beam
-- [x] `path.join` keeps a `.` segment and `path.normalize` drops it, on both targets alike
+### Step 1 residue — `bindInt`'s `i32`
 
-Left: `fs.list` answers the host's order (sorted on Node, directory order on Erlang). Not pinned in
-`glob`: an alternative holding a `/` (the pattern is split first), a `..` segment (read as a name),
-backslash escapes.
+- [ ] `libs/validation/src/binding.bp`'s `bindInt` reads its `i32` through std — std has no `i64` →
+      `i32` narrowing, so `parseI32` (a digit fold that does not check the `i32` range) stays until
+      one exists
 
-### Step 1 — `string.parseInt()` and `string.parseFloat()`
+### Step 2 residue — no `Json` accessor copy left in `libs/`
 
-Declared in `libs/std/src/primitives.bp` as methods of `string`, answering
-`@Result<i64, string>` / `@Result<f64, string>`; a leading `+`/`-`, digits only, the whole
-string (no trailing text, no whitespace); an `Error` names the input. Both targets through
-templates (`Number` / `list_to_integer` with the refusal spelled in botopink over the digits, so the
-two backends agree on every input — decision 142's rule for numerals).
-
-**Acceptance:**
-- [x] `"42".parseInt()` is `Ok(42)`, `"-0".parseInt()` is `Ok(0)`, `"4 2"`, `""`, `"42x"`, `"0x2A"`
-      are `Error` naming the input — inline tests green on commonJS and erlang
-- [x] `"1e3".parseFloat()` is `Ok(1000.0)` and agrees bit-for-bit with `json.decode`'s numeral on
-      the boundary values it pins (`5e-324`, `1.7976931348623157e308`) — `json.bp`'s agreement test
-      runs both over decision 142's whole boundary list
-- [x] `libs/validation/src/binding.bp`'s `bindEpochMillis` reads its `i64` with
-      `raw.trim().parseInt()`; the host cell `rawToI64` and `parseI64` are gone; `libs/validation`
-      green on commonJS and erlang (98 tests, one added: a trimmed numeral, and one beyond
-      2^53 − 1 is a `typeMismatch`)
-- [ ] `bindInt`'s `i32` reads std too — std has no `i64` → `i32` narrowing, so `parseI32` (a digit
-      fold that does not check the `i32` range) stays until one exists
-
-As landed: both are `default fn`s of `behavior String` (`libs/std/test/primitives_test.bp`, six
-tests). `parseInt` refuses a numeral beyond ±9007199254740991 (decision 176) — the range commonJS
-and the BEAM count alike. `parseFloat` refuses an overflow and answers `0.0` for an underflow. They
-run on commonJS, erlang and beam; on wasm a call traps, as every template-only `String` method
-does. The bodies call a method on `self` only and reach the rest through free cells — § Compiler
-residuals 1–3.
-
-`indexOf` / `lastIndexOf` (decision 169): on erlang both answer `string:length/1` of the text before
-the match — the unit `at`, `slice` and `length` count in there — where they answered its byte
-offset; three tests over a string built from code points, green on commonJS and erlang. commonJS is
-untouched. A library that hands an erlang `indexOf` to a byte-indexed host cell now reads a
-character index.
-
-### Step 2 — the `Json` accessors as methods on `json.Json`
-
-`libs/std/src/json.bp`: `Json.kindName() -> string`, `Json.isObject() -> bool`,
-`Json.members() -> Array<#(string, Json)>` (`[]` for a non-object), `Json.field(key) -> ?Json`,
-`Json.str() -> string` (`""` for a non-string), `Json.items() -> Array<Json>`. The names are the
-copies' (`membersOf` → `members`, `fieldOf` → `field`, `strOf` → `str`, `itemsOf` → `items`), so a
-consumer's edit is a receiver swap.
-
-**Acceptance:**
-- [x] each method has an inline test per `Json` variant, green on both targets
-- [x] `libs/actions/src/envelope.bp` and `rpc.bp` call the methods and declare none;
-      `libs/actions`' 19 tests unchanged and green on commonJS and erlang; the envelope and RPC
-      literals byte-identical (the writers are untouched)
-- [ ] `grep -rn "fn membersOf\|fn strOf\|fn itemsOf\|fn fieldOf\|fn kindName" libs/` is empty
-      (today: `libs/validation/src/schemas.bp` — private `itemsOf` / `membersOf` and `pub fn
+- [ ] `grep -rn "fn membersOf\|fn strOf\|fn itemsOf\|fn fieldOf" libs/` is empty — today
+      `libs/validation/src/schemas.bp` holds private `itemsOf` / `membersOf` and `pub fn
       fieldOf(input, name) -> Json`, which `#[schema]`'s emitted code calls; `125-validation-zod`
-      owns the file (§ Consumers) — and `libs/routing/src/segment.bp:77` `pub fn kindName(k:
-      SegmentKind)`, a different function over another type, which the grep has to exclude)
+      owns the file (§ Consumers). `libs/routing/src/segment.bp`'s `pub fn kindName(k: SegmentKind)`
+      is another function over another type and is excluded
 
-As landed: `field(key)` reads the value itself (`v.field(k)`, where the copies wrote
-`fieldOf(membersOf(v), k)`). A consumer's free `pub fn kindName(v: Json)` / `isObject` keeps
-compiling and answering beside the methods — measured from a dependency whose modules import the
-copies by sibling path in a program that loads `std/json`, on commonJS and erlang — so each copy is
-deleted by its owner at its own pace.
+### Step 3 and 5 residue — the rakun copies named as "consume std" rows
 
-### Step 3 — `hash.pbkdf2Sha256` and `clock.parseDuration`
+`04-rakun` carries no row today for any of these (a grep over `04-rakun/` finds none).
 
-`hash.pbkdf2Sha256(password, salt, iterations, length) -> string` (base64url, Node
-`crypto.pbkdf2Sync` / Erlang `crypto:pbkdf2_hmac`) and
-`clock.parseDuration(text) -> @Result<i64, string>` (milliseconds; units `ms`, `s`, `m`, `h`, `d`;
-one unit, digits only, refused otherwise — the stricter of the two rakun parsers).
+- [ ] the `04-rakun` track's `config.parseDuration` (`rakun/src/config.bp`) and `jwt.skewOf`
+      (`rakun-security/src/jwt.bp`) rows name `clock.parseDuration` as their replacement
+- [ ] the four rakun retry loops (`rakun-messaging/src/reliability/policy.bp`,
+      `rakun-tx/src/outbox.bp`, the mail sidecar, `rakun-scheduling/src/jobstore/scheduler.bp`) are
+      named as "consume std" rows of `async.RetryPolicy` / `retry` in the `04-rakun` track
 
-**Acceptance:**
-- [x] `pbkdf2Sha256("password", "salt", 1, 32)` equals RFC 6070's inputs under SHA-256 on both
-      targets (`Eg-2z_z4syxD5yJSVsT4N6hlSMkszDVICAWYfLcL4Xs` — the RFC's own vectors are
-      PBKDF2-HMAC-SHA1), with the 2- and 4096-round and 40-byte ones, and RFC 7914 §11's two
-      PBKDF2-HMAC-SHA-256 vectors
-- [x] `parseDuration("30s")` is `Ok(30000)`; `"1.5s"`, `"30"`, `"30 s"`, `"30S"` are `Error`
-- [ ] the `04-rakun` track's `config.parseDuration` / `jwt.skewOf` rows name this function as
-      their replacement (a "consume std" step there)
+### Step 4 residue — the engine under every `-test` member
 
-As landed: the salt is text (decision 175); `iterations` or `length` below 1 is a panic with one
-text on both targets, where each host raised its own. `parseDuration` also refuses a sign, two
-units, and a duration beyond 2^53 − 1 milliseconds. It does not read rakun's ISO `PT…` form nor a
-bare number under a default unit — `config.parseDuration(raw, unit, key)` keeps those two and calls
-std for the suffix form.
-
-### Step 4 — the snapshot engine on `io/fs` and `path`
-
-`libs/std/src/testing/snapshots.bp` drops its six `declare fn` templates for `io.fs.readFile`,
-`writeFile`, `remove`, `exists`, `removeTree` and a scratch directory under `io.os.tmpDir()` /
-`BOTOPINK_TEST_TMPDIR`, through `path.join`. Behaviour unchanged: `.new` on mismatch or missing,
-`Ok` and a stale `.new` deleted on match, no update path.
-
-**Acceptance:**
-- [x] `grep -n "External" libs/std/src/testing/snapshots.bp` is empty; the `engine ----` tests
-      green on both targets; `grep -rn "SNAP_CREATE\|update" snapshots.bp` still finds the header only
 - [ ] `zig build test-libs` reads every member's row at its previous count (the engine is what every
-      `-test` member stands on) — measured here for `std`, `routing`, `actions` and `validation`
-      only (the worktree holds no sibling library), and from a scratch consumer package on commonJS
-      and erlang: a missing snapshot writes its `.new` under a `__snapshots__/<suite>/` the engine
-      had to create and answers `Error`; renamed, the next run answers `Ok`. The libraries' rows are
-      the landing's check
-
-As landed: `fs.removeTree(path) -> @Result<i32, string>` is public (it was `fs.bp`'s private test
-cell); the scratch directory is `bpsnap-<pid>-<n>` under `BOTOPINK_TEST_TMPDIR`, since `io/random`
-cannot be imported by a module a consumer embeds (§ Compiler residuals 6); `import
-{testing.snapshots}` is refused on wasm now (STD-001 through `io/fs`).
-
-### Step 5 — `async.RetryPolicy` and `nextDelay`
-
-`pub type RetryPolicy(maxAttempts: i32, initialMillis: i64, multiplier: f64, maxMillis: i64)`,
-`nextDelay(policy, attempt) -> ?i64` (`null` past `maxAttempts`), and
-`retry(policy, work: fn() -> @Task<@Result<T, E>>) -> @Task<@Result<T, E>>` over `timeout`'s
-shape (24-g): the last `Error` is answered, never rejected. No jitter without a decision.
-
-**Acceptance:**
-- [x] `nextDelay(RetryPolicy(3, 100, 2.0, 1000), 1..4)` answers `100`, `200`, `400`, `null`
-- [x] `retry` over a work that fails twice then succeeds answers `Ok` after three calls, on both
-      targets; over one that always fails answers the last `Error` after `maxAttempts`
-- [ ] the four rakun loops are named as "consume std" rows in the `04-rakun` track
-
-As landed: a policy is usable only with `maxAttempts` ≥ 1, both delays ≥ 0, `maxMillis` ≤
-2147483647 and `multiplier` ≥ 1.0; `nextDelay` answers `null` for one that is not, and `retry` over
-one is fatal on both targets, like `race([])`. The delay is rounded down. The names are the README's
-(decision 170), which `rakun-messaging/reliability/policy.bp` also declares until its own step.
+      `-test` member stands on)
 
 ### Step 6 — conditional on `std-d`: `io.process` signals and a line reader
 
-Only if the maintainer answers `std-d` (a): `process.onSignal`, `process.forwardSignals(child)`,
-`io.stdin.readLine()`. Under (b) — the recommendation — this step is struck and onze 50's boxes
-take their (b) shape.
+Under (a): `process.onSignal`, `process.forwardSignals(child)`, `io.stdin.readLine()`. Under (b) —
+the recommendation — onze 50's boxes take their (b) shape.
 
-**Acceptance:**
 - [ ] under (a): a spawned child receives the `SIGTERM` sent to its parent, asserted on both
       targets with a child that prints on the signal; `readLine` answers a line without its newline
-- [ ] under (b): nothing here; `libs/std/AGENTS.md` states that std has no signal or TTY surface
-      and why
+- [ ] under (b): `libs/std/AGENTS.md` states that std has no signal or TTY surface and why
 
 ### Step 7 — conditional on `01std-f`: std's snapshot map
 
-Only if the maintainer answers `01std-f` (b): write the ~40 `.snap` files of
-[`test-snap.md`](./test-snap.md) under `libs/std/src/__snapshots__/`, each produced by an inline
-test through `snapshots.assertAs`, recorded by renaming the `.new` (no flag). Under (a) — the
-recommendation — the four existing files stay and the map is retired with a note in `AGENTS.md`.
+Under (b): write the ~40 `.snap` files of [`test-snap.md`](./test-snap.md) under
+`libs/std/src/__snapshots__/`, each produced by an inline test through `snapshots.assertAs`,
+recorded by renaming the `.new` (no flag). Under (a) — the recommendation — the four existing files
+stay and the map is retired.
 
-**Acceptance:**
 - [ ] under (b): every `.snap` the map names exists, identical on both targets; `botopink test`
       in `libs/std` green with no `.new` left
 - [ ] under (a): `libs/std/AGENTS.md` § Tests says the inline literals are the evidence
 
-### Step 8 — the surface documented
+### Step 11 — std on wasm, group 3 (decision 230)
 
-**Acceptance:**
-- [x] `libs/std/AGENTS.md` and `docs.md` list `parseInt`, `parseFloat`, the `Json` methods,
-      `pbkdf2Sha256`, `parseDuration`, `RetryPolicy` / `nextDelay` / `retry` — `docs.md` with one
-      compiled fence whose printed values were checked by running it on commonJS and erlang
-- [x] `libs/AGENTS.md` records that a shared primitive lands in std first and the copies are
-      deleted by the file's owner
+The std modules whose wasm build is not a compiler question (groups 1 and 2 are
+`01-compiler/05-wasm` step 5): `io/http` (`fetch`), `async` (`gateHandle`), `testing/mocks`
+(`pushMatcher`), `testing/asserts` (`canonical`, decision 146). For each module, one of (a) out of
+a wasm build — the manifest or the module refuses wasm with a located message, as today, recorded as
+the design; or (b) restructured so no host cell is reachable on wasm.
 
-### Step 9 — `Dict.ofEntries` (decision 174)
+- [ ] a question per module in [`../../decisions-pending.md`](../../decisions-pending.md) before it
+      is done
+- [ ] each of the four modules either refuses wasm with a located message, recorded in
+      `libs/std/AGENTS.md` as the design, or builds on wasm with no host cell reachable
 
-`Dict.ofEntries(entries: Array<#(K, V)>) -> Dict<K, V>` in `collections.bp`: inserted in order, so a
-repeated key keeps its last value at the place of that last entry, as a chain of `insert` does.
+## Consumers — "consume std X" rows handed to the library fronts
 
-**Acceptance:**
-- [x] three inline tests on commonJS and erlang (order, a repeated key against the `insert` chain,
-      no entries and a non-string key)
-
-### Step 10 — std's own residue (decisions 239, 217, 250)
-
-`Array.join`'s Erlang template spells the value-as-text call out —
-`iolist_to_binary(io_lib:format("~p", [__E]))` where it wrote `$stringify(__E)` (decision 239: the
-marker is refused in every template, std included). `Array.unique` drops every duplicate and keeps
-each value's first occurrence, compared with `==` (decision 217), where it dropped consecutive ones.
-`io.random`'s `bool()`, an alias of `coin()`, is dropped (decision 250): a declaration named like a
-primitive type is the refusal `01-checker` parked on it.
-
-**Acceptance:**
-- [x] `grep -rn '$stringify' libs/std/src/*.bp` finds no template; a program joining integers,
-      strings, floats, booleans, records, enum variants, nested arrays, tuples, `null`, an empty
-      array and non-ASCII text prints the same bytes before and after on erlang and on beam (the
-      `.beam` assembly is byte-identical; the `.erl` text loses the `erlang:` qualifier of
-      `iolist_to_binary`, the only change in the erlang codegen snapshots)
-- [x] `[1, 2, 1, 3, 2].unique()` is `[1, 2, 3]`, strings keep first occurrences, records compare by
-      value — `libs/std/test/primitives_gaps_test.bp`, green on commonJS and erlang; the compiler's
-      erlang row over `unique` reads the new body (`codegen/tests/erlang.zig`)
-- [x] `grep -rn "fn bool()" libs/std` is empty; nothing in the seven repositories called it
-
-Left: on erlang, `[[1, 2], [3]].join("+")` prints the bytes `\x01\x02+\x03` (a list element is
-taken as an iolist) where beam prints `[1,2]+[3]` — `primJoin` renders a list through `~p`. The two
-backends disagreed before this step and still do; the template is the erlang backend's
-(`01-compiler/02-erlang`).
-
-## Consumers — "consume std X" steps this front hands to the library fronts
-
-Not this front's files. Each row is a step in the named 1.0.11-beta front; the deletion is measured by
-the grep in the last column.
+Not this front's files. Each row is a step of the named front; the deletion is measured by the grep.
 
 | Copy | Owner front | Step | Measured by |
 |---|---|---|---|
-| `emilia.bp:95-97` `hashHex` | `06-emilia/34-emilia-modifiers` step 1 | `import {hash} from "std"`, `hash.contentHash`, fixture `e_39b87d03` unchanged | `grep -n hashHex repository/emilia/modules/emilia/src` empty |
-| `onze/src/config.bp:98-130` (`pub` accessors) | `07-onze/49-onze-stand-up` step 1 | receiver swap; the `pub` copies deleted (no consumer outside `onze`) | `grep -rn "fn membersOf\|fn strOf\|fn isObject\|fn kindName" repository/onze/modules/onze/src` empty |
-| `onze-cli/src/{build,info}.bp`, `onze-bundler/src/entry.bp:182`, the `parseInt` in `entry.bp` | `07-onze/50-onze-cli` step 1 | receiver swap | the same grep over `onze-cli/src` and `onze-bundler/src` empty |
-| `onze-og/src/svg.bp:19`, `metrics.bp:12` | `07-onze/51-onze-image` step 1 | `parseInt` / `parseFloat` | `grep -n "fn parse" repository/onze/modules/onze-og/src` empty |
-| `libs/validation/src/schemas.bp` `itemsOf`, `membersOf`, `pub fn fieldOf` | `03-bundled-libs/125-validation-zod` step 2 | receiver swap (`input.items()`, `input.members()`); `#[schema]`'s emitted `schemas.fieldOf(input, "…")` becomes `input.field("…") ?? Json.Null` or keeps a function under a name the grep does not match | `grep -n "fn itemsOf\|fn membersOf\|fn fieldOf" libs/validation/src` empty |
-| rakun's eleven copies (the table in § Problem) | the `04-rakun` track's fronts, by file | one row each | the `04-rakun` track's greps |
+| `emilia.bp` `hashHex` | `06-emilia/34-emilia-modifiers` step 1 | `import {hash} from "std"`, `hash.contentHash`, fixture `e_39b87d03` unchanged | `grep -n hashHex repository/emilia/modules/emilia/src` empty |
+| `onze/src/config.bp` (`pub` accessors) | `07-onze/49-onze-stand-up` step 1 | receiver swap; the `pub` copies deleted (no consumer outside `onze`) | `grep -rn "fn membersOf\|fn strOf\|fn isObject\|fn kindName" repository/onze/modules/onze/src` empty |
+| `onze-cli/src/{build,info}.bp`, `onze-bundler/src/entry.bp` (accessors and its `parseInt`) | `07-onze/50-onze-cli` step 1 | receiver swap | the same grep over `onze-cli/src` and `onze-bundler/src` empty |
+| `onze-og/src/svg.bp`, `metrics.bp` number parsers | `07-onze/51-onze-image` step 1 | `parseInt` / `parseFloat` | `grep -n "fn parse" repository/onze/modules/onze-og/src` empty |
+| `libs/validation/src/schemas.bp` `itemsOf`, `membersOf`, `pub fn fieldOf` | `03-bundled-libs/125-validation-zod` (step 2 residue) | receiver swap (`input.items()`, `input.members()`); `#[schema]`'s emitted `schemas.fieldOf(input, "…")` becomes `input.field("…") ?? Json.Null` or keeps a function under a name the grep does not match | `grep -n "fn itemsOf\|fn membersOf\|fn fieldOf" libs/validation/src` empty |
+| rakun's copies (below) | the `04-rakun` track's fronts, by file | one row each | the `04-rakun` track's greps |
+
+rakun's copies, by primitive: number parsers answering a `@Result` (e.g.
+`rakun-metrics/src/registry.bp`, `rakun-scheduling/src/cron.bp`, `rakun/src/config.bp`) →
+`parseInt` / `parseFloat`; `Json` accessors in `rakun-security/src/jwt.bp` and
+`rakun/src/autoconfig_registry.bp` → the `Json` methods; the four retry loops → `async.retry`;
+`config.parseDuration`, `jwt.skewOf` → `clock.parseDuration`; `rakun_security.erl`'s `pbkdf2` →
+`hash.pbkdf2Sha256` (its salt changes from base64url-decoded to text, decision 175); constant-time
+equality (`request_context.bp`), `sha256` (`rakun-ws/src/ws.bp`), `xmlEscape` (`config.bp`),
+`cron.rkFormatUtc`, `rakun-logging`'s `rkLogIso` → `hash.equalsConstantTime`, `hash.sha256`,
+`escape.attribute`, `clock.formatIso8601`. `rakun-messaging/reliability/policy.bp` declares its own
+`RetryPolicy` / `nextDelay` until its step (decision 170).
 
 ## Compiler residuals — met here, worked around in std, owned elsewhere
 
@@ -319,44 +140,25 @@ the grep in the last column.
 |---|---|---|---|
 | 1 | commonJS emits `Ok(x)` / `Error(e)` of a `default fn` of `primitives.bp` as written — `ReferenceError: Ok is not defined` | `return Ok(1);` in a new `default fn` of `behavior String`, called from a scratch project | the commonJS emitter |
 | 2 | in such a body commonJS emits `self.length()` as written (`self.length is not a function`) and erlang emits `opt.unwrapOr(d)` as a call to an undefined `unwrapOr/2` | `val x = self.split(".").at(0).unwrapOr("");` / `self.length()` in the same place | both emitters |
-| 3 | erlang lowers a method called on a LOCAL of such a body through a lookup another module's text changes: `exponent.startsWith("+")` came out as the bare `startsWith(Exponent, <<"+">>)` — `function startsWith/2 undefined` | `parseFloat`'s body as first landed, with the three "one unit for every string index" tests appended to `test/primitives_test.bp` | the erlang emitter |
-| 4 | a TYPE a module imports from a sibling (`import {RetryPolicy} from "reliability/policy"`, aliased or not) resolves to std's type of the same name when the same module also imports the std module that declares it (`import {async} from "std"`): `` `RetryPolicy` has no parameter named `initialMs` `` — functions are told apart, and so is a type when only ANOTHER module of the program loads the std module | a dependency with `reliability/policy.bp` (`pub type RetryPolicy(initialMs: i32, …)`) and `reliability/dispatch.bp` importing it beside `{async}` | `01-compiler/01-checker` (the import fix covers functions) |
+| 3 | erlang lowers a method called on a LOCAL of such a body through a lookup another module's text changes: `exponent.startsWith("+")` came out as the bare `startsWith(Exponent, <<"+">>)` — `function startsWith/2 undefined` | `parseFloat`'s body as first landed, with the three code-point index tests appended to `test/primitives_test.bp` | the erlang emitter |
+| 4 | a TYPE a module imports from a sibling (`import {RetryPolicy} from "reliability/policy"`) resolves to std's type of the same name when the same module also imports the std module that declares it (`import {async} from "std"`): `` `RetryPolicy` has no parameter named `initialMs` `` | a dependency with `reliability/policy.bp` (`pub type RetryPolicy(initialMs: i32, …)`) and `reliability/dispatch.bp` importing it beside `{async}` | `01-compiler/01-checker` (the import fix covers functions) |
 | 5 | a record cannot be built through a std module namespace: `async.RetryPolicy(3, 100, 2.0, 1000)` is `this "std" module has no such public function`; the leaf import works | `import {async} from "std";` and that call | `01-compiler/01-checker` |
-| 6 | a consumer outside the checkout cannot import `io/random` on commonJS: `module 'std/io/random' requires "./sidecars/random.mjs", but its library 'std' resolves to no package directory` | `import {io.random} from "std"` in a package under `/tmp` | `02-std-and-packaging` (packaging) |
+| 6 | a consumer outside the checkout cannot import `io/random` on commonJS: `module 'std/io/random' requires "./sidecars/random.mjs", but its library 'std' resolves to no package directory` | `import {io.random} from "std"` in a package under `/tmp` | **unowned** — no front of this track carries it; proposed `01-compiler/26-cli-tooling` (the CLI's bundled-package resolution) |
 | 7 | `nextDelay(policy, 1).unwrapOr(0)` is `type mismatch: expected i32, got i64` — a literal widens to `i64` as an argument and as a field, not as `unwrapOr`'s default | that expression | `01-compiler/01-checker` |
+| 8 | on erlang `[[1, 2], [3]].join("+")` prints the bytes `\x01\x02+\x03` (a list element is taken as an iolist) where beam prints `[1,2]+[3]` | that expression | `01-compiler/02-erlang` (`primJoin`'s template) |
 
-Two places outside `libs/` quote std's text and moved with it, nothing else in `modules/` did: the
-codegen and LSP snapshots that print the `String` prelude, `collections.bp` or a template's
-lowering, and one literal of `codegen/tests/comptime_module.zig`, which pins `indexOf`'s Erlang
-template verbatim.
-
-No rakun module that names `RetryPolicy` imports `std/async` today, and none that names
-`parseDuration` reads std's, so residual 4 breaks nothing at this landing; it is what a rakun step
-meets if it imports both before deleting its copy.
-
-## Gate
-
-- [ ] `zig build test` from a **cold** runtime cache, green, in this front's worktree
-- [ ] `botopink test` and `botopink test --target erlang` green in `libs/std`, `libs/actions`,
-      `libs/validation`; `zig build test-libs` every row at its previous count
-- [ ] `snapshots/codegen/**` byte-identical except the snapshots that print std's text (step 10:
-      `Array.join`'s Erlang template and `Array.unique`'s body); no compiler source changed — the
-      one test edit is `codegen/tests/erlang.zig`'s two rows over `unique`
-- [ ] `AGENTS.md` of every directory touched, updated in the same commit
-- [ ] Commit on `front/97-std-dedupe`; no push, no merge — landing is the maintainer's step
-
-## Blast radius
-
-Additive in std; two bundled libraries lose private functions with no surface change. Every
-consumer in a library keeps compiling until its own front deletes the copy — the point of landing
-std first. Step 4 touches what every `-test` member runs on: the `test-libs` counts are the check.
+Residual 4 breaks nothing today (no rakun module that names `RetryPolicy` imports `std/async`); it is
+what a rakun step meets if it imports both before deleting its copy.
 
 ## Notes
 
-- `parseInt` answers `i64` because every consumer that hand-rolled it fed a port, a size or a
-  count; a consumer wanting `i32` narrows.
 - No jitter, no `retry` over a plain `@Task` (a Task never fails, decision 120), no `RetryPolicy`
   field a consumer could set to "unbounded" — the most restrictive shape (decision 67).
-- The argv flag parser of the extraction analysis is **not** added here: three consumers with three
-  grammars, and the CLI's own `parseXxxOpts` shape (`compiler-cli`) is the pattern each copies; a
-  std `cli` module is a question for a later milestone once the grammars agree.
+- The argv flag parser (rakun `rakun-cli/src/args.bp`, `config.cliEntries`,
+  `onze-cli/src/create.bp`) is **not** added: three consumers, three grammars; a std `cli` module is
+  a question for a later milestone once the grammars agree.
+
+**Gate:** standard (fronts.md § Gate) + `botopink test` and `botopink test --target erlang` green in
+`libs/std`, `libs/actions`, `libs/validation`
+- [ ] the landing of steps 0–5, 8–10 merged before this gate was recorded: one cold `zig build
+      test` and a full `zig build test-libs` on feat with this front's steps in, recorded here
