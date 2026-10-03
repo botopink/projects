@@ -41,8 +41,8 @@ page dynamic; `render` / `action` / `handler` spans emitted; refresh envelope us
 - **R23-1 (decision 186).** Comptime vs per-request render is a compile-time fact: a page reaching a
   `#[serverOnly]` hook through `use` renders per request; the build writes each route's kind into
   `routing`'s `k` blob (`pattern|S|D`); `static_gen.bp` only reads it. Until the checker capability
-  lands (`language-gaps.md`, `01-compiler/01-checker`) the bridge is `ChunkWriter.markDynamic(reason:
-  string) -> i32`, called by the renderer, `static_gen.bp` reading only explicit marks;
+  lands (`language-gaps.md`, `01-compiler/01-checker`) the bridge is
+  `ChunkWriter.markDynamic(reason: string) -> i32`, called by the renderer, `static_gen.bp` reading only explicit marks;
   `rakun_ssr.erl`'s implicit `markDynamic(<<"searchParams">>)` on a query read deleted. The bridge
   goes with jhonstart's own `markDynamic` when the capability lands.
 - **R11-7.** Span API is the core's after 128, so the manifest (`rakun`, `rakun-web`, `rakun-cache`)

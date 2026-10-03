@@ -29,8 +29,8 @@ published endpoint dispatching on the wrapped element and serving the WSDL unmod
   enum-shaped `type` per enumeration; refuses the closed table's thirteen constructs (choice, any,
   anyAttribute, substitution groups, mixed content, union, list, redefine, network import, recursive
   depth over the limit, xsd:ID/IDREF, attribute groups, abstract types) with a located error; writes
-  `<out>/<service>.bp` + `<out>/<service>_test.bp` with header `// generated from <wsdl>
-  sha256=<hash>`, sorted by element name, formatted through `botopink format`.
+  `<out>/<service>.bp` + `<out>/<service>_test.bp` with header
+  `// generated from <wsdl> sha256=<hash>`, sorted by element name, formatted through `botopink format`.
 - **R93-3.** The endpoint compares the generated header's hash with the served WSDL's `hash.strongHash`.
 
 Generator runs over fixtures under `test/ws/fixtures/wsdl/`; the generated tree compiles through

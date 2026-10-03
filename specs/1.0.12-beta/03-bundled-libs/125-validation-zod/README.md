@@ -32,8 +32,8 @@ On feat `libs/validation`: 2 134 source lines — `report.bp`, `constraints.bp` 
 `table.bp`, `path.bp`, `schemas.bp` — 98 tests in eleven files, green on erlang and commonJS.
 Consumers: rakun's `rakun/src/{config,config_check}.bp`; jhonstart and onze import nothing.
 
-Already provided: JSON tree `json.Json { Null, Bool, Num, Str, Arr, Obj }`, `json.decode(s) ->
-@Result<Json, string>` (document order, duplicates refused), `Json` methods `members` / `field` /
+Already provided: JSON tree `json.Json { Null, Bool, Num, Str, Arr, Obj }`,
+`json.decode(s) -> @Result<Json, string>` (document order, duplicates refused), `Json` methods `members` / `field` /
 `items` (97) · fallible return `@Result<T, E>`, `try`, `try … catch`, `case` (`docs.md`) · `A | B`,
 `unknown`, `x is T` · `#(A, B)`, `type Shape { Circle(radius: f64) }`, `?T` · `Dict<K, V>`, `Set<T>`
 (`libs/std/src/collections.bp`) · field defaults `type Port(number: i32 = 80, host: string)` ·

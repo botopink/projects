@@ -56,8 +56,8 @@ L6  rakun-security ◄ web·data·client·session      rakun-cache ◄ web·actu
 L7  rakun-websocket ◄ web·data·security      rakun-app ◄ web·cache
 ```
 
-128 adds `rakun-cli → rakun-web` (from `rakun-release`), `rakun-messaging → rakun-actuator`, `→
-rakun-data` (from `rakun-stream`; every `rakun-messaging` consumer loads the data member); removes
+128 adds `rakun-cli → rakun-web` (from `rakun-release`), `rakun-messaging → rakun-actuator`,
+`→ rakun-data` (from `rakun-stream`; every `rakun-messaging` consumer loads the data member); removes
 every edge to `rakun-actuator-api`, `rakun-logging`, `rakun-tx`. `rakun-cache` and `rakun-client`
 stay separate, meet through the core's tag epoch (decision 185). Owed or in question:
 `rakun-test`'s test-only edges (03r-am, 19), `rakun-cli → rakun-client` for `rakun ws generate`

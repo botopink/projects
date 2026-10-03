@@ -21,8 +21,8 @@ SBOM validates against the checked-in CycloneDX 1.5 schema.
 
 - **R81-1.** `release.bp`'s `buildTarball` already compiles every `.erl` under each given
   application directory (`rakun_release.erl` `compile_dir/1`: `compile:file/2`, deterministic, a
-  non-compiling file raises naming it) into `lib/<app>-<vsn>/ebin/`. Unmeasured: whether `rakun
-  build`'s directories include the compiler's `out/erl/` (where `botopink build --target erlang`
+  non-compiling file raises naming it) into `lib/<app>-<vsn>/ebin/`. Unmeasured: whether
+  `rakun build`'s directories include the compiler's `out/erl/` (where `botopink build --target erlang`
   ships sidecars); step 1 measures, adds it if missing. Boot cell: `bin/<name> foreground` as a
   child process with `RAKUN_MAIN_HEADLESS=true`, stdout read for banner and exit code.
 - **R81-2.** On a booting release, `release_handler:install_release/1` on the running node from the

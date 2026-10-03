@@ -243,8 +243,8 @@ test "css: helpers ---- red 500 text" { try assertCss(@src(), [.Color.Red.500], 
 | E54 theme / E55 preflight / E56 cascade and output | 7 + 3 + 14 | `theme.bp` (37), `preflight.bp` (14), `output.bp` (47), `drainRules` ×5, `two flushes are independent` | **RETIRE** |
 | E57 escape hatches / E58 container / E59 compose | 7 + 7 + 10 | `arbitrary.bp` (9), `container.bp` (6) plus `ContainerAt*` (`:16226-16276`), `named —` ×4, `hocus`, `scrollbarHidden`, `a custom variant composes …` | **RETIRE** |
 
-Retired groups' form: (1), and (3) where a family already runs as one table (`palette — red,
-eleven shades`). 34 step 2 needs nothing from the map: its moved families have inline literals, no
+Retired groups' form: (1), and (3) where a family already runs as one table 
+(`palette — red, eleven shades`). 34 step 2 needs nothing from the map: its moved families have inline literals, no
 snapshot to re-record.
 
 ## 5 · `06-emilia/33-emilia-color-palette/test-snap-examples.md` (34.3 KB) — `snap-a`, 33 steps 2 and 4

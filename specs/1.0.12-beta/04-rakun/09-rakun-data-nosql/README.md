@@ -63,8 +63,8 @@ answer a count; driver failures raise (as 08's `query`), each with a `try*` twin
 - `#[documentQuery("…")]` follows `#[query]`'s post-130 shape (decision 216): writes a member of the
   annotated repository type answering the template verbatim (as `#[query]` writes
   `<Repo>.<m>Sql()`), registers it in 08's statement inventory as `#[query]` does (load-time
-  registration today, the boot's `@TypeInfo.all` catalogue once 130 lands); `bind(template,
-  params)` escapes for the target dialect.
+  registration today, the boot's `@TypeInfo.all` catalogue once 130 lands);
+  `bind(template, params)` escapes for the target dialect.
 - Pooling reuses 08's `rakun_pool_sup`; ETS and Mnesia bypass it and say so when a pool size is
   configured. Each configured arm registers a `#[healthIndicator]` through the core's
   `actuator_api`. `#[redisListener]` is 15's.
