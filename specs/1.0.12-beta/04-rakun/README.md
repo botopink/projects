@@ -32,7 +32,7 @@ already partly true in the code (74, 15, 81, 12, 65, 73); each front says which.
 | [`81`](./81-rakun-packaging-release/README.md) | high | not started (compile step exists) | `rakun-cli/src/release/**` | A | 128 · 03r-ak |
 | [`93`](./93-rakun-soap-webservices/README.md) | low | not started | `rakun-client/src/ws/**` | A | 128 · lg2-o |
 | [`73`](./73-rakun-starters/README.md) | medium | not started | `starters/**`, `examples/**` | A (decision 189) | 128 · 03r-af · lg2-v |
-| [`19`](./19-rakun-test-utilities/README.md) | high (blocking) | not started | `rakun-test` | A (step 1) · C (steps 2–5) · step 6 on 03r-ag | 128 · 15 step 1 · 04 step 4 · 03r-am · 03r-ag |
+| [`19`](./19-rakun-test-utilities/README.md) | high (blocking) | not started | `rakun-test` | A (step 1) · C (steps 2–5) · step 6 → 20-snap | 128 · 15 step 1 · 04 step 4 · 03r-am |
 | [`13`](./13-rakun-http-clients/README.md) | high | partial: step 4 on `feat`; 1–3 open | `rakun-client` (not `ws/**`) | B | 04 step 1 · lg2-a/b |
 | [`17`](./17-rakun-logging/README.md) | medium | not started | `rakun/src/logging/**` · `rakun-metrics` | B | 128 · `03-bundled-libs/106`'s package · 13 step 2 |
 | [`22`](./22-rakun-file-routing/README.md) | critical | not started | `rakun-app` | B | 04 step 5 · decision 186 · onze 50 · 53 · jhonstart 30 · 32 · lg2-q |
@@ -67,7 +67,7 @@ B  04 step 1 ──► 13 · 12
    65 (waits on nothing in the track after 128: its relay streams through `httpc`, not 13)
    │
 C  81 · 93 · 92 · 04 step 4 ──► 88
-   15 step 1 · 04 step 4 ──► 19 steps 2–5      (19 step 6 waits on 03r-ag only)
+   15 step 1 · 04 step 4 ──► 19 steps 2–5      (19 step 6 is 20-snap's, on snap-a)
 ```
 
 How many run at once, and beside which other tracks, is [`../fronts.md`](../fronts.md) § Execution
@@ -82,7 +82,7 @@ order of tracks 03–08. A B front opens the day the A step it names is on `feat
 - **19 step 1 early** — the Redis RESP double (decision 160) is what 12's session arm and cache
   provider and 09's Redis arm assert against; it lives in `rakun-test`, which depends on the core only.
 
-### 130 and 128 — ordering rule to confirm
+### 130 and 128 — ordering rule to confirm (`03r-ao`)
 
 `01-compiler/130-decorator-outputs` step 5 (decision 216) still plans edits to rakun files that
 this track owns or that 128 moves: the core's `src/decorators.bp` (frozen for rakun fronts),
@@ -96,9 +96,9 @@ into `modules/rakun/src/actuator_api/`. Its landed rakun edits (rakun-data's `#[
 `#[halResource]`) are on `feat` and move with their files. **Proposed rule** (the maintainer
 confirms; no decision covers it yet):
 
-1. 128 does not wait on 130. 130's remaining rakun sites are held on `dec-e` (and rakun-client's on
-   a behavior-member gap); sequencing them before 128 would hold every rakun front on an open
-   decision.
+1. 128 does not wait on 130. 130's remaining rakun sites reach nearly every rakun front's files
+   (rakun-client's also wait on a behavior-member gap); sequencing them before 128 would hold every
+   rakun front on them.
 2. No 130 rakun commit is in flight while 128 is open (128 holds all of rakun). 130's rakun sites
    are re-pointed at the post-128 paths.
 3. After 128, each 130 rakun commit is a consumer commit under decision 188's rule: never in a wave
@@ -166,7 +166,7 @@ The 24 choices of 1.0.10 (`03r-a` … `03r-x`, [`1.0.10-beta/decisions-pending.m
 recommendation is the most restrictive reading (decision 67). Answered: 03r-y (184, superseded by
 187), 03r-z (185), 03r-aa (160), 03r-ac (187), 03r-ah (153), 03r-ai (186), 03r-aj (187).
 
-**Open:** `03r-ab`, `03r-ad`, `03r-ae`, `03r-af`, `03r-ag`, `03r-ak`, `03r-al`, `03r-am`, `03r-an`.
+**Open:** `03r-ab`, `03r-ad`, `03r-ae`, `03r-af`, `03r-ak`, `03r-al`, `03r-am`, `03r-an`, `03r-ao` (the 130 rule, § Order).
 
 ### 03r-ab · Front 09 ships four arms; the binary-protocol stores are boot refusals until lg2-a
 
@@ -222,16 +222,7 @@ example cells. (b) build them, one front each, after every member front has land
 **Recommendation.** (a).
 **Blocks.** 73 step 3.
 
-### 03r-ag · The 57-helper snapshot layer is retired
-
-**Measured.** The closed `test-snap.md` specifies 57 `assert<Subject>(loc, …)` helpers and one
-`.snap` per acceptance box; no helper and no `.snap` exist. Every landed box is asserted by a named
-test. The same question stands in jhonstart (JH-SNAP), emilia (EM-4) and std (STD-5).
-**Options.** (a) retire the layer: `rakun-test` keeps its surfaces and grows the doubles 19 owes;
-[`19/test-snap-helpers.md`](./19-rakun-test-utilities/test-snap-helpers.md) is deleted. (b) build
-it — a milestone of its own. (c) helpers for new fronts only (09, 91).
-**Recommendation.** (a), answered once for every library.
-**Blocks.** 19 step 6 and the same box in the other tracks.
+The snapshot layer is [`decisions-pending.md`](../decisions-pending.md) `snap-a`, worked by [`20-snap`](../20-snap/README.md) step 2.
 
 ### 03r-ak · CycloneDX: a `required` / `type` validator over the checked-in schema
 
@@ -293,7 +284,7 @@ transport: R92-1's two boxes and the `ws://` / `wss://` arms of R92-7 deleted, T
 | RX-1 | `??`-with-a-dummy-record workarounds (`if (x == null)` narrowing exists) | 11 (`rakun-actuator/src/endpoint_host.bp:136,152`) · 79 (`rakun-security/test/basic_test.bp:137,174`) · 04 (`rakun/test/config_test.bp:569`) |
 | RX-2 | "declared parameter defaults are never applied" (the decorator-argument case) — re-measured in the owning member's tests, result recorded | 04 (14, 72) · 08 (78) · 12 · 15 (15, 86, 90) · 22 (60, 61, 64, 66); 21's was corrected by 13 step 4 |
 | RX-4 | the closed `status.md` L82 rows (static root, `Request` query/headers) | 65 (R82-4) · 04 (R62-3) |
-| RX-5 | the snapshot layer | 19 (03r-ag) |
+| RX-5 | the snapshot layer | `20-snap` step 2 (`snap-a`) |
 | RX-6 | the seven example projects | 73 (03r-af) |
 | RX-7 | `modules.md` vs the tree | 128 (the nine merges) · 91 (03r-ad) |
 

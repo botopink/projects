@@ -3,7 +3,7 @@
 **Priority:** low — every open box is a tail of a landed feature; none blocks another front
 except 53's OG row · **State:** not started
 **Depends on:** `04-rakun/22-rakun-file-routing` carrying 25 (the route handler registration,
-step 2) and 66 (route discovery, step 5) · maintainer `52-a` (step 4), `53-b` (step 7) ·
+step 2) and 66 (route discovery, step 5) · maintainer `52-a` (step 4) ·
 `07-onze/49` step 6 (the `assets` / `og` group files)
 **Owns:** `repository/onze/modules/onze-assets/**` (its `root.bp` and `botopink.json` included),
 `modules/onze-og/**`, `modules/onze-assets/scripts/` (new), `modules/onze-test/src/{assets,og}.bp`
@@ -89,9 +89,9 @@ not transcribed; OG defaults applied by route discovery; `measure` checked again
 - [ ] `og_test.bp`: N concurrent requests for one post spawn one rasterizer process and write
       one file (`rkCacheFlight` around `response.bp`'s render)
 
-### Step 7 — conditional on `53-b` (b): record §§ 51 · 52 · 70 of the map
+### Step 7 — §§ 51 · 52 · 70 of the snapshot map
 
-Map: [`test-snap.md`](./test-snap.md). Struck under (a) or (c).
+→ 20-snap (front 135) step 5
 
 ## Notes
 

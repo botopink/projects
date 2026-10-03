@@ -11,6 +11,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `05w-f` → 262 · `05w-g` → 263 · `gw-a` → 264 · `ck2-c` → 244 · `dec-e` → 254 · `lg2-k` → 216 ·
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
+Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 ## Open questions
 
@@ -262,7 +263,7 @@ until it is answered; the owning front lists the row under *Depends on*.
 
 #### 03r-af · The seven unbuilt example projects
 - **Measured.** `examples/` holds `rakun`, `rakun-container`, `rakun-ssr` (gate cells); `rest-service`, `secured-api`, `blog-server`, `order-pipeline`, `observed-service`, `realtime-gateway`, `release-kit` were never started; every member's contract is asserted by its own tests.
-- **Options.** (a) Retire the seven (`test-snap-examples.md` stays a closed record; the three on disk gain a `README.md` each). (b) Build them, one front each, after every member front. (c) Build `rest-service` only.
+- **Options.** (a) Retire the seven (the 1.0.10 example list stays a closed record; the three on disk gain a `README.md` each). (b) Build them, one front each, after every member front. (c) Build `rest-service` only.
 - **Recommendation.** (a).
 - **Blocks.** 73 step 3.
 
@@ -290,11 +291,17 @@ until it is answered; the owning front lists the row under *Depends on*.
 - **Recommendation.** (b).
 - **Blocks.** 92 step 2's first box.
 
+#### 03r-ao · `01-compiler/130`'s rakun sites against 128 (*proposed*, raised by the 04-rakun consolidation)
+- **Measured.** 130 step 5 (decision 216) still plans edits to files 128 moves or the rakun fronts own (the core's `decorators.bp`, `autoconfig.bp`, `config.bp`, `context.bp`, `lifecycle.bp`, `conditions.bp`; `rakun-web/src/convention.bp`; `rakun-app`; `rakun-scheduling`; `rakun-messaging`; `rakun-cli`; `rakun-data`; `rakun-security`; `rakun-websocket`; `rakun-client`; `rakun-actuator-api`, which 128 moves into `modules/rakun/src/actuator_api/`); no decision orders them.
+- **Options.** (a) 128 first and alone; 130's rakun sites re-pointed at the post-128 paths; after 128 each is a consumer commit under 188 (never in a wave with the owning front); the frozen-files rule excepts 130's rewrite of `src/decorators.bp` ([`04-rakun/README.md`](./04-rakun/README.md) § Order). (b) 130's rakun sites before 128 opens. (c) 128 performs 130's rewrite of the files it moves.
+- **Recommendation.** (a): 128 holds all of rakun, and (b) holds every rakun front on 130.
+- **Blocks.** 128's opening; 130 step 5's rakun rows.
+
 ### 05-jhonstart
 
 #### 67-a · Where the DOM-side forms boxes are asserted
 - **Measured.** `fieldError` after `__jhFormState`, the in-place re-render on `ok: false`, two forms' `pending` and optimistic commit / roll-back read `document` and `FormData`; `botopink test` has no DOM; `jhonstart-dom-test` (`fake_dom.mjs`, commonJS only) already serves the render's browser half.
-- **Options.** (a) Extend `fake_dom.mjs` with `<form>`, `<input>`, `FormData` and `submit`; assert the four boxes in `jhonstart-dom-test/test/forms_dom_test.bp` now, and again in onze 53's browser. (b) Only in onze 53's browser. (c) A real DOM library as a dev dependency.
+- **Options.** (a) Extend `fake_dom.mjs` with `<form>`, `<input>`, `FormData` and `submit`; assert the five boxes (1.0.10's 3a, 3b, 4, 5) in `jhonstart-dom-test/test/forms_dom_test.bp` now, and again in onze 53's browser. (b) Only in onze 53's browser. (c) A real DOM library as a dev dependency.
 - **Recommendation.** (a).
 - **Blocks.** 67 steps 1–3 (written for (a)); onze 53's write path.
 
@@ -302,7 +309,7 @@ until it is answered; the owning front lists the row under *Depends on*.
 
 #### 05emilia-n · The unplaced Tailwind rows
 - **Measured.** Five rows have no owner: the named `:has()` / `:not()` / ARIA / data / `in-[…]` forms (reachable through `arbSel` only); named groups and peers; `@theme inline`; negative translate (`TranslateX/Y.Neg` absent); and a hole — a cleared `--breakpoint-*` emits `@media (width >= )` instead of refusing, as 58 refuses an emptied container size.
-- **Options.** (a) The refusal only (a cleared breakpoint panics naming the entry); the four feature rows out of scope in `reference-coverage.md` § Deviations. (b) (a) plus negative translate and named groups / peers. (c) All five, `@theme inline` included (a second render mode).
+- **Options.** (a) The refusal only (a cleared breakpoint panics naming the entry); the four feature rows out of scope in `docs.md` § Deviations. (b) (a) plus negative translate and named groups / peers. (c) All five, `@theme inline` included (a second render mode).
 - **Recommendation.** (a) — the refusal is decision 67, not optional; (b) is the feature answer if any is wanted.
 - **Blocks.** 34 step 4 (conditional); step 3 (the refusal) is not conditional.
 
@@ -376,18 +383,13 @@ until it is answered; the owning front lists the row under *Depends on*.
 - **Recommendation.** (a).
 - **Blocks.** 118 step 1.
 
-### Snapshot maps — five ids, one answer
+### 20-snap — the second test layer
 
-| Id | Map | Measured | Blocks |
-|---|---|---|---|
-| 01std-f | std's ~40 `.snap` over `testing/asserts`, `snapshots`, `mocks`, `escape`, `hash`, `encoding`, `path` | four exist; every message is asserted inline at the foot of its file, on both targets | 97 step 7 |
-| 03r-ag | rakun's 57 `assert<Subject>` helpers and one `.snap` per acceptance box | `rakun-test` has four files and no helper; no `.snap`; every landed box has a named test | 19 step 6 |
-| 30-h | jhonstart `test-snap.md` §§ 94–67, one `.snap` per case | none; 204 inline tests on both rows, `jhonstart-test`'s eleven helpers with one snapshot per family, 32 example snapshots; both cross-library contracts (payload keys, `e_39b87d03`) asserted on the reading side | 26 step 7 |
-| 05emilia-m | 21 per-front suites and eight example projects | none; 734 inline tests in the member; the one contract (`e_39b87d03`) has three readers | 33 steps 3–4 |
-| 53-b | onze §§ 50 · 51 · 52 · 70 · 71 | §§ 49 · 68 · 69 realised; the five suites exist with inline literals; others read only the client manifest and the release layout | 71 step 6 · 50 step 8 · 51 step 7 |
-
-- **Options.** (a) Retire the maps: the inline literals are the evidence. (b) Realise them. (c) For `53-b`: realise only § 71's `release_text_test.bp`, which `107-release` must reproduce byte for byte; for `05emilia-m`: the module map only.
-- **Recommendation.** (a) for all five — a module-level snapshot is realised only where it proves a contract another library reads — with `53-b`'s (c) as that exception. onze's E2E runner (`bootApp`, `request`, `assertResponse`, `assertServeGate`) is written regardless (53 step 1). Under (a), `19-rakun-test-utilities/test-snap-helpers.md` is deleted.
+#### snap-a · The snapshot maps — retired; the snapshots that exist or that a contract reads stay (replaces `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b`)
+- **Measured.** The nine maps carried from 1.0.10 (history under `../1.0.11-beta/`; re-evaluated case by case in [`20-snap/README.md`](./20-snap/README.md)) hold 473 cases plus helper tables. 27 are obsolete (renamed, deleted or changed by decisions 186, 194, 200, 218, 34 step 2, 50-a, or deferred by `03r-ad`); 418 are verified today by a named inline test or an existing `.snap`; 21, in five groups, are verified nowhere and are worth a plain test. 24 `.snap` already realise onze's §§ 50 · 51 · 52 · 70 · 71 through `snapshots.assertAs`; jhonstart holds 39, std 4. The maps' recorded literals predate the code (slug separator, `_links` order, `normalize`, emilia classes) and are not expected values. Contract 7, `snapshots.md` rule 3 and 98 check (2) require at least one `assert<Subject>(loc, …)` in every `<lib>-test`.
+- **Options.** (a) As proposed: (1) the maps are closed records — no front records a `.snap` because a map names it; (2) existing `.snap` files stay (std 4, jhonstart 39, onze 50) and change only with their test; (3) a new snapshot is recorded only where its exact bytes are a contract another package reads — this milestone, onze-release's `text_…` and `dockerfile_…` (on disk) for `107-release`; (4) helpers, no more than a consumer uses: `emilia-test`'s `assertClassName` (under `defaultTheme()`, recording `e_39b87d03`) and `assertCss(loc, tokens, th)`, `rakun-test`'s `assertResponse(loc, res)` over `MockMvc.perform`, jhonstart's and onze's existing helpers (onze's `assertAlias` goes with 218), no other helper of the maps; (5) the 21 unverified values become plain tests — std's `mocks.verify` message with `throwsWith` on both targets, onze-release's tree as a path table, `emilia-card`'s repeat collapse, onze 53's blog E2E boxes as asserts over `request(…)` and the dev/start gate as an equality property (the runner is five harness functions with no snapshot writers); (6) 97 step 7, 26 step 7, 33 steps 3–4, 50 step 8 and 51 step 7 close with an `AGENTS.md` line ("the inline literals and the existing `__snapshots__/` are the evidence"). (b) Build the whole layer: every map's helpers and `.snap` (~2 500 files), the recorded literals re-derived first. (c) Keep the maps open per library: each library answers its own former question and keeps its map until then.
+- **Recommendation.** (a): one rule for every library, every value verified once, and only three new `.snap` (emilia-test 2, rakun-test 1).
+- **Blocks.** Front 135 ([`20-snap`](./20-snap/README.md)) steps 1–5, which own 97 step 7 · 19 step 6 · 26 step 7 · 33 steps 1, 3, 4 · 50 step 8 · 51 step 7 · 53 step 1's runner and steps 2–6's wording · 71 step 6; 98 check (2) stands unchanged.
 
 ## Contradictions
 
@@ -411,6 +413,7 @@ so. The decision text is left as recorded; the maintainer picks the resolution.
 
 #### ctr-d · Question `03r-ad` (a) against decision 187
 - **Rules.** `03r-ad` (a): "`modules/rakun-pulsar/`, depends on `rakun`, `rakun-messaging`, `rakun-client`, `rakun-security`, `rakun-tx`". 187: "`rakun-tx` and `rakun-devtools` into `rakun-data`"; "25 members become 16".
+- **Also.** (a) lists `rakun-security` and `rakun-data` as edges from the split, while front 91's mechanism adds them only with the data plane, which (a) defers.
 - **Recommendation.** Under (a) the member depends on `rakun-data` for transactions, and the record states 17 members after the split.
 - **Blocks.** 91; 128's member list.
 
@@ -488,6 +491,26 @@ so. The decision text is left as recorded; the maintainer picks the resolution.
 - **Rules.** 166: "a list written without [a trailing comma] stays on one line". 243: "without it, the width rules (`16-a` / `16-b`) decide", while saying it "extends" 166.
 - **Recommendation.** Record 243 as amending 166's no-comma half; the confirmation of `16-a` / `16-b` then covers it.
 - **Blocks.** 16-formatter step 6.
+
+#### ctr-t · Decision 213 against decision 221: a kind file whose name is not a function name
+- **Rules.** 213: the unfolded function is named after the file, and "a file name that is not a valid function name is an error at the file". 221: `bppKinds` maps kinds by file name, and `not-found.bpp` (`08-bpp/124-bpp-cli/examples/scaffold/app/`) is such a kind; onze's generated routes table imports `NotFound`.
+- **Recommendation.** A file whose name `bppKinds` lists takes the kind's function name (`not-found` → `NotFound`, the routes table's spelling); every other file keeps 213's error.
+- **Blocks.** 116 step 2; 124's scaffold.
+
+#### ctr-u · Decision 216 against front 125's `#[schema]`
+- **Rules.** 216: a decorator produces members, comptime meta, associated types and project reflection — "the loose `@emit` goes"; `#[validated]` follows (`validate()`, `constraints()`). `#[schema]`, on feat and in 125's design, still `@emit`s free `parse<T>` / `decode<T>` / `schemaOf<T>` (later `bind<T>`, `encode<T>`, `jsonSchemaOf<T>`); `125-validation-zod/surface.md` still names `constraintsOf<T>` / `validate<T>`.
+- **Recommendation.** `#[schema]`'s outputs become members (`Player.parse(input)`), as `#[validated]`'s did; surface.md's rows follow.
+- **Blocks.** 125 steps 3–10.
+
+#### ctr-v · Decision 189 (org-3) against emilia's fronts opening before 118
+- **Rules.** org-3: 118's carve-outs land before the owning front opens. `06-emilia/34` step 1 and `33` step 2 open now and reword emilia's `[class]={…}` comment lines themselves (`attributes.bp`, `emilia.bp`, `emilia-card/src/main.bp:5`), which 118 no longer owns.
+- **Recommendation.** Record that a carve-out touching comments only is taken by the owning front; 118 keeps the code lines (its own tests, `jhonstart-emilia`'s bridge test, `document-shell`).
+- **Blocks.** 34 step 1; 33 step 2; 118 § Owns.
+
+#### ctr-w · Front 09's Elasticsearch arm against decision 185
+- **Rules.** 185: an optional capability goes through a core extension point, "no member-to-member edge". `04-rakun/09` § Open point: the Elasticsearch arm over `rakun-client` adds a `rakun-data → rakun-client` edge every data consumer loads.
+- **Recommendation.** The arm reaches HTTP through a core extension point (or `httpc` directly, as 65's relay does), not a `rakun-client` edge; answered with `03r-ab`'s arm list.
+- **Blocks.** 09 step 3.
 
 ## Implementation choices awaiting confirmation
 

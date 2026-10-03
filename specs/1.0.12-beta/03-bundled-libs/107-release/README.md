@@ -3,8 +3,7 @@
 **Priority:** low — two generators of the same five files; correct today, drifting tomorrow ·
 **State:** not started
 **Depends on:** `07-g` answered (a) "package" · `04-rakun/81` and `07-onze/71` landed — the consumer
-commits take the slot after the fronts that own the files (decision 188), and 71 step 6 records the
-release text this front must reproduce · `04-rakun/128` (moves `rakun-release` into `rakun-cli`,
+commits take the slot after the fronts that own the files (decision 188) · `04-rakun/128` (moves `rakun-release` into `rakun-cli`,
 decision 187) · the three registration lines take one appending front at a time, and this front is
 the last (decision 189)
 **Owns:** `repository/botopink-lang/libs/release/**` (new) · registration lines (append) · consumers:
@@ -32,6 +31,11 @@ integers, lists, tuples, maps — replacing the `rkRelTerm` sidecar cell), `boot
 `dockerfile(spec)`, `appup(from, to)`.
 
 - [ ] each renderer byte-identical to rakun's release output for one fixed spec, both rows
+- [ ] onze-release's two recorded snapshots are reproduced byte for byte (`snap-a` (3)):
+      `modules/onze-release/test/__snapshots__/release/text_rel_sys_config_vm_args_and_the_boot_script.snap`
+      (`.rel`, `sys.config`, `vm.args`, the boot script) and
+      `dockerfile_two_stages_non_root_erts_bundled_and_not.snap` (the Dockerfile, with and without
+      ERTS) — they stay as recorded and are this front's contract
 - [ ] the term writer round-trips through `erl -eval 'file:consult(...)'` in an erlang test cell
 
 ### Step 2 — consumers

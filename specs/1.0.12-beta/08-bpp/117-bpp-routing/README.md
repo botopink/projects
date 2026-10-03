@@ -149,7 +149,7 @@ Reworded against decision 202 (no `prerender` export; `#[page]` decides the stag
 ## Decisions
 
 - `bpp-g` — how a `page.bpp` gets its `route: PageContext` and its `params`. Step 1.
-- Step 4's static endpoint against decision 222 — no id; the maintainer's to settle.
+- `ctr-c` — step 4's static endpoint against decision 222.
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `libs/routing`, and on erlang in `rakun-app`

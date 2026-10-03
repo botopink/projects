@@ -8,7 +8,7 @@ meta `AGENTS.md` § CI · the snapshot-capture normalisation for windows · and,
 residue now that 115, 132 and 133 are closed: `scripts/gate.sh`'s budget lines (`budget_cold`, the
 § budget comment), the vscode-extension workflow's Erlang install, the stale glibc comment in
 `repository/rakun/.github/workflows/test.yml`, and the cold-gate record in this README.
-**Does not touch:** `docs.md` prose (`../../01-compiler/08-hygiene`) · `build.zig`
+**Does not touch:** `docs.md` prose (`../../01-compiler/07-residuals`) · `build.zig`
 (`../../01-compiler/26-cli-tooling`) · any library's hook or test step · `README.md`'s one fence.
 
 ## Goal
@@ -100,12 +100,12 @@ figure is 9m31s, loaded).
 
 | Item | To | Why |
 |---|---|---|
-| `docs.md:5` — "a fence that is not a module … says so in a `docs-check` comment" is stale (a table is ```` ```text ````, no comment) | `../../01-compiler/08-hygiene` (prose) | this front edits fence and marker lines only |
+| `docs.md:5` — "a fence that is not a module … says so in a `docs-check` comment" is stale (a table is ```` ```text ````, no comment) | `../../01-compiler/07-residuals` (prose) | this front edits fence and marker lines only |
 | `build.zig` `test-docs` comment (near `:574`) still describes `<!-- docs-check: skip <reason> -->` | `../../01-compiler/26-cli-tooling` (owner of `build.zig`, decision 219) | not this front's file |
 
 ## Blast radius
 
-- `../../01-compiler/08-hygiene` owns `docs.md`'s prose; this front touches fence and marker lines.
+- `../../01-compiler/07-residuals` owns `docs.md`'s prose; this front touches fence and marker lines.
 - `../../01-compiler/18-comptime-runtimes`' "CI matrix run test.yml" is the same file: there is no
   windows row until step 3's measurement lands.
 

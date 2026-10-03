@@ -286,11 +286,10 @@ with no `pub default fn` taking `comptime _: @Expr<string>`: an error at the key
      hook with `use`, which today need `-> @Component<ElementBase, Element>` — question `bpp-f`.
      Step 2.
   3. *Header statements other than `val` and `use`* — step 0's list.
-  4. *`Children`.* The examples of the track write `children: Children = []`; jhonstart declares
-     no type `Children` (`element.bp`, `elements.bp` use the name). 118 adds it, and the prelude
-     imports it. Decision 223 names jhonstart's node type `Node` and says every spec and example
-     writes `Node`; the examples have not followed.
+  4. *`Node`.* The examples of the track write `children: Children = []`; no jhonstart module
+     declares `Children` (`element.bp`, `elements.bp` use the name; the checker knows it by name).
+     Decision 223 names jhonstart's node type `Node`: 118 declares it, its prelude imports it, and
+     the examples' `Children` is rewritten to `Node` — open boxes of `118-bpp-components` step 6.
   5. *An app-file kind whose name is not a function name.* Decision 213 names the function after
      the file and refuses a file name that is not a valid function name; decision 221 maps kinds
-     by file name, and `not-found.bpp` (`124-bpp-cli/examples/scaffold/app/`) is one of them. No
-     id yet. Step 2.
+     by file name, and `not-found.bpp` (`124-bpp-cli/examples/scaffold/app/`) is one of them — `ctr-t`. Step 2.

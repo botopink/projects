@@ -135,4 +135,4 @@ The open residue, all front 114's:
 | Item | To |
 |---|---|
 | `rakun-websocket` `test/limits_test.bp:48` is load-dependent (an outbound queue of 51 against a cap of 50 under load; 27 / 0 idle) — a red the gate can meet | `../04-rakun/` (the cap's enforcement in the websocket runtime, or the test's bound); no 04-rakun front carries it yet |
-| `docs.md:5` and the `build.zig` `test-docs` comment still describe `docs-check: skip` | `../01-compiler/08-hygiene` · `../01-compiler/26-cli-tooling` (114 § Handed out) |
+| `docs.md:5` and the `build.zig` `test-docs` comment still describe `docs-check: skip` | `../01-compiler/07-residuals` (step 7) · `../01-compiler/26-cli-tooling` (114 § Handed out) |

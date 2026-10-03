@@ -1,103 +1,183 @@
-# Status — 1.0.11-beta
+# Status — 1.0.12-beta
 
-**Updated:** 2026-10-02 · **Progress:** ~15 % landed (13 of 84 fronts done — the ten `00-gate`
-fronts in § Done, on the remote `feat` under the green cold gate with no open box; 8 are in analysis and
-count for their ticked steps; the milestone opened at 1.0.10-beta's close — [`closure.md`](../1.0.10-beta/closure.md))
+**Date:** 2026-10-03 · **Base** (each repository's `feat`): botopink-lang `ec77f649` · rakun
+`fac248b` · jhonstart `eddd681` · emilia `42d51ec` · onze `b1a3110` · erika `0a463f5` ·
+vscode-extension `7993f96`
 
-Count: `00-gate` 11 · `01-compiler` 18 · `02-std-and-packaging` 2 · `03-bundled-libs` 7 · `04-rakun` 20 ·
-`05-jhonstart` 3 · `06-emilia` 2 · `07-onze` 5 · `08-bpp` 11 — 79. A front in analysis counts for its ticked steps.
-Order inside each list follows [`overview.md`](./overview.md) § Order (most blocking first); for
-tracks 03–08 the waves are [`fronts.md`](./fronts.md) § Execution order of tracks 03–08.
+**Fronts:** 69 — **1 done** (129) · **18 partial** · **50 not started** (102 and 103 count as not
+started: their done steps are on unpushed branches only).
 
-**The gate now** (2026-10-02). `scripts/gate.sh --cold` is green on botopink-lang `0041d38c`, on the
-remote `feat`, with OTP 28 on `PATH` — every stage: `test-libs` `123 passed, 0 failed, 15 without
-tests, 38 restrictions audited` (no `FAILED cells:` line), `test-language` `2061 passed, 0 failed`
-on commonJS, erlang, wasm and beam, `test-docs` `100 fences — 100 checked, 0 skipped, 0 failed`;
-12m16s on a loaded machine (over the 10-min budget, printed yellow). GitHub CI is green on the
-remote `feat` of rakun, onze, jhonstart, erika, emilia and vscode-extension, and the meta
-`hook-integrity` is green; botopink-lang's own CI is not (test-web wasm32 and `test-libs.sh` under
-macOS bash 3.2, both fixed on an unlanded branch). The next integration
-(`gate-integration-3`: 97, 104, 106, 26, 04-js and the checker's shorthand-import fix) was red on
-one cell — a module named like the bundled `log` — which decision 206 answers (front 129).
+| Track | Done | Partial | Not started |
+|---|---|---|---|
+| `00-gate` | — | 114 | — |
+| `01-compiler` | 129 | 01 · 02 · 03 · 04 · 05 · 12 · 14 · 17 · 26 · 130 · 134 | 07 · 16 · 18 · 23 · 24 |
+| `02-std-and-packaging` | — | 97 | 98 |
+| `03-bundled-libs` | — | 104 · 106 · 125 | 102 · 103 · 105 · 107 |
+| `04-rakun` | — | 13 · 92 | the other 18 |
+| `05-jhonstart` · `06-emilia` · `07-onze` · `08-bpp` · `20-snap` | — | — | all (3 · 2 · 5 · 11 · 1) |
 
-**The gate at the open** (measured 2026-09-26, `scripts/gate.sh --cold` forced past reds): 8 of 10
-stages green; `test-libs` 84 passed / **36 failed** (rakun 25, onze 11); `test-language` 1244 / 1
-expected / **1 failed** (wasm); 3 `expected-failures.txt` lines; 21 `restricted-targets.txt` lines
-(3 dead, 21 cells unledgered, 9 counts moved); 226 files outside `format-check`'s trees; 11 `zig
-fmt` reds; 9 `docs-check: skip`; windows `allow_fail`. Each repository under its own gate: emilia,
-erika, jhonstart, vscode-extension **green**; onze ~29 %; rakun ~17 % and its pre-commit fails at
-the grep stage before any test.
+**Gate:** a green `scripts/gate.sh --cold` was last recorded on botopink-lang `0041d38c`; no cold
+gate is recorded on the current tip — [`00-gate/114`](./00-gate/114-gate-docs-and-ci/README.md)
+step 7. botopink-lang's GitHub CI still owes a green run on `feat` (114 step 3).
 
-## Done
+Each line: `front/step — what is left · blocker`. Lanes: **L1** finish what is on `feat` · **L2**
+the libraries' critical path · **L3** ready to open now · **L4** later, in the waves of
+[`fronts.md`](./fronts.md) § Execution order of tracks 03–08 · **L5** blocked on a decision.
 
-- [x] `00-gate/133-gate-speed` — the cold gate 12m16s → ~7m30s on a loaded machine (decision 265's budget), every cell byte-identical; erl busy-wait off, fewer VMs per cell; the cell-result store (content keys, the compiler partitioned by backend): a warm run 3–12 s after a cell, doc or one-backend change
-- [x] `00-gate/100-gate-onze` — onze's `(if …)` operand sites gone, `onze-cli` green on both targets, the workflow and the pre-commit green end to end
-- [x] `00-gate/131-gate-build-cache` — every build cache (erlang verdicts, `.beam`, cell durations, the language server's) under `<workspace>/.botopinkbuild/cache/`, `botopink clean` and `gate.sh --cold` delete them all; the closure cache dropped (decision 232)
-- [x] `00-gate/99-gate-rakun` — rakun's `(if …)` operand sites migrated, hook and CI hard; its cells green under the cold gate, its CI green
-- [x] `00-gate/101-gate-jhonstart` · `108-gate-erika` · `109-gate-emilia` — one hook and one CI shape per library, every cell green; each CI green
-- [x] `00-gate/112-gate-format` — every tree under `format-check` and `zig fmt` green
-- [x] `00-gate/110-gate-wasm` — every wasm lowering that cannot proceed is a located refusal; std on wasm leaves 110 (decision 230)
-- [x] `00-gate/111-gate-beam-and-targets` — beam in `--target all`, cells honour manifest `targets`, `expected-failures.txt` gone
-- [x] `00-gate/113-gate-ledger-and-scripts` — both ledgers deleted, restrictions audited structurally; `test-libs` `0 failed`
-- [x] `00-gate/132-gate-otp-pin` — the compiler declares OTP 28 and refuses another `erl`; the gate and the workflows read it
-- [x] `00-gate/115-gate-perf` — the cold gate 56m43s → 9–12 min on the shared machine, every tally unchanged; its idle runs and diffs carried by 133 and 131
+## L1 — finish what is already on `feat`
 
-## In analysis
+- [ ] 114 s3 — botopink-lang `test.yml` green on GitHub on `feat` (fixes landed) · a run
+- [ ] 114 s5 — `gate.sh` `budget_cold=450` and its comment (decision 265) · none
+- [ ] 114 s6 — vscode-extension workflow installs OTP 28, one green run · none
+- [ ] 114 s7 — a cold gate recorded on the current tip, ≤ 450 s, exit-check counts re-derived · a machine with `zig` and `erl`
+- [ ] 114 s8 — 133's emitted modules diffed; rakun `test.yml`'s glibc comment says 2.35 · none
+- [ ] 01-checker s6 box 3 — `throw` in a `case` arm under `@Result` · 04 s6
+- [ ] 01-checker s10 — a lambda parameter annotation (T12) · 16 s8
+- [ ] 16 s8 — the lambda annotation's printer arm · none — lands before 01 s10
+- [ ] 01-checker s13 — JS-4's two checker gaps · 05 lowering a nested constructor in a `val`
+- [ ] 01-checker s18 — numeric literal suffixes (247) · ctr-j (the `l` literal rule)
+- [ ] 01-checker s19 — the `.bpp` prelude scope (266) · 116 hands the prelude list
+- [ ] 01-checker s20 — type application and `comptime <expr>` (255) · none — 130's rakun DI (256's registry) waits on it
+- [ ] 01-checker rows — the `@block` tail refusal, the `$stringify` parser refusal (239), `primitive-type-name-taken`, the comptime body's file, T17, a package's module namespace, two aliased same-named types (imp-a), `@External.Wasm` read on every target, the template memo key, row 33 · the first two unblock 04 s1–2 and 02 s10
+- [ ] 04-js s1 — the `@block` tail-form IIFE · 01's `@block` tail refusal
+- [ ] 04-js s2 — `$stringify` in a template (164, 239); `render`'s arm and `emitStringify*` deleted · 01's parser refusal
+- [ ] 04-js s6 — `throw` in a `case` arm · 01 s6
+- [ ] 04-js s8 — an integer that leaves its type aborts (264) · ctr-j
+- [ ] 05-wasm s1 box 1 · s3 box 2 — `Array.unique` and C-07's cells on wasm · 02 s4, s7
+- [ ] 05-wasm s5 — the rest of std on wasm: heap growth (261), `String.fromCodepoint` (262), `pow` (259), `contentHash` (260), one `math` (263) · 97 s12 (std bodies) · 18 s5 (261's opcodes) · ctr-i
+- [ ] 02-erlang s4 — `run/array_unique` (C-35) · with 05 s1
+- [ ] 02-erlang s5 box 2 — a decorator body carrying `\u{…}` (cell: 14 s7) · none
+- [ ] 02-erlang s7 — C-07's erlang tails as `run/` cells · 05's wasm column
+- [ ] 02-erlang s10 — the block-as-value lowering (R7) · 01's `@block` tail refusal
+- [ ] 02-erlang s12 · 03-beam s7 — one `math` on every OS (263) · 97 s12
+- [ ] 02-erlang s13 · 03-beam s8 — an integer that leaves its type aborts (264) · ctr-j
+- [ ] 03-beam s1 box 3 — the checker's two binding shapes on beam · 01 s13
+- [ ] 03-beam s2 box 1 — C-07's `run/` cells on beam · 02 s7 · 05
+- [ ] 12 s1 box 2 — `--cold` with the pre-existing tool set · 114 s7
+- [ ] 12 s2 box 1 — `run/array_unique`, `run/throw_in_case_arm_result` · 02 s4 + 05 · 01 s6 + 04 s6
+- [ ] 14 s2 — the N=200 slope · 18's runtime-evaluation stage · 01's memo key
+- [ ] 14 s6 — the decision-gated rows · lg2-j, lg2-o, lg2-w
+- [ ] 14 s7 — a `comptime/tests` fixture for a `\u{…}` decorator body · none
+- [ ] 17 s1 box 4 — the per-row increment of a keyed `Dict` · 17-b
+- [ ] 17 s2 — the `@BeamMemory` text and the migration handed over · 07 s6 · the rakun track
+- [ ] 26 s2 box 3 — rakun's `orm_host.bp` workaround deletable (rakun's row) · none
+- [ ] 26 s3 — only a direct dependency is importable (T4, 242) · none
+- [ ] 26 s4 — `Env.warnings` reach `build` and `test` · a `codegen.zig` carve-out (`ModuleOutput`)
+- [ ] 26 s6 — lg2-v's resolver half · lg2-v
+- [ ] 26 s7 — `build.zig`'s `test-docs` comment (handed by 114) · none
+- [ ] 26 s8 — 206's residuals: the LSP's import check, a package importing itself · none
+- [ ] 130 s5 — the remaining decorator sites (34 of 119 done, plus `#[schema]`'s 5) · rakun's DI on 01 s20 · rakun sites under the 130↔128 rule · rakun-client's on the behavior-member gap · ctr-q
+- [ ] 130 s6 — module-level `@emit` removed · 130 s5 · 216 against `#[schema]`'s free functions (no id)
+- [ ] 134 s2 — the type functions, the `result` namespace, the `@Result` / `?T` methods, `@is` · 134-a, 134-d
+- [ ] 07-residuals s3, s5–s8, s12, s13 — `uncertain` rows, test comments, the `@BeamMemory` text, C-18's corrections + `docs.md:5` + § Imports, the lib-agnostic gate names every library, the per-cell compile row, the `async` delay flake · none (s8's comments after 02)
+- [ ] 07-residuals s1, s2, s4 — the codegen and comptime report waves, three renames · 02–05 landed · 01 landed
+- [ ] 07-residuals s9 · s10 · s11 — `->` arms · erika's C-13 migration · the pointers' sweep (last) · C-14 · 16 s1–2 · every library merged
+- [ ] 97 s1 residue — `bindInt`'s `i32` through std · std has no `i64` → `i32` narrowing
+- [ ] 97 s2 residue — no `Json` accessor copy left in `libs/` · 125 s2 residue (`schemas.bp`)
+- [ ] 97 s3 · s5 residue — rakun's `parseDuration`, `skewOf` and four retry loops as "consume std" rows · no 04-rakun front carries them yet
+- [ ] 97 s4 residue — the engine under every `-test` member, `test-libs` counts · none
+- [ ] 97 s11 — std on wasm, group 3 (230) · none — sequenced with 05 s5
+- [ ] 97 s12 — the std bodies of 259, 260, 262, 263 · none — before 05 s5's and 02/03's `math` steps
+- [ ] 104 s5 — the consumer sweep · 04, 65, 79, 12, 19, 22, `08-bpp/123`, 49, 51 landed (188)
+- [ ] 106 s2 — consumers: 17's and 26 s4's boxes; rakun-web's `problem_digest` commit · 65 landed · ctr-k
+- [ ] 125 s0 residue — the `f32` and `url.parse` platform facts as tests · none
+- [ ] 125 s2 residue — the examples as suite cases, the 2 000-deep test, the refusal test, `schemas.bp`'s accessors · none
 
-- [ ] `01-compiler/134-builtins-declared` — high · decisions 252–254, 256 · inventory done (21 builtin calls: 10 declared before, 21 now); `@TypeInfo.all` (253) answering `Declared<unknown>[]` (254) with `returnTypeName` (256) built; `comptime/builtins.zig`'s table held to `builtins.d.bp` by a unit test, every call held `declaration` checked (`builtin-arguments`); open `134-a…d`; remainder of step 2: the type functions, the `result` namespace, the `@Result` / `?T` methods
-- [ ] `00-gate/114-gate-docs-and-ci` — on the remote `feat` under the green cold gate of `0041d38c`, meta checks 4 and 5 green; waits on botopink-lang's CI green (test-web wasm32, `test-libs.sh` under macOS bash 3.2 — fixed on an unlanded branch)
-- [ ] `01-compiler/130-decorator-outputs` — steps 1–4 built (the four places); decisions 235 (`@TypeInfo.all(with: [a, b])`) and 248 (one builtin, `@typeInfo`) built; step 5 at 34 of 119 sites (std `#[mocks.mock]`, validation `#[validated]`, jhonstart `#[client]`, rakun-data `#[entity]`/`#[entityRepository]`/`#[belongsTo]`/`#[query]` members, rakun-cache `#[cached]`, rakun-hateoas `#[halResource]`) with a type's members closed (`unknown-associated-fn`); rakun's DI onto the context (234) held on `dec-e` (the boot's `@TypeInfo.all` over types whose `make()` differ cannot be typed); next, jhonstart's routes with onze's entry points (236), validation's `#[schema]` (5); rakun-client's `#[httpExchange]` held on a behavior's member reaching an importer
-- [ ] `01-compiler/04-js` — steps 3, 4, 5, 7 and C-37 done (`scripts/tsc-check.sh` also runs `node --check` over every emitted module: 79 projects, 364 modules; `run/sibling_blocks_bind_one_name` on four targets, decision 205's legal half) on `front/04-js` · step 1 waits on the checker refusing `@block`'s tail form, step 2 on `0405-d` (raised) and 01's parser kind, step 6 on 01 step 6
-- [ ] `01-compiler/01-checker` — steps 1–8 and 10–16 built on `front/01-checker` (the open boxes wait on 02/04/05 and 16); three more `language-gaps.md` rows closed (a generic value widens to its `?T`; a std namespace's type and `pub fn` reached through it; a declaration named like an import refused) · the primitive-named declaration refusal parked on std's `random.bool` · step 17 (decision 244, a default trailing everywhere) built · step 18 (decision 247's suffixes) next
-- [ ] `01-compiler/17-beam-memory` — step 1 built on `front/17-beam-memory`: off the BEAM `#[@BeamMemory]` refused at the annotation (decision 167; `test/beam_memory_noop` gone, the `run.sh` exemption gone), `keyed = true` lowered row per key on erlang and beam (decisions 168, 174: `run/beam_memory_ets_keyed` prints `20000 20000`) · the per-row increment and the other row operations wait on `17-b`, `17-c` (raised) · step 2 is 08's text
-- [ ] `02-std-and-packaging/97-std-dedupe` — high · steps 0–5, 8, 9 and 10 (decisions 239, 217, 250) and the `libs/actions` / `libs/validation` `i64` switch-overs committed on `front/97-std-dedupe` · left: `bindInt`'s `i32` (no std narrowing), `schemas.bp`'s accessors (125's), steps 6–7 (`std-d`, `01std-f`) · lands after the checker's import fix (decision 170)
-- [ ] `03-bundled-libs/102-routing-conventions` — steps 1–2 (the package), `kindLetter` and the wrap order of `fileKinds()` (decisions 171–173) committed on `front/102-routing-conventions` · step 3 (the consumers) goes first when the gate is green and 97 has landed (decision 188)
-- [ ] `03-bundled-libs/103-actions-id` — step 1 (the package) committed on `front/103-actions-id` · step 2 (the consumers) goes first when the gate is green
-- [ ] `03-bundled-libs/125-validation-zod` — steps 0–2 on `front/125-validation-zod`, written against the recommendation of `07-n`, which is open · they land with the gate, after 97 · steps 3–10 follow
+## L2 — the libraries' critical path
 
-## Pending
+- [ ] 102 s1–2 — `conventions.bp` and the segment helpers, done on unpushed `front/102-routing-conventions` · push, gate, land
+- [ ] 103 s1 — `id.bp` (`deriveActionId`, `isActionId`), done on unpushed `front/103-actions-id` · push, gate, land
+- [ ] 102 s3 (W2) — consumers, one commit per member, rakun's first (`rakun-app`, `rakun-hateoas`), then jhonstart `routes.bp`, onze `types.bp`, `scan.bp`, `chunk.bp` · 102 s1–2 landed · 49-d confirmed as amended
+- [ ] 103 s2 (W2) — consumers: rakun-app `actions.bp`, jhonstart-forms `form.bp` · 103 s1 landed · the `deriveActionId` / rakun-app `actionId` wrapper choice to confirm
+- [ ] 128 (W3) — the nine merges, alone in rakun · the rakun commits of 102 s3 and 103 s2 · ctr-d (member list) · ctr-k
+- [ ] 130 ↔ 128 — 128 does not wait on 130; no 130 rakun commit while 128 is open; after it, each is a decision-188 consumer commit · **to confirm** (no id)
+- [ ] rakun group A (W4–W5) — 04 (s1, the tag epoch, first) · 74 · 08 (s1 after 04 s4) · 15 · 79 · 81 · 93 · 73 · 19 s1 · 128 landed
+- [ ] rakun group B (W5–W7) — 13 (04 s1) · 12 (04 s1, 19 s1) · 22 (04 s5) · 17 (13 s2) · 11 (22) · 65 · 09 (19 s1, 13) · 91 (15) · 92 (74, 15) · the A step each names
+- [ ] rakun group C (W8) — 88 (81, 93, 92, 04 s4, 73) · 19 s2–5 (15 s1, 04 s4) · group B
+- [ ] rakun-websocket `test/limits_test.bp:48` — a load-dependent cap the gate can meet · no 04-rakun front carries it (unowned)
 
-- [ ] `03-bundled-libs/106-log` — high · ready: no open question (decisions 194, 195) · waits on `00-gate` green and 97 · precedes 26 step 4, 17 and 49 step 3
-- [ ] `03-bundled-libs/104-http` — ready: no open question (decision 196) · the package half (steps 1–4) waits on `00-gate` green and 97 · the consumer sweep (step 5) waits on 04, 65, 123, 79, 12, 19, 22, 49, 51
-- [ ] `03-bundled-libs/105-i18n` — waits on 104, both halves, and on 22 and 26 (decision 180 answered its question)
-- [ ] `03-bundled-libs/107-release` — conditional on `07-g` · waits on 71 and 81
-- [ ] `04-rakun/128-rakun-consolidation` — critical · first front of the track (decision 187) · waits on `99-gate-rakun` landed and pushed, and on the rakun consumer commits of 102 step 3 and 103 step 2
-- [ ] `04-rakun` group B (13 · 17 · 22 · 12 · 11 · 65 · 09 · 91 · 92) — wait on 128 and the group A step each names: `04` step 1 (13, 12), `04` step 5 (22), `19` step 1 (12, 09), 106 (17)
-- [ ] `04-rakun` group C (88 · 19 steps 2–5) — wait on group B
-- [ ] `05-jhonstart/67-jhonstart-forms` — waits on 26 (the fake DOM), 103 step 2 (`form.bp`) and `67-a`
-- [ ] `06-emilia/33-emilia-color-palette` steps 3–4 — wait on `05emilia-m` and on 34
-- [ ] `07-onze/53-onze-example-app` — waits on 49 · 50 · 51 · 71 steps 1–4, on 26 and 67, and on `04-rakun` 22 · 12 · 65 (the write path, the public root)
-- [ ] `02-std-and-packaging/98-packaging-tail` — waits on every library track (it verifies across seven repositories)
-- [ ] `01-compiler/05-wasm` step 5 (std on wasm, decisions 230, 238, 240, 241) — the `@External.Wasm` vocabulary, the codepoint unit, `math`, `escape`, `hash` and `io/random` (the `wasi:seed_u32` / `wasi:seeded_f64` adapters) done; `unicode`, `json`, `encoding`/`querystring` left, blocked on `05w-f`; `05w-c`, `05w-d`, `05w-e`, `05w-f`, `05w-g` open; steps 1–4 done but the two cells 02 step 7 and C-35 owe
-- [ ] `01-compiler/14-comptime-on-beam` — step 3 closed and step 1's located fixtures in; step 1's last half (the body's file in the message) and step 5 (T17, re-measured: holds) wait on 01 (`infer.zig` / `env.zig`); step 2 (the N=200 slope, re-measured 6.6 / 9.2 ms per evaluation) waits on `14-a` (which bindings a capture carries) and on an owner for the trace rendering; step 4 (T15) is decision 216's, closing with 130 step 6; step 6 waits on lg2-j/o/w
-- [ ] `01-compiler/16-formatter` — waits on `00-gate` (112), the libraries' migrations and 01's parser rows
-- [ ] `01-compiler/07-review-backlog` · `08-hygiene` · `09-ecosystem-residuals` — wait on 02–05, on every owner, on 16
+## L3 — ready to open now
 
-## Open
+- [ ] 118 — the template language, `prelude.bp`, the node type · none (props-d/e/f hold their boxes; ctr-r)
+- [ ] 121 s1–2 — Markdown to `Element` in the new member `onze-content` · none
+- [ ] 34 s1–3 — `hashHex` → std and the cross-library comments; the five families; the breakpoint refusal · s2: 05emilia-l confirmed · opens before 118's carve-out (ctr-r / 189)
+- [ ] 33 s2 — `emilia-card` emilia-only, the fifteen example READMEs (s1, s3, s4 are 135's) · none (ctr-r / 189)
+- [ ] 49 s1 · s6 — consume std's `Json` accessors in `config.bp`; the `onze-test` group stubs · none — not beside 102 s3's onze commits (188)
+- [ ] 50 s1 — consume std in `onze-cli` / `onze-bundler` · none — not beside 102 s3's `scan.bp` / `chunk.bp` commits (188)
+- [ ] 51 s1 — consume std (`fn intOf` in `svg.bp`, `metrics.bp`) · none
+- [ ] 27 s1 box 1 · s2 · s3 — the reconcile driver, `use linkStatus()` under a `@Component`, the example · 27-a to confirm
+- [ ] 125 s3 → s10 — in order, alone in `libs/validation` · 07-j (size) · 125's `@emit` shape against 216 (no id)
 
-- [ ] `01-compiler/02-erlang` · `03-beam` · `05-wasm` · `26-cli-tooling` — group A · after `00-gate`
-- [ ] `01-compiler/12-language-tests` · `18-comptime-runtimes` · `23-std-purity` · `24-effects-by-return` · `25-gate-perf` — group B · after `00-gate`
-- [ ] `04-rakun` group A: `04-rakun-erlang-runtime` (critical) · `74-rakun-tls-ssl-bundles` · `08-rakun-data-sql` · `15-rakun-messaging` · `79-rakun-oauth2-sso` · `81-rakun-packaging-release` · `93-rakun-soap-webservices` · `73-rakun-starters` · `19-rakun-test-utilities` step 1 — after 128
-- [ ] `05-jhonstart/26-jhonstart-router` (high) · `27-jhonstart-link` — after `101-gate-jhonstart`; 26 after 102 step 3's `routes.bp` commit and after 118 (its step 0 merges `jhonstart-html` into the core — decision 200); its step 4 after 106; its step 8 on the checker capability of decision 186
-- [ ] `06-emilia/34-emilia-modifiers` (high) · `33-emilia-color-palette` steps 1–2 — after `109-gate-emilia` and 118 step 1's carve-outs
-- [ ] `07-onze/49-onze-stand-up` (critical) · `50-onze-cli` · `51-onze-image` · `71-onze-release-packaging` — after `100-gate-onze`; 49 and 50 after 102 step 3's onze commits; 49 step 4 after `04-rakun/65` step 1 (decision 201); 50 step 2 on `50-b`, steps 4 and 7 on `std-d`
-- [ ] `08-bpp/118-bpp-components` (critical) — after `101-gate-jhonstart` · no open question (decisions 190–193)
-- [ ] `08-bpp/121-bpp-content` — steps 1–3 after `100-gate-onze` (step 3 on `08-f`) · steps 4–5 after 125 steps 0–2 · step 6 after 118 and 117 · step 7 after 53
-- [ ] `08-bpp/119-bpp-styling` — on `08-d` · after 118 and 26
-- [ ] `08-bpp/123-bpp-middleware` — after `04-rakun` 04 and 65 (decision 189)
-- [ ] `08-bpp/117-bpp-routing` · `120-bpp-islands` · `122-bpp-data` · `126-bpp-view-transitions` · `127-bpp-actions` — after 118 and the front of track 03 / 04 / 05 / 07 each names (`08-bpp/README.md` § Who else owns the files), one at a time where they append to one file; 117 on `08-b` (decision 202 answered `08-g`); 120 step 4 on `08-e`; 127 after 125 steps 0–2 and 6
-- [ ] `08-bpp/116-bpp-file-format` — after 118, `05-jhonstart/26` step 0 (`jhonstart-html` merged into the core, decision 200) and `01-compiler/26` · no open question (decisions 198–200)
-- [ ] `08-bpp/124-bpp-cli` — last in track 08 · after `07-onze/50`, 71 and every front above · `08-h`
+## L4 — later, in waves
 
-## Deferred out of this milestone
+Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 
-- `00-gate/133-gate-speed`'s 5-minute cold gate on 16 idle cores, its idle-machine measurements and the isolation pair → the next milestone (decision 265)
-- `04-rakun/91-rakun-pulsar`'s data plane → a decision (`03r-ad`, recommendation: defer until a
-  broker double exists); the front carries the codec and admin arm only.
-- `04-rakun/79`'s SAML ACS → `03r-ae` (no Exclusive XML c14n on OTP or std).
-- The snapshot maps of rakun, jhonstart, emilia, onze, std → one answer for all (`03r-ag`, `30-h`,
-  `05emilia-m`, `53-b`, `01std-f`; recommendation: retire, keep the helpers a contract needs and
-  onze's § 71 release text).
-- The windows CI row → deleted until the snapshot capture normalises CRLF and path separators
-  (decision 158).
-- Everything in [`deferred.md`](./deferred.md), carried.
+- [ ] 26 (W3) — the core: s0 merges `jhonstart-html`, s1–6 · 118 landed · 102 s3 `routes.bp` · s5: 29-a · s8: 01's hooks capability, ctr-l (s7 is 135's)
+- [ ] 27 s1 box 2 (W7) — the route-kind flag read · 22
+- [ ] 67 (W4) — the DOM-side forms boxes, the wire names handed in · 26 · 103 s2 · 67-a (s4 needs only 103 s2)
+- [ ] 49 s2–5 (W3 → W7) — query, headers, dispatcher; the digest's sink; the public root; the dynamic mark · 102 s3 · s3: 26 s4 + 17 · s4: 65 s1 · s5: 22 s4 · 49-e
+- [ ] 50 s2–7, s9 (W3 → W8) — `dev`, `prerender/`, the signal, `bin/onze`, the bundler tail, the defaults table; the `@/` alias gone (218) · 102 s3 · s2: 50-b · s4, s7: std-d · s5: 71 s2 · s6: 27 s1
+- [ ] 51 s2–6 (W7) — single flight and the route, the prop table, the metrics generator, the OG defaults · 22 · s4: 52-a
+- [ ] 71 s1–2 (W3) · s3–4 (W7) · s5 (W10) — ERTS copy and `bin/onze`; shutdown over real cells and static export; the four gate boxes over the blog · 49 s6 · s3: 11, 04, 81 · s4: 22 · s5: 50, 53
+- [ ] 53 (W8) — the blog's `alias` gone, the acceptance script's second half, the browser · 49 · 50 · 51 · 71 s1–4 · 26 · 27 · 67 · 22 · 12 · 65 · 135 s5 (the runner) · s6: 50-b
+- [ ] 119 (W3) — scoped `<style>` · 08-d · s2: 118, 26
+- [ ] 117 (W7) — `.bpp` / `.md` app files, `staticPaths`, `paginate`, partials · 102 · 22 · 49 · 50 · 121 s1–2 · s1: bpp-g, ctr-g · s4: ctr-c
+- [ ] 123 (W7) — `locals`, `sequence`, `actionContext` · 04 · 65 · s1 box 3: 08-j
+- [ ] 120 (W8) — hydration strategies, server islands · 118 · 119 · 117 · 26 · 22 · 49 · 50 · s4: 08-e2
+- [ ] 121 s3–6 (W9) · s7 (W10) — frontmatter, collections, references and RSS, `.md` pages; the blog reads Markdown · s3: 08-f · s6: 118, 117 · s7: 53
+- [ ] 122 (W9) — page-side status and headers, `rewrite`, `site` · 26 · 49 · 102 · 118 · 120
+- [ ] 126 (W9) — view transitions · 27 · 118 · 120
+- [ ] 127 (W10) — actions typed by a schema · 125 s6 · 103 · 22 · 67 · 49 · 117 · 120 · 126 · s4: 123
+- [ ] 116 (W5 at the earliest) — the `.bpp` file kind · 118 · 26 s0 · 01-compiler/26 · with 01-checker s19 · s2: bpp-f, ctr-e, ctr-g · s6: bpp-g
+- [ ] 105 (W9) — bundled `i18n` · 104 s5 · 22 · 26 · 03r-q confirmed
+- [ ] 107 (W9) — bundled `release` · 07-g · 71 · 81
+- [ ] 124 s1–4 (W10) · s5 (W11) — the commands, the config keys, the `.bpp` scaffold · 08-h · s1, s3: 08-e2, ctr-a · every other 08 front · s5: 116, 53
+- [ ] 98 (W11) — packaging checked everywhere · every library track's `-test` and README steps · s3: 95-f · s4: lg2-v
+- [ ] 16 s1–7 — the `;` re-count, migration and refusal, C-12's reformat, 165, 166/243, C-11 · s2: each library track runs the script · s4: 16-a/b · s6: ctr-s · s3 last, after every tree is migrated
+- [ ] 18 — the CI matrix, the four limits, the bench table, the transport test, `memory.grow` (261) · s1: the maintainer's push
+- [ ] 23 — the import cells and LSP snapshots, the confirmations · 23-a/b/c, std-c
+- [ ] 24 — the guide as one program, the confirmations, the per-item cost · 24-a/b/c/g · rakun's `serverAction`
+- [ ] 135 s5 (W7) — onze: the E2E runner (five harness functions), the release tree as a path table, 107's README names the two snapshots · snap-a · before 53 s2–6
+- [ ] 135 s1–4 (W11, last) — std's `mocks.verify` message; rakun-test's `assertResponse`; jhonstart's `AGENTS.md` paragraph; emilia-test's `assertClassName` / `assertCss` (they replace 97 s7, 19 s6, 26 s7, 33 s1/3/4, 50 s8, 51 s7) · snap-a · s4: 34 landed
+
+## L5 — blocked on a decision
+
+Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.0.10 choices) in its
+last section.
+
+- [ ] 17-b — 17 s1 box 4
+- [ ] 134-a · 134-d — 134 s2 (the `@print` rows; `@is`)
+- [ ] std-d — 97 s6 · 50 s4, s7
+- [ ] 95-f — 98 s3
+- [ ] 07-g — 107 whole
+- [ ] 07-j — 125 s3–10 (size)
+- [ ] 03r-ab — 09 s5 (and the scope of s1–4)
+- [ ] 03r-ad — 91 whole
+- [ ] 03r-ae — 79 s3
+- [ ] 03r-af — 73 s3
+- [ ] 03r-ak — 81 s3
+- [ ] 03r-al — 15 s5
+- [ ] 03r-am — 19 s3–4
+- [ ] 03r-an — 92 s2 (boxes 1, 3)
+- [ ] 67-a — 67 s1–3 · 53's write path
+- [ ] 05emilia-n — 34 s4
+- [ ] 50-b — 50 s2 · 53 s6
+- [ ] 08-d — 119 every step
+- [ ] 08-e2 — 120 s4 · 124 s1, s3
+- [ ] 08-f — 121 s3
+- [ ] 08-h — 124 whole
+- [ ] 08-j — 123 s1 box 3
+- [ ] bpp-f — 116 s2
+- [ ] bpp-g — 116 s6 · 117 s1
+- [ ] props-d · props-e · props-f — 118 s1, s4 (native attributes, named slots, spread)
+- [ ] snap-a — 135 s1–5 (replaces 01std-f, 03r-ag, 30-h, 05emilia-m, 53-b) · 53 s2–6 through 135 s5
+- [ ] lg2-a … lg2-w — none opens a front; each opens a step when answered: 01-checker (a, e, f, m, q, r, t), 14 s6 (j, o, w), 26 s6 / 98 s4 / 73 (v); the rakun boxes that name them — 04 (e, g, j), 08 (e, f), 13 · 65 · 09 · 91 · 92 (a, b), 15 (w), 22 (q), 88 (j), 93 (o)
+- [ ] C-14 — 07-residuals s9 (a 1.0.10 id)
+- [ ] confirmations a step waits on — 49-d (102 s3) · 49-e (49 s2) · 05emilia-l (34 s2) · 52-a (51 s4) · 29-a (26 s5) · 27-a (27) · 03r-q (105) · 16-a/b (16 s4) · 23-a/b/c, std-c (23) · 24-a/b/c/g (24; 24-g also 97 s5's surface)
+- [ ] ctr-a — 124 s1, s3 · ctr-b — as 08-e2 · ctr-c — 117 s4
+- [ ] ctr-d — 91 · 128's member list · ctr-k — 17 · 128 · 106 s2
+- [ ] ctr-e — 116 s2 · ctr-f — the 116 and 118 READMEs · ctr-g — 116 s2 · 117 s1 · bpp-g
+- [ ] ctr-i — 05's string lowering · 02's codepoint cell · ctr-j — 04 s8 · 02 s13 · 03 s8 · 01 s18
+- [ ] ctr-l — 26 s8's refusal list · ctr-q — 130 s5 · ctr-r — 118's carve-outs, 34 / 33 opening first · ctr-s — 16 s6
+- [ ] ctr-m — lg2-s · ctr-n — imp-a · ctr-o — lem-c · ctr-p — 04's readers · 104 s5 (ctr-h blocks nothing)
+- [ ] no id yet — the 130 ↔ 128 rule (128, 130 s5) · 216 against `#[schema]`'s free `@emit` functions (125, 130 s6) · 213 against 221 for `not-found.bpp` (116 s2, 124's scaffold)

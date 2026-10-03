@@ -69,7 +69,7 @@ Pooling reuses 08's `rakun_pool_sup`; ETS and Mnesia bypass it and say so when a
 configured. Each configured arm registers a `#[healthIndicator]` through the core's `actuator_api`.
 `#[redisListener]` is 15's.
 
-**Open point (no decision):** `rakun-data` depends on `rakun` and `rakun-actuator` only; the
+**Open point (`ctr-w`):** `rakun-data` depends on `rakun` and `rakun-actuator` only; the
 Elasticsearch arm over `rakun-client` adds a `rakun-data → rakun-client` edge every data consumer
 loads — the kind of edge decision 185's rule refuses. The front measures it first and reports to
 the maintainer before adding the edge (03r-ab's arm list is where it is answered).

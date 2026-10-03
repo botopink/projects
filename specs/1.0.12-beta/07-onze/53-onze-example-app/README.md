@@ -9,9 +9,9 @@ and emilia is exercised at once; last by construction · **State:** not started
 `04-rakun` track: `22-rakun-file-routing` carrying 24 (the action dispatcher, the `Origin` /
 `Host` 403), 25 (route handlers), 60 (static generation), 66 (OG discovery), and the middleware
 (`rakun-web`, erlang); `12-rakun-cache` (`revalidateTag`); `65-rakun-url-rules` (decision 201) ·
-maintainer `50-b` (step 6), `53-b` (the E2E runner is unconditional)
-**Owns:** `repository/onze/examples/blog/**` (`README.md` and `test/serve.sh` included),
-`modules/onze-test/src/e2e.bp` (the group file 49 stubs) · this directory
+maintainer `50-b` (step 6) · `20-snap` step 5 (the E2E runner, `snap-a`)
+**Owns:** `repository/onze/examples/blog/**` (`README.md` and `test/serve.sh` included) · this
+directory (`modules/onze-test/src/e2e.bp`, the group file 49 stubs, is `20-snap` step 5's)
 **Does not touch:** anything else — read-only against every other member and repository; a
 needed change is reported to its owner
 
@@ -19,7 +19,7 @@ needed change is reported to its owner
 
 Every row of [`acceptance.md`](./acceptance.md) § The acceptance script is a green assertion,
 over both `onze dev` and `onze build && onze start`, with the browser rows driven by a real
-browser, through the E2E runner of [`test-snap-examples.md`](./test-snap-examples.md).
+browser, through the E2E runner (`20-snap` step 5).
 
 ## Mechanism
 
@@ -29,12 +29,11 @@ browser, through the E2E runner of [`test-snap-examples.md`](./test-snap-example
   `components/{nav,post_card,like_button}.bp`, `lib/db.bp`; tests `db_test`, `render_test`,
   `tags_test` (both rows). No `middleware.bp`, `lib/actions.bp`, `app/api/posts/route.bp`,
   `loading.bp` / `error.bp`, `README.md` or `test/serve.sh`; `onze-test` has no `e2e.bp`.
-- **The E2E runner** (`test-snap-examples.md` § The E2E runner): `bootApp(dir, mode) ->
-  @Task<RunningApp>` (mode `dev` or `start`, over 50's commands), `stopApp`, `buildApp`,
-  `request(app, method, path, headers, body)`, `requestChunks`, `assertResponse(loc, reply)`
-  (status + headers + body, hashes literal), `assertResponseStream`, `assertBundle`, `assertCss`,
-  `assertServeGate(loc, dir, paths)` (the dev-vs-start diff over every static route; the only
-  helper that masks the build id).
+- **The E2E runner** (`20-snap` step 5, `snap-a` (5)): five harness functions — `bootApp(dir,
+  mode) -> @Task<RunningApp>` (mode `dev` or `start`, over 50's commands), `stopApp`, `buildApp`,
+  `request(app, method, path, headers, body)`, `requestChunks` — and no snapshot writers. The
+  suites assert status, headers and body over `request(…)`; the dev-vs-start gate is an equality
+  property, the `dev` reply equal to the `start` reply for every static route.
 - **The browser rows** run in a real browser driven by `serve.sh` (a headless browser the gate's
   environment provides; `00-gate` decides how its absence reads), not through
   `jhonstart-dom-test`.
@@ -49,16 +48,16 @@ browser, through the E2E runner of [`test-snap-examples.md`](./test-snap-example
 
 ### Step 1 — the runner and the README
 
-- [ ] `onze-test/src/e2e.bp` exports the runner of § The E2E runner that the blog's suites call
-      (at least `bootApp`, `stopApp`, `request`, `assertResponse`, `assertBundle`, `assertCss`,
-      `assertServeGate`); `test/helpers_test.bp` (49's) gains one case per helper over the
-      scaffold; erlang for `bootApp` / `request`, both rows for the writers
+→ 20-snap (front 135) step 5 (the runner)
+
 - [ ] `examples/blog/README.md` names `NEXTJS-DOCS.md`'s sections, the fronts, the four commands,
       and that `remotePatterns` is empty (51's sentence)
+- [ ] `examples/blog/botopink.json` has no `"alias"` key and no source imports `from "@/…"`
+      (decision 218; the bundler half is 50 step 9)
 
 ### Step 2 — prerender and metadata (after 50 step 3, rakun 60)
 
-- [ ] the four boxes of `acceptance.md` § Step 3, through `assertServeGate` and a `pages_test.bp`
+- [ ] the four boxes of `acceptance.md` § Step 3, through the dev/start equality property and a `pages_test.bp`
       case reading the `lib/db.bp` counter
 
 ### Step 3 — streaming and boundaries (after jhonstart 26 steps 3–4, 49 step 3)
@@ -81,8 +80,8 @@ browser, through the E2E runner of [`test-snap-examples.md`](./test-snap-example
 
 ### Step 6 — the commands and the DoD (after 50 step 2, 50-b)
 
-- [ ] `gate_test.bp`: `onze dev` serves every route of the script; `assertServeGate` shows no
-      diff between `dev` and `start` for every static route
+- [ ] `gate_test.bp`: `onze dev` serves every route of the script; the `dev` and `start` replies
+      are equal for every static route (a property over `request`)
 - [ ] every `// front NN` comment in `examples/blog/src/**` names a directory under
       `specs/1.0.12-beta/` (a `unit_test.bp` case walks the tree and the comments)
 - [ ] `acceptance.md` § Assumed API shapes reconciled row by row against the landed surfaces;

@@ -1,7 +1,7 @@
-# Front 23 — std purity: the gate's rows and four confirmations
+# Front 23 — std purity: the gate's rows and three confirmations
 
 **Priority:** low · **State:** not started (the std tree of decisions 106–111 landed in 1.0.10, C-31)
-**Depends on:** maintainer confirmations 23-a, 23-b, 23-c, std-c · the std track
+**Depends on:** maintainer confirmations 23-b, 23-c, std-c · the std track
 (`../02-std-and-packaging/`, which owns `libs/std/src/**`)
 **Owns:** `modules/language-server/src/project_graph.zig`'s import-tree cells (a carve-out —
 `modules/language-server/src/tests/**` is 07's) · `libs/std/AGENTS.md` (with 07) · `docs.md` § imports,
@@ -35,16 +35,16 @@ snapshot per import spelling).
 
 ### Step 2 — the confirmations
 
-23-a (the `collections` leaf — both forms landed), 23-b (`base64` retired), 23-c (the two `botopink
+23-b (`base64` retired), 23-c (the two `botopink
 test` folder fixes in `test_cmd.zig` / `libs.zig`, landed), std-c (the namespace rewrite): each
 confirmed or reversed by the maintainer; a reversal opens a step in the owning front (26 for 23-c,
 01 for std-c).
 
-- [ ] the four ids in `../../decisions-taken.md` with their numbers, or a reversal's step named
+- [ ] the three ids in `../../decisions-taken.md` with their numbers, or a reversal's step named
 
 ## Decisions
 
-- 23-a, 23-b, 23-c, std-c — to confirm (the full statements in
+- 23-b, 23-c, std-c — to confirm (23-a is moot: both forms landed) (the full statements in
   [1.0.10's `decisions-pending.md`](../../../1.0.10-beta/decisions-pending.md))
 
 **Gate:** standard (fronts.md § Gate) + `zig build test-libs` at baseline

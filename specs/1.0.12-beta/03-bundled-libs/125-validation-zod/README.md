@@ -60,7 +60,7 @@ two, and the front follows the split.
 (`decorators.bp`'s `validated`) — and the decorator `@emit`s functions named after the type.
 Decision 216 retires the loose `@emit` (`#[validated]` now adds the members `validate()` /
 `constraints()` to the type); `#[schema]`'s free functions still use it, and whether they become
-members (`Player.parse(input)`) is not decided:
+members (`Player.parse(input)`) is not decided (`ctr-u`):
 
 | Emitted | Zod's |
 |---|---|
@@ -276,6 +276,8 @@ twelve recipes.
 named for; (b) leaves unions, coercion and codecs for the consumers to hand-write, which is the
 state `language-gaps.md` already records as a cost.
 **Blocks.** the front's size.
+
+`ctr-u` — decision 216 against `#[schema]`'s free `@emit` ([`../../decisions-pending.md`](../../decisions-pending.md)). Steps 3–10.
 
 ## Notes
 

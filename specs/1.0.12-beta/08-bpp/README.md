@@ -159,7 +159,7 @@ Found by the reanalysis, owned elsewhere. Each is a row of `surface.md` in the *
 | The scan records a decorator's argument and never compares it with the file's directory | `onze-cli/src/scan.bp:36-56`, `:66-96` — read, not run | `07-onze/50`; 117 step 0 measures it |
 | `io.http.fetch` is GET only | `libs/std/src/io/http.bp` | `02-std-and-packaging` (the row `03-bundled-libs/README.md` names) |
 | `<Picture>`, `getImage`, remote patterns | `onze-assets` | `07-onze/51` |
-| The lib-agnostic gate greps for three of the five library names (`rakun\|jhonstart\|erika`); `onze` and `emilia` occur in compiler-core comments | `repository/botopink-lang/build.zig`; `codegen/erlang.zig` | `01-compiler/08-hygiene` |
+| The lib-agnostic gate greps for three of the five library names (`rakun\|jhonstart\|erika`); `onze` and `emilia` occur in compiler-core comments | `repository/botopink-lang/build.zig`; `codegen/erlang.zig` | `01-compiler/07-residuals` (step 8) |
 
 ## Rules in force
 
@@ -192,14 +192,18 @@ follows the language's own form.
 
 ## Decisions the maintainer owes
 
-Open: `08-d`, `08-e2`, `08-f`, `08-h` (below) and `bpp-f`, `bpp-g` (full text in
-[`../decisions-pending.md`](../decisions-pending.md)). Each takes the next free number in
-`decisions-taken.md` when answered.
+Open: `08-d`, `08-e2`, `08-f`, `08-h` (below) and `08-j`, `bpp-f`, `bpp-g`, `props-d`, `props-e`,
+`props-f` (full text in [`../decisions-pending.md`](../decisions-pending.md)); contradictions
+`ctr-a` (124), `ctr-c` (117), `ctr-e`, `ctr-f`, `ctr-g`, `ctr-t` (116).
+
+- `08-j` — how rakun's `local()` carries jhonstart's `#[serverOnly]`. Blocks 123 step 1's third box.
 
 - `bpp-f` — the return type of the function a `.bpp` file unfolds to (`-> Element` against a header
   that `await`s or `use`s). Blocks 116 step 2.
 - `bpp-g` — how a `page.bpp` gets its `route: PageContext` and its `params`. Blocks 116 step 6,
   117 step 1.
+- `props-d` · `props-e` · `props-f` — a native tag's attributes, a named slot, a spread on a
+  component. Block 118 steps 1 and 4.
 
 ### 08-d · Who scopes CSS
 

@@ -5,8 +5,8 @@ context that has no equivalent, and it is what authentication examples are writt
 **State:** not started
 **Depends on:** `04-rakun/04-rakun-erlang-runtime` (the core and its per-request frame —
 `locals.bp` is a new file in its member) · `04-rakun/65-rakun-url-rules` (it owns `rakun-web`;
-this front runs after it — decision 189). Written against decision 186 (what a `local` read does
-to the page's stage).
+this front runs after it — decision 189) · `08-j` (step 1's third box). Written against decision
+186 (what a `local` read does to the page's stage).
 **Owns:** new `repository/rakun/modules/rakun/src/locals.bp` · the lines of
 `rakun/modules/rakun-web/src/{middleware.bp, filter.bp}` named in the steps · their tests
 **Does not touch:** `rakun-app` (`actions.bp` is `04-rakun/22`'s — step 4 reads from it and adds
@@ -69,7 +69,7 @@ middleware decided per request is not a prerendered page. Under decision 186 tha
 compile-time fact — a request-time read is what `#[serverOnly]` marks — and until the checker
 capability lands the read marks the render through the bridge `04-rakun/22` step 4 leaves
 (`ChunkWriter.markDynamic`). How `local`, a rakun function, carries a marker jhonstart defines
-is not stated by the decision; step 1's third box (`dynamicReason()` says `locals`) is written
+is question `08-j`; step 1's third box (`dynamicReason()` says `locals`) is written
 for the bridge.
 
 **`sequence` is a value.** `sequence([validation, auth, greeting])` answers one middleware that

@@ -53,7 +53,7 @@ cell (or the language-gaps toolchain row is re-pinned with the measured failure)
 
 ### Step 3 — The seven (03r-af)
 
-- [ ] under (a): `modules/README.md` § Examples lists the three and says the seven were retired; the closed `test-snap-examples.md` is referenced from no live document
+- [ ] under (a): `modules/README.md` § Examples lists the three and says the seven were retired; the closed 1.0.10 map [`03-rakun/test-snap-examples.md`](../../../1.0.10-beta/03-rakun/test-snap-examples.md) is referenced from no live document
 - [ ] under (b)/(c): one front directory per example is opened by the maintainer, each after the member fronts it exercises; nothing here
 
 **Gate:** standard (fronts.md § Gate) + `zig build test-libs -- --target erlang --lib rakun` lists the

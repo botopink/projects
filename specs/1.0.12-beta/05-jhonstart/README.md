@@ -22,7 +22,7 @@ items and spec items, cut into three fronts by the member each edits.
 | JH-29-doc | `docs.md:371,393` say "front 23" for the payload envelope (jhonstart 30's since decision 117); the starter-table row of 29-a; the `islandAttr` wording | `docs.md` | 26 step 5 |
 | JH-28-ex | `request-scope-example.bp` (escaping) and `blog-post-page-example.bp` (sequential awaits) break the README's own rules | `26/examples/` | 26 step 6 |
 | PK-2 | the eight example members have no `README.md` | `examples/*/` | 26 step 6 |
-| JH-SNAP | the module-level snapshot map (`26/test-snap.md`) has no `.snap` files | every member's `test/` | 26 step 7, on 30-h |
+| JH-SNAP | the module-level snapshot layer (`snap-a`) | every member's `test/` | `20-snap` step 3 |
 | JH-27-3b | the reconciler decision `reconcile(current, target)` has no driver: a shared layout's islands are re-hydrated on every transition; the route-kind flag is not read | `jhonstart-link` | 27 step 1 |
 | JH-27-4 | `use linkStatus()` inside a `fn … -> @Component<ElementBase, Element>` is not tested | `jhonstart-link` | 27 step 2 |
 | JH-67-dom | the five DOM-side forms boxes (1.0.10's 3a, 3b, 4, 5): `fieldError` after `__jhFormState`, an `ok: false` envelope re-rendering in place, `pending` / `actionId` for two forms at once, optimistic commit and roll-back, `push` after the envelope | `jhonstart-forms` | 67 steps 1–3 |
@@ -32,7 +32,7 @@ items and spec items, cut into three fronts by the member each edits.
 
 | Front | Priority | State | What | Depends on |
 |---|---|---|---|---|
-| [`26-jhonstart-router/`](./26-jhonstart-router/README.md) | **high** — the boundary's digest is what `07-onze/49` step 3 completes; the rakun-free `src/` is a gate grep | not started | the core member: step 0 merges `jhonstart-html` into it (decision 200); one late-signal handler; no rakun in `src/`; the streaming tests; the digest and log line through `log` (194, 195); `docs.md`; the spec examples and eight READMEs; step 7 the snapshot map (on 30-h); step 8 the stage markers (186) | `08-bpp/118` landed; `03-bundled-libs/102` step 3; `01-compiler/01-checker` (step 8); 30-h, 29-a |
+| [`26-jhonstart-router/`](./26-jhonstart-router/README.md) | **high** — the boundary's digest is what `07-onze/49` step 3 completes; the rakun-free `src/` is a gate grep | not started | the core member: step 0 merges `jhonstart-html` into it (decision 200); one late-signal handler; no rakun in `src/`; the streaming tests; the digest and log line through `log` (194, 195); `docs.md`; the spec examples and eight READMEs; step 7 → `20-snap`; step 8 the stage markers (186) | `08-bpp/118` landed; `03-bundled-libs/102` step 3; `01-compiler/01-checker` (step 8); 29-a |
 | [`27-jhonstart-link/`](./27-jhonstart-link/README.md) | medium | not started | the reconciler driver in `jhonstart-link`; the `use linkStatus()` test | `04-rakun/22` (step 1 box 2 only); 27-a |
 | [`67-jhonstart-forms/`](./67-jhonstart-forms/README.md) | medium-high — the forms are the write path of onze 53's proof | not started | the DOM-side boxes in `jhonstart-dom-test`; the wire-name literals gone | 26 (`fake_dom.mjs`); `03-bundled-libs/103` step 2; 67-a |
 
@@ -46,7 +46,6 @@ items and spec items, cut into three fronts by the member each edits.
 26-jhonstart-router ──┐  (core member; 27 in parallel in jhonstart-link)
 27-jhonstart-link ────┤
                       └──► 67-jhonstart-forms  (needs 26's fake_dom.mjs and 103's form.bp lines)
-                                  └──► 26 step 7 (on 30-h (b): re-records every member's test/ — runs alone, last)
 
 01-compiler/01-checker (the hooks a function activates, readable from its @Decl) ──► 26 step 8
 
@@ -77,7 +76,9 @@ Lines 118 reports to the owner, not steps of 26, 27 or 67:
 
 118 also writes, as carve-outs in the core landed before 26 opens: its step-1 bracket-attribute
 lines (in the core only comments of `root.bp` / `elements.bp` name the DSL), the core's `src/prelude.bp` (what every `.bpp` file imports
-without writing it — decision 266) and the type `Children` the track's examples use.
+without writing it — decision 266) and the declaration of the node type `Node` (decision 223) the
+prelude imports; 118 also rewrites its examples' `Children` to `Node`. The rename of the core's own
+signatures that spell `Children` stays the hand-off above.
 
 ## Decisions
 
@@ -86,31 +87,12 @@ Confirmations kept from 1.0.10 ([`../../1.0.10-beta/decisions-pending.md`](../..
 | Id | Choice | Closes |
 |---|---|---|
 | 26-a | every router cell is dual-target | — |
-| 26-b | the query is reachable only through a marking hook; the payload's `d` is the mark | superseded by decision 186 once 26 step 8 lands; until then `d` stays the mark |
 | 27-a | a browser cell in a two-target member is dual-target, the erlang twin answering the server's truth | — |
 | 29-a | the island starter table is `globals.starters`, filled by `registerStarter` / `registerRouteStarters` | 26 step 5's starter-table row |
 | 30-b … 30-g | `RenderPlugin` as a record of async functions; `render` / `App` in `streaming.bp`; `Suspense` registers with the render; `UiSegment`; `app(…, lang:)`; the browser half in `jhonstart-dom-test` | — |
 | 31-a | `notFound()` / `redirect(url)` raise through one host cell | — |
 
-### 30-h · The module-level snapshot map of `test-snap.md` — realise or retire
-
-> **Raised by:** this track, from [`26-jhonstart-router/test-snap.md`](./26-jhonstart-router/test-snap.md).
-> **Measured.** The map names one `.snap` per case for every member's `test/` (`elements_test`,
-> `router_test`, `link_test`, `reconcile_test`, `server_test`, `client_test`, `streaming_test`,
-> `render_test`, `bridge_test`, `error_boundary_test`, `metadata_test`, `form_test`). None exists.
-> What exists: every case asserts its literal inline on both rows (204 tests in the core);
-> `jhonstart-test`'s `helpers_test.bp` (20 tests, 7 accepted snapshots); the example projects hold
-> 32 snapshots through those helpers; the two contracts another library reads — the payload keys
-> (`contracts.md` § 2) and the contract-4 class literal `e_39b87d03` — are asserted by
-> `render_test`'s literal, `bridge_test.bp` and onze's `build_test.bp:104`.
-> **Options.** (a) retire the map: the inline literals, the helper snapshots and the example
-> snapshots are the evidence; (b) realise it: ~150 `.snap` files under `modules/*/test/__snapshots__/`,
-> each a second copy of a literal the inline test already pins, re-recorded together on any
-> change to the render.
-> **Recommendation.** (a). A module-level snapshot is realised only where it proves a contract
-> another library reads, and both such contracts already have a snapshot or a literal on the
-> reading side.
-> **Blocks.** 26 step 7.
+The module-level snapshot map is [`decisions-pending.md`](../decisions-pending.md) `snap-a`, worked by [`20-snap`](../20-snap/README.md) step 3.
 
 ### 67-a · Where the DOM-side forms boxes are asserted
 

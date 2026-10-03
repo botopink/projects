@@ -6,16 +6,16 @@ that is red today · **State:** not started
 **Depends on:** `08-bpp/118` landed before this front opens (step 0 moves the member it lands in —
 decision 200), with its carve-outs in this member: the bracket-attribute step-1 lines (in the core
 only comments of `root.bp` / `elements.bp` name the DSL; no `[name]={` exists in `src/`), the
-core's `src/prelude.bp` and the type `Children` (decision 266) · `03-bundled-libs/102` step 3's `routes.bp` commit,
+core's `src/prelude.bp` (decision 266) and the declaration of the node type `Node` (decision 223) · `03-bundled-libs/102` step 3's `routes.bp` commit,
 landed before this front opens (decision 188) · `01-compiler/01-checker`'s capability — the hooks
 a function activates through `use`, readable from its `@Decl` (`language-gaps.md`) — for step 8
-(decision 186) · `30-h` (step 7) · `29-a` confirmed (step 5's starter-table row)
+(decision 186) · `29-a` confirmed (step 5's starter-table row)
 **Owns:** `repository/jhonstart/modules/jhonstart/**` (source, tests, `src/AGENTS.md`),
 `modules/jhonstart-dom-test/**` (`fake_dom.mjs`, `dom_test.bp`), `docs.md`, `AGENTS.md`,
 `examples/{blog-ssr,nav-shell,islands,forms,document-shell,jhonstart-counter,jhonstart-markup,jhonstart-todo}/README.md`
 · step 0 only: the deletion of `modules/jhonstart-html/`, the workspace manifest's member list,
 the import lines of `jhonstart-emilia`, `examples/jhonstart-markup` and `examples/document-shell`
-(decision 200) · step 7 only: every member's `test/__snapshots__/` · this directory
+(decision 200) · this directory
 **Does not touch:** `modules/jhonstart-link/**` (27) · `modules/jhonstart-forms/**`,
 `examples/forms/src/**` (67) · `src/html.bp` and its tests after step 0 (`08-bpp/118`'s, then one
 lowering arm each from 119, 120, 126) · `element.bp`, `hooks.bp` (frozen) · `html_attrs.bp`
@@ -171,15 +171,9 @@ the fronts it exercises (`modules.md` § Examples).
       own run, not a gate row)
 - [ ] `find repository/jhonstart/examples -maxdepth 2 -name README.md | wc -l` is 8 (0 today)
 
-### Step 7 — the module-level snapshot map (on `30-h`)
+### Step 7 — the module-level snapshot map
 
-- Under (b): realise [`test-snap.md`](./test-snap.md) for every member's `test/` through
-  `jhonstart-test`'s helpers, recorded by renaming `.new` files, after 27 and 67 have landed
-  (this step re-records every member's directory and runs alone; ~150 files).
-  - [ ] every `.snap` the map names exists, identical on both rows, no `.new` left
-- Under (a) — the recommendation:
-  - [ ] `AGENTS.md` § Tests says the inline literals, `helpers_test.bp`'s snapshots and the
-        examples' 32 are the evidence
+→ 20-snap (front 135) step 3
 
 ### Step 8 — the stage markers (decisions 186, 202)
 

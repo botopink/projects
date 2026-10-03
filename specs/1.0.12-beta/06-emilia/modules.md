@@ -24,14 +24,14 @@ time — 05emilia-h); siblings never import `from "emilia"`; `root.bp`, `botopin
 `README.md` (PK-2). `emilia-card` alone depends on another library (`"jhonstart": { "path":
 "../../../jhonstart/modules/jhonstart" }`), which decision 114 retires (front 33 step 2); the
 repository's CI checks jhonstart out for it (`.github/workflows/test.yml:94-99`, `00-gate`'s
-file). The eight cross-front examples of the map do not exist (front 33 step 4, conditional).
+file). The eight cross-front examples of the 1.0.10 map do not exist (`20-snap` step 4, `snap-a`).
 
 ## Front → files
 
 | Front | Owns | Runs beside |
 |---|---|---|
-| **34** (carries 1.0.10's 40 · 42 · 43 · 44 · 45 · 54 · 56) | `modules/emilia/src/**` (every file; the banner blocks of 44, 42, 43, 40, 34, 54, 45 and the hash cell of 56 are the ones it edits), `modules/emilia/AGENTS.md`, `docs.md`, `examples/emilia-{transitions,effects,outline-ring,transforms}/src/main.bp` (they pin the families step 2 moves — `grep -l 'Transition\|Backdrop\|Divide'`) | 33 steps 1–2 |
-| **33** (carries the test/examples layer of 1.0.10's 35–48 · 54–59) | `modules/emilia-test/**`, `examples/*/README.md` (fifteen), `examples/emilia-card/**`, `examples/<eight new>/**` (step 4), `modules/emilia/test/**` (step 3 — new directory) | 34, for steps 1–2; after 34 for steps 3–4 |
+| **34** (carries 1.0.10's 40 · 42 · 43 · 44 · 45 · 54 · 56) | `modules/emilia/src/**` (every file; the banner blocks of 44, 42, 43, 40, 34, 54, 45 and the hash cell of 56 are the ones it edits), `modules/emilia/AGENTS.md`, `docs.md`, `examples/emilia-{transitions,effects,outline-ring,transforms}/src/main.bp` (they pin the families step 2 moves — `grep -l 'Transition\|Backdrop\|Divide'`) | 33 step 2 |
+| **33** (carries the test/examples layer of 1.0.10's 35–48 · 54–59) | `examples/*/README.md` (fifteen), `examples/emilia-card/**` (`modules/emilia-test/**` and the snapshot layer are `20-snap` step 4's) | 34, for step 2 |
 
 The one file outside the repository, `repository/jhonstart/modules/jhonstart/src/html_attrs.bp`
 (front 48's, emilia-unaware), has no open item and no front edits it.

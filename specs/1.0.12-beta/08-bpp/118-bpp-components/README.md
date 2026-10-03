@@ -13,15 +13,16 @@ refused), 207 (an inline props type), 200 (`html` becomes the core's `pub defaul
 step 0 then merges the member into the core, `html` becoming the core's `pub default fn`
 (decision 200); the appends of 119, 120 and 126 are to `jhonstart/src/html.bp` ·
 `repository/jhonstart/examples/jhonstart-markup/**` except its `README.md` (`05-jhonstart/26`
-step 6) · new `jhonstart/modules/jhonstart/src/prelude.bp` and the node type the track's examples
-use (a carve-out of `05-jhonstart/26`'s member, decision 266) · the one-line carve-outs of step 1:
-each `[name]={expr}` attribute outside this member — in emilia's `attributes.bp` and `emilia.bp`
-(`06-emilia/34`'s files), `examples/emilia-card` (`06-emilia/33`'s), the two files of the core
-that use the DSL (`05-jhonstart/26`'s), `jhonstart-emilia`'s bridge test (119's), `document-shell`
-— rewritten by this front, one commit per repository, landed before the owning front opens
-(decision 189)
+step 6) · new `jhonstart/modules/jhonstart/src/prelude.bp` and the declaration of the node type
+`Node` in the core (decision 223; carve-outs of `05-jhonstart/26`'s member, decision 266) · the
+`Children` → `Node` rewrite of this track's `examples/**` · the one-line carve-outs of step 1:
+each `[name]={expr}` attribute outside this member — `jhonstart-emilia`'s bridge test (119's),
+`examples/document-shell`, and the comment lines of the core that name the DSL (`root.bp`,
+`elements.bp`, `05-jhonstart/26`'s) — rewritten by this front, one commit per repository, landed
+before the owning front opens (decision 189)
 **Does not touch:** `modules/jhonstart/**` beyond those lines (`05-jhonstart/26`'s — a need there
-is a hand-off, § Notes); the compiler; emilia beyond those lines. Fronts 119, 120 and 126 each
+is a hand-off, § Notes); the compiler; emilia — its `[class]={…}` lines are comments, reworded by
+`06-emilia/34` step 1, and `examples/emilia-card`'s by `06-emilia/33` step 2. Fronts 119, 120 and 126 each
 **append** one lowering arm to `html.bp` after this front lands, in that order (`fronts.md` rule 2).
 
 Reference: `astro-docs/09-astro-components.md`, `10-layouts.md`, `13-astro-syntax.md`.
@@ -63,7 +64,9 @@ on the BEAM and wat runtimes); step 0 finds which still hold. The lowering targe
 core member: `Element(tag, value, children, attrs)` (`jhonstart/src/element.bp`), `el(tag,
 children, attrs)` and `voidEl(tag, attrs)` (`elements.bp`), `fragment` (`element.bp`), `raw(html)`
 (`render.bp`), and `Children` — used by `element.bp` and `elements.bp` as the children type,
-coercing from a list, one `Element` or a `string`, and declared by no jhonstart module. The
+coercing from a list, one `Element` or a `string`, declared by no jhonstart module: the checker
+knows it by name (`compiler-core/src/comptime/env.zig`'s known names, `infer.zig`'s `Children`
+coercion). Decision 223 names it `Node`; this front declares `Node` (step 6). The
 renderer escapes text and attributes and refuses `</script` inside a raw-text body (`render.bp`).
 
 The function keeps its shape — lex, parse, lower twice (code and `CustomNode` overlay), return
@@ -99,8 +102,8 @@ written on `<Comp …>` are the fields of the type of the **first parameter** of
 each value — a literal or `{expr}` — has that field's type. An undeclared attribute, a value of
 another type, and a field with no default left unwritten are comptime errors located at the
 attribute. A component takes children only when that type declares a `children` field, whose type
-says what is acceptable — `children: Node`, the node type (decision 223; the examples still write
-`Children`). Content inside the tag of a component whose props declare no `children` is a comptime
+says what is acceptable — `children: Node`, the node type (decision 223; the examples' `Children`
+is rewritten by step 6). Content inside the tag of a component whose props declare no `children` is a comptime
 error at the tag, a `children` field of a narrower type refuses what it does not name, and a
 second `children` parameter beside the props goes away:
 
@@ -112,7 +115,7 @@ second `children` parameter beside the props goes away:
 **Slots.** `<slot />` reads `children`; `<slot name="footer">fallback</slot>` renders the fallback
 when its content is empty. How a **named** slot (`<p slot="footer">` on the caller,
 `<slot name="footer">` in the component) maps onto the props is not stated by decision 193, which
-names the `children` field only (§ Notes, open). The surface the examples aim at — `footer` as a
+names the `children` field only (`props-e`). The surface the examples aim at — `footer` as a
 field of the props is one reading of that open point, not a decision:
 
 ```bp
@@ -173,13 +176,15 @@ explicit stack the function already uses, and `language-gaps.md` gets the row.
 A `bool` expression renders the bare attribute when true and nothing when false; a `?string`
 renders nothing when null. `{...expr}` on an **element** appends an `Array<#(string, string)>` —
 the list `formAttrs(binding)` and `styled(tokens)` already answer; on a component it is refused
-(§ Notes, open point 3). `[name]={expr}` is refused with a message naming `name={expr}`, and its
-10 uses are rewritten in the same landing — the ones outside this member as the one-line
-carve-outs § Owns names, each landed before the front that owns the file opens (decision 189).
+(`props-f`). `[name]={expr}` is refused with a message naming `name={expr}`, and its
+uses in code are rewritten in the same landing — `jhonstart-html`'s `html_test.bp` and
+`elements_test.bp`, and outside this member, as the one-line carve-outs § Owns names,
+`jhonstart-emilia`'s `bridge_test.bp` and `document-shell`'s `shell_dsl.bp`, each landed before the
+front that owns the file opens (decision 189).
 On a **component** tag an attribute is a field of the props (decision 192), checked as
 § Mechanism says. The rule for the attributes of a **native** tag
 (`fn <tag>(children: Children, attrs: Array<#(string, string)> = [])`) is still to be stated
-(§ Notes, open point 1).
+(`props-d`).
 
 - [ ] `<a href="/a b" title={t} hidden={off} data-x="1">` renders all four as written, escaped by
       `escape.attribute`
@@ -212,8 +217,7 @@ until the compiler provides typed embedded expressions; void and self-closing ta
 
 A component tag lowers to a call whose first argument is the props value built from the tag's
 attributes (decision 192), and the content inside the tag is the props' `children` field
-(decisions 193, 223). The slot boxes wait on how a named slot maps onto the props (§ Notes, open
-point 2).
+(decisions 193, 223). The slot boxes wait on how a named slot maps onto the props (`props-e`).
 
 - [ ] `examples/components-and-slots-example.bp` passes on both targets
 - [ ] a tag whose name starts upper-case and resolves to nothing in the caller's scope fails at
@@ -246,14 +250,21 @@ directive is a `keyword`, an expression region is left to the host language. jho
       owned by `01-compiler/26`; it becomes a hand-off if the directory is closed to a library
       front)
 - [ ] a mismatched close tag underlines the tag, not the template
+- [ ] the core declares the node type `Node` (decision 223) — 191's set: text, a number, a
+      `bool`, a component of the same base, a list of them — importable as
+      `import {Node} from "jhonstart";`, and a `children: Node` field coerces as `Children` does
+      today (the checker's coercion is keyed on the name `Children`: if it must learn `Node`, that
+      is a hand-off to `01-compiler/01-checker`, named here before the box closes)
 - [ ] `jhonstart/src/prelude.bp` holds `import` items of the core's own modules only (`Element`,
-      the builders, the node type) and compiles with the member
+      the builders, `Node`) and compiles with the member
+- [ ] the examples' `Children` is rewritten to `Node`: `grep -rnw Children 08-bpp/*/examples`
+      (33 lines in 16 files today) is empty
 
 ## Decisions
 
-No id yet — the maintainer's to settle (`fronts.md` lists them):
-- the rule for the attributes of a **native** HTML tag (decision 192 covers component tags only) — step 1;
-- how a **named slot** maps onto the props (decision 193 names `children` only) — step 4.
+- `props-d` — the attributes of a **native** HTML tag (decision 192 covers component tags only) — steps 1, 4
+- `props-e` — how a **named slot** maps onto the props (decision 193 names `children` only) — step 4
+- `props-f` — `{...expr}` on a component — step 1
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test --target commonJS` and `--target erlang` green in `modules/jhonstart-html`
@@ -262,8 +273,8 @@ No id yet — the maintainer's to settle (`fronts.md` lists them):
 
 ## Blast radius
 
-- **12 files use the DSL; 10 bracket attributes are rewritten** (emilia's `attributes.bp` and
-  `emilia.bp`, `jhonstart-emilia`'s bridge test, `document-shell`, `emilia-card`).
+- **12 files use the DSL; four bracket attributes in code are rewritten** (this member's two
+  tests, `jhonstart-emilia`'s bridge test, `document-shell`); emilia's are comments (34, 33).
 - **A template that has a static attribute changes its output.** Today the attribute is silently
   absent from the HTML; after step 1 it is there. Every snapshot or literal that pinned the
   absence moves — step 1 lists them before it changes them.
@@ -273,17 +284,15 @@ No id yet — the maintainer's to settle (`fronts.md` lists them):
 
 ## Notes
 
-- **Open, after decisions 190–193.** (1) The rule for the attributes of a **native** HTML tag
-  (`fn <tag>(children: Children, attrs: Array<#(string, string)> = [])`): decision 192 covers
-  component tags only. (2) How a **named slot** (`<p slot="footer">`, `<slot name="footer">`) maps
-  onto the props: decision 193 names the `children` field and no other. (3) Whether `{...expr}` on
-  a component becomes legal now that its attributes are the fields of one record — step 1 refuses
-  it for a reason decision 192 removes. (4) The rename of `Children` to `Node` (decision 223) and
-  the move of a component's children into its props touch `modules/jhonstart/src/element.bp` and
-  every component of the track's members: they are hand-offs to `05-jhonstart`
-  ([`../../05-jhonstart/README.md`](../../05-jhonstart/README.md) § Handed to this track by
-  `08-bpp/118`), not steps of this front. The track's examples still write `Children`; the prelude
-  imports the node type under the name the hand-off settles.
+- **Open, after decisions 190–193.** (1) The attributes of a **native** HTML tag
+  (`fn <tag>(children: Children, attrs: Array<#(string, string)> = [])`) — `props-d`. (2) How a
+  **named slot** (`<p slot="footer">`, `<slot name="footer">`) maps onto the props — `props-e`.
+  (3) `{...expr}` on a component — `props-f`. (4) This front declares `Node` (decision 223), its
+  prelude imports it, and the track's examples' `Children` is rewritten to `Node` (step 6). The
+  rename of every signature that spells `Children` (`element.bp`, `elements.bp`) and the move of a
+  component's children into its props, in every component of the track's members, are hand-offs
+  to `05-jhonstart` ([`../../05-jhonstart/README.md`](../../05-jhonstart/README.md) § Handed to
+  this track by `08-bpp/118`), not steps of this front.
 - **What is not added.** Dynamic tags (`<Element>` from a variable): `{el(tag, children, attrs)}`
   in a hole is the form, and it is ordinary code. `.html` and `.svg` files as components: a
   comptime body cannot read a file (`language-gaps.md` lg2-o); the markup is pasted into a

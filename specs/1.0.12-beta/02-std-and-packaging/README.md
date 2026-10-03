@@ -22,7 +22,7 @@ The track owes two things:
 
 | Front | Priority | State | What | Depends on |
 |---|---|---|---|---|
-| [`97-std-dedupe/`](./97-std-dedupe/README.md) | high | partial: steps 0–5, 8–10 on feat; step 1 box 4, step 2 box 3, step 3 box 3, step 4 box 2, step 5 box 3, steps 6, 7, 11, 12 open | the shared primitives in std; the consumer rows; std on wasm group 3 (decision 230); the std bodies of decisions 259, 260, 262, 263 | `std-d` (step 6) · `01std-f` (step 7) · `24-g` confirmed |
+| [`97-std-dedupe/`](./97-std-dedupe/README.md) | high | partial: steps 0–5, 8–10 on feat; step 1 box 4, step 2 box 3, step 3 box 3, step 4 box 2, step 5 box 3, steps 6, 11, 12 open; step 7 → 20-snap | the shared primitives in std; the consumer rows; std on wasm group 3 (decision 230); the std bodies of decisions 259, 260, 262, 263 | `std-d` (step 6) · `24-g` confirmed |
 | [`98-packaging-tail/`](./98-packaging-tail/README.md) | medium | not started | `erika-test`'s first helper and `erika-linq`'s README; `scripts/check-packaging.sh`; `docs/botopink-json.md`; the manifest `subdir` field if lg2-v is answered (2) | every library track's `-test` and example-README steps · `95-f` · `lg2-v` |
 
 ## Order
@@ -55,13 +55,11 @@ Choices 1.0.10 implemented; the text is in
 |---|---|---|
 | 01std-a | a bundled library is loaded by the CLI and the LSP, not `expandStdImports` | — |
 | 01std-c | `routing.pattern`'s empty pattern matches only `/` | — |
-| 01std-d | the decorator registry keyed by module | — |
 | 01std-e | `actions.readEnvelope` refuses a `redirect` that disagrees with `n` | — |
 | std-a · std-b · std-c | `querystring` refuses by `Error`; `fs.exists` follows a link; decision 110's folder namespace is a rewrite | — |
 | 24-g | `std/async`'s started/unstarted surface (`allOf`, `all`, `race`, `runAll`, `raceOf`, `timeout`; `allSettled` gone) | 97 step 5 builds `RetryPolicy` on it |
 | ck2-e | a std decorator is reached through its module handle | — |
 | 95-a · 95-b · 95-c · 95-e | the relocation cuts; `rakun-app` inherits targets (amended by rakun's `["erlang"]`); `erika-test` exists; the qualified `from "rakun/request_context"` | — |
-| 95-d | the takeover's tag and orphan branch — the premise changed, see 95-f | 98 |
 | lg2-v | a subdirectory in a git dependency — recommendation (1), none ([`../decisions-pending.md`](../decisions-pending.md)) | 98 step 4 |
 
 ### 95-f · The onze takeover happened without the orphan branch and the archive — amend decision 79
@@ -79,20 +77,6 @@ Choices 1.0.10 implemented; the text is in
 > surface lives in std's `testing.mocks`; (2) buys nothing `git log` does not show and costs every
 > consumer a re-clone.
 > **Blocks.** 98 step 3.
-
-### 01std-f · std's own snapshot map — realise or retire
-
-> **Measured.** [`97-std-dedupe/test-snap.md`](./97-std-dedupe/test-snap.md) names ~40 `.snap`
-> files over `testing/asserts.bp`, `testing/snapshots.bp`, `testing/mocks.bp`, `escape.bp`,
-> `hash.bp`, `encoding.bp`, `path.bp`; four exist. Every message the map would pin is already a
-> literal in an inline test at the foot of the file (the `asserts.<fn>: <what>` strings through
-> `errorText`; the engine's `.new` behaviour by the `engine ----` tests), on both targets.
-> **Options.** (a) retire the map: the inline literals are the evidence, and a `.snap` of a std
-> message proves no contract another library reads; (b) realise it: ~40 files under
-> `libs/std/src/__snapshots__/`, re-recorded whenever a message changes, beside the same literal.
-> **Recommendation.** (a): realise a module-level snapshot only where it proves a contract another
-> library reads; none here does.
-> **Blocks.** 97 step 7.
 
 ### std-d · `io.process` signals and a TTY reader — add, or refuse the callers
 

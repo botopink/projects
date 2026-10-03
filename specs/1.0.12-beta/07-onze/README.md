@@ -17,12 +17,16 @@ member.
 |---|---|---|---|---|
 | [`49-onze-stand-up/`](./49-onze-stand-up/README.md) | **critical** | not started | `onze`, `onze-server`, `onze-test`'s root: std's Json accessors, query/headers, `serveActions`, the `log` sink, the public root (decision 201), the dynamic-mark bridge (decision 186), the `-test` group stubs | 102 step 3 (`types.bp`); jhonstart 26 step 4 · `04-rakun/17` (step 3); `04-rakun/65` step 1 (step 4); `04-rakun/22` step 4 (step 5); 49-e |
 | [`50-onze-cli/`](./50-onze-cli/README.md) | **high** | not started (step 7: the defaults record already drives `--help`) | `onze-cli`, `onze-bundler`, `examples/scaffold`: `dev`, `prerender/`, the signal, the defaults table, lazy starters, `assetPrefix`, `<Script>` callbacks | 102 step 3 (`scan.bp`, `chunk.bp`); 50-b; `std-d`; 71 step 2 (step 5); jhonstart 27 step 1 (step 6); 49 step 6 |
-| [`51-onze-image/`](./51-onze-image/README.md) | low | not started | `onze-assets`' image and font files, `onze-og`: single flight, the route, the § 16 prop table, the metrics generator, the OG defaults, the 2 % test | `04-rakun/22` (25, 66); 52-a; 53-b; 49 step 6 |
+| [`51-onze-image/`](./51-onze-image/README.md) | low | not started | `onze-assets`' image and font files, `onze-og`: single flight, the route, the § 16 prop table, the metrics generator, the OG defaults, the 2 % test | `04-rakun/22` (25, 66); 52-a; 49 step 6 |
 | [`71-onze-release-packaging/`](./71-onze-release-packaging/README.md) | medium | not started (step 6's snapshots on disk) | `onze-release`, `examples/static-site`: the ERTS copy, `bin/onze`, the shutdown over real cells, static export, the four gate boxes over a real release | 49 step 6; `04-rakun` 11 · 04 (62) · 81 (step 3); 50 · 53 (step 5) |
-| [`53-onze-example-app/`](./53-onze-example-app/README.md) | **high** — the proof of the whole stack; last | not started | `examples/blog/**`, `onze-test/src/e2e.bp`: the acceptance script's second half, the browser, the E2E runner | every front above; jhonstart 26 · 27 · 67; `04-rakun` 22 (24 · 25 · 60 · 66) · 12 · 65 |
+| [`53-onze-example-app/`](./53-onze-example-app/README.md) | **high** — the proof of the whole stack; last | not started | `examples/blog/**`: the acceptance script's second half, the browser (the E2E runner `onze-test/src/e2e.bp` is `20-snap` step 5's) | every front above; `20-snap` step 5; jhonstart 26 · 27 · 67; `04-rakun` 22 (24 · 25 · 60 · 66) · 12 · 65 |
 
 The "consume std" first steps of 49, 50 and 51 are unblocked (`97` is on `feat`), and so is 49
 step 3's half that needs the bundled `log` (`106` is on `feat`).
+
+Handed in by `01-compiler/129`: decision 218 (onze's `@/` alias goes; an application writes
+`import {lib.db.findPost};`) is not built — `50` step 9 (the bundler's `AliasMap`, the scaffold,
+`docs.md`) and `53` step 1 (the blog's `botopink.json`).
 
 ## Order
 
@@ -49,9 +53,8 @@ read-only against every other member and asserts what the four fronts land.
 
 ## Decisions
 
-Ids kept from 1.0.10 (`../1.0.10-beta/decisions-pending.md` § Track E); new questions continue
-each front's letter sequence; numbered decisions continue from the last one in
-`../decisions-taken.md`.
+Ids kept from 1.0.10 ([`../../1.0.10-beta/decisions-pending.md`](../../1.0.10-beta/decisions-pending.md) § Track E); new questions continue
+each front's letter sequence. Open: `50-b` (below), `std-d` (`02-std-and-packaging`), `snap-a`.
 
 ### To confirm
 
@@ -85,25 +88,5 @@ each front's letter sequence; numbered decisions continue from the last one in
 > optimisation once (a) is measured too slow on the blog.
 > **Blocks.** 50 step 2 (written for (a)); 53 step 6 ("`dev` serves every route").
 
-### 53-b · The onze module-level snapshot maps — realise or retire; the E2E runner stays
+The module-level snapshot maps of §§ 50 · 51 · 52 · 70 · 71 and 53's runner are [`decisions-pending.md`](../decisions-pending.md) `snap-a`, worked by [`20-snap`](../20-snap/README.md) step 5.
 
-> **Raised by:** front 53, from the maps copied as `50-onze-cli/test-snap.md` (§ 50),
-> `51-onze-image/test-snap.md` (§§ 51 · 52 · 70), `71-onze-release-packaging/test-snap.md` (§ 71)
-> and `53-onze-example-app/test-snap-examples.md`
-> **Facts.** §§ 49 · 68 · 69 are realised (the core's `describe*` suites, the bundler's 42 tests,
-> the assets' styling). The members of §§ 50–71 hold 24 `.snap` files, written through std's
-> `snapshots.assertAs` rather than the map's `onze-test` helpers: `onze-cli` 5 (`scan` 2,
-> `generate` 1, `create` 2), `onze-assets` 10 (`font` 4, `image` 3, `assets`, `css_module`,
-> `stylesheet` 1 each), `onze-og` 4, `onze-release` 5 (the `.rel` / `sys.config` / `vm.args` /
-> boot-script text, the Dockerfile, the build id, the shutdown, the static export). The rest of
-> each map is inline literals. What another library reads from these members is the client
-> manifest (§ 68, realised) and the release text, which `03-bundled-libs/107-release` must
-> reproduce byte for byte.
-> **Options.** (a) retire the unrealised rows of §§ 50 · 51 · 52 · 70 · 71: the 24 `.snap` and
-> the inline literals are the evidence; (b) realise every section through the `onze-test`
-> helpers (~120 `.snap`); (c) as (a), naming § 71's release snapshots as the one contract
-> another package keeps — already on disk.
-> **Recommendation.** (c). The E2E runner of `test-snap-examples.md` (`bootApp`, `request`,
-> `assertResponse`, `assertServeGate`) is not a snapshot map but the harness 53's acceptance
-> script runs on, and is written regardless (53 step 1).
-> **Blocks.** 71 step 6 (its last box); 50 step 8 and 51 step 7 (struck under (a)/(c)).

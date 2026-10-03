@@ -29,7 +29,7 @@ cut by file ownership so the fronts can run side by side.
 | [`16-formatter/`](./16-formatter/README.md) | medium | not started | C-13 step 3 (the `;` refused), the siblings' reformat, the one-line trailing lambda (165), a trailing comma decides (166, 243), the lambda annotation's printer arm | the library tracks' migrations · 01's parser rows · 16-a/16-b |
 | [`17-beam-memory/`](./17-beam-memory/README.md) | medium | partial: step 1 on feat but box 4; step 2 open | the per-row increment (17-b), the text handed to 07 | 17-b · 07 |
 | [`18-comptime-runtimes/`](./18-comptime-runtimes/README.md) | low | not started | the CI rows, the wat runtime's limits, the bench table, the transport test, `memory.grow` in the binary emitter | the maintainer · 14 · 05 |
-| [`23-std-purity/`](./23-std-purity/README.md) | low | not started | the import cells and LSP snapshots, four confirmations | 23-a/b/c, std-c |
+| [`23-std-purity/`](./23-std-purity/README.md) | low | not started | the import cells and LSP snapshots, three confirmations | 23-b/c, std-c |
 | [`24-effects-by-return/`](./24-effects-by-return/README.md) | medium | not started | the guide as one program, four confirmations, the per-item cost | rakun's `serverAction` · 24-a/b/c/g |
 | [`26-cli-tooling/`](./26-cli-tooling/README.md) | high | partial: steps 1, 2 (boxes 1–2), 3 (box 2), 4 (box 1), 5 on feat; 2 (box 3), 3, 4, 6, 7, 8 open | only a direct dependency importable (242), warnings in `build`/`test`, the LSP's import check | compiler-core's `ModuleOutput` · lg2-v · 23 |
 | [`129-import-without-from/`](./129-import-without-from/README.md) | high | done | `from` names a package (206) | — |
@@ -71,12 +71,12 @@ or, for the 1.0.10 confirmations, [1.0.10's](../../1.0.10-beta/decisions-pending
 - **134-a … 134-d** — `@print`'s arity, `with:`'s type, `@getContext`'s answer, `@is` by hand (134)
 - **C-14** — whether the `->` `case` arm leaves the language (07 step 9)
 - **16-a, 16-b** — C-12's argument list with its enclosing constructs; one element per line — to confirm (16)
-- **23-a, 23-b, 23-c, std-c** — to confirm (23) · **24-a, 24-b, 24-c, 24-g** — to confirm (24)
+- **23-b, 23-c, std-c** — to confirm (23) · **24-a, 24-b, 24-c, 24-g** — to confirm (24)
 - **01c-a, 01c-b** — the comptime module's atom; a section leaf's shorthand — to confirm (01) ·
   **0405-b** — commonJS prints `undefined` as `null` — to confirm (04)
-- two aliased imports of two same-named types (decision 170 makes them legal; the backends do not
-  tell types apart by module) — raised by 01, no id yet
-- **lg2-a … lg2-w** — the rakun sweep's language questions: none opens a front until answered; each
+- **imp-a** — two aliased imports of two same-named types (decision 170 makes them legal; the
+  backends do not tell types apart by module) (01)
+- **lg2-a … lg2-w** (`lg2-k` answered by 216) — the rakun sweep's language questions: none opens a front until answered; each
   opens a step in its front's README — 01 for lg2-a/e/f/q and the parser rows lg2-m/r/t, 14 for
   lg2-j/o/w, 26 for lg2-v. `lg2-l` may be answered de facto (`@panic` / `@todo` are `noreturn` and a
   branch ending in one narrows); the maintainer confirms and the row closes.

@@ -150,7 +150,7 @@ minified; a route's sheet under a threshold is inlined, otherwise linked.
 - `08-h` — the config file and the commands: (a) `onze.json` and `onze <command>` recommended.
   The whole front.
 - `08-e2` — which modes `"islands": {"props": …}` may name. Steps 1 and 3.
-- `islandKeyEnv` against decision 224 (§ Mechanism) — no id; the maintainer's to settle.
+- `ctr-a` — `islandKeyEnv` against decision 224 (§ Mechanism).
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `onze-cli`, `onze-bundler`, `onze`

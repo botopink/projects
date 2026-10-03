@@ -7,7 +7,7 @@ against a real release · **State:** not started (step 6's snapshots are on disk
 `81-rakun-packaging-release` (the sidecar-loading row, "a built erlang program cannot load its
 `.erl` sidecars" — the release boots only when it closes) · step 4: `04-rakun/22` carrying 60
 (static export reads its prerender) · step 5: `07-onze/50` (`build` wired) and `07-onze/53` (the
-blog complete) · maintainer `53-b` (step 6)
+blog complete)
 **Feeds:** `07-onze/50` step 5 (`start` calls `bin/onze`, after step 2) ·
 `03-bundled-libs/107-release` runs **after** this front (it extracts `otp.bp` / `docker.bp` /
 `spec.bp`'s renderers; the texts here are what it must reproduce)
@@ -46,9 +46,9 @@ secret inside.
 
 ## Done
 
-- Step 6 — the release texts (`.rel` / `sys.config` / `vm.args` / boot script), the Dockerfile,
-  the build id, the shutdown and the static export recorded as five `.snap` under
-  `modules/onze-release/test/__snapshots__/release/`, on both rows (53-b (c)); its open box below
+- Step 6, the recording — the release texts (`.rel` / `sys.config` / `vm.args` / boot script), the
+  Dockerfile, the build id, the shutdown and the static export are five `.snap` under
+  `modules/onze-release/test/__snapshots__/release/`, on both rows
 
 ## Open
 
@@ -99,15 +99,13 @@ environment (a container runtime present).
       environment provides `docker` or `podman`; `00-gate` decides how a missing runtime reads)
 - [ ] `scanForSecrets` over the real release finds only the `ONZE_PUBLIC_` table 68 inlined
 
-### Step 6 — the release snapshots as `107-release`'s contract (53-b (c))
+### Step 6 — the release snapshots as `107-release`'s contract
 
-- [ ] `03-bundled-libs/107-release`'s README names the five `release/*.snap` as the text it must
-      reproduce (a hand-off: 107's file)
+→ 20-snap (front 135) step 5
 
 ## Notes
 
-- Step 1 changes `package.bp` only; the Dockerfile text and its snapshot stay. The map of § 71
-  is [`test-snap.md`](./test-snap.md).
+- Step 1 changes `package.bp` only; the Dockerfile text and its snapshot stay.
 
 **Gate:** standard (fronts.md § Gate) +
 - [ ] `zig build test-libs` — `onze-release` 9+ on both rows; `static-site` green

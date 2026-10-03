@@ -3,8 +3,8 @@
 **Priority:** high, blocking — step 1's Redis double is what 12 and 09 assert against; `bootAndExit`
 is the CI gate every rakun application should run · **State:** not started
 **Depends on:** 128 · step 1: nothing else (decision 160) · steps 2–5: 15 step 1 (the registries on
-`rkOnReset`), 04 step 4 (the exit-code table) · 03r-am (steps 3–4) · step 6: 03r-ag
-**Group:** A (step 1) · C (steps 2–5) · step 6 on 03r-ag
+`rkOnReset`), 04 step 4 (the exit-code table) · 03r-am (steps 3–4)
+**Group:** A (step 1) · C (steps 2–5) · step 6 → 20-snap
 **Owns:** `modules/rakun-test/**` · `repository/rakun/AGENTS.md` § Test utilities · under 03r-am (a),
 by carve-out: `modules/rakun-messaging/src/broker_double.bp`,
 `modules/rakun-messaging/src/sidecars/rakun_messaging_double.erl`, `modules/rakun-scheduling/src/task_double.bp`
@@ -17,7 +17,7 @@ by carve-out: `modules/rakun-messaging/src/broker_double.bp`,
 `rakun-test` ships a RESP2 Redis double on a loopback port; `resetContext()` and `contextSnapshot()`
 cover the listener and task registries; a broker double drives a `#[listener]` with no broker
 configured; `bootAndExit` boots an application binding nothing and exits with a code; the `#[mock]`
-pairing and the example are current; the snapshot layer is settled by 03r-ag.
+pairing and the example are current; the snapshot layer is front 135's (`20-snap`, on `snap-a`).
 
 ## Mechanism
 
@@ -78,9 +78,9 @@ The double is test-only and ships no production path; no cell of this member is 
 - [ ] `mocks_pairing_test.bp` uses `testing.mocks`'s `#[mock]` with `#[bean]` if std's `#[mock]` fires outside `mocks.bp` in this milestone; otherwise the README states the hand-written pairing and the box stays open naming the std row
 - [ ] `examples/controller-test-example.bp` imports nothing `from "onze"`; it compiles against `rakun-test` + `testing.mocks`
 
-### Step 6 — The snapshot layer (RX-5, 03r-ag)
+### Step 6 — The snapshot layer (RX-5)
 
-- [ ] under (a): [`test-snap-helpers.md`](./test-snap-helpers.md) is deleted and `AGENTS.md` says the member ships no snapshot helpers; under (b) or (c): the helpers named in the answer are written one per subject with that file's rendering rules, and each front re-records its boxes as it lands
+→ 20-snap (front 135) step 2
 
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun-test`.
@@ -90,6 +90,5 @@ manifest edge (measured first). Step 4 adds fixtures under `test/fixtures/` only
 
 ## Notes
 
-- `test-snap-helpers.md` holds the snapshot-helper contract 03r-ag decides on; it goes with the answer.
 - `FakeRequest` hands handlers `toRequest()` until an implementer converts it to its behavior; not a
   box, recorded in `AGENTS.md`.

@@ -274,7 +274,7 @@ reconcile drops a workaround the examples still carry for one of them.
   `generateMetadata`'s head; the middleware's decision given a `Request` and a `Chain`; each page
   fn's `Element` given a `PageContext`. These catch vocabulary drift, without a server.
 - **The serving gate**: `examples/blog` builds, serves and renders its routes under both `onze
-  dev` and `onze build && onze start` — `gate_test.bp` (`assertServeGate`) and
+  dev` and `onze build && onze start` — `gate_test.bp` (the dev/start equality property) and
   `examples/blog/test/serve.sh`, which starts each, requests every route of the script and diffs
   against committed bodies with the content hashes masked. Erlang only: that is what serves.
 - **The client half**: structurally (the build emits a chunk, it holds `like_button` and not

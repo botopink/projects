@@ -1,14 +1,13 @@
 # Front 97 — std dedupe: one place for every shared primitive
 
 **Priority:** high — every library front's "consume std X" step is written against the surface this
-front lands · **State:** partial: steps 0–5, 8–10 on feat; the residue of steps 1–5, steps 6–7
-(conditional), 11 and 12 open
-**Depends on:** `std-d` (step 6) · `01std-f` (step 7) · `24-g` confirmed (step 5's surface) ·
+front lands · **State:** partial: steps 0–5, 8–10 on feat; the residue of steps 1–5, step 6
+(conditional), 11 and 12 open; step 7 → 20-snap
+**Depends on:** `std-d` (step 6) · `24-g` confirmed (step 5's surface) ·
 decision 230 (step 11) · decisions 259, 260, 262, 263 (step 12)
 **Owns:** `repository/botopink-lang/libs/std/src/**`, `libs/std/AGENTS.md`, `libs/std/test/**` ·
 the bundled libraries' consumer edits: `libs/actions/src/{envelope,rpc}.bp`,
-`libs/validation/src/binding.bp` · `libs/AGENTS.md` · `docs.md` § std where it lists the surface ·
-`libs/std/src/__snapshots__/**` (step 7 only)
+`libs/validation/src/binding.bp` · `libs/AGENTS.md` · `docs.md` § std where it lists the surface
 **Does not touch:** `repository/botopink-lang/modules/**` (the compiler — a new method on a primitive
 is declared in `libs/std/src/primitives.bp`; if a backend needs a lowering the front stops and
 reports it) · `libs/routing/**`, `libs/validation/src/schemas.bp` (`03-bundled-libs`) · any file under
@@ -88,16 +87,9 @@ the recommendation — onze 50's boxes take their (b) shape.
       targets with a child that prints on the signal; `readLine` answers a line without its newline
 - [ ] under (b): `libs/std/AGENTS.md` states that std has no signal or TTY surface and why
 
-### Step 7 — conditional on `01std-f`: std's snapshot map
+### Step 7 — std's snapshot map
 
-Under (b): write the ~40 `.snap` files of [`test-snap.md`](./test-snap.md) under
-`libs/std/src/__snapshots__/`, each produced by an inline test through `snapshots.assertAs`,
-recorded by renaming the `.new` (no flag). Under (a) — the recommendation — the four existing files
-stay and the map is retired.
-
-- [ ] under (b): every `.snap` the map names exists, identical on both targets; `botopink test`
-      in `libs/std` green with no `.new` left
-- [ ] under (a): `libs/std/AGENTS.md` § Tests says the inline literals are the evidence
+→ 20-snap (front 135) step 1
 
 ### Step 11 — std on wasm, group 3 (decision 230)
 

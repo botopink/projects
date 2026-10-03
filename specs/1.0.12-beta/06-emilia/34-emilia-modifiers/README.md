@@ -1,6 +1,6 @@
 # Front 34 — emilia source tail: std's hash, five families at upstream parity, the breakpoint refusal (carries 1.0.10's 40 · 42 · 43 · 44 · 45 · 54 · 56)
 
-**Priority:** high — step 2 moves output that every later snapshot (33 steps 3–4) would
+**Priority:** high — step 2 moves output that every later snapshot (`20-snap` step 4) would
 otherwise record twice · **State:** not started — opens now
 **Depends on:** `05emilia-l` confirmed (the rule step 2 applies) · `05emilia-n` (step 4).
 Nothing else: `hash.contentHash` exists in std; `08-bpp/118` step 1's bracket-attribute
@@ -10,7 +10,7 @@ carve-out is comments only in this member's files and step 1 rewords them here (
 named per step), `modules/emilia/AGENTS.md`, `docs.md`,
 `examples/emilia-{transitions,effects,outline-ring,transforms}/src/main.bp` · this directory
 **Does not touch:** `modules/emilia-test/**`, `examples/*/README.md`, `examples/emilia-card/**`,
-`modules/emilia/test/**` (33) · the other eleven examples' `src/main.bp` (none pins a moved
+`modules/emilia/test/**` (`20-snap`) · the other eleven examples' `src/main.bp` (none pins a moved
 family; if one does, the front reports it to 33 rather than editing) · `repository/jhonstart/**`
 (`html_attrs.bp` is 48's, closed) · `.gitignore`, the hooks, `.github/` (`00-gate`) ·
 `src/scoped.bp` and its test (`08-bpp/119` adds them beside this front and appends its line to

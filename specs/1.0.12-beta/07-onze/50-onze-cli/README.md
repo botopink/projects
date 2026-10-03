@@ -5,7 +5,7 @@ a new user runs first prints "not available yet" · **State:** not started (step
 record already drives `--help`)
 **Depends on:** `03-bundled-libs/102` step 3's `scan.bp` and `chunk.bp` commits, landed before
 this front opens (decision 188) · maintainer `50-b` (step 2), `std-d` (steps 4, 7), `50-a` as
-amended, `53-b` (step 8) · `07-onze/71` step 2 (`bin/onze`, step 5) · `05-jhonstart/27` step 1
+amended · `07-onze/71` step 2 (`bin/onze`, step 5) · `05-jhonstart/27` step 1
 (`applyTransition`, step 6 — 27 does not wait on this front, decision 189) · `07-onze/49` step 6
 (the `onze-test` group files)
 **Owns:** `repository/onze/modules/onze-cli/**`, `modules/onze-bundler/**`,
@@ -106,10 +106,24 @@ bundler read std's `Json` methods.
       (counts preserved in total)
 - [ ] `examples/scaffold/README.md` names `create`'s table and `NEXTJS-DOCS.md` § 29
 
-### Step 8 — conditional on `53-b` (b): record § 50 of the map
+### Step 8 — § 50 of the snapshot map
 
-Map: [`test-snap.md`](./test-snap.md). Under (a) or (c) — the recommendation — struck;
-`AGENTS.md` says the five `.snap` and the inline literals are the evidence.
+→ 20-snap (front 135) step 5
+
+### Step 9 — the `@/` alias goes (decision 218, handed by `01-compiler/129`)
+
+An application imports its own modules by path in braces (`import {lib.db.findPost};`, decision
+206); staging no longer resolves `from "@/…"`, which is `module-import-with-from` like any other.
+Today `onze-bundler`'s `AliasMap` resolves `@/…` (`graph.bp` `edgesOf` → `resolveAlias`,
+`rebuild.bp` `BundleSetup.aliases`), `src/fixture.bp` and `graph_test` / `rebuild_test` import
+through it, `examples/scaffold/botopink.json` declares `"alias"` and `docs.md` documents it.
+
+- [ ] `AliasMap` and `resolveAlias` are gone; the bundler's tests and `fixture.bp` import by path
+- [ ] `examples/scaffold/botopink.json` has no `"alias"` key; `docs.md` names the brace form, not
+      the alias (the blog's half is 53 step 1)
+- [ ] `grep -rn '"@/' repository/onze/modules repository/onze/examples/scaffold --include=*.bp` is empty
+- [ ] `onze-test`'s `assertAlias` (`src/core.bp`, its two `test/helpers_test.bp` cases and their
+      `.snap`) is deleted — 49's files, one carve-out commit
 
 ## Notes
 

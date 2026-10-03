@@ -45,7 +45,7 @@ members (no manifest).
 
 | Front | Owns | Adds to `jhonstart-test` |
 |---|---|---|
-| **26** | `modules/jhonstart/**` (the core, its tests, `src/AGENTS.md`), `modules/jhonstart-dom-test/**`, `docs.md`, `examples/*/README.md` (eight), and — step 7 only — every member's `test/__snapshots__/` | nothing new; `harness.bp` gains a recording `log` sink if step 4 needs it |
+| **26** | `modules/jhonstart/**` (the core, its tests, `src/AGENTS.md`), `modules/jhonstart-dom-test/**`, `docs.md`, `examples/*/README.md` (eight) | nothing new; `harness.bp` gains a recording `log` sink if step 4 needs it |
 | **27** | `modules/jhonstart-link/**` | `assert_link.bp` (`assertNavigation` over the driver's decision) |
 | **67** | `modules/jhonstart-forms/**` except `src/form.bp:117-121` (`03-bundled-libs/103-actions-id`), `examples/forms/src/**` and `test/**`, `modules/jhonstart-dom-test/test/forms_dom_test.bp` (new; `fake_dom.mjs` is 26's — 67 stops and reports if it needs a primitive it lacks) | `assert_form.bp` (`assertActionState` over a `-test` envelope); `harness.bp`'s `stubWireNames()` (step 4) |
 
@@ -60,7 +60,7 @@ landed and one at a time (`../fronts.md` § Execution order of tracks 03–08):
 | Member | Front | Files |
 |---|---|---|
 | `jhonstart-html` (until 26 step 0), then the core's `src/html.bp` | `08-bpp/118` (in `jhonstart-html`, before 26 step 0), then one lowering arm each from 119, 120, 126 (in the core) | `html.bp`, its tests |
-| `jhonstart` (core) | `08-bpp/118` before 26 opens; then 120, then 122; 116 | 118: `src/prelude.bp` (new, decision 266), the type `Children`, its step-1 bracket-attribute lines (comments only in the core) · 120: new `island_strategy.bp`, `deferred.bp`, lines of `client.bp`, `render.bp`, `island_runtime.mjs` · 122: new `response.bp`, lines of `server.bp`, `error_boundary.bp` · 116: new `bpp.bp`, `test/bpp_test.bp` |
+| `jhonstart` (core) | `08-bpp/118` before 26 opens; then 120, then 122; 116 | 118: `src/prelude.bp` (new, decision 266), the declaration of the node type `Node` (decision 223), its step-1 bracket-attribute lines (comments only in the core) · 120: new `island_strategy.bp`, `deferred.bp`, lines of `client.bp`, `render.bp`, `island_runtime.mjs` · 122: new `response.bp`, lines of `server.bp`, `error_boundary.bp` · 116: new `bpp.bp`, `test/bpp_test.bp` |
 | `jhonstart-link` | `08-bpp/126` (after 27) | new `transitions.bp`, `sidecars/transitions_runtime.mjs`, two call sites of `link_runtime.mjs` |
 | `jhonstart-forms` | `08-bpp/127` (after 67 and 103) | new `typed_call.bp` |
 | `jhonstart-emilia` | `08-bpp/119` | the whole member (`scopedStyle`, the sink) |
