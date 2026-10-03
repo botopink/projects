@@ -346,10 +346,13 @@ host: string)` is refused at `host`, as `fn lead(a: i32 = 1, b: i32)` is at `b`.
 step 9. `docs.md` and every library record with a leading default migrate by reordering the fields
 (a named construction keeps its call sites; a positional one is rewritten).
 
-- [ ] `reject/record_field_default_not_trailing`, `reject/variant_payload_default_not_trailing`,
-      `reject/method_param_default_not_trailing`; the free `fn`'s existing refusal kept
-- [ ] the fallout measured and migrated: `docs.md` (`check-docs`) and the libraries
-      (`test-libs`), counts here
+- [x] `reject/record_field_default_not_trailing`, `reject/variant_payload_default_not_trailing`,
+      `reject/method_param_default_not_trailing`, `reject/fn_param_default_not_trailing` (the free
+      `fn`'s refusal, pinned) — a field's is `field-default-trailing-only` (`parseFieldList`)
+- [x] the fallout measured (every `.bp` of the seven repositories parsed): no library or example
+      declares a leading default; four `tests/language` cells did and are reordered, `docs.md`'s
+      `Port` is `Port(host: string, number: i32 = 80)` (`test-docs` 100/0), and three unit fixtures
+      moved — one of them `format/tests/declarations.zig`, 16's file, the fixture line only
 
 ### Step 18 — numeric literal suffixes (decision 247)
 
