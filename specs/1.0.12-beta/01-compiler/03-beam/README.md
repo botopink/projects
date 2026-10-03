@@ -1,7 +1,7 @@
 # Front 03 — beam: the assembled target answers what erlang answers
 
 **Priority:** high · **State:** partial: steps 1–6 on feat (every lowering this front owns); step 1
-box 3 and step 2 box 1 wait on other fronts' cells; steps 7–8 open
+box 3 and step 2 box 1 wait on other fronts' cells; steps 7–9 open
 **Depends on:** `01-checker` step 13 (step 1) · `02-erlang` step 7 and `05-wasm` (step 2) ·
 `02-std-and-packaging` (step 7's private `math` bodies)
 **Owns:** `modules/compiler-core/src/codegen/beam_asm.zig` · `src/codegen/beam/**` except
@@ -67,6 +67,14 @@ assignments of every integer type, aborting as wasm's `int_chk` does.
 
 - [ ] the cells of `02-erlang` step 13 green on beam; `beam_export_audit.sh` green; beam snapshots
       move by the range test only
+
+### Step 9 — a lambda produced by a `case` arm (`language-gaps.md` row 28)
+
+The form parses and checks on every target (`test/case_arm_lambda_value`); on beam calling the
+lambda a `case` arm produced is `{badfun, ok}`.
+
+- [ ] a `run/` cell (the `test/` cell moved or mirrored) green on beam, printing what commonJS and
+      erlang print; row 28 of `language-gaps.md` deleted with it
 
 **Gate:** standard (fronts.md § Gate) + `scripts/beam_export_audit.sh` assembles every module before
 and after each step · every re-recorded RUN LOG verified by running (`erlc +from_asm` + `erl`)

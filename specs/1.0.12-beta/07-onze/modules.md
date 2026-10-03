@@ -39,7 +39,7 @@ Four fronts run together on disjoint files; the fifth is read-only against them.
 | **50** (carries 68) | `modules/onze-cli/**`, `modules/onze-bundler/**`, `examples/scaffold/**`, `modules/onze-test/src/{cli,bundler}.bp` | step 5 consumes 71's `bin/onze` |
 | **51** (carries 52 · 70) | `modules/onze-assets/**` (its `root.bp` and `botopink.json` included — the lowest-numbered front owning the member here; 69's items moved to 49, which touches only `onze-server`), `modules/onze-og/**`, `modules/onze-test/src/{assets,og}.bp` | the `/_onze/image` route's registration line in `onze-server/src/server.bp` is handed to 49 (one line, one commit, 49's) |
 | **71** | `modules/onze-release/**`, `examples/static-site/**` (new), `modules/onze-test/src/release.bp` | `onze-cli/src/{build,start}.bp`'s two lines (`includeErts` passed; `start` execs `bin/onze`) are 50 step 5's |
-| **53** | `examples/blog/**`, `modules/onze-test/src/e2e.bp`, `examples/blog/test/serve.sh` | read-only elsewhere; a needed change is reported to its owner |
+| **53** | `examples/blog/**`, `examples/blog/test/serve.sh` (`modules/onze-test/src/e2e.bp` is `20-snap` step 5's) | read-only elsewhere; a needed change is reported to its owner |
 
 Files a `03-bundled-libs` front owns for the duration of its landing, never edited at the same
 time: `onze/src/types.bp`'s segment classification, `onze-cli/src/scan.bp`'s segment walk, `onze-bundler/src/chunk.bp`'s segment read

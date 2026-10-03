@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**62 questions and 19 contradictions are open, and 90 implementation choices await confirmation.**
+**60 questions and 23 contradictions are open, and 90 implementation choices await confirmation.**
 A question is answered into [`decisions-taken.md`](./decisions-taken.md) under the next free number
 (kept there only); a lettered id is never renumbered or reused. Every recommendation is the most
 restrictive reading, with no configuration that bypasses it (decision 67). A front that meets a
@@ -382,6 +382,14 @@ until it is answered; the owning front lists the row under *Depends on*.
 - **Options.** (a) Still refused: the attributes are the form. (b) `{...p}` with `p` of the props type, explicit attributes overriding.
 - **Recommendation.** (a).
 - **Blocks.** 118 step 1.
+
+### Ownership
+
+#### own-a · Who owns the test runners (*proposed*)
+- **Measured.** `scripts/{gate.sh,test-libs.sh,lib/pool.sh}` (beyond 114's budget lines), `tests/language/run.sh` (beyond 12's report), `modules/test-shard/**`, `modules/lib-test-runner/**` and the meta `scripts/**` were owned by `25-gate-perf`, 113, 115 and 133, all closed (`fronts.md` § Ownership, open item).
+- **Options.** (a) `01-compiler/07-residuals`, which already holds 25's open step (the per-cell dependency compile). (b) `00-gate/114`, the gate's residue. (c) none: each front names a carve-out per commit.
+- **Recommendation.** (a): one owner, and the one that already holds the open runner work.
+- **Blocks.** Any front step that edits a runner (07-residuals step 12, 114 steps 5 and 7).
 
 ### 20-snap — the second test layer
 

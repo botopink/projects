@@ -1,7 +1,7 @@
 # Front 97 — std dedupe: one place for every shared primitive
 
 **Priority:** high — every library front's "consume std X" step is written against the surface this
-front lands · **State:** partial: steps 0–5, 8–10 on feat; the residue of steps 1–5, step 6
+front lands · **State:** partial: steps 0–5, 8–10 on feat; the residue of steps 1, 2 and 4, step 6
 (conditional), 11 and 12 open; step 7 → 20-snap
 **Depends on:** `std-d` (step 6) · `24-g` confirmed (step 5's surface) ·
 decision 230 (step 11) · decisions 259, 260, 262, 263 (step 12)
@@ -35,6 +35,7 @@ deleted by the front that owns its file.
 - Step 3 — `hash.pbkdf2Sha256` (decision 175) and `clock.parseDuration`
 - Step 4 — the snapshot engine on `io/fs` and `path`; `fs.removeTree` public
 - Step 5 — `async.RetryPolicy` / `nextDelay` / `retry` (decisions 170, 197)
+- Steps 3 and 5, the rakun rows — the copies are `04-rakun/README.md` § Hygiene items RX-10 · RX-11 · RX-12
 - Step 8 — the surface documented in `libs/std/AGENTS.md`, `docs.md` and `libs/AGENTS.md`
 - Step 9 — `Dict.ofEntries` (decision 174)
 - Step 10 — std's own residue: `Array.join` without `$stringify`, `Array.unique` keeps first
@@ -62,16 +63,6 @@ pace. `import {testing.snapshots}` is refused on wasm (STD-001 through `io/fs`).
       another type) — today it also finds `libs/validation/src/schemas.bp`'s private `itemsOf` /
       `membersOf` and `pub fn fieldOf(input, name) -> Json`, which `#[schema]`'s emitted code
       calls; `125-validation-zod` owns the file (its step 2 residue)
-
-### Step 3 and 5 residue — the rakun copies named as "consume std" rows
-
-`04-rakun` carries no row today for any of these (a grep over `04-rakun/` finds none).
-
-- [ ] the `04-rakun` track's `config.parseDuration` (`rakun/src/config.bp`) and `jwt.skewOf`
-      (`rakun-security/src/jwt.bp`) rows name `clock.parseDuration` as their replacement
-- [ ] the four rakun retry loops (`rakun-messaging/src/reliability/policy.bp`,
-      `rakun-tx/src/outbox.bp`, the mail sidecar, `rakun-scheduling/src/jobstore/scheduler.bp`) are
-      named as "consume std" rows of `async.RetryPolicy` / `retry` in the `04-rakun` track
 
 ### Step 4 residue — the engine under every `-test` member
 

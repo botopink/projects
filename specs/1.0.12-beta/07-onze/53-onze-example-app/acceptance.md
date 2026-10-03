@@ -42,7 +42,7 @@ look at.
 
 | File | Fronts | Proves |
 |---|---|---|
-| `botopink.json` | 49 · 50 | The alias map resolves: `@/components.post_card` reaches `components/post_card.bp` from four directories down |
+| `botopink.json` | 49 · 50 | No `alias` key (decision 218): `import {components.post_card.PostCard};` reaches `components/post_card.bp` from four directories down |
 | `onze.json` | 49 · 50 | `appDir`, `outDir`, `port` and `basePath` are read once and every command agrees on them |
 | `middleware.bp` | 07 · 62 · 65 | A request to `/dashboard` with no session cookie is redirected before any page renders; a request to `/images/hero.jpg` is not matched at all |
 | `content/posts/*.md` | — | Seed data, three posts, committed |

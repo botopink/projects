@@ -21,11 +21,6 @@
     "app/blog/mod.bp",
     "app/blog/[slug]/page.bpp"
   ],
-  "alias": {
-    "@/components": "components",
-    "@/layouts": "layouts",
-    "@/lib": "lib"
-  },
   "dependencies": {
     "jhonstart": { "path": "../../jhonstart/modules/jhonstart" },
     "onze": { "path": "../../onze/modules/onze" }

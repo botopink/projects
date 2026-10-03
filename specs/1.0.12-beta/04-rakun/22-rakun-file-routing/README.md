@@ -87,11 +87,12 @@ capability lands and `05-jhonstart/26` has the two markers; that part has no box
 
 - [ ] `botopink.json` gains no dependency; `ssr_test.bp`, `actions_test.bp`, `route_handler_test.bp` each assert one span (`render`, `action`, `handler`) with the route as an attribute, through the core's span test subscriber; with no subscriber nothing is emitted
 
-### Step 6 — Actions (R24-1, R24-2, RX-2)
+### Step 6 — Actions (R24-1, R24-2, RX-2, RX-13)
 
 - [ ] `actions_test.bp`: the literal `"refresh"` is `refreshValue()`; the envelope's `payload` is parsed by the bundled `actions`' contract-2 reader once jhonstart 30's reader is in `actions` — until then the cell asserts the pathname field by name and the box stays open naming 30
 - [ ] R24-1: `actions_build_test.bp` compares the registration record of a file carrying `pub val useServer = true;` with a decorated one field by field — written now against a hand-attached directive in `fixtures/`, so the box closes the day onze 50 attaches it
 - [ ] RX-2 (60, 61, 64, 66): the decorator-argument default re-measured in `segment_config_test.bp` and `i18n_test.bp`; the README records the result
+- [ ] RX-13: `actions_test.bp` and the `actions-cache` fixture spell no `__bp_action` / `X-Bp-Action` (onze's defaults, decision 114); `grep -rn '__bp_action\|X-Bp-Action' modules/rakun-app` empty
 
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun-app`; `examples/rakun-ssr` still builds.

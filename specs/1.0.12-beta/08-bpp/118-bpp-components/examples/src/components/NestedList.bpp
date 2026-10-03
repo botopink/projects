@@ -12,8 +12,8 @@
 //   </ul>
 //
 // `pub type Tree` is a declaration, so it is a type of the module, importable by
-// the page that builds the tree: `import {NestedList, Tree} from
-// "@/components.NestedList";`.
+// the page that builds the tree through the module's path, `components.NestedList`
+// (decisions 206, 218: no `@/` alias, no `from` for a module of the application).
 //
 // The `.bp` form, with its tests: `NestedList` in
 // `components-and-slots-example.bp`.

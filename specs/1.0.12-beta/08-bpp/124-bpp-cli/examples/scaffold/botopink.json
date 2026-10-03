@@ -8,11 +8,6 @@
   "bpp": "jhonstart",
   "files": ["root.bp", "content.bp", "app/mod.bp", "app/layout.bpp", "app/page.bpp", "app/not-found.bpp"],
   "targets": ["erlang", "commonJS"],
-  "alias": {
-    "@/components": "components",
-    "@/lib": "lib",
-    "@/content": "content"
-  },
   "dependencies": {
     "jhonstart": { "path": "../../../jhonstart/modules/jhonstart" },
     "emilia": { "path": "../../../emilia/modules/emilia" },

@@ -52,7 +52,7 @@ as strings handed in by onze; jhonstart names no rakun module.
 | `a` | actions, `[name, id]` |
 | `s` | emilia class names already in the server-emitted `<style>` — a render-plugin key (§ 6a), given by `jhonstart-emilia` |
 | `h` | open streaming holes |
-| `d` | dynamic flag — `true` only when the render read the query (`searchParams()`) or the request (`request()`, `cookies()`, `headers()`), a boundary's read included (26-b) |
+| `d` | dynamic flag — `true` only when the render read the query (`searchParams()`) or the request (`request()`, `cookies()`, `headers()`), a boundary's read included (26-b, answered by decision 186: the mark becomes compile-time at `05-jhonstart/26` step 8) |
 | `k` | route kinds — front 60 (static / dynamic / revalidate per pattern), joined on `pattern` |
 | `z` | slot states — front 61 (which `@slot` rendered for which pattern), joined on `pattern` |
 

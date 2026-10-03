@@ -73,6 +73,11 @@ The same shape for every track:
 | E onze | `onze-test` | `assertManifest(loc, m)` · `assertPayload(loc, p)` | `manifest` · `payload` | `formatManifest(m)` (contract 6) · the payload JSON (contract 2, `globals.payload`) |
 | the compiler, written in botopink | — | `assertJsSingle(loc, source)` | `js` | the JavaScript the source lowers to — the `.bp` twin of `codegen/tests/helpers.zig` `assertJsSingle` |
 
+The table shows the shape. Which helpers each library actually writes is `snap-a` (4) in
+[`../../decisions-pending.md`](../../decisions-pending.md), worked by [`20-snap`](../../20-snap/README.md):
+`emilia-test`'s `assertClassName` · `assertCss`, `rakun-test`'s `assertResponse`, and jhonstart's and
+onze's existing helpers.
+
 A helper never calls `readFile`/`writeFile` itself and never computes a path itself. If it needs a
 second snapshot per test it calls `assertNamedAs`.
 

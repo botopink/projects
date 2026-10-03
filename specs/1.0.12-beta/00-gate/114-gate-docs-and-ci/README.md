@@ -7,7 +7,8 @@
 meta `AGENTS.md` § CI · the snapshot-capture normalisation for windows · and, for the gate's
 residue now that 115, 132 and 133 are closed: `scripts/gate.sh`'s budget lines (`budget_cold`, the
 § budget comment), the vscode-extension workflow's Erlang install, the stale glibc comment in
-`repository/rakun/.github/workflows/test.yml`, and the cold-gate record in this README.
+`repository/rakun/.github/workflows/test.yml`, emilia's `test.yml` jhonstart checkout (step 8), and
+the cold-gate record in this README.
 **Does not touch:** `docs.md` prose (`../../01-compiler/07-residuals`) · `build.zig`
 (`../../01-compiler/26-cli-tooling`) · any library's hook or test step · `README.md`'s one fence.
 
@@ -95,6 +96,9 @@ figure is 9m31s, loaded).
 - [ ] `repository/rakun/.github/workflows/test.yml`'s header comment (glibc 2.38 pin, "ubuntu-22.04
       cannot start") rewritten: the pin is 2.35 since decision 219; the rows stay ubuntu-24.04 and
       macos-14 (no row change)
+- [ ] after `06-emilia/33` step 2 (emilia-card emilia-only): emilia's `.github/workflows/test.yml`
+      step "Checkout jhonstart (dependency — examples/emilia-card depends on jhonstart)" (`:94-99`)
+      and its comment (`:21`) are removed
 
 ## Handed out
 
@@ -108,5 +112,10 @@ figure is 9m31s, loaded).
 - `../../01-compiler/07-residuals` owns `docs.md`'s prose; this front touches fence and marker lines.
 - `../../01-compiler/18-comptime-runtimes`' "CI matrix run test.yml" is the same file: there is no
   windows row until step 3's measurement lands.
+
+### Step 9 — a red the gate can meet
+- [ ] `repository/rakun/modules/rakun-websocket/test/limits_test.bp:48` asserts a load-dependent cap:
+      it asserts a bound that holds on a loaded machine, or the cap is made deterministic; ten cold
+      runs of rakun's cells green on a loaded machine
 
 **Gate:** standard (fronts.md § Gate) + `zig build test-docs` green with `0 skipped`.

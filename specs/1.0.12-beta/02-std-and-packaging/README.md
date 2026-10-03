@@ -22,7 +22,7 @@ The track owes two things:
 
 | Front | Priority | State | What | Depends on |
 |---|---|---|---|---|
-| [`97-std-dedupe/`](./97-std-dedupe/README.md) | high | partial: steps 0–5, 8–10 on feat; step 1 box 4, step 2 box 3, step 3 box 3, step 4 box 2, step 5 box 3, steps 6, 11, 12 open; step 7 → 20-snap | the shared primitives in std; the consumer rows; std on wasm group 3 (decision 230); the std bodies of decisions 259, 260, 262, 263 | `std-d` (step 6) · `24-g` confirmed |
+| [`97-std-dedupe/`](./97-std-dedupe/README.md) | high | partial: steps 0–5, 8–10 on feat; step 1 box 4, step 2 box 3, step 4 box 2, steps 6, 11, 12 open; step 7 → 20-snap | the shared primitives in std; the consumer rows; std on wasm group 3 (decision 230); the std bodies of decisions 259, 260, 262, 263 | `std-d` (step 6) · `24-g` confirmed |
 | [`98-packaging-tail/`](./98-packaging-tail/README.md) | medium | not started | `erika-test`'s first helper and `erika-linq`'s README; `scripts/check-packaging.sh`; `docs/botopink-json.md`; the manifest `subdir` field if lg2-v is answered (2) | every library track's `-test` and example-README steps · `95-f` · `lg2-v` |
 
 ## Order
@@ -36,13 +36,6 @@ The track owes two things:
 
 97 runs alone because a std primitive landed after its consumers were rewritten is rewritten twice;
 98 is last because its acceptance is a grep over files other fronts write.
-
-## Not yet filed
-
-STD-11, two compiler rows found by std's own tests, are not rows of
-[`language-gaps.md`](../language-gaps.md) yet: `import {io.process}` shadows Node's global `process`
-in the commonJS test runner (`01-compiler/04-js`); a non-ASCII string literal reaches erlang as
-latin1, and a code point above U+00FF is `illegal character` (`01-compiler/02-erlang`).
 
 ## Decisions
 

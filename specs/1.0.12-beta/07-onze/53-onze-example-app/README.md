@@ -48,7 +48,10 @@ browser, through the E2E runner (`20-snap` step 5).
 
 ### Step 1 — the runner and the README
 
-→ 20-snap (front 135) step 5 (the runner)
+- [ ] the runner is five harness functions (`bootApp`, `stopApp`, `buildApp`, `request`, …) with no
+      snapshot writers; the blog E2E cases are asserts over `request(…)` and the dev/start gate an
+      equality property; one `helpers_test` case per harness function, erlang for `bootApp` /
+      `request` (the form `20-snap` § 9 evaluated)
 
 - [ ] `examples/blog/README.md` names `NEXTJS-DOCS.md`'s sections, the fronts, the four commands,
       and that `remotePatterns` is empty (51's sentence)

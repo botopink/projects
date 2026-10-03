@@ -206,7 +206,7 @@ grammar. None reaches a host cell.
 | `.partial()` · `.partial({ k: true })` | `#[partial("RecipePatch")]` — emits `RecipePatch` with every field `?T` | add · 5 | |
 | `.exactPartial()` | `#[partial]` with `#[present]` carried over | add · 5 | |
 | `.required()` | `#[required("RecipeFull")]` | add · 5 | emits the record with no `?` |
-| `z.deepPartial()` | — | gap | a decorator sees one declaration (`language-gaps.md` lg2-k); the nested types' partials must each be marked |
+| `z.deepPartial()` | — | gap | a decorator sees one declaration (`lg2-k` answered by 216: project reflection reaches declarations through `@TypeInfo.all`, 253); the nested types' partials must each be marked |
 | symbol keys | — | n/a | |
 | recursive objects (`get subcategories()`) | a field typed with the record itself | have | `parseCategory` calls itself by name; no getter trick is needed |
 | mutually recursive objects | two `#[schema]` records naming each other | have | by the name contract `parse<TypeName>` |

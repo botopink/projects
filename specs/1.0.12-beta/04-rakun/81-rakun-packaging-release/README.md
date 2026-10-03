@@ -57,6 +57,13 @@ open naming the runner's limit; a boot cell without an upgrade cell is not a ski
 - [ ] `bom-1.5.schema.json` checked in under `test/release/fixtures/`; `release_test.bp` walks the rendered SBOM against it (`required`, `type`, `enum`, local `$ref`) and passes; a fixture SBOM missing `bomFormat` fails the walk naming the path
 - [ ] R81-4 reworded to "`src/` renders every file; there is no `templates/`" and ticked
 
+### Step 4 — the release manifest's marker against `@TypeInfo.all` (decisions 216, 253)
+
+- [ ] `examples/release-manifest-example.bp` re-measured: if `@TypeInfo.all` builds the application
+      list, the marker, its Marker-index row and the `language-gaps.md` row go together
+      (`scripts/language-gap-markers.sh` exits 0); otherwise the row is narrowed to what is missing
+      (a package's module list or manifest) and the marker stays
+
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun-cli` (the `test/release/` files in the run).
 
@@ -66,7 +73,8 @@ member's suite.
 
 ## Notes
 
-- `examples/release-manifest-example.bp` is kept for its open marker (lg2-k: no comptime project
-  reflection — the application list stays a build-time walk).
+- `examples/release-manifest-example.bp` keeps its marker (**No comptime reflection over the
+  project**) until step 4: `lg2-k` is answered by 216 (4) and `@TypeInfo.all` (253) is on feat,
+  but it answers declarations, not a package's module list or manifest.
 - For a release, the toolchain row "a built erlang program cannot load its `.erl` sidecars" is this
   front's to close; the row's `botopink run` half is 73's re-measure.

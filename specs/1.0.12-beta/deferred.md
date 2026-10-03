@@ -75,6 +75,7 @@ Rows from the package restructure itself. The mocking surface is not deferred: i
 |---|---|---|---|---|
 | The `Request` / `MockMvc` double as a *shared* helper across libraries | 1.0.9's language-gaps "Unowned surface" | Front 19's, rakun-only; jhonstart and onze tests reach the server through `onze-test`, which depends on `rakun-test` ([`02-packaging/README.md`](../1.0.10-beta/02-packaging/README.md)) | Nothing | Never as a shared helper |
 | The Redis arm of `rakun-session`'s store suite against a real server | `rakun-session/test/store_test.bp` (its env-gated `RAKUN_TEST_REDIS_URL` cell is gone, decision gate-h) | A cell needing a service outside the process is not a gate cell, and no CI job provides Redis | `rakun-test`'s RESP2 double on a loopback port (`04-rakun/12` § the double, `19-rakun-test-utilities` step 1); the suite then runs its third arm against it | When `04-rakun/19` lands the double; the real-driver arm stays out unless a CI job provides the service (gate-h: no `--integration` flag without a job) |
+| A WebSocket broadcast across two BEAM nodes (`pg` over `erl` distribution) | `04-rakun/92-rakun-rsocket` step 1; `rakun-websocket/test/broadcast_test.bp` asserts the same-node broadcast only | The gate's cells run on one node; `00-gate/99` removed the peer start, and a cell that cannot run in the gate is not a gate cell (decision 160) | A CI job that runs two named nodes with a shared cookie | When such a job exists; until then the same-node `pg` cell is the evidence |
 
 ## Out of scope
 

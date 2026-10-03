@@ -1,7 +1,7 @@
 # Front 92 — RSocket: transports, TLS, channel, `#[messageMapping]`, dropped connections
 
-**Priority:** low — modest adoption, nothing depends on it · **State:** partial: step 1 box 1 on
-`feat` (`00-gate/99`); the rest open
+**Priority:** low — modest adoption, nothing depends on it · **State:** partial: step 1 on
+`feat` (`00-gate/99`; its record is a `deferred.md` row); steps 2–3 open
 **Depends on:** 128 (RSocket lives in `rakun-messaging` after it) · 15, landed (`botopink.json` and
 `src/root.bp` of the member are 15's; R92-1's edge, if taken, is one line there) · 74 (R92-2 reads
 the bundle registry; it waits for 74's hostname check before relying on `verify=full`) · 03r-an
@@ -43,13 +43,9 @@ Nothing is env-gated.
 
 ## Done
 
-- Step 1 box 1 — `rakun-websocket/test/broadcast_test.bp` asserts a same-node `pg` broadcast to two subscribers (`rakun_websocket.erl` `pg_broadcast/2`); no `skipped:` branch, no peer start (`00-gate/99`, decision 160)
+- Step 1 — `rakun-websocket/test/broadcast_test.bp` asserts a same-node `pg` broadcast to two subscribers (`rakun_websocket.erl` `pg_broadcast/2`); no `skipped:` branch, no peer start (`00-gate/99`, decision 160); the two-node broadcast is a `deferred.md` row
 
 ## Open
-
-### Step 1 — The broadcast record (decision 160)
-
-- [ ] one `deferred.md` row: the two-node broadcast over `erl` distribution (the cell the gate cannot run)
 
 ### Step 2 — Transports (R92-1, R92-2, R92-7)
 

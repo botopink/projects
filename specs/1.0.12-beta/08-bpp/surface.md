@@ -60,7 +60,7 @@ connected. Each row falls in one box:
 | `src/components/`, `src/layouts/`, `src/styles/` | free directories; layouts are `layout.bp` files in the route tree | have | — |
 | `public/` | `publicDir`, not registered yet — `/**` before the routes once rakun-web's miss falls through (decision 201) | wire | `07-onze/49` |
 | `src/content.config.ts` | not found | add · 121 | 121 |
-| import aliases | `alias` in `botopink.json` (`@/lib.db`) | have | — |
+| import aliases | a module of the application is imported by its path in braces (`import {lib.db.findPost};`, decisions 206, 218); onze's `alias` key and `@/` go (`07-onze/50` step 9) | have | — |
 
 ## 07 · Pages, 08 · Routing
 

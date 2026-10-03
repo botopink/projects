@@ -67,7 +67,7 @@ query is filled, rakun 23's `markDynamic("searchParams")` would make every page 
       them"
 - [ ] `__bp_action` and `X-Bp-Action` appear in onze's defaults and nowhere under
       `repository/rakun/` or `repository/jhonstart/` — closes when their owners drop the
-      literals (today: `rakun-app/test/actions_test.bp` and the `actions-cache` fixture;
+      literals (today: `rakun-app/test/actions_test.bp` and the `actions-cache` fixture, `04-rakun` RX-13 → 22;
       `jhonstart-forms/test/form_test.bp` and `examples/forms`, `05-jhonstart/67` step 4); onze's
       part is the grep
 

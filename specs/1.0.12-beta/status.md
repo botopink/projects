@@ -94,7 +94,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] rakun group A (W4–W5) — 04 (s1, the tag epoch, first) · 74 · 08 (s1 after 04 s4) · 15 · 79 · 81 · 93 · 73 · 19 s1 · 128 landed
 - [ ] rakun group B (W5–W7) — 13 (04 s1) · 12 (04 s1, 19 s1) · 22 (04 s5) · 17 (13 s2) · 11 (22) · 65 · 09 (19 s1, 13) · 91 (15) · 92 (74, 15) · the A step each names
 - [ ] rakun group C (W8) — 88 (81, 93, 92, 04 s4, 73) · 19 s2–5 (15 s1, 04 s4) · group B
-- [ ] rakun-websocket `test/limits_test.bp:48` — a load-dependent cap the gate can meet · no 04-rakun front carries it (unowned)
+- [ ] rakun-websocket `test/limits_test.bp:48` — a load-dependent cap the gate can meet · `00-gate/114` step 9
 
 ## L3 — ready to open now
 

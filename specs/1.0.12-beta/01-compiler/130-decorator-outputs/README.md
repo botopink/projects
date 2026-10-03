@@ -3,7 +3,7 @@
 **Priority:** high · **State:** partial: steps 1–4 on feat (decisions 216, 235, 248); step 5 at 34
 of 119 sites (plus `#[schema]`'s 5); step 6 not started
 **Depends on:** decisions 254 and 256 for rakun's DI (answered; 256's registry needs `01-checker`
-step 20) · the library tracks for their decorator files
+step 20) · the library tracks for their decorator files · `04-rakun/128` for the rakun rows (`03r-ao`)
 **Owns:** `repository/botopink-lang/modules/compiler-core/src/comptime/{reflection,assoc_types,typeinfo_all}.zig`
 and the decision-216 parts of `comptime.zig`, `comptime/{infer,env,decorator_eval,diagnostics,transform}.zig`,
 `comptime/runtime/prelude.zig`, `parser/exprs.zig` · `libs/std/src/builtins.d.bp`'s `Decl` surface and
@@ -56,11 +56,15 @@ importer; every library decorator uses them, and `@emit` is a named error.
 Each member is library-chosen naming (decision 174's note). Remaining at feat: `@emit(` in rakun 80
 lines, jhonstart 5, validation 5.
 
+The rakun rows are written against the post-128 paths (`04-rakun/README.md` § Order, `03r-ao` (a)):
+no 130 rakun commit is in flight while `04-rakun/128` is open; after it, each is a consumer commit
+under decision 188, never in a wave with the rakun front that owns the file.
+
 | File | Sites | Generated today | New form | Written against |
 |---|---|---|---|---|
 | rakun `rakun/src/{decorators,autoconfig,config,context}.bp`, `rakun-web/src/convention.bp`, `rakun-data/src/sql/transactional.bp`, `rakun-security/src/method_security.bp` | ~29 | `pub fn __rkMake_<T>()` (the singleton factory), `<T>Tx` / `<T>Sec` proxies built on it | member `T.make()`; the context filled at boot | decision 234 (`T.make()` + `rkResolve("<Field type>")`), 254 (the catalogue answers `Declared<unknown>[]`; `rkResolve<T>` narrows with `is fn() -> T`), 256 (the registry built at comptime at the entry point as one `Dict<string, unknown>`) |
 | same files + `lifecycle.bp`, `conditions.bp`, `rakun-data` `entity.bp` / `query.bp` | ~27 | `val __rkScan_<T>`, `__rkBean_`, `__rkLc_`, `__rkEv_`, `__rkImp_`, `__rkExit_`, `__rkAutoQ_`, `__rkCat_`, `__rkChk_`, `__rkEnable_`, `__rkEntityReg_`, `__rkQueryReg_` (load-time registration) | `@TypeInfo.all(…, member: "register")` at rakun's boot | 235, 234, 254 |
-| `rakun-web/src/convention.bp`, `rakun-app/src/{route_handler,actions}.bp`, `rakun-websocket`, `rakun-scheduling`, `rakun-messaging`, `rakun-cli`, `rakun-actuator-api`, `rakun/src/decorators.bp` routes | ~25 | `val __rkFilter_`/`__rkConverter_`/`__rkCustomizer_`/`__rkCors_`/`__rkAdvice_`/`__rkMiddleware_`/`__rkHandler_<VERB>_`/`__rkRoute_`/`__rkWs_`/`__rkSched_`/`__rkJob_`/`__rkCli_`/`__rkEp_`… | meta (`order`, `media`, `path`, `verb`) + `@TypeInfo.all` at the entry point | 235; 236 for `#[middleware]`'s gate; 234 |
+| `rakun-web/src/convention.bp`, `rakun-app/src/{route_handler,actions}.bp`, `rakun-websocket`, `rakun-scheduling`, `rakun-messaging`, `rakun-cli`, `rakun/src/actuator_api/**` (today `rakun-actuator-api`, moved by 128 step 1), `rakun/src/decorators.bp` routes | ~25 | `val __rkFilter_`/`__rkConverter_`/`__rkCustomizer_`/`__rkCors_`/`__rkAdvice_`/`__rkMiddleware_`/`__rkHandler_<VERB>_`/`__rkRoute_`/`__rkWs_`/`__rkSched_`/`__rkJob_`/`__rkCli_`/`__rkEp_`… | meta (`order`, `media`, `path`, `verb`) + `@TypeInfo.all` at the entry point | 235; 236 for `#[middleware]`'s gate; 234 |
 | `rakun-client/src/exchange.bp` | 2 | `pub type Http<T>` + `pub fn http<T>()` | `T.Http` + a factory member | held: a behavior's member called from another module fails (below) |
 | jhonstart `routes.bp` | 5 | `val __jhPage_X = jhPage(seg, …)` (+ layout/template/default), `pub fn <X>Params(route)` | meta `seg` + `@TypeInfo.all(with: page)` | 235; 236 (`paramsOf(@typeInfo(BlogPost).meta.page.seg, route)` once by hand); the readers are onze's generated entry points and jhonstart's tests |
 | validation `#[schema]` (`libs/validation/src/decorators.bp`) | 5 | `pub fn parse<T>At`, `parse<T>`, `decode<T>`, `schemaOf<T>` + helpers | members `T.parseAt/parse/decode/schema` | nothing — next; `decode` passes `parse<T>At` as a value, which is an unbound variable on erlang (below), so it wraps it in a lambda |

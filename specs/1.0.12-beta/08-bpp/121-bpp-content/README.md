@@ -113,8 +113,8 @@ A reference between collections is a marker on a string field — `#[reference("
 string` — and `sync` checks that every id exists, after every collection has loaded.
 
 **A Markdown page.** `app/about/page.md` is a page (117 step 1). Its frontmatter may name a
-layout by module path — `layout: "@/layouts.post"` — a component taking
-`(frontmatter: Json, headings: Array<Heading>, children: Children)`; the scan stages a page
+layout by module path — `layout: "layouts.post"` (no `@/`, decision 218) — a component taking
+`(frontmatter: Json, headings: Array<Heading>, children: Node)`; the scan stages a page
 module that reads the file, renders it and calls the layout. With no `layout`, the document is
 rendered inside the directory's layout chain like any page.
 

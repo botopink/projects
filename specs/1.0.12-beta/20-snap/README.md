@@ -1,10 +1,10 @@
 # Front 135 — snap: the second test layer, re-evaluated case by case
 
-**Priority:** low — last, except step 5's runner, which `07-onze/53` steps 2–6 run on · **State:** evaluated; no step started
-**Depends on:** `snap-a` ([`decisions-pending.md`](../decisions-pending.md)) · step 4: `06-emilia/34` landed (it moves the output the helpers record) · step 5's runner: before `07-onze/53` steps 2–6, which run on it
+**Priority:** low — last · **State:** evaluated; no step started
+**Depends on:** `snap-a` ([`decisions-pending.md`](../decisions-pending.md)) · step 4: `06-emilia/34` landed (it moves the output the helpers record)
 **Owns:** the snapshot steps every other front used to carry — `02-std-and-packaging/97` step 7 ·
 `04-rakun/19` step 6 · `05-jhonstart/26` step 7 · `06-emilia/33` steps 1, 3, 4 (the helper and
-suite parts) · `07-onze/50` step 8 · `51` step 7 · `53` step 1's runner · `71` step 6 · the
+suite parts) · `07-onze/50` step 8 · `51` step 7 · `71` step 6 · the
 helpers named below in `emilia-test`, `rakun-test`, onze's harness
 **Does not touch:** any test or `.snap` that exists today — they are evidence and change only with
 their test
@@ -52,9 +52,7 @@ are not expected values (finding 4).
 
 ### Step 5 — onze (on `snap-a`)
 - [ ] onze-release: the release tree as a path table in `package_test.bp` (§ 8, CONVERT)
-- [ ] onze 53's runner is the five harness functions, no snapshot writers; the 14 blog E2E cases
-      as asserts over `request(…)`, the dev/start gate as an equality property (§ 9); one
-      `helpers_test` case per harness function, erlang for `bootApp` / `request`
+- [ ] onze 53's runner: written by `07-onze/53` step 1 in the plain form § 9 gives (no snapshot writers)
 - [ ] `repository/onze/AGENTS.md`: the inline literals and the existing `__snapshots__/` (onze-cli
       5, onze-assets 10, onze-og 4, onze-release 5) are the evidence of §§ 50 · 51 · 52 · 70 · 71
       (50 step 8, 51 step 7)

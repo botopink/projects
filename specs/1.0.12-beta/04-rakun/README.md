@@ -14,8 +14,8 @@ hard assertion: no env-gated, skipped or "cannot be demonstrated" cell stays (de
 other front works on the tree it leaves, and **every path in this track's READMEs is a post-128
 path** (§ Where a merged member's front works).
 
-**State:** on `feat`: 13 step 4 (the RX-8 row) and 92 step 1's first box (the same-node broadcast,
-landed by `00-gate/99`). Nothing else. 128 has not started; it waits on the rakun consumer commits
+**State:** on `feat`: 13 step 4 (the RX-8 row) and 92 step 1 (the same-node broadcast,
+landed by `00-gate/99`; the two-node run is a `deferred.md` row). Nothing else. 128 has not started; it waits on the rakun consumer commits
 of `03-bundled-libs` 102 step 3 and 103 step 2, which have not landed. Several open steps are
 already partly true in the code (74, 15, 81, 12, 65, 73); each front says which.
 
@@ -41,7 +41,7 @@ already partly true in the code (74, 15, 81, 12, 65, 73); each front says which.
 | [`65`](./65-rakun-url-rules/README.md) | high | not started (rule 2 of decision 201 in code) | `rakun-web` (not `tls.bp`) · one line of `rakun-data/src/devtools/devtools.bp` | B | 128 · decision 201 |
 | [`09`](./09-rakun-data-nosql/README.md) | low | not started | `rakun-data/src/nosql/**` | B | 19 step 1 · 13 · 03r-ab · lg2-a |
 | [`91`](./91-rakun-pulsar/README.md) | low | not started | `rakun-messaging/src/pulsar/**` (→ `rakun-pulsar` under 03r-ad (a)/(b)) | B | 15 · 03r-ad · lg2-a |
-| [`92`](./92-rakun-rsocket/README.md) | low | partial: step 1 box 1 on `feat` | `rakun-messaging/src/rsocket/**` | B | 74 · 15 · 03r-an · lg2-a |
+| [`92`](./92-rakun-rsocket/README.md) | low | partial: step 1 on `feat` | `rakun-messaging/src/rsocket/**` | B | 74 · 15 · 03r-an · lg2-a |
 | [`88`](./88-rakun-cli/README.md) | medium | not started | `rakun-cli` (not `release/**`) | C | 81 · 93 · 92 · 04 step 4 · 73's re-measure · lg2-j · onze 50 |
 
 **critical** blocks another track (128 blocks every rakun front; 22 blocks onze 49/53 and jhonstart
@@ -150,7 +150,8 @@ A cell is a hard assertion or it does not exist (decision 160):
 | Cell | Front | Stance |
 |---|---|---|
 | `rakun-session`'s store suite, Redis arm | 12 | absent: `00-gate/99` deleted the env-gated cell (`deferred.md` row "The Redis arm of `rakun-session`'s store suite"); 12 re-adds it against 19's RESP double, and the row keeps only the real-server run |
-| `rakun-websocket/test/broadcast_test.bp`, the two-node broadcast | 92 | done: a same-node `pg` broadcast to two subscribers, no `skipped:`; 92 owes the `deferred.md` row for the two-node run |
+| `rakun-websocket/test/broadcast_test.bp`, the two-node broadcast | 92 | done: a same-node `pg` broadcast to two subscribers, no `skipped:`; the two-node run is a `deferred.md` row |
+| `rakun-websocket/test/limits_test.bp:48`, the outbound-queue cap | **unowned** (`rakun-websocket` has no open front; handed by `00-gate`) | load-dependent today — a queue of 51 against a cap of 50 under load, 27 / 0 idle: a red the gate can meet. The cap is enforced in the websocket runtime, or the test's bound is what the runtime guarantees; the coordinator names the front |
 | 15's three integration suites | 15 | never written: the in-process broker (03r-k) is the gate arm for every messaging cell; real drivers are `deferred.md` rows under the toolchain row "a sidecar cannot reach an external OTP application" |
 | 09's six opt-in suites | 09 | four arms in the gate (ETS, Mnesia, Redis on the double, Elasticsearch on an HTTP double); the four binary-protocol stores are boot refusals naming lg2-a (03r-ab) |
 | 83's Kafka producer transaction | 15 | 83's outbox path enrols in 86's existing producer transaction (`reliability/transaction.bp` `withProducerTransaction`, `read_committed` hold/drop); the real broker is a `deferred.md` row (03r-al) |
@@ -287,6 +288,10 @@ transport: R92-1's two boxes and the `ws://` / `wss://` arms of R92-7 deleted, T
 | RX-5 | the snapshot layer | `20-snap` step 2 (`snap-a`) |
 | RX-6 | the seven example projects | 73 (03r-af) |
 | RX-7 | `modules.md` vs the tree | 128 (the nine merges) · 91 (03r-ad) |
+| RX-10 | "consume std" (`02-std-and-packaging/97` § Consumers): `config.parseDuration` (`rakun/src/config.bp`) and `jwt.skewOf` (`rakun-security/src/jwt.bp`) → `clock.parseDuration` (one unit, digits only — not ISO `PT…`); number parsers answering a `@Result` (`rakun-metrics/src/registry.bp`, `rakun-scheduling/src/cron.bp`, `rakun/src/config.bp`) → `parseInt` / `parseFloat`; `Json` accessors (`jwt.bp`, `rakun/src/autoconfig_registry.bp`) → the `Json` methods; `rakun_security.erl`'s `pbkdf2` → `hash.pbkdf2Sha256` (salt as text, decision 175) | 04 (`config.bp`, `autoconfig_registry.bp`) · 79 (`jwt.bp`, `rakun_security.erl`) · 17 (`rakun-metrics`) · 15 (`cron.bp`) |
+| RX-11 | "consume std": the four retry loops → `async.RetryPolicy` / `retry` — `rakun-messaging/src/reliability/policy.bp` (its own `RetryPolicy` / `nextDelay`, decision 170; mind 97's residual 4), the outbox (`rakun-tx/src/outbox.bp`, `rakun-data/src/tx/` after 128), `rakun-scheduling/src/jobstore/scheduler.bp`, the `rakun-mail` sidecar | 15 (the first three) · `rakun-mail`: **unowned** (no open front) |
+| RX-12 | "consume std": constant-time equality (`rakun/src/request_context.bp`) → `hash.equalsConstantTime`; `sha256` (`rakun-ws/src/ws.bp`, `rakun-client/src/ws/` after 128) → `hash.sha256`; `xmlEscape` (`config.bp`) → `escape.attribute`; `cron.rkFormatUtc`, the logger's `rkLogIso` → `clock.formatIso8601` | 04 · 93 · 15 · 17 |
+| RX-13 | the onze wire names `__bp_action` / `X-Bp-Action` spelled as literals in rakun's tests (`rakun-app/test/actions_test.bp`, `rakun-app/test/fixtures/actions-cache/test/actions_cache_test.bp.fixture`) — decision 114: neither library spells onze's defaults; `07-onze/49` step 2's last box closes when they are gone | 22 |
 
 RX-3 (decisions 113–117's rakun halves), RX-8 (the `record ↔ Json` row, 13 step 4) and RX-9 (READMEs
 state current state) are done.
