@@ -6,7 +6,7 @@ continues from [1.0.10-beta's record](../1.0.10-beta/decisions-taken.md), which 
 other decisions and are used, not free) — a number is never reused or renumbered across
 milestones. Questions are raised in [`decisions-pending.md`](./decisions-pending.md) with a lettered
 id (`07-a`, `03r-y`, `lg2-a` …) and move here with the next free number when answered. **The next
-free number is 246.**
+free number is 247.**
 
 **Inherited by reference, not copied.** The earlier records stay where they are; these standing
 principles govern this milestone and are cited by number throughout:
@@ -146,3 +146,4 @@ maintainer can reverse any of them:
 | 243 | 16-d (scope) — does decision 166's trailing comma reach call arguments and tuples | **(a) every delimited list** (the maintainer): a trailing `,` keeps the list open, one item per line — generics, parameters, patterns, imports, types, arrays, record fields, enum bodies, call arguments and tuples alike; without it, the width rules (`16-a` / `16-b`) decide. A one-step pipeline has no comma and stays horizontal. Extends decision 166. Front `01-compiler/16-formatter` step 6. |
 | 244 | ck2-c — a leading default | **(c) a default is trailing everywhere** (the maintainer: "fn, record — default parameters must always be declared at the end"): a parameter or field with a default may only be followed by others with defaults, in a free `fn`, a method, a record type's fields and a variant's payload alike — `type Port(number: i32 = 80, host: string)` is refused like `fn lead(a: i32 = 1, b: i32)` already is (`fn-param-default-trailing-only`, extended to records). Reverses the record's exemption; `docs.md` and every library record with a leading default migrate (reorder the fields; named construction keeps call sites valid). Front `01-compiler/01-checker`. |
 | 245 | — | **Withdrawn — recorded in error.** The maintainer's "like Kotlin" referred to numeric literal suffixes (`ck3-a`), not to defaults; decision 244 stands as written (a default is trailing everywhere). The number stays used. |
+| 246 | gate-t — which libraries a `test-libs` cell's result-store key contains | **(a) every library of the roots, in every key** (the maintainer, confirming what 133 step 3 built): one byte changed in any library re-runs every `test-libs` cell; a key never trusts a manifest's dependency closure while nothing enforces that a test reads only its own closure (two tests that walked `..` were found and fixed on 2026-10-02). Narrowing it to the closure (option (b)) needs that enforcement first. Front `00-gate/133-gate-speed` step 3. |
