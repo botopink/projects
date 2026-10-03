@@ -1,6 +1,6 @@
 # Status — 1.0.11-beta
 
-**Updated:** 2026-10-02 · **Progress:** ~14 % landed (12 of 83 fronts done — the ten `00-gate`
+**Updated:** 2026-10-02 · **Progress:** ~14 % landed (12 of 84 fronts done — the ten `00-gate`
 fronts in § Done, on the remote `feat` under the green cold gate with no open box; 8 are in analysis and
 count for their ticked steps; the milestone opened at 1.0.10-beta's close — [`closure.md`](../1.0.10-beta/closure.md))
 
@@ -43,6 +43,7 @@ the grep stage before any test.
 
 ## In analysis
 
+- [ ] `01-compiler/134-builtins-declared` — high · decision 252 · inventory of every builtin and its declaration in `builtins.d.bp`; `@typeInfo`'s waits on its catalogue's name and `dec-e`
 - [ ] `00-gate/133-gate-speed` — high · decision 229 · step 1 measured (the erl busy-wait the biggest sink) and step 2 landed (busy-wait off, fewer VMs per cell): the cold gate 12m16s → 7m48s on a loaded machine, every cell byte-identical · step 3 (the cell-result store, keyed by full content) next; the idle-machine runs after it
 - [ ] `00-gate/114-gate-docs-and-ci` — on the remote `feat` under the green cold gate of `0041d38c`, meta checks 4 and 5 green; waits on botopink-lang's CI green (test-web wasm32, `test-libs.sh` under macOS bash 3.2 — fixed on an unlanded branch)
 - [ ] `01-compiler/130-decorator-outputs` — steps 1–4 built (the four places); decisions 235 (`@typeInfo.all(with: [a, b])`) and 248 (one builtin, `@typeInfo`) built; step 5 at 34 of 119 sites (std `#[mocks.mock]`, validation `#[validated]`, jhonstart `#[client]`, rakun-data `#[entity]`/`#[entityRepository]`/`#[belongsTo]`/`#[query]` members, rakun-cache `#[cached]`, rakun-hateoas `#[halResource]`) with a type's members closed (`unknown-associated-fn`); rakun's DI onto the context (234) held on `dec-e` (the boot's `@typeInfo.all` over types whose `make()` differ cannot be typed); next, jhonstart's routes with onze's entry points (236), validation's `#[schema]` (5); rakun-client's `#[httpExchange]` held on a behavior's member reaching an importer
