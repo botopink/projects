@@ -365,6 +365,52 @@ decision's audit; the targets' representation of `i64` / `u64` / `f32` is the ba
 
 - [ ] not started — the `language-gaps.md` row "`f32` has no literal" closes with it
 
+### Step 19 — a type application before a member (decision 255 (1))
+
+`Dict<string, unknown>.empty()`: a type's name (an upper-case first letter) with explicit type
+arguments followed by `.` or `(` is a type application — decision 8 §1.3 extended from a constructor
+call to a type's member; elsewhere `<` is a comparison (Kotlin's rule). The list goes to the chain's
+first link (`receiverTypeArgs` on the call or the `identAccess`); the checker binds the type's
+parameters in a variant's type or an inherent fn's signature (`applyReceiverTypeArgs`), and reads only
+a unit variant without a call.
+
+- [x] `run/type_application_static_member` on four targets — `Dict<string, unknown>.empty()`,
+      `Box<i32>.make(7)`, `Opt<string>.None`, `Opt<i32>.Some(3)`, and `a < b`, `x < y && z > w`,
+      `both(a < b, y > x)` staying comparisons
+- [x] `reject/type_application_{argument_mismatch,argument_count,variant_payload_mismatch,on_a_field}`
+      — each refused by the parent binary as `unexpected ','` or a comparison
+- [x] `botopink format` prints the form back, a broken chain keeping `<…>` on its root's line, and a
+      method's own `<…>` (`ctx.resolve<Repo>()`, dropped before) — `parser/tests/decision255.zig`;
+      `format.zig` (16's file) gained `typeArgsDoc`, the one arm this form needs
+- [x] `docs.md` § Generics names the form (`test-docs` green)
+- Not built: a type application through a module namespace (`collections.Dict<K, V>.empty()` — the
+  head is a value's name, so the list is a comparison there)
+
+### Step 20 — `comptime <expr>` (decision 255 (2))
+
+`comptime <expr>` is `comptime { break <expr>; }`. Measured at the base: the shorthand already
+parsed (at a statement's start, `prec.equality`) and the checker, the evaluator (`eval.zig`) and the
+comptime gate (`validateComptime`) read it as they read the block — the decision's own line
+`val d: Dict<string, unknown> = comptime Dict.empty();` checks and runs inside a body. A parser
+desugar to the block was built and withdrawn: the comptime transform specialises and unrolls on the
+`comptimeExpr` node (`transform.zig`), so it moved eleven codegen snapshots across the four backend
+directories and made wasm refuse three unrolled fixtures. Two findings, neither this front's to
+change: a module-level `comptime` refuses any call for both spellings (`validateComptime`, "'call' is
+a runtime identifier") — question `ck4-a` in `decisions-pending.md`; and a `comptime` in a body is
+not evaluated at compile time at all, it lowers as the run-time expression.
+
+- [x] `run/comptime_expression_is_block` (module level and in a body) and
+      `run/comptime_expression_static_call` (the decision's line beside its block) on commonJS, erlang
+      and beam; wasm lowers no comptime construct in a body (`.wasm.expect`, `05-wasm`'s row) — both
+      pin the equivalence (green on the parent binary)
+- [x] `reject/comptime_expression_type_mismatch` — the expression's type is the form's, located at
+      `comptime` as the block's is
+- [x] `botopink format` prints `comptime <expr>` back as written (`parser/tests/decision255.zig`)
+- Found, not this front's: a module-level `comptime` `val` declared after an import is dropped on
+  commonJS (`ReferenceError: short is not defined`) and refused on wasm — `import {collections.Dict}
+  from "std"; val short = comptime 2 + 3;` — the `ct_<i>` entries of `comptime.zig`'s
+  `evaluateComptime` against the backends' reading (14's / 04's)
+
 ## Gate
 
 - [x] `zig build test` from a **cold** runtime cache, green, in this front's worktree
