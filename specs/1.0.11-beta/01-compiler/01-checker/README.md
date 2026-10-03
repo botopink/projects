@@ -396,8 +396,8 @@ desugar to the block was built and withdrawn: the comptime transform specialises
 `comptimeExpr` node (`transform.zig`), so it moved eleven codegen snapshots across the four backend
 directories and made wasm refuse three unrolled fixtures. Two findings, neither this front's to
 change: a module-level `comptime` refuses any call for both spellings (`validateComptime`, "'call' is
-a runtime identifier") — question `ck4-a` in `decisions-pending.md`; and a `comptime` in a body is
-not evaluated at compile time at all, it lowers as the run-time expression.
+a runtime identifier"); and a `comptime` in a body is not evaluated at compile time at all, it lowers
+as the run-time expression. Decision 266 settles both: step 21.
 
 - [x] `run/comptime_expression_is_block` (module level and in a body) and
       `run/comptime_expression_static_call` (the decision's line beside its block) on commonJS, erlang
@@ -410,6 +410,21 @@ not evaluated at compile time at all, it lowers as the run-time expression.
   commonJS (`ReferenceError: short is not defined`) and refused on wasm — `import {collections.Dict}
   from "std"; val short = comptime 2 + 3;` — the `ct_<i>` entries of `comptime.zig`'s
   `evaluateComptime` against the backends' reading (14's / 04's)
+
+### Step 21 — a `comptime` is evaluated at compile time everywhere (decision 266)
+
+`comptime <expr>` and its block form run on the comptime runtime at module level and in a body; a
+call is evaluated there, and the value is lifted into the emitted program — a literal as a literal,
+a record or a collection as the construction each backend emits. A value with no emitted
+construction (a function, a resource) is a located refusal.
+
+- [ ] `validateComptime` admits a call the comptime runtime can run, at module level and in a body
+- [ ] a body's `comptime` is folded at build — `val a = comptime two();` emits `2`, never `two()`
+- [ ] a record and a collection are lifted: `val d: Dict<string, unknown> = comptime Dict.empty();`
+      builds at compile time on commonJS, erlang, beam and wasm (`run/comptime_expression_static_call`
+      loses its `.wasm.expect`)
+- [ ] `reject/comptime_value_not_liftable` — a function value out of a `comptime`, located at it
+- [ ] the module-level `comptime` `val` after an import (step 20's finding) emitted on every target
 
 ## Gate
 

@@ -1,13 +1,14 @@
 # Decisions the maintainer owes — 1.0.11-beta
 
-**These questions are open** — `lg2-a…w`, `02e-a` (raised by `01-compiler/02-erlang`), `05w-c…f` (raised by `01-compiler/05-wasm` step 5), `05w-g` (raised by `00-gate` on `macos-14`) and `17-b`, `17-c` (raised by `01-compiler/17-beam-memory`), `134-a…d` (raised by `01-compiler/134-builtins-declared`); `ck2-c` was answered (decision 244); the `lg2-*` rows are carried verbatim below from 1.0.10-beta's
-
-**Twenty-seven questions are open** — `ck2-c`, `lg2-a…w`, `02e-a` (raised by `01-compiler/02-erlang`), `dec-e` (raised by `01-compiler/130-decorator-outputs` step 5) and `gw-a` (raised by `front/gate-wasm-wrong-answers`); the first twenty-four carried verbatim below from 1.0.10-beta's
+**These questions are open** — `lg2-a…w`, `17-b`, `17-c` (raised by `01-compiler/17-beam-memory`) and
+`134-a…d` (raised by `01-compiler/134-builtins-declared`); `ck4-a` (decision 266), `gw-a` (264),
+`02e-a` (240) and `05w-a…g` (238, 241, 259–263) were answered. The `lg2-*` rows are carried verbatim
+below from 1.0.10-beta's
 § Open with their ids unchanged (`ck-host`, `lg-a`, `lg-b` and this milestone's `01c-e` were answered:
 decisions 146–149). Every `lg2-*` row of [`language-gaps.md`](./language-gaps.md) is a
 feature the language does not have; the recommendation is always the most restrictive reading
 (decision 67) — the feature stays out and the row's nearest form is the design — and no front opens
-on one until it is answered. **The next free decision number is 266** ([`decisions-taken.md`](./decisions-taken.md)).
+on one until it is answered. **The next free decision number is 267** ([`decisions-taken.md`](./decisions-taken.md)).
 
 Beside the open questions, every track carries **implementation choices awaiting confirmation** —
 a choice a front made, recommended and implemented, that the maintainer confirms or reverses. The
@@ -331,79 +332,6 @@ row's nearest form is the design — and the cost of that reading is named where
 > **Blocks.** The row; front 16 (`#[scheduled]`) and every decorator that would reuse std.
 
 
-### 02e-a · The unit of a string index on wasm
-
-> **Raised by:** `01-compiler/02-erlang` step 6 (the `run/string_index_of_codepoints` cell, four
-> targets) and step 5 (`.length()` of a non-ASCII string).
-> **Measured.** Decision 169 fixed codepoints on erlang (beam agrees) and kept UTF-16 units on
-> commonJS; it says nothing of wasm. On wasm every string index counts **bytes**: for
-> `val s = "a—bXc";` (an em dash, three bytes) `s.length()` is `7`, `s.indexOf("X")` is `5`,
-> `s.at(5)` is `X` — and `s.at(1)` / `s.slice(1, 2)` hand out the dash's first byte alone, a
-> string that is not UTF-8 (erlang: `5`, `3`, `X`, `—`, `—`). No front owns the row: `05-wasm`'s
-> README has no string-unit row, and `02-erlang` step 5's "bytes, 05's row" points at nothing.
-> **Options.**
-> (a) codepoints on wasm, as on erlang and beam — `length`, `at`, `slice`, `indexOf`,
-> `lastIndexOf` walk UTF-8 sequences; the cell's `.out` is one file for four targets:
-> ```botopink
-> val s = "a—bXc";
-> @print(s.indexOf("X"));      // 3 on commonJS, erlang, beam, wasm
-> @print(s.at(1));             // — everywhere
-> ```
-> (b) bytes on wasm, documented as wasm's unit beside commonJS's UTF-16 — the four functions
-> agree with each other, but `at` / `slice` may split a character:
-> ```botopink
-> @print(s.indexOf("X"));      // 3 on erlang/beam/commonJS, 5 on wasm
-> @print(s.at(1));             // — on erlang, one invalid byte on wasm
-> ```
-> and the cell prints `s.at(s.indexOf("X"))` only (`X` everywhere), the index itself left out;
-> (c) bytes on wasm, and `at` / `slice` refused at run time (a trap) when an index lands inside a
-> character.
-> **Recommendation.** (a) — decision 169's own reason ("one unit for every string index … so an
-> index can be handed back to `at`") read onto the fourth target; (b) keeps a string that is not
-> UTF-8 reachable from safe code, and (c) makes an index's validity depend on the text.
-> **Blocks.** `02-erlang` step 6's cell on four targets (until then it cannot be written: wasm
-> accepts the program, so no `.targets` may leave it out); the `05-wasm` row it would open.
-
-
-### gw-a · What an integer that leaves its type is
-
-> **Raised by:** `front/gate-wasm-wrong-answers` (the wasm wrong-answer sweep; `wat/AGENTS.md`
-> § Numbers).
-> **Measured.** No document says what `i32` / `i64` arithmetic does past the type's range, and the
-> four targets answer four ways for `val big: i32 = 2147483647; @print(big + 1)`: commonJS
-> `2147483648` (a JS number, never wrapped; an `i64` past `2^53` loses digits —
-> `9223372036854775807` prints `9223372036854776000`), erlang and beam `2147483648` (bignums: an
-> `i64` never overflows either), wasm `-2147483648` (two's complement) — a wrong value at exit 0.
-> The sweep made wasm **trap** on an `i32` / `i64` `+`, `-`, `*` (and a negation, a `+=`) whose
-> result leaves the type (`int_chk`), the one choice that is not a wrong number with exit 0; the
-> other targets still answer the wide value, so the four disagree by an abort rather than a value.
-> **Options.**
-> (a) overflow is a program error on every target — commonJS and erlang check the result against
-> the declared type's range and raise, as wasm traps now:
-> ```botopink
-> val big: i32 = 2147483647;
-> @print(big + 1);   // aborts on commonJS, erlang, beam, wasm
-> val w: i64 = 4611686018427387904;
-> @print(w * 2);     // aborts everywhere (2^63 is not an i64)
-> ```
-> (b) integers wrap at their width on every target — commonJS `(a + b) | 0` (and a `BigInt.asIntN`
-> path for `i64`), erlang/beam a `band` and sign fold, wasm its native ops (the checks dropped):
-> ```botopink
-> @print(big + 1);   // -2147483648 everywhere
-> ```
-> (c) integers are unbounded (the declared width is advisory) — erlang's answer; commonJS needs
-> `BigInt` for every `i64`, and wasm cannot hold the result in a word, so it keeps trapping there:
-> ```botopink
-> @print(big + 1);   // 2147483648 on commonJS, erlang, beam; wasm aborts
-> ```
-> **Recommendation.** (a) — the most restrictive reading (decision 67): the value the program
-> asked for does not exist in its declared type, so no target invents one; it is what wasm does
-> now, and the checks on commonJS / erlang are a range test per operation. (b) makes `+` disagree
-> with arithmetic every user expects; (c) leaves wasm permanently divergent.
-> **Blocks.** A four-target cell for integer overflow (today only `tests/wat.zig`'s RUN LOG pins
-> wasm's trap); `01-compiler/04-js` and `02-erlang` / `03-beam`'s range checks under (a).
-
-
 ### 134-a · `@print`, `@println` and `@debug` take any number of arguments
 
 > **Raised by:** `01-compiler/134-builtins-declared` step 2 (decision 252).
@@ -489,40 +417,3 @@ row's nearest form is the design — and the cost of that reading is named where
 > **Recommendation.** (a) — `is` is an operator; a call form nobody writes and that tests nothing
 > is the loosest reading.
 > **Blocks.** The last undeclared builtin-call row of step 1.
-
-### ck4-a · What `comptime <expr>` evaluates, and where a call may appear in it
-
-> **Raised by:** `01-compiler/01-checker` step 20 (decision 255 (2)).
-> **Measured.** The shorthand parsed before the decision and the checker types it as its block form.
-> Its meaning is two things today, neither of which is "evaluated at compile time" for the
-> decision's own line: (1) at **module level**, `validateComptime` admits literals, arithmetic,
-> comparisons, `if`, `break` and the block's own locals — any call is refused,
-> `val d: Dict<string, unknown> = comptime Dict.empty();` is "'call' is a runtime identifier", for
-> both spellings; (2) **in a body**, nothing is evaluated: `val a = comptime two();` lowers as
-> `const a = two();` (commonJS) and runs at run time, and wasm lowers no comptime construct there.
-> **Options.**
-> (a) the most restrictive: `comptime` means compile time everywhere — a body's `comptime` goes
-> through the same gate and fold as a module-level one, so a call is refused in both:
-> ```botopink
-> fn main() {
->     val n = comptime 3 * 4;                // folded to 12 at build
->     val d = comptime Dict.empty();         // error: 'call' is a runtime identifier
-> }
-> ```
-> (b) a call to a pure function is evaluated at build (the comptime runtime runs it) and its value
-> lifted when the value has a literal form on every target (a number, a string, a bool, an array of
-> them); a record value (`Dict`) stays refused until it has one:
-> ```botopink
-> fn two() -> i32 { return 2; }
-> val a = comptime two();                    // folded to 2
-> val d = comptime Dict.empty();             // error: a `Dict` has no literal form
-> ```
-> (c) the decision's line works: a record value is lifted too (each backend emits the record's
-> construction), at module level and in a body:
-> ```botopink
-> val d: Dict<string, unknown> = comptime Dict.empty();   // built at compile time
-> ```
-> **Recommendation.** (a) — a `comptime` that runs at run time is a promise the compiler does not
-> keep; refusing the call in a body is the strict reading, and (b)/(c) can extend it later. It reds
-> any library body that writes `comptime` around a call (to be counted before it lands).
-> **Blocks.** The meaning half of decision 255 (2); a body's `comptime` on wasm (`05-wasm`).
