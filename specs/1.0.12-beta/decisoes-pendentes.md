@@ -1,7 +1,7 @@
 # Decisões pendentes — 1.0.12-beta (só o que está em aberto, por ordem de importância)
 
 Atualizado em 2026-10-03. Só o que ainda espera resposta sua: o que já foi respondido está em
-`specs/1.0.12-beta/decisions-taken.md` (decisões 144–274; próximo número livre: **275**) e saiu daqui.
+`specs/1.0.12-beta/decisions-taken.md` (decisões 144–275; próximo número livre: **276**) e saiu daqui.
 Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 234–236 (injeção do rakun,
 `@TypeInfo.all` com lista, decorador de função), 237 (captura do template pelo texto), 238–243
 (`@External.Wasm`, `$stringify`, codepoints no wasm, células sem WASI, dependência direta, vírgula final),
@@ -9,7 +9,7 @@ Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 2
 minúsculos; a 209 revertida), 248 (um builtin só, `@typeInfo`), 249 (o compilador separado por backend na
 chave do cache), 250 (`io.random.bool()` removido), 252 (todo builtin declarado), 253 (`@TypeInfo.all`),
 254 (o catálogo responde `unknown`; `is fn() -> T`), 255 (`Tipo<…>.membro` e `comptime <expr>`), 256 (o
-registro de beans em comptime no ponto de entrada), 257 (`Schema<T>` na `validation`), 258 (`--lib` múltiplo), 259–263 (`pow` da glibc, `contentHash` por code point, heap do wasm crescendo, `String.fromCodepoint`, `std/math` igual em todo sistema), 264 (estouro de inteiro é erro em todo target), 265 (orçamento do gate frio em 7m30s nesta versão; os 5 min ficam para a próxima), 266 (`comptime` avaliado em compilação em todo lugar, registro içado), 267 (parâmetro variádico `..values: T[]`; `@print` declarado com ele), 268 (tipo builtin `Decorator` no `with:` do `@TypeInfo.all`), 269 (`@getContext(T)` é hook, chamado atrás de `use`), 270 (o prelúdio do `.bpp`: o `src/prelude.bp` do pacote, só imports do próprio pacote, importado só quando usado; o cabeçalho vence), 271 (`ctr-a`: não existe `islandKeyEnv`; a chave da island é sempre `ONZE_KEY`; as chaves da 124 são `trailingSlash`, `redirects`, `markdown`, `islands`), 272 (`08-e2` e `ctr-b`: os modos das props da server island são só `"sealed"`, o padrão, ou `"server"` — nenhum expõe as props), 273 (`ctr-c`: um route handler nunca é exportado no build; `app/rss.xml/route.bp` é servido a cada request — a 222 fica inteira), 274 (`03r-ad` e `ctr-d`: o Pulsar não vira membro — fica em `rakun-messaging/src/pulsar/`; o plano de dados é recusado no boot e adiado). A 245 e a 251 foram registradas cedo demais e retiradas.
+registro de beans em comptime no ponto de entrada), 257 (`Schema<T>` na `validation`), 258 (`--lib` múltiplo), 259–263 (`pow` da glibc, `contentHash` por code point, heap do wasm crescendo, `String.fromCodepoint`, `std/math` igual em todo sistema), 264 (estouro de inteiro é erro em todo target), 265 (orçamento do gate frio em 7m30s nesta versão; os 5 min ficam para a próxima), 266 (`comptime` avaliado em compilação em todo lugar, registro içado), 267 (parâmetro variádico `..values: T[]`; `@print` declarado com ele), 268 (tipo builtin `Decorator` no `with:` do `@TypeInfo.all`), 269 (`@getContext(T)` é hook, chamado atrás de `use`), 270 (o prelúdio do `.bpp`: o `src/prelude.bp` do pacote, só imports do próprio pacote, importado só quando usado; o cabeçalho vence), 271 (`ctr-a`: não existe `islandKeyEnv`; a chave da island é sempre `ONZE_KEY`; as chaves da 124 são `trailingSlash`, `redirects`, `markdown`, `islands`), 272 (`08-e2` e `ctr-b`: os modos das props da server island são só `"sealed"`, o padrão, ou `"server"` — nenhum expõe as props), 273 (`ctr-c`: um route handler nunca é exportado no build; `app/rss.xml/route.bp` é servido a cada request — a 222 fica inteira), 274 (`03r-ad` e `ctr-d`: o Pulsar não vira membro — fica em `rakun-messaging/src/pulsar/`; o plano de dados é recusado no boot e adiado), 275 (`bpp-f` e `ctr-e`: o `.bpp` devolve o `R` do `@ExprCustom<R>` que o `html` declara — no jhonstart, sempre `@Component<ElementBase, Element>`, com ou sem `use`/`await`). A 245 e a 251 foram registradas cedo demais e retiradas.
 
 > **Numeração.** O prelúdio do `.bpp` tinha sido registrado como 266 no commit `84aa028`, sem saber
 > que 266–269 já existiam no seu registro local. Na 1.0.12 ele é a **270**; as 266–269 estão em
@@ -78,55 +78,6 @@ Ordem, do que mais destrava para o que menos:
 
 Pares de regras que não valem juntas, ou uma decisão posterior que mudou outra sem dizer. O texto das
 decisões ficou como foi gravado; a escolha é sua. Marque a recomendação ou escreva a sua.
-
-### ctr-e · O `-> Element` das 199 e 213 × decisões 113 e 198
-
-**Contexto.** Um arquivo `.bpp` (componente no formato do Astro: cabeçalho entre `---`, depois o markup)
-é desdobrado pela ferramenta numa função `.bp`. As decisões 199 e 213 escrevem o retorno dessa função
-como `-> Element`. Só que `Element` é um tipo do jhonstart, e a 198 (com a 113) diz que a ferramenta
-usa a função default do pacote nomeado em `"bpp"` sem nomear biblioteca nenhuma — ela não pode escrever
-`Element` por conta própria. Pior: a 199 deixa o cabeçalho chamar `use`/`await`, e no jhonstart uma
-função assim precisa devolver `-> @Component<ElementBase, Element>` (é o que `routes.bp` exige de
-página e layout). Quem responde é a `bpp-f` (Parte 2).
-
-**Hoje:**
-```bp
-// components/card.bpp
----
-type Props(id: string)
-val post = use loadPost(props.id);          // hook no cabeçalho (199)
----
-<article>{post.title}</article>
-
-// desdobramento como a 199/213 escrevem
-pub default fn card(props: Props) -> Element {      // `Element`: nome do jhonstart; com `use`, recusado
-    val post = use loadPost(props.id);
-    return html """<article>{post.title}</article>""";
-}
-```
-
-- [ ] **(a)** Responder a `bpp-f` com (b): o retorno é o `R` do `@ExprCustom<R>` que a função default
-  declara (`html(…) -> @ExprCustom<Element>`), embrulhado pela regra de efeitos por retorno
-  (`01-compiler/24`) quando o cabeçalho tem `use`/`await`; o `-> Element` das 199/213 é lido como a
-  instância do jhonstart dessa regra.
-  ```bp
-  pub default fn card(props: Props) -> Element { … }                             // sem hook: R
-  pub default fn card(props: Props) -> @Component<ElementBase, Element> { … }    // com `use`: o embrulho
-  ```
-- [ ] **(b)** Ler 199/213 ao pé da letra: a ferramenta escreve sempre `-> Element` — passa a conhecer o
-  jhonstart (emenda a 113 e a 198), e um cabeçalho com hook não compila.
-  ```bp
-  pub default fn card(props: Props) -> Element {
-      val post = use loadPost(props.id);     // error: `use` needs a @Component return
-  ```
-- [ ] **(c)** Responder a `bpp-f` com (a): retorno = `R` do `@ExprCustom<R>`, e cabeçalho com
-  `use`/`await` é recusado na linha (estreita a 199).
-  ```text
-  components/card.bpp:3: error: a .bpp header cannot `use` a hook (the unfolded function answers R)
-  ```
-
-**Recomendação: (a).** Mantém os hooks da 199, e todo nome sai da assinatura da função default ou da
-linguagem — a ferramenta continua sem nomear biblioteca. **Bloqueia:** 116 passo 2.
 
 ### ctr-f · Decisões 198 e 199 × decisão 213
 
@@ -883,55 +834,6 @@ modules/test-shard/**, modules/lib-test-runner/** (idem)                 fechada
 
 **Recomendação: (a)** — um dono só, o que já segura o trabalho aberto. **Bloqueia:** 07-residuals passo
 12; 114 passos 5 e 7.
-
-### bpp-f · O tipo de retorno da função em que um `.bpp` se desdobra
-
-**Contexto.** Um arquivo `.bpp` (template estilo Astro: cabeçalho entre `---` e marcação embaixo) é
-reescrito pela ferramenta numa função `.bp`. Hoje a reescrita escreve `-> Element`, que é um nome do
-jhonstart — e a ferramenta não pode escrever nome de biblioteca nenhuma (113, 198); a 270 traz o nome
-para o escopo pelo prelúdio, não a anotação (`ctr-e`). O pacote de teste do 116 responde o tamanho do
-literal (`i32`), então o retorno não pode ser fixo. E um cabeçalho com `await` ou `use` (199) precisa
-hoje de `-> @Component<ElementBase, Element>`, não de `-> Element`.
-
-**Hoje:**
-```bpp
----
-val post = use loadPost(props.id);     // hook no cabeçalho
----
-<article>{post.title}</article>
-```
-```bp
-// o que a reescrita escreve hoje:
-pub default fn post(props: Props) -> Element { … }     // `Element` é do jhonstart; com `use` nem tipa:
-                                                       // precisaria de -> @Component<ElementBase, Element>
-```
-
-- [ ] **(a)** O retorno é o `R` do `@ExprCustom<R>` declarado pela função default do pacote; cabeçalho
-  com `await` ou `use` é recusado na linha (estreita a 199).
-  ```bp
-  // o pacote declara a função default com @ExprCustom<Element>; no pacote de teste do 116, @ExprCustom<i32>
-  pub default fn card(props: Props) -> Element { … }     // R copiado da assinatura
-  // post.bpp, linha 2: error: `use` no cabeçalho de um .bpp não é permitido
-  ```
-- [ ] **(b)** Como (a), e o embrulho segue as instruções do cabeçalho pela regra de efeitos por retorno
-  (`01-compiler/24`): sem `await`/`use` → `-> R`; com → o embrulho que a regra mandar (o passo 0 do 116
-  mede).
-  ```bp
-  pub default fn card(props: Props) -> Element { … }                          // sem await/use
-  pub default fn post(props: Props) -> @Component<ElementBase, Element> { … } // com use: embrulho da regra
-  ```
-- [ ] **(c)** O cabeçalho escreve o retorno numa linha `-> T` antes do `---` de fechamento — quem
-  escreve o `.bpp` passa a conhecer o tipo do framework.
-  ```bpp
-  ---
-  val post = use loadPost(props.id);
-  -> @Component<ElementBase, Element>
-  ---
-  <article>{post.title}</article>
-  ```
-
-**Recomendação: (b)** — mantém os hooks da 199, e todo nome vem da assinatura da função default ou da
-linguagem. **Bloqueia:** 116 passo 2.
 
 ### bpp-g · Como um `page.bpp` recebe `route: PageContext` e os `params`
 

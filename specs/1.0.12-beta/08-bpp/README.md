@@ -66,7 +66,7 @@ All eleven **not started**.
 | [`122-bpp-data/`](./122-bpp-data/README.md) | medium | not started | `Astro` global mapped; holes: page-side status/headers, `rewrite`, `site` | `05-jhonstart/26` · `07-onze/49` · `03-bundled-libs/102` · 118 · 120 |
 | [`123-bpp-middleware/`](./123-bpp-middleware/README.md) | medium | not started | `locals`, `sequence`, response rewritten after `next`, `actionContext` | `04-rakun/04` · `04-rakun/65` |
 | [`126-bpp-view-transitions/`](./126-bpp-view-transitions/README.md) | low | not started | `transition:name` / `animate` / `persist`, `navigate`, five lifecycle events, route announcer | `05-jhonstart/27` · 118 · 120 |
-| [`116-bpp-file-format/`](./116-bpp-file-format/README.md) | medium | not started | `.bpp` kind: `"bpp": "jhonstart"` in the app manifest; header between two `---` is botopink, rest the `html` literal; the package's prelude | 118 · `05-jhonstart/26` step 0 · `01-compiler/26` · `01-compiler`'s prelude scope · `bpp-f` (step 2) · `bpp-g` (step 6) |
+| [`116-bpp-file-format/`](./116-bpp-file-format/README.md) | medium | not started | `.bpp` kind: `"bpp": "jhonstart"` in the app manifest; header between two `---` is botopink, rest the `html` literal; the package's prelude | 118 · `05-jhonstart/26` step 0 · `01-compiler/26` · `01-compiler`'s prelude scope · `bpp-g` (step 6) |
 | [`124-bpp-cli/`](./124-bpp-cli/README.md) | high — last | not started · blocked by `08-h` | `onze sync`, `onze create-key`, config keys, component `<script>` bundling, built style sheet, `.bpp` scaffold | `08-h` · `07-onze/50`, `71` · every other front · `07-onze/53` (step 5) |
 
 ## Order
@@ -159,11 +159,10 @@ No relative imports: same package `import {components.card.Card};`, a package `i
 
 ## Decisions the maintainer owes
 
-Open: `08-d`, `08-f`, `08-h` (below) and `08-j`, `bpp-f`, `bpp-g`, `props-d`, `props-e`,
-`props-f` ([`../decisions-pending.md`](../decisions-pending.md)); contradictions `ctr-e`, `ctr-f`, `ctr-g`, `ctr-t` (116).
+Open: `08-d`, `08-f`, `08-h` (below) and `08-j`, `bpp-g`, `props-d`, `props-e`,
+`props-f` ([`../decisions-pending.md`](../decisions-pending.md)); contradictions `ctr-f`, `ctr-g`, `ctr-t` (116).
 
 - `08-j` — how rakun's `local()` carries jhonstart's `#[serverOnly]`. Blocks 123 step 1's third box.
-- `bpp-f` — return type of the unfolded function (`-> Element` vs a header that `await`s/`use`s). Blocks 116 step 2.
 - `bpp-g` — how a `page.bpp` gets `route: PageContext` and `params`. Blocks 116 step 6, 117 step 1.
 - `props-d` · `props-e` · `props-f` — native tag attributes, named slot, spread on a component. Block 118 steps 1, 4.
 

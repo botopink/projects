@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**62 questions and 19 contradictions are open, and 97 implementation choices await confirmation.**
+**61 questions and 18 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274.
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 ## Open questions
@@ -338,12 +338,6 @@ owning front lists the row under *Depends on*.
 - **Recommendation.** (a): one marker, and no library names another.
 - **Blocks.** 123 step 1's third box; any rakun request-time read a page reaches.
 
-#### bpp-f · The return type of the function a `.bpp` file unfolds to
-- **Measured.** The unfold writes `-> Element`, a jhonstart name the toolchain cannot spell (113, 198); 270 brings the name into scope, not the annotation (`ctr-e`). 116 step 2's fixture package answers the literal's length (`i32`). A header statement that `await`s or calls a hook with `use` (199) needs `-> @Component<ElementBase, Element>` today.
-- **Options.** (a) Return type = the `R` of the default function's declared `@ExprCustom<R>`; a header with `await` or `use` refused at that line (narrows 199). (b) As (a), and the wrapper follows the header's statements under the effects-by-return rule (01-compiler/24): no `await` / `use` → `-> R`, otherwise the wrapper that rule names (116 step 0 measures it). (c) The header writes the return type on a `-> T` line before the closing `---`.
-- **Recommendation.** (b): keeps 199's hooks; every name comes from the default function's signature or the language.
-- **Blocks.** 116 step 2.
-
 #### bpp-g · How a `page.bpp` gets its `route: PageContext` and its `params`
 - **Measured.** 221 gives a `page.bpp` its decorator; the unfold answers `fn <Name>(props: Props)` or `fn <Name>()`; a `.bp` page takes `route: PageContext` and binds its segments with `paramsOf(…meta.page.seg, route)` (236); jhonstart's router calls a page with a `PageContext`, cannot build an application's `Props`.
 - **Options.** (a) A `bppKinds` entry names the parameter too (`"page": {"decorator": "page", "parameter": "route: PageContext"}`): the unfold writes `pub default fn page(route: PageContext)`, the header reads `route`, the prelude brings `PageContext` and a `params(route)` helper (`ctr-g`: `page` then names both function and decorator). (b) The header declares `type Props(route: PageContext)`; the router requires that shape. (c) `#[page]`'s decorator output adds the parameter (01-compiler/130).
@@ -408,11 +402,6 @@ owning front lists the row under *Depends on*.
 
 Rule pairs that cannot both hold, or a later rule changing an earlier one silently. Decision text
 left as recorded; the maintainer picks the resolution.
-
-#### ctr-e · Decisions 199 and 213's `-> Element` against decisions 113 and 198
-- **Rules.** 199: "`card.bpp` is `pub fn card(props: Props) -> Element`"; 213: "`pub default fn PostCard(props: Props) -> Element`". 198: the toolchain uses the package's default function, "naming no library itself" (113). `Element` is jhonstart's type; 199's `use` / `await` header statements need `-> @Component<…>`.
-- **Recommendation.** Answer `bpp-f` (b); read 199 / 213's `-> Element` as jhonstart's instance of that rule.
-- **Blocks.** 116 step 2.
 
 #### ctr-f · Decisions 198 and 199 against decision 213
 - **Rules.** 199: "`card.bpp` is `pub fn card(props: Props)`; with none, `pub fn <name>()`"; 198: "`import {components.card.Card};`", "the module exports the result under the file's name"; 212: "the rest of 198 (and 199) stands". 213: "`components/PostCard.bpp` unfolds to `pub default fn PostCard(…)`", imported `import {components.PostCard};` — citing neither 198 nor 199.

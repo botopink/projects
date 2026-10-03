@@ -212,7 +212,11 @@ tested with the core.
       `children: Node` field coerces as `Children` does (coercion keyed on the name `Children`: if
       it must learn `Node`, hand-off to `01-compiler/01-checker`, named here before closing)
 - [ ] `jhonstart/src/prelude.bp` holds `import` items of the core's own modules only (`Element`,
-      builders, `Node`), compiles with the member
+      `ElementBase`, builders, `Node`), compiles with the member
+- [ ] `html` declares `-> @ExprCustom<@Component<ElementBase, Element>>` (decision 275): what a
+      template builds is a component, so a `.bpp` and a `.bp` that `return html """…"""` both return
+      `@Component<ElementBase, Element>`; the 12 files that use `html """` and the track's examples
+      written `-> Element` follow
 - [ ] examples' `Children` → `Node`: `grep -rnw Children 08-bpp/*/examples` (33 lines in 16 files today) is empty
 
 ## Decisions

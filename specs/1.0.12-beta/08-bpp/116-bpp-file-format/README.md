@@ -5,7 +5,7 @@ from a `.bp` module (118). · **State:** not started
 **Depends on:** `118-bpp-components` (the literal's template language) · `05-jhonstart/26` step 0
 (merges `jhonstart-html` into the core, `html` its default function, decision 200) ·
 `01-compiler/26-cli-tooling` (owns `compiler-cli/**`, `language-server/**` this milestone; 116
-opens after it) · `01-compiler`'s prelude scope (decision 270) · open: `bpp-f` (step 2), `bpp-g`
+opens after it) · `01-compiler`'s prelude scope (decision 270) · open: `bpp-g`
 (step 6). Written against decisions 198, 199, 200, 212, 213, 221, 270.
 **Owns:** in `repository/botopink-lang`: `modules/manifest/src/root.zig` (one key),
 `modules/compiler-cli/src/cli/{scanner,resolver,libs,format_cmd,migrate}.zig` (extension lists,
@@ -59,12 +59,14 @@ that line. Always the module's `pub default fn`, named after the file, never `pu
 
 | The header | The module of `components/PostCard.bpp` |
 |---|---|
-| declares `type Props(…)` | the header's declarations, then `pub default fn PostCard(props: Props) -> Element { <the header's statements> return html """<the markup>"""; }` |
-| declares no `Props` | the header's declarations, then `pub default fn PostCard() -> Element { <the header's statements> return html """<the markup>"""; }` |
+| declares `type Props(…)` | the header's declarations, then `pub default fn PostCard(props: Props) -> R { <the header's statements> return html """<the markup>"""; }` |
+| declares no `Props` | the header's declarations, then `pub default fn PostCard() -> R { <the header's statements> return html """<the markup>"""; }` |
 
 - `import {components.PostCard};` binds it without alias; another file name needs one
   (`import {components.post_card as PostCard};`). No case conversion; a non-function file name is an
-  error at the file. `-> Element` is `bpp-f`.
+  error at the file. `R` (decision 275) is the `R` of the default function's declared
+  `@ExprCustom<R>` — the toolchain reads it from the signature and names no library; for jhonstart
+  it is `@Component<ElementBase, Element>`, whether or not the header uses `use` / `await`.
 - Declarations (`import`, `type`, `pub`) module-level; statements (`val`, `use`) body ahead of
   `return` (may read `props`, call a hook). Attributes = `Props` fields (192); children via
   `children` (193). Header imports in the language's form (`import {components.card.Card};`,
@@ -141,8 +143,11 @@ error at the key. `X.bp` + `X.bpp` in one directory: error naming both.
 - [ ] unit tests: not a string, non-dependency, package with no `pub default fn` over
       `@Expr<string>`, key on a project with no `.bpp` (accepted), `.bpp` with no key
 
-### Step 2 — The unfold (the return type waits on `bpp-f`)
+### Step 2 — The unfold
 
+- [ ] the return type is read from the default function's signature (decision 275): the fixture
+      package's `@ExprCustom<i32>` gives `-> i32`; jhonstart's gives `-> @Component<ElementBase,
+      Element>` for a header with and without `use` / `await`; the toolchain spells no type name
 - [ ] `tests/language/modules/bpp_*`: fixture package whose default function is **not**
       jhonstart's (answers the literal's length) — `.bpp` with `type Props` unfolds to
       `pub default fn <Name>(props: Props)`, without to `pub default fn <Name>()`, no header = all
@@ -196,8 +201,6 @@ error at the key. `X.bp` + `X.bpp` in one directory: error naming both.
 
 ## Decisions
 
-- `bpp-f` — unfolded return type: `-> Element` is jhonstart's name, unspellable by the toolchain
-  (113); a header that `await`s or `use`s needs `-> @Component<ElementBase, Element>` today. Step 2.
 - `bpp-g` — how a `page.bpp` gets `route: PageContext` and `params` (221 gives only the decorator).
   Step 6, and 117 step 1.
 
@@ -219,7 +222,7 @@ error at the key. `X.bp` + `X.bpp` in one directory: error naming both.
 - **App names the package**: no rule needed for two libraries claiming one file kind.
 - **Not a syntax**: neither a compiler-owned fence nor a library writing the module; header is botopink, rest is literal.
 - **Still to be stated**, before the step named: (1) page parameter, `bpp-g` — step 6, `117-bpp-routing`
-  step 1; (2) return type, `bpp-f` — step 2; (3) header statements other than `val` / `use` — step 0's list;
+  step 1; (2) return type — decision 275; (3) header statements other than `val` / `use` — step 0's list;
   (4) `Node`: track examples write `children: Children = []`, declared by no jhonstart module
   (`element.bp`, `elements.bp` use it; checker knows it by name); per 223, 118 declares `Node`, its
   prelude imports it, examples' `Children` → `Node` — `118-bpp-components` step 6 boxes; (5) app-file

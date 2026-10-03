@@ -137,7 +137,7 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 - [ ] 122 (W9) — page-side status and headers, `rewrite`, `site` · 26 · 49 · 102 · 118 · 120
 - [ ] 126 (W9) — view transitions · 27 · 118 · 120
 - [ ] 127 (W10) — actions typed by a schema · 125 s6 · 103 · 22 · 67 · 49 · 117 · 120 · 126 · s4: 123
-- [ ] 116 (W5 at the earliest) — the `.bpp` file kind · 118 · 26 s0 · 01-compiler/26 · with 01-checker s22 · s2: bpp-f, ctr-e, ctr-g · s6: bpp-g
+- [ ] 116 (W5 at the earliest) — the `.bpp` file kind · 118 · 26 s0 · 01-compiler/26 · with 01-checker s22 · s2: ctr-g · s6: bpp-g
 - [ ] 105 (W9) — bundled `i18n` · 104 s5 · 22 · 26 · 03r-q confirmed
 - [ ] 107 (W9) — bundled `release` · 07-g · 71 · 81
 - [ ] 124 s1–4 (W10) · s5 (W11) — the commands, the config keys, the `.bpp` scaffold · 08-h · every other 08 front · s5: 116, 53
@@ -174,7 +174,6 @@ last section.
 - [ ] 08-f — 121 s3
 - [ ] 08-h — 124 whole
 - [ ] 08-j — 123 s1 box 3
-- [ ] bpp-f — 116 s2
 - [ ] bpp-g — 116 s6 · 117 s1
 - [ ] props-d · props-e · props-f — 118 s1, s4 (native attributes, named slots, spread)
 - [ ] snap-a — 135 s1–5 (replaces 01std-f, 03r-ag, 30-h, 05emilia-m, 53-b) · 53 s2–6 through 135 s5
@@ -182,7 +181,7 @@ last section.
 - [ ] C-14 — 07-residuals s9 (a 1.0.10 id)
 - [ ] confirmations a step waits on — 49-d (102 s3) · 49-e (49 s2) · 05emilia-l (34 s2) · 52-a (51 s4) · 29-a (26 s5) · 27-a (27) · 03r-q (105) · 16-a/b (16 s4) · 23-a/b/c, std-c (23) · 24-a/b/c/g (24; 24-g also 97 s5's surface)
 - [ ] ctr-k — 17 · 128 · 106 s2
-- [ ] ctr-e — 116 s2 · ctr-f — the 116 and 118 READMEs · ctr-g — 116 s2 · 117 s1 · bpp-g
+- [ ] ctr-f — the 116 and 118 READMEs · ctr-g — 116 s2 · 117 s1 · bpp-g
 - [ ] ctr-i — 05's string lowering · 02's codepoint cell · ctr-j — 04 s8 · 02 s13 · 03 s8 · 01 s18
 - [ ] ctr-l — 26 s8's refusal list · ctr-q — 130 s5 · ctr-r — 118's carve-outs, 34 / 33 opening first · ctr-s — 16 s6
 - [ ] ctr-m — lg2-s · ctr-n — imp-a · ctr-o — lem-c · ctr-p — 04's readers · 104 s5 (ctr-h blocks nothing)
