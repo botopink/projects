@@ -52,7 +52,7 @@ README.
 
 | Builtin | Resolved | Declaration (accepted signature) | Held at the call | Before | Now |
 |---|---|---|---|---|---|
-| `@print` / `@println` / `@debug` | `infer.zig:7026` (fallback `void`); lowered `codegen/commonJS.zig:5602`, `erlang.zig:2956`, `wat.zig:5363` | `print(value: unknown)` — but ANY NUMBER of arguments is accepted (`@print(a, b)` in four `tests/language/run` cells) | open question `134-a` (variadic) | `message: string` (wrong) | closest honest, `134-a` |
+| `@print` / `@println` / `@debug` | `infer.zig:7026` (fallback `void`); lowered `codegen/commonJS.zig:5602`, `erlang.zig:2956`, `wat.zig:5363` | `print(value: unknown)` — but ANY NUMBER of arguments is accepted (`@print(a, b)` in four `tests/language/run` cells) | decision 267 (variadic, step 4) | `message: string` (wrong) | closest honest until step 4 |
 | `@panic` | `infer.zig:7012`; `builtins_fns.d.bp` | `panic(message: string = "panic") -> noreturn` | declaration | yes | yes |
 | `@todo` | `infer.zig:7012`; `builtins_fns.d.bp` | `todo(message: string = "not implemented") -> noreturn` | declaration | yes | yes |
 | `@trap` | `infer.zig:7012` | `trap() -> noreturn` | declaration | yes | yes |
@@ -144,6 +144,23 @@ an unknown label are `builtin-arguments`, an argument of another type the ordina
   ``builtin `@emit` is implemented (comptime/builtins.zig) and builtins.d.bp does not declare it`` and
   ``builtin `@RecordKeys`: the compiler implements `…-> string[]`, builtins.d.bp declares `…-> string` ``)
 - [x] `zig build test`, `test-language`, `test-docs` green (and `test-libs`: 123 passed, 0 failed; `tsc-check`)
+
+### Step 4 — a variadic parameter, and the three print builtins declared with it (decision 267)
+
+`..name: T[]` as a function's last parameter: at most one, no default, no label; a call passes zero
+or more positional arguments after the fixed ones, each checked against `T`; the body reads `name`
+as a `T[]`. No spread at the call site. commonJS lowers it as a rest parameter, erlang/beam as one
+list argument, wasm as one array.
+
+**Acceptance:**
+- [ ] parser and formatter: `fn f(a: i32, ..rest: string[])` round-trips through `botopink format`
+- [ ] refused, located: a variadic that is not last, two variadics, a default on one, a type that is
+      not `T[]`, a spread `f(..xs)` at a call (`reject/` cells, one per refusal)
+- [ ] `run/variadic_parameter` on the four targets — zero, one and three arguments, a method and a
+      `declare fn` bound to a host function
+- [ ] `builtins.d.bp` declares `print`, `println` and `debug` as `(..values: unknown[])`; the three
+      rows of `comptime/builtins.zig` held to `declaration`; the four cells that pass two arguments
+      unchanged and green
 
 ## Gate
 
