@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.11-beta
 
-**Twenty-four questions are open** — `ck2-c` and `lg2-a…w`, carried verbatim below from 1.0.10-beta's
+**Twenty-five questions are open** — `ck2-c`, `lg2-a…w` and `02e-a` (raised by `01-compiler/02-erlang`); the first twenty-four carried verbatim below from 1.0.10-beta's
 § Open with their ids unchanged (`ck-host`, `lg-a`, `lg-b` and this milestone's `01c-e` were answered:
 decisions 146–149). Every `lg2-*` row of [`language-gaps.md`](./language-gaps.md) is a
 feature the language does not have; the recommendation is always the most restrictive reading
@@ -328,3 +328,36 @@ row's nearest form is the design — and the cost of that reading is named where
 > runtime the target selected (decision 84).
 > **Blocks.** The row; front 16 (`#[scheduled]`) and every decorator that would reuse std.
 
+
+### 02e-a · The unit of a string index on wasm
+
+> **Raised by:** `01-compiler/02-erlang` step 6 (the `run/string_index_of_codepoints` cell, four
+> targets) and step 5 (`.length()` of a non-ASCII string).
+> **Measured.** Decision 169 fixed codepoints on erlang (beam agrees) and kept UTF-16 units on
+> commonJS; it says nothing of wasm. On wasm every string index counts **bytes**: for
+> `val s = "a—bXc";` (an em dash, three bytes) `s.length()` is `7`, `s.indexOf("X")` is `5`,
+> `s.at(5)` is `X` — and `s.at(1)` / `s.slice(1, 2)` hand out the dash's first byte alone, a
+> string that is not UTF-8 (erlang: `5`, `3`, `X`, `—`, `—`). No front owns the row: `05-wasm`'s
+> README has no string-unit row, and `02-erlang` step 5's "bytes, 05's row" points at nothing.
+> **Options.**
+> (a) codepoints on wasm, as on erlang and beam — `length`, `at`, `slice`, `indexOf`,
+> `lastIndexOf` walk UTF-8 sequences; the cell's `.out` is one file for four targets:
+> ```botopink
+> val s = "a—bXc";
+> @print(s.indexOf("X"));      // 3 on commonJS, erlang, beam, wasm
+> @print(s.at(1));             // — everywhere
+> ```
+> (b) bytes on wasm, documented as wasm's unit beside commonJS's UTF-16 — the four functions
+> agree with each other, but `at` / `slice` may split a character:
+> ```botopink
+> @print(s.indexOf("X"));      // 3 on erlang/beam/commonJS, 5 on wasm
+> @print(s.at(1));             // — on erlang, one invalid byte on wasm
+> ```
+> and the cell prints `s.at(s.indexOf("X"))` only (`X` everywhere), the index itself left out;
+> (c) bytes on wasm, and `at` / `slice` refused at run time (a trap) when an index lands inside a
+> character.
+> **Recommendation.** (a) — decision 169's own reason ("one unit for every string index … so an
+> index can be handed back to `at`") read onto the fourth target; (b) keeps a string that is not
+> UTF-8 reachable from safe code, and (c) makes an index's validity depend on the text.
+> **Blocks.** `02-erlang` step 6's cell on four targets (until then it cannot be written: wasm
+> accepts the program, so no `.targets` may leave it out); the `05-wasm` row it would open.

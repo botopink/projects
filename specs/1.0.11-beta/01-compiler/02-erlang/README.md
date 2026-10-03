@@ -135,7 +135,10 @@ with `Array.unique`'s RUN LOG on erlang. The `run/` cell is open on two counts: 
 `unique` and neither a `.wasm.expect` (a compile refusal) nor a `.targets` (a host binding) can
 say so; and `primitives.bp` documents `unique` as dropping **consecutive** duplicates
 (`[1, 2, 1, 3, 2]` → `[1, 2, 1, 3, 2]` on commonJS, erlang and beam), not the `[1, 2, 3]` the box
-writes — a std-track question.
+writes. Decision 217 settles the second count for the box: `unique` drops **every** duplicate,
+keeping first occurrences (`[1, 2, 3]`); the body is the std track's (`02-std-and-packaging`),
+and the cell lands with it — on erlang nothing is left to lower (the typing above serves the new
+body as it serves the old).
 
 ### Step 5 — `\u{…}` and non-ASCII literals in Erlang text (C-36)
 
@@ -149,8 +152,9 @@ erlang as latin1, `illegal character` above U+00FF) is the same site: one fix, t
 - [ ] a decorator body carrying a `\u{…}` literal evaluates to the character (`comptime/tests/**` — 14's file; the fixture reported to 14, or added as a carve-out named in the commit)
 
 `.length()` of `"\u{1F600}"` is `1` on erlang and beam, `2` on commonJS (UTF-16 units, 04's row)
-and `4` on wasm (bytes, 05's row), so the cell prints the characters only. Under `LANG=C` beam
-still writes latin1 (03's twin).
+and `4` on wasm (bytes — `decisions-pending.md` 02e-a), so the cell prints the characters only.
+Under `LANG=C` beam wrote latin1: `03-beam`'s twin (an entry point setting `standard_io` to
+unicode), landing with the next integration.
 
 ### Step 6 — `string.indexOf` counts codepoints (T18, 23-d)
 
@@ -164,7 +168,11 @@ front owns the cell and the erlang lowering if the template needs a helper.
 
 Done by the std front 97 (decision 169, measured as `string:length/1` of the prefix — decision 197).
 `erlang.zig` has no `indexOf` lowering of its own: the erlang text is `primitives.bp`'s template,
-so nothing of this step is left in this front's files.
+so nothing of this step is left in this front's files. The cell waits on
+[`decisions-pending.md` 02e-a](../../decisions-pending.md#02e-a--the-unit-of-a-string-index-on-wasm):
+erlang, beam and commonJS print `3` and `X`, wasm counts bytes everywhere (`5`, and `.at(1)` of
+`"a—bXc"` is one byte of the dash) — decision 169 names no unit for wasm, and wasm accepts the
+program, so no `.targets` may leave it out.
 
 ### Step 7 — C-07's erlang tails
 
@@ -178,9 +186,9 @@ type-pattern fixtures this front added given their `.out` on erlang for the cell
 - [x] every `tests/language` cell naming §2, §4, §5, §6 green on erlang (`run.sh --target erlang`)
 
 The table is `test/is_truth_table` (commonJS and erlang agree on every row): no list of lines
-exists any more (decision 154), and as a `run/` cell it is red on beam (`#(i32, string)` holds for
-a record and a variant too) and traps on wasm — 03's and 05's rows; it becomes the `run/` cell
-when they land. §11's "erlang: nothing" is pinned by `codegen/tests/control_flow.zig`'s needle
+exists any more (decision 154), and as a `run/` cell it waits on beam's `#(i32, string)` test (it
+held for a record and a variant too — `03-beam`'s fix, landing with the next integration) and
+traps on wasm (05's row); it becomes the `run/` cell when both land. §11's "erlang: nothing" is pinned by `codegen/tests/control_flow.zig`'s needle
 (`A = 2.0,`, no box); a program cannot tell a stored value from an unboxed one, so
 `run/unknown_stores_nothing` has nothing to print that differs.
 
@@ -214,12 +222,18 @@ Measure the producers (`grep` over the erlang snapshots for the tail-`case` shap
 then delete the lowering; the erlang snapshots are otherwise byte-identical.
 
 **Acceptance:**
-- [ ] 0 producers measured and written in `src/codegen/AGENTS.md`; the lowering deleted; `snapshots/codegen/*/erlang/**` byte-identical (a diff outside the deleted shape is a bug found)
+- [x] the producers measured and written in `src/codegen/AGENTS.md` (§ erlang, "A block as a value has no lowering of its own")
+- [ ] `@block { 1 + 2 }` refused by the checker (01's file, the same box as `04-js` step 1) — then nothing in `erlang.zig` is deleted and `snapshots/codegen/*/erlang/**` stay byte-identical
 
-Open: no lowering in `erlang.zig` matches "a block in value position lowers to a `case` whose last
-expression is the value" — `@block { … }` is an applied fun, a comptime block an applied fun up to
-its `break`, and no erlang snapshot holds a `case true of` / `case ok of` shape. The site the row
-means has to be named before it can be measured or deleted.
+**Measured.** The one erlang site that takes a block in value position is `@block`'s applied
+`fun` (`builtinCallNode`), and it has genuine producers: `val a = @block { return 3; }` (`3`), a
+body whose every path returns (`js: block ---- @block builtin`, snapshot `block_block_builtin`,
+the only fixture writing `@block`; no `.bp` under `tests/language` or `libs` does) and
+`@block { … };` as a statement. The tail form decision 2 refuses — `val a = @block { 1 + 2 };`
+checks and prints `3` on erlang, beam and wasm, `null` on commonJS — goes through the same `fun`,
+whose last expression is its value by Erlang's own rule: there is no tail-`case` lowering to
+delete, and no erlang snapshot holds one. A value `if` / `case` with block arms (`docs.md`
+§ If / else) is legal and not R7's.
 
 ### Step 11 — C-06's `KNOWN` notes and the comment sweeps
 
@@ -249,6 +263,7 @@ Each pinned by `codegen/tests/erlang.zig` (the backend's own fixtures) or a `tes
 - [x] the sibling loader under `build` — step 9
 - [x] a lambda's parameter or `val` over a name of the enclosing function (decision 205) did not compile — each takes a fresh version and the enclosing names come back after the fun; `run/lambda_binds_name_of_enclosing_fn` (red on wasm: 05's row)
 - [x] a `default fn` two types adopt (or one adopts while another declares it) was emitted by neither, `twice/1` undefined — each adopter emits it into its own module, a call two types answer dispatches on the value; `run/behavior_default_adopted_by_two_types` (red on beam until 03's adopted-defaults commit lands, and on wasm)
+- [x] a spread alone in a list pattern (`[..all]`) was written `[All]`, a one-element list — a `case` arm died `case_clause`, `val assert [..all]` panicked; and `val [..rest] = xs;` lowered to the value alone, `Rest` unbound (03's measurement) — the whole list, bound (`Rest = Xs`); `run/list_pattern_spread_alone` on four targets. The plain `val` form cannot run here yet: this branch's checker answers `unbound variable 'rest'` — `01-checker` step 13's cell `run/val_spread_only_list_pattern` proves it end to end when that half lands
 - [x] a `test/` module calling a sidecar function it declares itself died `{error,undef}` — the runner loads its siblings when the build binds a host; `modules/erlang_host_sidecar_in_a_test`
 
 ## Gate
@@ -256,14 +271,15 @@ Each pinned by `codegen/tests/erlang.zig` (the backend's own fixtures) or a `tes
 - [x] `zig build test` from a **cold** runtime cache, green, in this front's worktree
 - [x] every re-recorded RUN LOG **verified by running the program** under `erl`; nothing bulk-accepted; steps 1, 2, 10 move `.erl` text only, RUN LOGs unchanged block by block
 - [x] `tests/language/run.sh --target erlang` green with the new cells; every cell proved able to fail on the parent binary
-- [ ] `zig build test-libs` erlang cells at baseline; rakun's members re-run (its host modules call the BIFs step 1 qualifies)
+- [x] `zig build test-libs` erlang cells at baseline; rakun's members re-run (its host modules call the BIFs step 1 qualifies)
 - [x] `src/codegen/AGENTS.md` and `erlang.zig`'s own notes updated in the same commit as each step
 
 The fixes' cells fail on the parent binary; three cells are pins that pass there too
 (`test/is_truth_table`, `run/closure_capture_statement_position`) or fail there only under
-`LANG=C` (`run/string_literal_unicode_escape`). Of `test-libs`, `libs/std` and rakun ran on erlang
-(green); the other libraries' erlang cells were not run here.
-- [ ] Commit on `fix/02-erlang`; no push, no merge
+`LANG=C` (`run/string_literal_unicode_escape`). `zig build test-libs -Doptimize=ReleaseSafe` in this
+front's worktree: `123 passed, 0 failed, 15 without tests, 38 restrictions audited` — the
+milestone's baseline, every rakun member's erlang cell among the passes.
+- [ ] Commit on `front/02-erlang`; no push, no merge
 
 ## Blast radius
 
