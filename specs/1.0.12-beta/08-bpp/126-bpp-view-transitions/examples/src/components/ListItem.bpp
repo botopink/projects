@@ -1,0 +1,32 @@
+---
+// Front 126 — bpp view transitions · examples/src/components/ListItem.bpp
+//
+// Demonstrates: `transition:name` in a `.bpp` component — one half of a pair.
+// The same name on the list's thumbnail (here) and on the post's hero image
+// (`post_hero.bpp`) pairs the two elements: the browser morphs one into the
+// other across the navigation.
+//
+//   <img transition:name={`cover-${slug}`} />
+//
+// The name is computed in the fence once and used by both the `src` and the
+// directive.
+//
+// The `.bp` form, with its tests: `ListItem` in `view-transitions-example.bp`.
+//
+// Upstream: astro-docs/20-view-transitions.md (Nomeando uma transição)
+//           https://docs.astro.build/en/guides/view-transitions/#naming-a-transition
+
+import {a, article, img} from "jhonstart";
+
+type Props(
+    slug: string,
+    heading: string,
+)
+
+val cover = "/covers/" + slug + ".png";
+val pair = "cover-" + slug;
+---
+<article>
+  <img src={cover} alt="" transition:name={pair} />
+  <a href={"/blog/" + slug}>{heading}</a>
+</article>

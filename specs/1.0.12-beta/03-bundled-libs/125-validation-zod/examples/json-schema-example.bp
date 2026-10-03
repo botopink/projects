@@ -1,0 +1,113 @@
+// Front 125 — validation: Zod's feature set · examples/json-schema-example.bp
+//
+// Demonstrates: step 9 — metadata, the registry and JSON Schema. The document is
+// emitted from the same reflection the decoder is emitted from, so the schema a
+// client reads and the checks the server runs cannot disagree.
+//
+//   const User = z.object({
+//     name: z.string().min(2).meta({ title: "Name", description: "The user's name" }),
+//     email: z.email(),
+//     get friend() { return User },
+//   });
+//   z.toJSONSchema(User);
+//   z.globalRegistry.add(User, { id: "User" });
+//   z.toJSONSchema(z.globalRegistry);
+//
+// Upstream: ZOD_DOCUMENTATION.md §§ 7 (Metadados e Registries), 8 (JSON Schema)
+//           — https://zod.dev/json-schema · https://zod.dev/metadata
+//
+// Target: both.
+
+import {decorators: {schema, validated, jsonSchema, schemaId, title, describe, example, deprecated}} from "validation";
+import {decorators: {minLength, email, isoDatetime, uuid, minValue, stripUnknown}} from "validation";
+import {schemas, schemas.Schema, constraints, table, spi, report: {ValidationReport, Violation}} from "validation";
+
+#[schema]
+#[validated]
+#[jsonSchema]
+#[schemaId("User")]
+#[describe("A registered user")]
+pub type User(
+    #[uuid] id: string,
+    #[minLength(2)] #[title("Name")] #[describe("The user's name")] #[example("Ana")] name: string,
+    #[email] email: string,
+    #[minValue(0)] age: ?i32,
+    #[isoDatetime] createdAt: string,
+    #[deprecated] nick: ?string,
+    friends: Array<User>,
+)
+
+#[schema]
+#[jsonSchema]
+#[stripUnknown]
+pub type Ping(at: string)
+
+// Emitted for each `#[jsonSchema]` type:
+//
+//   pub fn jsonSchemaOfUser() -> string       // draft 2020-12
+//
+// `constraintsOfUser()` — the compact table `#[validated]` already emits — is
+// unchanged and stays what a botopink client would never need: it has the
+// module.
+
+test "validation: a format marker becomes format, contentEncoding or pattern" {
+    // ZOD_DOCUMENTATION.md § 8.3: email → format "email", uuid → format "uuid",
+    // iso.datetime → format "date-time".
+    val doc = jsonSchemaOfUser();
+    assert doc.contains("\"email\":{\"type\":\"string\",\"format\":\"email\"}");
+    assert doc.contains("\"format\":\"uuid\"");
+    assert doc.contains("\"format\":\"date-time\"");
+}
+
+test "validation: checks become keywords, metadata becomes annotations" {
+    val doc = jsonSchemaOfUser();
+    assert doc.contains("\"minLength\":2");
+    assert doc.contains("\"title\":\"Name\"");
+    assert doc.contains("\"description\":\"The user's name\"");
+    assert doc.contains("\"examples\":[\"Ana\"]");
+    assert doc.contains("\"deprecated\":true");
+}
+
+test "validation: an optional field is nullable and not required" {
+    val doc = jsonSchemaOfUser();
+    assert doc.contains("\"age\":{\"type\":[\"integer\",\"null\"],\"minimum\":0}");
+    assert doc.contains("\"required\":[\"id\",\"name\",\"email\",\"createdAt\",\"friends\"]");
+}
+
+test "validation: a schema type inside a schema is a $ref, so recursion is finite" {
+    val doc = jsonSchemaOfUser();
+    assert doc.contains("\"friends\":{\"type\":\"array\",\"items\":{\"$ref\":\"#/$defs/User\"}}");
+}
+
+test "validation: additionalProperties follows the unknown-key rule of the type" {
+    assert jsonSchemaOfUser().contains("\"additionalProperties\":false");
+    assert jsonSchemaOfPing().contains("additionalProperties") == false;
+}
+
+test "validation: the registry answers every schema with an id as one document" {
+    val _u = spi.registerSchema("User", jsonSchemaOfUser);
+    val _p = spi.registerSchema("Ping", jsonSchemaOfPing);
+    val all = spi.registeredJsonSchemas();
+    assert all.startsWith("{\"schemas\":{\"User\":");
+    assert all.contains("\"Ping\":");
+}
+
+test "validation: one document, other dialects" {
+    val draft7 = table.toDraft07(jsonSchemaOfUser());
+    assert draft7.contains("\"$schema\":\"http://json-schema.org/draft-07/schema#\"");
+    assert draft7.contains("\"definitions\"");
+    val openapi = table.toOpenApi30(jsonSchemaOfUser());
+    assert openapi.contains("\"nullable\":true");
+}
+
+// What `#[jsonSchema]` refuses, at compile time:
+//
+//   #[schema] #[jsonSchema]
+//   pub type Odd(#[map("toLength")] size: i32)
+//
+//   error: #[jsonSchema] on `Odd`: field `size` is produced by a transform, and a
+//   transform has no JSON Schema — remove #[jsonSchema] or the transform
+//
+// Zod's `unrepresentable: "any"` writes `{}` there. A document that says
+// "anything" about a field the server does check is the silent pass this
+// library refuses (decision 67).

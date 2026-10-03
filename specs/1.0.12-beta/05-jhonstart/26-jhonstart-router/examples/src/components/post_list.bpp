@@ -1,0 +1,26 @@
+---
+// Front 26 — jhonstart-router · examples/src/components/post_list.bpp
+//
+// The slow half of `streamed-blog-page-example.bp`, as a `.bpp` component. It
+// is the child of the `<Suspense>` in `app/blog/page.bpp`, and nothing in it
+// knows that: it loads, and it renders.
+//
+// `recentPosts` is the loader — the host cell and the row decoding of the `.bp`
+// form — in a module of its own. `data-slug={post.slug}` is an expression
+// attribute: the template escapes it as an attribute value.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/guides/streaming
+
+import {li, span, ul} from "jhonstart";
+import {lib.blog.recentPosts};
+
+val posts = recentPosts();
+---
+<ul class="posts">
+  {posts.map({ post ->
+    <li data-slug={post.slug}>
+      <span class="title">{post.title}</span>
+    </li>
+  })}
+</ul>

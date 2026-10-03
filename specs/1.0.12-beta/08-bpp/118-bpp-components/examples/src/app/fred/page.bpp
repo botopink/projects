@@ -1,0 +1,35 @@
+---
+// Front 118 — bpp components · examples/src/app/fred/page.bpp
+//
+// Demonstrates: step 4 in a `.bpp` page — a component tag is a call. An
+// attribute is a labelled argument; a child with `slot="afterHeader"` goes to
+// that parameter; every other child goes to `children`.
+//
+//   <Wrapper title="Fred's Page">
+//     <p slot="after-header">All about Fred</p>
+//     <h2>All about Fred</h2>
+//     <p>Here is some stuff about Fred.</p>
+//   </Wrapper>
+//
+// The two `GreetingHeadline` tags are `GreetingHeadline(name: "Partner")` and
+// `GreetingHeadline(greeting: "Howdy", name: "Partner")` — the first takes
+// `Props`' default.
+//
+// The `.bp` form, with its tests: `Page` and `ButtonGroup` in
+// `components-and-slots-example.bp`.
+//
+// Upstream: astro-docs/09-astro-components.md (Slots Nomeados)
+
+import {div, h2, p} from "jhonstart";
+import {components.Wrapper};
+import {components.GreetingHeadline};
+---
+<Wrapper heading="Fred's Page">
+  <p slot="afterHeader">All about Fred</p>
+  <h2>All about Fred</h2>
+  <p>Here is some stuff about Fred.</p>
+  <div>
+    <GreetingHeadline name="Partner" />
+    <GreetingHeadline greeting="Howdy" name="Partner" />
+  </div>
+</Wrapper>

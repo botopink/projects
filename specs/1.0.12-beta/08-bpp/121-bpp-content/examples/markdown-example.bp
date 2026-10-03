@@ -1,0 +1,117 @@
+// Front 121 — bpp content · examples/markdown-example.bp
+//
+// Demonstrates: steps 1–3 — Markdown to an `Element` tree, heading ids, and
+// frontmatter to a `Json` a schema decodes.
+//
+//   ---
+//   title: 'The greatest post of all time'
+//   author: 'Ben'
+//   ---
+//   Here is my _great_ post!
+//
+//   const { frontmatter, Content, getHeadings, rawContent } = post;
+//
+// Upstream: astro-docs/14-markdown-content.md (Propriedades Disponíveis, IDs de
+//           Título, Recursos Embutidos · GitHub-Flavored Markdown)
+//           https://docs.astro.build/en/guides/markdown-content/
+//
+// Target: both — the renderer is pure botopink: the server renders a post, and
+// a preview island renders the same text to the same bytes.
+
+import {markdown, markdown: {MdDoc, Heading, MarkdownOptions}, frontmatter} from "onze-content";
+import {Element, renderToString} from "jhonstart";
+import {decorators.schema} from "validation";
+import {schemas, schemas.Schema, report.ValidationReport, report.Violation} from "validation";
+import {json.Json} from "std";
+
+#[schema]
+pub type Meta(title: string, author: string, tags: Array<string>)
+
+fn post() -> string {
+    return """
+---
+title: 'The greatest post of all time'
+author: Ben
+tags: [intro, meta]
+---
+
+## Introduction
+
+Here is my _great_ post, with a [link](https://botopink.dev) and `code`.
+
+- [x] written
+- [ ] published
+
+| Name | Stars |
+|------|------:|
+| Zod  |    40 |
+
+## Conclusion
+
+~~Wrong~~ Right. See the [introduction](#introduction).
+
+## Conclusion
+""";
+}
+
+test "content: frontmatter is split from the body and decoded with a schema" {
+    val parts = try frontmatter.split(post());
+    val meta = try parseMeta(parts.data);
+    assert meta.title == "The greatest post of all time";
+    assert meta.author == "Ben";
+    assert meta.tags.join(",") == "intro,meta";
+    assert parts.body.trimStart().startsWith("## Introduction");
+}
+
+test "content: a frontmatter key of the wrong type is located like any violation" {
+    val parts = try frontmatter.split("---\ntitle: 7\nauthor: Ben\ntags: []\n---\nbody");
+    val located = case parseMeta(parts.data) {
+        Ok(_) -> "";
+        Error(report) -> report.violations.map({ v -> v.field + ":" + v.code }).join(",");
+    };
+    assert located == "title:invalidType";
+}
+
+test "content: inline Markdown renders to elements" {
+    val body = try frontmatter.split(post());
+    val html = renderToString(markdown.toElement(markdown.parse(body.body)));
+    assert html.contains("<em>great</em>");
+    assert html.contains("<a href=\"https://botopink.dev\">link</a>");
+    assert html.contains("<code>code</code>");
+}
+
+test "content: GitHub-flavoured extensions" {
+    val body = try frontmatter.split(post());
+    val html = renderToString(markdown.toElement(markdown.parse(body.body)));
+    assert html.contains("<input type=\"checkbox\" checked disabled>");
+    assert html.contains("<th>Name</th>");
+    assert html.contains("<td style=\"text-align:right\">40</td>");
+    assert html.contains("<del>Wrong</del>");
+}
+
+test "content: headings get ids, and a repeated heading gets a suffix" {
+    val body = try frontmatter.split(post());
+    val doc = markdown.parse(body.body);
+    val slugs = markdown.headings(doc).map({ h -> h.depth.toString() + ":" + h.slug }).join(" ");
+    assert slugs == "2:introduction 2:conclusion 2:conclusion-1";
+    assert renderToString(markdown.toElement(doc)).contains("<h2 id=\"introduction\">Introduction</h2>");
+}
+
+test "content: text in a document is escaped; raw HTML passes through" {
+    val html = renderToString(markdown.toElement(markdown.parse("1 < 2 & 3\n\n<aside>kept</aside>")));
+    assert html.contains("<p>1 &lt; 2 &amp; 3</p>");
+    assert html.contains("<aside>kept</aside>");
+}
+
+test "content: smart punctuation is on, and a field turns it off" {
+    val smart = renderToString(markdown.toElement(markdown.parse("\"quoted\" -- and...")));
+    assert smart.contains("“quoted” – and…");
+    val plain = markdown.toElementWith(markdown.parse("\"quoted\""), MarkdownOptions(smartPunctuation: false));
+    assert renderToString(plain).contains("&quot;quoted&quot;");
+}
+
+test "content: what the YAML subset refuses, it refuses by line" {
+    assert frontmatter.split("---\na: &anchor 1\nb: *anchor\n---\n").isError();
+    assert frontmatter.split("---\na: !!str 1\n---\n").isError();
+    assert frontmatter.split("---\ntitle: open\n").isError();
+}

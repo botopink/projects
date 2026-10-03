@@ -1,0 +1,98 @@
+// Front 117 — bpp routing · examples/static-paths-example.bp
+// App file: src/app/dogs/[dog]/page.bp
+//
+// Demonstrates: step 2 and step 3 — the three names a page may export, and data
+// travelling with a static path.
+//
+//   ---
+//   export function getStaticPaths() {
+//     return [
+//       { params: { dog: "clifford" }, props: { breed: "red" } },
+//       { params: { dog: "rover" },    props: { breed: "mix" } },
+//     ];
+//   }
+//   export const prerender = true;
+//   const { dog } = Astro.params;
+//   const { breed } = Astro.props;
+//   ---
+//   <div>Good dog, {dog}!</div>
+//
+// Upstream: astro-docs/08-routing.md (Rotas dinâmicas · Modo Estático)
+//           astro-docs/21-on-demand-rendering.md (Habilitando Renderização Sob Demanda)
+//           https://docs.astro.build/en/guides/routing/#dynamic-routes
+//
+// Target: erlang (server). `staticPaths` runs once, at build time.
+
+import html, {page, PageContext, Element, ElementBase, renderToString} from "jhonstart";
+import {div, p} from "jhonstart";
+import {StaticPath, staticPath, pageData} from "onze";
+import {decorators.schema} from "validation";
+import {schemas, schemas.Schema, report.ValidationReport, report.Violation} from "validation";
+import {collections.Dict, json.Json} from "std";
+
+#[schema]
+pub type DogInfo(breed: string)
+
+// `export const prerender = true` has no counterpart (decision 202): `#[page]`
+// prerenders this page at comptime because it reaches no `#[serverOnly]` hook.
+
+// `getStaticPaths()`. Each row binds every dynamic segment of the directory and
+// may carry data for the page — Astro's `props`.
+pub fn staticPaths() -> @Task<Array<StaticPath>> {
+    return [
+        staticPath([#("dog", "clifford")], try encodeDogInfo(DogInfo(breed: "red")) catch Json.Null),
+        staticPath([#("dog", "rover")], try encodeDogInfo(DogInfo(breed: "mix")) catch Json.Null),
+    ];
+}
+
+#[page("dogs/[dog]")]
+pub fn Page(route: PageContext) -> @Component<ElementBase, Element> {
+    // `Astro.params` — the accessor `#[page]` emits from the bracket segments.
+    val dog = PageParams(route).dog;
+    // `Astro.props` — the row's data, decoded with the type's own schema.
+    val info = try pageData(route, schemaOfDogInfo()) catch DogInfo(breed: "unknown");
+    return html """
+      <div>
+        <p>Good dog, {dog}!</p>
+        <p>A {info.breed} one.</p>
+      </div>
+    """;
+}
+
+fn routeFor(dog: string, data: Json) -> PageContext {
+    return PageContext(
+        pathname: "/dogs/" + dog,
+        pattern: "/dogs/[dog]",
+        params: Dict.empty().insert("dog", dog),
+        rest: [],
+        data: data,
+    );
+}
+
+test "one row per page, each binding the segment" {
+    val rows = await staticPaths();
+    assert rows.length == 2;
+    assert rows.map({ r -> r.params.map({ b -> b[1] }).join("") }).join(",") == "clifford,rover";
+}
+
+test "the page reads its parameter and its data" {
+    val rows = await staticPaths();
+    val first = rows.at(0).unwrapOr(staticPath([], Json.Null));
+    val markup = renderToString(await Page(routeFor("clifford", first.data)));
+    assert markup.contains("Good dog, clifford!");
+    assert markup.contains("A red one.");
+}
+
+test "a row whose data does not fit the schema falls to the page's own fallback" {
+    val markup = renderToString(await Page(routeFor("rex", Json.Null)));
+    assert markup.contains("A unknown one.");
+}
+
+// What fails the BUILD, not a request:
+//
+//   a page under `[dog]/` that reaches no `#[serverOnly]` hook — so `#[page]`
+//   prerenders it (decision 202) — and declares no `staticPaths`
+//     error: /dogs/[dog] is prerendered and declares no static paths
+//
+// A page that adds `val jar = use cookies();` is rendered per request instead;
+// nothing declares or forces either stage.

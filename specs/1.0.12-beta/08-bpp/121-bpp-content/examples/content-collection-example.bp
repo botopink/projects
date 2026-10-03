@@ -1,0 +1,172 @@
+// Front 121 — bpp content · examples/content-collection-example.bp
+// App files: src/content.bp · src/app/blog/page.bp · src/app/blog/[id]/page.bp
+//
+// Demonstrates: steps 4–5 — a collection is a value: a name, a loader and a
+// schema. The schema is a `#[schema]` record (front 125), so an entry's
+// frontmatter is typed data, and a file that violates it fails the BUILD with
+// its path.
+//
+//   // src/content.config.ts
+//   const blog = defineCollection({
+//     loader: glob({ base: "./src/content/blog", pattern: "**/*.{md,mdx}" }),
+//     schema: z.object({
+//       title: z.string(), description: z.string(),
+//       pubDate: z.coerce.date(), updatedDate: z.coerce.date().optional(),
+//       author: reference("authors"),
+//     }),
+//   });
+//   export const collections = { blog, authors };
+//
+//   const posts = await getCollection("blog", ({ data }) => data.draft !== true);
+//   const { Content } = await render(post);
+//
+// Upstream: astro-docs/15-content-collections.md
+//           https://docs.astro.build/en/guides/content-collections/
+//
+// Target: erlang (server) — loading reads files. The rendered `Element` and the
+// decoded data are plain values on both targets.
+
+import html, {page, PageContext, Element, ElementBase, renderToString} from "jhonstart";
+import {a, article, h1, li, p, timeTag, ul} from "jhonstart";
+import {notFound} from "jhonstart";
+import {
+    collections: {Collection, AnyCollection, Entry, Rendered, defineCollection, glob, file, getCollection, getCollectionWhere, getEntry, render, reference, syncProblems},
+} from "onze-content";
+// The member's test kit: a scratch content tree under the host's tmpdir — two
+// posts (`hello-world`, `second-post`, the second a draft) and `authors.json`.
+import {fixtures: {contentTree, contentTreeWith}} from "onze-content";
+import {StaticPath, staticPath} from "onze";
+import {decorators: {schema, validated, minLength, coerce, isoDatetime, url, orElse}} from "validation";
+import {schemas, schemas.Schema, constraints, report.ValidationReport, report.Violation} from "validation";
+import {collections.Dict, json.Json, io.clock} from "std";
+
+// ── src/content.bp ──────────────────────────────────────────────────────────
+
+#[schema]
+#[validated]
+pub type BlogPost(
+    #[minLength(1)] title: string,
+    description: string,
+    // `z.coerce.date()` — ISO text in the file, epoch milliseconds in the program.
+    #[coerce] #[isoDatetime] pubDate: i64,
+    #[coerce] #[isoDatetime] updatedDate: ?i64,
+    #[orElse(false)] draft: bool,
+    // `reference("authors")` — checked by `onze sync` after every collection loads.
+    #[reference("authors")] author: string,
+)
+
+#[schema]
+#[validated]
+pub type Author(
+    name: string,
+    #[url] portfolio: string,
+)
+
+pub fn blog() -> Collection<BlogPost> {
+    return defineCollection("blog", glob("content/blog", "**/*.md"), schemaOfBlogPost());
+}
+
+// One JSON file holding every entry, each with an `id`.
+pub fn authors() -> Collection<Author> {
+    return defineCollection("authors", file("content/authors.json"), schemaOfAuthor());
+}
+
+// What `onze sync` reads: every collection of the application, with its entry
+// type erased — the list holds collections of different types.
+pub fn collections() -> Array<AnyCollection> {
+    return [blog().erased(), authors().erased()];
+}
+
+// ── src/app/blog/page.bp — the list ─────────────────────────────────────────
+
+#[page("blog")]
+pub fn blogIndex(route: PageContext) -> @Component<ElementBase, Element> {
+    val posts = await getCollectionWhere(blog(), { entry -> entry.data.draft == false });
+    return html """
+      <h1>My posts</h1>
+      <ul>
+        {posts.map({ post -> <li><a href={"/blog/" + post.id}>{post.data.title}</a></li> })}
+      </ul>
+    """;
+}
+
+// ── src/app/blog/[id]/page.bp — one entry ───────────────────────────────────
+
+pub fn staticPaths() -> @Task<Array<StaticPath>> {
+    val posts = await getCollection(blog());
+    return posts.map({ post -> staticPath([#("id", post.id)], Json.Null) });
+}
+
+#[page("blog/[id]")]
+pub fn blogPost(route: PageContext) -> @Component<ElementBase, Element> {
+    val found = await getEntry(blog(), blogPostParams(route).id);
+    if (found == null) { notFound(); }
+    val post = found ?? missing();
+    val rendered = render(post);
+    val by = await getEntry(authors(), post.data.author);
+    return html """
+      <article>
+        <h1>{post.data.title}</h1>
+        {if (by) { author -> <p>By <a href={author.data.portfolio}>{author.data.name}</a></p> }}
+        {rendered.content}
+      </article>
+    """;
+}
+
+fn missing() -> Entry<BlogPost> {
+    return Entry(
+        id: "",
+        collection: "blog",
+        data: BlogPost(title: "", description: "", pubDate: clock.nowMillis(), updatedDate: null, draft: true, author: ""),
+        body: "",
+        filePath: "",
+    );
+}
+
+// ── tests, over a fixture tree the test writes ──────────────────────────────
+
+test "content: every entry is typed by the collection's schema" {
+    val _f = contentTree();
+    val posts = await getCollection(blog());
+    assert posts.map({ p -> p.id }).join(",") == "hello-world,second-post";
+    assert posts.at(0).unwrapOr(missing()).data.title == "Hello, world";
+}
+
+test "content: a filter over entries" {
+    val _f = contentTree();
+    val live = await getCollectionWhere(blog(), { entry -> entry.data.draft == false });
+    assert live.length == 1;
+}
+
+test "content: an entry that violates the schema names its file and its field" {
+    val _f = contentTreeWith("content/blog/broken.md", "---\ntitle: ''\npubDate: yesterday\nauthor: ana\n---\nx");
+    val problems = await syncProblems(collections());
+    assert problems.join("\n")
+        == "content/blog/broken.md: title: must have at least 1 character\n"
+        + "content/blog/broken.md: description: must be present\n"
+        + "content/blog/broken.md: pubDate: must be an ISO 8601 datetime";
+}
+
+test "content: a reference to an entry that does not exist fails the sync" {
+    val _f = contentTreeWith("content/blog/orphan.md", "---\ntitle: T\ndescription: D\npubDate: 2026-01-10T00:00:00Z\nauthor: nobody\n---\nx");
+    val problems = await syncProblems(collections());
+    assert problems.join("\n") == "content/blog/orphan.md: author: no entry \"nobody\" in collection \"authors\"";
+}
+
+test "content: render answers the element tree and the heading list" {
+    val _f = contentTree();
+    val found = await getEntry(blog(), "hello-world");
+    val post = found ?? missing();
+    val rendered = render(post);
+    assert renderToString(rendered.content).contains("<h2 id=\"first-steps\">First steps</h2>");
+    assert rendered.headings.length == 1;
+}
+
+test "content: the page splices the rendered document" {
+    val _f = contentTree();
+    val route = PageContext(pathname: "/blog/hello-world", pattern: "/blog/[id]", params: Dict.empty().insert("id", "hello-world"), rest: [], data: Json.Null);
+    val markup = renderToString(await blogPost(route));
+    assert markup.contains("<h1>Hello, world</h1>");
+    assert markup.contains("By <a href=\"https://ana.example\">Ana</a>");
+    assert markup.contains("<h2 id=\"first-steps\">");
+}

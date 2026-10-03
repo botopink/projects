@@ -1,0 +1,50 @@
+---
+// Front 126 — bpp view transitions · examples/src/layouts/BaseLayout.bpp
+//
+// Demonstrates: the transition directives in a `.bpp` layout. `<ViewTransitions />`
+// in the head turns the animation on; a `transition:` directive on an element is
+// a data attribute the navigation runtime reads when it swaps the document.
+//
+//   <head><ClientRouter /></head>
+//   <main transition:animate="slide">
+//   <header transition:animate={fade({ duration: "0.4s" })}>
+//   <video controls transition:persist>
+//   <a href="/legacy" data-astro-reload>
+//
+// A customised animation is a value: `fade(duration: "0.4s")` is a call in a
+// hole, like any other expression.
+//
+// The `.bp` form, with its tests: `BaseLayout` in `view-transitions-example.bp`
+// at the root of `examples/`.
+//
+// Upstream: astro-docs/20-view-transitions.md
+//           https://docs.astro.build/en/guides/view-transitions/
+
+import {a, body, head, header, htmlTag, main, title, video} from "jhonstart";
+import {ViewTransitions, fade} from "jhonstart-link";
+
+type Props(
+    pageTitle: string,
+    children: Children = [],
+)
+---
+<htmlTag lang="en" transition:animate="none">
+  <head>
+    <title>{pageTitle}</title>
+    <ViewTransitions />
+  </head>
+  <body>
+    <header transition:animate={fade(duration: "0.4s")}>
+      <a href="/blog">Blog</a>
+      <!-- a full document load, on purpose -->
+      <a href="/legacy" data-jh-reload>Legacy</a>
+      <!-- replaces the history entry instead of adding one -->
+      <a href="/blog?sort=new" data-jh-history="replace">Newest</a>
+    </header>
+
+    <!-- keeps playing across navigations: the node is moved, not replaced -->
+    <video controls muted transition:persist="player" src="/intro.mp4"></video>
+
+    <main transition:animate="slide"><slot /></main>
+  </body>
+</htmlTag>

@@ -1,0 +1,23 @@
+---
+// Front 53 — onze example app · examples/app/blog/[slug]/not-found.bpp
+//
+// The segment's not-found boundary of `boundaries-example.bp`, as a `.bpp`
+// file: `pub fn NotFound() -> Element`. The NEAREST boundary wins — a
+// `notFound()` raised by `page.bpp` beside this file lands here, not in the
+// root `app/not-found.bpp`.
+//
+// Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/not-found
+
+import {h2, p, section} from "jhonstart";
+import {Link, linkProps} from "jhonstart";
+import {emilia, Token} from "emilia";
+
+fn panelTokens() -> Token[] {
+    return [.Pad.All.8, .Bg.Gray.100, .Border.Rounded.Md];
+}
+---
+<section class={emilia(panelTokens())}>
+  <h2>Post not found</h2>
+  <p>It may have been unpublished.</p>
+  {Link(linkProps("/blog"), ["Back to the blog"])}
+</section>

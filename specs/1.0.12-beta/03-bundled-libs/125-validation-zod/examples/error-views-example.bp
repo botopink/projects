@@ -1,0 +1,75 @@
+// Front 125 — validation: Zod's feature set · examples/error-views-example.bp
+//
+// Demonstrates: step 9 — the three shapes a report is read in. One report, one
+// order (declaration order), three views over the path each violation carries.
+//
+//   z.flattenError(error)    -> report.flatten()    form-level and per-field lists
+//   z.treeifyError(error)    -> report.tree()       nested, mirroring the document
+//   z.prettifyError(error)   -> report.pretty()     text for a log or a terminal
+//
+// The example is the reference's own: a strict object with a wrong-typed
+// field, a wrong-typed array item and an unknown key.
+//
+// Upstream: ZOD_DOCUMENTATION.md § 6 (Formatando Erros) —
+//           https://zod.dev/error-formatting
+//
+// Target: both. `pretty()` is compared as one literal on both targets, so the
+// two cannot drift by a space.
+
+import {decorators.schema} from "validation";
+import {schemas, schemas.Schema, report: {ValidationReport, Violation, Flat, ReportTree}} from "validation";
+import {messages: {setMessageSource, builtInOnly}} from "validation";
+
+#[schema]
+pub type Player(
+    username: string,
+    favoriteNumbers: Array<i32>,
+)
+
+fn failing() -> ValidationReport {
+    val _s = setMessageSource(builtInOnly());
+    return case decodePlayer(
+        """{"username": 1234, "favoriteNumbers": [1234, "4567"], "extraKey": 1234}""",
+    ) {
+        Ok(_) -> ValidationReport.empty();
+        Error(report) -> report;
+    };
+}
+
+test "validation: the report lists every violation, located" {
+    val located = failing().violations.map({ v -> v.field + ":" + v.code }).join(",");
+    assert located == "username:invalidType,favoriteNumbers[1]:invalidType,extraKey:unrecognizedKey";
+}
+
+test "validation: flatten splits form-level and field-level messages" {
+    // `fieldErrors` is keyed by the FIRST path segment, as `z.flattenError` is:
+    // the item inside `favoriteNumbers` is reported under the field.
+    val flat = failing().flatten();
+    assert flat.formErrors.join("|") == "extraKey is not a field of Player";
+    assert flat.fieldErrors.at("username").unwrapOr([]).join("|") == "must be text, was a number";
+    assert flat.fieldErrors.at("favoriteNumbers").unwrapOr([]).length == 1;
+}
+
+test "validation: tree mirrors the document's shape" {
+    val tree = failing().tree();
+    val username = tree.properties.at("username").unwrapOr(ReportTree.none());
+    assert username.errors.length == 1;
+    val numbers = tree.properties.at("favoriteNumbers").unwrapOr(ReportTree.none());
+    // items[0] has nothing to say; items[1] carries the violation.
+    assert numbers.errors.length == 0;
+    assert numbers.items.at(1).unwrapOr(ReportTree.none()).errors.length == 1;
+}
+
+test "validation: pretty is the same text on both targets" {
+    assert failing().pretty()
+        == "✖ must be text, was a number\n  → at username\n"
+        + "✖ must be a whole number, was text\n  → at favoriteNumbers[1]\n"
+        + "✖ extraKey is not a field of Player";
+}
+
+test "validation: the wire forms do not echo the rejected value" {
+    // `invalidValue` stays on the Violation for a log line; neither JSON form
+    // writes it, so a validation error cannot reflect input into a response.
+    assert failing().toJson().contains("1234") == false;
+    assert failing().toProblemDetail().contains("\"status\":400");
+}

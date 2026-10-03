@@ -1,0 +1,111 @@
+// Front 125 — validation: Zod's feature set · examples/object-policy-example.bp
+//
+// Demonstrates: step 5 — what an object does with what it was not told about:
+// unknown keys, absent keys, defaults and fallbacks.
+//
+//   z.strictObject({...})          -> the default (decision 144)
+//   z.object({...})  (strips)      -> #[stripUnknown]
+//   z.looseObject({...})           -> a #[rest] field of Dict<string, Json>
+//   .catchall(z.string())          -> a #[rest] field of Dict<string, string>
+//   .exactOptional()               -> #[present]
+//   .default("tuna")               -> #[orElse("tuna")]
+//   .catch(42)                     -> #[fallback(42)]
+//
+// Upstream: ZOD_DOCUMENTATION.md §§ 4.13 (Optionals), 4.17 (Objects),
+//           4.34 (Defaults), 4.36 (Catch) — https://zod.dev/api#objects
+//
+// Target: both.
+
+import {decorators: {schema, stripUnknown, rest, present, orElse, fallback}} from "validation";
+import {schemas, schemas.Schema, report.ValidationReport, report.Violation} from "validation";
+import {collections.Dict, json.Json} from "std";
+
+// The default refuses what it does not declare.
+#[schema]
+pub type StrictDog(name: string)
+
+// `z.object` — the extra key is dropped, silently, because the type says so.
+#[schema]
+#[stripUnknown]
+pub type Dog(name: string)
+
+// `z.looseObject` — the extra members are kept, in document order.
+#[schema]
+pub type LooseDog(
+    name: string,
+    #[rest] extra: Dict<string, Json>,
+)
+
+// `.catchall(z.string())` — the extra members must all be strings.
+#[schema]
+pub type TaggedDog(
+    name: string,
+    #[rest] tags: Dict<string, string>,
+)
+
+#[schema]
+pub type Profile(
+    // `.optional()` — the key may be absent or null.
+    nick: ?string,
+    // `.exactOptional()` — the key may be absent; an explicit null is refused.
+    #[present] middle: ?string,
+    // `.default("tuna")` — an absent key takes the literal.
+    //
+    // LANGUAGE GAP: `Field` reflects no default — the language's own form is
+    // the field default (`food: string = "tuna"`), but the decorator cannot
+    // know one was declared. `#[orElse]` writes it instead.
+    #[orElse("tuna")] food: string,
+    // `.catch(42)` — a value that does not decode is replaced, and no violation
+    // is recorded for it.
+    #[fallback(42)] lucky: i32,
+)
+
+fn dogCodes(r: @Result<StrictDog, ValidationReport>) -> string {
+    return case r {
+        Ok(_) -> "";
+        Error(report) -> report.violations.map({ v -> v.field + ":" + v.code }).join(",");
+    };
+}
+
+test "validation: an undeclared key is a violation by default" {
+    // `StrictDog.parse({ name: "Yeller", extraKey: true })` throws.
+    val r = decodeStrictDog("""{"name": "Yeller", "extraKey": true}""");
+    assert dogCodes(r) == "extraKey:unrecognizedKey";
+}
+
+test "validation: #[stripUnknown] drops it" {
+    val dog = try decodeDog("""{"name": "Yeller", "extraKey": true}""");
+    assert dog.name == "Yeller";
+}
+
+test "validation: a #[rest] field keeps what was not declared" {
+    val dog = try decodeLooseDog("""{"name": "Yeller", "extraKey": true, "age": 3}""");
+    assert dog.extra.keys().join(",") == "extraKey,age";
+}
+
+test "validation: a typed #[rest] field checks the extras" {
+    // `DogWithStrings.parse({ name: "Yeller", extraKey: 42 })` fails.
+    val r = decodeTaggedDog("""{"name": "Yeller", "extraKey": 42}""");
+    assert r.isError();
+    val ok = try decodeTaggedDog("""{"name": "Yeller", "extraKey": "extraValue"}""");
+    assert ok.tags.at("extraKey").unwrapOr("") == "extraValue";
+}
+
+test "validation: absent, null, default and fallback are four different answers" {
+    val p = try decodeProfile("""{"lucky": "tuna"}""");
+    assert p.nick == null;
+    assert p.middle == null;
+    assert p.food == "tuna";
+    assert p.lucky == 42;
+}
+
+test "validation: #[present] accepts an absent key and refuses an explicit null" {
+    // `User.parse({ nick: undefined })` fails for `exactOptional`.
+    val r = decodeProfile("""{"middle": null, "lucky": 1}""");
+    assert r.isError();
+}
+
+test "validation: a default is the absent case only — a wrong value is still wrong" {
+    val r = decodeProfile("""{"food": 7, "lucky": 1}""");
+    assert r.isError();
+}

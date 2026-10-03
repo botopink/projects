@@ -1,0 +1,50 @@
+---
+// Front 119 — bpp styling · examples/src/components/Box.bpp
+//
+// Demonstrates: step 2 in a `.bpp` component — a `<style>` after the markup, as
+// in an `.astro` file. The template gives every element IT writes one scope
+// attribute and hands the sheet to the render's style sink, scoped to that
+// attribute; the slotted content was written by the caller and carries none.
+//
+//   ---
+//   const { isRed } = Astro.props;
+//   const foregroundColor = "rgb(221 243 228)";
+//   ---
+//   <div class:list={['box', { red: isRed }]}><slot /></div>
+//   <style define:vars={{ foregroundColor }}>
+//     .box { border: 1px solid blue; color: var(--foregroundColor); }
+//     .red { border-color: red; }
+//   </style>
+//
+// `define:vars={foregroundColor}` names a `val` of the fence: it reaches the
+// root element as the custom property `--foregroundColor`.
+//
+// `scopedStyle` is imported and never spelled: the template names it in the
+// code it builds, and it resolves here, in the component's scope — the way a
+// tag's builder does.
+//
+// The `.bp` form, with its tests: `Box` in `scoped-style-example.bp` at the
+// root of `examples/`.
+//
+// Upstream: astro-docs/11-styling.md (Estilos com Escopo, Variáveis CSS)
+//           https://docs.astro.build/en/guides/styling/#scoped-styles
+
+import {div} from "jhonstart";
+import {classIf} from "jhonstart";
+import {scopedStyle} from "jhonstart-emilia";
+
+type Props(
+    isRed: bool,
+    children: Children = [],
+)
+
+val foregroundColor = "rgb(221 243 228)";
+---
+<div class="box" class:list={[classIf(isRed, "red")]}>
+  <slot />
+</div>
+
+<style define:vars={foregroundColor}>
+  .box { border: 1px solid blue; color: var(--foregroundColor); }
+  .red { border-color: red; }
+</style>
