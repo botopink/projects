@@ -70,7 +70,7 @@ The double is test-only and ships no production path; no cell of this member is 
 ### Step 4 — `bootAndExit` (R19-4; after 04 step 4)
 
 - [ ] `test/boot_test.bp`: `bootAndExit(app)` on `fixtures/ok` exits `0`; on `fixtures/{missing-bean,cycle,dup-route,dup-listener,bad-cron,bad-config}` exits with six distinct non-zero codes, each message naming the declaration
-- [ ] no port is bound (`rkListenerCount()` is 0 after the run) and no broker connection is attempted (the in-process broker's connect count is 0)
+- [ ] no port is bound (no listening socket is opened during the run — `rakun-messaging`'s `rkListenerCount()` counts message listeners, not sockets) and no broker connection is attempted (the in-process broker's connect count is 0)
 - [ ] `fixtures/fifty` boots and exits in under 2 s, measured with `io.clock`
 
 ### Step 5 — The pairing and the example (R19-5, STD-2)

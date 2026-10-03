@@ -211,7 +211,8 @@ re-measures; this front records the answer.
 - [ ] the std track's measurement recorded here, or the row filed in `02-std-and-packaging`
 
 **Gate:** standard (fronts.md § Gate) + a traced run (`BOTOPINK_SNAP_TRACE`) after each batch: 0
-orphans, traced = on disk; `scripts/snap_audit.sh --mode=runtime-parity` green after every rename ·
+orphans, traced = on disk; a warm re-run: same pass count, 0 leaks, 0 `.snap.md.new`;
+`scripts/snap_audit.sh --mode=runtime-parity` green after every rename ·
 `zig build test-docs` and `scripts/check-docs.sh` green after every document commit · every relative
 link of the documents this front owns resolves · library commits in erika on `front/07-residuals`,
 the pointers on the meta branch of the same name

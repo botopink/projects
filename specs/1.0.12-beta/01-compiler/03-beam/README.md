@@ -77,5 +77,7 @@ and after each step · every re-recorded RUN LOG verified by running (`erlc +fro
   `{unresolved_identifier, N}`; the check is the checker's.
 - **This front moves only beam snapshots.** A change that moves the erlang snapshots crossed into
   02's shared Erlang-text renderer — stop and report.
-- A module-level `val g = greet` called as `g()` prints `#Fun<…>` on beam (found by `05-wasm`;
-  `run/fn_value_bound_by_val` keeps to locals) — re-measure, and a step here if it holds.
+- Two rows registered by other fronts, to re-measure (a step here if either holds): a module-level
+  `val g = greet` called as `g()` prints `#Fun<…>` on beam (`05-wasm`; `run/fn_value_bound_by_val`
+  keeps to locals); a `throw` in the block form of a `case` arm under `-> @Result` still throws on
+  beam (`02-erlang`).

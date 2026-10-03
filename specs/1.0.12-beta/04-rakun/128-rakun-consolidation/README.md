@@ -98,7 +98,7 @@ One step per merge, in dependency order; each lands green on its own.
 
 - [ ] `modules/rakun-ws/` is gone; `client_test` and `envelope_test` run under
       `modules/rakun-client/test/ws/`; `rakun-client`'s suite green
-- [ ] `grep -rn '"rakun-ws"\|"rakun-soap"' repository/rakun` is empty (merged, not renamed — decision 187)
+- [ ] `grep -rn '"rakun-ws"' repository/rakun` is empty, and no manifest names a renamed SOAP member (merged, not renamed — decision 187)
 
 ### Step 5 — `rakun-tx` into `rakun-data`
 

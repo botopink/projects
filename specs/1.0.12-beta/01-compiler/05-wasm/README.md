@@ -95,6 +95,9 @@ Each re-measured at the step that takes it; a row that holds traps or is refused
       program-declared `default fn` of a primitive (`test/program_primitive_behavior_extends_std`),
       `?.b` on an absent element (`run/tuple_label_through_optional` keeps to the present half) —
       registered by `01-checker`
+- [ ] a nested constructor in a `val` binding (`val Pair(Circle(r), n) = p;`) is refused on wasm —
+      `01-checker` step 13's `run/val_nested_ctor_pattern` needs it lowered (each binding read off
+      its field's slot, as the one-level form)
 - [ ] a function read from a generic record's field and called through an untyped local prints its
       pointer (`Box<T>(value: T)`; `modules/typeinfo_all_registration` calls through a typed local —
       registered by `130-decorator-outputs`)

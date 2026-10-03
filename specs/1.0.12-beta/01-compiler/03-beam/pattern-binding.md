@@ -29,5 +29,6 @@ matched tuple's element register (`beam_asm.zig` `emitPatternDestruct`). The fix
 
 ## Open
 
-`01-checker` step 13: `val [..rest] = xs;` checks but leaves `rest` unbound on erlang, and a nested
-constructor (`val Pair(Circle(r), n) = p;`) is refused as refutable although no level can fail.
+`01-checker` step 13: `val [..rest] = xs;` checks but the checker leaves `rest` unbound, and a
+nested constructor (`val Pair(Circle(r), n) = p;`) is refused as refutable although no level can
+fail; wasm does not lower the nested form yet (`05-wasm`'s row).

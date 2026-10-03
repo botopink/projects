@@ -1,9 +1,9 @@
 # Front 01 — checker: every program `botopink check` accepts runs the same on four targets
 
 **Priority:** high · **State:** partial: steps 1–9, 11, 12, 14–17 on feat; step 6 box 3, steps 10,
-13, 18–20 and nine rows open
-**Depends on:** `04-js` step 6 (step 6 box 3) · `16-formatter` step 8 (step 10) · `02-erlang` and
-`05-wasm` lowering `val [..rest]` / a nested constructor (step 13) · `08-bpp/116` hands the prelude
+13, 18–20 and ten rows open
+**Depends on:** `04-js` step 6 (step 6 box 3) · `16-formatter` step 8 (step 10) · `05-wasm`
+lowering a nested constructor in a `val` (step 13) · `08-bpp/116` hands the prelude
 list (step 19) · decision-gated rows lg2-a (a byte type), lg2-f (type-valued decorator arguments),
 lg2-q (`@Decl`'s source location), lg2-e (a method-level `@Decl`'s owner and parameters), lg2-m (a
 module-level annotation), lg2-r (a decorator-supplied body), lg2-t (a negative numeric enum leaf) —
@@ -79,8 +79,9 @@ away by `format --check` — `16-formatter` step 8 adds the printer arm first.
 
 `val [..rest] = xs;` binds `rest`; `val Pair(Circle(r), n) = p;` is irrefutable when no level can
 fail and is accepted. The checker half works (measured with the refusal lifted: commonJS and beam
-answer); erlang leaves `Rest` unbound (`erlc` refuses — `02-erlang`) and wasm refuses the nested
-pattern (`05-wasm`), so the refusal stays until both lower it.
+answer); erlang binds a spread alone since `02-erlang`'s row (`Rest = Xs`,
+`run/list_pattern_spread_alone`), and wasm refuses the nested pattern (`05-wasm`'s row) — re-measure
+erlang's nested constructor, and keep the nested refusal until wasm lowers it.
 
 - [ ] `run/val_spread_only_list_pattern` prints `rest`'s length; `run/val_nested_ctor_pattern`
       prints `r` and `n` — four targets
@@ -154,6 +155,9 @@ already parses — `test/comptime_template.bp`). Decision 256's bean registry is
       to `comptime.zig`'s `resolveImports`
 - [ ] two aliased imports of two same-named **types** stay refused although decision 170 makes them
       legal, until the backends tell types apart by module — the maintainer's question, raised here
+- [ ] an `@External.Wasm` binding read on every target, not only on a wasm build: the checker's walk
+      over `external_variants` with `codegen/wat/host_binding.zig`'s `parse` as the reader, so a
+      misspelt `op:` in a library no wasm build reaches is refused (handed by `05-wasm` step 5)
 - [ ] `infer.zig`'s template memo key appends the whole scope's JSON per call site — O(scope) per
       template call (`14-comptime-on-beam` step 2's remaining cost)
 - [ ] row 33 (an `as` alias of an imported type binds the declared name) re-measured in its exact

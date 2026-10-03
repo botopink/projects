@@ -102,6 +102,8 @@ wasm already raises (`int_chk`). No target wraps, none answers a wider number.
 
 - [ ] a std module's module-level `var` lowers to `std@beam` on erlang, which the module does not
       import (found by `05-wasm` step 5; re-measure)
+- [ ] rakun's `codepointIndex` host cell (`autoconfig_registry.bp`) deletable since step 6 — the
+      rakun track's row, noted so it sees the fix
 
 **Gate:** standard (fronts.md § Gate) + every re-recorded RUN LOG verified by running the program
 under `erl`, nothing bulk-accepted · `zig build test-libs` erlang cells at baseline, rakun's members

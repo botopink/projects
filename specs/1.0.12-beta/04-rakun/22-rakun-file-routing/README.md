@@ -29,10 +29,10 @@ envelope uses `refreshValue()`.
 
 - **R62-3.** `ssr.bp`'s page request delegates `headerNames()`, `headers()`, `queryDict()`,
   `rawQuery()` to the core frame (04 step 5); onze-server hardcodes `[]` for them today.
-- **R22-1.** `file_router.bp`'s scan records a root `middleware.bp` in `ScanReport.middleware`
-  (`fs.exists` of `middleware.bp` beside `botopink.json`); the app's boot (`rkAppInstall`) registers
-  the file's exported entry through `rakun-web`'s `registerMiddleware` — the hand-off is asserted
-  by driving a request through `fixtures/middleware`.
+- **R22-1.** `file_router.bp`'s scan records a root `middleware.bp` (beside `botopink.json`, not
+  under `appDir`) in `ScanReport.middleware`; nothing reads that field yet. The app's boot registers
+  the file's exported entry through `rakun-web`'s `registerMiddleware`, and the hand-off is asserted
+  by driving a request through `fixtures/middleware`; what runs in the file is 65's chain.
 - **R25-3/4.** Handlers are dispatched by `rkDispatchHttp` after the chain; `OPTIONS` without an
   `#[optionsRoute]` (`route_handler.bp` `optionsRoute`) falls to the chain's CORS entry. Assertions
   over `fixtures/routing` with a recording filter.

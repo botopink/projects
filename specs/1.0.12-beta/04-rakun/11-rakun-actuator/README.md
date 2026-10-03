@@ -20,15 +20,18 @@ measured; the closed DoD is ticked against the post-128 tree.
 
 ## Mechanism
 
-- **R11-1.** 05's registry (`rkConfigSources()`) records key, value and source (03r-c); `configprops`
-  renders the value without the source — one field.
+- **R11-1.** `registry_endpoints.bp` `configpropsJson()` renders each key's value without the source
+  it came from. The core's configuration (`src/config.bp`, the eight sources walked in order) knows
+  which source supplied a key; the front measures whether that is readable from the host — if not,
+  the accessor is a widening reported to 04 — and adds the field.
 - **R11-2.** The route table (`rkRoutePaths()`) does not carry the registrar. The core's
   `registerRoute` would take a `source` tag (`"decorator"` / `"file"`) — a widening 04 owns; until it
-  lands, `mappings` labels by the handler-name prefix (`__rkHandler_`); the front measures whether
-  the prefix is enough (130 may rename it) and reports to 04 if not.
-- **R11-3.** `startup` reads the boot event log (`rkBootSteps()`); the four names are events
-  `bootSequenceFor` already emits under other labels — renamed in the endpoint's rendering, not in
-  the core.
+  lands, `mappings` labels by the handler-name prefix (`__rkHandler_`, written by `rakun-app`'s
+  `route_handler.bp`); the front measures whether the prefix is enough (130 may rename it) and
+  reports to 04 if not.
+- **R11-3.** `startup` (`instrumentation.bp` `startupRead`) renders `startupSteps()`, recorded by
+  `timeStep(name, …)` around the boot's steps; the four documented names are given in the
+  endpoint's rendering (or the `timeStep` labels), not in the core.
 - **R11-4.** `src/management.bp` (76) implements `shutdown` over `rakun_probes.erl`
   (`rakun_probes_shutdown`); the box is the host's own assertion.
 - **R11-5.** `src/instrumentation.bp` registers `#[instrumentation]` types at module load; the front

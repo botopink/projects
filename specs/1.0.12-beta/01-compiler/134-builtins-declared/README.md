@@ -49,5 +49,3 @@ walked yet.
 - **134-d** — `@is(…)` written by hand
 
 **Gate:** standard (fronts.md § Gate) + `zig build test-language`, `test-docs`, `test-libs`, `tsc-check` green
-</content>
-</invoke>

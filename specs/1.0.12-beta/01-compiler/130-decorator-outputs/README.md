@@ -97,5 +97,3 @@ half is not 216's).
   declared in `builtins.d.bp` (134).
 - A wasm row this front found — a function read from a generic record's field and called through
   an untyped local prints its pointer — is `05-wasm`'s.
-</content>
-</invoke>
