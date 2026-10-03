@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.11-beta
 
-**These questions are open** — `lg2-a…w`, `02e-a` (raised by `01-compiler/02-erlang`), `05w-c…f` (raised by `01-compiler/05-wasm` step 5), `05w-g` (raised by `00-gate` on `macos-14`) and `17-b`, `17-c` (raised by `01-compiler/17-beam-memory`); `ck2-c` was answered (decision 244); the `lg2-*` rows are carried verbatim below from 1.0.10-beta's
+**These questions are open** — `lg2-a…w`, `02e-a` (raised by `01-compiler/02-erlang`), `05w-c…f` (raised by `01-compiler/05-wasm` step 5), `05w-g` (raised by `00-gate` on `macos-14`) and `17-b`, `17-c` (raised by `01-compiler/17-beam-memory`), `134-a…d` (raised by `01-compiler/134-builtins-declared`); `ck2-c` was answered (decision 244); the `lg2-*` rows are carried verbatim below from 1.0.10-beta's
 
 **Twenty-seven questions are open** — `ck2-c`, `lg2-a…w`, `02e-a` (raised by `01-compiler/02-erlang`), `dec-e` (raised by `01-compiler/130-decorator-outputs` step 5) and `gw-a` (raised by `front/gate-wasm-wrong-answers`); the first twenty-four carried verbatim below from 1.0.10-beta's
 § Open with their ids unchanged (`ck-host`, `lg-a`, `lg-b` and this milestone's `01c-e` were answered:
@@ -402,3 +402,91 @@ row's nearest form is the design — and the cost of that reading is named where
 > with arithmetic every user expects; (c) leaves wasm permanently divergent.
 > **Blocks.** A four-target cell for integer overflow (today only `tests/wat.zig`'s RUN LOG pins
 > wasm's trap); `01-compiler/04-js` and `02-erlang` / `03-beam`'s range checks under (a).
+
+
+### 134-a · `@print`, `@println` and `@debug` take any number of arguments
+
+> **Raised by:** `01-compiler/134-builtins-declared` step 2 (decision 252).
+> **Measured.** The three accept any number of arguments of any type: `@print(a, b)` is written in
+> four `tests/language/run` cells (`float_record_field`, `string_literal_unicode_escape`,
+> `beam_memory_ets_keyed` twice) and lowers to `console.log(a, b)` / `'__bp_print'([A, B])`. No
+> declaration spells a variadic parameter, so `builtins.d.bp` declares the closest honest
+> `print(value: unknown)` and the compiler's table holds the three as an open question — their
+> arguments are not checked.
+> **Options.**
+> (a) one argument — the declaration as it stands is held at the call, `@print(a, b)` is
+> `builtin-arguments`, and the four cells print one value per call:
+> ```botopink
+> @print(x * 3.0);
+> @print(n);          // was @print(x * 3.0, n)
+> ```
+> (b) the language gains a variadic parameter, and the declaration spells it:
+> ```botopink
+> pub declare fn print(..values: unknown[]);
+> @print(x * 3.0, n);   // accepted, checked against unknown[]
+> ```
+> (c) the three stay outside the check (today).
+> **Recommendation.** (a) — the most restrictive reading (decision 67): one value per call is what
+> decision 8 §7's formatter defines, the multi-argument form is four test lines, and (b) is a
+> language feature for one builtin family.
+> **Blocks.** The three rows of `comptime/builtins.zig` held `declaration`.
+
+### 134-b · The type of `@TypeInfo.all`'s `with:`
+
+> **Raised by:** `01-compiler/134-builtins-declared` step 2 (decisions 252, 253).
+> **Measured.** `with:` names a decorator — a function whose first parameter is `comptime _: @Decl`
+> — or a list of them; no type spells "a decorator", so the declaration reads
+> `all(with: unknown, member: ?string = null) -> Declared<unknown>[]` and the catalogue's own rule
+> (`typeinfo-all-arguments`, `typeinfo-all-not-decorator`) does the checking.
+> **Options.**
+> (a) `with: unknown` and the catalogue's rule (today):
+> ```botopink
+> declare fn all(with: unknown, member: ?string = null) -> Declared<unknown>[];
+> ```
+> (b) a builtin type `Decorator` that only a decorator's name has, and its array:
+> ```botopink
+> declare fn all(with: Decorator | Decorator[], member: ?string = null) -> Declared<unknown>[];
+> @TypeInfo.all(with: route);   // `route` is a Decorator because of its first parameter
+> ```
+> (c) the decorator's function type, `fn(comptime _: Decl)` (a decorator with arguments does not
+> fit it).
+> **Recommendation.** (b) — the declaration then says what is accepted, and the generic check holds
+> it; (a) keeps a declaration that accepts everything, which the catalogue's rule has to correct.
+> **Blocks.** Nothing today; `TypeInfo.all` stays held by its own rule.
+
+### 134-c · What `@getContext(T)` answers
+
+> **Raised by:** `01-compiler/134-builtins-declared` step 1 (decision 252).
+> **Measured.** The checker types `@getContext(T)` as `T` (`infer.zig` RC3 arm), while
+> `builtins.d.bp` declared `-> Component<T, unknown>` and its comment shows
+> `val ctx = use getContext(T)` — which the checker refuses (`use-of-non-context-fn: 'T' is not a
+> hook`). No `.bp` file calls it. The declaration now says `-> T`, what the compiler does.
+> **Options.**
+> (a) `-> T`, called without `use` (today, declared):
+> ```botopink
+> val ctx = @getContext(BasePagamento);
+> ```
+> (b) `-> Component<T, T>`, called behind `use` as the old comment said:
+> ```botopink
+> val ctx = use @getContext(BasePagamento);
+> ```
+> **Recommendation.** (a) — it is what the checker and every backend implement; (b) changes a
+> builtin's typing for a form nothing writes.
+> **Blocks.** Nothing.
+
+### 134-d · `@is(…)` written by hand
+
+> **Raised by:** `01-compiler/134-builtins-declared` step 1 (decision 252).
+> **Measured.** `x is T` parses as the builtin call `is` carrying the tested type
+> (`ast.is_builtin_name`); the lexer also makes `@is(1)` that call, with no tested type, and it
+> type-checks as `bool` and lowers to nothing meaningful. It is reachable and undeclared.
+> **Options.**
+> (a) refuse `@is(…)` written as a call (`unknown-builtin`, naming `x is T`):
+> ```botopink
+> val b = @is(1);   // error[unknown-builtin]: `@is` is not a builtin — write `x is T`
+> ```
+> (b) declare it (`is(value: unknown) -> bool`) and keep the call.
+> **Recommendation.** (a) — `is` is an operator; a call form nobody writes and that tests nothing
+> is the loosest reading.
+> **Blocks.** The last undeclared builtin-call row of step 1.
+
