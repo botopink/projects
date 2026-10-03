@@ -1,7 +1,7 @@
 # Front 01 — checker: every program `botopink check` accepts runs the same on four targets
 
 **Priority:** high · **State:** partial: steps 1–9, 11, 12, 14–17 on feat; step 6 box 3, steps 10,
-13, 18, 19 and five rows open
+13, 18–20 and nine rows open
 **Depends on:** `04-js` step 6 (step 6 box 3) · `16-formatter` step 8 (step 10) · `02-erlang` and
 `05-wasm` lowering `val [..rest]` / a nested constructor (step 13) · `08-bpp/116` hands the prelude
 list (step 19) · decision-gated rows lg2-a (a byte type), lg2-f (type-valued decorator arguments),
@@ -25,7 +25,7 @@ Paths are relative to `repository/botopink-lang/modules/compiler-core/src/`.
 Every program the checker accepts is one every backend can run with the answer decision 8 gives,
 and every program it refuses is refused located, by name. When the front lands, the open rows
 below are cells on four targets, and the checker carries decision 266's prelude scope and
-decision 247's numeric suffixes.
+decision 247's numeric suffixes and decision 255's two expression forms.
 
 ## Done
 
@@ -113,6 +113,18 @@ header).
       only `article` — the transformed program imports `elements.article` and not `Element`; a name
       the module declares itself resolves to its own declaration; nothing in `src/` names a library
 - [ ] `src/comptime/AGENTS.md` states the scope order
+
+### Step 20 — two expression forms (decision 255)
+
+(1) A type name with explicit type arguments followed by `.member` or `(` is a type application —
+`Dict<string, unknown>.empty()` (1.0.10's decision 8 §1.3, `Box<i32>(value: 1)`, extended to a
+static member); elsewhere `<` is a comparison: a type-argument list is tried only after a type name
+and only when its `>` is followed by `.` or `(`, and a list that does not parse as types is a
+comparison. (2) `comptime <expr>` is `comptime { break <expr>; }` (`val x = comptime 10 + 5;`
+already parses — `test/comptime_template.bp`). Decision 256's bean registry is written with both.
+
+- [ ] `run/type_application_static_member` (`Dict<string, unknown>.empty()`, and `a < b > (c)`
+      still a comparison) on four targets; `comptime <expr>` pinned equal to its block form
 
 ### Rows other fronts found
 
