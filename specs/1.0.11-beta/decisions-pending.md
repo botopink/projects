@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.11-beta
 
-**Twenty-five questions are open** — `ck2-c`, `lg2-a…w` and `02e-a` (raised by `01-compiler/02-erlang`); the first twenty-four carried verbatim below from 1.0.10-beta's
+**Twenty-six questions are open** — `ck2-c`, `lg2-a…w`, `02e-a` (raised by `01-compiler/02-erlang`) and `dec-e` (raised by `01-compiler/130-decorator-outputs` step 5); the first twenty-four carried verbatim below from 1.0.10-beta's
 § Open with their ids unchanged (`ck-host`, `lg-a`, `lg-b` and this milestone's `01c-e` were answered:
 decisions 146–149). Every `lg2-*` row of [`language-gaps.md`](./language-gaps.md) is a
 feature the language does not have; the recommendation is always the most restrictive reading
@@ -70,6 +70,33 @@ step 2 raised, because its answer changes what a template body receives (`14-a`,
 > a `pow` at an input where (a) and (c) differ. The commonJS × erlang divergence (fdlibm × glibc) is a
 > row of its own, not this question's.
 > **Blocks.** Nothing today; it decides `math.bp`'s `powBody`.
+
+### dec-e · How the boot registers beans whose types differ (decision 234)
+
+> **Raised by:** `01-compiler/130-decorator-outputs` step 5, rakun's dependency injection (decision 234).
+> **Measured.** `@typeInfo.all(…)` answers one array literal, so every entry's `value` must have one
+> type. Decision 234's boot reads `@typeInfo.all(with: [stereotypes…], member: "make")`, and a
+> stereotype's `make()` returns its own type: two of them are `type mismatch: expected Mailer, got
+> Orders` at the query (measured on the compiler of 130). `@typeInfo.all(with: provides)` is the same
+> refusal for two `#[provides]` functions returning `Clock` and `Ledger` — each `value` is the
+> function itself. The language has no `any`, and a function's decorator writes no per-function code
+> (decision 236), so a `#[provides]` function cannot carry a registration of its own either.
+> **Options.** (a) **library only** — the stereotype adds a second member, `T.register() -> i32`,
+> which registers `{ -> T.make() }` under the type's name with the qualifier / primary / scope / lazy
+> its annotations carry; the boot reads `@typeInfo.all(with: [stereotypes…], member: "register")` and
+> calls each value. `#[provides]` functions become `#[bean]` methods of a `#[configuration]` type
+> (Spring's `@Bean`), registered by the configuration's own `register()`; the free-function
+> `#[provides]` goes (41 annotations in rakun). (b) **compiler** — `@typeInfo.all(…, each: f)` applies
+> a generic `f` to every entry where the answer is spliced (`[f(Declared(…Mailer…)), f(Declared(…Orders…))]`),
+> each call typed alone, the answer `R[]`: rakun writes
+> `@typeInfo.all(with: [service, …], member: "make", each: rkBean)` and
+> `@typeInfo.all(with: provides, each: rkProvided)`. (c) **keep the load-time registration** — each
+> stereotype emits `val __rkBean_T = rkRegisterBean(…, { -> T.make() })`; this is an `@emit`, which
+> step 6 removes, so (c) only defers the question.
+> **Recommendation.** (a) — no language feature, and the registration is a member like every other
+> output of decision 216; `#[bean]` inside `#[configuration]` is the one provider form Spring has.
+> **Blocks.** Decision 234's boot (the catalogue that fills the context): the `T.make()` factories and
+> the `rkResolve("<Field type>")` injection can be written, but nothing fills the context they read.
 
 ---
 
