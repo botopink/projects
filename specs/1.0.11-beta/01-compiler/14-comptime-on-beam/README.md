@@ -95,16 +95,42 @@ The cost per evaluation still grows with N. Where an N=200 build spends it (stac
 | the ETF encode of the argument | 5 % | — | 14 |
 | `erlc` checks and sidecars in the CLI | — | 24 % | 26 |
 
-The growth is the capture's `bindings`: every module-level `val` in scope is in every capture
-(`captureToTerm`), so the argument — encoded, decoded by the runtime and rendered into the trace — is
-O(N) per evaluation and O(N²) per build. Sending the scope only to a body that reads it
-(`bindings/1`, `lookup/2` — `ref` and `context` do not read the list) is question `14-a`
-(`decisions-pending.md`); nothing is built before it is answered. The trace listing's share needs an
-owner for `trace.zig` and for the four backends' `comptime_trace` field (`infer.zig` passes
-`env.comptimeTraces` to every evaluation; 01) before a build that reads no trace can skip rendering one.
+The growth was the capture's `bindings`: every module-level `val` in scope was in every capture, so
+the argument — encoded, decoded by the runtime and rendered into the trace — was O(N) per evaluation
+and O(N²) per build. Decision 237 answers question `14-a`: a capture carries only the bindings whose
+name is a **word** of its text. A word is a maximal run of `[A-Za-z0-9_]` whose first byte is not a
+digit (a botopink identifier's shape), read from the literal's own text — a `${…}` hole contributes
+none; the capture's `words` (distinct, in order of first appearance) travel beside `bindings`, and
+`bindings` is one scope probe per word (`template_eval.zig` `captureToTerm` / `appendWords`).
+`lookup(name)` answers `undefined` for a word the scope lacks and fails the template at its literal for
+a name that is not a word — `lookup("<name>"): not a word of the template's text; a template capture
+carries only the bindings whose name its text spells` (`runtime/prelude.zig` `lookup/2`, identical
+on both runtimes). jhonstart's `html` (tag and `[prop]` names) and erika's query (the collection after
+`from`) look up tokens of their text, and keep working.
+
+Re-measured after decision 237 (same project and build mode, best of 5; load average 19 / 17 / 16 at
+the three marks, 1-minute):
+
+| target (runtime) | N=0 | N=100 | N=200 | N=400 | slope 0→200 |
+|---|---|---|---|---|---|
+| commonJS (wat), before | 227 ms | 496 ms | 1002 ms | 2746 ms | 3.9 ms/eval |
+| commonJS (wat), after | 226 ms | 361 ms | 485 ms | 750 ms | 1.3 ms/eval |
+| erlang (BEAM), before | 429 ms | 743 ms | 1164 ms | 2749 ms | 3.7 ms/eval |
+| erlang (BEAM), after | 443 ms | 659 ms | 711 ms | 845 ms | 1.3 ms/eval |
+
+("before" measured at load 16 / 13 / 11.) The cost per evaluation no longer grows with N (N=200→400
+adds ≈ 1.3 ms/eval on commonJS, ≈ 0.7 on erlang). commonJS meets the N=200 budget (485 ≤ 600 ms);
+erlang does not (711 ms, of which 443 ms is the N=0 build), and neither meets the 1 ms slope. What is
+left per evaluation is the table above's other stages — the runtime's evaluation (18) and the trace
+listing (14 / the `trace.zig` owner) — with the argument now O(text). `infer.zig`'s template memo key
+still appends the whole scope's JSON per call site (01).
 
 **Acceptance:**
-- [ ] slope ≤ 1 ms per evaluation, N=200 ≤ 600 ms — unmet; the stages and their owners are the table above
+- [x] decision 237 — a capture carries only the bindings its text names; `lookup` of a name that is not
+      a word is a located error, on both runtimes (`decision 237 ----` fixtures in `templates.zig`)
+- [ ] slope ≤ 1 ms per evaluation, N=200 ≤ 600 ms — commonJS N=200 met, the slope (1.3 ms/eval on
+      both targets) and erlang's N=200 (711 ms) unmet; the remaining stages and their owners are the
+      table above
 
 ### Step 3 — the round-trip fixtures (box 3)
 
