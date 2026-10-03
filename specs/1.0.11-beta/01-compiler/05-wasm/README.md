@@ -43,7 +43,7 @@ otherwise; programs run with `botopink run --target wasm` (wasmtime).
 
 ## Current state
 
-Steps 1–4 are done (step 1's and step 3's last boxes wait on 02's cells); step 5 is under way (the vocabulary, the codepoint unit, `math` and `escape` — table in § Step 5); the cells `run/string_lines_words`, `run/array_flat_forms`,
+Steps 1–4 are done (step 1's and step 3's last boxes wait on 02's cells); step 5 is under way (the vocabulary, the codepoint unit, `math`, `escape`, `hash` and `io/random` build on wasm; `unicode`, `json`, `encoding`, `querystring` wait on `05w-f` — table in § Step 5); the cells `run/string_lines_words`, `run/array_flat_forms`,
 `run/array_windows`, `run/array_fill` and `run/generic_string_equality` pass on four targets. The
 step-1 cells also closed five shape rows that printed a container's element as its word at exit 0
 (`wat/AGENTS.md` § Shapes a container carries), and step 3 closed two pattern rows that matched
@@ -120,8 +120,9 @@ codepoints.
 | Group | Modules | State |
 |---|---|---|
 | 1 | `math`, `escape` | **build on wasm** — `math`: six `op:`, the rest `fn:` bodies porting the fdlibm Node's V8 runs (bit-identical to commonJS on 6 539 fuzzed inputs) and a double-double `pow` (`05w-c`); `escape`: two `fn:` literals |
-| 1 | `unicode`, `json`, `encoding` (and so `querystring`), `hash` | still refused — each needs its algorithms as private `fn:` bodies (normalisation tables, the JSON validator, base64 / hex / percent codecs, SHA-256 / SHA-512 / MD5 / HMAC / PBKDF2 / djb2) |
-| 2 | `io/random` | still refused — `float` has its adapter (`wasi:random_f64`), `seed` / `seededFloat` need state, `shuffle<T>` a generic body, `secureToken` / `uuidV4` random bytes as text |
+| 1 | `hash` | **builds on wasm** — every cell a `fn:` body: SHA-256, SHA-512, SHA-1, MD5, HMAC, PBKDF2, base64 and the djb2 fold in exact `f64` arithmetic; identical to commonJS on a 180-input fuzz of all eleven cells (1 987 lines, astral text included — `contentHash` there copies commonJS's answer, `05w-d`) |
+| 2 | `io/random` | **builds on wasm** — `float` `wasi:random_f64`; `seed` / `seededFloat` the adapters `wasi:seed_u32` / `wasi:seeded_f64` (the commonJS sidecar's Mulberry32; 400 seeded draws over ten seeds equal the sidecar's bit for bit); `shuffle<T>`, `secureToken`, `uuidV4`, `randomBytes` `fn:` bodies over `random_get` |
+| 1 | `unicode`, `json`, `encoding` (and so `querystring`) | still refused — **blocked on `05w-f`**: each answers text built from code points (`fromCodepoint`, a normalisation's output, a parsed `\u` escape, a decoded byte string), and nothing a wasm body can call makes a string from a code point |
 
 **Acceptance:**
 - [x] the vocabulary: `codegen/wat/host_binding.zig` (`parse`, `findOp`, `adapters`), `wat.zig`
@@ -133,8 +134,13 @@ codepoints.
       codepoints (`str_cp_*` helpers); `run/string_index_of_codepoints` on four targets
 - [x] `run/std_math_on_every_target`, `run/std_escape_on_every_target` on four targets, the
       commonJS answers
+- [x] `hash` and `io/random` build on wasm; `run/std_hash_digests_on_every_target`,
+      `run/std_hash_macs_on_every_target`, `run/std_hash_content_on_every_target` (three cells, not
+      one: a wasm program has one 64 KiB heap page, `05w-e`) and `run/std_random_on_every_target` on
+      four targets, the commonJS answers; `codegen/tests/wat.zig` holds the seed adapters to the
+      sidecar's draws
 - [ ] `botopink build --target wasm` in `libs/std` refuses only group 3's modules — `unicode`,
-      `json`, `encoding`, `querystring`, `hash`, `io/random` are left (table above)
+      `json`, `encoding`, `querystring` are left (`05w-f`)
 - [ ] a `run/` cell per remaining module family on four targets
 - [ ] `wat/AGENTS.md` § Where this backend refuses to answer lists only group 3
 - [ ] `05w-c` answered (how exactly `math` agrees with the hosts)
@@ -142,6 +148,21 @@ codepoints.
 **Handoff.** A wasm binding is read on a wasm build only; reading it on every target (a misspelt
 `op:` in a library no wasm build reaches) is the checker's walk over `external_variants`
 (`comptime/infer.zig`, `01-checker`), with `host_binding.parse` as the reader.
+
+**Found while binding `hash` and `io/random`** (`wat/AGENTS.md` § Host bindings, the limits
+table). Fixed: an integer `if` in a function answering `f64` was `(if (result f64)` around two
+`i32`s (`ifValueType`); a `fn:` target with a type of its module (`shuffle<T>(xs: Array<T>)`) was
+refused in every importer, because linking qualifies the `pub` declaration's types
+(`sameSignature` drops the module's own qualification); a `wasi:` adapter answering nothing under a
+`-> void` declaration was invalid code. Open, each a wasm row this front owns: **one 64 KiB page of
+memory, never grown** (`05w-e` — `pbkdf2Sha256(…, 9, 32)` already traps); **`i64` lowered as
+`i32`** (`val a: i64 = 4294967295` prints `-1` — a wrong value at exit 0); a float in an array kept
+as its `f32`, and `xs.at(i).unwrapOr(0.0)` on an `Array<f64>` invalid code; `Float.toString` writing
+six fraction digits and trapping at 2^31; `Array.range` / `Array.repeat` recursing once per element
+(O(n²) memory). Outside this front: a module with a module-level `val` initialised by a call
+(`val t = "a b".split(" ")`) fails a commonJS build with a bare `TypeError` when any function of it
+calls `Float.floor` (comptime), and a std module's module-level `var` lowers to
+`std@beam` on erlang, which the module does not import.
 
 **Found beside it (the coordinator's row).** `val g = greet; g()` printed the string's address on
 wasm; the local (and a module-level `val`) is now typed by the function's declaration —

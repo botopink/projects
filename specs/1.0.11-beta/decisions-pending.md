@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.11-beta
 
-**Twenty-six questions are open** — `ck2-c`, `lg2-a…w`, `02e-a` (raised by `01-compiler/02-erlang`) and `dec-e` (raised by `01-compiler/130-decorator-outputs` step 5); the first twenty-four carried verbatim below from 1.0.10-beta's
+**These questions are open** — `lg2-a…w`, `02e-a` (raised by `01-compiler/02-erlang`), `dec-e` (raised by `01-compiler/130-decorator-outputs` step 5), `05w-c…f` (raised by `01-compiler/05-wasm` step 5) and `17-b`, `17-c` (raised by `01-compiler/17-beam-memory`); `ck2-c` was answered (decision 244); the `lg2-*` rows are carried verbatim below from 1.0.10-beta's
 § Open with their ids unchanged (`ck-host`, `lg-a`, `lg-b` and this milestone's `01c-e` were answered:
 decisions 146–149). Every `lg2-*` row of [`language-gaps.md`](./language-gaps.md) is a
 feature the language does not have; the recommendation is always the most restrictive reading
@@ -33,7 +33,7 @@ letter ids are never renumbered; their full text lives where they were raised:
 Two items the milestone's own cut raised are written here rather than in a track, because they
 cross tracks (`gate-a…j`, the zero-tolerance policy of `00-gate`, were answered: decisions 153–162),
 and three that the audit of the `00-gate` fronts on the integrated `feat` raised (`gate-k…p`, answered: decisions 225–228, 230, 231), and two that `01-compiler/05-wasm` step 5
-raised, because their answer reaches std (`05w-a`, `05w-b`, answered: decisions 238, 241; `05w-c`, open — below), and one that `01-compiler/14-comptime-on-beam`
+raised, because their answer reaches std (`05w-a`, `05w-b`, answered: decisions 238, 241; `05w-c`, `05w-d`, `05w-e`, `05w-f`, open — below), and one that `01-compiler/14-comptime-on-beam`
 step 2 raised, because its answer changes what a template body receives (`14-a`, answered: decision 237):
 
 ### std-e · Test lifecycle hooks
@@ -70,6 +70,69 @@ step 2 raised, because its answer changes what a template body receives (`14-a`,
 > a `pow` at an input where (a) and (c) differ. The commonJS × erlang divergence (fdlibm × glibc) is a
 > row of its own, not this question's.
 > **Blocks.** Nothing today; it decides `math.bp`'s `powBody`.
+
+### 05w-d · What `hash.contentHash` folds for a character above U+FFFF
+
+> **Raised by:** `01-compiler/05-wasm` step 5 (`hash.bp`'s `contentHashBody`).
+> **Measured.** The three hosts answer three values for `contentHash("🎉")` (U+1F389). erlang folds
+> the code point: `djb2([127881])`. The Node cell loops over UTF-16 indices calling `charCodeAt`,
+> which the commonJS runtime answers with the code point there, so it folds the code point and then
+> the low surrogate: `djb2([127881, 57225])` = `9aae77`. `hash.bp`'s own comment says two UTF-16
+> units (`djb2([55356, 57225])` = `76298a`), which no target answers. wasm's body copies commonJS
+> (`9aae77`); a 180-input fuzz is then identical to commonJS on every cell.
+> **Options.** (a) the code points, as decision 169 counts a string: erlang's answer; the Node cell
+> folds `Array.from(s)`'s code points; wasm's body drops the surrogate step — every `contentHash`
+> over astral text changes on commonJS; (b) the UTF-16 units the comment names: the Node cell reads
+> the native `charCodeAt` (`String.prototype.charCodeAt.call`), erlang and wasm split a code point
+> into its surrogates — erlang's answers change; (c) keep commonJS's fold as the contract (wasm
+> already answers it) and port it to erlang.
+> **Recommendation.** (a) — one rule for every string index, and the djb2 of text is a function of
+> its characters; a cached key over astral text changes once.
+> **Blocks.** Nothing on wasm today (it answers commonJS); a `run/` cell over astral text on four
+> targets.
+
+### 05w-e · How much memory a wasm program has
+
+> **Raised by:** `01-compiler/05-wasm` step 5 (`std/hash` on wasm).
+> **Measured.** Every module declares `(memory (export "memory") 1)` — one 64 KiB page — and the heap
+> is a bump pointer that never frees and never grows (no `memory.grow` anywhere). A program traps
+> (`out of bounds memory access`) once it has allocated ~60 KiB: `s = s + "ab"` 2 000 times traps;
+> one program cannot print every `std/hash` digest (the cell is three cells), and
+> `hash.pbkdf2Sha256("password", "salt", 9, 32)` already traps where commonJS answers (8 iterations fit). A trap is not a wrong value, but
+> the ceiling is the backend's, not the program's.
+> **Options.** (a) the heap grows: every bump (`$__alloc`, `$__str_concat`, `$__str_slice`,
+> `allocSlots`, `allocResultPair`) goes through one helper that calls `memory.grow` when the new
+> pointer passes `memory.size` (a failed grow traps) — two new `Instr`s, `memory.size` and
+> `memory.grow`, which `wasm_binary_emitter.zig` (front 18's file) must encode in two lines; every
+> wasm snapshot (652 of 710) changes its helpers' text; (b) a larger fixed memory
+> (`(memory … 256)`, 16 MiB) — one line per snapshot, no new instruction, a higher ceiling of the
+> same kind; (c) keep one page.
+> **Recommendation.** (a) — a program's memory is bounded by the host, as on the other three
+> targets; (b) moves the trap, it does not remove it.
+> **Blocks.** PBKDF2 at a real iteration count on wasm; any std body over text longer than a few
+> KiB; one `run/` cell per module instead of three for `hash`.
+
+### 05w-f · How a wasm body makes text from a code point
+
+> **Raised by:** `01-compiler/05-wasm` step 5 (`unicode`, `json`, `encoding`, `querystring`).
+> **Measured.** A `fn:` body reads a string's code points (`charCodeAt`, `chars`), but nothing it can
+> call makes a string from one: no primitive member does (`String` has `charCodeAt`, no inverse), a
+> string literal escape is `\u{…}` of a fixed code point, and decision 238 gives the vocabulary no
+> form that answers a string (`op:` is numeric, an adapter's slots are numbers). `unicode`
+> (`fromCodepoint`, every normalisation's output), `json` (`codepointText`, a parsed `\u` escape),
+> `encoding` (`base64Decode`, `hexDecode`, `percentDecode` answer the text of decoded bytes) and so
+> `querystring` all need it; a wasm build importing any of them is refused (STD-001).
+> **Options.** (a) a primitive: `String.fromCodepoint(cp: i32) -> string` in `primitives.bp` (Node
+> `String.fromCodePoint`, erlang `<<Cp/utf8>>`, a wasm prelude lowering writing the UTF-8 bytes),
+> `charCodeAt`'s inverse on every target; the four modules' bodies build text from it, and
+> `unicode.fromCodepoint` becomes `fn:` over it; (b) an adapter answering a string —
+> `wasi:codepoint_text` (no WASI call), with string slots added to the adapter signatures —
+> bound by each module's private `codepointText` cell; (c) leave the four modules refused on wasm
+> (they join group 3).
+> **Recommendation.** (a) — the language reads a code point and should write one; it is no std
+> name the backend owns (decision 238's rule) but a member of `String` with an answer on every
+> target, as `charCodeAt` is.
+> **Blocks.** `unicode`, `json`, `encoding`, `querystring` on wasm (step 5's last group-1 box).
 
 ### dec-e · How the boot registers beans whose types differ (decision 234)
 
