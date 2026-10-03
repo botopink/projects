@@ -81,7 +81,7 @@ representation of `i64` / `u64` / `f32` the backends'. Lexer has no suffix handl
 - [ ] the suffixes lex and type, the uppercase and the unsuffixed-mismatch refusals located — one
       `run/` and one `reject/` cell each; the `language-gaps.md` row "`f32` has no literal" closes
 
-### Step 19 — a type application before a member (decision 255 (1)) — done
+### Step 19 — a type application before a member (decision 255 (1)) — built on `front/01-checker` (botopink-lang `6185db3c`), not on `feat`
 
 `Dict<string, unknown>.empty()`: a type name with explicit type arguments followed by `.` or `(` is a
 type application (1.0.10 decision 8 §1.3 extended to a type's member); elsewhere `<` is a comparison.
@@ -94,7 +94,7 @@ The list goes to the chain's first link (`receiverTypeArgs`); the checker binds 
 - [ ] a type application through a module namespace (`collections.Dict<K, V>.empty()` — the head is a
       value's name, so the list is a comparison there): built, or refused with a located message
 
-### Step 20 — `comptime <expr>` (decision 255 (2)) — done (measured and pinned)
+### Step 20 — `comptime <expr>` (decision 255 (2)) — measured and pinned on `front/01-checker` (`6185db3c`), not on `feat`
 
 `comptime <expr>` is `comptime { break <expr>; }`: parser, checker, evaluator (`eval.zig`) and gate
 (`validateComptime`) read it as the block. Built: `run/comptime_expression_is_block`,
@@ -102,22 +102,20 @@ The list goes to the chain's first link (`receiverTypeArgs`); the checker binds 
 `reject/comptime_expression_type_mismatch`, format round-trip. What it *means* was question `ck4-a`,
 answered by decision 266 (step 21).
 
-### Step 21 — `comptime` evaluated at compile time everywhere (decision 266, `ck4-a` (c))
+### Step 21 — a `comptime` is evaluated at compile time everywhere (decision 266)
 
-Measured: at module level `validateComptime` refuses any call ("'call' is a runtime identifier"); in a
-body nothing is evaluated (`val a = comptime two();` lowers as `const a = two();`), and wasm lowers no
-comptime construct in a body. Decision 266: a `comptime <expr>` is built at compilation wherever it is
-written, a record value (`Dict`) included, the registry hoisted.
+`comptime <expr>` and its block form run on the comptime runtime at module level and in a body; a
+call is evaluated there, and the value is lifted into the emitted program — a literal as a literal,
+a record or a collection as the construction each backend emits. A value with no emitted
+construction (a function, a resource) is a located refusal.
 
-- [ ] `val d: Dict<string, unknown> = comptime Dict.empty();` built at compile time at module level and
-      in a body, on four targets (each backend emits the record's construction)
-- [ ] a call in a `comptime` is evaluated by the comptime runtime; a body's `comptime` goes through the
-      same gate and fold as a module-level one
-- [ ] the libraries' bodies that write `comptime` around a call counted and green
-- [ ] found by step 20: a module-level `comptime` `val` after an import is dropped on commonJS
-      (`ReferenceError: short is not defined`) and refused on wasm — `import {collections.Dict} from
-      "std"; val short = comptime 2 + 3;` (`comptime.zig` `evaluateComptime` against the backends —
-      with `14-comptime-on-beam` / `04-js`)
+- [ ] `validateComptime` admits a call the comptime runtime can run, at module level and in a body
+- [ ] a body's `comptime` is folded at build — `val a = comptime two();` emits `2`, never `two()`
+- [ ] a record and a collection are lifted: `val d: Dict<string, unknown> = comptime Dict.empty();`
+      builds at compile time on commonJS, erlang, beam and wasm (`run/comptime_expression_static_call`
+      loses its `.wasm.expect`)
+- [ ] `reject/comptime_value_not_liftable` — a function value out of a `comptime`, located at it
+- [ ] the module-level `comptime` `val` after an import (step 20's finding) emitted on every target
 
 ### Step 22 — the prelude scope (decision 270)
 

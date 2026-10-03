@@ -12,9 +12,8 @@ chave do cache), 250 (`io.random.bool()` removido), 252 (todo builtin declarado)
 registro de beans em comptime no ponto de entrada), 257 (`Schema<T>` na `validation`), 258 (`--lib` múltiplo), 259–263 (`pow` da glibc, `contentHash` por code point, heap do wasm crescendo, `String.fromCodepoint`, `std/math` igual em todo sistema), 264 (estouro de inteiro é erro em todo target), 265 (orçamento do gate frio em 7m30s nesta versão; os 5 min ficam para a próxima), 266 (`comptime` avaliado em compilação em todo lugar, registro içado), 267 (parâmetro variádico `..values: T[]`; `@print` declarado com ele), 268 (tipo builtin `Decorator` no `with:` do `@TypeInfo.all`), 269 (`@getContext(T)` é hook, chamado atrás de `use`), 270 (o prelúdio do `.bpp`: o `src/prelude.bp` do pacote, só imports do próprio pacote, importado só quando usado; o cabeçalho vence). A 245 e a 251 foram registradas cedo demais e retiradas.
 
 > **Numeração.** O prelúdio do `.bpp` tinha sido registrado como 266 no commit `84aa028`, sem saber
-> que 266–269 já existiam no seu registro local. Na 1.0.12 ele é a **270**; a 1.0.11 (congelada)
-> ainda mostra a 266 antiga. As linhas 266–269 da 1.0.12 foram escritas a partir dos resumos acima —
-> o texto completo está no seu registro local e deve substituí-las quando ele subir.
+> que 266–269 já existiam no seu registro local. Na 1.0.12 ele é a **270**; as 266–269 estão em
+> `decisions-taken.md` com o texto completo dos commits `4fb3c5e`, `ec58d33`, `805b2be`, `c4976a6`.
 
 **Ordem:** da decisão que mais destrava para a que menos destrava.
 - **Parte 0** — `00-gate` e `01-compiler`, por prioridade (o que segura thread rodando primeiro).

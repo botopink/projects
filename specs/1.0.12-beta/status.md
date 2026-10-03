@@ -1,6 +1,7 @@
 # Status — 1.0.12-beta
 
-**Date:** 2026-10-03 · **Base** (each repository's `feat`): botopink-lang `ec77f649` · rakun
+**Date:** 2026-10-03 · **Base** (each repository's `feat`): botopink-lang `1659f50d` (decisions 263,
+264 landed: `a443f52d`, `48a096ea`, `d71b89f5`) · rakun
 `fac248b` · jhonstart `eddd681` · emilia `42d51ec` · onze `b1a3110` · erika `0a463f5` ·
 vscode-extension `7993f96`
 
@@ -18,6 +19,11 @@ started: their done steps are on unpushed branches only).
 
 **Gate:** a green `scripts/gate.sh --cold` was last recorded on botopink-lang `0041d38c`; no cold
 gate is recorded on the current tip — [`00-gate/114`](./00-gate/114-gate-docs-and-ci/README.md)
+
+**Meta CI red until pushed:** the meta `feat` pins botopink-lang `292b1227`, which is on no remote
+(check 1 of `hook-integrity.yml`); botopink-lang's own `feat` is `1659f50d`. The 01-checker work
+(`6185db3c` steps 19–20, `19d59508` numeric literals) is on `origin/front/01-checker` only, not
+merged into `feat`.
 step 7. botopink-lang's GitHub CI still owes a green run on `feat` (114 step 3).
 
 Each line: `front/step — what is left · blocker`. Lanes: **L1** finish what is on `feat` · **L2**
@@ -69,7 +75,8 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 26 s8 — 206's residuals: the LSP's import check, a package importing itself · none
 - [ ] 130 s5 — the remaining decorator sites (34 of 119 done, plus `#[schema]`'s 5) · rakun's DI on 01 s20 · rakun sites under the 130↔128 rule · rakun-client's on the behavior-member gap · ctr-q
 - [ ] 130 s6 — module-level `@emit` removed · 130 s5 · 216 against `#[schema]`'s free functions (no id)
-- [ ] 134 s2 — the type functions, the `result` namespace, the `@Result` / `?T` methods, `@is`; decisions 267–269 to build · 134-d
+- [ ] 134 s2 — the type functions, the `result` namespace, the `@Result` / `?T` methods, `@is` · 134-d
+- [ ] 134 s4–s6 — variadic parameter and the print builtins (267); the `Decorator` type for `with:` (268); `use @getContext(T)` (269)
 - [ ] 07-residuals s3, s5–s8, s12, s13 — `uncertain` rows, test comments, the `@BeamMemory` text, C-18's corrections + `docs.md:5` + § Imports, the lib-agnostic gate names every library, the per-cell compile row, the `async` delay flake · none (s8's comments after 02)
 - [ ] 07-residuals s1, s2, s4 — the codegen and comptime report waves, three renames · 02–05 landed · 01 landed
 - [ ] 07-residuals s9 · s10 · s11 — `->` arms · erika's C-13 migration · the pointers' sweep (last) · C-14 · 16 s1–2 · every library merged
