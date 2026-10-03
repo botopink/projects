@@ -15,20 +15,22 @@ identical input, is this front's defect.
 
 ---
 
-## The rule (decision 229)
+## The rule (decision 229, amended by 249)
 
 1. **Cold ≤ 5 min** wall on 16 idle cores (`budget_cold=300`). `--cold` runs every cell, fence and
    audit from scratch — no result store is read. It decides every landing.
 2. **Warm ≤ 1 min** wall on the same machine (`budget_warm=60`), after a change to a few files. A
    warm run may answer a cell from a stored result **only when the cell's key is equal**: the
-   compiler binary's build id, the target, the runtime's version (`node`, OTP release, the wasm
-   runner), and the SHA-256 of every byte the cell reads (its sources, its manifest, its `.expect` /
-   `.out` files, every dependency package's sources, std). A key that differs in one byte runs the
-   cell. No dependency analysis decides what to skip — equal content does.
+   compiler's build configuration and its **sources partitioned by backend** (decision 249: the
+   shared sources in every key, a backend's own emitter files only in its cells' keys — one list in
+   the repository, a file not in it shared), the target, the runtime's version (`node`, OTP release,
+   the wasm runner), and the SHA-256 of every byte the cell reads (its sources, its manifest, its
+   `.expect` / `.out` files, every dependency package's sources, std). A key that differs in one
+   byte runs the cell. No dependency analysis decides what to skip — equal content does.
 3. **Only passes are stored.** A failed cell runs again on every run, as the erlang verdict cache
    stores only acceptances (115).
 4. **The store lives in `.botopinkbuild/cache/results/`** (decision 225's layout): deleting
-   `.botopinkbuild/` wipes it, `--cold` neither reads nor writes it.
+   `.botopinkbuild/` wipes it; `--cold` never reads it and writes the passes it ran (decision 249).
 5. **No persistent runtime process.** A long-lived `erl` / node / test server across cells or runs
    is out (the maintainer's standing rule against `persistent_erlang`); per-cell cost is cut inside
    the cell's own process.
@@ -124,15 +126,56 @@ without `--cold`. `run.sh`, `test-libs.sh` and `check-docs.sh` print, per stage,
 and how many were answered from the store (`1616 jobs — 31 run, 1585 from store`), so a reader sees
 what was not executed.
 
+**Built.** One store per stage, every key the SHA-256 of what the job can read — never an analysis
+of what a change can affect:
+
+| Stage | Store | The key, besides the compiler¹ and the toolchain² |
+|---|---|---|
+| 8 `test-libs` (`modules/lib-test-runner/src/result_store.zig`) | `<cache root>/.botopinkbuild/cache/results/lib-test/` of each library | **every package the library roots hold** (`libs/*`, every `repository/*`, `.git` and `.botopinkbuild` left out — decision 246); the library, target, kind, `--filter` / `--strict` / `--json` |
+| 9 `test-language` (`scripts/lib/result-store.js`) | `<repo>/.botopinkbuild/cache/results/language/` | `run.sh`, `pool.sh`, `result-store.js`; every file of `--lib-root`; the cell's files (`test/<n>.bp`, every `run/<n>.*` / `reject/<n>.*`, the whole `modules/<n>/` tree); target and job kind |
+| 10 `test-docs` (`result-store.js`) | `<repo>/.botopinkbuild/cache/results/docs/` | `check-docs.sh`, `pool.sh`, `result-store.js`; every package of the doc's library roots; the check's scratch project whole; mode and expectation |
+
+¹ Decision 249: `botopink --version`'s new `build:` line (Zig version, optimize mode, target triple,
+source hash, checkout) and the files `source_stamp` hashes, partitioned by
+`modules/compiler-core/src/codegen/backend-partition.txt` — commonJS owns `codegen/commonJS.zig`,
+`typescript.zig` and `js/*`; beam `beam_asm.zig` and `beam/beam_emitter.zig`; wasm `wat.zig`; erlang
+owns nothing (`codegen/erlang.zig` lowers every comptime body on every target, so it is shared, as are
+the BEAM and wat files the comptime runtimes use). Exact paths: a new file is shared until listed. A
+job that compiles for no target (`reject/`, a doc fence) holds every target's files. One computation
+(`result-store.js compiler`) serves all three stores; the runner calls it. Nothing of a run is read
+or written when the binary's `build:` hash is not the checkout's (a binary not rebuilt) or the list
+fails its audit (a listed file imported and used by a file neither listed under the same target nor
+the `dispatcher`, `codegen.zig`).
+² `node --version`, the OTP release (otp_release, erts, `OTP_VERSION`), `wasmtime --version`, the
+platform and 14 environment variables — every runtime in every key (the comptime node is an `erl` on
+every target).
+
+Only passes are written, only when the key computed again after the run is unchanged; `--cold`
+(passed by `gate.sh --cold`) never reads and writes its passes. **Never stored**, and named on a
+`never stored` line: a cell with a symbolic link, a `git` dependency or a `path` dependency leaving
+it, every cell when a library root sits above the scratch directory (stages 9, 10) or when the
+universe holds a symbolic link or a `.botopinkbuild/deps/` (stage 8). Today: the docs' project
+`library` (2 fences, a `git` dependency on `erika`). `budget_cold=300`, `budget_warm=60`; § counts
+holds `run + from store` to each stage's plan. `modules/compiler-cli/tests/result_store.sh` (`zig
+build test-cli`) automates every box below on synthetic suites, with a shim compiler that names an
+edited copy of the sources on its `build:` line.
+
 **Acceptance:**
-- [ ] after a cold run, a warm run with no change answers every pass from the store and runs every
-      failure; ≤ 1 min wall
-- [ ] one byte changed in a cell's `.bp` → that cell runs; in `libs/std/src/collections.bp` → every
-      cell whose key includes std runs; the compiler rebuilt with one changed emitter line → every
-      cell runs
-- [ ] a changed `node` or OTP release → every cell of that target runs
-- [ ] `rm -rf .botopinkbuild` → the next run is cold in effect (nothing answered from the store)
-- [ ] a typical change (one compiler source file, the cells it affects) ≤ 1 min wall, measured
+- [x] after a run that filled the store (a `--cold` run fills it), a warm run with no change answers
+      every pass from the store and runs every failure; ≤ 1 min wall (stages 8–10 side by side:
+      20 s at load 33, 2.9 s at load 6 — § Step 3's numbers; failures re-run: `result_store.sh`)
+- [x] one byte changed in a cell's `.bp` → that cell runs (4 jobs of 1 616, 11.8 s); in
+      `libs/std/src/collections.bp` (shared: std is embedded) → every cell runs (1 616 / 100 / every
+      `test-libs` pair); the wasm emitter rebuilt with one more line → the wasm cells and the
+      target-independent `check` jobs run, nothing else (§ Step 3's numbers); the checker
+      (`comptime/infer.zig`) → every cell; a new unlisted file under `codegen/js/` → every cell
+      (`result_store.sh`)
+- [x] a changed `node`, OTP release or `wasmtime` → every cell runs (every runtime is in every key;
+      `result_store.sh`, shims on `PATH`)
+- [x] `rm -rf .botopinkbuild` → nothing answered from the store (`result_store.sh`)
+- [x] a typical change ≤ 1 min wall, loaded: a test cell, a doc (11.8 s); one backend's emitter file
+      (`codegen/wat.zig`, rebuilt: 515 of 1 616 language jobs — the 293 wasm and the 222 `reject/` — and the 100 doc fences ran, every `test-libs` pair from the store; 12.3 s wall at load 19). Not under it: a library (every `test-libs` pair runs, decision 246) and a
+      shared compiler file (every cell runs) — both by the rule. Idle confirmation pending
 
 ## Measurements
 
@@ -328,6 +371,26 @@ packing, ~1800 at 80 %. Stages 7–11 are 3566 CPU-s today: **~1750 CPU-s must g
 run longer than ~2 minutes wall. Turning the busy wait off covers ~1090 of it; the rest is the
 `erl` starts themselves (4 per erlang cell, 3 per beam cell) and `onze-cli`. With stage 2 warm the
 budget is 16 × 300 ≈ 4800 CPU-s, and the long cells are the limit, not the total.
+
+### Step 3 — the result store
+
+The three stages side by side (`zig build test-libs|test-language|test-docs -Doptimize=ReleaseSafe`),
+wall / CPU-s (user + sys), loaded by other worktree threads:
+
+| Run | `test-libs` | `test-language` | `test-docs` | Load min / med / max |
+|---|---|---|---|---|
+| empty store | 172 run · 9m15s / 1887 | 1616 run · 9m35s / 711 | 100 run · 14 s / 13 | 26 / 31 / 41 |
+| no change | 172 from store · 20.1 s / 17² | 1616 from store · 9.0 s / 11 | 98 from store · 3.9 s / 4 | 32 / 33 / 34 |
+| one byte of `run/array_fill.bp` | 172 from store · 4.0 s / 4 | 4 run · 11.8 s / 13 | 98 from store · 4.5 s / 4 | 26 / 27 / 28 |
+| std changed, compiler rebuilt | 2 of 2 run (`--lib std`) | 1616 run | 100 run | — |
+| rebuilt back (same bytes) | 172 from store · 2.6 s / 3 | 1616 from store · 2.9 s / 10 | 98 from store · 2.3 s / 3 | 6 |
+| decision 249 keys: one line of `codegen/wat.zig`, rebuilt | 172 from store · 3.2 s / 4 | 515 run, 1101 from store · 12.3 s / 52 | 100 run · 4.8 s / 9 | 19 |
+| the line removed, rebuilt | 172 from store · 2.4 s / 3 | 1616 from store · 2.9 s / 10 | 98 from store · 2.1 s / 3 | 19 |
+
+² before `test-libs.sh` stopped spawning one `sed` per passing test record; after it, 3.4 s.
+The store holds 172 + 1 616 + 89 entries, ~7.6 MB. No run wrote outside `.botopinkbuild/` in the
+universe (a SHA-1 of every other file of `libs/`, `tests/language` and the six repositories, before
+and after the empty-store run, identical) — so no key moved under a run.
 
 ### How it was measured
 
