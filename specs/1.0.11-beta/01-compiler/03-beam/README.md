@@ -55,9 +55,11 @@ beam: all 68 pass. A constructor or list pattern in binding position binds its n
 patterns in `case` bind and test every element, a lambda ending a `case` arm is its value, a type
 adopts its behavior's `default fn`s, `?.` through a tuple label answers absent, `-x` is the unary
 minus, a capitalised imported fn is a call, a bare `break` ends a `for`, the keyword form of an
-`@External.Erlang` template compiles, and a tuple type in `is` tests each element. Pinned by
-`codegen/tests/beam.zig` and three cells. `beam_export_audit.sh` assembles all 490 modules. Steps
-1–4 are done; step 5 waits on `17-beam-memory`.
+`@External.Erlang` template compiles, a tuple type in `is` tests each element, and an entry point
+sets `standard_io` to unicode before anything prints. Pinned by `codegen/tests/beam.zig` and three
+cells. `beam_export_audit.sh` assembles all 490 modules. Every step's beam half is done; what is
+open waits on another front: step 1's last box on `01-checker` step 13, step 2's first on
+`02-erlang` step 7 and `05-wasm`, step 5 on `17-beam-memory`.
 
 ## Mechanism
 
@@ -81,7 +83,7 @@ reaches here).
 **Acceptance:**
 - [x] `run/ctor_pattern_in_val_binding` — `val Label(t, w) = Tag.Label(t: 2, w: 5); @print(t + w)` prints `7` on four targets (erlang's `destructPatternExpr` twin: measured landed or added by 02 — the cell's erlang column says which)
 - [x] `codegen/tests/aggregates.zig:482`'s fixture gains its beam RUN LOG (`x 2 5 hi! 7`), the four-backend snapshot it was written to be
-- [ ] `run/val_nested_ctor_pattern` and `run/val_spread_only_list_pattern` (01 step 13's cells) pass on beam — **open:** the beam lowering is in (`emitPatternDestruct`); the checker still refuses both programs (`refutable-val-pattern`, `rest` unbound), so neither cell exists yet
+- [ ] `run/val_nested_ctor_pattern` and `run/val_spread_only_list_pattern` (01 step 13's cells) pass on beam — **open:** the beam lowering is in (`emitPatternDestruct`); the checker still refuses both programs (`refutable-val-pattern`, `rest` unbound), so neither cell exists yet. Measured with the checker's refusal lifted in a local build (not committed): beam prints `val Pair(Circle(r), n) = p` as `3 4`, `val W(I(a, b), n) = …` (nested one-variant enums) and `val H(Circle(r)) = …` as `7 x 9`, and `val [..rest] = [1, 2, 3]`'s length as `3`; commonJS answers the same; erlang leaves `Rest` unbound (`erlc` refuses the module, 02's row — `val assert [..rest] = xs` panics there too) and wasm refuses the nested pattern (05's row). 01 step 13 waits on 02 and 05, not on this front
 
 ### Step 2 — C-07's beam tails
 
@@ -91,7 +93,7 @@ LOG that is the value run; §4.1's truth table answered by each §4.2 form on be
 (`run/is_truth_table`'s beam column, 02 step 7's shared `.out`).
 
 **Acceptance:**
-- [ ] `run/is_truth_table`, `run/unknown_stores_nothing` green on beam — **open:** both are 02 step 7's cells, not landed; 02's `test/is_truth_table` passes on beam, and `codegen/tests/beam.zig` pins its table and `unknown` by value
+- [ ] `run/is_truth_table`, `run/unknown_stores_nothing` green on beam — **open:** both are 02 step 7's cells, not landed; 02's `test/is_truth_table` passes on beam, and `codegen/tests/beam.zig` pins its table and `unknown` by value. The table as a program (every row of the test cell, `@print` per form) prints the same ten lines on commonJS, erlang and beam; wasm refuses it (`cannot box this value as unknown`, 05's row), which is what keeps a four-target `.out` from landing
 - [x] one beam fixture per tuple / `..` / type-pattern shape, RUN LOG verified by running (`erlc +from_asm` + `erl`)
 - [x] `beam_export_audit.sh` green at its new total
 
@@ -125,6 +127,17 @@ owner of decision 39); this front emits the same in `.S`, byte-compared against 
 - [ ] `run/beam_memory_ets_keyed` (17's cell: two processes × 20 000 writes to different keys print `20000 20000`) green on beam
 - [ ] `{attributes, [{on_load, …}]}` unchanged; `beam_export_audit.sh` green
 
+### Step 6 — the entry point's `standard_io` (02 step 5's beam twin)
+
+`erl` opens `standard_io` in the host locale's encoding: under `LANG=C` a beam program wrote
+`@print("é")` as the latin1 byte `0xE9` and `"\u{1F600}"` as the text `\x{1F600}` (erlang sets it
+itself since 02 step 5). `'_botopink_main'/0` and the test runner's `main(Args)` call
+`io:setopts(standard_io, [{encoding, unicode}])` first (`emitUnicodeStdio`).
+
+**Acceptance:**
+- [x] `run/string_literal_unicode_escape` under `LANG=C LC_ALL=C` prints the characters on beam (measured by hand: the bytes equal erlang's and the `.out`); `codegen/tests/beam.zig` "an entry point sets standard_io to unicode before anything prints" pins the call and the RUN LOG
+- [x] the 438 beam snapshot files that moved (219 fixtures × `codegen/{beam,wat}/beam/`) moved by the entry's frame and the `setopts` call alone (`{call_only, 0, …}` → `{allocate, 0, 0}` + the call + `{call_last, …}`); no RUN LOG moved; `beam_export_audit.sh` green
+
 ## Gate
 
 - [x] `zig build test` from a **cold** runtime cache, green, in this front's worktree
@@ -132,14 +145,15 @@ owner of decision 39); this front emits the same in `.S`, byte-compared against 
 - [x] every re-recorded RUN LOG **verified by running the program** (the harness runs `erlc +from_asm` and `erl`; each moved block compared by hand)
 - [x] `tests/language/run.sh --target beam` green with the new cells; every cell proved able to fail on the parent binary
 - [x] `src/codegen/AGENTS.md` and `src/codegen/beam/AGENTS.md` in the same commit as each step
-- [ ] Commit on `fix/03-beam`; no push, no merge
+- [ ] Commit on `front/03-beam`; no push, no merge
 
 ## Blast radius
 
 Step 1 moves the beam snapshots of every fixture destructuring a constructor in a `val` (few — the
 form is new); step 2 adds fixtures and moves nothing; step 3 (the gate's) adds a loader call to
 every beam module's `main` — every beam `.S` snapshot moves by the prologue, no RUN LOG; step 5
-moves the `beam_memory_*` snapshots only.
+moves the `beam_memory_*` snapshots only; step 6 moved every beam snapshot with an entry point by
+its prologue (438 files: 219 fixtures under `codegen/{beam,wat}/beam/`), no RUN LOG.
 
 ## Notes
 
