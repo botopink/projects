@@ -15,9 +15,10 @@ closest `AGENTS.md` in each directory you touch.
 | `repository/botopink-lang/` | Compiler (`modules/compiler-core`), CLI, language server, lib-test-runner, `libs/std` |
 | `repository/{emilia,erika,jhonstart,onze,rakun}/` | Libraries written in botopink |
 | `repository/vscode-extension/` | VS Code extension |
-| `specs/1.0.11-beta/` | Current milestone: `00-gate` first (a 100 % green gate in every repository, zero tolerated reds, cut one front per repository / compiler area, plus a gate-performance front), then `01-compiler` · `02-std-and-packaging` · `03-bundled-libs` (what the frameworks copy from each other, extracted under decisions 115–117; plus `125-validation-zod`, Zod's feature set in `validation`) · `04-rakun` · `05-jhonstart` · `06-emilia` · `07-onze` · `08-bpp` (Astro's feature set on the four libraries; `116` alone edits the compiler, for the generic `.bpp` file kind). A reference-driven front carries a `surface.md` — every row of its reference and where it lands — and an `examples/` directory with the code its steps aim at. Index in `overview.md`, ownership and the parallel groups in `fronts.md`, the living checklist in `status.md`, the 1.0.10 → 1.0.11 map in `carried.md` and each track's `carried.md`; new fronts start from `specs/__template.md`. A carried front keeps its global number; decisions continue at 144 |
-| `specs/1.0.10-beta/` | Closed ecosystem milestone (`closure.md`, measured at the close); frozen — every open item moved to `specs/1.0.11-beta/` with the deep dives it still needs copied beside it |
-| `specs/1.0.5-beta/` | Closed compiler milestone (`closure.md`); its open work went to 1.0.10-beta's `00-compiler-carry-over/` and now lives in `specs/1.0.11-beta/01-compiler/` |
+| `specs/1.0.12-beta/` | Current milestone — 1.0.11-beta consolidated to current state only (same goals, every open step; history left in 1.0.11-beta). Tracks: `00-gate` (the gate's baseline rules + `114`, the gate's open residue) · `01-compiler` · `02-std-and-packaging` · `03-bundled-libs` (decisions 115–117; `125-validation-zod`) · `04-rakun` (`128` consolidation first) · `05-jhonstart` · `06-emilia` · `07-onze` · `08-bpp` (Astro's feature set; `116` alone edits the toolchain, for the `.bpp` file kind) · `20-snap` (front 135, last: the snapshot maps re-evaluated case by case). Index in `README.md`, the only status in `status.md` (five lanes), ownership, conflict rules, order and § Gate in `fronts.md`, decisions in `decisions-taken.md` (continue at 267) and `decisions-pending.md` (open questions, 1.0.10 confirmations, contradictions `ctr-*`). A reference-driven front carries a `surface.md` and an `examples/` directory; new fronts start from `specs/__template.md`; a front keeps its global number |
+| `specs/1.0.11-beta/` | Closed milestone (`closure.md`, with the audits that measured it in `closure-audit/`); frozen — consolidated into `specs/1.0.12-beta/` on 2026-10-03 |
+| `specs/1.0.10-beta/` | Closed ecosystem milestone (`closure.md`, measured at the close); frozen — every open item moved to `specs/1.0.11-beta/`, and from there to `specs/1.0.12-beta/` |
+| `specs/1.0.5-beta/` | Closed compiler milestone (`closure.md`); its open work went to 1.0.10-beta's `00-compiler-carry-over/` and now lives in `specs/1.0.12-beta/01-compiler/` |
 | `specs/1.0.0-beta/` … `1.0.4-beta/` | Closed. 1.0.6–1.0.9-beta were absorbed into 1.0.10-beta and deleted (decision 68); the mapping in `specs/1.0.10-beta/unification.md` |
 | `.github/workflows/` | The meta repository's CI: `hook-integrity.yml`, one job on push/PR to `feat`/`main` — see § CI |
 | `scripts/` | The meta repository's own tools: `worktree-add.sh <name> [<base>]` — opens a task worktree (§ Worktrees); `language-gap-markers.sh` — every `// LANGUAGE GAP` marker in a tracked `.bp` file (the repositories under `repository/`, and this one outside the closed milestones' spec trees) against the `## Marker index` of the milestone's `language-gaps.md`; CI check 5 |
@@ -27,8 +28,7 @@ closest `AGENTS.md` in each directory you touch.
 
 ## CI
 
-`.github/workflows/hook-integrity.yml` is the one job of this repository (1.0.11-beta
-00-gate, front 114), every check hard, plain bash over a checkout with submodules:
+`.github/workflows/hook-integrity.yml` is the one job of this repository (00-gate, front 114), every check hard, plain bash over a checkout with submodules:
 
 1. every submodule pointer is an ancestor of (or equal to) its remote `feat` — a bump never
    points at an unpushed commit (`git -C repository/<sub> merge-base --is-ancestor HEAD FETCH_HEAD`);

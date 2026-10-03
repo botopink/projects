@@ -1,4 +1,4 @@
-# hook-integrity — the meta repository's CI (1.0.11-beta 00-gate, front 114 step 4).
+# hook-integrity — the meta repository's CI (00-gate, front 114 step 4).
 #
 # The meta repository holds no code: it pins the compiler and the libraries as
 # submodules and keeps the planning documents. What can go wrong here is a
