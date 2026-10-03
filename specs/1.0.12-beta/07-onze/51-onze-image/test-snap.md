@@ -1,4 +1,4 @@
-# Front 51 — the 1.0.10 snapshot map, `06-onze/test-snap.md` §§ 51 · 52 · 70 (open: see README, conditional on decision 53-b)
+# Front 51 — the 1.0.10 snapshot map, `06-onze/test-snap.md` §§ 51 · 52 · 70 (realising it is step 7, conditional on decision 53-b; on disk `onze-assets` holds 10 `.snap` — `font` 4, `image` 3, `assets` / `css_module` / `stylesheet` 1 each — and `onze-og` 4, through `snapshots.assertAs`, not these helpers)
 
 ## 51 — image · `modules/onze-assets/test/image_test.bp` (both)
 

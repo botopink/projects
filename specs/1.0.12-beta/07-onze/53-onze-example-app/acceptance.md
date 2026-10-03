@@ -104,9 +104,9 @@ output and the three commands that build and run the image (front 71).
 ### Done
 
 - Step 1 — the skeleton and the store: `listPosts()` returns the three seeded posts newest first;
-  `readPost("missing")` reds naming the slug; `writePost` then `listPosts` shows four; the
-  element builders the app needs are jhonstart's (front 94); `@/lib.db` resolves from
-  `app/blog/[slug]/page.bp`
+  `readPost("missing")` reds naming the slug; `writePost` then `listPosts` shows four;
+  `tags_test`: `<nav>`, `<article>`, `<h2>`, `<a>`, `<form>`, `<label>`, `<input>`, `<button>`,
+  `<time>` render; `@/lib.db` resolves from `app/blog/[slug]/page.bp`
 - Step 2 — the read path: `/` (hero, nav, one `<style>`), `/blog` (three `PostCard`s, one emilia
   class each), `/blog/hello-world` and `/about` (`/marketing/about` 404) served by `onze start`
   (`onze-cli/test/start_test.bp`); exactly one non-empty `<style>`, on two consecutive requests

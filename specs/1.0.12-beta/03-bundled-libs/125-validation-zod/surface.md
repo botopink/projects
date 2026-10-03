@@ -1,9 +1,10 @@
 # 125-validation-zod — surface: every Zod feature, and where it lands in botopink
 
-The reference is Zod 4 as transcribed in `/home/ericfillipe/develop/zod/ZOD_DOCUMENTATION.md`
-(2 787 lines, §§ 1–13); this file walks it section by section. The botopink side was re-measured on
-2026-10-01 against `repository/botopink-lang` (`docs.md`, `libs/std`, `libs/validation`), and every
-"the language has no …" claim below names the line that says so.
+The reference is the Zod 4 documentation, <https://zod.dev/> (Zod 4.x; the API pages under
+<https://zod.dev/api>); this file walks it section by section, its § numbers following the
+reference's sections in order (§§ 1–13). Every "the language has no …" claim below names the place
+that says so in `repository/botopink-lang` (`docs.md`, `libs/std`, `libs/validation`). A row whose
+step landed (steps 0–2) reads **have**.
 
 ## How to read it
 
@@ -47,12 +48,12 @@ most of the table, and each is easy to assume the other way:
 
 | Zod | botopink | Box | Notes |
 |---|---|---|---|
-| `z.object({…})` defining a schema | `#[schema] pub type Player(username: string, xp: i32)` | add · 2 | derive. The declaration is the schema and the inferred type at once |
-| `Player.parse(input)` — throws | `try parsePlayer(input)` in a `@Result` function | add · 2 | emitted `pub fn parsePlayer(input: Json) -> @Result<Player, ValidationReport>`; `try` propagates the report (`docs.md:1467-1529`) |
-| `Player.safeParse(input)` | `parsePlayer(input)` — the `@Result` itself, read with `case` or `try … catch` | add · 2 | one function for both: only `@Result` fails (decisions 120 · 121) |
+| `z.object({…})` defining a schema | `#[schema] pub type Player(username: string, xp: i32)` | have | derive. The declaration is the schema and the inferred type at once |
+| `Player.parse(input)` — throws | `try parsePlayer(input)` in a `@Result` function | have | emitted `pub fn parsePlayer(input: Json) -> @Result<Player, ValidationReport>`; `try` propagates the report (`docs.md:1467-1529`) |
+| `Player.safeParse(input)` | `parsePlayer(input)` — the `@Result` itself, read with `case` or `try … catch` | have | one function for both: only `@Result` fails (decisions 120 · 121) |
 | `Player.parseAsync` / `safeParseAsync` | `-> @Task<@Result<T, ValidationReport>>` for a schema with an async check | add · 8 | combinator `schemas.refineAsync`; a derived type stays synchronous |
-| `Player.validate(input)` — boolean, no error built | `schemaOfPlayer().accepts(input)` | add · 2 | runs the same decoder with a counting sink instead of a list |
-| `ZodError.issues` — `code`, `path`, `message`, `expected` | `ValidationReport.violations` — `field` (the rendered path), `code`, `message`, `invalidValue` | have · add · 1 | `Violation` exists (`report.bp:28-33`); step 1 defines `field` as a path (`address.street`, `tags[1]`) and adds the structural codes |
+| `Player.validate(input)` — boolean, no error built | `schemaOfPlayer().accepts(input)` | have | runs the same decoder with a counting sink instead of a list |
+| `ZodError.issues` — `code`, `path`, `message`, `expected` | `ValidationReport.violations` — `field` (the rendered path), `code`, `message`, `invalidValue` | have | `Violation` exists (`report.bp:28-33`); `field` is the rendered path (`address.street`, `tags[1]`); the structural codes are step 1's |
 | `z.infer<typeof Player>` | the type is `Player` | native | there is no second declaration to infer from |
 | `z.input<>` / `z.output<>` | `Schema<T>` has one type; a transforming schema is `Schema<Out>` built from a `Schema<In>` | add · 8 | `schemas.map(inner, f)`; the input type is the argument of the inner schema |
 
@@ -60,13 +61,13 @@ most of the table, and each is easy to assume the other way:
 
 | Zod | botopink | Box | Notes |
 |---|---|---|---|
-| `z.string()` | field `string` · `schemas.text()` | add · 2 | accepts `Json.Str` only |
-| `z.number()` | field `f64` · `schemas.float()` | add · 2 | `Json.Num`; `NaN` / `Infinity` never arrive — `json.decode` refuses them (`json.bp:99-100`) |
-| `z.boolean()` | field `bool` · `schemas.boolean()` | add · 2 | |
-| `z.bigint()` | field `i64` · `schemas.long()` | add · 2 | a JSON number is an `f64`: accepted when integral and within ±2^53; beyond that the wire form is digit text under `#[coerce]`. There is no arbitrary-precision integer — **n/a** past `i64` |
+| `z.string()` | field `string` · `schemas.text()` | have | accepts `Json.Str` only |
+| `z.number()` | field `f64` · `schemas.float()` | have | `Json.Num`; `NaN` / `Infinity` never arrive — `json.decode` refuses them (`json.bp:99-100`) |
+| `z.boolean()` | field `bool` · `schemas.boolean()` | have | |
+| `z.bigint()` | field `i64` · `schemas.long()` | have | a JSON number is an `f64`: accepted when integral and within ±2^53; beyond that the wire form is digit text under `#[coerce]`. There is no arbitrary-precision integer — **n/a** past `i64` |
 | `z.symbol()` | — | n/a | JavaScript-only value kind |
 | `z.undefined()` · `z.void()` | — | n/a | one absent value, `null`, typed `?T` (`docs.md:1000-1003`) |
-| `z.null()` | `schemas.nil()` | add · 2 | accepts `Json.Null` only; used inside unions |
+| `z.null()` | `schemas.nil()` | add · 4 | accepts `Json.Null` only; used inside unions |
 | `z.coerce.string()` | `#[coerce]` on a `string` field | add · 6 | `Num` and `Bool` are rendered; `null` is refused (Zod turns it into `"null"`) — decision `07-m` |
 | `z.coerce.number()` | `#[coerce]` on `i32` / `i64` / `f64` · `bindInt` (have) · `bindFloat` | add · 6 | reads `Json.Str` with the grammar `isIntegerText` already defines (`binding.bp:105-119`), extended with a fraction and an exponent |
 | `z.coerce.boolean()` | `#[coerce]` on `bool` · `bindBool` (have) | have · add · 6 | **not** Zod's truthiness: `"false"` is `false` here. The accepted set is `z.stringbool`'s, below — decision `07-m` |
@@ -153,8 +154,8 @@ grammar. None reaches a host cell.
 | `.negative()` · `.nonpositive()` | `#[negative]` · `#[negativeOrZero]` | add · 3 | named after the pair already shipped |
 | `.multipleOf(n)` / `.step(n)` | `#[multipleOf(n)]` | add · 3 | `i32` by `%`; `f64` by the scaled-integer test Zod uses |
 | `z.int()` — safe-integer range | field `i64` with `#[safeInt]` | add · 3 | ±(2^53 − 1) |
-| `z.int32()` | field `i32` | add · 2 | the decoder refuses a fraction and a value outside the range — a structural `invalidType`, not a marker |
-| `z.int64()` | field `i64` | add · 2 | as `z.bigint()` above |
+| `z.int32()` | field `i32` | have | the decoder refuses a fraction and a value outside the range — a structural `invalidType`, not a marker |
+| `z.int64()` | field `i64` | have | as `z.bigint()` above |
 | `z.float32()` · `z.float64()` | field `f64`; `#[float32]` for the single-precision range | add · 3 | `f32` exists as a primitive (`docs.md:343`); step 0 measures whether it survives both targets |
 | `z.nan()` | — | n/a | a JSON document cannot carry one |
 | `z.bigint().gt(5n)` … | the same markers on `i64` | gap | an `i64` bound cannot be written (the literal is `i32`). Nearest: `#[gt]` on `i64` is refused with `minValue`'s message; `#[positive]` / `#[negative]` work, because `0` widens in a comparison |
@@ -163,7 +164,7 @@ grammar. None reaches a host cell.
 
 | Zod | botopink | Box | Notes |
 |---|---|---|---|
-| `z.boolean()` | field `bool` | add · 2 | |
+| `z.boolean()` | field `bool` | have | |
 | `z.date()` | — | n/a | there is no date type; an instant is epoch milliseconds (`i64`) and a calendar date is `clock.Civil` (`io/clock.bp:117`) |
 | `z.date().min(d)` · `.max(d)` | `#[pastDate]` · `#[futureDate]` (have) · `#[afterIso("…")]` · `#[beforeIso("…")]` | have · add · 3 | bounds written as ISO text, parsed once at validation |
 
@@ -182,11 +183,11 @@ grammar. None reaches a host cell.
 
 | Zod | botopink | Box | Notes |
 |---|---|---|---|
-| `.optional()` · `.nullable()` · `.nullish()` | field `?T` | add · 2 | one absent value: a missing key and a `null` both decode to `null` |
+| `.optional()` · `.nullable()` · `.nullish()` | field `?T` | have | one absent value: a missing key and a `null` both decode to `null` |
 | `.exactOptional()` | `#[present]` on a `?T` field — the key may be absent, but `null` is refused | add · 5 | |
 | `.unwrap()` | — | n/a | no schema value to unwrap; the type says it |
 | `.nonoptional()` | field `T` | native | |
-| `z.any()` · `z.unknown()` | field `Json` | add · 2 | the decoded tree is passed through; `unknown` is the language's own word for it but a `Json` can be walked |
+| `z.any()` · `z.unknown()` | field `Json` | have | the decoded tree is passed through; `unknown` is the language's own word for it but a `Json` can be walked |
 | `z.never()` | `schemas.never()` | add · 4 | always a violation; used as a union arm or a catch-all |
 
 ## §§ 4.17–4.18 · Objects
@@ -207,14 +208,14 @@ grammar. None reaches a host cell.
 | `.required()` | `#[required("RecipeFull")]` | add · 5 | emits the record with no `?` |
 | `z.deepPartial()` | — | gap | a decorator sees one declaration (`language-gaps.md` lg2-k); the nested types' partials must each be marked |
 | symbol keys | — | n/a | |
-| recursive objects (`get subcategories()`) | a field typed with the record itself | add · 2 | `parseCategory` calls itself by name; no getter trick is needed |
-| mutually recursive objects | two `#[schema]` records naming each other | add · 2 | by the name contract `parse<TypeName>` |
+| recursive objects (`get subcategories()`) | a field typed with the record itself | have | `parseCategory` calls itself by name; no getter trick is needed |
+| mutually recursive objects | two `#[schema]` records naming each other | have | by the name contract `parse<TypeName>` |
 
 ## §§ 4.19–4.20 · Arrays and tuples
 
 | Zod | botopink | Box | Notes |
 |---|---|---|---|
-| `z.array(T)` | field `Array<T>` / `T[]` | add · 2 | each item decoded with the path `field[i]` |
+| `z.array(T)` | field `Array<T>` / `T[]` | have | each item decoded with the path `field[i]` |
 | `.nonempty()` | `#[notEmpty]` | have | `vNotEmptyList` |
 | `.min(n)` · `.max(n)` · `.length(n)` | `#[minLength(n)]` · `#[maxLength(n)]` · `#[length(n)]` on an array field | add · 3 | `#[sizeBetween]` stays |
 | checks on the items (`z.array(z.email())`) | `#[with("emails")]` naming `fn emails() -> Schema<Array<string>>` | add · 8 | a marker is a raw lexeme and cannot nest (lg2-i) |
@@ -290,7 +291,7 @@ grammar. None reaches a host cell.
 
 | Zod | botopink | Box | Notes |
 |---|---|---|---|
-| `z.json()` | field `Json` | add · 2 | |
+| `z.json()` | field `Json` | have | |
 | `z.function({ input, output })` · `.implement` | — | n/a | a function's parameters are typed by its signature; wrapping one in a runtime check is `parse<Args>` at the boundary that calls it |
 | `z.custom<T>(fn)` | `schemas.custom(f)` with `f: fn(j: Json) -> @Result<T, string>` | add · 8 | |
 | `.apply(fn)` | a function over `Schema<T>` | native | schemas are values; composing them is a call |
@@ -374,11 +375,11 @@ grammar. None reaches a host cell.
 
 | Zod | botopink | Box | Notes |
 |---|---|---|---|
-| Standard Schema — "accept any schema" | a parameter typed `Schema<T>` | add · 2 | what `08-bpp/121` (collections) and `08-bpp/127` (actions) take |
+| Standard Schema — "accept any schema" | a parameter typed `Schema<T>` | have | what `08-bpp/121` (collections) and `08-bpp/127` (actions) take |
 | tRPC-style typed endpoints, form libraries | `08-bpp/127-bpp-actions` | — | the consumer, not this front |
 | Zod → OpenAPI | `table.toOpenApi30` | add · 9 | |
 | mock-data generators | — | — | not in the reference's core; no row |
-| Zod Classic (methods) vs Zod Mini (functions) | one API: `Schema<T>` methods for the wrappers (`.optional()`, `.array()`, `.refine(…)`, `.map(…)`), `checks.*` functions for the checks | add · 2 · 8 | a check is typed by what it checks (`Check<string>`), so `schemas.int().check(checks.email())` does not compile |
+| Zod Classic (methods) vs Zod Mini (functions) | one API: `Schema<T>` methods for the wrappers (`.optional()`, `.array()`, `.refine(…)`, `.map(…)`), `checks.*` functions for the checks | have · add · 8 | a check is typed by what it checks (`Check<string>`), so `schemas.int().check(checks.email())` does not compile |
 | `mySchema.isOptional()` · `.isNullable()` | `schema.isOptional()` | add · 9 | |
 | `mySchema.clone(def)` · `_zod.def` · `_zod.run` | `schema.fields()` / `.options()` for reflection; no internals | add · 9 | |
 | `z.$ZodType` hierarchy, v3/v4 dual support, peer dependencies | — | n/a | one bundled version, shipped with the compiler |

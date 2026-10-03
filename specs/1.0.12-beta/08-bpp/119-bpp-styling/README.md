@@ -1,17 +1,18 @@
 # Front 119 — bpp styling: scoped `<style>`
 
 **Priority:** medium — a page is complete without it (emilia tokens and a global stylesheet exist);
-a component that carries its own CSS is not.
-**Depends on:** decision [`08-d`](../README.md#08-d--who-scopes-css), open — it decides where
-the scoping code lives, so the whole front waits on it, step 1 included · `118-bpp-components`
-for step 2 (the template hands `<style>` over), and 118 step 1's one-line carve-out in
-`jhonstart-emilia`'s bridge test, landed before this front opens (decision 189) ·
-`05-jhonstart/26` landed, for the test file step 2 adds to `jhonstart-dom-test`. Step 1 depends
-on no front of this track and runs beside `06-emilia/34`.
+a component that carries its own CSS is not. · **State:** not started · blocked by `08-d`
+**Depends on:** open: [`08-d`](../README.md#08-d--who-scopes-css) — it decides where the scoping
+code lives, so the whole front waits on it, step 1 included · `118-bpp-components` for step 2 (the
+template hands `<style>` over), and 118 step 1's one-line carve-out in `jhonstart-emilia`'s bridge
+test, landed before this front opens (decision 189) · `05-jhonstart/26`, for the test file step 2
+adds to `jhonstart-dom-test`. Step 1 depends on no front of this track and runs beside
+`06-emilia/34`.
 **Owns:** new `repository/emilia/modules/emilia/src/scoped.bp` + `test/scoped_test.bp` (and the
 one line each appends to emilia's `root.bp` / `botopink.json`, which are 34's by ownership and
 which no step of 34 edits) · `repository/jhonstart/modules/jhonstart-emilia/**` · one lowering
-arm appended to `jhonstart-html/src/html.bp` (after 118; first of the three appending fronts) ·
+arm appended to `html.bp` (`jhonstart/src/html.bp` after `05-jhonstart/26` step 0; after 118;
+first of the three appending fronts) ·
 the test file step 2 adds to `jhonstart-dom-test` for the selector matcher — the front owns the
 file it adds; `fake_dom.mjs` stays `05-jhonstart/26`'s (decision 189)
 **Does not touch:** `emilia/src/{emilia,output,arbitrary}.bp` (`06-emilia/34`'s);
@@ -19,7 +20,10 @@ file it adds; `fake_dom.mjs` stays `05-jhonstart/26`'s (decision 189)
 
 Reference: `astro-docs/11-styling.md`.
 
----
+## Goal
+
+A component's `<style>` applies to that component only, as in Astro; `is:global`, `:global()` and
+`define:vars` work; the cascade is linked sheets, emilia's layers, then scoped styles.
 
 ## Problem
 
@@ -31,16 +35,14 @@ The three things in the tree that are near it are each something else:
 
 | | Is | Is not |
 |---|---|---|
-| emilia | a typed utility compiler: `emilia([.Pad.All.4])` → class `e_<hash>` and a rule in a per-render sheet (`emilia/src/emilia.bp:112-235`) | a CSS processor — `emilia/AGENTS.md:602` says so; it never reads author CSS |
+| emilia | a typed utility compiler: `emilia([.Pad.All.4])` → class `e_<hash>` and a rule in a per-render sheet (`emilia/src/emilia.bp:112-235`) | a CSS processor — `emilia/AGENTS.md:602`: "Not a runtime CSS engine. No selector parsing"; it never reads author CSS |
 | `*.module.css` | class renaming to `<file>_<class>_<hash6>` at build (`onze-assets/src/style_module.bp:1-36`) | scoping: it renames classes, so `h1 { }` in a module file is still global |
 | `globals.css` | read at build (`onze-cli/src/build.bp:112-114`) | per component |
 
 So "emilia processes the `<style>` block" names nothing that exists: emilia has no entry point
 that takes CSS text. Scoping is new code, and decision `08-d` is about where it goes.
 
-## Current state
-
-Measured 2026-10-01:
+What the work stands on:
 
 - emilia's rendering model: `Rule`, `Sheet`, `Variant`, `renderRule`, `renderDocument`
   (`emilia/src/output.bp:44-593`); `flush() -> @Task<string>` renders the per-render `<style>`
@@ -50,7 +52,7 @@ Measured 2026-10-01:
 - `hashHex` is djb2 in a host cell on both targets (`emilia.bp:79-97`) — and a comptime body
   cannot call a host function (`language-gaps.md`, the lg2-w row), so a template cannot hash.
 - A template knows where it was written: `q.source()` answers `Source(file, line, col)`
-  (`builtins.d.bp:434-438`).
+  (`libs/std/src/builtins.d.bp`, `Source`).
 
 ## Mechanism
 
@@ -75,10 +77,10 @@ runtime form stays readable.
 | Piece | Owner | Does |
 |---|---|---|
 | `scopeCss(scope: string, css: string) -> @Result<string, string>` | emilia, `scoped.bp` | reads the stylesheet — rules, at-rules, comments, strings — and rewrites selectors. Pure botopink, both targets, no host cell |
-| the lowering arm in `html.bp` | jhonstart-html | adds `data-s="<scope>"` to every element of a template that has a scoped `<style>`; replaces the `<style>` element with `scopedStyle("<scope>", "<css>", vars)` |
+| the lowering arm in `html.bp` | jhonstart (`html`) | adds `data-s="<scope>"` to every element of a template that has a scoped `<style>`; replaces the `<style>` element with `scopedStyle("<scope>", "<css>", vars)` |
 | `scopedStyle` and the sink | jhonstart-emilia (the bridge) | calls `scopeCss` once per scope per process, registers the result with the render's style sink; the sheet goes out after emilia's flush |
 
-jhonstart-html does not import emilia: `scopedStyle` resolves in the **caller's** scope, like a
+`html.bp` does not import emilia: `scopedStyle` resolves in the **caller's** scope, like a
 tag's builder does (`html.bp:231`), so a page that writes `<style>` imports `scopedStyle` from
 the bridge and a page that does not pays nothing.
 
@@ -96,7 +98,7 @@ the bridge and a page that does not pays nothing.
 scoped component styles in render order. Scoped styles come last, so they win at equal
 specificity — Astro's order.
 
-## Steps
+## Open
 
 ### Step 1 — `scopeCss`
 
@@ -106,7 +108,6 @@ at-rules that hold rules (`@media`, `@supports`, `@layer`, `@container`), at-rul
 combinators, pseudo-classes and pseudo-elements (the attribute goes before a pseudo-element),
 `:global(…)`, `:is(…)` and `:where(…)` (scoped inside).
 
-**Acceptance:**
 - [ ] `examples/scope-css-example.bp` passes on both targets
 - [ ] 40 selector cases in `scoped_test.bp`, each a literal pair; the reference's own two
       (`h1`, `.text`) among them
@@ -117,7 +118,6 @@ combinators, pseudo-classes and pseudo-elements (the attribute goes before a pse
 
 ### Step 2 — The template arm and the bridge
 
-**Acceptance:**
 - [ ] `examples/scoped-style-example.bp` passes on both targets
 - [ ] two components that both write `.title` render two rules and two attributes; neither rule
       matches the other's element — asserted on the rendered document with a selector matcher in
@@ -130,18 +130,19 @@ combinators, pseudo-classes and pseudo-elements (the attribute goes before a pse
 
 A component first rendered inside a `Suspense` fill needs its sheet in that fill.
 
-**Acceptance:**
 - [ ] a boundary's fill carries the scoped sheet of a component the shell did not render, as
       emilia's flush does today (`jhonstart-emilia/src/root.bp:95`)
 
-## Gate
+## Decisions
 
+- `08-d` — who scopes CSS: (a) emilia's `scopeCss` through the bridge (recommended), (b)
+  onze-assets, (c) jhonstart's `html`. Every step.
+
+**Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `emilia/modules/emilia` and `jhonstart-emilia`
 - [ ] `zig build test-libs`: emilia, jhonstart, onze green
-- [ ] `scripts/gate.sh --cold` green
-- [ ] `AGENTS.md` of every directory touched; `emilia/AGENTS.md:602` amended — emilia reads author
-      CSS in one function, and says which
-- [ ] Commit on `front/119-bpp-styling`; landing is the maintainer's step
+- [ ] `emilia/AGENTS.md:602` ("Not a runtime CSS engine") amended — emilia reads author CSS in one
+      function, and says which
 
 ## Blast radius
 

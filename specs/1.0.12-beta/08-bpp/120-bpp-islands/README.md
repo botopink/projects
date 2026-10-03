@@ -1,17 +1,20 @@
 # Front 120 — bpp islands: hydration strategies and server islands
 
 **Priority:** high — "load this when it is seen" and "render this part per visitor, cache the
-rest" are the two things an islands architecture is for, and the tree has neither.
+rest" are the two things an islands architecture is for, and the tree has neither. ·
+**State:** not started
 **Depends on:** `118-bpp-components` (the `client:` and `server:` directives are template arms) ·
-`05-jhonstart/26` (it owns the core member, and carries front 29's island work) · `07-onze/50`
-(ONZ-68-split: lazy starters — without them a deferred island's code is still downloaded up front)
-· `04-rakun/22` (rakun-app) · decision
-[`08-e`](../README.md#08-e--what-a-server-island-does-with-its-props).
+`119-bpp-styling` (the arm before this one in `html.bp`) · `05-jhonstart/26` (it owns the core
+member, and carries front 29's island work) · `07-onze/50` (ONZ-68-split: lazy starters — without
+them a deferred island's code is still downloaded up front) · `07-onze/49` (the island route in
+`onze-server`) · `04-rakun/22` (rakun-app) and 117 before it on that member · open:
+[`08-e2`](../README.md#08-e2--which-modes-the-islands-props-setting-may-name) (step 4). Written against
+decision 224 (server-island props: configurable, default sealed).
 **Owns:** in `repository/jhonstart/modules/jhonstart/src`: new `island_strategy.bp`,
 `deferred.bp`; the lines named in the steps of `client.bp`, `render.bp:218`,
 `island_runtime.mjs` · new `repository/rakun/modules/rakun-app/src/server_islands.bp` +
 `sidecars/` cell (after `04-rakun/22`, and after 117 on that member's `botopink.json` and
-`root.bp`) · one arm appended to `jhonstart-html/src/html.bp` (after 119's) · one line of
+`root.bp`) · one arm appended to `html.bp` (`jhonstart/src/html.bp`, after 119's) · one line of
 `onze-server/src/server.bp` (the route; after `07-onze/49`) · in `jhonstart-dom-test`: the test
 file step 2 adds, and step 2's three additions to `fake_dom.mjs` — the file stays
 `05-jhonstart/26`'s and is edited by one front at a time after 26, this front before 126
@@ -22,7 +25,11 @@ file step 2 adds, and step 2's three additions to `fake_dom.mjs` — the file st
 Reference: `astro-docs/02-islands-architecture.md`, `12-framework-components.md`,
 `22-server-islands.md`.
 
----
+## Goal
+
+A `client:idle` / `visible` / `media` / `only` directive starts an island — and downloads its code
+— when its strategy fires; `server:defer` renders a component per visitor in a second request
+while the page around it stays prerendered and cacheable, its props sealed by default.
 
 ## Problem
 
@@ -40,9 +47,9 @@ not make the page cacheable, because the personalised bytes are still in it. A s
 second request: the page is static, the island is fetched by the browser and rendered per visitor.
 Nothing in the tree does that.
 
-## Current state
+## What exists
 
-Measured 2026-10-01 at `repository/jhonstart/modules/jhonstart/src/`:
+At `repository/jhonstart/modules/jhonstart/src/`:
 
 | | |
 |---|---|
@@ -108,9 +115,15 @@ encoded by the function `#[clientProps]` emits for the props record, reached by 
 5. The island's response headers are the component's to set (`Cache-Control`); the page's URL is
    the request's `Referer`.
 
-**Sealing** (decision `08-e`): AES-256-GCM over the encoded props, key from `ONZE_KEY` or
-generated at build and written into the server bundle. The cipher is one Erlang host cell in
-rakun-app — rakun is erlang-only by manifest, so it needs no node twin.
+**Sealing** (decision 224): the props mode is configurable per project in `onze.json`
+(`"islands": {"props": "sealed"}`), with no per-request or per-environment override, and the
+default is **sealed** — AES-256-GCM over the encoded props, so the visitor can neither read nor
+alter them; the key is `ONZE_KEY`, or one generated at build (`onze create-key`, 124) and written
+into the server bundle. The cipher is one Erlang host cell in rakun-app — rakun is erlang-only by
+manifest, so it needs no node twin. Which other modes the setting may name is question `08-e2`
+(decision 67 forbids a setting that weakens a rule). 124's README still names the key's variable
+through a config key `islandKeyEnv` (default `ASTRO_KEY`), which does not match decision 224 —
+flagged there, not resolved.
 
 **The prefix is onze's.** rakun-app exposes `serveIslands(prefix)`; onze-server passes
 `/_onze/island` — the way it passes the action field and header names (decision 114).
@@ -118,7 +131,7 @@ rakun-app — rakun is erlang-only by manifest, so it needs no node twin.
 **Without a client bundle.** A page with a server island and no client island gets a small inline
 loader — one `<script>` per page, deduplicated — because the island must load with no bundle.
 
-## Steps
+## Open
 
 ### Step 0 — Measure
 
@@ -150,7 +163,7 @@ loader — one `<script>` per page, deduplicated — because the island must loa
       check (`entry.bp`) with the component's name — never a mount that starts nothing
 - [ ] two `client:` directives on one tag fail at the second
 
-### Step 4 — Server islands
+### Step 4 — Server islands (the modes beside `sealed` wait on `08-e2`)
 
 - [ ] `examples/server-island-example.bp` passes on erlang
 - [ ] `server_islands.bp`: `serveIslands(prefix)`, `seal` / `unseal`; a tampered or truncated
@@ -159,6 +172,9 @@ loader — one `<script>` per page, deduplicated — because the island must loa
 - [ ] the page that contains the island reads no cookie: `dynamicReason()` is empty and the page
       prerenders (`static_gen.bp`)
 - [ ] `server:defer` on a component that is not `#[deferred]` fails at boot, naming it
+- [ ] `seal` / `unseal` take the mode as a plain value — `onze.json`'s
+      `"islands": {"props": …}`, read by onze's config (124) — and default to `sealed`
+      (decision 224)
 
 ### Step 5 — The network (waits on ONZ-68-split)
 
@@ -166,14 +182,15 @@ loader — one `<script>` per page, deduplicated — because the island must loa
       requested until it is scrolled to; the chunk of a `client:media` island that does not match
       is never requested
 
-## Gate
+## Decisions
 
+- `08-e2` — which modes `"islands": {"props": …}` may name besides `sealed`. Step 4; 124.
+
+**Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `modules/jhonstart`; on commonJS in
       `jhonstart-dom-test`; on erlang in `rakun-app`
 - [ ] `zig build test-libs`: jhonstart, rakun, onze green; the blog's hydrated island still hydrates
-- [ ] `scripts/gate.sh --cold` green
-- [ ] `AGENTS.md` of every directory touched; `contracts.md` § 2
-- [ ] Commit on `front/120-bpp-islands`; landing is the maintainer's step
+- [ ] `contracts.md` § 2
 
 ## Blast radius
 
@@ -191,7 +208,7 @@ loader — one `<script>` per page, deduplicated — because the island must loa
   Mixing frameworks. `transition:persist` on an island is 126's.
 - **`#[clientProps]` is narrower than Astro's list** (`string`, `i32`, `f64`, `bool` against
   objects, arrays, `Map`, `Set`, `Date`, …). Step 1 widens it to arrays of those and nested
-  `#[clientProps]` records, encoded through `validation`'s `encode<T>` once 125 lands; `Dict`,
+  `#[clientProps]` records, encoded through `validation`'s `encode<T>` (125); `Dict`,
   `Set` and dates-as-`i64` follow from the same encoder.
 - **Event handlers.** An island's markup names its handlers (`data-jh-on-click="LikeButton:like"`)
   and the runtime binds none today (`island_runtime.mjs:98` is the only listener). That is

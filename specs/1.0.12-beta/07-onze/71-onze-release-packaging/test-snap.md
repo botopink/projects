@@ -1,4 +1,4 @@
-# Front 71 — the 1.0.10 snapshot map, `06-onze/test-snap.md` § 71 (open: see README, conditional on decision 53-b)
+# Front 71 — the 1.0.10 snapshot map, `06-onze/test-snap.md` § 71 (realised under 53-b (c): the five texts are on disk as `onze-release/test/__snapshots__/release/*.snap`, recorded through `snapshots.assertAs` rather than these helpers)
 
 ## 71 — release packaging · `modules/onze-release/test/`
 

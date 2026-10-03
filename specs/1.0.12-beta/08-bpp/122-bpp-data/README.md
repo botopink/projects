@@ -1,9 +1,11 @@
 # Front 122 — bpp data: the `Astro` global, mapped
 
 **Priority:** medium — most of the global exists under other names; three members do not exist
-at all.
+at all. · **State:** not started
 **Depends on:** `05-jhonstart/26` (the core member) · `07-onze/49` (ONZ-49-4.3: onze fills
-`RequestData.query` and `.headers` with `[]` today) · `118-bpp-components` for the examples.
+`RequestData.query` and `.headers` with `[]` today) · `03-bundled-libs/102` (`navigation.bp`) ·
+120 (before it on the core member's `botopink.json` and `root.bp`) · `118-bpp-components` for the
+examples.
 **Owns:** in `repository/jhonstart/modules/jhonstart/src`: the lines of `server.bp` and
 `error_boundary.bp` named in the steps, new `response.bp` (after `05-jhonstart/26`, and after 120
 on the member's `botopink.json` and `root.bp`) · `botopink-lang/libs/routing/src/navigation.bp` —
@@ -15,7 +17,11 @@ construction of `RequestData` (49's); middleware (123).
 Reference: `astro-docs/18-data-fetching.md`, `21-on-demand-rendering.md`, `08-routing.md`
 § Redirecionamentos, § Rewrites.
 
----
+## Goal
+
+Every member of Astro's `Astro` global has a counterpart — most already exist as parameters, hooks
+and navigation signals — and the three that do not are added: page-side status and headers,
+`rewrite` from a page, and `site` / `isPrerendered`.
 
 ## Problem
 
@@ -28,13 +34,13 @@ what it needs as a parameter and as hooks.
 The stack does not need the object. It needs the three things the object can do that nothing here
 can.
 
-## Current state — the whole global, member by member
+## The whole global, member by member
 
-Measured 2026-10-01. Paths under `repository/`.
+Paths under `repository/`.
 
 | `Astro.…` | Here | Where |
 |---|---|---|
-| `props` | the component's parameters | 118 |
+| `props` | the component's props parameter | 118 |
 | `params` | `<fn>Params(route)`, emitted by `#[page]` | `jhonstart/src/routes.bp:233-262` |
 | `slots.has` / `slots.render`, `self` | `hasContent(slot)`; the function's own name | 118 |
 | `request` — `url`, `method`, `headers` | `use request()` → `RequestData(method, path, params, query, headers, cookies)` | `jhonstart/src/server.bp:106`, `:252` — `query` and `headers` arrive empty until `07-onze/49` |
@@ -78,7 +84,7 @@ path that itself rewrites is followed at most once more and then refused, naming
 render's `app(…)` options, so jhonstart reads a value and names no config file.
 `isPrerendered()` answers whether this render is a build-time one.
 
-## Steps
+## Open
 
 ### Step 0 — Measure
 
@@ -106,13 +112,10 @@ render's `app(…)` options, so jhonstart reads a value and names no config file
       answer then, rather than emit a relative canonical link
 - [ ] `isPrerendered()` is true under `prerenderPath` (`static_gen.bp:381`) and false on a request
 
-## Gate
-
+**Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `modules/jhonstart` and `libs/routing`
 - [ ] `zig build test-libs`: jhonstart, rakun, onze green
-- [ ] `scripts/gate.sh --cold` green
-- [ ] `AGENTS.md` of every directory touched; `contracts.md` for the new signal
-- [ ] Commit on `front/122-bpp-data`; landing is the maintainer's step
+- [ ] `contracts.md` for the new signal
 
 ## Blast radius
 
@@ -124,7 +127,7 @@ render's `app(…)` options, so jhonstart reads a value and names no config file
 ## Notes
 
 - **Not added.** The `Astro` object. `Astro.cookies.set` from a render — the phase rule is the
-  design (front 62, 1.0.10); a page that must set a cookie does it in middleware or in the action
+  design; a page that must set a cookie does it in middleware or in the action
   that led to it. `fetch` with a method, headers and a body is `02-std-and-packaging`'s row.
 - **Returning a `Response` from a page** is the three signals plus the two hooks; there is no
   fourth thing a page's frontmatter returns.

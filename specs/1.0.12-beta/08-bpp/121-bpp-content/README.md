@@ -1,12 +1,13 @@
 # Front 121 — bpp content: Markdown, frontmatter and collections
 
 **Priority:** high — it is the largest piece of code in the track that does not exist in any form,
-and a content site is the reference's first use case.
-**Depends on:** `03-bundled-libs/125-validation-zod` steps 0–2 (`Schema<T>`) for step 4 onward ·
-`118-bpp-components` for step 6 (a rendered document is an `Element` a template splices) ·
-`117-bpp-routing` for `page.md` · decision
-[`08-f`](../README.md#08-f--where-markdown-and-yaml-live). **Steps 1–3 depend on nothing** and
-open with wave A.
+and a content site is the reference's first use case. · **State:** not started · steps 1–2 ready
+to open
+**Depends on:** open: [`08-f`](../README.md#08-f--where-markdown-and-yaml-live) (step 3, the
+frontmatter reader's home) · `03-bundled-libs/125-validation-zod` steps 0–2 (`Schema<T>`) for
+steps 4–5 — merged into botopink-lang `feat` (`libs/validation/src/schemas.bp`); `status.md` still
+lists them as pending · `118-bpp-components` and `117-bpp-routing` (`page.md`) for step 6 ·
+`07-onze/53` for step 7. **Steps 1–2 depend on nothing** and open with wave A.
 **Owns:** the new member `repository/onze/modules/onze-content/**` (`botopink.json`, `src/**`,
 `test/**`, `AGENTS.md`) · its line in `onze/botopink.json`'s `workspaces` and in
 `onze/modules.md` · `onze/examples/blog/content/**` and `src/lib/db.bp` (step 7, after
@@ -17,7 +18,10 @@ module is `02-std-and-packaging/97`'s — see `08-f`), the compiler.
 Reference: `astro-docs/14-markdown-content.md`, `15-content-collections.md`,
 `10-layouts.md` § Layouts Markdown, `19-images.md` § Imagens em arquivos Markdown.
 
----
+## Goal
+
+A new onze member renders CommonMark + GFM to `Element`, reads frontmatter, loads collections
+checked by a `Schema<T>` at build, serves `.md` pages and RSS — and the blog reads Markdown.
 
 ## Problem
 
@@ -38,10 +42,9 @@ collection, no schema over content, no heading index, no RSS.
 Two things the reference leans on have no place here: remark and rehype plugins are a JavaScript
 ecosystem with no host on this stack, and a Markdown renderer is a library, not a compiler stage.
 
-## Current state
+## What exists
 
-Measured 2026-10-01: `grep -ril markdown` over `repository/*/modules` and `libs/` finds no
-implementation. What a content layer would stand on does exist:
+No Markdown implementation in any repository. What a content layer stands on:
 
 | Need | Where |
 |---|---|
@@ -115,14 +118,13 @@ layout by module path — `layout: "@/layouts.post"` — a component taking
 module that reads the file, renders it and calls the layout. With no `layout`, the document is
 rendered inside the directory's layout chain like any page.
 
-## Steps
+## Open
 
 ### Step 1 — Markdown blocks
 
 Thematic breaks, ATX and setext headings, indented and fenced code, HTML blocks, link reference
 definitions, paragraphs, block quotes, list items and lists, with CommonMark's container rules.
 
-**Acceptance:**
 - [ ] the block sections of the CommonMark 0.31.2 specification's examples, as fixtures under
       `test/commonmark/` — each example one case, `markdown` in, HTML out, both targets
 - [ ] no example is skipped: one that does not pass is a failing test with its number in its name
@@ -133,16 +135,14 @@ Code spans, emphasis and strong emphasis (the delimiter-run algorithm), links an
 reference, autolink), raw HTML, hard and soft breaks, entities; tables, strikethrough, task lists,
 extended autolinks, footnotes; ids; smart punctuation.
 
-**Acceptance:**
 - [ ] every remaining CommonMark example; the GFM specification's extension examples
 - [ ] `examples/markdown-example.bp` passes on both targets
 - [ ] two headings with the same text get `conclusion` and `conclusion-1`
 - [ ] a 200 kB document renders within a budget step 2 measures and writes down — the parser is
       a code-point walk, and its cost on the BEAM is not known
 
-### Step 3 — Frontmatter
+### Step 3 — Frontmatter (waits on `08-f`)
 
-**Acceptance:**
 - [ ] `test/frontmatter_test.bp`: the reference's five frontmatter blocks decode to the `Json`
       they mean; an anchor, a tag and a second document are each refused with the line
 - [ ] a file with no fence has an empty object and the whole text as body; a fence that is not
@@ -150,7 +150,6 @@ extended autolinks, footnotes; ids; smart punctuation.
 
 ### Step 4 — Collections
 
-**Acceptance:**
 - [ ] `examples/content-collection-example.bp` passes on erlang
 - [ ] an entry that violates the schema fails `sync` with `<file>: <path>: <message>` per
       violation, and the build with it
@@ -161,7 +160,6 @@ extended autolinks, footnotes; ids; smart punctuation.
 
 ### Step 5 — References, the editor's schema, RSS
 
-**Acceptance:**
 - [ ] a `#[reference]` to an id that does not exist fails `sync`, naming both entries
 - [ ] `<name>.schema.json` validates the entries it was generated from (125's JSON Schema test
       tool)
@@ -169,7 +167,6 @@ extended autolinks, footnotes; ids; smart punctuation.
 
 ### Step 6 — Markdown pages and layouts; images
 
-**Acceptance:**
 - [ ] `page.md` with and without `layout:`; the layout receives the frontmatter and the heading
       list
 - [ ] `![alt](./cover.png)` beside the document becomes `onze-assets`' image element; a `/public`
@@ -177,19 +174,19 @@ extended autolinks, footnotes; ids; smart punctuation.
 
 ### Step 7 — The blog reads Markdown
 
-**Acceptance:**
 - [ ] `onze/examples/blog/content/posts/*.md` carry frontmatter; `lib/db.bp`'s `parsePost` is
       deleted and the pages read `getCollection(posts())`
 - [ ] the blog's existing tests are green with a post that has a heading, a list and a link
 
-## Gate
+## Decisions
 
+- `08-f` — where Markdown and YAML live: (b) Markdown in `onze-content`, YAML in std recommended;
+  until std's `yaml` lands, step 3 keeps its own copy. Step 3 (under (c), steps 1–2 too).
+
+**Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `modules/onze-content`
 - [ ] `zig build test-libs`: onze green, the new member's cells among them
-- [ ] `scripts/gate.sh --cold` green
-- [ ] `AGENTS.md` of the member; `onze/modules.md` and the workspace manifest updated in the same
-      commit
-- [ ] Commit on `front/121-bpp-content`; landing is the maintainer's step
+- [ ] `onze/modules.md` and the workspace manifest updated in the same commit
 
 ## Blast radius
 
@@ -197,8 +194,8 @@ extended autolinks, footnotes; ids; smart punctuation.
   and to `validation`; nothing imports it until step 7.
 - **Build time.** `sync` reads and renders every entry; it runs inside `onze build`. Step 4
   measures the blog and a 1 000-entry fixture.
-- **The CommonMark fixtures are ~650 test cells per target.** `115-gate-perf` counts cells; the
-  member's suite is sized against its budget before it lands.
+- **The CommonMark fixtures are ~650 test cells per target.** The gate's cold budget counts
+  them; the member's suite is sized against it before it lands.
 
 ## Notes
 

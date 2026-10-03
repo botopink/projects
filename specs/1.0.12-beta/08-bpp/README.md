@@ -203,7 +203,7 @@ Open: `08-d`, `08-e2`, `08-f`, `08-h` (below) and `bpp-f`, `bpp-g` (full text in
 
 ### 08-d · Who scopes CSS
 
-**Measured.** emilia compiles `Token[]` and is "not a CSS processor" (`emilia/AGENTS.md`).
+**Measured.** emilia compiles `Token[]` and is "not a runtime CSS engine. No selector parsing" (`emilia/AGENTS.md:602`).
 onze-assets renames the classes of `*.module.css` (`onze-assets/src/style_module.bp`). Decision
 113: emilia is CSS, jhonstart is HTML.
 **Options.** (a) emilia gains `scopeCss(scope, css)`, reached through the `jhonstart-emilia`
@@ -212,7 +212,7 @@ bridge; (b) onze-assets, beside the module renamer; (c) jhonstart's `html` scope
 unavailable to a jhonstart application that does not use onze.
 **Blocks.** All of 119.
 
-### 08-e2 · Which modes `"islands": {"props": …}` may name
+### 08-e2 · Which modes the islands props setting may name
 
 **Raised by** decision 224, which makes the mode configurable with `sealed` as the default and
 leaves the other values open, noting that decision 67 forbids a setting that weakens a rule.

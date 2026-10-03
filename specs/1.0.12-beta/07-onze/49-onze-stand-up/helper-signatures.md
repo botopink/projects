@@ -1,4 +1,4 @@
-# `onze-test` helper signatures — the 1.0.10 map, `06-onze/test-snap.md` § Helper signatures. Front 49 owns `onze-test/src/root.bp`; each front fills the group file it owns (README § Step 1). `core` and `fixtures` exist; the other groups are the open half.
+# `onze-test` helper signatures — the 1.0.10 map, `06-onze/test-snap.md` § Helper signatures. Front 49 owns `onze-test/src/root.bp`; each front fills the group file it owns (README step 6 stubs them). `core` and `fixtures` exist; the other groups are the open half.
 
 ## Helper signatures (`modules/onze-test/src/`)
 

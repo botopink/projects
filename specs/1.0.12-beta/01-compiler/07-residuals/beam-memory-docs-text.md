@@ -1,16 +1,12 @@
-# The `docs.md` text for `@BeamMemory` — supplied by front 17, placed by front 08
+# The `docs.md` text for `@BeamMemory` — supplied by front 17, placed by front 07 (step 6)
 
-Copied from 1.0.10's `17-beam-memory/docs-text.md` into the directory of the front that owns
-`docs.md` (08 item 5). Front 17 writes no `docs.md`; this file is the text it supplies. Two parts: what is **true ** (steps 1–3 landed) and
-can go in now, and the three mode paragraphs, which describe an emission that lands with C-10 and
-must not be published before it — a paragraph saying `hits += 1` is `ets:update_counter` while the
-erlang backend still emits an unbound `Hits` would be the failure decision 41 was taken against.
-
-Every number below is from the front's measurements (`design.md` §4, §6); none is a promise.
+Front 17 writes no `docs.md`; this file is the text it supplies. Both parts are true on feat
+(17 step 1: `keyed = true`, decision 167's refusal off the BEAM). The figures are 1.0.10's
+`17-beam-memory/design.md` §4, §6 and `run/beam_memory_ets_keyed`; none is a promise.
 
 ---
 
-## Part 1 — true now (`docs.md` § Bindings)
+## Part 1 — `docs.md` § Bindings
 
 ### Under `### val — immutable binding`, after the first two fences
 
@@ -38,11 +34,11 @@ Every number below is from the front's measurements (`design.md` §4, §6); none
 > ```
 >
 > On the BEAM the annotation `#[@BeamMemory.<member>]` widens where a module `var` lives beyond the
-> process (§ `@BeamMemory`). Off the BEAM the annotation is a silent no-op: a target with one
-> execution context has nowhere else to put the state. A hand-written `import { beam } from "std"`
-> — the host primitives themselves — is `std-unsupported-on-target` there, because that import asks
-> for something the target does not have. The two live at different levels of intent and are
-> decided together (decision 43).
+> process (§ `@BeamMemory`). Off the BEAM the annotation is refused where it is written —
+> ``error: `#[@BeamMemory]` has no meaning on the commonJS backend`` — because a target with one
+> execution context has no BEAM storage to name; a `var` there is one value for the whole program.
+> A hand-written `import { beam } from "std"` — the host primitives themselves — is
+> `std-unsupported-on-target` there for the same reason (decisions 43, 167).
 
 ### A new `### @BeamMemory — where a module var lives on the BEAM`, the validation half
 
@@ -73,12 +69,11 @@ Every number below is from the front's measurements (`design.md` §4, §6); none
 
 ---
 
-## Part 2 — the three modes (publish with C-10, not before)
+## Part 2 — the three modes (`docs.md` § `@BeamMemory`)
 
-Each paragraph carries the sentence its measurement forces (README step 6). The second paragraph
-also carries decision 42: `keyed` unwritten on a `Dict` is **not** a warning — replacing the whole
-container is a thing authors legitimately want — so the behaviour and the cost are stated here,
-where the default is documented, and nowhere else.
+The second paragraph carries decision 42: `keyed` unwritten on a `Dict` is **not** a warning —
+replacing the whole container is a thing authors legitimately want — so the behaviour and the cost
+are stated here, where the default is documented, and nowhere else.
 
 > **`ProcessDict`** — one value per BEAM process, in the process dictionary: no setup, no owner,
 > erased when the process ends. It is what a bare `var` means, and the spelling exists so that a
@@ -95,10 +90,13 @@ where the default is documented, and nowhere else.
 > lives** — a balance, an order, a paid session belong in a supervised process or a database.
 > Under **`keyed = false`** (the default) a `Dict` is stored as **one** value: a write copies the
 > whole dict, and two processes writing *different* keys at the same time lose one of the writes —
-> measured, 20 000 writes each to two keys finished at `19 994` and `20 000`. Under
-> `keyed = true` each key is its own row: at 10 keys a write is 5× cheaper, at 10 000 keys
-> 5 000×, and concurrent writes to different keys both hold. Choose `keyed = true` whenever more
-> than one process writes; keep the default when the dict is replaced whole.
+> measured, 20 000 writes each to two keys finished at `19 996` and `20 000`. Under
+> **`keyed = true`** each key is its own row: the seed is `Dict.empty()` or
+> `Dict.ofEntries([#("a", 1)])` of literals, a row is read as `counts.at(k)` and written as
+> `counts = counts.insert(k, v)`, and nothing else names the var — measured, two processes writing
+> 20 000 times each to their own key finish at `20000` and `20000`; at 10 keys a write is 5×
+> cheaper, at 10 000 keys 5 000×. Choose `keyed = true` whenever more than one process writes;
+> keep the default when the dict is replaced whole.
 
 > **`PersistentTerm`** — one value per node, written **once, at load**, read everywhere for the
 > cost of a function call. A write after load is a compile-time error with the hint
@@ -110,5 +108,6 @@ where the default is documented, and nowhere else.
 > function value: a `fun` belongs to the module version that created it and dies with it on
 > reload.
 
-**One sentence, both parts:** on commonJS and wasm all three read as the bare `var` — the
-annotation changes nothing there, and that is by design.
+If `17-b` or `17-c` widens the keyed surface, the `keyed = true` sentence follows the answer.
+</content>
+</invoke>

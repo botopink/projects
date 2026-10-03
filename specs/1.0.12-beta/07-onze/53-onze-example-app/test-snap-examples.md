@@ -1,13 +1,13 @@
-# Front 53 — the 1.0.10 examples snapshot map, `06-onze/test-snap-examples.md`, carried whole (§ The E2E runner is step 1, unconditional; the blog suites are steps 2–6; `scaffold_test` is front 50's, `export_test` front 71's)
+# Front 53 — the 1.0.10 examples snapshot map, `06-onze/test-snap-examples.md`, carried whole (§ The E2E runner is README step 1, unconditional; the blog suites are steps 2–6; `scaffold_test` is front 50's, `export_test` front 71's step 4; none of these suites or `.snap` exists yet)
 
 # onze — snapshot-test map of `repository/onze/examples/**`
 
 Same contract as [`test-snap.md`](../../../1.0.10-beta/06-onze/test-snap.md). The example apps are packages; their tests live
 in `examples/<app>/test/` and write `examples/<app>/test/__snapshots__/<suite>/<slug>.snap`.
 
-Three example projects ([`modules.md`](../../../1.0.10-beta/06-onze/modules.md)): `blog` (front 53 — the acceptance app),
+Three example projects ([`modules.md`](../modules.md)): `blog` (front 53 — the acceptance app),
 `scaffold` (front 50 — the committed `onze create --yes` output), `static-site` (front 71 — the
-`output: export` proof).
+`output: export` proof; not on disk yet).
 
 ## The E2E runner (`onze-test`)
 

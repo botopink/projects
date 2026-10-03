@@ -1,4 +1,4 @@
-# Front 50 — the 1.0.10 snapshot map, `06-onze/test-snap.md` § 50 (open: see README, conditional on decision 53-b)
+# Front 50 — the 1.0.10 snapshot map, `06-onze/test-snap.md` § 50 (realising it is step 8, conditional on decision 53-b; on disk `onze-cli` holds 5 `.snap` — `scan` 2, `generate` 1, `create` 2 — through `snapshots.assertAs`, not these helpers)
 
 ## 50 — cli · `modules/onze-cli/test/`
 
