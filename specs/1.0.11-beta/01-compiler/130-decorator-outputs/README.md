@@ -30,7 +30,7 @@ libraries: rakun 109, jhonstart 6, std 2, validation 2.
 | member of the annotated type | `decl.addMember("pub fn fromRow(r: Row) -> Self { … }")` | `City.fromRow(r)`, `c.describe()`; travels with the type to every importer | `decorator-member-without-type` (from a `fn`'s decorator), `decorator-member-duplicate`, `decorator-member-not-one-fn` |
 | comptime meta, per decorator | `decl.setMeta("table", "cities")` | `@typeInfo(City).meta.entity.table`, `@typeInfo(City).name` — string constants | `decorator-meta-on-member`, `decorator-meta-duplicate`, `typeinfo-unknown-member`, `typeinfo-unknown-declaration`, `typeinfo-meta-missing` |
 | associated type | `decl.addType("Columns", "(id: string)")` | `City.Columns` in type positions, `City.Columns(id: "x")`, `City.Size.Large`; imported with its owner (alias too) | `decorator-type-without-owner`, `decorator-type-name`, `decorator-type-duplicate`, `decorator-type-not-one-type` |
-| project reflection | (every top-level declaration a decorator runs over) | `@typeInfo.all(with: d)` → `Declared<T>[]`; `member: "m"` for types | `typeinfo-all-arguments`, `typeinfo-all-not-decorator`, `typeinfo-all-mixed`, `typeinfo-all-needs-member`, `typeinfo-all-private`, `typeinfo-all-imported` |
+| project reflection | (every top-level declaration a decorator runs over) | `@TypeInfo.all(with: d)` → `Declared<T>[]`; `member: "m"` for types | `typeinfo-all-arguments`, `typeinfo-all-not-decorator`, `typeinfo-all-mixed`, `typeinfo-all-needs-member`, `typeinfo-all-private`, `typeinfo-all-imported` |
 
 Choices recorded under decision 216 (the spellings are the decision's):
 
@@ -53,10 +53,10 @@ Choices recorded under decision 216 (the spellings are the decision's):
   the import item an importer needs; a value prints under the owner's path (`City.Columns(…)`,
   `City.Size.Small` — `TypeDecl.displayName`, read by every backend's display). Only a decorator
   declares one (no hand-written nested type).
-- **`@typeInfo.all`.** Answers a `Declared<T>(name, module, meta: DeclaredMeta[], value: T)` array:
+- **`@TypeInfo.all`.** Answers a `Declared<T>(name, module, meta: DeclaredMeta[], value: T)` array:
   `value` is the function itself, or for a type a thunk `{ -> T.<member>() }`; one kind per query.
   **What it sees:** every module of the build — the root package, its dependencies, std — that does
-  not itself read `@typeInfo.all`, plus the reader's own declarations. A reader is analysed after
+  not itself read `@TypeInfo.all`, plus the reader's own declarations. A reader is analysed after
   every other module (`orderReaders`) and imported by nobody. **Order:** module path (byte order),
   then declaration order. A declaration of another module is reached through an import the answer
   adds, so it is `pub`.
@@ -112,11 +112,11 @@ Remaining, by site, and what each is written against:
 
 | File | Sites | Generated today | New form | Written against |
 |---|---|---|---|---|
-| rakun `rakun/src/decorators.bp`, `rakun-web/src/convention.bp`, `rakun/src/autoconfig.bp`, `rakun/src/config.bp`, `rakun/src/context.bp`, `rakun-data/src/sql/transactional.bp`, `rakun-security/src/method_security.bp` | ~29 | `pub fn __rkMake_<T>()` (singleton factory, the injection contract), `<T>Tx` / `<T>Sec` proxies built on it | member `T.make()` or the context | decision 234: `T.make()` + `rkResolve("<Field type>")`, the context filled at boot through `@typeInfo.all` (235) — **held on `dec-e`** (below): the boot's query cannot be typed |
-| same files + `lifecycle.bp`, `conditions.bp`, `rakun-data` `entity.bp` / `query.bp` | ~27 | `val __rkScan_<T>`, `__rkBean_`, `__rkLc_`, `__rkEv_`, `__rkImp_`, `__rkExit_`, `__rkAutoQ_`, `__rkCat_`, `__rkChk_`, `__rkEnable_`, `__rkEntityReg_`, `__rkQueryReg_` (load-time registration) | `@typeInfo.all(…, member: "register")` at rakun's boot | decision 235 (built) + 234: the boot's catalogue |
-| `rakun-web/src/convention.bp`, `rakun-app/src/{route_handler,actions}.bp`, `rakun-websocket`, `rakun-scheduling`, `rakun-messaging`, `rakun-cli`, `rakun-actuator-api`, `rakun/src/decorators.bp` routes | ~25 | `val __rkFilter_`/`__rkConverter_`/`__rkCustomizer_`/`__rkCors_`/`__rkAdvice_`/`__rkMiddleware_`/`__rkHandler_<VERB>_`/`__rkRoute_`/`__rkWs_`/`__rkSched_`/`__rkJob_`/`__rkCli_`/`__rkEp_`… | meta (`order`, `media`, `path`, `verb`) + `@typeInfo.all` at the entry point | 235 (built); 236 for `#[middleware]`'s gate; 234 (each handler resolves its owner through the context) |
+| rakun `rakun/src/decorators.bp`, `rakun-web/src/convention.bp`, `rakun/src/autoconfig.bp`, `rakun/src/config.bp`, `rakun/src/context.bp`, `rakun-data/src/sql/transactional.bp`, `rakun-security/src/method_security.bp` | ~29 | `pub fn __rkMake_<T>()` (singleton factory, the injection contract), `<T>Tx` / `<T>Sec` proxies built on it | member `T.make()` or the context | decision 234: `T.make()` + `rkResolve("<Field type>")`, the context filled at boot through `@TypeInfo.all` (235) — **held on `dec-e`** (below): the boot's query cannot be typed |
+| same files + `lifecycle.bp`, `conditions.bp`, `rakun-data` `entity.bp` / `query.bp` | ~27 | `val __rkScan_<T>`, `__rkBean_`, `__rkLc_`, `__rkEv_`, `__rkImp_`, `__rkExit_`, `__rkAutoQ_`, `__rkCat_`, `__rkChk_`, `__rkEnable_`, `__rkEntityReg_`, `__rkQueryReg_` (load-time registration) | `@TypeInfo.all(…, member: "register")` at rakun's boot | decision 235 (built) + 234: the boot's catalogue |
+| `rakun-web/src/convention.bp`, `rakun-app/src/{route_handler,actions}.bp`, `rakun-websocket`, `rakun-scheduling`, `rakun-messaging`, `rakun-cli`, `rakun-actuator-api`, `rakun/src/decorators.bp` routes | ~25 | `val __rkFilter_`/`__rkConverter_`/`__rkCustomizer_`/`__rkCors_`/`__rkAdvice_`/`__rkMiddleware_`/`__rkHandler_<VERB>_`/`__rkRoute_`/`__rkWs_`/`__rkSched_`/`__rkJob_`/`__rkCli_`/`__rkEp_`… | meta (`order`, `media`, `path`, `verb`) + `@TypeInfo.all` at the entry point | 235 (built); 236 for `#[middleware]`'s gate; 234 (each handler resolves its owner through the context) |
 | `rakun-client/src/exchange.bp` | 2 | `pub type Http<T>` + `pub fn http<T>()` | `T.Http` + a factory member | held: a behavior's member called from another module fails on all four backends (below) |
-| jhonstart `routes.bp` | 5 | `val __jhPage_X = jhPage(seg, …)` (+ layout/template/default), `pub fn <X>Params(route)` | meta `seg` + `@typeInfo.all(with: page)` | 235 (built); 236 for `<X>Params` (`paramsOf(seg, route)`); the readers are onze's generated entry points and jhonstart's tests (62 annotations across jhonstart and onze) |
+| jhonstart `routes.bp` | 5 | `val __jhPage_X = jhPage(seg, …)` (+ layout/template/default), `pub fn <X>Params(route)` | meta `seg` + `@TypeInfo.all(with: page)` | 235 (built); 236 for `<X>Params` (`paramsOf(seg, route)`); the readers are onze's generated entry points and jhonstart's tests (62 annotations across jhonstart and onze) |
 | validation `#[schema]` (`libs/validation/src/decorators.bp`) | 5 | `pub fn parse<T>At`, `parse<T>`, `decode<T>`, `schemaOf<T>` + helpers | members `T.parseAt/parse/decode/schema` | nothing — next; `decode` passes `parse<T>At` as a value, and an associated fn read as a value is an unbound variable on erlang (`City.make` passed to a `fn(string) -> City`), so it wraps it in a lambda |
 
 **Found during the migration** (open, not 216's places): a `behavior`'s associated `default fn`
@@ -157,20 +157,20 @@ validation and rakun's config check, migrated together).
   `#[page]` records `decl.setMeta("seg", "[slug]")` and jhonstart writes
   `paramsOf(@typeInfo(BlogPost).meta.page.seg, route)` once by hand; rakun's `#[middleware]` gate
   the same way. No fifth place.
-- **235** (`dec-b`, question 4) — `@typeInfo.all(with: [a, b, c])` takes a list: one answer in the
+- **235** (`dec-b`, question 4) — `@TypeInfo.all(with: [a, b, c])` takes a list: one answer in the
   one order, a declaration carrying two of the listed decorators once. **Built**: `typeinfo_all.zig`
   (`with:` one decorator or a non-empty list, no spread; a name listed twice is
   `typeinfo-all-arguments`; the entry's `meta` is what every listed decorator set), cells
   `run/typeinfo_all_list` and `reject/typeinfo_all_list_twice`, `docs.md` § Decorators.
 - **234** (`dec-d`) — a constructor-injected field resolves through the context by the type's
   name: a stereotyped type's factory is its member `T.make()`, a field `clock: Clock` is
-  `rkResolve("Clock")`, the boot fills the context from `@typeInfo.all(with: [stereotypes…],
-  member: "make")` and `@typeInfo.all(with: provides)` / the `#[bean]` methods; `__rkMake_<T>`
+  `rkResolve("Clock")`, the boot fills the context from `@TypeInfo.all(with: [stereotypes…],
+  member: "make")` and `@TypeInfo.all(with: provides)` / the `#[bean]` methods; `__rkMake_<T>`
   goes; two providers are the context's rule (`#[qualifier]`, `#[primary]`); a missing bean is a
   boot failure.
 
 - **248** (`dec-c`) — one reflection builtin, `@typeInfo`. **Built**: `@typeInfo(X).name` /
-  `.meta.<d>.<k>` / `@typeInfo.all(…)`, a bare `@typeInfo(T)` is the structural `TypeInfo`, the
+  `.meta.<d>.<k>` / `@TypeInfo.all(…)`, a bare `@typeInfo(T)` is the structural `TypeInfo`, the
   lowercase spelling `typeinfo-lowercase` (`reject/typeinfo_lowercase`,
   `reject/typeinfo_all_lowercase`, a docs-check in `docs.md` § Decorators); compiler, std, jhonstart
   and rakun renamed.
@@ -178,9 +178,9 @@ validation and rakun's config check, migrated together).
 ## Open questions (beyond 216)
 
 1. **`dec-e` — how the boot registers beans whose types differ** (`decisions-pending.md`). An
-   `@typeInfo.all` answer is one array literal, so every `value` has one type; decision 234's
-   `@typeInfo.all(with: [stereotypes…], member: "make")` over two types whose `make()` returns
-   `Self` is `type mismatch: expected Mailer, got Orders`, and `@typeInfo.all(with: provides)` the
+   `@TypeInfo.all` answer is one array literal, so every `value` has one type; decision 234's
+   `@TypeInfo.all(with: [stereotypes…], member: "make")` over two types whose `make()` returns
+   `Self` is `type mismatch: expected Mailer, got Orders`, and `@TypeInfo.all(with: provides)` the
    same for two providers of different types. Options: a second member `T.register() -> i32` with
    `#[provides]` folded into `#[bean]` methods of a `#[configuration]` (recommended), or a compiler
    label `each: f` applying a generic function per entry. Until it is answered nothing fills the
