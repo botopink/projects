@@ -1,0 +1,37 @@
+---
+// Front 53 — onze example app · examples/components/new_post_form.bpp
+//
+// The form of `new-post-form-example.bp`, as a `.bpp` component. It is bound to
+// a server action by id, never by name; `useActionState` supplies the returned
+// message, the field it belongs to, and the pending flag. During the server
+// pass `pending` is false, so the first HTML is a form an un-hydrated browser
+// can submit.
+//
+// What the markup says that the builder form spelled by hand: the binding's
+// pairs are spread onto the `<form>`; `disabled={pending}` is present when true
+// and absent when false; a field's message is an `if` with no `else`.
+//
+// Upstream: https://nextjs.org/docs/app/api-reference/functions/use-action-state
+
+import {button, form, input, label, p} from "jhonstart";
+import {actionState, formAttrs, useActionState} from "jhonstart";
+
+val s = use useActionState("createPost", actionState(""));
+val state = s.0;
+val binding = s.1;
+val pending = s.2;
+val titleError = state.fieldError("title");
+val bodyError = state.fieldError("body");
+---
+<form {...formAttrs(binding)}>
+  <label for="title">Title</label>
+  <input id="title" name="title" required />
+  {if (titleError != "") { <p class="field-error">{titleError}</p> }}
+  <label for="body">Body</label>
+  <input id="body" name="body" required />
+  {if (bodyError != "") { <p class="field-error">{bodyError}</p> }}
+  <input id="published" name="published" type="date" />
+  <button type="submit" disabled={pending}>
+    {if (pending) { "Publishing…" } else { "Publish" }}
+  </button>
+</form>

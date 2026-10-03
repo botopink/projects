@@ -1,0 +1,77 @@
+// Front 117 — bpp routing · examples/partial-and-endpoint-example.bp
+// App files: src/app/partials/clicked/page.bp · src/app/builtwith.json/route.bp
+//
+// Demonstrates: step 4 — a page partial and a static file endpoint. They are
+// gathered in one file here so the example is one compilable unit; in an
+// application each is the module its path names, and each `pub val` below
+// belongs to the route declared right under it.
+//
+//   // src/pages/partials/clicked.astro
+//   ---
+//   export const partial = true;
+//   ---
+//   <li>I'm a partial!</li>
+//
+//   // src/pages/builtwith.json.ts   →  /builtwith.json
+//   export function GET({ params, request }) {
+//     return new Response(JSON.stringify({ name: "Astro", url: "https://astro.build/" }));
+//   }
+//
+// Upstream: astro-docs/07-astro-pages.md (Page Partials)
+//           astro-docs/16-endpoints.md (Endpoints de Arquivo Estático)
+//           https://docs.astro.build/en/basics/astro-pages/#page-partials
+//
+// Target: erlang (server).
+
+import html, {page, PageContext, Element, ElementBase, renderToString} from "jhonstart";
+import {li} from "jhonstart";
+import {Request} from "rakun";
+import {getRoute, HandlerResponse} from "rakun";
+import {rkTestRequest} from "rakun-web";
+import {collections.Dict, json, json.Json} from "std";
+
+// ── src/app/partials/clicked/page.bp ────────────────────────────────────────
+
+// A partial is a page, routed like one, rendered WITHOUT its layout chain and
+// without the document shell: no doctype, no <head>, no payload script. It is
+// what a library such as htmx swaps into a page that is already on screen.
+pub val partial = true;
+
+#[page("partials/clicked")]
+pub fn clicked(route: PageContext) -> @Component<ElementBase, Element> {
+    return html """<li>I'm a partial!</li>""";
+}
+
+// ── src/app/builtwith.json/route.bp ─────────────────────────────────────────
+
+// The directory's name carries the extension, so the route is `/builtwith.json`
+// and the response's content type follows it. With the segment prerendered, the
+// build writes the body to `<outDir>/builtwith.json` — a file a static host
+// serves with no server behind it. There is no `pub val prerender` (decision
+// 202); how a route handler, which `#[page]` does not decorate, is prerendered
+// is not stated by the decision (front 117 README, step 4).
+
+#[getRoute("builtwith.json")]
+pub fn builtWith(req: Request) -> @Task<HandlerResponse> {
+    return HandlerResponse.json(json.object([
+        #("name", json.quote("onze")),
+        #("url", json.quote("https://botopink.dev/")),
+    ]));
+}
+
+test "a partial is the markup and nothing around it" {
+    val route = PageContext(pathname: "/partials/clicked", pattern: "/partials/clicked", params: Dict.empty(), rest: [], data: Json.Null);
+    assert renderToString(await clicked(route)) == "<li>I'm a partial!</li>";
+}
+
+test "the endpoint answers the document a static export writes to disk" {
+    val res = await builtWith(rkTestRequest("GET", "/builtwith.json"));
+    assert res.status == 200;
+    assert res.body == "{\"name\":\"onze\",\"url\":\"https://botopink.dev/\"}";
+}
+
+// The E2E half is 07-onze/53's runner (`bootApp`, `request`):
+//
+//   GET /partials/clicked   → body starts with "<li>", no "<!DOCTYPE", no "data-jh-root"
+//   onze build              → .onze/prerender/builtwith.json exists, same bytes
+//   HEAD /builtwith.json    → 200, empty body (rakun's GET fallback, route_handler.bp:495)

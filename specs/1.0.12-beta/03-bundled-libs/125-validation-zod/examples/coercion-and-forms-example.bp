@@ -1,0 +1,97 @@
+// Front 125 — validation: Zod's feature set · examples/coercion-and-forms-example.bp
+//
+// Demonstrates: step 6 — coercion, transforms, and the form binder. A form and
+// a query string carry text only; `bind<T>` decodes them into the same record
+// `parse<T>` builds from JSON, with the same report.
+//
+//   z.coerce.number()          -> #[coerce] on i32 / i64 / f64
+//   z.coerce.boolean()         -> #[coerce] on bool — but NOT `Boolean(value)`:
+//                                 "false" is false here (decision 07-m)
+//   z.stringbool()             -> #[stringbool]
+//   z.coerce.date()            -> #[coerce] #[isoDatetime] on an i64 (epoch millis)
+//   z.string().trim().toLowerCase()   -> #[trim] #[lowercased]
+//
+// This is also what an Astro action does with `accept: "form"`: number inputs
+// through `z.number()`, checkboxes through `z.coerce.boolean()`, repeated names
+// through `z.array(...)` (astro-docs/25-actions.md § Usando Validadores com
+// Inputs de Formulário). `08-bpp/127-bpp-actions` is the consumer.
+//
+// Upstream: ZOD_DOCUMENTATION.md §§ 4.1 (Coerção), 4.3 (Transforms),
+//           4.12 (Stringbools) — https://zod.dev/api#coercion
+//
+// Target: both.
+
+import {decorators: {schema, validated, coerce, stringbool, trim, lowercased, email, isoDatetime, minValue}} from "validation";
+import {schemas, schemas.Schema, constraints, report.ValidationReport, report.Violation} from "validation";
+import {querystring, json.Json} from "std";
+
+#[schema]
+#[validated]
+pub type Newsletter(
+    #[trim] #[lowercased] #[email] email: string,
+    #[coerce] #[minValue(13)] age: i32,
+    #[stringbool] terms: bool,
+    #[coerce] #[isoDatetime] startsAt: i64,
+    tags: Array<string>,
+)
+
+fn located(r: @Result<Newsletter, ValidationReport>) -> string {
+    return case r {
+        Ok(_) -> "";
+        Error(report) -> report.violations.map({ v -> v.field + ":" + v.code }).join(",");
+    };
+}
+
+fn submitted(body: string) -> @Result<Newsletter, ValidationReport> {
+    val pairs = try querystring.parseForm(body) catch [];
+    return bindNewsletter(pairs);
+}
+
+test "validation: a form body becomes the typed record" {
+    val n = try submitted(
+        "email=+Ana%40Example.com+&age=30&terms=on&startsAt=2020-01-01T06%3A15%3A00Z&tags=a&tags=b",
+    );
+    assert n.email == "ana@example.com";       // trimmed, lowercased, then checked
+    assert n.age == 30;
+    assert n.terms;
+    assert n.tags.join(",") == "a,b";          // a repeated name is an array
+}
+
+test "validation: text that is not a number is invalidType, never zero" {
+    val r = submitted("email=a%40b.c&age=x&terms=on&startsAt=2020-01-01T06%3A15%3A00Z");
+    assert located(r) == "age:invalidType";
+}
+
+test "validation: 'false' is false" {
+    // `z.coerce.boolean().parse("false")` is `true` in Zod (any non-empty
+    // string is truthy). Here a bool reads the stringbool set and nothing else.
+    val n = try submitted("email=a%40b.c&age=30&terms=false&startsAt=2020-01-01T06%3A15%3A00Z");
+    assert n.terms == false;
+    val r = submitted("email=a%40b.c&age=30&terms=tuna&startsAt=2020-01-01T06%3A15%3A00Z");
+    assert located(r) == "terms:invalidType";
+}
+
+test "validation: an unchecked checkbox sends nothing, and a bool that is absent is false" {
+    val n = try submitted("email=a%40b.c&age=30&startsAt=2020-01-01T06%3A15%3A00Z");
+    assert n.terms == false;
+}
+
+test "validation: a coerced field still runs its checks" {
+    val r = submitted("email=a%40b.c&age=9&terms=on&startsAt=2020-01-01T06%3A15%3A00Z");
+    assert located(r) == "age:minValue";
+}
+
+test "validation: the same record decodes from JSON, where coercion also applies" {
+    val n = try decodeNewsletter(
+        """{"email": " Ana@Example.com ", "age": "30", "terms": "yes",
+            "startsAt": "2020-01-01T06:15:00Z", "tags": []}""",
+    );
+    assert n.age == 30;
+    assert n.terms;
+}
+
+test "validation: without #[coerce], a JSON string is not a number" {
+    val strict = schemas.int();
+    assert strict.accepts(Json.Str(value: "30")) == false;
+    assert schemas.coerceInt().accepts(Json.Str(value: "30"));
+}

@@ -1,0 +1,32 @@
+---
+// Front 118 — bpp components · examples/src/layouts/BaseLayout.bpp
+//
+// Demonstrates: step 4 in a `.bpp` component — a layout is a component with a
+// slot. It lives under `layouts/`, so its file kind is `*.bpp` (a component a
+// page calls by name); the `layout.bpp` kind is the one the `app/` tree applies
+// by directory.
+//
+//   <html lang="en">
+//     <head><title>Site</title><slot name="head" /></head>
+//     <body><slot /></body>
+//   </html>
+//
+// `<htmlTag>` is the builder of `<html>`: the name `html` is the template
+// function's.
+//
+// The `.bp` form, with its tests: `BaseLayout` in
+// `components-and-slots-example.bp`.
+//
+// Upstream: astro-docs/10-layouts.md — https://docs.astro.build/en/basics/layouts/
+
+import {body, head, htmlTag, title} from "jhonstart";
+
+type Props(
+    children: Children = [],
+    headExtra: Children = [],
+)
+---
+<htmlTag lang="en">
+  <head><title>Site</title><slot name="headExtra" /></head>
+  <body><slot /></body>
+</htmlTag>

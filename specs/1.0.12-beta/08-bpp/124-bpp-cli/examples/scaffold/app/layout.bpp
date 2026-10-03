@@ -1,0 +1,33 @@
+---
+// Front 124 — bpp CLI · examples/scaffold/app/layout.bpp
+//
+// Demonstrates: step 5 — what `onze create --example bpp` writes. This is the
+// root layout of the scaffolded project, as a `.bpp` file.
+//
+// The file's name is its kind: for `layout.bpp`, jhonstart's `bpp` function
+// (front 116) emits `#[layout("<route>")] pub fn Layout(props: LayoutProps)`.
+// The route is the empty path — this file is at the root of `app/` — so the
+// layout wraps every route. `props.children` is the page (or the nearer layout)
+// it wraps; `props.route` is the request's `PageContext`.
+//
+//   <html lang="en">
+//     <head><title>{title}</title></head>
+//     <body><nav>…</nav><slot /></body>
+//   </html>
+//
+// A layout of the `app/` tree is handed its child as a value, not as a slot:
+// its parameter is `props`, so the child is written `{props.children}`.
+//
+// Upstream: astro-docs/10-layouts.md — https://docs.astro.build/en/basics/layouts/
+
+import {a, main, nav} from "jhonstart";
+
+val here = props.route.pathname;
+---
+<nav data-here={here}>
+  <a href="/">Home</a>
+  <a href="/blog">Blog</a>
+</nav>
+<main>
+  {props.children}
+</main>

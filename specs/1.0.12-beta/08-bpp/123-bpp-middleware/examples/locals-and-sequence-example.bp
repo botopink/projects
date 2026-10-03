@@ -1,0 +1,134 @@
+// Front 123 — bpp middleware · examples/locals-and-sequence-example.bp
+// App files: src/middleware.bp · src/app/orders/page.bp
+//
+// Demonstrates: steps 1–3 — `locals` typed by their key, `sequence`, and a
+// response read after `next`.
+//
+//   // src/middleware.js
+//   export function onRequest(context, next) {
+//     context.locals.user = { id: 1, name: "John Wick" };
+//     context.locals.welcomeTitle = () => "Welcome back " + context.locals.user.name;
+//     return next();
+//   }
+//   export const onRequest = sequence(validation, auth, greeting);
+//
+//   // src/pages/orders.astro
+//   const title = Astro.locals.welcomeTitle();
+//
+// Upstream: astro-docs/17-middleware.md (Armazenando dados em `context.locals`,
+//           Encadeando Middleware, Exemplo: Redigir informações sensíveis)
+//           https://docs.astro.build/en/guides/middleware/
+//
+// Target: erlang (server). Middleware never has a browser half.
+
+import html, {page, PageContext, Element, ElementBase, renderToString} from "jhonstart";
+import {h1, p} from "jhonstart";
+import {Request, Response} from "rakun";
+import {LocalKey, setLocal, local} from "rakun";
+import {Chain, Next, Middleware, sequence, Buffered} from "rakun-web";
+import {middleware, matcher} from "rakun-web";
+import {rkChainOf, rkTestRequest, rkTestRequestAuthed} from "rakun-web";
+// A recorder that outlives a request — a local would not, which is the point of
+// the last test below.
+import {record, recorded, resetRecorded} from "rakun-test";
+import {collections.Dict, json.Json} from "std";
+
+// ── the application's locals, declared once ─────────────────────────────────
+
+pub type User(id: i32, name: string)
+
+// `App.Locals { user: User }` — the key carries the type, so a read needs no
+// cast and a key nobody set is null.
+pub fn currentUser() -> LocalKey<User> {
+    return LocalKey(name: "user");
+}
+
+pub fn requestId() -> LocalKey<string> {
+    return LocalKey(name: "requestId");
+}
+
+fn note(line: string) -> i32 {
+    return record(line);
+}
+
+// ── src/middleware.bp ───────────────────────────────────────────────────────
+
+fn validation(req: Request, chain: Chain) -> Response {
+    val _a = note("validation request");
+    val _id = setLocal(requestId(), req.header("x-request-id"));
+    val response = chain.next(req);
+    val _b = note("validation response");
+    return response;
+}
+
+fn auth(req: Request, chain: Chain) -> Response {
+    val _a = note("auth request");
+    val hasSession = req.header("cookie").contains("session=");
+    // Stop here: `greeting` and the page never run.
+    if (hasSession == false) return Next.redirect("/login");
+    val _u = setLocal(currentUser(), User(id: 1, name: "John Wick"));
+    val response = chain.next(req);
+    val _b = note("auth response");
+    return response;
+}
+
+// Read the finished page and replace part of it. `nextBuffered` waits for the
+// whole response — it turns streaming off for this request, and says so by name.
+fn redact(req: Request, chain: Chain) -> Response {
+    val _a = note("redact request");
+    val page = chain.nextBuffered(req);
+    val _b = note("redact response");
+    return page.replaceBody(page.body.replaceAll("PRIVATE INFO", "REDACTED"));
+}
+
+#[middleware]
+#[matcher("/orders/:path*")]
+pub fn onRequest(req: Request, chain: Chain) -> Response {
+    return sequence([validation, auth, redact])(req, chain);
+}
+
+// ── src/app/orders/page.bp ──────────────────────────────────────────────────
+
+#[page("orders")]
+pub fn Page(route: PageContext) -> @Component<ElementBase, Element> {
+    // `Astro.locals.user` — null when no middleware set it.
+    val user = local(currentUser());
+    return html """
+      <h1>{if (user) { u -> "Welcome back " + u.name } else { "Welcome" }}</h1>
+      <p>Card on file: PRIVATE INFO</p>
+    """;
+}
+
+test "a local set by middleware is read by the page of the same request" {
+    val res = rkChainOf(onRequest, rkTestRequestAuthed("GET", "/orders"));
+    assert res.status == 200;
+    assert res.body.contains("Welcome back John Wick");
+}
+
+test "the middleware of a sequence wrap each other" {
+    val _r = resetRecorded();
+    val _res = rkChainOf(onRequest, rkTestRequestAuthed("GET", "/orders"));
+    assert recorded().join(" > ")
+        == "validation request > auth request > redact request > redact response > auth response > validation response";
+}
+
+test "a middleware that answers stops the ones after it" {
+    val _r = resetRecorded();
+    val res = rkChainOf(onRequest, rkTestRequest("GET", "/orders"));
+    assert res.status == 307;
+    assert recorded().join(" > ") == "validation request > auth request > validation response";
+}
+
+test "a buffered response is rewritten before it is sent" {
+    val res = rkChainOf(onRequest, rkTestRequestAuthed("GET", "/orders"));
+    assert res.body.contains("REDACTED");
+    assert res.body.contains("PRIVATE INFO") == false;
+}
+
+test "a local does not outlive its request" {
+    val _first = rkChainOf(onRequest, rkTestRequestAuthed("GET", "/orders"));
+    val fresh = rkChainOf({ req, chain -> chain.next(req) }, rkTestRequest("GET", "/"));
+    assert fresh.status == 200;
+    assert local(currentUser()) == null;
+    assert local(requestId()) == null;
+}

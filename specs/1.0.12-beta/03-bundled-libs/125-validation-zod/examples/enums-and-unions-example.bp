@@ -1,0 +1,120 @@
+// Front 125 — validation: Zod's feature set · examples/enums-and-unions-example.bp
+//
+// Demonstrates: step 4 — enums, literals, unions and tagged unions. An enum is
+// a botopink enum; a union is a botopink union; the decoder tries the arms in
+// the order the type writes them.
+//
+//   const Fish = z.enum(["Salmon", "Tuna", "Trout"]);
+//   const tuna = z.literal("tuna");
+//   const idOrSlug = z.union([z.number(), z.string()]);
+//   const Reply = z.discriminatedUnion("status", [
+//     z.object({ status: z.literal("success"), data: z.string() }),
+//     z.object({ status: z.literal("failed"), error: z.string() }),
+//   ]);
+//
+// Upstream: ZOD_DOCUMENTATION.md §§ 4.2 (Literais), 4.11 (Enums), 4.21 (Unions),
+//           4.22 (XOR), 4.23 (Discriminated Unions) — https://zod.dev/api#enums
+//
+// Target: both.
+
+import {decorators: {schema, validated, literal, oneOf, tag}} from "validation";
+import {schemas, schemas.Schema, constraints, report.ValidationReport, report.Violation} from "validation";
+import {json, json.Json} from "std";
+
+// `z.enum([...])` — the variant's name is the wire value.
+#[schema]
+pub type Fish { Salmon, Tuna, Trout }
+
+#[schema]
+#[validated]
+pub type Catch(
+    fish: Fish,
+    #[literal("kg")] unit: string,
+    // A string union without declaring an enum. One comma-joined argument:
+    // LANGUAGE GAP: a decorator argument is a raw lexeme, so `#[oneOf("net", "rod")]`
+    // with a variable count has no declaration; `oneOf` takes one string.
+    #[oneOf("net,rod,trap")] gear: string,
+    // `z.union([z.number(), z.string()])`
+    tagId: i32 | string,
+)
+
+// `z.discriminatedUnion("status", [...])`. Each variant names a `#[schema]`
+// record of the same name, and the enum's decoder reads `status` first.
+//
+// LANGUAGE GAP: `Decl.variants` carries a variant's name and not its payload
+// fields, so the payload cannot be reflected from the enum itself; it is a
+// record the decoder reaches by name.
+#[schema]
+pub type Success(data: string)
+
+#[schema]
+pub type Failed(error: string)
+
+#[schema]
+#[tag("status")]
+pub type Reply {
+    Success(value: Success),
+    Failed(value: Failed),
+}
+
+fn located(r: @Result<Catch, ValidationReport>) -> string {
+    return case r {
+        Ok(_) -> "";
+        Error(report) -> report.violations.map({ v -> v.field + ":" + v.code }).join(",");
+    };
+}
+
+test "validation: an enum decodes by variant name" {
+    val c = try decodeCatch("""{"fish": "Tuna", "unit": "kg", "gear": "rod", "tagId": 7}""");
+    val name = case c.fish { Salmon -> "salmon"; Tuna -> "tuna"; Trout -> "trout"; };
+    assert name == "tuna";
+}
+
+test "validation: a value outside the enum, the literal or the set is invalidValue" {
+    // `FishEnum.parse("Swordfish")` fails — ZOD_DOCUMENTATION.md § 4.11.
+    val r = decodeCatch("""{"fish": "Swordfish", "unit": "lb", "gear": "hands", "tagId": 7}""");
+    assert located(r) == "fish:invalidValue,unit:literal,gear:oneOf";
+}
+
+test "validation: the options of an enum schema are its variants, in order" {
+    assert schemaOfFish().options().join(",") == "Salmon,Tuna,Trout";
+}
+
+test "validation: a union takes the first arm that accepts" {
+    val byNumber = try decodeCatch("""{"fish": "Tuna", "unit": "kg", "gear": "rod", "tagId": 7}""");
+    val byText = try decodeCatch("""{"fish": "Tuna", "unit": "kg", "gear": "rod", "tagId": "A-7"}""");
+    val n = byNumber.tagId;
+    val s = byText.tagId;
+    assert n is i32;
+    assert s is string;
+}
+
+test "validation: a union no arm accepts is one invalidUnion" {
+    val r = decodeCatch("""{"fish": "Tuna", "unit": "kg", "gear": "rod", "tagId": true}""");
+    assert located(r) == "tagId:invalidUnion";
+}
+
+test "validation: a tagged enum dispatches on its tag" {
+    val ok = try decodeReply("""{"status": "Success", "data": "42"}""");
+    val text = case ok {
+        Success(value) -> value.data;
+        Failed(value) -> value.error;
+    };
+    assert text == "42";
+}
+
+test "validation: an unknown tag names the tags that exist" {
+    val r = decodeReply("""{"status": "Pending"}""");
+    val message = case r {
+        Ok(_) -> "";
+        Error(report) -> report.violations.map({ v -> v.field + ":" + v.code }).join(",");
+    };
+    assert message == "status:invalidValue";
+}
+
+test "validation: xor refuses a value two arms accept" {
+    // `z.xor([z.string(), z.any()])` — "hello" matches both.
+    val exclusive = schemas.xor2(schemas.text(), schemas.json());
+    val hello = try json.decode("\"hello\"");
+    assert exclusive.accepts(hello) == false;
+}

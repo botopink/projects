@@ -1,0 +1,57 @@
+---
+// Front 120 — bpp islands · examples/src/app/page.bpp
+//
+// Demonstrates: steps 1–3 in a `.bpp` page — the five client directives. The
+// page is server-rendered markup; a `client:` directive on a component's tag is
+// what sends that component's code to the browser, and says when.
+//
+//   <InteractiveButton client:load />
+//   <HeavyChart client:idle />
+//   <InteractiveCounter client:visible />
+//   <MobileNav client:media="(max-width: 50em)" />
+//   <InteractiveModal client:only="svelte" />
+//
+// THE ISLANDS ARE `.bp` MODULES. `#[client]` is a decorator and sits on a
+// function; jhonstart's `bpp` function writes a component's function header
+// itself and writes no decorator on it (front 116 § Notes). It is the split
+// Astro has:
+// an `.astro` page places the island, and the island is a component of another
+// kind. `LikeButton`, `Carousel` and `MobileNav` are the three `#[client]`
+// functions of `hydration-directives-example.bp`.
+//
+// The `.bp` form of this page, with its tests: `Home` in
+// `hydration-directives-example.bp` at the root of `examples/`.
+//
+// Upstream: astro-docs/12-framework-components.md (Diretivas de hidratação)
+//           astro-docs/02-islands-architecture.md (Client Islands)
+//           https://docs.astro.build/en/reference/directives-reference/#client-directives
+
+import {h1, p} from "jhonstart";
+import {components.LikeButton};
+import {components.Carousel};
+import {components.MobileNav};
+
+// the post this home page features
+val slug = "hello";
+---
+<h1>Post</h1>
+
+<!-- interactive as soon as the page loads -->
+<LikeButton postSlug={slug} likes={3} client:load />
+
+<!-- started when the browser is idle; after 500 ms where it never is -->
+<LikeButton postSlug={slug} likes={0} client:idle="500" />
+
+<!-- its code is not requested until it is about to scroll into view -->
+<Carousel images={12} client:visible="200px" />
+
+<!-- only on a narrow screen -->
+<MobileNav open={false} client:media="(max-width: 50em)" />
+
+<!-- never rendered on the server: the fallback is, and the browser renders the rest -->
+<Carousel images={3} client:only>
+  <p slot="fallback">Loading the gallery…</p>
+</Carousel>
+
+<!-- no directive: server-rendered markup, no JavaScript sent for it -->
+<LikeButton postSlug={slug} likes={9} />

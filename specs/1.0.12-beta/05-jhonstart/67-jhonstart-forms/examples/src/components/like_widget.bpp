@@ -1,0 +1,37 @@
+---
+// Front 67 — jhonstart-forms · examples/src/components/like_widget.bpp
+//
+// The like widget of `optimistic-like-example.bp`, as a `.bpp` component: a
+// count that shows the new value before the server has agreed to it.
+//
+// `addLike` is a `fn`, so it is a function of the module — the one place the
+// prediction rule lives. The two hooks are statements of the fence. During the
+// server pass the optimistic value is the base value and the status is idle, so
+// the first HTML is the truth as the server knows it.
+//
+// `push` is not called here: the submit interceptor calls it, against the
+// submit that is starting.
+//
+// Upstream:
+//   https://react.dev/reference/react/useOptimistic
+//   https://react.dev/reference/react-dom/hooks/useFormStatus
+
+import {button, form, span} from "jhonstart";
+import {formAction, formAttrs, formStatus, optimistic} from "jhonstart-forms";
+
+type Props(serverCount: i32)
+
+fn addLike(current: i32, action: i32) -> i32 {
+    return current + action;
+}
+
+val #(shown, push) = use optimistic(serverCount, addLike);
+val status = use formStatus();
+val binding = formAction("a_likePost", "/blog/hello", "__bp_action");
+---
+<form {...formAttrs(binding)}>
+  <span class="like-count">{shown.toString()} likes</span>
+  <button type="submit" disabled={status.pending}>
+    {if (status.pending) { "…" } else { "Like" }}
+  </button>
+</form>

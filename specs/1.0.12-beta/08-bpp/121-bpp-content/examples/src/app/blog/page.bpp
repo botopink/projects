@@ -1,0 +1,31 @@
+---
+// Front 121 — bpp content · examples/src/app/blog/page.bpp
+//
+// Demonstrates: step 4 in a `.bpp` page — the list of a collection. `await` in
+// the fence is an await of the generated `Page(route)`, whose return type is an
+// await channel; it is not module-level `await`.
+//
+//   ---
+//   const posts = await getCollection("blog", ({ data }) => data.draft !== true);
+//   ---
+//   <ul>{posts.map((post) => <li><a href={`/blog/${post.id}`}>{post.data.title}</a></li>)}</ul>
+//
+// `blog()` is the collection declared in `src/content.bp` — a `.bp` module: it
+// has no markup. `post.data` is a `BlogPost`, so `post.data.title` is checked.
+//
+// The `.bp` form of this page, with its tests: `blogIndex` in
+// `content-collection-example.bp` at the root of `examples/`.
+//
+// Upstream: astro-docs/15-content-collections.md (Consultando coleções build-time)
+//           https://docs.astro.build/en/guides/content-collections/#querying-collections
+
+import {a, h1, li, ul} from "jhonstart";
+import {collections: {getCollectionWhere}} from "onze-content";
+import {content.blog};
+
+val posts = await getCollectionWhere(blog(), { entry -> entry.data.draft == false });
+---
+<h1>My posts</h1>
+<ul>
+  {posts.map({ post -> <li><a href={"/blog/" + post.id}>{post.data.title}</a></li> })}
+</ul>

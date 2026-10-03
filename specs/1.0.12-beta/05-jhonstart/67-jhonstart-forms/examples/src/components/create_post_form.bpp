@@ -1,0 +1,52 @@
+---
+// Front 67 — jhonstart-forms · examples/src/components/create_post_form.bpp
+//
+// The form of `create-post-form-example.bp`, as a `.bpp` component: a form
+// bound to a server action, the message the action returned rendered beside the
+// field it belongs to, and a submit button that disables itself while the
+// submit is in flight.
+//
+// `use actionState(…)` is a statement of the fence. During the server pass it
+// yields the initial state with `pending: false`, so the first HTML is the
+// empty form with an enabled button — the form an un-hydrated browser can
+// submit on its own.
+//
+// What the markup says that the builder form spelled by hand:
+//   - `{...formAttrs(binding)}` appends the binding's attribute pairs to the
+//     `<form>`;
+//   - `disabled={pending}` is a bool attribute: present when true, absent when
+//     false — `submitAttrs` is gone;
+//   - a field's message is an `if` with no `else`: nothing is rendered when
+//     there is none — `fieldLine` and its empty fragment are gone.
+//
+// The action id is front 24's and arrives as a prop; this file never derives it.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/getting-started/updating-data
+//   https://react.dev/reference/react/useActionState
+
+import {button, form, input, label, p} from "jhonstart";
+import {state: {newActionState}} from "actions";
+import {formAttrs, hiddenActionField, actionState} from "jhonstart-forms";
+
+type Props(actionId: string)
+
+val s = use actionState(actionId, newActionState(""));
+val state = s._0;
+val binding = s._1;
+val pending = s._2;
+val titleError = state.fieldError("title");
+val contentError = state.fieldError("content");
+---
+<form {...formAttrs(binding)}>
+  {hiddenActionField(binding)}
+  <label for="title">Title</label>
+  <input id="title" name="title" required />
+  {if (titleError != "") { <p class="field-error">{titleError}</p> }}
+  <label for="content">Content</label>
+  <input id="content" name="content" required />
+  {if (contentError != "") { <p class="field-error">{contentError}</p> }}
+  <button type="submit" disabled={pending}>
+    {if (pending) { "Creating…" } else { "Create post" }}
+  </button>
+</form>

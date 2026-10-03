@@ -1,0 +1,55 @@
+---
+// Front 127 — bpp actions · examples/src/components/NewsletterForm.bpp
+//
+// Demonstrates: an action's form in a `.bpp` component. The form posts to the
+// action with scripting off; after the post, the component reads the outcome —
+// one typed value, matched exhaustively.
+//
+//   ---
+//   const result = Astro.getActionResult(actions.newsletter);
+//   ---
+//   <form method="POST" action={actions.newsletter}>
+//     <input required type="email" name="email" />
+//     {result?.error && <p class="status">{result.error.message}</p>}
+//     <button>Sign up</button>
+//   </form>
+//
+// `newsletterAction()` is the action's DESCRIPTION — a name and two schemas —
+// from `src/actions/newsletter_api.bp`, a `.bp` module both targets compile.
+// The implementation (`src/actions/newsletter.bp`, `#[action]`) is not imported
+// here and never reaches the browser.
+//
+// `describe` is a `fn`, so it is a function of the module; the two `val`s are
+// the body of `NewsletterForm`.
+//
+// The `.bp` form, with its tests: `NewsletterForm` in `typed-action-example.bp`
+// at the root of `examples/`.
+//
+// Upstream: astro-docs/25-actions.md (Chamando Actions de uma Ação de Formulário HTML)
+//           https://docs.astro.build/en/guides/actions/#call-actions-from-an-html-form-action
+
+import {button, form, input, label, p} from "jhonstart";
+import {formAction, formAttrs, actionResult} from "jhonstart-forms";
+import {outcome: {ActionOutcome}} from "actions";
+import {actions.newsletter_api.newsletterAction, actions.newsletter_api.Subscribed};
+
+// `if (error) … else data` — exhaustive.
+fn describe(outcome: ActionOutcome<Subscribed>) -> string {
+    return case outcome {
+        Data(value) -> "Subscribed " + value.email;
+        InputError(fields) -> "Check: " + fields.keys().join(", ");
+        Failed(error) -> error.message;
+    };
+}
+
+// `Astro.getActionResult(actions.newsletter)` — null until the form was posted.
+val result = use actionResult(newsletterAction());
+val binding = formAction(newsletterAction());
+---
+<form {...formAttrs(binding)}>
+  <label for="email">E-mail</label>
+  <input id="email" required type="email" name="email" />
+  {if (result) { outcome -> <p class="status">{describe(outcome)}</p> }}
+  <label><input required type="checkbox" name="terms" /> I agree to the terms</label>
+  <button>Sign up</button>
+</form>

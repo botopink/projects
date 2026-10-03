@@ -1,0 +1,101 @@
+// Front 118 — bpp components · examples/directives-example.bp
+//
+// Demonstrates: step 5 — the template directives this front owns, and the table
+// every directive is checked against. A directive is `prefix:name` on a tag. One
+// the table does not hold is a compile error at its span; it never becomes a
+// rendered attribute.
+//
+//   <Fragment set:html={htmlString} />
+//   <article set:html={content} />
+//   <p class:list={["add", "dynamic", { classNames: true }]} />
+//
+// Upstream: astro-docs/13-astro-syntax.md (Fragments, `set:html`)
+//           astro-docs/11-styling.md (Combinando classes com `class:list`)
+//           astro-docs/14-markdown-content.md (`<Fragment set:html={compiled} />`)
+//           https://docs.astro.build/en/reference/directives-reference/
+//
+// Target: both.
+//
+// The directive table at the end of this track — who fills which row:
+//
+//   set:html  set:text  class:list  is:raw        118 (this front)
+//   is:global  is:inline  define:vars             119
+//   client:load|idle|visible|media|only           120
+//   server:defer                                  120
+//   transition:name|animate|persist               126
+
+import html, {classIf, Element, renderToString} from "jhonstart";
+import {article, div, p, pre, code, span} from "jhonstart";
+
+// ── set:html / set:text ─────────────────────────────────────────────────────
+
+// `set:html` trusts its value: it is `raw(value)`, the escape hatch the core
+// already has (`render.bp:204`). It is the element's ONLY child.
+pub fn Rendered(content: string) -> Element {
+    return html """<article set:html={content} />""";
+}
+
+// `<Fragment set:html={…} />` — no wrapper element at all.
+pub fn Inline(content: string) -> Element {
+    return html """<Fragment set:html={content} />""";
+}
+
+// `set:text` is the escaped twin — the same as a `{value}` child, as an attribute.
+pub fn Quoted(value: string) -> Element {
+    return html """<p set:text={value} />""";
+}
+
+// ── class:list ──────────────────────────────────────────────────────────────
+
+// Astro takes strings, arrays and `{ name: bool }` objects. There is no object
+// literal here: the list is an `Array<string>`, an empty string is dropped, and
+// `classIf(cond, name)` answers the name or "".
+pub fn Box(isRed: bool, extra: string) -> Element {
+    return html """
+      <div class="box" class:list={[classIf(isRed, "red"), extra]}>
+        <slot />
+      </div>
+    """;
+}
+
+// ── is:raw ──────────────────────────────────────────────────────────────────
+
+// The body is text: no tag, no hole, no directive is read inside it.
+pub fn Snippet() -> Element {
+    return html """
+      <pre><code is:raw>{items.map({ x -> <li>{x}</li> })}</code></pre>
+    """;
+}
+
+test "set:html writes the value unescaped, as the only child" {
+    assert renderToString(Rendered("<p>raw</p>")) == "<article><p>raw</p></article>";
+    assert renderToString(Inline("<p>raw</p>")) == "<p>raw</p>";
+}
+
+test "set:text escapes" {
+    assert renderToString(Quoted("<b>")) == "<p>&lt;b&gt;</p>";
+}
+
+test "class:list merges after the static class and drops what is empty" {
+    assert renderToString(Box(true, "")) == "<div class=\"box red\"></div>";
+    assert renderToString(Box(false, "wide")) == "<div class=\"box wide\"></div>";
+    assert renderToString(Box(false, "")) == "<div class=\"box\"></div>";
+}
+
+test "is:raw keeps braces and angle brackets as text" {
+    val markup = renderToString(Snippet());
+    assert markup.contains("{items.map({ x -&gt; &lt;li&gt;{x}&lt;/li&gt; })}");
+}
+
+// What does not compile:
+//
+//   <div set:html={s}>child</div>
+//     error: `set:html` is the element's only child                at `child`
+//
+//   <div foo:bar="1" />
+//     error: unknown directive `foo:bar` — known prefixes: set, class, is,
+//            define, client, server, transition                    at `foo:bar`
+//
+//   <div client:visible />
+//     error: `client:visible` hydrates a component; `div` is an element
+//            (front 120)                                           at the directive

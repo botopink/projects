@@ -1,0 +1,48 @@
+---
+// Front 26 — jhonstart-router · examples/src/app/blog/page.bpp
+//
+// The streamed blog index of `streamed-blog-page-example.bp`, as a `.bpp` page:
+// a header that costs nothing and a post list that costs 900 ms. The shell —
+// header, heading, and the skeleton where the list will go — flushes
+// immediately; the list arrives as a second chunk.
+//
+// The boundary is built in the fence and placed with a hole: `Suspense(posts)`
+// is an expression that answers an `Element`, and an `Element` in a hole is
+// spliced as it is. The boundary's child is a THUNK (`{ -> PostList() }`), not a
+// started task — `@Task` is eager on the BEAM, so a boundary holding a started
+// task would hold a result computed before the shell was written, and nothing
+// would stream. Building the record runs nothing.
+//
+// `skeleton` is a `fn` of the fence, so it is a function of the module; it
+// returns markup with `html`, which the emitted module imports. `PostList` is a
+// `.bpp` component of its own (`components/post_list.bpp`): the slow half knows
+// nothing about the boundary it sits in.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/guides/streaming
+//   https://nextjs.org/docs/app/api-reference/file-conventions/loading
+
+import {div, h1, header, section} from "jhonstart";
+import {Boundary, Suspense, boundaryId} from "jhonstart";
+import {components.post_list.PostList};
+
+// The fallback: what the reader sees while the list is in flight.
+fn skeleton() -> Element {
+    return html """<div class="skeleton">Loading posts…</div>""";
+}
+
+val posts = Boundary(
+    id: boundaryId(["blog"], "posts"),
+    fallback: skeleton(),
+    child: { ->
+        PostList();
+    },
+);
+---
+<div class="page">
+  <header class="site-header">botopink</header>
+  <h1>Blog</h1>
+  <section class="main">
+    {Suspense(posts)}
+  </section>
+</div>
