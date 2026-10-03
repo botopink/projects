@@ -43,7 +43,7 @@ otherwise; programs run with `botopink run --target wasm` (wasmtime).
 
 ## Current state
 
-Steps 1–3 are done; the cells `run/string_lines_words`, `run/array_flat_forms`,
+Steps 1–4 are done (step 1's and step 3's last boxes wait on 02's cells); step 5 waits on `05w-a` / `05w-b`; the cells `run/string_lines_words`, `run/array_flat_forms`,
 `run/array_windows`, `run/array_fill` and `run/generic_string_equality` pass on four targets. The
 step-1 cells also closed five shape rows that printed a container's element as its word at exit 0
 (`wat/AGENTS.md` § Shapes a container carries), and step 3 closed two pattern rows that matched
@@ -104,23 +104,37 @@ afterwards that `wat/AGENTS.md` § Where this backend refuses to answer states t
 that no other function is dropped silently (the audit of the wrong-answer class re-run).
 
 **Acceptance:**
-- [ ] `run/external_wrapper_keeps_refusal` refused on wasm by the documented rule; no wasm line in `expected-failures.txt`
-- [ ] `zig build test-libs` — `std`'s wasm-reachable cells at baseline
+- [x] `run/external_wrapper_keeps_refusal` refused on wasm by the documented rule (`wat/AGENTS.md` § Where this backend refuses to answer, "refused where the call is written, called or not"; the cell's `.wasm.expect` is the refusal at `14:12`); `expected-failures.txt` is deleted (111 step 4)
+- [x] `zig build test-libs -Doptimize=ReleaseSafe -- --lib std` — `2 passed, 0 failed` (`std · commonJS`, `std · erlang`); `std` has no wasm leg, since `botopink test` refuses wasm, so no wasm-reachable cell moved
 
 ### Step 5 — std on wasm: the `@External.Wasm` template reader and the WASI imports (decision 230)
 
 Moved from `00-gate/110-gate-wasm`. `botopink build --target wasm` in `libs/std` exits 1 with
-fifteen modules refused, because the wasm backend reads `@External.Wasm` nowhere: no host function
-can be bound. This step owns two of the three groups (the third is `02-std-and-packaging`'s):
+fifteen modules refused (re-measured at this front's tip: `async`, `encoding`, `escape`, `hash`,
+`io/clock`, `io/fs`, `io/http`, `io/random`, `json`, `math`, `querystring`, `testing/asserts`,
+`testing/mocks`, `testing/snapshots`, `unicode`), because the wasm backend reads `@External.Wasm`
+nowhere: no host function can be bound, and no binding in the ecosystem writes one. This step owns
+two of the three groups (the third is `02-std-and-packaging`'s):
 
 | Group | Modules | What it needs |
 |---|---|---|
 | 1 | `math`, `unicode`, `json`, `escape`, `encoding` (and so `querystring`), `hash` | the `@External.Wasm` template reader: a host cell lowered to wasm opcodes (`math`: `f64.floor` …) or to a prelude helper / pure `.bp` body |
 | 2 | `io/clock`, `io/random`, `io/fs` (and so `testing/snapshots`) | WASI imports (`clock_time_get`, `random_get`, `path_open` …) bound through the same reader |
 
+**Blocked on two questions** ([`decisions-pending.md`](../../decisions-pending.md)): `05w-a` — what
+an `@External.Wasm` binding names (a WAT expression, a closed `op:` / `fn:` / `wasi:` vocabulary, or
+no algorithm binding at all) and WASI preview1; `05w-b` — the three cells preview1 has no answer for
+(`io/clock.offsetMinutes`, `io/fs.workingDir`, `io/fs.scratchDir`, each refusing its whole module
+under decision 146) and the directory `wasmtime run` pre-opens (none today, so every `path_open`
+would fail). `05w-a` blocks the whole step; `05w-b` blocks group 2 but `io/random`. What group 1
+needs beyond the form: `math` is opcodes (`f64.floor`/`sqrt`/`min`/`max`/`abs`/`trunc`; not `round`:
+`f64.nearest` rounds half to even, `Math.round(2.5)` is `3`) plus algorithms wasm has no instruction for (`exp`, `ln`, `pow`, the trigonometry); `hash`, `json`,
+`unicode` (four normalisations), `encoding`, `escape` and `io/clock`'s ISO-8601 / civil arithmetic
+are algorithms.
+
 **Acceptance:**
 - [ ] `botopink build --target wasm` in `libs/std` refuses only group 3's modules (each with its located message)
-- [ ] `zig build test-libs` — `std · wasm` cells for groups 1 and 2 pass (wasmtime), the same answers as commonJS
+- [ ] `std · wasm` cells for groups 1 and 2 pass (wasmtime), the same answers as commonJS — `zig build test-libs` has no wasm leg today (`botopink test` refuses wasm), so these are `tests/language` `run/` cells importing each module, one per module, on four targets
 - [ ] `wat/AGENTS.md` § Where this backend refuses to answer lists only group 3
 
 ## Gate

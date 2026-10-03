@@ -65,6 +65,7 @@ the grep stage before any test.
 - [ ] `06-emilia/33-emilia-color-palette` steps 3–4 — wait on `05emilia-m` and on 34
 - [ ] `07-onze/53-onze-example-app` — waits on 49 · 50 · 51 · 71 steps 1–4, on 26 and 67, and on `04-rakun` 22 · 12 · 65 (the write path, the public root)
 - [ ] `02-std-and-packaging/98-packaging-tail` — waits on every library track (it verifies across seven repositories)
+- [ ] `01-compiler/05-wasm` step 5 (std on wasm, decision 230) — waits on `05w-a` (what an `@External.Wasm` binding names) and, for group 2, `05w-b` (the cells WASI preview1 cannot answer, the pre-opened directory); steps 1–4 done but the two cells 02 step 7 and C-35 owe
 - [ ] `01-compiler/17-beam-memory` — waits on 02, 03 (decisions 167, 168 and 174 answered `111-a` and `17-a`)
 - [ ] `01-compiler/16-formatter` — waits on `00-gate` (112), the libraries' migrations and 01's parser rows
 - [ ] `01-compiler/07-review-backlog` · `08-hygiene` · `09-ecosystem-residuals` — wait on 02–05, on every owner, on 16

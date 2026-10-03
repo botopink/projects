@@ -32,7 +32,8 @@ letter ids are never renumbered; their full text lives where they were raised:
 
 Two items the milestone's own cut raised are written here rather than in a track, because they
 cross tracks (`gate-a…j`, the zero-tolerance policy of `00-gate`, were answered: decisions 153–162),
-and three that the audit of the `00-gate` fronts on the integrated `feat` raised (`gate-k…p`, answered: decisions 225–228, 230, 231):
+and three that the audit of the `00-gate` fronts on the integrated `feat` raised (`gate-k…p`, answered: decisions 225–228, 230, 231), and two that `01-compiler/05-wasm` step 5
+raised, because their answer reaches std (`05w-a`, `05w-b`, open):
 
 ### std-e · Test lifecycle hooks
 
@@ -46,6 +47,93 @@ and three that the audit of the `00-gate` fronts on the integrated `feat` raised
 > **Recommendation.** (a) — nothing implicit runs around a test; the runner stays a list of bodies.
 > The cost is one line per test, which the libraries already pay.
 > **Blocks.** `language-gaps.md` row "No test lifecycle hooks".
+
+### 05w-a · What an `@External.Wasm` binding names, and which WASI
+
+> **Raised by:** `01-compiler/05-wasm` step 5 (decision 230).
+> **Measured.** `builtins.d.bp` declares `Wasm(template: string)` and nothing else: no binding in the
+> ecosystem writes one, `docs.md` § Host bindings defines the two shapes for Node and Erlang only
+> (`("module", "symbol")` and a target-text template over `$0`, `$1`, …), and the wasm backend reads
+> none (`#[@External.Wasm("x")]` today reaches `lowerPlainCall`'s "bodyless `declare fn` with no
+> `#[@External.<Target>(…)]`" refusal). The std cells groups 1–2 need are of three kinds: an opcode
+> (`math`: `f64.floor`, `f64.sqrt`, `f64.min` …), an algorithm wasm has no instruction for (`hash`'s
+> sha1/sha256/sha512/md5/hmac/pbkdf2, `json`'s validator, `unicode`'s four normalisations, `encoding`'s
+> base64/hex/percent, `io/clock`'s ISO-8601 and civil-date arithmetic), and a WASI call
+> (`clock_time_get`, `random_get`, `poll_oneoff`, `path_open`/`fd_read`/`fd_write`, `fd_readdir`,
+> `path_create_directory`, `path_symlink` …). A WASI function's ABI is pointers and an errno
+> (`random_get(buf, len) -> errno`), which no botopink signature can bind, since botopink has no
+> memory access. The backend already imports `wasi_snapshot_preview1.fd_write` (the print path), and
+> `wasmtime run` runs preview1 with no flag.
+> **Options.**
+> (a) the target's text, as Node and Erlang: a folded WAT expression over `$0…`, and the two-string
+> form as a raw import —
+> ```botopink
+> #[@External.Wasm("(f64.floor $0)")]
+> pub declare fn floor(x: f64) -> f64;
+> #[@External.Wasm("(call $sha256Body $0)")]          // a bp fn of the same module
+> declare fn sha256Hex(s: string) -> string;
+> #[@External.Wasm("(call $__clock_ns (i32.const 0))")] // a prelude helper: its name becomes a contract
+> declare fn systemNanos() -> i64;
+> ```
+> The backend parses the expression into its instruction model (an unknown opcode or name refused at
+> the annotation); WASI calls go through prelude helpers whose `$__` names std now depends on.
+> (b) a closed vocabulary of three tagged forms, arguments always the declared parameters in order —
+> ```botopink
+> #[@External.Wasm("op:f64.floor")]          // one opcode; its type checked against the signature
+> pub declare fn floor(x: f64) -> f64;
+> #[@External.Wasm("fn:sha256Body")]         // a botopink fn of the same module, same signature
+> declare fn sha256Hex(s: string) -> string;
+> #[@External.Wasm("wasi:clockNow")]         // one of a documented list of compiler WASI adapters
+> declare fn systemTimeWithUnit(unit: i32) -> i64;
+> ```
+> The adapters (`clockNow(unit)`, `monotonicNow(unit)`, `randomBytes(n)`, `sleep(ms)`, `readText`,
+> `writeText`, `exists`, `list`, `mkdir`, `rm`, `copy`, `stat`, `symlink` …) are a table in `docs.md`,
+> each a prelude group over WASI preview1; anything else is refused at the annotation. No raw import,
+> no WAT parser, and the algorithms stay in std as private `fn` bodies.
+> (c) no wasm binding at all for computation: std gives the cell a plain botopink body for every
+> target (`hash`, `json`, `unicode` written once in bp), and `@External.Wasm` is only (b)'s `op:` and
+> `wasi:` — a public-surface-neutral but large std rewrite, and the node/erlang host speed is lost.
+> **WASI version.** preview1 (`wasi_snapshot_preview1`) in every option: it is what the print path
+> imports and what `wasmtime run` runs unflagged; preview2 is the component model, a different
+> module format.
+> **Recommendation.** (b) — a closed list checked at the annotation is the strictest form (an unknown
+> opcode, a misspelt `fn:` or an adapter that does not exist is a located error, never text the
+> backend trusts); no `$__` name of the prelude becomes std's contract; nothing exposes raw memory; and
+> the algorithms stay in the library (the compiler knows no library), reached by name.
+> **Blocks.** All of `05-wasm` step 5: no `@External.Wasm` can be written or read until the form is
+> fixed.
+
+### 05w-b · The std cells WASI preview1 has no answer for, and the directory a wasm program sees
+
+> **Raised by:** `01-compiler/05-wasm` step 5 (decision 230).
+> **Measured.** WASI preview1 has no time zone, no working directory and no temporary directory, and
+> a wasm module reaches the file system only through directories the runner pre-opens —
+> `runtime.zig` and `botopink run` call `wasmtime run <module>` with no `--dir`, so today every
+> `path_open` would answer `EBADF`. Cells with no preview1 answer: `io/clock.offsetMinutes` (local
+> offset), `io/fs.workingDir`, `io/fs.scratchDir`. Under decision 146 one such cell refuses its whole
+> module, so `io/clock`, `io/fs` and with it `testing/snapshots` cannot leave the refused list while
+> it stays.
+> **Options.**
+> (a) the cells are refused on wasm, so their modules stay refused and move to group 3
+> (`02-std-and-packaging`'s, to restructure or keep out of a wasm build) —
+> ```
+> error: `offsetMinutes` has no `#[@External.<Target>(…)]` for the wasm backend
+> ```
+> (b) WASI's own meaning answers them — the offset is `0` (WASI time is UTC), the working directory
+> is `.` (the pre-opened one), the scratch directory is `./.botopinkbuild/tmp` — and `botopink run`
+> / the test runner pre-open the project directory (`wasmtime run --dir .`);
+> (c) as (a) for the three cells, which std moves to modules of their own (`io/clock` and `io/fs`
+> build on wasm without them) — a public-surface change, `02-std-and-packaging`'s.
+> And, whichever is taken, for `io/fs`'s other cells: (i) the runner pre-opens the project directory
+> and a path outside it is an `Error(…)` from the cell; (ii) nothing is pre-opened and every `io/fs`
+> cell answers `Error(…)` on wasm.
+> **Recommendation.** (a) with (i): a value WASI does not define is refused, never invented (a `0`
+> offset on a machine in UTC-3 is a wrong answer at exit 0, the class this backend exists to keep
+> out); the project directory is the one grant a program needs to read its own files, and a path
+> outside it fails as a missing file does on node. `05-wasm`'s acceptance then reads "refuses only
+> group 3 and the modules (a) moved there".
+> **Blocks.** `05-wasm` step 5's group 2 (`io/clock`, `io/fs`, `testing/snapshots`); `io/random`
+> is not blocked by it.
 
 ### C-37 · The commonJS prelude's `charCodeAt` recursion
 
