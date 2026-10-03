@@ -168,6 +168,27 @@ configuration that bypasses it (decision 67).
 **Recommendation.** (a) — the marker's documented surface is `$self`, `$N`, `$args`; a user template that needs a printed form calls a botopink function that prints. (b) widens a surface no document names.
 **Blocks.** 04 step 2.
 
+### 0405-d. Does std's own `$stringify` stay, under decision 164?
+
+**Raised by:** `04-js` step 2 (decision 164 answered 0405-c (a): "refused in every user template").
+**Measured.** One `.bp` in the seven repositories writes the marker: std's `primitives.bp`
+`Array.join`, `#[@External.Erlang("""… true -> $stringify(__E) end …""")]` — erlang and beam render
+it (`~p` text), and `builtins.d.bp`'s `External` comment lists `$stringify(...)` beside `$N` as a
+template marker. The located refusal of a marker lives in the parser (`parser/template_markers.zig`,
+01's), which parses std like any other source; `primOpTemplate.render` runs at codegen, after
+`check`, with no location and no way to tell std's template from a user's. Whether std is a "user"
+under decision 164 decides which fronts move.
+**Options.** (a) std keeps it: 01 adds `template-stringify-marker` with an exemption for the
+embedded std's parse (a parser flag its parse sites set), `primitives.bp` is untouched, `render`'s
+arm stays for std alone; (b) no exemption: the std track rewrites `Array.join`'s Erlang template
+without the marker (the `~p` text written out, or a call of a std `fn`), 01 refuses the marker in
+every template std's included, and `render`'s `$stringify` arm and the backends' `emitStringify*`
+go; (c) as (b), but the arm stays dead in `render` for a later primitive.
+**Recommendation.** (b) — one rule for every template and no parser flag (decision 67: an
+exemption only where it is structural, and a marker no one may write is no surface at all); (c)
+keeps code no input reaches.
+**Blocks.** 04 step 2 (the `reject/` cell) · 01's parser kind · the std track's `Array.join` line.
+
 ### 16-c. Decision 61 rule 3's one-line rule past `arrow_when_empty`
 
 **Raised by:** `16-formatter` step 5.

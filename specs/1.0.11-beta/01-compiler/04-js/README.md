@@ -1,7 +1,7 @@
 # Front 04 — js
 
-**Priority:** medium — commonJS is the default target and nearly done: one dead site, one template
-marker, one binding shape and two measurements are what is left.
+**Priority:** medium — commonJS is the default target and nearly done: one dead site (the checker's
+refusal), one template marker (0405-d) and the `throw`-in-arm lowering (01 step 6) are what is left.
 **Depends on:** `00-gate` (nothing of this front's files is a gate item) · `01-checker` step 5
 (decision 152: 01c-d answered (a), so step 4 is a cell only) and step 6 (the `throw`-in-arm typed
 AST) · the checker refusing `@block`'s tail form (step 1) · decisions 164 (0405-c, step 2) and 179
@@ -29,6 +29,7 @@ otherwise.
 | `tsc --noEmit` as a gate; `42.toString()` | `00/README.md` | § C-18, last box |
 | the redeclared binding lowered twice | `language-gaps.md` | row 34 (the commonJS half) |
 | `unwrapOrThrow` | `24-effects-by-return/README.md` | § Open, "The JS interop helper" |
+| the `charCodeAt` prelude patch (C-37, allocated at the cut) | `../carried.md` | § New C-items |
 
 ## Problem
 
@@ -36,16 +37,19 @@ otherwise.
 |---|---|---|
 | step 8 | `@block { 1 + 2 }` | `(() => {(1 + 2);})()` — prints `null`; the checker still accepts the tail form (step 1's measurement) |
 | `$stringify` | `#[@External.Node("$stringify($0)")] declare fn f(x: i32) -> string;` | `PrimOpStringifyUnsupported` (`comptime/primOpTemplate.zig`, the commonJS ctx); erlang accepts the same template |
-| row 34 | `var n: i32 = 1; n = n + 1; var n: i32 = 10;` | `SyntaxError: Identifier 'n' has already been declared` (erlang answers `10`) |
-| C-18 | every emitted `.d.ts` | `scripts/tsc-check.sh` (gate stage 11) holds it — step 3 |
+| row 34 | `var n: i32 = 1; n = n + 1; var n: i32 = 10;` | never reaches commonJS: `binding-redeclared` (decisions 152, 205) — step 4 |
+| C-18 | every emitted `.d.ts` and `.js` | `scripts/tsc-check.sh` (gate stage 11) holds it — step 3 |
 | C-18 | `42.toString()` | `run/number_method_call` pins it — step 3 |
+| C-37 | `s.slice(1, 4); s.charCodeAt(0)` and `"héllo".charCodeAt(1)` | `ell` · `104` · `233` on four targets — § C-37 |
 
 ## Current state
 
 Every 1.0.10 step but 8 is delivered; the 1.0.10 status rows for commonJS (a multi-subject
 `case`, an enum implementing a behavior, an imported fn as a value) closed with their cells
 (`run/case_multi_subject_patterns`, `run/enum_implements_behavior`, `modules/imported_fn_as_value`
-pass on `--target all`). Measured at the open.
+pass on `--target all`). Steps 3, 4, 5 and 7 and C-37 are delivered (measured on botopink-lang
+`838f565a`). Open: step 1 waits on the checker refusing `@block`'s tail form (`val a = @block
+{ 1 + 2 };` still checks and prints `null` on commonJS), step 2 on 0405-d, step 6 on 01 step 6.
 
 ## Mechanism
 
@@ -86,12 +90,11 @@ working. The located refusals of a template marker live in the parser
 (`parser/template_markers.zig` refuses `$self` and an out-of-range `$N` as
 `template-self-marker` / `template-marker-out-of-range`, `parser.zig` `ParseErrorType`,
 `print.zig`'s message), which is `parser/**` — 01's, owned by the running checker thread.
-**Options.** (a) 01 adds a third kind there (`template-stringify-marker`) with an exemption for the
-embedded prelude's parse (a parser flag the prelude parse sites set), and this front adds the
-`reject/` cell; (b) the std track rewrites `Array.join`'s Erlang template without the marker, and the
-refusal has no exemption at all. **Recommendation.** (b) then (a) without the flag — the most
-restrictive: one rule for every template, std's included; the marker then has no user left and
-`primOpTemplate.zig`'s arm can go with it.
+Whether std's own template is a "user template" under decision 164 is question **0405-d**
+([`../README.md`](../README.md) § Decisions): (a) std keeps it behind a parser exemption, (b) the std
+track rewrites `Array.join`'s Erlang line and the refusal has no exemption, the marker's `render`
+arm going with it. Recommendation (b). Either way the refusal is 01's (`parser/**`); this front adds
+the `reject/` cell once it lands.
 
 **Acceptance:**
 - [ ] `reject/external_template_stringify_marker` — refused at the template, naming the marker, on every target
@@ -117,19 +120,19 @@ found are fixed in `typescript.zig` (type-only imports, inferred generic names, 
 
 ### Step 4 — the redeclared binding (row 34, after 01c-d)
 
-Decision 152 answered (a): nothing lowers here — 01 refuses the program; this front's cell pins
-that a shadowing `val` in an inner block still emits a scoped `const`.
-
-**Measured.** commonJS emits the scoped `const` and prints the inner and the outer value; the other
-three do not: erlang's `erlc` refuses the module (`variable 'N@1' unsafe in 'case'`, `variable
-'Label@1' is unbound`), beam fails the assembler's consistency check (`{unassigned,{y,2}}`), and
-wasm prints the inner value where the outer one is read (`inner inner`, `pick(true)` answers `2`).
-The program: `val n = 1; if (flag) { val n = 2; @print(n); } return n;` and a `for` body
-shadowing an outer `val label`. A four-target cell is red on three backends that are 02's, 03's
-and 05's, so it is not added here; 01's step 5 names the same cell.
+Decision 152 answered (a) and decision 205 widened it (the body is the whole function): nothing
+lowers here. A second binding of a name visible at that point — in one body, over a parameter, in
+an inner block, as a `case` arm's binder — is `binding-redeclared` at the second binding (01's
+cells `reject/binding_redeclared_in_body`, `binding_shadows_parameter`,
+`binding_shadows_in_inner_block`, `case_arm_binder_reuses_name`), so the inner-block shadow this
+step measured (red on erlang, beam and wasm) has no producer. What stays legal is a name bound in
+blocks that do not see each other, and this front's cell pins that no backend leaks a block's
+binding or invents a scope for it: commonJS writes one `const` per block.
 
 **Acceptance:**
-- [ ] `run/inner_block_shadowing` prints the inner and outer values on four targets (after 02, 03, 05 lower it)
+- [x] `run/sibling_blocks_bind_one_name` — an `if` and its `else`, two `if`s, two loop bodies and two
+  `case` arms' binders each binding one name, and a block's `n` followed by the function's own `n`
+  once the block closed; green on commonJS, erlang, wasm and beam
 
 ### Step 5 — `unwrapOrThrow` (24-h, a decision)
 
@@ -165,21 +168,35 @@ backend).
 - [x] `js: primitive behavior default fn ---- a call on self lowers as on the declared receiver` and `---- Ok(v) and Error(e) build the @Result` (`codegen/tests/commonjs.zig`) green; red before
 - [x] `Array.first` / `Array.unique` answer `null` past the end (12 commonJS snapshots × 2 runtimes re-recorded, every moved line checked by script)
 
+### C-37 — the `charCodeAt` prelude patch
+
+The commonJS `String` prelude patch for `charCodeAt` called the method it patched, so one
+`s.slice(…)` in a module made every `.charCodeAt(…)` blow the stack (emilia's `output.bp:379-388`
+works around it). Closed: the patch calls the native `codePointAt`, never itself, and `codegen/tests/externals.zig`'s
+`no prelude template calls the method it patches` walks the embedded prelude
+(`src/codegen/AGENTS.md`, the `charCodeAt` paragraph). Re-measured on `838f565a`: a host template
+calling `$0.charCodeAt(i)` over `"héllo wörld"` after a `slice` runs. The `language-gaps.md` row is
+deleted; emilia's comment and workaround are `06-emilia`'s to drop.
+
+**Acceptance:**
+- [x] `run/string_char_code_after_slice` and `run/string_char_code_non_ascii` green on four targets
+
 ## Gate
 
 - [x] `zig build test` from a **cold** runtime cache, green, in this front's worktree
 - [ ] every re-recorded RUN LOG **verified by running the program** under `node`, checked against decision 8 §7
-- [ ] every emitted module passes `node --check`; `scripts/tsc-check.sh` green (the script is green; `node --check` not measured)
+- [x] every emitted module passes `node --check`; `scripts/tsc-check.sh` green — the script runs both
+  (79 projects, 364 modules); a planted host template that is not JavaScript reds it
 - [ ] `zig build test-libs` commonJS cells at baseline (jhonstart, emilia, onze, erika)
 - [x] `src/codegen/AGENTS.md` and `src/codegen/js/AGENTS.md` in the same commit as each step
-- [ ] Commit on `fix/04-js`; no push, no merge
+- [ ] Commit on `front/04-js`; no push, no merge
 
 ## Blast radius
 
 Step 1 moves nothing (byte-identical is the acceptance). Step 2 (a) reds any library template
 writing `$stringify` — measured: none in the libraries; std's `primitives.bp` writes it once
-(`Array.join`'s Erlang template, step 2's Options). Step 4 (b) would move every
-commonJS snapshot with a rebinding — none exists in the suite. Step 6 moves the fixtures with a
+(`Array.join`'s Erlang template, 0405-d). Step 4 moved nothing (a new cell, green on the parent
+binary). Step 6 moves the fixtures with a
 `throw` in an arm (few).
 
 ## Notes
