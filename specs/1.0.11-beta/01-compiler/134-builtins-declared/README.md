@@ -162,6 +162,21 @@ list argument, wasm as one array.
       rows of `comptime/builtins.zig` held to `declaration`; the four cells that pass two arguments
       unchanged and green
 
+### Step 5 — the `Decorator` type, and `with:` declared with it (decision 268)
+
+`Decorator` is a builtin type declared in `builtins.d.bp`: a name has it when it names a function
+whose first parameter is `comptime _: @Decl` (further arguments included); nothing else is
+assignable to it, and it cannot be constructed. `TypeInfo.all` declares
+`with: Decorator | Decorator[]`, and the generic check holds it.
+
+**Acceptance:**
+- [ ] `builtins.d.bp` declares `Decorator` and `all(with: Decorator | Decorator[], member: ?string = null)`;
+      the drift test green on the new signature
+- [ ] `@TypeInfo.all(with: 42)` and `with: someOrdinaryFn` refused as the ordinary mismatch, located
+      at the argument (`reject/` cells); `typeinfo-all-not-decorator` removed with its cell moved
+- [ ] a decorator with arguments, a single decorator and a list of them accepted (`run/` cell on the
+      four targets)
+
 ## Gate
 
 - [ ] `scripts/gate.sh --cold` green on the integrated branch

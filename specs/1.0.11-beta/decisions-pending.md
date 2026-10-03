@@ -1,14 +1,14 @@
 # Decisions the maintainer owes — 1.0.11-beta
 
 **These questions are open** — `lg2-a…w`, `17-b`, `17-c` (raised by `01-compiler/17-beam-memory`) and
-`134-b…d` (raised by `01-compiler/134-builtins-declared`); `134-a` (decision 267), `ck4-a` (266), `gw-a` (264),
+`134-c`, `134-d` (raised by `01-compiler/134-builtins-declared`); `134-b` (decision 268), `134-a` (267), `ck4-a` (266), `gw-a` (264),
 `02e-a` (240) and `05w-a…g` (238, 241, 259–263) were answered. The `lg2-*` rows are carried verbatim
 below from 1.0.10-beta's
 § Open with their ids unchanged (`ck-host`, `lg-a`, `lg-b` and this milestone's `01c-e` were answered:
 decisions 146–149). Every `lg2-*` row of [`language-gaps.md`](./language-gaps.md) is a
 feature the language does not have; the recommendation is always the most restrictive reading
 (decision 67) — the feature stays out and the row's nearest form is the design — and no front opens
-on one until it is answered. **The next free decision number is 268** ([`decisions-taken.md`](./decisions-taken.md)).
+on one until it is answered. **The next free decision number is 269** ([`decisions-taken.md`](./decisions-taken.md)).
 
 Beside the open questions, every track carries **implementation choices awaiting confirmation** —
 a choice a front made, recommended and implemented, that the maintainer confirms or reverses. The
@@ -331,29 +331,6 @@ row's nearest form is the design — and the cost of that reading is named where
 > runtime the target selected (decision 84).
 > **Blocks.** The row; front 16 (`#[scheduled]`) and every decorator that would reuse std.
 
-
-### 134-b · The type of `@TypeInfo.all`'s `with:`
-
-> **Raised by:** `01-compiler/134-builtins-declared` step 2 (decisions 252, 253).
-> **Measured.** `with:` names a decorator — a function whose first parameter is `comptime _: @Decl`
-> — or a list of them; no type spells "a decorator", so the declaration reads
-> `all(with: unknown, member: ?string = null) -> Declared<unknown>[]` and the catalogue's own rule
-> (`typeinfo-all-arguments`, `typeinfo-all-not-decorator`) does the checking.
-> **Options.**
-> (a) `with: unknown` and the catalogue's rule (today):
-> ```botopink
-> declare fn all(with: unknown, member: ?string = null) -> Declared<unknown>[];
-> ```
-> (b) a builtin type `Decorator` that only a decorator's name has, and its array:
-> ```botopink
-> declare fn all(with: Decorator | Decorator[], member: ?string = null) -> Declared<unknown>[];
-> @TypeInfo.all(with: route);   // `route` is a Decorator because of its first parameter
-> ```
-> (c) the decorator's function type, `fn(comptime _: Decl)` (a decorator with arguments does not
-> fit it).
-> **Recommendation.** (b) — the declaration then says what is accepted, and the generic check holds
-> it; (a) keeps a declaration that accepts everything, which the catalogue's rule has to correct.
-> **Blocks.** Nothing today; `TypeInfo.all` stays held by its own rule.
 
 ### 134-c · What `@getContext(T)` answers
 
