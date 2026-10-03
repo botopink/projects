@@ -11,12 +11,9 @@ decision 201) · step 5: `04-rakun/22-rakun-file-routing` step 4 (`ChunkWriter.m
 `modules/onze-test/{botopink.json,src/root.bp,src/core.bp,src/fixtures.bp}`, group stubs
 `src/{cli,bundler,assets,og,release,e2e}.bp` (step 6), `test/helpers_test.bp`, `docs.md`,
 `AGENTS.md` · the `/_onze/image` and OG registration lines 51 / rakun 66 hand in · this directory
-**Does not touch:** `modules/onze-{cli,bundler}/**`, `examples/scaffold/**` (50) ·
-`modules/onze-{assets,og}/**` (51) · `modules/onze-release/**` (71) · `examples/blog/**` (53) ·
-`onze/src/types.bp`'s segment classification (`03/102`, before) · `onze-server/src/server.bp`
-`cookiePairs` (`03/104`'s sweep, after) · `repository/{rakun,jhonstart}/**` · after landing,
-`08-bpp`'s: `onze/src/paginate.bp` (117), one `server.bp` line (120), `config.bp`'s `site` key
-(122) and other four keys (124)
+**Does not touch:** other fronts' members and the `03/102` (before), `03/104` (after) and `08-bpp`
+(117 · 120 · 122 · 124, after) windows — [`../modules.md`](../modules.md) § Front → files ·
+`repository/{rakun,jhonstart}/**`
 
 ## Goal
 

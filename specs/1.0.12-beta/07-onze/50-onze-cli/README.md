@@ -9,11 +9,9 @@ drives `--help`)
 27 does not wait on this, decision 189) · `07-onze/49` step 6 (the `onze-test` group files)
 **Owns:** `repository/onze/modules/onze-cli/**`, `modules/onze-bundler/**`,
 `examples/scaffold/**`, `modules/onze-test/src/{cli,bundler}.bp` · this directory
-**Does not touch:** `modules/onze/**`, `modules/onze-server/**` (49) · `modules/onze-{assets,og}/**`
-(51) · `modules/onze-release/**` (71 — step 5 calls its script) · `examples/blog/**` (53) ·
-`onze-cli/src/scan.bp`'s segment walk, `onze-bundler/src/chunk.bp`'s segment read (`03/102`,
-lands first) · after landing, `08-bpp`'s: `scan.bp`'s extension and exports (117), then 124's
-commands, build steps, scaffold
+**Does not touch:** other fronts' members (71's `onze-release`: step 5 only calls its script) and
+the `03/102` (lands first) and `08-bpp` (117, 124, after) windows — [`../modules.md`](../modules.md)
+§ Front → files
 
 ## Goal
 
