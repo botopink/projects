@@ -5,8 +5,8 @@ sidecar) and the one the language suite reaches only through `--target beam`, so
 quiet unless someone runs it.
 **Depends on:** `00-gate` (EF-1, EF-2 — the beam sidecar; this front's `beam_asm.zig` is one of the
 fix's files) · `01-checker` step 7 (lg-b) · `02-erlang` step 7 (the shared `.out` of the C-07
-cells) · `17-beam-memory` step 1 hands this front the `keyed = true` emission (17 owns the design,
-this front the `.S`) · maintainer decision lg-b (step 4).
+cells) · maintainer decision lg-b (step 4). The `keyed = true` `.S` arm is `17-beam-memory`'s
+(its § Owns names the function in `beam_asm.zig`; step 5 is a pointer).
 **Owns:** `modules/compiler-core/src/codegen/beam_asm.zig` · `src/codegen/beam/**` except
 `{erl_ast,erl_emitter}.zig` (02's Erlang-text renderer), `beam_file.zig` / `opcodes.zig` /
 `gen_opcodes.sh` (18's container) and `asm_text.zig` (14's listing) · the beam snapshots under
@@ -45,7 +45,7 @@ the open).
 | EF-1, EF-2 | `modules/erlang_host_sidecar_shipped`, `modules/erlang_sidecar_named_like_a_module` | `text:shout/1` is `undef`: the beam build ships no `.erl` sidecar and the `.S` module loads none |
 | T6 | `var n = 0; run({ -> n = n + 1; 1; }, 0); @print(n)` | `0` at exit 0 — the write is dropped silently (erlang refuses the module, commonJS prints `1`) |
 | C-07 | the tuple / `..` / type-pattern fixtures 02 added; §4.1 × §4.2 | no beam fixture with a RUN LOG pins them; the cells pass by hand |
-| C-10 | `#[@BeamMemory.Ets(keyed = true)] var counts: Dict<string, i32> = …` | refused (no row-per-key lowering) — 17-a first |
+| C-10 | `#[@BeamMemory.Ets(keyed = true)] var counts: Dict<string, i32> = …` | lowered row per key by `17-beam-memory` (step 5 is a pointer) |
 
 ## Current state
 
@@ -59,7 +59,7 @@ minus, a capitalised imported fn is a call, a bare `break` ends a `for`, the key
 sets `standard_io` to unicode before anything prints. Pinned by `codegen/tests/beam.zig` and three
 cells. `beam_export_audit.sh` assembles all 490 modules. Every step's beam half is done; what is
 open waits on another front: step 1's last box on `01-checker` step 13, step 2's first on
-`02-erlang` step 7 and `05-wasm`, step 5 on `17-beam-memory`.
+`02-erlang` step 7 and `05-wasm`, step 5 is `17-beam-memory`'s (a pointer).
 
 ## Mechanism
 
@@ -118,14 +118,13 @@ twin of 02 step 8.
 **Acceptance:**
 - [x] `test/closure_capture.bp`'s shapes as a `run/` cell green on beam; the exit-0 stale value gone (either refused before beam or written back)
 
-### Step 5 — `keyed = true` in assembly (C-10, after 17 step 1)
+### Step 5 — `keyed = true` in assembly (C-10) — a pointer to `17-beam-memory`
 
-17 decides the seed (17-a) and lands the erlang lowering (`ets:insert` / `ets:lookup` per key, the
-owner of decision 39); this front emits the same in `.S`, byte-compared against erlang's behaviour.
-
-**Acceptance:**
-- [ ] `run/beam_memory_ets_keyed` (17's cell: two processes × 20 000 writes to different keys print `20000 20000`) green on beam
-- [ ] `{attributes, [{on_load, …}]}` unchanged; `beam_export_audit.sh` green
+The `.S` keyed arm is `17-beam-memory`'s: its § Owns names the module-`var` read/write lowering in
+`beam_asm.zig` (a carve-out of this front's file granted by name), so 17 emits it beside the erlang
+lowering — `emitKeyedRowRead`, `emitKeyedRowWrite`, `emitKeyedHelpers` — and
+`run/beam_memory_ets_keyed` runs on beam with erlang. Its boxes live in
+[`../17-beam-memory/README.md`](../17-beam-memory/README.md) step 1; nothing is open here.
 
 ### Step 6 — the entry point's `standard_io` (02 step 5's beam twin)
 

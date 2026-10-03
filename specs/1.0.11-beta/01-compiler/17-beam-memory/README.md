@@ -1,8 +1,11 @@
 # Front 17 — beam-memory
 
 **Priority:** medium — the carrier, the three modes, the registered owner and the refusals are
-landed (C-05, C-10 steps 4–5); what is open is the one argument decision 51 defined that nothing
-can be written on: `keyed = true`.
+landed (C-05, C-10 steps 4–5); decision 167's refusal off the BEAM and decision 168's
+`keyed = true` (the seed, the row read, the row write, on erlang and beam) are built on
+`front/17-beam-memory`. Open: the per-row increment and the row operations beyond `at` /
+`insert` (questions `17-b`, `17-c` in [`../README.md`](../README.md) § Decisions), and the hand-off
+of the text to 08.
 **Depends on:** maintainer decision 17-a (the seed of a keyed `Dict`) · `02-erlang` and `03-beam`
 landed — this front's emission sites are in their files (`erlang.zig`'s module-`var` lowering,
 `beam_asm.zig`'s twin), so it runs after them as a named carve-out, one site each · `01-checker`
@@ -38,38 +41,52 @@ otherwise.
 #[@BeamMemory.Ets(keyed = true)] var counts: Dict<string, i32> = Dict.empty();
 ```
 
-validates (`keyed` on a `Dict`, decision 51) and is refused on erlang and beam: the `Ets`
-initialiser must be a literal or `isComptimeExpr()`, there is no `Dict` literal, and `comptime
-Dict.empty()` does not fold — so no program can write the argument. Under `keyed = false` a
+validated (`keyed` on a `Dict`, decision 51) and was refused on erlang and beam: the `Ets`
+initialiser had to be a literal or `isComptimeExpr()`, there is no `Dict` literal, and `comptime
+Dict.empty()` does not fold — so no program could write the argument. Under `keyed = false` a
 `Dict` is one row: a write copies the whole dict, and two processes writing different keys lose
-one of the writes (measured in 1.0.10: 19 994 of 20 000). Measured at 1.0.10's close; the refusal
-re-verified at the open (`reject/beam_memory_ets_initialiser` pins the rule).
+one of the writes (measured in 1.0.10: 19 994 of 20 000; on beam with the whole-value lowering at
+this front: 19 996 of 20 000). And off the BEAM the annotation was a silent no-op (decision 43):
+commonJS built `run/beam_memory_process_dict` with exit 0.
 
 ## Mechanism
 
-The `Ets` seed rule (`infer.zig`, the `@BeamMemory` validation beside the `val`-assignment
-diagnostics) admits a literal or a comptime-foldable expression; `Dict.empty()` is a call on a
-type-scoped constructor (decision 111) the folder does not evaluate. The emission
-(`erlang.zig`'s module-`var` lowering, `beam_asm.zig`'s twin) has the whole-value `Ets` arm
-(`ets:insert` / `ets:lookup` on one key, the `-on_load` seed, decision 39's owner) and no
-row-per-key arm.
+The checker (`comptime/infer.zig`, `validateMemoryAnnotations` beside the `val`-assignment
+diagnostics) validates the annotation; the emission (`erlang.zig`'s module-`var` lowering,
+`beam_asm.zig`'s twin) lowers a read and a write onto `std/beam`'s primitives through the guard
+and the registered owner of decision 39.
+
+- **Off the BEAM** (decision 167): `validateMemoryAnnotations` records the first annotation of a
+  module whose `Env.target` is neither erlang nor beam, and `reportOffBeamMemory` (after
+  `reportStdTargetGates`, once the module is inferred, so the annotation's own rules answer first —
+  `reject/` cells run `botopink check`, whose default target is commonJS) refuses it at the
+  annotation: ``error: `#[@BeamMemory]` has no meaning on the <target> backend``.
+- **`keyed = true`** (decisions 168, 174): `Ets`'s argument alone, never on a `pub` var; the seed is
+  `Dict.empty()` or `Dict.ofEntries([…])` of literal `#(key, value)` entries (`isKeyedSeed`),
+  folded into the table's rows by `erlang.zig` `keyedSeedRows` (a repeated key keeps its last
+  value). The var is named only as the receiver of `counts.at(k)` (`'__bp_ets_at'(Name, Rows, K)`
+  — `ets:lookup`, `null` without a row) and of `counts = counts.insert(k, v)`
+  (`'__bp_ets_row'(Name, Rows, {K, V})` — `ets:insert` of the one row); a row computed from the
+  var's own rows is decision 40's §5(b) refusal, any other write or read is refused naming the
+  one form. The owner of a module with a keyed var inserts a seed tagged `{'__bp_rows', Rows}` as
+  the rows; no other module's output moved. `std/beam` gained `etsLookup` (`ets:lookup`).
 
 ## Steps
 
-### Step 1 — `keyed = true` lowers, row per key (17-a)
+### Step 1 — `keyed = true` lowers, row per key (17-a), and the refusal off the BEAM (167)
 
-Per 17-a (a): `Dict.empty()` (and `Dict.fromList([…])` of literals) is the accepted seed of a keyed
-`Ets` var, folded as the empty table (or its rows); a read `counts.at(k)` is `ets:lookup` on the
-key, a write `counts = counts.insert(k, v)` is `ets:insert` of one row, `+=` through
-`counts.at(k)` on an integer value is `ets:update_counter` on that key (decision 40's rule per
-row); the registered owner unchanged. The same in `.S` (03 step 5 emits, this front specifies and
-compares).
+Per 17-a (decision 168, the constructor named by 174): `Dict.empty()` and `Dict.ofEntries([…])`
+of literals are the accepted seed of a keyed `Ets` var, folded as the table's rows; a read
+`counts.at(k)` is `ets:lookup` on the key, a write `counts = counts.insert(k, v)` is `ets:insert`
+of one row; the registered owner unchanged. The same in `.S` — this front emits both (its § Owns
+names the function in `beam_asm.zig`; 03 step 5 is a pointer here).
 
 **Acceptance:**
-- [ ] `run/beam_memory_ets_keyed` (`.targets erlang beam`) — two spawned processes writing **different** keys 20 000 times each print `20000 20000` (the `keyed = false` twin is the measurement, not a cell — a test that fails by chance is not a test)
-- [ ] `reject/beam_memory_ets_keyed_seed` — a seed that is neither `Dict.empty()` nor a literal-rowed `fromList` is refused naming the accepted forms
-- [ ] any other read-modify-write on a row refused with decision 40's 5(b) diagnostic; `reject/beam_memory_ets_keyed_recompose`
-- [ ] off the BEAM `#[@BeamMemory]` is refused (decision 167, confirmed for wasm by `111-a`): `botopink build --target commonJS` and `--target wasm` of `run/beam_memory_process_dict` exit 1 with `error: \`#[@BeamMemory]\` has no meaning on the <target> backend`, located at the annotation — measured 2026-10-03, commonJS still builds it with exit 0; `test/beam_memory_noop` (the no-op reading) is deleted or narrowed to the BEAM
+- [x] `run/beam_memory_ets_keyed` (`.targets erlang beam`) — two spawned processes writing **different** keys 20 000 times each print `20000 20000` on erlang and on beam (the `keyed = false` twin is the measurement, not a cell — a test that fails by chance is not a test); the seed's repeated key reads its last value, a key with no row `null`; `codegen/tests/beam_memory.zig` runs the same on both backends
+- [x] `reject/beam_memory_ets_keyed_seed` — a seed that is neither `Dict.empty()` nor a literal-entried `Dict.ofEntries` is refused naming the accepted forms
+- [x] any other read-modify-write on a row refused with decision 40's 5(b) diagnostic: `reject/beam_memory_ets_keyed_recompose`; a whole read refused: `reject/beam_memory_ets_keyed_whole_read`
+- [ ] `+=` through a row — `ets:update_counter` on the key — has no surface: `counts.at(k)` is a `?V`, there is no `??`, and `counts.at(k) += n` is no assignment target; question `17-b`
+- [x] off the BEAM `#[@BeamMemory]` is refused (decision 167, confirmed for wasm by `111-a`): `botopink build --target commonJS` and `--target wasm` exit 1 with ``error: `#[@BeamMemory]` has no meaning on the <target> backend``, located at the annotation; `test/beam_memory_noop` is deleted, `run/beam_memory_off_beam` pins the refusal (`.commonJS.expect`, `.wasm.expect`) and prints `2` on the BEAM; `run/beam_memory_ets` and `run/beam_memory_persistent_term` narrow to `erlang beam`, and `run.sh`'s audit takes the refusal as a host binding (its structural `#[@BeamMemory]` exemption is gone)
 
 ### Step 2 — the text and the migration handed over
 
@@ -78,6 +95,19 @@ publishes with step 1 (08's commit); the rakun migration (1.0.10's `rakun-migrat
 `runtime.mjs` half moot since the packaging, the `rakun_runtime.erl` registry / `gen_server` half
 remains) is the rakun track's, registered against decision 17 — nothing here.
 
+**The hand-off to 08** — two sentences of the text changed with step 1:
+- Part 1, under `### var`: "Off the BEAM the annotation is a silent no-op …" is superseded by
+  decision 167: *Off the BEAM the annotation is refused where it is written — ``error:
+  `#[@BeamMemory]` has no meaning on the commonJS backend`` — because a target with one execution
+  context has no BEAM storage to name; a `var` there is one value for the whole program.*
+- Part 2, the `keyed` sentence: *Under `keyed = true` each key is its own row: the seed is
+  `Dict.empty()` or `Dict.ofEntries([#("a", 1)])` of literals, a row is read as `counts.at(k)`
+  and written as `counts = counts.insert(k, v)`, and nothing else names the var — measured, two
+  processes writing 20 000 times each to their own key finish at `20000` and `20000`
+  (`run/beam_memory_ets_keyed`), where the whole-value dict finished at `19 996` (`19 994` in
+  1.0.10).* The 5× / 5 000× cost figures stay quoted from 1.0.10's `design.md` §6 (the emission of
+  a row write is one `ets:insert`, as the design measured).
+
 **Acceptance:**
 - [ ] 08's `docs.md` § `@BeamMemory` carries the three mode paragraphs and the `keyed` sentence with its measured figures
 - [ ] the rakun track's README names the migration by its 1.0.10 path
@@ -85,15 +115,18 @@ remains) is the rakun track's, registered against decision 17 — nothing here.
 ## Gate
 
 - [ ] `zig build test` from a **cold** runtime cache, green, in this front's worktree
-- [ ] the per-mode cells (`run/beam_memory_{process_dict,ets,persistent_term}`) still green on erlang and beam; the new cell's `.out` is what `erl` printed
-- [ ] `scripts/beam_export_audit.sh` green
-- [ ] `AGENTS.md` of `src/codegen/`, `src/codegen/beam/`, `libs/std/` (if `beam.bp` moves) in the same commit
-- [ ] Commit on `fix/17-beam-memory`; no push, no merge
+- [x] the per-mode cells (`run/beam_memory_{process_dict,ets,persistent_term}`) still green on erlang and beam; the new cell's `.out` is what `erl` printed
+- [x] `scripts/beam_export_audit.sh` green (490/490)
+- [x] `AGENTS.md` of `src/codegen/`, `src/codegen/tests/`, `src/comptime/`, `tests/language/` in the same commit (`src/codegen/beam/` and `libs/std/` name nothing that moved; `beam.bp`'s own header carries `etsLookup`)
+- [x] Commit on `front/17-beam-memory`; no push, no merge
 
 ## Blast radius
 
-The `beam_memory_*` snapshots and cells only; no library writes `keyed = true` at the open (the
-rakun migration is what will).
+The `beam_memory_*` cells only — no snapshot moved: a module without a keyed var emits byte for
+byte what it did. Decision 167 reaches every program that writes `#[@BeamMemory]` and builds for
+commonJS or wasm: no library writes the annotation (measured at the answer and again here — rakun,
+emilia, erika, jhonstart, onze), so the fallout is the four language cells. No library writes
+`keyed = true` (the rakun migration is what will).
 
 ## Notes
 
