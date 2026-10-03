@@ -46,6 +46,7 @@ the grep stage before any test.
 - [ ] `00-gate/133-gate-speed` — high · decision 229 · step 1 measured (the erl busy-wait the biggest sink) and step 2 landed (busy-wait off, fewer VMs per cell): the cold gate 12m16s → 7m48s on a loaded machine, every cell byte-identical · step 3 (the cell-result store, keyed by full content) next; the idle-machine runs after it
 - [ ] `00-gate/114-gate-docs-and-ci` — on the remote `feat` under the green cold gate of `0041d38c`, meta checks 4 and 5 green; waits on botopink-lang's CI green (test-web wasm32, `test-libs.sh` under macOS bash 3.2 — fixed on an unlanded branch)
 - [ ] `01-compiler/130-decorator-outputs` — steps 1–4 built (the four places, 52 cells, `test-language` 1567/0), step 5 begun (5 of 119 sites: std `#[mocks.mock]`, validation `#[validated]` with rakun's config check, jhonstart `#[client]`); rakun's 108 and jhonstart's 5 remaining sites wait on the migration and on the front's open questions 1 and 4
+- [ ] `01-compiler/04-js` — steps 3, 4, 5, 7 and C-37 done (`scripts/tsc-check.sh` also runs `node --check` over every emitted module: 79 projects, 364 modules; `run/sibling_blocks_bind_one_name` on four targets, decision 205's legal half) on `front/04-js` · step 1 waits on the checker refusing `@block`'s tail form, step 2 on `0405-d` (raised) and 01's parser kind, step 6 on 01 step 6
 - [ ] `01-compiler/01-checker` — the import fix is committed and in the integration branch (decision 170: an import that names its module is never ambiguous; aliases); the front's other steps are open
 - [ ] `02-std-and-packaging/97-std-dedupe` — high · the `fs.walk` fix, step 1 and step 2 committed on its branch · steps 3–5 and 8 in progress · steps 3 and 5 land after the checker's import fix (decision 170)
 - [ ] `03-bundled-libs/102-routing-conventions` — steps 1–2 (the package), `kindLetter` and the wrap order of `fileKinds()` (decisions 171–173) committed on `front/102-routing-conventions` · step 3 (the consumers) goes first when the gate is green and 97 has landed (decision 188)
@@ -72,7 +73,7 @@ the grep stage before any test.
 
 ## Open
 
-- [ ] `01-compiler/02-erlang` · `03-beam` · `04-js` · `05-wasm` · `14-comptime-on-beam` · `26-cli-tooling` — group A · after `00-gate`
+- [ ] `01-compiler/02-erlang` · `03-beam` · `05-wasm` · `14-comptime-on-beam` · `26-cli-tooling` — group A · after `00-gate`
 - [ ] `01-compiler/12-language-tests` · `18-comptime-runtimes` · `23-std-purity` · `24-effects-by-return` · `25-gate-perf` — group B · after `00-gate`
 - [ ] `04-rakun` group A: `04-rakun-erlang-runtime` (critical) · `74-rakun-tls-ssl-bundles` · `08-rakun-data-sql` · `15-rakun-messaging` · `79-rakun-oauth2-sso` · `81-rakun-packaging-release` · `93-rakun-soap-webservices` · `73-rakun-starters` · `19-rakun-test-utilities` step 1 — after 128
 - [ ] `05-jhonstart/26-jhonstart-router` (high) · `27-jhonstart-link` — after `101-gate-jhonstart`; 26 after 102 step 3's `routes.bp` commit and after 118 (its step 0 merges `jhonstart-html` into the core — decision 200); its step 4 after 106; its step 8 on the checker capability of decision 186
