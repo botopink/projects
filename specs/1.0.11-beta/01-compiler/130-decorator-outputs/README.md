@@ -58,10 +58,9 @@ Choices recorded under decision 216 (the spellings are the decision's):
   adds, so it is `pub`.
 
 Measured on `front/130-decorator-outputs` (botopink-lang): `zig build` green; `zig fmt --check
-modules` green; `scripts/format-check.sh` green; `zig build test` green; `zig build
-test-docs` 96/96; `tests/language/run.sh --target all` **1567 passed, 0 failed** (1515 at the open +
-52 new cells); std `botopink test` 442/442 on commonJS and on erlang; `validation` green on both of
-its targets; rakun core `botopink test --target erlang` 374/374.
+modules` green; `zig build test` green; `zig build test-docs` 101/101; `tests/language/run.sh
+--target all` **2067 passed, 0 failed**; `zig build test-libs` green for rakun-data, rakun-cache,
+rakun-hateoas, rakun-security and rakun-client (erlang, their one target).
 
 Cells (all four targets where they run):
 `run/decorator_add_member`, `modules/decorator_add_member_import`, `run/decorator_set_meta`,
@@ -70,26 +69,59 @@ Cells (all four targets where they run):
 `reject/typeinfo_{meta_missing,without_member,unknown_declaration}`,
 `reject/decorator_meta_{duplicate,on_member}`,
 `reject/decorator_add_type_{duplicate,not_one,without_owner,name}`,
-`reject/typeinfo_all_{mixed,needs_member,not_decorator,arguments}`,
+`reject/typeinfo_all_{mixed,needs_member,not_decorator,arguments}`, `reject/decorator_member_unknown`, `run/typeinfo_all_list`, `reject/typeinfo_all_list_twice`,
 `modules/typeinfo_all_{imported,private}` (by `<target>.expect`).
 
 ## Steps
 
 ### Step 5 — migrate the 119 sites
 
-Migrated (5 of 119): std `#[mocks.mock]` → `<Name>.Mock` + `<Name>.mock()`; validation
-`#[validated]` → `v.validate()` + `T.constraints()` (rakun's `#[configurationProperties]` boot check
-moved with it, its hook green); jhonstart `#[client]` → the meta `component`
-(`@typeinfo(X).meta.client.component`, its hook green). Remaining, by site:
+Migrated (34 of 119, plus `#[schema]`'s 5 that landed since the open — see below):
 
-| File | Sites | Generated today | New form |
-|---|---|---|---|
-| rakun `rakun/src/decorators.bp`, `rakun-web/src/convention.bp`, `rakun/src/autoconfig.bp`, `rakun/src/config.bp`, `rakun-data/src/sql/transactional.bp`, `rakun-security/src/method_security.bp` | ~16 | `pub fn __rkMake_<T>()` (singleton factory) | member `T.make()` |
-| same files + `rakun/src/context.bp`, `lifecycle.bp`, `conditions.bp` | ~25 | `val __rkScan_<T>`, `__rkBean_`, `__rkLc_`, `__rkEv_`, `__rkImp_`, `__rkExit_`, `__rkAutoQ_`, `__rkCat_`, `__rkChk_`, `__rkEnable_` (load-time registration) | member `T.register()` + `@typeinfo.all(with: component, member: "register")` at rakun's boot |
-| `rakun-web/src/convention.bp`, `rakun-app/src/{route_handler,actions}.bp`, `rakun-websocket`, `rakun-scheduling`, `rakun-messaging`, `rakun-cli`, `rakun-actuator-api`, `rakun/src/decorators.bp` routes | ~25 | `val __rkFilter_`/`__rkConverter_`/`__rkCustomizer_`/`__rkCors_`/`__rkAdvice_`/`__rkMiddleware_`/`__rkHandler_<VERB>_`/`__rkRoute_`/`__rkWs_`/`__rkSched_`/`__rkJob_`/`__rkCli_`/`__rkEp_`… | meta (`order`, `media`, `path`, `verb`) + `@typeinfo.all` at the entry point; a `#[middleware]` / route function is its own `value` |
-| `rakun-data/src/orm/{entity,repository}.bp`, `sql/query.bp` | ~29 | `pub fn __rkEntity_<T>_<op>`, `__rkJoin_`, `__rkDerivedCount_`, `__rkQuery_`, `pub type <T>Columns`, `val __rkEntityReg_`/`__rkQueryReg_` | members (`City.fromRow(r)`), associated types (`City.Columns`), meta (`table`), registrations as above |
-| `rakun-cache/src/cached.bp`, `rakun-client/src/exchange.bp`, `rakun-hateoas/src/hal.bp`, `transactional`, `method_security` | ~8 | `pub type Cached<T>` / `Http<T>` twins, `pub fn cached<T>()` / `http<T>()` | associated type `T.Cached` / `T.Http` + member factory |
-| jhonstart `routes.bp` | 5 | `val __jhPage_X = jhPage(seg, …)` (+ layout/template/default), `pub fn <X>Params(route)` | meta `seg` + `@typeinfo.all(with: page)` passed to jhonstart's registration; `<X>Params` has no place (open question 1) |
+- std `#[mocks.mock]` → `<Name>.Mock` + `<Name>.mock()`; validation `#[validated]` →
+  `v.validate()` + `T.constraints()` (rakun's `#[configurationProperties]` boot check moved with
+  it); jhonstart `#[client]` → the meta `component` (`@typeinfo(X).meta.client.component`).
+- rakun-data `#[entity]` (20 of 22) → meta `@typeinfo(T).meta.entity.{table,columns}`, the
+  associated type `T.Columns`, the members `T.columns()`, `T.entityMeta()`, `T.fromRow(r)`,
+  `T.params(c)`, `T.insert/update/delete(sql, c)` with their `…In(tx, …)` twins, `T.byId(sql, id)`,
+  and under `#[revisions]` `T.revisionsOf/revisionAt/revisionNumbers` + `T.revisionMeta()`; the two
+  left are its registrations (`val __rkEntityReg_`, `__rkEntityRevReg_`).
+- rakun-data `#[entityRepository]` (3) → `<Repo>.<m>Sql()`, `<Repo>.<m>CountSql()`,
+  `<Repo>.<m>Derived(sql, …)`; `#[belongsTo]` (2) → `<R>.sql()`, `<R>.fromRow(r)`; `#[query]` (1 of
+  2) → `<Repo>.<m>Sql()` (its registration `val __rkQueryReg_` left). Two `#[query]` methods of one
+  name on two types of one module are now two members and build (the old refusal was the shared
+  helper name's erlc collision).
+- rakun-cache `#[cached]` (2) → the associated type `<Name>.Cached(inner: …)`; the factory
+  `cached<Name>(inner)` is gone, the constructor is the factory.
+- rakun-hateoas `#[halResource]` (1) → the method `v.toHal(links)`.
+
+Each member is library-chosen naming (decision 174's note): the old suffix becomes the member's
+name, the parameters unchanged.
+
+**A type's members are closed** (built with the migration). `infer.zig`'s type-qualified call
+refuses a name a record-shaped type neither declares nor answers through a field or an implemented
+behavior: `unknown-associated-fn` at the call (`reject/decorator_member_unknown`, `docs.md`
+§ Decorators). Without it the migration lost two refusals that an unbound emitted name used to give:
+`T.revisionsOf(…)` on an entity without `#[revisions]` and a `#[belongsTo]` naming a non-entity.
+
+Remaining, by site, and what each is written against:
+
+| File | Sites | Generated today | New form | Written against |
+|---|---|---|---|---|
+| rakun `rakun/src/decorators.bp`, `rakun-web/src/convention.bp`, `rakun/src/autoconfig.bp`, `rakun/src/config.bp`, `rakun/src/context.bp`, `rakun-data/src/sql/transactional.bp`, `rakun-security/src/method_security.bp` | ~29 | `pub fn __rkMake_<T>()` (singleton factory, the injection contract), `<T>Tx` / `<T>Sec` proxies built on it | member `T.make()` or the context | decision 234: `T.make()` + `rkResolve("<Field type>")`, the context filled at boot through `@typeinfo.all` (235) |
+| same files + `lifecycle.bp`, `conditions.bp`, `rakun-data` `entity.bp` / `query.bp` | ~27 | `val __rkScan_<T>`, `__rkBean_`, `__rkLc_`, `__rkEv_`, `__rkImp_`, `__rkExit_`, `__rkAutoQ_`, `__rkCat_`, `__rkChk_`, `__rkEnable_`, `__rkEntityReg_`, `__rkQueryReg_` (load-time registration) | `@typeinfo.all(…, member: "register")` at rakun's boot | decision 235 (built) + 234: the boot's catalogue |
+| `rakun-web/src/convention.bp`, `rakun-app/src/{route_handler,actions}.bp`, `rakun-websocket`, `rakun-scheduling`, `rakun-messaging`, `rakun-cli`, `rakun-actuator-api`, `rakun/src/decorators.bp` routes | ~25 | `val __rkFilter_`/`__rkConverter_`/`__rkCustomizer_`/`__rkCors_`/`__rkAdvice_`/`__rkMiddleware_`/`__rkHandler_<VERB>_`/`__rkRoute_`/`__rkWs_`/`__rkSched_`/`__rkJob_`/`__rkCli_`/`__rkEp_`… | meta (`order`, `media`, `path`, `verb`) + `@typeinfo.all` at the entry point | 235 (built); 236 for `#[middleware]`'s gate; 234 (each handler resolves its owner through the context) |
+| `rakun-client/src/exchange.bp` | 2 | `pub type Http<T>` + `pub fn http<T>()` | `T.Http` + a factory member | held: a behavior's member called from another module fails on all four backends (below) |
+| jhonstart `routes.bp` | 5 | `val __jhPage_X = jhPage(seg, …)` (+ layout/template/default), `pub fn <X>Params(route)` | meta `seg` + `@typeinfo.all(with: page)` | 235 (built); 236 for `<X>Params` (`paramsOf(seg, route)`); the readers are onze's generated entry points and jhonstart's tests (62 annotations across jhonstart and onze) |
+| validation `#[schema]` (`libs/validation/src/decorators.bp`) | 5 | `pub fn parse<T>At`, `parse<T>`, `decode<T>`, `schemaOf<T>` + helpers | members `T.parseAt/parse/decode/schema` | nothing — next; `decode` passes `parse<T>At` as a value, and an associated fn read as a value is an unbound variable on erlang (`City.make` passed to a `fn(string) -> City`), so it wraps it in a lambda |
+
+**Found during the migration** (open, not 216's places): a `behavior`'s associated `default fn`
+called through the behavior from another module (`Shape.unit()` with `import {shapes.Shape}`) is
+an unknown erlang module on erlang/beam, a run-time error on commonJS and a refusal on wasm — the
+member does not travel with a behavior the way it travels with a type; an associated fn read as a
+value (`apply(City.make, …)`) is an unbound variable on erlang; a member's or associated type's
+diagnostic is located past the file's last line (the member source is placed after the module's
+lines) and names the type as `City__Columns`, not `City.Columns`.
 
 **Acceptance:** each library's hook green on this compiler; `rtk grep '@emit(' --include=*.bp` in
 `repository/` answers only `tests/language` cells about `@emit` itself.
@@ -115,21 +147,29 @@ Every decorator reply changed shape (tagged maps): two codegen snapshots re-reco
 new prelude records. `#[mocks.mock]` and `#[validated]` changed their consumers' spellings (std,
 validation and rakun's config check, migrated together).
 
+## Decisions answered for step 5
+
+- **236** (`dec-a`, the README's question 1) — a function's decorator writes no per-function code:
+  `#[page]` records `decl.setMeta("seg", "[slug]")` and jhonstart writes
+  `paramsOf(@typeinfo(BlogPost).meta.page.seg, route)` once by hand; rakun's `#[middleware]` gate
+  the same way. No fifth place.
+- **235** (`dec-b`, question 4) — `@typeinfo.all(with: [a, b, c])` takes a list: one answer in the
+  one order, a declaration carrying two of the listed decorators once. **Built**: `typeinfo_all.zig`
+  (`with:` one decorator or a non-empty list, no spread; a name listed twice is
+  `typeinfo-all-arguments`; the entry's `meta` is what every listed decorator set), cells
+  `run/typeinfo_all_list` and `reject/typeinfo_all_list_twice`, `docs.md` § Decorators.
+- **234** (`dec-d`) — a constructor-injected field resolves through the context by the type's
+  name: a stereotyped type's factory is its member `T.make()`, a field `clock: Clock` is
+  `rkResolve("Clock")`, the boot fills the context from `@typeinfo.all(with: [stereotypes…],
+  member: "make")` and `@typeinfo.all(with: provides)` / the `#[bean]` methods; `__rkMake_<T>`
+  goes; two providers are the context's rule (`#[qualifier]`, `#[primary]`); a missing bean is a
+  boot failure.
+
 ## Open questions (beyond 216)
 
-1. **A function's decorator has no place for per-function code.** jhonstart's `#[page]` writes
-   `pub fn <Page>Params(route)` and rakun's `#[middleware]` a gate lambda; a `fn` has no members,
-   so neither has a home among the four places. Options: (a) pages become types, (b) the helper
-   becomes generic library code fed by meta, (c) a fifth place. Recommendation (b).
-2. **`@typeinfo` beside `@typeInfo`.** Two builtins differing by case; the older `@typeInfo(T)`
+1. **`@typeinfo` beside `@typeInfo`.** Two builtins differing by case; the older `@typeInfo(T)`
    (structural `TypeInfo`) has no library caller. Recommendation: retire `@typeInfo`, or fold its
-   structural answer into `@typeinfo(T)`.
-3. **wasm: a function read from a generic record's field and called through an untyped local prints
+   structural answer into `@typeinfo(T)` (`dec-c`).
+2. **wasm: a function read from a generic record's field and called through an untyped local prints
    its pointer** (`Box<T>(value: T)` alone, independent of 216) — `typeinfo_all_registration` calls
    through a typed local; the gap belongs to `05-wasm`.
-4. **One query answers one decorator.** rakun's stereotypes (`#[component]`, `#[service]`,
-   `#[repository]`, `#[controller]`, `#[filter]`, …) are one kind of thing — a managed singleton —
-   under several decorators, so its boot would write one `@typeinfo.all` per stereotype. Options:
-   (a) one query per decorator (today); (b) `with: [service, repository, …]`, the union in one
-   order; (c) a stereotype decorator delegates to one shared marker the query names.
-   Recommendation (a) for 216's migration, (b) only if rakun's boot measures it worth a rule.
