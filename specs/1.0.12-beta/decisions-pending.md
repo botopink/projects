@@ -172,7 +172,7 @@ until it is answered; the owning front lists the row under *Depends on*.
 
 #### 134-b · The type of `@TypeInfo.all`'s `with:`
 - **Measured.** `with:` names a decorator or a list of them; no type spells "a decorator", so the declaration reads `all(with: unknown, member: ?string = null) -> Declared<unknown>[]` and the catalogue's rule (`typeinfo-all-arguments`, `typeinfo-all-not-decorator`) checks.
-- **Options.** (a) `with: unknown` plus the rule (today). (b) A builtin type `Decorator` that only a decorator's name has: `with: Decorator \| Decorator[]`. (c) The decorator's function type `fn(comptime _: Decl)` (a decorator with arguments does not fit).
+- **Options.** (a) `with: unknown` plus the rule (today). (b) A builtin type `Decorator` that only a decorator's name has: `with: Decorator | Decorator[]`. (c) The decorator's function type `fn(comptime _: Decl)` (a decorator with arguments does not fit).
 - **Recommendation.** (b): the declaration then says what it accepts.
 - **Blocks.** Nothing.
 
