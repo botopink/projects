@@ -65,7 +65,7 @@ among the carried fronts and four open rows live there. The closed 1.0.10 sub-fr
 | [`07-review-backlog/`](./07-review-backlog/README.md) | low | C-22 whole | after 02–05 |
 | [`08-hygiene/`](./08-hygiene/README.md) | low | C-23 items 1–4 (after each owner) · 17's `docs-text.md` · C-18's documents | after every owner |
 | [`09-ecosystem-residuals/`](./09-ecosystem-residuals/README.md) | low | erika-linq's `targets` · C-14's `->` arms · the pointers' sweep | after 16 and 00-gate |
-| [`130-decorator-outputs/`](./130-decorator-outputs/README.md) | high | decision 216: a decorator's four places (`decl.addMember`, `decl.setMeta` + `@typeinfo`, `decl.addType`, `@typeinfo.all`), the 119 library sites, then module-level `@emit` removed | new · beside A (its compiler files are `comptime/`'s decision-216 parts; the library migration rebases on 129) |
+| [`130-decorator-outputs/`](./130-decorator-outputs/README.md) | high | decision 216: a decorator's four places (`decl.addMember`, `decl.setMeta` + `@typeInfo`, `decl.addType`, `@typeInfo.all`), the 119 library sites, then module-level `@emit` removed | new · beside A (its compiler files are `comptime/`'s decision-216 parts; the library migration rebases on 129) |
 
 **Group A** shares no source file and no snapshot directory across its seven fronts, with the
 carve-outs each README names (the C-07 twins in per-backend test files; `codegen/beam/{erl_ast,erl_emitter}.zig`
