@@ -29,7 +29,7 @@ honoured.
 Steps: 1 boxes 1–2 JS-4 beam twin: constructor in a `val` binds (`emitPatternDestruct`,
 `run/ctor_pattern_in_val_binding`) · 2 boxes 2–3 one beam fixture per tuple / `..` / type-pattern
 shape; `beam_export_audit.sh` green · 3 sidecar's `.S` half (with 00-gate/111) · 4 captured-`var`
-write (148): threaded forms answer · 5 `keyed = true` in assembly (`17-beam-memory`'s) · 6 entry
+write (148): threaded forms answer · 5 `keyed: true` in assembly (`17-beam-memory`'s) · 6 entry
 point sets `standard_io` unicode (`emitUnicodeStdio`) · 7 one `math` (263): `fn:` read on
 `@External.Beam` (or `Erlang` without one; `hostFnBinding.Lowering.apply(…, .beam)`,
 `tests/externals.zig`'s `beam: … fn: binds a declare fn to a private body`) —

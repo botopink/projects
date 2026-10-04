@@ -2,7 +2,7 @@
 
 **Priority:** high · **State:** partial: steps 1–9, 11, 12, 14–17, 19, 20 on feat; step 18 built on
 feat (botopink-lang `49455602` merges `19d59508`, `6185db3c`) with one box open; step 6 box 3, steps
-10, 13, 21–26 and ten rows open
+10, 13, 21–27 and ten rows open
 **Depends on:** `04-js` step 6 (step 6 box 3) · `16-formatter` step 8 (step 10) · `05-wasm` nested
 constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated rows lg2-a, lg2-q, lg2-e, lg2-m, lg2-r, lg2-t — each a step here only once
 answered.
@@ -221,6 +221,22 @@ an explicit `<T>`); a type argument binds `T` to that type; `source is type` ans
 - [ ] `reject/value_or_type_mismatch` — `pick<i32>(Box("x"))` at the argument; a runtime value where
       the parameter is `comptime` at the argument (280 (0))
 - [ ] `docs.md` § Generics documents it; `language-gaps.md`'s row closes
+
+### Step 27 — the compiler's annotations speak botopink (decision 305)
+
+- [ ] parser: `label = value` in an annotation's arguments is a located error naming `label:`
+      (`reject/annotation_label_equals`); `Annotation.labels` read from `label: value` only;
+      `parser/AGENTS.md`'s labelled-argument line rewritten
+- [ ] `@External.<Target>(fn: name)` — `name` resolves to a private botopink function of the same module,
+      its signature checked against the bound one; a misspelt name is the ordinary unbound-name error at
+      the argument (`reject/external_fn_unbound`); renaming the function renames the binding
+- [ ] `@External.Wasm(op: "f64.sqrt")` checked against the opcode table (238's check, now on the label);
+      `@External.Wasm(wasi: .RandomF64)` — `wasi`'s type is an enum of docs.md's adapter list
+- [ ] the old prefixed strings (`"fn:…"`, `"op:…"`, `"wasi:…"`) are no longer recognised: an unlabelled
+      string is host code, always; a string starting with one of the old prefixes is a located error
+      naming the labelled form (one release, then removed)
+- [ ] std's 88 bindings migrated (79 `fn:`, 6 `op:`, 3 `wasi:`), `scripts/` grep cell: no `"fn:` /
+      `"op:` / `"wasi:` left in `libs/**`; `docs.md` § External rewritten
 
 ### Rows other fronts found
 

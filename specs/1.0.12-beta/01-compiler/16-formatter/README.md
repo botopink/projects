@@ -112,9 +112,9 @@ untouched — separate blocks stay separate, a list stays a list — and a list 
 pub type Account(…)                     // stays two blocks
 
 #[
-    @External.Node("fn:mixBody"),
-    @External.Erlang("fn:mixBody"),
-    @External.Beam("fn:mixBody"),
+    @External.Node(fn: mixBody),
+    @External.Erlang(fn: mixBody),
+    @External.Beam(fn: mixBody),
 ]
 fn mix(…) -> …                          // stays one list, one per line (trailing comma)
 ```
@@ -127,6 +127,12 @@ fn mix(…) -> …                          // stays one list, one per line (tra
 - [ ] the order is kept: a parser snapshot of `Decl.annotations` before and after formatting is equal
 - [ ] the trees of `scripts/format-check.sh` measured: no file moves but the lists the old split had
       broken up (reported to the tracks)
+
+### Step 10 — `label: value` in annotations (decision 305)
+
+- [ ] a labelled annotation argument prints `label: value` (`#[@BeamMemory.Ets(keyed: true)]`,
+      `#[@External.Erlang("…", inline: true)]`); `src/format/AGENTS.md`'s "prints `label = value`" row
+      rewritten; `format/tests/declarations.zig` cases updated (`assertFormat`, `assertIdempotent`)
 
 **Gate:** standard (fronts.md § Gate) + `scripts/format-check.sh` green over every `TREES` tree, a
 second pass moves nothing · `zig build test-libs` at baseline after step 3 (every library compiles

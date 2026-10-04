@@ -92,6 +92,8 @@ The limits table of `wat/AGENTS.md` still carries the one-page row.
       four targets, the commonJS answers
 - [ ] `wat/AGENTS.md` § Where this backend refuses to answer lists only group 3; limits table loses
       the one-page row
+- [ ] the bindings this step adds written in 305's form — `@External.Wasm(fn: name)`, `op: "…"`,
+      `wasi: .Adapter` — never the prefixed string (`01-checker` step 27 migrates the rest)
 
 ### Rows found by other fronts
 
