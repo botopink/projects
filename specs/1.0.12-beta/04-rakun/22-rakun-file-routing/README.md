@@ -102,6 +102,8 @@ file-convention route table (this member's) is generated at build from `routing`
 
 - [ ] the generated table: `pub val routes = comptime [layout("", rootLayout), page("blog/[slug]",
       blogSlugPage), …]`, one entry per app file, by `routing`'s `kindOf(path)`; no `bppKinds` read
+- [ ] a route file whose name is no identifier (`not-found.bpp`) imported with an alias by the
+      generated table (289); the import form for such a path segment stated here before landing
 - [ ] a page's `S` / `D` from `@typeInfo(f).hooks` (277) through that call, the same as the decorator
       form; `onze build`'s report unchanged (`07-onze/49` step 5)
 

@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**74 questions and 20 contradictions are open, and 97 implementation choices await confirmation.**
+**74 questions and 18 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288.
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 ## Open questions
@@ -510,12 +510,6 @@ left as recorded; the maintainer picks the resolution.
 - **Recommendation.** `<a #[reload]>`, `<a #[history(History.Replace)]>`, `#[transitionAnimate(Animate.Slide)]`, events as typed functions; `<script #[clientIdle] src=…>` — one strategy vocabulary.
 - **Blocks.** 126 steps 1–4; `07-onze/50` (`<Script>`); 124 (component scripts).
 
-#### ctr-g · Decision 213 against decision 221: one name bound twice
-- **Since 285.** No decorator comes from a file name any more; the clash is left only where a route file's header writes its kind's decorator (`page.bpp` with `#[page(paths: …)]`, 282).
-- **Rules.** 213: function named after the file → `page.bpp` → `pub default fn page`. 221: `"bppKinds": {"page": "page", "layout": "layout", …}` — jhonstart's decorator `page` (`pub fn page(comptime decl: @Decl, seg: string)`, 202) annotates that function in the same module. 152 / 205 refuse a second binding of one name; 270 makes a header binding the default function's name an error.
-- **Recommendation.** One yields: (a) the toolchain applies a `bppKinds` decorator via a qualified reference binding no name in the module; (b) a route file's function takes a name other than its file's; (c) the decorators take names distinct from the file kinds. (a) changes no library surface.
-- **Blocks.** 116 step 2; 117 step 1; `bpp-g`.
-
 #### ctr-h · Decision 149 against decisions 210 and 211
 - **Rules.** 149: "`==` is reference equality on an array and is refused on a record … a record that wants equality implements `behavior Eq`". 210: "structural equality on every target"; 211: "a type cannot define its own equality". 210 does not cite 149.
 - **Recommendation.** Record 149 as superseded by 210, its `behavior Eq` clause by 211; code on `feat` follows 210 / 214 (`run/record_structural_equality`).
@@ -575,12 +569,6 @@ left as recorded; the maintainer picks the resolution.
 - **Rules.** 166: "a list written without [a trailing comma] stays on one line". 243: "without it, the width rules (`16-a` / `16-b`) decide", while saying it "extends" 166.
 - **Recommendation.** Record 243 as amending 166's no-comma half; the confirmation of `16-a` / `16-b` then covers it.
 - **Blocks.** 16-formatter step 6.
-
-#### ctr-t · Decision 213 against decision 221: a kind file whose name is not a function name
-- **Since 285.** `bppKinds` is gone; the clash stays between 213's error and `routing`'s file names (`not-found.bpp`), which the route table imports.
-- **Rules.** 213: the unfolded function is named after the file, and "a file name that is not a valid function name is an error at the file". 221: `bppKinds` maps kinds by file name; `not-found.bpp` (`08-bpp/124-bpp-cli/examples/scaffold/app/`) is such a kind; onze's generated routes table imports `NotFound`.
-- **Recommendation.** A file whose name `bppKinds` lists takes the kind's function name (`not-found` → `NotFound`, the routes table's spelling); every other file keeps 213's error.
-- **Blocks.** 116 step 2; 124's scaffold.
 
 #### ctr-u · Decision 216 against front 125's `#[schema]`
 - **Rules.** 216: a decorator produces members, comptime meta, associated types, project reflection — "the loose `@emit` goes"; `#[validated]` follows (`validate()`, `constraints()`). `#[schema]`, on feat and in 125's design, still `@emit`s free `parse<T>` / `decode<T>` / `schemaOf<T>` (later `bind<T>`, `encode<T>`, `jsonSchemaOf<T>`); `125-validation-zod/surface.md` still names `constraintsOf<T>` / `validate<T>`.

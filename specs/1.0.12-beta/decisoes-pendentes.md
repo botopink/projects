@@ -1,7 +1,7 @@
 # Decisões pendentes — 1.0.12-beta (só o que está em aberto, por ordem de importância)
 
-Atualizado em 2026-10-04 (decisões 278–288). Só o que ainda espera resposta sua: o que já foi respondido está em
-`specs/1.0.12-beta/decisions-taken.md` (decisões 144–288; próximo número livre: **289**) e saiu daqui.
+Atualizado em 2026-10-04 (decisões 278–289). Só o que ainda espera resposta sua: o que já foi respondido está em
+`specs/1.0.12-beta/decisions-taken.md` (decisões 144–289; próximo número livre: **290**) e saiu daqui.
 Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 234–236 (injeção do rakun,
 `@TypeInfo.all` com lista, decorador de função), 237 (captura do template pelo texto), 238–243
 (`@External.Wasm`, `$stringify`, codepoints no wasm, células sem WASI, dependência direta, vírgula final),
@@ -9,7 +9,7 @@ Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 2
 minúsculos; a 209 revertida), 248 (um builtin só, `@typeInfo`), 249 (o compilador separado por backend na
 chave do cache), 250 (`io.random.bool()` removido), 252 (todo builtin declarado), 253 (`@TypeInfo.all`),
 254 (o catálogo responde `unknown`; `is fn() -> T`), 255 (`Tipo<…>.membro` e `comptime <expr>`), 256 (o
-registro de beans em comptime no ponto de entrada), 257 (`Schema<T>` na `validation`), 258 (`--lib` múltiplo), 259–263 (`pow` da glibc, `contentHash` por code point, heap do wasm crescendo, `String.fromCodepoint`, `std/math` igual em todo sistema), 264 (estouro de inteiro é erro em todo target), 265 (orçamento do gate frio em 7m30s nesta versão; os 5 min ficam para a próxima), 266 (`comptime` avaliado em compilação em todo lugar, registro içado), 267 (parâmetro variádico `..values: T[]`; `@print` declarado com ele), 268 (tipo builtin `Decorator` no `with:` do `@TypeInfo.all`), 269 (`@getContext(T)` é hook, chamado atrás de `use`), 270 (o prelúdio do `.bpp`: o `src/prelude.bp` do pacote, só imports do próprio pacote, importado só quando usado; o cabeçalho vence), 271 (`ctr-a`: não existe `islandKeyEnv`; a chave da island é sempre `ONZE_KEY`; as chaves da 124 são `trailingSlash`, `redirects`, `markdown`, `islands`), 272 (`08-e2` e `ctr-b`: os modos das props da server island são só `"sealed"`, o padrão, ou `"server"` — nenhum expõe as props), 273 (`ctr-c`: um route handler nunca é exportado no build; `app/rss.xml/route.bp` é servido a cada request — a 222 fica inteira), 274 (`03r-ad` e `ctr-d`: o Pulsar não vira membro — fica em `rakun-messaging/src/pulsar/`; o plano de dados é recusado no boot e adiado), 275 (`bpp-f` e `ctr-e`: o `.bpp` devolve o `R` do `@ExprCustom<R>` que o `html` declara — no jhonstart, sempre `@Component<ElementBase, Element>`, com ou sem `use`/`await`; todo `.bp` que devolve `html """…"""` também passa a declarar esse retorno), 276 (`View`: alias de `@Component<ElementBase, Element>` no `element.bp` do jhonstart — o mesmo tipo com nome curto; o `.bpp` desdobra em `-> View`), 277 (`hooks-a`: o `@Decl` lista todos os nós alcançáveis — cada função com os seus `use` e as suas chamadas —, e cada anotação carrega o seu `Decorator`; o jhonstart decide pré-renderizada/por request e valida `#[client]` comparando com os próprios decorators), 278 (diretivas do Astro viram anotações dentro da tag — `#[clientVisible("200px")]`; `#[clientOnly]` é uma função só, para hook e tag; o `html` age pelo tipo de retorno), 279 → 286 (as duas formas valem, `#[a]` `#[b]` e `#[a, b]`; o formatter mantém como foi escrito), 280 (argumento de decorator tipado e `comptime`, `@Decl<T>`, `Field<T>` e `.campo` com o nome exato), 281 (nenhum identificador de código como string), 282 (o papel de uma função vai no decorator, nunca no nome do export), 283 (segundo modelo: caso a caso, `nat-d1`…`nat-d9`), 284 (JSON: `botopink.json` o mais limpo possível, caso a caso; `"bpp"` obrigatório), 285 (o compilador só conhece o `"bpp"`, o `html` e o prelude; o papel do arquivo é da tabela de rotas do framework; o `bppKinds` sai), 287 (`ctr-aa`: o fallback de uma ilha é argumento da anotação — `#[serverDefer(fallback: …)]`, `#[clientOnly(fallback: …)]` —, fixo em comptime), 288 (`ctr-f`: um `.bpp` é o `pub default fn` do módulo com o nome exato do arquivo, devolvendo `View`; importado `import {components.card};` — a 213 emenda a 198 e a 199). A 245 e a 251 foram registradas cedo demais e retiradas.
+registro de beans em comptime no ponto de entrada), 257 (`Schema<T>` na `validation`), 258 (`--lib` múltiplo), 259–263 (`pow` da glibc, `contentHash` por code point, heap do wasm crescendo, `String.fromCodepoint`, `std/math` igual em todo sistema), 264 (estouro de inteiro é erro em todo target), 265 (orçamento do gate frio em 7m30s nesta versão; os 5 min ficam para a próxima), 266 (`comptime` avaliado em compilação em todo lugar, registro içado), 267 (parâmetro variádico `..values: T[]`; `@print` declarado com ele), 268 (tipo builtin `Decorator` no `with:` do `@TypeInfo.all`), 269 (`@getContext(T)` é hook, chamado atrás de `use`), 270 (o prelúdio do `.bpp`: o `src/prelude.bp` do pacote, só imports do próprio pacote, importado só quando usado; o cabeçalho vence), 271 (`ctr-a`: não existe `islandKeyEnv`; a chave da island é sempre `ONZE_KEY`; as chaves da 124 são `trailingSlash`, `redirects`, `markdown`, `islands`), 272 (`08-e2` e `ctr-b`: os modos das props da server island são só `"sealed"`, o padrão, ou `"server"` — nenhum expõe as props), 273 (`ctr-c`: um route handler nunca é exportado no build; `app/rss.xml/route.bp` é servido a cada request — a 222 fica inteira), 274 (`03r-ad` e `ctr-d`: o Pulsar não vira membro — fica em `rakun-messaging/src/pulsar/`; o plano de dados é recusado no boot e adiado), 275 (`bpp-f` e `ctr-e`: o `.bpp` devolve o `R` do `@ExprCustom<R>` que o `html` declara — no jhonstart, sempre `@Component<ElementBase, Element>`, com ou sem `use`/`await`; todo `.bp` que devolve `html """…"""` também passa a declarar esse retorno), 276 (`View`: alias de `@Component<ElementBase, Element>` no `element.bp` do jhonstart — o mesmo tipo com nome curto; o `.bpp` desdobra em `-> View`), 277 (`hooks-a`: o `@Decl` lista todos os nós alcançáveis — cada função com os seus `use` e as suas chamadas —, e cada anotação carrega o seu `Decorator`; o jhonstart decide pré-renderizada/por request e valida `#[client]` comparando com os próprios decorators), 278 (diretivas do Astro viram anotações dentro da tag — `#[clientVisible("200px")]`; `#[clientOnly]` é uma função só, para hook e tag; o `html` age pelo tipo de retorno), 279 → 286 (as duas formas valem, `#[a]` `#[b]` e `#[a, b]`; o formatter mantém como foi escrito), 280 (argumento de decorator tipado e `comptime`, `@Decl<T>`, `Field<T>` e `.campo` com o nome exato), 281 (nenhum identificador de código como string), 282 (o papel de uma função vai no decorator, nunca no nome do export), 283 (segundo modelo: caso a caso, `nat-d1`…`nat-d9`), 284 (JSON: `botopink.json` o mais limpo possível, caso a caso; `"bpp"` obrigatório), 285 (o compilador só conhece o `"bpp"`, o `html` e o prelude; o papel do arquivo é da tabela de rotas do framework; o `bppKinds` sai), 287 (`ctr-aa`: o fallback de uma ilha é argumento da anotação — `#[serverDefer(fallback: …)]`, `#[clientOnly(fallback: …)]` —, fixo em comptime), 288 (`ctr-f`: um `.bpp` é o `pub default fn` do módulo com o nome exato do arquivo, devolvendo `View`; importado `import {components.card};` — a 213 emenda a 198 e a 199), 289 (`ctr-g`, `ctr-t`: a função default pode ser anônima — `pub default fn (…)` — ou marcada depois — `pub default Tree;`; quem importa dá o nome; o `page.bpp` pode importar e escrever `#[page(…)]` sem colidir). A 245 e a 251 foram registradas cedo demais e retiradas.
 
 > **Numeração.** O prelúdio do `.bpp` tinha sido registrado como 266 no commit `84aa028`, sem saber
 > que 266–269 já existiam no seu registro local. Na 1.0.12 ele é a **270**; as 266–269 estão em
@@ -551,55 +551,6 @@ Ordem, do que mais destrava para o que menos:
 Pares de regras que não valem juntas, ou uma decisão posterior que mudou outra sem dizer. O texto das
 decisões ficou como foi gravado; a escolha é sua. Marque a recomendação ou escreva a sua.
 
-### ctr-g · 213 × 221: um nome ligado duas vezes
-
-> **Desde a 285.** Nenhum decorator vem mais do nome do arquivo: o compilador só conhece o `"bpp"`, o `html`
-> e o prelude, e o papel do arquivo é da tabela de rotas do framework. O conflito sobra só quando o cabeçalho
-> de um `page.bpp` escreve o decorator do próprio tipo (`#[page(paths: …)]`, 282).
-
-**Contexto.** Pela 213, `page.bpp` desdobra em `pub default fn page`. Pela 221, o pacote nomeado em
-`"bpp"` (o jhonstart) declara no `botopink.json` quais nomes de arquivo recebem qual decorador
-(`"bppKinds": {"page": "page", "layout": "layout", …}`), e a ferramenta aplica o decorador `page` do
-jhonstart (`pub fn page(comptime decl: @Decl, seg: string)`, em `routes.bp`) nessa mesma função. Para
-escrever `#[page(…)]`, o módulo precisaria ter o nome `page` importado — mas `page` já é a função. As
-decisões 152/205 recusam ligar um nome duas vezes no mesmo escopo, e a 270 recusa um cabeçalho que
-ligue o nome da função default.
-
-**Hoje:**
-```bp
-// o que o desdobramento de app/blog/page.bpp precisaria escrever
-import {page} from "jhonstart";                 // o decorador (221)
-#[page("blog")]
-pub default fn page(route: PageContext) -> @Component<ElementBase, Element> { … }
-//             ^^^^ binding-redeclared: `page` já foi ligado na linha 1
-```
-
-- [ ] **(a)** A ferramenta aplica o decorador do `bppKinds` por referência qualificada, sem ligar nome
-  no módulo — nenhuma biblioteca muda.
-  ```bp
-  // gerado; nenhum `import {page}` no módulo
-  #[‹jhonstart›.page("blog")]      // referência que a ferramenta resolve pelo manifesto (forma ilustrativa)
-  pub default fn page(route: PageContext) -> @Component<ElementBase, Element> { … }
-  ```
-- [ ] **(b)** A função de um arquivo de rota ganha outro nome que não o do arquivo (emenda a 213).
-  ```bp
-  import {page} from "jhonstart";
-  #[page("blog")]
-  pub default fn Page(route: PageContext) -> @Component<ElementBase, Element> { … }
-  ```
-- [ ] **(c)** Os decoradores ganham nomes diferentes dos tipos de arquivo — muda a superfície do
-  jhonstart (`routes.bp` e todo `#[page]` escrito à mão).
-  ```json
-  "bppKinds": { "page": "pageRoute", "layout": "layoutRoute", "template": "templateRoute" }
-  ```
-  ```bp
-  #[pageRoute("blog")]
-  pub default fn page(route: PageContext) -> @Component<ElementBase, Element> { … }
-  ```
-
-**Recomendação: (a)** — não muda a superfície de nenhuma biblioteca e mantém a 213 sem exceção.
-**Bloqueia:** 116 passo 2; 117 passo 1; `bpp-g`.
-
 ### ctr-h · Decisão 149 × decisões 210 e 211
 
 **Contexto.** A 149 (mais antiga) dizia que `==` em array compara referência e em record é recusado; um
@@ -988,48 +939,6 @@ val p = Person(name: "Ana Maria da Silva", email: "ana@example.com", city: "Belo
 
 **Recomendação: (a).** É o que o formatador da `feat` faz (16-a/16-b implementadas) e o que a 243 quis;
 falta só o texto dizer "emenda". **Bloqueia:** 16-formatter passo 6.
-
-### ctr-t · 213 × 221: arquivo de tipo cujo nome não é nome de função
-
-> **Desde a 285.** O `bppKinds` saiu; o conflito fica entre o erro da 213 e os nomes de arquivo do
-> `routing` (`not-found.bpp`), que a tabela de rotas importa.
-
-**Contexto.** A 213 dá à função de um `.bpp` o nome do arquivo, e "nome de arquivo que não é nome de
-função válido é erro no arquivo". A 221 mapeia tipos de arquivo pelo nome (`bppKinds`), e `not-found.bpp`
-é um desses tipos: o scaffold da 124 tem `app/not-found.bpp`, e a tabela de rotas gerada pelo onze
-(`onze-cli/src/generate.bp`) importa `NotFound` desse módulo. `not-found` tem hífen — pela 213, erro.
-
-**Hoje:**
-```bp
-// 08-bpp/124-bpp-cli/examples/scaffold/app/not-found.bpp
-// 213: error: `not-found` is not a valid function name
-
-// o que o onze gera para cada not-found
-import {<módulo>.NotFound as NotFound0};
-val __onze_NotFound0 = jhNotFound("", { -> NotFound0() });
-```
-
-- [ ] **(a)** Um arquivo listado no `bppKinds` recebe o nome de função do tipo (`not-found` →
-  `NotFound`, a grafia da tabela de rotas); qualquer outro mantém o erro da 213.
-  ```bp
-  // app/not-found.bpp →
-  pub default fn NotFound() -> Element { … }
-  // app/my-card.bpp (não listado) → error: `my-card` is not a valid function name
-  ```
-- [ ] **(b)** A 213 ao pé da letra: o arquivo muda de nome (`NotFound.bpp`), e a convenção de roteamento
-  (102, o scan do onze) passa a procurar esse nome.
-  ```text
-  app/NotFound.bpp      → pub default fn NotFound()
-  app/not-found.bpp     → error: `not-found` is not a valid function name
-  ```
-- [ ] **(c)** Conversão geral kebab → camel para todo `.bpp` (contra o "nenhuma conversão de caixa" da
-  213).
-  ```text
-  app/not-found.bpp → notFound     components/my-card.bpp → myCard
-  ```
-
-**Recomendação: (a).** Exceção fechada, decidida pelo manifesto do pacote (como o resto da 221), sem
-mexer na convenção de nomes de arquivo nem converter caixa. **Bloqueia:** 116 passo 2; o scaffold da 124.
 
 ### ctr-u · Decisão 216 × o `#[schema]` da 125
 

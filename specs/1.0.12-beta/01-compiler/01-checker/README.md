@@ -2,7 +2,7 @@
 
 **Priority:** high · **State:** partial: steps 1–9, 11, 12, 14–17, 19, 20 on feat; step 18 built on
 feat (botopink-lang `49455602` merges `19d59508`, `6185db3c`) with one box open; step 6 box 3, steps
-10, 13, 21–24 and ten rows open
+10, 13, 21–25 and ten rows open
 **Depends on:** `04-js` step 6 (step 6 box 3) · `16-formatter` step 8 (step 10) · `05-wasm` nested
 constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated rows lg2-a, lg2-q, lg2-e, lg2-m, lg2-r, lg2-t — each a step here only once
 answered.
@@ -192,6 +192,22 @@ type cannot be passed (lg2-f), and `Decl` (`builtins.d.bp`) is untyped. The case
       cell with its caret
 - [ ] `docs.md` § Decorators documents the four rules; `comptime/AGENTS.md` states how a comptime
       argument reaches the decorator body; `language-gaps.md`'s lg2-f and lg2-i rows close
+
+### Step 25 — the anonymous default function and `pub default <name>;` (decision 289)
+
+`pub default fn (params) -> R { … }` — a module's default function with no name in its module — and
+`pub default <name>;` — an existing function of the module made its default — parse and check;
+`pub default fn Name(…)` stays, the shorthand of `fn Name(…)` + `pub default Name;`. One default per
+module. An anonymous default's `decl.name` (and `@typeInfo`) is the module's file name; the
+importer binds it under the module path's last segment or an alias (213, 288).
+
+- [ ] `run/default_anonymous` — `pub default fn (x: i32) -> i32` imported `import {m.double};` and
+      called; `decl.name == "double"` in a decorator on it
+- [ ] `run/default_named_later` — `fn Tree(n: Node) -> View { … <Tree …/> … }` + `pub default Tree;`:
+      recursion through the name, imported by the module path
+- [ ] `reject/default_twice` (two defaults), `reject/default_unknown` (`pub default nope;`) at the line
+- [ ] a decorator named like the file imported beside an anonymous default (`page.bpp`'s case) checks
+- [ ] the formatter prints both forms (`16-formatter` hand-off if its arm is missing); `docs.md` § Modules
 
 ### Rows other fronts found
 

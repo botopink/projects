@@ -145,7 +145,7 @@ Labels only; text in [`../decisions-taken.md`](../decisions-taken.md).
 | 207 | Inline props type `props: type(…)` | 118 · `01-compiler/01-checker` |
 | 198 · 212 | `.bpp` = `.bp` module unfolded onto the `pub default fn` of the package in `"bpp": "<package>"`; header between two leading `---`, copied as written; rest is the literal; bad first line / unclosed header is an error at the line; no `template.emit` / `template.slice` | 116 |
 | 199 | `type Props(…)` → `props: Props` parameter (none without it), never `pub val`; declarations (`import`, `type`, `pub`) stay module-level, statements (`val`, `use`) become the body before `return` | 116 · 118 · 120 |
-| 213 | `pub default fn` named after the file (`components/PostCard.bpp` → `pub default fn PostCard(props: Props) -> Element`, `import {components.PostCard};`); non-function file name is an error | 116 · 118 |
+| 213 · 288 · 289 | A `.bpp` unfolds to the module's **anonymous** `pub default fn (…) -> View`; the importer names it (`import {components.PostCard};`, or an alias); `decl.name` is the file name; a module may instead mark a named function `pub default Tree;` | 116 · 118 |
 | 200 | `html` = `pub default fn` of core `jhonstart` (`import html, {Element} from "jhonstart";`); `jhonstart-html` deleted; manifest `"bpp": "jhonstart"` | `05-jhonstart/26` step 0 · 116 · 118 |
 | 221 · 285 | A `.bpp` decorator only when the header writes it (line before the closing `---`); a file's role (page, layout) is the framework's route table, never the toolchain's — it knows the `bpp` package, its `html` and its prelude only | 116 step 2 · 117 step 1 |
 | 270 | `bpp` package's `src/prelude.bp` (own modules only) is the last scope; imported only when a name resolves through it; header wins; binding the default function's name is an error; 118 writes jhonstart's | 116 · 118 |
@@ -191,7 +191,7 @@ step 2 owns.
 ## Decisions the maintainer owes
 
 Open: `08-d`, `08-f`, `08-h` (below) and `08-j`, `bpp-g`, `props-d`, `props-e`,
-`props-f` ([`../decisions-pending.md`](../decisions-pending.md)); contradictions `ctr-g`, `ctr-t` (116; `ctr-f` → 288).
+`props-f` ([`../decisions-pending.md`](../decisions-pending.md)); contradictions — `ctr-f` → 288, `ctr-g` and `ctr-t` → 289.
 
 - `08-j` — how rakun's `local()` carries jhonstart's `#[serverOnly]`. Blocks 123 step 1's third box.
 - `bpp-g` — how a `page.bpp` gets `route: PageContext` and `params`. Blocks 116 step 6, 117 step 1.

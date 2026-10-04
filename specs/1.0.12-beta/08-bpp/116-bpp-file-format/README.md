@@ -2,7 +2,7 @@
 
 **Priority:** medium — changes how a page looks, not what it can do; every feature is reachable
 from a `.bp` module (118). · **State:** not started
-**Depends on:** `118-bpp-components` (the literal's template language) · `05-jhonstart/26` step 0
+**Depends on:** `01-compiler/01-checker` step 25 (the anonymous default, 289) · `118-bpp-components` (the literal's template language) · `05-jhonstart/26` step 0
 (merges `jhonstart-html` into the core, `html` its default function, decision 200) ·
 `01-compiler/26-cli-tooling` (owns `compiler-cli/**`, `language-server/**` this milestone; 116
 opens after it) · `01-compiler`'s prelude scope (decision 270) · open: `bpp-g`
@@ -55,16 +55,17 @@ the toolchain uses its `pub default fn` (for jhonstart `html`, `import html from
 
 **The unfold** (198, 199, 212, 213). Header/literal split per 212; bad first line or unclosed
 header: `error: a .bpp header opens with --- on the first line and closes with a second ---` at
-that line. Always the module's `pub default fn`, named after the file, never `pub val`:
+that line. Always the module's **anonymous** `pub default fn` (289), never `pub val`; its name is the
+importer's (the file name or an alias), and `decl.name` reads the file name:
 
 | The header | The module of `components/PostCard.bpp` |
 |---|---|
-| declares `type Props(…)` | the header's declarations, then `pub default fn PostCard(props: Props) -> R { <the header's statements> return html """<the markup>"""; }` |
-| declares no `Props` | the header's declarations, then `pub default fn PostCard() -> R { <the header's statements> return html """<the markup>"""; }` |
+| declares `type Props(…)` | the header's declarations, then `pub default fn (props: Props) -> R { <the header's statements> return html """<the markup>"""; }` |
+| declares no `Props` | the header's declarations, then `pub default fn () -> R { <the header's statements> return html """<the markup>"""; }` |
 
 - `import {components.PostCard};` binds it without alias; another file name needs one
-  (`import {components.post_card as PostCard};`). No case conversion; a non-function file name is an
-  error at the file. `R` (decision 275) is the `R` of the default function's declared
+  (`import {components.post_card as PostCard};`). No case conversion; the importer's name is the file's,
+  so a file name that is no identifier needs an alias at the importer (289). `R` (decision 275) is the `R` of the default function's declared
   `@ExprCustom<R>` — the toolchain reads it from the signature and names no library; for jhonstart
   it is `View` (= `@Component<ElementBase, Element>`, decision 276), whether or not the header uses `use` / `await`.
 - Declarations (`import`, `type`, `pub`) module-level; statements (`val`, `use`) body ahead of
@@ -92,9 +93,10 @@ compiled and tested with the package; no manifest key names/overrides it. Handed
 `compiler-core` as the module's last scope (generic import-item list, no library); an item becomes
 an import only when a file name resolves through it. A file that is only `<article></article>` is
 `import html from "jhonstart"; import {element.Element, elements.article} from "jhonstart";
-pub default fn Card() -> Element { … }`, emitted code likewise. **Header wins** by scope order; a
+pub default fn () -> View { … }`, emitted code likewise. **Header wins** by scope order; a
 tag then resolving to a header declaration that is not a builder fails at the tag, naming the
-header line. Header binding the default function's name: error at the line. No prelude: only the
+header line. The default function binds no name in its module (289), so a header may import a
+decorator named like the file (`import {page} from "jhonstart";` in `page.bpp`). No prelude: only the
 default function is imported.
 
 ```bp
@@ -151,20 +153,20 @@ error at the key. `X.bp` + `X.bpp` in one directory: error naming both.
       Element>` for a header with and without `use` / `await`; the toolchain spells no type name
 - [ ] `tests/language/modules/bpp_*`: fixture package whose default function is **not**
       jhonstart's (answers the literal's length) — `.bpp` with `type Props` unfolds to
-      `pub default fn <Name>(props: Props)`, without to `pub default fn <Name>()`, no header = all
+      `pub default fn (props: Props)`, without to `pub default fn ()`, no header = all
       literal; fixture served unchanged (proof the toolchain knows no library)
 - [ ] header between two `---` (212): non-`---` first line in a file containing one, and an
       unclosed header, each refused at the line
-- [ ] function named after the file, imported by path without alias (213); non-function file name
-      refused at the file
+- [ ] the default function anonymous (289): `import {components.PostCard};` binds `PostCard` in the
+      importer, an alias another name; a file name that is no identifier (`not-found.bpp`) unfolds;
+      `decl.name` is the file name; `page.bpp` whose header imports and writes `#[page(…)]` compiles
 - [ ] declarations at module level, statements in the body in order; a statement reads `props`
 - [ ] a decorator before the closing `---` annotates the function (221 (1)); without one the
       function carries none — no decorator from the file name, no `bppKinds` read (285)
 - [ ] `X.bp` beside `X.bpp`, and `.bpp` with no key — each refused with § Mechanism's message
 - [ ] prelude (270): fixture with `prelude.bp` — markup-only `.bpp` compiles; module and emitted
       code import only used items; header name beats prelude's; `prelude.bp` holding a `fn`, another
-      package's item or an activation refused at its line; header binding the default function's
-      name refused at its line. The scope (`compiler-core`: last scope, import-item list) is
+      package's item or an activation refused at its line. The scope (`compiler-core`: last scope, import-item list) is
       `01-compiler/01-checker`'s, handed by this front
 - [ ] `grep -riE 'rakun|jhonstart|erika|emilia|onze'` over `modules/compiler-core/src` and the
       edited `compiler-cli` files is empty
@@ -227,5 +229,4 @@ error at the key. `X.bp` + `X.bpp` in one directory: error naming both.
   (4) `Node`: track examples write `children: Children = []`, declared by no jhonstart module
   (`element.bp`, `elements.bp` use it; checker knows it by name); per 223, 118 declares `Node`, its
   prelude imports it, examples' `Children` → `Node` — `118-bpp-components` step 6 boxes; (5) app-file
-  kind not a function name: 213 refuses it, 221 maps kinds by file name, `not-found.bpp`
-  (`124-bpp-cli/examples/scaffold/app/`) is one — `ctr-t`, step 2.
+  kind not a function name: answered by 289 — the default function is anonymous.
