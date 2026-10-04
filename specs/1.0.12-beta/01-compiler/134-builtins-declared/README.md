@@ -43,6 +43,9 @@ differences — `@ExprCustom<T>` declared as `CustomExpr<T>`, mirror's `Annotati
       `types`; the four bare names leave the builtin list
 - [ ] `Type` also declares the associated type `Field<T>` and `keys<T>(comptime source: type T) -> type`
       (decision 308); `builtins.d.bp`'s `Field` record leaves, `Decl.fields` typed `Type.Field<unknown>[]`
+- [ ] [`examples/types.bp`](./examples/types.bp) — the whole `Type` surface, signatures and results —
+      compiles and passes on the four targets; its "does not compile" lines are `01-checker` step 28's
+      `reject/` cells; `Type.merge` with a field on both sides is an error, `Type.required` drops every `?`
 - [ ] `docs.md` § Builtins generated from or checked against the declarations
 
 ### Step 4 — a variadic parameter, and the three print builtins declared with it (decision 267)

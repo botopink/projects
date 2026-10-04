@@ -1,0 +1,150 @@
+// Front 134 — builtins declared · examples/types.bp
+//
+// Demonstrates: std's `Type` (decisions 307, 308) — the derived-type functions
+// and the field key, with every signature and what each call produces.
+//
+// Target file: `libs/std/src/types.bp`, exported by std's `root.bp` as `types`.
+// Everything here runs at compile time except the members of `Field<T>`, which
+// also hold at run time. The bodies are the compiler's (`declare fn`; today's
+// `tryResolveTypeManipulationCall` in `comptime/infer.zig`, keyed on these
+// declarations instead of the bare names `partial`, `pick`, `omit`,
+// `mergeRecords`).
+//
+// OPEN (this front, with `01-checker` step 28): the spelling of a type that only
+// holds static members (`pub type Type { … }` with no case) and of a `type`
+// answer (`-> type`).
+
+// ── libs/std/src/types.bp ───────────────────────────────────────────────────
+
+pub type Type {
+
+    // The field key. One value per field of `T`'s declaration; nobody declares
+    // them. `.title` is the shorthand, resolved against the expected `T`.
+    pub type Field<T> {
+        val name: string;                         // "title"
+        val typeName: string;                     // "string", "?string", "Array<string>"
+        val annotations: DeclAnnotation[];        // the field's markers
+
+        pub declare fn of(text: string) -> ?Field<T>;   // "title" → .title; unknown → null
+        pub declare fn all() -> Field<T>[];              // declaration order
+    }
+
+    // The type functions — compile time only, every parameter `comptime`.
+    pub declare fn keys<T>(comptime source: type T) -> type;          // = Type.Field<T>
+    pub declare fn partial<T>(comptime source: type T) -> type;       // every field F → ?F
+    pub declare fn required<T>(comptime source: type T) -> type;      // every field ?F → F
+    pub declare fn pick<T>(comptime source: type T, comptime ..fields: Type.Field<T>[]) -> type;
+    pub declare fn omit<T>(comptime source: type T, comptime ..fields: Type.Field<T>[]) -> type;
+    pub declare fn merge<A, B>(comptime first: type A, comptime second: type B) -> type;
+}
+
+// ── an application module ───────────────────────────────────────────────────
+
+import {types.Type} from "std";
+import {decorators.validated, decorators.minLength} from "validation";
+
+#[validated]
+pub type Recipe(
+    #[minLength(1)] title: string,
+    description: ?string,
+    ingredients: Array<string>,
+)
+
+#[validated] pub type Dog(name: string, age: ?i32)
+#[validated] pub type Breed(breed: string)
+
+// Each result is a NEW nominal record named after its `val`, usable in every
+// type position, exported and imported like any type; the source fields'
+// markers come with them; a decorator on the `val` sees a type declaration.
+
+pub val RecipeKey = Type.keys(Recipe);
+//   Type.Field<Recipe> — .title, .description, .ingredients
+
+#[validated] pub val RecipePatch = Type.partial(Recipe);
+//   type RecipePatch(#[minLength(1)] title: ?string, description: ?string, ingredients: ?Array<string>)
+
+#[validated] pub val RecipeFull = Type.required(RecipePatch);
+//   type RecipeFull(#[minLength(1)] title: string, description: string, ingredients: Array<string>)
+//   — every `?` goes, `description` included: `required` does not know what
+//     was optional in `Recipe`
+
+#[validated] pub val RecipeTitle = Type.pick(Recipe, .title);
+//   type RecipeTitle(#[minLength(1)] title: string)
+
+#[validated] pub val RecipeBrief = Type.omit(Recipe, .description);
+//   type RecipeBrief(#[minLength(1)] title: string, ingredients: Array<string>)
+
+#[validated] pub val DogWithBreed = Type.merge(Dog, Breed);
+//   type DogWithBreed(name: string, age: ?i32, breed: string)
+
+// ── the key at run time ─────────────────────────────────────────────────────
+
+// Exhaustive: a field added to `Recipe` makes this `case` an error until handled.
+pub fn sortBy(list: Recipe[], key: RecipeKey) -> Recipe[] {
+    return case key {
+        .title -> list.sortBy({ r -> r.title });
+        .description -> list.sortBy({ r -> r.description ?? "" });
+        .ingredients -> list.sortBy({ r -> r.ingredients.length });
+    };
+}
+
+// A PATCH applies only what the client sent.
+pub fn applyPatch(recipe: Recipe, patch: RecipePatch) -> Recipe {
+    return Recipe(
+        ..recipe,
+        title: patch.title ?? recipe.title,
+        description: patch.description ?? recipe.description,
+        ingredients: patch.ingredients ?? recipe.ingredients,
+    );
+}
+
+test "a key read from outside, by its name" {
+    val key = RecipeKey.of("title") ?? .ingredients;
+    assert key == .title;
+    assert key.name == "title";
+    assert RecipeKey.of("nope") == null;
+}
+
+test "every key, in declaration order" {
+    assert RecipeKey.all().map({ k -> k.name }).join(",") == "title,description,ingredients";
+}
+
+test "a derived type is a type: constructed, passed, matched" {
+    val t = RecipeTitle(title: "Feijoada");
+    val brief = RecipeBrief(title: "Feijoada", ingredients: ["feijão"]);
+    val dog = DogWithBreed(name: "Rex", age: null, breed: "vira-lata");
+    assert t.title == brief.title;
+    assert dog.breed == "vira-lata";
+}
+
+test "a patch changes what it names and nothing else" {
+    val before = Recipe(title: "Feijoada", description: null, ingredients: ["feijão"]);
+    val after = applyPatch(before, RecipePatch(title: "Feijoada completa", description: null, ingredients: null));
+    assert after.title == "Feijoada completa";
+    assert after.ingredients == ["feijão"];
+}
+
+// ── in a decorator and in reflection ────────────────────────────────────────
+
+// pub fn unique<T>(comptime decl: @Decl<T>, comptime field: Type.Field<T>) { … }
+// pub fn index<T>(comptime decl: @Decl<T>, comptime ..fields: Type.Field<T>[]) { … }
+// pub fn check<T>(comptime decl: @Decl<T>, comptime rule: ?fn(v: T) -> bool = null,
+//                 comptime at: ?Type.Field<T> = null, …) { … }
+//
+// `@Decl<T>.fields` is `Type.Field<T>[]`; a `@Decl` without `T` hands out
+// `Type.Field<unknown>[]`.
+
+// ── does not compile (one `reject/` cell each, `01-checker` step 28) ─────────
+
+// Type.pick(Recipe, "title")                 — a string where a field goes: write `.title`
+// Type.pick(Recipe, .titel)                  — `Recipe` has no field `titel`
+// Type.pick(Recipe, .breed)                  — `Recipe` has no field `breed`
+// Type.pick(Recipe) / Type.omit(Recipe)      — at least one field
+// Type.pick(Recipe, .title, .title)          — field repeated
+// Type.omit(Recipe, .title, .description, .ingredients)
+//                                            — leaves an empty record
+// Type.partial(i32) / Type.partial(Fish)     — needs a record (`Fish` is an enum)
+// Type.merge(Dog, Dog)                       — a field on both sides (`name`, `age`):
+//                                              `omit` it first; nothing overrides silently
+// val P = Type.partial(Recipe);  (in a fn)   — only a module-level `val`
+// partial(Recipe)                            — unbound name: it is `Type.partial`
