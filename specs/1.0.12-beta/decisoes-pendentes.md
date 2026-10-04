@@ -16,7 +16,7 @@ registro de beans em comptime no ponto de entrada), 257 (`Schema<T>` na `validat
 > `decisions-taken.md` com o texto completo dos commits `4fb3c5e`, `ec58d33`, `805b2be`, `c4976a6`.
 
 **Ordem:** da decisão que mais destrava para a que menos destrava.
-- **Prioridade máxima** — a forma botopink (`nat-c`…`nat-g`; as regras já são as decisões 281–284) (as contradições da varredura já respondidas): o que foi copiado de fora quando a linguagem já tinha o recurso.
+- **Prioridade máxima** — a forma botopink (`nat-d`…`nat-g`; as regras já são as decisões 281–284; a `nat-c` foi toda respondida) (as contradições da varredura já respondidas): o que foi copiado de fora quando a linguagem já tinha o recurso.
 - **Parte 0** — `00-gate` e `01-compiler`, por prioridade (o que segura thread rodando primeiro).
 - **Parte 1** — contradições entre decisões, achadas na consolidação: cada uma segura um passo.
 - **Parte 2** — destravam muitas frentes.
