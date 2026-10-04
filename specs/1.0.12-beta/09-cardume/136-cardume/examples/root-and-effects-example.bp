@@ -8,6 +8,7 @@
 //   <RecoilRoot override={false}>            not added — one store per page, no nesting
 //   useRecoilBridgeAcrossReactRoots          not needed — islands already share the page's store
 //   atom({effects: [...]})                   atom(default, effects: [...])          — which ship: atm-d
+//   (no key: an atom by declaration)          #[atom(default: v)] type T — the type's own atom (297)
 //
 // Upstream: https://recoiljs.org/docs/api-reference/core/RecoilRoot
 //           https://recoiljs.org/docs/guides/atom-effects
@@ -21,20 +22,20 @@ import {atom} from "cardume";
 import {AtomRoot, atomValue} from "jhonstart-cardume";
 import {persistLocal} from "jhonstart-cardume";           // atm-d (b), illustrative
 
-pub type Theme { Light, Dark }
+#[atom(default: Theme.Light)]
+pub type Theme { Light, Dark }      // the type is its own atom (297): `use atomValue(Theme)`
 
 // ── seeding per request ─────────────────────────────────────────────────────
 
-pub val theme = atom(Theme.Light);
 pub val cartCount = atom(0);
 
 // The server reads the visitor's preference (a cookie, 294) and seeds the atom;
-// the islands that read `theme` start from the seeded value in the browser.
+// the islands that read `Theme` start from the seeded value in the browser.
 #[page("")]
 pub fn Home() -> View {
     val pref = use cookie(themeCookie);
     return html """
-      <AtomRoot initialize={{ set -> set(theme, pref ?? .Light) }}>
+      <AtomRoot initialize={{ set -> set(Theme, pref ?? .Light) }}>
         <header><ThemeToggle #[clientLoad] /></header>
         <main>…</main>
       </AtomRoot>
@@ -49,7 +50,7 @@ pub val savedCart = atom<i32[]>([], effects: [persistLocal("cart")]);
 
 #[client]
 pub fn ThemeToggle() -> View {
-    val t = use atomValue(theme);
+    val t = use atomValue(Theme);                 // Theme — the type's default, no `?`
     return html """<span>{case (t) { Light -> "☀"; Dark -> "☾"; }}</span>""";
 }
 

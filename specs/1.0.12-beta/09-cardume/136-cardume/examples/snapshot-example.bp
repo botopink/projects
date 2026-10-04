@@ -8,7 +8,7 @@
 //   useRecoilSnapshot()                        use snapshot()            → Snapshot (re-renders on every change)
 //   useGotoRecoilSnapshot()                    use snapshotRestorer()    → fn(s: Snapshot)
 //   useRecoilTransactionObserver_UNSTABLE(cb)  use transactionObserver({ now, previous -> … })
-//   snapshot.getLoadable(a) / getPromise(a)    snap.loadable(a) / await snap.value(a)
+//   snapshot.getLoadable(a) / getPromise(a)    snap.loadable(a) / await snap.value(a) — `a` an Atom<T> or a type (297)
 //   snapshot.map(cb)                           snap.with({ set -> … }) → a new Snapshot
 //   useGetRecoilValueInfo_UNSTABLE             not added — a debugging hook; the store's inspector is the
 //                                              runtime's (`jhonstart-dom-test`), not an app API

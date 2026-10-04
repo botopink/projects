@@ -10,6 +10,7 @@
 //                                                 family default is a plain function of the parameter
 //   selectorFamily({key, get: id => ({get}) …})   selectorFamily({ id: i32, get -> … })
 //   parameter: any serializable value             P compared by value (a record, an enum, a number, a string)
+//   useRecoilState(family(id))                    use atomState(todo(id)) — or atomState<Todo>(todo(id)), checked
 //
 // Upstream: https://recoiljs.org/docs/api-reference/utils/atomFamily
 //           https://recoiljs.org/docs/api-reference/utils/selectorFamily
@@ -40,7 +41,7 @@ pub val doneCount = selector({ get ->
 
 #[client]
 pub fn TodoItem(props: type(id: i32)) -> View {
-    val t = use atomState(todo(props.id));        // only this todo's atom
+    val t = use atomState<Todo>(todo(props.id));  // only this todo's atom; the type written, checked
     val text = use atomValue(todoLabel(props.id));
     return html """
       <li>

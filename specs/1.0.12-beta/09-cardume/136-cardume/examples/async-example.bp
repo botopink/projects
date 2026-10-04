@@ -12,6 +12,7 @@
 //   waitForNone([a, b])                      waitForNone(a, b)       → every Loadable, never suspends
 //   waitForAllSettled([a, b])                waitForAllSettled(a, b) → every Loadable once each settled
 //   noWait(s)                                not added — it is `loadable(s)`
+//   get(a) inside a selector                 get.atom(a) — an Atom<T> or a type (297): get.atom(Session)
 //   constSelector(v)                         constSelector(v)
 //   errorSelector(message)                   errorSelector(message)  → always Failed
 //
@@ -30,8 +31,14 @@ pub type Post(id: i32, title: string)
 
 pub val userId = atom(1);
 
+// the signed-in user, by type (297): middleware sets it, any page reads it
+pub type Session(userId: i32, token: string)
+
 // an async selector: re-runs when `userId` changes; a stale answer is dropped
-pub val currentUser = selector({ get -> await fetchUser(get.atom(userId)) });
+pub val currentUser = selector({ get ->
+    val s = get.atom(Session);                    // ?Session — the type's implicit atom
+    await fetchUser(s?.userId ?? get.atom(userId))
+});
 pub val userPosts = selector({ get -> await fetchPosts(get.atom(userId)) });
 
 // ── suspending read ─────────────────────────────────────────────────────────

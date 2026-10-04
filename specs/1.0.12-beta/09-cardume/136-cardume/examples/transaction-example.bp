@@ -5,7 +5,7 @@
 // after a write sees it, and a failing body applies nothing.
 //
 //   Recoil                                              here
-//   useRecoilTransaction_UNSTABLE(({get, set}) =>       use transaction({ tx, m: Move ->
+//   useRecoilTransaction_UNSTABLE(({get, set}) =>       use transaction({ tx, m: Move ->   (tx.get / tx.set: an Atom<T> or a type, 297)
 //     (m) => { set(col(m.from), …); set(col(m.to), …) })    tx.set(column(m.from), …); … })
 //
 // Upstream: https://recoiljs.org/docs/api-reference/core/useRecoilTransaction
@@ -19,6 +19,9 @@ import {atomValue, transaction} from "jhonstart-cardume";
 
 pub type Column { Todo, Doing, Done }
 pub type Move(card: i32, from: Column, to: Column)
+
+// the last move, by type (297): the type's own atom, ?LastMove
+pub type LastMove(move: Move)
 
 // one atom per column: the card ids in it
 pub val column = atomFamily({ c: Column -> case (c) { Todo -> [1, 2, 3]; _ -> []; } });
@@ -34,6 +37,7 @@ pub fn Board() -> View {
         if (!from.contains(m.card)) return;               // nothing written: nothing applied
         tx.set(column(m.from), from.filter({ id -> id != m.card }));
         tx.set(column(m.to), tx.get(column(m.to)).append(m.card));
+        tx.set(LastMove, LastMove(move: m));            // a type is an atom too
         // a read after a write sees the transaction's own value
         assert tx.get(column(m.from)).contains(m.card) == false;
     });

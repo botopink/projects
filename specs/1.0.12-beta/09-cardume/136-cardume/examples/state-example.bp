@@ -8,7 +8,7 @@
 //   atom({key, default})                     atom(default)
 //   selector({key, get})                     selector({ get -> … })
 //   selector({key, get, set})                a selector plus a setter function (see `setFahrenheit`)
-//   useRecoilState(a)                        use atomState(a)        → State<T>
+//   useRecoilState(a)                        use atomState(a)        → State<T>   — also atomState<T>(a), atomState(T) (297)
 //   useRecoilValue(a | s)                    use atomValue(a)        → T   (selectors too)
 //   useSetRecoilState(a)                     use atomSetter(a)       → fn(T), no subscription
 //   useResetRecoilState(a)                   use atomReset(a)        → fn()
@@ -52,7 +52,7 @@ pub fn setFahrenheit(set: fn(next: f64), f: f64) {
 #[client]
 pub fn Thermometer() -> View {
     val c = use atomState(tempC);              // State<f64>: c.value, c.set(…) — subscribes
-    val f = use atomValue(tempF);              // f64 — subscribes to the selector
+    val f = use atomValue<f64>(tempF);         // f64, written and checked — subscribes to the selector
     val setC = use atomSetter(tempC);          // fn(f64) — does NOT subscribe
     val reset = use atomReset(tempC);          // fn() — back to the default (20.0)
 
@@ -90,6 +90,9 @@ test "the server pass renders the defaults and the derived value" {
 //
 //   val x = use atomSetter(tempF)
 //     error: expected Atom<T>, got Selector<f64> — a selector is derived, not set
+//
+//   val f = use atomValue<i32>(tempF)
+//     error: expected Selector<i32>, got Selector<f64>
 //
 //   pub val tempC = atom(20.0, key: "tempC")
 //     error: an atom has no key — its identity is its declaration (281)

@@ -34,7 +34,7 @@ key anywhere.
 | Recoil | botopink |
 |---|---|
 | `atom({ key: "count", default: 0 })` | `pub val count = atom(0);` — `from "cardume"`; the identity is the declaration (281), no key |
-| `selector({ key, get: ({get}) => get(count) * 2 })` | `pub val doubled = selector({ get -> get.atom(count) * 2 });` (`get.selector(s)` for a selector — no overloading) |
+| `selector({ key, get: ({get}) => get(count) * 2 })` | `pub val doubled = selector({ get -> get.atom(count) * 2 });` — `get.atom` takes an `Atom<T>` or a type (297); `get.selector(s)` for a selector (no overloading) |
 | async selector (`get` returns a Promise) | `pub val user = selector({ get -> await fetchUser(get.atom(userId)) });` — a `Selector<@Task<User>>` |
 | `atomFamily({ key, default: id => … })` | `pub val todo = atomFamily({ id: i32 -> Todo(id: id, text: "", done: false) });` — `todo(5)` is an `Atom<Todo>` |
 | `selectorFamily` | `selectorFamily({ id: i32, get -> … })` |
@@ -114,7 +114,8 @@ move(Move(card: 7, from: .Todo, to: .Done));
   `await` inside —; every `tx.set` / `tx.reset` is applied **together** when the body returns, and
   each subscriber is notified once.
 - **Reads see the transaction's own writes** (`tx.get` after `tx.set` answers the new value).
-- **Atoms only**: `tx.get` / `tx.set` take an `Atom<T>` (a family member included), never a selector —
+- **Atoms only**: `tx.get` / `tx.set` take an `Atom<T>` (a family member included) or a type (its
+  implicit atom, 297), never a selector —
   a selector is derived, not stored (Recoil's rule); a selector read inside is a type error.
 - **All or nothing**: a body that fails (a refused `@Result`, a panic) applies nothing.
 
