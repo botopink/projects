@@ -88,15 +88,17 @@ beside the fingerprinted root — no per-entry root, no `/public` prefix.
 
 ### Step 5 — the dynamic mark (decision 186)
 
-Final state: no run-time mark (build writes each route's kind; waits on the checker capability,
-`language-gaps.md`, and `05-jhonstart/26` step 8). This step bridges until then; its deletion
-follows 26 step 8, no box here yet.
+Final state (decision 277): no run-time mark — `onze build` reads each `#[page]`'s `kind` meta
+(`S` / `D`) and writes it to `routing`'s `k` blob. The bridge below holds until
+`05-jhonstart/26` step 8 lands.
 
 - [ ] `responseFor` calls `ChunkWriter.markDynamic(reason)` when jhonstart's render reports `d`
       (`04-rakun/22` step 4 adds the method, removes rakun's implicit mark); `pageInput` /
       `requestData` build the query without a marking read; `server_test.bp`: a page never
       reading the query is prerenderable (rakun's `isDynamic()` false), one calling
       `searchParams()` is not
+- [ ] after `05-jhonstart/26` step 8: `onze build` writes the `k` blob from the `kind` meta, prints
+      `S prerendered` / `D per request (why)` per route; `responseFor`'s `markDynamic` call deleted
 
 ### Step 6 — the `onze-test` group stubs
 

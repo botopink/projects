@@ -74,12 +74,14 @@ No env-gated cell. R24-1, R24-2 depend on onze 50 / 53 and jhonstart 30; stay op
 
 ### Step 4 — The dynamic mark, interim bridge (R23-1, decision 186)
 
-Reading the kind from the `k` blob and deleting `ChunkWriter.markDynamic` follow when the checker
-capability lands and `05-jhonstart/26` has the two markers; no box here yet.
+Final state (decision 277): `static_gen.bp` reads the route's `S` / `D` from the `k` blob; the
+interim boxes below hold until `05-jhonstart/26` step 8 lands.
 
 - [ ] `ssr_test.bp`: a renderer reading `queryDict()` without `markDynamic` leaves the page static; one calling `markDynamic("searchParams")` makes it dynamic — through `static_gen.bp`'s decision
 - [ ] `rakun_ssr.erl` has no implicit mark on any accessor (grep cell over the sidecar source)
 - [ ] `AGENTS.md` § SSR states the rule and the `ChunkWriter` method; contract 5d in the milestone's `contracts.md` amended by the maintainer (named, not edited here)
+- [ ] after `05-jhonstart/26` step 8: `static_gen.bp`'s "the trial render touched a dynamic API"
+      reason deleted — the kind comes from the `k` blob; `ChunkWriter.markDynamic` deleted
 
 ### Step 5 — Spans (R11-7)
 

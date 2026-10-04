@@ -142,6 +142,33 @@ item of another package, an activation, default function's name bound by the hea
       name resolves to its own declaration; nothing in `src/` names a library
 - [ ] `src/comptime/AGENTS.md` states the scope order
 
+### Step 23 — the hooks a function reaches, in its `@Decl` (decision 277)
+
+`libs/std/src/builtins.d.bp`: `DeclAnnotation` gains `decorator: Decorator`; new `HookUse(hook:
+?Declared<unknown>, annotations: DeclAnnotation[], at: string)`, `HookCall(callee:
+Declared<unknown>, at: string)`, `HookNode(fn: Declared<unknown>, uses: HookUse[], calls:
+HookCall[])`; `Decl` gains `val hooks: HookNode[]`; `extend Decorator { pub fn is(self, other:
+Decorator) -> bool; }`. The checker (`comptime/infer.zig`, `env.zig`) computes, once per function:
+its node — each `use h(…)` written in it (with `h`'s annotations), each call of a `@Component`
+function (the calls `html` generates from tags included); `hooks` = that node then every node
+reachable through `calls`, breadth-first in body order, each function once; a cycle is an edge
+back; a `use` over a function value enters with `hook: null`; a host function gets no node; nodes
+shared across the compilation. No backend, no codegen snapshot changes; the compiler names no stage
+or library.
+
+- [ ] `run/decl_hooks_direct` — `use session()` → `[HookNode(f, uses: [session], calls: [])]`
+- [ ] `run/decl_hooks_all_nodes` — a page over `UserMenu` → `Avatar`, `Badge` and `Avatar` again: four
+      nodes, `Avatar` once, `calls` in body order
+- [ ] `run/decl_hooks_custom_hook` — `use user()` where `user` uses `session()`: the user's node has
+      `user`, `user`'s node has `session`
+- [ ] `run/decl_hooks_cycle` — `A → B → A`: two nodes, `B`'s call goes back to `A`
+- [ ] `run/decl_hooks_function_value` — `use f()` with `f` a parameter → `HookUse(hook: null)`
+- [ ] `run/decorator_is_identity` — `#[srv]` with `import {serverOnly as srv}` → `a.decorator.is(serverOnly)`;
+      a same-named decorator of another package → false
+- [ ] `docs.md` § Decorators documents `decl.hooks`, `HookNode`, `Decorator.is`; `comptime/AGENTS.md`
+      states the computation; `language-gaps.md`'s row "A function's `@Decl` does not say which hooks
+      it activates" closes
+
 ### Rows other fronts found
 
 - [ ] `@block` tail form refused: `val a = @block { 1 + 2 };` checks today (`inferBuiltinCallReturnType`

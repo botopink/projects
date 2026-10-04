@@ -1,7 +1,7 @@
 # Decisões pendentes — 1.0.12-beta (só o que está em aberto, por ordem de importância)
 
 Atualizado em 2026-10-03. Só o que ainda espera resposta sua: o que já foi respondido está em
-`specs/1.0.12-beta/decisions-taken.md` (decisões 144–276; próximo número livre: **277**) e saiu daqui.
+`specs/1.0.12-beta/decisions-taken.md` (decisões 144–277; próximo número livre: **278**) e saiu daqui.
 Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 234–236 (injeção do rakun,
 `@TypeInfo.all` com lista, decorador de função), 237 (captura do template pelo texto), 238–243
 (`@External.Wasm`, `$stringify`, codepoints no wasm, células sem WASI, dependência direta, vírgula final),
@@ -9,7 +9,7 @@ Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 2
 minúsculos; a 209 revertida), 248 (um builtin só, `@typeInfo`), 249 (o compilador separado por backend na
 chave do cache), 250 (`io.random.bool()` removido), 252 (todo builtin declarado), 253 (`@TypeInfo.all`),
 254 (o catálogo responde `unknown`; `is fn() -> T`), 255 (`Tipo<…>.membro` e `comptime <expr>`), 256 (o
-registro de beans em comptime no ponto de entrada), 257 (`Schema<T>` na `validation`), 258 (`--lib` múltiplo), 259–263 (`pow` da glibc, `contentHash` por code point, heap do wasm crescendo, `String.fromCodepoint`, `std/math` igual em todo sistema), 264 (estouro de inteiro é erro em todo target), 265 (orçamento do gate frio em 7m30s nesta versão; os 5 min ficam para a próxima), 266 (`comptime` avaliado em compilação em todo lugar, registro içado), 267 (parâmetro variádico `..values: T[]`; `@print` declarado com ele), 268 (tipo builtin `Decorator` no `with:` do `@TypeInfo.all`), 269 (`@getContext(T)` é hook, chamado atrás de `use`), 270 (o prelúdio do `.bpp`: o `src/prelude.bp` do pacote, só imports do próprio pacote, importado só quando usado; o cabeçalho vence), 271 (`ctr-a`: não existe `islandKeyEnv`; a chave da island é sempre `ONZE_KEY`; as chaves da 124 são `trailingSlash`, `redirects`, `markdown`, `islands`), 272 (`08-e2` e `ctr-b`: os modos das props da server island são só `"sealed"`, o padrão, ou `"server"` — nenhum expõe as props), 273 (`ctr-c`: um route handler nunca é exportado no build; `app/rss.xml/route.bp` é servido a cada request — a 222 fica inteira), 274 (`03r-ad` e `ctr-d`: o Pulsar não vira membro — fica em `rakun-messaging/src/pulsar/`; o plano de dados é recusado no boot e adiado), 275 (`bpp-f` e `ctr-e`: o `.bpp` devolve o `R` do `@ExprCustom<R>` que o `html` declara — no jhonstart, sempre `@Component<ElementBase, Element>`, com ou sem `use`/`await`; todo `.bp` que devolve `html """…"""` também passa a declarar esse retorno), 276 (`View`: alias de `@Component<ElementBase, Element>` no `element.bp` do jhonstart — o mesmo tipo com nome curto; o `.bpp` desdobra em `-> View`). A 245 e a 251 foram registradas cedo demais e retiradas.
+registro de beans em comptime no ponto de entrada), 257 (`Schema<T>` na `validation`), 258 (`--lib` múltiplo), 259–263 (`pow` da glibc, `contentHash` por code point, heap do wasm crescendo, `String.fromCodepoint`, `std/math` igual em todo sistema), 264 (estouro de inteiro é erro em todo target), 265 (orçamento do gate frio em 7m30s nesta versão; os 5 min ficam para a próxima), 266 (`comptime` avaliado em compilação em todo lugar, registro içado), 267 (parâmetro variádico `..values: T[]`; `@print` declarado com ele), 268 (tipo builtin `Decorator` no `with:` do `@TypeInfo.all`), 269 (`@getContext(T)` é hook, chamado atrás de `use`), 270 (o prelúdio do `.bpp`: o `src/prelude.bp` do pacote, só imports do próprio pacote, importado só quando usado; o cabeçalho vence), 271 (`ctr-a`: não existe `islandKeyEnv`; a chave da island é sempre `ONZE_KEY`; as chaves da 124 são `trailingSlash`, `redirects`, `markdown`, `islands`), 272 (`08-e2` e `ctr-b`: os modos das props da server island são só `"sealed"`, o padrão, ou `"server"` — nenhum expõe as props), 273 (`ctr-c`: um route handler nunca é exportado no build; `app/rss.xml/route.bp` é servido a cada request — a 222 fica inteira), 274 (`03r-ad` e `ctr-d`: o Pulsar não vira membro — fica em `rakun-messaging/src/pulsar/`; o plano de dados é recusado no boot e adiado), 275 (`bpp-f` e `ctr-e`: o `.bpp` devolve o `R` do `@ExprCustom<R>` que o `html` declara — no jhonstart, sempre `@Component<ElementBase, Element>`, com ou sem `use`/`await`; todo `.bp` que devolve `html """…"""` também passa a declarar esse retorno), 276 (`View`: alias de `@Component<ElementBase, Element>` no `element.bp` do jhonstart — o mesmo tipo com nome curto; o `.bpp` desdobra em `-> View`), 277 (`hooks-a`: o `@Decl` lista todos os nós alcançáveis — cada função com os seus `use` e as suas chamadas —, e cada anotação carrega o seu `Decorator`; o jhonstart decide pré-renderizada/por request e valida `#[client]` comparando com os próprios decorators). A 245 e a 251 foram registradas cedo demais e retiradas.
 
 > **Numeração.** O prelúdio do `.bpp` tinha sido registrado como 266 no commit `84aa028`, sem saber
 > que 266–269 já existiam no seu registro local. Na 1.0.12 ele é a **270**; as 266–269 estão em
@@ -62,15 +62,14 @@ Os ids das decisões não mudaram com a renumeração das trilhas: `07-*` são d
 
 Ordem, do que mais destrava para o que menos:
 
-1. **comp-a** — o `@Decl` diz quais hooks uma função alcança (a capacidade da 186) · destrava 26 s8, 49 s5, 22 s4, 123 · nova, para aprovar (Parte 2)
-2. **130-b**, **130-c** — o registro de beans do rakun (qualificador; `#[bean]` de configuração) · seguram o passo 5 da 130, que está rodando ⏳ (Parte 3)
-3. **own-a** — quem é dono dos scripts de teste · segura 07-residuals passo 12 e 114 passos 5 e 7 (Parte 2)
-4. **134-d** — `@is(…)` escrito à mão · trava a última linha do inventário da 134 (Parte 3)
-5. **17-b** — incremento por linha no `keyed` · trava a quarta caixa do passo 1 da 17 (Parte 3)
-6. **ctr-i**, **ctr-j** — unidade de string no erlang; faixa do `i64` · seguram células de 02/03/04/05 (Parte 1)
-7. **ctr-h**, **ctr-n**, **ctr-o**, **ctr-s** — só registro: decisões antigas que outras já mudaram (Parte 1)
-8. **imp-a** — dois tipos com o mesmo nome importados com alias (Parte 3)
-9. **17-c** — não trava nada hoje (Parte 3)
+1. **130-b**, **130-c** — o registro de beans do rakun (qualificador; `#[bean]` de configuração) · seguram o passo 5 da 130, que está rodando ⏳ (Parte 3)
+2. **own-a** — quem é dono dos scripts de teste · segura 07-residuals passo 12 e 114 passos 5 e 7 (Parte 2)
+3. **134-d** — `@is(…)` escrito à mão · trava a última linha do inventário da 134 (Parte 3)
+4. **17-b** — incremento por linha no `keyed` · trava a quarta caixa do passo 1 da 17 (Parte 3)
+5. **ctr-i**, **ctr-j** — unidade de string no erlang; faixa do `i64` · seguram células de 02/03/04/05 (Parte 1)
+6. **ctr-h**, **ctr-n**, **ctr-o**, **ctr-s** — só registro: decisões antigas que outras já mudaram (Parte 1)
+7. **imp-a** — dois tipos com o mesmo nome importados com alias (Parte 3)
+8. **17-c** — não trava nada hoje (Parte 3)
 
 ---
 
@@ -702,281 +701,6 @@ ponto de extensão do core, sem aresta entre membros.
 ---
 
 ## Parte 2 — Destravam muitas frentes
-
-### comp-a · O `@Decl` de uma função diz quais hooks ela alcança — com as anotações e o `Decorator` de cada uma *(proposta)*
-
-**Contexto.** A decisão 186 decidiu que o estágio de uma página (pré-renderizada no build, por request
-no servidor, ou no browser) é um **fato de compilação**, decidido pelos hooks que a página alcança com
-`use`: um hook `#[serverOnly]` (`session()`, `cookies()`) faz a página ser por request; um
-`#[clientOnly]` (`windowSize()`) só pode rodar dentro de um `#[client]`. Para isso a 186 pediu "uma
-capacidade do checker que não conhece biblioteca nenhuma: os hooks que uma função ativa por `use`,
-transitivamente, com as anotações, legíveis pelo `@Decl`" — mas nunca disse **a forma**. Ela está
-parada como linha do `language-gaps.md` ("A function's `@Decl` does not say which hooks it activates",
-dona: `01-checker`), e segura o passo 8 da 26 (jhonstart), o passo 5 da 49 (onze), o passo 4 da 22
-(rakun), a 123 (`local`) e a 117. Até lá, o estágio é marcado **em tempo de execução**
-(`ChunkWriter.markDynamic`, o `d` do payload), a ponte que a 186 manda apagar. Esta proposta dá a
-forma, e liga as anotações ao tipo `Decorator` da decisão 268 para que nenhuma biblioteca compare
-string. As diretivas `client:*` ficam fora — voltam numa pergunta própria.
-
-**Hoje:**
-```bp
-// jhonstart/src/router.bp — a página descobre que é dinâmica só ao renderizar
-pub fn cookies() -> @Component<ElementBase, Cookies> {
-    ChunkWriter.current().markDynamic("cookies");   // marca em runtime; o build não sabe
-    …
-}
-
-// o @Decl de uma função não tem a lista de hooks; a anotação refletida é só texto
-pub type DeclAnnotation(name: string, args: string[])     // builtins.d.bp:598
-```
-```text
-onze build   → toda página é renderizada "para ver" se marca dinâmica; o build não sabe antes
-```
-
-- [ ] **(a)** Nada novo: o estágio continua marcado em runtime (`markDynamic`); a 186 fica sem a
-  capacidade e a linha do `language-gaps.md` fica aberta.
-  ```text
-  /dashboard   descobre que é dinâmica só no primeiro render
-  #[client] Profile usando session()   → erro só em runtime, no browser
-  ```
-
-- [ ] **(b)** **O compilador lista os hooks alcançados, transitivamente, cada um com as anotações, e
-  cada anotação carrega o seu `Decorator`; a biblioteca compara com os decorators que ela importa.**
-  O compilador não ganha a palavra "stage", "server" nem "client". Como fica cada coisa:
-
-  **① Compilador — o que é declarado** (`libs/std/src/builtins.d.bp`, dono `01-checker`)
-  ```bp
-  // hoje: pub type DeclAnnotation(name: string, args: string[])
-  pub type DeclAnnotation(
-      name: string,               // fica: o nome como foi escrito (alias incluído)
-      args: string[],             // fica: os lexemas dos argumentos
-      decorator: Decorator,       // NOVO: a declaração do decorator — identidade, decisão 268
-  )
-
-  // NOVO: um `use` escrito numa função
-  pub type HookUse(
-      hook: ?Declared<unknown>,         // o hook ativado (ex.: session); null → regra R4
-      annotations: DeclAnnotation[],    // as anotações DO HOOK (ex.: #[serverOnly])
-      at: string,                       // onde está o `use`: "components/Avatar.bp:3:15"
-  )
-
-  // NOVO: uma chamada a outra função @Component (um componente ou um hook customizado)
-  pub type HookCall(
-      callee: Declared<unknown>,        // a função chamada (ex.: Avatar, vinda de <Avatar />)
-      at: string,                       // onde está a chamada
-  )
-
-  // NOVO: um nó — UMA função alcançada, com o que está escrito NELA
-  pub type HookNode(
-      fn: Declared<unknown>,            // a função
-      uses: HookUse[],                  // os `use` escritos nela (diretos)
-      calls: HookCall[],                // as funções @Component que ela chama (diretas), na ordem do corpo
-  )
-
-  pub behavior Decl {
-      …                                 // o que já existe (kind, name, fields, methods, returnType, annotations…)
-      val hooks: HookNode[];            // NOVO: TODOS os nós alcançáveis a partir desta função,
-                                        //       ela primeiro, cada função uma vez só
-  }
-
-  extend Decorator {
-      pub fn is(self, other: Decorator) -> bool;   // NOVO: mesma declaração? (nunca compara o nome)
-  }
-  ```
-  `@typeInfo(f).hooks` e o `decl.hooks` dentro de um decorator são a mesma lista. A lista é plana e
-  completa: com os `calls` de cada nó dá para reconstruir a árvore inteira (e desenhá-la).
-
-  Exemplo:
-  ```bp
-  pub fn Avatar() -> View   { val u = use session(); return html """<img src={u.photo} />"""; }
-  pub fn Badge() -> View    { val t = use state(0);  return html """<b>{t.value}</b>"""; }
-  pub fn UserMenu() -> View { return html """<nav><Avatar /><Badge /></nav>"""; }
-  pub fn Dashboard() -> View { val q = use searchParams(); return html """<UserMenu /><Avatar />"""; }
-  ```
-  ```text
-  @typeInfo(Dashboard).hooks = [
-    HookNode(fn: Dashboard, uses: [searchParams #[serverOnly] @page.bpp:2],
-                            calls: [UserMenu @page.bpp:4, Avatar @page.bpp:4]),
-    HookNode(fn: UserMenu,  uses: [],
-                            calls: [Avatar @UserMenu.bp:1, Badge @UserMenu.bp:1]),
-    HookNode(fn: Avatar,    uses: [session #[serverOnly] @Avatar.bp:1], calls: []),
-    HookNode(fn: Badge,     uses: [state @Badge.bp:1],                  calls: []),
-  ]                          // Avatar aparece UMA vez, embora seja chamado de dois lugares
-  ```
-
-  **② Compilador — como a lista é calculada** (checker, `comptime/infer.zig` + `env.zig`; nenhum backend muda)
-  - **R1** — o nó de uma função tem só o que está escrito nela: cada `use h(…)` vira um `HookUse`
-    (com as anotações de `h`); cada chamada a uma função cujo retorno é `@Component<…>` vira um
-    `HookCall` — inclusive as que o `html` gera das tags (`<Avatar />` vira `Avatar()`).
-  - **R2** — `hooks` é o nó da própria função seguido do nó de cada função alcançável pelos `calls`,
-    em largura e na ordem do corpo, **cada função uma vez** (a segunda ocorrência é só uma aresta).
-  - **R3** — um hook customizado (`fn user() -> @Component<ElementBase, User> { val s = use session(); … }`)
-    é ele mesmo um `HookUse` no nó de quem o usa **e** tem o seu próprio nó, com o `use session()`.
-  - **R4** — um `use` sobre um **valor-função** (um lambda recebido como parâmetro) não é rastreável:
-    entra como `HookUse(hook: null, annotations: [], at)`; cada biblioteca decide (o jhonstart: o lado seguro).
-  - **R5** — ciclos não precisam de regra: uma função já listada não ganha outro nó; a aresta volta para ela.
-  - **R6** — uma função host (`declare fn` com `#[@External]`) não tem `use` nem `calls`: não ganha nó.
-  - **R7** — a lista fica pronta depois que a função e as que ela chama foram checadas; um decorator
-    que lê `decl.hooks` roda nesse momento (os quatro lugares da decisão 216 já rodam depois do checker).
-  - **R8** — os decorators-marca (`#[serverOnly]`) são decorators comuns sem saída; a anotação deles
-    aparece no `annotations` do `HookUse`.
-  - **R9** — o nó de cada função é calculado uma vez por compilação e compartilhado: a lista de uma
-    página reaproveita os nós dos componentes, não os recalcula.
-
-  **③ Compilador — testes** (`tests/language/`, quatro targets onde roda)
-  ```text
-  run/decl_hooks_direct            use session() → [nó(f, uses: [session])]
-  run/decl_hooks_all_nodes         Dashboard → os 4 nós do exemplo, Avatar uma vez, calls na ordem do corpo
-  run/decl_hooks_custom_hook       use user() → nó de quem usa com [user]; nó de user com [session]
-  run/decl_hooks_cycle             A → B → A → dois nós, a aresta de B volta para A
-  run/decl_hooks_function_value    use f() com f parâmetro → HookUse(hook: null)
-  run/decorator_is_identity        #[srv] com import {serverOnly as srv} → a.decorator.is(serverOnly) == true;
-                                   um serverOnly de outro pacote → false
-  ```
-  E a linha do `language-gaps.md` "A function's `@Decl` does not say which hooks it activates" fecha.
-
-  **④ jhonstart — as marcas e a busca** (`modules/jhonstart/src/stage.bp`, novo; dono `05-jhonstart/26` passo 8)
-  ```bp
-  //// stage — onde um hook pode rodar (decisão 186). Decorators sem saída: só marcam.
-  pub fn serverOnly(comptime decl: @Decl) {}     // só no servidor, por request
-  pub fn clientOnly(comptime decl: @Decl) {}     // só no browser, dentro de um #[client]
-
-  /// Um caminho da raiz até um `use`: as funções no meio e o próprio use.
-  pub type HookPath(through: Declared<unknown>[], use: HookUse)
-
-  /// Todos os caminhos até um `use` cujo hook leva `marker` (null = valor-função, quando `unknownToo`).
-  /// Busca em largura sobre a lista: cada nó visitado uma vez, então o caminho é o mais curto.
-  pub fn pathsTo(nodes: HookNode[], marker: Decorator, unknownToo: bool = false) -> HookPath[] {
-      val byFn = Dict.fromPairs(nodes.map({ n -> #(n.fn, n) }));
-      var found: HookPath[] = [];
-      var queue: #(HookNode, Declared<unknown>[])[] = [#(nodes.first(), [])];
-      var seen: Declared<unknown>[] = [];
-      while (queue.length > 0) {
-          val #(n, path) = queue.first(); queue = queue.slice(1);
-          if (seen.contains(n.fn)) continue;
-          seen = seen.append([n.fn]);
-          for (n.uses) { u ->
-              val hit = u.annotations.any({ a -> a.decorator.is(marker) }) || (unknownToo && u.hook == null);
-              if (hit) found = found.append([HookPath(through: path, use: u)]);
-          }
-          for (n.calls) { c -> byFn.at(c.callee)?.let({ child -> queue = queue.append([#(child, path.append([c.callee]))]); }); }
-      }
-      return found;
-  }
-
-  pub fn viaText(p: HookPath) -> string {                             // ", via UserMenu → Avatar"
-      return if (p.through.length == 0) { "" } else { ", via " + p.through.map({ f -> f.name }).join(" → ") };
-  }
-  pub fn crossesClient(p: HookPath) -> bool {                         // o caminho passa por um #[client]?
-      return p.through.any({ f -> f.annotations.any({ a -> a.decorator.is(client) }) });
-  }
-  ```
-
-  **⑤ jhonstart — os hooks marcados** (uma linha antes de cada um)
-  ```bp
-  // server.bp
-  #[serverOnly] pub fn cookies() -> @Component<ElementBase, Cookies> { … }
-  #[serverOnly] pub fn headers() -> @Component<ElementBase, Headers> { … }
-  #[serverOnly] pub fn request() -> @Component<ElementBase, Request> { … }
-  // router.bp
-  #[serverOnly] pub fn searchParams() -> @Component<ElementBase, SearchParams> { … }
-  // hooks.bp — os de browser (os que só existem lá)
-  #[clientOnly] pub fn windowSize() -> @Component<ElementBase, Size> { … }
-  // state, effect, memo, ref, reducer: sem marca — rodam em qualquer estágio
-  ```
-
-  **⑥ jhonstart — `#[page]`** (`routes.bp`, hoje `pub fn page(comptime decl: @Decl, seg: string)` com `@emit`)
-  ```bp
-  pub fn page(comptime decl: @Decl, seg: string) {
-      decl.setMeta("seg", seg);                                        // a rota (decisão 236)
-
-      // #[clientOnly] fora de um #[client] → erro no `use` (186)
-      pathsTo(decl.hooks, clientOnly)
-          .filter({ p -> !crossesClient(p) })
-          .each({ p -> decl.failAt(p.use.at, "`" + p.use.hook.name + "()` é #[clientOnly] e só roda dentro de um #[client]" + viaText(p)) });
-
-      // o estágio: S = pré-renderizada no build, D = por request (186, 202)
-      val server = pathsTo(decl.hooks, serverOnly, unknownToo: true).first();
-      decl.setMeta("kind", if (server != null) { "D" } else { "S" });
-      decl.setMeta("why", server?.let({ p -> (p.use.hook?.name ?? "função desconhecida") + "()" + viaText(p) }) ?? "");
-  }
-  ```
-
-  **⑦ jhonstart — `#[client]`** (`client.bp:103`, o que já gera o starter da ilha)
-  ```bp
-  pub fn client(comptime decl: @Decl) {
-      pathsTo(decl.hooks, serverOnly).each({ p ->
-          decl.failAt(p.use.at, "#[client] " + decl.name + " alcança `" + p.use.hook.name +
-              "()` (#[serverOnly]" + viaText(p) + ") — um componente do browser não lê o request");
-      });
-      …                                   // o resto de hoje: o tipo de retorno (276), o starter
-  }
-  ```
-  Como `pathsTo` devolve **todos** os caminhos, o `#[client]` aponta cada `use` problemático, não só o primeiro.
-
-  **⑧ jhonstart — o que sai** (186)
-  ```text
-  router.bp   markDynamic (:186, :198, :276), renderIsDynamic, resetDynamic   → apagados
-  server.bp   import de markDynamic (:87) e a chamada (:254)                    → apagados
-  streaming.bp  o markDynamic do render (:52, :703)                             → apagado
-  payload     o campo `d` deixa de ser uma marca (o estágio já é conhecido)
-  ```
-
-  **⑨ routing — o `k` da rota** (`libs/routing/src/route_kinds.bp`, já existe: `pattern|S|D`)
-  O build grava o `kind` que o `#[page]` deixou na meta; ninguém mais o descobre renderizando.
-
-  **⑩ onze — o build** (`07-onze/49` passo 5)
-  ```text
-  $ onze build
-  /             S  prerendered
-  /about        S  prerendered
-  /dashboard    D  per request   (session() via UserMenu → Avatar)
-  /blog/[slug]  S  prerendered   (12 pages from staticPaths)
-  ```
-  `onze build` lê a meta `kind` de cada `#[page]`; não há mais "render de teste".
-
-  **⑪ rakun — a geração estática** (`04-rakun/22` passo 4, `rakun-app/src/static_gen.bp`)
-  O passo "o render de teste tocou uma API dinâmica" sai; `static_gen` lê o `S`/`D` da rota.
-  O `rakun_ssr.erl` perde a marca implícita.
-
-  **⑫ As mensagens** (todas em compilação, no lugar do `use`)
-  ```text
-  components/Profile.bp:4:15 error: #[client] Profile alcança `session()` (#[serverOnly], via UserMenu → Avatar)
-                                    — um componente do browser não lê o request
-  app/broken/page.bpp:3:12 error: `windowSize()` é #[clientOnly] e só roda dentro de um #[client]
-  ```
-
-  **⑬ Documentação** — `docs.md` § Decorators ganha `decl.hooks` e `Decorator.is`; o `AGENTS.md` do
-  jhonstart descreve as duas marcas e quem as lê; `05-jhonstart/README.md` deixa de citar a ponte.
-
-  **⑭ O que não muda** — nenhum backend, nenhum snapshot de codegen, o `html`, o `.bpp`, o `View`,
-  o `use`, a decisão 128. Uma página sem hook de servidor continua pré-renderizada; com, por request.
-
-  **⑮ Ordem** — `01-checker` (①–③) → `05-jhonstart/26` passo 8 (④–⑧) → `07-onze/49` passo 5 (⑩) e
-  `04-rakun/22` passo 4 (⑪), em paralelo; a 123 (`local`) e a `08-j` passam a ter onde se apoiar.
-
-- [ ] **(c)** Como (b), mas o compilador entrega o **estágio pronto** (`decl.stage == .Server`) em vez
-  da lista de hooks.
-  ```bp
-  if (@typeInfo(UserMenu).stage == .Server) { … }
-  ```
-  Mais curto para quem lê, mas o compilador passa a conhecer "server"/"client" — os nomes das marcas do
-  jhonstart — contra as decisões 113 e 198; outra biblioteca não consegue ter marca própria.
-
-- [ ] **(d)** Como (b), mas a anotação continua só texto: a biblioteca compara `a.name == "serverOnly"`.
-  ```bp
-  h.annotations.any({ a -> a.name == "serverOnly" })
-  ```
-  Sem mudar o `DeclAnnotation`; mas um erro de digitação passa calado, um alias (`import {serverOnly as
-  srv}`) engana, e um `#[serverOnly]` do rakun seria confundido com o do jhonstart.
-
-**Recomendação: (b).** É a capacidade que a 186 pediu, na forma mais restritiva: o compilador continua
-sem saber de biblioteca nenhuma (113, 198), o cálculo é um só e transitivo, e a comparação é por
-identidade da declaração (268), nunca por texto. Quem é dono: `01-compiler/01-checker` (um passo novo:
-`hooks` no `@Decl`, `decorator` no `DeclAnnotation`, `Decorator.is`); depois `05-jhonstart/26` passo 8
-(as marcas, o `#[page]`, o `#[client]`), `07-onze/49` passo 5 e `04-rakun/22` passo 4 (o build grava o
-`S`/`D`; o `markDynamic` some). **Bloqueia:** a linha "A function's `@Decl` does not say which hooks it
-activates" do `language-gaps.md`; 26 passo 8; 49 passo 5; 22 passo 4; 123 passo 1; a forma da `08-j`.
 
 ### snap-a · Os mapas de snapshot — aposentados; ficam os snapshots que existem ou que um contrato lê
 

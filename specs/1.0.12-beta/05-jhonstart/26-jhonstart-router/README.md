@@ -159,20 +159,30 @@ upstream section mirrored and fronts exercised (`modules.md` § Examples).
 
 → 20-snap (front 135) step 3
 
-### Step 8 — the stage markers (decisions 186, 202)
+### Step 8 — the stage markers (decisions 186, 202, 277)
 
-Opens when `01-compiler/01-checker` lands the capability of its `language-gaps.md` row. Then: declare
-`#[serverOnly]` / `#[clientOnly]`, mark the hooks, validate in `#[page]` and `#[client]`
-(§ Mechanism; `#[client]` already records comptime meta — decision 216); `#[page]` prerenders at
-comptime pages reaching no `#[serverOnly]` hook. `markDynamic` (`router.bp:186,198,276`,
-`server.bp:87,254`, `streaming.bp:52,703`) goes, payload's `d` stops being a mark, the build writes
-each route's kind. `07-onze/49` step 5 and `04-rakun/22` step 4 then delete their halves of the
-run-time bridge.
+Opens when `01-compiler/01-checker` step 23 lands `Decl.hooks` (decision 277). The library reads the
+list against its own decorators; the compiler names no marker.
 
-Acceptance written when the step opens; it needs one `refusals/` fixture per rule of decision 186 (a
-`#[serverOnly]` hook in a `#[client]` component, a `#[clientOnly]` hook outside one — no case for a
-page declaring itself prerendered, no such declaration exists, decision 202) and one page per stage
-with its route kind asserted, the comptime one prerendered by `#[page]`.
+- [ ] `src/stage.bp` (new): `pub fn serverOnly(comptime decl: @Decl) {}`, `pub fn clientOnly(comptime
+      decl: @Decl) {}` (markers, no output); `HookPath(through, use)`; `pathsTo(nodes, marker,
+      unknownToo = false)` breadth-first over `decl.hooks`, every path, each the shortest;
+      `viaText`, `crossesClient`
+- [ ] hooks marked: `#[serverOnly]` on `cookies`, `headers`, `request` (`server.bp`), `searchParams`
+      (`router.bp`); `#[clientOnly]` on the browser-only hooks; `state`, `effect`, `memo`, `ref`,
+      `reducer` unmarked
+- [ ] `#[page]` (`routes.bp`): `setMeta("seg", …)`; a `#[clientOnly]` path not crossing a `#[client]`
+      refused at its `use`; `setMeta("kind", "D")` when a `#[serverOnly]` or a `hook: null` path
+      exists, else `"S"`; `setMeta("why", …)` naming the hook and the chain
+- [ ] `#[client]` (`client.bp`): every `#[serverOnly]` path refused at its `use`, naming the chain
+      (`via UserMenu → Avatar`)
+- [ ] `markDynamic` (`router.bp:186,198,276`), its import and call (`server.bp:87,254`) and
+      `streaming.bp:52,703` deleted; the payload's `d` is no longer a mark
+- [ ] `refusals/`: a `#[serverOnly]` hook reached by a `#[client]` component (directly and through a
+      child), a `#[clientOnly]` hook outside one; `run/`: one page per kind — `S` prerendered by
+      `#[page]`, `D` per request — with its kind asserted, and one reaching a hook through a function
+      value (`D`)
+- [ ] `AGENTS.md` describes the two markers, who reads them and `pathsTo`
 
 **Gate:** standard (fronts.md § Gate) + every jhonstart member at its count or above on both rows
 (core 204; `jhonstart-dom-test` commonJS only, structural — 101) · `grep -rni rakun
