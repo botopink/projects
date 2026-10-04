@@ -151,8 +151,9 @@ the server-only implementation (refused by `onze-bundler/src/refusal.bp:55-138`)
 
 ### Step 6 — a cookie is declared once, typed (decision 294)
 
-- [ ] an action sets or clears a cookie through its declaration (`setCookie(decl, value)`,
-      `clearCookie(decl)`), the attributes from the declaration
+- [ ] an action sets or clears a cookie through hooks over its declaration (`use setCookie(decl)` → a
+      setter, `use clearCookie(decl)`; 295), the attributes from the declaration; actions return
+      `@Component<RequestBase, …>` so they may `use`
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `libs/actions` and `jhonstart-forms`; on erlang in `rakun-app`

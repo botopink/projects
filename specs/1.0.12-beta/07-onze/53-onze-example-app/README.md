@@ -122,7 +122,7 @@ both `onze dev` and `onze build && onze start`, browser rows in a real browser, 
 
 - [ ] `lib/cookies.bp` declares `sessionCookie = Cookie<SessionId>("session", …)`; the dashboard
       layout reads `use cookie(sessionCookie)` (no `pairValue(jar, "session")`), the login action
-      and the logout action write and clear it
+      and the logout action write and clear it with `use setCookie` / `use clearCookie` (295)
 
 **Gate:** standard (fronts.md § Gate) +
 - [ ] `zig build test-libs` green for `blog`, `onze-test`; `serve.sh` exit 0

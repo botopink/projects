@@ -215,6 +215,8 @@ list against its own decorators; the compiler names no marker.
 
 ### Step 12 — a cookie is declared once, typed (decision 294)
 
+- [ ] `use local(atom: Local<T>) -> ?T` (295), `#[serverOnly]` beside `cookie` — a value middleware set
+      for this request (how the marker reaches rakun's half: `08-j`)
 - [ ] `use cookie(decl: Cookie<T>) -> ?T`, `#[serverOnly]` (186): `null` when absent or undecodable;
       the jar (`use cookies()` → pairs) and `pairValue` go from page code; a render writes no cookie (122)
 

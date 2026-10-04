@@ -72,6 +72,7 @@ One commit per member, after the member's owning front has landed.
       SameSite = .Lax, maxAge: ?Duration = null, path: string = "/")` in `libs/http` (the package both
       jhonstart and rakun reach, 113); `T` one `http` can encode — `string`, numbers, `bool`, an enum,
       a one-field record — a value that does not decode reads as absent
+- [ ] `pub type Local<T>()` — a request-scoped atom, its identity the declaration (295), no name
 - [ ] `cookie.read(decl, header) -> ?T` (first-wins, 181) and `cookie.write(decl, value) -> string`
       (a `Set-Cookie` line carrying the declaration's attributes), `cookie.clear(decl)`; tests per `T` kind
 

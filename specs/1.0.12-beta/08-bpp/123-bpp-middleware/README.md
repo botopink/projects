@@ -43,18 +43,24 @@ Existing, not this front's: `middleware.bp` at the app root, `#[middleware]` wit
 
 ## Mechanism
 
-**A local is typed by its key** (instead of Astro's `App.Locals` in `env.d.ts`):
+**A local is an atom** (295, Recoil's shape with `use`): declared once, its identity the
+declaration — no string key — any `T`:
 
 ```bp
-pub type LocalKey<T>(name: string)
+pub val currentUser = Local<User>();          // libs/http's Local<T> (104)
 
-pub fn setLocal<T>(key: LocalKey<T>, value: T) -> i32          // middleware, handlers, actions
-pub fn local<T>(key: LocalKey<T>) -> ?T                        // anywhere in the same request
+// middleware — a hook context: `-> @Component<RequestBase, Response>`
+val setUser = use setLocal(currentUser);      // fn(User)
+setUser(u);
+
+// page, component, handler, action
+val user = use local(currentUser);            // ?User — null when nobody set it this request
 ```
 
-Keys declared once (`pub fn currentUser() -> LocalKey<User>`): typed reads, no cast; unset key =
-`null`. Values live in the request's process frame, die with it. Two keys with one name and two
-types: refused at the second `setLocal` of the request, naming both.
+Values live in the request's process frame, die with it. Middleware, route handlers and actions
+return `@Component<RequestBase, Response>` (128) so they may `use`; rakun's hooks (`setLocal`,
+`cookie`, `setCookie`) anchor at `RequestBase`, jhonstart's (`local`, `cookie`) at `ElementBase`, over
+the same atoms. `LocalKey<T>(name)` and its run-time name clash go.
 
 A page reading a local is per-request (a request-time read is what `#[serverOnly]` marks, 186);
 until the checker capability lands, the read marks the render through `04-rakun/22` step 4's
@@ -111,9 +117,18 @@ from the action field and header onze configures (114).
 
 ### Step 6 — a cookie is declared once, typed (decision 294)
 
-- [ ] middleware writes and clears through the declaration: `setCookie(sessionCookie, SessionId(value:
-      t))`, `clearCookie(sessionCookie)` (rakun's response, `http`'s `cookie.write`); the example's login
-      middleware rewritten
+- [ ] middleware writes and clears through hooks over the declaration: `val setSession = use
+      setCookie(sessionCookie); setSession(SessionId(value: t))`, `use clearCookie(sessionCookie)` (295;
+      rakun's response, `http`'s `cookie.write`); the example's login middleware rewritten
+
+### Step 7 — locals are atoms (decision 295)
+
+- [ ] `Local<T>` (104), rakun's `use setLocal(atom) -> fn(T)` and jhonstart's `use local(atom) -> ?T`;
+      `LocalKey`, `setLocal(key, value)`, `local(key)` gone
+- [ ] `#[middleware]` functions, route handlers and actions return `@Component<RequestBase, Response>`
+      (`rakun-web/src/middleware.bp`, `convention.bp`); a plain `-> Response` keeps working without `use`
+- [ ] two atoms of one `T` are distinct; an unset atom reads `null`; values die with the request
+- [ ] `examples/locals-and-sequence-example.bp` rewritten to atoms
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test --target erlang` green in `modules/rakun` and `modules/rakun-web`
