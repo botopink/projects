@@ -4,7 +4,7 @@ The rules the fronts implement against. Numbers continue from
 [1.0.10-beta's record](../1.0.10-beta/decisions-taken.md) (which stopped at 143; 91–94, 97 and
 99–101 are used) and are never renumbered or reused. A question is raised in
 [`decisions-pending.md`](./decisions-pending.md) under a lettered id and moves here with the next
-free number. **The next free number is 287.**
+free number. **The next free number is 288.**
 
 Each row: number · the id it answered · the rule in force · the fronts it binds. A row amended by a
 later one states only what is in force and cites the amendment; a row fully replaced is one line.
@@ -133,6 +133,7 @@ jhonstart & templates: 186, 190–193, 200, 202, 204, 220, 223 · onze: 218 · b
 | 243 | 16-d (scope) | 166 reaches every delimited list — generics, parameters, patterns, imports, types, arrays, record fields, enum bodies, call arguments and tuples; without the comma the width rules (`16-a` / `16-b`) decide; a one-step pipeline has no comma and stays horizontal (`ctr-s`) | 16-formatter step 6 |
 | 279 | fmt-ann | Replaced by 286 (both forms kept as written; the formatter joins nothing) | — |
 | 286 | fmt-ann (revision) | **Both annotation forms are valid and printed as written:** separate blocks (`#[a]` then `#[b]`) and one list (`#[a, b]`), before a declaration and inside a template tag (278). The formatter neither joins nor splits them — the canonical rewrite that split `#[a, b]` into one `#[…]` per annotation goes; inside a list, a trailing comma after the last annotation prints one per line and keeps the comma, without one the width rules decide (166, 243). Meaning identical: each item is its own annotation, in written order, for `Decl.annotations` and `@TypeInfo.all(with:)`; a comment between blocks stays where it is | `01-compiler/16-formatter` step 9 · 118 (the template grammar) |
+| 287 | ctr-aa | **An island's fallback is an argument of its annotation:** `serverDefer(comptime decl: @Decl, comptime fallback: ?View = null) -> Defer` and `clientOnly(…, comptime fallback: ?View = null) -> Hydrate` — `<Avatar #[serverDefer(fallback: <GenericAvatar size={48} />)] size={48} />`, `<Map #[clientOnly(fallback: <p>Loading…</p>)] zoom={3} />`. It is what the page shows until the component arrives (the island's second request; the browser's mount), so it is comptime (280): static markup or a component without request data; one reading request data is refused at the argument. No `slot="fallback"` child (120 used one); on a hook declaration `#[clientOnly]` takes no `fallback`. Named slots in general stay `props-e` | 120 steps 1, 2, 4 |
 
 ## Backends
 

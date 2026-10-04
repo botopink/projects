@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**74 questions and 22 contradictions are open, and 97 implementation choices await confirmation.**
+**74 questions and 21 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285.
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 ## Open questions
@@ -22,7 +22,7 @@ Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 Raised 2026-10-04 by a sweep of the spec after decision 278: concepts copied from Astro, Next.js,
 React, Spring, zod, TypeScript, LINQ and Tailwind in their foreign shape where botopink already has
-the feature. `nat-0`'s four rules are decisions 281–284; what remains applies them case by case; `ctr-x`…`ctr-aa` are
+the feature. `nat-0`'s four rules are decisions 281–284; what remains applies them case by case; `ctr-x`…`ctr-z` are
 the sites that already contradict a decision. The Portuguese page lists every site with examples.
 
 #### nat-c · Untyped bags where a record type would flow
@@ -509,11 +509,6 @@ left as recorded; the maintainer picks the resolution.
 - **Rules.** 278: an instruction on a tag is an annotation. 126 keeps `data-jh-reload`, `data-jh-history="replace"` on `<a>`, `jh:before-swap` string events, `#[transitionAnimate("slide")]` checked against a list; `<Script>`'s four string strategies (`onze-bundler/src/script.bp`, 50) stay beside `Hydrate` (120 § Blast radius).
 - **Recommendation.** `<a #[reload]>`, `<a #[history(History.Replace)]>`, `#[transitionAnimate(Animate.Slide)]`, events as typed functions; `<script #[clientIdle] src=…>` — one strategy vocabulary.
 - **Blocks.** 126 steps 1–4; `07-onze/50` (`<Script>`); 124 (component scripts).
-
-#### ctr-aa · `slot="fallback"` in 120 against open `props-e`
-- **Rules.** 120 says "None open", but its server islands and `#[clientOnly]` tags route a `slot="fallback"` child; `props-e` (a), recommended, refuses `slot="…"`.
-- **Recommendation.** With `props-e` (a), the fallback is an annotation argument: `<Avatar #[serverDefer(fallback: <GenericAvatar size={48} />)] />`, `<Map #[clientOnly(fallback: <p>Loading…</p>)] />`. The argument is comptime (280): a fallback is static markup or a component without run-time data (`<MapSkeleton />`); `fallback: <span>{user.name}</span>` is refused at the argument.
-- **Blocks.** 120 steps 2 and 4; `props-e`.
 
 #### ctr-f · Decisions 198 and 199 against decision 213
 - **Rules.** 199: "`card.bpp` is `pub fn card(props: Props)`; with none, `pub fn <name>()`"; 198: "`import {components.card.Card};`", "the module exports the result under the file's name"; 212: "the rest of 198 (and 199) stands". 213: "`components/PostCard.bpp` unfolds to `pub default fn PostCard(…)`", imported `import {components.PostCard};` — citing neither 198 nor 199.

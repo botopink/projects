@@ -163,7 +163,6 @@ last section.
 - [ ] ctr-x — 53's examples (`registerSegmentConfig`) · 49 s5
 - [ ] ctr-y — 122 s1 (request hooks under `use`) · 26 s8's hook list
 - [ ] ctr-z — 126 s1–4 · 50 (`<Script>`) · 124
-- [ ] ctr-aa — 120 s2, s4 (fallback) · props-e
 - [ ] nat-c — untyped bags · bpp-g, 08-j, 117, 122, 123, 130 (meta), rakun 04/08/15, 34, 03r-b
 - [ ] nat-d1…d9 — case by case (283): `ActionOutcome` (127), store `try*` twins (rakun 09/93), `Schema<T>` (125), arity families (125), `Partial`/`Pick` (125, 134), `nav:` strings (26, 53), lifecycle (rakun 04), `use use…` (53), erika's LINQ names (98)
 - [ ] nat-e — Spring's annotations · 130 s5, rakun 04/08/13/15/19/79/91/93, 130-b, 130-c

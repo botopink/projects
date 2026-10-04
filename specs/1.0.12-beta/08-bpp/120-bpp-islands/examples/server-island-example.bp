@@ -15,7 +15,7 @@
 //     <GenericAvatar slot="fallback" />
 //   </Avatar>
 //
-//   — here (decision 278): <Avatar #[serverDefer] size={48}> … </Avatar>
+//   — here (decisions 278, 287): <Avatar #[serverDefer(fallback: <GenericAvatar size={48} />)] size={48} />
 //
 //   // Avatar.astro
 //   const userSession = Astro.cookies.get("session");
@@ -74,9 +74,7 @@ pub fn Page(route: PageContext) -> @Component<ElementBase, Element> {
     val id = PageParams(route).id;
     return html """
       <h1>Product {id}</h1>
-      <Avatar #[serverDefer] size={48}>
-        <GenericAvatar size={48} slot="fallback" />
-      </Avatar>
+      <Avatar #[serverDefer(fallback: <GenericAvatar size={48} />)] size={48} />
     """;
 }
 

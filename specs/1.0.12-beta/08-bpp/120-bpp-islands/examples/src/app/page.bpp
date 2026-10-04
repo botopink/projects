@@ -51,9 +51,7 @@ val slug = "hello";
 <MobileNav #[clientMedia("(max-width: 50em)")] open={false} />
 
 <!-- never rendered on the server: the fallback is, and the browser renders the rest -->
-<Carousel #[clientOnly] images={3}>
-  <p slot="fallback">Loading the gallery…</p>
-</Carousel>
+<Carousel #[clientOnly(fallback: <p>Loading the gallery…</p>)] images={3} />
 
 <!-- no annotation: server-rendered markup, no JavaScript sent for it -->
 <LikeButton postSlug={slug} likes={9} />

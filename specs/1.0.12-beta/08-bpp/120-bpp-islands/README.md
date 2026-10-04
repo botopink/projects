@@ -67,9 +67,16 @@ All live in `island_strategy.bp` except `clientOnly` (`stage.bp`, below); the pr
 | `#[clientIdle]` · `#[clientIdle(500)]` | `Hydrate.Idle(timeoutMs)` | in `requestIdleCallback`; without it, after the timeout (200 ms default) |
 | `#[clientVisible]` · `#[clientVisible("200px")]` | `Hydrate.Visible(rootMargin)` | when an `IntersectionObserver` reports it |
 | `#[clientMedia("(max-width: 50em)")]` | `Hydrate.Media(query)` | when `matchMedia(query)` matches — at once if it does |
-| `#[clientOnly]` | `Hydrate.Only` | at once; the server renders **nothing** of it, only its `slot="fallback"` children |
+| `#[clientOnly]` · `#[clientOnly(fallback: <p>Loading…</p>)]` | `Hydrate.Only` | at once; the server renders **nothing** of it, only the annotation's `fallback` (287) |
 
 No `Hydrate` on the tag: server-rendered, never started (static markup, as in Astro).
+
+**The fallback is an annotation argument** (287): `serverDefer(comptime decl: @Decl, comptime
+fallback: ?View = null) -> Defer`, `clientOnly(comptime decl: @Decl, comptime fallback: ?View = null)`.
+It shows until the component arrives — the island's second request, or the browser's mount — so it
+is comptime (280): static markup or a component without request data; `fallback: <span>{user.name}</span>`
+is refused at the argument; a `slot="fallback"` child is refused (no `slot="…"`, `props-e`); on a hook
+declaration `#[clientOnly]` takes no `fallback`.
 
 **`#[clientOnly]` is one function** (278): decision 186's marker on a hook declaration and, on a
 tag, the instance rendered only on the client — both "only on the client". `05-jhonstart/26` step 8
@@ -104,12 +111,12 @@ the function `#[clientProps]` emits, reached by name `<Component>Props` (as `par
 ### Server islands
 
 ```
-<Avatar #[serverDefer]><GenericAvatar slot="fallback" /></Avatar>
+<Avatar #[serverDefer(fallback: <GenericAvatar size={48} />)] size={48} />
 ```
 
 1. Component marked `#[deferred]` registers `"Avatar" → renderer` at module load (shape of
    `#[page]`'s `jhPage` registration, `routes.bp:221-229`); props are a `#[clientProps]` record.
-2. Page render writes the fallback in `<div data-jh-d="<id>" data-jh-src="<url>">`, **does not
+2. Page render writes the annotation's `fallback` (287) in `<div data-jh-d="<id>" data-jh-src="<url>">`, **does not
    call the component**; a prerendered page stays prerendered.
 3. `<url>` = `<prefix>/Avatar?p=<sealed props>`; over 2 048 bytes the element carries
    `data-jh-body` and the runtime sends a `POST`.
@@ -151,7 +158,8 @@ The variable is always `ONZE_KEY` (decision 271).
 - [ ] `island_runtime.mjs`: one scheduler per strategy; an island started at most once
 - [ ] `jhonstart-dom-test`: `fake_dom.mjs` gains `IntersectionObserver`, `matchMedia`,
       `requestIdleCallback`; five cases, each asserting **not** started before its trigger, started after
-- [ ] `#[clientOnly]` on a tag renders the fallback on the server, the component in the browser
+- [ ] `#[clientOnly(fallback: …)]` on a tag renders the fallback on the server, the component in the
+      browser (287)
 
 ### Step 3 — The `Hydrate` arm of `html` (278)
 

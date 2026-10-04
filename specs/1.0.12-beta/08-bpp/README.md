@@ -59,7 +59,7 @@ All eleven **not started**.
 |---|---|---|---|---|
 | [`118-bpp-components/`](./118-bpp-components/README.md) | **critical** — all markup goes through it | not started · ready to open | `{expr}` of any renderable type, rendering attributes, components with props, slots, fragments, markup in `if` / `case` / lambdas, `set:html`, `class:list`, `<style>` / `<script>` to sinks; jhonstart's `prelude.bp` and node type | — |
 | [`121-bpp-content/`](./121-bpp-content/README.md) | **high** — largest new code | not started · steps 1–2 ready to open | New member `onze-content`: Markdown (CommonMark + GFM) to `Element`, frontmatter, collections with `Schema<T>`, `getCollection` / `getEntry` / `render`, `.md` pages, RSS | `08-f` (step 3) · 118, 117 (step 6) · `07-onze/53` (step 7) |
-| [`120-bpp-islands/`](./120-bpp-islands/README.md) | **high** | not started | `#[clientIdle]` / `#[clientVisible]` / `#[clientMedia]` / `#[clientOnly]`; `#[serverDefer]` with fallback slot, sealed props | 118 · 119 · 117 · `05-jhonstart/26` · `04-rakun/22` · `07-onze/49`, `50` |
+| [`120-bpp-islands/`](./120-bpp-islands/README.md) | **high** | not started | `#[clientIdle]` / `#[clientVisible]` / `#[clientMedia]` / `#[clientOnly]`; `#[serverDefer(fallback: …)]`, sealed props | 118 · 119 · 117 · `05-jhonstart/26` · `04-rakun/22` · `07-onze/49`, `50` |
 | [`117-bpp-routing/`](./117-bpp-routing/README.md) | high | not started | `.bpp` / `.md` / `.html` app files, `staticPaths` with data, `paginate`, partials, static endpoints, eight priority rules as tests | `03-bundled-libs/102` · `04-rakun/22` · `07-onze/49`, `50` · 121 steps 1–2 · `bpp-g` (step 1) |
 | [`119-bpp-styling/`](./119-bpp-styling/README.md) | medium | not started · blocked by `08-d` | Scoped `<style>`, `#[isGlobal]`, `:global()`, `#[defineVars]`, cascade order | `08-d` (every step) · 118, `05-jhonstart/26` (step 2) |
 | [`127-bpp-actions/`](./127-bpp-actions/README.md) | medium | not started | Action typed by a `#[schema]` record: JSON/form input, `ActionError`, typed client call | 125 step 6 · `03-bundled-libs/103` · `04-rakun/22` · `05-jhonstart/67` · `07-onze/49` · 117 · 120 · 126 · 123 (step 4) |
@@ -175,8 +175,8 @@ only; `comptime tag: Tag` = any tag. One result of each type per tag.
 | `#[clientIdle(timeoutMs)]` | `client:idle` | `@Decl` · `Hydrate.Idle` | `island_strategy.bp` | 120 step 1 |
 | `#[clientVisible(rootMargin)]` | `client:visible` | `@Decl` · `Hydrate.Visible` | `island_strategy.bp` | 120 step 1 |
 | `#[clientMedia(query)]` | `client:media` | `@Decl` · `Hydrate.Media` | `island_strategy.bp` | 120 step 1 |
-| `#[clientOnly]` | `client:only` | `@Decl` · `Hydrate.Only` — also decision 186's hook marker, one function | `jhonstart/src/stage.bp` | `05-jhonstart/26` step 8 (marker) · 120 step 1 (return) |
-| `#[serverDefer]` | `server:defer` | `@Decl` · `Defer` | `jhonstart/src/deferred.bp` | 120 step 4 |
+| `#[clientOnly]` | `client:only` | `@Decl`, `fallback: ?View` (287) · `Hydrate.Only` — also decision 186's hook marker, one function | `jhonstart/src/stage.bp` | `05-jhonstart/26` step 8 (marker) · 120 step 1 (return) |
+| `#[serverDefer]` | `server:defer` | `@Decl`, `fallback: ?View` (287) · `Defer` | `jhonstart/src/deferred.bp` | 120 step 4 |
 | `#[transitionName(name)]` | `transition:name` | `Tag` · `TransitionName` | `jhonstart-link/src/transitions.bp` | 126 step 1 |
 | `#[transitionAnimate(a)]` | `transition:animate` | `Tag` · `TransitionAnimate` | `transitions.bp` | 126 step 1 |
 | `#[transitionPersist(key?)]` | `transition:persist` | `Tag` · `TransitionPersist` | `transitions.bp` | 126 step 1 |

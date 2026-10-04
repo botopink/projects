@@ -1,7 +1,8 @@
 ---
 // Front 120 — bpp islands · examples/src/components/GenericAvatar.bpp
 //
-// Demonstrates: the fallback of a server island. It is an ordinary component —
+// Demonstrates: the fallback of a server island, passed as the annotation's
+// `fallback` argument (287). It is an ordinary component —
 // no annotation, no decorator — rendered into the prerendered page, and replaced
 // in the browser when the island's own response arrives.
 //

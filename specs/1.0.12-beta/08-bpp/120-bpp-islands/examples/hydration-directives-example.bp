@@ -104,14 +104,10 @@ pub fn Home(slug: string) -> View {
       <MobileNav #[clientMobile] open={false} />
 
       <!-- never rendered on the server: the fallback is, and the browser renders the rest -->
-      <Carousel #[clientOnly] images={3}>
-        <p slot="fallback">Loading the gallery…</p>
-      </Carousel>
+      <Carousel #[clientOnly(fallback: <p>Loading the gallery…</p>)] images={3} />
 
       <!-- reaches a #[clientOnly] hook: #[clientOnly] is the one annotation it accepts -->
-      <Map #[clientOnly] zoom={3}>
-        <p slot="fallback">Loading the map…</p>
-      </Map>
+      <Map #[clientOnly(fallback: <p>Loading the map…</p>)] zoom={3} />
 
       <!-- no annotation: server-rendered markup, no JavaScript sent for it -->
       <LikeButton postSlug={slug} likes={9} />
@@ -165,6 +161,11 @@ test "the annotation form and the function form are the same mount" {
 //
 //   <Carousel #[clientLoad, clientIdle] images={1} />
 //     error: two `Hydrate` annotations on one tag                  at #[clientIdle]
+//
+//   <Carousel #[clientOnly] images={3}>
+//     <p slot="fallback">…</p>
+//   </Carousel>
+//     error: no `slot="…"` — write #[clientOnly(fallback: <p>…</p>)]   (287)
 //
 //   <Map #[clientVisible] zoom={3} />
 //   <Map zoom={3} />

@@ -31,6 +31,4 @@ import {components.GenericAvatar};
 val id = params.id;
 ---
 <h1>Product {id}</h1>
-<Avatar #[serverDefer] size={48}>
-  <GenericAvatar size={48} slot="fallback" />
-</Avatar>
+<Avatar #[serverDefer(fallback: <GenericAvatar size={48} />)] size={48} />
