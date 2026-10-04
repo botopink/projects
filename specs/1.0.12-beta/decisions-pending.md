@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**74 questions and 15 contradictions are open, and 97 implementation choices await confirmation.**
+**80 questions and 15 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -24,11 +24,50 @@ Raised 2026-10-04 by a sweep of the spec after decision 278: concepts copied fro
 React, Spring, zod, TypeScript, LINQ and Tailwind in their foreign shape where botopink already has
 the feature. `nat-0`'s four rules are decisions 281–284; what remains applies them case by case; the contradictions it found are answered (287, 290, 291, 292). The Portuguese page lists every site with examples.
 
-#### nat-c · Untyped bags where a record type would flow
-- **Measured.** `params` / `searchParams` / cookies as `Array<#(string, string)>`, `pairValue(jar, "session")` answering `""` when absent (26, 53) · `StaticPath.data: Json` read back through `pageData(route, schemaOf…)` (117) · `LocalKey<T>(name: string)`, a clash refused at run time (123) · `decl.setMeta("table", "cities")`, string-only meta (216, 130) · `#[value("rakun.profiles.active")]`, `rkPropInt("12abc") == 12` (03r-b), `Event(name: string, payload: string)` (rakun) · `ThemeEntry(name: string, value: string)`, `extendTheme(th, [#("--breakpoint-md", "")])` (06-emilia).
-- **Options.** (a) Typed records: `PageContext<Params, Data>`, `use params<BlogPost>()`, `Cookie<SessionId>("session")` → `?SessionId`, `#[local] type CurrentUser(…)`, `decl.setMeta(Entity(table: "cities"))`, `#[config("rakun.data")] type DataConfig(…)`, events as records, `Theme(breakpoints: Breakpoints(…))`. (b) The bags stay, typed accessors generated beside them. (c) As is.
+#### nat-c · Untyped bags where a record type would flow — case by case
+Split at the maintainer's request into `nat-c1`…`nat-c7`; rakun's string-named events are already typed records by 281 (`#[on] fn f(e: OrderPlaced)`, `04-rakun/04` step 6). Each: (a) the typed record, (b) the bag kept with typed accessors beside it, (c) as is.
+
+#### nat-c1 · Route parameters as a `Dict<string, string>` (26, 53)
+- **Measured.** `route.params.lookup("slug").unwrapOr("")` (`blog-slug-page-example.bp:75`); `PostPage(params: Array<#(string,string)>)` (`05-jhonstart/26` examples); the same app already reads `blogPostPageParams(route).slug` (`app-tree-example.bp:112`, 236's `paramsOf`).
+- **Options.** (a) `PageContext<P, D>`: `route.params.slug`, `P` derived from the segment pattern or declared (`type BlogParams(slug: string)`). (b) The dict kept, `paramsOf` the typed accessor. (c) As is.
+- **Recommendation.** (a); the parameter's shape in a `.bpp` is `bpp-g`'s.
+- **Blocks.** `05-jhonstart/26`; `07-onze/53`; 117; bpp-g.
+
+#### nat-c2 · Cookies as string pairs, absent as `""` (26, 53)
+- **Measured.** `pairValue(jar, "session")` answers `""` for a missing cookie (`53x/app/dashboard/layout.bpp:25-27`); every value a `string`.
+- **Options.** (a) A cookie declared once, typed: `val sessionCookie = Cookie<SessionId>("session")`, read `use cookie(sessionCookie)` → `?SessionId`; the name stays a string (the browser's). (b) The jar kept, `jar.get(name) -> ?string` added. (c) As is.
 - **Recommendation.** (a).
-- **Blocks.** bpp-g, 08-j, 117, 122, 123, 130 (meta), rakun 04, 08, 15; `06-emilia/34` (05emilia-n); 03r-b.
+- **Blocks.** `05-jhonstart/26` (`cookies`); `07-onze/53`; 122.
+
+#### nat-c3 · `StaticPath.data: Json` read back through a schema (117)
+- **Measured.** `117/README.md:55-67`: "`Json`, not typed: the route record is one shape"; the page decodes it with `pageData(route, schemaOfDogInfo())` and must handle a failure for data the build produced itself.
+- **Options.** (a) Typed by the page: `paths: fn() -> @Task<#(P, D)[]>` (282) hands `route.data: D`. (b) `Json` kept, the decode generated. (c) As is.
+- **Recommendation.** (a) — 282 already types `paths`.
+- **Blocks.** 117 steps 1–3.
+
+#### nat-c4 · `LocalKey<T>(name: string)` for middleware locals (123)
+- **Measured.** `123/README.md:46-57`: a local's identity is its string name; two keys with one name clash at run time on the second `setLocal`.
+- **Options.** (a) The type is the key: `#[local] pub type CurrentUser(user: User)`, `setLocal(CurrentUser(user: u))`, `local<CurrentUser>()`. (b) `LocalKey` kept, a clash checked at comptime over the program's keys. (c) As is.
+- **Recommendation.** (a). How the read reaches jhonstart's marker stays `08-j`.
+- **Blocks.** 123; 08-j.
+
+#### nat-c5 · A decorator's meta holds strings only (216, 130)
+- **Measured.** `decl.setMeta("table", "cities")` stores a string, read as `@typeInfo(City).meta.entity.table`; a number or list is encoded by hand (`builtins.d.bp`, `Decl.setMeta`).
+- **Options.** (a) Typed meta: `decl.setMeta(Entity(table: "cities"))`, read back as `@typeInfo(City).meta.entity: Entity`. (b) Strings kept, typed readers per decorator. (c) As is.
+- **Recommendation.** (a) — 280's typed comptime arguments with nowhere typed to put them otherwise.
+- **Blocks.** `01-compiler/130`; rakun 08 (entity, index); 26 step 8 (`kind`, `why`).
+
+#### nat-c6 · rakun's configuration read by string keys (rakun 04, 08, 13, 15)
+- **Measured.** `#[value("rakun.profiles.active")]`, `rakun.data.repositories.bootstrap-mode=lazy` (an enum as a string), `rkPropInt("12abc") == 12` (03r-b: lenient, against 67).
+- **Options.** (a) A typed record per prefix: `#[config("rakun.data")] type DataConfig(bootstrapMode: BootstrapMode = .Eager)`, injected by type; a wrong value an error at boot naming the key; the prefix stays a string (the config file's). (b) `#[value]` kept, typed readers that refuse a malformed value. (c) As is.
+- **Recommendation.** (a); 03r-b's lenient parse goes either way.
+- **Blocks.** rakun 04 (step 3's `#[configurationProperties]`), 08, 13, 15; 03r-b.
+
+#### nat-c7 · emilia's theme as string pairs (06-emilia 34)
+- **Measured.** `ThemeEntry(name: string, value: string)` (`emilia/src/theme.bp:41`); `extendTheme(th, [#("--breakpoint-md", "")])` — clearing a breakpoint panics at run time.
+- **Options.** (a) A typed record with update: `Theme(..base, breakpoints: Breakpoints(md: Rem(48.0)))`; a missing value a type error. (b) Pairs kept, names checked against the known set at comptime. (c) As is.
+- **Recommendation.** (a).
+- **Blocks.** `06-emilia/34`; 05emilia-n.
 
 #### nat-d · A second model of what the language has — case by case (decision 283)
 No general rule (283): each case below is its own question, (a) the language's own, (b) both — the foreign one a thin layer over the native — or (c) as is.

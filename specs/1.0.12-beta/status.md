@@ -164,7 +164,7 @@ Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.
 last section.
 
 **First — the botopink shape** (raised 2026-10-04; answer `nat-0`, then the rest):
-- [ ] nat-c — untyped bags · bpp-g, 08-j, 117, 122, 123, 130 (meta), rakun 04/08/15, 34, 03r-b
+- [ ] nat-c1…c7 — case by case: route params (26, 53, bpp-g), cookies (26, 53, 122), `StaticPath.data` (117), `LocalKey` (123, 08-j), typed decorator meta (130), rakun config (04/08/13/15, 03r-b), emilia's theme (34)
 - [ ] nat-d1…d9 — case by case (283): `ActionOutcome` (127), store `try*` twins (rakun 09/93), `Schema<T>` (125), arity families (125), `Partial`/`Pick` (125, 134), `nav:` strings (26, 53), lifecycle (rakun 04), `use use…` (53), erika's LINQ names (98)
 - [ ] nat-e — Spring's annotations · 130 s5, rakun 04/08/13/15/19/79/91/93, 130-b, 130-c
 - [ ] nat-f2…f4 — case by case (284): `onze.json` keys (124, 08-h), `files`/`workspaces` (98), `ONZE_PUBLIC_` (50, 53)

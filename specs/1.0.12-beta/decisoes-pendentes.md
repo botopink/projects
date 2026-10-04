@@ -68,43 +68,162 @@ o recurso equivalente na linguagem. Eles caem em sete padrões.
 
 **As quatro regras já estão decididas:** 281 (nenhum identificador de código como string), 282 (o papel
 vai no decorator), 283 (segundo modelo: caso a caso, `nat-d1`…`nat-d9`) e 284 (JSON: caso a caso,
-`nat-f1`…`nat-f4`; a `nat-f1` virou a 285). **Ordem do que falta** (as contradições achadas na varredura já foram respondidas: 287, 290, 291, 292): `nat-c`, `nat-d1`…`nat-d9`, `nat-e`, `nat-f2`…`nat-f4` e `nat-g`.
+`nat-f1`…`nat-f4`; a `nat-f1` virou a 285). **Ordem do que falta** (as contradições achadas na varredura já foram respondidas: 287, 290, 291, 292): `nat-c1`…`nat-c7`, `nat-d1`…`nat-d9`, `nat-e`, `nat-f2`…`nat-f4` e `nat-g`.
 
-### nat-c · Sacos sem tipo onde um record tipado resolveria
+### nat-c · Sacos sem tipo onde um record tipado resolveria — caso a caso
 
-**Contexto.** Os records tipados existem, mas vários dados passam como pares de strings ou `Json`:
-- `params`, `searchParams` e cookies como `Array<#(string, string)>`; `pairValue(jar, "session")` devolve
-  `""` quando não existe, em vez de `?string` (26, 53);
-- `StaticPath.data: Json`, lido de volta com `pageData(route, schemaOf…)` (117);
-- `LocalKey<T>(name: string)`, com colisão só em runtime (123);
-- `decl.setMeta("table", "cities")`, meta só de strings (216, 130);
-- rakun: `#[value("rakun.profiles.active")]`, `rkPropInt("12abc") == 12` (leitura frouxa, contra a 67),
-  `Event(name: string, payload: string)`;
-- emilia: `ThemeEntry(name: string, value: string)`; `extendTheme(th, [#("--breakpoint-md", "")])` só dá
-  pânico em runtime.
+Dividida a seu pedido em `nat-c1`…`nat-c7`. Os eventos do rakun por nome (`Event(name: string, payload)`)
+já viraram records pela 281 (`#[on] fn f(e: OrderPlaced)`, `04-rakun/04` passo 6), então saíram daqui.
+Em cada caso: **(a)** o record tipado; **(b)** o saco fica, com acessores tipados ao lado; **(c)** como está.
+
+### nat-c1 · Parâmetros da rota como `Dict<string, string>` (26, 53)
+
+**Contexto.** A página recebe os parâmetros da URL (`/blog/[slug]`) num dicionário de strings. O próprio
+app de exemplo já usa, em outro arquivo, um acessor tipado (`blogPostPageParams(route).slug`, da 236).
 
 **Hoje:**
 ```bp
-val slug = route.params.lookup("slug").unwrapOr("");
-val session = pairValue(jar, "session");                 // "" se não existe
-val user = local(LocalKey<User>("user"));
-#[value("rakun.data.repositories.bootstrap-mode")] val mode: string
+val slug = route.params.lookup("slug").unwrapOr("");     // "slgu" volta "" sem erro
 ```
 
-- [ ] **(a)** Records tipados.
+- [ ] **(a)** `PageContext<P, D>`: os parâmetros são um record.
   ```bp
-  val p = use params<BlogPost>();                          // BlogPostParams
-  val session = Cookie<SessionId>("session");  use cookie(session)   // ?SessionId
-  #[local] pub type CurrentUser(user: User)
-  decl.setMeta(Entity(table: "cities"))
-  #[config("rakun.data")] type DataConfig(bootstrapMode: BootstrapMode = .Eager)
-  Theme(breakpoints: Breakpoints(md: Rem(48.0)))
+  type BlogParams(slug: string)
+  pub fn Page(route: PageContext<BlogParams, Post>) -> View { route.params.slug … }   // .slgu → erro
   ```
-- [ ] **(b)** Os sacos ficam, com acessores tipados gerados ao lado.
+- [ ] **(b)** O dicionário fica, e o `paramsOf` (236) é o acessor tipado.
+- [ ] **(c)** Como está.
+
+**Recomendação: (a).** Como o `.bpp` declara esse parâmetro é a `bpp-g`.
+**Bloqueia:** `05-jhonstart/26`; `07-onze/53`; 117; `bpp-g`.
+
+### nat-c2 · Cookies como pares de string, ausente como `""` (26, 53)
+
+**Contexto.** O valor de um cookie vem sempre como `string`, e um cookie que não existe volta `""`. Não dá
+para saber se ele veio vazio ou se não veio.
+
+**Hoje:**
+```bp
+val jar = use cookies();
+val session = pairValue(jar, "session");      // "" se não existe
+```
+
+- [ ] **(a)** O cookie é declarado uma vez, com tipo; o nome fica string, porque é do browser.
+  ```bp
+  val sessionCookie = Cookie<SessionId>("session");
+  val session = use cookie(sessionCookie);      // ?SessionId: null se não existe
+  ```
+- [ ] **(b)** O pote de cookies fica, e ganha `jar.get(name) -> ?string`.
 - [ ] **(c)** Como está.
 
 **Recomendação: (a).**
-**Bloqueia:** bpp-g; 08-j; 117; 122; 123; 130 (meta); rakun 04, 08, 15; `06-emilia/34` (05emilia-n); 03r-b.
+**Bloqueia:** `05-jhonstart/26` (`cookies`); `07-onze/53`; 122.
+
+### nat-c3 · `StaticPath.data: Json`, lido de volta com um schema (117)
+
+**Contexto.** Na pré-renderização, cada página estática recebe dados (o post, por exemplo) num `Json`. A
+página precisa decodificar esse `Json` e tratar uma falha, para um dado que o próprio build gerou.
+
+**Hoje:**
+```bp
+val info = pageData(route, schemaOfDogInfo());     // pode falhar, mesmo vindo do build
+```
+
+- [ ] **(a)** Tipado pela página: o `paths:` da 282 já devolve `#(P, D)`, e a página recebe `route.data: D`.
+  ```bp
+  #[page("dogs/[dog]", paths: allDogs)]
+  pub fn Page(route: PageContext<DogParams, DogInfo>) -> View { route.data.breed … }
+  ```
+- [ ] **(b)** O `Json` fica, e a decodificação é gerada.
+- [ ] **(c)** Como está.
+
+**Recomendação: (a)** — a 282 já tipa o `paths`.
+**Bloqueia:** 117 passos 1–3.
+
+### nat-c4 · `LocalKey<T>(name: string)` para os locals do middleware (123)
+
+**Contexto.** Um middleware guarda um valor (o usuário logado, por exemplo) para a página ler. A chave
+desse valor é identificada pelo **nome em texto**, e duas chaves com o mesmo nome só colidem em runtime.
+
+**Hoje:**
+```bp
+val userKey = LocalKey<User>("user");
+setLocal(userKey, u);   …   val u = local(userKey);
+```
+
+- [ ] **(a)** O tipo é a chave.
+  ```bp
+  #[local] pub type CurrentUser(user: User)
+  setLocal(CurrentUser(user: u));   …   val cu = local<CurrentUser>();
+  ```
+- [ ] **(b)** O `LocalKey` fica, e a colisão é conferida em comptime.
+- [ ] **(c)** Como está.
+
+**Recomendação: (a).** Como essa leitura chega à marca do jhonstart continua sendo a `08-j`.
+**Bloqueia:** 123; `08-j`.
+
+### nat-c5 · O meta de um decorator só guarda string (216, 130)
+
+**Contexto.** Um decorator guarda fatos sobre a declaração com `decl.setMeta(chave, valor)`, e o valor só
+pode ser string. Com a 280, os argumentos do decorator já são tipados, mas não há onde guardá-los com tipo.
+
+**Hoje:**
+```bp
+decl.setMeta("table", "cities");          // lido como @typeInfo(City).meta.entity.table: string
+```
+
+- [ ] **(a)** Meta tipado.
+  ```bp
+  decl.setMeta(Entity(table: "cities", indexes: [Index(columns: ["state", "name"])]));
+  @typeInfo(City).meta.entity            // Entity
+  ```
+- [ ] **(b)** As strings ficam, com leitores tipados por decorator.
+- [ ] **(c)** Como está.
+
+**Recomendação: (a).**
+**Bloqueia:** `01-compiler/130`; rakun 08 (entity, index); 26 passo 8 (`kind`, `why`).
+
+### nat-c6 · A configuração do rakun lida por chave de string (rakun 04, 08, 13, 15)
+
+**Contexto.** O rakun copiou o `@Value("chave.do.config")` do Spring: cada valor é lido por um caminho em
+texto, e um enum vira string. O `rkPropInt("12abc")` devolve `12`, aceitando lixo, o que vai contra a 67.
+
+**Hoje:**
+```bp
+#[value("rakun.data.repositories.bootstrap-mode")] val mode: string     // "lazy", "eager"… em texto
+```
+
+- [ ] **(a)** Um record tipado por prefixo, injetado pelo tipo; o prefixo fica string, porque é do arquivo
+  de config. Valor errado é erro no boot, apontando a chave.
+  ```bp
+  #[config("rakun.data")]
+  type DataConfig(bootstrapMode: BootstrapMode = .Eager, poolSize: i32 = 10)
+  ```
+- [ ] **(b)** O `#[value]` fica, com leitores tipados que recusam valor malformado.
+- [ ] **(c)** Como está.
+
+**Recomendação: (a).** A leitura frouxa da 03r-b sai em qualquer das opções.
+**Bloqueia:** rakun 04 (o `#[configurationProperties]` do passo 3), 08, 13, 15; 03r-b.
+
+### nat-c7 · O tema do emilia como pares de string (06-emilia 34)
+
+**Contexto.** O tema copiou o `@theme` do Tailwind como pares nome/valor em texto. Apagar um breakpoint
+escrevendo `""` só dá pânico em runtime.
+
+**Hoje:**
+```bp
+extendTheme(th, [#("--breakpoint-md", "")])      // pânico em runtime
+```
+
+- [ ] **(a)** Um record tipado, com atualização.
+  ```bp
+  Theme(..base, breakpoints: Breakpoints(md: Rem(48.0)))     // valor faltando é erro de tipo
+  ```
+- [ ] **(b)** Os pares ficam, com os nomes conferidos em comptime.
+- [ ] **(c)** Como está.
+
+**Recomendação: (a).**
+**Bloqueia:** `06-emilia/34`; 05emilia-n.
 
 ### nat-d · Um segundo modelo do que a linguagem já tem — caso a caso (decisão 283)
 
