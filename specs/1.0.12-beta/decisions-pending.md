@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**61 questions and 18 contradictions are open, and 97 implementation choices await confirmation.**
+**62 questions and 18 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -381,6 +381,12 @@ owning front lists the row under *Depends on*.
 - **Options.** (1) ★ As is: not importable on wasm. (2) The four move to their own module; the other 23 import on wasm (changes decision 74's API). (3) The three cells gain wasm versions (a regex engine in the wasm prelude; a catchable `@panic`).
 - **Recommendation.** (1) now; (2) if wasm must run asserts.
 - **Blocks.** Nothing in the gate; "std compiles on wasm" (05-wasm step 5, 97 step 11).
+
+#### comp-a · A function's `@Decl` lists the hooks it reaches, each annotation carrying its `Decorator` (*proposed*)
+- **Measured.** Decision 186 needs "one library-agnostic checker capability — the hooks a function activates through `use`, transitively, with their annotations, readable from its `@Decl`" and never gave its shape; `language-gaps.md` row "A function's `@Decl` does not say which hooks it activates" (owner `01-checker`) holds 26 step 8, 49 step 5, 22 step 4, 123, 117. `DeclAnnotation` is `(name: string, args: string[])` (`builtins.d.bp:598`); the stage is marked at run time (`markDynamic`). Directives (`client:*`) are out of scope here.
+- **Options.** (a) Nothing: run-time marking stays. (b) `Decl.hooks: HookUse[]` — `HookUse(hook, annotations, via, at)` for every `use` reached, transitively (calls of `@Component` functions, the calls `html` generates from tags included; fixed point on cycles; a hook reached only through a function value enters as unknown; host functions contribute nothing) — and `DeclAnnotation` gains `decorator: Decorator` (268) with `Decorator.is(other)` comparing declaration identity; jhonstart declares `#[serverOnly]` / `#[clientOnly]` as marker decorators and `#[page]` / `#[client]` read `reaches(decl, serverOnly)` against the decorators they import; no backend or snapshot changes. (c) As (b) but the compiler answers a ready `decl.stage` (it then names jhonstart's stages, against 113 and 198). (d) As (b) but annotations compared by `name` text (typos pass, aliases and same-named markers of another library confuse it).
+- **Recommendation.** (b): 186's capability in its most restrictive shape — the compiler names no library, one transitive computation, identity not text. Owner `01-checker` (a new step), then 26 step 8, 49 step 5, 22 step 4; `markDynamic` goes.
+- **Blocks.** The `language-gaps.md` row; 26 step 8; 49 step 5; 22 step 4; 123 step 1; `08-j`'s shape.
 
 ### Ownership
 

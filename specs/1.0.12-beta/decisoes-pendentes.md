@@ -62,14 +62,15 @@ Os ids das decisões não mudaram com a renumeração das trilhas: `07-*` são d
 
 Ordem, do que mais destrava para o que menos:
 
-1. **130-b**, **130-c** — o registro de beans do rakun (qualificador; `#[bean]` de configuração) · seguram o passo 5 da 130, que está rodando ⏳ (Parte 3)
-2. **own-a** — quem é dono dos scripts de teste · segura 07-residuals passo 12 e 114 passos 5 e 7 (Parte 2)
-3. **134-d** — `@is(…)` escrito à mão · trava a última linha do inventário da 134 (Parte 3)
-4. **17-b** — incremento por linha no `keyed` · trava a quarta caixa do passo 1 da 17 (Parte 3)
-5. **ctr-i**, **ctr-j** — unidade de string no erlang; faixa do `i64` · seguram células de 02/03/04/05 (Parte 1)
-6. **ctr-h**, **ctr-n**, **ctr-o**, **ctr-s** — só registro: decisões antigas que outras já mudaram (Parte 1)
-7. **imp-a** — dois tipos com o mesmo nome importados com alias (Parte 3)
-8. **17-c** — não trava nada hoje (Parte 3)
+1. **comp-a** — o `@Decl` diz quais hooks uma função alcança (a capacidade da 186) · destrava 26 s8, 49 s5, 22 s4, 123 · nova, para aprovar (Parte 2)
+2. **130-b**, **130-c** — o registro de beans do rakun (qualificador; `#[bean]` de configuração) · seguram o passo 5 da 130, que está rodando ⏳ (Parte 3)
+3. **own-a** — quem é dono dos scripts de teste · segura 07-residuals passo 12 e 114 passos 5 e 7 (Parte 2)
+4. **134-d** — `@is(…)` escrito à mão · trava a última linha do inventário da 134 (Parte 3)
+5. **17-b** — incremento por linha no `keyed` · trava a quarta caixa do passo 1 da 17 (Parte 3)
+6. **ctr-i**, **ctr-j** — unidade de string no erlang; faixa do `i64` · seguram células de 02/03/04/05 (Parte 1)
+7. **ctr-h**, **ctr-n**, **ctr-o**, **ctr-s** — só registro: decisões antigas que outras já mudaram (Parte 1)
+8. **imp-a** — dois tipos com o mesmo nome importados com alias (Parte 3)
+9. **17-c** — não trava nada hoje (Parte 3)
 
 ---
 
@@ -701,6 +702,162 @@ ponto de extensão do core, sem aresta entre membros.
 ---
 
 ## Parte 2 — Destravam muitas frentes
+
+### comp-a · O `@Decl` de uma função diz quais hooks ela alcança — com as anotações e o `Decorator` de cada uma *(proposta)*
+
+**Contexto.** A decisão 186 decidiu que o estágio de uma página (pré-renderizada no build, por request
+no servidor, ou no browser) é um **fato de compilação**, decidido pelos hooks que a página alcança com
+`use`: um hook `#[serverOnly]` (`session()`, `cookies()`) faz a página ser por request; um
+`#[clientOnly]` (`windowSize()`) só pode rodar dentro de um `#[client]`. Para isso a 186 pediu "uma
+capacidade do checker que não conhece biblioteca nenhuma: os hooks que uma função ativa por `use`,
+transitivamente, com as anotações, legíveis pelo `@Decl`" — mas nunca disse **a forma**. Ela está
+parada como linha do `language-gaps.md` ("A function's `@Decl` does not say which hooks it activates",
+dona: `01-checker`), e segura o passo 8 da 26 (jhonstart), o passo 5 da 49 (onze), o passo 4 da 22
+(rakun), a 123 (`local`) e a 117. Até lá, o estágio é marcado **em tempo de execução**
+(`ChunkWriter.markDynamic`, o `d` do payload), a ponte que a 186 manda apagar. Esta proposta dá a
+forma, e liga as anotações ao tipo `Decorator` da decisão 268 para que nenhuma biblioteca compare
+string. As diretivas `client:*` ficam fora — voltam numa pergunta própria.
+
+**Hoje:**
+```bp
+// jhonstart/src/router.bp — a página descobre que é dinâmica só ao renderizar
+pub fn cookies() -> @Component<ElementBase, Cookies> {
+    ChunkWriter.current().markDynamic("cookies");   // marca em runtime; o build não sabe
+    …
+}
+
+// o @Decl de uma função não tem a lista de hooks; a anotação refletida é só texto
+pub type DeclAnnotation(name: string, args: string[])     // builtins.d.bp:598
+```
+```text
+onze build   → toda página é renderizada "para ver" se marca dinâmica; o build não sabe antes
+```
+
+- [ ] **(a)** Nada novo: o estágio continua marcado em runtime (`markDynamic`); a 186 fica sem a
+  capacidade e a linha do `language-gaps.md` fica aberta.
+  ```text
+  /dashboard   descobre que é dinâmica só no primeiro render
+  #[client] Profile usando session()   → erro só em runtime, no browser
+  ```
+
+- [ ] **(b)** **O compilador lista os hooks alcançados, transitivamente, cada um com as anotações, e
+  cada anotação carrega o seu `Decorator`; a biblioteca compara com os decorators que ela mesma
+  importa.** O compilador não ganha a palavra "stage", "server" nem "client".
+
+  *1 — O que o compilador acrescenta ao `@Decl` (`builtins.d.bp`):*
+  ```bp
+  pub type DeclAnnotation(
+      name: string,               // continua (texto como escrito)
+      args: string[],
+      decorator: Decorator,       // NOVO: a declaração do decorator (identidade, decisão 268)
+  )
+
+  pub type HookUse(
+      hook: Declared<unknown>,          // a declaração do hook ativado (ex.: session)
+      annotations: DeclAnnotation[],    // as anotações do HOOK (ex.: #[serverOnly])
+      via: Declared<unknown>[],         // as funções no caminho até o `use` (ex.: [Avatar])
+      at: string,                       // onde está o `use` ("components/Avatar.bp:3")
+  )
+
+  // em Decl (e em @typeInfo(f)): 
+  hooks: HookUse[]                      // NOVO: todo `use` alcançado, transitivamente
+  ```
+  ```bp
+  extend Decorator {
+      pub fn is(self, other: Decorator) -> bool;   // identidade da declaração, nunca o nome escrito
+  }
+  ```
+
+  *2 — As regras do cálculo (no checker, uma vez por função):*
+  - entra todo `use <hook>(…)` escrito no corpo, e os `hooks` de cada função `@Component` chamada no
+    corpo — inclusive as que o `html` gera a partir das tags (`<Avatar />` vira `Avatar()`), por isso
+    um componente-pai alcança o `session()` do filho;
+  - recursão e ciclos: ponto fixo — cada hook entra uma vez por caminho mais curto;
+  - um hook alcançado só por um **valor-função** (um lambda recebido como parâmetro) não é rastreado:
+    entra como `HookUse(hook: <desconhecido>, annotations: [], …)` e a biblioteca trata como quiser
+    (o jhonstart: página por request, o lado seguro);
+  - uma função host (`declare fn` com `#[@External]`) não tem `use`: não contribui;
+  - não muda nenhum backend e nenhum snapshot: é só reflexão em compilação.
+
+  *3 — As marcas e a leitura, no jhonstart:*
+  ```bp
+  // jhonstart/src/stage.bp — decorators sem saída: só marcam
+  pub fn serverOnly(comptime decl: @Decl) {}
+  pub fn clientOnly(comptime decl: @Decl) {}
+
+  pub fn reaches(decl: Declared<unknown>, marker: Decorator) -> ?HookUse {
+      return decl.hooks.find({ h -> h.annotations.any({ a -> a.decorator.is(marker) }) });
+  }
+  pub fn crossesClient(h: HookUse) -> bool {          // o caminho passa por um #[client]?
+      return h.via.any({ f -> f.annotations.any({ a -> a.decorator.is(client) }) });
+  }
+
+  // jhonstart/src/server.bp · hooks.bp
+  #[serverOnly] pub fn session() -> @Component<ElementBase, Session> { … }
+  #[clientOnly] pub fn windowSize() -> @Component<ElementBase, Size> { … }
+  ```
+
+  *4 — Quem usa:*
+  ```bp
+  // #[page]: rota + estágio (186, 202)
+  #[page] pub fn page(comptime decl: @Decl, seg: string) {
+      decl.setMeta("seg", seg);
+      decl.hooks.filter({ h -> h.annotations.any({ a -> a.decorator.is(clientOnly) }) && !crossesClient(h) })
+          .each({ h -> decl.failAt(h.at, "`" + h.hook.name + "()` é #[clientOnly] e só roda dentro de um #[client]") });
+      decl.setMeta("kind", if (reaches(decl, serverOnly) != null) { "D" } else { "S" });
+  }
+
+  // #[client]: um componente do browser não lê o request
+  #[client] pub fn client(comptime decl: @Decl) {
+      reaches(decl, serverOnly)?.let({ h ->
+          decl.failAt(h.at, "#[client] " + decl.name + " alcança `" + h.hook.name + "()` (#[serverOnly]" + viaText(h) + ")");
+      });
+      …
+  }
+  ```
+
+  *5 — Resultado:*
+  ```text
+  components/Avatar.bp     pub fn Avatar() -> View { val u = use session(); … }
+  components/UserMenu.bp   pub fn UserMenu() -> View { return html """<nav><Avatar /></nav>"""; }
+
+  @typeInfo(UserMenu).hooks = [HookUse(hook: session, annotations: [#[serverOnly]], via: [Avatar], at: "components/Avatar.bp:3")]
+
+  $ onze build
+  /about        S  prerendered
+  /dashboard    D  per request   (session() via UserMenu → Avatar)
+
+  #[client] pub fn Profile() -> View { return html """<UserMenu />"""; }
+  components/Profile.bp:1:1 error: #[client] Profile alcança `session()` (#[serverOnly], via UserMenu → Avatar)
+
+  app/broken/page.bpp:3:12 error: `windowSize()` é #[clientOnly] e só roda dentro de um #[client]
+  ```
+  `markDynamic`, a marca em runtime e o `d` do payload vão embora (186). Outra biblioteca usa o mesmo
+  mecanismo com as próprias marcas (o rakun com um `#[requestScoped]` no `local()` — ver `08-j`),
+  sem que o compilador saiba de nenhuma.
+
+- [ ] **(c)** Como (b), mas o compilador entrega o **estágio pronto** (`decl.stage == .Server`) em vez
+  da lista de hooks.
+  ```bp
+  if (@typeInfo(UserMenu).stage == .Server) { … }
+  ```
+  Mais curto para quem lê, mas o compilador passa a conhecer "server"/"client" — os nomes das marcas do
+  jhonstart — contra as decisões 113 e 198; outra biblioteca não consegue ter marca própria.
+
+- [ ] **(d)** Como (b), mas a anotação continua só texto: a biblioteca compara `a.name == "serverOnly"`.
+  ```bp
+  h.annotations.any({ a -> a.name == "serverOnly" })
+  ```
+  Sem mudar o `DeclAnnotation`; mas um erro de digitação passa calado, um alias (`import {serverOnly as
+  srv}`) engana, e um `#[serverOnly]` do rakun seria confundido com o do jhonstart.
+
+**Recomendação: (b).** É a capacidade que a 186 pediu, na forma mais restritiva: o compilador continua
+sem saber de biblioteca nenhuma (113, 198), o cálculo é um só e transitivo, e a comparação é por
+identidade da declaração (268), nunca por texto. Quem é dono: `01-compiler/01-checker` (um passo novo:
+`hooks` no `@Decl`, `decorator` no `DeclAnnotation`, `Decorator.is`); depois `05-jhonstart/26` passo 8
+(as marcas, o `#[page]`, o `#[client]`), `07-onze/49` passo 5 e `04-rakun/22` passo 4 (o build grava o
+`S`/`D`; o `markDynamic` some). **Bloqueia:** a linha "A function's `@Decl` does not say which hooks it
+activates" do `language-gaps.md`; 26 passo 8; 49 passo 5; 22 passo 4; 123 passo 1; a forma da `08-j`.
 
 ### snap-a · Os mapas de snapshot — aposentados; ficam os snapshots que existem ou que um contrato lê
 

@@ -155,6 +155,7 @@ Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.
 last section.
 
 - [ ] 17-b — 17 s1 box 4
+- [ ] comp-a — the hooks a function reaches in its `@Decl` (186's capability) · 26 s8 · 49 s5 · 22 s4 · 123 s1
 - [ ] 134-d — 134 s2 (`@is`)
 - [ ] std-d — 97 s6 · 50 s4, s7
 - [ ] 95-f — 98 s3
