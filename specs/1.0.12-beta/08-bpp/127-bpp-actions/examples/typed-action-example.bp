@@ -3,8 +3,8 @@
 //            · src/components/newsletter.bp (the form)
 //
 // Demonstrates: an action whose input is validated and typed before the
-// function runs, from a form and from a scripted call, and whose answer is one
-// typed outcome on both sides.
+// function runs, from a form and from a scripted call, and whose answer is the
+// same `@Result<T, ActionError>` on both sides (decision 303).
 //
 //   export const server = {
 //     newsletter: defineAction({
@@ -30,7 +30,7 @@ import html, {Element, ElementBase, renderToString} from "jhonstart";
 import {button, form, input, label, p} from "jhonstart";
 import {formAction, formAttrs, actionResult} from "jhonstart-forms";
 import {action, ActionContext, runAction, formCall, rpcCall} from "rakun-app";
-import {outcome: {ActionRef, ActionOutcome, ActionError, ActionErrorCode, actionRef}} from "actions";
+import {outcome: {ActionRef, ActionError, actionRef}} from "actions";
 import {decorators: {schema, validated, email, trim, lowercased, stringbool}} from "validation";
 import {schemas, schemas.Schema, constraints, report.ValidationReport, report.Violation} from "validation";
 import {collections.Dict, json.Json} from "std";
@@ -63,12 +63,12 @@ pub fn newsletterAction() -> ActionRef<Signup, Subscribed> {
 pub fn newsletter(input: Signup, ctx: ActionContext) -> @Task<@Result<Subscribed, ActionError>> {
     // `ctx.cookies.has("user-session")`
     if (ctx.cookie("user-session") == "") {
-        throw ActionError(code: ActionErrorCode.Unauthorized, message: "User must be logged in.");
+        return Err(Unauthorized("User must be logged in."));
     }
     if (input.terms == false) {
-        throw ActionError(code: ActionErrorCode.BadRequest, message: "The terms must be accepted.");
+        return Err(BadRequest("The terms must be accepted."));
     }
-    return Subscribed(email: input.email);
+    return Ok(Subscribed(email: input.email));
 }
 
 // ── src/components/newsletter.bp — the form ─────────────────────────────────
@@ -89,12 +89,14 @@ pub fn NewsletterForm() -> @Component<ElementBase, Element> {
     """;
 }
 
-// `if (error) … else data` — exhaustive.
-fn describe(outcome: ActionOutcome<Subscribed>) -> string {
+// `if (error) … else data` — one `@Result`, exhaustive: never both, never neither.
+fn describe(outcome: @Result<Subscribed, ActionError>) -> string {
     return case outcome {
-        Data(value) -> "Subscribed " + value.email;
-        InputError(fields) -> "Check: " + fields.keys().join(", ");
-        Failed(error) -> error.message;
+        Ok(value) -> "Subscribed " + value.email;
+        Err(Input(fields)) -> "Check: " + fields.keys().join(", ");
+        Err(Unauthorized(message)) -> message;
+        Err(BadRequest(message)) -> message;
+        Err(_) -> "Something went wrong.";
     };
 }
 
@@ -118,10 +120,10 @@ test "a scripted call decodes the same type from JSON" {
     assert describe(out) == "Subscribed ana@example.com";
 }
 
-test "an invalid input is an InputError and the function is not called" {
+test "an invalid input is an Err(Input) and the function is not called" {
     val out = await runAction(newsletterAction(), formCall("email=nope&terms=on"), anonymous());
     // anonymous() would make the function answer Unauthorized — it never ran.
-    val fields = case out { InputError(fields) -> fields.at("email").unwrapOr([]).join("|"); _ -> "not an input error"; };
+    val fields = case out { Err(Input(fields)) -> fields.at("email").unwrapOr([]).join("|"); _ -> "not an input error"; };
     assert fields == "must be a well-formed email address";
 }
 
@@ -132,17 +134,18 @@ test "the framework's own form fields are not unknown keys" {
     assert describe(out) == "Check: coupon";
 }
 
-fn codeName(code: ActionErrorCode) -> string {
-    return case code {
-        Unauthorized -> "unauthorized";
-        BadRequest -> "bad-request";
-        _ -> "other";
+fn caseName(outcome: @Result<Subscribed, ActionError>) -> string {
+    return case outcome {
+        Err(Unauthorized(_)) -> "unauthorized";
+        Err(BadRequest(_)) -> "bad-request";
+        Err(_) -> "other";
+        Ok(_) -> "none";
     };
 }
 
-test "an ActionError carries its code to the caller" {
+test "an ActionError carries its case to the caller" {
     val out = await runAction(newsletterAction(), formCall("email=a%40b.c&terms=on"), anonymous());
-    val code = case out { Failed(error) -> codeName(error.code); _ -> "none"; };
+    val code = caseName(out);
     assert describe(out) == "User must be logged in.";
     assert code == "unauthorized";
 }

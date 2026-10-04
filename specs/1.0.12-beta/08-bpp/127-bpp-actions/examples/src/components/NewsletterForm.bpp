@@ -3,7 +3,7 @@
 //
 // Demonstrates: an action's form in a `.bpp` component. The form posts to the
 // action with scripting off; after the post, the component reads the outcome —
-// one typed value, matched exhaustively.
+// a `@Result<Subscribed, ActionError>` (decision 303), matched exhaustively.
 //
 //   ---
 //   const result = Astro.getActionResult(actions.newsletter);
@@ -30,15 +30,17 @@
 
 import {button, form, input, label, p} from "jhonstart";
 import {formAction, formAttrs, actionResult} from "jhonstart-forms";
-import {outcome: {ActionOutcome}} from "actions";
+import {outcome: {ActionError}} from "actions";
 import {actions.newsletter_api.newsletterAction, actions.newsletter_api.Subscribed};
 
-// `if (error) … else data` — exhaustive.
-fn describe(outcome: ActionOutcome<Subscribed>) -> string {
+// `if (error) … else data` — one `@Result`, exhaustive: never both, never neither.
+fn describe(outcome: @Result<Subscribed, ActionError>) -> string {
     return case outcome {
-        Data(value) -> "Subscribed " + value.email;
-        InputError(fields) -> "Check: " + fields.keys().join(", ");
-        Failed(error) -> error.message;
+        Ok(value) -> "Subscribed " + value.email;
+        Err(Input(fields)) -> "Check: " + fields.keys().join(", ");
+        Err(Unauthorized(message)) -> message;
+        Err(BadRequest(message)) -> message;
+        Err(_) -> "Something went wrong.";
     };
 }
 

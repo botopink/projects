@@ -19,7 +19,7 @@ Reference: `astro-docs/25-actions.md`.
 ## Goal
 
 An action described once by two schemas, implemented once on the server, validated and typed —
-form or JSON input, `ActionOutcome` on both sides, typed client call — beside `#[serverAction]`.
+form or JSON input, `@Result<T, ActionError>` on both sides (decision 303), typed client call — beside `#[serverAction]`.
 
 ## Problem
 
@@ -87,25 +87,43 @@ registers the function):
 |---|---|
 | a form post (`accept: "form"`) | drops the framework's own fields (the action field, a CSRF token), then `bindNewComment(pairs)` |
 | a scripted call (`accept: "json"`) | `parseNewComment(args[0])` |
-| either, with violations | answers `ActionOutcome.InputError` — violations grouped by path — **without calling the function** |
-| valid | calls the function, encodes `Ok(v)` with `encodeComment` or `Error(e)` as its code and message |
+| either, with violations | answers `Err(ActionError.Input(fields))` — violations grouped by path — **without calling the function** |
+| valid | calls the function, encodes `Ok(v)` with `encodeComment` as `{data}`, or `Err(e)` as `{error}` with its case's status and message |
 
 Input type named in the argument because a function `@Decl` has no parameter list; dropped once it
 gains one (wrapper reads the parameter).
 
-**One outcome type, both sides.**
+**One outcome type, both sides: the language's `@Result` (decision 303).** No `ActionOutcome` — the
+server function returns `@Result<T, ActionError>` and the caller receives the same `@Result<T, ActionError>`.
+Exactly one of a value and an error exists, the `case` is exhaustive, nothing needs `!!`.
 
 ```bp
-pub type ActionOutcome<T> {
-    Data(value: T),
-    InputError(fields: Dict<string, Array<string>>),      // isInputError(error) / error.fields
-    Failed(error: ActionError),
+pub type ActionError {
+    Input(fields: Dict<string, Array<string>>),   // isInputError(error) / error.fields — written by the wrapper
+    BadRequest(message: string),
+    Unauthorized(message: string),
+    Forbidden(message: string),
+    NotFound(message: string),
+    Conflict(message: string),
+    TooManyRequests(message: string),
+    Internal(message: string),
 }
-pub type ActionError(code: ActionErrorCode, message: string)
-pub type ActionErrorCode { BadRequest, Unauthorized, Forbidden, NotFound, Conflict, TooManyRequests, Internal }
+
+// the function — `return Err(…)`, never `throw`
+if (ctx.cookie("user-session") == "") { return Err(Unauthorized("User must be logged in.")); }
+return Ok(Subscribed(email: input.email));
+
+// the caller — the reference's `if (error) … else data`
+case (await callAction(newsletterAction(), input)) {
+    Ok(s) -> show(s);
+    Err(Input(fields)) -> markFields(fields);
+    Err(Unauthorized(_)) -> goToLogin();
+    Err(e) -> warn(e);
+}
 ```
 
-Each code is an HTTP status in the envelope; `ActionOutcome` read with an exhaustive `case` (the reference's `if (error) … else data`).
+Each case is an HTTP status in the envelope. The envelope's JSON stays the reference's — `{"data": …}`
+or `{"error": {"code", "message", "fields"}}` — as protocol only; bp code on either side sees the `@Result`.
 
 **Client calls through the reference.** `callAction(addCommentAction(), input)` in a `#[client]`
 component encodes with the input schema, posts the RPC body to the payload's id for that name,
@@ -121,10 +139,11 @@ the server-only implementation (refused by `onze-bundler/src/refusal.bp:55-138`)
       or hand-threaded (`07-onze/53/examples/new-post-form-example.bp:45`: `val createPostId = "a_9f31…"`)
 - [ ] what a form post carries besides user fields, by name — the list `bind<T>` must not see
 
-### Step 1 — `ActionOutcome`, `ActionError`, the envelope's typed payload
+### Step 1 — `ActionError` and the envelope's typed payload (decision 303)
 
-- [ ] `libs/actions/src/outcome.bp`, both targets; outcome travels in the envelope's existing `payload` field, no reader changes
-- [ ] an `InputError` written and read back keeps every path and message
+- [ ] `libs/actions/src/outcome.bp`, both targets: `ActionError` (the sum type above) and the `@Result<T, ActionError>` ↔ `{data}` / `{error}` codec; no `ActionOutcome`, no `ActionErrorCode`; it travels in the envelope's existing `payload` field, no reader changes
+- [ ] an `Err(Input(fields))` written and read back keeps every path and message; each other case keeps its status and message
+- [ ] a payload with both `data` and `error`, or neither, is refused by the reader (never decoded into a `@Result`)
 
 ### Step 2 — `#[action]` and the wrapper
 
@@ -132,11 +151,12 @@ the server-only implementation (refused by `onze-bundler/src/refusal.bp:55-138`)
 - [ ] invalid input never reaches the function — asserted with a counter the function bumps
 - [ ] `#[action]` on a function not returning `@Task<@Result<T, ActionError>>`, or naming a type
       with no `bind<T>` / `parse<T>` in scope, fails at the annotation
+- [ ] the function answers with `return Ok(…)` / `return Err(…)`; `Err(Input(…))` from the function itself is allowed (a check only the server can make, e.g. a taken e-mail)
 
 ### Step 3 — The client call and the form binding
 
-- [ ] `callAction` over `jhonstart-dom-test`'s fake transport: `Data`, `InputError`, `Failed` each decode to their variant
-- [ ] a form bound with `formAction(ref)` submits without JavaScript; the next render's `actionResult(ref)` holds the outcome
+- [ ] `callAction` over `jhonstart-dom-test`'s fake transport answers `@Task<@Result<T, ActionError>>`: `Ok`, `Err(Input)` and each other `Err` case decode to their variant
+- [ ] a form bound with `formAction(ref)` submits without JavaScript; the next render's `actionResult(ref)` holds the outcome — `?@Result<T, ActionError>`, `null` until posted
 - [ ] `fieldError(name)` (`libs/actions/src/state.bp:21`) answers the path's first message, so
       existing form components work over a typed action
 
@@ -168,7 +188,7 @@ the server-only implementation (refused by `onze-bundler/src/refusal.bp:55-138`)
 ## Notes
 
 - **Not added.** `defineAction` as one object (description and implementation compile for
-  different targets). `.orThrow()` — `callAction(…)` answers `@Task<ActionOutcome<T>>`;
-  `outcome.orError()` gives a `@Result` for `try`. Nested action objects (`actions.user.getUser`) — the module path.
+  different targets). `.orThrow()` — `callAction(…)` answers `@Task<@Result<T, ActionError>>`,
+  so `try` works on it directly (303). Nested action objects (`actions.user.getUser`) — the module path.
 - **File inputs.** No `z.instanceof(File)`: no byte type (lg2-a); rakun answers multipart with 415.
 - **Security.** Id unguessable, name not secret; authorisation in the function (`ctx`) or middleware.
