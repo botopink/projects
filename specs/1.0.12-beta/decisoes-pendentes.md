@@ -753,70 +753,122 @@ onze build   → toda página é renderizada "para ver" se marca dinâmica; o bu
       decorator: Decorator,       // NOVO: a declaração do decorator — identidade, decisão 268
   )
 
-  // NOVO: um `use` alcançado
+  // NOVO: um `use` escrito numa função
   pub type HookUse(
-      hook: Declared<unknown>,          // o hook ativado (ex.: session); `null` → ver regra R5
+      hook: ?Declared<unknown>,         // o hook ativado (ex.: session); null → regra R4
       annotations: DeclAnnotation[],    // as anotações DO HOOK (ex.: #[serverOnly])
-      via: Declared<unknown>[],         // as funções entre a função refletida e o `use` (ex.: [Avatar])
-      at: string,                       // o lugar do `use`: "components/Avatar.bp:3:15"
+      at: string,                       // onde está o `use`: "components/Avatar.bp:3:15"
+  )
+
+  // NOVO: uma chamada a outra função @Component (um componente ou um hook customizado)
+  pub type HookCall(
+      callee: Declared<unknown>,        // a função chamada (ex.: Avatar, vinda de <Avatar />)
+      at: string,                       // onde está a chamada
+  )
+
+  // NOVO: um nó — UMA função alcançada, com o que está escrito NELA
+  pub type HookNode(
+      fn: Declared<unknown>,            // a função
+      uses: HookUse[],                  // os `use` escritos nela (diretos)
+      calls: HookCall[],                // as funções @Component que ela chama (diretas), na ordem do corpo
   )
 
   pub behavior Decl {
       …                                 // o que já existe (kind, name, fields, methods, returnType, annotations…)
-      val hooks: HookUse[];             // NOVO: todo `use` alcançado, transitivamente
+      val hooks: HookNode[];            // NOVO: TODOS os nós alcançáveis a partir desta função,
+                                        //       ela primeiro, cada função uma vez só
   }
 
   extend Decorator {
       pub fn is(self, other: Decorator) -> bool;   // NOVO: mesma declaração? (nunca compara o nome)
   }
   ```
-  `@typeInfo(f).hooks` e o `decl.hooks` dentro de um decorator são a mesma lista.
+  `@typeInfo(f).hooks` e o `decl.hooks` dentro de um decorator são a mesma lista. A lista é plana e
+  completa: com os `calls` de cada nó dá para reconstruir a árvore inteira (e desenhá-la).
+
+  Exemplo:
+  ```bp
+  pub fn Avatar() -> View   { val u = use session(); return html """<img src={u.photo} />"""; }
+  pub fn Badge() -> View    { val t = use state(0);  return html """<b>{t.value}</b>"""; }
+  pub fn UserMenu() -> View { return html """<nav><Avatar /><Badge /></nav>"""; }
+  pub fn Dashboard() -> View { val q = use searchParams(); return html """<UserMenu /><Avatar />"""; }
+  ```
+  ```text
+  @typeInfo(Dashboard).hooks = [
+    HookNode(fn: Dashboard, uses: [searchParams #[serverOnly] @page.bpp:2],
+                            calls: [UserMenu @page.bpp:4, Avatar @page.bpp:4]),
+    HookNode(fn: UserMenu,  uses: [],
+                            calls: [Avatar @UserMenu.bp:1, Badge @UserMenu.bp:1]),
+    HookNode(fn: Avatar,    uses: [session #[serverOnly] @Avatar.bp:1], calls: []),
+    HookNode(fn: Badge,     uses: [state @Badge.bp:1],                  calls: []),
+  ]                          // Avatar aparece UMA vez, embora seja chamado de dois lugares
+  ```
 
   **② Compilador — como a lista é calculada** (checker, `comptime/infer.zig` + `env.zig`; nenhum backend muda)
-  - **R1** — cada `use h(…)` escrito no corpo entra como `HookUse(hook: h, annotations: <as de h>, via: [], at: <o use>)`.
-  - **R2** — cada chamada a uma função cujo retorno é `@Component<…>` (um componente ou um hook
-    customizado) acrescenta os `hooks` dela, com a função chamada no começo do `via`. Isso cobre os
-    filhos: o `html` gera `Avatar()` para `<Avatar />`, então o pai herda o `session()` do `Avatar`.
+  - **R1** — o nó de uma função tem só o que está escrito nela: cada `use h(…)` vira um `HookUse`
+    (com as anotações de `h`); cada chamada a uma função cujo retorno é `@Component<…>` vira um
+    `HookCall` — inclusive as que o `html` gera das tags (`<Avatar />` vira `Avatar()`).
+  - **R2** — `hooks` é o nó da própria função seguido do nó de cada função alcançável pelos `calls`,
+    em largura e na ordem do corpo, **cada função uma vez** (a segunda ocorrência é só uma aresta).
   - **R3** — um hook customizado (`fn user() -> @Component<ElementBase, User> { val s = use session(); … }`)
-    aparece como ele mesmo **e** como o que ele alcança: `use user()` dá `[user, session via user]`.
-  - **R4** — recursão e ciclos: ponto fixo; cada par (hook, `at`) entra uma vez, pelo caminho mais curto.
-  - **R5** — um `use` sobre um **valor-função** (um lambda recebido como parâmetro) não é rastreável:
-    entra como `HookUse(hook: null, annotations: [], via, at)`; cada biblioteca decide (o jhonstart: o lado seguro).
-  - **R6** — uma função host (`declare fn` com `#[@External]`) não tem `use`: não contribui.
-  - **R7** — a lista é calculada depois que a função e as que ela chama foram checadas; um decorator
+    é ele mesmo um `HookUse` no nó de quem o usa **e** tem o seu próprio nó, com o `use session()`.
+  - **R4** — um `use` sobre um **valor-função** (um lambda recebido como parâmetro) não é rastreável:
+    entra como `HookUse(hook: null, annotations: [], at)`; cada biblioteca decide (o jhonstart: o lado seguro).
+  - **R5** — ciclos não precisam de regra: uma função já listada não ganha outro nó; a aresta volta para ela.
+  - **R6** — uma função host (`declare fn` com `#[@External]`) não tem `use` nem `calls`: não ganha nó.
+  - **R7** — a lista fica pronta depois que a função e as que ela chama foram checadas; um decorator
     que lê `decl.hooks` roda nesse momento (os quatro lugares da decisão 216 já rodam depois do checker).
-  - **R8** — os decorators-marca (`#[serverOnly]`) não precisam de nada especial: são decorators
-    comuns sem saída; a anotação deles aparece no `annotations` do hook.
+  - **R8** — os decorators-marca (`#[serverOnly]`) são decorators comuns sem saída; a anotação deles
+    aparece no `annotations` do `HookUse`.
+  - **R9** — o nó de cada função é calculado uma vez por compilação e compartilhado: a lista de uma
+    página reaproveita os nós dos componentes, não os recalcula.
 
   **③ Compilador — testes** (`tests/language/`, quatro targets onde roda)
   ```text
-  run/decl_hooks_direct            use session() → hooks = [session], via [], at certo
-  run/decl_hooks_transitive        Pai → Filho → use session() → [session via Filho]
-  run/decl_hooks_custom_hook       use user() → [user, session via user]
-  run/decl_hooks_cycle             A ↔ B, cada um com um use → ponto fixo, cada hook uma vez
+  run/decl_hooks_direct            use session() → [nó(f, uses: [session])]
+  run/decl_hooks_all_nodes         Dashboard → os 4 nós do exemplo, Avatar uma vez, calls na ordem do corpo
+  run/decl_hooks_custom_hook       use user() → nó de quem usa com [user]; nó de user com [session]
+  run/decl_hooks_cycle             A → B → A → dois nós, a aresta de B volta para A
   run/decl_hooks_function_value    use f() com f parâmetro → HookUse(hook: null)
   run/decorator_is_identity        #[srv] com import {serverOnly as srv} → a.decorator.is(serverOnly) == true;
                                    um serverOnly de outro pacote → false
   ```
   E a linha do `language-gaps.md` "A function's `@Decl` does not say which hooks it activates" fecha.
 
-  **④ jhonstart — as marcas** (`modules/jhonstart/src/stage.bp`, novo; dono `05-jhonstart/26` passo 8)
+  **④ jhonstart — as marcas e a busca** (`modules/jhonstart/src/stage.bp`, novo; dono `05-jhonstart/26` passo 8)
   ```bp
   //// stage — onde um hook pode rodar (decisão 186). Decorators sem saída: só marcam.
   pub fn serverOnly(comptime decl: @Decl) {}     // só no servidor, por request
   pub fn clientOnly(comptime decl: @Decl) {}     // só no browser, dentro de um #[client]
 
-  pub fn reaches(decl: Declared<unknown>, marker: Decorator) -> ?HookUse {
-      return decl.hooks.find({ h -> h.annotations.any({ a -> a.decorator.is(marker) }) });
+  /// Um caminho da raiz até um `use`: as funções no meio e o próprio use.
+  pub type HookPath(through: Declared<unknown>[], use: HookUse)
+
+  /// Todos os caminhos até um `use` cujo hook leva `marker` (null = valor-função, quando `unknownToo`).
+  /// Busca em largura sobre a lista: cada nó visitado uma vez, então o caminho é o mais curto.
+  pub fn pathsTo(nodes: HookNode[], marker: Decorator, unknownToo: bool = false) -> HookPath[] {
+      val byFn = Dict.fromPairs(nodes.map({ n -> #(n.fn, n) }));
+      var found: HookPath[] = [];
+      var queue: #(HookNode, Declared<unknown>[])[] = [#(nodes.first(), [])];
+      var seen: Declared<unknown>[] = [];
+      while (queue.length > 0) {
+          val #(n, path) = queue.first(); queue = queue.slice(1);
+          if (seen.contains(n.fn)) continue;
+          seen = seen.append([n.fn]);
+          for (n.uses) { u ->
+              val hit = u.annotations.any({ a -> a.decorator.is(marker) }) || (unknownToo && u.hook == null);
+              if (hit) found = found.append([HookPath(through: path, use: u)]);
+          }
+          for (n.calls) { c -> byFn.at(c.callee)?.let({ child -> queue = queue.append([#(child, path.append([c.callee]))]); }); }
+      }
+      return found;
   }
-  pub fn unknownHook(decl: Declared<unknown>) -> ?HookUse {           // R5
-      return decl.hooks.find({ h -> h.hook == null });
+
+  pub fn viaText(p: HookPath) -> string {                             // ", via UserMenu → Avatar"
+      return if (p.through.length == 0) { "" } else { ", via " + p.through.map({ f -> f.name }).join(" → ") };
   }
-  pub fn crossesClient(h: HookUse) -> bool {                          // o caminho passa por um #[client]?
-      return h.via.any({ f -> f.annotations.any({ a -> a.decorator.is(client) }) });
-  }
-  pub fn viaText(h: HookUse) -> string {                              // ", via UserMenu → Avatar"
-      return if (h.via.length == 0) { "" } else { ", via " + h.via.map({ f -> f.name }).join(" → ") };
+  pub fn crossesClient(p: HookPath) -> bool {                         // o caminho passa por um #[client]?
+      return p.through.any({ f -> f.annotations.any({ a -> a.decorator.is(client) }) });
   }
   ```
 
@@ -839,27 +891,28 @@ onze build   → toda página é renderizada "para ver" se marca dinâmica; o bu
       decl.setMeta("seg", seg);                                        // a rota (decisão 236)
 
       // #[clientOnly] fora de um #[client] → erro no `use` (186)
-      decl.hooks
-          .filter({ h -> h.annotations.any({ a -> a.decorator.is(clientOnly) }) && !crossesClient(h) })
-          .each({ h -> decl.failAt(h.at, "`" + h.hook.name + "()` é #[clientOnly] e só roda dentro de um #[client]" + viaText(h)) });
+      pathsTo(decl.hooks, clientOnly)
+          .filter({ p -> !crossesClient(p) })
+          .each({ p -> decl.failAt(p.use.at, "`" + p.use.hook.name + "()` é #[clientOnly] e só roda dentro de um #[client]" + viaText(p)) });
 
       // o estágio: S = pré-renderizada no build, D = por request (186, 202)
-      val server = reaches(decl, serverOnly) ?? unknownHook(decl);
+      val server = pathsTo(decl.hooks, serverOnly, unknownToo: true).first();
       decl.setMeta("kind", if (server != null) { "D" } else { "S" });
-      decl.setMeta("why", server?.let({ h -> (h.hook?.name ?? "função desconhecida") + "()" + viaText(h) }) ?? "");
+      decl.setMeta("why", server?.let({ p -> (p.use.hook?.name ?? "função desconhecida") + "()" + viaText(p) }) ?? "");
   }
   ```
 
   **⑦ jhonstart — `#[client]`** (`client.bp:103`, o que já gera o starter da ilha)
   ```bp
   pub fn client(comptime decl: @Decl) {
-      reaches(decl, serverOnly)?.let({ h ->
-          decl.failAt(h.at, "#[client] " + decl.name + " alcança `" + h.hook.name +
-              "()` (#[serverOnly]" + viaText(h) + ") — um componente do browser não lê o request");
+      pathsTo(decl.hooks, serverOnly).each({ p ->
+          decl.failAt(p.use.at, "#[client] " + decl.name + " alcança `" + p.use.hook.name +
+              "()` (#[serverOnly]" + viaText(p) + ") — um componente do browser não lê o request");
       });
       …                                   // o resto de hoje: o tipo de retorno (276), o starter
   }
   ```
+  Como `pathsTo` devolve **todos** os caminhos, o `#[client]` aponta cada `use` problemático, não só o primeiro.
 
   **⑧ jhonstart — o que sai** (186)
   ```text
