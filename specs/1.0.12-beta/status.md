@@ -155,6 +155,21 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.0.10 choices) in its
 last section.
 
+**First — the botopink shape** (raised 2026-10-04; answer `nat-0`, then the rest):
+- [ ] nat-0 — the rule (no identifier in a string, no role by export name, no second model, JSON only for non-code) · lg2-f, lg2-g, lg2-i
+- [ ] ctr-x — 53's examples (`registerSegmentConfig`) · 49 s5
+- [ ] ctr-y — 122 s1 (request hooks under `use`) · 26 s8's hook list
+- [ ] ctr-z — 126 s1–4 · 50 (`<Script>`) · 124
+- [ ] ctr-aa — 120 s2, s4 (fallback) · props-e
+- [ ] nat-a — identifiers in strings · 120, 125 s3–10, 127, 26 (events), 53, rakun 04/06/08/72/78, 130-b
+- [ ] nat-b — roles by export name · 117 s1–3, 121, 51, 53, 122
+- [ ] nat-c — untyped bags · bpp-g, 08-j, 117, 122, 123, 130 (meta), rakun 04/08/15, 34, 03r-b
+- [ ] nat-d — second models (`Schema<T>`, `ActionOutcome`, exceptions, `nav:` strings, LINQ) · 125, 127, rakun 04/09/93, 53, 98
+- [ ] nat-e — Spring's annotations · 130 s5, rakun 04/08/13/15/19/79/91/93, 130-b, 130-c
+- [ ] nat-f — JSON for code (`bppKinds`, `onze.json`, `files`, `ONZE_PUBLIC_`) · 116 s2, 117 s1, 102, 124, 08-h, 98
+- [ ] nat-g — foreign syntax in annotations · 17
+
+Then:
 - [ ] 17-b — 17 s1 box 4
 - [ ] 134-d — 134 s2 (`@is`)
 - [ ] std-d — 97 s6 · 50 s4, s7

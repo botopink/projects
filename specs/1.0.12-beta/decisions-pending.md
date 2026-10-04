@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**61 questions and 18 contradictions are open, and 97 implementation choices await confirmation.**
+**69 questions and 22 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,10 +13,65 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277.
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 ## Open questions
+
+### Priority — the botopink shape (`nat-*`)
+
+Raised 2026-10-04 by a sweep of the spec after decision 278: concepts copied from Astro, Next.js,
+React, Spring, zod, TypeScript, LINQ and Tailwind in their foreign shape where botopink already has
+the feature. Answer first: `nat-0` sets the rule, `nat-a`…`nat-g` apply it; `ctr-x`…`ctr-aa` are
+the sites that already contradict a decision. The Portuguese page lists every site with examples.
+
+#### nat-0 · The rule: botopink's own feature before the imported shape
+- **Measured.** 278 replaced Astro's `prefix:name` with the annotation botopink already had. The sweep found ~40 more sites in seven patterns (`nat-a`…`nat-g`); several decisions and recommendations chose the foreign shape: 234 and 256 (string registry keys), lg2-f (1), lg2-g (1), lg2-i (1), 221 and 270 (`bppKinds`), 257 (`Schema<T>`).
+- **Options.** (a) Four rules, any exception stated in a decision: no code identifier (function, type, field, event, hook, action) passed as a string; no role declared by an export's name — it goes in the function's decorator; no second model of what the language has (`@Result`, records, variadics, interfaces, `use`); JSON only for what is not code. (b) Case by case, no rule. (c) Keep the imported shapes (porting ease).
+- **Recommendation.** (a). Consequences: lg2-f → (2) and lg2-i → (2) (typed decorator arguments, which `nat-a` and `nat-b` need); lg2-g moot; 234/256's string keys, 221/270's `bppKinds` and 257's `Schema<T>` reopened by `nat-a`, `nat-f`, `nat-d`.
+- **Blocks.** `nat-a`…`nat-g`; lg2-f, lg2-g, lg2-i.
+
+#### nat-a · A function, type, field or event referred to by a string
+- **Measured.** `data-jh-on-click="LikeButton:like"` (120 example, `07-onze/53`'s client island, `contracts.md:75`; nothing reads it) · `use useActionState("createPost", …)`, `formAction("a_9f31…", …, "__bp_action")` (53) · `#[action("Signup")]`, `actionRef("newsletter", …)` (127) · `#[check("passwordsMatch", "password,confirm")]`, `#[extending("Dog")]`, `#[partial("RecipePatch")]`, `#[wireNames("Salmon=salmon,…")]` (125, `language-gaps.md`) · `Island(component: "LikeButton", props: [#("likes", "3")])`, the `<Component>Props` encoder found by name, `#[deferred]` registering `"Avatar"` at module load (120, 53) · `ctx.resolve("OrderCache")`, `resolveNamed("Clock", "fixed")`, `member: "make"`, `#[entityRepository("City")]`, `#[eventListener("OrderPlaced")]` (rakun 04, 08; 234, 256).
+- **Options.** (a) The reference is the value: a function, a `comptime t: type`, a field of the type; the tables (islands, actions, beans, listeners) built at comptime by `@TypeInfo.all(with: …)`; a qualifier is a distinct type. (b) Strings stay, each checked at comptime against the scope. (c) As is.
+- **Recommendation.** (a). A field reference (`.password`) needs a `language-gaps.md` row.
+- **Blocks.** 120 (props encoder, `#[deferred]`), 125 steps 3–10, 127, `05-jhonstart/26` (event wiring), `07-onze/53`, rakun 04, 06, 08, 72, 78; 130-b.
+
+#### nat-b · A function's role declared by its export name
+- **Measured.** `staticPaths`, `partial` (117) · `generateMetadata`, `blogStaticParams` + `registerStaticParams("blog/[slug]", …)`, `Loading` / `NotFound` / `ErrorPage` (53) · OG image `pub val size`, `pub val contentType = "image/svg+xml"` (51) · `collections()` found in `src/content.bp` (121) · `registerSegmentConfig(…)` (`ctr-x`).
+- **Options.** (a) The page's decorator carries it: `#[page("blog/[slug]", paths: allSlugs, head: postHead, revalidate: hours(1))]`; other kinds likewise (`#[ogImage(size: …)]`, `#[collection(…)] type BlogPost`). (b) A decorator per role on the providing function (`#[paths] fn allSlugs()`, `#[head] fn postHead()`), joined by module. (c) As is.
+- **Recommendation.** (a) — one place, checked where written; needs lg2-i (2).
+- **Blocks.** 117 steps 1–3, 121, `07-onze/51`, `53`, 122.
+
+#### nat-c · Untyped bags where a record type would flow
+- **Measured.** `params` / `searchParams` / cookies as `Array<#(string, string)>`, `pairValue(jar, "session")` answering `""` when absent (26, 53) · `StaticPath.data: Json` read back through `pageData(route, schemaOf…)` (117) · `LocalKey<T>(name: string)`, a clash refused at run time (123) · `decl.setMeta("table", "cities")`, string-only meta (216, 130) · `#[value("rakun.profiles.active")]`, `rkPropInt("12abc") == 12` (03r-b), `Event(name: string, payload: string)` (rakun) · `ThemeEntry(name: string, value: string)`, `extendTheme(th, [#("--breakpoint-md", "")])` (06-emilia).
+- **Options.** (a) Typed records: `PageContext<Params, Data>`, `use params<BlogPost>()`, `Cookie<SessionId>("session")` → `?SessionId`, `#[local] type CurrentUser(…)`, `decl.setMeta(Entity(table: "cities"))`, `#[config("rakun.data")] type DataConfig(…)`, events as records, `Theme(breakpoints: Breakpoints(…))`. (b) The bags stay, typed accessors generated beside them. (c) As is.
+- **Recommendation.** (a).
+- **Blocks.** bpp-g, 08-j, 117, 122, 123, 130 (meta), rakun 04, 08, 15; `06-emilia/34` (05emilia-n); 03r-b.
+
+#### nat-d · A second model of what the language has
+- **Measured.** `Schema<T>` value schemas with `union2…5`, `tuple2…5`, `pipe` (125; 257) · TypeScript's `Partial` / `Pick` / `Omit` (125, 134 step 2) · `ActionOutcome {data, error}` (127) · `raiseProblem` and a `try*` twin per store method, `throw SoapFault` inside `-> @Result` (rakun 09, 93) · `throw "nav:not-found"` matched by prefix (`isSignal`, `contracts.md`; 53) · LINQ's names in erika (`where`, `select`, `toList`; 98) · `#[postConstruct]` / `#[preDestroy]` (rakun 04) · `use useActionState` — a `use` prefix under `use`.
+- **Options.** (a) The language's own: the record type is the schema (`#[schema]` on the type, `T.parse`), combinators variadic; `@Result` everywhere (`InputError` a case of `ActionError`, one store API); `noreturn` + `NavOutcome` matched by type; std's names in erika; `implement Lifecycle`; no hook named `use…`. (b) Both, the foreign one a thin layer over the native. (c) As is.
+- **Recommendation.** (a). Reopens 257's shape (not its home), with 07-j and ctr-u.
+- **Blocks.** 125, 127, rakun 04, 09, 93, `07-onze/53`, 98 (erika); lg2-h, lg2-l.
+
+#### nat-e · Spring's annotation zoo
+- **Measured.** `#[service]`, `#[repository]`, `#[restController]`, `#[configuration]` + `#[bean]`, `#[managed]`, `#[provides]` stacked for one meaning (rakun 04, 09, 13, 19) · `findByNameAndStateAllIgnoringCase` parsed into SQL (08; R78-1) · `#[amqpListener]` / `#[kafkaListener]` / `#[redisListener]` with string destinations (15, 91) · `#[httpExchange]` wired through `#[configuration]` (13) · `MockMvc`, `@MockBean`, `UserDetailsService` (19, 79).
+- **Options.** (a) One decorator per role that adds behaviour: `#[provides]` on functions, one `#[component]` on types (laziness an argument); queries as comptime expressions over `Columns` (`City.where(.state == s)`); `#[listen(destination)]`, the transport from typed config; rakun's own names. (b) Spring's names kept as aliases of (a). (c) As is.
+- **Recommendation.** (a). Absorbs 130-c.
+- **Blocks.** 130 step 5; rakun 04, 08, 13, 15, 19, 79, 91, 93; 130-b, 130-c.
+
+#### nat-f · JSON saying what code would
+- **Measured.** `bppKinds` (221, 270) — a third copy of the file-kind map beside `routing`'s `fileKinds() -> Array<string>` and the wire letters (102; 171–173) · `onze.json`'s `trailingSlash`, `redirects`, `markdown`, `allowedRedirects` beside `url_rules`, `MarkdownOptions`, `app(allowedRedirects:)` (124, 08-h) · `files`, `workspaces` (98) · the `ONZE_PUBLIC_` env prefix carrying a stage fact (53, `contracts.md`).
+- **Options.** (a) Code: the `bpp` package's prelude exports the kinds (`pub val kinds: #(string, Decorator)[]`), `routing` a `FileKind` enum; onze's settings a typed record in the app's code; `pub` modules instead of `files`; a public env value a stage-marked declaration. (b) JSON for plain project values only (names, ports), never a mapping to code. (c) As is.
+- **Recommendation.** (a) for every mapping to code, (b) for plain values. Reopens 221/270's manifest key; answers ctr-g and ctr-t on the way.
+- **Blocks.** 116 step 2, 117 step 1, 102, 124, 08-h, 98; ctr-g, ctr-t.
+
+#### nat-g · Foreign syntax inside an annotation
+- **Measured.** `#[@BeamMemory.Ets(keyed = true)]`, `inline = true` — Rust's `key = value` (17) · `#[@External.Erlang("fn:tanBody")]`, `"op:…"`, `"wasi:…"` — a function named by a prefixed string (238, 263).
+- **Options.** (a) botopink's labels (`keyed: true`) and a typed target (`External.Erlang(fn: "tanBody")` or an enum of kinds). (b) As is.
+- **Recommendation.** (a).
+- **Blocks.** 17 (with 17-b, 17-c); the backends' host cells.
 
 ### 01-compiler — the language
 
@@ -402,6 +457,26 @@ owning front lists the row under *Depends on*.
 
 Rule pairs that cannot both hold, or a later rule changing an earlier one silently. Decision text
 left as recorded; the maintainer picks the resolution.
+
+#### ctr-x · `registerSegmentConfig(dynamic: ForceStatic, …)` against decisions 202, 186 and 277
+- **Rules.** 202: no way to force a stage; 186 / 277: `#[page]` decides `S` / `D` from `Decl.hooks`. `07-onze/53`'s examples (`app/page.bpp:30-37`, `app/blog/[slug]/page.bpp:43-50`, `blog-slug-page-example.bp:50-58`, `app-page-example.bp:39-43`, `acceptance.md:211`) write Next's segment config — `dynamic`, `revalidate`, `fetchCache` — restating the route as a string and registering it at run time; `08-bpp/surface.md:75` notes the clash.
+- **Recommendation.** Delete `dynamic` and `fetchCache`; revalidation, if kept, a `#[page]` argument (`nat-b`).
+- **Blocks.** `07-onze/53`'s examples and acceptance; 49 step 5.
+
+#### ctr-y · Request hooks called without `use` against decision 277
+- **Rules.** 277: `Decl.hooks` lists the `use`s; 186: a `#[serverOnly]` hook makes a page `D`. 122 writes `val _s = responseStatus(404)` and `responseHeader(…)` — `#[serverOnly]` hooks without `use`, invisible to `pathsTo`, so the page would be classified `S`; `isPrerendered()` asks at run time what is a comptime fact.
+- **Recommendation.** Every request hook under `use` (`use responseStatus(404);`); `isPrerendered()` dropped.
+- **Blocks.** 122 step 1; `05-jhonstart/26` step 8's hook list.
+
+#### ctr-z · String instructions left after decision 278
+- **Rules.** 278: an instruction on a tag is an annotation. 126 keeps `data-jh-reload`, `data-jh-history="replace"` on `<a>`, `jh:before-swap` string events, `#[transitionAnimate("slide")]` checked against a list; `<Script>`'s four string strategies (`onze-bundler/src/script.bp`, 50) stay beside `Hydrate` (120 § Blast radius).
+- **Recommendation.** `<a #[reload]>`, `<a #[history(History.Replace)]>`, `#[transitionAnimate(Animate.Slide)]`, events as typed functions; `<script #[clientIdle] src=…>` — one strategy vocabulary.
+- **Blocks.** 126 steps 1–4; `07-onze/50` (`<Script>`); 124 (component scripts).
+
+#### ctr-aa · `slot="fallback"` in 120 against open `props-e`
+- **Rules.** 120 says "None open", but its server islands and `#[clientOnly]` tags route a `slot="fallback"` child; `props-e` (a), recommended, refuses `slot="…"`.
+- **Recommendation.** With `props-e` (a), the fallback is an annotation argument: `<Avatar #[serverDefer(fallback: <GenericAvatar size={48} />)] />`, `<Map #[clientOnly(fallback: <p>Loading…</p>)] />`.
+- **Blocks.** 120 steps 2 and 4; `props-e`.
 
 #### ctr-f · Decisions 198 and 199 against decision 213
 - **Rules.** 199: "`card.bpp` is `pub fn card(props: Props)`; with none, `pub fn <name>()`"; 198: "`import {components.card.Card};`", "the module exports the result under the file's name"; 212: "the rest of 198 (and 199) stands". 213: "`components/PostCard.bpp` unfolds to `pub default fn PostCard(…)`", imported `import {components.PostCard};` — citing neither 198 nor 199.

@@ -1,7 +1,7 @@
 # Decisões pendentes — 1.0.12-beta (só o que está em aberto, por ordem de importância)
 
-Atualizado em 2026-10-03. Só o que ainda espera resposta sua: o que já foi respondido está em
-`specs/1.0.12-beta/decisions-taken.md` (decisões 144–277; próximo número livre: **278**) e saiu daqui.
+Atualizado em 2026-10-04. Só o que ainda espera resposta sua: o que já foi respondido está em
+`specs/1.0.12-beta/decisions-taken.md` (decisões 144–278; próximo número livre: **279**) e saiu daqui.
 Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 234–236 (injeção do rakun,
 `@TypeInfo.all` com lista, decorador de função), 237 (captura do template pelo texto), 238–243
 (`@External.Wasm`, `$stringify`, codepoints no wasm, células sem WASI, dependência direta, vírgula final),
@@ -16,6 +16,7 @@ registro de beans em comptime no ponto de entrada), 257 (`Schema<T>` na `validat
 > `decisions-taken.md` com o texto completo dos commits `4fb3c5e`, `ec58d33`, `805b2be`, `c4976a6`.
 
 **Ordem:** da decisão que mais destrava para a que menos destrava.
+- **Prioridade máxima** — a forma botopink (`nat-0`, `nat-a`…`nat-g`) e as contradições `ctr-x`…`ctr-aa`: o que foi copiado de fora quando a linguagem já tinha o recurso.
 - **Parte 0** — `00-gate` e `01-compiler`, por prioridade (o que segura thread rodando primeiro).
 - **Parte 1** — contradições entre decisões, achadas na consolidação: cada uma segura um passo.
 - **Parte 2** — destravam muitas frentes.
@@ -55,6 +56,384 @@ Ids marcados *(proposta)* foram levantados na consolidação e ainda não tinham
 
 Os ids das decisões não mudaram com a renumeração das trilhas: `07-*` são da `03-bundled-libs`,
 `03r-*` da `04-rakun`, `05emilia-*` da `06-emilia`.
+
+---
+
+## Prioridade máxima — a forma botopink (`nat-*`) e o que já contradiz decisões
+
+Levantado em 04/10, numa varredura da spec depois da decisão 278. Assim como as diretivas do Astro, que
+copiamos quando o botopink **já tinha** a anotação, há cerca de 40 lugares onde um conceito veio do
+Astro, Next.js, React, Spring, zod, TypeScript, LINQ ou Tailwind **na forma de fora**, mesmo existindo
+o recurso equivalente na linguagem. Eles caem em sete padrões.
+
+**Ordem:** primeiro a **`nat-0`** (a regra geral); depois as quatro contradições **`ctr-x`…`ctr-aa`**, que
+já batem com decisões tomadas; depois a **`nat-a`…`nat-g`**, que aplicam a regra a cada padrão.
+
+### nat-0 · A regra: o recurso do botopink antes da forma importada
+
+**Contexto.** Na 278, `client:visible` (string do Astro) virou `#[clientVisible]`, a anotação que já
+existia. A varredura achou o mesmo erro em outros sete padrões (`nat-a`…`nat-g`). Algumas decisões e
+recomendações escolheram a forma de fora: 234 e 256 (chave de bean em string), as recomendações (1)
+da lg2-f, lg2-g e lg2-i (tipo por nome, argumento de decorador só `string`/número/`bool`), 221/270
+(`bppKinds` no JSON), 257 (`Schema<T>`).
+
+**Hoje:**
+```bp
+#[check("passwordsMatch", "password,confirm")]     // função e campos como texto
+val c = ctx.resolve("OrderCache");                 // tipo como texto
+pub fn staticPaths() -> …                          // papel da função pelo nome do export
+```
+
+- [ ] **(a)** Quatro regras; qualquer exceção é escrita numa decisão:
+  1. nenhum identificador de código (função, tipo, campo, evento, hook, ação) passado como string;
+  2. nenhum papel declarado pelo nome do export — vai no decorator da função;
+  3. nenhum segundo modelo do que a linguagem tem (`@Result`, records, variádicos, interfaces, `use`);
+  4. JSON só para o que não é código.
+  ```bp
+  #[check(passwordsMatch, .password, .confirm)]
+  val c = use bean(OrderCache);
+  #[page("blog/[slug]", paths: allSlugs)]
+  ```
+- [ ] **(b)** Caso a caso, sem regra geral.
+- [ ] **(c)** Manter as formas importadas (facilita portar código e documentação de fora).
+
+**Recomendação: (a).** Consequências: a lg2-f e a lg2-i passam para a opção (2) (argumento de decorador
+tipado, que a `nat-a` e a `nat-b` precisam); a lg2-g perde o motivo; a `nat-a` reabre a chave em string
+da 234/256, a `nat-f` o `bppKinds` da 221/270 e a `nat-d` a forma do `Schema<T>` da 257.
+**Bloqueia:** `nat-a`…`nat-g`; lg2-f, lg2-g, lg2-i.
+
+### ctr-x · `registerSegmentConfig(dynamic: ForceStatic, …)` × decisões 202, 186 e 277
+
+**Contexto.** A 202 diz que não existe jeito de forçar a etapa; pela 186 e pela 277, o `#[page]` decide
+`S`/`D` olhando o `Decl.hooks`. Os exemplos da `07-onze/53` (`app/page.bpp`, `app/blog/[slug]/page.bpp`,
+`blog-slug-page-example.bp`, `app-page-example.bp`, `acceptance.md:211`) copiam o `export const
+dynamic/revalidate/fetchCache` do Next, repetem a rota em string e registram em runtime. O
+`08-bpp/surface.md:75` já anota o conflito, mas os exemplos não mudaram.
+
+**Hoje:**
+```bp
+val _cfg = registerSegmentConfig("blog/[slug]", SegmentConfig(dynamic: DynamicMode.ForceStatic, revalidate: 3600, fetchCache: …));
+```
+
+- [ ] **(a)** Apagar `dynamic` e `fetchCache`; se a revalidação ficar, é argumento do `#[page]` (`nat-b`).
+  ```bp
+  #[page("blog/[slug]", revalidate: hours(1))]
+  ```
+- [ ] **(b)** Apagar tudo, inclusive a revalidação (fica para quando houver cache).
+- [ ] **(c)** Manter só como documentação do que o Next tem (não compila).
+
+**Recomendação: (a).**
+**Bloqueia:** exemplos e acceptance da `07-onze/53`; 49 passo 5.
+
+### ctr-y · Hooks de request chamados sem `use` × decisão 277
+
+**Contexto.** A 277 faz o `Decl.hooks` listar os `use`; pela 186, um hook `#[serverOnly]` torna a página
+`D`. A 122 escreve `responseStatus(404)` e `responseHeader(…)` como hooks `#[serverOnly]`, mas **sem
+`use`** — o `pathsTo` não enxerga, e a página seria classificada `S` (pré-renderizada) mesmo mudando o
+status por request. E `isPrerendered()` pergunta em runtime uma coisa que é fato de comptime.
+
+**Hoje:**
+```bp
+val _s = responseStatus(404);
+val _h = responseHeader("Cache-Control", "no-store");
+if (isPrerendered()) { … }
+```
+
+- [ ] **(a)** Todo hook de request vai sob `use`; `isPrerendered()` sai.
+  ```bp
+  use responseStatus(404);
+  use responseHeader("Cache-Control", "no-store");
+  ```
+- [ ] **(b)** Sob `use`, e `isPrerendered()` vira consulta de comptime (`comptime stageOf(Page) == .S`).
+
+**Recomendação: (a).**
+**Bloqueia:** 122 passo 1; a lista de hooks do passo 8 da `05-jhonstart/26`.
+
+### ctr-z · Instruções em string que sobraram depois da 278
+
+**Contexto.** Pela 278, uma instrução numa tag é anotação. Mas a 126 mantém `data-jh-reload` e
+`data-jh-history="replace"` no `<a>`, eventos `jh:before-swap` em string e `#[transitionAnimate("slide")]`
+conferido contra uma lista. E o `<Script>` (`onze-bundler/src/script.bp`, frente 50) tem quatro
+estratégias em string ao lado do `Hydrate` — dois vocabulários para a mesma coisa.
+
+**Hoje:**
+```bpp
+<a href="/legacy" data-jh-reload>…</a>
+<a href="/x" data-jh-history="replace">…</a>
+<main #[transitionAnimate("slide")]>
+<Script src="/chat.js" strategy="lazyOnload" />
+document.addEventListener("jh:before-swap", …)
+```
+
+- [ ] **(a)** Tudo anotação ou valor tipado; um vocabulário só de estratégia.
+  ```bpp
+  <a href="/legacy" #[reload]>…</a>
+  <a href="/x" #[history(History.Replace)]>…</a>
+  <main #[transitionAnimate(Animate.Slide)]>
+  <script #[clientIdle] src="/chat.js" />
+  ```
+  ```bp
+  use onBeforeSwap({ e -> … });
+  ```
+- [ ] **(b)** Só os atributos do `<a>` viram anotação; eventos e `<Script>` ficam como estão.
+
+**Recomendação: (a).**
+**Bloqueia:** 126 passos 1–4; `07-onze/50` (`<Script>`); 124 (scripts de componente).
+
+### ctr-aa · `slot="fallback"` na 120 × a `props-e` em aberto
+
+**Contexto.** A 120 diz "nenhuma decisão aberta", mas as ilhas de servidor e as tags `#[clientOnly]`
+usam um filho `slot="fallback"`. A `props-e` (a), que é a recomendada, recusa `slot="…"`: slot nomeado
+é campo de props.
+
+**Hoje:**
+```bpp
+<Avatar #[serverDefer] size={48}>
+  <GenericAvatar size={48} slot="fallback" />
+</Avatar>
+```
+
+- [ ] **(a)** O fallback é argumento da anotação (casa com a `props-e` (a)).
+  ```bpp
+  <Avatar #[serverDefer(fallback: <GenericAvatar size={48} />)] size={48} />
+  <Map #[clientOnly(fallback: <p>Carregando…</p>)] zoom={3} />
+  ```
+- [ ] **(b)** `slot="fallback"` fica como exceção só para ilhas.
+
+**Recomendação: (a).**
+**Bloqueia:** 120 passos 2 e 4; `props-e`.
+
+### nat-a · Função, tipo, campo ou evento referido por string
+
+**Contexto.** A linguagem já tem função como valor, parâmetro `comptime t: type`, o tipo `Decorator`
+(268), `@Decl` e o catálogo `@TypeInfo.all(with: …)` em comptime. Mesmo assim, estes lugares passam o
+nome como texto, conferido tarde ou nunca:
+- jhonstart/onze: `data-jh-on-click="LikeButton:like"` (ninguém lê); `use useActionState("createPost", …)`;
+  `formAction("a_9f31…", …, "__bp_action")`; `Island(component: "LikeButton", props: [#("likes", "3")])`;
+  o encoder achado pelo nome `<Component>Props`; `#[deferred]` registrando `"Avatar"` em runtime.
+- bpp: `#[action("Signup")]`, `actionRef("newsletter", …)` (127).
+- validation (125): `#[check("passwordsMatch", "password,confirm")]`, `#[extending("Dog")]`,
+  `#[partial("RecipePatch")]`, `#[wireNames("Salmon=salmon,…")]`.
+- rakun: `ctx.resolve("OrderCache")`, `resolveNamed("Clock", "fixed")`, `member: "make"` (234, 256),
+  `#[entityRepository("City")]`, `#[eventListener("OrderPlaced")]`.
+
+**Hoje:**
+```bp
+<button data-jh-on-click="LikeButton:like">
+val state = use useActionState("createPost", initial);
+#[check("passwordsMatch", "password,confirm")] type Signup(…)
+val cache = ctx.resolve("OrderCache");
+```
+
+- [ ] **(a)** A referência é o próprio valor; as tabelas (ilhas, ações, beans, listeners) são montadas em
+  comptime; qualificador é um tipo distinto.
+  ```bp
+  <button #[onClick(like)]>
+  val state = use actionState(createPost, initial);
+  #[check(passwordsMatch, .password, .confirm)] type Signup(…)
+  val cache = use bean(OrderCache);
+  type FixedClock(clock: Clock)          // em vez de resolveNamed("Clock", "fixed")
+  val islands = comptime @TypeInfo.all(with: client);
+  ```
+- [ ] **(b)** As strings ficam, mas cada uma é conferida em comptime contra o escopo.
+- [ ] **(c)** Como está.
+
+**Recomendação: (a).** Referência a campo (`.password`) precisa de uma linha no `language-gaps.md`.
+**Bloqueia:** 120 (encoder, `#[deferred]`); 125 passos 3–10; 127; `05-jhonstart/26` (eventos);
+`07-onze/53`; rakun 04, 06, 08, 72, 78; 130-b.
+
+### nat-b · O papel de uma função dito pelo nome do export
+
+**Contexto.** O `#[page]` e o `#[layout]` já são decorators. Mesmo assim, o que diz algo sobre a página é
+achado pelo **nome** do export, como no Next e no Astro: `staticPaths`, `partial` (117);
+`generateMetadata`, `blogStaticParams` + `registerStaticParams("blog/[slug]", …)`, `Loading`/`NotFound`/
+`ErrorPage` (53); `pub val size` e `pub val contentType = "image/svg+xml"` da imagem OG (51);
+`collections()` achado em `src/content.bp` (121).
+
+**Hoje:**
+```bp
+#[page("blog/[slug]")]
+pub fn Page(route: PageContext) -> View { … }
+pub fn staticPaths() -> @Task<Array<StaticPath>> { … }     // achado pelo nome
+pub fn generateMetadata(params: Array<#(string, string)>) -> Metadata { … }
+```
+
+- [ ] **(a)** O decorator da página carrega tudo; os outros tipos de arquivo também.
+  ```bp
+  #[page("blog/[slug]", paths: allSlugs, head: postHead, revalidate: hours(1))]
+  pub fn Page(route: PageContext<BlogParams, Post>) -> View { … }
+  #[ogImage(size: ImageSize(1200, 630), type: .Svg)] pub fn image(…) { … }
+  #[collection(glob("content/blog", "**/*.md"))] pub type BlogPost(…)
+  ```
+- [ ] **(b)** Um decorator por papel na função que fornece, ligado pelo módulo.
+  ```bp
+  #[paths] fn allSlugs() -> BlogParams[] { … }
+  #[head] fn postHead(p: BlogParams) -> Metadata { … }
+  ```
+- [ ] **(c)** Como está.
+
+**Recomendação: (a)** — um lugar só, conferido onde é escrito. Precisa da lg2-i (2).
+**Bloqueia:** 117 passos 1–3; 121; `07-onze/51` e `53`; 122.
+
+### nat-c · Sacos sem tipo onde um record tipado resolveria
+
+**Contexto.** Os records tipados existem, mas vários dados passam como pares de strings ou `Json`:
+- `params`, `searchParams` e cookies como `Array<#(string, string)>`; `pairValue(jar, "session")` devolve
+  `""` quando não existe, em vez de `?string` (26, 53);
+- `StaticPath.data: Json`, lido de volta com `pageData(route, schemaOf…)` (117);
+- `LocalKey<T>(name: string)`, com colisão só em runtime (123);
+- `decl.setMeta("table", "cities")`, meta só de strings (216, 130);
+- rakun: `#[value("rakun.profiles.active")]`, `rkPropInt("12abc") == 12` (leitura frouxa, contra a 67),
+  `Event(name: string, payload: string)`;
+- emilia: `ThemeEntry(name: string, value: string)`; `extendTheme(th, [#("--breakpoint-md", "")])` só dá
+  pânico em runtime.
+
+**Hoje:**
+```bp
+val slug = route.params.lookup("slug").unwrapOr("");
+val session = pairValue(jar, "session");                 // "" se não existe
+val user = local(LocalKey<User>("user"));
+#[value("rakun.data.repositories.bootstrap-mode")] val mode: string
+```
+
+- [ ] **(a)** Records tipados.
+  ```bp
+  val p = use params<BlogPost>();                          // BlogPostParams
+  val session = Cookie<SessionId>("session");  use cookie(session)   // ?SessionId
+  #[local] pub type CurrentUser(user: User)
+  decl.setMeta(Entity(table: "cities"))
+  #[config("rakun.data")] type DataConfig(bootstrapMode: BootstrapMode = .Eager)
+  Theme(breakpoints: Breakpoints(md: Rem(48.0)))
+  ```
+- [ ] **(b)** Os sacos ficam, com acessores tipados gerados ao lado.
+- [ ] **(c)** Como está.
+
+**Recomendação: (a).**
+**Bloqueia:** bpp-g; 08-j; 117; 122; 123; 130 (meta); rakun 04, 08, 15; `06-emilia/34` (05emilia-n); 03r-b.
+
+### nat-d · Um segundo modelo do que a linguagem já tem
+
+**Contexto.** A spec criou modelos paralelos ao que a linguagem já oferece:
+- `Schema<T>` como objeto à la zod, com `union2…5` e `tuple2…5` (as famílias por aridade só existem porque
+  não se usou variádico, 267) e `pipe` (125; 257) — o record tipado já é o schema;
+- `Partial`/`Pick`/`Omit` do TypeScript ao lado de type alias (125, 134 passo 2);
+- `ActionOutcome {data, error}` ao lado de `@Result` (127);
+- `raiseProblem` e um gêmeo `try*` para cada método das stores; `throw SoapFault` dentro de `-> @Result` (rakun 09, 93);
+- `throw "nav:not-found"` reconhecido por prefixo de string (`isSignal`), ao lado de `noreturn` e do `NavOutcome`;
+- nomes do LINQ no erika (`where`, `select`, `toList`) ao lado do `map`/`filter` do std (98);
+- `#[postConstruct]`/`#[preDestroy]` ao lado de interface com `implement` (rakun 04);
+- `use useActionState`: um prefixo `use` debaixo de `use`.
+
+**Hoje:**
+```bp
+val Slug = schemas.text().min(2);
+val Pet = schemas.union3(Cat, Dog, Fish);
+fn find(id: string) -> ?Doc { … raiseProblem(…) }      // e findTry(id) -> @Result<…>
+throw "nav:not-found";
+```
+
+- [ ] **(a)** O próprio recurso da linguagem.
+  ```bp
+  #[schema] #[minLength(2)] type Slug = string;
+  type Pet = Cat | Dog | Fish;                          // T.parse(json) gerado pelo #[schema]
+  fn find(id: string) -> @Result<?Doc, StoreError> { … }
+  fn notFound() -> noreturn { … }                       // casado pelo tipo NavOutcome
+  type MyService(…) implement Lifecycle { fn start(self) { … } fn stop(self) { … } }
+  ```
+- [ ] **(b)** Os dois; o de fora como camada fina sobre o nativo.
+- [ ] **(c)** Como está.
+
+**Recomendação: (a).** Reabre a forma da 257 (não o lugar), junto com a 07-j e a `ctr-u`.
+**Bloqueia:** 125; 127; rakun 04, 09, 93; `07-onze/53`; 98 (erika); lg2-h; lg2-l.
+
+### nat-e · O zoológico de anotações do Spring
+
+**Contexto.** O botopink tem um decorator qualquer mais `@TypeInfo.all(with: …)`; o rakun copiou as
+marcas do Spring, várias com o mesmo sentido:
+- `#[service]`, `#[repository]`, `#[restController]`, `#[configuration]` + `#[bean]`, `#[managed]`,
+  `#[provides]`, às vezes empilhados (rakun 04, 09, 13, 19);
+- query derivada do nome do método: `findByNameAndStateAllIgnoringCase` vira SQL (08; R78-1);
+- `#[amqpListener]`, `#[kafkaListener]`, `#[redisListener]` com destino em string (15, 91);
+- `#[httpExchange]` ligado via `#[configuration]` (13);
+- `MockMvc`, `@MockBean`, `UserDetailsService` com os nomes do Spring (19, 79).
+
+**Hoje:**
+```bp
+#[repository] #[managed] type CityRepo(…)
+fn findByNameAndStateAllIgnoringCase(name: string, state: string) -> City[]
+#[service] #[listener] #[kafkaListener("orders")] fn onOrder(…)
+```
+
+- [ ] **(a)** Um decorator por papel que acrescenta comportamento; query como expressão de comptime;
+  transporte vindo da config tipada; nomes do próprio rakun.
+  ```bp
+  #[component(lazy: true)] type CityRepo(…)
+  #[query] fn byState(s: string) -> City[] = City.where(.state == s);
+  #[listen(orders)] fn onOrder(o: OrderPlaced) { … }      // orders: Destination
+  ```
+- [ ] **(b)** Os nomes do Spring ficam como apelidos de (a).
+- [ ] **(c)** Como está.
+
+**Recomendação: (a).** Absorve a 130-c.
+**Bloqueia:** 130 passo 5; rakun 04, 08, 13, 15, 19, 79, 91, 93; 130-b; 130-c.
+
+### nat-f · JSON dizendo o que o código diria
+
+**Contexto.** O prelude (270), o tipo `Decorator` (268) e enums já existem. Mesmo assim:
+- `bppKinds` (221/270) mapeia nome de arquivo → decorator no `botopink.json` — e é a **terceira cópia**
+  do mesmo mapa, ao lado de `fileKinds() -> Array<string>` do `routing` e das letras do wire (102; 171–173);
+- `onze.json` com `trailingSlash`, `redirects`, `markdown` e `allowedRedirects`, que já existem como
+  código tipado (`url_rules`, `MarkdownOptions`, `app(allowedRedirects:)`) (124, 08-h);
+- `files` e `workspaces` do npm (98);
+- o prefixo `ONZE_PUBLIC_` (cópia do `NEXT_PUBLIC_`) carregando um fato de etapa.
+
+**Hoje:**
+```json
+{ "bpp": "jhonstart", "bppKinds": { "page": "page", "layout": "layout" } }
+```
+```bp
+pub fn fileKinds() -> Array<string> { return ["layout", "page", "not-found", …]; }
+val api = env("ONZE_PUBLIC_API_URL");
+```
+
+- [ ] **(a)** Código: o prelude do pacote `bpp` exporta os tipos; o `routing` tem um enum; as opções do
+  onze são um record no código do app; módulos `pub` em vez de `files`; valor público de ambiente é
+  uma declaração marcada com a etapa.
+  ```bp
+  // jhonstart/src/prelude.bp
+  pub val kinds: #(string, Decorator)[] = [#("page", page), #("layout", layout)];
+  pub type FileKind { Layout, Template, Error, Loading, NotFound, Page, Default, Route }
+  #[clientVisible] val apiUrl = env("API_URL");
+  ```
+- [ ] **(b)** JSON só para valores simples do projeto (nome, porta), nunca um mapa para código.
+- [ ] **(c)** Como está.
+
+**Recomendação: (a)** para todo mapa para código, **(b)** para os valores simples. Reabre a chave do
+manifesto da 221/270 e, de quebra, resolve a `ctr-g` e a `ctr-t`.
+**Bloqueia:** 116 passo 2; 117 passo 1; 102; 124; 08-h; 98; `ctr-g`; `ctr-t`.
+
+### nat-g · Sintaxe estrangeira dentro de anotação
+
+**Contexto.** O botopink rotula argumento com `nome: valor`. Duas anotações usam outra sintaxe:
+`#[@BeamMemory.Ets(keyed = true)]` e `inline = true` (o `key = value` do Rust; frente 17);
+`#[@External.Erlang("fn:tanBody")]`, `"op:…"` e `"wasi:…"` referenciam uma função por string com
+prefixo (238, 263).
+
+**Hoje:**
+```bp
+#[@BeamMemory.Ets(keyed = true)] var cache: Dict<string, i32>
+#[@External.Erlang("fn:tanBody")] fn tan(x: f64) -> f64
+```
+
+- [ ] **(a)** Rótulos do botopink e destino tipado.
+  ```bp
+  #[@BeamMemory.Ets(keyed: true)] var cache: Dict<string, i32>
+  #[@External.Erlang(fn: "tanBody")] fn tan(x: f64) -> f64
+  ```
+- [ ] **(b)** Como está.
+
+**Recomendação: (a).**
+**Bloqueia:** 17 (com a 17-b e a 17-c); as células de host dos backends.
 
 ---
 
