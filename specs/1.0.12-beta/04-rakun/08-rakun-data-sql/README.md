@@ -58,7 +58,7 @@ cell claims to have reached a server.
 
 - [ ] `orm_test.bp`: a 100-row fetch through a derived finder issues exactly one statement (recorded); the join finder's SQL names exactly the two tables and the join column
 - [ ] R78-2 reworded to the statement-count-and-text assertion; the "100 joined rows on a real arm" half is a `deferred.md` row
-- [ ] R78-1 ("`findByCiudad` is a compile error naming the entity and listing its fields"): re-measured on the post-130 decorators — if `#[entityRepository]` can read `meta.entity.columns`, the refusal lists them and the box ticks; else the measured text recorded, box open on lg2-e/f naming the nearest form
+- [ ] R78-1 ("`findByCiudad` is a compile error naming the entity and listing its fields"): re-measured on the post-130 decorators — if `#[entityRepository]` can read `meta(Entity)?.columns` (298), the refusal lists them and the box ticks; else the measured text recorded, box open on lg2-e/f naming the nearest form
 - [ ] RX-2 (78): decorator-argument default re-measured in `orm_build_test.bp`
 
 ### Step 4 — references, not strings (decision 281)
