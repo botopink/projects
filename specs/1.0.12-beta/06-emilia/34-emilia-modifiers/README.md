@@ -85,11 +85,28 @@ the four owned examples.
 - [ ] no other family's literal moves: `emilia` stays 734 or more, every unrelated test
       byte-identical (test-file diff shows only the five families)
 
-### Step 3 — a cleared breakpoint refuses
+### Step 3 — the theme: typed entries, one `#[theme]`, a cleared breakpoint refused at compile time (decision 300)
 
-- [ ] `extendTheme(th, [#("--breakpoint-md", "")])` then `Md([…])` panics naming `--breakpoint-md`,
-      asserted by message like front 54's unknown-prefix refusal; `container.bp`'s message shape is
-      the model
+The theme stays CSS's flat entry list (`theme.bp`'s reasons hold: nineteen namespaces, three reset
+forms); what goes is the string that hid code:
+
+```bp
+#[theme]
+pub val appTheme = comptime extendTheme(defaultTheme(), [
+    entry(.Breakpoint, "md", Rem(40.0)),       // was #("--breakpoint-md", "40rem")
+    clear(.Breakpoint, "lg"),                  // was #("--breakpoint-lg", "")
+]);
+emilia([.Lg([.Pad.All.4])])                    // compile error: breakpoint lg was cleared in the theme
+```
+
+- [ ] `entry(ns: Ns, name: string, value: <the namespace's value type>)` (`Rem`, `Color`, `Shadow`, …),
+      `clear(ns, name)`, `clearNs(ns)` (`--color-*: initial`), `clearAll()` (`--*: initial`); the name
+      inside a namespace stays a string (CSS's, 281); `#("--…", "…")` pairs leave the API
+- [ ] `#[theme]`: the app's one theme, found with `@TypeInfo.all(with: theme)`; two refused at compile
+      time naming both; none = `defaultTheme()`
+- [ ] a token naming a cleared or absent breakpoint (`Lg` after `clear(.Breakpoint, "lg")`) refused at
+      compile time when the token list is comptime-known (the literal lists `emilia(...)` takes),
+      naming the theme's line; the run-time refusal stays only for a list built at run time
 - [ ] `reference-rows.md` § 3.3 "removing breakpoints" reads as a deviation in `docs.md`
 
 ### Step 4 — the unplaced rows (on `05emilia-n`)
