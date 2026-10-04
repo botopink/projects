@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta (só o que está em aberto, por ordem de importância)
 
-Atualizado em 2026-10-04 (decisões 278–308). Só o que ainda espera resposta sua: o que já foi respondido está em
+Atualizado em 2026-10-04 (decisões 278–308). **Em aberto: 67 perguntas e 15 contradições.** Só o que ainda espera resposta sua: o que já foi respondido está em
 `specs/1.0.12-beta/decisions-taken.md` (decisões 144–308; próximo número livre: **309**) e saiu daqui.
 Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 234–236 (injeção do rakun,
 `@TypeInfo.all` com lista, decorador de função), 237 (captura do template pelo texto), 238–243
@@ -16,7 +16,7 @@ registro de beans em comptime no ponto de entrada), 257 (`Schema<T>` na `validat
 > `decisions-taken.md` com o texto completo dos commits `4fb3c5e`, `ec58d33`, `805b2be`, `c4976a6`.
 
 **Ordem:** da decisão que mais destrava para a que menos destrava.
-- **Prioridade máxima** — a forma botopink (`nat-d`…`nat-f`; a `nat-g` virou a 305; as regras já são as decisões 281–284; a `nat-c` foi toda respondida) (as contradições da varredura já respondidas): o que foi copiado de fora quando a linguagem já tinha o recurso.
+- **Prioridade máxima** — a forma botopink: falta `nat-d6`…`nat-d9`, `nat-e` e `nat-f2`…`nat-f4` (respondidas: `nat-a`, `nat-b`, `nat-c` inteira, `nat-d1` → 303, `nat-d2` → 304, `nat-d3` e `nat-d4` → 306, `nat-d5` → 307, `nat-f1` → 285, `nat-g` → 305; as regras são as decisões 281–284): o que foi copiado de fora quando a linguagem já tinha o recurso.
 - **Parte 0** — `00-gate` e `01-compiler`, por prioridade (o que segura thread rodando primeiro).
 - **Parte 1** — contradições entre decisões, achadas na consolidação: cada uma segura um passo.
 - **Parte 2** — destravam muitas frentes.
