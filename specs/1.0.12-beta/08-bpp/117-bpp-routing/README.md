@@ -141,6 +141,12 @@ Per decision 202 (no `prerender` export).
 - [ ] `static-paths-example.bp`, `pagination-example.bp`, `partial-and-endpoint-example.bp` and the
       `.bpp` tree rewritten to the hooks; a `page.bpp` header with `type Props(route: …)` no longer needed
 
+### Step 8 — page data typed by the type, not a schema value (decision 306)
+
+- [ ] `paginate(…, schemaOfAstronaut())`, `pageOf(route, schemaOfAstronaut())` take the `#[validated]`
+      type (`paginate(astronauts(), 2, "/astronauts", Astronaut)`; with 293, `use pageData<Astronaut>()`);
+      `pagination-example.bp`, `static-paths-example.bp` and the two `page.bpp` rewritten
+
 ## Decisions
 
 

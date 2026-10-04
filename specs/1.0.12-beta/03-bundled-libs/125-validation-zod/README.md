@@ -1,8 +1,8 @@
 # Front 125 — validation zod: Zod's feature set in botopink
 
 **Priority:** high for the step 0–2 residue (`08-bpp/121` content collections and `08-bpp/127`
-actions take the `Schema<T>` of steps 0–2); medium for the rest · **State:** partial: steps 0–2 on
-feat with residue; steps 3–10 open
+actions take the `#[validated]` type — decision 306); medium for the rest · **State:** partial: steps 0–2 on
+feat with residue; steps 3–12 open
 **Depends on:** `01-compiler/01-checker` step 24 (decision 280, step 7) · `07-j` (size). Written against decisions 144 (undeclared keys), 145 (emitted names),
 183 (`07-m`: coercion, step 6), 257 (`07-n`: `Schema<T>` lives in `validation`)
 **Owns:** `libs/validation/src/**` · `libs/validation/test/**` · `libs/validation/AGENTS.md` ·
@@ -70,28 +70,34 @@ it; whether they become members (`Player.parse(input)`) is open (`ctr-u`):
   on the built record. A marker on a `#[schema]` type not `#[validated]` is a compile error
   (decision 67).
 
-**A schema is also a value.** `Schema<T>` is a record holding the decoder, with wrapper methods and
-combinators for what a declaration cannot say:
+**Decision 306: the type is the only schema, and `#[schema]` becomes `#[validated]`.** One decorator
+checks (`validate()`, `constraints()`) and parses (the table above, as members — spelling `ctr-u`'s);
+`#[schema]` goes. `Schema<T>`, `Codec<A, B>`, `schemas.*` and `checks.*` are no longer public:
+`schemas.bp` is the private machinery the emitted decoders call. What only a value could say is a
+field marker:
 
 ```bp
-pub type Schema<T>(…) {
-    pub fn parse(self: Self<T>, input: Json) -> @Result<T, ValidationReport>
-    pub fn decode(self: Self<T>, text: string) -> @Result<T, ValidationReport>
-    pub fn accepts(self: Self<T>, input: Json) -> bool
-    pub fn optional(self: Self<T>) -> Schema<?T>
-    pub fn array(self: Self<T>) -> Schema<Array<T>>
-    pub fn check(self: Self<T>, c: Check<T>) -> Schema<T>
-    pub fn refine(self: Self<T>, ok: fn(v: T) -> bool, code: string, message: string) -> Schema<T>
-    pub fn map<U>(self: Self<T>, f: fn(v: T) -> U) -> Schema<U>
-}
+#[validated]
+pub type Invite(
+    #[minLength(1)] title: string,
+    #[each(email, lowercased)] guests: Array<string>,            // was emails() + #[with("emails")]
+    #[codec(decode: isoToMillis, encode: formatIso)] startsAt: i64,  // was schemas.codec(…)
+    #[preprocess(digitsToNumber)] seats: i32,                    // was schemas.preprocess(…)
+    #[check(isEven)] tables: i32,                                // was schemas.int().refine(…)
+)
+
+#[validated(transparent)]                                        // encoded as its one field: "a@b.c"
+pub type Email(#[email] value: string)
+
+pub type Pet = Cat | Dog | Fish;                                 // was schemas.union3(…)
 ```
 
-- Built by `schemas.text()`, `schemas.int()`, `schemas.union2(a, b)`, `schemas.pipe(a, b)`,
-  `schemas.codec(inner, decode, encode)`; `checks.minLength(2)` is a `Check<string>` (a string check
-  on a number schema does not compile).
-- The one seam between layers: `#[with("slugSchema")] slug: string`.
-- Another library's "any schema" parameter (a content collection's `schema:`, an action's `input:`)
-  is `Schema<T>`.
+- A loose value: declare a type, or call the `constraints.v*` predicates.
+- Another library takes the **type**: `comptime source: type T`, refused unless
+  `@typeInfo(T).meta(Validated)` (298) — `collection(BlogPost)` (121), `paginate(…, Astronaut)` (117),
+  an action's input and output from its signature (127).
+- A `surface.md` row no declaration says naturally (`pipe`, `xor`, `both`, `lazy`, `custom`, …): a
+  marker where one reads well on a field, else `n/a (306)` with its reason.
 
 **Platform facts fixing the shape** (measured on erlang and commonJS; each a line of
 `libs/validation/AGENTS.md` § Language notes and, where testable, a case of `test/platform_test.bp`;
@@ -256,10 +262,35 @@ recipes.
 Step 7's `#[check]` is the first (280 example 1); the rest of the string-named arguments:
 
 - [ ] `#[extending(Dog)]`, `#[partial(Recipe)]` take the type
-- [ ] `#[with(emails)]` takes the function value
+- [ ] ~~`#[with(emails)]` takes the function value~~ — `#[with]` goes (306, step 12)
 - [ ] `#[orElse(.Tuna)]` takes a value of the field's type (`T`, 280 (2))
 - [ ] `#[wireNames("Salmon=salmon,…")]` → `#[wireName("salmon")]` on each variant: the variant is the
       reference, the wire spelling a string (another system's name)
+
+### Step 12 — the type is the only schema; `#[schema]` becomes `#[validated]` (decision 306)
+
+Narrows steps 4, 7, 8 and 9: their `schemas.*` / `Schema.*` / `checks.*` items become the markers
+below or `n/a (306)`; the items about types and markers stand.
+
+- [ ] `#[schema]` deleted from `decorators.bp`; `#[validated]` emits what it emitted (members per
+      `ctr-u`) beside `validate()` / `constraints()`; a type carrying both today migrates to the one;
+      rakun's config binder (`validate()` / `constraints()` by name) unchanged
+- [ ] `Schema<T>`, `Codec<A, B>`, `Check<T>`, `schemas`, `checks` not exported from `root.bp`;
+      `grep -rn "schemas\.\|checks\.\|Schema<" ` outside `libs/validation/src` answers nothing in
+      `repository/` (consumers in 117, 121, 127 move by their fronts)
+- [ ] the field markers `#[each(…markers)]`, `#[codec(decode: f, encode: g)]`, `#[map(f)]`,
+      `#[tryMap(f)]`, `#[preprocess(f)]`, `#[check(rule)]` on a field, and `#[validated(transparent)]`
+      (one field, encoded as that field) — each with a decoding test on both targets and a located
+      refusal (wrong function signature, `transparent` on a type with two fields, `#[each]` on a
+      non-collection)
+- [ ] `#[with]` goes (step 11's `#[with(emails)]` box with it)
+- [ ] `surface.md`: every row re-sorted — a marker, a type, or `n/a (306)` with its reason; the
+      `union2…5` / `tuple2…5` / `xor2…5` families gone (nat-d4)
+- [ ] reflection (step 9) reads the type: `@typeInfo(T)` and its meta, not `Schema.fields()`;
+      `jsonSchemaOf<T>` from the declaration only
+- [ ] every example under `examples/` rewritten: `#[validated]` for `#[schema]`, no `schemas.*` /
+      `checks.*` / `Schema<T>` in application code (`transform-and-codec-example.bp`,
+      `collections-example.bp`'s `tupleRest`, `refine-and-messages-example.bp`'s value refine, …)
 
 ## Decisions
 

@@ -159,11 +159,21 @@ autolinks, footnotes; ids; smart punctuation.
 
 - [ ] `pub fn collections()` found in `src/content.bp` by its name → each collection declared by a
       decorator (`#[collection(glob("content/blog", "**/*.md"))]`), gathered with
-      `@TypeInfo.all(with: collection)`; the schema's own shape stays `nat-d`'s question
+      `@TypeInfo.all(with: collection)`; the schema's own shape is decision 306 (step 10)
 
 ### Step 9 — route parameters and page data are hooks (decision 293)
 
 - [ ] `content-collection-example.bp`: pages take no `route: PageContext`; parameters through `use params<P>()`, page data through `use pageData<D>()`
+
+### Step 10 — the collection takes the type (decision 306)
+
+- [ ] a collection's schema is a `#[validated]` type, never a `Schema<T>` value: `defineCollection("blog",
+      glob(…), schemaOfBlogPost())` → the decorator on the type itself —
+      `#[validated] #[collection(glob("content/blog", "**/*.md"))] pub type BlogPost(…)` — or
+      `collection(BlogPost)` (`comptime source: type T`, refused unless `@typeInfo(T).meta(Validated)`)
+- [ ] a frontmatter field only a value could check (a list of slugs, a date codec) is a field marker
+      (`#[each(…)]`, `#[codec(…)]`); `content-collection-example.bp` rewritten
+- [ ] `<name>.schema.json` comes from the type's `jsonSchema` (125 step 9)
 
 ## Decisions
 

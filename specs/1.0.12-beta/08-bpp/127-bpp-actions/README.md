@@ -168,6 +168,8 @@ the server-only implementation (refused by `onze-bundler/src/refusal.bp:55-138`)
 
 - [ ] `#[action]` without a string: input and output from the signature (280 (2)); `actionRef("…",
       schemaOf…, schemaOf…)` replaced by the function value; the wire id derived at comptime
+- [ ] input and output are `#[validated]` types (decision 306) — no `Schema<T>`, no `schemaOf…()`;
+      `Signup` / `Subscribed` in the examples drop `#[schema]` for `#[validated]`
 
 ### Step 6 — a cookie is declared once, typed (decision 294)
 
