@@ -5,7 +5,7 @@
 **State:** not started · `repository/cardume` scaffolded (0.0.1: the model's types, no store)
 **Depends on:** `26-jhonstart-router` (the core and its client runtime — `state` / `effect` rebinding
 in `client_runtime.mjs`) · `08-bpp/120` (the island payload: one page store shared by every island) ·
-`03-bundled-libs/125` (`encode<T>` for the values the server seeds) · decisions 128 (hooks), 278
+`03-bundled-libs/125` (`encode<T>` for the values the server seeds) · decisions 128 (hooks), 297 (value-or-type parameters; `01-checker` step 26), 278
 (`#[client]`), 281 (no string keys), 295 (request state as atoms), 296 (cardume) · open: `atm-a`, `atm-c`, `atm-d`
 **Owns:** `repository/cardume/**` (the core: `modules/cardume/src/cardume.bp`, its tests) · new
 member `repository/rakun/modules/rakun-cardume/**` (the request store, its hooks at `RequestBase`) ·
@@ -56,6 +56,23 @@ key anywhere.
 | `waitForAll([a, b])` | `waitForAll(a, b)` — variadic (267) |
 | `<RecoilRoot initializeState>` | optional `<AtomRoot initialize={seed}>`; without it the page's islands share one store |
 | atom effects | `atom(default, effects: [...])` — which ship: `atm-d` |
+
+**An atom by its declaration or by its type** (297). Every hook takes `comptime source: Atom<T> | type T`:
+
+```bp
+pub val currentUser = atom<?User>(null);
+use atomState(currentUser)          // the declared atom — T inferred
+use atomState<?User>(currentUser)   // the same, T written and checked
+use atomState(User)                 // the type's implicit atom: one per type per store, ?User (null until set)
+
+#[atom(default: Theme.Light)]
+pub type Theme { Light, Dark }
+use atomState(Theme)                // State<Theme> — the type's default, no `?`
+```
+
+The type form suits a value the store holds once (the signed-in user, the theme) — middleware
+`use atomSetter(User)`, a page `use atomValue(User)`, nothing declared; a declared atom holds
+several values of one type (`cartItems`, `wishlist`).
 
 Hook names are **nouns** (`atomState`, `atomValue`, `atomSetter` — jhonstart's rule, `hooks.bp`'s
 header): `use` is the activation, the name never repeats it (no `useAtomValue`) — whether 295's
@@ -122,6 +139,9 @@ the four hooks, the refresher), `async-example.bp` (async selectors, `loadable`,
 - [ ] `repository/cardume` on GitHub, `feat` pushed, the submodule `repository/cardume` added here;
       the scaffold's model (`Atom`, `Selector`, `Getter`, `AtomFamily`, `Loadable`, `Tx`) compiled and its
       three tests green on both targets
+- [ ] every hook takes `comptime source: Atom<T> | type T` (297, `01-checker` step 26): the type form is
+      the type's implicit atom per store, `?T` unless `#[atom(default: …)]` on the type; `atomState<T>(a)`
+      checked against `a`
 - [ ] `atom<T>(default: T) -> Atom<T>`; `atomValue`, `atomState`, `atomSetter`, `atomReset`, each
       `-> @Component<ElementBase, …>` (128), the server pass reading the default
 - [ ] `atoms_runtime.mjs`: the page store; a component re-renders on a change of what it read, and only then

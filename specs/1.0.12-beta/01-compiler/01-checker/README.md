@@ -2,7 +2,7 @@
 
 **Priority:** high · **State:** partial: steps 1–9, 11, 12, 14–17, 19, 20 on feat; step 18 built on
 feat (botopink-lang `49455602` merges `19d59508`, `6185db3c`) with one box open; step 6 box 3, steps
-10, 13, 21–25 and ten rows open
+10, 13, 21–26 and ten rows open
 **Depends on:** `04-js` step 6 (step 6 box 3) · `16-formatter` step 8 (step 10) · `05-wasm` nested
 constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated rows lg2-a, lg2-q, lg2-e, lg2-m, lg2-r, lg2-t — each a step here only once
 answered.
@@ -210,6 +210,17 @@ importer binds it under the module path's last segment or an alias (213, 288).
 - [ ] `reject/default_twice` (two defaults), `reject/default_unknown` (`pub default nope;`) at the line
 - [ ] a decorator named like the file imported beside an anonymous default (`page.bpp`'s case) checks
 - [ ] the formatter prints both forms (`16-formatter` hand-off if its arm is missing); `docs.md` § Modules
+
+### Step 26 — a `comptime` parameter that takes a value or a type (decision 297)
+
+`comptime source: X<T> | type T`: an argument of type `X<T>` binds `T` from it (or checks it against
+an explicit `<T>`); a type argument binds `T` to that type; `source is type` answers which, at comptime.
+
+- [ ] `run/value_or_type_param` — `fn pick<T>(comptime s: Box<T> | type T) -> string` called with a
+      `Box<i32>` value and with `string`; `@typeName`-free assertion on the branch taken
+- [ ] `reject/value_or_type_mismatch` — `pick<i32>(Box("x"))` at the argument; a runtime value where
+      the parameter is `comptime` at the argument (280 (0))
+- [ ] `docs.md` § Generics documents it; `language-gaps.md`'s row closes
 
 ### Rows other fronts found
 

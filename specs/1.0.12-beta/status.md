@@ -49,6 +49,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] decision 282 (a role in the decorator) — 117 s6 · 53 s8 · 51 s8 · 121 s8 · after 01-checker s24
 - [ ] decision 285 (the toolchain knows `bpp`, `html`, the prelude) — 116 s2 · 117 s1 · rakun 22 s7 · 26 s10
 - [ ] 01-checker s25 — the anonymous default `pub default fn (…)` and `pub default Name;` (289) · then 116 s2
+- [ ] 01-checker s26 — a `comptime` parameter taking a value or a type (`Atom<T> | type T`, 297) · then 136
 - [ ] decision 290 (no segment config; `revalidate`, `dynamicParams` in `#[page]`) — rakun 22 s8 · 26 s10 · 53 s9
 - [ ] decision 291 (`use request()` / `use response()`; no `isPrerendered`) — 122 s1, s3 · 26 s8, s10 · 120 s4
 - [ ] decision 292 (`#[reload]`, `#[history]`, navigation hooks, `ScriptStrategy`) — 126 s1–2 · 50 s10

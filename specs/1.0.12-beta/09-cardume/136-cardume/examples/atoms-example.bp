@@ -72,6 +72,30 @@ pub fn ProductCard(props: ProductProps) -> View {
 // `atomCallback`'s (step 5); this helper stands for it in the example
 fn cartNow() -> Item[] { return []; }
 
+// ── the type form (297): the type is its own atom ───────────────────────────
+
+pub type Customer(id: i32, name: string)
+
+// nothing declared: `Customer` names its implicit atom in the page's store
+#[client]
+pub fn Greeting() -> View {
+    val c = use atomValue(Customer);               // ?Customer — null until set
+    return html """<span>{c?.name ?? "visitor"}</span>""";
+}
+
+#[client]
+pub fn SignIn() -> View {
+    val setC = use atomSetter(Customer);           // fn(?Customer)
+    return html """<button #[onClick({ -> setC(Customer(id: 1, name: "Ana")) })]>sign in</button>""";
+}
+
+// the declared form with the type written: checked against the atom
+#[client]
+pub fn ItemsCount() -> View {
+    val items = use atomValue<Item[]>(cartItems);  // atomValue<Post[]>(cartItems) would not compile
+    return html """<span>{items.length.toString()}</span>""";
+}
+
 // ── the page ────────────────────────────────────────────────────────────────
 
 pub fn Shop() -> View {

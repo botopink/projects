@@ -4,7 +4,7 @@ The rules the fronts implement against. Numbers continue from
 [1.0.10-beta's record](../1.0.10-beta/decisions-taken.md) (which stopped at 143; 91–94, 97 and
 99–101 are used) and are never renumbered or reused. A question is raised in
 [`decisions-pending.md`](./decisions-pending.md) under a lettered id and moves here with the next
-free number. **The next free number is 297.**
+free number. **The next free number is 298.**
 
 Each row: number · the id it answered · the rule in force · the fronts it binds. A row amended by a
 later one states only what is in force and cites the amendment; a row fully replaced is one line.
@@ -96,6 +96,7 @@ jhonstart & templates: 186, 190–193, 200, 202, 204, 220, 223 · onze: 218 · b
 | 247 | ck3-a | Kotlin's numeric suffixes, lowercase: `1.5` is `f64` and `42` `i32` by default; `1.5f` f32, `1.5d` f64, `42l` i64, `42u` u32, `42ul` u64, `42i8`, `42i16`, `42u8`, `42u16`, `42isize`, `42usize`; an uppercase suffix (`42L`, `1.5F`) is a located error naming the lowercase one. A literal without suffix never changes type to fit: `val f: f32 = 1.5` and `val x: f64 = 1` are errors (write `1.5f`, `1d` or `1.0`). Reverses 209; 215 stands. The lexer's exact rule (hex digits `d`/`f` against suffixes, exponent, member access on a literal) and the targets' representation of `i64`/`u64`/`f32` are the implementing front's, against this decision | 01-checker (lexer, checker) · backends |
 | 255 | — | (1) A type name with explicit type arguments followed by `.member` or `(` is a type application — `Dict<string, unknown>.empty()` (extends 1.0.10's 8 §1.3 to a static member); elsewhere `<` is a comparison: a type-argument list is tried only after a type name and only when its `>` is followed by `.` or `(`, and a list that does not parse as types is a comparison. (2) `comptime <expr>` is `comptime { break <expr>; }` | 01-checker (parser) |
 | 264 | gw-a | Integer overflow is a program error on every target: `+`, `-`, `*`, unary `-` and the compound assignments of every integer type check the result against the declared type's range and abort (wasm's `int_chk`); commonJS and erlang/beam add a range test per operation; on commonJS an `i64`'s range is ±(2^53−1), so a result outside it aborts there too; no target wraps or answers a wider number (`ctr-j`) | 02-erlang · 03-beam · 04-js |
+| 297 | (cardume) | **A `comptime` parameter may accept a value or a type:** `comptime source: Atom<T> \| type T` takes either an `Atom<T>` value — `T` inferred from it, or written (`atomState<?User>(currentUser)`, checked) — or a type — `atomState(User)`, `T` bound to the type itself —; the body tells them apart at comptime (`source is type`). No overloading is added: one function, one name. cardume's hooks take this form (`atomState`, `atomValue`, `atomSetter`, `atomReset`, both bridges): a type names **its implicit atom** — one per type per store, valued `?T` (`null` until set), or `T` when the type declares a default (`#[atom(default: Theme.Light)] pub type Theme { … }`); a declared atom stays the way to hold several values of one type (281: the reference is the type or the declaration, never a string) | `01-compiler/01-checker` step 26 · `09-cardume/136` |
 
 ## Comptime, reflection & decorator outputs
 
