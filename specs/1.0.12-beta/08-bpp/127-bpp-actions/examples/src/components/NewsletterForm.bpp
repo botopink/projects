@@ -37,10 +37,10 @@ import {actions.newsletter_api.newsletterAction, actions.newsletter_api.Subscrib
 fn describe(outcome: @Result<Subscribed, ActionError>) -> string {
     return case outcome {
         Ok(value) -> "Subscribed " + value.email;
-        Err(Input(fields)) -> "Check: " + fields.keys().join(", ");
-        Err(Unauthorized(message)) -> message;
-        Err(BadRequest(message)) -> message;
-        Err(_) -> "Something went wrong.";
+        Error(Input(fields)) -> "Check: " + fields.keys().join(", ");
+        Error(Unauthorized(message)) -> message;
+        Error(BadRequest(message)) -> message;
+        Error(_) -> "Something went wrong.";
     };
 }
 

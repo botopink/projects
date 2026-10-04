@@ -63,12 +63,12 @@ pub fn newsletterAction() -> ActionRef<Signup, Subscribed> {
 pub fn newsletter(input: Signup, ctx: ActionContext) -> @Task<@Result<Subscribed, ActionError>> {
     // `ctx.cookies.has("user-session")`
     if (ctx.cookie("user-session") == "") {
-        return Err(Unauthorized("User must be logged in."));
+        throw Unauthorized("User must be logged in.");
     }
     if (input.terms == false) {
-        return Err(BadRequest("The terms must be accepted."));
+        throw BadRequest("The terms must be accepted.");
     }
-    return Ok(Subscribed(email: input.email));
+    return Subscribed(email: input.email);
 }
 
 // ── src/components/newsletter.bp — the form ─────────────────────────────────
@@ -93,10 +93,10 @@ pub fn NewsletterForm() -> @Component<ElementBase, Element> {
 fn describe(outcome: @Result<Subscribed, ActionError>) -> string {
     return case outcome {
         Ok(value) -> "Subscribed " + value.email;
-        Err(Input(fields)) -> "Check: " + fields.keys().join(", ");
-        Err(Unauthorized(message)) -> message;
-        Err(BadRequest(message)) -> message;
-        Err(_) -> "Something went wrong.";
+        Error(Input(fields)) -> "Check: " + fields.keys().join(", ");
+        Error(Unauthorized(message)) -> message;
+        Error(BadRequest(message)) -> message;
+        Error(_) -> "Something went wrong.";
     };
 }
 
@@ -120,10 +120,10 @@ test "a scripted call decodes the same type from JSON" {
     assert describe(out) == "Subscribed ana@example.com";
 }
 
-test "an invalid input is an Err(Input) and the function is not called" {
+test "an invalid input is an Error(Input) and the function is not called" {
     val out = await runAction(newsletterAction(), formCall("email=nope&terms=on"), anonymous());
     // anonymous() would make the function answer Unauthorized — it never ran.
-    val fields = case out { Err(Input(fields)) -> fields.at("email").unwrapOr([]).join("|"); _ -> "not an input error"; };
+    val fields = case out { Error(Input(fields)) -> fields.at("email").unwrapOr([]).join("|"); _ -> "not an input error"; };
     assert fields == "must be a well-formed email address";
 }
 
@@ -136,9 +136,9 @@ test "the framework's own form fields are not unknown keys" {
 
 fn caseName(outcome: @Result<Subscribed, ActionError>) -> string {
     return case outcome {
-        Err(Unauthorized(_)) -> "unauthorized";
-        Err(BadRequest(_)) -> "bad-request";
-        Err(_) -> "other";
+        Error(Unauthorized(_)) -> "unauthorized";
+        Error(BadRequest(_)) -> "bad-request";
+        Error(_) -> "other";
         Ok(_) -> "none";
     };
 }

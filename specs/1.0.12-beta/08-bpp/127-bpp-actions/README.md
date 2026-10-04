@@ -87,8 +87,8 @@ registers the function):
 |---|---|
 | a form post (`accept: "form"`) | drops the framework's own fields (the action field, a CSRF token), then `bindNewComment(pairs)` |
 | a scripted call (`accept: "json"`) | `parseNewComment(args[0])` |
-| either, with violations | answers `Err(ActionError.Input(fields))` — violations grouped by path — **without calling the function** |
-| valid | calls the function, encodes `Ok(v)` with `encodeComment` as `{data}`, or `Err(e)` as `{error}` with its case's status and message |
+| either, with violations | answers `Error(ActionError.Input(fields))` — violations grouped by path — **without calling the function** |
+| valid | calls the function, encodes `Ok(v)` with `encodeComment` as `{data}`, or `Error(e)` as `{error}` with its case's status and message |
 
 Input type named in the argument because a function `@Decl` has no parameter list; dropped once it
 gains one (wrapper reads the parameter).
@@ -109,16 +109,16 @@ pub type ActionError {
     Internal(message: string),
 }
 
-// the function — `return Err(…)`, never `throw`
-if (ctx.cookie("user-session") == "") { return Err(Unauthorized("User must be logged in.")); }
-return Ok(Subscribed(email: input.email));
+// the function — `return v` is `Ok(v)`; `throw e` is an `Error(e)` value, not a raise (118)
+if (ctx.cookie("user-session") == "") { throw Unauthorized("User must be logged in."); }
+return Subscribed(email: input.email);
 
 // the caller — the reference's `if (error) … else data`
 case (await callAction(newsletterAction(), input)) {
     Ok(s) -> show(s);
-    Err(Input(fields)) -> markFields(fields);
-    Err(Unauthorized(_)) -> goToLogin();
-    Err(e) -> warn(e);
+    Error(Input(fields)) -> markFields(fields);
+    Error(Unauthorized(_)) -> goToLogin();
+    Error(e) -> warn(e);
 }
 ```
 
@@ -142,7 +142,7 @@ the server-only implementation (refused by `onze-bundler/src/refusal.bp:55-138`)
 ### Step 1 — `ActionError` and the envelope's typed payload (decision 303)
 
 - [ ] `libs/actions/src/outcome.bp`, both targets: `ActionError` (the sum type above) and the `@Result<T, ActionError>` ↔ `{data}` / `{error}` codec; no `ActionOutcome`, no `ActionErrorCode`; it travels in the envelope's existing `payload` field, no reader changes
-- [ ] an `Err(Input(fields))` written and read back keeps every path and message; each other case keeps its status and message
+- [ ] an `Error(Input(fields))` written and read back keeps every path and message; each other case keeps its status and message
 - [ ] a payload with both `data` and `error`, or neither, is refused by the reader (never decoded into a `@Result`)
 
 ### Step 2 — `#[action]` and the wrapper
@@ -151,11 +151,11 @@ the server-only implementation (refused by `onze-bundler/src/refusal.bp:55-138`)
 - [ ] invalid input never reaches the function — asserted with a counter the function bumps
 - [ ] `#[action]` on a function not returning `@Task<@Result<T, ActionError>>`, or naming a type
       with no `bind<T>` / `parse<T>` in scope, fails at the annotation
-- [ ] the function answers with `return Ok(…)` / `return Err(…)`; `Err(Input(…))` from the function itself is allowed (a check only the server can make, e.g. a taken e-mail)
+- [ ] the function answers with `return v` / `throw e`; `throw Input(…)` from the function itself is allowed (a check only the server can make, e.g. a taken e-mail)
 
 ### Step 3 — The client call and the form binding
 
-- [ ] `callAction` over `jhonstart-dom-test`'s fake transport answers `@Task<@Result<T, ActionError>>`: `Ok`, `Err(Input)` and each other `Err` case decode to their variant
+- [ ] `callAction` over `jhonstart-dom-test`'s fake transport answers `@Task<@Result<T, ActionError>>`: `Ok`, `Error(Input)` and each other `Error` case decode to their variant
 - [ ] a form bound with `formAction(ref)` submits without JavaScript; the next render's `actionResult(ref)` holds the outcome — `?@Result<T, ActionError>`, `null` until posted
 - [ ] `fieldError(name)` (`libs/actions/src/state.bp:21`) answers the path's first message, so
       existing form components work over a typed action
