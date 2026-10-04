@@ -92,7 +92,7 @@ test "the page renders the fallback and a placeholder, not the component" {
 }
 
 test "the page reads nothing from the request, so it stays prerendered" {
-    assert @typeInfo(Page).meta.page.kind == "S";   // recorded by #[page] from the hooks (277)
+    assert @typeInfo(Page).meta(PageMeta)?.kind == .S;   // recorded by #[page] from the hooks (277)
 }
 
 test "the props in the URL are sealed, not readable and not editable" {

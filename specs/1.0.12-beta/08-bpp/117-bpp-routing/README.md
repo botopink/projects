@@ -34,7 +34,7 @@ Exists: segment grammar `[x]`, `[...x]`, `[[...x]]`, `(group)`, `@slot`, `_priva
 (`segment.bp`, `parseSegment`); a `.bp` page names its directory in its decorator
 (`#[page("blog/[slug]")]`, `onze/examples/blog/src/app/blog/[slug]/page.bp`) since `@Decl` has no
 source location (`language-gaps.md` lg2-q); `#[page]` emits `<fn>Params(route)` (`jhonstart/src/routes.bp`, `page`),
-moved by decision 236 to `paramsOf(…meta.page.seg, route)` (`01-compiler/130`); static generation:
+moved by decision 236 to `paramsOf(…seg, route)` (gone by 293) (`01-compiler/130`); static generation:
 `registerStaticParams(seg, fn() -> @Task<StaticParams[]>)`, `decideKind`, `prerenderAll(strict)`,
 `prerenderPath`, `serveStatic` (stale-while-revalidate), `staticExport(outDir)` (`static_gen.bp`);
 no segment config — `revalidate` and `dynamicParams` are `#[page]` arguments (290); `page` +
@@ -105,7 +105,7 @@ Per decision 202 (no `prerender` export).
 - [ ] `examples/static-paths-example.bp` passes; scan finds `staticPaths` and `partial` in a `.bp`
       and a `.bpp` page; no `prerender` read
 - [ ] a page calling `cookies()` is not prerendered (rendered per request): its kind is `D` and its
-      `why` names the read (`@typeInfo(Page).meta.page`, recorded by `#[page]` from `Decl.hooks`, 277)
+      `why` names the read (`@typeInfo(Page).meta(PageMeta)`, recorded by `#[page]` from `Decl.hooks`, 277)
 - [ ] a dynamic route `#[page]` prerenders with no `staticPaths` fails the build (`prerenderAll(strict)`)
 
 ### Step 3 — `StaticPath.data`, `paginate`, `Page<T>`

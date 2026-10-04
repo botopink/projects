@@ -106,7 +106,7 @@ test "a rewrite names the route to render under this URL" {
 
 test "reading the request or writing the response makes the page dynamic" {
     // the kind `#[page]` records at comptime from the hooks (277), not a run-time mark
-    assert @typeInfo(Page).meta.page.kind == "D";
+    assert @typeInfo(Page).meta(PageMeta)?.kind == .D;
 }
 
 // What is refused, and when:

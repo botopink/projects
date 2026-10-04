@@ -22,7 +22,7 @@ library decorator uses them; `@emit` is a named error.
 | Place | Written in a decorator | Read | Refused |
 |---|---|---|---|
 | member of the annotated type | `decl.addMember("pub fn fromRow(r: Row) -> Self { … }")` | `City.fromRow(r)`, `c.describe()`; travels with the type | `decorator-member-without-type`, `decorator-member-duplicate`, `decorator-member-not-one-fn` |
-| comptime meta, per decorator | `decl.setMeta("table", "cities")` | `@typeInfo(City).meta.entity.table`, `@typeInfo(City).name` — string constants | `decorator-meta-on-member`, `decorator-meta-duplicate`, `typeinfo-unknown-member`, `typeinfo-unknown-declaration`, `typeinfo-meta-missing` |
+| comptime meta, a typed value keyed by its type (298) | `decl.setMeta(Entity(table: "cities"))`, `decl.addMeta(Index(…))` | `@typeInfo(City).meta(Entity)` → `?Entity`; `metaAll(Index)` → `Index[]` |
 | associated type | `decl.addType("Columns", "(id: string)")` | `City.Columns` in type positions, `City.Columns(id: "x")`; imported with its owner | `decorator-type-without-owner`, `decorator-type-name`, `decorator-type-duplicate`, `decorator-type-not-one-type` |
 | project reflection | (every top-level declaration a decorator runs over) | `@TypeInfo.all(with: d)` (or a list, decision 235) → `Declared<unknown>[]` (decision 254), `member: "m"` for types | `typeinfo-all-arguments`, `typeinfo-all-not-decorator`, `typeinfo-all-mixed`, `typeinfo-all-needs-member`, `typeinfo-all-private`, `typeinfo-all-imported` |
 
@@ -63,7 +63,7 @@ decision 188, never in a wave with the rakun front owning the file.
 | same files + `lifecycle.bp`, `conditions.bp`, `rakun-data` `entity.bp` / `query.bp` | ~27 | `val __rkScan_<T>`, `__rkBean_`, `__rkLc_`, `__rkEv_`, `__rkImp_`, `__rkExit_`, `__rkAutoQ_`, `__rkCat_`, `__rkChk_`, `__rkEnable_`, `__rkEntityReg_`, `__rkQueryReg_` (load-time registration) | `@TypeInfo.all(…, member: "register")` at rakun's boot | 235, 234, 254 |
 | `rakun-web/src/convention.bp`, `rakun-app/src/{route_handler,actions}.bp`, `rakun-websocket`, `rakun-scheduling`, `rakun-messaging`, `rakun-cli`, `rakun/src/actuator_api/**` (today `rakun-actuator-api`, moved by 128 step 1), `rakun/src/decorators.bp` routes | ~25 | `val __rkFilter_`/`__rkConverter_`/`__rkCustomizer_`/`__rkCors_`/`__rkAdvice_`/`__rkMiddleware_`/`__rkHandler_<VERB>_`/`__rkRoute_`/`__rkWs_`/`__rkSched_`/`__rkJob_`/`__rkCli_`/`__rkEp_`… | meta (`order`, `media`, `path`, `verb`) + `@TypeInfo.all` at the entry point | 235; 236 for `#[middleware]`'s gate; 234 |
 | `rakun-client/src/exchange.bp` | 2 | `pub type Http<T>` + `pub fn http<T>()` | `T.Http` + a factory member | held: behavior member called from another module fails (below) |
-| jhonstart `routes.bp` | 5 | `val __jhPage_X = jhPage(seg, …)` (+ layout/template/default), `pub fn <X>Params(route)` | meta `seg` + `@TypeInfo.all(with: page)` | 235; 236 (`paramsOf(@typeInfo(BlogPost).meta.page.seg, route)` once by hand); readers: onze's generated entry points, jhonstart's tests |
+| jhonstart `routes.bp` | 5 | `val __jhPage_X = jhPage(seg, …)` (+ layout/template/default), `pub fn <X>Params(route)` | meta `seg` + `@TypeInfo.all(with: page)` | 235; 236 (`paramsOf(@typeInfo(BlogPost).meta(PageMeta)?.seg, route)` once by hand); readers: onze's generated entry points, jhonstart's tests |
 | validation `#[schema]` (`libs/validation/src/decorators.bp`) | 5 | `pub fn parse<T>At`, `parse<T>`, `decode<T>`, `schemaOf<T>` + helpers | members `T.parseAt/parse/decode/schema` | nothing — next; `decode` passes `parse<T>At` as a value (unbound variable on erlang, below), so wrap it in a lambda |
 
 - [ ] each library's hook green on this compiler; `grep -rn '@emit(' --include=*.bp repository/`
@@ -92,6 +92,20 @@ reflection over the project** (declaration half; the `@project()` manifest half 
 
 - [ ] `@TypeInfo.all(with: …, member: "make")` (256) names the member by reference — an interface's
       method — not by string; `Declared.value` stays `unknown` (254) until `nat-a`'s registry shape
+
+### Step 8 — typed meta, keyed by its type (decision 298)
+
+`Decl.setMeta(value: T)` — one value per type per declaration, a second of the same type refused at
+the call —; `Decl.addMeta(value: T)` for what repeats; read `@typeInfo(X).meta(T) -> ?T`,
+`@typeInfo(X).metaAll(T) -> T[]`, and `Declared.meta(T)` in `@TypeInfo.all`'s answer. Comptime only
+(280 (0)). `setMeta(key: string, value: string)` and `.meta.<decorator>.<key>` go.
+
+- [ ] `builtins.d.bp`: `setMeta`, `addMeta` on `Decl`; `meta`, `metaAll` on `TypeInfo<T>` and `Declared<T>`
+      (`comptime t: type`, 280); `DeclaredMeta(key, value)` gone
+- [ ] `run/meta_typed` — `#[entity("cities")]` sets `Entity(table: "cities")`, `meta(Entity)?.table ==
+      "cities"`; two `#[index]` add two `Index`, `metaAll(Index).length == 2`; `meta(Other)` is `null`
+- [ ] `reject/meta_twice` — two `setMeta(Entity(…))` on one declaration, at the second
+- [ ] the std and library sites migrated (rakun's `#[entity]` and the stereotypes, jhonstart's `#[page]`)
 
 **Gate:** standard (fronts.md § Gate) + std on commonJS and erlang; each library's hook
 

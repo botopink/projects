@@ -73,7 +73,7 @@ once more, then refused naming both.
 
 **`site()` is configuration**: `onze.json` `site` (124) via the render's `app(…)` options;
 jhonstart names no config file. No `isPrerendered()`: whether a page is prerendered is its kind,
-recorded by `#[page]` at comptime (`@typeInfo(Page).meta.page.kind`, 277).
+recorded by `#[page]` at comptime (`@typeInfo(Page).meta(PageMeta)?.kind`, 277).
 
 ## Open
 
@@ -87,7 +87,7 @@ recorded by `#[page]` at comptime (`@typeInfo(Page).meta.page.kind`, 277).
 - [ ] `examples/response-control-example.bp` passes
 - [ ] either called after the shell is written fails with the hook's name and the phase
 - [ ] a header set from a `Suspense` fill refused the same way
-- [ ] `response` marked `#[serverOnly]`: a page using it is `D` (`@typeInfo(Page).meta.page.kind`),
+- [ ] `response` marked `#[serverOnly]`: a page using it is `D` (`@typeInfo(Page).meta(PageMeta)?.kind`),
       its `why` naming `response`; a call written without `use` is no hook (the checker's ordinary
       error for a hook outside `use`)
 - [ ] `#[page(headers: …)]` on an `S` page: the headers served with the prerendered file

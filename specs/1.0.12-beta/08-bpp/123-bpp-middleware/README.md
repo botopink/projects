@@ -93,7 +93,7 @@ from the action field and header onze configures (114).
 - [ ] a local set in middleware is read by a page, a route handler and an action in the same
       request; `null` in the next request on the same process
 - [ ] a page reading a local is not prerendered: its kind is `D`, its `why` says `locals`
-      (`@typeInfo(Page).meta.page`, 277; through `08-j`'s marker)
+      (`@typeInfo(Page).meta(PageMeta)`, 277; through `08-j`'s marker)
 
 ### Step 2 — `sequence`
 

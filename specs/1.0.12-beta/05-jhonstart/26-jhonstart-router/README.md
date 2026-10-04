@@ -171,9 +171,10 @@ list against its own decorators; the compiler names no marker.
 - [ ] hooks marked: `#[serverOnly]` on `cookies`, `headers`, `request`, `response` (291; `server.bp`), `searchParams`
       (`router.bp`); `#[clientOnly]` on the browser-only hooks; `state`, `effect`, `memo`, `ref`,
       `reducer` unmarked
-- [ ] `#[page]` (`routes.bp`): `setMeta("seg", …)`; a `#[clientOnly]` path not crossing a `#[client]`
-      refused at its `use`; `setMeta("kind", "D")` when a `#[serverOnly]` or a `hook: null` path
-      exists, else `"S"`; `setMeta("why", …)` naming the hook and the chain
+- [ ] `#[page]` (`routes.bp`): `setMeta(PageMeta(seg, kind, why))` (298; `RouteKind { S, D }`); a
+      `#[clientOnly]` path not crossing a `#[client]` refused at its `use`; `kind: .D` when a
+      `#[serverOnly]` or a `hook: null` path exists, else `.S`; `why` naming the hook and the chain;
+      read `@typeInfo(Page).meta(PageMeta)`
 - [ ] `#[client]` (`client.bp`): every `#[serverOnly]` path refused at its `use`, naming the chain
       (`via UserMenu → Avatar`)
 - [ ] `markDynamic` (`router.bp:186,198,276`), its import and call (`server.bp:87,254`) and
@@ -206,7 +207,7 @@ list against its own decorators; the compiler names no marker.
 - [ ] `use params<P>()` and `use pageData<D>()` (`routes.bp`), unmarked — known at build for a
       prerendered page, so neither makes a page `D`; `searchParams` stays `#[serverOnly]`
 - [ ] a page function takes no parameter: `#[page]` and its function form expect `fn() -> View`;
-      `route: PageContext` and `paramsOf(meta.page.seg, route)` (236) go
+      `route: PageContext` and `paramsOf(…seg, route)` (236) go
 - [ ] `#[page]` checks every `use params<P>()` its `Decl.hooks` reach: `P`'s fields are the pattern's
       segments, each parsed to its field's type (`id: i32` → `/produto/abc` answers 404 without
       rendering); every `use pageData<D>()` matches `paths:`'s `D`; a mismatch refused at the page,
