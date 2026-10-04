@@ -741,100 +741,166 @@ onze build   → toda página é renderizada "para ver" se marca dinâmica; o bu
   ```
 
 - [ ] **(b)** **O compilador lista os hooks alcançados, transitivamente, cada um com as anotações, e
-  cada anotação carrega o seu `Decorator`; a biblioteca compara com os decorators que ela mesma
-  importa.** O compilador não ganha a palavra "stage", "server" nem "client".
+  cada anotação carrega o seu `Decorator`; a biblioteca compara com os decorators que ela importa.**
+  O compilador não ganha a palavra "stage", "server" nem "client". Como fica cada coisa:
 
-  *1 — O que o compilador acrescenta ao `@Decl` (`builtins.d.bp`):*
+  **① Compilador — o que é declarado** (`libs/std/src/builtins.d.bp`, dono `01-checker`)
   ```bp
+  // hoje: pub type DeclAnnotation(name: string, args: string[])
   pub type DeclAnnotation(
-      name: string,               // continua (texto como escrito)
-      args: string[],
-      decorator: Decorator,       // NOVO: a declaração do decorator (identidade, decisão 268)
+      name: string,               // fica: o nome como foi escrito (alias incluído)
+      args: string[],             // fica: os lexemas dos argumentos
+      decorator: Decorator,       // NOVO: a declaração do decorator — identidade, decisão 268
   )
 
+  // NOVO: um `use` alcançado
   pub type HookUse(
-      hook: Declared<unknown>,          // a declaração do hook ativado (ex.: session)
-      annotations: DeclAnnotation[],    // as anotações do HOOK (ex.: #[serverOnly])
-      via: Declared<unknown>[],         // as funções no caminho até o `use` (ex.: [Avatar])
-      at: string,                       // onde está o `use` ("components/Avatar.bp:3")
+      hook: Declared<unknown>,          // o hook ativado (ex.: session); `null` → ver regra R5
+      annotations: DeclAnnotation[],    // as anotações DO HOOK (ex.: #[serverOnly])
+      via: Declared<unknown>[],         // as funções entre a função refletida e o `use` (ex.: [Avatar])
+      at: string,                       // o lugar do `use`: "components/Avatar.bp:3:15"
   )
 
-  // em Decl (e em @typeInfo(f)): 
-  hooks: HookUse[]                      // NOVO: todo `use` alcançado, transitivamente
-  ```
-  ```bp
+  pub behavior Decl {
+      …                                 // o que já existe (kind, name, fields, methods, returnType, annotations…)
+      val hooks: HookUse[];             // NOVO: todo `use` alcançado, transitivamente
+  }
+
   extend Decorator {
-      pub fn is(self, other: Decorator) -> bool;   // identidade da declaração, nunca o nome escrito
+      pub fn is(self, other: Decorator) -> bool;   // NOVO: mesma declaração? (nunca compara o nome)
   }
   ```
+  `@typeInfo(f).hooks` e o `decl.hooks` dentro de um decorator são a mesma lista.
 
-  *2 — As regras do cálculo (no checker, uma vez por função):*
-  - entra todo `use <hook>(…)` escrito no corpo, e os `hooks` de cada função `@Component` chamada no
-    corpo — inclusive as que o `html` gera a partir das tags (`<Avatar />` vira `Avatar()`), por isso
-    um componente-pai alcança o `session()` do filho;
-  - recursão e ciclos: ponto fixo — cada hook entra uma vez por caminho mais curto;
-  - um hook alcançado só por um **valor-função** (um lambda recebido como parâmetro) não é rastreado:
-    entra como `HookUse(hook: <desconhecido>, annotations: [], …)` e a biblioteca trata como quiser
-    (o jhonstart: página por request, o lado seguro);
-  - uma função host (`declare fn` com `#[@External]`) não tem `use`: não contribui;
-  - não muda nenhum backend e nenhum snapshot: é só reflexão em compilação.
+  **② Compilador — como a lista é calculada** (checker, `comptime/infer.zig` + `env.zig`; nenhum backend muda)
+  - **R1** — cada `use h(…)` escrito no corpo entra como `HookUse(hook: h, annotations: <as de h>, via: [], at: <o use>)`.
+  - **R2** — cada chamada a uma função cujo retorno é `@Component<…>` (um componente ou um hook
+    customizado) acrescenta os `hooks` dela, com a função chamada no começo do `via`. Isso cobre os
+    filhos: o `html` gera `Avatar()` para `<Avatar />`, então o pai herda o `session()` do `Avatar`.
+  - **R3** — um hook customizado (`fn user() -> @Component<ElementBase, User> { val s = use session(); … }`)
+    aparece como ele mesmo **e** como o que ele alcança: `use user()` dá `[user, session via user]`.
+  - **R4** — recursão e ciclos: ponto fixo; cada par (hook, `at`) entra uma vez, pelo caminho mais curto.
+  - **R5** — um `use` sobre um **valor-função** (um lambda recebido como parâmetro) não é rastreável:
+    entra como `HookUse(hook: null, annotations: [], via, at)`; cada biblioteca decide (o jhonstart: o lado seguro).
+  - **R6** — uma função host (`declare fn` com `#[@External]`) não tem `use`: não contribui.
+  - **R7** — a lista é calculada depois que a função e as que ela chama foram checadas; um decorator
+    que lê `decl.hooks` roda nesse momento (os quatro lugares da decisão 216 já rodam depois do checker).
+  - **R8** — os decorators-marca (`#[serverOnly]`) não precisam de nada especial: são decorators
+    comuns sem saída; a anotação deles aparece no `annotations` do hook.
 
-  *3 — As marcas e a leitura, no jhonstart:*
+  **③ Compilador — testes** (`tests/language/`, quatro targets onde roda)
+  ```text
+  run/decl_hooks_direct            use session() → hooks = [session], via [], at certo
+  run/decl_hooks_transitive        Pai → Filho → use session() → [session via Filho]
+  run/decl_hooks_custom_hook       use user() → [user, session via user]
+  run/decl_hooks_cycle             A ↔ B, cada um com um use → ponto fixo, cada hook uma vez
+  run/decl_hooks_function_value    use f() com f parâmetro → HookUse(hook: null)
+  run/decorator_is_identity        #[srv] com import {serverOnly as srv} → a.decorator.is(serverOnly) == true;
+                                   um serverOnly de outro pacote → false
+  ```
+  E a linha do `language-gaps.md` "A function's `@Decl` does not say which hooks it activates" fecha.
+
+  **④ jhonstart — as marcas** (`modules/jhonstart/src/stage.bp`, novo; dono `05-jhonstart/26` passo 8)
   ```bp
-  // jhonstart/src/stage.bp — decorators sem saída: só marcam
-  pub fn serverOnly(comptime decl: @Decl) {}
-  pub fn clientOnly(comptime decl: @Decl) {}
+  //// stage — onde um hook pode rodar (decisão 186). Decorators sem saída: só marcam.
+  pub fn serverOnly(comptime decl: @Decl) {}     // só no servidor, por request
+  pub fn clientOnly(comptime decl: @Decl) {}     // só no browser, dentro de um #[client]
 
   pub fn reaches(decl: Declared<unknown>, marker: Decorator) -> ?HookUse {
       return decl.hooks.find({ h -> h.annotations.any({ a -> a.decorator.is(marker) }) });
   }
-  pub fn crossesClient(h: HookUse) -> bool {          // o caminho passa por um #[client]?
+  pub fn unknownHook(decl: Declared<unknown>) -> ?HookUse {           // R5
+      return decl.hooks.find({ h -> h.hook == null });
+  }
+  pub fn crossesClient(h: HookUse) -> bool {                          // o caminho passa por um #[client]?
       return h.via.any({ f -> f.annotations.any({ a -> a.decorator.is(client) }) });
   }
-
-  // jhonstart/src/server.bp · hooks.bp
-  #[serverOnly] pub fn session() -> @Component<ElementBase, Session> { … }
-  #[clientOnly] pub fn windowSize() -> @Component<ElementBase, Size> { … }
+  pub fn viaText(h: HookUse) -> string {                              // ", via UserMenu → Avatar"
+      return if (h.via.length == 0) { "" } else { ", via " + h.via.map({ f -> f.name }).join(" → ") };
+  }
   ```
 
-  *4 — Quem usa:*
+  **⑤ jhonstart — os hooks marcados** (uma linha antes de cada um)
   ```bp
-  // #[page]: rota + estágio (186, 202)
-  #[page] pub fn page(comptime decl: @Decl, seg: string) {
-      decl.setMeta("seg", seg);
-      decl.hooks.filter({ h -> h.annotations.any({ a -> a.decorator.is(clientOnly) }) && !crossesClient(h) })
-          .each({ h -> decl.failAt(h.at, "`" + h.hook.name + "()` é #[clientOnly] e só roda dentro de um #[client]") });
-      decl.setMeta("kind", if (reaches(decl, serverOnly) != null) { "D" } else { "S" });
-  }
+  // server.bp
+  #[serverOnly] pub fn cookies() -> @Component<ElementBase, Cookies> { … }
+  #[serverOnly] pub fn headers() -> @Component<ElementBase, Headers> { … }
+  #[serverOnly] pub fn request() -> @Component<ElementBase, Request> { … }
+  // router.bp
+  #[serverOnly] pub fn searchParams() -> @Component<ElementBase, SearchParams> { … }
+  // hooks.bp — os de browser (os que só existem lá)
+  #[clientOnly] pub fn windowSize() -> @Component<ElementBase, Size> { … }
+  // state, effect, memo, ref, reducer: sem marca — rodam em qualquer estágio
+  ```
 
-  // #[client]: um componente do browser não lê o request
-  #[client] pub fn client(comptime decl: @Decl) {
-      reaches(decl, serverOnly)?.let({ h ->
-          decl.failAt(h.at, "#[client] " + decl.name + " alcança `" + h.hook.name + "()` (#[serverOnly]" + viaText(h) + ")");
-      });
-      …
+  **⑥ jhonstart — `#[page]`** (`routes.bp`, hoje `pub fn page(comptime decl: @Decl, seg: string)` com `@emit`)
+  ```bp
+  pub fn page(comptime decl: @Decl, seg: string) {
+      decl.setMeta("seg", seg);                                        // a rota (decisão 236)
+
+      // #[clientOnly] fora de um #[client] → erro no `use` (186)
+      decl.hooks
+          .filter({ h -> h.annotations.any({ a -> a.decorator.is(clientOnly) }) && !crossesClient(h) })
+          .each({ h -> decl.failAt(h.at, "`" + h.hook.name + "()` é #[clientOnly] e só roda dentro de um #[client]" + viaText(h)) });
+
+      // o estágio: S = pré-renderizada no build, D = por request (186, 202)
+      val server = reaches(decl, serverOnly) ?? unknownHook(decl);
+      decl.setMeta("kind", if (server != null) { "D" } else { "S" });
+      decl.setMeta("why", server?.let({ h -> (h.hook?.name ?? "função desconhecida") + "()" + viaText(h) }) ?? "");
   }
   ```
 
-  *5 — Resultado:*
+  **⑦ jhonstart — `#[client]`** (`client.bp:103`, o que já gera o starter da ilha)
+  ```bp
+  pub fn client(comptime decl: @Decl) {
+      reaches(decl, serverOnly)?.let({ h ->
+          decl.failAt(h.at, "#[client] " + decl.name + " alcança `" + h.hook.name +
+              "()` (#[serverOnly]" + viaText(h) + ") — um componente do browser não lê o request");
+      });
+      …                                   // o resto de hoje: o tipo de retorno (276), o starter
+  }
+  ```
+
+  **⑧ jhonstart — o que sai** (186)
   ```text
-  components/Avatar.bp     pub fn Avatar() -> View { val u = use session(); … }
-  components/UserMenu.bp   pub fn UserMenu() -> View { return html """<nav><Avatar /></nav>"""; }
+  router.bp   markDynamic (:186, :198, :276), renderIsDynamic, resetDynamic   → apagados
+  server.bp   import de markDynamic (:87) e a chamada (:254)                    → apagados
+  streaming.bp  o markDynamic do render (:52, :703)                             → apagado
+  payload     o campo `d` deixa de ser uma marca (o estágio já é conhecido)
+  ```
 
-  @typeInfo(UserMenu).hooks = [HookUse(hook: session, annotations: [#[serverOnly]], via: [Avatar], at: "components/Avatar.bp:3")]
+  **⑨ routing — o `k` da rota** (`libs/routing/src/route_kinds.bp`, já existe: `pattern|S|D`)
+  O build grava o `kind` que o `#[page]` deixou na meta; ninguém mais o descobre renderizando.
 
+  **⑩ onze — o build** (`07-onze/49` passo 5)
+  ```text
   $ onze build
+  /             S  prerendered
   /about        S  prerendered
   /dashboard    D  per request   (session() via UserMenu → Avatar)
+  /blog/[slug]  S  prerendered   (12 pages from staticPaths)
+  ```
+  `onze build` lê a meta `kind` de cada `#[page]`; não há mais "render de teste".
 
-  #[client] pub fn Profile() -> View { return html """<UserMenu />"""; }
-  components/Profile.bp:1:1 error: #[client] Profile alcança `session()` (#[serverOnly], via UserMenu → Avatar)
+  **⑪ rakun — a geração estática** (`04-rakun/22` passo 4, `rakun-app/src/static_gen.bp`)
+  O passo "o render de teste tocou uma API dinâmica" sai; `static_gen` lê o `S`/`D` da rota.
+  O `rakun_ssr.erl` perde a marca implícita.
 
+  **⑫ As mensagens** (todas em compilação, no lugar do `use`)
+  ```text
+  components/Profile.bp:4:15 error: #[client] Profile alcança `session()` (#[serverOnly], via UserMenu → Avatar)
+                                    — um componente do browser não lê o request
   app/broken/page.bpp:3:12 error: `windowSize()` é #[clientOnly] e só roda dentro de um #[client]
   ```
-  `markDynamic`, a marca em runtime e o `d` do payload vão embora (186). Outra biblioteca usa o mesmo
-  mecanismo com as próprias marcas (o rakun com um `#[requestScoped]` no `local()` — ver `08-j`),
-  sem que o compilador saiba de nenhuma.
+
+  **⑬ Documentação** — `docs.md` § Decorators ganha `decl.hooks` e `Decorator.is`; o `AGENTS.md` do
+  jhonstart descreve as duas marcas e quem as lê; `05-jhonstart/README.md` deixa de citar a ponte.
+
+  **⑭ O que não muda** — nenhum backend, nenhum snapshot de codegen, o `html`, o `.bpp`, o `View`,
+  o `use`, a decisão 128. Uma página sem hook de servidor continua pré-renderizada; com, por request.
+
+  **⑮ Ordem** — `01-checker` (①–③) → `05-jhonstart/26` passo 8 (④–⑧) → `07-onze/49` passo 5 (⑩) e
+  `04-rakun/22` passo 4 (⑪), em paralelo; a 123 (`local`) e a `08-j` passam a ter onde se apoiar.
 
 - [ ] **(c)** Como (b), mas o compilador entrega o **estágio pronto** (`decl.stage == .Server`) em vez
   da lista de hooks.
