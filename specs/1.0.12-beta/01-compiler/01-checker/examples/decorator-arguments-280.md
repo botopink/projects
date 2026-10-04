@@ -322,35 +322,7 @@ Renomear `state` → `uf` deixa vermelhos todos os `.state`. Com string, o erro 
 
 ---
 
-## 7. Valor padrão de campo — o `T` é o tipo do campo (125)
-
-### A lib
-```bp
-pub fn orElse<T>(comptime decl: @Decl<T>, comptime fallback: T) {
-    decl.setMeta(Fallback(value: fallback));
-}
-```
-
-### O uso
-```bp
-pub type Fish { Salmon, Tuna, Cod }
-
-pub type Order(
-    #[orElse(.Tuna)] fish: Fish,      // T = Fish, então .Tuna é resolvido contra Fish
-    #[orElse(1)] quantity: i32,       // T = i32
-)
-```
-
-### O que não compila
-```bp
-#[orElse(.Tunna)] fish: Fish          // ❌ `Fish` não tem a variante `Tunna`
-#[orElse("tuna")] fish: Fish          // ❌ esperado `Fish`, recebido `string`
-#[orElse(0.5)] quantity: i32          // ❌ esperado `i32`, recebido `f64`
-```
-
----
-
-## 8. Anotação de tag — handler como função (278 + 280)
+## 7. Anotação de tag — handler como função (278 + 280)
 
 Na tag, o `@Decl` é o do componente (278). O handler é uma função do próprio componente.
 

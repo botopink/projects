@@ -238,7 +238,7 @@ val cache = ctx.resolve("OrderCache");
 - [ ] **(b)** As strings ficam, mas cada uma é conferida em comptime contra o escopo.
 - [ ] **(c)** Como está.
 
-**Recomendação: (a)**, com os meios da 280 (os oito exemplos aprovados estão em
+**Recomendação: (a)**, com os meios da 280 (os sete exemplos aprovados estão em
 `01-compiler/01-checker/examples/decorator-arguments-280.md`).
 **Bloqueia:** 120 (encoder, `#[deferred]`); 125 passos 3–10; 127; `05-jhonstart/26` (eventos);
 `07-onze/53`; rakun 04, 06, 08, 72, 78; 130-b.

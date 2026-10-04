@@ -188,7 +188,7 @@ type cannot be passed (lg2-f), and `Decl` (`builtins.d.bp`) is untyped. The case
 - [ ] `Field<T>` in `builtins.d.bp` (`name`, the field's type); `.name` resolved against the
       expected `T`, a missing field refused at it; variadic `..fields: Field<T>[]` (267)
 - [ ] `.Name` case-exact for fields and variants (`.custom` against `Custom` is the missing-name error)
-- [ ] the eight examples green on every target where they run; each "não compila" line a `reject/`
+- [ ] the seven examples green on every target where they run; each "não compila" line a `reject/`
       cell with its caret
 - [ ] `docs.md` § Decorators documents the four rules; `comptime/AGENTS.md` states how a comptime
       argument reaches the decorator body; `language-gaps.md`'s lg2-f and lg2-i rows close
