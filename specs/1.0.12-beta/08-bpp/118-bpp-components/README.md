@@ -121,7 +121,9 @@ pub default fn Card(props: type(title: string, children: Node = [], footer: Node
 {case status { Draft -> <em>draft</em>; _ -> <span>live</span>; }}
 ```
 
-**Tag annotations** (278). Astro's `prefix:name` directives are not in the grammar. `#[name(args)]`
+**Tag annotations** (278; **since 302 the same thing as a declaration's decorator**: `fn name(comptime
+decl: @Decl, …)`, no return, typed meta through `decl` — the text below reads "return type" as "meta
+the annotation records", and `comptime tag: Tag` as `comptime decl: @Decl` of kind `Element`). Astro's `prefix:name` directives are not in the grammar. `#[name(args)]`
 inside a tag resolves `name` in the caller's scope (hygiene below; unbound = the ordinary unbound-name
 error at its span, never a rendered attribute) and `html` calls it at comptime with typed arguments.
 Its first parameter says what it receives: `comptime decl: @Decl` — the tag's component (written on
@@ -210,8 +212,10 @@ name or `""`. `#[isRaw]` returns `RawBody`: the tag's body is text.
 - [ ] `<div #[fooBar]>` fails at `fooBar` as an unbound name; `<div class:list={…}>` fails at
       `class:list`, naming `class={classList(…)}`; `set:html` likewise, naming `{raw(…)}`
 - [ ] an annotation whose first parameter is `@Decl` written on an element fails at the annotation
-- [ ] an annotation returning a type `html` has no arm for fails at the annotation, naming the type;
-      two `RawBody` on one tag fail at the second; a `void` annotation runs and changes nothing
+- [ ] (302) `html` builds each tag's `@Decl` (`kind` `Element` / `Component`, `component`, the static
+      attributes), calls every annotation with it, reads back its meta by type (298): an unknown meta type
+      is ignored by `html` (another reader's); `addMember` / `addType` on a tag refused at the call; two
+      `RawBody` metas on one tag refused at the second; an annotation that records nothing changes nothing
 - [ ] `<Carousel #[clientVisible("200px"), transitionPersist] />` = two annotations in order;
       `<Carousel #[clientVisible("200px")] #[transitionPersist] />` the same two annotations (286)
 - [ ] an annotation's argument of the wrong type fails at the argument (raw text via `build` until

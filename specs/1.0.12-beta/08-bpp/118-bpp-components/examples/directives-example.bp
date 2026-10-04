@@ -29,7 +29,7 @@
 //   serverDefer -> Defer                                   120
 //   transitionName|Animate|Persist|PersistProps            126
 
-import html, {classIf, classList, raw, Tag, View, renderToString} from "jhonstart";
+import html, {classIf, classList, raw, View, renderToString} from "jhonstart";
 import {article, div, p, pre, code, span} from "jhonstart";
 
 // ── raw: Astro's set:html ───────────────────────────────────────────────────
@@ -74,9 +74,10 @@ pub fn Snippet() -> View {
 
 // ── an annotation that only checks ──────────────────────────────────────────
 
-// Returns `void`: `html` calls it and changes nothing. Any library may declare one.
-pub fn mustBeBox(comptime tag: Tag) {
-    if (tag.name != "div") @compileError("#[mustBeBox] goes on a <div>");
+// Records nothing: `html` calls it and changes nothing. Any library may declare one.
+// The same shape as a declaration's decorator (302): the tag is a `@Decl`.
+pub fn mustBeBox(comptime decl: @Decl) {
+    if (decl.name != "div") decl.fail("#[mustBeBox] goes on a <div>");
 }
 
 pub fn Checked() -> View {

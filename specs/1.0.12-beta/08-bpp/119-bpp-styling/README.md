@@ -69,8 +69,8 @@ sheet (124); runtime form stays readable.
 `html.bp` imports no emilia: `scopedStyle` resolves in the **caller's** scope like a tag builder
 (`html.bp:231`); only pages writing `<style>` import it from the bridge.
 
-Annotations on `<style>` (278) — `isGlobal`, `isInline`, `defineVars` — take `comptime tag: Tag`
-and return the style types this front's arm reads (`StyleMode.Global`, `StyleMode.Inline`,
+Annotations on `<style>` (278, 302) — `isGlobal`, `isInline`, `defineVars` — take `comptime decl: @Decl`
+(kind `Element`) and record the style metas this front's arm reads (`StyleMode.Global`, `StyleMode.Inline`,
 `StyleVars`); one of each per tag. Declared with the arm in `html.bp`, imported by the core's prelude.
 
 | Written | Meaning |
@@ -124,9 +124,10 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 <div class="onze-font-inter" #[styled(.Pad.All.4, .Lg(.Pad.All.8))]>…</div>
 ```
 
-- [ ] `jhonstart-emilia` declares `pub fn styled(comptime tag: Tag, comptime ..tokens: Token[]) ->
-      ClassName` (280, 267); `ClassName(name: string)` is jhonstart's (the core; `html` merges it into
-      the tag's `class`, after a static `class` — the arm in `html.bp`, 278); `html` names no emilia (113)
+- [ ] `jhonstart-emilia` declares `pub fn styled(comptime decl: @Decl, comptime ..tokens: Token[])` —
+      no return (302): it records `decl.addMeta(ClassName(names: [hashOf(tokens)]))`; `ClassName(names:
+      string[])` is jhonstart's (the core; `html` merges every `ClassName` meta into the tag's `class`,
+      after a static `class`); `html` names no emilia (113)
 - [ ] the token list is comptime: its order is the class's identity (`contracts.md` § 4) by
       construction; the class name and its rule computed at build once `hashHex` is std's pure
       `hash.contentHash` (`06-emilia/34` step 1) — the sheet a build artefact, the render registers

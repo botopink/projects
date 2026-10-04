@@ -79,10 +79,11 @@ pub fn Map(props: MapProps) -> View {
 
 // ── a library's own annotation ──────────────────────────────────────────────
 
-// Returns `Hydrate`, so `html` mounts an island with it, and gives it the checks
-// every `Hydrate` gets (`#[client]`, no `#[clientOnly]` hook reached).
-pub fn clientMobile(comptime decl: @Decl) -> Hydrate {
-    return clientMedia(decl, "(max-width: 50em)");
+// Records the `Hydrate` meta through `clientMedia` (302: an annotation returns
+// nothing), so `html` mounts an island and gives it the checks every `Hydrate`
+// gets (`#[client]`, no `#[clientOnly]` hook reached).
+pub fn clientMobile(comptime decl: @Decl) {
+    clientMedia(decl, "(max-width: 50em)");
 }
 
 // ── the page ────────────────────────────────────────────────────────────────

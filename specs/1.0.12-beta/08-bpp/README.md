@@ -158,32 +158,36 @@ Labels only; text in [`../decisions-taken.md`](../decisions-taken.md).
 
 No relative imports: same package `import {components.card};` (a `.bpp` component: its default function, 288), a package `import {x} from "pkg";`; `.bpp` headers likewise.
 
-## Tag annotations (278)
+## Tag annotations (278, 302)
 
-Every annotation this track creates. Each is a function, resolved in the caller's scope (the
-`.bpp` prelude imports the core's; `jhonstart-link`'s are imported by name); `html` calls it at
-comptime and acts on its **return type**; a tag carries its annotations as blocks or one list (286). First parameter: `comptime decl: @Decl` = component tags
-only; `comptime tag: Tag` = any tag. One result of each type per tag.
+Every annotation this track creates. **An annotation is one thing, on a declaration or on a tag**
+(302): a function `fn name(comptime decl: @Decl, comptime …args)` that returns nothing and acts
+through `decl`. On a tag, `decl.kind` is `Element` or `Component` (`decl.component` — the component's
+own `@Decl`), and its one channel is typed meta (298): the annotation `decl.setMeta(…)` /
+`decl.addMeta(…)`, and `html` — the reader — acts on the meta types it knows (`ClassName` → the
+`class`, `Hydrate` → an island, …), as the build acts on a function's. Resolved in the caller's scope
+(the `.bpp` prelude imports the core's; `jhonstart-link`'s by name); blocks or one list (286). One
+meta of each `setMeta` type per tag; `addMeta` types repeat.
 
-| Annotation | Astro | First parameter · returns | Declared in | Front |
+| Annotation | Astro | Records (meta the reader acts on) | Declared in | Front |
 |---|---|---|---|---|
-| `#[isRaw]` | `is:raw` | `Tag` · `RawBody` | `jhonstart/src/html.bp` | 118 step 5 |
-| `#[isGlobal]` | `is:global` | `Tag` (`<style>`) · `StyleMode.Global` | `jhonstart/src/html.bp` (119's arm) | 119 step 2 |
-| `#[isInline]` | `is:inline` | `Tag` (`<style>`, `<script>`) · `StyleMode.Inline` | `jhonstart/src/html.bp` (119's arm) | 119 step 2 · 124 |
-| `#[defineVars(a, b)]` | `define:vars` | `Tag` (`<style>`) · `StyleVars` | `jhonstart/src/html.bp` (119's arm) | 119 step 2 |
-| `#[clientLoad]` | `client:load` | `@Decl` · `Hydrate.Load` | `jhonstart/src/island_strategy.bp` | 120 step 1 |
-| `#[clientIdle(timeoutMs)]` | `client:idle` | `@Decl` · `Hydrate.Idle` | `island_strategy.bp` | 120 step 1 |
-| `#[clientVisible(rootMargin)]` | `client:visible` | `@Decl` · `Hydrate.Visible` | `island_strategy.bp` | 120 step 1 |
-| `#[clientMedia(query)]` | `client:media` | `@Decl` · `Hydrate.Media` | `island_strategy.bp` | 120 step 1 |
-| `#[clientOnly]` | `client:only` | `@Decl`, `fallback: ?View` (287) · `Hydrate.Only` — also decision 186's hook marker, one function | `jhonstart/src/stage.bp` | `05-jhonstart/26` step 8 (marker) · 120 step 1 (return) |
-| `#[serverDefer]` | `server:defer` | `@Decl`, `fallback: ?View` (287) · `Defer` | `jhonstart/src/deferred.bp` | 120 step 4 |
-| `#[transitionName(name)]` | `transition:name` | `Tag` · `TransitionName` | `jhonstart-link/src/transitions.bp` | 126 step 1 |
-| `#[transitionAnimate(a)]` | `transition:animate` | `Tag` · `TransitionAnimate` | `transitions.bp` | 126 step 1 |
-| `#[transitionPersist(key?)]` | `transition:persist` | `Tag` · `TransitionPersist` | `transitions.bp` | 126 step 1 |
-| `#[transitionPersistProps]` | `transition:persist-props` | `Tag` · `TransitionPersistProps` | `transitions.bp` | 126 step 1 |
-| `#[styled(..tokens)]` | (none — emilia's) | `Tag` · `ClassName` | `jhonstart-emilia` | 119 step 4 (301) |
-| `#[reload]` | `data-astro-reload` | `Tag` (`<a>`, `<form>`) · `LinkReload` | `transitions.bp` | 126 step 2 (292) |
-| `#[history(h)]` | `data-astro-history` | `Tag` · `LinkHistory` (`History.Push \| Replace \| Auto`) | `transitions.bp` | 126 step 2 (292) |
+| `#[isRaw]` | `is:raw` | `RawBody` | `jhonstart/src/html.bp` | 118 step 5 |
+| `#[isGlobal]` | `is:global` | `StyleMode.Global` | `jhonstart/src/html.bp` (119's arm) | 119 step 2 |
+| `#[isInline]` | `is:inline` | `StyleMode.Inline` | `jhonstart/src/html.bp` (119's arm) | 119 step 2 · 124 |
+| `#[defineVars(a, b)]` | `define:vars` | `StyleVars` | `jhonstart/src/html.bp` (119's arm) | 119 step 2 |
+| `#[clientLoad]` | `client:load` | `Hydrate.Load` | `jhonstart/src/island_strategy.bp` | 120 step 1 |
+| `#[clientIdle(timeoutMs)]` | `client:idle` | `Hydrate.Idle` | `island_strategy.bp` | 120 step 1 |
+| `#[clientVisible(rootMargin)]` | `client:visible` | `Hydrate.Visible` | `island_strategy.bp` | 120 step 1 |
+| `#[clientMedia(query)]` | `client:media` | `Hydrate.Media` | `island_strategy.bp` | 120 step 1 |
+| `#[clientOnly]` | `client:only` | `Hydrate.Only` — also decision 186's hook marker, one function (with its `fallback`, 287) | `jhonstart/src/stage.bp` | `05-jhonstart/26` step 8 (marker) · 120 step 1 (return) |
+| `#[serverDefer]` | `server:defer` | `Defer` (with its `fallback`, 287) | `jhonstart/src/deferred.bp` | 120 step 4 |
+| `#[transitionName(name)]` | `transition:name` | `TransitionName` | `jhonstart-link/src/transitions.bp` | 126 step 1 |
+| `#[transitionAnimate(a)]` | `transition:animate` | `TransitionAnimate` | `transitions.bp` | 126 step 1 |
+| `#[transitionPersist(key?)]` | `transition:persist` | `TransitionPersist` | `transitions.bp` | 126 step 1 |
+| `#[transitionPersistProps]` | `transition:persist-props` | `TransitionPersistProps` | `transitions.bp` | 126 step 1 |
+| `#[styled(..tokens)]` | (none — emilia's) | `ClassName` (`addMeta`) | `jhonstart-emilia` | 119 step 4 (301) |
+| `#[reload]` | `data-astro-reload` | `LinkReload` | `transitions.bp` | 126 step 2 (292) |
+| `#[history(h)]` | `data-astro-history` | `LinkHistory` (`History.Push \| Replace \| Auto`) | `transitions.bp` | 126 step 2 (292) |
 
 Not annotations — values: `set:html={s}` → `{raw(s)}`; `set:text={s}` → `{s}`; `class:list={[…]}` →
 `class={classList([…])}` (`classList` new in the core, 118 step 5). The arm for each return type is

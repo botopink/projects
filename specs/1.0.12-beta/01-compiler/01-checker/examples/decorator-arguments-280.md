@@ -333,8 +333,9 @@ Na tag, o `@Decl` é o do componente (278). O handler é uma função do própri
 ### A lib
 ```bp
 // jhonstart/src/events.bp
-pub fn onClick(comptime tag: Tag, comptime handler: fn() -> unknown) -> EventBinding {
-    return EventBinding(event: .Click, handler: handler);    // o arm do html gera o registro na ilha
+// 302: anotação de tag = decorator — não devolve nada, grava meta no `decl` da tag
+pub fn onClick(comptime decl: @Decl, comptime handler: fn() -> unknown) {
+    decl.addMeta(EventBinding(event: .Click, handler: handler));   // o html gera o registro na ilha
 }
 ```
 

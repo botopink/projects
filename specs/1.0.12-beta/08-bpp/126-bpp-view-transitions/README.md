@@ -49,9 +49,9 @@ stylesheet (`fade`, `slide` keyframes, reduced-motion rule) and sets one payload
 runtime wraps the swap in `document.startViewTransition(…)`, without it navigation is today's. No
 API: swap without animating, content never held back.
 
-**Annotations are data attributes** (278; the template only lowers them). Each is
-`(comptime tag: Tag, …)` — any element or component tag — declared in `transitions.bp`, returning
-its own type (`TransitionName`, `TransitionAnimate`, `TransitionPersist`, `TransitionPersistProps`),
+**Annotations are data attributes** (278, 302; the template only lowers them). Each is
+`(comptime decl: @Decl, …)` — any element or component tag — declared in `transitions.bp`, recording
+its own meta type (`TransitionName`, `TransitionAnimate`, `TransitionPersist`, `TransitionPersistProps`),
 so one tag may carry several, one of each:
 
 | Annotation | Attribute | The runtime |
@@ -66,7 +66,7 @@ Meets 27 here: `reconcile` answers which layouts are shared; `#[transitionPersis
 
 **Per link: two tag annotations** (292). `#[reload]` on `<a>` / `<form>` forces a document load;
 `#[history(.Push | .Replace | .Auto)]` picks the history call (`History` enum). They take `comptime
-tag: Tag`, return `LinkReload` / `LinkHistory` for this front's arm, and lower to the wire attributes
+decl: @Decl`, record `LinkReload` / `LinkHistory` metas for this front's arm (302), and lower to the wire attributes
 `data-jh-reload` / `data-jh-history="replace"` the runtime reads — the attributes are output, never
 written by hand (a written `data-jh-reload` is refused, naming the annotation).
 

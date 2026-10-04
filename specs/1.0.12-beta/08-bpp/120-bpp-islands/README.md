@@ -57,6 +57,12 @@ At `repository/jhonstart/modules/jhonstart/src/`:
 
 ### Client annotations (278)
 
+> **Since 302** an annotation returns nothing: `clientVisible(comptime decl: @Decl, comptime rootMargin)`
+> records `decl.setMeta(Hydrate.Visible(rootMargin))`; "returns `Hydrate`" below reads "records the
+> `Hydrate` meta" (one per tag), `serverDefer` records `Defer(fallback)`. `#[clientOnly]` is one
+> function for hook and tag with no union: both are a `@Decl` (on the hook a marker; on a tag it records
+> `Hydrate.Only`). The checks below run where `html` reads the `Hydrate` meta.
+
 Tag annotations (118's arm): a function in the caller's scope, `comptime decl: @Decl` first — the
 tag's component — returning `Hydrate`; `html` turns a `Hydrate` into the mount with that strategy.
 All live in `island_strategy.bp` except `clientOnly` (`stage.bp`, below); the prelude imports them.
@@ -92,9 +98,9 @@ the server, so the component's nodes do not enter the page's `hooks` (277).
   #[clientOnly]";
 - two `Hydrate` on one tag: error at the second.
 
-A library may declare its own (`pub fn clientMobile(comptime decl: @Decl) -> Hydrate { return
-clientMedia(decl, "(max-width: 50em)"); }`); it gets the checks above and adds no strategy — the
-runtime knows `Hydrate`'s five cases only.
+A library may declare its own (`pub fn clientMobile(comptime decl: @Decl) { clientMedia(decl,
+"(max-width: 50em)"); }` — it records the same meta); it gets the checks above and adds no strategy —
+the runtime knows `Hydrate`'s five cases only.
 
 Payload row becomes `#(id, component, props, when)` — `contracts.md` § 2 changed in the same commit.
 
