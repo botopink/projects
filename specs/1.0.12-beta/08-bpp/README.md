@@ -181,6 +181,7 @@ only; `comptime tag: Tag` = any tag. One result of each type per tag.
 | `#[transitionAnimate(a)]` | `transition:animate` | `Tag` · `TransitionAnimate` | `transitions.bp` | 126 step 1 |
 | `#[transitionPersist(key?)]` | `transition:persist` | `Tag` · `TransitionPersist` | `transitions.bp` | 126 step 1 |
 | `#[transitionPersistProps]` | `transition:persist-props` | `Tag` · `TransitionPersistProps` | `transitions.bp` | 126 step 1 |
+| `#[styled(..tokens)]` | (none — emilia's) | `Tag` · `ClassName` | `jhonstart-emilia` | 119 step 4 (301) |
 | `#[reload]` | `data-astro-reload` | `Tag` (`<a>`, `<form>`) · `LinkReload` | `transitions.bp` | 126 step 2 (292) |
 | `#[history(h)]` | `data-astro-history` | `Tag` · `LinkHistory` (`History.Push \| Replace \| Auto`) | `transitions.bp` | 126 step 2 (292) |
 

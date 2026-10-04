@@ -117,6 +117,24 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 - [ ] a boundary's fill carries the scoped sheet of a component the shell did not render, as
       emilia's flush does (`jhonstart-emilia/src/root.bp:95`)
 
+### Step 4 — emilia as a tag annotation: `#[styled(..tokens)]` (decision 301)
+
+```bpp
+<h1 #[styled(.Text.Size.X3xl, .Text.Bold, .Color.Gray.900)]>{post.title}</h1>
+<div class="onze-font-inter" #[styled(.Pad.All.4, .Lg(.Pad.All.8))]>…</div>
+```
+
+- [ ] `jhonstart-emilia` declares `pub fn styled(comptime tag: Tag, comptime ..tokens: Token[]) ->
+      ClassName` (280, 267); `ClassName(name: string)` is jhonstart's (the core; `html` merges it into
+      the tag's `class`, after a static `class` — the arm in `html.bp`, 278); `html` names no emilia (113)
+- [ ] the token list is comptime: its order is the class's identity (`contracts.md` § 4) by
+      construction; the class name and its rule computed at build once `hashHex` is std's pure
+      `hash.contentHash` (`06-emilia/34` step 1) — the sheet a build artefact, the render registers
+      nothing for a fixed list; until then computed at run time, unchanged
+- [ ] a token naming a cleared breakpoint refused at compile time (300) — always, the list being comptime
+- [ ] `class={emilia(tokens)}` leaves markup: refused in a template, naming `#[styled(…)]`; a style
+      chosen at run time picks among annotated branches (`{if (urgent) { <p #[styled(.Color.Red.600)]>…</p> } else { … }}`)
+
 ## Decisions
 
 - `08-d` — who scopes CSS: (a) emilia's `scopeCss` via the bridge (recommended), (b) onze-assets, (c) jhonstart's `html`. Every step.
