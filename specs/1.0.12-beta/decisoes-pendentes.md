@@ -68,7 +68,7 @@ o recurso equivalente na linguagem. Eles caem em sete padrões.
 
 **As quatro regras já estão decididas:** 281 (nenhum identificador de código como string), 282 (o papel
 vai no decorator), 283 (segundo modelo: caso a caso, `nat-d1`…`nat-d9`) e 284 (JSON: caso a caso,
-`nat-f1`…`nat-f4`; a `nat-f1` virou a 285). **Ordem do que falta** (as contradições achadas na varredura já foram respondidas: 287, 290, 291, 292): `nat-c5`…`nat-c7`, `nat-d1`…`nat-d9`, `nat-e`, `nat-f2`…`nat-f4` e `nat-g`.
+`nat-f1`…`nat-f4`; a `nat-f1` virou a 285). **Ordem do que falta** (as contradições achadas na varredura já foram respondidas: 287, 290, 291, 292): `nat-c5`…`nat-c7`, `nat-d1`…`nat-d9`, `nat-e`, `nat-f2`…`nat-f4` e `nat-g`. As do cardume (frente 136) estão na Parte 3: `atm-a`, `atm-c`, `atm-d`.
 
 ### nat-c · Sacos sem tipo onde um record tipado resolveria — caso a caso
 
@@ -2080,7 +2080,7 @@ val setItems = use atomSetter(cartItems);      // cardume: substantivo
 
 - [ ] **(a)** Substantivo em tudo; os nomes da 295 acompanham.
   ```bp
-  val setUser = use atomSetter(currentUser);
+  val setUser = use atomSetter(currentUser);      // ou por tipo (297): use atomSetter(User)
   val setSession = use cookieSetter(sessionCookie);
   ```
 - [ ] **(b)** Verbo para quem escreve, substantivo para quem lê: `use setAtom(a)`, `use setCookie(c)`,
