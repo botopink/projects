@@ -432,7 +432,8 @@ owning front lists the row under *Depends on*.
 #### bpp-g · How a `page.bpp` gets its `route: PageContext` and its `params`
 - **Measured.** 221 gives a `page.bpp` its decorator; the unfold answers `fn <Name>(props: Props)` or `fn <Name>()`; a `.bp` page takes `route: PageContext` and binds its segments with `paramsOf(…meta.page.seg, route)` (236); jhonstart's router calls a page with a `PageContext`, cannot build an application's `Props`.
 - **Options.** (a) A `bppKinds` entry names the parameter too (`"page": {"decorator": "page", "parameter": "route: PageContext"}`): the unfold writes `pub default fn page(route: PageContext)`, the header reads `route`, the prelude brings `PageContext` and a `params(route)` helper (`ctr-g`: `page` then names both function and decorator). (b) The header declares `type Props(route: PageContext)`; the router requires that shape. (c) `#[page]`'s decorator output adds the parameter (01-compiler/130).
-- **Recommendation.** (a): the toolchain copies what the package's manifest says, as 221 does.
+- **Since 285 and 289.** (a) is gone — no `bppKinds`, the toolchain knows only `"bpp"`, `html` and the prelude, and the default function is anonymous; (b) and (c) remain.
+- **Recommendation.** (b): the page's parameter is ordinary header code (`type Props(route: PageContext<BlogParams, Post>)`), the router calls the function with it, the prelude brings `PageContext`.
 - **Blocks.** 116 step 6; 117 step 1.
 
 #### props-d · A native tag's attributes (*proposed*)

@@ -1208,7 +1208,7 @@ pub fn BlogPost(route: PageContext) -> Element {
 
 - [ ] **(a)** A entrada do `bppKinds` diz também o parâmetro; a reescrita escreve
   `pub default fn page(route: PageContext)`, o cabeçalho lê `route`, e o prelúdio traz `PageContext` e
-  um helper `params(route)` (ver `ctr-g`: `page` passa a nomear função e decorador).
+  um helper `params(route)`.
   ```json
   "bppKinds": { "page": { "decorator": "page", "parameter": "route: PageContext" } }
   ```
@@ -1233,7 +1233,12 @@ pub fn BlogPost(route: PageContext) -> Element {
   // depois do decorador: pub default fn page(route: PageContext) -> Element
   ```
 
-**Recomendação: (a)** — a ferramenta copia o que o manifesto do pacote diz, como a 221 já faz.
+> **Desde a 285 e a 289.** A (a) caiu: não existe mais `bppKinds`, o compilador só conhece o `"bpp"`, o
+> `html` e o prelude, e a função default é anônima. Ficam a (b) e a (c).
+
+**Recomendação: (b)** — o parâmetro da página é código comum do cabeçalho
+(`type Props(route: PageContext<BlogParams, Post>)`), o roteador chama a função com ele, e o prelude traz o
+`PageContext`.
 **Bloqueia:** 116 passo 6; 117 passo 1.
 
 ### 08-j · Como o `local()` do rakun carrega uma marca do jhonstart *(proposta)*
