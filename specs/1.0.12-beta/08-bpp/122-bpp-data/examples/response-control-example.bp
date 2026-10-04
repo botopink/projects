@@ -4,7 +4,7 @@
 // Demonstrates: the `Astro` global, member by member, as a page here writes it.
 // There is no object: a page has a parameter (`route`), hooks (`use request()`,
 // `use cookies()`), navigation signals (`redirect`, `notFound`, `rewrite`) and
-// two response hooks (`responseStatus`, `responseHeader`).
+// a response hook (`use response()`, with `status` and `header` methods — 291).
 //
 //   ---
 //   export const prerender = false;
@@ -25,8 +25,8 @@ import html, {page, PageContext, Element, ElementBase, renderToString} from "jho
 import {h1, p} from "jhonstart";
 import {request, cookies, pairValue} from "jhonstart";                      // Astro.request, Astro.cookies
 import {redirect, notFound, rewrite} from "jhonstart";                      // Astro.redirect, a 404, Astro.rewrite
-import {responseStatus, responseHeader, recordedStatus, recordedHeaders} from "jhonstart";   // Astro.response
-import {site, absoluteUrl, isPrerendered, dynamicReason} from "jhonstart";  // Astro.site, Astro.isPrerendered
+import {response, recordedStatus, recordedHeaders} from "jhonstart";                       // Astro.response
+import {site, absoluteUrl} from "jhonstart";                               // Astro.site; no isPrerendered (291)
 import {captureSignals} from "jhonstart-test";
 import {collections.Dict, json.Json} from "std";
 
@@ -46,11 +46,16 @@ pub fn Page(route: PageContext) -> @Component<ElementBase, Element> {
     // Astro.rewrite — serve another route under this URL. A legacy id form.
     if (id.startsWith("sku-")) { val _r = rewrite("/product/" + id.slice(4, id.length())); }
 
+    // Astro.request, Astro.response — one hook to read, one to write; both #[serverOnly],
+    // so the page is `D` (277)
+    val req = use request();
+    val res = use response();
+
     val found = await findProduct(id);
 
     // Astro.response.status — the page still renders, with a 404 status.
     if (found == null) {
-        val _s = responseStatus(404);
+        res.status(404);
         return html """<h1>No such product</h1>""";
     }
     val product = found ?? Product(id: "", name: "", available: false);
@@ -59,10 +64,9 @@ pub fn Page(route: PageContext) -> @Component<ElementBase, Element> {
     if (product.available == false) { val _g = redirect("/products"); }
 
     // Astro.response.headers.set
-    val _h = responseHeader("Cache-Control", "public, max-age=3600");
+    res.header("Cache-Control", "public, max-age=3600");
 
     // Astro.request.headers, Astro.cookies
-    val req = use request();
     val jar = use cookies();
     val returning = pairValue(jar, "seen") != "";
 
@@ -100,17 +104,18 @@ test "a rewrite names the route to render under this URL" {
     assert signals.join(",") == "nav:rewrite:/product/7";
 }
 
-test "reading the request or setting the response makes the page dynamic" {
-    val _m = renderToString(await Page(routeFor("7")));
-    assert dynamicReason() != "";
-    assert isPrerendered() == false;
+test "reading the request or writing the response makes the page dynamic" {
+    // the kind `#[page]` records at comptime from the hooks (277), not a run-time mark
+    assert @typeInfo(Page).meta.page.kind == "D";
 }
 
 // What is refused, and when:
 //
-//   val _h = responseHeader("X-Late", "1");     inside a Suspense fill
+//   res.header("X-Late", "1");     inside a Suspense fill
 //     error at run time, in the render's log and as the boundary's error:
-//     responseHeader was called after the response head was written
+//     response().header was called after the response head was written
+//
+//   val _s = responseStatus(404);   — not a hook form: write `use response()` (291)
 //
 //   val jar = use cookies(); jar.set("seen", "1")
 //     there is no `set` on a render's cookie jar: a cookie is written by

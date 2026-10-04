@@ -17,7 +17,7 @@ Reference: `astro-docs/18-data-fetching.md`, `21-on-demand-rendering.md`, `08-ro
 ## Goal
 
 Every `Astro` member has a counterpart (mostly existing parameters, hooks, navigation signals); the
-three missing are added: page-side status and headers, `rewrite` from a page, `site` / `isPrerendered`.
+three missing are added: page-side status and headers (`use response()`, 291), `rewrite` from a page, `site`.
 
 ## Problem
 
@@ -47,22 +47,24 @@ Paths under `repository/`.
 | top-level `await`, `fetch` | `await` in a `@Component` body; `io.http.fetch(url)` — GET only | `docs.md:1592`; `libs/std/src/io/http.bp:55` |
 | **`response.status`, `response.headers`** | **not found** — a render answers 200 or a navigation signal | step 1 |
 | **`rewrite(path)`** | **not found** from a page; `Next.rewrite` in middleware | `rakun-web/src/middleware.bp:41-58` — step 2 |
-| **`site`, `generator`, `isPrerendered`** | **not found** | step 3 |
+| **`site`, `generator`** | **not found** | step 3 · `isPrerendered`: not added — the stage is a comptime fact (291) |
 
 ## Mechanism
 
-**Status/headers: hooks before the first byte.** `responseStatus(code)`, `responseHeader(name,
-value)` legal until the shell flushes, a located error after — the late-signal rule of `redirect`
-/ `notFound` (`05-jhonstart/README.md`, JH-26-6). They record into the render's state; the server
-reads it writing the head.
+**Status/headers: one hook, before the first byte** (291). `use response()` answers the render's
+response handle, `res.status(code)` and `res.header(name, value)` legal until the shell flushes, a
+located error after — the late-signal rule of `redirect` / `notFound` (`05-jhonstart/README.md`,
+JH-26-6). It is `#[serverOnly]` beside `request` (26 step 8): reading is `use request()`, writing
+`use response()`; both make the page `D` (186, 277). A fixed header on an `S` page is a `#[page]`
+argument instead — `#[page("about", headers: [#("Cache-Control", "public, max-age=3600")])]` (290).
 
 ```bp
+val req = use request();
+val res = use response();
 val product = await findProduct(id);
-if (product == null) { val _s = responseStatus(404); }
-val _h = responseHeader("Cache-Control", "public, max-age=3600");
+if (product == null) res.status(404);
+res.header("Cache-Control", "private, max-age=60");
 ```
-
-Request-time hooks: `#[serverOnly]` under 186/202, so the page renders per request.
 
 **Rewrite = navigation signal.** `rewrite(path)` raises `nav:rewrite:<path>` beside
 `nav:redirect`, `nav:not-found` in `libs/routing`'s `navigation`; the server matches `path`, renders that
@@ -70,7 +72,8 @@ route in the same response, address unchanged. A rewrite to a rewriting path is 
 once more, then refused naming both.
 
 **`site()` is configuration**: `onze.json` `site` (124) via the render's `app(…)` options;
-jhonstart names no config file. `isPrerendered()`: whether this render is build-time.
+jhonstart names no config file. No `isPrerendered()`: whether a page is prerendered is its kind,
+recorded by `#[page]` at comptime (`@typeInfo(Page).meta.page.kind`, 277).
 
 ## Open
 
@@ -79,12 +82,15 @@ jhonstart names no config file. `isPrerendered()`: whether this render is build-
 - [ ] what a page gets for `request().query`, `.headers` in `onze/examples/blog` (expected `[]`, `onze-server/src/server.bp:76-77`)
 - [ ] `redirect()` raised after the first chunk: the response
 
-### Step 1 — `responseStatus`, `responseHeader`
+### Step 1 — `use response()` (decision 291)
 
 - [ ] `examples/response-control-example.bp` passes
 - [ ] either called after the shell is written fails with the hook's name and the phase
 - [ ] a header set from a `Suspense` fill refused the same way
-- [ ] `dynamicReason()` names `responseStatus` for a page calling it
+- [ ] `response` marked `#[serverOnly]`: a page using it is `D` (`@typeInfo(Page).meta.page.kind`),
+      its `why` naming `response`; a call written without `use` is no hook (the checker's ordinary
+      error for a hook outside `use`)
+- [ ] `#[page(headers: …)]` on an `S` page: the headers served with the prerendered file
 
 ### Step 2 — `rewrite`
 
@@ -92,10 +98,9 @@ jhonstart names no config file. `isPrerendered()`: whether this render is build-
       route's markup at the first's URL — asserted via the navigation wire on both targets
 - [ ] a rewrite cycle refused, naming both paths
 
-### Step 3 — `site`, `isPrerendered`, `currentUrl`
+### Step 3 — `site`, `currentUrl`
 
 - [ ] `site()` is `""` when unset, and `absoluteUrl(path)` then refuses rather than emit a relative canonical link
-- [ ] `isPrerendered()` true under `prerenderPath` (`static_gen.bp:381`), false on a request
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `modules/jhonstart` and `libs/routing`

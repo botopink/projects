@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**74 questions and 17 contradictions are open, and 97 implementation choices await confirmation.**
+**74 questions and 16 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290.
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290 · `ctr-y` → 291.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 ## Open questions
@@ -22,7 +22,7 @@ Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 Raised 2026-10-04 by a sweep of the spec after decision 278: concepts copied from Astro, Next.js,
 React, Spring, zod, TypeScript, LINQ and Tailwind in their foreign shape where botopink already has
-the feature. `nat-0`'s four rules are decisions 281–284; what remains applies them case by case; `ctr-y`, `ctr-z` are
+the feature. `nat-0`'s four rules are decisions 281–284; what remains applies them case by case; `ctr-z` are
 the sites that already contradict a decision. The Portuguese page lists every site with examples.
 
 #### nat-c · Untyped bags where a record type would flow
@@ -494,11 +494,6 @@ owning front lists the row under *Depends on*.
 
 Rule pairs that cannot both hold, or a later rule changing an earlier one silently. Decision text
 left as recorded; the maintainer picks the resolution.
-
-#### ctr-y · Request hooks called without `use` against decision 277
-- **Rules.** 277: `Decl.hooks` lists the `use`s; 186: a `#[serverOnly]` hook makes a page `D`. 122 writes `val _s = responseStatus(404)` and `responseHeader(…)` — `#[serverOnly]` hooks without `use`, invisible to `pathsTo`, so the page would be classified `S`; `isPrerendered()` asks at run time what is a comptime fact.
-- **Recommendation.** Every request hook under `use` (`use responseStatus(404);`); `isPrerendered()` dropped.
-- **Blocks.** 122 step 1; `05-jhonstart/26` step 8's hook list.
 
 #### ctr-z · String instructions left after decision 278
 - **Since 281.** The variant and event strings go by rule 1 (`#[transitionAnimate(.Slide)]`, 126 step 4); open here: `data-jh-reload` / `data-jh-history` as annotations, the `jh:` events as typed hooks, `<Script>`'s strategies against `Hydrate`.

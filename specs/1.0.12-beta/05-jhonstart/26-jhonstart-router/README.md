@@ -168,7 +168,7 @@ list against its own decorators; the compiler names no marker.
       decl: @Decl) {}` (markers, no output); `HookPath(through, use)`; `pathsTo(nodes, marker,
       unknownToo = false)` breadth-first over `decl.hooks`, every path, each the shortest;
       `viaText`, `crossesClient`
-- [ ] hooks marked: `#[serverOnly]` on `cookies`, `headers`, `request` (`server.bp`), `searchParams`
+- [ ] hooks marked: `#[serverOnly]` on `cookies`, `headers`, `request`, `response` (291; `server.bp`), `searchParams`
       (`router.bp`); `#[clientOnly]` on the browser-only hooks; `state`, `effect`, `memo`, `ref`,
       `reducer` unmarked
 - [ ] `#[page]` (`routes.bp`): `setMeta("seg", …)`; a `#[clientOnly]` path not crossing a `#[client]`
@@ -193,7 +193,8 @@ list against its own decorators; the compiler names no marker.
 
 ### Step 10 — file roles are the framework's (decision 285)
 
-- [ ] `#[page]` (and its function form) takes `revalidate: ?Duration = null` and `dynamicParams: bool
+- [ ] `#[page]` (and its function form) takes `revalidate: ?Duration = null`, `headers: #(string,
+      string)[] = []` (a fixed header of an `S` page, 291) and `dynamicParams: bool
       = true` beside `paths:` / `head:` / `partial:` (282, 290) and records them in its meta; no other
       route configuration exists
 - [ ] `page`, `layout`, `template`, `loading`, `error`, `notFound` callable as comptime functions over

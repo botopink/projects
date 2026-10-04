@@ -29,7 +29,7 @@
 
 import html, {page, PageContext, Element, ElementBase, Children, renderToString} from "jhonstart";
 import {div, h1, img, p, span} from "jhonstart";
-import {cookies, pairValue, dynamicReason, responseHeader} from "jhonstart";
+import {cookies, pairValue, response} from "jhonstart";
 import {clientProps, deferred, serverDefer} from "jhonstart";
 import {serveIslands, renderIsland, seal, unseal} from "rakun-app";
 import {rkTestRequest, rkTestRequestAuthed} from "rakun-web";
@@ -54,9 +54,10 @@ pub fn Avatar(props: AvatarProps) -> @Component<ElementBase, Element> {
     val jar = use cookies();
     val session = pairValue(jar, "session");
     val src = await avatarFor(session);
-    // The island's response is the component's to cache (`responseHeader` is
-    // front 122's: a header set from a render, before the first byte).
-    val _h = responseHeader("Cache-Control", "private, max-age=60");
+    // The island's response is the component's to cache (`use response()` is
+    // front 122's, 291: a header set from a render, before the first byte).
+    val res = use response();
+    res.header("Cache-Control", "private, max-age=60");
     return html """<img alt="Your avatar" src={src} width={props.size.toString()} />""";
 }
 
@@ -91,8 +92,7 @@ test "the page renders the fallback and a placeholder, not the component" {
 }
 
 test "the page reads nothing from the request, so it stays prerendered" {
-    val _markup = renderToString(await Page(routeFor("7")));
-    assert dynamicReason() == "";
+    assert @typeInfo(Page).meta.page.kind == "S";   // recorded by #[page] from the hooks (277)
 }
 
 test "the props in the URL are sealed, not readable and not editable" {

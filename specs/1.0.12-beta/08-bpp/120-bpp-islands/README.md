@@ -182,7 +182,7 @@ The variable is always `ONZE_KEY` (decision 271).
 - [ ] `examples/server-island-example.bp` passes on erlang
 - [ ] `server_islands.bp`: `serveIslands(prefix)`, `seal` / `unseal`; tampered or truncated `p` answers 400, renders nothing
 - [ ] `GET` under 2 048 bytes and `POST` over it answer the same markup
-- [ ] the containing page reads no cookie: `dynamicReason()` empty, page prerenders (`static_gen.bp`)
+- [ ] the containing page reads no cookie: its kind is `S` (`@typeInfo(Page).meta.page.kind`, 277), page prerenders (`static_gen.bp`)
 - [ ] `serverDefer(comptime decl: @Decl) -> Defer` (`deferred.bp`, imported by the prelude); on a
       non-`#[deferred]` component it fails at the annotation, at compile time, naming it
 - [ ] `seal` / `unseal` take the mode as a plain value — `onze.json`'s `"islands": {"props": …}`,
