@@ -5,8 +5,8 @@
 //
 //   - front 28: the dashboard layout reads the session cookie with jhonstart's
 //     `use cookies()`, over the `RequestData` onze built from rakun's request (front
-//     62's frame). Reading it marks the render dynamic, so front 60 will not
-//     prerender the route, and `dynamicReason()` answers "cookies" in the build report.
+//     62's frame). `cookies` is #[serverOnly], so `#[page]` records the route as
+//     `D` from its hooks (277) and the build report's `why` says "cookies".
 //   - front 31: no session means jhonstart's `redirect("/login")`, thrown from the
 //     LAYOUT. A layout is a component (`fn … -> @Component<ElementBase, Element>`,
 //     decision 117) and renders before the page, so the signal leaves before the

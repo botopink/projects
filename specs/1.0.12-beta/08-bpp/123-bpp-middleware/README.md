@@ -59,7 +59,8 @@ types: refused at the second `setLocal` of the request, naming both.
 A page reading a local is per-request (a request-time read is what `#[serverOnly]` marks, 186);
 until the checker capability lands, the read marks the render through `04-rakun/22` step 4's
 bridge (`ChunkWriter.markDynamic`). How rakun's `local` carries jhonstart's marker: `08-j`; step
-1's third box (`dynamicReason()` says `locals`) is written for the bridge.
+1's third box is written for the final form — the kind `#[page]` records (277) —, with the bridge's
+`dynamicReason()` accepted only while `04-rakun/22` step 4's bridge stands.
 
 **`sequence` is a value.** `sequence([validation, auth, greeting])` = one middleware running the
 three in order, each seeing the next one's response on the way back (the onion); composes
@@ -85,7 +86,8 @@ from the action field and header onze configures (114).
 - [ ] `examples/locals-and-sequence-example.bp` passes on erlang
 - [ ] a local set in middleware is read by a page, a route handler and an action in the same
       request; `null` in the next request on the same process
-- [ ] a page reading a local is not prerendered; `dynamicReason()` says `locals`
+- [ ] a page reading a local is not prerendered: its kind is `D`, its `why` says `locals`
+      (`@typeInfo(Page).meta.page`, 277; through `08-j`'s marker)
 
 ### Step 2 — `sequence`
 

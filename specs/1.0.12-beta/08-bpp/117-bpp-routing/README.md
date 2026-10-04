@@ -104,7 +104,8 @@ Per decision 202 (no `prerender` export).
 
 - [ ] `examples/static-paths-example.bp` passes; scan finds `staticPaths` and `partial` in a `.bp`
       and a `.bpp` page; no `prerender` read
-- [ ] a page calling `cookies()` is not prerendered (rendered per request); `dynamicReason()` names the read
+- [ ] a page calling `cookies()` is not prerendered (rendered per request): its kind is `D` and its
+      `why` names the read (`@typeInfo(Page).meta.page`, recorded by `#[page]` from `Decl.hooks`, 277)
 - [ ] a dynamic route `#[page]` prerenders with no `staticPaths` fails the build (`prerenderAll(strict)`)
 
 ### Step 3 — `StaticPath.data`, `paginate`, `Page<T>`
