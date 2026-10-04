@@ -26,7 +26,7 @@
 import html, {Element, ElementBase, Children, renderToString} from "jhonstart";
 import {a, article, body, h1, head, header, htmlTag, img, main, title, video} from "jhonstart";
 import {ViewTransitions, fade, slide, TransitionAnimation} from "jhonstart-link";
-import {transitionName, transitionAnimate, transitionPersist} from "jhonstart-link";
+import {transitionName, transitionAnimate, transitionPersist, reload, history} from "jhonstart-link";
 
 // ── src/layouts/base.bp ─────────────────────────────────────────────────────
 
@@ -41,9 +41,9 @@ pub fn BaseLayout(pageTitle: string, children: Children = []) -> Element {
           <header #[transitionAnimate(fade(duration: "0.4s"))]>
             <a href="/blog">Blog</a>
             <!-- a full document load, on purpose -->
-            <a href="/legacy" data-jh-reload>Legacy</a>
+            <a href="/legacy" #[reload]>Legacy</a>
             <!-- replaces the history entry instead of adding one -->
-            <a href="/blog?sort=new" data-jh-history="replace">Newest</a>
+            <a href="/blog?sort=new" #[history(.Replace)]>Newest</a>
           </header>
 
           <!-- keeps playing across navigations: the node is moved, not replaced -->
@@ -100,7 +100,7 @@ test "a persisted element is marked with its name" {
     assert markup.contains("data-jh-vt-persist=\"player\"");
 }
 
-test "the per-link attributes are plain attributes" {
+test "the per-link annotations lower to the runtime's attributes (292)" {
     val markup = renderToString(BaseLayout("Blog"));
     assert markup.contains("<a href=\"/legacy\" data-jh-reload>");
     assert markup.contains("data-jh-history=\"replace\"");
@@ -115,8 +115,8 @@ test "the per-link attributes are plain attributes" {
 // In the browser (`jhonstart-dom-test/test/transitions_dom_test.bp`):
 //
 //   click <a href="/blog/hello">    → startViewTransition called once; the events
-//                                     jh:before-preparation, jh:after-preparation,
-//                                     jh:before-swap, jh:after-swap, jh:page-load
+//                                     onBeforePreparation, onAfterPreparation,
+//                                     onBeforeSwap, onAfterSwap, onPageLoad
 //                                     fire in that order
 //   the <video> after the swap      → the same node as before it
 //   a browser with no View Transition API → the swap happens, nothing is animated

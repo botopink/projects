@@ -195,7 +195,7 @@ are on disk, so most of Astro is there, or there and unwired.
 | `<ClientRouter />` — client-side navigation | click interception, `pushState` (`jhonstart-link/src/link_runtime.mjs:41-71`); driver `reconcile()` unwritten (`reconcile.bp:40`) | wire · `05-jhonstart/27` |
 | `transition:name`, `transition:animate` → `#[transitionName]`, `#[transitionAnimate]` (278), built-in `fade` / `slide` / `none` / `initial`, custom animations | not found — no `startViewTransition` in the tree | add · 126 |
 | `transition:persist`, `transition:persist-props` | not found | add · 126 — `#[transitionPersist]`, `#[transitionPersistProps]` (278) |
-| `data-astro-reload`, `data-astro-history` | not found | add · 126 |
+| `data-astro-reload`, `data-astro-history` | not found | add · 126 — `#[reload]`, `#[history(.Replace)]` (292) |
 | `navigate(href)` | no public function | add · 126 |
 | forms through the router | `formMount` (`jhonstart-forms/src/form.bp:173`) | have |
 | lifecycle events (`before-preparation` … `page-load`) | not found | add · 126 |

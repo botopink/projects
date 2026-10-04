@@ -129,6 +129,14 @@ no longer resolves `from "@/…"` — `module-import-with-from` like any other. 
 - `dev` restarts, not hot-loads (50-b (a)); Fast Refresh a stated non-goal (`reference-holes.md`
   § 29). The bundler's `importsOf` stays a text scan (lg2-s is the compiler's row).
 
+### Step 10 — `<Script>`'s strategy is an enum (decision 292)
+
+- [ ] `onze-bundler/src/script.bp`: `pub type ScriptStrategy { BeforeInteractive, AfterInteractive,
+      LazyOnload, Worker }`; `<Script src=… strategy={.LazyOnload} />` takes it as a prop;
+      `strategies() -> string[]` and `scriptPlacement(strategy: string)` go (281); an unknown one is the
+      missing-variant error at the prop
+- [ ] `script_test.bp` per variant; the strategies stay separate from the islands' `Hydrate` (120)
+
 **Gate:** standard (fronts.md § Gate) +
 - [ ] `zig build test-libs` — `onze-cli` 31+ and `onze-bundler` 42+ on every target its manifest
       declares; `scaffold` green

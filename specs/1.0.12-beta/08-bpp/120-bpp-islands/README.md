@@ -220,7 +220,7 @@ None open (224, 271, 272 answered the server-island ones; 278 the annotations).
 - **`hydrate()` no longer "everything now"**; "started after `hydrate()`" holds only for `Load`.
 - **New public route prefix** on every onze app, answering markup for sealed props; `GET`-reachable
   by design, the seal makes its input the server's own.
-- **`<Script>`'s strategies untouched** — scripts, not components.
+- **`<Script>`'s strategies stay their own** — scripts, not components: a `ScriptStrategy` enum (292), not `Hydrate`.
 
 ## Notes
 

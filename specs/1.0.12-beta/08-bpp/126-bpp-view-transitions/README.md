@@ -64,14 +64,19 @@ so one tag may carry several, one of each:
 
 Meets 27 here: `reconcile` answers which layouts are shared; `#[transitionPersist]` adds named elements to what survives.
 
-**Per link.** `data-jh-reload` on `<a>` / `<form>` forces a document load;
-`data-jh-history="push" | "replace" | "auto"` picks the history call.
+**Per link: two tag annotations** (292). `#[reload]` on `<a>` / `<form>` forces a document load;
+`#[history(.Push | .Replace | .Auto)]` picks the history call (`History` enum). They take `comptime
+tag: Tag`, return `LinkReload` / `LinkHistory` for this front's arm, and lower to the wire attributes
+`data-jh-reload` / `data-jh-history="replace"` the runtime reads — the attributes are output, never
+written by hand (a written `data-jh-reload` is refused, naming the annotation).
 
 **`navigate(href, options)`**: public, for non-click navigations (a `<select>` change, a finished action).
 
-**Five `document` events**, in order, cancelable where the reference's are:
-`jh:before-preparation` (with a `loader` to wrap), `jh:after-preparation`, `jh:before-swap` (with
-`newDocument`), `jh:after-swap`, `jh:page-load`.
+**Five lifecycle hooks** (292), in order, cancelable where the reference's events are:
+`use onBeforePreparation({ e -> … })` (with a `loader` to wrap), `use onAfterPreparation(…)`,
+`use onBeforeSwap({ e -> … })` (`e.newDocument`), `use onAfterSwap(…)`, `use onPageLoad(…)` — each
+`#[clientOnly]` (186, 278), its event a typed record. The `document` events `jh:before-swap` … stay the
+runtime's wire, never named by botopink code.
 
 **Accessibility.** After a swap an `aria-live="assertive"` element announces the `<title>`, else
 first `<h1>`, else the pathname. `prefers-reduced-motion: reduce` disables every transition animation in the stylesheet.
@@ -89,8 +94,12 @@ first `<h1>`, else the pathname. `prefers-reduced-motion: reduce` disables every
 
 - [ ] swap wrapped in `startViewTransition` when flagged — `link_runtime.mjs`'s two document-replacing call sites
 - [ ] `jhonstart-dom-test`: a `startViewTransition` double recording its callback; cases forward,
-      back, `data-jh-reload`, `data-jh-history="replace"`, a browser without the API
-- [ ] the five events fire in order, once per navigation; `before-preparation`'s wrapped loader runs around the fetch
+      back, `#[reload]`, `#[history(.Replace)]`, a browser without the API
+- [ ] the five hooks fire in order, once per navigation, with typed events; `onBeforePreparation`'s
+      wrapped loader runs around the fetch; a `#[client]` component's `use onBeforeSwap` registered
+      once per mount (292)
+- [ ] `#[reload]` / `#[history(…)]` lower to `data-jh-reload` / `data-jh-history`; a hand-written
+      `data-jh-reload` refused at the attribute, naming `#[reload]`
 
 ### Step 3 — `#[transitionPersist]`
 

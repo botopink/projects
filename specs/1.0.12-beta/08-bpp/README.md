@@ -181,6 +181,8 @@ only; `comptime tag: Tag` = any tag. One result of each type per tag.
 | `#[transitionAnimate(a)]` | `transition:animate` | `Tag` · `TransitionAnimate` | `transitions.bp` | 126 step 1 |
 | `#[transitionPersist(key?)]` | `transition:persist` | `Tag` · `TransitionPersist` | `transitions.bp` | 126 step 1 |
 | `#[transitionPersistProps]` | `transition:persist-props` | `Tag` · `TransitionPersistProps` | `transitions.bp` | 126 step 1 |
+| `#[reload]` | `data-astro-reload` | `Tag` (`<a>`, `<form>`) · `LinkReload` | `transitions.bp` | 126 step 2 (292) |
+| `#[history(h)]` | `data-astro-history` | `Tag` · `LinkHistory` (`History.Push \| Replace \| Auto`) | `transitions.bp` | 126 step 2 (292) |
 
 Not annotations — values: `set:html={s}` → `{raw(s)}`; `set:text={s}` → `{s}`; `class:list={[…]}` →
 `class={classList([…])}` (`classList` new in the core, 118 step 5). The arm for each return type is

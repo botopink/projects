@@ -24,7 +24,7 @@
 //           https://docs.astro.build/en/guides/view-transitions/
 
 import {a, body, head, header, htmlTag, main, title, video} from "jhonstart";
-import {ViewTransitions, fade, transitionAnimate, transitionPersist} from "jhonstart-link";
+import {ViewTransitions, fade, transitionAnimate, transitionPersist, reload, history} from "jhonstart-link";
 
 type Props(
     pageTitle: string,
@@ -40,9 +40,9 @@ type Props(
     <header #[transitionAnimate(fade(duration: "0.4s"))]>
       <a href="/blog">Blog</a>
       <!-- a full document load, on purpose -->
-      <a href="/legacy" data-jh-reload>Legacy</a>
+      <a href="/legacy" #[reload]>Legacy</a>
       <!-- replaces the history entry instead of adding one -->
-      <a href="/blog?sort=new" data-jh-history="replace">Newest</a>
+      <a href="/blog?sort=new" #[history(.Replace)]>Newest</a>
     </header>
 
     <!-- keeps playing across navigations: the node is moved, not replaced -->

@@ -51,6 +51,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 01-checker s25 — the anonymous default `pub default fn (…)` and `pub default Name;` (289) · then 116 s2
 - [ ] decision 290 (no segment config; `revalidate`, `dynamicParams` in `#[page]`) — rakun 22 s8 · 26 s10 · 53 s9
 - [ ] decision 291 (`use request()` / `use response()`; no `isPrerendered`) — 122 s1, s3 · 26 s8, s10 · 120 s4
+- [ ] decision 292 (`#[reload]`, `#[history]`, navigation hooks, `ScriptStrategy`) — 126 s1–2 · 50 s10
 - [ ] 01-checker s22 — the `.bpp` prelude scope (270) · 116 hands the prelude list
 - [x] 01-checker s19–s20 — type application and `comptime <expr>` (255): on feat (`49455602`)
 - [ ] 01-checker rows — the `@block` tail refusal, the `$stringify` parser refusal (239), `primitive-type-name-taken`, the comptime body's file, T17, a package's module namespace, two aliased same-named types (imp-a), `@External.Wasm` read on every target, the template memo key, row 33 · the first two unblock 04 s1–2 and 02 s10
@@ -163,7 +164,6 @@ Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.
 last section.
 
 **First — the botopink shape** (raised 2026-10-04; answer `nat-0`, then the rest):
-- [ ] ctr-z — 126 s1–4 · 50 (`<Script>`) · 124
 - [ ] nat-c — untyped bags · bpp-g, 08-j, 117, 122, 123, 130 (meta), rakun 04/08/15, 34, 03r-b
 - [ ] nat-d1…d9 — case by case (283): `ActionOutcome` (127), store `try*` twins (rakun 09/93), `Schema<T>` (125), arity families (125), `Partial`/`Pick` (125, 134), `nav:` strings (26, 53), lifecycle (rakun 04), `use use…` (53), erika's LINQ names (98)
 - [ ] nat-e — Spring's annotations · 130 s5, rakun 04/08/13/15/19/79/91/93, 130-b, 130-c
