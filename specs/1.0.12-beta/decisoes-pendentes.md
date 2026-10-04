@@ -68,7 +68,7 @@ o recurso equivalente na linguagem. Eles caem em sete padrões.
 
 **As quatro regras já estão decididas:** 281 (nenhum identificador de código como string), 282 (o papel
 vai no decorator), 283 (segundo modelo: caso a caso, `nat-d1`…`nat-d9`) e 284 (JSON: caso a caso,
-`nat-f1`…`nat-f4`). **Ordem do que falta:** as quatro contradições **`ctr-x`…`ctr-aa`**, que já batem
+`nat-f1`…`nat-f4`; a `nat-f1` virou a 285). **Ordem do que falta:** as quatro contradições **`ctr-x`…`ctr-aa`**, que já batem
 com decisões tomadas; depois `nat-c`, `nat-d1`…`nat-d9`, `nat-e`, `nat-f2`…`nat-f4` e `nat-g`.
 
 ### ctr-x · `registerSegmentConfig(dynamic: ForceStatic, …)` × decisões 202, 186 e 277
