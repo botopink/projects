@@ -162,7 +162,7 @@ No relative imports: same package `import {components.card.Card};`, a package `i
 
 Every annotation this track creates. Each is a function, resolved in the caller's scope (the
 `.bpp` prelude imports the core's; `jhonstart-link`'s are imported by name); `html` calls it at
-comptime and acts on its **return type**. First parameter: `comptime decl: @Decl` = component tags
+comptime and acts on its **return type**; a tag carries one `#[…]` list (279). First parameter: `comptime decl: @Decl` = component tags
 only; `comptime tag: Tag` = any tag. One result of each type per tag.
 
 | Annotation | Astro | First parameter · returns | Declared in | Front |

@@ -4,7 +4,7 @@ The rules the fronts implement against. Numbers continue from
 [1.0.10-beta's record](../1.0.10-beta/decisions-taken.md) (which stopped at 143; 91–94, 97 and
 99–101 are used) and are never renumbered or reused. A question is raised in
 [`decisions-pending.md`](./decisions-pending.md) under a lettered id and moves here with the next
-free number. **The next free number is 279.**
+free number. **The next free number is 280.**
 
 Each row: number · the id it answered · the rule in force · the fronts it binds. A row amended by a
 later one states only what is in force and cites the amendment; a row fully replaced is one line.
@@ -125,6 +125,7 @@ jhonstart & templates: 186, 190–193, 200, 202, 204, 220, 223 · onze: 218 · b
 | 165 | 16-c | A trailing lambda whose body is one expression prints on one line when it fits, arrow or not (`h1 { "my blog" }`), as its own commit after measuring the six trees | 16-formatter step 5 |
 | 166 | 16-d | A trailing comma decides: a list written with a comma after its last element prints one element per line and keeps the comma; a list written without one stays on one line. Scope: 243 (`ctr-s`) | 16-formatter step 6 |
 | 243 | 16-d (scope) | 166 reaches every delimited list — generics, parameters, patterns, imports, types, arrays, record fields, enum bodies, call arguments and tuples; without the comma the width rules (`16-a` / `16-b`) decide; a one-step pipeline has no comma and stays horizontal (`ctr-s`) | 16-formatter step 6 |
+| 279 | fmt-ann | A declaration's annotations print as **one** `#[…]` list: the formatter joins every `#[…]` block written before a declaration (and every annotation written inside one template tag, 278) into one, in the written order, and breaks it as any delimited list — a trailing comma after the last annotation prints one per line and keeps the comma, without one the width rules decide (166, 243). Meaning unchanged: each item is its own annotation, `Decl.annotations` and `@TypeInfo.all(with:)` see each one, in order (`#[check(a), check(b)]` is two `check`s). The parser already accepts the list (`#[@builtin(…), custom()]`); the canonical rewrite that split it into one `#[…]` per annotation goes. A comment between two blocks stays on its annotation (lossless) | `01-compiler/16-formatter` step 9 · 118 (the template grammar) |
 
 ## Backends
 

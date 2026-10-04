@@ -101,7 +101,7 @@ first `<h1>`, else the pathname. `prefers-reduced-motion: reduce` disables every
 
 - [ ] `examples/view-transitions-example.bp` passes
 - [ ] an unknown animation (`#[transitionAnimate("spin")]`) fails at the argument, listing the four built-ins
-- [ ] `<Counter #[clientLoad] #[transitionPersist] />` carries both (two types); two
+- [ ] `<Counter #[clientLoad, transitionPersist] />` carries both (two types); two
       `#[transitionName]` on one tag fail at the second
 - [ ] announcer text for a page with a title, without one, and with neither
 

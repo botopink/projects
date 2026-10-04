@@ -12,7 +12,7 @@
 //   <a href="/legacy" data-astro-reload>
 //
 //   — here: #[transitionName("hero")], #[transitionAnimate("slide")],
-//     #[transitionAnimate(fade(duration: "0.4s"))], #[transitionPersist], <Counter #[clientLoad] #[transitionPersist] />
+//     #[transitionAnimate(fade(duration: "0.4s"))], #[transitionPersist], <Counter #[clientLoad, transitionPersist] />
 //
 // A customised animation is a value: `fade(duration: "0.4s")` is a call in a
 // hole, like any other expression.

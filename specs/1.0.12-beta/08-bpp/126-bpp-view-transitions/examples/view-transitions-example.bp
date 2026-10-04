@@ -14,7 +14,7 @@
 //   <a href="/articles/emperor-penguins" data-astro-reload>
 //
 //   — here: #[transitionName("hero")], #[transitionAnimate("slide")],
-//     #[transitionAnimate(fade(duration: "0.4s"))], #[transitionPersist], <Counter #[clientLoad] #[transitionPersist] />
+//     #[transitionAnimate(fade(duration: "0.4s"))], #[transitionPersist], <Counter #[clientLoad, transitionPersist] />
 //
 // Upstream: astro-docs/20-view-transitions.md
 //           https://docs.astro.build/en/guides/view-transitions/

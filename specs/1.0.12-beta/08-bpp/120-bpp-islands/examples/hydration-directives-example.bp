@@ -163,7 +163,7 @@ test "the annotation form and the function form are the same mount" {
 //   <Footer #[clientLoad] />        Footer has no #[client]
 //     error: `Footer` is not a #[client] component — it renders on the server only
 //
-//   <Carousel #[clientLoad] #[clientIdle] images={1} />
+//   <Carousel #[clientLoad, clientIdle] images={1} />
 //     error: two `Hydrate` annotations on one tag                  at #[clientIdle]
 //
 //   <Map #[clientVisible] zoom={3} />

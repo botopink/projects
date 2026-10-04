@@ -1,7 +1,7 @@
 # Decisões pendentes — 1.0.12-beta (só o que está em aberto, por ordem de importância)
 
 Atualizado em 2026-10-04. Só o que ainda espera resposta sua: o que já foi respondido está em
-`specs/1.0.12-beta/decisions-taken.md` (decisões 144–278; próximo número livre: **279**) e saiu daqui.
+`specs/1.0.12-beta/decisions-taken.md` (decisões 144–279; próximo número livre: **280**) e saiu daqui.
 Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 234–236 (injeção do rakun,
 `@TypeInfo.all` com lista, decorador de função), 237 (captura do template pelo texto), 238–243
 (`@External.Wasm`, `$stringify`, codepoints no wasm, células sem WASI, dependência direta, vírgula final),

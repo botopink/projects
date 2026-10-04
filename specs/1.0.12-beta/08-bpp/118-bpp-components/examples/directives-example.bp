@@ -116,7 +116,7 @@ test "a void annotation renders nothing of its own" {
 //     error: no `prefix:name` directives — write {raw(s)} as the child
 //                                                                  at `set:html`
 //
-//   <code #[isRaw] #[isRaw]>…</code>
+//   <code #[isRaw, isRaw]>…</code>
 //     error: two `RawBody` annotations on one tag                  at the second
 //
 //   <div #[clientVisible] />
