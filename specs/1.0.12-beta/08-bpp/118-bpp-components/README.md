@@ -3,7 +3,7 @@
 **Priority:** critical — every other front writes markup through it; none is testable without it.
 · **State:** not started · ready to open
 **Depends on:** nothing open (`00-gate/101-gate-jhonstart` done). Written against decisions 190,
-191, 192, 193 and 223, 204, 207, 200, 270, 189.
+191, 192, 193 and 223, 204, 207, 200, 270, 189, 278.
 **Owns:** `repository/jhonstart/modules/jhonstart-html/**` (`src/html.bp`, `src/root.bp`,
 `test/**`, `botopink.json`, `src/AGENTS.md`) — lands there; `05-jhonstart/26` step 0 then merges
 it into the core, `html` the core's `pub default fn` (200); 119, 120, 126 append to
@@ -25,7 +25,7 @@ Reference: `astro-docs/09-astro-components.md`, `10-layouts.md`, `13-astro-synta
 
 Pages, layouts, components in `html """…"""`: every attribute renders, holes take any renderable
 type, a component tag is a call with its props, children and slots via props, markup inside `if`
-/ `case` / lambdas, directives checked against a table. Today:
+/ `case` / lambdas, annotations in tags (`#[isRaw]`, `#[clientVisible]`) resolved as names (278). Today:
 
 ```bp
 val cls = "card";
@@ -69,8 +69,8 @@ template  := node*
 node      := element | component | fragment | text | comment | hole | slot
 element   := '<' name attr* '>' node* '</' name '>'  |  '<' name attr* '/>'
 component := the same, with a name that starts with an upper-case letter
-attr      := name | name '=' '"' text '"' | name '=' '{' expr '}' | '{...' expr '}' | directive
-directive := prefix ':' name ( '=' value )?          set: class: is: client: server: transition: define:
+attr      := name | name '=' '"' text '"' | name '=' '{' expr '}' | '{...' expr '}' | annotation
+annotation := '#[' name ( '(' args ')' )? ']'      a function in the caller's scope (278)
 hole      := '{' expr '}'  |  '${' expr '}'
 expr      := botopink, in which markup may start a lambda body, an if / else block or a case arm
 ```
@@ -120,9 +120,19 @@ pub default fn Card(props: type(title: string, children: Node = [], footer: Node
 {case status { Draft -> <em>draft</em>; _ -> <span>live</span>; }}
 ```
 
-**Directive table.** `prefix:name` looked up; unknown = compile error at its span, never a rendered
-attribute. This front: `set:`, `class:`, `is:raw`; 119 `is:global`, `define:`; 120 `client:`,
-`server:`; 126 `transition:`.
+**Tag annotations** (278). Astro's `prefix:name` directives are not in the grammar. `#[name(args)]`
+inside a tag resolves `name` in the caller's scope (hygiene below; unbound = the ordinary unbound-name
+error at its span, never a rendered attribute) and `html` calls it at comptime with typed arguments.
+Its first parameter says what it receives: `comptime decl: @Decl` — the tag's component (written on
+an element: error at the annotation, "`div` is an element"); `comptime tag: Tag` — any tag (`Tag`,
+declared by this front: the tag's name and, for a component, its `@Decl`). `html` acts on the
+**return type**, never the name: `RawBody` (this front), the style types (119), `Hydrate` / `Defer`
+(120), the transition types (126) — each arm appended by its front —, `void` a check only; any other
+type is an error at the annotation, two results of one type on one tag an error at the second.
+Values are not annotations: `set:html={s}` is `{raw(s)}`, `set:text={s}` is `{s}`, `class:list` is
+`class={classList([…])}`. Arguments are embedded expressions — the same compiler need as holes.
+This front: `isRaw`, `classList`, `Tag`; 119 `isGlobal`, `isInline`, `defineVars`; 120
+`clientLoad` … `clientOnly`, `serverDefer`; 126 `transition…`.
 
 **Hygiene, prelude.** Tag names and expressions resolve in the caller's scope; `fragment`, `raw`,
 `el`, `classIf` resolve in the library (decision 112) — a page imports only what it names. In a
@@ -164,7 +174,7 @@ string)> = [])`): `props-d`.
 
 `{expr}` under 190, 191, 204 (raw text via `build` until typed embedded expressions); void and
 self-closing tags in place; `<>…</>`, `<Fragment>`; `<!-- … -->` (rendered); doctype; raw-text
-elements (`script`, `style`, `textarea`, `title`) unparsed; `is:raw` on any element.
+elements (`script`, `style`, `textarea`, `title`) unparsed; `#[isRaw]` on any element (278).
 
 - [ ] `examples/template-expressions-example.bp` passes on both targets
 - [ ] `{n}` for an `i32` renders its `toString()` text, same on both targets (191 — the box once asked for a refusal)
@@ -187,25 +197,33 @@ Tag → call with props from attributes (192); tag content = `children` (193, 22
 - [ ] `slot="x"` on a child of an **element** (not a component) is a compile error
 - [ ] slot transfer (`<slot name="head" slot="head" />`) through two layouts
 
-### Step 5 — `set:html`, `set:text`, `class:list`, and the directive table
+### Step 5 — Tag annotations, `raw`, `classList` (278)
 
-`set:html={s}` = `raw(s)` as only child (siblings: compile error); `set:text={s}` escaped;
-`class:list={[…]}` takes `Array<string>`, drops empty strings, joins with one space, merged after a
-static `class`. `classIf(cond, name)` answers the name or `""`.
+The § Mechanism arm: resolve, call with what the first parameter asks for, act on the return type.
+Astro's `set:html={s}` is `{raw(s)}` (the core's `raw`, unescaped); `set:text` has no form — `{s}`
+already escapes. `classList(xs: Array<string>) -> string` drops empty strings and joins with one
+space: `class={classList(["box", classIf(isRed, "red"), extra])}`; `classIf(cond, name)` answers the
+name or `""`. `#[isRaw]` returns `RawBody`: the tag's body is text.
 
 - [ ] `examples/directives-example.bp` passes on both targets
-- [ ] `<div foo:bar="1">` fails at `foo:bar` with the known prefixes
-- [ ] `<div set:html={s}>x</div>` fails at the child
+- [ ] `<div #[fooBar]>` fails at `fooBar` as an unbound name; `<div class:list={…}>` fails at
+      `class:list`, naming `class={classList(…)}`; `set:html` likewise, naming `{raw(…)}`
+- [ ] an annotation whose first parameter is `@Decl` written on an element fails at the annotation
+- [ ] an annotation returning a type `html` has no arm for fails at the annotation, naming the type;
+      two `RawBody` on one tag fail at the second; a `void` annotation runs and changes nothing
+- [ ] an annotation's argument of the wrong type fails at the argument (raw text via `build` until
+      typed embedded expressions, as holes)
 
 ### Step 6 — The overlay, and the prelude
 
 Every new token reaches the `CustomNode` tree: component tag carries its `Binding`
-(go-to-definition → the function), component attribute name = `property`, directive = `keyword`,
+(go-to-definition → the function), component attribute name = `property`, an annotation's name
+carries its `Binding` as a component tag does (go-to-definition → the annotation function),
 expression region left to the host language. jhonstart's `prelude.bp` (270) written, compiled,
 tested with the core.
 
-- [ ] language server's `@ExprCustom` snapshot for a template with a component, a slot, a
-      directive (`language-server/snapshots/lsp/` — recorded here, owned by `01-compiler/26`; a
+- [ ] language server's `@ExprCustom` snapshot for a template with a component, a slot, an
+      annotation (`language-server/snapshots/lsp/` — recorded here, owned by `01-compiler/26`; a
       hand-off if closed to a library front)
 - [ ] mismatched close tag underlines the tag, not the template
 - [ ] core declares `Node` (223) — 191's set — importable `import {Node} from "jhonstart";`; a

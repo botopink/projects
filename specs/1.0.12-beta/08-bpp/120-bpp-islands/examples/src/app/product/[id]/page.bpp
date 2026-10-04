@@ -3,7 +3,7 @@
 //
 // Demonstrates: step 4 in a `.bpp` page — a server island. The page is the same
 // for every visitor, so it is prerendered; the avatar depends on the visitor's
-// session, so it is NOT in the page. `server:defer` leaves the fallback in the
+// session, so it is NOT in the page. `#[serverDefer]` (Astro's `server:defer`, 278) leaves the fallback in the
 // markup and the browser fetches the component from its own endpoint.
 //
 //   <Avatar server:defer>
@@ -31,6 +31,6 @@ import {components.GenericAvatar};
 val id = params.id;
 ---
 <h1>Product {id}</h1>
-<Avatar size={48} server:defer>
+<Avatar #[serverDefer] size={48}>
   <GenericAvatar size={48} slot="fallback" />
 </Avatar>

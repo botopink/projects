@@ -16,13 +16,16 @@
 //   </style>
 //   <style is:global> h1 { margin: 0; } </style>
 //
+// Astro's directives are a value or an annotation here (decision 278):
+// `class={classList([…])}`, `<style #[defineVars(foregroundColor)]>`, `<style #[isGlobal]>`.
+//
 // Upstream: astro-docs/11-styling.md (Estilos com Escopo, Estilos Globais,
 //           `class:list`, Variáveis CSS, Ordem de Cascata)
 //           https://docs.astro.build/en/guides/styling/
 //
 // Target: both.
 
-import html, {classIf, Element, ElementBase, Children, renderToString} from "jhonstart";
+import html, {classIf, classList, Element, ElementBase, Children, renderToString} from "jhonstart";
 import {article, div, h1, p} from "jhonstart";
 // `scopedStyle` is the bridge's: `html` names it in the code it builds,
 // and it resolves here, in the caller's scope — the way a tag's builder does.
@@ -31,11 +34,11 @@ import {scopedStyle, collectedStyles, resetStyles} from "jhonstart-emilia";
 pub fn Box(isRed: bool, children: Children = []) -> Element {
     val foregroundColor = "rgb(221 243 228)";
     return html """
-      <div class="box" class:list={[classIf(isRed, "red")]}>
+      <div class={classList(["box", classIf(isRed, "red")])}>
         <slot />
       </div>
 
-      <style define:vars={foregroundColor}>
+      <style #[defineVars(foregroundColor)]>
         .box { border: 1px solid blue; color: var(--foregroundColor); }
         .red { border-color: red; }
       </style>
@@ -55,7 +58,7 @@ pub fn Post(title: string, children: Children = []) -> Element {
         article :global(p) { line-height: 1.6; }
       </style>
 
-      <style is:global>
+      <style #[isGlobal]>
         h1 { margin: 0; }
       </style>
     """;
@@ -77,7 +80,7 @@ test "the sheet is scoped to that attribute" {
     assert css.contains(".red[data-s=\"");
 }
 
-test "define:vars reaches the root element as custom properties" {
+test "#[defineVars] reaches the root element as custom properties" {
     val _r = resetStyles();
     val markup = renderToString(Box(false));
     assert markup.contains("style=\"--foregroundColor: rgb(221 243 228)\"");
@@ -95,7 +98,7 @@ test "two components may use the same class name" {
     assert markup.contains("<p class=\"title\">not a heading</p>");
 }
 
-test ":global and is:global leave selectors unscoped" {
+test ":global and #[isGlobal] leave selectors unscoped" {
     val _r = resetStyles();
     val _m = renderToString(Post("One"));
     val css = collectedStyles();
@@ -115,5 +118,5 @@ test "a component rendered many times registers its sheet once" {
 //   <style lang="scss"> … </style>
 //     error: `lang` — there is no CSS preprocessor; write CSS, or emilia tokens
 //
-//   <style define:vars={missing}> … </style>
+//   <style #[defineVars(missing)]> … </style>
 //     error: unbound name 'missing'                       at the name

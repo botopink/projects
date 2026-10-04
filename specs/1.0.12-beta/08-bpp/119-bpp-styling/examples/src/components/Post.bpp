@@ -2,7 +2,7 @@
 // Front 119 — bpp styling · examples/src/components/Post.bpp
 //
 // Demonstrates: step 2 in a `.bpp` component — the two ways out of a scope.
-// `:global(…)` leaves ONE selector unscoped inside a scoped rule; `is:global`
+// `:global(…)` leaves ONE selector unscoped inside a scoped rule; `#[isGlobal]` (Astro's `is:global`, 278)
 // leaves the whole sheet unscoped.
 //
 //   <style>
@@ -38,6 +38,6 @@ type Props(
   article :global(p) { line-height: 1.6; }
 </style>
 
-<style is:global>
+<style #[isGlobal]>
   h1 { margin: 0; }
 </style>

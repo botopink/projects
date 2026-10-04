@@ -35,7 +35,7 @@ val title = "Blog";
   <h1>{title}</h1>
   {if (posts.isEmpty()) { <p class="empty">Nothing here yet.</p> }}
   <ul>
-    {posts.map({ post -> <li><PostCard post={post} client:visible /></li> })}
+    {posts.map({ post -> <li><PostCard #[clientVisible] post={post} /></li> })}
   </ul>
 </BaseLayout>
 
@@ -59,13 +59,13 @@ All eleven **not started**.
 |---|---|---|---|---|
 | [`118-bpp-components/`](./118-bpp-components/README.md) | **critical** — all markup goes through it | not started · ready to open | `{expr}` of any renderable type, rendering attributes, components with props, slots, fragments, markup in `if` / `case` / lambdas, `set:html`, `class:list`, `<style>` / `<script>` to sinks; jhonstart's `prelude.bp` and node type | — |
 | [`121-bpp-content/`](./121-bpp-content/README.md) | **high** — largest new code | not started · steps 1–2 ready to open | New member `onze-content`: Markdown (CommonMark + GFM) to `Element`, frontmatter, collections with `Schema<T>`, `getCollection` / `getEntry` / `render`, `.md` pages, RSS | `08-f` (step 3) · 118, 117 (step 6) · `07-onze/53` (step 7) |
-| [`120-bpp-islands/`](./120-bpp-islands/README.md) | **high** | not started | `client:idle` / `visible` / `media` / `only`; `server:defer` with fallback slot, sealed props | 118 · 119 · 117 · `05-jhonstart/26` · `04-rakun/22` · `07-onze/49`, `50` |
+| [`120-bpp-islands/`](./120-bpp-islands/README.md) | **high** | not started | `#[clientIdle]` / `#[clientVisible]` / `#[clientMedia]` / `#[clientOnly]`; `#[serverDefer]` with fallback slot, sealed props | 118 · 119 · 117 · `05-jhonstart/26` · `04-rakun/22` · `07-onze/49`, `50` |
 | [`117-bpp-routing/`](./117-bpp-routing/README.md) | high | not started | `.bpp` / `.md` / `.html` app files, `staticPaths` with data, `paginate`, partials, static endpoints, eight priority rules as tests | `03-bundled-libs/102` · `04-rakun/22` · `07-onze/49`, `50` · 121 steps 1–2 · `bpp-g` (step 1) |
-| [`119-bpp-styling/`](./119-bpp-styling/README.md) | medium | not started · blocked by `08-d` | Scoped `<style>`, `is:global`, `:global()`, `define:vars`, cascade order | `08-d` (every step) · 118, `05-jhonstart/26` (step 2) |
+| [`119-bpp-styling/`](./119-bpp-styling/README.md) | medium | not started · blocked by `08-d` | Scoped `<style>`, `#[isGlobal]`, `:global()`, `#[defineVars]`, cascade order | `08-d` (every step) · 118, `05-jhonstart/26` (step 2) |
 | [`127-bpp-actions/`](./127-bpp-actions/README.md) | medium | not started | Action typed by a `#[schema]` record: JSON/form input, `ActionError`, typed client call | 125 step 6 · `03-bundled-libs/103` · `04-rakun/22` · `05-jhonstart/67` · `07-onze/49` · 117 · 120 · 126 · 123 (step 4) |
 | [`122-bpp-data/`](./122-bpp-data/README.md) | medium | not started | `Astro` global mapped; holes: page-side status/headers, `rewrite`, `site` | `05-jhonstart/26` · `07-onze/49` · `03-bundled-libs/102` · 118 · 120 |
 | [`123-bpp-middleware/`](./123-bpp-middleware/README.md) | medium | not started | `locals`, `sequence`, response rewritten after `next`, `actionContext` | `04-rakun/04` · `04-rakun/65` |
-| [`126-bpp-view-transitions/`](./126-bpp-view-transitions/README.md) | low | not started | `transition:name` / `animate` / `persist`, `navigate`, five lifecycle events, route announcer | `05-jhonstart/27` · 118 · 120 |
+| [`126-bpp-view-transitions/`](./126-bpp-view-transitions/README.md) | low | not started | `#[transitionName]` / `#[transitionAnimate]` / `#[transitionPersist]`, `navigate`, five lifecycle events, route announcer | `05-jhonstart/27` · 118 · 120 |
 | [`116-bpp-file-format/`](./116-bpp-file-format/README.md) | medium | not started | `.bpp` kind: `"bpp": "jhonstart"` in the app manifest; header between two `---` is botopink, rest the `html` literal; the package's prelude | 118 · `05-jhonstart/26` step 0 · `01-compiler/26` · `01-compiler`'s prelude scope · `bpp-g` (step 6) |
 | [`124-bpp-cli/`](./124-bpp-cli/README.md) | high — last | not started · blocked by `08-h` | `onze sync`, `onze create-key`, config keys, component `<script>` bundling, built style sheet, `.bpp` scaffold | `08-h` · `07-onze/50`, `71` · every other front · `07-onze/53` (step 5) |
 
@@ -84,8 +84,8 @@ Waves (cross-track numbers: [`../fronts.md`](../fronts.md) § Execution order of
 - **C**: 124 ◄ `07-onze/50`, every front above; 124 step 5 = second example app, the blog as
   `.bpp`, under 07-onze/53's acceptance script.
 
-Why: **118 first** — directives (`client:visible`, `server:defer`, `transition:name`,
-`define:vars`) need a parsing template; Markdown needs `Element` to splice; nothing needs `.bpp`.
+Why: **118 first** — tag annotations (`#[clientVisible]`, `#[serverDefer]`, `#[transitionName]`,
+`#[defineVars]`, 278) need a parsing template; Markdown needs `Element` to splice; nothing needs `.bpp`.
 **116 not first** — the compiler cannot lex HTML and emit jhonstart calls (`build.zig`'s
 lib-agnostic check fails `zig build test` when `modules/compiler-core/src` names a library) and
 need not: compiler-core gets `Module{path, source, declaration, srcPath}`, no extension. `.bpp`
@@ -153,9 +153,40 @@ Labels only; text in [`../decisions-taken.md`](../decisions-taken.md).
 | 203 | One convention: `app/` tree, directory per route; `.bpp` where `page.bp` is; no `pages/` | 117 step 1 |
 | 222 | Route handler (`route.bp`, every method) always server, never prerendered | 117 step 4 · 121 step 5 |
 | 224 | Server-island props default **sealed** (AES-256-GCM in the URL; `ONZE_KEY` or build-generated, `onze create-key`); per project `onze.json` `"islands": {"props": "sealed"}` | 120 step 4 · 124 |
+| 278 | Directives are tag annotations: `#[name(args)]` inside the tag, a function in scope, `html` acting on its return type; `#[clientOnly]` one function for hook and tag; values become values (§ Tag annotations) | 118 · 119 · 120 · 126 · `05-jhonstart/26` step 8 |
 | 189 | Ordering and ownership (carve-outs, `fake_dom.mjs`, `site` by 122) | all |
 
 No relative imports: same package `import {components.card.Card};`, a package `import {x} from "pkg";`; `.bpp` headers likewise.
+
+## Tag annotations (278)
+
+Every annotation this track creates. Each is a function, resolved in the caller's scope (the
+`.bpp` prelude imports the core's; `jhonstart-link`'s are imported by name); `html` calls it at
+comptime and acts on its **return type**. First parameter: `comptime decl: @Decl` = component tags
+only; `comptime tag: Tag` = any tag. One result of each type per tag.
+
+| Annotation | Astro | First parameter · returns | Declared in | Front |
+|---|---|---|---|---|
+| `#[isRaw]` | `is:raw` | `Tag` · `RawBody` | `jhonstart/src/html.bp` | 118 step 5 |
+| `#[isGlobal]` | `is:global` | `Tag` (`<style>`) · `StyleMode.Global` | `jhonstart/src/html.bp` (119's arm) | 119 step 2 |
+| `#[isInline]` | `is:inline` | `Tag` (`<style>`, `<script>`) · `StyleMode.Inline` | `jhonstart/src/html.bp` (119's arm) | 119 step 2 · 124 |
+| `#[defineVars(a, b)]` | `define:vars` | `Tag` (`<style>`) · `StyleVars` | `jhonstart/src/html.bp` (119's arm) | 119 step 2 |
+| `#[clientLoad]` | `client:load` | `@Decl` · `Hydrate.Load` | `jhonstart/src/island_strategy.bp` | 120 step 1 |
+| `#[clientIdle(timeoutMs)]` | `client:idle` | `@Decl` · `Hydrate.Idle` | `island_strategy.bp` | 120 step 1 |
+| `#[clientVisible(rootMargin)]` | `client:visible` | `@Decl` · `Hydrate.Visible` | `island_strategy.bp` | 120 step 1 |
+| `#[clientMedia(query)]` | `client:media` | `@Decl` · `Hydrate.Media` | `island_strategy.bp` | 120 step 1 |
+| `#[clientOnly]` | `client:only` | `@Decl` · `Hydrate.Only` — also decision 186's hook marker, one function | `jhonstart/src/stage.bp` | `05-jhonstart/26` step 8 (marker) · 120 step 1 (return) |
+| `#[serverDefer]` | `server:defer` | `@Decl` · `Defer` | `jhonstart/src/deferred.bp` | 120 step 4 |
+| `#[transitionName(name)]` | `transition:name` | `Tag` · `TransitionName` | `jhonstart-link/src/transitions.bp` | 126 step 1 |
+| `#[transitionAnimate(a)]` | `transition:animate` | `Tag` · `TransitionAnimate` | `transitions.bp` | 126 step 1 |
+| `#[transitionPersist(key?)]` | `transition:persist` | `Tag` · `TransitionPersist` | `transitions.bp` | 126 step 1 |
+| `#[transitionPersistProps]` | `transition:persist-props` | `Tag` · `TransitionPersistProps` | `transitions.bp` | 126 step 1 |
+
+Not annotations — values: `set:html={s}` → `{raw(s)}`; `set:text={s}` → `{s}`; `class:list={[…]}` →
+`class={classList([…])}` (`classList` new in the core, 118 step 5). The arm for each return type is
+appended to `html.bp` by the front in the last column, in 118 → 119 → 120 → 126 order. Compiler
+needs (no new row): annotation arguments are embedded expressions — the `language-gaps.md` row 118
+step 2 owns.
 
 ## Decisions the maintainer owes
 
@@ -201,10 +232,13 @@ config readers go to std "when a second consumer appears".
   library name, no syntax. Markup meaning is jhonstart's `html`.
 - **A library front never touches `modules/**`.** A need = a [`language-gaps.md`](../language-gaps.md) row + nearest form.
 - **Libraries keep their concerns** (113): template jhonstart, CSS emilia, request/route table rakun, wiring onze. No fifth library.
-- **Most restrictive, no bypass** (67): unknown directive = compile error at its span;
-  `client:*` on a non-`#[client]` function does not build.
-- **Astro's names kept where the stack has none** (`client:visible`, `server:defer`, `set:html`,
-  `class:list`, `transition:name`), **replaced where it has one**: no `Astro` global — parameters,
+- **Most restrictive, no bypass** (67): an unbound annotation is the unbound-name error at its
+  span, a written `prefix:name` directive an error naming the annotation; a `Hydrate` annotation on
+  a non-`#[client]` component does not build.
+- **Astro's directives are annotations or values** (278): an instruction is `#[preName(…)]` inside
+  the tag — the Astro name joined (`client:visible` → `#[clientVisible]`) —, a value an ordinary
+  attribute or hole (`set:html` → `{raw(…)}`, `class:list` → `class={classList(…)}`). Other Astro
+  names kept where the stack has none, **replaced where it has one**: no `Astro` global — parameters,
   hooks, navigation signals ([`122-bpp-data/`](./122-bpp-data/README.md) is the table).
 - **Examples are code.** `examples/` holds each step's target; on landing it moves into the
   member's tests or `examples/` and must compile. An `-example.bp` is one compilable unit with its

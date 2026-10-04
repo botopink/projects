@@ -82,7 +82,7 @@ instances behind one cache need the same key — the command's purpose.
 
 **Component scripts.** A template `<script>` with no attribute but `src` is a module script:
 collected, each distinct one bundled once per page rendering its component, emitted as one
-`<script type="module">`. `<script is:inline>` or any other attribute: emitted in place. Collected
+`<script type="module">`. `<script #[isInline]>` (Astro's `is:inline`, 278) or any other attribute: emitted in place. Collected
 script is JavaScript, not compiled botopink; typed client code is an island (120).
 
 **Styles at build.** 119's scoped sheets gathered per route, long scope ids → declaration-order

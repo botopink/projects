@@ -2,13 +2,14 @@
 
 **Priority:** high — "load when seen" and "render per visitor, cache the rest" are what islands
 are for; the tree has neither. · **State:** not started
-**Depends on:** `118-bpp-components` (`client:` / `server:` are template arms) · `119-bpp-styling`
+**Depends on:** `118-bpp-components` (tag annotations, 278 — this front appends the `Hydrate` / `Defer` arms) · `119-bpp-styling`
 (previous arm in `html.bp`) · `05-jhonstart/26` (owns the core, carries front 29's island work) ·
 `07-onze/50` (ONZ-68-split: lazy starters — without them deferred code still downloads up front)
 · `07-onze/49` (island route in `onze-server`) · `04-rakun/22` (rakun-app), 117 before it on that
-member · Written against decisions 224, 271, 272.
+member · `05-jhonstart/26` step 8 (`stage.bp`'s `clientOnly`, `pathsTo`) · Written against decisions 224,
+271, 272, 277, 278.
 **Owns:** in `repository/jhonstart/modules/jhonstart/src`: new `island_strategy.bp`,
-`deferred.bp`; the step-named lines of `client.bp`, `render.bp:218`, `island_runtime.mjs` · new
+`deferred.bp`; the step-named lines of `client.bp`, `clientOnly`'s return in `stage.bp` (26's file, step 1), `render.bp:218`, `island_runtime.mjs` · new
 `repository/rakun/modules/rakun-app/src/server_islands.bp` + `sidecars/` cell (after
 `04-rakun/22`, after 117 on the member's `botopink.json`, `root.bp`) · one arm appended to
 `html.bp` (`jhonstart/src/html.bp`, after 119's) · one line of `onze-server/src/server.bp` (the
@@ -21,8 +22,8 @@ Reference: `astro-docs/02-islands-architecture.md`, `12-framework-components.md`
 
 ## Goal
 
-`client:idle` / `visible` / `media` / `only` start an island — and download its code — when the
-strategy fires; `server:defer` renders a component per visitor in a second request while the page
+`#[clientIdle]` / `#[clientVisible]` / `#[clientMedia]` / `#[clientOnly]` on a component's tag start an
+island — and download its code — when the strategy fires; `#[serverDefer]` renders a component per visitor in a second request while the page
 stays prerendered and cacheable, props sealed by default.
 
 ## Problem
@@ -54,19 +55,39 @@ At `repository/jhonstart/modules/jhonstart/src/`:
 
 ## Mechanism
 
-### Client directives
+### Client annotations (278)
 
-Legal on a component tag whose function is `#[client]`; lowered to the mount with a strategy:
+Tag annotations (118's arm): a function in the caller's scope, `comptime decl: @Decl` first — the
+tag's component — returning `Hydrate`; `html` turns a `Hydrate` into the mount with that strategy.
+All live in `island_strategy.bp` except `clientOnly` (`stage.bp`, below); the prelude imports them.
 
-| Directive | Strategy | The runtime starts the island |
+| Annotation | Returns | The runtime starts the island |
 |---|---|---|
-| `client:load` | `Hydrate.Load` | at once — today's behaviour, by name |
-| `client:idle` · `client:idle="500"` | `Hydrate.Idle(timeoutMs)` | in `requestIdleCallback`; without it, after the timeout (200 ms default) |
-| `client:visible` · `client:visible="200px"` | `Hydrate.Visible(rootMargin)` | when an `IntersectionObserver` reports it |
-| `client:media="(max-width: 50em)"` | `Hydrate.Media(query)` | when `matchMedia(query)` matches — at once if it does |
-| `client:only` | `Hydrate.Only` | at once; the server renders **nothing** of it, only its `slot="fallback"` children |
+| `#[clientLoad]` | `Hydrate.Load` | at once — today's behaviour, by name |
+| `#[clientIdle]` · `#[clientIdle(500)]` | `Hydrate.Idle(timeoutMs)` | in `requestIdleCallback`; without it, after the timeout (200 ms default) |
+| `#[clientVisible]` · `#[clientVisible("200px")]` | `Hydrate.Visible(rootMargin)` | when an `IntersectionObserver` reports it |
+| `#[clientMedia("(max-width: 50em)")]` | `Hydrate.Media(query)` | when `matchMedia(query)` matches — at once if it does |
+| `#[clientOnly]` | `Hydrate.Only` | at once; the server renders **nothing** of it, only its `slot="fallback"` children |
 
-No `client:` directive: server-rendered, never started (static markup, as in Astro).
+No `Hydrate` on the tag: server-rendered, never started (static markup, as in Astro).
+
+**`#[clientOnly]` is one function** (278): decision 186's marker on a hook declaration and, on a
+tag, the instance rendered only on the client — both "only on the client". `05-jhonstart/26` step 8
+declares it a marker (`{}`); step 1 here gives it its `-> Hydrate` (`Hydrate.Only`), the result
+unused on a declaration. A `#[clientOnly]` tag lowers to the mount without calling the component on
+the server, so the component's nodes do not enter the page's `hooks` (277).
+
+**Checks by type, in `html`** — every `Hydrate`, whoever declared the annotation:
+- the component carries `#[client]` (`a.decorator.is(client)`, 277) — else "`Footer` is not a
+  `#[client]` component";
+- `pathsTo(decl.hooks, clientOnly)` (26 step 8) non-empty: refused under any `Hydrate` but `Only`,
+  and on a tag with no `Hydrate` — "`Map` reaches `geolocation` (#[clientOnly]) via …; use
+  #[clientOnly]";
+- two `Hydrate` on one tag: error at the second.
+
+A library may declare its own (`pub fn clientMobile(comptime decl: @Decl) -> Hydrate { return
+clientMedia(decl, "(max-width: 50em)"); }`); it gets the checks above and adds no strategy — the
+runtime knows `Hydrate`'s five cases only.
 
 Payload row becomes `#(id, component, props, when)` — `contracts.md` § 2 changed in the same commit.
 
@@ -75,7 +96,7 @@ Payload row becomes `#(id, component, props, when)` — `contracts.md` § 2 chan
 (`07-onze/50`'s ONZ-68-split); until then strategies defer execution only and the network box stays
 open, saying why.
 
-**Props.** `<LikeButton postSlug={s} likes={0} client:visible />` lowers to
+**Props.** `<LikeButton #[clientVisible] postSlug={s} likes={0} />` lowers to
 `mountIslandWhen("LikeButton", <encoded props>, children, Hydrate.Visible(""))`; props encoded by
 the function `#[clientProps]` emits, reached by name `<Component>Props` (as `parse<TypeName>` in
 `validation`). Step 0 measures what it emits.
@@ -83,7 +104,7 @@ the function `#[clientProps]` emits, reached by name `<Component>Props` (as `par
 ### Server islands
 
 ```
-<Avatar server:defer><GenericAvatar slot="fallback" /></Avatar>
+<Avatar #[serverDefer]><GenericAvatar slot="fallback" /></Avatar>
 ```
 
 1. Component marked `#[deferred]` registers `"Avatar" → renderer` at module load (shape of
@@ -117,7 +138,11 @@ The variable is always `ONZE_KEY` (decision 271).
 
 ### Step 1 — `Hydrate`, `mountIslandWhen`, the payload column
 
-- [ ] `island_strategy.bp`; `mountIsland` is `mountIslandWhen(…, Hydrate.Load)`
+- [ ] `island_strategy.bp`: `Hydrate`, `mountIslandWhen`; `mountIsland` is `mountIslandWhen(…, Hydrate.Load)`
+- [ ] the annotations `clientLoad`, `clientIdle(timeoutMs: i32 = 200)`, `clientVisible(rootMargin:
+      string = "")`, `clientMedia(query: string)` — each `(comptime decl: @Decl, …) -> Hydrate` —
+      and `stage.bp`'s `clientOnly` given `-> Hydrate` (`Hydrate.Only`), still the hook marker
+      `05-jhonstart/26` step 8 reads (278); all imported by `prelude.bp`
 - [ ] payload row's fourth column on both targets; `contracts.md` § 2 and onze's `build_test.bp:104` literal amended together
 - [ ] `client_test.bp`: one case per strategy, asserting the row
 
@@ -126,15 +151,23 @@ The variable is always `ONZE_KEY` (decision 271).
 - [ ] `island_runtime.mjs`: one scheduler per strategy; an island started at most once
 - [ ] `jhonstart-dom-test`: `fake_dom.mjs` gains `IntersectionObserver`, `matchMedia`,
       `requestIdleCallback`; five cases, each asserting **not** started before its trigger, started after
-- [ ] `client:only` renders the fallback on the server, the component in the browser
+- [ ] `#[clientOnly]` on a tag renders the fallback on the server, the component in the browser
 
-### Step 3 — The directives
+### Step 3 — The `Hydrate` arm of `html` (278)
 
 - [ ] `examples/hydration-directives-example.bp` passes
-- [ ] `client:visible` on an element, or on a component the template sees is not `#[client]`,
-      fails at the directive; an unseen one fails the build in the bundler's island check
-      (`entry.bp`) with its name — never a mount that starts nothing
-- [ ] two `client:` directives on one tag fail at the second
+- [ ] `#[clientVisible]` on an element fails at the annotation (its first parameter is `@Decl`); on
+      a component without `#[client]` fails at the annotation, checked by `Decorator.is`; an unseen
+      island fails the build in the bundler's island check (`entry.bp`) with its name — never a
+      mount that starts nothing
+- [ ] two `Hydrate` annotations on one tag fail at the second
+- [ ] a component whose `hooks` reach `#[clientOnly]`: refused under `#[clientLoad]`, `#[clientIdle]`,
+      `#[clientVisible]`, `#[clientMedia]` and with no annotation, the message naming the chain and
+      `#[clientOnly]`; accepted under `#[clientOnly]`
+- [ ] a `#[clientOnly]` tag adds no node of its component to the page's `hooks` (a `refusals/` cell
+      in 26's form: the page stays `S`)
+- [ ] a library annotation returning `Hydrate` (`clientMobile` in the example) mounts and gets the
+      same checks
 
 ### Step 4 — Server islands (modes `sealed` and `server`, decision 272)
 
@@ -142,7 +175,8 @@ The variable is always `ONZE_KEY` (decision 271).
 - [ ] `server_islands.bp`: `serveIslands(prefix)`, `seal` / `unseal`; tampered or truncated `p` answers 400, renders nothing
 - [ ] `GET` under 2 048 bytes and `POST` over it answer the same markup
 - [ ] the containing page reads no cookie: `dynamicReason()` empty, page prerenders (`static_gen.bp`)
-- [ ] `server:defer` on a non-`#[deferred]` component fails at boot, naming it
+- [ ] `serverDefer(comptime decl: @Decl) -> Defer` (`deferred.bp`, imported by the prelude); on a
+      non-`#[deferred]` component it fails at the annotation, at compile time, naming it
 - [ ] `seal` / `unseal` take the mode as a plain value — `onze.json`'s `"islands": {"props": …}`,
       read by onze's config (124) — default `sealed` (224)
 - [ ] mode `server`: the props stored server-side under a random id, the URL carries only `?id=…`;
@@ -151,12 +185,12 @@ The variable is always `ONZE_KEY` (decision 271).
 
 ### Step 5 — The network (waits on ONZ-68-split)
 
-- [ ] in `07-onze/53`'s browser run: a below-the-fold `client:visible` island's chunk is not
-      requested until scrolled to; a non-matching `client:media` island's chunk is never requested
+- [ ] in `07-onze/53`'s browser run: a below-the-fold `#[clientVisible]` island's chunk is not
+      requested until scrolled to; a non-matching `#[clientMedia]` island's chunk is never requested
 
 ## Decisions
 
-None open (224, 271, 272 answered the server-island ones).
+None open (224, 271, 272 answered the server-island ones; 278 the annotations).
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `modules/jhonstart`; on commonJS in `jhonstart-dom-test`; on erlang in `rakun-app`
@@ -174,8 +208,9 @@ None open (224, 271, 272 answered the server-island ones).
 
 ## Notes
 
-- **Not added.** `client:only="react"` (names a framework; there is one); mixing frameworks.
-  `transition:persist` on an island is 126's.
+- **Not added.** Astro's `client:only="react"` (names a framework; there is one); mixing frameworks.
+  `#[transitionPersist]` on an island is 126's. A new strategy ("on hover") is a `Hydrate` case,
+  this front's — a library annotation can only combine the five.
 - **`#[clientProps]` narrower than Astro** (`string`, `i32`, `f64`, `bool` vs objects, arrays,
   `Map`, `Set`, `Date`, …). Step 1 widens it to arrays of those and nested `#[clientProps]`
   records via `validation`'s `encode<T>` (125); `Dict`, `Set`, dates-as-`i64` follow.

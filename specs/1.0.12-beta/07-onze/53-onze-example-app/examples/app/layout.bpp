@@ -15,7 +15,7 @@
 // Token lists stay in named functions — a `fn` in the fence is a function of
 // the module — because the server and the client must build the SAME list in
 // the SAME order: token order is class identity (contracts.md § 4).
-// `class="onze-font-inter" class:list={[…]}` is `styledWith`: the static class
+// `class={classList(["onze-font-inter", …])}` is `styledWith` (Astro's `class:list`, 278): the static class
 // first, the emilia class second, one space apart.
 //
 // `Link(props, children)` takes a record, so it is called in a hole; `SiteNav`
@@ -23,7 +23,7 @@
 //
 // Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/layout
 
-import {div, header, main, nav} from "jhonstart";
+import {classList, div, header, main, nav} from "jhonstart";
 import {Link, linkProps, withClass} from "jhonstart";
 import {emilia, Token} from "emilia";
 
@@ -35,7 +35,7 @@ fn navTokens() -> Token[] {
     return [.Layout.Flex, .Flex.Gap.4, .Pad.Y.2];
 }
 ---
-<div class="onze-font-inter" class:list={[emilia(pageTokens())]}>
+<div class={classList(["onze-font-inter", emilia(pageTokens())])}>
   <header>
     <nav class={emilia(navTokens())}>
       {Link(linkProps("/"), ["Home"])}

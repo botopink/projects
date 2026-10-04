@@ -1,8 +1,8 @@
 // Front 126 — bpp view transitions · examples/view-transitions-example.bp
 // App files: src/layouts/base.bp · src/app/blog/page.bp · src/app/blog/[slug]/page.bp
 //
-// Demonstrates: the transition directives, as markup. `<ViewTransitions />` in
-// the head turns the animation on; a `transition:` directive on an element is a
+// Demonstrates: the transition annotations (decision 278). `<ViewTransitions />` in
+// the head turns the animation on; a `#[transition…]` annotation on a tag lowers to a
 // data attribute the navigation runtime reads when it swaps the document.
 //
 //   <head><ClientRouter /></head>
@@ -12,6 +12,9 @@
 //   <video controls transition:persist>
 //   <Counter client:load transition:persist initialCount={5} />
 //   <a href="/articles/emperor-penguins" data-astro-reload>
+//
+//   — here: #[transitionName("hero")], #[transitionAnimate("slide")],
+//     #[transitionAnimate(fade(duration: "0.4s"))], #[transitionPersist], <Counter #[clientLoad] #[transitionPersist] />
 //
 // Upstream: astro-docs/20-view-transitions.md
 //           https://docs.astro.build/en/guides/view-transitions/
@@ -23,18 +26,19 @@
 import html, {Element, ElementBase, Children, renderToString} from "jhonstart";
 import {a, article, body, h1, head, header, htmlTag, img, main, title, video} from "jhonstart";
 import {ViewTransitions, fade, slide, TransitionAnimation} from "jhonstart-link";
+import {transitionName, transitionAnimate, transitionPersist} from "jhonstart-link";
 
 // ── src/layouts/base.bp ─────────────────────────────────────────────────────
 
 pub fn BaseLayout(pageTitle: string, children: Children = []) -> Element {
     return html """
-      <htmlTag lang="en" transition:animate="none">
+      <htmlTag lang="en" #[transitionAnimate("none")]>
         <head>
           <title>{pageTitle}</title>
           <ViewTransitions />
         </head>
         <body>
-          <header transition:animate={fade(duration: "0.4s")}>
+          <header #[transitionAnimate(fade(duration: "0.4s"))]>
             <a href="/blog">Blog</a>
             <!-- a full document load, on purpose -->
             <a href="/legacy" data-jh-reload>Legacy</a>
@@ -43,9 +47,9 @@ pub fn BaseLayout(pageTitle: string, children: Children = []) -> Element {
           </header>
 
           <!-- keeps playing across navigations: the node is moved, not replaced -->
-          <video controls muted transition:persist="player" src="/intro.mp4"></video>
+          <video controls muted #[transitionPersist("player")] src="/intro.mp4"></video>
 
-          <main transition:animate="slide"><slot /></main>
+          <main #[transitionAnimate("slide")]><slot /></main>
         </body>
       </htmlTag>
     """;
@@ -53,12 +57,12 @@ pub fn BaseLayout(pageTitle: string, children: Children = []) -> Element {
 
 // ── src/app/blog/page.bp and src/app/blog/[slug]/page.bp ────────────────────
 
-// The same `transition:name` on both pages pairs the two elements: the browser
+// The same `#[transitionName]` on both pages pairs the two elements: the browser
 // morphs the list's thumbnail into the post's hero image.
 pub fn ListItem(slug: string, heading: string) -> Element {
     return html """
       <article>
-        <img src={"/covers/" + slug + ".png"} alt="" transition:name={"cover-" + slug} />
+        <img src={"/covers/" + slug + ".png"} alt="" #[transitionName("cover-" + slug)] />
         <a href={"/blog/" + slug}>{heading}</a>
       </article>
     """;
@@ -66,7 +70,7 @@ pub fn ListItem(slug: string, heading: string) -> Element {
 
 pub fn PostHero(slug: string, heading: string) -> Element {
     return html """
-      <img class="hero" src={"/covers/" + slug + ".png"} alt="" transition:name={"cover-" + slug} />
+      <img class="hero" src={"/covers/" + slug + ".png"} alt="" #[transitionName("cover-" + slug)] />
       <h1>{heading}</h1>
     """;
 }
@@ -104,9 +108,9 @@ test "the per-link attributes are plain attributes" {
 
 // What does not compile:
 //
-//   <main transition:animate="spin">
+//   <main #[transitionAnimate("spin")]>
 //     error: unknown animation `spin` — fade, slide, none, initial, or a
-//            TransitionAnimation value                          at the directive
+//            TransitionAnimation value                          at the argument
 //
 // In the browser (`jhonstart-dom-test/test/transitions_dom_test.bp`):
 //

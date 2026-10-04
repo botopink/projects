@@ -1,7 +1,7 @@
 ---
 // Front 126 — bpp view transitions · examples/src/components/PostHero.bpp
 //
-// Demonstrates: `transition:name` in a `.bpp` component — the other half of the
+// Demonstrates: `#[transitionName]` (Astro's `transition:name`, 278) in a `.bpp` component — the other half of the
 // pair `list_item.bpp` opens. Two roots, no wrapper element.
 //
 // The `.bp` form, with its tests: `PostHero` in `view-transitions-example.bp`.
@@ -9,6 +9,7 @@
 // Upstream: astro-docs/20-view-transitions.md (Nomeando uma transição)
 
 import {h1, img} from "jhonstart";
+import {transitionName} from "jhonstart-link";
 
 type Props(
     slug: string,
@@ -18,5 +19,5 @@ type Props(
 val cover = "/covers/" + slug + ".png";
 val pair = "cover-" + slug;
 ---
-<img class="hero" src={cover} alt="" transition:name={pair} />
+<img class="hero" src={cover} alt="" #[transitionName(pair)] />
 <h1>{heading}</h1>

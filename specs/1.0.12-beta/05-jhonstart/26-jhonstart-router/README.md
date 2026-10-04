@@ -159,7 +159,7 @@ upstream section mirrored and fronts exercised (`modules.md` § Examples).
 
 → 20-snap (front 135) step 3
 
-### Step 8 — the stage markers (decisions 186, 202, 277)
+### Step 8 — the stage markers (decisions 186, 202, 277, 278)
 
 Opens when `01-compiler/01-checker` step 23 lands `Decl.hooks` (decision 277). The library reads the
 list against its own decorators; the compiler names no marker.
@@ -182,7 +182,9 @@ list against its own decorators; the compiler names no marker.
       child), a `#[clientOnly]` hook outside one; `run/`: one page per kind — `S` prerendered by
       `#[page]`, `D` per request — with its kind asserted, and one reaching a hook through a function
       value (`D`)
-- [ ] `AGENTS.md` describes the two markers, who reads them and `pathsTo`
+- [ ] `AGENTS.md` describes the two markers, who reads them and `pathsTo`; `clientOnly` is also the
+      tag annotation (278) — `08-bpp/120` step 1 gives it `-> Hydrate` and reads `pathsTo` from the
+      `html` arm, so both stay `pub` and importable by the prelude
 
 **Gate:** standard (fronts.md § Gate) + every jhonstart member at its count or above on both rows
 (core 204; `jhonstart-dom-test` commonJS only, structural — 101) · `grep -rni rakun

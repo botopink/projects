@@ -3,7 +3,7 @@
 **Priority:** low — pages work without navigation animation; only 127 and 124 wait on it
 (`fronts.md`). · **State:** not started
 **Depends on:** `05-jhonstart/27-jhonstart-link` (JH-27-3b: driver `reconcile()` has no body — no
-swap to animate yet) · `118-bpp-components` (`transition:` is a template arm) · 120 (previous arm in
+swap to animate yet) · `118-bpp-components` (tag annotations, 278 — this front appends the transition arm) · 120 (previous arm in
 `html.bp`; `fake_dom.mjs` before this front).
 **Owns:** in `repository/jhonstart/modules/jhonstart-link/src`: new `transitions.bp`,
 `sidecars/transitions_runtime.mjs`; step 2's two call sites in `link_runtime.mjs` ·
@@ -16,7 +16,7 @@ Reference: `astro-docs/20-view-transitions.md`.
 ## Goal
 
 A layout rendering `<ViewTransitions />` gets animated client-side navigations via the View
-Transition API: `transition:name` / `animate` / `persist`, `navigate()`, five lifecycle events, a
+Transition API: `#[transitionName]` / `#[transitionAnimate]` / `#[transitionPersist]` (278), `navigate()`, five lifecycle events, a
 route announcer; apps that do not are unchanged.
 
 ## Problem
@@ -49,17 +49,20 @@ stylesheet (`fade`, `slide` keyframes, reduced-motion rule) and sets one payload
 runtime wraps the swap in `document.startViewTransition(…)`, without it navigation is today's. No
 API: swap without animating, content never held back.
 
-**Directives are data attributes** (the template only lowers them):
+**Annotations are data attributes** (278; the template only lowers them). Each is
+`(comptime tag: Tag, …)` — any element or component tag — declared in `transitions.bp`, returning
+its own type (`TransitionName`, `TransitionAnimate`, `TransitionPersist`, `TransitionPersistProps`),
+so one tag may carry several, one of each:
 
-| Directive | Attribute | The runtime |
+| Annotation | Attribute | The runtime |
 |---|---|---|
-| `transition:name="hero"` | `data-jh-vt-name` | sets `view-transition-name`, pairing with the same name on the next page |
-| `transition:animate="slide"` — `fade` (default), `slide`, `none`, `initial` | `data-jh-vt-animate` | picks the keyframes; `slide` reverses on back navigation |
-| `transition:animate={fade(duration: "0.4s")}` | `data-jh-vt-animate` + inline custom properties | `TransitionAnimation(name, delay, duration, easing, fillMode, direction)`, the reference's record |
-| `transition:persist` · `transition:persist="player"` | `data-jh-vt-persist` | element **moved** into the new document, not replaced — a playing `<video>`, a stateful island |
-| `transition:persist-props` | `data-jh-vt-persist-props` | a persisted island keeps its old props too |
+| `#[transitionName("hero")]` | `data-jh-vt-name` | sets `view-transition-name`, pairing with the same name on the next page |
+| `#[transitionAnimate("slide")]` — `fade` (default), `slide`, `none`, `initial` | `data-jh-vt-animate` | picks the keyframes; `slide` reverses on back navigation |
+| `#[transitionAnimate(fade(duration: "0.4s"))]` — argument `string \| TransitionAnimation` | `data-jh-vt-animate` + inline custom properties | `TransitionAnimation(name, delay, duration, easing, fillMode, direction)`, the reference's record |
+| `#[transitionPersist]` · `#[transitionPersist("player")]` | `data-jh-vt-persist` | element **moved** into the new document, not replaced — a playing `<video>`, a stateful island |
+| `#[transitionPersistProps]` | `data-jh-vt-persist-props` | a persisted island keeps its old props too |
 
-Meets 27 here: `reconcile` answers which layouts are shared; `transition:persist` adds named elements to what survives.
+Meets 27 here: `reconcile` answers which layouts are shared; `#[transitionPersist]` adds named elements to what survives.
 
 **Per link.** `data-jh-reload` on `<a>` / `<form>` forces a document load;
 `data-jh-history="push" | "replace" | "auto"` picks the history call.
@@ -77,8 +80,10 @@ first `<h1>`, else the pathname. `prefers-reduced-motion: reduce` disables every
 
 ### Step 1 — `transitions.bp` and the stylesheet
 
-- [ ] `ViewTransitions()`, `TransitionAnimation`, `fade(…)`, `slide(…)`, the three attribute writers, both targets
-- [ ] `transitions_test.bp`: the stylesheet is one literal; a directive's attributes are literals
+- [ ] `ViewTransitions()`, `TransitionAnimation`, `fade(…)`, `slide(…)`, the four annotations
+      `transitionName`, `transitionAnimate`, `transitionPersist`, `transitionPersistProps` with their
+      return types, both targets
+- [ ] `transitions_test.bp`: the stylesheet is one literal; an annotation's attributes are literals
 
 ### Step 2 — The runtime
 
@@ -87,21 +92,23 @@ first `<h1>`, else the pathname. `prefers-reduced-motion: reduce` disables every
       back, `data-jh-reload`, `data-jh-history="replace"`, a browser without the API
 - [ ] the five events fire in order, once per navigation; `before-preparation`'s wrapped loader runs around the fetch
 
-### Step 3 — `transition:persist`
+### Step 3 — `#[transitionPersist]`
 
 - [ ] a persisted element is the **same node** after the swap (identity, not equality) in the fake DOM; a persisted island is not re-hydrated
-- [ ] `transition:persist-props` keeps old props; without it the island re-renders with the new page's props and keeps its state
+- [ ] `#[transitionPersistProps]` keeps old props; without it the island re-renders with the new page's props and keeps its state
 
-### Step 4 — The directive arm, `navigate`, the announcer
+### Step 4 — The transition arm of `html`, `navigate`, the announcer
 
 - [ ] `examples/view-transitions-example.bp` passes
-- [ ] an unknown animation (`transition:animate="spin"`) fails at the directive, listing the four built-ins
+- [ ] an unknown animation (`#[transitionAnimate("spin")]`) fails at the argument, listing the four built-ins
+- [ ] `<Counter #[clientLoad] #[transitionPersist] />` carries both (two types); two
+      `#[transitionName]` on one tag fail at the second
 - [ ] announcer text for a page with a title, without one, and with neither
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `jhonstart-link`; on commonJS in `jhonstart-dom-test`
 - [ ] `zig build test-libs`: jhonstart, onze green
-- [ ] in `07-onze/53`'s browser run: two pages sharing a `transition:name` animate, no page load triggered
+- [ ] in `07-onze/53`'s browser run: two pages sharing a `#[transitionName]` animate, no page load triggered
 
 ## Blast radius
 
@@ -115,4 +122,5 @@ first `<h1>`, else the pathname. `prefers-reduced-motion: reduce` disables every
 
 - **Not added.** A separate client router (`linkMount` is it). `fallback: "animate"` (simulated
   animations): the swap happens, nothing simulated.
-- **Names.** Events and attributes `jh:` / `data-jh-` like all runtime names; directive names are Astro's.
+- **Names.** Events and attributes `jh:` / `data-jh-` like all runtime names; annotation names are
+  Astro's directive joined (`transition:persist-props` → `transitionPersistProps`, 278).

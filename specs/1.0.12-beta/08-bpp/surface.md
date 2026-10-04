@@ -100,7 +100,7 @@ are on disk, so most of Astro is there, or there and unwired.
 | a self-closing tag | stored, emitted at the **root** after the loop (`html.bp:212-217`, `:250-253`) — read, not run | add · 118 — step 0 measures it |
 | dynamic tags (`const Element = "div"`) | `el(tag, children, attrs)` (`jhonstart/src/elements.bp:31`) in a hole | have |
 | `<> </>`, `<Fragment>` | `fragment([...])`; several roots wrapped automatically (`html.bp:265-267`) | have · add · 118 (the tag spelling) |
-| `<Fragment set:html={s} />`, `set:html`, `set:text` | `raw(html)` (`jhonstart/src/render.bp:204`) | add · 118 |
+| `<Fragment set:html={s} />`, `set:html`, `set:text` | `raw(html)` (`jhonstart/src/render.bp:204`) | have — as values: `{raw(s)}`, `{s}` (278); 118 makes `raw` a hole |
 | kebab-case attributes, several roots, HTML comments | builders take any attribute name; no comments in the DSL | add · 118 |
 | `<slot />` | a builder's `children` argument | have — 118 gives it the tag |
 | named slots, fallback content, slot transfer | `LayoutProps.slots` always `[]` (`render.bp:296`); no named slot on a component | add · 118 |
@@ -117,9 +117,9 @@ are on disk, so most of Astro is there, or there and unwired.
 | Astro | The stack today | Box · owner |
 |---|---|---|
 | scoped `<style>` in a component | not found. emilia: typed utility compiler over `Token[]`, no CSS processor (`emilia/AGENTS.md:602`); DSL `<style>` lowers to the `style` builder, verbatim | add · 119 |
-| `is:global`, `:global()` | not found | add · 119 |
-| `class:list` | `cls` / `clsWith` for emilia tokens (`emilia/src/emilia.bp:186-210`); nothing for plain class names | add · 118 |
-| `define:vars` | not found | add · 119 |
+| `is:global`, `:global()` | not found | add · 119 — `<style #[isGlobal]>` (278) |
+| `class:list` | `cls` / `clsWith` for emilia tokens (`emilia/src/emilia.bp:186-210`); nothing for plain class names | add · 118 — a value, `class={classList([…])}` (278) |
+| `define:vars` | not found | add · 119 — `<style #[defineVars(a, b)]>` (278) |
 | inline `style` as an object | a string attribute | n/a — no object literal; the string is the form |
 | importing a stylesheet | `globals.css` read at build (`onze-cli/src/build.bp:112-114`); `*.module.css` renames classes to `<file>_<class>_<hash6>` (`onze-assets/src/style_module.bp:1-36`) | have |
 | Tailwind | emilia: `emilia(tokens)`, `flush()`, `@layer`s, class `e_<hash>` (`emilia.bp:112-235`) | have |
@@ -131,14 +131,14 @@ are on disk, so most of Astro is there, or there and unwired.
 
 | Astro | The stack today | Box · owner |
 |---|---|---|
-| `client:load` | `#[client]` + `mountIsland` — the only behaviour | have |
-| `client:idle`, `client:visible`, `client:media` | not found | add · 120 |
-| `client:only` | not found | add · 120 |
+| `client:load` | `#[client]` + `mountIsland` — the only behaviour | have · named `#[clientLoad]` · 120 (278) |
+| `client:idle`, `client:visible`, `client:media` | not found | add · 120 — `#[clientIdle]`, `#[clientVisible]`, `#[clientMedia]` (278) |
+| `client:only` | not found | add · 120 — `#[clientOnly]`, the same function as the hook marker (278) |
 | props to an island: plain data only | `#[clientProps]` whitelists `string`, `i32`, `f64`, `bool` (`client.bp:137`) — narrower than Astro | have · add · 120 (arrays, nested `#[clientProps]` records) |
 | children passed to an island | `serverSlot(children)` (`client.bp:277`) | have |
 | nesting islands | not measured | add · 120 step 0 |
 | mixing frameworks | — | n/a — one UI library |
-| hydrating an Astro component is an error | `client:*` on a function without `#[client]` | add · 120 — a compile error |
+| hydrating an Astro component is an error | a `Hydrate` annotation on a function without `#[client]` | add · 120 — a compile error |
 | event handlers in an island | attribute written (`data-jh-on-click="LikeButton:like"`, `jhonstart/modules/jhonstart/test/client_test.bp:150`), no listener reads it: the one `addEventListener` under `modules/jhonstart/src` is the `jh:refresh` button (`island_runtime.mjs:98`) | wire · handed to `05-jhonstart` — README § Handed |
 
 ## 14 · Markdown, 15 · Content collections, 19 · Images
@@ -193,8 +193,8 @@ are on disk, so most of Astro is there, or there and unwired.
 | Astro | The stack today | Box · owner |
 |---|---|---|
 | `<ClientRouter />` — client-side navigation | click interception, `pushState` (`jhonstart-link/src/link_runtime.mjs:41-71`); driver `reconcile()` unwritten (`reconcile.bp:40`) | wire · `05-jhonstart/27` |
-| `transition:name`, `transition:animate`, built-in `fade` / `slide` / `none` / `initial`, custom animations | not found — no `startViewTransition` in the tree | add · 126 |
-| `transition:persist`, `transition:persist-props` | not found | add · 126 |
+| `transition:name`, `transition:animate` → `#[transitionName]`, `#[transitionAnimate]` (278), built-in `fade` / `slide` / `none` / `initial`, custom animations | not found — no `startViewTransition` in the tree | add · 126 |
+| `transition:persist`, `transition:persist-props` | not found | add · 126 — `#[transitionPersist]`, `#[transitionPersistProps]` (278) |
 | `data-astro-reload`, `data-astro-history` | not found | add · 126 |
 | `navigate(href)` | no public function | add · 126 |
 | forms through the router | `formMount` (`jhonstart-forms/src/form.bp:173`) | have |
@@ -206,7 +206,7 @@ are on disk, so most of Astro is there, or there and unwired.
 
 | Astro | The stack today | Box · owner |
 |---|---|---|
-| `server:defer` | not found | add · 120 |
+| `server:defer` | not found | add · 120 — `#[serverDefer]` (278) |
 | `slot="fallback"` | `Boundary.fallback`, same idea within one response | add · 120 |
 | props serialised, encrypted, in the query; `POST` past 2 048 bytes | not found | add · 120 (decisions 224, 272: `sealed` by default, or `server`) |
 | `Cache-Control` on the island response | not found | add · 120 |
@@ -218,7 +218,7 @@ are on disk, so most of Astro is there, or there and unwired.
 | Astro | The stack today | Box · owner |
 |---|---|---|
 | `<script>` in a component: bundled, deduplicated, `type="module"` | `script` builder, verbatim; onze's `<Script>` with four strategies (`onze-bundler/src/script.bp:18-21`) | add · 124 |
-| `is:inline` | the verbatim behaviour above | have |
+| `is:inline` | the verbatim behaviour above | have · named `#[isInline]` (278) |
 | scripts from `src/` and from `public/` | `<Script>` | have |
 | passing data through `data-*` | any attribute | have |
 | custom elements | plain HTML | have |

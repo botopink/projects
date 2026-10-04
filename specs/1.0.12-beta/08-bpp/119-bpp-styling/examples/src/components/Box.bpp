@@ -16,7 +16,7 @@
 //     .red { border-color: red; }
 //   </style>
 //
-// `define:vars={foregroundColor}` names a `val` of the fence: it reaches the
+// `#[defineVars(foregroundColor)]` (Astro's `define:vars`, decision 278) names a `val` of the fence: it reaches the
 // root element as the custom property `--foregroundColor`.
 //
 // `scopedStyle` is imported and never spelled: the template names it in the
@@ -30,7 +30,7 @@
 //           https://docs.astro.build/en/guides/styling/#scoped-styles
 
 import {div} from "jhonstart";
-import {classIf} from "jhonstart";
+import {classIf, classList} from "jhonstart";
 import {scopedStyle} from "jhonstart-emilia";
 
 type Props(
@@ -40,11 +40,11 @@ type Props(
 
 val foregroundColor = "rgb(221 243 228)";
 ---
-<div class="box" class:list={[classIf(isRed, "red")]}>
+<div class={classList(["box", classIf(isRed, "red")])}>
   <slot />
 </div>
 
-<style define:vars={foregroundColor}>
+<style #[defineVars(foregroundColor)]>
   .box { border: 1px solid blue; color: var(--foregroundColor); }
   .red { border-color: red; }
 </style>

@@ -1,15 +1,21 @@
 // Front 120 — bpp islands · examples/hydration-directives-example.bp
-// App file: src/app/page.bp (+ components/like_button.bp, carousel.bp, mobile_nav.bp)
+// App file: src/app/page.bp (+ components/like_button.bp, carousel.bp, mobile_nav.bp, map.bp)
 //
-// Demonstrates: steps 1–3 — the five client directives. A component marked
-// `#[client]` renders on the server like any other; a `client:` directive on
-// its tag is what sends its code to the browser, and says when.
+// Demonstrates: steps 1–3 — the five client annotations (decision 278). A
+// component marked `#[client]` renders on the server like any other; a
+// `Hydrate` annotation on its tag is what sends its code to the browser, and
+// says when.
 //
-//   <InteractiveButton client:load />
-//   <HeavyChart client:idle />
-//   <InteractiveCounter client:visible />
-//   <MobileNav client:media="(max-width: 50em)" />
-//   <InteractiveModal client:only="svelte" />
+//   Astro                                   here
+//   <InteractiveButton client:load />       <InteractiveButton #[clientLoad] />
+//   <HeavyChart client:idle />              <HeavyChart #[clientIdle] />
+//   <InteractiveCounter client:visible />   <InteractiveCounter #[clientVisible] />
+//   <MobileNav client:media="(…)" />        <MobileNav #[clientMedia("(…)")] />
+//   <InteractiveModal client:only="svelte" /> <InteractiveModal #[clientOnly] />
+//
+// An annotation is a function in scope: `html` calls it at comptime with the
+// tag's component and acts on what it returns — a `Hydrate` is an island. The
+// name is never compared, so a library may write its own (`clientMobile` below).
 //
 // Upstream: astro-docs/12-framework-components.md (Hidratando componentes
 //           interativos, Diretivas de hidratação disponíveis)
@@ -19,18 +25,19 @@
 // Target: both — the page is erlang, the components are both: their first
 // render is on the server, and that is what is asserted here.
 
-import html, {Element, ElementBase, Children, renderToString} from "jhonstart";
+import html, {View, ElementBase, Children, renderToString} from "jhonstart";
 import {button, div, h1, nav, p, section, span} from "jhonstart";
 import {client, clientProps, mountIslandWhen, Hydrate, islandRows} from "jhonstart";
+import {clientLoad, clientIdle, clientVisible, clientMedia, clientOnly} from "jhonstart";
 import {state} from "jhonstart";
 
-// ── three islands ───────────────────────────────────────────────────────────
+// ── four islands ────────────────────────────────────────────────────────────
 
 #[clientProps]
 pub type LikeButtonProps(postSlug: string, likes: i32)
 
 #[client]
-pub fn LikeButton(props: LikeButtonProps) -> @Component<ElementBase, Element> {
+pub fn LikeButton(props: LikeButtonProps) -> View {
     val count = use state(props.likes);
     return html """
       <button data-jh-on-click="LikeButton:like" data-post={props.postSlug}>
@@ -43,7 +50,7 @@ pub fn LikeButton(props: LikeButtonProps) -> @Component<ElementBase, Element> {
 pub type CarouselProps(images: i32)
 
 #[client]
-pub fn Carousel(props: CarouselProps) -> @Component<ElementBase, Element> {
+pub fn Carousel(props: CarouselProps) -> View {
     return html """<section class="carousel">{props.images.toString()} images</section>""";
 }
 
@@ -51,84 +58,121 @@ pub fn Carousel(props: CarouselProps) -> @Component<ElementBase, Element> {
 pub type MobileNavProps(open: bool)
 
 #[client]
-pub fn MobileNav(props: MobileNavProps) -> @Component<ElementBase, Element> {
+pub fn MobileNav(props: MobileNavProps) -> View {
     return html """<nav class="mobile">menu</nav>""";
+}
+
+// A browser-only hook: `#[clientOnly]` on its declaration is decision 186's
+// marker — the same function the tag below is annotated with. One meaning:
+// only on the client.
+#[clientOnly]
+pub fn geolocation() -> @Component<ElementBase, string> { … }
+
+#[clientProps]
+pub type MapProps(zoom: i32)
+
+#[client]
+pub fn Map(props: MapProps) -> View {
+    val where = use geolocation();
+    return html """<div class="map">{where}</div>""";
+}
+
+// ── a library's own annotation ──────────────────────────────────────────────
+
+// Returns `Hydrate`, so `html` mounts an island with it, and gives it the checks
+// every `Hydrate` gets (`#[client]`, no `#[clientOnly]` hook reached).
+pub fn clientMobile(comptime decl: @Decl) -> Hydrate {
+    return clientMedia(decl, "(max-width: 50em)");
 }
 
 // ── the page ────────────────────────────────────────────────────────────────
 
-pub fn Home(slug: string) -> @Component<ElementBase, Element> {
+pub fn Home(slug: string) -> View {
     return html """
       <h1>Post</h1>
 
       <!-- interactive as soon as the page loads -->
-      <LikeButton postSlug={slug} likes={3} client:load />
+      <LikeButton #[clientLoad] postSlug={slug} likes={3} />
 
       <!-- started when the browser is idle; after 500 ms where it never is -->
-      <LikeButton postSlug={slug} likes={0} client:idle="500" />
+      <LikeButton #[clientIdle(500)] postSlug={slug} likes={0} />
 
       <!-- its code is not requested until it is about to scroll into view -->
-      <Carousel images={12} client:visible="200px" />
+      <Carousel #[clientVisible("200px")] images={12} />
 
       <!-- only on a narrow screen -->
-      <MobileNav open={false} client:media="(max-width: 50em)" />
+      <MobileNav #[clientMobile] open={false} />
 
       <!-- never rendered on the server: the fallback is, and the browser renders the rest -->
-      <Carousel images={3} client:only>
+      <Carousel #[clientOnly] images={3}>
         <p slot="fallback">Loading the gallery…</p>
       </Carousel>
 
-      <!-- no directive: server-rendered markup, no JavaScript sent for it -->
+      <!-- reaches a #[clientOnly] hook: #[clientOnly] is the one annotation it accepts -->
+      <Map #[clientOnly] zoom={3}>
+        <p slot="fallback">Loading the map…</p>
+      </Map>
+
+      <!-- no annotation: server-rendered markup, no JavaScript sent for it -->
       <LikeButton postSlug={slug} likes={9} />
     """;
 }
 
-test "each directive becomes the island's strategy in the payload row" {
+test "each annotation becomes the island's strategy in the payload row" {
     val _markup = renderToString(await Home("hello"));
     val whens = islandRows().map({ row -> row[3] }).join(" | ");
-    assert whens == "load | idle:500 | visible:200px | media:(max-width: 50em) | only";
+    assert whens == "load | idle:500 | visible:200px | media:(max-width: 50em) | only | only";
 }
 
-test "a component with no client directive is not an island" {
+test "a component with no Hydrate annotation is not an island" {
     val markup = renderToString(await Home("hello"));
-    assert islandRows().length == 5;
+    assert islandRows().length == 6;
     assert markup.contains("9 likes");
 }
 
-test "every island but client:only is rendered on the server" {
+test "every island but #[clientOnly] is rendered on the server" {
     val markup = renderToString(await Home("hello"));
     assert markup.contains("3 likes");
     assert markup.contains("<section class=\"carousel\">12 images</section>");
     assert markup.contains("<nav class=\"mobile\">menu</nav>");
 }
 
-test "client:only renders its fallback and nothing of the component" {
+test "#[clientOnly] renders its fallback and nothing of the component" {
     val markup = renderToString(await Home("hello"));
     assert markup.contains("<p>Loading the gallery…</p>");
     assert markup.contains("3 images") == false;
+    assert markup.contains("<p>Loading the map…</p>");
 }
 
-test "the directive form and the function form are the same mount" {
+test "the annotation form and the function form are the same mount" {
     val byHand = mountIslandWhen(
         "Carousel",
         encodeCarouselProps(CarouselProps(images: 12)),
         [],
         Hydrate.Visible(rootMargin: "200px"),
     );
-    val byTag = html """<Carousel images={12} client:visible="200px" />""";
+    val byTag = html """<Carousel #[clientVisible("200px")] images={12} />""";
     assert renderToString(byHand) == renderToString(byTag);
 }
 
 // What does not build:
 //
-//   <div client:visible />
-//     error: `client:visible` hydrates a component; `div` is an element
+//   <div #[clientVisible] />
+//     error: `clientVisible` annotates a component; `div` is an element
 //
-//   <Footer client:load />        Footer has no #[client]
+//   <Footer #[clientLoad] />        Footer has no #[client]
 //     error: `Footer` is not a #[client] component — it renders on the server only
 //
-//   <Carousel images={1} client:load client:idle />
-//     error: one `client:` directive per component                 at `client:idle`
+//   <Carousel #[clientLoad] #[clientIdle] images={1} />
+//     error: two `Hydrate` annotations on one tag                  at #[clientIdle]
+//
+//   <Map #[clientVisible] zoom={3} />
+//   <Map zoom={3} />
+//     error: `Map` would render on the server and reaches `geolocation`
+//            (#[clientOnly]) via Map → use geolocation(); use #[clientOnly]
+//
+//   <Carousel client:load />
+//     error: no `prefix:name` directives — write #[clientLoad]     at `client:load`
 //
 // The browser half — "not started before its trigger, started after it" — is
 // `jhonstart-dom-test/test/strategy_dom_test.bp`, against a fake

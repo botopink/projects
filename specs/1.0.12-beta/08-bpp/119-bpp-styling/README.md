@@ -2,7 +2,7 @@
 
 **Priority:** medium — a page is complete without it (emilia tokens, global stylesheet); a
 self-styled component is not. · **State:** not started · blocked by `08-d`
-**Depends on:** open: [`08-d`](../README.md#08-d--who-scopes-css) (where scoping lives — every
+**Depends on:** (written against 278) open: [`08-d`](../README.md#08-d--who-scopes-css) (where scoping lives — every
 step, step 1 included) · `118-bpp-components` for step 2 (`<style>` handed over), and 118 step 1's
 carve-out in `jhonstart-emilia`'s bridge test, landed before this opens (189) · `05-jhonstart/26`
 for step 2's `jhonstart-dom-test` file. Step 1 needs no track front; runs beside `06-emilia/34`.
@@ -18,7 +18,8 @@ Reference: `astro-docs/11-styling.md`.
 
 ## Goal
 
-A component's `<style>` applies to it only; `is:global`, `:global()`, `define:vars` work; cascade:
+A component's `<style>` applies to it only; `#[isGlobal]`, `:global()`, `#[defineVars(…)]` work
+(Astro's `is:global`, `define:vars` as annotations, 278); cascade:
 linked sheets, emilia's layers, scoped styles.
 
 ## Problem
@@ -68,13 +69,17 @@ sheet (124); runtime form stays readable.
 `html.bp` imports no emilia: `scopedStyle` resolves in the **caller's** scope like a tag builder
 (`html.bp:231`); only pages writing `<style>` import it from the bridge.
 
-| Directive | Meaning |
+Annotations on `<style>` (278) — `isGlobal`, `isInline`, `defineVars` — take `comptime tag: Tag`
+and return the style types this front's arm reads (`StyleMode.Global`, `StyleMode.Inline`,
+`StyleVars`); one of each per tag. Declared with the arm in `html.bp`, imported by the core's prelude.
+
+| Written | Meaning |
 |---|---|
 | `<style>` | scoped |
-| `<style is:global>` | handed to the sink as written; adds no attribute to the template's elements |
+| `<style #[isGlobal]>` | handed to the sink as written; adds no attribute to the template's elements |
 | `:global(sel)` inside a scoped sheet | `sel` left alone |
-| `<style define:vars={a, b}>` | each name a value in the template's scope; root elements get `style="--a: …; --b: …"`, escaped by `escape.css` — a `97-std-dedupe` row (`03-bundled-libs/README.md` § "What does not move") |
-| `<style is:inline>` | the `style` builder, verbatim — today's behaviour, by name |
+| `<style #[defineVars(a, b)]>` | each name a value in the template's scope; root elements get `style="--a: …; --b: …"`, escaped by `escape.css` — a `97-std-dedupe` row (`03-bundled-libs/README.md` § "What does not move") |
+| `<style #[isInline]>` | the `style` builder, verbatim — today's behaviour, by name |
 
 **Cascade** (head order): linked stylesheets (`globals.css`), emilia's layers, scoped component
 styles in render order — scoped last, winning at equal specificity.
@@ -97,11 +102,13 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
 ### Step 2 — The template arm and the bridge
 
 - [ ] `examples/scoped-style-example.bp` passes on both targets
+- [ ] `isGlobal`, `isInline`, `defineVars` and their return types in `html.bp`, in `prelude.bp`;
+      `#[isGlobal]` on a `<div>` fails at the annotation (a `<style>` annotation)
 - [ ] two components both writing `.title` render two rules and two attributes; neither rule
       matches the other's element — asserted on the rendered document with a `jhonstart-dom-test` selector matcher
 - [ ] a component rendered twenty times registers its sheet once
 - [ ] head order: `<link>`, emilia's `<style>`, scoped `<style>`
-- [ ] `define:vars` value containing `;` or `}` is escaped; the test injects one
+- [ ] a `#[defineVars]` value containing `;` or `}` is escaped; the test injects one
 
 ### Step 3 — A streamed boundary's styles
 
@@ -129,5 +136,5 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 
 - **Not added.** Sass, Less, Stylus, PostCSS, LightningCSS (no preprocessor host);
   `<style lang="…">` is a compile error naming the attribute. Inline `style` object: no object literal; string is the form.
-- **`class:list`** is 118's.
+- **`classList`** (Astro's `class:list`) is 118's.
 - **Minification, per-page chunks**: the build's (124); runtime sheet is as `scopeCss` answers.

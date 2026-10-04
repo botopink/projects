@@ -1,18 +1,20 @@
 ---
 // Front 120 — bpp islands · examples/src/app/page.bpp
 //
-// Demonstrates: steps 1–3 in a `.bpp` page — the five client directives. The
-// page is server-rendered markup; a `client:` directive on a component's tag is
-// what sends that component's code to the browser, and says when.
+// Demonstrates: steps 1–3 in a `.bpp` page — the five client annotations
+// (decision 278). The page is server-rendered markup; a `Hydrate` annotation on
+// a component's tag is what sends that component's code to the browser, and
+// says when. The annotations come from jhonstart's prelude: no import.
 //
-//   <InteractiveButton client:load />
-//   <HeavyChart client:idle />
-//   <InteractiveCounter client:visible />
-//   <MobileNav client:media="(max-width: 50em)" />
-//   <InteractiveModal client:only="svelte" />
+//   Astro                                   here
+//   <InteractiveButton client:load />       <InteractiveButton #[clientLoad] />
+//   <HeavyChart client:idle />              <HeavyChart #[clientIdle] />
+//   <InteractiveCounter client:visible />   <InteractiveCounter #[clientVisible] />
+//   <MobileNav client:media="(…)" />        <MobileNav #[clientMedia("(…)")] />
+//   <InteractiveModal client:only="svelte" /> <InteractiveModal #[clientOnly] />
 //
 // THE ISLANDS ARE `.bp` MODULES. `#[client]` is a decorator and sits on a
-// function; the unfold of a `.bpp` file (front 116) writes its function header
+// function (a tag annotation sits on a tag); the unfold of a `.bpp` file (front 116) writes its function header
 // itself, and a decorator reaches it only from the header's last line or the
 // file's name (decision 221). It is the split Astro has:
 // an `.astro` page places the island, and the island is a component of another
@@ -37,21 +39,21 @@ val slug = "hello";
 <h1>Post</h1>
 
 <!-- interactive as soon as the page loads -->
-<LikeButton postSlug={slug} likes={3} client:load />
+<LikeButton #[clientLoad] postSlug={slug} likes={3} />
 
 <!-- started when the browser is idle; after 500 ms where it never is -->
-<LikeButton postSlug={slug} likes={0} client:idle="500" />
+<LikeButton #[clientIdle(500)] postSlug={slug} likes={0} />
 
 <!-- its code is not requested until it is about to scroll into view -->
-<Carousel images={12} client:visible="200px" />
+<Carousel #[clientVisible("200px")] images={12} />
 
 <!-- only on a narrow screen -->
-<MobileNav open={false} client:media="(max-width: 50em)" />
+<MobileNav #[clientMedia("(max-width: 50em)")] open={false} />
 
 <!-- never rendered on the server: the fallback is, and the browser renders the rest -->
-<Carousel images={3} client:only>
+<Carousel #[clientOnly] images={3}>
   <p slot="fallback">Loading the gallery…</p>
 </Carousel>
 
-<!-- no directive: server-rendered markup, no JavaScript sent for it -->
+<!-- no annotation: server-rendered markup, no JavaScript sent for it -->
 <LikeButton postSlug={slug} likes={9} />

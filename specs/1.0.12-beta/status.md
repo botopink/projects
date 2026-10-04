@@ -108,7 +108,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 
 ## L3 — ready to open now
 
-- [ ] 118 — the template language, `prelude.bp`, the node type · none (props-d/e/f hold their boxes; ctr-r)
+- [ ] 118 — the template language, tag annotations (278), `prelude.bp`, the node type · none (props-d/e/f hold their boxes; ctr-r)
 - [ ] 121 s1–2 — Markdown to `Element` in the new member `onze-content` · none
 - [ ] 34 s1–3 — `hashHex` → std and the cross-library comments; the five families; the breakpoint refusal · s2: 05emilia-l confirmed · opens before 118's carve-out (ctr-r / 189)
 - [ ] 33 s2 — `emilia-card` emilia-only, the fifteen example READMEs (s1, s3, s4 are 135's) · none (ctr-r / 189)
@@ -133,10 +133,10 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 - [ ] 119 (W3) — scoped `<style>` · 08-d · s2: 118, 26
 - [ ] 117 (W7) — `.bpp` / `.md` app files, `staticPaths`, `paginate`, partials · 102 · 22 · 49 · 50 · 121 s1–2 · s1: bpp-g, ctr-g
 - [ ] 123 (W7) — `locals`, `sequence`, `actionContext` · 04 · 65 · s1 box 3: 08-j
-- [ ] 120 (W8) — hydration strategies, server islands · 118 · 119 · 117 · 26 · 22 · 49 · 50
+- [ ] 120 (W8) — hydration strategies as `#[client…]` / `#[serverDefer]` annotations (278), server islands · 118 · s1: 26 s8 (`clientOnly`) · 119 · 117 · 26 · 22 · 49 · 50
 - [ ] 121 s3–6 (W9) · s7 (W10) — frontmatter, collections, references and RSS, `.md` pages; the blog reads Markdown · s3: 08-f · s6: 118, 117 · s7: 53
 - [ ] 122 (W9) — page-side status and headers, `rewrite`, `site` · 26 · 49 · 102 · 118 · 120
-- [ ] 126 (W9) — view transitions · 27 · 118 · 120
+- [ ] 126 (W9) — view transitions, `#[transition…]` annotations (278) · 27 · 118 · 120
 - [ ] 127 (W10) — actions typed by a schema · 125 s6 · 103 · 22 · 67 · 49 · 117 · 120 · 126 · s4: 123
 - [ ] 116 (W5 at the earliest) — the `.bpp` file kind · 118 · 26 s0 · 01-compiler/26 · with 01-checker s22 · s2: ctr-g · s6: bpp-g
 - [ ] 105 (W9) — bundled `i18n` · 104 s5 · 22 · 26 · 03r-q confirmed
