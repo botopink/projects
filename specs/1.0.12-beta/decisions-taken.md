@@ -4,7 +4,7 @@ The rules the fronts implement against. Numbers continue from
 [1.0.10-beta's record](../1.0.10-beta/decisions-taken.md) (which stopped at 143; 91–94, 97 and
 99–101 are used) and are never renumbered or reused. A question is raised in
 [`decisions-pending.md`](./decisions-pending.md) under a lettered id and moves here with the next
-free number. **The next free number is 276.**
+free number. **The next free number is 277.**
 
 Each row: number · the id it answered · the rule in force · the fronts it binds. A row amended by a
 later one states only what is in force and cites the amendment; a row fully replaced is one line.
@@ -34,7 +34,7 @@ decorator outputs: 216, 234–237, 248, 251–254, 256, 266–269 · Formatter: 
 179, 238, 240, 241, 259–263 · std: 174–178, 197, 217, 250 · Bundled libraries: 144, 145, 163,
 171–173, 180–183, 194–196, 257 · rakun: 184, 185, 187, 201, 274 · Track ordering: 188, 189 ·
 jhonstart & templates: 186, 190–193, 200, 202, 204, 220, 223 · onze: 218 · bpp: 198, 199, 203,
-212, 213, 221, 222, 224, 270, 271, 272, 273, 275. No decision of this milestone is emilia's alone.
+212, 213, 221, 222, 224, 270, 271, 272, 273, 275, 276. No decision of this milestone is emilia's alone.
 
 ## Gate & CI
 
@@ -226,4 +226,5 @@ jhonstart & templates: 186, 190–193, 200, 202, 204, 220, 223 · onze: 218 · b
 | 271 | ctr-a | Front 124 follows 224: there is no `islandKeyEnv` key; the server-island key is always the environment variable `ONZE_KEY` (or the one `onze create-key` / the build generates) — renaming it would be configuration that weakens the rule (67). 124's `onze.json` keys are `trailingSlash`, `redirects`, `markdown`, `islands` (with 122's `site`, the five of org-7) | 124 steps 1 and 3 · 120 step 4 |
 | 272 | 08-e2 · ctr-b | The `"islands": {"props": …}` key of `onze.json` names only modes that keep the props secret: `"sealed"` (the default — AES-256-GCM in `?p=…`, decision 224) or `"server"` (the props stored server-side under a random id, nothing in the URL, the shell not cacheable across instances); there is no `"signed"` or any mode the visitor can read, and an unknown value is a config error. Decision 67 stands: the choice is caching across instances against nothing in the URL, never secrecy | 120 step 4 · 124 steps 1 and 3 |
 | 273 | ctr-c | 222 holds whole: a route handler is never exported by the build. 117 step 4's box reads "`app/rss.xml/route.bp` is served per request" — `onze build` writes no `<outDir>/rss.xml`; a feed that must be a static file is a page-kind file, prerendered by 202 | 117 step 4 · surface.md |
-| 275 | bpp-f · ctr-e | The function a `.bpp` file unfolds to returns the `R` of the default function's declared `@ExprCustom<R>`, read by the toolchain from that signature (it spells no library's type, 113, 198). jhonstart's `html` declares `-> @ExprCustom<@Component<ElementBase, Element>>`, so every jhonstart `.bpp` — and every `.bp` that returns `html """…"""` — returns `@Component<ElementBase, Element>`, whether or not the header uses `use` or `await`. The consequence is confirmed: a `.bp` function written `-> Element { return html """…"""; }` becomes `-> @Component<ElementBase, Element>` — no `.bp` returns a template as a plain `Element`. Amends the `-> Element` of 199 and 213 | 116 step 2 · 118 step 6 |
+| 275 | bpp-f · ctr-e | The function a `.bpp` file unfolds to returns the `R` of the default function's declared `@ExprCustom<R>`, read by the toolchain from that signature (it spells no library's type, 113, 198). jhonstart's `html` declares `-> @ExprCustom<View>` (`View` = `@Component<ElementBase, Element>`, 276), so every jhonstart `.bpp` — and every `.bp` that returns `html """…"""` — returns `@Component<ElementBase, Element>`, whether or not the header uses `use` or `await`. The consequence is confirmed: a `.bp` function written `-> Element { return html """…"""; }` becomes `-> @Component<ElementBase, Element>` — no `.bp` returns a template as a plain `Element`. Amends the `-> Element` of 199 and 213 | 116 step 2 · 118 step 6 |
+| 276 | view-a | jhonstart declares `pub type View = @Component<ElementBase, Element>;` in `element.bp` — a type alias (decision 110), the same type under a shorter name: it behaves exactly as `@Component<ElementBase, Element>`, each accepts the other, and the emitted code keeps the full type. No subtyping is added (a `View` is not a type of its own; decision 128's component stays any `@Component<Base, T>` whose `T` implements `@Context<Base>`); methods for it, if ever needed, go in an `extend View { … }` block. The prelude imports `View`; `html` declares `-> @ExprCustom<View>`, so a `.bpp` unfolds to `-> View` (275) and a `.bp` component may write either spelling. A decorator that checks a component's return (`#[client]`) compares the resolved type, never the text | 118 step 6 · 116 step 2 · `05-jhonstart/26` (the `#[client]` check) |

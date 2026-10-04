@@ -212,11 +212,15 @@ tested with the core.
       `children: Node` field coerces as `Children` does (coercion keyed on the name `Children`: if
       it must learn `Node`, hand-off to `01-compiler/01-checker`, named here before closing)
 - [ ] `jhonstart/src/prelude.bp` holds `import` items of the core's own modules only (`Element`,
-      `ElementBase`, builders, `Node`), compiles with the member
-- [ ] `html` declares `-> @ExprCustom<@Component<ElementBase, Element>>` (decision 275): what a
-      template builds is a component, so a `.bpp` and a `.bp` that `return html """…"""` both return
-      `@Component<ElementBase, Element>`; the 12 files that use `html """` and the track's examples
-      written `-> Element` follow
+      `ElementBase`, `View`, builders, `Node`), compiles with the member
+- [ ] `element.bp` declares `pub type View = @Component<ElementBase, Element>;` (decision 276) and the
+      prelude imports `View`; a cell shows `-> View` and `-> @Component<ElementBase, Element>` accepted
+      for one another
+- [ ] `html` declares `-> @ExprCustom<View>` (decisions 275, 276): a `.bpp` and a `.bp` that
+      `return html """…"""` both return `View`; the 12 files that use `html """` and the track's
+      examples written `-> Element` follow
+- [ ] `#[client]` (`client.bp`, today a text comparison with `"@Component<ElementBase, Element>"`)
+      accepts a component declared `-> View`: it compares the resolved type (decision 276)
 - [ ] examples' `Children` → `Node`: `grep -rnw Children 08-bpp/*/examples` (33 lines in 16 files today) is empty
 
 ## Decisions

@@ -66,7 +66,7 @@ that line. Always the module's `pub default fn`, named after the file, never `pu
   (`import {components.post_card as PostCard};`). No case conversion; a non-function file name is an
   error at the file. `R` (decision 275) is the `R` of the default function's declared
   `@ExprCustom<R>` — the toolchain reads it from the signature and names no library; for jhonstart
-  it is `@Component<ElementBase, Element>`, whether or not the header uses `use` / `await`.
+  it is `View` (= `@Component<ElementBase, Element>`, decision 276), whether or not the header uses `use` / `await`.
 - Declarations (`import`, `type`, `pub`) module-level; statements (`val`, `use`) body ahead of
   `return` (may read `props`, call a hook). Attributes = `Props` fields (192); children via
   `children` (193). Header imports in the language's form (`import {components.card.Card};`,
