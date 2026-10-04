@@ -118,5 +118,11 @@ both `onze dev` and `onze build && onze start`, browser rows in a real browser, 
 
 - [ ] `app-page-example.bp`, `app-tree-example.bp`, `blog-list-page-example.bp`, `blog-slug-page-example.bp`, `new-post-form-example.bp`, `acceptance.md`: pages take no `route: PageContext`; parameters through `use params<P>()`, page data through `use pageData<D>()`
 
+### Step 11 — a cookie is declared once, typed (decision 294)
+
+- [ ] `lib/cookies.bp` declares `sessionCookie = Cookie<SessionId>("session", …)`; the dashboard
+      layout reads `use cookie(sessionCookie)` (no `pairValue(jar, "session")`), the login action
+      and the logout action write and clear it
+
 **Gate:** standard (fronts.md § Gate) +
 - [ ] `zig build test-libs` green for `blog`, `onze-test`; `serve.sh` exit 0

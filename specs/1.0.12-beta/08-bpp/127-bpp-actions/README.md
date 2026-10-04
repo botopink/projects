@@ -149,6 +149,11 @@ the server-only implementation (refused by `onze-bundler/src/refusal.bp:55-138`)
 - [ ] `#[action]` without a string: input and output from the signature (280 (2)); `actionRef("…",
       schemaOf…, schemaOf…)` replaced by the function value; the wire id derived at comptime
 
+### Step 6 — a cookie is declared once, typed (decision 294)
+
+- [ ] an action sets or clears a cookie through its declaration (`setCookie(decl, value)`,
+      `clearCookie(decl)`), the attributes from the declaration
+
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `libs/actions` and `jhonstart-forms`; on erlang in `rakun-app`
 - [ ] `zig build test-libs`: rakun, jhonstart, onze green; `#[serverAction]`'s tests unchanged

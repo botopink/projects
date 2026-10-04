@@ -213,6 +213,11 @@ list against its own decorators; the compiler names no marker.
       naming the chain (`via BlogPost → Breadcrumb`)
 - [ ] the examples of this track rewritten (`route.params.lookup(…)`, `PageContext` parameters)
 
+### Step 12 — a cookie is declared once, typed (decision 294)
+
+- [ ] `use cookie(decl: Cookie<T>) -> ?T`, `#[serverOnly]` (186): `null` when absent or undecodable;
+      the jar (`use cookies()` → pairs) and `pairValue` go from page code; a render writes no cookie (122)
+
 **Gate:** standard (fronts.md § Gate) + every jhonstart member at its count or above on both rows
 (core 204; `jhonstart-dom-test` commonJS only, structural — 101) · `grep -rni rakun
 modules/jhonstart/src` empty and `grep -i emilia modules/jhonstart/src` still empty · `dom_test.bp`

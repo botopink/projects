@@ -66,4 +66,13 @@ One commit per member, after the member's owning front has landed.
       "cookieFromHeader\|rangeQ\|qMillis\|qPerMille" repository/{rakun,onze}/modules` is empty
 - [ ] each touched member's `AGENTS.md` updated in its commit
 
+### Step 6 — a cookie is declared once, typed (decision 294)
+
+- [ ] `pub type Cookie<T>(name: string, httpOnly: bool = true, secure: bool = true, sameSite:
+      SameSite = .Lax, maxAge: ?Duration = null, path: string = "/")` in `libs/http` (the package both
+      jhonstart and rakun reach, 113); `T` one `http` can encode — `string`, numbers, `bool`, an enum,
+      a one-field record — a value that does not decode reads as absent
+- [ ] `cookie.read(decl, header) -> ?T` (first-wins, 181) and `cookie.write(decl, value) -> string`
+      (a `Set-Cookie` line carrying the declaration's attributes), `cookie.clear(decl)`; tests per `T` kind
+
 **Gate:** standard (fronts.md § Gate), for the sweep

@@ -109,6 +109,12 @@ from the action field and header onze configures (114).
 
 - [ ] `locals-and-sequence-example.bp`: pages take no `route: PageContext`; parameters through `use params<P>()`, page data through `use pageData<D>()`
 
+### Step 6 — a cookie is declared once, typed (decision 294)
+
+- [ ] middleware writes and clears through the declaration: `setCookie(sessionCookie, SessionId(value:
+      t))`, `clearCookie(sessionCookie)` (rakun's response, `http`'s `cookie.write`); the example's login
+      middleware rewritten
+
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test --target erlang` green in `modules/rakun` and `modules/rakun-web`
 - [ ] `zig build test-libs`: rakun, onze green; the blog's dashboard gate unchanged
