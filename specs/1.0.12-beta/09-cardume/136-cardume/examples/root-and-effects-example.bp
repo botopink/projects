@@ -1,0 +1,61 @@
+// Front 136 — cardume · examples/root-and-effects-example.bp
+//
+// Demonstrates: the store's root and atom effects.
+//
+//   Recoil                                   cardume
+//   <RecoilRoot>                             not needed — a page's islands share one store; <AtomRoot> only to seed
+//   <RecoilRoot initializeState={…}>         <AtomRoot initialize={seed}> — seed: fn(set: Setter), run per request
+//   <RecoilRoot override={false}>            not added — one store per page, no nesting
+//   useRecoilBridgeAcrossReactRoots          not needed — islands already share the page's store
+//   atom({effects: [...]})                   atom(default, effects: [...])          — which ship: atm-d
+//
+// Upstream: https://recoiljs.org/docs/api-reference/core/RecoilRoot
+//           https://recoiljs.org/docs/guides/atom-effects
+//
+// Target: both. The effects half is ILLUSTRATIVE until atm-d is answered.
+
+import html, {View, page, cookie, renderToString} from "jhonstart";
+import {Cookie} from "http";
+import {header, main} from "jhonstart";
+import {atom} from "cardume";
+import {AtomRoot, atomValue} from "jhonstart-cardume";
+import {persistLocal} from "jhonstart-cardume";           // atm-d (b), illustrative
+
+pub type Theme { Light, Dark }
+
+// ── seeding per request ─────────────────────────────────────────────────────
+
+pub val theme = atom(Theme.Light);
+pub val cartCount = atom(0);
+
+// The server reads the visitor's preference (a cookie, 294) and seeds the atom;
+// the islands that read `theme` start from the seeded value in the browser.
+#[page("")]
+pub fn Home() -> View {
+    val pref = use cookie(themeCookie);
+    return html """
+      <AtomRoot initialize={{ set -> set(theme, pref ?? .Light) }}>
+        <header><ThemeToggle #[clientLoad] /></header>
+        <main>…</main>
+      </AtomRoot>
+    """;
+}
+
+// ── an effect: keep the cart in the browser across visits (atm-d (b)) ──────
+
+pub val savedCart = atom<i32[]>([], effects: [persistLocal("cart")]);
+// on first read in the browser: loads localStorage["cart"] if present;
+// on every change: writes it back. On the server: the default ([]).
+
+#[client]
+pub fn ThemeToggle() -> View {
+    val t = use atomValue(theme);
+    return html """<span>{case (t) { Light -> "☀"; Dark -> "☾"; }}</span>""";
+}
+
+val themeCookie = Cookie<Theme>("theme");
+
+// What does not compile:
+//
+//   <AtomRoot initialize={{ set -> set(cartTotal, 0) }}>
+//     error: expected Atom<T>, got Selector<i32> — a seed writes atoms only

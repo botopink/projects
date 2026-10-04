@@ -46,6 +46,13 @@ key anywhere.
 | `useRecoilCallback` | `val cb = use atomCallback({ snap, set, arg: A -> … });` → `fn(arg: A)` |
 | `useRecoilTransaction_UNSTABLE` | `val move = use transaction({ tx, arg: A -> … });` → `fn(arg: A)` |
 | `useRecoilSnapshot` | `val snap = use snapshot();` |
+| `useGotoRecoilSnapshot` | `val restore = use snapshotRestorer();` → `fn(s: Snapshot)` |
+| `useRecoilTransactionObserver_UNSTABLE` | `use transactionObserver({ now, previous -> … });` |
+| `useRecoilRefresher_UNSTABLE` | `val refresh = use selectorRefresher(s);` → `fn()` |
+| `useRecoilStateLoadable` | `use loadable(a)` + `use atomSetter(a)` |
+| `waitForAny` / `waitForNone` / `waitForAllSettled` | the same names, variadic |
+| `constSelector(v)` / `errorSelector(m)` | the same names |
+| `noWait(s)`, `isRecoilValue`, `DefaultValue`, `useRecoilBridgeAcrossReactRoots`, `useGetRecoilValueInfo_UNSTABLE` | not added — `loadable`; the type says it; `atomReset`; islands share one store; the runtime's inspector |
 | `waitForAll([a, b])` | `waitForAll(a, b)` — variadic (267) |
 | `<RecoilRoot initializeState>` | optional `<AtomRoot initialize={seed}>`; without it the page's islands share one store |
 | atom effects | `atom(default, effects: [...])` — which ship: `atm-d` |
@@ -94,6 +101,13 @@ move(Move(card: 7, from: .Todo, to: .Done));
   a selector is derived, not stored (Recoil's rule); a selector read inside is a type error.
 - **All or nothing**: a body that fails (a refused `@Result`, a panic) applies nothing.
 
+**The examples**, one per section of Recoil's API reference: `state-example.bp` (atom, selector,
+the four hooks, the refresher), `async-example.bp` (async selectors, `loadable`, `waitFor*`,
+`constSelector`, `errorSelector`), `families-example.bp`, `snapshot-example.bp` (`atomCallback`,
+`snapshot`, undo with `snapshotRestorer` + `transactionObserver`), `transaction-example.bp`,
+`root-and-effects-example.bp` (`AtomRoot initialize`, `persistLocal` — illustrative until `atm-d`),
+`atoms-example.bp` (a cart across two islands).
+
 ## Open
 
 ### Step 0 — Measure
@@ -119,24 +133,28 @@ move(Move(card: 7, from: .Todo, to: .Done));
 - [ ] `selector<T>(get: fn(get: Getter) -> T) -> Selector<T>`; dependency tracking, memoisation; a
       cycle refused at run time naming the chain
 - [ ] a component reading a selector re-renders when, and only when, one of its dependencies changes
+- [ ] `examples/state-example.bp` passes
 
 ### Step 3 — Families
 
 - [ ] `atomFamily<P, T>(default: fn(p: P) -> T)` and `selectorFamily`; `todo(5)` the same atom on every
-      call with `5`; `P` comparable by value
+      call with `5`; `P` comparable by value; `examples/families-example.bp` passes
 
 ### Step 4 — Async selectors and `loadable`
 
 - [ ] `selector({ get -> await … })`: `atomValue` suspends to the nearest `Suspense`; `loadable` answers
       `Loading` → `Value` / `Failed` without suspending; a dependency change re-runs it, a stale answer dropped
-- [ ] `waitForAll(..selectors)`
+- [ ] `waitForAll`, `waitForAny`, `waitForNone`, `waitForAllSettled` (variadic), `constSelector`,
+      `errorSelector`, `selectorRefresher`; `examples/async-example.bp` passes
 
 ### Step 5 — Transactions, callbacks, snapshots
 
 - [ ] `examples/transaction-example.bp` passes: a card moved between two columns in one transaction —
       both columns change in one notification; a read after a write sees it; a failing body applies nothing
 - [ ] `tx.get(aSelector)` a compile error at the argument (atoms only)
-- [ ] `atomCallback({ snap, set, arg -> … })`: reads a snapshot without subscribing; `snapshot()`
+- [ ] `atomCallback({ snap, set, arg -> … })`: reads a snapshot without subscribing; `snapshot()`,
+      `snapshotRestorer()`, `transactionObserver(…)`; `examples/snapshot-example.bp`'s undo passes in
+      `jhonstart-dom-test`
 
 ### Step 6 — The server seed and the island hand-off
 

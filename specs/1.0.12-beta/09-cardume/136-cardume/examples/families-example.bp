@@ -1,0 +1,72 @@
+// Front 136 — cardume · examples/families-example.bp
+//
+// Demonstrates: atomFamily and selectorFamily — one atom (or selector) per
+// parameter. A todo list where each todo is its own atom, so editing one todo
+// re-renders that todo only.
+//
+//   Recoil                                        cardume
+//   atomFamily({key, default: id => …})           atomFamily({ id: i32 -> … })
+//   atomFamily({key, default: selectorFamily…})   atomFamily({ id -> … }) whose default reads nothing — a
+//                                                 family default is a plain function of the parameter
+//   selectorFamily({key, get: id => ({get}) …})   selectorFamily({ id: i32, get -> … })
+//   parameter: any serializable value             P compared by value (a record, an enum, a number, a string)
+//
+// Upstream: https://recoiljs.org/docs/api-reference/utils/atomFamily
+//           https://recoiljs.org/docs/api-reference/utils/selectorFamily
+//
+// Target: both.
+
+import html, {View, client, renderToString} from "jhonstart";
+import {input, label, li, ul, span} from "jhonstart";
+import {atom, atomFamily, selector, selectorFamily} from "cardume";
+import {atomValue, atomState} from "jhonstart-cardume";
+
+pub type Todo(id: i32, text: string, done: bool)
+
+// the list of ids, and one atom per todo
+pub val todoIds = atom<i32[]>([1, 2, 3]);
+pub val todo = atomFamily({ id: i32 -> Todo(id: id, text: "", done: false) });
+
+// one selector per id: the todo's label
+pub val todoLabel = selectorFamily({ id: i32, get ->
+    val t = get.atom(todo(id));
+    if (t.done) "✓ " + t.text else t.text
+});
+
+// a selector over the whole family: how many are done
+pub val doneCount = selector({ get ->
+    get.atom(todoIds).filter({ id -> get.atom(todo(id)).done }).length
+});
+
+#[client]
+pub fn TodoItem(props: type(id: i32)) -> View {
+    val t = use atomState(todo(props.id));        // only this todo's atom
+    val text = use atomValue(todoLabel(props.id));
+    return html """
+      <li>
+        <input type="checkbox" checked={t.value.done}
+               #[onChange({ -> t.set(Todo(..t.value, done: !t.value.done)) })] />
+        <span>{text}</span>
+      </li>
+    """;
+}
+
+#[client]
+pub fn TodoList() -> View {
+    val ids = use atomValue(todoIds);
+    val done = use atomValue(doneCount);
+    return html """
+      <ul>{ids.map({ id -> <TodoItem id={id} /> })}</ul>
+      <p>{done.toString()} done</p>
+    """;
+}
+
+test "a family answers the same atom for an equal parameter" {
+    assert todo(1) == todo(1);
+    assert todo(1) != todo(2);
+}
+
+// What does not compile:
+//
+//   todo("1")
+//     error: expected i32, got string — the family's parameter is typed

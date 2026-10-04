@@ -1,0 +1,73 @@
+// Front 136 — cardume · examples/snapshot-example.bp
+//
+// Demonstrates: snapshots, callbacks and observers — reading the whole store
+// without subscribing, and undo.
+//
+//   Recoil                                     cardume
+//   useRecoilCallback(({snapshot, set}) =>…)   use atomCallback({ snap, set, arg: A -> … }) → fn(arg: A)
+//   useRecoilSnapshot()                        use snapshot()            → Snapshot (re-renders on every change)
+//   useGotoRecoilSnapshot()                    use snapshotRestorer()    → fn(s: Snapshot)
+//   useRecoilTransactionObserver_UNSTABLE(cb)  use transactionObserver({ now, previous -> … })
+//   snapshot.getLoadable(a) / getPromise(a)    snap.loadable(a) / await snap.value(a)
+//   snapshot.map(cb)                           snap.with({ set -> … }) → a new Snapshot
+//   useGetRecoilValueInfo_UNSTABLE             not added — a debugging hook; the store's inspector is the
+//                                              runtime's (`jhonstart-dom-test`), not an app API
+//
+// Upstream: https://recoiljs.org/docs/api-reference/core/useRecoilCallback
+//           https://recoiljs.org/docs/api-reference/core/Snapshot
+//
+// Target: both.
+
+import html, {View, client, renderToString} from "jhonstart";
+import {button, div, p} from "jhonstart";
+import {atom, Snapshot} from "cardume";
+import {atomValue, atomState, atomCallback, snapshot, snapshotRestorer, transactionObserver} from "jhonstart-cardume";
+
+pub val draft = atom("");
+pub val history = atom<Snapshot[]>([]);
+
+// ── a callback: read without subscribing ────────────────────────────────────
+
+// The button re-renders nothing when `draft` changes; it reads the current value
+// only when clicked.
+#[client]
+pub fn SaveButton() -> View {
+    val save = use atomCallback({ snap, set, _: #() ->
+        val text = snap.atom(draft);
+        if (text != "") await postDraft(text);
+    });
+    return html """<button #[onClick({ -> save(#()) })]>save</button>""";
+}
+
+// ── undo: observe every transaction, keep the snapshots, go back ────────────
+
+#[client]
+pub fn UndoBar() -> View {
+    val past = use atomState(history);
+    val restore = use snapshotRestorer();
+    use transactionObserver({ now, previous ->
+        past.set(past.value.append(previous));
+    });
+    return html """
+      <button disabled={past.value.isEmpty()}
+              #[onClick({ -> restore(past.value.last()) })]>undo</button>
+    """;
+}
+
+#[client]
+pub fn Editor() -> View {
+    val d = use atomState(draft);
+    return html """<input value={d.value} #[onInput({ e -> d.set(e.value) })] /> <UndoBar /> <SaveButton />""";
+}
+
+fn postDraft(text: string) -> @Task<#()> { return #(); }
+
+test "the server pass renders the empty draft" {
+    val markup = renderToString(await Editor());
+    assert markup.contains("value=\"\"");
+}
+
+// What does not compile:
+//
+//   use atomCallback({ snap, set, _: #() -> snap.set(draft, "x") })
+//     error: a Snapshot is read-only — write through `set`

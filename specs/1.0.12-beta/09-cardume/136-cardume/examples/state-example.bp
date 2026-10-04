@@ -1,0 +1,95 @@
+// Front 136 — cardume · examples/state-example.bp
+//
+// Demonstrates: Recoil's "State" section — atom, selector, and the hooks that
+// read and write them. A temperature converter: one atom (Celsius), one
+// writable-looking selector pair, and the four hooks.
+//
+//   Recoil                                   cardume
+//   atom({key, default})                     atom(default)
+//   selector({key, get})                     selector({ get -> … })
+//   selector({key, get, set})                a selector plus a setter function (see `setFahrenheit`)
+//   useRecoilState(a)                        use atomState(a)        → State<T>
+//   useRecoilValue(a | s)                    use atomValue(a)        → T   (selectors too)
+//   useSetRecoilState(a)                     use atomSetter(a)       → fn(T), no subscription
+//   useResetRecoilState(a)                   use atomReset(a)        → fn()
+//   useRecoilRefresher_UNSTABLE(s)           use selectorRefresher(s) → fn() (re-run a selector's get)
+//   isRecoilValue(x)                         not added — the type says it (Atom<T> | Selector<T>)
+//   DefaultValue                             not added — a reset is `atomReset`, never a sentinel value
+//
+// Upstream: https://recoiljs.org/docs/api-reference/core/atom
+//           https://recoiljs.org/docs/api-reference/core/selector
+//           https://recoiljs.org/docs/api-reference/core/useRecoilState
+//
+// Target: both — the server pass reads the defaults.
+
+import html, {View, client, renderToString} from "jhonstart";
+import {button, div, input, p, span} from "jhonstart";
+import {atom, selector, Atom} from "cardume";
+import {atomState, atomValue, atomSetter, atomReset, selectorRefresher} from "jhonstart-cardume";
+
+// ── atom ────────────────────────────────────────────────────────────────────
+
+// Recoil: const tempC = atom({ key: "tempC", default: 20 });
+// No key: the declaration is the identity (281).
+pub val tempC = atom(20.0);
+
+// ── selector (read) ─────────────────────────────────────────────────────────
+
+// Recoil: selector({ key: "tempF", get: ({get}) => get(tempC) * 9/5 + 32 })
+pub val tempF = selector({ get -> get.atom(tempC) * 9.0 / 5.0 + 32.0 });
+
+// ── a selector's "set", the botopink way ────────────────────────────────────
+
+// Recoil lets a selector declare `set` (write through to atoms). Here a
+// selector is derived only; writing through is an ordinary function of the
+// atom's setter — the write is explicit where it happens.
+pub fn setFahrenheit(set: fn(next: f64), f: f64) {
+    set((f - 32.0) * 5.0 / 9.0);
+}
+
+// ── the hooks ───────────────────────────────────────────────────────────────
+
+#[client]
+pub fn Thermometer() -> View {
+    val c = use atomState(tempC);              // State<f64>: c.value, c.set(…) — subscribes
+    val f = use atomValue(tempF);              // f64 — subscribes to the selector
+    val setC = use atomSetter(tempC);          // fn(f64) — does NOT subscribe
+    val reset = use atomReset(tempC);          // fn() — back to the default (20.0)
+
+    return html """
+      <div class="thermo">
+        <p>{c.value.toString()} °C = {f.toString()} °F</p>
+        <button #[onClick({ -> c.set(c.value + 1.0) })]>+1 °C</button>
+        <button #[onClick({ -> setFahrenheit(setC, 212.0) })]>boil</button>
+        <button #[onClick(reset)]>reset</button>
+      </div>
+    """;
+}
+
+// ── refresher ───────────────────────────────────────────────────────────────
+
+// A selector whose `get` reads the world (here: the clock) caches its answer
+// until a dependency changes; `selectorRefresher` re-runs it on demand.
+pub val now = selector({ get -> clockNow() });
+
+#[client]
+pub fn Clock() -> View {
+    val t = use atomValue(now);
+    val refresh = use selectorRefresher(now);
+    return html """<span>{t}</span> <button #[onClick(refresh)]>refresh</button>""";
+}
+
+fn clockNow() -> string { return "12:00"; }
+
+test "the server pass renders the defaults and the derived value" {
+    val markup = renderToString(await Thermometer());
+    assert markup.contains("20 °C = 68 °F");
+}
+
+// What does not compile:
+//
+//   val x = use atomSetter(tempF)
+//     error: expected Atom<T>, got Selector<f64> — a selector is derived, not set
+//
+//   pub val tempC = atom(20.0, key: "tempC")
+//     error: an atom has no key — its identity is its declaration (281)

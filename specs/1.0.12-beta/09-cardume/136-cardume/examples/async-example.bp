@@ -1,0 +1,108 @@
+// Front 136 — cardume · examples/async-example.bp
+//
+// Demonstrates: async selectors, Loadable and the concurrency helpers.
+//
+//   Recoil                                   cardume
+//   selector({get: async ({get}) => …})      selector({ get -> await … })   → Selector<@Task<T>>
+//   useRecoilValue(asyncSel)                 use atomValue(s)  — suspends to the nearest <Suspense>
+//   useRecoilValueLoadable(s)                use loadable(s)   → Loadable<T>: Loading | Value(v) | Failed(m)
+//   useRecoilStateLoadable(a)                use loadable(a) + use atomSetter(a)
+//   waitForAll([a, b]) / waitForAll({a, b})  waitForAll(a, b)        — variadic (267), a tuple back
+//   waitForAny([a, b])                       waitForAny(a, b)        → the first Value, as a Loadable tuple
+//   waitForNone([a, b])                      waitForNone(a, b)       → every Loadable, never suspends
+//   waitForAllSettled([a, b])                waitForAllSettled(a, b) → every Loadable once each settled
+//   noWait(s)                                not added — it is `loadable(s)`
+//   constSelector(v)                         constSelector(v)
+//   errorSelector(message)                   errorSelector(message)  → always Failed
+//
+// Upstream: https://recoiljs.org/docs/api-reference/core/Loadable
+//           https://recoiljs.org/docs/api-reference/utils/waitForAll
+//
+// Target: both.
+
+import html, {View, client, Suspense, renderToString} from "jhonstart";
+import {div, h2, li, p, ul} from "jhonstart";
+import {atom, selector, constSelector, errorSelector, waitForAll, waitForAny, waitForNone, Loadable} from "cardume";
+import {atomValue, atomState, loadable} from "jhonstart-cardume";
+
+pub type User(id: i32, name: string)
+pub type Post(id: i32, title: string)
+
+pub val userId = atom(1);
+
+// an async selector: re-runs when `userId` changes; a stale answer is dropped
+pub val currentUser = selector({ get -> await fetchUser(get.atom(userId)) });
+pub val userPosts = selector({ get -> await fetchPosts(get.atom(userId)) });
+
+// ── suspending read ─────────────────────────────────────────────────────────
+
+#[client]
+pub fn UserName() -> View {
+    val u = use atomValue(currentUser);       // suspends until the Task answers
+    return html """<h2>{u.name}</h2>""";
+}
+
+// ── non-suspending read ─────────────────────────────────────────────────────
+
+#[client]
+pub fn UserNameLoadable() -> View {
+    val l = use loadable(currentUser);
+    return case (l) {
+        Loading -> html """<p>Loading…</p>""";
+        Value(u) -> html """<h2>{u.name}</h2>""";
+        Failed(m) -> html """<p class="error">{m}</p>""";
+    };
+}
+
+// ── two requests in parallel ────────────────────────────────────────────────
+
+// Recoil: const [user, posts] = useRecoilValue(waitForAll([currentUser, userPosts]));
+#[client]
+pub fn Profile() -> View {
+    val both = use atomValue(waitForAll(currentUser, userPosts));   // #(User, Post[])
+    return html """
+      <h2>{both.0.name}</h2>
+      <ul>{both.1.map({ p -> <li>{p.title}</li> })}</ul>
+    """;
+}
+
+// ── whichever answers, without suspending ───────────────────────────────────
+
+#[client]
+pub fn Partial() -> View {
+    val l = use atomValue(waitForNone(currentUser, userPosts));     // #(Loadable<User>, Loadable<Post[]>)
+    val name = case (l.0) { Value(u) -> u.name; _ -> "…"; };
+    return html """<p>{name}</p>""";
+}
+
+// ── constant and error selectors (tests, defaults) ──────────────────────────
+
+pub val guest = constSelector(User(id: 0, name: "guest"));
+pub val offline = errorSelector("offline");
+
+#[client]
+pub fn Page() -> View {
+    val uid = use atomState(userId);
+    return html """
+      <Suspense fallback={<p>Loading…</p>}>
+        <UserName #[clientLoad] />
+      </Suspense>
+      <button #[onClick({ -> uid.set(uid.value + 1) })]>next user</button>
+    """;
+}
+
+fn fetchUser(id: i32) -> @Task<User> { return User(id: id, name: "Ana"); }
+fn fetchPosts(id: i32) -> @Task<Post[]> { return [Post(id: 1, title: "Hello")]; }
+
+test "the server pass renders the Suspense fallback before the user answers" {
+    val markup = renderToString(await Page());
+    assert markup.contains("Loading…");
+}
+
+// What does not compile:
+//
+//   val u = use atomValue(currentUser); u.name    inside a body that is no @Component
+//     error: `use` outside a hook context (128)
+//
+//   waitForAll()
+//     error: waitForAll takes one selector at least
