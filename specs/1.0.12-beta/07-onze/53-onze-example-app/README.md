@@ -114,5 +114,9 @@ both `onze dev` and `onze build && onze start`, browser rows in a real browser, 
       `acceptance.md` row 60 names `#[page("blog/[slug]", revalidate: hours(1), dynamicParams: true)]`;
       the home page prerendered by its hooks alone
 
+### Step 10 — route parameters and page data are hooks (decision 293)
+
+- [ ] `app-page-example.bp`, `app-tree-example.bp`, `blog-list-page-example.bp`, `blog-slug-page-example.bp`, `new-post-form-example.bp`, `acceptance.md`: pages take no `route: PageContext`; parameters through `use params<P>()`, page data through `use pageData<D>()`
+
 **Gate:** standard (fronts.md § Gate) +
 - [ ] `zig build test-libs` green for `blog`, `onze-test`; `serve.sh` exit 0

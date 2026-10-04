@@ -163,6 +163,8 @@ or library.
       `user`, `user`'s node has `session`
 - [ ] `run/decl_hooks_cycle` — `A → B → A`: two nodes, `B`'s call goes back to `A`
 - [ ] `run/decl_hooks_function_value` — `use f()` with `f` a parameter → `HookUse(hook: null)`
+- [ ] `HookUse` carries the `use`'s explicit type arguments (`typeArgs: TypeInfo[]` — `use params<BlogParams>()`
+      → `[BlogParams]`), so `#[page]` checks them (293); `run/decl_hooks_type_args`
 - [ ] `run/decorator_is_identity` — `#[srv]` with `import {serverOnly as srv}` → `a.decorator.is(serverOnly)`;
       a same-named decorator of another package → false
 - [ ] `docs.md` § Decorators documents `decl.hooks`, `HookNode`, `Decorator.is`; `comptime/AGENTS.md`

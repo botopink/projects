@@ -105,6 +105,10 @@ from the action field and header onze configures (114).
 - [ ] `actionContext` distinguishes an RPC call from a form post of the same action
 - [ ] step 0's measurement becomes two tests; if middleware skips a 404 today, it runs after this step
 
+### Step 5 — route parameters and page data are hooks (decision 293)
+
+- [ ] `locals-and-sequence-example.bp`: pages take no `route: PageContext`; parameters through `use params<P>()`, page data through `use pageData<D>()`
+
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test --target erlang` green in `modules/rakun` and `modules/rakun-web`
 - [ ] `zig build test-libs`: rakun, onze green; the blog's dashboard gate unchanged

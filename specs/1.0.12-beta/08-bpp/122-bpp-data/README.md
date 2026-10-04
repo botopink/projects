@@ -102,6 +102,10 @@ recorded by `#[page]` at comptime (`@typeInfo(Page).meta.page.kind`, 277).
 
 - [ ] `site()` is `""` when unset, and `absoluteUrl(path)` then refuses rather than emit a relative canonical link
 
+### Step 4 — route parameters and page data are hooks (decision 293)
+
+- [ ] `response-control-example.bp` and its `.bpp` page: pages take no `route: PageContext`; parameters through `use params<P>()`, page data through `use pageData<D>()`
+
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `modules/jhonstart` and `libs/routing`
 - [ ] `zig build test-libs`: jhonstart, rakun, onze green

@@ -204,6 +204,10 @@ The variable is always `ONZE_KEY` (decision 271).
 - [ ] `#[deferred]`'s registration (`"Avatar"` → renderer at module load) → the comptime catalogue
       (`@TypeInfo.all(with: deferred)`); the URL keeps the component's name as the wire id
 
+### Step 7 — route parameters and page data are hooks (decision 293)
+
+- [ ] `server-island-example.bp`: pages take no `route: PageContext`; parameters through `use params<P>()`, page data through `use pageData<D>()`
+
 ## Decisions
 
 None open (224, 271, 272 answered the server-island ones; 278 the annotations).

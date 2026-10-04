@@ -199,6 +199,10 @@ resta só a tabela já resolvida.
 
 ## 4. Página — caminhos e cabeçalho por função (117, 53 — `nat-b`)
 
+> **Forma da página emendada pela 293:** a página não recebe mais `route: PageContext<P, D>`; ela lê
+> `use params<P>()` e `use pageData<D>()`, e o `#[page]` confere `paths:` contra esses `use` (via
+> `Decl.hooks`). O mecanismo da 280 (argumento função tipado) continua o mesmo.
+
 Os parâmetros da rota (`P`) e os dados (`D`) saem da assinatura da página. `paths` e `head` têm que
 concordar com eles.
 

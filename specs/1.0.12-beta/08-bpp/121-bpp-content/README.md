@@ -161,6 +161,10 @@ autolinks, footnotes; ids; smart punctuation.
       decorator (`#[collection(glob("content/blog", "**/*.md"))]`), gathered with
       `@TypeInfo.all(with: collection)`; the schema's own shape stays `nat-d`'s question
 
+### Step 9 — route parameters and page data are hooks (decision 293)
+
+- [ ] `content-collection-example.bp`: pages take no `route: PageContext`; parameters through `use params<P>()`, page data through `use pageData<D>()`
+
 ## Decisions
 
 - `08-f` — where Markdown and YAML live: (b) recommended (Markdown in `onze-content`, YAML in

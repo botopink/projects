@@ -4,7 +4,7 @@
 **Depends on:** `03-bundled-libs/102-routing-conventions` (step 3: the eight app-file kinds and
 `classify` move into `routing.conventions`, not on feat yet; extended there, once) · `04-rakun/22`
 (rakun-app router, static generation) · `07-onze/50` (ONZ-50-7: `prerender/` in the build output),
-`07-onze/49` (`paginate.bp` new in its member) · 121 steps 1–2 (`page.md`) · open: `bpp-g` (step 1).
+`07-onze/49` (`paginate.bp` new in its member) · 121 steps 1–2 (`page.md`).
 Written against decisions 203, 221, 186 and 202, 222.
 **Owns:** `botopink-lang/libs/routing/src/{segment.bp, conventions.bp}` (lines named in the steps)
 · `rakun/modules/rakun-app/src/static_gen.bp` (`StaticParams`' data column, endpoint export) · new
@@ -46,7 +46,7 @@ never compares it with the directory (read, not run — step 0).
 | Form | Is | Declares its route by |
 |---|---|---|
 | `page.bp` | a module with a decorated function | `#[page("<dir>")]`, checked against the directory by the scan |
-| `page.bpp` | a `.bp` module in another spelling (front 116, decision 198) | its directory below `app/`; a page by its file name in the route table `rakun-app` generates (285; `04-rakun/22`), or `#[page]` written in the header (221 (1)); `route` parameter and `params`: `bpp-g` |
+| `page.bpp` | a `.bp` module in another spelling (front 116, decision 198) | its directory below `app/`; a page by its file name in the route table `rakun-app` generates (285; `04-rakun/22`), or `#[page]` written in the header (221 (1)); no parameter — `use params<P>()`, `use pageData<D>()` (293) |
 | `page.md` | Markdown with frontmatter | the scan, which stages a page module calling 121's renderer |
 | `page.html` | a complete document | the scan, which stages a page that answers the file's bytes |
 
@@ -91,7 +91,7 @@ feed that must be a static file is a page-kind file, prerendered by 202.
 - [ ] the reference's eight priority rules, each a `match_test.bp` case over a two-route table —
       failures are step 5's list
 
-### Step 1 — `.bpp`, `.md` and `.html` as app files (a `page.bpp`'s parameter waits on `bpp-g`)
+### Step 1 — `.bpp`, `.md` and `.html` as app files (a page takes no parameter: 293)
 
 - [ ] `routing.conventions.classify` answers kind and form for the four extensions; rakun-app and
       onze-cli read it (after 102)
@@ -134,9 +134,15 @@ Per decision 202 (no `prerender` export).
       (`fn() -> @Task<#(P, D)[]>`, 280 example 4); the scan stops looking for export names
 - [ ] a `staticPaths` left in a page module is refused, naming `#[page(…, paths: …)]`
 
+### Step 7 — route parameters and page data are hooks (decision 293)
+
+- [ ] `StaticPath.data: Json` and `pageData(route, schemaOf…)` go: `paths: fn() -> @Task<#(P, D)[]>`
+      (282), the page reads `use params<P>()` / `use pageData<D>()`
+- [ ] `static-paths-example.bp`, `pagination-example.bp`, `partial-and-endpoint-example.bp` and the
+      `.bpp` tree rewritten to the hooks; a `page.bpp` header with `type Props(route: …)` no longer needed
+
 ## Decisions
 
-- `bpp-g` — how a `page.bpp` gets `route: PageContext` and `params`. Step 1.
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `libs/routing`, on erlang in `rakun-app`
@@ -155,7 +161,7 @@ Per decision 202 (no `prerender` export).
 
 - **Not added.** `pages/` tree (203). `src/fetch.ts` / Hono: rakun's pipeline. Config redirects:
   table in `routing/url_rules`; the key is 124's.
-- **`Astro.params`** = `#[page]`'s `<fn>Params(route)` (`paramsOf` under 236); in `.bpp`, `bpp-g`.
+- **`Astro.params`** = `use params<P>()` (293), in `.bp` and `.bpp` alike.
   **`Astro.props`** of a paginated page = `pageOf(route, schema)`.
 - **Reserved prefixes.** `/_onze/` is onze's (`/_onze/image`; `/_onze/island/` after 120); a
   `_onze` directory under `app/` is skipped by `_private`, so no page claims it.

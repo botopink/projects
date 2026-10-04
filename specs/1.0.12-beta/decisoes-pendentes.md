@@ -1,7 +1,7 @@
 # Decisões pendentes — 1.0.12-beta (só o que está em aberto, por ordem de importância)
 
-Atualizado em 2026-10-04 (decisões 278–292). Só o que ainda espera resposta sua: o que já foi respondido está em
-`specs/1.0.12-beta/decisions-taken.md` (decisões 144–292; próximo número livre: **293**) e saiu daqui.
+Atualizado em 2026-10-04 (decisões 278–293). Só o que ainda espera resposta sua: o que já foi respondido está em
+`specs/1.0.12-beta/decisions-taken.md` (decisões 144–293; próximo número livre: **294**) e saiu daqui.
 Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 234–236 (injeção do rakun,
 `@TypeInfo.all` com lista, decorador de função), 237 (captura do template pelo texto), 238–243
 (`@External.Wasm`, `$stringify`, codepoints no wasm, células sem WASI, dependência direta, vírgula final),
@@ -9,7 +9,7 @@ Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 2
 minúsculos; a 209 revertida), 248 (um builtin só, `@typeInfo`), 249 (o compilador separado por backend na
 chave do cache), 250 (`io.random.bool()` removido), 252 (todo builtin declarado), 253 (`@TypeInfo.all`),
 254 (o catálogo responde `unknown`; `is fn() -> T`), 255 (`Tipo<…>.membro` e `comptime <expr>`), 256 (o
-registro de beans em comptime no ponto de entrada), 257 (`Schema<T>` na `validation`), 258 (`--lib` múltiplo), 259–263 (`pow` da glibc, `contentHash` por code point, heap do wasm crescendo, `String.fromCodepoint`, `std/math` igual em todo sistema), 264 (estouro de inteiro é erro em todo target), 265 (orçamento do gate frio em 7m30s nesta versão; os 5 min ficam para a próxima), 266 (`comptime` avaliado em compilação em todo lugar, registro içado), 267 (parâmetro variádico `..values: T[]`; `@print` declarado com ele), 268 (tipo builtin `Decorator` no `with:` do `@TypeInfo.all`), 269 (`@getContext(T)` é hook, chamado atrás de `use`), 270 (o prelúdio do `.bpp`: o `src/prelude.bp` do pacote, só imports do próprio pacote, importado só quando usado; o cabeçalho vence), 271 (`ctr-a`: não existe `islandKeyEnv`; a chave da island é sempre `ONZE_KEY`; as chaves da 124 são `trailingSlash`, `redirects`, `markdown`, `islands`), 272 (`08-e2` e `ctr-b`: os modos das props da server island são só `"sealed"`, o padrão, ou `"server"` — nenhum expõe as props), 273 (`ctr-c`: um route handler nunca é exportado no build; `app/rss.xml/route.bp` é servido a cada request — a 222 fica inteira), 274 (`03r-ad` e `ctr-d`: o Pulsar não vira membro — fica em `rakun-messaging/src/pulsar/`; o plano de dados é recusado no boot e adiado), 275 (`bpp-f` e `ctr-e`: o `.bpp` devolve o `R` do `@ExprCustom<R>` que o `html` declara — no jhonstart, sempre `@Component<ElementBase, Element>`, com ou sem `use`/`await`; todo `.bp` que devolve `html """…"""` também passa a declarar esse retorno), 276 (`View`: alias de `@Component<ElementBase, Element>` no `element.bp` do jhonstart — o mesmo tipo com nome curto; o `.bpp` desdobra em `-> View`), 277 (`hooks-a`: o `@Decl` lista todos os nós alcançáveis — cada função com os seus `use` e as suas chamadas —, e cada anotação carrega o seu `Decorator`; o jhonstart decide pré-renderizada/por request e valida `#[client]` comparando com os próprios decorators), 278 (diretivas do Astro viram anotações dentro da tag — `#[clientVisible("200px")]`; `#[clientOnly]` é uma função só, para hook e tag; o `html` age pelo tipo de retorno), 279 → 286 (as duas formas valem, `#[a]` `#[b]` e `#[a, b]`; o formatter mantém como foi escrito), 280 (argumento de decorator tipado e `comptime`, `@Decl<T>`, `Field<T>` e `.campo` com o nome exato), 281 (nenhum identificador de código como string), 282 (o papel de uma função vai no decorator, nunca no nome do export), 283 (segundo modelo: caso a caso, `nat-d1`…`nat-d9`), 284 (JSON: `botopink.json` o mais limpo possível, caso a caso; `"bpp"` obrigatório), 285 (o compilador só conhece o `"bpp"`, o `html` e o prelude; o papel do arquivo é da tabela de rotas do framework; o `bppKinds` sai), 287 (`ctr-aa`: o fallback de uma ilha é argumento da anotação — `#[serverDefer(fallback: …)]`, `#[clientOnly(fallback: …)]` —, fixo em comptime), 288 (`ctr-f`: um `.bpp` é o `pub default fn` do módulo com o nome exato do arquivo, devolvendo `View`; importado `import {components.card};` — a 213 emenda a 198 e a 199), 289 (`ctr-g`, `ctr-t`: a função default pode ser anônima — `pub default fn (…)` — ou marcada depois — `pub default Tree;`; quem importa dá o nome; o `page.bpp` pode importar e escrever `#[page(…)]` sem colidir), 290 (`ctr-x`: sem configuração de segmento — `dynamic` e `fetchCache` saem; `revalidate` e `dynamicParams` são argumentos do `#[page]`), 291 (`ctr-y`: `use request()` para ler e `use response()` para escrever — `res.status(404)`, `res.header(…)` —; header fixo de página S em `#[page(headers: …)]`; sem `isPrerendered()`), 292 (`ctr-z`: `<a #[reload]>`, `<a #[history(.Replace)]>`; os eventos de navegação são hooks — `use onBeforeSwap(…)` —; o `<Script>` tem enum próprio, `strategy={.LazyOnload}`). A 245 e a 251 foram registradas cedo demais e retiradas.
+registro de beans em comptime no ponto de entrada), 257 (`Schema<T>` na `validation`), 258 (`--lib` múltiplo), 259–263 (`pow` da glibc, `contentHash` por code point, heap do wasm crescendo, `String.fromCodepoint`, `std/math` igual em todo sistema), 264 (estouro de inteiro é erro em todo target), 265 (orçamento do gate frio em 7m30s nesta versão; os 5 min ficam para a próxima), 266 (`comptime` avaliado em compilação em todo lugar, registro içado), 267 (parâmetro variádico `..values: T[]`; `@print` declarado com ele), 268 (tipo builtin `Decorator` no `with:` do `@TypeInfo.all`), 269 (`@getContext(T)` é hook, chamado atrás de `use`), 270 (o prelúdio do `.bpp`: o `src/prelude.bp` do pacote, só imports do próprio pacote, importado só quando usado; o cabeçalho vence), 271 (`ctr-a`: não existe `islandKeyEnv`; a chave da island é sempre `ONZE_KEY`; as chaves da 124 são `trailingSlash`, `redirects`, `markdown`, `islands`), 272 (`08-e2` e `ctr-b`: os modos das props da server island são só `"sealed"`, o padrão, ou `"server"` — nenhum expõe as props), 273 (`ctr-c`: um route handler nunca é exportado no build; `app/rss.xml/route.bp` é servido a cada request — a 222 fica inteira), 274 (`03r-ad` e `ctr-d`: o Pulsar não vira membro — fica em `rakun-messaging/src/pulsar/`; o plano de dados é recusado no boot e adiado), 275 (`bpp-f` e `ctr-e`: o `.bpp` devolve o `R` do `@ExprCustom<R>` que o `html` declara — no jhonstart, sempre `@Component<ElementBase, Element>`, com ou sem `use`/`await`; todo `.bp` que devolve `html """…"""` também passa a declarar esse retorno), 276 (`View`: alias de `@Component<ElementBase, Element>` no `element.bp` do jhonstart — o mesmo tipo com nome curto; o `.bpp` desdobra em `-> View`), 277 (`hooks-a`: o `@Decl` lista todos os nós alcançáveis — cada função com os seus `use` e as suas chamadas —, e cada anotação carrega o seu `Decorator`; o jhonstart decide pré-renderizada/por request e valida `#[client]` comparando com os próprios decorators), 278 (diretivas do Astro viram anotações dentro da tag — `#[clientVisible("200px")]`; `#[clientOnly]` é uma função só, para hook e tag; o `html` age pelo tipo de retorno), 279 → 286 (as duas formas valem, `#[a]` `#[b]` e `#[a, b]`; o formatter mantém como foi escrito), 280 (argumento de decorator tipado e `comptime`, `@Decl<T>`, `Field<T>` e `.campo` com o nome exato), 281 (nenhum identificador de código como string), 282 (o papel de uma função vai no decorator, nunca no nome do export), 283 (segundo modelo: caso a caso, `nat-d1`…`nat-d9`), 284 (JSON: `botopink.json` o mais limpo possível, caso a caso; `"bpp"` obrigatório), 285 (o compilador só conhece o `"bpp"`, o `html` e o prelude; o papel do arquivo é da tabela de rotas do framework; o `bppKinds` sai), 287 (`ctr-aa`: o fallback de uma ilha é argumento da anotação — `#[serverDefer(fallback: …)]`, `#[clientOnly(fallback: …)]` —, fixo em comptime), 288 (`ctr-f`: um `.bpp` é o `pub default fn` do módulo com o nome exato do arquivo, devolvendo `View`; importado `import {components.card};` — a 213 emenda a 198 e a 199), 289 (`ctr-g`, `ctr-t`: a função default pode ser anônima — `pub default fn (…)` — ou marcada depois — `pub default Tree;`; quem importa dá o nome; o `page.bpp` pode importar e escrever `#[page(…)]` sem colidir), 290 (`ctr-x`: sem configuração de segmento — `dynamic` e `fetchCache` saem; `revalidate` e `dynamicParams` são argumentos do `#[page]`), 291 (`ctr-y`: `use request()` para ler e `use response()` para escrever — `res.status(404)`, `res.header(…)` —; header fixo de página S em `#[page(headers: …)]`; sem `isPrerendered()`), 292 (`ctr-z`: `<a #[reload]>`, `<a #[history(.Replace)]>`; os eventos de navegação são hooks — `use onBeforeSwap(…)` —; o `<Script>` tem enum próprio, `strategy={.LazyOnload}`), 293 (`nat-c1`, `nat-c3`, `bpp-g`: a página lê a rota por hook — `use params<BlogParams>()`, `use pageData<Post>()` —, sem parâmetro; o `#[page]` confere os campos contra a pasta). A 245 e a 251 foram registradas cedo demais e retiradas.
 
 > **Numeração.** O prelúdio do `.bpp` tinha sido registrado como 266 no commit `84aa028`, sem saber
 > que 266–269 já existiam no seu registro local. Na 1.0.12 ele é a **270**; as 266–269 estão em
@@ -68,34 +68,13 @@ o recurso equivalente na linguagem. Eles caem em sete padrões.
 
 **As quatro regras já estão decididas:** 281 (nenhum identificador de código como string), 282 (o papel
 vai no decorator), 283 (segundo modelo: caso a caso, `nat-d1`…`nat-d9`) e 284 (JSON: caso a caso,
-`nat-f1`…`nat-f4`; a `nat-f1` virou a 285). **Ordem do que falta** (as contradições achadas na varredura já foram respondidas: 287, 290, 291, 292): `nat-c1`…`nat-c7`, `nat-d1`…`nat-d9`, `nat-e`, `nat-f2`…`nat-f4` e `nat-g`.
+`nat-f1`…`nat-f4`; a `nat-f1` virou a 285). **Ordem do que falta** (as contradições achadas na varredura já foram respondidas: 287, 290, 291, 292): `nat-c2`, `nat-c4`…`nat-c7`, `nat-d1`…`nat-d9`, `nat-e`, `nat-f2`…`nat-f4` e `nat-g`.
 
 ### nat-c · Sacos sem tipo onde um record tipado resolveria — caso a caso
 
 Dividida a seu pedido em `nat-c1`…`nat-c7`. Os eventos do rakun por nome (`Event(name: string, payload)`)
 já viraram records pela 281 (`#[on] fn f(e: OrderPlaced)`, `04-rakun/04` passo 6), então saíram daqui.
 Em cada caso: **(a)** o record tipado; **(b)** o saco fica, com acessores tipados ao lado; **(c)** como está.
-
-### nat-c1 · Parâmetros da rota como `Dict<string, string>` (26, 53)
-
-**Contexto.** A página recebe os parâmetros da URL (`/blog/[slug]`) num dicionário de strings. O próprio
-app de exemplo já usa, em outro arquivo, um acessor tipado (`blogPostPageParams(route).slug`, da 236).
-
-**Hoje:**
-```bp
-val slug = route.params.lookup("slug").unwrapOr("");     // "slgu" volta "" sem erro
-```
-
-- [ ] **(a)** `PageContext<P, D>`: os parâmetros são um record.
-  ```bp
-  type BlogParams(slug: string)
-  pub fn Page(route: PageContext<BlogParams, Post>) -> View { route.params.slug … }   // .slgu → erro
-  ```
-- [ ] **(b)** O dicionário fica, e o `paramsOf` (236) é o acessor tipado.
-- [ ] **(c)** Como está.
-
-**Recomendação: (a).** Como o `.bpp` declara esse parâmetro é a `bpp-g`.
-**Bloqueia:** `05-jhonstart/26`; `07-onze/53`; 117; `bpp-g`.
 
 ### nat-c2 · Cookies como pares de string, ausente como `""` (26, 53)
 
@@ -118,27 +97,6 @@ val session = pairValue(jar, "session");      // "" se não existe
 
 **Recomendação: (a).**
 **Bloqueia:** `05-jhonstart/26` (`cookies`); `07-onze/53`; 122.
-
-### nat-c3 · `StaticPath.data: Json`, lido de volta com um schema (117)
-
-**Contexto.** Na pré-renderização, cada página estática recebe dados (o post, por exemplo) num `Json`. A
-página precisa decodificar esse `Json` e tratar uma falha, para um dado que o próprio build gerou.
-
-**Hoje:**
-```bp
-val info = pageData(route, schemaOfDogInfo());     // pode falhar, mesmo vindo do build
-```
-
-- [ ] **(a)** Tipado pela página: o `paths:` da 282 já devolve `#(P, D)`, e a página recebe `route.data: D`.
-  ```bp
-  #[page("dogs/[dog]", paths: allDogs)]
-  pub fn Page(route: PageContext<DogParams, DogInfo>) -> View { route.data.breed … }
-  ```
-- [ ] **(b)** O `Json` fica, e a decodificação é gerada.
-- [ ] **(c)** Como está.
-
-**Recomendação: (a)** — a 282 já tipa o `paths`.
-**Bloqueia:** 117 passos 1–3.
 
 ### nat-c4 · `LocalKey<T>(name: string)` para os locals do middleware (123)
 
@@ -1217,65 +1175,6 @@ modules/test-shard/**, modules/lib-test-runner/** (idem)                 fechada
 
 **Recomendação: (a)** — um dono só, o que já segura o trabalho aberto. **Bloqueia:** 07-residuals passo
 12; 114 passos 5 e 7.
-
-### bpp-g · Como um `page.bpp` recebe `route: PageContext` e os `params`
-
-**Contexto.** A 221 dá a um `page.bpp` o seu decorador (`#[page]`, pelo `bppKinds` do manifesto do
-pacote); a reescrita responde `fn <Nome>(props: Props)` ou `fn <Nome>()`. Mas uma página `.bp` recebe
-`route: PageContext` e liga os segmentos da URL com `paramsOf(…meta.page.seg, route)` (236), e o
-roteador do jhonstart chama a página com um `PageContext` — ele não sabe construir o `Props` da
-aplicação. Falta dizer de onde o cabeçalho tira `route` e `params`.
-
-**Hoje:**
-```bpp
----
-val post = findPost(params.slug);      // de onde vem `params`?
----
-<h1>{post.title}</h1>
-```
-```bp
-// a mesma página escrita em .bp (o que o roteador sabe chamar):
-#[page("blog/[slug]")]
-pub fn BlogPost(route: PageContext) -> Element {
-    val params = paramsOf(BlogPost.meta.page.seg, route);    // decisão 236
-    …
-}
-```
-
-- [ ] **(a)** A entrada do `bppKinds` diz também o parâmetro; a reescrita escreve
-  `pub default fn page(route: PageContext)`, o cabeçalho lê `route`, e o prelúdio traz `PageContext` e
-  um helper `params(route)`.
-  ```json
-  "bppKinds": { "page": { "decorator": "page", "parameter": "route: PageContext" } }
-  ```
-  ```bp
-  #[page] pub default fn page(route: PageContext) -> Element {
-      val post = findPost(params(route).slug);
-      …
-  }
-  ```
-- [ ] **(b)** O cabeçalho declara `type Props(route: PageContext)`, e o roteador exige essa forma.
-  ```bpp
-  ---
-  type Props(route: PageContext)
-  val post = findPost(params(props.route).slug);
-  ---
-  <h1>{post.title}</h1>
-  ```
-- [ ] **(c)** A saída do decorador `#[page]` acrescenta o parâmetro (`01-compiler/130`) — a reescrita
-  continua com `fn page()`, e o decorador muda a assinatura.
-  ```bp
-  #[page] pub default fn page() -> Element { … }
-  // depois do decorador: pub default fn page(route: PageContext) -> Element
-  ```
-
-> **Desde a 285 e a 289.** A (a) caiu: não existe mais `bppKinds`, o compilador só conhece o `"bpp"`, o
-> `html` e o prelude, e a função default é anônima. Ficam a (b) e a (c).
-
-**Recomendação: (b)** — o parâmetro da página é código comum do cabeçalho
-(`type Props(route: PageContext<BlogParams, Post>)`), o roteador chama a função com ele, e o prelude traz o
-`PageContext`.
-**Bloqueia:** 116 passo 6; 117 passo 1.
 
 ### 08-j · Como o `local()` do rakun carrega uma marca do jhonstart *(proposta)*
 

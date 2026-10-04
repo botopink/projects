@@ -201,6 +201,18 @@ list against its own decorators; the compiler names no marker.
       a function value (`page("blog/[slug]", f)`), with the decorator form's checks (the stage
       markers of step 8, the return `View`) — the decorator form stays for hand-written `.bp` routes
 
+### Step 11 — route parameters and page data are hooks (decision 293)
+
+- [ ] `use params<P>()` and `use pageData<D>()` (`routes.bp`), unmarked — known at build for a
+      prerendered page, so neither makes a page `D`; `searchParams` stays `#[serverOnly]`
+- [ ] a page function takes no parameter: `#[page]` and its function form expect `fn() -> View`;
+      `route: PageContext` and `paramsOf(meta.page.seg, route)` (236) go
+- [ ] `#[page]` checks every `use params<P>()` its `Decl.hooks` reach: `P`'s fields are the pattern's
+      segments, each parsed to its field's type (`id: i32` → `/produto/abc` answers 404 without
+      rendering); every `use pageData<D>()` matches `paths:`'s `D`; a mismatch refused at the page,
+      naming the chain (`via BlogPost → Breadcrumb`)
+- [ ] the examples of this track rewritten (`route.params.lookup(…)`, `PageContext` parameters)
+
 **Gate:** standard (fronts.md § Gate) + every jhonstart member at its count or above on both rows
 (core 204; `jhonstart-dom-test` commonJS only, structural — 101) · `grep -rni rakun
 modules/jhonstart/src` empty and `grep -i emilia modules/jhonstart/src` still empty · `dom_test.bp`

@@ -5,7 +5,7 @@ from a `.bp` module (118). · **State:** not started
 **Depends on:** `01-compiler/01-checker` step 25 (the anonymous default, 289) · `118-bpp-components` (the literal's template language) · `05-jhonstart/26` step 0
 (merges `jhonstart-html` into the core, `html` its default function, decision 200) ·
 `01-compiler/26-cli-tooling` (owns `compiler-cli/**`, `language-server/**` this milestone; 116
-opens after it) · `01-compiler`'s prelude scope (decision 270) · open: `bpp-g`
+opens after it) · `01-compiler`'s prelude scope (decision 270)
 (step 6). Written against decisions 198, 199, 200, 212, 213, 221, 270.
 **Owns:** in `repository/botopink-lang`: `modules/manifest/src/root.zig` (one key),
 `modules/compiler-cli/src/cli/{scanner,resolver,libs,format_cmd,migrate}.zig` (extension lists,
@@ -79,7 +79,7 @@ framework's: the route table `rakun-app` generates from `routing`'s file kinds (
 jhonstart's `page` / `layout` on the unfolded function; the toolchain applies no decorator by file
 name and reads no `bppKinds`. A decorator written on the line before the closing `---` is ordinary
 header code annotating the function (221 (1)).
-`route: PageContext` and `params`: `bpp-g`.
+A page takes no parameter: `use params<P>()`, `use pageData<D>()` in the header (293; was `bpp-g`).
 
 **Nothing added to a template body.** The header is the module-level half; no function emits
 declarations or keeps an origin. The literal *is* the file: a literal span is a file span,
@@ -192,7 +192,7 @@ error at the key. `X.bp` + `X.bpp` in one directory: error naming both.
       line; `format --check` fails on the first, passes the second
 - [ ] `scripts/format-check.sh` walks `.bpp` files — header under the gate's format stage like any `.bp`
 
-### Step 6 — A project of `.bpp` files (a page's parameter waits on `bpp-g`)
+### Step 6 — A project of `.bpp` files (a page reads its route by hook: 293)
 
 - [ ] this front's `examples/` and every track front's `examples/src/` compile as an onze test
       project whose `botopink.json` carries `"bpp": "jhonstart"`
@@ -204,7 +204,6 @@ error at the key. `X.bp` + `X.bpp` in one directory: error naming both.
 
 ## Decisions
 
-- `bpp-g` — how a `page.bpp` gets `route: PageContext` and `params` (221 gives only the decorator).
   Step 6, and 117 step 1.
 
 **Gate:** standard (fronts.md § Gate), in `repository/botopink-lang` and `repository/vscode-extension`, plus:
@@ -224,7 +223,7 @@ error at the key. `X.bp` + `X.bpp` in one directory: error naming both.
 
 - **App names the package**: no rule needed for two libraries claiming one file kind.
 - **Not a syntax**: neither a compiler-owned fence nor a library writing the module; header is botopink, rest is literal.
-- **Still to be stated**, before the step named: (1) page parameter, `bpp-g` — step 6, `117-bpp-routing`
+- **Still to be stated**, before the step named: (1) page parameter — answered by 293 (hooks, no parameter) — `117-bpp-routing`
   step 1; (2) return type — decision 275; (3) header statements other than `val` / `use` — step 0's list;
   (4) `Node`: track examples write `children: Children = []`, declared by no jhonstart module
   (`element.bp`, `elements.bp` use it; checker knows it by name); per 223, 118 declares `Node`, its

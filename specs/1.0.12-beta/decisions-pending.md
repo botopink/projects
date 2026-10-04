@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**80 questions and 15 contradictions are open, and 97 implementation choices await confirmation.**
+**77 questions and 15 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290 · `ctr-y` → 291 · `ctr-z` → 292.
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290 · `ctr-y` → 291 · `ctr-z` → 292 · `nat-c1`, `nat-c3`, `bpp-g` → 293.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 ## Open questions
@@ -27,23 +27,11 @@ the feature. `nat-0`'s four rules are decisions 281–284; what remains applies 
 #### nat-c · Untyped bags where a record type would flow — case by case
 Split at the maintainer's request into `nat-c1`…`nat-c7`; rakun's string-named events are already typed records by 281 (`#[on] fn f(e: OrderPlaced)`, `04-rakun/04` step 6). Each: (a) the typed record, (b) the bag kept with typed accessors beside it, (c) as is.
 
-#### nat-c1 · Route parameters as a `Dict<string, string>` (26, 53)
-- **Measured.** `route.params.lookup("slug").unwrapOr("")` (`blog-slug-page-example.bp:75`); `PostPage(params: Array<#(string,string)>)` (`05-jhonstart/26` examples); the same app already reads `blogPostPageParams(route).slug` (`app-tree-example.bp:112`, 236's `paramsOf`).
-- **Options.** (a) `PageContext<P, D>`: `route.params.slug`, `P` derived from the segment pattern or declared (`type BlogParams(slug: string)`). (b) The dict kept, `paramsOf` the typed accessor. (c) As is.
-- **Recommendation.** (a); the parameter's shape in a `.bpp` is `bpp-g`'s.
-- **Blocks.** `05-jhonstart/26`; `07-onze/53`; 117; bpp-g.
-
 #### nat-c2 · Cookies as string pairs, absent as `""` (26, 53)
 - **Measured.** `pairValue(jar, "session")` answers `""` for a missing cookie (`53x/app/dashboard/layout.bpp:25-27`); every value a `string`.
 - **Options.** (a) A cookie declared once, typed: `val sessionCookie = Cookie<SessionId>("session")`, read `use cookie(sessionCookie)` → `?SessionId`; the name stays a string (the browser's). (b) The jar kept, `jar.get(name) -> ?string` added. (c) As is.
 - **Recommendation.** (a).
 - **Blocks.** `05-jhonstart/26` (`cookies`); `07-onze/53`; 122.
-
-#### nat-c3 · `StaticPath.data: Json` read back through a schema (117)
-- **Measured.** `117/README.md:55-67`: "`Json`, not typed: the route record is one shape"; the page decodes it with `pageData(route, schemaOfDogInfo())` and must handle a failure for data the build produced itself.
-- **Options.** (a) Typed by the page: `paths: fn() -> @Task<#(P, D)[]>` (282) hands `route.data: D`. (b) `Json` kept, the decode generated. (c) As is.
-- **Recommendation.** (a) — 282 already types `paths`.
-- **Blocks.** 117 steps 1–3.
 
 #### nat-c4 · `LocalKey<T>(name: string)` for middleware locals (123)
 - **Measured.** `123/README.md:46-57`: a local's identity is its string name; two keys with one name clash at run time on the second `setLocal`.
@@ -466,13 +454,6 @@ owning front lists the row under *Depends on*.
 - **Options.** (a) Stage markers move to a package both import (bundled `routing`, under 115's two-library test); both libraries mark with the same `#[serverOnly]`. (b) rakun declares its own marker; the capability reads markers by a manifest-declared name. (c) `local` readable only in middleware, handlers, actions, never from a page.
 - **Recommendation.** (a): one marker, and no library names another.
 - **Blocks.** 123 step 1's third box; any rakun request-time read a page reaches.
-
-#### bpp-g · How a `page.bpp` gets its `route: PageContext` and its `params`
-- **Measured.** 221 gives a `page.bpp` its decorator; the unfold answers `fn <Name>(props: Props)` or `fn <Name>()`; a `.bp` page takes `route: PageContext` and binds its segments with `paramsOf(…meta.page.seg, route)` (236); jhonstart's router calls a page with a `PageContext`, cannot build an application's `Props`.
-- **Options.** (a) A `bppKinds` entry names the parameter too (`"page": {"decorator": "page", "parameter": "route: PageContext"}`): the unfold writes `pub default fn page(route: PageContext)`, the header reads `route`, the prelude brings `PageContext` and a `params(route)` helper (`ctr-g`: `page` then names both function and decorator). (b) The header declares `type Props(route: PageContext)`; the router requires that shape. (c) `#[page]`'s decorator output adds the parameter (01-compiler/130).
-- **Since 285 and 289.** (a) is gone — no `bppKinds`, the toolchain knows only `"bpp"`, `html` and the prelude, and the default function is anonymous; (b) and (c) remain.
-- **Recommendation.** (b): the page's parameter is ordinary header code (`type Props(route: PageContext<BlogParams, Post>)`), the router calls the function with it, the prelude brings `PageContext`.
-- **Blocks.** 116 step 6; 117 step 1.
 
 #### props-d · A native tag's attributes (*proposed*)
 - **Measured.** 192 covers component tags only; a native tag is `fn <tag>(children: Children, attrs: Array<#(string, string)> = [])` in jhonstart (118 § Notes).
