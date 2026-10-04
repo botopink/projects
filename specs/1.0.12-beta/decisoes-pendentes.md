@@ -1,7 +1,7 @@
 # Decisões pendentes — 1.0.12-beta (só o que está em aberto, por ordem de importância)
 
-Atualizado em 2026-10-04 (decisões 278–283). Só o que ainda espera resposta sua: o que já foi respondido está em
-`specs/1.0.12-beta/decisions-taken.md` (decisões 144–283; próximo número livre: **284**) e saiu daqui.
+Atualizado em 2026-10-04 (decisões 278–284). Só o que ainda espera resposta sua: o que já foi respondido está em
+`specs/1.0.12-beta/decisions-taken.md` (decisões 144–284; próximo número livre: **285**) e saiu daqui.
 Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 234–236 (injeção do rakun,
 `@TypeInfo.all` com lista, decorador de função), 237 (captura do template pelo texto), 238–243
 (`@External.Wasm`, `$stringify`, codepoints no wasm, células sem WASI, dependência direta, vírgula final),
@@ -16,7 +16,7 @@ registro de beans em comptime no ponto de entrada), 257 (`Schema<T>` na `validat
 > `decisions-taken.md` com o texto completo dos commits `4fb3c5e`, `ec58d33`, `805b2be`, `c4976a6`.
 
 **Ordem:** da decisão que mais destrava para a que menos destrava.
-- **Prioridade máxima** — a forma botopink (`nat-0`, `nat-a`…`nat-g`) e as contradições `ctr-x`…`ctr-aa`: o que foi copiado de fora quando a linguagem já tinha o recurso.
+- **Prioridade máxima** — a forma botopink (`nat-c`…`nat-g`; as regras já são as decisões 281–284) e as contradições `ctr-x`…`ctr-aa`: o que foi copiado de fora quando a linguagem já tinha o recurso.
 - **Parte 0** — `00-gate` e `01-compiler`, por prioridade (o que segura thread rodando primeiro).
 - **Parte 1** — contradições entre decisões, achadas na consolidação: cada uma segura um passo.
 - **Parte 2** — destravam muitas frentes.
@@ -66,46 +66,10 @@ copiamos quando o botopink **já tinha** a anotação, há cerca de 40 lugares o
 Astro, Next.js, React, Spring, zod, TypeScript, LINQ ou Tailwind **na forma de fora**, mesmo existindo
 o recurso equivalente na linguagem. Eles caem em sete padrões.
 
-**Ordem:** primeiro a **`nat-0`** (a regra geral); depois as quatro contradições **`ctr-x`…`ctr-aa`**, que
-já batem com decisões tomadas; depois a **`nat-c`…`nat-g`**, que aplicam a regra a cada padrão (a `nat-a` virou a 281, a `nat-b` a 282).
-
-### nat-0 · A regra: o recurso do botopink antes da forma importada
-
-> **Respondida em parte.** A regra 1 (nenhum identificador de código como string) virou a **decisão 281**
-> (com a `nat-a`); a regra 2 (nenhum papel pelo nome do export) virou a **decisão 282** (com a `nat-b`).
-> A regra 3 não vira regra geral (**decisão 283**): cada caso é uma pergunta, `nat-d1`…`nat-d9`.
-> A regra 4 continua aberta aqui.
-
-**Contexto.** Na 278, `client:visible` (string do Astro) virou `#[clientVisible]`, a anotação que já
-existia. A varredura achou o mesmo erro em outros sete padrões (`nat-a`…`nat-g`). Algumas decisões e
-recomendações escolheram a forma de fora: 234 e 256 (chave de bean em string), as recomendações (1)
-da lg2-f, lg2-g e lg2-i (tipo por nome, argumento de decorador só `string`/número/`bool`), 221/270
-(`bppKinds` no JSON), 257 (`Schema<T>`).
-
-**Hoje:**
-```bp
-#[check("passwordsMatch", "password,confirm")]     // função e campos como texto
-val c = ctx.resolve("OrderCache");                 // tipo como texto
-pub fn staticPaths() -> …                          // papel da função pelo nome do export
-```
-
-- [ ] **(a)** Quatro regras; qualquer exceção é escrita numa decisão:
-  1. nenhum identificador de código (função, tipo, campo, evento, hook, ação) passado como string;
-  2. nenhum papel declarado pelo nome do export — vai no decorator da função;
-  3. nenhum segundo modelo do que a linguagem tem (`@Result`, records, variádicos, interfaces, `use`);
-  4. JSON só para o que não é código.
-  ```bp
-  #[check(passwordsMatch, .password, .confirm)]
-  val c = use bean(OrderCache);
-  #[page("blog/[slug]", paths: allSlugs)]
-  ```
-- [ ] **(b)** Caso a caso, sem regra geral.
-- [ ] **(c)** Manter as formas importadas (facilita portar código e documentação de fora).
-
-**Recomendação: (a).** Os meios já estão decididos na **280** (argumento de decorator tipado e `comptime`,
-`@Decl<T>`, `Field<T>` e `.campo`; a lg2-f e a lg2-i foram respondidas por ela); a lg2-g perde o motivo; a `nat-a` reabre a chave em string
-da 234/256, a `nat-f` o `bppKinds` da 221/270 e a `nat-d` a forma do `Schema<T>` da 257.
-**Bloqueia:** `nat-a`…`nat-g`; lg2-g.
+**As quatro regras já estão decididas:** 281 (nenhum identificador de código como string), 282 (o papel
+vai no decorator), 283 (segundo modelo: caso a caso, `nat-d1`…`nat-d9`) e 284 (JSON: caso a caso,
+`nat-f1`…`nat-f4`). **Ordem do que falta:** as quatro contradições **`ctr-x`…`ctr-aa`**, que já batem
+com decisões tomadas; depois `nat-c`, `nat-d1`…`nat-d9`, `nat-e`, `nat-f1`…`nat-f4` e `nat-g`.
 
 ### ctr-x · `registerSegmentConfig(dynamic: ForceStatic, …)` × decisões 202, 186 e 277
 
@@ -492,40 +456,104 @@ fn findByNameAndStateAllIgnoringCase(name: string, state: string) -> City[]
 **Recomendação: (a).** Absorve a 130-c.
 **Bloqueia:** 130 passo 5; rakun 04, 08, 13, 15, 19, 79, 91, 93; 130-b; 130-c.
 
-### nat-f · JSON dizendo o que o código diria
+### nat-f · Configuração em JSON — caso a caso (decisão 284)
 
-**Contexto.** O prelude (270), o tipo `Decorator` (268) e enums já existem. Mesmo assim:
-- `bppKinds` (221/270) mapeia nome de arquivo → decorator no `botopink.json` — e é a **terceira cópia**
-  do mesmo mapa, ao lado de `fileKinds() -> Array<string>` do `routing` e das letras do wire (102; 171–173);
-- `onze.json` com `trailingSlash`, `redirects`, `markdown` e `allowedRedirects`, que já existem como
-  código tipado (`url_rules`, `MarkdownOptions`, `app(allowedRedirects:)`) (124, 08-h);
-- `files` e `workspaces` do npm (98);
-- o prefixo `ONZE_PUBLIC_` (cópia do `NEXT_PUBLIC_`) carregando um fato de etapa.
+Você decidiu (284) que o `botopink.json` fica **o mais limpo possível**, mas configuração pode ficar nele
+quando fizer sentido, decidindo **caso a caso**. O `"bpp": "jhonstart"` continua obrigatório: o app pode
+depender de dois pacotes que desdobram `.bpp`, e precisa dizer qual. Cada caso abaixo é uma pergunta.
+
+### nat-f1 · `bppKinds`: qual nome de arquivo recebe qual decorator (221, 270)
+
+**Contexto.** Pela 221, o `botopink.json` do jhonstart diz qual arquivo recebe qual decorator. O lado
+direito é o **nome de uma função** do jhonstart escrito como texto, e nada confere. As contradições
+`ctr-g` e `ctr-t` nascem desse mapa. Existe ainda uma terceira cópia da mesma lista no `routing`
+(`fileKinds() -> Array<string>`, 102).
 
 **Hoje:**
 ```json
-{ "bpp": "jhonstart", "bppKinds": { "page": "page", "layout": "layout" } }
+// jhonstart/botopink.json
+{ "bppKinds": { "page": "page", "layout": "layout", "template": "template" } }
 ```
+
+- [ ] **(a)** Como na 221: o mapa fica no `botopink.json` do pacote.
+- [ ] **(b)** Cada decorator diz a qual arquivo se aplica, com uma marca builtin; o manifesto fica limpo.
+  ```bp
+  // jhonstart/src/routes.bp
+  #[@BppKind("page")]   pub fn page(comptime decl: @Decl, …) { … }
+  #[@BppKind("layout")] pub fn layout(comptime decl: @Decl, …) { … }
+  ```
+- [ ] **(c)** Um módulo do pacote exporta a lista (`pub val kinds: #(string, Decorator)[] = [#("page", page), …]`)
+  — precisa mudar a 270 (o prelude só tem `import`) ou criar um segundo módulo de convenção.
+
+**Recomendação: (b)** — o manifesto fica mais limpo, o decorator é referência (281) e o papel fica no
+decorator (282).
+**Bloqueia:** 116 passo 2; 117 passo 1; `ctr-g`; `ctr-t`.
+
+### nat-f2 · As opções do `onze.json`: `trailingSlash`, `redirects`, `markdown`, `allowedRedirects` (124, 08-h)
+
+**Contexto.** Essas chaves repetem opções que o código do onze já tem como tipo (`url_rules`,
+`MarkdownOptions`, `app(allowedRedirects:)`). Hoje, um valor errado só aparece quando o servidor sobe.
+
+**Hoje:**
+```json
+{ "trailingSlash": "nevr" }          // erro de digitação: só aparece no boot
+```
+
+- [ ] **(a)** Ficam no `onze.json`, e o build lê para o record tipado: chave ou valor errado é erro **na linha
+  do arquivo**, no build.
+  ```
+  onze.json:1:20 error: "nevr" não é um trailingSlash — always, never, ignore
+  ```
+- [ ] **(b)** Um record tipado no código do app, sem JSON.
+  ```bp
+  pub val config = OnzeConfig(trailingSlash: .Never, redirects: [Redirect(from: "/old", to: "/new")]);
+  ```
+- [ ] **(c)** Como está.
+
+**Recomendação: (a)** — é configuração, pode ficar no JSON (284), e o build confere como conferiria o código.
+**Bloqueia:** 124; 08-h; `07-onze/49` e `50`.
+
+### nat-f3 · `files` e `workspaces` no `botopink.json` (98)
+
+**Contexto.** `files` lista o que o pacote publica (como no npm); `workspaces` lista os membros de um
+monorepo.
+
+**Hoje:**
+```json
+{ "files": ["src/client.bp", "src/server.bp"], "workspaces": ["modules/*"] }
+```
+
+- [ ] **(a)** Os dois ficam: é empacotamento, não código.
+- [ ] **(b)** `files` sai: publica-se o que é `pub`, e um módulo interno se marca no código (`#![internal]`,
+  lg2-m); `workspaces` fica.
+- [ ] **(c)** Os dois são derivados.
+
+**Recomendação: (a)** — o que vai no pacote é um fato de empacotamento.
+**Bloqueia:** 98.
+
+### nat-f4 · O prefixo `ONZE_PUBLIC_` nas variáveis de ambiente (53, `contracts.md`)
+
+**Contexto.** Uma variável só chega ao código do browser se o nome começar com `ONZE_PUBLIC_` (cópia do
+`NEXT_PUBLIC_`). É um fato de etapa (186) carregado por uma convenção de nome: se alguém esquecer o
+prefixo, nada avisa, e o valor simplesmente não chega.
+
+**Hoje:**
 ```bp
-pub fn fileKinds() -> Array<string> { return ["layout", "page", "not-found", …]; }
 val api = env("ONZE_PUBLIC_API_URL");
 ```
 
-- [ ] **(a)** Código: o prelude do pacote `bpp` exporta os tipos; o `routing` tem um enum; as opções do
-  onze são um record no código do app; módulos `pub` em vez de `files`; valor público de ambiente é
-  uma declaração marcada com a etapa.
+- [ ] **(a)** Fica como está.
+- [ ] **(b)** A declaração diz que é pública, e o uso num `#[client]` é conferido em comptime (186).
   ```bp
-  // jhonstart/src/prelude.bp
-  pub val kinds: #(string, Decorator)[] = [#("page", page), #("layout", layout)];
-  pub type FileKind { Layout, Template, Error, Loading, NotFound, Page, Default, Route }
   #[clientVisible] val apiUrl = env("API_URL");
   ```
-- [ ] **(b)** JSON só para valores simples do projeto (nome, porta), nunca um mapa para código.
-- [ ] **(c)** Como está.
+- [ ] **(c)** Uma lista de variáveis públicas no `onze.json`.
+  ```json
+  { "publicEnv": ["API_URL"] }
+  ```
 
-**Recomendação: (a)** para todo mapa para código, **(b)** para os valores simples. Reabre a chave do
-manifesto da 221/270 e, de quebra, resolve a `ctr-g` e a `ctr-t`.
-**Bloqueia:** 116 passo 2; 117 passo 1; 102; 124; 08-h; 98; `ctr-g`; `ctr-t`.
+**Recomendação: (b).**
+**Bloqueia:** `07-onze/50` e `53`; `contracts.md`.
 
 ### nat-g · Sintaxe estrangeira dentro de anotação
 

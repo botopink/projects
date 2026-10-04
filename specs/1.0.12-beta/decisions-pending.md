@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**73 questions and 22 contradictions are open, and 97 implementation choices await confirmation.**
+**75 questions and 22 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`).
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`).
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 ## Open questions
@@ -22,15 +22,8 @@ Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 Raised 2026-10-04 by a sweep of the spec after decision 278: concepts copied from Astro, Next.js,
 React, Spring, zod, TypeScript, LINQ and Tailwind in their foreign shape where botopink already has
-the feature. Answer first: `nat-0` sets the rule, `nat-a`…`nat-g` apply it; `ctr-x`…`ctr-aa` are
+the feature. `nat-0`'s four rules are decisions 281–284; what remains applies them case by case; `ctr-x`…`ctr-aa` are
 the sites that already contradict a decision. The Portuguese page lists every site with examples.
-
-#### nat-0 · The rule: botopink's own feature before the imported shape
-- **Answered in part.** Rule 1 (no code identifier as a string) is decision 281 (with `nat-a`), rule 2 (no role by export name) decision 282 (with `nat-b`); rule 3 is no general rule (283) — `nat-d1`…`nat-d9` case by case; rule 4 stays open below.
-- **Measured.** 278 replaced Astro's `prefix:name` with the annotation botopink already had. The sweep found ~40 more sites in seven patterns (`nat-a`…`nat-g`); several decisions and recommendations chose the foreign shape: 234 and 256 (string registry keys), lg2-f (1), lg2-g (1), lg2-i (1), 221 and 270 (`bppKinds`), 257 (`Schema<T>`).
-- **Options.** (a) Four rules, any exception stated in a decision: no code identifier (function, type, field, event, hook, action) passed as a string; no role declared by an export's name — it goes in the function's decorator; no second model of what the language has (`@Result`, records, variadics, interfaces, `use`); JSON only for what is not code. (b) Case by case, no rule. (c) Keep the imported shapes (porting ease).
-- **Recommendation.** (a). Its means are taken: decision 280 (typed comptime decorator arguments, `@Decl<T>`, `Field<T>`; lg2-f and lg2-i answered); lg2-g moot; 234/256's string keys, 221/270's `bppKinds` and 257's `Schema<T>` reopened by `nat-a`, `nat-f`, `nat-d`.
-- **Blocks.** `nat-a`…`nat-g`; lg2-g.
 
 #### nat-c · Untyped bags where a record type would flow
 - **Measured.** `params` / `searchParams` / cookies as `Array<#(string, string)>`, `pairValue(jar, "session")` answering `""` when absent (26, 53) · `StaticPath.data: Json` read back through `pageData(route, schemaOf…)` (117) · `LocalKey<T>(name: string)`, a clash refused at run time (123) · `decl.setMeta("table", "cities")`, string-only meta (216, 130) · `#[value("rakun.profiles.active")]`, `rkPropInt("12abc") == 12` (03r-b), `Event(name: string, payload: string)` (rakun) · `ThemeEntry(name: string, value: string)`, `extendTheme(th, [#("--breakpoint-md", "")])` (06-emilia).
@@ -101,11 +94,32 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Recommendation.** (a). Absorbs 130-c.
 - **Blocks.** 130 step 5; rakun 04, 08, 13, 15, 19, 79, 91, 93; 130-b, 130-c.
 
-#### nat-f · JSON saying what code would
-- **Measured.** `bppKinds` (221, 270) — a third copy of the file-kind map beside `routing`'s `fileKinds() -> Array<string>` and the wire letters (102; 171–173) · `onze.json`'s `trailingSlash`, `redirects`, `markdown`, `allowedRedirects` beside `url_rules`, `MarkdownOptions`, `app(allowedRedirects:)` (124, 08-h) · `files`, `workspaces` (98) · the `ONZE_PUBLIC_` env prefix carrying a stage fact (53, `contracts.md`).
-- **Options.** (a) Code: the `bpp` package's prelude exports the kinds (`pub val kinds: #(string, Decorator)[]`), `routing` a `FileKind` enum; onze's settings a typed record in the app's code; `pub` modules instead of `files`; a public env value a stage-marked declaration. (b) JSON for plain project values only (names, ports), never a mapping to code. (c) As is.
-- **Recommendation.** (a) for every mapping to code, (b) for plain values. Reopens 221/270's manifest key; answers ctr-g and ctr-t on the way.
-- **Blocks.** 116 step 2, 117 step 1, 102, 124, 08-h, 98; ctr-g, ctr-t.
+#### nat-f · Configuration in JSON — case by case (decision 284)
+`botopink.json` as clean as possible, configuration allowed where it makes sense (284); `"bpp": "<package>"` stays. Each case below is its own question.
+
+#### nat-f1 · `bppKinds`: which file name takes which decorator (221 (2), 270)
+- **Measured.** The `bpp` package's `botopink.json` maps file names to its decorators (`"bppKinds": {"page": "page", "layout": "layout", …}`); the right side names a function of the package's code, unchecked; `ctr-g` and `ctr-t` are clashes this map causes. A third copy of the kinds lives in `routing` (`fileKinds() -> Array<string>`, 102).
+- **Options.** (a) As 221: the map in the package's manifest. (b) Each decorator says it: the builtin marker `#[@BppKind("page")] pub fn page(…)`, read at comptime with `@TypeInfo.all(with: @BppKind)` in that package; no manifest key, the prelude still imports only (270). (c) A module of the package exports it (`pub val kinds: #(string, Decorator)[]`) — needs 270 amended or a second conventional module.
+- **Recommendation.** (b): the manifest gets cleaner, the decorator is a reference (281), its role is in a decorator (282).
+- **Blocks.** 116 step 2, 117 step 1; `ctr-g`, `ctr-t`.
+
+#### nat-f2 · `onze.json`'s `trailingSlash`, `redirects`, `markdown`, `allowedRedirects` (124, 08-h)
+- **Measured.** The keys restate options onze's code already types (`url_rules`, `MarkdownOptions`, `app(allowedRedirects:)`); a misspelt value is seen when the server boots.
+- **Options.** (a) Kept in `onze.json`, read into the typed record at build, a wrong key or value an error at its line in the file. (b) A typed record in the app's code (`pub val config = OnzeConfig(trailingSlash: .Never, …)`), no JSON. (c) As is.
+- **Recommendation.** (a) — configuration is allowed there (284); the build checks it as code would.
+- **Blocks.** 124; 08-h; `07-onze/49`, `50`.
+
+#### nat-f3 · `files` and `workspaces` in `botopink.json` (98)
+- **Measured.** `files` lists what a package ships (npm's); `workspaces` / `{ "workspace": true }` list members (`98-packaging-tail/README.md:27`, `docs/botopink-json.md:52`).
+- **Options.** (a) Both kept — packaging, not code. (b) `files` derived from `pub` modules (an internal module marked in code, `#![internal]`, lg2-m); `workspaces` kept. (c) Both derived.
+- **Recommendation.** (a): what ships is a packaging fact.
+- **Blocks.** 98.
+
+#### nat-f4 · The `ONZE_PUBLIC_` prefix on environment variables (53, `contracts.md`)
+- **Measured.** A variable reaches client code only when its name starts with `ONZE_PUBLIC_` (Next's `NEXT_PUBLIC_`); a stage fact (186) carried by a naming convention.
+- **Options.** (a) Kept. (b) The declaration says it: `#[clientVisible] val apiUrl = env("API_URL")`, reaching it from a `#[client]` component checked at comptime (186). (c) A list of public variables in `onze.json`.
+- **Recommendation.** (b).
+- **Blocks.** `07-onze/50`, `53`; `contracts.md`.
 
 #### nat-g · Foreign syntax inside an annotation
 - **Measured.** `#[@BeamMemory.Ets(keyed = true)]`, `inline = true` — Rust's `key = value` (17) · `#[@External.Erlang("fn:tanBody")]`, `"op:…"`, `"wasi:…"` — a function named by a prefixed string (238, 263).
