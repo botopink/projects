@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**65 questions and 22 contradictions are open, and 97 implementation choices await confirmation.**
+**73 questions and 22 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282.
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`).
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 ## Open questions
@@ -26,7 +26,7 @@ the feature. Answer first: `nat-0` sets the rule, `nat-a`…`nat-g` apply it; `c
 the sites that already contradict a decision. The Portuguese page lists every site with examples.
 
 #### nat-0 · The rule: botopink's own feature before the imported shape
-- **Answered in part.** Rule 1 (no code identifier as a string) is decision 281 (with `nat-a`), rule 2 (no role by export name) decision 282 (with `nat-b`); rules 3 and 4 stay open below.
+- **Answered in part.** Rule 1 (no code identifier as a string) is decision 281 (with `nat-a`), rule 2 (no role by export name) decision 282 (with `nat-b`); rule 3 is no general rule (283) — `nat-d1`…`nat-d9` case by case; rule 4 stays open below.
 - **Measured.** 278 replaced Astro's `prefix:name` with the annotation botopink already had. The sweep found ~40 more sites in seven patterns (`nat-a`…`nat-g`); several decisions and recommendations chose the foreign shape: 234 and 256 (string registry keys), lg2-f (1), lg2-g (1), lg2-i (1), 221 and 270 (`bppKinds`), 257 (`Schema<T>`).
 - **Options.** (a) Four rules, any exception stated in a decision: no code identifier (function, type, field, event, hook, action) passed as a string; no role declared by an export's name — it goes in the function's decorator; no second model of what the language has (`@Result`, records, variadics, interfaces, `use`); JSON only for what is not code. (b) Case by case, no rule. (c) Keep the imported shapes (porting ease).
 - **Recommendation.** (a). Its means are taken: decision 280 (typed comptime decorator arguments, `@Decl<T>`, `Field<T>`; lg2-f and lg2-i answered); lg2-g moot; 234/256's string keys, 221/270's `bppKinds` and 257's `Schema<T>` reopened by `nat-a`, `nat-f`, `nat-d`.
@@ -38,11 +38,62 @@ the sites that already contradict a decision. The Portuguese page lists every si
 - **Recommendation.** (a).
 - **Blocks.** bpp-g, 08-j, 117, 122, 123, 130 (meta), rakun 04, 08, 15; `06-emilia/34` (05emilia-n); 03r-b.
 
-#### nat-d · A second model of what the language has
-- **Measured.** `Schema<T>` value schemas with `union2…5`, `tuple2…5`, `pipe` (125; 257) · TypeScript's `Partial` / `Pick` / `Omit` (125, 134 step 2) · `ActionOutcome {data, error}` (127) · `raiseProblem` and a `try*` twin per store method, `throw SoapFault` inside `-> @Result` (rakun 09, 93) · `throw "nav:not-found"` matched by prefix (`isSignal`, `contracts.md`; 53) · LINQ's names in erika (`where`, `select`, `toList`; 98) · `#[postConstruct]` / `#[preDestroy]` (rakun 04) · `use useActionState` — a `use` prefix under `use`.
-- **Options.** (a) The language's own: the record type is the schema (`#[schema]` on the type, `T.parse`), combinators variadic; `@Result` everywhere (`InputError` a case of `ActionError`, one store API); `noreturn` + `NavOutcome` matched by type; std's names in erika; `implement Lifecycle`; no hook named `use…`. (b) Both, the foreign one a thin layer over the native. (c) As is.
-- **Recommendation.** (a). Reopens 257's shape (not its home), with 07-j and ctr-u.
-- **Blocks.** 125, 127, rakun 04, 09, 93, `07-onze/53`, 98 (erika); lg2-h, lg2-l.
+#### nat-d · A second model of what the language has — case by case (decision 283)
+No general rule (283): each case below is its own question, (a) the language's own, (b) both — the foreign one a thin layer over the native — or (c) as is.
+
+#### nat-d1 · `ActionOutcome {data, error}` beside `@Result` (127)
+- **Measured.** `typed-action-example.bp`: an action answers `ActionOutcome<T>(data: ?T, error: ?ActionError)`; nothing stops reading `data` with `error` set.
+- **Options.** (a) `-> @Task<@Result<T, ActionError>>`, `InputError` a case of `ActionError`. (b) `ActionOutcome` kept as a view over the `@Result`. (c) As is.
+- **Recommendation.** (a).
+- **Blocks.** 127 steps 1–4; `07-onze/53`'s action examples.
+
+#### nat-d2 · A thrown store error and a `try*` twin per method (rakun 09, 93)
+- **Measured.** `09-rakun-data-nosql/README.md:50` ("driver failures raise … each with a `try*` twin"); `stores-example.bp:125,146` `raiseProblem`; `soap-client-example.bp:66-68` `throw SoapFault` inside `-> @Result`.
+- **Options.** (a) One API answering `@Result<…, StoreError>`. (b) The throwing form the default, the `try*` twin kept. (c) As is.
+- **Recommendation.** (a).
+- **Blocks.** rakun 09 (every store), 93; lg2-h.
+
+#### nat-d3 · `Schema<T>` value objects beside the record type (125; 257)
+- **Measured.** `125/README.md:57-94`: `schemas.object([#("email", schemas.text().email()), …])` beside `type Signup(email: string, …)`; 257 put `Schema<T>` in `validation`.
+- **Options.** (a) The type is the schema: `#[schema] type Signup(…)`, `Signup.parse(json)`; `Schema<T>` only where no type exists (an ad-hoc check). (b) Both, `Schema<T>` derivable from a `#[schema]` type. (c) As is.
+- **Recommendation.** (b) — the type first, the value form for what is not a declared type. Reads with 07-j and ctr-u.
+- **Blocks.** 125 steps 3–10; 07-j; ctr-u.
+
+#### nat-d4 · One combinator per arity: `union2…5`, `tuple2…5` (125)
+- **Measured.** `125/README.md:73-94`; the families exist because TypeScript's zod needs them; botopink has `A | B`, `#(A, B)` and variadics (267).
+- **Options.** (a) The type forms (`type Pet = Cat | Dog | Fish`) and, if a value form is kept, one variadic `union(..arms)`. (b) The families kept. (c) As is.
+- **Recommendation.** (a).
+- **Blocks.** 125 step 8.
+
+#### nat-d5 · TypeScript's `Partial` / `Pick` / `Omit` beside type aliases (125, 134 step 2)
+- **Measured.** `#[partial("RecipePatch")]`, `#[extending("Dog")]` (now typed by 281); `partial`, `pick`, `omit`, `mergeRecords` builtins (134 step 2).
+- **Options.** (a) An alias over a builtin: `type RecipePatch = partial(Recipe)`. (b) The decorator on a written type (`#[partial(Recipe)] type RecipePatch(…)`), checked. (c) As is.
+- **Recommendation.** (a) — one mechanism for derived types (110).
+- **Blocks.** 125 step 9; 134 step 2.
+
+#### nat-d6 · `throw "nav:not-found"` beside `noreturn` (53)
+- **Measured.** `contracts.md:280-281` `isSignal` by prefix; `boundaries-example.bp:89-91`; `server-action-example.bp:79` `val _gone = redirect(…)`.
+- **Options.** (a) `fn notFound() -> noreturn`, boundaries matching the `NavOutcome` type. (b) The string signal kept under a typed wrapper. (c) As is.
+- **Recommendation.** (a). With lg2-l and lg2-h.
+- **Blocks.** `05-jhonstart/26`, `07-onze/53`; lg2-l, lg2-h, 31-a.
+
+#### nat-d7 · Lifecycle annotations beside interfaces (rakun 04)
+- **Measured.** `context-lifecycle-example.bp:66,72`: `#[postConstruct]`, `#[preDestroy]`.
+- **Options.** (a) `implement Lifecycle { fn start(self); fn stop(self) }`. (b) Both. (c) As is.
+- **Recommendation.** (a).
+- **Blocks.** rakun 04.
+
+#### nat-d8 · A `use…` hook name under `use` (53)
+- **Measured.** `new-post-form-example.bp:118`: `use useActionState(…)`; jhonstart-forms spells it `actionState`.
+- **Options.** (a) `use actionState(…)`; a hook named `use…` refused. (b) Both names. (c) As is.
+- **Recommendation.** (a).
+- **Blocks.** `07-onze/53`'s examples.
+
+#### nat-d9 · LINQ's names in erika beside std's (98)
+- **Measured.** `98-packaging-tail/README.md:47-51`; `erika.bp`: `where`, `select`, `selectMany`, `orderByDescending`, `toList`.
+- **Options.** (a) std's names (`filter`, `map`), erika adding only what std lacks (laziness, `groupBy`). (b) LINQ's names — erika's identity is LINQ. (c) As is.
+- **Recommendation.** none from this review: erika's purpose decides (b) is a fair reading.
+- **Blocks.** 98 (erika).
 
 #### nat-e · Spring's annotation zoo
 - **Measured.** `#[service]`, `#[repository]`, `#[restController]`, `#[configuration]` + `#[bean]`, `#[managed]`, `#[provides]` stacked for one meaning (rakun 04, 09, 13, 19) · `findByNameAndStateAllIgnoringCase` parsed into SQL (08; R78-1) · `#[amqpListener]` / `#[kafkaListener]` / `#[redisListener]` with string destinations (15, 91) · `#[httpExchange]` wired through `#[configuration]` (13) · `MockMvc`, `@MockBean`, `UserDetailsService` (19, 79).

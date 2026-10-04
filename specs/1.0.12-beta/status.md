@@ -159,13 +159,13 @@ Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.
 last section.
 
 **First — the botopink shape** (raised 2026-10-04; answer `nat-0`, then the rest):
-- [ ] nat-0 rules 3–4 — no second model, JSON only for non-code (rule 1 is 281, rule 2 is 282) · lg2-g
+- [ ] nat-0 rule 4 — JSON only for non-code (rule 1 is 281, rule 2 is 282, rule 3 case by case: 283) · lg2-g
 - [ ] ctr-x — 53's examples (`registerSegmentConfig`) · 49 s5
 - [ ] ctr-y — 122 s1 (request hooks under `use`) · 26 s8's hook list
 - [ ] ctr-z — 126 s1–4 · 50 (`<Script>`) · 124
 - [ ] ctr-aa — 120 s2, s4 (fallback) · props-e
 - [ ] nat-c — untyped bags · bpp-g, 08-j, 117, 122, 123, 130 (meta), rakun 04/08/15, 34, 03r-b
-- [ ] nat-d — second models (`Schema<T>`, `ActionOutcome`, exceptions, `nav:` strings, LINQ) · 125, 127, rakun 04/09/93, 53, 98
+- [ ] nat-d1…d9 — case by case (283): `ActionOutcome` (127), store `try*` twins (rakun 09/93), `Schema<T>` (125), arity families (125), `Partial`/`Pick` (125, 134), `nav:` strings (26, 53), lifecycle (rakun 04), `use use…` (53), erika's LINQ names (98)
 - [ ] nat-e — Spring's annotations · 130 s5, rakun 04/08/13/15/19/79/91/93, 130-b, 130-c
 - [ ] nat-f — JSON for code (`bppKinds`, `onze.json`, `files`, `ONZE_PUBLIC_`) · 116 s2, 117 s1, 102, 124, 08-h, 98
 - [ ] nat-g — foreign syntax in annotations · 17

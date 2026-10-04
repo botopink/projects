@@ -1,7 +1,7 @@
 # Decisões pendentes — 1.0.12-beta (só o que está em aberto, por ordem de importância)
 
-Atualizado em 2026-10-04 (decisões 278–282). Só o que ainda espera resposta sua: o que já foi respondido está em
-`specs/1.0.12-beta/decisions-taken.md` (decisões 144–282; próximo número livre: **283**) e saiu daqui.
+Atualizado em 2026-10-04 (decisões 278–283). Só o que ainda espera resposta sua: o que já foi respondido está em
+`specs/1.0.12-beta/decisions-taken.md` (decisões 144–283; próximo número livre: **284**) e saiu daqui.
 Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 234–236 (injeção do rakun,
 `@TypeInfo.all` com lista, decorador de função), 237 (captura do template pelo texto), 238–243
 (`@External.Wasm`, `$stringify`, codepoints no wasm, células sem WASI, dependência direta, vírgula final),
@@ -73,7 +73,8 @@ já batem com decisões tomadas; depois a **`nat-c`…`nat-g`**, que aplicam a r
 
 > **Respondida em parte.** A regra 1 (nenhum identificador de código como string) virou a **decisão 281**
 > (com a `nat-a`); a regra 2 (nenhum papel pelo nome do export) virou a **decisão 282** (com a `nat-b`).
-> As regras 3 e 4 continuam abertas aqui.
+> A regra 3 não vira regra geral (**decisão 283**): cada caso é uma pergunta, `nat-d1`…`nat-d9`.
+> A regra 4 continua aberta aqui.
 
 **Contexto.** Na 278, `client:visible` (string do Astro) virou `#[clientVisible]`, a anotação que já
 existia. A varredura achou o mesmo erro em outros sete padrões (`nat-a`…`nat-g`). Algumas decisões e
@@ -247,40 +248,218 @@ val user = local(LocalKey<User>("user"));
 **Recomendação: (a).**
 **Bloqueia:** bpp-g; 08-j; 117; 122; 123; 130 (meta); rakun 04, 08, 15; `06-emilia/34` (05emilia-n); 03r-b.
 
-### nat-d · Um segundo modelo do que a linguagem já tem
+### nat-d · Um segundo modelo do que a linguagem já tem — caso a caso (decisão 283)
 
-**Contexto.** A spec criou modelos paralelos ao que a linguagem já oferece:
-- `Schema<T>` como objeto à la zod, com `union2…5` e `tuple2…5` (as famílias por aridade só existem porque
-  não se usou variádico, 267) e `pipe` (125; 257) — o record tipado já é o schema;
-- `Partial`/`Pick`/`Omit` do TypeScript ao lado de type alias (125, 134 passo 2);
-- `ActionOutcome {data, error}` ao lado de `@Result` (127);
-- `raiseProblem` e um gêmeo `try*` para cada método das stores; `throw SoapFault` dentro de `-> @Result` (rakun 09, 93);
-- `throw "nav:not-found"` reconhecido por prefixo de string (`isSignal`), ao lado de `noreturn` e do `NavOutcome`;
-- nomes do LINQ no erika (`where`, `select`, `toList`) ao lado do `map`/`filter` do std (98);
-- `#[postConstruct]`/`#[preDestroy]` ao lado de interface com `implement` (rakun 04);
-- `use useActionState`: um prefixo `use` debaixo de `use`.
+Você decidiu (283) que **não há regra geral**: cada caso é visto separadamente, com calma. Cada um tem
+as mesmas três saídas: **(a)** usar o recurso da linguagem; **(b)** os dois, o de fora como camada fina
+por cima do nativo; **(c)** como está. Até a resposta, a frente escreve o que tem hoje.
+
+### nat-d1 · `ActionOutcome {data, error}` ao lado do `@Result` (127)
+
+**Contexto.** As ações do Astro devolvem `{ data, error }`. A 127 copiou isso como um record próprio, mas
+o botopink já tem `@Result`, e o checker obriga a tratar os dois casos.
 
 **Hoje:**
 ```bp
-val Slug = schemas.text().min(2);
-val Pet = schemas.union3(Cat, Dog, Fish);
-fn find(id: string) -> ?Doc { … raiseProblem(…) }      // e findTry(id) -> @Result<…>
-throw "nav:not-found";
+pub type ActionOutcome<T>(data: ?T, error: ?ActionError)
+val r = await signup(input);
+if (r.error != null) { … } else { mostrar(r.data!!); }    // nada impede ler data com error preenchido
 ```
 
-- [ ] **(a)** O próprio recurso da linguagem.
+- [ ] **(a)** `@Result`.
   ```bp
-  #[schema] #[minLength(2)] type Slug = string;
-  type Pet = Cat | Dog | Fish;                          // T.parse(json) gerado pelo #[schema]
-  fn find(id: string) -> @Result<?Doc, StoreError> { … }
-  fn notFound() -> noreturn { … }                       // casado pelo tipo NavOutcome
-  type MyService(…) implement Lifecycle { fn start(self) { … } fn stop(self) { … } }
+  fn signup(…) -> @Task<@Result<Subscribed, ActionError>>
+  case (await signup(input)) { Ok(s) -> mostrar(s); Err(e) -> erro(e); }
   ```
-- [ ] **(b)** Os dois; o de fora como camada fina sobre o nativo.
+- [ ] **(b)** `ActionOutcome` fica como uma visão por cima do `@Result` (`outcome.toResult()`).
 - [ ] **(c)** Como está.
 
-**Recomendação: (a).** Reabre a forma da 257 (não o lugar), junto com a 07-j e a `ctr-u`.
-**Bloqueia:** 125; 127; rakun 04, 09, 93; `07-onze/53`; 98 (erika); lg2-h; lg2-l.
+**Recomendação: (a).**
+**Bloqueia:** 127 passos 1–4; os exemplos de ação da `07-onze/53`.
+
+### nat-d2 · Erro lançado nas stores, com uma API `try*` gêmea (rakun 09, 93)
+
+**Contexto.** No Java, o driver lança exceção. O rakun copiou: cada método das stores lança, e existe uma
+segunda versão `try*` que devolve `@Result`. São duas APIs para cada operação. Na SOAP, há `throw SoapFault`
+dentro de uma função `-> @Result`.
+
+**Hoje:**
+```bp
+fn get(k: string) -> ?string { … raiseProblem(…) }        // lança
+fn tryGet(k: string) -> @Result<?string, StoreError>       // a versão que não lança
+```
+
+- [ ] **(a)** Uma API só, com `@Result`.
+  ```bp
+  fn get(k: string) -> @Result<?string, StoreError>
+  ```
+- [ ] **(b)** A que lança fica como padrão, e a `try*` continua ao lado.
+- [ ] **(c)** Como está.
+
+**Recomendação: (a).**
+**Bloqueia:** rakun 09 (todas as stores), 93; lg2-h.
+
+### nat-d3 · Objetos `Schema<T>` ao lado do tipo (125; 257)
+
+**Contexto.** No zod, o schema é um valor montado com funções, porque o TypeScript não tem tipos em
+runtime. No botopink, o record tipado já descreve o formato, e o `#[schema]` pode gerar o `parse`. Hoje a
+125 tem os dois: o formato fica escrito duas vezes e pode divergir. A 257 decidiu que o `Schema<T>` mora
+na `validation`; aqui a pergunta é sobre a **forma**.
+
+**Hoje:**
+```bp
+pub type Signup(email: string, age: i32)
+val signupSchema = schemas.object([#("email", schemas.text().email()), #("age", schemas.int())]);
+```
+
+- [ ] **(a)** O tipo é o schema; o `Schema<T>` como valor sai.
+  ```bp
+  #[schema] pub type Signup(#[email] email: string, age: i32)
+  val r = Signup.parse(json);
+  ```
+- [ ] **(b)** O tipo primeiro; o `Schema<T>` como valor só para o que não é um tipo declarado (uma checagem
+  avulsa), e derivável de um `#[schema]` (`Signup.schema`).
+  ```bp
+  #[schema] pub type Signup(#[email] email: string, age: i32)
+  val slug = schemas.text().min(2);           // avulso, sem tipo próprio
+  ```
+- [ ] **(c)** Como está.
+
+**Recomendação: (b)** — o tipo é a forma principal, e o valor fica para o que não tem tipo. Lê junto com a
+07-j e a `ctr-u`.
+**Bloqueia:** 125 passos 3–10; 07-j; `ctr-u`.
+
+### nat-d4 · Uma função por aridade: `union2…5`, `tuple2…5` (125)
+
+**Contexto.** O zod em TypeScript precisa de uma função por quantidade de argumentos. O botopink tem tipo
+união (`A | B`), tupla (`#(A, B)`) e variádico (267).
+
+**Hoje:**
+```bp
+schemas.union2(a, b)   schemas.union3(a, b, c)   …   schemas.tuple5(…)
+```
+
+- [ ] **(a)** As formas de tipo e, se a forma valor ficar, uma função variádica só.
+  ```bp
+  type Pet = Cat | Dog | Fish;
+  schemas.union(..arms)
+  ```
+- [ ] **(b)** As famílias ficam.
+- [ ] **(c)** Como está.
+
+**Recomendação: (a).**
+**Bloqueia:** 125 passo 8.
+
+### nat-d5 · `Partial` / `Pick` / `Omit` do TypeScript ao lado de type alias (125, 134 passo 2)
+
+**Contexto.** Para derivar um tipo de outro, a 125 usa decorators (`#[partial(Recipe)]`) e a 134 tem
+builtins (`partial`, `pick`, `omit`, `mergeRecords`). O botopink já tem type alias (110).
+
+**Hoje:**
+```bp
+#[partial(Recipe)] pub type RecipePatch(…)     // repete os campos, e o decorator confere
+```
+
+- [ ] **(a)** Um alias sobre o builtin: um mecanismo só para tipo derivado.
+  ```bp
+  pub type RecipePatch = partial(Recipe);
+  ```
+- [ ] **(b)** O decorator num tipo escrito à mão, conferido contra o original.
+- [ ] **(c)** Como está.
+
+**Recomendação: (a).**
+**Bloqueia:** 125 passo 9; 134 passo 2.
+
+### nat-d6 · `throw "nav:not-found"` ao lado do `noreturn` (53)
+
+**Contexto.** O Next lança um erro especial para `notFound()` e `redirect()`, e o reconhece por um prefixo
+de texto. O botopink tem `noreturn` (uma chamada que não volta) e o `routing` já tem o tipo `NavOutcome`.
+
+**Hoje:**
+```bp
+throw "nav:not-found";
+if (isSignal(e)) …                    // compara o começo da string
+val _gone = redirect("/login");      // finge devolver string
+```
+
+- [ ] **(a)** `noreturn` e o tipo.
+  ```bp
+  fn notFound() -> noreturn { … }      // a fronteira casa pelo tipo NavOutcome
+  redirect("/login");                  // termina o caminho; nada depois executa
+  ```
+- [ ] **(b)** O sinal em string fica, dentro de um embrulho tipado.
+- [ ] **(c)** Como está.
+
+**Recomendação: (a).** Junto com a lg2-l e a lg2-h.
+**Bloqueia:** `05-jhonstart/26`, `07-onze/53`; lg2-l, lg2-h, 31-a.
+
+### nat-d7 · Anotações de ciclo de vida ao lado de interface (rakun 04)
+
+**Contexto.** O Spring marca os métodos de início e fim com `@PostConstruct` e `@PreDestroy`. O botopink
+tem interface com `implement`, que obriga a implementar os dois.
+
+**Hoje:**
+```bp
+type Pool(…) {
+    #[postConstruct] fn init(self) { … }
+    #[preDestroy] fn close(self) { … }       // se esquecer, nada avisa
+}
+```
+
+- [ ] **(a)** Interface.
+  ```bp
+  type Pool(…) implement Lifecycle {
+      fn start(self) { … }
+      fn stop(self) { … }
+  }
+  ```
+- [ ] **(b)** Os dois.
+- [ ] **(c)** Como está.
+
+**Recomendação: (a).**
+**Bloqueia:** rakun 04.
+
+### nat-d8 · Hook chamado `use…` debaixo de `use` (53)
+
+**Contexto.** O React marca hook pelo nome `useX`, porque não tem palavra-chave. O botopink tem `use`
+(128). O exemplo da 53 escreve os dois, e a jhonstart-forms já chama o hook de `actionState`.
+
+**Hoje:**
+```bp
+val s = use useActionState(createPost, initial);
+```
+
+- [ ] **(a)** Só `use`; um hook com nome começando por `use` é recusado.
+  ```bp
+  val s = use actionState(createPost, initial);
+  ```
+- [ ] **(b)** Os dois nomes valem.
+- [ ] **(c)** Como está.
+
+**Recomendação: (a).**
+**Bloqueia:** os exemplos da `07-onze/53`.
+
+### nat-d9 · Nomes do LINQ no erika ao lado dos do std (98)
+
+**Contexto.** O erika imita o LINQ do C#: `where`, `select`, `selectMany`, `orderByDescending`, `toList`.
+O std já tem `filter`, `map` e `unique` (217) para as mesmas operações. Por outro lado, a identidade do
+erika é justamente ser um LINQ.
+
+**Hoje:**
+```bp
+query.where({ c -> c.active }).select({ c -> c.name }).toList()
+```
+
+- [ ] **(a)** Os nomes do std; o erika só acrescenta o que o std não tem (laziness, `groupBy`).
+  ```bp
+  query.filter({ c -> c.active }).map({ c -> c.name })
+  ```
+- [ ] **(b)** Os nomes do LINQ: é o propósito do erika.
+- [ ] **(c)** Como está.
+
+**Recomendação:** nenhuma desta revisão — depende do que você quer que o erika seja; a (b) é uma leitura
+justa.
+**Bloqueia:** 98 (erika).
 
 ### nat-e · O zoológico de anotações do Spring
 
