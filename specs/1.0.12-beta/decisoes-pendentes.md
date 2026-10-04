@@ -72,7 +72,8 @@ vai no decorator), 283 (segundo modelo: caso a caso, `nat-d1`…`nat-d9`) e 284 
 
 ### nat-c · Sacos sem tipo onde um record tipado resolveria — caso a caso
 
-Dividida a seu pedido em `nat-c1`…`nat-c7`. Os eventos do rakun por nome (`Event(name: string, payload)`)
+Dividida a seu pedido em `nat-c1`…`nat-c7`; a `nat-c1` (parâmetros da rota) e a `nat-c3` (`StaticPath.data`)
+viraram a **293** — `use params<P>()` e `use pageData<D>()`. Os eventos do rakun por nome (`Event(name: string, payload)`)
 já viraram records pela 281 (`#[on] fn f(e: OrderPlaced)`, `04-rakun/04` passo 6), então saíram daqui.
 Em cada caso: **(a)** o record tipado; **(b)** o saco fica, com acessores tipados ao lado; **(c)** como está.
 

@@ -25,7 +25,7 @@ React, Spring, zod, TypeScript, LINQ and Tailwind in their foreign shape where b
 the feature. `nat-0`'s four rules are decisions 281–284; what remains applies them case by case; the contradictions it found are answered (287, 290, 291, 292). The Portuguese page lists every site with examples.
 
 #### nat-c · Untyped bags where a record type would flow — case by case
-Split at the maintainer's request into `nat-c1`…`nat-c7`; rakun's string-named events are already typed records by 281 (`#[on] fn f(e: OrderPlaced)`, `04-rakun/04` step 6). Each: (a) the typed record, (b) the bag kept with typed accessors beside it, (c) as is.
+Split at the maintainer's request into `nat-c1`…`nat-c7` (`nat-c1`, `nat-c3` → 293); rakun's string-named events are already typed records by 281 (`#[on] fn f(e: OrderPlaced)`, `04-rakun/04` step 6). Each: (a) the typed record, (b) the bag kept with typed accessors beside it, (c) as is.
 
 #### nat-c2 · Cookies as string pairs, absent as `""` (26, 53)
 - **Measured.** `pairValue(jar, "session")` answers `""` for a missing cookie (`53x/app/dashboard/layout.bpp:25-27`); every value a `string`.
