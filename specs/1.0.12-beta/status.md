@@ -44,6 +44,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 01-checker s18 — numeric literal suffixes (247): built on feat (`49455602`); left: the two `language-gaps.md` literal halves, a cold gate · ctr-j (the `l` literal rule)
 - [ ] 01-checker s21 — `comptime` evaluated at compile time everywhere (266; ck4-a (c))
 - [ ] 01-checker s23 — `Decl.hooks`: every reachable node, annotations with their `Decorator` (277) · then 26 s8, 49 s5, 22 s4
+- [ ] 01-checker s24 — typed comptime decorator arguments, `@Decl<T>`, `Field<T>` and `.name` (280; cases in `01-checker/examples/decorator-arguments-280.md`) · then 125 s7, the `nat-*` rewrites
 - [ ] 01-checker s22 — the `.bpp` prelude scope (270) · 116 hands the prelude list
 - [x] 01-checker s19–s20 — type application and `comptime <expr>` (255): on feat (`49455602`)
 - [ ] 01-checker rows — the `@block` tail refusal, the `$stringify` parser refusal (239), `primitive-type-name-taken`, the comptime body's file, T17, a package's module namespace, two aliased same-named types (imp-a), `@External.Wasm` read on every target, the template memo key, row 33 · the first two unblock 04 s1–2 and 02 s10
@@ -156,7 +157,7 @@ Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.
 last section.
 
 **First — the botopink shape** (raised 2026-10-04; answer `nat-0`, then the rest):
-- [ ] nat-0 — the rule (no identifier in a string, no role by export name, no second model, JSON only for non-code) · lg2-f, lg2-g, lg2-i
+- [ ] nat-0 — the rule (no identifier in a string, no role by export name, no second model, JSON only for non-code) · lg2-g (its means: 280)
 - [ ] ctr-x — 53's examples (`registerSegmentConfig`) · 49 s5
 - [ ] ctr-y — 122 s1 (request hooks under `use`) · 26 s8's hook list
 - [ ] ctr-z — 126 s1–4 · 50 (`<Script>`) · 124

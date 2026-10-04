@@ -3,7 +3,7 @@
 **Priority:** high for the step 0–2 residue (`08-bpp/121` content collections and `08-bpp/127`
 actions take the `Schema<T>` of steps 0–2); medium for the rest · **State:** partial: steps 0–2 on
 feat with residue; steps 3–10 open
-**Depends on:** `07-j` (size). Written against decisions 144 (undeclared keys), 145 (emitted names),
+**Depends on:** `01-compiler/01-checker` step 24 (decision 280, step 7) · `07-j` (size). Written against decisions 144 (undeclared keys), 145 (emitted names),
 183 (`07-m`: coercion, step 6), 257 (`07-n`: `Schema<T>` lives in `validation`)
 **Owns:** `libs/validation/src/**` · `libs/validation/test/**` · `libs/validation/AGENTS.md` ·
 `libs/validation/botopink.json` — except `src/messages.bp`'s `interpolate`, moved to `i18n` by
@@ -207,12 +207,15 @@ and `null` are absent; else `invalidType`.
 
 ### Step 7 — Refinements and messages
 
-`#[check("fn")]`, `#[check("fn", "fieldA,fieldB")]` on the type, `#[stopOnFirst]`,
+`#[check(rule, at: .field, message: "…", code: .Custom)]` on the type and `#[check(message: "…")]` on
+the rule function itself (decision 280 — `01-checker/examples/decorator-arguments-280.md` example 1;
+the string forms `#[check("fn", "fieldA,fieldB")]` go), `#[stopOnFirst]`,
 `#[message("…")]`, `#[typeMessage("…")]`, `Schema.refine`, `Schema.parseWith(input, source)`.
 
 - [ ] `examples/refine-and-messages-example.bp` passes on both targets
-- [ ] a `#[check]` naming a missing function, or one with another signature, fails at the
-      annotation's module naming the function
+- [ ] a `#[check]` naming a missing function, a missing field (`.confrim`) or a rule of another
+      signature fails at that argument (280); a `#[check]` on a rule function outside the module
+      declaring the validated type is refused
 - [ ] `surface.md` § 5's resolution order is one test with six rows, each overriding the next
 
 ### Step 8 — Combinators and codecs

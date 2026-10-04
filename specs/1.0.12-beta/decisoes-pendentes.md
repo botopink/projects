@@ -1,7 +1,7 @@
 # Decisões pendentes — 1.0.12-beta (só o que está em aberto, por ordem de importância)
 
-Atualizado em 2026-10-04. Só o que ainda espera resposta sua: o que já foi respondido está em
-`specs/1.0.12-beta/decisions-taken.md` (decisões 144–279; próximo número livre: **280**) e saiu daqui.
+Atualizado em 2026-10-04 (decisões 278–280). Só o que ainda espera resposta sua: o que já foi respondido está em
+`specs/1.0.12-beta/decisions-taken.md` (decisões 144–280; próximo número livre: **281**) e saiu daqui.
 Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 234–236 (injeção do rakun,
 `@TypeInfo.all` com lista, decorador de função), 237 (captura do template pelo texto), 238–243
 (`@External.Wasm`, `$stringify`, codepoints no wasm, células sem WASI, dependência direta, vírgula final),
@@ -97,10 +97,10 @@ pub fn staticPaths() -> …                          // papel da função pelo n
 - [ ] **(b)** Caso a caso, sem regra geral.
 - [ ] **(c)** Manter as formas importadas (facilita portar código e documentação de fora).
 
-**Recomendação: (a).** Consequências: a lg2-f e a lg2-i passam para a opção (2) (argumento de decorador
-tipado, que a `nat-a` e a `nat-b` precisam); a lg2-g perde o motivo; a `nat-a` reabre a chave em string
+**Recomendação: (a).** Os meios já estão decididos na **280** (argumento de decorator tipado e `comptime`,
+`@Decl<T>`, `Field<T>` e `.campo`; a lg2-f e a lg2-i foram respondidas por ela); a lg2-g perde o motivo; a `nat-a` reabre a chave em string
 da 234/256, a `nat-f` o `bppKinds` da 221/270 e a `nat-d` a forma do `Schema<T>` da 257.
-**Bloqueia:** `nat-a`…`nat-g`; lg2-f, lg2-g, lg2-i.
+**Bloqueia:** `nat-a`…`nat-g`; lg2-g.
 
 ### ctr-x · `registerSegmentConfig(dynamic: ForceStatic, …)` × decisões 202, 186 e 277
 
@@ -238,7 +238,8 @@ val cache = ctx.resolve("OrderCache");
 - [ ] **(b)** As strings ficam, mas cada uma é conferida em comptime contra o escopo.
 - [ ] **(c)** Como está.
 
-**Recomendação: (a).** Referência a campo (`.password`) precisa de uma linha no `language-gaps.md`.
+**Recomendação: (a)**, com os meios da 280 (os oito exemplos aprovados estão em
+`01-compiler/01-checker/examples/decorator-arguments-280.md`).
 **Bloqueia:** 120 (encoder, `#[deferred]`); 125 passos 3–10; 127; `05-jhonstart/26` (eventos);
 `07-onze/53`; rakun 04, 06, 08, 72, 78; 130-b.
 
@@ -272,7 +273,7 @@ pub fn generateMetadata(params: Array<#(string, string)>) -> Metadata { … }
   ```
 - [ ] **(c)** Como está.
 
-**Recomendação: (a)** — um lugar só, conferido onde é escrito. Precisa da lg2-i (2).
+**Recomendação: (a)** — um lugar só, conferido onde é escrito (argumento função: 280).
 **Bloqueia:** 117 passos 1–3; 121; `07-onze/51` e `53`; 122.
 
 ### nat-c · Sacos sem tipo onde um record tipado resolveria
@@ -2558,34 +2559,6 @@ fn get(comptime decl: @Decl, path: string) { decl.owner; decl.params }     // ba
 parâmetros. **Bloqueia:** a linha (o marcador em `typed-action-example.bp` do `08-bpp/127`); rakun
 06–10, 29.
 
-### lg2-f · Argumento de decorator que nomeia um tipo
-
-**Contexto.** Argumentos de decorator são valores comuns e não existe "tipo de tipo": passar
-`MailSender` onde o parâmetro é `string` dá "argument 1 must be string". O rakun (`conditions.bp`)
-nomeia o tipo por string, como o `excludeName` do Spring. A diferença prática: com string, um erro
-de digitação no nome não é pego na anotação.
-
-**Hoje:**
-```bp
-fn conditionalOnMissingBean(comptime decl: @Decl, t: string) { … }
-#[conditionalOnMissingBean(MailSender)] fn smtpSender() -> MailSender { … }
-// error: argument 1 must be string
-```
-
-- [ ] **(1)** Pelo nome em string.
-  ```bp
-  #[conditionalOnMissingBean("MailSender")] fn smtpSender() -> MailSender { … }
-  ```
-- [ ] **(2)** Parâmetro do tipo `type`, checado na anotação.
-  ```bp
-  fn conditionalOnMissingBean(comptime decl: @Decl, t: type) { … }
-  #[conditionalOnMissingBean(MailSender)]  fn smtpSender() -> MailSender { … }
-  #[conditionalOnMissingBean(MailSendr)]   fn other() -> MailSender { … }   // error: unknown type `MailSendr`
-  ```
-
-**Recomendação: (1).** Nenhum tipo-de-tipo entra na linguagem por causa de uma família de anotações.
-**Bloqueia:** a linha; rakun 72, 78.
-
 ### lg2-g · `@typeName<T>()`
 
 **Contexto.** Não existe intrínseco que transforme um tipo no seu nome: `@typeName<User>()` não
@@ -2641,32 +2614,6 @@ val u = try load(p) catch { e: NotFound -> defaultUser() };   // não parseia
 
 **Recomendação: (1).** É a decisão 121 como escrita: o erro é o `E` do `@Result`. **Bloqueia:** a
 linha; rakun 07, 31, 63.
-
-### lg2-i · Argumento de decorator é lexema cru
-
-**Contexto.** Só argumentos `string`, numéricos e `bool` de decorator são checados e entregues como
-valor. Um literal de array como argumento (ou como default do parâmetro) chega ao corpo como o texto
-do fonte: `[1, 2]` vira a string `"[1, 2]"`, de tamanho 6. Hoje as bibliotecas usam strings separadas
-por vírgula (`#[crossOrigin("origin", "GET,POST")]`).
-
-**Hoje:**
-```bp
-fn grid(comptime decl: @Decl, sizes: Array<i32> = [1, 2]) { … }   // sizes.length == 6 (é o texto "[1, 2]")
-```
-
-- [ ] **(1)** Recusar na declaração todo parâmetro de decorator que não seja `string`, número ou `bool`.
-  ```bp
-  fn grid(comptime decl: @Decl, sizes: Array<i32> = [1, 2]) { … }
-  // error: a decorator parameter must be string, a number or bool — `sizes` is Array<i32>
-  fn grid(comptime decl: @Decl, sizes: string = "1,2") { … }       // a forma aceita
-  ```
-- [ ] **(2)** Argumentos tipados, cada um checado e entregue como valor.
-  ```bp
-  #[grid([1, 2])] type Layout(…)          // dentro: sizes.length == 2
-  ```
-
-**Recomendação: (1).** O caminho do lexema continua exato para os três tipos que trata, e nenhum
-outro finge ser tipado. **Bloqueia:** a linha; rakun 07.
 
 ### lg2-j · Estado comptime entre invocações de decorator
 

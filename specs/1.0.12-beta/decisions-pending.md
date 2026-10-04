@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**69 questions and 22 contradictions are open, and 97 implementation choices await confirmation.**
+**67 questions and 22 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278.
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 ## Open questions
@@ -28,19 +28,19 @@ the sites that already contradict a decision. The Portuguese page lists every si
 #### nat-0 · The rule: botopink's own feature before the imported shape
 - **Measured.** 278 replaced Astro's `prefix:name` with the annotation botopink already had. The sweep found ~40 more sites in seven patterns (`nat-a`…`nat-g`); several decisions and recommendations chose the foreign shape: 234 and 256 (string registry keys), lg2-f (1), lg2-g (1), lg2-i (1), 221 and 270 (`bppKinds`), 257 (`Schema<T>`).
 - **Options.** (a) Four rules, any exception stated in a decision: no code identifier (function, type, field, event, hook, action) passed as a string; no role declared by an export's name — it goes in the function's decorator; no second model of what the language has (`@Result`, records, variadics, interfaces, `use`); JSON only for what is not code. (b) Case by case, no rule. (c) Keep the imported shapes (porting ease).
-- **Recommendation.** (a). Consequences: lg2-f → (2) and lg2-i → (2) (typed decorator arguments, which `nat-a` and `nat-b` need); lg2-g moot; 234/256's string keys, 221/270's `bppKinds` and 257's `Schema<T>` reopened by `nat-a`, `nat-f`, `nat-d`.
-- **Blocks.** `nat-a`…`nat-g`; lg2-f, lg2-g, lg2-i.
+- **Recommendation.** (a). Its means are taken: decision 280 (typed comptime decorator arguments, `@Decl<T>`, `Field<T>`; lg2-f and lg2-i answered); lg2-g moot; 234/256's string keys, 221/270's `bppKinds` and 257's `Schema<T>` reopened by `nat-a`, `nat-f`, `nat-d`.
+- **Blocks.** `nat-a`…`nat-g`; lg2-g.
 
 #### nat-a · A function, type, field or event referred to by a string
 - **Measured.** `data-jh-on-click="LikeButton:like"` (120 example, `07-onze/53`'s client island, `contracts.md:75`; nothing reads it) · `use useActionState("createPost", …)`, `formAction("a_9f31…", …, "__bp_action")` (53) · `#[action("Signup")]`, `actionRef("newsletter", …)` (127) · `#[check("passwordsMatch", "password,confirm")]`, `#[extending("Dog")]`, `#[partial("RecipePatch")]`, `#[wireNames("Salmon=salmon,…")]` (125, `language-gaps.md`) · `Island(component: "LikeButton", props: [#("likes", "3")])`, the `<Component>Props` encoder found by name, `#[deferred]` registering `"Avatar"` at module load (120, 53) · `ctx.resolve("OrderCache")`, `resolveNamed("Clock", "fixed")`, `member: "make"`, `#[entityRepository("City")]`, `#[eventListener("OrderPlaced")]` (rakun 04, 08; 234, 256).
 - **Options.** (a) The reference is the value: a function, a `comptime t: type`, a field of the type; the tables (islands, actions, beans, listeners) built at comptime by `@TypeInfo.all(with: …)`; a qualifier is a distinct type. (b) Strings stay, each checked at comptime against the scope. (c) As is.
-- **Recommendation.** (a). A field reference (`.password`) needs a `language-gaps.md` row.
+- **Recommendation.** (a), written with decision 280's means (typed comptime arguments, `@Decl<T>`, `Field<T>` and `.name`; its use cases are the sites above).
 - **Blocks.** 120 (props encoder, `#[deferred]`), 125 steps 3–10, 127, `05-jhonstart/26` (event wiring), `07-onze/53`, rakun 04, 06, 08, 72, 78; 130-b.
 
 #### nat-b · A function's role declared by its export name
 - **Measured.** `staticPaths`, `partial` (117) · `generateMetadata`, `blogStaticParams` + `registerStaticParams("blog/[slug]", …)`, `Loading` / `NotFound` / `ErrorPage` (53) · OG image `pub val size`, `pub val contentType = "image/svg+xml"` (51) · `collections()` found in `src/content.bp` (121) · `registerSegmentConfig(…)` (`ctr-x`).
 - **Options.** (a) The page's decorator carries it: `#[page("blog/[slug]", paths: allSlugs, head: postHead, revalidate: hours(1))]`; other kinds likewise (`#[ogImage(size: …)]`, `#[collection(…)] type BlogPost`). (b) A decorator per role on the providing function (`#[paths] fn allSlugs()`, `#[head] fn postHead()`), joined by module. (c) As is.
-- **Recommendation.** (a) — one place, checked where written; needs lg2-i (2).
+- **Recommendation.** (a) — one place, checked where written (function-valued arguments: 280).
 - **Blocks.** 117 steps 1–3, 121, `07-onze/51`, `53`, 122.
 
 #### nat-c · Untyped bags where a record type would flow
@@ -109,12 +109,6 @@ owning front lists the row under *Depends on*.
 - **Recommendation.** (1).
 - **Blocks.** The row (marker in `08-bpp/127`'s `typed-action-example.bp`); rakun 06–10, 29.
 
-#### lg2-f · A decorator argument that names a type
-- **Measured.** `#[onMissing(MailSender)]` against `fn onMissing(comptime decl: @Decl, t: string)` is "argument 1 must be string": no type value.
-- **Options.** (1) A type named by its string (Spring's `excludeName`). (2) A `type`-typed decorator parameter, checked to resolve at the annotation.
-- **Recommendation.** (1).
-- **Blocks.** The row; rakun 72, 78.
-
 #### lg2-g · `@typeName<T>()`
 - **Measured.** `@typeName<User>()` does not parse; explicit type arguments parse at every call (1.0.10's 8 §1.3, 255) — only the intrinsic is missing.
 - **Options.** (1) None: a registry key travels as a string beside `T` (254's `rkResolve<T>(name)`). (2) A comptime `@typeName<T>()` answering the declared name.
@@ -126,12 +120,6 @@ owning front lists the row under *Depends on*.
 - **Options.** (1) An error is a `@Result`'s `E` (1.0.10's 121): a typed error is an enum matched with `case`. (2) A `catch` arm per type. (3) Typed host exceptions.
 - **Recommendation.** (1) — the row becomes documentation of 121.
 - **Blocks.** The row; rakun 07, 31, 63.
-
-#### lg2-i · A decorator argument is a raw lexeme
-- **Measured.** An array literal as decorator argument or parameter default reaches the body as source text (`sizes: Array<i32> = [1, 2]` gives `sizes.length == 6`); only `string`, numeric, `bool` arguments checked.
-- **Options.** (1) Refuse, at the declaration, a decorator parameter whose type is not `string`, a number or `bool`. (2) Typed decorator arguments, each checked and handed over as its value.
-- **Recommendation.** (1).
-- **Blocks.** The row; rakun 07.
 
 #### lg2-j · Comptime state across decorator invocations
 - **Measured.** A module-level `var` written by a decorator body is refused at the annotation; each invocation is its own module call.

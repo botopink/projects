@@ -214,7 +214,7 @@ Each format: one `constraints.bp` predicate, one marker, one combinator check, o
 | `z.array(T)` | field `Array<T>` / `T[]` | have | each item at path `field[i]` |
 | `.nonempty()` | `#[notEmpty]` | have | `vNotEmptyList` |
 | `.min(n)` · `.max(n)` · `.length(n)` | `#[minLength(n)]` · `#[maxLength(n)]` · `#[length(n)]` on an array field | add · 3 | `#[sizeBetween]` stays |
-| checks on the items (`z.array(z.email())`) | `#[with("emails")]` naming `fn emails() -> Schema<Array<string>>` | add · 8 | a marker is a raw lexeme, cannot nest (lg2-i) |
+| checks on the items (`z.array(z.email())`) | `#[with("emails")]` naming `fn emails() -> Schema<Array<string>>` | add · 8 | a marker is a raw lexeme, cannot nest (lg2-i) — 280 makes it `#[with(emails)]`, a function value |
 | `.unwrap()` | — | n/a | |
 | `z.tuple([A, B, C])` | field `#(A, B, C)` | add · 4 | JSON array of exactly that length |
 | `z.tuple([A], rest)` | `schemas.tupleRest(…)` | add · 4 | combinator; answers `#(A, Array<R>)` |

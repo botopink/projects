@@ -2,9 +2,9 @@
 
 **Priority:** high · **State:** partial: steps 1–9, 11, 12, 14–17, 19, 20 on feat; step 18 built on
 feat (botopink-lang `49455602` merges `19d59508`, `6185db3c`) with one box open; step 6 box 3, steps
-10, 13, 21, 22 and ten rows open
+10, 13, 21–24 and ten rows open
 **Depends on:** `04-js` step 6 (step 6 box 3) · `16-formatter` step 8 (step 10) · `05-wasm` nested
-constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated rows lg2-a, lg2-f, lg2-q, lg2-e, lg2-m, lg2-r, lg2-t — each a step here only once
+constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated rows lg2-a, lg2-q, lg2-e, lg2-m, lg2-r, lg2-t — each a step here only once
 answered.
 **Owns:** `modules/compiler-core/src/comptime/{infer,types,unify,env,transform,eval,error,diagnostics}.zig`
 · `src/parser/**`, `src/parser.zig`, `src/print.zig`, `src/lexer.zig`, `src/lexer/**` · `src/ast.zig`
@@ -168,6 +168,30 @@ or library.
 - [ ] `docs.md` § Decorators documents `decl.hooks`, `HookNode`, `Decorator.is`; `comptime/AGENTS.md`
       states the computation; `language-gaps.md`'s row "A function's `@Decl` does not say which hooks
       it activates" closes
+
+### Step 24 — typed comptime decorator arguments, `@Decl<T>`, `Field<T>` (decision 280)
+
+Today a decorator argument is a raw lexeme checked only as `string`, number or `bool` (lg2-i), a
+type cannot be passed (lg2-f), and `Decl` (`builtins.d.bp`) is untyped. The cases are
+[`examples/decorator-arguments-280.md`](./examples/decorator-arguments-280.md) — each example a
+`run/` cell, its "não compila" lines `reject/` cells.
+
+- [ ] a decorator parameter without `comptime` refused at the parameter (`decorator-param-not-comptime`);
+      the decorators of std and of the seven repositories migrated in the same landing (`botopink
+      check` of every package identical but for the added keyword)
+- [ ] arguments of any type checked at the argument and handed over as values: a function, a
+      `type`, an enum variant, a record, an array (`[1, 2]` has length 2); a value not known at
+      comptime (`env("X")`) refused at the argument (`decorator-arg-not-comptime`)
+- [ ] `@Decl<T>` in `builtins.d.bp`; `T` bound from the annotated declaration (type, field, function)
+      when the signature uses it, through a pattern too (`@Decl<fn(e: E) -> unknown>`); `@Decl` =
+      `@Decl<unknown>`; a declaration not matching the pattern refused at the annotation
+- [ ] `Field<T>` in `builtins.d.bp` (`name`, the field's type); `.name` resolved against the
+      expected `T`, a missing field refused at it; variadic `..fields: Field<T>[]` (267)
+- [ ] `.Name` case-exact for fields and variants (`.custom` against `Custom` is the missing-name error)
+- [ ] the eight examples green on every target where they run; each "não compila" line a `reject/`
+      cell with its caret
+- [ ] `docs.md` § Decorators documents the four rules; `comptime/AGENTS.md` states how a comptime
+      argument reaches the decorator body; `language-gaps.md`'s lg2-f and lg2-i rows close
 
 ### Rows other fronts found
 
