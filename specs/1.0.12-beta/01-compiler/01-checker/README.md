@@ -2,7 +2,7 @@
 
 **Priority:** high · **State:** partial: steps 1–9, 11, 12, 14–17, 19, 20 on feat; step 18 built on
 feat (botopink-lang `49455602` merges `19d59508`, `6185db3c`) with one box open; step 6 box 3, steps
-10, 13, 21–27 and ten rows open
+10, 13, 21–28 and ten rows open
 **Depends on:** `04-js` step 6 (step 6 box 3) · `16-formatter` step 8 (step 10) · `05-wasm` nested
 constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated rows lg2-a, lg2-q, lg2-e, lg2-m, lg2-r, lg2-t — each a step here only once
 answered.
@@ -237,6 +237,23 @@ an explicit `<T>`); a type argument binds `T` to that type; `source is type` ans
       naming the labelled form (one release, then removed)
 - [ ] std's 88 bindings migrated (79 `fn:`, 6 `op:`, 3 `wasi:`), `scripts/` grep cell: no `"fn:` /
       `"op:` / `"wasi:` left in `libs/**`; `docs.md` § External rewritten
+
+### Step 28 — a derived type: a compile-time function answering a new type (decision 307)
+
+`pub val RecipeTitle = pick(Recipe, .title);` — today `tryResolveTypeManipulationCall` (`infer.zig`)
+resolves `partial`, `pick`, `omit`, `mergeRecords` to an anonymous record no decorator can annotate.
+
+- [ ] the five (`partial`, `required`, `pick`, `omit`, `mergeRecords`) are compile-time functions: every
+      parameter `comptime`, fields as `Field<T>` (`.title`); a string field (`"title"`) is a located
+      error naming `.title`; an unknown field the ordinary `Field<T>` error at the argument (280)
+- [ ] the answer is a new nominal record named after its `val`: `RecipeTitle` in diagnostics and hover,
+      usable in every type position, constructed `RecipeTitle(title: "…")`, matched, exported and
+      imported (`import {recipes.RecipeTitle};`); two `val`s over the same call are two types
+- [ ] a decorator on that `val` sees a type declaration (`decl.kind`, `decl.fields`):
+      `#[validated] pub val RecipePatch = partial(Recipe);` emits as on a written record; each field
+      keeps the source field's annotations (`partial` makes it `?T`)
+- [ ] the call is refused outside a module-level `val` (a local, a parameter default) — located
+- [ ] `run/derived_type_functions` on the four targets; `language-gaps.md`'s derived-record row closed
 
 ### Rows other fronts found
 

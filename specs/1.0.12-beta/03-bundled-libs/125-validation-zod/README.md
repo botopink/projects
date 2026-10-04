@@ -190,11 +190,15 @@ name `#[schema]` records (`#[tag("status")]`).
 ### Step 5 — Object policy and derived types
 
 Unknown keys (`#[stripUnknown]`, `#[rest]`), `#[present]`, `#[orElse]`, `#[orElseOf]`,
-`#[fallback]`, `#[fallbackOf]`; type-emitting `#[pick]`, `#[omit]`, `#[partial]`, `#[required]`;
-check `#[extending]` (`extends` is a keyword — `lexer.zig:754`).
+`#[fallback]`, `#[fallbackOf]`. Derived types are the language's (decision 307):
+`#[validated] pub val RecipePatch = partial(Recipe);`, `pick(Recipe, .title)`, `omit`, `required`,
+`mergeRecords(Dog, Breed)` — the markers `#[pick]`, `#[omit]`, `#[partial]`, `#[required]`,
+`#[extending]` go.
 
 - [ ] `examples/object-policy-example.bp` and `derived-types-example.bp` pass on both targets
-- [ ] `#[partial("RecipePatch")]` emits a type a second module imports and constructs
+- [ ] `#[validated] pub val RecipePatch = partial(Recipe);` decodes with every field optional and keeps
+      `Recipe`'s markers; a second module imports and constructs it (after `01-checker` step 28)
+- [ ] `derived-types-example.bp` rewritten to the five functions; no `#[extending]` repeating fields
 - [ ] `#[orElse]` with a literal not decoding as the field's type is a compile error
 
 ### Step 6 — Coercion, transforms, and the form binder
@@ -261,7 +265,7 @@ recipes.
 
 Step 7's `#[check]` is the first (280 example 1); the rest of the string-named arguments:
 
-- [ ] `#[extending(Dog)]`, `#[partial(Recipe)]` take the type
+- [ ] ~~`#[extending(Dog)]`, `#[partial(Recipe)]` take the type~~ — the markers go (307)
 - [ ] ~~`#[with(emails)]` takes the function value~~ — `#[with]` goes (306, step 12)
 - [ ] `#[orElse(.Tuna)]` takes a value of the field's type (`T`, 280 (2))
 - [ ] `#[wireNames("Salmon=salmon,…")]` → `#[wireName("salmon")]` on each variant: the variant is the

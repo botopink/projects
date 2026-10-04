@@ -36,6 +36,9 @@ differences — `@ExprCustom<T>` declared as `CustomExpr<T>`, mirror's `Annotati
 `DeclAnnotation`. The check covers calls; types not walked yet.
 
 - [ ] every builtin above declared; the drift test walks the types and their methods too
+- [ ] `partial`, `required`, `pick`, `omit`, `mergeRecords` declared as compile-time functions answering a
+      type (decision 307 — `fn pick<T>(comptime source: type T, comptime ..fields: Field<T>[]) -> type`,
+      the spelling of a `type` answer fixed here with `01-checker` step 28); `required` is new
 - [ ] `docs.md` § Builtins generated from or checked against the declarations
 
 ### Step 4 — a variadic parameter, and the three print builtins declared with it (decision 267)
