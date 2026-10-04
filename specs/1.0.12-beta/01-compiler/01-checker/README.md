@@ -240,17 +240,20 @@ an explicit `<T>`); a type argument binds `T` to that type; `source is type` ans
 
 ### Step 28 — a derived type: a compile-time function answering a new type (decision 307)
 
-`pub val RecipeTitle = pick(Recipe, .title);` — today `tryResolveTypeManipulationCall` (`infer.zig`)
-resolves `partial`, `pick`, `omit`, `mergeRecords` to an anonymous record no decorator can annotate.
+`pub val RecipeTitle = Type.pick(Recipe, .title);` — today `tryResolveTypeManipulationCall` (`infer.zig`)
+resolves the bare names `partial`, `pick`, `omit`, `mergeRecords` to an anonymous record no decorator can
+annotate. After, the five are static methods of std's `Type` (`libs/std/src/types.bp`, declared by 134
+step 2) and the resolver keys on that declaration.
 
-- [ ] the five (`partial`, `required`, `pick`, `omit`, `mergeRecords`) are compile-time functions: every
-      parameter `comptime`, fields as `Field<T>` (`.title`); a string field (`"title"`) is a located
-      error naming `.title`; an unknown field the ordinary `Field<T>` error at the argument (280)
+- [ ] `Type.partial`, `Type.required`, `Type.pick`, `Type.omit`, `Type.merge` are compile-time functions:
+      every parameter `comptime`, fields as `Field<T>` (`.title`); a string field (`"title"`) is a located
+      error naming `.title`; an unknown field the ordinary `Field<T>` error at the argument (280); the bare
+      `partial(…)` / `mergeRecords(…)` are unbound names
 - [ ] the answer is a new nominal record named after its `val`: `RecipeTitle` in diagnostics and hover,
       usable in every type position, constructed `RecipeTitle(title: "…")`, matched, exported and
       imported (`import {recipes.RecipeTitle};`); two `val`s over the same call are two types
 - [ ] a decorator on that `val` sees a type declaration (`decl.kind`, `decl.fields`):
-      `#[validated] pub val RecipePatch = partial(Recipe);` emits as on a written record; each field
+      `#[validated] pub val RecipePatch = Type.partial(Recipe);` emits as on a written record; each field
       keeps the source field's annotations (`partial` makes it `?T`)
 - [ ] the call is refused outside a module-level `val` (a local, a parameter default) — located
 - [ ] `run/derived_type_functions` on the four targets; `language-gaps.md`'s derived-record row closed

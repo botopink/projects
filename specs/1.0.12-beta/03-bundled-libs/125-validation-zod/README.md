@@ -191,14 +191,14 @@ name `#[schema]` records (`#[tag("status")]`).
 
 Unknown keys (`#[stripUnknown]`, `#[rest]`), `#[present]`, `#[orElse]`, `#[orElseOf]`,
 `#[fallback]`, `#[fallbackOf]`. Derived types are the language's (decision 307):
-`#[validated] pub val RecipePatch = partial(Recipe);`, `pick(Recipe, .title)`, `omit`, `required`,
-`mergeRecords(Dog, Breed)` — the markers `#[pick]`, `#[omit]`, `#[partial]`, `#[required]`,
+`#[validated] pub val RecipePatch = Type.partial(Recipe);`, `Type.pick(Recipe, .title)`, `Type.omit`,
+`Type.required`, `Type.merge(Dog, Breed)` (std's `Type`) — the markers `#[pick]`, `#[omit]`, `#[partial]`, `#[required]`,
 `#[extending]` go.
 
 - [ ] `examples/object-policy-example.bp` and `derived-types-example.bp` pass on both targets
-- [ ] `#[validated] pub val RecipePatch = partial(Recipe);` decodes with every field optional and keeps
+- [ ] `#[validated] pub val RecipePatch = Type.partial(Recipe);` decodes with every field optional and keeps
       `Recipe`'s markers; a second module imports and constructs it (after `01-checker` step 28)
-- [ ] `derived-types-example.bp` rewritten to the five functions; no `#[extending]` repeating fields
+- [ ] `derived-types-example.bp` rewritten to `Type`'s five methods; no `#[extending]` repeating fields
 - [ ] `#[orElse]` with a literal not decoding as the field's type is a compile error
 
 ### Step 6 — Coercion, transforms, and the form binder

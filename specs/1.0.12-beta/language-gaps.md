@@ -26,7 +26,7 @@ exempts a file.
 |---|---|---|
 | `repository/rakun/modules/rakun-cache/src/cache.bp` | 1 | **No module-level annotation** |
 | `repository/rakun/modules/rakun-cache/test/granularity_test.bp` | 1 | **No module-level annotation** |
-| `specs/1.0.12-beta/03-bundled-libs/125-validation-zod/examples/derived-types-example.bp` | 1 | **A derived record type has no name a decorator can be attached to** *(answered by 307: `#[validated] pub val RecipePatch = partial(Recipe);` — a compile-time function answering a new named type; closes with `01-checker` step 28)* |
+| `specs/1.0.12-beta/03-bundled-libs/125-validation-zod/examples/derived-types-example.bp` | 1 | **A derived record type has no name a decorator can be attached to** *(answered by 307: `#[validated] pub val RecipePatch = Type.partial(Recipe);` — a compile-time static method of std's `Type` answering a new named type; closes with `01-checker` step 28)* |
 | `specs/1.0.12-beta/03-bundled-libs/125-validation-zod/examples/enums-and-unions-example.bp` | 2 | **A decorator argument is a raw lexeme** · **`Decl.variants` carries a variant's name and not its payload fields or its annotations** |
 | `specs/1.0.12-beta/03-bundled-libs/125-validation-zod/examples/object-policy-example.bp` | 1 | **`Field` reflects no default** |
 | `specs/1.0.12-beta/08-bpp/127-bpp-actions/examples/typed-action-example.bp` | 1 | **A method's own `@Decl` has no parameter list** |
