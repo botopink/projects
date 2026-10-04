@@ -512,7 +512,7 @@ left as recorded; the maintainer picks the resolution.
 
 #### ctr-aa · `slot="fallback"` in 120 against open `props-e`
 - **Rules.** 120 says "None open", but its server islands and `#[clientOnly]` tags route a `slot="fallback"` child; `props-e` (a), recommended, refuses `slot="…"`.
-- **Recommendation.** With `props-e` (a), the fallback is an annotation argument: `<Avatar #[serverDefer(fallback: <GenericAvatar size={48} />)] />`, `<Map #[clientOnly(fallback: <p>Loading…</p>)] />`.
+- **Recommendation.** With `props-e` (a), the fallback is an annotation argument: `<Avatar #[serverDefer(fallback: <GenericAvatar size={48} />)] />`, `<Map #[clientOnly(fallback: <p>Loading…</p>)] />`. The argument is comptime (280): a fallback is static markup or a component without run-time data (`<MapSkeleton />`); `fallback: <span>{user.name}</span>` is refused at the argument.
 - **Blocks.** 120 steps 2 and 4; `props-e`.
 
 #### ctr-f · Decisions 198 and 199 against decision 213

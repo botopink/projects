@@ -166,11 +166,57 @@ usam um filho `slot="fallback"`. A `props-e` (a), que é a recomendada, recusa `
 </Avatar>
 ```
 
-- [ ] **(a)** O fallback é argumento da anotação (casa com a `props-e` (a)).
-  ```bpp
-  <Avatar #[serverDefer(fallback: <GenericAvatar size={48} />)] size={48} />
-  <Map #[clientOnly(fallback: <p>Carregando…</p>)] zoom={3} />
+- [ ] **(a)** O fallback é argumento da anotação (casa com a `props-e` (a)): ele não é filho do componente,
+  é uma instrução para o `html` sobre o que mostrar **enquanto** o componente não chega.
+
+  **Na lib** (jhonstart), a anotação recebe o fallback como um `View`:
+  ```bp
+  pub fn serverDefer(comptime decl: @Decl, comptime fallback: ?View = null) -> Defer { … }
+  pub fn clientOnly(comptime decl: @Decl, comptime fallback: ?View = null) -> Hydrate { … }
   ```
+
+  **Na página**, um fallback curto vai direto no argumento; um maior vira um componente:
+  ```bpp
+  ---
+  import {components.Avatar};
+  import {components.Map};
+  import {components.MapSkeleton};
+  ---
+  <h1>Produto</h1>
+
+  <!-- ilha de servidor: a página continua pré-renderizada; o avatar chega num segundo request -->
+  <Avatar #[serverDefer(fallback: <span class="avatar generic" />)] size={48} />
+
+  <!-- só no browser: o servidor escreve o esqueleto, o browser troca pelo mapa -->
+  <Map #[clientOnly(fallback: <MapSkeleton />)] zoom={3} />
+  ```
+
+  **O que o servidor envia** — o fallback no lugar do componente:
+  ```html
+  <h1>Produto</h1>
+  <div data-jh-d="0" data-jh-src="/_onze/island/Avatar?p=…"><span class="avatar generic"></span></div>
+  <div data-jh-i="1"><div class="map-skeleton"></div></div>
+  ```
+  Depois o browser busca o `Avatar` no endpoint da ilha e monta o `Map`, substituindo cada fallback.
+
+  **O que não compila:**
+  ```bpp
+  <Avatar #[serverDefer(fallback: <span>{user.name}</span>)] />
+  <!-- ❌ `user` só existe em runtime: argumento de anotação é comptime (280) -->
+
+  <Avatar #[serverDefer(fallback: "carregando")] />
+  <!-- ❌ esperado `View`, recebido `string` -->
+
+  <Avatar #[serverDefer] size={48}>
+    <span slot="fallback" />
+  </Avatar>
+  <!-- ❌ `slot="…"` não existe (props-e (a)): use #[serverDefer(fallback: …)] -->
+  ```
+
+  **Atenção:** como o fallback é argumento de anotação, ele é fixo em comptime. Pode ser markup estático
+  ou um componente sem dado de runtime (`<MapSkeleton />`, `<GenericAvatar size={48} />`), mas não pode
+  usar um valor que só existe no request, como o nome do usuário. Para um esqueleto ou um "carregando",
+  é o caso comum.
 - [ ] **(b)** `slot="fallback"` fica como exceção só para ilhas.
 
 **Recomendação: (a).**
