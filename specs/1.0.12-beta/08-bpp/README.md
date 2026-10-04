@@ -153,7 +153,7 @@ Labels only; text in [`../decisions-taken.md`](../decisions-taken.md).
 | 203 | One convention: `app/` tree, directory per route; `.bpp` where `page.bp` is; no `pages/` | 117 step 1 |
 | 222 | Route handler (`route.bp`, every method) always server, never prerendered | 117 step 4 · 121 step 5 |
 | 224 | Server-island props default **sealed** (AES-256-GCM in the URL; `ONZE_KEY` or build-generated, `onze create-key`); per project `onze.json` `"islands": {"props": "sealed"}` | 120 step 4 · 124 |
-| 278 | Directives are tag annotations: `#[name(args)]` inside the tag, a function in scope, `html` acting on its return type; `#[clientOnly]` one function for hook and tag; values become values (§ Tag annotations) | 118 · 119 · 120 · 126 · `05-jhonstart/26` step 8 |
+| 278 · 302 | Directives are tag annotations: `#[name(args)]` inside the tag, a function in scope — since 302 the same thing as a decorator (`comptime decl: @Decl`, no return, typed meta `html` reads by type); `#[clientOnly]` one function for hook and tag; values become values (§ Tag annotations) | 118 · 119 · 120 · 126 · `05-jhonstart/26` step 8 |
 | 189 | Ordering and ownership (carve-outs, `fake_dom.mjs`, `site` by 122) | all |
 
 No relative imports: same package `import {components.card};` (a `.bpp` component: its default function, 288), a package `import {x} from "pkg";`; `.bpp` headers likewise.
