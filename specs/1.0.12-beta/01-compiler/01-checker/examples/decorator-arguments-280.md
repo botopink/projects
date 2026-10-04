@@ -17,9 +17,9 @@ Cada exemplo mostra quatro partes:
 As regras que os exemplos usam:
 
 - **(0)** Todo parâmetro de decorator é `comptime`, escrito explicitamente.
-- **(1)** O argumento é tipado: pode ser função, `type`, `Field<T>`, enum ou record.
+- **(1)** O argumento é tipado: pode ser função, `type`, `Type.Field<T>` (308), enum ou record.
 - **(2)** `@Decl<T>`: o `T` é inferido da declaração anotada; quando a assinatura não usa o `T`, ele é `unknown`.
-- **(3)** `Field<T>` e o atalho `.campo`.
+- **(3)** `Type.Field<T>` (da std, decisão 308) e o atalho `.campo`.
 - **(4)** O atalho `.Nome` resolve exatamente o nome declarado (maiúsculas contam): `.Custom`, nunca
   `.custom`; nenhuma saída converte caixa — um nome de outro sistema é string explícita.
 
@@ -35,6 +35,8 @@ As regras que os exemplos usam:
 ### A lib
 ```bp
 // validation/src/check.bp
+import {types.Type} from "std";
+
 pub type Code { Custom, Required, TooShort, Mismatch }
 
 pub type Violation(field: string, code: Code, message: string)
@@ -45,7 +47,7 @@ pub type Violation(field: string, code: Code, message: string)
 pub fn check<T>(
     comptime decl: @Decl<T>,
     comptime rule: ?fn(v: T) -> bool = null,
-    comptime at: ?Field<T> = null,
+    comptime at: ?Type.Field<T> = null,
     comptime message: string,
     comptime code: Code = .Custom,
 ) {
@@ -285,13 +287,15 @@ val users = Cache<User[]>("users");
 ### A lib
 ```bp
 // rakun-data-sql/src/entity.bp
+import {types.Type} from "std";
+
 pub fn entity<T>(comptime decl: @Decl<T>, comptime table: string) {        // nome SQL: string
     decl.setMeta(Table(name: table));
 }
-pub fn index<T>(comptime decl: @Decl<T>, comptime ..fields: Field<T>[]) {   // variádico (267)
+pub fn index<T>(comptime decl: @Decl<T>, comptime ..fields: Type.Field<T>[]) {   // variádico (267)
     decl.setMeta(Index(columns: fields.map({ f -> f.name })));
 }
-pub fn unique<T>(comptime decl: @Decl<T>, comptime field: Field<T>) {
+pub fn unique<T>(comptime decl: @Decl<T>, comptime field: Type.Field<T>) {
     decl.setMeta(Unique(column: field.name));
 }
 pub fn column<T>(comptime decl: @Decl<T>, comptime name: string) {          // num campo: T = tipo do campo

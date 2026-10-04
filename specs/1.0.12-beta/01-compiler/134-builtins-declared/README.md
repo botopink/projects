@@ -38,9 +38,11 @@ differences — `@ExprCustom<T>` declared as `CustomExpr<T>`, mirror's `Annotati
 - [ ] every builtin above declared; the drift test walks the types and their methods too
 - [ ] std's `types.bp` declares `pub type Type` with five static compile-time methods answering a type
       (decision 307): `partial`, `required` (new), `pick`, `omit`, `merge` (was `mergeRecords`) —
-      `pub fn pick<T>(comptime source: type T, comptime ..fields: Field<T>[]) -> type`, the spelling of a
+      `pub fn pick<T>(comptime source: type T, comptime ..fields: Type.Field<T>[]) -> type`, the spelling of a
       `type` answer fixed here with `01-checker` step 28; bodies are the compiler's; `root.bp` exports
       `types`; the four bare names leave the builtin list
+- [ ] `Type` also declares the associated type `Field<T>` and `keys<T>(comptime source: type T) -> type`
+      (decision 308); `builtins.d.bp`'s `Field` record leaves, `Decl.fields` typed `Type.Field<unknown>[]`
 - [ ] `docs.md` § Builtins generated from or checked against the declarations
 
 ### Step 4 — a variadic parameter, and the three print builtins declared with it (decision 267)

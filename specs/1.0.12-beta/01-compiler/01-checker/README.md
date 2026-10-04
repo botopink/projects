@@ -187,8 +187,9 @@ type cannot be passed (lg2-f), and `Decl` (`builtins.d.bp`) is untyped. The case
 - [ ] `@Decl<T>` in `builtins.d.bp`; `T` bound from the annotated declaration (type, field, function)
       when the signature uses it, through a pattern too (`@Decl<fn(e: E) -> unknown>`); `@Decl` =
       `@Decl<unknown>`; a declaration not matching the pattern refused at the annotation
-- [ ] `Field<T>` in `builtins.d.bp` (`name`, the field's type); `.name` resolved against the
-      expected `T`, a missing field refused at it; variadic `..fields: Field<T>[]` (267)
+- [ ] `Field<T>` — `Type.Field<T>` in std's `types.bp` (decision 308), not `builtins.d.bp` — (`name`, the
+      field's type); `.name` resolved against the expected `T`, a missing field refused at it; variadic
+      `..fields: Type.Field<T>[]` (267); `decl.fields` hands out `Type.Field<unknown>`
 - [ ] `.Name` case-exact for fields and variants (`.custom` against `Custom` is the missing-name error)
 - [ ] the seven examples green on every target where they run; each "não compila" line a `reject/`
       cell with its caret
@@ -246,8 +247,8 @@ annotate. After, the five are static methods of std's `Type` (`libs/std/src/type
 step 2) and the resolver keys on that declaration.
 
 - [ ] `Type.partial`, `Type.required`, `Type.pick`, `Type.omit`, `Type.merge` are compile-time functions:
-      every parameter `comptime`, fields as `Field<T>` (`.title`); a string field (`"title"`) is a located
-      error naming `.title`; an unknown field the ordinary `Field<T>` error at the argument (280); the bare
+      every parameter `comptime`, fields as `Type.Field<T>` (`.title`); a string field (`"title"`) is a located
+      error naming `.title`; an unknown field the ordinary `Type.Field<T>` error at the argument (280); the bare
       `partial(…)` / `mergeRecords(…)` are unbound names
 - [ ] the answer is a new nominal record named after its `val`: `RecipeTitle` in diagnostics and hover,
       usable in every type position, constructed `RecipeTitle(title: "…")`, matched, exported and
@@ -257,6 +258,10 @@ step 2) and the resolver keys on that declaration.
       keeps the source field's annotations (`partial` makes it `?T`)
 - [ ] the call is refused outside a module-level `val` (a local, a parameter default) — located
 - [ ] `run/derived_type_functions` on the four targets; `language-gaps.md`'s derived-record row closed
+- [ ] `Type.keys(Recipe)` is `Type.Field<Recipe>` (decision 308) — the same type, not a copy
+- [ ] a `Type.Field<T>` at run time: stored, passed, compared; `case key { .title -> … }` exhaustive over
+      `T`'s fields (a field added to `T` makes a `case` without it an error); `key.name`, `Key.of(text) ->
+      ?Key`, `Key.all()` in declaration order — `run/field_key_runtime` on the four targets
 
 ### Rows other fronts found
 

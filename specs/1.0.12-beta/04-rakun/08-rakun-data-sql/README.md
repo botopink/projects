@@ -65,7 +65,7 @@ cell claims to have reached a server.
 
 - [ ] `#[entityRepository(City)]` takes the type; `derivedSql("CityRepo", "countByState")` takes the
       function; an operator is `Op`'s variant, never `">="`
-- [ ] `index`, `unique` take `Field<T>` (`.state`); table and column names stay strings (SQL's, 280 example 6)
+- [ ] `index`, `unique` take `Type.Field<T>` (`.state`; 308); table and column names stay strings (SQL's, 280 example 6)
 
 ### Step 5 — configuration as a typed record (decision 299)
 
