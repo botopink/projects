@@ -193,6 +193,9 @@ list against its own decorators; the compiler names no marker.
 
 ### Step 10 — file roles are the framework's (decision 285)
 
+- [ ] `#[page]` (and its function form) takes `revalidate: ?Duration = null` and `dynamicParams: bool
+      = true` beside `paths:` / `head:` / `partial:` (282, 290) and records them in its meta; no other
+      route configuration exists
 - [ ] `page`, `layout`, `template`, `loading`, `error`, `notFound` callable as comptime functions over
       a function value (`page("blog/[slug]", f)`), with the decorator form's checks (the stage
       markers of step 8, the return `View`) — the decorator form stays for hand-written `.bp` routes

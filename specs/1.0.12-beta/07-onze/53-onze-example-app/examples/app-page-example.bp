@@ -1,8 +1,8 @@
 // Front 53 — onze example app · examples/app-page-example.bp
 // App file: app/page.bp
 //
-// Demonstrates: the home page. `#[page("")]` registers `/`; the segment config
-// makes front 60 prerender it at build time; the hero is an optimized,
+// Demonstrates: the home page. `#[page("")]` registers `/`; it reads no
+// `#[serverOnly]` hook, so it is prerendered at build time (186, 290); the hero is an optimized,
 // above-the-fold image from front 51.
 //
 // Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/page
@@ -17,8 +17,6 @@ import {section} from "jhonstart";                              // provided by f
 import {styled, Token} from "emilia";                           // front 48
 import {page, PageContext} from "jhonstart";                        // front 30
 import {collections.Dict} from "std";
-// front 60 — the segment configuration and the prerender decision
-import {registerSegmentConfig, SegmentConfig, DynamicMode, FetchCache} from "rakun";
 // front 51 — the Image component and the optimizer behind it
 import {
     Image,
@@ -36,18 +34,10 @@ fn leadTokens() -> Token[] {
     return [.Pad.Y.4, .Color.Gray.700, .Text.Size.Lg];
 }
 
-// front 60 — `ForceStatic` with no revalidation: the home page is prerendered at
-// build time and served from the manifest until the next deploy. Every field is
-// written out because a declared parameter default is never applied.
-val _homeConfig = registerSegmentConfig("", SegmentConfig(
-    dynamic: DynamicMode.ForceStatic,
-    dynamicParams: false,
-    revalidate: 0,
-    fetchCache: FetchCache.Auto,
-));
 
-// front 22 — `/`. The page touches nothing request-specific, so front 60's trial
-// render leaves it static; a `use searchParams()` here would opt it out.
+// front 22 — `/`. The page touches nothing request-specific, so `#[page]` reads
+// it as `S` from its hooks (277) and it is prerendered until the next deploy;
+// a `use searchParams()` here would make it `D`. Nothing forces a stage (202, 290).
 #[page("")]
 pub fn homePage(route: PageContext) -> @Component<ElementBase, Element> {
     val cfg = defaultImageConfig();

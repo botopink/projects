@@ -21,14 +21,11 @@ import {styled, Token} from "emilia";                       // front 48
 import {page, PageContext} from "jhonstart";                    // front 30
 import {notFound} from "jhonstart";                         // front 31 — a page's signals are jhonstart's (decisions 115, 117)
 import {
-    registerSegmentConfig,
     registerStaticParams,
-    SegmentConfig,
-    DynamicMode,
-    FetchCache,
     StaticParams,
     ParamBinding,
 } from "rakun";                                             // front 60
+import {io.clock.hours} from "std";             // a `Duration` (std)
 import {Metadata, OpenGraph, TwitterCard, Icons} from "jhonstart";   // front 32
 import {mergeMetadata, pairValue} from "jhonstart";                  // front 32
 import {collections.Dict} from "std";
@@ -47,15 +44,6 @@ fn bodyTokens() -> Token[] {
     return [.Pad.Y.4, .Color.Gray.700];
 }
 
-// front 60 — the segment configuration. `Auto` with `revalidate: 3600`: the
-// three seeded posts are prerendered at build time and refreshed hourly, and a
-// slug that appears later is rendered on demand because `dynamicParams` is true.
-val _postConfig = registerSegmentConfig("blog/[slug]", SegmentConfig(
-    dynamic: DynamicMode.Auto,
-    dynamicParams: true,
-    revalidate: 3600,
-    fetchCache: FetchCache.Auto,
-));
 
 // front 60 — called once, at build time. Each row binds every dynamic segment
 // of the pattern; a row that misses one fails the build.
@@ -70,7 +58,9 @@ val _postParams = registerStaticParams("blog/[slug]", blogStaticParams);
 // front 22 — the segment reaches the page through `route.params`, a `Dict`, so
 // it is read with `lookup(...).unwrapOr(...)` and never with `get`.
 // front 28 — a server component: `fn … -> @Component<ElementBase, Element>` (decision 117).
-#[page("blog/[slug]")]
+// the seeded posts prerendered and regenerated hourly; a slug that appears
+// later is rendered on demand — everything in `#[page]` (290), no segment config
+#[page("blog/[slug]", revalidate: hours(1), dynamicParams: true)]
 pub fn blogPostPage(route: PageContext) -> @Component<ElementBase, Element> {
     val slug = route.params.lookup("slug").unwrapOr("");
     val found = findPost(slug);

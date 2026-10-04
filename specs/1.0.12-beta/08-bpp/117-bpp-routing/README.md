@@ -37,7 +37,7 @@ source location (`language-gaps.md` lg2-q); `#[page]` emits `<fn>Params(route)` 
 moved by decision 236 to `paramsOf(…meta.page.seg, route)` (`01-compiler/130`); static generation:
 `registerStaticParams(seg, fn() -> @Task<StaticParams[]>)`, `decideKind`, `prerenderAll(strict)`,
 `prerenderPath`, `serveStatic` (stale-while-revalidate), `staticExport(outDir)` (`static_gen.bp`);
-`SegmentConfig(dynamic, dynamicParams, revalidate, fetchCache)` (`segment_config.bp`); `page` +
+no segment config — `revalidate` and `dynamicParams` are `#[page]` arguments (290); `page` +
 `route` in one segment refused (`file_router.bp`). onze's scan records each decorator argument,
 never compares it with the directory (read, not run — step 0).
 

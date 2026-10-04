@@ -25,7 +25,9 @@ import {article, h1, p, timeTag} from "jhonstart";
 import {notFound} from "jhonstart";
 import {Metadata, OpenGraph, TwitterCard, Icons, pairValue} from "jhonstart";
 import {emilia, Token} from "emilia";
-import {registerSegmentConfig, registerStaticParams, SegmentConfig, DynamicMode, FetchCache, StaticParams, ParamBinding} from "rakun";
+import {page} from "jhonstart";                   // the decorator, beside the anonymous default (289)
+import {io.clock.hours} from "std";             // a `Duration` (std)
+import {registerStaticParams, StaticParams, ParamBinding} from "rakun";
 import {lib.db.Post, lib.db.findPost, lib.db.listPosts, lib.db.missingPost};
 
 fn titleTokens() -> Token[] {
@@ -40,14 +42,6 @@ fn bodyTokens() -> Token[] {
     return [.Pad.Y.4, .Color.Gray.700];
 }
 
-// front 60 — the seeded posts are prerendered at build time and refreshed
-// hourly; a slug that appears later is rendered on demand.
-pub val segment = registerSegmentConfig("blog/[slug]", SegmentConfig(
-    dynamic: DynamicMode.Auto,
-    dynamicParams: true,
-    revalidate: 3600,
-    fetchCache: FetchCache.Auto,
-));
 
 pub fn blogStaticParams() -> @Task<StaticParams[]> {
     return listPosts().map({ post ->
@@ -84,6 +78,9 @@ pub fn postMetadata(post: Post) -> Metadata {
 val found = findPost(params.slug);
 if (found.isEmpty()) { notFound(); }
 val post = found.first().unwrapOr(missingPost(params.slug));
+// the seeded posts prerendered and regenerated hourly; a slug that appears later
+// is rendered on demand (290 — everything in `#[page]`)
+#[page("blog/[slug]", revalidate: hours(1), dynamicParams: true)]
 ---
 <article>
   <h1 class={emilia(titleTokens())}>{post.title}</h1>

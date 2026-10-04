@@ -4,10 +4,8 @@
 // The home page of `app-page-example.bp`, as a `.bpp` file: `/`, prerendered at
 // build time, with an above-the-fold image from front 51.
 //
-// A MODULE-LEVEL VALUE IS `pub val`. The segment configuration must be
-// registered when the module loads, not on every render; in a fence a bare
-// `val` is a statement of the page's body, and a `pub` item is a declaration of
-// the module — so the registration is written `pub val segment = …`.
+// No segment configuration (290): the page reads no `#[serverOnly]` hook, so it
+// is prerendered and served until the next deploy; nothing forces a stage.
 //
 // `Image(props, config, dir)` is positional, so it is called in a hole.
 //
@@ -16,7 +14,6 @@
 
 import {h1, p, section} from "jhonstart";
 import {emilia, Token} from "emilia";
-import {registerSegmentConfig, SegmentConfig, DynamicMode, FetchCache} from "rakun";
 import {Image, defaultImageProps, defaultImageConfig, withPriority} from "onze";
 
 fn titleTokens() -> Token[] {
@@ -27,14 +24,6 @@ fn leadTokens() -> Token[] {
     return [.Pad.Y.4, .Color.Gray.700, .Text.Size.Lg];
 }
 
-// front 60 — `ForceStatic` with no revalidation: prerendered at build time and
-// served from the manifest until the next deploy.
-pub val segment = registerSegmentConfig("", SegmentConfig(
-    dynamic: DynamicMode.ForceStatic,
-    dynamicParams: false,
-    revalidate: 0,
-    fetchCache: FetchCache.Auto,
-));
 
 // front 51 — above the fold, so eager and high priority. The declared width and
 // height reserve the box before the bytes arrive.

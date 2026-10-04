@@ -107,5 +107,12 @@ both `onze dev` and `onze build && onze start`, browser rows in a real browser, 
       → `#[page("blog/[slug]", paths: allPosts)]`; `generateMetadata` → `head: postHead`;
       `acceptance.md`'s rows (122, 126) name the decorator arguments
 
+### Step 9 — no segment configuration (decision 290)
+
+- [ ] `registerSegmentConfig` gone from the examples (`app/page.bpp`, `app-page-example.bp`,
+      `app/blog/[slug]/page.bpp`, `blog-slug-page-example.bp` — rewritten with 290);
+      `acceptance.md` row 60 names `#[page("blog/[slug]", revalidate: hours(1), dynamicParams: true)]`;
+      the home page prerendered by its hooks alone
+
 **Gate:** standard (fronts.md § Gate) +
 - [ ] `zig build test-libs` green for `blog`, `onze-test`; `serve.sh` exit 0

@@ -49,6 +49,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] decision 282 (a role in the decorator) — 117 s6 · 53 s8 · 51 s8 · 121 s8 · after 01-checker s24
 - [ ] decision 285 (the toolchain knows `bpp`, `html`, the prelude) — 116 s2 · 117 s1 · rakun 22 s7 · 26 s10
 - [ ] 01-checker s25 — the anonymous default `pub default fn (…)` and `pub default Name;` (289) · then 116 s2
+- [ ] decision 290 (no segment config; `revalidate`, `dynamicParams` in `#[page]`) — rakun 22 s8 · 26 s10 · 53 s9
 - [ ] 01-checker s22 — the `.bpp` prelude scope (270) · 116 hands the prelude list
 - [x] 01-checker s19–s20 — type application and `comptime <expr>` (255): on feat (`49455602`)
 - [ ] 01-checker rows — the `@block` tail refusal, the `$stringify` parser refusal (239), `primitive-type-name-taken`, the comptime body's file, T17, a package's module namespace, two aliased same-named types (imp-a), `@External.Wasm` read on every target, the template memo key, row 33 · the first two unblock 04 s1–2 and 02 s10
@@ -161,7 +162,6 @@ Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.
 last section.
 
 **First — the botopink shape** (raised 2026-10-04; answer `nat-0`, then the rest):
-- [ ] ctr-x — 53's examples (`registerSegmentConfig`) · 49 s5
 - [ ] ctr-y — 122 s1 (request hooks under `use`) · 26 s8's hook list
 - [ ] ctr-z — 126 s1–4 · 50 (`<Script>`) · 124
 - [ ] nat-c — untyped bags · bpp-g, 08-j, 117, 122, 123, 130 (meta), rakun 04/08/15, 34, 03r-b

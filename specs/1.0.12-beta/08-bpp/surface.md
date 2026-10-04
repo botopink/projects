@@ -72,7 +72,7 @@ are on disk, so most of Astro is there, or there and unwired.
 | `getStaticPaths()` returning `params` | `registerStaticParams(seg, fn() -> @Task<StaticParams[]>)` (`static_gen.bp:106`) | have |
 | `getStaticPaths()` returning `props` | not found: a row binds parameters only | add · 117 |
 | a dynamic route with no `getStaticPaths` is an error in static mode | `prerenderAll(strict)` (`static_gen.bp:478`) | have |
-| `export const prerender = false` | `SegmentConfig(dynamic, dynamicParams, revalidate, fetchCache)` registered by a `val` (`segment_config.bp:38`); mode also derived — reading request data marks it dynamic | n/a — decision 202 — no page declares its stage: `#[page]` prerenders at comptime a page reaching no `#[serverOnly]` hook; nothing forces per-request |
+| `export const prerender = false` | `SegmentConfig(dynamic, dynamicParams, revalidate, fetchCache)` registered by a `val` (`segment_config.bp:38`) — deleted by 290 (`revalidate`, `dynamicParams` become `#[page]` arguments); mode derived — reading request data marks it dynamic | n/a — decision 202 — no page declares its stage: `#[page]` prerenders at comptime a page reaching no `#[serverOnly]` hook; nothing forces per-request |
 | redirects in config | redirect table in `routing/url_rules` | wire · add · 124 — `04-rakun/65`, 124 (the config key) |
 | `Astro.redirect(url, status)` | `redirect(url)` raises `nav:redirect:<loc>`, 303 / 307 / 308 on the wire (`jhonstart/src/error_boundary.bp:187`, `routing/navigation`) | have |
 | `Astro.rewrite(url)` from a page | not found; `Next.rewrite` in middleware only (`rakun-web/src/middleware.bp:41-58`) | add · 122 |

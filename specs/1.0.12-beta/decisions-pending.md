@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**74 questions and 18 contradictions are open, and 97 implementation choices await confirmation.**
+**74 questions and 17 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289.
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 ## Open questions
@@ -22,7 +22,7 @@ Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 Raised 2026-10-04 by a sweep of the spec after decision 278: concepts copied from Astro, Next.js,
 React, Spring, zod, TypeScript, LINQ and Tailwind in their foreign shape where botopink already has
-the feature. `nat-0`'s four rules are decisions 281–284; what remains applies them case by case; `ctr-x`…`ctr-z` are
+the feature. `nat-0`'s four rules are decisions 281–284; what remains applies them case by case; `ctr-y`, `ctr-z` are
 the sites that already contradict a decision. The Portuguese page lists every site with examples.
 
 #### nat-c · Untyped bags where a record type would flow
@@ -495,11 +495,6 @@ owning front lists the row under *Depends on*.
 Rule pairs that cannot both hold, or a later rule changing an earlier one silently. Decision text
 left as recorded; the maintainer picks the resolution.
 
-#### ctr-x · `registerSegmentConfig(dynamic: ForceStatic, …)` against decisions 202, 186 and 277
-- **Rules.** 202: no way to force a stage; 186 / 277: `#[page]` decides `S` / `D` from `Decl.hooks`. `07-onze/53`'s examples (`app/page.bpp:30-37`, `app/blog/[slug]/page.bpp:43-50`, `blog-slug-page-example.bp:50-58`, `app-page-example.bp:39-43`, `acceptance.md:211`) write Next's segment config — `dynamic`, `revalidate`, `fetchCache` — restating the route as a string and registering it at run time; `08-bpp/surface.md:75` notes the clash.
-- **Recommendation.** Delete `dynamic` and `fetchCache`; revalidation, if kept, a `#[page]` argument (decision 282).
-- **Blocks.** `07-onze/53`'s examples and acceptance; 49 step 5.
-
 #### ctr-y · Request hooks called without `use` against decision 277
 - **Rules.** 277: `Decl.hooks` lists the `use`s; 186: a `#[serverOnly]` hook makes a page `D`. 122 writes `val _s = responseStatus(404)` and `responseHeader(…)` — `#[serverOnly]` hooks without `use`, invisible to `pathsTo`, so the page would be classified `S`; `isPrerendered()` asks at run time what is a comptime fact.
 - **Recommendation.** Every request hook under `use` (`use responseStatus(404);`); `isPrerendered()` dropped.
@@ -653,7 +648,7 @@ local change in the named place). Full 1.0.10 text under the same id in
 | 03r-l | A listener container is named after its destination; Redis defaults to ack-mode `none` (explicit `auto` / `manual` on Redis refuses the boot) | 15 |
 | 03r-m | Inside a server action `revalidatePath` / `revalidateTag` expire at once; outside, stale-then-fresh | 12 · 22 |
 | 03r-n | A JSON-RPC argument is a form-encoded field list, read in order into one form | 22 |
-| 03r-o | A segment config field equal to `defaultSegmentConfig()`'s is inherited; any other overrides | 22 |
+| 03r-o | ~~A segment config field equal to `defaultSegmentConfig()`'s is inherited~~ — moot: 290 deletes the segment config | 22 |
 | 03r-p | A slot belongs to the nearest layout at or above its shortest entry; a conflict is two pages of one slot at one URL | 22 |
 | 03r-q | Locale routing lives in `rakun-app/src/i18n.bp`; no `rakun-i18n` member | 22 |
 | 03r-r | Starters name sibling members `{ "workspace": true }` | 73 |

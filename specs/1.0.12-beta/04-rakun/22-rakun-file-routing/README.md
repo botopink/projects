@@ -107,6 +107,15 @@ file-convention route table (this member's) is generated at build from `routing`
 - [ ] a page's `S` / `D` from `@typeInfo(f).hooks` (277) through that call, the same as the decorator
       form; `onze build`'s report unchanged (`07-onze/49` step 5)
 
+### Step 8 — no segment configuration — everything in `#[page]` (decision 290)
+
+- [ ] `segment_config.bp`'s `dynamic` / `DynamicMode`, `fetchCache` / `FetchCache`,
+      `registerSegmentConfig(seg, …)` and the layout-to-page inheritance (03r-o) deleted; nothing
+      forces a stage (202) — `S` / `D` is `#[page]`'s, from `Decl.hooks` (277)
+- [ ] `revalidate` and `dynamicParams` read from the page's `#[page]` meta (or the route table's
+      `page(seg, f, …)` call, step 7); `static_gen.bp`'s regeneration and the unknown-param rule
+      unchanged in behaviour; `segment_config_test.bp` and `static_gen_test.bp` rewritten to it
+
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun-app`; `examples/rakun-ssr` still builds.
 

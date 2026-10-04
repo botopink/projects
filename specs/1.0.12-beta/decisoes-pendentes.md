@@ -1,7 +1,7 @@
 # Decisões pendentes — 1.0.12-beta (só o que está em aberto, por ordem de importância)
 
-Atualizado em 2026-10-04 (decisões 278–289). Só o que ainda espera resposta sua: o que já foi respondido está em
-`specs/1.0.12-beta/decisions-taken.md` (decisões 144–289; próximo número livre: **290**) e saiu daqui.
+Atualizado em 2026-10-04 (decisões 278–290). Só o que ainda espera resposta sua: o que já foi respondido está em
+`specs/1.0.12-beta/decisions-taken.md` (decisões 144–290; próximo número livre: **291**) e saiu daqui.
 Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 234–236 (injeção do rakun,
 `@TypeInfo.all` com lista, decorador de função), 237 (captura do template pelo texto), 238–243
 (`@External.Wasm`, `$stringify`, codepoints no wasm, células sem WASI, dependência direta, vírgula final),
@@ -9,14 +9,14 @@ Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 2
 minúsculos; a 209 revertida), 248 (um builtin só, `@typeInfo`), 249 (o compilador separado por backend na
 chave do cache), 250 (`io.random.bool()` removido), 252 (todo builtin declarado), 253 (`@TypeInfo.all`),
 254 (o catálogo responde `unknown`; `is fn() -> T`), 255 (`Tipo<…>.membro` e `comptime <expr>`), 256 (o
-registro de beans em comptime no ponto de entrada), 257 (`Schema<T>` na `validation`), 258 (`--lib` múltiplo), 259–263 (`pow` da glibc, `contentHash` por code point, heap do wasm crescendo, `String.fromCodepoint`, `std/math` igual em todo sistema), 264 (estouro de inteiro é erro em todo target), 265 (orçamento do gate frio em 7m30s nesta versão; os 5 min ficam para a próxima), 266 (`comptime` avaliado em compilação em todo lugar, registro içado), 267 (parâmetro variádico `..values: T[]`; `@print` declarado com ele), 268 (tipo builtin `Decorator` no `with:` do `@TypeInfo.all`), 269 (`@getContext(T)` é hook, chamado atrás de `use`), 270 (o prelúdio do `.bpp`: o `src/prelude.bp` do pacote, só imports do próprio pacote, importado só quando usado; o cabeçalho vence), 271 (`ctr-a`: não existe `islandKeyEnv`; a chave da island é sempre `ONZE_KEY`; as chaves da 124 são `trailingSlash`, `redirects`, `markdown`, `islands`), 272 (`08-e2` e `ctr-b`: os modos das props da server island são só `"sealed"`, o padrão, ou `"server"` — nenhum expõe as props), 273 (`ctr-c`: um route handler nunca é exportado no build; `app/rss.xml/route.bp` é servido a cada request — a 222 fica inteira), 274 (`03r-ad` e `ctr-d`: o Pulsar não vira membro — fica em `rakun-messaging/src/pulsar/`; o plano de dados é recusado no boot e adiado), 275 (`bpp-f` e `ctr-e`: o `.bpp` devolve o `R` do `@ExprCustom<R>` que o `html` declara — no jhonstart, sempre `@Component<ElementBase, Element>`, com ou sem `use`/`await`; todo `.bp` que devolve `html """…"""` também passa a declarar esse retorno), 276 (`View`: alias de `@Component<ElementBase, Element>` no `element.bp` do jhonstart — o mesmo tipo com nome curto; o `.bpp` desdobra em `-> View`), 277 (`hooks-a`: o `@Decl` lista todos os nós alcançáveis — cada função com os seus `use` e as suas chamadas —, e cada anotação carrega o seu `Decorator`; o jhonstart decide pré-renderizada/por request e valida `#[client]` comparando com os próprios decorators), 278 (diretivas do Astro viram anotações dentro da tag — `#[clientVisible("200px")]`; `#[clientOnly]` é uma função só, para hook e tag; o `html` age pelo tipo de retorno), 279 → 286 (as duas formas valem, `#[a]` `#[b]` e `#[a, b]`; o formatter mantém como foi escrito), 280 (argumento de decorator tipado e `comptime`, `@Decl<T>`, `Field<T>` e `.campo` com o nome exato), 281 (nenhum identificador de código como string), 282 (o papel de uma função vai no decorator, nunca no nome do export), 283 (segundo modelo: caso a caso, `nat-d1`…`nat-d9`), 284 (JSON: `botopink.json` o mais limpo possível, caso a caso; `"bpp"` obrigatório), 285 (o compilador só conhece o `"bpp"`, o `html` e o prelude; o papel do arquivo é da tabela de rotas do framework; o `bppKinds` sai), 287 (`ctr-aa`: o fallback de uma ilha é argumento da anotação — `#[serverDefer(fallback: …)]`, `#[clientOnly(fallback: …)]` —, fixo em comptime), 288 (`ctr-f`: um `.bpp` é o `pub default fn` do módulo com o nome exato do arquivo, devolvendo `View`; importado `import {components.card};` — a 213 emenda a 198 e a 199), 289 (`ctr-g`, `ctr-t`: a função default pode ser anônima — `pub default fn (…)` — ou marcada depois — `pub default Tree;`; quem importa dá o nome; o `page.bpp` pode importar e escrever `#[page(…)]` sem colidir). A 245 e a 251 foram registradas cedo demais e retiradas.
+registro de beans em comptime no ponto de entrada), 257 (`Schema<T>` na `validation`), 258 (`--lib` múltiplo), 259–263 (`pow` da glibc, `contentHash` por code point, heap do wasm crescendo, `String.fromCodepoint`, `std/math` igual em todo sistema), 264 (estouro de inteiro é erro em todo target), 265 (orçamento do gate frio em 7m30s nesta versão; os 5 min ficam para a próxima), 266 (`comptime` avaliado em compilação em todo lugar, registro içado), 267 (parâmetro variádico `..values: T[]`; `@print` declarado com ele), 268 (tipo builtin `Decorator` no `with:` do `@TypeInfo.all`), 269 (`@getContext(T)` é hook, chamado atrás de `use`), 270 (o prelúdio do `.bpp`: o `src/prelude.bp` do pacote, só imports do próprio pacote, importado só quando usado; o cabeçalho vence), 271 (`ctr-a`: não existe `islandKeyEnv`; a chave da island é sempre `ONZE_KEY`; as chaves da 124 são `trailingSlash`, `redirects`, `markdown`, `islands`), 272 (`08-e2` e `ctr-b`: os modos das props da server island são só `"sealed"`, o padrão, ou `"server"` — nenhum expõe as props), 273 (`ctr-c`: um route handler nunca é exportado no build; `app/rss.xml/route.bp` é servido a cada request — a 222 fica inteira), 274 (`03r-ad` e `ctr-d`: o Pulsar não vira membro — fica em `rakun-messaging/src/pulsar/`; o plano de dados é recusado no boot e adiado), 275 (`bpp-f` e `ctr-e`: o `.bpp` devolve o `R` do `@ExprCustom<R>` que o `html` declara — no jhonstart, sempre `@Component<ElementBase, Element>`, com ou sem `use`/`await`; todo `.bp` que devolve `html """…"""` também passa a declarar esse retorno), 276 (`View`: alias de `@Component<ElementBase, Element>` no `element.bp` do jhonstart — o mesmo tipo com nome curto; o `.bpp` desdobra em `-> View`), 277 (`hooks-a`: o `@Decl` lista todos os nós alcançáveis — cada função com os seus `use` e as suas chamadas —, e cada anotação carrega o seu `Decorator`; o jhonstart decide pré-renderizada/por request e valida `#[client]` comparando com os próprios decorators), 278 (diretivas do Astro viram anotações dentro da tag — `#[clientVisible("200px")]`; `#[clientOnly]` é uma função só, para hook e tag; o `html` age pelo tipo de retorno), 279 → 286 (as duas formas valem, `#[a]` `#[b]` e `#[a, b]`; o formatter mantém como foi escrito), 280 (argumento de decorator tipado e `comptime`, `@Decl<T>`, `Field<T>` e `.campo` com o nome exato), 281 (nenhum identificador de código como string), 282 (o papel de uma função vai no decorator, nunca no nome do export), 283 (segundo modelo: caso a caso, `nat-d1`…`nat-d9`), 284 (JSON: `botopink.json` o mais limpo possível, caso a caso; `"bpp"` obrigatório), 285 (o compilador só conhece o `"bpp"`, o `html` e o prelude; o papel do arquivo é da tabela de rotas do framework; o `bppKinds` sai), 287 (`ctr-aa`: o fallback de uma ilha é argumento da anotação — `#[serverDefer(fallback: …)]`, `#[clientOnly(fallback: …)]` —, fixo em comptime), 288 (`ctr-f`: um `.bpp` é o `pub default fn` do módulo com o nome exato do arquivo, devolvendo `View`; importado `import {components.card};` — a 213 emenda a 198 e a 199), 289 (`ctr-g`, `ctr-t`: a função default pode ser anônima — `pub default fn (…)` — ou marcada depois — `pub default Tree;`; quem importa dá o nome; o `page.bpp` pode importar e escrever `#[page(…)]` sem colidir), 290 (`ctr-x`: sem configuração de segmento — `dynamic` e `fetchCache` saem; `revalidate` e `dynamicParams` são argumentos do `#[page]`). A 245 e a 251 foram registradas cedo demais e retiradas.
 
 > **Numeração.** O prelúdio do `.bpp` tinha sido registrado como 266 no commit `84aa028`, sem saber
 > que 266–269 já existiam no seu registro local. Na 1.0.12 ele é a **270**; as 266–269 estão em
 > `decisions-taken.md` com o texto completo dos commits `4fb3c5e`, `ec58d33`, `805b2be`, `c4976a6`.
 
 **Ordem:** da decisão que mais destrava para a que menos destrava.
-- **Prioridade máxima** — a forma botopink (`nat-c`…`nat-g`; as regras já são as decisões 281–284) e as contradições `ctr-x`…`ctr-z`: o que foi copiado de fora quando a linguagem já tinha o recurso.
+- **Prioridade máxima** — a forma botopink (`nat-c`…`nat-g`; as regras já são as decisões 281–284) e as contradições `ctr-y` e `ctr-z`: o que foi copiado de fora quando a linguagem já tinha o recurso.
 - **Parte 0** — `00-gate` e `01-compiler`, por prioridade (o que segura thread rodando primeiro).
 - **Parte 1** — contradições entre decisões, achadas na consolidação: cada uma segura um passo.
 - **Parte 2** — destravam muitas frentes.
@@ -68,31 +68,8 @@ o recurso equivalente na linguagem. Eles caem em sete padrões.
 
 **As quatro regras já estão decididas:** 281 (nenhum identificador de código como string), 282 (o papel
 vai no decorator), 283 (segundo modelo: caso a caso, `nat-d1`…`nat-d9`) e 284 (JSON: caso a caso,
-`nat-f1`…`nat-f4`; a `nat-f1` virou a 285). **Ordem do que falta:** as três contradições **`ctr-x`…`ctr-z`**, que já batem
+`nat-f1`…`nat-f4`; a `nat-f1` virou a 285). **Ordem do que falta:** as duas contradições **`ctr-y` e `ctr-z`**, que já batem
 com decisões tomadas; depois `nat-c`, `nat-d1`…`nat-d9`, `nat-e`, `nat-f2`…`nat-f4` e `nat-g`.
-
-### ctr-x · `registerSegmentConfig(dynamic: ForceStatic, …)` × decisões 202, 186 e 277
-
-**Contexto.** A 202 diz que não existe jeito de forçar a etapa; pela 186 e pela 277, o `#[page]` decide
-`S`/`D` olhando o `Decl.hooks`. Os exemplos da `07-onze/53` (`app/page.bpp`, `app/blog/[slug]/page.bpp`,
-`blog-slug-page-example.bp`, `app-page-example.bp`, `acceptance.md:211`) copiam o `export const
-dynamic/revalidate/fetchCache` do Next, repetem a rota em string e registram em runtime. O
-`08-bpp/surface.md:75` já anota o conflito, mas os exemplos não mudaram.
-
-**Hoje:**
-```bp
-val _cfg = registerSegmentConfig("blog/[slug]", SegmentConfig(dynamic: DynamicMode.ForceStatic, revalidate: 3600, fetchCache: …));
-```
-
-- [ ] **(a)** Apagar `dynamic` e `fetchCache`; se a revalidação ficar, é argumento do `#[page]` (decisão 282).
-  ```bp
-  #[page("blog/[slug]", revalidate: hours(1))]
-  ```
-- [ ] **(b)** Apagar tudo, inclusive a revalidação (fica para quando houver cache).
-- [ ] **(c)** Manter só como documentação do que o Next tem (não compila).
-
-**Recomendação: (a).**
-**Bloqueia:** exemplos e acceptance da `07-onze/53`; 49 passo 5.
 
 ### ctr-y · Hooks de request chamados sem `use` × decisão 277
 
@@ -4709,6 +4686,9 @@ uma lista `nome=valor` form-encoded, em ordem, num formulário só; a frente 67 
 **Recomendação: (a).** É a única que dá exatamente o estado do POST de formulário. **Bloqueia:** nada.
 
 ### 03r-o ★ · Campo de segment config igual ao default conta como não declarado
+
+> **Sem objeto desde a 290:** a configuração de segmento foi apagada (`revalidate` e `dynamicParams` são
+> argumentos do `#[page]`), então não há mais herança de layout para página. Nada a confirmar.
 
 **Contexto.** O `configFor` tem de sobrescrever o config do ancestral "campo a campo, não inteiro":
 um segmento que só define `revalidate` mantém o `dynamic` do ancestral. Mas `SegmentConfig` é um
