@@ -1,0 +1,101 @@
+// Front 136 — cardume · examples/atoms-example.bp
+//
+// Demonstrates: steps 1–3 — a cart shared by two islands of one page. The atom
+// and the selector are declared once, in cardume; each island reads them through
+// jhonstart-cardume's hooks; adding an item in one island updates the badge in
+// the other, because both read the page's one store.
+//
+//   Recoil                                   here
+//   const cart = atom({key: "cart", …})      pub val cartItems = atom<Item[]>([]);
+//   const total = selector({key, get})       pub val cartTotal = selector({ get -> … });
+//   useRecoilValue(total)                    use atomValue(cartTotal)
+//   useSetRecoilState(cart)                  use atomSetter(cartItems)
+//   atomFamily({key, default: id => …})      atomFamily({ id: i32 -> … })
+//
+// Upstream: https://recoiljs.org/docs/introduction/core-concepts
+//
+// Target: both — the server pass renders the defaults; the browser half (two
+// islands, one store) is `jhonstart-dom-test/test/cardume_dom_test.bp`.
+
+import html, {View, client, clientProps, renderToString} from "jhonstart";
+import {button, div, li, span, ul} from "jhonstart";
+import {atom, selector, atomFamily} from "cardume";
+import {atomValue, atomState, atomSetter} from "jhonstart-cardume";
+
+pub type Item(id: i32, name: string, price: i32)
+
+// ── the state, declared once ────────────────────────────────────────────────
+
+pub val cartItems = atom<Item[]>([]);
+
+pub val cartTotal = selector({ get ->
+    get.atom(cartItems).map({ i -> i.price }).sum()
+});
+
+pub val cartCount = selector({ get -> get.atom(cartItems).length });
+
+// one "quantity" atom per product id
+pub val quantity = atomFamily({ id: i32 -> 1 });
+
+// ── island 1: the header badge — reads only ─────────────────────────────────
+
+#[client]
+pub fn CartBadge() -> View {
+    val n = use atomValue(cartCount);
+    val total = use atomValue(cartTotal);
+    return html """<span class="badge">{n.toString()} · R$ {total.toString()}</span>""";
+}
+
+// ── island 2: the product card — writes ─────────────────────────────────────
+
+#[clientProps]
+pub type ProductProps(id: i32, name: string, price: i32)
+
+#[client]
+pub fn ProductCard(props: ProductProps) -> View {
+    // writing without subscribing: this card does not re-render when the cart changes
+    val setItems = use atomSetter(cartItems);
+    val qty = use atomState(quantity(props.id));
+    fn add() {
+        setItems(cartNow().append(Item(id: props.id, name: props.name, price: props.price * qty.value)));
+    }
+    return html """
+      <div class="card">
+        {props.name}
+        <button #[onClick({ -> qty.set(qty.value + 1) })]>+</button> {qty.value.toString()}
+        <button #[onClick(add)]>Add</button>
+      </div>
+    """;
+}
+
+// reading the current value inside an event handler, without a subscription, is
+// `atomCallback`'s (step 5); this helper stands for it in the example
+fn cartNow() -> Item[] { return []; }
+
+// ── the page ────────────────────────────────────────────────────────────────
+
+pub fn Shop() -> View {
+    return html """
+      <header><CartBadge #[clientLoad] /></header>
+      <ProductCard #[clientVisible] id={1} name="Lamp" price={120} />
+      <ProductCard #[clientVisible] id={2} name="Desk" price={900} />
+    """;
+}
+
+test "the server pass renders the atoms' defaults" {
+    val markup = renderToString(await Shop());
+    assert markup.contains("0 · R$ 0");
+}
+
+test "a family answers the same atom for the same id" {
+    assert quantity(1).default == 1;
+    assert quantity(2).default == 1;
+}
+
+// What does not compile:
+//
+//   pub val cart = atom<Item[]>([], key: "cart")
+//     error: an atom has no key — its identity is its declaration (281)
+//
+//   val s = use atomSetter(cartTotal)
+//     error: expected Atom<T>, got Selector<i32> — a selector is derived, not set

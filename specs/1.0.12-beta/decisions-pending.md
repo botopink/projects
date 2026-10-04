@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**73 questions and 15 contradictions are open, and 97 implementation choices await confirmation.**
+**76 questions and 15 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290 · `ctr-y` → 291 · `ctr-z` → 292 · `nat-c1`, `nat-c3`, `bpp-g` → 293 · `nat-c2` → 294 · `nat-c4` → 295.
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290 · `ctr-y` → 291 · `ctr-z` → 292 · `nat-c1`, `nat-c3`, `bpp-g` → 293 · `nat-c2` → 294 · `nat-c4` → 295 · (cardume) → 296.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 ## Open questions
@@ -460,6 +460,26 @@ owning front lists the row under *Depends on*.
 - **Options.** (a) Still refused: the attributes are the form. (b) `{...p}` with `p` of the props type, explicit attributes overriding.
 - **Recommendation.** (a).
 - **Blocks.** 118 step 1.
+
+### 09-cardume
+
+#### atm-a · Hook names: nouns, or 295's verbs (*proposed*)
+- **Measured.** jhonstart's rule (`hooks.bp` header): a hook is a noun, `use` the activation (`state`, `memo`); cardume's draft follows it (`atomValue`, `atomSetter`); 295 spelled `use setLocal(atom)`, `use setCookie(decl)` — verbs.
+- **Options.** (a) Nouns everywhere: `atomSetter`, `cookieSetter`, `cookieClearer` (295's spellings follow). (b) Verbs for writers (`use setAtom(a)`, `use setCookie(c)`), nouns for readers. (c) Each library its own.
+- **Recommendation.** (a) — one rule, already jhonstart's.
+- **Blocks.** 136 steps 1, 7; 123; 127; `07-onze/53`.
+
+#### atm-c · An atom's `T` across the server/browser seam (*proposed*)
+- **Measured.** The server seeds the values an island read into its payload (136 step 6); a value crossing must be encodable (`encode<T>`, 125); some state is browser-only by nature (a DOM handle, a function).
+- **Options.** (a) Every atom's `T` encodable, checked where the atom is declared. (b) Any `T`; an island's read set checked at build — a non-encodable atom an island reads must have a client-only default (`clientAtom(…)`). (c) Any `T`, refused only at run time.
+- **Recommendation.** (b): restrictive where it matters (what crosses), free elsewhere.
+- **Blocks.** 136 step 6.
+
+#### atm-d · Which atom effects ship (*proposed*)
+- **Measured.** Recoil's atom effects persist or sync an atom (localStorage, URL, a server push); none exists here.
+- **Options.** (a) None in the first cut. (b) `persistLocal("cart")` only. (c) `persistLocal` and a search-param sync (`syncSearchParam("tab")`).
+- **Recommendation.** (a): land the store first; effects as their own step after a measured need.
+- **Blocks.** 136 step 8.
 
 ### From the maintainer's Portuguese record (`decisoes-pendentes.md`)
 

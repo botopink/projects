@@ -1,0 +1,65 @@
+// Front 136 — cardume · examples/transaction-example.bp
+//
+// Demonstrates: step 5 — a kanban card moved between two columns in ONE
+// transaction: both columns change together, subscribers are told once, a read
+// after a write sees it, and a failing body applies nothing.
+//
+//   Recoil                                              here
+//   useRecoilTransaction_UNSTABLE(({get, set}) =>       use transaction({ tx, m: Move ->
+//     (m) => { set(col(m.from), …); set(col(m.to), …) })    tx.set(column(m.from), …); … })
+//
+// Upstream: https://recoiljs.org/docs/api-reference/core/useRecoilTransaction
+//
+// Target: both.
+
+import html, {View, client, renderToString} from "jhonstart";
+import {button, div, li, ul} from "jhonstart";
+import {atomFamily} from "cardume";
+import {atomValue, transaction} from "jhonstart-cardume";
+
+pub type Column { Todo, Doing, Done }
+pub type Move(card: i32, from: Column, to: Column)
+
+// one atom per column: the card ids in it
+pub val column = atomFamily({ c: Column -> case (c) { Todo -> [1, 2, 3]; _ -> []; } });
+
+#[client]
+pub fn Board() -> View {
+    val todo = use atomValue(column(.Todo));
+    val done = use atomValue(column(.Done));
+
+    // synchronous, atomic: both `set`s are applied together when the body returns
+    val move = use transaction({ tx, m: Move ->
+        val from = tx.get(column(m.from));
+        if (!from.contains(m.card)) return;               // nothing written: nothing applied
+        tx.set(column(m.from), from.filter({ id -> id != m.card }));
+        tx.set(column(m.to), tx.get(column(m.to)).append(m.card));
+        // a read after a write sees the transaction's own value
+        assert tx.get(column(m.from)).contains(m.card) == false;
+    });
+
+    return html """
+      <div class="board">
+        <ul>{todo.map({ id -> <li><button #[onClick({ -> move(Move(card: id, from: .Todo, to: .Done)) })]>{id.toString()} →</button></li> })}</ul>
+        <ul>{done.map({ id -> <li>{id.toString()}</li> })}</ul>
+      </div>
+    """;
+}
+
+test "the server pass renders the families' defaults" {
+    val markup = renderToString(await Board());
+    assert markup.contains("1 →");
+}
+
+// The browser half (jhonstart-dom-test/test/cardume_tx_dom_test.bp):
+//
+//   click "1 →"   → Todo [2, 3], Done [1], in ONE notification: Board re-renders once
+//   move a card that is not in `from` → nothing applied, no notification
+//
+// What does not compile:
+//
+//   use transaction({ tx, m: Move -> tx.set(cartTotal, 0) })
+//     error: expected Atom<T>, got Selector<i32> — a transaction writes atoms only
+//
+//   use transaction({ tx, m: Move -> val u = await fetchUser(1); … })
+//     error: `await` in a body whose return is not a @Task — a transaction is synchronous

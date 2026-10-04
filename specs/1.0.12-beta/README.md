@@ -27,9 +27,10 @@ The track number is the blocking order. A front keeps its global number and dire
 | [`06-emilia/`](./06-emilia/README.md) | 2 | 34 `hashHex` → std and five families to Tailwind 4.3.2's form; 33 the `-test` member and the examples |
 | [`07-onze/`](./07-onze/README.md) | 5 | 49 stand-up, 50 CLI (`onze dev`), 51 image, 71 release, 53 the example app — the proof of the stack, last |
 | [`08-bpp/`](./08-bpp/README.md) | 11 | Astro's feature set on the stack: 118 the template first; 121 content, 120 islands, 117 routing, 119 scoped CSS, 127 actions, 122 data, 123 `locals`, 126 view transitions; 116 the `.bpp` file kind (the one front that edits the toolchain); 124 the CLI last |
+| [`09-cardume/`](./09-cardume/README.md) | 1 | 136: `cardume`, a library of its own — shared state as atoms (Recoil's model; decision 296), its core and the two bridges `rakun-cardume`, `jhonstart-cardume` |
 | [`20-snap/`](./20-snap/README.md) | 1 | 135: the nine snapshot maps re-evaluated case by case; owns every snapshot step the other fronts carried; last |
 
-69 fronts in all. Where each stands is [`status.md`](./status.md).
+70 fronts in all. Where each stands is [`status.md`](./status.md).
 
 ## Rules in force
 

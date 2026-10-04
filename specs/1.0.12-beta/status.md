@@ -133,6 +133,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 
 Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 
+- [ ] 136 (`09-cardume`) — cardume: the core, `rakun-cardume`, `jhonstart-cardume` · `botopink/cardume` to be created and pushed · 26 · 120 · 125 · atm-a · atm-c · s8: atm-d
 - [ ] 26 (W3) — the core: s0 merges `jhonstart-html`, s1–6 · 118 landed · 102 s3 `routes.bp` · s5: 29-a · s8: 01's hooks capability, ctr-l (s7 is 135's)
 - [ ] 27 s1 box 2 (W7) — the route-kind flag read · 22
 - [ ] 67 (W4) — the DOM-side forms boxes, the wire names handed in · 26 · 103 s2 · 67-a (s4 needs only 103 s2)

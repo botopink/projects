@@ -47,7 +47,7 @@ Existing, not this front's: `middleware.bp` at the app root, `#[middleware]` wit
 declaration — no string key — any `T`:
 
 ```bp
-pub val currentUser = Local<User>();          // libs/http's Local<T> (104)
+pub val currentUser = atom<?User>(null);     // cardume's atom (296); rakun-cardume holds the request's store
 
 // middleware — a hook context: `-> @Component<RequestBase, Response>`
 val setUser = use setLocal(currentUser);      // fn(User)
@@ -123,7 +123,7 @@ from the action field and header onze configures (114).
 
 ### Step 7 — locals are atoms (decision 295)
 
-- [ ] `Local<T>` (104), rakun's `use setLocal(atom) -> fn(T)` and jhonstart's `use local(atom) -> ?T`;
+- [ ] cardume's `Atom<T>` (296) through `rakun-cardume` (`09-cardume/136` step 7): rakun's `use setLocal(atom) -> fn(T)` and jhonstart's `use local(atom) -> ?T` (names: `atm-a`);
       `LocalKey`, `setLocal(key, value)`, `local(key)` gone
 - [ ] `#[middleware]` functions, route handlers and actions return `@Component<RequestBase, Response>`
       (`rakun-web/src/middleware.bp`, `convention.bp`); a plain `-> Response` keeps working without `use`
