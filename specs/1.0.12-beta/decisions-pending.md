@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**75 questions and 15 contradictions are open, and 97 implementation choices await confirmation.**
+**74 questions and 15 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290 · `ctr-y` → 291 · `ctr-z` → 292 · `nat-c1`, `nat-c3`, `bpp-g` → 293 · `nat-c2` → 294 · `nat-c4` → 295 · (cardume) → 296, 297 · `nat-c5` → 298.
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290 · `ctr-y` → 291 · `ctr-z` → 292 · `nat-c1`, `nat-c3`, `bpp-g` → 293 · `nat-c2` → 294 · `nat-c4` → 295 · (cardume) → 296, 297 · `nat-c5` → 298 · `nat-c6`, `03r-b` (reversed) → 299.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 ## Open questions
@@ -25,13 +25,7 @@ React, Spring, zod, TypeScript, LINQ and Tailwind in their foreign shape where b
 the feature. `nat-0`'s four rules are decisions 281–284; what remains applies them case by case; the contradictions it found are answered (287, 290, 291, 292). The Portuguese page lists every site with examples.
 
 #### nat-c · Untyped bags where a record type would flow — case by case
-Split at the maintainer's request into `nat-c1`…`nat-c7` (`nat-c1`, `nat-c3` → 293; `nat-c2` → 294; `nat-c4` → 295; `nat-c5` → 298); rakun's string-named events are already typed records by 281 (`#[on] fn f(e: OrderPlaced)`, `04-rakun/04` step 6). Each: (a) the typed record, (b) the bag kept with typed accessors beside it, (c) as is.
-
-#### nat-c6 · rakun's configuration read by string keys (rakun 04, 08, 13, 15)
-- **Measured.** `#[value("rakun.profiles.active")]`, `rakun.data.repositories.bootstrap-mode=lazy` (an enum as a string), `rkPropInt("12abc") == 12` (03r-b: lenient, against 67).
-- **Options.** (a) A typed record per prefix: `#[config("rakun.data")] type DataConfig(bootstrapMode: BootstrapMode = .Eager)`, injected by type; a wrong value an error at boot naming the key; the prefix stays a string (the config file's). (b) `#[value]` kept, typed readers that refuse a malformed value. (c) As is.
-- **Recommendation.** (a); 03r-b's lenient parse goes either way.
-- **Blocks.** rakun 04 (step 3's `#[configurationProperties]`), 08, 13, 15; 03r-b.
+Split at the maintainer's request into `nat-c1`…`nat-c7` (`nat-c1`, `nat-c3` → 293; `nat-c2` → 294; `nat-c4` → 295; `nat-c5` → 298; `nat-c6` → 299); rakun's string-named events are already typed records by 281 (`#[on] fn f(e: OrderPlaced)`, `04-rakun/04` step 6). Each: (a) the typed record, (b) the bag kept with typed accessors beside it, (c) as is.
 
 #### nat-c7 · emilia's theme as string pairs (06-emilia 34)
 - **Measured.** `ThemeEntry(name: string, value: string)` (`emilia/src/theme.bp:41`); `extendTheme(th, [#("--breakpoint-md", "")])` — clearing a breakpoint panics at run time.
@@ -645,7 +639,7 @@ local change in the named place). Full 1.0.10 text under the same id in
 | Id | Choice implemented | Where |
 |---|---|---|
 | 03r-a | Every rakun manifest is `["erlang"]`; a built erlang program ships and loads its `.erl` sidecars (ledger half moot under 153) | every member |
-| 03r-b | `rkPropInt("12abc")` is `12` (the leading-integer rule `toI32` states) | 04 |
+| 03r-b | ~~`rkPropInt("12abc")` is `12`~~ — reversed by 299: a malformed number stops the boot | 04 |
 | 03r-c | Front 05's readers stay botopink; no `rakun_config.erl` | 04 |
 | 03r-d | The configuration check runs in `bootSequenceFor`, lazy initialization included | 04 |
 | 03r-e | A cookie or query component std refuses, or that would decode to a control character, stays as written (`decodeComponent`) (`ctr-p`) | 04 |

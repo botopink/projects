@@ -72,6 +72,10 @@ env variable but `BOTOPINK_BIN`, no external service.
 
 - [ ] `command_decorator_test.bp`'s load-time refusal across types stays the cell; the box ("two commands claiming the same name fail at comptime, naming both declarations") open on lg2-j, says so; if lg2-j is answered "no", reworded to the load-time refusal and ticked
 
+### Step 5 — configuration as a typed record (decision 299)
+
+- [ ] this member's `#[value("…")]` / `rkProp*` reads and group configs become `#[config("<prefix>")]` records (`04` step 7)
+
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun-cli`.
 

@@ -103,6 +103,18 @@ A bean, an event or a condition is named by its type or its function, never its 
 - [ ] `#[conditionalOnMissingBean(MailSender)]` takes a `type` (280 example 3); `rkExcludeFromEager`
       takes the type
 
+### Step 7 — configuration as a typed record (decision 299)
+
+- [ ] `#[config("rakun.data")] pub type DataConfig(poolSize: i32 = 10, bootstrapMode: BootstrapMode =
+      .Eager)`: bound at boot from the config file (and `#[env("…")]` fields from the environment),
+      injected by type (`use config(DataConfig)` in a `RequestBase` body, or as a bean); `#[configurationProperties]`
+      folds into it
+- [ ] a field's key is its exact name (`poolSize`, `Lazy` — no case conversion, 280 (4)); `#[key("pool-size")]`
+      names an existing file's spelling; a wrong type, an unknown variant, an unknown key or a malformed
+      number (`"12abc"`) stops the boot naming the file, line and expected type (03r-b's lenient parse goes)
+- [ ] `#[value("…")]` and `rkProp*` leave the rakun members; `rakun.profiles.active` is a field of a
+      `#[config("rakun")]` record (`profiles: string[]`)
+
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` green in `modules/rakun`;
 `botopink format --check` clean there; `modules/README.md` updated.
 

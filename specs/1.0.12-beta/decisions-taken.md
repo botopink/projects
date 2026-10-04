@@ -4,7 +4,7 @@ The rules the fronts implement against. Numbers continue from
 [1.0.10-beta's record](../1.0.10-beta/decisions-taken.md) (which stopped at 143; 91–94, 97 and
 99–101 are used) and are never renumbered or reused. A question is raised in
 [`decisions-pending.md`](./decisions-pending.md) under a lettered id and moves here with the next
-free number. **The next free number is 299.**
+free number. **The next free number is 300.**
 
 Each row: number · the id it answered · the rule in force · the fronts it binds. A row amended by a
 later one states only what is in force and cites the amendment; a row fully replaced is one line.
@@ -124,6 +124,7 @@ jhonstart & templates: 186, 190–193, 200, 202, 204, 220, 223 · onze: 218 · b
 | 283 | nat-0 (rule 3) | **No general rule against a second model.** Whether a library keeps its own model of something the language has (`@Result`, records, variadics, interfaces, `use`, `noreturn`, std's names) is decided case by case, calmly — each case is its own question (`nat-d1`…`nat-d9`), and until answered the front writes what it has today | 125 · 127 · rakun 04, 09, 93 · `07-onze/53` · 98 |
 | 284 | nat-0 (rule 4) | **Configuration in JSON, case by case.** `botopink.json` stays as clean as possible; a configuration may live in it, or in another JSON file, where that makes sense, decided case by case (`nat-f1`…`nat-f4`). `"bpp": "<package>"` stays required: an application may depend on two packages that unfold `.bpp` files and must say which | 116 · 124 · 98 · `07-onze/50`, `53` |
 | 298 | nat-c5 | **A decorator's meta is a typed value keyed by its type:** `decl.setMeta(Entity(table: "cities"))` stores one value per type per declaration (a second of the same type is an error at it), `decl.addMeta(Index(…))` appends what repeats; read `@typeInfo(City).meta(Entity)` → `?Entity` and `@typeInfo(City).metaAll(Index)` → `Index[]`, the same on `@TypeInfo.all`'s `Declared` (`d.meta(Entity)`). The key is the record's type (281, 297) — not the decorator's name: a renamed decorator changes no reader, two decorators may write one type, one decorator several, and who may read is who sees the type. Comptime only (280 (0)). Amends 216 (2) (`setMeta(key, value)` strings under the decorator's name) | `01-compiler/130` step 8 · `05-jhonstart/26` step 8 · rakun 08 |
+| 299 | nat-c6 | **rakun's configuration is a typed record per prefix:** `#[config("rakun.data")] pub type DataConfig(poolSize: i32 = 10, bootstrapMode: BootstrapMode = .Eager)`, bound at boot from the config file — the prefix a string, the file's (281) — and injected by type (`use config(DataConfig)`, 297's type form, or as a bean). A field's key is its exact name and an enum value its exact variant (`poolSize: 10`, `bootstrapMode: Lazy`; no case conversion, 280 (4)); `#[key("pool-size")]` names another spelling, `#[env("DB_POOL_SIZE")]` an environment variable. A wrong type, an unknown variant, an unknown key or a malformed number stops the boot naming the file, the line and the expected type — `rkPropInt("12abc") == 12` (03r-b) is reversed. `#[value("…")]`, `rkProp*` and string profiles go; `#[configurationProperties]` folds into `#[config]` | rakun 04 step 7 · 08 · 13 · 15 · 88 |
 
 ## Formatter
 

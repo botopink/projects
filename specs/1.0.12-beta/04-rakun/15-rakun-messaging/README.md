@@ -91,6 +91,10 @@ the toolchain row "a sidecar cannot reach an external OTP application"; the clos
 - [ ] R16-1 ("the parser is an ordinary compiled function; the decorator body calls it") stays open on lg2-w; README records the inlined parser's size and the one-line change that closes it when the decision lands
 - [ ] RX-2 (15, 86, 90): decorator-argument default re-measured in `decorators_test.bp`, result recorded
 
+### Step 7 — configuration as a typed record (decision 299)
+
+- [ ] this member's `#[value("…")]` / `rkProp*` reads and group configs become `#[config("<prefix>")]` records (`04` step 7)
+
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `rakun-messaging` (`test/stream/` in the run), `rakun-data` (`test/tx/`) and
 `rakun-scheduling`; `grep -rn RAKUN_TEST_ modules/rakun-messaging modules/rakun-data/src/tx modules/rakun-data/test/tx` empty.

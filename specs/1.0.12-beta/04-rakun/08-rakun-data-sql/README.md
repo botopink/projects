@@ -67,6 +67,10 @@ cell claims to have reached a server.
       function; an operator is `Op`'s variant, never `">="`
 - [ ] `index`, `unique` take `Field<T>` (`.state`); table and column names stay strings (SQL's, 280 example 6)
 
+### Step 5 — configuration as a typed record (decision 299)
+
+- [ ] this member's `#[value("…")]` / `rkProp*` reads and group configs become `#[config("<prefix>")]` records (`04` step 7)
+
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun-data`.
 

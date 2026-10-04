@@ -59,6 +59,10 @@ No env-gated cell; the pool is asserted by the double's accept count.
 - [ ] `request_test.bp`: a header-adding interceptor is seen by the double; two interceptors run in registration order
 - [ ] `retrieveStream` hands a 1 MB body from the double in more than one chunk, concatenation equals the body; peak process heap during transfer under 256 KB (`erlang:process_info(memory)` through the sidecar)
 
+### Step 4 — configuration as a typed record (decision 299)
+
+- [ ] this member's `#[value("…")]` / `rkProp*` reads and group configs become `#[config("<prefix>")]` records (`04` step 7)
+
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun-client`.
 
