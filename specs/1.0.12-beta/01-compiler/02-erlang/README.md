@@ -1,7 +1,7 @@
 # Front 02 — erlang: the erlang target answers what decision 8 says, on every shape
 
 **Priority:** high · **State:** partial: steps 1–3, 5 (box 1), 6, 8, 9, 11–13 on feat; steps 4, 7,
-10 open
+10, 14 open
 **Depends on:** `05-wasm` (step 7's wasm column) · `01-checker`'s `@block` tail-form refusal (step
 10)
 **Owns:** `modules/compiler-core/src/codegen/erlang.zig` · `src/codegen/crossModule.zig` ·
@@ -78,6 +78,16 @@ same `fun`. Nothing in `erlang.zig` deleted.
 
 - [ ] `@block { 1 + 2 }` refused by the checker (`01-checker` row) — `snapshots/codegen/*/erlang/**`
       then byte-identical
+
+### Step 14 — a method declared `-> @Result` is lowered as a `@Result` (decision 304)
+
+Measured by rakun (`rakun-data/src/sql/template.bp`, comment above `tryQuery`): on erlang a **method**
+declared `-> @Result` is lowered as a plain function — a `throw` in it escapes as a raise and a returned
+value is not wrapped in `{ok, V}` — while a module-level fn is lowered correctly.
+
+- [ ] `run/` cell: a method `-> @Result<i32, string>` with `return 1`, `throw "x"` and `try other()` answers `{ok, 1}`, `{error, "x"}` and the propagated error — same as the module-level fn cell
+- [ ] the same cell on js (no change expected; asserted)
+- [ ] a behavior method (`KeyValueStore.get`) declared `-> @Result` dispatches and wraps the same
 
 ### Rows found by other fronts
 

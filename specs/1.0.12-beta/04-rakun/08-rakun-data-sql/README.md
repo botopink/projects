@@ -71,6 +71,17 @@ cell claims to have reached a server.
 
 - [ ] this member's `#[value("…")]` / `rkProp*` reads and group configs become `#[config("<prefix>")]` records (`04` step 7)
 
+### Step 6 — one API answering `@Result<T, StoreError>` (decision 304; after `01-compiler/02-erlang` step 14)
+
+- [ ] `StoreError` declared in `src/datasource.bp` (already exported; this front edits neither `botopink.json` nor `src/root.bp`): `pub type StoreError { Unavailable(message: string), Timeout(ms: i32), Conflict(message: string), Constraint(name: string, message: string) }` — the draft cases, closed here with 09 (a case added only when a driver failure needs its own handling); exported for 09
+- [ ] `SqlTemplate.query` / `update` / `single` answer `@Result<Rows | i32 | ?Row, StoreError>`; `raising` and the `@panic(o.error)` path go — a driver failure is `throw` of its case, never a raise
+- [ ] `tryQuery`, `tryUpdate`, `tryQueryOn`, `tryUpdateOn` (`src/sql/template.bp:106-152`), `tryMigrate` (`src/migration/migrate.bp:414`) and every other `try*` twin in the member deleted; their callers use the one API (`case` or `try`)
+- [ ] the ORM repository's generated methods (`save`, `update`, `byId`, derived queries) answer `@Result<…, StoreError>`; an optimistic-lock miss is `Error(Conflict(…))` (`audit-and-revisions-example.bp`'s `repo.tryUpdate(saved)` becomes `repo.update(saved)` matched on `Conflict`)
+- [ ] `transaction(work)`: an `Error` the work returns rolls back, as a raise does today — one cell each
+- [ ] `@panic` left only for a programming error: `single()` meeting more than one row keeps its message naming the statement
+- [ ] the method forwarding comment in `template.bp` (a method `-> @Result` lowered as a plain function) gone with 02 step 14
+- [ ] the front's examples and `repository/rakun/AGENTS.md` § SQL data access rewritten to `try` / `case`
+
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun-data`.
 

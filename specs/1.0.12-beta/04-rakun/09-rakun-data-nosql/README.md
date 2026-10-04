@@ -47,7 +47,7 @@ pub behavior DocumentStore {
 ```
 
 Documents and filters are JSON strings; `get` / `findById` / `popRight` answer `?string`; mutators
-answer a count; driver failures raise (as 08's `query`), each with a `try*` twin.
+answer a count. Under decision 304 every method answers `@Result<…, StoreError>` (08's `StoreError`) — no raise on a driver failure, no `try*` twin; the signatures above are the pre-304 shapes, rewritten in step 6.
 
 | Arm | URL | In the gate | How |
 |---|---|---|---|
@@ -89,7 +89,7 @@ No cell env-gated or *skipped*; refusal cells are green, asserting the refusal t
 
 ### Step 2 — The Mnesia arm
 
-- [ ] a document written in one transaction plus a raise in it leaves nothing behind
+- [ ] a document written in one transaction plus an `Error` returned in it leaves nothing behind
 - [ ] `disc_copies` survives a node restart within one run (sidecar stops and restarts `mnesia` on the same directory)
 - [ ] a second node joining sees the existing documents — over `peer`; or, if the runner cannot start a peer, reworded to the `add_table_copy` call issued and its result asserted, README says why
 - [ ] the supported filter subset works; anything else fails naming the operator
@@ -98,10 +98,10 @@ No cell env-gated or *skipped*; refusal cells are green, asserting the refusal t
 
 - [ ] every `KeyValueStore` method maps to the documented Redis command, asserted on the double's command log
 - [ ] `fieldGet` / `fieldPut` use hashes, `pushLeft` / `popRight` lists
-- [ ] a connection lost mid-call (`redisDoubleFail`) retried once, then raises
+- [ ] a connection lost mid-call (`redisDoubleFail`) retried once, then answers `Error(Unavailable(…))`
 - [ ] `redis` health indicator `UP` against the double, `DOWN` with the reason when the port is closed
 - [ ] `index`, `get`, `search`, `delete` go through `rakun-client`; the HTTP double records paths and bodies; timeouts, the bundle and the SSRF filter apply (one negative test each)
-- [ ] a 4xx from the double raises with the double's error body, not a generic message
+- [ ] a 4xx from the double answers an `Error` carrying the double's error body, not a generic message
 - [ ] no third-party OTP application required (manifest and sidecar list prove it)
 
 ### Step 4 — `#[documentQuery]`
@@ -117,6 +117,13 @@ No cell env-gated or *skipped*; refusal cells are green, asserting the refusal t
 - [ ] `mongodb://`, `bolt://`, `cassandra://`, `couchbase://` each refuse the boot naming scheme, driver and lg2-a — four cells in `test/nosql/arms_test.bp`
 - [ ] four `deferred.md` rows, each naming its box list and the unblocking gap
 - [ ] member README's arm table says which arms run and which refuse
+
+### Step 6 — one API answering `@Result<T, StoreError>` (decision 304; after 08 step 6)
+
+- [ ] `KeyValueStore` and `DocumentStore`: every method answers `@Result<T, StoreError>` (`get` → `@Result<?string, StoreError>`, a mutator → `@Result<i32, StoreError>`); no `try*` method on either behavior or any arm
+- [ ] each arm maps its driver failure to a `StoreError` case — connection refused / lost → `Unavailable`, deadline → `Timeout`, version clash → `Conflict`; one cell per arm per case it can produce
+- [ ] a refused filter operator stays a boot / call refusal naming the operator (a programming error, `@panic`)
+- [ ] `examples/stores-example.bp` rewritten: `raiseProblem` gone, the controller `-> @Result<Response, StoreError>` with `try` (65 step 4)
 
 **Gate:** standard (fronts.md § Gate) +
 - [ ] `botopink test --target erlang` green in `modules/rakun-data` with the `nosql/` files; `botopink format --check` clean

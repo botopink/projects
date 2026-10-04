@@ -62,6 +62,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] decision 301 (`#[styled(..tokens)]`) — 119 s4 · 53 s12 · after 34 s1 for the build-time sheet
 - [ ] decision 302 (a tag's annotation = a decorator: `@Decl`, no return, meta) — 130 s9 · 118 s5 · 119 · 120 · 126
 - [ ] decision 303 (an action answers `@Result<T, ActionError>`; no `ActionOutcome`) — 127 s1–s3
+- [ ] decision 304 (a store answers `@Result<T, StoreError>`; no `try*` twin, no raise) — rakun 08 s6 · 09 s6 · 65 s4 · 02-erlang s14
 - [ ] 01-checker s22 — the `.bpp` prelude scope (270) · 116 hands the prelude list
 - [x] 01-checker s19–s20 — type application and `comptime <expr>` (255): on feat (`49455602`)
 - [ ] 01-checker rows — the `@block` tail refusal, the `$stringify` parser refusal (239), `primitive-type-name-taken`, the comptime body's file, T17, a package's module namespace, two aliased same-named types (imp-a), `@External.Wasm` read on every target, the template memo key, row 33 · the first two unblock 04 s1–2 and 02 s10
@@ -175,7 +176,7 @@ Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.
 last section.
 
 **First — the botopink shape** (raised 2026-10-04; answer `nat-0`, then the rest):
-- [ ] nat-d2…d9 — case by case (283; nat-d1 → 303): store `try*` twins (rakun 09/93), `Schema<T>` (125), arity families (125), `Partial`/`Pick` (125, 134), `nav:` strings (26, 53), lifecycle (rakun 04), `use use…` (53), erika's LINQ names (98)
+- [ ] nat-d3…d9 — case by case (283; nat-d1 → 303, nat-d2 → 304): `Schema<T>` (125), arity families (125), `Partial`/`Pick` (125, 134), `nav:` strings (26, 53), lifecycle (rakun 04), `use use…` (53), erika's LINQ names (98)
 - [ ] nat-e — Spring's annotations · 130 s5, rakun 04/08/13/15/19/79/91/93, 130-b, 130-c
 - [ ] nat-f2…f4 — case by case (284): `onze.json` keys (124, 08-h), `files`/`workspaces` (98), `ONZE_PUBLIC_` (50, 53)
 - [ ] nat-g — foreign syntax in annotations · 17
