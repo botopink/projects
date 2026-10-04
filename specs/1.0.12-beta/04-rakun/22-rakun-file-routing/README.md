@@ -94,6 +94,17 @@ interim boxes below hold until `05-jhonstart/26` step 8 lands.
 - [ ] RX-2 (60, 61, 64, 66): decorator-argument default re-measured in `segment_config_test.bp`, `i18n_test.bp`; README records the result
 - [ ] RX-13: `actions_test.bp` and the `actions-cache` fixture spell no `__bp_action` / `X-Bp-Action` (onze's defaults, decision 114); `grep -rn '__bp_action\|X-Bp-Action' modules/rakun-app` empty
 
+### Step 7 — file roles are the framework's (decision 285)
+
+The compiler applies nothing by file name: an unfolded `page.bpp` is a plain `pub default fn`. The
+file-convention route table (this member's) is generated at build from `routing`'s kinds (102,
+171) and calls jhonstart's `page` / `layout` / … as comptime functions on each default function.
+
+- [ ] the generated table: `pub val routes = comptime [layout("", rootLayout), page("blog/[slug]",
+      blogSlugPage), …]`, one entry per app file, by `routing`'s `kindOf(path)`; no `bppKinds` read
+- [ ] a page's `S` / `D` from `@typeInfo(f).hooks` (277) through that call, the same as the decorator
+      form; `onze build`'s report unchanged (`07-onze/49` step 5)
+
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun-app`; `examples/rakun-ssr` still builds.
 

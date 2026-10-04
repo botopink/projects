@@ -1,7 +1,7 @@
 # Decisões pendentes — 1.0.12-beta (só o que está em aberto, por ordem de importância)
 
-Atualizado em 2026-10-04 (decisões 278–284). Só o que ainda espera resposta sua: o que já foi respondido está em
-`specs/1.0.12-beta/decisions-taken.md` (decisões 144–284; próximo número livre: **285**) e saiu daqui.
+Atualizado em 2026-10-04 (decisões 278–285). Só o que ainda espera resposta sua: o que já foi respondido está em
+`specs/1.0.12-beta/decisions-taken.md` (decisões 144–285; próximo número livre: **286**) e saiu daqui.
 Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 234–236 (injeção do rakun,
 `@TypeInfo.all` com lista, decorador de função), 237 (captura do template pelo texto), 238–243
 (`@External.Wasm`, `$stringify`, codepoints no wasm, células sem WASI, dependência direta, vírgula final),
@@ -69,7 +69,7 @@ o recurso equivalente na linguagem. Eles caem em sete padrões.
 **As quatro regras já estão decididas:** 281 (nenhum identificador de código como string), 282 (o papel
 vai no decorator), 283 (segundo modelo: caso a caso, `nat-d1`…`nat-d9`) e 284 (JSON: caso a caso,
 `nat-f1`…`nat-f4`). **Ordem do que falta:** as quatro contradições **`ctr-x`…`ctr-aa`**, que já batem
-com decisões tomadas; depois `nat-c`, `nat-d1`…`nat-d9`, `nat-e`, `nat-f1`…`nat-f4` e `nat-g`.
+com decisões tomadas; depois `nat-c`, `nat-d1`…`nat-d9`, `nat-e`, `nat-f2`…`nat-f4` e `nat-g`.
 
 ### ctr-x · `registerSegmentConfig(dynamic: ForceStatic, …)` × decisões 202, 186 e 277
 
@@ -462,33 +462,6 @@ Você decidiu (284) que o `botopink.json` fica **o mais limpo possível**, mas c
 quando fizer sentido, decidindo **caso a caso**. O `"bpp": "jhonstart"` continua obrigatório: o app pode
 depender de dois pacotes que desdobram `.bpp`, e precisa dizer qual. Cada caso abaixo é uma pergunta.
 
-### nat-f1 · `bppKinds`: qual nome de arquivo recebe qual decorator (221, 270)
-
-**Contexto.** Pela 221, o `botopink.json` do jhonstart diz qual arquivo recebe qual decorator. O lado
-direito é o **nome de uma função** do jhonstart escrito como texto, e nada confere. As contradições
-`ctr-g` e `ctr-t` nascem desse mapa. Existe ainda uma terceira cópia da mesma lista no `routing`
-(`fileKinds() -> Array<string>`, 102).
-
-**Hoje:**
-```json
-// jhonstart/botopink.json
-{ "bppKinds": { "page": "page", "layout": "layout", "template": "template" } }
-```
-
-- [ ] **(a)** Como na 221: o mapa fica no `botopink.json` do pacote.
-- [ ] **(b)** Cada decorator diz a qual arquivo se aplica, com uma marca builtin; o manifesto fica limpo.
-  ```bp
-  // jhonstart/src/routes.bp
-  #[@BppKind("page")]   pub fn page(comptime decl: @Decl, …) { … }
-  #[@BppKind("layout")] pub fn layout(comptime decl: @Decl, …) { … }
-  ```
-- [ ] **(c)** Um módulo do pacote exporta a lista (`pub val kinds: #(string, Decorator)[] = [#("page", page), …]`)
-  — precisa mudar a 270 (o prelude só tem `import`) ou criar um segundo módulo de convenção.
-
-**Recomendação: (b)** — o manifesto fica mais limpo, o decorator é referência (281) e o papel fica no
-decorator (282).
-**Bloqueia:** 116 passo 2; 117 passo 1; `ctr-g`; `ctr-t`.
-
 ### nat-f2 · As opções do `onze.json`: `trailingSlash`, `redirects`, `markdown`, `allowedRedirects` (124, 08-h)
 
 **Contexto.** Essas chaves repetem opções que o código do onze já tem como tipo (`url_rules`,
@@ -643,6 +616,10 @@ import {components.post_card as PostCard};      // arquivo com outro nome: alias
 entre chaves); registrar a emenda não muda código, só o texto. **Bloqueia:** os READMEs da 116 e da 118.
 
 ### ctr-g · 213 × 221: um nome ligado duas vezes
+
+> **Desde a 285.** Nenhum decorator vem mais do nome do arquivo: o compilador só conhece o `"bpp"`, o `html`
+> e o prelude, e o papel do arquivo é da tabela de rotas do framework. O conflito sobra só quando o cabeçalho
+> de um `page.bpp` escreve o decorator do próprio tipo (`#[page(paths: …)]`, 282).
 
 **Contexto.** Pela 213, `page.bpp` desdobra em `pub default fn page`. Pela 221, o pacote nomeado em
 `"bpp"` (o jhonstart) declara no `botopink.json` quais nomes de arquivo recebem qual decorador
@@ -1077,6 +1054,9 @@ val p = Person(name: "Ana Maria da Silva", email: "ana@example.com", city: "Belo
 falta só o texto dizer "emenda". **Bloqueia:** 16-formatter passo 6.
 
 ### ctr-t · 213 × 221: arquivo de tipo cujo nome não é nome de função
+
+> **Desde a 285.** O `bppKinds` saiu; o conflito fica entre o erro da 213 e os nomes de arquivo do
+> `routing` (`not-found.bpp`), que a tabela de rotas importa.
 
 **Contexto.** A 213 dá à função de um `.bpp` o nome do arquivo, e "nome de arquivo que não é nome de
 função válido é erro no arquivo". A 221 mapeia tipos de arquivo pelo nome (`bppKinds`), e `not-found.bpp`

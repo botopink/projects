@@ -47,6 +47,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 01-checker s24 — typed comptime decorator arguments, `@Decl<T>`, `Field<T>` and `.name` (280; cases in `01-checker/examples/decorator-arguments-280.md`) · then 125 s7, the `nat-*` rewrites
 - [ ] decision 281 (references, not strings) — rakun 04 s6, 08 s4, 12 s4 · 130 s7 · 125 s11 · 120 s6 · 127 s5 · 126 s4 · 26 s9 · 53 s7 · each after 01-checker s24
 - [ ] decision 282 (a role in the decorator) — 117 s6 · 53 s8 · 51 s8 · 121 s8 · after 01-checker s24
+- [ ] decision 285 (the toolchain knows `bpp`, `html`, the prelude) — 116 s2 · 117 s1 · rakun 22 s7 · 26 s10
 - [ ] 01-checker s22 — the `.bpp` prelude scope (270) · 116 hands the prelude list
 - [x] 01-checker s19–s20 — type application and `comptime <expr>` (255): on feat (`49455602`)
 - [ ] 01-checker rows — the `@block` tail refusal, the `$stringify` parser refusal (239), `primitive-type-name-taken`, the comptime body's file, T17, a package's module namespace, two aliased same-named types (imp-a), `@External.Wasm` read on every target, the template memo key, row 33 · the first two unblock 04 s1–2 and 02 s10
@@ -166,7 +167,7 @@ last section.
 - [ ] nat-c — untyped bags · bpp-g, 08-j, 117, 122, 123, 130 (meta), rakun 04/08/15, 34, 03r-b
 - [ ] nat-d1…d9 — case by case (283): `ActionOutcome` (127), store `try*` twins (rakun 09/93), `Schema<T>` (125), arity families (125), `Partial`/`Pick` (125, 134), `nav:` strings (26, 53), lifecycle (rakun 04), `use use…` (53), erika's LINQ names (98)
 - [ ] nat-e — Spring's annotations · 130 s5, rakun 04/08/13/15/19/79/91/93, 130-b, 130-c
-- [ ] nat-f1…f4 — case by case (284): `bppKinds` (116 s2, 117 s1, ctr-g, ctr-t), `onze.json` keys (124, 08-h), `files`/`workspaces` (98), `ONZE_PUBLIC_` (50, 53)
+- [ ] nat-f2…f4 — case by case (284): `onze.json` keys (124, 08-h), `files`/`workspaces` (98), `ONZE_PUBLIC_` (50, 53)
 - [ ] nat-g — foreign syntax in annotations · 17
 
 Then:

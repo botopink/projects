@@ -46,7 +46,7 @@ never compares it with the directory (read, not run — step 0).
 | Form | Is | Declares its route by |
 |---|---|---|
 | `page.bp` | a module with a decorated function | `#[page("<dir>")]`, checked against the directory by the scan |
-| `page.bpp` | a `.bp` module in another spelling (front 116, decision 198) | its directory below `app/`; `#[page]` from the file name via the `bpp` package's `bppKinds`, or from the header (221); `route` parameter and `params`: `bpp-g` |
+| `page.bpp` | a `.bp` module in another spelling (front 116, decision 198) | its directory below `app/`; a page by its file name in the route table `rakun-app` generates (285; `04-rakun/22`), or `#[page]` written in the header (221 (1)); `route` parameter and `params`: `bpp-g` |
 | `page.md` | Markdown with frontmatter | the scan, which stages a page module calling 121's renderer |
 | `page.html` | a complete document | the scan, which stages a page that answers the file's bytes |
 

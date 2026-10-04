@@ -10,8 +10,8 @@
 // function the file unfolds to, ahead of `return html """…""";` (decision 199).
 //
 // What a `.bp` page writes by hand: `#[page("blog/[slug]")]` comes from the
-// file's name through jhonstart's `bppKinds`, or from a decorator on the header's
-// last line (decision 221). Its `route: PageContext` parameter and the `params`
+// file's name through the route table built from its file name, or from a decorator on the header's
+// last line (decision 285). Its `route: PageContext` parameter and the `params`
 // bound from the bracket segment are open question `bpp-g` (README § Notes,
 // point 1); `params.slug` below is written against that answer.
 //

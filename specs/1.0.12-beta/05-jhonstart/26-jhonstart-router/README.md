@@ -191,6 +191,12 @@ list against its own decorators; the compiler names no marker.
 - [ ] event handlers as `#[onClick(like)]` (a function value; 278 + 280 example 7) — no
       `data-jh-on-click="LikeButton:like"`, no `"error:reset"`; the runtime binds by position
 
+### Step 10 — file roles are the framework's (decision 285)
+
+- [ ] `page`, `layout`, `template`, `loading`, `error`, `notFound` callable as comptime functions over
+      a function value (`page("blog/[slug]", f)`), with the decorator form's checks (the stage
+      markers of step 8, the return `View`) — the decorator form stays for hand-written `.bp` routes
+
 **Gate:** standard (fronts.md § Gate) + every jhonstart member at its count or above on both rows
 (core 204; `jhonstart-dom-test` commonJS only, structural — 101) · `grep -rni rakun
 modules/jhonstart/src` empty and `grep -i emilia modules/jhonstart/src` still empty · `dom_test.bp`

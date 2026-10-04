@@ -5,7 +5,7 @@
 // root layout of the scaffolded project, as a `.bpp` file.
 //
 // The file's name is its kind: for `layout.bpp`, the unfold (front 116) gives
-// the function `#[layout]` through jhonstart's `bppKinds` (decision 221) and
+// the function `#[layout]` through the route table built from its file name (decision 285) and
 // names it after the file (decision 213); it takes `props: LayoutProps`.
 // The route is the empty path — this file is at the root of `app/` — so the
 // layout wraps every route. `props.children` is the page (or the nearer layout)

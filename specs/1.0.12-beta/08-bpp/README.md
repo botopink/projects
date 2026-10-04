@@ -147,7 +147,7 @@ Labels only; text in [`../decisions-taken.md`](../decisions-taken.md).
 | 199 | `type Props(…)` → `props: Props` parameter (none without it), never `pub val`; declarations (`import`, `type`, `pub`) stay module-level, statements (`val`, `use`) become the body before `return` | 116 · 118 · 120 |
 | 213 | `pub default fn` named after the file (`components/PostCard.bpp` → `pub default fn PostCard(props: Props) -> Element`, `import {components.PostCard};`); non-function file name is an error | 116 · 118 |
 | 200 | `html` = `pub default fn` of core `jhonstart` (`import html, {Element} from "jhonstart";`); `jhonstart-html` deleted; manifest `"bpp": "jhonstart"` | `05-jhonstart/26` step 0 · 116 · 118 |
-| 221 | `page.bpp` decorator from the header (line before the closing `---`) or the file name via `"bppKinds"` in the `bpp` package's `botopink.json`; mismatch is an error | 116 step 2 · 117 step 1 |
+| 221 · 285 | A `.bpp` decorator only when the header writes it (line before the closing `---`); a file's role (page, layout) is the framework's route table, never the toolchain's — it knows the `bpp` package, its `html` and its prelude only | 116 step 2 · 117 step 1 |
 | 270 | `bpp` package's `src/prelude.bp` (own modules only) is the last scope; imported only when a name resolves through it; header wins; binding the default function's name is an error; 118 writes jhonstart's | 116 · 118 |
 | 186 · 202 | Stage is comptime: `#[page]` prerenders unless it reaches a `#[serverOnly]` hook; no `prerender` export, no `output` key | 117 step 2 · 123 · 124 |
 | 203 | One convention: `app/` tree, directory per route; `.bpp` where `page.bp` is; no `pages/` | 117 step 1 |

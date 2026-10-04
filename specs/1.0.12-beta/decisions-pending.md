@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**75 questions and 22 contradictions are open, and 97 implementation choices await confirmation.**
+**74 questions and 22 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`).
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 ## Open questions
@@ -96,12 +96,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 
 #### nat-f · Configuration in JSON — case by case (decision 284)
 `botopink.json` as clean as possible, configuration allowed where it makes sense (284); `"bpp": "<package>"` stays. Each case below is its own question.
-
-#### nat-f1 · `bppKinds`: which file name takes which decorator (221 (2), 270)
-- **Measured.** The `bpp` package's `botopink.json` maps file names to its decorators (`"bppKinds": {"page": "page", "layout": "layout", …}`); the right side names a function of the package's code, unchecked; `ctr-g` and `ctr-t` are clashes this map causes. A third copy of the kinds lives in `routing` (`fileKinds() -> Array<string>`, 102).
-- **Options.** (a) As 221: the map in the package's manifest. (b) Each decorator says it: the builtin marker `#[@BppKind("page")] pub fn page(…)`, read at comptime with `@TypeInfo.all(with: @BppKind)` in that package; no manifest key, the prelude still imports only (270). (c) A module of the package exports it (`pub val kinds: #(string, Decorator)[]`) — needs 270 amended or a second conventional module.
-- **Recommendation.** (b): the manifest gets cleaner, the decorator is a reference (281), its role is in a decorator (282).
-- **Blocks.** 116 step 2, 117 step 1; `ctr-g`, `ctr-t`.
 
 #### nat-f2 · `onze.json`'s `trailingSlash`, `redirects`, `markdown`, `allowedRedirects` (124, 08-h)
 - **Measured.** The keys restate options onze's code already types (`url_rules`, `MarkdownOptions`, `app(allowedRedirects:)`); a misspelt value is seen when the server boots.
@@ -527,6 +521,7 @@ left as recorded; the maintainer picks the resolution.
 - **Blocks.** The 116 and 118 READMEs.
 
 #### ctr-g · Decision 213 against decision 221: one name bound twice
+- **Since 285.** No decorator comes from a file name any more; the clash is left only where a route file's header writes its kind's decorator (`page.bpp` with `#[page(paths: …)]`, 282).
 - **Rules.** 213: function named after the file → `page.bpp` → `pub default fn page`. 221: `"bppKinds": {"page": "page", "layout": "layout", …}` — jhonstart's decorator `page` (`pub fn page(comptime decl: @Decl, seg: string)`, 202) annotates that function in the same module. 152 / 205 refuse a second binding of one name; 270 makes a header binding the default function's name an error.
 - **Recommendation.** One yields: (a) the toolchain applies a `bppKinds` decorator via a qualified reference binding no name in the module; (b) a route file's function takes a name other than its file's; (c) the decorators take names distinct from the file kinds. (a) changes no library surface.
 - **Blocks.** 116 step 2; 117 step 1; `bpp-g`.
@@ -592,6 +587,7 @@ left as recorded; the maintainer picks the resolution.
 - **Blocks.** 16-formatter step 6.
 
 #### ctr-t · Decision 213 against decision 221: a kind file whose name is not a function name
+- **Since 285.** `bppKinds` is gone; the clash stays between 213's error and `routing`'s file names (`not-found.bpp`), which the route table imports.
 - **Rules.** 213: the unfolded function is named after the file, and "a file name that is not a valid function name is an error at the file". 221: `bppKinds` maps kinds by file name; `not-found.bpp` (`08-bpp/124-bpp-cli/examples/scaffold/app/`) is such a kind; onze's generated routes table imports `NotFound`.
 - **Recommendation.** A file whose name `bppKinds` lists takes the kind's function name (`not-found` → `NotFound`, the routes table's spelling); every other file keeps 213's error.
 - **Blocks.** 116 step 2; 124's scaffold.

@@ -72,11 +72,12 @@ that line. Always the module's `pub default fn`, named after the file, never `pu
   `children` (193). Header imports in the language's form (`import {components.card.Card};`,
   `import {x} from "pkg";`); no relative import.
 
-**App-file decorator** (221): a decorator on the line before the closing `---` annotates the
-function; else from the file name via the `bpp` package's `botopink.json` map
-(`"bppKinds": {"page": "page", "layout": "layout", "template": "template", …}`, from `routing`'s
-conventions, decision 171) — applied as the manifest says, no library named. Header decorator ≠
-file name's (`page.bpp` with `#[layout]`): error at the header line; equal: allowed, redundant.
+**What the toolchain knows** (285): the package named by `"bpp"`, its `pub default fn` (`html`, the
+unfold target) and its prelude (270) — nothing else. A file's role (page, layout, …) is the
+framework's: the route table `rakun-app` generates from `routing`'s file kinds (`04-rakun/22`) calls
+jhonstart's `page` / `layout` on the unfolded function; the toolchain applies no decorator by file
+name and reads no `bppKinds`. A decorator written on the line before the closing `---` is ordinary
+header code annotating the function (221 (1)).
 `route: PageContext` and `params`: `bpp-g`.
 
 **Nothing added to a template body.** The header is the module-level half; no function emits
@@ -157,8 +158,8 @@ error at the key. `X.bp` + `X.bpp` in one directory: error naming both.
 - [ ] function named after the file, imported by path without alias (213); non-function file name
       refused at the file
 - [ ] declarations at module level, statements in the body in order; a statement reads `props`
-- [ ] decorator (221): one before the closing `---` annotates the function; else the fixture's
-      `bppKinds` gives it from the file name; mismatch refused at the header line
+- [ ] a decorator before the closing `---` annotates the function (221 (1)); without one the
+      function carries none — no decorator from the file name, no `bppKinds` read (285)
 - [ ] `X.bp` beside `X.bpp`, and `.bpp` with no key — each refused with § Mechanism's message
 - [ ] prelude (270): fixture with `prelude.bp` — markup-only `.bpp` compiles; module and emitted
       code import only used items; header name beats prelude's; `prelude.bp` holding a `fn`, another

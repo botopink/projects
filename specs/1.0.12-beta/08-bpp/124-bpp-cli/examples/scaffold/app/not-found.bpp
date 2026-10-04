@@ -3,7 +3,7 @@
 //
 // Demonstrates: step 5 — the root not-found boundary of the scaffold. The
 // file's name is its kind: for `not-found.bpp`, the unfold (front 116) gives
-// the function its decorator through jhonstart's `bppKinds` (decision 221).
+// the function its decorator through the route table built from its file name (decision 285).
 // onze's generated routes table imports `NotFound` from a not-found module
 // (`onze-cli/src/generate.bp`); decision 213 names the function after the file,
 // and `not-found` is not a function name — open (front 116 README § Notes).

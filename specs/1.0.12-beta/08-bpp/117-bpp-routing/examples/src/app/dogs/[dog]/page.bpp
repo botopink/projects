@@ -6,7 +6,7 @@
 //
 // The route is the directory. `#[page("dogs/[dog]")]` is not written: the
 // unfold (front 116) gives the function `#[page]` from the file's name, through
-// jhonstart's `bppKinds` (decision 221). `route` and `params` are open question
+// the route table built from its file name (decision 285). `route` and `params` are open question
 // `bpp-g`; the body below is written against its answer.
 //
 // `staticPaths` is `pub`, so it is a declaration of the module, where the scan
