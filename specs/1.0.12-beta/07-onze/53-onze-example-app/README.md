@@ -95,5 +95,11 @@ both `onze dev` and `onze build && onze start`, browser rows in a real browser, 
 - Every failure found is reported to the owning front — the purpose of this front. Combined
   examples live here only (decision 114).
 
+### Step 7 — references, not strings (decision 281)
+
+- [ ] the examples rewritten: `use actionState(createPost, initial)` (no `"createPost"`, no `use`
+      prefix), `<form action={createPost}>` (no `formAction("a_9f31…", …, "__bp_action")`),
+      starters from the catalogue (no `registerStarter("…")`), handlers `#[onClick(…)]`
+
 **Gate:** standard (fronts.md § Gate) +
 - [ ] `zig build test-libs` green for `blog`, `onze-test`; `serve.sh` exit 0

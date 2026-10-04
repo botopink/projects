@@ -57,8 +57,8 @@ so one tag may carry several, one of each:
 | Annotation | Attribute | The runtime |
 |---|---|---|
 | `#[transitionName("hero")]` | `data-jh-vt-name` | sets `view-transition-name`, pairing with the same name on the next page |
-| `#[transitionAnimate("slide")]` — `fade` (default), `slide`, `none`, `initial` | `data-jh-vt-animate` | picks the keyframes; `slide` reverses on back navigation |
-| `#[transitionAnimate(fade(duration: "0.4s"))]` — argument `string \| TransitionAnimation` | `data-jh-vt-animate` + inline custom properties | `TransitionAnimation(name, delay, duration, easing, fillMode, direction)`, the reference's record |
+| `#[transitionAnimate(.Slide)]` — `fade` (default), `slide`, `none`, `initial` | `data-jh-vt-animate` | picks the keyframes; `slide` reverses on back navigation |
+| `#[transitionAnimate(fade(duration: "0.4s"))]` — argument `Animate \| TransitionAnimation` (281) | `data-jh-vt-animate` + inline custom properties | `TransitionAnimation(name, delay, duration, easing, fillMode, direction)`, the reference's record |
 | `#[transitionPersist]` · `#[transitionPersist("player")]` | `data-jh-vt-persist` | element **moved** into the new document, not replaced — a playing `<video>`, a stateful island |
 | `#[transitionPersistProps]` | `data-jh-vt-persist-props` | a persisted island keeps its old props too |
 
@@ -100,7 +100,8 @@ first `<h1>`, else the pathname. `prefers-reduced-motion: reduce` disables every
 ### Step 4 — The transition arm of `html`, `navigate`, the announcer
 
 - [ ] `examples/view-transitions-example.bp` passes
-- [ ] an unknown animation (`#[transitionAnimate("spin")]`) fails at the argument, listing the four built-ins
+- [ ] `#[transitionAnimate(.Slide)]` (a variant or a `TransitionAnimation`, 281 — no `"slide"`); an
+      unknown one (`.Spin`) fails at the argument as a missing variant
 - [ ] `<Counter #[clientLoad, transitionPersist] />` carries both (two types); two
       `#[transitionName]` on one tag fail at the second
 - [ ] announcer text for a page with a title, without one, and with neither

@@ -11,7 +11,7 @@
 //   <video controls transition:persist>
 //   <a href="/legacy" data-astro-reload>
 //
-//   — here: #[transitionName("hero")], #[transitionAnimate("slide")],
+//   — here: #[transitionName("hero")], #[transitionAnimate(.Slide)],
 //     #[transitionAnimate(fade(duration: "0.4s"))], #[transitionPersist], <Counter #[clientLoad, transitionPersist] />
 //
 // A customised animation is a value: `fade(duration: "0.4s")` is a call in a
@@ -31,7 +31,7 @@ type Props(
     children: Children = [],
 )
 ---
-<htmlTag lang="en" #[transitionAnimate("none")]>
+<htmlTag lang="en" #[transitionAnimate(.None)]>
   <head>
     <title>{pageTitle}</title>
     <ViewTransitions />
@@ -48,6 +48,6 @@ type Props(
     <!-- keeps playing across navigations: the node is moved, not replaced -->
     <video controls muted #[transitionPersist("player")] src="/intro.mp4"></video>
 
-    <main #[transitionAnimate("slide")]><slot /></main>
+    <main #[transitionAnimate(.Slide)]><slot /></main>
   </body>
 </htmlTag>

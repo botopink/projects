@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**67 questions and 22 contradictions are open, and 97 implementation choices await confirmation.**
+**66 questions and 22 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280.
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 ## Open questions
@@ -26,16 +26,11 @@ the feature. Answer first: `nat-0` sets the rule, `nat-a`…`nat-g` apply it; `c
 the sites that already contradict a decision. The Portuguese page lists every site with examples.
 
 #### nat-0 · The rule: botopink's own feature before the imported shape
+- **Answered in part.** Rule 1 (no code identifier as a string) is decision 281, which also answers `nat-a`; rules 2–4 stay open below.
 - **Measured.** 278 replaced Astro's `prefix:name` with the annotation botopink already had. The sweep found ~40 more sites in seven patterns (`nat-a`…`nat-g`); several decisions and recommendations chose the foreign shape: 234 and 256 (string registry keys), lg2-f (1), lg2-g (1), lg2-i (1), 221 and 270 (`bppKinds`), 257 (`Schema<T>`).
 - **Options.** (a) Four rules, any exception stated in a decision: no code identifier (function, type, field, event, hook, action) passed as a string; no role declared by an export's name — it goes in the function's decorator; no second model of what the language has (`@Result`, records, variadics, interfaces, `use`); JSON only for what is not code. (b) Case by case, no rule. (c) Keep the imported shapes (porting ease).
 - **Recommendation.** (a). Its means are taken: decision 280 (typed comptime decorator arguments, `@Decl<T>`, `Field<T>`; lg2-f and lg2-i answered); lg2-g moot; 234/256's string keys, 221/270's `bppKinds` and 257's `Schema<T>` reopened by `nat-a`, `nat-f`, `nat-d`.
 - **Blocks.** `nat-a`…`nat-g`; lg2-g.
-
-#### nat-a · A function, type, field or event referred to by a string
-- **Measured.** `data-jh-on-click="LikeButton:like"` (120 example, `07-onze/53`'s client island, `contracts.md:75`; nothing reads it) · `use useActionState("createPost", …)`, `formAction("a_9f31…", …, "__bp_action")` (53) · `#[action("Signup")]`, `actionRef("newsletter", …)` (127) · `#[check("passwordsMatch", "password,confirm")]`, `#[extending("Dog")]`, `#[partial("RecipePatch")]`, `#[wireNames("Salmon=salmon,…")]` (125, `language-gaps.md`) · `Island(component: "LikeButton", props: [#("likes", "3")])`, the `<Component>Props` encoder found by name, `#[deferred]` registering `"Avatar"` at module load (120, 53) · `ctx.resolve("OrderCache")`, `resolveNamed("Clock", "fixed")`, `member: "make"`, `#[entityRepository("City")]`, `#[eventListener("OrderPlaced")]` (rakun 04, 08; 234, 256).
-- **Options.** (a) The reference is the value: a function, a `comptime t: type`, a field of the type; the tables (islands, actions, beans, listeners) built at comptime by `@TypeInfo.all(with: …)`; a qualifier is a distinct type. (b) Strings stay, each checked at comptime against the scope. (c) As is.
-- **Recommendation.** (a), written with decision 280's means (typed comptime arguments, `@Decl<T>`, `Field<T>` and `.name`; its use cases are the sites above).
-- **Blocks.** 120 (props encoder, `#[deferred]`), 125 steps 3–10, 127, `05-jhonstart/26` (event wiring), `07-onze/53`, rakun 04, 06, 08, 72, 78; 130-b.
 
 #### nat-b · A function's role declared by its export name
 - **Measured.** `staticPaths`, `partial` (117) · `generateMetadata`, `blogStaticParams` + `registerStaticParams("blog/[slug]", …)`, `Loading` / `NotFound` / `ErrorPage` (53) · OG image `pub val size`, `pub val contentType = "image/svg+xml"` (51) · `collections()` found in `src/content.bp` (121) · `registerSegmentConfig(…)` (`ctr-x`).
@@ -219,8 +214,8 @@ owning front lists the row under *Depends on*.
 
 #### 130-b · Two `#[provides]` of one type in a registry keyed by type name (decisions 254, 256)
 - **Measured.** 256's snippet keys a provider by `b.returnTypeName`. Two qualified providers of one type (`#[provides] #[qualifier("fast")] fn fastDye() -> Dye` beside `#[qualifier("slow")]`), and a `#[primary]` beside a plain one, collide on `"Dye"` → refused as a duplicate, where `__rkMake_Dye` let the unqualified or `#[primary]` one own the injection and kept the others reachable by `ctx.resolveNamed("Dye", "fast")` (`rakun/test/context_test.bp`, `examples/rakun-container`).
-- **Options.** (a) A qualified provider is keyed `Type@qualifier` (the decorator records `setMeta("qualifier", …)`); the plain name is the unqualified or `#[primary]` one; two owners of the plain name are the duplicate (`d = d.insert(rkBeanKey(b), b.value)`). (b) The registry holds only what injection by type reads; qualified providers stay in the context table their load-time registration fills. (c) The snippet as written: any two providers of one type are a duplicate.
-- **Recommendation.** (a): one registry, every bean in it, the old ownership rule kept, a duplicate still a build error; needs `rkBeanKey` callable in the block (decision 266).
+- **Options.** (a) A qualified provider is keyed `Type@qualifier` (the decorator records `setMeta("qualifier", …)`); the plain name is the unqualified or `#[primary]` one; two owners of the plain name are the duplicate (`d = d.insert(rkBeanKey(b), b.value)`). (b) The registry holds only what injection by type reads; qualified providers stay in the context table their load-time registration fills. (c) The snippet as written: any two providers of one type are a duplicate. (d) *Added under 281:* a qualifier is a distinct type (`type FastDye(dye: Dye)`, `#[provides] fn fastDye() -> FastDye`), so the registry is keyed by type alone; `#[qualifier("…")]` and `resolveNamed` go.
+- **Recommendation.** (d) under decision 281 — (a)'s `Type@qualifier` keeps a string beside the type; (a) if a string label is wanted after all.
 - **Blocks.** rakun's `#[provides]` / `#[qualifier]` / `#[primary]` migration (130 step 5: `context.bp`, its test, rakun-container).
 
 #### 130-c · A `#[configuration]`'s `#[bean]` methods in the registry (decision 234)
@@ -457,6 +452,7 @@ left as recorded; the maintainer picks the resolution.
 - **Blocks.** 122 step 1; `05-jhonstart/26` step 8's hook list.
 
 #### ctr-z · String instructions left after decision 278
+- **Since 281.** The variant and event strings go by rule 1 (`#[transitionAnimate(.Slide)]`, 126 step 4); open here: `data-jh-reload` / `data-jh-history` as annotations, the `jh:` events as typed hooks, `<Script>`'s strategies against `Hydrate`.
 - **Rules.** 278: an instruction on a tag is an annotation. 126 keeps `data-jh-reload`, `data-jh-history="replace"` on `<a>`, `jh:before-swap` string events, `#[transitionAnimate("slide")]` checked against a list; `<Script>`'s four string strategies (`onze-bundler/src/script.bp`, 50) stay beside `Hydrate` (120 § Blast radius).
 - **Recommendation.** `<a #[reload]>`, `<a #[history(History.Replace)]>`, `#[transitionAnimate(Animate.Slide)]`, events as typed functions; `<script #[clientIdle] src=…>` — one strategy vocabulary.
 - **Blocks.** 126 steps 1–4; `07-onze/50` (`<Script>`); 124 (component scripts).

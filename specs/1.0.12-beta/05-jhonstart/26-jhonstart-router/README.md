@@ -186,6 +186,11 @@ list against its own decorators; the compiler names no marker.
       tag annotation (278) — `08-bpp/120` step 1 gives it `-> Hydrate` and reads `pathsTo` from the
       `html` arm, so both stay `pub` and importable by the prelude
 
+### Step 9 — references, not strings (decision 281)
+
+- [ ] event handlers as `#[onClick(like)]` (a function value; 278 + 280 example 7) — no
+      `data-jh-on-click="LikeButton:like"`, no `"error:reset"`; the runtime binds by position
+
 **Gate:** standard (fronts.md § Gate) + every jhonstart member at its count or above on both rows
 (core 204; `jhonstart-dom-test` commonJS only, structural — 101) · `grep -rni rakun
 modules/jhonstart/src` empty and `grep -i emilia modules/jhonstart/src` still empty · `dom_test.bp`

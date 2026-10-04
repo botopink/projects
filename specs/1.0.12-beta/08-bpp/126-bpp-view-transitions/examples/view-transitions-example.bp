@@ -13,7 +13,7 @@
 //   <Counter client:load transition:persist initialCount={5} />
 //   <a href="/articles/emperor-penguins" data-astro-reload>
 //
-//   — here: #[transitionName("hero")], #[transitionAnimate("slide")],
+//   — here: #[transitionName("hero")], #[transitionAnimate(.Slide)],
 //     #[transitionAnimate(fade(duration: "0.4s"))], #[transitionPersist], <Counter #[clientLoad, transitionPersist] />
 //
 // Upstream: astro-docs/20-view-transitions.md
@@ -32,7 +32,7 @@ import {transitionName, transitionAnimate, transitionPersist} from "jhonstart-li
 
 pub fn BaseLayout(pageTitle: string, children: Children = []) -> Element {
     return html """
-      <htmlTag lang="en" #[transitionAnimate("none")]>
+      <htmlTag lang="en" #[transitionAnimate(.None)]>
         <head>
           <title>{pageTitle}</title>
           <ViewTransitions />
@@ -49,7 +49,7 @@ pub fn BaseLayout(pageTitle: string, children: Children = []) -> Element {
           <!-- keeps playing across navigations: the node is moved, not replaced -->
           <video controls muted #[transitionPersist("player")] src="/intro.mp4"></video>
 
-          <main #[transitionAnimate("slide")]><slot /></main>
+          <main #[transitionAnimate(.Slide)]><slot /></main>
         </body>
       </htmlTag>
     """;
@@ -108,9 +108,9 @@ test "the per-link attributes are plain attributes" {
 
 // What does not compile:
 //
-//   <main #[transitionAnimate("spin")]>
-//     error: unknown animation `spin` — fade, slide, none, initial, or a
-//            TransitionAnimation value                          at the argument
+//   <main #[transitionAnimate(.Spin)]>
+//     error: `Animate` has no variant `Spin` — Fade, Slide, None, Initial, or a
+//            TransitionAnimation value                          at `.Spin`
 //
 // In the browser (`jhonstart-dom-test/test/transitions_dom_test.bp`):
 //

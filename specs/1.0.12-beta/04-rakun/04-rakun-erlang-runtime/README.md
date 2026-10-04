@@ -90,6 +90,19 @@ R62-1 (`setPhase(RequestPhase.Action)` visible to `requestPhase()` and `rkCacheP
 12's `revalidate_test.bp`, ticks here when 12 lands it. R64-1's filter half (i18n redirect reusing
 `rawQuery()`) is 22's.
 
+### Step 6 — references, not strings (decision 281)
+
+A bean, an event or a condition is named by its type or its function, never its text
+(`examples/context-lifecycle-example.bp`).
+
+- [ ] `ctx.resolve("OrderCache")` → resolution by type (`use bean(OrderCache)`, 269's `@getContext`
+      shape); `resolveNamed("Clock", "fixed")` → the shape `130-b` answers (option (d): a
+      qualifier is a distinct type)
+- [ ] `#[eventListener("OrderPlaced")]` → `#[on] fn f(e: OrderPlaced)`, the event the parameter's type
+      (280 example 2); the string form refused
+- [ ] `#[conditionalOnMissingBean(MailSender)]` takes a `type` (280 example 3); `rkExcludeFromEager`
+      takes the type
+
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` green in `modules/rakun`;
 `botopink format --check` clean there; `modules/README.md` updated.
 

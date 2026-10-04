@@ -251,6 +251,16 @@ recipes.
 - [ ] every `builtInTemplate` code has an entry in every shipped locale; a missing one fails
       `test/locales_test.bp` by name
 - [ ] `setMessageSource(locales.ptBR())` changes the message of every code and of no placeholder
+### Step 11 — references, not strings (decision 281)
+
+Step 7's `#[check]` is the first (280 example 1); the rest of the string-named arguments:
+
+- [ ] `#[extending(Dog)]`, `#[partial(Recipe)]` take the type
+- [ ] `#[with(emails)]` takes the function value
+- [ ] `#[orElse(.Tuna)]` takes a value of the field's type (`T`, 280 (2))
+- [ ] `#[wireNames("Salmon=salmon,…")]` → `#[wireName("salmon")]` on each variant: the variant is the
+      reference, the wire spelling a string (another system's name)
+
 ## Decisions
 
 ### 07-j · How much of Zod is the front

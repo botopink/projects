@@ -88,6 +88,11 @@ reflection over the project** (declaration half; the `@project()` manifest half 
 - [ ] a member's / associated type's diagnostic is located past the file's last line (member source
       placed after the module's lines) and names `City__Columns`, not `City.Columns`
 
+### Step 7 — references, not strings (decision 281)
+
+- [ ] `@TypeInfo.all(with: …, member: "make")` (256) names the member by reference — an interface's
+      method — not by string; `Declared.value` stays `unknown` (254) until `nat-a`'s registry shape
+
 **Gate:** standard (fronts.md § Gate) + std on commonJS and erlang; each library's hook
 
 ## Notes

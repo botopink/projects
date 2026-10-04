@@ -1,7 +1,7 @@
 # Decisões pendentes — 1.0.12-beta (só o que está em aberto, por ordem de importância)
 
-Atualizado em 2026-10-04 (decisões 278–280). Só o que ainda espera resposta sua: o que já foi respondido está em
-`specs/1.0.12-beta/decisions-taken.md` (decisões 144–280; próximo número livre: **281**) e saiu daqui.
+Atualizado em 2026-10-04 (decisões 278–281). Só o que ainda espera resposta sua: o que já foi respondido está em
+`specs/1.0.12-beta/decisions-taken.md` (decisões 144–281; próximo número livre: **282**) e saiu daqui.
 Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 234–236 (injeção do rakun,
 `@TypeInfo.all` com lista, decorador de função), 237 (captura do template pelo texto), 238–243
 (`@External.Wasm`, `$stringify`, codepoints no wasm, células sem WASI, dependência direta, vírgula final),
@@ -67,9 +67,12 @@ Astro, Next.js, React, Spring, zod, TypeScript, LINQ ou Tailwind **na forma de f
 o recurso equivalente na linguagem. Eles caem em sete padrões.
 
 **Ordem:** primeiro a **`nat-0`** (a regra geral); depois as quatro contradições **`ctr-x`…`ctr-aa`**, que
-já batem com decisões tomadas; depois a **`nat-a`…`nat-g`**, que aplicam a regra a cada padrão.
+já batem com decisões tomadas; depois a **`nat-b`…`nat-g`**, que aplicam a regra a cada padrão (a `nat-a` virou a 281).
 
 ### nat-0 · A regra: o recurso do botopink antes da forma importada
+
+> **Respondida em parte.** A regra 1 (nenhum identificador de código como string) virou a **decisão 281**,
+> que também respondeu a `nat-a`. As regras 2, 3 e 4 continuam abertas aqui.
 
 **Contexto.** Na 278, `client:visible` (string do Astro) virou `#[clientVisible]`, a anotação que já
 existia. A varredura achou o mesmo erro em outros sete padrões (`nat-a`…`nat-g`). Algumas decisões e
@@ -151,6 +154,10 @@ if (isPrerendered()) { … }
 
 ### ctr-z · Instruções em string que sobraram depois da 278
 
+> **Desde a 281.** As strings de variante saem pela regra 1 (`#[transitionAnimate(.Slide)]`, 126 passo 4).
+> Continua aberto aqui: `data-jh-reload`/`data-jh-history` como anotação, os eventos `jh:` como hooks
+> tipados e as estratégias do `<Script>` contra o `Hydrate`.
+
 **Contexto.** Pela 278, uma instrução numa tag é anotação. Mas a 126 mantém `data-jh-reload` e
 `data-jh-history="replace"` no `<a>`, eventos `jh:before-swap` em string e `#[transitionAnimate("slide")]`
 conferido contra uma lista. E o `<Script>` (`onze-bundler/src/script.bp`, frente 50) tem quatro
@@ -202,46 +209,6 @@ usam um filho `slot="fallback"`. A `props-e` (a), que é a recomendada, recusa `
 
 **Recomendação: (a).**
 **Bloqueia:** 120 passos 2 e 4; `props-e`.
-
-### nat-a · Função, tipo, campo ou evento referido por string
-
-**Contexto.** A linguagem já tem função como valor, parâmetro `comptime t: type`, o tipo `Decorator`
-(268), `@Decl` e o catálogo `@TypeInfo.all(with: …)` em comptime. Mesmo assim, estes lugares passam o
-nome como texto, conferido tarde ou nunca:
-- jhonstart/onze: `data-jh-on-click="LikeButton:like"` (ninguém lê); `use useActionState("createPost", …)`;
-  `formAction("a_9f31…", …, "__bp_action")`; `Island(component: "LikeButton", props: [#("likes", "3")])`;
-  o encoder achado pelo nome `<Component>Props`; `#[deferred]` registrando `"Avatar"` em runtime.
-- bpp: `#[action("Signup")]`, `actionRef("newsletter", …)` (127).
-- validation (125): `#[check("passwordsMatch", "password,confirm")]`, `#[extending("Dog")]`,
-  `#[partial("RecipePatch")]`, `#[wireNames("Salmon=salmon,…")]`.
-- rakun: `ctx.resolve("OrderCache")`, `resolveNamed("Clock", "fixed")`, `member: "make"` (234, 256),
-  `#[entityRepository("City")]`, `#[eventListener("OrderPlaced")]`.
-
-**Hoje:**
-```bp
-<button data-jh-on-click="LikeButton:like">
-val state = use useActionState("createPost", initial);
-#[check("passwordsMatch", "password,confirm")] type Signup(…)
-val cache = ctx.resolve("OrderCache");
-```
-
-- [ ] **(a)** A referência é o próprio valor; as tabelas (ilhas, ações, beans, listeners) são montadas em
-  comptime; qualificador é um tipo distinto.
-  ```bp
-  <button #[onClick(like)]>
-  val state = use actionState(createPost, initial);
-  #[check(passwordsMatch, .password, .confirm)] type Signup(…)
-  val cache = use bean(OrderCache);
-  type FixedClock(clock: Clock)          // em vez de resolveNamed("Clock", "fixed")
-  val islands = comptime @TypeInfo.all(with: client);
-  ```
-- [ ] **(b)** As strings ficam, mas cada uma é conferida em comptime contra o escopo.
-- [ ] **(c)** Como está.
-
-**Recomendação: (a)**, com os meios da 280 (os sete exemplos aprovados estão em
-`01-compiler/01-checker/examples/decorator-arguments-280.md`).
-**Bloqueia:** 120 (encoder, `#[deferred]`); 125 passos 3–10; 127; `05-jhonstart/26` (eventos);
-`07-onze/53`; rakun 04, 06, 08, 72, 78; 130-b.
 
 ### nat-b · O papel de uma função dito pelo nome do export
 
@@ -1351,9 +1318,18 @@ e o registro os recusa como duplicata. Antes, o `__rkMake_Dye` deixava o sem qua
   #[provides] #[qualifier("slow")] fn slowDye() -> Dye { … }
   // error: duplicate bean "Dye" (fastDye, slowDye)
   ```
+- [ ] **(d)** *(nova, pela 281)* O qualificador é um tipo distinto; o registro é chaveado só pelo tipo, e
+  `#[qualifier("…")]` e `resolveNamed` saem.
+  ```bp
+  type FastDye(dye: Dye)
+  type SlowDye(dye: Dye)
+  #[provides] fn fastDye() -> FastDye { … }
+  #[provides] fn slowDye() -> SlowDye { … }
+  val d = use bean(FastDye);              // em vez de ctx.resolveNamed("Dye", "fast")
+  ```
 
-**Recomendação: (a)** — um registro, todo bean nele, a regra antiga de dono mantida e duplicata
-continua erro de build; precisa do `rkBeanKey` chamável no bloco (decisão 266). **Bloqueia:** a migração
+**Recomendação: (d)**, pela decisão 281 — a (a) guarda uma string (`Dye@fast`) ao lado do tipo. A (a)
+continua possível se você quiser um rótulo em texto mesmo assim. **Bloqueia:** a migração
 de `#[provides]` / `#[qualifier]` / `#[primary]` do rakun (130 passo 5: `context.bp`, o teste dele,
 rakun-container).
 

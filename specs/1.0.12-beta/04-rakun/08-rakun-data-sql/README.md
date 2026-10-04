@@ -61,6 +61,12 @@ cell claims to have reached a server.
 - [ ] R78-1 ("`findByCiudad` is a compile error naming the entity and listing its fields"): re-measured on the post-130 decorators — if `#[entityRepository]` can read `meta.entity.columns`, the refusal lists them and the box ticks; else the measured text recorded, box open on lg2-e/f naming the nearest form
 - [ ] RX-2 (78): decorator-argument default re-measured in `orm_build_test.bp`
 
+### Step 4 — references, not strings (decision 281)
+
+- [ ] `#[entityRepository(City)]` takes the type; `derivedSql("CityRepo", "countByState")` takes the
+      function; an operator is `Op`'s variant, never `">="`
+- [ ] `index`, `unique` take `Field<T>` (`.state`); table and column names stay strings (SQL's, 280 example 6)
+
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun-data`.
 

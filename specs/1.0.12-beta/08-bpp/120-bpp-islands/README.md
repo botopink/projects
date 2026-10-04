@@ -188,6 +188,14 @@ The variable is always `ONZE_KEY` (decision 271).
 - [ ] in `07-onze/53`'s browser run: a below-the-fold `#[clientVisible]` island's chunk is not
       requested until scrolled to; a non-matching `#[clientMedia]` island's chunk is never requested
 
+### Step 6 — references, not strings (decision 281)
+
+- [ ] `Island(component: "LikeButton", props: [#("likes", "3")])` → the function and its typed
+      `#[clientProps]` record; the starter table built at comptime (`@TypeInfo.all(with: client)`)
+- [ ] the `<Component>Props` encoder reached as a member (`LikeButtonProps.encode`, 216), not by name
+- [ ] `#[deferred]`'s registration (`"Avatar"` → renderer at module load) → the comptime catalogue
+      (`@TypeInfo.all(with: deferred)`); the URL keeps the component's name as the wire id
+
 ## Decisions
 
 None open (224, 271, 272 answered the server-island ones; 278 the annotations).

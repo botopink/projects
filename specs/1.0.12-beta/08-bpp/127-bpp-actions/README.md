@@ -144,6 +144,11 @@ the server-only implementation (refused by `onze-bundler/src/refusal.bp:55-138`)
 
 - [ ] 123's `actionContext(req)` names a typed action and how it was called
 
+### Step 5 — references, not strings (decision 281)
+
+- [ ] `#[action]` without a string: input and output from the signature (280 (2)); `actionRef("…",
+      schemaOf…, schemaOf…)` replaced by the function value; the wire id derived at comptime
+
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `libs/actions` and `jhonstart-forms`; on erlang in `rakun-app`
 - [ ] `zig build test-libs`: rakun, jhonstart, onze green; `#[serverAction]`'s tests unchanged

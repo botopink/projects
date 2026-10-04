@@ -49,6 +49,11 @@ assertion complete.
 - [ ] `revalidate_test.bp`: after `setPhase(RequestPhase.Action)`, `requestPhase()` and `rkCachePhase()` both answer the action phase in the same process — cell "in a server action all three verbs are legal" (already asserts `rkCachePhase() == "action"` for a request opened in that phase) gains the `setPhase` call and the `requestPhase()` read; 04's R62-1 ticks with it
 - [ ] RX-2: decorator-argument default of `#[cacheable]` / `#[cached]` re-measured in `consumer_test.bp`; README records the result
 
+### Step 4 — references, not strings (decision 281)
+
+- [ ] `#[cacheable(products)]` takes a `Cache<T>` value whose `T` is the function's return (280
+      example 5); the cache's own name (`Cache<Product[]>("products")`) stays a string
+
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun-cache` and `modules/rakun-session`; `grep -rn RAKUN_TEST_ modules/rakun-session modules/rakun-cache` empty.
 
