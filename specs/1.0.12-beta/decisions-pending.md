@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**74 questions and 21 contradictions are open, and 97 implementation choices await confirmation.**
+**74 questions and 20 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287.
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 ## Open questions
@@ -509,11 +509,6 @@ left as recorded; the maintainer picks the resolution.
 - **Rules.** 278: an instruction on a tag is an annotation. 126 keeps `data-jh-reload`, `data-jh-history="replace"` on `<a>`, `jh:before-swap` string events, `#[transitionAnimate("slide")]` checked against a list; `<Script>`'s four string strategies (`onze-bundler/src/script.bp`, 50) stay beside `Hydrate` (120 § Blast radius).
 - **Recommendation.** `<a #[reload]>`, `<a #[history(History.Replace)]>`, `#[transitionAnimate(Animate.Slide)]`, events as typed functions; `<script #[clientIdle] src=…>` — one strategy vocabulary.
 - **Blocks.** 126 steps 1–4; `07-onze/50` (`<Script>`); 124 (component scripts).
-
-#### ctr-f · Decisions 198 and 199 against decision 213
-- **Rules.** 199: "`card.bpp` is `pub fn card(props: Props)`; with none, `pub fn <name>()`"; 198: "`import {components.card.Card};`", "the module exports the result under the file's name"; 212: "the rest of 198 (and 199) stands". 213: "`components/PostCard.bpp` unfolds to `pub default fn PostCard(…)`", imported `import {components.PostCard};` — citing neither 198 nor 199.
-- **Recommendation.** Record 213 as amending 199's name and visibility and 198's export and import example (`card.bpp` → `pub default fn card`, `import {components.card};`, or aliased).
-- **Blocks.** The 116 and 118 READMEs.
 
 #### ctr-g · Decision 213 against decision 221: one name bound twice
 - **Since 285.** No decorator comes from a file name any more; the clash is left only where a route file's header writes its kind's decorator (`page.bpp` with `#[page(paths: …)]`, 282).

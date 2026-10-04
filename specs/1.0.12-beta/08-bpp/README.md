@@ -156,7 +156,7 @@ Labels only; text in [`../decisions-taken.md`](../decisions-taken.md).
 | 278 | Directives are tag annotations: `#[name(args)]` inside the tag, a function in scope, `html` acting on its return type; `#[clientOnly]` one function for hook and tag; values become values (§ Tag annotations) | 118 · 119 · 120 · 126 · `05-jhonstart/26` step 8 |
 | 189 | Ordering and ownership (carve-outs, `fake_dom.mjs`, `site` by 122) | all |
 
-No relative imports: same package `import {components.card.Card};`, a package `import {x} from "pkg";`; `.bpp` headers likewise.
+No relative imports: same package `import {components.card};` (a `.bpp` component: its default function, 288), a package `import {x} from "pkg";`; `.bpp` headers likewise.
 
 ## Tag annotations (278)
 
@@ -191,7 +191,7 @@ step 2 owns.
 ## Decisions the maintainer owes
 
 Open: `08-d`, `08-f`, `08-h` (below) and `08-j`, `bpp-g`, `props-d`, `props-e`,
-`props-f` ([`../decisions-pending.md`](../decisions-pending.md)); contradictions `ctr-f`, `ctr-g`, `ctr-t` (116).
+`props-f` ([`../decisions-pending.md`](../decisions-pending.md)); contradictions `ctr-g`, `ctr-t` (116; `ctr-f` → 288).
 
 - `08-j` — how rakun's `local()` carries jhonstart's `#[serverOnly]`. Blocks 123 step 1's third box.
 - `bpp-g` — how a `page.bpp` gets `route: PageContext` and `params`. Blocks 116 step 6, 117 step 1.

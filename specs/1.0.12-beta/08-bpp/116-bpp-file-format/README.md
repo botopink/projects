@@ -69,7 +69,7 @@ that line. Always the module's `pub default fn`, named after the file, never `pu
   it is `View` (= `@Component<ElementBase, Element>`, decision 276), whether or not the header uses `use` / `await`.
 - Declarations (`import`, `type`, `pub`) module-level; statements (`val`, `use`) body ahead of
   `return` (may read `props`, call a hook). Attributes = `Props` fields (192); children via
-  `children` (193). Header imports in the language's form (`import {components.card.Card};`,
+  `children` (193). Header imports in the language's form (`import {components.card};`,
   `import {x} from "pkg";`); no relative import.
 
 **What the toolchain knows** (285): the package named by `"bpp"`, its `pub default fn` (`html`, the
