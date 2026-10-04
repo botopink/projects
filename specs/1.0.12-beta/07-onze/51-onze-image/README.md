@@ -94,6 +94,12 @@ std's number parsing.
 - Rasterizer stays a port; a NIF opt-in is 71's packaging concern.
 - Nothing outside onze moves; step 2's route line lands through 49.
 
+### Step 8 — a role in the decorator, not in an export's name (decision 282)
+
+- [ ] the OG route's `pub val size` / `pub val contentType` → `#[ogImage(size: ImageSize(1200, 630),
+      type: .Svg)] pub fn image(…)`; rakun 66's discovery reads the decorator's meta, not export names;
+      no decorator argument = the 1200×630 PNG default
+
 **Gate:** standard (fronts.md § Gate) +
 - [ ] `zig build test-libs` — `onze-assets` at its counts or above (image 8, font 7, styling 13)
       and `onze-og` 10+, on every target its manifest declares

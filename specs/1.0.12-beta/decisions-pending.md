@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**66 questions and 22 contradictions are open, and 97 implementation choices await confirmation.**
+**65 questions and 22 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281.
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 ## Open questions
@@ -26,17 +26,11 @@ the feature. Answer first: `nat-0` sets the rule, `nat-a`…`nat-g` apply it; `c
 the sites that already contradict a decision. The Portuguese page lists every site with examples.
 
 #### nat-0 · The rule: botopink's own feature before the imported shape
-- **Answered in part.** Rule 1 (no code identifier as a string) is decision 281, which also answers `nat-a`; rules 2–4 stay open below.
+- **Answered in part.** Rule 1 (no code identifier as a string) is decision 281 (with `nat-a`), rule 2 (no role by export name) decision 282 (with `nat-b`); rules 3 and 4 stay open below.
 - **Measured.** 278 replaced Astro's `prefix:name` with the annotation botopink already had. The sweep found ~40 more sites in seven patterns (`nat-a`…`nat-g`); several decisions and recommendations chose the foreign shape: 234 and 256 (string registry keys), lg2-f (1), lg2-g (1), lg2-i (1), 221 and 270 (`bppKinds`), 257 (`Schema<T>`).
 - **Options.** (a) Four rules, any exception stated in a decision: no code identifier (function, type, field, event, hook, action) passed as a string; no role declared by an export's name — it goes in the function's decorator; no second model of what the language has (`@Result`, records, variadics, interfaces, `use`); JSON only for what is not code. (b) Case by case, no rule. (c) Keep the imported shapes (porting ease).
 - **Recommendation.** (a). Its means are taken: decision 280 (typed comptime decorator arguments, `@Decl<T>`, `Field<T>`; lg2-f and lg2-i answered); lg2-g moot; 234/256's string keys, 221/270's `bppKinds` and 257's `Schema<T>` reopened by `nat-a`, `nat-f`, `nat-d`.
 - **Blocks.** `nat-a`…`nat-g`; lg2-g.
-
-#### nat-b · A function's role declared by its export name
-- **Measured.** `staticPaths`, `partial` (117) · `generateMetadata`, `blogStaticParams` + `registerStaticParams("blog/[slug]", …)`, `Loading` / `NotFound` / `ErrorPage` (53) · OG image `pub val size`, `pub val contentType = "image/svg+xml"` (51) · `collections()` found in `src/content.bp` (121) · `registerSegmentConfig(…)` (`ctr-x`).
-- **Options.** (a) The page's decorator carries it: `#[page("blog/[slug]", paths: allSlugs, head: postHead, revalidate: hours(1))]`; other kinds likewise (`#[ogImage(size: …)]`, `#[collection(…)] type BlogPost`). (b) A decorator per role on the providing function (`#[paths] fn allSlugs()`, `#[head] fn postHead()`), joined by module. (c) As is.
-- **Recommendation.** (a) — one place, checked where written (function-valued arguments: 280).
-- **Blocks.** 117 steps 1–3, 121, `07-onze/51`, `53`, 122.
 
 #### nat-c · Untyped bags where a record type would flow
 - **Measured.** `params` / `searchParams` / cookies as `Array<#(string, string)>`, `pairValue(jar, "session")` answering `""` when absent (26, 53) · `StaticPath.data: Json` read back through `pageData(route, schemaOf…)` (117) · `LocalKey<T>(name: string)`, a clash refused at run time (123) · `decl.setMeta("table", "cities")`, string-only meta (216, 130) · `#[value("rakun.profiles.active")]`, `rkPropInt("12abc") == 12` (03r-b), `Event(name: string, payload: string)` (rakun) · `ThemeEntry(name: string, value: string)`, `extendTheme(th, [#("--breakpoint-md", "")])` (06-emilia).
@@ -443,7 +437,7 @@ left as recorded; the maintainer picks the resolution.
 
 #### ctr-x · `registerSegmentConfig(dynamic: ForceStatic, …)` against decisions 202, 186 and 277
 - **Rules.** 202: no way to force a stage; 186 / 277: `#[page]` decides `S` / `D` from `Decl.hooks`. `07-onze/53`'s examples (`app/page.bpp:30-37`, `app/blog/[slug]/page.bpp:43-50`, `blog-slug-page-example.bp:50-58`, `app-page-example.bp:39-43`, `acceptance.md:211`) write Next's segment config — `dynamic`, `revalidate`, `fetchCache` — restating the route as a string and registering it at run time; `08-bpp/surface.md:75` notes the clash.
-- **Recommendation.** Delete `dynamic` and `fetchCache`; revalidation, if kept, a `#[page]` argument (`nat-b`).
+- **Recommendation.** Delete `dynamic` and `fetchCache`; revalidation, if kept, a `#[page]` argument (decision 282).
 - **Blocks.** `07-onze/53`'s examples and acceptance; 49 step 5.
 
 #### ctr-y · Request hooks called without `use` against decision 277

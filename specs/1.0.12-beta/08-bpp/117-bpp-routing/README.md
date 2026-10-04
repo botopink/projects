@@ -126,6 +126,13 @@ Per decision 202 (no `prerender` export).
       both; touching parameters (`[a][b]`) refused
 - [ ] eight rules green in `match_test.bp`; rule 6 ("an endpoint over a page") stays a scan refusal, asserted as one
 
+### Step 6 — a role in the decorator, not in an export's name (decision 282)
+
+- [ ] `pub fn staticPaths()` and `pub val partial = true` are no longer read: `#[page("dogs/[dog]",
+      paths: dogPaths, partial: true)]`, `paths` typed against the page's `PageContext<P, D>`
+      (`fn() -> @Task<#(P, D)[]>`, 280 example 4); the scan stops looking for export names
+- [ ] a `staticPaths` left in a page module is refused, naming `#[page(…, paths: …)]`
+
 ## Decisions
 
 - `bpp-g` — how a `page.bpp` gets `route: PageContext` and `params`. Step 1.

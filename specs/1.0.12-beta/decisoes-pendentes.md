@@ -1,7 +1,7 @@
 # Decisões pendentes — 1.0.12-beta (só o que está em aberto, por ordem de importância)
 
-Atualizado em 2026-10-04 (decisões 278–281). Só o que ainda espera resposta sua: o que já foi respondido está em
-`specs/1.0.12-beta/decisions-taken.md` (decisões 144–281; próximo número livre: **282**) e saiu daqui.
+Atualizado em 2026-10-04 (decisões 278–282). Só o que ainda espera resposta sua: o que já foi respondido está em
+`specs/1.0.12-beta/decisions-taken.md` (decisões 144–282; próximo número livre: **283**) e saiu daqui.
 Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 234–236 (injeção do rakun,
 `@TypeInfo.all` com lista, decorador de função), 237 (captura do template pelo texto), 238–243
 (`@External.Wasm`, `$stringify`, codepoints no wasm, células sem WASI, dependência direta, vírgula final),
@@ -67,12 +67,13 @@ Astro, Next.js, React, Spring, zod, TypeScript, LINQ ou Tailwind **na forma de f
 o recurso equivalente na linguagem. Eles caem em sete padrões.
 
 **Ordem:** primeiro a **`nat-0`** (a regra geral); depois as quatro contradições **`ctr-x`…`ctr-aa`**, que
-já batem com decisões tomadas; depois a **`nat-b`…`nat-g`**, que aplicam a regra a cada padrão (a `nat-a` virou a 281).
+já batem com decisões tomadas; depois a **`nat-c`…`nat-g`**, que aplicam a regra a cada padrão (a `nat-a` virou a 281, a `nat-b` a 282).
 
 ### nat-0 · A regra: o recurso do botopink antes da forma importada
 
-> **Respondida em parte.** A regra 1 (nenhum identificador de código como string) virou a **decisão 281**,
-> que também respondeu a `nat-a`. As regras 2, 3 e 4 continuam abertas aqui.
+> **Respondida em parte.** A regra 1 (nenhum identificador de código como string) virou a **decisão 281**
+> (com a `nat-a`); a regra 2 (nenhum papel pelo nome do export) virou a **decisão 282** (com a `nat-b`).
+> As regras 3 e 4 continuam abertas aqui.
 
 **Contexto.** Na 278, `client:visible` (string do Astro) virou `#[clientVisible]`, a anotação que já
 existia. A varredura achou o mesmo erro em outros sete padrões (`nat-a`…`nat-g`). Algumas decisões e
@@ -118,7 +119,7 @@ dynamic/revalidate/fetchCache` do Next, repetem a rota em string e registram em 
 val _cfg = registerSegmentConfig("blog/[slug]", SegmentConfig(dynamic: DynamicMode.ForceStatic, revalidate: 3600, fetchCache: …));
 ```
 
-- [ ] **(a)** Apagar `dynamic` e `fetchCache`; se a revalidação ficar, é argumento do `#[page]` (`nat-b`).
+- [ ] **(a)** Apagar `dynamic` e `fetchCache`; se a revalidação ficar, é argumento do `#[page]` (decisão 282).
   ```bp
   #[page("blog/[slug]", revalidate: hours(1))]
   ```
@@ -209,39 +210,6 @@ usam um filho `slot="fallback"`. A `props-e` (a), que é a recomendada, recusa `
 
 **Recomendação: (a).**
 **Bloqueia:** 120 passos 2 e 4; `props-e`.
-
-### nat-b · O papel de uma função dito pelo nome do export
-
-**Contexto.** O `#[page]` e o `#[layout]` já são decorators. Mesmo assim, o que diz algo sobre a página é
-achado pelo **nome** do export, como no Next e no Astro: `staticPaths`, `partial` (117);
-`generateMetadata`, `blogStaticParams` + `registerStaticParams("blog/[slug]", …)`, `Loading`/`NotFound`/
-`ErrorPage` (53); `pub val size` e `pub val contentType = "image/svg+xml"` da imagem OG (51);
-`collections()` achado em `src/content.bp` (121).
-
-**Hoje:**
-```bp
-#[page("blog/[slug]")]
-pub fn Page(route: PageContext) -> View { … }
-pub fn staticPaths() -> @Task<Array<StaticPath>> { … }     // achado pelo nome
-pub fn generateMetadata(params: Array<#(string, string)>) -> Metadata { … }
-```
-
-- [ ] **(a)** O decorator da página carrega tudo; os outros tipos de arquivo também.
-  ```bp
-  #[page("blog/[slug]", paths: allSlugs, head: postHead, revalidate: hours(1))]
-  pub fn Page(route: PageContext<BlogParams, Post>) -> View { … }
-  #[ogImage(size: ImageSize(1200, 630), type: .Svg)] pub fn image(…) { … }
-  #[collection(glob("content/blog", "**/*.md"))] pub type BlogPost(…)
-  ```
-- [ ] **(b)** Um decorator por papel na função que fornece, ligado pelo módulo.
-  ```bp
-  #[paths] fn allSlugs() -> BlogParams[] { … }
-  #[head] fn postHead(p: BlogParams) -> Metadata { … }
-  ```
-- [ ] **(c)** Como está.
-
-**Recomendação: (a)** — um lugar só, conferido onde é escrito (argumento função: 280).
-**Bloqueia:** 117 passos 1–3; 121; `07-onze/51` e `53`; 122.
 
 ### nat-c · Sacos sem tipo onde um record tipado resolveria
 

@@ -101,5 +101,11 @@ both `onze dev` and `onze build && onze start`, browser rows in a real browser, 
       prefix), `<form action={createPost}>` (no `formAction("a_9f31…", …, "__bp_action")`),
       starters from the catalogue (no `registerStarter("…")`), handlers `#[onClick(…)]`
 
+### Step 8 — a role in the decorator, not in an export's name (decision 282)
+
+- [ ] the examples rewritten: `generateStaticParams` / `blogStaticParams` + `registerStaticParams("blog/[slug]", …)`
+      → `#[page("blog/[slug]", paths: allPosts)]`; `generateMetadata` → `head: postHead`;
+      `acceptance.md`'s rows (122, 126) name the decorator arguments
+
 **Gate:** standard (fronts.md § Gate) +
 - [ ] `zig build test-libs` green for `blog`, `onze-test`; `serve.sh` exit 0

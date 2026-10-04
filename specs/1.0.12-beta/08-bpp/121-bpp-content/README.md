@@ -155,6 +155,12 @@ autolinks, footnotes; ids; smart punctuation.
       pages read `getCollection(posts())`
 - [ ] blog's existing tests green with a post holding a heading, a list and a link
 
+### Step 8 — a role in the decorator, not in an export's name (decision 282)
+
+- [ ] `pub fn collections()` found in `src/content.bp` by its name → each collection declared by a
+      decorator (`#[collection(glob("content/blog", "**/*.md"))]`), gathered with
+      `@TypeInfo.all(with: collection)`; the schema's own shape stays `nat-d`'s question
+
 ## Decisions
 
 - `08-f` — where Markdown and YAML live: (b) recommended (Markdown in `onze-content`, YAML in
