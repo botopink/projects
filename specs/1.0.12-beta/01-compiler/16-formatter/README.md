@@ -20,7 +20,7 @@ Paths relative to `repository/botopink-lang/`.
 
 No tree writes the `;` after a braced block statement, parser refuses it (`blockStatementSemicolon`);
 five libraries formatted at C-12's rules; decisions 166/243 trailing comma and 165 one-line trailing
-lambda in the printer; one `#[…]` list per declaration (279); every parser form has a printer arm.
+lambda in the printer; annotations printed as written (286); every parser form has a printer arm.
 
 ## Mechanism
 
@@ -99,34 +99,34 @@ comma; without it width rules (16-a / 16-b) decide. One-step pipeline: no comma,
 
 - [ ] `format/tests/expressions.zig`: the annotated form round-trips (`assertFormat`, `assertIdempotent`, `assertLossless`)
 
-### Step 9 — one `#[…]` list per declaration (decision 279)
+### Step 9 — annotations printed as written (decision 286)
 
-The canonical rewrite inverts: today the printer splits `#[a, b]` into one `#[…]` per annotation
-(`src/format/AGENTS.md` § canonical rewrites; `format/tests/helpers.zig` expects the split); after,
-every block written before a declaration — function, type, field, method, enum item, parameter,
-loop — joins into one list in the written order, broken by decision 166/243's trailing comma.
+Today the printer splits `#[a, b]` into one `#[…]` per annotation (`src/format/AGENTS.md` § canonical
+rewrites; `format/tests/helpers.zig` expects the split). After, both forms survive formatting
+untouched — separate blocks stay separate, a list stays a list — and a list breaks by decision
+166/243's trailing comma.
 
 ```bp
-#[check(passwordsMatch, .password, .confirm), check(noReusedHandle)]
-pub type Account(…)
+#[check(passwordsMatch, .password, .confirm)]
+#[check(noReusedHandle)]
+pub type Account(…)                     // stays two blocks
 
 #[
     @External.Node("fn:mixBody"),
     @External.Erlang("fn:mixBody"),
     @External.Beam("fn:mixBody"),
 ]
-fn mix(…) -> …
+fn mix(…) -> …                          // stays one list, one per line (trailing comma)
 ```
 
-- [ ] `#[a]` / `#[b]` written as two blocks prints `#[a, b]`; with a trailing comma, one per line;
-      `assertFormat`, `assertIdempotent`, `assertLossless` cases for a function, a type, a field, a
-      method, a loop and a mix of builtin (`@`) and custom annotations
-- [ ] a comment written between two blocks prints on its annotation's line in the open form (no
-      token lost); `helpers.zig`'s containment note and `src/format/AGENTS.md`'s canonical-rewrite
-      line rewritten
+- [ ] `#[a]` / `#[b]` round-trips as two blocks, `#[a, b]` as one list; with a trailing comma the
+      list prints one per line; `assertFormat`, `assertIdempotent`, `assertLossless` cases for a
+      function, a type, a field, a method, a loop and a mix of builtin (`@`) and custom annotations
+- [ ] a comment between two blocks, or inside an open list, stays where it was written;
+      `helpers.zig`'s containment note and `src/format/AGENTS.md`'s canonical-rewrite line rewritten
 - [ ] the order is kept: a parser snapshot of `Decl.annotations` before and after formatting is equal
-- [ ] the trees of `scripts/format-check.sh` reformatted and green, the movement per tree reported to
-      the tracks (the libraries reformat their own, as step 4)
+- [ ] the trees of `scripts/format-check.sh` measured: no file moves but the lists the old split had
+      broken up (reported to the tracks)
 
 **Gate:** standard (fronts.md § Gate) + `scripts/format-check.sh` green over every `TREES` tree, a
 second pass moves nothing · `zig build test-libs` at baseline after step 3 (every library compiles

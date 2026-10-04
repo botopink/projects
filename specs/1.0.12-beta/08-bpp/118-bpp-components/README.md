@@ -70,7 +70,7 @@ node      := element | component | fragment | text | comment | hole | slot
 element   := '<' name attr* '>' node* '</' name '>'  |  '<' name attr* '/>'
 component := the same, with a name that starts with an upper-case letter
 attr      := name | name '=' '"' text '"' | name '=' '{' expr '}' | '{...' expr '}' | annotation
-annotation := '#[' item ( ',' item )* ','? ']'      one list per tag (279)
+annotation := '#[' item ( ',' item )* ','? ']'      a tag may carry several blocks (286)
 item      := name ( '(' args ')' )?                 a function in the caller's scope (278)
 hole      := '{' expr '}'  |  '${' expr '}'
 expr      := botopink, in which markup may start a lambda body, an if / else block or a case arm
@@ -213,7 +213,7 @@ name or `""`. `#[isRaw]` returns `RawBody`: the tag's body is text.
 - [ ] an annotation returning a type `html` has no arm for fails at the annotation, naming the type;
       two `RawBody` on one tag fail at the second; a `void` annotation runs and changes nothing
 - [ ] `<Carousel #[clientVisible("200px"), transitionPersist] />` = two annotations in order;
-      two `#[…]` blocks on one tag accepted, the editor overlay hinting the joined form (279)
+      `<Carousel #[clientVisible("200px")] #[transitionPersist] />` the same two annotations (286)
 - [ ] an annotation's argument of the wrong type fails at the argument (raw text via `build` until
       typed embedded expressions, as holes)
 
