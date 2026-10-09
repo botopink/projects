@@ -102,7 +102,7 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
 ### Step 2 — The template arm and the bridge
 
 - [ ] `examples/scoped-style-example.bp` passes on both targets
-- [ ] `isGlobal`, `isInline`, `defineVars` and their return types in `html.bp`, in `prelude.bp`;
+- [ ] `isGlobal`, `isInline`, `defineVars` and the meta types they record (302) in `html.bp`, in `prelude.bp`;
       `#[isGlobal]` on a `<div>` fails at the annotation (a `<style>` annotation)
 - [ ] two components both writing `.title` render two rules and two attributes; neither rule
       matches the other's element — asserted on the rendered document with a `jhonstart-dom-test` selector matcher
@@ -131,7 +131,8 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 - [ ] the token list is comptime: its order is the class's identity (`contracts.md` § 4) by
       construction; the class name and its rule computed at build once `hashHex` is std's pure
       `hash.contentHash` (`06-emilia/34` step 1) — the sheet a build artefact, the render registers
-      nothing for a fixed list; until then computed at run time, unchanged
+      nothing for a fixed list; until then computed at run time, unchanged. With `06-emilia/34` step 1
+      this makes `68-d` (the bundler's styleMap probe) moot (301)
 - [ ] a token naming a cleared breakpoint refused at compile time (300) — always, the list being comptime
 - [ ] `class={emilia(tokens)}` leaves markup: refused in a template, naming `#[styled(…)]`; a style
       chosen at run time picks among annotated branches (`{if (urgent) { <p #[styled(.Color.Red.600)]>…</p> } else { … }}`)

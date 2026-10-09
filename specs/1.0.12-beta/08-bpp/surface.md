@@ -122,7 +122,7 @@ are on disk, so most of Astro is there, or there and unwired.
 | `define:vars` | not found | add · 119 — `<style #[defineVars(a, b)]>` (278) |
 | inline `style` as an object | a string attribute | n/a — no object literal; the string is the form |
 | importing a stylesheet | `globals.css` read at build (`onze-cli/src/build.bp:112-114`); `*.module.css` renames classes to `<file>_<class>_<hash6>` (`onze-assets/src/style_module.bp:1-36`) | have |
-| Tailwind | emilia: `emilia(tokens)`, `flush()`, `@layer`s, class `e_<hash>` (`emilia.bp:112-235`) | have |
+| Tailwind | emilia: `emilia(tokens)`, `flush()`, `@layer`s, class `e_<hash>` (`emilia.bp:112-235`) | have — in markup `<h1 #[styled(…)]>`, `class={emilia(tokens)}` leaves templates (301; 119 step 4) |
 | Sass / Less / Stylus / PostCSS / LightningCSS | — | n/a — no preprocessor host; CSS or emilia tokens |
 | cascade order: link, imported, scoped | bridge puts emilia's flush in the head (`jhonstart-emilia/src/root.bp:95`) | add · 119 — fixes the order |
 | per-page CSS chunks, inlining under 4 kB | one stylesheet | add · 124 |
@@ -156,7 +156,7 @@ are on disk, so most of Astro is there, or there and unwired.
 | `reference("authors")` | not found | add · 121 |
 | `getCollection`, `getEntry`, filters, `render(entry)` | not found | add · 121 |
 | live collections | a function that fetches at request time | n/a — an ordinary `@Task` function; a second API adds nothing |
-| JSON Schema files for data entries | not found | add · 125 — `jsonSchemaOf<T>` |
+| JSON Schema files for data entries | not found | add · 125 — the `#[validated]` type's `jsonSchema` member (306) |
 | `<Image />` with `srcset`, an optimising endpoint | `Image(p, cfg, publicDir)`, `/_onze/image` (`onze-assets/src/image.bp:196`, `image_handler.bp:107`); route unregistered | wire · `07-onze/51` |
 | `<Picture />`, `getImage()`, `image.domains`, remote patterns | not found; remote sources answer 501 | wire · `07-onze/51` (ONZ-51-DoD) |
 | SVG as a component | not found | gap — same row (lg2-o); nearest: inline `<svg>` in a component |
@@ -172,7 +172,7 @@ are on disk, so most of Astro is there, or there and unwired.
 | static file endpoints (`data.json.ts` built into a file) | `staticExport` writes pages only | n/a — decisions 222, 273: a route handler is served per request; a static file is a page-kind file (117) |
 | `params`, `request`, `redirect` in an endpoint | `Request`, `HandlerResponse` (`route_handler.bp:45`) | have |
 | `src/middleware.ts`, `onRequest(context, next)` | `middleware.bp`, `#[middleware]` + `#[matcher]`, `Next.pass / redirect / rewrite` (`rakun-web/src/middleware.bp:41-83`) | have |
-| `context.locals` | **not found** | add · 123 |
+| `context.locals` | **not found** | add · 123 — request-scoped cardume atoms, store `rakun-cardume`'s (295, 296) |
 | `sequence(a, b, c)` | ordered filter chain with bands (`rakun-web/src/filter.bp:162-173`, `:319`) | have · add · 123 (the one-line spelling) |
 | rewriting the response body after `next()` | not found: `Response` is a frozen record | add · 123 |
 | `context.rewrite()`, `next(request)` | `Next.rewrite` | have |
@@ -181,7 +181,7 @@ are on disk, so most of Astro is there, or there and unwired.
 | adapters (Node, Netlify, Vercel, Cloudflare) | one runtime: BEAM, packaged by `onze-release` | n/a — rakun is erlang-only by manifest |
 | `output: "server"` | every page `Auto`: mode derived from what the render reads | n/a — decision 202 — no `output` key |
 | HTML streaming | `App.renderStream`, boundaries in completion order (`streaming.bp:935-957`) | have |
-| `Astro.cookies` | `cookies()` reads (`jhonstart/src/server.bp:270`); writes in a handler, action or middleware (`rakun/src/request_context.bp:586`, `:752`) | have |
+| `Astro.cookies` | `cookies()` reads (`jhonstart/src/server.bp:270`); writes in a handler, action or middleware (`rakun/src/request_context.bp:586`, `:752`) | have — becomes `use cookie(decl)` over a declared `Cookie<T>` (294) |
 | `Astro.request`, `.url`, `.method`, `.headers` | `request()` → `RequestData(method, path, params, query, headers, cookies)` (`server.bp:106`, `:252`); onze fills `query`, `headers` with `[]` | wire · `07-onze/49` (ONZ-49-4.3) |
 | `Astro.response.status`, `.headers` | not found from a page | add · 122 |
 | returning a `Response` from a page | navigation signals only | add · 122 |
@@ -231,7 +231,7 @@ are on disk, so most of Astro is there, or there and unwired.
 | typed props, `ComponentProps<typeof X>` | a function's parameters | have |
 | `HTMLAttributes<"a">`, polymorphic components | attributes are `Array<#(string, string)>` | n/a — no per-tag attribute typing; the template checks names against a table (118) |
 | `InferGetStaticPropsType` | `<name>Params(route)` emitted by `#[page]` (`routes.bp:233-262`) | have |
-| `App.Locals`, `env.d.ts` | — | add · 123 (a typed `locals` record) |
+| `App.Locals`, `env.d.ts` | — | add · 123 (one atom declaration per local, 295) |
 | `astro check` | `botopink check` | have |
 
 ## 25 · Actions
@@ -239,7 +239,7 @@ are on disk, so most of Astro is there, or there and unwired.
 | Astro | The stack today | Box · owner |
 |---|---|---|
 | `defineAction({ handler })`, called from the client | `#[serverAction]` on `fn(form: FormData) -> @Task<ActionResult>`, HMAC ids (`rakun-app/src/actions.bp:170`, `:237`); dispatcher not installed by onze | wire · `07-onze/49` (ONZ-49-4.5) |
-| `input:` — a schema that validates and types the input | `form.field("title")` by hand, inline checks (`07-onze/53/examples/server-action-example.bp`) | add · 127, on 125 |
+| `input:` — a schema that validates and types the input | `form.field("title")` by hand, inline checks (`07-onze/53/examples/server-action-example.bp`) | add · 127, on 125 — a `#[validated]` input type (306) |
 | `accept: "form"` and the per-input rules | `bodyForm` (`route_handler.bp:168`) | add · 127 — `bind<T>` |
 | `{ data, error }`, `.orThrow()` | `ActionResult`, `ActionEnvelope` (`libs/actions`) | have · add · 127 (a typed `data`) |
 | `ActionError` with a `code` | `ActionResult.invalid(field, message)` | add · 127 |
