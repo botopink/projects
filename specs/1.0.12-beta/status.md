@@ -1,15 +1,16 @@
 # Status — 1.0.12-beta
 
-**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `146c98ad` (batch 1 of
-tracks 00–03 and feat's reds, landed after a green `gate.sh --cold`) · rakun `44831c9` · jhonstart
-`324edac` · emilia `42d51ec` · onze `2c03bcb` · erika `0a463f5` · vscode-extension `f041865`
+**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `BASE-PLACEHOLDER` (gate-int-2:
+02-erlang s15, 04-js s9–s10, 134 s2 part and s5, the 01-checker / 03-beam / 05-wasm rows, landed after a
+green `gate.sh --cold`) · rakun `BASE-PLACEHOLDER` · jhonstart `BASE-PLACEHOLDER` · emilia `BASE-PLACEHOLDER`
+· onze `BASE-PLACEHOLDER` · erika `BASE-PLACEHOLDER` · vscode-extension `BASE-PLACEHOLDER`
 
-**Fronts:** 70 — **1 done** (129) · **22 partial** · **47 not started**.
+**Fronts:** 71 — **1 done** (129) · **22 partial** · **48 not started**.
 
 | Track | Done | Partial | Not started |
 |---|---|---|---|
 | `00-gate` | — | 114 | — |
-| `01-compiler` | 129 | 01 · 02 · 03 · 04 · 05 · 07 · 12 · 14 · 17 · 18 · 26 · 130 · 134 | 16 · 23 · 24 |
+| `01-compiler` | 129 | 01 · 02 · 03 · 04 · 05 · 07 · 12 · 14 · 17 · 18 · 26 · 130 · 134 | 16 · 23 · 24 · 139 |
 | `02-std-and-packaging` | — | 97 | 98 |
 | `03-bundled-libs` | — | 102 · 103 · 104 · 106 · 125 | 105 · 107 |
 | `04-rakun` | — | 13 · 92 | the other 18 |
@@ -41,7 +42,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 139 (332) — `bigint` on the four targets · then 97 s15 (`Decimal`, `Json`'s `Int` / `BigInt` / `Dec`) · 125's bind rule
 - [ ] 01-checker s13 — JS-4's two checker gaps · 05 lowering a nested constructor in a `val`
 - [ ] 01-checker s18 — numeric literal suffixes (247): built on feat (`49455602`); left: the two `language-gaps.md` literal halves, a cold gate · the `l` literal rule on every target (319)
-- [ ] 01-checker s21 — `comptime` evaluated at compile time everywhere (266; ck4-a (c)); a `comptime { … }` block in a function body fails at codegen on commonJS and wasm
+- [x] 01-checker s21 part — every body `comptime` `eval.zig` folds is folded by the checker (`foldBodyComptime`), so no backend meets it (`run/comptime_block_in_body`, four targets); the runtime box is the priority row above (331)
 - [ ] 01-checker s23 — `Decl.hooks`: every reachable node, annotations with their `Decorator` (277) · then 26 s8, 49 s5, 22 s4
 - [ ] 01-checker s24 — typed comptime decorator arguments, `@Decl<T>`, `Field<T>` (`Type.Field<T>`, 308) and `.name` (280; cases in `01-checker/examples/decorator-arguments-280.md`) · then 125 s7, the `nat-*` rewrites
 - [ ] decision 281 (references, not strings) — rakun 04 s6, 08 s4, 12 s4 · 130 s7 · 125 s11 · 120 s6 · 127 s5 · 126 s4 · 26 s9 · 53 s7 · each after 01-checker s24
@@ -70,20 +71,23 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 01-checker s22 — the `.bpp` prelude scope (270) · 116 hands the prelude list
 - [x] 01-checker s19–s20 — type application and `comptime <expr>` (255): on feat (`49455602`)
 - [x] 01-checker rows — the `@block` tail refusal, the `$stringify` parser refusal (239), `primitive-type-name-taken`, T17, row 33 re-measured (refused at the alias); a type reached twice through `@TypeInfo.all` and an import accepted
-- [ ] 01-checker rows — the comptime body's file, a package's module namespace, two aliased same-named types (310), `@External.Wasm` read on every target, the template memo key, two diagnostics teaching retired spellings · none
-- [ ] 01-checker row — a partially returning `@block` type-checks (commonJS prints `null` on the fall-through) · none
-- [ ] 01-checker row — a type error in a decorator body (`decl.nope`) escapes the checker as a run-time `{badkey,nope}` · none
+- [ ] 01-checker rows — the comptime body's file, a package's module namespace, two aliased same-named types (310), `@External.Wasm` read on every target, the template memo key · none
+- [x] 01-checker rows — a partially returning `@block` is `block-tail-value` (`reject/block_partial_return`); a decorator body's `decl.nope` is the checker's unknown field, located in the body (`reject/decorator_{body,helper}_unknown_field`); the two diagnostics teaching retired spellings corrected
+- [ ] 01-checker rows — an unsuffixed literal is not range-checked (`val e: i32 = 3000000000` accepted, 319); `-9223372036854775808l` refused; `refuseIntegerOutOfRange` cites 247 instead of 319 · none
 - [x] 04-js s1 — the `@block` tail form refused before commonJS (01's `block-tail-value`); the IIFE serves the two shapes left
 - [x] 04-js s2 — `$stringify` in a template (164, 239); `render`'s arm and `emitStringify*` deleted
 - [ ] 04-js s6 — `throw` in a `case` arm · 01 s6
 - [x] 04-js s8 — an integer that leaves its type aborts (264): on feat (`48a096ea`)
+- [x] 04-js s9 (319) — `i64` / `u64` / `isize` / `usize` a number below 2^53 and a `BigInt` past it: every operation through the prelude helpers, literals, host templates and `.d.ts` as `number | bigint`, the cost within 10 %, `run/i64_full_range` on the four targets
+- [ ] 04-js s9 rest — `Json`'s exact `i64` (332: 139, then 97 s15) · the explicit conversions (97 s13's std surface)
+- [x] 04-js s10 (320) — a string index counts codepoints on commonJS: the five reads through prelude helpers, host templates in codepoints, `run/string_index_of_codepoints` one `.out` for the four targets
+- [ ] 04-js s10 row — string reads cost +24 % against the 10 % target (`js/AGENTS.md`) · none
 - [ ] 05-wasm s1 box 1 · s3 box 2 — `Array.unique` and C-07's cells on wasm · 02 s4, s7
 - [ ] 05-wasm s5 — the rest of std on wasm: heap growth, `pow`, astral `contentHash`, `encoding` / `querystring` family cells, the `wat/AGENTS.md` limits row done; left: `unicode` and `json` on wasm and their cells · `02/97` s16 (333), 05w-j
 - [x] 05-wasm s8 — overflow for `u32`/`u64` and the narrow integer types on wasm (264)
 - [x] 05-wasm — an `@block`'s `return` is the block's value (decision 2), `run/block_return_is_block_value`
-- [ ] 05-wasm row — `_` in a variant payload pattern binds `0` · none
-- [ ] 05-wasm row — a nested variant pattern answers wrong · none
-- [ ] 05-wasm row — unsigned compare and divide use the signed opcodes · none
+- [x] 05-wasm rows — `_` in a variant payload, a nested variant pattern (`run/variant_payload_wildcard_and_nested`); unsigned compare and divide (`run/unsigned_compare_and_divide`); `u64`'s unsigned overflow checks and printing, an unannotated `u64` literal or sum keeps its type, radix literals to `u64`'s top
+- [ ] 05-wasm rows — `?u64`'s `toString` and a `u64` record field print signed; a `u64` tuple slot is refused · none
 - [ ] 02-erlang s4 — `run/array_unique` (C-35) · with 05 s1
 - [x] 02-erlang s5 box 2 — a decorator body carrying `\u{…}` (cell: 14 s7)
 - [ ] 02-erlang s7 — C-07's erlang tails as `run/` cells · 05's wasm column
@@ -91,8 +95,10 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 02-erlang row — an `@block` reassigning an enclosing `var` makes `erlc` refuse the module (`Acc@1` unbound) · none
 - [x] 02-erlang s12 · 03-beam s7 — one `math` on every OS (263): on feat (`a443f52d`)
 - [x] 02-erlang s13 · 03-beam s8 — an integer that leaves its type aborts (264): on feat (`48a096ea`)
+- [x] 02-erlang s15 · 97 s14 box 1 (320) — erlang and beam count codepoints: the emitters and std's Erlang templates read the codepoint list (`run/string_index_of_codepoints`, combining-mark and astral rows)
 - [x] 03-beam s9 — a lambda a `case` arm answers is the arm's value (`language-gaps.md` row 28 deleted); an `@block`'s `return` is the block's value; an in-frame loop's head keeps a forward entry under `beam_jump`
-- [ ] 03-beam row — a variant name declared by two enums with different fields binds the whole value on a positional pattern (`modules/variant_positional_payload_same_name`, held) · none
+- [x] 03-beam row — a variant name declared by two enums with different fields binds the payload on a positional pattern: `beam_asm` registers an imported enum's name (`modules/variant_positional_payload_same_name`)
+- [ ] 03-beam row — a `case` no arm matches returns the subject at exit 0 instead of raising `case_clause` · none
 - [ ] 03-beam s1 box 3 — the checker's two binding shapes on beam · 01 s13
 - [ ] 03-beam s2 box 1 — C-07's `run/` cells on beam · 02 s7 · 05
 - [ ] 12 s1 box 2 — `--cold` with the pre-existing tool set · 114 s7
@@ -125,6 +131,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 97 s3 · s5 residue — rakun's `parseDuration`, `skewOf` and four retry loops as "consume std" rows · no 04-rakun front carries them yet
 - [ ] 97 s4 residue — the engine under every `-test` member, `test-libs` counts · none
 - [ ] 97 s11 — std on wasm, group 3 (230) · 97-a, 97-b, 97-c (`io/http`, `async`, `testing/mocks`), 110-a
+- [ ] 97 s13 — `Math.min` / `max` / `abs` and `Integer`'s default fns break past 2^53 on commonJS; std has no `toF64()` / `toI32()` surface (319's conversions) · none
 - [x] 97 s12 — `unicode.fromCodepoint` a `fn:` over `String.fromCodepoint` on all four targets (with `powBody`, `fn:` transcendentals, code-point `contentHash`)
 - [ ] 97 row — an embedded std file's reserved-word error is unlocated · none
 - [ ] 104 s5 — the consumer sweep · 04, 65, 79, 12, 19, 22, `08-bpp/123`, 49, 51 landed (188)
@@ -149,6 +156,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] rakun track — remove the workarounds the compiler made deletable: rakun-data `rows.bp`'s `longOf` (C2 fixed), `runtime.bp`'s row-89 named fn (row 28 fixed), `orm_host.bp` → `src/orm/host.bp` (26 s2) · `04-rakun` RX-14
 - [ ] rakun track — latent `i32` clocks: `migration_host.cellNowMs`, the test-only monotonic `nowMs` in `rakun-mail`, `rakun-rsocket` and `tls_listener_test`, `Duration.millis` · `04-rakun` RX-15
 - [ ] rakun track — stale `__rkMake_` text in rakun's `AGENTS.md` · `04-rakun` RX-16
+- [x] rakun track — the server test measures `Content-Length` in bytes (320's follow-up) · `04-rakun` RX-17
 
 ## L3 — ready to open now
 
@@ -166,8 +174,8 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 
 - [ ] decision 321 (qualified beans: `#[qualifier("label")]`, `ctx.resolveNamed(Type, "label")`, `resolveNamed(Type)` the primary, labels checked at build) — 130 s5 · rakun 04 s6
-- [ ] decision 320 (string index: codepoints on every target; erlang leaves `string:length/1`; commonJS native when no surrogate pair) — 97 s14 · 04-js s10 · 02-erlang s15
-- [ ] decision 319 (`i64` is 64-bit on every target; commonJS a number below 2^53, a `BigInt` above; literal refused past the type's range everywhere; 176, 264 amended) — 04-js s9 · 01-checker s18 · 97 s13
+- [ ] decision 320 (string index: codepoints on every target; erlang leaves `string:length/1`; commonJS native when no surrogate pair) — 97 s14 boxes 2–3 (04-js s10, 02-erlang s15 done)
+- [ ] decision 319 (`i64` is 64-bit on every target; commonJS a number below 2^53, a `BigInt` above; literal refused past the type's range everywhere; 176, 264 amended) — 04-js s9's rest · 01-checker s18 and its literal rows · 97 s13
 - [ ] decision 318 (one decorator per role, rakun's names: `#[component]`, `#[repository]` on a behavior, `#[provides]`, `#[httpClient]`, `#[listen(dest)]`, `#[controller]`, wrappers; closes 130-c, erk-c) — 130 s5 · rakun 04 s8 · 08 s7 · 12 s6 · 13 s6 · 15 s8 · 19 s7 · 79 s4 · 91 s2 · 93 s4
 - [ ] decisions 315, 316 (no module annotation; a decorator wraps its function, `decl.wrapWith`, typed) — 01-checker s30 · rakun 12 s5 · 15's example
 - [ ] 137 (`04-rakun`) — erika's database target: holes, `QuerySource<T>`, the grammar, `#[erika "…"]` · s5: 01-checker s29 · s2's body form: erk-a

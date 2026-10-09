@@ -1,6 +1,7 @@
 # Front 04 — js: commonJS keeps no dead lowering and no marker std alone may write
 
-**Priority:** medium · **State:** partial: steps 1–5, 7, 8 and C-37 done; steps 6, 9, 10, 11 open
+**Priority:** medium · **State:** partial: steps 1–5, 7, 8 and C-37 done; steps 9 and 10 done on commonJS but for
+`Json` (332), the conversions (a std surface) and the string-read cost (+24 % against 10 %); steps 6, 11 open
 **Depends on:** step 6's typed AST (step 6)
 **Owns:** `modules/compiler-core/src/codegen/commonJS.zig` · `src/codegen/typescript.zig` ·
 `src/codegen/js/**` · `src/comptime/primOpTemplate.zig`'s `$stringify` arm (step 2, decision 239) ·
@@ -93,7 +94,7 @@ function i64add(a, b) {
       `BigInt`, aborts past −2^63 … 2^63 − 1 / 0 … 2^64 − 1 (`__bp_int`), and answers the canonical form;
       a literal is a number when safe, else `123…n`; `rangeExactDouble` deleted
 - [ ] canonical form kept by every producer (operations, literals, conversions, `Json`, host templates)
-      — operations and literals done; `Json` waits on `jsi64-a`; std's `Math.min`/`max`/`abs` cells and
+      — operations and literals done; `Json` waits on 332 (`139`, then `02/97` step 15's `Json` integer); std's `Math.min`/`max`/`abs` cells and
       `Integer`'s `default fn`s (`isEven`, `clamp`) throw a `TypeError` on a `BigInt` (97 step 13):
       `==` stays `===`, a `Dict` / `Set` keyed by `i64` keys by value — one cell each across the 2^53 edge
 - [ ] conversions explicit and exact (no `toF64()` / `toI32()` is declared anywhere yet — std surface first):

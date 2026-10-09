@@ -112,6 +112,11 @@ with a located message, recorded as the design; or (b) restructured so no host c
       (`9223372036854775807l` round-trips on commonJS through `Int`)
 - [ ] `string.parseInt()` answers `Error` only past the `i64` range (176 as amended by 319); its cells on
       the four targets
+- [ ] `Math.min` / `max` / `abs` and `Integer`'s `default fn`s (`isEven`, `clamp`) answer past 2^53 on
+      commonJS — today they throw a `TypeError` on a `BigInt` (from `04-js` step 9); one cell each across
+      the 2^53 edge
+- [ ] the explicit conversions 319 names (`toF64()`, `toI32()`, …) declared in std — none is declared
+      anywhere; `04-js` step 9's conversions box waits on this surface
 
 ### Step 14 — erlang counts codepoints, not grapheme clusters (decision 320)
 

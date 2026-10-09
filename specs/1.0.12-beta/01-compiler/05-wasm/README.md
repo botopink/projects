@@ -70,6 +70,11 @@ std's `math` and `hash` answer commonJS's bits on every target.
   after the carrier's checked `+`, `-`, `*`, unary `-`, `+=` (`$__i32_range_chk` for `i8`/`u8`/`i16`/
   `u16`, `$__i64_range_chk` for `u32`/`u64`; a `u64` ends at `2^63 − 1` in its `i64` carrier)
   (`run/int_overflow_add_i8`, `run/int_overflow_sub_u32` green on wasm)
+- Variant patterns and unsigned integers: `_` in a variant payload binds nothing, a nested variant pattern
+  answers what erlang answers (`run/variant_payload_wildcard_and_nested`); unsigned compare and divide use
+  the unsigned opcodes (`run/unsigned_compare_and_divide`); `u64` gets unsigned overflow checks and
+  printing, an unannotated `u64` literal or sum keeps its type, radix literals reach `u64`'s top (fixture in
+  `codegen/tests/wat.zig`)
 
 ## Open
 
@@ -133,9 +138,8 @@ Each re-measured at the step that takes it; a holding row traps or is refused by
       at the PRELUDE's line under the caller's file name (`std/json.bp:341:13` for
       `primitives.bp:341`'s `stringSlice0`) — `ensurePrimDefault`'s copy carries no origin; and the
       refusal itself: `stringSlice0` / `stringToFloat` have no wasm cell — found by step 5
-- [ ] `_` in a variant payload pattern binds `0` on wasm
-- [ ] a nested variant pattern answers wrong on wasm
-- [ ] unsigned compare and divide use the signed opcodes on wasm
+- [ ] `?u64`'s `toString` and a `u64` record field print signed on wasm (`18446744073709551615ul` as `-1`)
+- [ ] a `u64` tuple slot is refused on wasm
 
 ### Step 9 — a prebuilt wasm library merged into the module (decision 333 (B); no user yet, after step 5)
 

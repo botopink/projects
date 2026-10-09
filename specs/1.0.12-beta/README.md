@@ -30,7 +30,7 @@ The track number is the blocking order. A front keeps its global number and dire
 | [`09-cardume/`](./09-cardume/README.md) | 1 | 136: `cardume`, a library of its own — shared state as atoms (Recoil's model; decision 296), its core and the two bridges `rakun-cardume`, `jhonstart-cardume` |
 | [`20-snap/`](./20-snap/README.md) | 1 | 135: the nine snapshot maps re-evaluated case by case; owns every snapshot step the other fronts carried; last |
 
-70 fronts in all. Where each stands is [`status.md`](./status.md).
+71 fronts in all. Where each stands is [`status.md`](./status.md).
 
 ## Rules in force
 

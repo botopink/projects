@@ -1,6 +1,6 @@
 # Front 02 — erlang: the erlang target answers what decision 8 says, on every shape
 
-**Priority:** high · **State:** partial: steps 1–3, 5, 6, 8–13 on feat; steps 4, 7, 14, 15 open
+**Priority:** high · **State:** partial: steps 1–3, 5, 6, 8–13 and 15 done; steps 4, 7, 14 open
 **Depends on:** `05-wasm` (step 7's wasm column) · `01-checker`'s `@block` tail-form refusal (step
 10)
 **Owns:** `modules/compiler-core/src/codegen/erlang.zig` · `src/codegen/crossModule.zig` ·
@@ -104,8 +104,8 @@ value is not wrapped in `{ok, V}` — while a module-level fn is lowered correct
 
 ### Step 15 — a combining mark counts as two codepoints (decision 320; with `02/97` step 14)
 
-- [ ] commonJS column of `run/string_index_of_codepoints`: the astral rows (`"👍".length` 1, `"a👍b👍c"`)
-      wait on `04-js` step 10 — erlang, beam and wasm green (§ Done)
+- [x] commonJS column of `run/string_index_of_codepoints`: the astral rows (`"👍".length` 1, `"a👍b👍c"`)
+      green with `04-js` step 10 (one `.out` for the four targets) — erlang, beam and wasm in § Done
 
 **Gate:** standard (fronts.md § Gate) + every re-recorded RUN LOG verified under `erl`, nothing
 bulk-accepted · `zig build test-libs` erlang cells at baseline, rakun's members re-run

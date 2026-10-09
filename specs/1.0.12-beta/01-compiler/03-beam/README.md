@@ -47,6 +47,8 @@ from the enclosing function (`run/block_return_is_block_value`, four targets;
   `{label, Top}`, so tail sharing cannot turn the entry into a jump to an identical back edge and leave
   `Top` with backward references only (`erlc` stopped on `{undefined_label, Top}` in log's
   `stripLineNumbers`; `modules/import_bundled_package_beside_own_module` green on beam).
+- A variant name declared by two enums with different fields: a positional pattern binds the payload, not
+  the whole value — `beam_asm` registers an imported enum's name (`modules/variant_positional_payload_same_name`).
 
 ## Open
 
@@ -67,8 +69,8 @@ ten lines on commonJS, erlang, beam.
 
 ### Rows found by other fronts
 
-- [ ] a variant name declared by two enums with different fields: a positional pattern binds the
-      whole value instead of the payload (`modules/variant_positional_payload_same_name`, held)
+- [ ] a `case` no arm matches returns the subject at exit 0 instead of raising `case_clause` as erlang
+      does
 
 **Gate:** standard (fronts.md § Gate) + `scripts/beam_export_audit.sh` assembles every module before
 and after each step · every re-recorded RUN LOG verified by running (`erlc +from_asm` + `erl`)

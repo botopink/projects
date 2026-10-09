@@ -273,7 +273,8 @@ member edge (decision 185). (c) retire the WebSocket transport: R92-1's two boxe
 | RX-15 | latent `i32` clocks: `migration_host.cellNowMs`, the test-only monotonic `nowMs` in `rakun-mail`, `rakun-rsocket` and `tls_listener_test`, `Duration.millis` typed `i32` | 08 · 92 · 04 · `rakun-mail`: **unowned** |
 | RX-16 | stale `__rkMake_` text in rakun's `AGENTS.md` (factories are `T.make()`, 234) | 04 |
 
-Done: RX-3 (decisions 113–117's rakun halves), RX-8 (`record ↔ Json` row, 13 step 4), RX-9 (READMEs state current state).
+Done: RX-3 (decisions 113–117's rakun halves), RX-8 (`record ↔ Json` row, 13 step 4), RX-9 (READMEs state current state), RX-17 (the server test measures `Content-Length` in bytes, not
+in string indices — decision 320's follow-up).
 
 ## Cross-track dependencies
 

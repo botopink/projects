@@ -370,6 +370,12 @@ type's body is a parse error.
       (from `05-wasm` step 5)
 - [ ] `infer.zig`'s template memo key appends the whole scope's JSON per call site — O(scope) per
       template call (`14-comptime-on-beam` step 2's remaining cost)
+- [ ] an unsuffixed integer literal is not range-checked against its declared type:
+      `val e: i32 = 3000000000` is accepted (319: a literal past the type's range is refused everywhere)
+      (from `04-js` step 9)
+- [ ] `-9223372036854775808l` is refused (the literal's digits are past `i64` before the sign applies);
+      `run/i64_full_range` writes `-9223372036854775807l - 1l` (from `04-js` step 9)
+- [ ] `refuseIntegerOutOfRange`'s message cites 247; the rule in force is 319 (from `04-js` step 9)
 
 **Gate:** standard (fronts.md § Gate) + every re-recorded `snapshots/comptime/**` file read for
 expected/found orientation; a refusal moving a backend fixture is reported to that backend's front,
