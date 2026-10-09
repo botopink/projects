@@ -117,7 +117,7 @@ functions".
 | `--alpha(var(--color-lime-300) / 50%)` | igual | `color-mix(in oklab, var(--color-lime-300) 50%, transparent)` |
 | `@variant hover { … }`, `@variant dark { … }` | igual, dentro do componente | a regra sob `&:hover` / sob a variante `dark` |
 | `@custom-variant hocus (&:hover, &:focus);` | igual, num `styled` exportado como variante | `@variant hocus { … }` passa a valer onde ele é importado |
-| `@apply p-4 font-bold;` | um buraco do tipo `StyledView`: `${padAll(4)} ${fontBold}` | as declarações do outro componente entram ali; composição tipada, sem nome de classe em string (281) |
+| `@apply p-4 font-bold;` | um buraco do tipo `StyledPropertyView` (p10): `${padAll(4)} ${fontBold}` | as declarações do outro componente entram ali; composição tipada, sem nome de classe em string (281) |
 | `@utility tab-4 { tab-size: 4; }` | `pub val tab4 = styled "tab-size: 4;";` | o `val` dá o nome; não precisa de `@utility` |
 | `@utility tab-* { tab-size: --value(integer); }` | `fn tab(n: i32) -> StyledView { return styled "tab-size: ${n};"; }` | a função é a família; o tipo do parâmetro faz o papel de `--value(integer)` |
 | `@layer components { … }` | a camada do `Sheet` em que o componente entra | |
@@ -170,8 +170,8 @@ pub default fn styled(comptime css: @Expr<string>) -> @ExprCustom<StyledView> { 
 
 ```bp
 // emilia — Tailwind: @utility p-* { padding: --spacing(--value(integer)); }
-fn padAll(n: i32) -> @Component<StyledBase, Styled> {
-    return styled "padding: --spacing(${n});";
+fn padAll(n: i32) -> @Component<StyledBase, StyledProperty> {    // StyledPropertyView (p10)
+    return styledProperty "padding: --spacing(${n});";
 }
 ```
 
@@ -193,8 +193,9 @@ O que isso dá:
   componente alcança. Um componente sem hook de run-time é calculado no build (classe e regra
   constantes, nada registrado no render), como uma página `#[page]` é pré-renderizada quando não
   alcança um hook `#[serverOnly]` (202). Com um hook de run-time, ele é calculado por render.
-- **Composição como entre componentes.** `${btn}` dentro de outro `styled` é um filho renderizado
-  sob a mesma base, como um componente dentro do `html`. O `@apply` do Tailwind vira isso.
+- **Composição como entre componentes.** Um `styledProperty` dentro de outro `styled` (`${tab4}`) é
+  um filho renderizado sob a mesma base, como um componente dentro do `html`, e as declarações dele
+  entram no lugar. O `@apply` do Tailwind vira isso (p10).
 - **A ponte com o jhonstart.** Quem recebe a seção `--- style ---` é o `jhonstart-styled`, e não o
   `styled`: a função default dele monta, com o `styled`, a folha com escopo da seção, e o componente a
   ativa com `use` (p1). O `jhonstart-styled` também liga `ElementBase` a `StyledBase` (o papel que o `jhonstart-emilia`
@@ -214,14 +215,18 @@ e cada caso da família é um componente:
 
 ```bp
 // emilia/src/spacing.bp (ou o bloco da família Pad)
-import styled, {StyledView} from "styled";
+import styled, {styledProperty, StyledView, StyledPropertyView} from "styled";
 
+// as famílias são só declarações: styledProperty (p10)
 // Tailwind: @utility p-*  { padding: --spacing(--value(integer)); }
-fn padAll(n: i32) -> StyledView { return styled "padding: --spacing(${n});"; }
+fn padAll(n: i32) -> StyledPropertyView { return styledProperty "padding: --spacing(${n});"; }
 // Tailwind: @utility px-* { padding-inline: --spacing(--value(integer)); }
-fn padX(n: i32) -> StyledView { return styled "padding-inline: --spacing(${n});"; }
+fn padX(n: i32) -> StyledPropertyView { return styledProperty "padding-inline: --spacing(${n});"; }
 // o meio passo vira um valor: --spacing(0.5) → calc(var(--spacing) * 0.5)
-fn padAllHalf(n: i32) -> StyledView { return styled "padding: --spacing(${n}.5);"; }
+fn padAllHalf(n: i32) -> StyledPropertyView { return styledProperty "padding: --spacing(${n}.5);"; }
+
+// as variantes embrulham as declarações num styled: .Hover(…), .Md(…)
+fn hover(inner: StyledPropertyView) -> StyledView { return styled "&:hover { ${inner} }"; }
 ```
 
 - Uma lista de tokens é a composição dos componentes dos seus tokens. A ordem continua sendo a
@@ -567,7 +572,7 @@ escopo. Os breakpoints (`md`, `lg`) estão no tema da emilia (300), que o `style
 raio, fonte), e o valor é comptime quando o tema é, então o componente ainda sai no build (p9). A (b)
 é mais curta, mas cria um segundo canal para o mesmo dado. A (c) duplica o tema.
 
-### p10 · Uma variação só de propriedades: `styledProperty "…"`
+### p10 · Uma variação só de propriedades: `styledProperty "…"` — aceito (09/10): (a)
 
 **Contexto.** O `styled """…"""` aceita tudo: declarações, blocos `&:hover { … }`, `@media`,
 `@variant`. Muitos usos precisam só de declarações. É o caso de cada utilitário da emilia
@@ -575,7 +580,7 @@ raio, fonte), e o valor é comptime quando o tema é, então o componente ainda 
 reaproveitado em vários lugares. Uma variação só de propriedades dá a esse caso um tipo próprio, que
 garante "só declarações".
 
-- [ ] **(a)** O pacote `styled` exporta `styledProperty`, um template function como o `styled`, cujo
+- [x] **(a)** O pacote `styled` exporta `styledProperty`, um template function como o `styled`, cujo
   literal só aceita declarações. Ele devolve `@Component<StyledBase, StyledProperty>`, no padrão do
   p8 (`StyledPropertyView` é o alias), e `StyledProperty` também implementa o `Styleable` (p4).
   ```bp
@@ -598,13 +603,13 @@ garante "só declarações".
   styledProperty "&:hover { color: red; }"
   // error: styledProperty holds declarations only — use styled for selectors, variants and at-rules   at `&`
   ```
-- [ ] **(b)** Um `styled` só. Um literal que tem só declarações já funciona igual, mas sem um tipo
+- [ ] **(b)** *(descartada)* Um `styled` só. Um literal que tem só declarações já funciona igual, mas sem um tipo
   que diga isso.
   ```bp
   pub val tab4 = styled "tab-size: 4;";       // StyledView, como qualquer outro
   ```
 
-**Recomendação: (a).** Ela segue o mesmo princípio do p6: o tipo diz o que o valor é, sem que seja
+**Por que (a).** Ela segue o mesmo princípio do p6: o tipo diz o que o valor é, sem que seja
 preciso ler a string de CSS.
 
 - **Composição com garantia.** Só um `StyledProperty` entra num buraco no meio das declarações, e ele
