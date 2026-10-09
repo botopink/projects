@@ -44,7 +44,7 @@ pub fn staticPaths() -> @Task<Array<StaticPath>> {
 }
 
 #[page("astronauts/[page]")]
-pub fn Page(route: PageContext) -> @Component<ElementBase, Element> {
+pub fn Page(route: PageContext) -> @Component<Element> {
     val current = try pageOf(route, schemaOfAstronaut()) catch Page.empty();
     return html """
       <h1>Page {current.currentPage.toString()} of {current.lastPage.toString()}</h1>

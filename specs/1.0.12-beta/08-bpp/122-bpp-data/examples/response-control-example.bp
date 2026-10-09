@@ -39,7 +39,7 @@ fn findProduct(id: string) -> @Task<?Product> {
 }
 
 #[page("product/[id]")]
-pub fn Page(route: PageContext) -> @Component<ElementBase, Element> {
+pub fn Page(route: PageContext) -> @Component<Element> {
     // Astro.params
     val id = PageParams(route).id;
 

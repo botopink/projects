@@ -46,7 +46,7 @@ pub fn staticPaths() -> @Task<Array<StaticPath>> {
 }
 
 #[page("dogs/[dog]")]
-pub fn Page(route: PageContext) -> @Component<ElementBase, Element> {
+pub fn Page(route: PageContext) -> @Component<Element> {
     // `Astro.params` — the accessor `#[page]` emits from the bracket segments.
     val dog = PageParams(route).dog;
     // `Astro.props` — the row's data, decoded with the type's own schema.

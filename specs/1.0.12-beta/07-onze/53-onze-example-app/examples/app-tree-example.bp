@@ -50,7 +50,7 @@ import {collections.Dict} from "std";
 // is the subtree the router already rendered: the next layout down, or the page.
 
 #[layout("")]
-pub fn rootLayout(props: LayoutProps) -> @Component<ElementBase, Element> {
+pub fn rootLayout(props: LayoutProps) -> @Component<Element> {
     val header = div([h1([text("onze", attrs: [])], attrs: [])], attrs: [
         bracketPair("data-jh-chrome", "header"),
     ]);
@@ -64,14 +64,14 @@ pub fn rootLayout(props: LayoutProps) -> @Component<ElementBase, Element> {
 // `layout.bp` and `template.bp`, and jhonstart front 30 owns the distinction.
 
 #[layout("blog")]
-pub fn blogLayout(props: LayoutProps) -> @Component<ElementBase, Element> {
+pub fn blogLayout(props: LayoutProps) -> @Component<Element> {
     val crumb = p([text("Blog", attrs: [])], attrs: []);
     return div([crumb, props.children], attrs: [bracketPair("data-jh-seg", "blog")]);
 }
 
 // ---- app/page.bp — the home page ----------------------------------------------
 //
-// Every page, layout and template is `fn … -> @Component<ElementBase, Element>`
+// Every page, layout and template is `fn … -> @Component<Element>`
 // (decision 117): jhonstart's registry pins one shape, and the marker refuses any
 // other at compile time. A page that needs no data awaits nothing and costs nothing.
 
@@ -80,7 +80,7 @@ fn recentSlugs() -> @Task<string[]> {
 }
 
 #[page("")]
-pub fn homePage(route: PageContext) -> @Component<ElementBase, Element> {
+pub fn homePage(route: PageContext) -> @Component<Element> {
     val slugs = await recentSlugs();
     val items = slugs.map({ s -> li([text(s, attrs: [])], attrs: []) });
     return div([
@@ -92,7 +92,7 @@ pub fn homePage(route: PageContext) -> @Component<ElementBase, Element> {
 // ---- app/blog/page.bp — the blog index ----------------------------------------
 
 #[page("blog")]
-pub fn blogIndexPage(route: PageContext) -> @Component<ElementBase, Element> {
+pub fn blogIndexPage(route: PageContext) -> @Component<Element> {
     val slugs = await recentSlugs();
     val items = slugs.map({ s -> li([text(s, attrs: [])], attrs: []) });
     return ul(items, attrs: [bracketPair("data-jh-list", "posts")]);
@@ -108,7 +108,7 @@ fn postBody(slug: string) -> @Task<string> {
 }
 
 #[page("blog/[slug]")]
-pub fn blogPostPage(route: PageContext) -> @Component<ElementBase, Element> {
+pub fn blogPostPage(route: PageContext) -> @Component<Element> {
     val params = blogPostPageParams(route);
     val body = await postBody(params.slug);
     return div([
@@ -124,7 +124,7 @@ pub fn blogPostPage(route: PageContext) -> @Component<ElementBase, Element> {
 // `§ 5. Multiple Root Layouts` is expressed.
 
 #[page("(marketing)/about")]
-pub fn aboutPage(route: PageContext) -> @Component<ElementBase, Element> {
+pub fn aboutPage(route: PageContext) -> @Component<Element> {
     return div([
         h1([text("About", attrs: [])], attrs: []),
         p([text("Rendered on BEAM, like every page in this tree.", attrs: [])], attrs: []),

@@ -6,7 +6,7 @@
 // values go in `${…}` holes, so the braces stay CSS's; Tailwind v4's CSS syntax
 // works where it is CSS (`--spacing()`, `--theme()`, `@variant`); `@apply` is a
 // hole of a `StyledPropertyView`. Both answer components in the language's
-// model (`@Component<StyledBase, …>`), so a test reads one after `await`. It
+// model (`@Component<…>`), so a test reads one after `await`. It
 // knows no `.bpp` and no jhonstart.
 //
 // emilia is a series of components written this way (`06-emilia/34` step 5).

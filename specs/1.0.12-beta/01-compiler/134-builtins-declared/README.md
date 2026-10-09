@@ -2,8 +2,9 @@
 
 **Priority:** high · **State:** partial: steps 1, 3, 4 and 5 done; step 2 partial (calls, `@Result`'s
 methods, the mirrored types and `@is` held; std's `Type` declared with `pick` / `omit`, `Decl.fields`'
-`Type.Field<unknown>` open; `?T` methods and the `result` namespace removed under 330); step 6 rewritten by
-decision 354 (contexts), not started
+`Type.Field<unknown>` open; `?T` methods and the `result` namespace removed under 330); step 6 (354, 357)
+partial: boxes 1, 2, 5 (357) and 6 (the codemod) done; box 4 on erlang, beam and commonJS (wasm refuses at the
+`use`; the comptime runtimes and generic code open, `134-g`); box 3 waits on `01-checker` step 23 (277)
 **Depends on:** step 6: backend fronts 02–05 and 18 for the hidden context map (354) · answered: `134-f` → 354, 134-e → 329, 330, 134-d → 322, 134-a → 267, 134-b → 268, 134-c → 269
 **Owns:** `libs/std/src/builtins.d.bp`, `libs/std/src/builtins_fns.d.bp` (with 130 for the `Decl`
 surface) · compiler's builtin table and the check tying it to the declarations
@@ -39,12 +40,39 @@ implementation to the declarations; `docs.md` documents each from its declaratio
   `modules/variadic_across_modules`, `reject/variadic_{not_last,twice,default,not_array,label,spread_at_call}` (all red on
   the parent); the twenty cells that pass `@print` zero or two-plus arguments green on the four targets; `format: a
   variadic parameter keeps its `..``; `docs.md` § A variadic parameter (`docs-check: reject variadic-spread`)
-- Step 6 (269), but its run cell — `builtins.d.bp` declares `getContext<T>(comptime _: type) -> Component<T, T>` (row and
-  drift green); after RC5, RC4 and RC3 the arm answers `Component<T, T>` and a call that is not `use`'s operand
-  (`Env.useOperandLoc`) is `context-getcontext-without-use` at the `@`; `use` reads it as a `T` — `infer: use
-  @getContext(T) reads the context as a T`, `infer error: use @getContext(T) is a T, not anything else`
-  (`found: BasePagamento`), `reject/getcontext_without_use` (`8:15`, red on the parent); the three
-  `context-getcontext-*` snapshots unchanged; `docs.md` § Builtins and § use show the `use` form
+- Step 6 box 1 (354 (1)) — `@Component<R>`: the parser refuses `@Component<C, R>` at the base
+  (`generic-arg-count-exceeded`, naming `@Component<R>`), `@Context<…>`
+  (`context-marker-removed`, naming `implement @Renderable`) and `@Renderable<…>`; `builtins.d.bp` declares
+  `pub behavior Renderable {}` and `Component<R> extends Task`, `Context<Base>` and `getContext` gone with the
+  `context-getcontext-*`, `context-anchor-violation` and `effect-wrapper-mismatch` codes and decision 96's one
+  base per body; `TypeDef.isRenderable` tells a component from a `@Component` read with `use`; a hand-written
+  `@getContext(…)` is `unknown-builtin` naming `use context(C)` — `reject/component_base_parameter`,
+  `reject/context_marker_removed`, `reject/renderable_type_argument`, `reject/getcontext_removed` (each red on
+  the parent); `parser: decision 354 — …` (`effect_rejections.zig`)
+- Step 6 box 2 (354 (2), (3)) — std's `context` module: `Context<T>()`, `provide`, `context` (`use` only,
+  lowered by the compiler); `use-outside-render-tree` in a decorator body, a template body and a `comptime`;
+  `context-hook-without-use`, `context-not-declared` (a `Context<T>()` that is not a module-level `val`'s whole
+  initializer, a `val` naming another context, a context named by a local or a parameter),
+  `context-provide-outside-component` (a body whose `R` is not `@Renderable`, or a provide that is not a
+  statement of its own) and `context-provide-after-render` — `reject/use_in_comptime_block`,
+  `reject/use_in_decorator_body`, `reject/use_in_template_body`, `reject/context_hook_without_use`,
+  `reject/context_hook_as_value`, `reject/context_not_declared`, `reject/context_val_alias`,
+  `reject/context_read_of_parameter`, `reject/context_provide_in_hook`, `reject/context_provide_after_render`,
+  `reject/context_provide_bound`
+- Step 6 box 4, on erlang, beam and commonJS (354 (8)) — `comptime/context_lower.zig` over the transformed
+  module: the hidden `bpContextMap__` on every function whose type answers `@Component<R>` (aliases, methods,
+  `implement` methods, function types and `is` tests included), the children map after each `use provide`,
+  `use context` a lookup in std's `context.find` (`context-unbound` at run time); a host function is called
+  with no map and a `@Component` value handed to it keeps the map as its first parameter — a host that calls one
+  passes `null` (jhonstart's `jhonstart_signal`) — `run/context_provide_read`, `run/context_nearest_wins`,
+  `run/context_unbound` (`.exit`, `.<t>.stderr`) on the three; wasm refuses the `use` (`.wasm.expect`,
+  `language-gaps.md` 354-wasm)
+- Step 6 box 5 (357) — `use-not-top-level` in the checker (`Env.useConstruct`, `Env.earlyExitLine`), the
+  parser's static-prefix rule gone — `reject/use_in_if`, `reject/use_in_loop`, `reject/use_in_lambda`,
+  `reject/use_after_early_return`, `run/use_conditional_argument`; `reject/use_after_return` and
+  `reject/generator_loop_use` meet it; the short-circuit operands too (`134-h`)
+- Step 6 box 6 — `scripts/codemod-component-contexts.py` (`scripts/AGENTS.md`); run over botopink-lang, jhonstart,
+  onze, styled, rakun and the VS Code extension (patches); no `use @getContext(T)` remained to report
 - Step 2, `Type.pick` / `Type.omit` — `types.bp` declares both `(comptime source: type T, comptime ..fields:
   Type.Field<T>[]) -> type`, bodyless; std tests green on erlang and commonJS
 - Step 5 (268) — `builtins.d.bp` declares `pub behavior Decorator {}` and `all(with: Decorator | Decorator[], member: ?string = null)`; the row held `.declaration`, drift green. `infer.zig` `checkCatalogueArguments` types `with:` by `decoratorArgumentType` (a name of a body-carrying `comptime _: @Decl` function is `Decorator`, an array literal of them `Decorator[]`) and holds the call to the declaration; `typeinfo_all.plan` leaves a query naming anything else unanswered; `typeinfo-all-not-decorator` removed, its cell moved to `reject/typeinfo_all_with_ordinary_fn` beside `reject/typeinfo_all_with_number` (the ordinary mismatch at the argument); `run/typeinfo_all_decorator_argument` (a decorator with an argument, a single one, a list) on the four targets; `docs.md` § Builtins
@@ -94,23 +122,27 @@ fn Button() -> @Component<Element> {
 }
 ```
 
-- [ ] `@Component<R>`: `@Component<C, R>` a type-arity error naming `@Component<R>`; a component is the
+- [x] `@Component<R>`: `@Component<C, R>` a type-arity error naming `@Component<R>`; a component is the
       `@Component<R>` whose `R` implements `@Renderable`, any other `@Component<R>` read with `use` (no `@Hook`: `@Component` is the one wrapper); `@Context<C>` and
       `@getContext` leave `builtins.d.bp` (`context-getcontext-*` codes go with them)
-- [ ] std declares `Context<T>`, `provide(ctx: Context<T>, value: T)` and `context(ctx: Context<T>) -> T`
+- [x] std declares `Context<T>`, `provide(ctx: Context<T>, value: T)` and `context(ctx: Context<T>) -> T`
       as hooks (`use` only); `use` inside a decorator body, a template body or a `comptime { … }` refused,
       located (354 (3))
-- [ ] `Decl.hooks` (277) carries each `provide` / `context` with its object, for the frameworks' build check (354 (4))
+- [ ] `Decl.hooks` (277) carries each `provide` / `context` with its object, for the frameworks' build check (354 (4)) —
+      waits on `01-checker` step 23 (`Decl.hooks` itself is not built); `Env.contextUses` already records each use
+      with its context's identity
 - [ ] the hidden context map: every `@Component` function takes it; `provide` builds the children's map,
       `context` looks up, `context-unbound` at run time with none — `run/context_provide_read` and
       `run/context_nearest_wins` alike on erlang, beam, commonJS, wasm and both comptime runtimes
-      (handed to 02–05 and 18 for each lowering)
-- [ ] the rules of hooks (357): `use` only at the top level of a `@Component` body —
+      (handed to 02–05 and 18 for each lowering) — built on erlang, beam and commonJS; open: wasm (refused at the
+      `use`, 05), the comptime runtimes (`emitComptimeModule` lowers the parsed program, 18 / 14), a `@Component`
+      value handed to generic code (`134-g`)
+- [x] the rules of hooks (357): `use` only at the top level of a `@Component` body —
       `error[use-not-top-level]` inside `if` / `else`, a `case` arm, a loop, a lambda, `try` /
       `catch`, or after a statement that may return early, naming the enclosing construct;
       `reject/use_in_if`, `reject/use_in_loop`, `reject/use_in_lambda`, `reject/use_after_early_return`;
       `run/use_conditional_argument` (`use provide(Ctx, if (c) a else b)` accepted)
-- [ ] the codemod: `@Component<C, R>` → `@Component<R>`, `implement @Context<C>` → `implement @Renderable`,
+- [x] the codemod: `@Component<C, R>` → `@Component<R>`, `implement @Context<C>` → `implement @Renderable`,
       `use @getContext(T)` reported at its line (no mechanical rewrite: the provider is the author's)
 
 ## Decisions

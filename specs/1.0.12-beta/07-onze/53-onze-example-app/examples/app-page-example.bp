@@ -39,7 +39,7 @@ fn leadTokens() -> Token[] {
 // it as `S` from its hooks (277) and it is prerendered until the next deploy;
 // a `use searchParams()` here would make it `D`. Nothing forces a stage (202, 290).
 #[page("")]
-pub fn homePage(route: PageContext) -> @Component<ElementBase, Element> {
+pub fn homePage(route: PageContext) -> @Component<Element> {
     val cfg = defaultImageConfig();
     // front 51 — above the fold, so eager and high priority. The declared width
     // and height reserve the box before the bytes arrive.

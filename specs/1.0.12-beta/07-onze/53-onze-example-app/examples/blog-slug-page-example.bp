@@ -57,11 +57,11 @@ val _postParams = registerStaticParams("blog/[slug]", blogStaticParams);
 
 // front 22 — the segment reaches the page through `route.params`, a `Dict`, so
 // it is read with `lookup(...).unwrapOr(...)` and never with `get`.
-// front 28 — a server component: `fn … -> @Component<ElementBase, Element>` (decision 117).
+// front 28 — a server component: `fn … -> @Component<Element>` (decision 117).
 // the seeded posts prerendered and regenerated hourly; a slug that appears
 // later is rendered on demand — everything in `#[page]` (290), no segment config
 #[page("blog/[slug]", revalidate: hours(1), dynamicParams: true)]
-pub fn blogPostPage(route: PageContext) -> @Component<ElementBase, Element> {
+pub fn blogPostPage(route: PageContext) -> @Component<Element> {
     val slug = route.params.lookup("slug").unwrapOr("");
     val found = findPost(slug);
 

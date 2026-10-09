@@ -4,7 +4,7 @@
 // The shell — header, heading, and a skeleton where the list will go — flushes
 // immediately; the list arrives as a second chunk.
 //
-// The boundary's child is a THUNK (`fn() -> @Component<ElementBase, Element>`), not a started task.
+// The boundary's child is a THUNK (`fn() -> @Component<Element>`), not a started task.
 // That is not a style choice: `@Task` is eager on the BEAM
 // (std `async`'s header), so a boundary holding a started task would hold a
 // result that had already been computed before the shell was written, and
@@ -32,13 +32,13 @@ import { escape } from "std";
 
 pub type Post(slug: string, title: string)
 
-// The slow half: a server component, `fn … -> @Component<ElementBase, Element>`
+// The slow half: a server component, `fn … -> @Component<Element>`
 // (decision 104), which is the thunk type `Boundary.child` takes. Nothing about
 // it knows it is inside a boundary.
 #[@External.Erlang("blog_repo", "recent_posts")]
 declare fn recentPostRows() -> string;
 
-fn PostList() -> @Component<ElementBase, Element> {
+fn PostList() -> @Component<Element> {
     val rows = recentPostRows().split("\n").filter({ r -> r != "" });
     val posts = rows.map({ r -> decodePost(r) });
     return ul(posts.map({ p -> postRow(p) }), attrs: [#("class", "posts")]);
@@ -118,7 +118,7 @@ test "resolving a boundary renders its child, not its fallback" {
     assert c.html == "<div class=\"done\">ready</div>";
 }
 
-fn readyChild() -> @Component<ElementBase, Element> {
+fn readyChild() -> @Component<Element> {
     return div([text("ready", attrs: [])], attrs: [#("class", "done")]);
 }
 
