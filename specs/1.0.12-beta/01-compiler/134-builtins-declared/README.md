@@ -105,6 +105,11 @@ fn Button() -> @Component<Element> {
       `context` looks up, `context-unbound` at run time with none — `run/context_provide_read` and
       `run/context_nearest_wins` alike on erlang, beam, commonJS, wasm and both comptime runtimes
       (handed to 02–05 and 18 for each lowering)
+- [ ] the rules of hooks (357): `use` only at the top level of a `@Component` body —
+      `error[use-not-top-level]` inside `if` / `else`, a `case` arm, a loop, a lambda, `try` /
+      `catch`, or after a statement that may return early, naming the enclosing construct;
+      `reject/use_in_if`, `reject/use_in_loop`, `reject/use_in_lambda`, `reject/use_after_early_return`;
+      `run/use_conditional_argument` (`use provide(Ctx, if (c) a else b)` accepted)
 - [ ] the codemod: `@Component<C, R>` → `@Component<R>`, `implement @Context<C>` → `implement @Renderable`,
       `use @getContext(T)` reported at its line (no mechanical rewrite: the provider is the author's)
 
