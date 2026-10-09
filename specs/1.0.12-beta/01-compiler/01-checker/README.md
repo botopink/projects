@@ -46,7 +46,14 @@ refused at the aliased item (imp-a), the package named `` `srv` `` not `` `srv:`
 (named `default`, a keyword; `decl.name` the file's), `pub default <name>;`, `import {m.card};`
 binding a module's default (`comptime/default_fn.zig`), `default-unknown` / `default-twice`;
 `modules/default_{anonymous,named_later}`, `reject/default_{unknown,twice,named_twice}`, `docs.md` §
-Modules; the formatter arm is `16-formatter`'s (handed over as a patch). Rows from other
+Modules; the formatter arm is `16-formatter`'s (handed over as a patch). Step 26 (297): `comptime s:
+V<T> | type T` — the value form keeps `V<T>` with `s is type` folded false, a twin `<f>__type` without
+`s` takes a type argument (`comptime/value_or_type.zig`; the call rewritten, the twin imported beside
+an imported callee); `type-arg-read`, `is-type-outside-value-or-type`, and 280 (0)'s
+`comptime-arg-not-known` for every `comptime` parameter (`twice(k)` used to drop `twice` and fail
+erlc); `run/value_or_type_param`, `modules/value_or_type_param_imported`,
+`reject/{value_or_type_mismatch,comptime_arg_not_known,type_arg_read,is_type_outside_value_or_type}`,
+`docs.md` § Generics; the last union member's printer arm handed to 16. Rows from other
 fronts: decision 170's type half, std type's constructor through its namespace, `unwrapOr`'s width,
 behavior `default fn` body checked, shorthand import never reaching a bundled package, occurs-check
 message, primitive behavior extending std's, type parameter widening to its optional, std module's
@@ -208,17 +215,6 @@ type cannot be passed (lg2-f), and `Decl` (`builtins.d.bp`) is untyped. The case
       cell with its caret
 - [ ] `docs.md` § Decorators documents the four rules; `comptime/AGENTS.md` states how a comptime
       argument reaches the decorator body; `language-gaps.md`'s lg2-f and lg2-i rows close
-
-### Step 26 — a `comptime` parameter that takes a value or a type (decision 297)
-
-`comptime source: X<T> | type T`: an argument of type `X<T>` binds `T` from it (or checks it against
-an explicit `<T>`); a type argument binds `T` to that type; `source is type` answers which, at comptime.
-
-- [ ] `run/value_or_type_param` — `fn pick<T>(comptime s: Box<T> | type T) -> string` called with a
-      `Box<i32>` value and with `string`; `@typeName`-free assertion on the branch taken
-- [ ] `reject/value_or_type_mismatch` — `pick<i32>(Box("x"))` at the argument; a runtime value where
-      the parameter is `comptime` at the argument (280 (0))
-- [ ] `docs.md` § Generics documents it; `language-gaps.md`'s row closes
 
 ### Step 27 — the compiler's annotations speak botopink (decision 305)
 
