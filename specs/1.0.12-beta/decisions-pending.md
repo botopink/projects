@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**54 questions and 6 contradictions are open, and 92 implementation choices await confirmation.**
+**53 questions and 6 contradictions are open, and 92 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -514,12 +514,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Blocks.** nothing today; (b) is an `og_test.bp` change owned by 51.
 
 ### 08-bpp
-
-#### props-e · A named slot (*proposed*)
-- **Measured.** 193 names the `children` field, no other; Astro writes `<p slot="footer">` / `<slot name="footer">` (118 § Notes). 287 already dropped islands' `slot="fallback"` (the fallback is an annotation argument) and left named slots in general here.
-- **Options.** (a) A named slot is a props field of type `Node` (223), written as an attribute (`type Props(children: Node, footer: Node)`, `footer={…}`); `slot="…"` refused. (b) `slot="footer"` on a child routes it to props field `footer`. (c) No named slots.
-- **Recommendation.** (a): 192 already covers it, no second routing mechanism — the path 287 took for the fallback.
-- **Blocks.** 118's slot boxes (steps 1 and 4).
 
 #### 118-a · Who rewrites the native builders into props form, and when (*proposed*)
 - **Measured** (botopink-lang `56d4bc29`, jhonstart `76da71d`). Decision 351 (1) makes each native tag a

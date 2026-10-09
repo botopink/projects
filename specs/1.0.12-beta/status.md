@@ -72,6 +72,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] decision 354 (`@Component<R>`; contexts — `Context<T>`, `use provide` / `use context`, only in a render tree, checked at build through `Decl.hooks`, stage markers, the island seam, the hidden map; answers 134-f) — 134 s6 · 01-checker · 02–05 · 18 · codemod · 26 · rakun 128 · 119 s1 box 4 · 120 · 34 s5
 - [ ] decision 357 (rules of hooks: `use` only at a `@Component` body's top level — never in `if`, a loop, a lambda, `try`, after an early return; every `use` runs on every call, its arguments always given) — 134 s6 · 01-checker · 24 (guide § use) · every library body with a `use`
 - [ ] decision 359 (spread: `Pessoa(...old, nome: n)` and `<Card {...p} featured />`, the source the record's type or a 307 derived type, left to right, complete at build) — 01-checker s34 · 02–05 · 16 · 118 s1
+- [ ] decision 360 (slots as Astro's: `<Slot />`, `<Slot name={.x}>fallback</Slot>`, a child `#[slot(.x)]`, transfer, `use hasSlot(.x)`; never props; 193's `children` field goes) — 118 s4 · 26 (`Slot`, `hasSlot`, prelude) · 01-checker · 120
 - [ ] decision 302 (a tag's annotation = a decorator: `@Decl`, no return, meta) — 130 s9 · 118 s5 · 119 · 120 · 126
 - [ ] decision 303 (an action answers `@Result<T, ActionError>`; no `ActionOutcome`) — 127 s1–s3
 - [ ] decision 304 (a store answers `@Result<T, StoreError>`; no `try*` twin, no raise) — rakun 08 s6 · 09 s6 · 65 s4 · 02-erlang s14
@@ -191,7 +192,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 ## L3 — ready to open now
 
 - [ ] 129 s1–4 (337) — `mod m;` binds the namespace `m`; the shorthand `import {x};` refused (`shorthand-import`, fix written); about 75 items migrated in botopink-lang, rakun, jhonstart · before 138 s3 deletes `libs/<pkg>` or after, either — a consumer commit per library (188)
-- [ ] 118 — the template language, tag annotations (278), `prelude.bp`, the node type · none (s1: decision 351, native attributes; props-e holds its boxes; s1's component spread is 359, on 01-checker s34; ctr-r closed: 118 goes first, org-3 holds)
+- [ ] 118 — the template language, tag annotations (278), `prelude.bp`, the node type · none (s1: decision 351, native attributes; s4's slots are 360; s1's component spread is 359, on 01-checker s34; ctr-r closed: 118 goes first, org-3 holds)
 - [x] 121 s1–2 — Markdown to `Element` in `onze-content` (onze `584f64a`, on `feat`): 714 / 714 on both rows at onze `05b7005`
 - [x] 33 s2 — `emilia-card` emilia-only, the fifteen example READMEs (s1, s3, s4 are 135's)
 - [x] 49 s1 · s6 — `config.bp` / `types.bp` on std's `Json` methods (`isString` stays — `49-g`); the six `onze-test` group stubs (onze-wave patch 02)
@@ -267,7 +268,6 @@ Then:
 - [ ] 05emilia-n — 34 s4 (reduced: the four features; the refusal is 300)
 - [ ] 50-b — 50 s2 · 53 s6
 - [ ] 08-f — 121 s3
-- [ ] props-e — 118 s4 (named slots)
 - [ ] snap-a — 135 s1–5 (replaces 01std-f, 03r-ag, 30-h, 05emilia-m, 53-b) · 53 s2–6 through 135 s5
 - [ ] erk-a · erk-b — the body form's source (137 s2, 08 s7) · `#[documentQuery]` under 313 (09 s4) 
 - [ ] lg2-b … lg2-u — none opens a front; each opens a step when answered: 01-checker (q — reduced); the rakun boxes that name them — 13 · 65 · 92 (b), 22 (q) · answered: a (346 → 01 s32), e (347), j (343), o (342), w (341) → 14 s6, v (344) → 26 s6 / 98 s4 / 73, f, i (280), k (216, 253), r (311–313), t (314), m (315), c (316); g has no subject under 281

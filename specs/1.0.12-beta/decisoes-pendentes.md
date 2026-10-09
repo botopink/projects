@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 54 perguntas, 6 contradições e 92 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **360**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 53 perguntas, 6 contradições e 92 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **361**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -13,42 +13,6 @@
 ## Parte 1 — O que trava agora (responder primeiro)
 
 Ordem: quantos passos e frentes a resposta libera, depois o caminho crítico de `fronts.md` § Execution order (102 s3 / 103 s2 → 128 → rakun 04 → 22 → 49 → 53; 118 → 26 → 67 → 127; 118 → 119 → 120 → 126 → 127 → 124). Nenhuma pergunta aberta trava a `00-gate/114`.
-
-### props-e · Slot nomeado *(proposta)*
-
-**Trava:** `08-bpp/118` passo 4 (as caixas de slot: o slot nomeado e o slot passado por dois layouts) · ⏳ pronto para abrir thread ao responder
-
-**Contexto.** A decisão 193 dá nome ao campo `children`, a nenhum outro. O Astro escreve
-`<p slot="footer">` / `<slot name="footer">` (118 § Notes). A 287 já tirou o `slot="fallback"` das
-islands (o fallback é argumento de uma anotação) e deixou aqui a questão dos slots nomeados em geral.
-
-**Hoje** (medido: `botopink build --target commonJS` num projeto de rascunho sobre `jhonstart-html`):
-```text
-html """<div><p slot="footer">x</p></div>"""
-error: html: `slot="…"` is refused — named slots wait on decision props-e
- --> src/main.bp:5:26
-<slot name="footer"> → error: html: `<slot name="…">` is refused — named slots wait on decision props-e
-```
-
-- [ ] **(a)** Um slot nomeado é um campo de props do tipo `Node` (223), escrito como atributo
-  (`type Props(children: Node, footer: Node)`, `footer={…}`); `slot="…"` recusado.
-  ```bp
-  pub default fn Card(props: type(title: string, children: Node = [], footer: Node = [])) -> View { … }
-
-  html """<Card title="Oi" footer={rodape}><p>corpo</p></Card>"""
-  html """<BaseLayout footer={props.footer}>…</BaseLayout>"""   // por dois layouts: o campo passa adiante
-  ```
-- [ ] **(b)** `slot="footer"` num filho o encaminha para o campo de props `footer`.
-  ```bp
-  html """<Card title="Oi"><p>corpo</p><small slot="footer">rodapé</small></Card>"""
-  ```
-- [ ] **(c)** Sem slots nomeados.
-  ```bp
-  html """<Card title="Oi"><p>corpo</p></Card>"""   // só `children`; `slot="…"` e `<slot name>` recusados
-  ```
-
-**Recomendação: (a)** — a 192 já cobre, sem um segundo mecanismo de encaminhamento, e é o caminho que a
-287 tomou para o fallback. **Bloqueia:** as caixas de slot da 118 (passos 1 e 4).
 
 ### 08-f · Onde moram Markdown e YAML
 

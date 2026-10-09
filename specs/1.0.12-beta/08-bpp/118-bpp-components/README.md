@@ -95,20 +95,25 @@ a narrower `children` type refuses what it does not name; a second `children` pa
 | `<Card title="Hi" count={n} />` | `Card` called with the props value `(title: "Hi", count: n)` |
 | `<Card title="Hi"><p>body</p></Card>` | the same, with `children: [p(["body"])]` among the fields |
 
-**Slots.** `<slot />` reads `children`; `<slot name="footer">fallback</slot>` renders the fallback
-when empty. Named-slot mapping (`<p slot="footer">` / `<slot name="footer">`) is open (`props-e`);
-`footer` as a props field below is one reading, not a decision:
+**Slots** (decision 360, Astro's in annotation form — never props). `<Slot />` renders the default
+slot; `<Slot name={.footer}>fallback</Slot>` declares and renders the `footer` slot; a child
+`#[slot(.footer)]` fills it; `use hasSlot(.footer)` tells whether it was filled:
 
 ```bp
-pub default fn Card(props: type(title: string, children: Node = [], footer: Node = [])) -> View {
+pub default fn Card(props: type(title: string)) -> View {
     return html """
       <article>
         <h2>{props.title}</h2>
-        <slot />
-        <footer><slot name="footer"><small>no footer</small></slot></footer>
+        <Slot />
+        <footer><Slot name={.footer}><small>no footer</small></Slot></footer>
       </article>
     """;
 }
+
+<Card title="Hi">
+  <p>body</p>                          <!-- default slot -->
+  <p #[slot(.footer)]>© 2026</p>       <!-- footer slot; .foter would be a compile error -->
+</Card>
 ```
 
 **Markup inside an expression.** No ternary, no `&&` value; markup begins where a lambda, `if` or
@@ -206,11 +211,14 @@ core's `node.bp`, `prelude.bp` and `element.bp`'s `View`; green on commonJS and 
   `element.bp` (frozen) and `elements.bp` (`05-jhonstart/26`'s, which opens after 118) — `118-a`.
   `html`'s `lookup` answers `(name, kind)`, so a prelude builder and a local function of the same
   name are one to it (4).
-- Slots on a component — waiting on `props-e` (named slots, step 4). Spread on a component — decision
+- Slots on a component — decision 360 (step 4). Spread on a component — decision
   359 (`<Card {...p} featured />` is `CardProps(...p, featured: true)`), step 1, on `01-checker` step 34.
-- Step 4 — named slots and the slot transfer through two layouts: `props-e`. The props as one
-  record (192, `props: type(…)`, 207): **Template-built code cannot build an inline props type**
-  (`01-checker`); until then components take parameters and `<slot />` reads `children`.
+- Step 4 — slots as 360: `<Slot />`, `<Slot name={.x}>fallback</Slot>`, a child `#[slot(.x)]`,
+  `<Fragment #[slot(.x)]>`, the transfer `<Slot name={.x} #[slot(.x)] />` through two layouts,
+  `use hasSlot(.x)`; a slot name the component does not write and content for an absent default slot
+  refused at the child; lowercase `<slot>` the native element; the hidden slot argument. The props
+  as one record (192, `props: type(…)`, 207) still wait on **Template-built code cannot build an
+  inline props type** (`01-checker`); slots no longer do.
 - Step 5 — the 302 arm (build a tag's `@Decl`, call every annotation, read its meta by type; two
   annotations in order on `<Carousel>`; an argument of the wrong type at the argument): **A tag
   annotation cannot be called by the template function** (`01-compiler/130` step 9). The box "an
@@ -225,7 +233,6 @@ core's `node.bp`, `prelude.bp` and `element.bp`'s `View`; green on commonJS and 
 
 ## Decisions
 
-- `props-e` — **named slot** onto props (193 names `children` only) — step 4 · waiting
 - `118-a` — who rewrites the native builders into props form, and when — step 1's props box
 
 **Gate:** standard (fronts.md § Gate), plus:
