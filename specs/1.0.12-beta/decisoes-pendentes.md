@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 49 perguntas, 6 contradições e 85 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **351**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 48 perguntas, 6 contradições e 85 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **352**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -13,38 +13,6 @@
 ## Parte 1 — O que trava agora (responder primeiro)
 
 Ordem: quantos passos e frentes a resposta libera, depois o caminho crítico de `fronts.md` § Execution order (102 s3 / 103 s2 → 128 → rakun 04 → 22 → 49 → 53; 118 → 26 → 67 → 127; 118 → 119 → 120 → 126 → 127 → 124). Nenhuma pergunta aberta trava a `00-gate/114`.
-
-### props-d · Os atributos de uma tag nativa *(proposta)*
-
-**Trava:** `08-bpp/118` passos 1 e 4 · ⏳ pronto para abrir thread ao responder
-
-**Contexto.** A decisão 192 cobre só tags de componente: um atributo é um campo do tipo de props.
-Uma tag nativa é `fn <tag>(children: Children, attrs: Array<#(string, string)> = [])` na jhonstart
-(118 § Notes) — nada diz quais nomes ela aceita nem de que tipo.
-
-**Hoje** (medido: `botopink test --target commonJS` num projeto de rascunho sobre `jhonstart-html`):
-```bp
-renderNode(html """<div colour="red" hreff="/x"><p>x</p></div>""")
-// == "<div colour=\"red\" hreff=\"/x\"><p>x</p></div>"   — qualquer nome passa, como escrito
-```
-
-- [ ] **(a)** Os atributos de uma tag nativa são campos de um tipo de props que a jhonstart declara por
-  elemento (atributo desconhecido ou de tipo errado recusado, como na 192).
-  ```bp
-  html """<a href="/x">x</a>"""    // aceito: `href` é campo das props de <a>
-  html """<a hreff="/x">x</a>"""   // recusado no atributo: <a> não declara `hreff`
-  ```
-- [ ] **(b)** Qualquer nome de atributo, valor `string` ou um buraco da 191.
-  ```bp
-  html """<div colour="red" data-n={n}>x</div>"""   // aceito: qualquer nome; `string` ou buraco (191)
-  ```
-- [ ] **(c)** Um conjunto de atributos globais mais uma lista por tag, valores `string`.
-  ```bp
-  html """<div id="a" class="c">x</div>"""   // aceito: atributos globais
-  html """<div href="/x">x</div>"""          // recusado: `href` não está na lista de <div>
-  ```
-
-**Recomendação: (a)** — uma regra para toda tag, a mais restritiva. **Bloqueia:** 118 passos 1 e 4.
 
 ### props-e · Slot nomeado *(proposta)*
 

@@ -173,7 +173,7 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 | **71** s3 · s4 | s3: 11, 04, 81 · s4: 22 | 53 · 107 |
 | **71** s5 | 50 · 53 | — |
 | **53** | 49 · 50 · 51 · 71 s1–4 · 26 · 27 · 67 · 22 · 12 · 65 · 135 s5 (s2–6) · s6: 50-b | 71 s5 · 121 s7 · 124 s5 · 120's and 126's browser boxes |
-| **118** | props-d/e/f (their boxes) | 26 · 119 · 120 · 126 · 121 s6 · 116 |
+| **118** | props-e/f (their boxes) | 26 · 119 · 120 · 126 · 121 s6 · 116 |
 | **121** s1–2 · s3–6 · s7 | — · s3: 08-f, s6: 118, 117 · 53 | 117 · 124 |
 | **119** | s1: the two repositories' first `feat` commit · s2: 118, 26 · s5: 34 s5 | 120 · 34 s5 (first, 350), s3 · 116 s6 (the style section's examples) |
 | **123** | 04 · 65 | 127 s4 · 104 s5 |

@@ -197,14 +197,14 @@ step 2 owns.
 
 ## Decisions the maintainer owes
 
-Open: `08-f` (below) and `props-d`, `props-e`, `props-f`, `nat-f2`
-([`../decisions-pending.md`](../decisions-pending.md)); contradictions — `ctr-f` → 288, `ctr-g` and `ctr-t` → 289.
+Open: `08-f` (below) and `props-e`, `props-f`, `nat-f2`
+([`../decisions-pending.md`](../decisions-pending.md)); `props-d` → 351 (native tags typed as React's intrinsic elements, through `prelude.bp`); contradictions — `ctr-f` → 288, `ctr-g` and `ctr-t` → 289.
 Closed: `08-h` → 285, 224 (`onze.json`, `onze <command>`); `08-j` → 295, 296 (request state is
 `rakun-cardume`'s atoms, read through jhonstart's own hook under its `#[serverOnly]`, 277); `08-d` → 338
 (CSS in three layers — the repositories `css` and `styled`, emilia over `styled` —, `jhonstart-styled`,
 the `.bpp` style section; `jhonstart-emilia` deleted).
 
-- `props-d` · `props-e` · `props-f` — native tag attributes, named slot, spread on a component. Block 118 steps 1, 4.
+- `props-e` · `props-f` — named slot, spread on a component. Block 118 steps 4, 1.
 - `nat-f2` — which `onze.json` keys (`trailingSlash`, `redirects`, `markdown`, `allowedRedirects`) and how they are read. Blocks 124's key boxes.
 
 ### 08-f · Where Markdown and YAML live

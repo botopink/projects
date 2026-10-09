@@ -187,7 +187,10 @@ core's `node.bp`, `prelude.bp` and `element.bp`'s `View`; green on commonJS and 
 
 ## Open
 
-- Step 1 — native-tag attribute names and types: `props-d`.
+- Step 1 — native-tag attributes (decision 351): each builder takes its element's props record
+  (`GlobalAttrs`, `AriaAttrs` and the element's own, layered with `Type.merge`), lowered as a
+  component tag; multi-word names camelCase, `data-*` open; a tag the prelude does not name refused
+  at the tag; the element spread takes the element's props type, the pair spread goes.
 - Step 4 — named slots and the slot transfer through two layouts: `props-e`. The props as one
   record (192, `props: type(…)`, 207): **Template-built code cannot build an inline props type**
   (`01-checker`); until then components take parameters and `<slot />` reads `children`.
@@ -205,7 +208,6 @@ core's `node.bp`, `prelude.bp` and `element.bp`'s `View`; green on commonJS and 
 
 ## Decisions
 
-- `props-d` — attributes of a **native** HTML tag (192 covers components only) — steps 1, 4
 - `props-e` — **named slot** onto props (193 names `children` only) — step 4
 - `props-f` — `{...expr}` on a component — step 1
 

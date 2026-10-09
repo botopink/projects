@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**48 questions and 6 contradictions are open, and 85 implementation choices await confirmation.**
+**47 questions and 6 contradictions are open, and 85 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -394,12 +394,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Blocks.** 50 step 2; 53 step 6.
 
 ### 08-bpp
-
-#### props-d · A native tag's attributes (*proposed*)
-- **Measured.** 192 covers component tags only; a native tag is `fn <tag>(children: Children, attrs: Array<#(string, string)> = [])` in jhonstart (118 § Notes).
-- **Options.** (a) A native tag's attributes = fields of a props type jhonstart declares per element (unknown attribute or wrong type refused, as 192). (b) Any attribute name, a `string` value or a 191 hole. (c) A global attribute set plus per-tag lists, `string` values.
-- **Recommendation.** (a): one rule for every tag, the most restrictive.
-- **Blocks.** 118 steps 1 and 4.
 
 #### props-e · A named slot (*proposed*)
 - **Measured.** 193 names the `children` field, no other; Astro writes `<p slot="footer">` / `<slot name="footer">` (118 § Notes). 287 already dropped islands' `slot="fallback"` (the fallback is an annotation argument) and left named slots in general here.
