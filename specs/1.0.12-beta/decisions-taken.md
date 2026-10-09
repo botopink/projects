@@ -4,7 +4,7 @@ The rules the fronts implement against. Numbers continue from
 [1.0.10-beta's record](../1.0.10-beta/decisions-taken.md) (which stopped at 143; 91–94, 97 and
 99–101 are used) and are never renumbered or reused. A question is raised in
 [`decisions-pending.md`](./decisions-pending.md) under a lettered id and moves here with the next
-free number. **The next free number is 317.**
+free number. **The next free number is 318.**
 
 Each row: number · the id it answered · the rule in force · the fronts it binds. A row amended by a
 later one states only what is in force and cites the amendment; a row fully replaced is one line.
@@ -28,7 +28,7 @@ behaviour; shared logic in std) — the maintainer may reverse it.
 - [79](../1.0.10-beta/decisions-taken.md) — the `onze` name passed from the mocking library to the
   orchestrator (how it happened: question `95-f`).
 
-**Index.** Gate & CI: 153–162, 219, 225–233, 246, 249, 258, 265 · Language & checker: 146–152,
+**Index.** Gate & CI: 153–162, 219, 225–233, 246, 249, 258, 265, 317 · Language & checker: 146–152,
 164, 167, 168, 170, 205–211, 214, 215, 239, 242, 244, 245, 247, 255, 264, 309, 310, 311, 314, 315 · Comptime, reflection &
 decorator outputs: 216, 234–237, 248, 251–254, 256, 266–269, 277, 316 · Formatter: 165, 166, 243 · Backends: 169,
 179, 238, 240, 241, 259–263 · std: 174–178, 197, 217, 250 · Bundled libraries: 144, 145, 163,
@@ -64,6 +64,7 @@ jhonstart & templates: 186, 190–193, 200, 202, 204, 220, 223 · onze: 218 · b
 | 249 | gate-s | (1) `--cold` writes the passes it ran into the store and never reads it. (2) A cell's key holds the SHA-256 of the compiler's sources partitioned by backend: every source not assigned to one backend (lexer, parser, checker, comptime and its runtimes, the preludes, embedded std, CLI, build config incl. Zig version and optimize mode) is shared and in every key; a backend's emitter files (one list in the repository, reviewed with the code) are only in the keys of that target's cells; a file not in the list is shared. Amends 229 | 00-gate/133 step 3 |
 | 258 | lib-a | `test-libs` given several `--lib` runs every one, in order, in one report | 00-gate/133 |
 | 265 | — | The cold budget is 7m30s (`budget_cold=450`); the 5-minute cold target and the idle-machine measurements are a `deferred.md` row; the warm minute and every consistency rule of 229/249 stay; over budget is a yellow line, never a red. Amends 229 | 00-gate/133 |
+| 317 | 23-c | Confirms the implemented choice (a): `botopink test` in a project whose modules sit in folders — a module whose source is in the project's own `src` belongs to the project, never to a dependency named after its first folder (`io/random` is not package `io`'s); a type's compiled units are written beside the module that declares it (`std@io@net@@Socket` beside `io/net`), not at the run's root. Both fixes are general CLI rules (`test_cmd.zig`, `libs.zig`), touching neither compiler-core nor a snapshot; the std keeps its folders | `01-compiler/23` step 2 · 26 (its files) |
 
 ## Language & checker
 

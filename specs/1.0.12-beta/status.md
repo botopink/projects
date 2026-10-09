@@ -180,8 +180,8 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.0.10 choices) in its
-last section. Open after the 9 Oct revalidation: 64 questions, 11 contradictions, 91 implementation
-choices.
+last section. Open after the 9 Oct revalidation and the answers since (309–317): 61 questions, 11 contradictions, 90
+implementation choices.
 
 **First — the botopink shape** (raised 2026-10-04; answer `nat-0`, then the rest):
 - [ ] nat-d6…d9 — case by case (283; nat-d1 → 303, nat-d2 → 304, nat-d3 and nat-d4 → 306, nat-d5 → 307): `nav:` strings (26, 53), lifecycle (rakun 04), `use use…` (53), erika's LINQ names (98)
@@ -212,7 +212,7 @@ Then:
 - [ ] erk-a · erk-b · erk-c — the body form's source (137 s2, 08 s7) · `#[documentQuery]` under 313 (09 s4) · the owner of `#[repository]`'s behavior form (08 s7, 130 s5)
 - [ ] lg2-a … lg2-w — none opens a front; each opens a step when answered: 01-checker (a, e — only `owner`, q — reduced), 14 s6 (j, o, w), 26 s6 / 98 s4 / 73 (v); the rakun boxes that name them — 04 (e, j), 08 (e), 13 · 65 · 09 · 91 · 92 (a, b), 15 (w), 22 (q), 88 (j), 93 (o) · answered: f, i (280), k (216, 253), r (311–313), t (314), m (315), c (316); g has no subject under 281
 - [ ] C-14 — 07-residuals s9 (a 1.0.10 id)
-- [ ] confirmations a step waits on — 49-d (102 s3) · 49-e (49 s2) · 05emilia-l (34 s2) · 52-a (51 s4) · 29-a (26 s5; reduced: `registerRouteStarters` + `globals.starters`) · 27-a (27) · 03r-q (105) · 16-a/b (16 s4) · 23-a/b/c, std-c (23) · 24-a/b/c/g (24; 24-g also 97 s5's surface)
+- [ ] confirmations a step waits on — 49-d (102 s3) · 49-e (49 s2) · 05emilia-l (34 s2) · 52-a (51 s4) · 29-a (26 s5; reduced: `registerRouteStarters` + `globals.starters`) · 27-a (27) · 03r-q (105) · 16-a/b (16 s4) · 23-a/b, std-c (23; 23-c → 317) · 24-a/b/c/g (24; 24-g also 97 s5's surface)
 - [ ] ctr-k — 17 · 128 · 106 s2 (only the record)
 - [ ] ctr-i — 05's string lowering · 02's codepoint cell · ctr-j — 04 s8 · 02 s13 · 03 s8 · 01 s18
 - [ ] ctr-l — 26 s8's refusal list (only the record) · ctr-s — 16 s6 · ctr-u — 125 s12 (only the spelling of `#[validated]`'s members) · ctr-v — 34 / 33 opening before 118 (only the record) · ctr-w — 09 s3

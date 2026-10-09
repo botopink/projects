@@ -1,7 +1,7 @@
 # Front 23 — std purity: the gate's rows and three confirmations
 
 **Priority:** low · **State:** not started (std tree of decisions 106–111 landed in 1.0.10, C-31)
-**Depends on:** maintainer confirmations 23-b, 23-c, std-c · std track (`../02-std-and-packaging/`,
+**Depends on:** maintainer confirmations 23-b, std-c (23-c → 317) · std track (`../02-std-and-packaging/`,
 owner of `libs/std/src/**`)
 **Owns:** `modules/language-server/src/project_graph.zig`'s import-tree cells (carve-out —
 `modules/language-server/src/tests/**` is 07's) · `libs/std/AGENTS.md` (with 07) · `docs.md` §
@@ -39,11 +39,12 @@ per import spelling).
 landed), std-c (namespace rewrite): each confirmed or reversed; a reversal opens a step in the owner
 (26 for 23-c, 01 for std-c).
 
-- [ ] the three ids in `../../decisions-taken.md` with their numbers, or a reversal's step named
+- [ ] the three ids in `../../decisions-taken.md` with their numbers, or a reversal's step named —
+      23-c confirmed (317); 23-b and std-c open
 
 ## Decisions
 
-- 23-b, 23-c, std-c — to confirm (23-a moot: both forms landed); statements in
+- 23-c confirmed (317) · 23-b, std-c — to confirm (23-a moot: both forms landed); statements in
   [1.0.10's `decisions-pending.md`](../../../1.0.10-beta/decisions-pending.md)
 
 **Gate:** standard (fronts.md § Gate) + `zig build test-libs` at baseline

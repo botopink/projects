@@ -5,7 +5,7 @@ steps 2 (box 3), 3, 4, 6, 7, 8 open
 **Depends on:** `compiler-core`'s `ModuleOutput` carrying warnings (step 4 — `codegen.zig` carve-out
 named in the commit) · decision-gated lg2-v (git subdirectory — manifest side is
 `../../02-std-and-packaging/98-packaging-tail/` step 4; `bpmp` resolver half opens here when
-answered) · `23-std-purity` step 2 (23-c's two `botopink test` fixes confirmed — this front's files)
+answered) · 23-c's two `botopink test` fixes confirmed (decision 317 — this front's files, kept)
 **Owns:** `modules/compiler-cli/**` (`src/cli/{build,run,test_cmd,libs,sources,config,resolver}.zig`,
 the rest, `tests/**`) · `modules/bpmp/**` except `src/manifest.zig` under 98's step 4 ·
 `modules/language-server/src/**` except `src/tests/**` (07) and `project_graph.zig`'s import-tree
