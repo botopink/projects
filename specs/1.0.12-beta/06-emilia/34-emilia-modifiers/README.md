@@ -1,7 +1,7 @@
 # Front 34 — emilia source tail: std's hash, five families at upstream parity, the breakpoint refusal (carries 1.0.10's 40 · 42 · 43 · 44 · 45 · 54 · 56)
 
 **Priority:** high — step 2 moves output every later snapshot (`20-snap` step 4) would otherwise
-record twice · **State:** not started — opens now
+record twice · **State:** step 1 done; steps 2–4 wait on 05emilia-l / -e / -n, steps 3 and 5 on `08-bpp/119` step 1
 **Depends on:** `05emilia-l` confirmed (step 2's rule) · `05emilia-e` (step 3's base theme — open
 again with 300) · `05emilia-n` (step 4, the four feature rows only) · `08-bpp/119` step 1 (steps 3
 and 5: the repositories `css` and `styled` — the theme mechanism and the components, decision 338).
@@ -61,22 +61,21 @@ the four owned examples.
   does for an emptied `--container-*` (front 58), only for a list built at run time (step 3).
 - **The unplaced rows:** [`reference-rows.md`](./reference-rows.md), category (c).
 
+## Done
+
+Step 1 `emilia.bp` imports `{hash} from "std"` and `styleRule` names the class
+`"e_" + hash.contentHash(payload)`; the `hashHex` templates are gone and no file under
+`modules/emilia/src` names it. std's fold is emilia's (djb2, seed 5381, 32-bit mask, unpadded
+lowercase hex) over code points, and a class body is ASCII (`assertAsciiBody`), so every class name is
+unchanged: contract-4 fixture `e_39b87d03` and `emilia-card`'s `e_486b0b4f` / `e_b63a108` /
+`e_74f3ae56` pass unedited. `output.bp`'s `String.slice` comment is one line naming C-37 closed (the
+`split("\t")` code stays); the cross-library and `[class]={…}` comments in `attributes.bp` and
+`emilia.bp` state the shape without a neighbour or a template surface, and
+`grep -rn "jhonstart\|rakun\|onze" repository/emilia/modules` is empty. `botopink test`: `emilia`
+734 passed, 0 failed on commonJS and on erlang; `emilia-card` 4/0, `jhonstart-emilia` 10/0 and
+`onze-cli` 31/0 on both.
+
 ## Open
-
-### Step 1 — `hashHex` → `hash.contentHash`; `modules/` names no other library
-
-- [ ] `grep -n hashHex repository/emilia/modules/emilia/src` is empty; `emilia.bp` imports
-      `{hash} from "std"` and computes the class as `"e_" + hash.contentHash(payload)`
-- [ ] contract-4 fixture `e_39b87d03` byte-identical on both rows; `bridge_test.bp` and onze's
-      `build_test.bp:104` unchanged and green
-- [ ] `output.bp:379-388`'s comment no longer names `hashHex`: its defect is closed (C-37), so the
-      comment goes, or — if the `split("\t")` workaround stays — names C-37 as closed in one line
-- [ ] the six comment lines naming another library — `attributes.bp:4,30`,
-      `emilia.bp:110,16500,16501,16510` — state the shape without the neighbour ("a consumer's
-      element", "a build step that reads `styleRule`", "every reader of the contract-4 literal");
-      the `[class]={…}` comments (`attributes.bp:30,32,36`, `emilia.bp:185,202`) describe the
-      class-name value without spelling a template surface (replaces `08-bpp/118`'s carve-out in
-      emilia); `grep -rn "jhonstart\|rakun\|onze" repository/emilia/modules` is empty
 
 ### Step 2 — the five families to upstream's form (05emilia-l applied)
 
