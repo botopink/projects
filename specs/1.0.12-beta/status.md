@@ -79,7 +79,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 04-js s6 — `throw` in a `case` arm · 01 s6
 - [x] 04-js s8 — an integer that leaves its type aborts (264): on feat (`48a096ea`)
 - [ ] 05-wasm s1 box 1 · s3 box 2 — `Array.unique` and C-07's cells on wasm · 02 s4, s7
-- [ ] 05-wasm s5 — the rest of std on wasm: heap growth, `pow`, astral `contentHash`, `encoding` / `querystring` family cells, the `wat/AGENTS.md` limits row done; left: `unicode` and `json` on wasm and their cells · `02/97` s16 (333), 05w-j
+- [ ] 05-wasm s5 — the rest of std on wasm: heap growth, `pow`, astral `contentHash`, `encoding` / `querystring` family cells, the `wat/AGENTS.md` limits row done; left: `unicode` and `json` on wasm and their cells · `02/97` s16 (333), 97 s15 (336)
 - [x] 05-wasm s8 — overflow for `u32`/`u64` and the narrow integer types on wasm (264)
 - [x] 05-wasm — an `@block`'s `return` is the block's value (decision 2), `run/block_return_is_block_value`
 - [ ] 05-wasm row — `_` in a variant payload pattern binds `0` · none
@@ -202,11 +202,11 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.0.10 choices) in its
-last section. Open after the 9 Oct revalidation and the answers since (309–335): 56 questions, 8 contradictions, 88
+last section. Open after the 9 Oct revalidation and the answers since (309–336): 55 questions, 8 contradictions, 88
 implementation choices.
 
 **First — what blocks now** (`decisoes-pendentes.md` § Prioridade 1, "O que trava agora", set by the maintainer 2026-10-09), in order:
-- [ ] 05w-j — 05-wasm s5 (`json` on wasm) · 05w-i → 333 (A): 97 s16
+- [ ] 05w-i → 333 (A): 97 s16 · 05w-j → 336: 97 s15
 
 **Then — the botopink shape** (raised 2026-10-04):
 - [ ] nat-d6…d9 — case by case (283; nat-d1 → 303, nat-d2 → 304, nat-d3 and nat-d4 → 306, nat-d5 → 307): `nav:` strings (26, 53), lifecycle (rakun 04), `use use…` (53), erika's LINQ names (98)
