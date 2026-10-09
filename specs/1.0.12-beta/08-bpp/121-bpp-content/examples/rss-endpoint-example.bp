@@ -24,7 +24,6 @@ import {rkTestRequest} from "rakun-web";
 import {collections: {getCollection}, feeds: {RssFeed, RssItem, rssFeed}} from "onze-content";
 import {site} from "onze";                 // `site` in onze.json — front 124; `https://example.dev` in these tests
 import {content.blog};
-import {io.clock} from "std";
 
 // No `pub val prerender` (decision 202). Decision 222 rules that a route handler
 // is always server and never prerendered, so writing this feed to a static file
@@ -37,8 +36,10 @@ pub fn feed(req: Request) -> @Task<HandlerResponse> {
         RssItem(
             title: post.data.title,
             description: post.data.description,
-            link: site() + "/blog/" + post.id,
-            pubDate: clock.formatIso8601(post.data.pubDate),
+            // A link rooted at `/` is made absolute against the feed's `site`.
+            link: "/blog/" + post.id,
+            // Epoch milliseconds; the feed writes RFC 822.
+            pubDate: post.data.pubDate,
         );
     });
     val body = rssFeed(RssFeed(

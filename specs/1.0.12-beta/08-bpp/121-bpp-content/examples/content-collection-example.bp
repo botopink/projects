@@ -30,7 +30,7 @@ import html, {page, PageContext, Element, ElementBase, renderToString} from "jho
 import {a, article, h1, li, p, timeTag, ul} from "jhonstart";
 import {notFound} from "jhonstart";
 import {
-    collections: {Collection, AnyCollection, Entry, Rendered, defineCollection, glob, file, getCollection, getCollectionWhere, getEntry, render, reference, syncProblems},
+    collections: {Collection, AnyCollection, Entry, Rendered, defineCollection, glob, file, getCollection, getCollectionWhere, getEntry, render, syncProblems},
 } from "onze-content";
 // The member's test kit: a scratch content tree under the host's tmpdir — two
 // posts (`hello-world`, `second-post`, the second a draft) and `authors.json`.
@@ -51,8 +51,9 @@ pub type BlogPost(
     #[coerce] #[isoDatetime] pubDate: i64,
     #[coerce] #[isoDatetime] updatedDate: ?i64,
     #[orElse(false)] draft: bool,
-    // `reference("authors")` — checked by `onze sync` after every collection loads.
-    #[reference("authors")] author: string,
+    // `reference("authors")` — checked by `onze sync` after every collection loads;
+    // named on the collection below (`.reference("author", "authors")`).
+    author: string,
 )
 
 #[schema]
@@ -63,7 +64,9 @@ pub type Author(
 )
 
 pub fn blog() -> Collection<BlogPost> {
-    return defineCollection("blog", glob("content/blog", "**/*.md"), schemaOfBlogPost());
+    // LANGUAGE GAP: A field marker cannot be read by the library that takes the type — the form is `#[reference("authors")] author: string` on `BlogPost`.
+    return defineCollection("blog", glob("content/blog", "**/*.md"), schemaOfBlogPost())
+        .reference("author", "authors");
 }
 
 // One JSON file holding every entry, each with an `id`.

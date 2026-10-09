@@ -1,7 +1,8 @@
 # Front 121 — bpp content: Markdown, frontmatter and collections
 
 **Priority:** high — the track's largest code that exists in no form; content sites are the
-reference's first use case. · **State:** steps 1–2 done (`onze-content`'s `markdown`) · step 3 waits on `08-f`
+reference's first use case. · **State:** steps 1–2 done (`onze-content`'s `markdown`) · steps 4–5 done
+but for the boxes below (`collections`, `feeds`) · step 3 waits on `08-f`
 **Depends on:** open: [`08-f`](../README.md#08-f--where-markdown-and-yaml-live) (step 3,
 frontmatter reader's home) · `03-bundled-libs/125-validation-zod` steps 0–2 for steps
 4–5 (step 12 for step 10: the `#[validated]` type; `Schema<T>` is private, 306) — steps 0–2 merged into botopink-lang `feat` (`libs/validation/src/schemas.bp`); `status.md` still lists
@@ -123,6 +124,26 @@ reads, renders, calls the layout. No `layout`: rendered inside the directory's l
   a 200 kB document renders within 2 000 ms (`budget_test`; measured ~130 ms erlang, ~140 ms
   commonJS). 692 tests per row.
 
+- Step 4 — collections (`src/collections.bp`, `test/collections_test.bp`, both rows):
+  `defineCollection(name, loader, Schema<T>)`; loaders are `fn() -> @Task<@Result<Array<RawEntry>,
+  string>>` — `glob(base, pattern)` (one `.json` object per file; id = the slugged path, a `slug`
+  member overrides; a `.md` file is a problem naming step 3), `file(path)` (an array of objects by
+  `id`; a missing, empty or repeated `id` and a document that is not a list refused, each at its
+  index), an application's own function; `getCollection`, `getCollectionWhere`, `getEntry`,
+  `render`; `syncProblems(collections)` answers every violation as `<file>: <path>: <message>` (plus
+  a repeated id, a collection defined twice, a loader's own error) and `writeStore(collections,
+  outDir)` refuses with them, else writes `<outDir>/content/<name>.json`; after `useStore(outDir)`
+  `getCollection` reads the store with the content files deleted.
+- Step 5 — references and RSS: a reference to a missing id fails the sync naming the referencing
+  file and the missing id (`<file>: author: no entry "nobody" in collection "authors"`; a list of
+  ids, an unsynced target collection), declared as `.reference("author", "authors")` on the
+  collection — `language-gaps.md` **A field marker cannot be read by the library that takes the
+  type**, until step 10; `rssFeed` (`src/feeds.bp`, `test/feeds_test.bp`): one channel, every text
+  node escaped, links rooted at `/` made absolute against `site`, dates RFC 822.
+  `examples/rss-endpoint-example.bp` follows (`pubDate` epoch milliseconds, rooted link).
+- 714 tests per row (`botopink test --target erlang` / `--target commonJS` in
+  `modules/onze-content`).
+
 ## Open
 
 ### Step 3 — Frontmatter (waits on `08-f`)
@@ -133,19 +154,20 @@ reads, renders, calls the layout. No `layout`: rendered inside the directory's l
       `test/markdown_test.bp`; the frontmatter ones wait here
 - [ ] no fence → empty object, whole text as body; unclosed fence → `Error`
 
-### Step 4 — Collections
+### Step 4 — Collections (the rest)
 
-- [ ] `examples/content-collection-example.bp` passes on erlang
-- [ ] a schema-violating entry fails `sync` with `<file>: <path>: <message>` per violation, and the build
-- [ ] `file("data/dogs.json")` loads an array of objects by `id`; missing or repeated `id` refused
-- [ ] a custom loader is `fn() -> @Task<@Result<Array<RawEntry>, string>>`
-- [ ] the store is read at run time without touching content files
+- [ ] `examples/content-collection-example.bp` passes on erlang — waits on step 3 (its posts and
+      the `fixtures` kit are `.md`), 125 steps 5–6 (`#[orElse]`, `#[coerce]` over `#[isoDatetime]`),
+      293's page hooks (step 9) and an onze `StaticPath` (117)
+- [ ] the build fails on a sync problem — `writeStore` refuses; `onze build` running it is 124's
 
-### Step 5 — References, the editor's schema, RSS
+### Step 5 — the editor's schema; the marker; the endpoint
 
-- [ ] `#[reference]` to a missing id fails `sync`, naming both entries
-- [ ] `<name>.schema.json` validates the entries it came from (125's JSON Schema test tool)
-- [ ] `examples/rss-endpoint-example.bp`: feed well-formed, every text node escaped
+- [ ] `#[reference("authors")]` on the field replaces `.reference(…)` — step 10 (the gap row's owner)
+- [ ] `<name>.schema.json` validates the entries it came from — waits on 125 step 9 (`jsonSchema`,
+      its JSON Schema test tool)
+- [ ] `examples/rss-endpoint-example.bp` passes — waits on rakun's `#[getRoute]` under 117 step 4,
+      `site` (122/124) and step 3 (its collection is `.md`); the feed itself is `feeds_test.bp`'s
 
 ### Step 6 — Markdown pages and layouts; images
 
