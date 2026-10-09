@@ -92,9 +92,9 @@ Closed in 1.0.11: 99, 100, 101, 108, 109, 110, 111, 112, 113, 115, 131, 132, 133
 
 | Front | Priority | State | What | Depends |
 |---|---|---|---|---|
-| [`114-gate-docs-and-ci/`](./114-gate-docs-and-ci/README.md) | high | partial: steps 1, 2, 4 on feat; 3 (box 2), 5–8 open | docs fences, every CI workflow hard and green, and the gate's residue | — |
+| [`114-gate-docs-and-ci/`](./114-gate-docs-and-ci/README.md) | high | partial: steps 1, 2, 4, 5 on feat; 6 box 1, 8 box 2 on `front/114-16s8`; 3 (box 2), 6 (box 2), 7, 8 (boxes 1, 3), 9 open | docs fences, every CI workflow hard and green, and the gate's residue | — |
 
-Open residue (all 114, see its steps 3, 5–8). **Known gaps:** windows row (decision 158); 5-minute
+Open residue (all 114, see its steps 3, 6–9). **Known gaps:** windows row (decision 158); 5-minute
 cold target and idle-machine measurements deferred to next milestone (decision 265).
 
 ## Handed out

@@ -1,6 +1,7 @@
 # Front 114 — gate-docs-and-ci: no `skip` fence, no soft CI row, every workflow green and pinned
 
-**Priority:** high · **State:** partial: steps 1, 2, 4 and step 3 box 1 on feat; steps 3 (box 2), 5–8 open
+**Priority:** high · **State:** partial: steps 1, 2, 4, 5 and step 3 box 1 on feat; step 6 box 1 and step 8 box 2 on
+`front/114-16s8`; steps 3 (box 2), 6 (box 2), 7, 8 (boxes 1, 3), 9 open
 **Depends on:** nothing open (botopink-lang CI fixes on feat; only a green run remains)
 **Owns:** `scripts/check-docs.sh` · `docs.md` marker lines and the fence lines after them (no prose) ·
 botopink-lang `.github/workflows/test.yml` · meta `.github/workflows/**` and meta `AGENTS.md` § CI ·
@@ -32,7 +33,10 @@ OTP 28, green on `feat`; a recorded green cold gate on the tip within 450 s (dec
 
 Step 1 `reject`/`project` replace `skip` (decision 157) · 2 `scripts/AGENTS.md` § check-docs.sh
 table has `reject`, no `skip` · 3 box 1 no `allow_fail`, no windows row (decision 158) · 4 meta
-`hook-integrity` checks 1–5 green on remote `feat`.
+`hook-integrity` checks 1–5 green on remote `feat` · 5 `gate.sh` `budget_cold=450`, `budget_warm=60`, header
+and § budget comments name 7m30s cold (decision 265), over budget yellow · 6 box 1 vscode-extension
+`compiler` job reads `OTP_RELEASE` from the compiler source, installs it with `erlef/setup-beam`, asserts
+it · 8 box 2 rakun `test.yml` and `AGENTS.md` name the 2.35 pin.
 
 ## Open
 
@@ -44,25 +48,17 @@ normalisable in `modules/compiler-core/src/codegen/tests/helpers.zig` without to
 do it and restore the row hard with every ubuntu stage (`erlef/setup-beam` supports windows).
 - [ ] botopink-lang `test` workflow green on GitHub on `feat`, every row (fixes on feat: test-web
       wasm32, `test-libs.sh`/`run.sh` under macOS bash 3.2 / BSD `xargs`, `pool.sh` without GNU
-      `timeout`, macOS `/private/var`)
+      `timeout`, macOS `/private/var`). Last run on `49455602` (2026-10-03) red, none of it in
+      `test.yml`: stage 1 `zig fmt --check modules` (`comptime/transform.zig:1172`, one indent —
+      01-checker's `19d59508`); behind it, reproduced locally, `codegen.tests.beam_templates` (15
+      `std/math` templates refused, "operator `:`" — `a443f52d`, std-math-uniform) and
+      `comptime/eval.zig` "comptime literals" (`3` expected, `3.0` found — 01-checker)
 - [ ] (only with a windows runner) drift measured, capture normalised, row restored hard — else row
       stays deleted, gap carried
 
-### Step 5 — `budget_cold=450` (decision 265)
-
-`scripts/gate.sh` sets `budget_cold=300` (near `budget_warm=60`); comment says "5 minutes cold, 1
-minute warm".
-- [ ] `grep -n '^budget_cold=' scripts/gate.sh` → `budget_cold=450`; `budget_warm=60` unchanged
-- [ ] header and budget comments say 7m30s cold (decision 265), 5 minutes deferred; over budget
-      stays yellow, never red
-
 ### Step 6 — the vscode-extension workflow on OTP 28 (decisions 228, 227)
 
-`repository/vscode-extension/.github/workflows/test.yml` (both jobs `ubuntu-22.04`) runs `apt-get
-install -y erlang` = OTP 24, refused by the compiler (`botopink check` evaluates `comptime` via
-`erl`); last green may predate the OTP check — latent red.
-- [ ] install takes the release from the compiler (`erlef/setup-beam` with what `botopink --version`
-      prints, or `otp-version: '28'` read as the library workflows read it)
+The `compiler` job installs the compiler's `OTP_RELEASE` (box 1, Done); a green run on remote `feat` remains.
 - [ ] `npm test` and `npm run compiler-check` green on GitHub on remote `feat` after that
 
 ### Step 7 — a cold gate recorded on the current tip
@@ -79,8 +75,6 @@ last full cold: 9m31s, loaded).
 - [ ] 133 step 2 completed: every emitted module of every `test-libs` and `test-language` cell
       diffed byte-for-byte, `feat` vs the tree before 133's first merge (only printed results were
       diffed); record it here — or withdraw "every cell byte-identical" from `../../status.md`
-- [ ] `repository/rakun/.github/workflows/test.yml` header comment (glibc 2.38, "ubuntu-22.04 cannot
-      start") rewritten: pin 2.35 (decision 219); rows stay ubuntu-24.04, macos-14
 - [ ] after `06-emilia/33` step 2 (emilia-card emilia-only): emilia `.github/workflows/test.yml` step
       "Checkout jhonstart (dependency — examples/emilia-card depends on jhonstart)" (`:94-99`) and
       its comment (`:21`) removed
