@@ -59,7 +59,7 @@ com o `.bpp` mora no `jhonstart-styled`:
 - a `pub default fn` que o `"bpp".style` nomeia e que recebe o texto da seção;
 - o id de escopo, tirado do caminho do módulo e da linha da seção;
 - as anotações da linha da seção (`#[isGlobal]`, `#[defineVars]`);
-- o `Style` entregue ao `html`;
+- o estilo ativado com `use` no componente (p1), que o `html` lê pelos hooks;
 - a ponte `ElementBase` → `StyledBase`;
 - o sink que põe a folha no head.
 
@@ -197,8 +197,8 @@ O que isso dá:
 - **Composição como entre componentes.** `${btn}` dentro de outro `styled` é um filho renderizado
   sob a mesma base, como um componente dentro do `html`. O `@apply` do Tailwind vira isso.
 - **A ponte com o jhonstart.** Quem recebe a seção `--- style ---` é o `jhonstart-styled`, e não o
-  `styled`: a função default dele monta, com o `styled`, os componentes da seção e devolve ao `html`
-  o `Style` do jhonstart. O `jhonstart-styled` também liga `ElementBase` a `StyledBase` (o papel que o `jhonstart-emilia`
+  `styled`: a função default dele monta, com o `styled`, a folha com escopo da seção, e o componente a
+  ativa com `use` (p1). O `jhonstart-styled` também liga `ElementBase` a `StyledBase` (o papel que o `jhonstart-emilia`
   tem hoje, e que acaba com ele): quando o `html` renderiza a página, os componentes de estilo rodam sob a base
   da página e escrevem na folha dela.
 
@@ -248,8 +248,8 @@ fn padAllHalf(n: i32) -> StyledView { return styled "padding: --spacing(${n}.5);
 
 Depois da marcação, uma linha `--- style ---` abre a seção, que vai até o fim do arquivo. Ela é
 compilada à parte: o toolchain entrega o texto à função default do `style`, como entrega a marcação
-ao `html`. O valor que volta chega ao `html` junto com a marcação, e o `html` escreve
-`data-s="<id>"` em todo elemento que o template escreve.
+ao `html`. O valor vira um `val` do módulo que o componente ativa com `use` (p1). O `html` vê esse
+`use` nos hooks da função e escreve `data-s="<id>"` em todo elemento que o template escreve.
 
 | Escrito | Significa |
 |---|---|
@@ -269,9 +269,9 @@ O build o encurta (124).
 
 | Peça | Dono | Faz |
 |---|---|---|
-| `pub default fn` de `jhonstart-styled` | membro novo do jhonstart | recebe a seção, aplica o escopo pelo `styled` e devolve o `Style` do jhonstart (id, folha, modo, vars) |
+| `pub default fn` de `jhonstart-styled` | membro novo do jhonstart | recebe a seção, aplica o escopo pelo `styled` e devolve um `@Component<StyledBase, Styled>` com escopo (id, folha, vars), ativado com `use` (p1) |
 | o sink | `jhonstart-styled` | põe a **única** folha do render no head e em cada fill de boundary: as camadas da emilia e depois as seções com escopo |
-| `Style` e o braço no `html.bp` | core do jhonstart | recebe o `Style` com a marcação, escreve `data-s` e recusa `<style>` sem `#[isInline]` |
+| o braço no `html.bp` | core do jhonstart | lê nos hooks da função (277) o `use` de um estilo com escopo, escreve `data-s` e recusa `<style>` sem `#[isInline]` |
 | `#[styled(..)]` | `jhonstart-styled` (p4) | aceita tudo o que implementa o `Styleable` do `styled`: componentes da aplicação e tokens da emilia; as regras vão para o mesmo sink. O `jhonstart-emilia` sai (p4) |
 
 A ordem da cascata fica: folhas linkadas (`globals.css`), camadas da emilia, seções com escopo.
@@ -301,40 +301,63 @@ que continuam sem saber do `.bpp`.
 Cada ponto traz o contexto, as opções com exemplo e a recomendação. As recomendações seguem a
 decisão 67: uma forma só, a mais restritiva.
 
-### p1 · Como o `Style` chega ao `html` num `.bp`
+### p1 · Como o estilo chega ao `html` — aceito (09/10): `use cardStyle;`
 
-**Contexto.** No `.bpp`, quem escreve a ligação entre a seção e a marcação é o desdobramento (116).
-Num `.bp`, o componente escreve à mão. As duas formas precisam ser a mesma, e é o `jhonstart-styled`
-quem fornece a função de estilo.
+**O que se pergunta.** Um `.bpp` é outro jeito de escrever um `.bp` (198): o toolchain desdobra o
+arquivo em código botopink comum. A marcação vira `return html """…""";`. O p1 é qual código a seção
+de estilo vira, ou seja, como o `html` fica sabendo que o template tem um estilo com escopo e precisa
+escrever `data-s` nos elementos.
 
-- [ ] **(a)** O `html` recebe o estilo como argumento antes do literal.
+- [x] **Resposta: o componente ativa o estilo com `use`.** O estilo é um `@Component<StyledBase,
+  Styled>` (§ 3.2, p8), então ativá-lo é o `use` comum da linguagem (128). O `html` vê esse `use` em
+  `@typeInfo(f).hooks` (277), como já vê os outros hooks, e escreve `data-s="<id>"` em todo elemento
+  do template **dessa função**.
   ```bp
   import html, {View} from "jhonstart";
-  import style from "jhonstart-styled";
+  import styled from "jhonstart-styled";          // a função default do pacote que "bpp".style nomeia
 
-  val cardStyle = style """ .title { font-size: 2rem; } """;
+  val cardStyle = styled """.title { font-size: 2rem; }""";
 
-  pub fn Card(props: Props) -> View {
-      return html(cardStyle) """<article><h1 class="title">{props.title}</h1></article>""";
+  pub default fn (props: Props) -> View {
+      use cardStyle;
+      return html """<h1 class="title">{props.title}</h1>""";
   }
   ```
-- [ ] **(b)** Um hook do `jhonstart-styled`, que o `html` acha pelo `@typeInfo(f).hooks` (277).
-  ```bp
-  pub fn Card(props: Props) -> View {
-      use scopedStyle(cardStyle);
-      return html """<article><h1 class="title">{props.title}</h1></article>""";
-  }
-  ```
-- [ ] **(c)** Uma anotação na tag raiz (302), que grava o `Style` como meta, e o `html` aplica o escopo
-  ao template inteiro.
-  ```bp
-  return html """<article #[scoped(cardStyle)]><h1 class="title">{props.title}</h1></article>""";
-  ```
 
-**Recomendação: (a)**, e (c) se a 116 medir no passo 0 que a linguagem não aceita um template
-function com valor antes do literal. A (a) é a mais explícita: o estilo aparece onde o template é
-chamado. A (c) não pede nada novo à linguagem, mas põe numa tag algo que vale para o template todo. A
-(b) esconde a ligação no contexto do render.
+**O `.bpp` desdobra nisso.** O arquivo
+
+```bpp
+---
+type Props(title: string)
+---
+<h1 class="title">{props.title}</h1>
+--- style ---
+.title { font-size: 2rem; }
+```
+
+vira o módulo acima. A seção vira um `val` de módulo, com um nome gerado que o cabeçalho não
+alcança, e o `use` dele entra no corpo depois das instruções do cabeçalho, antes do `return`. A forma
+exata é da 116.
+
+**O que vem junto:**
+
+- **O escopo é da função que faz `use`.** Um filho que escreve o próprio template não ganha o
+  atributo desse pai, como no Astro: um componente filho não é estilizado pelo `<style>` do pai.
+- **Mais de um estilo:** `use cardStyle; use layoutStyle;`. Cada um tem o seu id, e o template ganha
+  os dois atributos.
+- **O valor está disponível quando precisa:** `val s = use cardStyle;` dá o `Styled` (`s.className`,
+  `s.rules`).
+- **Sem custo novo** (p9): o corpo de um `View` já é um `@Component`. Um `cardStyle` com literal fixo
+  é calculado no build.
+- **Dois `styled` diferentes.** Neste exemplo, `styled` é a função default do `jhonstart-styled`: um
+  literal com seletores, que vira uma folha com escopo. O `styled` do pacote `styled` é o de
+  componentes, em que declarações viram uma classe. Um `.bp` que use os dois dá alias a um deles (170).
+- **`#[defineVars(a, b)]`** na linha da seção desdobra num `use` com os valores, como em
+  `use cardStyle.vars(a, b);`. A forma exata é da 116.
+
+**As alternativas descartadas:** `html(cardStyle) """…"""` (pedia à linguagem um valor antes do
+literal) e uma anotação `#[scoped(cardStyle)]` na tag raiz (uma tag carregando algo que vale para o
+template inteiro).
 
 ### p2 · A forma string `"bpp": "jhonstart"` — aceito (09/10): (a)
 
