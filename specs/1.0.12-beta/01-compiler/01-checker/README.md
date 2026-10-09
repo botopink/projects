@@ -33,7 +33,20 @@ standalone · 4 record value called = `callee-not-a-function` · 5 `binding-rede
 postfix read on `( … )` · 12 `unknown` as binding = `reserved-word-as-name` · 14 `primitives.d.bp` /
 `@external(` comment sweep · 15 imported type re-checked at a second import site keeps field types ·
 16 inline parameter type (207) · 17 default trailing everywhere (244). Decisions 208, 209, 215 —
-`Ok`/`Error` never constructors; integer literal under `f64`; `f64 == 1` refused. Rows from other
+`Ok`/`Error` never constructors; integer literal under `f64`; `f64 == 1` refused. Rows: an `@block`
+used as a value with no valued `return` is `block-tail-value` (decision 2; `reject/block_tail_value`)
+· `$stringify` in an `@External` template is `template-stringify-marker` (239;
+`reject/template_stringify_marker`) · a module-level `fn`/`val`/`var` named like a primitive type is
+`primitive-type-name-taken` (`reject/primitive_type_name_taken{,_val}`) · T17: the reflection
+records a `@Decl` hands out are `__Decl__{Annotation,Param,Field,Method}` (`comptime.zig`, shown
+`Decl.Param`), so an imported `Param` no longer hides them
+(`modules/reflection_type_not_shadowed_by_import`) · row 33 re-measured in its two-package shape:
+refused at the aliased item (imp-a), the package named `` `srv` `` not `` `srv:` ``
+(`modules/import_same_type_name_two_packages_one_aliased`). Step 25 (289): `pub default fn (…)`
+(named `default`, a keyword; `decl.name` the file's), `pub default <name>;`, `import {m.card};`
+binding a module's default (`comptime/default_fn.zig`), `default-unknown` / `default-twice`;
+`modules/default_{anonymous,named_later}`, `reject/default_{unknown,twice,named_twice}`, `docs.md` §
+Modules; the formatter arm is `16-formatter`'s (handed over as a patch). Rows from other
 fronts: decision 170's type half, std type's constructor through its namespace, `unwrapOr`'s width,
 behavior `default fn` body checked, shorthand import never reaching a bundled package, occurs-check
 message, primitive behavior extending std's, type parameter widening to its optional, std module's
@@ -196,22 +209,6 @@ type cannot be passed (lg2-f), and `Decl` (`builtins.d.bp`) is untyped. The case
 - [ ] `docs.md` § Decorators documents the four rules; `comptime/AGENTS.md` states how a comptime
       argument reaches the decorator body; `language-gaps.md`'s lg2-f and lg2-i rows close
 
-### Step 25 — the anonymous default function and `pub default <name>;` (decision 289)
-
-`pub default fn (params) -> R { … }` — a module's default function with no name in its module — and
-`pub default <name>;` — an existing function of the module made its default — parse and check;
-`pub default fn Name(…)` stays, the shorthand of `fn Name(…)` + `pub default Name;`. One default per
-module. An anonymous default's `decl.name` (and `@typeInfo`) is the module's file name; the
-importer binds it under the module path's last segment or an alias (213, 288).
-
-- [ ] `run/default_anonymous` — `pub default fn (x: i32) -> i32` imported `import {m.double};` and
-      called; `decl.name == "double"` in a decorator on it
-- [ ] `run/default_named_later` — `fn Tree(n: Node) -> View { … <Tree …/> … }` + `pub default Tree;`:
-      recursion through the name, imported by the module path
-- [ ] `reject/default_twice` (two defaults), `reject/default_unknown` (`pub default nope;`) at the line
-- [ ] a decorator named like the file imported beside an anonymous default (`page.bpp`'s case) checks
-- [ ] the formatter prints both forms (`16-formatter` hand-off if its arm is missing); `docs.md` § Modules
-
 ### Step 26 — a `comptime` parameter that takes a value or a type (decision 297)
 
 `comptime source: X<T> | type T`: an argument of type `X<T>` binds `T` from it (or checks it against
@@ -321,24 +318,9 @@ pub fn posts() -> string { return loadPosts(); }
 
 ### Rows other fronts found
 
-- [ ] `@block` tail form refused: `val a = @block { 1 + 2 };` checks today (`inferBuiltinCallReturnType`
-      types a block by its tail; decision 2 refuses), prints `3` erlang/beam/wasm, `null` commonJS;
-      `@block { return 3; }`, statement `@block { … };` stay legal — closes `02-erlang` step 10,
-      `04-js` step 1
-- [ ] `$stringify` refused in every `@External` template, std included (decisions 164, 239): located
-      parser refusal beside `template-self-marker` / `template-marker-out-of-range`
-      (`parser/template_markers.zig`, `parser.zig` `ParseErrorType`, `print.zig`); std's
-      `Array.join` stops writing it — `04-js` step 2 adds the cell
-- [ ] module-level `fn` / `val` / `var` named like a primitive type = `primitive-type-name-taken` at
-      the name (`language-gaps.md` row "A function named like a primitive type shadows the type in
-      its module") — was parked on std's `random.bool` (dropped by decision 250): can land; not on feat
 - [ ] comptime body diagnostic names the body's file: `infer.zig` (`decoratorError`) passes the
       display path, or locates at the body call for the module's own decorator — asserted in
       `comptime_module.zig`, `decorator_invocation.zig` (from `14-comptime-on-beam` step 1)
-- [ ] T17 — reflection model (`Decl`, `Param`, `Field`, `Method`) resolves in a decorator body by its
-      own identity, not shadowed by an import named `Param`/`Field` —
-      `modules/reflection_type_not_shadowed_by_import` (decorator module importing a user `Param`
-      reads `m.params` of a `@Decl`); today `unknown field 'name' on type 'Param'`
 - [ ] package module namespace in type and value position (`import {report} from "validation"`, then
       `report.X`) as for std modules — exports known only to `comptime.zig`'s `resolveImports`
 - [ ] two aliased imports of two same-named **types** are legal (310): every backend qualifies a type by
@@ -349,9 +331,6 @@ pub fn posts() -> string { return loadPosts(); }
       (from `05-wasm` step 5)
 - [ ] `infer.zig`'s template memo key appends the whole scope's JSON per call site — O(scope) per
       template call (`14-comptime-on-beam` step 2's remaining cost)
-- [ ] row 33 (`as` alias of an imported type binds the declared name) re-measured in its exact shape
-      (two packages, one `App` aliased); step-4-sized import-binding row if it reproduces, else
-      closed (decision 110's `as` on a type leaf landed — `modules/import_alias_on_type`)
 
 **Gate:** standard (fronts.md § Gate) + every re-recorded `snapshots/comptime/**` file read for
 expected/found orientation; a refusal moving a backend fixture is reported to that backend's front,
