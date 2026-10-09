@@ -133,6 +133,8 @@ resolving every `var(--x)` at render. (a), recommended: only `docs.md` § Deviat
       composed `translate`; `group/item:hover` renders `.group\/item:hover .e_…`; both measured
       against 4.3.2
 - [ ] under (a): the `docs.md` paragraph; `reference-rows.md` rows marked (b)
+- [ ] `tokens.bp:2190-2195`'s comment states `Neg` as the decided form (decision 314), not a language gap;
+      `TranslateX.Neg` / `TranslateY.Neg`, when (b) adds them, follow it
 
 **Gate:** standard (fronts.md § Gate) + `emilia` 734 or more on both rows; the fifteen examples
 green on both rows; `jhonstart-emilia` and `onze-cli` (the two fixture readers) green ·
