@@ -22,9 +22,7 @@ feitos em styled           #[styled(..)] na tag         ← do jhonstart-styled 
 ```
 
 ```bpp
----
 type Props(title: string, children: Node)
----
 --- style ---
 .title { font-size: 2rem; }
 article :global(p) { line-height: 1.6; }
@@ -247,18 +245,23 @@ fn padAllHalf(n: i32) -> StyledView { return styled "padding: --spacing(${n}.5);
 
 ## 6. A seção `--- style ---` no `.bpp`
 
-**A ordem do arquivo (p3):** cabeçalho, estilo, marcação. A seção de estilo vem **antes** da
-marcação, aberta por uma linha `--- style ---` e fechada por uma linha `---`, como o cabeçalho. Fica
-logo depois do cabeçalho, ou na primeira linha quando o arquivo não tem cabeçalho. A marcação
-continua sendo o resto do arquivo, como na 212.
+**O formato do arquivo (p3).** O cabeçalho começa na primeira linha, sem `---` de abertura, e vai
+até a primeira linha separadora. A separadora diz o que vem depois:
+
+- `---`: a marcação, até o fim do arquivo;
+- `--- style ---`: o estilo, até uma linha `---`, e depois a marcação, até o fim do arquivo.
 
 ```bpp
----                                  ← cabeçalho (212), opcional
-type Props(title: string)
+type Props(title: string)            ← cabeçalho: da primeira linha até a separadora
 ---
---- style ---                        ← estilo, opcional; uma seção só
+<h1 class="title">{props.title}</h1> ← marcação: o resto do arquivo
+```
+
+```bpp
+type Props(title: string)            ← cabeçalho
+--- style ---                        ← fecha o cabeçalho e abre o estilo; uma seção só
 .title { font-size: 2rem; }
----
+---                                  ← fecha o estilo
 <h1 class="title">{props.title}</h1> ← marcação: o resto do arquivo
 ```
 
@@ -269,17 +272,25 @@ type Props(title: string)
 <h1 class="title">Oi</h1>
 ```
 
+```bpp
+<h1>Oi</h1>                          ← sem nenhuma separadora: só marcação
+```
+
 Ela é compilada à parte: o toolchain entrega o texto à função default do `style`, como entrega a
 marcação ao `html`, e o componente a ativa com `use` (p1). O `html` vê esse `use` nos hooks da função
 e escreve `data-s="<id>"` em todo elemento que o template escreve.
 
-Por que antes, e não depois da marcação:
+Por que assim:
 
-- **A marcação continua sendo o resto do arquivo.** A regra da 212 quase não muda, e uma linha
-  `---` dentro da marcação nunca é confundida com uma seção, porque as seções só existem no topo.
-- **Os dois blocos de código ficam juntos, em cima**, cercados por `---` do mesmo jeito: o que o
-  componente declara (cabeçalho e estilo) e, embaixo, o que ele mostra.
-- **Fechar com `---` não colide com o CSS**, que nunca tem uma linha só com `---`.
+- **O cabeçalho é código botopink desde a primeira linha**, como o começo de um `.bp`, sem uma
+  cerca para abrir. São uma ou duas linhas separadoras, em vez das quatro do formato do Astro com
+  estilo.
+- **A marcação continua sendo o resto do arquivo**, como na 212; uma linha `---` dentro dela é
+  marcação, porque a separação já aconteceu.
+- **O estilo fica entre o que o componente declara e o que ele mostra**, e fechar com `---` não
+  colide com o CSS, que nunca tem uma linha só com `---`.
+- **Emenda a 212**: o formato deixa de ser o do Astro (cabeçalho entre dois `---` no começo do
+  arquivo).
 
 | Escrito | Significa |
 |---|---|
@@ -289,9 +300,11 @@ Por que antes, e não depois da marcação:
 | `<style #[isInline]>` na marcação | o builder `style`, verbatim (o comportamento de hoje) |
 | `<style>` na marcação, sem `#[isInline]` | erro na tag, apontando para a seção |
 | seção sem `"bpp".style` no manifesto | erro na linha: `a --- style --- section needs "bpp.style" in botopink.json` |
+| a primeira linha é `---` (cabeçalho vazio, a forma do Astro) | erro na linha: `the header starts on the first line; a .bpp has no opening ---` |
 | `--- style ---` depois da marcação | erro na linha: `the --- style --- section goes before the markup, after the header` |
 | uma segunda `--- style ---` | erro na linha: `a .bpp file has one --- style --- section; use :global(…) for unscoped rules` |
-| `--- style ---` sem o `---` que fecha | erro na linha de abertura, como o cabeçalho aberto (212) |
+| `--- style ---` sem o `---` que fecha | erro na linha de abertura |
+| uma linha só com `---` dentro de um arquivo sem cabeçalho | ela vira a separadora, e a marcação acima é lida como cabeçalho e falha na linha; para escrever `---` na marcação, use uma expressão: `{"---"}` |
 
 O id do escopo, sem hash, é o caminho do módulo mais a linha da seção (`components-post-card-12`),
 calculado pelo `jhonstart-styled`; o `css` recebe só a string pronta em `scope(id, css)`.
@@ -316,7 +329,7 @@ que continuam sem saber do `.bpp`.
 | Onde | Mudança |
 |---|---|
 | decisões 198, 200, 284 | `"bpp": "jhonstart"` vira `"bpp": {"default": "jhonstart", …}` |
-| 212 | entre o cabeçalho e a marcação, uma seção de estilo opcional (`--- style ---` … `---`); a marcação continua sendo o resto do arquivo |
+| 212 | o cabeçalho começa na primeira linha, sem `---` de abertura, e termina na primeira separadora: `---` (vem a marcação) ou `--- style ---` (vem o estilo, fechado por `---`, e depois a marcação); a marcação continua sendo o resto do arquivo; um arquivo sem separadora é só marcação |
 | 270 | o prelúdio é o do pacote em `bpp.default` |
 | 278 | `#[defineVars]` sai (buracos, p1); `#[isGlobal]` sai (p3: `:global(…)`); `<style>` na marcação só com `#[isInline]` |
 | 285 | o toolchain passa a conhecer também o pacote de `style` |
@@ -359,9 +372,7 @@ escrever `data-s` nos elementos.
 **O `.bpp` desdobra nisso.** O arquivo
 
 ```bpp
----
 type Props(title: string)
----
 --- style ---
 .title { font-size: 2rem; }
 ---
@@ -396,9 +407,7 @@ run-time vira uma variável CSS: a regra lê `var(--s-<n>)`, e o elemento raiz d
 lista de nomes. A folha continua uma só para todas as instâncias, e só o atributo `style` muda.
 
 ```bpp
----
 type Props(color: string)
----
 --- style ---
 .box { border: 1px solid ${props.color}; padding: 1rem; }
 ---
@@ -439,12 +448,11 @@ template inteiro).
 
 ### p3 · Uma seção de estilo, antes da marcação — aceito (09/10): (b)
 
-- [x] Uma seção só, entre o cabeçalho e a marcação, fechada por `---`. O que precisa escapar do
-  escopo vai com `:global(…)`.
+- [x] Uma seção só, entre o cabeçalho e a marcação: `--- style ---` fecha o cabeçalho, `---` fecha o
+  estilo. O cabeçalho não tem `---` de abertura (§ 6). O que precisa escapar do escopo vai com
+  `:global(…)`.
   ```bpp
-  ---
   type Props(title: string, children: Node)
-  ---
   --- style ---
   .title { font-size: 2rem; }
   article :global(p) { line-height: 1.6; }    /* só os <p> dentro DESTE article */
