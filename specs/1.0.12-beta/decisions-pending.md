@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**61 questions and 9 contradictions are open, and 88 implementation choices await confirmation.**
+**62 questions and 9 contradictions are open, and 88 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -88,6 +88,12 @@ subject under 281. Every decorator parameter in these examples is `comptime` (28
 - **Recommendation.** (a): the strictest — no commit where the form parses and formatting strips it; parse and print stay one front's pair.
 - **Blocks.** `16-formatter` step 8; `01-checker` step 10.
 
+#### ck-rows-a · A body's `comptime` the build cannot fold yet (*proposed*)
+- **Measured.** Decision 266: a body's `comptime` is evaluated at compile time and no longer lowers as the run-time expression. `01-checker` folds every block `eval.zig` reads (literals, operators, the block's locals, `if`, `break` — `run/comptime_block_in_body`). A block holding a call or a loop is not folded — the comptime runtime that would run it is step 21 box 1 — and still reaches the backends: `fn total() -> i32 { return comptime { var d = 0; for ([1, 2, 3]) { b -> d = add(d, b); } break d; }; }` prints `6` on erlang and beam, dies on commonJS (`ReferenceError: d is not defined` — only the `break` is emitted) and is refused on wasm (`no lowering for the comptime construct comptimeBlock`). rakun writes this shape six times (`beans()`: `examples/rakun`, `examples/rakun-container`, four `test/` files), over `@TypeInfo.all(…)` and a `Dict` of functions.
+- **Options.** (a) Refuse, located at the `comptime`, every body `comptime` the folder cannot read, until step 21 box 1 runs it on the comptime runtime: `return comptime { var d = 0; for (…) { … } break d; };` → `comptime-not-folded: this block holds a loop the build cannot evaluate yet`; rakun's six `beans()` red until then. (b) Refuse it only where a backend would mis-run it (commonJS, wasm), keep erlang/beam's run-time lowering until box 1: `botopink build --target commonJS` refuses the block, `--target erlang` prints `6`. (c) Leave it: commonJS throws at run time, wasm refuses at codegen.
+- **Recommendation.** (a) — the strictest: no `comptime` reaches a backend unevaluated; under 266 rakun's `Dict` of functions is a located refusal anyway (a function has no emitted construction), so `beans()` changes shape either way.
+- **Blocks.** `01-checker` step 21's last box (the unfoldable half); rakun's `beans()`.
+
 #### lg2-a · A byte type
 - **Measured.** No primitive, std type or literal holds bytes (`val b: Bytes = "a";` mismatches everywhere); every host cell marshals via `string`.
 - **Options.** (1) None: a binary payload refused where it enters. (2) A `Bytes` primitive with an explicit, fallible boundary (`Bytes.fromUtf8`, `toUtf8 -> @Result`), no implicit conversion. (3) `string` also carries raw bytes.
@@ -101,13 +107,13 @@ subject under 281. Every decorator parameter in these examples is `comptime` (28
 - **Blocks.** The row; rakun 02, 23, 25, 28, 30, 60.
 
 #### lg2-d · A decorator that reads the body it annotates
-- **Measured.** `decl.body` is `{error,{badkey,body}}` at the annotation; the handle carries kind, name, fields, variants, methods, return type, annotations.
+- **Measured.** `decl.body` is the checker's `unknown field 'body' on type 'Decl'`, located at the read in the decorator body (`01-checker`'s decorator-body row; it was `{error,{badkey,body}}` at the annotation); the handle carries kind, name, fields, variants, methods, return type, annotations.
 - **Options.** (1) No statement access. (2) A read-only statement tree on `@Decl`. (3) A body-walking comptime API.
 - **Recommendation.** (1); rakun 83's saga stays a value pairing each step with its compensation.
 - **Blocks.** The row; rakun 83.
 
 #### lg2-e · A method-level `@Decl`'s owner
-- **Measured.** 280 answered the parameters: `@Decl<T>` binds the function's type (`@Decl<fn(e: E) -> unknown>`), and 280's approved example 1 (`01-checker` step 24) reads `decl.params`, `decl.params[0].module`, `decl.module` on a fn's `@Decl`. Left: `decl.owner` on a method-level decorator is `badkey`; only the type-level handle sees the whole type.
+- **Measured.** 280 answered the parameters: `@Decl<T>` binds the function's type (`@Decl<fn(e: E) -> unknown>`), and 280's approved example 1 (`01-checker` step 24) reads `decl.params`, `decl.params[0].module`, `decl.module` on a fn's `@Decl`. Left: `decl.owner` on a method-level decorator is the checker's unknown field of `Decl`, at the read (was `badkey`); only the type-level handle sees the whole type.
 - **Options.** (1) A method-level marker sees its own method (parameters per 280); the type-level decorator reads the type. (2) `owner` on a method-level `@Decl`.
 - **Recommendation.** (1).
 - **Blocks.** The row (marker in `08-bpp/127`'s `typed-action-example.bp`, its parameter half closing with `01-checker` step 24); rakun 06–10, 29.
@@ -149,13 +155,13 @@ subject under 281. Every decorator parameter in these examples is `comptime` (28
 - **Blocks.** The row; rakun 02.
 
 #### lg2-q · `@Decl`'s source location
-- **Measured.** `decl.loc.file` is `badkey` at the annotation. 289 and 290 already write option (1): a route file's decorator carries the route (`#[page("blog/[slug]", paths: allPosts)]`), the page reads its segments by hook (293), takes no parameter and returns `View` (275, 276). An anonymous default's `decl.name` is the file name (289), not its path.
+- **Measured.** `decl.loc.file` is the checker's unknown field of `Decl`, at the read (was `badkey` at the annotation). 289 and 290 already write option (1): a route file's decorator carries the route (`#[page("blog/[slug]", paths: allPosts)]`), the page reads its segments by hook (293), takes no parameter and returns `View` (275, 276). An anonymous default's `decl.name` is the file name (289), not its path.
 - **Options.** (1) None: the app-relative segment is an explicit decorator argument (`#[page("blog/[slug]")] pub fn BlogPost() -> View`). (2) A `loc` field on `@Decl` (`@src()`'s `SourceLocation`).
 - **Recommendation.** (1): a decorator's output never depends on where its file sits; 289/290 are written so.
 - **Blocks.** The row; rakun 22 (the `#[page("…")]` examples already follow (1)).
 
 #### lg2-s · Module-graph reflection
-- **Measured.** `decl.imports` is `badkey` at the annotation; `onze-bundler/src/graph.bp` reads imports with `importsOf`, a textual scan.
+- **Measured.** `decl.imports` is the checker's unknown field of `Decl`, at the read (was `badkey` at the annotation); `onze-bundler/src/graph.bp` reads imports with `importsOf`, a textual scan.
 - **Options.** (1) None: `importsOf` stays a textual scan that fails loudly. (2) An `imports` field on a module-level `@Decl`.
 - **Recommendation.** (1); its old argument ("in step with `lg2-k`") fell with 216.
 - **Blocks.** The row; onze 68 (client bundle).
