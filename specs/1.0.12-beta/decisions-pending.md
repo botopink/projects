@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**47 questions and 6 contradictions are open, and 85 implementation choices await confirmation.**
+**50 questions and 6 contradictions are open, and 85 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -407,6 +407,53 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Recommendation.** (a).
 - **Blocks.** 118 step 1.
 
+#### 119-b · Where a component computed at render registers (*proposed*)
+- **Measured** (botopink-lang `d7c71405`, styled `aff2eb0`). A literal with no hole emits `styledConstant("s_…", ".s_…{…}")` / `propertyConstant(…)` with literals (`scripts/git-hooks/repository-stages.sh` reads the emitted module on erlang and commonJS); a literal with holes emits `styledComputed` / `propertyComputed`, which build `Styled(className, rules)` when they run and register it nowhere — nothing in `styled` collects the components a render ran. `StyledBase()` is a phantom; `@getContext(T)` is checked (`comptime/infer.zig`) but no backend lowers it, so a component cannot reach a render's sheet through its base. `styled` has no host cell; emilia's per-render store is two host cells (`emilia.bp:63-77`, the process dictionary / `globalThis.__emilia_sheet`), and `06-emilia/34` step 5 says that store "is what `css` and `styled` now hold".
+- **Options.** (a) `styled` holds the per-render store — host cells on erlang (process dictionary) and node (a `globalThis` map), emilia's two moved: `styledComputed` registers its class and rules when it runs, a `${p}` splice registers nothing (no class of its own, 338), `rendered()` answers the registered components once each in first-registration order and empties the store, a constant registers nothing (the build's sheet, 124):
+  ```bp
+  fn badge(c: string) -> StyledView { return styled "color: ${c};"; }
+  val b = await badge(props.color);                // registers .s_<h>{color:…} in this render
+  var sheet = Sheet.of([layer("base")]);
+  for (rendered()) { c -> sheet = sheet.add("base", c); }   // jhonstart-styled's sink; the store is empty after
+  ```
+  (b) Nothing registers in `styled`: a component is a value, and the renderer adds what the render reached — `jhonstart-styled`'s sink reads the rendered functions' `use`s (277) and calls `sheet.add(layer, await c)`; the box's second half moves to step 2, and emilia's `flush()` (34 step 5) takes the components it renders as an argument:
+  ```bp
+  use styled "color: ${props.color};";             // html reads the hook; the sink adds it to the render's Sheet
+  ```
+  (c) Through the base: `StyledBase(sheet: …)`, `styledComputed` registering through `@getContext(StyledBase)` — needs `@getContext` lowered at run time (`01-compiler`; no backend does today).
+- **Recommendation.** (a): the store 34 step 5 already assigns to `styled`, no compiler change, the render's sheet holding exactly what the render ran.
+- **Blocks.** 119 step 1 box 4 (its second half); `06-emilia/34` step 5 (`flush()` over `styled`'s sheet).
+
+#### 119-c · What "reaches no run-time hook" means for a literal with holes (*proposed*)
+- **Measured** (botopink-lang `d7c71405`). Built: by the literal's text — no hole, computed at build; any hole, computed when it runs — so `styled "${tab4} color: red;"` with `pub val tab4 = styledProperty "tab-size: 4;"` is computed at render although every value is known at build. 338 reads the criterion off `@typeInfo(f).hooks` (277), which lists `use`s and component calls; a hole is neither. Building a holed literal at build needs its holes' values in the template, and every route is shut today: `e.lookup(name)` answers no value (row **A template function cannot read another expansion's value**); in built code, `comptime styledComputed(…, [propertyConstant(…)])` evaluates but is emitted as `'Styled'(…)` (erlang: `function 'Styled'/2 undefined`) / `Styled(…)` (commonJS: `ReferenceError`) unless the calling module imports `Styled` (row **A record value a `comptime` expression answers is emitted as an unbound constructor**); `comptime padAll(2).rules`, reaching a function whose body is a `styledProperty` expansion, panics the compiler (row **A `comptime` expression reaching a template expansion panics the erlang emitter**); `comptime` refuses `tab4` as "a runtime identifier"; `styledComputed` calls std's host `contentHash` (row T19).
+- **Options.** (a) As built: a literal is computed at build exactly when it has no hole.
+  ```bp
+  pub val tab4 = styledProperty "tab-size: 4;";   // build: propertyConstant("s_e8b00b8b", ".s_e8b00b8b{tab-size:4}", "tab-size:4")
+  pub val code = styled "${tab4} color: red;";    // render: styledComputed("s_", […], [tab4])
+  ```
+  (b) A literal whose every hole is known at build is computed at build (the template emits a `comptime` expression), one with a hole naming a parameter or a run-time value at render — waits on the two new rows and on a way for the template to tell the two kinds of hole apart (row 135):
+  ```bp
+  pub val code = styled "${tab4} color: red;";    // build: styledConstant("s_…", ".s_…{tab-size:4;color:red}")
+  fn badge(c: string) -> StyledView { return styled "color: ${c};"; }   // render
+  ```
+- **Recommendation.** (a) now — decidable from the literal alone, no compiler change; (b) when `14-comptime-on-beam` closes the two rows.
+- **Blocks.** 119 step 1 box 4 (its first half's reading).
+
+#### 119-d · Who builds the catalogue a template body reads (row 134) (*proposed*)
+- **Measured** (botopink-lang `d7c71405`, a scratch package). A package module whose template function calls `@TypeInfo.all(with: theme)`: the importing application fails with `unbound variable 'themed'` at the template's use — not `typeinfo-all-imported` at the import (the reader module drops out of the importer's scope silently); without the call it builds. `styled` therefore cannot find the application's `#[theme]`, refuse a second, nor fall back to the default when there is none: its literals read `baseTheme()`. No `01-compiler` front lists the capability (130's project reflection is `@TypeInfo.all` at an entry point). Even found, the theme's value is needed at build: `Declared.value` is the run-time `val`, and a comptime `extendTheme(…)` with `ThemeValue.Rem(…)` is row 133.
+- **Options.** (a) A new step of `01-compiler/130-decorator-outputs`: `@TypeInfo.all` in a template function's body answers for the program the call is compiled in (the expansion after every module's decorators), a template-function reader exempt from `typeinfo-all-imported`, its `value` readable at build.
+  ```bp
+  // styled/src/styled.bp, inside `pub default fn styled(comptime css: @Expr<string>)`
+  val themes = @TypeInfo.all(with: theme);   // the application's #[theme] declarations
+  if (themes.length > 1) css.fail("styled: two #[theme] declarations: …");
+  ```
+  (b) A capability of `@Expr`: `css.catalogue(with: theme)` → `Declared<unknown>[]` of the calling program — the same answer, read through the expression the template already holds.
+  ```bp
+  val themes = css.catalogue(with: theme);
+  ```
+- **Recommendation.** (a): one catalogue, one rule, answered for the program being compiled; owner 130 (project reflection). Meanwhile the importer's `unbound variable` is a diagnostic bug of `typeinfo-all-imported` (row 134).
+- **Blocks.** 119 step 1 box 5; `06-emilia/34` step 3; 119 step 4's cleared-breakpoint refusal.
+
 ### 09-cardume
 
 #### atm-c · An atom's `T` across the server/browser seam (*proposed*)
@@ -460,6 +507,7 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Options.** (a) The box greps the package's own text: `grep -rn "bpp\|jhonstart\|emilia" repository/css/{src,test,botopink.json} repository/styled/{src,test,botopink.json}` — empty today for `css`. (b) The shared hook's comment drops the name, in every library repository at once (check 4), a change none of 119's repositories owns.
 - **Recommendation.** (a): the box measures what the package knows; the hook is one text owned by the gate.
 - **Blocks.** Only ticking 119 step 1's grep box.
+
 ---
 
 ## Part 3 — Implementation choices of tracks 04–09
