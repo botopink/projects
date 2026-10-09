@@ -95,7 +95,7 @@ fn Button() -> @Component<Element> {
 ```
 
 - [ ] `@Component<R>`: `@Component<C, R>` a type-arity error naming `@Component<R>`; a component is the
-      `@Component<R>` whose `R` implements `@Renderable`, any other `R` a hook; `@Context<C>` and
+      `@Component<R>` whose `R` implements `@Renderable`, any other `@Component<R>` read with `use` (no `@Hook`: `@Component` is the one wrapper); `@Context<C>` and
       `@getContext` leave `builtins.d.bp` (`context-getcontext-*` codes go with them)
 - [ ] std declares `Context<T>`, `provide(ctx: Context<T>, value: T)` and `context(ctx: Context<T>) -> T`
       as hooks (`use` only); `use` inside a decorator body, a template body or a `comptime { … }` refused,
