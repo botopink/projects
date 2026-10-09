@@ -2,6 +2,10 @@
 
 **Depends on:** `02-std-and-packaging/97-std-dedupe` (steps 0–5 on feat — this track's std side).
 
+> **Decision 326.** The packages stop being bundled: front 138 moves each to its own repository
+> (`repository/<pkg>`), an ordinary dependency; the compiler embeds std alone. Paths below that read
+> `libs/<pkg>` read `repository/<pkg>` once 138 lands; the three shared registration lines go with it.
+
 Criterion: decisions 115–117 — a bundled package only when **two or more libraries** (or server and
 browser) need the same code and decision 113 keeps it out of each framework. Names no framework, no
 protocol of its own, no state beyond an inline host table (`persistent_term` / `globalThis`, as in
@@ -26,6 +30,7 @@ no name std or a framework already exports).
 | [`106-log/`](./106-log/README.md) | high | partial: step 1 (the package) on feat; step 2 open | bundled `log` (decision 195): levels, `LogRecord`, four renderers, a sink-injected `Logger`, the one `errorDigest` (decision 194) | step 2: `04-rakun/17`, `05-jhonstart/26` step 4, `04-rakun/65` |
 | [`107-release/`](./107-release/README.md) | low | not started (conditional on `07-g`) | bundled `release`: pure OTP release renderers rakun-cli and onze-release both write | `07-g` · `04-rakun/81` · `07-onze/71` |
 | [`125-validation-zod/`](./125-validation-zod/README.md) | high for the step 0–2 residue, medium after | partial: steps 0–3 done; steps 4–12 open (scope: 325) | Zod's feature set in `validation`: the `#[validated]` type is the only schema (306 — `#[schema]` folds into it) with parse members `parse`, `parseAt`, `decode`, `bind`, `encode`, `jsonSchema` (spelling `ctr-u`); field markers where Zod composes values (`Schema<T>`, `schemas.*`, `checks.*` private); 71 checks; report views; locales. Map: [`surface.md`](./125-validation-zod/surface.md). Extracts nothing — here as owner of `libs/validation/**` | `07-j` (reduced: ≈ option (c) under 306) |
+| [`138-libs-to-repositories/`](./138-libs-to-repositories/README.md) | high | not started | decision 326: `actions`, `http`, `log`, `routing`, `validation` leave `botopink-lang/libs` for their own repositories (`repository/<pkg>`, history kept), ordinary dependencies; `cardume` joins as a submodule; the compiler embeds std alone | the six GitHub repositories (maintainer); lands between two waves, before the track's consumer commits |
 
 ## Order
 

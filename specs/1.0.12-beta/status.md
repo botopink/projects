@@ -130,6 +130,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 
 ## L2 — the libraries' critical path
 
+- [ ] 138 (decision 326) — `actions`, `http`, `log`, `routing`, `validation` to `repository/<pkg>` (history kept), `cardume` as a submodule, the compiler embeds std alone · the six GitHub repositories (maintainer) · before 102 s3 / 103 s2's consumer commits
 - [x] 102 s1–2 — `conventions.bp` and the segment helpers in `libs/routing` (re-implemented)
 - [x] 103 s1 — `id.bp` (`deriveActionId`, `isActionId`) in `libs/actions` (re-implemented)
 - [ ] 102 s3 (W2) — consumers, one commit per member, rakun's first (`rakun-app`, `rakun-hateoas`), then jhonstart `routes.bp`, onze `types.bp`, `scan.bp`, `chunk.bp` · 102 s1–2 landed · decision 323

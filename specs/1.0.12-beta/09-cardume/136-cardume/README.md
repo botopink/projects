@@ -2,7 +2,7 @@
 
 **Priority:** medium — no page needs it to render; every app with two islands that must agree
 (a cart badge and a cart drawer) needs it to be correct, and rakun's request locals are its atoms (295) ·
-**State:** not started · `repository/cardume` scaffolded (0.0.1: the model's types, no store)
+**State:** not started · `repository/cardume` scaffolded (0.0.1: the model's types, no store); `botopink/cardume` and its submodule are `03-bundled-libs/138`'s step 1–5 (326)
 **Depends on:** `26-jhonstart-router` (the core and its client runtime — `state` / `effect` rebinding
 in `client_runtime.mjs`) · `08-bpp/120` (the island payload: one page store shared by every island) ·
 `03-bundled-libs/125` (a `#[validated]` type's `encode` member, 306 — spelling `ctr-u`'s — for the
