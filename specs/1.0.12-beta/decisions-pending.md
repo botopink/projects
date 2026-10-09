@@ -557,7 +557,7 @@ local change in the named place). Full 1.0.10 text under the same id in
 | 68-d | The styleMap is evaluated by a probe compiled into both packages (`emilia-hash-split`, `emilia-unevaluated`) — moot once 34 step 1 and 119 step 4 land (301: `#[styled]` tokens are comptime, the class and rule computed at build over std's `contentHash`); holds until then | bundler |
 | 69-a | onze-assets keeps `AssetRoot`; onze-server converts it to rakun-web's `StaticRoot` | assets · server |
 
-### Choices made by the 00-gate threads and the consolidation (5) — see `decisoes-pendentes.md` Parte 5
+### Choices made by the 00-gate threads and the consolidation (5) — see `decisoes-pendentes.md` Parte 1 § Confirmações ★
 
 | Id | ★ implemented | Where |
 |---|---|---|
