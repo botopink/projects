@@ -125,8 +125,8 @@ and beam, 2 on wasm.
 
 - [ ] the five templates count codepoints (a UTF-8 walk or `unicode:characters_to_list/1`), on erlang
       and beam; `02-erlang` step 15's cell green
-- [ ] `docs.md` § Strings states the unit per target — codepoints on erlang, beam, wasm; UTF-16 units on
-      commonJS, differing outside the BMP (`"👍".length`) — handed to `07-residuals` (the prose)
+- [ ] std's Node templates for the five take and answer codepoint indices (`04-js` step 10's helpers)
+- [ ] `docs.md` § Strings states the unit — codepoints on every target — handed to `07-residuals` (the prose)
 
 ## Consumers — "consume std X" rows handed to the library fronts
 

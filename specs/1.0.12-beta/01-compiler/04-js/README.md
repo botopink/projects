@@ -1,6 +1,6 @@
 # Front 04 — js: commonJS keeps no dead lowering and no marker std alone may write
 
-**Priority:** medium · **State:** partial: steps 3, 4, 5, 7, 8 and C-37 on feat; steps 1, 2, 6, 9 open
+**Priority:** medium · **State:** partial: steps 3, 4, 5, 7, 8 and C-37 on feat; steps 1, 2, 6, 9, 10 open
 **Depends on:** `01-checker`'s `@block` tail-form refusal (step 1), `$stringify` parser refusal (step
 2), step 6's typed AST (step 6)
 **Owns:** `modules/compiler-core/src/codegen/commonJS.zig` · `src/codegen/typescript.zig` ·
@@ -99,6 +99,25 @@ function i64add(a, b) {
       `u64` top, a value crossing back below 2^53, an overflow past each bound) answers alike on the four
       targets; `run/int_overflow_mul_i64` re-recorded — commonJS now aborts where the others do
 - [ ] `docs.md` § Integer overflow's commonJS paragraph rewritten (handed to `07-residuals`, owner of the prose)
+
+### Step 10 — a string index counts codepoints (decision 320)
+
+Today commonJS answers JavaScript's UTF-16 units: `"👍".length` is 2 there, 1 on the other targets.
+After, the same codepoint count, at a low cost:
+
+```js
+function strLength(s) {
+  return HAS_PAIR.test(s) ? cpLength(s) : s.length;   // no surrogate pair: JavaScript's own answer
+}
+```
+
+- [ ] `length`, `at`, `slice`, `indexOf`, `lastIndexOf` (and every std primitive taking or answering a
+      string index) through prelude helpers: a string without a surrogate pair uses the native index,
+      one with a pair is walked by codepoint; an index past a pair is a codepoint index on input and output
+- [ ] a JS host template receives and answers codepoint indices
+- [ ] cost measured: the helpers on strings without a pair within 10% of the native calls (recorded in
+      `js/AGENTS.md`)
+- [ ] `run/string_index_of_codepoints` (with `"👍"` and `"e\u{301}"`) one `.out` for the four targets
 
 **Gate:** standard (fronts.md § Gate) + every re-recorded RUN LOG verified under `node` against
 decision 8 §7 · `zig build test-libs` commonJS cells at baseline (jhonstart, emilia, onze, erika)
