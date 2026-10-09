@@ -86,8 +86,8 @@ first `<h1>`, else the pathname. `prefers-reduced-motion: reduce` disables every
 ### Step 1 — `transitions.bp` and the stylesheet
 
 - [ ] `ViewTransitions()`, `TransitionAnimation`, `fade(…)`, `slide(…)`, the four annotations
-      `transitionName`, `transitionAnimate`, `transitionPersist`, `transitionPersistProps` with their
-      return types, both targets
+      `transitionName`, `transitionAnimate`, `transitionPersist`, `transitionPersistProps` with the
+      meta types they record (302), both targets
 - [ ] `transitions_test.bp`: the stylesheet is one literal; an annotation's attributes are literals
 
 ### Step 2 — The runtime

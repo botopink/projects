@@ -62,7 +62,7 @@ All eleven **not started**.
 | [`120-bpp-islands/`](./120-bpp-islands/README.md) | **high** | not started | `#[clientIdle]` / `#[clientVisible]` / `#[clientMedia]` / `#[clientOnly]`; `#[serverDefer(fallback: …)]`, sealed props | 118 · 119 · 117 · `05-jhonstart/26` · `04-rakun/22` · `07-onze/49`, `50` |
 | [`117-bpp-routing/`](./117-bpp-routing/README.md) | high | not started | `.bpp` / `.md` / `.html` app files, `staticPaths` with data, `paginate`, partials, static endpoints, eight priority rules as tests | `03-bundled-libs/102` · `04-rakun/22` · `07-onze/49`, `50` · 121 steps 1–2 |
 | [`119-bpp-styling/`](./119-bpp-styling/README.md) | medium | not started · blocked by `08-d` | Scoped `<style>`, `#[isGlobal]`, `:global()`, `#[defineVars]`, cascade order | `08-d` (every step) · 118, `05-jhonstart/26` (step 2) |
-| [`127-bpp-actions/`](./127-bpp-actions/README.md) | medium | not started | Action typed by a `#[validated]` record (306): JSON/form input, `ActionError`, typed client call | 125 step 6 · `03-bundled-libs/103` · `04-rakun/22` · `05-jhonstart/67` · `07-onze/49` · 117 · 120 · 126 · 123 (step 4) |
+| [`127-bpp-actions/`](./127-bpp-actions/README.md) | medium | not started | Action typed by a `#[validated]` record (306): JSON/form input, `ActionError`, typed client call | 125 steps 6, 12 (306) · `03-bundled-libs/103` · `04-rakun/22` · `05-jhonstart/67` · `07-onze/49` · 117 · 120 · 126 · 123 (step 4) |
 | [`122-bpp-data/`](./122-bpp-data/README.md) | medium | not started | `Astro` global mapped; holes: page-side status/headers, `rewrite`, `site` | `05-jhonstart/26` · `07-onze/49` · `03-bundled-libs/102` · 118 · 120 |
 | [`123-bpp-middleware/`](./123-bpp-middleware/README.md) | medium | not started | `locals`, `sequence`, response rewritten after `next`, `actionContext` | `04-rakun/04` · `04-rakun/65` |
 | [`126-bpp-view-transitions/`](./126-bpp-view-transitions/README.md) | low | not started | `#[transitionName]` / `#[transitionAnimate]` / `#[transitionPersist]`, `navigate`, five lifecycle events, route announcer | `05-jhonstart/27` · 118 · 120 |
@@ -155,6 +155,9 @@ Labels only; text in [`../decisions-taken.md`](../decisions-taken.md).
 | 224 | Server-island props default **sealed** (AES-256-GCM in the URL; `ONZE_KEY` or build-generated, `onze create-key`); per project `onze.json` `"islands": {"props": "sealed"}` | 120 step 4 · 124 |
 | 278 · 302 | Directives are tag annotations: `#[name(args)]` inside the tag, a function in scope — since 302 the same thing as a decorator (`comptime decl: @Decl`, no return, typed meta `html` reads by type); `#[clientOnly]` one function for hook and tag; values become values (§ Tag annotations) | 118 · 119 · 120 · 126 · `05-jhonstart/26` step 8 |
 | 189 | Ordering and ownership (carve-outs, `fake_dom.mjs`, `site` by 122) | all |
+| 293 · 294 | A page takes no parameter: `use params<P>()`, `use pageData<D>()`; a cookie is declared once, `use cookie(decl)` | 116 · 117 · 120–123 · 127 |
+| 295 · 296 | Request state = cardume atoms (`rakun-cardume`'s store per request), read through `use` | 123 · 127 |
+| 306 | `#[schema]` merged into `#[validated]`; `Schema<T>` private — a library takes the type | 117 step 8 · 121 step 10 · 127 step 5 |
 
 No relative imports: same package `import {components.card};` (a `.bpp` component: its default function, 288), a package `import {x} from "pkg";`; `.bpp` headers likewise.
 

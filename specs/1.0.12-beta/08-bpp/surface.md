@@ -182,7 +182,7 @@ are on disk, so most of Astro is there, or there and unwired.
 | `output: "server"` | every page `Auto`: mode derived from what the render reads | n/a — decision 202 — no `output` key |
 | HTML streaming | `App.renderStream`, boundaries in completion order (`streaming.bp:935-957`) | have |
 | `Astro.cookies` | `cookies()` reads (`jhonstart/src/server.bp:270`); writes in a handler, action or middleware (`rakun/src/request_context.bp:586`, `:752`) | have — becomes `use cookie(decl)` over a declared `Cookie<T>` (294) |
-| `Astro.request`, `.url`, `.method`, `.headers` | `request()` → `RequestData(method, path, params, query, headers, cookies)` (`server.bp:106`, `:252`); onze fills `query`, `headers` with `[]` | wire · `07-onze/49` (ONZ-49-4.3) |
+| `Astro.request`, `.url`, `.method`, `.headers` | `request()` → `RequestData(method, path, params, query, headers, cookies)` (`server.bp:106`, `:252`); onze fills `query`, `headers` with `[]` | wire · `07-onze/49` (ONZ-49-4.3); read with `use request()` (291) |
 | `Astro.response.status`, `.headers` | not found from a page | add · 122 |
 | returning a `Response` from a page | navigation signals only | add · 122 |
 | sessions | `Session`, three stores (`rakun-session`) | have |
@@ -207,7 +207,7 @@ are on disk, so most of Astro is there, or there and unwired.
 | Astro | The stack today | Box · owner |
 |---|---|---|
 | `server:defer` | not found | add · 120 — `#[serverDefer]` (278) |
-| `slot="fallback"` | `Boundary.fallback`, same idea within one response | add · 120 |
+| `slot="fallback"` | `Boundary.fallback`, same idea within one response | add · 120 — `#[serverDefer(fallback: …)]`, an annotation argument, no `slot="…"` (287) |
 | props serialised, encrypted, in the query; `POST` past 2 048 bytes | not found | add · 120 (decisions 224, 272: `sealed` by default, or `server`) |
 | `Cache-Control` on the island response | not found | add · 120 |
 | the page URL through `Referer` | — | add · 120 |
@@ -230,7 +230,7 @@ are on disk, so most of Astro is there, or there and unwired.
 |---|---|---|
 | typed props, `ComponentProps<typeof X>` | a function's parameters | have |
 | `HTMLAttributes<"a">`, polymorphic components | attributes are `Array<#(string, string)>` | n/a — no per-tag attribute typing; the template checks names against a table (118) |
-| `InferGetStaticPropsType` | `<name>Params(route)` emitted by `#[page]` (`routes.bp:233-262`) | have |
+| `InferGetStaticPropsType` | `<name>Params(route)` emitted by `#[page]` (`routes.bp:233-262`) | have — becomes `use params<P>()` / `use pageData<D>()` (293) |
 | `App.Locals`, `env.d.ts` | — | add · 123 (one atom declaration per local, 295) |
 | `astro check` | `botopink check` | have |
 
