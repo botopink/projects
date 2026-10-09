@@ -121,7 +121,7 @@ functions".
 | `@utility tab-4 { tab-size: 4; }` | `pub val tab4 = styled "tab-size: 4;";` | o `val` dá o nome; não precisa de `@utility` |
 | `@utility tab-* { tab-size: --value(integer); }` | `fn tab(n: i32) -> StyledView { return styled "tab-size: ${n};"; }` | a função é a família; o tipo do parâmetro faz o papel de `--value(integer)` |
 | `@layer components { … }` | a camada do `Sheet` em que o componente entra | |
-| `@theme { --color-mint-500: …; }` | recusado no `styled` | o tema é o da decisão 300 (`#[theme]`, `entry(…)`), tipado e declarado uma vez |
+| `@theme { --color-mint-500: …; }` | recusado no `styled` | o tema é o `#[theme]` tipado da decisão 300 (pelo p7 (d), declarado com o mecanismo do `styled`), declarado uma vez |
 
 O mesmo componente, escrito das duas formas:
 
@@ -547,8 +547,9 @@ breakpoint da 300.
 
 ### p7 · De onde vêm os breakpoints
 
-**Contexto.** O `styled` conhece as pseudo-classes, `dark` e as `@custom-variant` que estão em
-escopo. Os breakpoints (`md`, `lg`) estão no tema da emilia (300), que o `styled` não conhece.
+**Contexto.** Um componente `styled` da aplicação quer mudar o layout no `md`, mas escrever `48rem`
+à mão fica errado quando o tema muda (`entry(.Breakpoint, "md", Rem(52.0))`). O valor precisa vir do
+tema, e hoje o tema é da emilia (300), uma camada acima do `styled`, que não a conhece.
 
 - [ ] **(a)** Por hook: a emilia declara `use breakpoint(name)` sobre `StyledBase` (§ 3.2).
   ```bp
@@ -568,9 +569,46 @@ escopo. Os breakpoints (`md`, `lg`) estão no tema da emilia (300), que o `style
   pub val container = styled "width: 100%; @media (width >= --breakpoint(md)) { … }";
   ```
 
-**Recomendação: (a).** O tema continua num lugar só, o mesmo hook lê qualquer valor do tema (cor,
-raio, fonte), e o valor é comptime quando o tema é, então o componente ainda sai no build (p9). A (b)
-é mais curta, mas cria um segundo canal para o mesmo dado. A (c) duplica o tema.
+- [ ] **(d)** O tema vai para o `styled`: o **mecanismo** (`Theme`, `entry`, `clear`,
+  `extendTheme`, o `#[theme]` da aplicação e a checagem da 300) passa a ser do `styled`, e a emilia
+  fica com os **valores** do Tailwind (`defaultTheme()`: paleta, escada, `md = 48rem`…). Como o
+  `styled` passa a conhecer o tema, `@variant md` e `--theme(…)` funcionam no literal, resolvidos no
+  build.
+  ```bp
+  import {defaultTheme} from "emilia";
+  import {theme, extendTheme, entry, clear} from "styled";
+
+  #[theme] pub val appTheme = comptime extendTheme(defaultTheme(), [
+      entry(.Breakpoint, "md", Rem(52.0)),
+      clear(.Breakpoint, "2xl"),
+  ]);
+
+  pub val container = styled """
+    width: 100%;
+    @variant md { max-width: --theme(--breakpoint-md); }
+  """;
+  // → @media (width >= 52rem) { .s_<hash> { max-width: 52rem } }
+  // @variant 2xl { … }  →  erro de compilação: o 2xl foi apagado do tema (300)
+  ```
+
+**Recomendação: (d).** O `styled` já depende do tema sem dizer: o `--spacing(4)` que ele expande lê a
+`--spacing` do tema. Como no Tailwind v4, o tema é parte do núcleo do CSS, e não dos utilitários.
+
+| | (a) hook da emilia | **(d) tema no `styled`** |
+|---|---|---|
+| onde mora o tema | emilia | `styled` (mecanismo) + emilia (valores do Tailwind) |
+| como se lê | `val md = use breakpoint("md");` | `@variant md { … }`, `--theme(--breakpoint-md)` |
+| o componente | precisa ser função | pode ser `val` |
+| aplicação sem emilia | sem tema | com tema (o default do `styled`, ou o próprio) |
+| sintaxe do Tailwind | em parte | `@variant md` como no Tailwind |
+
+- O tema continua num lugar só, com uma declaração `#[theme]` por aplicação.
+- O valor sai em qualquer posição, inclusive dentro de um `@media`, onde um `var()` não funciona.
+- A checagem da 300 continua, agora feita pelo `styled`.
+- **Emenda a 300:** o mecanismo passa da emilia para o `styled`, e a emilia fica com o
+  `defaultTheme()`. O `@theme` continua recusado no literal, porque o tema é tipado (`#[theme]`).
+- Descartadas: (a) obriga o componente a virar função e deixa uma aplicação sem emilia sem tema; (b)
+  entrega a condição do `@media` mas não o valor; (c) duplica o tema.
 
 ### p10 · Uma variação só de propriedades: `styledProperty "…"` — aceito (09/10): (a)
 
