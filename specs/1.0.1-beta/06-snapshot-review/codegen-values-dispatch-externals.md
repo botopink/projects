@@ -216,3 +216,5 @@ re-ran byte-identical to the snapshot; the `wasm` `ok` cells still print the exp
 under wasmtime while the snapshot RUN LOG stays empty, per H4). Two caveats worth carrying
 forward: the `beam` cells depend on the H1 cache (a cold cache blanks them), and the
 `erlang` cells of fixtures whose erlc run emits warnings depend on H2.
+
+**Status (1.0.12-beta, front 07 step 3 — the `uncertain` rows, re-derived 2026-10-08 on botopink-lang `feat`):** both rows answered, verdict `ok`. `operators_equality_maps_to` — beam lowers the program's `==` to `{test, is_eq_exact, …}` like erlang's `=:=` (C-07 D1: exact between typed operands); RUN LOG `true` / `false` on all four. `external_a3_result_template_owned_declare_fn` — erlang's `unwrapOr` closure binds `__BpR`, so the `R` shadow warning is gone; RUN LOG `42` on commonJS, erlang and beam; wasm refuses the program at compile time (`parseInt` has no `#[@External.<Target>(…)]` for the wasm backend).

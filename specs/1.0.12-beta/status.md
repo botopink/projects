@@ -103,7 +103,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 130 s6 — module-level `@emit` removed · 130 s5 · `#[schema]`'s free functions → members of the type (306; spelling: ctr-u)
 - [ ] 134 s2 — the type functions, the `result` namespace, the `@Result` / `?T` methods, `@is` refused (322)
 - [ ] 134 s4–s6 — variadic parameter and the print builtins (267); the `Decorator` type for `with:` (268); `use @getContext(T)` (269)
-- [ ] 07-residuals s3, s5–s8, s12, s13 — `uncertain` rows, test comments, the `@BeamMemory` text, C-18's corrections + `docs.md:5` + § Imports, the lib-agnostic gate names every library, the per-cell compile row, the `async` delay flake · none (s8's comments after 02)
+- [ ] 07-residuals s8 — the lib-agnostic gate names every library: the test-file comments reworded; the other owners' comments, then the `-w` pattern · 02 and the other owners landed (s3, s5–s7, s12, s13 on `front/07-residuals`)
 - [ ] 07-residuals s1, s2, s4 — the codegen and comptime report waves, three renames · 02–05 landed · 01 landed
 - [ ] 07-residuals s9 · s10 · s11 — `->` arms · erika's C-13 migration · the pointers' sweep (last) · C-14 · 16 s1–2 · every library merged
 - [ ] 97 s1 residue — `bindInt`'s `i32` through std · std has no `i64` → `i32` narrowing

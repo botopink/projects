@@ -84,6 +84,10 @@ last full cold: 9m31s, loaded).
 - [ ] after `06-emilia/33` step 2 (emilia-card emilia-only): emilia `.github/workflows/test.yml` step
       "Checkout jhonstart (dependency — examples/emilia-card depends on jhonstart)" (`:94-99`) and
       its comment (`:21`) removed
+- [ ] `scripts/check-docs.sh`'s header says `check` is target-independent (`:63`, `:76`): it is not
+      since decision 167 — `#[@BeamMemory…]` checks under an erlang manifest and is refused under the
+      harness's `commonJS` one, so `docs.md` § `@BeamMemory` is a `project` fence with an erlang
+      `botopink.json` (from `07` step 6); the comment says the manifest's target is read
 
 ## Handed out
 

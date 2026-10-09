@@ -74,6 +74,14 @@ Rows from the package restructure. The mocking surface is not deferred: `testing
 | The Redis arm of `rakun-session`'s store suite against a real server | `rakun-session/test/store_test.bp` (its env-gated `RAKUN_TEST_REDIS_URL` cell is gone, decision gate-h) | A cell needing an out-of-process service is not a gate cell; no CI job provides Redis | `rakun-test`'s RESP2 double on a loopback port (`04-rakun/12` § the double, `19-rakun-test-utilities` step 1); the suite then runs its third arm against it | When `04-rakun/19` lands the double; real-driver arm stays out unless a CI job provides the service (gate-h: no `--integration` flag without a job) |
 | A WebSocket broadcast across two BEAM nodes (`pg` over `erl` distribution) | `04-rakun/92-rakun-rsocket` step 1; `rakun-websocket/test/broadcast_test.bp` asserts the same-node broadcast only | Gate cells run on one node; `00-gate/99` removed the peer start; a cell that cannot run in the gate is not a gate cell (decision 160) | A CI job running two named nodes with a shared cookie | When such a job exists; until then the same-node `pg` cell is the evidence |
 
+## Next milestone's opening list
+
+Not deferred for a missing mechanism: work this milestone files for the next one to open as a front.
+
+| Front | Measurement | What it builds | Owner when opened |
+|---|---|---|---|
+| A content-keyed compile cache in compiler-core | [`01-compiler/07-residuals`](./01-compiler/07-residuals/README.md) step 12: every `test-libs` cell recompiles std and its library from source — 11 of 12 modules per emilia example, ~110 of 114 per rakun member; ~9 s (commonJS) and ~12.7 s + `erlc` (erlang) per emilia cell | Per-module output keyed by the module's source bytes, the compile options and the compiler version, read before a module is compiled and written after; the result store (decision 229) keeps answering whole cells | `01-compiler` (compiler-core); the runners unchanged |
+
 ## Out of scope
 
 Not runtime or authoring features; listed so the audit is closed, not silent.

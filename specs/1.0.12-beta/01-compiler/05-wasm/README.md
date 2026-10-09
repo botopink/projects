@@ -106,7 +106,10 @@ Each re-measured at the step that takes it; a holding row traps or is refused by
 - [ ] from `01-checker`: element read of a union array (`run/array_literal_union` reads `length`
       only), union of primitives a `case` produces (`test/case_value_union`), program-declared
       `default fn` of a primitive (`test/program_primitive_behavior_extends_std`), `?.b` on an absent
-      element (`run/tuple_label_through_optional` keeps to the present half)
+      element (`run/tuple_label_through_optional` keeps to the present half) — re-measured by `07`
+      step 5: no trap, a wrong value at exit 0: `es.at(3)?.a ?? 0` and `rs.at(5)?.a ?? -1` over
+      `#(a: i32, b: string)[]` print `8` on wasm where commonJS, erlang and beam print `0`, `-1`
+      (`codegen/tests/beam.zig`'s `?. on an absent tuple element …` program)
 - [ ] nested constructor in a `val` binding (`val Pair(Circle(r), n) = p;`) refused on wasm —
       `01-checker` step 13's `run/val_nested_ctor_pattern` needs it lowered (each binding off its
       field's slot, as the one-level form)

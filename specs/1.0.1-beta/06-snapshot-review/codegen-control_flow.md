@@ -264,3 +264,5 @@ Per-backend parts that are correct inside non-ok tests (for reference, not count
   - try_catch_with_throw_rethrow, try_catch_with_return_fallback, try_propagate_in_multi_statement_fn, catch_tail_*, try_catch_with_case_handler, throw_*
   - case_guard_bound_identifier_numeric_guard, case_guard_variant_field_guard, mutual_recursion
 - **wasm valid and correct:** try_catch_with_return_fallback, catch_tail_on_binary_expression, catch_tail_on_function_call_no_try, try_catch_with_case_handler, try_propagate_without_catch, mutual_recursion.
+
+**Status (1.0.12-beta, front 07 step 3 — the `uncertain` rows, re-derived 2026-10-08 on botopink-lang `feat`):** `case_nested_case_in_block_arm`'s semantics half answered: a block arm's value is its last expression (decision 8 §5.1 P3), and all four backends now answer the inner `case`'s value (commonJS returns the inner IIFE, erlang the inner `case`, wasm an `(if (result i32) …)` chain into `$result`). Its `weak` half (a module-level `val` with no print, so no RUN LOG) stays with step 1's wave A.
