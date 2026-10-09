@@ -82,6 +82,13 @@ std's `math` and `hash` answer commonJS's bits on every target.
   the unsigned opcodes (`run/unsigned_compare_and_divide`); `u64` gets unsigned overflow checks and
   printing, an unannotated `u64` literal or sum keeps its type, radix literals reach `u64`'s top (fixture in
   `codegen/tests/wat.zig`)
+- Printing rows (from other fronts): a `bool` record field or tuple element read alone prints `true` /
+  `false` (`isBoolExpr` reads the field's declared type; `run/bool_field_print`); a `u64` record field
+  or tuple element prints unsigned through the shape printer (code `u`; `run/u64_record_field_print`);
+  a `?u64` prints, narrows, unwraps and turns into text unsigned (`$__print_opt_u64`, `?u`,
+  `unwrapOr` typed by its payload; `run/optional_u64_to_string`); a 64-bit tuple element (`u64`,
+  `i64`, `u32`) holds its `i64` cell — built, read, destructured, bound, compared, nested; a pattern
+  that tests one is refused (`run/u64_tuple_slot`) — four targets each
 
 ## Open
 
@@ -131,8 +138,6 @@ Each re-measured at the step that takes it; a holding row traps or is refused by
       at the PRELUDE's line under the caller's file name (`std/json.bp:341:13` for
       `primitives.bp:341`'s `stringSlice0`) — `ensurePrimDefault`'s copy carries no origin; and the
       refusal itself: `stringSlice0` / `stringToFloat` have no wasm cell — found by step 5
-- [ ] `?u64`'s `toString` and a `u64` record field print signed on wasm (`18446744073709551615ul` as `-1`)
-- [ ] a `u64` tuple slot is refused on wasm
 
 ### Step 9 — a prebuilt wasm library merged into the module (decision 333 (B); no user yet, after step 5)
 
