@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**59 questions and 9 contradictions are open, and 90 implementation choices await confirmation.**
+**61 questions and 9 contradictions are open, and 90 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -183,6 +183,32 @@ subject under 281. Every decorator parameter in these examples is `comptime` (28
 - **Options.** (a) The two forms, as built. (b) (a) plus `counts[k]` with 63's meaning (`ets:lookup`, `V`, failure on a missing row). (c) (b) plus `hasKey` (`ets:member`) and `delete` (`ets:delete`), each a new `std/beam` primitive.
 - **Recommendation.** (a).
 - **Blocks.** Nothing — the built surface stands until widened.
+
+#### 05w-i · `unicode.normalize` on wasm (*raised by `05-wasm` step 5*)
+- **Measured.** `unicode`'s four `normalize*` cells are host calls — Node `String.prototype.normalize` (ICU 78.2, Unicode 17.0), erlang `unicode:characters_to_nf*_binary` (Unicode 16.0) — and wasm has no host to ask. Under 146 the module is refused on wasm, called or not, so `unicode.codepoints` (now a `fn:` body there) is unreachable too: `run/std_unicode_on_every_target`'s `.wasm.expect` names `normalizeNfc`, reached from `normalize`. A botopink normalizer needs UnicodeData's tables (Python's `unicodedata` 16.0: 17 085 decomposition mappings, 934 code points with a non-zero combining class, plus the composition exclusions; Hangul is algorithmic). The two hosts already disagree on code points Unicode 17.0 assigned.
+- **Options.**
+  (a) A botopink port on wasm only — std carries generated tables of one pinned Unicode version as private bodies; Node and erlang keep their hosts:
+  ```
+  #[@External.Wasm("fn:normalizeNfcBody")]
+  declare fn normalizeNfc(s: string) -> string;   // wasm: compose(decompose(s, canonical))
+  ```
+  (b) The port on every target (decision 263's shape): one table, one answer per code point everywhere — `normalize("ǅ", NFKD)` is `68 122 780` on all four, whatever the host's Unicode version.
+  (c) No normalizer on wasm: `normalize` moves to its own module (`unicode/normalize`), refused on wasm by STD-001; `unicode` builds there.
+  ```
+  import {unicode.normalize} from "std";   // wasm: std-unsupported-on-target
+  ```
+- **Recommendation.** (c) — the strictest: wasm answers nothing it has no data for, and nothing is invented (241's rule); (b) if one answer everywhere is wanted.
+- **Blocks.** `05-wasm` step 5 box 1 (`unicode` on wasm) and box 2's `unicode` cell; under (c) a std restructure (`02-std-and-packaging`).
+
+#### 05w-j · `json.parse` / `json.stringify` on wasm (*raised by `05-wasm` step 5*)
+- **Measured.** Both are `JSON.stringify(JSON.parse(s))` on Node and `json:encode(json:decode(s))` on erlang; wasm has no host JSON, so STD-001 refuses every import of `json` on wasm (`run/std_json_on_every_target.wasm.expect`: `std-unsupported-on-target` naming `std/json.parse`), though every other cell of `json` is bound. The two hosts already answer differently (measured, `json.parse(…)`, commonJS / erlang): `{"b":1,"a":2,"1":3}` → `{"1":3,"b":1,"a":2}` / `{"1":3,"a":2,"b":1}`; `{"a":1,"a":2}` → `{"a":2}` / `{"a":1}`; `1e400` → `null` / Error; `"\ud800"` → `"\ud800"` / Error; `1.0` → `1` / `1.0`; `12345678901234567890` → `12345678901234567000` / `12345678901234567890`. std's own `decode` (decision 117 rule 7) is strict: a duplicate member, an overflow and an unpaired surrogate are Errors, members in document order.
+- **Options.**
+  (a) wasm binds both to `decode` plus a canonical writer (document order, a number in its shortest text): `parse("{\"a\":1,\"a\":2}")` is an Error on wasm, Node and erlang keep their hosts.
+  (b) Every target runs that botopink body (one answer everywhere, 263's shape): `parse("{\"b\":1,\"a\":2}")` is `{"b":1,"a":2}` on all four, `parse("1e400")` an Error on all four.
+  (c) wasm ports `JSON.parse` + `JSON.stringify` exactly (integer-like keys first, last duplicate wins, overflow → `null`); an unpaired surrogate traps on wasm (a wasm string holds UTF-8 only).
+  (d) `parse` / `stringify` leave `json` (their callers use `decode` and the writers); `json` builds on wasm.
+- **Recommendation.** (b): one strict answer on every target, nothing per-host; (d) if the host round-trip is not worth keeping.
+- **Blocks.** `05-wasm` step 5 box 1 (`json` on wasm) and box 2's `json` cell; `run/std_template_host_fns_across_modules` keeps its `.targets` until `io/fs` builds too.
 
 ### 02-std-and-packaging
 

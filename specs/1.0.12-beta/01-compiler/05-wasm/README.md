@@ -2,8 +2,9 @@
 
 **Priority:** high · **State:** partial: steps 1–4 on feat (step 1's and step 3's last boxes wait on
 02's cells); step 5 under way — vocabulary, codepoint unit, `math`, `escape`, `hash`, `io/random`,
-heap growth, `String.fromCodepoint`, `pow`, astral `contentHash` on feat; `unicode`, `json`'s two
-cells, the family cells and `wat/AGENTS.md` open
+heap growth, `String.fromCodepoint`, `pow`, astral `contentHash`, `encoding` / `querystring` cells;
+`unicode` waits on 05w-i (`normalize`), `json` on 05w-j (`parse` / `stringify`), the 305 spelling on
+`01-checker` step 27
 **Depends on:** `02-erlang` steps 4, 7 (cells) · `02-std-and-packaging` (`unicode.fromCodepoint`
 over `String.fromCodepoint`, decision 262)
 **Owns:** `modules/compiler-core/src/codegen/wat.zig` · `src/codegen/wat/**` except
@@ -51,6 +52,16 @@ std's `math` and `hash` answer commonJS's bits on every target.
 - Step 5 — `contentHash` folds code points (260): `contentHashBody` without its surrogate step; `contentHash("🎉")`, `contentHash("a🎉b")` rows of `run/std_hash_on_every_target` — `d71b89f5`
 - Floats, `i64`, overflow: `Float.toString` = V8's shortest digits, float slot keeps its `f64`, `i64` full width, overflow traps (`run/float_shortest_text`, `run/float_slot_keeps_f64`, `run/i64_full_width`; decision 264 for wasm)
 - `val g = greet; g()` typed by the function's declaration (`run/fn_value_bound_by_val`)
+- Step 5 box 2 (part) — family cells on four targets: `run/std_encoding_on_every_target`,
+  `run/std_querystring_on_every_target`; `run/std_module_imports_std_module` lost its `.wasm.expect`,
+  `run/std_default_fn_in_a_std_module` its `.targets`; `unicode.codepoints` / `firstCodepoint` bound
+  with `fn:` bodies; `run/std_json_on_every_target` and `run/std_unicode_on_every_target` on three
+  targets, refused on wasm by name (`.wasm.expect`) until 05w-j / 05w-i
+- Wrong answers at exit 0 the std cells found, closed: a namespace call to a mangled function
+  (`url.parse` beside `querystring.parse`, `run/std_namespace_calls_same_name`); a `?T` tuple element —
+  printed, read through `._N`, a generic method's `#(Q<T>, ?T)` (`run/tuple_optional_element`);
+  `o.unwrapOr(d)` keeping the payload's tuple shape
+- `wat/AGENTS.md`'s limits table lost the one-page row (decision 261)
 
 ## Open
 
@@ -87,14 +98,15 @@ keeps its `.wasm.expect`, `run/std_template_host_fns_across_modules` and
 `run/std_default_fn_in_a_std_module` their `.targets`, though `encoding` now binds every cell on wasm.
 The limits table of `wat/AGENTS.md` still carries the one-page row.
 
-- [ ] `botopink build --target wasm` in `libs/std` refuses only group 3's modules (`unicode`,
-      `json.parse` / `json.stringify` bound)
-- [ ] a `run/` cell per remaining module family (`unicode`, `json`, `encoding`, `querystring`) on
-      four targets, the commonJS answers
-- [ ] `wat/AGENTS.md` § Where this backend refuses to answer lists only group 3; limits table loses
-      the one-page row
+- [ ] `botopink build --target wasm` in `libs/std` refuses only group 3's modules (`unicode` waits on
+      `decisions-pending.md` 05w-i, `json.parse` / `json.stringify` on 05w-j)
+- [ ] a `run/` cell per remaining module family on four targets, the commonJS answers — `unicode`
+      and `json` drop their `.wasm.expect` once 05w-i / 05w-j land (`encoding`, `querystring` done)
+- [ ] `wat/AGENTS.md` § Where this backend refuses to answer lists only group 3 (the limits table's
+      one-page row is gone)
 - [ ] the bindings this step adds written in 305's form — `@External.Wasm(fn: name)`, `op: "…"`,
-      `wasi: .Adapter` — never the prefixed string (`01-checker` step 27 migrates the rest)
+      `wasi: .Adapter` — never the prefixed string: the parser refuses `fn: name` until `01-checker`
+      step 27, so `unicode`'s two new bindings are prefixed strings that step migrates
 
 ### Rows found by other fronts
 
@@ -116,6 +128,13 @@ Each re-measured at the step that takes it; a holding row traps or is refused by
 - [ ] function read from a generic record's field, called through an untyped local, prints its
       pointer (`Box<T>(value: T)`; `modules/typeinfo_all_registration` uses a typed local — from
       `130-decorator-outputs`)
+- [ ] `@print` of a generic record prints a field typed by a type parameter as a word:
+      `Q(items: [7])` over `Q<T>(items: Array<T>)` prints `Q(items: 308)`, `B(v: "s")` prints
+      `B(v: 292)` at exit 0 (one descriptor per declaration, not per instantiation) — found by step 5
+- [ ] a primitive `default fn` from `primitives.bp` reached on wasm (`"1.5".parseFloat()`) is refused
+      at the PRELUDE's line under the caller's file name (`std/json.bp:341:13` for
+      `primitives.bp:341`'s `stringSlice0`) — `ensurePrimDefault`'s copy carries no origin; and the
+      refusal itself: `stringSlice0` / `stringToFloat` have no wasm cell — found by step 5
 
 **Gate:** standard (fronts.md § Gate) + every re-recorded RUN LOG verified under wasmtime and
 compared with commonJS's · no new RUN LOG answers at exit 0 a value another backend answers
