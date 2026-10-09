@@ -23,6 +23,10 @@ pub mod config;                // declares the module and binds the namespace `c
 import {config.splitPath};     // brings the name — the same in any module of the package
 // or, with no import:
 config.splitPath(x)
+
+// src/mod1/mod.bp declares `pub mod mod2;` — the namespace walks the tree, no import:
+pub mod mod1;
+mod1.mod2.splitPath(x)
 ```
 
 ## Open (decision 337)
@@ -30,10 +34,15 @@ config.splitPath(x)
 ### Step 1 — `mod m;` binds `m`
 
 - [ ] `mod config;` and `pub mod config;` bind `config` as a namespace in the declaring module, as
-      `import {config};` does elsewhere: `config.splitPath(x)`, `config.Type`, a nested `config.sub.f(x)`
+      `import {config};` does elsewhere: `config.splitPath(x)`, `config.Type`
+- [ ] the namespace walks a folder module's tree with no import: `src/mod1/mod.bp` declares
+      `pub mod mod2;`, and `mod mod1;` alone allows `mod1.mod2.splitPath(x)` (110's walk, as
+      `io.fs.readText` after `import {io} from "std"`); every step a `pub mod`, the leaf `pub` — a plain
+      `mod mod2;` is private to `mod1`'s subtree, so `mod1.mod2` from `main` is `private-module` at `mod2`
 - [ ] in the declaring module `import {config};` is `redundant-module-import` at the item (fix: delete it);
       a top-level declaration named like a declared module is `import-name-collision`
-- [ ] cells `modules/mod_binds_namespace` (four targets) and `reject/redundant_module_import`,
+- [ ] cells `modules/mod_binds_namespace`, `modules/mod_namespace_cascade` (four targets) and
+      `reject/private_module_through_namespace`, `reject/redundant_module_import`,
       `reject/declaration_named_like_module`
 
 ### Step 2 — the shorthand is refused
