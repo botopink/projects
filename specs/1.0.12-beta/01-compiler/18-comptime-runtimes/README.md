@@ -1,6 +1,7 @@
 # Front 18 — comptime runtimes: BEAM direct, WAT, and the browser build — the evidence and the limits
 
-**Priority:** low · **State:** partial: steps 2, 4, 5 done, step 3's open row recorded; 1 and 3 open
+**Priority:** low · **State:** partial: steps 2, 4, 5 done, step 3's open row and the evaluation's
+budget recorded; 1 and 3 open
 (`test-web` wasm32 fix and gate stage 12 on feat)
 **Depends on:** maintainer (CI runs after a push) · `14-comptime-on-beam` step 2 (bench numbers
 recorded here) · `05-wasm` step 5 (decision 261's opcodes)
@@ -42,7 +43,11 @@ request respawns and answers). A missing `erl` is no longer `EvalFailed`: the re
 (decision 228) leaves `` `erl` could not be run: … put it on PATH `` as the transport message —
 `AGENTS.md`'s note says so · 5 `memory.size` / `memory.grow` (`0x3F 0x00` / `0x40 0x00`, on feat
 since `d71b89f5`) pinned by `wasm_binary_emitter.zig`'s `memory.size and memory.grow encode with
-their memory-index byte (decision 261)`.
+their memory-index byte (decision 261)`. · 3, box 2: the runtime's evaluation within 14's budget —
+0.15 ms/eval on wat (a kept wasm3 instance per module, reset to its load-time state:
+`persistent_wat.zig`'s `a kept instance starts every evaluation from the state its load left`, `an
+exception keeps the instance; an engine trap drops it …`), ≈ 0.1 ms per BEAM frame after the spawn
+(table above).
 
 ## Open
 
@@ -65,17 +70,26 @@ trip — 45 % / 29 % of an N=200 build before decision 237).
 |---|---|---|---|---|---|---|---|
 | open | 2026-10-09 | dev box, 16 threads, Debug `zig-out/bin/botopink`, load 56.7 → 77.6 | commonJS (wat) | 582 ms | 574 ms | 1045 ms | 2.5 |
 | open | 2026-10-09 | same run | erlang (BEAM) | 1007 ms | 1509 ms | 1907 ms | 2.1 |
+| before (14 s2) | 2026-10-09 | dev box, 16 threads, Debug, load 5.6 → 5.3 | commonJS (wat) | 304 ms | 356 ms | 570 ms | 1.1 |
+| before (14 s2) | 2026-10-09 | same run | erlang (BEAM) | 514 ms | 652 ms | 771 ms | 0.6 |
+| before (14 s2) | 2026-10-09 | same machine, load ≈ 6 | beam (BEAM) | 397 ms | 580 ms | 690 ms | 0.6 |
+| after (14 s2) | 2026-10-09 | dev box, 16 threads, Debug, load 8.9 → 8.2 | commonJS (wat) | 304 ms | 344 ms | 443 ms | 0.5 |
+| after (14 s2) | 2026-10-09 | same run | beam (BEAM) | 442 ms | 583 ms | 712 ms | 0.7 |
+| after (14 s2) | 2026-10-09 | same run | erlang (BEAM) | 533 ms | 675 ms | 782 ms | 0.6 |
+
+Stage split of the N=200 build (E-2, ms per evaluation), before → after: wat `instance` (fresh
+wasm3 environment, runtime, parse, load) 0.336 → 0.035 (the kept instance's reset), `run` (bp_init
+through the reply, wasm3's lazy compile included) 0.374 → 0.111, `module` 0.218 → 0.165 (no
+Erlang listing per call), `memo_key` 0.034 → 0.002, total 1.02 → 0.39; BEAM `frame` ≈ 0.1 per
+evaluation after the first (the first carries the node's spawn, 112 ms idle), total 0.92 with the
+spawn.
 
 `scripts/comptime_bench.sh --no-build --target <t> --n 0,10,200 --repeat 3`, min of three builds.
-The load (other worktrees' gates) makes the slope an upper bound; re-measure on an idle runner. The
-script's E-2 half (in-node split) reports `no comptime module was written`: it reads
-`.botopinkbuild/tmp/{template,decorator}`, which nothing writes since modules travel in-frame (front
-14 step 3, decision 83) — the instrument needs `14`'s rewrite before it measures anything.
+The load (other worktrees' gates) makes the slope an upper bound; re-measure on an idle runner.
+E-2 is the in-compiler stage split (`runtime/stages.zig`), one more build of the largest N.
 
 - [ ] a table with the open's row (above); the close's row added by the last front to land
-- [ ] the runtime's evaluation brought within 14's budget (≤ 1 ms per evaluation), or what remains
-      named — open: 2.1–2.5 ms/eval under load, both runtimes above the budget; the split between
-      wasm3 setup / module load / frame round trip waits on E-2's rewrite
+
 
 **Gate:** standard (fronts.md § Gate) + `zig build test` green under both runtimes ·
 `scripts/snap_audit.sh --mode=runtime-parity` green · `zig build compiler-web` and `test-web` green

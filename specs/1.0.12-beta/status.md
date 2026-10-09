@@ -72,7 +72,8 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 01-checker s22 — the `.bpp` prelude scope (270) · 116 hands the prelude list
 - [x] 01-checker s19–s20 — type application and `comptime <expr>` (255): on feat (`49455602`)
 - [x] 01-checker rows — the `@block` tail refusal, the `$stringify` parser refusal (239), `primitive-type-name-taken`, T17, row 33 re-measured (refused at the alias); a type reached twice through `@TypeInfo.all` and an import accepted
-- [ ] 01-checker rows — the comptime body's file, a package's module namespace, two aliased same-named types (310), `@External.Wasm` read on every target, the template memo key · none
+- [ ] 01-checker rows — the comptime body's file, a package's module namespace, two aliased same-named types (310), `@External.Wasm` read on every target · none
+- [x] 01-checker row — the template memo key is O(text) (`template_eval.memoKey`, 237)
 - [x] 01-checker rows — a partially returning `@block` is `block-tail-value` (`reject/block_partial_return`); a decorator body's `decl.nope` is the checker's unknown field, located in the body (`reject/decorator_{body,helper}_unknown_field`); the two diagnostics teaching retired spellings corrected
 - [ ] 01-checker rows — an unsuffixed literal is not range-checked (`val e: i32 = 3000000000` accepted, 319); `-9223372036854775808l` refused; `refuseIntegerOutOfRange` cites 247 instead of 319 · none
 - [x] 04-js s1 — the `@block` tail form refused before commonJS (01's `block-tail-value`); the IIFE serves the two shapes left
@@ -105,7 +106,8 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [x] 03-beam s2 box 1 — C-07's `run/` cells on beam (`run/is_truth_table`)
 - [ ] 12 s1 box 2 — `--cold` with the pre-existing tool set · 114 s7
 - [ ] 12 s2 box 1 — `run/throw_in_case_arm_result` (`run/array_unique` landed with 02 s4 and 05 s1) · 01 s6 + 04 s6
-- [ ] 14 s2 — the N=200 slope · 18's runtime-evaluation stage · 01's memo key
+- [x] 14 s2 slope — ≤ 1 ms/eval on both runtimes (wat 0.5, BEAM 0.6–0.7): kept wasm3 instance, argument-only trace listing, O(text) memo key, the bench's stage split
+- [ ] 14 s2 rest — N=200 ≤ 600 ms on the BEAM runtime (712 / 782 ms): the N=0 build and the node's spawn · 02/03/CLI, 18
 - [ ] 14 s6 — a decorator's host cells, `@embedFile` / `@embedBytes`, independent invocations · decisions 341–343
 - [x] 14 s7 — a `comptime/tests` fixture for a `\u{…}` decorator body
 - [ ] 17 s1 box 4 — the per-row increment of a keyed `Dict` · `Dict.bump`, decision 340
@@ -211,7 +213,7 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 - [ ] 124 s1–4 (W10) · s5 (W11) — the commands, the config keys, the `.bpp` scaffold (08-h closed → 285, 224) · every other 08 front · s5: 116, 53
 - [ ] 98 (W11) — packaging checked everywhere · every library track's `-test` and README steps · s3: 95-f · s4 done: `subdir` (344)
 - [ ] 16 s1–7 — the `;` re-count, migration and refusal, C-12's reformat, 165, 166/243/345, C-11 · s2: each library track runs the script · s6 (345 in the printer) before s4 · s3 last, after every tree is migrated
-- [ ] 18 s1, s3 — the CI matrix, the bench's open row (s2, s4, s5 done) · s1: the maintainer's push
+- [ ] 18 s1, s3 — the CI matrix, the bench's close row (s2, s4, s5, s3's evaluation budget done) · s1: the maintainer's push
 - [ ] 23 — the import cells and LSP snapshots, the confirmations · 23-a/b/c, std-c
 - [ ] 24 — the guide as one program, the confirmations, the per-item cost · 24-a/b/c/g · rakun's `serverAction`
 - [ ] 135 s5 (W7) — onze: the E2E runner (five harness functions), the release tree as a path table, 107's README names the two snapshots · snap-a · before 53 s2–6

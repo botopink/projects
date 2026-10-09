@@ -403,8 +403,10 @@ every host cell marshals through `string`.
 - [ ] `@External.Wasm` binding read on every target: checker walk over `external_variants` with
       `codegen/wat/host_binding.zig`'s `parse`, so a misspelt `op:` no wasm build reaches is refused
       (from `05-wasm` step 5)
-- [ ] `infer.zig`'s template memo key appends the whole scope's JSON per call site — O(scope) per
-      template call (`14-comptime-on-beam` step 2's remaining cost)
+- [x] `infer.zig`'s template memo key appends the whole scope's JSON per call site — O(scope) per
+      template call: now `template_eval.memoKey` — the callee, each capture's text with the scope
+      entries of its words (decision 237), the plain arguments; 0.034 → 0.002 ms per N=200 call
+      (`14-comptime-on-beam` step 2)
 - [ ] an unsuffixed integer literal is not range-checked against its declared type:
       `val e: i32 = 3000000000` is accepted (319: a literal past the type's range is refused everywhere)
       (from `04-js` step 9)
