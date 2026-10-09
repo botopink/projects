@@ -10,7 +10,7 @@
 //   {visible ? <p>Show me!</p> : <p>Else show me!</p>}
 //
 // A value computed in the fence (`count`) is in scope in the template; a number
-// is written out with `toString()` — a hole holds `Children`, and an `i32` is
+// is written out with `toString()` — a hole holds `Node`, and an `i32` is
 // not one.
 //
 // The `.bp` form, with its tests: `Menu` in `template-expressions-example.bp`

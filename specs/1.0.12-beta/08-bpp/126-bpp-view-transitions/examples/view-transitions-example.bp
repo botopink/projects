@@ -23,14 +23,14 @@
 // browser's, asserted against a `startViewTransition` double in
 // `jhonstart-dom-test`.
 
-import html, {Element, ElementBase, Children, renderToString} from "jhonstart";
+import html, {Element, ElementBase, Node, renderToString} from "jhonstart";
 import {a, article, body, h1, head, header, htmlTag, img, main, title, video} from "jhonstart";
 import {ViewTransitions, fade, slide, TransitionAnimation} from "jhonstart-link";
 import {transitionName, transitionAnimate, transitionPersist, reload, history} from "jhonstart-link";
 
 // ── src/layouts/base.bp ─────────────────────────────────────────────────────
 
-pub fn BaseLayout(pageTitle: string, children: Children = []) -> Element {
+pub fn BaseLayout(pageTitle: string, children: Node = []) -> Element {
     return html """
       <htmlTag lang="en" #[transitionAnimate(.None)]>
         <head>

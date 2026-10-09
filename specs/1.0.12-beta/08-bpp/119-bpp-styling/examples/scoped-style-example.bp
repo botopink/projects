@@ -25,13 +25,13 @@
 //
 // Target: both.
 
-import html, {classIf, classList, Element, ElementBase, Children, renderToString} from "jhonstart";
+import html, {classIf, classList, Element, ElementBase, Node, renderToString} from "jhonstart";
 import {article, div, h1, p} from "jhonstart";
 // `scopedStyle` is the bridge's: `html` names it in the code it builds,
 // and it resolves here, in the caller's scope — the way a tag's builder does.
 import {scopedStyle, collectedStyles, resetStyles} from "jhonstart-emilia";
 
-pub fn Box(isRed: bool, children: Children = []) -> Element {
+pub fn Box(isRed: bool, children: Node = []) -> Element {
     val foregroundColor = "rgb(221 243 228)";
     return html """
       <div class={classList(["box", classIf(isRed, "red")])}>
@@ -45,7 +45,7 @@ pub fn Box(isRed: bool, children: Children = []) -> Element {
     """;
 }
 
-pub fn Post(title: string, children: Children = []) -> Element {
+pub fn Post(title: string, children: Node = []) -> Element {
     return html """
       <article>
         <h1 class="title">{title}</h1>

@@ -35,7 +35,7 @@ import {scopedStyle} from "jhonstart-emilia";
 
 type Props(
     isRed: bool,
-    children: Children = [],
+    children: Node = [],
 )
 
 val foregroundColor = "rgb(221 243 228)";

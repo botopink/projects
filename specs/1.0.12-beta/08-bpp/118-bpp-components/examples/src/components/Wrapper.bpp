@@ -2,8 +2,8 @@
 // Front 118 — bpp components · examples/src/components/Wrapper.bpp
 //
 // Demonstrates: step 4 in a `.bpp` component — slots. A slot is a field of
-// `Props` of type `Children`: `children` is the default slot, any other
-// `Children` field is the named slot of its name, and what a `<slot>` tag wraps
+// `Props` of type `Node`: `children` is the default slot, any other
+// `Node` field is the named slot of its name, and what a `<slot>` tag wraps
 // is its fallback.
 //
 //   <div id="content-wrapper">
@@ -26,9 +26,9 @@ import {hasContent} from "jhonstart";
 
 type Props(
     heading: string,
-    children: Children = [],
-    afterHeader: Children = [],
-    afterFooter: Children = [],
+    children: Node = [],
+    afterHeader: Node = [],
+    afterFooter: Node = [],
 )
 ---
 <div id="content-wrapper">

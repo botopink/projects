@@ -3,7 +3,7 @@
 // Demonstrates: step 4 — components, props, slots. There is no props object and
 // no `Astro.props`: a component is a function, an attribute is a labelled
 // argument, a prop default is a parameter default, and a slot is a parameter of
-// type `Children`.
+// type `Node`.
 //
 //   ---
 //   interface Props { name: string; greeting?: string }
@@ -24,7 +24,7 @@
 //
 // Target: both.
 
-import html, {hasContent, Element, ElementBase, Children, renderToString} from "jhonstart";
+import html, {hasContent, Element, ElementBase, Node, renderToString} from "jhonstart";
 import {article, aside, body, div, footer, h1, h2, head, header, htmlTag, li, main, p, small, title, ul} from "jhonstart";
 
 // ── props ───────────────────────────────────────────────────────────────────
@@ -50,9 +50,9 @@ pub fn ButtonGroup() -> Element {
 // slot's fallback is what the `<slot>` tag wraps.
 pub fn Wrapper(
     heading: string,
-    children: Children = [],
-    afterHeader: Children = [],
-    afterFooter: Children = [],
+    children: Node = [],
+    afterHeader: Node = [],
+    afterFooter: Node = [],
 ) -> Element {
     return html """
       <div id="content-wrapper">
@@ -81,7 +81,7 @@ pub fn Page() -> Element {
 
 // ── nested layouts: a slot handed on ────────────────────────────────────────
 
-pub fn BaseLayout(children: Children = [], headExtra: Children = []) -> Element {
+pub fn BaseLayout(children: Node = [], headExtra: Node = []) -> Element {
     return html """
       <htmlTag lang="en">
         <head><title>Site</title><slot name="headExtra" /></head>
@@ -90,7 +90,7 @@ pub fn BaseLayout(children: Children = [], headExtra: Children = []) -> Element 
     """;
 }
 
-pub fn HomeLayout(children: Children = [], headExtra: Children = []) -> Element {
+pub fn HomeLayout(children: Node = [], headExtra: Node = []) -> Element {
     // Astro: `<slot name="head" slot="head" />` — read my slot, fill theirs.
     return html """
       <BaseLayout>

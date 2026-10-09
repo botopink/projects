@@ -28,7 +28,7 @@ import {ViewTransitions, fade, transitionAnimate, transitionPersist, reload, his
 
 type Props(
     pageTitle: string,
-    children: Children = [],
+    children: Node = [],
 )
 ---
 <htmlTag lang="en" #[transitionAnimate(.None)]>
