@@ -1,9 +1,9 @@
-# Front 127 — bpp actions: an action typed by a schema
+# Front 127 — bpp actions: an action typed by its `#[validated]` types
 
 **Priority:** medium — actions run; they lack what the reference leads with: framework-validated,
 typed input. · **State:** not started
 **Depends on:** `03-bundled-libs/125-validation-zod` step 6 (`bind<T>`, against decision 183; steps
-0–2, `Schema<T>`, merged into botopink-lang `feat`) · `03-bundled-libs/103-actions-id` (owns
+0–2 merged into botopink-lang `feat`) and step 12 (`#[schema]` merged into `#[validated]`, 306; step 5) · `03-bundled-libs/103-actions-id` (owns
 `libs/actions` this milestone) · `04-rakun/22` (rakun-app), 117 and 120 before it on the member's
 `botopink.json`, `root.bp` · `05-jhonstart/67` (jhonstart-forms) · `07-onze/49` (ONZ-49-4.5:
 `serveActions` not installed by onze yet) · 126 (`fronts.md`) · 123 for step 4 (`actionContext`) ·
@@ -18,7 +18,7 @@ Reference: `astro-docs/25-actions.md`.
 
 ## Goal
 
-An action described once by two schemas, implemented once on the server, validated and typed —
+An action described once by its input and output types (`#[validated]`, 306), implemented once on the server, validated and typed —
 form or JSON input, `@Result<T, ActionError>` on both sides (decision 303), typed client call — beside `#[serverAction]`.
 
 ## Problem
@@ -40,7 +40,8 @@ String fields, an `if` per rule, messages at the call, untyped `ActionResult` �
 schema, typed `handler`, typed client `data`). The pieces exist unjoined: `libs/actions`
 (`ActionState` with per-field errors, `ActionEnvelope`, `RpcCall`), registry and HMAC ids
 (`rakun-app/src/actions.bp`), form hooks (`jhonstart-forms/src/form.bp`: `actionState`,
-`formStatus`, `optimistic`), 125's `parse<T>` (emitted by `#[schema]`) and, after its step 6, `bind<T>`.
+`formStatus`, `optimistic`), 125's `parse<T>` (emitted by `#[schema]` today; a member of the
+`#[validated]` type after 306) and, after its step 6, `bind<T>`.
 
 ## What exists
 
@@ -57,7 +58,10 @@ schema, typed `handler`, typed client `data`). The pieces exist unjoined: `libs/
 
 ## Mechanism
 
-**Described once, in a module both targets compile** — a value: name + two schemas.
+**Described once, in a module both targets compile** — today's form below: a value, name + two
+schemas. Step 5 replaces it (281, 306): the types are `#[validated]` only (no `#[schema]`, no
+`Schema<T>`, no `schemaOf…()`), `actionRef("…", schemaOf…, schemaOf…)` gives way to the function
+value, and `#[action]` takes no string — input and output come from the signature (280 (2)).
 
 ```bp
 // src/actions/comments_api.bp — both targets
@@ -90,8 +94,9 @@ registers the function):
 | either, with violations | answers `Error(ActionError.Input(fields))` — violations grouped by path — **without calling the function** |
 | valid | calls the function, encodes `Ok(v)` with `encodeComment` as `{data}`, or `Error(e)` as `{error}` with its case's status and message |
 
-Input type named in the argument because a function `@Decl` has no parameter list; dropped once it
-gains one (wrapper reads the parameter).
+Input type named in the argument because a function `@Decl` has no parameter list; dropped in step
+5, where the wrapper reads input and output from the signature (280 (2)). The wrapper's `bind…` /
+`parse…` / `encode…` become the `#[validated]` types' own members (306; spelling `ctr-u`).
 
 **One outcome type, both sides: the language's `@Result` (decision 303).** No `ActionOutcome` — the
 server function returns `@Result<T, ActionError>` and the caller receives the same `@Result<T, ActionError>`.
@@ -110,7 +115,8 @@ pub type ActionError {
 }
 
 // the function — `return v` is `Ok(v)`; `throw e` is an `Error(e)` value, not a raise (118)
-if (ctx.cookie("user-session") == "") { throw Unauthorized("User must be logged in."); }
+val session = use cookie(sessionCookie);       // declared once, typed (294)
+if (session == null) { throw Unauthorized("User must be logged in."); }
 return Subscribed(email: input.email);
 
 // the caller — the reference's `if (error) … else data`
@@ -126,8 +132,8 @@ Each case is an HTTP status in the envelope. The envelope's JSON stays the refer
 or `{"error": {"code", "message", "fields"}}` — as protocol only; bp code on either side sees the `@Result`.
 
 **Client calls through the reference.** `callAction(addCommentAction(), input)` in a `#[client]`
-component encodes with the input schema, posts the RPC body to the payload's id for that name,
-decodes with the output schema. Forms: `formAction(addCommentAction())`; after a no-script post the
+component encodes with the input type, posts the RPC body to the payload's id for that name,
+decodes with the output type (their `#[validated]` members, 306). Forms: `formAction(addCommentAction())`; after a no-script post the
 page reads `actionResult(addCommentAction())`. The client imports the description module, never
 the server-only implementation (refused by `onze-bundler/src/refusal.bp:55-138`).
 
@@ -150,7 +156,7 @@ the server-only implementation (refused by `onze-bundler/src/refusal.bp:55-138`)
 - [ ] `examples/typed-action-example.bp` passes on erlang
 - [ ] invalid input never reaches the function — asserted with a counter the function bumps
 - [ ] `#[action]` on a function not returning `@Task<@Result<T, ActionError>>`, or naming a type
-      with no `bind<T>` / `parse<T>` in scope, fails at the annotation
+      that is not `#[validated]` (`@typeInfo(T).meta(Validated)`, 306), fails at the annotation
 - [ ] the function answers with `return v` / `throw e`; `throw Input(…)` from the function itself is allowed (a check only the server can make, e.g. a taken e-mail)
 
 ### Step 3 — The client call and the form binding
@@ -176,6 +182,8 @@ the server-only implementation (refused by `onze-bundler/src/refusal.bp:55-138`)
 - [ ] an action sets or clears a cookie through hooks over its declaration (`use setCookie(decl)` → a
       setter, `use clearCookie(decl)`; 295), the attributes from the declaration; actions return
       `@Component<RequestBase, …>` so they may `use`
+- [ ] `typed-action-example.bp` reads the session with `use cookie(sessionCookie)` over a declared
+      `Cookie<T>` (294), not `ctx.cookie("user-session")`
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `libs/actions` and `jhonstart-forms`; on erlang in `rakun-app`

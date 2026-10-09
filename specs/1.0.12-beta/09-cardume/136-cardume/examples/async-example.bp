@@ -4,7 +4,7 @@
 //
 //   Recoil                                   cardume
 //   selector({get: async ({get}) => …})      selector({ get -> await … })   → Selector<@Task<T>>
-//   useRecoilValue(asyncSel)                 use atomValue(s)  — suspends to the nearest <Suspense>
+//   useRecoilValue(asyncSel)                 use atomValue(s)  — suspends to the nearest Suspense boundary
 //   useRecoilValueLoadable(s)                use loadable(s)   → Loadable<T>: Loading | Value(v) | Failed(m)
 //   useRecoilStateLoadable(a)                use loadable(a) + use atomSetter(a)
 //   waitForAll([a, b]) / waitForAll({a, b})  waitForAll(a, b)        — variadic (267), a tuple back
@@ -21,8 +21,8 @@
 //
 // Target: both.
 
-import html, {View, client, Suspense, renderToString} from "jhonstart";
-import {div, h2, li, p, ul} from "jhonstart";
+import html, {View, client, Boundary, Suspense, holeId, renderToString} from "jhonstart";
+import {div, h2, li, p, text, ul} from "jhonstart";
 import {atom, selector, constSelector, errorSelector, waitForAll, waitForAny, waitForNone, Loadable} from "cardume";
 import {atomValue, atomState, loadable} from "jhonstart-cardume";
 
@@ -90,10 +90,14 @@ pub val offline = errorSelector("offline");
 #[client]
 pub fn Page() -> View {
     val uid = use atomState(userId);
+    // `Suspense(b)` takes a `Boundary(id, fallback, child)`; `child` is an unstarted thunk (26)
+    val user = Boundary(
+        id: holeId(0),
+        fallback: p([text("Loading…", attrs: [])], attrs: []),
+        child: { -> html """<UserName #[clientLoad] />"""; },
+    );
     return html """
-      <Suspense fallback={<p>Loading…</p>}>
-        <UserName #[clientLoad] />
-      </Suspense>
+      {Suspense(user)}
       <button #[onClick({ -> uid.set(uid.value + 1) })]>next user</button>
     """;
 }

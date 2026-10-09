@@ -26,7 +26,7 @@
 //   https://nextjs.org/docs/app/getting-started/fetching-data
 //   https://nextjs.org/docs/app/api-reference/file-conventions/page
 
-import { Element, ElementBase, View, div, h1, p, ul, li, span, text, renderToString } from "jhonstart";
+import { Element, View, div, h1, p, ul, li, span, text, renderToString } from "jhonstart";
 import { params } from "jhonstart";             // front 26 step 11 (decision 293)
 import { article, section, h2 } from "jhonstart";  // front 94
 import { escape } from "std";

@@ -73,7 +73,7 @@ fits. RETIRE cites the existing test, no sketch. KEEP/CONVERT say whether the va
    std's engine uses `_` (`snapshots.slugOf`; e.g. `path_named_second_snapshot.snap`). Onze
    50/51/71 maps too; realised onze `.snap` already use `_`.
 2. **Onze maps' "Measured" text was stale** ("inline literals, no `.snap`" for §§ 50 · 51 · 52 ·
-   70 · 71): 24 `.snap` exist via `snapshots.assertAs` directly (onze-cli 5, onze-assets 10,
+   70 · 71): 24 of onze's 51 `.snap` realise them via `snapshots.assertAs` directly (onze-cli 5, onze-assets 10,
    onze-og 4, onze-release 5); 71 step 6 (c) almost met.
 3. **98 check (2) conflicts with retiring rakun's helpers** — resolved by R-K (§ 2).
 4. **Recorded values contradict landed code:** HAL `_links` first vs last at `hal_test.bp:55`
@@ -147,9 +147,9 @@ Map: 60 `assert<Subject>(loc, …)` helpers in `rakun-test`, each with a renderi
 **R-K — the one rakun helper a contract needs.** 98 check (2)
 (`02-std-and-packaging/98-packaging-tail` § Mechanism: every `modules/*-test/src` holds ≥ 1
 `pub fn assert[A-Z]…(loc: SourceLocation` handing `loc` to `snapshots.`), contract 7
-(`contracts.md:545-570`) and `snapshots.md` rule 3 ("every library … exposes, from `<lib>-test`,
-the `assert<Subject>` helpers") all fail under "the member ships no snapshot helpers" (each needs an `assert<Subject>` writing through `snapshots`); contract
-7's table names rakun's subjects `route` and `response`. Proposal: the response half of
+(`contracts.md:486-510`) and `snapshots.md` rule 3 ("every library … exposes, from `<lib>-test`,
+the `assert<Subject>` helpers") all fail under "the member ships no snapshot helpers" (each needs an `assert<Subject>` writing through `snapshots`);
+`02-std-and-packaging/98-packaging-tail/test-helpers.md`'s table (`:66`) names rakun's subjects `route` and `response`. Proposal: the response half of
 `assertRoute` as `assertResponse` over `MockMvc.perform`'s `Response(status, body)` — form (4),
 over `mockmvc.bp`; +1 helper, +1 accepted `.snap` in a `helpers_test.bp`, no member box
 re-recorded, value derived fresh.
@@ -208,8 +208,8 @@ families' literals.
 
 | Helper | Verdict | Reason / re-derivation |
 |---|---|---|
-| `assertClassName` | **KEEP** | 98 check (2), contract 7 need ≥ 1 helper in `emilia-test`; records the one value a consumer reads, the contract-4 class. **Re-derive the spec:** `className(tokens, defaultTheme())`, not "`emilia(tokens)` under `fullTheme()`" — `e_39b87d03` is the `defaultTheme()` value (`emilia.bp:16516`) |
-| `assertCss` | **KEEP** | the one CSS helper a consumer can use (former emilia question's (a)); contract 7's emilia row (`assertSheet` / `assertUtility`) under its 1.0.11 name. **Re-derive the spec:** map renders `tokensToSheet(tokens, fullTheme())`, but `tokensToSheet` is private (`emilia.bp:459`). Needs a `pub` CSS-of-one-list surface (render with `renderRule("e", r, defaultOptions())`), else falls back to `styleRule(tokens, th)._1` (encoded sheet, not CSS) |
+| `assertClassName` | **KEEP** | 98 check (2), contract 7 need ≥ 1 helper in `emilia-test`; records the one value a consumer reads, the contract-4 class. **Re-derive the spec:** `className(tokens, defaultTheme())`, not "`emilia(tokens)` under `fullTheme()`" — `e_39b87d03` is the `defaultTheme()` value (`emilia.bp:16503-16516`: `className(cardTokens(), defaultTheme())`) |
+| `assertCss` | **KEEP** | the one CSS helper a consumer can use (former emilia question's (a)); `02-std-and-packaging/98-packaging-tail/test-helpers.md`'s emilia row (`:64`, `assertSheet` / `assertUtility`) under its 1.0.11 name. **Re-derive the spec:** map renders `tokensToSheet(tokens, fullTheme())`, but `tokensToSheet` is private (`emilia.bp:459`). Needs a `pub` CSS-of-one-list surface (render with `renderRule("e", r, defaultOptions())`), else falls back to `styleRule(tokens, th)._1` (encoded sheet, not CSS) |
 | `assertCssWith` | **CONVERT** — fold into `assertCss(loc, tokens, th)` | one helper with explicit theme; caller passes `fullTheme()` |
 | `assertUtility`, `assertVariant`, `assertTheme`, `assertRules`, `assertCascade` | **RETIRE** | no consumer, no contract; each subject asserted inline (below) |
 
