@@ -52,7 +52,7 @@ renderNode(html """<div><style>h1 { color: red }</style><h1>x</h1></div>""")
   `@apply` vira um buraco `${…}` tipado). Cada um é um repositório próprio (326: `repository/css`,
   `repository/styled`). A emilia vira uma série de componentes feitos em `styled`, aplicados na tag
   (301). As três camadas não conhecem o `.bpp`: a integração toda mora no `jhonstart-styled`, que também declara o `#[styled(…)]`; o `jhonstart-emilia` deixa de existir. O `"bpp"` vira objeto, e o estilo do `.bpp` vai para uma seção própria, compilada pelo pacote
-  de `style`. Proposta inteira, com o que muda e três pontos ainda abertos, cada um com exemplos e recomendação (p3, p6, p7; p1 — `use styled """…""";` no corpo, buracos de run-time como variáveis CSS no lugar do `#[defineVars]` —, p2, p4, p5, p8 e p9 aceitos em 09/10):
+  de `style`. Proposta inteira, com o que muda e dois pontos ainda abertos, cada um com exemplos e recomendação (p6, p7; p3 — uma seção só, antes da marcação, global com `:global(…)` —, p1 — `use styled """…""";` no corpo, buracos de run-time como variáveis CSS no lugar do `#[defineVars]` —, p2, p4, p5, p8 e p9 aceitos em 09/10):
   [`08-bpp/119-bpp-styling/proposta-08-d.md`](./08-bpp/119-bpp-styling/proposta-08-d.md).
   ```bp
   // botopink.json: "bpp": {"default": "jhonstart", "style": "jhonstart-styled"}
@@ -60,12 +60,13 @@ renderNode(html """<div><style>h1 { color: red }</style><h1>x</h1></div>""")
   fn padAll(n: i32) -> @Component<StyledBase, Styled> { return styled "padding: --spacing(${n});"; }
   ```
   ```bpp
-  <h1 class="title">{props.title}</h1>
   --- style ---
   .title { font-size: 2rem; }          // → .title[data-s="components-post-12"]{font-size:2rem}
+  ---
+  <h1 class="title">{props.title}</h1>
   ```
 
-**Recomendação: (d)**, se os pontos p3, p6 e p7 forem aceitos como recomendados; senão, (a). A (d) dá um
+**Recomendação: (d)**, se os pontos p6 e p7 forem aceitos como recomendados; senão, (a). A (d) dá um
 parser e uma folha só para todo mundo, e a emilia vira cliente do `styled`. A (c) põe um parser de CSS
 na biblioteca de HTML; a (b) deixa o estilo com escopo indisponível sem o onze. **Bloqueia:** a 119,
 todo passo — na cadeia crítica 118 → 119 → 120 → 126 → 127 → 124.

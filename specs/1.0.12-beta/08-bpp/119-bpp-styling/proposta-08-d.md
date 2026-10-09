@@ -25,13 +25,14 @@ feitos em styled           #[styled(..)] na tag         ← do jhonstart-styled 
 ---
 type Props(title: string, children: Node)
 ---
+--- style ---
+.title { font-size: 2rem; }
+article :global(p) { line-height: 1.6; }
+---
 <article>
   <h1 class="title">{props.title}</h1>
   {props.children}
 </article>
---- style ---
-.title { font-size: 2rem; }
-article :global(p) { line-height: 1.6; }
 ```
 
 ## 2. As três camadas
@@ -246,20 +247,51 @@ fn padAllHalf(n: i32) -> StyledView { return styled "padding: --spacing(${n}.5);
 
 ## 6. A seção `--- style ---` no `.bpp`
 
-Depois da marcação, uma linha `--- style ---` abre a seção, que vai até o fim do arquivo. Ela é
-compilada à parte: o toolchain entrega o texto à função default do `style`, como entrega a marcação
-ao `html`. O valor vira um `val` do módulo que o componente ativa com `use` (p1). O `html` vê esse
-`use` nos hooks da função e escreve `data-s="<id>"` em todo elemento que o template escreve.
+**A ordem do arquivo (p3):** cabeçalho, estilo, marcação. A seção de estilo vem **antes** da
+marcação, aberta por uma linha `--- style ---` e fechada por uma linha `---`, como o cabeçalho. Fica
+logo depois do cabeçalho, ou na primeira linha quando o arquivo não tem cabeçalho. A marcação
+continua sendo o resto do arquivo, como na 212.
+
+```bpp
+---                                  ← cabeçalho (212), opcional
+type Props(title: string)
+---
+--- style ---                        ← estilo, opcional; uma seção só
+.title { font-size: 2rem; }
+---
+<h1 class="title">{props.title}</h1> ← marcação: o resto do arquivo
+```
+
+```bpp
+--- style ---                        ← sem cabeçalho: o estilo abre o arquivo
+.title { font-size: 2rem; }
+---
+<h1 class="title">Oi</h1>
+```
+
+Ela é compilada à parte: o toolchain entrega o texto à função default do `style`, como entrega a
+marcação ao `html`, e o componente a ativa com `use` (p1). O `html` vê esse `use` nos hooks da função
+e escreve `data-s="<id>"` em todo elemento que o template escreve.
+
+Por que antes, e não depois da marcação:
+
+- **A marcação continua sendo o resto do arquivo.** A regra da 212 quase não muda, e uma linha
+  `---` dentro da marcação nunca é confundida com uma seção, porque as seções só existem no topo.
+- **Os dois blocos de código ficam juntos, em cima**, cercados por `---` do mesmo jeito: o que o
+  componente declara (cabeçalho e estilo) e, embaixo, o que ele mostra.
+- **Fechar com `---` não colide com o CSS**, que nunca tem uma linha só com `---`.
 
 | Escrito | Significa |
 |---|---|
 | `--- style ---` | com escopo: cada seletor ganha `[data-s="<id>"]` |
-| `--- style #[isGlobal] ---` | vai para a folha como foi escrito, sem escopo (só se o p3 ficar com (a); com (b), o global é `:global(…)`) |
 | `:global(sel)` dentro da seção | `sel` fica sem escopo |
 | `${props.color}` dentro da seção | buraco: valor fixo vai para a regra; valor de run-time vira `var(--s-<n>)`, e o elemento raiz ganha `style="--s-<n>: …"` (p1; substitui o `#[defineVars]`) |
 | `<style #[isInline]>` na marcação | o builder `style`, verbatim (o comportamento de hoje) |
 | `<style>` na marcação, sem `#[isInline]` | erro na tag, apontando para a seção |
 | seção sem `"bpp".style` no manifesto | erro na linha: `a --- style --- section needs "bpp.style" in botopink.json` |
+| `--- style ---` depois da marcação | erro na linha: `the --- style --- section goes before the markup, after the header` |
+| uma segunda `--- style ---` | erro na linha: `a .bpp file has one --- style --- section; use :global(…) for unscoped rules` |
+| `--- style ---` sem o `---` que fecha | erro na linha de abertura, como o cabeçalho aberto (212) |
 
 O id do escopo, sem hash, é o caminho do módulo mais a linha da seção (`components-post-card-12`),
 calculado pelo `jhonstart-styled`; o `css` recebe só a string pronta em `scope(id, css)`.
@@ -284,9 +316,9 @@ que continuam sem saber do `.bpp`.
 | Onde | Mudança |
 |---|---|
 | decisões 198, 200, 284 | `"bpp": "jhonstart"` vira `"bpp": {"default": "jhonstart", …}` |
-| 212 | o arquivo ganha uma terceira parte, a seção de estilo |
+| 212 | entre o cabeçalho e a marcação, uma seção de estilo opcional (`--- style ---` … `---`); a marcação continua sendo o resto do arquivo |
 | 270 | o prelúdio é o do pacote em `bpp.default` |
-| 278 | `#[defineVars]` sai (buracos, p1); `#[isGlobal]` sai pelo p3 (b) ou vai para a linha da seção pelo (a); `<style>` na marcação só com `#[isInline]` |
+| 278 | `#[defineVars]` sai (buracos, p1); `#[isGlobal]` sai (p3: `:global(…)`); `<style>` na marcação só com `#[isInline]` |
 | 285 | o toolchain passa a conhecer também o pacote de `style` |
 | 301 | os tokens viram componentes `styled`; a folha sai pelo `jhonstart-styled`; pelo p4, o `#[styled(..)]` passa do `jhonstart-emilia` para o `jhonstart-styled` e aceita também componentes da aplicação (a escrita no template não muda); o `jhonstart-emilia` sai |
 | `08-bpp/119` | é dona de `repository/css`, `repository/styled` e `jhonstart-styled`, e apaga o membro `jhonstart-emilia` (p4); passos: 1 os pacotes, 2 `jhonstart-styled` e o braço do `html`, 3 boundary, 4 `#[styled]`, 5 uma folha só; no gate, `grep -rn "bpp\|jhonstart"` vazio em `repository/css`, `repository/styled` e `repository/emilia/modules` |
@@ -330,9 +362,10 @@ escrever `data-s` nos elementos.
 ---
 type Props(title: string)
 ---
-<h1 class="title">{props.title}</h1>
 --- style ---
 .title { font-size: 2rem; }
+---
+<h1 class="title">{props.title}</h1>
 ```
 
 vira o estilo direto no `use`, a primeira forma abaixo: a seção vira `use <style> """…""";` no
@@ -366,9 +399,10 @@ lista de nomes. A folha continua uma só para todas as instâncias, e só o atri
 ---
 type Props(color: string)
 ---
-<div class="box">…</div>
 --- style ---
 .box { border: 1px solid ${props.color}; padding: 1rem; }
+---
+<div class="box">…</div>
 ```
 ```html
 <!-- regra (uma só, no build):  .box[data-s="box-5"]{border:1px solid var(--s-0);padding:1rem} -->
@@ -403,31 +437,30 @@ template inteiro).
   error: "bpp" is an object — write "bpp": {"default": "jhonstart"}      at the key
   ```
 
-### p3 · Quantas seções de estilo por arquivo
+### p3 · Uma seção de estilo, antes da marcação — aceito (09/10): (b)
 
-**Contexto.** O exemplo `Post` do Astro tem um `<style>` com escopo e outro `is:global` no mesmo
-componente.
-
-- [ ] **(a)** No máximo uma seção com escopo e uma `#[isGlobal]`, nessa ordem.
+- [x] Uma seção só, entre o cabeçalho e a marcação, fechada por `---`. O que precisa escapar do
+  escopo vai com `:global(…)`.
   ```bpp
-  <article><h1 class="title">{props.title}</h1></article>
+  ---
+  type Props(title: string, children: Node)
+  ---
   --- style ---
   .title { font-size: 2rem; }
-  --- style #[isGlobal] ---
-  h1 { margin: 0; }
-  ```
-- [ ] **(b)** Uma seção só; o que é global vai com `:global(…)`.
-  ```bpp
-  --- style ---
-  .title { font-size: 2rem; }
-  :global(h1) { margin: 0; }
+  article :global(p) { line-height: 1.6; }    /* só os <p> dentro DESTE article */
+  :global(h1) { margin: 0; }                  /* o seletor inteiro sem escopo */
+  ---
+  <article><h1 class="title">{props.title}</h1>{props.children}</article>
   ```
 
-**Recomendação: (b).** Com o `:global(…)`, uma seção cobre os dois casos, e o arquivo tem um lugar
-só de CSS. A (a) só ganha quando a folha global é grande, e aí ela cabe melhor num `globals.css`.
-Isso muda a recomendação anterior, que era (a). Com (b), o `#[isGlobal]` deixa de existir; o
-`#[defineVars]` já saiu com o p1 (buracos de run-time viram variáveis CSS), e a linha da seção fica
-sem anotação.
+- **Mais preciso que uma seção global.** `article :global(p)` mantém o escopo no `article` e libera
+  só o `p`: atinge o conteúdo de fora (um Markdown, os `children`) que está dentro **deste**
+  componente, e nenhum outro `article` do site.
+- **Um lugar só de CSS por arquivo, e a linha sempre igual.** O `#[isGlobal]` sai, e o
+  `#[defineVars]` já tinha saído (p1, buracos). A linha é sempre `--- style ---`.
+- **O global de verdade vai no `globals.css`**: reset e tipografia base do site não pertencem a um
+  componente.
+- Descartada: (a), uma segunda seção `--- style #[isGlobal] ---`.
 
 ### p4 · Aplicar um componente `styled` numa tag — aceito (09/10): (a)
 
@@ -465,8 +498,10 @@ breakpoint da 300.
     "dependencies": { "jhonstart": {…}, "jhonstart-styled": {…}, "emilia": {…} } }
   ```
   ```bpp
-  <h1 #[styled(.Text.Bold)]>Oi</h1>        // compila: a folha sai pelo sink do jhonstart-styled
   --- style ---                            // error: a --- style --- section needs "bpp.style"
+  …
+  ---
+  <h1 #[styled(.Text.Bold)]>Oi</h1>        // sem a seção, compila: a folha sai pelo sink do jhonstart-styled
   ```
 
 ### p6 · `@utility` literal no `styled`
