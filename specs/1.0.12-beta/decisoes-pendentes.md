@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 62 perguntas, 6 contradições e 92 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **366**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 66 perguntas, 8 contradições e 92 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **366**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -62,6 +62,31 @@ antecipado; não nomeia os operadores de curto-circuito, cujo operando direito r
   ```
 
 **Recomendação: (a)** — a 357 (2): nunca sob uma condição.
+
+### s23-b · `Decorator.is(other)` — `is` é palavra reservada (contradição)
+
+**Trava:** a caixa `run/decorator_is_identity` do passo 23 do `01-checker`; o passo 8 do `05-jhonstart/26`
+
+**Contexto.** A 277 declara `extend Decorator { pub fn is(self, other: Decorator) -> bool; }` e lê
+`a.decorator.is(serverOnly)`. `is` é palavra-chave: nem `fn is(self, …)` nem `a.is(b)` passam no parser
+(nenhuma palavra-chave serve de nome de método). O passo 23 construiu o campo `decorator` de todo
+`DeclAnnotation` (a identidade da declaração, alias e namespace resolvidos); a comparação não.
+
+- [ ] **(a)** `is` admitido como nome de método depois do `.` e na declaração.
+  ```bp
+  if (a.decorator.is(serverOnly)) decl.fail("…");
+  ```
+- [ ] **(b)** Um nome que não é palavra-chave.
+  ```bp
+  extend Decorator { pub fn same(self, other: Decorator) -> bool; }
+  if (a.decorator.same(serverOnly)) decl.fail("…");
+  ```
+- [ ] **(c)** `==` entre dois `Decorator`, sem método.
+  ```bp
+  if (a.decorator == serverOnly) decl.fail("…");
+  ```
+
+**Recomendação: (b)** — uma regra de palavras reservadas, sem exceção.
 
 ### 08-f · Onde moram Markdown e YAML
 
@@ -920,6 +945,11 @@ toda função que alcança uma das quatro células é recusada no wasm (146); o 
 
 | Id | Assunto | Recomendação | Trava |
 |---|---|---|---|
+| `s23-a ★` | Dois nomes de campo da 277 (`fn` é reservada; o objeto do contexto da 354 (4) não tinha nome) | (a) ★ — `HookNode(function: …)` e `HookUse(…, context: ?Declared<unknown>)`, lidos `n.function.name` / `u.context.name`; (b) `n.decl` / `u.target`; (c) `n.of` / `u.object` | nada — (a) está construída |
+| `s23-c ★` | O que um `Declared` alcançado guarda no corpo de um decorator | (b) — ler `h.value` num corpo de decorator é recusado (`decl-hooks-value`), como num corpo de template; hoje (a) ★: `h.value == null` é `true` e `h.meta` lista `route.path` (toda entrada, chave `<decorator>.<key>`); (c) (b) e `meta` só do decorator que lê | nada — (a) está construída |
+| `s23-d ★` | Um `@Component` chamado por valor-função ou por método | (b) — `HookCall(callee: ?Declared<unknown>, at)`, a chamada entra com `callee: null` (`fn Page(render: fn() -> @Component<Element>) { val r = render(); }` → `calls: [HookCall(callee: null, at: "main:3:13")]`); hoje (a) ★: não entra (`calls: []`); (c) recusada no build (`hooks-dynamic-call`) | nada — (a) está construída |
+| `s23-e ★` | Uma função cuja lista um decorator lê é checada antes das saídas dos decorators do módulo existirem | (b) — o decorator que lê `.hooks` roda depois dos corpos (uma análise a mais no `comptime.zig`); hoje (a) ★: `#[graph] fn Page() { return generatedTitle(); }` ao lado de um `#[gen]` que emite `generatedTitle` falha em `unbound variable 'generatedTitle'`; (c) um decorator que lê `.hooks` só pode `setMeta` / `fail` | nada nas células; o `05-jhonstart/26` passo 8 se o `#[page]` emitir o que a página nomeia |
+| `s23-f ★` | O `TypeInfo` de um argumento de tipo num `HookUse` | (b) — as anotações de cada campo e os métodos do tipo, como `decl.fields` / `decl.methods`; hoje (a) ★: nome, módulo e campos `Field(name, typeName, annotations: [])`, `methods: []` (`params<main.BlogParams(slug: string, id: i32)>`) | nada para a 293 |
 | `ctr-o` | Decisão 146 × confirmação `lem-c` | (a). Mantém o que cada uma já implementa. | a confirmação da `lem-c` — nenhum passo. |
 | `17-c` | O que mais pode nomear um var `keyed: true` | (a): `at`, `insert` e o `bump` da 340. Uma grafia por operação de linha. | nada — o que está construído vale até ser ampliado. |
 | `ctr-l` | A terceira recusa da 186 × decisão 202 | (a). Sob a 202 nenhuma página se declara pré-renderizada; a recusa é letra morta, e a 202 é a mais restritiva (não há como forçar estágio). | nada nas frentes; só o registro. |

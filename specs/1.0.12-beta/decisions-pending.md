@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**62 questions and 6 contradictions are open, and 92 implementation choices await confirmation.**
+**66 questions and 8 contradictions are open, and 92 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -72,6 +72,81 @@ Nothing open: 138-a answered (337).
 - **Options.** (a) Refused (as built), 357 (2)'s "never under a condition": `val n = ready && use flag();` is `use-not-top-level`; written `val f = use flag(); val n = ready && f;`. (b) Accepted: only the listed constructs refuse — `val n = ready && use flag();` builds, and `flag` runs on the calls where `ready` holds.
 - **Recommendation.** (a).
 - **Blocks.** Nothing — built as (a).
+
+#### s23-a · Two field names of decision 277's records (contradiction with the reserved words)
+- **Measured.** 277 writes `HookNode(fn: Declared<unknown>, …)`; every keyword is reserved in every position
+  (`reserved-word-as-name`: `type N(fn: string)` is refused at the field). 354 (4) asks `Decl.hooks` to carry each
+  `provide` / `context` "with its object" and names no field. Built (`01-checker` step 23): `HookNode(function:
+  Declared<unknown>, uses: HookUse[], calls: HookCall[])` and `HookUse(…, context: ?Declared<unknown>)`, read
+  `n.function.name` and `u.context.name` (`run/decl_hooks_context` prints `App: std/context.provide(main.ThemeContext)`).
+- **Options.** (a) As built: `n.function`, `u.context`. (b) `n.decl` / `u.target`: `n.decl.name`, `u.target.name`.
+  (c) `n.of` / `u.object`: `n.of.name`, `u.object.name`.
+- **Recommendation.** (a): the words the decisions use for them, no exception to the reserved words.
+- **Blocks.** Nothing — built as (a); a rename touches `builtins.d.bp`, `comptime.zig`'s mirror, `hooks.zig` and the cells.
+
+#### s23-b · `Decorator.is(other)` — `is` is a keyword (contradiction)
+- **Measured.** 277 declares `extend Decorator { pub fn is(self, other: Decorator) -> bool; }` and reads
+  `a.decorator.is(serverOnly)`. `is` is a keyword: `fn is(self, …)` and `a.is(b)` do not parse (`unexpected `is``),
+  nor does any keyword as a method name (`type`, `case`, `in`, `as`, `match`, `loop` measured). Separately, a
+  decorator's name written in a decorator body (`serverOnly`) lowers on the comptime runtime as an unbound
+  variable, so whichever form is chosen the compiler writes the name's identity there. Built: every
+  `DeclAnnotation` carries `decorator` (the declaration's identity — an alias and a namespace resolved); the
+  comparison is not built.
+- **Options.** (a) `is` admitted as a method name after `.` and in a declaration: `if (a.decorator.is(serverOnly)) …`.
+  (b) A name that is no keyword: `if (a.decorator.same(serverOnly)) …` (`extend Decorator { pub fn same(self,
+  other: Decorator) -> bool; }`). (c) `==` on two `Decorator`s, no method: `if (a.decorator == serverOnly) …`.
+- **Recommendation.** (b): one reserved-word rule with no exception; a method states the identity comparison.
+- **Blocks.** `01-checker` step 23 box `run/decorator_is_identity`; `05-jhonstart/26` step 8 (`#[page]` / `#[client]`
+  testing a hook's markers).
+
+#### s23-c · What a reached declaration's `Declared` holds in a decorator body
+- **Measured.** `HookUse.hook`, `HookCall.callee` and `HookNode.function` are `Declared<unknown>`. Built: `value` is
+  `null` (no function of the program runs while it compiles, 364 (3)), and `meta` is every entry the declaration's
+  decorators set so far, keyed `<decorator>.<key>` (`DeclaredMeta(key: "route.path", value: "/about")`). A template
+  body's read of a catalogue entry's `value` is refused (`typeinfo-all-template-value`).
+- **Options.** (a) As built: `h.value == null` is `true`; `h.meta` lists `route.path`. (b) `h.value` refused at the read
+  in a decorator body, as in a template body (`decl-hooks-value: a reached function is no value at build`); `meta` as
+  (a). (c) (b), and `meta` holds only the entries of the decorator reading the list (`path`), as a catalogue entry
+  holds `d`'s.
+- **Recommendation.** (b): refuse > accept; a `null` that type-checks as the function hides that nothing is there.
+- **Blocks.** Nothing — built as (a).
+
+#### s23-d · A `@Component` called through a function value or a method
+- **Measured.** `HookCall.callee` is `Declared<unknown>`, not optional. Built: a call whose callee names no
+  declaration — a parameter (`fn Page(render: fn() -> @Component<Element>) { val r = render(); … }`), a local, a
+  method (`menu.render()`) — enters no `HookCall`; a `use` over one enters with `hook: null` (277).
+- **Options.** (a) As built: `Page`'s node has `calls: []`. (b) `HookCall(callee: ?Declared<unknown>, at)`, such a
+  call entered with `callee: null`, reaching nothing — `Page`'s node has `calls: [HookCall(callee: null, at:
+  "main:3:13")]`, so a reader sees an edge it cannot follow (a `use`'s rule). (c) Refused at build in a function whose
+  list a decorator reads: `val r = render();` is `hooks-dynamic-call` at the call.
+- **Recommendation.** (b): what the reader cannot see is reported, as `hook: null` is; the reader decides (277: a
+  `use` with `hook: null` makes a page per-request).
+- **Blocks.** Nothing — built as (a).
+
+#### s23-e · A function whose list a decorator reads is checked before its module's decorator outputs exist
+- **Measured.** Decorators run before bodies; `decl.hooks` needs the bodies of the function and of this module's
+  functions it reaches. Built: when a decorator reads `.hooks` (its body or a function it reaches —
+  `hooks.readsMember`), the module's imports and `val`s are inferred, then those bodies, where the decorator runs. A
+  body naming what a decorator of the same module `@emit`s is refused there as an unbound name — `#[graph] fn Page()
+  { return generatedTitle(); }` beside `#[gen] fn x()` emitting `generatedTitle` fails on `generatedTitle`, and
+  compiles when no decorator of the module reads `.hooks`.
+- **Options.** (a) As built: refused, at the name. (b) A decorator reading `.hooks` runs after the module's bodies are
+  inferred (a further analysis in `comptime.zig`, its outputs spliced by one more), so the example compiles.
+  (c) A decorator reading `.hooks` may only `setMeta` / `fail`: `emit`, `addMember`, `addType` refused in it
+  (`decorator-hooks-output`), so it runs after the bodies with no second splice.
+- **Recommendation.** (b): (a) refuses a program for the order the compiler runs in, not for what it says.
+- **Blocks.** Nothing in the cells; `05-jhonstart/26` step 8 if `#[page]` emits what its page names.
+
+#### s23-f · A type argument's `TypeInfo` in a `HookUse`
+- **Measured.** Built: `typeArgs` gives the type's name, its declaring module (`""` for a primitive or std's), and a
+  record's fields as `Field(name, typeName, annotations: [])` — `params<main.BlogParams(slug: string, id: i32)>`;
+  `methods` is `[]` and a field's annotations are not carried (the checker of an importing module holds the type's
+  shape, not its declaration). 293 reads the field names and types.
+- **Options.** (a) As built. (b) Every field's annotations and the type's methods, as `decl.fields` / `decl.methods`
+  give them — `t.fields[0].annotations` lists `#[validated]` — the session publishing each module's type
+  declarations.
+- **Recommendation.** (b): the record is `TypeInfo`'s, and an empty list that means "not carried" is a lie.
+- **Blocks.** Nothing for 293.
 
 #### 140-a · What a pending `@Task` is on wasm (front 140 step 4)
 - **Measured.** wasm lowers `@Task<T>` as `T`: `await` is identity and `async { … }` runs its block where it is written (`wat.zig`, `asyncBlock`, "the eager `@Task`"); erlang's `race` answers the head of the list (`hd(__Fs)`), its `raceOf` one process per thunk. 334 (4) asks `@Task` on `wasi` to "run to completion when awaited, blocking on its pollable" and `race` to answer "the first pollable ready"; with `@Task<T>` = `T` there is no pollable to wait on, and `delay` would block where it is called. 335 (2) makes results the contract. A body that awaits inside (`async { await delay(30, ()); "a" }`) cannot be suspended on a single-threaded run-to-completion host.
