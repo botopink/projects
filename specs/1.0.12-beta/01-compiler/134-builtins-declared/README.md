@@ -47,7 +47,8 @@ differences — `@ExprCustom<T>` declared as `CustomExpr<T>`, mirror's `Annotati
       `tests/language/reject/hand_written_is_builtin` (`val b = @is(1);` on line 5 → `.expect` the message and
       `5:13`); `x is T` unchanged — measured on a scratch build: the refusal located at `5:13`, `x is i32` prints
       `true`
-- [ ] std's `types.bp` declares `pub type Type` with five static compile-time methods answering a type
+- [ ] std's `types.bp` declares `pub type Type { … }` — a namespace type, no field list and no value (329):
+      `Type()` refused, a `self` function in its body refused — with five static compile-time methods answering a type
       (decision 307): `partial`, `required` (new), `pick`, `omit`, `merge` (was `mergeRecords`) —
       `pub fn pick<T>(comptime source: type T, comptime ..fields: Type.Field<T>[]) -> type`, the spelling of a
       `type` answer fixed here with `01-checker` step 28; bodies are the compiler's; `root.bp` exports
