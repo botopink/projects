@@ -11,6 +11,11 @@ chave do cache), 250 (`io.random.bool()` removido), 252 (todo builtin declarado)
 254 (o catálogo responde `unknown`; `is fn() -> T`), 255 (`Tipo<…>.membro` e `comptime <expr>`), 256 (o
 registro de beans em comptime no ponto de entrada), 257 (`Schema<T>` na `validation`), 258 (`--lib` múltiplo), 259–263 (`pow` da glibc, `contentHash` por code point, heap do wasm crescendo, `String.fromCodepoint`, `std/math` igual em todo sistema), 264 (estouro de inteiro é erro em todo target), 265 (orçamento do gate frio em 7m30s nesta versão; os 5 min ficam para a próxima), 266 (`comptime` avaliado em compilação em todo lugar, registro içado), 267 (parâmetro variádico `..values: T[]`; `@print` declarado com ele), 268 (tipo builtin `Decorator` no `with:` do `@TypeInfo.all`), 269 (`@getContext(T)` é hook, chamado atrás de `use`), 270 (o prelúdio do `.bpp`: o `src/prelude.bp` do pacote, só imports do próprio pacote, importado só quando usado; o cabeçalho vence), 271 (`ctr-a`: não existe `islandKeyEnv`; a chave da island é sempre `ONZE_KEY`; as chaves da 124 são `trailingSlash`, `redirects`, `markdown`, `islands`), 272 (`08-e2` e `ctr-b`: os modos das props da server island são só `"sealed"`, o padrão, ou `"server"` — nenhum expõe as props), 273 (`ctr-c`: um route handler nunca é exportado no build; `app/rss.xml/route.bp` é servido a cada request — a 222 fica inteira), 274 (`03r-ad` e `ctr-d`: o Pulsar não vira membro — fica em `rakun-messaging/src/pulsar/`; o plano de dados é recusado no boot e adiado), 275 (`bpp-f` e `ctr-e`: o `.bpp` devolve o `R` do `@ExprCustom<R>` que o `html` declara — no jhonstart, sempre `@Component<ElementBase, Element>`, com ou sem `use`/`await`; todo `.bp` que devolve `html """…"""` também passa a declarar esse retorno), 276 (`View`: alias de `@Component<ElementBase, Element>` no `element.bp` do jhonstart — o mesmo tipo com nome curto; o `.bpp` desdobra em `-> View`), 277 (`hooks-a`: o `@Decl` lista todos os nós alcançáveis — cada função com os seus `use` e as suas chamadas —, e cada anotação carrega o seu `Decorator`; o jhonstart decide pré-renderizada/por request e valida `#[client]` comparando com os próprios decorators), 278 (diretivas do Astro viram anotações dentro da tag — `#[clientVisible("200px")]`; `#[clientOnly]` é uma função só, para hook e tag; o `html` age pelo tipo de retorno), 279 → 286 (as duas formas valem, `#[a]` `#[b]` e `#[a, b]`; o formatter mantém como foi escrito), 280 (argumento de decorator tipado e `comptime`, `@Decl<T>`, `Field<T>` e `.campo` com o nome exato), 281 (nenhum identificador de código como string), 282 (o papel de uma função vai no decorator, nunca no nome do export), 283 (segundo modelo: caso a caso, `nat-d1`…`nat-d9`), 284 (JSON: `botopink.json` o mais limpo possível, caso a caso; `"bpp"` obrigatório), 285 (o compilador só conhece o `"bpp"`, o `html` e o prelude; o papel do arquivo é da tabela de rotas do framework; o `bppKinds` sai), 287 (`ctr-aa`: o fallback de uma ilha é argumento da anotação — `#[serverDefer(fallback: …)]`, `#[clientOnly(fallback: …)]` —, fixo em comptime), 288 (`ctr-f`: um `.bpp` é o `pub default fn` do módulo com o nome exato do arquivo, devolvendo `View`; importado `import {components.card};` — a 213 emenda a 198 e a 199), 289 (`ctr-g`, `ctr-t`: a função default pode ser anônima — `pub default fn (…)` — ou marcada depois — `pub default Tree;`; quem importa dá o nome; o `page.bpp` pode importar e escrever `#[page(…)]` sem colidir), 290 (`ctr-x`: sem configuração de segmento — `dynamic` e `fetchCache` saem; `revalidate` e `dynamicParams` são argumentos do `#[page]`), 291 (`ctr-y`: `use request()` para ler e `use response()` para escrever — `res.status(404)`, `res.header(…)` —; header fixo de página S em `#[page(headers: …)]`; sem `isPrerendered()`), 292 (`ctr-z`: `<a #[reload]>`, `<a #[history(.Replace)]>`; os eventos de navegação são hooks — `use onBeforeSwap(…)` —; o `<Script>` tem enum próprio, `strategy={.LazyOnload}`), 293 (`nat-c1`, `nat-c3`, `bpp-g`: a página lê a rota por hook — `use params<BlogParams>()`, `use pageData<Post>()` —, sem parâmetro; o `#[page]` confere os campos contra a pasta), 294 (`nat-c2`: o cookie é declarado uma vez, com tipo — `Cookie<SessionId>("session", httpOnly: true, …)` —, lido com `use cookie(decl)` → `?T` e gravado com `use setCookie`), 295 (`nat-c4`: estado do request como átomos, no estilo do Recoil — `pub val currentUser = Local<User>()`, `use local(currentUser)`, `use setLocal(currentUser)`; middleware, handler e action viram `@Component<RequestBase, Response>`), 296 (`cardume`: lib própria de estado compartilhado, o Recoil do botopink — átomo, selector, família, transação; pontes `rakun-cardume` e `jhonstart-cardume`), 297 (um parâmetro `comptime` aceita valor ou tipo — `Atom<T> | type T` —: `use atomState(currentUser)`, `use atomState<?User>(currentUser)` e `use atomState(User)`, o átomo implícito do tipo), 298 (`nat-c5`: o meta de decorator é um valor tipado indexado pelo tipo — `decl.setMeta(Entity(…))`, lido `@typeInfo(City).meta(Entity)` → `?Entity`; `addMeta` / `metaAll` para o que se repete), 299 (`nat-c6`: a configuração do rakun é um record tipado por prefixo — `#[config("rakun.data")] type DataConfig(…)` —, nome exato do campo, erro no boot com a linha; a 03r-b é revertida), 300 (`nat-c7`: o tema do emilia continua no formato do CSS, mas tipado — `entry(.Breakpoint, "md", Rem(40.0))`, `clear(.Breakpoint, "lg")` — e declarado uma vez com `#[theme] pub val appTheme = comptime extendTheme(…)`; usar um breakpoint apagado é erro de compilação). Com isso a `nat-c` inteira foi respondida (293, 294, 295, 298, 299, 300). 301 (o emilia entra no markup como anotação de tag — `<h1 #[styled(.Text.Bold, …)]>` —, tokens em comptime, classe e regra calculadas no build quando o hash for do std), 302 (anotação de tag e decorator de declaração são a mesma coisa: `fn nome(comptime decl: @Decl, …)`, sem retorno, agindo pelo `decl` — na tag, gravando meta tipado que o `html` lê pelo tipo). 303 (`nat-d1`: a action devolve `@Result<T, ActionError>` dos dois lados — `return v` / `throw e`, lido com `case` — `Ok(…)` / `Error(…)` —; o `ActionOutcome` sai; `Input(fields)` é um caso do `ActionError`; o `{data, error}` fica só no JSON do protocolo). 304 (`nat-d2`: as stores têm uma API só, `@Result<T, StoreError>` — `query`, `update`, o repositório do ORM e as stores NoSQL —; os gêmeos `try*` e o raise saem; o handler pode devolver `@Result<Response, E>` e o rakun-web responde o `Error`; `@panic` só para erro de programação; o `throw SoapFault` da SOAP já estava certo). 305 (`nat-g`: as anotações do compilador falam botopink — `keyed: true`, `inline: true`, o formatter imprime `:` e o `=` vira erro —; o `@External` troca as strings com prefixo por argumentos tipados: `fn: tanBody` é referência, `op: "f64.sqrt"` é o nome do opcode do wasm, `wasi: .RandomF64` é enum; a string sem rótulo continua sendo código do host). 306 (`nat-d3`: o tipo é o único schema e o `#[schema]` vira `#[validated]` — um decorator só, que valida e faz o parse —; o `Schema<T>`, os combinadores `schemas.*` e os `checks.*` saem da API pública e ficam internos; o que só o valor dizia vira marcador de campo — `#[each(email)]`, `#[codec(decode: …, encode: …)]`, `#[map]`, `#[preprocess]`, `#[validated(transparent)]` —; outra lib recebe o tipo: `collection(BlogPost)`; com isso a `nat-d4` cai — as famílias `union2…5` / `tuple2…5` saem junto com a forma valor, e união e tupla são tipos). 307 (`nat-d5`: tipo derivado é uma função de tempo de compilação que devolve um tipo novo, guardado num `val`; as cinco são métodos estáticos de um tipo `Type` da std — `pub val RecipeTitle = Type.pick(Recipe, .title);`, `Type.partial`, `Type.omit`, `Type.merge`, `Type.required` —; o tipo tem o nome do `val`, aceita decorator e herda os marcadores; os marcadores `#[pick]`, `#[omit]`, `#[partial]`, `#[extending]` da validation saem). 308 (o `Field<T>` vai para dentro do `Type` da std — `Type.Field<Recipe>` —, e `Type.keys(Recipe)` devolve esse mesmo tipo; ele também vale em runtime: `case key { .title -> … }` exaustivo, `key.name`, `RecipeKey.of("title")`, `RecipeKey.all()`). A 245 e a 251 foram registradas cedo demais e retiradas.
 
+> **Reordenado em 2026-10-08.** O arquivo foi reordenado pelo que trava as trilhas 00–03: as 49
+> perguntas, contradições e confirmações que travam um passo de `00-gate`, `01-compiler`,
+> `02-std-and-packaging` ou `03-bundled-libs` vieram inteiras para a Prioridade 1, com uma linha
+> **Trava:** no topo; o resto ficou na ordem que tinha. Nenhum texto de pergunta mudou.
+
 > **Revalidação de 09/10.** Cada item foi conferido contra as decisões 144–308, as frentes e o código.
 > Saíram, sem escolha nova: `08-h` (285, 224) · `08-j` (295) · `lg2-g` (281) · `ctr-q` (281, 256) ·
 > `ctr-m` (duplicava a `lg2-s`) · `ctr-n` (a 170 já não tem o exemplo `from "m1"`) · `ctr-r` (premissa
@@ -24,15 +29,18 @@ registro de beans em comptime no ponto de entrada), 257 (`Schema<T>` na `validat
 > que 266–269 já existiam no seu registro local. Na 1.0.12 ele é a **270**; as 266–269 estão em
 > `decisions-taken.md` com o texto completo dos commits `4fb3c5e`, `ec58d33`, `805b2be`, `c4976a6`.
 
-**Ordem:** da decisão que mais destrava para a que menos destrava.
-- **Prioridade máxima** — a forma botopink: falta `nat-d6`…`nat-d9`, `nat-e` e `nat-f2`…`nat-f4` (respondidas: `nat-a`, `nat-b`, `nat-c` inteira, `nat-d1` → 303, `nat-d2` → 304, `nat-d3` e `nat-d4` → 306, `nat-d5` → 307, `nat-f1` → 285, `nat-g` → 305; as regras são as decisões 281–284): o que foi copiado de fora quando a linguagem já tinha o recurso.
-- **Parte 0** — `00-gate` e `01-compiler`, por prioridade (o que segura thread rodando primeiro).
+**Ordem:** primeiro o que trava as trilhas `00-gate`, `01-compiler`, `02-std-and-packaging` e `03-bundled-libs`; depois, da decisão que mais destrava para a que menos destrava, o que trava as trilhas 04–09 e 20.
+- **Prioridade 1** — o que trava 00-gate, 01-compiler, 02-std e 03-bundled-libs, por trilha (00 → 01 → 02 → 03) e, dentro de cada trilha, do que tem thread esperando (⏳) para o que destrava menos. Cada item é a pergunta inteira, com uma linha **Trava:** no topo. Absorveu a antiga Parte 0.
+- **Prioridade 2** — a forma botopink: falta `nat-d6`…`nat-d8`, `nat-f2` e `nat-f4` (a `nat-e`, a `nat-d9` e a `nat-f3` travam 01/02 e estão na Prioridade 1; respondidas: `nat-a`, `nat-b`, `nat-c` inteira, `nat-d1` → 303, `nat-d2` → 304, `nat-d3` e `nat-d4` → 306, `nat-d5` → 307, `nat-f1` → 285, `nat-g` → 305; as regras são as decisões 281–284): o que foi copiado de fora quando a linguagem já tinha o recurso.
 - **Parte 1** — contradições entre decisões, achadas na consolidação: cada uma segura um passo.
 - **Parte 2** — destravam muitas frentes.
 - **Parte 3** — destravam uma frente ou um passo.
 - **Parte 4** — não bloqueiam nada hoje.
 - **Parte 5** — escolhas que as threads fizeram (★), para confirmar.
 - **Parte 6** — escolhas já implementadas na 1.0.10, só para confirmar.
+
+O que trava 00–03 saiu de cada parte para a Prioridade 1; as Partes 1–6 mantêm o número, para que as
+referências no texto das perguntas ("Parte 6", "Parte 1") continuem valendo.
 
 **Estado.** A 1.0.11 foi fechada e consolidada na 1.0.12 (mesmos objetivos, só estado atual; histórico
 em `specs/1.0.11-beta/`, com as auditorias em `closure-audit/`). O `00-gate` tem 13 de 14 frentes
@@ -68,7 +76,1839 @@ Os ids das decisões não mudaram com a renumeração das trilhas: `07-*` são d
 
 ---
 
-## Prioridade máxima — a forma botopink (`nat-*`) e o que já contradiz decisões
+## Prioridade 1 — o que trava 00-gate, 01-compiler, 02-std e 03-bundled-libs
+
+Tudo o que trava um passo das quatro primeiras trilhas, tirado do `status.md` (linhas L1 e L5), dos
+`README.md` das trilhas e das frentes, do grafo do `fronts.md` e da linha **Bloqueia** de cada pergunta.
+Cada item fica na trilha da thread que espera por ele; sem thread esperando, na primeira trilha que ele
+trava. Dentro da trilha, a ordem é: primeiro o que tem thread esperando (⏳), depois o que libera mais
+passos e frentes, depois a posição na cadeia crítica do `fronts.md`. A linha **Trava:** diz o passo de
+00–03 e, quando há, o que fica parado fora delas.
+
+Threads rodando em 2026-10-08: `01-checker` (passos 25, 23, 24, 26, 27/28 e as linhas do parser) ·
+`00-gate/114` (passos 3, 5, 6, 8) com o passo 8 da `16-formatter` · `02/97` (passos 11, 12 e os
+resíduos) · `03/102` passos 1–2 e `03/103` passo 1 (os próximos, 102 passo 3 e 103 passo 2, esperam a
+49-d e a 103-a) · `01-compiler/26-cli-tooling` (passos 3, 4, 7, 8) · `03/125` (resíduos dos passos 0 e 2,
+passo 3 em diante; espera a 07-j e a ctr-u).
+
+Os textos comuns de grupo ficaram onde estavam: o de `nat-d` e `nat-f` na Prioridade 2, o de `lg2-*` na
+Parte 4.
+
+### Trilha `00-gate`
+
+Nenhuma pergunta aberta trava a `00-gate/114`: os passos 3, 5, 6, 7 e 8 não esperam decisão
+(`status.md` L1). As escolhas ★ das frentes do gate da 1.0.11 (`110-b`, `111-b`, `112-a`, `113-a`,
+`113-b`) não travam nada e ficam na Parte 5; a `own-a` (dono dos scripts de teste) fica na Parte 4.
+
+### Trilha `01-compiler`
+
+32 itens: 6 com thread esperando (⏳), depois do que libera mais para o que libera menos.
+
+### pkg-b · Um pacote importando a si mesmo pelo nome (`from "std"` dentro do próprio `std`)
+
+**Trava:** `01-compiler/26` passo 8, segunda caixa (a regra de um pacote importando a si mesmo pelo nome, ou a migração das três fontes do std, que é da `02/97`) · ⏳ thread da 26-cli-tooling rodando (passos 3, 4, 7, 8)
+
+**Contexto.** A decisão 206 já está implementada (frente 129): `from` nomeia só pacote, e um módulo do
+próprio pacote vem pelo caminho entre chaves. Sobra um caso: um pacote importando a si mesmo pelo nome.
+Os testes dos pacotes bundled já usam a forma com chaves (`libs/log/test/digest_test.bp:8`:
+`import {digest.errorDigest, …};`); sobram três fontes do std — `std/src/querystring.bp:28`,
+`std/src/testing/snapshots.bp:49-51` e `std/src/io/fs.bp:20`. A diferença prática é o que o módulo
+enxerga: pelo nome do pacote, só o que é exportado; pelo caminho, também o interno.
+
+**Hoje:**
+```bp
+// libs/std/src/io/fs.bp:20
+import {path.relative} from "std";        // o próprio std — compila
+```
+
+- [ ] **(a)** Vale: é um pacote, e `from` nomeia pacote.
+  ```bp
+  // libs/std/src/io/fs.bp
+  import {path.relative} from "std";      // ok: só a superfície pública do std
+  ```
+- [ ] **(b)** Recusa: dentro do pacote, é `import {path.relative};`, como qualquer outro módulo dele.
+  ```bp
+  import {path.relative} from "std";      // error: dentro do pacote `std`, importe pelo módulo
+  import {path.relative};                 // ok: vê também o que não é exportado
+  ```
+
+**Recomendação: (b).** Os testes já migraram para a forma com chaves; sobram três fontes do std, e uma
+regra só — dentro do pacote, pelo módulo — é a mais restritiva (67). **Bloqueia:** nada (o caso está
+como item do passo 8 da `01-compiler/26`, cuja contagem — log 1, routing 1, validation 2, std 8 — está
+desatualizada).
+
+### imp-a · Dois tipos com o mesmo nome importados com alias *(proposta)*
+
+**Trava:** `01-compiler/01-checker`, linhas do checker: os dois tipos de mesmo nome importados com alias · ⏳ thread do 01-checker rodando as linhas
+
+**Contexto.** A decisão 170 torna legal importar dois nomes iguais de módulos diferentes, desde que com
+alias. O checker recusa isso para **tipos** (`import-name-collision`, célula
+`modules/import_two_types_one_name`), porque os backends não distinguem tipos por módulo — dois `T`
+viram o mesmo nome no código gerado. Para valores (funções, constantes) o alias já funciona.
+
+**Hoje:**
+```bp
+import {m1.f as f1};
+import {m2.f as f2};      // ok: valores
+import {m1.T as A};
+import {m2.T as B};       // hoje: import-name-collision
+```
+
+- [ ] **(a)** Tipos continuam recusados: o alias da 170 vale só para valores.
+  ```bp
+  import {m1.T as A};
+  import {m2.T as B};     // error[import-name-collision]: dois tipos `T`; o alias vale só para valores
+  ```
+- [ ] **(b)** Os backends qualificam tipos pelo módulo; a forma passa a valer.
+  ```bp
+  import {m1.T as A};
+  import {m2.T as B};
+  val a: A = A(…);        // ok: o backend distingue m1.T de m2.T
+  val b: B = B(…);
+  ```
+
+**Recomendação: (b).** A 170 é regra sua; a recusa é limite de backend, guardado numa linha do
+`language-gaps.md` até ser construído. **Bloqueia:** nada aberto; uma linha da 01-checker.
+
+### lg2-r · Corpo fornecido por um decorator para um método declarado
+
+**Trava:** `01-compiler/01-checker`, linhas do parser: a linha da lg2-r vira passo quando respondida; fora de 00–03: rakun 08, 09, 78 · ⏳ thread do 01-checker rodando as linhas do parser
+
+**Contexto.** Um método sem corpo (`declare fn`) num `type` é só a forma de método host: sem
+`#[@External.<Target>]`, ele é recusado em toda chamada, em todo target
+(`run/bodyless_method_without_binding`). Nenhum decorator pode fornecer o corpo — o rakun-data queria
+isso para `#[query]`, como os repositórios do Spring Data. Hoje o decorator acrescenta um membro ao
+tipo dono (216 (1)) e o método chama esse membro. Pela 304, um método de repositório responde
+`@Result<T, StoreError>`.
+
+**Hoje:**
+```bp
+type Users { #[query("select * from users where id = $1")] declare fn find(self: Self, id: i32) -> @Result<?User, StoreError>; }
+users.find(1);                            // error: run/bodyless_method_without_binding, na chamada
+```
+
+- [ ] **(1)** Método sem corpo é só binding host; o decorator acrescenta um membro e o método tem corpo.
+  ```bp
+  type Users {
+      #[query("select * from users where id = $1")]
+      fn find(self: Self, id: i32) -> @Result<?User, StoreError> { return self.findQuery(id); }   // membro do #[query] (216)
+  }
+  ```
+- [ ] **(2)** O decorator fornece o corpo: a declaração basta.
+  ```bp
+  type Users { #[query("select * from users where id = $1")] declare fn find(self: Self, id: i32) -> @Result<?User, StoreError>; }
+  users.find(1);                          // compila; o corpo veio do #[query]
+  ```
+
+**Recomendação: (1).** É o que a recusa de hoje já impõe (`run/bodyless_method_without_binding`).
+**Bloqueia:** a linha; rakun 08, 09, 78.
+
+### lg2-t · Folha de enum numérica negativa
+
+**Trava:** `01-compiler/01-checker`, linhas do parser: a linha da lg2-t vira passo quando respondida; fora de 00–03: emilia 35, 36, 45 · ⏳ thread do 01-checker rodando as linhas do parser
+
+**Contexto.** Folhas numéricas de enum são dígitos puros, então `-rotate-12` e `-translate-y-2` do
+Tailwind não têm grafia: `Rotate { 12, -12 }` é recusado no `-`. O emilia usa a convenção de uma
+sub-seção `Neg { … }` (frentes 35, 40, 45), lida como "rotate, negativo, doze". Em posição de
+expressão uma folha numérica se escreve `.__12`.
+
+**Hoje:**
+```bp
+type Tok { Rotate { 12, -12 } }           // erro no `-`
+```
+
+- [ ] **(1)** Não: sub-seção `Neg`.
+  ```bp
+  type Tok { Rotate { 12, Neg { 12 } } }
+  val t = .Rotate.Neg.__12;
+  ```
+- [ ] **(2)** Folha com sinal.
+  ```bp
+  type Tok { Rotate { 12, -12 } }
+  val t = .Rotate.__N12;                  // grafia em posição de expressão
+  ```
+- [ ] **(3)** `-` unário num caminho de enum.
+  ```bp
+  val t = -(.Rotate.__12);
+  ```
+
+**Recomendação: (1).** O nome de uma folha continua um nome. **Bloqueia:** a linha; emilia 35, 36, 45.
+
+### lg2-m · Anotação de módulo
+
+**Trava:** `01-compiler/01-checker`, linhas do parser: a linha da lg2-m vira passo quando respondida; fora de 00–03: rakun 12 · ⏳ thread do 01-checker rodando as linhas do parser
+
+**Contexto.** O `'use cache'` no topo de um arquivo do Next.js não tem grafia em botopink: `#![…]` no
+topo de um módulo dá "this token cannot appear here". O `rakun-cache` hoje liga a política padrão do
+módulo uma vez num `val` e cada chamada usa esse `val`. A pergunta é se a linguagem ganha atributo de
+módulo.
+
+**Hoje:**
+```bp
+#![useCache]                              // error: this token cannot appear here
+```
+
+- [ ] **(1)** Não: a política do módulo é um `val` de módulo.
+  ```bp
+  val cached = cacheWith(cachePolicy(…));                                  // rakun-cache/src/cache.bp
+  pub fn posts() -> string { return cached(["posts"], { -> loadPosts() }); }
+  ```
+- [ ] **(2)** Atributo interno no topo do arquivo, que um decorator recebe com o `@Decl` do módulo.
+  ```bp
+  #![useCache(ttl: 60)]
+  pub fn posts() -> string { return loadPosts(); }                         // toda fn do módulo passa pelo cache
+  ```
+
+**Recomendação: (1).** A política de um módulo é um `val` de módulo. **Bloqueia:** a linha; rakun 12.
+
+### 23-c · `botopink test` num projeto com módulos em pasta
+
+**Trava:** `01-compiler/23` passo 2 (as confirmações); uma reversão abre passo na `01-compiler/26` (`test_cmd.zig`, `libs.zig`), que depende desta confirmação · ⏳ thread da 26-cli-tooling rodando
+
+**Contexto.** Quando o std passou a ter módulos em pasta (`io/random`, `io/net`), o `botopink test`
+quebrou de dois jeitos: no commonJS, todo módulo `a/b` era lido como pertencente à dependência `a`
+(`shipMjsSidecars`), e no erlang doze testes morriam com `{error,undef}` porque o `test_cmd` gravava as
+unidades de tipo (`std@io@net@@Socket`) na raiz da execução, onde o runner de `io/net` não procura. Um
+projeto de dois módulos (`src/top.bp`, `src/io/rec.bp`) reproduz o segundo em qualquer lugar.
+
+**Hoje:**
+```text
+src/top.bp   src/io/rec.bp
+$ botopink test --target erlang       # passa (antes: testes morriam com {error,undef})
+$ botopink test --target commonJS     # passa (antes: module 'io/random' requires "./sidecars/random.mjs",
+                                      #   but its library 'io' resolves to no package directory)
+```
+
+- [ ] **(a) ★** Duas correções gerais na CLI: um módulo cujo fonte está no `src` do próprio projeto é
+  do projeto; as unidades de tipo são gravadas ao lado do módulo que as declara.
+  ```text
+  libs/std/src/io/net.bp   →   unidades de `Socket` gravadas junto de io/net, não na raiz
+  ```
+- [ ] **(b)** Manter o std plano no disco e aninhar só as chaves do registro.
+  ```text
+  libs/std/src/io_net.bp   (arquivo plano)  →  registrado como "io/net"
+  ```
+
+**Recomendação: (a).** As regras são gerais — qualquer biblioteca com módulo em pasta tinha os dois
+defeitos — e nenhuma toca o compiler-core nem um snapshot. **Bloqueia:** nada.
+
+### nat-e · O zoológico de anotações do Spring
+
+**Trava:** `01-compiler/130` passo 5 (com a 130-b e a 130-c, que dependem dela); fora de 00–03: rakun 04, 08, 13, 15, 19, 79, 91, 93
+
+**Contexto.** O botopink tem um decorator qualquer mais `@TypeInfo.all(with: …)`; o rakun copiou as
+marcas do Spring, várias com o mesmo sentido:
+- `#[service]`, `#[repository]`, `#[restController]`, `#[configuration]` + `#[bean]`, `#[managed]`,
+  `#[provides]`, às vezes empilhados (rakun 04, 09, 13, 19);
+- query derivada do nome do método: `findByNameAndStateAllIgnoringCase` vira SQL (08; R78-1);
+- `#[amqpListener]`, `#[kafkaListener]`, `#[redisListener]`: três marcas para um só papel, uma por
+  transporte (15, 91). O nome do destino é do broker e pode ficar string (281);
+- `#[httpExchange]` ligado via `#[configuration]` (13);
+- `MockMvc`, `@MockBean`, `UserDetailsService` com os nomes do Spring (19, 79).
+
+A config já foi decidida: a 299 a fez um record tipado por prefixo, e `#[configurationProperties]`,
+`#[value]` e `rkProp*` saíram. A 304 fez os métodos do repositório responderem
+`@Result<T, StoreError>`.
+
+**Hoje:**
+```bp
+#[repository] #[managed] type CityRepo(…)
+#[derived] fn findByNameAndStateAllIgnoringCase(name: string, state: string) -> City[]   // 304: -> @Result
+#[service] #[listener] type OrderListeners(…) {
+    #[kafkaListener("order-events", "order-service")] fn onOrderEvent(…)
+}
+```
+
+- [ ] **(a)** Um decorator por papel que acrescenta comportamento; query como expressão de comptime;
+  um só `#[listen]`, o transporte vindo da config tipada (299); nomes do próprio rakun.
+  ```bp
+  #[component(lazy: true)] type CityRepo(…)
+  #[query] fn byState(s: string) -> @Result<City[], StoreError> = City.where(.state == s);
+  pub val orders = Destination<OrderPlaced>("orders");    // o nome do broker escrito uma vez, como o Cookie<T> da 294
+  #[listen(orders)] fn onOrder(o: OrderPlaced) { … }
+  ```
+- [ ] **(b)** Os nomes do Spring ficam como apelidos de (a).
+- [ ] **(c)** Como está.
+
+**Recomendação: (a).** Absorve a 130-c.
+**Bloqueia:** 130 passo 5; rakun 04, 08, 13, 15, 19, 79, 91, 93; 130-b; 130-c.
+
+### ctr-j · Decisão 264 × decisão 176 e "o mesmo valor em todo target"
+
+**Trava:** `01-checker` passo 18 (a regra do literal `l`); as checagens de faixa de `04-js` passo 8, `02-erlang` passo 13 e `03-beam` passo 8
+
+**Contexto.** A 264 tornou estouro de inteiro um erro de programa em todo target (a conta aborta em vez de
+dar a volta). Mas ela diz que no commonJS a faixa do `i64` é ±(2^53−1) — o que um número JS (double)
+guarda exato —, enquanto no erlang, beam e wasm o `i64` vai até ±2^63. A mesma conta aborta num target e
+responde nos outros, contra o princípio da delegação ("o mesmo valor em todo target") e contra a leitura
+da 176 (`parseInt` além de ±(2^53−1) é `Error` em todo target). O literal `l` além da faixa é recusado
+pelo checker só no commonJS (`refuseBeyondJsSafeInteger`, `compiler-core/src/comptime/infer.zig:10549-10567`),
+cuja doc e dica citam a 247 — que só trata de sufixos —; e o teste dele aceita até 2^53 inclusive
+(`v <= 1 << 53`), um a mais que a faixa da 264.
+
+**Hoje:**
+```bp
+val x: i64 = 9007199254740991l;   // 2^53 − 1
+@print(x + 1l);                   // commonJS: aborta "integer overflow: + on i64 at …"
+                                  // erlang/beam/wasm: 9007199254740992
+val y = 9007199254740993l;        // commonJS: recusado no literal ("past 2^53") · outros: compila
+val z = 9007199254740992l;        // commonJS: compila (2^53), fora da faixa ±(2^53−1) da 264
+```
+
+- [ ] **(a)** `i64` (e `u64`, `isize`, `usize`) é ±(2^53−1) em todo target (a leitura da 176): a conta
+  aborta igual nos quatro, e o literal além da faixa é recusado em todo target.
+  ```bp
+  @print(x + 1l);                   // aborta em todo target: integer overflow: + on i64
+  val y = 9007199254740993l;        // error em todo target: the `i64` literal is past 2^53
+  ```
+- [ ] **(b)** O commonJS baixa `i64` para `BigInt`: faixa completa ±(2^63−1) em todo target, ao custo de
+  aritmética mais lenta e conversão explícita na fronteira com `Number`/JSON.
+  ```bp
+  @print(x + 1l);                   // 9007199254740992 em todo target
+  // commonJS gerado: (x + 1n)   — e checagem contra ±(2n**63n − 1n)
+  ```
+
+**Recomendação: (a)**, a mais restritiva. Nos dois casos a regra do literal passa a ser da 264 e o
+checker deixa de citar a 247: na (a) o limite do literal vira 2^53−1 (hoje 2^53); na (b) a recusa só do
+commonJS sai. **Bloqueia:** as checagens de faixa de 04-js, 02-erlang, 03-beam; a regra do literal `l`
+no checker.
+
+### ctr-i · Codepoints (169, 240) × `string:length/1` (197)
+
+**Trava:** `02-erlang` passo 6 (a célula de codepoints); `05-wasm`: o lowering de string e o passo 8
+
+**Contexto.** A 169 e a 240 dizem que o índice de string (`length`, `at`, `slice`, `indexOf`) conta
+*codepoints* no erlang, no beam e no wasm, para que um índice devolvido por `indexOf` possa voltar ao
+`at`. A 197 (1) diz que o erlang responde `string:length/1` do texto antes do achado — e é isso que o
+`libs/std/src/primitives.bp` usa (`string:length/1`, `string:slice/3`). Só que essas funções do OTP
+contam *grapheme clusters* (o que o leitor vê como um caractere): uma letra mais um acento combinante é
+1. Com `"é"` pré-composto (U+00E9) os targets concordam; a diferença aparece com marca combinante.
+
+**Hoje:**
+```bp
+val s = "e\u{301}";        // "é" escrito como `e` + acento agudo combinante (U+0301)
+@print(s.length);          // erlang/beam: 1 (grapheme) · wasm: 2 (codepoints) · commonJS: 2 (UTF-16)
+```
+
+- [ ] **(a)** Codepoints: os templates do erlang passam a contar codepoints; uma célula com marca
+  combinante fixa os quatro targets.
+  ```bp
+  @print("e\u{301}".length);     // 2 em todo target — um .out só
+  @print("e\u{301}".at(1));      // "\u{301}" em todo target
+  ```
+- [ ] **(b)** Grapheme clusters: a 169 e a 240 são reescritas; o wasm precisa de um segmentador Unicode
+  (tabelas no binário) e o commonJS de `Intl.Segmenter`.
+  ```bp
+  @print("e\u{301}".length);     // 1 em todo target
+  @print("👍🏽".length);           // 1 (emoji + modificador de tom)
+  ```
+
+**Recomendação: (a)** — é o que a 169 e a 240 dizem, o que a 260 usa no `contentHash` (code points), e
+não exige tabela Unicode em target nenhum. **Bloqueia:** a célula do passo 6 da 02-erlang; o lowering de
+string do 05-wasm.
+
+### 130-b · Dois `#[provides]` do mesmo tipo no registro de beans (decisões 254, 256, 281)
+
+**Trava:** `01-compiler/130` passo 5 (a migração de `#[provides]` / `#[qualifier]` / `#[primary]` do rakun); depende da nat-e
+
+**Contexto.** A 256 monta o registro de beans do rakun em comptime, no ponto de entrada, com um laço
+sobre `@TypeInfo.all(with: provides)`, e o trecho dela chaveia cada provider por `b.returnTypeName` — o
+nome do tipo em texto, que a 281 tirou do registro ("how a qualified bean is told apart stays `130-b`,
+now with a type-based option"). Nesse trecho, dois providers qualificados do mesmo tipo — e um
+`#[primary]` ao lado de um comum — colidem em `"Dye"` e seriam recusados como duplicata. O código de
+hoje não passa por esse registro: o `#[provides]` emite `rkRegisterBean(…)`, que grava cada provider na
+tabela do contexto em load com a chave `Tipo@qualificador`; o sem qualificador (ou o `#[primary]`) fica
+com o nome puro, e os outros são alcançados por `ctx.resolveNamed("Dye", "warm")`
+(`rakun/src/context.bp:1030-1110`, `rakun/test/context_test.bp:486-510`, `examples/rakun-container`) —
+a regra do Spring.
+
+**Hoje:**
+```bp
+#[provides] #[qualifier("fast")] fn fastDye() -> Dye { … }
+#[provides] #[qualifier("slow")] fn slowDye() -> Dye { … }
+// hoje: aceitos na tabela do contexto ("Dye@fast", "Dye@slow");
+// no registro da 256 (chave b.returnTypeName) seriam duplicata de "Dye"
+ctx.resolveNamed("Dye", "fast")      // o nome do tipo em string (281)
+```
+
+- [ ] **(a)** Provider qualificado é chaveado `Tipo@qualificador` (o decorador grava
+  `decl.setMeta(Qualifier(name: "fast"))`, 298); o nome puro é o sem qualificador ou o `#[primary]`; dois
+  donos do nome puro são a duplicata.
+  ```bp
+  for (@TypeInfo.all(with: provides)) { b ->
+      d = d.insert(rkBeanKey(b), b.value);   // "Dye@fast", "Dye@slow", "Dye" para o primary
+  }
+  ctx.resolveNamed("Dye", "fast")            // lê "Dye@fast" do mesmo registro
+  ```
+- [ ] **(b)** O registro guarda só o que a injeção por tipo lê; os qualificados ficam na tabela do
+  contexto que o registro em load preenche (`resolveNamed` a lê) — dois lugares para bean.
+  ```bp
+  // registro em comptime: só "Dye" (o sem qualificador ou o #[primary])
+  // fastDye e slowDye: registrados em load na tabela do contexto
+  ctx.resolveNamed("Dye", "fast")            // lê a tabela, não o registro
+  ```
+- [ ] **(c)** O trecho como está: dois providers de um tipo são sempre duplicata; qualificador só nomeia
+  bean de tipo com um provider.
+  ```bp
+  #[provides] #[qualifier("fast")] fn fastDye() -> Dye { … }
+  #[provides] #[qualifier("slow")] fn slowDye() -> Dye { … }
+  // error: duplicate bean "Dye" (fastDye, slowDye)
+  ```
+- [ ] **(d)** *(nova, pela 281)* O qualificador é um tipo distinto; o registro é chaveado só pelo tipo, e
+  `#[qualifier("…")]` e `resolveNamed` saem.
+  ```bp
+  type FastDye(dye: Dye)
+  type SlowDye(dye: Dye)
+  #[provides] fn fastDye() -> FastDye { … }
+  #[provides] fn slowDye() -> SlowDye { … }
+  val d = use bean(FastDye);              // em vez de ctx.resolveNamed("Dye", "fast")
+  ```
+
+**Recomendação: (d)**, pela decisão 281 — a (a) guarda uma string (`Dye@fast`) ao lado do tipo e lê o
+tipo pelo nome em `resolveNamed`. A (a) continua possível se você quiser um rótulo em texto mesmo assim.
+O passo 6 da `04-rakun/04` já escreve a forma da (d). **Bloqueia:** a migração de `#[provides]` /
+`#[qualifier]` / `#[primary]` do rakun (130 passo 5: `context.bp`, o teste dele, rakun-container).
+**Depende de:** `nat-e`, que também a bloqueia.
+
+### 130-c · Os métodos `#[bean]` de um `#[configuration]` no registro (decisão 234)
+
+**Trava:** `01-compiler/130` passo 5 (a migração do `#[configuration]` e todo `rkRegisterBean` de um `#[bean]`); a nat-e a absorve
+
+**Contexto.** A 234 preenche o contexto de injeção "a partir do `@TypeInfo.all(with: provides)` / dos
+métodos `#[bean]`", mas o `@TypeInfo.all` responde só declarações de topo, e um `#[bean]` é método de um
+tipo `#[configuration]`: nenhuma consulta o alcança. Hoje o `#[configuration]` dá ao tipo um membro
+`make()` e, por `#[bean]`, emite `val __rkBeanM_<Config>_<método> = rkRegisterBean("<TipoDeRetorno>", …)`,
+que grava o bean na tabela do contexto em load (`rakun/src/decorators.bp:333-385`). Os `#[bean]`
+escritos hoje estão em `examples/rakun/src/config.bp` e nos testes (`rakun/test/autoconfig_test.bp`,
+`conditions_test.bp`, `scopes_test.bp`, `context_test.bp`; `rakun-test/test/mocks_pairing_test.bp`). Sem
+resposta, esses beans ficam fora do registro novo. A 299 já tirou o `#[value("…")]`: a configuração é um
+record tipado por prefixo (`#[config("app")]`), injetado por tipo. A `nat-e` recomenda absorver esta
+pergunta.
+
+**Hoje:**
+```bp
+// examples/rakun/src/config.bp
+#[configuration]
+pub type AppConfig(
+    #[value("app.timezone")] timezone: string,       // sai pela 299
+) {
+    #[bean]
+    pub fn clock(self: Self) -> Clock { return Clock(zone: self.timezone); }
+    // emite val __rkBeanM_AppConfig_clock = rkRegisterBean("Clock", …)
+}
+```
+
+- [ ] **(a)** Métodos `#[bean]` viram funções livres `#[provides]`; a configuração é o record da 299, e o
+  provider a lê por tipo.
+  ```bp
+  #[config("app")]
+  pub type AppConfig(timezone: string);
+
+  #[provides]
+  pub fn clock() -> Clock {
+      val config = use config(AppConfig);       // 299: por tipo, nunca rkResolve<…>("AppConfig")
+      return Clock(zone: config.timezone);
+  }
+  ```
+- [ ] **(b)** A configuração grava cada bean como meta tipada (298) e entrega a fábrica dele; o ponto de
+  entrada faz um terceiro laço sobre `@TypeInfo.all(with: configuration)`.
+  ```bp
+  for (@TypeInfo.all(with: configuration)) { c ->
+      // c.metaAll(Bean): um Bean por método #[bean], com a sua fábrica (unknown)
+      c.metaAll(Bean).forEach({ b -> d = d.insert(<a chave da 130-b>, b.factory); });
+  }
+  ```
+- [ ] **(c)** O `@TypeInfo.all` ganha `methods: true` — reflexão nova, que alcança métodos.
+  ```bp
+  for (@TypeInfo.all(with: bean, methods: true)) { b -> d = d.insert(<a chave da 130-b>, b.value); }
+  ```
+
+**Recomendação: (a)** — um jeito só de fornecer bean, já no laço do registro, sem reflexão nova; o
+`@Bean` do Spring é o que o `#[provides]` já é numa linguagem com funções livres. **Bloqueia:** a
+migração do `#[configuration]` do rakun e todo `rkRegisterBean` que um `#[bean]` emite (130 passo 5).
+**Depende de:** `nat-e`, que a absorve.
+
+### 03r-ao · A ordem entre o 130 e o 128 no rakun *(proposta)*
+
+**Trava:** `01-compiler/130` passo 5 (as linhas do rakun) e a abertura da `04-rakun/128` — só o registro; as frentes já seguem a (a)
+
+**Contexto.** A frente 128 reorganiza o rakun (a decisão 187 funde membros: 25 viram 16) e move
+arquivos — por exemplo `rakun-actuator-api` para `modules/rakun/src/actuator_api/`. O passo 5 da
+`01-compiler/130` (decisão 216: decoradores produzem membros e meta em vez de `@emit` solto) ainda
+edita arquivos que o 128 move ou que as frentes do rakun possuem: o `decorators.bp`, `autoconfig.bp`,
+`config.bp`, `context.bp`, `lifecycle.bp` e `conditions.bp` do core, `rakun-web/src/convention.bp`,
+`rakun-app`, `rakun-scheduling`, `rakun-messaging`, `rakun-cli`, `rakun-data`, `rakun-security`,
+`rakun-websocket`, `rakun-client` e o `actuator_api`. As frentes já seguem a (a) como regra provisória:
+o 130 já escreve os caminhos de depois do 128 e não faz commit no rakun com o 128 aberto
+(`130-decorator-outputs/README.md` § Step 5), e o `04-rakun` já dá ao 130 a escrita do `decorators.bp`
+congelado (`04-rakun/README.md` § Order e § Rules, "to confirm"). Os sites já migrados (`#[entity]`,
+`#[entityRepository]`, `#[belongsTo]`, `#[query]`, `#[cached]`, `#[halResource]` e as fábricas
+`T.make()` do `front/130-rakun-di`) estão na `feat` e se movem com os arquivos. Falta só registrar a regra.
+
+**Hoje:**
+```text
+130 passo 5 escreve:     modules/rakun/src/actuator_api/**   (hoje rakun-actuator-api, movido pelo 128 passo 1)
+130 passo 5 diz:         nenhum commit do 130 no rakun enquanto o 128 estiver aberto (03r-ao (a))
+04-rakun § Rules:        src/decorators.bp congelado; único escritor: a reescrita do 130 (a confirmar)
+nenhuma decisão registra a regra
+```
+
+- [ ] **(a)** O 128 primeiro e sozinho; os pontos do 130 no rakun apontam para os caminhos depois do
+  128; depois dele cada um é um commit de consumidor (decisão 188, nunca na mesma onda da frente dona);
+  a regra de arquivos congelados abre exceção para a reescrita do `decorators.bp` pelo 130.
+  ```text
+  onda 1: 128 sozinho                 → rakun com 16 membros, caminhos novos
+  onda 2: commit de consumidor do 130 → modules/rakun/src/actuator_api/…  (fora da onda da frente dona)
+          exceção ao congelamento     → modules/rakun/src/decorators.bp reescrito pelo 130
+  ```
+- [ ] **(b)** Os pontos do 130 no rakun antes de o 128 abrir — toda frente do rakun espera o 130.
+  ```text
+  onda 1: 130 passo 5 edita modules/rakun-actuator-api/…, modules/rakun-web/src/convention.bp, …
+  onda 2: só então o 128 abre (e move os arquivos que o 130 acabou de editar)
+  ```
+- [ ] **(c)** O próprio 128 faz a reescrita do 130 nos arquivos que move — o 128 fica maior e mistura
+  mudança de lugar com mudança de forma.
+  ```text
+  128: git mv modules/rakun-actuator-api/src → modules/rakun/src/actuator_api
+       + reescreve os #[…] desses arquivos no formato da 216, no mesmo commit
+  ```
+
+**Recomendação: (a)** — o 128 segura o rakun inteiro, e a (b) seguraria toda frente do rakun esperando
+o 130. **Bloqueia:** só o registro — o 130 e o `04-rakun` já seguem a (a); a abertura do 128 e as
+linhas do rakun no passo 5 do 130 andam pela regra provisória até a confirmação.
+
+### 134-d · `@is(…)` escrito à mão
+
+**Trava:** `01-compiler/134` passo 2 (a caixa de `@is(…)`)
+
+**Contexto.** `x is T` é lido como a chamada builtin `is` levando o tipo testado. O lexer também faz de
+`@is(1)` essa mesma chamada, só que sem tipo testado — tipa como `bool` e não baixa nada com sentido. É
+alcançável e não está declarado, e a 252 diz que todo builtin é declarado; é uma das chamadas builtin
+ainda não declaradas do passo 2 da 134 (ao lado do namespace `result.*`).
+
+**Hoje:**
+```bp
+val b = @is(1);   // hoje compila: bool, sem testar nada
+```
+
+- [ ] **(a)** Recusar `@is(…)` como chamada (`unknown-builtin`, apontando `x is T`).
+  ```bp
+  val b = @is(1);   // error[unknown-builtin]: `@is` não é builtin — escreva `x is T`
+  ```
+- [ ] **(b)** Declará-lo (`is(value: unknown) -> bool`) e manter a chamada.
+  ```bp
+  pub declare fn is(value: unknown) -> bool;
+  val b = @is(1);   // compila, declarado — e continua sem testar tipo nenhum
+  ```
+
+**Recomendação: (a).** `is` é um operador; uma forma de chamada que ninguém escreve e que não testa nada
+é a leitura mais frouxa. **Bloqueia:** a caixa de `@is(…)` do passo 2 da 134.
+
+### 17-b · O incremento por linha de um `Dict` com `keyed: true`
+
+**Trava:** `01-compiler/17` passo 1, quarta caixa
+
+**Contexto.** A frente 17 implementou o `keyed: true` (decisões 168 e 174; a grafia `label: value` é da
+305): um `var` global anotado `#[@BeamMemory.Ets(keyed: true)]` vira uma tabela ETS em que cada chave é
+uma linha. `counts.at(k)` lê uma linha (`ets:lookup`) e `counts = counts.insert(k, v)` escreve uma linha
+(`ets:insert`); dois processos escrevendo cada um a sua chave 20 000 vezes terminam em `20000 20000`. O
+que falta é um `+=` numa linha virar `ets:update_counter` (atômico). O `??` agora existe, então a forma
+abaixo **tipa** — mas continua recusada, porque recalcula a linha a partir do próprio var e pode perder
+um de dois incrementos simultâneos (a regra 5(b) da decisão 40). `counts.at(k) += 1` e `counts[k] += 1`
+não são alvos de atribuição.
+
+**Hoje:**
+```bp
+#[@BeamMemory.Ets(keyed: true)]
+var counts: Dict<string, i32> = Dict.empty();
+
+counts = counts.insert(k, (counts.at(k) ?? 0) + 1);   // tipa; recusado: … can lose one of two concurrent runs
+```
+
+- [ ] **(a)** Nenhum: uma linha keyed se escreve inteira; um contador que vários processos incrementam é
+  um `#[@BeamMemory.Ets] var n: i32` próprio (o incremento da decisão 40).
+  ```bp
+  #[@BeamMemory.Ets] var hitsA: i32 = 0;
+  hitsA += 1;                                  // ets:update_counter
+  ```
+- [ ] **(b)** Um método da std `Dict.bump(key, by)` (valor inteiro; chave ausente conta de 0), comum num
+  `Dict` normal e, sob `keyed: true`, `ets:update_counter(T, K, By, {K, 0})`.
+  ```bp
+  counts = counts.bump(k, 1);
+  ```
+- [ ] **(c)** Atribuição por índice na gramática, com o mesmo lowering.
+  ```bp
+  counts[k] += 1;
+  ```
+- [ ] **(d)** *(nova, agora que `??` existe)* Reconhecer exatamente a forma
+  `counts.insert(k, (counts.at(k) ?? 0) + n)` e baixá-la para `ets:update_counter`, sem método nem
+  gramática nova.
+  ```bp
+  counts = counts.insert(k, (counts.at(k) ?? 0) + 1);   // reconhecida → ets:update_counter(T, k, 1, {k, 0})
+  counts = counts.insert(k, (counts.at(k) ?? 0) * 2);   // outra forma: continua recusada
+  ```
+
+**Recomendação: (a).** Nenhum método ou gramática nova por causa de uma anotação; (b) põe no `Dict` um
+método cuja atomicidade só existe sob `keyed: true`, (c) cria um alvo de atribuição que a linguagem não
+tem, (d) faz uma forma escrita mudar de significado conforme o padrão. **Bloqueia:** a quarta caixa do
+passo 1 da 17.
+
+### lg2-w · Função host chamada do corpo de um decorator
+
+**Trava:** `01-compiler/14` passo 6 (as linhas que esperam decisão: lg2-j, lg2-o, lg2-w); fora de 00–03: rakun 16 (`#[scheduled]`) e todo decorator que reusaria o std
+
+**Contexto.** Um decorator roda num runtime comptime (BEAM ou wat). Só funções com corpo viajam para
+o módulo do decorator; uma função host (`declare fn` com célula Erlang/JS), do std ou do próprio
+projeto, não viaja, e a chamada falha com `call to undefined function quote/1` nos dois runtimes. Na
+prática, o `#[scheduled]` da frente 16 repete as regras de cron inline em vez de reusar o std. (O
+`@emit` de módulo sai da linguagem pela 216; os exemplos usam meta tipado, 298.)
+
+**Hoje:**
+```bp
+fn route(comptime decl: @Decl, comptime path: string) { decl.setMeta(Route(path: json.quote(path))); }
+// undefined function quote/1
+```
+
+- [ ] **(1)** Corpo comptime só chama funções com corpo; a chamada host é recusada, localizada, nomeando a função, em todo target.
+  ```bp
+  fn route(comptime decl: @Decl, comptime path: string) { decl.setMeta(Route(path: json.quote(path))); }
+  // error: `json.quote` is a host function — a decorator body calls bodied functions only
+  fn quote(s: string) -> string { … }     // a forma aceita: uma fn com corpo no projeto ou num pacote
+  ```
+- [ ] **(2)** A célula Erlang viaja para o módulo do decorator no runtime BEAM; no runtime wat a chamada é recusada.
+  ```bp
+  decl.setMeta(Route(path: json.quote(path)));   // runtime BEAM: compila · runtime wat: error
+  ```
+- [ ] **(3)** Decorator que alcança célula host sempre roda no runtime BEAM, qualquer que seja o target.
+  ```bp
+  decl.setMeta(Route(path: json.quote(path)));   // --target wasm: o decorator roda no BEAM e compila
+  ```
+
+**Recomendação: (1).** A resposta de um decorator nunca depende de qual runtime o target escolheu
+(decisão 84). **Bloqueia:** a linha; frente 16 (`#[scheduled]`); todo decorator que reusaria o std.
+
+### lg2-o · Acesso a arquivos no comptime
+
+**Trava:** `01-compiler/14` passo 6; fora de 00–03: rakun 88, 93
+
+**Contexto.** Um corpo comptime (decorator, template) só vê o prelude do seu runtime: `fs.readText`
+lá dentro é recusado na anotação. Por isso o rakun gera o `.bp` de um WSDL com um comando
+(`rakun ws generate`) e versiona o resultado. Com (2), o build passaria a ler arquivos além dos
+fontes, e esses arquivos entrariam na chave do cache.
+
+**Hoje:**
+```bp
+fn wsdl(comptime decl: @Decl, comptime path: string) { val xml = fs.readText(path); … }   // recusado na anotação
+```
+
+- [ ] **(1)** Não: o `.bp` gerado é versionado.
+  ```
+  $ rakun ws generate schema.wsdl         → src/ws/billing.bp   # roda antes; o resultado entra no repositório
+  ```
+- [ ] **(2)** Leitura isolada de entradas declaradas, que entram na chave do cache do build.
+  ```bp
+  #[wsdl("schema.wsdl")] type Billing {}  // lê o arquivo durante a compilação
+  ```
+
+**Recomendação: (1).** Um build lê só os seus fontes. **Bloqueia:** a linha; rakun 88, 93.
+
+### lg2-j · Estado comptime entre invocações de decorator
+
+**Trava:** `01-compiler/14` passo 6; fora de 00–03: rakun 05
+
+**Contexto.** Cada invocação de decorator é uma chamada de módulo independente: um `var` de módulo
+escrito pelo corpo do decorator é recusado na anotação. A pergunta veio do rakun 05, que queria
+acumular um catálogo de chaves enquanto as anotações são visitadas. Hoje um catálogo é o registro de
+entrada da decisão 256, lido com `@TypeInfo.all` (decisões 253/256) — sem `member: "make"` nem chave
+pelo nome do tipo, que a 281 tirou da 256 (a forma da chave por tipo é da `130-b`).
+
+**Hoje:**
+```bp
+var seen: Array<string> = [];
+fn register(comptime decl: @Decl) { seen.push(decl.name); }   // erro na anotação
+```
+
+- [ ] **(1)** Cada invocação é independente; a lista de registros vem de `@TypeInfo.all`.
+  ```bp
+  val beans = comptime {
+      var d: unknown[] = [];
+      for (@TypeInfo.all(with: [service, configuration])) { b -> d = d.append([b.value]); }
+      break d;
+  };                                      // lido no ponto de entrada; a ordem é a do catálogo, não a da visita
+  ```
+- [ ] **(2)** Estado mutável comptime por compilação: `seen` acumula, e a ordem de visita passa a importar.
+  ```bp
+  var seen: Array<string> = [];
+  fn register(comptime decl: @Decl) { seen.push(decl.name); }   // compila; seen depende da ordem dos arquivos
+  ```
+
+**Recomendação: (1).** A resposta de um decorator depende só da declaração dele, então a ordem em que
+o compilador visita as declarações nunca muda um build. **Bloqueia:** a linha; rakun 05.
+
+### lg2-v · Subdiretório numa dependência git
+
+**Trava:** `01-compiler/26` passo 6 (a metade do resolver) e `02/98` passo 4 (o campo `subdir`); fora de 00–03: rakun 73; o argumento da `07-h`
+
+**Contexto.** Uma dependência no `botopink.json` é `{git, path, ref, workspace}`
+(`modules/manifest/src/root.zig`): não há como apontar para uma pasta dentro de um repositório git.
+Como todo módulo `rakun-*` é uma pasta do repositório do rakun, quem está fora do checkout meta não
+instala um starter por git. Custa: segura o `07-h` (b) e o 98 passo 4.
+
+**Hoje:**
+```json
+"rakun-web": { "git": "git@github.com:botopink/rakun.git" }      // instala a raiz do repositório, não o módulo
+```
+
+- [ ] **(1)** Não: dependência git é a raiz de um repositório; membro de monorepo só por `path`.
+  ```json
+  "rakun-web": { "path": "../rakun/modules/rakun-web" }
+  ```
+- [ ] **(2)** Campo `subdir`, resolvido pelo `bpmp`.
+  ```json
+  "rakun-web": { "git": "git@github.com:botopink/rakun.git", "subdir": "modules/rakun-web" }
+  ```
+
+**Recomendação: (1).** Se você escolher a (2): `subdir` só vale junto com `git`, e um que escape do
+checkout (`..`) é recusado. **Bloqueia:** a linha; rakun 73; `02/98` passo 4 (condicional); o
+argumento do `07-h`.
+
+### 16-a · A lista de argumentos quebra junto com o que a envolve
+
+**Trava:** `01-compiler/16` passos 4 e 6 (o reformat das cinco bibliotecas)
+
+**Contexto.** O formatador (C-12) só quebra uma construção quando ela não cabe em 80 colunas, e o
+grupo de fora decide primeiro (decisão 65: tudo-ou-nada). Habilitada sozinha (o
+`argument-list.patch` estacionado), a lista de argumentos abria ~1 480 de ~2 770 listas por causa do
+que vinha DEPOIS delas (`) != -1;`, `) + "…"`), porque a expressão binária em volta estava fixada — o
+"meio errado" da decisão 65. Por isso a implementação habilitou junto, cada uma com seu
+`groupMeasured`: corrida binária, `if` sem chaves, lista de argumentos e literais de array, tupla e
+behavior. Custo medido: 142 arquivos; linhas acima de 80 colunas 5 973 → 1 840; um segundo passe não
+move nada.
+
+**Hoje:**
+```bp
+assert doc.indexOf("…um argumento comprido…")
+    != -1;                 // o binário quebra primeiro; a lista é medida na própria linha
+```
+
+- [ ] **(a) ★** A lista habilitada junto com as construções que a envolvem, a de fora decidindo
+  primeiro.
+  ```bp
+  if (absDiff > tolerance)
+      throw "…";           // o `if` sem chaves põe o ramo na linha seguinte, sem quebrar a condição
+  ```
+- [ ] **(b)** A lista habilitada sozinha (ou em commits separados — cada passo intermediário é um meio
+  errado próprio, e as seis árvores seriam reformatadas duas vezes).
+  ```bp
+  assert doc.indexOf(
+      "…um argumento comprido…",
+  ) != -1;
+  ```
+- [ ] **(c)** Manter a lista fixada (nunca quebra).
+  ```bp
+  assert doc.indexOf("…um argumento comprido…") != -1;   // passa de 80 colunas
+  ```
+
+**Recomendação: (a).** É a única que não reformata nada duas vezes e não abre lista pelo que vem
+depois; cobre também a metade "sem vírgula" da 166 (ver `ctr-s`). **Bloqueia:** o reformat das cinco
+bibliotecas (09) e o passo 6 da 16-formatter.
+
+### ctr-s · Decisão 166 × decisão 243
+
+**Trava:** `01-compiler/16` passo 6
+
+**Contexto.** No formatador, a 166 diz que a vírgula final decide: lista escrita com vírgula depois do
+último elemento fica um por linha (e mantém a vírgula); lista sem ela fica numa linha só. A 243 estendeu
+o alcance da 166 a toda lista delimitada (genéricos, parâmetros, imports, argumentos…), mas diz que, sem a
+vírgula, decidem as regras de largura (`16-a`/`16-b`: quebra o que não cabe) — e se apresenta como
+"extensão" da 166, embora mude a metade "sem vírgula".
+
+**Hoje:**
+```bp
+// escrito sem vírgula final, mais largo que a linha:
+val p = Person(name: "Ana Maria da Silva", email: "ana@example.com", city: "Belo Horizonte", age: 30);
+// 166: fica numa linha · 243: as regras de largura quebram
+```
+
+- [ ] **(a)** Registrar a 243 como emenda da metade "sem vírgula" da 166; a confirmação de `16-a`/`16-b`
+  (Parte 6) cobre o resto.
+  ```bp
+  val p = Person(
+      name: "Ana Maria da Silva",
+      email: "ana@example.com",
+      city: "Belo Horizonte",
+      age: 30
+  );                                   // forma exata da quebra: 16-a/16-b
+  ```
+- [ ] **(b)** A 166 vale inteira: sem vírgula, uma linha, por mais larga que fique; a 243 só estende o
+  alcance.
+  ```bp
+  val p = Person(name: "Ana Maria da Silva", email: "ana@example.com", city: "Belo Horizonte", age: 30);
+  ```
+
+**Recomendação: (a).** É o que o formatador da `feat` faz (16-a/16-b implementadas) e o que a 243 quis;
+falta só o texto dizer "emenda". A 286 já aplica essa leitura às listas de anotações ("without one
+the width rules decide (166, 243)"). **Bloqueia:** 16-formatter passo 6.
+
+### 16-b · Array aberto: um elemento por linha
+
+**Trava:** `01-compiler/16` passo 4
+
+**Contexto.** Antes, elementos escritos numa linha do fonte ficavam numa linha da saída. Quando a lista
+passa a medir largura, isso não é idempotente (a linha junta passa de 80, uma chamada dentro dela
+quebra, e o passe seguinte lê outro layout: 3 arquivos do corpus mudaram num segundo passe), e faz a
+saída depender de como o fonte estava quebrado — o que a decisão 65 parte 2 proíbe. A decisão 166
+(escopo na 243) vem antes desta regra: uma lista escrita com vírgula depois do último elemento sai
+aberta, um por linha, mesmo que caiba — a única marca do fonte que conta. Esta escolha decide só a lista
+escrita sem essa vírgula.
+
+**Hoje:**
+```bp
+val xs = [
+    1,
+    2,
+    3,
+];
+```
+
+- [ ] **(a) ★** Na forma aberta, um elemento por linha (tudo-ou-nada, decisão 65 parte 1).
+  ```bp
+  val xs = [1, 2, 3];      // sem vírgula final e cabe: fica fechado numa linha
+  ```
+- [ ] **(b)** `fill` de Wadler na lista sem vírgula final: quantos couberem por linha — o resultado
+  passa a depender de como o fonte estava quebrado.
+  ```bp
+  val xs = [
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+      21, 22, 23,
+  ];
+  ```
+
+**Recomendação: (a).** É idempotente e não depende da entrada; o custo é que uma lista longa de
+números curtos ocupa uma linha por número. **Bloqueia:** nada.
+
+### lg2-a · Tipo byte
+
+**Trava:** `01-compiler/01-checker`: a linha da lg2-a vira passo quando respondida; `03/104` (os parsers de fio e os corpos de compressão esperam a lg2-a); fora de 00–03: rakun 01, 13, 15, 24, 25, 70, 71; `03r-ab`
+
+**Contexto.** Nenhum primitivo, tipo do std ou literal guarda bytes, e toda célula host (o código
+Erlang/JS por trás de uma função `declare`) passa dados como `string`. Por isso `Socket.recv` devolve
+UTF-8 quebrado num fluxo binário e não dá para escrever upload, download ou endpoint de imagem.
+Custa: uploads, downloads, imagens; Mongo/Bolt/Cassandra/Couchbase e o plano de dados do Pulsar no
+rakun.
+
+**Hoje:**
+```bp
+val b: Bytes = "a";                       // type mismatch em todo target
+val chunk = sock.recv();                  // string: bytes que não são UTF-8 chegam corrompidos
+```
+
+- [ ] **(1)** Sem tipo byte: um payload binário é recusado onde entra; nada lê bytes como texto.
+  ```
+  POST /upload   Content-Type: multipart/form-data
+  → 415 Unsupported Media Type            // a frente 25 recusa na borda
+  ```
+- [ ] **(2)** `Bytes` com fronteira explícita: toda conversão é uma chamada que pode falhar, nenhuma implícita.
+  ```bp
+  val b = Bytes.fromUtf8("a");
+  val s = try b.toUtf8();                 // toUtf8 -> @Result: bytes inválidos viram Error, não lixo
+  ```
+- [ ] **(3)** `string` também carrega bytes crus, como hoje.
+  ```bp
+  val frame: string = sock.recv();        // bytes crus dentro de uma string
+  val n = frame.length();                 // conta caracteres, não bytes; UTF-8 quebrado passa calado
+  ```
+
+**Recomendação: (1).** Um payload binário é recusado onde entra, nunca lido com perda. Se você
+escolher a (2): nenhuma conversão sem uma chamada que pode falhar; a (3) continua recusada.
+**Bloqueia:** a linha "No byte or binary type"; rakun 01, 13, 15, 24, 25, 70, 71; `03r-ab`,
+o plano de dados do Pulsar (adiado pela 274) (todos seguem com `string` + recusa 415 até a resposta).
+
+### lg2-e · O dono num `@Decl` de método
+
+**Trava:** `01-compiler/01-checker`: a linha do dono (`owner`) do `@Decl` de método, ao lado do passo 24; fora de 00–03: rakun 06–10, 29; o marcador da `08-bpp/127`
+
+**Contexto.** A decisão 280 já respondeu os parâmetros: o `@Decl<T>` de uma função ou método tem `T`
+= o tipo da função (`@Decl<fn(e: E) -> unknown>` liga `E`), e os exemplos aprovados da 280 (exemplo
+1, alvo do `01-checker` passo 24) leem `decl.params`, `decl.params[0].module` e `decl.module` num
+`@Decl` de fn. Resta o dono: num decorator aplicado a um método, `decl.owner` dá `badkey`, e só o
+`@Decl` do tipo enxerga o tipo inteiro com seus métodos (`decl.methods[i]`). Por isso o rakun faz o
+decorator do tipo (`#[restController]`) ler os marcadores dos métodos (`#[getMapping]`). A pergunta é
+se o decorator de método deve enxergar o tipo que o declara.
+
+**Hoje:**
+```bp
+type UserController { #[get("/u/:id")] fn show(self: Self, id: i32) … }
+fn get(comptime decl: @Decl, comptime path: string) { decl.owner }     // badkey
+```
+
+- [ ] **(1)** O marcador de método só vê o próprio método (parâmetros pela 280); quem vê o tipo é o decorator do tipo.
+  ```bp
+  #[controller] type UserController { #[get("/u/:id")] fn show(self: Self, id: i32) … }
+  fn controller(comptime decl: @Decl) {
+      for (decl.methods) { m -> … }       // m.annotations tem `get`; m.params tem `id: i32`
+  }
+  ```
+- [ ] **(2)** `decl.owner` existe no método.
+  ```bp
+  fn get(comptime decl: @Decl, comptime path: string) {
+      decl.owner.name;                    // "UserController"
+      decl.owner.methods.length;          // os irmãos do método
+  }
+  ```
+
+**Recomendação: (1).** Um decorator de método responde pelo método; o que depende do tipo inteiro é
+do decorator do tipo, que já vê todos os métodos. **Bloqueia:** a linha (o marcador em
+`typed-action-example.bp` do `08-bpp/127`, que fecha com o passo 24 do `01-checker` quanto aos
+parâmetros); rakun 06–10, 29.
+
+### lg2-q · Localização no fonte dentro de `@Decl`
+
+**Trava:** `01-compiler/01-checker`: a linha reduzida de `decl.loc`; fora de 00–03: rakun 22
+
+**Contexto.** Um decorator não sabe em que arquivo está a declaração: `decl.loc.file` dá `badkey`. O
+roteamento por arquivo (rakun 22, onze 53) queria deduzir a rota do caminho, como o `app/` do
+Next.js. As decisões 289 e 290 já escrevem a forma (1): o `page.bpp` de uma rota leva a rota como
+argumento do seu decorator (`#[page("blog/[slug]", paths: allPosts)]`, `#[page("blog/[slug]",
+revalidate: hours(1))]`), e a página lê os segmentos por hook (293), sem parâmetro, devolvendo `View`
+(275, 276). O segmento explícito é gerado e verificado pelo CLI da frente 50. Resta só registrar que
+`@Decl` não ganha `loc` — o `decl.name` de um default anônimo já é o nome do arquivo (289), não o
+caminho.
+
+**Hoje:**
+```bp
+fn page(comptime decl: @Decl, comptime route: string) { decl.loc.file }   // badkey
+```
+
+- [ ] **(1)** Não: o segmento é argumento explícito (a forma da 289/290).
+  ```bp
+  // app/blog/[slug]/page.bp
+  #[page("blog/[slug]")] pub fn BlogPost() -> View { val p = use params<BlogParams>(); … }
+  ```
+- [ ] **(2)** `decl.loc` (o `SourceLocation` do `@src()`): `#[page]` deduz a rota do caminho do arquivo.
+  ```bp
+  // app/blog/[slug]/page.bp
+  #[page] pub fn BlogPost() -> View { … }   // rota "blog/[slug]" lida de decl.loc.file
+  ```
+
+**Recomendação: (1).** A saída de um decorator nunca depende de onde o arquivo está; as 289/290 já
+foram escritas assim. **Bloqueia:** a linha; rakun 22 (os exemplos com `#[page("…")]` já seguem a (1)).
+
+### 23-b · As quatro funções do `base64` foram aposentadas
+
+**Trava:** `01-compiler/23` passo 2 (as confirmações)
+
+**Contexto.** `base64.decode` devolvia uma `string`; o substituto `encoding.base64Decode` devolve
+`@Result<string, string>` porque a frente 01 valida a entrada antes de o `Buffer.from` truncá-la
+(idem `decodeUrlSafe` → `base64UrlDecode`). Nenhuma biblioteca importava `base64`. O `base64.bp` foi
+apagado e seus quatro testes foram reescritos com os nomes do `encoding` (o std continua com 417
+testes). A decisão 106 e `01-std/modules.md` já nomeiam os substitutos.
+
+**Hoje:**
+```bp
+val s = try encoding.base64Decode(text);     // @Result<string, string>: valida antes de decodificar
+base64.decode(text)                          // não existe mais
+```
+
+- [ ] **(a) ★** Aposentar as quatro (`encode` / `decode` / `encodeUrlSafe` / `decodeUrlSafe`).
+  ```bp
+  val raw = try encoding.base64UrlDecode(token);
+  ```
+- [ ] **(b)** Manter as quatro no `encoding` como apelidos que devolvem `string` (escondem a recusa).
+  ```bp
+  val s = encoding.decode("não é base64!");   // devolve uma string truncada, sem erro
+  ```
+
+**Recomendação: (a).** Duas grafias de um mesmo codec, uma delas escondendo a recusa, é o que a frente
+01 removeu. **Bloqueia:** nada.
+
+### std-c · O namespace de pasta é uma reescrita do programa
+
+**Trava:** `01-compiler/23` passo 2 (as confirmações); uma reversão abre passo no `01-checker`
+
+**Contexto.** A decisão 110 permite `import {io} from "std"` e depois `io.fs.readText(…)`. A
+implementação (`comptime/std_namespace.zig`) reescreve o programa já lido para as formas folha que o
+checker e os quatro backends já baixam: `io.fs.f()` vira o namespace de `io/fs` (o item
+`io.fs as __bp_ns_io_fs` é acrescentado), e `collections.Dict` vira `Dict`. Só os módulos alcançados
+são importados. Limites: um membro inexistente é `unbound variable 'io'`; um módulo que declara seu
+próprio `Dict` de topo mantém `collections.Dict` sem reescrever (recusado do mesmo jeito); um local com
+o nome da pasta (`fn f(io: …)`) não é distinguido dela. (Foi por aqui que a alternativa da 23-a entrou.)
+
+**Hoje:**
+```bp
+import {io} from "std";
+io.fs.readText(path)       // reescrito para o import folha `io.fs`; só os módulos alcançados são importados
+io.nope.f()                // unbound variable 'io'
+```
+
+- [ ] **(a) ★** A reescrita: um arquivo, nenhum backend mexido.
+  ```bp
+  import {collections} from "std";
+  val d = collections.Dict.empty();   // roda nos quatro targets
+  ```
+- [ ] **(b)** Um tipo-namespace no checker e um lowering de `a.b.f()` nos quatro backends, para o
+  diagnóstico nomear a pasta.
+  ```bp
+  io.nope.f()                // error: std folder `io` has no module `nope`
+  ```
+
+**Recomendação: (a).** (b) só se o diagnóstico nomeando a pasta for desejado. **Bloqueia:** nada.
+
+### 24-b · Os métodos de `@Task`
+
+**Trava:** `01-compiler/24` passo 2 (as confirmações); a forma de combinadores do `std/async` (`02/97`)
+
+**Contexto.** O invólucro assíncrono antigo do prelúdio tinha `map` / `flatMap` / `await`. A decisão
+120 fala em "`.map`, `.then` e afins, sem parâmetro de erro" — uma Task nunca falha, então não há
+`mapError`. A implementação ficou com uma grafia por operação. Os dois métodos estão declarados em
+`builtins.d.bp`, que pela decisão 252 é o contrato dos builtins: a checagem do 134 (passo 3) já liga as
+chamadas `@…` às declarações, mas ainda não percorre os tipos e seus métodos (passo 2 em aberto), então
+uma chamada de `map` / `then` ainda não é checada contra a declaração. Nenhum backend os baixa ainda.
+
+**Hoje:**
+```bp
+// builtins.d.bp
+pub behavior Task<T> {
+    fn map<R>(self: Self<T>, transform: fn(value: T) -> R) -> Task<R>;
+    fn then<R>(self: Self<T>, next: fn(value: T) -> Task<R>) -> Task<R>;
+}
+```
+
+- [ ] **(a) ★** `map` e `then` (o bind, com o nome que o guia usa); nenhum apelido.
+  ```bp
+  val t: @Task<i32> = load();
+  t.map({ n -> n + 1 })           // existe
+  t.then({ n -> loadMore(n) })    // existe (é o bind)
+  t.flatMap({ n -> loadMore(n) }) // não existe: uma grafia por operação
+  ```
+- [ ] **(b)** `flatMap` como apelido de `then`.
+  ```bp
+  t.flatMap({ n -> loadMore(n) }) // o mesmo que t.then(…)
+  ```
+
+**Recomendação: (a).** Uma grafia por operação (decisão 67). **Bloqueia:** o `std/async`, se ele
+quiser uma forma de combinadores.
+
+### 24-a · Os códigos de diagnóstico de efeito que sobraram
+
+**Trava:** `01-compiler/24` passo 2 (as confirmações)
+
+**Contexto.** Desde a frente 24 (decisão 118), uma função ganha um efeito escrevendo o invólucro no
+tipo de retorno (`-> @Result<…>`, `-> @Task<…>`) e mais nada; não há mais anotação de efeito. Os
+códigos que falavam da anotação (`effect-missing-annotation`, `effect-missing-wrapper`,
+`effect-duplicate-annotation`, `effect-on-declare-forbidden`, `effect-on-behavior-method-forbidden`)
+ficaram sem assunto, e `for-over-fallible-generator` aplicava uma regra que a decisão 122 apaga. O
+guia já escrevia a recusa de um `throw` com o código do `try`, e a implementação seguiu o guia. Os
+sobreviventes estão em `comptime/diagnostics.zig`.
+
+**Hoje:**
+```bp
+fn f() { try g(); }       // error[effect-try-without-fallible-channel]
+fn h() { throw "x"; }     // error[effect-try-without-fallible-channel] — o do `throw` foi fundido nele
+for (s) { x -> … }        // sobre um @Stream: error[for-over-stream] (era for-over-future-generator)
+```
+
+- [ ] **(a) ★** Um código só para "não há camada `@Result` no retorno", seja `try` ou `throw`;
+  `effect-wrapper-mismatch` fica só para o componente cujo `T` implementa `@Context<B>` com um `B`
+  diferente do `C` escrito; `for-over-stream` / `for-await-expects-stream` são os nomes novos.
+  ```bp
+  fn h() { throw "x"; }     // error[effect-try-without-fallible-channel]
+  ```
+- [ ] **(b)** Um código separado para o `throw`.
+  ```bp
+  fn h() { throw "x"; }     // error[effect-throw-without-fallible-channel]
+  ```
+
+**Recomendação: (a).** As duas recusas têm a mesma causa e a mesma correção (pôr `@Result` no
+retorno); o guia já escreve assim, e reverter é renomear constantes. **Bloqueia:** nada.
+
+### 24-c · `iter for` / `iter while` são um `loop` com prefixo
+
+**Trava:** `01-compiler/24` passo 2 (as confirmações)
+
+**Contexto.** O README da frente pedia um nó novo `GenLoop { kind, loop }`; mas cada um dos quatro
+backends já baixa uma forma de laço anotado (o `loop` da 22-loops), e a própria decisão 125 diz que
+`iter for (xs) { … }` significa `iter loop { for (xs) { … }; break; }`. O parser então lê assim e
+guarda a palavra escrita em `LoopExpr.prefixedKeyword`, para o formatador devolvê-la. O label fica
+onde a decisão 105 o escreve, depois da palavra do laço.
+
+**Hoje:**
+```bp
+iter for (xs) { x -> yield x * 2; }      // lido como: iter loop { for (xs) { x -> yield x * 2; }; break; }
+iter loop :l { yield :l 1; }             // o label nomeia o gerador
+iter for :l (xs) { x -> break :l; }      // o label nomeia o `for` escrito
+iter for :l (xs) { x -> yield :l x; }    // error[yield-label-not-generator]
+```
+
+- [ ] **(a) ★** Açúcar sintático sobre o `loop` prefixado; o label de `iter for :l` nomeia o `for`
+  (então `break :l` / `continue :l` mantêm o sentido de sempre).
+  ```bp
+  iter for :l (xs) { x -> if (x < 0) { continue :l; }; yield x; }   // continue do `for`
+  ```
+- [ ] **(b)** Um nó novo `GenLoop`, com um lowering próprio em cada um dos quatro backends — o mesmo
+  código-fonte, mais quatro caminhos para manter em acordo.
+  ```bp
+  iter for (xs) { x -> yield x * 2; }      // vira GenLoop { kind: For, loop: … } até o backend
+  ```
+- [ ] **(c)** Como (a), mas o label de um `for` prefixado nomeia também o gerador — o parser só move o
+  label para o nó de fora.
+  ```bp
+  iter for :l (xs) { x -> yield :l x; }    // compila: `:l` é o escopo do gerador
+  ```
+
+**Recomendação: (a).** É a equivalência que a decisão 125 já escreve, sem nenhum backend novo.
+**Bloqueia:** nada.
+
+### ctr-o · Decisão 146 × confirmação `lem-c`
+
+**Trava:** a confirmação da `lem-c` (Parte 6): qual regra do checker vale para a declaração host sem corpo — só o registro na `01-compiler`
+
+**Contexto.** A 146 diz que uma função cujo corpo alcança uma função host (com `#[@External.<Target>]`)
+sem binding para o target em build é recusada na declaração, chamada ou não. A `lem-c` (Parte 6,
+implementada na 1.0.10) diz que um **método** host sem binding é recusado onde é **chamado**; o tipo em si
+compila — recusar a declaração foi a opção não tomada. As duas se conciliam se a `lem-c` valer para a
+declaração host sem corpo e a 146 para toda função com corpo.
+
+**Hoje:**
+```bp
+// std io.net: `Socket.recv` tem binding Erlang e Node, nenhum Wasm
+sock.recv(10, 1000)    // wasm: MissingExternal `Socket.recv`, na chamada; o tipo Socket compila (lem-c)
+
+fn readLine(s: Socket) -> @Result<string, string> {   // 146: corpo alcança `recv` sem binding no wasm
+    return s.recv(80, 1000);                          //      → recusada na declaração, mesmo sem chamada
+}
+```
+
+- [ ] **(a)** Confirmar a `lem-c` para declaração host sem corpo (um tipo declarado uma vez compila para um
+  target em que falta um método); a 146 vale para toda função com corpo, livre ou método, que alcance
+  uma; o `docs.md` diz as duas.
+  ```bp
+  pub type Socket(handle: unknown) { pub declare fn recv(self: Self, length: i32, timeoutMillis: i32) -> … }
+  // ↑ compila no wasm (lem-c)
+  fn readLine(s: Socket) -> @Result<string, string> { return s.recv(80, 1000); }   // wasm: recusada (146)
+  ```
+- [ ] **(b)** A 146 vale para tudo: o próprio tipo com método host sem binding é recusado no target que
+  não o tem (a opção não tomada da `lem-c`).
+  ```text
+  $ botopink build --target wasm
+  error: `Socket.recv` has no #[@External.Wasm] binding (at the declaration of Socket)
+  ```
+- [ ] **(c)** A `lem-c` vale para tudo: recusa só na chamada, também para função com corpo (a 146 recua
+  e volta o `collectHostBound` preguiçoso do wasm).
+  ```bp
+  fn readLine(s: Socket) -> @Result<string, string> { return s.recv(80, 1000); }   // compila; só a chamada `readLine(s)` é recusada
+  ```
+
+**Recomendação: (a).** Mantém o que cada uma já implementa; a (b) impediria um tipo portátil com um método
+de um target só, e a (c) desfaria a regra estrita da 146. **Bloqueia:** a confirmação da `lem-c`.
+
+### ctr-h · Decisão 149 × decisões 210 e 211
+
+**Trava:** nada — só o registro (o `==` estrutural das 210/211 já está na `feat`); estava na antiga Parte 0
+
+**Contexto.** A 149 (mais antiga) dizia que `==` em array compara referência e em record é recusado; um
+record que quisesse igualdade implementaria `behavior Eq`. A 210, depois, decidiu o contrário: `==` é
+estrutural em todo target (records, tuplas, listas e variantes comparam por valor, recursivamente), e a
+211 acrescentou que um tipo não define a própria igualdade (`==` nunca chama código do usuário). A 210 não
+citou a 149, então o registro ainda tem as duas. O código na `feat` já segue a 210. Só falta o registro.
+
+**Hoje:**
+```bp
+// tests/language/run/record_structural_equality.bp — passa na feat, nos quatro targets
+type Person(name: string, age: i32)
+@print(Person(name: "Ana", age: 30) == Person(name: "Ana", age: 30));   // true
+@print([1, 2] == [1, 2]);                                               // true (a 149 dizia false)
+```
+
+- [ ] **(a)** Registrar a 149 como substituída pela 210, e a cláusula `behavior Eq` pela 211 — nada muda
+  no código.
+  ```bp
+  type Loose(n: i32) {
+      pub fn equals(self: Self, other: Self) -> bool { return true; }   // sem papel especial (211)
+  }
+  @print(Loose(n: 1) == Loose(n: 2));     // false: `==` compara campo a campo
+  ```
+- [ ] **(b)** Voltar à 149: reverte a 210/211 e o código da `feat`.
+  ```bp
+  @print([1, 2] == [1, 2]);                                // false: referência
+  Person(name: "Ana", age: 30) == Person(…)                // error: `==` on a record; implement behavior Eq
+  ```
+
+**Recomendação: (a).** A 210/211 é a decisão mais recente, já está construída e testada nos quatro
+targets. **Bloqueia:** nada; só o registro.
+
+### 17-c · O que mais pode nomear um var `keyed: true`
+
+**Trava:** nada hoje — o passo 1 da `01-compiler/17` vale como está; estava na antiga Parte 0
+
+**Contexto.** Um var `keyed: true` não tem "valor inteiro" na memória: é uma tabela lida linha a linha.
+Por isso hoje ele só aparece como `counts.at(k)` (`ets:lookup`) e `counts = counts.insert(k, v)`
+(`ets:insert`); todo o resto (`counts[k]`, `hasKey`, `delete`, `size()`, passá-lo adiante) é recusado no
+identificador, e um var keyed nunca é `pub` (quem importasse leria o valor inteiro, que não existe). A
+decisão 63 (1.0.5) dá ao índice outra resposta que a do `at`: `d[k]` responde o tipo do valor, `V`, e
+**falha** quando a chave falta; `d.at(k)` responde `?V` (`null` na ausência).
+
+**Hoje:**
+```bp
+@print(counts.size());     // error: `counts` is a `keyed = true` var: it is read one row at a time, as `counts.at(key)`
+@print(counts["a"]);       // a mesma recusa; pela 63, counts["a"] responderia i32 e falharia sem a linha
+```
+
+- [ ] **(a)** Só as duas formas, como está.
+  ```bp
+  val a = counts.at("a") ?? 0;          // ets:lookup
+  counts = counts.insert("b", 10);      // ets:insert
+  @print(counts["a"]);                  // error: … read one row at a time, as `counts.at(key)`
+  ```
+- [ ] **(b)** (a) mais `counts[k]`, com o sentido da 63: responde `V` e falha quando a linha falta.
+  ```bp
+  @print(counts["a"]);       // ets:lookup; sem a linha "a", falha (63)
+  ```
+- [ ] **(c)** (b) mais `hasKey` (`ets:member`) e `delete` (`ets:delete`) como operações de linha, cada uma
+  um primitivo novo no `std/beam`.
+  ```bp
+  if (counts.hasKey("a")) counts = counts.delete("a");
+  ```
+
+**Recomendação: (a).** Uma grafia por operação de linha; (b) custa pouco, mas é uma segunda leitura de
+linha, com outra resposta na ausência; (c) aumenta a superfície que o checker e os dois emissores
+precisam manter iguais. **Bloqueia:** nada — o que está construído vale até ser ampliado.
+
+### Trilha `02-std-and-packaging`
+
+7 itens: 2 com thread esperando (⏳).
+
+### 110-a · O `testing.asserts` no wasm, depois da regra estrita (decisão 146)
+
+**Trava:** `02/97` passo 11 (std no wasm, grupo 3: a pergunta por módulo) e `05-wasm` passo 5 ("std compila no wasm") · ⏳ thread da 97 rodando os passos 11 e 12
+
+**Contexto.** A decisão 146 diz que uma função cujo corpo alcança uma função host sem versão para o
+target é recusada na declaração, chamada ou não. Com isso, um programa wasm que importa
+`testing.asserts` é recusado: quatro das 27 funções dele chegam a uma célula host (`canonical`,
+`regexMatches`, `tryCatch`) que não tem versão wasm. A thread ficou com (1) porque nada no gate roda
+asserções no wasm hoje e as outras saídas mudam API (2) ou exigem trabalho grande no backend wasm (3).
+A (1) segue a decisão 230 ("a std module wasm cannot build is a located refusal") e a opção (a) do
+passo 11 do `02/97`, que pede esta pergunta por módulo. A última oração da 146 ("`testing.asserts` is
+restructured so nothing without a wasm binding is reachable from it on wasm") pedia a (2) ou a (3):
+responder (1) emenda essa oração.
+
+**Hoje:**
+```bp
+import {testing.asserts} from "std";      // --target wasm
+// error: `canonical` has no `#[@External.<Target>(…)]` for the wasm backend — in `std/testing/asserts`, which this import links
+```
+```
+deepEquals → canonical        matches → regexMatches        throws, throwsWith → tryCatch
+usos nos repositórios: throwsWith ~290 · throws 4 · deepEquals 2 · matches 1 · 140 arquivos importam o módulo
+```
+
+- [ ] **(1) ★ como está** — o `asserts` não é importável no wasm; duas células de linguagem viraram recusa fixada no wasm.
+  ```bp
+  // --target wasm: o import é recusado (erro acima); um programa wasm checa à mão
+  if (soma(1, 2) != 3) @panic("soma(1, 2) != 3");
+  ```
+- [ ] **(2)** As quatro funções com célula host vão para um módulo próprio; as outras 23 voltam a importar no wasm. Muda a API do `asserts` (decisão 74) e o import de cada arquivo que usa as quatro.
+  ```bp
+  import {testing.asserts} from "std";            // equals, isTrue, contains… — importa no wasm
+  import {testing.asserts_host} from "std";       // deepEquals, matches, throws, throwsWith — nome ilustrativo
+  ```
+- [ ] **(3)** As três células ganham versão wasm. Precisa de um leitor de `@External.Wasm` no backend (a decisão 238 já existe), de um motor de regex no prelude wasm para `regexMatches`, e de `@panic` capturável para `tryCatch` (hoje é `unreachable`).
+  ```bp
+  import {testing.asserts} from "std";            // --target wasm: compila
+  try asserts.matches("abc", "a.c");              // regex do prelude wasm
+  try asserts.throwsWith({ -> parse("x") }, "bad");  // @panic capturável no wasm
+  ```
+
+**Recomendação (da thread): (1) agora**; a (2) se o wasm precisar rodar asserções — é a única que
+não espera a 05-wasm. **Bloqueia:** nada no gate; só o "std compila no wasm" do 05-wasm passo 5 / 97
+passo 11.
+
+### 24-g · A forma do `std/async` com uma Task que nunca falha
+
+**Trava:** `02/97` passo 5 (o `RetryPolicy` construído sobre o `std/async`; resíduo) e `01-compiler/24` passo 2 · ⏳ thread da 97 rodando os resíduos
+
+**Contexto.** Antes da frente 24, o `std/async` tinha uma superfície de thunks (`allOf`, `settleOf`,
+`raceOf`, `timeout`) e uma de Tasks já iniciadas (`all`, `allSettled`, `race`), as duas construídas
+sobre "Task rejeitada = falha". Agora uma Task nunca falha (decisões 120 e 121): o erro vai DENTRO,
+`@Task<@Result<T, E>>`. O guia escreve `try await async.allOf([fetchUser(1), fetchUser(2)])` — Tasks
+já iniciadas cujo valor é `@Result` — e a suíte `front/24-cells` segue o guia; já as células
+`beam_memory_*` precisam de thunks não iniciados, porque no erlang uma Task ansiosa já rodou quando o
+combinador a recebe. A implementação deu o nome `allOf` à forma do guia e outros nomes aos thunks.
+
+**Hoje:**
+```bp
+val users = try await async.allOf([fetchUser(1), fetchUser(2)]);   // Tasks já iniciadas de @Result: para no primeiro Error
+val xs = await async.runAll([{ -> work(1) }, { -> work(2) }]);     // thunks: é aqui que há concorrência
+val r = await async.timeout({ -> slow() }, 100);                   // estourou → Error("timeout"), uma string
+```
+
+- [ ] **(a) ★** Iniciadas: `allOf`, `all`, `race`; não iniciadas: `runAll`, `raceOf`, `timeout`;
+  `failed(message)` responde `Error(message)`; `allSettled`, `settleOf`, `unwrapAll` e `attempt` foram
+  removidos (não há rejeição para "settle"). Um crash dentro de uma task é relançado.
+  ```bp
+  val users = try await async.allOf([fetchUser(1), fetchUser(2)]);
+  async.allSettled([…])          // não existe mais
+  ```
+- [ ] **(b)** `allOf` sobre thunks, como o README da `01-std/02` escreveu — o exemplo do guia passa a
+  ser escrito com thunks.
+  ```bp
+  val users = try await async.allOf([{ -> fetchUser(1) }, { -> fetchUser(2) }]);
+  ```
+- [ ] **(c)** Um `allOf` sobrecarregado para as duas formas de elemento — exige sobrecarga por tipo,
+  que a linguagem não tem.
+  ```bp
+  async.allOf([fetchUser(1)])            // iniciadas
+  async.allOf([{ -> fetchUser(1) }])     // thunks — mesmo nome, outra assinatura
+  ```
+
+**Recomendação: (a).** Segue o guia e a suíte da frente 24, e cada forma tem um nome só.
+**Bloqueia:** nada — o README da `01-std/02-std-async-primitives` (1.0.10) já especifica o `allOf` sobre
+Tasks iniciadas.
+
+### std-d · `io.process`: sinais e leitor de TTY
+
+**Trava:** `02/97` passo 6 (condicional); fora de 00–03: onze 50 passos 4 e 7
+
+**Contexto.** O `io/process.bp` do std não registra nem repassa sinal, e o std não tem leitor de linha
+do terminal. Consequência no onze: o `onze start` espera o `process.run`, então um `SIGTERM` mata o
+`bin/onze` e deixa o nó rodando; e o `onze create` sem `--yes` não tem prompt para onde cair. A pergunta
+é se o std ganha essas três funções host (em dois targets) ou se o onze contorna.
+
+**Hoje:**
+```text
+$ onze start &  ;  kill -TERM %1
+# o bin/onze sai; o nó erl continua rodando
+$ onze create
+# sem --yes: não há leitor de TTY para perguntar o nome do projeto
+```
+
+- [ ] **(a)** O std ganha as três células: `process.onSignal(name, fn)`, `process.forwardSignals(child)`,
+  `io.stdin.readLine()`.
+  ```bp
+  process.forwardSignals(child);
+  val name = io.stdin.readLine();           // `onze create` pergunta o nome do projeto
+  ```
+- [ ] **(b)** Nada no std.
+  ```text
+  $ onze start            # faz exec do nó erl (bin/onze da 71): a VM é PID 1 e recebe o SIGTERM direto
+  $ onze create           # sem nome e sem --yes:
+  error: `onze create` needs <name> (or --yes)    # o nome é posicional; as flags são --example, --port, …
+  ```
+
+**Recomendação: (b)**, a mais restritiva. **Bloqueia:** onze 50 passos 4 e 7; 97 passo 6 (condicional).
+
+### 08-f · Onde moram Markdown e YAML
+
+**Trava:** `02/97`: uma linha (o `yaml` no std, se for a (b)); fora de 00–03: `08-bpp/121` passo 3
+
+**Contexto.** Páginas de conteúdo (posts de blog) são Markdown com um cabeçalho YAML ("frontmatter").
+Hoje não existe código de Markdown em lugar nenhum, e há um único leitor de um subconjunto de YAML, no
+`config.bp` do rakun. A regra do `03-bundled-libs` (115) manda um leitor de config para o std "quando
+aparecer um segundo consumidor" — e o frontmatter é esse segundo consumidor do YAML; o Markdown tem um
+só.
+
+**Hoje:**
+```text
+---
+title: Hello
+---
+# Post
+→ ninguém lê isto ainda; o único leitor de YAML é o de rakun/src/config.bp (subconjunto, privado)
+```
+
+- [ ] **(a)** Os dois no novo membro `onze-content` — o rakun fica com a sua cópia de YAML.
+  ```bp
+  import {markdown, frontmatter} from "onze-content";
+  ```
+- [ ] **(b)** Markdown no `onze-content`; YAML no std, e o leitor de config do rakun é apagado pela frente
+  do rakun. Até o `yaml` do std chegar, o passo 3 da 121 lê o frontmatter com cópia própria e a apaga
+  depois.
+  ```bp
+  import {yaml} from "std";
+  import {markdown} from "onze-content";
+  ```
+- [ ] **(c)** Um bundled `markdown`.
+  ```bp
+  import {markdown} from "markdown";
+  ```
+
+**Recomendação: (b).** O frontmatter é o segundo consumidor do YAML; o Markdown tem um só (115).
+**Bloqueia:** 121 passo 3; uma linha para a 97.
+
+### 95-f · A tomada do onze aconteceu sem o branch órfão e sem arquivar nada
+
+**Trava:** `02/98` passo 3 (a frente 95 fechada como confirmação)
+
+**Contexto.** A decisão 79 previa que o nome `onze` passasse da antiga biblioteca de mocking para o
+orquestrador por meio de um branch órfão, arquivando o histórico antigo. O que aconteceu:
+`repository/onze` é o workspace do orquestrador, construído em cima da tag `mocking-lib-final`, no
+mesmo histórico e no mesmo remoto; nada foi arquivado nem renomeado, e o nome já resolve só para os
+membros do orquestrador. A thread ficou com (1) porque o resultado prático é o mesmo e reescrever o
+remoto obrigaria todo checkout a reclonar. Responder (1) gera uma decisão nova que emenda a 79.
+
+**Hoje:**
+```
+$ git -C repository/onze tag            → mocking-lib-final     # a lib antiga vive como histórico tagueado
+$ git -C repository/onze log --oneline  → o orquestrador em cima dessa tag, mesmo remoto
+```
+
+- [ ] **(1) ★** Confirmar a árvore como está — uma decisão nova emenda a 79: a lib antiga é o histórico tagueado do mesmo repositório.
+  ```
+  $ git -C repository/onze checkout mocking-lib-final   # quem precisar da lib antiga, lê a tag
+  $ git -C repository/onze pull                         # nenhum checkout precisa reclonar
+  ```
+- [ ] **(2)** Reescrever o remoto para o branch órfão e arquivar o histórico antigo, como a 79 escreveu.
+  ```
+  $ git -C repository/onze checkout --orphan main && git commit …
+  $ git -C repository/onze push --force origin main      # todo checkout de repository/onze reclona
+  ```
+
+**Recomendação: (1).** O nome já é só do orquestrador e a lib antiga continua recuperável pela tag;
+reescrever o remoto custa um reclone em todo lugar sem ganho. **Bloqueia:** o passo 3 do `02/98`
+("front 95 closed as a confirmation"), escrito sob a (1), fecha com ela.
+
+### nat-f3 · `files` e `workspaces` no `botopink.json` (98)
+
+**Trava:** `02/98` (o que vai no pacote; a 270 conta com `files`)
+
+**Contexto.** `files` lista, relativo a `src`, os módulos que um consumidor pode importar (como no npm).
+Um pacote-biblioteca sem `files` não publica nada (`docs/botopink-json.md:52`). `workspaces` lista os
+membros de um monorepo. Um manifesto com `workspaces` é workspace e recusa `src`, `files`, `entry` e
+`dependencies` (`:159-170`), então os dois nunca estão no mesmo arquivo. A 270 já conta com `files`: o
+prelude do pacote do `"bpp"` é `src/prelude.bp`, listado em `files`.
+
+**Hoje:**
+```json
+{ "name": "acme-web", "src": "src/", "files": ["root.bp", "router.bp"] }
+```
+```json
+{ "name": "rakun", "workspaces": ["modules/*", "examples/*"] }
+```
+
+- [ ] **(a)** Os dois ficam: é empacotamento, não código.
+- [ ] **(b)** `files` sai: publica-se o que é `pub`, e um módulo interno se marca no código (`#![internal]`,
+  lg2-m); `workspaces` fica. A 270 deixa de citar `files`.
+- [ ] **(c)** Os dois são derivados.
+
+**Recomendação: (a)** — o que vai no pacote é um fato de empacotamento, e a 270 já conta com ele.
+**Bloqueia:** 98.
+
+### nat-d9 · Nomes do LINQ no erika ao lado dos do std (98)
+
+**Trava:** `02/98` (o primeiro helper do `erika-test` e o README do `erika-linq`)
+
+**Contexto.** O erika imita o LINQ do C#: `where`, `select`, `selectMany`, `orderByDescending`, `toList`.
+O std já tem `filter`, `map`, `flatMap` e `unique` (217) para as mesmas operações. O erika é eager: cada
+operador materializa um array novo (`erika/src/erika.bp:5`). Por outro lado, a identidade do erika é
+justamente ser um LINQ.
+
+**Hoje:**
+```bp
+query.where({ c -> c.active }).select({ c -> c.name }).toList()
+```
+
+- [ ] **(a)** Os nomes do std; o erika só acrescenta o que o std não tem (`groupBy`, as agregações).
+  ```bp
+  query.filter({ c -> c.active }).map({ c -> c.name })
+  ```
+- [ ] **(b)** Os nomes do LINQ: é o propósito do erika.
+- [ ] **(c)** Como está.
+
+**Recomendação:** nenhuma desta revisão — depende do que você quer que o erika seja; a (b) é uma leitura
+justa.
+**Bloqueia:** 98 (erika).
+
+### Trilha `03-bundled-libs`
+
+10 itens: 4 com thread esperando (⏳); a 49-d e a 103-a abrem a cadeia crítica dos frameworks.
+
+### 49-d ★ · `chainFor` recebe os padrões ancestrais
+
+**Trava:** `03/102` passo 3 (os consumidores) e, por ele, `04-rakun/128`, o grupo A do rakun, 22, 26, 49, 50, 117 e 124 — a cabeça da cadeia 102/103 → 128 → 04 → 22 → 49 → 53 · ⏳ thread da 102 nos passos 1–2; o passo 3 é o próximo
+
+**Contexto.** O jhonstart monta a cadeia de layouts do cliente com o `ancestorPatterns` do
+`routing`; o passo 4 dizia que o boot do onze não importa nada de `routing`. A thread fez
+`chainFor(patterns)` mapear `segmentFor` sobre os padrões que a cadeia de layouts do rakun já
+nomeia para a rota casada. Mas a 102 (`routing.conventions`) existe para apagar a re-derivação da
+gramática de segmentos, e o `types.bp` do onze (`appFileKinds`, `classifyAppFile`) é um dos sete
+lugares que a refazem à mão — o passo 3 da 102 desfaz a metade "não importa nada de `routing`".
+
+**Hoje:**
+```bp
+chainFor(patterns)        // os padrões vêm da cadeia de layouts do rakun; o onze não importa nada de `routing`
+```
+
+- [ ] **(a)** ★ manter como está — `chainFor(patterns)` e nenhum import de `routing` no onze
+  ```bp
+  // onze/src/types.bp continua com appFileKinds() e classifyAppFile() próprios
+  ```
+- [ ] **(b)** importar `ancestorPatterns` — o onze deriva a cadeia de novo
+  ```bp
+  import {ancestorPatterns} from "routing";
+  chainFor(ancestorPatterns(route.pattern))
+  ```
+- [ ] **(c)** confirmar como emendada pela 102 — `chainFor(patterns)` fica; o onze consome `routing.conventions`
+  ```bp
+  import {conventions.classify, conventions.fileKinds} from "routing";   // substitui classifyAppFile / appFileKinds
+  chainFor(patterns)                                                      // inalterado
+  ```
+
+**Recomendação: (c).** A cadeia continua vindo do rakun, e a classificação de arquivos deixa de
+ser refeita à mão no onze. **Bloqueia:** o passo 3 da 102 (troca nos consumidores, incluindo o
+`types.bp` do onze), e por ele a 128 e o grupo A do rakun.
+
+### 103-a ★ · O nome da função do pacote `actions.id` *(da consolidação)*
+
+**Trava:** `03/103` passo 2 (os consumidores: o `actionId` do `rakun-app` como embrulho do `deriveActionId`) e, por ele, 128, 22, 67 e 127 · ⏳ thread da 103 no passo 1; o passo 2 é o próximo
+
+**Contexto.** Hoje o `rakun-app` calcula o id de uma action em `actions.bp`
+(`actionId(module, name, buildId)`, um HMAC-SHA256 com o segredo `rakun.actions.secret`, prefixo `a_`
++ 24 hex), e o `jhonstart-forms` confere um formato mais frouxo. A frente 103 cria o pacote
+`actions.id` com uma derivação e uma gramática únicas para os dois lerem. A thread chamou a função do
+pacote de `deriveActionId` (recebe o segredo como parâmetro; o pacote nunca lê a configuração) e
+manteve o `actionId` do `rakun-app`, que já é lido pelos testes, por `actionIdOf` e por
+`resolveAction`, passando a apenas envolvê-la. Isso está na branch `front/103-actions-id`, ainda não
+na `feat`. Duas decisões já mudam o entorno, não a pergunta: a 299 tira o `rkProp` — o segredo passa
+a ser um campo de um registro `#[config("rakun.actions")]`, injetado por tipo; a 281 tira o
+`actionIdOf(name: string)` — a action é referida pela própria função, não pelo nome em texto. Resta só
+o nome da função do pacote.
+
+**Hoje:**
+```bp
+// rakun/modules/rakun-app/src/actions.bp — rkProp sai com a 299
+pub fn actionId(module: string, name: string, buildId: string) -> string {
+    val mac = hash.hmacSha256(
+        rkProp("rakun.actions.secret"),
+        module + "." + name + ":" + buildId,
+    );
+    return "a_" + mac.slice(0, 24);
+}
+```
+
+- [ ] **(a) ★** `deriveActionId(secret, module, name, buildId)` no pacote; o `actionId` do `rakun-app` continua e passa a envolvê-lo.
+  ```bp
+  // libs/actions — id.bp
+  pub fn deriveActionId(secret: string, module: string, name: string, buildId: string) -> string { … }
+  pub fn isActionId(id: string) -> bool { … }
+
+  // rakun-app/src/actions.bp — o segredo vem do registro #[config("rakun.actions")] (299)
+  pub fn actionId(module: string, name: string, buildId: string) -> string {
+      val cfg = use config(ActionsConfig);      // nome do tipo ilustrativo
+      return deriveActionId(cfg.secret, module, name, buildId);
+  }
+  ```
+- [ ] **(b)** O pacote se chama `actionId` e o `actionId` do `rakun-app` é apagado no passo 2 da 103.
+  ```bp
+  // libs/actions — id.bp
+  pub fn actionId(secret: string, module: string, name: string, buildId: string) -> string { … }
+
+  // rakun-app: actionIdOf, resolveAction e actions_test.bp passam a chamar
+  actionId(cfg.secret, module, name, buildId);   // cfg: o registro #[config("rakun.actions")] (299)
+  ```
+
+**Recomendação: (a) ★** — nome livre (decisão 163 / 07-i): o `rakun-app` já exporta `actionId`, e
+reaproveitar o nome no pacote com outra assinatura obrigaria a mexer em todos os seus chamadores.
+**Bloqueia:** nada com (a); com (b), o passo 2 da 103 (consumidores) muda antes do envio da branch.
+
+### 07-j · Quanto do Zod entra na 125
+
+**Trava:** `03/125` passos 3–10 (o tamanho da frente) · ⏳ thread da 125 nos resíduos dos passos 0 e 2 e do passo 3 em diante
+
+**Contexto.** A frente 125 traz para a `validation` a superfície do Zod (validação por schema).
+`125-validation-zod/surface.md` tem 211 linhas de referência (§ Count): 48 já são a linguagem ou a
+biblioteca (11 native, 37 have), 134 dá para construir com o decorador e a reflexão que existem, 7 são
+lacunas com forma mais próxima entregue (linha em `language-gaps.md`), 20 não fazem sentido aqui e 2 ficam
+fora do núcleo da referência. Os passos 0–2 já estão na `feat`, ainda com `#[schema]`.
+
+A 306 já desenhou o resultado: `#[validated]` é o único schema e emite `parse`, `parseAt`, `decode`,
+`bind`, `encode`, `jsonSchema` (grafia do `ctr-u`); codecs, map e preprocess viram marcadores de campo
+(`#[codec(decode:, encode:)]`, `#[map]`, `#[preprocess]`, `#[each]`); uniões e tuplas são tipos declarados;
+o que só um valor diria fica `n/a (306)` no `surface.md`. Na prática isso é a (c) — (a) e (b) contradizem
+a lista de membros da 306. Resta registrar o tamanho.
+
+**Hoje:**
+```bp
+#[schema] type Signup(email: string, password: string)
+val s = try parseSignup(json);            // passos 0–2 na feat: `parse<TypeName>` é um molde de nome (decorators.bp:343)
+```
+
+- [ ] **(a)** Só os marcadores (passo 3); o `#[validated]` não ganha os membros de parse.
+  ```bp
+  #[validated] type Signup(#[email] email: string, #[min(8)] password: string)
+  ```
+- [ ] **(b)** Marcadores + `parse` de records planos (passos 0–3).
+  ```bp
+  #[validated] type Signup(#[email] email: string, #[min(8)] password: string)
+  val s = try Signup.parse(json);
+  ```
+- [ ] **(c)** Tudo, na forma da 306: uniões e tuplas como tipos declarados, mapas, coerção, transforms e
+  codecs como marcadores, `bind`, `encode`, `jsonSchema` como membros.
+  ```bp
+  val form = try Signup.bind(pairs);            // de pares de formulário
+  val schema = Signup.jsonSchema();
+  ```
+
+**Recomendação: (c)**, na ordem dos passos — fechar como (c) sob a 306 (membros com a grafia do `ctr-u`;
+`surface.md` reclassificado em marcador, tipo ou `n/a (306)`). **Bloqueia:** o tamanho da 125 (passos 3–10).
+
+### ctr-u · A grafia dos membros de parse do `#[validated]` (decisões 216, 306)
+
+**Trava:** `03/125` passo 12 e as linhas do `surface.md`; `01-compiler/130` passo 6 (a grafia dos membros) · ⏳ thread da 125
+
+**Contexto.** A 306 já decidiu o resto: o `#[schema]` sai e vira `#[validated]`, e o que ele emitia vira
+membro do tipo, como o `validate()`/`constraints()` (216) — `parse`, `parseAt`, `decode`, `bind`,
+`encode`, `jsonSchema` —; `Schema<T>`, `Codec`, `schemas.*` e `checks.*` ficam privados. A grafia desses
+membros a 306 deixou para esta pergunta. Na `feat`, o `#[schema]` (`libs/validation/src/decorators.bp:482`)
+ainda emite pelo `@emit` funções soltas com o nome do tipo (`parse<T>`, `schemaOf<T>`, …), e o
+`surface.md` da 125 ainda as nomeia (`schemaOfPlayer()`, `jsonSchemaOf<T>`, `constraintsOf<T>`,
+`validate<T>`: `surface.md:39,197,335`).
+
+**Hoje:**
+```bp
+#[schema]
+type Player(name: string, level: i32)
+
+val p = try parsePlayer(doc);        // função solta, emitida pelo @emit — sai com a 306
+val s = schemaOfPlayer();            // Schema<T> fica privado (306)
+```
+
+- [ ] **(a)** Os nomes que a 306 lista, como membros do tipo, sem o nome do tipo dentro.
+  ```bp
+  #[validated]
+  pub type Player(name: string, level: i32)
+
+  val p = try Player.parse(doc);
+  val q = try Player.decode(text);
+  val j = Player.jsonSchema();
+  ```
+- [ ] **(b)** A grafia fica com a 125, como a 216 diz das grafias exatas ("the implementing front's"):
+  esta pergunta fecha e a 125 escolhe no passo 12.
+  ```text
+  125 passo 12: os membros e as linhas do surface.md, com a grafia que a frente escolher
+  ```
+
+**Recomendação: (a).** São os nomes que a 306 já escreve e a forma que o `#[validated]` já usa
+(`validate()`, `constraints()`); os nomes gerados com o tipo dentro (`parse<T>`, que hoje são contrato
+entre dois `#[schema]`) deixam de existir. **Bloqueia:** 125 passo 12 (306) e as linhas do `surface.md`.
+
+### snap-a · Os mapas de snapshot — aposentados; ficam os snapshots que existem ou que um contrato lê
+
+**Trava:** `03/107` (a caixa dos dois snapshots do `onze-release`); fora de 00–03: a frente 135 inteira (`20-snap`) e, por ela, 97 passo 7, 19 passo 6, 26 passo 7, 33, 50 passo 8, 51 passo 7, 53 e 71 passo 6
+
+**Contexto.** Substitui as cinco perguntas antigas (`01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b`).
+Um "mapa de snapshot" é uma lista, herdada da 1.0.10, dos casos que cada biblioteca deveria gravar como
+arquivo `.snap` (a saída esperada guardada em disco). Os nove mapas foram reavaliados caso a caso na
+trilha `20-snap` (frente 135): **473 casos** — 27 obsoletos (renomeados, apagados ou mudados pelas
+decisões 186, 194, 200, 218, pelo 34 passo 2, pela 50-a, ou adiados pela 274), 418 já verificados
+hoje por um teste inline ou por um `.snap` que existe, e 21 que nada verifica e valem um teste simples.
+Os literais gravados nos mapas são anteriores ao código (separador de slug, ordem do `_links`,
+`normalize`, classes da emilia) e não servem de valor esperado. O contrato 7, a regra 3 do
+`snapshots.md` e a checagem (2) da 98 exigem pelo menos um `assert<Assunto>(loc, …)` em cada `<lib>-test`.
+
+**Hoje:**
+```bp
+// cada caso já é afirmado por um literal inline, nos dois targets:
+assert tokenDeclarations(.Border.Rounded.Md) == "border-radius:var(--radius-md)";   // emilia.bp:10615
+// e os .snap que existem: std 4, jhonstart 39, onze 51 (24 deles via snapshots.assertAs)
+```
+
+- [ ] **(a)** Como proposto: os mapas viram registro fechado; os `.snap` que existem ficam (std 4,
+  jhonstart 39, onze 51) e só mudam junto com o seu teste; um `.snap` novo só onde os bytes exatos são
+  contrato de outro pacote (os `text_…` e `dockerfile_…` do onze-release, já em disco, para a
+  `107-release`); helpers só os que um consumidor usa — `emilia-test`: `assertClassName` (sob
+  `defaultTheme()`, gravando `e_39b87d03`) e `assertCss(loc, tokens, th)`; `rakun-test`:
+  `assertResponse(loc, res)` sobre `MockMvc.perform`; os do jhonstart e do onze como estão (o
+  `assertAlias` do onze sai com a 218). Os 21 valores sem verificação viram testes simples, e 97 passo 7,
+  26 passo 7, 33 passos 3–4, 50 passo 8, 51 passo 7 fecham com uma linha no `AGENTS.md`. Só **3** `.snap`
+  novos (emilia-test 2, rakun-test 1).
+  ```bp
+  try asserts.throwsWith({ -> val _v = verify(repo, times(1)).find(eq(7)); 0; },
+      "mocks.verify: find - expected exactly 1 matching call(s), got 2");       // std, nos dois targets
+  assertClassName(loc, cardTokens(), defaultTheme());                           // emilia-test → e_39b87d03
+  // AGENTS.md: "os literais inline e os __snapshots__/ existentes são a evidência"
+  ```
+- [ ] **(b)** Construir a camada inteira: todos os helpers e `.snap` dos mapas (~2 500 arquivos), com os
+  literais recalculados primeiro — muitos arquivos novos para valores que já têm um teste inline.
+  ```text
+  modules/emilia-test/test/__snapshots__/rounded_md.snap
+  modules/emilia-test/test/__snapshots__/rounded_lg.snap
+  …                                            # ~2 500 arquivos, cada literal do mapa recalculado
+  ```
+- [ ] **(c)** Manter os mapas abertos por biblioteca: cada uma responde a sua pergunta antiga e guarda o
+  seu mapa até lá — cinco respostas separadas, regras possivelmente diferentes.
+  ```text
+  05emilia-m (aberta): a emilia grava os casos do seu mapa?   → resposta só para a emilia
+  03r-ag     (aberta): o rakun grava os casos do seu mapa?    → resposta só para o rakun
+  ```
+
+**Recomendação: (a).** Uma regra para todas as bibliotecas, cada valor verificado uma vez, e só três
+`.snap` novos; é a opção mais restritiva que ainda prova tudo. **Bloqueia:** a frente 135 inteira
+(`20-snap`, passos 1–5), que é dona de 97 passo 7 · 19 passo 6 · 26 passo 7 · 33 passos 1, 3, 4 · 50
+passo 8 · 51 passo 7 · o runner do passo 1 da 53 e o texto dos passos 2–6 · 71 passo 6; a checagem (2)
+da 98 fica como está.
+
+### atm-a · Nomes dos hooks de cookie: substantivos, ou os verbos da 294/295 *(proposta)*
+
+**Trava:** `03/104` passo 6 (os hooks de cookie); fora de 00–03: 123, 127, `07-onze/53`
+
+**Contexto.** A regra do jhonstart (no cabeçalho do `hooks.bp`) diz que hook é **substantivo** e que o
+`use` é quem ativa: `use state(0)`, `use memo(…)`. Para as locais de request a 296 já decidiu: elas são
+átomos do cardume e "each bridge spells the same hooks (`atomValue`, `atomState`, `atomSetter`,
+`atomReset` …)" — `use setLocal(currentUser)` vira `use atomSetter(currentUser)`. Resta o cookie: o
+`Cookie<T>` fica no `http` (294, 296), e a 294/295 escreveram **verbos** para escrever e limpar.
+
+**Hoje:**
+```bp
+val session = use cookie(sessionCookie);          // 294: leitura, substantivo
+val setSession = use setCookie(sessionCookie);    // 294/295: verbo
+val clearSession = use clearCookie(sessionCookie);
+```
+
+- [ ] **(a)** Substantivo também no cookie, como no cardume.
+  ```bp
+  val setSession = use cookieSetter(sessionCookie);
+  val clearSession = use cookieClearer(sessionCookie);
+  ```
+- [ ] **(b)** Manter os verbos da 294/295 no cookie (`use setCookie`, `use clearCookie`); substantivo no
+  resto.
+- [ ] **(c)** Cada lib com o seu.
+
+**Recomendação: (a)** — uma regra só, que já é a do jhonstart e a do cardume.
+**Bloqueia:** 123; 127; 104 passo 6; `07-onze/53` (os sites de cookie).
+
+### ctr-p · Confirmação `std-a` × confirmação `03r-e`
+
+**Trava:** `03/104` passo 5 (a varredura de consumidores); fora de 00–03: os leitores do rakun 04
+
+**Contexto.** Há dois decodificadores de query/cookie, cada um com uma regra. A `std-a` (Parte 6,
+implementada): `querystring.parse`/`parseForm` do std devolvem `Error` para um escape que decodifica em
+caractere de controle (como `%0A`), e o `splitQuery` do rakun passa a usá-los. A `03r-e` (implementada no
+rakun): um componente de cookie ou query que decodificaria em caractere de controle "fica como escrito".
+A 196 leva os leitores de cookie do rakun para o `http`. Quando o rakun ler query pela `querystring` e
+cookie pelo `http`, a regra da `03r-e` fica sem onde morar.
+
+**Hoje:**
+```bp
+querystring.parse("a=%0A")      // std: Error — escape que vira caractere de controle
+decodeComponent("%0A")          // rakun: "%0A" — fica como escrito (03r-e)
+```
+
+- [ ] **(a)** Confirmar a `std-a`; a `03r-e` cai quando o rakun ler query pela `querystring` e cookie pelo
+  `http` — uma regra só, a do std.
+  ```bp
+  // GET /busca?q=%0A no rakun, depois da troca
+  querystring.parse("q=%0A")      // Error: o leitor do rakun recusa o parâmetro
+  ```
+- [ ] **(b)** Confirmar a `03r-e` e levar a regra dela para o std: o componente fica como escrito.
+  ```bp
+  querystring.parse("a=%0A")      // Ok([#("a", "%0A")])
+  ```
+
+**Recomendação: (a).** Recusar é o mais restritivo (67) e mantém a lógica compartilhada no std; um valor
+"como escrito" chega ao código como se fosse válido. A 294 já vai nessa direção para cookie: `use
+cookie(decl)` dá `null` quando o valor não decodifica. **Bloqueia:** os leitores do rakun 04; a
+varredura de consumidores da 104.
+
+### ctr-k · Decisão 187 × decisão 195
+
+**Trava:** `03/106` passo 2 e a abertura da `04-rakun/128` — só o registro; as frentes já seguem a (a)
+
+**Contexto.** A 187 (consolidação do rakun) fundiu o `rakun-logging` dentro do core: o core chama o
+próprio logger e não existe plugin de relatório de falha. A 195, posterior, criou o pacote bundled `log`
+(níveis, `LogRecord`, renderizadores, `errorDigest`, sink injetado) e diz que "o rakun-logging mantém as
+células erlang e se instala como o sink" — falando de um membro que a 187 já apagou. A pergunta é só
+como ler a 195.
+
+**Hoje:**
+```text
+187: rakun-logging → dentro do core `rakun`     (25 membros → 16)
+195: "o rakun-logging … se instala como o sink do `log`"     ← membro que não existe mais
+```
+
+- [ ] **(a)** Ler a 195 como "o logging do core (depois do 128) instala o logger erlang como sink do
+  `log` no boot", e registrar assim.
+  ```bp
+  // core `rakun`, no boot (ilustrativo)
+  import {sink.setSink, sink.LogSink} from "log";
+  setSink(rakunLoggerSink());          // a partir daqui, todo registro do `log` vira linha do logger do rakun
+  ```
+- [ ] **(b)** Ler a 195 ao pé da letra: o `rakun-logging` volta a ser membro separado e instala o sink —
+  a 187 cede nesse ponto (17 membros).
+  ```text
+  modules/rakun-logging/   → instala o sink no boot; quem não depende dele fica com o sink padrão
+  ```
+
+**Recomendação: (a).** Mantém a consolidação da 187 e o comportamento que a 195 queria (um sink só,
+instalado no boot). As frentes já seguem a (a) (`04-rakun/17`: "the logger installs itself as `log`'s
+sink at boot"; `03-bundled-libs/106-log`); falta só o registro da 195. **Bloqueia:** nada nas frentes;
+só o registro.
+
+### 03r-q ★ · Roteamento por locale mora no `rakun-app`
+
+**Trava:** `03/105` inteira (o `i18n` bundled abre com ela confirmada)
+
+**Contexto.** O README da frente 64 reservava `modules/rakun-i18n/**`, mas `modules.md` § The cut
+põe "negociação de i18n" no `rakun-app`, e o módulo precisa dos vizinhos dele de qualquer forma (a
+cadeia de layouts, o cache, a navegação da frente 63). Os exemplos importam de `"rakun-app"`.
+
+**Hoje:**
+```bp
+import {…} from "rakun-app";       // src/i18n.bp
+```
+
+- [ ] **(a)** ★ manter — `rakun-app/src/i18n.bp`
+  ```bp
+  import {localeOf, htmlLang} from "rakun-app";
+  ```
+- [ ] **(b)** um membro novo `rakun-i18n`
+  ```bp
+  import {localeOf, htmlLang} from "rakun-i18n";   // modules/rakun-i18n/botopink.json, depende de rakun-app
+  ```
+
+**Recomendação: (a)** (a 105 extrai o que for comum para o bundled `i18n`; mover um arquivo é
+barato se um serviço sem app router precisar de locale). **Bloqueia:** nada.
+
+### 07-g · Renderização de release OTP
+
+**Trava:** `03/107` inteira (frente condicional: responder ou adiar a 107)
+
+**Contexto.** Hoje `rakun-release/release.bp` (depois do 128, `rakun-cli/src/release/`) e
+`onze-release/otp.bp` escrevem o mesmo `.rel` / `vm.args` / `sys.config` / script de boot / Dockerfile,
+cada um com o seu código. O onze não pode reusar o do rakun (o rakun é só erlang; o onze-release também
+compila para commonJS). Uma correção no formato hoje precisa ser feita duas vezes.
+
+**Hoje:**
+```bp
+// rakun/modules/rakun-release/src/release.bp
+pub fn renderRel(r: Release) -> string
+pub fn renderVmArgs(r: Release) -> string
+// onze/modules/onze-release/src/otp.bp
+pub fn relFileText(spec: ReleaseSpec) -> string
+pub fn vmArgsText(spec: ReleaseSpec) -> string
+```
+
+- [ ] **(a)** Um bundled `release` de renderizadores puros.
+  ```bp
+  import {rel, vmArgs, sysConfig} from "release";
+  fs.writeText(path.join([out, "onze.rel"]), rel(spec));
+  ```
+- [ ] **(b)** Feature do CLI: `botopink release --out dist/`.
+  ```text
+  $ botopink release --out dist/
+  dist/releases/0.1.0/onze.rel  dist/releases/0.1.0/vm.args  dist/releases/0.1.0/sys.config
+  ```
+- [ ] **(c)** Deixar os dois como estão.
+  ```text
+  rakun: renderRel(r)       onze: relFileText(spec)     # duas cópias, cada correção feita duas vezes
+  ```
+
+**Recomendação: (a)** — uma cópia só, que serve aos dois frameworks nos dois targets; o CLI pode adotar o
+pacote depois. **Bloqueia:** 107-release (frente condicional:
+responder ou adiar a 107).
+
+---
+
+## Prioridade 2 — a forma botopink (`nat-*`) e o que já contradiz decisões
 
 Levantado em 04/10, numa varredura da spec depois da decisão 278. Assim como as diretivas do Astro, que
 copiamos quando o botopink **já tinha** a anotação, há cerca de 40 lugares onde um conceito veio do
@@ -77,7 +1917,7 @@ o recurso equivalente na linguagem. Eles caem em sete padrões.
 
 **As quatro regras já estão decididas:** 281 (nenhum identificador de código como string), 282 (o papel
 vai no decorator), 283 (segundo modelo: caso a caso, `nat-d1`…`nat-d9`) e 284 (JSON: caso a caso,
-`nat-f1`…`nat-f4`; a `nat-f1` virou a 285). **Ordem do que falta** (as contradições achadas na varredura já foram respondidas: 287, 290, 291, 292): `nat-d6`…`nat-d9` (a `nat-d1` virou a 303, a `nat-d2` a 304, a `nat-d3` a 306 — a `nat-d4` caiu junto — e a `nat-d5` a 307), `nat-e` e `nat-f2`…`nat-f4` (a `nat-g` virou a 305). As do cardume (frente 136) estão na Parte 3: `atm-a`, `atm-c`, `atm-d`.
+`nat-f1`…`nat-f4`; a `nat-f1` virou a 285). **Ordem do que falta** (as contradições achadas na varredura já foram respondidas: 287, 290, 291, 292): `nat-d6`…`nat-d9` (a `nat-d1` virou a 303, a `nat-d2` a 304, a `nat-d3` a 306 — a `nat-d4` caiu junto — e a `nat-d5` a 307), `nat-e` e `nat-f2`…`nat-f4` (a `nat-g` virou a 305). As do cardume (frente 136) estão na Parte 3: `atm-c`, `atm-d`. Na Prioridade 1, porque travam 01/02/03: a `nat-e` (passo 5 da 130), a `nat-d9` e a `nat-f3` (a 98) e a `atm-a` (passo 6 da 104).
 
 ### nat-d · Um segundo modelo do que a linguagem já tem — caso a caso (decisão 283)
 
@@ -166,68 +2006,6 @@ pub fn actionState(actionId: string, initial: ActionState)   // jhonstart-forms
 **Recomendação: (a).**
 **Bloqueia:** os exemplos da `07-onze/53`.
 
-### nat-d9 · Nomes do LINQ no erika ao lado dos do std (98)
-
-**Contexto.** O erika imita o LINQ do C#: `where`, `select`, `selectMany`, `orderByDescending`, `toList`.
-O std já tem `filter`, `map`, `flatMap` e `unique` (217) para as mesmas operações. O erika é eager: cada
-operador materializa um array novo (`erika/src/erika.bp:5`). Por outro lado, a identidade do erika é
-justamente ser um LINQ.
-
-**Hoje:**
-```bp
-query.where({ c -> c.active }).select({ c -> c.name }).toList()
-```
-
-- [ ] **(a)** Os nomes do std; o erika só acrescenta o que o std não tem (`groupBy`, as agregações).
-  ```bp
-  query.filter({ c -> c.active }).map({ c -> c.name })
-  ```
-- [ ] **(b)** Os nomes do LINQ: é o propósito do erika.
-- [ ] **(c)** Como está.
-
-**Recomendação:** nenhuma desta revisão — depende do que você quer que o erika seja; a (b) é uma leitura
-justa.
-**Bloqueia:** 98 (erika).
-
-### nat-e · O zoológico de anotações do Spring
-
-**Contexto.** O botopink tem um decorator qualquer mais `@TypeInfo.all(with: …)`; o rakun copiou as
-marcas do Spring, várias com o mesmo sentido:
-- `#[service]`, `#[repository]`, `#[restController]`, `#[configuration]` + `#[bean]`, `#[managed]`,
-  `#[provides]`, às vezes empilhados (rakun 04, 09, 13, 19);
-- query derivada do nome do método: `findByNameAndStateAllIgnoringCase` vira SQL (08; R78-1);
-- `#[amqpListener]`, `#[kafkaListener]`, `#[redisListener]`: três marcas para um só papel, uma por
-  transporte (15, 91). O nome do destino é do broker e pode ficar string (281);
-- `#[httpExchange]` ligado via `#[configuration]` (13);
-- `MockMvc`, `@MockBean`, `UserDetailsService` com os nomes do Spring (19, 79).
-
-A config já foi decidida: a 299 a fez um record tipado por prefixo, e `#[configurationProperties]`,
-`#[value]` e `rkProp*` saíram. A 304 fez os métodos do repositório responderem
-`@Result<T, StoreError>`.
-
-**Hoje:**
-```bp
-#[repository] #[managed] type CityRepo(…)
-#[derived] fn findByNameAndStateAllIgnoringCase(name: string, state: string) -> City[]   // 304: -> @Result
-#[service] #[listener] type OrderListeners(…) {
-    #[kafkaListener("order-events", "order-service")] fn onOrderEvent(…)
-}
-```
-
-- [ ] **(a)** Um decorator por papel que acrescenta comportamento; query como expressão de comptime;
-  um só `#[listen]`, o transporte vindo da config tipada (299); nomes do próprio rakun.
-  ```bp
-  #[component(lazy: true)] type CityRepo(…)
-  #[query] fn byState(s: string) -> @Result<City[], StoreError> = City.where(.state == s);
-  pub val orders = Destination<OrderPlaced>("orders");    // o nome do broker escrito uma vez, como o Cookie<T> da 294
-  #[listen(orders)] fn onOrder(o: OrderPlaced) { … }
-  ```
-- [ ] **(b)** Os nomes do Spring ficam como apelidos de (a).
-- [ ] **(c)** Como está.
-
-**Recomendação: (a).** Absorve a 130-c.
-**Bloqueia:** 130 passo 5; rakun 04, 08, 13, 15, 19, 79, 91, 93; 130-b; 130-c.
-
 ### nat-f · Configuração em JSON — caso a caso (decisão 284)
 
 Você decidiu (284) que o `botopink.json` fica **o mais limpo possível**, mas configuração pode ficar nele
@@ -266,30 +2044,6 @@ onze.json: unknown key "trailingSlash" (known: name, port, basePath, appDir, pub
 código, do jeito que a 299 faz com a do rakun.
 **Bloqueia:** 124; 08-h; `07-onze/49` e `50`.
 
-### nat-f3 · `files` e `workspaces` no `botopink.json` (98)
-
-**Contexto.** `files` lista, relativo a `src`, os módulos que um consumidor pode importar (como no npm).
-Um pacote-biblioteca sem `files` não publica nada (`docs/botopink-json.md:52`). `workspaces` lista os
-membros de um monorepo. Um manifesto com `workspaces` é workspace e recusa `src`, `files`, `entry` e
-`dependencies` (`:159-170`), então os dois nunca estão no mesmo arquivo. A 270 já conta com `files`: o
-prelude do pacote do `"bpp"` é `src/prelude.bp`, listado em `files`.
-
-**Hoje:**
-```json
-{ "name": "acme-web", "src": "src/", "files": ["root.bp", "router.bp"] }
-```
-```json
-{ "name": "rakun", "workspaces": ["modules/*", "examples/*"] }
-```
-
-- [ ] **(a)** Os dois ficam: é empacotamento, não código.
-- [ ] **(b)** `files` sai: publica-se o que é `pub`, e um módulo interno se marca no código (`#![internal]`,
-  lg2-m); `workspaces` fica. A 270 deixa de citar `files`.
-- [ ] **(c)** Os dois são derivados.
-
-**Recomendação: (a)** — o que vai no pacote é um fato de empacotamento, e a 270 já conta com ele.
-**Bloqueia:** 98.
-
 ### nat-f4 · O prefixo `ONZE_PUBLIC_` nas variáveis de ambiente (53, `contracts.md`)
 
 **Contexto.** Uma variável só chega ao código do browser se o nome começar com `ONZE_PUBLIC_` (cópia do
@@ -320,160 +2074,13 @@ val apiBase = env.read("ONZE_PUBLIC_API_URL").unwrapOr("http://localhost:3000");
 
 ---
 
-## Parte 0 — `00-gate` e `01-compiler`, por prioridade
-
-Ordem, do que mais destrava para o que menos:
-
-1. **130-b**, **130-c** — o registro de beans do rakun (qualificador; `#[bean]` de configuração) · seguram o passo 5 da 130, que está rodando ⏳ (Parte 3)
-2. **134-d** — `@is(…)` escrito à mão · trava uma linha do passo 2 da 134 (Parte 3)
-3. **17-b** — incremento por linha no `keyed` · trava a quarta caixa do passo 1 da 17 (Parte 3)
-4. **ctr-i**, **ctr-j** — unidade de string no erlang; faixa do `i64` · seguram células de 02/03/04/05 (Parte 1)
-5. **ctr-h**, **ctr-s** — só registro: decisões antigas que outras já mudaram; **ctr-o** — qual regra vale para a declaração host sem corpo · trava a confirmação da `lem-c` (Parte 1)
-6. **imp-a** — dois tipos com o mesmo nome importados com alias (Parte 3)
-7. **17-c** — não trava nada hoje (Parte 3)
-
----
-
-
 ## Parte 1 — Contradições entre decisões
 
 Pares de regras que não valem juntas, ou uma decisão posterior que mudou outra sem dizer. O texto das
 decisões ficou como foi gravado; a escolha é sua. Marque a recomendação ou escreva a sua.
 
-### ctr-h · Decisão 149 × decisões 210 e 211
-
-**Contexto.** A 149 (mais antiga) dizia que `==` em array compara referência e em record é recusado; um
-record que quisesse igualdade implementaria `behavior Eq`. A 210, depois, decidiu o contrário: `==` é
-estrutural em todo target (records, tuplas, listas e variantes comparam por valor, recursivamente), e a
-211 acrescentou que um tipo não define a própria igualdade (`==` nunca chama código do usuário). A 210 não
-citou a 149, então o registro ainda tem as duas. O código na `feat` já segue a 210. Só falta o registro.
-
-**Hoje:**
-```bp
-// tests/language/run/record_structural_equality.bp — passa na feat, nos quatro targets
-type Person(name: string, age: i32)
-@print(Person(name: "Ana", age: 30) == Person(name: "Ana", age: 30));   // true
-@print([1, 2] == [1, 2]);                                               // true (a 149 dizia false)
-```
-
-- [ ] **(a)** Registrar a 149 como substituída pela 210, e a cláusula `behavior Eq` pela 211 — nada muda
-  no código.
-  ```bp
-  type Loose(n: i32) {
-      pub fn equals(self: Self, other: Self) -> bool { return true; }   // sem papel especial (211)
-  }
-  @print(Loose(n: 1) == Loose(n: 2));     // false: `==` compara campo a campo
-  ```
-- [ ] **(b)** Voltar à 149: reverte a 210/211 e o código da `feat`.
-  ```bp
-  @print([1, 2] == [1, 2]);                                // false: referência
-  Person(name: "Ana", age: 30) == Person(…)                // error: `==` on a record; implement behavior Eq
-  ```
-
-**Recomendação: (a).** A 210/211 é a decisão mais recente, já está construída e testada nos quatro
-targets. **Bloqueia:** nada; só o registro.
-
-### ctr-i · Codepoints (169, 240) × `string:length/1` (197)
-
-**Contexto.** A 169 e a 240 dizem que o índice de string (`length`, `at`, `slice`, `indexOf`) conta
-*codepoints* no erlang, no beam e no wasm, para que um índice devolvido por `indexOf` possa voltar ao
-`at`. A 197 (1) diz que o erlang responde `string:length/1` do texto antes do achado — e é isso que o
-`libs/std/src/primitives.bp` usa (`string:length/1`, `string:slice/3`). Só que essas funções do OTP
-contam *grapheme clusters* (o que o leitor vê como um caractere): uma letra mais um acento combinante é
-1. Com `"é"` pré-composto (U+00E9) os targets concordam; a diferença aparece com marca combinante.
-
-**Hoje:**
-```bp
-val s = "e\u{301}";        // "é" escrito como `e` + acento agudo combinante (U+0301)
-@print(s.length);          // erlang/beam: 1 (grapheme) · wasm: 2 (codepoints) · commonJS: 2 (UTF-16)
-```
-
-- [ ] **(a)** Codepoints: os templates do erlang passam a contar codepoints; uma célula com marca
-  combinante fixa os quatro targets.
-  ```bp
-  @print("e\u{301}".length);     // 2 em todo target — um .out só
-  @print("e\u{301}".at(1));      // "\u{301}" em todo target
-  ```
-- [ ] **(b)** Grapheme clusters: a 169 e a 240 são reescritas; o wasm precisa de um segmentador Unicode
-  (tabelas no binário) e o commonJS de `Intl.Segmenter`.
-  ```bp
-  @print("e\u{301}".length);     // 1 em todo target
-  @print("👍🏽".length);           // 1 (emoji + modificador de tom)
-  ```
-
-**Recomendação: (a)** — é o que a 169 e a 240 dizem, o que a 260 usa no `contentHash` (code points), e
-não exige tabela Unicode em target nenhum. **Bloqueia:** a célula do passo 6 da 02-erlang; o lowering de
-string do 05-wasm.
-
-### ctr-j · Decisão 264 × decisão 176 e "o mesmo valor em todo target"
-
-**Contexto.** A 264 tornou estouro de inteiro um erro de programa em todo target (a conta aborta em vez de
-dar a volta). Mas ela diz que no commonJS a faixa do `i64` é ±(2^53−1) — o que um número JS (double)
-guarda exato —, enquanto no erlang, beam e wasm o `i64` vai até ±2^63. A mesma conta aborta num target e
-responde nos outros, contra o princípio da delegação ("o mesmo valor em todo target") e contra a leitura
-da 176 (`parseInt` além de ±(2^53−1) é `Error` em todo target). O literal `l` além da faixa é recusado
-pelo checker só no commonJS (`refuseBeyondJsSafeInteger`, `compiler-core/src/comptime/infer.zig:10549-10567`),
-cuja doc e dica citam a 247 — que só trata de sufixos —; e o teste dele aceita até 2^53 inclusive
-(`v <= 1 << 53`), um a mais que a faixa da 264.
-
-**Hoje:**
-```bp
-val x: i64 = 9007199254740991l;   // 2^53 − 1
-@print(x + 1l);                   // commonJS: aborta "integer overflow: + on i64 at …"
-                                  // erlang/beam/wasm: 9007199254740992
-val y = 9007199254740993l;        // commonJS: recusado no literal ("past 2^53") · outros: compila
-val z = 9007199254740992l;        // commonJS: compila (2^53), fora da faixa ±(2^53−1) da 264
-```
-
-- [ ] **(a)** `i64` (e `u64`, `isize`, `usize`) é ±(2^53−1) em todo target (a leitura da 176): a conta
-  aborta igual nos quatro, e o literal além da faixa é recusado em todo target.
-  ```bp
-  @print(x + 1l);                   // aborta em todo target: integer overflow: + on i64
-  val y = 9007199254740993l;        // error em todo target: the `i64` literal is past 2^53
-  ```
-- [ ] **(b)** O commonJS baixa `i64` para `BigInt`: faixa completa ±(2^63−1) em todo target, ao custo de
-  aritmética mais lenta e conversão explícita na fronteira com `Number`/JSON.
-  ```bp
-  @print(x + 1l);                   // 9007199254740992 em todo target
-  // commonJS gerado: (x + 1n)   — e checagem contra ±(2n**63n − 1n)
-  ```
-
-**Recomendação: (a)**, a mais restritiva. Nos dois casos a regra do literal passa a ser da 264 e o
-checker deixa de citar a 247: na (a) o limite do literal vira 2^53−1 (hoje 2^53); na (b) a recusa só do
-commonJS sai. **Bloqueia:** as checagens de faixa de 04-js, 02-erlang, 03-beam; a regra do literal `l`
-no checker.
-
-### ctr-k · Decisão 187 × decisão 195
-
-**Contexto.** A 187 (consolidação do rakun) fundiu o `rakun-logging` dentro do core: o core chama o
-próprio logger e não existe plugin de relatório de falha. A 195, posterior, criou o pacote bundled `log`
-(níveis, `LogRecord`, renderizadores, `errorDigest`, sink injetado) e diz que "o rakun-logging mantém as
-células erlang e se instala como o sink" — falando de um membro que a 187 já apagou. A pergunta é só
-como ler a 195.
-
-**Hoje:**
-```text
-187: rakun-logging → dentro do core `rakun`     (25 membros → 16)
-195: "o rakun-logging … se instala como o sink do `log`"     ← membro que não existe mais
-```
-
-- [ ] **(a)** Ler a 195 como "o logging do core (depois do 128) instala o logger erlang como sink do
-  `log` no boot", e registrar assim.
-  ```bp
-  // core `rakun`, no boot (ilustrativo)
-  import {sink.setSink, sink.LogSink} from "log";
-  setSink(rakunLoggerSink());          // a partir daqui, todo registro do `log` vira linha do logger do rakun
-  ```
-- [ ] **(b)** Ler a 195 ao pé da letra: o `rakun-logging` volta a ser membro separado e instala o sink —
-  a 187 cede nesse ponto (17 membros).
-  ```text
-  modules/rakun-logging/   → instala o sink no boot; quem não depende dele fica com o sink padrão
-  ```
-
-**Recomendação: (a).** Mantém a consolidação da 187 e o comportamento que a 195 queria (um sink só,
-instalado no boot). As frentes já seguem a (a) (`04-rakun/17`: "the logger installs itself as `log`'s
-sink at boot"; `03-bundled-libs/106-log`); falta só o registro da 195. **Bloqueia:** nada nas frentes;
-só o registro.
+As que travam 00–03 estão na Prioridade 1: `ctr-i`, `ctr-j`, `ctr-s`, `ctr-o`, `ctr-h` (01) e `ctr-u`,
+`ctr-p`, `ctr-k` (03). Aqui ficam `ctr-l`, `ctr-v` e `ctr-w`.
 
 ### ctr-l · A terceira recusa da 186 × decisão 202
 
@@ -508,151 +2115,6 @@ pub val prerender = true;       // não existe (202): nada para a terceira recus
 
 **Recomendação: (a).** Sob a 202 nenhuma página se declara pré-renderizada; a recusa é letra morta, e a
 202 é a mais restritiva (não há como forçar estágio). **Bloqueia:** nada nas frentes; só o registro.
-
-### ctr-o · Decisão 146 × confirmação `lem-c`
-
-**Contexto.** A 146 diz que uma função cujo corpo alcança uma função host (com `#[@External.<Target>]`)
-sem binding para o target em build é recusada na declaração, chamada ou não. A `lem-c` (Parte 6,
-implementada na 1.0.10) diz que um **método** host sem binding é recusado onde é **chamado**; o tipo em si
-compila — recusar a declaração foi a opção não tomada. As duas se conciliam se a `lem-c` valer para a
-declaração host sem corpo e a 146 para toda função com corpo.
-
-**Hoje:**
-```bp
-// std io.net: `Socket.recv` tem binding Erlang e Node, nenhum Wasm
-sock.recv(10, 1000)    // wasm: MissingExternal `Socket.recv`, na chamada; o tipo Socket compila (lem-c)
-
-fn readLine(s: Socket) -> @Result<string, string> {   // 146: corpo alcança `recv` sem binding no wasm
-    return s.recv(80, 1000);                          //      → recusada na declaração, mesmo sem chamada
-}
-```
-
-- [ ] **(a)** Confirmar a `lem-c` para declaração host sem corpo (um tipo declarado uma vez compila para um
-  target em que falta um método); a 146 vale para toda função com corpo, livre ou método, que alcance
-  uma; o `docs.md` diz as duas.
-  ```bp
-  pub type Socket(handle: unknown) { pub declare fn recv(self: Self, length: i32, timeoutMillis: i32) -> … }
-  // ↑ compila no wasm (lem-c)
-  fn readLine(s: Socket) -> @Result<string, string> { return s.recv(80, 1000); }   // wasm: recusada (146)
-  ```
-- [ ] **(b)** A 146 vale para tudo: o próprio tipo com método host sem binding é recusado no target que
-  não o tem (a opção não tomada da `lem-c`).
-  ```text
-  $ botopink build --target wasm
-  error: `Socket.recv` has no #[@External.Wasm] binding (at the declaration of Socket)
-  ```
-- [ ] **(c)** A `lem-c` vale para tudo: recusa só na chamada, também para função com corpo (a 146 recua
-  e volta o `collectHostBound` preguiçoso do wasm).
-  ```bp
-  fn readLine(s: Socket) -> @Result<string, string> { return s.recv(80, 1000); }   // compila; só a chamada `readLine(s)` é recusada
-  ```
-
-**Recomendação: (a).** Mantém o que cada uma já implementa; a (b) impediria um tipo portátil com um método
-de um target só, e a (c) desfaria a regra estrita da 146. **Bloqueia:** a confirmação da `lem-c`.
-
-### ctr-p · Confirmação `std-a` × confirmação `03r-e`
-
-**Contexto.** Há dois decodificadores de query/cookie, cada um com uma regra. A `std-a` (Parte 6,
-implementada): `querystring.parse`/`parseForm` do std devolvem `Error` para um escape que decodifica em
-caractere de controle (como `%0A`), e o `splitQuery` do rakun passa a usá-los. A `03r-e` (implementada no
-rakun): um componente de cookie ou query que decodificaria em caractere de controle "fica como escrito".
-A 196 leva os leitores de cookie do rakun para o `http`. Quando o rakun ler query pela `querystring` e
-cookie pelo `http`, a regra da `03r-e` fica sem onde morar.
-
-**Hoje:**
-```bp
-querystring.parse("a=%0A")      // std: Error — escape que vira caractere de controle
-decodeComponent("%0A")          // rakun: "%0A" — fica como escrito (03r-e)
-```
-
-- [ ] **(a)** Confirmar a `std-a`; a `03r-e` cai quando o rakun ler query pela `querystring` e cookie pelo
-  `http` — uma regra só, a do std.
-  ```bp
-  // GET /busca?q=%0A no rakun, depois da troca
-  querystring.parse("q=%0A")      // Error: o leitor do rakun recusa o parâmetro
-  ```
-- [ ] **(b)** Confirmar a `03r-e` e levar a regra dela para o std: o componente fica como escrito.
-  ```bp
-  querystring.parse("a=%0A")      // Ok([#("a", "%0A")])
-  ```
-
-**Recomendação: (a).** Recusar é o mais restritivo (67) e mantém a lógica compartilhada no std; um valor
-"como escrito" chega ao código como se fosse válido. A 294 já vai nessa direção para cookie: `use
-cookie(decl)` dá `null` quando o valor não decodifica. **Bloqueia:** os leitores do rakun 04; a
-varredura de consumidores da 104.
-
-### ctr-s · Decisão 166 × decisão 243
-
-**Contexto.** No formatador, a 166 diz que a vírgula final decide: lista escrita com vírgula depois do
-último elemento fica um por linha (e mantém a vírgula); lista sem ela fica numa linha só. A 243 estendeu
-o alcance da 166 a toda lista delimitada (genéricos, parâmetros, imports, argumentos…), mas diz que, sem a
-vírgula, decidem as regras de largura (`16-a`/`16-b`: quebra o que não cabe) — e se apresenta como
-"extensão" da 166, embora mude a metade "sem vírgula".
-
-**Hoje:**
-```bp
-// escrito sem vírgula final, mais largo que a linha:
-val p = Person(name: "Ana Maria da Silva", email: "ana@example.com", city: "Belo Horizonte", age: 30);
-// 166: fica numa linha · 243: as regras de largura quebram
-```
-
-- [ ] **(a)** Registrar a 243 como emenda da metade "sem vírgula" da 166; a confirmação de `16-a`/`16-b`
-  (Parte 6) cobre o resto.
-  ```bp
-  val p = Person(
-      name: "Ana Maria da Silva",
-      email: "ana@example.com",
-      city: "Belo Horizonte",
-      age: 30
-  );                                   // forma exata da quebra: 16-a/16-b
-  ```
-- [ ] **(b)** A 166 vale inteira: sem vírgula, uma linha, por mais larga que fique; a 243 só estende o
-  alcance.
-  ```bp
-  val p = Person(name: "Ana Maria da Silva", email: "ana@example.com", city: "Belo Horizonte", age: 30);
-  ```
-
-**Recomendação: (a).** É o que o formatador da `feat` faz (16-a/16-b implementadas) e o que a 243 quis;
-falta só o texto dizer "emenda". A 286 já aplica essa leitura às listas de anotações ("without one
-the width rules decide (166, 243)"). **Bloqueia:** 16-formatter passo 6.
-
-### ctr-u · A grafia dos membros de parse do `#[validated]` (decisões 216, 306)
-
-**Contexto.** A 306 já decidiu o resto: o `#[schema]` sai e vira `#[validated]`, e o que ele emitia vira
-membro do tipo, como o `validate()`/`constraints()` (216) — `parse`, `parseAt`, `decode`, `bind`,
-`encode`, `jsonSchema` —; `Schema<T>`, `Codec`, `schemas.*` e `checks.*` ficam privados. A grafia desses
-membros a 306 deixou para esta pergunta. Na `feat`, o `#[schema]` (`libs/validation/src/decorators.bp:482`)
-ainda emite pelo `@emit` funções soltas com o nome do tipo (`parse<T>`, `schemaOf<T>`, …), e o
-`surface.md` da 125 ainda as nomeia (`schemaOfPlayer()`, `jsonSchemaOf<T>`, `constraintsOf<T>`,
-`validate<T>`: `surface.md:39,197,335`).
-
-**Hoje:**
-```bp
-#[schema]
-type Player(name: string, level: i32)
-
-val p = try parsePlayer(doc);        // função solta, emitida pelo @emit — sai com a 306
-val s = schemaOfPlayer();            // Schema<T> fica privado (306)
-```
-
-- [ ] **(a)** Os nomes que a 306 lista, como membros do tipo, sem o nome do tipo dentro.
-  ```bp
-  #[validated]
-  pub type Player(name: string, level: i32)
-
-  val p = try Player.parse(doc);
-  val q = try Player.decode(text);
-  val j = Player.jsonSchema();
-  ```
-- [ ] **(b)** A grafia fica com a 125, como a 216 diz das grafias exatas ("the implementing front's"):
-  esta pergunta fecha e a 125 escolhe no passo 12.
-  ```text
-  125 passo 12: os membros e as linhas do surface.md, com a grafia que a frente escolher
-  ```
-
-**Recomendação: (a).** São os nomes que a 306 já escreve e a forma que o `#[validated]` já usa
-(`validate()`, `constraints()`); os nomes gerados com o tipo dentro (`parse<T>`, que hoje são contrato
-entre dois `#[schema]`) deixam de existir. **Bloqueia:** 125 passo 12 (306) e as linhas do `surface.md`.
 
 ### ctr-v · Decisão 189 (org-3) × as frentes da emilia abrindo antes da 118
 
@@ -725,110 +2187,10 @@ ponto de extensão do core, sem aresta entre membros.
 
 ---
 
----
-
 ## Parte 2 — Destravam muitas frentes
 
-### snap-a · Os mapas de snapshot — aposentados; ficam os snapshots que existem ou que um contrato lê
-
-**Contexto.** Substitui as cinco perguntas antigas (`01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b`).
-Um "mapa de snapshot" é uma lista, herdada da 1.0.10, dos casos que cada biblioteca deveria gravar como
-arquivo `.snap` (a saída esperada guardada em disco). Os nove mapas foram reavaliados caso a caso na
-trilha `20-snap` (frente 135): **473 casos** — 27 obsoletos (renomeados, apagados ou mudados pelas
-decisões 186, 194, 200, 218, pelo 34 passo 2, pela 50-a, ou adiados pela 274), 418 já verificados
-hoje por um teste inline ou por um `.snap` que existe, e 21 que nada verifica e valem um teste simples.
-Os literais gravados nos mapas são anteriores ao código (separador de slug, ordem do `_links`,
-`normalize`, classes da emilia) e não servem de valor esperado. O contrato 7, a regra 3 do
-`snapshots.md` e a checagem (2) da 98 exigem pelo menos um `assert<Assunto>(loc, …)` em cada `<lib>-test`.
-
-**Hoje:**
-```bp
-// cada caso já é afirmado por um literal inline, nos dois targets:
-assert tokenDeclarations(.Border.Rounded.Md) == "border-radius:var(--radius-md)";   // emilia.bp:10615
-// e os .snap que existem: std 4, jhonstart 39, onze 51 (24 deles via snapshots.assertAs)
-```
-
-- [ ] **(a)** Como proposto: os mapas viram registro fechado; os `.snap` que existem ficam (std 4,
-  jhonstart 39, onze 51) e só mudam junto com o seu teste; um `.snap` novo só onde os bytes exatos são
-  contrato de outro pacote (os `text_…` e `dockerfile_…` do onze-release, já em disco, para a
-  `107-release`); helpers só os que um consumidor usa — `emilia-test`: `assertClassName` (sob
-  `defaultTheme()`, gravando `e_39b87d03`) e `assertCss(loc, tokens, th)`; `rakun-test`:
-  `assertResponse(loc, res)` sobre `MockMvc.perform`; os do jhonstart e do onze como estão (o
-  `assertAlias` do onze sai com a 218). Os 21 valores sem verificação viram testes simples, e 97 passo 7,
-  26 passo 7, 33 passos 3–4, 50 passo 8, 51 passo 7 fecham com uma linha no `AGENTS.md`. Só **3** `.snap`
-  novos (emilia-test 2, rakun-test 1).
-  ```bp
-  try asserts.throwsWith({ -> val _v = verify(repo, times(1)).find(eq(7)); 0; },
-      "mocks.verify: find - expected exactly 1 matching call(s), got 2");       // std, nos dois targets
-  assertClassName(loc, cardTokens(), defaultTheme());                           // emilia-test → e_39b87d03
-  // AGENTS.md: "os literais inline e os __snapshots__/ existentes são a evidência"
-  ```
-- [ ] **(b)** Construir a camada inteira: todos os helpers e `.snap` dos mapas (~2 500 arquivos), com os
-  literais recalculados primeiro — muitos arquivos novos para valores que já têm um teste inline.
-  ```text
-  modules/emilia-test/test/__snapshots__/rounded_md.snap
-  modules/emilia-test/test/__snapshots__/rounded_lg.snap
-  …                                            # ~2 500 arquivos, cada literal do mapa recalculado
-  ```
-- [ ] **(c)** Manter os mapas abertos por biblioteca: cada uma responde a sua pergunta antiga e guarda o
-  seu mapa até lá — cinco respostas separadas, regras possivelmente diferentes.
-  ```text
-  05emilia-m (aberta): a emilia grava os casos do seu mapa?   → resposta só para a emilia
-  03r-ag     (aberta): o rakun grava os casos do seu mapa?    → resposta só para o rakun
-  ```
-
-**Recomendação: (a).** Uma regra para todas as bibliotecas, cada valor verificado uma vez, e só três
-`.snap` novos; é a opção mais restritiva que ainda prova tudo. **Bloqueia:** a frente 135 inteira
-(`20-snap`, passos 1–5), que é dona de 97 passo 7 · 19 passo 6 · 26 passo 7 · 33 passos 1, 3, 4 · 50
-passo 8 · 51 passo 7 · o runner do passo 1 da 53 e o texto dos passos 2–6 · 71 passo 6; a checagem (2)
-da 98 fica como está.
-
-### 03r-ao · A ordem entre o 130 e o 128 no rakun *(proposta)*
-
-**Contexto.** A frente 128 reorganiza o rakun (a decisão 187 funde membros: 25 viram 16) e move
-arquivos — por exemplo `rakun-actuator-api` para `modules/rakun/src/actuator_api/`. O passo 5 da
-`01-compiler/130` (decisão 216: decoradores produzem membros e meta em vez de `@emit` solto) ainda
-edita arquivos que o 128 move ou que as frentes do rakun possuem: o `decorators.bp`, `autoconfig.bp`,
-`config.bp`, `context.bp`, `lifecycle.bp` e `conditions.bp` do core, `rakun-web/src/convention.bp`,
-`rakun-app`, `rakun-scheduling`, `rakun-messaging`, `rakun-cli`, `rakun-data`, `rakun-security`,
-`rakun-websocket`, `rakun-client` e o `actuator_api`. As frentes já seguem a (a) como regra provisória:
-o 130 já escreve os caminhos de depois do 128 e não faz commit no rakun com o 128 aberto
-(`130-decorator-outputs/README.md` § Step 5), e o `04-rakun` já dá ao 130 a escrita do `decorators.bp`
-congelado (`04-rakun/README.md` § Order e § Rules, "to confirm"). Os sites já migrados (`#[entity]`,
-`#[entityRepository]`, `#[belongsTo]`, `#[query]`, `#[cached]`, `#[halResource]` e as fábricas
-`T.make()` do `front/130-rakun-di`) estão na `feat` e se movem com os arquivos. Falta só registrar a regra.
-
-**Hoje:**
-```text
-130 passo 5 escreve:     modules/rakun/src/actuator_api/**   (hoje rakun-actuator-api, movido pelo 128 passo 1)
-130 passo 5 diz:         nenhum commit do 130 no rakun enquanto o 128 estiver aberto (03r-ao (a))
-04-rakun § Rules:        src/decorators.bp congelado; único escritor: a reescrita do 130 (a confirmar)
-nenhuma decisão registra a regra
-```
-
-- [ ] **(a)** O 128 primeiro e sozinho; os pontos do 130 no rakun apontam para os caminhos depois do
-  128; depois dele cada um é um commit de consumidor (decisão 188, nunca na mesma onda da frente dona);
-  a regra de arquivos congelados abre exceção para a reescrita do `decorators.bp` pelo 130.
-  ```text
-  onda 1: 128 sozinho                 → rakun com 16 membros, caminhos novos
-  onda 2: commit de consumidor do 130 → modules/rakun/src/actuator_api/…  (fora da onda da frente dona)
-          exceção ao congelamento     → modules/rakun/src/decorators.bp reescrito pelo 130
-  ```
-- [ ] **(b)** Os pontos do 130 no rakun antes de o 128 abrir — toda frente do rakun espera o 130.
-  ```text
-  onda 1: 130 passo 5 edita modules/rakun-actuator-api/…, modules/rakun-web/src/convention.bp, …
-  onda 2: só então o 128 abre (e move os arquivos que o 130 acabou de editar)
-  ```
-- [ ] **(c)** O próprio 128 faz a reescrita do 130 nos arquivos que move — o 128 fica maior e mistura
-  mudança de lugar com mudança de forma.
-  ```text
-  128: git mv modules/rakun-actuator-api/src → modules/rakun/src/actuator_api
-       + reescreve os #[…] desses arquivos no formato da 216, no mesmo commit
-  ```
-
-**Recomendação: (a)** — o 128 segura o rakun inteiro, e a (b) seguraria toda frente do rakun esperando
-o 130. **Bloqueia:** só o registro — o 130 e o `04-rakun` já seguem a (a); a abertura do 128 e as
-linhas do rakun no passo 5 do 130 andam pela regra provisória até a confirmação.
+As duas perguntas desta parte travam 00–03 e estão na Prioridade 1: a `snap-a` (03, e a `20-snap`
+inteira) e a `03r-ao` (01).
 
 ---
 
@@ -836,291 +2198,8 @@ linhas do rakun no passo 5 do 130 andam pela regra provisória até a confirmaç
 
 Cada uma abre uma frente, um passo ou uma onda.
 
-### 130-b · Dois `#[provides]` do mesmo tipo no registro de beans (decisões 254, 256, 281)
-
-**Contexto.** A 256 monta o registro de beans do rakun em comptime, no ponto de entrada, com um laço
-sobre `@TypeInfo.all(with: provides)`, e o trecho dela chaveia cada provider por `b.returnTypeName` — o
-nome do tipo em texto, que a 281 tirou do registro ("how a qualified bean is told apart stays `130-b`,
-now with a type-based option"). Nesse trecho, dois providers qualificados do mesmo tipo — e um
-`#[primary]` ao lado de um comum — colidem em `"Dye"` e seriam recusados como duplicata. O código de
-hoje não passa por esse registro: o `#[provides]` emite `rkRegisterBean(…)`, que grava cada provider na
-tabela do contexto em load com a chave `Tipo@qualificador`; o sem qualificador (ou o `#[primary]`) fica
-com o nome puro, e os outros são alcançados por `ctx.resolveNamed("Dye", "warm")`
-(`rakun/src/context.bp:1030-1110`, `rakun/test/context_test.bp:486-510`, `examples/rakun-container`) —
-a regra do Spring.
-
-**Hoje:**
-```bp
-#[provides] #[qualifier("fast")] fn fastDye() -> Dye { … }
-#[provides] #[qualifier("slow")] fn slowDye() -> Dye { … }
-// hoje: aceitos na tabela do contexto ("Dye@fast", "Dye@slow");
-// no registro da 256 (chave b.returnTypeName) seriam duplicata de "Dye"
-ctx.resolveNamed("Dye", "fast")      // o nome do tipo em string (281)
-```
-
-- [ ] **(a)** Provider qualificado é chaveado `Tipo@qualificador` (o decorador grava
-  `decl.setMeta(Qualifier(name: "fast"))`, 298); o nome puro é o sem qualificador ou o `#[primary]`; dois
-  donos do nome puro são a duplicata.
-  ```bp
-  for (@TypeInfo.all(with: provides)) { b ->
-      d = d.insert(rkBeanKey(b), b.value);   // "Dye@fast", "Dye@slow", "Dye" para o primary
-  }
-  ctx.resolveNamed("Dye", "fast")            // lê "Dye@fast" do mesmo registro
-  ```
-- [ ] **(b)** O registro guarda só o que a injeção por tipo lê; os qualificados ficam na tabela do
-  contexto que o registro em load preenche (`resolveNamed` a lê) — dois lugares para bean.
-  ```bp
-  // registro em comptime: só "Dye" (o sem qualificador ou o #[primary])
-  // fastDye e slowDye: registrados em load na tabela do contexto
-  ctx.resolveNamed("Dye", "fast")            // lê a tabela, não o registro
-  ```
-- [ ] **(c)** O trecho como está: dois providers de um tipo são sempre duplicata; qualificador só nomeia
-  bean de tipo com um provider.
-  ```bp
-  #[provides] #[qualifier("fast")] fn fastDye() -> Dye { … }
-  #[provides] #[qualifier("slow")] fn slowDye() -> Dye { … }
-  // error: duplicate bean "Dye" (fastDye, slowDye)
-  ```
-- [ ] **(d)** *(nova, pela 281)* O qualificador é um tipo distinto; o registro é chaveado só pelo tipo, e
-  `#[qualifier("…")]` e `resolveNamed` saem.
-  ```bp
-  type FastDye(dye: Dye)
-  type SlowDye(dye: Dye)
-  #[provides] fn fastDye() -> FastDye { … }
-  #[provides] fn slowDye() -> SlowDye { … }
-  val d = use bean(FastDye);              // em vez de ctx.resolveNamed("Dye", "fast")
-  ```
-
-**Recomendação: (d)**, pela decisão 281 — a (a) guarda uma string (`Dye@fast`) ao lado do tipo e lê o
-tipo pelo nome em `resolveNamed`. A (a) continua possível se você quiser um rótulo em texto mesmo assim.
-O passo 6 da `04-rakun/04` já escreve a forma da (d). **Bloqueia:** a migração de `#[provides]` /
-`#[qualifier]` / `#[primary]` do rakun (130 passo 5: `context.bp`, o teste dele, rakun-container).
-**Depende de:** `nat-e`, que também a bloqueia.
-
-### 130-c · Os métodos `#[bean]` de um `#[configuration]` no registro (decisão 234)
-
-**Contexto.** A 234 preenche o contexto de injeção "a partir do `@TypeInfo.all(with: provides)` / dos
-métodos `#[bean]`", mas o `@TypeInfo.all` responde só declarações de topo, e um `#[bean]` é método de um
-tipo `#[configuration]`: nenhuma consulta o alcança. Hoje o `#[configuration]` dá ao tipo um membro
-`make()` e, por `#[bean]`, emite `val __rkBeanM_<Config>_<método> = rkRegisterBean("<TipoDeRetorno>", …)`,
-que grava o bean na tabela do contexto em load (`rakun/src/decorators.bp:333-385`). Os `#[bean]`
-escritos hoje estão em `examples/rakun/src/config.bp` e nos testes (`rakun/test/autoconfig_test.bp`,
-`conditions_test.bp`, `scopes_test.bp`, `context_test.bp`; `rakun-test/test/mocks_pairing_test.bp`). Sem
-resposta, esses beans ficam fora do registro novo. A 299 já tirou o `#[value("…")]`: a configuração é um
-record tipado por prefixo (`#[config("app")]`), injetado por tipo. A `nat-e` recomenda absorver esta
-pergunta.
-
-**Hoje:**
-```bp
-// examples/rakun/src/config.bp
-#[configuration]
-pub type AppConfig(
-    #[value("app.timezone")] timezone: string,       // sai pela 299
-) {
-    #[bean]
-    pub fn clock(self: Self) -> Clock { return Clock(zone: self.timezone); }
-    // emite val __rkBeanM_AppConfig_clock = rkRegisterBean("Clock", …)
-}
-```
-
-- [ ] **(a)** Métodos `#[bean]` viram funções livres `#[provides]`; a configuração é o record da 299, e o
-  provider a lê por tipo.
-  ```bp
-  #[config("app")]
-  pub type AppConfig(timezone: string);
-
-  #[provides]
-  pub fn clock() -> Clock {
-      val config = use config(AppConfig);       // 299: por tipo, nunca rkResolve<…>("AppConfig")
-      return Clock(zone: config.timezone);
-  }
-  ```
-- [ ] **(b)** A configuração grava cada bean como meta tipada (298) e entrega a fábrica dele; o ponto de
-  entrada faz um terceiro laço sobre `@TypeInfo.all(with: configuration)`.
-  ```bp
-  for (@TypeInfo.all(with: configuration)) { c ->
-      // c.metaAll(Bean): um Bean por método #[bean], com a sua fábrica (unknown)
-      c.metaAll(Bean).forEach({ b -> d = d.insert(<a chave da 130-b>, b.factory); });
-  }
-  ```
-- [ ] **(c)** O `@TypeInfo.all` ganha `methods: true` — reflexão nova, que alcança métodos.
-  ```bp
-  for (@TypeInfo.all(with: bean, methods: true)) { b -> d = d.insert(<a chave da 130-b>, b.value); }
-  ```
-
-**Recomendação: (a)** — um jeito só de fornecer bean, já no laço do registro, sem reflexão nova; o
-`@Bean` do Spring é o que o `#[provides]` já é numa linguagem com funções livres. **Bloqueia:** a
-migração do `#[configuration]` do rakun e todo `rkRegisterBean` que um `#[bean]` emite (130 passo 5).
-**Depende de:** `nat-e`, que a absorve.
-
-### 134-d · `@is(…)` escrito à mão
-
-**Contexto.** `x is T` é lido como a chamada builtin `is` levando o tipo testado. O lexer também faz de
-`@is(1)` essa mesma chamada, só que sem tipo testado — tipa como `bool` e não baixa nada com sentido. É
-alcançável e não está declarado, e a 252 diz que todo builtin é declarado; é uma das chamadas builtin
-ainda não declaradas do passo 2 da 134 (ao lado do namespace `result.*`).
-
-**Hoje:**
-```bp
-val b = @is(1);   // hoje compila: bool, sem testar nada
-```
-
-- [ ] **(a)** Recusar `@is(…)` como chamada (`unknown-builtin`, apontando `x is T`).
-  ```bp
-  val b = @is(1);   // error[unknown-builtin]: `@is` não é builtin — escreva `x is T`
-  ```
-- [ ] **(b)** Declará-lo (`is(value: unknown) -> bool`) e manter a chamada.
-  ```bp
-  pub declare fn is(value: unknown) -> bool;
-  val b = @is(1);   // compila, declarado — e continua sem testar tipo nenhum
-  ```
-
-**Recomendação: (a).** `is` é um operador; uma forma de chamada que ninguém escreve e que não testa nada
-é a leitura mais frouxa. **Bloqueia:** a caixa de `@is(…)` do passo 2 da 134.
-
-### 17-b · O incremento por linha de um `Dict` com `keyed: true`
-
-**Contexto.** A frente 17 implementou o `keyed: true` (decisões 168 e 174; a grafia `label: value` é da
-305): um `var` global anotado `#[@BeamMemory.Ets(keyed: true)]` vira uma tabela ETS em que cada chave é
-uma linha. `counts.at(k)` lê uma linha (`ets:lookup`) e `counts = counts.insert(k, v)` escreve uma linha
-(`ets:insert`); dois processos escrevendo cada um a sua chave 20 000 vezes terminam em `20000 20000`. O
-que falta é um `+=` numa linha virar `ets:update_counter` (atômico). O `??` agora existe, então a forma
-abaixo **tipa** — mas continua recusada, porque recalcula a linha a partir do próprio var e pode perder
-um de dois incrementos simultâneos (a regra 5(b) da decisão 40). `counts.at(k) += 1` e `counts[k] += 1`
-não são alvos de atribuição.
-
-**Hoje:**
-```bp
-#[@BeamMemory.Ets(keyed: true)]
-var counts: Dict<string, i32> = Dict.empty();
-
-counts = counts.insert(k, (counts.at(k) ?? 0) + 1);   // tipa; recusado: … can lose one of two concurrent runs
-```
-
-- [ ] **(a)** Nenhum: uma linha keyed se escreve inteira; um contador que vários processos incrementam é
-  um `#[@BeamMemory.Ets] var n: i32` próprio (o incremento da decisão 40).
-  ```bp
-  #[@BeamMemory.Ets] var hitsA: i32 = 0;
-  hitsA += 1;                                  // ets:update_counter
-  ```
-- [ ] **(b)** Um método da std `Dict.bump(key, by)` (valor inteiro; chave ausente conta de 0), comum num
-  `Dict` normal e, sob `keyed: true`, `ets:update_counter(T, K, By, {K, 0})`.
-  ```bp
-  counts = counts.bump(k, 1);
-  ```
-- [ ] **(c)** Atribuição por índice na gramática, com o mesmo lowering.
-  ```bp
-  counts[k] += 1;
-  ```
-- [ ] **(d)** *(nova, agora que `??` existe)* Reconhecer exatamente a forma
-  `counts.insert(k, (counts.at(k) ?? 0) + n)` e baixá-la para `ets:update_counter`, sem método nem
-  gramática nova.
-  ```bp
-  counts = counts.insert(k, (counts.at(k) ?? 0) + 1);   // reconhecida → ets:update_counter(T, k, 1, {k, 0})
-  counts = counts.insert(k, (counts.at(k) ?? 0) * 2);   // outra forma: continua recusada
-  ```
-
-**Recomendação: (a).** Nenhum método ou gramática nova por causa de uma anotação; (b) põe no `Dict` um
-método cuja atomicidade só existe sob `keyed: true`, (c) cria um alvo de atribuição que a linguagem não
-tem, (d) faz uma forma escrita mudar de significado conforme o padrão. **Bloqueia:** a quarta caixa do
-passo 1 da 17.
-
-### 17-c · O que mais pode nomear um var `keyed: true`
-
-**Contexto.** Um var `keyed: true` não tem "valor inteiro" na memória: é uma tabela lida linha a linha.
-Por isso hoje ele só aparece como `counts.at(k)` (`ets:lookup`) e `counts = counts.insert(k, v)`
-(`ets:insert`); todo o resto (`counts[k]`, `hasKey`, `delete`, `size()`, passá-lo adiante) é recusado no
-identificador, e um var keyed nunca é `pub` (quem importasse leria o valor inteiro, que não existe). A
-decisão 63 (1.0.5) dá ao índice outra resposta que a do `at`: `d[k]` responde o tipo do valor, `V`, e
-**falha** quando a chave falta; `d.at(k)` responde `?V` (`null` na ausência).
-
-**Hoje:**
-```bp
-@print(counts.size());     // error: `counts` is a `keyed = true` var: it is read one row at a time, as `counts.at(key)`
-@print(counts["a"]);       // a mesma recusa; pela 63, counts["a"] responderia i32 e falharia sem a linha
-```
-
-- [ ] **(a)** Só as duas formas, como está.
-  ```bp
-  val a = counts.at("a") ?? 0;          // ets:lookup
-  counts = counts.insert("b", 10);      // ets:insert
-  @print(counts["a"]);                  // error: … read one row at a time, as `counts.at(key)`
-  ```
-- [ ] **(b)** (a) mais `counts[k]`, com o sentido da 63: responde `V` e falha quando a linha falta.
-  ```bp
-  @print(counts["a"]);       // ets:lookup; sem a linha "a", falha (63)
-  ```
-- [ ] **(c)** (b) mais `hasKey` (`ets:member`) e `delete` (`ets:delete`) como operações de linha, cada uma
-  um primitivo novo no `std/beam`.
-  ```bp
-  if (counts.hasKey("a")) counts = counts.delete("a");
-  ```
-
-**Recomendação: (a).** Uma grafia por operação de linha; (b) custa pouco, mas é uma segunda leitura de
-linha, com outra resposta na ausência; (c) aumenta a superfície que o checker e os dois emissores
-precisam manter iguais. **Bloqueia:** nada — o que está construído vale até ser ampliado.
-
-### imp-a · Dois tipos com o mesmo nome importados com alias *(proposta)*
-
-**Contexto.** A decisão 170 torna legal importar dois nomes iguais de módulos diferentes, desde que com
-alias. O checker recusa isso para **tipos** (`import-name-collision`, célula
-`modules/import_two_types_one_name`), porque os backends não distinguem tipos por módulo — dois `T`
-viram o mesmo nome no código gerado. Para valores (funções, constantes) o alias já funciona.
-
-**Hoje:**
-```bp
-import {m1.f as f1};
-import {m2.f as f2};      // ok: valores
-import {m1.T as A};
-import {m2.T as B};       // hoje: import-name-collision
-```
-
-- [ ] **(a)** Tipos continuam recusados: o alias da 170 vale só para valores.
-  ```bp
-  import {m1.T as A};
-  import {m2.T as B};     // error[import-name-collision]: dois tipos `T`; o alias vale só para valores
-  ```
-- [ ] **(b)** Os backends qualificam tipos pelo módulo; a forma passa a valer.
-  ```bp
-  import {m1.T as A};
-  import {m2.T as B};
-  val a: A = A(…);        // ok: o backend distingue m1.T de m2.T
-  val b: B = B(…);
-  ```
-
-**Recomendação: (b).** A 170 é regra sua; a recusa é limite de backend, guardado numa linha do
-`language-gaps.md` até ser construído. **Bloqueia:** nada aberto; uma linha da 01-checker.
-
-### pkg-b · Um pacote importando a si mesmo pelo nome (`from "std"` dentro do próprio `std`)
-
-**Contexto.** A decisão 206 já está implementada (frente 129): `from` nomeia só pacote, e um módulo do
-próprio pacote vem pelo caminho entre chaves. Sobra um caso: um pacote importando a si mesmo pelo nome.
-Os testes dos pacotes bundled já usam a forma com chaves (`libs/log/test/digest_test.bp:8`:
-`import {digest.errorDigest, …};`); sobram três fontes do std — `std/src/querystring.bp:28`,
-`std/src/testing/snapshots.bp:49-51` e `std/src/io/fs.bp:20`. A diferença prática é o que o módulo
-enxerga: pelo nome do pacote, só o que é exportado; pelo caminho, também o interno.
-
-**Hoje:**
-```bp
-// libs/std/src/io/fs.bp:20
-import {path.relative} from "std";        // o próprio std — compila
-```
-
-- [ ] **(a)** Vale: é um pacote, e `from` nomeia pacote.
-  ```bp
-  // libs/std/src/io/fs.bp
-  import {path.relative} from "std";      // ok: só a superfície pública do std
-  ```
-- [ ] **(b)** Recusa: dentro do pacote, é `import {path.relative};`, como qualquer outro módulo dele.
-  ```bp
-  import {path.relative} from "std";      // error: dentro do pacote `std`, importe pelo módulo
-  import {path.relative};                 // ok: vê também o que não é exportado
-  ```
-
-**Recomendação: (b).** Os testes já migraram para a forma com chaves; sobram três fontes do std, e uma
-regra só — dentro do pacote, pelo módulo — é a mais restritiva (67). **Bloqueia:** nada (o caso está
-como item do passo 8 da `01-compiler/26`, cuja contagem — log 1, routing 1, validation 2, std 8 — está
-desatualizada).
+Na Prioridade 1, porque travam 00–03: `pkg-b`, `imp-a`, `130-b`, `130-c`, `134-d`, `17-b`, `17-c` (01),
+`std-d`, `08-f` (02), `07-j`, `atm-a` (03).
 
 ### 08-d · Quem faz o escopo do CSS
 
@@ -1154,42 +2233,6 @@ styles.module.css  .title{…}  → .title_<hash>   // o onze-assets só renomei
 
 **Recomendação: (a).** A (c) põe um parser de CSS na biblioteca de HTML; a (b) deixa o estilo com escopo
 indisponível sem o onze. **Bloqueia:** 119 inteira — na cadeia crítica 118 → 119 → 120 → 126 → 127 → 124.
-
-### 08-f · Onde moram Markdown e YAML
-
-**Contexto.** Páginas de conteúdo (posts de blog) são Markdown com um cabeçalho YAML ("frontmatter").
-Hoje não existe código de Markdown em lugar nenhum, e há um único leitor de um subconjunto de YAML, no
-`config.bp` do rakun. A regra do `03-bundled-libs` (115) manda um leitor de config para o std "quando
-aparecer um segundo consumidor" — e o frontmatter é esse segundo consumidor do YAML; o Markdown tem um
-só.
-
-**Hoje:**
-```text
----
-title: Hello
----
-# Post
-→ ninguém lê isto ainda; o único leitor de YAML é o de rakun/src/config.bp (subconjunto, privado)
-```
-
-- [ ] **(a)** Os dois no novo membro `onze-content` — o rakun fica com a sua cópia de YAML.
-  ```bp
-  import {markdown, frontmatter} from "onze-content";
-  ```
-- [ ] **(b)** Markdown no `onze-content`; YAML no std, e o leitor de config do rakun é apagado pela frente
-  do rakun. Até o `yaml` do std chegar, o passo 3 da 121 lê o frontmatter com cópia própria e a apaga
-  depois.
-  ```bp
-  import {yaml} from "std";
-  import {markdown} from "onze-content";
-  ```
-- [ ] **(c)** Um bundled `markdown`.
-  ```bp
-  import {markdown} from "markdown";
-  ```
-
-**Recomendação: (b).** O frontmatter é o segundo consumidor do YAML; o Markdown tem um só (115).
-**Bloqueia:** 121 passo 3; uma linha para a 97.
 
 ### props-d · Os atributos de uma tag nativa *(proposta)*
 
@@ -1313,6 +2356,7 @@ rakun.nosql.url = mongodb://localhost/app
 **Recomendação: (a)** — nunca cair para ETS debaixo de uma URL do Mongo; o braço Elasticsearch sem aresta
 para o `rakun-client` (ver `ctr-w`; o passo 3 da 09 ainda passa por ele). A frente já segue a (a); falta
 só o registro. **Bloqueia:** 09 passo 5 (as células de recusa).
+
 ### 03r-ae · SAML 2.0 ACS
 
 **Contexto.** O ACS é o endpoint do service provider SAML que recebe a assertion assinada do provedor de
@@ -1559,36 +2603,6 @@ onze dev: not available yet - it serves the build `onze start` serves and reload
 (b) depois, se (a) medir lento demais no blog. **Bloqueia:** 50 passo 2; 53 passo 6 ("`dev` serve toda
 rota").
 
-### std-d · `io.process`: sinais e leitor de TTY
-
-**Contexto.** O `io/process.bp` do std não registra nem repassa sinal, e o std não tem leitor de linha
-do terminal. Consequência no onze: o `onze start` espera o `process.run`, então um `SIGTERM` mata o
-`bin/onze` e deixa o nó rodando; e o `onze create` sem `--yes` não tem prompt para onde cair. A pergunta
-é se o std ganha essas três funções host (em dois targets) ou se o onze contorna.
-
-**Hoje:**
-```text
-$ onze start &  ;  kill -TERM %1
-# o bin/onze sai; o nó erl continua rodando
-$ onze create
-# sem --yes: não há leitor de TTY para perguntar o nome do projeto
-```
-
-- [ ] **(a)** O std ganha as três células: `process.onSignal(name, fn)`, `process.forwardSignals(child)`,
-  `io.stdin.readLine()`.
-  ```bp
-  process.forwardSignals(child);
-  val name = io.stdin.readLine();           // `onze create` pergunta o nome do projeto
-  ```
-- [ ] **(b)** Nada no std.
-  ```text
-  $ onze start            # faz exec do nó erl (bin/onze da 71): a VM é PID 1 e recebe o SIGTERM direto
-  $ onze create           # sem nome e sem --yes:
-  error: `onze create` needs <name> (or --yes)    # o nome é posicional; as flags são --example, --port, …
-  ```
-
-**Recomendação: (b)**, a mais restritiva. **Bloqueia:** onze 50 passos 4 e 7; 97 passo 6 (condicional).
-
 ### 67-a · Onde as caixas de forms do lado do DOM são afirmadas
 
 **Contexto.** Cinco caixas de forms do jhonstart (as 3a, 3b, 4, 5 da 1.0.10: `fieldError` depois do
@@ -1657,116 +2671,12 @@ arbSel(":has(> img)", [.Flex])     // a única forma de escrever as variantes no
 
 **Recomendação: (a)**; (b) se você quiser alguma feature. **Bloqueia:** 34 passo 4 (condicional).
 
-### 07-g · Renderização de release OTP
-
-**Contexto.** Hoje `rakun-release/release.bp` (depois do 128, `rakun-cli/src/release/`) e
-`onze-release/otp.bp` escrevem o mesmo `.rel` / `vm.args` / `sys.config` / script de boot / Dockerfile,
-cada um com o seu código. O onze não pode reusar o do rakun (o rakun é só erlang; o onze-release também
-compila para commonJS). Uma correção no formato hoje precisa ser feita duas vezes.
-
-**Hoje:**
-```bp
-// rakun/modules/rakun-release/src/release.bp
-pub fn renderRel(r: Release) -> string
-pub fn renderVmArgs(r: Release) -> string
-// onze/modules/onze-release/src/otp.bp
-pub fn relFileText(spec: ReleaseSpec) -> string
-pub fn vmArgsText(spec: ReleaseSpec) -> string
-```
-
-- [ ] **(a)** Um bundled `release` de renderizadores puros.
-  ```bp
-  import {rel, vmArgs, sysConfig} from "release";
-  fs.writeText(path.join([out, "onze.rel"]), rel(spec));
-  ```
-- [ ] **(b)** Feature do CLI: `botopink release --out dist/`.
-  ```text
-  $ botopink release --out dist/
-  dist/releases/0.1.0/onze.rel  dist/releases/0.1.0/vm.args  dist/releases/0.1.0/sys.config
-  ```
-- [ ] **(c)** Deixar os dois como estão.
-  ```text
-  rakun: renderRel(r)       onze: relFileText(spec)     # duas cópias, cada correção feita duas vezes
-  ```
-
-**Recomendação: (a)** — uma cópia só, que serve aos dois frameworks nos dois targets; o CLI pode adotar o
-pacote depois. **Bloqueia:** 107-release (frente condicional:
-responder ou adiar a 107).
-
-### 07-j · Quanto do Zod entra na 125
-
-**Contexto.** A frente 125 traz para a `validation` a superfície do Zod (validação por schema).
-`125-validation-zod/surface.md` tem 211 linhas de referência (§ Count): 48 já são a linguagem ou a
-biblioteca (11 native, 37 have), 134 dá para construir com o decorador e a reflexão que existem, 7 são
-lacunas com forma mais próxima entregue (linha em `language-gaps.md`), 20 não fazem sentido aqui e 2 ficam
-fora do núcleo da referência. Os passos 0–2 já estão na `feat`, ainda com `#[schema]`.
-
-A 306 já desenhou o resultado: `#[validated]` é o único schema e emite `parse`, `parseAt`, `decode`,
-`bind`, `encode`, `jsonSchema` (grafia do `ctr-u`); codecs, map e preprocess viram marcadores de campo
-(`#[codec(decode:, encode:)]`, `#[map]`, `#[preprocess]`, `#[each]`); uniões e tuplas são tipos declarados;
-o que só um valor diria fica `n/a (306)` no `surface.md`. Na prática isso é a (c) — (a) e (b) contradizem
-a lista de membros da 306. Resta registrar o tamanho.
-
-**Hoje:**
-```bp
-#[schema] type Signup(email: string, password: string)
-val s = try parseSignup(json);            // passos 0–2 na feat: `parse<TypeName>` é um molde de nome (decorators.bp:343)
-```
-
-- [ ] **(a)** Só os marcadores (passo 3); o `#[validated]` não ganha os membros de parse.
-  ```bp
-  #[validated] type Signup(#[email] email: string, #[min(8)] password: string)
-  ```
-- [ ] **(b)** Marcadores + `parse` de records planos (passos 0–3).
-  ```bp
-  #[validated] type Signup(#[email] email: string, #[min(8)] password: string)
-  val s = try Signup.parse(json);
-  ```
-- [ ] **(c)** Tudo, na forma da 306: uniões e tuplas como tipos declarados, mapas, coerção, transforms e
-  codecs como marcadores, `bind`, `encode`, `jsonSchema` como membros.
-  ```bp
-  val form = try Signup.bind(pairs);            // de pares de formulário
-  val schema = Signup.jsonSchema();
-  ```
-
-**Recomendação: (c)**, na ordem dos passos — fechar como (c) sob a 306 (membros com a grafia do `ctr-u`;
-`surface.md` reclassificado em marcador, tipo ou `n/a (306)`). **Bloqueia:** o tamanho da 125 (passos 3–10).
-
 - [ ] Confirmo a recomendação em todas desta parte
 - [ ] Quero rever: ___
 
 ---
 
----
-
 ### cardume (frente 136)
-
-### atm-a · Nomes dos hooks de cookie: substantivos, ou os verbos da 294/295 *(proposta)*
-
-**Contexto.** A regra do jhonstart (no cabeçalho do `hooks.bp`) diz que hook é **substantivo** e que o
-`use` é quem ativa: `use state(0)`, `use memo(…)`. Para as locais de request a 296 já decidiu: elas são
-átomos do cardume e "each bridge spells the same hooks (`atomValue`, `atomState`, `atomSetter`,
-`atomReset` …)" — `use setLocal(currentUser)` vira `use atomSetter(currentUser)`. Resta o cookie: o
-`Cookie<T>` fica no `http` (294, 296), e a 294/295 escreveram **verbos** para escrever e limpar.
-
-**Hoje:**
-```bp
-val session = use cookie(sessionCookie);          // 294: leitura, substantivo
-val setSession = use setCookie(sessionCookie);    // 294/295: verbo
-val clearSession = use clearCookie(sessionCookie);
-```
-
-- [ ] **(a)** Substantivo também no cookie, como no cardume.
-  ```bp
-  val setSession = use cookieSetter(sessionCookie);
-  val clearSession = use cookieClearer(sessionCookie);
-  ```
-- [ ] **(b)** Manter os verbos da 294/295 no cookie (`use setCookie`, `use clearCookie`); substantivo no
-  resto.
-- [ ] **(c)** Cada lib com o seu.
-
-**Recomendação: (a)** — uma regra só, que já é a do jhonstart e a do cardume.
-**Bloqueia:** 123; 127; 104 passo 6; `07-onze/53` (os sites de cookie).
 
 ### atm-c · O `T` de um átomo entre servidor e browser *(proposta)*
 
@@ -1812,9 +2722,15 @@ receber atualização do servidor. Aqui ainda não existe nenhum.
 
 **Recomendação: (a)** — primeiro a store; efeitos num passo próprio quando houver uso medido.
 **Bloqueia:** 136 passo 8.
+
+---
+
 ## Parte 4 — Não bloqueiam nada hoje
 
 Regras para o próximo caso, confirmações e recursos de linguagem que ficam de fora por padrão.
+
+Na Prioridade 1, porque travam um passo de 01/02: `110-a`, `95-f` e as `lg2-a`, `lg2-e`, `lg2-j`,
+`lg2-m`, `lg2-o`, `lg2-q`, `lg2-r`, `lg2-t`, `lg2-v`, `lg2-w`.
 
 ### own-a · Quem é dono dos scripts de teste *(proposta)*
 
@@ -1956,36 +2872,6 @@ test "b" { resetChain(); … }           // esquecer a linha = estado vazado do 
 **Recomendação: (a).** Nada implícito roda em volta de um teste; o que ele precisa está escrito nele.
 **Bloqueia:** só a linha "No test lifecycle hooks" do `language-gaps.md`, que fica como está.
 
-### 95-f · A tomada do onze aconteceu sem o branch órfão e sem arquivar nada
-
-**Contexto.** A decisão 79 previa que o nome `onze` passasse da antiga biblioteca de mocking para o
-orquestrador por meio de um branch órfão, arquivando o histórico antigo. O que aconteceu:
-`repository/onze` é o workspace do orquestrador, construído em cima da tag `mocking-lib-final`, no
-mesmo histórico e no mesmo remoto; nada foi arquivado nem renomeado, e o nome já resolve só para os
-membros do orquestrador. A thread ficou com (1) porque o resultado prático é o mesmo e reescrever o
-remoto obrigaria todo checkout a reclonar. Responder (1) gera uma decisão nova que emenda a 79.
-
-**Hoje:**
-```
-$ git -C repository/onze tag            → mocking-lib-final     # a lib antiga vive como histórico tagueado
-$ git -C repository/onze log --oneline  → o orquestrador em cima dessa tag, mesmo remoto
-```
-
-- [ ] **(1) ★** Confirmar a árvore como está — uma decisão nova emenda a 79: a lib antiga é o histórico tagueado do mesmo repositório.
-  ```
-  $ git -C repository/onze checkout mocking-lib-final   # quem precisar da lib antiga, lê a tag
-  $ git -C repository/onze pull                         # nenhum checkout precisa reclonar
-  ```
-- [ ] **(2)** Reescrever o remoto para o branch órfão e arquivar o histórico antigo, como a 79 escreveu.
-  ```
-  $ git -C repository/onze checkout --orphan main && git commit …
-  $ git -C repository/onze push --force origin main      # todo checkout de repository/onze reclona
-  ```
-
-**Recomendação: (1).** O nome já é só do orquestrador e a lib antiga continua recuperável pela tag;
-reescrever o remoto custa um reclone em todo lugar sem ganho. **Bloqueia:** o passo 3 do `02/98`
-("front 95 closed as a confirmation"), escrito sob a (1), fecha com ela.
-
 ### 07-i (revisão) · A proibição de nomes repetidos em pacotes bundled continua depois do alias?
 
 **Contexto.** A decisão 163 proíbe um pacote bundled de exportar um nome que o std ou um framework já
@@ -2015,49 +2901,6 @@ alias fica para o caso em que o nome natural é do std (decisão 170). Vale tamb
 usa `deriveActionId`, porque o `rakun-app` já exporta `actionId`. **Bloqueia:** nada; as frentes
 102, 103 e 104 já escolheram nomes livres.
 
-### 110-a · O `testing.asserts` no wasm, depois da regra estrita (decisão 146)
-
-**Contexto.** A decisão 146 diz que uma função cujo corpo alcança uma função host sem versão para o
-target é recusada na declaração, chamada ou não. Com isso, um programa wasm que importa
-`testing.asserts` é recusado: quatro das 27 funções dele chegam a uma célula host (`canonical`,
-`regexMatches`, `tryCatch`) que não tem versão wasm. A thread ficou com (1) porque nada no gate roda
-asserções no wasm hoje e as outras saídas mudam API (2) ou exigem trabalho grande no backend wasm (3).
-A (1) segue a decisão 230 ("a std module wasm cannot build is a located refusal") e a opção (a) do
-passo 11 do `02/97`, que pede esta pergunta por módulo. A última oração da 146 ("`testing.asserts` is
-restructured so nothing without a wasm binding is reachable from it on wasm") pedia a (2) ou a (3):
-responder (1) emenda essa oração.
-
-**Hoje:**
-```bp
-import {testing.asserts} from "std";      // --target wasm
-// error: `canonical` has no `#[@External.<Target>(…)]` for the wasm backend — in `std/testing/asserts`, which this import links
-```
-```
-deepEquals → canonical        matches → regexMatches        throws, throwsWith → tryCatch
-usos nos repositórios: throwsWith ~290 · throws 4 · deepEquals 2 · matches 1 · 140 arquivos importam o módulo
-```
-
-- [ ] **(1) ★ como está** — o `asserts` não é importável no wasm; duas células de linguagem viraram recusa fixada no wasm.
-  ```bp
-  // --target wasm: o import é recusado (erro acima); um programa wasm checa à mão
-  if (soma(1, 2) != 3) @panic("soma(1, 2) != 3");
-  ```
-- [ ] **(2)** As quatro funções com célula host vão para um módulo próprio; as outras 23 voltam a importar no wasm. Muda a API do `asserts` (decisão 74) e o import de cada arquivo que usa as quatro.
-  ```bp
-  import {testing.asserts} from "std";            // equals, isTrue, contains… — importa no wasm
-  import {testing.asserts_host} from "std";       // deepEquals, matches, throws, throwsWith — nome ilustrativo
-  ```
-- [ ] **(3)** As três células ganham versão wasm. Precisa de um leitor de `@External.Wasm` no backend (a decisão 238 já existe), de um motor de regex no prelude wasm para `regexMatches`, e de `@panic` capturável para `tryCatch` (hoje é `unreachable`).
-  ```bp
-  import {testing.asserts} from "std";            // --target wasm: compila
-  try asserts.matches("abc", "a.c");              // regex do prelude wasm
-  try asserts.throwsWith({ -> parse("x") }, "bad");  // @panic capturável no wasm
-  ```
-
-**Recomendação (da thread): (1) agora**; a (2) se o wasm precisar rodar asserções — é a única que
-não espera a 05-wasm. **Bloqueia:** nada no gate; só o "std compila no wasm" do 05-wasm passo 5 / 97
-passo 11.
-
 ### lg2-a … lg2-w · Recursos que as bibliotecas pediram e a linguagem não tem
 
 Cada `lg2-*` é uma linha do [`language-gaps.md`](./language-gaps.md): um recurso que alguma
@@ -2070,41 +2913,6 @@ decisões 216 e 253 (`@TypeInfo.all`); a **lg2-f** (argumento de decorator que n
 tipados, `@Decl<T>`, `Type.Field<T>`); e a **lg2-g** (`@typeName<T>()`), sem objeto pela 281: o
 registro do rakun passa a resolver pelo tipo (`use bean(OrderCache)`), nunca por um nome em string.
 Pela 280 (0), todo parâmetro de decorator nos exemplos abaixo é `comptime`.
-
-### lg2-a · Tipo byte
-
-**Contexto.** Nenhum primitivo, tipo do std ou literal guarda bytes, e toda célula host (o código
-Erlang/JS por trás de uma função `declare`) passa dados como `string`. Por isso `Socket.recv` devolve
-UTF-8 quebrado num fluxo binário e não dá para escrever upload, download ou endpoint de imagem.
-Custa: uploads, downloads, imagens; Mongo/Bolt/Cassandra/Couchbase e o plano de dados do Pulsar no
-rakun.
-
-**Hoje:**
-```bp
-val b: Bytes = "a";                       // type mismatch em todo target
-val chunk = sock.recv();                  // string: bytes que não são UTF-8 chegam corrompidos
-```
-
-- [ ] **(1)** Sem tipo byte: um payload binário é recusado onde entra; nada lê bytes como texto.
-  ```
-  POST /upload   Content-Type: multipart/form-data
-  → 415 Unsupported Media Type            // a frente 25 recusa na borda
-  ```
-- [ ] **(2)** `Bytes` com fronteira explícita: toda conversão é uma chamada que pode falhar, nenhuma implícita.
-  ```bp
-  val b = Bytes.fromUtf8("a");
-  val s = try b.toUtf8();                 // toUtf8 -> @Result: bytes inválidos viram Error, não lixo
-  ```
-- [ ] **(3)** `string` também carrega bytes crus, como hoje.
-  ```bp
-  val frame: string = sock.recv();        // bytes crus dentro de uma string
-  val n = frame.length();                 // conta caracteres, não bytes; UTF-8 quebrado passa calado
-  ```
-
-**Recomendação: (1).** Um payload binário é recusado onde entra, nunca lido com perda. Se você
-escolher a (2): nenhuma conversão sem uma chamada que pode falhar; a (3) continua recusada.
-**Bloqueia:** a linha "No byte or binary type"; rakun 01, 13, 15, 24, 25, 70, 71; `03r-ab`,
-o plano de dados do Pulsar (adiado pela 274) (todos seguem com `string` + recusa 415 até a resposta).
 
 ### lg2-b · O que `@Task<T>` significa no BEAM
 
@@ -2209,42 +3017,6 @@ fn saga(comptime decl: @Decl) { decl.body }      // {error,{badkey,body}}
 **Recomendação: (1).** Um decorator lê assinaturas, não corpos; a saga do rakun 83 continua um valor.
 **Bloqueia:** a linha; rakun 83.
 
-### lg2-e · O dono num `@Decl` de método
-
-**Contexto.** A decisão 280 já respondeu os parâmetros: o `@Decl<T>` de uma função ou método tem `T`
-= o tipo da função (`@Decl<fn(e: E) -> unknown>` liga `E`), e os exemplos aprovados da 280 (exemplo
-1, alvo do `01-checker` passo 24) leem `decl.params`, `decl.params[0].module` e `decl.module` num
-`@Decl` de fn. Resta o dono: num decorator aplicado a um método, `decl.owner` dá `badkey`, e só o
-`@Decl` do tipo enxerga o tipo inteiro com seus métodos (`decl.methods[i]`). Por isso o rakun faz o
-decorator do tipo (`#[restController]`) ler os marcadores dos métodos (`#[getMapping]`). A pergunta é
-se o decorator de método deve enxergar o tipo que o declara.
-
-**Hoje:**
-```bp
-type UserController { #[get("/u/:id")] fn show(self: Self, id: i32) … }
-fn get(comptime decl: @Decl, comptime path: string) { decl.owner }     // badkey
-```
-
-- [ ] **(1)** O marcador de método só vê o próprio método (parâmetros pela 280); quem vê o tipo é o decorator do tipo.
-  ```bp
-  #[controller] type UserController { #[get("/u/:id")] fn show(self: Self, id: i32) … }
-  fn controller(comptime decl: @Decl) {
-      for (decl.methods) { m -> … }       // m.annotations tem `get`; m.params tem `id: i32`
-  }
-  ```
-- [ ] **(2)** `decl.owner` existe no método.
-  ```bp
-  fn get(comptime decl: @Decl, comptime path: string) {
-      decl.owner.name;                    // "UserController"
-      decl.owner.methods.length;          // os irmãos do método
-  }
-  ```
-
-**Recomendação: (1).** Um decorator de método responde pelo método; o que depende do tipo inteiro é
-do decorator do tipo, que já vê todos os métodos. **Bloqueia:** a linha (o marcador em
-`typed-action-example.bp` do `08-bpp/127`, que fecha com o passo 24 do `01-checker` quanto aos
-parâmetros); rakun 06–10, 29.
-
 ### lg2-h · Raise e catch por tipo
 
 **Contexto.** Um erro em botopink é o `E` de um `@Result<T, E>`, lido com `case` dentro do `catch`
@@ -2273,37 +3045,6 @@ val u = try load(p) catch { e: NotFound -> defaultUser() };   // não parseia
 
 **Recomendação: (1).** É a decisão 121 como escrita: o erro é o `E` do `@Result`. **Bloqueia:** a
 linha; rakun 07, 31, 63.
-
-### lg2-j · Estado comptime entre invocações de decorator
-
-**Contexto.** Cada invocação de decorator é uma chamada de módulo independente: um `var` de módulo
-escrito pelo corpo do decorator é recusado na anotação. A pergunta veio do rakun 05, que queria
-acumular um catálogo de chaves enquanto as anotações são visitadas. Hoje um catálogo é o registro de
-entrada da decisão 256, lido com `@TypeInfo.all` (decisões 253/256) — sem `member: "make"` nem chave
-pelo nome do tipo, que a 281 tirou da 256 (a forma da chave por tipo é da `130-b`).
-
-**Hoje:**
-```bp
-var seen: Array<string> = [];
-fn register(comptime decl: @Decl) { seen.push(decl.name); }   // erro na anotação
-```
-
-- [ ] **(1)** Cada invocação é independente; a lista de registros vem de `@TypeInfo.all`.
-  ```bp
-  val beans = comptime {
-      var d: unknown[] = [];
-      for (@TypeInfo.all(with: [service, configuration])) { b -> d = d.append([b.value]); }
-      break d;
-  };                                      // lido no ponto de entrada; a ordem é a do catálogo, não a da visita
-  ```
-- [ ] **(2)** Estado mutável comptime por compilação: `seen` acumula, e a ordem de visita passa a importar.
-  ```bp
-  var seen: Array<string> = [];
-  fn register(comptime decl: @Decl) { seen.push(decl.name); }   // compila; seen depende da ordem dos arquivos
-  ```
-
-**Recomendação: (1).** A resposta de um decorator depende só da declaração dele, então a ordem em que
-o compilador visita as declarações nunca muda um build. **Bloqueia:** a linha; rakun 05.
 
 ### lg2-l · `noreturn` é tipo-fundo?
 
@@ -2341,31 +3082,6 @@ val s: string = notFound();               // error: expected string, got noretur
 **Recomendação: (1).** Um sinal nunca é um valor. **Bloqueia:** a linha; os sinais do jhonstart (63,
 `31-a`) e os testes de navegação do rakun.
 
-### lg2-m · Anotação de módulo
-
-**Contexto.** O `'use cache'` no topo de um arquivo do Next.js não tem grafia em botopink: `#![…]` no
-topo de um módulo dá "this token cannot appear here". O `rakun-cache` hoje liga a política padrão do
-módulo uma vez num `val` e cada chamada usa esse `val`. A pergunta é se a linguagem ganha atributo de
-módulo.
-
-**Hoje:**
-```bp
-#![useCache]                              // error: this token cannot appear here
-```
-
-- [ ] **(1)** Não: a política do módulo é um `val` de módulo.
-  ```bp
-  val cached = cacheWith(cachePolicy(…));                                  // rakun-cache/src/cache.bp
-  pub fn posts() -> string { return cached(["posts"], { -> loadPosts() }); }
-  ```
-- [ ] **(2)** Atributo interno no topo do arquivo, que um decorator recebe com o `@Decl` do módulo.
-  ```bp
-  #![useCache(ttl: 60)]
-  pub fn posts() -> string { return loadPosts(); }                         // toda fn do módulo passa pelo cache
-  ```
-
-**Recomendação: (1).** A política de um módulo é um `val` de módulo. **Bloqueia:** a linha; rakun 12.
-
 ### lg2-n · Thunk convertido em `Node`
 
 **Contexto.** O tipo de nó da UI (`Children` hoje, `Node` pela decisão 223) aceita conversão
@@ -2390,29 +3106,6 @@ show({ -> "x" })                          // expected Node, got function
 
 **Recomendação: (1).** As coerções que o compilador conhece continuam três (array, `Element`,
 `string`). **Bloqueia:** a linha; jhonstart 30.
-
-### lg2-o · Acesso a arquivos no comptime
-
-**Contexto.** Um corpo comptime (decorator, template) só vê o prelude do seu runtime: `fs.readText`
-lá dentro é recusado na anotação. Por isso o rakun gera o `.bp` de um WSDL com um comando
-(`rakun ws generate`) e versiona o resultado. Com (2), o build passaria a ler arquivos além dos
-fontes, e esses arquivos entrariam na chave do cache.
-
-**Hoje:**
-```bp
-fn wsdl(comptime decl: @Decl, comptime path: string) { val xml = fs.readText(path); … }   // recusado na anotação
-```
-
-- [ ] **(1)** Não: o `.bp` gerado é versionado.
-  ```
-  $ rakun ws generate schema.wsdl         → src/ws/billing.bp   # roda antes; o resultado entra no repositório
-  ```
-- [ ] **(2)** Leitura isolada de entradas declaradas, que entram na chave do cache do build.
-  ```bp
-  #[wsdl("schema.wsdl")] type Billing {}  // lê o arquivo durante a compilação
-  ```
-
-**Recomendação: (1).** Um build lê só os seus fontes. **Bloqueia:** a linha; rakun 88, 93.
 
 ### lg2-p · Cancelamento
 
@@ -2443,67 +3136,6 @@ val t = await async.timeout({ -> slow() }, 100);              // Error("timeout"
 
 **Recomendação: (1).** Em linha com a `lg2-b` (1). **Bloqueia:** a linha; rakun 02.
 
-### lg2-q · Localização no fonte dentro de `@Decl`
-
-**Contexto.** Um decorator não sabe em que arquivo está a declaração: `decl.loc.file` dá `badkey`. O
-roteamento por arquivo (rakun 22, onze 53) queria deduzir a rota do caminho, como o `app/` do
-Next.js. As decisões 289 e 290 já escrevem a forma (1): o `page.bpp` de uma rota leva a rota como
-argumento do seu decorator (`#[page("blog/[slug]", paths: allPosts)]`, `#[page("blog/[slug]",
-revalidate: hours(1))]`), e a página lê os segmentos por hook (293), sem parâmetro, devolvendo `View`
-(275, 276). O segmento explícito é gerado e verificado pelo CLI da frente 50. Resta só registrar que
-`@Decl` não ganha `loc` — o `decl.name` de um default anônimo já é o nome do arquivo (289), não o
-caminho.
-
-**Hoje:**
-```bp
-fn page(comptime decl: @Decl, comptime route: string) { decl.loc.file }   // badkey
-```
-
-- [ ] **(1)** Não: o segmento é argumento explícito (a forma da 289/290).
-  ```bp
-  // app/blog/[slug]/page.bp
-  #[page("blog/[slug]")] pub fn BlogPost() -> View { val p = use params<BlogParams>(); … }
-  ```
-- [ ] **(2)** `decl.loc` (o `SourceLocation` do `@src()`): `#[page]` deduz a rota do caminho do arquivo.
-  ```bp
-  // app/blog/[slug]/page.bp
-  #[page] pub fn BlogPost() -> View { … }   // rota "blog/[slug]" lida de decl.loc.file
-  ```
-
-**Recomendação: (1).** A saída de um decorator nunca depende de onde o arquivo está; as 289/290 já
-foram escritas assim. **Bloqueia:** a linha; rakun 22 (os exemplos com `#[page("…")]` já seguem a (1)).
-
-### lg2-r · Corpo fornecido por um decorator para um método declarado
-
-**Contexto.** Um método sem corpo (`declare fn`) num `type` é só a forma de método host: sem
-`#[@External.<Target>]`, ele é recusado em toda chamada, em todo target
-(`run/bodyless_method_without_binding`). Nenhum decorator pode fornecer o corpo — o rakun-data queria
-isso para `#[query]`, como os repositórios do Spring Data. Hoje o decorator acrescenta um membro ao
-tipo dono (216 (1)) e o método chama esse membro. Pela 304, um método de repositório responde
-`@Result<T, StoreError>`.
-
-**Hoje:**
-```bp
-type Users { #[query("select * from users where id = $1")] declare fn find(self: Self, id: i32) -> @Result<?User, StoreError>; }
-users.find(1);                            // error: run/bodyless_method_without_binding, na chamada
-```
-
-- [ ] **(1)** Método sem corpo é só binding host; o decorator acrescenta um membro e o método tem corpo.
-  ```bp
-  type Users {
-      #[query("select * from users where id = $1")]
-      fn find(self: Self, id: i32) -> @Result<?User, StoreError> { return self.findQuery(id); }   // membro do #[query] (216)
-  }
-  ```
-- [ ] **(2)** O decorator fornece o corpo: a declaração basta.
-  ```bp
-  type Users { #[query("select * from users where id = $1")] declare fn find(self: Self, id: i32) -> @Result<?User, StoreError>; }
-  users.find(1);                          // compila; o corpo veio do #[query]
-  ```
-
-**Recomendação: (1).** É o que a recusa de hoje já impõe (`run/bodyless_method_without_binding`).
-**Bloqueia:** a linha; rakun 08, 09, 78.
-
 ### lg2-s · Reflexão do grafo de módulos
 
 **Contexto.** O `@Decl` expõe declarações, não os imports de um módulo: `decl.imports` dá `badkey`.
@@ -2530,35 +3162,6 @@ fn graph(comptime decl: @Decl) { decl.imports } // badkey
 **Recomendação: (1)** — por conta própria: os imports de um módulo são texto que o bundler já lê e
 recusa alto quando não entende; o argumento antigo ("em linha com a `lg2-k`") caiu com a 216.
 **Bloqueia:** a linha; onze 68 (o bundler de cliente).
-
-### lg2-t · Folha de enum numérica negativa
-
-**Contexto.** Folhas numéricas de enum são dígitos puros, então `-rotate-12` e `-translate-y-2` do
-Tailwind não têm grafia: `Rotate { 12, -12 }` é recusado no `-`. O emilia usa a convenção de uma
-sub-seção `Neg { … }` (frentes 35, 40, 45), lida como "rotate, negativo, doze". Em posição de
-expressão uma folha numérica se escreve `.__12`.
-
-**Hoje:**
-```bp
-type Tok { Rotate { 12, -12 } }           // erro no `-`
-```
-
-- [ ] **(1)** Não: sub-seção `Neg`.
-  ```bp
-  type Tok { Rotate { 12, Neg { 12 } } }
-  val t = .Rotate.Neg.__12;
-  ```
-- [ ] **(2)** Folha com sinal.
-  ```bp
-  type Tok { Rotate { 12, -12 } }
-  val t = .Rotate.__N12;                  // grafia em posição de expressão
-  ```
-- [ ] **(3)** `-` unário num caminho de enum.
-  ```bp
-  val t = -(.Rotate.__12);
-  ```
-
-**Recomendação: (1).** O nome de uma folha continua um nome. **Bloqueia:** a linha; emilia 35, 36, 45.
 
 ### lg2-u · Decorator em posição de expressão
 
@@ -2587,67 +3190,8 @@ val x = #[deco] 1;                        // recusado: loop-annotation-not-gener
 **Recomendação: (1).** Um decorator anota uma declaração ou uma tag; trabalho numa expressão comum é
 uma chamada. **Bloqueia:** a linha (o caso da marcação da frente 48 do emilia já está coberto pela 301).
 
-### lg2-v · Subdiretório numa dependência git
-
-**Contexto.** Uma dependência no `botopink.json` é `{git, path, ref, workspace}`
-(`modules/manifest/src/root.zig`): não há como apontar para uma pasta dentro de um repositório git.
-Como todo módulo `rakun-*` é uma pasta do repositório do rakun, quem está fora do checkout meta não
-instala um starter por git. Custa: segura o `07-h` (b) e o 98 passo 4.
-
-**Hoje:**
-```json
-"rakun-web": { "git": "git@github.com:botopink/rakun.git" }      // instala a raiz do repositório, não o módulo
-```
-
-- [ ] **(1)** Não: dependência git é a raiz de um repositório; membro de monorepo só por `path`.
-  ```json
-  "rakun-web": { "path": "../rakun/modules/rakun-web" }
-  ```
-- [ ] **(2)** Campo `subdir`, resolvido pelo `bpmp`.
-  ```json
-  "rakun-web": { "git": "git@github.com:botopink/rakun.git", "subdir": "modules/rakun-web" }
-  ```
-
-**Recomendação: (1).** Se você escolher a (2): `subdir` só vale junto com `git`, e um que escape do
-checkout (`..`) é recusado. **Bloqueia:** a linha; rakun 73; `02/98` passo 4 (condicional); o
-argumento do `07-h`.
-
-### lg2-w · Função host chamada do corpo de um decorator
-
-**Contexto.** Um decorator roda num runtime comptime (BEAM ou wat). Só funções com corpo viajam para
-o módulo do decorator; uma função host (`declare fn` com célula Erlang/JS), do std ou do próprio
-projeto, não viaja, e a chamada falha com `call to undefined function quote/1` nos dois runtimes. Na
-prática, o `#[scheduled]` da frente 16 repete as regras de cron inline em vez de reusar o std. (O
-`@emit` de módulo sai da linguagem pela 216; os exemplos usam meta tipado, 298.)
-
-**Hoje:**
-```bp
-fn route(comptime decl: @Decl, comptime path: string) { decl.setMeta(Route(path: json.quote(path))); }
-// undefined function quote/1
-```
-
-- [ ] **(1)** Corpo comptime só chama funções com corpo; a chamada host é recusada, localizada, nomeando a função, em todo target.
-  ```bp
-  fn route(comptime decl: @Decl, comptime path: string) { decl.setMeta(Route(path: json.quote(path))); }
-  // error: `json.quote` is a host function — a decorator body calls bodied functions only
-  fn quote(s: string) -> string { … }     // a forma aceita: uma fn com corpo no projeto ou num pacote
-  ```
-- [ ] **(2)** A célula Erlang viaja para o módulo do decorator no runtime BEAM; no runtime wat a chamada é recusada.
-  ```bp
-  decl.setMeta(Route(path: json.quote(path)));   // runtime BEAM: compila · runtime wat: error
-  ```
-- [ ] **(3)** Decorator que alcança célula host sempre roda no runtime BEAM, qualquer que seja o target.
-  ```bp
-  decl.setMeta(Route(path: json.quote(path)));   // --target wasm: o decorator roda no BEAM e compila
-  ```
-
-**Recomendação: (1).** A resposta de um decorator nunca depende de qual runtime o target escolheu
-(decisão 84). **Bloqueia:** a linha; frente 16 (`#[scheduled]`); todo decorator que reusaria o std.
-
 - [ ] Confirmo a recomendação em todas desta parte
 - [ ] Quero rever: ___
-
----
 
 ---
 
@@ -2657,6 +3201,8 @@ Cada uma já está no código da `feat` (as frentes 110–113 entraram e fechara
 muda nada; marcar a alternativa vira trabalho para a frente dona (hoje, a `00-gate/114` ou a dona do
 arquivo). Exceção: a 103-a (da consolidação) ainda não está na `feat` — está na branch
 `front/103-actions-id`, ainda não enviada ao remoto.
+
+A `103-a` trava o passo 2 da 103 e está na Prioridade 1.
 
 ### 111-b ★ · O carregador de sidecars no beam só é emitido quando o build liga uma função host
 
@@ -2854,61 +3400,8 @@ TREES=(
 **Recomendação: (a) ★.** Um exemplo novo já nasce verificado, sem lista para manter (decisão 67).
 **Bloqueia:** nada.
 
-### 103-a ★ · O nome da função do pacote `actions.id` *(da consolidação)*
-
-**Contexto.** Hoje o `rakun-app` calcula o id de uma action em `actions.bp`
-(`actionId(module, name, buildId)`, um HMAC-SHA256 com o segredo `rakun.actions.secret`, prefixo `a_`
-+ 24 hex), e o `jhonstart-forms` confere um formato mais frouxo. A frente 103 cria o pacote
-`actions.id` com uma derivação e uma gramática únicas para os dois lerem. A thread chamou a função do
-pacote de `deriveActionId` (recebe o segredo como parâmetro; o pacote nunca lê a configuração) e
-manteve o `actionId` do `rakun-app`, que já é lido pelos testes, por `actionIdOf` e por
-`resolveAction`, passando a apenas envolvê-la. Isso está na branch `front/103-actions-id`, ainda não
-na `feat`. Duas decisões já mudam o entorno, não a pergunta: a 299 tira o `rkProp` — o segredo passa
-a ser um campo de um registro `#[config("rakun.actions")]`, injetado por tipo; a 281 tira o
-`actionIdOf(name: string)` — a action é referida pela própria função, não pelo nome em texto. Resta só
-o nome da função do pacote.
-
-**Hoje:**
-```bp
-// rakun/modules/rakun-app/src/actions.bp — rkProp sai com a 299
-pub fn actionId(module: string, name: string, buildId: string) -> string {
-    val mac = hash.hmacSha256(
-        rkProp("rakun.actions.secret"),
-        module + "." + name + ":" + buildId,
-    );
-    return "a_" + mac.slice(0, 24);
-}
-```
-
-- [ ] **(a) ★** `deriveActionId(secret, module, name, buildId)` no pacote; o `actionId` do `rakun-app` continua e passa a envolvê-lo.
-  ```bp
-  // libs/actions — id.bp
-  pub fn deriveActionId(secret: string, module: string, name: string, buildId: string) -> string { … }
-  pub fn isActionId(id: string) -> bool { … }
-
-  // rakun-app/src/actions.bp — o segredo vem do registro #[config("rakun.actions")] (299)
-  pub fn actionId(module: string, name: string, buildId: string) -> string {
-      val cfg = use config(ActionsConfig);      // nome do tipo ilustrativo
-      return deriveActionId(cfg.secret, module, name, buildId);
-  }
-  ```
-- [ ] **(b)** O pacote se chama `actionId` e o `actionId` do `rakun-app` é apagado no passo 2 da 103.
-  ```bp
-  // libs/actions — id.bp
-  pub fn actionId(secret: string, module: string, name: string, buildId: string) -> string { … }
-
-  // rakun-app: actionIdOf, resolveAction e actions_test.bp passam a chamar
-  actionId(cfg.secret, module, name, buildId);   // cfg: o registro #[config("rakun.actions")] (299)
-  ```
-
-**Recomendação: (a) ★** — nome livre (decisão 163 / 07-i): o `rakun-app` já exporta `actionId`, e
-reaproveitar o nome no pacote com outra assinatura obrigaria a mexer em todos os seus chamadores.
-**Bloqueia:** nada com (a); com (b), o passo 2 da 103 (consumidores) muda antes do envio da branch.
-
-- [ ] Confirmo as seis como estão
+- [ ] Confirmo as cinco como estão
 - [ ] Quero rever: ___
-
----
 
 ---
 
@@ -2921,6 +3414,9 @@ linha em `decisions-pending.md` § Implementation choices. Saíram daqui por já
 **23-a** e **01std-d** (a alternativa delas entrou no código), **26-b** (respondida pela decisão 186),
 **03r-b** (revertida pela 299), **03r-d** (respondida pela 299: configuração inválida para o boot) e
 **95-e** (a colisão de `percentDecode` sumiu do código: o rakun lê pelo `encoding` do std).
+
+Na Prioridade 1, porque travam um passo de 01/02/03: `16-a`, `16-b`, `23-b`, `23-c`, `std-c`, `24-a`,
+`24-b`, `24-c`, `24-g`, `03r-q`, `49-d`.
 
 ### A que recomendo a alternativa
 
@@ -2962,145 +3458,6 @@ m.times(2)      // compila; o método é emitido igualzinho a um sem `inline`
 promessa falsa para quem lê o código. **Bloqueia:** nada — a recusa é do `01-checker`; até lá vale (a).
 
 ### Compilador
-
-### 24-a · Os códigos de diagnóstico de efeito que sobraram
-
-**Contexto.** Desde a frente 24 (decisão 118), uma função ganha um efeito escrevendo o invólucro no
-tipo de retorno (`-> @Result<…>`, `-> @Task<…>`) e mais nada; não há mais anotação de efeito. Os
-códigos que falavam da anotação (`effect-missing-annotation`, `effect-missing-wrapper`,
-`effect-duplicate-annotation`, `effect-on-declare-forbidden`, `effect-on-behavior-method-forbidden`)
-ficaram sem assunto, e `for-over-fallible-generator` aplicava uma regra que a decisão 122 apaga. O
-guia já escrevia a recusa de um `throw` com o código do `try`, e a implementação seguiu o guia. Os
-sobreviventes estão em `comptime/diagnostics.zig`.
-
-**Hoje:**
-```bp
-fn f() { try g(); }       // error[effect-try-without-fallible-channel]
-fn h() { throw "x"; }     // error[effect-try-without-fallible-channel] — o do `throw` foi fundido nele
-for (s) { x -> … }        // sobre um @Stream: error[for-over-stream] (era for-over-future-generator)
-```
-
-- [ ] **(a) ★** Um código só para "não há camada `@Result` no retorno", seja `try` ou `throw`;
-  `effect-wrapper-mismatch` fica só para o componente cujo `T` implementa `@Context<B>` com um `B`
-  diferente do `C` escrito; `for-over-stream` / `for-await-expects-stream` são os nomes novos.
-  ```bp
-  fn h() { throw "x"; }     // error[effect-try-without-fallible-channel]
-  ```
-- [ ] **(b)** Um código separado para o `throw`.
-  ```bp
-  fn h() { throw "x"; }     // error[effect-throw-without-fallible-channel]
-  ```
-
-**Recomendação: (a).** As duas recusas têm a mesma causa e a mesma correção (pôr `@Result` no
-retorno); o guia já escreve assim, e reverter é renomear constantes. **Bloqueia:** nada.
-
-### 24-b · Os métodos de `@Task`
-
-**Contexto.** O invólucro assíncrono antigo do prelúdio tinha `map` / `flatMap` / `await`. A decisão
-120 fala em "`.map`, `.then` e afins, sem parâmetro de erro" — uma Task nunca falha, então não há
-`mapError`. A implementação ficou com uma grafia por operação. Os dois métodos estão declarados em
-`builtins.d.bp`, que pela decisão 252 é o contrato dos builtins: a checagem do 134 (passo 3) já liga as
-chamadas `@…` às declarações, mas ainda não percorre os tipos e seus métodos (passo 2 em aberto), então
-uma chamada de `map` / `then` ainda não é checada contra a declaração. Nenhum backend os baixa ainda.
-
-**Hoje:**
-```bp
-// builtins.d.bp
-pub behavior Task<T> {
-    fn map<R>(self: Self<T>, transform: fn(value: T) -> R) -> Task<R>;
-    fn then<R>(self: Self<T>, next: fn(value: T) -> Task<R>) -> Task<R>;
-}
-```
-
-- [ ] **(a) ★** `map` e `then` (o bind, com o nome que o guia usa); nenhum apelido.
-  ```bp
-  val t: @Task<i32> = load();
-  t.map({ n -> n + 1 })           // existe
-  t.then({ n -> loadMore(n) })    // existe (é o bind)
-  t.flatMap({ n -> loadMore(n) }) // não existe: uma grafia por operação
-  ```
-- [ ] **(b)** `flatMap` como apelido de `then`.
-  ```bp
-  t.flatMap({ n -> loadMore(n) }) // o mesmo que t.then(…)
-  ```
-
-**Recomendação: (a).** Uma grafia por operação (decisão 67). **Bloqueia:** o `std/async`, se ele
-quiser uma forma de combinadores.
-
-### 24-c · `iter for` / `iter while` são um `loop` com prefixo
-
-**Contexto.** O README da frente pedia um nó novo `GenLoop { kind, loop }`; mas cada um dos quatro
-backends já baixa uma forma de laço anotado (o `loop` da 22-loops), e a própria decisão 125 diz que
-`iter for (xs) { … }` significa `iter loop { for (xs) { … }; break; }`. O parser então lê assim e
-guarda a palavra escrita em `LoopExpr.prefixedKeyword`, para o formatador devolvê-la. O label fica
-onde a decisão 105 o escreve, depois da palavra do laço.
-
-**Hoje:**
-```bp
-iter for (xs) { x -> yield x * 2; }      // lido como: iter loop { for (xs) { x -> yield x * 2; }; break; }
-iter loop :l { yield :l 1; }             // o label nomeia o gerador
-iter for :l (xs) { x -> break :l; }      // o label nomeia o `for` escrito
-iter for :l (xs) { x -> yield :l x; }    // error[yield-label-not-generator]
-```
-
-- [ ] **(a) ★** Açúcar sintático sobre o `loop` prefixado; o label de `iter for :l` nomeia o `for`
-  (então `break :l` / `continue :l` mantêm o sentido de sempre).
-  ```bp
-  iter for :l (xs) { x -> if (x < 0) { continue :l; }; yield x; }   // continue do `for`
-  ```
-- [ ] **(b)** Um nó novo `GenLoop`, com um lowering próprio em cada um dos quatro backends — o mesmo
-  código-fonte, mais quatro caminhos para manter em acordo.
-  ```bp
-  iter for (xs) { x -> yield x * 2; }      // vira GenLoop { kind: For, loop: … } até o backend
-  ```
-- [ ] **(c)** Como (a), mas o label de um `for` prefixado nomeia também o gerador — o parser só move o
-  label para o nó de fora.
-  ```bp
-  iter for :l (xs) { x -> yield :l x; }    // compila: `:l` é o escopo do gerador
-  ```
-
-**Recomendação: (a).** É a equivalência que a decisão 125 já escreve, sem nenhum backend novo.
-**Bloqueia:** nada.
-
-### 24-g · A forma do `std/async` com uma Task que nunca falha
-
-**Contexto.** Antes da frente 24, o `std/async` tinha uma superfície de thunks (`allOf`, `settleOf`,
-`raceOf`, `timeout`) e uma de Tasks já iniciadas (`all`, `allSettled`, `race`), as duas construídas
-sobre "Task rejeitada = falha". Agora uma Task nunca falha (decisões 120 e 121): o erro vai DENTRO,
-`@Task<@Result<T, E>>`. O guia escreve `try await async.allOf([fetchUser(1), fetchUser(2)])` — Tasks
-já iniciadas cujo valor é `@Result` — e a suíte `front/24-cells` segue o guia; já as células
-`beam_memory_*` precisam de thunks não iniciados, porque no erlang uma Task ansiosa já rodou quando o
-combinador a recebe. A implementação deu o nome `allOf` à forma do guia e outros nomes aos thunks.
-
-**Hoje:**
-```bp
-val users = try await async.allOf([fetchUser(1), fetchUser(2)]);   // Tasks já iniciadas de @Result: para no primeiro Error
-val xs = await async.runAll([{ -> work(1) }, { -> work(2) }]);     // thunks: é aqui que há concorrência
-val r = await async.timeout({ -> slow() }, 100);                   // estourou → Error("timeout"), uma string
-```
-
-- [ ] **(a) ★** Iniciadas: `allOf`, `all`, `race`; não iniciadas: `runAll`, `raceOf`, `timeout`;
-  `failed(message)` responde `Error(message)`; `allSettled`, `settleOf`, `unwrapAll` e `attempt` foram
-  removidos (não há rejeição para "settle"). Um crash dentro de uma task é relançado.
-  ```bp
-  val users = try await async.allOf([fetchUser(1), fetchUser(2)]);
-  async.allSettled([…])          // não existe mais
-  ```
-- [ ] **(b)** `allOf` sobre thunks, como o README da `01-std/02` escreveu — o exemplo do guia passa a
-  ser escrito com thunks.
-  ```bp
-  val users = try await async.allOf([{ -> fetchUser(1) }, { -> fetchUser(2) }]);
-  ```
-- [ ] **(c)** Um `allOf` sobrecarregado para as duas formas de elemento — exige sobrecarga por tipo,
-  que a linguagem não tem.
-  ```bp
-  async.allOf([fetchUser(1)])            // iniciadas
-  async.allOf([{ -> fetchUser(1) }])     // thunks — mesmo nome, outra assinatura
-  ```
-
-**Recomendação: (a).** Segue o guia e a suíte da frente 24, e cada forma tem um nome só.
-**Bloqueia:** nada — o README da `01-std/02-std-async-primitives` (1.0.10) já especifica o `allOf` sobre
-Tasks iniciadas.
 
 ### 01c-a · O átomo de um módulo comptime
 
@@ -3354,135 +3711,6 @@ if (x != null) { x = x.next; x.value; }   // …e encerra o estreitamento: `x.va
 
 **Recomendação: (a).** É correta sem análise de fluxo; (b) é o refinamento, (c) recusa o percurso de
 lista que toda biblioteca escreve. **Bloqueia:** nada.
-
-### 16-a · A lista de argumentos quebra junto com o que a envolve
-
-**Contexto.** O formatador (C-12) só quebra uma construção quando ela não cabe em 80 colunas, e o
-grupo de fora decide primeiro (decisão 65: tudo-ou-nada). Habilitada sozinha (o
-`argument-list.patch` estacionado), a lista de argumentos abria ~1 480 de ~2 770 listas por causa do
-que vinha DEPOIS delas (`) != -1;`, `) + "…"`), porque a expressão binária em volta estava fixada — o
-"meio errado" da decisão 65. Por isso a implementação habilitou junto, cada uma com seu
-`groupMeasured`: corrida binária, `if` sem chaves, lista de argumentos e literais de array, tupla e
-behavior. Custo medido: 142 arquivos; linhas acima de 80 colunas 5 973 → 1 840; um segundo passe não
-move nada.
-
-**Hoje:**
-```bp
-assert doc.indexOf("…um argumento comprido…")
-    != -1;                 // o binário quebra primeiro; a lista é medida na própria linha
-```
-
-- [ ] **(a) ★** A lista habilitada junto com as construções que a envolvem, a de fora decidindo
-  primeiro.
-  ```bp
-  if (absDiff > tolerance)
-      throw "…";           // o `if` sem chaves põe o ramo na linha seguinte, sem quebrar a condição
-  ```
-- [ ] **(b)** A lista habilitada sozinha (ou em commits separados — cada passo intermediário é um meio
-  errado próprio, e as seis árvores seriam reformatadas duas vezes).
-  ```bp
-  assert doc.indexOf(
-      "…um argumento comprido…",
-  ) != -1;
-  ```
-- [ ] **(c)** Manter a lista fixada (nunca quebra).
-  ```bp
-  assert doc.indexOf("…um argumento comprido…") != -1;   // passa de 80 colunas
-  ```
-
-**Recomendação: (a).** É a única que não reformata nada duas vezes e não abre lista pelo que vem
-depois; cobre também a metade "sem vírgula" da 166 (ver `ctr-s`). **Bloqueia:** o reformat das cinco
-bibliotecas (09) e o passo 6 da 16-formatter.
-
-### 16-b · Array aberto: um elemento por linha
-
-**Contexto.** Antes, elementos escritos numa linha do fonte ficavam numa linha da saída. Quando a lista
-passa a medir largura, isso não é idempotente (a linha junta passa de 80, uma chamada dentro dela
-quebra, e o passe seguinte lê outro layout: 3 arquivos do corpus mudaram num segundo passe), e faz a
-saída depender de como o fonte estava quebrado — o que a decisão 65 parte 2 proíbe. A decisão 166
-(escopo na 243) vem antes desta regra: uma lista escrita com vírgula depois do último elemento sai
-aberta, um por linha, mesmo que caiba — a única marca do fonte que conta. Esta escolha decide só a lista
-escrita sem essa vírgula.
-
-**Hoje:**
-```bp
-val xs = [
-    1,
-    2,
-    3,
-];
-```
-
-- [ ] **(a) ★** Na forma aberta, um elemento por linha (tudo-ou-nada, decisão 65 parte 1).
-  ```bp
-  val xs = [1, 2, 3];      // sem vírgula final e cabe: fica fechado numa linha
-  ```
-- [ ] **(b)** `fill` de Wadler na lista sem vírgula final: quantos couberem por linha — o resultado
-  passa a depender de como o fonte estava quebrado.
-  ```bp
-  val xs = [
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-      21, 22, 23,
-  ];
-  ```
-
-**Recomendação: (a).** É idempotente e não depende da entrada; o custo é que uma lista longa de
-números curtos ocupa uma linha por número. **Bloqueia:** nada.
-
-### 23-b · As quatro funções do `base64` foram aposentadas
-
-**Contexto.** `base64.decode` devolvia uma `string`; o substituto `encoding.base64Decode` devolve
-`@Result<string, string>` porque a frente 01 valida a entrada antes de o `Buffer.from` truncá-la
-(idem `decodeUrlSafe` → `base64UrlDecode`). Nenhuma biblioteca importava `base64`. O `base64.bp` foi
-apagado e seus quatro testes foram reescritos com os nomes do `encoding` (o std continua com 417
-testes). A decisão 106 e `01-std/modules.md` já nomeiam os substitutos.
-
-**Hoje:**
-```bp
-val s = try encoding.base64Decode(text);     // @Result<string, string>: valida antes de decodificar
-base64.decode(text)                          // não existe mais
-```
-
-- [ ] **(a) ★** Aposentar as quatro (`encode` / `decode` / `encodeUrlSafe` / `decodeUrlSafe`).
-  ```bp
-  val raw = try encoding.base64UrlDecode(token);
-  ```
-- [ ] **(b)** Manter as quatro no `encoding` como apelidos que devolvem `string` (escondem a recusa).
-  ```bp
-  val s = encoding.decode("não é base64!");   // devolve uma string truncada, sem erro
-  ```
-
-**Recomendação: (a).** Duas grafias de um mesmo codec, uma delas escondendo a recusa, é o que a frente
-01 removeu. **Bloqueia:** nada.
-
-### 23-c · `botopink test` num projeto com módulos em pasta
-
-**Contexto.** Quando o std passou a ter módulos em pasta (`io/random`, `io/net`), o `botopink test`
-quebrou de dois jeitos: no commonJS, todo módulo `a/b` era lido como pertencente à dependência `a`
-(`shipMjsSidecars`), e no erlang doze testes morriam com `{error,undef}` porque o `test_cmd` gravava as
-unidades de tipo (`std@io@net@@Socket`) na raiz da execução, onde o runner de `io/net` não procura. Um
-projeto de dois módulos (`src/top.bp`, `src/io/rec.bp`) reproduz o segundo em qualquer lugar.
-
-**Hoje:**
-```text
-src/top.bp   src/io/rec.bp
-$ botopink test --target erlang       # passa (antes: testes morriam com {error,undef})
-$ botopink test --target commonJS     # passa (antes: module 'io/random' requires "./sidecars/random.mjs",
-                                      #   but its library 'io' resolves to no package directory)
-```
-
-- [ ] **(a) ★** Duas correções gerais na CLI: um módulo cujo fonte está no `src` do próprio projeto é
-  do projeto; as unidades de tipo são gravadas ao lado do módulo que as declara.
-  ```text
-  libs/std/src/io/net.bp   →   unidades de `Socket` gravadas junto de io/net, não na raiz
-  ```
-- [ ] **(b)** Manter o std plano no disco e aninhar só as chaves do registro.
-  ```text
-  libs/std/src/io_net.bp   (arquivo plano)  →  registrado como "io/net"
-  ```
-
-**Recomendação: (a).** As regras são gerais — qualquer biblioteca com módulo em pasta tinha os dois
-defeitos — e nenhuma toca o compiler-core nem um snapshot. **Bloqueia:** nada.
 
 ### 0405-b · O vazio imprime `null` no commonJS
 
@@ -3840,36 +4068,6 @@ fs.exists("link-quebrado")      // false — a mesma resposta que uma leitura da
 
 **Recomendação: (a).** A pergunta de quem chama antes de ler é se a leitura vai achar alguma coisa.
 **Bloqueia:** nada.
-
-### std-c · O namespace de pasta é uma reescrita do programa
-
-**Contexto.** A decisão 110 permite `import {io} from "std"` e depois `io.fs.readText(…)`. A
-implementação (`comptime/std_namespace.zig`) reescreve o programa já lido para as formas folha que o
-checker e os quatro backends já baixam: `io.fs.f()` vira o namespace de `io/fs` (o item
-`io.fs as __bp_ns_io_fs` é acrescentado), e `collections.Dict` vira `Dict`. Só os módulos alcançados
-são importados. Limites: um membro inexistente é `unbound variable 'io'`; um módulo que declara seu
-próprio `Dict` de topo mantém `collections.Dict` sem reescrever (recusado do mesmo jeito); um local com
-o nome da pasta (`fn f(io: …)`) não é distinguido dela. (Foi por aqui que a alternativa da 23-a entrou.)
-
-**Hoje:**
-```bp
-import {io} from "std";
-io.fs.readText(path)       // reescrito para o import folha `io.fs`; só os módulos alcançados são importados
-io.nope.f()                // unbound variable 'io'
-```
-
-- [ ] **(a) ★** A reescrita: um arquivo, nenhum backend mexido.
-  ```bp
-  import {collections} from "std";
-  val d = collections.Dict.empty();   // roda nos quatro targets
-  ```
-- [ ] **(b)** Um tipo-namespace no checker e um lowering de `a.b.f()` nos quatro backends, para o
-  diagnóstico nomear a pasta.
-  ```bp
-  io.nope.f()                // error: std folder `io` has no module `nope`
-  ```
-
-**Recomendação: (a).** (b) só se o diagnóstico nomeando a pasta for desejado. **Bloqueia:** nada.
 
 ### 95-a · Os cortes de realocação `jhonstart-link` e `rakun-app`
 
@@ -4351,29 +4549,6 @@ app/dashboard/@team/(a)/page.bp + (b)/page.bp   →  conflito: duas páginas de 
 
 **Recomendação: (a).** (b) mexe no contrato que a frente 22 possui; (c) proíbe o recurso.
 **Bloqueia:** nada.
-
-### 03r-q ★ · Roteamento por locale mora no `rakun-app`
-
-**Contexto.** O README da frente 64 reservava `modules/rakun-i18n/**`, mas `modules.md` § The cut
-põe "negociação de i18n" no `rakun-app`, e o módulo precisa dos vizinhos dele de qualquer forma (a
-cadeia de layouts, o cache, a navegação da frente 63). Os exemplos importam de `"rakun-app"`.
-
-**Hoje:**
-```bp
-import {…} from "rakun-app";       // src/i18n.bp
-```
-
-- [ ] **(a)** ★ manter — `rakun-app/src/i18n.bp`
-  ```bp
-  import {localeOf, htmlLang} from "rakun-app";
-  ```
-- [ ] **(b)** um membro novo `rakun-i18n`
-  ```bp
-  import {localeOf, htmlLang} from "rakun-i18n";   // modules/rakun-i18n/botopink.json, depende de rakun-app
-  ```
-
-**Recomendação: (a)** (a 105 extrai o que for comum para o bundled `i18n`; mover um arquivo é
-barato se um serviço sem app router precisar de locale). **Bloqueia:** nada.
 
 ### 03r-r ★ · Starters nomeiam os irmãos com `workspace: true`
 
@@ -5197,39 +5372,6 @@ thread recusa chave desconhecida, duplicada, de tipo errado, porta fracionária 
 
 **Recomendação: (a)** (decisão 67: um `"prot"` errado não pode deixar a porta 3000 em silêncio).
 **Bloqueia:** nada.
-
-### 49-d ★ · `chainFor` recebe os padrões ancestrais
-
-**Contexto.** O jhonstart monta a cadeia de layouts do cliente com o `ancestorPatterns` do
-`routing`; o passo 4 dizia que o boot do onze não importa nada de `routing`. A thread fez
-`chainFor(patterns)` mapear `segmentFor` sobre os padrões que a cadeia de layouts do rakun já
-nomeia para a rota casada. Mas a 102 (`routing.conventions`) existe para apagar a re-derivação da
-gramática de segmentos, e o `types.bp` do onze (`appFileKinds`, `classifyAppFile`) é um dos sete
-lugares que a refazem à mão — o passo 3 da 102 desfaz a metade "não importa nada de `routing`".
-
-**Hoje:**
-```bp
-chainFor(patterns)        // os padrões vêm da cadeia de layouts do rakun; o onze não importa nada de `routing`
-```
-
-- [ ] **(a)** ★ manter como está — `chainFor(patterns)` e nenhum import de `routing` no onze
-  ```bp
-  // onze/src/types.bp continua com appFileKinds() e classifyAppFile() próprios
-  ```
-- [ ] **(b)** importar `ancestorPatterns` — o onze deriva a cadeia de novo
-  ```bp
-  import {ancestorPatterns} from "routing";
-  chainFor(ancestorPatterns(route.pattern))
-  ```
-- [ ] **(c)** confirmar como emendada pela 102 — `chainFor(patterns)` fica; o onze consome `routing.conventions`
-  ```bp
-  import {conventions.classify, conventions.fileKinds} from "routing";   // substitui classifyAppFile / appFileKinds
-  chainFor(patterns)                                                      // inalterado
-  ```
-
-**Recomendação: (c).** A cadeia continua vindo do rakun, e a classificação de arquivos deixa de
-ser refeita à mão no onze. **Bloqueia:** o passo 3 da 102 (troca nos consumidores, incluindo o
-`types.bp` do onze), e por ele a 128 e o grupo A do rakun.
 
 ### 49-e ★ · A metade rakun do boot é um membro próprio
 
