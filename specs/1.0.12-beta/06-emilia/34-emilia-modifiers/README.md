@@ -3,7 +3,8 @@
 **Priority:** high — emilia on `styled` first (decision 350): step 5 before step 2, so the five
 families move once, in `styled`'s literal; step 2 moves output every later snapshot (`20-snap`
 step 4) would otherwise record twice · **State:** step 1 done; next step 5, after `08-bpp/119`
-step 1's two open boxes; then step 2 (decision 350) and step 3 (358); step 4 on 05emilia-n
+step 1's two open boxes; then step 2 (decision 350) and step 3 (358); step 4 on 05emilia-n · step 5's two text boxes done; its
+other seven wait on `34-a`, `34-b`, `34-c` and 119 step 1 box 4 (`StyledContext`)
 **Depends on:** `08-bpp/119` step 1 (step 5, and through it step 2 — its box 4 registers through
 `use context(StyledContext)`, 352, 354, so `flush()` — which provides `StyledContext` — waits on
 `01-compiler/134` step 6; step 3: the repositories `css`
@@ -78,6 +79,11 @@ unchanged: contract-4 fixture `e_39b87d03` and `emilia-card`'s `e_486b0b4f` / `e
 734 passed, 0 failed on commonJS and on erlang; `emilia-card` 4/0, `jhonstart-emilia` 10/0 and
 `onze-cli` 31/0 on both.
 
+Step 5, the two text boxes: `AGENTS.md` § What emilia is NOT opens "Not a CSS processor — emilia reads
+no author CSS: author CSS is `css`'s, components are `styled`'s"; `grep -rn "bpp\|jhonstart"
+repository/emilia/modules` is empty. No code moved: `emilia` 734 passed, 0 failed on erlang and on
+commonJS, and every example's printed output and test log byte-identical to `a122dce` on both.
+
 ## Open
 
 Order (decision 350: the library on `styled` first): step 5 → step 2 → step 3; step 4 when
@@ -125,9 +131,25 @@ emilia imports `styled` and std — no framework, no `.bpp`, no jhonstart (113, 
       prefix; onze 68's `styleRule` reader and `jhonstart-emilia` (until `08-bpp/119` step 5) green
       without an edit to the class names they assert
 - [ ] `emilia` 734 or more on both rows; `botopink.json` lists `styled` and nothing else outside std
-- [ ] `AGENTS.md`: "Not a runtime CSS engine. No selector parsing" (`:602`) reworded — emilia reads
+- [x] `AGENTS.md`: "Not a runtime CSS engine. No selector parsing" (`:602`) reworded — emilia reads
       no author CSS; author CSS is `css`'s, components `styled`'s
-- [ ] `grep -rn "bpp\|jhonstart" repository/emilia/modules` empty
+- [x] `grep -rn "bpp\|jhonstart" repository/emilia/modules` empty
+
+Waits on (measured on botopink-lang `0c544566`, styled `3ac4a07`):
+- `34-a` — a component is an `async function` on commonJS and its field is read after `await`, so
+  the first family read as a `styledProperty` turns `emilia`, `className`, `styleRule` and every
+  entry point above `tokenToSheet` into `@Task<…>`, and their consumers outside 34 (boxes 1–4).
+- `34-b` — contract 4's class is the hash of emilia's codec payload; 338's is the hash of the rules:
+  the fixture's rules in `styled`'s form hash to `e_f51c2501`, not `e_39b87d03` (boxes 5–6).
+- `34-c` — `styled`'s reader writes a block's declarations before its nested rules (token order lost
+  between plain tokens and a selector variant), and `Sheet.render()` holds none of `flush()`'s
+  document frame (boxes 3, 5).
+- `08-bpp/119` step 1 box 4 — `styled` declares no `StyledContext` (`StyledBase` is still the phantom),
+  so the per-render store has nothing to register through (box 5).
+- `Token implement Styleable` is written in `Token`'s own body (`pub type Token implement Styleable
+  { … }` compiles; `Impl implement Styleable for Token` in another module does not make `Token`
+  conform), so the dispatcher `toStyled()` reaches must be importable from `tokens.bp` — the families
+  move beside `Token` or `Token` beside them (box 4, with box 1).
 
 ### Step 2 — the five families to upstream's form, in `styled`'s literal (decision 350; after step 5)
 

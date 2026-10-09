@@ -27,7 +27,7 @@ test member plus examples.
 
 | Front | Priority | State | What | Depends on |
 |---|---|---|---|---|
-| [`34-emilia-modifiers/`](./34-emilia-modifiers/README.md) | **high** — emilia on `styled` first (350); the parity tail moves pinned output every later snapshot would re-record | step 1 done | `modules/emilia/src/**`: `hashHex` → std and the cross-library comments; the five families to upstream's form; Tailwind's theme values over `styled`'s `#[theme]` (300, 338); the four unplaced feature rows (on 05emilia-n); the examples that pin the moved families; emilia over `styled` (338) | 05emilia-n (step 4), `08-bpp/119` step 1 (steps 5, 3) — order: step 5 first, then 2 (in `styled`'s literal), 3; 4 on 05emilia-n |
+| [`34-emilia-modifiers/`](./34-emilia-modifiers/README.md) | **high** — emilia on `styled` first (350); the parity tail moves pinned output every later snapshot would re-record | step 1 done; step 5's text boxes done, the rest on `34-a` · `34-b` · `34-c` | `modules/emilia/src/**`: `hashHex` → std and the cross-library comments; the five families to upstream's form; Tailwind's theme values over `styled`'s `#[theme]` (300, 338); the four unplaced feature rows (on 05emilia-n); the examples that pin the moved families; emilia over `styled` (338) | 05emilia-n (step 4), `08-bpp/119` step 1 (steps 5, 3) — order: step 5 first, then 2 (in `styled`'s literal), 3; 4 on 05emilia-n |
 | [`33-emilia-color-palette/`](./33-emilia-color-palette/README.md) | medium | step 2 done | steps 1, 3, 4 (the helpers, the suites, the examples) → `20-snap`; step 2 (the fifteen READMEs, `emilia-card` emilia-only) landed | — |
 
 ## Order

@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**70 questions and 8 contradictions are open, and 92 implementation choices await confirmation.**
+**73 questions and 8 contradictions are open, and 92 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -694,6 +694,103 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Blocks.** 67 steps 1–3 (written for (a)); onze 53's write path.
 
 ### 06-emilia
+
+#### 34-a · emilia's run-time entry points once a family is a `styled` component (*proposed*)
+- **Measured** (front 34 step 5, `front/emilia-34-s5`, botopink-lang `0c544566`, styled `3ac4a07`). A
+  `styledProperty` / `styled` value is a `@Component<…>`, and on commonJS every component function is an
+  `async function` (the built `styled/styled.js`: `async function propertyConstant(bpContextMap__, …)`),
+  the build-time constants included. Its fields are read after `await`, and `await` needs a `@Task` /
+  `@Component` return (`effect-await-without-task`). So once `tokenToSheet` reads one family's
+  `styledProperty`, the chain above it — `tokensToSheet`, `styleRule`, `emiliaWith`, `emilia`,
+  `className`, `styled`, `styledWith`, `cls`, `clsWith`, `named`, `assertAsciiBody` — returns
+  `@Task<…>`, and every caller of them changes: `jhonstart-emilia` (`src/root.bp`, the bridge test),
+  onze 68's `styleRule` reader, `onze-cli`, and the fifteen examples (eleven of whose `src/main.bp` 34
+  does not own). A field read without `await` compiles: erlang answers it, commonJS reads `undefined`
+  (the confirmed gap row "A `@Component` value's field is read without `await`"; probed:
+  `val p = padAll(4); p.declarations` passes on erlang and fails its assert on commonJS).
+- **Options.**
+  (a) Step 5 makes the entry points `@Task<…>`; the consumers gain `await` in the same landing (a
+  carve-out of 34 into `jhonstart-emilia/src` + `test/bridge_test.bp`, onze 68's reader, `onze-cli`
+  and the eleven examples' `src/main.bp`):
+  ```bp
+  pub fn emilia(tokens: Token[]) -> @Task<string> { … }
+  val cls = await emilia([.Pad.All.__4]);          // was: val cls = emilia([.Pad.All.__4]);
+  ```
+  (b) Step 5 waits until no run-time consumer reads a token list: `08-bpp/119` step 4 first (a list is
+  an annotation's comptime argument, `<div #[styled(.Pad.All.4)]>`, `class={emilia(tokens)}` refused)
+  and step 5's deletion of `jhonstart-emilia`; order 119 s4 → 34 s5 → 119 s5 (today 119 s5 waits on
+  34 s5):
+  ```bp
+  <div #[styled(.Pad.All.4)]>…</div>                // the only way a list reaches a page
+  ```
+  (c) The families stay string builders: emilia uses `styled` for its sheet only, amending 338 (3) and
+  350 (no `@utility` literal per family):
+  ```bp
+  fn padAll(n: i32) -> string { return "padding:" + spacing(n); }   // as today
+  ```
+- **Recommendation.** (a): it is the model 338 accepted ("on commonJS an `async function`"), one path,
+  and every miss is a red on commonJS (the 734 tests assert the strings). The field-read gap row is
+  worth closing first (`01-checker`), so a missed `await` is refused at the read, not found by a test.
+- **Blocks.** 34 step 5 boxes 1–4 (families, `@utility` comments, variants, `Token implement
+  Styleable`), and through them step 2.
+
+#### 34-b · Contract 4's class formula against 338's class over the rules (contradiction) (*proposed*)
+- **Rules.** `contracts.md` § 4: `class = "e_" + hash.contentHash(encodeSheet(tokensToSheet(tokens,
+  theme)))`, the shared fixture `e_39b87d03`; 34 step 5's box 6 keeps it unchanged and box 5 deletes
+  `output.bp`'s sheet model (the codec `encodeSheet` with it). 338 (2): a component's class is
+  `contentHash` over its rules, with the layer's prefix (emilia's `e_`).
+- **Measured.** `cardTokens()`'s payload (four `R\tutilities\t…` records) hashes to `39b87d03`; the
+  same list's rules as `styled` writes them —
+  `\u{1}{background:#ffffff;padding:calc(var(--spacing) * 4);font-weight:bold}@media (hover: hover){\u{1}:hover{background-color:var(--color-gray-100)}}`
+  — hash to `f51c2501`. The prefix alone does not keep the fixture: under 338 it is `e_f51c2501`, and
+  every emilia class moves (`emilia-card`'s three included).
+- **Options.**
+  (a) Contract 4 follows 338: `class = prefix + contentHash(rules)`; the fixture is re-derived once in
+  step 5 and its readers (emilia's inline test, `jhonstart-emilia`'s bridge test, onze 68's bundle
+  test, `emilia-card`) re-recorded in the same landing:
+  ```bp
+  assert className(cardTokens(), defaultTheme()) == "e_f51c2501";   // was "e_39b87d03"
+  ```
+  (b) emilia keeps the formula and its codec: it hashes its payload and hands `styled` a finished
+  component, `styledConstant("e_" + hash.contentHash(payload), rules)` — two class rules in one sheet,
+  and `encodeSheet` stays:
+  ```bp
+  val c = "e_" + hash.contentHash(encodeSheet(tokensToSheet(tokens, th)));   // as today
+  return styledConstant(c, rules);
+  ```
+- **Recommendation.** (a): one class rule for every component; the classes move once, in step 5,
+  before `20-snap` records them (350's argument for the families).
+- **Blocks.** 34 step 5 boxes 5–6; `contracts.md` § 4.
+
+#### 34-c · The order of a class's rules, and the document around `styled`'s sheet (*proposed*)
+- **Measured.** (1) `styled`'s reader writes a block's own declarations first and its nested rules
+  after (`reader.bp` `readBlock`: `rulesOf(sels, decls, …) + nested`). emilia keeps token order among
+  the rules with no at-rule: `[.Bg.White, Token.Focus([.Bg.Color.Gray.__100]), .Pad.All.__4]` renders
+  today `.e_6a7c63ea{background:#ffffff}.e_6a7c63ea:focus{background-color:var(--color-gray-100)}.e_6a7c63ea{padding:calc(var(--spacing) * 4)}`;
+  the same list as one literal, `styled "${bg} &:focus { ${gray} } ${pad}"`, renders
+  `.k{background:#ffffff;padding:calc(var(--spacing) * 4)}.k:focus{…}` — other bytes, and two lists that
+  differ only in where a selector variant stands get one class (contract 4 clause 2, "token order is
+  class identity"). (2) `Sheet.render()` writes `@layer <name>{…}` per non-empty layer and nothing
+  else; emilia's `flush()` document also holds `<style>`, the `@layer theme, base, components,
+  utilities;` statement (and `@layer properties;`), the theme's `:root{…}` block, the base rules, the
+  `@keyframes` blocks (deduplicated, outside every layer), the `@property` fallback under
+  `@supports`, and the `prefix` / `important` / `layers: false` options.
+- **Options.**
+  (a) `styled`'s reading stands: emilia's output moves for every list with a selector variant between
+  two plain tokens, recorded once in step 5, and clause 2 reads "rule order is class identity".
+  (b) `styled`'s reader keeps source order — a declaration after a nested rule opens a new rule of the
+  class, as CSS Nesting's nested-declarations rule does (`08-bpp/119`'s reader, before 34 s5); emilia
+  composes a list's plain tokens before its conditioned ones (its rule today), and its `flush()` keeps
+  the document frame — `<style>`, the statement, `:root`, the base rules, keyframes, the fallback —
+  around `Sheet.render()`, the rule model and codec gone:
+  ```text
+  styled "${bg} &:focus { ${gray} } ${pad}"  →  .k{background:#ffffff}.k:focus{…}.k{padding:…}
+  ```
+  (c) emilia keeps its `Rule` / `Sheet` composition and takes only the families' declarations from
+  `styled` — amends 338 (3) ("its own sheet model goes").
+- **Recommendation.** (b): byte-identical output (step 5's claim) and clause 2 both hold, and the
+  reading is what CSS Nesting does in a browser.
+- **Blocks.** 34 step 5 boxes 3 and 5; `08-bpp/119` step 1 (the reader) under (b).
 
 #### 05emilia-n · The unplaced Tailwind rows
 - **Measured.** Four rows have no owner: named `:has()` / `:not()` / ARIA / data / `in-[…]` forms (reachable via `arbSel` only); named groups and peers; `@theme inline`; negative translate (`TranslateX/Y.Neg` absent, `tokens.bp:2259-2272`). The fifth — a cleared breakpoint emitting `@media (width >= )` — is decision 300's: "a token naming a cleared or absent breakpoint is a compile error where the token list is comptime-known" (34 step 3, unconditional).
