@@ -1,12 +1,14 @@
 # Front 97 — std dedupe: one place for every shared primitive
 
 **Priority:** high — every library's "consume std X" step is written against this surface ·
-**State:** partial: steps 0–5, 8–10, 12 on feat; residue of steps 1, 2, 4, step 6 (conditional), 11
-open (its questions: `97-a`, `97-b` → 334, 335; `97-c` → 335; `110-a` open), 13 (boxes 1–2), 14, 15, 17 open; step 7 → 20-snap
+**State:** partial: steps 0–5, 8–10, 12 and step 1's residue on feat; residue of steps 2 (the library
+repositories' copies), 4, step 6 (conditional), 11
+open (its questions: `97-a`, `97-b` → 334, 335; `97-c` → 335; `110-a` open), 13 (box 1's three `io/clock` templates —
+`97-s13-b` —, box 2), 14, 15, 17 open; step 7 → 20-snap
 **Depends on:** `std-d` (step 6) · `24-g` confirmed (step 5) · decision 230 (step 11) · decision
 262 (step 12)
 **Owns:** `repository/botopink-lang/libs/std/src/**`, `libs/std/AGENTS.md`, `libs/std/test/**` ·
-consumer edits `libs/actions/src/{envelope,rpc}.bp`, `libs/validation/src/binding.bp` ·
+consumer edits `libs/actions/src/{envelope,rpc}.bp`, `repository/validation/src/binding.bp` (moved by 138) ·
 `libs/AGENTS.md` · `docs.md` § std where it lists the surface
 **Does not touch:** `repository/botopink-lang/modules/**` (a new primitive method is declared in
 `libs/std/src/primitives.bp`; a needed backend lowering → stop and report) · `libs/routing/**`,
@@ -67,6 +69,23 @@ function in the concept's module. Each library copy deleted by its file's front.
   conversions `toI32()`, `toI64()`, `toU32()`, `toU64()`, `toF64()` on `Integer`, aborting when the value
   does not fit (decision 319); wasm's halves are `05-wasm` rows; `97-s13-a` (`abs` of the minimum) open
 
+- Step 1 residue — `bindInt` reads its `i32` through std: `raw.trim().parseInt()`, then `toI32()`
+  once the value is inside the `i32` range; a numeral past it is a `typeMismatch` and `0` (it
+  aborted, `integer overflow: + on i32`, on both targets); `parseI32` deleted
+  (`repository/validation/src/binding.bp`, test "validation: bindInt reads the i32 range's ends and
+  refuses past them as a violation")
+- Step 13 box 1, all but three `io/clock` templates — `io/fs`'s `stat` reads `statSync` with
+  `bigint: true` and answers `size` / `mtime` in 319's canonical form; `async`'s `millisAsFloat` /
+  `wholeMillis` take and answer either kind, `delay`'s budget is `toI32()`; `io/clock`'s `wide` is
+  `toI64()` and `largestExactMillis` a literal (no host cell); the readings (`Date.now`,
+  `performance.now`, `Date.parse`) are `number`s by construction: `run/std_io_i64_canonical` on
+  commonJS, erlang and beam
+- Step 2 residue, botopink-lang half — `libs/` holds std alone (decision 326); the grep finds only
+  std's own `Json` methods there
+- Step 4 residue, std half — no `-test` member carries an engine of its own: `jhonstart-test` and
+  `onze-test` import std's `testing.snapshots`; `emilia-test`, `erika-test`, `rakun-test`,
+  `rakun-starter-test` and `jhonstart-dom-test` record no snapshot
+
 Facts the open rows rely on:
 - `parseInt` answers `i64`, refuses beyond ±(2^53 − 1); on wasm a template-only `String` method traps.
 - `parseDuration`: one unit (`ms`, `s`, `m`, `h`, `d`), digits only, no sign — not rakun's ISO `PT…`
@@ -78,23 +97,23 @@ Facts the open rows rely on:
 
 ## Open
 
-### Step 1 residue — `bindInt`'s `i32`
+### Step 2 residue — no `Json` accessor copy left in the library repositories
 
-- [ ] `libs/validation/src/binding.bp`'s `bindInt` reads its `i32` through std — no `i64` → `i32`
-      narrowing in std, so `parseI32` (digit fold, no `i32` range check) stays until one exists
+The copies left the compiler with their libraries (138); each is its owner's step (§ Consumers):
 
-### Step 2 residue — no `Json` accessor copy left in `libs/`
-
-- [ ] `grep -rn "fn membersOf\|fn strOf\|fn itemsOf\|fn fieldOf\|fn kindName" libs/` finds only
-      `libs/routing/src/segment.bp`'s `pub fn kindName(k: SegmentKind)` — today also
-      `libs/validation/src/schemas.bp`'s private `itemsOf` / `membersOf` and
-      `pub fn fieldOf(input, name) -> Json` (called by `#[schema]`'s emitted code — `#[validated]`'s after
-      306); owner
-      `125-validation-zod` step 2 residue
+- [ ] `repository/validation/src/derived.bp`'s `pub fn membersOf(j: Json)` (a one-line wrapper of
+      `j.members()`, named by `#[validated]`'s emitted code, `decorators.bp` `encRest`) and
+      `formats.bp`'s private `isObject` — `125-validation-zod` step 2 residue
+- [ ] rakun: `rakun-security/src/jwt.bp` (`membersOf`, `isObject`, `fieldOf`, `strOf`, `itemsOf`) and
+      `rakun/src/autoconfig_registry.bp` (`membersOf`, `isObject`, `itemsOf`) — `04-rakun`'s rows
+- Not copies: `routing/src/segment.bp`'s `kindName(k: SegmentKind)`, `log/test/reports_test.bp`'s
+  `fieldOf(r: LogRecord, …)`, `rakun-app/test/navigation_test.bp`'s `kindName(out: NavOutcome)`; the
+  kind tests std's `Json` does not carry (`onze/src/config.bp` `isString`, rakun's `isArray` /
+  `isText` / `isNum`) wait on step 15's readers
 
 ### Step 4 residue — the engine under every `-test` member
 
-- [ ] `zig build test-libs` reads every member's row at its previous count
+- [ ] `zig build test-libs` reads every member's row at its previous count (the last recorded whole run, 138's gate: 125 passed) — read on the next cold gate. Measured for std and the seven `-test` members: `std`, `emilia-test`, `erika-test`, `jhonstart-test`, `onze-test` pass on commonJS and erlang, `jhonstart-dom-test` on commonJS, `rakun-test` on erlang, `rakun-starter-test` compiles (no tests); 12 passed, 0 failed, 1 without tests, 3 restrictions audited
 
 ### Step 6 — conditional on `std-d`: `io.process` signals and a line reader
 
@@ -122,9 +141,9 @@ with a located message, recorded as the design; or (b) restructured so no host c
 
 ### Step 13 — std over the hybrid `i64` on commonJS (decision 319; with `04-js` step 9)
 
-- [ ] every Node template of std taking or answering an `i64` (`io/clock.bp`'s `systemTimeWithUnit`,
-      `monotonicTimeWithUnit`, `largestExactMillis`, `wide`; `io/fs.bp`'s `size` / `mtime`; the rest found
-      by grep) passes and answers `number | bigint` in 319's canonical form
+- [ ] `io/clock`'s `formatIso8601`, `toCivil` and `offsetMinutes` given an epoch past ECMAScript's
+      time range (every `BigInt` epoch): question `97-s13-b`; `parseDuration`'s 2^53 − 1 bound after
+      319: `97-s13-c`; `fs.stat`'s `mtime` resolution (ms on Node, s × 1000 on erlang): `97-s13-d`
 - [ ] `Json`: an `i64` written as its digits (the read half is step 15's `Int` node, 332)
       (`9223372036854775807l` round-trips on commonJS through `Int`)
 - [x] `string.parseInt()` answers `Error` only past the `i64` range (176 as amended by 319):
