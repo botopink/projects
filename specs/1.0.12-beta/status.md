@@ -1,6 +1,6 @@
 # Status — 1.0.12-beta
 
-**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `56d4bc29` (batch 8: variadic parameters, @getContext as a hook, Type.pick/omit declared, wasm hosts) · rakun `08f32ab` · jhonstart `76da71d` · emilia `1568c0b`
+**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `56d4bc29` (batch 8: variadic parameters, @getContext as a hook, Type.pick/omit declared, wasm hosts) · rakun `08f32ab` · jhonstart `0e3ccbd` · emilia `1568c0b`
 · onze `7a98ae2` · erika `8f88482` · vscode-extension `f041865`
 
 **Fronts:** 71 — **0 done** · **23 partial** · **48 not started**.
