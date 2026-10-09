@@ -67,6 +67,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] decision 300 (typed theme entries, one `#[theme]`; the mechanism `styled`'s, the values emilia's — 338) — 119 s1 · 34 s3
 - [ ] decision 301 (`#[styled(..)]`, `jhonstart-styled`'s since 338) — 119 s4 · 53 s12 · after 34 s1 for the build-time sheet
 - [ ] decision 338 (CSS in three layers — the repositories `css` and `styled`, emilia over `styled`; `jhonstart-styled`, `use` of a scoped style; `"bpp": {"default", "style"}`; the header with no opening `---` and one `--- style ---` section; `jhonstart-emilia` deleted) — 119 s1–5 · 116 s1, s2, s5, s6 · 34 s3, s5 · 118 (`<style>` refusal) · 124 (scaffold manifest)
+- [ ] decision 354 (`@Component<R>`; contexts — `Context<T>`, `use provide` / `use context`, only in a render tree, checked at build through `Decl.hooks`, stage markers, the island seam, the hidden map; answers 134-f) — 134 s6 · 01-checker · 02–05 · 18 · codemod · 26 · rakun 128 · 119 s1 box 4 · 120 · 34 s5
 - [ ] decision 302 (a tag's annotation = a decorator: `@Decl`, no return, meta) — 130 s9 · 118 s5 · 119 · 120 · 126
 - [ ] decision 303 (an action answers `@Result<T, ActionError>`; no `ActionOutcome`) — 127 s1–s3
 - [ ] decision 304 (a store answers `@Result<T, StoreError>`; no `try*` twin, no raise) — rakun 08 s6 · 09 s6 · 65 s4 · 02-erlang s14
@@ -134,7 +135,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 01-checker s31 — `?T` by `??`, `?.`, `?.[]`, `?.()`, `x!` (330); the migration script before the refusals
 - [x] 134 s5 — the `Decorator` type for `with:` (268)
 - [x] 134 s4 — the variadic parameter `..name: T[]` and the print builtins declared with it (267)
-- [ ] 134 s6 — `use @getContext(T)` typed and the bare call refused (269); the run cell · 134-f
+- [ ] 134 s6 — contexts (354): `@Component<R>`, `@Renderable`, `use provide` / `use context`, the hidden context map on every target and comptime runtime, the codemod · 02–05, 18 for the lowerings
 - [ ] 07-residuals s8 — the lib-agnostic gate names every library: the test-file comments reworded; the other owners' comments, then the `-w` pattern · 02 and the other owners landed (s3, s5–s7, s12, s13 done)
 - [ ] 07-residuals s1, s2, s4 — the codegen and comptime report waves, three renames · 02–05 landed · 01 landed
 - [ ] 07-residuals s9 · s10 · s11 — `->` arms · erika's C-13 migration · the pointers' sweep (last) · C-14 · 16 s1–2 · every library merged
@@ -177,7 +178,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] rakun track — latent `i32` clocks: `migration_host.cellNowMs`, the test-only monotonic `nowMs` in `rakun-mail`, `rakun-rsocket` and `tls_listener_test`, `Duration.millis` · `04-rakun` RX-15
 - [ ] rakun track — stale `__rkMake_` text in rakun's `AGENTS.md` · `04-rakun` RX-16
 - [x] rakun track — the server test measures `Content-Length` in bytes (320's follow-up) · `04-rakun` RX-17
-- [ ] emilia on `styled` first (decision 350) — 119 s1's two open boxes (a component with no run-time hook computed at build; the theme mechanism, 300) → 34 s5 (emilia over `styled`, output byte-identical) → 34 s2 (the five families in `styled`'s literal) · `119-c` and, through 352 (`119-b`: registration by `use @getContext(StyledBase)`), `134-f` (box 4), box 5 on `01-compiler/130` s10 (353, row 134) — measured on `d7c71405`, see L5 (`css` done, `styled` landed)
+- [ ] emilia on `styled` first (decision 350) — 119 s1's two open boxes (a component with no run-time hook computed at build; the theme mechanism, 300) → 34 s5 (emilia over `styled`, output byte-identical) → 34 s2 (the five families in `styled`'s literal) · `119-c` and, through 352 / 354 (registration by `use context(StyledContext)`), 134 s6 (box 4), box 5 on `01-compiler/130` s10 (353, row 134) — measured on `d7c71405`, see L5 (`css` done, `styled` landed)
 
 ## L3 — ready to open now
 
@@ -255,7 +256,7 @@ Then:
 - [ ] 03r-am — 19 s3–4
 - [ ] 03r-an — 92 s2 (boxes 1, 3)
 - [ ] 67-a — 67 s1–3 · 53's write path · only the record
-- [ ] 119-c · 134-f — 119 s1 box 4 (a literal with holes known at build; `@getContext` at run time, which 352 needs) → 34 s5
+- [ ] 119-c — 119 s1 box 4 (a literal with holes known at build) → 34 s5
 - [ ] 05emilia-n — 34 s4 (reduced: the four features; the refusal is 300)
 - [ ] 50-b — 50 s2 · 53 s6
 - [ ] 08-f — 121 s3

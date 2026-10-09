@@ -1,7 +1,7 @@
 # Front 119 — bpp styling: `css`, `styled`, `jhonstart-styled`, the style section
 
 **Priority:** step 1 **high** — emilia moves onto `styled` first (decision 350; `06-emilia/34` step 5 waits on it); steps 2–5 medium — a page is complete without them (emilia tokens, global stylesheet); a
-self-styled component is not. · **State:** step 1: `css` done, `styled` landed but for the theme read from the program and the run-time registration (two boxes below, blocked: `119-c`, and row 134 — `01-compiler/130` step 10, 353; box 4's registration is 352, on `134-f`)
+self-styled component is not. · **State:** step 1: `css` done, `styled` landed but for the theme read from the program and the run-time registration (two boxes below, blocked: `119-c`, `01-compiler/134` step 6 (354), and row 134 — `01-compiler/130` step 10, 353; box 4's registration is 352, on `134-f`)
 **Depends on:** (written against 278, 301, 302, 326, 338) step 1: the two repositories
 `botopink/css` and `botopink/styled` exist (created; each needs a first commit on `feat` before
 it becomes a submodule — CI check 1) · step 2: `118-bpp-components` (the template arm), 118 step 1's
@@ -84,14 +84,15 @@ Two consumers of `styled` (emilia, `jhonstart-styled`): decisions 115–117's cr
 (own repositories, ordinary dependencies).
 
 **`styled`.** Two template functions over `comptime css: @Expr<string>`, both components in the
-language's model (128, the pattern of 276's `View`):
+language's model (354, the pattern of 276's `View`):
 
 ```bp
 // styled/src/styled.bp
-pub type StyledBase(…);                                   // the base: the render's sheet, the layer
-pub type Styled(className: string, rules: string) implement @Context<StyledBase>;
-pub type StyledView = @Component<StyledBase, Styled>;
-pub type StyledPropertyView = @Component<StyledBase, StyledProperty>;
+pub type StyledSheet(…);                                  // the render's sheet, the layer
+pub val StyledContext = Context<StyledSheet>();           // provided by whoever renders (354)
+pub type Styled(className: string, rules: string) implement @Renderable;
+pub type StyledView = @Component<Styled>;
+pub type StyledPropertyView = @Component<StyledProperty>;
 
 pub default fn styled(comptime css: @Expr<string>) -> @ExprCustom<StyledView> { … }
 pub fn styledProperty(comptime css: @Expr<string>) -> @ExprCustom<StyledPropertyView> { … }
@@ -135,9 +136,9 @@ pub val code = styled """
 
 | Piece | Does |
 |---|---|
-| its `pub default fn` — what `"bpp".style` names | a template function over the section's text answering a scoped `@Component<StyledBase, Styled>`: scope id (module path and section line, sanitised to `[a-z0-9-]`, `components-post-card-12`), the sheet scoped through `css.scope`, the run-time holes |
+| its `pub default fn` — what `"bpp".style` names | a template function over the section's text answering a scoped `@Component<Styled>`: scope id (module path and section line, sanitised to `[a-z0-9-]`, `components-post-card-12`), the sheet scoped through `css.scope`, the run-time holes |
 | run-time holes | a hole whose value is known at build is written into the rule; one known only at render becomes `var(--s-<n>)` in the rule and `style="--s-<n>: …"` on the template's root element, escaped by `escape.css` (a `97-std-dedupe` row) — Astro's `define:vars`, with no annotation |
-| the bridge `ElementBase` → `StyledBase` | styled components run under the page's base and write to its sheet |
+| the `StyledContext` provider | `use provide(StyledContext, …)` at the render's root: styled components computed at render write to that sheet (352, 354); at a prerender, the build's sheet |
 | the sink | writes the render's one `styled` sheet — emilia's layers, then scoped styles in render order — in the head and each boundary fill (step 3), after linked sheets; payload key `s` (`contracts.md` § 6a) |
 | `#[styled(comptime decl: @Decl, comptime ..items: Styleable[])]` | records `ClassName(names: […])` (302); takes emilia's tokens (`Token implement Styleable`) and the application's components alike: `<button #[styled(btn, .Pad.All.4)]>` (301's spelling; moved from `jhonstart-emilia`, step 4) |
 
@@ -202,9 +203,9 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
 - [x] `styledProperty` refuses `{`, `&`, `@` at the character; `@utility` and `@theme` refused in
       either literal, each error naming the botopink form
 - [ ] a component with no run-time hook is computed at build (the emitted module holds the class as
-      a constant); one reaching a run-time hook registers at render through `use @getContext(StyledBase)` (352:
-      `StyledBase` a real record — the render's sheet and layer —, no store in `styled`; waits on
-      `@getContext` lowered at run time, `134-f`), `119-c` (a
+      a constant); one reaching a run-time hook registers at render through `use context(StyledContext)` (352, 354:
+      the render's sheet and layer, no store in `styled`; waits on the hidden context map,
+      `01-compiler/134` step 6), `119-c` (a
       literal with holes known at build: built today at render; the `comptime` route is two
       `14-comptime-on-beam` rows)
 - [ ] the theme mechanism (300) in `styled`: `#[theme]` found at comptime, two refused, none →
@@ -282,8 +283,8 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 - Step 1, `styled` — `botopink/styled` at `repository/styled` (`.gitmodules` `branch = feat`, § Layout
   row, CI check 4's list); manifest `["erlang", "commonJS"]`, std and `css` (`dependencies`, the
   reader's character walk), no host cell. `styled "…"` (the default module's `pub default fn`) and
-  `styledProperty "…"` read the literal at build and answer `@Component<StyledBase, Styled>` /
-  `@Component<StyledBase, StyledProperty>`: declarations (`;` required), `${p}` splices of a
+  `styledProperty "…"` read the literal at build and answer `@Component<Styled>` /
+  `@Component<StyledProperty>` (354; landed as `@Component<StyledBase, …>`): declarations (`;` required), `${p}` splices of a
   `StyledPropertyView`, value holes (`string | i32 | f64`), CSS nesting, `@variant` (pseudo-classes,
   media conditions, the theme's breakpoints, `max-*`), `@media` / `@supports` / `@container` /
   `@starting-style`, `--spacing()`, `--alpha()`, `--theme()`. The class is `s_` + `contentHash` of
@@ -305,7 +306,7 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 
 ## Decisions
 
-Open: `119-c` (step 1 box 4), `134-f` (box 4's registration under 352) — `decisions-pending.md` Part 2. Answered: `08-d` → 338, `119-b` → 352, `119-d` → 353 (box 5 waits on `01-compiler/130` step 10).
+Open: `119-c` (step 1 box 4) — `decisions-pending.md` Part 2. Answered: `08-d` → 338, `119-b` → 352, `134-f` → 354, `119-d` → 353 (box 5 waits on `01-compiler/130` step 10).
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `repository/css`, `repository/styled` and `jhonstart-styled`

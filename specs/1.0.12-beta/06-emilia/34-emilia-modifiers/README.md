@@ -5,7 +5,8 @@ families move once, in `styled`'s literal; step 2 moves output every later snaps
 step 4) would otherwise record twice · **State:** step 1 done; next step 5, after `08-bpp/119`
 step 1's two open boxes; then step 2 (decision 350) and step 3 (05emilia-e); step 4 on 05emilia-n
 **Depends on:** `08-bpp/119` step 1 (step 5, and through it step 2 — its box 4 registers through
-`use @getContext(StyledBase)`, 352, so `flush()` over `styled`'s sheet waits on `134-f`; step 3: the repositories `css`
+`use context(StyledContext)`, 352, 354, so `flush()` — which provides `StyledContext` — waits on
+`01-compiler/134` step 6; step 3: the repositories `css`
 and `styled` — the components and the theme mechanism, decision 338) · `05emilia-e` (step 3's base
 theme — open again with 300) · `05emilia-n` (step 4, the four feature rows only).
 Nothing else:

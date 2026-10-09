@@ -2,9 +2,9 @@
 
 **Priority:** high · **State:** partial: steps 1, 3, 4 and 5 done; step 2 partial (calls, `@Result`'s
 methods, the mirrored types and `@is` held; std's `Type` declared with `pick` / `omit`, `Decl.fields`'
-`Type.Field<unknown>` open; `?T` methods and the `result` namespace removed under 330); step 6 partial
-(the hook typed and refused bare; its run cell waits on `134-f`)
-**Depends on:** `134-f` (step 6's run cell; decision 352 needs it lowered — `styled`'s render-time registration) · answered: 134-e → 329, 330, 134-d → 322, 134-a → 267, 134-b → 268, 134-c → 269
+`Type.Field<unknown>` open; `?T` methods and the `result` namespace removed under 330); step 6 rewritten by
+decision 354 (contexts), not started
+**Depends on:** step 6: backend fronts 02–05 and 18 for the hidden context map (354) · answered: `134-f` → 354, 134-e → 329, 330, 134-d → 322, 134-a → 267, 134-b → 268, 134-c → 269
 **Owns:** `libs/std/src/builtins.d.bp`, `libs/std/src/builtins_fns.d.bp` (with 130 for the `Decl`
 surface) · compiler's builtin table and the check tying it to the declarations
 (`modules/compiler-core/src/comptime/builtins.zig`, `Env.builtinDecls`, `comptime.zig`
@@ -76,20 +76,41 @@ second is deleted; `Type`'s namespace-type spelling (329), `Type.Field<T>` and `
       `reject/` cells; `Type.merge` with a field on both sides is an error, `Type.required` drops every `?`
 - [ ] `docs.md` § Builtins generated from or checked against the declarations
 
-### Step 6 — `@getContext(T)` is a hook (decision 269)
+### Step 6 — contexts: `@Component<R>`, `use provide` / `use context` (decision 354, replaces 269)
 
-`builtins.d.bp` declares `getContext<T>(comptime _: type) -> Component<T, T>`; the checker's RC3 arm
-types the call as that declaration instead of `T`. `use @getContext(T)` reads the context as a `T`;
-the bare call is refused.
+```bp
+import {context.Context} from "std";
 
-- [ ] `val ctx = use @getContext(BasePagamento);` — the typing is done (Done); the `run/` cell on the
-      four targets waits on `134-f`: no backend lowers `@getContext` (commonJS writes `await
-      @getContext(BasePagamento)` verbatim, a syntax error; erlang calls an undefined `getContext/1`;
-      wasm refuses it, no lowering), and what it reads at run time (RC1's provider stack) is not decided
+pub val ThemeContext = Context<Theme>();
+
+fn App() -> @Component<Element> {
+    use provide(ThemeContext, Theme(mode: .Dark));   // for everything App renders below it
+    return <Page />;
+}
+
+fn Button() -> @Component<Element> {
+    val theme = use context(ThemeContext);           // the nearest provider above
+    …
+}
+```
+
+- [ ] `@Component<R>`: `@Component<C, R>` a type-arity error naming `@Component<R>`; a component is the
+      `@Component<R>` whose `R` implements `@Renderable`, any other `R` a hook; `@Context<C>` and
+      `@getContext` leave `builtins.d.bp` (`context-getcontext-*` codes go with them)
+- [ ] std declares `Context<T>`, `provide(ctx: Context<T>, value: T)` and `context(ctx: Context<T>) -> T`
+      as hooks (`use` only); `use` inside a decorator body, a template body or a `comptime { … }` refused,
+      located (354 (3))
+- [ ] `Decl.hooks` (277) carries each `provide` / `context` with its object, for the frameworks' build check (354 (4))
+- [ ] the hidden context map: every `@Component` function takes it; `provide` builds the children's map,
+      `context` looks up, `context-unbound` at run time with none — `run/context_provide_read` and
+      `run/context_nearest_wins` alike on erlang, beam, commonJS, wasm and both comptime runtimes
+      (handed to 02–05 and 18 for each lowering)
+- [ ] the codemod: `@Component<C, R>` → `@Component<R>`, `implement @Context<C>` → `implement @Renderable`,
+      `use @getContext(T)` reported at its line (no mechanical rewrite: the provider is the author's)
 
 ## Decisions
 
-Open: `134-f` (what `use @getContext(T)` is at run time — step 6's run cell). Answered: 329, 330 (`134-e`: a namespace type, `?T` methodless, `result` deleted,
+Answered: `134-f` → 354 (contexts), 329, 330 (`134-e`: a namespace type, `?T` methodless, `result` deleted,
 `Type.Field<T>` associated — step 2), 322 (`@is` refused, step 2), 267 (step 4), 268 (step 5), 269 (step 6).
 
 **Gate:** standard (fronts.md § Gate) + `zig build test-language`, `test-docs`, `test-libs`, `tsc-check` green
