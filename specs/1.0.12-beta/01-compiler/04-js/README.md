@@ -17,7 +17,7 @@ Paths relative to `repository/botopink-lang/modules/compiler-core/src/`.
 ## Goal
 
 No lowering whose only producer the checker should refuse; no template marker std alone may write;
-`throw` in a `case` arm answers `Error` from the function; out-of-range integer aborts (decision 264); `i64` is a `BigInt` with the full range (319).
+`throw` in a `case` arm answers `Error` from the function; out-of-range integer aborts (decision 264); `i64` keeps the full range, a number below 2^53 and a `BigInt` above (319).
 
 ## Done
 
@@ -65,24 +65,39 @@ codegen); the arm emits `return {Error: e}`.
       `05-wasm` step 5, comptime path; re-measure, name the owner)
 - [ ] `Point(x: 0, ..)` in a `case` answers `null` on commonJS (from `02-erlang`; re-measure)
 
-### Step 9 — `i64`, `u64`, `isize`, `usize` as `BigInt` (decision 319)
+### Step 9 — `i64`, `u64`, `isize`, `usize`: a number, a `BigInt` past 2^53 (decision 319)
 
 Today these four lower to JS numbers and 264's check bounds them at ±(2^53−1)
 (`ArithKind.rangeExactDouble`): `9007199254740991l + 1l` aborts on commonJS and answers on the other
-three targets. After, they are `BigInt` and the bounds are the type's own.
+three targets. After, they keep the full range at a low cost: a value within ±(2^53−1) stays a JS
+`number`, a value beyond it is a `BigInt`, always in that canonical form.
 
-- [ ] lowering: a literal `42l` is `42n`; `+ - * / %`, unary `-`, the compound assignments, comparisons
-      and `==` on `BigInt` (`/` truncates toward zero, as the other targets); `__bp_int` checks against
-      −2^63 … 2^63 − 1 / 0 … 2^64 − 1; `rangeExactDouble` deleted
-- [ ] conversions explicit and exact: `toF64()`, `toI32()` and the like abort when the value does not fit
-      (`Number(x)` only after the check); widening `i32 → i64` is `BigInt(n)`; `@print` and string
-      interpolation print the digits (no `n`)
-- [ ] a `Dict` / `Set` keyed by `i64` keys by value; `Array` indexes stay `i32`
-- [ ] a Node host template taking or answering one of the four types sees a `bigint`; the emitted
-      `.d.ts` types them `bigint`; `scripts/tsc-check.sh` green
+```js
+function i64add(a, b) {
+  if (typeof a === "number" && typeof b === "number") {
+    const r = a + b;
+    if (Number.isSafeInteger(r)) return r;        // the common case: today's cost
+  }
+  return norm(BigInt(a) + BigInt(b));             // promoted; checked against ±2^63, back to number when it fits
+}
+```
+
+- [ ] lowering: every operation on the four types (`+ - * / %`, unary `-`, the compound assignments,
+      comparisons) through a prelude helper with the number fast path; the slow path computes in
+      `BigInt`, aborts past −2^63 … 2^63 − 1 / 0 … 2^64 − 1 (`__bp_int`), and answers the canonical form;
+      a literal is a number when safe, else `123…n`; `rangeExactDouble` deleted
+- [ ] canonical form kept by every producer (operations, literals, conversions, `Json`, host templates):
+      `==` stays `===`, a `Dict` / `Set` keyed by `i64` keys by value — one cell each across the 2^53 edge
+- [ ] conversions explicit and exact: `toF64()`, `toI32()` and the like abort when the value does not fit;
+      widening `i32 → i64` is free (already canonical); `@print` and string interpolation print the digits
+      (no `n`)
+- [ ] a Node host template taking or answering one of the four types sees `number | bigint` (canonical);
+      the emitted `.d.ts` types them `number | bigint`; `scripts/tsc-check.sh` green
+- [ ] cost measured: a loop of i64 additions below 2^53 within 10% of today's `int_check` build (the
+      number recorded in `js/AGENTS.md`)
 - [ ] `run/i64_full_range` (`9007199254740991l + 1l`, `9223372036854775807l`, `-9223372036854775808l`, the
-      `u64` top, an overflow past each bound) answers alike on the four targets; `run/int_overflow_mul_i64`
-      re-recorded — commonJS now aborts where the others do
+      `u64` top, a value crossing back below 2^53, an overflow past each bound) answers alike on the four
+      targets; `run/int_overflow_mul_i64` re-recorded — commonJS now aborts where the others do
 - [ ] `docs.md` § Integer overflow's commonJS paragraph rewritten (handed to `07-residuals`, owner of the prose)
 
 **Gate:** standard (fronts.md § Gate) + every re-recorded RUN LOG verified under `node` against

@@ -106,12 +106,13 @@ Std half of 05-wasm step 5. `unicode.bp`'s `fromCodepoint` is still a Node / Erl
 
 - [ ] `unicode.fromCodepoint` a `fn:` over `String.fromCodepoint`; `unicode` builds its text with it
 
-### Step 13 — std over a `BigInt` `i64` on commonJS (decision 319; with `04-js` step 9)
+### Step 13 — std over the hybrid `i64` on commonJS (decision 319; with `04-js` step 9)
 
 - [ ] every Node template of std taking or answering an `i64` (`io/clock.bp`'s `systemTimeWithUnit`,
       `monotonicTimeWithUnit`, `largestExactMillis`, `wide`; `io/fs.bp`'s `size` / `mtime`; the rest found
-      by grep) passes and answers a `bigint`
-- [ ] `Json`: an `i64` written and read as an exact JSON number, never through a JS `Number`
+      by grep) passes and answers `number | bigint` in 319's canonical form
+- [ ] `Json`: an `i64` written and read as an exact JSON number — a safe value directly, a larger one by its
+      digits into a `BigInt`, never rounded
       (`9223372036854775807l` round-trips on commonJS)
 - [ ] `string.parseInt()` answers `Error` only past the `i64` range (176 as amended by 319); its cells on
       the four targets

@@ -146,7 +146,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 
 Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 
-- [ ] decision 319 (`i64` is 64-bit on every target; commonJS `BigInt`; literal refused past the type's range everywhere; 176, 264 amended) — 04-js s9 · 01-checker s18 · 97 s13
+- [ ] decision 319 (`i64` is 64-bit on every target; commonJS a number below 2^53, a `BigInt` above; literal refused past the type's range everywhere; 176, 264 amended) — 04-js s9 · 01-checker s18 · 97 s13
 - [ ] decision 318 (one decorator per role, rakun's names: `#[component]`, `#[repository]` on a behavior, `#[provides]`, `#[httpClient]`, `#[listen(dest)]`, `#[controller]`, wrappers; closes 130-c, erk-c) — 130 s5 · rakun 04 s8 · 08 s7 · 12 s6 · 13 s6 · 15 s8 · 19 s7 · 79 s4 · 91 s2 · 93 s4
 - [ ] decisions 315, 316 (no module annotation; a decorator wraps its function, `decl.wrapWith`, typed) — 01-checker s30 · rakun 12 s5 · 15's example
 - [ ] 137 (`04-rakun`) — erika's database target: holes, `QuerySource<T>`, the grammar, `#[erika "…"]` · s5: 01-checker s29 · s2's body form: erk-a
