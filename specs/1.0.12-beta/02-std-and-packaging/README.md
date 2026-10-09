@@ -20,7 +20,7 @@ Owes:
 
 | Front | Priority | State | What | Depends on |
 |---|---|---|---|---|
-| [`97-std-dedupe/`](./97-std-dedupe/README.md) | high | partial: steps 0–5, 8–10, 12 on feat; step 1 box 4, step 2 box 3, step 4 box 2, steps 6, 11, 13–17 open (11's questions: 97-a/b → 334, 97-c open); step 7 → 20-snap | the shared primitives in std; the consumer rows; std on wasm group 3 (decision 230); the std bodies of decisions 259, 260, 262, 263 | `std-d` (step 6) · `24-g` confirmed |
+| [`97-std-dedupe/`](./97-std-dedupe/README.md) | high | partial: steps 0–5, 8–10, 12 on feat; step 1 box 4, step 2 box 3, step 4 box 2, steps 6, 11, 13–17 open (11's questions: 97-a/b/c → 334, 335); step 7 → 20-snap | the shared primitives in std; the consumer rows; std on wasm group 3 (decision 230); the std bodies of decisions 259, 260, 262, 263 | `std-d` (step 6) · `24-g` confirmed |
 | [`98-packaging-tail/`](./98-packaging-tail/README.md) | medium | not started | `erika-test`'s first helper and `erika-linq`'s README; `scripts/check-packaging.sh`; `docs/botopink-json.md`; the manifest `subdir` field if lg2-v is answered (2) | every library track's `-test` and example-README steps · `95-f` · `lg2-v` |
 
 ## Order

@@ -2,7 +2,7 @@
 
 **Priority:** high — every library's "consume std X" step is written against this surface ·
 **State:** partial: steps 0–5, 8–10, 12 on feat; residue of steps 1, 2, 4, step 6 (conditional), 11
-open (its questions: `97-a`, `97-b` → 334; `97-c`, `110-a` open), 13–17 open; step 7 → 20-snap
+open (its questions: `97-a`, `97-b` → 334, 335; `97-c` → 335; `110-a` open), 13–17 open; step 7 → 20-snap
 **Depends on:** `std-d` (step 6) · `24-g` confirmed (step 5) · decision 230 (step 11) · decision
 262 (step 12)
 **Owns:** `repository/botopink-lang/libs/std/src/**`, `libs/std/AGENTS.md`, `libs/std/test/**` ·
@@ -48,7 +48,7 @@ function in the concept's module. Each library copy deleted by its file's front.
 - Step 3 — `clock.parseDuration` compares the count with `(2^53 − 1) / unit` before multiplying, so
   `"104249992d"` is the `out of range` `Error` on commonJS too (the product aborted there once an
   `i64` overflow aborts on every target)
-- Step 11 box 1 — a question per module: `97-a` (`io/http`) and `97-b` (`async`) → 334, `97-c`
+- Step 11 box 1 — a question per module: `97-a` (`io/http`) and `97-b` (`async`) → 334, 335, `97-c` → 335
   (`testing/mocks`), `110-a` (`testing/asserts`)
 
 Facts the open rows rely on:
@@ -100,7 +100,8 @@ Modules whose wasm build is not a compiler question (groups 1, 2 are `01-compile
 (`canonical`, decision 146). Per module: (a) out of a wasm build — manifest or module refuses wasm
 with a located message, recorded as the design; or (b) restructured so no host cell is reachable.
 
-- [ ] `io/http` and `async` build on wasm through step 17 (334); `testing/mocks` per `97-c`; `testing/asserts` per
+- [ ] `io/http` and `async` build on wasm through step 17 (334, 335); `testing/mocks` keeps its located refusal on wasm
+      until `botopink test` runs the wasm column, then its registry moves to the module's memory (335 (3)); `testing/asserts` per
       `110-a` — each refusing module refuses with a located message, recorded in `libs/std/AGENTS.md` as the design
 
 ### Step 13 — std over the hybrid `i64` on commonJS (decision 319; with `04-js` step 9)
@@ -155,10 +156,12 @@ and beam, 2 on wasm.
 
 ### Step 17 — `io/http` and `async` bound to the `wasi` host (decision 334; after `01-compiler/140` steps 1–4)
 
-- [ ] `io/http`'s `fetch` binds `@External.Wasm(host: .Wasi, wasi: .HttpOutgoing)`; the request and response
-      mapped to `wasi:http`'s types by the adapter; `run/std_io_http_on_every_target` against a local double
+- [ ] `io/http`'s `fetch` binds `@External.Wasm(host: .Wasi, wasi: .HttpOutgoing)` and the `browser` host's JS `fetch`;
+      the request and response mapped by each adapter; on `browser` a forbidden header or a `Set-Cookie` read answers
+      `HttpError.NotAllowedOnHost(…)` naming it (335 (1)); `run/std_io_http_on_every_target` against a local double
 - [ ] `async`'s twelve cells bind on `wasi` (`delay` on the monotonic clock, `race` / `raceOf` on pollables, the
-      gate cells as pollables); `RetryPolicy` / `nextDelay` unchanged; `run/std_async_on_every_target`
+      gate cells as pollables) and on `browser` (JSPI promises); `RetryPolicy` / `nextDelay` unchanged;
+      `run/std_async_on_every_target` asserts results and answer order only — never effect interleaving (335 (2))
 - [ ] the `browser` bindings of both modules in the same commit (334: a cell bound on both hosts or neither)
 
 ## Consumers — "consume std X" rows handed to the library fronts

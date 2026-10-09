@@ -123,7 +123,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 97 s2 residue — no `Json` accessor copy left in `libs/` · 125 s2 residue (`schemas.bp`)
 - [ ] 97 s3 · s5 residue — rakun's `parseDuration`, `skewOf` and four retry loops as "consume std" rows · no 04-rakun front carries them yet
 - [ ] 97 s4 residue — the engine under every `-test` member, `test-libs` counts · none
-- [ ] 97 s11 — std on wasm, group 3 (230) · `io/http`, `async` through 140 + s17 (334) · 97-c (`testing/mocks`), 110-a
+- [ ] 97 s11 — std on wasm, group 3 (230) · `io/http`, `async` through 140 + s17 (334) · `testing/mocks` in module memory when tests run on wasm (335), 110-a
 - [x] 97 s12 — `unicode.fromCodepoint` a `fn:` over `String.fromCodepoint` on all four targets (with `powBody`, `fn:` transcendentals, code-point `contentHash`)
 - [ ] 97 row — an embedded std file's reserved-word error is unlocated · none
 - [ ] 104 s5 — the consumer sweep · 04, 65, 79, 12, 19, 22, `08-bpp/123`, 49, 51 landed (188)
@@ -202,12 +202,11 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.0.10 choices) in its
-last section. Open after the 9 Oct revalidation and the answers since (309–334): 57 questions, 8 contradictions, 88
+last section. Open after the 9 Oct revalidation and the answers since (309–335): 56 questions, 8 contradictions, 88
 implementation choices.
 
 **First — what blocks now** (`decisoes-pendentes.md` § Prioridade 1, "O que trava agora", set by the maintainer 2026-10-09), in order:
 - [ ] 05w-j — 05-wasm s5 (`json` on wasm) · 05w-i → 333 (A): 97 s16
-- [ ] 97-c — 97 s11 (`testing/mocks` on wasm) · 97-a, 97-b → 334 (140, then 97 s17)
 
 **Then — the botopink shape** (raised 2026-10-04):
 - [ ] nat-d6…d9 — case by case (283; nat-d1 → 303, nat-d2 → 304, nat-d3 and nat-d4 → 306, nat-d5 → 307): `nav:` strings (26, 53), lifecycle (rakun 04), `use use…` (53), erika's LINQ names (98)
