@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 55 perguntas, 6 contradições e 85 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **352**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 54 perguntas, 6 contradições e 85 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **353**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -730,47 +730,6 @@ e nós em `test/json_schema_test.bp`).
 hash do arquivo trazido registrados no `AGENTS.md` do `repository/validation`. **Bloqueia:** 125 passo 9,
 caixa 3.
 
-### 119-b · Onde um componente calculado na renderização se registra *(proposta)*
-
-**Trava:** `08-bpp/119` passo 1, caixa 4 (a segunda metade) → `06-emilia/34` passo 5 (caminho crítico,
-decisão 350)
-
-**Contexto.** A 338 diz: componente sem hook de tempo de execução é calculado no build; um que alcança
-um "se registra na renderização". O `styled` não tem onde registrar: `StyledBase()` é fantasma, o
-`@getContext(T)` é checado mas nenhum backend o gera, e o `styled` não tem célula host. O armazém por
-renderização hoje é o da emilia (duas células host, `emilia.bp:63-77`), e a 34 passo 5 diz que ele "é o
-que `css` e `styled` agora guardam".
-
-**Hoje** (medido no `d7c71405`):
-```bp
-pub val tab4 = styledProperty "tab-size: 4;";   // build: propertyConstant("s_e8b00b8b", …) — no módulo emitido
-fn badge(c: string) -> StyledView { return styled "color: ${c};"; }
-val b = await badge("red");                     // styledComputed(…) monta Styled(…) e não registra em lugar nenhum
-```
-
-- [ ] **(a)** O `styled` guarda o armazém da renderização (células host no erlang e no node, as duas da
-  emilia mudadas para cá): `styledComputed` registra classe e regras ao rodar; um `${p}` costurado não
-  registra (não tem classe própria); `rendered()` devolve cada componente uma vez, na ordem do primeiro
-  registro, e esvazia o armazém; constante não registra (é do sheet do build, 124).
-  ```bp
-  val b = await badge(props.color);              // registra .s_<h>{color:…} nesta renderização
-  var sheet = Sheet.of([layer("base")]);
-  for (rendered()) { c -> sheet = sheet.add("base", c); }   // o sink da jhonstart-styled
-  ```
-- [ ] **(b)** Nada se registra no `styled`: componente é valor, e quem renderiza junta o que a
-  renderização alcançou — o sink da `jhonstart-styled` lê os `use` das funções renderizadas (277) e faz
-  `sheet.add(layer, await c)`; a segunda metade da caixa vai para o passo 2, e o `flush()` da emilia
-  (34 passo 5) recebe os componentes como argumento.
-  ```bp
-  use styled "color: ${props.color};";           // o html lê o hook; o sink o põe no Sheet da renderização
-  ```
-- [ ] **(c)** Pela base: `StyledBase(sheet: …)` e `styledComputed` registrando via
-  `@getContext(StyledBase)` — precisa do `@getContext` gerado em tempo de execução (`01-compiler`; nenhum
-  backend gera hoje).
-
-**Recomendação: (a)** — é o armazém que a 34 passo 5 já dá ao `styled`, sem mudar o compilador.
-**Bloqueia:** 119 passo 1 caixa 4; 34 passo 5.
-
 ### 119-c · O que é "não alcança hook de tempo de execução" num literal com buracos *(proposta)*
 
 **Trava:** `08-bpp/119` passo 1, caixa 4 (a leitura da primeira metade)
@@ -882,7 +841,7 @@ val t = async.delay(30, "a");   // bloqueia 30 ms aqui; `await t` é identidade
 
 | Id | Assunto | Recomendação | Trava | Espera também |
 |---|---|---|---|---|
-| `134-f` | O que `use @getContext(T)` é em tempo de execução | (a) — recusar em todo target (`builtin-not-lowered` no `@`, como o `@module()`) até existir provedor; nada é emitido quebrado. | 134 passo 6 (a célula `run/`) | com (b)/(c), as frentes de backend 02–05 |
+| `134-f` | O que `use @getContext(T)` é em tempo de execução | (c) — desde a 352 (`119-b`) a (a) não serve mais: o componente do `styled` calculado na renderização lê a folha com `use @getContext(StyledBase)`; a base é o valor com que o componente foi chamado (a ponte da `jhonstart-styled`, o `flush()` do emilia), sem forma `provide` nova; `context-unbound` em runtime quando não há nenhuma. | 134 passo 6 (a célula `run/`); pela 352, 119 passo 1 caixa 4 e 34 passo 5 | com (b)/(c), as frentes de backend 02–05 |
 | `67-a` | Onde as caixas de forms do lado do DOM são afirmadas | (a). As caixas rodam no gate da biblioteca dona, onde quebram primeiro, sem dependência nova; o navegador do onze 53 confere de novo. | a forma dos passos 1–3 da 67 (escritos para a (a)); o caminho de | 26; 103 s2 |
 | `03r-ab` | Front 09: stores de protocolo binário | (a) — nunca cair para ETS debaixo de uma URL do Mongo; o braço Elasticsearch sem aresta para o `rakun-client` (ver `ctr-w`; o passo 3 da 09 ainda passa por ele). A frente já segue a (a); falta só o registro. | 09 passo 5 (as células de recusa). | 09: 19 s1, 13 (grupo B, depois do 128) |
 | `ctr-p` | Confirmação `std-a` × confirmação `03r-e` | (a). Recusar é o mais restritivo (67) e mantém a lógica compartilhada no std. | os leitores do rakun 04; a varredura de consumidores da 104 (passo 5) | rakun 04: o 128; 104 s5: os donos dos arquivos consumidores (04, 65, 79, 12, 19, 22, 123, 49, 51) |

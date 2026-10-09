@@ -4,7 +4,7 @@
 methods, the mirrored types and `@is` held; std's `Type` declared with `pick` / `omit`, `Decl.fields`'
 `Type.Field<unknown>` open; `?T` methods and the `result` namespace removed under 330); step 6 partial
 (the hook typed and refused bare; its run cell waits on `134-f`)
-**Depends on:** `134-f` (step 6's run cell) · answered: 134-e → 329, 330, 134-d → 322, 134-a → 267, 134-b → 268, 134-c → 269
+**Depends on:** `134-f` (step 6's run cell; decision 352 needs it lowered — `styled`'s render-time registration) · answered: 134-e → 329, 330, 134-d → 322, 134-a → 267, 134-b → 268, 134-c → 269
 **Owns:** `libs/std/src/builtins.d.bp`, `libs/std/src/builtins_fns.d.bp` (with 130 for the `Decl`
 surface) · compiler's builtin table and the check tying it to the declarations
 (`modules/compiler-core/src/comptime/builtins.zig`, `Env.builtinDecls`, `comptime.zig`

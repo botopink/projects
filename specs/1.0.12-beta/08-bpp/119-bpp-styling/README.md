@@ -1,7 +1,7 @@
 # Front 119 — bpp styling: `css`, `styled`, `jhonstart-styled`, the style section
 
 **Priority:** step 1 **high** — emilia moves onto `styled` first (decision 350; `06-emilia/34` step 5 waits on it); steps 2–5 medium — a page is complete without them (emilia tokens, global stylesheet); a
-self-styled component is not. · **State:** step 1: `css` done, `styled` landed but for the theme read from the program and the run-time registration (two boxes below, blocked: `119-b`, `119-c`, `119-d` and row 134)
+self-styled component is not. · **State:** step 1: `css` done, `styled` landed but for the theme read from the program and the run-time registration (two boxes below, blocked: `119-c`, `119-d` and row 134; box 4's registration is 352, on `134-f`)
 **Depends on:** (written against 278, 301, 302, 326, 338) step 1: the two repositories
 `botopink/css` and `botopink/styled` exist (created; each needs a first commit on `feat` before
 it becomes a submodule — CI check 1) · step 2: `118-bpp-components` (the template arm), 118 step 1's
@@ -202,8 +202,9 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
 - [x] `styledProperty` refuses `{`, `&`, `@` at the character; `@utility` and `@theme` refused in
       either literal, each error naming the botopink form
 - [ ] a component with no run-time hook is computed at build (the emitted module holds the class as
-      a constant); one reaching a run-time hook registers at render · `119-b` (where it registers:
-      `StyledBase` is a phantom, `@getContext` is not lowered, `styled` holds no store), `119-c` (a
+      a constant); one reaching a run-time hook registers at render through `use @getContext(StyledBase)` (352:
+      `StyledBase` a real record — the render's sheet and layer —, no store in `styled`; waits on
+      `@getContext` lowered at run time, `134-f`), `119-c` (a
       literal with holes known at build: built today at render; the `comptime` route is two
       `14-comptime-on-beam` rows)
 - [ ] the theme mechanism (300) in `styled`: `#[theme]` found at comptime, two refused, none →
@@ -304,7 +305,7 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 
 ## Decisions
 
-Open: `119-b`, `119-c` (step 1 box 4), `119-d` (step 1 box 5; with row 134) — `decisions-pending.md` Part 2. Answered: `08-d` → 338.
+Open: `119-c` (step 1 box 4), `134-f` (box 4's registration under 352), `119-d` (step 1 box 5; with row 134) — `decisions-pending.md` Part 2. Answered: `08-d` → 338, `119-b` → 352.
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `repository/css`, `repository/styled` and `jhonstart-styled`
