@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**59 questions and 6 contradictions are open, and 92 implementation choices await confirmation.**
+**58 questions and 6 contradictions are open, and 92 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -27,28 +27,6 @@ Nothing open: 138-a answered (337).
 ### 01-compiler
 
 `00-gate` has no open question: 114's steps wait on no decision.
-
-#### s24-a · What a decorator body reads of a function or a type argument
-- **Measured.** `01-checker` step 24 (botopink-lang `front/checker-s24`) checks both at the argument —
-  `#[check("m", orderTotal)]` is `type mismatch: `#[check]`'s `rule` expects `?fn(Account) -> bool`, got
-  `fn(Order) -> bool``, `#[conditionalOnMissingBean(MailSendr)]` the unknown-type error — and hands every other
-  value over as itself (an array, a record, a variant, a field key). A function or a type still reaches the body as
-  its name as written (`"passwordsMatch"`, `"MailSender"`), as before 280: the body runs in its own module on the
-  comptime runtime, where the annotated module's functions and types are not compiled. 280 (1) says "handed over as
-  values"; the examples use a function argument only inside emitted code (`decl.addMember("validate", fn…)`,
-  illustrative, undecided) and a type only in typed meta (`decl.setMeta(OnMissing(type: t))`, 298).
-- **Options.** (a) Live values: the function, and what it reaches, compiled into the decorator module (as 331's
-  block lifts a declared function), callable in the body; a type read as `TypeInfo<T>` (253) —
-  `fn sample(comptime decl: @Decl, comptime key: fn(s: string) -> string) { decl.setMeta("k", key("x")); }` runs
-  `key` at build. (b) Opaque references: the body passes them on to an output — typed meta (298), a member source
-  by reference — and reading or calling one is refused at the read, located —
-  `decl.setMeta(OnMissing(type: t))` builds, `t.name` / `rule(x)` is `decorator-arg-opaque`. (c) Their name as
-  written (what is built): `rule` is `"passwordsMatch"` in the body, although its parameter says
-  `fn(v: T) -> bool`.
-- **Recommendation.** (b): no user code runs while the program compiles unless a `comptime` block says so, and a
-  value is never read as a type its signature does not state; the outputs carry the reference to the backends.
-- **Blocks.** `01-checker` s24 box 2 (the function and type halves of "handed over as values"); 125 s7
-  (`#[check]`'s `rule`); rakun 04 s6 (`conditionalOnMissingBean(MailSender)`); 282 (a page's `paths`/`head`).
 
 #### s24-b · Example 1's `#[check]` puts defaulted parameters before `message`
 - **Measured.** `01-checker/examples/decorator-arguments-280.md` example 1 declares `check<T>(comptime decl:

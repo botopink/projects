@@ -57,7 +57,7 @@ erlc); `run/value_or_type_param`, `modules/value_or_type_param_imported`,
 lists from another module, imported explicitly too, is one type reached twice: accepted (the
 package's own item named `catalog`, not `catalog:`; the catalogue's alias keeps naming the type a
 second import re-registers — `infer.zig` `constructs`; `modules/typeinfo_all_type_also_imported`). Step 24 (280), all but the function/type handover
-(`s24-a`), `decl.fields` as `Type.Field<unknown>` (134 s2) and example 7: every decorator parameter
+(364: step 35), `decl.fields` as `Type.Field<unknown>` (134 s2) and example 7: every decorator parameter
 `comptime` (`decorator-param-not-comptime`, a `comptime` default); an argument is one located
 expression, checked against its parameter with the decorator's generics bound by `@Decl<P>`
 (refused at the annotation) and the arguments, `.name` a field of `Type.Field<T>`'s `T` or a variant,
@@ -236,7 +236,8 @@ example a `run/` cell, its "não compila" lines `reject/` cells. Built on `front
 - [ ] arguments of any type checked at the argument and handed over as values: a function, a `type`,
       an enum variant, a record, an array (`[1, 2]` has length 2); a value not known at comptime
       (`env("X")`) refused at the argument (`decorator-arg-not-comptime`) — built but for the
-      function and the `type`, which the body still receives as their name: question `s24-a`
+      function and the `type`, which the body still receives as their name: 364 replaces the box
+      with step 35 (every argument an `@Expr<T>`)
 - [x] `@Decl<T>` in `builtins.d.bp`; `T` bound from the annotated declaration (type, field, function)
       when the signature uses it, through a pattern too (`@Decl<fn(e: E) -> unknown>`); `@Decl` =
       `@Decl<unknown>`; a declaration not matching the pattern refused at the annotation
@@ -426,6 +427,30 @@ val outra = Pessoa(...base, ...contato, nome: n);   // left to right, the later 
 - [ ] `run/record_spread` on the four targets (a new record, the source unchanged and evaluated once);
       `reject/record_spread_other_type`, `reject/record_spread_partial`, `reject/record_spread_missing_field`
 - [ ] a plain function call takes no spread (267): `reject/call_spread`
+
+### Step 35 — every decorator argument is an `@Expr<T>` (decision 364)
+
+```bp
+fn check<T>(comptime decl: @Decl<T>, comptime message: @Expr<string>, comptime rule: @Expr<fn(v: T) -> bool>) {
+    decl.addMeta(Check(message: message, rule: rule));   // passed on; the program calls `rule`
+}
+fn page(comptime decl: @Decl, comptime pattern: @Expr<string>) {
+    val p = pattern.value;                                // "blog/[slug]", read at build
+}
+```
+
+- [ ] a decorator or tag-annotation parameter other than `@Decl` is `comptime x: @Expr<T>`; `comptime x: T`
+      refused at the declaration naming `@Expr<T>` (`reject/decorator_param_not_expr`)
+- [ ] the argument checked against `T` at the argument, as s24; `x.value` answers it when known at build
+      and `T` is data; `.value` of an argument not known at build refused at the argument
+      (`reject/decorator_value_not_comptime`); an `@Expr` of a function or a type has no `.value`
+      (`reject/decorator_call_expr_fn`, `reject/decorator_inspect_expr_type`)
+- [ ] an `@Expr` passed into typed meta, a member or emitted code is evaluated by the program at run
+      time — `run/decorator_expr_rule_called` (the rule runs at validation, on the four targets),
+      `run/decorator_expr_message_runtime` (a message from a function call)
+- [ ] `x.fail("…")` located at the argument
+- [ ] the codemod: every declared decorator in jhonstart, rakun, validation and std takes `@Expr<T>` and
+      reads `.value`; `botopink check` of every library member clean
 
 ### Rows other fronts found
 
