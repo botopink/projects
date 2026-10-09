@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 55 perguntas, 6 contradições e 89 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **358**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 55 perguntas, 6 contradições e 88 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **359**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -195,36 +195,6 @@ val s = use linkStatus();   // no servidor (gêmeo erlang): LinkStatus(pending: 
 
 **Recomendação: (a).** Um hook que o render do servidor chama tem de existir no servidor.
 **Bloqueia:** 27 passo 1 caixa 1, passos 2 e 3.
-
-### 05emilia-e ★ · `fullTheme()` vai no `fullOptions()` — e qual é a base do `#[theme]` (300)
-
-**Trava:** `06-emilia/34` passo 3 (o tema base) · ⏳ pronto para abrir thread ao responder
-
-**Contexto.** Escolha implementada: `fullTheme()` vai no `fullOptions()` em `emilia.bp` (o `flush()`
-renderiza com ele); `defaultOptions()` / `defaultTheme()` ficam sem paleta. Reaberta pela 300: a 300
-nomeia `defaultTheme()` como a base do `#[theme]` e o fallback sem `#[theme]` — e ele não tem paleta.
-
-**Hoje** (ilustrativo):
-```text
-flush()          → renderiza com fullOptions() / fullTheme()   (com paleta)
-defaultTheme()   → sem paleta — e é o que a 300 nomeia como base do #[theme]
-```
-
-- [ ] **(a) ★** Ler o `defaultTheme()` da 300 como `fullTheme()`.
-  ```text
-  #[theme] base e fallback sem #[theme] = fullTheme()   ;  defaultTheme() continua sem paleta
-  ```
-- [ ] **(b)** Fazer do `defaultTheme()` o tema completo.
-  ```text
-  defaultTheme() = o tema com paleta   ;  a 300 vale como escrita
-  ```
-- [ ] **(c)** A 300 ao pé da letra.
-  ```text
-  sem #[theme]: a base é defaultTheme() → var(--color-…) fica indefinida
-  ```
-
-**Recomendação: (a).** Não mexe em cinco frentes e só troca o nome da base na 300. **Bloqueia:** 34
-passo 3.
 
 ### 05emilia-n · As linhas do Tailwind sem dono
 

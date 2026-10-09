@@ -207,8 +207,8 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
       the render's sheet and layer, no store in `styled`; waits on the hidden context map,
       `01-compiler/134` step 6); a literal whose every hole is known at build is computed at build
       (355) once `01-compiler/14` step 8 lands — until then computed at render, the same CSS
-- [ ] the theme mechanism (300) in `styled`: `#[theme]` found at comptime, two refused, none →
-      the default; `--theme(--breakpoint-md)` and `@variant md` read it; a cleared breakpoint refused
+- [ ] the theme mechanism (300) in `styled`: `#[theme]` found at comptime, two refused, none a
+      compile error at the first literal naming the fix (358); `--theme(--breakpoint-md)` and `@variant md` read it; a cleared breakpoint refused
       at compile time · row 134 (a library's template function cannot read the program's catalogue),
       built by `01-compiler/130` step 10 (353)
 - [x] `grep -rn "bpp\|jhonstart\|emilia" repository/css repository/styled` empty — the shared
@@ -305,7 +305,7 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 
 ## Decisions
 
-Answered: `119-e` → 356, `119-c` → 355, `08-d` → 338, `119-b` → 352, `134-f` → 354, `119-d` → 353 (box 5 waits on `01-compiler/130` step 10).
+Answered: `05emilia-e` → 358, `119-e` → 356, `119-c` → 355, `08-d` → 338, `119-b` → 352, `134-f` → 354, `119-d` → 353 (box 5 waits on `01-compiler/130` step 10).
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `repository/css`, `repository/styled` and `jhonstart-styled`

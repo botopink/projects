@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**55 questions and 6 contradictions are open, and 89 implementation choices await confirmation.**
+**55 questions and 6 contradictions are open, and 88 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -659,7 +659,7 @@ No general rule (283): each case below is its own question, (a) the language's o
 | 30-g | Browser half asserted in the commonJS-only member `jhonstart-dom-test` over `fake_dom.mjs` | `jhonstart-dom-test` |
 | 31-a | `notFound()` / `redirect(url)` raise via one host cell (`__jhRaise`); a boundary captures via `__jhCapture`; `notFoundReason()` / `redirectReason(url)` answer the reason without raising. They declare `-> string` until `noreturn` fits a value position — waits on nat-d6 and lg2-l (if nat-d6 is (a), they become `-> noreturn`) | core · `error_boundary.bp:118-187` |
 
-### 06-emilia (10)
+### 06-emilia (9)
 
 | Id | Choice implemented | Where |
 |---|---|---|
@@ -667,7 +667,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 | 05emilia-b | The backdrop section is `BackdropFilter` | 42 |
 | 05emilia-c | `drop-shadow-none` follows upstream (`--tw-drop-shadow: ` and the reader) | 42 |
 | 05emilia-d | Snap strictness is the fallback `var(--tw-scroll-snap-strictness, proximity)` | 46 |
-| 05emilia-e | `fullTheme()` rides on `fullOptions()` in `emilia.bp` (`flush()` renders with it); `defaultOptions()` / `defaultTheme()` stay palette-free. Open with 300: 300 names `defaultTheme()` as the `#[theme]` base and the no-`#[theme]` fallback, which has no palette — recommended: read it as `fullTheme()` (alternatives: make `defaultTheme()` the full theme, or take 300 literally and leave `var(--color-…)` undefined) | 56 · 34 step 3 |
 | 05emilia-f | `--inset-shadow-*` entries drop upstream's leading `inset` | 41 |
 | 05emilia-g | `space-*` / `divide-*` follow upstream's selector and reverse-aware margins | 35 · 40 |
 | 05emilia-i | `--tw-*` transform variables are `@property` blocks with upstream's `properties` layer — `translate-*`, `skew-*` and `scale-*` (`--tw-scale-*`) alike | 45 · 54 · 56 |

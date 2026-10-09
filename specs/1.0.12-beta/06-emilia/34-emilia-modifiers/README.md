@@ -3,12 +3,11 @@
 **Priority:** high — emilia on `styled` first (decision 350): step 5 before step 2, so the five
 families move once, in `styled`'s literal; step 2 moves output every later snapshot (`20-snap`
 step 4) would otherwise record twice · **State:** step 1 done; next step 5, after `08-bpp/119`
-step 1's two open boxes; then step 2 (decision 350) and step 3 (05emilia-e); step 4 on 05emilia-n
+step 1's two open boxes; then step 2 (decision 350) and step 3 (358); step 4 on 05emilia-n
 **Depends on:** `08-bpp/119` step 1 (step 5, and through it step 2 — its box 4 registers through
 `use context(StyledContext)`, 352, 354, so `flush()` — which provides `StyledContext` — waits on
 `01-compiler/134` step 6; step 3: the repositories `css`
-and `styled` — the components and the theme mechanism, decision 338) · `05emilia-e` (step 3's base
-theme — open again with 300) · `05emilia-n` (step 4, the four feature rows only).
+and `styled` — the components and the theme mechanism, decision 338) · `05emilia-n` (step 4, the four feature rows only).
 Nothing else:
 `hash.contentHash` exists; `08-bpp/118` step 1's bracket-attribute carve-out is comments only here,
 reworded by step 1 (no code uses `[name]={`).
@@ -168,15 +167,20 @@ pub val appTheme = comptime extendTheme(defaultTheme(), [
 <div #[styled(.Lg(.Pad.All.4))]>…</div>        // compile error: breakpoint lg was cleared in the theme
 ```
 
-The base (`defaultTheme()` as 300 writes it, palette-free, against `fullTheme()`, which `flush()`
-renders with) is `05emilia-e`, open — the boxes below do not settle it.
+The theme is always declared (358): an application with no `#[theme]` is a compile error at its
+first literal, naming `#[theme] pub val appTheme = comptime defaultTheme();`; emilia's
+`defaultTheme()` is the whole Tailwind theme, palette included.
 
-- [ ] `theme.bp` builds `defaultTheme()` (and `fullTheme()`) as a value of `styled`'s `Theme`; emilia's
+- [ ] `theme.bp` builds `defaultTheme()` — the whole Tailwind theme, `fullTheme()`'s entries folded in,
+      `fullTheme()` / `fullOptions()` gone — as a value of `styled`'s `Theme`; emilia's
       own `extendTheme`, `#("--…", "…")` pairs and `""`-as-clear leave its API
 - [ ] a token's breakpoint, colour or spacing resolves through the app's `#[theme]` (`styled`'s), so a
       token naming a cleared or absent breakpoint (`Lg` after `clear(.Breakpoint, "lg")`) is refused at
       compile time when the token list is comptime-known (every `#[styled(…)]` annotation, 301, 338),
       naming the theme's line; the run-time refusal stays only for a list built at run time
+- [ ] an emilia token reading an entry the declared theme lacks is a compile error at the token
+      (358); `flush()` renders with the declared theme; every example and test program declares
+      `#[theme] pub val appTheme = comptime defaultTheme();`
 - [ ] `reference-rows.md` § 3.3 "removing breakpoints" reads as a deviation in `docs.md`
 
 ### Step 4 — the unplaced rows (on `05emilia-n`, reduced to the four features; the refusal is step 3, 300)

@@ -151,7 +151,7 @@ if (themes.length > 1) css.fail("styled: two #[theme] declarations: …");
 - [ ] the importer of a reader module that breaks the rule gets `typeinfo-all-imported` at the
       import, not `unbound variable '<template>'` at the use (row 134's diagnostic half)
 - [ ] `run/template_reads_program_catalogue` — a package's template function counting the importing
-      application's `#[theme]` declarations: none, one, two (refused at the second, naming both)
+      application's `#[theme]` declarations: none (refused, 358), one, two (refused at the second, naming both)
 
 **Gate:** standard (fronts.md § Gate) + std on commonJS and erlang; each library's hook
 
