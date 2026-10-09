@@ -1,6 +1,6 @@
 # Status — 1.0.12-beta
 
-**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `0c544566` (batch 15: a template reads a hole's build value — 14 s8, 355)) · rakun `343a55c` · jhonstart `8936320` · emilia `a122dce`
+**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `0c544566` (batch 15: a template reads a hole's build value — 14 s8, 355)) · rakun `7be8632` · jhonstart `8936320` · emilia `a122dce`
 · onze `3b36270` · erika `8f88482` · vscode-extension `f041865`
 
 **Fronts:** 71 — **0 done** · **23 partial** · **48 not started**.
@@ -184,7 +184,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [x] 138 — the five new repositories carry Node 22 and the glibc 2.35 note (actions 5b78ce8, http fe75240, log 220cfe2, routing 7e6a24f, validation bf0610f); their first CI run reads after this push
 - [x] 138 (decision 326) — actions, http, log, routing, validation are repository/<pkg> submodules (history kept); the compiler embeds std alone (botopink-lang 541336e3); rakun, jhonstart, onze declare them
 - [x] 138 rest — doc comments say "shared library" where they said "bundled library" (jhonstart, onze, routing, validation; rakun's starter-web `root.bp:3` rewritten: `validation` is declared by rakun core, the starter lists it nowhere); emilia, erika, jhonstart and onze `test.yml` on Node 22 with the `fs.globSync` note; onze-cli `build.bp:165`'s two T7 warnings gone at their cause — the `extraDeps` list is built in place, no variable lends its name as a label (chores patches, land with the coordinator; jhonstart 204+15, onze-bundler 42, onze-cli 31, routing 82, validation 246 passed, 0 failed, on commonJS and erlang)
-- [ ] 138 rest, rakun — the same doc-comment rewrite in rakun's sources (rakun-app, rakun, rakun-security, rakun-web; `chores/rakun-138-doc-comments.AFTER-128.patch`) · 128 landed (rebase; rakun-security `security.bp`, rakun-web `filter.bp`, `middleware.bp`, `rules.bp` are not canonical under `botopink format` at c0e991c and stay out of the patch until formatted)
+- [x] 138 rest, rakun — "shared library" doc comments in rakun's sources, the four formerly non-canonical files included (after 128)
 - [ ] 138 rest — the `cardume` submodule · `botopink/cardume` holds its scaffold
 - [ ] 01-checker — decision 8 §6 T7 warns between two elements of one array literal, where no type is written: `[#("a", linkDir), #("b", formsDir)]` says "the variable `formsDir` fills the element labeled `linkDir`" (the first element's T1 labels taken as the written type; `comptime/infer.zig` `warnTupleLabelMismatch` via `unifyAt`); still hit by onze-cli `build.bp` (the static-tree list), `create.bp:187` · none
 - [x] 102 s1–2 — `conventions.bp` and the segment helpers in `libs/routing` (re-implemented)
