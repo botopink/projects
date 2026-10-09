@@ -43,6 +43,10 @@ mod1.mod2.splitPath(x)
       mod2.splitPath;` and `import {mod1.splitPath};` elsewhere — today green on commonJS and erlang through
       `import {mod1.mod2.splitPath as sp}; pub val splitPath = sp;` (measured 9 Oct), red through the
       namespace (`unbound variable 'mod2'`)
+- [ ] verify, then fix what fails: a type re-exported the same way, `mod mod2; pub type Pair =
+      mod2.Pair;`, is the same type, not a second one — `mod1.Pair(a: 1, b: 2)` builds a `mod2.Pair`
+      on the four targets; a first try answered `import-name-collision` ("one module holds one type of a
+      name") at the aliased import, so check it against 310 before changing anything
 - [ ] `import {mod1.mod2};` binds `mod2` in any module of the package (docs.md § Imports: "an item whose
       whole path names a module binds a namespace") — measured 9 Oct: `unbound variable 'mod2'` for a
       nested module of the package, while `import {config};` (a top-level one) binds
