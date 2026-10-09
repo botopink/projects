@@ -62,7 +62,18 @@ fronts: decision 170's type half, std type's constructor through its namespace, 
 behavior `default fn` body checked, shorthand import never reaching a bundled package, occurs-check
 message, primitive behavior extending std's, type parameter widening to its optional, std module's
 `pub type`/`pub fn` through its namespace, `import-name-collision` for a `fn`/`val` named like an
-import.
+import. This front's own rows (status L1): a partially returning value-position `@block`
+(`if (c) return 3; 4`) is `block-tail-value` at the block (`stmtsMayFallThrough` on the typed
+body; `reject/block_partial_return`) · the module's own decorator body, and the module's helpers it
+reaches, are checked when the evaluator refuses them, so `decl.nope` is the checker's unknown field
+located in the body, not `{badkey,nope}` at the annotation
+(`reject/decorator_{body,helper}_unknown_field`; `reject/comptime_method_nothing_answers` now carets
+the call) · step 21's last box for every block `eval.zig` folds: a body's `comptime <expr>` /
+`comptime { … }` admitted by `error.zig` `isFoldable` is folded by the checker (`foldBodyComptime` →
+`Env.srcRewrites`, spliced by `transform.zig`), so no backend meets it (`run/comptime_block_in_body`,
+four targets; `run/comptime_expression_is_block` lost its `.wasm.expect`) ·
+`std-unsupported-on-target` names `#[@External.<Member>]` and the `--target` spelling (`commonJS`),
+every `@BeamMemory` diagnostic spells `keyed: true`, and the evaluator hints name `erl` alone.
 
 ## Open
 
@@ -359,16 +370,6 @@ type's body is a parse error.
       (from `05-wasm` step 5)
 - [ ] `infer.zig`'s template memo key appends the whole scope's JSON per call site — O(scope) per
       template call (`14-comptime-on-beam` step 2's remaining cost)
-
-- [ ] two diagnostics teach a retired spelling (from `07` step 6): `std-unsupported-on-target`
-      reads "std/beam has no `@external` for target 'node'" (`infer.zig` `refuseStdUnsupported`; the
-      annotation is `#[@External.<Target>(…)]`, the target `commonJS`), and the `PersistentTerm`
-      write's hint for a `Dict` names `#[@BeamMemory.Ets(keyed = true)]` where the argument is
-      written `keyed: true`
-- [ ] a partially returning `@block` (a `return` on some paths, no value on the fall-through)
-      type-checks; commonJS prints `null` on the fall-through (from `04-js` step 1)
-- [ ] a type error in a decorator body (`decl.nope`) escapes the checker and surfaces at run time as
-      `{badkey,nope}`
 
 **Gate:** standard (fronts.md § Gate) + every re-recorded `snapshots/comptime/**` file read for
 expected/found orientation; a refusal moving a backend fixture is reported to that backend's front,
