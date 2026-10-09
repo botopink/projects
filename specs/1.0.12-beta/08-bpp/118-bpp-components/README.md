@@ -199,7 +199,9 @@ core's `node.bp`, `prelude.bp` and `element.bp`'s `View`; green on commonJS and 
 
 ## Open
 
-- Step 1 — native-tag props (decision 351 (1), (2), (4), (5)): each builder takes its element's
+- Step 1 — native-tag props: **handed to `05-jhonstart/26` step 13 (decision 362)**; 118 lands with
+  351's html-side rules (names, `data-*`, `onClick` refused, no pair spread on an element). What 26
+  builds (351 (1), (2), (4), (5)): each builder takes its element's
   props record (`GlobalAttrs`, `AriaAttrs` and the element's own, layered with `Type.merge`), lowered
   as a component tag, so an unknown attribute, a value of the wrong type and content in a void
   element are refused; a tag the prelude does not name refused at the tag; the element spread takes
@@ -208,7 +210,7 @@ core's `node.bp`, `prelude.bp` and `element.bp`'s `View`; green on commonJS and 
   `'AnchorProps' is a value, not a type` (`01-checker` s28); a named props record is filled by no
   labelled call (`<anchor href="/x">` → `'anchor' expects 1 argument(s), got 2`, by hand too —
   **Template-built code cannot build an inline props type**, `01-checker`); the builders are
-  `element.bp` (frozen) and `elements.bp` (`05-jhonstart/26`'s, which opens after 118) — `118-a`.
+  `element.bp` (frozen) and `elements.bp` (`05-jhonstart/26`'s, which opens after 118) — 362 gives the rewrite to 26.
   `html`'s `lookup` answers `(name, kind)`, so a prelude builder and a local function of the same
   name are one to it (4).
 - Slots on a component — decision 360 (step 4). Spread on a component — decision
@@ -235,7 +237,6 @@ core's `node.bp`, `prelude.bp` and `element.bp`'s `View`; green on commonJS and 
 
 ## Decisions
 
-- `118-a` — who rewrites the native builders into props form, and when — step 1's props box
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test --target commonJS` and `--target erlang` green in `modules/jhonstart-html`

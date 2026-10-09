@@ -230,6 +230,27 @@ list against its own decorators; the compiler names no marker.
 - [ ] `use cookie(decl: Cookie<T>) -> ?T`, `#[serverOnly]` (186): `null` when absent or undecodable;
       the jar (`use cookies()` → pairs) and `pairValue` go from page code; a render writes no cookie (122)
 
+### Step 13 — the native builders in props form (decision 362)
+
+After step 0, `01-checker` s28 and the props-filling lowering (**Template-built code cannot build an
+inline props type**):
+
+```bp
+pub val AnchorProps = Type.merge(Type.merge(GlobalAttrs, AriaAttrs), AnchorAttrs);
+pub fn a(props: AnchorProps) -> Element { return el("a", props.children, attrsOf(props)); }
+// markup:     <a hreff="/x">  →  error: `a` has no field `hreff`, at the attribute
+// by hand:    a(AnchorProps(href: "/", children: ["Home"]))
+```
+
+- [ ] every builder of `elements.bp` and `element.bp`'s eight (unfrozen for this step) takes its
+      element's props record — `GlobalAttrs`, `AriaAttrs`, the element's own, layered with
+      `Type.merge`; content in the props' `children` (360); a void element's props have none
+- [ ] 351's refusals at build: an unknown attribute, a value of the wrong type, content in a void
+      element, a tag the `#[bpp.htmlPrelude]` module does not name (361); the element spread typed (359)
+- [ ] the 78 hand-written callers rewritten in the same landing — jhonstart 51, onze 27, a consumer
+      commit per library (188); the `(children, attrs:)` form gone, `el(…)` the escape hatch
+- [ ] 118 step 1's handed box closed against this step
+
 **Gate:** standard (fronts.md § Gate) + every jhonstart member at its count or above on both rows
 (core 204; `jhonstart-dom-test` commonJS only, structural — 101) · `grep -rni rakun
 modules/jhonstart/src` empty and `grep -i emilia modules/jhonstart/src` still empty · `dom_test.bp`
