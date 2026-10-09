@@ -66,18 +66,13 @@ std's `math` and `hash` answer commonJS's bits on every target.
   `$__blk<n>` and branches out of `$__blkend<n>` instead of `return` from the enclosing function;
   the block's type and string/bool shape read off its returns (`run/block_return_is_block_value`,
   four targets; `block_block_builtin` wasm snapshots move)
+- Step 8 — the narrow and unsigned integer types check their own range on wasm (264): `emitRangeCheck`
+  after the carrier's checked `+`, `-`, `*`, unary `-`, `+=` (`$__i32_range_chk` for `i8`/`u8`/`i16`/
+  `u16`, `$__i64_range_chk` for `u32`/`u64`; a `u64` ends at `2^63 − 1` in its `i64` carrier)
+  (`run/int_overflow_add_i8`, `run/int_overflow_sub_u32` green on wasm) — patch
+  `fix-cells-red/02-wat-narrow-int-range`
 
 ## Open
-
-### Step 8 — overflow for the unsigned and narrow integer types (decision 264)
-
-`wat.zig` `emitArith` checks only `i32` / `i64`: `run/int_overflow_sub_u32` and
-`run/int_overflow_add_i8` are red on wasm (`tests/language/AGENTS.md` says so), though d71b89f5
-claims `i8` and `u32`.
-
-- [ ] `u32`, `u64` and the narrow types (`i8`, `i16`, `u8`, `u16`) checked after `+`, `-`, `*`, unary
-      `-` and `+=` on wasm; both cells green on wasm
-
 
 ### Step 1 — `Array.unique` on wasm (box 1)
 

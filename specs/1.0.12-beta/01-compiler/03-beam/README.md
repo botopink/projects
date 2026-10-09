@@ -43,6 +43,11 @@ Rows from other fronts: an `@block`'s `return` is the block's value (decision 2)
 `lowerBlockWithReturn` jumps to the block's exit label with the value in `x0` instead of `return.`
 from the enclosing function (`run/block_return_is_block_value`, four targets;
 `block_block_builtin` beam snapshots move by the jump).
+- An in-frame loop's head survives OTP's `beam_jump`: `writeLoopTop` puts a `{line, …}` anchor before
+  `{label, Top}`, so tail sharing cannot turn the entry into a jump to an identical back edge and leave
+  `Top` with backward references only (`erlc` stopped on `{undefined_label, Top}` in log's
+  `stripLineNumbers`; `modules/import_bundled_package_beside_own_module` green on beam) — patch
+  `fix-cells-red/01-beam-loop-top-anchor`.
 
 ## Open
 
