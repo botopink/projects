@@ -122,6 +122,8 @@ fn mix(…) -> …                          // stays one list, one per line (tra
 - [ ] `#[a]` / `#[b]` round-trips as two blocks, `#[a, b]` as one list; with a trailing comma the
       list prints one per line; `assertFormat`, `assertIdempotent`, `assertLossless` cases for a
       function, a type, a field, a method, a loop and a mix of builtin (`@`) and custom annotations
+- [ ] the template annotation (decision 311) prints as written: `#[erika "…"]` and `#[erika """…"""]`
+      round-trip unchanged, alone and inside a list (`01-checker` step 29 adds the node)
 - [ ] a comment between two blocks, or inside an open list, stays where it was written;
       `helpers.zig`'s containment note and `src/format/AGENTS.md`'s canonical-rewrite line rewritten
 - [ ] the order is kept: a parser snapshot of `Decl.annotations` before and after formatting is equal

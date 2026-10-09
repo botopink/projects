@@ -4,7 +4,7 @@
 `rakun-data`; its open boxes are small · **State:** not started
 **Depends on:** 128 · 04 step 4 (`rkExcludeFromEager`, step 1 only) · decision 147 (`try` in a
 lambda takes its expected type's return — tests written against it) · lg2-e/f (R78-1's field list) ·
-lg2-r (decorator-supplied method body — `#[query]` shape stays) · 03r-v (confirmation)
+decisions 311–313 (step 7: `01-checker` step 29, `137` steps 1–5, `erk-a` for the body-form cell, `erk-c` for the owner of `#[repository]`'s behavior form) · 03r-v (confirmation)
 **Owns:** `modules/rakun-data/**` except 09's (`src/nosql/**`, `src/nosql_host.bp`,
 `src/sidecars/rakun_nosql.erl`, `test/nosql/**`), 15's (`src/tx/**`, `test/tx/**`) and 65's line in
 `src/devtools/devtools.bp`; edits neither `botopink.json` nor `src/root.bp` this milestone ·
@@ -48,7 +48,7 @@ cell claims to have reached a server.
 
 - [ ] `sql_pool_test.bp`: with `bootstrapMode: Lazy` (`DataConfig`, step 5 — 299; `rakun.data.repositories.bootstrap-mode=lazy` until it lands), a recording-constructor `#[repository]` is not constructed by `Rakun.run`, is constructed on first resolution
 - [ ] with the default (`Eager`) it is constructed before `Rakun.run` returns
-- [ ] R08-2 ("named parameters, `#[query]`, the pool and local transactions all behave as the acceptance lists") ticked, the four lists re-run
+- [ ] R08-2 ("named parameters, the repository queries, the pool and local transactions all behave as the acceptance lists" — `#[query]` reads as step 7's `#[repository]` forms, 313) ticked, the four lists re-run
 
 ### Step 2 — Migration lock (R77-1)
 
@@ -85,6 +85,49 @@ cell claims to have reached a server.
 - [ ] the method forwarding comment in `template.bp` (a method `-> @Result` lowered as a plain function) gone with 02 step 14
 - [ ] the front's examples and `repository/rakun/AGENTS.md` § SQL data access rewritten to `try` / `case`
 
+### Step 7 — repositories: `#[repository] behavior` with `#[erika "…"]` or `#[nativeQuery("…")]` (decisions 311–313; after `01-checker` step 29 and `137` steps 1–5)
+
+Today a repository is a `type` whose method carries `#[query("…")]` (`src/sql/query.bp`), which writes
+`<Repo>.<m>Sql()` and registers the statement through `rkRegisterQuery`; the body calls the member by hand.
+
+```bp
+#[repository]
+behavior Users {
+    #[erika "select * from User where id = ${id} limit 1"]
+    fn find(self: Self, id: i32) -> @Result<?User, StoreError>;
+
+    #[nativeQuery("select * from users where email = :email limit 1")]
+    fn byEmail(self: Self, email: string) -> @Result<?User, StoreError>;
+}
+
+val users: Users = Users.of(db);      // generated: Users.Sql(db: SqlTemplate) implement Users
+```
+
+- [ ] (owner per `erk-c`: today `#[repository]` is the core's stereotype on a `type`, `rakun/src/decorators.bp:124`, frozen)
+      `#[repository]` on a `behavior` reads each method's query meta (`#[erika]`'s, `#[nativeQuery]`'s — 298)
+      and generates `Users.Sql(db: SqlTemplate) implement Users`, `Users.of(db)` and the by-type
+      registration in the container (`Users` injectable); on anything but a behavior it is an error at
+      the annotation; a method with neither query annotation is an error at the method
+- [ ] `#[nativeQuery("…")]`: the driver's SQL as a comptime string, verbatim; `:name` placeholders
+      matched by name to the method's parameters (an unanswered placeholder or an unused parameter is an
+      error at the annotation); the leading-keyword and quote-next-to-placeholder checks of today's
+      `#[query]` kept; rows decoded into the declared answer by column name
+- [ ] a `?T` answer: erika's query must say `limit 1` (312, checked by erika); a native query meeting more
+      than one row is the `single()` panic naming the statement (304)
+- [ ] `Table<T>` implements erika's `QuerySource<T>` (`137` step 2): the table name from `#[entity]`
+      (298), statements run on its `SqlTemplate`
+- [ ] `SqlTemplate.query` / `update` / `single`: `sql` is `comptime` — a statement built at run time is
+      refused at the argument (the injection rule `#[query]` kept by shape)
+- [ ] `#[query]`, the `<m>Sql()` members, `rkRegisterQuery` / `rkRegisteredQueries` deleted; the statement
+      inventory (`/actuator/sql`, 11) read from the query meta through `@TypeInfo.all` (253)
+- [ ] `examples/city-entity-example.bp`, `examples/audit-and-revisions-example.bp` rewritten to the
+      repository behavior; their `// LANGUAGE GAP` markers for the bodyless-method row go, and the row
+      with them (`language-gaps.md`)
+- [ ] cells: a `#[repository]` over ETS answering both forms; `Users.mock()` (`#[mocks.mock]`) on the same
+      behavior; the body form (`erika "…"` in a `type` method — its source per `erk-a`); `reject/` cells
+      for a `?T` without `limit 1`, a field `User` lacks, a placeholder no parameter answers
+- [ ] `repository/rakun/AGENTS.md` § SQL data access and the member README rewritten to the two forms
+
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun-data`.
 
@@ -93,4 +136,4 @@ Blast radius: step 1 changes construction timing under `lazy` only; `rakun-sessi
 on the PostgreSQL arm only.
 
 Kept for open markers: `examples/city-entity-example.bp`, `examples/audit-and-revisions-example.bp`
-(lg2-r, the self-field rule by design).
+(the bodyless-method row, by design since 311 — they go with step 7).

@@ -44,7 +44,7 @@ Paths in `repository/rakun` are the tree `04-rakun/128` leaves (decision 187;
 | `01-compiler` | per front, [`01-compiler/README.md`](./01-compiler/README.md) § Ownership: the checker and parser (01); each backend's emitter and snapshot directories (02 · 03 · 04 · 05); `codegen/tests/**`, `comptime/tests/**`, `parser/tests/**`, `language-server/src/tests/**`, the prose of `docs.md`, erika's C-13 migration (07); `tests/language/**` bookkeeping (12); `asm_text.zig` (14); `format.zig` and the `;` parser kind (16); the keyed-`Ets` functions (17); `beam_file.zig`, `opcodes.zig`, the wasm binary emitter, `release.yml` and two `build.zig` steps (18); `compiler-cli/**`, `bpmp/**`, `language-server/**`, root `build.zig` (26); the decorator sites (130); `builtins.d.bp` and `comptime/builtins.zig` (134) | `libs/std/**` but the carve-outs; every library repository |
 | `02-std-and-packaging` | `libs/std/**` and the std halves handed over (97); the examples' `README.md` and `-test` helpers no library front claimed, `scripts/check-packaging.sh`, `docs/botopink-json.md`, `modules/manifest/**` for the `subdir` field (98) | the compiler; a library's `src/` |
 | `03-bundled-libs` | `libs/{routing,actions,http,i18n,log,release,validation}/**`; the three registration lines (`build.zig`'s `bundled_packages`, `libs/AGENTS.md`, `format-check.sh` `TREES` — 104 owns them, 105 then 107 append); the consumer lines each front names in rakun, jhonstart and onze, one commit per member | anything else in those members |
-| `04-rakun` | while 128 is open: all of `repository/rakun`; after it, `modules/<member>/**` per front ([`04-rakun/README.md`](./04-rakun/README.md) § Parallel groups); `starters/**`, `examples/**` (73) | the compiler, onze, jhonstart, emilia; the core's `src/{decorators,http,bootstrap}.bp` (frozen; the one writer is 130's decision-216 rewrite) |
+| `04-rakun` | while 128 is open: all of `repository/rakun`; `repository/erika/modules/erika/**` and erika's `docs.md`, `examples.md`, `AGENTS.md` (137); after it, `modules/<member>/**` per front ([`04-rakun/README.md`](./04-rakun/README.md) § Parallel groups); `starters/**`, `examples/**` (73) | the compiler, onze, jhonstart, emilia; the core's `src/{decorators,http,bootstrap}.bp` (frozen; the one writer is 130's decision-216 rewrite) |
 | `05-jhonstart` | `modules/jhonstart/**` and `jhonstart-dom-test/**` (26 — `fake_dom.mjs` stays 26's; a front owns the test file it adds there); `jhonstart-link/**` (27); `jhonstart-forms/**`, `jhonstart-dom-test/test/forms_dom_test.bp`, the harness's `stubWireNames()` (67) | rakun; `element.bp`, `hooks.bp` (frozen); `routes.bp`'s segment walk (102), `render.bp`'s `isLangTag` (105), `form.bp`'s `formAction` check (103) while those fronts are open |
 | `06-emilia` | `modules/emilia/src/**` and its comment carve-outs from 118 (34); `examples/emilia-card/**` and the fifteen example READMEs (33) | jhonstart; `src/scoped.bp` and `jhonstart-emilia/**` (`08-bpp/119`) |
 | `07-onze` | `onze/**` + `onze-server/**` + `onze-test`'s root and group files (49); `onze-cli/**` + `onze-bundler/**` (50); `onze-assets/**` + `onze-og/**` (51); `onze-release/**` + `examples/static-site/**` (71); `examples/blog/**` (53) | rakun, jhonstart; the lines 102 names in `types.bp`, `scan.bp`, `chunk.bp`, 104's in `server.bp` and `image_handler.bp`, 107's in `otp.bp` / `docker.bp` / `spec.bp`, while that front is open |
@@ -137,7 +137,7 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 | **128** | the rakun commits of 102 s3 and 103 s2 · the 130 rule (03r-ao) · ctr-k | every rakun front |
 | **04** | 128 | 13 · 12 (s1) · 22 (s5) · 08 s1 · 19 s2–5 · 88 (s4) · 123 · 104 s5 · 71 s3 |
 | **74** | 128 | 92 |
-| **08** | 128 · s1: 04 s4 | — |
+| **08** | 128 · s1: 04 s4 · s7: 137 s1–5, 01-checker s29, erk-c | — |
 | **15** | 128 · s5: 03r-al | 19 s2–5 · 91 · 92 |
 | **79** | 128 · s3: 03r-ae | 104 s5 |
 | **81** | 128 · s3: 03r-ak | 88 · 107 · 71 s3 |
@@ -151,7 +151,8 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 | **12** | 19 s1 · 04 s1 | 53 · 104 s5 |
 | **11** | 128 · 22 (R11-7) | 71 s3 |
 | **65** | 128 · s1: decision 201 | 49 s4 · 53 · 123 · 104 s5 · 106 s2 |
-| **09** | 19 s1 · 13 · s5: 03r-ab | — |
+| **09** | 19 s1 · 13 · s4: erk-b · s5: 03r-ab | — |
+| **137** | s5: 01-checker s29 · s2 (body form): erk-a | 08 s7 |
 | **91** | 15 · decision 274 | — |
 | **92** | 74 · 15 · s2: 03r-an | 88 |
 | **88** | 81 · 93 · 92 · 04 s4 · 73 | — |

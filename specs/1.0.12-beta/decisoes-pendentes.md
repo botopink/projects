@@ -1,7 +1,7 @@
 # Decisões pendentes — 1.0.12-beta (só o que está em aberto, por ordem de importância)
 
-Atualizado em 2026-10-09 (decisões 278–310; revalidação item a item). **Em aberto: 62 perguntas, 11 contradições e 91 escolhas ★ para confirmar.** Só o que ainda espera resposta sua: o que já foi respondido está em
-`specs/1.0.12-beta/decisions-taken.md` (decisões 144–310; próximo número livre: **311**) e saiu daqui.
+Atualizado em 2026-10-09 (decisões 278–313; revalidação item a item). **Em aberto: 64 perguntas, 11 contradições e 91 escolhas ★ para confirmar.** Só o que ainda espera resposta sua: o que já foi respondido está em
+`specs/1.0.12-beta/decisions-taken.md` (decisões 144–313; próximo número livre: **314**) e saiu daqui.
 Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 234–236 (injeção do rakun,
 `@TypeInfo.all` com lista, decorador de função), 237 (captura do template pelo texto), 238–243
 (`@External.Wasm`, `$stringify`, codepoints no wasm, células sem WASI, dependência direta, vírgula final),
@@ -9,7 +9,7 @@ Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 2
 minúsculos; a 209 revertida), 248 (um builtin só, `@typeInfo`), 249 (o compilador separado por backend na
 chave do cache), 250 (`io.random.bool()` removido), 252 (todo builtin declarado), 253 (`@TypeInfo.all`),
 254 (o catálogo responde `unknown`; `is fn() -> T`), 255 (`Tipo<…>.membro` e `comptime <expr>`), 256 (o
-registro de beans em comptime no ponto de entrada), 257 (`Schema<T>` na `validation`), 258 (`--lib` múltiplo), 259–263 (`pow` da glibc, `contentHash` por code point, heap do wasm crescendo, `String.fromCodepoint`, `std/math` igual em todo sistema), 264 (estouro de inteiro é erro em todo target), 265 (orçamento do gate frio em 7m30s nesta versão; os 5 min ficam para a próxima), 266 (`comptime` avaliado em compilação em todo lugar, registro içado), 267 (parâmetro variádico `..values: T[]`; `@print` declarado com ele), 268 (tipo builtin `Decorator` no `with:` do `@TypeInfo.all`), 269 (`@getContext(T)` é hook, chamado atrás de `use`), 270 (o prelúdio do `.bpp`: o `src/prelude.bp` do pacote, só imports do próprio pacote, importado só quando usado; o cabeçalho vence), 271 (`ctr-a`: não existe `islandKeyEnv`; a chave da island é sempre `ONZE_KEY`; as chaves da 124 são `trailingSlash`, `redirects`, `markdown`, `islands`), 272 (`08-e2` e `ctr-b`: os modos das props da server island são só `"sealed"`, o padrão, ou `"server"` — nenhum expõe as props), 273 (`ctr-c`: um route handler nunca é exportado no build; `app/rss.xml/route.bp` é servido a cada request — a 222 fica inteira), 274 (`03r-ad` e `ctr-d`: o Pulsar não vira membro — fica em `rakun-messaging/src/pulsar/`; o plano de dados é recusado no boot e adiado), 275 (`bpp-f` e `ctr-e`: o `.bpp` devolve o `R` do `@ExprCustom<R>` que o `html` declara — no jhonstart, sempre `@Component<ElementBase, Element>`, com ou sem `use`/`await`; todo `.bp` que devolve `html """…"""` também passa a declarar esse retorno), 276 (`View`: alias de `@Component<ElementBase, Element>` no `element.bp` do jhonstart — o mesmo tipo com nome curto; o `.bpp` desdobra em `-> View`), 277 (`hooks-a`: o `@Decl` lista todos os nós alcançáveis — cada função com os seus `use` e as suas chamadas —, e cada anotação carrega o seu `Decorator`; o jhonstart decide pré-renderizada/por request e valida `#[client]` comparando com os próprios decorators), 278 (diretivas do Astro viram anotações dentro da tag — `#[clientVisible("200px")]`; `#[clientOnly]` é uma função só, para hook e tag; o `html` age pelo tipo de retorno), 279 → 286 (as duas formas valem, `#[a]` `#[b]` e `#[a, b]`; o formatter mantém como foi escrito), 280 (argumento de decorator tipado e `comptime`, `@Decl<T>`, `Field<T>` e `.campo` com o nome exato), 281 (nenhum identificador de código como string), 282 (o papel de uma função vai no decorator, nunca no nome do export), 283 (segundo modelo: caso a caso, `nat-d1`…`nat-d9`), 284 (JSON: `botopink.json` o mais limpo possível, caso a caso; `"bpp"` obrigatório), 285 (o compilador só conhece o `"bpp"`, o `html` e o prelude; o papel do arquivo é da tabela de rotas do framework; o `bppKinds` sai), 287 (`ctr-aa`: o fallback de uma ilha é argumento da anotação — `#[serverDefer(fallback: …)]`, `#[clientOnly(fallback: …)]` —, fixo em comptime), 288 (`ctr-f`: um `.bpp` é o `pub default fn` do módulo com o nome exato do arquivo, devolvendo `View`; importado `import {components.card};` — a 213 emenda a 198 e a 199), 289 (`ctr-g`, `ctr-t`: a função default pode ser anônima — `pub default fn (…)` — ou marcada depois — `pub default Tree;`; quem importa dá o nome; o `page.bpp` pode importar e escrever `#[page(…)]` sem colidir), 290 (`ctr-x`: sem configuração de segmento — `dynamic` e `fetchCache` saem; `revalidate` e `dynamicParams` são argumentos do `#[page]`), 291 (`ctr-y`: `use request()` para ler e `use response()` para escrever — `res.status(404)`, `res.header(…)` —; header fixo de página S em `#[page(headers: …)]`; sem `isPrerendered()`), 292 (`ctr-z`: `<a #[reload]>`, `<a #[history(.Replace)]>`; os eventos de navegação são hooks — `use onBeforeSwap(…)` —; o `<Script>` tem enum próprio, `strategy={.LazyOnload}`), 293 (`nat-c1`, `nat-c3`, `bpp-g`: a página lê a rota por hook — `use params<BlogParams>()`, `use pageData<Post>()` —, sem parâmetro; o `#[page]` confere os campos contra a pasta), 294 (`nat-c2`: o cookie é declarado uma vez, com tipo — `Cookie<SessionId>("session", httpOnly: true, …)` —, lido com `use cookie(decl)` → `?T` e gravado com `use setCookie`), 295 (`nat-c4`: estado do request como átomos, no estilo do Recoil — `pub val currentUser = Local<User>()`, `use local(currentUser)`, `use setLocal(currentUser)`; middleware, handler e action viram `@Component<RequestBase, Response>`), 296 (`cardume`: lib própria de estado compartilhado, o Recoil do botopink — átomo, selector, família, transação; pontes `rakun-cardume` e `jhonstart-cardume`), 297 (um parâmetro `comptime` aceita valor ou tipo — `Atom<T> | type T` —: `use atomState(currentUser)`, `use atomState<?User>(currentUser)` e `use atomState(User)`, o átomo implícito do tipo), 298 (`nat-c5`: o meta de decorator é um valor tipado indexado pelo tipo — `decl.setMeta(Entity(…))`, lido `@typeInfo(City).meta(Entity)` → `?Entity`; `addMeta` / `metaAll` para o que se repete), 299 (`nat-c6`: a configuração do rakun é um record tipado por prefixo — `#[config("rakun.data")] type DataConfig(…)` —, nome exato do campo, erro no boot com a linha; a 03r-b é revertida), 300 (`nat-c7`: o tema do emilia continua no formato do CSS, mas tipado — `entry(.Breakpoint, "md", Rem(40.0))`, `clear(.Breakpoint, "lg")` — e declarado uma vez com `#[theme] pub val appTheme = comptime extendTheme(…)`; usar um breakpoint apagado é erro de compilação). Com isso a `nat-c` inteira foi respondida (293, 294, 295, 298, 299, 300). 301 (o emilia entra no markup como anotação de tag — `<h1 #[styled(.Text.Bold, …)]>` —, tokens em comptime, classe e regra calculadas no build quando o hash for do std), 302 (anotação de tag e decorator de declaração são a mesma coisa: `fn nome(comptime decl: @Decl, …)`, sem retorno, agindo pelo `decl` — na tag, gravando meta tipado que o `html` lê pelo tipo). 303 (`nat-d1`: a action devolve `@Result<T, ActionError>` dos dois lados — `return v` / `throw e`, lido com `case` — `Ok(…)` / `Error(…)` —; o `ActionOutcome` sai; `Input(fields)` é um caso do `ActionError`; o `{data, error}` fica só no JSON do protocolo). 304 (`nat-d2`: as stores têm uma API só, `@Result<T, StoreError>` — `query`, `update`, o repositório do ORM e as stores NoSQL —; os gêmeos `try*` e o raise saem; o handler pode devolver `@Result<Response, E>` e o rakun-web responde o `Error`; `@panic` só para erro de programação; o `throw SoapFault` da SOAP já estava certo). 305 (`nat-g`: as anotações do compilador falam botopink — `keyed: true`, `inline: true`, o formatter imprime `:` e o `=` vira erro —; o `@External` troca as strings com prefixo por argumentos tipados: `fn: tanBody` é referência, `op: "f64.sqrt"` é o nome do opcode do wasm, `wasi: .RandomF64` é enum; a string sem rótulo continua sendo código do host). 306 (`nat-d3`: o tipo é o único schema e o `#[schema]` vira `#[validated]` — um decorator só, que valida e faz o parse —; o `Schema<T>`, os combinadores `schemas.*` e os `checks.*` saem da API pública e ficam internos; o que só o valor dizia vira marcador de campo — `#[each(email)]`, `#[codec(decode: …, encode: …)]`, `#[map]`, `#[preprocess]`, `#[validated(transparent)]` —; outra lib recebe o tipo: `collection(BlogPost)`; com isso a `nat-d4` cai — as famílias `union2…5` / `tuple2…5` saem junto com a forma valor, e união e tupla são tipos). 307 (`nat-d5`: tipo derivado é uma função de tempo de compilação que devolve um tipo novo, guardado num `val`; as cinco são métodos estáticos de um tipo `Type` da std — `pub val RecipeTitle = Type.pick(Recipe, .title);`, `Type.partial`, `Type.omit`, `Type.merge`, `Type.required` —; o tipo tem o nome do `val`, aceita decorator e herda os marcadores; os marcadores `#[pick]`, `#[omit]`, `#[partial]`, `#[extending]` da validation saem). 308 (o `Field<T>` vai para dentro do `Type` da std — `Type.Field<Recipe>` —, e `Type.keys(Recipe)` devolve esse mesmo tipo; ele também vale em runtime: `case key { .title -> … }` exaustivo, `key.name`, `RecipeKey.of("title")`, `RecipeKey.all()`). 309 (`pkg-b`: dentro do pacote, um módulo dele se importa sempre pelo caminho, sem `from` — `from "std"` dentro do próprio `std` é `module-import-with-from`, como a 206; as três fontes do std migram no commit que acrescenta a recusa). 310 (`imp-a`: dois tipos de mesmo nome de módulos diferentes podem ser importados com alias — `import {m1.T as A}; import {m2.T as B};` —, a 170 vale para tipos como para valores; os backends qualificam o tipo pelo módulo no código gerado; até lá a recusa fica como linha do `language-gaps.md`). A 245 e a 251 foram registradas cedo demais e retiradas.
+registro de beans em comptime no ponto de entrada), 257 (`Schema<T>` na `validation`), 258 (`--lib` múltiplo), 259–263 (`pow` da glibc, `contentHash` por code point, heap do wasm crescendo, `String.fromCodepoint`, `std/math` igual em todo sistema), 264 (estouro de inteiro é erro em todo target), 265 (orçamento do gate frio em 7m30s nesta versão; os 5 min ficam para a próxima), 266 (`comptime` avaliado em compilação em todo lugar, registro içado), 267 (parâmetro variádico `..values: T[]`; `@print` declarado com ele), 268 (tipo builtin `Decorator` no `with:` do `@TypeInfo.all`), 269 (`@getContext(T)` é hook, chamado atrás de `use`), 270 (o prelúdio do `.bpp`: o `src/prelude.bp` do pacote, só imports do próprio pacote, importado só quando usado; o cabeçalho vence), 271 (`ctr-a`: não existe `islandKeyEnv`; a chave da island é sempre `ONZE_KEY`; as chaves da 124 são `trailingSlash`, `redirects`, `markdown`, `islands`), 272 (`08-e2` e `ctr-b`: os modos das props da server island são só `"sealed"`, o padrão, ou `"server"` — nenhum expõe as props), 273 (`ctr-c`: um route handler nunca é exportado no build; `app/rss.xml/route.bp` é servido a cada request — a 222 fica inteira), 274 (`03r-ad` e `ctr-d`: o Pulsar não vira membro — fica em `rakun-messaging/src/pulsar/`; o plano de dados é recusado no boot e adiado), 275 (`bpp-f` e `ctr-e`: o `.bpp` devolve o `R` do `@ExprCustom<R>` que o `html` declara — no jhonstart, sempre `@Component<ElementBase, Element>`, com ou sem `use`/`await`; todo `.bp` que devolve `html """…"""` também passa a declarar esse retorno), 276 (`View`: alias de `@Component<ElementBase, Element>` no `element.bp` do jhonstart — o mesmo tipo com nome curto; o `.bpp` desdobra em `-> View`), 277 (`hooks-a`: o `@Decl` lista todos os nós alcançáveis — cada função com os seus `use` e as suas chamadas —, e cada anotação carrega o seu `Decorator`; o jhonstart decide pré-renderizada/por request e valida `#[client]` comparando com os próprios decorators), 278 (diretivas do Astro viram anotações dentro da tag — `#[clientVisible("200px")]`; `#[clientOnly]` é uma função só, para hook e tag; o `html` age pelo tipo de retorno), 279 → 286 (as duas formas valem, `#[a]` `#[b]` e `#[a, b]`; o formatter mantém como foi escrito), 280 (argumento de decorator tipado e `comptime`, `@Decl<T>`, `Field<T>` e `.campo` com o nome exato), 281 (nenhum identificador de código como string), 282 (o papel de uma função vai no decorator, nunca no nome do export), 283 (segundo modelo: caso a caso, `nat-d1`…`nat-d9`), 284 (JSON: `botopink.json` o mais limpo possível, caso a caso; `"bpp"` obrigatório), 285 (o compilador só conhece o `"bpp"`, o `html` e o prelude; o papel do arquivo é da tabela de rotas do framework; o `bppKinds` sai), 287 (`ctr-aa`: o fallback de uma ilha é argumento da anotação — `#[serverDefer(fallback: …)]`, `#[clientOnly(fallback: …)]` —, fixo em comptime), 288 (`ctr-f`: um `.bpp` é o `pub default fn` do módulo com o nome exato do arquivo, devolvendo `View`; importado `import {components.card};` — a 213 emenda a 198 e a 199), 289 (`ctr-g`, `ctr-t`: a função default pode ser anônima — `pub default fn (…)` — ou marcada depois — `pub default Tree;`; quem importa dá o nome; o `page.bpp` pode importar e escrever `#[page(…)]` sem colidir), 290 (`ctr-x`: sem configuração de segmento — `dynamic` e `fetchCache` saem; `revalidate` e `dynamicParams` são argumentos do `#[page]`), 291 (`ctr-y`: `use request()` para ler e `use response()` para escrever — `res.status(404)`, `res.header(…)` —; header fixo de página S em `#[page(headers: …)]`; sem `isPrerendered()`), 292 (`ctr-z`: `<a #[reload]>`, `<a #[history(.Replace)]>`; os eventos de navegação são hooks — `use onBeforeSwap(…)` —; o `<Script>` tem enum próprio, `strategy={.LazyOnload}`), 293 (`nat-c1`, `nat-c3`, `bpp-g`: a página lê a rota por hook — `use params<BlogParams>()`, `use pageData<Post>()` —, sem parâmetro; o `#[page]` confere os campos contra a pasta), 294 (`nat-c2`: o cookie é declarado uma vez, com tipo — `Cookie<SessionId>("session", httpOnly: true, …)` —, lido com `use cookie(decl)` → `?T` e gravado com `use setCookie`), 295 (`nat-c4`: estado do request como átomos, no estilo do Recoil — `pub val currentUser = Local<User>()`, `use local(currentUser)`, `use setLocal(currentUser)`; middleware, handler e action viram `@Component<RequestBase, Response>`), 296 (`cardume`: lib própria de estado compartilhado, o Recoil do botopink — átomo, selector, família, transação; pontes `rakun-cardume` e `jhonstart-cardume`), 297 (um parâmetro `comptime` aceita valor ou tipo — `Atom<T> | type T` —: `use atomState(currentUser)`, `use atomState<?User>(currentUser)` e `use atomState(User)`, o átomo implícito do tipo), 298 (`nat-c5`: o meta de decorator é um valor tipado indexado pelo tipo — `decl.setMeta(Entity(…))`, lido `@typeInfo(City).meta(Entity)` → `?Entity`; `addMeta` / `metaAll` para o que se repete), 299 (`nat-c6`: a configuração do rakun é um record tipado por prefixo — `#[config("rakun.data")] type DataConfig(…)` —, nome exato do campo, erro no boot com a linha; a 03r-b é revertida), 300 (`nat-c7`: o tema do emilia continua no formato do CSS, mas tipado — `entry(.Breakpoint, "md", Rem(40.0))`, `clear(.Breakpoint, "lg")` — e declarado uma vez com `#[theme] pub val appTheme = comptime extendTheme(…)`; usar um breakpoint apagado é erro de compilação). Com isso a `nat-c` inteira foi respondida (293, 294, 295, 298, 299, 300). 301 (o emilia entra no markup como anotação de tag — `<h1 #[styled(.Text.Bold, …)]>` —, tokens em comptime, classe e regra calculadas no build quando o hash for do std), 302 (anotação de tag e decorator de declaração são a mesma coisa: `fn nome(comptime decl: @Decl, …)`, sem retorno, agindo pelo `decl` — na tag, gravando meta tipado que o `html` lê pelo tipo). 303 (`nat-d1`: a action devolve `@Result<T, ActionError>` dos dois lados — `return v` / `throw e`, lido com `case` — `Ok(…)` / `Error(…)` —; o `ActionOutcome` sai; `Input(fields)` é um caso do `ActionError`; o `{data, error}` fica só no JSON do protocolo). 304 (`nat-d2`: as stores têm uma API só, `@Result<T, StoreError>` — `query`, `update`, o repositório do ORM e as stores NoSQL —; os gêmeos `try*` e o raise saem; o handler pode devolver `@Result<Response, E>` e o rakun-web responde o `Error`; `@panic` só para erro de programação; o `throw SoapFault` da SOAP já estava certo). 305 (`nat-g`: as anotações do compilador falam botopink — `keyed: true`, `inline: true`, o formatter imprime `:` e o `=` vira erro —; o `@External` troca as strings com prefixo por argumentos tipados: `fn: tanBody` é referência, `op: "f64.sqrt"` é o nome do opcode do wasm, `wasi: .RandomF64` é enum; a string sem rótulo continua sendo código do host). 306 (`nat-d3`: o tipo é o único schema e o `#[schema]` vira `#[validated]` — um decorator só, que valida e faz o parse —; o `Schema<T>`, os combinadores `schemas.*` e os `checks.*` saem da API pública e ficam internos; o que só o valor dizia vira marcador de campo — `#[each(email)]`, `#[codec(decode: …, encode: …)]`, `#[map]`, `#[preprocess]`, `#[validated(transparent)]` —; outra lib recebe o tipo: `collection(BlogPost)`; com isso a `nat-d4` cai — as famílias `union2…5` / `tuple2…5` saem junto com a forma valor, e união e tupla são tipos). 307 (`nat-d5`: tipo derivado é uma função de tempo de compilação que devolve um tipo novo, guardado num `val`; as cinco são métodos estáticos de um tipo `Type` da std — `pub val RecipeTitle = Type.pick(Recipe, .title);`, `Type.partial`, `Type.omit`, `Type.merge`, `Type.required` —; o tipo tem o nome do `val`, aceita decorator e herda os marcadores; os marcadores `#[pick]`, `#[omit]`, `#[partial]`, `#[extending]` da validation saem). 308 (o `Field<T>` vai para dentro do `Type` da std — `Type.Field<Recipe>` —, e `Type.keys(Recipe)` devolve esse mesmo tipo; ele também vale em runtime: `case key { .title -> … }` exaustivo, `key.name`, `RecipeKey.of("title")`, `RecipeKey.all()`). 309 (`pkg-b`: dentro do pacote, um módulo dele se importa sempre pelo caminho, sem `from` — `from "std"` dentro do próprio `std` é `module-import-with-from`, como a 206; as três fontes do std migram no commit que acrescenta a recusa). 310 (`imp-a`: dois tipos de mesmo nome de módulos diferentes podem ser importados com alias — `import {m1.T as A}; import {m2.T as B};` —, a 170 vale para tipos como para valores; os backends qualificam o tipo pelo módulo no código gerado; até lá a recusa fica como linha do `language-gaps.md`). 311–313 (`lg2-r`: num `type`, método sem corpo continua só binding host; a anotação de template `#[f "…"]` — o literal capturado como `@Expr`, os `${…}` resolvidos nos parâmetros do método; o erika consulta banco também, como o LINQ — `from User` nomeia o tipo importado, buracos viram parâmetros, `limit 1` conferido contra `?T`; repositório é `#[repository] behavior` com `#[erika "…"]` ou a query nativa `#[nativeQuery("… :id …")]` em string comum; o `#[query]` sai). Abertas junto: `erk-a`, `erk-b`, `erk-c`. A 245 e a 251 foram registradas cedo demais e retiradas.
 
 > **Reordenado em 2026-10-08.** O arquivo foi reordenado pelo que trava as trilhas 00–03: as 49
 > perguntas, contradições e confirmações que travam um passo de `00-gate`, `01-compiler`,
@@ -102,40 +102,7 @@ Nenhuma pergunta aberta trava a `00-gate/114`: os passos 3, 5, 6, 7 e 8 não esp
 
 ### Trilha `01-compiler`
 
-30 itens: 4 com thread esperando (⏳), depois do que libera mais para o que libera menos.
-
-### lg2-r · Corpo fornecido por um decorator para um método declarado
-
-**Trava:** `01-compiler/01-checker`, linhas do parser: a linha da lg2-r vira passo quando respondida; fora de 00–03: rakun 08, 09, 78 · ⏳ thread do 01-checker rodando as linhas do parser
-
-**Contexto.** Um método sem corpo (`declare fn`) num `type` é só a forma de método host: sem
-`#[@External.<Target>]`, ele é recusado em toda chamada, em todo target
-(`run/bodyless_method_without_binding`). Nenhum decorator pode fornecer o corpo — o rakun-data queria
-isso para `#[query]`, como os repositórios do Spring Data. Hoje o decorator acrescenta um membro ao
-tipo dono (216 (1)) e o método chama esse membro. Pela 304, um método de repositório responde
-`@Result<T, StoreError>`.
-
-**Hoje:**
-```bp
-type Users { #[query("select * from users where id = $1")] declare fn find(self: Self, id: i32) -> @Result<?User, StoreError>; }
-users.find(1);                            // error: run/bodyless_method_without_binding, na chamada
-```
-
-- [ ] **(1)** Método sem corpo é só binding host; o decorator acrescenta um membro e o método tem corpo.
-  ```bp
-  type Users {
-      #[query("select * from users where id = $1")]
-      fn find(self: Self, id: i32) -> @Result<?User, StoreError> { return self.findQuery(id); }   // membro do #[query] (216)
-  }
-  ```
-- [ ] **(2)** O decorator fornece o corpo: a declaração basta.
-  ```bp
-  type Users { #[query("select * from users where id = $1")] declare fn find(self: Self, id: i32) -> @Result<?User, StoreError>; }
-  users.find(1);                          // compila; o corpo veio do #[query]
-  ```
-
-**Recomendação: (1).** É o que a recusa de hoje já impõe (`run/bodyless_method_without_binding`).
-**Bloqueia:** a linha; rakun 08, 09, 78.
+29 itens: 3 com thread esperando (⏳), depois do que libera mais para o que libera menos.
 
 ### lg2-t · Folha de enum numérica negativa
 
@@ -2135,6 +2102,110 @@ Cada uma abre uma frente, um passo ou uma onda.
 Na Prioridade 1, porque travam 00–03: `130-b`, `130-c`, `134-d`, `17-b`, `17-c` (01),
 `std-d`, `08-f` (02), `07-j`, `atm-a` (03).
 
+### erk-a · A fonte de uma consulta `erika "…"` no corpo de um método *(proposta)*
+
+**Trava:** `04-rakun/137` passo 2 (a forma no corpo) · a célula da forma no corpo do passo 7 da rakun 08
+
+**Contexto.** Pela 312, `from User` nomeia o tipo, e a fonte de banco é quem implementa o `QuerySource<T>`
+do erika (a `Table<T>` do rakun-data). Num `#[repository]` a fonte é do `Users.Sql(db)` gerado (313).
+No corpo de um método de `type`, nada na consulta diz qual valor é a fonte.
+
+**Hoje:**
+```bp
+type Report(users: Table<User>) {
+    fn active(self: Self) -> @Result<User[], StoreError> {
+        return erika "select * from User where active = true";   // qual Table<User>?
+    }
+}
+```
+
+- [ ] **(a)** A fonte é um buraco; `from User` fica para a memória e a anotação.
+  ```bp
+  return erika "select * from ${self.users} where active = true";   // o tipo da linha vem de Table<User>
+  ```
+- [ ] **(b)** `from User` em todo lugar; no corpo, a fonte é o único campo de `self` do tipo `Table<User>` —
+  nenhum ou dois é erro na consulta (por tipo, como o container do rakun injeta).
+  ```bp
+  type Report(users: Table<User>) { … return erika "select * from User where active = true"; … }   // ok: self.users
+  type Two(a: Table<User>, b: Table<User>) { … erika "select * from User" … }   // error: dois Table<User> em self
+  ```
+- [ ] **(c)** As duas: a (b), e a (a) quando há dois campos do mesmo tipo de tabela.
+
+**Recomendação: (b).** Uma grafia só do `from`, em todo lugar; a fonte achada pelo tipo, nunca por nome.
+**Bloqueia:** `04-rakun/137` passo 2 (forma no corpo); a célula da forma no corpo na rakun 08 passo 7.
+
+### erk-c · Quem é dono da forma `behavior` do `#[repository]` *(proposta)*
+
+**Trava:** a primeira caixa do passo 7 da rakun 08 · a reescrita do core na 130 passo 5
+
+**Contexto.** Hoje o `#[repository]` é o estereótipo de injeção do core do rakun, num `type`
+(`modules/rakun/src/decorators.bp:124`: registro no scan, `<T>.make()`), num arquivo congelado (só a 130
+escreve nele). A 313 põe o `#[repository]` num `behavior` para gerar o `Users.Sql(db)` a partir do meta de
+consulta dos métodos — trabalho de SQL que o core não pode nomear (185: o rakun-data depende do rakun,
+nunca o contrário).
+
+**Hoje:**
+```bp
+#[repository]
+type CityRepo(sql: SqlTemplate) { … }        // core: estereótipo de injeção
+```
+
+- [ ] **(a)** Um `#[repository]` só, o do core: num `type` continua o estereótipo; num `behavior` lê o meta
+  tipado dos métodos e pede a implementação a um `behavior RepositoryBackend` que o core declara e o
+  rakun-data implementa (o core não nomeia SQL).
+  ```bp
+  #[repository] type CityRepo(sql: SqlTemplate) { … }          // como hoje
+  #[repository] behavior Users { #[erika "…"] fn find(…) -> …; }  // core lê o meta; rakun-data gera Users.Sql
+  ```
+- [ ] **(b)** Duas funções com o mesmo nome: a do core para `type`, a do rakun-data para `behavior`; o módulo
+  importa a que usa (as duas: alias, 170).
+  ```bp
+  import {repository} from "rakun-data";
+  ```
+- [ ] **(c)** A forma do rakun-data ganha nome próprio, `#[sqlRepository]`; o `#[repository]` do core não muda.
+  ```bp
+  #[sqlRepository] behavior Users { … }
+  ```
+
+**Recomendação: (a).** Um nome, um sentido para quem lê — "um repositório" —, e o core livre de SQL por uma
+interface (185). **Bloqueia:** a primeira caixa do passo 7 da rakun 08; a reescrita do core na 130 passo 5.
+
+### erk-b · O `#[documentQuery]` depois da 313 *(proposta)*
+
+**Trava:** `04-rakun/09` passo 4
+
+**Contexto.** No passo 4 da 09, o `#[documentQuery("…")]` segue a forma do `#[query]`: um membro do tipo
+repositório que devolve o template. A 313 apagou essa forma para SQL: repositório é `#[repository] behavior`,
+com `#[erika "…"]` ou `#[nativeQuery("…")]` nos métodos. A gramática do erika é SQL; o filtro de um
+document store é JSON (`$in`, `$gt`, …).
+
+**Hoje:**
+```bp
+type Orders(store: DocumentStore) {
+    #[documentQuery("{\"status\": :status}")]                // gera Orders.byStatusQuery()
+    fn byStatus(self: Self, status: string) -> … { … }
+}
+```
+
+- [ ] **(a)** A mesma forma da 313: `#[repository] behavior`, com `#[documentQuery("…")]` nos métodos — string
+  comum entregue ao store como o `#[nativeQuery]` entrega SQL ao driver (`:nome` casado com os parâmetros,
+  escapado pelo `bind`).
+  ```bp
+  #[repository]
+  behavior Orders {
+      #[documentQuery("{\"status\": :status}")]
+      fn byStatus(self: Self, status: string) -> @Result<Order[], StoreError>;
+  }
+  ```
+- [ ] **(b)** O erika ganha um destino de documento: o mesmo `select … where …` vira o filtro do store.
+  ```bp
+  #[erika "select * from Order where status = ${status}"]
+  ```
+- [ ] **(c)** Como está: um membro do tipo.
+
+**Recomendação: (a)** agora — uma forma só de repositório para todo store; (b) quando uma necessidade
+medida pedir. **Bloqueia:** 09 passo 4.
+
 ### 08-d · Quem faz o escopo do CSS
 
 **Contexto.** Um `<style>` dentro de um componente `.bpp` deve valer só para aquele componente (como no
@@ -2664,7 +2735,7 @@ receber atualização do servidor. Aqui ainda não existe nenhum.
 Regras para o próximo caso, confirmações e recursos de linguagem que ficam de fora por padrão.
 
 Na Prioridade 1, porque travam um passo de 01/02: `110-a`, `95-f` e as `lg2-a`, `lg2-e`, `lg2-j`,
-`lg2-m`, `lg2-o`, `lg2-q`, `lg2-r`, `lg2-t`, `lg2-v`, `lg2-w`.
+`lg2-m`, `lg2-o`, `lg2-q`, `lg2-t`, `lg2-v`, `lg2-w`.
 
 ### own-a · Quem é dono dos scripts de teste *(proposta)*
 

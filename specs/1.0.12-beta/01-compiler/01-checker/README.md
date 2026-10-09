@@ -2,9 +2,9 @@
 
 **Priority:** high · **State:** partial: steps 1–9, 11, 12, 14–17, 19, 20 on feat; step 18 built on
 feat (botopink-lang `49455602` merges `19d59508`, `6185db3c`) with one box open; step 6 box 3, steps
-10, 13, 21–28 and ten rows open
+10, 13, 21–29 and ten rows open
 **Depends on:** `04-js` step 6 (step 6 box 3) · `16-formatter` step 8 (step 10) · `05-wasm` nested
-constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated rows lg2-a, lg2-q, lg2-e, lg2-m, lg2-r, lg2-t — each a step here only once
+constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated rows lg2-a, lg2-q, lg2-e, lg2-m, lg2-t — each a step here only once
 answered.
 **Owns:** `modules/compiler-core/src/comptime/{infer,types,unify,env,transform,eval,error,diagnostics}.zig`
 · `src/parser/**`, `src/parser.zig`, `src/print.zig`, `src/lexer.zig`, `src/lexer/**` · `src/ast.zig`
@@ -262,6 +262,31 @@ step 2) and the resolver keys on that declaration.
 - [ ] a `Type.Field<T>` at run time: stored, passed, compared; `case key { .title -> … }` exhaustive over
       `T`'s fields (a field added to `T` makes a `case` without it an error); `key.name`, `Key.of(text) ->
       ?Key`, `Key.all()` in declaration order — `run/field_key_runtime` on the four targets
+
+### Step 29 — the template annotation `#[f "…"]` (decision 311)
+
+`#[erika "select * from User where id = ${id} limit 1"]` on a method is a parse error today: an
+annotation is `#[name]` or `#[name(args)]`, and its arguments are comptime values (280), so a hole
+naming a parameter cannot be written. After, the template call `f "…"` may be written as an annotation.
+
+- [ ] parser: `#[f "…"]` and `#[f """…"""]` (also inside a `#[a, b]` list) — a node of its own beside
+      the call form, printed as written (`16-formatter` step 9 gains the cell)
+- [ ] checker: `f` resolves to a template function (first parameter `comptime q: @Expr<…>`); any other
+      function is a located error at the annotation; `#[f(…)]` naming a template function is a located
+      error naming `#[f "…"]`
+- [ ] the literal is captured unevaluated, as at a call site; a `${…}` hole resolves in the annotated
+      declaration's scope — on a method its parameters, by name and type (an unknown name is the
+      ordinary unbound-name error at the hole) —; other names in the module's scope (112)
+- [ ] the template function receives the annotated declaration's `@Decl` beside `q` (spelling decided
+      here and recorded in `docs.md` § Decorators); a method's own `@Decl` carries `params` — closes
+      `language-gaps.md`'s row "A method's own `@Decl` has no parameter list" (280)
+- [ ] what the function produces goes to 216's four places, as a decorator's (typed meta, 298, for
+      erika's query)
+- [ ] `run/template_annotation` (a method annotation whose meta a type-level decorator reads) on the
+      four targets; `reject/` cells for `#[f(…)]` on a template function, a non-template `#[f "…"]` and an
+      unknown hole name
+- [ ] `docs.md` § Decorators and § Template functions document the form; `comptime/AGENTS.md` states
+      how the literal and the `@Decl` reach the body
 
 ### Rows other fronts found
 

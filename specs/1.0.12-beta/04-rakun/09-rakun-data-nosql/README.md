@@ -60,7 +60,9 @@ answer a count. Under decision 304 every method answers `@Result<…, StoreError
 - A configured driver whose module cannot load fails the boot naming it — never an ETS fallback.
 - ETS / Mnesia filter dialect exact: flat JSON object of equality pairs with `$in`, `$gt`, `$lt`,
   `$exists`; anything else fails naming the operator.
-- `#[documentQuery("…")]` follows `#[query]`'s post-130 shape (decision 216): writes a member of the
+- `#[documentQuery("…")]` — **open: `erk-b`** (313 deleted `#[query]`'s shape for SQL; recommended: the same
+  `#[repository] behavior` shape, the string handed to the store as `#[nativeQuery]` hands SQL). Until answered it
+  follows `#[query]`'s post-130 shape (decision 216): writes a member of the
   annotated repository type answering the template verbatim (as `#[query]` writes
   `<Repo>.<m>Sql()`), registers it in 08's statement inventory as `#[query]` does (load-time
   registration today, the boot's `@TypeInfo.all` catalogue once 130 lands);
@@ -104,7 +106,7 @@ No cell env-gated or *skipped*; refusal cells are green, asserting the refusal t
 - [ ] a 4xx from the double answers an `Error` carrying the double's error body, not a generic message
 - [ ] no third-party OTP application required (manifest and sidecar list prove it)
 
-### Step 4 — `#[documentQuery]`
+### Step 4 — `#[documentQuery]` (its shape: `erk-b`)
 
 - [ ] writes the repository member answering the template verbatim (named as `#[query]`'s) and registers it
 - [ ] empty template, and one with unbalanced braces, each fail the build with a located message (`test/nosql/query_build_test.bp` over a scratch project under `BOTOPINK_TEST_TMPDIR`)
