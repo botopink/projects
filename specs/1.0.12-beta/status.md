@@ -12,7 +12,8 @@
 | `02-std-and-packaging` | — | 97 | 98 |
 | `03-bundled-libs` | — | 102 · 103 · 104 · 106 · 125 | 105 · 107 |
 | `04-rakun` | — | 13 · 92 | the other 18 |
-| `05-jhonstart` · `06-emilia` · `07-onze` · `08-bpp` · `09-cardume` · `20-snap` | — | — | all (3 · 2 · 5 · 11 · 1 · 1) |
+| `06-emilia` | — | 33 | 34 |
+| `05-jhonstart` · `07-onze` · `08-bpp` · `09-cardume` · `20-snap` | — | — | all (3 · 5 · 11 · 1 · 1) |
 
 **Gate:** `scripts/gate.sh --cold` green on botopink-lang `576c8d17` (batch 3: every stage; test-libs
 123 passed, 0 failed; language tests 2431 passed, 0 failed) — 7m54s wall against the 7m30s budget
@@ -30,7 +31,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [x] 114 s6 box 2 — vscode-extension's workflow green on `feat` (`f041865`)
 - [ ] 114 s7 — a cold gate recorded on the current tip, ≤ 450 s, exit-check counts re-derived · a machine with `zig` and `erl`
 - [x] 114 s8 boxes 1–2 — 133's emitted modules byte-identical, measured; rakun's `test.yml` glibc comment says 2.35
-- [ ] 114 s8 box 3 — emilia `test.yml`'s jhonstart checkout removed · 06-emilia/33 s2
+- [x] 114 s8 box 3 — emilia `test.yml`'s jhonstart checkout removed (its own emilia patch, after 06-emilia/33 s2)
 - [x] 114 — the four other libraries' `test.yml` stale glibc 2.38 comment says 2.35 (emilia `b3d877e`, erika `44aef93`, jhonstart `0ba3c55`, onze `d6664c8`)
 - [ ] 01-compiler — `codegen/AGENTS.md:306` says "node 20"; CI installs Node 22 since `6d95d8fc` · none
 - [ ] 01-checker s6 box 3 — `throw` in a `case` arm under `@Result` · 04 s6
@@ -165,7 +166,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 118 — the template language, tag annotations (278), `prelude.bp`, the node type · none (props-d/e/f hold their boxes; ctr-r closed: 118 goes first, org-3 holds)
 - [ ] 121 s1–2 — Markdown to `Element` in the new member `onze-content` · none
 - [ ] 34 s1–3 — `hashHex` → std and the cross-library comments; the five families; the breakpoint refusal · s2: 05emilia-l confirmed · opens before 118's carve-out (ctr-v / 189, only the record)
-- [ ] 33 s2 — `emilia-card` emilia-only, the fifteen example READMEs (s1, s3, s4 are 135's) · none (ctr-v / 189, only the record)
+- [x] 33 s2 — `emilia-card` emilia-only, the fifteen example READMEs (s1, s3, s4 are 135's)
 - [ ] 49 s1 · s6 — consume std's `Json` accessors in `config.bp`; the `onze-test` group stubs · none — not beside 102 s3's onze commits (188)
 - [ ] 50 s1 — consume std in `onze-cli` / `onze-bundler` · none — not beside 102 s3's `scan.bp` / `chunk.bp` commits (188)
 - [ ] 51 s1 — consume std (`fn intOf` in `svg.bp`, `metrics.bp`) · none

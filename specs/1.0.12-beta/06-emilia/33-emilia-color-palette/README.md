@@ -2,7 +2,7 @@
 
 **Priority:** medium — `emilia-card` violates decision 114 on disk; `emilia-test`'s helpers
 (mandatory, `02-packaging` § 5) and the snapshot layer are `20-snap`'s ·
-**State:** not started — step 2 open now; steps 1, 3, 4 → 20-snap
+**State:** step 2 done; steps 1, 3, 4 → 20-snap
 **Depends on:** step 2: nothing (`08-bpp/118`'s carve-out here is one comment,
 `emilia-card/src/main.bp:5`, rewritten by step 2 anyway) · `02-std-and-packaging/98` reads the
 README count — not a dependency
@@ -28,6 +28,19 @@ four; the rest have no open item) · `.github/workflows/test.yml` (`00-gate`) ·
 `emilia-card` prints what `emilia(tokens)` and `flush()` answer for the same three token lists, no
 `Element`.
 
+## Done
+
+Step 2 `examples/emilia-card` depends on `emilia` only (`botopink.json`'s `dependencies` and
+`description` name no other library; `src/main.bp` imports `emilia`, `flush`, `Token` and nothing
+else) and prints the three class names and the flushed document; 4 tests pin the three names as
+literals (`e_486b0b4f`, `e_b63a108`, `e_74f3ae56`), the repeat collapse, the utilities layer as one
+literal and a second `flush()` holding no rule — `botopink test` 4 passed, 0 failed on commonJS and on
+erlang, `botopink build` exit 0 on both; a planted wrong literal reddens two of them. The output is
+documented in its `README.md`. `find repository/emilia/examples -maxdepth 2 -name README.md | wc -l`
+is 15, each naming the Tailwind section it mirrors (with the upstream pages) and the fronts it
+exercises; `grep -rn "jhonstart\|rakun\|onze" repository/emilia/examples` is empty. Reported to
+`00-gate/114` step 8 box 3, which removed the dead jhonstart checkout from emilia's `test.yml`.
+
 ## Open
 
 ### Step 1 — the helpers
@@ -36,18 +49,8 @@ four; the rest have no open item) · `.github/workflows/test.yml` (`00-gate`) ·
 
 ### Step 2 — `emilia-card` emilia-only, and the fifteen READMEs
 
-- [ ] `examples/emilia-card/botopink.json` lists `emilia` only (`description` names no other
-      library); `src/main.bp` imports nothing from jhonstart; prints the three class names and the
-      flushed sheet, asserted inline on both rows (4 tests or more); output documented in its README
-      (1.0.10's PK-3 "prints what it printed before" superseded)
-- [ ] `find repository/emilia/examples -maxdepth 2 -name README.md | wc -l` is 15; each names the
-      Tailwind section it mirrors and the front(s) it exercises
-- [ ] `grep -rn jhonstart repository/emilia/examples` is empty (this front's scope; `modules/` is
-      34 step 1; `AGENTS.md`, `README.md`, `docs.md`, root `botopink.json` describe the relation,
-      `CHANGELOG.md` is history)
-- [ ] reported to `00-gate/114`: the CI step "Checkout jhonstart (dependency — examples/emilia-card
-      depends on jhonstart)" (`.github/workflows/test.yml:94-99`) is dead once this lands
-- `emilia-card`'s repeat-collapse assert is `20-snap` step 4's, written with this step
+Done (§ Done). `emilia-card`'s repeat-collapse test moves onto `emilia-test`'s helper with `20-snap`
+step 4.
 
 ### Step 3 — the module-level suites
 
