@@ -1,11 +1,11 @@
 {
   "name": "notes",
   "version": "0.0.1",
-  "description": "Front 116 — an application's manifest. `bpp` is the whole configuration of the file kind, an object (decision 338): `default` names the ONE dependency whose `pub default fn` — a template function, jhonstart's `html` (decisions 198, 200) — this project's `.bpp` files unfold onto; `style` (here absent: no file has a style section) would name the dependency whose `pub default fn` a `--- style ---` section unfolds onto. For each file the toolchain copies the header — from the first line to the separator line — into the module as written and hands everything after the separator `---` to that function as its literal; it knows no tag and no library. A `.bpp` file is listed in `files` like any module.",
+  "description": "Front 116 — an application's manifest. `bpp` is the whole configuration of the file kind, one package name (decision 361): the dependency in which the toolchain finds, by std's `bpp` annotations, the template function this project's `.bpp` files unfold onto (`#[bpp.html]`, jhonstart's `html`, decisions 198, 200), the style section's (`#[bpp.style]`) and the two preludes (`#[bpp.htmlPrelude]`, `#[bpp.stylePrelude]`). For each file the toolchain copies the header — from the first line to the separator line — into the module as written and hands everything after the separator `---` to that function as its literal; it knows no tag and no library. A `.bpp` file is listed in `files` like any module.",
   "src": "src/",
   "entry": "root.bp",
   "target": "erlang",
-  "bpp": { "default": "jhonstart" },
+  "bpp": "jhonstart",
   "files": [
     "root.bp",
     "lib/mod.bp",

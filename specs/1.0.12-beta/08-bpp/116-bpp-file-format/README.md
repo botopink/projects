@@ -1,14 +1,14 @@
 # Front 116 — bpp file format: a `.bpp` file is another spelling of a `.bp` module
 
 **Priority:** medium — changes how a page looks, not what it can do; every feature is reachable
-from a `.bp` module (118). · **State:** not started
+from a `.bp` module (118). · **State:** step 1 done (std's `bpp`, the key, the roles; with `01-compiler/130` step 10 box 1, decision 356); steps 0, 2–6 not started
 **Depends on:** `01-compiler/01-checker` step 25 (the anonymous default, 289) · `118-bpp-components` (the literal's template language) · `05-jhonstart/26` step 0
 (merges `jhonstart-html` into the core, `html` its default function, decision 200) ·
 `01-compiler/26-cli-tooling` (owns `compiler-cli/**`, `language-server/**` this milestone; 116
 opens after it) · `01-compiler`'s prelude scope (decision 270) · `119-bpp-styling` step 2
 (the core's `#[style]` function — 361 merged `jhonstart-styled` into the core; step 6's style-section examples only).
 Written against decisions 198, 199, 200, 212, 213, 221, 270, 284, 285, 338.
-**Owns:** `libs/std/src/bpp.bp` (new module, 361; carve-out of `02-std-and-packaging`) · in `repository/botopink-lang`: `modules/manifest/src/root.zig` (one key),
+**Owns:** `libs/std/src/bpp.bp` (new module, 361; carve-out of `02-std-and-packaging`, with its `pub mod bpp;` line in `libs/std/src/root.bp`) · in `repository/botopink-lang`: `modules/manifest/src/root.zig` (one key), `modules/compiler-cli/src/cli/bpp.zig` (the roles) and `build.zig`'s `reportDependencyError` (one arm),
 `modules/compiler-cli/src/cli/{scanner,resolver,libs,format_cmd,migrate}.zig` (extension lists,
 unfold, formatter's view), `modules/lib-test-runner/src/discovery.zig`,
 `modules/language-server/src/{project_index,project_graph,engine}.zig` (extension lists, span
@@ -46,15 +46,15 @@ no library and no syntax.
 
 ## Mechanism
 
-**The application names the packages** (198, 284, 338): `botopink.json` key `"bpp"`, an object.
-`default` (required) names the dependency whose `pub default fn` unfolds the markup (for jhonstart
-`html`, `import html from "jhonstart";`, 200); `style` (optional) names the dependency whose
-`pub default fn` unfolds the style section, required only by a file with one. The string form is
-refused at the key: `error: "bpp" is an object — write "bpp": {"default": "jhonstart"}`.
+**The application names the package** (198, 284, 361): `botopink.json` key `"bpp"`, one package
+name, an entry of `dependencies`. The toolchain finds the four roles in that package by std's `bpp`
+annotations (`libs/std/src/bpp.bp`): `#[bpp.html]` on the template function the markup unfolds onto
+(exactly one), `#[bpp.style]` on the style section's (at most one), `#[bpp.htmlPrelude]` /
+`#[bpp.stylePrelude]` on the marker `val` of each prelude module (at most one each). The object form
+is refused at the key: `error: "bpp" is a package name — write "bpp": "jhonstart"`.
 
 ```json
-{ "name": "notes", "dependencies": { "jhonstart": { … }, "jhonstart-styled": { … }, "onze": { … } },
-  "bpp": { "default": "jhonstart", "style": "jhonstart-styled" } }
+{ "name": "notes", "dependencies": { "jhonstart": { … }, "onze": { … } }, "bpp": "jhonstart" }
 ```
 
 **The file** (212, 338). The header starts on the first line, with no opening `---`, and ends at
@@ -112,9 +112,9 @@ pub default fn (props: Props) -> View {
   `children` (193). Header imports in the language's form (`import {components.card};`,
   `import {x} from "pkg";`); no relative import.
 
-**What the toolchain knows** (285, 338): the package named by `"bpp".default`, its `pub default fn`
-(`html`, the unfold target) and its prelude (270), and the `pub default fn` of the package named by
-`"bpp".style` (the style section's unfold target) — nothing else; it names no library. A file's role
+**What the toolchain knows** (285, 361): the package `"bpp"` names and, in it, the declarations std's
+`bpp` annotations mark — the markup's unfold target, the style section's, and the two preludes —
+nothing else; it names no library. A file's role
 (page, layout, …) is the framework's: the route table `rakun-app` generates from `routing`'s file
 kinds (`04-rakun/22`) calls jhonstart's `page` / `layout` on the unfolded function; the toolchain
 applies no decorator by file name and reads no `bppKinds`. A decorator written on the header's last
@@ -164,10 +164,14 @@ section and the markup unchanged; `format --check` checks the header, passes the
 the markup.
 
 **Refusals (compile time).** `.bpp` with no `bpp` key: error at the file, naming the key. `"bpp"`
-a string: error at the key, naming the object. `"bpp".default` missing, or `default` / `style`
-naming a non-dependency or a package with no `pub default fn` taking `comptime _: @Expr<string>`:
-error at the key. A style section with no `"bpp".style`: error at the section's line. `X.bp` +
-`X.bpp` in one directory: error naming both.
+an object (or any non-string): error at the key, naming the string form. `"bpp"` naming a
+non-dependency: error at the value. `#[bpp.html]` missing or twice, another role twice: error at the
+key, naming the declarations. A role declaration that is not `pub`, and a declaration beside a
+prelude module's imports and marker: error at that declaration. `#[bpp.html]` / `#[bpp.style]` on
+anything but a function answering `@ExprCustom<R>`, a prelude role on anything but a `val`: std's
+decorator refuses it at the annotation. A style section in a project whose package marks no
+`#[bpp.style]`: error at its `--- style ---` line. `X.bp` + `X.bpp` in one directory: error naming
+both.
 
 ## Open
 
@@ -195,16 +199,21 @@ import {bpp} from "std";
 #[bpp.htmlPrelude] pub val prelude = bpp.Prelude();
 ```
 
-- [ ] std's module `bpp` (`libs/std/src/bpp.bp`): `html`, `htmlPrelude`, `style`, `stylePrelude`,
-      `Prelude`; listed in std's `docs.md`; a carve-out of `02-std-and-packaging` (one new file)
-- [ ] `modules/manifest`: `"bpp"` is one package name (`"bpp": "jhonstart"`), a dependency; the object
+- [x] std's module `bpp` (`libs/std/src/bpp.bp`): `html`, `htmlPrelude`, `style`, `stylePrelude`,
+      `Prelude`; listed in std's module table (`docs.md` § std, `libs/std/AGENTS.md`); a carve-out of
+      `02-std-and-packaging` (one new file and its `pub mod` line)
+- [x] `modules/manifest`: `"bpp"` is one package name (`"bpp": "jhonstart"`), a dependency; the object
       form refused at the key: `error: "bpp" is a package name — write "bpp": "jhonstart"`
-- [ ] the roles found in that package by `bpp`'s annotations: `#[html]` exactly once (missing or twice
+- [x] the roles found in that package by `bpp`'s annotations: `#[html]` exactly once (missing or twice
       refused at the key, naming the declarations), `#[style]`, `#[htmlPrelude]`, `#[stylePrelude]` at
       most once; a marker on a prelude module holding other declarations refused at the declaration
-- [ ] the key on a project with no `.bpp` accepted; a `.bpp` with no key refused at the file
-- [ ] a style section in a project whose package has no `#[style]` refused at the section's
+- [x] the key on a project with no `.bpp` accepted; a `.bpp` with no key refused at the file
+- [x] a style section in a project whose package has no `#[style]` refused at the section's
       `--- style ---` line
+- [x] jhonstart: `#[bpp.html]` on `jhonstart-html`'s `html`, `#[bpp.htmlPrelude] pub val prelude =
+      bpp.Prelude();` in the core's `src/prelude.bp`; no style function exists yet (119 step 2), and no
+      manifest in any repository wrote the object form. Until `05-jhonstart/26` step 0 moves `html`
+      into the core, the core marks no `#[bpp.html]` and `"bpp": "jhonstart"` is refused at the key
 
 ### Step 2 — The unfold
 
@@ -281,7 +290,9 @@ import {bpp} from "std";
 
 ## Decisions
 
-None open.
+Open, raised by step 1 (`decisions-pending.md` § 08-bpp): `116-a` (the prelude module's own
+`import {bpp} from "std"` — blocks step 2's prelude box), `116-b ★` (roles checked with no `.bpp`
+file — built as (a)), `116-c ★` (a decorator on a module `var` — refused, built as (a)).
 
 **Gate:** standard (fronts.md § Gate), in `repository/botopink-lang` and `repository/vscode-extension`, plus:
 - [ ] `zig build test-libs`: every library green — no existing `.bp` file changes meaning
