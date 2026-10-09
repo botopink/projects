@@ -3,7 +3,7 @@
 Aprovados pelo mantenedor em 04/10 como os casos de uso da decisão 280; são os alvos do passo 24 do
 `01-checker` (cada exemplo vira uma célula `run/` e as suas recusas, células `reject/`). Partes
 ilustrativas, que não são da 280: a emissão por função (`decl.addMember("validate", fn…)`) não é
-decidida (a `nat-c` fechou em 293–300 sem ela); o meta tipado (`decl.setMeta(Table(…))`) é da 298; `decl.wrapWith` (exemplo 5) é da lg2-c;
+decidida (a `nat-c` fechou em 293–300 sem ela); o meta tipado (`decl.setMeta(Table(…))`) é da 298; `decl.wrapWith` (exemplo 5) é da 316 (`01-checker` passo 30);
 `decl.addToCatalogue()` é a forma do catálogo de 216 (4).
 
 Cada exemplo mostra quatro partes:
@@ -259,7 +259,7 @@ pub fn cacheable<A, T>(
     comptime decl: @Decl<fn(a: A) -> T>,
     comptime cache: Cache<T>,                 // o T do cache tem que ser o T devolvido
 ) {
-    decl.wrapWith(cachedCall(cache))          // ilustrativo — embrulhar o corpo é a lg2-c
+    decl.wrapWith(cachedCall(cache))          // embrulhar a função: decisão 316
 }
 ```
 

@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**63 questions and 11 contradictions are open, and 91 implementation choices await confirmation.**
+**61 questions and 11 contradictions are open, and 91 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290 · `ctr-y` → 291 · `ctr-z` → 292 · `nat-c1`, `nat-c3`, `bpp-g` → 293 · `nat-c2` → 294 · `nat-c4` → 295 · (cardume) → 296, 297 · `nat-c5` → 298 · `nat-c6`, `03r-b` (reversed) → 299 · `nat-c7` → 300 (all of `nat-c` answered) · `nat-d1` → 303 · `nat-d2` → 304 · `nat-g` → 305 · `nat-d3` → 306 · `nat-d4` → 306 (moot: the `union2…5` / `tuple2…5` families go with the public value form; unions and tuples are types) · `nat-d5` → 307 · `pkg-b` → 309 · `imp-a` → 310 · `lg2-r` → 311, 312, 313 · `lg2-t` → 314.
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290 · `ctr-y` → 291 · `ctr-z` → 292 · `nat-c1`, `nat-c3`, `bpp-g` → 293 · `nat-c2` → 294 · `nat-c4` → 295 · (cardume) → 296, 297 · `nat-c5` → 298 · `nat-c6`, `03r-b` (reversed) → 299 · `nat-c7` → 300 (all of `nat-c` answered) · `nat-d1` → 303 · `nat-d2` → 304 · `nat-g` → 305 · `nat-d3` → 306 · `nat-d4` → 306 (moot: the `union2…5` / `tuple2…5` families go with the public value form; unions and tuples are types) · `nat-d5` → 307 · `pkg-b` → 309 · `imp-a` → 310 · `lg2-r` → 311, 312, 313 · `lg2-t` → 314 · `lg2-m` → 315 · `lg2-c` → 316.
 Closed by the 9 Oct revalidation (every item re-checked against 144–308, the fronts and the code): `08-h` → 285, 224 · `08-j` → 295 · `lg2-g` → 281 · `ctr-q` → 281, 256 · `ctr-m` (duplicate of `lg2-s`) · `ctr-n` (170 no longer carries the `from "m1"` example) · `ctr-r` (wrong premise: 118 lands before 26 step 0) · `111-c` → 228 · `03r-b`, `03r-d` → 299 · `95-e` (the collision left the code) · `03r-o` → 290 · `05emilia-h` → 206 · `68-c` → 280, 281. The rest were rewritten where their text or facts had gone stale.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
@@ -72,7 +72,7 @@ No general rule (283): each case below is its own question, (a) the language's o
 
 #### nat-f3 · `files` and `workspaces` in `botopink.json` (98)
 - **Measured.** `files` lists, relative to `src`, the modules a consumer may import; a library without it ships nothing (`docs/botopink-json.md:52`). `workspaces` lists members; a manifest with it is a workspace and refuses `src`, `files`, `entry`, `dependencies` (`:159-170`) — the two never share a file (`98-packaging-tail/README.md:27`). 270 relies on `files` (the prelude `src/prelude.bp` is listed there).
-- **Options.** (a) Both kept — packaging, not code. (b) `files` derived from `pub` modules (an internal module marked in code, `#![internal]`, lg2-m), 270 reworded; `workspaces` kept. (c) Both derived.
+- **Options.** (a) Both kept — packaging, not code. (b) `files` derived from `pub` modules (an internal module marked in code — `#![internal]` has no spelling since 315), 270 reworded; `workspaces` kept. (c) Both derived.
 - **Recommendation.** (a): what ships is a packaging fact, and 270 already relies on it.
 - **Blocks.** 98.
 
@@ -100,12 +100,6 @@ subject under 281. Every decorator parameter in these examples is `comptime` (28
 - **Options.** (1) A Task promises the value, nothing about when its body runs; concurrency = `std/async`'s explicit process per unstarted thunk, documented. (2) A scheduler behind `@Task` on the BEAM (a process per Task, `await` a receive). (3) `spawn` / `join` in the language.
 - **Recommendation.** (1) — the restrictive reading of 1.0.10's 120.
 - **Blocks.** The row; rakun 02, 23, 25, 28, 30, 60.
-
-#### lg2-c · A decorator that rewrites or wraps the body it annotates
-- **Measured.** A decorator reads its declaration as `@Decl` data, answers only decision 216's outputs (members of the annotated type, meta, associated types, catalogue entries); no form returns a replacement body. A free function's decorator has nowhere to put a proxy (`decorator-member-without-type`; module-level `@emit` leaves, 216). rakun's `<Type>Tx` / `<Type>Sec` proxies are injected by type (281). 280's example 5 writes the typed form `decl.wrapWith(cachedCall(cache))`, marked illustrative.
-- **Options.** (1) None: a decorator adds beside its target (a member of the owning type, an associated type, a combinator), never changes what it does. (2) A typed wrapper: `decl.wrapWith(f)`, `f` checked against `@Decl<T>`; never a body as text. (3) Fixed before / after / around hooks the compiler composes.
-- **Recommendation.** (1).
-- **Blocks.** The row; rakun 06, 07, 08, 10, 12, 16, 83; 280's example 5 stays illustrative.
 
 #### lg2-d · A decorator that reads the body it annotates
 - **Measured.** `decl.body` is `{error,{badkey,body}}` at the annotation; the handle carries kind, name, fields, variants, methods, return type, annotations.
@@ -136,12 +130,6 @@ subject under 281. Every decorator parameter in these examples is `comptime` (28
 - **Options.** (1) `noreturn` unifies with nothing: a call to it is a statement ending its path; the signals become `-> noreturn` called as statements (in a page: `fn() -> View`, `use params<P>()`). (2) `noreturn` is the bottom type, fits any position.
 - **Recommendation.** (1).
 - **Blocks.** The row; jhonstart's signals (63, `31-a`); rakun's navigation tests.
-
-#### lg2-m · A module-level annotation
-- **Measured.** `#![useCache]` at a module's top is "this token cannot appear here".
-- **Options.** (1) None: a module-level policy is a module-level `val`. (2) An inner attribute `#![name(…)]` a decorator receives with the module's `@Decl`.
-- **Recommendation.** (1).
-- **Blocks.** The row; rakun 12.
 
 #### lg2-n · A thunk coerced into `Node`
 - **Measured.** `show({ -> "x" })` against `fn show(children: Children)` (`Node` under 223) mismatches.

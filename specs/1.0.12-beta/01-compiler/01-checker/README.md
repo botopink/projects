@@ -2,9 +2,9 @@
 
 **Priority:** high · **State:** partial: steps 1–9, 11, 12, 14–17, 19, 20 on feat; step 18 built on
 feat (botopink-lang `49455602` merges `19d59508`, `6185db3c`) with one box open; step 6 box 3, steps
-10, 13, 21–29 and ten rows open
+10, 13, 21–30 and ten rows open
 **Depends on:** `04-js` step 6 (step 6 box 3) · `16-formatter` step 8 (step 10) · `05-wasm` nested
-constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated rows lg2-a, lg2-q, lg2-e, lg2-m — each a step here only once
+constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated rows lg2-a, lg2-q, lg2-e — each a step here only once
 answered.
 **Owns:** `modules/compiler-core/src/comptime/{infer,types,unify,env,transform,eval,error,diagnostics}.zig`
 · `src/parser/**`, `src/parser.zig`, `src/print.zig`, `src/lexer.zig`, `src/lexer/**` · `src/ast.zig`
@@ -287,6 +287,37 @@ naming a parameter cannot be written. After, the template call `f "…"` may be 
       unknown hole name
 - [ ] `docs.md` § Decorators and § Template functions document the form; `comptime/AGENTS.md` states
       how the literal and the `@Decl` reach the body
+
+### Step 30 — a decorator wraps the function it annotates: `decl.wrapWith(f)` (decision 316)
+
+A decorator answers only 216's four outputs today; a free function's decorator has nowhere to put a
+proxy (`decorator-member-without-type`). After, it may wrap the function, typed:
+
+```bp
+pub fn useCache(comptime decl: @Decl<fn(..) -> string>, comptime ttl: Duration = hours(1)) {
+    decl.wrapWith({ call -> cacheThrough(policyFor(decl, ttl), call.args, { -> call.run() }) });
+}
+
+#[useCache(ttl: minutes(5))]
+pub fn posts() -> string { return loadPosts(); }
+```
+
+- [ ] `decl.wrapWith(f)` in `builtins.d.bp` (with 134): `f` receives the call value (the arguments and
+      running the original body — spelling decided here, recorded in `docs.md` § Decorators) and answers
+      the function's return type; a wrapper whose type does not match the annotated signature
+      (`@Decl<fn(..) -> T>`, 280) is an error at the decorator
+- [ ] the wrapped function keeps its name, signature and identity for callers (a reference to it is
+      the wrapped behaviour); the original body is reachable only through the call value
+- [ ] two or more wrappers compose in annotation order, the first written outermost — one cell
+- [ ] on a method it wraps that method; on a function or method of another module the wrapper runs
+      wherever it is called (the importer sees the wrapped behaviour)
+- [ ] a decorator still reads no body (lg2-d) and writes none as a string (281)
+- [ ] `run/decorator_wraps_function` (a counting wrapper, a cache wrapper, two composed) on the four
+      targets; `reject/` cells for a wrapper of the wrong return type and for `wrapWith` outside a
+      function or method decorator
+- [ ] `01-checker/examples/decorator-arguments-280.md` example 5 runs (no longer illustrative);
+      `language-gaps.md`'s row "A decorator cannot rewrite or wrap the body it annotates" closes once
+      its marker (rakun 15's `publish-reliability-example.bp`) is rewritten
 
 ### Rows other fronts found
 

@@ -38,8 +38,8 @@ the toolchain row "a sidecar cannot reach an external OTP application"; the clos
   the worker settles its held batch before exiting.
 - **`publishWithRetry` (R86-3).** In `reliability/policy.bp`:
   `publishWithRetry(policy, publish: fn() -> i32) -> i32` — policy backoff, dead-letter at the
-  ceiling; `jmsSend` and `templates.bp`'s publish call it when the destination has a policy. Not a
-  wrapping decorator (lg2-c does not block it).
+  ceiling; `jmsSend` and `templates.bp`'s publish call it when the destination has a policy. A
+  `#[retryable]` wrapping decorator over it is possible since 316 (`01-checker` step 30); not this step.
 - **STOMP attempt count (R90-4).** Fixture broker sets `x-attempt` on a NACK's redelivery (a real
   broker preserves headers); the arm reads it, so 86's ceiling applies.
 - **Windows (R89-2/3).** `Window(size, lateness)`, watermark advanced by event time; one emission
@@ -111,4 +111,4 @@ and `publishWithRetry` after this lands; 19 consumes step 1.
   destination; Redis ack-mode `none`), 03r-x (conditional-UPDATE claims, resumed coordinators)
   implemented; confirmation only.
 - Kept for open markers: `examples/order-listeners-example.bp` (lg2-a),
-  `publish-reliability-example.bp` (lg2-c), `jms-listener-example.bp` (lg2-a), `saga-example.bp` (lg2-d).
+  `publish-reliability-example.bp` (316: rewritten once `01-checker` step 30 lands), `jms-listener-example.bp` (lg2-a), `saga-example.bp` (lg2-d).

@@ -16,7 +16,7 @@ cut by file ownership so fronts run in parallel.
 
 | Front | Priority | State | What | Depends on |
 |---|---|---|---|---|
-| [`01-checker/`](./01-checker/README.md) | high | partial: steps 1–9, 11, 12, 14–17, 19, 20 on feat, 18 built with one box open; 6 (box 3), 10, 13, 21, 22, 23 and ten rows open | the checker and parser rows; the hooks in `@Decl` (277); numeric suffixes (247), type application and `comptime <expr>` (255, built), `comptime` at compile time (266), the prelude scope (270), the `@block` tail and `$stringify` refusals; the template annotation `#[f "…"]` (311) | 04 step 6 · 16 step 8 · 05 (step 13) · `08-bpp/116` (the prelude list) |
+| [`01-checker/`](./01-checker/README.md) | high | partial: steps 1–9, 11, 12, 14–17, 19, 20 on feat, 18 built with one box open; 6 (box 3), 10, 13, 21, 22, 23 and ten rows open | the checker and parser rows; the hooks in `@Decl` (277); numeric suffixes (247), type application and `comptime <expr>` (255, built), `comptime` at compile time (266), the prelude scope (270), the `@block` tail and `$stringify` refusals; the template annotation `#[f "…"]` (311); a decorator wrapping its function, `decl.wrapWith` (316) | 04 step 6 · 16 step 8 · 05 (step 13) · `08-bpp/116` (the prelude list) |
 | [`02-erlang/`](./02-erlang/README.md) | high | partial: steps 1–3, 5, 6, 8, 9, 11–13 on feat; 4, 7, 10 open | `run/array_unique`, C-07's `run/` cells, one `math` (263), overflow aborts (264) | 05 · 01 (`@block`) · the std track (263) |
 | [`03-beam/`](./03-beam/README.md) | high | partial: steps 1–8 on feat; 1 (box 3), 2 (box 1), 9 open | 01 step 13's and 02 step 7's cells on beam; 263, 264 in assembly; row 28's `{badfun, ok}` | 01 · 02 · 05 · the std track |
 | [`04-js/`](./04-js/README.md) | medium | partial: steps 3, 4, 5, 7, 8 and C-37 on feat; 1, 2, 6 open | the `@block` tail IIFE, `$stringify` (239), `throw` in a `case` arm, overflow aborts (264) | 01 |
@@ -65,8 +65,8 @@ choices to confirm (16-a/b, 23-b/c, std-c, 24-a/b/c/g, 01c-a/b, 0405-b) in
 (134) · **C-14** (07 step 9) · **16-a, 16-b** (16) · **23-b, 23-c, std-c** (23) · **24-a, 24-b,
 24-c, 24-g** (24) · **01c-a, 01c-b** (01) · **0405-b** (04) · **lg2-a … lg2-w**
 (`lg2-k` answered by 216, `lg2-f`/`lg2-i` by 280, `lg2-g` by 281): none opens a front until
-answered, each then a step — 01 lg2-a/e (only `owner`)/q +
-parser row lg2-m, 14 lg2-j/o/w, 26 lg2-v; `lg2-l` maybe de facto (`@panic` / `@todo`
+answered, each then a step — 01 lg2-a/e (only `owner`)/q,
+14 lg2-j/o/w, 26 lg2-v; `lg2-l` maybe de facto (`@panic` / `@todo`
 `noreturn`, a branch ending in one narrows): maintainer confirms, row closes.
 
 Every recommendation: most restrictive behaviour, nothing configurable bypasses it (decision 67).

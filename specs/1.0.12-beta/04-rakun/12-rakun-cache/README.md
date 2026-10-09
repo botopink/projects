@@ -4,7 +4,8 @@
 asserted only on `DOWN`; onze 51's single flight and 53's revalidation read this member ·
 **State:** not started (premise changed: env-gated cell already deleted)
 **Depends on:** 128 · 19 step 1 (RESP double — decision 160) · 04 step 1 (`rkBumpTag` — decision
-185: plugs into the core's epoch, no edge to `rakun-client`) · 03r-f … 03r-j (confirmations)
+185: plugs into the core's epoch, no edge to `rakun-client`) · 03r-f … 03r-j (confirmations) ·
+`01-checker` step 30 (step 5)
 **Owns:** `modules/rakun-cache/**` · `modules/rakun-session/**` · `repository/rakun/AGENTS.md` § Cache,
 § Session
 **Does not touch:** `rakun-test` (imports `redisDouble*`) · `rakun-client` (13's; only the tag epoch
@@ -25,8 +26,8 @@ assertion complete.
   `rakun-cache`'s provider (`cache.bp` `rkCacheFlight("redis\n" + rkey, …)`, 03r-i).
 - A cell starts `redisDoubleStart(0)` on an ephemeral loopback port, points the arm at
   `redis://127.0.0.1:<port>`, runs the suite, reads `redisDoubleLog(port)`, stops it. Nothing gated.
-- `// LANGUAGE GAP:` markers in `rakun-cache/src/cache.bp` and `test/granularity_test.bp` (lg2-m,
-  file-level `'use cache'`) have their rows; nothing to file.
+- `// LANGUAGE GAP:` markers in `rakun-cache/src/cache.bp` and `test/granularity_test.bp` (file-level
+  `'use cache'`): no module annotation by design (315); the cache is chosen per function (316) — step 5.
 
 ## Open
 
@@ -53,6 +54,21 @@ assertion complete.
 
 - [ ] `#[cacheable(products)]` takes a `Cache<T>` value whose `T` is the function's return (280
       example 5); the cache's own name (`Cache<Product[]>("products")`) stays a string
+
+### Step 5 — the cache chosen per function: `#[useCache]` (decisions 315, 316; after `01-checker` step 30)
+
+- [ ] `#[useCache]` (`src/cache.bp`): a function decorator wrapping the function through
+      `decl.wrapWith` (316) — the cache key from the function and its arguments, the policy from the
+      decorator's typed arguments (`ttl:`, `tags:`, `scope:`; 280), never a string naming code (281)
+- [ ] `#[useCache] pub fn posts() -> string { … }` caches on ETS and on the Redis double; two
+      `#[useCache]` functions of one module keep separate entries; a wrong return type for the policy
+      is an error at the decorator
+- [ ] the module-level form stays (315): `val cached = cacheWith(cachePolicy(…))`; the member README
+      shows both and says there is no module annotation
+- [ ] the two `// LANGUAGE GAP` markers (`src/cache.bp:540`, `test/granularity_test.bp`) rewritten to
+      cite 315/316; their marker-index rows and the row "No module-level annotation" deleted in the
+      same commit (`language-gaps.md`)
+- [ ] 280 example 5's `#[cacheable(products)]` (step 4) wraps through the same mechanism
 
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun-cache` and `modules/rakun-session`; `grep -rn RAKUN_TEST_ modules/rakun-session modules/rakun-cache` empty.

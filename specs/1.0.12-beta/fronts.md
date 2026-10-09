@@ -152,6 +152,7 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 | **11** | 128 · 22 (R11-7) | 71 s3 |
 | **65** | 128 · s1: decision 201 | 49 s4 · 53 · 123 · 104 s5 · 106 s2 |
 | **09** | 19 s1 · 13 · s4: erk-b · s5: 03r-ab | — |
+| **12** s5 | 01-checker s30 | — |
 | **137** | s5: 01-checker s29 · s2 (body form): erk-a | 08 s7 |
 | **91** | 15 · decision 274 | — |
 | **92** | 74 · 15 · s2: 03r-an | 88 |
