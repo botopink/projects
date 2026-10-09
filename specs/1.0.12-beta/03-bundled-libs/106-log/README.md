@@ -1,7 +1,8 @@
 # Front 106 — log: a shared `log`, one error digest, one way to the logger
 
 **Priority:** high — `05-jhonstart/26` step 4, `04-rakun/17`, `07-onze/49` step 3 written against it
-(decisions 194, 195) · **State:** partial: step 1 (the package) on feat; step 2 open
+(decisions 194, 195) · **State:** partial: step 1 (the package) on feat; step 2 open; step 3 built on
+erlang, beam and commonJS (`front/106-s3`), its wasm column waiting on 106-a and two gap rows
 **Depends on:** step 2 — `04-rakun/17` and `05-jhonstart/26` step 4 (their boxes), `04-rakun/65`
 landed (own commit)
 **Owns:** `repository/log/**` · one consumer commit:
@@ -50,8 +51,16 @@ Boxes 1–2 landed by the members' owners, ticked here; box 3 this front's own c
 - [ ] sinks in `log`: console, a file with rotation, per-name levels — one API on every target; an
       `@External` cell they use is bound on erlang/beam, commonJS and wasm, never on some only (on the
       BEAM a sink may hand records to OTP's `logger`); ported from `rakun-logging`'s `cells.bp`
-- [ ] `log.captureRuntimeReports()`: BEAM the OTP `logger`'s crash, supervisor and SASL reports; node
-      `uncaughtException` / `unhandledRejection`; wasm a no-op binding — a cell per target
-- [ ] `log` imports on every target (146): the four-target build of its test member green
+      — built: `consoleSink` (`@print`, no cell), `fileSink` / `LogFile` (`logger_std_h`'s rotation in
+      botopink over four cells), `fanOut`, `Threshold` / `Levels` (longest dotted prefix) — choices
+      106-b…106-d; `hostWrite` bound on wasm (`fn:printLine`). Left: the wasm binding of the sink slot
+      (**A wasm binding cannot keep a value across calls**, 140) and of the four file cells (**A wasm
+      binding cannot reach the file system**, 106-a)
+- [x] `log.captureRuntimeReports()`: BEAM the OTP `logger`'s crash, supervisor and SASL reports; node
+      `uncaughtException` / `unhandledRejection`; wasm a no-op binding — a cell per target (106-e;
+      the wasm cell measured in isolation)
+- [ ] `log` imports on every target (146): the four-target build of its test member green — erlang,
+      commonJS and beam green (35 tests each); wasm refused first at std (`std/json`, `02/97` step 15;
+      `std/io/clock`'s `systemTimeWithUnit` / `toCivil`), then at the two gap rows above
 
 **Gate:** standard (fronts.md § Gate), for step 2's own commit and step 3

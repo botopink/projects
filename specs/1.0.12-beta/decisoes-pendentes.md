@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 54 perguntas, 6 contradições e 85 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **354**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 55 perguntas, 6 contradições e 89 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **354**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -871,6 +871,38 @@ val t = async.delay(30, "a");   // bloqueia 30 ms aqui; `await t` é identidade
 | `03r-an` | O transporte WebSocket do RSocket depois da 187 | (b). | a primeira e a terceira caixas do passo 2 da 92. | 92: o 128 (RSocket no `rakun-messaging` depois dele), 74, 15 |
 | `atm-c` | O `T` de um átomo entre servidor e browser | (b) — restritivo onde importa (o que atravessa) e livre no resto. | 136 passo 6. | 136: 26, 120, 125 |
 | `atm-d` | Quais efeitos de átomo entram | (a) — primeiro a store; efeitos num passo próprio quando houver uso medido. | 136 passo 8. | 136: 26, 120, 125 |
+| `106-a` | O que o `log.fileSink` é no wasm (texto completo abaixo) | (a) — uma API só, e no wasm o `fileSink` devolve um `Error` nomeado; nada é escrito nem perdido em silêncio. | a coluna wasm da caixa 1 do passo 3 da 106 e a caixa 3 | 140 (uma ligação wasm que guarde um valor); `02/97` passo 15 (`json` no wasm) e o `io/clock` do std no wasm |
+
+
+### 106-a · O que o `log.fileSink` é no wasm *(proposta)*
+
+**Trava:** `03-bundled-libs/106` passo 3 — a coluna wasm da caixa 1 e a caixa 3 · espera também a 140 e o `02/97` passo 15
+
+**Contexto.** A decisão 349 pede os sinks do `log` — console, arquivo com rotação, níveis por nome — com uma API só em todo target, cada célula `@External` ligada no erlang/beam, commonJS e wasm. O sink de console não precisa de célula (`@print` existe nos quatro); o de arquivo precisa de quatro (`appendLine`, `fileBytes`, `moveFile`, `removeFile`), ligadas no erlang/beam e no node, e nenhuma ligação wasm alcança arquivo (linha **A wasm binding cannot reach the file system** do `language-gaps.md`): o WASI preview 2 tem `wasi:filesystem`, mas o host `browser` da 334 não tem sistema de arquivos, e a 140 liga uma célula nos dois hosts ou em nenhum.
+
+**Hoje** (medido no `56d4bc29`):
+```text
+error: `fileBytes` has no `#[@External.<Target>(…)]` for the wasm backend
+```
+toda função que alcança uma das quatro células é recusada no wasm (146); o `log` não compila lá.
+
+- [ ] **(a)** Uma API só, recusa localizada no wasm: as quatro células ganham ligação `fn:`, e o `fileSink` devolve `Error` no wasm, nos dois hosts.
+  ```bp
+  val sink = try fileSink(LogFile(path: "app.log", maxBytes: 10485760l, maxFiles: 7), Format.Ecs, levels);
+  // no wasm → Error("log.fileSink: a wasm program has no file system - use consoleSink")
+  ```
+- [ ] **(b)** Arquivo de verdade no host `wasi` por um adaptador `wasi:filesystem` (140), o `Error` da (a) só no `browser` — uma célula que se comporta diferente nos dois hosts.
+  ```bp
+  #[@External.Wasm(wasi: .FileAppend, host: .Wasi)]
+  #[@External.Wasm("fn:noFileAppend", host: .Browser)]
+  declare fn appendLine(path: string, line: string) -> i32;
+  ```
+- [ ] **(c)** O sink de arquivo sai do `log` para um pacote próprio (`log-file`), declarado só para erlang, beam e commonJS; o `log` passa a importar em todo target.
+  ```bp
+  import {logfile.fileSink} from "log-file";   // um build wasm recusa o import, no import
+  ```
+
+**Recomendação: (a)** — a API única da 349, com a recusa localizada na única chamada que não pode ser atendida; a (c) recusa mais cedo, mas tira do `log` um sink que a 349 diz que é dele; a (b) só quando a 140 tiver `wasi:filesystem` e houver motivo para dar arquivo a um programa wasm.
 
 ---
 
@@ -926,6 +958,10 @@ Já implementadas; marque "confirmo" ou a alternativa (a pergunta inteira em `de
 | `95-a` | Os cortes de realocação `jhonstart-link` e `rakun-app` | (a) Realocar já, como movimento sem comportamento. | (a). Senão as frentes donas fariam o movimento no meio de uma mudança de comportamento, que é o diff mais difícil de revisar. |
 | `95-b` | `targets` do `rakun-app`: herdar do workspace ou declarar | (b) Declarar `targets` no próprio membro, como todo outro membro — uma cópia que precisa ser editada quando o workspace mudar. | (b). É o que o código faz, igual nos 36 manifests, e cada um diz por si onde roda (decisão 153). |
 | `95-c` | `erika-test` existe | (a) Criar o membro agora, com um teste. | (a). Cumpre a regra do packaging sem custo. |
+| `106-b ★` | O `consoleSink` do `log` escreve na saída padrão | (a) Uma linha por registro na saída padrão, por `@print`, em todo target — não o `console.error` / `console.warn` do node nem o `logger` do OTP; o `defaultSink` continua no logger do host. | (a) ★. É o único fluxo que um programa wasm também escreve: um comportamento só. |
+| `106-c ★` | A rotação do `fileSink` | (a) A do `logger_std_h` do OTP, escrita uma vez em botopink: depois de uma escrita que deixa o arquivo com `maxBytes` ou mais, ele vira `<path>.0`, cada arquivo sobe um, o `<path>.<maxFiles - 1>` é apagado; `maxFiles` 0 apaga o arquivo; uma chamada de host que falha levanta erro; o teto total do rakun continua do rakun. | (a) ★. A mesma rotação em todo target, e um log que para de escrever em silêncio é um log perdido. |
+| `106-d ★` | Níveis por nome | (a) `Threshold { From(level), Off }`, `Levels(root, names)`, vence o prefixo pontuado mais longo; nome vazio, segmento vazio e nome repetido são recusados (`Error` ao construir um sink, pânico ao resolver); grupos e overrides em tempo de execução são do framework, que reconstrói o `Levels` e instala o sink de novo. | (a) ★. Nada é resolvido adivinhando qual entrada vale. |
+| `106-e ★` | O `captureRuntimeReports()` observa, nunca trata | (a) BEAM: um filtro primário do `logger` no domínio `otp`, que passa o evento adiante intacto (o handler do OTP continua imprimindo); node: `uncaughtExceptionMonitor` (o node continua saindo; o `unhandledRejection` chega como origem no modo padrão); registros do logger `runtime` com `report.kind`; wasm: ligação que não faz nada. | (a) ★. Capturar não muda o que o runtime faz com a falha. |
 
 ### Confirmações ★ — libs-external-methods
 
