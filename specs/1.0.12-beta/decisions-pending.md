@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**55 questions and 6 contradictions are open, and 91 implementation choices await confirmation.**
+**58 questions and 6 contradictions are open, and 92 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -558,6 +558,89 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Blocks.** nothing today; (b) is an `og_test.bp` change owned by 51.
 
 ### 08-bpp
+
+#### 116-a · The prelude module's own `import {bpp} from "std"` (decision 361 × 270) (*proposed*)
+- **Measured** (front 116 step 1, `front/decision-361`). 361 puts the prelude's marker in the prelude
+  module — `#[bpp.htmlPrelude] pub val prelude = bpp.Prelude();` — so the module must import std's
+  `bpp` (jhonstart's `src/prelude.bp` now ends `import {bpp} from "std"; #[bpp.htmlPrelude] pub val
+  prelude = bpp.Prelude();`). 270 says "that module's imports are the prelude" and refuses, at the
+  line, "an item of another package (242)". Read together, the marker's own import is both a prelude
+  item (every `.bpp` file would resolve `bpp` through it) and a refused line. Step 1 checks only that
+  the module holds imports and its marker; the prelude scope and its refusals are step 2's.
+- **Options.**
+  (a) The import of std's `bpp` (or a leaf of it) is the marker's, not the prelude's: left out of the
+  item list handed to `compiler-core`, and exempt from 242's refusal — every other `from "std"` item
+  in a prelude stays refused:
+  ```bp
+  // src/prelude.bp
+  import {element.Element};          // a prelude item
+  import {bpp} from "std";           // the marker's import — not a prelude item, not refused
+  #[bpp.htmlPrelude]
+  pub val prelude = bpp.Prelude();
+  // Card.bpp: `bpp.Prelude()` in its header is `unbound variable 'bpp'`
+  ```
+  (b) The marker's import is a prelude item like any other: a `.bpp` file resolves `bpp` without
+  importing it, and 242's refusal exempts std:
+  ```bp
+  // Card.bpp header: `val p = bpp.Prelude();` compiles through the prelude
+  ```
+  (c) 242 stands for the prelude: a prelude module may import nothing from another package, so the
+  marker is spelled through a path the language does not have today (a qualified annotation with no
+  import, `#[std.bpp.htmlPrelude]`), a parser and checker change:
+  ```bp
+  #[std.bpp.htmlPrelude]
+  pub val prelude = Prelude();   // `Prelude` unbound: (c) needs a qualified constructor too
+  ```
+- **Recommendation.** (a): the prelude stays the package's own modules (242), and the one import the
+  marker needs reaches no `.bpp` file.
+- **Blocks.** 116 step 2's prelude box (the item list and its refusals); nothing in step 1.
+
+#### 116-b · Are the roles checked on a project with no `.bpp` file? (*proposed* ★)
+- **Measured** (front 116 step 1). 361 (4): "the key on a project with no `.bpp` accepted". Implemented:
+  the key is accepted, and the roles of the package it names are still checked on every
+  `build` / `check` / `run` / `test` (`compiler-cli/src/cli/bpp.zig`, called from
+  `libs.loadDependencies`) — `tests/language/modules/bpp_html_missing` has no `.bpp` file and is
+  refused at the key. Today `"bpp": "jhonstart"` is such a project's refusal until
+  `05-jhonstart/26` step 0 moves `html` (and its `#[bpp.html]`) from `jhonstart-html` into the core.
+- **Options.**
+  (a) ★ The roles are checked whenever the key is present:
+  ```text
+  { "bpp": "jhonstart" }, no .bpp file, the core marks no #[bpp.html]
+  error: "bpp" names "jhonstart", and no declaration of it carries #[bpp.html] — …   (at the key)
+  ```
+  (b) The roles are checked only when the project has a `.bpp` file; the key alone is never refused
+  past `manifest.parse` (a dependency, a string):
+  ```text
+  { "bpp": "jhonstart" }, no .bpp file → builds; the first Card.bpp added → the error above
+  ```
+- **Recommendation.** (a): a key that cannot be honoured is refused where it is written, before a file
+  depends on it (decision 67).
+- **Blocks.** Nothing — (a) is built; (b) would remove one call.
+
+#### 116-c · A decorator on a module `var` (decision 356 names a `val`) (*proposed* ★)
+- **Measured** (`front/decision-361`, 01-compiler/130 step 10 box 1). Before 356 every user decorator
+  on a module binding was dropped silently. 356 makes one on a `val` run (`DeclKind.Val`). A module
+  `var` is the same AST node (`ValDecl.mutable`); built: a user decorator on a `var` is refused at the
+  annotation, `` `#[mark]` annotates the module `var` `count`, and a decorator runs on a `val`, never on
+  a `var` `` (`tests/language/reject/val_decorator_on_var`); `#[@BeamMemory.…]` is untouched.
+- **Options.**
+  (a) ★ Refused at the annotation (built):
+  ```bp
+  #[mark]
+  var count = 1;   // error at `mark`: … a decorator runs on a `val`, never on a `var`
+  ```
+  (b) It runs like a `val`'s, kind `DeclKind.Val`, and the `var` is catalogued:
+  ```bp
+  #[mark]
+  var count = 1;   // mark runs; @TypeInfo.all(with: mark) answers `count`
+  ```
+  (c) It runs with its own kind, `DeclKind.Var`, so a decorator can tell the two apart:
+  ```bp
+  fn mark(comptime decl: @Decl) { if (decl.kind == DeclKind.Var) decl.fail("…"); }
+  ```
+- **Recommendation.** (a) until a use is measured: refusing loses nothing a library needs today, and
+  (b) or (c) can be added without breaking a program.
+- **Blocks.** Nothing.
 
 ### 09-cardume
 

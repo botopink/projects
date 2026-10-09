@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 55 perguntas, 6 contradições e 91 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **364**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 58 perguntas, 6 contradições e 92 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **364**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -797,6 +797,7 @@ val _a = after({ -> @panic("boom") });
 | `03r-an` | O transporte WebSocket do RSocket depois da 187 | (b). | a primeira e a terceira caixas do passo 2 da 92. | 92: o 128 (RSocket no `rakun-messaging` depois dele), 74, 15 |
 | `atm-c` | O `T` de um átomo entre servidor e browser | (b) — restritivo onde importa (o que atravessa) e livre no resto. | 136 passo 6. | 136: 26, 120, 125 |
 | `atm-d` | Quais efeitos de átomo entram | (a) — primeiro a store; efeitos num passo próprio quando houver uso medido. | 136 passo 8. | 136: 26, 120, 125 |
+| `116-a` | O `import {bpp} from "std"` do próprio módulo de prelúdio (361 × 270) | (a) — o import do `bpp` é do marcador, não do prelúdio: fica fora da lista de itens e isento da recusa da 242; todo outro item `from "std"` num prelúdio segue recusado. Com (a): `bpp.Prelude()` no cabeçalho de um `Card.bpp` é `unbound variable 'bpp'`; (b) o import vira item do prelúdio e o `.bpp` resolve `bpp` sem importar; (c) nenhum import, `#[std.bpp.htmlPrelude]` — sintaxe que não existe hoje | a caixa do prelúdio da 116 passo 2 (a lista de itens e as recusas) | 116 passo 2 |
 | `106-a` | O que o `log.fileSink` é no wasm (texto completo abaixo) | (a) — uma API só, e no wasm o `fileSink` devolve um `Error` nomeado; nada é escrito nem perdido em silêncio. | a coluna wasm da caixa 1 do passo 3 da 106 e a caixa 3 | 140 (uma ligação wasm que guarde um valor); `02/97` passo 15 (`json` no wasm) e o `io/clock` do std no wasm |
 
 
@@ -855,6 +856,8 @@ toda função que alcança uma das quatro células é recusada no wasm (146); o 
 | `49-g` | `isString`: do onze, ou do `Json` do std | (b) — o std ganha `Json.isString()` (superfície da 97) ao lado do `isObject`; o onze apaga o seu. Hoje: `if (isString(v) == false) throw …`; com (b): `if (v.isString() == false) throw …`; nunca (c), `v.kindName() != "a string"`. | nada; com (b), uma linha em `config.bp` / `types.bp` depois da 97. |
 | `51-a` | Inteiro malformado num sidecar de métricas ou num ângulo de gradiente | (b) — recusar (decisão 67): `parseMetrics` responde `Error("… line 3: \"9x0\" is not an integer")`; `gradientOf` responde `#(-1, "", "")`. Hoje (a): `ascent 9x0` vira `ascent 0`, `9.5deg` vira 0°. | nada hoje; (b) muda o `og_test.bp` (da 51). |
 | `lg2-u` | Decorator em posição de expressão | (1). Um decorator anota uma declaração ou uma tag; trabalho numa expressão comum é uma chamada. | a linha (o caso da marcação da frente 48 do emilia já está coberto pela 301). |
+| `116-b ★` | Os papéis são conferidos num projeto sem nenhum `.bpp`? | (a) ★ — com a chave presente, sempre: `{ "bpp": "jhonstart" }` sem `.bpp` e sem `#[bpp.html]` no núcleo é `error: "bpp" names "jhonstart", and no declaration of it carries #[bpp.html]` na chave; (b) só quando o projeto tem um `.bpp` — a chave sozinha compila até o primeiro `Card.bpp` | nada — (a) está construída |
+| `116-c ★` | Decorator num `var` de módulo (a 356 fala de `val`) | (a) ★ — recusado na anotação: `#[mark] var count = 1;` é `` `#[mark]` annotates the module `var` `count`, and a decorator runs on a `val`, never on a `var` ``; (b) roda como o de um `val` (`DeclKind.Val`) e o `var` entra no catálogo; (c) roda com `DeclKind.Var` próprio | nada |
 
 ### Confirmações ★ das trilhas 00–03
 
