@@ -1,8 +1,7 @@
 # Front 02 — erlang: the erlang target answers what decision 8 says, on every shape
 
-**Priority:** high · **State:** partial: steps 1–3, 5, 6, 8–13 and 15 done; steps 4, 7, 14 open
-**Depends on:** `05-wasm` (step 7's wasm column) · `01-checker`'s `@block` tail-form refusal (step
-10)
+**Priority:** high · **State:** partial: steps 1–13 and 15 done; step 14 open
+**Depends on:** `01-checker`'s `@block` tail-form refusal (step 10)
 **Owns:** `modules/compiler-core/src/codegen/erlang.zig` · `src/codegen/crossModule.zig` ·
 `src/codegen/beam/{erl_ast,erl_emitter}.zig` (Erlang-text renderer, carve-out from 03; erlang target
 and comptime module text both use it) · `snapshots/codegen/<runtime>/erlang/**`,
@@ -56,31 +55,19 @@ sidecar.
   `run/string_index_of_codepoints` gains combining-mark and astral rows (`"e\u{301}".length` 2,
   `"👍".length` 1, `at` / `slice` / `indexOf` / `lastIndexOf` across both) — green on erlang, beam,
   wasm; erlang and beam answered `1` / `false` / `3` on the parent
+- Step 4 — `run/array_unique` (C-35, decision 217): `[1, 2, 1, 3, 2].unique()` prints `[1, 2, 3]`
+  on four targets, with string, float, bool and empty rows (wasm's `$__arr_unique` keeps first
+  occurrences, `05-wasm` step 1; wasm printed `[1, 2, 1, 3, 2]` on the parent)
+- Step 7 — C-07's erlang tails: `run/is_truth_table` holds §4.1 × §4.2 on four targets (every `is`
+  form over the ten `unknown` values, tuple rows by arity and element value, §4.1's conversion); wasm
+  refused it on the parent. §11 ("erlang: nothing") has no `run/` cell: it is a cost, not an answer —
+  no program prints a difference between a stored and an unboxed value — and stays pinned by
+  `codegen/tests/control_flow.zig`'s needle (`A = 2.0,`)
 - Row (from `block-backends`) — a statement `@block` reassigning an enclosing `var` answers the
   variables and the statement rebinds them (`mutatingBlockExpr`): `run/block_reassigns_enclosing_var`
   prints `6` on four targets (erlc refused the module on the parent)
 
 ## Open
-
-### Step 4 — `run/array_unique` (C-35)
-
-Decision 217 (drop duplicates, keep first, `==`); std body on feat (`primitives.bp`, `Array.unique`
-default fn); nothing left to lower on erlang. Cell is this front's.
-
-- [ ] `run/array_unique` — `[1, 2, 1, 3, 2].unique()` prints `[1, 2, 3]` on four targets (wasm
-      column with `05-wasm` step 1). Measured: commonJS, erlang, beam print `[1, 2, 3]`; wasm prints
-      `[1, 2, 1, 3, 2]` — the cell waits on wasm
-
-### Step 7 — C-07's erlang tails as `run/` cells
-
-§4.1's truth table per §4.2 form (`is` on a primitive, constructor, tuple, `Box<unknown>`) and §11's
-"erlang: nothing". `test/is_truth_table` holds on commonJS, erlang, beam (same ten lines); wasm
-refuses (`cannot box this value as unknown`, `05-wasm` row) — no four-target `.out` yet. §11 pinned
-by `codegen/tests/control_flow.zig`'s needle (`A = 2.0,`): no program can tell stored from unboxed.
-
-- [ ] `run/is_truth_table` — every row of §4.1 × §4.2, one `.out` for four targets
-- [ ] `run/unknown_stores_nothing` (§11) on four targets, or box struck with a written reason
-      (nothing a program prints differs)
 
 ### Step 14 — a method declared `-> @Result` is lowered as a `@Result` (decision 304)
 

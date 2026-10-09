@@ -1,8 +1,8 @@
 # Front 03 — beam: the assembled target answers what erlang answers
 
-**Priority:** high · **State:** partial: steps 1–9 done (every owned lowering); step 1 box 3 and
-step 2 box 1 wait on other fronts' cells
-**Depends on:** `01-checker` step 13 (step 1) · `02-erlang` step 7 and `05-wasm` (step 2)
+**Priority:** high · **State:** partial: steps 1–9 done (every owned lowering) but step 1 box 3, which
+waits on `01-checker` step 13's cells
+**Depends on:** `01-checker` step 13 (step 1)
 **Owns:** `modules/compiler-core/src/codegen/beam_asm.zig` · `src/codegen/beam/**` except
 `{erl_ast,erl_emitter}.zig` (02), `beam_file.zig` / `opcodes.zig` / `gen_opcodes.sh` (18),
 `asm_text.zig` (14) · `snapshots/codegen/<runtime>/beam/**`, `snapshots/codegen/<runtime>/errors/beam/**`
@@ -43,6 +43,11 @@ Rows from other fronts: an `@block`'s `return` is the block's value (decision 2)
 `lowerBlockWithReturn` jumps to the block's exit label with the value in `x0` instead of `return.`
 from the enclosing function (`run/block_return_is_block_value`, four targets;
 `block_block_builtin` beam snapshots move by the jump).
+- Step 2 box 1 — C-07's cells on beam: `run/is_truth_table` (`02-erlang` step 7) green on beam;
+  `run/unknown_stores_nothing` struck with 02 step 7 (§11 is a cost no program prints)
+- A `case` no arm matches raises `{case_clause, V}` as erlang does: with no arm that takes every
+  subject (`armCatchesAll`), the fall-through is `{case_end, {x,0}}` (`run/case_no_arm_matches_raises`
+  — a host function answers an atom no variant is; beam printed the subject at exit 0 on the parent)
 - An in-frame loop's head survives OTP's `beam_jump`: `writeLoopTop` puts a `{line, …}` anchor before
   `{label, Top}`, so tail sharing cannot turn the entry into a jump to an identical back edge and leave
   `Top` with backward references only (`erlc` stopped on `{undefined_label, Top}` in log's
@@ -59,18 +64,6 @@ n) = p` as `3 4`, nested one-variant enums as `7 x 9`, `val [..rest] = [1, 2, 3]
 
 - [ ] `run/val_nested_ctor_pattern` and `run/val_spread_only_list_pattern` (`01-checker` step 13)
       pass on beam
-
-### Step 2 — C-07's `run/` cells on beam (box 1)
-
-`codegen/tests/beam.zig` pins the truth table and `unknown` by value; the program prints the same
-ten lines on commonJS, erlang, beam.
-
-- [ ] `run/is_truth_table`, `run/unknown_stores_nothing` (`02-erlang` step 7's cells) green on beam
-
-### Rows found by other fronts
-
-- [ ] a `case` no arm matches returns the subject at exit 0 instead of raising `case_clause` as erlang
-      does
 
 **Gate:** standard (fronts.md § Gate) + `scripts/beam_export_audit.sh` assembles every module before
 and after each step · every re-recorded RUN LOG verified by running (`erlc +from_asm` + `erl`)
