@@ -216,7 +216,7 @@ Closed: `08-h` → 285, 224 (`onze.json`, `onze <command>`); `08-j` → 295, 296
 beside the module renamer; (c) jhonstart's `html` scopes its own `<style>`; (d) *proposed* — `css` and
 `styled` (`styled "…"` → `@Component<StyledBase, Styled>`, Tailwind v4's CSS syntax), each its own repository (326), emilia over `styled`, `"bpp": {"default", "style"}`, a
 `--- style ---` section ([`119-bpp-styling/proposta-08-d.md`](./119-bpp-styling/proposta-08-d.md)).
-**Recommendation.** (d) with its points p1–p7 as recommended (p8, p9 accepted); otherwise (a). (c) puts a CSS parser in the HTML library; (b) excludes jhonstart apps without onze.
+**Recommendation.** (d) with its points p1, p3, p6, p7 as recommended (p2, p4, p5, p8, p9 accepted); otherwise (a). (c) puts a CSS parser in the HTML library; (b) excludes jhonstart apps without onze.
 **Blocks.** All of 119.
 
 ### 08-f · Where Markdown and YAML live

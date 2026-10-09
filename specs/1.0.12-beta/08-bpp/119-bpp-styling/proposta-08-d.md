@@ -14,7 +14,7 @@ repository/styled   (botopink/styled)  a base para construir componentes de CSS:
         ▲                          ▲
 repository/emilia           jhonstart/jhonstart-styled   ← "bpp".style: compila a seção --- style ---
 uma série de componentes           ▲
-feitos em styled           #[styled(..)] na tag         ← do jhonstart-styled pelo p4 (a); hoje do jhonstart-emilia (301)
+feitos em styled           #[styled(..)] na tag         ← do jhonstart-styled (p4); o jhonstart-emilia sai
 ```
 
 ```json
@@ -40,7 +40,7 @@ article :global(p) { line-height: 1.6; }
 |---|---|---|---|---|
 | `css`: a base para construir CSS | `repository/css` (`botopink/css`) | lê uma folha (regras, at-rules, comentários, strings, `{ }` aninhado) para um `Sheet` tipado; o renderizador; `scope(id, css) -> @Result<string, string>` | std | `styled` |
 | `styled`: a base para construir componentes de CSS | `repository/styled` (`botopink/styled`) | `styled "…"` → `@Component<StyledBase, Styled>` (§ 3.2; `Styled` = classe + regras); a folha que junta os componentes por render ou por build, em `@layer`s | `css`, std | emilia · `jhonstart-styled` |
-| emilia: uma série de componentes feitos em `styled` | `repository/emilia` | os tokens, o tema, cada família escrita em `styled "…"`; aplicada na tag como anotação (301) | `styled`, std | `jhonstart-emilia` |
+| emilia: uma série de componentes feitos em `styled` | `repository/emilia` | os tokens, o tema, cada família escrita em `styled "…"`; aplicada na tag pelo `#[styled]` do `jhonstart-styled` (p4) | `styled`, std | ninguém em particular: o `Token` implementa o `Styleable` do `styled`, e a aplicação passa tokens ao `#[styled]` |
 
 **Por que dois repositórios próprios.** Pela decisão 326, um pacote compartilhado novo nasce como
 repositório (`botopink/<pkg>`, submódulo em `repository/<pkg>`, ao lado de `http`, `log` e
@@ -198,8 +198,8 @@ O que isso dá:
   sob a mesma base, como um componente dentro do `html`. O `@apply` do Tailwind vira isso.
 - **A ponte com o jhonstart.** Quem recebe a seção `--- style ---` é o `jhonstart-styled`, e não o
   `styled`: a função default dele monta, com o `styled`, os componentes da seção e devolve ao `html`
-  o `Style` do jhonstart. O `jhonstart-styled` também liga `ElementBase` a `StyledBase`, do mesmo jeito que o `jhonstart-emilia`
-  liga a emilia hoje: quando o `html` renderiza a página, os componentes de estilo rodam sob a base
+  o `Style` do jhonstart. O `jhonstart-styled` também liga `ElementBase` a `StyledBase` (o papel que o `jhonstart-emilia`
+  tem hoje, e que acaba com ele): quando o `html` renderiza a página, os componentes de estilo rodam sob a base
   da página e escrevem na folha dela.
 
 **O custo.** No commonJS, todo retorno `@Component` sai como `async function` (120, 128). Um
@@ -272,7 +272,7 @@ O build o encurta (124).
 | `pub default fn` de `jhonstart-styled` | membro novo do jhonstart | recebe a seção, aplica o escopo pelo `styled` e devolve o `Style` do jhonstart (id, folha, modo, vars) |
 | o sink | `jhonstart-styled` | põe a **única** folha do render no head e em cada fill de boundary: as camadas da emilia e depois as seções com escopo |
 | `Style` e o braço no `html.bp` | core do jhonstart | recebe o `Style` com a marcação, escreve `data-s` e recusa `<style>` sem `#[isInline]` |
-| `#[styled(..)]` | `jhonstart-styled` (p4 (a)); hoje o `jhonstart-emilia` (301) | aceita tudo o que implementa o `Styleable` do `styled`: componentes da aplicação e tokens da emilia; as regras vão para o mesmo sink, e o plugin de flush próprio do `jhonstart-emilia` sai |
+| `#[styled(..)]` | `jhonstart-styled` (p4) | aceita tudo o que implementa o `Styleable` do `styled`: componentes da aplicação e tokens da emilia; as regras vão para o mesmo sink. O `jhonstart-emilia` sai (p4) |
 
 A ordem da cascata fica: folhas linkadas (`globals.css`), camadas da emilia, seções com escopo.
 
@@ -288,8 +288,8 @@ que continuam sem saber do `.bpp`.
 | 270 | o prelúdio é o do pacote em `bpp.default` |
 | 278 | `#[isGlobal]` e `#[defineVars]` passam para a linha da seção; `<style>` na marcação só com `#[isInline]` |
 | 285 | o toolchain passa a conhecer também o pacote de `style` |
-| 301 | os tokens viram componentes `styled`; a folha sai pelo `jhonstart-styled`; pelo p4 (a), o `#[styled(..)]` passa a ser do `jhonstart-styled` e aceita também componentes da aplicação (a escrita no template não muda) |
-| `08-bpp/119` | é dona de `repository/css`, `repository/styled`, `jhonstart-styled` e `jhonstart-emilia`; passos: 1 os pacotes, 2 `jhonstart-styled` e o braço do `html`, 3 boundary, 4 `#[styled]`, 5 uma folha só; no gate, `grep -rn "bpp\|jhonstart"` vazio em `repository/css`, `repository/styled` e `repository/emilia/modules` |
+| 301 | os tokens viram componentes `styled`; a folha sai pelo `jhonstart-styled`; pelo p4, o `#[styled(..)]` passa do `jhonstart-emilia` para o `jhonstart-styled` e aceita também componentes da aplicação (a escrita no template não muda); o `jhonstart-emilia` sai |
+| `08-bpp/119` | é dona de `repository/css`, `repository/styled` e `jhonstart-styled`, e apaga o membro `jhonstart-emilia` (p4); passos: 1 os pacotes, 2 `jhonstart-styled` e o braço do `html`, 3 boundary, 4 `#[styled]`, 5 uma folha só; no gate, `grep -rn "bpp\|jhonstart"` vazio em `repository/css`, `repository/styled` e `repository/emilia/modules` |
 | `08-bpp/116` | manifesto em objeto, o desdobramento da seção e o formatter (que não mexe nos bytes da seção) |
 | `06-emilia/34` | um passo 5: a emilia sobre o `styled`, com o `e_39b87d03` intacto |
 | meta | dois repositórios novos (`botopink/css`, `botopink/styled`), os submódulos em `.gitmodules` e a linha § Layout do `AGENTS.md` (326) |
@@ -336,23 +336,13 @@ function com valor antes do literal. A (a) é a mais explícita: o estilo aparec
 chamado. A (c) não pede nada novo à linguagem, mas põe numa tag algo que vale para o template todo. A
 (b) esconde a ligação no contexto do render.
 
-### p2 · A forma string `"bpp": "jhonstart"`
+### p2 · A forma string `"bpp": "jhonstart"` — aceito (09/10): (a)
 
-**Contexto.** Hoje o manifesto diz `"bpp": "jhonstart"` (200). A proposta transforma a chave em
-objeto.
-
-- [ ] **(a)** Só o objeto; a string é recusada e o erro mostra a forma nova.
+- [x] Só o objeto; a string é recusada, e o erro mostra a forma nova. Uma forma só (67).
   ```text
   "bpp": "jhonstart"
   error: "bpp" is an object — write "bpp": {"default": "jhonstart"}      at the key
   ```
-- [ ] **(b)** A string continua valendo, como atalho para `{"default": "jhonstart"}`.
-  ```json
-  "bpp": "jhonstart"                                   // ≡ {"default": "jhonstart"}
-  "bpp": {"default": "jhonstart", "style": "jhonstart-styled"}
-  ```
-
-**Recomendação: (a).** Uma forma só (67). A migração é de uma linha, e o erro diz qual.
 
 ### p3 · Quantas seções de estilo por arquivo
 
@@ -379,58 +369,45 @@ só de CSS. A (a) só ganha quando a folha global é grande, e aí ela cabe melh
 Isso muda a recomendação anterior, que era (a). Com (b), o `#[isGlobal]` deixa de existir:
 `#[defineVars]` passa a ser a única anotação da linha da seção.
 
-### p4 · Aplicar um componente `styled` numa tag, e o nome `#[styled]`
+### p4 · Aplicar um componente `styled` numa tag — aceito (09/10): (a)
 
-**Contexto.** A 301 dá à emilia a anotação `#[styled(..tokens)]`, declarada pelo `jhonstart-emilia`.
-Com o `styled`, a aplicação também escreve componentes próprios (`pub val btn = styled """…"""`), e a
-proposta ainda não diz como aplicar um deles a uma tag. Além disso, o pacote se chama `styled` e a
-anotação também: um `.bp` que importa os dois precisa de alias.
-
-- [ ] **(a)** Um `#[styled]` só, declarado pelo `jhonstart-styled`, que aceita tudo o que implementa
-  o behavior `Styleable` do pacote `styled`. `StyledView` implementa esse behavior, e a emilia faz o
-  `Token` implementá-lo, já que ela importa o `styled`. O `jhonstart-emilia` deixa de declarar a
-  anotação.
+- [x] Um `#[styled(…)]` só, que aceita tudo o que implementa o behavior `Styleable`, tanto os
+  componentes da aplicação quanto os tokens da emilia.
   ```bp
-  // styled:  pub behavior Styleable { fn toStyled(self: Self) -> StyledView; }
-  // emilia:  Token implement Styleable   (cada token → o seu componente styled)
   <button #[styled(btn, .Pad.All.4, .Text.Bold)]>Salvar</button>
   ```
-- [ ] **(b)** Duas anotações com nomes diferentes: `#[styled(btn)]` para componentes, do
-  `jhonstart-styled`, e `#[tw(.Pad.All.4)]` para a emilia, do `jhonstart-emilia`.
-  ```bp
-  <button #[styled(btn)] #[tw(.Pad.All.4, .Text.Bold)]>Salvar</button>
-  ```
-- [ ] **(c)** A 301 como está; um componente próprio entra pela classe.
-  ```bp
-  <button class={btn.className} #[styled(.Pad.All.4)]>Salvar</button>   // a regra de btn registrada à parte
-  ```
 
-**Recomendação: (a).** Uma anotação para todo estilo, e o `jhonstart-styled` continua sem conhecer a
-emilia: ele conhece só o behavior do `styled` (113). A ordem da lista continua sendo a identidade da
-classe (`contracts.md` § 4), e a lista continua comptime (280), com a checagem de breakpoint da 300.
-Isso emenda a 301: muda quem declara a anotação, a escrita no template fica igual.
+**Onde cada peça fica:**
 
-### p5 · A emilia numa aplicação sem `"bpp".style`
+| Peça | Hoje (301) | Com o p4 (a) |
+|---|---|---|
+| a anotação `#[styled(…)]` | `jhonstart-emilia` (a ponte) | `jhonstart-styled`; não vai para o pacote `styled`, que não conhece tag nem HTML |
+| `behavior Styleable { fn toStyled(self: Self) -> StyledView; }` | — | pacote `styled` |
+| `Token implement Styleable` (cada token → o seu componente `styled`) | — | emilia, que importa o `styled` e continua sem conhecer tag, jhonstart ou `.bpp` |
+| `StyledView implement Styleable` | — | pacote `styled` |
+| o plugin de flush da folha da emilia (`jhonstart-emilia/src/root.bp:95`) | `jhonstart-emilia` | sai: a folha da emilia é a do `styled`, escrita pelo sink do `jhonstart-styled` |
 
-**Contexto.** A chave `style` só diz quem compila a seção `--- style ---`. Uma aplicação pode usar
-só `#[styled(…)]`, sem escrever nenhuma seção.
+**O `jhonstart-emilia` deixa de existir** (aceito em 09/10). A anotação vai para o
+`jhonstart-styled`, o flush some, e o `class={emilia(tokens)}` já saiu dos templates pela 301. A
+aplicação depende do `jhonstart-styled` e da emilia, e a ligação entre os dois é o behavior do
+`styled`; nenhum membro do jhonstart nomeia a emilia. Como continua valendo da 301: a escrita no template não muda, a ordem da lista
+é a identidade da classe (`contracts.md` § 4), e a lista é comptime (280), com a checagem de
+breakpoint da 300.
 
-- [ ] **(a)** A anotação funciona sem a chave. Ela é um import comum do `jhonstart-styled`, que
-  registra o sink quando é usado; só a seção exige `"bpp".style`.
+### p5 · O `#[styled]` numa aplicação sem `"bpp".style` — resolvido (09/10)
+
+- [x] A pergunta partia de uma premissa errada: a emilia não conhece o `.bpp`, então nada nela
+  depende do manifesto. Com o p4 (a), a anotação é um import comum do `jhonstart-styled`, e funciona
+  com ou sem a chave. `"bpp".style` só diz ao toolchain quem compila a seção `--- style ---`, e é
+  exigido só quando o arquivo tem uma.
   ```json
   { "bpp": { "default": "jhonstart" },
     "dependencies": { "jhonstart": {…}, "jhonstart-styled": {…}, "emilia": {…} } }
   ```
   ```bpp
-  <h1 #[styled(.Text.Bold)]>Oi</h1>        // compila; a folha sai pelo sink do jhonstart-styled
+  <h1 #[styled(.Text.Bold)]>Oi</h1>        // compila: a folha sai pelo sink do jhonstart-styled
+  --- style ---                            // error: a --- style --- section needs "bpp.style"
   ```
-- [ ] **(b)** Quem usa estilo é obrigado a declarar `"style"`.
-  ```text
-  error: #[styled] needs "bpp.style" in botopink.json      at the annotation
-  ```
-
-**Recomendação: (a).** A chave existe para o toolchain saber a quem entregar a seção, e uma anotação
-não é uma seção. Exigir a chave seria configuração sem função.
 
 ### p6 · `@utility` literal no `styled`
 
