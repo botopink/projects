@@ -1,7 +1,7 @@
 # Front 114 — gate-docs-and-ci: no `skip` fence, no soft CI row, every workflow green and pinned
 
-**Priority:** high · **State:** partial: steps 1, 2, 4, 5, step 3 box 1, step 6 box 1 and step 8
-boxes 1–2 done; steps 3 (box 2), 6 (box 2), 7, 8 (box 3), 9 open
+**Priority:** high · **State:** partial: steps 1, 2, 4, 5, step 3 box 1, step 6 and step 8
+boxes 1–2 done; steps 3 (box 2), 7, 8 (boxes 3–5), 9 open
 **Depends on:** nothing open (botopink-lang CI fixes on feat; only a green run remains)
 **Owns:** `scripts/check-docs.sh` · `docs.md` marker lines and the fence lines after them (no prose) ·
 botopink-lang `.github/workflows/test.yml` · meta `.github/workflows/**` and meta `AGENTS.md` § CI ·
@@ -36,7 +36,9 @@ table has `reject`, no `skip` · 3 box 1 no `allow_fail`, no windows row (decisi
 `hook-integrity` checks 1–5 green on remote `feat` · 5 `gate.sh` `budget_cold=450`, `budget_warm=60`, header
 and § budget comments name 7m30s cold (decision 265), over budget yellow · 6 box 1 vscode-extension
 `compiler` job reads `OTP_RELEASE` from the compiler source, installs it with `erlef/setup-beam`, asserts
-it · 8 box 2 rakun `test.yml` and `AGENTS.md` name the 2.35 pin.
+it · 6 box 2 vscode-extension `test` green on remote `feat` (`f0418658`: job `test` runs `npm test`,
+job `compiler` the snippets and grammar against the compiler) · 8 box 2 rakun `test.yml` and
+`AGENTS.md` name the 2.35 pin.
 8 box 1 133's emitted modules diffed byte for byte, each of 133's two merges against its first
 parent (step 2: `838f565a^1` vs `838f565a`; step 3: `b22aaa1d^1` vs `b22aaa1d`), four ReleaseSafe
 compilers, one input set (botopink-lang `b22aaa1d`'s `tests/language` and `libs/`; emilia `42d51ec8`,
@@ -61,18 +63,17 @@ normalisable in `modules/compiler-core/src/codegen/tests/helpers.zig` without to
 do it and restore the row hard with every ubuntu stage (`erlef/setup-beam` supports windows).
 - [ ] botopink-lang `test` workflow green on GitHub on `feat`, every row (fixes on feat: test-web
       wasm32, `test-libs.sh`/`run.sh` under macOS bash 3.2 / BSD `xargs`, `pool.sh` without GNU
-      `timeout`, macOS `/private/var`). Last run on `49455602` (2026-10-03) red, none of it in
-      `test.yml`: stage 1 `zig fmt --check modules` (`comptime/transform.zig:1172`, one indent —
-      01-checker's `19d59508`); behind it, reproduced locally, `codegen.tests.beam_templates` (15
-      `std/math` templates refused, "operator `:`" — `a443f52d`, std-math-uniform) and
-      `comptime/eval.zig` "comptime literals" (`3` expected, `3.0` found — 01-checker)
+      `timeout`, macOS `/private/var`). Last run on `94a9c3ef` (2026-10-09): both `test` rows green;
+      job `libs` red on one cell, `std·commonJS` — five `fs.glob` tests (`libs/std/src/io/fs.bp:382`,
+      `:387`, `:398`, `:411`, `:426`): the commonJS body matches a segment with `fs.globSync`
+      (Node 22+) and both jobs installed Node 20, where it throws and the walk answers `[]`. Fix in
+      `test.yml`: both Node installs at 22, the floor std's bodies name
 - [ ] (only with a windows runner) drift measured, capture normalised, row restored hard — else row
       stays deleted, gap carried
 
 ### Step 6 — the vscode-extension workflow on OTP 28 (decisions 228, 227)
 
-The `compiler` job installs the compiler's `OTP_RELEASE` (box 1, Done); a green run on remote `feat` remains.
-- [ ] `npm test` and `npm run compiler-check` green on GitHub on remote `feat` after that
+Both boxes Done.
 
 ### Step 7 — a cold gate recorded on the current tip
 
@@ -85,7 +86,9 @@ last full cold: 9m31s, loaded).
 
 ### Step 8 — the gate's other residue
 
-- [ ] after `06-emilia/33` step 2 (emilia-card emilia-only): emilia `.github/workflows/test.yml` step
+- [ ] after `06-emilia/33` step 2 (emilia-card emilia-only; still open on emilia `42d51ec8` —
+      `examples/emilia-card/botopink.json` depends on `../../../jhonstart/modules/jhonstart`, so the
+      checkout is live): emilia `.github/workflows/test.yml` step
       "Checkout jhonstart (dependency — examples/emilia-card depends on jhonstart)" (`:94-99`) and
       its comment (`:21`) removed
 - [ ] `scripts/check-docs.sh`'s header says `check` is target-independent (`:63`, `:76`): it is not
@@ -93,7 +96,8 @@ last full cold: 9m31s, loaded).
       harness's `commonJS` one, so `docs.md` § `@BeamMemory` is a `project` fence with an erlang
       `botopink.json` (from `07` step 6); the comment says the manifest's target is read
 - [ ] the four other libraries' `test.yml` (emilia, erika, jhonstart, onze) carry the stale glibc 2.38
-      comment rakun's had
+      comment rakun's had — each `test.yml` and the CI paragraph of each `AGENTS.md` name the 2.35 pin
+      (decision 219) in the text rakun's carries; lands with each library's next push
 
 ## Handed out
 
