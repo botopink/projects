@@ -319,12 +319,13 @@ val apiBase = env.read("ONZE_PUBLIC_API_URL").unwrapOr("http://localhost:3000");
 **Bloqueia:** `07-onze/50` e `53`; `contracts.md`.
 
 ---
+
 ## Parte 0 — `00-gate` e `01-compiler`, por prioridade
 
 Ordem, do que mais destrava para o que menos:
 
 1. **130-b**, **130-c** — o registro de beans do rakun (qualificador; `#[bean]` de configuração) · seguram o passo 5 da 130, que está rodando ⏳ (Parte 3)
-2. **134-d** — `@is(…)` escrito à mão · trava a última linha do inventário da 134 (Parte 3)
+2. **134-d** — `@is(…)` escrito à mão · trava uma linha do passo 2 da 134 (Parte 3)
 3. **17-b** — incremento por linha no `keyed` · trava a quarta caixa do passo 1 da 17 (Parte 3)
 4. **ctr-i**, **ctr-j** — unidade de string no erlang; faixa do `i64` · seguram células de 02/03/04/05 (Parte 1)
 5. **ctr-h**, **ctr-s** — só registro: decisões antigas que outras já mudaram; **ctr-o** — qual regra vale para a declaração host sem corpo · trava a confirmação da `lem-c` (Parte 1)
@@ -830,6 +831,7 @@ o 130. **Bloqueia:** só o registro — o 130 e o `04-rakun` já seguem a (a); a
 linhas do rakun no passo 5 do 130 andam pela regra provisória até a confirmação.
 
 ---
+
 ## Parte 3 — Destravam uma frente ou um passo
 
 Cada uma abre uma frente, um passo ou uma onda.
@@ -2648,6 +2650,7 @@ fn route(comptime decl: @Decl, comptime path: string) { decl.setMeta(Route(path:
 ---
 
 ---
+
 ## Parte 5 — Escolhas que as threads fizeram (★), para confirmar
 
 Cada uma já está no código da `feat` (as frentes 110–113 entraram e fecharam na 1.0.11). Confirmar não
@@ -2908,6 +2911,7 @@ reaproveitar o nome no pacote com outra assinatura obrigaria a mexer em todos os
 ---
 
 ---
+
 ## Parte 6 — Escolhas já implementadas na 1.0.10, ainda sem confirmação
 
 Cada item abaixo já está no código com a opção ★. O exemplo mostra o que você escreve e o que
