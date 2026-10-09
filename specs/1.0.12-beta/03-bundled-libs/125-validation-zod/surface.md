@@ -2,7 +2,7 @@
 
 Reference: Zod 4 documentation, <https://zod.dev/> (Zod 4.x; API pages under <https://zod.dev/api>),
 walked section by section, § numbers following the reference (§§ 1–13). Every "the language has no …"
-claim names its place in `repository/botopink-lang` (`docs.md`, `libs/std`, `libs/validation`). Rows
+claim names its place in `repository/botopink-lang` (`docs.md`, `libs/std`, `repository/validation`). Rows
 whose step landed (steps 0–3) read **have**.
 
 ## How to read it
@@ -13,7 +13,7 @@ compile time. Each feature lands in one of five boxes:
 | Box | Meaning |
 |---|---|
 | **native** | The language or std already is the feature; the row names the spelling |
-| **have** | `libs/validation` covers it today, under the spelling shown |
+| **have** | `repository/validation` covers it today, under the spelling shown |
 | **add · N** | Added in step *N* of [`README.md`](./README.md) |
 | **gap** | Needs a compiler change; the row names the nearest working form and the `language-gaps.md` row |
 | **n/a** | No meaning on this platform; reason stated |
@@ -378,7 +378,7 @@ Each format: one `formats.bp` rule, one `constraints.bp` predicate, one marker, 
 | Zod Classic (methods) vs Zod Mini (functions) | one API: `Schema<T>` methods for the wrappers (`.optional()`, `.array()`, `.refine(…)`, `.map(…)`), `checks.*` functions for the checks | have · add · 8 | a check is typed by its subject (`Check<string>`): `schemas.int().check(checks.email())` does not compile |
 | `mySchema.isOptional()` · `.isNullable()` | `schema.isOptional()` | add · 9 | |
 | `mySchema.clone(def)` · `_zod.def` · `_zod.run` | `schema.fields()` / `.options()` for reflection; no internals | add · 9 | |
-| `z.$ZodType` hierarchy, v3/v4 dual support, peer dependencies | — | n/a | one bundled version, shipped with the compiler |
+| `z.$ZodType` hierarchy, v3/v4 dual support, peer dependencies | — | n/a | one version per `dependencies` entry (a repository of its own, decision 326) |
 
 ---
 

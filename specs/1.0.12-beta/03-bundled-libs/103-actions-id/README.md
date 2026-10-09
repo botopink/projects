@@ -3,14 +3,14 @@
 **Priority:** high — the action id is a security boundary derived in one place, re-checked in
 another; one grammar only · **State:** step 1 done (the package); step 2 open
 **Depends on:** nothing (step 2 edits two library members — `fronts.md` § Order)
-**Owns:** `repository/botopink-lang/libs/actions/src/id.bp` (new), `libs/actions/test/id_test.bp`,
-`libs/actions/AGENTS.md`, `libs/actions/botopink.json` (`files`), `libs/actions/src/root.bp` (the
+**Owns:** `repository/actions/src/id.bp` (new), `repository/actions/test/id_test.bp`,
+`repository/actions/AGENTS.md`, `repository/actions/botopink.json` (`files`), `repository/actions/src/root.bp` (the
 module's line) · consumers:
 `repository/rakun/modules/rakun-app/src/actions.bp` (`actionId` and its callers `actionIdOf`,
 `resolveAction` only), `repository/jhonstart/modules/jhonstart-forms/src/form.bp` (`formAction`'s
 `wellFormed` check only)
 **Does not touch:** the rest of rakun-app / jhonstart-forms (`04-rakun` 22, `05-jhonstart` 67) ·
-`build.zig`, `libs/AGENTS.md`, `scripts/format-check.sh`
+the compiler (`repository/botopink-lang/**` — `actions` is a repository of its own since 138 (decision 326))
 
 ## Goal
 
@@ -29,14 +29,14 @@ referred to by its function; `08-bpp/127` step 5); this front only repoints the 
 
 ## Done
 
-- Step 1 — `libs/actions/src/id.bp`: `deriveActionId(secret, module, name, buildId)` (std
+- Step 1 — `repository/actions/src/id.bp`: `deriveActionId(secret, module, name, buildId)` (std
   `hash.hmacSha256`, the secret a parameter) and `isActionId(id)` (`a_` + exactly 24 lowercase hex);
   `test/id_test.bp` (5 tests) — six known-answer ids (HMAC-SHA256 computed outside botopink;
   `(…, "app@posts", "createPost", "build-1")` of `rakun-app/test/actions_test.bp` among them, empty
   texts included), every derived id an `isActionId`, refusals of 23 and 25 digits, uppercase, `a_`,
   `""`, another prefix, a non-hex digit, `a_9f2c1b7e`, `a_1`, `a_<script>`. `botopink test` 24
   passed, 0 failed on erlang and on commonJS (19 before); `format --check` clean;
-  `libs/actions/AGENTS.md` names `id`; `botopink.json` `files`, `root.bp` updated
+  `repository/actions/AGENTS.md` names `id`; `botopink.json` `files`, `root.bp` updated
 
 ## Open
 
@@ -53,4 +53,4 @@ referred to by its function; `08-bpp/127` step 5); this front only repoints the 
       comparison untouched; `actions_test.bp` green with the calls renamed
 - [ ] jhonstart-forms' `formAction` calls `isActionId`; its form tests green on both rows
 
-**Gate:** standard (fronts.md § Gate) + `libs/actions/AGENTS.md` names `id`
+**Gate:** standard (fronts.md § Gate) + `repository/actions/AGENTS.md` names `id`

@@ -1,11 +1,10 @@
-# Front 107 — release: a bundled `release`, the OTP release text both frameworks render (conditional on `07-g`)
+# Front 107 — release: a shared `release`, the OTP release text both frameworks render (conditional on `07-g`)
 
 **Priority:** low — two generators of the same five files; correct today, drifting tomorrow ·
 **State:** not started
 **Depends on:** `07-g` answered (a) "package" · `04-rakun/81`, `07-onze/71` landed (decision 188) ·
-`04-rakun/128` (moves `rakun-release` into `rakun-cli`, decision 187) · last appender to the three
-registration lines (decision 189)
-**Owns:** `repository/botopink-lang/libs/release/**` (new) · registration lines (append) · consumers:
+`04-rakun/128` (moves `rakun-release` into `rakun-cli`, decision 187)
+**Owns:** `repository/release/**` (new — `botopink/release`, born as a repository: decision 326) · consumers:
 `repository/rakun/modules/rakun-cli/src/release/release.bp` (renderers `renderRel`, `renderVmArgs`,
 `renderSysConfig`, `bootScript`, `renderDockerfile`, systemd, appup — today in
 `rakun-release/src/release.bp`), `repository/onze/modules/onze-release/src/{otp,docker,spec}.bp`
@@ -46,4 +45,4 @@ integers, lists, tuples, maps — replacing the `rkRelTerm` sidecar cell), `boot
 
 `07-g` — [`../README.md`](../README.md) § Decisions.
 
-**Gate:** standard (fronts.md § Gate) + `libs/release/AGENTS.md` written
+**Gate:** standard (fronts.md § Gate) + `repository/release/AGENTS.md` written

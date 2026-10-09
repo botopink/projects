@@ -2,7 +2,9 @@
 
 **Priority:** high — every other front of this track and every consumer commit (102 step 3, 103 step
 2, 104 step 5, 105, 106 step 2, 107, 125 steps 4–12) is written against where the packages live;
-moving them first means each of those commits is written once · **State:** not started
+moving them first means each of those commits is written once · **State:** steps 2–5 staged, step 6
+done — the five repositories' trees wait to be pushed; the compiler, consumer and meta changes are
+patches that land after the pushes (§ Notes, *Landing*); `cardume` waits on its scaffold
 **Depends on:** decision 326 · the six GitHub repositories created by the maintainer (step 1 — an
 organisation action, not a front's) · no front editing `libs/{actions,http,log,routing,validation}/**`
 while steps 2–4 run (they land between two waves; the track's other fronts rebase onto them)
@@ -100,13 +102,13 @@ alone.
 
 ### Step 6 — the specs follow
 
-- [ ] the track's fronts (102, 103, 104, 105, 106, 107, 125) point at `repository/<pkg>/…` instead of
+- [x] the track's fronts (102, 103, 104, 105, 106, 107, 125) point at `repository/<pkg>/…` instead of
       `repository/botopink-lang/libs/<pkg>/…`; `105-i18n` and `107-release` create their packages as
       repositories (`botopink/i18n`, `botopink/release`) under the same rule
-- [ ] this track's README: the three shared registration lines (`build.zig`'s `bundled_packages`,
+- [x] this track's README: the three shared registration lines (`build.zig`'s `bundled_packages`,
       `libs/AGENTS.md`'s table, `format-check.sh`'s `TREES`) go — a new package is a new repository;
       `fronts.md` § Ownership names the six repositories under `03-bundled-libs`
-- [ ] `09-cardume/136` reads `repository/cardume` as a submodule this front added
+- [x] `09-cardume/136` reads `repository/cardume` as a submodule this front added
 
 **Gate:** standard (fronts.md § Gate) — `zig build test` and `zig build test-libs` from a cold cache in
 botopink-lang, every library repository's own `botopink test`, and the meta repository's
@@ -121,3 +123,14 @@ botopink-lang, every library repository's own `botopink test`, and the meta repo
   name std or a framework already exports) still applies to what they export.
 - **std stays.** std is the language's library — embedded, importable with no declaration, the one
   bundled package left.
+- **Landing.** (1) push the five staged repositories (`feat` and `main`); (2) the botopink-lang
+  patch (std alone in the binary) and the rakun, jhonstart and onze manifest patches, together — a
+  consumer that declares `routing` while the compiler still bundles it is refused
+  (`BundledDependency`), and one that does not declare it after is 242's unresolved source; (3) the
+  meta patch (`.gitmodules`, `AGENTS.md`, `hook-integrity.yml`) with the submodule pointers at the
+  pushed tips (CI checks 1 and 2). `cardume`'s submodule, its job-`libs` checkout and its layout and
+  check-4 entries are a separate patch that lands once its scaffold is pushed.
+- **Shorthand reach (`138-a`).** With `routing` a dependency, decision 170's exclusion — the
+  shorthand never reaches a bundled package — has no package left to cover (std's modules are
+  reached: measured); `tests/language/modules/shorthand_import_beside_bundled_package` answers
+  `ambiguous-import-use` until `138-a` is decided.

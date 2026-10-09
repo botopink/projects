@@ -1,11 +1,10 @@
-# Front 104 — http: a bundled `http`, the codecs of HTTP semantics
+# Front 104 — http: a shared `http`, the codecs of HTTP semantics
 
 **Priority:** high — four `Cookie:` readers with three duplicate rules: a correctness defect under
 cookie tossing · **State:** partial: steps 1–4 (the package) on feat; step 5 open
 **Depends on:** step 5 — owners of its consumer files landed: `04-rakun` 04, 65, 79, 12, 19, 22 and
 `08-bpp/123` (also in rakun-web), `07-onze` 49 and 51 (decision 188)
-**Owns:** `repository/botopink-lang/libs/http/**` · the three registration lines (`build.zig`
-`bundled_packages`, `libs/AGENTS.md` packages table, `scripts/format-check.sh` `TREES`) · consumers:
+**Owns:** `repository/http/**` (`botopink/http`, a repository of its own since 138 (decision 326)) · consumers:
 `repository/rakun/modules/rakun/src/request_context.bp` (cookie lookup, `equalsConstantTime` sites),
 `rakun-web/src/{negotiation,compression,static,error}.bp`, `rakun-security/src/csrf.bp`
 (`cookieValue`), `rakun-session/src/session_cookie.bp`, `rakun-app/src/i18n.bp` (`cookieFrom`,
@@ -48,7 +47,7 @@ Copies step 5 deletes:
   `formatHeader`
 - Step 2 — `accept`: strict `qValue` (decision 182), media / token / language negotiation
 - Step 3 — `mime`, `status`, `date`, `byteRange`, `cacheControl`
-- Step 4 — registered in `build.zig`, `libs/AGENTS.md`, `scripts/format-check.sh`; `libs/http/AGENTS.md`
+- Step 4 — the package's `AGENTS.md` (registered in the compiler then; 138 moved it to `repository/http`)
 
 ## Open
 
@@ -69,7 +68,7 @@ One commit per member, after the member's owning front has landed.
 ### Step 6 — a cookie is declared once, typed (decision 294)
 
 - [ ] `pub type Cookie<T>(name: string, httpOnly: bool = true, secure: bool = true, sameSite:
-      SameSite = .Lax, maxAge: ?Duration = null, path: string = "/")` in `libs/http` (the package both
+      SameSite = .Lax, maxAge: ?Duration = null, path: string = "/")` in `repository/http` (the package both
       jhonstart and rakun reach, 113); `T` one `http` can encode — `string`, numbers, `bool`, an enum,
       a one-field record — a value that does not decode reads as absent
 - [ ] `cookie.read(decl, header) -> ?T` (first-wins, 181) and `cookie.write(decl, value) -> string`

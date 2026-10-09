@@ -43,7 +43,7 @@ Paths in `repository/rakun` are the tree `04-rakun/128` leaves (decision 187;
 | `00-gate` (114) | `scripts/check-docs.sh`; the marker and fence lines of `docs.md` (not its prose); botopink-lang `.github/workflows/test.yml`; `gate.sh`'s budget lines; the vscode-extension workflow's Erlang install; rakun `test.yml`'s glibc comment; the meta `.github/workflows/**` and meta `AGENTS.md` § CI | the stages' content, the checker, the emitters |
 | `01-compiler` | per front, [`01-compiler/README.md`](./01-compiler/README.md) § Ownership: the checker and parser (01); each backend's emitter and snapshot directories (02 · 03 · 04 · 05); `codegen/tests/**`, `comptime/tests/**`, `parser/tests/**`, `language-server/src/tests/**`, the prose of `docs.md`, erika's C-13 migration (07); `tests/language/**` bookkeeping (12); `asm_text.zig` (14); `format.zig` and the `;` parser kind (16); the keyed-`Ets` functions (17); `beam_file.zig`, `opcodes.zig`, the wasm binary emitter, `release.yml` and two `build.zig` steps (18); `compiler-cli/**`, `bpmp/**`, `language-server/**`, root `build.zig` (26); the decorator sites (130); `builtins.d.bp` and `comptime/builtins.zig` (134) | `libs/std/**` but the carve-outs; every library repository |
 | `02-std-and-packaging` | `libs/std/**` and the std halves handed over (97); the examples' `README.md` and `-test` helpers no library front claimed, `scripts/check-packaging.sh`, `docs/botopink-json.md`, `modules/manifest/**` for the `subdir` field (98) | the compiler; a library's `src/` |
-| `03-bundled-libs` | `libs/{routing,actions,http,i18n,log,release,validation}/**` — after 138 (decision 326) `repository/{routing,actions,http,log,validation}/**`, `repository/{i18n,release}` when born, and `repository/cardume` until 136 opens; 138: the bundled-package lines of botopink-lang's `build.zig`, `libs.zig`, scripts and job `libs`, the consumers' `dependencies` lines, the meta `.gitmodules` / `AGENTS.md` / `hook-integrity.yml` library list (carve-out of 114); until 138, the three registration lines (`build.zig`'s `bundled_packages`, `libs/AGENTS.md`, `format-check.sh` `TREES` — 104 owns them, 105 then 107 append); the consumer lines each front names in rakun, jhonstart and onze, one commit per member | anything else in those members |
+| `03-bundled-libs` | the six repositories of decision 326 — `repository/{actions,http,log,routing,validation}/**` (moved from `botopink-lang/libs` with their history by 138) and `repository/cardume` until 136 opens —, `repository/{i18n,release}` when born (each a repository: nothing in the compiler registers a package); 138: the bundled-package lines of botopink-lang's `build.zig`, `libs.zig`, scripts and job `libs`, the consumers' `dependencies` lines, the meta `.gitmodules` / `AGENTS.md` / `hook-integrity.yml` library list (carve-out of 114); the consumer lines each front names in rakun, jhonstart and onze, one commit per member | anything else in those members |
 | `04-rakun` | while 128 is open: all of `repository/rakun`; `repository/erika/modules/erika/**` and erika's `docs.md`, `examples.md`, `AGENTS.md` (137); after it, `modules/<member>/**` per front ([`04-rakun/README.md`](./04-rakun/README.md) § Parallel groups); `starters/**`, `examples/**` (73) | the compiler, onze, jhonstart, emilia; the core's `src/{decorators,http,bootstrap}.bp` (frozen; the one writer is 130's decision-216 rewrite) |
 | `05-jhonstart` | `modules/jhonstart/**` and `jhonstart-dom-test/**` (26 — `fake_dom.mjs` stays 26's; a front owns the test file it adds there); `jhonstart-link/**` (27); `jhonstart-forms/**`, `jhonstart-dom-test/test/forms_dom_test.bp`, the harness's `stubWireNames()` (67) | rakun; `element.bp`, `hooks.bp` (frozen); `routes.bp`'s segment walk (102), `render.bp`'s `isLangTag` (105), `form.bp`'s `formAction` check (103) while those fronts are open |
 | `06-emilia` | `modules/emilia/src/**` and its comment carve-outs from 118 (34); `examples/emilia-card/**` and the fifteen example READMEs (33) | jhonstart; `src/scoped.bp` and `jhonstart-emilia/**` (`08-bpp/119`) |
@@ -74,10 +74,10 @@ that must edit one names it as a carve-out in its commit, and no two open fronts
   letter of 188 (to confirm). 104 step 5, 105, 107 and 106's `problem_digest` commit take their
   slot **after** the fronts that own their consumer files; 106's other consumers are the owners' own
   steps (26 s4, 17, 49 s3 — decisions 194, 195). 104 before 105 (both edit `rakun-app/src/i18n.bp`);
-  71 and 81 before 107; 103 step 2 before 67; 105's edit of `libs/validation/src/messages.bp`
+  71 and 81 before 107; 103 step 2 before 67; 105's edit of `repository/validation/src/messages.bp`
   between two steps of 125, never during one.
-- **The three registration files** take one appending front at a time (decision 189): 104 owns the
-  lines; `routing`, `actions`, `validation`, `http`, `log` are registered; 105, then 107.
+- **No registration file** (decision 326): a package is a repository; 105 and 107 create theirs
+  (`botopink/i18n`, `botopink/release`), and decision 189's appending order has nothing left to order.
 - **Inside `04-rakun`**: 128 first and alone in the repository (decision 187), after the rakun
   commits of 102 step 3 and 103 step 2; then groups A, B, C as its README computes. 04 step 1 (the
   tag epoch, decision 185) gates 13 and 12; 04 step 4 gates 08 step 1, 19 steps 2–5 and 88; 04
@@ -125,9 +125,9 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 
 | Front | Needs | Unblocks |
 |---|---|---|
-| **102** s1–2 | done (re-implemented in `libs/routing`) | 102 s3 · 117 · 122 |
+| **102** s1–2 | done (re-implemented in `repository/routing`) | 102 s3 · 117 · 122 |
 | **102** s3 | s1–2 · 323 | 128 · 22 · 26 · 49 · 50 · 117 · 124 |
-| **103** s1 | done (re-implemented in `libs/actions`) | 103 s2 · 127 |
+| **103** s1 | done (re-implemented in `repository/actions`) | 103 s2 · 127 |
 | **103** s2 | s1 | 128 · 22 · 67 · 127 |
 | **104** s5 | 04 · 65 · 79 · 12 · 19 · 22 · 123 · 49 · 51 | 105 |
 | **105** | 104 s5 · 22 · 26 · 03r-q confirmed | — |

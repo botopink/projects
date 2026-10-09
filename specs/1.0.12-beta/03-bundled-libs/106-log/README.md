@@ -1,10 +1,10 @@
-# Front 106 — log: a bundled `log`, one error digest, one way to the logger
+# Front 106 — log: a shared `log`, one error digest, one way to the logger
 
 **Priority:** high — `05-jhonstart/26` step 4, `04-rakun/17`, `07-onze/49` step 3 written against it
 (decisions 194, 195) · **State:** partial: step 1 (the package) on feat; step 2 open
 **Depends on:** step 2 — `04-rakun/17` and `05-jhonstart/26` step 4 (their boxes), `04-rakun/65`
 landed (own commit)
-**Owns:** `repository/botopink-lang/libs/log/**` · one consumer commit:
+**Owns:** `repository/log/**` · one consumer commit:
 `repository/rakun/modules/rakun-web/src/error.bp` (`problem_digest` erlang cell) and
 `rakun-web/src/sidecars/rakun_chain.erl`'s `problem_digest/1` — after `04-rakun/65`, never in a wave
 with it, `08-bpp/123` or `104-http` step 5 (same member, decision 188)

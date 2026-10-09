@@ -352,6 +352,14 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Recommendation.** (a).
 - **Blocks.** Nothing waits; the track is cut as (a).
 
+#### 138-a · Does the shorthand import reach a dependency's modules?
+- **Measured.** Decision 170's compiler side (`comptime.zig` `outsideShorthandReach`) keeps the shorthand (`import {x};`, no `from`) out of a **bundled** package's modules only. After 326 std is the one bundled package, and std's modules are reached anyway (another refusal: `` `split` is declared `pub` by `std/path` and by `config`, and this import does not say which ``), so the exclusion covers nothing. `tests/language/modules/shorthand_import_beside_bundled_package`, rewritten to declare a fixture `routing` by `path`, answers on all four targets: `error: ambiguous-import-use: `splitPath` is imported from two declarations — declared `pub` by `config` and by `routing/match` — and this use does not say which`. On the parent binary (bundled `routing`) it printed `own` / `2`.
+- **Options.** Over `src/config.bp` = `pub fn splitPath(p: string) -> string[] { return ["own", p]; }` and `src/main.bp` = `pub mod config; import {splitPath}; import {splitPath as routeSplit} from "routing";` with `routing` declared:
+  (a) the shorthand resolves among the importing package's own modules only — never a dependency's, never std's: the program prints `own` then `2`, as it did while `routing` was bundled (326: "their names, exports and import sources do not change"); `comptime.zig`'s exclusion keys on "a module of another package of the build" instead of "a bundled package" (01-compiler).
+  (b) the shorthand reaches every loaded module, own or not: `import {splitPath};` is `ambiguous-import-use`, and the program must write `import {config.splitPath};` (170: "a bare name reaching two declarations is refused"); the cell becomes a `<target>.expect` refusal, and `outsideShorthandReach` is deleted as dead code.
+- **Recommendation.** (b) — the strictest (decision 67: refuse > accept), and no code to keep for a package kind that no longer exists; a consumer that met the case writes the module path once.
+- **Blocks.** The cell above (red until decided) and with it front 138's botopink-lang patch; under (b) also any consumer member whose shorthand reached a moved package's name (none measured in `zig build test-libs`).
+
 ### 04-rakun
 
 #### erk-a · The source of an `erika "…"` query in a method body (*proposed*)
