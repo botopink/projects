@@ -1,8 +1,8 @@
 # Front 97 — std dedupe: one place for every shared primitive
 
 **Priority:** high — every library's "consume std X" step is written against this surface ·
-**State:** partial: steps 0–5, 8–10, 12 (but `unicode`) on feat; residue of steps 1, 2, 4, 12, step 6
-(conditional), 11, 13, 14 open; step 7 → 20-snap
+**State:** partial: steps 0–5, 8–10, 12 on feat; residue of steps 1, 2, 4, step 6 (conditional), 11
+open (its questions raised: `97-a`, `97-b`, `97-c`, `110-a`), 13, 14 open; step 7 → 20-snap
 **Depends on:** `std-d` (step 6) · `24-g` confirmed (step 5) · decision 230 (step 11) · decision
 262 (step 12)
 **Owns:** `repository/botopink-lang/libs/std/src/**`, `libs/std/AGENTS.md`, `libs/std/test/**` ·
@@ -43,7 +43,13 @@ function in the concept's module. Each library copy deleted by its file's front.
   of `run/std_math_on_every_target`); transcendentals `fn:` bodies on erlang and beam, exact ops
   host calls (decisions 259, 262, 263 — `d71b89f5`, `a443f52d`); `contentHash` folds code points
   on every target (`Array.from(s)`, `hash.contentHash folds a code point above U+FFFF once`; decision
-  260 — `d71b89f5`)
+  260 — `d71b89f5`); `unicode.fromCodepoint` a `fn:` body over `String.fromCodepoint` on all four
+  targets (`unicode.fromCodepoint of a code point above U+FFFF is one code point`)
+- Step 3 — `clock.parseDuration` compares the count with `(2^53 − 1) / unit` before multiplying, so
+  `"104249992d"` is the `out of range` `Error` on commonJS too (the product aborted there once an
+  `i64` overflow aborts on every target)
+- Step 11 box 1 — a question per module: `97-a` (`io/http`), `97-b` (`async`), `97-c`
+  (`testing/mocks`), `110-a` (`testing/asserts`)
 
 Facts the open rows rely on:
 - `parseInt` answers `i64`, refuses beyond ±(2^53 − 1); on wasm a template-only `String` method traps.
@@ -94,17 +100,8 @@ Modules whose wasm build is not a compiler question (groups 1, 2 are `01-compile
 (`canonical`, decision 146). Per module: (a) out of a wasm build — manifest or module refuses wasm
 with a located message, recorded as the design; or (b) restructured so no host cell is reachable.
 
-- [ ] a question per module in [`../../decisions-pending.md`](../../decisions-pending.md) before it
-      is done
 - [ ] each of the four modules refuses wasm with a located message (recorded in `libs/std/AGENTS.md`
       as the design) or builds on wasm with no host cell reachable
-
-### Step 12 — `unicode.fromCodepoint` over the primitive (decision 262)
-
-Std half of 05-wasm step 5. `unicode.bp`'s `fromCodepoint` is still a Node / Erlang template
-(`String.fromCodePoint($0)`, `unicode:characters_to_binary([$0], utf8)`) with no wasm binding.
-
-- [ ] `unicode.fromCodepoint` a `fn:` over `String.fromCodepoint`; `unicode` builds its text with it
 
 ### Step 13 — std over the hybrid `i64` on commonJS (decision 319; with `04-js` step 9)
 

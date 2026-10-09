@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**56 questions and 9 contradictions are open, and 90 implementation choices await confirmation.**
+**59 questions and 9 contradictions are open, and 90 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -203,6 +203,24 @@ subject under 281. Every decorator parameter in these examples is `comptime` (28
 - **Options.** (1) Confirm the tree: a new decision amends 79 — the old library lives as the tagged history of the same repository. (2) Rewrite the remote to an orphan branch, archive the old history (every checkout re-clones).
 - **Recommendation.** (1).
 - **Blocks.** `02/98` step 3 ("front 95 closed as a confirmation"), written under (1).
+
+#### 97-a · `io/http` on wasm (230 group 3)
+- **Measured.** `import {io.http} from "std"` built `--target wasm` is refused twice, located: `` `fetch` has no `#[@External.<Target>(…)]` for the wasm backend `` at `std/io/http.bp:71:26` and `std-unsupported-on-target … (for fetch)` at the import. `fetch` is the module's one host cell (Node `globalThis.fetch`, erlang `httpc:request`); WASI preview 1, the only host a wasm build has, defines no socket or HTTP call, so no body can be written in botopink.
+- **Options.** (a) Out of a wasm build, as today: `import {io.http} from "std"` → `error: std-unsupported-on-target: std/io/http has no `@external` for target 'wasm' (for fetch)` at `src/main.bp:1:9`, recorded in `libs/std/AGENTS.md` as the design. (b) Restructured: the module's types (`Response`, …) move to a host-free module a wasm program may import (`import {io.httpTypes} from "std"`), `fetch` stays refused.
+- **Recommendation.** (a): nothing a wasm program can do with the types alone; (b) adds a module for no caller.
+- **Blocks.** 97 step 11 (io/http's box).
+
+#### 97-b · `async` on wasm (230 group 3)
+- **Measured.** `import {async} from "std"` built `--target wasm` is refused at `std/async.bp:114:25` (`gateHandle`) and at the import (`for delay, race, raceOf`). Its twelve module cells (plus four test-only ones) are Node/Erlang only (`hostTarget`, `monoMillis`, `delay`, `gateHandle`, `gateOpen`, `gateAwait`, `race`, `spawnAll`, `raceOf`, `millisAsFloat`, `wholeMillis`, `timerMillis`); `nextDelay` (and `RetryPolicy`) is pure arithmetic over three of them. No `run/` cell runs an `@Task` on wasm (`async_block_*.targets` = `commonJS erlang beam`): the wasm backend has no task model to bind a gate or a timer to.
+- **Options.** (a) Out of a wasm build, as today: `import {async} from "std"` → `std-unsupported-on-target: std/async has no `@external` for target 'wasm' (for delay, race, raceOf)`, recorded in `libs/std/AGENTS.md`. (b) Restructured: `RetryPolicy` / `nextDelay` move to a host-free module (`import {retryPolicy} from "std"`, `retryPolicy.nextDelay(p, 2)` on wasm), whose three numeric casts become `fn:` bodies; every `@Task` function stays refused.
+- **Recommendation.** (a): no wasm consumer of `nextDelay` exists; (b) splits decision 170's surface for none, and is open later.
+- **Blocks.** 97 step 11 (async's box).
+
+#### 97-c · `testing/mocks` on wasm (230 group 3)
+- **Measured.** `import {testing.mocks} from "std"` built `--target wasm` is refused at `std/testing/mocks.bp:121:14` (`pushMatcher`) and at the import (all eight cells: `newMock`, `key`, `pushMatcher`, `invoke`, `beginVerify`, `whenCall`, `thenReturnCell`, `thenThrowCell`). Every cell reads or writes process-wide state (Node `globalThis.__bp_mocks`, erlang the process dictionary); a std module holds no module-level `var` (`libs/std/AGENTS.md`), and `botopink test` runs neither beam nor wasm.
+- **Options.** (a) Out of a wasm build, as today: `import {testing.mocks} from "std"` → `std-unsupported-on-target: std/testing/mocks has no `@external` for target 'wasm' (for newMock, …)`, recorded in `libs/std/AGENTS.md`. (b) Restructured: the registry becomes a value threaded through the calls (`val reg = mocks.registry(); val m = Repo.Mock(reg); mocks.verify(reg, m).find(1)`) — host-free, and decision 71's API changes for every consumer.
+- **Recommendation.** (a): no test runs on wasm, so nothing could call it there.
+- **Blocks.** 97 step 11 (testing/mocks' box). `testing/asserts` is `110-a`.
 
 ### 03-bundled-libs
 
