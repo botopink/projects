@@ -77,7 +77,7 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Blocks.** 98.
 
 #### nat-f4 · The `ONZE_PUBLIC_` prefix on environment variables (53, `contracts.md`)
-- **Measured.** A variable reaches client code only when its name starts with `ONZE_PUBLIC_` (Next's `NEXT_PUBLIC_`). A missing prefix is not silent: the bundler refuses at build a client module's `env.read("X")` without it, naming the variable (`env-non-public`, `onze-bundler/src/refusal.bp:13-14`; `contracts.md:439-441`). What remains is a stage fact (186) carried by a naming convention the environment must follow (`client-island-example.bp:41`).
+- **Measured.** A variable reaches client code only when its name starts with `ONZE_PUBLIC_` (Next's `NEXT_PUBLIC_`). A missing prefix is not silent: the bundler refuses at build a client module's `env.read("X")` without it, naming the variable (`env-non-public`, `onze-bundler/src/refusal.bp:13-14`; `contracts.md:440-442`). What remains is a stage fact (186) carried by a naming convention the environment must follow (`client-island-example.bp:41`).
 - **Options.** (a) Kept. (b) The declaration says it — `#[publicEnv] val apiUrl = env.read("API_URL")`, its use from a `#[client]` component checked at comptime (186); a marker of its own, since `#[clientVisible]` is 278's hydration annotation; 299's `#[env("…")]` the precedent in a record. (c) A list of public variables in `onze.json`.
 - **Recommendation.** (b).
 - **Blocks.** `07-onze/50`, `53`; `contracts.md`.

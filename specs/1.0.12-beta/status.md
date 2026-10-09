@@ -5,7 +5,7 @@
 `a19340b` · jhonstart `eddd681` · emilia `42d51ec` · onze `b1a3110` · erika `0a463f5` ·
 vscode-extension `7993f96`
 
-**Fronts:** 69 — **1 done** (129) · **18 partial** · **50 not started** (102 and 103 count as not
+**Fronts:** 70 — **1 done** (129) · **18 partial** · **51 not started** (102 and 103 count as not
 started: their done steps are on unpushed branches only).
 
 | Track | Done | Partial | Not started |
@@ -15,7 +15,7 @@ started: their done steps are on unpushed branches only).
 | `02-std-and-packaging` | — | 97 | 98 |
 | `03-bundled-libs` | — | 104 · 106 · 125 | 102 · 103 · 105 · 107 |
 | `04-rakun` | — | 13 · 92 | the other 18 |
-| `05-jhonstart` · `06-emilia` · `07-onze` · `08-bpp` · `20-snap` | — | — | all (3 · 2 · 5 · 11 · 1) |
+| `05-jhonstart` · `06-emilia` · `07-onze` · `08-bpp` · `09-cardume` · `20-snap` | — | — | all (3 · 2 · 5 · 11 · 1 · 1) |
 
 **Gate:** a green `scripts/gate.sh --cold` was last recorded on botopink-lang `0041d38c`; no cold
 gate is recorded on the current tip — [`00-gate/114`](./00-gate/114-gate-docs-and-ci/README.md)
@@ -98,8 +98,8 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 26 s6 — lg2-v's resolver half · lg2-v
 - [ ] 26 s7 — `build.zig`'s `test-docs` comment (handed by 114) · none
 - [ ] 26 s8 — 206's residuals: the LSP's import check, a package importing itself · none
-- [ ] 130 s5 — the remaining decorator sites (34 of 119 done, plus `#[schema]`'s 5) · rakun's DI on 01 s20 · rakun sites under the 130↔128 rule · rakun-client's on the behavior-member gap · ctr-q
-- [ ] 130 s6 — module-level `@emit` removed · 130 s5 · 216 against `#[schema]`'s free functions (no id)
+- [ ] 130 s5 — the remaining decorator sites (34 of 119 done, plus `#[schema]`'s 5) · rakun's DI on 01 s20 · rakun sites under the 130↔128 rule (03r-ao, only the record) · rakun-client's on the behavior-member gap (ctr-q closed: the table built at comptime, 281, 256)
+- [ ] 130 s6 — module-level `@emit` removed · 130 s5 · `#[schema]`'s free functions → members of the type (306; spelling: ctr-u)
 - [ ] 134 s2 — the type functions, the `result` namespace, the `@Result` / `?T` methods, `@is` · 134-d
 - [ ] 134 s4–s6 — variadic parameter and the print builtins (267); the `Decorator` type for `with:` (268); `use @getContext(T)` (269)
 - [ ] 07-residuals s3, s5–s8, s12, s13 — `uncertain` rows, test comments, the `@BeamMemory` text, C-18's corrections + `docs.md:5` + § Imports, the lib-agnostic gate names every library, the per-cell compile row, the `async` delay flake · none (s8's comments after 02)
@@ -123,7 +123,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 102 s3 (W2) — consumers, one commit per member, rakun's first (`rakun-app`, `rakun-hateoas`), then jhonstart `routes.bp`, onze `types.bp`, `scan.bp`, `chunk.bp` · 102 s1–2 landed · 49-d confirmed as amended
 - [ ] 103 s2 (W2) — consumers: rakun-app `actions.bp`, jhonstart-forms `form.bp` · 103 s1 landed · the `deriveActionId` / rakun-app `actionId` wrapper choice to confirm
 - [ ] 128 (W3) — the nine merges, alone in rakun · the rakun commits of 102 s3 and 103 s2 · ctr-k
-- [ ] 130 ↔ 128 — 128 does not wait on 130; no 130 rakun commit while 128 is open; after it, each is a decision-188 consumer commit · **to confirm** (no id)
+- [ ] 130 ↔ 128 — 128 does not wait on 130; no 130 rakun commit while 128 is open; after it, each is a decision-188 consumer commit · **to confirm** (03r-ao — only the record; the fronts follow (a))
 - [ ] rakun group A (W4–W5) — 04 (s1, the tag epoch, first) · 74 · 08 (s1 after 04 s4) · 15 · 79 · 81 · 93 · 73 · 19 s1 · 128 landed
 - [ ] rakun group B (W5–W7) — 13 (04 s1) · 12 (04 s1, 19 s1) · 22 (04 s5) · 17 (13 s2) · 11 (22) · 65 · 09 (19 s1, 13) · 91 (15) · 92 (74, 15) · the A step each names
 - [ ] rakun group C (W8) — 88 (81, 93, 92, 04 s4, 73) · 19 s2–5 (15 s1, 04 s4) · group B
@@ -131,24 +131,24 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 
 ## L3 — ready to open now
 
-- [ ] 118 — the template language, tag annotations (278), `prelude.bp`, the node type · none (props-d/e/f hold their boxes; ctr-r)
+- [ ] 118 — the template language, tag annotations (278), `prelude.bp`, the node type · none (props-d/e/f hold their boxes; ctr-r closed: 118 goes first, org-3 holds)
 - [ ] 121 s1–2 — Markdown to `Element` in the new member `onze-content` · none
-- [ ] 34 s1–3 — `hashHex` → std and the cross-library comments; the five families; the breakpoint refusal · s2: 05emilia-l confirmed · opens before 118's carve-out (ctr-r / 189)
-- [ ] 33 s2 — `emilia-card` emilia-only, the fifteen example READMEs (s1, s3, s4 are 135's) · none (ctr-r / 189)
+- [ ] 34 s1–3 — `hashHex` → std and the cross-library comments; the five families; the breakpoint refusal · s2: 05emilia-l confirmed · opens before 118's carve-out (ctr-v / 189, only the record)
+- [ ] 33 s2 — `emilia-card` emilia-only, the fifteen example READMEs (s1, s3, s4 are 135's) · none (ctr-v / 189, only the record)
 - [ ] 49 s1 · s6 — consume std's `Json` accessors in `config.bp`; the `onze-test` group stubs · none — not beside 102 s3's onze commits (188)
 - [ ] 50 s1 — consume std in `onze-cli` / `onze-bundler` · none — not beside 102 s3's `scan.bp` / `chunk.bp` commits (188)
 - [ ] 51 s1 — consume std (`fn intOf` in `svg.bp`, `metrics.bp`) · none
 - [ ] 27 s1 box 1 · s2 · s3 — the reconcile driver, `use linkStatus()` under a `@Component`, the example · 27-a to confirm
-- [ ] 125 s3 → s10 — in order, alone in `libs/validation` · 07-j (size) · 125's `@emit` shape against 216 (no id)
+- [ ] 125 s3 → s10 — in order, alone in `libs/validation` · 07-j (reduced: ≈ option (c) under 306) · `#[schema]` into `#[validated]` (306; spelling: ctr-u)
 
 ## L4 — later, in waves
 
 Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 
-- [ ] 136 (`09-cardume`) — cardume: the core, `rakun-cardume`, `jhonstart-cardume` · `botopink/cardume` to be created and pushed · 26 · 120 · 125 · atm-a · atm-c · s8: atm-d
-- [ ] 26 (W3) — the core: s0 merges `jhonstart-html`, s1–6 · 118 landed · 102 s3 `routes.bp` · s5: 29-a · s8: 01's hooks capability, ctr-l (s7 is 135's)
+- [ ] 136 (`09-cardume`) — cardume: the core, `rakun-cardume`, `jhonstart-cardume` · `botopink/cardume` to be created and pushed · 26 · 120 · 125 · atm-a (reduced: the cookie hooks) · atm-c · s8: atm-d
+- [ ] 26 (W3) — the core: s0 merges `jhonstart-html`, s1–6 · 118 landed · 102 s3 `routes.bp` · s5: 29-a (reduced: `registerRouteStarters` + `globals.starters`) · s8: 01's hooks capability, ctr-l (only the record) (s7 is 135's)
 - [ ] 27 s1 box 2 (W7) — the route-kind flag read · 22
-- [ ] 67 (W4) — the DOM-side forms boxes, the wire names handed in · 26 · 103 s2 · 67-a (s4 needs only 103 s2)
+- [ ] 67 (W4) — the DOM-side forms boxes, the wire names handed in · 26 · 103 s2 · 67-a (only the record) (s4 needs only 103 s2)
 - [ ] 49 s2–5 (W3 → W7) — query, headers, dispatcher; the digest's sink; the public root; the dynamic mark · 102 s3 · s3: 26 s4 + 17 · s4: 65 s1 · s5: 22 s4 · 49-e
 - [ ] 50 s2–7, s9 (W3 → W8) — `dev`, `prerender/`, the signal, `bin/onze`, the bundler tail, the defaults table; the `@/` alias gone (218) · 102 s3 · s2: 50-b · s4, s7: std-d · s5: 71 s2 · s6: 27 s1
 - [ ] 51 s2–6 (W7) — single flight and the route, the prop table, the metrics generator, the OG defaults · 22 · s4: 52-a
@@ -156,7 +156,7 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 - [ ] 53 (W8) — the blog's `alias` gone, the acceptance script's second half, the browser · 49 · 50 · 51 · 71 s1–4 · 26 · 27 · 67 · 22 · 12 · 65 · 135 s5 (the runner) · s6: 50-b
 - [ ] 119 (W3) — scoped `<style>` · 08-d · s2: 118, 26
 - [ ] 117 (W7) — `.bpp` / `.md` app files, `staticPaths`, `paginate`, partials · 102 · 22 · 49 · 50 · 121 s1–2 · s1: 293
-- [ ] 123 (W7) — `locals`, `sequence`, `actionContext` · 04 · 65 · s1 box 3: 08-j
+- [ ] 123 (W7) — `locals`, `sequence`, `actionContext` · 04 · 65 (s1 box 3: 08-j closed → 295/296, `use local(atom)`, the store `rakun-cardume`'s)
 - [ ] 120 (W8) — hydration strategies as `#[client…]` / `#[serverDefer]` annotations (278), server islands · 118 · s1: 26 s8 (`clientOnly`) · 119 · 117 · 26 · 22 · 49 · 50
 - [ ] 121 s3–6 (W9) · s7 (W10) — frontmatter, collections, references and RSS, `.md` pages; the blog reads Markdown · s3: 08-f · s6: 118, 117 · s7: 53
 - [ ] 122 (W9) — page-side status and headers, `rewrite`, `site` · 26 · 49 · 102 · 118 · 120
@@ -165,7 +165,7 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 - [ ] 116 (W5 at the earliest) — the `.bpp` file kind · 118 · 26 s0 · 01-compiler/26 · with 01-checker s22 · s2: 01-checker s25 (289) · s6: 293
 - [ ] 105 (W9) — bundled `i18n` · 104 s5 · 22 · 26 · 03r-q confirmed
 - [ ] 107 (W9) — bundled `release` · 07-g · 71 · 81
-- [ ] 124 s1–4 (W10) · s5 (W11) — the commands, the config keys, the `.bpp` scaffold · 08-h · every other 08 front · s5: 116, 53
+- [ ] 124 s1–4 (W10) · s5 (W11) — the commands, the config keys, the `.bpp` scaffold (08-h closed → 285, 224) · every other 08 front · s5: 116, 53
 - [ ] 98 (W11) — packaging checked everywhere · every library track's `-test` and README steps · s3: 95-f · s4: lg2-v
 - [ ] 16 s1–7 — the `;` re-count, migration and refusal, C-12's reformat, 165, 166/243, C-11 · s2: each library track runs the script · s4: 16-a/b · s6: ctr-s · s3 last, after every tree is migrated
 - [ ] 18 — the CI matrix, the four limits, the bench table, the transport test, `memory.grow` (261) · s1: the maintainer's push
@@ -177,12 +177,13 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.0.10 choices) in its
-last section.
+last section. Open after the 9 Oct revalidation: 64 questions, 11 contradictions, 91 implementation
+choices.
 
 **First — the botopink shape** (raised 2026-10-04; answer `nat-0`, then the rest):
 - [ ] nat-d6…d9 — case by case (283; nat-d1 → 303, nat-d2 → 304, nat-d3 and nat-d4 → 306, nat-d5 → 307): `nav:` strings (26, 53), lifecycle (rakun 04), `use use…` (53), erika's LINQ names (98)
 - [ ] nat-e — Spring's annotations · 130 s5, rakun 04/08/13/15/19/79/91/93, 130-b, 130-c
-- [ ] nat-f2…f4 — case by case (284): `onze.json` keys (124, 08-h), `files`/`workspaces` (98), `ONZE_PUBLIC_` (50, 53)
+- [ ] nat-f2…f4 — case by case (284): `onze.json` keys (124), `files`/`workspaces` (98), `ONZE_PUBLIC_` (50, 53)
 
 Then:
 - [ ] 17-b — 17 s1 box 4
@@ -190,28 +191,29 @@ Then:
 - [ ] std-d — 97 s6 · 50 s4, s7
 - [ ] 95-f — 98 s3
 - [ ] 07-g — 107 whole
-- [ ] 07-j — 125 s3–10 (size)
-- [ ] 03r-ab — 09 s5 (and the scope of s1–4)
+- [ ] 07-j — 125 s3–10 (size; reduced: ≈ option (c) under 306)
+- [ ] 03r-ab — 09 s5 (and the scope of s1–4) · only the record
 - [ ] 03r-ae — 79 s3
 - [ ] 03r-af — 73 s3
 - [ ] 03r-ak — 81 s3
 - [ ] 03r-al — 15 s5
 - [ ] 03r-am — 19 s3–4
 - [ ] 03r-an — 92 s2 (boxes 1, 3)
-- [ ] 67-a — 67 s1–3 · 53's write path
-- [ ] 05emilia-n — 34 s4
+- [ ] 67-a — 67 s1–3 · 53's write path · only the record
+- [ ] 05emilia-n — 34 s4 (reduced: the four features; the refusal is 300)
 - [ ] 50-b — 50 s2 · 53 s6
 - [ ] 08-d — 119 every step
 - [ ] 08-f — 121 s3
-- [ ] 08-h — 124 whole
-- [ ] 08-j — 123 s1 box 3
 - [ ] props-d · props-e · props-f — 118 s1, s4 (native attributes, named slots, spread)
 - [ ] snap-a — 135 s1–5 (replaces 01std-f, 03r-ag, 30-h, 05emilia-m, 53-b) · 53 s2–6 through 135 s5
-- [ ] lg2-a … lg2-w — none opens a front; each opens a step when answered: 01-checker (a, e, f, m, q, r, t), 14 s6 (j, o, w), 26 s6 / 98 s4 / 73 (v); the rakun boxes that name them — 04 (e, g, j), 08 (e, f), 13 · 65 · 09 · 91 · 92 (a, b), 15 (w), 22 (q), 88 (j), 93 (o)
+- [ ] lg2-a … lg2-w — none opens a front; each opens a step when answered: 01-checker (a, e — only `owner`, m, q — reduced, r, t), 14 s6 (j, o, w), 26 s6 / 98 s4 / 73 (v); the rakun boxes that name them — 04 (e, j), 08 (e), 13 · 65 · 09 · 91 · 92 (a, b), 15 (w), 22 (q), 88 (j), 93 (o) · answered: f, i (280), k (216, 253); g has no subject under 281
 - [ ] C-14 — 07-residuals s9 (a 1.0.10 id)
-- [ ] confirmations a step waits on — 49-d (102 s3) · 49-e (49 s2) · 05emilia-l (34 s2) · 52-a (51 s4) · 29-a (26 s5) · 27-a (27) · 03r-q (105) · 16-a/b (16 s4) · 23-a/b/c, std-c (23) · 24-a/b/c/g (24; 24-g also 97 s5's surface)
-- [ ] ctr-k — 17 · 128 · 106 s2
+- [ ] confirmations a step waits on — 49-d (102 s3) · 49-e (49 s2) · 05emilia-l (34 s2) · 52-a (51 s4) · 29-a (26 s5; reduced: `registerRouteStarters` + `globals.starters`) · 27-a (27) · 03r-q (105) · 16-a/b (16 s4) · 23-a/b/c, std-c (23) · 24-a/b/c/g (24; 24-g also 97 s5's surface)
+- [ ] ctr-k — 17 · 128 · 106 s2 (only the record)
 - [ ] ctr-i — 05's string lowering · 02's codepoint cell · ctr-j — 04 s8 · 02 s13 · 03 s8 · 01 s18
-- [ ] ctr-l — 26 s8's refusal list · ctr-q — 130 s5 · ctr-r — 118's carve-outs, 34 / 33 opening first · ctr-s — 16 s6
-- [ ] ctr-m — lg2-s · ctr-n — imp-a · ctr-o — lem-c · ctr-p — 04's readers · 104 s5 (ctr-h blocks nothing)
-- [ ] no id yet — the 130 ↔ 128 rule (128, 130 s5) · 216 against `#[schema]`'s free `@emit` functions (125, 130 s6) · 213 against 221 for `not-found.bpp` (116 s2, 124's scaffold)
+- [ ] ctr-l — 26 s8's refusal list (only the record) · ctr-s — 16 s6 · ctr-u — 125 s12 (only the spelling of `#[validated]`'s members) · ctr-v — 34 / 33 opening before 118 (only the record) · ctr-w — 09 s3
+- [ ] ctr-o — lem-c · ctr-p — 04's readers · 104 s5 (ctr-h blocks nothing)
+- [ ] 03r-ao — the 130 ↔ 128 rule (128, 130 s5) · only the record
+- [ ] imp-a — two aliased same-named types (01-checker rows) · lg2-s — module-graph reflection
+
+Closed on 9 Oct (no longer pending): 08-h → 285, 224 · 08-j → 295 · lg2-g → 281 · ctr-q → 281, 256 · ctr-m (= lg2-s) · ctr-n · ctr-r · 111-c → 228 · 03r-b (reversed), 03r-d → 299 · 95-e · 03r-o → 290 · 05emilia-h → 206 · 68-c → 280, 281. `#[schema]`'s free functions → 306 (ctr-u); `not-found.bpp` (213 against 221) → 289. own-a blocks nothing (`fronts.md` § Ownership's provisional rule).

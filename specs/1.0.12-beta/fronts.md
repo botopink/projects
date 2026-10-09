@@ -56,7 +56,8 @@ Paths in `repository/rakun` are the tree `04-rakun/128` leaves (decision 187;
 114's budget lines), `tests/language/run.sh` (beyond 12's report and `all)` line),
 `modules/test-shard/**`, `modules/lib-test-runner/**` and the meta `scripts/**` were owned by
 `25-gate-perf`, `00-gate` 113, 115 and 133, all closed. Until the maintainer names an owner, a front
-that must edit one names it as a carve-out in its commit, and no two open fronts edit the same one.
+that must edit one names it as a carve-out in its commit, and no two open fronts edit the same one
+(`own-a`; it blocks nothing — no open step edits a runner).
 
 ## Conflict rules
 
@@ -83,7 +84,7 @@ that must edit one names it as a carve-out in its commit, and no two open fronts
   step 5 gates 22; 19 step 1 gates 12 and 09; 15 gates 91 and 92; 74 gates 92. **65 does not wait
   on 13** (its relay streams through `httpc`, not `rakun-client`). 92 step 2 waits on `03r-an`.
   73 is in group A (decision 189).
-- **130 ↔ 128 — to confirm** (no decision id): (1) 128 does not wait on 130; (2) no 130 rakun
+- **130 ↔ 128 — to confirm** (`03r-ao`, only the record): (1) 128 does not wait on 130; (2) no 130 rakun
   commit is in flight while 128 is open, and 130's rakun sites are re-pointed at the post-128 paths;
   (3) after 128, each 130 rakun commit is a decision-188 consumer commit — before the owning rakun
   front opens if ready, else after it lands; (4) the frozen-files rule excepts 130's rewrite of
@@ -95,7 +96,8 @@ that must edit one names it as a carve-out in its commit, and no two open fronts
   bracket-attribute carve-outs land before the owning front opens (189 org-3), and it writes the
   core's `prelude.bp` and the node type before 26 opens (270). In emilia the carve-out is comments
   only, and 34 step 1 and 33 step 2 take it over and open now — this departs from the letter of 189
-  (flagged as `ctr-r`).
+  (`ctr-v`, only the record; `ctr-r` closed 9 Oct — 118 lands in `jhonstart-html` before 26 step 0
+  merges it, so org-3 holds literally).
 - **Files several fronts append to, one at a time** (decision 189): `html.bp` 119 → 120 → 126;
   `rakun-app`'s `botopink.json` / `root.bp` 117 → 120 → 127; the jhonstart core 120 → 122;
   `fake_dom.mjs`, after 26, 120 → 126; `onze/src/config.bp` 122 (`site`) → 124.
@@ -131,8 +133,8 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 | **105** | 104 s5 · 22 · 26 · 03r-q confirmed | — |
 | **106** s2 | 17 · 26 s4 · 65 · ctr-k | — |
 | **107** | 07-g (a) · 71 · 81 | — |
-| **125** s3–10 | 07-j · s6: decision 183 | 127 (s6) |
-| **128** | the rakun commits of 102 s3 and 103 s2 · the 130 rule · ctr-k | every rakun front |
+| **125** s3–10 | 07-j (reduced: ≈ (c) under 306) · s6: decision 183 | 127 (s6) |
+| **128** | the rakun commits of 102 s3 and 103 s2 · the 130 rule (03r-ao) · ctr-k | every rakun front |
 | **04** | 128 | 13 · 12 (s1) · 22 (s5) · 08 s1 · 19 s2–5 · 88 (s4) · 123 · 104 s5 · 71 s3 |
 | **74** | 128 | 92 |
 | **08** | 128 · s1: 04 s4 | — |
@@ -166,17 +168,17 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 | **71** s3 · s4 | s3: 11, 04, 81 · s4: 22 | 53 · 107 |
 | **71** s5 | 50 · 53 | — |
 | **53** | 49 · 50 · 51 · 71 s1–4 · 26 · 27 · 67 · 22 · 12 · 65 · 135 s5 (s2–6) · s6: 50-b | 71 s5 · 121 s7 · 124 s5 · 120's and 126's browser boxes |
-| **118** | props-d/e/f (their boxes) · ctr-r | 26 · 119 · 120 · 126 · 121 s6 · 116 |
+| **118** | props-d/e/f (their boxes) | 26 · 119 · 120 · 126 · 121 s6 · 116 |
 | **121** s1–2 · s3–6 · s7 | — · s3: 08-f, s6: 118, 117 · 53 | 117 · 124 |
 | **119** | 08-d · s2: 118, 26 | 120 |
-| **123** | 04 · 65 · s1: 08-j | 127 s4 · 104 s5 |
+| **123** | 04 · 65 | 127 s4 · 104 s5 |
 | **117** | 102 · 22 · 49 · 50 · 121 s1–2 | 120 · 127 · 121 s6 · 124 |
 | **120** | 118 · 119 · 117 · 26 · 22 · 49 · 50 | 122 · 126 · 127 · 124 |
 | **122** | 26 · 49 · 102 · 118 · 120 | 124 |
 | **126** | 27 · 118 · 120 | 127 · 124 |
 | **127** | 125 s6 · 103 · 22 · 67 · 49 · 117 · 120 · 126 · s4: 123 | 124 |
 | **116** | 118 · 26 s0 · `01-compiler/26` · with `01-checker` s22 · decisions 198–200, 212, 213, 221, 270, 285, 288, 289 · s2: `01-checker` s25 | 124 s5 |
-| **124** | 08-h · 50 · 71 · every other `08` front · s5: 116, 53 | — |
+| **124** | 50 · 71 · every other `08` front · s5: 116, 53 | — |
 | **98** | every library track's `-test` and README steps · s3: 95-f · s4: lg2-v | — |
 | **135** | snap-a · s4: 34 · s1–4: the owning fronts' other steps | s5: 53 s2–6 |
 
@@ -199,7 +201,7 @@ for the carve-outs named above.
 | 7 | 11 · 123 · 117 · 49 s3–5 · 51 s2–6 · 71 s3–4 · 27 s1 box 2 · 135 s5 | 22 (11, 117, 51, 49 s5, 71 s4, 27); 04 and 65 (123); 26 s4 and 17 (49 s3); 65 s1 (49 s4); 11, 04, 81 (71 s3); snap-a (135 s5, before 53) |
 | 8 | 88 · 19 s2–5 · 120 · 53 · 104 s5 · 106 s2 · 50 s5–6 | 81, 93, 92, 04 s4, 73 (88); 15 s1, 04 s4 (19); 117, 119 (120); every front 53 names; every owner of 104's consumer files; 65, 17, 26 s4 (106); 71 s2, 27 s1 (50) |
 | 9 | 122 · 126 · 121 s3–6 · 105 · 107 | 120 (122, 126); 08-f, 117 (121); 104 s5 (105); 07-g, 71, 81 (107) |
-| 10 | 127 · 71 s5 · 121 s7 · 124 s1–4 | 125 s6, 126, 123 (127); 50 and 53 (71 s5, 121 s7); 08-h and every other `08` front but 116 (124) |
+| 10 | 127 · 71 s5 · 121 s7 · 124 s1–4 | 125 s6, 126, 123 (127); 50 and 53 (71 s5, 121 s7); every other `08` front but 116 (124) |
 | 11 | 124 s5 · 98 · 135 s1–4 | 116 and 53 (124 s5); every library track (98); snap-a, 34 and the owning fronts (135, last) |
 
 The chains that set the pace: 102 / 103 pushed → 102 s3 + 103 s2 → 128 → 04 → 22 → 49 → 53;

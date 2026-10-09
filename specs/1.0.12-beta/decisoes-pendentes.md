@@ -295,7 +295,7 @@ prelude do pacote do `"bpp"` é `src/prelude.bp`, listado em `files`.
 **Contexto.** Uma variável só chega ao código do browser se o nome começar com `ONZE_PUBLIC_` (cópia do
 `NEXT_PUBLIC_`). Esquecer o prefixo não passa calado: o bundler recusa no build um `env.read("X")` de
 módulo cliente cujo nome não tem o prefixo, e nomeia a variável (`env-non-public`,
-`onze-bundler/src/refusal.bp:13-14`; `contracts.md:439-441`). O que fica é um fato de etapa (186)
+`onze-bundler/src/refusal.bp:13-14`; `contracts.md:440-442`). O que fica é um fato de etapa (186)
 carregado por uma convenção de nome, e o nome da variável no ambiente é obrigado a carregar o prefixo.
 
 **Hoje:**
@@ -5383,7 +5383,7 @@ error[emilia-unevaluated]     um dos dois backends não respondeu
 
 - [ ] **(a)** ★ manter — a classe é a da própria função do emilia, nos dois compiladores
   ```text
-  contrato 4: [Flex, Gap.N(4)]  →  e_39b87d03   (node == erl)
+  contrato 4: className(cardTokens(), defaultTheme())  →  e_39b87d03   (node == erl)
   ```
 - [ ] **(b)** um interpretador de tokens no bundler — uma segunda implementação do emilia
   ```bp

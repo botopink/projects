@@ -162,10 +162,10 @@ Five clauses, each a test:
    (`mergeClass`, `emilia/modules/emilia/src/attributes.bp`), nowhere else.
 5. Attribute array order fixed (`renderToString` writes attrs in array order).
 
-**Shared fixture:** `emilia/modules/emilia/test/attributes_test.bp` (renders no HTML) asserts the
-class for a fixed token list as a **literal hex string** on commonJS and erlang; the
-`jhonstart-emilia` bridge test (30) asserts the same literal for the same list; 68's bundle test
-asserts the client produces it. The payload's `s` key makes it checkable at run time.
+**Shared fixture:** `className(cardTokens(), defaultTheme()) == "e_39b87d03"` (`cardTokens()` =
+`[.Bg.White, .Pad.All.__4, .Text.Bold, Token.Hover([.Bg.Color.Gray.__100])]`), a **literal hex string**
+on commonJS and erlang (inline test, `emilia/modules/emilia/src/emilia.bp:16503-16516`, no HTML); the
+`jhonstart-emilia` bridge test (30, `bridge_test.bp:165-186`) and 68's bundle test assert the same literal; the payload's `s` key makes it checkable at run time.
 
 ## 4a · Emilia dispatcher shape — owned by fronts 54 and 56, consumed by 33–48, 57, 58
 
