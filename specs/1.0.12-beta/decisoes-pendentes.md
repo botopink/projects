@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 55 perguntas, 6 contradições e 89 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **355**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 55 perguntas, 6 contradições e 93 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **355**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -995,6 +995,15 @@ Já implementadas; marque "confirmo" ou a alternativa (a pergunta inteira em `de
 | `106-c ★` | A rotação do `fileSink` | (a) A do `logger_std_h` do OTP, escrita uma vez em botopink: depois de uma escrita que deixa o arquivo com `maxBytes` ou mais, ele vira `<path>.0`, cada arquivo sobe um, o `<path>.<maxFiles - 1>` é apagado; `maxFiles` 0 apaga o arquivo; uma chamada de host que falha levanta erro; o teto total do rakun continua do rakun. | (a) ★. A mesma rotação em todo target, e um log que para de escrever em silêncio é um log perdido. |
 | `106-d ★` | Níveis por nome | (a) `Threshold { From(level), Off }`, `Levels(root, names)`, vence o prefixo pontuado mais longo; nome vazio, segmento vazio e nome repetido são recusados (`Error` ao construir um sink, pânico ao resolver); grupos e overrides em tempo de execução são do framework, que reconstrói o `Levels` e instala o sink de novo. | (a) ★. Nada é resolvido adivinhando qual entrada vale. |
 | `106-e ★` | O `captureRuntimeReports()` observa, nunca trata | (a) BEAM: um filtro primário do `logger` no domínio `otp`, que passa o evento adiante intacto (o handler do OTP continua imprimindo); node: `uncaughtExceptionMonitor` (o node continua saindo; o `unhandledRejection` chega como origem no modo padrão); registros do logger `runtime` com `report.kind`; wasm: ligação que não faz nada. | (a) ★. Capturar não muda o que o runtime faz com a falha. |
+
+### Confirmações ★ — bugs-sweep
+
+| Id | Assunto | Implementado (★) | Recomendação |
+|---|---|---|---|
+| `bs-a` | Função associada de um tipo chamada com menos argumentos | (a) Preenche pelos defaults declarados e reordena por rótulo, como a função de um módulo do std: com `fn of(x: string, y: string = "d")`, `Bag.of("p")` é `Bag.of("p", "d")`; qualquer outra contagem é o erro de aridade. (b) Recusar a chamada curta: `'of' expects 2 argument(s), got 1`. | (a). É a regra que toda outra chamada já segue; antes, toda contagem diferente da exata caía num caminho que não checava nem preenchia nada. |
+| `bs-b` | Tipo sem sinal recebe literal negado | (a) Recusa no literal: `val x: u32 = -1;` → ``the literal `-1` does not fit `u32` (at least 0)``. (b) Aceitar e deixar a checagem de execução da 264 abortar na negação. (`-0` passa nos dois.) | (a) — a mais restritiva: o tipo não tem esse valor, e o checker diz isso onde ele está escrito. |
+| `bs-c` | `erl` interrompido sai com status 0 | (a) A saída com o banner do break handler (`BREAK: (a)bort …`) marca a execução como interrompida: nunca vai para o cache. (b) Rodar `erl +Bi` (ignora SIGINT): a execução termina e é genuína, mas um programa travado sobrevive ao Ctrl-C até o timeout de 2 minutos. | (a). É o único lugar em que o harness lê a saída, e só para não guardar. |
+| `bs-d` | Raízes de biblioteca do `check-docs.sh` | (a) `--lib-root <dir>` substitui as raízes padrão; o teste do harness passa a sua; o gate mantém o padrão, que faz hash de todo pacote irmão — o `vscode-extension` tem `botopink.json`, então um link simbólico no `node_modules` dele deixa toda checagem dos docs `never stored` no checkout meta (custo, nunca veredito). (b) As raízes padrão só aceitam pacote com `src`. (c) O hash da árvore pula `node_modules`. | (a) agora; (b) se o custo no gate importar — o manifesto do vscode-extension não é de biblioteca. |
 
 ### Confirmações ★ — libs-external-methods
 
