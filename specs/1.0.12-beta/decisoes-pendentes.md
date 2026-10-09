@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 55 perguntas, 8 contradições e 88 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **338**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 56 perguntas, 8 contradições e 88 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **338**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -1115,6 +1115,37 @@ fn page(comptime decl: @Decl, comptime route: string) { decl.loc.file }   // bad
 foram escritas assim. **Bloqueia:** a linha; rakun 22 (os exemplos com `#[page("…")]` já seguem a (1)).
 
 ---
+
+### 97-s13-a · O `abs()` do mínimo de um tipo inteiro (decisões 264 e 319)
+
+**Trava:** nada no gate; só a metade `abs` do `02/97` passo 13
+
+**Contexto.** O `abs` é uma chamada host (`erlang:abs`, `Math.abs` ou a negação de um `BigInt`), não um
+dos operadores da 264, então nenhum teste de faixa roda: o `abs` do mínimo responde um valor fora do
+tipo, igual em commonJS, erlang e beam. O `Signed` declara um `abs` só para `I32` e `I64`, então o
+template não sabe a largura.
+
+**Hoje:**
+```bp
+fn lo64() -> i64 { return -9223372036854775807l - 1l; }
+@print(lo64().abs());   // 9223372036854775808 — fora do i64 (commonJS, erlang, beam)
+```
+
+- [ ] **(a) ★** O `abs` aborta fora do tipo como o `-` unário: sai do `Signed` para `I32` e `I64`, cada um com o seu limite.
+  ```bp
+  @print(lo64().abs());   // aborta: integer overflow: abs on i64 — nos quatro targets
+  ```
+- [ ] **(b)** Como está: o valor matemático, mesmo fora do tipo.
+  ```bp
+  @print(lo64().abs());   // 9223372036854775808, tipado i64
+  ```
+- [ ] **(c)** O `abs` responde o tipo sem sinal.
+  ```bp
+  val m: u64 = lo64().abs();   // 9223372036854775808ul
+  ```
+
+**Recomendação: (a).** Um valor fora do tipo declarado nunca existe (264); custa duas declarações.
+**Bloqueia:** nada no gate; a célula `run/i64_number_methods_past_js_safe` fica longe do mínimo.
 
 ## Parte 2 — Trava, mas o passo ainda espera outra frente
 
