@@ -166,6 +166,27 @@ Nothing open: 138-a answered (337).
 - **Recommendation.** Read 195 as "rakun's core logging (after 128) installs its erlang logger as `log`'s sink at boot", and record it. The fronts already follow it (`04-rakun/17` R17-1 and step 2; `03-bundled-libs/106-log`); only 195's row is pending.
 - **Blocks.** Nothing in the fronts; the record.
 
+#### 125-a · How the JSON Schema documents are checked against the 2020-12 meta-schema (*proposed*)
+- **Measured.** Step 9's third box asks for "one node script under `test/tools/`, run by
+  `test/json_schema_test.bp` on commonJS, skipped by nothing". A 2020-12 meta-schema check needs a
+  validator (Ajv 2020, or another); none is reachable from `repository/validation`'s suite: the
+  repository ships `.bp` only, has no `package.json`, and a test cannot install from the network
+  (CI and a cold gate). Ajv exists on this machine only inside unrelated global npm packages
+  (`kanban`, `logseq`). The documents are already pinned as literals against
+  ZOD_DOCUMENTATION.md § 8 (`test/json_schema_test.bp`, sixteen documents and nodes).
+- **Options.**
+  (a) Vendor a validator under `test/tools/` (Ajv's standalone 2020 build, ~120 kB JS, MIT) and run
+  it from `test/json_schema_test.bp` through `io.process.run("node", …)` on commonJS:
+  `node test/tools/check-schema.js '<document>'` → `ok` / the error list.
+  (b) A hand-written structural check of the keywords the library writes (`type`, `properties`,
+  `required`, `items`, `prefixItems`, `$ref`, `$defs`, `anyOf`, `format`, …) against the
+  meta-schema's vocabulary, in botopink — no dependency, but not "validates against the
+  meta-schema".
+  (c) Drop the box: the literals against § 8 are the evidence.
+- **Recommendation.** (a) — the strictest reading of the box, a real validator, no network; the
+  vendored file's version and hash recorded in `repository/validation/AGENTS.md`.
+- **Blocks.** 125 step 9, box 3.
+
 #### 07-g · OTP release rendering
 - **Measured.** `rakun-release/release.bp` (into `rakun-cli` under 187) and `onze-release/otp.bp` render the same `.rel` / `vm.args` / `sys.config` / boot script / Dockerfile; onze cannot reuse rakun's (rakun erlang-only, onze-release also commonJS).
 - **Options.** (a) A bundled `release` of pure renderers. (b) A `botopink` CLI feature (02). (c) Leave both.

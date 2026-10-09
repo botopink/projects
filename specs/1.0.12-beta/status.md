@@ -128,7 +128,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 07-residuals s1, s2, s4 — the codegen and comptime report waves, three renames · 02–05 landed · 01 landed
 - [ ] 07-residuals s9 · s10 · s11 — `->` arms · erika's C-13 migration · the pointers' sweep (last) · C-14 · 16 s1–2 · every library merged
 - [ ] 97 s1 residue — `bindInt`'s `i32` through std · std has no `i64` → `i32` narrowing
-- [ ] 97 s2 residue — no `Json` accessor copy left in `libs/` · 125 s2 residue (`schemas.bp`)
+- [ ] 97 s2 residue — no `Json` accessor copy left in `libs/` · 125 s2 residue (`derived.bp`, was `schemas.bp`)
 - [ ] 97 s3 · s5 residue — rakun's `parseDuration`, `skewOf` and four retry loops as "consume std" rows · no 04-rakun front carries them yet
 - [ ] 97 s4 residue — the engine under every `-test` member, `test-libs` counts · none
 - [ ] 97 s11 — std on wasm, group 3 (230) · `io/http`, `async` through 140 + s17 (334) · `testing/mocks` in module memory when tests run on wasm (335), 110-a
@@ -140,6 +140,8 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [x] 125 s0 residue — the `f32` and `url.parse` platform facts as tests
 - [x] 125 s2 residue — the examples as suite cases, the 2 000-deep test, the refusal test, `schemas.bp`'s accessors
 - [x] 125 s3 — checks and formats (39 `surface.md` rows)
+- [x] 125 s4–s12 — enums, unions, tuples, dicts, sets; object policy; coercion and `T.bind`; messages and locales; `T.encode`, codecs, `#[each]` / `#[check(rule)]` / `#[preprocess]`; error views and `T.jsonSchema()`; `#[schema]` folded into `#[validated]` (327's members, `derived` private, `#[validated(transparent)]`) — validation 246 / 0 on erlang and commonJS; consumer patches rakun (375 / 0) and onze-content (714 / 0) — validation, rakun and onze land as patches (hooked)
+- [ ] 125 s4–s12 residue — `#[tag]`'s refusal and `#[wireName]` (`Decl.variants` gap) · the type-level `#[check]`, `#[map]` / `#[tryMap]` / `#[codec]`, signature refusals (01-checker s24) · `Type`'s derived types (01-checker s28, 134 s4) · reflection by `@typeInfo(T).fields` and 298 · the meta-schema check (125-a)
 
 ## L2 — the libraries' critical path
 

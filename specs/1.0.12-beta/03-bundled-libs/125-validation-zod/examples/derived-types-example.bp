@@ -1,90 +1,92 @@
 // Front 125 — validation: Zod's feature set · examples/derived-types-example.bp
 //
 // Demonstrates: step 5 — `.pick`, `.omit`, `.partial`, `.required` and
-// `.extend`. In Zod these answer a new schema at run time. Here a marker on the
-// source type makes the decorator EMIT the derived record, with its own
-// `#[schema]` functions, so the derived type is a type like any other: it is
-// imported, constructed and matched by name.
+// `.extend`. In Zod these answer a new schema at run time. Here they are the
+// language's (decision 307): std's `Type` answers a new named record type at
+// compile time, bound by a module-level `val`, and `#[validated]` on that
+// binding makes it its own schema like any other type — imported, constructed
+// and matched by name, its fields keeping the source's markers.
 //
 //   const JustTheTitle  = Recipe.pick({ title: true });
 //   const NoDescription = Recipe.omit({ description: true });
 //   const RecipePatch   = Recipe.partial();
+//   const RecipeFull    = Recipe.required();
 //   const DogWithBreed  = Dog.extend({ breed: z.string() });
 //
 // Upstream: ZOD_DOCUMENTATION.md § 4.17 (`.extend()`, `.pick()` / `.omit()`,
 //           `.partial()`, `.required()`) — https://zod.dev/api#objects
 //
-// Target: both.
+// Target: both — once `01-checker` step 28 answers `Type`'s calls and 134
+// step 4 declares `pick` / `omit` (the variadic parameter, decision 267). Not a
+// suite case until then.
 
-import {decorators: {schema, pick, omit, partial, extending}} from "validation";
-import {schemas, schemas.Schema, report.ValidationReport, report.Violation} from "validation";
+import {decorators: {validated, minLength}} from "validation";
+import {derived, report: {ValidationReport, Violation}, table.constraintTableJson, constraints.vMinLength} from "validation";
+import {types.Type, json.Json} from "std";
 
-#[schema]
-#[pick("RecipeTitle", "title")]
-#[omit("RecipeBrief", "description")]
-#[partial("RecipePatch")]
+#[validated]
 pub type Recipe(
-    title: string,
+    #[minLength(1)] title: string,
     description: ?string,
     ingredients: Array<string>,
 )
 
-// What the three markers emit, written out:
-//
-//   #[schema] pub type RecipeTitle(title: string)
-//   #[schema] pub type RecipeBrief(title: string, ingredients: Array<string>)
-//   #[schema] pub type RecipePatch(title: ?string, description: ?string, ingredients: ?Array<string>)
-//
-// each with its own parse / decode / schemaOf functions.
-
-// `.extend({ breed })`. The language's `mergeRecords(Dog, Breed)` answers an
-// anonymous record type, which no decorator can annotate.
-//
 // LANGUAGE GAP: a derived record type has no name a decorator can be attached
-// to, so the wider record is declared in full and `#[extending]` checks that it
-// repeats every field of the one it extends, with the same type.
-#[schema]
+// to until `Type`'s calls are answered (`01-checker` step 28).
+#[validated] pub val RecipeTitle = Type.pick(Recipe, .title);
+#[validated] pub val RecipeBrief = Type.omit(Recipe, .description);
+#[validated] pub val RecipePatch = Type.partial(Recipe);
+#[validated] pub val RecipeFull = Type.required(Recipe);
+
+#[validated]
 pub type Dog(name: string, age: ?i32)
 
-#[schema]
-#[extending("Dog")]
-pub type DogWithBreed(name: string, age: ?i32, breed: string)
+#[validated]
+pub type Breed(breed: string)
+
+// `.extend({ breed })`: the merge of two declared types.
+#[validated] pub val DogWithBreed = Type.merge(Dog, Breed);
 
 // A PATCH handler is where a partial type earns its place: only the keys the
-// client sent are applied, with the record's own update form.
+// client sent are applied.
 pub fn applyPatch(recipe: Recipe, patch: RecipePatch) -> Recipe {
     val title = patch.title ?? recipe.title;
     val ingredients = patch.ingredients ?? recipe.ingredients;
-    return Recipe(..recipe, title: title, ingredients: ingredients);
+    return Recipe(title: title, description: recipe.description, ingredients: ingredients);
 }
 
 test "validation: a picked type declares only what was picked" {
-    val t = try decodeRecipeTitle("""{"title": "Feijoada"}""");
+    val t = try RecipeTitle.decode("""{"title": "Feijoada"}""");
     assert t.title == "Feijoada";
-    assert decodeRecipeTitle("""{"title": "Feijoada", "ingredients": []}""").isError();
+    assert RecipeTitle.decode("""{"title": "Feijoada", "ingredients": []}""").isError();
 }
 
 test "validation: an omitted field is gone from the type and from the decoder" {
-    val brief = try decodeRecipeBrief("""{"title": "Feijoada", "ingredients": ["feijão"]}""");
+    val brief = try RecipeBrief.decode("""{"title": "Feijoada", "ingredients": ["feijão"]}""");
     assert brief.ingredients.length == 1;
 }
 
-test "validation: every field of a partial type may be absent" {
-    val patch = try decodeRecipePatch("""{"title": "Feijoada completa"}""");
+test "validation: every field of a partial type may be absent, and keeps its markers" {
+    val patch = try RecipePatch.decode("""{"title": "Feijoada completa"}""");
     assert patch.title == "Feijoada completa";
     assert patch.ingredients == null;
+    assert RecipePatch.decode("""{"title": ""}""").isError();
 }
 
 test "validation: a patch changes what it names and nothing else" {
     val before = Recipe(title: "Feijoada", description: null, ingredients: ["feijão"]);
-    val patch = try decodeRecipePatch("""{"title": "Feijoada completa"}""");
+    val patch = try RecipePatch.decode("""{"title": "Feijoada completa"}""");
     val after = applyPatch(before, patch);
     assert after.title == "Feijoada completa";
     assert after.ingredients.length == 1;
 }
 
-test "validation: the extended record decodes the base's fields and its own" {
-    val dog = try decodeDogWithBreed("""{"name": "Yeller", "breed": "mix"}""");
+test "validation: a required type refuses an absent optional" {
+    assert RecipeFull.decode("""{"title": "x", "ingredients": []}""").isError();
+}
+
+test "validation: the merged record decodes both types' fields" {
+    val dog = try DogWithBreed.decode("""{"name": "Yeller", "breed": "mix"}""");
     assert dog.breed == "mix";
     assert dog.age == null;
 }

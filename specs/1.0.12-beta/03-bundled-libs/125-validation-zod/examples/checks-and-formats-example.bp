@@ -3,7 +3,7 @@
 // Demonstrates: step 3 — the string checks, the string formats and the numeric
 // checks, as markers. A marker is a predicate (`constraints.bp`), a built-in
 // message (`messages.bp`) and a table row (`table.bp`); `#[validated]` is what
-// runs them, and `parse<T>` calls `validate<T>` on the record it built.
+// runs them, and `T.parse` calls `validate()` on the record it built.
 //
 //   z.string().min(2).max(40)            z.email()         z.uuid()
 //   z.string().startsWith("ord_")        z.url()           z.ipv4()
@@ -17,16 +17,16 @@
 // of PCRE and ECMAScript, or a walk — so the server and the browser run one
 // predicate, not two that are supposed to agree.
 
-import {decorators.schema, decorators.validated} from "validation";
+import {decorators.validated} from "validation";
 import {decorators.minLength, decorators.maxLength, decorators.startsWith, decorators.lowercase, decorators.email, decorators.uuid, decorators.url, decorators.httpUrl} from "validation";
 import {decorators.ipv4, decorators.e164, decorators.isoDate, decorators.isoDatetime, decorators.creditCard, decorators.iban, decorators.hash, decorators.gt, decorators.multipleOf, decorators.negative} from "validation";
-import {schemas, schemas.Schema, report.ValidationReport, report.Violation} from "validation";
+import {derived} from "validation";
+import {report.ValidationReport, report.Violation} from "validation";
 import {constraints.vUuid, constraints.vMinLength, constraints.vMaxLength, constraints.vEmail, constraints.vLowercase, constraints.vE164, constraints.vHttpUrl, constraints.vIsoDate} from "validation";
 import {constraints.vStartsWith, constraints.vCreditCard, constraints.vIban, constraints.vGtI32, constraints.vMultipleOfI32, constraints.vNegativeF64, constraints.vIpv4, constraints.vIsoDatetime, constraints.vHash} from "validation";
 import {table.constraintTableJson} from "validation";
 import {json.Json} from "std";
 
-#[schema]
 #[validated]
 pub type Customer(
     #[uuid] id: string,
@@ -37,7 +37,6 @@ pub type Customer(
     #[isoDate] birthday: string,
 )
 
-#[schema]
 #[validated]
 pub type Payment(
     #[startsWith("ord_")] order: string,
@@ -69,7 +68,7 @@ fn payCodes(r: @Result<Payment, ValidationReport>) -> string {
 }
 
 test "validation: a customer that satisfies every marker" {
-    val c = try decodeCustomer(
+    val c = try Customer.decode(
         """{"id": "0190a5b2-7f3c-7c1e-9d2a-3b4c5d6e7f80", "name": "Ana",
             "email": "ana@example.com", "phone": "+5511999990000",
             "site": "https://example.com", "birthday": "1990-02-28"}""",
@@ -79,7 +78,7 @@ test "validation: a customer that satisfies every marker" {
 
 test "validation: each format refuses the input the reference refuses" {
     // "555-555-5555" for e164, "2020-1-1" for iso.date — ZOD_DOCUMENTATION.md § 4.4.
-    val r = decodeCustomer(
+    val r = Customer.decode(
         """{"id": "not-a-uuid", "name": "A", "email": "Ana@Example.com",
             "phone": "555-555-5555", "site": "ftp://example.com", "birthday": "2020-1-1"}""",
     );
@@ -88,7 +87,7 @@ test "validation: each format refuses the input the reference refuses" {
 }
 
 test "validation: an absent optional field skips its markers" {
-    val r = decodeCustomer(
+    val r = Customer.decode(
         """{"id": "0190a5b2-7f3c-7c1e-9d2a-3b4c5d6e7f80", "name": "Ana",
             "email": "ana@example.com", "birthday": "1990-02-28"}""",
     );
@@ -96,7 +95,7 @@ test "validation: an absent optional field skips its markers" {
 }
 
 test "validation: a calendar date is checked, not only its shape" {
-    val r = decodeCustomer(
+    val r = Customer.decode(
         """{"id": "0190a5b2-7f3c-7c1e-9d2a-3b4c5d6e7f80", "name": "Ana",
             "email": "ana@example.com", "birthday": "2023-02-29"}""",
     );
@@ -105,7 +104,7 @@ test "validation: a calendar date is checked, not only its shape" {
 
 test "validation: the checksum formats are walks, not regexes" {
     // 4111 1111 1111 1111 passes Luhn; changing the last digit does not.
-    val ok = decodePayment(
+    val ok = Payment.decode(
         """{"order": "ord_1", "card": "4111 1111 1111 1111", "refundTo": "DE89370400440532013000",
             "cents": 1500, "adjustment": -0.5, "origin": "192.168.0.1",
             "at": "2020-01-01T06:15:00Z",
@@ -113,7 +112,7 @@ test "validation: the checksum formats are walks, not regexes" {
     );
     assert payCodes(ok) == "";
 
-    val bad = decodePayment(
+    val bad = Payment.decode(
         """{"order": "1", "card": "4111 1111 1111 1112", "refundTo": "DE89 3704 0044 0532",
             "cents": 12, "adjustment": 0.5, "origin": "256.1.1.1",
             "at": "2020-01-01T06:15:00+02:00", "receipt": "abc"}""",

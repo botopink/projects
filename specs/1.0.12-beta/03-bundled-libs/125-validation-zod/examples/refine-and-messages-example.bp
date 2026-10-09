@@ -1,112 +1,95 @@
 // Front 125 — validation: Zod's feature set · examples/refine-and-messages-example.bp
 //
-// Demonstrates: step 7 — refinements and the messages they report.
+// Demonstrates: step 7 — the messages a check reports.
 //
-//   .refine((data) => data.password === data.confirm,
-//           { error: "Passwords don't match", path: ["confirm"] })
-//   .superRefine((val, ctx) => ctx.addIssue({...}))
 //   z.string().min(8, "Too short!")              // a check-level message
 //   z.string("Not a string!")                    // a schema-level message
 //   schema.parse(x, { error: iss => "…" })       // a per-parse message
 //   z.config({ customError })                    // a global one
 //
-// A type-level `#[check("fn")]` names a function `fn(v: T) -> Array<Violation>`;
-// it runs after the field checks and may answer any number of violations, each
-// with its own path. That one form is `refine`, `superRefine` and `check`.
+// Not here yet — a type-level rule takes the rule, the field it reports at, a
+// message and a code as typed decorator arguments (decision 280, example 1),
+// which `01-checker` step 24 brings:
+//
+//   #[validated]
+//   #[check(passwordsMatch, at: .confirm, message: "Passwords don't match", code: .Custom)]
+//   pub type Account(…)
+//
+//   fn passwordsMatch(a: Account) -> bool { return a.password == a.confirm; }
 //
 // Upstream: ZOD_DOCUMENTATION.md §§ 4.31 (Refinements), 5 (Personalizando Erros)
 //           — https://zod.dev/api#refinements · https://zod.dev/error-customization
 //
 // Target: both.
 
-import {decorators: {schema, validated, check, minLength, message, typeMessage, stopOnFirst, lowercase}} from "validation";
-import {schemas, schemas.Schema, constraints, report: {ValidationReport, Violation, violation, noViolation, oneViolation}} from "validation";
-import {messages: {MessageSource, setMessageSource, builtInOnly}} from "validation";
+import {decorators.validated, decorators.minLength, decorators.message, decorators.typeMessage, decorators.stopOnFirst, decorators.lowercase} from "validation";
+import {derived} from "validation";
+import {report.ValidationReport, report.Violation} from "validation";
+import {constraints.vMinLength, constraints.vLowercase, table.constraintTableJson} from "validation";
+import {messages.MessageSource, messages.setMessageSource, messages.builtInOnly, messages.underSource} from "validation";
 import {json, json.Json} from "std";
 
-#[schema]
 #[validated]
-// The second argument lists the fields this check reads: it runs only when
-// none of them already has a violation — Zod's `when`.
-#[check("passwordsMatch", "password,confirm")]
-#[check("noReusedHandle")]
 pub type Account(
     #[typeMessage("a handle is text")] handle: string,
     // Zod's `abort: true` — the second check is skipped when the first fails.
-    #[stopOnFirst]
-    #[minLength(8)] #[message("Too short!")]
-    #[lowercase] #[message("Must be lowercase")]
-    password: string,
+    #[stopOnFirst] #[minLength(8)] #[message("Too short!")] #[lowercase] #[message("Must be lowercase")] password: string,
     confirm: string,
 )
-
-// `refine` with a custom path: the violation is reported at `confirm`.
-fn passwordsMatch(a: Account) -> Array<Violation> {
-    if (a.password == a.confirm) return noViolation();
-    return oneViolation(violation("confirm", "custom", "Passwords don't match", ""));
-}
-
-// `superRefine`: any number of violations from one function.
-fn noReusedHandle(a: Account) -> Array<Violation> {
-    var found: Array<Violation> = [];
-    if (a.handle == "admin")
-        found = found.append(oneViolation(violation("handle", "reserved", "That handle is reserved", a.handle)));
-    if (a.password.contains(a.handle))
-        found = found.append(oneViolation(violation("password", "custom", "The password contains the handle", "")));
-    return found;
-}
 
 fn messagesOf(r: @Result<Account, ValidationReport>) -> string {
     return case r {
         Ok(_) -> "";
-        Error(report) -> report.violations.map({ v -> v.field + ": " + v.message }).join(" | ");
+        Error(report) -> report.violations
+            .map({ v -> v.field + ": " + v.message })
+            .join(" | ");
     };
 }
 
-test "validation: a cross-field rule reports at the field it names" {
-    val r = decodeAccount("""{"handle": "ana", "password": "correct-horse", "confirm": "correct-house"}""");
-    assert messagesOf(r) == "confirm: Passwords don't match";
-}
-
 test "validation: a check-level message replaces the built-in one" {
-    val r = decodeAccount("""{"handle": "ana", "password": "short", "confirm": "short"}""");
+    val _s = setMessageSource(builtInOnly());
+    val r = Account.decode(
+        """{"handle": "ana", "password": "short", "confirm": "short"}""",
+    );
     assert messagesOf(r) == "password: Too short!";
 }
 
 test "validation: #[stopOnFirst] skips the checks after the first failure" {
     // "SHORT" fails both minLength and lowercase; only the first is reported.
-    val r = decodeAccount("""{"handle": "ana", "password": "SHORT", "confirm": "SHORT"}""");
+    val r = Account.decode(
+        """{"handle": "ana", "password": "SHORT", "confirm": "SHORT"}""",
+    );
     assert messagesOf(r) == "password: Too short!";
-}
-
-test "validation: a type check waits for the fields it reads to be valid" {
-    // `confirm` is missing, so `passwordsMatch` does not run and adds nothing.
-    val r = decodeAccount("""{"handle": "ana", "password": "correct-horse"}""");
-    assert messagesOf(r) == "confirm: must be present";
-}
-
-test "validation: one check may answer several violations" {
-    val r = decodeAccount("""{"handle": "admin", "password": "admin-admin", "confirm": "admin-admin"}""");
-    assert messagesOf(r) == "handle: That handle is reserved | password: The password contains the handle";
+    val long = Account.decode(
+        """{"handle": "ana", "password": "LONG-ENOUGH", "confirm": "x"}""",
+    );
+    assert messagesOf(long) == "password: Must be lowercase";
 }
 
 test "validation: a schema-level message restates the wrong-type case" {
-    val r = decodeAccount("""{"handle": 7, "password": "correct-horse", "confirm": "correct-horse"}""");
+    val r = Account.decode(
+        """{"handle": 7, "password": "correct-horse", "confirm": "correct-horse"}""",
+    );
     assert messagesOf(r) == "handle: a handle is text";
 }
 
 test "validation: a per-parse source sits under the field's own message and over the global one" {
+    val _s = setMessageSource(builtInOnly());
     val portuguese = MessageSource(
         locale: { -> "" },
-        template: { key -> if (key == "required") { "é obrigatório" } else { "" } },
+        template: { key -> if (key == "required") "é obrigatório" else "" },
     );
     val doc = try json.decode("""{"handle": "ana", "password": "short"}""");
-    val r = schemaOfAccount().parseWith(doc, portuguese);
-    assert messagesOf(r) == "password: Too short! | confirm: é obrigatório";
-}
-
-test "validation: a refinement on a schema value" {
-    val even = schemas.int().refine({ n -> n % 2 == 0 }, "even", "must be even");
-    assert even.accepts(Json.Num(value: 4.0));
-    assert even.accepts(Json.Num(value: 3.0)) == false;
+    val r = underSource(portuguese, { -> Account.parse(doc) });
+    assert messagesOf(r) == "confirm: é obrigatório";
+    val short = try json.decode(
+        """{"handle": "ana", "password": "short", "confirm": "x"}""",
+    );
+    assert messagesOf(underSource(portuguese, { -> Account.parse(short) }))
+        == "password: Too short!";
+    // The source was for that call only.
+    assert messagesOf(
+        Account.decode("""{"handle": "ana", "password": "correct-horse"}"""),
+    )
+        == "confirm: must be present";
 }
