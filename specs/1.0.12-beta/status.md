@@ -1,6 +1,6 @@
 # Status — 1.0.12-beta
 
-**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `dd4cda88` (batch 9: nine bug rows, @TypeInfo.all in a template body — 353) · rakun `08f32ab` · jhonstart `0e3ccbd` · emilia `1568c0b`
+**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `106c84b3` (batch 10: typed comptime decorator arguments — 01-checker s24, 280) · rakun `c0e991c` · jhonstart `678689c` · emilia `1568c0b`
 · onze `29e8ff3` · erika `8f88482` · vscode-extension `f041865`
 
 **Fronts:** 71 — **0 done** · **23 partial** · **48 not started**.
@@ -105,6 +105,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [x] 05-wasm s8 — overflow for `u32`/`u64` and the narrow integer types on wasm (264)
 - [x] 05-wasm — an `@block`'s `return` is the block's value (decision 2), `run/block_return_is_block_value`
 - [x] 05-wasm rows — `_` in a variant payload, a nested variant pattern (`run/variant_payload_wildcard_and_nested`); unsigned compare and divide (`run/unsigned_compare_and_divide`); `u64`'s unsigned overflow checks and printing, an unannotated `u64` literal or sum keeps its type, radix literals to `u64`'s top
+- [ ] 05-wasm row — a nested record field read through a generic record and concatenated prints a number: `type Route<P, D>(params: P, data: D)`, `"<h1>" + route.data.title + "</h1>"` with `data: Post(title: "A")` prints `<h1>332</h1>` on wasm (erlang right) · none
 - [ ] 05-wasm rows — `?u64`'s `toString` and a `u64` record field print signed; a `u64` tuple slot is refused · none
 - [x] 02-erlang s4 — `run/array_unique` (C-35), four targets
 - [x] 02-erlang s5 box 2 — a decorator body carrying `\u{…}` (cell: 14 s7)
