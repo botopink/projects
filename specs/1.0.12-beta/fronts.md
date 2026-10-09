@@ -164,7 +164,7 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 | **27** | s1 box 2: 22 · 27-a | 50 s6 · 126 · 53 |
 | **67** | 26 · 103 s2 · 67-a | 53 · 127 |
 | **136** | 26 · 120 · 125 · atm-a · atm-c · s8: atm-d | 123 (locals) · 127 · 53 |
-| **34** | s3: 05emilia-e, 119 s1 · s4: 05emilia-n · s5: 119 s1 | 135 s4 · 119 s5 |
+| **34** | s5 (first, 350): 119 s1 · s2: s5 · s3: 119 s1, 05emilia-e · s4: 05emilia-n | 135 s4 · 119 s5 |
 | **33** s2 | — | 98 |
 | **49** | 102 s3's `types.bp` (s2–s5; s1 and s6 open now) · s3: 26 s4, 17 · s4: 65 s1 · s5: 22 s4 · 49-e | 50 · 51 · 71 · 53 · 117 · 120 · 122 · 127 · 104 s5 |
 | **50** | 102 s3's `scan.bp`, `chunk.bp` (s2–s7) · 49 s6 · s2: 50-b · s4, s7: std-d · s5: 71 s2 · s6: 27 s1 | 53 · 117 · 120 · 124 · 71 s5 |
@@ -175,7 +175,7 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 | **53** | 49 · 50 · 51 · 71 s1–4 · 26 · 27 · 67 · 22 · 12 · 65 · 135 s5 (s2–6) · s6: 50-b | 71 s5 · 121 s7 · 124 s5 · 120's and 126's browser boxes |
 | **118** | props-d/e/f (their boxes) | 26 · 119 · 120 · 126 · 121 s6 · 116 |
 | **121** s1–2 · s3–6 · s7 | — · s3: 08-f, s6: 118, 117 · 53 | 117 · 124 |
-| **119** | s1: the two repositories' first `feat` commit · s2: 118, 26 · s5: 34 s5 | 120 · 34 s3, s5 · 116 s6 (the style section's examples) |
+| **119** | s1: the two repositories' first `feat` commit · s2: 118, 26 · s5: 34 s5 | 120 · 34 s5 (first, 350), s3 · 116 s6 (the style section's examples) |
 | **123** | 04 · 65 | 127 s4 · 104 s5 |
 | **117** | 102 · 22 · 49 · 50 · 121 s1–2 | 120 · 127 · 121 s6 · 124 |
 | **120** | 118 · 119 · 117 · 26 · 22 · 49 · 50 | 122 · 126 · 127 · 124 |
@@ -197,9 +197,9 @@ for the carve-outs named above.
 
 | Wave | Opens | When |
 |---|---|---|
-| 1 | 118 · 34 · 33 s2 · 121 s1–2 · the onze "consume std" thread (49 s1, 49 s6, 50 s1, 51 s1) · 27 (s1 box 1, s2, s3) · 125 s3 → s10; 102 s1–2 and 103 s1 pushed and landed (no thread) | now |
+| 1 | 118 · 119 s1 → 34 s5 → 34 s2 (350: emilia on `styled` first) · 33 s2 · 121 s1–2 · the onze "consume std" thread (49 s1, 49 s6, 50 s1, 51 s1) · 27 (s1 box 1, s2, s3) · 125 s3 → s10; 102 s1–2 and 103 s1 pushed and landed (no thread) | now |
 | 2 | 102 s3 + 103 s2, one thread: rakun's commits first, the onze commits after the consume-std thread lands | 102 s1–2 and 103 s1 landed |
-| 3 | 128 · 26 · 49 s2 · 50 s2–3, s7 · 71 s1–2 · 119 | 102 s3 / 103 s2's rakun commits (128); 118 and `routes.bp` (26); `types.bp` (49); `scan.bp`, `chunk.bp` (50); 49 s6 (71); 118 (119) |
+| 3 | 128 · 26 · 49 s2 · 50 s2–3, s7 · 71 s1–2 · 119 s2–5 | 102 s3 / 103 s2's rakun commits (128); 118 and `routes.bp` (26); `types.bp` (49); `scan.bp`, `chunk.bp` (50); 49 s6 (71); 118 (119) |
 | 4 | 04 (s1 first) · 19 s1 · 15 · 74 · 81 · 67 | 128 landed (rakun); 26 and 103 s2 (67) |
 | 5 | 08 · 79 · 93 · 73 · 13 · 12; 116 at the earliest | 128; 04 s4 (08 s1); 04 s1 (13, 12); 19 s1 (12); 118, 26 s0, `01-compiler/26` (116) |
 | 6 | 22 · 65 · 17 · 09 · 92 · 91 | 04 s5 (22); 13 s2 (17); 19 s1 and 13 (09); 74 and 15 (92); 15 (91) |

@@ -1,10 +1,12 @@
 # Front 34 — emilia source tail: std's hash, five families at upstream parity, the breakpoint refusal (carries 1.0.10's 40 · 42 · 43 · 44 · 45 · 54 · 56)
 
-**Priority:** high — step 2 moves output every later snapshot (`20-snap` step 4) would otherwise
-record twice · **State:** step 1 done; step 2 ready (decision 350); steps 3–4 wait on 05emilia-e / -n, steps 3 and 5 on `08-bpp/119` step 1
-**Depends on:** `05emilia-e` (step 3's base theme — open again with 300; step 2's rule is
-decision 350) · `05emilia-n` (step 4, the four feature rows only) · `08-bpp/119` step 1 (steps 3
-and 5: the repositories `css` and `styled` — the theme mechanism and the components, decision 338).
+**Priority:** high — emilia on `styled` first (decision 350): step 5 before step 2, so the five
+families move once, in `styled`'s literal; step 2 moves output every later snapshot (`20-snap`
+step 4) would otherwise record twice · **State:** step 1 done; next step 5, after `08-bpp/119`
+step 1's two open boxes; then step 2 (decision 350) and step 3 (05emilia-e); step 4 on 05emilia-n
+**Depends on:** `08-bpp/119` step 1 (step 5, and through it step 2; step 3: the repositories `css`
+and `styled` — the components and the theme mechanism, decision 338) · `05emilia-e` (step 3's base
+theme — open again with 300) · `05emilia-n` (step 4, the four feature rows only).
 Nothing else:
 `hash.contentHash` exists; `08-bpp/118` step 1's bracket-attribute carve-out is comments only here,
 reworded by step 1 (no code uses `[name]={`).
@@ -47,7 +49,7 @@ the four owned examples.
 | `border-spacing-*` | `border-spacing:calc(…) 0` (`emilia.bp:313`, `:12805-12897`) | `--tw-border-spacing-x:…;--tw-border-spacing-y:…;border-spacing:var(--tw-border-spacing-x) var(--tw-border-spacing-y)` | 43 |
 | `divide-*` | the width | `border-*-style:var(--tw-border-style);` beside the width | 40 |
 
-  Each: one dispatcher arm in its block + the `@property` / theme entries the chain reads
+  Each (step 2, over step 5's components): its family's `styledProperty` literal + the `@property` / theme entries the chain reads
   (05emilia-i's shape for `--tw-ease` / `--tw-duration` / `--tw-border-spacing-*`; `fullTheme()`
   gains no entry — per-utility variables with `@property` registrations like the transform ones; no
   new `Ns` prefix — 05emilia-a, -d, -i stand). Decision 350: a family moves whole, one helper per
@@ -77,7 +79,56 @@ unchanged: contract-4 fixture `e_39b87d03` and `emilia-card`'s `e_486b0b4f` / `e
 
 ## Open
 
-### Step 2 — the five families to upstream's form (decision 350)
+Order (decision 350: the library on `styled` first): step 5 → step 2 → step 3; step 4 when
+05emilia-n is answered. Step 5 keeps today's output byte for byte, so the five families move only in
+step 2, each as its `styledProperty` literal.
+
+### Step 5 — emilia over `styled` — first (decisions 338, 350; after `08-bpp/119` step 1)
+
+emilia is the third layer: `css` the base for building CSS, `styled` the base for building CSS
+components, emilia a series of components built with `styled`, applied to a tag with
+`jhonstart-styled`'s `#[styled(…)]` (`<h1 #[styled(.Text.Bold)]>`, 301 — the template side is
+`08-bpp/119` step 4). emilia's own sheet model — `Rule`, `Sheet`, `Variant`, `renderRule`,
+`renderDocument` (`output.bp:44-593`) and the per-render store `flush()` drains
+(`emilia.bp:227-235`) — is what `css` and `styled` now hold. Each family is a `styledProperty`, the
+ladder of `spacing.bp` becomes the literal's `--spacing()`, and a variant wraps declarations in a
+`styled`:
+
+```bp
+import styled, {styledProperty, StyledView, StyledPropertyView, Styleable} from "styled";
+
+// Tailwind: @utility p-*  { padding: --spacing(--value(integer)); }
+fn padAll(n: i32) -> StyledPropertyView { return styledProperty "padding: --spacing(${n});"; }
+// Tailwind: @utility px-* { padding-inline: --spacing(--value(integer)); }
+fn padX(n: i32) -> StyledPropertyView { return styledProperty "padding-inline: --spacing(${n});"; }
+fn padAllHalf(n: i32) -> StyledPropertyView { return styledProperty "padding: --spacing(${n}.5);"; }
+
+fn hover(inner: StyledPropertyView) -> StyledView { return styled "&:hover { ${inner} }"; }
+
+Token implement Styleable { fn toStyled(self: Self) -> StyledView { … } }   // each token → its component
+```
+
+emilia imports `styled` and std — no framework, no `.bpp`, no jhonstart (113, 338).
+
+- [ ] every family's `*TokenToCss` / `oneDecl` / `axisDecl` string building replaced by
+      `styledProperty "…"` components; `spacing.bp`'s `spacing` / `spacingHalf` / `spacingNegHalf`
+      replaced by `--spacing(…)` in the literal; no CSS text assembled with `+`
+- [ ] each `styledProperty` literal is the upstream `@utility`'s declarations in Tailwind's CSS
+      syntax, the 4.3.2 `@utility` quoted in a comment beside it (decision 350)
+- [ ] variants (`.Hover(…)`, `.Md(…)`, `.Dark(…)`, …) wrap their inner declarations in a `styled`;
+      a token list is the composition of its tokens' components, its order the class's identity
+- [ ] `Token implement Styleable`
+- [ ] `output.bp`'s sheet model deleted; `flush()` renders `styled`'s sheet with emilia's `@layer`s,
+      byte-identical to today's
+- [ ] contract-4 fixture `e_39b87d03` unchanged (`contracts.md` § 4) — emilia's layer keeps the `e_`
+      prefix; onze 68's `styleRule` reader and `jhonstart-emilia` (until `08-bpp/119` step 5) green
+      without an edit to the class names they assert
+- [ ] `emilia` 734 or more on both rows; `botopink.json` lists `styled` and nothing else outside std
+- [ ] `AGENTS.md`: "Not a runtime CSS engine. No selector parsing" (`:602`) reworded — emilia reads
+      no author CSS; author CSS is `css`'s, components `styled`'s
+- [ ] `grep -rn "bpp\|jhonstart" repository/emilia/modules` empty
+
+### Step 2 — the five families to upstream's form, in `styled`'s literal (decision 350; after step 5)
 
 - [ ] `transition` / `transition-*` presets render upstream's `var(--tw-ease, …)` /
       `var(--tw-duration, …)` pair, set `--tw-ease` / `--tw-duration` with `@property`
@@ -86,8 +137,9 @@ unchanged: contract-4 fixture `e_39b87d03` and `emilia-card`'s `e_486b0b4f` / `e
       `-webkit-backdrop-filter` before `backdrop-filter`
 - [ ] `border-spacing-*` writes `--tw-border-spacing-x` / `-y` and the reader
 - [ ] `divide-x-*` / `divide-y-*` write `border-*-style:var(--tw-border-style)` beside the width
-- [ ] each moved arm's inline tests and the four examples' inline strings assert the new literal,
-      measured against 4.3.2's output quoted in the test's comment; `docs.md` and its
+- [ ] each moved family's `styledProperty` literal is the 4.3.2 `@utility`, quoted beside it; its
+      inline tests and the four examples' inline strings assert the new literal, measured against
+      4.3.2's output quoted in the test's comment; `docs.md` and its
       `tailwind-mapping` rows updated
 - [ ] no other family's literal moves: `emilia` stays 734 or more, every unrelated test
       byte-identical (test-file diff shows only the five families)
@@ -140,51 +192,6 @@ resolving every `var(--x)` at render. (a), recommended: only `docs.md` § Deviat
 - [ ] under (a): the `docs.md` paragraph; `reference-rows.md` rows marked (b)
 - [ ] `tokens.bp:2190-2195`'s comment states `Neg` as the decided form (decision 314), not a language gap;
       `TranslateX.Neg` / `TranslateY.Neg`, when (b) adds them, follow it
-
-### Step 5 — emilia over `styled` (decision 338; after `08-bpp/119` step 1)
-
-emilia is the third layer: `css` the base for building CSS, `styled` the base for building CSS
-components, emilia a series of components built with `styled`, applied to a tag with
-`jhonstart-styled`'s `#[styled(…)]` (`<h1 #[styled(.Text.Bold)]>`, 301 — the template side is
-`08-bpp/119` step 4). emilia's own sheet model — `Rule`, `Sheet`, `Variant`, `renderRule`,
-`renderDocument` (`output.bp:44-593`) and the per-render store `flush()` drains
-(`emilia.bp:227-235`) — is what `css` and `styled` now hold. Each family is a `styledProperty`, the
-ladder of `spacing.bp` becomes the literal's `--spacing()`, and a variant wraps declarations in a
-`styled`:
-
-```bp
-import styled, {styledProperty, StyledView, StyledPropertyView, Styleable} from "styled";
-
-// Tailwind: @utility p-*  { padding: --spacing(--value(integer)); }
-fn padAll(n: i32) -> StyledPropertyView { return styledProperty "padding: --spacing(${n});"; }
-// Tailwind: @utility px-* { padding-inline: --spacing(--value(integer)); }
-fn padX(n: i32) -> StyledPropertyView { return styledProperty "padding-inline: --spacing(${n});"; }
-fn padAllHalf(n: i32) -> StyledPropertyView { return styledProperty "padding: --spacing(${n}.5);"; }
-
-fn hover(inner: StyledPropertyView) -> StyledView { return styled "&:hover { ${inner} }"; }
-
-Token implement Styleable { fn toStyled(self: Self) -> StyledView { … } }   // each token → its component
-```
-
-emilia imports `styled` and std — no framework, no `.bpp`, no jhonstart (113, 338).
-
-- [ ] every family's `*TokenToCss` / `oneDecl` / `axisDecl` string building replaced by
-      `styledProperty "…"` components; `spacing.bp`'s `spacing` / `spacingHalf` / `spacingNegHalf`
-      replaced by `--spacing(…)` in the literal; no CSS text assembled with `+`
-- [ ] each `styledProperty` literal is the upstream `@utility`'s declarations in Tailwind's CSS
-      syntax, the 4.3.2 `@utility` quoted in a comment beside it (decision 350)
-- [ ] variants (`.Hover(…)`, `.Md(…)`, `.Dark(…)`, …) wrap their inner declarations in a `styled`;
-      a token list is the composition of its tokens' components, its order the class's identity
-- [ ] `Token implement Styleable`
-- [ ] `output.bp`'s sheet model deleted; `flush()` renders `styled`'s sheet with emilia's `@layer`s,
-      byte-identical to today's
-- [ ] contract-4 fixture `e_39b87d03` unchanged (`contracts.md` § 4) — emilia's layer keeps the `e_`
-      prefix; onze 68's `styleRule` reader and `jhonstart-emilia` (until `08-bpp/119` step 5) green
-      without an edit to the class names they assert
-- [ ] `emilia` 734 or more on both rows; `botopink.json` lists `styled` and nothing else outside std
-- [ ] `AGENTS.md`: "Not a runtime CSS engine. No selector parsing" (`:602`) reworded — emilia reads
-      no author CSS; author CSS is `css`'s, components `styled`'s
-- [ ] `grep -rn "bpp\|jhonstart" repository/emilia/modules` empty
 
 **Gate:** standard (fronts.md § Gate) + `emilia` 734 or more on both rows; the fifteen examples
 green on both rows; `jhonstart-emilia` and `onze-cli` (the two fixture readers) green ·

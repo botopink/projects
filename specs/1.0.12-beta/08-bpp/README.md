@@ -59,7 +59,7 @@ All eleven **not started**.
 | [`121-bpp-content/`](./121-bpp-content/README.md) | **high** — largest new code | steps 1–2, 4–5 done (4–5's boxes on 3, 9, 10, 117, 124, 125 left) · step 3 on `08-f` | New member `onze-content`: Markdown (CommonMark + GFM) to `Element`, frontmatter, collections typed by a `#[validated]` type (306), `getCollection` / `getEntry` / `render`, `.md` pages, RSS | `08-f` (step 3) · 118, 117 (step 6) · `07-onze/53` (step 7) |
 | [`120-bpp-islands/`](./120-bpp-islands/README.md) | **high** | not started | `#[clientIdle]` / `#[clientVisible]` / `#[clientMedia]` / `#[clientOnly]`; `#[serverDefer(fallback: …)]`, sealed props | 118 · 119 · 117 · `05-jhonstart/26` · `04-rakun/22` · `07-onze/49`, `50` |
 | [`117-bpp-routing/`](./117-bpp-routing/README.md) | high | not started | `.bpp` / `.md` / `.html` app files, `staticPaths` with data, `paginate`, partials, static endpoints, eight priority rules as tests | `03-bundled-libs/102` · `04-rakun/22` · `07-onze/49`, `50` · 121 steps 1–2 |
-| [`119-bpp-styling/`](./119-bpp-styling/README.md) | medium | not started · step 1 ready to open | The repositories `css` and `styled` (`styled "…"`, `styledProperty "…"`, the theme mechanism); `jhonstart-styled` (the style section, `use`, `:global()`, run-time holes as CSS variables, `#[styled(..)]`, the one sheet); `jhonstart-emilia` deleted; cascade order (338) | 118, `05-jhonstart/26` (step 2) · `06-emilia/34` step 5 (step 5) |
+| [`119-bpp-styling/`](./119-bpp-styling/README.md) | step 1 **high** (350: emilia on `styled` first) · steps 2–5 medium | step 1: `css` done, `styled` landed but two boxes | The repositories `css` and `styled` (`styled "…"`, `styledProperty "…"`, the theme mechanism); `jhonstart-styled` (the style section, `use`, `:global()`, run-time holes as CSS variables, `#[styled(..)]`, the one sheet); `jhonstart-emilia` deleted; cascade order (338) | 118, `05-jhonstart/26` (step 2) · `06-emilia/34` step 5 (step 5) |
 | [`127-bpp-actions/`](./127-bpp-actions/README.md) | medium | not started | Action typed by a `#[validated]` record (306): JSON/form input, `ActionError`, typed client call | 125 steps 6, 12 (306) · `03-bundled-libs/103` · `04-rakun/22` · `05-jhonstart/67` · `07-onze/49` · 117 · 120 · 126 · 123 (step 4) |
 | [`122-bpp-data/`](./122-bpp-data/README.md) | medium | not started | `Astro` global mapped; holes: page-side status/headers, `rewrite`, `site` | `05-jhonstart/26` · `07-onze/49` · `03-bundled-libs/102` · 118 · 120 |
 | [`123-bpp-middleware/`](./123-bpp-middleware/README.md) | medium | not started | `locals`, `sequence`, response rewritten after `next`, `actionContext` | `04-rakun/04` · `04-rakun/65` |
@@ -111,7 +111,7 @@ Every front but 121 edits files owned by another track's front; sequenced, never
 | `rakun-web/src/{middleware,filter}.bp` (123; the request store is `rakun-cardume`'s, `09-cardume/136`, 296) | `04-rakun/04` (core) · `04-rakun/65` (rakun-web) | after 04 and 65 (189) |
 | `libs/routing/src/{segment,conventions}.bp` (117) · `navigation.bp` (122) | `03-bundled-libs/102` | after 102 |
 | `libs/actions/src/outcome.bp` (127) | `03-bundled-libs/103` | after 103 |
-| `emilia/src/` — none: emilia moves onto `styled` in `06-emilia/34` steps 3 and 5 | `06-emilia/34` | after 119 step 1 |
+| `emilia/src/` — none: emilia moves onto `styled` in `06-emilia/34` step 5 (first, 350), then steps 2 and 3 | `06-emilia/34` | after 119 step 1 |
 | `compiler-cli/**`, `language-server/**` (116) | `01-compiler/26-cli-tooling` | 116 opens after 26 |
 
 ## Handed to other tracks

@@ -1,6 +1,6 @@
 # Front 119 — bpp styling: `css`, `styled`, `jhonstart-styled`, the style section
 
-**Priority:** medium — a page is complete without it (emilia tokens, global stylesheet); a
+**Priority:** step 1 **high** — emilia moves onto `styled` first (decision 350; `06-emilia/34` step 5 waits on it); steps 2–5 medium — a page is complete without them (emilia tokens, global stylesheet); a
 self-styled component is not. · **State:** step 1: `css` done, `styled` landed but for the theme read from the program and the run-time registration (two boxes below)
 **Depends on:** (written against 278, 301, 302, 326, 338) step 1: the two repositories
 `botopink/css` and `botopink/styled` exist (created; each needs a first commit on `feat` before
