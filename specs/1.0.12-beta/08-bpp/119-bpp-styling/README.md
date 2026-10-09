@@ -1,7 +1,7 @@
 # Front 119 — bpp styling: `css`, `styled`, `jhonstart-styled`, the style section
 
 **Priority:** step 1 **high** — emilia moves onto `styled` first (decision 350; `06-emilia/34` step 5 waits on it); steps 2–5 medium — a page is complete without them (emilia tokens, global stylesheet); a
-self-styled component is not. · **State:** step 1: `css` done, `styled` landed but for the theme read from the program and the run-time registration (two boxes below, blocked: `119-c`, `119-d` and row 134; box 4's registration is 352, on `134-f`)
+self-styled component is not. · **State:** step 1: `css` done, `styled` landed but for the theme read from the program and the run-time registration (two boxes below, blocked: `119-c`, and row 134 — `01-compiler/130` step 10, 353; box 4's registration is 352, on `134-f`)
 **Depends on:** (written against 278, 301, 302, 326, 338) step 1: the two repositories
 `botopink/css` and `botopink/styled` exist (created; each needs a first commit on `feat` before
 it becomes a submodule — CI check 1) · step 2: `118-bpp-components` (the template arm), 118 step 1's
@@ -210,7 +210,7 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
 - [ ] the theme mechanism (300) in `styled`: `#[theme]` found at comptime, two refused, none →
       the default; `--theme(--breakpoint-md)` and `@variant md` read it; a cleared breakpoint refused
       at compile time · row 134 (a library's template function cannot read the program's catalogue),
-      owner `119-d`
+      built by `01-compiler/130` step 10 (353)
 - [x] `grep -rn "bpp\|jhonstart\|emilia" repository/css repository/styled` empty — the shared
       hook text names emilia (`119-a`)
 
@@ -305,7 +305,7 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 
 ## Decisions
 
-Open: `119-c` (step 1 box 4), `134-f` (box 4's registration under 352), `119-d` (step 1 box 5; with row 134) — `decisions-pending.md` Part 2. Answered: `08-d` → 338, `119-b` → 352.
+Open: `119-c` (step 1 box 4), `134-f` (box 4's registration under 352) — `decisions-pending.md` Part 2. Answered: `08-d` → 338, `119-b` → 352, `119-d` → 353 (box 5 waits on `01-compiler/130` step 10).
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `repository/css`, `repository/styled` and `jhonstart-styled`

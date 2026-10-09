@@ -127,6 +127,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 26 s9 — a dependency's sidecars and imports answer as its own build does · none
 - [x] 26 row — the LSP makes the 309 refusal: the package name from the nearest manifest, through `engine.importDiagnostics` to the resolver
 - [ ] 130 s5 — the remaining decorator sites (38 of 119 done, plus `#[schema]`'s 5) · rakun's DI on 01 s20 · rakun sites under the 130↔128 rule (decision 339) · rakun-client's on the behavior-member gap (ctr-q closed: the table built at comptime, 281, 256)
+- [ ] 130 s10 — `@TypeInfo.all` in a template body answers for the calling program, `value` read at build, the importer's diagnostic (353) · row 133 → 119 s1 box 5 · 34 s3 · 119 s4
 - [ ] 130 s6 — module-level `@emit` removed · 130 s5 · `#[schema]`'s free functions → members of the type (306; `T.parse(…)`, 327)
 - [x] 134 s2 part — `@is` refused (322); the drift test walks the mirrored types and `@Result`'s methods (declared); std `Type` (`keys`, `partial`, `required`, `merge`)
 - [ ] 134 s2 — `Decl.fields` as `Type.Field<unknown>`, `examples/types.bp` · 01-checker s28 (`Type` a namespace type, `Type.Field<T>` declared, `Type.pick` / `omit` declared with the variadic; `result` deleted and `?T` methodless — done)
@@ -176,7 +177,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] rakun track — latent `i32` clocks: `migration_host.cellNowMs`, the test-only monotonic `nowMs` in `rakun-mail`, `rakun-rsocket` and `tls_listener_test`, `Duration.millis` · `04-rakun` RX-15
 - [ ] rakun track — stale `__rkMake_` text in rakun's `AGENTS.md` · `04-rakun` RX-16
 - [x] rakun track — the server test measures `Content-Length` in bytes (320's follow-up) · `04-rakun` RX-17
-- [ ] emilia on `styled` first (decision 350) — 119 s1's two open boxes (a component with no run-time hook computed at build; the theme mechanism, 300) → 34 s5 (emilia over `styled`, output byte-identical) → 34 s2 (the five families in `styled`'s literal) · `119-c` and, through 352 (`119-b`: registration by `use @getContext(StyledBase)`), `134-f` (box 4), `119-d` with row 134 (box 5) — measured on `d7c71405`, see L5 (`css` done, `styled` landed)
+- [ ] emilia on `styled` first (decision 350) — 119 s1's two open boxes (a component with no run-time hook computed at build; the theme mechanism, 300) → 34 s5 (emilia over `styled`, output byte-identical) → 34 s2 (the five families in `styled`'s literal) · `119-c` and, through 352 (`119-b`: registration by `use @getContext(StyledBase)`), `134-f` (box 4), box 5 on `01-compiler/130` s10 (353, row 134) — measured on `d7c71405`, see L5 (`css` done, `styled` landed)
 
 ## L3 — ready to open now
 
@@ -254,7 +255,7 @@ Then:
 - [ ] 03r-am — 19 s3–4
 - [ ] 03r-an — 92 s2 (boxes 1, 3)
 - [ ] 67-a — 67 s1–3 · 53's write path · only the record
-- [ ] 119-c · 134-f — 119 s1 box 4 (a literal with holes known at build; `@getContext` at run time, which 352 needs) → 34 s5 · 119-d — 119 s1 box 5 (who builds the catalogue a template body reads, row 134) → 34 s3, 119 s4
+- [ ] 119-c · 134-f — 119 s1 box 4 (a literal with holes known at build; `@getContext` at run time, which 352 needs) → 34 s5
 - [ ] 05emilia-n — 34 s4 (reduced: the four features; the refusal is 300)
 - [ ] 50-b — 50 s2 · 53 s6
 - [ ] 08-f — 121 s3

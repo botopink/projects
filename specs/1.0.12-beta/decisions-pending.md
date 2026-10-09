@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**54 questions and 6 contradictions are open, and 85 implementation choices await confirmation.**
+**53 questions and 6 contradictions are open, and 85 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -477,21 +477,6 @@ No general rule (283): each case below is its own question, (a) the language's o
   ```
 - **Recommendation.** (a) now — decidable from the literal alone, no compiler change; (b) when `14-comptime-on-beam` closes the two rows.
 - **Blocks.** 119 step 1 box 4 (its first half's reading).
-
-#### 119-d · Who builds the catalogue a template body reads (row 134) (*proposed*)
-- **Measured** (botopink-lang `d7c71405`, a scratch package). A package module whose template function calls `@TypeInfo.all(with: theme)`: the importing application fails with `unbound variable 'themed'` at the template's use — not `typeinfo-all-imported` at the import (the reader module drops out of the importer's scope silently); without the call it builds. `styled` therefore cannot find the application's `#[theme]`, refuse a second, nor fall back to the default when there is none: its literals read `baseTheme()`. No `01-compiler` front lists the capability (130's project reflection is `@TypeInfo.all` at an entry point). Even found, the theme's value is needed at build: `Declared.value` is the run-time `val`, and a comptime `extendTheme(…)` with `ThemeValue.Rem(…)` is row 133.
-- **Options.** (a) A new step of `01-compiler/130-decorator-outputs`: `@TypeInfo.all` in a template function's body answers for the program the call is compiled in (the expansion after every module's decorators), a template-function reader exempt from `typeinfo-all-imported`, its `value` readable at build.
-  ```bp
-  // styled/src/styled.bp, inside `pub default fn styled(comptime css: @Expr<string>)`
-  val themes = @TypeInfo.all(with: theme);   // the application's #[theme] declarations
-  if (themes.length > 1) css.fail("styled: two #[theme] declarations: …");
-  ```
-  (b) A capability of `@Expr`: `css.catalogue(with: theme)` → `Declared<unknown>[]` of the calling program — the same answer, read through the expression the template already holds.
-  ```bp
-  val themes = css.catalogue(with: theme);
-  ```
-- **Recommendation.** (a): one catalogue, one rule, answered for the program being compiled; owner 130 (project reflection). Meanwhile the importer's `unbound variable` is a diagnostic bug of `typeinfo-all-imported` (row 134).
-- **Blocks.** 119 step 1 box 5; `06-emilia/34` step 3; 119 step 4's cleared-breakpoint refusal.
 
 ### 09-cardume
 

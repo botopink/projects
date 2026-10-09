@@ -1,7 +1,7 @@
 # Front 130 — decorator outputs: a decorator's four places, then module-level `@emit` removed
 
 **Priority:** high · **State:** partial: steps 1–4 on feat (decisions 216, 235, 248); step 5 at 38
-of 119 sites (plus `#[schema]`'s 5); step 6 not started
+of 119 sites (plus `#[schema]`'s 5); step 6 not started; step 10 (353) not started
 **Depends on:** decisions 254, 256 for rakun's DI (answered; 256's registry needs `01-checker` step
 20) · library tracks for their decorator files · `04-rakun/128` for rakun rows (decision 339)
 **Owns:** `repository/botopink-lang/modules/compiler-core/src/comptime/{reflection,assoc_types,typeinfo_all}.zig`
@@ -126,6 +126,27 @@ they recorded — the same function shape as a declaration's decorator, named by
 - [ ] on a tag `addMember`, `addType` refused at the call; `setMeta` of one type twice refused at the second
 - [ ] `run/tag_decl_meta` — an annotation recording `ClassName(names: ["a"])` on a `<div>` read back by the
       template function; the same annotation function also accepted on a declaration
+
+### Step 10 — a template body reads the program's catalogue (decision 353)
+
+A library's template function calls `@TypeInfo.all(with: …)` and gets the catalogue of the program
+that expands the call — `styled` finds the application's one `#[theme]` (119 step 1 box 5).
+
+```bp
+// styled/src/styled.bp, inside `pub default fn styled(comptime css: @Expr<string>)`
+val themes = @TypeInfo.all(with: theme);   // the application's #[theme] declarations
+if (themes.length > 1) css.fail("styled: two #[theme] declarations: …");
+```
+
+- [ ] `@TypeInfo.all` in a template function's body answers for the calling program, after every
+      module's decorators; the reader is exempt from `typeinfo-all-imported` (256's entry-point
+      rule unchanged for every other reader)
+- [ ] a `Declared`'s `value` readable at build: a comptime `extendTheme(…)` holding `ThemeValue.Rem(…)`
+      evaluates (row 133)
+- [ ] the importer of a reader module that breaks the rule gets `typeinfo-all-imported` at the
+      import, not `unbound variable '<template>'` at the use (row 134's diagnostic half)
+- [ ] `run/template_reads_program_catalogue` — a package's template function counting the importing
+      application's `#[theme]` declarations: none, one, two (refused at the second, naming both)
 
 **Gate:** standard (fronts.md § Gate) + std on commonJS and erlang; each library's hook
 
