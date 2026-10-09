@@ -39,9 +39,17 @@ mod1.mod2.splitPath(x)
       `pub mod mod2;`, and `mod mod1;` alone allows `mod1.mod2.splitPath(x)` (110's walk, as
       `io.fs.readText` after `import {io} from "std"`); every step a `pub mod`, the leaf `pub` — a plain
       `mod mod2;` is private to `mod1`'s subtree, so `mod1.mod2` from `main` is `private-module` at `mod2`
+- [ ] a folder's `mod.bp` re-exports with a value, no syntax of its own: `mod mod2; pub val splitPath =
+      mod2.splitPath;` and `import {mod1.splitPath};` elsewhere — today green on commonJS and erlang through
+      `import {mod1.mod2.splitPath as sp}; pub val splitPath = sp;` (measured 9 Oct), red through the
+      namespace (`unbound variable 'mod2'`)
+- [ ] `import {mod1.mod2};` binds `mod2` in any module of the package (docs.md § Imports: "an item whose
+      whole path names a module binds a namespace") — measured 9 Oct: `unbound variable 'mod2'` for a
+      nested module of the package, while `import {config};` (a top-level one) binds
 - [ ] in the declaring module `import {config};` is `redundant-module-import` at the item (fix: delete it);
       a top-level declaration named like a declared module is `import-name-collision`
-- [ ] cells `modules/mod_binds_namespace`, `modules/mod_namespace_cascade` (four targets) and
+- [ ] cells `modules/mod_binds_namespace`, `modules/mod_namespace_cascade`, `modules/mod_reexport_by_val`,
+      `modules/import_nested_module_namespace` (four targets) and
       `reject/private_module_through_namespace`, `reject/redundant_module_import`,
       `reject/declaration_named_like_module`
 
