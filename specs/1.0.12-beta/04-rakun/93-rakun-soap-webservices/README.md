@@ -2,8 +2,9 @@
 
 **Priority:** low — SOAP appears where an enterprise endpoint exists; nothing builds on it ·
 **State:** not started
-**Depends on:** 128 (merges the SOAP member into `rakun-client` — decision 187; no rename) · lg2-o (a
-comptime body has no filesystem access — the generator is a run-time tool writing checked-in `.bp`)
+**Depends on:** 128 (merges the SOAP member into `rakun-client` — decision 187; no rename) · decision 342
+(`@embedFile` lets a decorator read the WSDL at compile time; this front keeps the run-time generator
+writing checked-in `.bp` — moving it into a decorator is a later front's choice)
 · 13's client already takes a bundle (R93-2) · 88 writes the CLI command after this
 **Owns:** `modules/rakun-client/src/ws/**`, `test/ws/**`, `src/sidecars/rakun_ws.erl` · its
 `modules/README.md` row · `repository/rakun/AGENTS.md` § SOAP
@@ -24,7 +25,7 @@ published endpoint dispatching on the wrapped element and serving the WSDL unmod
 
 - **Generator (step 2).** `src/ws/generate.bp`: `generate(wsdlPath: string, outDir: string) ->
   @Result<string[], string>` reads the WSDL and its local `xsd:import`s through std's `fs` at run
-  time (lg2-o); walks the targeted subset (elements, complex types with sequence/all, simple types
+  time; walks the targeted subset (elements, complex types with sequence/all, simple types
   with enumeration and restriction, `minOccurs`/`maxOccurs`, local imports) into records and an
   enum-shaped `type` per enumeration; refuses the closed table's thirteen constructs (choice, any,
   anyAttribute, substitution groups, mixed content, union, list, redefine, network import, recursive
@@ -68,4 +69,5 @@ Generator runs over fixtures under `test/ws/fixtures/wsdl/`; the generated tree 
 Blast radius: new files under `rakun-client/src/ws/` only. 88 adds `ws generate` and the
 `rakun-cli → rakun-client` edge in its own front.
 
-`examples/soap-client-example.bp` kept for its open marker (lg2-o).
+`examples/soap-client-example.bp` kept for its open marker (the comptime-file gap, answered by 342's
+`@embedFile`, unbuilt).

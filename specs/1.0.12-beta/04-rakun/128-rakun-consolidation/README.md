@@ -5,7 +5,7 @@ it moves, an import it rewrites or a manifest it changes · **State:** not start
 **Depends on:** rakun consumer commits of `03-bundled-libs/102` step 3
 (`rakun-app/src/{file_router,static_gen}.bp`, `rakun-hateoas/src/hal.bp`) and `103` step 2
 (`rakun-app/src/actions.bp`) landed first (decision 188) — not landed · no `01-compiler/130` rakun
-commit in flight while open ([`../README.md`](../README.md) § Order, the 130 rule — `03r-ao` (a), followed; only the record is missing)
+commit in flight while open ([`../README.md`](../README.md) § Order, the 130 rule — decision 339)
 **Owns:** while open, every member of `repository/rakun/modules/**`, `starters/**`, `examples/**`,
 the workspace `botopink.json`, `modules/README.md`, `repository/rakun/AGENTS.md`,
 `.github/workflows/` and `scripts/git-hooks/` where they list members · [`../modules.md`](../modules.md) · this directory

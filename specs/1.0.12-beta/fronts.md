@@ -84,7 +84,7 @@ that must edit one names it as a carve-out in its commit, and no two open fronts
   step 5 gates 22; 19 step 1 gates 12 and 09; 15 gates 91 and 92; 74 gates 92. **65 does not wait
   on 13** (its relay streams through `httpc`, not `rakun-client`). 92 step 2 waits on `03r-an`.
   73 is in group A (decision 189).
-- **130 ↔ 128 — to confirm** (`03r-ao`, only the record): (1) 128 does not wait on 130; (2) no 130 rakun
+- **130 ↔ 128 — decision 339**: (1) 128 does not wait on 130; (2) no 130 rakun
   commit is in flight while 128 is open, and 130's rakun sites are re-pointed at the post-128 paths;
   (3) after 128, each 130 rakun commit is a decision-188 consumer commit — before the owning rakun
   front opens if ready, else after it lands; (4) the frozen-files rule excepts 130's rewrite of
@@ -134,7 +134,7 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 | **106** s2 | 17 · 26 s4 · 65 · ctr-k | — |
 | **107** | 07-g (a) · 71 · 81 | — |
 | **125** s4–10 | 325 (every step) · s6: decision 183 | 127 (s6) |
-| **128** | the rakun commits of 102 s3 and 103 s2 · the 130 rule (03r-ao) · ctr-k | every rakun front |
+| **128** | the rakun commits of 102 s3 and 103 s2 · the 130 rule (339) · ctr-k | every rakun front |
 | **04** | 128 | 13 · 12 (s1) · 22 (s5) · 08 s1 · 19 s2–5 · 88 (s4) · 123 · 104 s5 · 71 s3 |
 | **74** | 128 | 92 |
 | **08** | 128 · s1: 04 s4 · s7: 137 s1–5, 01-checker s29 | — |
@@ -184,7 +184,7 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 | **127** | 125 s6 · 103 · 22 · 67 · 49 · 117 · 120 · 126 · s4: 123 | 124 |
 | **116** | 118 · 26 s0 · `01-compiler/26` · with `01-checker` s22 · decisions 198–200, 212, 213, 221, 270, 285, 288, 289, 338 · s2: `01-checker` s25 · s6: 119 s2 | 124 s5 |
 | **124** | 50 · 71 · every other `08` front · s5: 116, 53 | — |
-| **98** | every library track's `-test` and README steps · s3: 95-f · s4: lg2-v | — |
+| **98** | every library track's `-test` and README steps · s3: 95-f · s4: `subdir` (344) | — |
 | **135** | snap-a · s4: 34 · s1–4: the owning fronts' other steps | s5: 53 s2–6 |
 
 ### Waves

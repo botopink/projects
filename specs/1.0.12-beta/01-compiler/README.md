@@ -23,13 +23,13 @@ cut by file ownership so fronts run in parallel.
 | [`05-wasm/`](./05-wasm/README.md) | high | partial: steps 1–4 done (two cells wait on 02), step 8 done; step 5 under way (heap growth, `fromCodepoint`, `pow`, astral `contentHash`, one `math`, `encoding` / `querystring` cells done; `unicode` on `02/97` step 16 (333), `json` on `02/97` step 15 (336)) | the rest of std on wasm: heap growth (261), `String.fromCodepoint` (262), `pow` (259), `contentHash` (260), one `math` (263) | 02 · the std track · 18 |
 | [`07-residuals/`](./07-residuals/README.md) | low | partial: steps 3, 5–7, 12, 13 done; 1, 2, 4, 8–11 open | the 1.0.1-beta snapshot review (C-22); comments and documents (C-23, C-18, the `@BeamMemory` text); erika's migration and the pointers' sweep; the per-cell compile row | 02–05 · 01 · 16 · C-14 |
 | [`12-language-tests/`](./12-language-tests/README.md) | medium | partial: steps 1 (box 1), 2 (box 2), 3, 4 on feat; 1 (box 2), 2 (box 1) open | the two missing area cells, `--cold` on the pre-existing tool set | 01/04 · 02/05 · `00-gate/114` |
-| [`14-comptime-on-beam/`](./14-comptime-on-beam/README.md) | medium | partial: steps 1 (fixture half), 3, 4, 7 and decision 237 done; 2, 6 open | the N=200 budget, a decorator body with `\u{…}` | 18 · 01 · lg2-j/o/w |
-| [`16-formatter/`](./16-formatter/README.md) | medium | not started | C-13 step 3 (the `;` refused), the siblings' reformat, the one-line trailing lambda (165), a trailing comma decides (166, 243), the lambda annotation's printer arm, annotations printed as written (286) | the library tracks' migrations · 01's parser rows · 16-a/16-b |
-| [`17-beam-memory/`](./17-beam-memory/README.md) | medium | partial: step 1 on feat but box 4; step 2 open | the per-row increment (17-b), the text handed to 07 | 17-b · 07 |
+| [`14-comptime-on-beam/`](./14-comptime-on-beam/README.md) | medium | partial: steps 1 (fixture half), 3, 4, 7 and decision 237 done; 2, 6 open | the N=200 budget, a decorator body with `\u{…}` | 18 · 01 |
+| [`16-formatter/`](./16-formatter/README.md) | medium | not started | C-13 step 3 (the `;` refused), the siblings' reformat, the one-line trailing lambda (165), the trailing comma alone decides (166, 243, 345), the lambda annotation's printer arm, annotations printed as written (286) | the library tracks' migrations · 01's parser rows |
+| [`17-beam-memory/`](./17-beam-memory/README.md) | medium | partial: step 1 on feat but box 4; step 2 open | the per-row increment (`Dict.bump`, 340), the text handed to 07 | 07 |
 | [`18-comptime-runtimes/`](./18-comptime-runtimes/README.md) | low | partial: steps 2, 4, 5 done, 3's open row; 1, 3 open | the CI rows, the bench's close row, the evaluation within 14's budget | the maintainer · 14 · 05 |
 | [`23-std-purity/`](./23-std-purity/README.md) | low | not started | the import cells and LSP snapshots, three confirmations | 23-b/c, std-c |
 | [`24-effects-by-return/`](./24-effects-by-return/README.md) | medium | not started | the guide as one program, four confirmations, the per-item cost | rakun's `serverAction` · 24-a/b/c/g |
-| [`26-cli-tooling/`](./26-cli-tooling/README.md) | high | partial: steps 1–5, 7, 8 done (2 box 3 measured, rakun's row); 6, 9 open | only a direct dependency importable (242), warnings in `build`/`test`, the LSP's import check | lg2-v · 23 |
+| [`26-cli-tooling/`](./26-cli-tooling/README.md) | high | partial: steps 1–5, 7, 8 done (2 box 3 measured, rakun's row); 6, 9 open | only a direct dependency importable (242), warnings in `build`/`test`, the LSP's import check | 98 step 4 · 23 |
 | [`129-import-without-from/`](./129-import-without-from/README.md) | high | partial | `from` names a package (206, done); the shorthand goes, `mod` binds its namespace (337) | — |
 | [`130-decorator-outputs/`](./130-decorator-outputs/README.md) | high | partial: steps 1–4 done; 5 (38 of 119 sites), 6 open | the library sites, `@emit` removed | 01 step 20 (256's registry) · the library tracks |
 | [`134-builtins-declared/`](./134-builtins-declared/README.md) | high | partial: steps 1, 3 on feat; 2 partial | the type functions, the `result` namespace, the `@Result`/`?T` methods, `@is` | 134-a…d |
@@ -61,13 +61,13 @@ Fronts share no source file or snapshot directory except by named, sequenced car
 ## Decisions
 
 Open ids waited on — statements in [`../decisions-pending.md`](../decisions-pending.md); 1.0.10
-choices to confirm (16-a/b, 23-b/c, std-c, 24-a/b/c/g, 01c-a/b, 0405-b) in
+choices to confirm (23-b/c, std-c, 24-a/b/c/g, 01c-a/b, 0405-b) in
 [1.0.10's](../../1.0.10-beta/decisions-pending.md); front in parentheses:
-**17-b, 17-c** ([`17-beam-memory`](./17-beam-memory/README.md) § Decisions) · **C-14** (07 step 9) · **16-a, 16-b** (16) · **23-b, std-c** (23) · **24-a, 24-b,
-24-c, 24-g** (24) · **01c-a, 01c-b** (01) · **0405-b** (04) · **lg2-a … lg2-w**
-(`lg2-k` answered by 216, `lg2-f`/`lg2-i` by 280, `lg2-g` by 281): none opens a front until
-answered, each then a step — 01 lg2-a/e (only `owner`)/q,
-14 lg2-j/o/w, 26 lg2-v; `lg2-l` maybe de facto (`@panic` / `@todo`
+**17-c** ([`17-beam-memory`](./17-beam-memory/README.md) § Decisions) · **C-14** (07 step 9) · **23-b, std-c** (23) · **24-a, 24-b,
+24-c, 24-g** (24) · **01c-a, 01c-b** (01) · **0405-b** (04) · **lg2-b … lg2-u**
+(`lg2-k` answered by 216, `lg2-f`/`lg2-i` by 280, `lg2-g` by 281; `lg2-a` by 346 → 01 step 32,
+`lg2-e` by 347, `lg2-j`/`lg2-o`/`lg2-w` by 343/342/341 → 14 step 6, `lg2-v` by 344 → 26 step 6): none
+opens a front until answered, each then a step — 01 lg2-q; `lg2-l` maybe de facto (`@panic` / `@todo`
 `noreturn`, a branch ending in one narrows): maintainer confirms, row closes.
 
 Every recommendation: most restrictive behaviour, nothing configurable bypasses it (decision 67).

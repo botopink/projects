@@ -1,12 +1,12 @@
 # Front 17 — beam-memory: `keyed: true` row per key, and `@BeamMemory` refused off the BEAM
 
-**Priority:** medium · **State:** partial: step 1 on feat but its fourth box (17-b); step 2 open
-**Depends on:** 17-b (step 1 box 4) · `07-residuals` step 6 (text into `docs.md`) · rakun track
+**Priority:** medium · **State:** partial: step 1 on feat but its fourth box (`Dict.bump`, decision 340); step 2 open
+**Depends on:** `07-residuals` step 6 (text into `docs.md`) · rakun track
 (migration)
 **Owns:** module-`var` read/write lowering under `#[@BeamMemory.Ets(keyed: true)]` in
 `codegen/erlang.zig` and `codegen/beam_asm.zig` (`keyedSeedRows`, `emitKeyedRowRead`,
 `emitKeyedRowWrite`, `emitKeyedHelpers` — carve-out of 02 and 03 by name) · `libs/std/src/beam.bp`'s
-keyed primitives (std-track carve-out, named in the commit) · `beam_memory_*` cells · this directory
+keyed primitives and `Dict.bump` (decision 340; std-track carve-out, named in the commit) · `beam_memory_*` cells · this directory
 **Does not touch:** `src/parser/**`, `src/ast.zig`, `src/comptime/**` beyond `validateMemoryAnnotations`
 (01) · rest of `erlang.zig` / `beam_asm.zig` (02, 03) · `docs.md` (07 — text in
 [`../07-residuals/beam-memory-docs-text.md`](../07-residuals/beam-memory-docs-text.md)) ·
@@ -17,7 +17,7 @@ Paths relative to `repository/botopink-lang/modules/compiler-core/src/`.
 ## Goal
 
 `#[@BeamMemory.Ets(keyed: true)] var counts: Dict<K, V>` = one ETS row per key on erlang and beam
-(concurrent writers of different keys lose nothing); per-key increment per 17-b; refused off the
+(concurrent writers of different keys lose nothing); per-key increment by `Dict.bump` (340); refused off the
 BEAM (decision 167); documented in `docs.md`.
 
 ## Mechanism
@@ -40,10 +40,13 @@ BEAM (decision 167); documented in `docs.md`.
 
 ## Open
 
-### Step 1 — the per-row increment (box 4, 17-b)
+### Step 1 — the per-row increment (box 4, decision 340)
 
-- [ ] the answer to 17-b built: `+=` through a row reaches `ets:update_counter` on the key, or the
-      refusal is the rule and `docs.md`'s text says so
+- [ ] std's `Dict.bump(key, by) -> Dict<K, V>` (integer `V`, an absent key counts from 0) is
+      `insert(key, (at(key) ?? 0) + by)` on any `Dict`; on a keyed var `counts = counts.bump(k, n)`
+      lowers to `ets:update_counter(T, k, n, {k, 0})` on erlang and beam — a `run/beam_memory_ets`
+      cell with concurrent bumps of one key losing none; `counts.insert(k, (counts.at(k) ?? 0) + n)`
+      stays refused (no pattern recognised); `docs.md`'s `keyed` sentence names `bump`
 
 ### Step 2 — the text and the migration handed over
 
@@ -60,14 +63,12 @@ BEAM (decision 167); documented in `docs.md`.
 
 Measured / options / blocks in [`../../decisions-pending.md`](../../decisions-pending.md).
 
-### 17-b. The per-row increment of a `keyed: true` `Dict`
-
-Recommendation (a): keyed rows written whole, per-key counter refused — no new method or grammar for
-one annotation.
+Answered: 17-b → decision 340 (`Dict.bump`, `ets:update_counter` under `keyed: true`).
 
 ### 17-c. What else names a `keyed: true` var
 
-Recommendation (a): the two built forms only. Blocks nothing — built surface stands until widened.
+Recommendation (a): the built forms only — `at`, `insert` and 340's `bump`. Blocks nothing — built
+surface stands until widened.
 
 **Gate:** standard (fronts.md § Gate) + per-mode cells (`run/beam_memory_{process_dict,ets,persistent_term}`)
 green on erlang and beam, a new cell's `.out` what `erl` printed · `scripts/beam_export_audit.sh` green

@@ -107,4 +107,4 @@ and cost stated here, where the default is documented, nowhere else.
 > function value: a `fun` belongs to the module version that created it and dies with it on
 > reload.
 
-If `17-b` or `17-c` widens the keyed surface, the `keyed: true` sentence follows.
+The `keyed: true` sentence names `Dict.bump` (decision 340) beside `at` and `insert`; if `17-c` widens the keyed surface, it follows.

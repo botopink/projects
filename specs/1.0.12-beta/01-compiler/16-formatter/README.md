@@ -3,7 +3,7 @@
 **Priority:** medium · **State:** not started
 **Depends on:** library tracks' `c13-migrate.py` runs (rakun, jhonstart, onze; erika by
 `07-residuals` step 10) — step 3 after the last · `01-checker`'s parser rows (patch rebases on them)
-· 16-a, 16-b to confirm (step 4)
+· decision 345 in the printer first (step 6, before step 4)
 **Owns:** `modules/compiler-core/src/format.zig` · `src/format/**` · member-trivia and member-order
 fields of `src/ast.zig` and their fill sites in `src/parser/decls.zig` (`parseEnumItem`,
 `parseFieldList`, `parseMethodDecl`) — carve-out of 01 · step 3 only, carve-out of 01: `parser.zig`'s
@@ -61,11 +61,12 @@ parser rows. Reds every `.bp` still writing it — hence last.
 - [ ] `zig build test`, `test-libs`, `test-language` green; no parser snapshot moves but the new error fixture's
 - [ ] `docs.md`'s row moves from "optional" to "refused"; `src/parser/AGENTS.md` in the same commit
 
-### Step 4 — the siblings' reformat at C-12's rules (after 16-a / 16-b)
+### Step 4 — the siblings' reformat at C-12's rules (after step 6, decision 345)
 
-Once confirmed each track runs `botopink format` on its tree; this front measures copies first
-(token-identical, idempotent, cells equal; 16-a's hunk counts — emilia 18 files, rakun 47, jhonstart
-19, erika 2, onze 2 — re-derived).
+Once step 6 lands each track runs `botopink format` on its tree; this front measures copies first
+(token-identical, idempotent, cells equal; the hunk counts measured under 16-a — emilia 18 files,
+rakun 47, jhonstart 19, erika 2, onze 2 — re-derived under 345: lists written open without a
+trailing comma now join).
 
 - [ ] the copies' measurement in this README; the tracks' commits; `botopink format --check` exit 0 in every member of every library
 
@@ -73,17 +74,23 @@ Once confirmed each track runs `botopink format` on its tree; this front measure
 
 A fitting one-expression trailing-lambda body prints on one line, arrow or not; today rule 3 stops at
 `arrow_when_empty` (`format.zig` `fmtLambdaAt`): `h1 { "my blog" }` takes three lines. Canonical form
-into `src/format/AGENTS.md` first; own commit after 16-a/16-b.
+into `src/format/AGENTS.md` first; own commit after step 6.
 
 - [ ] `h1 { "my blog" }` round-trips on one line; `assertFormat` / `assertIdempotent` / `assertLossless` cases; movement per tree measured and reported to the tracks
 
-### Step 6 — a trailing comma decides (decisions 166, 243)
+### Step 6 — the trailing comma alone decides (decisions 166, 243, 345)
 
 Every delimited list (generics, parameters, patterns, imports, types, arrays, record fields, enum
 bodies, call arguments, tuples) with a `,` after its last element prints one per line and keeps the
-comma; without it width rules (16-a / 16-b) decide. One-step pipeline: no comma, horizontal.
+comma; without it the list prints on one line whatever its width, and a list written open without
+the comma is joined (345). No width rule opens a list: 16-a's `groupMeasured` leaves the argument
+list and the array / tuple literals (a binary run and a brace-less `if` keep it), 16-b's open array
+goes. One-step pipeline: no comma, horizontal.
 
 - [ ] one `assertFormat` case per list kind, both spellings; the six trees measured before and after; `src/format/AGENTS.md` states the rule
+- [ ] 345 in the printer: a list without the trailing comma stays on one line past the width, and one written
+      open without it joins (`assertFormat` cases); 16-a's `groupMeasured` kept only for the binary run and the
+      brace-less `if`; 16-b's open array removed
 
 ### Step 7 — C-11's boxes closed
 

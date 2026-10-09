@@ -48,8 +48,8 @@ remark/rehype plugins have no host here; a Markdown renderer is a library, not a
 | a document to validate | `json.Json` (`libs/std/src/json.bp:113`) |
 | a place to run at build | `onze build`, a botopink program walking the source tree and staging a package (`onze-cli/src/build.bp:105`) |
 
-Missing: comptime has no filesystem (`language-gaps.md` lg2-o) — no compile-time `import.meta.glob`; content loads
-in the build tool and at boot, never in the compiler.
+Missing: comptime reads a named file only (`@embedFile`, decision 342) — no compile-time `import.meta.glob`; a
+collection loads in the build tool and at boot, never in the compiler.
 
 ## Mechanism
 

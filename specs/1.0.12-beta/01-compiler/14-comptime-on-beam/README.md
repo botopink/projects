@@ -3,7 +3,7 @@
 **Priority:** medium · **State:** partial: steps 1 (fixture half), 3, 4, 7 and decision 237 on
 feat; steps 2, 6 open
 **Depends on:** `18-comptime-runtimes` (step 2's runtime-evaluation stage) · `01-checker` (step 2's
-memo key; body file name and T17 are 01's rows) · decision-gated rows lg2-j, lg2-o, lg2-w — each a step once answered.
+memo key; body file name and T17 are 01's rows) · step 6 (decisions 341, 342, 343).
 **Owns:** `modules/compiler-core/src/comptime/template_eval.zig`, `decorator_eval.zig` ·
 `src/comptime/runtime/beam/**` (lowering) · `src/comptime/runtime/etf.zig` (term round trip) ·
 `src/comptime/runtime/prelude.zig` (resident preludes) · `src/codegen/beam/asm_text.zig` (listing) ·
@@ -62,9 +62,23 @@ Remaining per-evaluation cost:
 - [ ] slope ≤ 1 ms per evaluation and N=200 ≤ 600 ms on both runtimes, measured with
       `scripts/comptime_bench.sh` and recorded in 18's table
 
-### Step 6 — the decision-gated rows
+### Step 6 — host cells, files and independence in a decorator (decisions 341, 342, 343)
 
-lg2-w (hit by every decorator), lg2-j, lg2-o: each a step once answered; nothing built before.
+- [ ] 341: a host function reached from a decorator body travels with the cell of the runtime that
+      evaluates it — `@External.Beam` (or `@External.Erlang`) on the BEAM runtime, `@External.Wasm` on the
+      wat runtime (which forms run there, and the bridge to the term layout, are front 18's); the cells
+      required are those of the package's declared `targets` (`erlang`/`beam` → Beam, `commonJS`/`wasm` →
+      Wasm, none declared → both); a missing one refused at the call when the package is compiled, naming
+      the function, the cell and the reason; `@External.Node` never serves; a cell per case on both
+      runtimes, `COMPTIME REPLY` byte-identical where both cells exist
+- [ ] 342: `@embedFile` / `@embedBytes` read the file relative to the `botopink.json` of the package that
+      wrote the path (the application's for a decorator annotating its declarations; the member's in a
+      workspace); a missing file, or a non-UTF-8 one for `@embedFile`, is a compile error at the call; the
+      content hash enters the cell's cache key (with 26 for watch and the LSP); `rakun ws generate`'s
+      checked-in `.bp` can go (rakun 93)
+- [ ] 343: a module-level `var` written by a decorator body stays refused, the message pointing at
+      `@TypeInfo.all(with: …)` at the entry point; one cell refusing a duplicate there naming both
+      declarations
 
 **Gate:** standard (fronts.md § Gate) + `scripts/snap_audit.sh --mode=runtime-parity` green, every
 re-recorded listing classified, `COMPTIME REPLY` byte-identical at every step ·

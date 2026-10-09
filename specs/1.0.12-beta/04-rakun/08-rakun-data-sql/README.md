@@ -3,7 +3,7 @@
 **Priority:** high — session, scheduling, security, cache, mail and merged tx/devtools stand on
 `rakun-data`; its open boxes are small · **State:** not started
 **Depends on:** 128 · 04 step 4 (`rkExcludeFromEager`, step 1 only) · decision 147 (`try` in a
-lambda takes its expected type's return — tests written against it) · lg2-e/f (R78-1's field list) ·
+lambda takes its expected type's return — tests written against it) · decision 347 (R78-1's field list: the type-level generator reads it) ·
 decisions 311–313 (step 7: `01-checker` step 29, `137` steps 1–5, `erk-a` for the body-form cell, decision 318: `#[repository]` is rakun-data's, on a behavior only) · 03r-v (confirmation)
 **Owns:** `modules/rakun-data/**` except 09's (`src/nosql/**`, `src/nosql_host.bp`,
 `src/sidecars/rakun_nosql.erl`, `test/nosql/**`), 15's (`src/tx/**`, `test/tx/**`) and 65's line in
@@ -34,8 +34,9 @@ join count asserted on what the code can show.
   `@typeInfo(T).meta(Entity)` (298: `Entity(table, columns)`). A derived finder naming no field fails at build with
   "unknown field 'ciudad'" naming `Columns` (`orm_build_test.bp`), without the field list.
   `#[entityRepository("City")]` names its entity by string today (step 4 takes the type, 281); whether it can read
-  `@typeInfo(City).meta(Entity)?.columns` at comptime (decisions 216, 248) decides if the list prints
-  without lg2-e/f.
+  `@typeInfo(City).meta(Entity)?.columns` at comptime (decisions 216, 248) decides if the list prints;
+  under 347 the check is the type-level generator's (318's `#[repository]` on a behavior), never a
+  method marker's.
 - **R78-2.** ETS arm has no JOIN, PostgreSQL arm no server here; "nothing is fetched that the method
   did not name" asserted by statement count on ETS over a 100-row single-table fetch plus the join's SQL text.
 
@@ -60,7 +61,7 @@ cell claims to have reached a server.
 
 - [ ] `orm_test.bp`: a 100-row fetch through a derived finder issues exactly one statement (recorded); the join finder's SQL names exactly the two tables and the join column
 - [ ] R78-2 reworded to the statement-count-and-text assertion; the "100 joined rows on a real arm" half is a `deferred.md` row
-- [ ] R78-1 ("`findByCiudad` is a compile error naming the entity and listing its fields"): re-measured on the post-130 decorators — if `#[entityRepository]` can read `meta(Entity)?.columns` (298), the refusal lists them and the box ticks; else the measured text recorded, box open on lg2-e/f naming the nearest form
+- [ ] R78-1 ("`findByCiudad` is a compile error naming the entity and listing its fields"): the type-level generator (`#[repository]` on a behavior, 318) checks each `findBy<Field>` against `@typeInfo(<entity>).meta(Entity)?.columns` (298) and refuses, listing them (347) — re-measured on the post-130 decorators and ticked
 - [ ] RX-2 (78): decorator-argument default re-measured in `orm_build_test.bp`
 
 ### Step 4 — references, not strings (decision 281)

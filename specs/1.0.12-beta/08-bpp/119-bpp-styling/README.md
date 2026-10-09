@@ -63,8 +63,8 @@ and only emilia uses it. Stands on:
 - Bridge today: `jhonstart-emilia/src/root.bp:95` `plugin() -> RenderPlugin` puts emilia's flush in
   the head and each boundary fill, adds payload key `s` (`contracts.md` § 6a).
 - `hashHex` is djb2 in a host cell on both targets (`emilia.bp:79-97`); std's `hash.contentHash` is
-  the pure form (`06-emilia/34` step 1); comptime cannot call a host function (`language-gaps.md`
-  lg2-w).
+  the pure form (`06-emilia/34` step 1); a decorator calls a host function only with the cells its package's targets need (decision
+  341, `01-compiler/14` step 6).
 - `q.source()` answers `Source(file, line, col)` (`libs/std/src/builtins.d.bp`, `Source`).
 - A `@Component<C, T>` body may write `use`; a template function reads a function's hooks through
   `@typeInfo(f).hooks` (128, 277).

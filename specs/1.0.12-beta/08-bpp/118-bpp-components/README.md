@@ -233,5 +233,5 @@ core's `node.bp`, `prelude.bp` and `element.bp`'s `View`; green on commonJS and 
   ([`../../05-jhonstart/README.md`](../../05-jhonstart/README.md) § Handed to this track by
   `08-bpp/118`), not steps here.
 - **Not added.** Dynamic tags (`<Element>` from a variable): `{el(tag, children, attrs)}` in a hole. `.html`/`.svg` components:
-  comptime cannot read a file (lg2-o); paste the markup.
+  none — `@embedFile` (342) reads the file as text, which a component may hold; no file becomes a component.
 - **`Astro.self`** = own name; **`Astro.props`** = props parameter; **`Astro.slots.has("x")`** = `hasContent(x)`.

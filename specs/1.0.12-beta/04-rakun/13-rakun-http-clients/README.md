@@ -3,7 +3,7 @@
 **Priority:** high — the pool unblocks 17's one-connection OTLP push (R75-1); the interceptor seam is
 03r-w's second option · **State:** partial: step 4 on `feat`; steps 1–3 open
 **Depends on:** 128 (moves the SOAP files here, the span API into the core) · 04 step 1
-(`rkTagEpoch` — decision 185: no `rakun-client → rakun-cache` edge) · lg2-a / lg2-b (streamed body is
+(`rkTagEpoch` — decision 185: no `rakun-client → rakun-cache` edge) · lg2-b · 346's `Bytes`, unbuilt (streamed body is
 a `string` chunk — enough for a text stream, what this front ships)
 **Owns:** `modules/rakun-client/**` except 93's `src/ws/**`, `test/ws/**`, `src/sidecars/rakun_ws.erl` —
 `botopink.json`, `src/root.bp` are this front's; 93 appends when this front does not hold them ·

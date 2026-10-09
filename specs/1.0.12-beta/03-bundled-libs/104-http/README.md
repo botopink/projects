@@ -13,7 +13,7 @@ cookie tossing · **State:** partial: steps 1–4 (the package) on feat; step 5 
 `repository/onze/modules/onze-assets/src/image_handler.bp` (its MIME table) · reason-phrase tables in
 `rakun/src/sidecars/rakun_runtime.erl`, `rakun_ssr.erl`, `rakun_websocket.erl` **read, not edited**
 **Does not touch:** HTTP/1.1 wire parsers (`decode_packet` in `rakun_runtime.erl`,
-`rakun_client.erl`) and compression bodies (`zlib`) — wait on lg2-a (byte type) · `hash.etag` and
+`rakun_client.erl`) and compression bodies (`zlib`) — wait on 346's `Bytes` (`01-checker` step 32) · `hash.etag` and
 friends (std) · other lines of those members
 
 ## Goal

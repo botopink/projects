@@ -3,7 +3,7 @@
 **Priority:** high — 19's broker double and `bootAndExit` wait on step 1; 91, 92 on the member;
 86's `Retry` and 90's retry ceiling are correctness gaps in delivered code · **State:** not started
 (two premises already true: the listener-names term and the producer transaction exist)
-**Depends on:** 128 · 03r-al (step 5) · lg2-w (R16-1, one box) · 03r-k / 03r-l / 03r-x (confirmations)
+**Depends on:** 128 · 03r-al (step 5) · `01-compiler/14` step 6 (R16-1, decision 341) · 03r-k / 03r-l / 03r-x (confirmations)
 **Owns:** `modules/rakun-messaging/**` except 91's (`src/pulsar/**`, `src/pulsar_host.bp`,
 `src/sidecars/rakun_pulsar.erl`, `test/pulsar/**`) and 92's (`src/rsocket/**`, `test/rsocket/**`,
 `src/sidecars/rakun_rsocket.erl`) — `src/stream/**`, `test/stream/**` are this front's ·
@@ -88,7 +88,7 @@ the toolchain row "a sidecar cannot reach an external OTP application"; the clos
 
 ### Step 6 — Scheduling and defaults (R16-1, RX-2)
 
-- [ ] R16-1 ("the parser is an ordinary compiled function; the decorator body calls it") stays open on lg2-w; README records the inlined parser's size and the one-line change that closes it when the decision lands
+- [ ] R16-1 ("the parser is an ordinary compiled function; the decorator body calls it") closes once `01-compiler/14` step 6 lands (341): a host cell it reaches needs `@External.Beam` only (rakun declares `["erlang"]`); until then README records the inlined parser's size and the one-line change
 - [ ] RX-2 (15, 86, 90): decorator-argument default re-measured in `decorators_test.bp`, result recorded
 
 ### Step 7 — configuration as a typed record (decision 299)
@@ -120,5 +120,5 @@ and `publishWithRetry` after this lands; 19 consumes step 1.
 - 03r-k (in-process broker; a real address refuses the boot), 03r-l (container named after its
   destination; Redis ack-mode `none`), 03r-x (conditional-UPDATE claims, resumed coordinators)
   implemented; confirmation only.
-- Kept for open markers: `examples/order-listeners-example.bp` (lg2-a),
-  `publish-reliability-example.bp` (316: rewritten once `01-checker` step 30 lands), `jms-listener-example.bp` (lg2-a), `saga-example.bp` (lg2-d).
+- Kept for open markers: `examples/order-listeners-example.bp` (the byte gap, 346),
+  `publish-reliability-example.bp` (316: rewritten once `01-checker` step 30 lands), `jms-listener-example.bp` (the byte gap, 346), `saga-example.bp` (lg2-d).
