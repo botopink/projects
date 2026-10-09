@@ -35,9 +35,8 @@ per import spelling).
 
 ### Step 2 — the confirmations
 
-23-b (`base64` retired), 23-c (the two `botopink test` folder fixes in `test_cmd.zig` / `libs.zig`,
-landed), std-c (namespace rewrite): each confirmed or reversed; a reversal opens a step in the owner
-(26 for 23-c, 01 for std-c).
+23-b (`base64` retired) and std-c (namespace rewrite): each confirmed or reversed; a reversal opens a
+step in the owner (01 for std-c). 23-c is confirmed (317).
 
 - [ ] the three ids in `../../decisions-taken.md` with their numbers, or a reversal's step named —
       23-c confirmed (317); 23-b and std-c open

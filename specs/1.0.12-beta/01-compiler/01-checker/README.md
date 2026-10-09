@@ -41,7 +41,7 @@ used as a value with no valued `return` is `block-tail-value` (decision 2; `reje
 records a `@Decl` hands out are `__Decl__{Annotation,Param,Field,Method}` (`comptime.zig`, shown
 `Decl.Param`), so an imported `Param` no longer hides them
 (`modules/reflection_type_not_shadowed_by_import`) · row 33 re-measured in its two-package shape:
-refused at the aliased item (imp-a), the package named `` `srv` `` not `` `srv:` ``
+refused at the aliased item (until 310's backend half lands), the package named `` `srv` `` not `` `srv:` ``
 (`modules/import_same_type_name_two_packages_one_aliased`). Step 25 (289): `pub default fn (…)`
 (named `default`, a keyword; `decl.name` the file's), `pub default <name>;`, `import {m.card};`
 binding a module's default (`comptime/default_fn.zig`), `default-unknown` / `default-twice`;
