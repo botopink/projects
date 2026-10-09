@@ -1,7 +1,7 @@
 # Front 119 — bpp styling: `css`, `styled`, `jhonstart-styled`, the style section
 
 **Priority:** medium — a page is complete without it (emilia tokens, global stylesheet); a
-self-styled component is not. · **State:** step 1: `css` done, `styled` open
+self-styled component is not. · **State:** step 1: `css` done, `styled` landed but for the theme read from the program and the run-time registration (two boxes below)
 **Depends on:** (written against 278, 301, 302, 326, 338) step 1: the two repositories
 `botopink/css` and `botopink/styled` exist (created; each needs a first commit on `feat` before
 it becomes a submodule — CI check 1) · step 2: `118-bpp-components` (the template arm), 118 step 1's
@@ -192,21 +192,21 @@ last two. The build shortens scope ids to a declaration-order counter in the fin
 lists, compounds, combinators, pseudo-classes/elements (attribute before a pseudo-element),
 `:global(…)`, `:is(…)` and `:where(…)` (scoped inside).
 
-- [ ] `botopink/styled` carries a first commit on `feat`; submodule at `repository/styled`; meta
+- [x] `botopink/styled` carries a first commit on `feat`; submodule at `repository/styled`; meta
       `.gitmodules` and `AGENTS.md` § Layout row in the same commit; manifest `["erlang",
       "commonJS"]`, erlang first, imports std and `css` only
-- [ ] `examples/styled-example.bp` passes on both targets: `styledProperty "padding: --spacing(4);"`
+- [x] `examples/styled-example.bp` passes on both targets: `styledProperty "padding: --spacing(4);"`
       renders `.s_<hash>{padding:calc(var(--spacing) * 4)}`; `&:hover`, `@media` and `@variant md`
       nest under the class; `${p}` of a `StyledPropertyView` inlines its declarations; the same rules
       share one class; the layer's prefix; a sheet renders its layers in declaration order
-- [ ] `styledProperty` refuses `{`, `&`, `@` at the character; `@utility` and `@theme` refused in
+- [x] `styledProperty` refuses `{`, `&`, `@` at the character; `@utility` and `@theme` refused in
       either literal, each error naming the botopink form
 - [ ] a component with no run-time hook is computed at build (the emitted module holds the class as
       a constant); one reaching a run-time hook registers at render
 - [ ] the theme mechanism (300) in `styled`: `#[theme]` found at comptime, two refused, none →
       the default; `--theme(--breakpoint-md)` and `@variant md` read it; a cleared breakpoint refused
       at compile time
-- [ ] `grep -rn "bpp\|jhonstart\|emilia" repository/css repository/styled` empty — the shared
+- [x] `grep -rn "bpp\|jhonstart\|emilia" repository/css repository/styled` empty — the shared
       hook text names emilia (`119-a`)
 
 ### Step 2 — `jhonstart-styled` and the template arm
@@ -274,6 +274,29 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
   comment, stray `}`, unclosed `(`/`[`, a selector with no block) is an `Error` naming the byte
   offset, never a truncated sheet; `scope(s, scope(s, css))` is refused (any `[data-s…]` in a
   selector); 24 tests, green on erlang and commonJS.
+- Step 1, `styled` — `botopink/styled` at `repository/styled` (`.gitmodules` `branch = feat`, § Layout
+  row, CI check 4's list); manifest `["erlang", "commonJS"]`, std and `css` (`dependencies`, the
+  reader's character walk), no host cell. `styled "…"` (the default module's `pub default fn`) and
+  `styledProperty "…"` read the literal at build and answer `@Component<StyledBase, Styled>` /
+  `@Component<StyledBase, StyledProperty>`: declarations (`;` required), `${p}` splices of a
+  `StyledPropertyView`, value holes (`string | i32 | f64`), CSS nesting, `@variant` (pseudo-classes,
+  media conditions, the theme's breakpoints, `max-*`), `@media` / `@supports` / `@container` /
+  `@starting-style`, `--spacing()`, `--alpha()`, `--theme()`. The class is `s_` + `contentHash` of
+  the rules; a literal with no hole emits `styledConstant` / `propertyConstant` with the class as a
+  literal (the repository stage reads the emitted module on both targets), one with holes builds it
+  when the component runs. `Sheet.of(layers).add(layer, styled).render()` (each component once, a
+  layer's prefix renaming the class, `@layer`s in declaration order); `Theme`, `Ns`, `ThemeValue`,
+  `entry`, `clear`, `clearNs`, `clearAll`, `extendTheme`, `baseTheme`, `#[theme]`; `Styleable`
+  (`toStyled()`) on the records. `examples/styled-example.bp` passes on both targets as the suite case
+  `test/styled_example_test.bp` and as `examples/styled-example/` (an application of `from
+  "styled"`); 29 tests and 14 refusals (`refusals/`, each message at its character) on erlang and
+  commonJS. Open, each a `language-gaps.md` row: the literals read `baseTheme()`, never the
+  application's `#[theme]` (a library's template function cannot read the program's catalogue — so
+  two `#[theme]` are not refused, and a cleared breakpoint is refused only against the theme the
+  literal reads, `readVariant` checked at run time); `@custom-variant` is refused, naming the
+  function form (a template cannot read another expansion's value); `Styleable` is implemented by the
+  records, not the view aliases. A component with holes is computed when it runs; registering it in
+  the render's sheet is `jhonstart-styled`'s sink (step 2).
 
 ## Decisions
 

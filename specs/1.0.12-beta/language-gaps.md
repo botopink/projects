@@ -30,6 +30,13 @@ exempts a file.
 | `repository/onze/modules/onze-content/src/collections.bp` | 1 | **A field marker cannot be read by the library that takes the type** |
 | `repository/rakun/modules/rakun-cache/src/cache.bp` | 1 | **No module-level annotation** |
 | `repository/rakun/modules/rakun-cache/test/granularity_test.bp` | 1 | **No module-level annotation** |
+| `repository/styled/examples/styled-example/src/main.bp` | 1 | **A library's template function cannot read the program's catalogue** · **A function a template body reaches cannot name an enum variant nor build a private record** |
+| `repository/styled/src/hash.bp` | 1 | **A decorator body cannot call a host function** |
+| `repository/styled/src/layers.bp` | 1 | **A method's behavior-typed parameter refuses an implementer** |
+| `repository/styled/src/reader.bp` | 1 | **A template function cannot read another expansion's value** |
+| `repository/styled/src/styled.bp` | 2 | **A wrapper's type alias cannot implement a behavior** · **A library's template function cannot read the program's catalogue** |
+| `repository/styled/src/variants.bp` | 1 | **A function a template body reaches cannot name an enum variant nor build a private record** |
+| `repository/styled/test/styled_example_test.bp` | 1 | **No assignment to a `self` field — by design.** · **A method's behavior-typed parameter refuses an implementer** |
 | `specs/1.0.12-beta/03-bundled-libs/125-validation-zod/examples/derived-types-example.bp` | 1 | **A derived record type has no name a decorator can be attached to** *(answered by 307: `#[validated] pub val RecipePatch = Type.partial(Recipe);` — a compile-time static method of std's `Type` answering a new named type; closes with `01-checker` step 28)* |
 | `specs/1.0.12-beta/03-bundled-libs/125-validation-zod/examples/enums-and-unions-example.bp` | 2 | **A decorator argument is a raw lexeme** · **`Decl.variants` carries a variant's name and not its payload fields or its annotations** |
 | `specs/1.0.12-beta/03-bundled-libs/125-validation-zod/examples/object-policy-example.bp` | 1 | **`Field` reflects no default** |
