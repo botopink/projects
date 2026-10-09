@@ -108,9 +108,8 @@ with a located message, recorded as the design; or (b) restructured so no host c
 - [ ] every Node template of std taking or answering an `i64` (`io/clock.bp`'s `systemTimeWithUnit`,
       `monotonicTimeWithUnit`, `largestExactMillis`, `wide`; `io/fs.bp`'s `size` / `mtime`; the rest found
       by grep) passes and answers `number | bigint` in 319's canonical form
-- [ ] `Json`: an `i64` written and read as an exact JSON number — a safe value directly, a larger one by its
-      digits into a `BigInt`, never rounded
-      (`9223372036854775807l` round-trips on commonJS)
+- [ ] `Json`: an `i64` written as its digits (the read half is step 15's `Int` node, 332)
+      (`9223372036854775807l` round-trips on commonJS through `Int`)
 - [ ] `string.parseInt()` answers `Error` only past the `i64` range (176 as amended by 319); its cells on
       the four targets
 
@@ -124,6 +123,20 @@ and beam, 2 on wasm.
       and beam; `02-erlang` step 15's cell green
 - [ ] std's Node templates for the five take and answer codepoint indices (`04-js` step 10's helpers)
 - [ ] `docs.md` § Strings states the unit — codepoints on every target — handed to `07-residuals` (the prose)
+
+### Step 15 — `Decimal` and `Json`'s numbers as Jackson reads them (decision 332; after `01-compiler/139`)
+
+- [ ] `Decimal` in std (`math/decimal.bp` or the module the front names): an unscaled `bigint` and a
+      `scale`; `add`, `sub`, `mul` exact; `div(b, scale:, rounding:)` with `Rounding { Up, Down, Ceiling,
+      Floor, HalfUp, HalfDown, HalfEven, Unnecessary }` (Java's `RoundingMode`; `Unnecessary` aborts when
+      rounding is needed); `compare`; `==` by numeric value (`1.0 == 1.00`); `toString()` plain with its
+      scale (`"1.00"`, never `1E+2`); `parse(text) -> @Result<Decimal, string>`
+- [ ] `Json`: `Num(value: f64)` replaced by `Int(value: i64)`, `BigInt(value: bigint)`, `Dec(value: Decimal)`,
+      chosen by the numeral; readers `num() -> ?f64`, `i64() -> ?i64`, `bigint() -> ?bigint`,
+      `decimal() -> ?Decimal`, `isNumber()`, `isIntegral()` (exact or `null`, never coerced); `encode` writes
+      the digits and the plain decimal text; std's tests `decodesTo("9007199254740993", Int(value: 9007199254740993))`
+- [ ] the 13 files with a `case` over `Json` (std 6, rakun 3, jhonstart 2, onze 2) gain the arms, one commit per
+      repository; `run/json_numbers_exact` one `.out` for the four targets
 
 ## Consumers — "consume std X" rows handed to the library fronts
 

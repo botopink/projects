@@ -181,7 +181,7 @@ Decision 325 (07-j) fixed the scope: every step, in order. Nothing in steps 4–
 |---|---|
 | 4 enums, unions, tuples, maps, sets | the decorator that reads an enum is `#[validated]`'s after 306 and its members are 327's; `#[tag]` waits on the **`Decl.variants`** gap row |
 | 5 object policy, derived types | 307's `Type` (std `types.bp`) and `01-checker` step 28 (`#[validated] pub val RecipePatch = Type.partial(Recipe)`) |
-| 6 coercion, transforms, form binder | nothing (`T.bind`, 327) |
+| 6 coercion, transforms, form binder | nothing (`T.bind`, 327); a number field reads by its type as 332 (5) — `i64` exact, `bigint`, `Decimal`, `f64` rounded; a string only under `#[coerce]` |
 | 7 refinements and messages | `01-checker` step 24 (280: `#[check(rule, at: .field, code: .Custom)]` takes typed arguments) |
 | 8 combinators and codecs | 306's field markers (`#[codec]`, `#[map]`, `#[preprocess]`, `#[check]`) take function values (280, step 24) |
 | 9 reflection, error views, JSON Schema | reflection reads `@typeInfo(T)` meta (298, 306) |

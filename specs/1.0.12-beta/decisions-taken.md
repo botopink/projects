@@ -4,7 +4,7 @@ The rules the fronts implement against. Numbers continue from
 [1.0.10-beta's record](../1.0.10-beta/decisions-taken.md) (which stopped at 143; 91–94, 97 and
 99–101 are used) and are never renumbered or reused. A question is raised in
 [`decisions-pending.md`](./decisions-pending.md) under a lettered id and moves here with the next
-free number. **The next free number is 332.**
+free number. **The next free number is 333.**
 
 Each row: number · the id it answered · the rule in force · the fronts it binds. A row amended by a
 later one states only what is in force and cites the amendment; a row fully replaced is one line.
@@ -31,7 +31,7 @@ behaviour; shared logic in std) — the maintainer may reverse it.
 **Index.** Gate & CI: 153–162, 219, 225–233, 246, 249, 258, 265, 317 · Language & checker: 146–152,
 164, 167, 168, 170, 205–211, 214, 215, 239, 242, 244, 245, 247, 255, 264, 309, 310, 311, 314, 315, 319, 320, 322, 328, 329, 330 · Comptime, reflection &
 decorator outputs: 216, 234–237, 248, 251–254, 256, 266–269, 277, 316, 331 · Formatter: 165, 166, 243 · Backends: 169,
-179, 238, 240, 241, 259–263 · std: 174–178, 197, 217, 250 · Bundled libraries: 144, 145, 163,
+179, 238, 240, 241, 259–263 · std: 174–178, 197, 217, 250, 332 · Bundled libraries: 144, 145, 163,
 171–173, 180–183, 194–196, 257, 324, 325, 326, 327 · rakun: 184, 185, 187, 201, 274, 312, 313, 318, 321 · Track ordering: 188, 189 ·
 jhonstart & templates: 186, 190–193, 200, 202, 204, 220, 223 · onze: 218, 323 · bpp: 198, 199, 203,
 212, 213, 221, 222, 224, 270, 271, 272, 273, 275, 276. No decision of this milestone is emilia's alone.
@@ -186,6 +186,7 @@ jhonstart & templates: 186, 190–193, 200, 202, 204, 220, 223 · onze: 218, 323
 | 197 | — | † (1) erlang's `indexOf` / `lastIndexOf` answer `string:length/1` of the text before the match, the unit `length`, `at` and `slice` count there — codepoints, not `string:length/1`'s grapheme clusters (320). (2) `async.retry` with an unusable policy panics (`maxAttempts` < 1, a negative delay, `maxMillis` > 2147483647, `multiplier` < 1.0), as `race([])` does; `nextDelay` answers `null` for it. (3) `hash.pbkdf2Sha256` with `iterations` or `length` < 1 panics with one text on every target, never the host's raise. (4) `fs.glob`, identical on every target: a final `**` is every entry at every depth, the root excluded; a trailing `/` keeps real directories only; a `..` segment is a literal name; a `{a,b}` alternative holding `/` matches nothing | 02/97 |
 | 217 | — | † `Array.unique` removes every duplicate, keeping each value's first occurrence in order — `[1, 2, 1, 3, 2].unique()` is `[1, 2, 3]` on every target, compared with `==` (210); the consecutive-only reading goes and no second method keeps it | 02 · 05-wasm (the trap) · 02-erlang step 4 |
 | 250 | — | † std's `io.random.bool()` is dropped, not renamed; `coin()` is the boolean draw | 02/97 step 10 · 01-checker (the primitive-named-declaration refusal unparks when 97 lands) |
+| 332 | jsi64-a | **Big numbers, and `Json` read like Jackson's strict configuration.** (1) `bigint` is a primitive integer of any size with every integer operator and the literal suffix `n` (`123…890n`); erlang/beam use the VM's integer, commonJS `BigInt`, wasm a runtime library — one value on the four targets (front `01-compiler/139`). (2) std's `Decimal` is the exact decimal (Java's `BigDecimal`: an unscaled `bigint` and a scale): `add`, `sub`, `mul` exact; `div` takes a scale and a rounding mode (`a.div(b, scale: 2, rounding: .HalfEven)`) and has no form without them. (3) `==` on `Decimal` compares the numeric value (`1.0 == 1.00`, as `compareTo`); the scale is kept and `toString()` writes it (`"1.00"`). (4) `Json`'s numbers are chosen by the numeral, as Jackson's nodes with `USE_BIG_DECIMAL_FOR_FLOATS` on: an integer within `i64` is `Int(value: i64)` (Jackson's `IntNode`/`LongNode`), a larger one `BigInt(value: bigint)` (`BigIntegerNode`), one with a fraction or an exponent `Dec(value: Decimal)` (`DecimalNode`), exact; `Num(value: f64)` goes; readers after `JsonNode`'s: `num() -> ?f64` (any number, approximate — `doubleValue`), `i64() -> ?i64`, `bigint() -> ?bigint`, `decimal() -> ?Decimal` (exact, `null` when the value does not fit — never a coercion), `isNumber()`, `isIntegral()`. Writing keeps the value exact: `Int` and `BigInt` as their digits, `Dec` as its plain text with its scale (`WRITE_BIGDECIMAL_AS_PLAIN`). (5) `#[validated]`'s bind reads a field by its own type, as Jackson's typed binding with `ACCEPT_FLOAT_AS_INT` and `ALLOW_COERCION_OF_SCALARS` off: `i64` exact (a fraction or an out-of-range integer is a violation at the field, never truncated), `bigint` any integer, `Decimal` any number exactly, `f64` any number rounded; a string becomes a number only under `#[coerce]` (325 step 6). Amends 319's `Json` clause | `01-compiler/139` · `02/97` step 15 · `03-bundled-libs/125` · `04-js` step 9 · the 13 files with a `case` over `Json` |
 
 ## Bundled libraries
 

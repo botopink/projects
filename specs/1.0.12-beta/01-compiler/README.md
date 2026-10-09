@@ -33,6 +33,7 @@ cut by file ownership so fronts run in parallel.
 | [`129-import-without-from/`](./129-import-without-from/README.md) | high | done | `from` names a package (206) | — |
 | [`130-decorator-outputs/`](./130-decorator-outputs/README.md) | high | partial: steps 1–4 done; 5 (38 of 119 sites), 6 open | the library sites, `@emit` removed | 01 step 20 (256's registry) · the library tracks |
 | [`134-builtins-declared/`](./134-builtins-declared/README.md) | high | partial: steps 1, 3 on feat; 2 partial | the type functions, the `result` namespace, the `@Result`/`?T` methods, `@is` | 134-a…d |
+| [`139-bigint/`](./139-bigint/README.md) | medium | not started | `bigint`, an integer of any size with the integer operators and the `n` suffix, one value on the four targets (332) | 04-js step 9 · 05-wasm step 8 |
 
 ## Ownership
 
