@@ -150,8 +150,8 @@ pub val primaryBtn = styled """
 """;
 ```
 
-O `@utility` fica recusado (§ 9, p6). Fica aberto de onde o `@variant` tira os breakpoints,
-que hoje estão no tema da emilia (p7).
+O `@utility` fica recusado (§ 9, p6). O `@variant md` e o `--theme(…)` leem o tema, que passa a
+ser do `styled` (p7).
 
 ### 3.2 Um componente de estilo é um `@Component<StyledBase, Styled>`
 
@@ -545,31 +545,31 @@ breakpoint da 300.
 - O resto da sintaxe do Tailwind continua no literal (`--spacing()`, `--alpha()`, `@variant`,
   `@custom-variant`), porque ali é CSS; saem só `@utility` e `@theme` (§ 3.1).
 
-### p7 · De onde vêm os breakpoints
+### p7 · De onde vêm os breakpoints — aceito (09/10): (d), o tema vai para o `styled`
 
 **Contexto.** Um componente `styled` da aplicação quer mudar o layout no `md`, mas escrever `48rem`
 à mão fica errado quando o tema muda (`entry(.Breakpoint, "md", Rem(52.0))`). O valor precisa vir do
 tema, e hoje o tema é da emilia (300), uma camada acima do `styled`, que não a conhece.
 
-- [ ] **(a)** Por hook: a emilia declara `use breakpoint(name)` sobre `StyledBase` (§ 3.2).
+- [ ] *(descartada)* **(a)** Por hook: a emilia declara `use breakpoint(name)` sobre `StyledBase` (§ 3.2).
   ```bp
   fn container() -> StyledView {
       val md = use breakpoint("md");          // breakpoint apagado no tema: erro de compilação (300)
       return styled "width: 100%; @media (width >= ${md}) { max-width: ${md}; }";
   }
   ```
-- [ ] **(b)** A emilia exporta `@custom-variant` geradas do tema, e o literal escreve `@variant md`,
+- [ ] *(descartada)* **(b)** A emilia exporta `@custom-variant` geradas do tema, e o literal escreve `@variant md`,
   como no Tailwind.
   ```bp
   import {variants.md} from "emilia";
   pub val container = styled "width: 100%; @variant md { max-width: 48rem; }";
   ```
-- [ ] **(c)** O `styled` ganha um tema próprio, separado do da emilia.
+- [ ] *(descartada)* **(c)** O `styled` ganha um tema próprio, separado do da emilia.
   ```bp
   pub val container = styled "width: 100%; @media (width >= --breakpoint(md)) { … }";
   ```
 
-- [ ] **(d)** O tema vai para o `styled`: o **mecanismo** (`Theme`, `entry`, `clear`,
+- [x] **(d)** O tema vai para o `styled`: o **mecanismo** (`Theme`, `entry`, `clear`,
   `extendTheme`, o `#[theme]` da aplicação e a checagem da 300) passa a ser do `styled`, e a emilia
   fica com os **valores** do Tailwind (`defaultTheme()`: paleta, escada, `md = 48rem`…). Como o
   `styled` passa a conhecer o tema, `@variant md` e `--theme(…)` funcionam no literal, resolvidos no
@@ -591,7 +591,7 @@ tema, e hoje o tema é da emilia (300), uma camada acima do `styled`, que não a
   // @variant 2xl { … }  →  erro de compilação: o 2xl foi apagado do tema (300)
   ```
 
-**Recomendação: (d).** O `styled` já depende do tema sem dizer: o `--spacing(4)` que ele expande lê a
+**Por que (d).** O `styled` já depende do tema sem dizer: o `--spacing(4)` que ele expande lê a
 `--spacing` do tema. Como no Tailwind v4, o tema é parte do núcleo do CSS, e não dos utilitários.
 
 | | (a) hook da emilia | **(d) tema no `styled`** |
