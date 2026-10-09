@@ -39,6 +39,10 @@ point sets `standard_io` unicode (`emitUnicodeStdio`) · 7 one `math` (263): `fn
 answers is the arm's value on beam (`codegen/tests/beam.zig`'s `a lambda literal that ends a case arm
 is the arm's value`); `test/case_arm_lambda_value` moved to `run/case_arm_lambda_value`, `a?` / `b`
 on all four targets; `language-gaps.md` row 28 deleted.
+Rows from other fronts: an `@block`'s `return` is the block's value (decision 2) —
+`lowerBlockWithReturn` jumps to the block's exit label with the value in `x0` instead of `return.`
+from the enclosing function (`run/block_return_is_block_value`, four targets;
+`block_block_builtin` beam snapshots move by the jump).
 
 ## Open
 

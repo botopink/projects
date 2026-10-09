@@ -62,6 +62,10 @@ std's `math` and `hash` answer commonJS's bits on every target.
   printed, read through `._N`, a generic method's `#(Q<T>, ?T)` (`run/tuple_optional_element`);
   `o.unwrapOr(d)` keeping the payload's tuple shape
 - `wat/AGENTS.md`'s limits table lost the one-page row (decision 261)
+- An `@block`'s `return` is the block's value (decision 2): `lowerBlockWithReturn` stores into
+  `$__blk<n>` and branches out of `$__blkend<n>` instead of `return` from the enclosing function;
+  the block's type and string/bool shape read off its returns (`run/block_return_is_block_value`,
+  four targets; `block_block_builtin` wasm snapshots move)
 
 ## Open
 

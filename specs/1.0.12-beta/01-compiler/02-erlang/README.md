@@ -1,7 +1,6 @@
 # Front 02 — erlang: the erlang target answers what decision 8 says, on every shape
 
-**Priority:** high · **State:** partial: steps 1–3, 5, 6, 8, 9, 11–13 on feat; steps 4, 7, 10, 14,
-15 open
+**Priority:** high · **State:** partial: steps 1–3, 5, 6, 8–13 on feat; steps 4, 7, 14, 15 open
 **Depends on:** `05-wasm` (step 7's wasm column) · `01-checker`'s `@block` tail-form refusal (step
 10)
 **Owns:** `modules/compiler-core/src/codegen/erlang.zig` · `src/codegen/crossModule.zig` ·
@@ -46,6 +45,11 @@ fronts: `default fn` body's `unwrapOr`/method calls, `true`/`false` in a tuple p
 `Point(x: 0, ..)`, `throw` in a `case` arm of a `-> @Result` fn, host locale, lambda over an
 enclosing name (205), a `default fn` two types adopt, `[..all]` alone, `test/` module calling its own
 sidecar.
+- Step 10 — `@block { 1 + 2 }` refused by the checker (`block-tail-value`, `reject/block_tail_value`):
+  `snapshots/codegen/*/erlang/**` byte-identical, nothing in `erlang.zig` deleted. The block's
+  `return` is the block's: a `return` the fun cannot answer last (in a loop, a discarded statement)
+  throws `{'__bp_block', V}` to the block's guard (`guardBlockReturn`), not `'__bp_try'` to the
+  function's — `run/block_return_is_block_value` (four targets; `skipTwo` answered `1` on the parent)
 
 ## Open
 
@@ -68,15 +72,6 @@ by `codegen/tests/control_flow.zig`'s needle (`A = 2.0,`): no program can tell s
 - [ ] `run/unknown_stores_nothing` (§11) on four targets, or box struck with a written reason
       (nothing a program prints differs)
 
-### Step 10 — the block-as-value lowering (R7)
-
-Only erlang site with a block in value position: `@block`'s applied `fun` (`builtinCallNode`), with
-real producers (`@block { return 3; }`, `@block { … };`); decision 2's refused tail form uses the
-same `fun`. Nothing in `erlang.zig` deleted.
-
-- [ ] `@block { 1 + 2 }` refused by the checker (`01-checker` row) — `snapshots/codegen/*/erlang/**`
-      then byte-identical
-
 ### Step 14 — a method declared `-> @Result` is lowered as a `@Result` (decision 304)
 
 Measured by rakun (`rakun-data/src/sql/template.bp`, comment above `tryQuery`): on erlang a **method**
@@ -88,6 +83,10 @@ value is not wrapped in `{ok, V}` — while a module-level fn is lowered correct
 - [ ] a behavior method (`KeyValueStore.get`) declared `-> @Result` dispatches and wraps the same
 
 ### Rows found by other fronts
+
+- [ ] an `@block` that reassigns an enclosing `var` (`var acc = 1; @block { acc = acc + 5; };
+      @print(acc)`) reads `Acc@1` outside the fun, unbound — `erlc` refuses the module (measured by
+      `block-backends`; beam, wasm, commonJS print `6`)
 
 - [ ] std module's module-level `var` lowers to `std@beam` on erlang, not imported by the module
       (from `05-wasm` step 5; re-measure)
