@@ -152,12 +152,13 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 07-residuals s8 — the lib-agnostic gate names every library: the test-file comments reworded; the other owners' comments, then the `-w` pattern · 02 and the other owners landed (s3, s5–s7, s12, s13 done)
 - [ ] 07-residuals s1, s2, s4 — the codegen and comptime report waves, three renames · 02–05 landed · 01 landed
 - [ ] 07-residuals s9 · s10 · s11 — `->` arms · erika's C-13 migration · the pointers' sweep (last) · C-14 · 16 s1–2 · every library merged
-- [ ] 97 s1 residue — `bindInt`'s `i32` through std (`toI32()` exists since 97 s13)
-- [ ] 97 s2 residue — no `Json` accessor copy left in `libs/` · 125 s2 residue (`derived.bp`, was `schemas.bp`)
+- [x] 97 s1 residue — `bindInt`'s `i32` through std: `parseInt`, then `toI32()` inside the range; past it a `typeMismatch` (it aborted); `parseI32` deleted (validation)
+- [ ] 97 s2 residue — the library repositories' `Json` accessor copies (botopink-lang's `libs/` is std alone, clean): validation `derived.bp` `membersOf`, `formats.bp` `isObject` · 125 s2 residue · rakun `jwt.bp`, `autoconfig_registry.bp` · 04-rakun
 - [ ] 97 s3 · s5 residue — rakun's `parseDuration`, `skewOf` and four retry loops as "consume std" rows · no 04-rakun front carries them yet
-- [ ] 97 s4 residue — the engine under every `-test` member, `test-libs` counts · none
+- [ ] 97 s4 residue — the full `test-libs` count against its last record (138: 125 passed) · the cold gate; the engine half is done: no `-test` member has its own, and `test-libs --lib std` plus the seven `-test` members read 12 passed, 0 failed, 1 without tests, 3 restrictions audited
 - [ ] 97 s11 — std on wasm, group 3 (230) · `io/http`, `async` through 140 + s17 (334) · `testing/mocks` in module memory when tests run on wasm (335), 110-a
-- [ ] 97 s13 rest — std's Node templates over an `i64` (`io/clock`, `io/fs`) in 319's canonical form · `Json`'s `i64` as its digits (332, s15) · `97-s13-a` (`abs` of the minimum)
+- [ ] 97 s13 rest — `io/clock`'s `formatIso8601` / `toCivil` / `offsetMinutes` past ECMAScript's time range · `97-s13-b` · `Json`'s `i64` as its digits (332, s15) · `97-s13-a` (`abs` of the minimum)
+- [x] 97 s13 box 1 but three — `fs.stat` (`bigint: true`), `async`'s `millisAsFloat` / `wholeMillis`, `clock`'s `wide` (`toI64()`) and `largestExactMillis` (a literal) in 319's canonical form: `run/std_io_i64_canonical`
 - [x] 97 s13 boxes 3–5 — `parseInt` exact over `i64`; `min` / `max` / `abs` / `clamp` / `isEven` / `isOdd` past 2^53 on commonJS; `toI32()` … `toF64()` on `Integer`, aborting when the value does not fit (wasm halves: 05-wasm rows)
 - [x] 97 s12 — `unicode.fromCodepoint` a `fn:` over `String.fromCodepoint` on all four targets (with `powBody`, `fn:` transcendentals, code-point `contentHash`)
 - [x] 97 row — an embedded std module that does not lex or parse is printed located at its `libs/std/src/<module>.bp` file and the build stops with `EmbeddedStdRefused` (was `compilation failed` / `UnexpectedToken`; `parseEmbeddedStd`, `comptime/tests/located_errors.zig`; bugs-sweep patch 08)
@@ -247,7 +248,7 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.0.10 choices) in its
-last section. Open after the 9 Oct revalidation and the answers since (309–337): 58 questions, 8 contradictions, 88
+last section. Open after the 9 Oct revalidation and the answers since (309–337): 61 questions, 8 contradictions, 88
 implementation choices.
 
 **First — what blocks now** (`decisoes-pendentes.md` Parte 1, "O que trava agora", set by the maintainer 2026-10-09), in order:
@@ -259,6 +260,7 @@ implementation choices.
 
 Then:
 - [ ] std-d — 97 s6 · 50 s4, s7
+- [ ] 97-s13-b — 97 s13's three `io/clock` templates · 97-s13-c, 97-s13-d block nothing
 - [ ] 95-f — 98 s3
 - [ ] 07-g — 107 whole
 - [ ] 03r-ab — 09 s5 (and the scope of s1–4) · only the record

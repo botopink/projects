@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 58 perguntas, 6 contradições e 92 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **364**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 61 perguntas, 6 contradições e 92 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **364**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -445,6 +445,91 @@ fn lo64() -> i64 { return -9223372036854775807l - 1l; }
 
 **Recomendação: (a).** Um valor fora do tipo declarado nunca existe (264); custa duas declarações.
 **Bloqueia:** nada no gate; a célula `run/i64_number_methods_past_js_safe` fica longe do mínimo.
+
+### 97-s13-b · O `io/clock` com uma época fora da faixa de tempo do ECMAScript (decisão 319)
+
+**Trava:** os três templates restantes da linha `io/clock` do `02/97` passo 13
+
+**Contexto.** `formatIso8601`, `toCivil` e `offsetMinutes` recebem uma época `i64`, e a forma Node monta
+um `Date`, cuja faixa é ±8,64 × 10^15 ms (anos −271821 … 275760). Toda época `BigInt` (além de
+2^53 − 1) fica fora dela. A 319 manda o template Node aceitar `number | bigint`, mas não diz o que ele
+responde para essas épocas.
+
+**Hoje:**
+```bp
+@print(clock.toCivil(8640000000000001l).year);   // NaN no commonJS, 275760 no erlang
+clock.toCivil(9007199254740993l);                // commonJS: TypeError: Cannot convert a BigInt value to a number
+clock.formatIso8601(8640000000000000l);          // "+275760-09-13T00:00:00.000Z" no commonJS; erlang aborta (badarg depois do ano 9999)
+```
+
+- [ ] **(a)** Um domínio só em todos os targets, recusado fora dele: as épocas que o RFC 3339 escreve, 0000-01-01 … 9999-12-31.
+  ```bp
+  clock.toCivil(253402300800000l);   // aborta em todos os targets: clock.toCivil: 253402300800000 is outside 0000-01-01 … 9999-12-31
+  ```
+- [ ] **(b)** Toda época `i64` responde, igual em todos os targets: um corpo botopink (dias a partir da data civil, algoritmo de Hinnant) no lugar de `Date` e `calendar`.
+  ```bp
+  @print(clock.toCivil(9007199254740993l).year);   // 287396 em todos os targets
+  ```
+- [ ] **(c) ★** Como está: a faixa e a resposta de cada host.
+  ```bp
+  @print(clock.toCivil(8640000000000001l).year);   // NaN no commonJS, 275760 no erlang
+  ```
+
+**Recomendação: (a).** Nenhum target responde `NaN` ou uma data que outro recusa, e o RFC 3339 — o texto que `formatIso8601` e `parseIso8601` prometem — tem ano de quatro dígitos.
+**Bloqueia:** só os três templates; o resto da linha `io/clock` entrou (as leituras são `number` por construção, `wide` e `largestExactMillis` são botopink).
+
+### 97-s13-c · O limite de 2^53 − 1 do `clock.parseDuration` depois da 319
+
+**Trava:** nada
+
+**Contexto.** O `parseDuration` recusa uma duração além de 2^53 − 1 ms porque "os dois targets não contam
+igual" depois dela — verdade antes da 319, falso depois: um `i64` é exato até 2^63 − 1 em todos os targets.
+
+**Hoje:**
+```bp
+clock.parseDuration("9007199254740992ms");   // Error("clock.parseDuration: \"9007199254740992ms\" is out of range")
+```
+
+- [ ] **(a) ★** Manter o limite: uma duração segue como atraso de timer ou número JSON, os dois `f64`, e além de 2^53 deixa de ser exata lá.
+  ```bp
+  clock.parseDuration("9007199254740992ms");   // Error(… is out of range)
+  ```
+- [ ] **(b)** O limite é o do `i64`.
+  ```bp
+  clock.parseDuration("9007199254740992ms");   // Ok(9007199254740992)
+  clock.parseDuration("106751991168d");        // Error(… is out of range) — além de 2^63 − 1 ms
+  ```
+
+**Recomendação: (a).** A faixa menor recusa mais, e nenhum chamador medido precisa de mais de 285 426 anos.
+**Bloqueia:** nada; o comentário de `largestExactMillis` cita a pergunta.
+
+### 97-s13-d · A resolução do `mtime` do `fs.stat`
+
+**Trava:** nada
+
+**Contexto.** A forma Node responde `mtime` em milissegundos inteiros (`mtimeNs` arredondado para baixo), a
+erlang em segundos inteiros × 1000 (`file:read_file_info/2` com `{time, posix}` não tem fração de segundo).
+
+**Hoje:**
+```bp
+fs.stat("five.txt")   // mtime: 1760000000734 no commonJS, 1760000000000 no erlang e no beam
+```
+
+- [ ] **(a)** Um valor só em todos os targets: a forma Node também arredonda para segundos inteiros.
+  ```bp
+  fs.stat("five.txt")   // mtime: 1760000000000 em todos os targets
+  ```
+- [ ] **(b) ★** Milissegundos onde o host tem (como está).
+  ```bp
+  fs.stat("five.txt")   // mtime: 1760000000734 no commonJS, 1760000000000 no erlang
+  ```
+- [ ] **(c)** O campo vira segundos inteiros (`mtimeSeconds: i64`), a unidade que todo host dá.
+  ```bp
+  fs.stat("five.txt")   // mtimeSeconds: 1760000000 em todos os targets
+  ```
+
+**Recomendação: (a).** O mesmo arquivo responde o mesmo valor em todos os targets; a (c) renomeia um campo público pelo mesmo resultado.
+**Bloqueia:** nada; `run/std_io_i64_canonical` imprime só `mtime > 2020-01-01`.
 
 ### 110-a · O `testing.asserts` no wasm, depois da regra estrita (decisão 146)
 
