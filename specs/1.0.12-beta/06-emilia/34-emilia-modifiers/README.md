@@ -1,9 +1,9 @@
 # Front 34 — emilia source tail: std's hash, five families at upstream parity, the breakpoint refusal (carries 1.0.10's 40 · 42 · 43 · 44 · 45 · 54 · 56)
 
 **Priority:** high — step 2 moves output every later snapshot (`20-snap` step 4) would otherwise
-record twice · **State:** step 1 done; steps 2–4 wait on 05emilia-l / -e / -n, steps 3 and 5 on `08-bpp/119` step 1
-**Depends on:** `05emilia-l` confirmed (step 2's rule) · `05emilia-e` (step 3's base theme — open
-again with 300) · `05emilia-n` (step 4, the four feature rows only) · `08-bpp/119` step 1 (steps 3
+record twice · **State:** step 1 done; step 2 ready (decision 350); steps 3–4 wait on 05emilia-e / -n, steps 3 and 5 on `08-bpp/119` step 1
+**Depends on:** `05emilia-e` (step 3's base theme — open again with 300; step 2's rule is
+decision 350) · `05emilia-n` (step 4, the four feature rows only) · `08-bpp/119` step 1 (steps 3
 and 5: the repositories `css` and `styled` — the theme mechanism and the components, decision 338).
 Nothing else:
 `hash.contentHash` exists; `08-bpp/118` step 1's bracket-attribute carve-out is comments only here,
@@ -50,7 +50,7 @@ the four owned examples.
   Each: one dispatcher arm in its block + the `@property` / theme entries the chain reads
   (05emilia-i's shape for `--tw-ease` / `--tw-duration` / `--tw-border-spacing-*`; `fullTheme()`
   gains no entry — per-utility variables with `@property` registrations like the transform ones; no
-  new `Ns` prefix — 05emilia-a, -d, -i stand). 05emilia-l: a family moves whole, one helper per
+  new `Ns` prefix — 05emilia-a, -d, -i stand). Decision 350: a family moves whole, one helper per
   shape. A token list using a moved family changes class-name hash (hash is over the sheet); the
   contract-4 fixture (padding / colour / hover) uses none and does not move. jhonstart and onze
   assert class names, not bodies.
@@ -77,7 +77,7 @@ unchanged: contract-4 fixture `e_39b87d03` and `emilia-card`'s `e_486b0b4f` / `e
 
 ## Open
 
-### Step 2 — the five families to upstream's form (05emilia-l applied)
+### Step 2 — the five families to upstream's form (decision 350)
 
 - [ ] `transition` / `transition-*` presets render upstream's `var(--tw-ease, …)` /
       `var(--tw-duration, …)` pair, set `--tw-ease` / `--tw-duration` with `@property`
@@ -128,7 +128,7 @@ renders with) is `05emilia-e`, open — the boxes below do not settle it.
 ### Step 4 — the unplaced rows (on `05emilia-n`, reduced to the four features; the refusal is step 3, 300)
 
 (b): `TranslateX.Neg` / `TranslateY.Neg` in `tokens.bp` (`:2259-2279`) beside `Rotate.Neg`, with
-05emilia-l's `calc(… * -1)` form; named groups and peers as `GroupNamed(name, inner)` /
+350's `calc(… * -1)` form; named groups and peers as `GroupNamed(name, inner)` /
 `PeerNamed(name, inner)` payload variants (top-level, like every payload-carrying token) with
 `.group\/<name>` / `.peer\/<name>` selectors. (c): also `@theme inline` as an `Options` field
 resolving every `var(--x)` at render. (a), recommended: only `docs.md` § Deviations stating
@@ -171,6 +171,8 @@ emilia imports `styled` and std — no framework, no `.bpp`, no jhonstart (113, 
 - [ ] every family's `*TokenToCss` / `oneDecl` / `axisDecl` string building replaced by
       `styledProperty "…"` components; `spacing.bp`'s `spacing` / `spacingHalf` / `spacingNegHalf`
       replaced by `--spacing(…)` in the literal; no CSS text assembled with `+`
+- [ ] each `styledProperty` literal is the upstream `@utility`'s declarations in Tailwind's CSS
+      syntax, the 4.3.2 `@utility` quoted in a comment beside it (decision 350)
 - [ ] variants (`.Hover(…)`, `.Md(…)`, `.Dark(…)`, …) wrap their inner declarations in a `styled`;
       a token list is the composition of its tokens' components, its order the class's identity
 - [ ] `Token implement Styleable`

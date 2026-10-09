@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 49 perguntas, 6 contradições e 86 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **350**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 49 perguntas, 6 contradições e 85 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **351**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -227,35 +227,6 @@ val s = use linkStatus();   // no servidor (gêmeo erlang): LinkStatus(pending: 
 
 **Recomendação: (a).** Um hook que o render do servidor chama tem de existir no servidor.
 **Bloqueia:** 27 passo 1 caixa 1, passos 2 e 3.
-
-### 05emilia-l ★ · Confirmar uma coluna move a família inteira para a forma do upstream
-
-**Trava:** `06-emilia/34` passo 2 (a regra do passo) · ⏳ pronto para abrir thread ao responder
-
-**Contexto.** Escolha já implementada nas frentes 35–45: confirmar uma coluna move a família inteira
-para a forma do upstream, um helper por forma. As cinco famílias ainda fora de paridade são a tabela
-EM-8 do `06-emilia`: os presets de transition, `backdrop-opacity-*`, `border-spacing-*`, o
-`-webkit-backdrop-filter` dos filtros de backdrop e o estilo de borda do `divide-*`. A confirmação
-decide que a regra vale também para famílias que nenhuma linha aberta nomeou.
-
-**Hoje** (ilustrativo):
-```text
-divide-*   → ainda sem `border-*-style:var(--tw-border-style)` (EM-8)
-a regra "a família inteira" está nas frentes 35–45; as cinco da EM-8 esperam o passo 2 da 34
-```
-
-- [ ] **(a) ★** Confirmar: a família inteira na forma do upstream; o passo 2 da 34 move as cinco.
-  ```text
-  34 passo 2: transition presets · backdrop-opacity-* · border-spacing-* · -webkit-backdrop-filter
-              · divide-* com border-*-style:var(--tw-border-style)   → forma do upstream
-  ```
-- [ ] **(b)** Não confirmar: a regra vale só para as colunas que uma linha aberta nomeou; as cinco
-  famílias ficam fora do passo 2.
-  ```text
-  34 passo 2: nada a mover nas cinco; a EM-8 continua aberta
-  ```
-
-**Recomendação: (a).** **Bloqueia:** 34 passo 2.
 
 ### 05emilia-e ★ · `fullTheme()` vai no `fullOptions()` — e qual é a base do `#[theme]` (300)
 

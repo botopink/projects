@@ -174,7 +174,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 118 — the template language, tag annotations (278), `prelude.bp`, the node type · none (props-d/e/f hold their boxes; ctr-r closed: 118 goes first, org-3 holds)
 - [ ] 121 s1–2 — Markdown to `Element` in the new member `onze-content` · none
 - [ ] 119 s1 — the repositories `css` (reader, `Sheet`, `scope`) and `styled` (`styled "…"`, `styledProperty "…"`, the theme mechanism, `Styleable`) (338) · the first `feat` commit of `botopink/css` and `botopink/styled` (created)
-- [ ] 34 s1–2 — `hashHex` → std and the cross-library comments; the five families · s2: 05emilia-l confirmed · opens before 118's carve-out (ctr-v / 189, only the record)
+- [ ] 34 s1–2 — `hashHex` → std and the cross-library comments; the five families · s2: rule is decision 350 · opens before 118's carve-out (ctr-v / 189, only the record)
 - [x] 33 s2 — `emilia-card` emilia-only, the fifteen example READMEs (s1, s3, s4 are 135's)
 - [ ] 49 s1 · s6 — consume std's `Json` accessors in `config.bp`; the `onze-test` group stubs · none — not beside 102 s3's onze commits (188)
 - [ ] 50 s1 — consume std in `onze-cli` / `onze-bundler` · none — not beside 102 s3's `scan.bp` / `chunk.bp` commits (188)
@@ -254,7 +254,7 @@ Then:
 - [ ] erk-a · erk-b — the body form's source (137 s2, 08 s7) · `#[documentQuery]` under 313 (09 s4) 
 - [ ] lg2-b … lg2-u — none opens a front; each opens a step when answered: 01-checker (q — reduced); the rakun boxes that name them — 13 · 65 · 92 (b), 22 (q) · answered: a (346 → 01 s32), e (347), j (343), o (342), w (341) → 14 s6, v (344) → 26 s6 / 98 s4 / 73, f, i (280), k (216, 253), r (311–313), t (314), m (315), c (316); g has no subject under 281
 - [ ] C-14 — 07-residuals s9 (a 1.0.10 id)
-- [ ] confirmations a step waits on — 49-e (49 s2) · 05emilia-l (34 s2) · 52-a (51 s4) · 29-a (26 s5; reduced: `registerRouteStarters` + `globals.starters`) · 27-a (27) · 03r-q (105) · 23-a/b, std-c (23; 23-c → 317) · 24-a/b/c/g (24; 24-g also 97 s5's surface)
+- [ ] confirmations a step waits on — 49-e (49 s2) · 52-a (51 s4) · 29-a (26 s5; reduced: `registerRouteStarters` + `globals.starters`) · 27-a (27) · 03r-q (105) · 23-a/b, std-c (23; 23-c → 317) · 24-a/b/c/g (24; 24-g also 97 s5's surface)
 - [ ] ctr-l — 26 s8's refusal list (only the record) · ctr-v — 34 / 33 opening before 118 (only the record) · ctr-w — 09 s3
 - [ ] ctr-o — lem-c · ctr-p — 04's readers · 104 s5
 - [ ] lg2-s — module-graph reflection

@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**48 questions and 6 contradictions are open, and 86 implementation choices await confirmation.**
+**48 questions and 6 contradictions are open, and 85 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -510,7 +510,7 @@ No general rule (283): each case below is its own question, (a) the language's o
 | 30-g | Browser half asserted in the commonJS-only member `jhonstart-dom-test` over `fake_dom.mjs` | `jhonstart-dom-test` |
 | 31-a | `notFound()` / `redirect(url)` raise via one host cell (`__jhRaise`); a boundary captures via `__jhCapture`; `notFoundReason()` / `redirectReason(url)` answer the reason without raising. They declare `-> string` until `noreturn` fits a value position — waits on nat-d6 and lg2-l (if nat-d6 is (a), they become `-> noreturn`) | core · `error_boundary.bp:118-187` |
 
-### 06-emilia (11)
+### 06-emilia (10)
 
 | Id | Choice implemented | Where |
 |---|---|---|
@@ -524,7 +524,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 | 05emilia-i | `--tw-*` transform variables are `@property` blocks with upstream's `properties` layer — `translate-*`, `skew-*` and `scale-*` (`--tw-scale-*`) alike | 45 · 54 · 56 |
 | 05emilia-j | A selector-list modifier (`marker:`, `selection:`) is a list of one-`&` variants | 34 · 56 |
 | 05emilia-k | Negative half step is `spacingNegHalf(n)`; `spacingHalf` refuses a negative `n` | 54 |
-| 05emilia-l | Confirming a column moves its whole family to upstream's form, one helper per shape; the five families still out of parity are 06-emilia's EM-8 table (transition presets, `backdrop-opacity-*`, `border-spacing-*`, `-webkit-backdrop-filter`, `divide-*`'s border style) | 35–45; 34 step 2 moves the five under it |
 
 ### 07-onze (9)
 

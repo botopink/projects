@@ -231,7 +231,7 @@ test "css: helpers ---- red 500 text" { try assertCss(@src(), [.Color.Red.500], 
 | E35 spacing and sizing | 11 | `spacing.bp` (6), `Size —`, `Space —` (`:4972`, `:5207`) | **RETIRE** |
 | E36 layout / E37 grid / E38 typography / E39 backgrounds | 8 + 8 + 10 + 5 | per-front banners (`front 36`…`front 39`, `columns —` and `flex shorthand` tests, `gradient` ×14) | **RETIRE** |
 | E40 borders, outline, ring | 7 of 9 | `Border.*`, `Ring.W`, `Ring composes …` (`:10560-10803`) | **RETIRE** |
-| E40d `divide ---- y two x one colour reverse`, `ast: divide ---- same sibling selector as space` | 2 | — | **OBSOLETE**: 34 step 2 (05emilia-l) adds `border-*-style:var(--tw-border-style)` to `divide-*` |
+| E40d `divide ---- y two x one colour reverse`, `ast: divide ---- same sibling selector as space` | 2 | — | **OBSOLETE**: 34 step 2 (decision 350) adds `border-*-style:var(--tw-border-style)` to `divide-*` |
 | E41 effects | 8 | `front 41` banner, shadow ladder, opacity | **RETIRE** |
 | E42 filters | 5 of 7 | `Filter.* — every row` (`:12379-12430`), `Filter — blur and grayscale … compose` (`:12689`) | **RETIRE** |
 | E42b `backdrop blur and opacity`, `raw filter and raw backdrop` | 2 | — | **OBSOLETE**: 34 step 2 changes `backdrop-opacity` to `opacity(50%)`, adds `-webkit-backdrop-filter` first |
