@@ -1,7 +1,7 @@
 # Front 140 — a wasm build binds to its runtime: wasmtime (WASI preview 2) and the browser, together
 
 **Priority:** high — `io/http` and `async` stay refused on wasm until it lands (97-a, 97-b → 334) ·
-**State:** not started
+**State:** partial: steps 1–3 built, step 6 built but for `@Task` through JSPI; 4, 5 wait on `140-a`…`140-c`
 **Depends on:** decision 334 · `05-wasm` step 5 (std on wasm, groups 1–2) · front 18 (the binary
 emitter, for the component wrapping) · `02-std-and-packaging/98` (the manifest model, for the
 `"wasm"` key)
@@ -35,27 +35,35 @@ wasm cell runs on both.
 declare fn fetch(req: Request) -> @Task<@Result<Response, HttpError>>;
 ```
 
+## Done
+
+- Step 1 — `"wasm": { "host": "wasi" | "browser" }` in `modules/manifest` (`WasmHost`, `parseWasm`: a
+  non-object, no `host`, another field, a host neither — located; refused on a workspace); the CLI reads
+  it (`ProjectConfig.wasmHost`); `docs/botopink-json.md` documents the field and its five refusals.
+- Step 2 — `@External.Wasm(…, host: .Wasi | .Browser)`: the build's lookup carries its host (`wasm` /
+  `wasm.browser`, `ast.ExternalLookup`), `externalFor` reads the binding serving it, `checkHostBindings`
+  checks every binding whatever its host; the checker refuses `host:` off `Wasm`, a value other than the two,
+  and two bindings for one host (`refuseHostArg`, `refuseWasmHostTwice`); `std-unsupported-on-target`
+  names the host (`… for target 'wasm' on host 'wasi'`). Cells: four `reject/external_*host*`,
+  `run/external_wasm_host_binding`, `modules/wasm_host_from_manifest`. Hand-off: `builtins.d.bp`'s
+  `External.Wasm(template: string)` does not declare `host` (std's file; the checker reads it).
+- Step 3 — a `wasi` build is a WASI preview 2 component in text (`wat_emitter.renderComponent`): the module
+  as `$main` (its start exported `__bp_init`), a preview 1 adapter the compiler writes (`fd_write` on
+  `wasi:cli/stdout`/`stderr` + `wasi:io/streams`, `random_get` on `wasi:random/random`), the
+  `wasi:cli/run` export; `botopink run` is `wasmtime run -S http`; the wasm column green under it (372/372).
+  `wasi:http`, `wasi:clocks`, `wasi:io/poll` join the frame with their users (steps 4–5); the binary
+  emitter encodes no component (wasmtime runs the text).
+- Step 6, box 1 without `@Task` — a `browser` build writes `<module>.wasm` and the loader `<module>.mjs`
+  (`browser_loader.zig`: `fd_write` on the console / `fs.writeSync`, `random_get` on
+  `crypto.getRandomValues`); `botopink run` is `node <module>.mjs`; `tests/language/run.sh` runs every
+  wasm cell on both hosts, one `.out`, a disagreement failing the cell (372/372 agree);
+  `modules/wasm_host_browser_runs`.
+
 ## Open
 
-### Step 1 — the profile in the manifest
-
-- [ ] `"wasm": { "host": "wasi" | "browser" }` read by `modules/manifest`; absent means `"wasi"`; an
-      unknown host is a located manifest error; `docs/botopink-json.md` documents it (284: packaging)
-
-### Step 2 — `@External.Wasm(host: …)`
-
-- [ ] the binding takes `host: .Wasi | .Browser` beside `op:`, `fn:`, `wasi:`, `module:` (238, 333); a
-      binding with no `host:` serves every profile (`op:`, `fn:`); a cell with no binding for the build's
-      host is the located `std-unsupported-on-target` naming the host, as today
-
-### Step 3 — WASI preview 2 for the `wasi` profile
-
-- [ ] the emitted module is wrapped as a WASI preview 2 component (the preview 1 adapter for the existing
-      `wasi:` cells, `wasi:http/outgoing-handler`, `wasi:clocks/monotonic-clock`, `wasi:io/poll` imported);
-      `wasmtime run` (with `-S http`) runs it; the adapters' list in `docs.md` § External grows
-- [ ] every existing wasm cell still green under the component (`zig build test-language`, wasm column)
-
 ### Step 4 — `@Task` on `wasi`
+
+Waits on `140-a` (what a pending Task is on wasm) and `140-b` (an adapter that answers a `@Task`).
 
 - [ ] a `@Task` runs to completion when awaited, blocking on its pollable (the model erlang's eager
       lowering already has, lg2-b); `delay(ms)` waits on the monotonic clock; `race` / `raceOf` answer the
@@ -64,16 +72,18 @@ declare fn fetch(req: Request) -> @Task<@Result<Response, HttpError>>;
 
 ### Step 5 — the cells
 
+Waits on step 4 and on `02/97` step 17 (`io/http`'s and `async`'s wasm bindings).
+
 - [ ] `run/wasm_host_http` (a request to a local HTTP double, its status and body) and `run/wasm_host_async`
       (`delay`, `race`) under wasmtime; the commonJS and erlang answers equal
 - [ ] `05-wasm`'s `wat/AGENTS.md` § Where this backend refuses to answer loses `io/http` and `async`
 
 ### Step 6 — the `browser` profile (with 3–5, never after)
 
-- [ ] JS imports for the `browser` host (`fetch`, `setTimeout`) and `@Task` as a `Promise` through JSPI;
-      the emitted `.wasm` and a small loader `.js`
-- [ ] parity: std's check refuses a cell bound on one host only; the wasm column of `zig build test-language`
-      and `test-libs` runs each cell under wasmtime **and** under node with JSPI, one `.out`
+- [ ] JS imports for the `browser` host (`fetch`, `setTimeout`) and `@Task` as a `Promise` through JSPI
+      (waits on `140-a`, `140-c`); the emitted `.wasm` and its loader are built (§ Done)
+- [ ] parity: std's check refuses a cell bound on one host only (std's, `02/97` step 17); `test-libs` runs
+      the wasm column on both hosts once `botopink test` runs wasm (335 (3)) — `test-language`'s does (§ Done)
 
 **Gate:** standard (fronts.md § Gate) + `zig build test-language` with wasmtime's component support and
 `zig build test-libs` (std's wasm column).
