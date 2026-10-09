@@ -1,4 +1,3 @@
----
 // Front 127 — bpp actions · examples/src/components/NewsletterForm.bpp
 //
 // Demonstrates: an action's form in a `.bpp` component. The form posts to the

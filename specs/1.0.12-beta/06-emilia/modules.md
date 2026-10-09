@@ -38,6 +38,6 @@ emilia-unaware), has no open item; no front edits it.
 
 ## Relations
 
-emilia imports nobody; `jhonstart-emilia` awaits `flush()` / `flushWith(o)`; onze 68 calls
+emilia imports nobody; `jhonstart-emilia` awaits `flush()` / `flushWith(o)` (until `08-bpp/119` deletes it and emilia's sheet goes out through `jhonstart-styled`'s sink, decision 338); onze 68 calls
 `styleRule` at build time, asserts the contract-4 literal (`build_test.bp:104`). Class-name hash →
 std `hash.contentHash` (34 step 1), literal `e_39b87d03` unchanged — same djb2 fold, no reader moves.

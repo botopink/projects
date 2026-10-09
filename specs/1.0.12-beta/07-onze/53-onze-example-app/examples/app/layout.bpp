@@ -1,13 +1,12 @@
----
 // Front 53 — onze example app · examples/app/layout.bpp
 //
 // The root layout of `app-layout-example.bp`, as a `.bpp` file (1.0.11-beta
-// `08-bpp/116`). The application's `botopink.json` says `"bpp": "jhonstart"`;
-// the file unfolds to the module's anonymous `pub default fn (props: LayoutProps)
-// -> View` (288, 289). Its role is the framework's rule, not the toolchain's:
-// the route table `rakun-app` generates calls jhonstart's `layout` on it, the
-// route being this file's directory below `app/` — the root (285); no decorator
-// is applied by file name.
+// `08-bpp/116`). The application's `botopink.json` says `"bpp": {"default":
+// "jhonstart"}` (338); the file unfolds to the module's anonymous `pub default
+// fn (props: LayoutProps) -> View` (288, 289). Its role is the framework's
+// rule, not the toolchain's: the route table `rakun-app` generates calls
+// jhonstart's `layout` on it, the route being this file's directory below
+// `app/` — the root (285); no decorator is applied by file name.
 //
 // `props.children` is the subtree the router already built. A layout returns
 // the BODY subtree only: the document shell and the moment the head is written

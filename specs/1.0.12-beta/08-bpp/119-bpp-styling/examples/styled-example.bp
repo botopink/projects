@@ -1,0 +1,75 @@
+// Front 119 — bpp styling · examples/styled-example.bp
+//
+// Demonstrates: step 1 — the repository `styled`, the base for building CSS
+// components (decision 338). `styled "…"` (the package's `pub default fn`) and
+// `styledProperty "…"` (declarations only) are template functions like `html`:
+// values go in `${…}` holes, so the braces stay CSS's; Tailwind v4's CSS syntax
+// works where it is CSS (`--spacing()`, `--theme()`, `@variant`); `@apply` is a
+// hole of a `StyledPropertyView`. Both answer components in the language's
+// model (`@Component<StyledBase, …>`). It knows no `.bpp` and no jhonstart.
+//
+// emilia is a series of components written this way (`06-emilia/34` step 5).
+//
+// Target: both — a component renders to the same bytes on every target.
+
+import styled, {styledProperty, StyledPropertyView, Sheet} from "styled";
+
+pub val tab4 = styledProperty "tab-size: 4;";
+
+// Tailwind: @utility p-* { padding: --spacing(--value(integer)); }
+fn padAll(n: i32) -> StyledPropertyView {
+    return styledProperty "padding: --spacing(${n});";
+}
+
+pub val code = styled """
+  ${tab4}
+  font-family: var(--font-mono);
+  &:hover { ${padAll(2)} }
+  @variant md { max-width: --theme(--breakpoint-md); }
+""";
+
+test "styled: a property's hole is a value; --spacing() expands" {
+    val p = padAll(4);
+    assert p.rules == ".${p.className}{padding:calc(var(--spacing) * 4)}";
+}
+
+test "styled: a StyledPropertyView in a hole inlines its declarations (@apply)" {
+    assert code.rules.contains(".${code.className}{tab-size:4;font-family:var(--font-mono)}");
+    assert code.rules.contains(".${code.className}:hover{padding:calc(var(--spacing) * 2)}");
+}
+
+test "styled: @variant md reads the theme's breakpoint at build" {
+    // the default theme's md (48rem); an app's #[theme] entry moves it
+    assert code.rules.contains("@media (width >= 48rem){.${code.className}{max-width:48rem}}");
+}
+
+test "styled: the same rules are the same class, under the layer's prefix" {
+    assert padAll(4).className == padAll(4).className;
+    assert padAll(4).className != padAll(8).className;
+    assert padAll(4).className.startsWith("s_");
+}
+
+test "styled: a sheet renders its layers in declaration order, each component once" {
+    val sheet = Sheet(layers: ["base", "components"]);
+    sheet.add("components", code);
+    sheet.add("components", code);
+    sheet.add("base", padAll(2));
+    val out = sheet.render();
+    assert out.indexOf("@layer base") < out.indexOf("@layer components");
+    assert out.split(".${code.className}{").length == 2;
+}
+
+// What does not compile:
+//
+//   styledProperty "&:hover { color: red; }"
+//     error: styledProperty holds declarations only — use styled for selectors,
+//            variants and at-rules                                          at `&`
+//
+//   styled "@utility tab-* { tab-size: --value(integer); }"
+//     error: name a component with a val or a function                     at @utility
+//
+//   styled "@theme { --color-mint-500: oklch(0.72 0.11 178); }"
+//     error: the theme is the typed #[theme] (extendTheme, entry)           at @theme
+//
+//   styled "@variant 2xl { … }"            // with 2xl cleared in the app's #[theme]
+//     error: breakpoint `2xl` was cleared from the theme                   at 2xl

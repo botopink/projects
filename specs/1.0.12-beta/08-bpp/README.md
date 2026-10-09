@@ -22,7 +22,6 @@ Added, by cost:
 5. **Single-file look** (116) — header over markup in its own file; last.
 
 ```bpp
----
 import {layouts.BaseLayout};
 import {components.PostCard};
 import {getCollection} from "onze-content";
@@ -30,6 +29,9 @@ import {content.blog};
 
 val posts = await getCollection(blog());
 val title = "Blog";
+--- style ---
+ul { list-style: none; padding: 0; }
+.empty { color: gray; }
 ---
 <BaseLayout title={title}>
   <h1>{title}</h1>
@@ -38,17 +40,13 @@ val title = "Blog";
     {posts.map({ post -> <li><PostCard #[clientVisible] post={post} /></li> })}
   </ul>
 </BaseLayout>
-
-<style>
-  ul { list-style: none; padding: 0; }
-  .empty { color: gray; }
-</style>
 ```
 
-Header = module declarations + statements of the unfolded function (198, 199, 212, 213); markup =
-literal of jhonstart's default `html` (200); unbound names via jhonstart's `prelude.bp` (270); `{…}`
-is botopink (lambda, `if`; no arrow, no ternary); `<PostCard post={post} />` is a call with props
-field `post` (192); `<style>` scoped by emilia. The `.bp` form (`return html """…""";`) compiles
+Header = from the first line to the separator, module declarations + statements of the unfolded
+function (198, 199, 212, 213); style section = CSS scoped by `jhonstart-styled`, the package
+`"bpp".style` names (338); markup = literal of jhonstart's default `html` (200); unbound names via
+jhonstart's `prelude.bp` (270); `{…}` is botopink (lambda, `if`; no arrow, no ternary);
+`<PostCard post={post} />` is a call with props field `post` (192). The `.bp` form (`return html """…""";`) compiles
 identically; fronts 117–127 are built and tested on it.
 
 ## Fronts
@@ -57,16 +55,16 @@ All eleven **not started**.
 
 | Front | Priority | State | What | Depends on (open) |
 |---|---|---|---|---|
-| [`118-bpp-components/`](./118-bpp-components/README.md) | **critical** — all markup goes through it | not started · ready to open | `{expr}` of any renderable type, rendering attributes, components with props, slots, fragments, markup in `if` / `case` / lambdas, `set:html`, `class:list`, `<style>` / `<script>` to sinks; jhonstart's `prelude.bp` and node type | — |
+| [`118-bpp-components/`](./118-bpp-components/README.md) | **critical** — all markup goes through it | not started · ready to open | `{expr}` of any renderable type, rendering attributes, components with props, slots, fragments, markup in `if` / `case` / lambdas, `set:html`, `class:list`, `<script>` to its sink (`<style>` in markup refused but `#[isInline]`, 338); jhonstart's `prelude.bp` and node type | — |
 | [`121-bpp-content/`](./121-bpp-content/README.md) | **high** — largest new code | steps 1–2, 4–5 done (4–5's boxes on 3, 9, 10, 117, 124, 125 left) · step 3 on `08-f` | New member `onze-content`: Markdown (CommonMark + GFM) to `Element`, frontmatter, collections typed by a `#[validated]` type (306), `getCollection` / `getEntry` / `render`, `.md` pages, RSS | `08-f` (step 3) · 118, 117 (step 6) · `07-onze/53` (step 7) |
 | [`120-bpp-islands/`](./120-bpp-islands/README.md) | **high** | not started | `#[clientIdle]` / `#[clientVisible]` / `#[clientMedia]` / `#[clientOnly]`; `#[serverDefer(fallback: …)]`, sealed props | 118 · 119 · 117 · `05-jhonstart/26` · `04-rakun/22` · `07-onze/49`, `50` |
 | [`117-bpp-routing/`](./117-bpp-routing/README.md) | high | not started | `.bpp` / `.md` / `.html` app files, `staticPaths` with data, `paginate`, partials, static endpoints, eight priority rules as tests | `03-bundled-libs/102` · `04-rakun/22` · `07-onze/49`, `50` · 121 steps 1–2 |
-| [`119-bpp-styling/`](./119-bpp-styling/README.md) | medium | not started · blocked by `08-d` | Scoped `<style>`, `#[isGlobal]`, `:global()`, `#[defineVars]`, cascade order | `08-d` (every step) · 118, `05-jhonstart/26` (step 2) |
+| [`119-bpp-styling/`](./119-bpp-styling/README.md) | medium | not started · step 1 ready to open | The repositories `css` and `styled` (`styled "…"`, `styledProperty "…"`, the theme mechanism); `jhonstart-styled` (the style section, `use`, `:global()`, run-time holes as CSS variables, `#[styled(..)]`, the one sheet); `jhonstart-emilia` deleted; cascade order (338) | 118, `05-jhonstart/26` (step 2) · `06-emilia/34` step 5 (step 5) |
 | [`127-bpp-actions/`](./127-bpp-actions/README.md) | medium | not started | Action typed by a `#[validated]` record (306): JSON/form input, `ActionError`, typed client call | 125 steps 6, 12 (306) · `03-bundled-libs/103` · `04-rakun/22` · `05-jhonstart/67` · `07-onze/49` · 117 · 120 · 126 · 123 (step 4) |
 | [`122-bpp-data/`](./122-bpp-data/README.md) | medium | not started | `Astro` global mapped; holes: page-side status/headers, `rewrite`, `site` | `05-jhonstart/26` · `07-onze/49` · `03-bundled-libs/102` · 118 · 120 |
 | [`123-bpp-middleware/`](./123-bpp-middleware/README.md) | medium | not started | `locals`, `sequence`, response rewritten after `next`, `actionContext` | `04-rakun/04` · `04-rakun/65` |
 | [`126-bpp-view-transitions/`](./126-bpp-view-transitions/README.md) | low | not started | `#[transitionName]` / `#[transitionAnimate]` / `#[transitionPersist]`, `navigate`, five lifecycle events, route announcer | `05-jhonstart/27` · 118 · 120 |
-| [`116-bpp-file-format/`](./116-bpp-file-format/README.md) | medium | not started | `.bpp` kind: `"bpp": "jhonstart"` in the app manifest; header between two `---` is botopink, rest the `html` literal; the package's prelude | 118 · `05-jhonstart/26` step 0 · `01-compiler/26` · `01-compiler`'s prelude scope |
+| [`116-bpp-file-format/`](./116-bpp-file-format/README.md) | medium | not started | `.bpp` kind: `"bpp": {"default": "jhonstart", "style": "jhonstart-styled"}` in the app manifest; header from the first line to the separator is botopink, then an optional `--- style ---` section, then the `html` literal; the package's prelude (212, 338) | 118 · `05-jhonstart/26` step 0 · `01-compiler/26` · `01-compiler`'s prelude scope |
 | [`124-bpp-cli/`](./124-bpp-cli/README.md) | high — last | not started | `onze sync`, `onze create-key`, config keys, component `<script>` bundling, built style sheet, `.bpp` scaffold | `nat-f2` (which keys) · `07-onze/50`, `71` · every other front · `07-onze/53` (step 5) |
 
 ## Order
@@ -75,7 +73,7 @@ Waves (cross-track numbers: [`../fronts.md`](../fronts.md) § Execution order of
 
 - **A** (after `00-gate` → 125 steps 0–2): 118 (alone in `html.bp`, in the core after 26 step 0;
   carve-outs before 34, 33, 26, 119 open — decision 189) · 121 steps 1–2 (alone, new member;
-  step 3 on 08-f) · 119 step 1 (alone in `emilia/src/scoped.bp`, on 08-d).
+  step 3 on 08-f) · 119 step 1 (alone in the repositories `css` and `styled`, 338).
 - **B**: 123 ◄ `04-rakun/04` (core), `04-rakun/65` (rakun-web) · 117 ◄ `03-bundled-libs/102`,
   `04-rakun/22`, `07-onze/49`, `50` · 120 ◄ `05-jhonstart/26`, `07-onze/50` (lazy starters), 117
   (rakun-app) · 122 ◄ 26, 49, 120 (core) · 126 ◄ `05-jhonstart/27` (reconcile driver), 120
@@ -85,7 +83,7 @@ Waves (cross-track numbers: [`../fronts.md`](../fronts.md) § Execution order of
   `.bpp`, under 07-onze/53's acceptance script.
 
 Why: **118 first** — tag annotations (`#[clientVisible]`, `#[serverDefer]`, `#[transitionName]`,
-`#[defineVars]`, 278) need a parsing template; Markdown needs `Element` to splice; nothing needs `.bpp`.
+278) need a parsing template; Markdown needs `Element` to splice; nothing needs `.bpp`.
 **116 not first** — the compiler cannot lex HTML and emit jhonstart calls (`build.zig`'s
 lib-agnostic check fails `zig build test` when `modules/compiler-core/src` names a library) and
 need not: compiler-core gets `Module{path, source, declaration, srcPath}`, no extension. `.bpp`
@@ -113,7 +111,7 @@ Every front but 121 edits files owned by another track's front; sequenced, never
 | `rakun-web/src/{middleware,filter}.bp` (123; the request store is `rakun-cardume`'s, `09-cardume/136`, 296) | `04-rakun/04` (core) · `04-rakun/65` (rakun-web) | after 04 and 65 (189) |
 | `libs/routing/src/{segment,conventions}.bp` (117) · `navigation.bp` (122) | `03-bundled-libs/102` | after 102 |
 | `libs/actions/src/outcome.bp` (127) | `03-bundled-libs/103` | after 103 |
-| `emilia/src/` — one new file (119) | `06-emilia/34` | beside it: 34 does not touch `scoped.bp` |
+| `emilia/src/` — none: emilia moves onto `styled` in `06-emilia/34` steps 3 and 5 | `06-emilia/34` | after 119 step 1 |
 | `compiler-cli/**`, `language-server/**` (116) | `01-compiler/26-cli-tooling` | 116 opens after 26 |
 
 ## Handed to other tracks
@@ -143,12 +141,12 @@ Labels only; text in [`../decisions-taken.md`](../decisions-taken.md).
 | 193 · 223 | Children only via a `children: Node` props field (`Node` replaces `JhonstartNode`/`Children`); else error at the tag | 118 step 4 · `05-jhonstart` |
 | 204 | `?T` hole refused | 118 step 2 |
 | 207 | Inline props type `props: type(…)` | 118 · `01-compiler/01-checker` |
-| 198 · 212 | `.bpp` = `.bp` module unfolded onto the `pub default fn` of the package in `"bpp": "<package>"`; header between two leading `---`, copied as written; rest is the literal; bad first line / unclosed header is an error at the line; no `template.emit` / `template.slice` | 116 |
+| 198 · 212 · 338 | `.bpp` = `.bp` module unfolded onto the `pub default fn` of the package in `"bpp": {"default": "<package>"}`; header from the first line (no opening `---`) to the separator, copied as written; `---` → the markup, `--- style ---` → one style section closed by `---`, then the markup; the markup is the literal; a first line `---`, a misplaced, second or unclosed style section are errors at the line; no `template.emit` / `template.slice` | 116 |
 | 199 | `type Props(…)` → `props: Props` parameter (none without it), never `pub val`; declarations (`import`, `type`, `pub`) stay module-level, statements (`val`, `use`) become the body before `return` | 116 · 118 · 120 |
 | 213 · 288 · 289 | A `.bpp` unfolds to the module's **anonymous** `pub default fn (…) -> View`; the importer names it (`import {components.PostCard};`, or an alias); `decl.name` is the file name; a module may instead mark a named function `pub default Tree;` | 116 · 118 |
-| 200 | `html` = `pub default fn` of core `jhonstart` (`import html, {Element} from "jhonstart";`); `jhonstart-html` deleted; manifest `"bpp": "jhonstart"` | `05-jhonstart/26` step 0 · 116 · 118 |
-| 221 · 285 | A `.bpp` decorator only when the header writes it (line before the closing `---`); a file's role (page, layout) is the framework's route table, never the toolchain's — it knows the `bpp` package, its `html` and its prelude only | 116 step 2 · 117 step 1 |
-| 270 | `bpp` package's `src/prelude.bp` (own modules only) is the last scope; imported only when a name resolves through it; header wins; binding the default function's name is an error; 118 writes jhonstart's | 116 · 118 |
+| 200 | `html` = `pub default fn` of core `jhonstart` (`import html, {Element} from "jhonstart";`); `jhonstart-html` deleted; manifest `"bpp": {"default": "jhonstart"}` (338) | `05-jhonstart/26` step 0 · 116 · 118 |
+| 221 · 285 | A `.bpp` decorator only when the header writes it (its last line, before the separator); a file's role (page, layout) is the framework's route table, never the toolchain's — it knows the `bpp.default` package, its `html` and its prelude, and the `bpp.style` package's default function only (338) | 116 step 2 · 117 step 1 |
+| 270 | `bpp.default` package's `src/prelude.bp` (own modules only) is the last scope; imported only when a name resolves through it; header wins; binding the default function's name is an error; 118 writes jhonstart's | 116 · 118 |
 | 186 · 202 | Stage is comptime: `#[page]` prerenders unless it reaches a `#[serverOnly]` hook; no `prerender` export, no `output` key | 117 step 2 · 123 · 124 |
 | 203 | One convention: `app/` tree, directory per route; `.bpp` where `page.bp` is; no `pages/` | 117 step 1 |
 | 222 | Route handler (`route.bp`, every method) always server, never prerendered | 117 step 4 · 121 step 5 |
@@ -175,9 +173,7 @@ meta of each `setMeta` type per tag; `addMeta` types repeat.
 | Annotation | Astro | Records (meta the reader acts on) | Declared in | Front |
 |---|---|---|---|---|
 | `#[isRaw]` | `is:raw` | `RawBody` | `jhonstart/src/html.bp` | 118 step 5 |
-| `#[isGlobal]` | `is:global` | `StyleMode.Global` | `jhonstart/src/html.bp` (119's arm) | 119 step 2 |
 | `#[isInline]` | `is:inline` | `StyleMode.Inline` | `jhonstart/src/html.bp` (119's arm) | 119 step 2 · 124 |
-| `#[defineVars(a, b)]` | `define:vars` | `StyleVars` | `jhonstart/src/html.bp` (119's arm) | 119 step 2 |
 | `#[clientLoad]` | `client:load` | `Hydrate.Load` | `jhonstart/src/island_strategy.bp` | 120 step 1 |
 | `#[clientIdle(timeoutMs)]` | `client:idle` | `Hydrate.Idle` | `island_strategy.bp` | 120 step 1 |
 | `#[clientVisible(rootMargin)]` | `client:visible` | `Hydrate.Visible` | `island_strategy.bp` | 120 step 1 |
@@ -188,36 +184,28 @@ meta of each `setMeta` type per tag; `addMeta` types repeat.
 | `#[transitionAnimate(a)]` | `transition:animate` | `TransitionAnimate` | `transitions.bp` | 126 step 1 |
 | `#[transitionPersist(key?)]` | `transition:persist` | `TransitionPersist` | `transitions.bp` | 126 step 1 |
 | `#[transitionPersistProps]` | `transition:persist-props` | `TransitionPersistProps` | `transitions.bp` | 126 step 1 |
-| `#[styled(..tokens)]` | (none — emilia's) | `ClassName` (`addMeta`) | `jhonstart-emilia` | 119 step 4 (301) |
+| `#[styled(..items)]` | (none — emilia's tokens, the app's `styled` components) | `ClassName` (`addMeta`) | `jhonstart-styled` | 119 step 4 (301, 338) |
 | `#[reload]` | `data-astro-reload` | `LinkReload` | `transitions.bp` | 126 step 2 (292) |
 | `#[history(h)]` | `data-astro-history` | `LinkHistory` (`History.Push \| Replace \| Auto`) | `transitions.bp` | 126 step 2 (292) |
 
 Not annotations — values: `set:html={s}` → `{raw(s)}`; `set:text={s}` → `{s}`; `class:list={[…]}` →
-`class={classList([…])}` (`classList` new in the core, 118 step 5). The arm for each return type is
+`class={classList([…])}` (`classList` new in the core, 118 step 5). Astro's `is:global` is `:global(…)`
+and `define:vars` a run-time hole in the style section (338). The arm for each return type is
 appended to `html.bp` by the front in the last column, in 118 → 119 → 120 → 126 order. Compiler
 needs (no new row): annotation arguments are embedded expressions — the `language-gaps.md` row 118
 step 2 owns.
 
 ## Decisions the maintainer owes
 
-Open: `08-d`, `08-f` (below) and `props-d`, `props-e`, `props-f`, `nat-f2`
+Open: `08-f` (below) and `props-d`, `props-e`, `props-f`, `nat-f2`
 ([`../decisions-pending.md`](../decisions-pending.md)); contradictions — `ctr-f` → 288, `ctr-g` and `ctr-t` → 289.
 Closed: `08-h` → 285, 224 (`onze.json`, `onze <command>`); `08-j` → 295, 296 (request state is
-`rakun-cardume`'s atoms, read through jhonstart's own hook under its `#[serverOnly]`, 277).
+`rakun-cardume`'s atoms, read through jhonstart's own hook under its `#[serverOnly]`, 277); `08-d` → 338
+(CSS in three layers — the repositories `css` and `styled`, emilia over `styled` —, `jhonstart-styled`,
+the `.bpp` style section; `jhonstart-emilia` deleted).
 
 - `props-d` · `props-e` · `props-f` — native tag attributes, named slot, spread on a component. Block 118 steps 1, 4.
 - `nat-f2` — which `onze.json` keys (`trailingSlash`, `redirects`, `markdown`, `allowedRedirects`) and how they are read. Blocks 124's key boxes.
-
-### 08-d · Who scopes CSS
-
-**Measured.** emilia compiles `Token[]`, "not a runtime CSS engine. No selector parsing"
-(`emilia/AGENTS.md:602`); onze-assets renames `*.module.css` classes (`onze-assets/src/style_module.bp`); decision 113.
-**Options.** (a) emilia `scopeCss(scope, css)` via the `jhonstart-emilia` bridge; (b) onze-assets,
-beside the module renamer; (c) jhonstart's `html` scopes its own `<style>`; (d) *proposed* — `css` and
-`styled` (`styled "…"` → `@Component<StyledBase, Styled>`, Tailwind v4's CSS syntax), each its own repository (326), emilia over `styled`, `"bpp": {"default", "style"}`, a
-`--- style ---` section ([`119-bpp-styling/proposta-08-d.md`](./119-bpp-styling/proposta-08-d.md)).
-**Recommendation.** (d) with its points p1–p10 as answered on 2026-10-09; otherwise (a). (c) puts a CSS parser in the HTML library; (b) excludes jhonstart apps without onze.
-**Blocks.** All of 119.
 
 ### 08-f · Where Markdown and YAML live
 
@@ -233,15 +221,15 @@ config readers go to std "when a second consumer appears".
 ### 08-h · The config file and the commands — closed (285, 224)
 
 The config is `onze.json`, the commands `onze <command>` (`create | info | build | start`, `dev`
-`07-onze/50`'s); the toolchain knows only `"bpp"`, `html` and the prelude (285). Which keys: `nat-f2`.
+`07-onze/50`'s); the toolchain knows only `"bpp"` (`default`, `style`), their default functions and the prelude (285, 338). Which keys: `nat-f2`.
 
 ## Rules for this track
 
 - **The compiler knows no library.** Only 116 edits `repository/botopink-lang`: a manifest key,
-  `.bpp` in the tools' lists, the unfold (198), the prelude as generic last scope (270) — no
-  library name, no syntax. Markup meaning is jhonstart's `html`.
+  `.bpp` in the tools' lists, the unfold (198, 338), the prelude as generic last scope (270) — no
+  library name, no syntax. Markup meaning is jhonstart's `html`; style meaning `jhonstart-styled`'s.
 - **A library front never touches `modules/**`.** A need = a [`language-gaps.md`](../language-gaps.md) row + nearest form.
-- **Libraries keep their concerns** (113): template jhonstart, CSS emilia, request/route table rakun, wiring onze. No fifth library.
+- **Libraries keep their concerns** (113): template jhonstart, CSS emilia — over the shared repositories `css` and `styled`, which know no `.bpp` (338) —, request/route table rakun, wiring onze. No fifth library: `jhonstart-styled` is the one place CSS meets `.bpp`.
 - **Most restrictive, no bypass** (67): an unbound annotation is the unbound-name error at its
   span, a written `prefix:name` directive an error naming the annotation; a `Hydrate` annotation on
   a non-`#[client]` component does not build.

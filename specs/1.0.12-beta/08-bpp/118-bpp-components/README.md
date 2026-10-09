@@ -130,12 +130,12 @@ error at its span, never a rendered attribute) and `html` calls it at comptime w
 Its first parameter says what it receives: `comptime decl: @Decl` — the tag's component (written on
 an element: error at the annotation, "`div` is an element"); `comptime tag: Tag` — any tag (`Tag`,
 declared by this front: the tag's name and, for a component, its `@Decl`). `html` acts on the
-**return type**, never the name: `RawBody` (this front), the style types (119), `Hydrate` / `Defer`
+**return type**, never the name: `RawBody` (this front), `isInline`'s style meta (119; `isGlobal` and `defineVars` went with 338), `Hydrate` / `Defer`
 (120), the transition types (126) — each arm appended by its front —, `void` a check only; any other
 type is an error at the annotation, two results of one type on one tag an error at the second.
 Values are not annotations: `set:html={s}` is `{raw(s)}`, `set:text={s}` is `{s}`, `class:list` is
 `class={classList([…])}`. Arguments are embedded expressions — the same compiler need as holes.
-This front: `isRaw`, `classList` (no `Tag` type — 302); 119 `isGlobal`, `isInline`, `defineVars`; 120
+This front: `isRaw`, `classList` (no `Tag` type — 302); 119 `isInline` (`isGlobal`, `defineVars` gone, 338); 120
 `clientLoad` … `clientOnly`, `serverDefer`; 126 `transition…`.
 
 **Hygiene, prelude.** Tag names and expressions resolve in the caller's scope; `fragment`, `raw`,

@@ -116,7 +116,7 @@ counter (same in prerendered markup), minified; under a threshold inlined, else 
 ### Step 5 — The scaffold, and the second blog
 
 - [ ] `onze create --example bpp` (50's `--example` tail) writes a project with `.bpp` pages and a
-      posts collection — `examples/scaffold/`: manifest carries `"bpp": "jhonstart"` (116), `app/`
+      posts collection — `examples/scaffold/`: manifest carries `"bpp": {"default": "jhonstart"}` (116, 338), `app/`
       holds `layout.bpp`, `page.bpp`, `not-found.bpp`; `onze build && onze start` serves it
 - [ ] `07-onze/53`'s acceptance script runs against it — same routes, same assertions as `examples/blog`
 

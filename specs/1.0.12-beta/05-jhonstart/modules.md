@@ -11,7 +11,7 @@ what each front owns in it.
 | **`jhonstart-html`** | `root.bp`, `html.bp` | `elements_test`, `html_test` | inherits | `jhonstart` |
 | **`jhonstart-link`** | `root.bp`, `link.bp` + `link_runtime.mjs` / `sidecars/jhonstart_link.erl`, `reconcile.bp` | `link_test` (28), `reconcile_test` (10) | inherits | `jhonstart` |
 | **`jhonstart-forms`** | `root.bp`, `form.bp` + `form_runtime.mjs` / `sidecars/jhonstart_forms.erl` | `form_test` (15) | inherits | `jhonstart`, `jhonstart-link`; `actions` (bundled) |
-| **`jhonstart-emilia`** | `root.bp` | `bridge_test` (10) | inherits | `jhonstart`, `jhonstart-html`, `emilia` (by `path`) |
+| **`jhonstart-emilia`** | `root.bp` | `bridge_test` (10) | inherits | `jhonstart`, `jhonstart-html`, `emilia` (by `path`) — deleted by `08-bpp/119` (decision 338) |
 | **`jhonstart-test`** | `root.bp`, `harness.bp`, `assert_html.bp`, `assert_route.bp`, `assert_link.bp`, `assert_server.bp`, `assert_island.bp`, `assert_stream.bp`, `assert_render.bp`, `assert_error_boundary.bp`, `assert_metadata.bp`, `assert_form.bp` | `helpers_test` (20 tests, 7 accepted snapshots) | inherits | `jhonstart`, `jhonstart-link`, `jhonstart-forms`, std |
 | **`jhonstart-dom-test`** | `root.bp`, `fake_dom.mjs` | `dom_test` (8) | `["commonJS"]` — structural: no DOM on the BEAM (30-g), `botopink build --target erlang` refuses it at `src/root.bp:37`; no erlang row | `jhonstart` |
 
@@ -20,6 +20,8 @@ what each front owns in it.
   "jhonstart";`), `jhonstart-emilia`, `examples/jhonstart-markup`, `examples/document-shell` import
   from the core — six members after. Before that, `08-bpp/118` adds the core's `src/prelude.bp`
   (decision 270) as a carve-out.
+- `08-bpp/119` adds the member `jhonstart-styled` (the CSS integration) and deletes `jhonstart-emilia`
+  (decision 338) — still six members after.
 - Every browser cell has an erlang twin answering the server's truth (27-a); `jhonstart-dom-test` is
   the one member needing a document.
 - The core's `botopink.json` lists `files` in dependency order; its `root.bp` the `pub mod` lines in
@@ -62,13 +64,14 @@ Other tracks' fronts editing these members, each after the member's owner landed
 | `jhonstart` (core) | `08-bpp/118` before 26 opens; then 120, then 122; 116 | 118: `src/prelude.bp` (new, decision 270), the declaration of the node type `Node` (decision 223), its step-1 bracket-attribute lines (comments only in the core) · 120: new `island_strategy.bp`, `deferred.bp`, lines of `client.bp`, `render.bp`, `island_runtime.mjs` · 122: new `response.bp`, lines of `server.bp`, `error_boundary.bp` · 116: new `bpp.bp`, `test/bpp_test.bp` |
 | `jhonstart-link` | `08-bpp/126` (after 27) | new `transitions.bp`, `sidecars/transitions_runtime.mjs`, two call sites of `link_runtime.mjs` |
 | `jhonstart-forms` | `08-bpp/127` (after 67 and 103) | new `typed_call.bp` |
-| `jhonstart-emilia` | `08-bpp/119` | the whole member (`scopedStyle`, the sink) |
+| `jhonstart-styled` (new) | `08-bpp/119` | the whole member (decision 338): the `pub default fn` `"bpp".style` names, the render's one style sheet sink (head and each boundary fill), `#[styled(..)]`, the bridge to `styled`'s base |
+| `jhonstart-emilia` | `08-bpp/119` | deletes the member (step 5: emilia's sheet goes out through `jhonstart-styled`'s sink; the flush plugin `root.bp:95` goes) |
 | `jhonstart-dom-test` | 67 · `08-bpp` 119, 120, 126, 127 | a test file each, owned by the front that adds it; `fake_dom.mjs` stays 26's, edited by one front at a time after 26 (decision 189) |
 | `examples/jhonstart-markup` | `08-bpp/118` | the example's sources; its `README.md` is 26's |
 
 ## Relations
 
 jhonstart and rakun never import each other; onze alone names both; emilia enters only through
-`jhonstart-emilia`; bundled `routing` and `actions` imported like std. The core will import bundled
+`jhonstart-emilia` (`jhonstart-styled` after `08-bpp/119`, decision 338); bundled `routing` and `actions` imported like std. The core will import bundled
 `log` (decision 195, 26 step 4): the boundary logs and digests through it, onze hands in the sink
 (like `allowedRedirects`); no rakun type crosses.

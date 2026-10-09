@@ -1,8 +1,9 @@
 // Front 119 — bpp styling · examples/scoped-style-example.bp
 //
-// Demonstrates: step 2 — a component that carries its own CSS. The template
-// gives every element it writes one attribute; `scopedStyle` hands the sheet to
-// the render's style sink, scoped to that attribute.
+// Demonstrates: step 2 — a component that carries its own CSS, in the `.bp`
+// form a `.bpp` style section unfolds to (decision 338): the component
+// activates a scoped style with `use`; `html` sees the `use` in the function's
+// hooks and gives every element the template writes the scope attribute.
 //
 //   ---
 //   const { isRed } = Astro.props;
@@ -16,8 +17,8 @@
 //   </style>
 //   <style is:global> h1 { margin: 0; } </style>
 //
-// Astro's directives are a value or an annotation here (decision 278):
-// `class={classList([…])}`, `<style #[defineVars(foregroundColor)]>`, `<style #[isGlobal]>`.
+// `define:vars` is a hole (`${foregroundColor}`, a CSS variable at render);
+// `is:global` is `:global(…)`; `class:list` is `classList` (118).
 //
 // Upstream: astro-docs/11-styling.md (Estilos com Escopo, Estilos Globais,
 //           `class:list`, Variáveis CSS, Ordem de Cascata)
@@ -25,48 +26,42 @@
 //
 // Target: both.
 
-import html, {classIf, classList, Element, ElementBase, Node, renderToString} from "jhonstart";
+import html, {classIf, classList, View, Node, renderToString} from "jhonstart";
 import {article, div, h1, p} from "jhonstart";
-// `scopedStyle` is the bridge's: `html` names it in the code it builds,
-// and it resolves here, in the caller's scope — the way a tag's builder does.
-import {scopedStyle, collectedStyles, resetStyles} from "jhonstart-emilia";
+import styled from "jhonstart-styled";
+import {collectedStyles, resetStyles} from "jhonstart-styled";
 
-pub fn Box(isRed: bool, children: Node = []) -> Element {
+pub fn Box(isRed: bool, children: Node) -> View {
     val foregroundColor = "rgb(221 243 228)";
+    use styled """
+      .box { border: 1px solid blue; color: ${foregroundColor}; }
+      .red { border-color: red; }
+    """;
     return html """
-      <div class={classList(["box", classIf(isRed, "red")])}>
-        <slot />
-      </div>
-
-      <style #[defineVars(foregroundColor)]>
-        .box { border: 1px solid blue; color: var(--foregroundColor); }
-        .red { border-color: red; }
-      </style>
+      <div class={classList(["box", classIf(isRed, "red")])}>{children}</div>
     """;
 }
 
-pub fn Post(title: string, children: Node = []) -> Element {
+// shared by every component that writes a title
+val titleStyle = styled """.title { font-size: 2rem; }""";
+
+pub fn Post(title: string, children: Node) -> View {
+    use titleStyle;
+    use styled """
+      article :global(p) { line-height: 1.6; }
+      :global(h1) { margin: 0; }
+    """;
     return html """
       <article>
         <h1 class="title">{title}</h1>
-        <slot />
+        {children}
       </article>
-
-      <style>
-        .title { font-size: 2rem; }
-        /* the slotted content is another component's; reach it on purpose */
-        article :global(p) { line-height: 1.6; }
-      </style>
-
-      <style #[isGlobal]>
-        h1 { margin: 0; }
-      </style>
     """;
 }
 
 test "every element the template writes carries the scope attribute" {
     val _r = resetStyles();
-    val markup = renderToString(Box(true, [p(["hi"])]));
+    val markup = renderToString(Box(true, p(["hi"])));
     assert markup.contains("<div class=\"box red\" data-s=\"");
     // the slotted <p> was written by the CALLER, so it carries no attribute of Box
     assert markup.contains("<p>hi</p>");
@@ -74,33 +69,38 @@ test "every element the template writes carries the scope attribute" {
 
 test "the sheet is scoped to that attribute" {
     val _r = resetStyles();
-    val _m = renderToString(Box(false));
+    val _m = renderToString(Box(false, p([])));
     val css = collectedStyles();
     assert css.contains(".box[data-s=\"");
     assert css.contains(".red[data-s=\"");
 }
 
-test "#[defineVars] reaches the root element as custom properties" {
+test "a run-time hole is a CSS variable on the root element" {
     val _r = resetStyles();
-    val markup = renderToString(Box(false));
-    assert markup.contains("style=\"--foregroundColor: rgb(221 243 228)\"");
+    val markup = renderToString(Box(false, p([])));
+    assert markup.contains("style=\"--s-0: rgb(221 243 228)\"");
+    assert collectedStyles().contains("color: var(--s-0)");
+}
+
+test "two uses give the template two attributes" {
+    val _r = resetStyles();
+    val markup = renderToString(Post("One", p([])));
+    assert markup.split("data-s").length == 3;      // article: titleStyle's and the inline style's
 }
 
 test "two components may use the same class name" {
     val _r = resetStyles();
     val page = html """<Post title="One"><Box isRed={false}><p class="title">not a heading</p></Box></Post>""";
     val markup = renderToString(page);
-    val css = collectedStyles();
-    // Post's `.title` rule is scoped to Post's attribute; the <p class="title">
-    // was written by this test's template, which has no <style> — it carries no
-    // scope attribute and Post's rule does not match it.
-    assert css.contains(".title[data-s=\"");
+    // the <p class="title"> was written by this test's template, which activates
+    // no style — it carries no scope attribute and Post's `.title` does not match it.
+    assert collectedStyles().contains(".title[data-s=\"");
     assert markup.contains("<p class=\"title\">not a heading</p>");
 }
 
-test ":global and #[isGlobal] leave selectors unscoped" {
+test ":global leaves a selector, or part of one, unscoped" {
     val _r = resetStyles();
-    val _m = renderToString(Post("One"));
+    val _m = renderToString(Post("One", p([])));
     val css = collectedStyles();
     assert css.contains("] p { line-height: 1.6; }");
     assert css.contains("h1 { margin: 0; }");
@@ -108,15 +108,16 @@ test ":global and #[isGlobal] leave selectors unscoped" {
 
 test "a component rendered many times registers its sheet once" {
     val _r = resetStyles();
-    val list = html """<div>{[1, 2, 3].map({ n -> <Box isRed={false} /> })}</div>""";
+    val list = html """<div>{[1, 2, 3].map({ n -> <Box isRed={false}><p /></Box> })}</div>""";
     val _m = renderToString(list);
     assert collectedStyles().split(".box[").length == 2;
 }
 
 // What does not compile:
 //
-//   <style lang="scss"> … </style>
-//     error: `lang` — there is no CSS preprocessor; write CSS, or emilia tokens
+//   html """<style>.a { color: red; }</style><p class="a">x</p>"""
+//     error: <style> in markup — write the CSS in the style section, or `use styled """…"""`;
+//            `<style #[isInline]>` keeps it verbatim                       at the tag
 //
-//   <style #[defineVars(missing)]> … </style>
-//     error: unbound name 'missing'                       at the name
+//   use styled """.a { color: {c}; }"""
+//     error: `{` opens a CSS block, not a value — a value goes in `${…}`   at the brace

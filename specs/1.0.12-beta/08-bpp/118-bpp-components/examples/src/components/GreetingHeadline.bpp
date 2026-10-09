@@ -1,4 +1,3 @@
----
 // Front 118 — bpp components · examples/src/components/GreetingHeadline.bpp
 //
 // Demonstrates: step 4 in a `.bpp` component — props. `type Props` is the

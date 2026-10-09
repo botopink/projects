@@ -1,9 +1,8 @@
----
 // Front 26 — jhonstart-router · examples/src/app/blog/[slug]/page.bpp
 //
 // The `/blog/[slug]` page of `blog-post-page-example.bp`, as a `.bpp` file
 // (1.0.11-beta `08-bpp/116`): the application's manifest says
-// `"bpp": "jhonstart"`, and this file unfolds to the module's anonymous
+// `"bpp": {"default": "jhonstart"}` (338), and this file unfolds to the module's anonymous
 // `pub default fn () -> View` around the statements below, with the markup as
 // its return (275, 289) — no parameter (293); the route table calls
 // `page("blog/[slug]", f)` on it (285).

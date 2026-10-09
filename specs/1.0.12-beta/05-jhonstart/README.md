@@ -50,7 +50,7 @@ marker). Left: a tail of code and spec items, three fronts by the member each ed
 
 outbound: 26 step 4 ──► 07-onze/49 step 3 sets the sink · 27 step 1 ──► 07-onze/50 step 6 adopts applyTransition
           26 step 8 ──► 07-onze/49 step 5 and 04-rakun/22 step 4 delete the run-time mark
-inbound (08-bpp, after the owning front, one at a time): 116 · 120 · 122 in the core · 126 after 27 · 127 after 67 · 119 in jhonstart-emilia
+inbound (08-bpp, after the owning front, one at a time): 116 · 120 · 122 in the core · 126 after 27 · 127 after 67 · 119: new member jhonstart-styled, deletes jhonstart-emilia, one arm in html.bp
 ```
 
 ## Ownership notes

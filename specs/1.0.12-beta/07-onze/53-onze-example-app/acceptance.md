@@ -5,7 +5,7 @@ blockers: [`README.md`](./README.md) (its steps cite these sections). `[x]` = ho
 
 **Why a combined app.** Only a real app falsifies: **vocabulary drift** (one route param read by
 fronts 22, 49, 28, 32, 60, each with its own test), **ordering** (emilia's sheet, jhonstart's
-streamed chunks and the payload's `s` key via the `jhonstart-emilia` plugin, front 52's preload
+streamed chunks and the payload's `s` key via `jhonstart-styled`'s sink, front 52's preload
 links first — decision 114), **the halves** (29 marks a client boundary, 68 bundles it,
 jhonstart's render serializes the payload, 67 reconnects a form: two targets, one round trip).
 **Target:** both — pages, layouts, actions, handlers, middleware → BEAM; island, `Link`
@@ -221,7 +221,7 @@ example; **still assumed** = the risk.
 |---|---|---|
 | 30 | `LayoutProps(children: leaf)` is constructible with one named field | `LayoutProps` is jhonstart's record (decision 114); no example there constructs one; three tests here do |
 | 51 · 52 | `Image(props, cfg, publicDir)`, `googleFont(family, opts) -> @Task<Font>`, `fontHead(fonts) -> string` | 51 and 52's own shapes, same author; nothing external confirmed them |
-| 30 | emilia's block reaches the head, each streamed chunk and the payload's `s` key via the asynchronous `jhonstart-emilia` plugin onze registers (decisions 113, 114) | the layout produces and hands over the head string, does not call the plugin — seam cited, not exercised |
+| 30 | emilia's block reaches the head, each streamed chunk and the payload's `s` key via the asynchronous `jhonstart-styled` sink onze registers (the `jhonstart-emilia` plugin until `08-bpp/119` deletes it; decisions 113, 114, 338) | the layout produces and hands over the head string, does not call the plugin — seam cited, not exercised |
 | 12 | `cache.revalidatedPaths()` is a test seam available to an app's own tests | front 12's example uses it but calls it a seam, not public surface |
 
 ## Rules two fronts must agree on

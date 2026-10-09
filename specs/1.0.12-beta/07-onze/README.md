@@ -4,7 +4,7 @@
 [`modules.md`](./modules.md) · uncovered Next.js rows: [`reference-holes.md`](./reference-holes.md).
 
 onze wires (decision 113): the one package importing jhonstart, rakun and the `jhonstart-emilia`
-bridge together; where the libraries meet in an example (decision 114). Its eight members and the
+bridge together (`jhonstart-styled` once `08-bpp/119` deletes that member, decision 338); where the libraries meet in an example (decision 114). Its eight members and the
 blog (`examples/blog`, `onze build && onze start`) exist. Owed: the wiring that waited on rakun,
 `onze dev`, the release end to end, the image/font/OG tails, the blog acceptance script's second
 half. Five fronts, cut by member.

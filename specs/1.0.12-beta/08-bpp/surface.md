@@ -116,15 +116,15 @@ are on disk, so most of Astro is there, or there and unwired.
 
 | Astro | The stack today | Box · owner |
 |---|---|---|
-| scoped `<style>` in a component | not found. emilia: typed utility compiler over `Token[]`, no CSS processor (`emilia/AGENTS.md:602`); DSL `<style>` lowers to the `style` builder, verbatim | add · 119 |
-| `is:global`, `:global()` | not found | add · 119 — `<style #[isGlobal]>` (278) |
+| scoped `<style>` in a component | not found. emilia: typed utility compiler over `Token[]`, no CSS processor (`emilia/AGENTS.md:602`); DSL `<style>` lowers to the `style` builder, verbatim | add · 119 — the `--- style ---` section (or `use styled """…"""` in a `.bp`), scoped by `jhonstart-styled` through the repositories `styled` and `css`; `<style>` in markup refused but `#[isInline]` (338) |
+| `is:global`, `:global()` | not found | add · 119 — `:global(…)` only; site-wide CSS in `globals.css` (338) |
 | `class:list` | `cls` / `clsWith` for emilia tokens (`emilia/src/emilia.bp:186-210`); nothing for plain class names | add · 118 — a value, `class={classList([…])}` (278) |
-| `define:vars` | not found | add · 119 — `<style #[defineVars(a, b)]>` (278) |
+| `define:vars` | not found | add · 119 — a run-time hole in the style section, `${value}` → a CSS variable on the root element (338) |
 | inline `style` as an object | a string attribute | n/a — no object literal; the string is the form |
 | importing a stylesheet | `globals.css` read at build (`onze-cli/src/build.bp:112-114`); `*.module.css` renames classes to `<file>_<class>_<hash6>` (`onze-assets/src/style_module.bp:1-36`) | have |
 | Tailwind | emilia: `emilia(tokens)`, `flush()`, `@layer`s, class `e_<hash>` (`emilia.bp:112-235`) | have — in markup `<h1 #[styled(…)]>`, `class={emilia(tokens)}` leaves templates (301; 119 step 4) |
 | Sass / Less / Stylus / PostCSS / LightningCSS | — | n/a — no preprocessor host; CSS or emilia tokens |
-| cascade order: link, imported, scoped | bridge puts emilia's flush in the head (`jhonstart-emilia/src/root.bp:95`) | add · 119 — fixes the order |
+| cascade order: link, imported, scoped | bridge puts emilia's flush in the head (`jhonstart-emilia/src/root.bp:95`) | add · 119 — fixes the order; `jhonstart-styled`'s one sheet (338) |
 | per-page CSS chunks, inlining under 4 kB | one stylesheet | add · 124 |
 
 ## 12 · Framework components

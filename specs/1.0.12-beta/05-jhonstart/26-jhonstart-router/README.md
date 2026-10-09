@@ -73,7 +73,7 @@ After `08-bpp/118` landed in `jhonstart-html`. `src/html.bp` and the member's te
 (`import html, {Element, renderToString} from "jhonstart";`); member deleted (decision 187's
 criterion: a module every consumer needs is not its own member). Consumers `jhonstart-emilia`,
 `examples/jhonstart-markup`, `examples/document-shell` import from the core. Code moves, no
-behaviour change; `08-bpp/116` (`"bpp": "jhonstart"`) and later `html.bp` appends (119, 120, 126)
+behaviour change; `08-bpp/116` (`"bpp": {"default": "jhonstart"}`, decision 338) and later `html.bp` appends (119, 120, 126)
 are written against it.
 
 Acceptance written when the step opens: member gone, its tests in the core's cell on both rows,

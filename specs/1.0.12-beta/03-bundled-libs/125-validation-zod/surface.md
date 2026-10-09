@@ -117,7 +117,7 @@ Each format: one `formats.bp` rule, one `constraints.bp` predicate, one marker, 
 | `z.emoji()` | `#[emoji]` | have | walk over `unicode.codepoints` (`unicode.bp:55`): `Extended_Pictographic` and `Emoji_Component` ranges of emoji-data.txt, as Zod's `\p{…}` |
 | `z.base64()` | `#[base64]` | have | walk: the alphabet, a multiple of four, at most two `=` at the end (`""` is base64, as Zod) |
 | `z.base64url()` | `#[base64url]` | have | walk: the URL alphabet, unpadded, no length leaving one dangling character |
-| `z.hex()` | `#[hex]` | have | walk; the three private `isHex` copies (`jhonstart-emilia/src/root.bp:39`, `rakun-web/src/static.bp:271`, `rakun-actuator-api/src/span.bp:149`) become consumers in their own fronts |
+| `z.hex()` | `#[hex]` | have | walk; the three private `isHex` copies (`jhonstart-emilia/src/root.bp:39`, `rakun-web/src/static.bp:271`, `rakun-actuator-api/src/span.bp:149`) become consumers in their own fronts; `jhonstart-emilia`'s leaves with the member instead (`08-bpp/119` deletes it, decision 338) |
 | `z.jwt()` · `z.jwt({ alg })` | `#[jwt]` · `#[jwtAlg("HS256")]` | have | three base64url segments (stricter than Zod 4, which does not count them); header `json.decode`d: a text `alg`, `typ` `"JWT"` when present. Shape only — no signature check |
 | `z.nanoid()` · `z.cuid()` · `z.cuid2()` · `z.ulid()` | `#[nanoid]` · `#[cuid]` · `#[cuid2]` · `#[ulid]` | have | regex each |
 | `z.ipv4()` · `z.ipv6()` | `#[ipv4]` · `#[ipv6]` | have | walk (octet range; `::` compression) |

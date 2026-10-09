@@ -1,4 +1,3 @@
----
 // Front 120 — bpp islands · examples/src/app/product/[id]/page.bpp
 //
 // Demonstrates: step 4 in a `.bpp` page — a server island. The page is the same

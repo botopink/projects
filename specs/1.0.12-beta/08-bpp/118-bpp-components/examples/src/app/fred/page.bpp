@@ -1,4 +1,3 @@
----
 // Front 118 — bpp components · examples/src/app/fred/page.bpp
 //
 // Demonstrates: step 4 in a `.bpp` page — a component tag is a call. An

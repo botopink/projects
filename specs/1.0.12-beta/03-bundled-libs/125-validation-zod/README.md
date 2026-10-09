@@ -23,7 +23,7 @@ Zod's core is `parse`: untrusted data in, typed value or located issues out. `#[
 record by hand (`language-gaps.md`: "No `record ↔ Json` derivation"; 39 functions named `…Json(`
 outside tests, 33 in rakun). Not a regex demand — `regex.matches(` outside `libs/std` and
 `repository/validation`: 0; `#[pattern(…)]` outside the library: 1, in a test; `registerConstraint(`
-outside: 0; private format walks: 3 `isHex` (`jhonstart-emilia/src/root.bp`,
+outside: 0; private format walks: 3 `isHex` (`jhonstart-emilia/src/root.bp` — leaves with the member, `08-bpp/119`, decision 338 —,
 `rakun-web/src/static.bp`, `rakun-actuator-api/src/span.bp`). The need is `Json` → record; the rest
 follows: the `#[validated]` type derives parse / decode / bind / encode / JSON Schema as members
 (306 — `#[schema]` folds into it; field markers compose, no public `Schema<T>`), checks grow from 13

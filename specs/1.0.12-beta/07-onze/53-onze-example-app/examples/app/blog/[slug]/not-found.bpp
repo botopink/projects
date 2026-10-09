@@ -1,4 +1,3 @@
----
 // Front 53 — onze example app · examples/app/blog/[slug]/not-found.bpp
 //
 // The segment's not-found boundary of `boundaries-example.bp`, as a `.bpp`

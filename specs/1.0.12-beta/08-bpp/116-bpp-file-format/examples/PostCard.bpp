@@ -1,14 +1,14 @@
----
 // Front 116 — bpp file format · examples/PostCard.bpp
 // App file: src/components/PostCard.bpp
 //
 // Demonstrates: a component as a single file. The application's manifest says
-// `"bpp": "jhonstart"` (`app-botopink-json-example.json`), so the toolchain
-// unfolds this file onto jhonstart's `pub default fn`, `html` (decisions 198,
-// 200): the header — between the two `---` lines (decision 212) — is ordinary
-// botopink, its declarations staying at module level and its statements becoming
-// the body of the function the file unfolds to; everything after the second
-// `---` line is the literal handed to `html`.
+// `"bpp": {"default": "jhonstart"}` (`app-botopink-json-example.json`), so the
+// toolchain unfolds this file onto jhonstart's `pub default fn`, `html`
+// (decisions 198, 200, 338): the header — from the first line, with no opening
+// `---`, to the separator line (decision 212) — is ordinary botopink, its
+// declarations staying at module level and its statements becoming the body of
+// the function the file unfolds to; everything after the separator `---` line
+// is the literal handed to `html`. This file has no `--- style ---` section.
 //
 // `type Props` is the convention (decision 199): with it the file is the
 // anonymous `pub default fn (props: Props) -> View` (289, 276), the header's statements read

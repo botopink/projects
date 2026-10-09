@@ -1,4 +1,3 @@
----
 // Front 121 — bpp content · examples/src/app/blog/page.bpp
 //
 // Demonstrates: step 4 in a `.bpp` page — the list of a collection. `await` in

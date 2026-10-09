@@ -1,4 +1,3 @@
----
 // Front 117 — bpp routing · examples/src/app/dogs/[dog]/page.bpp
 //
 // Demonstrates: steps 1–3 in a `.bpp` page — the three names a page may export,
