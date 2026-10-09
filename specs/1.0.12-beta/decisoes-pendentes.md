@@ -95,41 +95,88 @@ linha **Trava:** com o passo que espera por ela; ao responder, a thread do passo
 
 **Trava:** `01-compiler/134` passo 2 (o resto) · `01-checker` passos 24 e 28 · ⏳ pronto para abrir thread ao responder
 
-**Contexto.** O passo 2 da 134 declara no `builtins.d.bp` tudo que o compilador conhece (252). Duas
-coisas ainda não têm forma: (1) o `?T` e o namespace `result`; (2) `Type.Field<T>` (308), um tipo
-dentro de outro, o que hoje é erro de parse. A parte 3 (um tipo só de funções estáticas) virou a 329:
-`pub type Type { … }`, sem valor.
+**Contexto.** O passo 2 da 134 declara no `builtins.d.bp` tudo que o compilador conhece (252). Faltam: o
+`?T` (hoje com os métodos `map`, `flatMap`, `unwrapOr` só em prosa), o namespace `result` (também só em
+prosa) e `Type.Field<T>` (308 — um tipo dentro de outro é erro de parse hoje). A parte 3 virou a 329.
+O mantenedor propôs: `Option<T>` nunca; o `?T` se resolve com os operadores do TypeScript. O TypeScript
+é frouxo em alguns pontos; cada um vira uma pergunta abaixo, na leitura mais restritiva (67).
 
 **Hoje** (medido no compilador):
 ```bp
 val nome: ?string = buscar();
-nome ?? "anônimo"         // ✅ funciona
-nome?.length()            // ✅ funciona
+nome ?? "anônimo"         // ✅
+nome?.length()            // ✅
+xs?.[0]   f?.(1)          // ❌ planejados (comentário no builtins.d.bp)
 nome!.length()            // ❌ erro de sintaxe
-nome.unwrapOr("x")        // ✅ funciona — método de ?T, só em prosa (238 arquivos usam `.unwrapOr(`)
-result.map(r, f)          // ✅ funciona — namespace, só em prosa
+nome.unwrapOr("x")        // ✅ método de ?T, só em prosa — 238 arquivos usam `.unwrapOr(` (?T e @Result)
+result.map(r, f)          // ✅ namespace, só em prosa
 ```
 
-**Parte 1 — `?T` e `result`** (proposta do mantenedor: `?T` com os operadores do TypeScript, `Option<T>` nunca)
-- [ ] **(1a)** `?T` sem métodos: `??`, `?.`, `?.[i]`, `?.(args)` e `!` sufixo; o `!` é conferido — aborta em runtime,
-  localizado, quando o valor é `null` (67: a leitura mais restritiva, o `!!` do Kotlin); `map`, `flatMap`, `unwrapOr`
-  saem de `?T` (ficam no `@Result`), com um script de migração por repositório (`.unwrapOr(d)` → `?? d`).
-  ```bp
-  nome ?? "anônimo"   nome?.trim()?.toUpper()   xs?.[0]   f?.(1)   nome!.length()
-  ```
-- [ ] **(1b)** Como (1a), e também `??=` em `var`: `cache ??= carregar();`.
-- [ ] **Namespace `result`:** **(r1)** sai — `r.map(f)`, `r.unwrapOr(x)` no próprio `@Result` são a única grafia; **(r2)** fica, declarado como tipo namespace (329).
+**1 · Os operadores de `?T`**
+- [ ] **(1a)** `?T` não tem métodos: `??`, `?.`, `?.[i]`, `?.(args)` e `!` sufixo. `map`, `flatMap`, `unwrapOr`
+  saem de `?T` (ficam no `@Result`); um script de migração por repositório troca `.unwrapOr(d)` por `?? d`
+  e `.map({ v -> v.f() })` por `?.f()`.
+- [ ] **(1b)** Como (1a), mais `??=` em `var`: `cache ??= carregar();`.
+- [ ] **(1c)** Os operadores entram, e os métodos de `?T` ficam também (duas grafias).
 
-**Parte 2 — `Type.Field<T>`**
-- [ ] **(2a)** Um tipo declarado no corpo de um tipo é o tipo associado dele (o mesmo nó do `decl.addType`, 216); a 308 fica.
+**Recomendação: (1a).** Uma grafia por operação; `??=` é açúcar de `if (cache == null) cache = carregar();`
+e pode entrar depois, se fizer falta.
+
+**2 · Operador sobre um valor que nunca é `null`**
+- [ ] **(2a)** Erro de compilação: `?.`, `?.[]`, `?.()`, `!` e `??` só se escrevem sobre um `?T`.
+  ```bp
+  val s: string = "x";
+  s?.length()   // error: `s` is `string`, never null — write `s.length()`
+  s ?? "y"      // error: the left side of `??` is never null
+  ```
+- [ ] **(2b)** Aceito calado, como no TypeScript.
+
+**Recomendação: (2a).** Um operador sem efeito esconde que o autor esperava `null` onde não há.
+
+**3 · O tipo de `?.` quando o membro já devolve um opcional**
+- [ ] **(3a)** Achata: `nome?.trim()` com `trim(): ?string` é `?string`.
+- [ ] **(3b)** Aninha: `??string`.
+
+**Recomendação: (3a).** `?T` é "um valor ou ausente"; não existe ausente de ausente (o `?T` não é um tipo
+com nome, nem `Option<Option<T>>`).
+
+**4 · `??` misturado com `&&` / `||`**
+- [ ] **(4a)** Sem parênteses é erro, como no TypeScript: `a ?? b || c` pede `(a ?? b) || c` ou `a ?? (b || c)`.
+- [ ] **(4b)** Uma precedência fixa, sem parênteses obrigatórios.
+
+**Recomendação: (4a).** A leitura não depende de lembrar uma tabela de precedência.
+
+**5 · O `!` sufixo**
+- [ ] **(5a)** Conferido em runtime: um `null` aborta, igual em todo target, com o local e a expressão —
+  `value is null — nome! at main.bp:3:13`. É um erro de programa, como o `@panic` (não um `@Result`).
+- [ ] **(5b)** Só para o compilador, como no TypeScript: em runtime segue com `null` e falha depois, longe dali.
+- [ ] **(5c)** Não existe `!`: quem tem certeza escreve `case` ou `??` com o próprio `@panic`.
+
+O `!` sufixo (`x!`) não conflita com o "não" lógico, que é prefixo (`!x`).
+
+**Recomendação: (5a).** A (5b) é exatamente a leitura frouxa que a 67 recusa; a (5a) é o `!!` do Kotlin.
+
+**6 · O namespace `result`**
+- [ ] **(6a)** Sai: `r.map(f)`, `r.flatMap(f)`, `r.unwrapOr(x)`, `r.isOk()`, `r.isError()` no próprio `@Result`
+  são a única grafia; `result.map(r, f)` vira nome não ligado.
+- [ ] **(6b)** Fica, declarado como tipo namespace (329), com as mesmas cinco funções.
+
+**Recomendação: (6a).** Uma grafia por operação.
+
+**7 · `Type.Field<T>`**
+- [ ] **(7a)** Um tipo declarado no corpo de um tipo é o tipo associado dele (o mesmo nó do `decl.addType`, 216);
+  a grafia `Type.Field<T>` da 308 fica.
   ```bp
   pub type Type {
       pub type Field<T>(name: string, typeName: string, annotations: DeclAnnotation[]) { … }
   }
   ```
-- [ ] **(2b)** `Field<T>` no topo do `types.bp`, `import {types.Field} from "std";` — emenda a 308.
+- [ ] **(7b)** `Field<T>` no topo do `types.bp`, `import {types.Field} from "std";` — emenda a 308.
 
-**Recomendação: (1a) ou (1b) · (r1) · (2a).** **Bloqueia:** o resto do passo 2 da 134; `01-checker` passos 24 e 28.
+**Recomendação: (7a).** Mantém a 308 e usa o conceito de tipo associado que a 216 já tem.
+
+**Recomendação geral: 1a · 2a · 3a · 4a · 5a · 6a · 7a.** **Bloqueia:** o resto do passo 2 da 134 (o que o
+`builtins.d.bp` declara de `?T`, `@Result` e `Type`); `01-checker` passos 24 (`Type.Field<T>`) e 28 (`Type.keys`, `pick`, `omit`).
 
 ### ck-rows-a · Um `comptime` de corpo que o build ainda não consegue dobrar *(proposta)* ⏳
 
