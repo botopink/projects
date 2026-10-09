@@ -128,9 +128,13 @@ function strLength(s) {
       string index) through prelude helpers: a string without a surrogate pair uses the native index,
       one with a pair is walked by codepoint; an index past a pair is a codepoint index on input and output
 - [x] a JS host template receives and answers codepoint indices
-- [ ] cost measured: the helpers on strings without a pair within 10% of the native calls (recorded in
-      `js/AGENTS.md`) — measured +24 % on a loop of four string reads (+100 % before the length-keyed
-      cache); the 10 % is not met
+- [x] cost measured: the helpers on strings without a pair within 10% of the native calls (recorded in
+      `js/AGENTS.md` § String indices, with the benchmark's source) — a read tests its BINDING, not
+      itself (`js/str_slots.zig`: a parameter or `val` bound once gets a lazy `<name>$sp` slot; a
+      surrogate-free literal or a `val` bound to one reads natively), and the length-keyed cache is
+      two-way: 2·10^7 calls of four reads, best of three, native 590 ms → helpers 895 ms (+52 %) before,
+      631 ms (+7 %) after; four non-colliding lengths 583 → 662 ms (+14 %) before, 625 ms (+7 %) after
+      (loaded machine: further rounds +7–15 %)
 - [x] `run/string_index_of_codepoints` (with `"👍"` and `"e\u{301}"`) one `.out` for the four targets
 
 ### Step 11 — the same wasm library from commonJS (decision 333 (B); after `05-wasm` step 9)
