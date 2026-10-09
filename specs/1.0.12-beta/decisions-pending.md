@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**58 questions and 10 contradictions are open, and 90 implementation choices await confirmation.**
+**58 questions and 9 contradictions are open, and 90 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290 · `ctr-y` → 291 · `ctr-z` → 292 · `nat-c1`, `nat-c3`, `bpp-g` → 293 · `nat-c2` → 294 · `nat-c4` → 295 · (cardume) → 296, 297 · `nat-c5` → 298 · `nat-c6`, `03r-b` (reversed) → 299 · `nat-c7` → 300 (all of `nat-c` answered) · `nat-d1` → 303 · `nat-d2` → 304 · `nat-g` → 305 · `nat-d3` → 306 · `nat-d4` → 306 (moot: the `union2…5` / `tuple2…5` families go with the public value form; unions and tuples are types) · `nat-d5` → 307 · `pkg-b` → 309 · `imp-a` → 310 · `lg2-r` → 311, 312, 313 · `lg2-t` → 314 · `lg2-m` → 315 · `lg2-c` → 316 · `23-c` confirmed → 317 · `nat-e`, `130-c`, `erk-c` → 318 · `ctr-j` → 319 (option (b)).
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290 · `ctr-y` → 291 · `ctr-z` → 292 · `nat-c1`, `nat-c3`, `bpp-g` → 293 · `nat-c2` → 294 · `nat-c4` → 295 · (cardume) → 296, 297 · `nat-c5` → 298 · `nat-c6`, `03r-b` (reversed) → 299 · `nat-c7` → 300 (all of `nat-c` answered) · `nat-d1` → 303 · `nat-d2` → 304 · `nat-g` → 305 · `nat-d3` → 306 · `nat-d4` → 306 (moot: the `union2…5` / `tuple2…5` families go with the public value form; unions and tuples are types) · `nat-d5` → 307 · `pkg-b` → 309 · `imp-a` → 310 · `lg2-r` → 311, 312, 313 · `lg2-t` → 314 · `lg2-m` → 315 · `lg2-c` → 316 · `23-c` confirmed → 317 · `nat-e`, `130-c`, `erk-c` → 318 · `ctr-j` → 319 (option (b)) · `ctr-i` → 320 (option (a); commonJS keeps UTF-16).
 Closed by the 9 Oct revalidation (every item re-checked against 144–308, the fronts and the code): `08-h` → 285, 224 · `08-j` → 295 · `lg2-g` → 281 · `ctr-q` → 281, 256 · `ctr-m` (duplicate of `lg2-s`) · `ctr-n` (170 no longer carries the `from "m1"` example) · `ctr-r` (wrong premise: 118 lands before 26 step 0) · `111-c` → 228 · `03r-b`, `03r-d` → 299 · `95-e` (the collision left the code) · `03r-o` → 290 · `05emilia-h` → 206 · `68-c` → 280, 281. The rest were rewritten where their text or facts had gone stale.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
@@ -420,11 +420,6 @@ left as recorded; the maintainer picks the resolution.
 - **Rules.** 149: "`==` is reference equality on an array and is refused on a record … a record that wants equality implements `behavior Eq`". 210: "structural equality on every target"; 211: "a type cannot define its own equality". 210 does not cite 149.
 - **Recommendation.** Record 149 as superseded by 210, its `behavior Eq` clause by 211; code on `feat` follows 210 / 214 (`run/record_structural_equality`).
 - **Blocks.** Nothing; the record.
-
-#### ctr-i · Codepoints (169, 240) against `string:length/1` (197)
-- **Rules.** 169: erlang's `indexOf` answers "the codepoint index, as `at` / `slice` / `length` already do"; 240: wasm counts "codepoints, as erlang and beam", walking UTF-8 sequences. 197 (1): erlang answers "`string:length/1` of the text before the match". OTP's `string:length/1` and `string:slice/3` (used by `primitives.bp`'s `length`, `at`, `slice`, `indexOf`) count grapheme clusters: `"é"` has length 1 on erlang, 2 under a UTF-8 walk.
-- **Recommendation.** One unit: (a) codepoints — erlang's templates count codepoints, a cell with a combining mark pins four targets; or (b) grapheme clusters — 169 / 240 restated, wasm needs a segmenter. (a) is what 169 and 240 say and what 260 hashes.
-- **Blocks.** 02-erlang step 6's cell; 05-wasm's string lowering.
 
 #### ctr-k · Decision 187 against decision 195
 - **Rules.** 187: "the core absorbs `rakun-actuator-api` and `rakun-logging` … the core calls its own logger and no failure-report plugin exists". 195 (later): "rakun-logging keeps its erlang cells and installs itself as the sink".

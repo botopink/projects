@@ -1,7 +1,7 @@
 # Front 02 — erlang: the erlang target answers what decision 8 says, on every shape
 
 **Priority:** high · **State:** partial: steps 1–3, 5 (box 1), 6, 8, 9, 11–13 on feat; steps 4, 7,
-10, 14 open
+10, 14, 15 open
 **Depends on:** `05-wasm` (step 7's wasm column) · `01-checker`'s `@block` tail-form refusal (step
 10)
 **Owns:** `modules/compiler-core/src/codegen/erlang.zig` · `src/codegen/crossModule.zig` ·
@@ -95,6 +95,12 @@ value is not wrapped in `{ok, V}` — while a module-level fn is lowered correct
       (from `05-wasm` step 5; re-measure)
 - [ ] rakun's `codepointIndex` host cell (`autoconfig_registry.bp`) deletable since step 6 — rakun
       track's row, noted here
+
+### Step 15 — a combining mark counts as two codepoints (decision 320; with `02/97` step 14)
+
+- [ ] `run/string_index_of_codepoints` gains `"e\u{301}"`: `length` 2, `at(1)` `"\u{301}"`, `indexOf("\u{301}")`
+      1 — one `.out` for erlang, beam and wasm; commonJS the same inside the BMP (the cell stays in the BMP)
+- [ ] a commonJS-only cell pins `"👍".length` = 2 and the other three a cell with 1 (320's stated difference)
 
 **Gate:** standard (fronts.md § Gate) + every re-recorded RUN LOG verified under `erl`, nothing
 bulk-accepted · `zig build test-libs` erlang cells at baseline, rakun's members re-run

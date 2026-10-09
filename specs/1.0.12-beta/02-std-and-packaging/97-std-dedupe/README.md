@@ -2,7 +2,7 @@
 
 **Priority:** high — every library's "consume std X" step is written against this surface ·
 **State:** partial: steps 0–5, 8–10, 12 (but `unicode`) on feat; residue of steps 1, 2, 4, 12, step 6
-(conditional), 11, 13 open; step 7 → 20-snap
+(conditional), 11, 13, 14 open; step 7 → 20-snap
 **Depends on:** `std-d` (step 6) · `24-g` confirmed (step 5) · decision 230 (step 11) · decision
 262 (step 12)
 **Owns:** `repository/botopink-lang/libs/std/src/**`, `libs/std/AGENTS.md`, `libs/std/test/**` ·
@@ -116,6 +116,17 @@ Std half of 05-wasm step 5. `unicode.bp`'s `fromCodepoint` is still a Node / Erl
       (`9223372036854775807l` round-trips on commonJS)
 - [ ] `string.parseInt()` answers `Error` only past the `i64` range (176 as amended by 319); its cells on
       the four targets
+
+### Step 14 — erlang counts codepoints, not grapheme clusters (decision 320)
+
+`primitives.bp`'s Erlang templates for `length`, `at`, `slice`, `indexOf`, `lastIndexOf` call
+`string:length/1` / `string:slice/3`, which count grapheme clusters: `"e\u{301}".length` is 1 on erlang
+and beam, 2 on wasm.
+
+- [ ] the five templates count codepoints (a UTF-8 walk or `unicode:characters_to_list/1`), on erlang
+      and beam; `02-erlang` step 15's cell green
+- [ ] `docs.md` § Strings states the unit per target — codepoints on erlang, beam, wasm; UTF-16 units on
+      commonJS, differing outside the BMP (`"👍".length`) — handed to `07-residuals` (the prose)
 
 ## Consumers — "consume std X" rows handed to the library fronts
 
