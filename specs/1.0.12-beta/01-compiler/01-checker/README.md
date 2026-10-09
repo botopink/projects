@@ -296,6 +296,12 @@ step 2) and the resolver keys on that declaration.
       (two packages, one `App` aliased); step-4-sized import-binding row if it reproduces, else
       closed (decision 110's `as` on a type leaf landed — `modules/import_alias_on_type`)
 
+- [ ] two diagnostics teach a retired spelling (from `07` step 6): `std-unsupported-on-target`
+      reads "std/beam has no `@external` for target 'node'" (`infer.zig` `refuseStdUnsupported`; the
+      annotation is `#[@External.<Target>(…)]`, the target `commonJS`), and the `PersistentTerm`
+      write's hint for a `Dict` names `#[@BeamMemory.Ets(keyed = true)]` where the argument is
+      written `keyed: true`
+
 **Gate:** standard (fronts.md § Gate) + every re-recorded `snapshots/comptime/**` file read for
 expected/found orientation; a refusal moving a backend fixture is reported to that backend's front,
 never deleted here · `botopink check` of every package of the seven repositories identical to the

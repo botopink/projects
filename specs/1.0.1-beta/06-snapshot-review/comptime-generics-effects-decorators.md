@@ -211,3 +211,5 @@ decorator_regression: string_concat_in_body (CLI reproduces `invalid name: Forbi
 std_target_gating: import_of_std_process_from_wasm_target_reds, import_of_std_process_from_node_target_is_accepted, null_target_keeps_the_check_off_tooling_parity (`libs/std/src/process.bp` declares only `@External.Node`/`@External.Erlang`/`@External.Beam`, so wasm must red and node must pass).
 
 eval_pipeline: simple_comptime_val_arithmetic (COMPTIME VALUES now `ct_0: val x = comptime 10 + 5 → 15`, `ct_1: val y = comptime 42 → 42`; transform `val x = 15;` / `val y = 42;`; JSON `i32` — correct).
+
+**Status (1.0.12-beta, front 07 step 3 — the `uncertain` rows, re-derived 2026-10-08 on botopink-lang `feat`):** `generic_enum_result_t_with_ok_and_err` answered: a bare generic name is not a type — `fn isOk(r: Res)` over `type <T> { … }` is refused, `Res needs 1 type argument` at the annotation (`botopink check`), and the test writes `Result<T>`. The arity handling is consistent with `?T`. Verdict `ok`.

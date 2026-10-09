@@ -167,3 +167,5 @@ variants.zig:
 - `three_level_chain_a_imports_b_b_imports_c` (VA:78)
 - `unused_dependency_does_not_pollute_main_bindings` (VA:94)
 - `import_record_constructor_from_dependency` (VA:105). Note: `models.bp` declares a non-`pub` `record Point` and the import still works. This is by design per `modules/compiler-core/src/comptime.zig:843-844`: "Non-pub types still export their constructor (above) for value use".
+
+**Status (1.0.12-beta, front 07 step 3 — the `uncertain` rows, re-derived 2026-10-08 on botopink-lang `feat`):** `path_access_with_bad_tail_raises_focused_error` answered as the row recommended: the error's caret now points at the offending segment `Bogus` (`main.bp:7:19`), not the last one. Verdict `ok`.

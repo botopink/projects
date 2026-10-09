@@ -84,6 +84,14 @@ subdirectory (98 step 4 owns the manifest model); nothing before.
 language-server tests green with new snapshots · `zig build test-libs` at baseline (rakun's members
 exercise every sidecar path)
 
+
+### Rows other fronts found
+
+- [ ] `botopink check` / `build` print a type error's message and box but not its hint: the
+      `PersistentTerm` write (`infer.zig`'s hint names `#[@BeamMemory.Ets]`) and
+      `std-unsupported-on-target` carry one and the terminal shows none; a parse error's
+      `= hint:` line prints (measured by `07` step 6; `docs.md` § `@BeamMemory` cites the hint)
+
 ## Notes
 
 - `project_graph.zig` shared with 23 (import-tree cells), `src/tests/**` with 07: named carve-outs,

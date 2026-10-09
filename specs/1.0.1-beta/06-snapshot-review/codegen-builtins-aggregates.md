@@ -206,3 +206,5 @@ Assessment (unchanged after the re-check):
 - Parseability of the 4 empty-snapshot sources was probed with `zig-out/bin/botopink check` (binary
   built 2026-09-15 19:48, after every parser commit in this tree) inside a throwaway project in the
   scratch dir. The parser-source citations remain the primary evidence.
+
+**Status (1.0.12-beta, front 07 step 3 — the `uncertain` rows, re-derived 2026-10-08 on botopink-lang `feat`):** both rows answered, verdict `ok`. `assert_with_message` — decision 4: a failing `assert` aborts on all four backends with the message and the location (commonJS `__bp_assert_fatal(false, "error message", "main.bp:2")`, erlang/beam `{bp_assert, <<"error message">>, <<"main.bp:2">>}`); commonJS no longer lowers to `console.assert`. `assert_pattern_with_enum_variant` — commonJS tests the result shape (`"ok" in _match`), not `instanceof Ok`; RUN LOG `42` on all four backends.
