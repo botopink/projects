@@ -97,7 +97,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 26 s4 — `Env.warnings` reach `build` and `test` · a `codegen.zig` carve-out (`ModuleOutput`)
 - [ ] 26 s6 — lg2-v's resolver half · lg2-v
 - [ ] 26 s7 — `build.zig`'s `test-docs` comment (handed by 114) · none
-- [ ] 26 s8 — 206's residuals: the LSP's import check, a package importing itself · none
+- [ ] 26 s8 — 206's residuals: the LSP's import check, a package importing itself refused (309) · none
 - [ ] 130 s5 — the remaining decorator sites (34 of 119 done, plus `#[schema]`'s 5) · rakun's DI on 01 s20 · rakun sites under the 130↔128 rule (03r-ao, only the record) · rakun-client's on the behavior-member gap (ctr-q closed: the table built at comptime, 281, 256)
 - [ ] 130 s6 — module-level `@emit` removed · 130 s5 · `#[schema]`'s free functions → members of the type (306; spelling: ctr-u)
 - [ ] 134 s2 — the type functions, the `result` namespace, the `@Result` / `?T` methods, `@is` · 134-d

@@ -4,7 +4,7 @@ The rules the fronts implement against. Numbers continue from
 [1.0.10-beta's record](../1.0.10-beta/decisions-taken.md) (which stopped at 143; 91–94, 97 and
 99–101 are used) and are never renumbered or reused. A question is raised in
 [`decisions-pending.md`](./decisions-pending.md) under a lettered id and moves here with the next
-free number. **The next free number is 309.**
+free number. **The next free number is 310.**
 
 Each row: number · the id it answered · the rule in force · the fronts it binds. A row amended by a
 later one states only what is in force and cites the amendment; a row fully replaced is one line.
@@ -29,7 +29,7 @@ behaviour; shared logic in std) — the maintainer may reverse it.
   orchestrator (how it happened: question `95-f`).
 
 **Index.** Gate & CI: 153–162, 219, 225–233, 246, 249, 258, 265 · Language & checker: 146–152,
-164, 167, 168, 170, 205–211, 214, 215, 239, 242, 244, 245, 247, 255, 264 · Comptime, reflection &
+164, 167, 168, 170, 205–211, 214, 215, 239, 242, 244, 245, 247, 255, 264, 309 · Comptime, reflection &
 decorator outputs: 216, 234–237, 248, 251–254, 256, 266–269, 277 · Formatter: 165, 166, 243 · Backends: 169,
 179, 238, 240, 241, 259–263 · std: 174–178, 197, 217, 250 · Bundled libraries: 144, 145, 163,
 171–173, 180–183, 194–196, 257 · rakun: 184, 185, 187, 201, 274 · Track ordering: 188, 189 ·
@@ -97,6 +97,7 @@ jhonstart & templates: 186, 190–193, 200, 202, 204, 220, 223 · onze: 218 · b
 | 255 | — | (1) A type name with explicit type arguments followed by `.member` or `(` is a type application — `Dict<string, unknown>.empty()` (extends 1.0.10's 8 §1.3 to a static member); elsewhere `<` is a comparison: a type-argument list is tried only after a type name and only when its `>` is followed by `.` or `(`, and a list that does not parse as types is a comparison. (2) `comptime <expr>` is `comptime { break <expr>; }` | 01-checker (parser) |
 | 264 | gw-a | Integer overflow is a program error on every target: `+`, `-`, `*`, unary `-` and the compound assignments of every integer type check the result against the declared type's range and abort (wasm's `int_chk`); commonJS and erlang/beam add a range test per operation; on commonJS an `i64`'s range is ±(2^53−1), so a result outside it aborts there too; no target wraps or answers a wider number (`ctr-j`) | 02-erlang · 03-beam · 04-js |
 | 297 | (cardume) | **A `comptime` parameter may accept a value or a type:** `comptime source: Atom<T> \| type T` takes either an `Atom<T>` value — `T` inferred from it, or written (`atomState<?User>(currentUser)`, checked) — or a type — `atomState(User)`, `T` bound to the type itself —; the body tells them apart at comptime (`source is type`). No overloading is added: one function, one name. cardume's hooks take this form (`atomState`, `atomValue`, `atomSetter`, `atomReset`, both bridges): a type names **its implicit atom** — one per type per store, valued `?T` (`null` until set), or `T` when the type declares a default (`#[atom(default: Theme.Light)] pub type Theme { … }`); a declared atom stays the way to hold several values of one type (281: the reference is the type or the declaration, never a string) | `01-compiler/01-checker` step 26 · `09-cardume/136` |
+| 309 | pkg-b | **Inside a package, an import of its own module is always by path, never `from`:** `from "<the importing package's own name>"` is `error[module-import-with-from]` at the source string, as 206's `from "<a module of this package>"`, with the brace form as its fix — inside std, `import {path.relative} from "std";` is refused and `import {path.relative};` is the one form. No exception for std, a bundled package or a dependency's own sources; a package's tests are its modules too. The brace form reaches the package's internal declarations as well as the exported ones. The three std sources that import `from "std"` (`std/src/querystring.bp`, `std/src/testing/snapshots.bp`, `std/src/io/fs.bp`) migrate in the commit that adds the refusal. Completes 206 | 01-compiler/26 step 8 · `libs/std/src` (named carve-out) · 07-residuals step 7 (`docs.md` § Imports) |
 
 ## Comptime, reflection & decorator outputs
 

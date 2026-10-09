@@ -70,15 +70,15 @@ subdirectory (98 step 4 owns the manifest model); nothing before.
 
 - LSP runs no import-source check (F4 or `module-import-with-from`): editor shows `from "<own
   module>"` resolving until `botopink check` refuses it.
-- `from "<own package name>"` inside the package still reads its own modules. Measured 9 Oct: no
-  test imports its own package by name; 3 std sources do (`std/src/querystring.bp:28`,
-  `std/src/testing/snapshots.bp:49-51`, `std/src/io/fs.bp:20`) — rule (package is its own name) or
-  leftover; write the answer (206: `from "<module of this package>"` is an error, import by path).
+- `from "<own package name>"` inside the package still reads its own modules; decision 309 refuses it
+  (`module-import-with-from`, as 206). Measured 9 Oct: no test imports its own package by name; 3 std
+  sources do (`std/src/querystring.bp:28`, `std/src/testing/snapshots.bp:49-51`, `std/src/io/fs.bp:20`).
 
 - [ ] the LSP reports `module-import-with-from` and `unresolved import source` as `check` does — one
       `lsp/` snapshot each
-- [ ] a package importing itself by name: the rule written in `docs.md` § Imports (07 places it) and
-      pinned by a `resolver.zig` unit test, or the imports migrated and refused
+- [ ] `from "<own package name>"` is `error[module-import-with-from]` (309), pinned by a `resolver.zig`
+      unit test; the three std sources migrated to the brace form in the same commit (a named
+      `libs/std/src` carve-out)
 
 **Gate:** standard (fronts.md § Gate) + `zig build test-cli`, `test-bpmp`, `test-vscode` green;
 language-server tests green with new snapshots · `zig build test-libs` at baseline (rakun's members
