@@ -178,14 +178,14 @@ fn padAll(n: i32) -> @Component<StyledBase, StyledProperty> {    // StyledProper
 O que isso dá:
 
 - **Hooks dentro do estilo.** O corpo pode escrever `use`, com os hooks ancorados em `StyledBase`
-  (128). A emilia declara os hooks do seu tema nessa base, e um componente lê o breakpoint do tema
-  em vez de copiar o valor. Isso responde ao p7.
+  (128): por exemplo, um valor que só existe no render, como a preferência do usuário. O tema não
+  precisa de hook: ele é do `styled` (p7), e o literal o lê com `@variant md` e `--theme(…)`.
   ```bp
-  fn container() -> @Component<StyledBase, Styled> {
-      val md = use breakpoint("md");          // emilia, sobre StyledBase; um breakpoint apagado é erro (300)
+  fn density() -> @Component<StyledBase, Styled> {
+      val compact = use prefersCompact();     // um hook de run-time: o componente sai por render (p9)
       return styled """
-        width: 100%;
-        @media (width >= ${md}) { max-width: ${md}; }
+        padding: --spacing(${if (compact) 2 else 4});
+        @variant md { max-width: --theme(--breakpoint-md); }
       """;
   }
   ```
