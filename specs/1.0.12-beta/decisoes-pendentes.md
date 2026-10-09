@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 54 perguntas, 6 contradições e 85 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **354**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 55 perguntas, 6 contradições e 85 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **354**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -761,6 +761,40 @@ importa `Styled`; `comptime padAll(2).rules` derruba o compilador (`reached unre
 **Recomendação: (a)** agora — decidível só pelo literal, sem mudar o compilador; (b) quando a
 `14-comptime-on-beam` fechar as duas linhas. **Bloqueia:** 119 passo 1 caixa 4.
 
+
+### 119-e · O que um decorador num `val` vê, e como `#[theme] pub val` entra no catálogo *(proposta)*
+
+**Trava:** `08-bpp/119` passo 1, caixa 5 (o tema no `styled`) · `01-compiler/130` passo 10, caixa 2
+(`value` no build) · `06-emilia/34` passo 3 · 119 passo 4
+
+**Contexto.** A 300 declara o tema `#[theme] pub val appTheme = comptime extendTheme(…);` e o acha com
+`@TypeInfo.all(with: theme)`; a 353 deixa o corpo do template do `styled` fazer essa consulta pela
+aplicação. Mas um decorador num `val` nunca roda nem entra no catálogo: `invokeDecorators` só percorre
+`fn`, `type` e `behavior`, `DeclKind` não tem membro para valor, e `#[mark] pub val one = 1;` com um
+`mark` que sempre chama `decl.fail` compila e imprime `1` (medido no compilador da 353). O `value` no
+build precisa do valor do `val` levado ao módulo de comptime do template: `comptime extendTheme(…)` já
+avalia, e sai como `'ThemeEntry'/2 undefined` (a linha do construtor sem import).
+
+**Hoje:** o decorador num `val` é ignorado em silêncio.
+
+- [ ] **(a)** O decorador num `val` roda sobre um `@Decl` de tipo `DeclKind.Val` (`name`, `returnType`
+  como escrito; `setMeta` vale, `addMember`/`addType` recusados), e o `val` entra no catálogo: no ponto de
+  entrada `value` é o `val`; no corpo de template, o valor de build do `val`, levado como literal quando o
+  inicializador é `comptime`, e recusado na leitura senão. A grafia da 300 fica.
+  ```bp
+  #[theme] pub val appTheme = comptime extendTheme(baseTheme(), [entry(.Breakpoint, "md", ThemeValue.Rem(52.0))]);
+  val th = if (themes.length == 0) baseTheme() else themes.at(0)?.value as Theme;   // 52rem no build
+  ```
+- [ ] **(b)** Decorador num `val` recusado na anotação; o tema é uma função, e o `value` de uma entrada de
+  função é chamável no build (o módulo do template leva a função do programa e seu fecho) — emenda a 300.
+  ```bp
+  #[theme] pub fn appTheme() -> Theme { return extendTheme(baseTheme(), [entry(.Breakpoint, "md", ThemeValue.Rem(52.0))]); }
+  val th = if (f is fn() -> Theme) f() else baseTheme();
+  ```
+
+**Recomendação: (a)** — a grafia da 300 fica, um valor é dado que o módulo do template recebe como
+literal (nenhum fecho de função do programa entra nele), e o decorador hoje descartado passa a rodar. Até
+a resposta, recusar o decorador num `val` na anotação (a leitura mais restritiva do descarte de hoje).
 ### 140-a · O que é uma `@Task` pendente no wasm (frente 140, passo 4)
 
 **Trava:** `01-compiler/140` passos 4 e 5 (`run/wasm_host_async`) e a metade JSPI do 6; `02/97` passo 17
