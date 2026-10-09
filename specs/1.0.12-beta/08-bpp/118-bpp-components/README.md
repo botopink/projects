@@ -96,8 +96,8 @@ a narrower `children` type refuses what it does not name; a second `children` pa
 | `<Card title="Hi"><p>body</p></Card>` | the same, with `children: [p(["body"])]` among the fields |
 
 **Slots** (decision 360, Astro's in annotation form — never props). `<Slot />` renders the default
-slot; `<Slot name={.footer}>fallback</Slot>` declares and renders the `footer` slot; a child
-`#[slot(.footer)]` fills it; `use hasSlot(.footer)` tells whether it was filled:
+slot; `<Slot name="footer">fallback</Slot>` declares and renders the `footer` slot; a child
+`#[slot("footer")]` fills it; `use hasSlot("footer")` tells whether it was filled:
 
 ```bp
 pub default fn Card(props: type(title: string)) -> View {
@@ -105,14 +105,14 @@ pub default fn Card(props: type(title: string)) -> View {
       <article>
         <h2>{props.title}</h2>
         <Slot />
-        <footer><Slot name={.footer}><small>no footer</small></Slot></footer>
+        <footer><Slot name="footer"><small>no footer</small></Slot></footer>
       </article>
     """;
 }
 
 <Card title="Hi">
   <p>body</p>                          <!-- default slot -->
-  <p #[slot(.footer)]>© 2026</p>       <!-- footer slot; .foter would be a compile error -->
+  <p #[slot("footer")]>© 2026</p>     <!-- footer slot; "foter" would be a compile error -->
 </Card>
 ```
 
@@ -213,9 +213,9 @@ core's `node.bp`, `prelude.bp` and `element.bp`'s `View`; green on commonJS and 
   name are one to it (4).
 - Slots on a component — decision 360 (step 4). Spread on a component — decision
   359 (`<Card {...p} featured />` is `CardProps(...p, featured: true)`), step 1, on `01-checker` step 34.
-- Step 4 — slots as 360: `<Slot />`, `<Slot name={.x}>fallback</Slot>`, a child `#[slot(.x)]`,
-  `<Fragment #[slot(.x)]>`, the transfer `<Slot name={.x} #[slot(.x)] />` through two layouts,
-  `use hasSlot(.x)`; a slot name the component does not write and content for an absent default slot
+- Step 4 — slots as 360: `<Slot />`, `<Slot name="x">fallback</Slot>`, a child `#[slot("x")]`,
+  `<Fragment #[slot("x")]>`, the transfer `<Slot name="x" #[slot("x")] />` through two layouts,
+  `use hasSlot("x")`, the name a string literal checked at build; a slot name the component does not write and content for an absent default slot
   refused at the child; lowercase `<slot>` the native element; the hidden slot argument. The props
   as one record (192, `props: type(…)`, 207) still wait on **Template-built code cannot build an
   inline props type** (`01-checker`); slots no longer do.

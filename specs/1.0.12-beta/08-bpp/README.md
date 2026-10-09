@@ -204,7 +204,7 @@ Closed: `08-h` → 285, 224 (`onze.json`, `onze <command>`); `08-j` → 295, 296
 (CSS in three layers — the repositories `css` and `styled`, emilia over `styled` —, `jhonstart-styled`,
 the `.bpp` style section; `jhonstart-emilia` deleted).
 
-- Answered: `props-f` → 359 (spread on a component and in a record's construction), `props-e` → 360 (slots as Astro's, `#[slot(.x)]`).
+- Answered: `props-f` → 359 (spread on a component and in a record's construction), `props-e` → 360 (slots as Astro's, `#[slot("x")]`).
 - `nat-f2` — which `onze.json` keys (`trailingSlash`, `redirects`, `markdown`, `allowedRedirects`) and how they are read. Blocks 124's key boxes.
 
 ### 08-f · Where Markdown and YAML live

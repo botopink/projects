@@ -81,7 +81,7 @@ No `Hydrate` on the tag: server-rendered, never started (static markup, as in As
 fallback: ?View = null) -> Defer`, `clientOnly(comptime decl: @Decl, comptime fallback: ?View = null)`.
 It shows until the component arrives — the island's second request, or the browser's mount — so it
 is comptime (280): static markup or a component without request data; `fallback: <span>{user.name}</span>`
-is refused at the argument; a `slot="fallback"` child is refused (no `slot="…"`; slots are 360's `#[slot(.x)]`); on a hook
+is refused at the argument; a `slot="fallback"` child is refused (no `slot="…"`; slots are 360's `#[slot("x")]`); on a hook
 declaration `#[clientOnly]` takes no `fallback`.
 
 **`#[clientOnly]` is one function** (278): decision 186's marker on a hook declaration and, on a
