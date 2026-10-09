@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**61 questions and 8 contradictions are open, and 88 implementation choices await confirmation.**
+**62 questions and 8 contradictions are open, and 88 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -223,6 +223,22 @@ subject under 281. Every decorator parameter in these examples is `comptime` (28
 - **Options.** (a) `process.onSignal(name, fn)`, `process.forwardSignals(child)`, `io.stdin.readLine()` — three host cells on two targets. (b) No std change: `onze start` execs the node (71's `bin/onze` is PID 1); `onze create` without `--yes` refused naming the flags it needs.
 - **Recommendation.** (b).
 - **Blocks.** onze 50 steps 4 and 7; 97 step 6 (conditional).
+
+#### jsi64-a · How `Json` carries an exact `i64` (decision 319)
+- **Measured.** 319 says std's `Json` "writes and reads an `i64` as an exact JSON number"; `json.bp` has no integer: `Json.Num(value: f64)` is the one number, `decode` turns every numeral into its correctly rounded `f64` (`numeralValue`, decision 142), and `decodesTo("9007199254740993", Json.Num(value: 9007199254740992.0))` is an assertion of std's own tests. Writing needs nothing: `n.toString()` of an `i64` is its digits on every target once 319's lowering lands (`run/i64_full_range`), and `json.array` / `json.object` assemble encoded text. Reading has no shape to answer an exact `i64` in, and adding a variant changes every exhaustive `case` over `Json` (rakun, onze, the std tests).
+- **Options.**
+  (a) A variant: `Int(value: i64)` — `decode` answers `Int` for a numeral with no fraction or exponent inside the `i64` range, `Num` otherwise; every `case` over `Json` gains an arm.
+  ```botopink
+  case json.decode("9223372036854775807").unwrap() { Int(value: n) -> @print(n); _ -> {} }   // 9223372036854775807
+  ```
+  (b) `Num` keeps its numeral: `Num(value: f64, text: string)`, and a reader `Json.int(self) -> ?i64` reads the text exactly (`null` when it has a fraction, an exponent or is out of range); no new arm.
+  ```botopink
+  @print(json.decode("9223372036854775807").unwrap().int());   // 9223372036854775807
+  @print(json.decode("1.5").unwrap().int());                   // null
+  ```
+  (c) A separate reader over the text, `Json` unchanged: `json.decodeInt(s: string) -> @Result<i64, string>` for a document that is one integer.
+- **Recommendation.** (b): the value read is exact or absent, never rounded, and no consumer's `case` changes.
+- **Blocks.** `04-js` step 9's `Json` bullet and `02/97` step 13's (`9223372036854775807l` round-trips on commonJS).
 
 #### std-e · Test lifecycle hooks
 - **Measured.** Library tests reset state by hand at the top of the body: rakun-web's `resetChain()` 77×, `rkAppReset(…)` 20×, `resetTables(…)` 14×, among others; rakun-test's `resetSingletons` / `resetContext` only in its own `context_test.bp`; jhonstart-dom-test's `installDocument(…)` 11×.
