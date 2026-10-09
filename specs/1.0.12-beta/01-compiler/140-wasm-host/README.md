@@ -1,4 +1,4 @@
-# Front 140 — a wasm build binds to its runtime: wasmtime and WASI preview 2 first
+# Front 140 — a wasm build binds to its runtime: wasmtime (WASI preview 2) and the browser, together
 
 **Priority:** high — `io/http` and `async` stay refused on wasm until it lands (97-a, 97-b → 334) ·
 **State:** not started
@@ -19,9 +19,10 @@ Paths relative to `repository/botopink-lang/modules/compiler-core/src/` unless t
 ## Goal
 
 Decision 334: a wasm build names the runtime it runs on, and std binds a cell to what that runtime
-offers. The first and default profile is **`wasi`** — wasmtime and the runtimes that follow WASI
-preview 2 (`wasi:http`, `wasi:clocks`, `wasi:io/poll`); the **`browser`** profile (JS imports:
-`fetch`, timers, `Promise` through JSPI) is decided and comes after.
+offers. The default profile is **`wasi`** — wasmtime and the runtimes that follow WASI preview 2
+(`wasi:http`, `wasi:clocks`, `wasi:io/poll`); the **`browser`** profile (JS imports: `fetch`, timers,
+`Promise` through JSPI) lands **with it**: a cell bound on one host is bound on the other, and every
+wasm cell runs on both.
 
 ```jsonc
 // botopink.json of a wasm program
@@ -67,10 +68,12 @@ declare fn fetch(req: Request) -> @Task<@Result<Response, HttpError>>;
       (`delay`, `race`) under wasmtime; the commonJS and erlang answers equal
 - [ ] `05-wasm`'s `wat/AGENTS.md` § Where this backend refuses to answer loses `io/http` and `async`
 
-### Step 6 — the `browser` profile (after 1–5)
+### Step 6 — the `browser` profile (with 3–5, never after)
 
 - [ ] JS imports for the `browser` host (`fetch`, `setTimeout`) and `@Task` as a `Promise` through JSPI;
-      the emitted `.wasm` and a small loader `.js`; a cell run under node with JSPI enabled
+      the emitted `.wasm` and a small loader `.js`
+- [ ] parity: std's check refuses a cell bound on one host only; the wasm column of `zig build test-language`
+      and `test-libs` runs each cell under wasmtime **and** under node with JSPI, one `.out`
 
 **Gate:** standard (fronts.md § Gate) + `zig build test-language` with wasmtime's component support and
 `zig build test-libs` (std's wasm column).

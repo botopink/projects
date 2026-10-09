@@ -159,7 +159,7 @@ and beam, 2 on wasm.
       mapped to `wasi:http`'s types by the adapter; `run/std_io_http_on_every_target` against a local double
 - [ ] `async`'s twelve cells bind on `wasi` (`delay` on the monotonic clock, `race` / `raceOf` on pollables, the
       gate cells as pollables); `RetryPolicy` / `nextDelay` unchanged; `run/std_async_on_every_target`
-- [ ] the `browser` bindings of both modules land with 140 step 6
+- [ ] the `browser` bindings of both modules in the same commit (334: a cell bound on both hosts or neither)
 
 ## Consumers — "consume std X" rows handed to the library fronts
 
