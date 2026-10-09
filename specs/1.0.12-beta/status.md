@@ -1,9 +1,8 @@
 # Status — 1.0.12-beta
 
-**Date:** 2026-10-03 · **Base** (each repository's `feat`): botopink-lang `49455602` (decisions 263,
-264 landed: `a443f52d`, `48a096ea`, `d71b89f5`; 01-checker and 130-rakun-di merged) · rakun
-`a19340b` · jhonstart `eddd681` · emilia `42d51ec` · onze `b1a3110` · erika `0a463f5` ·
-vscode-extension `7993f96`
+**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `146c98ad` (batch 1 of
+tracks 00–03 and feat's reds, landed after a green `gate.sh --cold`) · rakun `44831c9` · jhonstart
+`324edac` · emilia `42d51ec` · onze `2c03bcb` · erika `0a463f5` · vscode-extension `f041865`
 
 **Fronts:** 70 — **1 done** (129) · **22 partial** · **47 not started**.
 
@@ -16,14 +15,11 @@ vscode-extension `7993f96`
 | `04-rakun` | — | 13 · 92 | the other 18 |
 | `05-jhonstart` · `06-emilia` · `07-onze` · `08-bpp` · `09-cardume` · `20-snap` | — | — | all (3 · 2 · 5 · 11 · 1 · 1) |
 
-**Gate:** a green `scripts/gate.sh --cold` was last recorded on botopink-lang `0041d38c`; no cold
-gate is recorded on the current tip — [`00-gate/114`](./00-gate/114-gate-docs-and-ci/README.md)
-
-**Merged without a gate run:** botopink-lang `49455602` (`front/01-checker`: decision 255, numeric
-literal suffixes; `front/130-rakun-di`: `x is fn(…) -> T` narrowing) and rakun `a19340b`
-(`front/130-rakun-di`: `T.make()` factories) were merged into `feat` without `gate.sh --cold` —
-114 step 7 runs it.
-step 7. botopink-lang's GitHub CI still owes a green run on `feat` (114 step 3).
+**Gate:** `scripts/gate.sh --cold` green on botopink-lang `146c98ad` (every stage; test-libs 123
+passed, 0 failed; language tests 2353 passed, 0 failed) — 9m18s wall against the 7m30s budget under
+load 19–22, so 114 step 7 (≤ 450 s on an idle machine) stays open. The merges of `49455602` / rakun
+`a19340b` that went in without a gate are repaired by this landing. botopink-lang's GitHub CI still
+owes a green run on `feat` (114 step 3).
 
 Each line: `front/step — what is left · blocker`. Lanes: **L1** finish what is on `feat` · **L2**
 the libraries' critical path · **L3** ready to open now · **L4** later, in the waves of
