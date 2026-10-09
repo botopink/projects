@@ -1,153 +1,108 @@
 // Front 125 — validation: Zod's feature set · examples/transform-and-codec-example.bp
 //
-// Demonstrates: step 8 — the schema as a value: transforms, pipes, custom
-// decoders and codecs, and the one marker (`#[with]`) that lets a derived type
-// use a schema built by hand.
+//   z.preprocess(fn, z.int())                         -> #[preprocess(fn)]
+//   z.int().refine(isEven)                            -> #[check(isEven)]
+//   z.array(z.email())                                -> #[each("email")]
+//   z.array(z.string().toLowerCase())                 -> #[each("lowercased")]
+//   schema.encode(value)                              -> T.encode(value)
 //
-//   z.string().transform(val => val.length)                    -> .map
-//   z.string().pipe(z.transform(...))                          -> schemas.pipe
-//   z.preprocess(fn, z.int())                                  -> schemas.preprocess
-//   z.custom<Decimal>(fn)                                      -> schemas.custom
-//   z.codec(z.iso.datetime(), z.date(), { decode, encode })    -> schemas.codec
-//   stringToDate.decode(…) / .encode(…)                        -> .parse / .encode
+// Decision 306's shape: what only a value could say is a field marker. Not here
+// yet — `#[map(f)]`, `#[tryMap(f)]` and `#[codec(decode: f, encode: g)]` read
+// the type of `f`'s parameter, which a decorator argument carries once
+// arguments are typed (`01-checker` step 24):
 //
-// Upstream: ZOD_DOCUMENTATION.md §§ 4.32 (Pipes), 4.33 (Transforms),
-//           4.41 (Custom), 9 (Codecs) — https://zod.dev/codecs
+//   #[map(codePoints)] titleLength: i32,                              // z.string().transform(…)
+//   #[codec(decode: codecs.isoToMillis, encode: codecs.millisToIso)] startsAt: i64,
+//
+// The recipes themselves are `codecs.bp`'s decode / encode pairs.
+//
+// Upstream: ZOD_DOCUMENTATION.md §§ 4.31 (Refinements), 4.33 (Transforms),
+//           4.36 (Preprocess), 9 (Codecs) — https://zod.dev/codecs
 //
 // Target: both.
 
-import {decorators: {schema, validated, with, codec, minLength}} from "validation";
-import {schemas, schemas: {Schema, Codec}, checks, codecs, constraints} from "validation";
-import {report: {ValidationReport, Violation}} from "validation";
-import {io.clock, json, json.Json, unicode} from "std";
+import {decorators.validated, decorators.minLength, decorators.each, decorators.preprocess, decorators.check} from "validation";
+import {derived} from "validation";
+import {report.ValidationReport, report.Violation} from "validation";
+import {constraints.vMinLength, constraints.vEmail, constraints.vEach, constraints.vCheck, table.constraintTableJson} from "validation";
+import {json.Json} from "std";
 
-// ── transforms ──────────────────────────────────────────────────────────────
-
-// `z.string().transform(val => val.length)` — a `Schema<string>` becomes a
-// `Schema<i32>`. The input type is the inner schema's; there is no separate
-// `z.input<>` / `z.output<>` to keep track of.
-// The transform is a named function: a method called on a lambda parameter
-// whose type arrives through a generic is not lowered on commonJS
-// (`language-gaps.md`), and length is counted in code points on both targets.
-fn codePoints(s: string) -> i32 {
-    return unicode.codepoints(s).length;
-}
-
-pub fn textLength() -> Schema<i32> {
-    return schemas.text().map(codePoints);
-}
-
-// A transform that can fail — Zod's `ctx.issues.push(...); return z.NEVER`.
-// The `Error` text is the message, coded `custom`.
-fn positiveOnly(n: i32) -> @Result<i32, string> {
-    if (n <= 0) { throw "must be positive"; }
-    return n;
-}
-
-pub fn positiveInt() -> Schema<i32> {
-    return schemas.tryMap(schemas.int(), positiveOnly);
-}
-
-// `z.preprocess((val) => typeof val === "string" ? parseInt(val) : val, z.int())`
+// `z.preprocess((val) => typeof val === "string" ? Number(val) : val, z.int())`
 fn digitsToNumber(input: Json) -> Json {
     return case input {
-        Str(value) -> schemas.numberOrSelf(value, input);
+        Str(value) -> numberOrSelf(value, input);
         _ -> input;
     };
 }
 
-pub fn lenientInt() -> Schema<i32> {
-    return schemas.preprocess(digitsToNumber, schemas.int());
+fn numberOrSelf(text: string, input: Json) -> Json {
+    return case text.parseFloat() {
+        Ok(n) -> Json.Num(n);
+        Error(_) -> input;
+    };
 }
 
-// A list of e-mails: a check on the ITEMS, which a field marker cannot say.
-pub fn emails() -> Schema<Array<string>> {
-    return schemas.text().check(checks.email()).array();
+fn isEven(n: i32) -> bool {
+    return n % 2 == 0;
 }
 
-// ── a codec ─────────────────────────────────────────────────────────────────
-
-// ISO text on the wire, epoch milliseconds in the program. There is no date
-// type; an instant is an `i64`.
-fn isoToMillis(text: string) -> @Result<i64, string> {
-    return try clock.parseIso8601(text);
-}
-
-pub fn instant() -> Codec<string, i64> {
-    return schemas.codec(
-        schemas.text().check(checks.isoDatetimeOffset()),
-        isoToMillis,
-        { millis -> clock.formatIso8601(millis) },
-    );
-}
-
-// ── a derived type that uses them ───────────────────────────────────────────
-
-#[schema]
 #[validated]
 pub type Invite(
     #[minLength(1)] title: string,
-    #[with("emails")] guests: Array<string>,
-    #[codec("instant")] startsAt: i64,
+    // LANGUAGE GAP: a decorator's name is not a value a package's decorator
+    // can take (`Decorator` is unknown there), so the marker is named as text.
+    #[each("email")] #[each("lowercased")] guests: Array<string>,
+    #[preprocess(digitsToNumber)] seats: i32,
+    #[check(isEven)] tables: i32,
 )
 
-// Emitted for `Invite`, beside the functions of step 2:
-//
-//   pub fn encodeInvite(v: Invite) -> @Result<Json, ValidationReport>
-
-test "validation: map changes the schema's type" {
-    val n = try textLength().parse(Json.Str(value: "hello"));
-    assert n == 5;
+fn codes(r: @Result<Invite, ValidationReport>) -> string {
+    return case r {
+        Ok(_) -> "";
+        Error(report) -> report.violations
+            .map({ v -> v.field + ":" + v.code })
+            .join(",");
+    };
 }
 
-test "validation: a failing transform is a violation, coded custom" {
-    assert positiveInt().accepts(Json.Num(value: 3.0));
-    val r = positiveInt().parse(Json.Num(value: 0.0));
-    val text = case r { Ok(_) -> ""; Error(report) -> report.violations.map({ v -> v.code + ":" + v.message }).join(","); };
-    assert text == "custom:must be positive";
+test "validation: preprocess runs before the field's decoder" {
+    val invite = try Invite.decode(
+        """{"title": "Launch", "guests": [], "seats": "42", "tables": 2}""",
+    );
+    assert invite.seats == 42;
 }
 
-test "validation: preprocess runs before the inner schema" {
-    val n = try lenientInt().parse(Json.Str(value: "42"));
-    assert n == 42;
+test "validation: a field's rule answers a custom violation" {
+    val r = Invite.decode(
+        """{"title": "Launch", "guests": [], "seats": 1, "tables": 3}""",
+    );
+    assert codes(r) == "tables:custom";
 }
 
-test "validation: pipe feeds one schema's value to the next" {
-    // `z.string().pipe(z.transform(val => val.length))`
-    val piped = schemas.pipe(schemas.text(), codePoints);
-    val n = try piped.parse(Json.Str(value: "hello"));
-    assert n == 5;
+test "validation: #[each] checks and transforms every item, at the item's path" {
+    val r = Invite.decode(
+        """{"title": "Launch", "guests": ["a@b.c", "nope"], "seats": 1, "tables": 2}""",
+    );
+    assert codes(r) == "guests[1]:email";
+    val ok = try Invite.decode(
+        """{"title": "Launch", "guests": ["A@B.C"], "seats": 1, "tables": 2}""",
+    );
+    assert ok.guests.join(",") == "a@b.c";
 }
 
-test "validation: a codec decodes on the way in and encodes on the way out" {
-    val millis = try instant().decode("2024-01-15T10:30:00.000Z");
-    assert instant().encode(millis) == "2024-01-15T10:30:00.000Z";
-}
-
-test "validation: a codec field round-trips through the derived type" {
-    val text = """{"title": "Launch", "guests": ["a@b.c"], "startsAt": "2024-01-15T10:30:00.000Z"}""";
-    val invite = try decodeInvite(text);
-    val back = try encodeInvite(invite);
-    val again = try parseInvite(back);
-    assert again.startsAt == invite.startsAt;
+test "validation: a record round-trips through encode" {
+    val invite = try Invite.decode(
+        """{"title": "Launch", "guests": ["a@b.c"], "seats": 3, "tables": 4}""",
+    );
+    val back = try Invite.encode(invite);
+    val again = try Invite.parse(back);
+    assert again.title == "Launch";
     assert again.guests.join(",") == "a@b.c";
-}
-
-test "validation: the item check of #[with] reports the item's own path" {
-    val r = decodeInvite("""{"title": "Launch", "guests": ["a@b.c", "nope"], "startsAt": "2024-01-15T10:30:00.000Z"}""");
-    val text = case r { Ok(_) -> ""; Error(report) -> report.violations.map({ v -> v.field + ":" + v.code }).join(","); };
-    assert text == "guests[1]:email";
+    assert again.seats == 3;
 }
 
 test "validation: encode refuses a value its own checks refuse" {
     // Refinements run in both directions — ZOD_DOCUMENTATION.md § 9.6.
-    val broken = Invite(title: "", guests: [], startsAt: clock.nowMillis());
-    assert encodeInvite(broken).isError();
-}
-
-test "validation: the recipe codecs are inverses of themselves" {
-    val n = try codecs.textToInt().decode("42");
-    assert codecs.textToInt().encode(n) == "42";
-    val flag = try codecs.textToBool().decode("yes");
-    assert codecs.textToBool().encode(flag) == "true";
+    val broken = Invite(title: "", guests: [], seats: 1, tables: 2);
+    assert Invite.encode(broken).isError();
 }

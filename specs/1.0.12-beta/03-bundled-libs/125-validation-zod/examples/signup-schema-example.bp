@@ -1,10 +1,10 @@
 // Front 125 — validation: Zod's feature set · examples/signup-schema-example.bp
 //
-// Demonstrates: step 2 — the type is the schema. `#[schema]` on a record emits
-// `parseSignup` (Zod's `.parse` / `.safeParse`), `decodeSignup` (JSON text in)
-// and `schemaOfSignup` (the schema as a value). There is no second declaration
-// to keep in step with the type, and nothing to infer: `z.infer<typeof Signup>`
-// is `Signup`.
+// Demonstrates: steps 2 and 12 — the type is the schema. `#[validated]` on a
+// record gives it `Signup.parse` (Zod's `.parse` / `.safeParse`) and
+// `Signup.decode` (JSON text in) beside its checks (decisions 306, 327). There
+// is no second declaration to keep in step with the type, no schema value, and
+// nothing to infer: `z.infer<typeof Signup>` is `Signup`.
 //
 //   const Signup = z.object({ username: z.string(), xp: z.number(), bio: z.string().optional() });
 //   type Signup = z.infer<typeof Signup>;
@@ -17,33 +17,38 @@
 // form state in the browser, and `test/parity_test.bp` holds the two to one
 // digest.
 
-import {decorators.schema} from "validation";
-import {schemas, schemas.Schema, report.ValidationReport, report.Violation} from "validation";
+import {decorators.validated} from "validation";
+import {derived} from "validation";
+import {report.ValidationReport, report.Violation} from "validation";
 import {json, json.Json} from "std";
+import {table.constraintTableJson} from "validation";
 
-#[schema]
+#[validated]
 pub type Signup(
     username: string,
     xp: i32,
     bio: ?string,
 )
 
-// What the decorator emits, written out. Nothing below this comment is typed by
-// the application:
+// What the decorator adds to `Signup`, written out. Nothing below this comment
+// is typed by the application:
 //
-//   pub fn schemaOfSignup() -> Schema<Signup>
-//   pub fn parseSignup(input: Json) -> @Result<Signup, ValidationReport>
-//   pub fn decodeSignup(text: string) -> @Result<Signup, ValidationReport>
+//   pub fn parse(input: Json) -> @Result<Signup, ValidationReport>
+//   pub fn parseAt(input: Json, at: string) -> @Result<Signup, ValidationReport>
+//   pub fn decode(text: string) -> @Result<Signup, ValidationReport>
+//   pub fn bind(pairs: Array<#(string, string)>) -> @Result<Signup, ValidationReport>
+//   pub fn encode(v: Signup) -> @Result<Json, ValidationReport>
+//   pub fn jsonSchema() -> string
 
 // `.parse` — in a function that can fail, `try` hands the report up.
 pub fn register(body: string) -> @Result<string, ValidationReport> {
-    val signup = try decodeSignup(body);
+    val signup = try Signup.decode(body);
     return "welcome, " + signup.username;
 }
 
 // `.safeParse` — the `@Result` itself, read on the spot.
 pub fn describe(body: string) -> string {
-    return case decodeSignup(body) {
+    return case Signup.decode(body) {
         Ok(signup) -> signup.username + " has " + signup.xp.toString() + " xp";
         Error(report) -> report.violations.length.toString() + " problem(s)";
     };
@@ -59,7 +64,7 @@ fn located(r: @Result<Signup, ValidationReport>) -> string {
 }
 
 test "validation: a well-formed document becomes a typed record" {
-    val signup = try decodeSignup("""{"username": "billie", "xp": 100}""");
+    val signup = try Signup.decode("""{"username": "billie", "xp": 100}""");
     assert signup.username == "billie";
     assert signup.xp == 100;
     assert signup.bio == null;
@@ -67,30 +72,30 @@ test "validation: a well-formed document becomes a typed record" {
 
 test "validation: every wrong field is reported, in declaration order" {
     // Zod's own example: `{ username: 42, xp: "100" }` — two `invalid_type` issues.
-    val r = decodeSignup("""{"username": 42, "xp": "100"}""");
+    val r = Signup.decode("""{"username": 42, "xp": "100"}""");
     assert located(r) == "username:invalidType,xp:invalidType";
 }
 
 test "validation: a missing key is required, a missing optional key is null" {
-    assert located(decodeSignup("""{"xp": 1}""")) == "username:required";
+    assert located(Signup.decode("""{"xp": 1}""")) == "username:required";
 }
 
 test "validation: an i32 field refuses a fraction and a value outside the range" {
-    assert located(decodeSignup("""{"username": "a", "xp": 1.5}"""))
+    assert located(Signup.decode("""{"username": "a", "xp": 1.5}"""))
         == "xp:invalidType";
-    assert located(decodeSignup("""{"username": "a", "xp": 3000000000}"""))
+    assert located(Signup.decode("""{"username": "a", "xp": 3000000000}"""))
         == "xp:invalidType";
 }
 
 test "validation: text that is not JSON is one violation, at the root" {
-    assert located(decodeSignup("{nope")) == ":invalidJson";
+    assert located(Signup.decode("{nope")) == ":invalidJson";
 }
 
 test "validation: accepts() answers a bool and builds no report" {
     val ok = try json.decode("""{"username": "billie", "xp": 100}""");
     val bad = try json.decode("""{"username": 42}""");
-    assert schemaOfSignup().accepts(ok);
-    assert schemaOfSignup().accepts(bad) == false;
+    assert Signup.parse(ok).isOk();
+    assert Signup.parse(bad).isError();
 }
 
 test "validation: try propagates the report out of a fallible function" {

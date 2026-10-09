@@ -1,28 +1,32 @@
 // Front 125 — validation: Zod's feature set · examples/collections-example.bp
 //
-// Demonstrates: step 4 — tuples, records (maps keyed by text), maps and sets.
-// Each is the std or language type of the same meaning, so the field's type
-// says what the document must look like.
+// Demonstrates: step 4 — tuples, records (maps keyed by text), and sets. Each
+// is the std or language type of the same meaning, so the field's type says
+// what the document must look like.
 //
 //   z.tuple([z.string(), z.number(), z.boolean()])     -> #(string, f64, bool)
 //   z.record(z.string(), z.string())                   -> Dict<string, string>
 //   z.record(z.enum(["id","name"]), z.string())        -> Dict<Key, string> + #[exhaustive]
-//   z.map(z.string(), z.number())                      -> Dict<string, f64>, wire [[k, v], …]
+//   z.partialRecord(z.enum(["id","name"]), z.number()) -> Dict<Key, i32>
+//   z.record(z.number(), z.string())                   -> Dict<i32, string>
 //   z.set(z.number())                                  -> Set<i32>
 //
-// Upstream: ZOD_DOCUMENTATION.md §§ 4.20 (Tuples), 4.25 (Records), 4.26 (Maps),
-//           4.27 (Sets) — https://zod.dev/api#tuples
+// Upstream: ZOD_DOCUMENTATION.md §§ 4.20 (Tuples), 4.25 (Records), 4.27 (Sets)
+//           — https://zod.dev/api#tuples
 //
-// Target: both.
+// Target: both. `z.map`'s wire form of pairs and `z.tuple([A], rest)` are
+// `n/a (306)`: no declaration says them, and the combinators that did are
+// private.
 
-import {decorators: {schema, validated, exhaustive, maxLength, notEmpty}} from "validation";
-import {schemas, schemas.Schema, constraints, report.ValidationReport, report.Violation} from "validation";
-import {collections: {Dict, Set}, json, json.Json} from "std";
+import {decorators.validated, decorators.exhaustive, decorators.maxLength, decorators.notEmpty} from "validation";
+import {derived} from "validation";
+import {report.ValidationReport, report.Violation} from "validation";
+import {constraints.vNotEmptySet, constraints.vMaxLengthSet, table.constraintTableJson} from "validation";
+import {collections.Dict, collections.Set, json.Json} from "std";
 
-#[schema]
+#[validated]
 pub type Key { Id, Name }
 
-#[schema]
 #[validated]
 pub type Sheet(
     // a JSON array of exactly three items, typed by position
@@ -35,15 +39,25 @@ pub type Sheet(
     #[notEmpty] #[maxLength(5)] tags: Set<string>,
 )
 
+#[validated]
+pub type Ranks(
+    // numeric keys: the key text read by the integer grammar
+    byPlace: Dict<i32, string>,
+    // without `#[exhaustive]` a key of the enum may be missing
+    widths: Dict<Key, i32>,
+)
+
 fn located(r: @Result<Sheet, ValidationReport>) -> string {
     return case r {
         Ok(_) -> "";
-        Error(report) -> report.violations.map({ v -> v.field + ":" + v.code }).join(",");
+        Error(report) -> report.violations
+            .map({ v -> v.field + ":" + v.code })
+            .join(",");
     };
 }
 
 test "validation: a tuple is positional and exactly as long as its type" {
-    val sheet = try decodeSheet(
+    val sheet = try Sheet.decode(
         """{"origin": ["A1", 2.5, true], "labels": {"a": "b"},
             "columns": {"Id": "#", "Name": "name"}, "tags": ["x", "y"]}""",
     );
@@ -54,13 +68,13 @@ test "validation: a tuple is positional and exactly as long as its type" {
 }
 
 test "validation: each position of a tuple is its own path" {
-    val r = decodeSheet(
+    val r = Sheet.decode(
         """{"origin": ["A1", "2.5"], "labels": {},
             "columns": {"Id": "#", "Name": "name"}, "tags": ["x"]}""",
     );
     assert located(r) == "origin:invalidType";
 
-    val wrongItem = decodeSheet(
+    val wrongItem = Sheet.decode(
         """{"origin": ["A1", "2.5", true], "labels": {},
             "columns": {"Id": "#", "Name": "name"}, "tags": ["x"]}""",
     );
@@ -68,7 +82,7 @@ test "validation: each position of a tuple is its own path" {
 }
 
 test "validation: a record member is addressed by its key" {
-    val r = decodeSheet(
+    val r = Sheet.decode(
         """{"origin": ["A1", 1, true], "labels": {"a": 1},
             "columns": {"Id": "#", "Name": "name"}, "tags": ["x"]}""",
     );
@@ -76,12 +90,12 @@ test "validation: a record member is addressed by its key" {
 }
 
 test "validation: an exhaustive record needs every variant; a key outside the enum is refused" {
-    val missing = decodeSheet(
+    val missing = Sheet.decode(
         """{"origin": ["A1", 1, true], "labels": {}, "columns": {"Id": "#"}, "tags": ["x"]}""",
     );
     assert located(missing) == "columns.Name:required";
 
-    val extra = decodeSheet(
+    val extra = Sheet.decode(
         """{"origin": ["A1", 1, true], "labels": {},
             "columns": {"Id": "#", "Name": "n", "Age": "a"}, "tags": ["x"]}""",
     );
@@ -89,27 +103,33 @@ test "validation: an exhaustive record needs every variant; a key outside the en
 }
 
 test "validation: a set reports the repeated item instead of folding it away" {
-    val r = decodeSheet(
+    val r = Sheet.decode(
         """{"origin": ["A1", 1, true], "labels": {},
             "columns": {"Id": "#", "Name": "n"}, "tags": ["x", "y", "x"]}""",
     );
     assert located(r) == "tags[2]:duplicate";
 }
 
-test "validation: a map travels as an array of pairs" {
-    // JSON has no map; `schemas.pairs` is the wire form `[[k, v], …]`.
-    val scores = schemas.pairs(schemas.text(), schemas.float());
-    val doc = try json.decode("""[["ana", 9.5], ["bia", 8]]""");
-    val d = try scores.parse(doc);
-    assert d.size() == 2;
-    assert d.at("bia").unwrapOr(0.0) == 8.0;
+test "validation: the markers of a set run on the decoded set" {
+    val r = Sheet.decode(
+        """{"origin": ["A1", 1, true], "labels": {},
+            "columns": {"Id": "#", "Name": "n"}, "tags": []}""",
+    );
+    assert located(r) == "tags:notEmpty";
 }
 
-test "validation: a tuple with a rest is a pair of the head and the tail" {
-    // `z.tuple([z.string()], z.number())` — [string, ...number[]]
-    val row = schemas.tupleRest(schemas.text(), schemas.float());
-    val doc = try json.decode("""["total", 1, 2, 3]""");
-    val parsed = try row.parse(doc);
-    assert parsed[0] == "total";
-    assert parsed[1].length == 3;
+test "validation: a dict keyed by i32 or by an enum, partial" {
+    val ranks = try Ranks.decode(
+        """{"byPlace": {"1": "ana", "2": "bia"}, "widths": {"Id": 4}}""",
+    );
+    assert ranks.byPlace.at(2).unwrapOr("") == "bia";
+    assert ranks.widths.size() == 1;
+    val bad = Ranks.decode("""{"byPlace": {"one": "ana"}, "widths": {}}""");
+    val codes = case bad {
+        Ok(_) -> "";
+        Error(report) -> report.violations
+            .map({ v -> v.field + ":" + v.code })
+            .join(",");
+    };
+    assert codes == "byPlace.one:invalidType";
 }

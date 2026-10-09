@@ -1,8 +1,8 @@
 // Front 125 — validation: Zod's feature set · examples/nested-and-arrays-example.bp
 //
 // Demonstrates: step 2 — nested records, arrays, and a type that names itself.
-// A field whose type is another `#[schema]` type is decoded by calling
-// `parse<ThatType>At` BY NAME, so the decorator never needs to see a second
+// A field whose type is another `#[validated]` type is decoded by calling
+// `ThatType.parseAt` BY NAME, so the decorator never needs to see a second
 // declaration; a violation inside it carries the whole path.
 //
 //   const Address = z.object({ street: z.string(), zip: z.string() });
@@ -14,23 +14,25 @@
 //
 // Target: both.
 
-import {decorators.schema} from "validation";
-import {schemas, schemas.Schema, report.ValidationReport, report.Violation} from "validation";
+import {decorators.validated} from "validation";
+import {derived} from "validation";
+import {report.ValidationReport, report.Violation} from "validation";
 import {json.Json} from "std";
+import {table.constraintTableJson} from "validation";
 
-#[schema]
+#[validated]
 pub type Address(
     street: string,
     zip: string,
 )
 
-#[schema]
+#[validated]
 pub type Line(
     sku: string,
     quantity: i32,
 )
 
-#[schema]
+#[validated]
 pub type Order(
     id: string,
     ship: Address,
@@ -39,8 +41,8 @@ pub type Order(
 )
 
 // Zod needs a getter to let a schema mention itself. Here the field's type is
-// the record's own name and `parseCategory` calls itself.
-#[schema]
+// the record's own name and `Category.parseAt` calls itself.
+#[validated]
 pub type Category(
     name: string,
     subcategories: Array<Category>,
@@ -56,7 +58,7 @@ fn located(r: @Result<Order, ValidationReport>) -> string {
 }
 
 test "validation: a nested document becomes nested records" {
-    val order = try decodeOrder(
+    val order = try Order.decode(
         """{"id": "o1", "ship": {"street": "Rua A", "zip": "01310-100"},
             "lines": [{"sku": "x", "quantity": 2}]}""",
     );
@@ -66,7 +68,7 @@ test "validation: a nested document becomes nested records" {
 }
 
 test "validation: a violation names the path to the value, not the leaf alone" {
-    val r = decodeOrder(
+    val r = Order.decode(
         """{"id": "o1", "ship": {"street": "Rua A"},
             "lines": [{"sku": "x", "quantity": 2}, {"sku": 7, "quantity": "two"}]}""",
     );
@@ -75,14 +77,14 @@ test "validation: a violation names the path to the value, not the leaf alone" {
 }
 
 test "validation: an array field refuses a value that is not an array" {
-    val r = decodeOrder(
+    val r = Order.decode(
         """{"id": "o1", "ship": {"street": "a", "zip": "b"}, "lines": {}}""",
     );
     assert located(r) == "lines:invalidType";
 }
 
 test "validation: a recursive type decodes to any depth" {
-    val tree = try decodeCategory(
+    val tree = try Category.decode(
         """{"name": "root", "subcategories": [
               {"name": "a", "subcategories": [{"name": "a1", "subcategories": []}]},
               {"name": "b", "subcategories": []}]}""",

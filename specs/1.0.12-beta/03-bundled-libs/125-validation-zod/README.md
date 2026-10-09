@@ -2,7 +2,8 @@
 
 **Priority:** high for the step 0–2 residue (`08-bpp/121` content collections and `08-bpp/127`
 actions take the `#[validated]` type — decision 306); medium for the rest · **State:** partial: steps 0–3 done;
-steps 4–12 open, blocked (§ Steps 4–12)
+steps 4–12 landed in 306's shape but for the boxes that wait on `01-checker` steps 24 / 28, 134 step 4,
+`@typeInfo(T).fields`, the `Decl.variants` gap and question `125-a` (§ Open)
 **Depends on:** `01-compiler/01-checker` step 24 (decision 280, step 7) · decision 325 (07-j: every step, 306's shape). Written against decisions 144 (undeclared keys), 145 (emitted names),
 183 (`07-m`: coercion, step 6), 257 (`07-n`: `Schema<T>` lives in `validation` — amended by 306: the
 place stays, the value is private), 306–308
@@ -29,10 +30,11 @@ follows: the `#[validated]` type derives parse / decode / bind / encode / JSON S
 (306 — `#[schema]` folds into it; field markers compose, no public `Schema<T>`), checks grow from 13
 markers to 71, reports gain views and locales.
 
-On feat `repository/validation`: 2 134 source lines — `report.bp`, `constraints.bp` (20 `v*` predicates),
-`decorators.bp` (`#[validated]`, 13 markers, `#[schema]`), `messages.bp`, `spi.bp`, `binding.bp`,
-`table.bp`, `path.bp`, `schemas.bp` — 98 tests in eleven files, green on erlang and commonJS.
-Consumers: rakun's `rakun/src/{config,config_check}.bp`; jhonstart and onze import nothing.
+With steps 4–12 applied, `repository/validation`: 8 067 source lines in thirteen modules — `root`, `path`,
+`report`, `messages`, `locales`, `formats`, `derived` (the machinery the members call), `table`,
+`spi`, `constraints`, `binding`, `codecs`, `decorators` (`#[validated]`, 73 constraint markers and
+the field and type markers of steps 4–12) — 246 tests in twenty-seven files, green on erlang and
+commonJS. Consumers: rakun's `rakun/src/{config,config_check}.bp` (its `Duration` / `DataSize` are `#[validated]`) and `onze-content`'s collections (a type's `parse`).
 
 Already provided: JSON tree `json.Json { Null, Bool, Num, Str, Arr, Obj }`,
 `json.decode(s) -> @Result<Json, string>` (document order, duplicates refused), `Json` methods `members` / `field` /
@@ -49,31 +51,27 @@ decorator `@emit("pub type …")` (`rakun-data/src/orm/entity.bp`) · text helpe
 
 Zod's one object model (type via `z.infer`, and parser) is split in two here.
 
-**The type is the schema.** Today a `#[schema]` record or enum is reflected as `#[validated]`
-reflects it (`decl.fields`, each field's `typeName` and `annotations` — `decorators.bp`'s
-`validated`), and the decorator `@emit`s free functions named after the type. Decision 216 retires
-loose `@emit` (`#[validated]` adds members `validate()` / `constraints()`); 306 makes the parse half
-members of the `#[validated]` type too (`#[schema]` goes, step 12) — their spelling is decision 327
-(`Player.parse(input)`). The table is what `#[schema]` emits today; under 306
-`schemaOf<T>` (the schema value) is private, the rest become members:
+**The type is the schema.** A `#[validated]` record or enum is reflected (`decl.fields`, each
+field's `typeName` and `annotations`; `decl.variants`) and the decorator gives the type its members
+(decision 216) — the checks `validate()` / `constraints()` and the parse half (306, 327):
 
-| Emitted today | Zod's |
+| Member | Zod's |
 |---|---|
-| `pub fn schemaOf<T>() -> Schema<T>` | the schema value |
-| `pub fn parse<T>(input: Json) -> @Result<T, ValidationReport>` | `.parse` / `.safeParse` |
-| `pub fn parse<T>At(input: Json, at: string) -> @Result<T, ValidationReport>` | the same, for a value at path `at` of a larger document — what a nested field calls |
-| `pub fn decode<T>(text: string) -> @Result<T, ValidationReport>` | `.parse(JSON.parse(text))`, a syntax error as one violation coded `invalidJson` |
-| `pub fn bind<T>(pairs: Array<#(string, string)>) -> @Result<T, ValidationReport>` | `z.coerce.*` over a form or a query |
-| `pub fn encode<T>(v: T) -> @Result<Json, ValidationReport>` | `.encode` |
-| `pub fn jsonSchemaOf<T>() -> string` | `z.toJSONSchema` |
+| `T.parse(input: Json) -> @Result<T, ValidationReport>` | `.parse` / `.safeParse` |
+| `T.parseAt(input: Json, at: string) -> @Result<T, ValidationReport>` | the same, for a value at path `at` of a larger document — what a nested field calls |
+| `T.decode(text: string) -> @Result<T, ValidationReport>` | `.parse(JSON.parse(text))`, a syntax error as one violation coded `invalidJson` |
+| `T.bind(pairs: Array<#(string, string)>) -> @Result<T, ValidationReport>` | `z.coerce.*` over a form or a query |
+| `T.encode(v: T) -> @Result<Json, ValidationReport>` | `.encode` |
+| `T.jsonSchema() -> string` | `z.toJSONSchema` |
+| `T.options() -> Array<string>` (an enum) | `.options` / `.values` |
 
 - Decoder: straight-line, one statement per field; every field decoded, every violation collected,
   record built only when the list is empty — "all violations, not fail-fast" is the shape, not an
   option (`binding.bp`'s header).
-- A field of another schema type → its `parseAt` (today `parse<ThatType>At`, emitted by name; no
-  second declaration seen).
-- Checks not duplicated: the parse calls `validate()` on the built record — one decorator since 306
-  (today a marker on a `#[schema]` type not `#[validated]` is a compile error, decision 67).
+- A field of another `#[validated]` type → its `T.parseAt` (and `T.__json`, `T.__schemaNode`):
+  members travel with the type, so no second declaration is seen.
+- Checks not duplicated: `T.parseAt` calls `validate()` on the built record, `T.encode` before it
+  writes.
 
 **Decision 306: the type is the only schema, and `#[schema]` becomes `#[validated]`.** One decorator
 checks (`validate()`, `constraints()`) and parses (the table above, as members — `Player.parse(doc)`, 327);
@@ -170,151 +168,78 @@ compiler rows in `language-gaps.md`):
   / `?i32` / `?i64` / `?f64` fields when present. Not added: the `checks.*` functions — 306 makes
   them private, and no module of them exists. `#[safeInt]`'s refusal is reachable on erlang only
   (commonJS cannot build an `i64` past ±(2^53 − 1)). Embedded source +78 203 bytes (88 411 → 166 614)
+- Step 4 — `#[validated]` on a payload-less enum decodes the variant's name (`Fish.options()` the
+  variants); `#[literal]` (`string`, `i32`, `bool`) and `#[oneOf("a,b")]` (73 markers); fields typed
+  `A | B` (one `invalidUnion` naming each arm's first violation; absent is `required` unless an arm is
+  `?T` / `Json`), `#(A, B, …)` (exact length, items at `at[i]`), `Dict<K, V>` (`K` text, `i32` or a
+  `#[validated]` enum; `#[exhaustive]` needs every variant), `Set<T>` (`duplicate` at the second
+  occurrence); `#[tag("status")]` over payload records named `<Enum><Variant>` (a record of the
+  variant's own name is built as the variant — measured). `union2…5`, `xor2…5`, `both`, `tuple2…5`,
+  `tupleRest`, `pairs`, `never`, `nil` not added — `n/a (306)`. `enums_and_unions_example_test.bp`,
+  `collections_example_test.bp`
+- Step 5 — `#[stripUnknown]`, `#[rest]` (`Dict<string, T>`, one), `#[present]`, `#[orElse(literal)]`,
+  `#[orElseOf(f)]`, `#[fallback(literal)]`, `#[fallbackOf(f)]` (a value that does not decode or fails
+  its checks); a literal not of the field's type is refused at the field.
+  `object_policy_example_test.bp`; `derived-types-example.bp` rewritten to `Type`'s methods (not a
+  suite case until `01-checker` step 28)
+- Step 6 — `#[coerce]` (decision 183; `#[coerce] #[isoDatetime]` on an `i64` reads an instant),
+  `#[stringbool]`, `#[trim]`, `#[lowercased]`, `#[uppercased]`, `#[normalized(form)]`,
+  `#[normalizedUrl]`, `bindFloat`, `T.bind(pairs)` over `derived.formDocument` (a repeated name an
+  array's items, an unchecked checkbox `false`, an undeclared name the unknown-key rule); the four
+  binders' tests unchanged. `coercion_and_forms_example_test.bp`
+- Step 7 — `#[message("…")]`, `#[typeMessage("…")]`, `#[stopOnFirst]`, the per-parse source
+  `messages.underSource(source, { -> T.parse(doc) })`; the six levels of § 5's resolution order are
+  `test/message_order_test.bp`. `refine_and_messages_example_test.bp` (all but the type-level
+  `#[check]`)
+- Step 8 — `T.encode` (runs `validate()` first) and `T.__json`, every field type decode reads;
+  `#[preprocess(f)]`, `#[check(rule)]` on a field, `#[each("marker")]` (checks and transforms on
+  items, at `field[i]`); `codecs.bp`, Zod's twelve recipes as decode / encode pairs, each an inverse
+  over five values and five canonical texts (`codecs_test.bp`). `transform_and_codec_example_test.bp`
+- Step 9 — `report.flatten()`, `.tree()`, `.pretty()`; `#[title]`, `#[describe]`, `#[example]`,
+  `#[deprecated]`, `#[schemaId]` (`$id`), `#[jsonSchema]` (unrepresentable refused); `T.jsonSchema()`
+  (2020-12, `$defs`, `{"$ref": "#"}` for the document's own type), `table.toDraft07`,
+  `table.toOpenApi30`, `table.withRefBase`, `spi.registerSchema` / `registeredJsonSchemas`;
+  `json_schema_test.bp` holds sixteen of § 8's documents and nodes (key order aside);
+  `T.constraints()` unchanged (`table_test.bp`). `error_views_example_test.bp`,
+  `json_schema_example_test.bp`
+- Step 10 — `locales.en()` (the built-in table), `ptBR()`, `es()`: a template for every code of
+  `messages.codes()` (82), each a different text with the same placeholders (`locales_test.bp`)
+- Step 11 — `#[orElse(.Tuna)]` / `#[fallback(.Worm)]`: an enum field's default is its variant by
+  reference (280 (2)'s declared shape `orElse<T>(decl: @Decl<T>, value: T)`)
+- Step 12 — `#[schema]` deleted: `#[validated]` gives every type the members of 327 — `parse`,
+  `parseAt`, `decode`, `bind`, `encode`, `jsonSchema` (an enum also `options`) — beside `validate()` /
+  `constraints()`; `Schema<T>` and its combinators deleted; `schemas.bp` is `derived.bp`, the
+  private machinery the members call (`import {derived} from "validation";` in a consumer, for the
+  emitted code); `#[validated(transparent)]` (one field, read and written as that field; two fields
+  refused); `#[with]` never added; every example rewritten (eleven are suite cases); `surface.md`
+  re-sorted (209 rows: 136 have, 17 `n/a (306)`, 20 add with their blockers). Consumers: rakun core's
+  `Duration` / `DataSize` and `typed_config_test.bp`'s nested records carry `#[validated]` (a
+  `#[validated]` record's field types are schemas too), two rakun tests import `derived` / `Json`;
+  `onze-content`'s `defineCollection` takes the type's `parse` (`{ d -> T.parse(d) }`) instead of a
+  `Schema<T>` — rakun 375 / 0 (erlang), onze-content 714 / 0 (commonJS, erlang)
 
 ## Open
 
-### Steps 4–12 — what each still waits on
+Decision 325 (07-j) fixed the scope: every step, in order. What is left of steps 4–12, with what it
+waits on:
 
-Decision 325 (07-j) fixed the scope: every step, in order. Nothing in steps 4–12 is started.
-
-| Step | Blocked by |
-|---|---|
-| 4 enums, unions, tuples, maps, sets | the decorator that reads an enum is `#[validated]`'s after 306 and its members are 327's; `#[tag]` waits on the **`Decl.variants`** gap row |
-| 5 object policy, derived types | 307's `Type` (std `types.bp`) and `01-checker` step 28 (`#[validated] pub val RecipePatch = Type.partial(Recipe)`) |
-| 6 coercion, transforms, form binder | nothing (`T.bind`, 327); a number field reads by its type as 332 (5) — `i64` exact, `bigint`, `Decimal`, `f64` rounded; a string only under `#[coerce]` |
-| 7 refinements and messages | `01-checker` step 24 (280: `#[check(rule, at: .field, code: .Custom)]` takes typed arguments) |
-| 8 combinators and codecs | 306's field markers (`#[codec]`, `#[map]`, `#[preprocess]`, `#[check]`) take function values (280, step 24) |
-| 9 reflection, error views, JSON Schema | reflection reads `@typeInfo(T)` meta (298, 306) |
-| 10 locales | nothing (325) |
-| 11 references, not strings | `01-checker` step 24 (281: `#[orElse(.Tuna)]`, `#[wireName]`) |
-| 12 `#[schema]` becomes `#[validated]` | nothing (327) |
+| Step | Box | Waits on |
+|---|---|---|
+| 4 | `#[tag]` on an enum whose variant has no payload record is a compile error at the annotation (today it fails where the emitted code names the record) | the **`Decl.variants`** gap row (payload fields not reflected) |
+| 5 | `derived-types-example.bp` passes; `#[validated] pub val RecipePatch = Type.partial(Recipe);` decodes with every field optional, keeps `Recipe`'s markers, and is imported and constructed by a second module | `01-checker` step 28 (`Type`'s calls answered) · 134 step 4 (`pick` / `omit`, decision 267) |
+| 7 | the type-level `#[check(rule, at: .field, message: "…", code: .Custom)]` and `#[check(message: "…")]` on the rule; a `#[check]` naming a missing function, a missing field (`.confrim`) or a rule of another signature fails at that argument; one on a rule outside the type's module refused | `01-checker` step 24 (280) |
+| 8 | `#[map(f)]`, `#[tryMap(f)]`, `#[codec(decode: f, encode: g)]` — they read `f`'s parameter type | `01-checker` step 24 (280 (2)) |
+| 9 | the emitted document validates against the 2020-12 meta-schema (a node script under `test/tools/`) | question `125-a` (no validator in reach of the suite) |
+| 11 | `#[wireName("salmon")]` on each variant | the **`Decl.variants`** gap row (annotations of variants) |
+| 12 | a located refusal for a field marker's function of the wrong signature (`#[preprocess]`, `#[check]`; `#[map]`, `#[tryMap]`, `#[codec]` with them) | `01-checker` step 24 |
+| 12 | reflection reads the type — `@typeInfo(T).fields`, `@typeInfo(T).meta(Validated)` — and a library takes the type (`comptime source: type T`) | `@typeInfo(T).fields` (`typeinfo-unknown-member`, `01-checker`) · 298 |
 
 Step 3 touches step 24 in one place: `#[gt]`, `#[lt]` and `#[multipleOf]` declare their bound
 `comptime value: f64` and `#[validated]` gives it the field's type from the lexeme (`5` → `5.0` on an
 `f64` field, a fraction refused on an integer one); under 280 (2) the bound is `@Decl<T>`'s `T` —
-step 24's migration of the markers rewrites those three signatures.
-
-### Step 4 — Enums, literals, unions, tuples, maps, sets (narrowed by step 12, 306)
-
-`#[schema]` (`#[validated]` after step 12) on a payload-less enum (variant name is the wire value);
-`#[literal]`, `#[oneOf]`; fields typed `A | B`, `#(A, B)`, `Dict<K, V>`, `Set<T>`; `schemas.union2…5`, `xor2…5`, `both`, `tuple2…5`,
-`tupleRest`, `dict`, `set`, `never`, `nil` (`Json.Null` only, for unions); tagged enum whose variants
-name `#[schema]` records (`#[tag("status")]`).
-
-- [ ] `examples/enums-and-unions-example.bp` and `collections-example.bp` pass on both targets
-- [ ] a union whose arms all fail reports one `invalidUnion` naming each arm's first violation; a
-      `Set` with a repeated item reports `duplicate` at the second occurrence's index
-- [ ] `#[tag]` on an enum with a variant lacking a matching schema record (`#[validated]`, 306) is a
-      compile error
-
-### Step 5 — Object policy and derived types
-
-Unknown keys (`#[stripUnknown]`, `#[rest]`), `#[present]`, `#[orElse]`, `#[orElseOf]`,
-`#[fallback]`, `#[fallbackOf]`. Derived types are the language's (decision 307):
-`#[validated] pub val RecipePatch = Type.partial(Recipe);`, `Type.pick(Recipe, .title)`, `Type.omit`,
-`Type.required`, `Type.merge(Dog, Breed)` (std's `Type`) — the markers `#[pick]`, `#[omit]`, `#[partial]`, `#[required]`,
-`#[extending]` go.
-
-- [ ] `examples/object-policy-example.bp` and `derived-types-example.bp` pass on both targets
-- [ ] `#[validated] pub val RecipePatch = Type.partial(Recipe);` decodes with every field optional and keeps
-      `Recipe`'s markers; a second module imports and constructs it (after `01-checker` step 28)
-- [ ] `derived-types-example.bp` rewritten to `Type`'s five methods; no `#[extending]` repeating fields
-- [ ] `#[orElse]` with a literal not decoding as the field's type is a compile error
-
-### Step 6 — Coercion, transforms, and the form binder
-
-`#[coerce]`, `#[stringbool]`, transforms (`#[trim]`, `#[lowercased]`, `#[uppercased]`,
-`#[normalized]`, `#[normalizedUrl]`), `bindFloat`, `bind<T>` over `Array<#(string, string)>` (what
-`querystring.parse` and `encoding.formParse` answer). Repeated name → an array field's items;
-undeclared name → unknown-key rule. Coercion per target type, same on both targets (decision 183):
-`bool` reads the `stringbool` set; a number reads the integer grammar + fraction and exponent; `""`
-and `null` are absent; else `invalidType`.
-
-- [ ] `examples/coercion-and-forms-example.bp` passes on both targets
-- [ ] `bindSignup` over `email=a%40b.c&age=x&tags=a&tags=b` reports `age` as `invalidType` and
-      builds nothing; with `age=30` builds `tags: ["a", "b"]`
-- [ ] the existing four binders keep their tests unchanged (`binding_test.bp`)
-
-### Step 7 — Refinements and messages (narrowed by step 12, 306)
-
-`#[check(rule, at: .field, message: "…", code: .Custom)]` on the type and `#[check(message: "…")]` on
-the rule function itself (decision 280 — `01-checker/examples/decorator-arguments-280.md` example 1;
-the string forms `#[check("fn", "fieldA,fieldB")]` go), `#[stopOnFirst]`,
-`#[message("…")]`, `#[typeMessage("…")]`, `Schema.refine`, `Schema.parseWith(input, source)`.
-
-- [ ] `examples/refine-and-messages-example.bp` passes on both targets
-- [ ] a `#[check]` naming a missing function, a missing field (`.confrim`) or a rule of another
-      signature fails at that argument (280); a `#[check]` on a rule function outside the module
-      declaring the validated type is refused
-- [ ] `surface.md` § 5's resolution order is one test with six rows, each overriding the next
-
-### Step 8 — Combinators and codecs (narrowed by step 12, 306: codecs, map, preprocess are field markers)
-
-`Schema.map`, `schemas.tryMap`, `pipe`, `preprocess`, `custom`, `refineAsync`; `Codec<A, B>`,
-`schemas.codec`, `invert`; `#[with]`, `#[map]`, `#[codec]`; `encode<T>`; `codecs.bp` with the twelve
-recipes.
-
-- [ ] `examples/transform-and-codec-example.bp` passes on both targets
-- [ ] every recipe: `decode(encode(x)) == x` over five values, `encode(decode(t)) == t` over five
-      canonical texts
-- [ ] `encode<T>` of a value failing `validate()` is an `Error`, not a document
-
-### Step 9 — Reflection, error views, metadata, JSON Schema (narrowed by step 12, 306)
-
-`Schema.fields()`, `.keys()`, `.options()`, `.isOptional()`; `report.flatten()`, `.tree()`,
-`.pretty()`; `#[title]`, `#[describe]`, `#[example]`, `#[deprecated]`, `#[schemaId]`;
-`spi.registerSchema`; `jsonSchemaOf<T>`, `inputJsonSchemaOf<T>`, `table.toDraft07`,
-`table.toOpenApi30`, `table.withRefBase`, `spi.registeredJsonSchemas`.
-
-- [ ] `examples/error-views-example.bp` and `json-schema-example.bp` pass on both targets
-- [ ] `jsonSchemaOf<T>` for the reference's § 8 examples is the reference's document, key order
-      aside — eleven literals
-- [ ] emitted document validates against the 2020-12 meta-schema: one node script under
-      `test/tools/`, run by `test/json_schema_test.bp` on commonJS, skipped by nothing; on erlang
-      the same literals compared byte for byte
-- [ ] `T.constraints()` unchanged for the thirteen existing markers (`table_test.bp`)
-
-### Step 10 — Locales
-
-`locales/` — `en` (built-in table, moved), `ptBR`, `es`: one `fn() -> MessageSource` each.
-
-- [ ] every `builtInTemplate` code has an entry in every shipped locale; a missing one fails
-      `test/locales_test.bp` by name
-- [ ] `setMessageSource(locales.ptBR())` changes the message of every code and of no placeholder
-### Step 11 — references, not strings (decision 281)
-
-Step 7's `#[check]` is the first (280 example 1); the rest of the string-named arguments:
-
-- [ ] ~~`#[extending(Dog)]`, `#[partial(Recipe)]` take the type~~ — the markers go (307)
-- [ ] ~~`#[with(emails)]` takes the function value~~ — `#[with]` goes (306, step 12)
-- [ ] `#[orElse(.Tuna)]` takes a value of the field's type (`T`, 280 (2))
-- [ ] `#[wireNames("Salmon=salmon,…")]` → `#[wireName("salmon")]` on each variant: the variant is the
-      reference, the wire spelling a string (another system's name)
-
-### Step 12 — the type is the only schema; `#[schema]` becomes `#[validated]` (decision 306)
-
-Narrows steps 4, 7, 8 and 9: their `schemas.*` / `Schema.*` / `checks.*` items become the markers
-below or `n/a (306)`; the items about types and markers stand.
-
-- [ ] `#[schema]` deleted from `decorators.bp`; `#[validated]` emits what it emitted (members per
-      327: `T.parse`, `T.parseAt`, `T.decode`, `T.bind`, `T.encode`, `T.jsonSchema`) beside `validate()` / `constraints()`; a type carrying both today migrates to the one;
-      rakun's config binder (`validate()` / `constraints()` by name) unchanged
-- [ ] `Schema<T>`, `Codec<A, B>`, `Check<T>`, `schemas`, `checks` not exported from `root.bp`;
-      `grep -rn "schemas\.\|checks\.\|Schema<" ` outside `repository/validation/src` answers nothing in
-      `repository/` (consumers in 117, 121, 127 move by their fronts)
-- [ ] the field markers `#[each(…markers)]`, `#[codec(decode: f, encode: g)]`, `#[map(f)]`,
-      `#[tryMap(f)]`, `#[preprocess(f)]`, `#[check(rule)]` on a field, and `#[validated(transparent)]`
-      (one field, encoded as that field) — each with a decoding test on both targets and a located
-      refusal (wrong function signature, `transparent` on a type with two fields, `#[each]` on a
-      non-collection)
-- [ ] `#[with]` goes (step 11's `#[with(emails)]` box with it)
-- [ ] `surface.md`: every row re-sorted — a marker, a type, or `n/a (306)` with its reason; the
-      `union2…5` / `tuple2…5` / `xor2…5` families gone (nat-d4)
-- [ ] reflection (step 9) reads the type: `@typeInfo(T)` and its meta, not `Schema.fields()`;
-      `jsonSchemaOf<T>` from the declaration only
-- [ ] every example under `examples/` rewritten: `#[validated]` for `#[schema]`, no `schemas.*` /
-      `checks.*` / `Schema<T>` in application code (`transform-and-codec-example.bp`,
-      `collections-example.bp`'s `tupleRest`, `refine-and-messages-example.bp`'s value refine, …)
+step 24's migration of the markers rewrites those three signatures, `#[orElse]` / `#[fallback]`'s
+values (step 11) and `#[validated]`'s run-time `form` (a comptime parameter takes no default —
+`language-gaps.md`).
 
 ## Decisions
 
@@ -331,12 +256,17 @@ Every step, in 306's shape; `surface.md` re-sorted into marker, declared type or
 
 - **Not in the compiler:** `repository/validation` is a repository of its own (decision 326); a
   consumer declares it in `dependencies`, and a step's size is the package's, not the binary's.
+- **Members beyond 327's list** (library decisions, reported): an enum's `options()`; `__json`,
+  `__schemaNode`, `__schemaDefs` — the contract one type's members call on another's, `__`-named;
+  the machinery module is `derived` (306 makes `schemas` private, and a consumer must still import
+  what the emitted members name); the per-parse source is `messages.underSource(source, run)`, not a
+  member, so a type's signature names no `MessageSource`.
 - **`#[validated]`'s contract stays:** rakun's config binder calls `validate()` / `constraints()` by
   name (decision 216); every existing marker keeps code, message, table row.
 - **`Violation.field` is a path only for nested data**; flat record → the field's name, as before.
 - **Consumers unchanged here:** the three `isHex` walks, hand-written `…Json(` functions, route
   handlers reading query fields — candidates in each member's owning front.
-- **Snapshots:** none in `repository/validation/test/`, none added — JSON Schema asserted as a literal.
+- **Snapshots:** none in `repository/validation/test/`, none added — JSON Schema asserted as literals.
 - **Not added:** `z.function`, `z.promise`, `z.symbol`, `z.undefined`, `z.nan`, typed registries,
   `fromJSONSchema`, JIT switches — each `n/a` with reason in `surface.md`. None is "later".
 - **Async:** derived schemas are synchronous. `schemas.refineAsync` (private after 306; step 12
@@ -351,6 +281,8 @@ Every step, in 306's shape; `surface.md` re-sorted into marker, declared type or
 
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `--target commonJS`
 green and `botopink format --check src test` clean in `repository/validation`
-- [ ] `zig build test-libs`: rakun's two `#[validated]` consumers still green — the name contract
-      `validate()` / `constraints()` (decision 216) did not move
-- [ ] every file under `examples/` is a suite case — an example that does not compile is red
+- [x] rakun's two `#[validated]` consumers still green — the name contract `validate()` /
+      `constraints()` (decision 216) did not move (rakun core 375 / 0 on erlang, with the consumer
+      patch); `zig build test-libs` itself is the cold gate's
+- [ ] every file under `examples/` is a suite case — eleven of twelve; `derived-types-example.bp`
+      waits on `01-checker` step 28
