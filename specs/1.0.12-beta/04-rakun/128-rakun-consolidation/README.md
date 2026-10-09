@@ -81,9 +81,9 @@ One step per merge, dependency order; each lands green alone.
 
 - [ ] `modules/rakun-logging/` is gone; its files are under `modules/rakun/src/logging/` and
       `test/logging/`; the core's suite green with them
-- [ ] the core's `after()` reports a deferred function's failure through its own logger; no
-      `rkInstallFailureSink` / `rkReportFailure` exists (`grep -rn` over `modules/` — empty today, and
-      stays empty)
+- [ ] no failure-report seam exists — `rkInstallFailureSink` / `rkReportFailure`, `grep -rn` over
+      `modules/` empty, and stays empty; a deferred `after()` failure reaching the core's logger is
+      `04-rakun/17` step 4 (decision 365), after 128 lands
 - [ ] `rakun-starter` brings `rakun` only; `starter_manifest_test.bp` asserts it
 
 ### Step 3 — `rakun-hateoas` into `rakun-web`

@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 58 perguntas, 6 contradições e 92 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **365**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 57 perguntas, 6 contradições e 92 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **366**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -713,34 +713,6 @@ val t = async.delay(30, "a");   // bloqueia 30 ms aqui; `await t` é identidade
 - [ ] **(3)** Texto JavaScript sem rótulo numa ligação `.Browser` (código de host, como no `@External.Node`).
 
 **Recomendação: (2).** Uma lista fechada, paridade por construção ("ligado nos dois hosts ou em nenhum").
-
-### 128-a · O `after()` do passo 2 da 128: a falha adiada pelo logger do próprio núcleo *(proposta)*
-
-**Trava:** `04-rakun/128` passo 2, segunda caixa (os patches dos passos 1–10 não esperam)
-
-**Contexto.** O passo 2 da 128 trouxe o `rakun-logging` para o núcleo (`modules/rakun/src/logging/`). A caixa pede que o `after()` do núcleo relate a falha de uma função adiada pelo próprio logger. Hoje `reap/2` em `rakun_request_context.erl` grava `after: failed <id da requisição> <motivo>` numa linha ETS que `afterLog()` lê — nada passa pelo `logger` do OTP nem pelo `logging/`. Não existe `rkInstallFailureSink` / `rkReportFailure` (grep vazio antes e depois). Mudar isso muda o que `request_context.bp` faz, e a 128 só move arquivos; depois dela o arquivo é da 04.
-
-**Hoje:**
-```bp
-val _a = after({ -> @panic("boom") });
-// depois da resposta: afterLog() traz "after: failed req-7 …" (o motivo como termo Erlang) — nenhum registro no logger
-```
-
-- [ ] **(a)** A 128 faz no passo 2: `drainAfter` também relata pelo logger do núcleo, e uma célula captura o registro.
-  ```bp
-  val _l = logger("rakun.request.after").error("after: failed " + id + " " + reason);
-  // célula: rkLogCaptureStart("…"); … assert rkLogCaptureLines("…").contains("req-7")
-  ```
-- [ ] **(b)** A caixa sai da 128 (que fica só com "não existe seam de relato de falha", já verdade) e vira passo da 17 (dona de `logging/**`) sobre o `request_context.bp` da 04, depois que a 128 aterrissar.
-  ```bp
-  // 17, passo novo: a mesma linha de (a), escrita pela 17 com a 04
-  ```
-- [ ] **(c)** A caixa já está cumprida: `afterLog()` é o registro do próprio núcleo, sem plugin; a caixa é apagada.
-  ```bp
-  // nada muda: afterLog() continua sendo o único lugar da falha adiada
-  ```
-
-**Recomendação: (b).** A 128 não muda corpo nenhum e o comportamento chega como passo verificado — nunca (c), que deixa a falha adiada fora do logger.
 
 ## Parte 2 — Trava, mas o passo ainda espera outra frente
 

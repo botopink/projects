@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**58 questions and 6 contradictions are open, and 92 implementation choices await confirmation.**
+**57 questions and 6 contradictions are open, and 92 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -424,12 +424,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 
 
 ### 04-rakun
-
-#### 128-a · 128 step 2's `after()` box: a deferred failure through the core's own logger (*proposed*)
-- **Measured.** `modules/rakun/src/sidecars/rakun_request_context.erl` `reap/2` records a deferred thunk that raised or overran with `log/2`: a line `after: failed <request id> <reason>` appended to an ETS slot, read back by `afterLog()` (`request_context.bp`: "what front 17 is handed"). Nothing in that path calls OTP `logger` or the logger the core holds since 128 step 2 (`modules/rakun/src/logging/`, `logger(name).error(…)` over `rkLogEmit`). No `rkInstallFailureSink` / `rkReportFailure` exists anywhere under `modules/` (grep empty before and after 128). Making the line go through the logger changes what `request_context.bp` and its sidecar do; 128 moves files and changes no body (its README § Does not touch), and `request_context.bp` is 04's file after 128.
-- **Options.** (a) 128 step 2 does it: `drainAfter` reports each failure through the core logger as well — `logger("rakun.request.after").error("after: failed " + id + " " + reason)` — `afterLog()` kept, and a cell captures the record (`rkLogCaptureStart`) with the request id. (b) The box leaves 128: 128 step 2 keeps "no failure-report seam exists" (true), and "a deferred failure reaches the core's logger, carrying the request id" becomes a step of 17 (owner of `logging/**`) written against 04's `request_context.bp`, after 128 lands. (c) The box is met as it stands: `afterLog()` is the core's own record and there is no plugin; the box is deleted.
-- **Recommendation.** (b): 128 changes no body, and the behaviour still lands as an asserted step rather than being deleted — never (c), which leaves a deferred failure off the logger.
-- **Blocks.** 128 step 2's second box only; steps 1–10's patches do not wait on it.
 
 #### erk-a · The source of an `erika "…"` query in a method body (*proposed*)
 - **Measured.** 312: `from User` names the type; a database source implements erika's `QuerySource<T>` (rakun-data's `Table<T>`). In a `#[repository]` behavior the generated `Users.Sql(db)` owns the source (313). In a method body — `type Report(users: Table<User>) { fn active(self: Self) -> @Result<User[], StoreError> { return erika "select * from User where active = true"; } }` — nothing in the query says which value is the source.

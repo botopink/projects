@@ -62,6 +62,14 @@ without a grant; metrics and traces share one connection; no test writes under `
 - [ ] `endpoint_test.bp`: `loggers`, `logfile` 403 under default exposure; still 403 with every `rakun.logging.*` key permissive; answer with 76's grant
 - [ ] `rakun-metrics/test/export_test.bp`: one push cycle (metrics + traces) opens one connection on the double (accept count 1) after 13's pool; before it the cell is written, marked in the README as waiting on 13, not skipped
 
+### Step 4 — a deferred `after()` failure through the core's logger (decision 365; after 128)
+
+- [ ] `drainAfter` (04's `request_context.bp` and its sidecar) reports each deferred function that
+      raised or overran through `logger("rakun.request.after").error("after: failed " + id + " " + reason)`,
+      the request id as the correlation id; `afterLog()` kept as the request's own record
+- [ ] `logging/after_failure_test.bp`: a deferred function that raises and one that overruns each
+      produce one `error` line with `correlation=<request id>` (captured, `rkLogCaptureStart`)
+
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun` (`test/logging/` in the run) and `modules/rakun-metrics`;
 `grep -rn '\.cache/bp-rakun' modules/rakun/src/logging modules/rakun/test/logging` empty.
