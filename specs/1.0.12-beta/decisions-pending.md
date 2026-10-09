@@ -112,6 +112,25 @@ Nothing open: 138-a answered (337).
 - **Recommendation.** (1) now; (2) if wasm must run asserts.
 - **Blocks.** Nothing in the gate; "std compiles on wasm" (05-wasm step 5, 97 step 11).
 
+#### 97-s16-a · Where `unicode`'s generated tables live
+- **Measured.** `02/97` step 16 names `libs/std/src/unicode/tables.bp`. The module tree resolves a `mod Name;` only to `Name.bp` or `Name/mod.bp` in the declaring file's directory (`compiler-cli/src/cli/resolver.zig`, `build.zig` `collectStdModules`), so a file module `unicode.bp` has no children: `unicode/tables.bp` is unreachable unless `unicode` becomes a folder, and a folder index holds `mod` lines only and makes `unicode` a namespace (`unicode.normalize` would become `unicode.<sub>.normalize`, decision 110). Landed: a flat sibling `libs/std/src/unicode_tables.bp`, `mod unicode_tables;` (private) in `root.bp`, `import {unicode_tables as tables};` in `unicode.bp`. The registry does not honour the `mod`'s privacy: a consumer's `import {unicode_tables} from "std"` resolves (97's compiler residual 11).
+- **Options.** (a) ★ As landed — a flat private sibling:
+  ```bp
+  // root.bp
+  pub mod unicode;
+  mod unicode_tables;
+  // unicode.bp
+  import {unicode_tables as tables};
+  ```
+  (b) A file module may declare children in the folder of its own name (Rust 2018's `unicode.rs` + `unicode/tables.rs`) — a resolver and `build.zig` change, `01-compiler/26`:
+  ```bp
+  // unicode.bp
+  mod tables;            // → libs/std/src/unicode/tables.bp
+  import {unicode.tables};
+  ```
+- **Recommendation.** (a): no compiler change, one module more in the registry; residual 11 makes the privacy real whichever is chosen.
+- **Blocks.** Nothing (a move of one generated file and the generator's output path under (b)).
+
 #### std-d · `io.process` signals and a TTY reader
 - **Measured.** `io/process.bp` neither registers nor forwards a signal; std has no TTY line reader; `onze start` waits on `process.run` → `SIGTERM` leaves the node running; `onze create` without `--yes` has no prompt to fall back to.
 - **Options.** (a) `process.onSignal(name, fn)`, `process.forwardSignals(child)`, `io.stdin.readLine()` — three host cells on two targets. (b) No std change: `onze start` execs the node (71's `bin/onze` is PID 1); `onze create` without `--yes` refused naming the flags it needs.

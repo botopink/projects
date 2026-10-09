@@ -94,17 +94,18 @@ std's `math` and `hash` answer commonJS's bits on every target.
 
 ### Step 5 — the rest of std on wasm (decisions 262, 241)
 
-`unicode` binds nothing on wasm (`fromCodepoint`, `codepoints`, the four `normalize*` cells are Node /
-Erlang templates; `unicode.fromCodepoint` a `fn:` over `String.fromCodepoint` is std's, decision
-262); `json.parse` / `json.stringify` have no `@External.Wasm`. `run/std_module_imports_std_module`
+`unicode` builds and runs on wasm: `fromCodepoint`, `firstCodepointOrZero` and `codepoints` are
+`fn:` bodies, `normalize` std's botopink normalizer (`02/97` step 16, decision 333 (A)), and
+`run/std_unicode_on_every_target` has one `.out` for the four targets. `json.parse` /
+`json.stringify` have no `@External.Wasm`. `run/std_module_imports_std_module`
 keeps its `.wasm.expect`, `run/std_template_host_fns_across_modules` and
 `run/std_default_fn_in_a_std_module` their `.targets`, though `encoding` now binds every cell on wasm.
 The limits table of `wat/AGENTS.md` still carries the one-page row.
 
-- [ ] `botopink build --target wasm` in `libs/std` refuses only group 3's modules (`unicode` waits on
-      `02/97` step 16 (333 (A)), `json` on `02/97` step 15 (336))
-- [ ] a `run/` cell per remaining module family on four targets, the commonJS answers — `unicode`
-      and `json` drop their `.wasm.expect` once `02/97` steps 16 (333) / 15 (336) land (`encoding`, `querystring` done)
+- [ ] `botopink build --target wasm` in `libs/std` refuses only group 3's modules (`json` waits on
+      `02/97` step 15 (336); `unicode` builds)
+- [ ] a `run/` cell per remaining module family on four targets, the commonJS answers — `json` drops
+      its `.wasm.expect` once `02/97` step 15 (336) lands (`encoding`, `querystring`, `unicode` done)
 - [ ] `wat/AGENTS.md` § Where this backend refuses to answer lists only group 3 (the limits table's
       one-page row is gone)
 - [ ] the bindings this step adds written in 305's form — `@External.Wasm(fn: name)`, `op: "…"`,
