@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 58 perguntas, 6 contradições e 92 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **364**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 59 perguntas, 6 contradições e 92 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **364**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -858,6 +858,7 @@ toda função que alcança uma das quatro células é recusada no wasm (146); o 
 | `lg2-u` | Decorator em posição de expressão | (1). Um decorator anota uma declaração ou uma tag; trabalho numa expressão comum é uma chamada. | a linha (o caso da marcação da frente 48 do emilia já está coberto pela 301). |
 | `116-b ★` | Os papéis são conferidos num projeto sem nenhum `.bpp`? | (a) ★ — com a chave presente, sempre: `{ "bpp": "jhonstart" }` sem `.bpp` e sem `#[bpp.html]` no núcleo é `error: "bpp" names "jhonstart", and no declaration of it carries #[bpp.html]` na chave; (b) só quando o projeto tem um `.bpp` — a chave sozinha compila até o primeiro `Card.bpp` | nada — (a) está construída |
 | `116-c ★` | Decorator num `var` de módulo (a 356 fala de `val`) | (a) ★ — recusado na anotação: `#[mark] var count = 1;` é `` `#[mark]` annotates the module `var` `count`, and a decorator runs on a `val`, never on a `var` ``; (b) roda como o de um `val` (`DeclKind.Val`) e o `var` entra no catálogo; (c) roda com `DeclKind.Var` próprio | nada |
+| `27-b ★` | As entradas do driver da transição: de onde vem o markup e quem marca `data-jh-pending` | (a) ★ — seis funções no `DomOps` (`markup` → `@Task<@Result<string, string>>`, `replaceSubtree`, `startIslands`, `mountCount`, `scrollTo(depth)`, `markPending(href, on)`), `applyTransition` assíncrono → `@Task<@Result<Navigation, string>>`, profundidade `shared - 1` (os FILHOS do segmento compartilhado mais fundo; `/blog` → `/blog/x` troca 1); (b) as quatro do README, o markup como parâmetro e a marca no runtime (`link_runtime.mjs`) — a caixa do passo 2 só no browser do onze 53; (c) as quatro, `replaceSubtree(depth, href)` e a marca dentro dela | nada — (a) está construída |
 
 ### Confirmações ★ das trilhas 00–03
 
