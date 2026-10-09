@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 51 perguntas, 6 contradições e 85 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **352**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 55 perguntas, 6 contradições e 85 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **352**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -802,10 +802,87 @@ importa `Styled`; `comptime padAll(2).rules` derruba o compilador (`reached unre
 **Recomendação: (a)** agora — decidível só pelo literal, sem mudar o compilador; (b) quando a
 `14-comptime-on-beam` fechar as duas linhas. **Bloqueia:** 119 passo 1 caixa 4.
 
+### 140-a · O que é uma `@Task` pendente no wasm (frente 140, passo 4)
+
+**Trava:** `01-compiler/140` passos 4 e 5 (`run/wasm_host_async`) e a metade JSPI do 6; `02/97` passo 17
+
+**Contexto.** No wasm `@Task<T>` é `T`: `await` é identidade e `async { … }` roda onde está escrito. A 334 (4) pede que a Task no `wasi` rode "até o fim quando aguardada, bloqueando no seu pollable", e `race` responda "o primeiro pollable pronto"; sem pollable não há o que esperar, e `delay` bloquearia onde é chamado. A 335 (2) faz do resultado o contrato. Um corpo que aguarda por dentro não pode ser suspenso num host de uma thread que roda até o fim.
+
+**Hoje:**
+```bp
+val t = async.delay(30, "a");   // bloqueia 30 ms aqui; `await t` é identidade
+```
+
+- [ ] **(1)** Task feita pelo host (`delay`, `fetch`) vira caixa `{pollable, valor}`; o resto continua ansioso.
+  ```bp
+  await async.race([async.delay(30, "a"), async.delay(10, "b")])          // "b" nos quatro targets
+  await async.raceOf([{ -> async { await async.delay(30, ()); "a" } }, { -> async.delay(10, "b") }])
+  // "a" no wasm (o primeiro thunk bloqueia 30 ms), "b" no node
+  ```
+- [ ] **(2)** Toda Task é preguiçosa (thunk + pollable opcional), roda no `await`; mesma divergência para um corpo que aguarda por dentro.
+- [ ] **(3)** (1), e no wasm `race`/`raceOf` aceitam só Tasks feitas pelo host: um operando que roda código botopink antes é `std-unsupported-on-target … on host 'wasi'` na chamada.
+  ```bp
+  await async.race([async.delay(30, "a"), async.delay(10, "b")])   // compila
+  await async.raceOf([…])                                            // recusado no wasm
+  ```
+
+**Recomendação: (3).** Um programa cuja resposta pode diferir entre hosts não compila (335 (2), decisão 67).
+
+### 140-b · Como a std liga uma função de host que devolve Task no wasm
+
+**Trava:** `01-compiler/140` passos 4–5; `02/97` passo 17
+
+**Contexto.** Os adaptadores `wasi:` da 238 só têm slots numéricos (`i32`, `i64`, `f32`, `f64`, `bool`); `delay<T>(millis: i32, value: T) -> @Task<T>` e `fetch(req: Request) -> @Task<@Result<Response, HttpError>>` têm tipos genéricos e records.
+
+**Hoje:**
+```bp
+#[@External.Wasm("wasi:random_f64")] pub declare fn float() -> f64;   // só formas numéricas
+```
+
+- [ ] **(1)** Só adaptadores numéricos; a std escreve `delay`/`fetch` como corpos `fn:` sobre eles (corpo ansioso: a caixa da 140-a (1) não sai da std).
+  ```bp
+  #[@External.Wasm(fn: delayBody)] pub declare fn delay<T>(millis: i32, value: T) -> @Task<T>;
+  fn delayBody<T>(millis: i32, value: T) -> @Task<T> { sleepMillis(millis); return value; }
+  ```
+- [ ] **(2)** A assinatura de um adaptador pode nomear `@Task<T>` e um `T` genérico, conferida pela forma; o compilador monta a caixa.
+  ```bp
+  #[@External.Wasm(wasi: .Delay)] pub declare fn delay<T>(millis: i32, value: T) -> @Task<T>;
+  ```
+- [ ] **(3)** Records cruzam no layout do compilador (`Request`, `Response` lidos pelo adaptador) — o `fetch` precisa disso também sob (2).
+
+**Recomendação: (2), com (3) só para o `fetch`.** Cada assinatura na lista do docs.md; qualquer outra forma recusada na anotação.
+
+### 140-c · O que uma ligação do host `browser` nomeia
+
+**Trava:** `01-compiler/140` passo 6 (`fetch`, `setTimeout` no `browser`); `02/97` passo 17
+
+**Contexto.** A 334 (3) dá `host: .Browser`; a 238/305 têm três formas (`op:`, `fn:`, `wasi:`), nenhuma é import JavaScript. Já feito (passo 6): o loader do `browser` serve em JavaScript os dois imports preview 1 do módulo (`fd_write`, `random_get`), então um adaptador `wasi:` sem `host:` já roda nos dois hosts.
+
+**Hoje:**
+```bp
+#[@External.Wasm("wasi:random_f64")] pub declare fn float() -> f64;   // wasmtime e node, iguais
+```
+
+- [ ] **(1)** Quarta forma `js: .Adaptador` para `host: .Browser`, uma segunda lista, o loader com o JavaScript de cada um.
+  ```bp
+  #[@External.Wasm(js: .Fetch, host: .Browser)]
+  #[@External.Wasm(wasi: .HttpOutgoing, host: .Wasi)]
+  pub declare fn fetch(req: Request) -> @Task<@Result<Response, HttpError>>;
+  ```
+- [ ] **(2)** Uma lista só para os dois hosts: cada adaptador `wasi:` tem implementação preview 2 (o componente) e JavaScript (o loader); `host:` só onde os hosts diferem de fato.
+  ```bp
+  #[@External.Wasm(wasi: .HttpOutgoing)]
+  pub declare fn fetch(req: Request) -> @Task<@Result<Response, HttpError>>;
+  ```
+- [ ] **(3)** Texto JavaScript sem rótulo numa ligação `.Browser` (código de host, como no `@External.Node`).
+
+**Recomendação: (2).** Uma lista fechada, paridade por construção ("ligado nos dois hosts ou em nenhum").
+
 ## Parte 2 — Trava, mas o passo ainda espera outra frente
 
 | Id | Assunto | Recomendação | Trava | Espera também |
 |---|---|---|---|---|
+| `134-f` | O que `use @getContext(T)` é em tempo de execução | (a) — recusar em todo target (`builtin-not-lowered` no `@`, como o `@module()`) até existir provedor; nada é emitido quebrado. | 134 passo 6 (a célula `run/`) | com (b)/(c), as frentes de backend 02–05 |
 | `67-a` | Onde as caixas de forms do lado do DOM são afirmadas | (a). As caixas rodam no gate da biblioteca dona, onde quebram primeiro, sem dependência nova; o navegador do onze 53 confere de novo. | a forma dos passos 1–3 da 67 (escritos para a (a)); o caminho de | 26; 103 s2 |
 | `03r-ab` | Front 09: stores de protocolo binário | (a) — nunca cair para ETS debaixo de uma URL do Mongo; o braço Elasticsearch sem aresta para o `rakun-client` (ver `ctr-w`; o passo 3 da 09 ainda passa por ele). A frente já segue a (a); falta só o registro. | 09 passo 5 (as células de recusa). | 09: 19 s1, 13 (grupo B, depois do 128) |
 | `ctr-p` | Confirmação `std-a` × confirmação `03r-e` | (a). Recusar é o mais restritivo (67) e mantém a lógica compartilhada no std. | os leitores do rakun 04; a varredura de consumidores da 104 (passo 5) | rakun 04: o 128; 104 s5: os donos dos arquivos consumidores (04, 65, 79, 12, 19, 22, 123, 49, 51) |

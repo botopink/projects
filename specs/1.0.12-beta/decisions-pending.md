@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**51 questions and 6 contradictions are open, and 85 implementation choices await confirmation.**
+**55 questions and 6 contradictions are open, and 85 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -28,6 +28,22 @@ Nothing open: 138-a answered (337).
 
 `00-gate` has no open question: 114's steps wait on no decision.
 
+#### 134-f · What `use @getContext(T)` is at run time
+- **Measured.** Under 269 the checker types `val ctx = use @getContext(BasePagamento);` as a `BasePagamento` inside a
+  `-> @Component<BasePagamento, i32>` body and refuses the bare call (front 134 step 6). No backend lowers the call:
+  commonJS writes `const ctx = await @getContext(BasePagamento);` verbatim (node: `SyntaxError`), erlang calls an
+  undefined `getContext/1` with an unbound `BasePagamento` (`erlc` refuses), wasm refuses `no lowering for the builtin
+  @getContext`, beam compiles and runs only while the body is never called. RC1's provider stack (`context-unbound`)
+  is not implemented, and no `.bp` file provides a context, so nothing says what the call reads.
+- **Options.** (a) Refuse it on every target until providers exist: `builtin-not-lowered` at the `@`, as `@module()`
+  is (`use @getContext(T)` → `error[builtin-not-lowered]: @getContext() is declared but no target lowers it`); the run
+  cell waits for the provider front. (b) Lower it now over a provider stack the `@Component` call pushes: a `provide`
+  form (`provide BasePagamento(total: 3) { … }`) the language does not have — a new decision. (c) Lower it to the
+  enclosing component's own context value (`T` read off the call's owner), with `context-unbound` (RC1) at run time
+  when none is active.
+- **Recommendation.** (a): a call the program cannot run is refused where it is written, never emitted broken.
+- **Blocks.** `01-compiler/134` step 6's run cell; with (b) or (c), the backend fronts (02–05) lower it.
+
 #### lg2-q · `@Decl`'s source location
 - **Measured.** `decl.loc.file` is the checker's unknown field of `Decl`, at the read (was `badkey` at the annotation). 289 and 290 already write option (1): a route file's decorator carries the route (`#[page("blog/[slug]", paths: allPosts)]`), the page reads its segments by hook (293), takes no parameter and returns `View` (275, 276). An anonymous default's `decl.name` is the file name (289), not its path.
 - **Options.** (1) None: the app-relative segment is an explicit decorator argument (`#[page("blog/[slug]")] pub fn BlogPost() -> View`). (2) A `loc` field on `@Decl` (`@src()`'s `SourceLocation`).
@@ -44,6 +60,24 @@ Nothing open: 138-a answered (337).
 - **Options.** (a) The two forms, as built, and `counts = counts.bump(k, n)` (340). (b) (a) plus `counts[k]` with 63's meaning (`ets:lookup`, `V`, failure on a missing row). (c) (b) plus `hasKey` (`ets:member`) and `delete` (`ets:delete`), each a new `std/beam` primitive.
 - **Recommendation.** (a).
 - **Blocks.** Nothing — the built surface stands until widened.
+
+#### 140-a · What a pending `@Task` is on wasm (front 140 step 4)
+- **Measured.** wasm lowers `@Task<T>` as `T`: `await` is identity and `async { … }` runs its block where it is written (`wat.zig`, `asyncBlock`, "the eager `@Task`"); erlang's `race` answers the head of the list (`hd(__Fs)`), its `raceOf` one process per thunk. 334 (4) asks `@Task` on `wasi` to "run to completion when awaited, blocking on its pollable" and `race` to answer "the first pollable ready"; with `@Task<T>` = `T` there is no pollable to wait on, and `delay` would block where it is called. 335 (2) makes results the contract. A body that awaits inside (`async { await delay(30, ()); "a" }`) cannot be suspended on a single-threaded run-to-completion host.
+- **Options.** (1) A host-made task (`delay`, `fetch`) is a box `{pollable, value}`, every other task stays eager; `await` blocks on the pollable; `race` polls the boxes and answers the first ready, an eager one being ready. `race([delay(30, "a"), delay(10, "b")])` is `"b"` on the four targets; `raceOf([{ -> async { await delay(30, ()); "a" } }, { -> delay(10, "b") }])` is `"a"` on wasm (the first thunk blocks 30 ms) and `"b"` on node. (2) Every `@Task` is lazy — a thunk plus an optional pollable, run when awaited; `async { }` runs at its `await`; `race` runs operands in order until one is a pending pollable. Same divergence for a body that awaits inside. (3) (1), and on wasm `race` / `raceOf` take host-made tasks only: an operand that runs botopink code first (`raceOf` itself, a `race` over an `async` block) is `std-unsupported-on-target … on host 'wasi'` at the call — `race([delay(30, "a"), delay(10, "b")])` builds, `raceOf([…])` does not.
+- **Recommendation.** (3) — a program whose answer could differ between hosts does not build (335 (2), decision 67).
+- **Blocks.** Front 140 steps 4 and 5 (`run/wasm_host_async`), the JSPI half of step 6; `02/97` step 17 (`async`'s wasm bindings).
+
+#### 140-b · How std binds a task-typed host function on wasm
+- **Measured.** Decision 238's `wasi:` adapters take numeric slots only (`host_binding.zig` `Slot`: `i32`, `i64`, `f32`, `f64`, `bool`); `async.delay<T>(millis: i32, value: T) -> @Task<T>` and `io/http.fetch(req: Request) -> @Task<@Result<Response, HttpError>>` have generic and record types, which no adapter signature spells.
+- **Options.** (1) Numeric adapters only (`wasi: .SleepMillis` `(i32) -> void`, `wasi: .HttpSend` over handles), std writing `delay` / `fetch` as `fn:` bodies over them — `#[@External.Wasm(fn: delayBody)] … fn delayBody<T>(millis: i32, value: T) -> @Task<T> { sleepMillis(millis); return value; }` (an eager body: blocks where called, so 140-a (1)'s box cannot be made by std). (2) An adapter's signature may name `@Task<T>` and a generic `T` (`wasi: .Delay` `(i32, T) -> @Task<T>`), checked by shape at the annotation, the compiler making the pollable box — `#[@External.Wasm(wasi: .Delay)] pub declare fn delay<T>(millis: i32, value: T) -> @Task<T>;`. (3) Records cross as the compiler's layout (`Request`, `Response` read by an adapter) — needed by `fetch` under (2) as well.
+- **Recommendation.** (2) with (3) for `fetch` alone: each adapter's signature in docs.md's list, every other shape refused at the annotation.
+- **Blocks.** Front 140 steps 4–5; `02/97` step 17.
+
+#### 140-c · What a `browser` binding names
+- **Measured.** 334 (3) gives `@External.Wasm` `host: .Browser`, 238/305 three forms (`op:`, `fn:`, `wasi:`), none a JavaScript import. Built (step 6): the `browser` loader serves the module's two preview 1 imports (`fd_write`, `random_get`) in JavaScript, so a `wasi:` adapter without `host:` already runs on both hosts (`std/io/random`'s three run under node through the loader).
+- **Options.** (1) A fourth form `js: .Adapter` for `host: .Browser`, a second documented list, the loader carrying each adapter's JavaScript — `#[@External.Wasm(js: .Fetch, host: .Browser)]` beside `#[@External.Wasm(wasi: .HttpOutgoing, host: .Wasi)]`. (2) One adapter list for both hosts: each `wasi:` adapter has a preview 2 implementation (the component's adapter) and a JavaScript one (the loader), so `#[@External.Wasm(wasi: .HttpOutgoing)]` serves both and `host:` is written only where the hosts truly differ. (3) Unlabelled JavaScript text on a `.Browser` binding (host code, as `@External.Node`).
+- **Recommendation.** (2): one closed list, parity by construction ("bound on both hosts or on neither").
+- **Blocks.** Front 140 step 6 (`fetch`, `setTimeout` on `browser`); `02/97` step 17.
 
 ### 02-std-and-packaging
 
