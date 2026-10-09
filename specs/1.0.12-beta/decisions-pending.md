@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**54 questions and 6 contradictions are open, and 92 implementation choices await confirmation.**
+**56 questions and 6 contradictions are open, and 92 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -27,6 +27,44 @@ Nothing open: 138-a answered (337).
 ### 01-compiler
 
 `00-gate` has no open question: 114's steps wait on no decision.
+
+#### s24-a · What a decorator body reads of a function or a type argument
+- **Measured.** `01-checker` step 24 (botopink-lang `front/checker-s24`) checks both at the argument —
+  `#[check("m", orderTotal)]` is `type mismatch: `#[check]`'s `rule` expects `?fn(Account) -> bool`, got
+  `fn(Order) -> bool``, `#[conditionalOnMissingBean(MailSendr)]` the unknown-type error — and hands every other
+  value over as itself (an array, a record, a variant, a field key). A function or a type still reaches the body as
+  its name as written (`"passwordsMatch"`, `"MailSender"`), as before 280: the body runs in its own module on the
+  comptime runtime, where the annotated module's functions and types are not compiled. 280 (1) says "handed over as
+  values"; the examples use a function argument only inside emitted code (`decl.addMember("validate", fn…)`,
+  illustrative, undecided) and a type only in typed meta (`decl.setMeta(OnMissing(type: t))`, 298).
+- **Options.** (a) Live values: the function, and what it reaches, compiled into the decorator module (as 331's
+  block lifts a declared function), callable in the body; a type read as `TypeInfo<T>` (253) —
+  `fn sample(comptime decl: @Decl, comptime key: fn(s: string) -> string) { decl.setMeta("k", key("x")); }` runs
+  `key` at build. (b) Opaque references: the body passes them on to an output — typed meta (298), a member source
+  by reference — and reading or calling one is refused at the read, located —
+  `decl.setMeta(OnMissing(type: t))` builds, `t.name` / `rule(x)` is `decorator-arg-opaque`. (c) Their name as
+  written (what is built): `rule` is `"passwordsMatch"` in the body, although its parameter says
+  `fn(v: T) -> bool`.
+- **Recommendation.** (b): no user code runs while the program compiles unless a `comptime` block says so, and a
+  value is never read as a type its signature does not state; the outputs carry the reference to the backends.
+- **Blocks.** `01-checker` s24 box 2 (the function and type halves of "handed over as values"); 125 s7
+  (`#[check]`'s `rule`); rakun 04 s6 (`conditionalOnMissingBean(MailSender)`); 282 (a page's `paths`/`head`).
+
+#### s24-b · Example 1's `#[check]` puts defaulted parameters before `message`
+- **Measured.** `01-checker/examples/decorator-arguments-280.md` example 1 declares `check<T>(comptime decl:
+  @Decl<T>, comptime rule: ?fn(v: T) -> bool = null, comptime at: ?Type.Field<T> = null, comptime message: string,
+  comptime code: Code = .Custom)`. Decision 244 (`01-checker` step 17) refuses a defaulted parameter followed by a
+  required one at the parse, for every function (`fn-param-default-trailing-only`) — the declaration does not
+  compile, so `#[check(passwordsMatch, at: .confirm, message: "…")]` and the function form `#[check(message: "…")]`
+  cannot be written as the example writes them. Step 24's cells declare `message` first.
+- **Options.** (a) 244 holds: `message` first — `check<T>(comptime decl: @Decl<T>, comptime message: string,
+  comptime rule: ?fn(v: T) -> bool = null, comptime at: ?Type.Field<T> = null, comptime code: Code = .Custom)`,
+  used `#[check("As senhas não batem", passwordsMatch, at: .confirm)]` and `#[check("A senha não pode conter o
+  nome")]`; the example is rewritten. (b) A decorator may put a default before a required parameter, the required
+  one then always given by label — the example compiles as written; amends 244 for decorators only. (c) `message`
+  takes a default (`= ""`) — `#[check(passwordsMatch, at: .confirm)]` is a check with no text.
+- **Recommendation.** (a): one parameter rule for every function (244); the example follows it.
+- **Blocks.** 125 s7 (`#[check]`'s signature in `repository/validation`); the example file's text.
 
 #### lg2-q · `@Decl`'s source location
 - **Measured.** `decl.loc.file` is the checker's unknown field of `Decl`, at the read (was `badkey` at the annotation). 289 and 290 already write option (1): a route file's decorator carries the route (`#[page("blog/[slug]", paths: allPosts)]`), the page reads its segments by hook (293), takes no parameter and returns `View` (275, 276). An anonymous default's `decl.name` is the file name (289), not its path.

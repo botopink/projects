@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 54 perguntas, 6 contradições e 92 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **360**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 56 perguntas, 6 contradições e 92 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **360**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -581,6 +581,55 @@ val clearSession = use clearCookie(sessionCookie);
 
 **Recomendação: (a)** — uma regra só, que já é a do jhonstart e a do cardume.
 **Bloqueia:** 123; 127; 104 passo 6; `07-onze/53` (os sites de cookie).
+
+### s24-a · O que o corpo de um decorator lê de um argumento função ou tipo
+
+**Trava:** `01-checker` passo 24, caixa 2 (a metade função/tipo de "entregues como valores"); 125 s7 (o `rule` do `#[check]`); rakun 04 s6 (`conditionalOnMissingBean(MailSender)`); 282 (`paths`/`head` da página).
+
+**Contexto.** O passo 24 confere função e tipo no argumento e entrega todo outro valor como ele é (array, record, variante, chave de campo). Função e tipo ainda chegam ao corpo como o nome escrito — o corpo roda no módulo dele, no runtime de comptime, onde as funções e os tipos do módulo anotado não são compilados.
+
+**Hoje.** `#[check("m", orderTotal)]` → `type mismatch: `#[check]`'s `rule` expects `?fn(Account) -> bool`, got `fn(Order) -> bool``; dentro do corpo, `rule` vale `"passwordsMatch"`.
+
+- [ ] **(a)** Valores vivos: a função (e o que ela alcança) compilada no módulo do decorator, chamável no corpo; o tipo lido como `TypeInfo<T>` (253).
+  ```bp
+  fn sample(comptime decl: @Decl, comptime key: fn(s: string) -> string) {
+      decl.setMeta("k", key("x"));   // roda `key` no build
+  }
+  ```
+- [ ] **(b)** Referências opacas: o corpo só as repassa a uma saída (meta tipado da 298, membro por referência); ler ou chamar é recusado na leitura.
+  ```bp
+  decl.setMeta(OnMissing(type: t));   // compila
+  decl.setMeta("n", t.name);          // ❌ decorator-arg-opaque, no `t.name`
+  ```
+- [ ] **(c)** O nome escrito (o que existe hoje): `rule` é `"passwordsMatch"` no corpo, embora o parâmetro diga `fn(v: T) -> bool`.
+
+**Recomendação: (b).** Nenhum código do usuário roda na compilação sem um `comptime` que diga isso, e um valor nunca é lido com um tipo que a assinatura não declara; as saídas levam a referência aos backends.
+
+### s24-b · O `#[check]` do exemplo 1 põe parâmetros com default antes de `message`
+
+**Trava:** 125 s7 (a assinatura do `#[check]` em `repository/validation`); o texto do arquivo de exemplos.
+
+**Contexto.** O exemplo 1 declara `check<T>(…, comptime rule: ?fn(v: T) -> bool = null, comptime at: ?Type.Field<T> = null, comptime message: string, comptime code: Code = .Custom)`. A decisão 244 recusa no parse um parâmetro com default seguido de um obrigatório, em toda função (`fn-param-default-trailing-only`).
+
+**Hoje.** A declaração do exemplo não compila; as células do passo 24 declaram `message` primeiro.
+
+- [ ] **(a)** A 244 vale: `message` primeiro.
+  ```bp
+  pub fn check<T>(comptime decl: @Decl<T>, comptime message: string,
+      comptime rule: ?fn(v: T) -> bool = null, comptime at: ?Type.Field<T> = null,
+      comptime code: Code = .Custom) { … }
+  #[check("As senhas não batem", passwordsMatch, at: .confirm)]
+  ```
+- [ ] **(b)** Um decorator pode ter default antes de um obrigatório, que então vai sempre por rótulo — o exemplo compila como está; emenda a 244 só para decorators.
+  ```bp
+  #[check(passwordsMatch, at: .confirm, message: "As senhas não batem")]
+  ```
+- [ ] **(c)** `message` ganha default `""`.
+  ```bp
+  #[check(passwordsMatch, at: .confirm)]   // uma regra sem texto
+  ```
+
+**Recomendação: (a).** Uma regra de parâmetro para toda função (244); o exemplo segue ela.
 
 ### lg2-q · Localização no fonte dentro de `@Decl`
 
