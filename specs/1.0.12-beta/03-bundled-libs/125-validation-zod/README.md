@@ -2,7 +2,7 @@
 
 **Priority:** high for the step 0–2 residue (`08-bpp/121` content collections and `08-bpp/127`
 actions take the `#[validated]` type — decision 306); medium for the rest · **State:** partial: steps 0–2 on
-feat with residue; steps 3–12 open
+feat (step 2 with residue); steps 3–12 open
 **Depends on:** `01-compiler/01-checker` step 24 (decision 280, step 7) · `07-j` (reduced: ≈ option (c) under 306). Written against decisions 144 (undeclared keys), 145 (emitted names),
 183 (`07-m`: coercion, step 6), 257 (`07-n`: `Schema<T>` lives in `validation` — amended by 306: the
 place stays, the value is private), 306–308
@@ -122,8 +122,12 @@ compiler rows in `language-gaps.md`):
   `fn some<T>(v: T) -> ?T { return v; }` is "recursive type detected".
 - **Length in code points** — `unicode.codepoints(s).length`; `"😀".length()` is 2 on commonJS, 1 on
   erlang, so no length marker uses `length()`.
-- **`f32` has no literal** (`val f: f32 = 1.5;` mismatches), no std `f64` → integer conversion: an
-  `i32` / `i64` field comes from three host cells in `schemas.bp`.
+- **`f32` is a double on both targets** (`1.5f`; `0.1f` reads back `0.1`): `#[float32]` is a range
+  check on an `f64`. No std `f64` → integer conversion: an `i32` / `i64` field comes from three host
+  cells in `schemas.bp`.
+- **`url.parse` answers every input** (no case folding, default port kept, `[::1]` split at its
+  first colon, `not a url` / `http://` / `http://a b.com/` answered): `#[url]` splits the authority
+  and checks scheme, host and port itself.
 
 ## Done
 
@@ -138,17 +142,13 @@ compiler rows in `language-gaps.md`):
   `schemaOf<T>`, `parse<T>`, `parse<T>At`, `decode<T>` (decision 257); three bad fields → three
   violations in declaration order; undeclared key refused (decision 144); self-naming type decodes;
   `schema_parity_test.bp` holds twenty documents under one digest on both targets
+- Step 0 residue — the last two platform facts are `platform_test.bp` cases: an `f32` (`1.5f`) is a
+  double on both targets and round-trips unchanged; `url.parse` against WHATWG, one case per input
+  where they differ (case kept, default port kept, `mailto:` read as one scheme, `[::1]` split at its
+  first colon, four inputs WHATWG refuses answered); `#[url]` (step 3) and `#[float32]` rewritten to
+  those facts (§ Mechanism, `surface.md`)
 
 ## Open
-
-### Step 0 residue — the two platform facts not yet tests
-
-- [ ] `f32` round-trips on both targets — a `test/platform_test.bp` case (today only a note in
-      `AGENTS.md` § Language notes)
-- [ ] `url.parse` against the reference's WHATWG examples (§ URLs): a `test/platform_test.bp` case
-      per input where it answers differently
-- [ ] a fact found false changes the dependent step **in this README**, same commit — no design the
-      platform refuses is kept
 
 ### Step 2 residue
 

@@ -108,7 +108,7 @@ Each format: one `constraints.bp` predicate, one marker, one combinator check, o
 | `z.uuid()` | `#[uuid]` | add · 3 | regex; RFC 9562 version and variant nibbles |
 | `z.uuid({ version })` · `z.uuidv4()` · `z.uuidv6()` · `z.uuidv7()` | `#[uuidV(4)]` (1–8) | add · 3 | version nibble compared |
 | `z.guid()` | `#[guid]` | add · 3 | 8-4-4-4-12 shape, no nibble check |
-| `z.url()` | `#[url]` | add · 3 | `url.parse` (`url.bp:46`) + scheme and host required; step 0 lists WHATWG differences |
+| `z.url()` | `#[url]` | add · 3 | walk: scheme `[A-Za-z][A-Za-z0-9+.-]*`, `://`, host (labels, IPv4 or bracketed IPv6) and port 0–65535 checked here — `url.parse` (`url.bp:46`) answers every input (`platform_test.bp`) |
 | `z.url({ hostname, protocol })` | `#[urlHost("…")]` · `#[urlProtocol("…")]` | add · 3 | patterns over parsed parts |
 | `z.url({ normalize })` | `#[normalizedUrl]` | add · 6 | transform: `url.serialize(url.parse(v))` |
 | `z.httpUrl()` | `#[httpUrl]` | add · 3 | `http` / `https`, dotted host |
@@ -152,7 +152,7 @@ Each format: one `constraints.bp` predicate, one marker, one combinator check, o
 | `z.int()` — safe-integer range | field `i64` with `#[safeInt]` | add · 3 | ±(2^53 − 1) |
 | `z.int32()` | field `i32` | have | decoder refuses a fraction and out-of-range — structural `invalidType`, not a marker |
 | `z.int64()` | field `i64` | have | as `z.bigint()` |
-| `z.float32()` · `z.float64()` | field `f64`; `#[float32]` for the single-precision range | add · 3 | `f32` is a primitive (`docs.md:343`); step 0 measures it on both targets |
+| `z.float32()` · `z.float64()` | field `f64`; `#[float32]` for the single-precision range | add · 3 | `f32` (`1.5f`) is a double on both targets (`platform_test.bp`), so the range is this check |
 | `z.nan()` | — | n/a | JSON cannot carry one |
 | `z.bigint().gt(5n)` … | the same markers on `i64` | gap | no `i64` bound literal (literal is `i32`). Nearest: `#[gt]` on `i64` refused with `minValue`'s message; `#[positive]` / `#[negative]` work (`0` widens in a comparison) |
 
