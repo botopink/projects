@@ -4,7 +4,7 @@
 hook; 22 on step 5's `Request` accessors; onze 49 on the page `Request` listing query and headers
 (R62-3); 88's `beans` on step 4's injected fields; 19 on step 4's exit codes · **State:** not started
 **Depends on:** 128 · lg2-e (R06-4's comptime refusal), lg2-j (comptime state — `#[provides]` duplicate
-check runs at boot) · `130-b` (qualified beans; open) · decision 318 (step 8) · 03r-c/e (confirmations);
+check runs at boot) · decision 321 (qualified beans, step 6) · decision 318 (step 8) · 03r-c/e (confirmations);
 lg2-g closed by 281 (no registry key as a type's name — step 6), 03r-b and 03r-d by 299 (step 7)
 **Owns:** `modules/rakun/**` except 74's four files (`src/ssl_bundle.bp`, `src/sidecars/rakun_ssl.erl`,
 `test/ssl_bundle_test.bp`, `test/tls_listener_test.bp`), 11's `src/actuator_api/**` and 17's
@@ -98,15 +98,16 @@ A bean, an event or a condition is named by its type or its function, never its 
 (`examples/context-lifecycle-example.bp`).
 
 - [ ] `ctx.resolve("OrderCache")` → resolution by type (`use bean(OrderCache)`, 269's `@getContext`
-      shape); `resolveNamed("Clock", "fixed")` → the shape `130-b` answers (option (d): a
-      qualifier is a distinct type; `130-b` open)
+      shape); `resolveNamed("Clock", "fixed")` → `resolveNamed(Clock, "fixed")` (321: the type as a type,
+      the label a `comptime` string checked against the registry at build; `resolveNamed(Clock)` the `#[primary]`);
+      `#[qualifier("…")]` also on a constructor field; an unknown label, a duplicate label or two `#[primary]` a build error
 - [ ] `#[eventListener("OrderPlaced")]` → `#[on] fn f(e: OrderPlaced)`, the event the parameter's type
       (280 example 2); the string form refused
 - [ ] `#[conditionalOnMissingBean(MailSender)]` takes a `type` (280 example 3); `rkExcludeFromEager`
       takes the type
 - [ ] `examples/context-lifecycle-example.bp` rewritten to decision 281 (`ctx.resolve("…")` /
       `resolveNamed` / `#[eventListener("…")]` / `has("…")` by type; its `// LANGUAGE GAP:` on
-      `@typeName<T>()` goes with lg2-g, closed by 281); the qualifier half follows `130-b`
+      `@typeName<T>()` goes with lg2-g, closed by 281); the qualifier half follows 321
 
 ### Step 7 — configuration as a typed record (decision 299)
 

@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**58 questions and 9 contradictions are open, and 90 implementation choices await confirmation.**
+**57 questions and 9 contradictions are open, and 90 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290 · `ctr-y` → 291 · `ctr-z` → 292 · `nat-c1`, `nat-c3`, `bpp-g` → 293 · `nat-c2` → 294 · `nat-c4` → 295 · (cardume) → 296, 297 · `nat-c5` → 298 · `nat-c6`, `03r-b` (reversed) → 299 · `nat-c7` → 300 (all of `nat-c` answered) · `nat-d1` → 303 · `nat-d2` → 304 · `nat-g` → 305 · `nat-d3` → 306 · `nat-d4` → 306 (moot: the `union2…5` / `tuple2…5` families go with the public value form; unions and tuples are types) · `nat-d5` → 307 · `pkg-b` → 309 · `imp-a` → 310 · `lg2-r` → 311, 312, 313 · `lg2-t` → 314 · `lg2-m` → 315 · `lg2-c` → 316 · `23-c` confirmed → 317 · `nat-e`, `130-c`, `erk-c` → 318 · `ctr-j` → 319 (option (b)) · `ctr-i` → 320 (option (a), commonJS included: codepoints on every target).
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290 · `ctr-y` → 291 · `ctr-z` → 292 · `nat-c1`, `nat-c3`, `bpp-g` → 293 · `nat-c2` → 294 · `nat-c4` → 295 · (cardume) → 296, 297 · `nat-c5` → 298 · `nat-c6`, `03r-b` (reversed) → 299 · `nat-c7` → 300 (all of `nat-c` answered) · `nat-d1` → 303 · `nat-d2` → 304 · `nat-g` → 305 · `nat-d3` → 306 · `nat-d4` → 306 (moot: the `union2…5` / `tuple2…5` families go with the public value form; unions and tuples are types) · `nat-d5` → 307 · `pkg-b` → 309 · `imp-a` → 310 · `lg2-r` → 311, 312, 313 · `lg2-t` → 314 · `lg2-m` → 315 · `lg2-c` → 316 · `23-c` confirmed → 317 · `nat-e`, `130-c`, `erk-c` → 318 · `ctr-j` → 319 (option (b)) · `ctr-i` → 320 (option (a), commonJS included: codepoints on every target) · `130-b` → 321 (a label checked at build).
 Closed by the 9 Oct revalidation (every item re-checked against 144–308, the fronts and the code): `08-h` → 285, 224 · `08-j` → 295 · `lg2-g` → 281 · `ctr-q` → 281, 256 · `ctr-m` (duplicate of `lg2-s`) · `ctr-n` (170 no longer carries the `from "m1"` example) · `ctr-r` (wrong premise: 118 lands before 26 step 0) · `111-c` → 228 · `03r-b`, `03r-d` → 299 · `95-e` (the collision left the code) · `03r-o` → 290 · `05emilia-h` → 206 · `68-c` → 280, 281. The rest were rewritten where their text or facts had gone stale.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
@@ -114,7 +114,7 @@ subject under 281. Every decorator parameter in these examples is `comptime` (28
 
 #### lg2-j · Comptime state across decorator invocations
 - **Measured.** A module-level `var` written by a decorator body is refused at the annotation; each invocation is its own module call.
-- **Options.** (1) Each invocation independent; a catalogue is read with `@TypeInfo.all(with: …)` at the entry point (256, without `member: "make"` or a type-name key, both removed by 281; the type key is `130-b`'s). (2) Comptime mutable state scoped to one compilation.
+- **Options.** (1) Each invocation independent; a catalogue is read with `@TypeInfo.all(with: …)` at the entry point (256, without `member: "make"` or a type-name key, both removed by 281; the type key is `321's). (2) Comptime mutable state scoped to one compilation.
 - **Recommendation.** (1): a decorator's answer depends on its declaration alone.
 - **Blocks.** The row; rakun 05.
 
@@ -189,12 +189,6 @@ subject under 281. Every decorator parameter in these examples is `comptime` (28
 - **Options.** (a) Refuse `@is(…)` as a call (`unknown-builtin`, naming `x is T`). (b) Declare `is(value: unknown) -> bool`.
 - **Recommendation.** (a).
 - **Blocks.** The `@is(…)` box of 134 step 2.
-
-#### 130-b · Two `#[provides]` of one type in the bean registry (decisions 254, 256, 281)
-- **Measured.** 256's snippet keys a provider by `b.returnTypeName` — a type's name as text, which 281 takes out of the registry ("how a qualified bean is told apart stays `130-b`, now with a type-based option"). There, two qualified providers of one type (`#[provides] #[qualifier("fast")] fn fastDye() -> Dye` beside `#[qualifier("slow")]`), and a `#[primary]` beside a plain one, collide on `"Dye"` → a duplicate. Today's code does not use that registry: `#[provides]` emits `rkRegisterBean(…)`, filling the context table at load keyed `Type@qualifier`; the unqualified or `#[primary]` one owns the plain name, the others are reached by `ctx.resolveNamed("Dye", "warm")` (`rakun/src/context.bp:1030-1110`, `rakun/test/context_test.bp:486-510`, `examples/rakun-container`).
-- **Options.** (a) A qualified provider is keyed `Type@qualifier` (the decorator records `decl.setMeta(Qualifier(name: "fast"))`, 298); the plain name is the unqualified or `#[primary]` one; two owners of it are the duplicate (`d = d.insert(rkBeanKey(b), b.value)`). (b) The registry holds only what injection by type reads; qualified providers stay in the context table their load-time registration fills. (c) The snippet as written: any two providers of one type are a duplicate. (d) *Added under 281:* a qualifier is a distinct type (`type FastDye(dye: Dye)`, `#[provides] fn fastDye() -> FastDye`, `use bean(FastDye)`), so the registry is keyed by type alone; `#[qualifier("…")]` and `resolveNamed` go.
-- **Recommendation.** (d) under decision 281 — (a)'s `Type@qualifier` keeps a string beside the type and `resolveNamed` names the type in text; (a) if a string label is wanted after all. `04-rakun/04` step 6 already writes (d)'s shape.
-- **Blocks.** rakun's `#[provides]` / `#[qualifier]` / `#[primary]` migration (130 step 5: `context.bp`, its test, rakun-container). Not absorbed by 318 (`nat-e`); open on its own.
 
 ### 02-std-and-packaging
 
