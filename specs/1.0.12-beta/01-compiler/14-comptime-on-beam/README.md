@@ -1,7 +1,8 @@
 # Front 14 — comptime-on-beam: the comptime pipeline's evidence and its cost per evaluation
 
-**Priority:** medium · **State:** partial: steps 1 (fixture half), 3, 4, 7, decision 237 and step
-2's slope on feat; step 2's N=200 wall clock on the BEAM runtime, step 6 and step 8 (355) open
+**Priority:** medium · **State:** partial: steps 1 (fixture half), 3, 4, 7, decision 237, step 2's
+slope and step 8's boxes 1–3 and 5 on feat; step 2's N=200 wall clock on the BEAM runtime, step 6 and
+step 8's imported `val` and `contentHash` (T19) open
 **Depends on:** `18-comptime-runtimes` (step 2's runtime-evaluation stage) · `01-checker` (step 2's
 memo key; body file name and T17 are 01's rows) · step 6 (decisions 341, 342, 343).
 **Owns:** `modules/compiler-core/src/comptime/template_eval.zig`, `decorator_eval.zig` ·
@@ -51,6 +52,28 @@ call-site project ≤ 600 ms on both runtimes.
 - Step 7 — `decorator_invocation.zig`'s `a \u{…} literal in the body …`: a body literal and a plain
   argument carrying `\u{…}` reach the `@emit` reply as the code points' UTF-8 bytes, byte-identical
   on beam and wat (`02-erlang` step 5 box 2); reds if `writeStringFromLexeme` writes `\x{…}`
+- Step 8, box 1 — a template reads a hole's build value (decision 355): each `Interp` part of
+  `q.parts()` carries `known` and `value` (`template_eval.zig` `interpTerm`), computed by
+  `block_eval.zig` `holeValue` (`infer.zig` `withHoleValues`): a literal, a `comptime`, a non-`var`
+  `val` of the module whose initializer is known at build, a template call already expanded whose
+  arguments all are (`knownAtBuild`) — evaluated on the comptime runtime as a `comptime` is, a value
+  that raises refused at the hole; the spelling is `14s8-a`, the reach `14s8-b`, the refusal `14s8-c`
+  (`run/styled_holes_known_at_build`, four targets; `reject/hole_known_at_build_raises`; `comptime:
+  round trip ---- a hole known at build …`, the reply byte-identical on beam and wat)
+- Step 8, box 2 — a record a `comptime` answers is lifted as its type's declared constructor; a type of
+  a module this one does not import is imported where the value is written (`block_eval.zig`
+  `constructorName`, `Env.templateImports` erased as a type alias) (`modules/comptime_reaches_package_template`)
+- Step 8, box 3 — a `comptime` reaching a template call evaluates its expansion (`Preparer.replace`,
+  `expandedFn` for a carried function of the module), the template module's functions it names carried
+  under their aliases (`comptime.zig` `importTemplateAliasClosures`); a function holding a template call
+  declared after the `comptime` is refused naming the call (`unexpandedTemplateCall`, `14s8-d`); `"${…}"`
+  in a carried function lowers in the comptime module (`erlang.zig`'s untyped `stringTemplate` arm), so
+  the erlang emitter no longer aborts (`modules/comptime_reaches_package_template`,
+  `run/comptime_interpolation_in_called_fn`, `reject/comptime_template_call_declared_after`)
+- Step 8, box 5 — `styled "${tab4} color: red;"` with `tab4 = styledProperty "tab-size: 4;"` is emitted
+  `styledConstant("s_b480a37a", ".s_b480a37a{tab-size:4;color:red}")` on erlang and commonJS (styled's
+  `repository-stages.sh` reads it; `${padAll(2)}` stays `styledComputed`); the four-target cell is
+  `run/styled_holes_known_at_build` (a template of its own: the compiler knows no library)
 
 ## Open
 
@@ -99,16 +122,11 @@ pub val tab4 = styledProperty "tab-size: 4;";
 pub val code = styled "${tab4} color: red;";   // styledConstant("s_…", ".s_…{tab-size:4;color:red}")
 ```
 
-- [ ] a template function reads another expansion's value — `e.lookup(name)` answers the `val`'s build
-      value when its initializer is known at build (row **A template function cannot read another
-      expansion's value**), so the template tells a hole known at build from a run-time one
-- [ ] a record a `comptime` expression answers is lifted as its constructor, imported where emitted
-      (row **A record value a `comptime` expression answers is emitted as an unbound constructor**)
-- [ ] a `comptime` expression reaching a template expansion evaluates (row **A `comptime` expression
-      reaching a template expansion panics the erlang emitter**)
-- [ ] `contentHash` at comptime (T19; with step 6's host cells)
-- [ ] `run/styled_holes_known_at_build` — `code` above emitted as a constant on the four targets; a
-      hole naming a parameter still computed at render
+- [ ] a hole naming a `val` another module exports is known at build when its initializer is: the
+      exporting module's expansion travels with the export (`comptime.zig` `registerExports`); today it
+      is computed at render (`14s8-b`), the same CSS
+- [ ] `contentHash` at comptime (T19; with step 6's host cells) — `comptime padAll(2).rules` is refused
+      naming `.contentHash(…)` (a run-time hole reaches `propertyComputed`)
 
 ## Notes
 
