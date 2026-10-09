@@ -14,7 +14,7 @@ repository/styled   (botopink/styled)  a base para construir componentes de CSS:
         ▲                          ▲
 repository/emilia           jhonstart/jhonstart-styled   ← "bpp".style: compila a seção --- style ---
 uma série de componentes           ▲
-feitos em styled           jhonstart-emilia             ← #[styled(..tokens)] na tag (301)
+feitos em styled           #[styled(..)] na tag         ← do jhonstart-styled pelo p4 (a); hoje do jhonstart-emilia (301)
 ```
 
 ```json
@@ -254,7 +254,7 @@ ao `html`. O valor que volta chega ao `html` junto com a marcação, e o `html` 
 | Escrito | Significa |
 |---|---|
 | `--- style ---` | com escopo: cada seletor ganha `[data-s="<id>"]` |
-| `--- style #[isGlobal] ---` | vai para a folha como foi escrito, sem escopo |
+| `--- style #[isGlobal] ---` | vai para a folha como foi escrito, sem escopo (só se o p3 ficar com (a); com (b), o global é `:global(…)`) |
 | `:global(sel)` dentro da seção | `sel` fica sem escopo |
 | `--- style #[defineVars(a, b)] ---` | cada nome é um valor do escopo do template; o elemento raiz ganha `style="--a: …; --b: …"` |
 | `<style #[isInline]>` na marcação | o builder `style`, verbatim (o comportamento de hoje) |
@@ -272,7 +272,7 @@ O build o encurta (124).
 | `pub default fn` de `jhonstart-styled` | membro novo do jhonstart | recebe a seção, aplica o escopo pelo `styled` e devolve o `Style` do jhonstart (id, folha, modo, vars) |
 | o sink | `jhonstart-styled` | põe a **única** folha do render no head e em cada fill de boundary: as camadas da emilia e depois as seções com escopo |
 | `Style` e o braço no `html.bp` | core do jhonstart | recebe o `Style` com a marcação, escreve `data-s` e recusa `<style>` sem `#[isInline]` |
-| `#[styled(..tokens)]` | `jhonstart-emilia` | 301; os tokens viram componentes `styled` e as regras vão para o mesmo sink, e o plugin de flush próprio da ponte sai |
+| `#[styled(..)]` | `jhonstart-styled` (p4 (a)); hoje o `jhonstart-emilia` (301) | aceita tudo o que implementa o `Styleable` do `styled`: componentes da aplicação e tokens da emilia; as regras vão para o mesmo sink, e o plugin de flush próprio do `jhonstart-emilia` sai |
 
 A ordem da cascata fica: folhas linkadas (`globals.css`), camadas da emilia, seções com escopo.
 
@@ -288,7 +288,7 @@ que continuam sem saber do `.bpp`.
 | 270 | o prelúdio é o do pacote em `bpp.default` |
 | 278 | `#[isGlobal]` e `#[defineVars]` passam para a linha da seção; `<style>` na marcação só com `#[isInline]` |
 | 285 | o toolchain passa a conhecer também o pacote de `style` |
-| 301 | os tokens viram componentes `styled`; a folha sai pelo `jhonstart-styled` |
+| 301 | os tokens viram componentes `styled`; a folha sai pelo `jhonstart-styled`; pelo p4 (a), o `#[styled(..)]` passa a ser do `jhonstart-styled` e aceita também componentes da aplicação (a escrita no template não muda) |
 | `08-bpp/119` | é dona de `repository/css`, `repository/styled`, `jhonstart-styled` e `jhonstart-emilia`; passos: 1 os pacotes, 2 `jhonstart-styled` e o braço do `html`, 3 boundary, 4 `#[styled]`, 5 uma folha só; no gate, `grep -rn "bpp\|jhonstart"` vazio em `repository/css`, `repository/styled` e `repository/emilia/modules` |
 | `08-bpp/116` | manifesto em objeto, o desdobramento da seção e o formatter (que não mexe nos bytes da seção) |
 | `06-emilia/34` | um passo 5: a emilia sobre o `styled`, com o `e_39b87d03` intacto |
@@ -298,30 +298,189 @@ que continuam sem saber do `.bpp`.
 
 ## 9. O que ainda precisa ser decidido dentro da proposta
 
-- [ ] **(p1) Como o `Style` chega ao `html` num `.bp`.** É a forma escrita do desdobramento e a que
-  um componente `.bp` escreve à mão. (a) `html(style) """…"""`: um template function que recebe um
-  valor antes do literal; a 116 mede no passo 0 se a linguagem aceita isso e, se não aceitar, abre
-  uma linha no `language-gaps.md`. (b) Um hook, `use scopedStyle(style)`, lido pelo `html` através
-  de `@typeInfo(f).hooks` (277). **Recomendo (a)**: é explícito e não depende do contexto do render.
-- [ ] **(p2) A forma string `"bpp": "jhonstart"`.** (a) Recusada, apontando para o objeto. (b)
-  Aceita como atalho para `{"default": …}`. **Recomendo (a)**: uma forma só (67).
-- [ ] **(p3) Quantas seções por arquivo.** (a) No máximo uma com escopo e uma `#[isGlobal]`. (b)
-  Uma só. **Recomendo (a)**: o exemplo `Post` do Astro usa as duas.
-- [ ] **(p4) O nome `styled` repetido.** O pacote se chama `styled` e a anotação da 301 também
-  (`#[styled(..tokens)]`). (a) Os dois ficam; um é pacote, o outro é função da ponte. (b) A anotação
-  muda de nome, para `#[emilia(…)]` ou `#[tw(…)]`. **Recomendo (a)**: os dois nunca se encontram no
-  mesmo escopo.
-- [ ] **(p5) A emilia sem `"bpp".style`.** Uma aplicação que só usa `#[styled]`, sem seção de
-  estilo, (a) continua com a folha da emilia porque a ponte registra o sink, ou (b) é obrigada a
-  ter `style`. **Recomendo (a)**.
-- [ ] **(p6) `@utility` literal.** (a) Recusado no `styled`: o `val` ou a função faz o papel dele,
-  como em `compose.bp`. (b) Aceito: `styled "@utility tab-* { tab-size: --value(integer); }"` gera
-  uma família tipada `fn(i32) -> StyledView`. **Recomendo (a)**: um jeito só de nomear, o do botopink.
-- [ ] **(p7) De onde vêm os breakpoints.** O `styled` conhece as pseudo-classes, `dark` e as
-  `@custom-variant` importadas; os breakpoints (`md`, `lg`) estão no tema da emilia (300). (a) Por
-  hook: `use breakpoint("md")`, declarado pela emilia sobre `StyledBase` (§ 3.2). (b) A emilia
-  exporta `@custom-variant` geradas do tema. (c) O `styled` ganha um tema próprio. **Recomendo
-  (a)**: o tema continua num lugar só, e o mesmo hook serve para qualquer valor do tema.
+Cada ponto traz o contexto, as opções com exemplo e a recomendação. As recomendações seguem a
+decisão 67: uma forma só, a mais restritiva.
+
+### p1 · Como o `Style` chega ao `html` num `.bp`
+
+**Contexto.** No `.bpp`, quem escreve a ligação entre a seção e a marcação é o desdobramento (116).
+Num `.bp`, o componente escreve à mão. As duas formas precisam ser a mesma, e é o `jhonstart-styled`
+quem fornece a função de estilo.
+
+- [ ] **(a)** O `html` recebe o estilo como argumento antes do literal.
+  ```bp
+  import html, {View} from "jhonstart";
+  import style from "jhonstart-styled";
+
+  val cardStyle = style """ .title { font-size: 2rem; } """;
+
+  pub fn Card(props: Props) -> View {
+      return html(cardStyle) """<article><h1 class="title">{props.title}</h1></article>""";
+  }
+  ```
+- [ ] **(b)** Um hook do `jhonstart-styled`, que o `html` acha pelo `@typeInfo(f).hooks` (277).
+  ```bp
+  pub fn Card(props: Props) -> View {
+      use scopedStyle(cardStyle);
+      return html """<article><h1 class="title">{props.title}</h1></article>""";
+  }
+  ```
+- [ ] **(c)** Uma anotação na tag raiz (302), que grava o `Style` como meta, e o `html` aplica o escopo
+  ao template inteiro.
+  ```bp
+  return html """<article #[scoped(cardStyle)]><h1 class="title">{props.title}</h1></article>""";
+  ```
+
+**Recomendação: (a)**, e (c) se a 116 medir no passo 0 que a linguagem não aceita um template
+function com valor antes do literal. A (a) é a mais explícita: o estilo aparece onde o template é
+chamado. A (c) não pede nada novo à linguagem, mas põe numa tag algo que vale para o template todo. A
+(b) esconde a ligação no contexto do render.
+
+### p2 · A forma string `"bpp": "jhonstart"`
+
+**Contexto.** Hoje o manifesto diz `"bpp": "jhonstart"` (200). A proposta transforma a chave em
+objeto.
+
+- [ ] **(a)** Só o objeto; a string é recusada e o erro mostra a forma nova.
+  ```text
+  "bpp": "jhonstart"
+  error: "bpp" is an object — write "bpp": {"default": "jhonstart"}      at the key
+  ```
+- [ ] **(b)** A string continua valendo, como atalho para `{"default": "jhonstart"}`.
+  ```json
+  "bpp": "jhonstart"                                   // ≡ {"default": "jhonstart"}
+  "bpp": {"default": "jhonstart", "style": "jhonstart-styled"}
+  ```
+
+**Recomendação: (a).** Uma forma só (67). A migração é de uma linha, e o erro diz qual.
+
+### p3 · Quantas seções de estilo por arquivo
+
+**Contexto.** O exemplo `Post` do Astro tem um `<style>` com escopo e outro `is:global` no mesmo
+componente.
+
+- [ ] **(a)** No máximo uma seção com escopo e uma `#[isGlobal]`, nessa ordem.
+  ```bpp
+  <article><h1 class="title">{props.title}</h1></article>
+  --- style ---
+  .title { font-size: 2rem; }
+  --- style #[isGlobal] ---
+  h1 { margin: 0; }
+  ```
+- [ ] **(b)** Uma seção só; o que é global vai com `:global(…)`.
+  ```bpp
+  --- style ---
+  .title { font-size: 2rem; }
+  :global(h1) { margin: 0; }
+  ```
+
+**Recomendação: (b).** Com o `:global(…)`, uma seção cobre os dois casos, e o arquivo tem um lugar
+só de CSS. A (a) só ganha quando a folha global é grande, e aí ela cabe melhor num `globals.css`.
+Isso muda a recomendação anterior, que era (a). Com (b), o `#[isGlobal]` deixa de existir:
+`#[defineVars]` passa a ser a única anotação da linha da seção.
+
+### p4 · Aplicar um componente `styled` numa tag, e o nome `#[styled]`
+
+**Contexto.** A 301 dá à emilia a anotação `#[styled(..tokens)]`, declarada pelo `jhonstart-emilia`.
+Com o `styled`, a aplicação também escreve componentes próprios (`pub val btn = styled """…"""`), e a
+proposta ainda não diz como aplicar um deles a uma tag. Além disso, o pacote se chama `styled` e a
+anotação também: um `.bp` que importa os dois precisa de alias.
+
+- [ ] **(a)** Um `#[styled]` só, declarado pelo `jhonstart-styled`, que aceita tudo o que implementa
+  o behavior `Styleable` do pacote `styled`. `StyledView` implementa esse behavior, e a emilia faz o
+  `Token` implementá-lo, já que ela importa o `styled`. O `jhonstart-emilia` deixa de declarar a
+  anotação.
+  ```bp
+  // styled:  pub behavior Styleable { fn toStyled(self: Self) -> StyledView; }
+  // emilia:  Token implement Styleable   (cada token → o seu componente styled)
+  <button #[styled(btn, .Pad.All.4, .Text.Bold)]>Salvar</button>
+  ```
+- [ ] **(b)** Duas anotações com nomes diferentes: `#[styled(btn)]` para componentes, do
+  `jhonstart-styled`, e `#[tw(.Pad.All.4)]` para a emilia, do `jhonstart-emilia`.
+  ```bp
+  <button #[styled(btn)] #[tw(.Pad.All.4, .Text.Bold)]>Salvar</button>
+  ```
+- [ ] **(c)** A 301 como está; um componente próprio entra pela classe.
+  ```bp
+  <button class={btn.className} #[styled(.Pad.All.4)]>Salvar</button>   // a regra de btn registrada à parte
+  ```
+
+**Recomendação: (a).** Uma anotação para todo estilo, e o `jhonstart-styled` continua sem conhecer a
+emilia: ele conhece só o behavior do `styled` (113). A ordem da lista continua sendo a identidade da
+classe (`contracts.md` § 4), e a lista continua comptime (280), com a checagem de breakpoint da 300.
+Isso emenda a 301: muda quem declara a anotação, a escrita no template fica igual.
+
+### p5 · A emilia numa aplicação sem `"bpp".style`
+
+**Contexto.** A chave `style` só diz quem compila a seção `--- style ---`. Uma aplicação pode usar
+só `#[styled(…)]`, sem escrever nenhuma seção.
+
+- [ ] **(a)** A anotação funciona sem a chave. Ela é um import comum do `jhonstart-styled`, que
+  registra o sink quando é usado; só a seção exige `"bpp".style`.
+  ```json
+  { "bpp": { "default": "jhonstart" },
+    "dependencies": { "jhonstart": {…}, "jhonstart-styled": {…}, "emilia": {…} } }
+  ```
+  ```bpp
+  <h1 #[styled(.Text.Bold)]>Oi</h1>        // compila; a folha sai pelo sink do jhonstart-styled
+  ```
+- [ ] **(b)** Quem usa estilo é obrigado a declarar `"style"`.
+  ```text
+  error: #[styled] needs "bpp.style" in botopink.json      at the annotation
+  ```
+
+**Recomendação: (a).** A chave existe para o toolchain saber a quem entregar a seção, e uma anotação
+não é uma seção. Exigir a chave seria configuração sem função.
+
+### p6 · `@utility` literal no `styled`
+
+**Contexto.** No Tailwind, `@utility` dá nome a um utilitário, e `--value()` transforma o nome numa
+família. No botopink, o nome vem do `val` ou da função, e a família é uma função com parâmetro.
+
+- [ ] **(a)** Recusado; o `val` ou a função faz o papel dele.
+  ```bp
+  pub val tab4 = styled "tab-size: 4;";
+  fn tab(n: i32) -> StyledView { return styled "tab-size: ${n};"; }
+  // styled "@utility tab-* { … }"  →  error: name a component with a val or a function   at @utility
+  ```
+- [ ] **(b)** Aceito: o literal gera uma família tipada a partir do `--value()`.
+  ```bp
+  pub val tab = styled "@utility tab-* { tab-size: --value(integer); }";   // tab: fn(i32) -> StyledView
+  tab(4)
+  ```
+
+**Recomendação: (a).** Um jeito só de dar nome, o da linguagem, como o `compose.bp` da emilia já faz.
+A (b) faria o tipo de um `val` depender de uma string de CSS.
+
+### p7 · De onde vêm os breakpoints
+
+**Contexto.** O `styled` conhece as pseudo-classes, `dark` e as `@custom-variant` que estão em
+escopo. Os breakpoints (`md`, `lg`) estão no tema da emilia (300), que o `styled` não conhece.
+
+- [ ] **(a)** Por hook: a emilia declara `use breakpoint(name)` sobre `StyledBase` (§ 3.2).
+  ```bp
+  fn container() -> StyledView {
+      val md = use breakpoint("md");          // breakpoint apagado no tema: erro de compilação (300)
+      return styled "width: 100%; @media (width >= ${md}) { max-width: ${md}; }";
+  }
+  ```
+- [ ] **(b)** A emilia exporta `@custom-variant` geradas do tema, e o literal escreve `@variant md`,
+  como no Tailwind.
+  ```bp
+  import {variants.md} from "emilia";
+  pub val container = styled "width: 100%; @variant md { max-width: 48rem; }";
+  ```
+- [ ] **(c)** O `styled` ganha um tema próprio, separado do da emilia.
+  ```bp
+  pub val container = styled "width: 100%; @media (width >= --breakpoint(md)) { … }";
+  ```
+
+**Recomendação: (a).** O tema continua num lugar só, o mesmo hook lê qualquer valor do tema (cor,
+raio, fonte), e o valor é comptime quando o tema é, então o componente ainda sai no build (p9). A (b)
+é mais curta, mas cria um segundo canal para o mesmo dado. A (c) duplica o tema.
+
+### p8 e p9 · aceitos em 09/10
+
 - [x] **(p8) Os nomes — aceito (09/10): (a).** `StyledBase`, `Styled`, `StyledView`, no padrão do
   jhonstart (`ElementBase` é o nome do valor seguido de `Base`).
 - [x] **(p9) O custo no commonJS — aceito (09/10): (a).** Um componente de estilo calculado por
