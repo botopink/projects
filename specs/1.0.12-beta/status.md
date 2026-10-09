@@ -1,8 +1,7 @@
 # Status — 1.0.12-beta
 
-**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `6d95d8fc` (batch 3:
-01-checker s21, the backend cells; Node 22 CI) · rakun `ed54e36` · jhonstart `0ba3c55` · emilia `b3d877e`
-· onze `d6664c8` · erika `44aef93` · vscode-extension `f041865`
+**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `fe13b439` (batch 4: three codegen gaps front 121 met — a var across branches on erlang/beam, a valueless case arm on commonJS, a record update in a lambda) · rakun `ed54e36` · jhonstart `2fd6b01` · emilia `b3d877e`
+· onze `61bdb0c` · erika `44aef93` · vscode-extension `f041865`
 
 **Fronts:** 71 — **0 done** · **23 partial** · **48 not started**.
 
