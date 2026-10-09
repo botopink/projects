@@ -537,6 +537,7 @@ No general rule (283): each case below is its own question, (a) the language's o
   prelude builder and a local `fn em(…)` are one to it. What 118 enforces meanwhile, in `html.bp`:
   351's names (camelCase rendered in HTML's spelling, `data-*` a `string`, any other kebab-case and
   `onClick` refused at the name) and no pair spread on an element.
+- **Since 354–361** (re-read on today's `feat`). Nothing removes a blocker or moves a file: `element.bp` stays frozen, `elements.bp` stays `05-jhonstart/26`'s, and 361 merges `jhonstart-styled` into that same core member, so 119's modules land beside it — one more reason for one writer per file. What the rewrite now writes: a native builder keeps its content as the `children` field of its element's props (360 removes `children` from a *component's* props only); its spread takes the element's props type or a 307 type derived from it, left to right (359); the prelude module that imports the builders is the one declaring `#[bpp.htmlPrelude] pub val prelude = bpp.Prelude();` (361), so (c)'s `intrinsics.bp` would be imported there; a builder is a plain function answering `Element`, not a `@Component` (354). The 78 hand-written callers could write `a(AnchorProps(href: "/", children: …))` once the builders take props (359 builds the record), but the call still needs `01-checker` s28 for `AnchorProps` as a type.
 - **Options.**
   (a) 118 takes carve-outs of `element.bp` and `elements.bp` once s28 and 207's spelling land, and
   rewrites the 78 hand-written callers in jhonstart and onze in the same landing:
