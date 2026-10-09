@@ -1,6 +1,6 @@
 # Front 130 — decorator outputs: a decorator's four places, then module-level `@emit` removed
 
-**Priority:** high · **State:** partial: steps 1–4 on feat (decisions 216, 235, 248); step 5 at 34
+**Priority:** high · **State:** partial: steps 1–4 on feat (decisions 216, 235, 248); step 5 at 38
 of 119 sites (plus `#[schema]`'s 5); step 6 not started
 **Depends on:** decisions 254, 256 for rakun's DI (answered; 256's registry needs `01-checker` step
 20) · library tracks for their decorator files · `04-rakun/128` for rakun rows (`03r-ao`)
@@ -46,15 +46,15 @@ library decorator uses them; `@emit` is a named error.
 ## Done
 
 - Steps 1–4 — the four places (decision 216), `with:` a list (235), one `@typeInfo` (248), `@TypeInfo.all` (253) — cells `run/decorator_{add_member,set_meta,add_type}`, `modules/decorator_{add_member_import,meta_import,add_type_import}`, `modules/typeinfo_all_{registration,imported,private}`, `run/typeinfo_all_list` and the `reject/decorator_*`, `reject/typeinfo_*` refusals
-- Step 5, migrated — std `#[mocks.mock]`; validation `#[validated]`; jhonstart `#[client]`; rakun-data `#[entity]` (20 of 22), `#[entityRepository]` (3), `#[belongsTo]` (2), `#[query]` (1 of 2); rakun-cache `#[cached]` (2); rakun-hateoas `#[halResource]` (1)
+- Step 5, migrated — std `#[mocks.mock]`; validation `#[validated]`; jhonstart `#[client]`; rakun-data `#[entity]` (20 of 22), `#[entityRepository]` (3), `#[belongsTo]` (2), `#[query]` (1 of 2); rakun-cache `#[cached]` (2); rakun-hateoas `#[halResource]` (1); jhonstart `#[page]` / `#[layout]` / `#[template]` / `#[defaultView]` registrations (4: meta `seg`, registered by the entry point with `jhRegisterRoutes(@TypeInfo.all(with: page), …)` — onze's `onze_main.bp`, jhonstart's, onze-server's and the blog example's tests)
 
 ## Open
 
 ### Step 5 — migrate the remaining sites
 
-Member names are the library's (decision 174's note). Remaining `@emit(` at feat: rakun 67 lines,
-jhonstart 5, validation 5. Rakun rows target post-128 paths (`04-rakun/README.md` § Order, `03r-ao`
-(a)): no 130 rakun commit while `04-rakun/128` is open; after it, each a consumer commit under
+Member names are the library's (decision 174's note). Remaining `@emit(`: rakun 67 lines,
+jhonstart 1 (`#[page]`'s `<X>Params`), validation 5. Rakun rows target post-128 paths
+(`04-rakun/README.md` § Order, `03r-ao` (a)): no 130 rakun commit while `04-rakun/128` is open; after it, each a consumer commit under
 decision 188, never in a wave with the rakun front owning the file.
 
 | File | Sites | Generated today | New form | Written against |
@@ -63,7 +63,7 @@ decision 188, never in a wave with the rakun front owning the file.
 | same files + `lifecycle.bp`, `conditions.bp`, `rakun-data` `entity.bp` / `query.bp` | ~27 | `val __rkScan_<T>`, `__rkBean_`, `__rkLc_`, `__rkEv_`, `__rkImp_`, `__rkExit_`, `__rkAutoQ_`, `__rkCat_`, `__rkChk_`, `__rkEnable_`, `__rkEntityReg_`, `__rkQueryReg_` (load-time registration) | `@TypeInfo.all(with: …)` read at comptime (member by reference, step 7) | 235, 234, 254, 281 |
 | `rakun-web/src/convention.bp`, `rakun-app/src/{route_handler,actions}.bp`, `rakun-websocket`, `rakun-scheduling`, `rakun-messaging`, `rakun-cli`, `rakun/src/actuator_api/**` (today `rakun-actuator-api`, moved by 128 step 1), `rakun/src/decorators.bp` routes | ~25 | `val __rkFilter_`/`__rkConverter_`/`__rkCustomizer_`/`__rkCors_`/`__rkAdvice_`/`__rkMiddleware_`/`__rkHandler_<VERB>_`/`__rkRoute_`/`__rkWs_`/`__rkSched_`/`__rkJob_`/`__rkCli_`/`__rkEp_`… | meta (`order`, `media`, `path`, `verb`) + `@TypeInfo.all` at the entry point | 235; 236 for `#[middleware]`'s gate; 234 |
 | `rakun-client/src/exchange.bp` | 2 | `pub type Http<T>` + `pub fn http<T>()` | `T.Http` + a factory member | held: behavior member called from another module fails (below) |
-| jhonstart `routes.bp` | 5 | `val __jhPage_X = jhPage(seg, …)` (+ layout/template/default), `pub fn <X>Params(route)` | meta `seg` + `@TypeInfo.all(with: page)` | 235; 236 (`paramsOf(@typeInfo(BlogPost).meta(PageMeta)?.seg, route)` once by hand — after 293 a page takes no parameter and reads `use params<P>()`); readers: onze's generated entry points, jhonstart's tests |
+| jhonstart `routes.bp` | 1 | `pub fn <X>Params(route)` (the four registrations are done) | none — the page takes no parameter and reads `use params<P>()`, checked by `#[page]` over `Decl.hooks` | 293 (amends 236's `paramsOf`); held: `05-jhonstart/26` step 11 after `01-checker` step 23, and the segment walk inside it is `03-bundled-libs/102` step 3's while 102 is open |
 | validation `#[schema]` (`libs/validation/src/decorators.bp`) — `#[validated]` after 306 | 5 | `pub fn parse<T>At`, `parse<T>`, `decode<T>`, `schemaOf<T>` + helpers | members `T.parseAt/parse/decode` (no `schema` — `Schema<T>` is private, 306) | nothing — next; `decode` passes `parse<T>At` as a value (unbound variable on erlang, below), so wrap it in a lambda |
 
 - [ ] each library's hook green on this compiler; `grep -rn '@emit(' --include=*.bp repository/`
@@ -85,6 +85,12 @@ reflection over the project** (declaration half; the `@project()` manifest half 
       error on commonJS, refusal on wasm — members do not travel with a behavior as with a type
       (holds `rakun-client`'s two sites)
 - [ ] an associated fn read as a value (`apply(City.make, …)`) is an unbound variable on erlang
+- [ ] a narrowed `val` is read by its unrenamed name on erlang: a second `val v` in one function binds
+      `V@1` and `if (v is fn(…) -> T) v(…)` reads `V` (`language-gaps.md`, `02-erlang`; jhonstart's
+      `jhRegisterRoutes` names each loop's value apart)
+- [ ] a module whose source text holds `@TypeInfo.all` — in a string literal too — is a reader
+      (`comptime/typeinfo_all.zig`'s text search), so a code generator spelling it is refused at every
+      import (`language-gaps.md`; onze-cli's `start.bp` puts the name together)
 - [ ] a member's / associated type's diagnostic is located past the file's last line (member source
       placed after the module's lines) and names `City__Columns`, not `City.Columns`
 
