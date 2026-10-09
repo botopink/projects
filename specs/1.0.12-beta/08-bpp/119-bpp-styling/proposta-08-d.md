@@ -50,6 +50,21 @@ repositório (`botopink/<pkg>`, submódulo em `repository/<pkg>`, ao lado de `ht
 usam o mesmo código sem que o jhonstart importe a emilia, nem o contrário. `css` e `styled` não
 conhecem HTML nem framework.
 
+**Quem conhece o `.bpp`: só o `jhonstart-styled`.** `css`, `styled` e emilia não sabem que o
+`.bpp` existe. Eles não leem o manifesto, não conhecem a seção `--- style ---` nem o atributo
+`data-s`, e não dependem do jhonstart. Cada um conhece só a sua camada: o `css`, texto de CSS e um id
+de escopo qualquer; o `styled`, componentes e a folha; a emilia, tokens e tema. Toda a integração
+com o `.bpp` mora no `jhonstart-styled`:
+
+- a `pub default fn` que o `"bpp".style` nomeia e que recebe o texto da seção;
+- o id de escopo, tirado do caminho do módulo e da linha da seção;
+- as anotações da linha da seção (`#[isGlobal]`, `#[defineVars]`);
+- o `Style` entregue ao `html`;
+- a ponte `ElementBase` → `StyledBase`;
+- o sink que põe a folha no head.
+
+Trocar de framework, ou usar o `styled` fora de qualquer template, não toca nas três camadas.
+
 **O que acaba.** A emilia deixa de ter um modelo de folha só seu (`Rule`, `Sheet`, `renderRule`,
 `renderDocument` em `output.bp:44-593`). Ninguém mais monta texto de CSS com `+`.
 
@@ -181,8 +196,9 @@ O que isso dá:
   alcança um hook `#[serverOnly]` (202). Com um hook de run-time, ele é calculado por render.
 - **Composição como entre componentes.** `${btn}` dentro de outro `styled` é um filho renderizado
   sob a mesma base, como um componente dentro do `html`. O `@apply` do Tailwind vira isso.
-- **A ponte com o jhonstart.** A seção `--- style ---` devolve um `StyledView`. O
-  `jhonstart-styled` liga `ElementBase` a `StyledBase`, do mesmo jeito que o `jhonstart-emilia`
+- **A ponte com o jhonstart.** Quem recebe a seção `--- style ---` é o `jhonstart-styled`, e não o
+  `styled`: a função default dele monta, com o `styled`, os componentes da seção e devolve ao `html`
+  o `Style` do jhonstart. O `jhonstart-styled` também liga `ElementBase` a `StyledBase`, do mesmo jeito que o `jhonstart-emilia`
   liga a emilia hoje: quando o `html` renderiza a página, os componentes de estilo rodam sob a base
   da página e escrevem na folha dela.
 
@@ -245,7 +261,8 @@ ao `html`. O valor que volta chega ao `html` junto com a marcação, e o `html` 
 | `<style>` na marcação, sem `#[isInline]` | erro na tag, apontando para a seção |
 | seção sem `"bpp".style` no manifesto | erro na linha: `a --- style --- section needs "bpp.style" in botopink.json` |
 
-O id do escopo, sem hash, é o caminho do módulo mais a linha da seção (`components-post-card-12`).
+O id do escopo, sem hash, é o caminho do módulo mais a linha da seção (`components-post-card-12`),
+calculado pelo `jhonstart-styled`; o `css` recebe só a string pronta em `scope(id, css)`.
 O build o encurta (124).
 
 ## 7. Como o jhonstart junta as peças
@@ -259,6 +276,9 @@ O build o encurta (124).
 
 A ordem da cascata fica: folhas linkadas (`globals.css`), camadas da emilia, seções com escopo.
 
+Todas as linhas desta tabela são do jhonstart. Nenhuma pede nada novo a `css`, `styled` ou emilia,
+que continuam sem saber do `.bpp`.
+
 ## 8. O que muda se for aceita
 
 | Onde | Mudança |
@@ -269,7 +289,7 @@ A ordem da cascata fica: folhas linkadas (`globals.css`), camadas da emilia, se�
 | 278 | `#[isGlobal]` e `#[defineVars]` passam para a linha da seção; `<style>` na marcação só com `#[isInline]` |
 | 285 | o toolchain passa a conhecer também o pacote de `style` |
 | 301 | os tokens viram componentes `styled`; a folha sai pelo `jhonstart-styled` |
-| `08-bpp/119` | é dona de `repository/css`, `repository/styled`, `jhonstart-styled` e `jhonstart-emilia`; passos: 1 os pacotes, 2 `jhonstart-styled` e o braço do `html`, 3 boundary, 4 `#[styled]`, 5 uma folha só |
+| `08-bpp/119` | é dona de `repository/css`, `repository/styled`, `jhonstart-styled` e `jhonstart-emilia`; passos: 1 os pacotes, 2 `jhonstart-styled` e o braço do `html`, 3 boundary, 4 `#[styled]`, 5 uma folha só; no gate, `grep -rn "bpp\|jhonstart"` vazio em `repository/css`, `repository/styled` e `repository/emilia/modules` |
 | `08-bpp/116` | manifesto em objeto, o desdobramento da seção e o formatter (que não mexe nos bytes da seção) |
 | `06-emilia/34` | um passo 5: a emilia sobre o `styled`, com o `e_39b87d03` intacto |
 | meta | dois repositórios novos (`botopink/css`, `botopink/styled`), os submódulos em `.gitmodules` e a linha § Layout do `AGENTS.md` (326) |

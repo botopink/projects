@@ -51,7 +51,7 @@ renderNode(html """<div><style>h1 { color: red }</style><h1>x</h1></div>""")
   CSS do Tailwind v4 onde ela é CSS: `--spacing()`, `--alpha()`, `@variant`, `@custom-variant`; o
   `@apply` vira um buraco `${…}` tipado). Cada um é um repositório próprio (326: `repository/css`,
   `repository/styled`). A emilia vira uma série de componentes feitos em `styled`, aplicados na tag
-  (301). O `"bpp"` vira objeto, e o estilo do `.bpp` vai para uma seção própria, compilada pelo pacote
+  (301). As três camadas não conhecem o `.bpp`: a integração toda mora no `jhonstart-styled`. O `"bpp"` vira objeto, e o estilo do `.bpp` vai para uma seção própria, compilada pelo pacote
   de `style`. Proposta inteira, com o que muda e sete pontos ainda abertos (p1–p7; p8 e p9 aceitos em 09/10):
   [`08-bpp/119-bpp-styling/proposta-08-d.md`](./08-bpp/119-bpp-styling/proposta-08-d.md).
   ```bp
