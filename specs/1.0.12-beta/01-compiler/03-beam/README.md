@@ -36,6 +36,11 @@ point sets `standard_io` unicode (`emitUnicodeStdio`) · 7 one `math` (263): `fn
 `run/std_math_on_every_target` (`a443f52d`) · 8 an integer out of its type aborts (264):
 `emitIntCheck` (two `is_ge` + inline `erlang:error({integer_overflow, …})`) — 02 step 13's cells with
 `.beam.stderr`; beam snapshots move by the check and its labels only (`48a096ea`).
+- An in-frame loop's head survives OTP's `beam_jump`: `writeLoopTop` puts a `{line, …}` anchor before
+  `{label, Top}`, so tail sharing cannot turn the entry into a jump to an identical back edge and leave
+  `Top` with backward references only (`erlc` stopped on `{undefined_label, Top}` in log's
+  `stripLineNumbers`; `modules/import_bundled_package_beside_own_module` green on beam) — patch
+  `fix-cells-red/01-beam-loop-top-anchor`.
 
 ## Open
 

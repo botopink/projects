@@ -77,7 +77,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [x] 04-js s8 — an integer that leaves its type aborts (264): on feat (`48a096ea`)
 - [ ] 05-wasm s1 box 1 · s3 box 2 — `Array.unique` and C-07's cells on wasm · 02 s4, s7
 - [ ] 05-wasm s5 — the rest of std on wasm: heap growth, `pow`, astral `contentHash` done (`d71b89f5`, `a443f52d`); left: std-wide wasm build (`unicode`, `json` bindings), a four-target cell per family, `wat/AGENTS.md` limits row · 97 s12 box 1
-- [ ] 05-wasm s8 — overflow for `u32`/`u64` and the narrow integer types on wasm (264): `run/int_overflow_sub_u32`, `run/int_overflow_add_i8` red on wasm (261's opcodes) 
+- [x] 05-wasm s8 — overflow for `u32`/`u64` and the narrow integer types on wasm (264): patch `fix-cells-red/02-wat-narrow-int-range`, awaiting the cold gate
 - [ ] 02-erlang s4 — `run/array_unique` (C-35) · with 05 s1
 - [ ] 02-erlang s5 box 2 — a decorator body carrying `\u{…}` (cell: 14 s7) · none
 - [ ] 02-erlang s7 — C-07's erlang tails as `run/` cells · 05's wasm column

@@ -51,18 +51,13 @@ std's `math` and `hash` answer commonJS's bits on every target.
 - Step 5 — `contentHash` folds code points (260): `contentHashBody` without its surrogate step; `contentHash("🎉")`, `contentHash("a🎉b")` rows of `run/std_hash_on_every_target` — `d71b89f5`
 - Floats, `i64`, overflow: `Float.toString` = V8's shortest digits, float slot keeps its `f64`, `i64` full width, overflow traps (`run/float_shortest_text`, `run/float_slot_keeps_f64`, `run/i64_full_width`; decision 264 for wasm)
 - `val g = greet; g()` typed by the function's declaration (`run/fn_value_bound_by_val`)
+- Step 8 — the narrow and unsigned integer types check their own range on wasm (264): `emitRangeCheck`
+  after the carrier's checked `+`, `-`, `*`, unary `-`, `+=` (`$__i32_range_chk` for `i8`/`u8`/`i16`/
+  `u16`, `$__i64_range_chk` for `u32`/`u64`; a `u64` ends at `2^63 − 1` in its `i64` carrier)
+  (`run/int_overflow_add_i8`, `run/int_overflow_sub_u32` green on wasm) — patch
+  `fix-cells-red/02-wat-narrow-int-range`
 
 ## Open
-
-### Step 8 — overflow for the unsigned and narrow integer types (decision 264)
-
-`wat.zig` `emitArith` checks only `i32` / `i64`: `run/int_overflow_sub_u32` and
-`run/int_overflow_add_i8` are red on wasm (`tests/language/AGENTS.md` says so), though d71b89f5
-claims `i8` and `u32`.
-
-- [ ] `u32`, `u64` and the narrow types (`i8`, `i16`, `u8`, `u16`) checked after `+`, `-`, `*`, unary
-      `-` and `+=` on wasm; both cells green on wasm
-
 
 ### Step 1 — `Array.unique` on wasm (box 1)
 
