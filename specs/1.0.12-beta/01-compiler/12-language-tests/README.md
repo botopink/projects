@@ -2,8 +2,7 @@
 
 **Priority:** medium · **State:** partial: step 1 box 1, step 2 box 2, steps 3 and 4 on feat; step 1
 box 2 and step 2 box 1 open
-**Depends on:** area fronts with missing cells (`02-erlang` step 4 with `05-wasm`; `01-checker` step 6
-with `04-js` step 6) · the landing's `scripts/gate.sh --cold` (`00-gate/114`)
+**Depends on:** area fronts with missing cells (`01-checker` step 6 with `04-js` step 6) · the landing's `scripts/gate.sh --cold` (`00-gate/114`)
 **Owns:** `repository/botopink-lang/tests/language/**` — cells, their `.out` / `.expect` / `.exit` /
 `.targets`, `AGENTS.md`, `run.sh`'s report (per-target line) and its `all)` line
 **Does not touch:** compiler sources, `libs/std/**`, `examples/**`, snapshot dirs, `build.zig`,
@@ -48,14 +47,14 @@ Suite half holds: `env -i HOME=… LANG=C.UTF-8 PATH=/usr/bin:/bin:<wasmtime>` r
 ### Step 2 — the owner rule for the area fronts' cells (box 1)
 
 Owner rule: `../README.md` § Rules (`tests/language/AGENTS.md` § Who adds a cell). Every listed cell
-exists at feat but two:
+exists at feat but one (`run/array_unique` landed with `02-erlang` step 4 and `05-wasm` step 1,
+green on four targets):
 
 | Cell | Front | Row |
 |---|---|---|
-| `run/array_unique` | `02-erlang` step 4 (`05-wasm` step 1 for wasm) | C-35 |
 | `run/throw_in_case_arm_result` | `01-checker` step 6 (`04-js` step 6) | row 29 |
 
-- [ ] both cells exist at the close and pass on every target they declare
+- [ ] `run/throw_in_case_arm_result` exists at the close and passes on every target it declares
 
 **Gate:** standard (fronts.md § Gate) + `tests/language/AGENTS.md` updated in the same commit as any
 cell or owner-row change

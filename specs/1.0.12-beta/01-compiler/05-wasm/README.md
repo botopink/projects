@@ -1,11 +1,10 @@
 # Front 05 — wasm: no wrong answer at exit 0, and std builds on wasm
 
-**Priority:** high · **State:** partial: steps 1–4 on feat (step 1's and step 3's last boxes wait on
-02's cells); step 5 under way — vocabulary, codepoint unit, `math`, `escape`, `hash`, `io/random`,
+**Priority:** high · **State:** partial: steps 1–4 on feat; step 5 under way — vocabulary, codepoint unit, `math`, `escape`, `hash`, `io/random`,
 heap growth, `String.fromCodepoint`, `pow`, astral `contentHash`, `encoding` / `querystring` cells;
 `unicode` waits on `02/97` step 16 (333 (A): `normalize` in botopink), `json` on `02/97` step 15 (336: `parse` / `stringify` go), the 305 spelling on
 `01-checker` step 27
-**Depends on:** `02-erlang` steps 4, 7 (cells) · `02-std-and-packaging` (`unicode.fromCodepoint`
+**Depends on:** `02-std-and-packaging` (`unicode.fromCodepoint`
 over `String.fromCodepoint`, decision 262)
 **Owns:** `modules/compiler-core/src/codegen/wat.zig` · `src/codegen/wat/**` except
 `wasm_binary_emitter.zig` (18) · `snapshots/codegen/<runtime>/wasm/**`,
@@ -42,6 +41,14 @@ std's `math` and `hash` answer commonJS's bits on every target.
 ## Done
 
 - Step 1 boxes 2–3 — primitive-method traps lowered (`run/string_lines_words`, `run/array_flat_forms`, `run/array_windows`, `run/array_fill`, `run/array_pop_removes`); no method listed as "trap"
+- Step 1 box 1 — `Array.unique` keeps each value at its first occurrence (decision 217):
+  `$__arr_unique` scans the kept elements instead of the previous one (`run/array_unique`; the
+  `tests/wat.zig` RUN LOG's `[3, 1, 3]` was the wrong answer pinned, now `[3, 1]`)
+- Step 3 box 2 — C-07's cells on wasm: `run/is_truth_table` green — an element of an `unknown[]`
+  walked by a lambda is an `unknown` local, and a tuple in an `unknown` slot carries its arity and
+  one box per element, so `is #(i32, string)` tests each element by value (`boxTupleAsUnknown`,
+  `lowerIsTuple`; an element nothing types writes arity `-1` and `is` traps);
+  `run/unknown_stores_nothing` struck with 02 step 7
 - Step 2 — `==` between type-parameter values compares strings by content (`run/generic_string_equality`)
 - Step 3 box 1 — one wasm fixture per tuple / `..` / type-pattern shape
 - Step 4 — strict host-wrapper rule (decision 146; `run/external_wrapper_keeps_refusal`)
@@ -77,20 +84,6 @@ std's `math` and `hash` answer commonJS's bits on every target.
   `codegen/tests/wat.zig`)
 
 ## Open
-
-### Step 1 — `Array.unique` on wasm (box 1)
-
-`[3, 1, 1, 3].unique()` answers on four targets at feat; cell is 02's.
-
-- [ ] `run/array_unique` (`02-erlang` step 4) green on wasm
-
-### Step 3 — C-07's cells on wasm (box 2)
-
-Truth-table program refused on wasm (`cannot box this value as unknown`) — blocks `02-erlang` step
-7's four-target `.out`.
-
-- [ ] `run/is_truth_table` and `run/unknown_stores_nothing` green on wasm, or a row wasm cannot
-      answer traps and its `.wasm.expect` says so
 
 ### Step 5 — the rest of std on wasm (decisions 262, 241)
 
