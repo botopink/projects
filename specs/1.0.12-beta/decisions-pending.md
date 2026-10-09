@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**48 questions and 6 contradictions are open, and 86 implementation choices await confirmation.**
+**49 questions and 6 contradictions are open, and 86 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -27,6 +27,22 @@ Nothing open: 138-a answered (337).
 ### 01-compiler
 
 `00-gate` has no open question: 114's steps wait on no decision.
+
+#### 134-f · What `use @getContext(T)` is at run time
+- **Measured.** Under 269 the checker types `val ctx = use @getContext(BasePagamento);` as a `BasePagamento` inside a
+  `-> @Component<BasePagamento, i32>` body and refuses the bare call (front 134 step 6). No backend lowers the call:
+  commonJS writes `const ctx = await @getContext(BasePagamento);` verbatim (node: `SyntaxError`), erlang calls an
+  undefined `getContext/1` with an unbound `BasePagamento` (`erlc` refuses), wasm refuses `no lowering for the builtin
+  @getContext`, beam compiles and runs only while the body is never called. RC1's provider stack (`context-unbound`)
+  is not implemented, and no `.bp` file provides a context, so nothing says what the call reads.
+- **Options.** (a) Refuse it on every target until providers exist: `builtin-not-lowered` at the `@`, as `@module()`
+  is (`use @getContext(T)` → `error[builtin-not-lowered]: @getContext() is declared but no target lowers it`); the run
+  cell waits for the provider front. (b) Lower it now over a provider stack the `@Component` call pushes: a `provide`
+  form (`provide BasePagamento(total: 3) { … }`) the language does not have — a new decision. (c) Lower it to the
+  enclosing component's own context value (`T` read off the call's owner), with `context-unbound` (RC1) at run time
+  when none is active.
+- **Recommendation.** (a): a call the program cannot run is refused where it is written, never emitted broken.
+- **Blocks.** `01-compiler/134` step 6's run cell; with (b) or (c), the backend fronts (02–05) lower it.
 
 #### lg2-q · `@Decl`'s source location
 - **Measured.** `decl.loc.file` is the checker's unknown field of `Decl`, at the read (was `badkey` at the annotation). 289 and 290 already write option (1): a route file's decorator carries the route (`#[page("blog/[slug]", paths: allPosts)]`), the page reads its segments by hook (293), takes no parameter and returns `View` (275, 276). An anonymous default's `decl.name` is the file name (289), not its path.

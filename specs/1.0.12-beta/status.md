@@ -123,10 +123,11 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 130 s5 — the remaining decorator sites (38 of 119 done, plus `#[schema]`'s 5) · rakun's DI on 01 s20 · rakun sites under the 130↔128 rule (decision 339) · rakun-client's on the behavior-member gap (ctr-q closed: the table built at comptime, 281, 256)
 - [ ] 130 s6 — module-level `@emit` removed · 130 s5 · `#[schema]`'s free functions → members of the type (306; `T.parse(…)`, 327)
 - [x] 134 s2 part — `@is` refused (322); the drift test walks the mirrored types and `@Result`'s methods (declared); std `Type` (`keys`, `partial`, `required`, `merge`)
-- [ ] 134 s2 — `Type` a namespace type (329), `Type.Field<T>`, `Type.pick` / `omit`, `examples/types.bp`; `result` deleted and `?T` methodless (330) · 134 s4 · 01-checker s28
+- [ ] 134 s2 — `Decl.fields` as `Type.Field<unknown>`, `examples/types.bp` · 01-checker s28 (`Type` a namespace type, `Type.Field<T>` declared, `Type.pick` / `omit` declared with the variadic; `result` deleted and `?T` methodless — done)
 - [ ] 01-checker s31 — `?T` by `??`, `?.`, `?.[]`, `?.()`, `x!` (330); the migration script before the refusals
 - [x] 134 s5 — the `Decorator` type for `with:` (268)
-- [ ] 134 s4 · s6 — variadic parameter and the print builtins (267); `use @getContext(T)` (269)
+- [x] 134 s4 — the variadic parameter `..name: T[]` and the print builtins declared with it (267)
+- [ ] 134 s6 — `use @getContext(T)` typed and the bare call refused (269); the run cell · 134-f
 - [ ] 07-residuals s8 — the lib-agnostic gate names every library: the test-file comments reworded; the other owners' comments, then the `-w` pattern · 02 and the other owners landed (s3, s5–s7, s12, s13 done)
 - [ ] 07-residuals s1, s2, s4 — the codegen and comptime report waves, three renames · 02–05 landed · 01 landed
 - [ ] 07-residuals s9 · s10 · s11 — `->` arms · erika's C-13 migration · the pointers' sweep (last) · C-14 · 16 s1–2 · every library merged
