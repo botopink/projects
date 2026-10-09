@@ -19,7 +19,7 @@
 // a preview island renders the same text to the same bytes.
 
 import {markdown, markdown: {MdDoc, Heading, MarkdownOptions}, frontmatter} from "onze-content";
-import {Element, renderToString} from "jhonstart";
+import {Element, renderNode} from "jhonstart";
 import {decorators.schema} from "validation";
 import {schemas, schemas.Schema, report.ValidationReport, report.Violation} from "validation";
 import {json.Json} from "std";
@@ -74,7 +74,7 @@ test "content: a frontmatter key of the wrong type is located like any violation
 
 test "content: inline Markdown renders to elements" {
     val body = try frontmatter.split(post());
-    val html = renderToString(markdown.toElement(markdown.parse(body.body)));
+    val html = renderNode(markdown.toElement(markdown.parse(body.body)));
     assert html.contains("<em>great</em>");
     assert html.contains("<a href=\"https://botopink.dev\">link</a>");
     assert html.contains("<code>code</code>");
@@ -82,8 +82,8 @@ test "content: inline Markdown renders to elements" {
 
 test "content: GitHub-flavoured extensions" {
     val body = try frontmatter.split(post());
-    val html = renderToString(markdown.toElement(markdown.parse(body.body)));
-    assert html.contains("<input type=\"checkbox\" checked disabled>");
+    val html = renderNode(markdown.toElement(markdown.parse(body.body)));
+    assert html.contains("<input type=\"checkbox\" checked=\"\" disabled=\"\">");
     assert html.contains("<th>Name</th>");
     assert html.contains("<td style=\"text-align:right\">40</td>");
     assert html.contains("<del>Wrong</del>");
@@ -94,20 +94,20 @@ test "content: headings get ids, and a repeated heading gets a suffix" {
     val doc = markdown.parse(body.body);
     val slugs = markdown.headings(doc).map({ h -> h.depth.toString() + ":" + h.slug }).join(" ");
     assert slugs == "2:introduction 2:conclusion 2:conclusion-1";
-    assert renderToString(markdown.toElement(doc)).contains("<h2 id=\"introduction\">Introduction</h2>");
+    assert renderNode(markdown.toElement(doc)).contains("<h2 id=\"introduction\">Introduction</h2>");
 }
 
 test "content: text in a document is escaped; raw HTML passes through" {
-    val html = renderToString(markdown.toElement(markdown.parse("1 < 2 & 3\n\n<aside>kept</aside>")));
+    val html = renderNode(markdown.toElement(markdown.parse("1 < 2 & 3\n\n<aside>kept</aside>")));
     assert html.contains("<p>1 &lt; 2 &amp; 3</p>");
     assert html.contains("<aside>kept</aside>");
 }
 
 test "content: smart punctuation is on, and a field turns it off" {
-    val smart = renderToString(markdown.toElement(markdown.parse("\"quoted\" -- and...")));
+    val smart = renderNode(markdown.toElement(markdown.parse("\"quoted\" -- and...")));
     assert smart.contains("“quoted” – and…");
-    val plain = markdown.toElementWith(markdown.parse("\"quoted\""), MarkdownOptions(smartPunctuation: false));
-    assert renderToString(plain).contains("&quot;quoted&quot;");
+    val plain = markdown.toElement(markdown.parseWith("\"quoted\"", MarkdownOptions(smartPunctuation: false)));
+    assert renderNode(plain) == "<p>\"quoted\"</p>";
 }
 
 test "content: what the YAML subset refuses, it refuses by line" {

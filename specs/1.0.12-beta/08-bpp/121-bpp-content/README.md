@@ -1,7 +1,7 @@
 # Front 121 — bpp content: Markdown, frontmatter and collections
 
 **Priority:** high — the track's largest code that exists in no form; content sites are the
-reference's first use case. · **State:** not started · steps 1–2 ready to open
+reference's first use case. · **State:** steps 1–2 done (`onze-content`'s `markdown`) · step 3 waits on `08-f`
 **Depends on:** open: [`08-f`](../README.md#08-f--where-markdown-and-yaml-live) (step 3,
 frontmatter reader's home) · `03-bundled-libs/125-validation-zod` steps 0–2 for steps
 4–5 (step 12 for step 10: the `#[validated]` type; `Schema<T>` is private, 306) — steps 0–2 merged into botopink-lang `feat` (`libs/validation/src/schemas.bp`); `status.md` still lists
@@ -52,19 +52,26 @@ in the build tool and at boot, never in the compiler.
 
 ## Mechanism
 
-New member `onze-content`, four modules, no dependency on the rest of onze:
+New member `onze-content`, four public modules, no dependency on the rest of onze:
 
 ```
-markdown.bp      text → MdNode tree → Element          (pure, both targets)
+markdown.bp      text → MdNode tree → HTML / Element   (pure, both targets)
 frontmatter.bp   "---\n…\n---\n" → Json + body         (pure, both targets)
 collections.bp   Collection<T>, loaders, Entry<T>, getCollection / getEntry / render
 feeds.bp         rssFeed(…) -> string
 ```
 
+`markdown` keeps two private modules: `md_text` (code points with constant-time reads on both rows,
+character classes, escaping, URL normalisation, character references) and `md_entities` (the HTML5
+named references).
+
 **Markdown.** CommonMark 0.31.2 blocks and inlines + GFM tables, strikethrough, task lists,
-autolinks + footnotes. Tree `MdNode { Heading(depth, id, kids), Paragraph(kids), Code(lang, text),
-List(ordered, tight, items), Link(href, title, kids), Image(src, alt, title), Html(text), … }`;
-readers `toElement(doc)`, `toHtml(doc)`, `headings(doc) -> Array<Heading(depth, slug, text)>`.
+autolinks + footnotes + the tag filter. Tree `MdNode { Heading(depth, id, kids), Paragraph(kids),
+Code(lang, text), List(ordered, start, tight, items), Item(task, kids), Link(href, title, kids),
+Image(src, alt, title), Html(text), … }` in `MdDoc(nodes, footnotes)`; `parse(text)` /
+`parseWith(text, MarkdownOptions(smartPunctuation, gfm, headingIds))`, all three on by default,
+`commonmarkOptions()` CommonMark alone; readers `toElement(doc)`, `toHtml(doc)`,
+`headings(doc) -> Array<Heading(depth, slug, text)>`.
 Heading ids: GitHub's slug rule, unique per document. Smart punctuation on, off via a
 `MarkdownOptions` field. Code block = `<pre><code class="language-x">`, no highlighting. Raw HTML
 passes through `raw(…)` (author's own, like a template).
@@ -106,32 +113,24 @@ module path — `layout: "layouts.post"` (no `@/`, decision 218) — a component
 `(frontmatter: Json, headings: Array<Heading>, children: Node)`; the scan stages a page module that
 reads, renders, calls the layout. No `layout`: rendered inside the directory's layout chain.
 
+## Done
+
+- Step 1 — Markdown blocks: the CommonMark 0.31.2 block sections' 296 examples are
+  `test/commonmark/<section>_test.bp`, one test each named by its number, green on both rows.
+- Step 2 — inlines, GFM, heading ids: the other 356 CommonMark examples, the GFM spec's 24
+  extension examples (`gfm_extensions_test`), cmark-gfm's 3 footnote examples, `markdown_test`
+  (`conclusion` / `conclusion-1`, `toElement` through jhonstart's `renderNode`, the options);
+  a 200 kB document renders within 2 000 ms (`budget_test`; measured ~130 ms erlang, ~140 ms
+  commonJS). 692 tests per row.
+
 ## Open
-
-### Step 1 — Markdown blocks
-
-Thematic breaks, ATX and setext headings, indented and fenced code, HTML blocks, link reference
-definitions, paragraphs, block quotes, list items and lists, with CommonMark's container rules.
-
-- [ ] CommonMark 0.31.2 spec block-section examples as fixtures under `test/commonmark/` — one case
-      each, `markdown` in, HTML out, both targets
-- [ ] no example skipped: a failing one is a failing test with its number in its name
-
-### Step 2 — Markdown inlines, GFM, heading ids
-
-Code spans, emphasis/strong (delimiter-run algorithm), links and images (inline, reference,
-autolink), raw HTML, hard/soft breaks, entities; tables, strikethrough, task lists, extended
-autolinks, footnotes; ids; smart punctuation.
-
-- [ ] every remaining CommonMark example; the GFM spec's extension examples
-- [ ] `examples/markdown-example.bp` passes on both targets
-- [ ] two same-text headings get `conclusion` and `conclusion-1`
-- [ ] a 200 kB document renders within a budget step 2 measures and records (code-point walk; BEAM cost unknown)
 
 ### Step 3 — Frontmatter (waits on `08-f`)
 
 - [ ] `test/frontmatter_test.bp`: the reference's five frontmatter blocks decode to the meant
       `Json`; an anchor, a tag, a second document each refused with the line
+- [ ] `examples/markdown-example.bp` passes on both targets — its Markdown tests run today as
+      `test/markdown_test.bp`; the frontmatter ones wait here
 - [ ] no fence → empty object, whole text as body; unclosed fence → `Error`
 
 ### Step 4 — Collections

@@ -3,7 +3,7 @@
 Members' `src/`, `test/`, `botopink.json`, as on `feat`. Cite function names, not line numbers;
 file names differing from the 1.0.10 plan are noted.
 
-## Members — eight
+## Members — nine
 
 | Member | `src/` | `test/` | Targets | Depends on |
 |---|---|---|---|---|
@@ -15,6 +15,7 @@ file names differing from the 1.0.10 plan are noted.
 | **`onze-assets`** | `root.bp`, `style_module.bp`, `stylesheet.bp`, `assets.bp`, `preprocess.bp`, `head.bp` (`pageRenderHooks`), `font_metrics.bp` (the transcribed table), `font.bp`, `image.bp`, `image_handler.bp` (the MIME table) | `style_module_test`, `stylesheet_test`, `preprocess_test`, `font_test`, `image_test` — no `assets_test` (its cases are in `stylesheet_test`); 28 tests | inherits | `jhonstart` (by `path`), `onze-bundler` |
 | **`onze-og`** | `root.bp`, `card_style.bp` (the plan's `style.bp` — jhonstart exports a `style` element), `metrics.bp` (a local `intOf` cell), `layout.bp`, `svg.bp` (a local `intOf` cell), `raster.bp`, `response.bp` | `og_test` (one file, 10 tests) | inherits | `jhonstart` (by `path`); it parses front 52's sidecar itself — no `onze-assets` edge |
 | **`onze-release`** | `root.bp`, `spec.bp`, `otp.bp` (`bootScriptText`'s `BUILD_ID` check), `docker.bp`, `package.bp`, `lifecycle.bp`, `static_export.bp` (the plan's `export.bp`) | `build_id_test` (both), `release_text_test` (both), `package_test` — no `dockerfile_test` (its cases are in `release_text_test`); 9 tests, five `.snap` under `__snapshots__/release/` | inherits | `onze`, `onze-bundler` |
+| **`onze-content`** | `root.bp`, `markdown.bp` (`MarkdownOptions`, `MdNode`, `MdDoc`, `Footnote`, `Heading`; `parse` / `parseWith`, `toHtml`, `toElement`, `headings` — CommonMark 0.31.2 + GFM), `md_text.bp` (`Chars`, the character classes, escaping, `normalizeUri`), `md_entities.bp` (the HTML5 named references) — front 121 steps 1–2; frontmatter, collections and feeds arrive with its steps 3–5 | `commonmark/*_test` (26 files, the spec's 652 examples), `gfm_extensions_test` (24), `gfm_footnotes_test` (3), `markdown_test` (12), `budget_test` (1) — 692 tests, both rows | inherits | `jhonstart` (by `path`); nothing imports it until 121 step 7 |
 
 Workspace `botopink.json`: `name onze`, targets `["commonJS", "erlang"]`, workspaces
 `["modules/*", "examples/*"]`.
