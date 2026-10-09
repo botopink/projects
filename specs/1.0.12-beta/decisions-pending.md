@@ -88,6 +88,39 @@ subject under 281. Every decorator parameter in these examples is `comptime` (28
 - **Recommendation.** (a): the strictest — no commit where the form parses and formatting strips it; parse and print stay one front's pair.
 - **Blocks.** `16-formatter` step 8; `01-checker` step 10.
 
+#### 134-e · Three surfaces no declaration form spells today: `?T`'s methods and `result`, `Type.Field<T>`, a type of static functions (*proposed*)
+- **Measured** (branch `front/134-s2s5`, on botopink-lang `146c98ad`). (1) `?T`'s `map` / `flatMap` / `unwrapOr` (`infer.zig` `inferResultOptionMethod`) and the builtin `result` namespace (`result.map/then/unwrap/isOk/isError`, `inferResultNamespaceCall`) have no declaration: `?T` is not a named type (`Option<T>` / `Optional<T>` are refused) and `result` is a lowercase namespace, not a type. They stay prose in `builtins.d.bp`; `comptime/builtins.zig` `methods` holds `Result`'s five methods only (declared in the enum's body since this branch). (2) `Type.Field<T>` (308) is an associated type of `Type`, and a type declared inside a type body is a parse error — `pub type Field<T>(name: string)` inside `type Type() { … }` → "unexpected `type`"; 216 (3)'s associated types exist only as `decl.addType` contributions. The example's body (`val name: string; … pub declare fn of(…)`) is no type form either. (3) `std/types.bp` spells `Type` as `pub type Type() { pub declare fn … }` — 138's empty record with associated fns, the form `Onze()` and `Rakun()` use — so `Type()` constructs an empty value; `pub type Type { pub declare fn … }` is `type-without-field-list`.
+- **Options.**
+  (1a) prose stays; the drift test holds `Result` only.
+  (1b) declare both, `?T` through an `extend` and the namespace as a type of static functions:
+  ```bp
+  extend ?T {
+      declare fn map<T2>(self: ?T, transform: fn(value: T) -> T2) -> ?T2;
+      declare fn flatMap<T2>(self: ?T, transform: fn(value: T) -> ?T2) -> ?T2;
+      declare fn unwrapOr(self: ?T, fallback: T) -> T;
+  }
+  pub type result() {
+      declare fn map<R, E, R2>(r: Result<R, E>, transform: fn(value: R) -> R2) -> Result<R2, E>;
+      // then, unwrap, isOk, isError
+  }
+  ```
+  (1c) `extend ?T { … }` as in (1b), and the `result` namespace goes — `r.map(f)` is the one spelling (`result.map(r, f)` becomes an unbound name).
+  (2a) a type declared in a type's body is that type's associated type, the node `decl.addType` already produces:
+  ```bp
+  pub type Type() {
+      pub type Field<T>(name: string, typeName: string, annotations: DeclAnnotation[]) {
+          pub declare fn of(text: string) -> ?Type.Field<T>;
+          pub declare fn all() -> Type.Field<T>[];
+      }
+      pub declare fn keys<T>(comptime source: type T) -> type;
+  }
+  ```
+  (2b) `Field<T>` top-level in `types.bp`, imported `import {types.Field} from "std";` — amends 308's `Type.Field<T>` to `Field<T>`.
+  (3a) keep `pub type Type() { … }` (no new form; `Type()` is a useless value).
+  (3b) a `type` whose body holds only static functions and no field list is a namespace type — not constructible, not a value: `pub type Type { pub declare fn partial<T>(comptime source: type T) -> type; }` (amends 138 for that body only; `type Marker {}` and a body with an instance method stay refused).
+- **Recommendation.** (1c), (2a), (3b): one spelling for one operation, 308's name kept, and nothing constructible that means nothing (decision 67).
+- **Blocks.** `134` step 2 (the `?T` / `result` declarations; `Type.Field<T>` and `keys`'s answer; `builtins.d.bp`'s `Field` record leaving, `Decl.fields` as `Type.Field<unknown>[]`); `01-checker` step 24 (`Type.Field<T>`), step 28 (`Type.keys`, `pick`, `omit`).
+
 #### lg2-a · A byte type
 - **Measured.** No primitive, std type or literal holds bytes (`val b: Bytes = "a";` mismatches everywhere); every host cell marshals via `string`.
 - **Options.** (1) None: a binary payload refused where it enters. (2) A `Bytes` primitive with an explicit, fallible boundary (`Bytes.fromUtf8`, `toUtf8 -> @Result`), no implicit conversion. (3) `string` also carries raw bytes.
