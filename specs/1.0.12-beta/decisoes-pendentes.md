@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta (só o que está em aberto, por ordem de importância)
 
-Atualizado em 2026-10-09 (decisões 278–316; revalidação item a item). **Em aberto: 61 perguntas, 11 contradições e 91 escolhas ★ para confirmar.** Só o que ainda espera resposta sua: o que já foi respondido está em
+Atualizado em 2026-10-09 (decisões 278–316; revalidação item a item). **Em aberto: 62 perguntas, 11 contradições e 91 escolhas ★ para confirmar.** Só o que ainda espera resposta sua: o que já foi respondido está em
 `specs/1.0.12-beta/decisions-taken.md` (decisões 144–316; próximo número livre: **317**) e saiu daqui.
 Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 234–236 (injeção do rakun,
 `@TypeInfo.all` com lista, decorador de função), 237 (captura do template pelo texto), 238–243
@@ -102,7 +102,50 @@ Nenhuma pergunta aberta trava a `00-gate/114`: os passos 3, 5, 6, 7 e 8 não esp
 
 ### Trilha `01-compiler`
 
-27 itens: 1 com thread esperando (⏳), depois do que libera mais para o que libera menos.
+28 itens: 2 com thread esperando (⏳), depois do que libera mais para o que libera menos.
+
+### 16-x · A anotação de tipo no parâmetro de lambda: quem põe o campo no AST *(proposta)* ⏳
+
+**Trava:** `01-compiler/16` passo 8 e `01-compiler/01-checker` passo 10 · ⏳ thread da 114/16 esperando
+
+**Contexto.** O passo 8 da `16-formatter` deveria entrar antes do passo 10 do `01-checker`: o printer
+precisa imprimir `{ n: i32 -> f(n) }` com a anotação antes que o parser a aceite, senão o
+`botopink format` a apaga. Só que hoje o AST da lambda guarda **só os nomes** dos parâmetros
+(`FunctionExprOf.params` e `TrailingLambdaOf.params` são `[]const []const u8`, `ast.zig`), e o parser
+recusa a forma. Um braço de printer precisa de um tipo por parâmetro no AST, e o teste de ida e volta
+(`assertFormat`, `assertIdempotent`, `assertLossless`) precisa que o parser leia a forma — os dois são
+do `01-checker` (campos de nó do `ast.zig` e `src/parser/**`); a 16 só é dona do `format.zig` e dos
+campos de trivia. Do jeito que está escrito, o passo 8 não cabe na posse da 16.
+
+**Hoje:**
+```bp
+val g = { n: i32 -> f(n) };
+// error: this token cannot appear here — at `n` (botopink format --check, feat 49455602)
+```
+
+- [ ] **(a)** Um commit só, no passo 10 do `01-checker`: o campo no AST (um parâmetro com `name` e
+  `typeRef` opcional), o parser, o braço do printer no `format.zig` (recorte da 16 só para esse braço)
+  com os três testes de formatação, e depois a metade do checker. Nunca existe uma árvore em que o
+  parser aceita o que o printer apaga.
+  ```bp
+  val g = { n: i32 -> f(n) };   // parseia, formata igual, o tipo declarado unifica com o esperado
+  ```
+- [ ] **(b)** A 16 recebe um recorte do `ast.zig` (o campo, vazio por padrão) e do parser (a leitura da
+  cabeça da lambda): campo, parse, printer e testes entram no passo 8; o passo 10 do `01-checker` faz
+  só a metade do checker (o tipo declarado unificado com o esperado).
+  ```bp
+  val g = { n: i32 -> f(n) };   // depois do passo 8: parseia e formata igual, o tipo ainda não é conferido
+  val h: fn(f64) -> f64 = { n: i32 -> n };   // só o passo 10 recusa (i32 contra f64)
+  ```
+- [ ] **(c)** A metade do parser do passo 10 primeiro (AST e parser; enquanto isso o formatter apaga a
+  anotação, e o `format --check` falha em qualquer árvore que a escreva), o passo 8 da 16 depois.
+  ```bp
+  val g = { n: i32 -> f(n) };   // entre os dois commits, `botopink format` imprime `{ n -> f(n) }`
+  ```
+
+**Recomendação: (a)** — a mais restritiva: nenhum commit em que a forma parseia e o formatter a apaga, e
+o par parse/impressão fica numa frente só (a nota da 16: "forma nova de parser precisa de um braço de
+printer aqui"). **Bloqueia:** o passo 8 da `16-formatter` e o passo 10 do `01-checker`.
 
 ### 23-c · `botopink test` num projeto com módulos em pasta
 

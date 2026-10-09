@@ -97,6 +97,10 @@ comma; without it width rules (16-a / 16-b) decide. One-step pipeline: no comma,
 
 `{ n: i32 -> f(n) }` prints with its annotation (survives `format --check`). Before 01's parser half.
 
+**Blocked on `16-x`** (`../../decisions-pending.md`): the lambda's AST holds parameter names only
+(`FunctionExprOf.params`, `TrailingLambdaOf.params`) and the parser refuses the form, so a printer arm
+and its round-trip test need an `ast.zig` field and the lambda-head parse — both 01's.
+
 - [ ] `format/tests/expressions.zig`: the annotated form round-trips (`assertFormat`, `assertIdempotent`, `assertLossless`)
 
 ### Step 9 — annotations printed as written (decision 286)

@@ -179,10 +179,10 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.0.10 choices) in its
-last section. Open after the 9 Oct revalidation: 65 questions, 11 contradictions, 91 implementation
+last section. Open after the 9 Oct revalidation: 62 questions, 11 contradictions, 91 implementation
 choices.
 
-**First — what blocks tracks 00–03** (order of `decisoes-pendentes.md` § Prioridade máxima): 16-x (16 s8, 01-checker s10) · nat-e · 130-b · 130-c · 134-d · 17-b · ctr-i · ctr-j · 16-a/16-b/ctr-s · ctr-o · lg2-a/e/m/q/r/t · pkg-b · 110-a · imp-a · nat-f3 · nat-d9 · 95-f · std-d · 08-f · 07-j · ctr-u · 07-g · atm-a · ctr-p
+**First — what blocks tracks 00–03:** the order of `decisoes-pendentes.md` § Prioridade 1; `16-x` (16 s8, 01-checker s10) heads its 01-compiler list.
 
 **Then — the botopink shape** (raised 2026-10-04):
 - [ ] nat-d6…d9 — case by case (283; nat-d1 → 303, nat-d2 → 304, nat-d3 and nat-d4 → 306, nat-d5 → 307): `nav:` strings (26, 53), lifecycle (rakun 04), `use use…` (53), erika's LINQ names (98)
