@@ -1,7 +1,7 @@
 # Status — 1.0.12-beta
 
-**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `d3e4873f` (batch 5: a template module carries what its body reaches, labelled tuple reads, packed comptime frames — 331's template half) · rakun `ed54e36` · jhonstart `9695f2e` · emilia `b3d877e`
-· onze `5194988` · erika `44aef93` · vscode-extension `f041865`
+**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `541336e3` (front 138: the compiler embeds std alone, decision 326) · rakun `4b4cbee` · jhonstart `61445d2` · emilia `b3d877e`
+· onze `d496063` · erika `44aef93` · vscode-extension `f041865`
 
 **Fronts:** 71 — **0 done** · **23 partial** · **48 not started**.
 
@@ -142,8 +142,9 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 ## L2 — the libraries' critical path
 
 - [ ] rakun-messaging — one erlang test failed once in the pre-commit gate under load 26 (90 passed, 1 failed; the hook log did not name it) and passed 3/3 alone (91 passed, 0 failed) — a load-dependent test to find and make deterministic · none
-- [ ] 138 — the five new repositories have never run CI (no check suite on their first push); their `test.yml` installs Node 20 and carries the stale glibc 2.38 comment: Node 22 and the 2.35 comment with 138's landing · 138
-- [ ] 138 (decision 326) — `actions`, `http`, `log`, `routing`, `validation` to `repository/<pkg>` (history kept), `cardume` as a submodule, the compiler embeds std alone · the six GitHub repositories (maintainer) · before 102 s3 / 103 s2's consumer commits
+- [x] 138 — the five new repositories carry Node 22 and the glibc 2.35 note (actions 5b78ce8, http fe75240, log 220cfe2, routing 7e6a24f, validation bf0610f); their first CI run reads after this push
+- [x] 138 (decision 326) — actions, http, log, routing, validation are repository/<pkg> submodules (history kept); the compiler embeds std alone (botopink-lang 541336e3); rakun, jhonstart, onze declare them
+- [ ] 138 rest — the `cardume` submodule (no scaffold yet); consumer doc comments saying "bundled library" (rakun-starter-web root.bp:3 now wrong); emilia test.yml on Node 20; onze-cli build.bp:165 checker warning · none
 - [x] 102 s1–2 — `conventions.bp` and the segment helpers in `libs/routing` (re-implemented)
 - [x] 103 s1 — `id.bp` (`deriveActionId`, `isActionId`) in `libs/actions` (re-implemented)
 - [ ] 102 s3 (W2) — consumers, one commit per member, rakun's first (`rakun-app`, `rakun-hateoas`), then jhonstart `routes.bp`, onze `types.bp`, `scan.bp`, `chunk.bp` · 102 s1–2 landed · decision 323 · jhonstart `routes.bp`'s commit unblocked: the decorator gap (a package record built in a decorator body) fixed by 01-checker s21's `typesReached`

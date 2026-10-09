@@ -2,7 +2,7 @@
 
 **Priority:** high — every other front of this track and every consumer commit (102 step 3, 103 step
 2, 104 step 5, 105, 106 step 2, 107, 125 steps 4–12) is written against where the packages live;
-moving them first means each of those commits is written once · **State:** steps 2–5 staged, step 6
+moving them first means each of those commits is written once · **State:** steps 1–5 done but cardume; step 6 (specs) done 
 done — the five repositories' trees wait to be pushed; the compiler, consumer and meta changes are
 patches that land after the pushes (§ Notes, *Landing*); `cardume` waits on its scaffold
 **Depends on:** decision 326 · the six GitHub repositories created by the maintainer (step 1 — an
@@ -134,3 +134,12 @@ botopink-lang, every library repository's own `botopink test`, and the meta repo
   shorthand never reaches a bundled package — has no package left to cover (std's modules are
   reached: measured); `tests/language/modules/shorthand_import_beside_bundled_package` answers
   `ambiguous-import-use` until `138-a` is decided.
+
+## Done
+
+- Steps 1–2: `botopink/{actions,http,log,routing,validation}` hold `git subtree split --prefix=libs/<pkg>` of botopink-lang `feat` plus one shaping commit (AGENTS.md, hooks byte-identical to emilia's, `.gitignore`, CI on erlang + commonJS with Node 22 and the glibc 2.35 note; `actions` declares `routing`); `feat` = `main` at actions `5b78ce8`, http `fe75240`, log `220cfe2`, routing `7e6a24f`, validation `bf0610f`. `botopink test`: actions 24, http 44, log 22, routing 82, validation 155 passed, 0 failed, on erlang and commonJS.
+- Step 3 (botopink-lang `541336e3`): `libs/{actions,http,log,routing,validation}` deleted; `bundled_packages` is std's alone; `libs.zig` / `project_graph.zig` lose `appendBundled`; format-check / tsc-check / check-docs read `libs/std`; `test.yml`'s `libs` job checks out the five; `modules/shorthand_import_beside_bundled_package` deleted (337 (4)).
+- Step 4: rakun `4b4cbee` (rakun, rakun-web, rakun-app, rakun-hateoas), jhonstart `61445d2` (jhonstart, jhonstart-forms, jhonstart-test, examples/forms), onze `d496063` (onze, onze-cli, onze-bundler, onze-content → `validation`) declare what they import.
+- Step 5: `.gitmodules` adds the five (`branch = feat`); `AGENTS.md` § Layout and § CI check 4 and `hook-integrity.yml` cover ten library repositories.
+- Gate: `gate.sh --cold` every stage passed (test-libs 125 passed, 0 failed, the five as rows on both targets; language tests 2440 passed, 0 failed).
+- Open: the `cardume` submodule (no scaffold exists yet; steps 1 and 5's cardume boxes); consumer doc comments still saying "bundled library" (rakun-starter-web `root.bp:3` now wrong), the emilia workflow on Node 20, onze-cli `build.bp:165`'s new checker warning — rows for their owners.
