@@ -95,6 +95,16 @@ the toolchain row "a sidecar cannot reach an external OTP application"; the clos
 
 - [ ] this member's `#[value("…")]` / `rkProp*` reads and group configs become `#[config("<prefix>")]` records (`04` step 7)
 
+### Step 8 — one listener: `#[listen(dest)]` (decision 318 (5))
+
+- [ ] `pub val orders = Destination<OrderPlaced>("order-events")`: the destination declared once, typed,
+      the broker's name a string (281); the transport and group from 299's typed config
+- [ ] `#[listen(orders)]` on a method of a `#[component]`; the payload the method's parameter, checked
+      against the destination's `T`; `#[amqpListener]`, `#[kafkaListener]`, `#[redisListener]`,
+      `#[streamListener]` and the type-level `#[listener]` deleted, every site and test rewritten
+- [ ] `#[retryable(…)]` on a publishing method a wrapper (316) over `publishWithRetry`;
+      `publish-reliability-example.bp`'s marker rewritten
+
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `rakun-messaging` (`test/stream/` in the run), `rakun-data` (`test/tx/`) and
 `rakun-scheduling`; `grep -rn RAKUN_TEST_ modules/rakun-messaging modules/rakun-data/src/tx modules/rakun-data/test/tx` empty.

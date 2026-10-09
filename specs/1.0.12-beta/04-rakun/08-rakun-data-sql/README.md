@@ -4,7 +4,7 @@
 `rakun-data`; its open boxes are small · **State:** not started
 **Depends on:** 128 · 04 step 4 (`rkExcludeFromEager`, step 1 only) · decision 147 (`try` in a
 lambda takes its expected type's return — tests written against it) · lg2-e/f (R78-1's field list) ·
-decisions 311–313 (step 7: `01-checker` step 29, `137` steps 1–5, `erk-a` for the body-form cell, `erk-c` for the owner of `#[repository]`'s behavior form) · 03r-v (confirmation)
+decisions 311–313 (step 7: `01-checker` step 29, `137` steps 1–5, `erk-a` for the body-form cell, decision 318: `#[repository]` is rakun-data's, on a behavior only) · 03r-v (confirmation)
 **Owns:** `modules/rakun-data/**` except 09's (`src/nosql/**`, `src/nosql_host.bp`,
 `src/sidecars/rakun_nosql.erl`, `test/nosql/**`), 15's (`src/tx/**`, `test/tx/**`) and 65's line in
 `src/devtools/devtools.bp`; edits neither `botopink.json` nor `src/root.bp` this milestone ·
@@ -103,8 +103,8 @@ behavior Users {
 val users: Users = Users.of(db);      // generated: Users.Sql(db: SqlTemplate) implement Users
 ```
 
-- [ ] (owner per `erk-c`: today `#[repository]` is the core's stereotype on a `type`, `rakun/src/decorators.bp:124`, frozen)
-      `#[repository]` on a `behavior` reads each method's query meta (`#[erika]`'s, `#[nativeQuery]`'s — 298)
+- [ ] `#[repository]` is rakun-data's and annotates only a `behavior` (318; the core's type stereotype goes
+      in 04 step 8): it reads each method's query meta (`#[erika]`'s, `#[nativeQuery]`'s — 298)
       and generates `Users.Sql(db: SqlTemplate) implement Users`, `Users.of(db)` and the by-type
       registration in the container (`Users` injectable); on anything but a behavior it is an error at
       the annotation; a method with neither query annotation is an error at the method
@@ -127,6 +127,9 @@ val users: Users = Users.of(db);      // generated: Users.Sql(db: SqlTemplate) i
       behavior; the body form (`erika "…"` in a `type` method — its source per `erk-a`); `reject/` cells
       for a `?T` without `limit 1`, a field `User` lacks, a placeholder no parameter answers
 - [ ] `repository/rakun/AGENTS.md` § SQL data access and the member README rewritten to the two forms
+
+- [ ] `#[transactional]` (`src/sql/transactional.bp`) a wrapper (316, 318 (7)): the hand-written `<Type>Tx`
+      proxy deleted, its sites the annotation on the method
 
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun-data`.

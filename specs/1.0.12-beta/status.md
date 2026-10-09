@@ -146,6 +146,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 
 Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 
+- [ ] decision 318 (one decorator per role, rakun's names: `#[component]`, `#[repository]` on a behavior, `#[provides]`, `#[httpClient]`, `#[listen(dest)]`, `#[controller]`, wrappers; closes 130-c, erk-c) — 130 s5 · rakun 04 s8 · 08 s7 · 12 s6 · 13 s6 · 15 s8 · 19 s7 · 79 s4 · 91 s2 · 93 s4
 - [ ] decisions 315, 316 (no module annotation; a decorator wraps its function, `decl.wrapWith`, typed) — 01-checker s30 · rakun 12 s5 · 15's example
 - [ ] 137 (`04-rakun`) — erika's database target: holes, `QuerySource<T>`, the grammar, `#[erika "…"]` · s5: 01-checker s29 · s2's body form: erk-a
 - [ ] 136 (`09-cardume`) — cardume: the core, `rakun-cardume`, `jhonstart-cardume` · `botopink/cardume` to be created and pushed · 26 · 120 · 125 · atm-a (reduced: the cookie hooks) · atm-c · s8: atm-d
@@ -180,12 +181,11 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.0.10 choices) in its
-last section. Open after the 9 Oct revalidation and the answers since (309–317): 61 questions, 11 contradictions, 90
+last section. Open after the 9 Oct revalidation and the answers since (309–318): 58 questions, 11 contradictions, 90
 implementation choices.
 
 **First — the botopink shape** (raised 2026-10-04; answer `nat-0`, then the rest):
 - [ ] nat-d6…d9 — case by case (283; nat-d1 → 303, nat-d2 → 304, nat-d3 and nat-d4 → 306, nat-d5 → 307): `nav:` strings (26, 53), lifecycle (rakun 04), `use use…` (53), erika's LINQ names (98)
-- [ ] nat-e — Spring's annotations · 130 s5, rakun 04/08/13/15/19/79/91/93, 130-b, 130-c
 - [ ] nat-f2…f4 — case by case (284): `onze.json` keys (124), `files`/`workspaces` (98), `ONZE_PUBLIC_` (50, 53)
 
 Then:
@@ -209,7 +209,7 @@ Then:
 - [ ] 08-f — 121 s3
 - [ ] props-d · props-e · props-f — 118 s1, s4 (native attributes, named slots, spread)
 - [ ] snap-a — 135 s1–5 (replaces 01std-f, 03r-ag, 30-h, 05emilia-m, 53-b) · 53 s2–6 through 135 s5
-- [ ] erk-a · erk-b · erk-c — the body form's source (137 s2, 08 s7) · `#[documentQuery]` under 313 (09 s4) · the owner of `#[repository]`'s behavior form (08 s7, 130 s5)
+- [ ] erk-a · erk-b — the body form's source (137 s2, 08 s7) · `#[documentQuery]` under 313 (09 s4) 
 - [ ] lg2-a … lg2-w — none opens a front; each opens a step when answered: 01-checker (a, e — only `owner`, q — reduced), 14 s6 (j, o, w), 26 s6 / 98 s4 / 73 (v); the rakun boxes that name them — 04 (e, j), 08 (e), 13 · 65 · 09 · 91 · 92 (a, b), 15 (w), 22 (q), 88 (j), 93 (o) · answered: f, i (280), k (216, 253), r (311–313), t (314), m (315), c (316); g has no subject under 281
 - [ ] C-14 — 07-residuals s9 (a 1.0.10 id)
 - [ ] confirmations a step waits on — 49-d (102 s3) · 49-e (49 s2) · 05emilia-l (34 s2) · 52-a (51 s4) · 29-a (26 s5; reduced: `registerRouteStarters` + `globals.starters`) · 27-a (27) · 03r-q (105) · 16-a/b (16 s4) · 23-a/b, std-c (23; 23-c → 317) · 24-a/b/c/g (24; 24-g also 97 s5's surface)

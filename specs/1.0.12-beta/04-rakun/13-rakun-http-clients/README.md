@@ -63,6 +63,16 @@ No env-gated cell; the pool is asserted by the double's accept count.
 
 - [ ] this member's `#[value("…")]` / `rkProp*` reads and group configs become `#[config("<prefix>")]` records (`04` step 7)
 
+### Step 6 — `#[httpClient]` (decision 318 (4))
+
+- [ ] `#[httpClient(EchoConfig)] behavior EchoService { #[get("/users/${id}")] fn user(self: Self, id: string) -> @Result<User, HttpError>; }`:
+      a generator on the behavior, as `#[repository]` is (313); the group a typed config record (299);
+      path holes the method's parameters (311's template form where the spelling needs it)
+- [ ] `#[httpExchange]`, `#[getExchange]` … `#[deleteExchange]` deleted; `exchange_build_test.bp`,
+      `exchange_test.bp` and their refusal cells rewritten to the new names
+- [ ] a method answers `@Result<T, HttpError>` with `T` decoded from the body (125's `#[validated]`
+      decoder) — the `string`-only rule of `exchange.bp:47-49` goes with its gap note
+
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun-client`.
 

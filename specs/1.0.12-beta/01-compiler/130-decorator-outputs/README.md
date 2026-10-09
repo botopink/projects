@@ -52,6 +52,11 @@ library decorator uses them; `@emit` is a named error.
 
 ### Step 5 — migrate the remaining sites
 
+Decision 318 shrinks rakun's list before it migrates: `#[service]`, `#[managed]`, the core's `#[repository]`,
+`#[restController]`, `#[configuration]` / `#[bean]`, the four transport listeners and `#[httpExchange]` are
+deleted by the owning rakun fronts (04 step 8, 13 step 6, 15 step 8), not migrated; only their
+replacements are written here in 216's forms.
+
 Member names are the library's (decision 174's note). Remaining `@emit(` at feat: rakun 67 lines,
 jhonstart 5, validation 5. Rakun rows target post-128 paths (`04-rakun/README.md` § Order, `03r-ao`
 (a)): no 130 rakun commit while `04-rakun/128` is open; after it, each a consumer commit under

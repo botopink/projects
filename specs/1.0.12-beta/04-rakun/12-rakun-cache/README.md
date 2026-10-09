@@ -70,6 +70,11 @@ assertion complete.
       same commit (`language-gaps.md`)
 - [ ] 280 example 5's `#[cacheable(products)]` (step 4) wraps through the same mechanism
 
+### Step 6 — the cache decorators as wrappers (decision 318 (7))
+
+- [ ] `#[cached]` / `#[cacheable]` / the evict marks rewritten as wrappers on the method (316), not a
+      generated `<Behavior>.Cached(inner: …)` twin; one cell per verb
+
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun-cache` and `modules/rakun-session`; `grep -rn RAKUN_TEST_ modules/rakun-session modules/rakun-cache` empty.
 

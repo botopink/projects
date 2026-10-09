@@ -47,6 +47,13 @@ documents; nothing env-gated.
 - [ ] under (a): `test/saml2/acs_test.bp` — a fixture assertion with valid signature, in-window `Conditions`, matching audience and `InResponseTo` authenticates; each of the four checks failed alone rejects (four cells); a signature over a different document rejects; the canonicaliser reproduces the W3C exc-c14n test vectors checked in under `test/saml2/fixtures/c14n/`
 - [ ] under (b): the three boxes deleted, `saml2.bp` keeps the 501 with a message naming the gap, one `deferred.md` row holds them
 
+### Step 4 — `#[secured]` and rakun's own names (decision 318 (7), (8))
+
+- [ ] `#[secured(…)]` a wrapper (316) on a function or method; the hand-written `<Type>Sec` proxy
+      (`method_security.bp`) deleted, its sites the annotation
+- [ ] `UserDetailsService` and the other Spring names renamed after their role (front's choice, e.g.
+      `behavior UserStore`), recorded in the member README; no Spring alias
+
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun-security`.
 

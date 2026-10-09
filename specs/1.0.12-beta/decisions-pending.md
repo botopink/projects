@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**61 questions and 11 contradictions are open, and 90 implementation choices await confirmation.**
+**58 questions and 11 contradictions are open, and 90 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290 · `ctr-y` → 291 · `ctr-z` → 292 · `nat-c1`, `nat-c3`, `bpp-g` → 293 · `nat-c2` → 294 · `nat-c4` → 295 · (cardume) → 296, 297 · `nat-c5` → 298 · `nat-c6`, `03r-b` (reversed) → 299 · `nat-c7` → 300 (all of `nat-c` answered) · `nat-d1` → 303 · `nat-d2` → 304 · `nat-g` → 305 · `nat-d3` → 306 · `nat-d4` → 306 (moot: the `union2…5` / `tuple2…5` families go with the public value form; unions and tuples are types) · `nat-d5` → 307 · `pkg-b` → 309 · `imp-a` → 310 · `lg2-r` → 311, 312, 313 · `lg2-t` → 314 · `lg2-m` → 315 · `lg2-c` → 316 · `23-c` confirmed → 317.
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290 · `ctr-y` → 291 · `ctr-z` → 292 · `nat-c1`, `nat-c3`, `bpp-g` → 293 · `nat-c2` → 294 · `nat-c4` → 295 · (cardume) → 296, 297 · `nat-c5` → 298 · `nat-c6`, `03r-b` (reversed) → 299 · `nat-c7` → 300 (all of `nat-c` answered) · `nat-d1` → 303 · `nat-d2` → 304 · `nat-g` → 305 · `nat-d3` → 306 · `nat-d4` → 306 (moot: the `union2…5` / `tuple2…5` families go with the public value form; unions and tuples are types) · `nat-d5` → 307 · `pkg-b` → 309 · `imp-a` → 310 · `lg2-r` → 311, 312, 313 · `lg2-t` → 314 · `lg2-m` → 315 · `lg2-c` → 316 · `23-c` confirmed → 317 · `nat-e`, `130-c`, `erk-c` → 318.
 Closed by the 9 Oct revalidation (every item re-checked against 144–308, the fronts and the code): `08-h` → 285, 224 · `08-j` → 295 · `lg2-g` → 281 · `ctr-q` → 281, 256 · `ctr-m` (duplicate of `lg2-s`) · `ctr-n` (170 no longer carries the `from "m1"` example) · `ctr-r` (wrong premise: 118 lands before 26 step 0) · `111-c` → 228 · `03r-b`, `03r-d` → 299 · `95-e` (the collision left the code) · `03r-o` → 290 · `05emilia-h` → 206 · `68-c` → 280, 281. The rest were rewritten where their text or facts had gone stale.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
@@ -53,13 +53,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Options.** (a) std's names (`filter`, `map`), erika adding only what std lacks (`groupBy`, the aggregates). (b) LINQ's names — erika's identity is LINQ. (c) As is.
 - **Recommendation.** none from this review: erika's purpose decides (b) is a fair reading.
 - **Blocks.** 98 (erika).
-
-#### nat-e · Spring's annotation zoo
-- **Measured.** `#[service]`, `#[repository]`, `#[restController]`, `#[configuration]` + `#[bean]`, `#[managed]`, `#[provides]` stacked for one meaning (rakun 04, 09, 13, 19) · `#[derived] findByNameAndStateAllIgnoringCase(…) -> City[]` parsed into SQL (08; R78-1) · `#[amqpListener]` / `#[kafkaListener]` / `#[redisListener]`, three markers for one role, one per transport (15, 91) — the destination is the broker's name and may stay a string (281) · `#[httpExchange]` wired through `#[configuration]` (13) · `MockMvc`, `@MockBean`, `UserDetailsService` (19, 79).
-- **Rules.** 299 settled configuration (typed record per prefix; `#[configurationProperties]`, `#[value]`, `rkProp*` gone); 304 makes repository methods answer `@Result<T, StoreError>`.
-- **Options.** (a) One decorator per role that adds behaviour: `#[provides]` on functions, one `#[component]` on types (laziness an argument); queries as comptime expressions over `Columns` (`#[query] fn byState(s: string) -> @Result<City[], StoreError> = City.where(.state == s)`); one `#[listen(orders)]`, `orders` a `Destination<OrderPlaced>("orders")` declared once (294's `Cookie<T>` pattern), the transport from 299's typed config; rakun's own names. (b) Spring's names kept as aliases of (a). (c) As is.
-- **Recommendation.** (a). Absorbs 130-c.
-- **Blocks.** 130 step 5; rakun 04, 08, 13, 15, 19, 79, 91, 93; 130-b, 130-c.
 
 #### nat-f · Configuration in JSON — case by case (decision 284)
 `botopink.json` as clean as possible, configuration allowed where it makes sense (284); `"bpp": "<package>"` stays. Each case below is its own question.
@@ -201,13 +194,7 @@ subject under 281. Every decorator parameter in these examples is `comptime` (28
 - **Measured.** 256's snippet keys a provider by `b.returnTypeName` — a type's name as text, which 281 takes out of the registry ("how a qualified bean is told apart stays `130-b`, now with a type-based option"). There, two qualified providers of one type (`#[provides] #[qualifier("fast")] fn fastDye() -> Dye` beside `#[qualifier("slow")]`), and a `#[primary]` beside a plain one, collide on `"Dye"` → a duplicate. Today's code does not use that registry: `#[provides]` emits `rkRegisterBean(…)`, filling the context table at load keyed `Type@qualifier`; the unqualified or `#[primary]` one owns the plain name, the others are reached by `ctx.resolveNamed("Dye", "warm")` (`rakun/src/context.bp:1030-1110`, `rakun/test/context_test.bp:486-510`, `examples/rakun-container`).
 - **Options.** (a) A qualified provider is keyed `Type@qualifier` (the decorator records `decl.setMeta(Qualifier(name: "fast"))`, 298); the plain name is the unqualified or `#[primary]` one; two owners of it are the duplicate (`d = d.insert(rkBeanKey(b), b.value)`). (b) The registry holds only what injection by type reads; qualified providers stay in the context table their load-time registration fills. (c) The snippet as written: any two providers of one type are a duplicate. (d) *Added under 281:* a qualifier is a distinct type (`type FastDye(dye: Dye)`, `#[provides] fn fastDye() -> FastDye`, `use bean(FastDye)`), so the registry is keyed by type alone; `#[qualifier("…")]` and `resolveNamed` go.
 - **Recommendation.** (d) under decision 281 — (a)'s `Type@qualifier` keeps a string beside the type and `resolveNamed` names the type in text; (a) if a string label is wanted after all. `04-rakun/04` step 6 already writes (d)'s shape.
-- **Blocks.** rakun's `#[provides]` / `#[qualifier]` / `#[primary]` migration (130 step 5: `context.bp`, its test, rakun-container). Depends on `nat-e`.
-
-#### 130-c · A `#[configuration]`'s `#[bean]` methods in the registry (decision 234)
-- **Measured.** 234 fills the context from `@TypeInfo.all(with: provides)` / the `#[bean]` methods, but `@TypeInfo.all` answers top-level declarations and a `#[bean]` is a method of a `#[configuration]` type. Today `#[configuration]` gives the type a `make()` member and, per `#[bean]`, emits `val __rkBeanM_<Config>_<method> = rkRegisterBean("<ReturnType>", …)` into the context table at load (`rakun/src/decorators.bp:333-385`). Written `#[bean]`s: `examples/rakun/src/config.bp` and tests (`rakun/test/{autoconfig,conditions,scopes,context}_test.bp`, `rakun-test/test/mocks_pairing_test.bp`). 299 removed `#[value("…")]`: configuration is a typed record per prefix (`#[config("app")]`), injected by type.
-- **Options.** (a) `#[bean]` methods become `#[provides]` free functions; the configuration is 299's record, read by type (`use config(AppConfig)`, never `rkResolve<…>("AppConfig")`). (b) The configuration records each bean as typed meta (298) carrying its factory; the entry adds a third loop over `@TypeInfo.all(with: configuration)`. (c) `@TypeInfo.all` gains `methods: true`.
-- **Recommendation.** (a): one way to provide a bean, already in the registry's loop, no new reflection.
-- **Blocks.** rakun's `#[configuration]` migration and every `rkRegisterBean` a `#[bean]` emits (130 step 5). Depends on `nat-e`, which absorbs it.
+- **Blocks.** rakun's `#[provides]` / `#[qualifier]` / `#[primary]` migration (130 step 5: `context.bp`, its test, rakun-container). Not absorbed by 318 (`nat-e`); open on its own.
 
 ### 02-std-and-packaging
 
@@ -262,12 +249,6 @@ subject under 281. Every decorator parameter in these examples is `comptime` (28
 - **Options.** (a) The source is a hole: `erika "select * from ${self.users} where active = true"` — the row type from `Table<User>`; `from User` is then the in-memory and annotation form only. (b) `from User` everywhere; in a body the source is the one field of `self` typed `Table<User>` — none or two is an error at the query (by type, as rakun's container injects). (c) Both: (b), and (a) when two fields of the same table type exist.
 - **Recommendation.** (b): one spelling of `from` in every place; the source found by type, never by a name.
 - **Blocks.** `04-rakun/137` step 2's body form; rakun 08 step 7's body-form cell.
-
-#### erk-c · Who owns `#[repository]`'s behavior form (*proposed*)
-- **Measured.** `#[repository]` is today rakun core's DI stereotype on a `type` (`modules/rakun/src/decorators.bp:124`: scan registration, `<T>.make()`), a frozen file (04-rakun § Ownership: the one writer is 130). 313 puts `#[repository]` on a `behavior` to generate `Users.Sql(db)` from its methods' query meta — SQL work the core must not name (185: rakun-data depends on rakun, never the reverse).
-- **Options.** (a) One `#[repository]`, the core's: on a `type` it stays the stereotype; on a `behavior` it reads the methods' typed meta and asks a `RepositoryBackend` behavior the core declares and rakun-data implements (the core names no SQL). (b) Two functions of one name: the core's for types, rakun-data's for behaviors; a module imports the one it needs (both: an alias, 170). (c) rakun-data's form gets its own name (`#[sqlRepository]`), the core's `#[repository]` unchanged.
-- **Recommendation.** (a): one name, one meaning for the reader — "a repository" —, the core free of SQL through an interface (185).
-- **Blocks.** rakun 08 step 7's first box; 130 step 5's core rewrite (the core's `decorators.bp` gains the behavior arm).
 
 #### erk-b · `#[documentQuery]` under 313 (*proposed*)
 - **Measured.** 09 step 4: `#[documentQuery("…")]` follows `#[query]`'s shape — a member of the repository type answering the template verbatim. 313 deletes that shape for SQL: a repository is a `#[repository] behavior`, its methods carrying `#[erika "…"]` or `#[nativeQuery("…")]`. erika's grammar is SQL's; a document store's filter is JSON (`$in`, `$gt`, …).

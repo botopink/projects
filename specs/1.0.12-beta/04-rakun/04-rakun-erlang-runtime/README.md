@@ -4,7 +4,7 @@
 hook; 22 on step 5's `Request` accessors; onze 49 on the page `Request` listing query and headers
 (R62-3); 88's `beans` on step 4's injected fields; 19 on step 4's exit codes · **State:** not started
 **Depends on:** 128 · lg2-e (R06-4's comptime refusal), lg2-j (comptime state — `#[provides]` duplicate
-check runs at boot) · `130-b` (qualified beans; open, depends on `nat-e`) · 03r-c/e (confirmations);
+check runs at boot) · `130-b` (qualified beans; open) · decision 318 (step 8) · 03r-c/e (confirmations);
 lg2-g closed by 281 (no registry key as a type's name — step 6), 03r-b and 03r-d by 299 (step 7)
 **Owns:** `modules/rakun/**` except 74's four files (`src/ssl_bundle.bp`, `src/sidecars/rakun_ssl.erl`,
 `test/ssl_bundle_test.bp`, `test/tls_listener_test.bp`), 11's `src/actuator_api/**` and 17's
@@ -99,7 +99,7 @@ A bean, an event or a condition is named by its type or its function, never its 
 
 - [ ] `ctx.resolve("OrderCache")` → resolution by type (`use bean(OrderCache)`, 269's `@getContext`
       shape); `resolveNamed("Clock", "fixed")` → the shape `130-b` answers (option (d): a
-      qualifier is a distinct type; `130-b` open, depends on `nat-e`)
+      qualifier is a distinct type; `130-b` open)
 - [ ] `#[eventListener("OrderPlaced")]` → `#[on] fn f(e: OrderPlaced)`, the event the parameter's type
       (280 example 2); the string form refused
 - [ ] `#[conditionalOnMissingBean(MailSender)]` takes a `type` (280 example 3); `rkExcludeFromEager`
@@ -119,6 +119,17 @@ A bean, an event or a condition is named by its type or its function, never its 
       number (`"12abc"`) stops the boot naming the file, line and expected type (03r-b's lenient parse goes)
 - [ ] `#[value("…")]` and `rkProp*` leave the rakun members; `rakun.profiles.active` is a field of a
       `#[config("rakun")]` record (`profiles: string[]`)
+
+### Step 8 — one decorator per role (decision 318; the core's `decorators.bp` through 130 step 5)
+
+- [ ] `#[component(lazy: …, scope: …)]` the one type stereotype; `#[service]`, `#[managed]` and the core's
+      `#[repository]` on a `type` deleted, their sites `#[component]` (the scan and `T.make()` unchanged)
+- [ ] `#[provides]` on a free function the one way to provide a bean, reading 299's typed config;
+      `#[configuration]`, `#[bean]` and their `rkRegisterBean` emission deleted; `examples/rakun/src/config.bp`
+      and `test/{autoconfig,conditions,scopes,context}_test.bp` rewritten
+- [ ] one `#[controller]`: the answer by the method's return type — `View` HTML, a record JSON, `Response`
+      as is; `#[restController]` deleted, its sites `#[controller]`
+- [ ] no Spring name left in the core's public surface (`grep` over `src/` for the deleted names is empty)
 
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` green in `modules/rakun`;
 `botopink format --check` clean there; `modules/README.md` updated.

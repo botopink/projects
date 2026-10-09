@@ -45,6 +45,11 @@ codec's CRC32C matches the Castagnoli vector; its varint / length-prefix half is
 - [ ] `repository/rakun/AGENTS.md` § Pulsar states the arm's scope (admin, settings, codec) and the
       refusal
 
+### Step 2 — the listener spelling (decision 318 (5))
+
+- [ ] the refused Pulsar listener is `#[listen(dest)]` with a Pulsar transport in the typed config; the
+      boot refusal of step 1 names that transport
+
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun-messaging`.
 

@@ -56,6 +56,11 @@ Generator runs over fixtures under `test/ws/fixtures/wsdl/`; the generated tree 
 - [ ] `test/ws/client_test.bp`: `WsClient` built with bundle `b` passes it to `rakun-client`; the TLS double sees the bundle's client certificate; a missing bundle name refuses the build
 - [ ] `test/ws/client_test.bp`: `<path>?wsdl` serves the source unmodified, its hash equals the generated header's
 
+### Step 4 — rakun's own names (decision 318)
+
+- [ ] the generated client is a generator on a `behavior`, as `#[httpClient]` (318 (4)); the endpoint a
+      `#[controller]` method (318 (6)); no Spring-WS name left
+
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` green in `modules/rakun-client`
 (`test/ws/` in the run); `botopink format --check` clean, generator output included;
 `modules/README.md` updated.

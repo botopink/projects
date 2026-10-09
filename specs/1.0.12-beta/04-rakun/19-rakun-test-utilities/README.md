@@ -81,6 +81,13 @@ Test-only, no production path; no gated cell.
 
 → 20-snap (front 135) step 2
 
+### Step 7 — rakun's own names (decision 318 (8))
+
+- [ ] `MockMvc` and the `@MockBean`-style override renamed after their role in botopink (front's choice,
+      recorded in the member README — e.g. `TestClient`, a container override taking a `#[mocks.mock]`
+      double); no Spring name or alias left in `rakun-test`'s public surface; 135's `assertResponse`
+      follows the new name
+
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun-test`.
 
