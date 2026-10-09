@@ -39,7 +39,8 @@ library decorator uses them; `@emit` is a named error.
   `Owner.Name` and adds the importer's import item; a value prints under the owner's path
   (`TypeDecl.displayName`). Only decorators declare one.
 - **`@TypeInfo.all`.** Sees every build module not itself reading `@TypeInfo.all`, plus the reader's
-  own declarations; readers analysed after all others (`orderReaders`), imported by nobody. Order:
+  own declarations; a reader is a module whose parse calls `@TypeInfo.all` (a comment or a string
+  literal spelling it is none); readers analysed after all others (`orderReaders`), imported by nobody. Order:
   module path (byte order), then declaration order. Entry = `Declared(name, module, meta, value,
   returnTypeName)` (decision 256).
 
@@ -47,6 +48,7 @@ library decorator uses them; `@emit` is a named error.
 
 - Steps 1–4 — the four places (decision 216), `with:` a list (235), one `@typeInfo` (248), `@TypeInfo.all` (253) — cells `run/decorator_{add_member,set_meta,add_type}`, `modules/decorator_{add_member_import,meta_import,add_type_import}`, `modules/typeinfo_all_{registration,imported,private}`, `run/typeinfo_all_list` and the `reject/decorator_*`, `reject/typeinfo_*` refusals
 - Step 5, migrated — std `#[mocks.mock]`; validation `#[validated]`; jhonstart `#[client]`; rakun-data `#[entity]` (20 of 22), `#[entityRepository]` (3), `#[belongsTo]` (2), `#[query]` (1 of 2; the other is not migrated — 313 deletes `#[query]`, rakun 08 step 7); rakun-cache `#[cached]` (2); rakun-hateoas `#[halResource]` (1); jhonstart `#[page]` / `#[layout]` / `#[template]` / `#[defaultView]` registrations (4: meta `seg`, registered by the entry point with `jhRegisterRoutes(@TypeInfo.all(with: page), …)` — onze's `onze_main.bp`, jhonstart's, onze-server's and the blog example's tests)
+- Rows found during the migration, closed — a reader found in the parse, not the text (`comptime/typeinfo_all.zig` `reads(program)`, cell `modules/typeinfo_all_spelled_in_string`; onze-cli's `start.bp` writes `@TypeInfo.all` in its generated source); a fn-typed local called at its current binding on erlang (`codegen/erlang.zig`, cell `run/fn_local_rebound_call`, `02-erlang`'s half; jhonstart's `jhRegisterRoutes` binds `val v` in each of its four loops)
 
 ## Open
 
@@ -90,12 +92,6 @@ reflection over the project** (declaration half; the `@project()` manifest half 
       error on commonJS, refusal on wasm — members do not travel with a behavior as with a type
       (holds `rakun-client`'s two sites)
 - [ ] an associated fn read as a value (`apply(City.make, …)`) is an unbound variable on erlang
-- [ ] a narrowed `val` is read by its unrenamed name on erlang: a second `val v` in one function binds
-      `V@1` and `if (v is fn(…) -> T) v(…)` reads `V` (`language-gaps.md`, `02-erlang`; jhonstart's
-      `jhRegisterRoutes` names each loop's value apart)
-- [ ] a module whose source text holds `@TypeInfo.all` — in a string literal too — is a reader
-      (`comptime/typeinfo_all.zig`'s text search), so a code generator spelling it is refused at every
-      import (`language-gaps.md`; onze-cli's `start.bp` puts the name together)
 - [ ] a member's / associated type's diagnostic is located past the file's last line (member source
       placed after the module's lines) and names `City__Columns`, not `City.Columns`
 

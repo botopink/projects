@@ -150,8 +150,9 @@ compiler rows in `language-gaps.md`):
 - Step 2 residue — `signup-schema-example.bp` and `nested-and-arrays-example.bp` are suite cases
   (`test/*_example_test.bp`, the example byte for byte but for the import lines); a four-level
   `Category` decodes and a bad leaf is reported at its full path; a self-reference 2 000 levels deep
-  decodes on both targets (over a document built as a value: std's `json.decode` overflows node's
-  stack between 1 000 and 1 500 levels — std's reader, front 97, not this decoder);
+  decodes on both targets, over a document built as a value and over its JSON text (std's
+  `json.decode` reads by a loop since `fix-js-gaps`; its recursion overflowed node's stack between
+  1 000 and 1 500 levels);
   `test/refusal_test.bp` runs `botopink check` over a fixture and asserts the unsupported field
   type's refusal, message and location; `schemas.bp` reads with std's `Json.items()` /
   `.members()` and the emitted decoder with `input.field("…") ?? Json.Null` — `itemsOf`,
