@@ -58,7 +58,7 @@ com o `.bpp` mora no `jhonstart-styled`:
 
 - a `pub default fn` que o `"bpp".style` nomeia e que recebe o texto da seção;
 - o id de escopo, tirado do caminho do módulo e da linha da seção;
-- as anotações da linha da seção (`#[isGlobal]`, `#[defineVars]`);
+- os buracos de run-time da seção, que viram variáveis CSS no elemento raiz (p1);
 - o estilo ativado com `use` no componente (p1), que o `html` lê pelos hooks;
 - a ponte `ElementBase` → `StyledBase`;
 - o sink que põe a folha no head.
@@ -256,7 +256,7 @@ ao `html`. O valor vira um `val` do módulo que o componente ativa com `use` (p1
 | `--- style ---` | com escopo: cada seletor ganha `[data-s="<id>"]` |
 | `--- style #[isGlobal] ---` | vai para a folha como foi escrito, sem escopo (só se o p3 ficar com (a); com (b), o global é `:global(…)`) |
 | `:global(sel)` dentro da seção | `sel` fica sem escopo |
-| `--- style #[defineVars(a, b)] ---` | cada nome é um valor do escopo do template; o elemento raiz ganha `style="--a: …; --b: …"` |
+| `${props.color}` dentro da seção | buraco: valor fixo vai para a regra; valor de run-time vira `var(--s-<n>)`, e o elemento raiz ganha `style="--s-<n>: …"` (p1; substitui o `#[defineVars]`) |
 | `<style #[isInline]>` na marcação | o builder `style`, verbatim (o comportamento de hoje) |
 | `<style>` na marcação, sem `#[isInline]` | erro na tag, apontando para a seção |
 | seção sem `"bpp".style` no manifesto | erro na linha: `a --- style --- section needs "bpp.style" in botopink.json` |
@@ -286,7 +286,7 @@ que continuam sem saber do `.bpp`.
 | decisões 198, 200, 284 | `"bpp": "jhonstart"` vira `"bpp": {"default": "jhonstart", …}` |
 | 212 | o arquivo ganha uma terceira parte, a seção de estilo |
 | 270 | o prelúdio é o do pacote em `bpp.default` |
-| 278 | `#[isGlobal]` e `#[defineVars]` passam para a linha da seção; `<style>` na marcação só com `#[isInline]` |
+| 278 | `#[defineVars]` sai (buracos, p1); `#[isGlobal]` sai pelo p3 (b) ou vai para a linha da seção pelo (a); `<style>` na marcação só com `#[isInline]` |
 | 285 | o toolchain passa a conhecer também o pacote de `style` |
 | 301 | os tokens viram componentes `styled`; a folha sai pelo `jhonstart-styled`; pelo p4, o `#[styled(..)]` passa do `jhonstart-emilia` para o `jhonstart-styled` e aceita também componentes da aplicação (a escrita no template não muda); o `jhonstart-emilia` sai |
 | `08-bpp/119` | é dona de `repository/css`, `repository/styled` e `jhonstart-styled`, e apaga o membro `jhonstart-emilia` (p4); passos: 1 os pacotes, 2 `jhonstart-styled` e o braço do `html`, 3 boundary, 4 `#[styled]`, 5 uma folha só; no gate, `grep -rn "bpp\|jhonstart"` vazio em `repository/css`, `repository/styled` e `repository/emilia/modules` |
@@ -301,7 +301,7 @@ que continuam sem saber do `.bpp`.
 Cada ponto traz o contexto, as opções com exemplo e a recomendação. As recomendações seguem a
 decisão 67: uma forma só, a mais restritiva.
 
-### p1 · Como o estilo chega ao `html` — aceito (09/10): `use cardStyle;`
+### p1 · Como o estilo chega ao `html` — aceito (09/10): `use`, inline ou por `val`
 
 **O que se pergunta.** Um `.bpp` é outro jeito de escrever um `.bp` (198): o toolchain desdobra o
 arquivo em código botopink comum. A marcação vira `return html """…""";`. O p1 é qual código a seção
@@ -335,9 +335,45 @@ type Props(title: string)
 .title { font-size: 2rem; }
 ```
 
-vira o módulo acima. A seção vira um `val` de módulo, com um nome gerado que o cabeçalho não
-alcança, e o `use` dele entra no corpo depois das instruções do cabeçalho, antes do `return`. A forma
-exata é da 116.
+vira o estilo direto no `use`, a primeira forma abaixo: a seção vira `use <style> """…""";` no
+corpo, depois das instruções do cabeçalho e antes do `return`. Não há `val` com nome gerado. A
+forma exata é da 116.
+
+**As duas formas valem, porque são a mesma coisa.** `use` ativa qualquer expressão que seja um
+`@Component`; escrever o literal no `use` ou passar por um `val` não muda nada. O `val` serve quando
+o estilo é compartilhado entre componentes:
+
+```bp
+// inline: o que o .bpp desdobra, e o caso comum num .bp
+pub default fn (props: Props) -> View {
+    use styled """.title { font-size: 2rem; }""";
+    return html """<h1 class="title">{props.title}</h1>""";
+}
+
+// por val: um estilo usado por mais de um componente
+val cardStyle = styled """.title { font-size: 2rem; }""";
+pub fn Card(props: Props) -> View { use cardStyle; return html """…"""; }
+pub fn CardSmall(props: Props) -> View { use cardStyle; return html """…"""; }
+```
+
+**Buracos com valores do corpo substituem o `#[defineVars]`.** Inline, o literal enxerga `props` e os
+`val`s do cabeçalho. Um buraco com valor fixo (comptime) é escrito na regra. Um buraco com valor de
+run-time vira uma variável CSS: a regra lê `var(--s-<n>)`, e o elemento raiz do template ganha
+`style="--s-<n>: …"`, com o valor escapado. É o que o `define:vars` do Astro faz, sem anotação e sem
+lista de nomes. A folha continua uma só para todas as instâncias, e só o atributo `style` muda.
+
+```bpp
+---
+type Props(color: string)
+---
+<div class="box">…</div>
+--- style ---
+.box { border: 1px solid ${props.color}; padding: 1rem; }
+```
+```html
+<!-- regra (uma só, no build):  .box[data-s="box-5"]{border:1px solid var(--s-0);padding:1rem} -->
+<div class="box" data-s="box-5" style="--s-0: red">…</div>
+```
 
 **O que vem junto:**
 
@@ -352,8 +388,8 @@ exata é da 116.
 - **Dois `styled` diferentes.** Neste exemplo, `styled` é a função default do `jhonstart-styled`: um
   literal com seletores, que vira uma folha com escopo. O `styled` do pacote `styled` é o de
   componentes, em que declarações viram uma classe. Um `.bp` que use os dois dá alias a um deles (170).
-- **`#[defineVars(a, b)]`** na linha da seção desdobra num `use` com os valores, como em
-  `use cardStyle.vars(a, b);`. A forma exata é da 116.
+- **A linha da seção fica sem anotação.** O global é `:global(…)` (p3) e as variáveis são buracos.
+  Sobra `--- style ---`, sempre igual.
 
 **As alternativas descartadas:** `html(cardStyle) """…"""` (pedia à linguagem um valor antes do
 literal) e uma anotação `#[scoped(cardStyle)]` na tag raiz (uma tag carregando algo que vale para o
@@ -389,8 +425,9 @@ componente.
 
 **Recomendação: (b).** Com o `:global(…)`, uma seção cobre os dois casos, e o arquivo tem um lugar
 só de CSS. A (a) só ganha quando a folha global é grande, e aí ela cabe melhor num `globals.css`.
-Isso muda a recomendação anterior, que era (a). Com (b), o `#[isGlobal]` deixa de existir:
-`#[defineVars]` passa a ser a única anotação da linha da seção.
+Isso muda a recomendação anterior, que era (a). Com (b), o `#[isGlobal]` deixa de existir; o
+`#[defineVars]` já saiu com o p1 (buracos de run-time viram variáveis CSS), e a linha da seção fica
+sem anotação.
 
 ### p4 · Aplicar um componente `styled` numa tag — aceito (09/10): (a)
 
