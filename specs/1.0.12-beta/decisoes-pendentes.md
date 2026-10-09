@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta (só o que está em aberto, por ordem de importância)
 
-Atualizado em 2026-10-09 (decisões 278–327; revalidação item a item). **Em aberto: 63 perguntas, 8 contradições e 88 escolhas ★ para confirmar.** Só o que ainda espera resposta sua: o que já foi respondido está em
+Atualizado em 2026-10-09 (decisões 278–327; revalidação item a item). **Em aberto: 64 perguntas, 8 contradições e 88 escolhas ★ para confirmar.** Só o que ainda espera resposta sua: o que já foi respondido está em
 `specs/1.0.12-beta/decisions-taken.md` (decisões 144–327; próximo número livre: **328**) e saiu daqui.
 Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 234–236 (injeção do rakun,
 `@TypeInfo.all` com lista, decorador de função), 237 (captura do template pelo texto), 238–243
@@ -232,6 +232,41 @@ fn total() -> i32 {
 pela 266, o `Dict` de funções do rakun já é uma recusa localizada de qualquer jeito (uma função não tem
 construção emitida), então o `beans()` muda de forma em qualquer opção. **Bloqueia:** a última caixa do
 passo 21 do `01-checker`; o `beans()` do rakun.
+
+### jsi64-a · Como o `Json` guarda um `i64` exato (decisão 319) *(proposta)* ⏳
+
+**Trava:** `04-js` passo 9 (a parte do `Json`) · `02/97` passo 13 · ⏳ pronto para abrir thread ao responder
+
+**Contexto.** A 319 diz que o `Json` da std "escreve e lê um `i64` como um número JSON exato". O
+`json.bp` não tem inteiro: `Json.Num(value: f64)` é o único número, o `decode` transforma todo numeral
+no `f64` arredondado corretamente (decisão 142), e os próprios testes da std afirmam que
+`decodesTo("9007199254740993", Json.Num(value: 9007199254740992.0))`. Escrever já funciona: o
+`toString()` de um `i64` dá os dígitos em todo target com a 319. Ler não tem onde devolver um `i64`
+exato, e uma variante nova muda todo `case` exaustivo sobre `Json` (rakun, onze, testes da std).
+
+**Hoje:**
+```bp
+@print(json.decode("9223372036854775807").unwrap());   // Num(value: 9223372036854775808.0) — arredondado
+```
+
+- [ ] **(a)** Uma variante `Int(value: i64)`: o `decode` responde `Int` para um numeral sem fração nem
+  expoente dentro do intervalo do `i64`, e `Num` nos outros casos; todo `case` sobre `Json` ganha um braço.
+  ```bp
+  case json.decode("9223372036854775807").unwrap() { Int(value: n) -> @print(n); _ -> {} }   // 9223372036854775807
+  ```
+- [ ] **(b)** O `Num` guarda o numeral: `Num(value: f64, text: string)`, e um leitor
+  `Json.int(self) -> ?i64` lê o texto exato (`null` quando tem fração, expoente ou sai do intervalo);
+  nenhum braço novo.
+  ```bp
+  @print(json.decode("9223372036854775807").unwrap().int());   // 9223372036854775807
+  @print(json.decode("1.5").unwrap().int());                   // null
+  ```
+- [ ] **(c)** Um leitor à parte sobre o texto, sem mudar o `Json`: `json.decodeInt(s: string) ->
+  @Result<i64, string>` para um documento que é um inteiro só.
+
+**Recomendação: (b)** — o valor lido é exato ou ausente, nunca arredondado, e nenhum `case` dos
+consumidores muda. **Bloqueia:** a parte do `Json` do passo 9 da `04-js` e a do passo 13 da `02/97`
+(`9223372036854775807l` ida e volta no commonJS).
 
 **3 · `05-wasm`**
 
