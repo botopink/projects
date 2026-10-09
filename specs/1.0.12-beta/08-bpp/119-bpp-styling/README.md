@@ -167,7 +167,7 @@ own contracts.
 /* written */                      /* served */
 h1 { color: red; }                 h1[data-s="a1"] { color: red; }
 .text :global(em) { … }            .text[data-s="a1"] em { … }
-article > p:hover { … }            article[data-s="a1"] > p[data-s="a1"]:hover { … }
+article > p:hover { … }            article[data-s="a1"] > p:hover[data-s="a1"] { … }
 :global(h1) { margin: 0; }         h1 { margin: 0; }
 ```
 

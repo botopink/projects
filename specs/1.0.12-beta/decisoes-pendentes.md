@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 56 perguntas, 8 contradições e 88 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **339**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 56 perguntas, 9 contradições e 88 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **339**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -1143,6 +1143,7 @@ import {unicode_tables as tables};
 | `29-a ★` | A tabela de starters de island: o que resta é o loader por rota — (a) manter — `globals.starters` + `registerRouteStarters`; nenhum `__` escrito à mão; um loader por rota | (a). A divisão segue a unidade do manifest (a rota) e a entrada não declara global nenhum. | 26 passo 5 (reduzida: `registerRouteStarters` + `globals.starters`) | 26: 118 |
 | `erk-b` | O `#[documentQuery]` depois da 313 | (a) agora — uma forma só de repositório para todo store; (b) quando uma necessidade medida pedir. | `04-rakun/09` passo 4 | 09: 19 s1, 13 (depois do 128) |
 | `ctr-w` | O braço Elasticsearch da 09 × decisão 185 | (a) — é o que a 185 manda e não acrescenta membro. | 09 passo 3. | 09: 19 s1, 13 (depois do 128) |
+| `119-a` | A caixa do grep da 119 passo 1 × o hook byte-idêntico da checagem 4 do CI (`runner-standalone.sh` cita `emilia`) | (a) — o grep mede o texto do próprio pacote (`src`, `test`, `botopink.json`); o hook é um texto só, do gate. | Só marcar a caixa do grep da 119 passo 1. | 119 s1 |
 | `03r-ae` | SAML 2.0 ACS | (a) — a 79 está no grupo A do rakun, então está escalada neste milestone; **(b)** só se ela sair dele. Nunca a (c). | 79 passo 3. | 79: grupo A, depois do 128 |
 | `03r-af` | Os sete projetos de exemplo nunca construídos | (a). O contrato de cada membro já é afirmado pelos testes do próprio membro; sete frentes de exemplo não provariam nada novo. | 73 passo 3. | 73: grupo A, depois do 128 |
 | `03r-ak` | Validar o SBOM contra o schema CycloneDX 1.5 | (a). Valida contra o schema de verdade, sem rede, sem afrouxar a caixa e sem pôr no std um validador genérico por causa de um consumidor só. | 81 passo 3. | 81: grupo A, depois do 128 |
