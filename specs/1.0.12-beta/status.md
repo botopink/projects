@@ -75,6 +75,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] decision 360 (slots as Astro's: `<Slot />`, `<Slot name="x">fallback</Slot>`, a child `#[slot("x")]`, transfer, `use hasSlot("x")`, `Slot` / `slot` jhonstart functions with `comptime` parameters (302); never props; 193's `children` field goes) — 118 s4 · 130 s9 · 26 (`Slot`, `hasSlot`, prelude) · 01-checker · 120
 - [ ] decision 361 (std's module `bpp`: `#[bpp.html]`, `#[bpp.htmlPrelude]`, `#[bpp.style]`, `#[bpp.stylePrelude]`; `jhonstart-styled` merged into the core; `"bpp": "jhonstart"`) — 116 s1 (the std module, the manifest, the roles) · 119 s2–5 (in the core) · 26 · onze · 124
 - [ ] decision 362 (26 rewrites the native builders into props form in place, with the 78 hand-written callers; no second builder per tag) — 26 s13 · after 26 s0, 01-checker s28 and the props-filling lowering
+- [ ] decision 363 (a browser-only cell is `#[clientOnly]`, no erlang twin; a server `Link` styled by `data-jh-pending`) — 27 s1–3 · 26 (island cells) · 120 · 126
 - [ ] decision 302 (a tag's annotation = a decorator: `@Decl`, no return, meta) — 130 s9 · 118 s5 · 119 · 120 · 126
 - [ ] decision 303 (an action answers `@Result<T, ActionError>`; no `ActionOutcome`) — 127 s1–s3
 - [ ] decision 304 (a store answers `@Result<T, StoreError>`; no `try*` twin, no raise) — rakun 08 s6 · 09 s6 · 65 s4 · 02-erlang s14
@@ -200,7 +201,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [x] 49 s1 · s6 — `config.bp` / `types.bp` on std's `Json` methods (`isString` stays — `49-g`); the six `onze-test` group stubs (onze-wave patch 02)
 - [x] 50 s1 — `onze-cli` / `onze-bundler` read std's `Json` methods; no local `membersOf` / `itemsOf` / `textOf` (onze-wave patch 03)
 - [x] 51 s1 — `onze-og` reads integers with std's `parseInt`; no `intOf` (malformed text still `0` — `51-a`) (onze-wave patch 04)
-- [ ] 27 s1 box 1 · s2 · s3 — the reconcile driver, `use linkStatus()` under a `@Component`, the example · 27-a to confirm
+- [ ] 27 s1 box 1 · s2 · s3 — the reconcile driver, `use linkStatus()` only in a `#[client]` component (363), `data-jh-pending`, the example · none
 
 ## L4 — later, in waves
 
@@ -274,7 +275,7 @@ Then:
 - [ ] erk-a · erk-b — the body form's source (137 s2, 08 s7) · `#[documentQuery]` under 313 (09 s4) 
 - [ ] lg2-b … lg2-u — none opens a front; each opens a step when answered: 01-checker (q — reduced); the rakun boxes that name them — 13 · 65 · 92 (b), 22 (q) · answered: a (346 → 01 s32), e (347), j (343), o (342), w (341) → 14 s6, v (344) → 26 s6 / 98 s4 / 73, f, i (280), k (216, 253), r (311–313), t (314), m (315), c (316); g has no subject under 281
 - [ ] C-14 — 07-residuals s9 (a 1.0.10 id)
-- [ ] confirmations a step waits on — 49-e (49 s2) · 52-a (51 s4) · 29-a (26 s5; reduced: `registerRouteStarters` + `globals.starters`) · 27-a (27) · 03r-q (105) · 23-a/b, std-c (23; 23-c → 317) · 24-a/b/c/g (24; 24-g also 97 s5's surface)
+- [ ] confirmations a step waits on — 49-e (49 s2) · 52-a (51 s4) · 29-a (26 s5; reduced: `registerRouteStarters` + `globals.starters`) · 03r-q (105) · 23-a/b, std-c (23; 23-c → 317) · 24-a/b/c/g (24; 24-g also 97 s5's surface)
 - [ ] ctr-l — 26 s8's refusal list (only the record) · ctr-v — 34 / 33 opening before 118 (only the record) · ctr-w — 09 s3
 - [ ] ctr-o — lem-c · ctr-p — 04's readers · 104 s5
 - [ ] lg2-s — module-graph reflection

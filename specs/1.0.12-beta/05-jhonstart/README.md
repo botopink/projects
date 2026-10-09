@@ -32,7 +32,7 @@ marker). Left: a tail of code and spec items, three fronts by the member each ed
 | Front | Priority | State | What | Depends on |
 |---|---|---|---|---|
 | [`26-jhonstart-router/`](./26-jhonstart-router/README.md) | **high** — the boundary's digest is what `07-onze/49` step 3 completes; the rakun-free `src/` is a gate grep | not started | the core member: step 0 merges `jhonstart-html` into it (decision 200); one late-signal handler; no rakun in `src/`; the streaming tests; the digest and log line through `log` (194, 195); `docs.md`; the spec examples and eight READMEs; step 7 → `20-snap`; step 8 the stage markers (186) | `08-bpp/118` landed; `03-bundled-libs/102` step 3; `01-compiler/01-checker` (step 8); 29-a |
-| [`27-jhonstart-link/`](./27-jhonstart-link/README.md) | medium | not started | the reconciler driver in `jhonstart-link`; the `use linkStatus()` test | `04-rakun/22` (step 1 box 2 only); 27-a |
+| [`27-jhonstart-link/`](./27-jhonstart-link/README.md) | medium | not started | the reconciler driver in `jhonstart-link`; `use linkStatus()` only in a `#[client]` component, `data-jh-pending` (363) | `04-rakun/22` (step 1 box 2 only) |
 | [`67-jhonstart-forms/`](./67-jhonstart-forms/README.md) | medium-high — the forms are the write path of onze 53's proof | not started | the DOM-side boxes in `jhonstart-dom-test`; the wire-name literals gone | 26 (`fake_dom.mjs`); `03-bundled-libs/103` step 2; 67-a |
 
 ## Order
@@ -81,7 +81,7 @@ Confirmations kept from 1.0.10 ([`../../1.0.10-beta/decisions-pending.md`](../..
 | Id | Choice | Closes |
 |---|---|---|
 | 26-a | every router cell is dual-target | — |
-| 27-a | a browser cell in a two-target member is dual-target, the erlang twin answering the server's truth | — |
+| 27-a → 363 | a browser-only cell is `#[clientOnly]`, no erlang twin; a server `Link` styled by `data-jh-pending` | 27 |
 | 29-a | reduced (open, `decisions-pending.md`): the island starter table is `globals.starters`, filled per route by `registerRouteStarters(pattern, load)`; the per-name `registerStarter` goes — 281 builds the table at comptime (`@TypeInfo.all(with: client)`, `08-bpp/120` step 6, `07-onze/53` step 7) | 26 step 5's starter-table row |
 | 30-b … 30-g | `RenderPlugin` as a record of async functions; `render` / `App` in `streaming.bp`, `compose` taking the page as a thunk (a page is `fn() -> View`, no `route` parameter — 293); `Suspense(b)` registers its `Boundary(id, fallback, child)` with the render (`child` the unstarted thunk); `UiSegment`; `app(…, lang:)`; the browser half in `jhonstart-dom-test` | — |
 | 31-a | `notFound()` / `redirect(url)` raise through one host cell | — |

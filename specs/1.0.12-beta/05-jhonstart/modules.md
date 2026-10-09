@@ -22,7 +22,7 @@ what each front owns in it.
   (decision 270) as a carve-out.
 - `08-bpp/119` adds the member `jhonstart-styled` (the CSS integration) and deletes `jhonstart-emilia`
   (decision 338) — still six members after.
-- Every browser cell has an erlang twin answering the server's truth (27-a); `jhonstart-dom-test` is
+- A browser-only cell is `#[clientOnly]`, with no erlang twin (363; the twins `sidecars/jhonstart_link.erl` and `jhonstart_island.erl` go); `jhonstart-dom-test` is
   the one member needing a document.
 - The core's `botopink.json` lists `files` in dependency order; its `root.bp` the `pub mod` lines in
   front order.

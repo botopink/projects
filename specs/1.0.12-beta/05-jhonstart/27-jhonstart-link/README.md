@@ -5,10 +5,10 @@ correctness gap, unobservable in the gate until a DOM primitive exists · **Stat
 **Depends on:** nothing for step 1 box 1, steps 2 and 3 — the driver is pure over a record of four
 entry-supplied functions, so no wait on `07-onze/50` (50 step 6 depends on this front — decision
 189) · `04-rakun/22-rakun-file-routing` for step 1 box 2: the route-kind flag in the payload's `k`
-blob, build-written (decision 186), read through `routing.routeKindOf` · `27-a` confirmed (erlang
-twins' shape) · `05-jhonstart/26` step 2 only if the driver needs the signal path (it should not)
+blob, build-written (decision 186), read through `routing.routeKindOf` · decision 363 (a browser-only cell is
+`#[clientOnly]`, no erlang twin) · `05-jhonstart/26` step 2 only if the driver needs the signal path (it should not)
 **Owns:** `repository/jhonstart/modules/jhonstart-link/**` (`link.bp`, `link_runtime.mjs`,
-`sidecars/jhonstart_link.erl`, `reconcile.bp`, `test/**`, `AGENTS.md`) ·
+`sidecars/jhonstart_link.erl` (deleted, 363), `reconcile.bp`, `test/**`, `AGENTS.md`) ·
 `modules/jhonstart-test/src/assert_link.bp` · this directory
 **Does not touch:** `modules/jhonstart/**` (26) · `modules/jhonstart-forms/**` (67; imports
 `linkPrefetch` from here — additive changes only) · `modules/jhonstart-dom-test/**` (26; a driver
@@ -53,14 +53,18 @@ record of the entry's four functions (`replaceSubtree(depth, html)`, `startIslan
       call, no recomputation (waits until `04-rakun/22`'s flag is in the payload; the driver reads
       `k` as the router already does)
 - [ ] 1.0.10's DoD box "the reconciler decides remount vs re-render" re-ticked only when both cases
-      above are green on both rows (the erlang twin answers "no transition")
+      above are green on both rows (the driver is pure; no erlang twin — 363)
+- [ ] `sidecars/jhonstart_link.erl` deleted; `linkStatus` declared `#[clientOnly]` (186, 363); the
+      member's erlang build emits neither the hook nor its cell
 
-### Step 2 — `use linkStatus()` under a `@Component` return
+### Step 2 — `use linkStatus()` only in the client (decisions 354, 363)
 
-- [ ] `link_test.bp`: a `fn Pending() -> @Component<ElementBase, Element>` body with
-      `val s = use linkStatus();` (→ `LinkStatus(pending, href)`, `link.bp:187`) renders; a twin
-      without the `@Component` return is a
-      `use-without-context-effect` fixture under `refusals/` (decisions 118 and 128)
+- [ ] `link_test.bp` (commonJS row): a `#[client] fn Pending() -> @Component<Element>` body with
+      `val s = use linkStatus();` (→ `LinkStatus(pending, href)`, `link.bp:187`) renders
+- [ ] `refusals/`: `use linkStatus()` in a component that is not `#[client]` refused at the `use`
+      (186's check, 363)
+- [ ] a server-rendered `Link` reads no hook: the client router sets `data-jh-pending` on the
+      active link and clears it when the transition ends; a test over a recording `DomOps` asserts it
 
 ### Step 3 — the example
 
@@ -68,8 +72,8 @@ record of the entry's four functions (`replaceSubtree(depth, html)`, `startIslan
 route kind, the checkout link's pending state (`examples/src/**/*.bpp` show the same page as
 `.bpp`); corrected here if step 1 changes its surface.
 
-- [ ] the example gains the checkout link's pending state — a component reading
-      `use linkStatus()` → `LinkStatus(pending, href)` (today it has no checkout link and no status)
+- [ ] the example gains the checkout link's pending state — styled through `[data-jh-pending]`
+      (no hook); and one `#[client]` island reading `use linkStatus()` for a progress indicator
 - [ ] `botopink check` over the example against `modules/jhonstart-link` passes
 
 **Gate:** standard (fronts.md § Gate) + `jhonstart-link` 38 or more on both rows;

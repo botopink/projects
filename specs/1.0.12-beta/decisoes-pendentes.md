@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 53 perguntas, 6 contradições e 92 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **363**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 53 perguntas, 6 contradições e 91 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **364**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -107,32 +107,6 @@ assert tokenDeclarations(.Border.Rounded.Md) == "border-radius:var(--radius-md)"
 (`20-snap`, passos 1–5), que é dona de 97 passo 7 · 19 passo 6 · 26 passo 7 · 33 passos 1, 3, 4 · 50
 passo 8 · 51 passo 7 · o runner do passo 1 da 53 e o texto dos passos 2–6 · 71 passo 6; a checagem (2)
 da 98 fica como está.
-
-### 27-a ★ · Célula de browser num membro de dois targets
-
-**Trava:** `05-jhonstart/27` passo 1 caixa 1, passos 2 e 3 (o "Depends on" da 27: "`27-a` confirmed") · ⏳ pronto para abrir thread ao responder
-
-**Contexto.** Escolha já implementada. Uma célula de browser num membro de dois targets é de dois
-targets: o gêmeo erlang responde a verdade do servidor (`jhonstart-link`, `link.bp:187,231`; core).
-O driver da 27 é puro sobre um registro de quatro funções e não espera o `07-onze/50`; só esta
-confirmação falta.
-
-**Hoje** (ilustrativo):
-```bp
-val s = use linkStatus();   // no servidor (gêmeo erlang): LinkStatus(pending: false, href: "")
-```
-
-- [ ] **(a) ★** Confirmar: toda célula de browser tem um gêmeo erlang que responde o vazio do servidor.
-  ```bp
-  val s = use linkStatus();   // servidor: LinkStatus(pending: false, href: ""); browser: o estado do link
-  ```
-- [ ] **(b)** Não confirmar: a forma do gêmeo erlang vira trabalho da `05-jhonstart/27`, antes do passo 1.
-  ```text
-  27 passo 1 caixa 1 · passos 2 e 3 → esperam a 27 escrever outra forma para o gêmeo
-  ```
-
-**Recomendação: (a).** Um hook que o render do servidor chama tem de existir no servidor.
-**Bloqueia:** 27 passo 1 caixa 1, passos 2 e 3.
 
 ### 05emilia-n · As linhas do Tailwind sem dono
 
