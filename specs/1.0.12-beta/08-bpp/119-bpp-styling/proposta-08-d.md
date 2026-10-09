@@ -150,8 +150,8 @@ pub val primaryBtn = styled """
 """;
 ```
 
-Ficam abertos (§ 9, p6 e p7): aceitar ou não `@utility … --value()` literalmente, e de onde o
-`@variant` tira os breakpoints, que hoje estão no tema da emilia.
+O `@utility` fica recusado (§ 9, p6). Fica aberto de onde o `@variant` tira os breakpoints,
+que hoje estão no tema da emilia (p7).
 
 ### 3.2 Um componente de estilo é um `@Component<StyledBase, Styled>`
 
@@ -512,25 +512,33 @@ breakpoint da 300.
   <h1 #[styled(.Text.Bold)]>Oi</h1>        // sem a seção, compila: a folha sai pelo sink do jhonstart-styled
   ```
 
-### p6 · `@utility` literal no `styled`
+### p6 · `@utility` no `styled` — aceito (09/10): (a), recusado
 
-**Contexto.** No Tailwind, `@utility` dá nome a um utilitário, e `--value()` transforma o nome numa
-família. No botopink, o nome vem do `val` ou da função, e a família é uma função com parâmetro.
-
-- [ ] **(a)** Recusado; o `val` ou a função faz o papel dele.
+- [x] O `@utility` perde a função no botopink, que tem uma solução melhor: o nome vem de um `val`, e
+  a família é uma função com parâmetros tipados.
+  ```css
+  /* Tailwind */
+  @utility tab-4 { tab-size: 4; }
+  @utility tab-* { tab-size: --value(integer); }
+  ```
   ```bp
+  // styled
   pub val tab4 = styled "tab-size: 4;";
   fn tab(n: i32) -> StyledView { return styled "tab-size: ${n};"; }
+  fn pad(x: i32, y: i32) -> StyledView { return styled "padding: --spacing(${y}) --spacing(${x});"; }
+
+  <pre #[styled(tab(8))]>…</pre>
   // styled "@utility tab-* { … }"  →  error: name a component with a val or a function   at @utility
   ```
-- [ ] **(b)** Aceito: o literal gera uma família tipada a partir do `--value()`.
-  ```bp
-  pub val tab = styled "@utility tab-* { tab-size: --value(integer); }";   // tab: fn(i32) -> StyledView
-  tab(4)
-  ```
 
-**Recomendação: (a).** Um jeito só de dar nome, o da linguagem, como o `compose.bp` da emilia já faz.
-A (b) faria o tipo de um `val` depender de uma string de CSS.
+- **Um jeito só de dar nome** (67), o da linguagem; o `compose.bp` da emilia já traduz
+  `@utility scrollbar-hidden` para `pub fn scrollbarHidden()`.
+- **O tipo de um `val` não depende de uma string de CSS**: `pub val tab = styled "…"` é sempre um
+  componente.
+- **A família é tipada e pode ter vários parâmetros**: `tab("oito")` é erro de compilação, e o
+  `--value()` só daria um parâmetro.
+- O resto da sintaxe do Tailwind continua no literal (`--spacing()`, `--alpha()`, `@variant`,
+  `@custom-variant`), porque ali é CSS; saem só `@utility` e `@theme` (§ 3.1).
 
 ### p7 · De onde vêm os breakpoints
 
