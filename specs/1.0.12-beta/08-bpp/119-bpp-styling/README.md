@@ -2,7 +2,10 @@
 
 **Priority:** step 1 **high** — emilia moves onto `styled` first (decision 350; `06-emilia/34` step 5 waits on it); steps 2–5 medium — a page is complete without them (emilia tokens, global stylesheet); a
 self-styled component is not. · **State:** step 1: `css` done, `styled` landed but for the theme read from the program and the run-time registration (two boxes below, blocked: `01-compiler/134` step 6 (354), and row 134 — `01-compiler/130` step 10, 353; box 4's registration is 352, on `134-f`)
-**Depends on:** (written against 278, 301, 302, 326, 338) step 1: the two repositories
+**Decision 361:** `jhonstart-styled` merges into the core `jhonstart` — every step below that names
+that member writes its modules in the core (`jhonstart/src/styled_*.bp`), the style function carrying
+`bpp`'s `#[style]`; the manifest is `"bpp": "jhonstart"`.
+**Depends on:** (written against 278, 301, 302, 326, 338, 361) step 1: the two repositories
 `botopink/css` and `botopink/styled` exist (created; each needs a first commit on `feat` before
 it becomes a submodule — CI check 1) · step 2: `118-bpp-components` (the template arm), 118 step 1's
 carve-out in `jhonstart-emilia`'s bridge test landed before this opens (189), `05-jhonstart/26` for

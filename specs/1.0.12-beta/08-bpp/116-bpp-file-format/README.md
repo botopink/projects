@@ -6,9 +6,9 @@ from a `.bp` module (118). · **State:** not started
 (merges `jhonstart-html` into the core, `html` its default function, decision 200) ·
 `01-compiler/26-cli-tooling` (owns `compiler-cli/**`, `language-server/**` this milestone; 116
 opens after it) · `01-compiler`'s prelude scope (decision 270) · `119-bpp-styling` step 2
-(`jhonstart-styled`'s `pub default fn`; step 6's style-section examples only).
+(the core's `#[style]` function — 361 merged `jhonstart-styled` into the core; step 6's style-section examples only).
 Written against decisions 198, 199, 200, 212, 213, 221, 270, 284, 285, 338.
-**Owns:** in `repository/botopink-lang`: `modules/manifest/src/root.zig` (one key),
+**Owns:** `repository/bpp/**` (new repository, 361) · in `repository/botopink-lang`: `modules/manifest/src/root.zig` (one key),
 `modules/compiler-cli/src/cli/{scanner,resolver,libs,format_cmd,migrate}.zig` (extension lists,
 unfold, formatter's view), `modules/lib-test-runner/src/discovery.zig`,
 `modules/language-server/src/{project_index,project_graph,engine}.zig` (extension lists, span
@@ -183,18 +183,27 @@ error at the key. A style section with no `"bpp".style`: error at the section's 
 - [ ] a module hand-assembled as the unfold would: a header-line type error and one inside the
       literal each reported at the `.bpp` line
 
-### Step 1 — `bpp` in the manifest model
+### Step 1 — `bpp` in the manifest model, the roles by `bpp`'s annotations (decision 361)
 
-- [ ] `modules/manifest`: `"bpp"` parsed as an object — `default` required, `style` optional (338)
-- [ ] `default` names a dependency whose `pub default fn` takes `comptime _: @Expr<string>`; unit
-      tests: `default` missing, a non-dependency, a package with no such default function — each
-      refused at the key
-- [ ] `style` likewise: a non-dependency, a package with no such default function — each refused at
-      the key
-- [ ] the string form `"bpp": "jhonstart"` refused at the key: `error: "bpp" is an object — write
-      "bpp": {"default": "jhonstart"}`
+```bp
+// repository/bpp — the four role annotations (302's shape)
+// repository/jhonstart/modules/jhonstart/src/root.bp
+#[html] pub default fn html(comptime t: @Expr<string>) -> @ExprCustom<View> { … }
+#[style] pub fn style(comptime css: @Expr<string>) -> @ExprCustom<StyledView> { … }
+// src/prelude.bp — imports, and the marker
+#[htmlPrelude] pub val prelude = Prelude();
+```
+
+- [ ] `botopink/bpp` at `repository/bpp`: `html`, `htmlPrelude`, `style`, `stylePrelude`, `Prelude`;
+      std only; its first `feat` commit before the submodule (CI check 1); the `AGENTS.md` § Layout row
+      and CI check 4's list with it
+- [ ] `modules/manifest`: `"bpp"` is one package name (`"bpp": "jhonstart"`), a dependency; the object
+      form refused at the key: `error: "bpp" is a package name — write "bpp": "jhonstart"`
+- [ ] the roles found in that package by `bpp`'s annotations: `#[html]` exactly once (missing or twice
+      refused at the key, naming the declarations), `#[style]`, `#[htmlPrelude]`, `#[stylePrelude]` at
+      most once; a marker on a prelude module holding other declarations refused at the declaration
 - [ ] the key on a project with no `.bpp` accepted; a `.bpp` with no key refused at the file
-- [ ] a style section in a project whose `"bpp"` has no `style` refused at the section's
+- [ ] a style section in a project whose package has no `#[style]` refused at the section's
       `--- style ---` line
 
 ### Step 2 — The unfold
