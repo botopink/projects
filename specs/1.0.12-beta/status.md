@@ -1,6 +1,6 @@
 # Status — 1.0.12-beta
 
-**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `106c84b3` (batch 10: typed comptime decorator arguments — 01-checker s24, 280) · rakun `c0e991c` · jhonstart `064da1b` · emilia `a122dce`
+**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `20e9fa36` (batch 11: wasm/beam/commonJS rows, std's i64 templates) · rakun `c0e991c` · jhonstart `064da1b` · emilia `a122dce`
 · onze `5f485a0` · erika `8f88482` · vscode-extension `f041865`
 
 **Fronts:** 71 — **0 done** · **23 partial** · **48 not started**.
@@ -107,17 +107,17 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [x] 05-wasm s8 — overflow for `u32`/`u64` and the narrow integer types on wasm (264)
 - [x] 05-wasm — an `@block`'s `return` is the block's value (decision 2), `run/block_return_is_block_value`
 - [x] 05-wasm rows — `_` in a variant payload, a nested variant pattern (`run/variant_payload_wildcard_and_nested`); unsigned compare and divide (`run/unsigned_compare_and_divide`); `u64`'s unsigned overflow checks and printing, an unannotated `u64` literal or sum keeps its type, radix literals to `u64`'s top
-- [ ] 05-wasm row — a nested record field read through a generic record and concatenated prints a number: `type Route<P, D>(params: P, data: D)`, `"<h1>" + route.data.title + "</h1>"` with `data: Post(title: "A")` prints `<h1>332</h1>` on wasm (erlang right) · none
+- [x] 05-wasm row — a nested record field read through a generic record and concatenated is the field's text: `recordTypeOfExpr` reads a field declared as a type parameter (`data: D` of `Route<P, D>`) as the record the receiver's type argument names (`recvTypeArg`); `route.data.title` printed `<h1>332</h1>` on wasm (`run/generic_record_nested_field_concat`; backend-bugs patch 01)
 - [ ] 01-compiler row — an `l`-suffixed literal inside a `case` arm keeps its suffix in the generated code: `Ok(s) -> @print(s.mtime > 1577836800000l)` is a JS `SyntaxError`, an `erlc` syntax error and `illegal integer` on beam (the same literal in a plain function is fine) · none
 - [ ] 03-beam row — std's `unicode_test` does not assemble on beam: `Internal consistency check failed … {unassigned,{y,6}}` (baseline 106c84b3; std's declared targets are commonJS and erlang) · none
 - [ ] 01-checker row — T7 ("fills the element labeled `x`") fires between two elements of one array literal with no type written (onze-cli `build.bp` static-tree list, `create.bp:187`) · none
-- [ ] 05-wasm rows — `?u64`'s `toString` and a `u64` record field print signed; a `u64` tuple slot is refused · none
+- [x] 05-wasm rows — `?u64`'s `toString` and a `u64` record field print unsigned; a `u64` tuple slot holds its 8-byte cell — already on `feat` (batch 6, `c6483b21`): `run/optional_u64_to_string`, `run/u64_record_field_print`, `run/u64_tuple_slot` green on the four targets at `106c84b3`
 - [x] 02-erlang s4 — `run/array_unique` (C-35), four targets
 - [x] 02-erlang s5 box 2 — a decorator body carrying `\u{…}` (cell: 14 s7)
 - [x] 02-erlang s7 — C-07's erlang tails as `run/is_truth_table`; `run/unknown_stores_nothing` struck (§11 is a cost, no program prints a difference)
 - [x] 02-erlang s10 — the block-as-value lowering (R7): the valueless tail refused by the checker, a `return` the block's fun cannot answer last throws to the block's own guard
 - [x] 02-erlang row — an `@block` with a `return` (or in value position) that reassigns an enclosing `var`: every `return` answers `{V, Group}` and the call site rebinds the group (`valueBlockExpr`; `run/block_value_reassigns_enclosing_var`, a `for`'s `return` in `tests/erlang.zig`; bugs-sweep patch 06)
-- [ ] 03-beam row — a `return` from a `for` inside an `@block` answers from the enclosing function: `val found = @block { for (xs) { x -> if (x > limit) { return x; }; }; return -1; }; return found * 100;` answers `7` on beam, `700` on the other three · none
+- [x] 03-beam row — a `return` from a `for` inside an `@block` is the block's value: a loop's fun throws `{'__bp_return', V}` (apart from a `try`'s `'__bp_try'`), and `guardLoopCall` answers it into the `@block` of its frame (`answerLoopThrow`, `inBlockExit`); beam answered `7` for `700`. wasm's `blockReturnValue` reads a `return` written in the body before one inside a loop (a string block over a `for` printed an address) — `run/block_for_return_is_block_value` (backend-bugs patch 02)
 - [x] 02-erlang s12 · 03-beam s7 — one `math` on every OS (263): on feat (`a443f52d`)
 - [x] 02-erlang s13 · 03-beam s8 — an integer that leaves its type aborts (264): on feat (`48a096ea`)
 - [x] 02-erlang s15 · 97 s14 box 1 (320) — erlang and beam count codepoints: the emitters and std's Erlang templates read the codepoint list (`run/string_index_of_codepoints`, combining-mark and astral rows)
@@ -149,7 +149,8 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 130 s6 — module-level `@emit` removed · 130 s5 · `#[schema]`'s free functions → members of the type (306; `T.parse(…)`, 327)
 - [x] 134 s2 part — `@is` refused (322); the drift test walks the mirrored types and `@Result`'s methods (declared); std `Type` (`keys`, `partial`, `required`, `merge`)
 - [ ] 134 s2 — `Decl.fields` as `Type.Field<unknown>`, `examples/types.bp` · 01-checker s28 (`Type` a namespace type, `Type.Field<T>` declared, `Type.pick` / `omit` declared with the variadic; `result` deleted and `?T` methodless — done)
-- [ ] 01-checker s31 row — on commonJS, `x?.m()` where `m` is a method of a user type (`doc.field("src")?.str()` on std `Json`) passes the checker and fails at run time (`…?.str is not a function`): the `?.` method lowering box names erlang, beam and wasm only · none
+- [x] 01-checker s31 row — on commonJS, `x?.m()` over an enum method (`doc.field("src")?.str()` on std `Json`) is the static call guarded around a receiver evaluated once (`optEnumCall`); the owner is read at the checker's link loc (`ast.optional_synthetic_col`) — `run/optional_enum_method_call` (backend-bugs patch 03)
+- [ ] 03-beam row — `x?.m()` over an IMPORTED enum's method calls the variant's atom as a module: `doc.field("src")?.str()` on std `Json` is `undef` `'std@json@@Json__v__str':str/1` (a local enum and erlang are right; the written `?.` call's loc records no instance lowering, the payload link's does — `ast.optional_synthetic_col`) · none
 - [ ] 01-checker s31 — `?T` by `??`, `?.`, `?.[]`, `?.()`, `x!` (330); the migration script before the refusals
 - [x] 134 s5 — the `Decorator` type for `with:` (268)
 - [x] 134 s4 — the variadic parameter `..name: T[]` and the print builtins declared with it (267)
@@ -157,12 +158,13 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 07-residuals s8 — the lib-agnostic gate names every library: the test-file comments reworded; the other owners' comments, then the `-w` pattern · 02 and the other owners landed (s3, s5–s7, s12, s13 done)
 - [ ] 07-residuals s1, s2, s4 — the codegen and comptime report waves, three renames · 02–05 landed · 01 landed
 - [ ] 07-residuals s9 · s10 · s11 — `->` arms · erika's C-13 migration · the pointers' sweep (last) · C-14 · 16 s1–2 · every library merged
-- [ ] 97 s1 residue — `bindInt`'s `i32` through std (`toI32()` exists since 97 s13)
-- [ ] 97 s2 residue — no `Json` accessor copy left in `libs/` · 125 s2 residue (`derived.bp`, was `schemas.bp`)
+- [x] 97 s1 residue — `bindInt`'s `i32` through std: `parseInt`, then `toI32()` inside the range; past it a `typeMismatch` (it aborted); `parseI32` deleted (validation)
+- [ ] 97 s2 residue — the library repositories' `Json` accessor copies (botopink-lang's `libs/` is std alone, clean): validation `derived.bp` `membersOf`, `formats.bp` `isObject` · 125 s2 residue · rakun `jwt.bp`, `autoconfig_registry.bp` · 04-rakun
 - [ ] 97 s3 · s5 residue — rakun's `parseDuration`, `skewOf` and four retry loops as "consume std" rows · no 04-rakun front carries them yet
-- [ ] 97 s4 residue — the engine under every `-test` member, `test-libs` counts · none
+- [ ] 97 s4 residue — the full `test-libs` count against its last record (138: 125 passed) · the cold gate; the engine half is done: no `-test` member has its own, and `test-libs --lib std` plus the seven `-test` members read 12 passed, 0 failed, 1 without tests, 3 restrictions audited
 - [ ] 97 s11 — std on wasm, group 3 (230) · `io/http`, `async` through 140 + s17 (334) · `testing/mocks` in module memory when tests run on wasm (335), 110-a
-- [ ] 97 s13 rest — std's Node templates over an `i64` (`io/clock`, `io/fs`) in 319's canonical form · `Json`'s `i64` as its digits (332, s15) · `97-s13-a` (`abs` of the minimum)
+- [ ] 97 s13 rest — `io/clock`'s `formatIso8601` / `toCivil` / `offsetMinutes` past ECMAScript's time range · `97-s13-b` · `Json`'s `i64` as its digits (332, s15) · `97-s13-a` (`abs` of the minimum)
+- [x] 97 s13 box 1 but three — `fs.stat` (`bigint: true`), `async`'s `millisAsFloat` / `wholeMillis`, `clock`'s `wide` (`toI64()`) and `largestExactMillis` (a literal) in 319's canonical form: `run/std_io_i64_canonical`
 - [x] 97 s13 boxes 3–5 — `parseInt` exact over `i64`; `min` / `max` / `abs` / `clamp` / `isEven` / `isOdd` past 2^53 on commonJS; `toI32()` … `toF64()` on `Integer`, aborting when the value does not fit (wasm halves: 05-wasm rows)
 - [x] 97 s12 — `unicode.fromCodepoint` a `fn:` over `String.fromCodepoint` on all four targets (with `powBody`, `fn:` transcendentals, code-point `contentHash`)
 - [x] 97 row — an embedded std module that does not lex or parse is printed located at its `libs/std/src/<module>.bp` file and the build stops with `EmbeddedStdRefused` (was `compilation failed` / `UnexpectedToken`; `parseEmbeddedStd`, `comptime/tests/located_errors.zig`; bugs-sweep patch 08)
@@ -257,7 +259,7 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.0.10 choices) in its
-last section. Open after the 9 Oct revalidation and the answers since (309–337): 58 questions, 8 contradictions, 88
+last section. Open after the 9 Oct revalidation and the answers since (309–337): 61 questions, 8 contradictions, 88
 implementation choices.
 
 **First — what blocks now** (`decisoes-pendentes.md` Parte 1, "O que trava agora", set by the maintainer 2026-10-09), in order:
@@ -269,6 +271,7 @@ implementation choices.
 
 Then:
 - [ ] std-d — 97 s6 · 50 s4, s7
+- [ ] 97-s13-b — 97 s13's three `io/clock` templates · 97-s13-c, 97-s13-d block nothing
 - [ ] 95-f — 98 s3
 - [ ] 07-g — 107 whole
 - [ ] 03r-ab — 09 s5 (and the scope of s1–4) · only the record
