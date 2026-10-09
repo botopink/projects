@@ -59,7 +59,7 @@ leaves (decision 187).
 | This front edits | Also owned by | Sequence |
 |---|---|---|
 | 102: rakun-app `file_router.bp`, `static_gen.bp`; rakun-hateoas `hal.bp` | `04-rakun` 22; 128 (moves `hal.bp` into `rakun-web/src/hateoas/`) | 102, then 128, then 22 |
-| 103: rakun-app `actions.bp` (`actionId`, `resolveAction`); jhonstart-forms `form.bp` (`formAction`) | `04-rakun` 22; `05-jhonstart` 67 | 103 first |
+| 103: rakun-app `actions.bp` (`actionId` deleted — 324 —, `resolveAction`); jhonstart-forms `form.bp` (`formAction`) | `04-rakun` 22; `05-jhonstart` 67 | 103 first |
 | 102: jhonstart `routes.bp` | `05-jhonstart` 26 | 102 first |
 | 102: onze `types.bp`; onze-cli `scan.bp`; onze-bundler `chunk.bp` | `07-onze` 49; 50 | 102 first |
 | 104: rakun `request_context.bp`; rakun-web `negotiation.bp`, `compression.bp`, `static.bp`, `error.bp`; rakun-security `csrf.bp`; rakun-session `session_cookie.bp`; rakun-test `fake_request.bp`; rakun-app `i18n.bp` (`cookieFrom`, `qPerMille`) | `04-rakun` 04; 65 (and `08-bpp/123`, also in rakun-web); 79; 12; 19; 22 | after all of them |

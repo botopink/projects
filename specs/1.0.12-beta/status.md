@@ -197,11 +197,11 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.0.10 choices) in its
-last section. Open after the 9 Oct revalidation and the answers since (309–323): 62 questions, 9 contradictions, 89
+last section. Open after the 9 Oct revalidation and the answers since (309–324): 62 questions, 9 contradictions, 88
 implementation choices.
 
 **First — what blocks now** (`decisoes-pendentes.md` § Prioridade 1, "O que trava agora", set by the maintainer 2026-10-09), in order:
-- [ ] 103-a — 103 s2 (49-d → 323: 102 s3 free) · 07-j, ctr-u — 125 s4–s12
+- [ ] 07-j, ctr-u — 125 s4–s12 (49-d → 323, 103-a → 324: 102 s3 and 103 s2 free)
 - [ ] 16-x — 16 s8 (and 01-checker s10)
 - [ ] 05w-i · 05w-j — 05-wasm s5 (`unicode`, `json` on wasm)
 - [ ] 97-a · 97-b · 97-c — 97 s11 (`io/http`, `async`, `testing/mocks` on wasm)

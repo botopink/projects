@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**62 questions and 9 contradictions are open, and 89 implementation choices await confirmation.**
+**62 questions and 9 contradictions are open, and 88 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290 · `ctr-y` → 291 · `ctr-z` → 292 · `nat-c1`, `nat-c3`, `bpp-g` → 293 · `nat-c2` → 294 · `nat-c4` → 295 · (cardume) → 296, 297 · `nat-c5` → 298 · `nat-c6`, `03r-b` (reversed) → 299 · `nat-c7` → 300 (all of `nat-c` answered) · `nat-d1` → 303 · `nat-d2` → 304 · `nat-g` → 305 · `nat-d3` → 306 · `nat-d4` → 306 (moot: the `union2…5` / `tuple2…5` families go with the public value form; unions and tuples are types) · `nat-d5` → 307 · `pkg-b` → 309 · `imp-a` → 310 · `lg2-r` → 311, 312, 313 · `lg2-t` → 314 · `lg2-m` → 315 · `lg2-c` → 316 · `23-c` confirmed → 317 · `nat-e`, `130-c`, `erk-c` → 318 · `ctr-j` → 319 (option (b)) · `ctr-i` → 320 (option (a), commonJS included: codepoints on every target) · `130-b` → 321 (a label checked at build) · `134-d` → 322 · `49-d` confirmed as amended → 323.
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290 · `ctr-y` → 291 · `ctr-z` → 292 · `nat-c1`, `nat-c3`, `bpp-g` → 293 · `nat-c2` → 294 · `nat-c4` → 295 · (cardume) → 296, 297 · `nat-c5` → 298 · `nat-c6`, `03r-b` (reversed) → 299 · `nat-c7` → 300 (all of `nat-c` answered) · `nat-d1` → 303 · `nat-d2` → 304 · `nat-g` → 305 · `nat-d3` → 306 · `nat-d4` → 306 (moot: the `union2…5` / `tuple2…5` families go with the public value form; unions and tuples are types) · `nat-d5` → 307 · `pkg-b` → 309 · `imp-a` → 310 · `lg2-r` → 311, 312, 313 · `lg2-t` → 314 · `lg2-m` → 315 · `lg2-c` → 316 · `23-c` confirmed → 317 · `nat-e`, `130-c`, `erk-c` → 318 · `ctr-j` → 319 (option (b)) · `ctr-i` → 320 (option (a), commonJS included: codepoints on every target) · `130-b` → 321 (a label checked at build) · `134-d` → 322 · `49-d` confirmed as amended → 323 · `103-a` → 324 (no rakun-app wrapper).
 Closed by the 9 Oct revalidation (every item re-checked against 144–308, the fronts and the code): `08-h` → 285, 224 · `08-j` → 295 · `lg2-g` → 281 · `ctr-q` → 281, 256 · `ctr-m` (duplicate of `lg2-s`) · `ctr-n` (170 no longer carries the `from "m1"` example) · `ctr-r` (wrong premise: 118 lands before 26 step 0) · `111-c` → 228 · `03r-b`, `03r-d` → 299 · `95-e` (the collision left the code) · `03r-o` → 290 · `05emilia-h` → 206 · `68-c` → 280, 281. The rest were rewritten where their text or facts had gone stale.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
@@ -619,7 +619,7 @@ local change in the named place). Full 1.0.10 text under the same id in
 | 68-d | The styleMap is evaluated by a probe compiled into both packages (`emilia-hash-split`, `emilia-unevaluated`) — moot once 34 step 1 and 119 step 4 land (301: `#[styled]` tokens are comptime, the class and rule computed at build over std's `contentHash`); holds until then | bundler |
 | 69-a | onze-assets keeps `AssetRoot`; onze-server converts it to rakun-web's `StaticRoot` | assets · server |
 
-### Choices made by the 00-gate threads and the consolidation (6) — see `decisoes-pendentes.md` Parte 5
+### Choices made by the 00-gate threads and the consolidation (5) — see `decisoes-pendentes.md` Parte 5
 
 | Id | ★ implemented | Where |
 |---|---|---|
@@ -628,4 +628,3 @@ local change in the named place). Full 1.0.10 text under the same id in
 | 113-b | the restriction audit matches the refusal by its text (alternative, recommended: give the refusal an id — 07-residuals) | `lib-test-runner` |
 | 110-b | the count history left `tests/language/AGENTS.md` | `tests/language/AGENTS.md` |
 | 112-a | `format-check`'s `TREES` holds `examples` as one entry plus `modules/manifest/tests` | `scripts/format-check.sh` |
-| 103-a | the package function is `deriveActionId`; rakun-app's `actionId` wraps it, the secret read from the `#[config("rakun.actions")]` record (299), not `rkProp` | `03-bundled-libs/103` |

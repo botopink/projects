@@ -4,7 +4,7 @@ The rules the fronts implement against. Numbers continue from
 [1.0.10-beta's record](../1.0.10-beta/decisions-taken.md) (which stopped at 143; 91–94, 97 and
 99–101 are used) and are never renumbered or reused. A question is raised in
 [`decisions-pending.md`](./decisions-pending.md) under a lettered id and moves here with the next
-free number. **The next free number is 324.**
+free number. **The next free number is 325.**
 
 Each row: number · the id it answered · the rule in force · the fronts it binds. A row amended by a
 later one states only what is in force and cites the amendment; a row fully replaced is one line.
@@ -32,7 +32,7 @@ behaviour; shared logic in std) — the maintainer may reverse it.
 164, 167, 168, 170, 205–211, 214, 215, 239, 242, 244, 245, 247, 255, 264, 309, 310, 311, 314, 315, 319, 320, 322 · Comptime, reflection &
 decorator outputs: 216, 234–237, 248, 251–254, 256, 266–269, 277, 316 · Formatter: 165, 166, 243 · Backends: 169,
 179, 238, 240, 241, 259–263 · std: 174–178, 197, 217, 250 · Bundled libraries: 144, 145, 163,
-171–173, 180–183, 194–196, 257 · rakun: 184, 185, 187, 201, 274, 312, 313, 318, 321 · Track ordering: 188, 189 ·
+171–173, 180–183, 194–196, 257, 324 · rakun: 184, 185, 187, 201, 274, 312, 313, 318, 321 · Track ordering: 188, 189 ·
 jhonstart & templates: 186, 190–193, 200, 202, 204, 220, 223 · onze: 218, 323 · bpp: 198, 199, 203,
 212, 213, 221, 222, 224, 270, 271, 272, 273, 275, 276. No decision of this milestone is emilia's alone.
 
@@ -201,6 +201,7 @@ jhonstart & templates: 186, 190–193, 200, 202, 204, 220, 223 · onze: 218, 323
 | 195 | 07-f | A bundled `log` — `import {errorDigest, Logger} from "log";` — levels, `LogRecord`, four renderers, `errorDigest` and a `Logger` whose sink is injected, target-agnostic, used by jhonstart and rakun. `RenderHooks.onError` is not added: jhonstart's boundary calls `log`'s error-logging function (220), which writes the record through the injected sink and answers the digest; with no sink set the default sink (erlang `logger` / node `console`) receives it. rakun-logging keeps its erlang cells and installs itself as the sink (`ctr-k`); onze sets only the sink. `106-log` precedes `05-jhonstart/26` step 4 and `07-onze/49` step 3 | 106 |
 | 196 | 07-a | A bundled `http` — `import {cookie, accept} from "http";` — one cookie reader, one q-value parser, one home for the header codecs, target-agnostic, consumed by rakun and onze-server; rakun's four `Cookie:` readers (`request_context.bp`, `csrf.bp`, `i18n.bp`, `session_cookie.bp`), onze-server's and the three q-value parsers are deleted for it; rules 181 and 182 | 104 |
 | 257 | 07-n | `Schema<T>`, `#[schema]` and the schema combinators live in the bundled `validation`, beside the constraint markers and `#[validated]` (`import {schemas} from "validation";`); every failure — a constraint or a decode — is a `ValidationReport` with each violation at its path; std keeps `json` and knows nothing of validation *(Amended by 306: `Schema<T>` and the combinators are private; the `#[schema]` type is the public schema.)* | 125 step 2 |
+| 324 | 103-a | **One function derives an action id: `actions.id.deriveActionId(secret, module, name, buildId)`; rakun-app keeps no wrapper.** The package names it `deriveActionId` (163: a bundled package takes no name a framework exports) and answers `isActionId(id)` for the grammar. rakun-app's `actionId(module, name, buildId)` is deleted, not kept as a wrapper: its callers (`resolveAction`, the action registration in `actions.bp`, `actions_test.bp`) call `deriveActionId` with the secret read from the `#[config("rakun.actions")]` record (299), never `rkProp`. jhonstart-forms checks with `isActionId` | `03-bundled-libs/103` step 2 · `04-rakun/22` · `05-jhonstart/67` |
 
 ## rakun
 

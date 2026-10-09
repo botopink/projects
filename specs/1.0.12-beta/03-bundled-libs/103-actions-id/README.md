@@ -21,9 +21,9 @@ hash.hmacSha256(rkProp("rakun.actions.secret"), module + "." + name + ":" + buil
 looser shape (`a_` prefix, no `/`, space or quote): a 23-hex id passes jhonstart, never matches
 rakun. After: both read one derivation and grammar from `actions.id`.
 
-**Name.** `deriveActionId` — rakun-app exports `actionId` (decision 163; `103-a`). rakun-app's
-`actionId` (read by its tests, `actionIdOf`, `resolveAction`) keeps its name, calls `deriveActionId`
-with the secret from the `#[config("rakun.actions")]` record (299), not `rkProp`. `actionIdOf(name:
+**Name.** `deriveActionId` — rakun-app exports `actionId` (decision 163). Decision 324: rakun-app's
+`actionId` is deleted, not kept as a wrapper; its callers call `deriveActionId` with the secret from the
+`#[config("rakun.actions")]` record (299), not `rkProp`. `actionIdOf(name:
 string)` — a lookup by the action's name in text — is today's code and goes with 281 (an action is
 referred to by its function; `08-bpp/127` step 5); this front only repoints the derivation under it.
 
@@ -44,13 +44,13 @@ referred to by its function; `08-bpp/127` step 5); this front only repoints the 
 
 | Member | Changes | Imports from `actions` | Needs attention |
 |---|---|---|---|
-| rakun-app `actions.bp` | the body of `actionId(module, name, buildId)` becomes `deriveActionId(<secret>, module, name, buildId)` — the three-argument function stays (its tests, `actionIdOf` and `resolveAction` call it) | `id.deriveActionId` | none — the same expression |
+| rakun-app `actions.bp` | `actionId(module, name, buildId)` deleted (324); its callers — the registration at `actions.bp:265`, `resolveAction` at `:274`, `test/actions_test.bp` — call `deriveActionId(<secret>, module, name, buildId)` | `id.deriveActionId` | the tests that named `actionId` rewritten to `deriveActionId` with the test secret |
 | jhonstart-forms `form.bp` | `formAction`'s `wellFormed` expression becomes `isActionId(actionId)` | `id.isActionId` | `test/form_test.bp` binds forms to `a_9f2c1b7e`, `a_0000aaaa` and `a_1` (the last in `formStatusOf`, which does not check), and `docs.md` shows `a_9f2c1b7e`: 8 hex digits, refused by the grammar — those fixtures become 24-digit ids; the refusal text of `formAction` ("hold no `/`, space or quote") states the old rule; the two refusals `form_test.bp` asserts (``is not an action id``) keep. `examples/forms` already uses a 24-digit id |
 
-- [ ] rakun-app's `actionId` calls `actions.id.deriveActionId` (derivation and `slice` gone from
-      rakun-app), the secret from the `#[config("rakun.actions")]` record once 299 lands in rakun-app
-      — until then the one `rkProp` read stays where it is; `resolveAction`'s constant-time
-      comparison untouched; `actions_test.bp` green unchanged
+- [ ] rakun-app's `actionId` deleted (324): every caller calls `actions.id.deriveActionId` (derivation and
+      `slice` gone from rakun-app), the secret from the `#[config("rakun.actions")]` record once 299 lands
+      in rakun-app — until then the one `rkProp` read sits at the call; `resolveAction`'s constant-time
+      comparison untouched; `actions_test.bp` green with the calls renamed
 - [ ] jhonstart-forms' `formAction` calls `isActionId`; its form tests green on both rows
 
 **Gate:** standard (fronts.md § Gate) + `libs/actions/AGENTS.md` names `id`
