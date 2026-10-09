@@ -8,7 +8,8 @@ free number. **The next free number is 337.**
 
 Each row: number · the id it answered · the rule in force · the fronts it binds. A row amended by a
 later one states only what is in force and cites the amendment; a row fully replaced is one line.
-`ctr-*` marks a contradiction with another rule, open in `decisions-pending.md` § Contradictions.
+`ctr-*` marks a contradiction with another rule, open in `decisions-pending.md` (Part 1 under its
+track when it blocks a 00–03 step, else Part 2 § Contradictions that block no 00–03 step).
 † = decided by the coordinator under the maintainer's library-method delegation of 2026-10-02 (one
 interpretation and no colliding name; the same value on every target; the most restrictive
 behaviour; shared logic in std) — the maintainer may reverse it.

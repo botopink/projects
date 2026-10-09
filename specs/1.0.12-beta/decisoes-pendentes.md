@@ -1252,7 +1252,7 @@ responder ou adiar a 107).
 
 ### Confirmações ★ das trilhas 00–03
 
-Já implementadas; marque "confirmo" ou a alternativa (a pergunta inteira em `decisions-pending.md` § Implementation choices).
+Já implementadas; marque "confirmo" ou a alternativa (a pergunta inteira em `decisions-pending.md` Part 1 § Implementation choices of tracks 00–03).
 
 | Id | Assunto | Implementado (★) | Recomendação |
 |---|---|---|---|
