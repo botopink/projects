@@ -102,7 +102,7 @@ Nenhuma pergunta aberta trava a `00-gate/114`: os passos 3, 5, 6, 7 e 8 não esp
 
 ### Trilha `01-compiler`
 
-26 itens, nenhum com thread esperando; do do que libera mais para o que libera menos.
+26 itens, nenhum com thread esperando; do que libera mais para o que libera menos.
 
 ### nat-e · O zoológico de anotações do Spring
 
