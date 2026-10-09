@@ -3,7 +3,7 @@
 Reference: Zod 4 documentation, <https://zod.dev/> (Zod 4.x; API pages under <https://zod.dev/api>),
 walked section by section, § numbers following the reference (§§ 1–13). Every "the language has no …"
 claim names its place in `repository/botopink-lang` (`docs.md`, `libs/std`, `libs/validation`). Rows
-whose step landed (steps 0–2) read **have**.
+whose step landed (steps 0–3) read **have**.
 
 ## How to read it
 
@@ -84,13 +84,13 @@ rows:
 
 | Zod | botopink | Box | Notes |
 |---|---|---|---|
-| `.max(n)` | `#[maxLength(n)]` · `checks.maxLength(n)` | add · 3 | `#[sizeBetween(min, max)]` stays (have) |
-| `.min(n)` | `#[minLength(n)]` | add · 3 | |
-| `.length(n)` | `#[length(n)]` | add · 3 | |
+| `.max(n)` | `#[maxLength(n)]` (`checks.*` not public — 306) | have | `#[sizeBetween(min, max)]` stays (have) |
+| `.min(n)` | `#[minLength(n)]` | have | |
+| `.length(n)` | `#[length(n)]` | have | |
 | `.nonempty()` | `#[notEmpty]` | have | `decorators.bp:86-94` |
 | `.regex(re)` | `#[pattern("…")]` | have | intersection grammar, `constraints.bp:212-219` |
-| `.startsWith(s)` · `.endsWith(s)` · `.includes(s)` | `#[startsWith("…")]` · `#[endsWith("…")]` · `#[includes("…")]` | add · 3 | plain `string` methods |
-| `.uppercase()` · `.lowercase()` | `#[uppercase]` · `#[lowercase]` | add · 3 | check, not transform: fails on a letter of the other case |
+| `.startsWith(s)` · `.endsWith(s)` · `.includes(s)` | `#[startsWith("…")]` · `#[endsWith("…")]` · `#[includes("…")]` | have | plain `string` methods |
+| `.uppercase()` · `.lowercase()` | `#[uppercase]` · `#[lowercase]` | have | check, not transform: fails on a letter of the other case |
 | length in Unicode code points | step 0 measures `"é".length()` and `"😀".length()` on both targets | add · 0 | `indexOf` already disagrees with `length` on erlang (`language-gaps.md`, "`string.indexOf` counts bytes"); a length marker is as portable as `length()` |
 | `.trim()` | `#[trim]` | add · 6 | transform, applied by `parse<T>` before checks |
 | `.toLowerCase()` · `.toUpperCase()` | `#[lowercased]` · `#[uppercased]` | add · 6 | named apart from the checks on purpose |
@@ -98,41 +98,41 @@ rows:
 
 ## § 4.4 · String formats
 
-Each format: one `constraints.bp` predicate, one marker, one combinator check, one built-in message.
-"walk" = plain-botopink scan, no regex; "regex" = the intersection grammar. None reaches a host cell.
+Each format: one `formats.bp` rule, one `constraints.bp` predicate, one marker, one built-in message.
+"walk" = plain-botopink scan, no regex; "regex" = the intersection grammar. None declares a host cell.
 
 | Zod | botopink | Box | How |
 |---|---|---|---|
 | `z.email()` | `#[email]` | have | regex (`constraints.bp:217-219`) |
-| `z.email({ pattern })` — html5, rfc5322, unicode | `#[emailHtml5]` · `#[emailRfc5322]` · `#[emailUnicode]` | add · 3 | regex each; default unchanged |
-| `z.uuid()` | `#[uuid]` | add · 3 | regex; RFC 9562 version and variant nibbles |
-| `z.uuid({ version })` · `z.uuidv4()` · `z.uuidv6()` · `z.uuidv7()` | `#[uuidV(4)]` (1–8) | add · 3 | version nibble compared |
-| `z.guid()` | `#[guid]` | add · 3 | 8-4-4-4-12 shape, no nibble check |
-| `z.url()` | `#[url]` | add · 3 | walk: scheme `[A-Za-z][A-Za-z0-9+.-]*`, `://`, host (labels, IPv4 or bracketed IPv6) and port 0–65535 checked here — `url.parse` (`url.bp:46`) answers every input (`platform_test.bp`) |
-| `z.url({ hostname, protocol })` | `#[urlHost("…")]` · `#[urlProtocol("…")]` | add · 3 | patterns over parsed parts |
+| `z.email({ pattern })` — html5, rfc5322, unicode | `#[emailHtml5]` · `#[emailRfc5322]` · `#[emailUnicode]` | have | regex each; default unchanged |
+| `z.uuid()` | `#[uuid]` | have | regex; RFC 9562 version and variant nibbles |
+| `z.uuid({ version })` · `z.uuidv4()` · `z.uuidv6()` · `z.uuidv7()` | `#[uuidV(4)]` (1–8) | have | version nibble compared |
+| `z.guid()` | `#[guid]` | have | 8-4-4-4-12 shape, no nibble check |
+| `z.url()` | `#[url]` | have | walk: scheme `[A-Za-z][A-Za-z0-9+.-]*`, `://`, host (labels, IPv4 or bracketed IPv6) and port 0–65535 checked here — `url.parse` (`url.bp:46`) answers every input (`platform_test.bp`) |
+| `z.url({ hostname, protocol })` | `#[urlHost("…")]` · `#[urlProtocol("…")]` | have | patterns over parsed parts |
 | `z.url({ normalize })` | `#[normalizedUrl]` | add · 6 | transform: `url.serialize(url.parse(v))` |
-| `z.httpUrl()` | `#[httpUrl]` | add · 3 | `http` / `https`, dotted host |
-| `z.hostname()` | `#[hostname]` | add · 3 | walk, RFC 1123 labels |
-| `z.e164()` | `#[e164]` | add · 3 | regex |
-| `z.emoji()` | `#[emoji]` | add · 3 | walk over `unicode.codepoints` (`unicode.bp:55`) against emoji ranges; no class in the grammar |
-| `z.base64()` | `#[base64]` | add · 3 | `encoding.base64Decode` answers `@Result` (`encoding.bp:35`) |
-| `z.base64url()` | `#[base64url]` | add · 3 | `encoding.base64UrlDecode` (`encoding.bp:49`) |
-| `z.hex()` | `#[hex]` | add · 3 | walk; the three private `isHex` copies (`jhonstart-emilia/src/root.bp:39`, `rakun-web/src/static.bp:271`, `rakun-actuator-api/src/span.bp:149`) become consumers in their own fronts |
-| `z.jwt()` · `z.jwt({ alg })` | `#[jwt]` · `#[jwtAlg("HS256")]` | add · 3 | three base64url segments; header `json.decode`d for `alg`. Shape only — no signature check |
-| `z.nanoid()` · `z.cuid()` · `z.cuid2()` · `z.ulid()` | `#[nanoid]` · `#[cuid]` · `#[cuid2]` · `#[ulid]` | add · 3 | regex each |
-| `z.ipv4()` · `z.ipv6()` | `#[ipv4]` · `#[ipv6]` | add · 3 | walk (octet range; `::` compression) |
-| `z.mac()` · `z.mac({ delimiter })` | `#[mac]` · `#[macDelimiter("-")]` | add · 3 | regex |
-| `z.cidrv4()` · `z.cidrv6()` | `#[cidrv4]` · `#[cidrv6]` | add · 3 | address walk + prefix range |
-| `z.creditCard()` | `#[creditCard]` | add · 3 | Luhn walk; single spaces or hyphens between groups, as Zod |
-| `z.currencyCode()` | `#[currencyCode]` | add · 3 | ISO 4217 table as a comma-joined literal, uppercase only |
-| `z.iban()` | `#[iban]` | add · 3 | mod-97 over nine-digit chunks (products stay in `i32`) |
-| `z.hash("sha256", { enc })` | `#[hash("sha256")]` · `#[hashEnc("sha256", "base64url")]` | add · 3 | length table of § "Tamanhos Esperados e Padding" + the encoding's alphabet |
-| `z.iso.date()` | `#[isoDate]` | add · 3 | walk: `YYYY-MM-DD` + calendar check |
-| `z.iso.time()` · precision | `#[isoTime]` · `#[isoTimePrecision(n)]` | add · 3 | walk |
-| `z.iso.datetime()` · `offset` · `local` · `precision` | `#[isoDatetime]` · `#[isoDatetimeOffset]` · `#[isoDatetimeLocal]` · `#[isoDatetimePrecision(n)]` | add · 3 | walk; `Z` only by default, as Zod |
-| `z.iso.duration()` | `#[isoDuration]` | add · 3 | walk |
+| `z.httpUrl()` | `#[httpUrl]` | have | `http` / `https`, dotted host |
+| `z.hostname()` | `#[hostname]` | have | walk, RFC 1123 labels |
+| `z.e164()` | `#[e164]` | have | regex |
+| `z.emoji()` | `#[emoji]` | have | walk over `unicode.codepoints` (`unicode.bp:55`): `Extended_Pictographic` and `Emoji_Component` ranges of emoji-data.txt, as Zod's `\p{…}` |
+| `z.base64()` | `#[base64]` | have | walk: the alphabet, a multiple of four, at most two `=` at the end (`""` is base64, as Zod) |
+| `z.base64url()` | `#[base64url]` | have | walk: the URL alphabet, unpadded, no length leaving one dangling character |
+| `z.hex()` | `#[hex]` | have | walk; the three private `isHex` copies (`jhonstart-emilia/src/root.bp:39`, `rakun-web/src/static.bp:271`, `rakun-actuator-api/src/span.bp:149`) become consumers in their own fronts |
+| `z.jwt()` · `z.jwt({ alg })` | `#[jwt]` · `#[jwtAlg("HS256")]` | have | three base64url segments (stricter than Zod 4, which does not count them); header `json.decode`d: a text `alg`, `typ` `"JWT"` when present. Shape only — no signature check |
+| `z.nanoid()` · `z.cuid()` · `z.cuid2()` · `z.ulid()` | `#[nanoid]` · `#[cuid]` · `#[cuid2]` · `#[ulid]` | have | regex each |
+| `z.ipv4()` · `z.ipv6()` | `#[ipv4]` · `#[ipv6]` | have | walk (octet range; `::` compression) |
+| `z.mac()` · `z.mac({ delimiter })` | `#[mac]` · `#[macDelimiter("-")]` | have | regex |
+| `z.cidrv4()` · `z.cidrv6()` | `#[cidrv4]` · `#[cidrv6]` | have | address walk + prefix range |
+| `z.creditCard()` | `#[creditCard]` | have | Luhn walk over 12–19 digits; single spaces or single hyphens between groups (one kind), as Zod |
+| `z.currencyCode()` | `#[currencyCode]` | have | ISO 4217's 2025 list (funds and metals included) as a comma-joined literal, uppercase only |
+| `z.iban()` | `#[iban]` | have | shape (15–34, country letters, check digits) + ISO 7064 mod 97-10 digit by digit (stays in `i32`); per-country length not checked |
+| `z.hash("sha256", { enc })` | `#[hash("sha256")]` · `#[hashEnc("sha256", "base64url")]` | have | length table of § "Tamanhos Esperados e Padding" + the encoding's alphabet |
+| `z.iso.date()` | `#[isoDate]` | have | walk: `YYYY-MM-DD` + calendar check |
+| `z.iso.time()` · precision | `#[isoTime]` · `#[isoTimePrecision(n)]` | have | walk |
+| `z.iso.datetime()` · `offset` · `local` · `precision` | `#[isoDatetime]` · `#[isoDatetimeOffset]` · `#[isoDatetimeLocal]` · `#[isoDatetimePrecision(n)]` | have | walk; `Z` only by default, as Zod; `#[isoDatetimePrecision(n)]` checks the precision beside one of the three, which fix the zones (alone it is refused) |
+| `z.iso.duration()` | `#[isoDuration]` | have | walk |
 | `z.stringFormat(name, fn \| regex)` | `spi.registerConstraint(name, code, check)` + `#[constraint("name")]` | have | `spi.bp:78-85`, `decorators.bp:326-338` |
-| `z.regexes.*` | `constraints.emailPattern()` and one `pub fn <name>Pattern()` per regex format | add · 3 | `emailPattern` public today (`constraints.bp:217`) |
+| `z.regexes.*` | `constraints.emailPattern()` and one `pub fn <name>Pattern()` per regex format | have | `emailPattern` public today (`constraints.bp:217`) |
 
 ## § 4.5 · Template literals
 
@@ -144,17 +144,17 @@ Each format: one `constraints.bp` predicate, one marker, one combinator check, o
 
 | Zod | botopink | Box | Notes |
 |---|---|---|---|
-| `.gt(n)` · `.lt(n)` | `#[gt(n)]` · `#[lt(n)]` | add · 3 | per width, like `minValue` (`constraints.bp:114-160`) |
+| `.gt(n)` · `.lt(n)` | `#[gt(n)]` · `#[lt(n)]` | have | per width (`I32`, `I64`, `F64`); the bound has the field's type (a fraction on an integer field is refused) |
 | `.gte(n)` / `.min(n)` · `.lte(n)` / `.max(n)` | `#[minValue(n)]` · `#[maxValue(n)]` | have | `i32`, `f64`; refused on `i64` (integer literal does not widen — `validation/AGENTS.md` § Language notes) |
 | `.positive()` · `.nonnegative()` | `#[positive]` · `#[positiveOrZero]` | have | `i32`, `i64`, `f64` |
-| `.negative()` · `.nonpositive()` | `#[negative]` · `#[negativeOrZero]` | add · 3 | named after the shipped pair |
-| `.multipleOf(n)` / `.step(n)` | `#[multipleOf(n)]` | add · 3 | `i32` by `%`; `f64` by Zod's scaled-integer test |
-| `z.int()` — safe-integer range | field `i64` with `#[safeInt]` | add · 3 | ±(2^53 − 1) |
+| `.negative()` · `.nonpositive()` | `#[negative]` · `#[negativeOrZero]` | have | named after the shipped pair |
+| `.multipleOf(n)` / `.step(n)` | `#[multipleOf(n)]` | have | `i32` / `i64` by `%`; `f64` by Zod's scaled-integer test, the step's decimals read from the lexeme |
+| `z.int()` — safe-integer range | field `i64` with `#[safeInt]` | have | ±(2^53 − 1) |
 | `z.int32()` | field `i32` | have | decoder refuses a fraction and out-of-range — structural `invalidType`, not a marker |
 | `z.int64()` | field `i64` | have | as `z.bigint()` |
-| `z.float32()` · `z.float64()` | field `f64`; `#[float32]` for the single-precision range | add · 3 | `f32` (`1.5f`) is a double on both targets (`platform_test.bp`), so the range is this check |
+| `z.float32()` · `z.float64()` | field `f64`; `#[float32]` for the single-precision range | have | `f32` (`1.5f`) is a double on both targets (`platform_test.bp`), so the range is this check |
 | `z.nan()` | — | n/a | JSON cannot carry one |
-| `z.bigint().gt(5n)` … | the same markers on `i64` | gap | no `i64` bound literal (literal is `i32`). Nearest: `#[gt]` on `i64` refused with `minValue`'s message; `#[positive]` / `#[negative]` work (`0` widens in a comparison) |
+| `z.bigint().gt(5n)` … | `#[gt]`, `#[lt]`, `#[multipleOf]`, `#[negative]` on `i64` | have | an integer literal takes the `i64` its argument position asks for (`docs.md`); `#[minValue]` / `#[maxValue]` still refuse `i64` (their table rows unchanged) |
 
 ## §§ 4.9–4.10 · Booleans and dates
 
@@ -162,7 +162,7 @@ Each format: one `constraints.bp` predicate, one marker, one combinator check, o
 |---|---|---|---|
 | `z.boolean()` | field `bool` | have | |
 | `z.date()` | — | n/a | no date type; instant = epoch ms (`i64`), calendar date = `clock.Civil` (`io/clock.bp:117`) |
-| `z.date().min(d)` · `.max(d)` | `#[pastDate]` · `#[futureDate]` (have) · `#[afterIso("…")]` · `#[beforeIso("…")]` | have · add · 3 | bounds as ISO text, parsed once at validation |
+| `z.date().min(d)` · `.max(d)` | `#[pastDate]` · `#[futureDate]` (have) · `#[afterIso("…")]` · `#[beforeIso("…")]` | have | bounds as RFC 3339 text with its zone, checked at the marker, parsed by `clock.parseIso8601` at validation; strict, as `#[pastDate]` |
 
 ## §§ 4.11–4.12 · Enums and stringbools
 
@@ -213,7 +213,7 @@ Each format: one `constraints.bp` predicate, one marker, one combinator check, o
 |---|---|---|---|
 | `z.array(T)` | field `Array<T>` / `T[]` | have | each item at path `field[i]` |
 | `.nonempty()` | `#[notEmpty]` | have | `vNotEmptyList` |
-| `.min(n)` · `.max(n)` · `.length(n)` | `#[minLength(n)]` · `#[maxLength(n)]` · `#[length(n)]` on an array field | add · 3 | `#[sizeBetween]` stays |
+| `.min(n)` · `.max(n)` · `.length(n)` | `#[minLength(n)]` · `#[maxLength(n)]` · `#[length(n)]` on an array field | have | `#[sizeBetween]` stays |
 | checks on the items (`z.array(z.email())`) | `#[with("emails")]` naming `fn emails() -> Schema<Array<string>>` | add · 8 | a marker is a raw lexeme, cannot nest (lg2-i) — 280 makes it `#[with(emails)]`, a function value |
 | `.unwrap()` | — | n/a | |
 | `z.tuple([A, B, C])` | field `#(A, B, C)` | add · 4 | JSON array of exactly that length |
@@ -242,7 +242,7 @@ Each format: one `constraints.bp` predicate, one marker, one combinator check, o
 | `z.looseRecord` | `#[rest]` beside declared fields | add · 5 | above |
 | numeric keys | `Dict<i32, V>` | add · 4 | key text via the integer grammar |
 | `z.map(K, V)` | `Dict<K, V>` decoded from an array of pairs | add · 4 | wire form `[[k, v], …]` |
-| `.min` / `.max` / `.size` / `.nonempty` on maps and sets | the length markers | add · 3 | `Dict.size()`, `Set.size()` |
+| `.min` / `.max` / `.size` / `.nonempty` on maps and sets | the length markers | have | `Dict.size()`, `Set.size()` |
 | `z.set(T)` | field `Set<T>` | add · 4 | JSON array; repeated item → `duplicate`, not folded |
 
 ## §§ 4.28–4.30 · Files, promises, instanceof
@@ -385,18 +385,18 @@ Each format: one `constraints.bp` predicate, one marker, one combinator check, o
 ## Count
 
 211 rows by the Box column's first word (a partly shipped row counts as what it already is), after
-steps 0–2:
+steps 0–3:
 
 | Box | Rows |
 |---|---|
 | native | 11 |
-| have | 37 |
-| add (this front) | 134 |
-| gap (nearest form shipped, row filed) | 7 |
+| have | 77 |
+| add (this front) | 95 |
+| gap (nearest form shipped, row filed) | 6 |
 | n/a | 20 |
 | consumer or out of the reference's core (`—`) | 2 |
 
-Seven gaps: `i64` bounds, wire names on variants, payload fields of variants, `.extend` on an
+Six gaps: wire names on variants, payload fields of variants, `.extend` on an
 anonymous record, `z.deepPartial`, `z.file`, field defaults in reflection — plus the byte codecs in
 § 9's recipe row (same cause as `z.file`). Each has a [`../../language-gaps.md`](../../language-gaps.md)
 row and a nearest form above; none blocks a step.

@@ -1,8 +1,8 @@
 # Front 125 — validation zod: Zod's feature set in botopink
 
 **Priority:** high for the step 0–2 residue (`08-bpp/121` content collections and `08-bpp/127`
-actions take the `#[validated]` type — decision 306); medium for the rest · **State:** partial: steps 0–2 on
-feat; steps 3–12 open
+actions take the `#[validated]` type — decision 306); medium for the rest · **State:** partial: steps 0–3 done
+(botopink-lang held as patches until the coordinator lands them); steps 4–12 open, blocked (§ Steps 4–12)
 **Depends on:** `01-compiler/01-checker` step 24 (decision 280, step 7) · `07-j` (reduced: ≈ option (c) under 306). Written against decisions 144 (undeclared keys), 145 (emitted names),
 183 (`07-m`: coercion, step 6), 257 (`07-n`: `Schema<T>` lives in `validation` — amended by 306: the
 place stays, the value is private), 306–308
@@ -156,23 +156,42 @@ compiler rows in `language-gaps.md`):
   type's refusal, message and location; `schemas.bp` reads with std's `Json.items()` /
   `.members()` and the emitted decoder with `input.field("…") ?? Json.Null` — `itemsOf`,
   `membersOf`, `fieldOf` gone (the box `97-std-dedupe` step 2 waits on)
+- Step 3 — 58 markers (8 string checks, 41 formats, 7 numeric, 2 date bounds) and the length
+  markers on `Array`, `Dict`, `Set`: each a rule in the new `src/formats.bp` (walks and
+  intersection-grammar regexes, no host cell), a `constraints.bp` predicate, a marker in
+  `decorators.bp`, a built-in template and, with parameters, a `table.bp` row;
+  `grep -c '@External' src/constraints.bp` is 0. `constraints_test.bp` holds three accepted and
+  three refused inputs per string predicate (the reference's `"555-555-5555"`, `"2020-1-1"`,
+  `"usd"`, `"DE89 3704 0044 0532"` among the refused) and the boundaries of the numeric, list,
+  dict, set and date ones; `parity_test.bp` runs every predicate through one 62-row digest on both
+  targets; `refusal_test.bp` has one row per marker of `markerNames()` (71, the count asserted) and
+  15 argument refusals; `checks-and-formats-example.bp` is a suite case. Markers now check `?string`
+  / `?i32` / `?i64` / `?f64` fields when present. Not added: the `checks.*` functions — 306 makes
+  them private, and no module of them exists. `#[safeInt]`'s refusal is reachable on erlang only
+  (commonJS cannot build an `i64` past ±(2^53 − 1)). Embedded source +78 203 bytes (88 411 → 166 614)
 
 ## Open
 
-### Step 3 — Checks and formats
+### Steps 4–12 — blocked (measured 2026-10-09)
 
-Every `surface.md` row of §§ 4.3, 4.4, 4.6–4.8 and the length rows of §§ 4.19–4.27 marked `add · 3`:
-8 string checks, 41 format markers, 7 numeric markers, 2 date bounds — 58 markers — plus length
-markers on `Array`, `Dict`, `Set`. Each: a predicate in `constraints.bp`, a marker in
-`decorators.bp`, a `checks.*` function (private after 306, step 12), a built-in template, and (with parameters) a `table.bp` row.
+Each step's scope depends on an open answer; nothing in steps 4–12 is started.
 
-- [ ] `constraints_test.bp`: three accepted and three refused inputs per predicate, refused ones from
-      the reference's examples where given (`"555-555-5555"` for `e164`, `"2020-1-1"` for
-      `isoDate`, `"usd"` for `currencyCode`, `"DE89 3704 0044 0532"` for `iban`)
-- [ ] `parity_test.bp` runs every predicate on both targets against one digest
-- [ ] each marker on a field type it cannot check is a compile error; `test/refusal_test.bp` lists
-      one refusal per marker
-- [ ] no predicate reaches a host cell: `grep -c '@External' src/constraints.bp` is `0`
+| Step | Blocked by |
+|---|---|
+| 4 enums, unions, tuples, maps, sets | `07-j` (only option (c) has steps 4–10); the decorator that reads an enum is `#[validated]`'s after 306 and its members' spelling is `ctr-u`'s; `#[tag]` waits on the **`Decl.variants`** gap row |
+| 5 object policy, derived types | `07-j`; 307's `Type` (std `types.bp`) and `01-checker` step 28 (`#[validated] pub val RecipePatch = Type.partial(Recipe)`) |
+| 6 coercion, transforms, form binder | `07-j`; the `bind` member's spelling (`ctr-u`) |
+| 7 refinements and messages | `07-j`; `01-checker` step 24 (280: `#[check(rule, at: .field, code: .Custom)]` takes typed arguments) |
+| 8 combinators and codecs | `07-j`; 306's field markers (`#[codec]`, `#[map]`, `#[preprocess]`, `#[check]`) take function values (280, step 24); `encode`'s spelling (`ctr-u`) |
+| 9 reflection, error views, JSON Schema | `07-j`; `jsonSchema`'s spelling (`ctr-u`); reflection reads `@typeInfo(T)` meta (298, 306) |
+| 10 locales | `07-j` |
+| 11 references, not strings | `01-checker` step 24 (281: `#[orElse(.Tuna)]`, `#[wireName]`) |
+| 12 `#[schema]` becomes `#[validated]` | `ctr-u` (the members' spelling) |
+
+Step 3 touches step 24 in one place: `#[gt]`, `#[lt]` and `#[multipleOf]` declare their bound
+`comptime value: f64` and `#[validated]` gives it the field's type from the lexeme (`5` → `5.0` on an
+`f64` field, a fraction refused on an integer one); under 280 (2) the bound is `@Decl<T>`'s `T` —
+step 24's migration of the markers rewrites those three signatures.
 
 ### Step 4 — Enums, literals, unions, tuples, maps, sets (narrowed by step 12, 306)
 

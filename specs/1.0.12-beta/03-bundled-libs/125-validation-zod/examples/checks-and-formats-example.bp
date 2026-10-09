@@ -17,10 +17,13 @@
 // of PCRE and ECMAScript, or a walk — so the server and the browser run one
 // predicate, not two that are supposed to agree.
 
-import {decorators: {schema, validated}} from "validation";
-import {decorators: {minLength, maxLength, startsWith, lowercase, email, uuid, url, httpUrl}} from "validation";
-import {decorators: {ipv4, e164, isoDate, isoDatetime, creditCard, iban, hash, gt, multipleOf, negative}} from "validation";
-import {schemas, schemas.Schema, checks, constraints, report.ValidationReport, report.Violation} from "validation";
+import {decorators.schema, decorators.validated} from "validation";
+import {decorators.minLength, decorators.maxLength, decorators.startsWith, decorators.lowercase, decorators.email, decorators.uuid, decorators.url, decorators.httpUrl} from "validation";
+import {decorators.ipv4, decorators.e164, decorators.isoDate, decorators.isoDatetime, decorators.creditCard, decorators.iban, decorators.hash, decorators.gt, decorators.multipleOf, decorators.negative} from "validation";
+import {schemas, schemas.Schema, report.ValidationReport, report.Violation} from "validation";
+import {constraints.vUuid, constraints.vMinLength, constraints.vMaxLength, constraints.vEmail, constraints.vLowercase, constraints.vE164, constraints.vHttpUrl, constraints.vIsoDate} from "validation";
+import {constraints.vStartsWith, constraints.vCreditCard, constraints.vIban, constraints.vGtI32, constraints.vMultipleOfI32, constraints.vNegativeF64, constraints.vIpv4, constraints.vIsoDatetime, constraints.vHash} from "validation";
+import {table.constraintTableJson} from "validation";
 import {json.Json} from "std";
 
 #[schema]
@@ -50,14 +53,18 @@ pub type Payment(
 fn codesOf(r: @Result<Customer, ValidationReport>) -> string {
     return case r {
         Ok(_) -> "";
-        Error(report) -> report.violations.map({ v -> v.field + ":" + v.code }).join(",");
+        Error(report) -> report.violations
+            .map({ v -> v.field + ":" + v.code })
+            .join(",");
     };
 }
 
 fn payCodes(r: @Result<Payment, ValidationReport>) -> string {
     return case r {
         Ok(_) -> "";
-        Error(report) -> report.violations.map({ v -> v.field + ":" + v.code }).join(",");
+        Error(report) -> report.violations
+            .map({ v -> v.field + ":" + v.code })
+            .join(",");
     };
 }
 
@@ -76,7 +83,8 @@ test "validation: each format refuses the input the reference refuses" {
         """{"id": "not-a-uuid", "name": "A", "email": "Ana@Example.com",
             "phone": "555-555-5555", "site": "ftp://example.com", "birthday": "2020-1-1"}""",
     );
-    assert codesOf(r) == "id:uuid,name:minLength,email:lowercase,phone:e164,site:httpUrl,birthday:isoDate";
+    assert codesOf(r)
+        == "id:uuid,name:minLength,email:lowercase,phone:e164,site:httpUrl,birthday:isoDate";
 }
 
 test "validation: an absent optional field skips its markers" {
@@ -112,14 +120,4 @@ test "validation: the checksum formats are walks, not regexes" {
     );
     assert payCodes(bad)
         == "order:startsWith,card:creditCard,refundTo:iban,cents:multipleOf,adjustment:negative,origin:ipv4,at:isoDatetime,receipt:hash";
-}
-
-test "validation: the same checks exist as values, typed by what they check" {
-    val name = schemas.text()
-        .check(checks.minLength(2))
-        .check(checks.maxLength(40));
-    assert name.accepts(Json.Str(value: "Ana"));
-    assert name.accepts(Json.Str(value: "A")) == false;
-    // `schemas.int().check(checks.email())` does not compile:
-    // `Check<string>` is not a `Check<i32>`.
 }
