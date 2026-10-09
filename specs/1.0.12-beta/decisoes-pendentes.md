@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 55 perguntas, 6 contradições e 85 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **352**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 57 perguntas, 6 contradições e 85 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **352**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -935,6 +935,8 @@ val t = async.delay(30, "a");   // bloqueia 30 ms aqui; `await t` é identidade
 | `lg2-n` | Thunk convertido em `Node` | (1). As coerções que o compilador conhece continuam três (array, `Element`, `string`). | a linha; jhonstart 30. |
 | `lg2-p` | Cancelamento | (1). Em linha com a `lg2-b` (1). | a linha; rakun 02. |
 | `lg2-s` | Reflexão do grafo de módulos | (1) — por conta própria: os imports de um módulo são texto que o bundler já lê e recusa alto quando não entende; o argumento antigo ("em linha com a `lg2-k`") caiu com a 216. | a linha; onze 68 (o bundler de cliente). |
+| `49-g` | `isString`: do onze, ou do `Json` do std | (b) — o std ganha `Json.isString()` (superfície da 97) ao lado do `isObject`; o onze apaga o seu. Hoje: `if (isString(v) == false) throw …`; com (b): `if (v.isString() == false) throw …`; nunca (c), `v.kindName() != "a string"`. | nada; com (b), uma linha em `config.bp` / `types.bp` depois da 97. |
+| `51-a` | Inteiro malformado num sidecar de métricas ou num ângulo de gradiente | (b) — recusar (decisão 67): `parseMetrics` responde `Error("… line 3: \"9x0\" is not an integer")`; `gradientOf` responde `#(-1, "", "")`. Hoje (a): `ascent 9x0` vira `ascent 0`, `9.5deg` vira 0°. | nada hoje; (b) muda o `og_test.bp` (da 51). |
 | `lg2-u` | Decorator em posição de expressão | (1). Um decorator anota uma declaração ou uma tag; trabalho numa expressão comum é uma chamada. | a linha (o caso da marcação da frente 48 do emilia já está coberto pela 301). |
 
 ### Confirmações ★ das trilhas 00–03

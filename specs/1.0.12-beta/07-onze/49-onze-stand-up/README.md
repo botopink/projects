@@ -1,6 +1,6 @@
 # Front 49 — onze stand-up tail: the request, the dispatcher, the digest and the public root reach the app
 
-**Priority:** critical — 53's write path, error pages, assets read what this wires · **State:** not started
+**Priority:** critical — 53's write path, error pages, assets read what this wires · **State:** steps 1 and 6 done (onze-wave patches; land with the coordinator)
 **Depends on:** `03-bundled-libs/102` step 3's `types.bp` commit, before this opens (decision 188) ·
 step 3: `05-jhonstart/26` step 4 (boundary digests via bundled `log`, decisions 194, 195),
 `04-rakun/17-rakun-logging` (the sink) · step 4: `04-rakun/65-rakun-url-rules` step 1 (fall-through,
@@ -32,17 +32,23 @@ reading the query stays prerenderable; `onze-test` has one group file per front.
   chain (decision 67).
 - Filled query → rakun 23's `markDynamic("searchParams")` makes every page dynamic; decision 186
   removes run-time marks; step 5 is the bridge.
-- Onze reads std's `Json` (`members`, `field`, `str`, `kindName`, `isObject`) instead of its own
-  `pub` accessors in `config.bp` (`membersOf`, `isObject`, `kindName`, `isString`, `strOf`).
+- Onze reads std's `Json` (`members`, `field`, `str`, `items`, `kindName`, `isObject`); `config.bp`
+  keeps `isString` alone (`49-g`).
 - `onze-test` group signatures: [`helper-signatures.md`](./helper-signatures.md).
 
+## Done
+
+- Step 1 — consume std (97): `config.bp` and `types.bp` read a document through std's `Json`
+  methods (`members`, `field`, `str`, `items`, `isObject`, `kindName`); `grep -n "pub fn
+  membersOf\|pub fn strOf\|pub fn isObject\|pub fn kindName" modules/onze/src` is empty;
+  `pub fn isString` stays (std has no string test — question `49-g`); `onze` 23 / 23 on both rows
+  (unchanged).
+- Step 6 — the `onze-test` group stubs: `src/{cli,bundler,assets,og,release,e2e}.bp`, empty
+  modules with their `pub mod` lines and `files` entries; no dependency added (the root
+  `AGENTS.md` rule: a member lists exactly what its sources import — the front that fills a group
+  adds the member it imports); `helpers_test.bp` unchanged, `onze-test` 7 / 7 on both rows.
+
 ## Open
-
-### Step 1 — consume std (97): the Json accessors
-
-- [ ] `config.bp` reads via `Json.members()` / `.field()` / `.str()` / `.kindName()` /
-      `.isObject()`; `grep -n "pub fn membersOf\|pub fn strOf\|pub fn isObject\|pub fn kindName"
-      modules/onze/src` empty; `config_test.bp` count unchanged
 
 ### Step 2 — the query, the headers, the dispatcher
 
@@ -98,15 +104,6 @@ Final state (decision 277): no run-time mark — `onze build` reads each `#[page
       `use searchParams()` is not
 - [ ] after `05-jhonstart/26` step 8: `onze build` writes the `k` blob from the `kind` meta, prints
       `S prerendered` / `D per request (why)` per route; `responseFor`'s `markDynamic` call deleted
-
-### Step 6 — the `onze-test` group stubs
-
-`src/{cli,bundler,assets,og,release,e2e}.bp`: empty modules, `pub mod` lines in `root.bp`, needed
-members in `botopink.json` — 50 · 51 · 71 · 53 fill their files without touching the root. No
-blocker.
-
-- [ ] `onze-test` resolves with six more modules, each exporting nothing yet; `helpers_test.bp`
-      unchanged; `zig build test-libs` `onze-test` 7 / 7 on both rows
 
 ## Notes
 

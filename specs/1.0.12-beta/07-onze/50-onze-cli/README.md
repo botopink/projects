@@ -1,7 +1,7 @@
 # Front 50 — onze CLI tail: `onze dev`, `prerender/`, the signal, one defaults table, the bundler tail
 
 **Priority:** high — `onze dev` is the one missing command of four; a new user's first scaffold
-run prints "not available yet" · **State:** not started (step 7: the defaults record already
+run prints "not available yet" · **State:** step 1 done (onze-wave patch; lands with the coordinator) (step 7: the defaults record already
 drives `--help`)
 **Depends on:** `03-bundled-libs/102` step 3's `scan.bp`, `chunk.bp` commits, before this opens
 (decision 188) · maintainer `50-b` (step 2), `std-d` (steps 4, 7), `50-a` as amended ·
@@ -26,9 +26,7 @@ chunk per route, honours `assetPrefix` and both `<Script>` callbacks; CLI and bu
   describes a reload into the running node (50-b (b)) and cites "front 50 step 6", 1.0.10's
   numbering (here: step 2); no `dev.bp`;
   `onze-bundler/src/rebuild.bp` (a changed file's invalidation set) has no caller. `build.bp`
-  does not drive rakun 60's `static_gen.bp`. `start.bp` waits on `process.run`. `build.bp`,
-  `info.bp` declare a local `membersOf`, `onze-bundler/src/entry.bp` an `itemsOf` (std's
-  `Json.members()` / `.items()`). `create.bp`'s `createDefaults()` feeds the option parser and
+  does not drive rakun 60's `static_gen.bp`. `start.bp` waits on `process.run`. `create.bp`'s `createDefaults()` feeds the option parser and
   `createHelp()` (`--help`, snapshot `create/help_the_flag_table_from_the_one_defaults_record.snap`);
   `docs.md` has no copy of the table. `resolve.bp`'s cases are in `scan_test` / `create_test` (no
   `resolve_test.bp`). The generated entry imports every client component → every island in
@@ -47,12 +45,15 @@ chunk per route, honours `assetPrefix` and both `<Script>` callbacks; CLI and bu
   (`registerRouteStarters(pattern, load)`); `chunk.bp` cuts one chunk per route group plus
   `shared`; the manifest's `R` record already maps pattern → chunk.
 
+## Done
+
+- Step 1 — consume std (97): `onze-cli`'s `build.bp`, `info.bp`, `generate.bp` and
+  `onze-bundler`'s `entry.bp` read through std's `Json` methods (`members`, `field`, `str`,
+  `items`); `grep -n "fn membersOf\|fn itemsOf\|fn textOf" modules/onze-cli/src
+  modules/onze-bundler/src` is empty; `onze-cli` 31 / 31 and `onze-bundler` 42 / 42 on both rows
+  (unchanged).
+
 ## Open
-
-### Step 1 — consume std (97)
-
-- [ ] `grep -n "fn membersOf\|fn itemsOf" modules/onze-cli/src modules/onze-bundler/src` empty;
-      every suite's count unchanged
 
 ### Step 2 — `onze dev` (50-b (a))
 

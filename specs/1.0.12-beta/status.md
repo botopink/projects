@@ -31,7 +31,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [x] 114 s6 box 2 — vscode-extension's workflow green on `feat` (`f041865`)
 - [ ] 114 — the runtime cache (`codegen/runtime.zig` `cacheWrite`, `.botopinkbuild/runtime-cache`) stores a run that ended on a signal as a pass: an interrupted `erl` (`BREAK: (a)bort …`) or a cut output is replayed by every later run until the cache is deleted; a run not ended by its own exit is never stored · none
 - [ ] 114 — `modules/compiler-cli/tests/result_store.sh` "no change" fails when the meta checkout's `repository/vscode-extension/node_modules` holds a symbolic link ("2 checks never stored"); the test depends on a sibling repository's install · none
-- [ ] 114 — onze-cli `start_test.bp` hard-codes ports 43101/43102 and the gate runs its commonJS and erlang cells side by side: a request can reach the other cell's server (`test-libs` red once on batch 8, green alone) · onze, one port per cell
+- [x] 114 — onze-cli `start_test.bp` asks the OS for each server's port (`freePort`, a listener on port 0) instead of 43101/43102; both cells green run side by side (onze-wave patch 05, lands with the coordinator)
 - [ ] 114 s7 — a cold gate recorded on the current tip, ≤ 450 s, exit-check counts re-derived · a machine with `zig` and `erl`
 - [x] 114 s8 boxes 1–2 — 133's emitted modules byte-identical, measured; rakun's `test.yml` glibc comment says 2.35
 - [x] 114 s8 box 3 — emilia `test.yml`'s jhonstart checkout removed (its own emilia patch, after 06-emilia/33 s2)
@@ -182,11 +182,11 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 
 - [ ] 129 s1–4 (337) — `mod m;` binds the namespace `m`; the shorthand `import {x};` refused (`shorthand-import`, fix written); about 75 items migrated in botopink-lang, rakun, jhonstart · before 138 s3 deletes `libs/<pkg>` or after, either — a consumer commit per library (188)
 - [ ] 118 — the template language, tag annotations (278), `prelude.bp`, the node type · none (s1: decision 351, native attributes; props-e/f hold their boxes; ctr-r closed: 118 goes first, org-3 holds)
-- [ ] 121 s1–2 — Markdown to `Element` in the new member `onze-content` · none
+- [x] 121 s1–2 — Markdown to `Element` in `onze-content` (onze `584f64a`, on `feat`): 714 / 714 on both rows at onze `05b7005`
 - [x] 33 s2 — `emilia-card` emilia-only, the fifteen example READMEs (s1, s3, s4 are 135's)
-- [ ] 49 s1 · s6 — consume std's `Json` accessors in `config.bp`; the `onze-test` group stubs · none — not beside 102 s3's onze commits (188)
-- [ ] 50 s1 — consume std in `onze-cli` / `onze-bundler` · none — not beside 102 s3's `scan.bp` / `chunk.bp` commits (188)
-- [ ] 51 s1 — consume std (`fn intOf` in `svg.bp`, `metrics.bp`) · none
+- [x] 49 s1 · s6 — `config.bp` / `types.bp` on std's `Json` methods (`isString` stays — `49-g`); the six `onze-test` group stubs (onze-wave patch 02)
+- [x] 50 s1 — `onze-cli` / `onze-bundler` read std's `Json` methods; no local `membersOf` / `itemsOf` / `textOf` (onze-wave patch 03)
+- [x] 51 s1 — `onze-og` reads integers with std's `parseInt`; no `intOf` (malformed text still `0` — `51-a`) (onze-wave patch 04)
 - [ ] 27 s1 box 1 · s2 · s3 — the reconcile driver, `use linkStatus()` under a `@Component`, the example · 27-a to confirm
 
 ## L4 — later, in waves
