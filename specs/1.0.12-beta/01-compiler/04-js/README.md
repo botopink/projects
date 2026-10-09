@@ -116,12 +116,12 @@ function strLength(s) {
       `js/AGENTS.md`)
 - [ ] `run/string_index_of_codepoints` (with `"👍"` and `"e\u{301}"`) one `.out` for the four targets
 
-### Step 11 — the same wasm library from commonJS (decision 333)
+### Step 11 — the same wasm library from commonJS (decision 333 (B); after `05-wasm` step 9)
 
 - [ ] a binding with `@External.Wasm(module: …)` and no `@External.Node` lowers on commonJS to the same
       library: the module instantiates the package's `.wasm` once (synchronously, from its bytes beside the
-      emitted `.js`) and calls it through the same glue; `unicode.normalize*` answer as on wasm
-- [ ] the emitted package ships the `.wasm` next to its `.js`; `tsc-check.sh` green; `run/std_unicode_on_every_target`
+      emitted `.js`) and calls it through the same glue
+- [ ] the emitted package ships the `.wasm` next to its `.js`; `tsc-check.sh` green; `run/wasm_library_binding`
       one answer on commonJS and wasm
 
 **Gate:** standard (fronts.md § Gate) + every re-recorded RUN LOG verified under `node` against

@@ -3,7 +3,7 @@
 **Priority:** high · **State:** partial: steps 1–4 on feat (step 1's and step 3's last boxes wait on
 02's cells); step 5 under way — vocabulary, codepoint unit, `math`, `escape`, `hash`, `io/random`,
 heap growth, `String.fromCodepoint`, `pow`, astral `contentHash`, `encoding` / `querystring` cells;
-`unicode` waits on step 9 (333: `normalize` through utf8proc), `json` on 05w-j (`parse` / `stringify`), the 305 spelling on
+`unicode` waits on `02/97` step 16 (333 (A): `normalize` in botopink), `json` on 05w-j (`parse` / `stringify`), the 305 spelling on
 `01-checker` step 27
 **Depends on:** `02-erlang` steps 4, 7 (cells) · `02-std-and-packaging` (`unicode.fromCodepoint`
 over `String.fromCodepoint`, decision 262)
@@ -56,7 +56,7 @@ std's `math` and `hash` answer commonJS's bits on every target.
   `run/std_querystring_on_every_target`; `run/std_module_imports_std_module` lost its `.wasm.expect`,
   `run/std_default_fn_in_a_std_module` its `.targets`; `unicode.codepoints` / `firstCodepoint` bound
   with `fn:` bodies; `run/std_json_on_every_target` and `run/std_unicode_on_every_target` on three
-  targets, refused on wasm by name (`.wasm.expect`) until 05w-j / step 9 (333)
+  targets, refused on wasm by name (`.wasm.expect`) until 05w-j / `02/97` step 16 (333)
 - Wrong answers at exit 0 the std cells found, closed: a namespace call to a mangled function
   (`url.parse` beside `querystring.parse`, `run/std_namespace_calls_same_name`); a `?T` tuple element —
   printed, read through `._N`, a generic method's `#(Q<T>, ?T)` (`run/tuple_optional_element`);
@@ -97,9 +97,9 @@ keeps its `.wasm.expect`, `run/std_template_host_fns_across_modules` and
 The limits table of `wat/AGENTS.md` still carries the one-page row.
 
 - [ ] `botopink build --target wasm` in `libs/std` refuses only group 3's modules (`unicode` waits on
-      step 9 (333), `json.parse` / `json.stringify` on 05w-j)
+      `02/97` step 16 (333 (A)), `json.parse` / `json.stringify` on 05w-j)
 - [ ] a `run/` cell per remaining module family on four targets, the commonJS answers — `unicode`
-      and `json` drop their `.wasm.expect` once step 9 (333) / 05w-j land (`encoding`, `querystring` done)
+      and `json` drop their `.wasm.expect` once `02/97` step 16 (333) / 05w-j land (`encoding`, `querystring` done)
 - [ ] `wat/AGENTS.md` § Where this backend refuses to answer lists only group 3 (the limits table's
       one-page row is gone)
 - [ ] the bindings this step adds written in 305's form — `@External.Wasm(fn: name)`, `op: "…"`,
@@ -137,7 +137,7 @@ Each re-measured at the step that takes it; a holding row traps or is refused by
 - [ ] a nested variant pattern answers wrong on wasm
 - [ ] unsigned compare and divide use the signed opcodes on wasm
 
-### Step 9 — a prebuilt wasm library merged into the module (decision 333)
+### Step 9 — a prebuilt wasm library merged into the module (decision 333 (B); no user yet, after step 5)
 
 - [ ] `@External.Wasm(module: .<Library>, fn: "<export>")` — a fourth form beside `op:`, `fn:`, `wasi:` (238); the
       library named from the package's wasm manifest (version, hash); an unknown library, a missing export or a
@@ -147,9 +147,8 @@ Each re-measured at the step that takes it; a holding row traps or is refused by
       convention named in the manifest; no pointer reaches botopink code
 - [ ] the merge: the library's functions, memory and data folded into the emitted module (the binary emitter is
       front 18's — a named carve-out), one `.wasm` out; `wasmtime` and the WAT comptime runtime run it
-- [ ] `run/std_unicode_on_every_target` drops its `.wasm.expect`: `normalize("ǅ", NFKD)` is `68 122 780` and the
-      other three forms match the reference on the four targets; the measured size the library adds recorded in
-      `wat/AGENTS.md`
+- [ ] `run/wasm_library_binding`: a test fixture library (a small `.wasm` built for the cell — a string and a number
+      across) called from wasm and from commonJS, one answer; the size the merge adds recorded in `wat/AGENTS.md`
 
 **Gate:** standard (fronts.md § Gate) + every re-recorded RUN LOG verified under wasmtime and
 compared with commonJS's · no new RUN LOG answers at exit 0 a value another backend answers
