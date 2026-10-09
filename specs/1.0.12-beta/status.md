@@ -1,6 +1,6 @@
 # Status — 1.0.12-beta
 
-**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `c6483b21` (batch 6: the LSP makes 309's refusal; wasm bool/u64 printing; commonJS string reads near native) · rakun `4b4cbee` · jhonstart `61445d2` · emilia `24b0d9e`
+**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `c6483b21` (batch 6: the LSP makes 309's refusal; wasm bool/u64 printing; commonJS string reads near native) · rakun `de85b3d` · jhonstart `6b368ec` · emilia `8ebcea9`
 · onze `d496063` · erika `44aef93` · vscode-extension `f041865`
 
 **Fronts:** 71 — **0 done** · **23 partial** · **48 not started**.
