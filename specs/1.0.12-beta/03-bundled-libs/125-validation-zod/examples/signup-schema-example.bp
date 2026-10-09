@@ -52,7 +52,9 @@ pub fn describe(body: string) -> string {
 fn located(r: @Result<Signup, ValidationReport>) -> string {
     return case r {
         Ok(_) -> "";
-        Error(report) -> report.violations.map({ v -> v.field + ":" + v.code }).join(",");
+        Error(report) -> report.violations
+            .map({ v -> v.field + ":" + v.code })
+            .join(",");
     };
 }
 
@@ -74,8 +76,10 @@ test "validation: a missing key is required, a missing optional key is null" {
 }
 
 test "validation: an i32 field refuses a fraction and a value outside the range" {
-    assert located(decodeSignup("""{"username": "a", "xp": 1.5}""")) == "xp:invalidType";
-    assert located(decodeSignup("""{"username": "a", "xp": 3000000000}""")) == "xp:invalidType";
+    assert located(decodeSignup("""{"username": "a", "xp": 1.5}"""))
+        == "xp:invalidType";
+    assert located(decodeSignup("""{"username": "a", "xp": 3000000000}"""))
+        == "xp:invalidType";
 }
 
 test "validation: text that is not JSON is one violation, at the root" {

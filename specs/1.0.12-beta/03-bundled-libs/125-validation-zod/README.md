@@ -2,7 +2,7 @@
 
 **Priority:** high for the step 0–2 residue (`08-bpp/121` content collections and `08-bpp/127`
 actions take the `#[validated]` type — decision 306); medium for the rest · **State:** partial: steps 0–2 on
-feat (step 2 with residue); steps 3–12 open
+feat; steps 3–12 open
 **Depends on:** `01-compiler/01-checker` step 24 (decision 280, step 7) · `07-j` (reduced: ≈ option (c) under 306). Written against decisions 144 (undeclared keys), 145 (emitted names),
 183 (`07-m`: coercion, step 6), 257 (`07-n`: `Schema<T>` lives in `validation` — amended by 306: the
 place stays, the value is private), 306–308
@@ -147,23 +147,17 @@ compiler rows in `language-gaps.md`):
   where they differ (case kept, default port kept, `mailto:` read as one scheme, `[::1]` split at its
   first colon, four inputs WHATWG refuses answered); `#[url]` (step 3) and `#[float32]` rewritten to
   those facts (§ Mechanism, `surface.md`)
+- Step 2 residue — `signup-schema-example.bp` and `nested-and-arrays-example.bp` are suite cases
+  (`test/*_example_test.bp`, the example byte for byte but for the import lines); a four-level
+  `Category` decodes and a bad leaf is reported at its full path; a self-reference 2 000 levels deep
+  decodes on both targets (over a document built as a value: std's `json.decode` overflows node's
+  stack between 1 000 and 1 500 levels — std's reader, front 97, not this decoder);
+  `test/refusal_test.bp` runs `botopink check` over a fixture and asserts the unsupported field
+  type's refusal, message and location; `schemas.bp` reads with std's `Json.items()` /
+  `.members()` and the emitted decoder with `input.field("…") ?? Json.Null` — `itemsOf`,
+  `membersOf`, `fieldOf` gone (the box `97-std-dedupe` step 2 waits on)
 
 ## Open
-
-### Step 2 residue
-
-- [ ] `examples/signup-schema-example.bp` and `nested-and-arrays-example.bp` compile and pass as
-      suite cases, both targets (`test/schema_test.bp` declares its own `Signup` today)
-- [ ] `parseCategory` over a four-level recursive document; a self-reference 2 000 levels deep
-      does not exhaust the stack on either target (decoder recurses through `Arr`, depth is the
-      document's — the test pins it; today's test is 3 levels)
-- [ ] `#[schema]` (`#[validated]` after step 12) on a type with an unsupported field type is a
-      located compile error naming field and type — refusal exists in `decorators.bp`; a test asserts it
-- [ ] `schemas.bp`'s private `itemsOf` / `membersOf` and `pub fn fieldOf` give way to std's `Json`
-      methods (`input.items()`, `input.members()`; emitted `schemas.fieldOf(input, "…")` →
-      `input.field("…") ?? Json.Null` or a function under another name);
-      `grep -n "fn itemsOf\|fn membersOf\|fn fieldOf" libs/validation/src` is empty — the box
-      `97-std-dedupe` step 2 waits on
 
 ### Step 3 — Checks and formats
 

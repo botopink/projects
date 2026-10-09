@@ -2,7 +2,7 @@
 //
 // Demonstrates: step 2 — nested records, arrays, and a type that names itself.
 // A field whose type is another `#[schema]` type is decoded by calling
-// `schemaOf<ThatType>()` BY NAME, so the decorator never needs to see a second
+// `parse<ThatType>At` BY NAME, so the decorator never needs to see a second
 // declaration; a violation inside it carries the whole path.
 //
 //   const Address = z.object({ street: z.string(), zip: z.string() });
@@ -49,7 +49,9 @@ pub type Category(
 fn located(r: @Result<Order, ValidationReport>) -> string {
     return case r {
         Ok(_) -> "";
-        Error(report) -> report.violations.map({ v -> v.field + ":" + v.code }).join(",");
+        Error(report) -> report.violations
+            .map({ v -> v.field + ":" + v.code })
+            .join(",");
     };
 }
 
@@ -68,11 +70,14 @@ test "validation: a violation names the path to the value, not the leaf alone" {
         """{"id": "o1", "ship": {"street": "Rua A"},
             "lines": [{"sku": "x", "quantity": 2}, {"sku": 7, "quantity": "two"}]}""",
     );
-    assert located(r) == "ship.zip:required,lines[1].sku:invalidType,lines[1].quantity:invalidType";
+    assert located(r)
+        == "ship.zip:required,lines[1].sku:invalidType,lines[1].quantity:invalidType";
 }
 
 test "validation: an array field refuses a value that is not an array" {
-    val r = decodeOrder("""{"id": "o1", "ship": {"street": "a", "zip": "b"}, "lines": {}}""");
+    val r = decodeOrder(
+        """{"id": "o1", "ship": {"street": "a", "zip": "b"}, "lines": {}}""",
+    );
     assert located(r) == "lines:invalidType";
 }
 
