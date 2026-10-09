@@ -5,8 +5,7 @@
 step 3: `05-jhonstart/26` step 4 (boundary digests via bundled `log`, decisions 194, 195),
 `04-rakun/17-rakun-logging` (the sink) · step 4: `04-rakun/65-rakun-url-rules` step 1 (fall-through,
 decision 201) · step 5: `04-rakun/22-rakun-file-routing` step 4 (`ChunkWriter.markDynamic`, decision
-186) · step 2's wire-name box: rakun's tests, `05-jhonstart/67` step 4 · maintainer: `49-e`, `49-d`
-(as amended by 102)
+186) · step 2's wire-name box: rakun's tests, `05-jhonstart/67` step 4 · maintainer: `49-e` · decision 323 (`49-d` confirmed as amended by 102)
 **Owns:** `repository/onze/modules/onze/**`, `modules/onze-server/**`,
 `modules/onze-test/{botopink.json,src/root.bp,src/core.bp,src/fixtures.bp}`, group stubs
 `src/{cli,bundler,assets,og,release,e2e}.bp` (step 6), `test/helpers_test.bp`, `docs.md`,

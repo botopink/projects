@@ -61,7 +61,7 @@ examples).
 ### To confirm
 
 Built as recommended; full rows in [`decisions-pending.md`](../decisions-pending.md) § Implementation
-choices / 07-onze: `49-a` · `49-c` · `49-d` (amended by `03-bundled-libs/102`; closes 49) · `49-e`
+choices / 07-onze: `49-a` · `49-c` · `49-e`
 (closes 49 step 2's wording box) · `50-a` (amended: `start` calls 71's `bin/onze`; closes 50) ·
 `52-a` (closes 51 step 4) · `53-a` · `68-a` · `68-d` (moot once `06-emilia/34` step 1 and 119 step 4
 land — 301's `#[styled]` tokens are comptime, class and rule computed at build; holds until then) ·

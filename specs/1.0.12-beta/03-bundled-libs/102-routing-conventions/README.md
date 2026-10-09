@@ -3,8 +3,8 @@
 **Priority:** high — segment grammar hand-walked in seven places outside `routing`, two disagreeing
 on what an app file is; 128 and rakun group A wait on step 3 · **State:** steps 1–2 done (the
 package); step 3 open
-**Depends on:** 49-d confirmed as amended ("onze imports nothing from routing" — reversed here)
-(step 3)
+**Depends on:** decision 323 (49-d confirmed as amended: "onze imports nothing from routing"
+reversed) (step 3)
 **Owns:** `repository/botopink-lang/libs/routing/src/conventions.bp` (new), `libs/routing/src/segment.bp`
 (new helpers), `libs/routing/test/**`, `libs/routing/AGENTS.md`, `libs/routing/botopink.json`
 (`files`), `libs/routing/src/root.bp` (the module's line) · consumers, one commit each: `repository/rakun/modules/rakun-app/src/{file_router,static_gen}.bp`,
@@ -104,6 +104,6 @@ Each site deletes its copy, imports the package; member tests keep their asserti
 - [ ] `onze/examples/blog`'s app tree classifies identically before and after (diff of the staged tree)
 
 Changed by their owners: `libs/AGENTS.md`'s `routing` packages row does not name the conventions yet
-(`104-http`'s line); `07-onze/modules.md`'s dependency column gains onze → `routing` (49-d reversed).
+(`104-http`'s line); `07-onze/modules.md`'s dependency column gains onze → `routing` (323).
 
 **Gate:** standard (fronts.md § Gate) + each touched member's `AGENTS.md` updated in its commit

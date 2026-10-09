@@ -67,4 +67,4 @@ Manifest `targets` is the single source of truth (decision 153): `onze-server` `
 - As in 1.0.10: onze imports jhonstart, rakun (via `onze-server` only), the bridge; nothing imports
   onze; no style sink; reads no navigation signal.
 - New: `onze-server` sets the bundled `log`'s sink to rakun's logger, nothing else (49 step 3;
-  decisions 194, 195); `types.bp` consumes `routing.conventions` once `102` lands (49-d amended).
+  decisions 194, 195); `types.bp` consumes `routing.conventions` once `102` lands (323).

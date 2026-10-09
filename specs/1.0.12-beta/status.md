@@ -132,7 +132,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 
 - [x] 102 s1–2 — `conventions.bp` and the segment helpers in `libs/routing` (re-implemented)
 - [x] 103 s1 — `id.bp` (`deriveActionId`, `isActionId`) in `libs/actions` (re-implemented)
-- [ ] 102 s3 (W2) — consumers, one commit per member, rakun's first (`rakun-app`, `rakun-hateoas`), then jhonstart `routes.bp`, onze `types.bp`, `scan.bp`, `chunk.bp` · 102 s1–2 landed · 49-d confirmed as amended
+- [ ] 102 s3 (W2) — consumers, one commit per member, rakun's first (`rakun-app`, `rakun-hateoas`), then jhonstart `routes.bp`, onze `types.bp`, `scan.bp`, `chunk.bp` · 102 s1–2 landed · decision 323
 - [ ] 103 s2 (W2) — consumers: rakun-app `actions.bp`, jhonstart-forms `form.bp` · 103 s1 landed · the `deriveActionId` / rakun-app `actionId` wrapper choice to confirm
 - [ ] 128 (W3) — the nine merges, alone in rakun · the rakun commits of 102 s3 and 103 s2 · ctr-k
 - [ ] 130 ↔ 128 — 128 does not wait on 130; no 130 rakun commit while 128 is open; after it, each is a decision-188 consumer commit · **to confirm** (03r-ao — only the record; the fronts follow (a))
@@ -197,11 +197,11 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.0.10 choices) in its
-last section. Open after the 9 Oct revalidation and the answers since (309–322): 62 questions, 9 contradictions, 90
+last section. Open after the 9 Oct revalidation and the answers since (309–323): 62 questions, 9 contradictions, 89
 implementation choices.
 
 **First — what blocks now** (`decisoes-pendentes.md` § Prioridade 1, "O que trava agora", set by the maintainer 2026-10-09), in order:
-- [ ] 49-d — 102 s3 · 103-a — 103 s2 · 07-j, ctr-u — 125 s4–s12
+- [ ] 103-a — 103 s2 (49-d → 323: 102 s3 free) · 07-j, ctr-u — 125 s4–s12
 - [ ] 16-x — 16 s8 (and 01-checker s10)
 - [ ] 05w-i · 05w-j — 05-wasm s5 (`unicode`, `json` on wasm)
 - [ ] 97-a · 97-b · 97-c — 97 s11 (`io/http`, `async`, `testing/mocks` on wasm)
@@ -232,7 +232,7 @@ Then:
 - [ ] erk-a · erk-b — the body form's source (137 s2, 08 s7) · `#[documentQuery]` under 313 (09 s4) 
 - [ ] lg2-a … lg2-w — none opens a front; each opens a step when answered: 01-checker (a, e — only `owner`, q — reduced), 14 s6 (j, o, w), 26 s6 / 98 s4 / 73 (v); the rakun boxes that name them — 04 (e, j), 08 (e), 13 · 65 · 09 · 91 · 92 (a, b), 15 (w), 22 (q), 88 (j), 93 (o) · answered: f, i (280), k (216, 253), r (311–313), t (314), m (315), c (316); g has no subject under 281
 - [ ] C-14 — 07-residuals s9 (a 1.0.10 id)
-- [ ] confirmations a step waits on — 49-d (102 s3) · 49-e (49 s2) · 05emilia-l (34 s2) · 52-a (51 s4) · 29-a (26 s5; reduced: `registerRouteStarters` + `globals.starters`) · 27-a (27) · 03r-q (105) · 16-a/b (16 s4) · 23-a/b, std-c (23; 23-c → 317) · 24-a/b/c/g (24; 24-g also 97 s5's surface)
+- [ ] confirmations a step waits on — 49-e (49 s2) · 05emilia-l (34 s2) · 52-a (51 s4) · 29-a (26 s5; reduced: `registerRouteStarters` + `globals.starters`) · 27-a (27) · 03r-q (105) · 16-a/b (16 s4) · 23-a/b, std-c (23; 23-c → 317) · 24-a/b/c/g (24; 24-g also 97 s5's surface)
 - [ ] ctr-k — 17 · 128 · 106 s2 (only the record)
 - [ ] ctr-l — 26 s8's refusal list (only the record) · ctr-s — 16 s6 · ctr-u — 125 s12 (only the spelling of `#[validated]`'s members) · ctr-v — 34 / 33 opening before 118 (only the record) · ctr-w — 09 s3
 - [ ] ctr-o — lem-c · ctr-p — 04's readers · 104 s5 (ctr-h blocks nothing)

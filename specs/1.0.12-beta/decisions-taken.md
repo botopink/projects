@@ -4,7 +4,7 @@ The rules the fronts implement against. Numbers continue from
 [1.0.10-beta's record](../1.0.10-beta/decisions-taken.md) (which stopped at 143; 91–94, 97 and
 99–101 are used) and are never renumbered or reused. A question is raised in
 [`decisions-pending.md`](./decisions-pending.md) under a lettered id and moves here with the next
-free number. **The next free number is 323.**
+free number. **The next free number is 324.**
 
 Each row: number · the id it answered · the rule in force · the fronts it binds. A row amended by a
 later one states only what is in force and cites the amendment; a row fully replaced is one line.
@@ -33,7 +33,7 @@ behaviour; shared logic in std) — the maintainer may reverse it.
 decorator outputs: 216, 234–237, 248, 251–254, 256, 266–269, 277, 316 · Formatter: 165, 166, 243 · Backends: 169,
 179, 238, 240, 241, 259–263 · std: 174–178, 197, 217, 250 · Bundled libraries: 144, 145, 163,
 171–173, 180–183, 194–196, 257 · rakun: 184, 185, 187, 201, 274, 312, 313, 318, 321 · Track ordering: 188, 189 ·
-jhonstart & templates: 186, 190–193, 200, 202, 204, 220, 223 · onze: 218 · bpp: 198, 199, 203,
+jhonstart & templates: 186, 190–193, 200, 202, 204, 220, 223 · onze: 218, 323 · bpp: 198, 199, 203,
 212, 213, 221, 222, 224, 270, 271, 272, 273, 275, 276. No decision of this milestone is emilia's alone.
 
 ## Gate & CI
@@ -243,6 +243,7 @@ jhonstart & templates: 186, 190–193, 200, 202, 204, 220, 223 · onze: 218 · b
 | # | Id | Rule in force | Binds |
 |---|---|---|---|
 | 218 | onze-a | onze's `@/` alias goes: an application writes `import {lib.db.findPost};`; staging no longer rewrites `from "@/…"`, which is `module-import-with-from` like any other (206) | 07-onze (staging `rewriteImports`, docs, examples) |
+| 323 | 49-d | Confirms the implemented choice as amended by `03-bundled-libs/102` (option (c)): `chainFor(patterns)` keeps taking the ancestor patterns rakun's layout chain names for the matched route — onze derives no chain of its own —, and onze consumes `routing.conventions` for what an app file is: `types.bp`'s `appFileKinds()` and `classifyAppFile()` go, replaced by `conventions.fileKinds` / `conventions.classify`. "onze imports nothing from `routing`" is reversed; `07-onze/modules.md` gains onze → `routing` | `03-bundled-libs/102` step 3 · `07-onze/49` |
 
 ## bpp
 
