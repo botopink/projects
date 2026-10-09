@@ -53,7 +53,11 @@ an imported callee); `type-arg-read`, `is-type-outside-value-or-type`, and 280 (
 `comptime-arg-not-known` for every `comptime` parameter (`twice(k)` used to drop `twice` and fail
 erlc); `run/value_or_type_param`, `modules/value_or_type_param_imported`,
 `reject/{value_or_type_mismatch,comptime_arg_not_known,type_arg_read,is_type_outside_value_or_type}`,
-`docs.md` § Generics; the last union member's printer arm handed to 16. Rows from other
+`docs.md` § Generics; the last union member's printer arm handed to 16. A type `@TypeInfo.all`
+lists from another module, imported explicitly too, is one type reached twice: accepted (the
+package's own item named `catalog`, not `catalog:`; the catalogue's alias keeps naming the type a
+second import re-registers — `infer.zig` `constructs`; `modules/typeinfo_all_type_also_imported`).
+Rows from other
 fronts: decision 170's type half, std type's constructor through its namespace, `unwrapOr`'s width,
 behavior `default fn` body checked, shorthand import never reaching a bundled package, occurs-check
 message, primitive behavior extending std's, type parameter widening to its optional, std module's
