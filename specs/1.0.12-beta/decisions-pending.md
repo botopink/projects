@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**57 questions and 6 contradictions are open, and 92 implementation choices await confirmation.**
+**60 questions and 6 contradictions are open, and 92 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -93,6 +93,57 @@ Nothing open: 138-a answered (337).
 - **Options.** (a) ★ `abs` aborts past its type as unary `-` does (`integer overflow: abs on i64`): `abs` moves from `Signed` to `I32` and `I64`, each with its own bound in its forms (`lo64().abs()` aborts on every target). (b) As is: `abs` answers the mathematical value even outside the type (`lo64().abs()` is `9223372036854775808` typed `i64`). (c) `abs` answers the unsigned type (`i64.abs() -> u64`; `lo64().abs()` is `9223372036854775808ul`).
 - **Recommendation.** (a): a value outside its declared type never exists (264), and the cost is two declarations.
 - **Blocks.** Nothing in the gate; the `abs` half of `02/97` step 13 (the cell `run/i64_number_methods_past_js_safe` stays off the minimum).
+
+#### 97-s13-b · `io/clock` given an epoch past ECMAScript's time range (319)
+- **Measured.** `formatIso8601`, `toCivil` and `offsetMinutes` take an `i64` epoch and their Node forms build a `Date`, whose range is ±8.64 × 10^15 ms (years −271821 … 275760). Every `BigInt` epoch (past 2^53 − 1) is outside it. `clock.toCivil(8640000000000001l).year` prints `NaN` on commonJS and `275760` on erlang; `clock.offsetMinutes(8640000000000001l)` `NaN` / `-180`; `clock.toCivil(9007199254740993l)` throws `TypeError: Cannot convert a BigInt value to a number` on commonJS; `clock.formatIso8601(8640000000000000l)` answers `+275760-09-13T00:00:00.000Z` on commonJS and aborts on erlang (`calendar:system_time_to_rfc3339` is `badarg` past year 9999). 319 asks a Node template to take `number | bigint`; what it answers for these epochs is not written.
+- **Options.**
+  (a) One domain on every target, refused past it: the epochs RFC 3339 writes, 0000-01-01T00:00:00Z … 9999-12-31T23:59:59.999Z (−62167219200000 … 253402300799999); the three abort past it, naming the value, on every target.
+  ```bp
+  clock.toCivil(253402300800000l);   // aborts on every target: clock.toCivil: 253402300800000 is outside 0000-01-01 … 9999-12-31
+  ```
+  (b) Every `i64` epoch answers, the same on every target: a botopink civil body (days from civil, Hinnant's algorithm) replaces `Date` and `calendar`; `formatIso8601` writes a five-digit year with a sign, as `Date` does.
+  ```bp
+  @print(clock.toCivil(9007199254740993l).year);   // 287396 on every target
+  ```
+  (c) ★ As is: each host's range and answer (`NaN` fields on commonJS, a date on erlang).
+  ```bp
+  @print(clock.toCivil(8640000000000001l).year);   // NaN on commonJS, 275760 on erlang
+  ```
+- **Recommendation.** (a): no target answers `NaN` or a date another target refuses, and RFC 3339 — the text `formatIso8601` and `parseIso8601` promise — has four-digit years.
+- **Blocks.** The three templates of `02/97` step 13's `io/clock` row (the rest of the row landed: the readings are `number`s by construction, `wide` / `largestExactMillis` botopink).
+
+#### 97-s13-c · `clock.parseDuration`'s 2^53 − 1 bound after 319
+- **Measured.** `parseDuration` refuses a duration past 2^53 − 1 ms (`"9007199254740992ms"` is `… is out of range`) because "the two targets do not count alike" past it — true before 319, false after it: an `i64` is exact to 2^63 − 1 on every target, and `"9223372036854775807ms"` would answer the same digits on commonJS, erlang and beam.
+- **Options.**
+  (a) ★ Keep the bound: a duration is handed on as a timer delay or a JSON number, both `f64`, and past 2^53 it is no longer exact there.
+  ```bp
+  clock.parseDuration("9007199254740992ms");   // Error("clock.parseDuration: \"9007199254740992ms\" is out of range")
+  ```
+  (b) The bound is `i64`'s: the count past 2^63 − 1 / unit is out of range.
+  ```bp
+  clock.parseDuration("9007199254740992ms");   // Ok(9007199254740992)
+  clock.parseDuration("106751991168d");        // Error(… is out of range) — past 2^63 − 1 ms
+  ```
+- **Recommendation.** (a): the narrower range refuses more, and no caller measured needs a duration past 285 426 years.
+- **Blocks.** Nothing; `largestExactMillis`'s comment names the question.
+
+#### 97-s13-d · `fs.stat`'s `mtime` resolution
+- **Measured.** The Node form answers `mtime` in whole milliseconds (`mtimeNs` floored), the erlang form in whole seconds × 1000 (`file:read_file_info/2` with `{time, posix}` has no sub-second field): a file written at …`.734` reads `…734` on commonJS and `…000` on erlang and beam.
+- **Options.**
+  (a) One value on every target: the Node form floors to whole seconds too.
+  ```bp
+  fs.stat("five.txt")   // mtime: 1760000000000 on every target
+  ```
+  (b) ★ Milliseconds where the host has them (as is).
+  ```bp
+  fs.stat("five.txt")   // mtime: 1760000000734 on commonJS, 1760000000000 on erlang
+  ```
+  (c) `FileStat.mtime` becomes whole seconds (`mtimeSeconds: i64`), the unit every host gives.
+  ```bp
+  fs.stat("five.txt")   // mtimeSeconds: 1760000000 on every target
+  ```
+- **Recommendation.** (a): the same file answers the same value on every target; (c) renames a public field for the same result.
+- **Blocks.** Nothing; `run/std_io_i64_canonical` prints only `mtime > 2020-01-01`.
 
 #### 97-s16-a · Where `unicode`'s generated tables live
 - **Measured.** `02/97` step 16 names `libs/std/src/unicode/tables.bp`. The module tree resolves a `mod Name;` only to `Name.bp` or `Name/mod.bp` in the declaring file's directory (`compiler-cli/src/cli/resolver.zig`, `build.zig` `collectStdModules`), so a file module `unicode.bp` has no children: `unicode/tables.bp` is unreachable unless `unicode` becomes a folder, and a folder index holds `mod` lines only and makes `unicode` a namespace (`unicode.normalize` would become `unicode.<sub>.normalize`, decision 110). Landed: a flat sibling `libs/std/src/unicode_tables.bp`, `mod unicode_tables;` (private) in `root.bp`, `import {unicode_tables as tables};` in `unicode.bp`. The registry does not honour the `mod`'s privacy: a consumer's `import {unicode_tables} from "std"` resolves (97's compiler residual 11).

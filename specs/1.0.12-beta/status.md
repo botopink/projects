@@ -108,6 +108,9 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [x] 05-wasm — an `@block`'s `return` is the block's value (decision 2), `run/block_return_is_block_value`
 - [x] 05-wasm rows — `_` in a variant payload, a nested variant pattern (`run/variant_payload_wildcard_and_nested`); unsigned compare and divide (`run/unsigned_compare_and_divide`); `u64`'s unsigned overflow checks and printing, an unannotated `u64` literal or sum keeps its type, radix literals to `u64`'s top
 - [ ] 05-wasm row — a nested record field read through a generic record and concatenated prints a number: `type Route<P, D>(params: P, data: D)`, `"<h1>" + route.data.title + "</h1>"` with `data: Post(title: "A")` prints `<h1>332</h1>` on wasm (erlang right) · none
+- [ ] 01-compiler row — an `l`-suffixed literal inside a `case` arm keeps its suffix in the generated code: `Ok(s) -> @print(s.mtime > 1577836800000l)` is a JS `SyntaxError`, an `erlc` syntax error and `illegal integer` on beam (the same literal in a plain function is fine) · none
+- [ ] 03-beam row — std's `unicode_test` does not assemble on beam: `Internal consistency check failed … {unassigned,{y,6}}` (baseline 106c84b3; std's declared targets are commonJS and erlang) · none
+- [ ] 01-checker row — T7 ("fills the element labeled `x`") fires between two elements of one array literal with no type written (onze-cli `build.bp` static-tree list, `create.bp:187`) · none
 - [ ] 05-wasm rows — `?u64`'s `toString` and a `u64` record field print signed; a `u64` tuple slot is refused · none
 - [x] 02-erlang s4 — `run/array_unique` (C-35), four targets
 - [x] 02-erlang s5 box 2 — a decorator body carrying `\u{…}` (cell: 14 s7)
