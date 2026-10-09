@@ -10,7 +10,7 @@ escopo do CSS e onde mora o parser. Quando for aceita, vira uma decisão numerad
 ```text
 repository/css      (botopink/css)     a base para construir CSS: lê uma folha, Sheet tipado, scope()
         ▲
-repository/styled   (botopink/styled)  a base para construir componentes de CSS: styled "…" → @Component<BaseStyled, Styled>
+repository/styled   (botopink/styled)  a base para construir componentes de CSS: styled "…" → @Component<StyledBase, Styled>
         ▲                          ▲
 repository/emilia           jhonstart/jhonstart-styled   ← "bpp".style: compila a seção --- style ---
 uma série de componentes           ▲
@@ -39,7 +39,7 @@ article :global(p) { line-height: 1.6; }
 | Camada | Onde | O que é | Importa | Quem importa |
 |---|---|---|---|---|
 | `css`: a base para construir CSS | `repository/css` (`botopink/css`) | lê uma folha (regras, at-rules, comentários, strings, `{ }` aninhado) para um `Sheet` tipado; o renderizador; `scope(id, css) -> @Result<string, string>` | std | `styled` |
-| `styled`: a base para construir componentes de CSS | `repository/styled` (`botopink/styled`) | `styled "…"` → `@Component<BaseStyled, Styled>` (§ 3.2; `Styled` = classe + regras); a folha que junta os componentes por render ou por build, em `@layer`s | `css`, std | emilia · `jhonstart-styled` |
+| `styled`: a base para construir componentes de CSS | `repository/styled` (`botopink/styled`) | `styled "…"` → `@Component<StyledBase, Styled>` (§ 3.2; `Styled` = classe + regras); a folha que junta os componentes por render ou por build, em `@layer`s | `css`, std | emilia · `jhonstart-styled` |
 | emilia: uma série de componentes feitos em `styled` | `repository/emilia` | os tokens, o tema, cada família escrita em `styled "…"`; aplicada na tag como anotação (301) | `styled`, std | `jhonstart-emilia` |
 
 **Por que dois repositórios próprios.** Pela decisão 326, um pacote compartilhado novo nasce como
@@ -139,7 +139,7 @@ pub val primaryBtn = styled """
 Ficam abertos (§ 9, p6 e p7): aceitar ou não `@utility … --value()` literalmente, e de onde o
 `@variant` tira os breakpoints, que hoje estão no tema da emilia.
 
-### 3.2 Um componente de estilo é um `@Component<BaseStyled, Styled>`
+### 3.2 Um componente de estilo é um `@Component<StyledBase, Styled>`
 
 Um componente `styled` usa o mesmo modelo de componente da linguagem (decisão 128). O `View` do
 jhonstart já funciona assim: `@Component<ElementBase, Element>`, em que `Element implement
@@ -147,28 +147,28 @@ jhonstart já funciona assim: `@Component<ElementBase, Element>`, em que `Elemen
 
 ```bp
 // styled/src/styled.bp
-pub type BaseStyled(…);                                  // a base: a folha do render, a camada
-pub type Styled(className: string, rules: string) implement @Context<BaseStyled>;
-pub type StyledView = @Component<BaseStyled, Styled>;    // alias, como o View (276)
+pub type StyledBase(…);                                  // a base: a folha do render, a camada
+pub type Styled(className: string, rules: string) implement @Context<StyledBase>;
+pub type StyledView = @Component<StyledBase, Styled>;    // alias, como o View (276)
 
 pub default fn styled(comptime css: @Expr<string>) -> @ExprCustom<StyledView> { … }
 ```
 
 ```bp
 // emilia — Tailwind: @utility p-* { padding: --spacing(--value(integer)); }
-fn padAll(n: i32) -> @Component<BaseStyled, Styled> {
+fn padAll(n: i32) -> @Component<StyledBase, Styled> {
     return styled "padding: --spacing(${n});";
 }
 ```
 
 O que isso dá:
 
-- **Hooks dentro do estilo.** O corpo pode escrever `use`, com os hooks ancorados em `BaseStyled`
+- **Hooks dentro do estilo.** O corpo pode escrever `use`, com os hooks ancorados em `StyledBase`
   (128). A emilia declara os hooks do seu tema nessa base, e um componente lê o breakpoint do tema
   em vez de copiar o valor. Isso responde ao p7.
   ```bp
-  fn container() -> @Component<BaseStyled, Styled> {
-      val md = use breakpoint("md");          // emilia, sobre BaseStyled; um breakpoint apagado é erro (300)
+  fn container() -> @Component<StyledBase, Styled> {
+      val md = use breakpoint("md");          // emilia, sobre StyledBase; um breakpoint apagado é erro (300)
       return styled """
         width: 100%;
         @media (width >= ${md}) { max-width: ${md}; }
@@ -182,7 +182,7 @@ O que isso dá:
 - **Composição como entre componentes.** `${btn}` dentro de outro `styled` é um filho renderizado
   sob a mesma base, como um componente dentro do `html`. O `@apply` do Tailwind vira isso.
 - **A ponte com o jhonstart.** A seção `--- style ---` devolve um `StyledView`. O
-  `jhonstart-styled` liga `ElementBase` a `BaseStyled`, do mesmo jeito que o `jhonstart-emilia`
+  `jhonstart-styled` liga `ElementBase` a `StyledBase`, do mesmo jeito que o `jhonstart-emilia`
   liga a emilia hoje: quando o `html` renderiza a página, os componentes de estilo rodam sob a base
   da página e escrevem na folha dela.
 
@@ -299,17 +299,14 @@ A ordem da cascata fica: folhas linkadas (`globals.css`), camadas da emilia, se�
   uma família tipada `fn(i32) -> StyledView`. **Recomendo (a)**: um jeito só de nomear, o do botopink.
 - [ ] **(p7) De onde vêm os breakpoints.** O `styled` conhece as pseudo-classes, `dark` e as
   `@custom-variant` importadas; os breakpoints (`md`, `lg`) estão no tema da emilia (300). (a) Por
-  hook: `use breakpoint("md")`, declarado pela emilia sobre `BaseStyled` (§ 3.2). (b) A emilia
+  hook: `use breakpoint("md")`, declarado pela emilia sobre `StyledBase` (§ 3.2). (b) A emilia
   exporta `@custom-variant` geradas do tema. (c) O `styled` ganha um tema próprio. **Recomendo
   (a)**: o tema continua num lugar só, e o mesmo hook serve para qualquer valor do tema.
-- [ ] **(p8) Os nomes.** O par `BaseStyled` / `Styled` e o alias `StyledView`. No jhonstart, a base
-  se chama `ElementBase` (o nome do valor seguido de `Base`), o que aqui daria `StyledBase`. (a)
-  `StyledBase`, `Styled`, `StyledView`, no padrão do jhonstart. (b) `BaseStyled`, como você
-  escreveu. **Recomendo (a)**: o mesmo padrão nas duas bibliotecas.
-- [ ] **(p9) O custo no commonJS.** Um componente de estilo calculado por render é uma
-  `async function` (120, 128). (a) Aceitar: só paga quem usa hook de run-time. (b) Exigir que todo
-  `styled` seja comptime, sem hook de run-time. **Recomendo (a)**: o caso comum, sem hook ou só com
-  hooks do tema, é calculado no build.
+- [x] **(p8) Os nomes — aceito (09/10): (a).** `StyledBase`, `Styled`, `StyledView`, no padrão do
+  jhonstart (`ElementBase` é o nome do valor seguido de `Base`).
+- [x] **(p9) O custo no commonJS — aceito (09/10): (a).** Um componente de estilo calculado por
+  render é uma `async function` (120, 128); só paga quem usa hook de run-time. O caso comum, sem
+  hook ou só com hooks do tema, é calculado no build.
 
 ## 10. Comparação com as opções que a `08-d` tinha
 
