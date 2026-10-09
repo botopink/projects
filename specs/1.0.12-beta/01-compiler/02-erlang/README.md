@@ -81,8 +81,9 @@ value is not wrapped in `{ok, V}` — while a module-level fn is lowered correct
 
 ### Rows found by other fronts
 
-- [ ] the same `@block` reassignment with a `return` in the block, or in value position
-      (`val v = @block { acc = acc + 5; acc }`), still reads `Acc@1` outside the fun — not measured
+- [x] the same `@block` reassignment with a `return` in the block, or in value position: every
+      `return` answers `{V, Group}` and the call site rebinds the group (`valueBlockExpr`;
+      `run/block_value_reassigns_enclosing_var`, a `for`'s `return` in `tests/erlang.zig`; bugs-sweep)
 
 - [ ] std module's module-level `var` lowers to `std@beam` on erlang, not imported by the module
       (from `05-wasm` step 5; re-measure)
