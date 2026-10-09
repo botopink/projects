@@ -1,7 +1,7 @@
 # Front 14 — comptime-on-beam: the comptime pipeline's evidence and its cost per evaluation
 
-**Priority:** medium · **State:** partial: steps 1 (fixture half), 3, 4 and decision 237 on feat;
-steps 2, 6, 7 open
+**Priority:** medium · **State:** partial: steps 1 (fixture half), 3, 4, 7 and decision 237 on
+feat; steps 2, 6 open
 **Depends on:** `18-comptime-runtimes` (step 2's runtime-evaluation stage) · `01-checker` (step 2's
 memo key; body file name and T17 are 01's rows) · decision-gated rows lg2-j, lg2-o, lg2-w — each a step once answered.
 **Owns:** `modules/compiler-core/src/comptime/template_eval.zig`, `decorator_eval.zig` ·
@@ -41,6 +41,9 @@ call-site project ≤ 600 ms on both runtimes.
 - Step 3 — three round-trip fixtures, `COMPTIME REPLY` byte-identical on beam and wat
 - Step 4 — T15 answered by decision 216: closes with `130-decorator-outputs` step 6, nothing built here
 - Step 5 — T17 re-measured (holds for `Param`, `Field`): fix is `01-checker`'s row
+- Step 7 — `decorator_invocation.zig`'s `a \u{…} literal in the body …`: a body literal and a plain
+  argument carrying `\u{…}` reach the `@emit` reply as the code points' UTF-8 bytes, byte-identical
+  on beam and wat (`02-erlang` step 5 box 2); reds if `writeStringFromLexeme` writes `\x{…}`
 
 ## Open
 
@@ -62,14 +65,6 @@ Remaining per-evaluation cost:
 ### Step 6 — the decision-gated rows
 
 lg2-w (hit by every decorator), lg2-j, lg2-o: each a step once answered; nothing built before.
-
-### Step 7 — a decorator body carrying `\u{…}` (from `02-erlang` step 5)
-
-`02-erlang`'s renderer fix (`writeStringFromLexeme` decodes `\u{…}` to UTF-8 bytes) serves the
-comptime module text too.
-
-- [ ] a `comptime/tests/**` fixture: a decorator body carrying a `\u{…}` literal evaluates to the
-      character, on both runtimes
 
 **Gate:** standard (fronts.md § Gate) + `scripts/snap_audit.sh --mode=runtime-parity` green, every
 re-recorded listing classified, `COMPTIME REPLY` byte-identical at every step ·

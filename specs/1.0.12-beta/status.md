@@ -78,7 +78,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 05-wasm s5 — the rest of std on wasm: heap growth, `pow`, astral `contentHash` done (`d71b89f5`, `a443f52d`); left: std-wide wasm build (`unicode`, `json` bindings), a four-target cell per family, `wat/AGENTS.md` limits row · 97 s12 box 1
 - [ ] 05-wasm s8 — overflow for `u32`/`u64` and the narrow integer types on wasm (264): `run/int_overflow_sub_u32`, `run/int_overflow_add_i8` red on wasm (261's opcodes) · ctr-i
 - [ ] 02-erlang s4 — `run/array_unique` (C-35) · with 05 s1
-- [ ] 02-erlang s5 box 2 — a decorator body carrying `\u{…}` (cell: 14 s7) · none
+- [x] 02-erlang s5 box 2 — a decorator body carrying `\u{…}` (cell: 14 s7): on `front/02-erlang-14`
 - [ ] 02-erlang s7 — C-07's erlang tails as `run/` cells · 05's wasm column
 - [ ] 02-erlang s10 — the block-as-value lowering (R7) · 01's `@block` tail refusal
 - [x] 02-erlang s12 · 03-beam s7 — one `math` on every OS (263): on feat (`a443f52d`)
@@ -89,7 +89,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 12 s2 box 1 — `run/array_unique`, `run/throw_in_case_arm_result` · 02 s4 + 05 · 01 s6 + 04 s6
 - [ ] 14 s2 — the N=200 slope · 18's runtime-evaluation stage · 01's memo key
 - [ ] 14 s6 — the decision-gated rows · lg2-j, lg2-o, lg2-w
-- [ ] 14 s7 — a `comptime/tests` fixture for a `\u{…}` decorator body · none
+- [x] 14 s7 — a `comptime/tests` fixture for a `\u{…}` decorator body: on `front/02-erlang-14`
 - [ ] 17 s1 box 4 — the per-row increment of a keyed `Dict` · 17-b
 - [ ] 17 s2 — the `@BeamMemory` text and the migration handed over · 07 s6 · the rakun track
 - [ ] 26 s2 box 3 — rakun's `orm_host.bp` workaround deletable (rakun's row) · none

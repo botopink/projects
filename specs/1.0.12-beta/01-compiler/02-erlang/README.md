@@ -1,7 +1,7 @@
 # Front 02 — erlang: the erlang target answers what decision 8 says, on every shape
 
-**Priority:** high · **State:** partial: steps 1–3, 5 (box 1), 6, 8, 9, 11–13 on feat; steps 4, 7,
-10, 14 open
+**Priority:** high · **State:** partial: steps 1–3, 5, 6, 8, 9, 11–13 on feat; steps 4, 7, 10, 14
+open
 **Depends on:** `05-wasm` (step 7's wasm column) · `01-checker`'s `@block` tail-form refusal (step
 10)
 **Owns:** `modules/compiler-core/src/codegen/erlang.zig` · `src/codegen/crossModule.zig` ·
@@ -28,7 +28,9 @@ rule and 263's one `math` honoured.
 Steps: 1 every codegen BIF qualified; `no_auto_import` for a user fn shadowing one (T13) · 2 `while`
 fun is `__BpLoop<depth>` (T14) · 3 `'_botopink_init'/0` walked for helpers: module-level `@print` in
 a dependency (C-34) · 4 box 2 typing a `default fn` body of `primitives.bp` (C-35 erlang half) · 5
-box 1 `\u{…}` and non-ASCII literals in Erlang text; entry point sets `standard_io` unicode (C-36) ·
+box 1 `\u{…}` and non-ASCII literals in Erlang text; entry point sets `standard_io` unicode (C-36);
+box 2 the same renderer serves comptime module text: a decorator body's `\u{…}` literal and a plain
+argument's reach the `@emit` reply as UTF-8 bytes on beam and wat (fixture is 14 step 7's) ·
 6 `string.indexOf` counts codepoints (decisions 169, 240): `run/string_index_of_codepoints`, one
 `.out` · 8 captured-`var` write: nothing lowers here (148) · 9 sibling loader under `build` (T1, with
 `26-cli-tooling` step 1) · 10 box 1 block-as-value producers measured (`src/codegen/AGENTS.md`) · 11
@@ -54,10 +56,6 @@ default fn); nothing left to lower on erlang. Cell is this front's.
 
 - [ ] `run/array_unique` — `[1, 2, 1, 3, 2].unique()` prints `[1, 2, 3]` on four targets (wasm
       column with `05-wasm` step 1)
-
-### Step 5 — a decorator body carrying `\u{…}` (box 2)
-
-Renderer fix serves comptime module text too; fixture is `14-comptime-on-beam`'s (14 step 7).
 
 ### Step 7 — C-07's erlang tails as `run/` cells
 
