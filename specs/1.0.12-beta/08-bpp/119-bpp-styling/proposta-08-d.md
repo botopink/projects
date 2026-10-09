@@ -567,6 +567,62 @@ escopo. Os breakpoints (`md`, `lg`) estão no tema da emilia (300), que o `style
 raio, fonte), e o valor é comptime quando o tema é, então o componente ainda sai no build (p9). A (b)
 é mais curta, mas cria um segundo canal para o mesmo dado. A (c) duplica o tema.
 
+### p10 · Uma variação só de propriedades: `styledProperty "…"`
+
+**Contexto.** O `styled """…"""` aceita tudo: declarações, blocos `&:hover { … }`, `@media`,
+`@variant`. Muitos usos precisam só de declarações. É o caso de cada utilitário da emilia
+(`padding: …`), do que se compõe dentro de outro componente (o `@apply` do Tailwind) e de um valor
+reaproveitado em vários lugares. Uma variação só de propriedades dá a esse caso um tipo próprio, que
+garante "só declarações".
+
+- [ ] **(a)** O pacote `styled` exporta `styledProperty`, um template function como o `styled`, cujo
+  literal só aceita declarações. Ele devolve `@Component<StyledBase, StyledProperty>`, no padrão do
+  p8 (`StyledPropertyView` é o alias), e `StyledProperty` também implementa o `Styleable` (p4).
+  ```bp
+  import styled, {styledProperty} from "styled";
+
+  pub val tab4 = styledProperty "tab-size: 4;";
+  fn padAll(n: i32) -> StyledPropertyView { return styledProperty "padding: --spacing(${n});"; }
+
+  // compor: as declarações entram no lugar, sem classe própria (o @apply do Tailwind)
+  pub val code = styled """
+    ${tab4}
+    font-family: var(--font-mono);
+    &:hover { ${padAll(2)} }
+  """;
+  // → .s_<hash>{tab-size:4;font-family:var(--font-mono)} .s_<hash>:hover{padding:calc(var(--spacing) * 2)}
+
+  // aplicar na tag: vira uma classe, como um styled
+  <pre #[styled(tab4)]>…</pre>
+
+  styledProperty "&:hover { color: red; }"
+  // error: styledProperty holds declarations only — use styled for selectors, variants and at-rules   at `&`
+  ```
+- [ ] **(b)** Um `styled` só. Um literal que tem só declarações já funciona igual, mas sem um tipo
+  que diga isso.
+  ```bp
+  pub val tab4 = styled "tab-size: 4;";       // StyledView, como qualquer outro
+  ```
+
+**Recomendação: (a).** Ela segue o mesmo princípio do p6: o tipo diz o que o valor é, sem que seja
+preciso ler a string de CSS.
+
+- **Composição com garantia.** Só um `StyledProperty` entra num buraco no meio das declarações, e ele
+  nunca traz um seletor ou um `@media` escondido. Isso refaz o `@apply` sem as surpresas do Tailwind.
+- **A emilia se encaixa sem esforço.** Um utilitário do Tailwind é declarações mais uma variante, e na
+  emilia as famílias passam a devolver `StyledPropertyView`. As variantes (`.Hover(…)`, `.Md(…)`)
+  embrulham as declarações num `styled`:
+  ```bp
+  fn hover(inner: StyledPropertyView) -> StyledView { return styled "&:hover { ${inner} }"; }
+  ```
+- **Checagem mais cedo.** Um `{`, um `&` ou um `@` num `styledProperty` é erro no caractere, e não
+  uma regra que sai errada.
+- **Sem custo novo.** Com literal fixo, é calculado no build (p9), como o `styled`.
+
+**O nome.** `styledProperty`, como você escreveu (o literal pode ter várias declarações, mas o nome
+segue o par com o `styled`). As alternativas são `styledProperties` e `properties`. A segunda é curta
+demais para um nome exportado (163).
+
 ### p8 e p9 · aceitos em 09/10
 
 - [x] **(p8) Os nomes — aceito (09/10): (a).** `StyledBase`, `Styled`, `StyledView`, no padrão do
