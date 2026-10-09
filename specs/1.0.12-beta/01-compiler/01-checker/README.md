@@ -1,8 +1,8 @@
 # Front 01 — checker: every program `botopink check` accepts runs the same on four targets
 
 **Priority:** high · **State:** partial: steps 1–9, 11, 12, 14–17, 19, 20 on feat; step 18 built on
-feat (botopink-lang `49455602` merges `19d59508`, `6185db3c`) with one box open; step 6 box 3, steps
-13, 21–33 and ten rows open
+feat (botopink-lang `49455602` merges `19d59508`, `6185db3c`) with one box open; step 24 built on
+`front/checker-s24` but three boxes; step 6 box 3, steps 13, 21–33 and ten rows open
 **Depends on:** `04-js` step 6 (step 6 box 3) · `05-wasm` nested
 constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated row lg2-q — a step here only once answered (lg2-a is step 32, decision 346;
 lg2-e answered by 347 with nothing to build: a method's `@Decl` has no `owner`).
@@ -56,7 +56,15 @@ erlc); `run/value_or_type_param`, `modules/value_or_type_param_imported`,
 `docs.md` § Generics; the last union member's printer arm handed to 16. A type `@TypeInfo.all`
 lists from another module, imported explicitly too, is one type reached twice: accepted (the
 package's own item named `catalog`, not `catalog:`; the catalogue's alias keeps naming the type a
-second import re-registers — `infer.zig` `constructs`; `modules/typeinfo_all_type_also_imported`).
+second import re-registers — `infer.zig` `constructs`; `modules/typeinfo_all_type_also_imported`). Step 24 (280), all but the function/type handover
+(`s24-a`), `decl.fields` as `Type.Field<unknown>` (134 s2) and example 7: every decorator parameter
+`comptime` (`decorator-param-not-comptime`, a `comptime` default); an argument is one located
+expression, checked against its parameter with the decorator's generics bound by `@Decl<P>`
+(refused at the annotation) and the arguments, `.name` a field of `Type.Field<T>`'s `T` or a variant,
+case-exact; `decorator-arg-not-comptime`; arrays, records, variants, field keys handed over as values
+(built by a function of the decorator module); `run/decorator_{arguments_check,argument_values,decl_pattern,type_argument,function_arguments,record_argument,field_keys}`,
+`modules/decorator_typed_arguments_import`, 19 `reject/` cells (`comptime-default-outside-decorator`
+for a `comptime` default no call fills), `parser/tests/decision280.zig`, `docs.md` § Decorators.
 Rows from other
 fronts: decision 170's type half, std type's constructor through its namespace, `unwrapOr`'s width,
 behavior `default fn` body checked, shorthand import never reaching a bundled package (goes with the shorthand: 337, 129 s2), occurs-check
@@ -216,28 +224,39 @@ or library.
 
 ### Step 24 — typed comptime decorator arguments, `@Decl<T>`, `Field<T>` (decision 280)
 
-Today a decorator argument is a raw lexeme checked only as `string`, number or `bool` (lg2-i), a
-type cannot be passed (lg2-f), and `Decl` (`builtins.d.bp`) is untyped. The cases are
-[`examples/decorator-arguments-280.md`](./examples/decorator-arguments-280.md) — each example a
-`run/` cell, its "não compila" lines `reject/` cells.
+The cases are [`examples/decorator-arguments-280.md`](./examples/decorator-arguments-280.md) — each
+example a `run/` cell, its "não compila" lines `reject/` cells. Built on `front/checker-s24`
+(botopink-lang patch; the library halves are patches of their own, below).
 
-- [ ] a decorator parameter without `comptime` refused at the parameter (`decorator-param-not-comptime`);
-      the decorators of std and of the seven repositories migrated in the same landing (`botopink
-      check` of every package identical but for the added keyword)
-- [ ] arguments of any type checked at the argument and handed over as values: a function, a
-      `type`, an enum variant, a record, an array (`[1, 2]` has length 2); a value not known at
-      comptime (`env("X")`) refused at the argument (`decorator-arg-not-comptime`)
-- [ ] `@Decl<T>` in `builtins.d.bp`; `T` bound from the annotated declaration (type, field, function)
+- [x] a decorator parameter without `comptime` refused at the parameter (`decorator-param-not-comptime`,
+      `reject/decorator_param_not_comptime`); a `comptime` parameter takes a default; the decorators of
+      the compiler's cells and docs, jhonstart (4), rakun (74, 21 files) and validation (8) migrated
+      (the keyword only; std declares none with a further parameter); `botopink check` of every library
+      member clean
+- [ ] arguments of any type checked at the argument and handed over as values: a function, a `type`,
+      an enum variant, a record, an array (`[1, 2]` has length 2); a value not known at comptime
+      (`env("X")`) refused at the argument (`decorator-arg-not-comptime`) — built but for the
+      function and the `type`, which the body still receives as their name: question `s24-a`
+- [x] `@Decl<T>` in `builtins.d.bp`; `T` bound from the annotated declaration (type, field, function)
       when the signature uses it, through a pattern too (`@Decl<fn(e: E) -> unknown>`); `@Decl` =
       `@Decl<unknown>`; a declaration not matching the pattern refused at the annotation
+      (`reject/decorator_decl_pattern_{mismatch,return}`)
 - [ ] `Field<T>` — `Type.Field<T>` in std's `types.bp` (decision 308), not `builtins.d.bp` — (`name`, the
       field's type); `.name` resolved against the expected `T`, a missing field refused at it; variadic
-      `..fields: Type.Field<T>[]` (267); `decl.fields` hands out `Type.Field<unknown>`
-- [ ] `.Name` case-exact for fields and variants (`.custom` against `Custom` is the missing-name error)
+      `..fields: Type.Field<T>[]` (267); `decl.fields` hands out `Type.Field<unknown>` — built but the
+      last clause (`decl.fields` is still `builtins.d.bp`'s `Field`, the same shape; `types.bp` gives it
+      to `134` step 2)
+- [x] `.Name` case-exact for fields and variants (`.custom` against `Custom` is the missing-name error;
+      `reject/decorator_variant_case`, `reject/decorator_field_key_case`)
 - [ ] the seven examples green on every target where they run; each "não compila" line a `reject/`
-      cell with its caret
-- [ ] `docs.md` § Decorators documents the four rules; `comptime/AGENTS.md` states how a comptime
-      argument reaches the decorator body; `language-gaps.md`'s lg2-f and lg2-i rows close
+      cell with its caret — examples 1–6 green on the four targets
+      (`run/decorator_{arguments_check,decl_pattern,type_argument,function_arguments,record_argument,field_keys}`,
+      `run/decorator_argument_values`, `modules/decorator_typed_arguments_import`), 19 `reject/` cells
+      (`comptime_default_outside_decorator` among them: a `comptime` default outside a decorator); example 1's signature is `s24-b`; example 7
+      (`#[onClick(like)]` in a tag) is the html template's (`08-bpp/118`, `05-jhonstart/26`)
+- [x] `docs.md` § Decorators documents the four rules; `comptime/AGENTS.md` states how a comptime
+      argument reaches the decorator body; `language-gaps.md`'s lg2-f and lg2-i rows marked built (they
+      go when their markers do: 125 s7, rakun 04 s6)
 
 ### Step 27 — the compiler's annotations speak botopink (decision 305)
 
