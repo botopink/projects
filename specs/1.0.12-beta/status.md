@@ -77,7 +77,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 04-js s6 — `throw` in a `case` arm · 01 s6
 - [x] 04-js s8 — an integer that leaves its type aborts (264): on feat (`48a096ea`)
 - [ ] 05-wasm s1 box 1 · s3 box 2 — `Array.unique` and C-07's cells on wasm · 02 s4, s7
-- [ ] 05-wasm s5 — the rest of std on wasm: heap growth, `pow`, astral `contentHash`, `encoding` / `querystring` family cells, the `wat/AGENTS.md` limits row done; left: `unicode` and `json` on wasm and their cells · 05w-i, 05w-j
+- [ ] 05-wasm s5 — the rest of std on wasm: heap growth, `pow`, astral `contentHash`, `encoding` / `querystring` family cells, the `wat/AGENTS.md` limits row done; left: `unicode` and `json` on wasm and their cells · step 9 (333), 05w-j
 - [x] 05-wasm s8 — overflow for `u32`/`u64` and the narrow integer types on wasm (264)
 - [x] 05-wasm — an `@block`'s `return` is the block's value (decision 2), `run/block_return_is_block_value`
 - [ ] 05-wasm row — `_` in a variant payload pattern binds `0` · none
