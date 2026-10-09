@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 56 perguntas, 9 contradições e 88 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **339**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 57 perguntas, 9 contradições e 88 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **339**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -1118,6 +1118,36 @@ import {unicode_tables as tables};
 - [ ] **(b)** Fica como a thread fez: um irmão privado `unicode_tables.bp` na raiz da std.
 
 **Recomendação (da thread): (b)** — nenhuma mudança de API, um arquivo gerado e privado. **Bloqueia:** nada.
+
+### 125-a · Como os documentos JSON Schema são conferidos contra o meta-schema 2020-12 *(proposta)* ⏳
+
+**Trava:** `03-bundled-libs/125` passo 9, caixa 3 · ⏳ pronto para abrir thread ao responder
+
+**Contexto.** A terceira caixa do passo 9 pede "um script node em `test/tools/`, rodado por
+`test/json_schema_test.bp` no commonJS, sem pular nada". Conferir contra o meta-schema 2020-12 exige um
+validador (Ajv 2020 ou outro), e nenhum é alcançável pela suíte do `repository/validation`: o
+repositório só tem `.bp`, não tem `package.json`, e um teste não pode instalar da rede (CI e gate frio).
+Os documentos já estão fixados como literais contra o § 8 do ZOD_DOCUMENTATION.md (dezesseis documentos
+e nós em `test/json_schema_test.bp`).
+
+**Hoje:**
+```bp
+// test/json_schema_test.bp compara o documento gerado com um literal; nenhum validador roda
+```
+
+- [ ] **(a)** Trazer um validador para `test/tools/` (o build standalone do Ajv 2020, ~120 kB de JS, MIT)
+  e rodá-lo pelo `test/json_schema_test.bp` com `io.process.run("node", …)` no commonJS:
+  ```bp
+  // node test/tools/check-schema.js '<documento>'  → "ok" ou a lista de erros
+  ```
+- [ ] **(b)** Uma checagem estrutural escrita à mão das palavras-chave que a biblioteca escreve (`type`,
+  `properties`, `required`, `items`, `prefixItems`, `$ref`, `$defs`, `anyOf`, `format`, …) contra o
+  vocabulário do meta-schema, em botopink — sem dependência, mas não é "validar contra o meta-schema".
+- [ ] **(c)** Tirar a caixa: os literais contra o § 8 são a evidência.
+
+**Recomendação: (a)** — a leitura mais restritiva da caixa, um validador de verdade, sem rede; versão e
+hash do arquivo trazido registrados no `AGENTS.md` do `repository/validation`. **Bloqueia:** 125 passo 9,
+caixa 3.
 
 ## Parte 2 — Trava, mas o passo ainda espera outra frente
 
