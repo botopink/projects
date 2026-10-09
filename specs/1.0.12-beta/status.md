@@ -1,7 +1,7 @@
 # Status — 1.0.12-beta
 
-**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `fe13b439` (batch 4: three codegen gaps front 121 met — a var across branches on erlang/beam, a valueless case arm on commonJS, a record update in a lambda) · rakun `ed54e36` · jhonstart `2fd6b01` · emilia `b3d877e`
-· onze `61bdb0c` · erika `44aef93` · vscode-extension `f041865`
+**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `d3e4873f` (batch 5: a template module carries what its body reaches, labelled tuple reads, packed comptime frames — 331's template half) · rakun `ed54e36` · jhonstart `9695f2e` · emilia `b3d877e`
+· onze `5194988` · erika `44aef93` · vscode-extension `f041865`
 
 **Fronts:** 71 — **0 done** · **23 partial** · **48 not started**.
 
