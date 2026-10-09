@@ -2,7 +2,7 @@
 
 **Priority:** high — every library's "consume std X" step is written against this surface ·
 **State:** partial: steps 0–5, 8–10, 12 on feat; residue of steps 1, 2, 4, step 6 (conditional), 11
-open (its questions raised: `97-a`, `97-b`, `97-c`, `110-a`), 13, 14 open; step 7 → 20-snap
+open (its questions: `97-a`, `97-b` → 334, 335; `97-c` → 335; `110-a` open), 13–17 open; step 7 → 20-snap
 **Depends on:** `std-d` (step 6) · `24-g` confirmed (step 5) · decision 230 (step 11) · decision
 262 (step 12)
 **Owns:** `repository/botopink-lang/libs/std/src/**`, `libs/std/AGENTS.md`, `libs/std/test/**` ·
@@ -48,7 +48,7 @@ function in the concept's module. Each library copy deleted by its file's front.
 - Step 3 — `clock.parseDuration` compares the count with `(2^53 − 1) / unit` before multiplying, so
   `"104249992d"` is the `out of range` `Error` on commonJS too (the product aborted there once an
   `i64` overflow aborts on every target)
-- Step 11 box 1 — a question per module: `97-a` (`io/http`), `97-b` (`async`), `97-c`
+- Step 11 box 1 — a question per module: `97-a` (`io/http`) and `97-b` (`async`) → 334, 335, `97-c` → 335
   (`testing/mocks`), `110-a` (`testing/asserts`)
 
 Facts the open rows rely on:
@@ -100,8 +100,9 @@ Modules whose wasm build is not a compiler question (groups 1, 2 are `01-compile
 (`canonical`, decision 146). Per module: (a) out of a wasm build — manifest or module refuses wasm
 with a located message, recorded as the design; or (b) restructured so no host cell is reachable.
 
-- [ ] each of the four modules refuses wasm with a located message (recorded in `libs/std/AGENTS.md`
-      as the design) or builds on wasm with no host cell reachable
+- [ ] `io/http` and `async` build on wasm through step 17 (334, 335); `testing/mocks` keeps its located refusal on wasm
+      until `botopink test` runs the wasm column, then its registry moves to the module's memory (335 (3)); `testing/asserts` per
+      `110-a` — each refusing module refuses with a located message, recorded in `libs/std/AGENTS.md` as the design
 
 ### Step 13 — std over the hybrid `i64` on commonJS (decision 319; with `04-js` step 9)
 
@@ -141,6 +142,8 @@ and beam, 2 on wasm.
       chosen by the numeral; readers `num() -> ?f64`, `i64() -> ?i64`, `bigint() -> ?bigint`,
       `decimal() -> ?Decimal`, `isNumber()`, `isIntegral()` (exact or `null`, never coerced); `encode` writes
       the digits and the plain decimal text; std's tests `decodesTo("9007199254740993", Int(value: 9007199254740993))`
+- [ ] `json.parse` and `json.stringify` deleted with their Node / Erlang templates (336); their one caller (`tests/language/run/std_json_on_every_target.bp`)
+      rewritten to `decode` / `encode`; `json` compiles on wasm under both hosts with no host cell
 - [ ] the 13 files with a `case` over `Json` (std 6, rakun 3, jhonstart 2, onze 2) gain the arms, one commit per
       repository; `run/json_numbers_exact` one `.out` for the four targets
 
@@ -158,6 +161,16 @@ and beam, 2 on wasm.
       the NormalizationTest.txt lines of the pinned version pass (a std test reading the vendored file)
 - [ ] a Unicode bump: rerun the generator with the new files and hashes, one commit, the test file with it
 - [ ] `libs/std/AGENTS.md` names the generator, the pinned version and the bump procedure
+
+### Step 17 — `io/http` and `async` bound to the `wasi` host (decision 334; after `01-compiler/140` steps 1–4)
+
+- [ ] `io/http`'s `fetch` binds `@External.Wasm(host: .Wasi, wasi: .HttpOutgoing)` and the `browser` host's JS `fetch`;
+      the request and response mapped by each adapter; on `browser` a forbidden header or a `Set-Cookie` read answers
+      `HttpError.NotAllowedOnHost(…)` naming it (335 (1)); `run/std_io_http_on_every_target` against a local double
+- [ ] `async`'s twelve cells bind on `wasi` (`delay` on the monotonic clock, `race` / `raceOf` on pollables, the
+      gate cells as pollables) and on `browser` (JSPI promises); `RetryPolicy` / `nextDelay` unchanged;
+      `run/std_async_on_every_target` asserts results and answer order only — never effect interleaving (335 (2))
+- [ ] the `browser` bindings of both modules in the same commit (334: a cell bound on both hosts or neither)
 
 ## Consumers — "consume std X" rows handed to the library fronts
 

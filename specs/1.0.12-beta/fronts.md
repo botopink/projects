@@ -155,6 +155,7 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 | **12** s5 | 01-checker s30 | — |
 | **138** | the six repositories (maintainer) · between two waves | 102 s3 · 103 s2 · 104 s5 · 105 · 106 s2 · 107 · 125 s4–12 · 136 (the submodule) |
 | **139** | 04-js s9 · 05-wasm s8 | 97 s15 · 125 (number fields) |
+| **140** | 05-wasm s5 · 18 (emitter) · 98 (manifest key) | 97 s11, s17 · 05-wasm (the refusal list) |
 | **137** | s5: 01-checker s29 · s2 (body form): erk-a | 08 s7 |
 | **91** | 15 · decision 274 | — |
 | **92** | 74 · 15 · s2: 03r-an | 88 |
