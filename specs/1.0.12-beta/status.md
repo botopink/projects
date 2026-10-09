@@ -113,7 +113,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [x] 26 s2 box 3 — measured: rakun's `orm_host.bp` workaround deletable (move to `src/orm/host.bp`; rakun-data 128 passed) — the deletion is a rakun-track row (L2)
 - [x] 26 s3 — only a direct dependency is importable (T4, 242): located refusal, `modules/transitive_package_import`
 - [x] 26 s4 — `build` and `test` print checker warnings
-- [ ] 26 s6 — the `subdir` resolver half · decision 344
+- [x] 26 s6 — the `subdir` resolver half · decision 344
 - [x] 26 s7 — `build.zig`'s `test-docs` comment
 - [x] 26 s8 — 206's residuals: the LSP reports `module-import-with-from` and `unresolved import source`; a package importing itself by name refused (309), std's three sources migrated
 - [ ] 26 s9 — a dependency's sidecars and imports answer as its own build does · none
@@ -209,7 +209,7 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 - [ ] 105 (W9) — bundled `i18n` · 104 s5 · 22 · 26 · 03r-q confirmed
 - [ ] 107 (W9) — bundled `release` · 07-g · 71 · 81
 - [ ] 124 s1–4 (W10) · s5 (W11) — the commands, the config keys, the `.bpp` scaffold (08-h closed → 285, 224) · every other 08 front · s5: 116, 53
-- [ ] 98 (W11) — packaging checked everywhere · every library track's `-test` and README steps · s3: 95-f · s4: `subdir` (344)
+- [ ] 98 (W11) — packaging checked everywhere · every library track's `-test` and README steps · s3: 95-f · s4 done: `subdir` (344)
 - [ ] 16 s1–7 — the `;` re-count, migration and refusal, C-12's reformat, 165, 166/243/345, C-11 · s2: each library track runs the script · s6 (345 in the printer) before s4 · s3 last, after every tree is migrated
 - [ ] 18 s1, s3 — the CI matrix, the bench's open row (s2, s4, s5 done) · s1: the maintainer's push
 - [ ] 23 — the import cells and LSP snapshots, the confirmations · 23-a/b/c, std-c
