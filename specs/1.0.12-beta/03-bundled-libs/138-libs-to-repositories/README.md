@@ -142,4 +142,5 @@ botopink-lang, every library repository's own `botopink test`, and the meta repo
 - Step 4: rakun `4b4cbee` (rakun, rakun-web, rakun-app, rakun-hateoas), jhonstart `61445d2` (jhonstart, jhonstart-forms, jhonstart-test, examples/forms), onze `d496063` (onze, onze-cli, onze-bundler, onze-content → `validation`) declare what they import.
 - Step 5: `.gitmodules` adds the five (`branch = feat`); `AGENTS.md` § Layout and § CI check 4 and `hook-integrity.yml` cover ten library repositories.
 - Gate: `gate.sh --cold` every stage passed (test-libs 125 passed, 0 failed, the five as rows on both targets; language tests 2440 passed, 0 failed).
-- Open: the `cardume` submodule (no scaffold exists yet; steps 1 and 5's cardume boxes); consumer doc comments still saying "bundled library" (rakun-starter-web `root.bp:3` now wrong), the emilia workflow on Node 20, onze-cli `build.bp:165`'s new checker warning — rows for their owners.
+- Rest (chores patches): doc comments say "shared library" (jhonstart, onze, routing, validation; rakun's — rakun-starter-web `root.bp:3` with them — waits for 128 to land); emilia, erika, jhonstart and onze CI on Node 22; onze-cli `build.bp:165`'s warnings gone (the `extraDeps` list built in place).
+- Open: the `cardume` submodule (no scaffold exists yet; steps 1 and 5's cardume boxes).
