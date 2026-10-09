@@ -36,8 +36,17 @@ differences — `@ExprCustom<T>` declared as `CustomExpr<T>`, mirror's `Annotati
 `DeclAnnotation`. The check covers calls; types not walked yet.
 
 - [ ] every builtin above declared; the drift test walks the types and their methods too
-- [ ] `@is(…)` written by hand is `error[unknown-builtin]` at the call naming `x is T` (322); `reject/hand_written_is_builtin`;
-      `x is T` unchanged
+- [ ] `@is(…)` written by hand is refused (322; 252: a builtin not declared in `builtins.d.bp` is unknown, and
+      `builtins.d.bp` declares no `is`). Where: `comptime/infer.zig`, `inferCallExpr`'s `call.is_builtin` arm for
+      `ast.is_builtin_name` — today it types `bool` whether or not `isType` is set; a call with `isType == null`
+      (only a hand-written `@is(…)`: the parser's carrier of `x is T` always sets it) returns
+      `unknown-builtin: unknown builtin `@is` — `is` is an operator`, hint "Test a type with the operator: `x is T`.",
+      located at the `@`. `isKnownBuiltinName` keeps `is` / `[]` for the parser's carriers only; `ast.zig`'s doc
+      on `is_builtin_name` stops saying no source can write the call. Cells: `infer error: hand-written is builtin
+      is refused` (`snapshots/comptime/errors/hand_written_is_builtin_is_refused.snap.md`) and
+      `tests/language/reject/hand_written_is_builtin` (`val b = @is(1);` on line 5 → `.expect` the message and
+      `5:13`); `x is T` unchanged — measured on a scratch build: the refusal located at `5:13`, `x is i32` prints
+      `true`
 - [ ] std's `types.bp` declares `pub type Type` with five static compile-time methods answering a type
       (decision 307): `partial`, `required` (new), `pick`, `omit`, `merge` (was `mergeRecords`) —
       `pub fn pick<T>(comptime source: type T, comptime ..fields: Type.Field<T>[]) -> type`, the spelling of a
