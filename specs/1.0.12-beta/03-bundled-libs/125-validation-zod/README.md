@@ -3,8 +3,9 @@
 **Priority:** high for the step 0–2 residue (`08-bpp/121` content collections and `08-bpp/127`
 actions take the `#[validated]` type — decision 306); medium for the rest · **State:** partial: steps 0–2 on
 feat with residue; steps 3–12 open
-**Depends on:** `01-compiler/01-checker` step 24 (decision 280, step 7) · `07-j` (size). Written against decisions 144 (undeclared keys), 145 (emitted names),
-183 (`07-m`: coercion, step 6), 257 (`07-n`: `Schema<T>` lives in `validation`)
+**Depends on:** `01-compiler/01-checker` step 24 (decision 280, step 7) · `07-j` (reduced: ≈ option (c) under 306). Written against decisions 144 (undeclared keys), 145 (emitted names),
+183 (`07-m`: coercion, step 6), 257 (`07-n`: `Schema<T>` lives in `validation` — amended by 306: the
+place stays, the value is private), 306–308
 **Owns:** `libs/validation/src/**` · `libs/validation/test/**` · `libs/validation/AGENTS.md` ·
 `libs/validation/botopink.json` — except `src/messages.bp`'s `interpolate`, moved to `i18n` by
 `105-i18n` between two steps of this front, never during one (decision 189)
@@ -24,8 +25,9 @@ outside tests, 33 in rakun). Not a regex demand — `regex.matches(` outside `li
 `libs/validation`: 0; `#[pattern(…)]` outside the library: 1, in a test; `registerConstraint(`
 outside: 0; private format walks: 3 `isHex` (`jhonstart-emilia/src/root.bp`,
 `rakun-web/src/static.bp`, `rakun-actuator-api/src/span.bp`). The need is `Json` → record; the rest
-follows: `#[schema]` derives parse / decode / bind / encode / JSON Schema, `Schema<T>` composes,
-checks grow from 13 markers to 71, reports gain views and locales.
+follows: the `#[validated]` type derives parse / decode / bind / encode / JSON Schema as members
+(306 — `#[schema]` folds into it; field markers compose, no public `Schema<T>`), checks grow from 13
+markers to 71, reports gain views and locales.
 
 On feat `libs/validation`: 2 134 source lines — `report.bp`, `constraints.bp` (20 `v*` predicates),
 `decorators.bp` (`#[validated]`, 13 markers, `#[schema]`), `messages.bp`, `spi.bp`, `binding.bp`,
@@ -37,7 +39,8 @@ Already provided: JSON tree `json.Json { Null, Bool, Num, Str, Arr, Obj }`,
 `items` (97) · fallible return `@Result<T, E>`, `try`, `try … catch`, `case` (`docs.md`) · `A | B`,
 `unknown`, `x is T` · `#(A, B)`, `type Shape { Circle(radius: f64) }`, `?T` · `Dict<K, V>`, `Set<T>`
 (`libs/std/src/collections.bp`) · field defaults `type Port(number: i32 = 80, host: string)` ·
-derived records `partial(T)`, `pick`, `omit`, `mergeRecords` (`comptime/infer.zig`) · type-writing
+derived records `partial(T)`, `pick`, `omit`, `mergeRecords` (`comptime/infer.zig`; `Type.partial` /
+`Type.pick` / `Type.omit` / `Type.merge` / `Type.required` with 307) · type-writing
 decorator `@emit("pub type …")` (`rakun-data/src/orm/entity.bp`) · text helpers `regex.compile` /
 `captures`, `unicode.normalize` / `codepoints`, `url.parse`, `encoding.base64Decode` / `hexDecode`,
 `clock.parseIso8601` / `toCivil`, `string.parseFloat` (97).
@@ -46,13 +49,15 @@ decorator `@emit("pub type …")` (`rakun-data/src/orm/entity.bp`) · text helpe
 
 Zod's one object model (type via `z.infer`, and parser) is split in two here.
 
-**The type is the schema.** A `#[schema]` record or enum is reflected as `#[validated]` reflects it
-(`decl.fields`, each field's `typeName` and `annotations` — `decorators.bp`'s `validated`); the
-decorator `@emit`s functions named after the type. Decision 216 retires loose `@emit`
-(`#[validated]` adds members `validate()` / `constraints()`); `#[schema]`'s free functions still use
-it; whether they become members (`Player.parse(input)`) is open (`ctr-u`):
+**The type is the schema.** Today a `#[schema]` record or enum is reflected as `#[validated]`
+reflects it (`decl.fields`, each field's `typeName` and `annotations` — `decorators.bp`'s
+`validated`), and the decorator `@emit`s free functions named after the type. Decision 216 retires
+loose `@emit` (`#[validated]` adds members `validate()` / `constraints()`); 306 makes the parse half
+members of the `#[validated]` type too (`#[schema]` goes, step 12) — only their spelling is open
+(`ctr-u`, recommended `Player.parse(input)`). The table is what `#[schema]` emits today; under 306
+`schemaOf<T>` (the schema value) is private, the rest become members:
 
-| Emitted | Zod's |
+| Emitted today | Zod's |
 |---|---|
 | `pub fn schemaOf<T>() -> Schema<T>` | the schema value |
 | `pub fn parse<T>(input: Json) -> @Result<T, ValidationReport>` | `.parse` / `.safeParse` |
@@ -65,10 +70,10 @@ it; whether they become members (`Player.parse(input)`) is open (`ctr-u`):
 - Decoder: straight-line, one statement per field; every field decoded, every violation collected,
   record built only when the list is empty — "all violations, not fail-fast" is the shape, not an
   option (`binding.bp`'s header).
-- A field of another `#[schema]` type → call `parse<ThatType>At` by name (no second declaration seen).
-- Checks not duplicated: a type with markers is also `#[validated]`; `parse<T>` calls `validate()`
-  on the built record. A marker on a `#[schema]` type not `#[validated]` is a compile error
-  (decision 67).
+- A field of another schema type → its `parseAt` (today `parse<ThatType>At`, emitted by name; no
+  second declaration seen).
+- Checks not duplicated: the parse calls `validate()` on the built record — one decorator since 306
+  (today a marker on a `#[schema]` type not `#[validated]` is a compile error, decision 67).
 
 **Decision 306: the type is the only schema, and `#[schema]` becomes `#[validated]`.** One decorator
 checks (`validate()`, `constraints()`) and parses (the table above, as members — spelling `ctr-u`'s);
@@ -152,8 +157,8 @@ compiler rows in `language-gaps.md`):
 - [ ] `parseCategory` over a four-level recursive document; a self-reference 2 000 levels deep
       does not exhaust the stack on either target (decoder recurses through `Arr`, depth is the
       document's — the test pins it; today's test is 3 levels)
-- [ ] `#[schema]` on a type with an unsupported field type is a located compile error naming field
-      and type — refusal exists in `decorators.bp`; a test asserts it
+- [ ] `#[schema]` (`#[validated]` after step 12) on a type with an unsupported field type is a
+      located compile error naming field and type — refusal exists in `decorators.bp`; a test asserts it
 - [ ] `schemas.bp`'s private `itemsOf` / `membersOf` and `pub fn fieldOf` give way to std's `Json`
       methods (`input.items()`, `input.members()`; emitted `schemas.fieldOf(input, "…")` →
       `input.field("…") ?? Json.Null` or a function under another name);
@@ -165,7 +170,7 @@ compiler rows in `language-gaps.md`):
 Every `surface.md` row of §§ 4.3, 4.4, 4.6–4.8 and the length rows of §§ 4.19–4.27 marked `add · 3`:
 8 string checks, 41 format markers, 7 numeric markers, 2 date bounds — 58 markers — plus length
 markers on `Array`, `Dict`, `Set`. Each: a predicate in `constraints.bp`, a marker in
-`decorators.bp`, a `checks.*` function, a built-in template, and (with parameters) a `table.bp` row.
+`decorators.bp`, a `checks.*` function (private after 306, step 12), a built-in template, and (with parameters) a `table.bp` row.
 
 - [ ] `constraints_test.bp`: three accepted and three refused inputs per predicate, refused ones from
       the reference's examples where given (`"555-555-5555"` for `e164`, `"2020-1-1"` for
@@ -175,17 +180,18 @@ markers on `Array`, `Dict`, `Set`. Each: a predicate in `constraints.bp`, a mark
       one refusal per marker
 - [ ] no predicate reaches a host cell: `grep -c '@External' src/constraints.bp` is `0`
 
-### Step 4 — Enums, literals, unions, tuples, maps, sets
+### Step 4 — Enums, literals, unions, tuples, maps, sets (narrowed by step 12, 306)
 
-`#[schema]` on a payload-less enum (variant name is the wire value); `#[literal]`, `#[oneOf]`; fields
-typed `A | B`, `#(A, B)`, `Dict<K, V>`, `Set<T>`; `schemas.union2…5`, `xor2…5`, `both`, `tuple2…5`,
+`#[schema]` (`#[validated]` after step 12) on a payload-less enum (variant name is the wire value);
+`#[literal]`, `#[oneOf]`; fields typed `A | B`, `#(A, B)`, `Dict<K, V>`, `Set<T>`; `schemas.union2…5`, `xor2…5`, `both`, `tuple2…5`,
 `tupleRest`, `dict`, `set`, `never`, `nil` (`Json.Null` only, for unions); tagged enum whose variants
 name `#[schema]` records (`#[tag("status")]`).
 
 - [ ] `examples/enums-and-unions-example.bp` and `collections-example.bp` pass on both targets
 - [ ] a union whose arms all fail reports one `invalidUnion` naming each arm's first violation; a
       `Set` with a repeated item reports `duplicate` at the second occurrence's index
-- [ ] `#[tag]` on an enum with a variant lacking a matching `#[schema]` record is a compile error
+- [ ] `#[tag]` on an enum with a variant lacking a matching schema record (`#[validated]`, 306) is a
+      compile error
 
 ### Step 5 — Object policy and derived types
 
@@ -215,7 +221,7 @@ and `null` are absent; else `invalidType`.
       builds nothing; with `age=30` builds `tags: ["a", "b"]`
 - [ ] the existing four binders keep their tests unchanged (`binding_test.bp`)
 
-### Step 7 — Refinements and messages
+### Step 7 — Refinements and messages (narrowed by step 12, 306)
 
 `#[check(rule, at: .field, message: "…", code: .Custom)]` on the type and `#[check(message: "…")]` on
 the rule function itself (decision 280 — `01-checker/examples/decorator-arguments-280.md` example 1;
@@ -228,7 +234,7 @@ the string forms `#[check("fn", "fieldA,fieldB")]` go), `#[stopOnFirst]`,
       declaring the validated type is refused
 - [ ] `surface.md` § 5's resolution order is one test with six rows, each overriding the next
 
-### Step 8 — Combinators and codecs
+### Step 8 — Combinators and codecs (narrowed by step 12, 306: codecs, map, preprocess are field markers)
 
 `Schema.map`, `schemas.tryMap`, `pipe`, `preprocess`, `custom`, `refineAsync`; `Codec<A, B>`,
 `schemas.codec`, `invert`; `#[with]`, `#[map]`, `#[codec]`; `encode<T>`; `codecs.bp` with the twelve
@@ -239,7 +245,7 @@ recipes.
       canonical texts
 - [ ] `encode<T>` of a value failing `validate()` is an `Error`, not a document
 
-### Step 9 — Reflection, error views, metadata, JSON Schema
+### Step 9 — Reflection, error views, metadata, JSON Schema (narrowed by step 12, 306)
 
 `Schema.fields()`, `.keys()`, `.options()`, `.isOptional()`; `report.flatten()`, `.tree()`,
 `.pretty()`; `#[title]`, `#[describe]`, `#[example]`, `#[deprecated]`, `#[schemaId]`;
@@ -298,7 +304,11 @@ below or `n/a (306)`; the items about types and markers stand.
 
 ## Decisions
 
-### 07-j · How much of Zod is the front
+### 07-j · How much of Zod is the front (reduced: ≈ option (c) under 306)
+
+306 already draws the shape — markers, declared unions and tuples, `#[validated]`'s parse members, a
+row only a value could say `n/a (306)`; what stays open is the size, recommended (c) in step order
+([`decisions-pending.md`](../../decisions-pending.md) `07-j`).
 
 **Measured.** `surface.md`: 211 reference rows; 11 native, 37 have, 134 add, 7 need a compiler row,
 20 have no meaning here, 2 out of the reference's core.
@@ -308,7 +318,9 @@ flat records + markers; (c) every step.
 coercion, codecs hand-written by consumers — the cost `language-gaps.md` records.
 **Blocks.** the front's size.
 
-`ctr-u` — decision 216 against `#[schema]`'s free `@emit` ([`../../decisions-pending.md`](../../decisions-pending.md)). Steps 3–10.
+`ctr-u` — reduced by 306 to the spelling of `#[validated]`'s parse members (recommended: 306's
+names as members, `Player.parse(doc)`) ([`../../decisions-pending.md`](../../decisions-pending.md)).
+Blocks step 12 and `surface.md`'s rows.
 
 ## Notes
 
@@ -322,7 +334,8 @@ coercion, codecs hand-written by consumers — the cost `language-gaps.md` recor
 - **Snapshots:** none in `libs/validation/test/`, none added — JSON Schema asserted as a literal.
 - **Not added:** `z.function`, `z.promise`, `z.symbol`, `z.undefined`, `z.nan`, typed registries,
   `fromJSONSchema`, JIT switches — each `n/a` with reason in `surface.md`. None is "later".
-- **Async:** derived schemas are synchronous. `schemas.refineAsync` answers a `Schema` whose `parse`
+- **Async:** derived schemas are synchronous. `schemas.refineAsync` (private after 306; step 12
+  sorts its row) answers a `Schema` whose `parse`
   is `-> @Task<@Result<…>>`; on erlang `@Task` is eager (`language-gaps.md` lg2-b) — "may call a
   `@Task` function", not "concurrent".
 - **Cross-backend regex:** intersection of PCRE (`re:run/2`) and ECMAScript, grammar at

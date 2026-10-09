@@ -17,7 +17,7 @@ test member plus examples.
 | EM-1 | `hashHex` (`emilia.bp:95-97`, used at `:114`) copies std's `hash.contentHash`; one import, fixture `e_39b87d03` must not move. `output.bp:379-388`'s comment explains a commonJS prelude defect (C-37) closed in the compiler (`01-compiler/04-js`) — emilia drops it | `modules/emilia/src/emilia.bp`, `output.bp` | 34 step 1 |
 | EM-11 | six comment lines of `modules/` name another library (`attributes.bp:4,30`, `emilia.bp:110,16500,16501,16510`), five name jhonstart's `[name]={…}` DSL spelling (`attributes.bp:30,32,36`, `emilia.bp:185,202`) — decision 114's grep cannot be empty | `modules/emilia/src/` | 34 step 1 |
 | EM-8 | five families out of parity with 4.3.2 (05emilia-l's tail) — table in [34 § Mechanism](./34-emilia-modifiers/README.md): transition presets, `backdrop-opacity-*`, `border-spacing-*`, backdrop filters' `-webkit-backdrop-filter`, `divide-*`'s `border-*-style:var(--tw-border-style)` | `emilia.bp` blocks 44 · 42 · 43 · 40; `examples/emilia-{transitions,effects,outline-ring,transforms}/src/main.bp` where they pin the output | 34 step 2 |
-| EM-9 | unplaced rows of `34-emilia-modifiers/reference-rows.md`, category (c): named `:has()` / `:not()` / ARIA / data-attribute / `in-[…]` forms; named `group/name` / `peer/name`; a cleared `--breakpoint-*` emits `@media (width >= )` instead of refusing; `@theme inline`; negative translate (`tokens.bp:2259-2279` has no `Neg`) | `tokens.bp`, `emilia.bp` blocks 34 · 54 · 45 | 34 steps 3 (the refusal) and 4 (the rest, on 05emilia-n) |
+| EM-9 | unplaced rows of `34-emilia-modifiers/reference-rows.md`, category (c): named `:has()` / `:not()` / ARIA / data-attribute / `in-[…]` forms; named `group/name` / `peer/name`; a cleared `--breakpoint-*` emits `@media (width >= )` instead of refusing; `@theme inline`; negative translate (`tokens.bp:2259-2279` has no `Neg`) | `tokens.bp`, `emilia.bp` blocks 34 · 54 · 45 | 34 steps 3 (the refusal, decision 300) and 4 (the four feature rows, on 05emilia-n) |
 | EM-3 | `emilia-test` exposes no `assert<Subject>` — `root.bp` holds one resolve test (PK-4) | `modules/emilia-test/src/**` | `20-snap` step 4 (`snap-a`) |
 | EM-7 | `emilia-card` depends on jhonstart (`botopink.json` `"jhonstart": { "path": … }`); decision 114: emilia-only, printing its class names and flushed sheet | `examples/emilia-card/**` | 33 step 2 |
 | PK-2 | fifteen example members without `README.md` | `examples/*/README.md` | 33 step 2 |
@@ -27,7 +27,7 @@ test member plus examples.
 
 | Front | Priority | State | What | Depends on |
 |---|---|---|---|---|
-| [`34-emilia-modifiers/`](./34-emilia-modifiers/README.md) | **high** — the parity tail moves pinned output every later snapshot would re-record | not started | `modules/emilia/src/**`: `hashHex` → std and the cross-library comments; the five families to upstream's form; the breakpoint refusal; the unplaced rows (on 05emilia-n); the examples that pin the moved families | 05emilia-l (step 2), 05emilia-n (step 4) — opens now |
+| [`34-emilia-modifiers/`](./34-emilia-modifiers/README.md) | **high** — the parity tail moves pinned output every later snapshot would re-record | not started | `modules/emilia/src/**`: `hashHex` → std and the cross-library comments; the five families to upstream's form; the typed `#[theme]` and the breakpoint refusal (300); the four unplaced feature rows (on 05emilia-n); the examples that pin the moved families | 05emilia-l (step 2), 05emilia-e (step 3's base theme), 05emilia-n (step 4) — opens now |
 | [`33-emilia-color-palette/`](./33-emilia-color-palette/README.md) | medium | not started | the fifteen READMEs, `emilia-card` emilia-only (step 2); steps 1, 3, 4 (the helpers, the suites, the examples) → `20-snap` | step 2: nothing — open now |
 
 ## Order
@@ -54,28 +54,28 @@ Confirmations kept from 1.0.10 ([`../../1.0.10-beta/decisions-pending.md`](../..
 
 | Id | Choice | Closes |
 |---|---|---|
-| 05emilia-a … 05emilia-k | the filter chain inline; `BackdropFilter`; `drop-shadow-none`; snap strictness fallback; `fullOptions()`; `--inset-shadow-*`; `space-*` / `divide-*` selector; siblings never import `from "emilia"`; `@property` blocks; selector-list modifiers; `spacingNegHalf` | — |
+| 05emilia-a … 05emilia-k (e reopened, next row) | the filter chain inline; `BackdropFilter`; `drop-shadow-none`; snap strictness fallback; `fullOptions()`; `--inset-shadow-*`; `space-*` / `divide-*` selector; siblings never import `from "emilia"` (05emilia-h → 206: `from "<module of this package>"` is an error, a sibling imports by path); `@property` blocks; selector-list modifiers; `spacingNegHalf` | — |
+| 05emilia-e | **open again with 300** ([`decisions-pending.md`](../decisions-pending.md) § Implementation choices awaiting confirmation): 300 names `defaultTheme()` (palette-free) as the `#[theme]` base and the no-`#[theme]` fallback, while `flush()` renders with `fullTheme()` (`fullOptions()`); recommended there: read 300's `defaultTheme()` as `fullTheme()` — not settled | 34 step 3 |
 | 05emilia-l | confirming a column moves its whole family to upstream's form — its § Blocks names the five families 34 step 2 moves | 34 step 2 (the confirmation settles that the rule applies to families no open row named) |
 
 Snapshot suites and the eight cross-front examples: [`decisions-pending.md`](../decisions-pending.md) `snap-a`, worked by [`20-snap`](../20-snap/README.md) step 4.
 
-### 05emilia-n · The unplaced Tailwind rows — declare them, or leave them to `arbSel`
+### 05emilia-n · The unplaced Tailwind rows — declare them, or leave them to `arbSel` (reduced: only the four features)
 
 > **Raised by:** front 34, from [`34-emilia-modifiers/reference-rows.md`](./34-emilia-modifiers/reference-rows.md)
-> (category (c)).
-> **Measured.** Five ownerless rows: named `:has()` / `:not()` / ARIA / data-attribute / `in-[…]`
-> forms (only via `arbSel`); named groups and peers (`group/item`, `peer/name` — six group and
-> eight peer states exist, unnamed); `@theme inline` (emilia always emits `var(--x)`); negative
-> translate (`Rotate.Neg` exists, `TranslateX/Y.Neg` not, `tokens.bp:2259-2279`); and a hole, not a
-> feature — a cleared `--breakpoint-*` emits `@media (width >= )` instead of refusing, as 58 refuses
-> an emptied container size.
-> **Options.** (a) the refusal only: a cleared breakpoint panics naming the entry, as 58; the four
-> feature rows out of scope, stated in `docs.md` § Deviations (`arbSel` is the spelling); (b) (a) +
-> negative translate and named groups/peers (two token sections, one `Variant` fn each — small,
-> upstream-shaped); (c) all five, including `@theme inline` (a second render mode over every
-> `var()` site — large).
-> **Recommendation.** (a) — the refusal is decision 67, not optional; the rest is a feature
-> decision. (b) is the recommended *feature* answer if any: negative translate is the row a user
+> (category (c)). Current wording: [`decisions-pending.md`](../decisions-pending.md) `05emilia-n`.
+> **Measured.** Four ownerless feature rows: named `:has()` / `:not()` / ARIA / data-attribute /
+> `in-[…]` forms (only via `arbSel`); named groups and peers (`group/item`, `peer/name` — six group
+> and eight peer states exist, unnamed); `@theme inline` (emilia always emits `var(--x)`); negative
+> translate (`Rotate.Neg` exists, `TranslateX/Y.Neg` not, `tokens.bp:2259-2279`). The fifth row —
+> a cleared `--breakpoint-*` emitting `@media (width >= )` instead of refusing — is no longer part of
+> this question: decision 300 settles it ("a token naming a cleared or absent breakpoint is a
+> compile error where the token list is comptime-known"; 34 step 3, unconditional).
+> **Options.** (a) None: the four out of scope, stated in `docs.md` § Deviations (`arbSel` is the
+> spelling); (b) negative translate and named groups/peers (two token sections, one `Variant` fn
+> each — small, upstream-shaped); (c) all four, including `@theme inline` (a second render mode over
+> every `var()` site — large).
+> **Recommendation.** (a); (b) is the feature answer if any: negative translate is the row a user
 > meets first (`-translate-y-2`), named groups the one documented modifier `arbSel` cannot spell
 > readably.
-> **Blocks.** 34 step 4; step 3 (the refusal) is not conditional.
+> **Blocks.** 34 step 4 (conditional).

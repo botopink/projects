@@ -15,14 +15,17 @@ another; one grammar only · **State:** not on feat; step 1 reported done on unp
 ## Goal
 
 rakun-app `actionId(module, name, buildId)` (`actions.bp`) = `"a_" +
-hash.hmacSha256(rkProp("rakun.actions.secret"), module + "." + name + ":" + buildId).slice(0, 24)`.
-jhonstart-forms' `formAction` re-checks a looser shape (`a_` prefix, no `/`, space or quote): a
-23-hex id passes jhonstart, never matches rakun. After: both read one derivation and grammar from
-`actions.id`.
+hash.hmacSha256(rkProp("rakun.actions.secret"), module + "." + name + ":" + buildId).slice(0, 24)`
+(today; `rkProp` goes with 299 — the secret becomes a field of rakun-app's typed
+`#[config("rakun.actions")]` record, injected by type). jhonstart-forms' `formAction` re-checks a
+looser shape (`a_` prefix, no `/`, space or quote): a 23-hex id passes jhonstart, never matches
+rakun. After: both read one derivation and grammar from `actions.id`.
 
-**Name.** `deriveActionId` — rakun-app exports `actionId` (decision 163). rakun-app's `actionId`
-(read by its tests, `actionIdOf`, `resolveAction`) keeps its name, calls `deriveActionId` with the
-secret it reads.
+**Name.** `deriveActionId` — rakun-app exports `actionId` (decision 163; `103-a`). rakun-app's
+`actionId` (read by its tests, `actionIdOf`, `resolveAction`) keeps its name, calls `deriveActionId`
+with the secret from the `#[config("rakun.actions")]` record (299), not `rkProp`. `actionIdOf(name:
+string)` — a lookup by the action's name in text — is today's code and goes with 281 (an action is
+referred to by its function; `08-bpp/127` step 5); this front only repoints the derivation under it.
 
 ## Open
 
@@ -40,7 +43,9 @@ reads `rakun.actions.secret`. `hmacSha256` answers lowercase hex on both targets
 ### Step 2 — consumers
 
 - [ ] rakun-app's `actionId` calls `actions.id.deriveActionId` (derivation and `slice` gone from
-      rakun-app); `resolveAction`'s constant-time comparison untouched; `actions_test.bp` green unchanged
+      rakun-app), the secret from the `#[config("rakun.actions")]` record once 299 lands in rakun-app
+      — until then the one `rkProp` read stays where it is; `resolveAction`'s constant-time
+      comparison untouched; `actions_test.bp` green unchanged
 - [ ] jhonstart-forms' `formAction` calls `isActionId`; its form tests green on both rows
 
 **Gate:** standard (fronts.md § Gate) + `libs/actions/AGENTS.md` names `id`

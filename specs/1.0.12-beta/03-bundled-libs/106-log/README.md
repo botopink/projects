@@ -13,8 +13,8 @@ with it, `08-bpp/123` or `104-http` step 5 (same member, decision 188)
 `04-rakun/128`, decision 187; imports the pure half, installs itself as the sink),
 `repository/jhonstart/modules/jhonstart/src/error_boundary.bp` (`05-jhonstart/26` step 4), onze's sink
 line (`07-onze/49` step 3) · `rakun-logging`'s `cells.bp` (41 erlang cells: OTP handler install, file
-rotation, per-name overrides, correlation id, capture), the `rkProp` levels and groups, actuator
-endpoints
+rotation, per-name overrides, correlation id, capture), the `rkProp` levels and groups (a typed
+`#[config]` record with 299 — rakun's), actuator endpoints
 
 ## Goal
 

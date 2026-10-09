@@ -2,7 +2,8 @@
 
 **Priority:** high — step 2 moves output every later snapshot (`20-snap` step 4) would otherwise
 record twice · **State:** not started — opens now
-**Depends on:** `05emilia-l` confirmed (step 2's rule) · `05emilia-n` (step 4). Nothing else:
+**Depends on:** `05emilia-l` confirmed (step 2's rule) · `05emilia-e` (step 3's base theme — open
+again with 300) · `05emilia-n` (step 4, the four feature rows only). Nothing else:
 `hash.contentHash` exists; `08-bpp/118` step 1's bracket-attribute carve-out is comments only here,
 reworded by step 1 (no code uses `[name]={`).
 **Owns:** `repository/emilia/modules/emilia/src/**` (all eleven files; edited blocks named per step),
@@ -18,7 +19,8 @@ them beside, appending its line to `root.bp` / `botopink.json`, which no step he
 
 Class name is std's `hash.contentHash` (decision 116), contract-4 fixture `e_39b87d03` unchanged;
 `modules/` names no other library (decision 114); five families render what Tailwind 4.3.2 renders;
-a cleared `--breakpoint-*` refuses; unplaced rows declared or stated as deviations (05emilia-n).
+the theme is typed and declared once with `#[theme]`, a token naming a cleared breakpoint a compile
+error (decision 300); the four unplaced feature rows declared or stated as deviations (05emilia-n).
 `emilia`: 734 tests on both rows; the five families pinned by inline tests in their blocks and by
 the four owned examples.
 
@@ -48,9 +50,11 @@ the four owned examples.
   shape. A token list using a moved family changes class-name hash (hash is over the sheet); the
   contract-4 fixture (padding / colour / hover) uses none and does not move. jhonstart and onze
   assert class names, not bodies.
-- **The refusal.** A cleared `--breakpoint-*` (`extendTheme` with an empty value) silently emits
-  `@media (width >= )`; `theme.bp`'s breakpoint reader panics on an empty entry naming it, as
-  `container.bp`'s does for an emptied `--container-*` (front 58).
+- **The refusal.** Today a cleared `--breakpoint-*` (`extendTheme` with an empty value) silently
+  emits `@media (width >= )`. Decision 300: a token naming a cleared or absent breakpoint is a compile
+  error where the token list is comptime-known (a `#[styled(…)]` tag annotation's tokens always are,
+  280/301); `theme.bp`'s breakpoint reader panics on an empty entry naming it, as `container.bp`'s
+  does for an emptied `--container-*` (front 58), only for a list built at run time (step 3).
 - **The unplaced rows:** [`reference-rows.md`](./reference-rows.md), category (c).
 
 ## Open
@@ -96,20 +100,27 @@ pub val appTheme = comptime extendTheme(defaultTheme(), [
     entry(.Breakpoint, "md", Rem(40.0)),       // was #("--breakpoint-md", "40rem")
     clear(.Breakpoint, "lg"),                  // was #("--breakpoint-lg", "")
 ]);
-emilia([.Lg([.Pad.All.4])])                    // compile error: breakpoint lg was cleared in the theme
 ```
+```bpp
+<div #[styled(.Lg([.Pad.All.4]))]>…</div>     // compile error: breakpoint lg was cleared in the theme (301's markup form)
+```
+
+The base (`defaultTheme()` as 300 writes it, palette-free, against `fullTheme()`, which `flush()`
+renders with) is `05emilia-e`, open — the boxes below do not settle it.
 
 - [ ] `entry(ns: Ns, name: string, value: <the namespace's value type>)` (`Rem`, `Color`, `Shadow`, …),
       `clear(ns, name)`, `clearNs(ns)` (`--color-*: initial`), `clearAll()` (`--*: initial`); the name
       inside a namespace stays a string (CSS's, 281); `#("--…", "…")` pairs leave the API
 - [ ] `#[theme]`: the app's one theme, found with `@TypeInfo.all(with: theme)`; two refused at compile
-      time naming both; none = `defaultTheme()`
+      time naming both; none = the base theme (`defaultTheme()` per 300's text — which base is
+      `05emilia-e`)
 - [ ] a token naming a cleared or absent breakpoint (`Lg` after `clear(.Breakpoint, "lg")`) refused at
-      compile time when the token list is comptime-known (the literal lists `emilia(...)` takes),
-      naming the theme's line; the run-time refusal stays only for a list built at run time
+      compile time when the token list is comptime-known (every `#[styled(…)]` annotation, 301; a
+      literal list passed to emilia's entry points), naming the theme's line; the run-time refusal
+      stays only for a list built at run time
 - [ ] `reference-rows.md` § 3.3 "removing breakpoints" reads as a deviation in `docs.md`
 
-### Step 4 — the unplaced rows (on `05emilia-n`)
+### Step 4 — the unplaced rows (on `05emilia-n`, reduced to the four features; the refusal is step 3, 300)
 
 (b): `TranslateX.Neg` / `TranslateY.Neg` in `tokens.bp` (`:2259-2279`) beside `Rotate.Neg`, with
 05emilia-l's `calc(… * -1)` form; named groups and peers as `GroupNamed(name, inner)` /

@@ -10,8 +10,9 @@ The tree on `feat` (`find repository/emilia -name '*.bp'`) and what each front o
 | **`emilia-test`** | `root.bp` (one resolve test; no helper) | inline | inherits | `emilia` (`{ "workspace": true }`) |
 
 Rules: `tokens.bp` is one file; host cells and all that needs them live in `emilia.bp` (a
-cross-module bare import of an `#[@External]` declaration is `undefined` at run time — 05emilia-h);
-siblings never import `from "emilia"`; `root.bp`, `botopink.json`, `tokens.bp` append in
+cross-module bare import of an `#[@External]` declaration is `undefined` at run time);
+siblings never import `from "emilia"` — a module of the package is imported by its path (05emilia-h
+→ 206: `from "<module of this package>"` is an error); `root.bp`, `botopink.json`, `tokens.bp` append in
 front-number order.
 
 ## Examples — fifteen members
