@@ -101,7 +101,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 26 s8 — 206's residuals: the LSP's import check, a package importing itself refused (309) · none
 - [ ] 130 s5 — the remaining decorator sites (34 of 119 done, plus `#[schema]`'s 5) · rakun's DI on 01 s20 · rakun sites under the 130↔128 rule (03r-ao, only the record) · rakun-client's on the behavior-member gap (ctr-q closed: the table built at comptime, 281, 256)
 - [ ] 130 s6 — module-level `@emit` removed · 130 s5 · `#[schema]`'s free functions → members of the type (306; spelling: ctr-u)
-- [ ] 134 s2 — the type functions, the `result` namespace, the `@Result` / `?T` methods, `@is` · 134-d
+- [ ] 134 s2 — the type functions, the `result` namespace, the `@Result` / `?T` methods, `@is` refused (322)
 - [ ] 134 s4–s6 — variadic parameter and the print builtins (267); the `Decorator` type for `with:` (268); `use @getContext(T)` (269)
 - [ ] 07-residuals s3, s5–s8, s12, s13 — `uncertain` rows, test comments, the `@BeamMemory` text, C-18's corrections + `docs.md:5` + § Imports, the lib-agnostic gate names every library, the per-cell compile row, the `async` delay flake · none (s8's comments after 02)
 - [ ] 07-residuals s1, s2, s4 — the codegen and comptime report waves, three renames · 02–05 landed · 01 landed
@@ -184,7 +184,7 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.0.10 choices) in its
-last section. Open after the 9 Oct revalidation and the answers since (309–321): 57 questions, 9 contradictions, 90
+last section. Open after the 9 Oct revalidation and the answers since (309–322): 56 questions, 9 contradictions, 90
 implementation choices.
 
 **First — the botopink shape** (raised 2026-10-04; answer `nat-0`, then the rest):
@@ -193,7 +193,6 @@ implementation choices.
 
 Then:
 - [ ] 17-b — 17 s1 box 4
-- [ ] 134-d — 134 s2 (`@is`)
 - [ ] std-d — 97 s6 · 50 s4, s7
 - [ ] 95-f — 98 s3
 - [ ] 07-g — 107 whole

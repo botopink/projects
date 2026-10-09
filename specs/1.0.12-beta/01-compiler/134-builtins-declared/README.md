@@ -3,7 +3,7 @@
 **Priority:** high · **State:** partial: steps 1 and 3 on feat; step 2 partial (builtin calls
 declared; type functions, `result` namespace, `@Result` / `?T` methods and `@is` open); steps 4–6
 (decisions 267–269) open
-**Depends on:** 134-d (open question) · answered: 134-a → 267, 134-b → 268, 134-c → 269
+**Depends on:** nothing open · answered: 134-d → 322, 134-a → 267, 134-b → 268, 134-c → 269
 **Owns:** `libs/std/src/builtins.d.bp`, `libs/std/src/builtins_fns.d.bp` (with 130 for the `Decl`
 surface) · compiler's builtin table and the check tying it to the declarations
 (`modules/compiler-core/src/comptime/builtins.zig`, `Env.builtinDecls`, `comptime.zig`
@@ -31,11 +31,13 @@ Undeclared: comptime type functions called without `@` — `mergeRecords`, `part
 (`infer.zig` `tryResolveTypeManipulationCall`); builtin `result` namespace
 (`result.map/then/unwrap/isOk/isError`) and `@Result` / `?T` methods (`map`, `flatMap`, `unwrapOr`,
 `isOk`, `isError`), today comments in `builtins.d.bp`; `@is(…)` (parser's carrier of `x is T`,
-`ast.is_builtin_name` — hand-written `@is(1)` types `bool` with no tested type, 134-d); two naming
+`ast.is_builtin_name` — hand-written `@is(1)` types `bool` with no tested type; refused by 322); two naming
 differences — `@ExprCustom<T>` declared as `CustomExpr<T>`, mirror's `Annotation(name, args)` is
 `DeclAnnotation`. The check covers calls; types not walked yet.
 
 - [ ] every builtin above declared; the drift test walks the types and their methods too
+- [ ] `@is(…)` written by hand is `error[unknown-builtin]` at the call naming `x is T` (322); `reject/hand_written_is_builtin`;
+      `x is T` unchanged
 - [ ] std's `types.bp` declares `pub type Type` with five static compile-time methods answering a type
       (decision 307): `partial`, `required` (new), `pick`, `omit`, `merge` (was `mergeRecords`) —
       `pub fn pick<T>(comptime source: type T, comptime ..fields: Type.Field<T>[]) -> type`, the spelling of a
@@ -92,7 +94,6 @@ the bare call is refused.
 
 ## Decisions
 
-134-d (`@is(…)` by hand) — in [`../../decisions-pending.md`](../../decisions-pending.md). Answered:
-267 (step 4), 268 (step 5), 269 (step 6).
+None open. Answered: 322 (`@is` refused, step 2), 267 (step 4), 268 (step 5), 269 (step 6).
 
 **Gate:** standard (fronts.md § Gate) + `zig build test-language`, `test-docs`, `test-libs`, `tsc-check` green
