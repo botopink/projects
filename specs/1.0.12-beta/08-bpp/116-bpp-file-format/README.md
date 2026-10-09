@@ -8,7 +8,7 @@ from a `.bp` module (118). · **State:** not started
 opens after it) · `01-compiler`'s prelude scope (decision 270) · `119-bpp-styling` step 2
 (the core's `#[style]` function — 361 merged `jhonstart-styled` into the core; step 6's style-section examples only).
 Written against decisions 198, 199, 200, 212, 213, 221, 270, 284, 285, 338.
-**Owns:** `repository/bpp/**` (new repository, 361) · in `repository/botopink-lang`: `modules/manifest/src/root.zig` (one key),
+**Owns:** `libs/std/src/bpp.bp` (new module, 361; carve-out of `02-std-and-packaging`) · in `repository/botopink-lang`: `modules/manifest/src/root.zig` (one key),
 `modules/compiler-cli/src/cli/{scanner,resolver,libs,format_cmd,migrate}.zig` (extension lists,
 unfold, formatter's view), `modules/lib-test-runner/src/discovery.zig`,
 `modules/language-server/src/{project_index,project_graph,engine}.zig` (extension lists, span
@@ -186,17 +186,17 @@ error at the key. A style section with no `"bpp".style`: error at the section's 
 ### Step 1 — `bpp` in the manifest model, the roles by `bpp`'s annotations (decision 361)
 
 ```bp
-// repository/bpp — the four role annotations (302's shape)
+// libs/std/src/bpp.bp — the four role annotations (302's shape)
 // repository/jhonstart/modules/jhonstart/src/root.bp
-#[html] pub default fn html(comptime t: @Expr<string>) -> @ExprCustom<View> { … }
-#[style] pub fn style(comptime css: @Expr<string>) -> @ExprCustom<StyledView> { … }
+import {bpp} from "std";
+#[bpp.html] pub default fn html(comptime t: @Expr<string>) -> @ExprCustom<View> { … }
+#[bpp.style] pub fn style(comptime css: @Expr<string>) -> @ExprCustom<StyledView> { … }
 // src/prelude.bp — imports, and the marker
-#[htmlPrelude] pub val prelude = Prelude();
+#[bpp.htmlPrelude] pub val prelude = bpp.Prelude();
 ```
 
-- [ ] `botopink/bpp` at `repository/bpp`: `html`, `htmlPrelude`, `style`, `stylePrelude`, `Prelude`;
-      std only; its first `feat` commit before the submodule (CI check 1); the `AGENTS.md` § Layout row
-      and CI check 4's list with it
+- [ ] std's module `bpp` (`libs/std/src/bpp.bp`): `html`, `htmlPrelude`, `style`, `stylePrelude`,
+      `Prelude`; listed in std's `docs.md`; a carve-out of `02-std-and-packaging` (one new file)
 - [ ] `modules/manifest`: `"bpp"` is one package name (`"bpp": "jhonstart"`), a dependency; the object
       form refused at the key: `error: "bpp" is a package name — write "bpp": "jhonstart"`
 - [ ] the roles found in that package by `bpp`'s annotations: `#[html]` exactly once (missing or twice
