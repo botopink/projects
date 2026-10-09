@@ -18,8 +18,8 @@
 //
 // `staticPaths` is `pub`, so it stays at module level for the scan; `missing`
 // is a `fn`, so it is a function of the module too. Everything from `val found`
-// down is the body of the function the file unfolds to (front 116; its `route`
-// parameter is open question `bpp-g`).
+// down is the body of the function the file unfolds to (front 116). A page takes
+// no parameter (decision 293, was `bpp-g`): `use params<P>()`, `use pageData<D>()`.
 //
 // The `.bp` form of this page, with its tests: `blogPost` in
 // `content-collection-example.bp` at the root of `examples/`.

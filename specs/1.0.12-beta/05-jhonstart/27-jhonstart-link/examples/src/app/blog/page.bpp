@@ -18,7 +18,7 @@
 
 import {div, h1, nav, span, ul} from "jhonstart";
 import {Link, linkProps, withClass} from "jhonstart-link";
-import {components.archive_row.ArchiveRow};
+import {components.archive_row as ArchiveRow};   // a `.bpp`'s default, named by the importer (288)
 import {lib.blog.listPosts};
 
 val posts = await listPosts();

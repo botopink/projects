@@ -24,7 +24,7 @@
 
 import {div, h1, header, section} from "jhonstart";
 import {Boundary, Suspense, boundaryId} from "jhonstart";
-import {components.post_list.PostList};
+import {components.post_list as PostList};   // a `.bpp`'s default, named by the importer (288)
 
 // The fallback: what the reader sees while the list is in flight.
 fn skeleton() -> Element {

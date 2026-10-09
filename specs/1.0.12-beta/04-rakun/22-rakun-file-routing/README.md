@@ -5,9 +5,9 @@ here; the member is every onze application's server half · **State:** not start
 **Depends on:** 128 (logger and span API are the core's after it — decision 187) · 04 step 5 (core
 `Request`'s `rawQuery()`, `headerNames()`, `headers()`, `queryDict()`) · `rakun-app` consumer
 commits of `03-bundled-libs/102` step 3 and `103` step 2, before 128 (decision 188) · decision 186
-(step 4; its checker capability for the final state) · onze 50 (R24-1), onze 53 and jhonstart 30
+(step 4; its checker capability for the final state) · onze 53 and jhonstart 30
 (R24-2) · jhonstart 32 (R64-2 and 66's two boxes — rakun owns nothing in them) · lg2-q (`@Decl`
-source location — segment stays an explicit argument) · 03r-m … 03r-q (confirmations)
+source location — segment stays an explicit argument) · 03r-m, n, p, q (confirmations; 03r-o closed by 290 — step 8)
 **Owns:** `modules/rakun-app/**` · `repository/rakun/AGENTS.md` § The file-convention route table,
 § SSR, § Actions
 **Does not touch:** `modules/rakun-web/**` (65's; chain consumed through its API) · `rakun-cache`
@@ -51,7 +51,7 @@ page dynamic; `render` / `action` / `handler` spans emitted; refresh envelope us
 - **R24-2.** `actions.bp` imports `refreshValue` from bundled `actions`; `actions_test.bp` still
   passes the literal `"refresh"` (`scripted("refresh", "")`).
 
-No env-gated cell. R24-1, R24-2 depend on onze 50 / 53 and jhonstart 30; stay open, named.
+No env-gated cell. R24-2 depends on onze 53 and jhonstart 30; stays open, named. R24-1's directive is gone (282, 303 — step 6).
 
 ## Open
 
@@ -90,7 +90,7 @@ interim boxes below hold until `05-jhonstart/26` step 8 lands.
 ### Step 6 — Actions (R24-1, R24-2, RX-2, RX-13)
 
 - [ ] `actions_test.bp`: literal `"refresh"` is `refreshValue()`; the envelope's `payload` parsed by bundled `actions`' contract-2 reader once jhonstart 30's reader is in `actions` — until then the cell asserts the pathname field by name and the box stays open naming 30
-- [ ] R24-1: `actions_build_test.bp` compares field by field the registration record of a file with `pub val useServer = true;` and a decorated one — written now against a hand-attached directive in `fixtures/`, closes the day onze 50 attaches it
+- [ ] R24-1 reworded before work starts: the file-level `pub val useServer = true;` form contradicts 282 (a role is said in a decorator, never by an export's name) — an action is `#[action] pub fn` (303) and onze 50 attaches no directive; the field-by-field comparison against a directive file goes (maintainer confirms the new wording)
 - [ ] RX-2 (60, 61, 64, 66): decorator-argument default re-measured in `segment_config_test.bp`, `i18n_test.bp`; README records the result
 - [ ] RX-13: `actions_test.bp` and the `actions-cache` fixture spell no `__bp_action` / `X-Bp-Action` (onze's defaults, decision 114); `grep -rn '__bp_action\|X-Bp-Action' modules/rakun-app` empty
 
@@ -110,7 +110,7 @@ file-convention route table (this member's) is generated at build from `routing`
 ### Step 8 — no segment configuration — everything in `#[page]` (decision 290)
 
 - [ ] `segment_config.bp`'s `dynamic` / `DynamicMode`, `fetchCache` / `FetchCache`,
-      `registerSegmentConfig(seg, …)` and the layout-to-page inheritance (03r-o) deleted; nothing
+      `registerSegmentConfig(seg, …)` and the layout-to-page inheritance (03r-o's, closed by 290) deleted; nothing
       forces a stage (202) — `S` / `D` is `#[page]`'s, from `Decl.hooks` (277)
 - [ ] `revalidate` and `dynamicParams` read from the page's `#[page]` meta (or the route table's
       `page(seg, f, …)` call, step 7); `static_gen.bp`'s regeneration and the unknown-param rule
@@ -130,8 +130,8 @@ onze-server compile unchanged.
 ## Notes
 
 - 03r-m (revalidation inside an action expires), 03r-n (a JSON-RPC argument is a form-encoded field
-  list), 03r-o (segment config defaults), 03r-p (slot ownership), 03r-q (i18n in rakun-app)
-  implemented; confirmation only.
+  list), 03r-p (slot ownership), 03r-q (i18n in rakun-app) implemented; confirmation only. 03r-o
+  (segment config defaults) closed by 290: no segment config, inheritance gone (step 8).
 - Ticked by another track: R64-2 (jhonstart 32 consumes `Alternate[]`), 66's "front 32 emits
   `<link rel="manifest" …>`" and "front 32 consumes `imagesFor` and `iconsFor`".
 - Kept for open markers: `examples/route-handler-example.bp` (lg2-a, lg2-b),

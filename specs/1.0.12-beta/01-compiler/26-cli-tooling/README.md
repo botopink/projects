@@ -39,7 +39,7 @@ only declared dependencies (decision 242); `build`, `test` and the LSP print che
 
 ### Step 3 — only a direct dependency is importable (T4, decision 242)
 
-`import {rkProp} from "rakun";` with only `rakun-starter-web` declared = `error: unresolved import
+`import {Request} from "rakun";` with only `rakun-starter-web` declared = `error: unresolved import
 source "rakun" — declare it in botopink.json "dependencies"` (`cli/sources.zig`,
 `proj.dependencyNames`); rakun starters declare what they import. Same refusal for `import
 {linkPrefetch} from "jhonstart-link"` from a package declaring only `jhonstart-forms`.
@@ -70,9 +70,10 @@ subdirectory (98 step 4 owns the manifest model); nothing before.
 
 - LSP runs no import-source check (F4 or `module-import-with-from`): editor shows `from "<own
   module>"` resolving until `botopink check` refuses it.
-- `from "<own package name>"` inside the package (bundled libraries' own tests: `log` 1, `routing`
-  1, `validation` 2, `std` 8 files) still reads its own modules — measure: rule (package is its own
-  name) or leftover; write the answer.
+- `from "<own package name>"` inside the package still reads its own modules. Measured 9 Oct: no
+  test imports its own package by name; 3 std sources do (`std/src/querystring.bp:28`,
+  `std/src/testing/snapshots.bp:49-51`, `std/src/io/fs.bp:20`) — rule (package is its own name) or
+  leftover; write the answer (206: `from "<module of this package>"` is an error, import by path).
 
 - [ ] the LSP reports `module-import-with-from` and `unresolved import source` as `check` does — one
       `lsp/` snapshot each

@@ -58,7 +58,8 @@ record of the entry's four functions (`replaceSubtree(depth, html)`, `startIslan
 ### Step 2 — `use linkStatus()` under a `@Component` return
 
 - [ ] `link_test.bp`: a `fn Pending() -> @Component<ElementBase, Element>` body with
-      `val s = use linkStatus();` renders; a twin without the `@Component` return is a
+      `val s = use linkStatus();` (→ `LinkStatus(pending, href)`, `link.bp:187`) renders; a twin
+      without the `@Component` return is a
       `use-without-context-effect` fixture under `refusals/` (decisions 118 and 128)
 
 ### Step 3 — the example
@@ -67,6 +68,8 @@ record of the entry's four functions (`replaceSubtree(depth, html)`, `startIslan
 route kind, the checkout link's pending state (`examples/src/**/*.bpp` show the same page as
 `.bpp`); corrected here if step 1 changes its surface.
 
+- [ ] the example gains the checkout link's pending state — a component reading
+      `use linkStatus()` → `LinkStatus(pending, href)` (today it has no checkout link and no status)
 - [ ] `botopink check` over the example against `modules/jhonstart-link` passes
 
 **Gate:** standard (fronts.md § Gate) + `jhonstart-link` 38 or more on both rows;

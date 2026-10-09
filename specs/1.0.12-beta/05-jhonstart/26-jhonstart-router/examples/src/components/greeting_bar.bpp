@@ -2,11 +2,12 @@
 // Front 26 — jhonstart-router · examples/src/components/greeting_bar.bpp
 //
 // The greeting bar of `request-scope-example.bp`, as a `.bpp` component: it
-// reads the reader's locale from a cookie and whether they are signed in from a
-// header.
+// reads the reader's locale from a cookie (`use cookie(decl)`, 294) and whether
+// they are signed in from a header.
 //
 // `use request()` is a statement of the fence, so it is a statement of the
-// emitted `GreetingBar()` — a component, where a hook may be used. `greetingFor`
+// module's `pub default fn () -> View` (288, 289) — a component, where a hook
+// may be used. `greetingFor`
 // is a `fn`, so it is a function of the module.
 //
 // Nothing read here may cross to the client: the `authorization` header decides
@@ -17,7 +18,10 @@
 //   https://nextjs.org/docs/app/api-reference/functions/headers
 
 import {header, span} from "jhonstart";
-import {request} from "jhonstart";
+import {cookie, request} from "jhonstart";
+// `pub val localeCookie = Cookie<string>("locale");` — declared once, in a
+// module of its own (294): the browser's name is written there only.
+import {lib.cookies.localeCookie};
 
 fn greetingFor(locale: string) -> string {
     return case locale {
@@ -29,7 +33,8 @@ fn greetingFor(locale: string) -> string {
 
 val req = use request();
 val signedIn = req.header("authorization") != "";
-val greeting = greetingFor(req.cookie("locale"));
+val locale = use cookie(localeCookie);
+val greeting = greetingFor(locale ?? "");
 val label = if (signedIn) { greeting + " back" } else { greeting };
 ---
 <header class="bar">

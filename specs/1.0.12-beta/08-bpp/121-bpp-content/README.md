@@ -3,8 +3,8 @@
 **Priority:** high — the track's largest code that exists in no form; content sites are the
 reference's first use case. · **State:** not started · steps 1–2 ready to open
 **Depends on:** open: [`08-f`](../README.md#08-f--where-markdown-and-yaml-live) (step 3,
-frontmatter reader's home) · `03-bundled-libs/125-validation-zod` steps 0–2 (`Schema<T>`) for steps
-4–5 — merged into botopink-lang `feat` (`libs/validation/src/schemas.bp`); `status.md` still lists
+frontmatter reader's home) · `03-bundled-libs/125-validation-zod` steps 0–2 for steps
+4–5 (step 12 for step 10: the `#[validated]` type; `Schema<T>` is private, 306) — steps 0–2 merged into botopink-lang `feat` (`libs/validation/src/schemas.bp`); `status.md` still lists
 them pending · `118-bpp-components`, `117-bpp-routing` (`page.md`) for step 6 · `07-onze/53` for
 step 7. **Steps 1–2 depend on nothing**, open with wave A.
 **Owns:** new member `repository/onze/modules/onze-content/**` (`botopink.json`, `src/**`,
@@ -18,8 +18,8 @@ Reference: `astro-docs/14-markdown-content.md`, `15-content-collections.md`,
 
 ## Goal
 
-New onze member: CommonMark + GFM to `Element`, frontmatter, collections checked by `Schema<T>` at
-build, `.md` pages, RSS — and the blog reads Markdown.
+New onze member: CommonMark + GFM to `Element`, frontmatter, collections checked by their
+`#[validated]` type at build (306), `.md` pages, RSS — and the blog reads Markdown.
 
 ## Problem
 
@@ -72,7 +72,7 @@ passes through `raw(…)` (author's own, like a template).
 **Frontmatter.** YAML subset: block and flow maps/lists, plain, single- and double-quoted scalars,
 `|` and `>` blocks, comments, `null` / `true` / `false`, integers, floats. Anchors, aliases, tags,
 multi-document streams, other implicit typing: `Error` naming the line. Result is `Json`, decoded
-by a `Schema<T>` with pathed violations.
+by the collection's `#[validated]` type (its parse member, spelling `ctr-u`; 306) with pathed violations.
 
 **Collections.** A value declared in the app:
 
@@ -82,15 +82,20 @@ pub fn blog() -> Collection<BlogPost> {
 }
 ```
 
+Steps 8 and 10 replace this form (282, 306): the collection is said on its `#[validated]` type —
+`#[validated] #[collection(glob("content/blog", "**/*.md"))] pub type BlogPost(…)`, or
+`collection(BlogPost)` —, never with a `Schema<T>` value, and the build gathers collections with
+`@TypeInfo.all(with: collection)` instead of reading `collections()` by name.
+
 `Entry<T>(id, collection, data: T, body: string, filePath: string)`; id = path under the loader's
 base, no extension, slugged; frontmatter `slug` overrides. `getCollection(c)`,
 `getCollectionWhere(c, keep)`, `getEntry(c, id)`, `render(entry) -> Rendered(content: Element,
 headings: Array<Heading>)`. The app lists collections in `pub fn collections() ->
-Array<AnyCollection>` in `src/content.bp`, read by the build.
+Array<AnyCollection>` in `src/content.bp`, read by the build (until step 8, 282).
 
 | When | Who | What |
 |---|---|---|
-| build | `onze sync`, run by `onze build` (124) | loads every collection, decodes every entry; **a violation fails the build** with file path and report; writes `<outDir>/content/<name>.json` and `<outDir>/content/<name>.schema.json` (`jsonSchemaOf<T>`) |
+| build | `onze sync`, run by `onze build` (124) | loads every collection, decodes every entry; **a violation fails the build** with file path and report; writes `<outDir>/content/<name>.json` and `<outDir>/content/<name>.schema.json` (the type's `jsonSchema` member, 306) |
 | run | `getCollection` | reads the build store; under `onze dev` loads from the files |
 
 Cross-collection reference: a marker on a string field, `#[reference("authors")] author: string`;
@@ -173,6 +178,7 @@ autolinks, footnotes; ids; smart punctuation.
       `collection(BlogPost)` (`comptime source: type T`, refused unless `@typeInfo(T).meta(Validated)`)
 - [ ] a frontmatter field only a value could check (a list of slugs, a date codec) is a field marker
       (`#[each(…)]`, `#[codec(…)]`); `content-collection-example.bp` rewritten
+- [ ] `markdown-example.bp`'s `Meta` is `#[validated]`, decoded by its own member (no `#[schema]`, no `schemas.Schema` import)
 - [ ] `<name>.schema.json` comes from the type's `jsonSchema` (125 step 9)
 
 ## Decisions

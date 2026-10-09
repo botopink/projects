@@ -1,10 +1,11 @@
 ---
 // Front 53 — onze example app · examples/app/loading.bpp
 //
-// The root loading UI of `boundaries-example.bp`, as a `.bpp` file. For a file
-// named `loading.bpp` the emitted function is `pub fn Loading() -> Element` —
-// the name onze's generated routes table imports. It takes no argument, so the
-// fence has nothing in scope but what it declares; here it declares nothing.
+// The root loading UI of `boundaries-example.bp`, as a `.bpp` file. It unfolds
+// to the module's anonymous `pub default fn () -> View` (288, 289), which the
+// generated route table imports by path and names itself (285). It takes no
+// argument, so the fence has nothing in scope but what it declares; here it
+// declares nothing.
 //
 // The skeleton is deliberately the same shape as the content it replaces, so
 // the swap does not move the page.

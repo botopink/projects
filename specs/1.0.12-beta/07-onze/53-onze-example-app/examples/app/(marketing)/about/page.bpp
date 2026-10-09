@@ -2,8 +2,8 @@
 // Front 53 — onze example app · examples/app/(marketing)/about/page.bpp
 //
 // The route-group page of `app-tree-example.bp`, as a `.bpp` file. The route
-// jhonstart's `bpp` function writes is this file's directory,
-// `(marketing)/about`; the group is transparent to the URL, so the page answers
+// is this file's directory, `(marketing)/about`, read by the route table
+// `rakun-app` generates (285); the group is transparent to the URL, so the page answers
 // `/about`, not `/marketing/about`.
 //
 // A page that needs no data has an empty fence but for its imports: it awaits

@@ -42,7 +42,7 @@ boot cell without an upgrade cell is not a skip.
 ### Step 1 — The tarball boots (R81-1)
 
 - [ ] `release_test.bp`: a release from `examples/rakun` has every `out/erl/*.erl` compiled into `lib/<app>/ebin` (`.beam` files listed in the tarball's tree) — measured first against today's `compile_dir` call; README records whether it already held
-- [ ] unpacked under the scratch directory, `bin/<name> foreground` with headless keep-alive=false options starts, prints the banner, exits 0 within 10 s
+- [ ] unpacked under the scratch directory, `bin/<name> foreground` with `headless: true`, `keepAlive: false` (299; `keep-alive` today) starts, prints the banner, exits 0 within 10 s
 - [ ] a non-compiling sidecar fails `rakun build` naming file and line
 
 ### Step 2 — Upgrade and downgrade (R81-2)

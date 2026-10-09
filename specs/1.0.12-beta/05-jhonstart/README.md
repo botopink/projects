@@ -82,8 +82,8 @@ Confirmations kept from 1.0.10 ([`../../1.0.10-beta/decisions-pending.md`](../..
 |---|---|---|
 | 26-a | every router cell is dual-target | — |
 | 27-a | a browser cell in a two-target member is dual-target, the erlang twin answering the server's truth | — |
-| 29-a | the island starter table is `globals.starters`, filled by `registerStarter` / `registerRouteStarters` | 26 step 5's starter-table row |
-| 30-b … 30-g | `RenderPlugin` as a record of async functions; `render` / `App` in `streaming.bp`; `Suspense` registers with the render; `UiSegment`; `app(…, lang:)`; the browser half in `jhonstart-dom-test` | — |
+| 29-a | reduced (open, `decisions-pending.md`): the island starter table is `globals.starters`, filled per route by `registerRouteStarters(pattern, load)`; the per-name `registerStarter` goes — 281 builds the table at comptime (`@TypeInfo.all(with: client)`, `08-bpp/120` step 6, `07-onze/53` step 7) | 26 step 5's starter-table row |
+| 30-b … 30-g | `RenderPlugin` as a record of async functions; `render` / `App` in `streaming.bp`, `compose` taking the page as a thunk (a page is `fn() -> View`, no `route` parameter — 293); `Suspense(b)` registers its `Boundary(id, fallback, child)` with the render (`child` the unstarted thunk); `UiSegment`; `app(…, lang:)`; the browser half in `jhonstart-dom-test` | — |
 | 31-a | `notFound()` / `redirect(url)` raise through one host cell | — |
 
 Module-level snapshot map: [`decisions-pending.md`](../decisions-pending.md) `snap-a`, worked by [`20-snap`](../20-snap/README.md) step 3.
@@ -100,4 +100,5 @@ Module-level snapshot map: [`decisions-pending.md`](../decisions-pending.md) `sn
 > browser only (jhonstart's gate never runs them); (c) a real DOM library as a dev dependency.
 > **Recommendation.** (a) — asserted in jhonstart's own gate against its writers' markup, no
 > dependency; 53 proves them in a browser besides.
-> **Blocks.** 67 steps 1–3's shape (acceptance written for (a)).
+> **Blocks.** 67 steps 1–3's shape (acceptance written for (a)). Still open: the front already
+> applies (a); only the record is missing (`decisions-pending.md` `67-a`).

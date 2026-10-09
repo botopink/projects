@@ -3,10 +3,11 @@
 //
 // The root layout of `app-layout-example.bp`, as a `.bpp` file (1.0.11-beta
 // `08-bpp/116`). The application's `botopink.json` says `"bpp": "jhonstart"`;
-// for a file named `layout.bpp` jhonstart's `bpp` function emits
-// `#[layout("")] pub fn Layout(props: LayoutProps)` — the route is this file's
-// directory below `app/`, the root — around the fence, so the decorator
-// argument front 50's scan checks against the location cannot disagree with it.
+// the file unfolds to the module's anonymous `pub default fn (props: LayoutProps)
+// -> View` (288, 289). Its role is the framework's rule, not the toolchain's:
+// the route table `rakun-app` generates calls jhonstart's `layout` on it, the
+// route being this file's directory below `app/` — the root (285); no decorator
+// is applied by file name.
 //
 // `props.children` is the subtree the router already built. A layout returns
 // the BODY subtree only: the document shell and the moment the head is written

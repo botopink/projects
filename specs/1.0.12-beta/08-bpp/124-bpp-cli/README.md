@@ -1,10 +1,10 @@
 # Front 124 — bpp CLI: what the build has to learn
 
 **Priority:** high — last; no feature of its own, makes the others part of `onze build`. ·
-**State:** not started · blocked by `08-h`
-**Depends on:** open: [`08-h`](../README.md#08-h--the-config-file-and-the-commands) (whole front) · `07-onze/50-onze-cli` (owns `onze-cli`, `onze-bundler`; `onze dev` its open box) ·
+**State:** not started
+**Depends on:** open: `nat-f2` (which `onze.json` keys, step 1; `08-h` closed → 285, 224: `onze.json`, `onze <command>`) · `07-onze/50-onze-cli` (owns `onze-cli`, `onze-bundler`; `onze dev` its open box) ·
 `07-onze/71` (static export to disk, ONZ-71-7) · every track front · 116 and `07-onze/53` (step 5).
-Written against decisions 202, 224.
+Written against decisions 202, 224, 285.
 **Owns:** in `repository/onze/modules`: `onze-cli/src/{main.bp, build.bp}` (commands, build
 steps below); new `onze-cli/src/{sync.bp, key.bp}`; `onze/src/config.bp` — every § Mechanism key
 but `site` (122's, 189); `onze-bundler/src/` — new `component_script.bp`, `style_sheet.bp` ·
@@ -25,7 +25,7 @@ passing `07-onze/53`'s acceptance script.
 
 Not `botopink` — no framework command (`compiler-cli/src/main.zig:121-170`: `build check run test
 format new clean migrate`), and a dev server there would know jhonstart and rakun (lib-agnostic
-rule; 08-h). Not a second config file. The framework CLI exists, in botopink:
+rule; 285). Not a second config file. The framework CLI exists, in botopink:
 
 | Astro | onze | State |
 |---|---|---|
@@ -59,7 +59,7 @@ Work: two commands, the config keys, three build steps.
 ## Mechanism
 
 **Config keys**: read and validated in `config.bp`, handed to the using library as plain values;
-no library reads `onze.json`.
+no library reads `onze.json`. Which of the keys below, and how they are read: `nat-f2`.
 
 | Key | Astro's | Goes to |
 |---|---|---|
@@ -90,7 +90,7 @@ counter (same in prerendered markup), minified; under a threshold inlined, else 
 
 ## Open
 
-### Step 1 — The config keys
+### Step 1 — The config keys (after `nat-f2`)
 
 - [ ] § Mechanism keys read and validated; unknown key still refused; `docs.md`'s table generated
       from the one source `--help` and `create` read (ONZ-50-DoD's "defaults table from one source")
@@ -122,7 +122,8 @@ counter (same in prerendered markup), minified; under a threshold inlined, else 
 
 ## Decisions
 
-- `08-h` — config file and commands: (a) `onze.json` + `onze <command>` recommended. Whole front.
+- `nat-f2` — `onze.json`'s `trailingSlash`, `redirects`, `markdown`, `allowedRedirects`: (a) kept, read into a typed record at build, an error at its line (299's precedent) recommended. Step 1.
+- `08-h` — closed (285, 224): `onze.json`, `onze <command>`.
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `onze-cli`, `onze-bundler`, `onze`

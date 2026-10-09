@@ -14,16 +14,18 @@ lg2-r (decorator-supplied method body — `#[query]` shape stays) · 03r-v (conf
 
 ## Goal
 
-`rakun.data.repositories.bootstrap-mode=lazy` keeps repositories out of the eager pass; the
+`bootstrapMode: Lazy` (the `#[config("rakun.data")]` record, 299) keeps repositories out of the eager pass; the
 migration lock gains a PostgreSQL advisory arm beside `global`; the ORM's unknown-field refusal and
 join count asserted on what the code can show.
 
 ## Mechanism
 
-- **R08-1.** `rakun.data.repositories.bootstrap-mode` (registered by `datasource.bp`, default
-  `eager`; accepts `eager`, `deferred`, `lazy`). Eager pass is the core's `eagerInitIn`; under `lazy`
-  this member registers every `#[repository]` name via 04 step 4's `rkExcludeFromEager(name)` at
-  boot, before the pass.
+- **R08-1.** Today `rakun.data.repositories.bootstrap-mode` (registered by `datasource.bp`, default
+  `eager`; accepts `eager`, `deferred`, `lazy`). Under 299 (step 5) it is a field of the typed record
+  `#[config("rakun.data")] pub type DataConfig(…, bootstrapMode: BootstrapMode = .Eager)`, its key the
+  field's exact name and its value the variant (`bootstrapMode: Lazy`). Eager pass is the core's
+  `eagerInitIn`; under `Lazy` this member excludes every `#[repository]` type via 04 step 4's
+  `rkExcludeFromEager` (by type, 04 step 6 — 281) at boot, before the pass.
 - **R77-1.** Advisory arm `pg_advisory_lock` on PostgreSQL, in `rakun_migration.erl` behind the
   `postgresql` scheme, asserted on the SQL issued (no server in the gate); `global` arm on the others
   (a node-local lock on multi-node PostgreSQL is the wrong default).
@@ -31,7 +33,7 @@ join count asserted on what the code can show.
   `T.columns()`, `<Repo>.<m>Sql()`, `<Repo>.<m>Derived(…)`, and the meta
   `@typeInfo(T).meta(Entity)` (298: `Entity(table, columns)`). A derived finder naming no field fails at build with
   "unknown field 'ciudad'" naming `Columns` (`orm_build_test.bp`), without the field list.
-  `#[entityRepository("City")]` names its entity by string; whether it can read
+  `#[entityRepository("City")]` names its entity by string today (step 4 takes the type, 281); whether it can read
   `@typeInfo(City).meta(Entity)?.columns` at comptime (decisions 216, 248) decides if the list prints
   without lg2-e/f.
 - **R78-2.** ETS arm has no JOIN, PostgreSQL arm no server here; "nothing is fetched that the method
@@ -44,8 +46,8 @@ cell claims to have reached a server.
 
 ### Step 1 — Lazy bootstrap (R08-1, R08-2; after 04 step 4)
 
-- [ ] `sql_pool_test.bp`: with `rakun.data.repositories.bootstrap-mode=lazy`, a recording-constructor `#[repository]` is not constructed by `Rakun.run`, is constructed on first `resolve`
-- [ ] with the default (`eager`) it is constructed before `Rakun.run` returns
+- [ ] `sql_pool_test.bp`: with `bootstrapMode: Lazy` (`DataConfig`, step 5 — 299; `rakun.data.repositories.bootstrap-mode=lazy` until it lands), a recording-constructor `#[repository]` is not constructed by `Rakun.run`, is constructed on first resolution
+- [ ] with the default (`Eager`) it is constructed before `Rakun.run` returns
 - [ ] R08-2 ("named parameters, `#[query]`, the pool and local transactions all behave as the acceptance lists") ticked, the four lists re-run
 
 ### Step 2 — Migration lock (R77-1)
@@ -66,6 +68,7 @@ cell claims to have reached a server.
 - [ ] `#[entityRepository(City)]` takes the type; `derivedSql("CityRepo", "countByState")` takes the
       function; an operator is `Op`'s variant, never `">="`
 - [ ] `index`, `unique` take `Type.Field<T>` (`.state`; 308); table and column names stay strings (SQL's, 280 example 6)
+- [ ] `examples/city-entity-example.bp`, `examples/audit-and-revisions-example.bp` rewritten to decision 281 (`#[entityRepository(City)]`, `derivedSql` by function, `Op`'s variant) and 299 (no `rkProp` / `rkPropInt` import)
 
 ### Step 5 — configuration as a typed record (decision 299)
 

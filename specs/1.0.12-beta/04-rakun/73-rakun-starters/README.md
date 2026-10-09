@@ -31,7 +31,8 @@ cell (or the language-gaps toolchain row re-pinned with the measured failure), e
 - **`run` re-measure.** At 1.0.10 front 04's close, `botopink run` died with `undef
   rakun_runtime:serve/2` (`examples/rakun`) and `undef rakun_file_router:register_layout/2`
   (`examples/rakun-ssr`); the compiler now ships `out/erl/*.erl` and compiles them under `run`. Cell:
-  build, run headless with `rakun.main.headless=true keep-alive=false`, assert exit 0 and banner.
+  build, run headless with `rakun.main`'s `headless: true`, `keepAlive: false` (299: the key is the
+  field's name; `keep-alive` today), assert exit 0 and banner.
   Still failing → failure text to the milestone's `language-gaps.md` toolchain row, box open naming
   it, cell not written (no skip).
 

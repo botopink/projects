@@ -71,7 +71,8 @@ parameter is `comptime _: @Decl` (further arguments included); nothing else is a
 it cannot be constructed. `TypeInfo.all` declares `with: Decorator | Decorator[]`.
 
 - [ ] `builtins.d.bp` declares `Decorator` and `all(with: Decorator | Decorator[], member: ?string = null)`;
-      the drift test green on the new signature
+      the drift test green on the new signature (`member` becomes a reference with 281 —
+      `130-decorator-outputs` step 7)
 - [ ] `@TypeInfo.all(with: 42)` and `with: someOrdinaryFn` refused as the ordinary mismatch, located
       at the argument (`reject/` cells); `typeinfo-all-not-decorator` removed with its cell moved
 - [ ] a decorator with arguments, a single decorator and a list of them accepted (`run/` cell on the

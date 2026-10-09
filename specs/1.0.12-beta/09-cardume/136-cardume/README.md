@@ -5,7 +5,8 @@
 **State:** not started · `repository/cardume` scaffolded (0.0.1: the model's types, no store)
 **Depends on:** `26-jhonstart-router` (the core and its client runtime — `state` / `effect` rebinding
 in `client_runtime.mjs`) · `08-bpp/120` (the island payload: one page store shared by every island) ·
-`03-bundled-libs/125` (`encode<T>` for the values the server seeds) · decisions 128 (hooks), 297 (value-or-type parameters; `01-checker` step 26), 278
+`03-bundled-libs/125` (a `#[validated]` type's `encode` member, 306 — spelling `ctr-u`'s — for the
+values the server seeds) · decisions 128 (hooks), 297 (value-or-type parameters; `01-checker` step 26), 278
 (`#[client]`), 281 (no string keys), 295 (request state as atoms), 296 (cardume) · open: `atm-a`, `atm-c`, `atm-d`
 **Owns:** `repository/cardume/**` (the core: `modules/cardume/src/cardume.bp`, its tests) · new
 member `repository/rakun/modules/rakun-cardume/**` (the request store, its hooks at `RequestBase`) ·
@@ -75,16 +76,18 @@ The type form suits a value the store holds once (the signed-in user, the theme)
 several values of one type (`cartItems`, `wishlist`).
 
 Hook names are **nouns** (`atomState`, `atomValue`, `atomSetter` — jhonstart's rule, `hooks.bp`'s
-header): `use` is the activation, the name never repeats it (no `useAtomValue`) — whether 295's
-`use setLocal` / `use setCookie` follow is `atm-a`. Both bridges spell the same hooks, each anchored at
+header): `use` is the activation, the name never repeats it (no `useAtomValue`). 296 settled the
+request locals (`use setLocal` is `use atomSetter`); whether the cookie hooks (`use setCookie` /
+`use clearCookie`, 294) follow is `atm-a`. Both bridges spell the same hooks, each anchored at
 its base (128): `jhonstart-cardume`'s at `ElementBase`, `rakun-cardume`'s at `RequestBase`.
 
 ### The stores
 
 - **In rakun, one store per request** (`rakun-cardume`): it lives in the request's process frame and
   dies with it; middleware, route handlers and actions (`-> @Component<RequestBase, Response>`, 295)
-  write with `use atomSetter(a)`; a page reads the request's value with jhonstart's `use atomValue(a)` —
-  `#[serverOnly]` (186) when the atom was written by rakun this request (how the marker crosses: `08-j`).
+  write with `use atomSetter(a)`; a page reads the request's value through jhonstart's own hook
+  (`use local(a)`, `05-jhonstart/26` step 12), marked by jhonstart's `#[serverOnly]` (186, 277) — the
+  store it reads is `rakun-cardume`'s (295, 296).
 - **In the browser, one store per page** (`jhonstart-cardume`). Every island of the page subscribes to it, so two islands
   reading `cartItems` agree; a component re-renders when an atom or selector it **read** changes
   (`atomValue`, `atomState`, `loadable` subscribe; `atomSetter`, `atomReset`, `transaction`,
@@ -92,8 +95,8 @@ its base (128): `jhonstart-cardume`'s at `ElementBase`, `rakun-cardume`'s at `Re
   starts a new one.
 - **On the server**, during the render pass, `atomValue` reads the atom's default — or the value an
   `AtomRoot initialize` gave it for this request —, setters are no-ops, and the atoms an island read
-  travel in the island payload as its starting values (encoded with `encode<T>`, 125; `T` must be
-  encodable — `atm-c`).
+  travel in the island payload as its starting values (encoded with the `encode` member of a
+  `#[validated]` type, 306, or as a type 294 accepts for a cookie; which `T` may cross is `atm-c`).
 - **Selectors** track their dependencies at run time (each `get(x)` call), are memoised on the
   dependencies' values, and recompute only when one changes; a cycle is an error naming the chain.
   An async selector suspends a component reading it with `atomValue` (the nearest `Suspense`, 26), or
@@ -196,9 +199,11 @@ the four hooks, the refresher), `async-example.bp` (async selectors, `loadable`,
 
 ## Decisions
 
-- `atm-a` — hook names: nouns here (`atomSetter`) against 295's verbs (`use setLocal`, `use setCookie`)
-- `atm-c` — what an atom's `T` may be when the server seeds it (encodable only, or any `T` with a
-  client-only default)
+- `atm-a` — reduced to the cookie hooks (296 settled the locals: `atomSetter` etc.): nouns
+  (`use cookieSetter(c)`, `use cookieClearer(c)`) or 294's verbs (`use setCookie`, `use clearCookie`)
+- `atm-c` — what an atom's `T` may be when the server seeds it: "encodable" is the `encode` member of
+  a `#[validated]` type (306) or a type 294 accepts for a cookie; every `T` encodable, or any `T` with
+  a non-encodable atom an island reads declared client-only
 - `atm-d` — which atom effects ship (none; `persistLocal`; URL search-param sync)
 
 **Gate:** standard (fronts.md § Gate), plus:

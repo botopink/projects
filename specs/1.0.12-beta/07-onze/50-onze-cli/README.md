@@ -22,7 +22,9 @@ chunk per route, honours `assetPrefix` and both `<Script>` callbacks; CLI and bu
 
 ## Mechanism
 
-- **Today.** `main.bp` answers `dev` with "onze dev: not available yet" (exit 2); no `dev.bp`;
+- **Today.** `main.bp` answers `dev` with "onze dev: not available yet" (exit 2) — its text
+  describes a reload into the running node (50-b (b)) and cites "front 50 step 6", 1.0.10's
+  numbering (here: step 2); no `dev.bp`;
   `onze-bundler/src/rebuild.bp` (a changed file's invalidation set) has no caller. `build.bp`
   does not drive rakun 60's `static_gen.bp`. `start.bp` waits on `process.run`. `build.bp`,
   `info.bp` declare a local `membersOf`, `onze-bundler/src/entry.bp` an `itemsOf` (std's
@@ -60,7 +62,8 @@ chunk per route, honours `assetPrefix` and both `<Script>` callbacks; CLI and bu
       makes `/about` resolve (manifest and `onze_routes.bp` regenerated)
 - [ ] a compile error prints the compiler's own message; the previous build keeps answering
 - [ ] `-p` does not write `onze.json`; `-H <addr>` binds that address (`reference-holes.md` § 29)
-- [ ] `main.bp` dispatches `dev` to `dev.bp`; the "not available yet" text gone
+- [ ] `main.bp` dispatches `dev` to `dev.bp`; the "not available yet" text (and its stale "front 50
+      step 6") gone
 
 ### Step 3 — `prerender/`
 

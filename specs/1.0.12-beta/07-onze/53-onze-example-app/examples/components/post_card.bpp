@@ -7,7 +7,9 @@
 // the SAME list in the SAME order, because token order is class identity, and
 // one shared function guarantees that where two inline copies do not.
 //
-// `type Props(post: Post)` is the parameter: `<PostCard post={p} />` in
+// `type Props(post: Post)` is the parameter of the module's anonymous
+// `pub default fn (props: Props) -> View` (288, 289); the importer names it —
+// `import {components.post_card as PostCard};` — so `<PostCard post={p} />` in
 // `app/blog/page.bpp` is the call `PostCard(post: p)`.
 //
 // Upstream: https://nextjs.org/docs/app/getting-started/css

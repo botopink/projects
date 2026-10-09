@@ -49,8 +49,8 @@ reading the query stays prerenderable; `onze-test` has one group file per front.
 
 - [ ] `requestData` fills `query` from `queryDict(req.query)` (malformed component → the `Error`
       `queryDict` answers → 400 via `responseFor`, asserted) and `headers` from `headerNames` /
-      `req.header(name)`; `server_test.bp`: a page reading `searchParams().get("q")` and
-      `headers().get("x-test")` answers both over the socket
+      `req.header(name)`; `server_test.bp`: a page reading the query's `q` (`use searchParams()`)
+      and the `x-test` header (`use request()`, 291) answers both over the socket
 - [ ] `Onze.run` installs `serveActions` with the wire names it set; `server_test.bp`: `POST` with
       `X-Bp-Action` reaches the action, answers the envelope; a boot with the action keys removed
       fails naming `rakun.actions.field` (refusal rakun's, test here)
@@ -95,8 +95,8 @@ Final state (decision 277): no run-time mark — `onze build` reads each `#[page
 - [ ] `responseFor` calls `ChunkWriter.markDynamic(reason)` when jhonstart's render reports `d`
       (`04-rakun/22` step 4 adds the method, removes rakun's implicit mark); `pageInput` /
       `requestData` build the query without a marking read; `server_test.bp`: a page never
-      reading the query is prerenderable (rakun's `isDynamic()` false), one calling
-      `searchParams()` is not
+      reading the query is prerenderable (rakun's `isDynamic()` false), one with
+      `use searchParams()` is not
 - [ ] after `05-jhonstart/26` step 8: `onze build` writes the `k` blob from the `kind` meta, prints
       `S prerendered` / `D per request (why)` per route; `responseFor`'s `markDynamic` call deleted
 

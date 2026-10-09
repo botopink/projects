@@ -51,19 +51,29 @@ pages read. 51, 71: independent members. 53: read-only against every other membe
 ## Decisions
 
 Ids kept from 1.0.10 ([`../../1.0.10-beta/decisions-pending.md`](../../1.0.10-beta/decisions-pending.md) § Track E); new questions continue
-each front's letter sequence. Open: `50-b` (below), `std-d` (`02-std-and-packaging`), `snap-a`.
+each front's letter sequence. Open: `50-b` (below), `std-d` (`02-std-and-packaging`), `snap-a`;
+from the naturalness review ([`decisions-pending.md`](../decisions-pending.md) § nat): `nat-f2`
+(`onze.json`'s planned keys — 49, 50), `nat-f4` (the `ONZE_PUBLIC_` prefix — 50, 53; a client
+module's unprefixed `env.read` is already refused at build, `onze-bundler/src/refusal.bp`),
+`nat-d6` (`notFound` / `redirect` vs `noreturn` — 53), `nat-d8` (the `use…` hook name — 53's
+examples).
 
 ### To confirm
 
 Built as recommended; full rows in [`decisions-pending.md`](../decisions-pending.md) § Implementation
 choices / 07-onze: `49-a` · `49-c` · `49-d` (amended by `03-bundled-libs/102`; closes 49) · `49-e`
 (closes 49 step 2's wording box) · `50-a` (amended: `start` calls 71's `bin/onze`; closes 50) ·
-`52-a` (closes 51 step 4) · `53-a` · `68-a` · `68-c` · `68-d` · `69-a`.
+`52-a` (closes 51 step 4) · `53-a` · `68-a` · `68-d` (moot once `06-emilia/34` step 1 and 119 step 4
+land — 301's `#[styled]` tokens are comptime, class and rule computed at build; holds until then) ·
+`69-a`. `68-c` closed (280, 281): starters and client props found by type at comptime
+(`#[clientProps]`, 120 step 6), never by name.
 
 ### 50-b · What `onze dev` does on a change — reload into the running node, or restart it
 
 Raised by front 50 step 2; full question in [`decisions-pending.md`](../decisions-pending.md) § 50-b.
 Recommendation (a): restart the node per change (`build` + `start` over a file watcher).
-**Blocks.** 50 step 2 (written for (a)); 53 step 6 ("`dev` serves every route").
+**Blocks.** 50 step 2 (written for (a)); 53 step 6 ("`dev` serves every route"). Today
+`onze-cli/src/main.bp:101`'s "not available yet" text describes (b) (reload into the running node)
+and cites "front 50 step 6" — 1.0.10's numbering; here it is 50 step 2, which removes the text.
 
 Module-level snapshot maps of §§ 50 · 51 · 52 · 70 · 71 and 53's runner: [`decisions-pending.md`](../decisions-pending.md) `snap-a`, worked by [`20-snap`](../20-snap/README.md) step 5.

@@ -11,9 +11,8 @@
 //
 // What a `.bp` page writes by hand: `#[page("blog/[slug]")]` comes from the
 // file's name through the route table built from its file name, or from a decorator on the header's
-// last line (decision 285). Its `route: PageContext` parameter and the `params`
-// bound from the bracket segment are open question `bpp-g` (README § Notes,
-// point 1); `params.slug` below is written against that answer.
+// last line (decision 285). A page takes no parameter (decision 293, was
+// `bpp-g`): the bracket segment is read with `use params<P>()`.
 //
 // Upstream: astro-docs/07-astro-pages.md · astro-docs/08-routing.md (Rotas
 //           dinâmicas) — https://docs.astro.build/en/guides/routing/
@@ -29,7 +28,10 @@ pub fn staticPaths() -> @Task<Array<StaticPath>> {
     return listPosts().map({ post -> staticPath([#("slug", post.slug)]) });
 }
 
-val slug = params.slug;
+type SlugParams(slug: string)
+
+val segment = use params<SlugParams>();
+val slug = segment.slug;
 val found = findPost(slug);
 if (found.isEmpty()) { notFound(); }
 val post = found.first().unwrapOr(missingPost(slug));

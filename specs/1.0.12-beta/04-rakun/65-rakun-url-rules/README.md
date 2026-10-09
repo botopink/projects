@@ -57,18 +57,18 @@ drop hop-by-hop headers both ways. The dev profile turns static caching off.
 - [ ] `rules_test.bp`: a rewrite to the double answering a 4 MB body streams it — relay process's peak memory under 512 KB (`rkProcessPeakMemory`), client receives every byte
 - [ ] `Connection`, `Transfer-Encoding`, `Upgrade`, `Keep-Alive`, `Proxy-Connection`, `TE`, `Trailer` and every name in the upstream's `Connection` value absent from the relayed response; same list absent from the relayed request (the double records it)
 
-### Step 4 — a handler may answer `@Result<Response, E>` (decision 304)
-
-- [ ] a `#[getMapping]` / `#[postMapping]` / … method declared `-> @Result<Response, E>` is accepted; `Ok(r)` is sent as is
-- [ ] an `Error(e)` of 08's `StoreError` answers a problem response: `Unavailable` 503, `Timeout` 504, `Conflict` 409, `Constraint` 409; any other `E` 500 with a digest, as an uncaught raise is today — one cell each
-- [ ] the error is logged once, with the request id, by the same entry that logs a raise (`src/error.bp`)
-
 ### Step 3 — The dev default (R82-1, R80-1, R82-2, R82-3)
 
 - [ ] `rakun-data/src/devtools/devtools.bp`: dev property source sets `rakun.web.resources.cache.period=0`; `rakun-data/test/devtools/devtools_test.bp` asserts the key present under the dev profile, absent otherwise
 - [ ] `static_test.bp`: under the dev profile every root answers `Cache-Control: no-cache`
 - [ ] R82-2 reworded to "traversal and encoded traversal answer 404 without a filesystem call; a symlink escape by resolving the link, before any read" and ticked; symlink cell asserts the escape refused before any read (`rkStaticFsCalls()` grows by exactly the one `readlink`)
 - [ ] R82-3 ("onze front 69's roots are served through `registerStaticRoot` with no second content-type table, ETag rule or traversal guard anywhere under `repository/`"): the grep (`fn contentTypeOf` only in `src/static.bp`) runs as a cell; onze registering is onze's (69)
+
+### Step 4 — a handler may answer `@Result<Response, E>` (decision 304)
+
+- [ ] a `#[getMapping]` / `#[postMapping]` / … method declared `-> @Result<Response, E>` is accepted; `Ok(r)` is sent as is
+- [ ] an `Error(e)` of 08's `StoreError` answers a problem response: `Unavailable` 503, `Timeout` 504, `Conflict` 409, `Constraint` 409; any other `E` 500 with a digest, as an uncaught raise is today — one cell each
+- [ ] the error is logged once, with the request id, by the same entry that logs a raise (`src/error.bp`)
 
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun-web` and `modules/rakun-data` (`test/devtools/` in the run).

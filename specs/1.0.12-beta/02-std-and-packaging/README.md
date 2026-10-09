@@ -49,7 +49,7 @@ Implemented in 1.0.10; text in [1.0.10-beta `decisions-pending.md`](../../1.0.10
 | std-a · std-b · std-c | `querystring` refuses by `Error`; `fs.exists` follows a link; decision 110's folder namespace is a rewrite | — |
 | 24-g | `std/async`'s started/unstarted surface (`allOf`, `all`, `race`, `runAll`, `raceOf`, `timeout`; `allSettled` gone) | 97 step 5 builds `RetryPolicy` on it |
 | ck2-e | a std decorator is reached through its module handle | — |
-| 95-a · 95-b · 95-c · 95-e | the relocation cuts; `rakun-app` inherits targets (amended by rakun's `["erlang"]`); `erika-test` exists; the qualified `from "rakun/request_context"` | — |
+| 95-a · 95-b · 95-c | the relocation cuts; `rakun-app` inherits targets (amended by rakun's `["erlang"]`); `erika-test` exists (`95-e` closed 9 Oct: the `percentDecode` collision left the code, rakun uses `encoding.percentDecode`) | — |
 | lg2-v | a subdirectory in a git dependency — recommendation (1), none ([`../decisions-pending.md`](../decisions-pending.md)) | 98 step 4 |
 
 ### 95-f · The onze takeover happened without the orphan branch and the archive — amend decision 79

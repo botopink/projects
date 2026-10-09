@@ -23,8 +23,8 @@ Reference: `astro-docs/09-astro-components.md` § Estrutura do Componente.
 
 ## Goal
 
-A `.bp` component (after 118: `import html, {Element} from "jhonstart";` + `pub default fn
-PostCard(props: Props) -> Element { val kind = …; return html """<article …>…</article>"""; }`)
+A `.bp` component (after 118: `import html, {View} from "jhonstart";` + `pub default fn
+(props: Props) -> View { val kind = …; return html """<article …>…</article>"""; }` — 276, 289)
 written as `components/PostCard.bpp`, dropping the template import, function header and
 `return html """` (full pair: `examples/PostCard.bpp`, `examples/PostCard-desugared-example.bp`):
 
@@ -204,7 +204,7 @@ error at the key. `X.bp` + `X.bpp` in one directory: error naming both.
 
 ## Decisions
 
-  Step 6, and 117 step 1.
+None open (`bpp-g` → 293: step 6, and 117 step 1).
 
 **Gate:** standard (fronts.md § Gate), in `repository/botopink-lang` and `repository/vscode-extension`, plus:
 - [ ] `zig build test-libs`: every library green — no existing `.bp` file changes meaning

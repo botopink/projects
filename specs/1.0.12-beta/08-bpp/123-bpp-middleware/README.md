@@ -2,10 +2,11 @@
 
 **Priority:** medium — middleware exists; `locals` is the one context member with no equivalent,
 and authentication examples use it. · **State:** not started
-**Depends on:** `04-rakun/04-rakun-erlang-runtime` (core, per-request frame — `locals.bp` new in
-its member) · `04-rakun/65-rakun-url-rules` (owns `rakun-web`; this runs after it — 189) · `08-j`
-(step 1's third box). Written against decision 186.
-**Owns:** new `repository/rakun/modules/rakun/src/locals.bp` · step-named lines of
+**Depends on:** `04-rakun/04-rakun-erlang-runtime` (core, per-request frame) · `04-rakun/65-rakun-url-rules`
+(owns `rakun-web`; this runs after it — 189) · `09-cardume/136` step 7 (`rakun-cardume`, the request
+store locals live in — 295, 296). Written against decision 186.
+**Owns:** ~~new `repository/rakun/modules/rakun/src/locals.bp`~~ — the request store is
+`rakun-cardume`'s (296, `09-cardume/136`) · step-named lines of
 `rakun/modules/rakun-web/src/{middleware.bp, filter.bp}` · their tests
 **Does not touch:** `rakun-app` (`actions.bp` is `04-rakun/22`'s — step 4 reads, adds nothing); jhonstart; onze.
 
@@ -64,9 +65,11 @@ the same atoms. `LocalKey<T>(name)` and its run-time name clash go.
 
 A page reading a local is per-request (a request-time read is what `#[serverOnly]` marks, 186);
 until the checker capability lands, the read marks the render through `04-rakun/22` step 4's
-bridge (`ChunkWriter.markDynamic`). How rakun's `local` carries jhonstart's marker: `08-j`; step
-1's third box is written for the final form — the kind `#[page]` records (277) —, with the bridge's
-`dynamicReason()` accepted only while `04-rakun/22` step 4's bridge stands.
+bridge (`ChunkWriter.markDynamic`). The page reads through jhonstart's own hook (`use local(atom)` —
+cardume's `atomValue`, 296), which jhonstart marks with its `#[serverOnly]` (277, 295); rakun and
+jhonstart import neither the other (113). Step 1's third box is written for the final form — the
+kind `#[page]` records (277) —, with the bridge's `dynamicReason()` accepted only while `04-rakun/22`
+step 4's bridge stands.
 
 **`sequence` is a value.** `sequence([validation, auth, greeting])` = one middleware running the
 three in order, each seeing the next one's response on the way back (the onion); composes
@@ -93,7 +96,7 @@ from the action field and header onze configures (114).
 - [ ] a local set in middleware is read by a page, a route handler and an action in the same
       request; `null` in the next request on the same process
 - [ ] a page reading a local is not prerendered: its kind is `D`, its `why` says `locals`
-      (`@typeInfo(Page).meta(PageMeta)`, 277; through `08-j`'s marker)
+      (`@typeInfo(Page).meta(PageMeta)`, 277; jhonstart's hook carries `#[serverOnly]`, 295)
 
 ### Step 2 — `sequence`
 
@@ -128,7 +131,7 @@ from the action field and header onze configures (114).
 - [ ] `#[middleware]` functions, route handlers and actions return `@Component<RequestBase, Response>`
       (`rakun-web/src/middleware.bp`, `convention.bp`); a plain `-> Response` keeps working without `use`
 - [ ] two atoms of one `T` are distinct; an unset atom reads `null`; values die with the request
-- [ ] `examples/locals-and-sequence-example.bp` rewritten to atoms
+- [ ] `examples/locals-and-sequence-example.bp` and `examples/src/app/orders/page.bpp` rewritten to atoms (the page reads `use local(currentUser)` through jhonstart's hook, never `import {local} from "rakun"` — 113, 295)
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test --target erlang` green in `modules/rakun` and `modules/rakun-web`
@@ -143,6 +146,8 @@ from the action field and header onze configures (114).
 ## Notes
 
 - **Not added.** `context.rewrite`, `next(request)` — `Next.rewrite`. `defineMiddleware` — the
-  signature is the type. `App.Locals` in `env.d.ts` — `LocalKey<T>`.
-- **jhonstart learns nothing of locals.** Pages import `local` from rakun as any server-only
-  function; the client graph refuses it (`onze-bundler/src/refusal.bp:55-138`).
+  signature is the type. `App.Locals` in `env.d.ts` — an atom declaration (295; `LocalKey<T>` goes).
+- **jhonstart and rakun import neither the other** (113). The per-request store is
+  `rakun-cardume`'s (296); a page reads through jhonstart's own hook (`use local(atom)` / cardume's
+  `atomValue`), marked by jhonstart's `#[serverOnly]` (277, 295); a `#[client]` reaching it is
+  refused (277; today `onze-bundler/src/refusal.bp:55-138`).

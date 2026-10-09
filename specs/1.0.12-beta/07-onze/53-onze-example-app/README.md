@@ -97,9 +97,13 @@ both `onze dev` and `onze build && onze start`, browser rows in a real browser, 
 
 ### Step 7 — references, not strings (decision 281)
 
-- [ ] the examples rewritten: `use actionState(createPost, initial)` (no `"createPost"`, no `use`
-      prefix), `<form action={createPost}>` (no `formAction("a_9f31…", …, "__bp_action")`),
-      starters from the catalogue (no `registerStarter("…")`), handlers `#[onClick(…)]`
+- [ ] the examples rewritten: the action passed as a reference — `createPost`, never `"createPost"`
+      (done in `new-post-form-example.bp` and `components/new_post_form.bpp`; the hook's name,
+      `useActionState` vs `actionState`, is `nat-d8`'s, open) —, `<form action={createPost}>` (no
+      `formAction("a_9f31…", …, "__bp_action")`), starters and client props from the catalogue
+      found by type at comptime (`#[clientProps]`, 120 step 6; `68-c` → 280, 281 — no
+      `registerStarter("…")`, no `Island(component: "LikeButton", …)` in `client-island-example.bp`;
+      the payload's wire spelling stays), handlers `#[onClick(…)]`
 
 ### Step 8 — a role in the decorator, not in an export's name (decision 282)
 
@@ -116,7 +120,9 @@ both `onze dev` and `onze build && onze start`, browser rows in a real browser, 
 
 ### Step 10 — route parameters and page data are hooks (decision 293)
 
-- [ ] `app-page-example.bp`, `app-tree-example.bp`, `blog-list-page-example.bp`, `blog-slug-page-example.bp`, `new-post-form-example.bp`, `acceptance.md`: pages take no `route: PageContext`; parameters through `use params<P>()`, page data through `use pageData<D>()`
+- [ ] `app-page-example.bp`, `app-tree-example.bp`, `blog-list-page-example.bp`, `blog-slug-page-example.bp`, `new-post-form-example.bp`, `acceptance.md`: pages take no `route: PageContext` (`fn() -> View`, 276); parameters through `use params<P>()`, page data through `use pageData<D>()`
+- [ ] `app/blog/[slug]/page.bpp`: `params` no longer bound by the bracket segment — the header reads
+      `use params<P>()` (`P` with a `slug: string` field)
 
 ### Step 11 — a cookie is declared once, typed (decision 294)
 

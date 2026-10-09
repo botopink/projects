@@ -1,8 +1,9 @@
 ---
 // Front 53 — onze example app · examples/app/dashboard/layout.bpp
 //
-// The auth gate of `new-post-form-example.bp`, as a `.bpp` file:
-// `#[layout("dashboard")]`, from this file's directory.
+// The auth gate of `new-post-form-example.bp`, as a `.bpp` file: a layout at
+// `dashboard`, this file's directory — the generated route table calls
+// jhonstart's `layout` on its default function (285).
 //
 // The layout reads the session cookie with `use cookies()`. Reading it marks
 // the render dynamic, so front 60 will not prerender anything under

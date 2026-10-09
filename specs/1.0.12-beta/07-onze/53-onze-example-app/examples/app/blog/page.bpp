@@ -16,7 +16,7 @@
 import {li, ul} from "jhonstart";
 import {emilia, Token} from "emilia";
 import {lib.db.listPosts};
-import {components.post_card.PostCard};
+import {components.post_card as PostCard};   // the default, named by the importer (288)
 
 fn listTokens() -> Token[] {
     return [.Layout.Flex, .Flex.Col, .Flex.Gap.4];

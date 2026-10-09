@@ -2,7 +2,8 @@
 // Front 53 — onze example app · examples/app/blog/[slug]/not-found.bpp
 //
 // The segment's not-found boundary of `boundaries-example.bp`, as a `.bpp`
-// file: `pub fn NotFound() -> Element`. The NEAREST boundary wins — a
+// file: the module's anonymous `pub default fn () -> View` (288, 289), made a
+// boundary by the generated route table (285). The NEAREST boundary wins — a
 // `notFound()` raised by `page.bpp` beside this file lands here, not in the
 // root `app/not-found.bpp`.
 //

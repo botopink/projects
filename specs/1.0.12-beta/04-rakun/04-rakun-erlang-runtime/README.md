@@ -3,8 +3,9 @@
 **Priority:** critical — waiting: 13, 12 on step 1's tag epoch; 08 step 1 on step 4's eager-pass
 hook; 22 on step 5's `Request` accessors; onze 49 on the page `Request` listing query and headers
 (R62-3); 88's `beans` on step 4's injected fields; 19 on step 4's exit codes · **State:** not started
-**Depends on:** 128 · lg2-e (R06-4's comptime refusal), lg2-g (`@typeName<T>()` — registry key stays
-a string), lg2-j (comptime state — `#[provides]` duplicate check runs at boot) · 03r-b/c/d/e (confirmations)
+**Depends on:** 128 · lg2-e (R06-4's comptime refusal), lg2-j (comptime state — `#[provides]` duplicate
+check runs at boot) · `130-b` (qualified beans; open, depends on `nat-e`) · 03r-c/e (confirmations);
+lg2-g closed by 281 (no registry key as a type's name — step 6), 03r-b and 03r-d by 299 (step 7)
 **Owns:** `modules/rakun/**` except 74's four files (`src/ssl_bundle.bp`, `src/sidecars/rakun_ssl.erl`,
 `test/ssl_bundle_test.bp`, `test/tls_listener_test.bp`), 11's `src/actuator_api/**` and 17's
 `src/logging/**` with their tests and sidecars · `test/fixtures/**` · `botopink.json`, `src/root.bp` ·
@@ -31,11 +32,12 @@ logging `after()` failures through the core's logger and exposing headers and ra
   in `bootSequenceFor` (`src/context.bp`), naming both functions ("fail the build" read as "fail
   before the first request"); README records which.
 - **Eager by default (R06-5).** `eagerInitIn` constructs every non-`lazy` singleton; `#[value]` read
-  at construction, so a missing key already fails in the pass — the open box asserts `Rakun.run`
-  does not return.
+  at construction today (the `#[config]` record of step 7 replaces it, 299), so a missing key already
+  fails in the pass — the open box asserts `Rakun.run` does not return.
 - **Eager-pass hook (for 08).** No `rkExcludeFromEager` exists. `eagerInitIn` skips `lazy`
-  registrations; gains a run-time exclusion list (`rkExcludeFromEager(name)`) so 08 keeps
-  `#[repository]` beans out under `rakun.data.repositories.bootstrap-mode=lazy`.
+  registrations; gains a run-time exclusion list (`rkExcludeFromEager`, taking the type — step 6,
+  281) so 08 keeps `#[repository]` beans out under `bootstrapMode: Lazy` (08's
+  `#[config("rakun.data")]` record, 299).
 - **Page `Request` (R62-3, R64-1).** `headerNames()`, `headers()`, `queryDict()` exist on the core's
   request (`src/request_context.bp`); the frame holds raw headers and raw query
   (`rakun_request_context.erl`). The `Request` behavior gains those three and `rawQuery()`;
@@ -57,8 +59,8 @@ logging `after()` failures through the core's logger and exposing headers and ra
 ### Step 2 — Boot options and the cycle stack (R04-1, R04-2)
 
 - [ ] `erlang_runtime_test.bp`: scratch project, `banner.txt` with `${application.version}`, `${rakun.version}`, `${otp.version}`, booted headless; captured output starts with the substituted banner, once, before any log line
-- [ ] `rakun.main.banner-mode=off` prints nothing; under `botopink test` nothing printed whatever the setting
-- [ ] `rakun.main.headless=true` + `keep-alive=true` does not halt within the test's budget; `keep-alive=false` halts with `0`
+- [ ] `rakun.main`'s `bannerMode` off prints nothing (299: the key is the field's name; `banner-mode` today); under `botopink test` nothing printed whatever the setting
+- [ ] `rakun.main`'s `headless: true` + `keepAlive: true` does not halt within the test's budget; `keepAlive: false` halts with `0` (299; `keep-alive` today)
 - [ ] a `fixtures/cycle` boot fails listing the construction stack, innermost last (`A -> B -> C -> A`), asserted line by line
 
 ### Step 3 — Configuration (R05-1, R05-2, R14-1, RX-2)
@@ -66,7 +68,7 @@ logging `after()` failures through the core's logger and exposing headers and ra
 - [ ] `typed_config_test.bp`: one bound record with a field of each of `bool`, `i32`, `i64`, `f64`, `string`, `string[]`, `Duration`, `DataSize`, each from a property source; an unparsable value of each refuses the boot naming the key
 - [ ] `config_check_test.bp`: the refusal names key, offending value and source file, against `fixtures/typed`
 - [ ] `config_check_test.bp`: the check over a valid 50-field record under 5 ms, `io.clock` over 100 iterations
-- [ ] RX-2 (14, 72): the decorator-argument default (`#[configurationProperties("prefix")]`, argument omitted) re-measured in `config_check_test.bp` / `autoconfig_test.bp`; README records "applied" or "still the language-gaps decorator-default row"
+- [ ] RX-2 (14, 72): the decorator-argument default (`#[configurationProperties("prefix")]` today, `#[config]` after step 7 — 299, argument omitted) re-measured in `config_check_test.bp` / `autoconfig_test.bp`; README records "applied" or "still the language-gaps decorator-default row"
 
 ### Step 4 — Context (R06-1 … R06-7)
 
@@ -74,11 +76,11 @@ logging `after()` failures through the core's logger and exposing headers and ra
 - [ ] two unqualified `#[provides]` of one type refuse the boot naming both functions (`fixtures/phmissing` gains the case); README says "at boot, until lg2-j"
 - [ ] `#[postConstruct]` runs after construction, before `eagerInit` returns — a hook recording the eager pass's state
 - [ ] `#[scope("request")]` on a constructor-injected factory refused naming the injection site — comptime if lg2-e lets the decorator see it, else boot; README says which
-- [ ] with defaults every registered bean constructed before `Rakun.run` returns; a missing `#[value]` key fails inside `Rakun.run` (a recording constructor)
+- [ ] with defaults every registered bean constructed before `Rakun.run` returns; a missing required config key (`#[value]` today, a `#[config]` field after step 7 — 299) fails inside `Rakun.run` (a recording constructor)
 - [ ] `scopes_test.bp` / `context_test.bp`: clean stop exits `0`; failed boot exits non-zero, a distinct code per failure kind (the table 19's `bootAndExit` consumes)
 - [ ] `rakun.d.bp` leaves `botopink.json`'s `files` and the tree; `fixtures/imports` (a consumer naming `Context` in a signature) still compiles — the concrete type carries `resolve` / `has`
 - [ ] the scan registry records each component's injected field names; `rkScannedDeps(name) -> string[]` answers them (88's `beans`)
-- [ ] `rkExcludeFromEager(name)`: a registered name skipped by `eagerInitIn`, constructed on first `resolve` (`context_test.bp`); `pub` from `src/root.bp` (08 step 1 consumes it)
+- [ ] `rkExcludeFromEager(T)` (by type, step 6 — 281): a registered type skipped by `eagerInitIn`, constructed on first resolution (`context_test.bp`); `pub` from `src/root.bp` (08 step 1 consumes it)
 
 ### Step 5 — Request context (R62-2, R62-3, R64-1's core half, RX-1)
 
@@ -97,11 +99,14 @@ A bean, an event or a condition is named by its type or its function, never its 
 
 - [ ] `ctx.resolve("OrderCache")` → resolution by type (`use bean(OrderCache)`, 269's `@getContext`
       shape); `resolveNamed("Clock", "fixed")` → the shape `130-b` answers (option (d): a
-      qualifier is a distinct type)
+      qualifier is a distinct type; `130-b` open, depends on `nat-e`)
 - [ ] `#[eventListener("OrderPlaced")]` → `#[on] fn f(e: OrderPlaced)`, the event the parameter's type
       (280 example 2); the string form refused
 - [ ] `#[conditionalOnMissingBean(MailSender)]` takes a `type` (280 example 3); `rkExcludeFromEager`
       takes the type
+- [ ] `examples/context-lifecycle-example.bp` rewritten to decision 281 (`ctx.resolve("…")` /
+      `resolveNamed` / `#[eventListener("…")]` / `has("…")` by type; its `// LANGUAGE GAP:` on
+      `@typeName<T>()` goes with lg2-g, closed by 281); the qualifier half follows `130-b`
 
 ### Step 7 — configuration as a typed record (decision 299)
 
@@ -128,7 +133,8 @@ starters` finds keys the examples define). Removing `rakun.d.bp` removes a `Cont
 
 ## Notes
 
-- 03r-b (`rkPropInt("12abc")` is `12`), 03r-c (no `rakun_config.erl`), 03r-d (check in
-  `bootSequenceFor`), 03r-e (`decodeComponent`) implemented, await confirmation; reversing 03r-b is
-  one function here and one in the typed readers.
-- `examples/context-lifecycle-example.bp` kept for its open `// LANGUAGE GAP:` (lg2-g).
+- 03r-c (no `rakun_config.erl`), 03r-e (`decodeComponent`) implemented, await confirmation.
+  03r-b (`rkPropInt("12abc")` is `12`) reversed by 299 and 03r-d (check in `bootSequenceFor`) closed
+  by 299 — both are step 7's.
+- `examples/context-lifecycle-example.bp`: its `// LANGUAGE GAP:` (lg2-g) is closed by 281; rewritten
+  by step 6's last box.

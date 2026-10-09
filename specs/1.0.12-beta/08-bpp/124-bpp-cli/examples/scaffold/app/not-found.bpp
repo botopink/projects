@@ -5,8 +5,9 @@
 // file's name is its kind: for `not-found.bpp`, the unfold (front 116) gives
 // the function its decorator through the route table built from its file name (decision 285).
 // onze's generated routes table imports `NotFound` from a not-found module
-// (`onze-cli/src/generate.bp`); decision 213 names the function after the file,
-// and `not-found` is not a function name — open (front 116 README § Notes).
+// (`onze-cli/src/generate.bp`); the unfolded function is the module's anonymous
+// `pub default fn` (288, 289), named by its importer, so `not-found` needs no
+// function name (front 116 README § Notes (5)).
 // It takes no parameter, so the fence has no `route`.
 //
 // A fence may be empty of statements: the imports are declarations, and the

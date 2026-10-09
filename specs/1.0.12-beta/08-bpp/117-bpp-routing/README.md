@@ -4,7 +4,7 @@
 **Depends on:** `03-bundled-libs/102-routing-conventions` (step 3: the eight app-file kinds and
 `classify` move into `routing.conventions`, not on feat yet; extended there, once) · `04-rakun/22`
 (rakun-app router, static generation) · `07-onze/50` (ONZ-50-7: `prerender/` in the build output),
-`07-onze/49` (`paginate.bp` new in its member) · 121 steps 1–2 (`page.md`).
+`07-onze/49` (`paginate.bp` new in its member) · 121 steps 1–2 (`page.md`) · `03-bundled-libs/125` step 12 (step 8: the `#[validated]` type, 306).
 Written against decisions 203, 221, 186 and 202, 222.
 **Owns:** `botopink-lang/libs/routing/src/{segment.bp, conventions.bp}` (lines named in the steps)
 · `rakun/modules/rakun-app/src/static_gen.bp` (`StaticParams`' data column, endpoint export) · new
@@ -53,7 +53,8 @@ never compares it with the directory (read, not run — step 0).
 Two forms of one kind in one directory: refused, naming both.
 
 **Two optional exports**, read by the scan, registered in the staged routes module (generated form
-of today's hand-written `val _ = registerStaticParams(…)`):
+of today's hand-written `val _ = registerStaticParams(…)`) — until step 6: a role is a decorator,
+never an export name (282), so both become `#[page(…, paths: …, partial: true)]`:
 
 | Export | Meaning | Registers |
 |---|---|---|
@@ -64,10 +65,13 @@ No `prerender` export (202): `#[page]` prerenders unless the page reaches a `#[s
 
 `StaticPath(params: Array<#(string, string)>, data: Json)`. `data` = Astro's `props`, carried
 beside the prerendered page, read back with a schema (`pageData(route, schemaOfPost())`) so the page
-does not reload it. `Json`, not typed: the route record is one shape for every page.
+does not reload it. `Json`, not typed: the route record is one shape for every page. Steps 7–8
+replace this: `paths: fn() -> @Task<#(P, D)[]>`, read with `use pageData<D>()` (293), `D` a
+`#[validated]` type, never a `Schema<T>` value (306).
 
-**Pagination over `staticPaths`.** `paginate(items, size, schema)` answers one `StaticPath` per
-page, segment `page` = `1 … n`, carrying the slice; the page reads `pageOf(route, schema)`:
+**Pagination over `staticPaths`.** `paginate(items, size, T)` — `T` the `#[validated]` item type
+(306; today a schema value) — answers one `StaticPath` per page, segment `page` = `1 … n`, carrying
+the slice; the page reads it with `use pageData<D>()` (293; today `pageOf(route, schema)`):
 
 ```bp
 pub type Page<T>(
@@ -104,7 +108,7 @@ Per decision 202 (no `prerender` export).
 
 - [ ] `examples/static-paths-example.bp` passes; scan finds `staticPaths` and `partial` in a `.bp`
       and a `.bpp` page; no `prerender` read
-- [ ] a page calling `cookies()` is not prerendered (rendered per request): its kind is `D` and its
+- [ ] a page reading a cookie (`use cookie(sessionCookie)`, 294) is not prerendered (rendered per request): its kind is `D` and its
       `why` names the read (`@typeInfo(Page).meta(PageMeta)`, recorded by `#[page]` from `Decl.hooks`, 277)
 - [ ] a dynamic route `#[page]` prerenders with no `staticPaths` fails the build (`prerenderAll(strict)`)
 
@@ -161,13 +165,13 @@ Per decision 202 (no `prerender` export).
 - **Route record gains a column** (partial flag, data). The route-table wire
   (`kind|pattern|slot|verb`, `libs/routing/src/table.bp`) is `contracts.md` § 1; step 2 amends it
   and both readers in the same commit.
-- **No existing page changes**: a `.bp` page keeps decorator and hand-written `registerStaticParams`; exports are a shorter spelling.
+- **No existing page changes**: a `.bp` page keeps decorator and hand-written `registerStaticParams`; `#[page(…, paths: …)]` is a shorter spelling (282).
 
 ## Notes
 
 - **Not added.** `pages/` tree (203). `src/fetch.ts` / Hono: rakun's pipeline. Config redirects:
   table in `routing/url_rules`; the key is 124's.
 - **`Astro.params`** = `use params<P>()` (293), in `.bp` and `.bpp` alike.
-  **`Astro.props`** of a paginated page = `pageOf(route, schema)`.
+  **`Astro.props`** of a paginated page = `use pageData<D>()` (293; `D` a `#[validated]` type, 306).
 - **Reserved prefixes.** `/_onze/` is onze's (`/_onze/image`; `/_onze/island/` after 120); a
   `_onze` directory under `app/` is skipped by `_private`, so no page claims it.

@@ -27,7 +27,8 @@ std's `math` and `hash` answer commonJS's bits on every target.
 
 - **Primitive method table** — `primCallRes`, prelude groups `str_lines` … `arr_fill` (`wat/AGENTS.md`
   § The primitive method table); `newArrShape` for result shapes.
-- **Host bindings** (decision 238) — `op:<wasm opcode>` (typed against the signature), `fn:<a
+- **Host bindings** (decision 238; today's prefixed strings, labelled by 305 — `op: "…"`, `fn: name`,
+  `wasi: .Adapter`, `01-checker` step 27) — `op:<wasm opcode>` (typed against the signature), `fn:<a
   private botopink fn of the same module>`, `wasi:<adapter>` (WASI preview1, list in `docs.md` §
   Host bindings); arguments = declared parameters in order; anything else a located error —
   `codegen/wat/host_binding.zig` (`parse`, `findOp`, `adapters`), `wat.zig` `checkHostBindings` /

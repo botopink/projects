@@ -31,8 +31,9 @@ std's number parsing.
 - **Single flight**: `rkCacheFlight(key, work)` around the encoder call in `image_handler.bp` and
   the render in `onze-og/src/response.bp`; key = the content hash the cache already uses. Route =
   one registration line in `Onze.run`, handed to 49.
-- **OG defaults** = rakun 66's route-discovery record: `response.bp` reads `size` / `contentType`
-  from discovered exports or `defaultSize()` / `"image/png"`.
+- **OG defaults** = rakun 66's route-discovery record: `response.bp` reads size and type from the
+  route's `#[ogImage(…)]` meta (282, step 8) or `defaultSize()` / `"image/png"` — never from
+  exports named `size` / `contentType` (today's form).
 - **2 % test**: a fixture string through the rasterizer to SVG with `getBBox`-equivalent metrics
   (rsvg's `--export-id` bounds), compared with `measure`.
 
@@ -71,8 +72,9 @@ std's number parsing.
 
 ### Step 5 — the OG defaults, the 2 % test, one table
 
-- [ ] a route exporting neither `size` nor `contentType` renders 1200×630 PNG via rakun 66's
-      discovery; `og_test.bp` asserts through the discovered record
+- [ ] a route whose `#[ogImage]` gives no size or type (step 8; today: one exporting neither `size`
+      nor `contentType`) renders 1200×630 PNG via rakun 66's discovery; `og_test.bp` asserts
+      through the discovered record
 - [ ] `measure` agrees with `rsvg-convert`'s layout of a fixture string within 2 % — runs when
       the rasterizer is installed; hard failure without it only in the gate's environment (a dev
       machine prints the skip reason; `00-gate` decides whether a skip is red)

@@ -24,17 +24,17 @@ library decorator uses them; `@emit` is a named error.
 | member of the annotated type | `decl.addMember("pub fn fromRow(r: Row) -> Self { … }")` | `City.fromRow(r)`, `c.describe()`; travels with the type | `decorator-member-without-type`, `decorator-member-duplicate`, `decorator-member-not-one-fn` |
 | comptime meta, a typed value keyed by its type (298) | `decl.setMeta(Entity(table: "cities"))`, `decl.addMeta(Index(…))` | `@typeInfo(City).meta(Entity)` → `?Entity`; `metaAll(Index)` → `Index[]` |
 | associated type | `decl.addType("Columns", "(id: string)")` | `City.Columns` in type positions, `City.Columns(id: "x")`; imported with its owner | `decorator-type-without-owner`, `decorator-type-name`, `decorator-type-duplicate`, `decorator-type-not-one-type` |
-| project reflection | (every top-level declaration a decorator runs over) | `@TypeInfo.all(with: d)` (or a list, decision 235) → `Declared<unknown>[]` (decision 254), `member: "m"` for types | `typeinfo-all-arguments`, `typeinfo-all-not-decorator`, `typeinfo-all-mixed`, `typeinfo-all-needs-member`, `typeinfo-all-private`, `typeinfo-all-imported` |
+| project reflection | (every top-level declaration a decorator runs over) | `@TypeInfo.all(with: d)` (or a list, decision 235) → `Declared<unknown>[]` (decision 254), `member: "m"` for types (a reference after step 7, 281) | `typeinfo-all-arguments`, `typeinfo-all-not-decorator`, `typeinfo-all-mixed`, `typeinfo-all-needs-member`, `typeinfo-all-private`, `typeinfo-all-imported` |
 
 - **Members.** One `fn` per call, written as in a body; `pub` as the source says; from a field's or
   method's decorator it joins the owning type; parsed into the target's body before re-analysis
   (`comptime.zig` `mergeMembers`). Members closed: a name a record-shaped type neither declares nor
   answers via a field or behavior = `unknown-associated-fn` at the call
   (`reject/decorator_member_unknown`).
-- **Meta.** String values; namespace = the decorator's name; describes a top-level `type`,
-  `behavior` or `fn`. Reads answered by the checker, spliced as literals. One builtin (decision 248):
-  bare `@typeInfo(T)` = structural `TypeInfo`, comptime only; lowercase spelling =
-  `typeinfo-lowercase`.
+- **Meta.** String values; namespace = the decorator's name (typed, keyed by its type after step 8,
+  298); describes a top-level `type`, `behavior` or `fn`. Reads answered by the checker, spliced as
+  literals. One builtin (decision 248): bare `@typeInfo(T)` = structural `TypeInfo`, comptime only;
+  lowercase spelling = `typeinfo-lowercase`.
 - **Associated types.** Top-level type `Owner__Name`; `comptime/assoc_types.zig` rewrites every
   `Owner.Name` and adds the importer's import item; a value prints under the owner's path
   (`TypeDecl.displayName`). Only decorators declare one.
@@ -52,18 +52,18 @@ library decorator uses them; `@emit` is a named error.
 
 ### Step 5 — migrate the remaining sites
 
-Member names are the library's (decision 174's note). Remaining `@emit(` at feat: rakun 80 lines,
+Member names are the library's (decision 174's note). Remaining `@emit(` at feat: rakun 67 lines,
 jhonstart 5, validation 5. Rakun rows target post-128 paths (`04-rakun/README.md` § Order, `03r-ao`
 (a)): no 130 rakun commit while `04-rakun/128` is open; after it, each a consumer commit under
 decision 188, never in a wave with the rakun front owning the file.
 
 | File | Sites | Generated today | New form | Written against |
 |---|---|---|---|---|
-| rakun `rakun/src/{decorators,autoconfig,config,context}.bp`, `rakun-web/src/convention.bp`, `rakun-data/src/sql/transactional.bp`, `rakun-security/src/method_security.bp` | ~29 | `pub fn __rkMake_<T>()` (singleton factory), `<T>Tx` / `<T>Sec` proxies on it | member `T.make()`; context filled at boot | 234 (`T.make()` + `rkResolve("<Field type>")`), 254 (catalogue answers `Declared<unknown>[]`; `rkResolve<T>` narrows with `is fn() -> T`), 256 (registry built at comptime at the entry point as one `Dict<string, unknown>`) |
-| same files + `lifecycle.bp`, `conditions.bp`, `rakun-data` `entity.bp` / `query.bp` | ~27 | `val __rkScan_<T>`, `__rkBean_`, `__rkLc_`, `__rkEv_`, `__rkImp_`, `__rkExit_`, `__rkAutoQ_`, `__rkCat_`, `__rkChk_`, `__rkEnable_`, `__rkEntityReg_`, `__rkQueryReg_` (load-time registration) | `@TypeInfo.all(…, member: "register")` at rakun's boot | 235, 234, 254 |
+| rakun `rakun/src/{decorators,autoconfig,config,context}.bp`, `rakun-web/src/convention.bp`, `rakun-data/src/sql/transactional.bp`, `rakun-security/src/method_security.bp` | ~29 | member `T.make()` (`rkSingleton`) on each stereotype; a `#[bean]` method emits `val __rkBeanM_<T>_<m> = rkRegisterBean("<return type>", …)` (`rakun/src/decorators.bp:333-385`); `<T>Tx` proxy + `val __rkTx_<T> = rkRegisterBean(…)` (`transactional.bp:81-82`), `<T>Sec` proxy + `pub fn __rkMake_<T>Sec()` (`method_security.bp:141-142`) | member `T.make()`; the registry built at comptime from `@TypeInfo.all(with: …)`, never keyed by a name string (281, 256; `ctr-q` closed) | 234 (`T.make()`, by-type injection), 254 (catalogue answers `Declared<unknown>[]`; `rkResolve<T>` narrows with `is fn() -> T`), 256 (registry built at comptime at the entry point), 281 (amends 234/256 where they key by a type's name, and `member: "make"`) |
+| same files + `lifecycle.bp`, `conditions.bp`, `rakun-data` `entity.bp` / `query.bp` | ~27 | `val __rkScan_<T>`, `__rkBean_`, `__rkLc_`, `__rkEv_`, `__rkImp_`, `__rkExit_`, `__rkAutoQ_`, `__rkCat_`, `__rkChk_`, `__rkEnable_`, `__rkEntityReg_`, `__rkQueryReg_` (load-time registration) | `@TypeInfo.all(with: …)` read at comptime (member by reference, step 7) | 235, 234, 254, 281 |
 | `rakun-web/src/convention.bp`, `rakun-app/src/{route_handler,actions}.bp`, `rakun-websocket`, `rakun-scheduling`, `rakun-messaging`, `rakun-cli`, `rakun/src/actuator_api/**` (today `rakun-actuator-api`, moved by 128 step 1), `rakun/src/decorators.bp` routes | ~25 | `val __rkFilter_`/`__rkConverter_`/`__rkCustomizer_`/`__rkCors_`/`__rkAdvice_`/`__rkMiddleware_`/`__rkHandler_<VERB>_`/`__rkRoute_`/`__rkWs_`/`__rkSched_`/`__rkJob_`/`__rkCli_`/`__rkEp_`… | meta (`order`, `media`, `path`, `verb`) + `@TypeInfo.all` at the entry point | 235; 236 for `#[middleware]`'s gate; 234 |
 | `rakun-client/src/exchange.bp` | 2 | `pub type Http<T>` + `pub fn http<T>()` | `T.Http` + a factory member | held: behavior member called from another module fails (below) |
-| jhonstart `routes.bp` | 5 | `val __jhPage_X = jhPage(seg, …)` (+ layout/template/default), `pub fn <X>Params(route)` | meta `seg` + `@TypeInfo.all(with: page)` | 235; 236 (`paramsOf(@typeInfo(BlogPost).meta(PageMeta)?.seg, route)` once by hand); readers: onze's generated entry points, jhonstart's tests |
+| jhonstart `routes.bp` | 5 | `val __jhPage_X = jhPage(seg, …)` (+ layout/template/default), `pub fn <X>Params(route)` | meta `seg` + `@TypeInfo.all(with: page)` | 235; 236 (`paramsOf(@typeInfo(BlogPost).meta(PageMeta)?.seg, route)` once by hand — after 293 a page takes no parameter and reads `use params<P>()`); readers: onze's generated entry points, jhonstart's tests |
 | validation `#[schema]` (`libs/validation/src/decorators.bp`) — `#[validated]` after 306 | 5 | `pub fn parse<T>At`, `parse<T>`, `decode<T>`, `schemaOf<T>` + helpers | members `T.parseAt/parse/decode` (no `schema` — `Schema<T>` is private, 306) | nothing — next; `decode` passes `parse<T>At` as a value (unbound variable on erlang, below), so wrap it in a lambda |
 
 - [ ] each library's hook green on this compiler; `grep -rn '@emit(' --include=*.bp repository/`
@@ -91,7 +91,7 @@ reflection over the project** (declaration half; the `@project()` manifest half 
 ### Step 7 — references, not strings (decision 281)
 
 - [ ] `@TypeInfo.all(with: …, member: "make")` (256) names the member by reference — an interface's
-      method — not by string; `Declared.value` stays `unknown` (254) until `nat-a`'s registry shape
+      method — not by string; `Declared.value` stays `unknown` (254; `nat-a` answered by 281)
 
 ### Step 8 — typed meta, keyed by its type (decision 298)
 
@@ -125,6 +125,6 @@ they recorded — the same function shape as a declaration's decorator, named by
 ## Notes
 
 - Every decorator reply is a tagged map; `Declared` / `DeclaredMeta` are prelude records in
-  `builtins.d.bp` (134).
+  `builtins.d.bp` (134); `DeclaredMeta` goes with step 8 (298).
 - Found here, `05-wasm`'s: a function read from a generic record's field, called through an untyped
   local, prints its pointer.

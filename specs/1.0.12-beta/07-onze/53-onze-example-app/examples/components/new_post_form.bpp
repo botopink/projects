@@ -15,8 +15,9 @@
 
 import {button, form, input, label, p} from "jhonstart";
 import {actionState, formAttrs, useActionState} from "jhonstart";
+import {lib.actions.createPost};   // the action by reference (281), never by name in text
 
-val s = use useActionState("createPost", actionState(""));
+val s = use useActionState(createPost, actionState(""));
 val state = s.0;
 val binding = s.1;
 val pending = s.2;

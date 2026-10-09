@@ -26,8 +26,8 @@ compiler through `BOTOPINK_BIN` under `BOTOPINK_TEST_TMPDIR`; manifest depends o
 watcher, not devtools. `rakun run` sets `RAKUN_PROFILES_ACTIVE` / `RAKUN_SERVER_PORT`, runs `botopink run`.
 
 - **R88-1.** Once 73's re-measure shows `botopink run` serves, each box is a child-process cell:
-  `rakun run --profile test --port 0` on a scaffolded app whose `#[value("rakun.profiles.active")]`
-  handler answers it; bound port read from the port file (04's boot options); `--watch` edits a file
+  `rakun run --profile test --port 0` on a scaffolded app whose handler answers the active profile
+  from the `#[config("rakun")]` record's `profiles` field (299, 04 step 7; `#[value("rakun.profiles.active")]` today); bound port read from the port file (04's boot options); `--watch` edits a file
   and re-requests; SIGTERM and exit code. Re-measure fails → cells not written, boxes stay open
   naming the toolchain row.
 - **R88-2.** `rakun build` on a project whose sidecar does not compile (81 step 1's refusal) exits 1,
@@ -44,7 +44,7 @@ env variable but `BOTOPINK_BIN`, no external service.
 
 ### Step 1 — `rakun run` (R88-1)
 
-- [ ] `run_test.bp`: the profile reaches the app (`GET /profile` answers `test`), a `#[value]` binding reflects it; `--port` wins over `RAKUN_SERVER_PORT` wins over `application.yaml` (three runs, three ports)
+- [ ] `run_test.bp`: the profile reaches the app (`GET /profile` answers `test`), the `#[config("rakun")]` record's `profiles` reflects it (299); `--port` wins over `RAKUN_SERVER_PORT` wins over `application.yaml` (three runs, three ports)
 - [ ] `--watch`: editing the scaffold's handler changes the answer within 2 s; a connection opened before the edit still answers
 - [ ] SIGTERM to the child: drain path runs (an in-flight request completes), exit code 0
 

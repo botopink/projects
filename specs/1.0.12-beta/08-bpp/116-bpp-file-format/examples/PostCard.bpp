@@ -10,8 +10,8 @@
 // the body of the function the file unfolds to; everything after the second
 // `---` line is the literal handed to `html`.
 //
-// `type Props` is the convention (decision 199): with it the file is
-// `pub default fn PostCard(props: Props) -> Element`, the header's statements read
+// `type Props` is the convention (decision 199): with it the file is the
+// anonymous `pub default fn (props: Props) -> View` (289, 276), the header's statements read
 // `props`, and the attributes a caller writes are the fields of `Props`
 // (decision 192).
 //

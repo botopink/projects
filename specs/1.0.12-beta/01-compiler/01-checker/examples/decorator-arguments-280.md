@@ -2,8 +2,8 @@
 
 Aprovados pelo mantenedor em 04/10 como os casos de uso da decisão 280; são os alvos do passo 24 do
 `01-checker` (cada exemplo vira uma célula `run/` e as suas recusas, células `reject/`). Partes
-ilustrativas, que não são da 280: a emissão por função (`decl.addMember("validate", fn…)`) e o meta
-tipado (`decl.setMeta(Table(…))`) são da `nat-c`; `decl.wrapWith` (exemplo 5) é da lg2-c;
+ilustrativas, que não são da 280: a emissão por função (`decl.addMember("validate", fn…)`) não é
+decidida (a `nat-c` fechou em 293–300 sem ela); o meta tipado (`decl.setMeta(Table(…))`) é da 298; `decl.wrapWith` (exemplo 5) é da lg2-c;
 `decl.addToCatalogue()` é a forma do catálogo de 216 (4).
 
 Cada exemplo mostra quatro partes:
@@ -26,7 +26,7 @@ As regras que os exemplos usam:
 > **Sobre a emissão.** Hoje o `decl.addMember` recebe o código como string (216). Nos exemplos ele
 > recebe uma **função de verdade**: `decl.addMember("validate", fn(self: T) -> … { … })`. Essa função
 > captura os argumentos `comptime`, que entram no código gerado como constantes. Essa forma de
-> emitir é a parte da `nat-c` (saídas tipadas). Onde aparece, está marcada como ilustrativa.
+> emitir não é decidida (a `nat-c` fechou em 293–300 sem ela). Onde aparece, está marcada como ilustrativa.
 
 ---
 
@@ -173,7 +173,7 @@ publish("OrderPlaced")                   // compila, mas nenhum listener recebe 
 ```bp
 // rakun/src/conditions.bp
 pub fn conditionalOnMissingBean(comptime decl: @Decl, comptime t: type) {
-    decl.setMeta(OnMissing(type: t));      // meta tipado (nat-c); o registro em comptime lê isto
+    decl.setMeta(OnMissing(type: t));      // meta tipado (298); o registro em comptime lê isto
 }
 ```
 
@@ -199,7 +199,7 @@ resta só a tabela já resolvida.
 
 ---
 
-## 4. Página — caminhos e cabeçalho por função (117, 53 — `nat-b`)
+## 4. Página — caminhos e cabeçalho por função (117, 53 — 282)
 
 > **Forma da página emendada pela 293:** a página não recebe mais `route: PageContext<P, D>`; ela lê
 > `use params<P>()` e `use pageData<D>()`, e o `#[page]` confere `paths:` contra esses `use` (via
@@ -243,7 +243,7 @@ fn postHead(p: BlogParams, d: Post) -> Head { return Head(title: d.title); }
 #[page("blog/[slug]", paths: allUsers)]   // ❌ esperado fn() -> @Task<#(BlogParams, Post)[]>, recebido fn() -> @Task<User[]>
 #[page("blog/[slug]", head: postHead)]
 pub fn Page(route: PageContext<BlogParams, Post>) -> string   // ❌ #[page] espera uma função que devolve View
-pub fn staticPaths() -> …                 // não é mais lido: o papel vai no decorator (`nat-b`)
+pub fn staticPaths() -> …                 // não é mais lido: o papel vai no decorator (282)
 ```
 
 ---
@@ -379,7 +379,7 @@ bind(root, 0, "click", like);
 | `entity("cities")`, `column("state_name")` | nomes do banco |
 | `page("blog/[slug]")` | URL pública |
 | `Cache<Product[]>("products")` | nome do cache no Redis/ETS |
-| `@External.Erlang(fn: "tanBody")` | função Erlang |
+| `@External.Erlang("string:slice($0, 0, 1)")` | código do host (a string sem rótulo); `fn: tanBody` é referência à função botopink (305) |
 | `config("rakun.data")` | caminho no arquivo de configuração |
 | `message: "As senhas não batem"` | texto para o usuário |
 

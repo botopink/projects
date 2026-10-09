@@ -3,7 +3,7 @@
 **Priority:** low — breadth; an application ships without a document store ·
 **State:** not started (`modules/rakun-data/src/nosql/` does not exist)
 **Depends on:** 128 · 19 step 1 (Redis RESP double — decision 160) · 13 (Elasticsearch arm via
-`rakun-client` and 13's in-process HTTP double) · 03r-ab (four-arm scope) · lg2-a (the four
+`rakun-client` and 13's in-process HTTP double) · 03r-ab (four-arm scope; this README follows (a), only the record is missing) · lg2-a (the four
 binary-protocol stores)
 **Owns:** `modules/rakun-data/src/nosql/**`, `src/nosql_host.bp`, `src/sidecars/rakun_nosql.erl`,
 `test/nosql/**`; appends to `modules/rakun-data/botopink.json` `files` and `src/root.bp` (08 does not
@@ -112,7 +112,7 @@ No cell env-gated or *skipped*; refusal cells are green, asserting the refusal t
 - [ ] `#[documentQuery]` on a non-method fails at comptime
 - [ ] registered templates appear in 08's statement inventory
 
-### Step 5 — The refusal cells (03r-ab)
+### Step 5 — The refusal cells (03r-ab (a))
 
 - [ ] `mongodb://`, `bolt://`, `cassandra://`, `couchbase://` each refuse the boot naming scheme, driver and lg2-a — four cells in `test/nosql/arms_test.bp`
 - [ ] four `deferred.md` rows, each naming its box list and the unblocking gap

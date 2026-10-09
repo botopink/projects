@@ -1,7 +1,7 @@
 {
   "name": "scaffold",
   "version": "0.1.0",
-  "description": "Front 124 — the manifest `onze create --example bpp` writes: the scaffold's own (`onze/examples/scaffold/botopink.json`) with its pages as `.bpp` files, a content collection, and one new key. `bpp` names the package onto whose `pub default fn` the project's `.bpp` files unfold (front 116; decisions 198, 200): with it, `app/page.bpp` is a page; without it, the build stops at the first `.bpp` file and names this key.",
+  "description": "Front 124 — the manifest `onze create --example bpp` writes: the scaffold's own (`onze/examples/scaffold/botopink.json`) with its pages as `.bpp` files, a content collection, and one new key. `bpp` names the package onto whose `pub default fn` the project's `.bpp` files unfold (front 116; decisions 198, 200): with it, `app/page.bpp` unfolds (that it is a page is the framework's route table, decision 285); without it, the build stops at the first `.bpp` file and names this key.",
   "src": ".",
   "entry": "root.bp",
   "target": "erlang",

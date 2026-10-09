@@ -5,8 +5,8 @@
 **Depends on:** `05-jhonstart/26` (steps 1–3 assert through 26's `fake_dom.mjs`; this front adds a
 test file there, stops if a primitive is missing) · `03-bundled-libs/103-actions-id` step 2 (owns
 `form.bp:117-121`, `formAction`'s hand id check, replaced by `actions.id.isActionId`; never together
-— this one after; step 4 needs only 103) · `67-a` answered (recommendation (a); steps 1–3's
-acceptance written for it)
+— this one after; step 4 needs only 103) · `67-a` pending — steps 1–3 written for (a), the
+recommendation; only the record is missing
 **Owns:** `repository/jhonstart/modules/jhonstart-forms/**` except `src/form.bp:117-121` ·
 `examples/forms/src/**`, `examples/forms/test/**` (with its `__snapshots__/`) ·
 `modules/jhonstart-dom-test/test/forms_dom_test.bp` (new) · `modules/jhonstart-test/src/assert_form.bp`

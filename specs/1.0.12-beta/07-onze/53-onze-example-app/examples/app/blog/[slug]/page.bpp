@@ -7,7 +7,6 @@
 //
 // What is a DECLARATION here stays at module level, where the fronts that read
 // it look:
-//   - `pub val segment` — front 60's segment configuration;
 //   - `pub fn blogStaticParams` and `pub val staticParams` — every value the
 //     segment can take, called once at build time;
 //   - `pub fn generateMetadata` / `pub fn postMetadata` — front 32's head.

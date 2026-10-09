@@ -22,7 +22,7 @@ hole and where it goes.
 | 18 | `twitter-image`, `icon`, `apple-icon` generated routes | 70 · rakun 66 | 66 registers the files; 70 renders only `opengraph-image`. `twitter-image` = same renderer, second file name — one row for 66 |
 | 24 | Vercel / managed adapters | 71 | deliberately none: the release is the artifact |
 | 24 | `output: 'standalone'` file tracing | 71 | not needed: an OTP release is the traced set |
-| 28 | `redirects()` · `rewrites()` · `headers()` · `trailingSlash` | rakun 65 | rakun's `url-rules`; not in `onze.json` — 49's README should say where they live |
+| 28 | `redirects()` · `rewrites()` · `headers()` · `trailingSlash` | rakun 65 | rakun's `url-rules`; not in `onze.json` today — 49's README should say where they live; 124 plans `trailingSlash` / `redirects` keys there, open as `nat-f2` |
 | 28 | `assetPrefix` (CDN prefix for `/_onze/static/`) | 68 · 69 | **missing**: chunk URLs are absolute under `/_onze/static/<buildId>/`; no CDN prefix. One config key through `ChunkRef.url` and `servedPrefixes` — 50 step 6 |
 | 28 | `poweredByHeader`, `compress` | rakun 07 · 82 | server concerns, not onze |
 | 28 | `env` (build-time inlined values) | 49 · 68 | `ONZE_PUBLIC_` only; a non-public `env` map inlined into the **server** at build is refused by design (71: config at boot, not build) |

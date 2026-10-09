@@ -1,8 +1,9 @@
 ---
 // Front 53 — onze example app · examples/app/blog/layout.bpp
 //
-// The segment layout of `blog-list-page-example.bp`, as a `.bpp` file:
-// `#[layout("blog")]`, from this file's directory. It wraps `/blog` and
+// The segment layout of `blog-list-page-example.bp`, as a `.bpp` file: a
+// layout at `blog`, this file's directory — the generated route table calls
+// jhonstart's `layout` on its default function (285). It wraps `/blog` and
 // everything under it, and is NOT re-rendered when the client navigates between
 // two routes that share it.
 //

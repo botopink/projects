@@ -8,7 +8,8 @@ carve-outs here: bracket-attribute step-1 lines (only comments of `root.bp` / `e
 DSL; no `[name]={` in `src/`), `src/prelude.bp` (decision 270), the `Node` declaration (decision
 223) · `03-bundled-libs/102` step 3's `routes.bp` commit, landed before opening (decision 188) ·
 `01-compiler/01-checker`'s capability (hooks a function activates through `use`, readable from its
-`@Decl` — `language-gaps.md`) for step 8 (decision 186) · `29-a` confirmed (step 5's starter-table row)
+`@Decl` — `language-gaps.md`) for step 8 (decision 186) · `29-a` (reduced: `registerRouteStarters` +
+`globals.starters`) for step 5's starter-table row
 **Owns:** `repository/jhonstart/modules/jhonstart/**` (source, tests, `src/AGENTS.md`),
 `modules/jhonstart-dom-test/**` (`fake_dom.mjs`, `dom_test.bp`), `docs.md`, `AGENTS.md`,
 `examples/{blog-ssr,nav-shell,islands,forms,document-shell,jhonstart-counter,jhonstart-markup,jhonstart-todo}/README.md`
@@ -53,10 +54,12 @@ time (no run-time `markDynamic`).
   → default sink receives the record.
 - **A page's stage (decisions 186, 202).** Stages: comptime (build, prerender), server (request
   time), client (browser). Unmarked hook: any stage; `#[serverOnly]` → request time; `#[clientOnly]`
-  → browser. This library declares both markers and marks its hooks (`searchParams`, `cookies`,
-  `headers`, `request` are `#[serverOnly]`); `#[page]` and `#[client]` read the hooks their function
-  activates through `use`, transitively, and refuse at compile time, located at the `use`: a
-  `#[serverOnly]` hook in a `#[client]` component, a `#[clientOnly]` hook outside one. No page
+  → browser. This library declares both markers and marks its hooks (`searchParams`, `cookie`
+  (294), `headers`, `request`, `response` (291) are `#[serverOnly]`); `#[page]` and `#[client]` read
+  the hooks their function activates through `use`, transitively (277), and refuse at compile time,
+  located at the `use`: a `#[serverOnly]` hook in a `#[client]` component, a `#[clientOnly]` hook
+  outside one — the two refusals only (186's third, "a page that declares itself prerendered", has
+  no case under 202: `ctr-l`, only the record is missing). No page
   declares its stage: `#[page]` (`routes.bp:220`) prerenders at comptime a page reaching no
   `#[serverOnly]` hook, else renders per request. The build writes the kind into `routing`'s `k`
   blob; `markDynamic` and the payload's `d` as a run-time mark go.
@@ -138,8 +141,10 @@ Every fallback digest changes from 8 hex to 16.
 
 - [ ] `docs.md:371,393` name front 30 (this library's payload envelope), not rakun's 23; the other
       "front 23" payload mentions (`:397,784,991,1096`) likewise
-- [ ] `docs.md` § The front-68 contract (`:1091`) has the starter-table row (`globals.starters`,
-      `registerStarter` / `registerRouteStarters`, 29-a); the `islandAttr(ordinal)` row reads
+- [ ] `docs.md` § The front-68 contract (`:1091`) has the starter-table row: the per-route loaders
+      `registerRouteStarters(pattern, load)` over `globals.starters` (29-a, reduced); no per-name
+      `registerStarter` — 281 builds the starter table at comptime (`@TypeInfo.all(with: client)`,
+      `08-bpp/120` step 6, `07-onze/53` step 7); the `islandAttr(ordinal)` row reads
       "exported here; onze's entry imports it"; `07-onze/50` cites the section
 - [ ] `docs.md` § Error boundaries documents the digest scheme and the `log` sink
 
@@ -154,6 +159,9 @@ upstream section mirrored and fronts exercised (`modules.md` § Examples).
 - [ ] the three `.bp` files compile with `botopink check` against `modules/jhonstart` (front's own
       run, not a gate row)
 - [ ] `find repository/jhonstart/examples -maxdepth 2 -name README.md | wc -l` is 8 (0 today)
+- [ ] `examples/request-scope-example.bp` rewritten to decision 294 (the locale cookie a
+      `Cookie<string>` declared once, read with `use cookie(decl)`; no `RequestData.cookies` pairs,
+      no `pairValue`)
 
 ### Step 7 — the module-level snapshot map
 
@@ -168,7 +176,7 @@ list against its own decorators; the compiler names no marker.
       decl: @Decl) {}` (markers, no output); `HookPath(through, use)`; `pathsTo(nodes, marker,
       unknownToo = false)` breadth-first over `decl.hooks`, every path, each the shortest;
       `viaText`, `crossesClient`
-- [ ] hooks marked: `#[serverOnly]` on `cookies`, `headers`, `request`, `response` (291; `server.bp`), `searchParams`
+- [ ] hooks marked: `#[serverOnly]` on `cookie` (294), `headers`, `request`, `response` (291; `server.bp`), `searchParams`
       (`router.bp`); `#[clientOnly]` on the browser-only hooks; `state`, `effect`, `memo`, `ref`,
       `reducer` unmarked
 - [ ] `#[page]` (`routes.bp`): `setMeta(PageMeta(seg, kind, why))` (298; `RouteKind { S, D }`); a
@@ -216,8 +224,9 @@ list against its own decorators; the compiler names no marker.
 
 ### Step 12 — a cookie is declared once, typed (decision 294)
 
-- [ ] `use local(atom: Local<T>) -> ?T` (295), `#[serverOnly]` beside `cookie` — a value middleware set
-      for this request (how the marker reaches rakun's half: `08-j`)
+- [ ] `use local(atom: Atom<T>) -> ?T` (295; `Local<T>` is cardume's `Atom<T>`, 296), jhonstart's own
+      hook, `#[serverOnly]` by jhonstart's marker (277) beside `cookie` — the value middleware set for
+      this request, held in `rakun-cardume`'s store per request (296; `08-j` closed by 295)
 - [ ] `use cookie(decl: Cookie<T>) -> ?T`, `#[serverOnly]` (186): `null` when absent or undecodable;
       the jar (`use cookies()` → pairs) and `pairValue` go from page code; a render writes no cookie (122)
 

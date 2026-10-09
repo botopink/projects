@@ -11,12 +11,13 @@ it into the core, `html` the core's `pub default fn` (200); 119, 120, 126 append
 `README.md` (`05-jhonstart/26` step 6) · new `jhonstart/modules/jhonstart/src/prelude.bp` and the
 core's node type `Node` (223; carve-outs of `05-jhonstart/26`'s member, 270) · the `Children` →
 `Node` rewrite of this track's `examples/**` · step 1's one-line carve-outs: each `[name]={expr}`
-attribute outside this member — `jhonstart-emilia`'s bridge test (119's),
-`examples/document-shell`, the core's comment lines naming the DSL (`root.bp`, `elements.bp`,
-`05-jhonstart/26`'s) — one commit per repository, landed before the owning front opens (189)
+attribute outside this member in code — `jhonstart-emilia`'s bridge test (119's),
+`examples/document-shell` — one commit per repository, landed before the owning front opens (189)
 **Does not touch:** `modules/jhonstart/**` beyond those lines (`05-jhonstart/26`'s — a need is a
-hand-off, § Notes); the compiler; emilia — its `[class]={…}` lines are comments, reworded by
-`06-emilia/34` step 1, `examples/emilia-card`'s by `06-emilia/33` step 2. 119, 120, 126 each
+hand-off, § Notes); the core's comment lines naming the DSL (`root.bp`, `elements.bp`) — a
+comments-only carve-out is taken by the owning front, `05-jhonstart/26` (`ctr-v` (a)); the compiler;
+emilia — its `[class]={…}` lines are comments, reworded by `06-emilia/34` step 1,
+`examples/emilia-card`'s by `06-emilia/33` step 2. 119, 120, 126 each
 **append** one lowering arm to `html.bp` after this front, in that order (`fronts.md` rule 2).
 
 Reference: `astro-docs/09-astro-components.md`, `10-layouts.md`, `13-astro-syntax.md`.
@@ -99,7 +100,7 @@ when empty. Named-slot mapping (`<p slot="footer">` / `<slot name="footer">`) is
 `footer` as a props field below is one reading, not a decision:
 
 ```bp
-pub default fn Card(props: type(title: string, children: Node = [], footer: Node = [])) -> Element {
+pub default fn Card(props: type(title: string, children: Node = [], footer: Node = [])) -> View {
     return html """
       <article>
         <h2>{props.title}</h2>
@@ -134,7 +135,7 @@ declared by this front: the tag's name and, for a component, its `@Decl`). `html
 type is an error at the annotation, two results of one type on one tag an error at the second.
 Values are not annotations: `set:html={s}` is `{raw(s)}`, `set:text={s}` is `{s}`, `class:list` is
 `class={classList([…])}`. Arguments are embedded expressions — the same compiler need as holes.
-This front: `isRaw`, `classList`, `Tag`; 119 `isGlobal`, `isInline`, `defineVars`; 120
+This front: `isRaw`, `classList` (no `Tag` type — 302); 119 `isGlobal`, `isInline`, `defineVars`; 120
 `clientLoad` … `clientOnly`, `serverDefer`; 126 `transition…`.
 
 **Hygiene, prelude.** Tag names and expressions resolve in the caller's scope; `fragment`, `raw`,
@@ -160,8 +161,8 @@ No recursion → parse with the function's explicit stack, plus a `language-gaps
 
 `name="text"` (to the closing quote), `name={expr}`, bare `name`, kebab-case. `bool`: bare
 attribute when true, nothing when false; `?string`: nothing when null. `{...expr}` on an
-**element** appends an `Array<#(string, string)>` (what `formAttrs(binding)`, `styled(tokens)`
-answer); on a component refused (`props-f`). `[name]={expr}` refused with a message naming
+**element** appends an `Array<#(string, string)>` (what `formAttrs(binding)` answers; emilia is
+`#[styled(…)]`, a tag annotation — 301); on a component refused (`props-f`). `[name]={expr}` refused with a message naming
 `name={expr}`; its code uses rewritten in the same landing — `jhonstart-html`'s `html_test.bp`,
 `elements_test.bp`, and the § Owns carve-outs `jhonstart-emilia`'s `bridge_test.bp`,
 `document-shell`'s `shell_dsl.bp`, each before the owning front opens (189). Component attributes
@@ -202,11 +203,11 @@ Tag → call with props from attributes (192); tag content = `children` (193, 22
 
 ### Step 5 — Tag annotations, `raw`, `classList` (278)
 
-The § Mechanism arm: resolve, call with what the first parameter asks for, act on the return type.
+The § Mechanism arm: resolve, call with the tag's `@Decl`, act on the meta it records (302).
 Astro's `set:html={s}` is `{raw(s)}` (the core's `raw`, unescaped); `set:text` has no form — `{s}`
 already escapes. `classList(xs: Array<string>) -> string` drops empty strings and joins with one
 space: `class={classList(["box", classIf(isRed, "red"), extra])}`; `classIf(cond, name)` answers the
-name or `""`. `#[isRaw]` returns `RawBody`: the tag's body is text.
+name or `""`. `#[isRaw]` records `RawBody` (302): the tag's body is text.
 
 - [ ] `examples/directives-example.bp` passes on both targets
 - [ ] `<div #[fooBar]>` fails at `fooBar` as an unbound name; `<div class:list={…}>` fails at

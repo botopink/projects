@@ -6,9 +6,10 @@
 // front 25 dispatches it. The param for a dynamic segment arrives through the
 // ordinary `Request` — there is no second path parser.
 //
-// Front 62 supplies `headers()` and `cookies()` inside the handler: the phase is
-// Handler, so both reads and a cookie write are legal here, and the same write
-// from a render would raise.
+// Front 62 supplies the request and the cookies inside the handler — through
+// hooks, `use request()` and `use cookie(decl)` / `use setCookie(decl)` (291,
+// 294, 295): the phase is Handler, so both reads and a cookie write are legal
+// here, and the same write from a render would raise.
 //
 // Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/route
 //           NEXTJS-DOCS.md § 19. Route Handlers (API)
@@ -18,8 +19,8 @@
 import {Request, HttpMethod} from "rakun";
 import {getRoute, postRoute, HandlerResponse, bodyJson} from "rakun";  // front 25
 import {rkAppRegisterHandler} from "rakun";                            // front 22 registry cell
-// front 62 — a handler's phase permits BOTH reads and cookie writes, so
-// `cookies()`, `headers()` and `after()` are all legal inside these functions.
+// front 62 — a handler's phase permits BOTH reads and cookie writes, so the
+// request and cookie hooks (291, 294) and `after()` are all legal inside these functions.
 // This example reads authorization through the ordinary `Request` instead, so
 // every handler below is testable without a live request frame; front 62's own
 // example shows the frame-bound form.

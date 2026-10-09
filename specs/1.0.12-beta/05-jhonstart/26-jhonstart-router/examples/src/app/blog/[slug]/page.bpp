@@ -3,9 +3,10 @@
 //
 // The `/blog/[slug]` page of `blog-post-page-example.bp`, as a `.bpp` file
 // (1.0.11-beta `08-bpp/116`): the application's manifest says
-// `"bpp": "jhonstart"`, and this file is the module jhonstart's `bpp` function
-// emits — `#[page("blog/[slug]")] pub fn Page(route: PageContext)` around the
-// statements below, with the markup as its return.
+// `"bpp": "jhonstart"`, and this file unfolds to the module's anonymous
+// `pub default fn () -> View` around the statements below, with the markup as
+// its return (275, 289) — no parameter (293); the route table calls
+// `page("blog/[slug]", f)` on it (285).
 //
 // What does not change: everything here runs on the BEAM, once, while the
 // request is in flight. The two awaits are sequential on purpose — the comments
@@ -17,7 +18,8 @@
 // `text(value)` is written out as it is — are gone, and a comment body that
 // looks like markup is still text.
 //
-// `params` is bound because the route has a bracket segment; `loadPost` and
+// `use params<BlogParams>()` reads the bracket segment as a record (293;
+// `#[page]` checks its fields against the pattern); `loadPost` and
 // `loadComments` are the loaders of the `.bp` form, in a module of their own.
 //
 // Upstream:
@@ -25,9 +27,13 @@
 //   https://nextjs.org/docs/app/api-reference/file-conventions/page
 
 import {article, h1, h2, li, p, section, span, ul} from "jhonstart";
+import {params} from "jhonstart";
 import {lib.blog.loadPost, lib.blog.loadComments};
 
-val post = await loadPost(params.slug);
+type BlogParams(slug: string)
+
+val route = use params<BlogParams>();
+val post = await loadPost(route.slug);
 val comments = await loadComments(post.id);
 ---
 <article class="post">

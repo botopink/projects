@@ -20,4 +20,4 @@ pub fn assertPublicEnv(loc: SourceLocation, env: Array<#(string, string)>, names
 ```
 
 Each helper renders its subject to one canonical text, compares with the `.snap`; on mismatch
-writes `<path>.new`, returns `Err("<path> differs; wrote <path>.new")`.
+writes `<path>.new`, answers `Error("<path> differs; wrote <path>.new")`.

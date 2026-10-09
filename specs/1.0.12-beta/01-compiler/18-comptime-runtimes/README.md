@@ -81,5 +81,5 @@ within budget
 
 ## Notes
 
-- erlang/beam run-time targets still need `erl`; `node` / `wasmtime` stay for commonJS / wasm RUN
+- erlang/beam `build`/`run`/`test` need the right `erl` (OTP 28, decision 228); `node` / `wasmtime` stay for commonJS / wasm RUN
   LOGs. `erlc` (OTP 28+) needed to build the compiler; a user's machine needs `erl` only.

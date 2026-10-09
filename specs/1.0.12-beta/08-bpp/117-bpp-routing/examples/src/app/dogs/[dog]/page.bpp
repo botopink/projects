@@ -6,8 +6,9 @@
 //
 // The route is the directory. `#[page("dogs/[dog]")]` is not written: the
 // unfold (front 116) gives the function `#[page]` from the file's name, through
-// the route table built from its file name (decision 285). `route` and `params` are open question
-// `bpp-g`; the body below is written against its answer.
+// the route table built from its file name (decision 285). A page takes no
+// parameter (decision 293, was `bpp-g`): `use params<P>()`, `use pageData<D>()` —
+// the body below is rewritten to them by front 117 steps 7–8.
 //
 // `staticPaths` is `pub`, so it is a declaration of the module, where the scan
 // reads it — the same name, in the same place, as in a `page.bp`. The two `val`s

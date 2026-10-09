@@ -2,8 +2,8 @@
 
 **Repos:** `repository/jhonstart` · `repository/onze` · `repository/rakun` · `repository/emilia` ·
 `repository/botopink-lang` (116 only) · **Reference:** Astro docs (`/home/ericfillipe/develop/astro/astro-docs/`, 25 pages).
-**Depends on:** `00-gate`; `03-bundled-libs/125-validation-zod` steps 0–2 (`Schema<T>`, taken by
-collections and actions); the 04/05/07 fronts in § Order. **Map:** [`surface.md`](./surface.md) (161 rows).
+**Depends on:** `00-gate`; `03-bundled-libs/125-validation-zod` steps 0–2 and 12 (the `#[validated]`
+type collections and actions take — `Schema<T>` is private, 306); the 04/05/07 fronts in § Order. **Map:** [`surface.md`](./surface.md) (161 rows).
 
 ## Goal
 
@@ -58,16 +58,16 @@ All eleven **not started**.
 | Front | Priority | State | What | Depends on (open) |
 |---|---|---|---|---|
 | [`118-bpp-components/`](./118-bpp-components/README.md) | **critical** — all markup goes through it | not started · ready to open | `{expr}` of any renderable type, rendering attributes, components with props, slots, fragments, markup in `if` / `case` / lambdas, `set:html`, `class:list`, `<style>` / `<script>` to sinks; jhonstart's `prelude.bp` and node type | — |
-| [`121-bpp-content/`](./121-bpp-content/README.md) | **high** — largest new code | not started · steps 1–2 ready to open | New member `onze-content`: Markdown (CommonMark + GFM) to `Element`, frontmatter, collections with `Schema<T>`, `getCollection` / `getEntry` / `render`, `.md` pages, RSS | `08-f` (step 3) · 118, 117 (step 6) · `07-onze/53` (step 7) |
+| [`121-bpp-content/`](./121-bpp-content/README.md) | **high** — largest new code | not started · steps 1–2 ready to open | New member `onze-content`: Markdown (CommonMark + GFM) to `Element`, frontmatter, collections typed by a `#[validated]` type (306), `getCollection` / `getEntry` / `render`, `.md` pages, RSS | `08-f` (step 3) · 118, 117 (step 6) · `07-onze/53` (step 7) |
 | [`120-bpp-islands/`](./120-bpp-islands/README.md) | **high** | not started | `#[clientIdle]` / `#[clientVisible]` / `#[clientMedia]` / `#[clientOnly]`; `#[serverDefer(fallback: …)]`, sealed props | 118 · 119 · 117 · `05-jhonstart/26` · `04-rakun/22` · `07-onze/49`, `50` |
 | [`117-bpp-routing/`](./117-bpp-routing/README.md) | high | not started | `.bpp` / `.md` / `.html` app files, `staticPaths` with data, `paginate`, partials, static endpoints, eight priority rules as tests | `03-bundled-libs/102` · `04-rakun/22` · `07-onze/49`, `50` · 121 steps 1–2 |
 | [`119-bpp-styling/`](./119-bpp-styling/README.md) | medium | not started · blocked by `08-d` | Scoped `<style>`, `#[isGlobal]`, `:global()`, `#[defineVars]`, cascade order | `08-d` (every step) · 118, `05-jhonstart/26` (step 2) |
-| [`127-bpp-actions/`](./127-bpp-actions/README.md) | medium | not started | Action typed by a `#[schema]` record: JSON/form input, `ActionError`, typed client call | 125 step 6 · `03-bundled-libs/103` · `04-rakun/22` · `05-jhonstart/67` · `07-onze/49` · 117 · 120 · 126 · 123 (step 4) |
+| [`127-bpp-actions/`](./127-bpp-actions/README.md) | medium | not started | Action typed by a `#[validated]` record (306): JSON/form input, `ActionError`, typed client call | 125 step 6 · `03-bundled-libs/103` · `04-rakun/22` · `05-jhonstart/67` · `07-onze/49` · 117 · 120 · 126 · 123 (step 4) |
 | [`122-bpp-data/`](./122-bpp-data/README.md) | medium | not started | `Astro` global mapped; holes: page-side status/headers, `rewrite`, `site` | `05-jhonstart/26` · `07-onze/49` · `03-bundled-libs/102` · 118 · 120 |
 | [`123-bpp-middleware/`](./123-bpp-middleware/README.md) | medium | not started | `locals`, `sequence`, response rewritten after `next`, `actionContext` | `04-rakun/04` · `04-rakun/65` |
 | [`126-bpp-view-transitions/`](./126-bpp-view-transitions/README.md) | low | not started | `#[transitionName]` / `#[transitionAnimate]` / `#[transitionPersist]`, `navigate`, five lifecycle events, route announcer | `05-jhonstart/27` · 118 · 120 |
 | [`116-bpp-file-format/`](./116-bpp-file-format/README.md) | medium | not started | `.bpp` kind: `"bpp": "jhonstart"` in the app manifest; header between two `---` is botopink, rest the `html` literal; the package's prelude | 118 · `05-jhonstart/26` step 0 · `01-compiler/26` · `01-compiler`'s prelude scope |
-| [`124-bpp-cli/`](./124-bpp-cli/README.md) | high — last | not started · blocked by `08-h` | `onze sync`, `onze create-key`, config keys, component `<script>` bundling, built style sheet, `.bpp` scaffold | `08-h` · `07-onze/50`, `71` · every other front · `07-onze/53` (step 5) |
+| [`124-bpp-cli/`](./124-bpp-cli/README.md) | high — last | not started | `onze sync`, `onze create-key`, config keys, component `<script>` bundling, built style sheet, `.bpp` scaffold | `nat-f2` (which keys) · `07-onze/50`, `71` · every other front · `07-onze/53` (step 5) |
 
 ## Order
 
@@ -110,7 +110,7 @@ Every front but 121 edits files owned by another track's front; sequenced, never
 | `onze/src/paginate.bp` (117) · `onze/src/config.bp` — `site` (122), other keys (124) (189) | `07-onze/49` | after 49 |
 | `onze-server/src/server.bp` — island route, content boot step | `07-onze/49` | after 49 |
 | `rakun-app/src/{static_gen,actions}.bp` (117, 127) · new `server_islands.bp` (120), `typed_action.bp` (127) | `04-rakun/22` | after 22; 117, 120, 127, one at a time on the member's `botopink.json`, `root.bp` |
-| `rakun/src/locals.bp` (new) · `rakun-web/src/{middleware,filter}.bp` (123) | `04-rakun/04` (core) · `04-rakun/65` (rakun-web) | after 04 and 65 (189) |
+| `rakun-web/src/{middleware,filter}.bp` (123; the request store is `rakun-cardume`'s, `09-cardume/136`, 296) | `04-rakun/04` (core) · `04-rakun/65` (rakun-web) | after 04 and 65 (189) |
 | `libs/routing/src/{segment,conventions}.bp` (117) · `navigation.bp` (122) | `03-bundled-libs/102` | after 102 |
 | `libs/actions/src/outcome.bp` (127) | `03-bundled-libs/103` | after 103 |
 | `emilia/src/` — one new file (119) | `06-emilia/34` | beside it: 34 does not touch `scoped.bp` |
@@ -197,11 +197,13 @@ step 2 owns.
 
 ## Decisions the maintainer owes
 
-Open: `08-d`, `08-f`, `08-h` (below) and `08-j`, `props-d`, `props-e`,
-`props-f` ([`../decisions-pending.md`](../decisions-pending.md)); contradictions — `ctr-f` → 288, `ctr-g` and `ctr-t` → 289.
+Open: `08-d`, `08-f` (below) and `props-d`, `props-e`, `props-f`, `nat-f2`
+([`../decisions-pending.md`](../decisions-pending.md)); contradictions — `ctr-f` → 288, `ctr-g` and `ctr-t` → 289.
+Closed: `08-h` → 285, 224 (`onze.json`, `onze <command>`); `08-j` → 295, 296 (request state is
+`rakun-cardume`'s atoms, read through jhonstart's own hook under its `#[serverOnly]`, 277).
 
-- `08-j` — how rakun's `local()` carries jhonstart's `#[serverOnly]`. Blocks 123 step 1's third box.
 - `props-d` · `props-e` · `props-f` — native tag attributes, named slot, spread on a component. Block 118 steps 1, 4.
+- `nat-f2` — which `onze.json` keys (`trailingSlash`, `redirects`, `markdown`, `allowedRedirects`) and how they are read. Blocks 124's key boxes.
 
 ### 08-d · Who scopes CSS
 
@@ -223,13 +225,10 @@ config readers go to std "when a second consumer appears".
 "two or more libraries" makes no package. Until std's `yaml`, 121 step 3 keeps its own copy, deleted on landing.
 **Blocks.** 121 step 3 (frontmatter); under (c), where steps 1–2 live; a row for `02-std-and-packaging/97`.
 
-### 08-h · The config file and the commands
+### 08-h · The config file and the commands — closed (285, 224)
 
-**Measured.** `onze.json` refuses unknown keys (49-c); `onze create | info | build | start` exist,
-`dev` a stub (`onze-cli/src/main.bp`); `botopink` has no framework command (`compiler-cli/src/main.zig`).
-**Options.** (a) `onze.json` and `onze <command>`; (b) `bpp.json` and `botopink dev` / `preview`.
-**Recommendation.** (a); (b) makes the compiler's CLI a framework's.
-**Blocks.** 124.
+The config is `onze.json`, the commands `onze <command>` (`create | info | build | start`, `dev`
+`07-onze/50`'s); the toolchain knows only `"bpp"`, `html` and the prelude (285). Which keys: `nat-f2`.
 
 ## Rules for this track
 

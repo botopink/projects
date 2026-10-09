@@ -23,7 +23,7 @@ true in code: 74, 15, 81, 12, 65, 73 (each front says which).
 | Front | Priority | State | What (post-128 paths) | Group | Depends on |
 |---|---|---|---|---|---|
 | [`128`](./128-rakun-consolidation/README.md) | critical | not started | the nine merges; every manifest and import | first, alone | 102 step 3 + 103 step 2 rakun commits (decision 188) · the 130 rule (§ Order) |
-| [`04`](./04-rakun-erlang-runtime/README.md) | critical | not started | `rakun` core, all but 74's, 11's, 17's files | A | 128 · lg2-e · lg2-g · lg2-j |
+| [`04`](./04-rakun-erlang-runtime/README.md) | critical | not started | `rakun` core, all but 74's, 11's, 17's files | A | 128 · lg2-e · lg2-j (lg2-g closed by 281: by-type injection, step 6) |
 | [`74`](./74-rakun-tls-ssl-bundles/README.md) | high | not started (two cells exist) | the core's four TLS files · `rakun-web/src/tls.bp` | A | 128 |
 | [`08`](./08-rakun-data-sql/README.md) | high | not started | `rakun-data`: `sql/**`, `migration/**`, `orm/**`, `datasource.bp` | A (step 1 after 04 step 4) | 128 · 04 step 4 (step 1) · lg2-e/f · decision 147 |
 | [`15`](./15-rakun-messaging/README.md) | high | not started (two premises already true) | `rakun-messaging` (not `pulsar/**`, `rsocket/**`) · `rakun-data/src/tx/**` · `rakun-scheduling` | A | 128 · 03r-al · lg2-w |
@@ -38,7 +38,7 @@ true in code: 74, 15, 81, 12, 65, 73 (each front says which).
 | [`12`](./12-rakun-cache/README.md) | medium | not started (premise changed) | `rakun-cache` · `rakun-session` | B | 19 step 1 · 04 step 1 |
 | [`11`](./11-rakun-actuator/README.md) | medium | not started | `rakun-actuator` · `rakun/src/actuator_api/**` | B | 128 · 22 (R11-7) |
 | [`65`](./65-rakun-url-rules/README.md) | high | not started (rule 2 of decision 201 in code) | `rakun-web` (not `tls.bp`) · one line of `rakun-data/src/devtools/devtools.bp` | B | 128 · decision 201 |
-| [`09`](./09-rakun-data-nosql/README.md) | low | not started | `rakun-data/src/nosql/**` | B | 19 step 1 · 13 · 03r-ab · lg2-a |
+| [`09`](./09-rakun-data-nosql/README.md) | low | not started | `rakun-data/src/nosql/**` | B | 19 step 1 · 13 · 03r-ab (record only) · lg2-a |
 | [`91`](./91-rakun-pulsar/README.md) | low | not started | `rakun-messaging/src/pulsar/**` (stays; data plane deferred — 274) | B | 15 · lg2-a |
 | [`92`](./92-rakun-rsocket/README.md) | low | partial: step 1 on `feat` | `rakun-messaging/src/rsocket/**` | B | 74 · 15 · 03r-an · lg2-a |
 | [`88`](./88-rakun-cli/README.md) | medium | not started | `rakun-cli` (not `release/**`) | C | 81 · 93 · 92 · 04 step 4 · 73's re-measure · lg2-j · onze 50 |
@@ -79,7 +79,7 @@ B front opens the day its named A step is on `feat`.
 - **19 step 1 early** — the Redis RESP double (decision 160) that 12's session arm and cache
   provider and 09's Redis arm assert against; in `rakun-test`, which depends on the core only.
 
-### 130 and 128 — ordering rule to confirm (`03r-ao`)
+### 130 and 128 — the ordering rule (`03r-ao`, only the record is missing)
 
 `01-compiler/130-decorator-outputs` step 5 (decision 216) still plans edits to files this track
 owns or 128 moves: the core's `src/decorators.bp` (frozen for rakun fronts), `autoconfig.bp`,
@@ -90,8 +90,8 @@ owns or 128 moves: the core's `src/decorators.bp` (frozen for rakun fronts), `au
 `rakun-websocket` · `rakun-client/src/exchange.bp` (13's) · `rakun-actuator-api` (128 moves it into
 `modules/rakun/src/actuator_api/`). Landed edits (rakun-data's `#[entity]` /
 `#[entityRepository]` / `#[belongsTo]` / `#[query]`, rakun-cache's `#[cached]`, rakun-hateoas'
-`#[halResource]`) are on `feat` and move with their files. **Proposed rule** (maintainer confirms;
-no decision yet):
+`#[halResource]`) are on `feat` and move with their files. **The rule** — `03r-ao`'s option (a), which
+130 and these fronts already follow as provisional; only the decision record is missing:
 
 1. 128 does not wait on 130 (130's rakun sites reach nearly every front's files; rakun-client's
    also wait on a behavior-member gap).
@@ -111,7 +111,7 @@ is file-disjoint. Shared members:
 | `rakun` | 04 · 74 · 17 · 11 | 74: `src/ssl_bundle.bp`, `src/sidecars/rakun_ssl.erl`, `test/ssl_bundle_test.bp`, `test/tls_listener_test.bp` · 17: `src/logging/**`, `test/logging/**`, `src/sidecars/rakun_logging.erl` · 11: `src/actuator_api/**`, `test/actuator_api/**`, `src/sidecars/rakun_actuator_api.erl` · 04: the rest, `botopink.json` and `src/root.bp` included; 74, 17, 11 add no file to the member |
 | `rakun-web` | 65 · 74 | 74: `src/tls.bp`, `test/tls_test.bp`; 65: the rest, `src/hateoas/**` included (no open box) |
 | `rakun-data` | 08 · 09 · 15 · 65 | 09: `src/nosql/**`, `src/nosql_host.bp`, `src/sidecars/rakun_nosql.erl`, `test/nosql/**` · 15: `src/tx/**`, `test/tx/**` · 65: one line of `src/devtools/devtools.bp` and `test/devtools/devtools_test.bp` · 08: the rest; 08 edits neither `botopink.json` nor `src/root.bp` this milestone, so 09 appends to both without waiting |
-| `rakun-messaging` | 15 · 91 · 92 | 91: `src/pulsar/**`, `src/pulsar_host.bp`, `src/sidecars/rakun_pulsar.erl`, `test/pulsar/**` · 92: `src/rsocket/**`, `test/rsocket/**`, `src/sidecars/rakun_rsocket.erl` · 15: the rest, `src/stream/**` included. `botopink.json`, `src/root.bp` are 15's; 91 (only if 03r-ad splits) and 92 (only for R92-1's edge, 03r-an) edit them after 15 lands |
+| `rakun-messaging` | 15 · 91 · 92 | 91: `src/pulsar/**`, `src/pulsar_host.bp`, `src/sidecars/rakun_pulsar.erl`, `test/pulsar/**` · 92: `src/rsocket/**`, `test/rsocket/**`, `src/sidecars/rakun_rsocket.erl` · 15: the rest, `src/stream/**` included. `botopink.json`, `src/root.bp` are 15's; 92 (only for R92-1's edge, 03r-an) edits them after 15 lands; 91 does not (274: no split) |
 | `rakun-client` | 13 · 93 | 93: `src/ws/**`, `test/ws/**`, `src/sidecars/rakun_ws.erl`; `botopink.json`, `src/root.bp` are 13's, 93 appends when 13 does not hold them |
 | `rakun-cli` | 81 · 88 | 81: `src/release/**`, `test/release/**`, `src/sidecars/rakun_release.erl`, and `botopink.json` / `src/root.bp` (lower number); 88 the rest, after 81 (group C) |
 | `rakun-test` | 19 | 12's and 09's cells import the double; neither edits `rakun-test` |
@@ -155,15 +155,20 @@ A cell is a hard assertion or does not exist (decision 160):
 ## What the maintainer must decide
 
 1.0.10's 24 choices (`03r-a` … `03r-x`, [`1.0.10-beta/decisions-pending.md`](../../1.0.10-beta/decisions-pending.md)
-§ Track B) are implemented, await confirmation; fronts build on them: 03r-b/c/d/e → 04 · 03r-f…j
-→ 12 · 03r-k/l/x → 15 · 03r-m…q → 22 · 03r-r → 73 · 03r-s → 17 · 03r-t/u → 11 · 03r-v → 08 ·
-03r-w → 79 and 13. New questions continue the letters; each recommendation is the most restrictive
-reading (decision 67). Answered: 03r-y (184, superseded by 187), 03r-z (185), 03r-aa (160), 03r-ac
-(187), 03r-ah (153), 03r-ai (186), 03r-aj (187).
+§ Track B) are implemented; those still awaiting confirmation, fronts building on them: 03r-c/e → 04 ·
+03r-f…j → 12 · 03r-k/l/x → 15 · 03r-m/n/p/q → 22 · 03r-r → 73 · 03r-s → 17 · 03r-t/u → 11 · 03r-v →
+08 · 03r-w → 79 and 13. Closed on 9 Oct: 03r-b (reversed by 299 — a malformed number stops the boot
+naming file, line, type; 04 step 7), 03r-d (299 — config bound at boot into a typed
+`#[config("prefix")]` record), 03r-o (290 — no segment config; 22 step 8). New questions continue the
+letters; each recommendation is the most restrictive reading (decision 67). Answered: 03r-y (184,
+superseded by 187), 03r-z (185), 03r-aa (160), 03r-ac (187), 03r-ad (274), 03r-ah (153), 03r-ai (186),
+03r-aj (187).
 
-**Open:** `03r-ab`, `03r-ae`, `03r-af`, `03r-ak`, `03r-al`, `03r-am`, `03r-an`, `03r-ao` (the 130 rule, § Order).
+**Open:** `03r-ae`, `03r-af`, `03r-ak`, `03r-am`, `03r-an`. **Only the record is missing** (the fronts
+already follow the recommendation): `03r-ab` (09 is written to (a)), `03r-al` (15 step 5 is written
+to (a)), `03r-ao` (the 130 rule, § Order — 130 and 128 follow (a)).
 
-### 03r-ab · Front 09 ships four arms; the binary-protocol stores are boot refusals until lg2-a
+### 03r-ab · Front 09 ships four arms; the binary-protocol stores are boot refusals until lg2-a (only the record is missing)
 
 **Measured.** MongoDB (OP_MSG + BSON), Neo4j (Bolt), Cassandra (CQL binary), Couchbase (memcached
 binary) are byte protocols; host cells marshal through `string` (lg2-a); each needs an OTP driver
@@ -174,7 +179,8 @@ a sidecar cannot load. ETS, Mnesia in the VM; Redis RESP over `gen_tcp` (text); 
 and 7's 12 boxes become the refusal cells + one `deferred.md` row each. (b) the four in an Erlang
 sidecar, a front each. (c) defer 09 whole.
 **Recommendation.** (a): refusal naming the gap is restrictive; ETS fallback under a Mongo URL is what 09 forbids.
-**Blocks.** 09 step 5 (and the scope of steps 1–4).
+09's README already applies (a).
+**Blocks.** Only the record — 09 step 5 is written to (a).
 
 ### 03r-ae · SAML 2.0 ACS: Exclusive XML Canonicalisation in a sidecar, or the SP retired
 
@@ -209,7 +215,7 @@ the field list. (c) a `json.schema` in std (not rakun's).
 **Recommendation.** (a).
 **Blocks.** 81 step 3.
 
-### 03r-al · 83's broker path enrols in 86's producer transaction
+### 03r-al · 83's broker path enrols in 86's producer transaction (only the record is missing)
 
 **Measured.** `rakun-data/src/tx` (`outbox_test.bp` "path choice: broker transactions skip the
 outbox, otherwise the outbox is used") holds the choice minus the broker. Broker side exists:
@@ -219,8 +225,8 @@ in order on commit, drops on a raise; a `read_committed` reader never sees an ab
 **Options.** (a) with the in-process broker transactional, the outbox path publishes through
 `withProducerTransaction`, writes no outbox row; R83-1's boxes reworded to the in-process broker,
 real-broker run a `deferred.md` row. (b) delete the two boxes. (c) leave open.
-**Recommendation.** (a).
-**Blocks.** 15 step 5.
+**Recommendation.** (a). 15 step 5 is already written to (a).
+**Blocks.** Only the record (15 step 5).
 
 ### 03r-am · Where the broker and scheduler doubles live
 
@@ -269,10 +275,10 @@ Done: RX-3 (decisions 113–117's rakun halves), RX-8 (`record ↔ Json` row, 13
 
 | Direction | This track | Other track | What crosses |
 |---|---|---|---|
-| rakun ⇄ `01-compiler/130` | 04 · 08 · 11 · 13 · 15 · 22 · 65 · 79 · 88 · 128 | 130 step 5 (decision 216) | the decorator rewrite of the rakun sites — § Order, the 130 rule (to confirm) |
+| rakun ⇄ `01-compiler/130` | 04 · 08 · 11 · 13 · 15 · 22 · 65 · 79 · 88 · 128 | 130 step 5 (decision 216) | the decorator rewrite of the rakun sites — § Order, the 130 rule (`03r-ao`, followed; record missing) |
 | rakun → onze | 65 (R82-4) | 49 step 4 (decision 201) | a static-root miss falls through to the router, only `GET` / `HEAD` served, a refusal stays final; onze registers `/**` → `public/` before the routes |
 | rakun → onze | 04 (R62-3) · 22 | 49 (ONZ-49-4.3) | the page `Request` enumerates `queryDict()`, `headerNames()` / `headers()` so `RequestData.query` / `.headers` stop being `[]` |
-| rakun ⇄ onze | 22 (R24-1, R24-2) | 50 (`useServer`), 53 (`serveActions`, the `__bp_action` / `X-Bp-Action` literals) | the file-level directive attached by `onze build`; the refresh payload is contract 2 |
+| rakun ⇄ onze | 22 (R24-1, R24-2) | 50 (`useServer` — no longer a form: 282, 303; 22 step 6), 53 (`serveActions`, the `__bp_action` / `X-Bp-Action` literals) | an action is `#[action] pub fn` (303), no file-level directive; the refresh payload is contract 2 |
 | rakun → onze | 22 (60) | 53 (prerender), 71 (`staticExport`) · jhonstart 27 | the route kind the build writes (decision 186) and the prerender store |
 | rakun → onze | 22 (66) | 70 | default size and content type via route discovery |
 | rakun → onze | 11 (R11-4) · 04 (R06-6) · 81 | 71 | `POST /actuator/shutdown`, exit codes, the release's stop path |
@@ -280,7 +286,7 @@ Done: RX-3 (decisions 113–117's rakun halves), RX-8 (`record ↔ Json` row, 13
 | rakun → jhonstart | 22 (R64-2, 66) | 32 | `Alternate[]`, `manifestHref`, `imagesFor`, `iconsFor` consumed unchanged; boxes close when 32 ticks |
 | rakun → onze | 88 (R88-6) | 50 | the CLI boundary table, mirrored in `07-onze/50-onze-cli/README.md` (onze's file) |
 | rakun → std / packaging | 73 | lg2-v · PK-7 | a git dependency with a subdirectory, for an out-of-tree starter consumer |
-| rakun → `01-compiler` | 04 · 08 · 09 · 13 · 15 · 22 · 65 · 88 · 91 · 92 · 93 | lg2-a · b · e · f · g · j · o · q · r · w | named per front; a box blocked on a compiler decision stays open and says so |
+| rakun → `01-compiler` | 04 · 08 · 09 · 13 · 15 · 22 · 65 · 88 · 91 · 92 · 93 | lg2-a · b · e · f · j · o · q · r · w | named per front; a box blocked on a compiler decision stays open and says so |
 | `03-bundled-libs` → rakun | 128 · 22 · 65 · 04 · 79 · 12 · 19 · 17 · 81 | 102 step 3 (`rakun-app/src/{file_router,static_gen}.bp`, `rakun-hateoas/src/hal.bp`) · 103 step 2 (`rakun-app/src/actions.bp`) · 104 step 5 (`rakun/src/request_context.bp`, `rakun-web/src/{negotiation,compression,static,error}.bp`, `rakun-security/src/csrf.bp`, `rakun-session/src/session_cookie.bp`, `rakun-test/src/fake_request.bp`, `rakun-app/src/i18n.bp`) · 105 (`rakun-app/src/i18n.bp`) · 106 (`rakun-web/src/error.bp`'s `problem_digest`; the logging files are 17's) · 107 (`rakun-cli/src/release/release.bp`) | consumer commits, never in a wave with the owning front (decision 188): 102 and 103 before 128; 104, 105, 107 and 106's one commit after the owning fronts land |
 | `08-bpp` → rakun | 04 · 65 · 22 | 123 (new `rakun/src/locals.bp`; lines of `rakun-web/src/{middleware,filter}.bp`) · 117 (`rakun-app/src/static_gen.bp`) · 120 (new `rakun-app/src/server_islands.bp`) · 127 (new `rakun-app/src/typed_action.bp`, one line of `actions.bp`) | after the owning rakun front: 123 after 04 and 65 (decision 189); 117, then 120, then 127 after 22, one at a time on `rakun-app`'s `botopink.json` and `root.bp` |
 
@@ -291,7 +297,7 @@ Done: RX-3 (decisions 113–117's rakun halves), RX-8 (`record ↔ Json` row, 13
   with no node binding is the design.
 - Host modules: `src/sidecars/rakun_<name>.erl`; test-only: `_fixture.erl` / `_double.erl`.
 - The core's `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp` are frozen for every rakun
-  front; sole writer: `01-compiler/130`'s decision-216 rewrite (§ Order, to confirm).
+  front; sole writer: `01-compiler/130`'s decision-216 rewrite (§ Order, `03r-ao` — followed, record missing).
 - A shared member's `botopink.json` and `src/root.bp` belong to its lowest-numbered front; others
   append in number order, never reorder.
 - A member another always needs is part of it (decision 187). Between mutually optional members, no

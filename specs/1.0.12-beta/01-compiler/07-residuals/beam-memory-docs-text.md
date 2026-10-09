@@ -87,7 +87,7 @@ and cost stated here, where the default is documented, nowhere else.
 > lose one of the two writes. The initialiser must be a literal or a `comptime` expression: it is
 > re-run at a moment nobody chose. **`Ets` is cache and counting memory, not where the truth
 > lives** — a balance, an order, a paid session belong in a supervised process or a database.
-> Under **`keyed = false`** (the default) a `Dict` is stored as **one** value: a write copies the
+> Under **`keyed: false`** (the default) a `Dict` is stored as **one** value: a write copies the
 > whole dict, and two processes writing *different* keys at the same time lose one of the writes —
 > measured, 20 000 writes each to two keys finished at `19 996` and `20 000`. Under
 > **`keyed: true`** each key is its own row: the seed is `Dict.empty()` or

@@ -37,6 +37,8 @@ import {layout, page, LayoutProps, PageContext} from "jhonstart";   // front 30
 import {cookies, pairValue} from "jhonstart";                   // front 28 · front 26
 import {redirect} from "jhonstart";                             // front 31 (decisions 115, 117)
 import {collections.Dict} from "std";
+// app-local — the action, passed by reference (281), never by its name in text
+import {lib.actions.createPost};
 
 // The action id is front 24's (contract 3) and the field name is the one onze configures
 // (decision 114; `__bp_action` is onze's default). Both arrive from the boot; fixed here.
@@ -115,7 +117,7 @@ pub fn newPostForm(binding: FormBinding, state: ActionState, pending: bool) -> E
 fn NewPostForm() -> @Component<ElementBase, Element> {
     // Read positionally; the labels survive the hook (`s.state`, `s.binding`,
     // `s.pending`) as well.
-    val s = use useActionState("createPost", actionState(""));
+    val s = use useActionState(createPost, actionState(""));
     val state = s.0;
     val binding = s.1;
     val pending = s.2;

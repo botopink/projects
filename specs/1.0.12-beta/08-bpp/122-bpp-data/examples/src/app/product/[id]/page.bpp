@@ -3,7 +3,7 @@
 //
 // Demonstrates: the `Astro` global, member by member, in a `.bpp` page. There
 // is no object: the fence is the body of the function the file unfolds to
-// (front 116), so it has the parameter `route` (open question `bpp-g`), the hooks (`use request()`, `use cookies()`), the
+// (front 116), so it has no parameter (decision 293: `use params<P>()`, `use pageData<D>()`), the hooks (`use request()`, `use cookies()`), the
 // navigation signals (`redirect`, `notFound`, `rewrite`) and the two response
 // hook (`use response()`, 291).
 //

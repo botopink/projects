@@ -3,8 +3,9 @@
 //
 // Demonstrates: the three boundary conventions and the one rule that makes them
 // compose — a boundary must let front 63's signals through instead of swallowing
-// them. A 404 travels the same `@Result` channel as a real failure, because
-// `throw` is the only way to abort a render. A boundary that caught everything
+// them. A 404 travels the same `@Result` channel as a real failure: in a
+// `-> @Result` function `throw e` builds the `Error(e)` value, not a raise (118,
+// 303), and the boundary reads it. A boundary that caught everything
 // would turn every missing post into "something went wrong" and every redirect
 // into a fallback page.
 //

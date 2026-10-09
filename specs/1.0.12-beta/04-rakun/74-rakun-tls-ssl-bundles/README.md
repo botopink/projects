@@ -15,7 +15,7 @@ files in `modules/rakun-web`)
 
 A `verify=full` client bundle asserted to refuse a hostname mismatch over a loopback `ssl`
 listener; `verify=none` warns through the core's logger; a reload leaves live connections alone,
-`reload-on-update` picks up a rotated certificate within two intervals.
+`reloadOnUpdate` (299: the key is the field's name; `reload-on-update` today) picks up a rotated certificate within two intervals.
 
 ## Mechanism
 
@@ -41,7 +41,7 @@ listener; `verify=none` warns through the core's logger; a reload leaves live co
 ### Step 2 — Reload (R74-3, R74-4)
 
 - [ ] `tls_listener_test.bp`: a connection opened before `sslReload("b")` still exchanges bytes after it (existing cell "sslReload after replacing both files makes the next handshake present the new certificate" covers the new-connection half)
-- [ ] `reload-on-update=true`, `interval=200ms`: rotated files on disk picked up, a new connection presents the new serial within 400 ms (`io.clock`)
+- [ ] `reloadOnUpdate: true`, `interval: 200ms` (299): rotated files on disk picked up, a new connection presents the new serial within 400 ms (`io.clock`)
 
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun` and `modules/rakun-web`.
