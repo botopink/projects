@@ -407,12 +407,16 @@ every host cell marshals through `string`.
       template call: now `template_eval.memoKey` — the callee, each capture's text with the scope
       entries of its words (decision 237), the plain arguments; 0.034 → 0.002 ms per N=200 call
       (`14-comptime-on-beam` step 2)
-- [ ] an unsuffixed integer literal is not range-checked against its declared type:
-      `val e: i32 = 3000000000` is accepted (319: a literal past the type's range is refused everywhere)
-      (from `04-js` step 9)
-- [ ] `-9223372036854775808l` is refused (the literal's digits are past `i64` before the sign applies);
-      `run/i64_full_range` writes `-9223372036854775807l - 1l` (from `04-js` step 9)
-- [ ] `refuseIntegerOutOfRange`'s message cites 247; the rule in force is 319 (from `04-js` step 9)
+- [x] an unsuffixed integer literal is range-checked in the type its position asks for, `i32` with
+      nothing asking (247): `val e: i32 = 3000000000` and an unannotated `3000000000` are refused at
+      the literal (`reject/integer_literal_unsuffixed_out_of_range`,
+      `reject/integer_literal_unsuffixed_default_out_of_range`); `run/i64_full_width`'s
+      `@print(4294967296)` is written `4294967296l` (from `04-js` step 9; bugs-sweep)
+- [x] the operand of a unary `-` is read as the negative value: `-9223372036854775808l` is `i64`'s
+      minimum, `-129` is below `i8`, a negated literal takes its width from the other operand
+      (`isIntegerLiteralOperand`), wasm emits a type's minimum as the constant
+      (`run/integer_literal_type_minimum`, `reject/integer_literal_below_minimum`; bugs-sweep, bs-b)
+- [x] `refuseIntegerOutOfRange` cites 319 (`infer_errors` "cites decision 319"; bugs-sweep)
 
 **Gate:** standard (fronts.md § Gate) + every re-recorded `snapshots/comptime/**` file read for
 expected/found orientation; a refusal moving a backend fixture is reported to that backend's front,

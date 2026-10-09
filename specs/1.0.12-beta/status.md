@@ -29,19 +29,21 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 114 s3 — botopink-lang `test.yml` green on GitHub on `feat` · the `libs` job was red on `94a9c3ef` on Node 20 (`fs.globSync`, five `std·commonJS` `fs.glob` tests, needs Node 22) — fixed in botopink-lang `6d95d8fc` (both Node installs at 22); the box stays open until a green run is read
 - [x] 114 s6 box 1 — vscode-extension workflow installs the compiler's OTP 28 (vscode-extension `f041865`)
 - [x] 114 s6 box 2 — vscode-extension's workflow green on `feat` (`f041865`)
-- [ ] 114 — the runtime cache (`codegen/runtime.zig` `cacheWrite`, `.botopinkbuild/runtime-cache`) stores a run that ended on a signal as a pass: an interrupted `erl` (`BREAK: (a)bort …`) or a cut output is replayed by every later run until the cache is deleted; a run not ended by its own exit is never stored · none
-- [ ] 114 — `modules/compiler-cli/tests/result_store.sh` "no change" fails when the meta checkout's `repository/vscode-extension/node_modules` holds a symbolic link ("2 checks never stored"); the test depends on a sibling repository's install · none
+- [x] 114 — the runtime cache never stores a run not ended by its own exit: `RunStatus.interrupted` (a signal, a stop, an `erl` that printed its break handler's banner and halted 0) is never recorded nor cached, wasm included; `HARNESS_VERSION` `6-own-exit` drops older entries (`tests/runtime_scratch.zig` "never cached"; bugs-sweep patch 01, bs-c)
+- [ ] 114 — `codegen/runtime.zig`'s own `test` blocks never run: `codegen/tests.zig` does not import the file (`runtimeTrapLog`, `compileFailureLog`, the duplicate-atom refusals — `-Dtest-filter` finds none) · none
+- [x] 114 — `result_store.sh` no longer reads a sibling checkout: `check-docs.sh`'s default library roots are this checkout's `libs/` and every sibling under `repository/` holding a `botopink.json` (vscode-extension's included), each hashed whole into every key; `--lib-root` replaces them and the test names its own (bugs-sweep patch 02; the gate's cost of it: bs-d)
 - [ ] 114 — onze-cli `start_test.bp` hard-codes ports 43101/43102 and the gate runs its commonJS and erlang cells side by side: a request can reach the other cell's server (`test-libs` red once on batch 8, green alone) · onze, one port per cell
 - [ ] 114 s7 — a cold gate recorded on the current tip, ≤ 450 s, exit-check counts re-derived · a machine with `zig` and `erl`
 - [x] 114 s8 boxes 1–2 — 133's emitted modules byte-identical, measured; rakun's `test.yml` glibc comment says 2.35
 - [x] 114 s8 box 3 — emilia `test.yml`'s jhonstart checkout removed (its own emilia patch, after 06-emilia/33 s2)
 - [x] 114 — the four other libraries' `test.yml` stale glibc 2.38 comment says 2.35 (emilia `b3d877e`, erika `44aef93`, jhonstart `0ba3c55`, onze `d6664c8`)
-- [ ] 01-compiler — `codegen/AGENTS.md:306` says "node 20"; CI installs Node 22 since `6d95d8fc` · none
+- [x] 01-compiler — the node floor is 22 (std's `fs.glob` calls `fs.globSync`): `codegen/AGENTS.md`'s `toReversed` note, and the `node ≥` rows of `AGENTS.md`, `README.md` and `docs.md` (bugs-sweep patch 09)
 - [ ] 01-checker s6 box 3 — `throw` in a `case` arm under `@Result` · 04 s6
 - [x] **01-checker s21 (priority, 331)** — every `comptime` runs on the comptime runtime (BEAM or WAT), never on the target; the same value on the four targets; a declared function's reference lifted; rakun `beans()` green unchanged; a decorator body's helper building another module's record (`block_eval.typesReached`)
 - [x] 134 s4 (267) — the variadic parameter `..name: T[]`; 134 s6 (269) — `@getContext(T)` answers `Component<T, T>`, refused outside `use`; 134 s2 — `Type.pick` / `Type.omit` declared (no cell calls them yet: 01-checker s28) · botopink-lang `56d4bc29`
 - [ ] 134 — `registerStdlib` now runs the associated-type rewrite on std modules (`comptime.zig`, landed with batch 8 for `Type.Field<T>`): owner 01-checker · none
-- [ ] 01-compiler — a string template in a `pub fn` of a `pub type` crashes commonJS codegen (`stringTemplate => unreachable` in `commonJS.zig` `buildExpr`); an associated fn called with too many arguments is not arity-checked (`associatedCallReturnType`) · none
+- [x] 01-compiler — a string template in a method body (a type's, an enum's, a behavior's `default fn`) reached every backend's `stringTemplate => unreachable`: the method-body walk desugars it, and runs whatever the maps hold (`run/template_in_type_method`, four targets; bugs-sweep patch 04)
+- [x] 01-compiler — a type's associated fn is arity-checked: a short call filled from the declared defaults, a labelled one reordered, any other count refused at the call (`reject/associated_fn_too_many_arguments`, `reject/associated_fn_missing_argument`, `run/associated_fn_of_type_default`; bugs-sweep patch 05, bs-a)
 - [ ] 140 (334) — steps 1–3 and 6's loader landed (botopink-lang `56d4bc29`: `wasm.host`, `@External.Wasm(host:)`, the wasi build a preview 2 component, the browser `.wasm` + `.mjs`, every wasm cell on both hosts); open: steps 4–5 (140-a, 140-b, 140-c), the binary component encoding, std's `External.Wasm` declaration without `host` · a wasm build binds to wasmtime / WASI preview 2 (`wasi:http`, clocks, pollables; `@Task` blocking on pollables), `browser` together (one `.out` on both) · then 97 s17 (`io/http`, `async` on wasm)
 - [x] 97 s16 (333 (A), first) — `unicode.normalize` in botopink on the four targets over `unicode_tables.bp`, generated by `zig build gen-unicode` from Unicode 17.0.0; every line of `NormalizationTest.txt` green on commonJS, erlang and beam; `run/std_unicode_on_every_target` one `.out` (its `.wasm.expect` gone) · `97-s16-a` (where the tables live)
 - [ ] 05-wasm s9 · 04-js s11 (333 (B), later) — a prebuilt wasm library merged into the module; no user yet
@@ -81,7 +83,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 01-checker rows — the comptime body's file, a package's module namespace, two aliased same-named types (310), `@External.Wasm` read on every target · none
 - [x] 01-checker row — the template memo key is O(text) (`template_eval.memoKey`, 237)
 - [x] 01-checker rows — a partially returning `@block` is `block-tail-value` (`reject/block_partial_return`); a decorator body's `decl.nope` is the checker's unknown field, located in the body (`reject/decorator_{body,helper}_unknown_field`); the two diagnostics teaching retired spellings corrected
-- [ ] 01-checker rows — an unsuffixed literal is not range-checked (`val e: i32 = 3000000000` accepted, 319); `-9223372036854775808l` refused; `refuseIntegerOutOfRange` cites 247 instead of 319 · none
+- [x] 01-checker rows (319) — an unsuffixed literal is range-checked in the type its position asks for (`i32` with nothing asking, 247); the operand of a unary `-` is read as the negative value, so each signed minimum is written as itself (wasm emits it as the constant, `negatedMinimum`) and a negated literal takes its width from the other operand; the refusal cites 319 (`reject/integer_literal_*`, `run/integer_literal_type_minimum`, `infer_errors` "cites decision 319"; `run/i64_full_width`'s `@print(4294967296)` written `4294967296l`; bugs-sweep patch 07, bs-b)
 - [x] 04-js s1 — the `@block` tail form refused before commonJS (01's `block-tail-value`); the IIFE serves the two shapes left
 - [x] 04-js s2 — `$stringify` in a template (164, 239); `render`'s arm and `emitStringify*` deleted
 - [ ] 04-js s6 — `throw` in a `case` arm · 01 s6
@@ -90,7 +92,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 04-js s9 rest — `Json`'s exact `i64` (332: 139, then 97 s15) · the explicit conversions (97 s13's std surface)
 - [x] 04-js s10 (320) — a string index counts codepoints on commonJS: the five reads through prelude helpers, host templates in codepoints, `run/string_index_of_codepoints` one `.out` for the four targets
 - [ ] 04-js s10 row — string reads cost +24 % against the 10 % target (`js/AGENTS.md`) · none
-- [ ] 04-js row — `??` lowering defeats the self-tail-call loop on commonJS: the IIFE reads the parameters, `NameScan` refuses the `while (true)` rewrite; std `path.bp` `resolveAll` recurses per segment since 330's migration · none
+- [x] 04-js row — an immediately invoked plain arrow or `function` is not a closure for the self-tail-call scan (`NameScan.immediateBody`): the `??` IIFE keeps the loop, std `path.resolveAll` / `applyPieces` loop again (two `std_package` snapshots re-recorded; bugs-sweep patch 03)
 - [x] 05-wasm s1 box 1 · s3 box 2 — `Array.unique` keeps the first occurrence (`run/array_unique`); C-07's cells on wasm as `run/is_truth_table` (`run/unknown_stores_nothing` struck — §11 is a cost, no program prints a difference)
 - [ ] 05-wasm s5 — the rest of std on wasm: heap growth, `pow`, astral `contentHash`, `encoding` / `querystring` family cells, the `wat/AGENTS.md` limits row done; left: `json` on wasm and its cell · 97 s15 (336)
 - [x] 05-wasm s8 — overflow for `u32`/`u64` and the narrow integer types on wasm (264)
@@ -101,7 +103,8 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [x] 02-erlang s5 box 2 — a decorator body carrying `\u{…}` (cell: 14 s7)
 - [x] 02-erlang s7 — C-07's erlang tails as `run/is_truth_table`; `run/unknown_stores_nothing` struck (§11 is a cost, no program prints a difference)
 - [x] 02-erlang s10 — the block-as-value lowering (R7): the valueless tail refused by the checker, a `return` the block's fun cannot answer last throws to the block's own guard
-- [ ] 02-erlang row — an `@block` reassigning an enclosing `var` makes `erlc` refuse the module (`Acc@1` unbound) · none
+- [x] 02-erlang row — an `@block` with a `return` (or in value position) that reassigns an enclosing `var`: every `return` answers `{V, Group}` and the call site rebinds the group (`valueBlockExpr`; `run/block_value_reassigns_enclosing_var`, a `for`'s `return` in `tests/erlang.zig`; bugs-sweep patch 06)
+- [ ] 03-beam row — a `return` from a `for` inside an `@block` answers from the enclosing function: `val found = @block { for (xs) { x -> if (x > limit) { return x; }; }; return -1; }; return found * 100;` answers `7` on beam, `700` on the other three · none
 - [x] 02-erlang s12 · 03-beam s7 — one `math` on every OS (263): on feat (`a443f52d`)
 - [x] 02-erlang s13 · 03-beam s8 — an integer that leaves its type aborts (264): on feat (`48a096ea`)
 - [x] 02-erlang s15 · 97 s14 box 1 (320) — erlang and beam count codepoints: the emitters and std's Erlang templates read the codepoint list (`run/string_index_of_codepoints`, combining-mark and astral rows)
@@ -145,7 +148,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 97 s13 rest — std's Node templates over an `i64` (`io/clock`, `io/fs`) in 319's canonical form · `Json`'s `i64` as its digits (332, s15) · `97-s13-a` (`abs` of the minimum)
 - [x] 97 s13 boxes 3–5 — `parseInt` exact over `i64`; `min` / `max` / `abs` / `clamp` / `isEven` / `isOdd` past 2^53 on commonJS; `toI32()` … `toF64()` on `Integer`, aborting when the value does not fit (wasm halves: 05-wasm rows)
 - [x] 97 s12 — `unicode.fromCodepoint` a `fn:` over `String.fromCodepoint` on all four targets (with `powBody`, `fn:` transcendentals, code-point `contentHash`)
-- [ ] 97 row — an embedded std file's reserved-word error is unlocated · none
+- [x] 97 row — an embedded std module that does not lex or parse is printed located at its `libs/std/src/<module>.bp` file and the build stops with `EmbeddedStdRefused` (was `compilation failed` / `UnexpectedToken`; `parseEmbeddedStd`, `comptime/tests/located_errors.zig`; bugs-sweep patch 08)
 - [ ] 104 s5 — the consumer sweep · 04, 65, 79, 12, 19, 22, `08-bpp/123`, 49, 51 landed (188)
 - [ ] 106 s2 — consumers: 17's and 26 s4's boxes; rakun-web's `problem_digest` commit · 65 landed
 - [ ] 106 s3 — `log`'s sinks and runtime-report capture, bound on every target · decision 349
