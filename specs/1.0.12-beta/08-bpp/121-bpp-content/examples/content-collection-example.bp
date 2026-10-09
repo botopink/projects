@@ -83,7 +83,7 @@ pub fn collections() -> Array<AnyCollection> {
 // ── src/app/blog/page.bp — the list ─────────────────────────────────────────
 
 #[page("blog")]
-pub fn blogIndex(route: PageContext) -> @Component<ElementBase, Element> {
+pub fn blogIndex(route: PageContext) -> @Component<Element> {
     val posts = await getCollectionWhere(blog(), { entry -> entry.data.draft == false });
     return html """
       <h1>My posts</h1>
@@ -101,7 +101,7 @@ pub fn staticPaths() -> @Task<Array<StaticPath>> {
 }
 
 #[page("blog/[id]")]
-pub fn blogPost(route: PageContext) -> @Component<ElementBase, Element> {
+pub fn blogPost(route: PageContext) -> @Component<Element> {
     val found = await getEntry(blog(), blogPostParams(route).id);
     if (found == null) { notFound(); }
     val post = found ?? missing();

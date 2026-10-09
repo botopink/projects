@@ -10,7 +10,7 @@ import {Element, ElementBase, client, div} from "jhonstart";
 import {linkStatus} from "jhonstart-link";
 
 #[client]
-pub fn NavProgress() -> @Component<ElementBase, Element> {
+pub fn NavProgress() -> @Component<Element> {
     val s = use linkStatus();
     val state = if (s.pending) "busy" else "idle";
     return div([], attrs: [#("class", "nav-progress"), #("data-state", state)]);

@@ -3,7 +3,7 @@
 // The `/blog/[slug]` page, as a server component.
 //
 // Everything in this file runs on the BEAM, once, while the request is in
-// flight. `PostPage` returns `View` (= `@Component<ElementBase, Element>`,
+// flight. `PostPage` returns `View` (= `@Component<Element>`,
 // decisions 128, 276; `@Component ⊃ @Task`, so a component awaits) and takes no
 // parameter (293); the two loaders return
 // `@Task<T>` and are awaited at statement level, one after the other, and the tree is

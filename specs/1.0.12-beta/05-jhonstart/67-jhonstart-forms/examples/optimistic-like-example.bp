@@ -30,7 +30,7 @@ fn addLike(current: i32, action: i32) -> i32 {
 }
 
 // The submit button, which reads its own form's status rather than a prop.
-fn LikeButton() -> @Component<ElementBase, Element> {
+fn LikeButton() -> @Component<Element> {
     val status = use formStatus();
     return likeButton(status);
 }
@@ -59,7 +59,7 @@ fn likeWidget(binding: FormBinding, shown: i32, status: FormStatus) -> Element {
 
 // The component. `push(1)` is called by the submit interceptor, not from here:
 // the prediction is recorded against the submit that is starting.
-fn LikeWidget(serverCount: i32) -> @Component<ElementBase, Element> {
+fn LikeWidget(serverCount: i32) -> @Component<Element> {
     // Each element takes its type from the hook's tuple (decision 67): `shown` is
     // the `i32` of `T`. Upstream: `const [shown, push] = useOptimistic(...)`.
     val #(shown, push) = use optimistic(serverCount, addLike);
