@@ -3,7 +3,8 @@
 **Priority:** medium — the logger every member reports through, in the core after 128 (decision
 187); one digest scheme with jhonstart (decision 194) is rakun's one cross-library correctness item ·
 **State:** not started
-**Depends on:** 128 · `03-bundled-libs/106-log`'s package, landed (decisions 194, 195 — step 2) ·
+**Depends on:** 128 · `03-bundled-libs/106-log`'s package, landed (decisions 194, 195 — step 2), and its
+step 3 (`log`'s sinks, decision 349) ·
 13 step 2 (keep-alive pool, R75-1) · 03r-s (confirmation)
 **Owns:** `modules/rakun/src/logging/**`, `test/logging/**`, `src/sidecars/rakun_logging.erl` ·
 `modules/rakun-metrics/**` · `repository/rakun/AGENTS.md` § Logging, § Metrics
@@ -16,7 +17,7 @@
 
 An edge-minted request's correlation id is its trace id (log line and span agree); the core's
 failure entry (04's `after()`, 22's regeneration) is one `error` line with the request id; one
-digest implementation, `log`'s, and the logger is `log`'s sink; `loggers` / `logfile` refused
+digest implementation, `log`'s, and the core installs one of `log`'s sinks at boot (349); `loggers` / `logfile` refused
 without a grant; metrics and traces share one connection; no test writes under `$HOME`.
 
 ## Mechanism
@@ -26,8 +27,10 @@ without a grant; metrics and traces share one connection; no test writes under `
   a fallback before the fresh id: the current span's `traceId()` (core's after 128), set by the edge
   span before the filter chain. Both boxes assert the same value from two suites.
 - **R17-1 (decisions 194, 195).** `logging/digest.bp` `errorDigest(module, errorClass, message,
-  topFrames)` deleted for `log`'s; `formats.bp`, `levels.bp`, `digest.bp` import the pure half from
-  `log`, erlang cells stay. The logger installs itself as `log`'s sink at boot, so a record
+  topFrames)` deleted for `log`'s; `formats.bp`, `levels.bp`, `digest.bp` import `log`; the sink and
+  capture cells go to `log` (349) — the core keeps the correlation id, its typed config and the
+  endpoints, and at boot installs `log`'s sink configured from `rakun.logging.*` and calls
+  `log.captureRuntimeReports()`, so a record
   jhonstart's boundary writes through `log` reaches rakun's handlers with the fallback's digest —
   one function, not two compared.
 - **R17-2.** `endpoint_test.bp` mounts the actuator host with 76's default exposure, asserts 403 for
@@ -52,7 +55,7 @@ without a grant; metrics and traces share one connection; no test writes under `
 ### Step 2 — The digest and the sink (R17-1; after 106's package)
 
 - [ ] `grep -n "fn errorDigest" modules/rakun/src/logging` empty; `digest_test.bp` asserts the lines of `log`'s known-answer fixture through the imported `errorDigest` — fixture is `log`'s, not this member's
-- [ ] the logger installs itself as `log`'s sink at boot; a record through `log`'s error-logging function produces one `error` line carrying the digest the call answered (`digest_test.bp`); README documents that onze sets the sink for the render (`07-onze/49` step 3) and that the box ticks when jhonstart 26 step 4's cell reads the same fixture
+- [ ] the core installs `log`'s sink (configured from `rakun.logging.*`) and calls `log.captureRuntimeReports()` at boot; `cells.bp`'s sink and capture cells deleted (349, after `106` step 3); a record through `log`'s error-logging function produces one `error` line carrying the digest the call answered (`digest_test.bp`); README documents that onze installs `log`'s sink for the render (`07-onze/49` step 3) and that the box ticks when jhonstart 26 step 4's cell reads the same fixture
 
 ### Step 3 — Endpoints and export (R17-2, R75-1)
 

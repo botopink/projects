@@ -2,7 +2,7 @@
 
 **Priority:** low — a third broker behind an abstraction that has two; nothing depends on it ·
 **State:** not started
-**Depends on:** 128 · 15, landed (`publishWithRetry` and the `x-attempt` envelope) · lg2-a (the
+**Depends on:** 128 · 15, landed (`publishWithRetry` and the `x-attempt` envelope) · 346's `Bytes`, unbuilt (the
 codec's byte half in botopink; an Erlang sidecar has binaries) · decision 274
 **Owns:** `modules/rakun-messaging/src/pulsar/**`, `src/pulsar_host.bp`, `src/sidecars/rakun_pulsar.erl`,
 `test/pulsar/**`, the new `test/pulsar/refusal_test.bp` · its `deferred.md` row ·
@@ -25,14 +25,14 @@ Today: `rakun-messaging/src/pulsar/{mod,pulsar}.bp` (148 lines), `src/pulsar_hos
 Pulsar's HTTP admin API through `rakun-client` (`pulsar.bp` the member's only `rakun-client`
 importer; the edge stays transitive through `rakun-metrics`, so no split would remove it). The
 codec's CRC32C matches the Castagnoli vector; its varint / length-prefix half is marked
-`// LANGUAGE GAP:` in the example (lg2-a; no bitwise operators by design).
+`// LANGUAGE GAP:` in the example (no byte type until 346's `Bytes`; no bitwise operators by design).
 
 - **Refusal cell.** `pulsar://` in `rakun.messaging.pulsar.url` refuses the boot: "the Pulsar data
   plane is not implemented (deferred: <row>); the admin arm is available".
 - **Deferred.** The data plane — CONNECT, LOOKUP, PARTITIONED_METADATA, PRODUCER, SEND/SEND_RECEIPT,
   SUBSCRIBE, FLOW, ACK, NEGATIVE_ACK, PING/PONG, transaction commands over `gen_tcp` — is one
   `deferred.md` row naming this README, a fixture-broker sidecar (`rakun_pulsar_fixture.erl`) as the
-  way to write it, and lg2-a. Never a cell waiting for a broker or reporting *skipped*.
+  way to write it, and 346's `Bytes`. Never a cell waiting for a broker or reporting *skipped*.
 
 ## Open
 
@@ -41,7 +41,7 @@ codec's CRC32C matches the Castagnoli vector; its varint / length-prefix half is
 - [ ] `test/pulsar/refusal_test.bp` asserts the boot refusal's text for a `pulsar://` listener; the
       admin and topic suites stay green
 - [ ] one `deferred.md` row for the data plane, naming this README, the fixture-broker approach and
-      lg2-a; `examples/pulsar-listener-example.bp` keeps its markers
+      346's `Bytes`; `examples/pulsar-listener-example.bp` keeps its markers
 - [ ] `repository/rakun/AGENTS.md` § Pulsar states the arm's scope (admin, settings, codec) and the
       refusal
 
@@ -55,4 +55,4 @@ green in `modules/rakun-messaging`.
 
 Blast radius: none outside `rakun-messaging`; `rakun-starter-messaging` unchanged.
 
-`examples/pulsar-listener-example.bp` kept for its open marker (lg2-a and the bitwise rule).
+`examples/pulsar-listener-example.bp` kept for its open marker (the byte gap — 346 — and the bitwise rule).

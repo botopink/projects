@@ -3,7 +3,7 @@
 **Priority:** high — onze's public root waits on step 1 (a `/**` static root answers every page URL
 404 today); an unasserted hop-by-hop rule is a proxy correctness gap · **State:** not started
 (decision 201's rule 2 already in code)
-**Depends on:** 128 · decision 201 (step 1) · lg2-a / lg2-b (relay carries the body as `string`
+**Depends on:** 128 · decision 201 (step 1) · lg2-b · 346's `Bytes`, unbuilt (relay carries the body as `string`
 chunks — enough for the assertion)
 **Owns:** `modules/rakun-web/**` except 74's `src/tls.bp`, `test/tls_test.bp` (`src/hateoas/**`
 included, no open box) · one line of `modules/rakun-data/src/devtools/devtools.bp` — dev-profile

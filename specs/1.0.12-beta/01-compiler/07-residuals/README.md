@@ -195,7 +195,7 @@ each track rewrites its own tree.
 ### Step 10 — erika's C-13 migration and C-12 reformat
 
 erika has no track: `16-formatter/c13-migrate.py` over erika (28 sites at 1.0.10 — `16-formatter`
-step 1 re-counts), then `botopink format` at C-12's rules once 16-a/16-b confirmed.
+step 1 re-counts), then `botopink format` at C-12's rules once `16-formatter` step 6 (decision 345) lands.
 
 - [ ] erika's `;` sites migrated by the script, cells green before/after, `botopink format --check` exit 0; reformat token-identical, idempotent
 - [ ] erika's gate (`scripts/git-hooks/pre-commit`: `botopink test` per member, `botopink build` per example) green; `zig build test-libs -- --lib erika` / `--lib erika-linq` green in the meta worktree

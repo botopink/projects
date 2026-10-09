@@ -2,10 +2,10 @@
 
 **Priority:** high · **State:** partial: steps 1–9, 11, 12, 14–17, 19, 20 on feat; step 18 built on
 feat (botopink-lang `49455602` merges `19d59508`, `6185db3c`) with one box open; step 6 box 3, steps
-13, 21–31 and ten rows open
+13, 21–33 and ten rows open
 **Depends on:** `04-js` step 6 (step 6 box 3) · `05-wasm` nested
-constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated rows lg2-a, lg2-q, lg2-e — each a step here only once
-answered.
+constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated row lg2-q — a step here only once answered (lg2-a is step 32, decision 346;
+lg2-e answered by 347 with nothing to build: a method's `@Decl` has no `owner`).
 **Owns:** `modules/compiler-core/src/comptime/{infer,types,unify,env,transform,eval,error,diagnostics}.zig`
 · `src/parser/**`, `src/parser.zig`, `src/print.zig`, `src/lexer.zig`, `src/lexer/**` · `src/ast.zig`
 (node fields its steps add) · `snapshots/comptime/**`, `snapshots/parser/**` · its cells under
@@ -341,21 +341,54 @@ Today `??` and `?.` work; `?.[i]`, `?.(args)` and the postfix `!` do not parse; 
 `unwrapOr` and the `result` namespace work in prose only (`builtins.d.bp` comments); a `type` in a
 type's body is a parse error.
 
-- [ ] parser: `?.[i]`, `?.(args)` and the postfix `!` (`x!`, `x!.f()`); the prefix `!x` unchanged
-- [ ] checker: an operator over a value whose type is not `?T` is a located error naming the type (`s?.length()`,
+- [x] parser: `?.[i]`, `?.(args)` and the postfix `!` (`x!`, `x!.f()`); the prefix `!x` unchanged
+- [x] checker: an operator over a value whose type is not `?T` is a located error naming the type (`s?.length()`,
       `s ?? "y"`, `s!` with `s: string`); `?.` over a member answering `?U` is `?U` (flattened); `??` beside
       `&&` / `||` without parentheses is a located error asking for them
-- [ ] `x!`: `null` aborts with `value is null — <expr> at <file>:<line>:<col>`, one text on the four targets
-      (the lowering is each backend's, 02–05; cells `run/optional_operators`, `run/optional_bang_aborts`)
-- [ ] `?T` has no methods: `.map`, `.flatMap`, `.unwrapOr` on a `?T` are `unknown method` naming `?.` / `??`; on
-      `@Result` they stay; `result.map(…)` and the rest of the namespace are unbound names
+- [ ] `x!`: `null` aborts with `value is null — <expr> at <file>:<line>:<col>` — built (`?? @panic(…)`,
+      `run/optional_bang_aborts`); commonJS prints the text, erlang and beam abort with it as an Erlang binary
+      (the `—` makes it non-latin1), wasm aborts without it: one text on the four targets is the backends'
+      panic printing (02, 03, 05)
+- [x] `?T` has no methods: `.map`, `.flatMap`, `.unwrapOr` on a `?T` are `unknown method` naming `?.` / `??`; on
+      `@Result` they stay; `result.map(…)` and the rest of the namespace are unbound names. A method after a
+      `?.` link continues its chain (`e?.key.length()`), as TypeScript's does
 - [ ] a migration script (`scripts/codemod-optional-operators.py`, as 129's) rewrites `.unwrapOr(d)` on a `?T` to
       `?? d` and `result.<op>(r, …)` to `r.<op>(…)` in every tree — one commit per repository, before the
-      refusals land
-- [ ] a `type` declared in a type's body is that type's associated type (the `decl.addType` node, 216):
+      refusals land. Built and run over botopink-lang (std, the five shared libraries, the language suite,
+      `examples/`); the five library repositories' migrations are prepared, one per repository
+- [x] a `type` declared in a type's body is that type's associated type (the `decl.addType` node, 216):
       `pub type Type { pub type Field<T>(…) { … } }` reads `Type.Field<T>` (308); `reject/` cells for a nested
       type named like a member
-- [ ] `docs.md` § Operators and § Optionals (07's prose) list the five operators and the five rules
+- [x] `docs.md` § Operators and § Optionals (07's prose) list the five operators and the five rules
+- [ ] wasm: `?.()` over a function answering a plain value is refused (`run/optional_call_operator`'s
+      `.wasm.expect`) — the answer has to be boxed (05)
+- [ ] erlang, beam, wasm: `recv?.m()` over an absent receiver — `s?.length()` raises `badarg` on erlang and
+      beam and answers `8` on wasm (the backends' `?.` method lowering; a method continuing a `?.member` chain
+      is right on the four)
+- [ ] erlang: `a ?? ns.f()` with a package-module namespace call as the default (std's own
+      `os.tmpdir()`) lowers as a method call on `ns`; std reads it into a `val` first
+
+### Step 32 — a `Bytes` primitive (decision 346)
+
+Today no primitive, std type or literal holds bytes (`val b: Bytes = "a";` mismatches everywhere) and
+every host cell marshals through `string`.
+
+- [ ] `Bytes` in `builtins.d.bp` / `primitives.bp`: an immutable byte sequence; `Bytes.fromUtf8(s: string)
+      -> Bytes`; `b.toUtf8()` answering `@Result` (an `Error` on invalid UTF-8)
+- [ ] no conversion between `string` and `Bytes` without those calls: a string literal where `Bytes` is
+      expected, and `Bytes` where `string` is, are located mismatches (`reject/` cells)
+- [ ] a host cell may take and answer `Bytes`; the lowering is each backend's (an Erlang binary, a
+      `Uint8Array` on commonJS, a buffer in wasm memory — 02–05), one `run/bytes_round_trip` cell on the
+      four targets
+- [ ] the rest of the surface (length, slice, concatenation, `encoding`'s bridges) written in the step's
+      commit under 67; `docs.md` § Primitives (07's prose) and `language-gaps.md`'s byte row point here
+
+### Step 33 — `@embedFile` / `@embedBytes` checked (decision 342)
+
+- [ ] `@embedFile(comptime path: string) -> string` and `@embedBytes(comptime path: string) -> Bytes` in
+      `builtins.d.bp`, callable in any context; a `path` not known at compile time is 280 (0)'s error at
+      the argument; an absolute path or one leaving the package (`..`) refused at the argument (`reject/`
+      cells); the read itself is `14-comptime-on-beam` step 6's
 
 ### Rows other fronts found
 
@@ -370,8 +403,10 @@ type's body is a parse error.
 - [ ] `@External.Wasm` binding read on every target: checker walk over `external_variants` with
       `codegen/wat/host_binding.zig`'s `parse`, so a misspelt `op:` no wasm build reaches is refused
       (from `05-wasm` step 5)
-- [ ] `infer.zig`'s template memo key appends the whole scope's JSON per call site — O(scope) per
-      template call (`14-comptime-on-beam` step 2's remaining cost)
+- [x] `infer.zig`'s template memo key appends the whole scope's JSON per call site — O(scope) per
+      template call: now `template_eval.memoKey` — the callee, each capture's text with the scope
+      entries of its words (decision 237), the plain arguments; 0.034 → 0.002 ms per N=200 call
+      (`14-comptime-on-beam` step 2)
 - [ ] an unsuffixed integer literal is not range-checked against its declared type:
       `val e: i32 = 3000000000` is accepted (319: a literal past the type's range is refused everywhere)
       (from `04-js` step 9)

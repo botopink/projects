@@ -2,7 +2,7 @@
 
 **Priority:** high — every library's "consume std X" step is written against this surface ·
 **State:** partial: steps 0–5, 8–10, 12 on feat; residue of steps 1, 2, 4, step 6 (conditional), 11
-open (its questions: `97-a`, `97-b` → 334, 335; `97-c` → 335; `110-a` open), 13–17 open; step 7 → 20-snap
+open (its questions: `97-a`, `97-b` → 334, 335; `97-c` → 335; `110-a` open), 13 (boxes 1–2), 14, 15, 17 open; step 7 → 20-snap
 **Depends on:** `std-d` (step 6) · `24-g` confirmed (step 5) · decision 230 (step 11) · decision
 262 (step 12)
 **Owns:** `repository/botopink-lang/libs/std/src/**`, `libs/std/AGENTS.md`, `libs/std/test/**` ·
@@ -48,8 +48,24 @@ function in the concept's module. Each library copy deleted by its file's front.
 - Step 3 — `clock.parseDuration` compares the count with `(2^53 − 1) / unit` before multiplying, so
   `"104249992d"` is the `out of range` `Error` on commonJS too (the product aborted there once an
   `i64` overflow aborts on every target)
+- Step 16 — `unicode.normalize` (NFC, NFD, NFKC, NFKD) is std's botopink body on the four targets
+  (decision 333 (A)): decompose recursively, canonical order by combining class, recompose (blocked
+  and excluded pairs), Hangul by the algorithm; the Node and Erlang templates are gone. Its tables,
+  `libs/std/src/unicode_tables.bp` (generated, never edited; a flat private `mod` — question
+  `97-s16-a`), are written by `libs/std/tools/unicode-gen/main.zig` through `zig build gen-unicode`
+  (one line of root `build.zig`, a carve-out of 26) from Unicode 17.0.0's `UnicodeData.txt`,
+  `CompositionExclusions.txt` and `DerivedNormalizationProps.txt`, vendored beside it with their
+  SHA-256 in `manifest.json`; the derived exclusions are checked equal to
+  `Full_Composition_Exclusion`. `test/unicode_test.bp` checks every line of the six parts of the
+  vendored `NormalizationTest.txt` (green on commonJS, erlang and beam); `run/std_unicode_on_every_target`
+  one `.out` for the four targets, its `.wasm.expect` deleted; the bump procedure in
+  `libs/std/AGENTS.md` § unicode
 - Step 11 box 1 — a question per module: `97-a` (`io/http`) and `97-b` (`async`) → 334, 335, `97-c` → 335
   (`testing/mocks`), `110-a` (`testing/asserts`)
+- Step 13 boxes 3–5 — `parseInt` exact over the `i64` range; `min` / `max` / `abs` / `clamp` /
+  `isEven` / `isOdd` past 2^53 on commonJS (`BigInt.prototype` patched beside `Number.prototype`); the
+  conversions `toI32()`, `toI64()`, `toU32()`, `toU64()`, `toF64()` on `Integer`, aborting when the value
+  does not fit (decision 319); wasm's halves are `05-wasm` rows; `97-s13-a` (`abs` of the minimum) open
 
 Facts the open rows rely on:
 - `parseInt` answers `i64`, refuses beyond ±(2^53 − 1); on wasm a template-only `String` method traps.
@@ -111,13 +127,18 @@ with a located message, recorded as the design; or (b) restructured so no host c
       by grep) passes and answers `number | bigint` in 319's canonical form
 - [ ] `Json`: an `i64` written as its digits (the read half is step 15's `Int` node, 332)
       (`9223372036854775807l` round-trips on commonJS through `Int`)
-- [ ] `string.parseInt()` answers `Error` only past the `i64` range (176 as amended by 319); its cells on
-      the four targets
-- [ ] `Math.min` / `max` / `abs` and `Integer`'s `default fn`s (`isEven`, `clamp`) answer past 2^53 on
-      commonJS — today they throw a `TypeError` on a `BigInt` (from `04-js` step 9); one cell each across
-      the 2^53 edge
-- [ ] the explicit conversions 319 names (`toF64()`, `toI32()`, …) declared in std — none is declared
-      anywhere; `04-js` step 9's conversions box waits on this surface
+- [x] `string.parseInt()` answers `Error` only past the `i64` range (176 as amended by 319):
+      `run/string_parse_int_i64_range` on commonJS, erlang and beam; wasm's half is `05-wasm`'s
+      (`stringSlice0/2` unresolved, pinned by `.wasm.expect`)
+- [x] `min` / `max` / `abs` / `clamp` and `Integer`'s `isEven` / `isOdd` answer past 2^53 on commonJS
+      (the numeric tower is patched on `BigInt.prototype` too — a carve-out in `04-js`'s
+      `commonJS.zig` `prototypeAssign`; std's Node forms take either kind):
+      `run/i64_number_methods_past_js_safe`; wasm refuses an `i64` receiver (`05-wasm` row);
+      `abs` of the minimum is question `97-s13-a`
+- [x] the explicit conversions `toI32()`, `toI64()`, `toU32()`, `toU64()`, `toF64()` declared on
+      `Integer`, aborting when the value does not fit, never rounding: `run/integer_conversions_exact`,
+      `run/integer_conversion_to_i32_aborts`, `run/integer_conversion_to_f64_inexact_aborts` on
+      commonJS, erlang and beam; wasm has no row for them (`05-wasm`, pinned by `.wasm.expect`)
 
 ### Step 14 — erlang counts codepoints, not grapheme clusters (decision 320)
 
@@ -146,21 +167,6 @@ and beam, 2 on wasm.
       rewritten to `decode` / `encode`; `json` compiles on wasm under both hosts with no host cell
 - [ ] the 13 files with a `case` over `Json` (std 6, rakun 3, jhonstart 2, onze 2) gain the arms, one commit per
       repository; `run/json_numbers_exact` one `.out` for the four targets
-
-### Step 16 — `unicode.normalize` in botopink, tables generated by Zig (decision 333 (A)) — before 05-wasm step 9
-
-- [ ] the generator: a Zig program under `libs/std/tools/unicode-gen/` run by `zig build gen-unicode` (one line
-      of root `build.zig`, a carve-out of 26), reading `UnicodeData.txt`, `CompositionExclusions.txt` and
-      `DerivedNormalizationProps.txt` of the pinned version (17.0; SHA-256 in `tools/unicode-gen/manifest.json`,
-      the files vendored beside it) and writing `libs/std/src/unicode/tables.bp` — canonical and compatibility
-      decompositions, combining classes, the composition pairs; the generated file says so and is never edited
-- [ ] the algorithm in `unicode.bp`: decompose (recursive, compatibility for NFK*), the canonical ordering by
-      combining class, recompose (blocked and excluded pairs), Hangul by the algorithm; `normalize*` are those
-      bodies on the four targets — the Node and Erlang templates go
-- [ ] `run/std_unicode_on_every_target` one `.out` for the four targets: `normalize("ǅ", NFKD)` is `68 122 780`, and
-      the NormalizationTest.txt lines of the pinned version pass (a std test reading the vendored file)
-- [ ] a Unicode bump: rerun the generator with the new files and hashes, one commit, the test file with it
-- [ ] `libs/std/AGENTS.md` names the generator, the pinned version and the bump procedure
 
 ### Step 17 — `io/http` and `async` bound to the `wasi` host (decision 334; after `01-compiler/140` steps 1–4)
 
@@ -212,6 +218,8 @@ rakun's copies, by primitive:
 | 7 | `nextDelay(policy, 1).unwrapOr(0)` is `type mismatch: expected i32, got i64` — a literal widens to `i64` as argument and field, not as `unwrapOr`'s default | that expression | `01-compiler/01-checker` |
 | 8 | erlang `[[1, 2], [3]].join("+")` prints bytes `\x01\x02+\x03` (element taken as iolist); beam prints `[1,2]+[3]` | that expression | `01-compiler/02-erlang` (`primJoin`'s template) |
 | 9 | an embedded std file's reserved-word error is unlocated | a reserved word used as a name in a `libs/std/src` file | `01-compiler/01-checker` |
+| 10 | beam lowers an or-pattern of enum variants to no test: `case f { C \| D -> true; _ -> false }` answers `false` for `C` on beam, `true` on the other three (`unicode.normalize` writes one arm per form) | `type Form { A, B, C, D }` and that `case` over `Form.C` | `01-compiler/03-beam` |
+| 11 | the embedded std registry carries no module visibility: `mod unicode_tables;` (private in `root.bp`) is importable by a consumer, `import {unicode_tables} from "std"` | that import from a scratch package | `01-compiler/26-cli-tooling` (`build.zig`'s registry) |
 
 Residual 4 breaks nothing today (no rakun module naming `RetryPolicy` imports `std/async`); a rakun
 step meets it if it imports both before deleting its copy.

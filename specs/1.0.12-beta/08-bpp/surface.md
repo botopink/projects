@@ -106,7 +106,7 @@ are on disk, so most of Astro is there, or there and unwired.
 | named slots, fallback content, slot transfer | `LayoutProps.slots` always `[]` (`render.bp:296`); no named slot on a component | add · 118 |
 | `Astro.slots.has()` / `.render()` | not found | add · 118 |
 | `Astro.self` | a function calls itself by name | have |
-| `.html` components | not found | gap — a comptime body cannot read a file (lg2-o); nearest: markup pasted into a component |
+| `.html` components | not found | gap — no file becomes a component; nearest: the markup pasted into a component, or read with `@embedFile` (342) |
 | layouts with `<slot />` | `layout.bp` + `LayoutProps.children`; nested by directory (`render.bp:341` `compose`) | have |
 | a layout chosen by the page, by import | the directory chain; a page may call any component | have |
 | Markdown layouts (`layout:` in frontmatter, the `frontmatter` / `headings` props) | not found | add · 121 |
@@ -148,7 +148,7 @@ are on disk, so most of Astro is there, or there and unwired.
 | Markdown → HTML, GFM, heading ids, smart punctuation | not found anywhere. Blog posts are text files: line 1 title, line 2 date, then body (`onze/examples/blog/src/lib/db.bp:52-59`) | add · 121 |
 | YAML / TOML frontmatter | rakun config's YAML subset (`rakun/modules/rakun/src/config.bp:340`); no TOML | add · 121 (decision `08-f`) |
 | importing a `.md`: `frontmatter`, `<Content />`, `rawContent()`, `compiledContent()`, `getHeadings()` | not found | add · 121 |
-| `import.meta.glob` | `fs.glob` at run time (`libs/std/src/io/fs.bp:122`) | gap — comptime has no filesystem (lg2-o); collections load at build and boot |
+| `import.meta.glob` | `fs.glob` at run time (`libs/std/src/io/fs.bp:122`) | gap — comptime reads named files only (`@embedFile`, 342), no glob; collections load at build and boot |
 | processor choice (Sätteri / Unified), remark / rehype plugins | — | n/a — no plugin host; 121 takes one `fn(MdNode) -> MdNode` |
 | MDX | — | n/a — Markdown with components is a template; 118 is the form |
 | `defineCollection`, `glob()`, `file()` loaders, custom loaders | not found | add · 121 |
@@ -159,7 +159,7 @@ are on disk, so most of Astro is there, or there and unwired.
 | JSON Schema files for data entries | not found | add · 125 — the `#[validated]` type's `jsonSchema` member (306) |
 | `<Image />` with `srcset`, an optimising endpoint | `Image(p, cfg, publicDir)`, `/_onze/image` (`onze-assets/src/image.bp:196`, `image_handler.bp:107`); route unregistered | wire · `07-onze/51` |
 | `<Picture />`, `getImage()`, `image.domains`, remote patterns | not found; remote sources answer 501 | wire · `07-onze/51` (ONZ-51-DoD) |
-| SVG as a component | not found | gap — same row (lg2-o); nearest: inline `<svg>` in a component |
+| SVG as a component | not found | gap — same row; nearest: inline `<svg>` in a component, or `@embedFile` (342) |
 | images in Markdown, `image()` in a collection schema | not found | add · 121 |
 | Sharp, the asset cache | an encoder port; single-flight an open box (ONZ-51-5) | wire · `07-onze/51` |
 

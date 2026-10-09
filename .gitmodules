@@ -43,3 +43,7 @@
 	path = repository/css
 	url = git@github.com:botopink/css.git
 	branch = feat
+[submodule "repository/styled"]
+	path = repository/styled
+	url = git@github.com:botopink/styled.git
+	branch = feat

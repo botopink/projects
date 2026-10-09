@@ -1,9 +1,9 @@
 # Front 14 — comptime-on-beam: the comptime pipeline's evidence and its cost per evaluation
 
-**Priority:** medium · **State:** partial: steps 1 (fixture half), 3, 4, 7 and decision 237 on
-feat; steps 2, 6 open
+**Priority:** medium · **State:** partial: steps 1 (fixture half), 3, 4, 7, decision 237 and step
+2's slope on feat; step 2's N=200 wall clock on the BEAM runtime and step 6 open
 **Depends on:** `18-comptime-runtimes` (step 2's runtime-evaluation stage) · `01-checker` (step 2's
-memo key; body file name and T17 are 01's rows) · decision-gated rows lg2-j, lg2-o, lg2-w — each a step once answered.
+memo key; body file name and T17 are 01's rows) · step 6 (decisions 341, 342, 343).
 **Owns:** `modules/compiler-core/src/comptime/template_eval.zig`, `decorator_eval.zig` ·
 `src/comptime/runtime/beam/**` (lowering) · `src/comptime/runtime/etf.zig` (term round trip) ·
 `src/comptime/runtime/prelude.zig` (resident preludes) · `src/codegen/beam/asm_text.zig` (listing) ·
@@ -38,6 +38,13 @@ call-site project ≤ 600 ms on both runtimes.
 
 - Step 1, fixture half — `L:C` and caret asserted (`comptime_module.zig`, `decorator_invocation.zig`, `templates.zig`, `reject/comptime_method_nothing_answers`); body's file is `01-checker`'s row
 - Step 2, box 1 — decision 237: capture carries only the words of its text
+- Step 2, box 2, the slope — ≤ 1 ms per evaluation on both runtimes (`scripts/comptime_bench.sh`,
+  18's table): the wat runtime keeps one wasm3 instance per module atom and resets it to its
+  load-time memory and globals (`persistent_wat.zig` `Kept`; a trapped instance dropped; nothing
+  outlives the process, decision 229); the trace listing renders only `main/1`'s argument
+  (`argumentListing`), no Erlang listing of the module; the template memo key is O(text)
+  (`template_eval.memoKey`, 01's row); the bench's E-2 is the in-compiler stage split
+  (`runtime/stages.zig`, `BOTOPINK_COMPTIME_STAGES`)
 - Step 3 — three round-trip fixtures, `COMPTIME REPLY` byte-identical on beam and wat
 - Step 4 — T15 answered by decision 216: closes with `130-decorator-outputs` step 6, nothing built here
 - Step 5 — T17 re-measured (holds for `Param`, `Field`): fix is `01-checker`'s row
@@ -47,24 +54,39 @@ call-site project ≤ 600 ms on both runtimes.
 
 ## Open
 
-### Step 2 — the N=200 slope (box 2)
+### Step 2 — the N=200 wall clock on the BEAM runtime (box 2's rest)
 
-After decision 237 (debug build, best of 5, load 16–19, 16 cores): commonJS (wat) N=200 485 ms,
-erlang (BEAM) 711 ms (443 ms of it the N=0 build); slope 1.3 ms/eval on both; no longer grows with N.
-Remaining per-evaluation cost:
+Measured 2026-10-09 (debug build, best of 3, load 8–10, 16 threads): slope 0.5 ms/eval (wat),
+0.6–0.7 (BEAM); N=200 443 ms (commonJS), 712 ms (beam), 782 ms (erlang). The per-evaluation
+stages total 0.39 ms (wat) and 0.92 ms (BEAM, the `erl` spawn included) — what keeps the BEAM
+builds above 600 ms is not per evaluation:
 
-| Stage | Owner |
-|---|---|
-| runtime evaluation — wat: fresh wasm3 environment, parse and load of the linked module per evaluation (`persistent_wat.zig`); BEAM: the frame round trip | 18 |
-| trace listing — `main/1`'s argument rendered as text per evaluation (`listingWithArgument`, `runtime.listingOf`) for `comptime_traces`, which every backend renders (`trace.renderAlloc`) and only the snapshot harness and browser build read: a build reading no trace need not render one | this front (listing) with the owner of `trace.zig` and the codegen `comptime_trace` field |
-| `infer.zig`'s template memo key appends the whole scope's JSON per call site | 01 |
+| Cost | ms | Owner |
+|---|---|---|
+| the N=0 build (no evaluation): beam 442, erlang 533 (commonJS 304) — erlang's includes the CLI's OTP session compiling the emitted `.erl` (`cli/otp.zig`, `cli/build.zig`), a second `erl` boot | 140–230 over commonJS | 02 / 03 / CLI |
+| the comptime node's spawn + handshake on the first evaluation (`persistent_beam.zig`), 115 ms idle, 235 under load | ≈ 115 | 18 |
+| `module` stage (`buildModule`: `emitKey` formats the declarations per call site) | 0.17/eval | this front |
 
-- [ ] slope ≤ 1 ms per evaluation and N=200 ≤ 600 ms on both runtimes, measured with
-      `scripts/comptime_bench.sh` and recorded in 18's table
+- [ ] N=200 ≤ 600 ms on the BEAM runtime, measured with `scripts/comptime_bench.sh` and recorded in
+      18's table (wat: met)
 
-### Step 6 — the decision-gated rows
+### Step 6 — host cells, files and independence in a decorator (decisions 341, 342, 343)
 
-lg2-w (hit by every decorator), lg2-j, lg2-o: each a step once answered; nothing built before.
+- [ ] 341: a host function reached from a decorator body travels with the cell of the runtime that
+      evaluates it — `@External.Beam` (or `@External.Erlang`) on the BEAM runtime, `@External.Wasm` on the
+      wat runtime (which forms run there, and the bridge to the term layout, are front 18's); the cells
+      required are those of the package's declared `targets` (`erlang`/`beam` → Beam, `commonJS`/`wasm` →
+      Wasm, none declared → both); a missing one refused at the call when the package is compiled, naming
+      the function, the cell and the reason; `@External.Node` never serves; a cell per case on both
+      runtimes, `COMPTIME REPLY` byte-identical where both cells exist
+- [ ] 342: `@embedFile` / `@embedBytes` read the file relative to the `botopink.json` of the package that
+      wrote the path (the application's for a decorator annotating its declarations; the member's in a
+      workspace); a missing file, or a non-UTF-8 one for `@embedFile`, is a compile error at the call; the
+      content hash enters the cell's cache key (with 26 for watch and the LSP); `rakun ws generate`'s
+      checked-in `.bp` can go (rakun 93)
+- [ ] 343: a module-level `var` written by a decorator body stays refused, the message pointing at
+      `@TypeInfo.all(with: …)` at the entry point; one cell refusing a duplicate there naming both
+      declarations
 
 **Gate:** standard (fronts.md § Gate) + `scripts/snap_audit.sh --mode=runtime-parity` green, every
 re-recorded listing classified, `COMPTIME REPLY` byte-identical at every step ·

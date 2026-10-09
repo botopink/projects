@@ -1,10 +1,10 @@
 # Front 98 — packaging tail: the rule checked across the seven repositories
 
 **Priority:** medium — compiles nothing differently; the packaging rule holds only once it lands ·
-**State:** not started
+**State:** partial: step 4 done; steps 1–3 open
 **Depends on:** the library tracks' `-test` and example-README steps (`05-jhonstart/26` step 6,
 `06-emilia/33` steps 1–2, `07-onze/50` step 8 and `53` step 1, `04-rakun`'s `rakun-test` front
-`19-rakun-test-utilities`) · `95-f` (step 3) · `lg2-v` (step 4)
+`19-rakun-test-utilities`) · `95-f` (step 3)
 **Owns:** `repository/erika/modules/erika-test/**`, `repository/erika/examples/erika-linq/README.md`,
 `repository/erika/AGENTS.md` (erika has no track) · `repository/botopink-lang/scripts/check-packaging.sh`
 (new) · `repository/botopink-lang/docs/botopink-json.md` · decision-75 carve-out, step 4 only:
@@ -29,7 +29,11 @@ Measured on feat:
 | the `-test` member exposes ≥ one `assert<Subject>(loc, …) -> @Result<void, string>` | jhonstart (11 helper files), onze (`core.bp`: 4) | **emilia** (`root.bp` only), **rakun** (`expect*` booleans only), **erika** (`src/root.bp` only, no `test/`) |
 | every example carries a `README.md` naming the upstream section and the front | — (onze: one directory-level `examples/README.md`) | **29 of 29** |
 | no example depends on an ecosystem library by `git` | all | — |
-| a monorepo member is installable from git | — | `DepSpec` has no subdirectory field (lg2-v); rakun front 73's starters cannot ship |
+| a monorepo member is installable from git | `DepSpec.subdir` (step 4, decision 344) | — |
+
+## Done
+
+- Step 4 — `DepSpec` carries `subdir` (decision 344): `modules/manifest` refuses it without `git`, absolute, with a `..` / `.` / empty segment or a backslash, and one repository at two refs on the second entry naming both (4 unit tests); `bpmp install` of a fixture repository with a `subdir` lands the member and its `path` sibling from one clone at the tag (`modules/bpmp` unit test, `tests/cli_contract.sh` over a local bare repository); `docs/botopink-json.md` documents the field and every located error (the resolver half: `01-compiler/26` step 6)
 
 ## Mechanism
 
@@ -72,20 +76,8 @@ Under `95-f` (1): one `repository/onze` entry in `.gitmodules`, workspace `onze`
       repository/onze` is the orchestrator's commit; `docs/botopink-json.md` says in one line the
       orchestrator repository carries the mocking library as tagged history
 
-### Step 4 — conditional on `lg2-v`: the `subdir` field
-
-(2): `DepSpec` gains `subdir` on the `git` form — refused without `git`, refused escaping the clone
-(`..`, absolute); `bpmp install` resolves `<clone>/<subdir>` into `.botopinkbuild/deps/<name>/`;
-compiler resolves by name as before. (1), recommended: closed by design, rakun front 73 ships
-starters by `path`.
-
-- [ ] under (2): `modules/manifest` unit tests for the three refusals; `bpmp install` of a fixture
-      repository with a `subdir` lands the member; `docs/botopink-json.md` documents it (three lines
-      in its located-error table)
-- [ ] under (1): `docs/botopink-json.md` § dependencies says a git dependency is a repository root
-
 ## Decisions
 
-`95-f`, `lg2-v` — [`../README.md`](../README.md) § Decisions.
+`95-f` — [`../README.md`](../README.md) § Decisions; `subdir` is decision 344.
 
 **Gate:** standard (fronts.md § Gate) + `scripts/check-packaging.sh` exit 0 in the main checkout

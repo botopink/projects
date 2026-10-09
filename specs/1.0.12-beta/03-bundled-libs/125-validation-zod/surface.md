@@ -252,7 +252,7 @@ Each format: one `formats.bp` rule, one `constraints.bp` predicate, one marker, 
 
 | Zod | botopink | Box | Notes |
 |---|---|---|---|
-| `z.file()` · `.min` · `.max` · `.mime` | — | gap | no byte type (`language-gaps.md` lg2-a); multipart refused with 415 today. Nearest: validate the upload's declared `name`, `size`, `type` as a record |
+| `z.file()` · `.min` · `.max` · `.mime` | — | gap | no byte type until 346's `Bytes` (`01-checker` step 32); multipart refused with 415 today. Nearest: validate the upload's declared `name`, `size`, `type` as a record |
 | `z.promise()` | — | n/a | deprecated in Zod; a `@Task` is awaited before parsing |
 | `z.instanceof(Class)` | `x is T` | native | `docs.md:625-626`; a host class has no botopink type |
 | `z.property(k, schema)` · `z.properties({…})` | — | n/a (306) | a check over a `Json` value; declare the shape as a type |
@@ -358,7 +358,7 @@ Each format: one `formats.bp` rule, one `constraints.bp` predicate, one marker, 
 | `z.invertCodec` | — | n/a (306) | a codec value; a field's `#[codec]` names both directions |
 | composability (codecs inside objects and arrays) | a field with `#[codec(…)]` | add · 8 | `01-checker` step 24 |
 | refinements run in both directions | `T.encode` runs `validate()` first and answers `@Result` | have | |
-| the recipe list — `stringToNumber`, `stringToInt`, `stringToBigInt`, `isoDatetimeToDate`, `epochSecondsToDate`, `epochMillisToDate`, `jsonCodec`, `base64ToBytes`, `hexToBytes`, `stringToURL`, `stringToHttpURL`, `uriComponent`, `stringToBoolean` | `codecs.textToInt` · `textToLong` · `textToFloat` · `isoToMillis` · `secondsToMillis` · `jsonText` · `base64Text` · `base64urlText` · `hexText` · `textToUrl` · `uriComponent` · `textToBool` | add · 8 | `utf8ToBytes` / `bytesToUtf8` are **gap** (lg2-a) |
+| the recipe list — `stringToNumber`, `stringToInt`, `stringToBigInt`, `isoDatetimeToDate`, `epochSecondsToDate`, `epochMillisToDate`, `jsonCodec`, `base64ToBytes`, `hexToBytes`, `stringToURL`, `stringToHttpURL`, `uriComponent`, `stringToBoolean` | `codecs.textToInt` · `textToLong` · `textToFloat` · `isoToMillis` · `secondsToMillis` · `jsonText` · `base64Text` · `base64urlText` · `hexText` · `textToUrl` · `uriComponent` · `textToBool` | add · 8 | `utf8ToBytes` / `bytesToUtf8` are **gap** until 346's `Bytes` (`Bytes.fromUtf8` / `toUtf8`) |
 
 ## § 10 · AOT compilation
 
