@@ -1,7 +1,7 @@
 # Front 26 — cli-tooling: a program built by the CLI serves on the BEAM, and every driver speaks
 
 **Priority:** high · **State:** partial: steps 1, 2 (boxes 1–2), 3 (box 2), 4 (box 1) and 5 on feat;
-steps 2 (box 3), 3, 4, 6, 7, 8 open
+steps 2 (box 3), 3, 4, 6, 7, 8, 9 open (8 box 2 blocked on a `compiler-core` step)
 **Depends on:** `compiler-core`'s `ModuleOutput` carrying warnings (step 4 — `codegen.zig` carve-out
 named in the commit) · decision-gated lg2-v (git subdirectory — manifest side is
 `../../02-std-and-packaging/98-packaging-tail/` step 4; `bpmp` resolver half opens here when
@@ -78,7 +78,26 @@ subdirectory (98 step 4 owns the manifest model); nothing before.
       `lsp/` snapshot each
 - [ ] `from "<own package name>"` is `error[module-import-with-from]` (309), pinned by a `resolver.zig`
       unit test; the three std sources migrated to the brace form in the same commit (a named
-      `libs/std/src` carve-out)
+      `libs/std/src` carve-out). **Blocked on `compiler-core`** (measured 9 Oct): any one of the three
+      sources in the brace form fails `libs/std`'s own `botopink check` and every consumer of the
+      module (`TypeError`, no location) — the embedded std copy (`std/<mod>`) is compiled whenever
+      a module imports `from "std"`, and `comptime.zig` follows a std module's imports only through
+      `from "std"` (`stdImportsOf`, `expandStdImports`, the std type-export paths); a brace import
+      inside an embedded std module reaches nothing. The refusal cannot land before the migration
+      (std imports itself by name), and the migration cannot land before a `compiler-core` step
+      makes a brace import inside `std/<mod>` name `std/<path>` — a named 01-compiler row
+
+### Step 9 — a dependency's sidecars and imports answer as its own build does
+
+- [ ] a transitive dependency's sidecar ships: a project outside the rakun workspace depending on a
+      member by `path` failed `build` with "`rakun_actuator` / `rakun_probes` is not a sidecar of
+      this project" — `libs.sidecarOwner` asked only the project's direct `dependencies`, then the
+      roots by name; it now walks the closure the build resolved (`closureOwner`) ·
+      `tests/cli_contract.sh` "a dependency of a path dependency", `libs.zig` unit test
+- [ ] a dependency's module importing a package it does not declare is decision 242's located
+      `unresolved import source` (at the dependency's file), not `unbound variable` —
+      `libs.loadOne` runs `resolver.checkSources` against the dependency's own manifest ·
+      `modules/dependency_imports_undeclared_package`, four targets
 
 **Gate:** standard (fronts.md § Gate) + `zig build test-cli`, `test-bpmp`, `test-vscode` green;
 language-server tests green with new snapshots · `zig build test-libs` at baseline (rakun's members
