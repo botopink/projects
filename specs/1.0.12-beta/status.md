@@ -41,7 +41,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 01-checker s10 — a lambda parameter annotation (T12) · 16 s8
 - [ ] 16 s8 — the lambda annotation's printer arm · none — lands before 01 s10
 - [ ] 01-checker s13 — JS-4's two checker gaps · 05 lowering a nested constructor in a `val`
-- [ ] 01-checker s18 — numeric literal suffixes (247): built on feat (`49455602`); left: the two `language-gaps.md` literal halves, a cold gate · ctr-j (the `l` literal rule)
+- [ ] 01-checker s18 — numeric literal suffixes (247): built on feat (`49455602`); left: the two `language-gaps.md` literal halves, a cold gate · the `l` literal rule on every target (319)
 - [ ] 01-checker s21 — `comptime` evaluated at compile time everywhere (266; ck4-a (c))
 - [ ] 01-checker s23 — `Decl.hooks`: every reachable node, annotations with their `Decorator` (277) · then 26 s8, 49 s5, 22 s4
 - [ ] 01-checker s24 — typed comptime decorator arguments, `@Decl<T>`, `Field<T>` (`Type.Field<T>`, 308) and `.name` (280; cases in `01-checker/examples/decorator-arguments-280.md`) · then 125 s7, the `nat-*` rewrites
@@ -74,7 +74,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 04-js s1 — the `@block` tail-form IIFE · 01's `@block` tail refusal
 - [ ] 04-js s2 — `$stringify` in a template (164, 239); `render`'s arm and `emitStringify*` deleted · 01's parser refusal
 - [ ] 04-js s6 — `throw` in a `case` arm · 01 s6
-- [x] 04-js s8 — an integer that leaves its type aborts (264): on feat (`48a096ea`) · ctr-j still open
+- [x] 04-js s8 — an integer that leaves its type aborts (264): on feat (`48a096ea`)
 - [ ] 05-wasm s1 box 1 · s3 box 2 — `Array.unique` and C-07's cells on wasm · 02 s4, s7
 - [ ] 05-wasm s5 — the rest of std on wasm: heap growth, `pow`, astral `contentHash` done (`d71b89f5`, `a443f52d`); left: std-wide wasm build (`unicode`, `json` bindings), a four-target cell per family, `wat/AGENTS.md` limits row · 97 s12 box 1
 - [ ] 05-wasm s8 — overflow for `u32`/`u64` and the narrow integer types on wasm (264): `run/int_overflow_sub_u32`, `run/int_overflow_add_i8` red on wasm (261's opcodes) · ctr-i
@@ -83,7 +83,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 02-erlang s7 — C-07's erlang tails as `run/` cells · 05's wasm column
 - [ ] 02-erlang s10 — the block-as-value lowering (R7) · 01's `@block` tail refusal
 - [x] 02-erlang s12 · 03-beam s7 — one `math` on every OS (263): on feat (`a443f52d`)
-- [x] 02-erlang s13 · 03-beam s8 — an integer that leaves its type aborts (264): on feat (`48a096ea`) · ctr-j still open
+- [x] 02-erlang s13 · 03-beam s8 — an integer that leaves its type aborts (264): on feat (`48a096ea`)
 - [ ] 03-beam s1 box 3 — the checker's two binding shapes on beam · 01 s13
 - [ ] 03-beam s2 box 1 — C-07's `run/` cells on beam · 02 s7 · 05
 - [ ] 12 s1 box 2 — `--cold` with the pre-existing tool set · 114 s7
@@ -146,6 +146,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 
 Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 
+- [ ] decision 319 (`i64` is 64-bit on every target; commonJS `BigInt`; literal refused past the type's range everywhere; 176, 264 amended) — 04-js s9 · 01-checker s18 · 97 s13
 - [ ] decision 318 (one decorator per role, rakun's names: `#[component]`, `#[repository]` on a behavior, `#[provides]`, `#[httpClient]`, `#[listen(dest)]`, `#[controller]`, wrappers; closes 130-c, erk-c) — 130 s5 · rakun 04 s8 · 08 s7 · 12 s6 · 13 s6 · 15 s8 · 19 s7 · 79 s4 · 91 s2 · 93 s4
 - [ ] decisions 315, 316 (no module annotation; a decorator wraps its function, `decl.wrapWith`, typed) — 01-checker s30 · rakun 12 s5 · 15's example
 - [ ] 137 (`04-rakun`) — erika's database target: holes, `QuerySource<T>`, the grammar, `#[erika "…"]` · s5: 01-checker s29 · s2's body form: erk-a
@@ -181,7 +182,7 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.0.10 choices) in its
-last section. Open after the 9 Oct revalidation and the answers since (309–318): 58 questions, 11 contradictions, 90
+last section. Open after the 9 Oct revalidation and the answers since (309–319): 58 questions, 10 contradictions, 90
 implementation choices.
 
 **First — the botopink shape** (raised 2026-10-04; answer `nat-0`, then the rest):
@@ -214,7 +215,7 @@ Then:
 - [ ] C-14 — 07-residuals s9 (a 1.0.10 id)
 - [ ] confirmations a step waits on — 49-d (102 s3) · 49-e (49 s2) · 05emilia-l (34 s2) · 52-a (51 s4) · 29-a (26 s5; reduced: `registerRouteStarters` + `globals.starters`) · 27-a (27) · 03r-q (105) · 16-a/b (16 s4) · 23-a/b, std-c (23; 23-c → 317) · 24-a/b/c/g (24; 24-g also 97 s5's surface)
 - [ ] ctr-k — 17 · 128 · 106 s2 (only the record)
-- [ ] ctr-i — 05's string lowering · 02's codepoint cell · ctr-j — 04 s8 · 02 s13 · 03 s8 · 01 s18
+- [ ] ctr-i — 05's string lowering · 02's codepoint cell
 - [ ] ctr-l — 26 s8's refusal list (only the record) · ctr-s — 16 s6 · ctr-u — 125 s12 (only the spelling of `#[validated]`'s members) · ctr-v — 34 / 33 opening before 118 (only the record) · ctr-w — 09 s3
 - [ ] ctr-o — lem-c · ctr-p — 04's readers · 104 s5 (ctr-h blocks nothing)
 - [ ] 03r-ao — the 130 ↔ 128 rule (128, 130 s5) · only the record

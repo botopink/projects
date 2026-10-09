@@ -2,7 +2,7 @@
 
 **Priority:** high — every library's "consume std X" step is written against this surface ·
 **State:** partial: steps 0–5, 8–10, 12 (but `unicode`) on feat; residue of steps 1, 2, 4, 12, step 6
-(conditional), 11 open; step 7 → 20-snap
+(conditional), 11, 13 open; step 7 → 20-snap
 **Depends on:** `std-d` (step 6) · `24-g` confirmed (step 5) · decision 230 (step 11) · decision
 262 (step 12)
 **Owns:** `repository/botopink-lang/libs/std/src/**`, `libs/std/AGENTS.md`, `libs/std/test/**` ·
@@ -105,6 +105,16 @@ Std half of 05-wasm step 5. `unicode.bp`'s `fromCodepoint` is still a Node / Erl
 (`String.fromCodePoint($0)`, `unicode:characters_to_binary([$0], utf8)`) with no wasm binding.
 
 - [ ] `unicode.fromCodepoint` a `fn:` over `String.fromCodepoint`; `unicode` builds its text with it
+
+### Step 13 — std over a `BigInt` `i64` on commonJS (decision 319; with `04-js` step 9)
+
+- [ ] every Node template of std taking or answering an `i64` (`io/clock.bp`'s `systemTimeWithUnit`,
+      `monotonicTimeWithUnit`, `largestExactMillis`, `wide`; `io/fs.bp`'s `size` / `mtime`; the rest found
+      by grep) passes and answers a `bigint`
+- [ ] `Json`: an `i64` written and read as an exact JSON number, never through a JS `Number`
+      (`9223372036854775807l` round-trips on commonJS)
+- [ ] `string.parseInt()` answers `Error` only past the `i64` range (176 as amended by 319); its cells on
+      the four targets
 
 ## Consumers — "consume std X" rows handed to the library fronts
 

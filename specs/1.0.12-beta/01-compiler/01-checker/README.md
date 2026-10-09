@@ -88,6 +88,9 @@ number's token (`lexer.zig` `splitNumber`, `numberSuffixType`, `numberBackendTex
 2^53 refused on commonJS (`run/wide_literal_past_js_safe_integer.commonJS.expect`); `docs.md` §
 Numeric literals.
 
+- [ ] an integer literal past its type's range refused on every target (decision 319): `refuseBeyondJsSafeInteger`
+      (`comptime/infer.zig`) deleted, its 247 citation with it; `run/wide_literal_past_js_safe_integer` answers
+      the value on the four targets (after `04-js` step 9)
 - [ ] `language-gaps.md`'s rows "`f32` has no literal" and "An `i64` has no literal" lose their
       literal half; a cold gate green on `49455602` (no gate has run on the merge)
 

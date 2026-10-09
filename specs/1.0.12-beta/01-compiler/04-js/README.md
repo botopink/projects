@@ -1,6 +1,6 @@
 # Front 04 — js: commonJS keeps no dead lowering and no marker std alone may write
 
-**Priority:** medium · **State:** partial: steps 3, 4, 5, 7, 8 and C-37 on feat; steps 1, 2, 6 open
+**Priority:** medium · **State:** partial: steps 3, 4, 5, 7, 8 and C-37 on feat; steps 1, 2, 6, 9 open
 **Depends on:** `01-checker`'s `@block` tail-form refusal (step 1), `$stringify` parser refusal (step
 2), step 6's typed AST (step 6)
 **Owns:** `modules/compiler-core/src/codegen/commonJS.zig` · `src/codegen/typescript.zig` ·
@@ -17,7 +17,7 @@ Paths relative to `repository/botopink-lang/modules/compiler-core/src/`.
 ## Goal
 
 No lowering whose only producer the checker should refuse; no template marker std alone may write;
-`throw` in a `case` arm answers `Error` from the function; out-of-range integer aborts (decision 264).
+`throw` in a `case` arm answers `Error` from the function; out-of-range integer aborts (decision 264); `i64` is a `BigInt` with the full range (319).
 
 ## Done
 
@@ -64,6 +64,26 @@ codegen); the arm emits `return {Error: e}`.
       commonJS build with a bare `TypeError` when any of its functions calls `Float.floor` (from
       `05-wasm` step 5, comptime path; re-measure, name the owner)
 - [ ] `Point(x: 0, ..)` in a `case` answers `null` on commonJS (from `02-erlang`; re-measure)
+
+### Step 9 — `i64`, `u64`, `isize`, `usize` as `BigInt` (decision 319)
+
+Today these four lower to JS numbers and 264's check bounds them at ±(2^53−1)
+(`ArithKind.rangeExactDouble`): `9007199254740991l + 1l` aborts on commonJS and answers on the other
+three targets. After, they are `BigInt` and the bounds are the type's own.
+
+- [ ] lowering: a literal `42l` is `42n`; `+ - * / %`, unary `-`, the compound assignments, comparisons
+      and `==` on `BigInt` (`/` truncates toward zero, as the other targets); `__bp_int` checks against
+      −2^63 … 2^63 − 1 / 0 … 2^64 − 1; `rangeExactDouble` deleted
+- [ ] conversions explicit and exact: `toF64()`, `toI32()` and the like abort when the value does not fit
+      (`Number(x)` only after the check); widening `i32 → i64` is `BigInt(n)`; `@print` and string
+      interpolation print the digits (no `n`)
+- [ ] a `Dict` / `Set` keyed by `i64` keys by value; `Array` indexes stay `i32`
+- [ ] a Node host template taking or answering one of the four types sees a `bigint`; the emitted
+      `.d.ts` types them `bigint`; `scripts/tsc-check.sh` green
+- [ ] `run/i64_full_range` (`9007199254740991l + 1l`, `9223372036854775807l`, `-9223372036854775808l`, the
+      `u64` top, an overflow past each bound) answers alike on the four targets; `run/int_overflow_mul_i64`
+      re-recorded — commonJS now aborts where the others do
+- [ ] `docs.md` § Integer overflow's commonJS paragraph rewritten (handed to `07-residuals`, owner of the prose)
 
 **Gate:** standard (fronts.md § Gate) + every re-recorded RUN LOG verified under `node` against
 decision 8 §7 · `zig build test-libs` commonJS cells at baseline (jhonstart, emilia, onze, erika)
