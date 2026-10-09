@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**66 questions and 8 contradictions are open, and 92 implementation choices await confirmation.**
+**70 questions and 8 contradictions are open, and 92 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -147,6 +147,30 @@ Nothing open: 138-a answered (337).
   declarations.
 - **Recommendation.** (b): the record is `TypeInfo`'s, and an empty list that means "not carried" is a lie.
 - **Blocks.** Nothing for 293.
+
+#### 14s8-a · How a template reads a hole's build value (355; `01-compiler/14` step 8 box 1)
+- **Measured.** Box 1 was written as `e.lookup(name)` answering a `val`'s build value. A `${…}` hole adds no word to the capture (237), so `lookup` cannot reach `tab4` in `styled "${tab4} color: red;"`, and 355's holes known at build include a literal and a `comptime`, which have no name. Built (`front/fourteen-s8`): each `Interp` part of `q.parts()` carries `known` (bool) and `value` (the build value as data, a record its fields; `null` when computed at render). `builtins.d.bp` still declares `Part.Interp(hole: Expr<string>, span)`; the part a body reads carries `code`, `known`, `value` (field reads on `Part` are not checked today), so a value of the wrong shape fails the template at run time: `styled "${whole} margin: 0;"` with `whole = styled "color: red;"` (a `Styled` where a declaration stands) is `{error,{badkey,declarations}}` at the literal, where the computed call refused it as `type mismatch: expected StyledProperty, got Styled`.
+- **Options.** (a) As built: `for (q.parts()) { p -> if (p.kind == "Interp" && p.known) built = built + p.value; }`; `p.value` is `null` for a hole computed at render. (b) `q.lookup(p.code)` answers `Binding(name, kind, value)` for a hole that names a `val`: `val b = q.lookup(p.code); if (b?.value != null) …` — a literal or a `comptime` hole is never known. (c) 364's `@Expr<T>.value` on each hole: `if (p.known) built = built + p.hole.value;`, `.value` of a hole not known at build an error at the read, located — one spelling with every other `comptime` parameter, the hole typed `@Expr<T>`.
+- **Recommendation.** (c) — one spelling, typed, a read of an unknown value refused (decision 67); (a) stands until `01-checker` s24 builds `@Expr.value`, and either way `Part` in `builtins.d.bp` (02's) declares what the part carries.
+- **Blocks.** Nothing — built as (a).
+
+#### 14s8-b · Which holes are known at build (355)
+- **Measured.** Built narrowest: a string, number, `true` / `false` or `null` literal; a `comptime`; a non-`var` `val` of the same module whose initializer is known at build; a template call, already expanded, whose every argument is known at build. Computed at render: an array or tuple literal (`${[1, 2]}`), a record constructor call with literal arguments (`${Point(x: 1, y: 2)}`), a field read (`${tab4.rules}`), any other call, a parameter or a local — and, until 14 step 8's open box, a `val` another module exports (`import {tab4} from "tokens"; styled "${tab4}"`), the same CSS either way.
+- **Options.** (a) As built: `styled "${tab4} color: red;"` is a constant, `styled "${[a, b].join(" ")};"` is computed. (b) (a) plus array and tuple literals and constructor calls whose elements are known at build: `styled "grid-template-areas: ${areas};"` with `pub val areas = ["a", "b"].join(" ");` is still computed (a call), `pub val p = Pad(n: 4);` read by a template is known. (c) (b) plus any call to a function whose arguments are known at build, run at build.
+- **Recommendation.** (a) — 355 names literals, `comptime` values and `val`s; (c) runs user code at build where no `comptime` says so (364 (3)).
+- **Blocks.** Nothing — built as (a).
+
+#### 14s8-c · A hole known at build whose value raises there
+- **Measured.** A hole known at build is evaluated on the comptime runtime as a `comptime` is (331). Built: a raise is refused at the hole — `pub val boom = raising "x"; pub val read = quote "${boom}";` (`raising` building `crash("x")`, which `@panic`s) is ``this hole is known at build (decision 355) and its value raised there: the comptime block raised: {error,{panic,<<"crash: x">>}}`` at `${boom}` (`reject/hole_known_at_build_raises`).
+- **Options.** (a) Refused at the hole (as built). (b) The hole is computed at render (`known` false): `read` builds, and the program raises when it reads `boom`.
+- **Recommendation.** (a) — fail > warn, at build rather than at run time.
+- **Blocks.** Nothing — built as (a).
+
+#### 14s8-d · A `comptime` reaching a function declared after it that holds a template call
+- **Measured.** A function's template calls are expanded when its body is inferred; a `comptime` carries the expansions (`block_eval.zig` `expandedFn`). A function declared after the `comptime` has none yet. Built: refused at the `comptime` — `pub val early = comptime late();` above `fn late() -> string { return tag "b"; }` is ``the comptime reaches the template call `tag` at 14:12 in `late`, which is not expanded where the comptime runs — declare `late` before the `comptime` in this module`` (`reject/comptime_template_call_declared_after`).
+- **Options.** (a) Refused, naming the call and the remedy (as built). (b) The checker infers the body of every function a `comptime` reaches before the `comptime` is evaluated, so the order of declarations does not matter.
+- **Recommendation.** (a) until (b) is built by `01-checker`; (b) refuses nothing a program needs.
+- **Blocks.** Nothing — built as (a).
 
 #### 140-a · What a pending `@Task` is on wasm (front 140 step 4)
 - **Measured.** wasm lowers `@Task<T>` as `T`: `await` is identity and `async { … }` runs its block where it is written (`wat.zig`, `asyncBlock`, "the eager `@Task`"); erlang's `race` answers the head of the list (`hd(__Fs)`), its `raceOf` one process per thunk. 334 (4) asks `@Task` on `wasi` to "run to completion when awaited, blocking on its pollable" and `race` to answer "the first pollable ready"; with `@Task<T>` = `T` there is no pollable to wait on, and `delay` would block where it is called. 335 (2) makes results the contract. A body that awaits inside (`async { await delay(30, ()); "a" }`) cannot be suspended on a single-threaded run-to-completion host.
