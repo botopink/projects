@@ -6,8 +6,7 @@ disk: [`modules.md`](./modules.md).
 emilia is CSS (decision 113): a `Token` enum resolved through a theme, emitted as a layered `<style>`
 document, both targets, importing nobody. Green (`emilia` 734 tests on both rows, fifteen example
 members, `emilia-test` 1). Left: one std-dedupe box, five Tailwind families out of parity with
-4.3.2, a few unplaced rows, the examples' READMEs, an emilia-only `emilia-card` (test layer is
-`20-snap`'s). Two fronts by file: library source (every family in `emilia.bp` / `tokens.bp`), and
+4.3.2, a few unplaced rows (test layer is `20-snap`'s). Two fronts by file: library source (every family in `emilia.bp` / `tokens.bp`), and
 test member plus examples.
 
 ## What emilia still owes
@@ -19,8 +18,6 @@ test member plus examples.
 | EM-8 | five families out of parity with 4.3.2 (05emilia-l's tail) — table in [34 § Mechanism](./34-emilia-modifiers/README.md): transition presets, `backdrop-opacity-*`, `border-spacing-*`, backdrop filters' `-webkit-backdrop-filter`, `divide-*`'s `border-*-style:var(--tw-border-style)` | `emilia.bp` blocks 44 · 42 · 43 · 40; `examples/emilia-{transitions,effects,outline-ring,transforms}/src/main.bp` where they pin the output | 34 step 2 |
 | EM-9 | unplaced rows of `34-emilia-modifiers/reference-rows.md`, category (c): named `:has()` / `:not()` / ARIA / data-attribute / `in-[…]` forms; named `group/name` / `peer/name`; a cleared `--breakpoint-*` emits `@media (width >= )` instead of refusing; `@theme inline`; negative translate (`tokens.bp:2259-2279` has no `Neg`) | `tokens.bp`, `emilia.bp` blocks 34 · 54 · 45 | 34 steps 3 (the refusal, decision 300) and 4 (the four feature rows, on 05emilia-n) |
 | EM-3 | `emilia-test` exposes no `assert<Subject>` — `root.bp` holds one resolve test (PK-4) | `modules/emilia-test/src/**` | `20-snap` step 4 (`snap-a`) |
-| EM-7 | `emilia-card` depends on jhonstart (`botopink.json` `"jhonstart": { "path": … }`); decision 114: emilia-only, printing its class names and flushed sheet | `examples/emilia-card/**` | 33 step 2 |
-| PK-2 | fifteen example members without `README.md` | `examples/*/README.md` | 33 step 2 |
 | EM-4 · EM-5 | per-front snapshot suites and the eight cross-front examples of the 1.0.10 maps — the 610 inline tests in `emilia.bp` are today's evidence | `modules/emilia/test/**`, `examples/<new>/**` | `20-snap` step 4 (`snap-a`) |
 
 ## Fronts
@@ -28,7 +25,7 @@ test member plus examples.
 | Front | Priority | State | What | Depends on |
 |---|---|---|---|---|
 | [`34-emilia-modifiers/`](./34-emilia-modifiers/README.md) | **high** — the parity tail moves pinned output every later snapshot would re-record | not started | `modules/emilia/src/**`: `hashHex` → std and the cross-library comments; the five families to upstream's form; the typed `#[theme]` and the breakpoint refusal (300); the four unplaced feature rows (on 05emilia-n); the examples that pin the moved families | 05emilia-l (step 2), 05emilia-e (step 3's base theme), 05emilia-n (step 4) — opens now |
-| [`33-emilia-color-palette/`](./33-emilia-color-palette/README.md) | medium | not started | the fifteen READMEs, `emilia-card` emilia-only (step 2); steps 1, 3, 4 (the helpers, the suites, the examples) → `20-snap` | step 2: nothing — open now |
+| [`33-emilia-color-palette/`](./33-emilia-color-palette/README.md) | medium | step 2 done | steps 1, 3, 4 (the helpers, the suites, the examples) → `20-snap`; step 2 (the fifteen READMEs, `emilia-card` emilia-only) landed | — |
 
 ## Order
 

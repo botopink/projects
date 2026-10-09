@@ -1,7 +1,7 @@
 # Front 114 — gate-docs-and-ci: no `skip` fence, no soft CI row, every workflow green and pinned
 
 **Priority:** high · **State:** partial: steps 1, 2, 4, 5, step 3 box 1, step 6 and step 8
-boxes 1–2 done; steps 3 (box 2), 7, 8 (boxes 3–5), 9 open
+boxes 1–3 done; steps 3 (box 2), 7, 8 (boxes 4–5), 9 open
 **Depends on:** nothing open (botopink-lang CI fixes on feat; only a green run remains)
 **Owns:** `scripts/check-docs.sh` · `docs.md` marker lines and the fence lines after them (no prose) ·
 botopink-lang `.github/workflows/test.yml` · meta `.github/workflows/**` and meta `AGENTS.md` § CI ·
@@ -52,6 +52,12 @@ step 2 — 3 281 + 246 396 files, step 3 — 3 307 + 246 416, byte-identical, ex
 job but one (`rakun-devtools` `botopink test --target erlang`, red before step 2 and green after with
 identical emitted bytes — a test outcome, not an emission). stderr not compared: it carries the
 compile time (`Compiled in 53.24ms`) and differs between two runs of one compiler.
+8 box 3 emilia `.github/workflows/test.yml`'s "Checkout jhonstart" step and its bootstrap comment
+removed, with `AGENTS.md`'s CI paragraph, in an emilia patch of its own after `06-emilia/33` step 2:
+every one of the 17 members' `dependencies` is `{}` or `{ "emilia": { "workspace": true } }`, and
+`emilia-card` in a copy of emilia placed under a `botopink-lang/repository/` with no `jhonstart`
+beside it compiles 12 modules (48 with jhonstart), `botopink test` 4 passed, 0 failed on commonJS and
+on erlang, `botopink build` exit 0 on both.
 
 ## Open
 
@@ -86,11 +92,6 @@ last full cold: 9m31s, loaded).
 
 ### Step 8 — the gate's other residue
 
-- [ ] after `06-emilia/33` step 2 (emilia-card emilia-only; still open on emilia `42d51ec8` —
-      `examples/emilia-card/botopink.json` depends on `../../../jhonstart/modules/jhonstart`, so the
-      checkout is live): emilia `.github/workflows/test.yml` step
-      "Checkout jhonstart (dependency — examples/emilia-card depends on jhonstart)" (`:94-99`) and
-      its comment (`:21`) removed
 - [ ] `scripts/check-docs.sh`'s header says `check` is target-independent (`:63`, `:76`): it is not
       since decision 167 — `#[@BeamMemory…]` checks under an erlang manifest and is refused under the
       harness's `commonJS` one, so `docs.md` § `@BeamMemory` is a `project` fence with an erlang
