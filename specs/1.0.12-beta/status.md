@@ -129,7 +129,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 26 s9 — a dependency's sidecars and imports answer as its own build does · none
 - [x] 26 row — the LSP makes the 309 refusal: the package name from the nearest manifest, through `engine.importDiagnostics` to the resolver
 - [ ] 130 s5 — the remaining decorator sites (38 of 119 done, plus `#[schema]`'s 5) · rakun's DI on 01 s20 · rakun sites under the 130↔128 rule (decision 339) · rakun-client's on the behavior-member gap (ctr-q closed: the table built at comptime, 281, 256)
-- [ ] 130 s10 — `@TypeInfo.all` in a template body answers for the calling program, `value` read at build, the importer's diagnostic (353) · row 133 → 119 s1 box 5 · 34 s3 · 119 s4
+- [ ] 130 s10 — `@TypeInfo.all` in a template body answers for the calling program, `value` read at build, the importer's diagnostic (353); a decorator on a `val` runs and the `val` is catalogued, its build value lifted (356) · row 133 → 119 s1 box 5 · 34 s3 · 119 s4
 - [ ] 130 s6 — module-level `@emit` removed · 130 s5 · `#[schema]`'s free functions → members of the type (306; `T.parse(…)`, 327)
 - [x] 134 s2 part — `@is` refused (322); the drift test walks the mirrored types and `@Result`'s methods (declared); std `Type` (`keys`, `partial`, `required`, `merge`)
 - [ ] 134 s2 — `Decl.fields` as `Type.Field<unknown>`, `examples/types.bp` · 01-checker s28 (`Type` a namespace type, `Type.Field<T>` declared, `Type.pick` / `omit` declared with the variadic; `result` deleted and `?T` methodless — done)

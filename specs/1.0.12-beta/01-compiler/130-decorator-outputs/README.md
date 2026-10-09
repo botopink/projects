@@ -138,10 +138,15 @@ val themes = @TypeInfo.all(with: theme);   // the application's #[theme] declara
 if (themes.length > 1) css.fail("styled: two #[theme] declarations: …");
 ```
 
+- [ ] a decorator on a `val` runs (356): `DeclKind.Val`, `name`, `returnType` as written; `setMeta`
+      legal, `addMember` / `addType` refused at the annotation; the `val` catalogued —
+      `run/val_decorator_runs` (`#[mark] pub val one = 1;` fails with the decorator's message)
 - [ ] `@TypeInfo.all` in a template function's body answers for the calling program, after every
       module's decorators; the reader is exempt from `typeinfo-all-imported` (256's entry-point
       rule unchanged for every other reader)
-- [ ] a `Declared`'s `value` readable at build: a comptime `extendTheme(…)` holding `ThemeValue.Rem(…)`
+- [ ] a `Declared`'s `value` readable at build: a `val` with a `comptime` initializer lifted into the
+      template's module as a literal (356), refused at the read otherwise
+      (`typeinfo-all-template-value`); a comptime `extendTheme(…)` holding `ThemeValue.Rem(…)`
       evaluates (row 133)
 - [ ] the importer of a reader module that breaks the rule gets `typeinfo-all-imported` at the
       import, not `unbound variable '<template>'` at the use (row 134's diagnostic half)
