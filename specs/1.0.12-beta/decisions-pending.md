@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**53 questions and 6 contradictions are open, and 89 implementation choices await confirmation.**
+**55 questions and 6 contradictions are open, and 89 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -477,6 +477,32 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Options.** (a) Restart the node on every change (`build` + `start` looped over a file watcher — same bytes as `start`, 1–3 s per edit). (b) Hot-load changed modules; regenerate and reload `onze_routes` when the app tree changes. (c) (b), falling back to (a) when a convention file changed. Browser island state lost either way (Fast Refresh a non-goal, `07-onze/reference-holes.md` § 29).
 - **Recommendation.** (a): one code path, the same bytes `start` serves; (b) later, if (a) measures too slow on the blog.
 - **Blocks.** 50 step 2; 53 step 6.
+
+#### 49-g · `isString` — onze's own, or std's `Json`
+- **Measured.** 49 step 1 moved `onze/src/config.bp` and `types.bp` onto std's `Json` methods
+  (`members`, `field`, `str`, `items`, `isObject`, `kindName`); std has no string test, so
+  `config.bp` keeps one `pub fn isString(v: Json) -> bool` (a `case` over `Str`), imported by
+  `types.bp`. The step's grep (`membersOf`, `strOf`, `isObject`, `kindName`) is empty; its
+  Mechanism line also names `isString`.
+- **Options.** (a) Keep onze's `isString` — `if (isString(v) == false) throw wrongKind(…)`.
+  (b) std adds `pub fn isString(self: Self) -> bool` to `Json` (97's surface), onze deletes its
+  own — `if (v.isString() == false) throw wrongKind(…)`. (c) Read through `kindName` —
+  `if (v.kindName() != "a string") throw …` (a diagnostic text as a type test).
+- **Recommendation.** (b): one reader per question, in std, beside `isObject`; (c) never.
+- **Blocks.** nothing; under (b), a one-line follow-up in `config.bp` / `types.bp` after 97.
+
+#### 51-a · A malformed integer in a metrics sidecar or a gradient angle
+- **Measured.** 51 step 1 replaced `onze-og`'s two `intOf` cells with std's `string.parseInt()`;
+  the old cells answered `0` for text that is not an integer, and so do the call sites now
+  (`case t.parseInt() { Ok(n) -> n.toI32(); Error(_) -> 0; }` — `metrics.bp` `parseMetrics`,
+  `svg.bp` `gradientOf`). A sidecar line `ascent 9x0` reads as `ascent 0`;
+  `linear-gradient(9.5deg,#a,#b)` draws at 0°. An integer past `i32` now aborts (`toI32`).
+- **Options.** (a) Keep `0`. (b) Refuse: `parseMetrics(…) -> @Result<FontMetrics, string>`
+  answers `Error("<family> <weight>: line 3: \"9x0\" is not an integer")`, and `gradientOf`
+  answers its "not a two-stop linear gradient" value (`#(-1, "", "")`) for an angle that is not
+  an integer.
+- **Recommendation.** (b) — decision 67: a malformed input is refused, never read as zero.
+- **Blocks.** nothing today; (b) is an `og_test.bp` change owned by 51.
 
 ### 08-bpp
 

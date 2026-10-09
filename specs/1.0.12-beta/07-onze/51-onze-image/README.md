@@ -1,7 +1,7 @@
 # Front 51 — onze image, font and image response tail (carries 52 · 70)
 
 **Priority:** low — every box is a tail of a landed feature; blocks no front except 53's OG row ·
-**State:** not started
+**State:** step 1 done (onze-wave patch; lands with the coordinator)
 **Depends on:** `04-rakun/22-rakun-file-routing` carrying 25 (route handler registration, step 2)
 and 66 (route discovery, step 5) · maintainer `52-a` (step 4) · `07-onze/49` step 6 (the `assets`
 / `og` group files)
@@ -26,7 +26,7 @@ std's number parsing.
   (`#[getRoute("_onze/image")]`, front 25) unregistered; rakun-cache's `rkCacheFlight` unused in
   onze. `font_metrics.bp`'s five rows transcribed (52-a); `localFont` takes a metrics probe nothing
   binds. `card_style.bp`'s `supportedProperties()` lists `margin`, `border`; the README table does
-  not. `onze-og/src/svg.bp`, `metrics.bp` each declare a local `intOf` cell. Remote image sources
+  not. Remote image sources
   pass the allowlist, answer 501.
 - **Single flight**: `rkCacheFlight(key, work)` around the encoder call in `image_handler.bp` and
   the render in `onze-og/src/response.bp`; key = the content hash the cache already uses. Route =
@@ -37,12 +37,13 @@ std's number parsing.
 - **2 % test**: a fixture string through the rasterizer to SVG with `getBBox`-equivalent metrics
   (rsvg's `--export-id` bounds), compared with `measure`.
 
+## Done
+
+- Step 1 — consume std (97): `svg.bp` and `metrics.bp` read integers with `string.parseInt()`
+  (`toI32`); `grep -n "fn intOf" modules/onze-og/src` is empty; `og_test.bp` unchanged, 10 / 10
+  on both rows. Text that is no integer still reads as `0`, as the cells did — question `51-a`.
+
 ## Open
-
-### Step 1 — consume std (97)
-
-- [ ] `svg.bp`, `metrics.bp` use `string.parseInt()` / `parseFloat()`; `grep -n "fn intOf"
-      modules/onze-og/src` empty; `og_test.bp` unchanged
 
 ### Step 2 — single flight, and the route
 

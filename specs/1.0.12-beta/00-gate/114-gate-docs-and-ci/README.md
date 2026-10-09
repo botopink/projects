@@ -58,6 +58,9 @@ every one of the 17 members' `dependencies` is `{}` or `{ "emilia": { "workspace
 `emilia-card` in a copy of emilia placed under a `botopink-lang/repository/` with no `jhonstart`
 beside it compiles 12 modules (48 with jhonstart), `botopink test` 4 passed, 0 failed on commonJS and
 on erlang, `botopink build` exit 0 on both.
+Residue (status row): onze-cli's `test/start_test.bp` serves each `onze start` it drives on a port
+the OS hands out (`freePort`: a `node` listener on port 0 on 127.0.0.1, closed at once) instead of
+43101 / 43102; the suite's assertions unchanged, its commonJS and erlang cells green run side by side.
 
 ## Open
 
