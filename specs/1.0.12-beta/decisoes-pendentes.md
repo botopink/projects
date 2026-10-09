@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 57 perguntas, 8 contradições e 88 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **338**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 56 perguntas, 8 contradições e 88 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **339**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -13,63 +13,6 @@
 ## Parte 1 — O que trava agora (responder primeiro)
 
 Ordem: quantos passos e frentes a resposta libera, depois o caminho crítico de `fronts.md` § Execution order (102 s3 / 103 s2 → 128 → rakun 04 → 22 → 49 → 53; 118 → 26 → 67 → 127; 118 → 119 → 120 → 126 → 127 → 124). Nenhuma pergunta aberta trava a `00-gate/114`.
-
-### 08-d · Quem faz o escopo do CSS
-
-**Trava:** `08-bpp/119` inteira, passo 1 incluído — na cadeia crítica 118 → 119 → 120 → 126 → 127 → 124 · ⏳ pronto para abrir thread ao responder
-
-**Contexto.** A frente 119 quer que o `<style>` de um componente valha só para ele. Nada perto faz
-escopo hoje: o emilia compila `Token[]` e "não é um processador de CSS" (`emilia/AGENTS.md`: sem
-leitura de seletor, nunca lê CSS de autor); o `onze-assets` renomeia as classes de `*.module.css`
-(`style_module.bp`), mas um `h1 { }` num arquivo de módulo continua global; decisão 113. O passo 1 da
-119 não espera frente de trilha nenhuma — só esta resposta.
-
-**Hoje** (medido: `botopink test --target commonJS` num projeto de rascunho sobre `jhonstart-html`):
-```bp
-renderNode(html """<div><style>h1 { color: red }</style><h1>x</h1></div>""")
-// == "<div><style>h1 { color: red }</style><h1>x</h1></div>"   — verbatim: pinta todo <h1> da página
-```
-
-- [ ] **(a)** O emilia ganha `scopeCss(scope, css)`, alcançado pelo `jhonstart-emilia`.
-  ```bp
-  import {scopeCss} from "emilia";
-  val css = scopeCss(scope, "h1 { color: red }");   // o <style> do componente passa por aqui (ilustrativo)
-  ```
-- [ ] **(b)** O `onze-assets`, ao lado do renomeador de módulos.
-  ```text
-  onze build   → o <style> do componente ganha escopo junto com os *.module.css
-  sem o onze   → o mesmo <style> continua global
-  ```
-- [ ] **(c)** O `html` do core `jhonstart` faz o escopo do próprio `<style>` (o membro `jhonstart-html`
-  sai, 200).
-  ```bp
-  html """<style>h1 { color: red }</style><h1>x</h1>"""   // o html lê e reescreve o seletor: um parser de CSS no html
-  ```
-
-- [ ] **(d)** *(proposta, 09/10)* CSS em três camadas. `css` é a base para construir CSS (parser,
-  `Sheet`, `scope`) e `styled` é a base para construir componentes de CSS (`styled "…"` → `@Component<StyledBase, Styled>`, com hooks e a regra build/render das páginas; a sintaxe
-  CSS do Tailwind v4 onde ela é CSS: `--spacing()`, `--alpha()`, `@variant`, `@custom-variant`; o
-  `@apply` vira um buraco `${…}` tipado). Cada um é um repositório próprio (326: `repository/css`,
-  `repository/styled`). A emilia vira uma série de componentes feitos em `styled`, aplicados na tag
-  (301). As três camadas não conhecem o `.bpp`: a integração toda mora no `jhonstart-styled`, que também declara o `#[styled(…)]`; o `jhonstart-emilia` deixa de existir. O `"bpp"` vira objeto, e o estilo do `.bpp` vai para uma seção própria, compilada pelo pacote
-  de `style`. Proposta inteira, com o que muda e todos os pontos respondidos (p7 — o tema vai para o `styled`, a emilia fica com os valores do Tailwind —; p10 — `styledProperty "…"`, só declarações —, p6 — `@utility` recusado, o nome vem de um `val` ou de uma função —, p3 — uma seção só, antes da marcação, global com `:global(…)`; o cabeçalho começa na primeira linha, sem `---` de abertura —, p1 — `use styled """…""";` no corpo, buracos de run-time como variáveis CSS no lugar do `#[defineVars]` —, p2, p4, p5, p8 e p9 aceitos em 09/10):
-  [`08-bpp/119-bpp-styling/proposta-08-d.md`](./08-bpp/119-bpp-styling/proposta-08-d.md).
-  ```bp
-  // botopink.json: "bpp": {"default": "jhonstart", "style": "jhonstart-styled"}
-  // emilia — Tailwind: @utility p-* { padding: --spacing(--value(integer)); }
-  fn padAll(n: i32) -> @Component<StyledBase, Styled> { return styled "padding: --spacing(${n});"; }
-  ```
-  ```bpp
-  --- style ---
-  .title { font-size: 2rem; }          // → .title[data-s="components-post-12"]{font-size:2rem}
-  ---
-  <h1 class="title">{props.title}</h1>
-  ```
-
-**Recomendação: (d)**, com os pontos p1–p10 como respondidos em 09/10; senão, (a). A (d) dá um
-parser e uma folha só para todo mundo, e a emilia vira cliente do `styled`. A (c) põe um parser de CSS
-na biblioteca de HTML; a (b) deixa o estilo com escopo indisponível sem o onze. **Bloqueia:** a 119,
-todo passo — na cadeia crítica 118 → 119 → 120 → 126 → 127 → 124.
 
 ### props-d · Os atributos de uma tag nativa *(proposta)*
 

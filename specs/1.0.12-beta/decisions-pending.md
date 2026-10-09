@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**55 questions and 8 contradictions are open, and 88 implementation choices await confirmation.**
+**54 questions and 8 contradictions are open, and 88 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -434,12 +434,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Blocks.** 50 step 2; 53 step 6.
 
 ### 08-bpp
-
-#### 08-d · Who scopes CSS
-- **Measured.** emilia compiles `Token[]`, "not a CSS processor"; onze-assets renames `*.module.css` classes (`style_module.bp`); decision 113.
-- **Options.** (a) emilia gains `scopeCss(scope, css)`, reached via `jhonstart-emilia`. (b) onze-assets, beside the module renamer. (c) core `jhonstart`'s `html` scopes its own `<style>` (the `jhonstart-html` member goes, 200). (d) *(proposed 2026-10-09)* CSS in three layers — `css` (reader, `Sheet`, `scope`) and `styled` (`styled "…"` components, each a `@Component<StyledBase, Styled>` — hooks, build-or-render by `@typeInfo(f).hooks` —, Tailwind v4's CSS syntax where it is CSS: `--spacing()`, `--alpha()`, `@variant`, `@custom-variant`; `@apply` as a typed `${…}` hole), each its own repository (326, `repository/css`, `repository/styled`), emilia a series of `styled` components applied on the tag (301); none of the three knows `.bpp` — the integration lives in `jhonstart-styled`, which also declares `#[styled(…)]`; `jhonstart-emilia` is deleted; `"bpp": {"default": "jhonstart", "style": "jhonstart-styled"}`; a `.bpp` file's CSS in one `--- style ---` … `---` section between the header and the markup, compiled by the style package; `<style>` in markup only with `#[isInline]`. Full text and every point answered (p7 — the theme moves to `styled`, emilia keeps Tailwind's values —; p10 — `styledProperty "…"`, declarations only —, p6 — `@utility` refused, a `val` or a function names a component —, p3 — one section, before the markup, `:global(…)` for unscoped rules; the header starts on the first line, no opening `---` (amends 212) —, p1 — `use styled """…""";` in the body, run-time holes as CSS variables replacing `#[defineVars]` —, p2, p4, p5, p8, p9 accepted 2026-10-09): [`08-bpp/119-bpp-styling/proposta-08-d.md`](./08-bpp/119-bpp-styling/proposta-08-d.md).
-- **Recommendation.** (d), with p1–p10 as answered on 2026-10-09; otherwise (a). (c) puts a CSS parser in the HTML library; (b) leaves scoped styles unavailable without onze.
-- **Blocks.** 119, every step — on the critical chain 118 → 119 → 120 → 126 → 127 → 124.
 
 #### props-d · A native tag's attributes (*proposed*)
 - **Measured.** 192 covers component tags only; a native tag is `fn <tag>(children: Children, attrs: Array<#(string, string)> = [])` in jhonstart (118 § Notes).
