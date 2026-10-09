@@ -36,7 +36,16 @@ snapshot moved (`js/AGENTS.md` § The IIFE build sites) · 2 `$stringify` is no 
 `primOpTemplate.render`'s arm and erlang's / beam's `emitStringifyOpen` / `emitStringifyClose`
 deleted (carve-out into `erlang.zig`, `beam_asm.zig`), `render: $stringify is no marker — its bytes
 pass through` red on the parent; the refusal is `reject/template_stringify_marker` (01-checker's,
-every target); no snapshot moved.
+every target); no snapshot moved. · 9 (most) `i64`/`isize`/`u64`/`usize` hybrid on commonJS (319):
+`js_prelude` `wide_norm`/`wide_add`…`wide_neg` through `wideOp` (number fast path, `BigInt` past
+±(2^53 − 1), aborts at the type's own bounds), a literal past 2^53 written `…n`, `__bp_show` prints a
+`BigInt`'s digits, `x is i64` reads both forms, `.d.ts` `number | bigint`, `rangeExactDouble` deleted,
+`refuseBeyondJsSafeInteger` deleted (checker patch); `run/i64_full_range`, `run/int_overflow_sub_i64_min`,
+`run/int_overflow_add_u64_max` (`%` / `/` past 2^53), `run/i64_dict_key_across_safe_edge`; the loop
+995 → 687 ms (`js/AGENTS.md` § 64-bit integers) · 10 (commonJS) string indices count codepoints (320):
+`__bp_has_surrogate` + `__bp_str_length` / `__bp_string_char_at` / `__bp_str_index_of` /
+`__bp_str_last_index_of`, std's Node `stringSlice0`/`stringSlice1`/`charCodeAt` cells;
+`run/string_index_of_codepoints` (strcp-erl's) green on commonJS, `run/string_codepoint_slice_and_code`.
 
 ## Open
 
@@ -79,22 +88,28 @@ function i64add(a, b) {
 }
 ```
 
-- [ ] lowering: every operation on the four types (`+ - * / %`, unary `-`, the compound assignments,
+- [x] lowering: every operation on the four types (`+ - * / %`, unary `-`, the compound assignments,
       comparisons) through a prelude helper with the number fast path; the slow path computes in
       `BigInt`, aborts past −2^63 … 2^63 − 1 / 0 … 2^64 − 1 (`__bp_int`), and answers the canonical form;
       a literal is a number when safe, else `123…n`; `rangeExactDouble` deleted
-- [ ] canonical form kept by every producer (operations, literals, conversions, `Json`, host templates):
+- [ ] canonical form kept by every producer (operations, literals, conversions, `Json`, host templates)
+      — operations and literals done; `Json` waits on `jsi64-a`; std's `Math.min`/`max`/`abs` cells and
+      `Integer`'s `default fn`s (`isEven`, `clamp`) throw a `TypeError` on a `BigInt` (97 step 13):
       `==` stays `===`, a `Dict` / `Set` keyed by `i64` keys by value — one cell each across the 2^53 edge
-- [ ] conversions explicit and exact: `toF64()`, `toI32()` and the like abort when the value does not fit;
+- [ ] conversions explicit and exact (no `toF64()` / `toI32()` is declared anywhere yet — std surface first):
       widening `i32 → i64` is free (already canonical); `@print` and string interpolation print the digits
       (no `n`)
-- [ ] a Node host template taking or answering one of the four types sees `number | bigint` (canonical);
+- [x] a Node host template taking or answering one of the four types sees `number | bigint` (canonical);
       the emitted `.d.ts` types them `number | bigint`; `scripts/tsc-check.sh` green
-- [ ] cost measured: a loop of i64 additions below 2^53 within 10% of today's `int_check` build (the
+- [x] cost measured: a loop of i64 additions below 2^53 within 10% of today's `int_check` build (the
       number recorded in `js/AGENTS.md`)
-- [ ] `run/i64_full_range` (`9007199254740991l + 1l`, `9223372036854775807l`, `-9223372036854775808l`, the
+- [x] `run/i64_full_range` (`9007199254740991l + 1l`, `9223372036854775807l`, `-9223372036854775808l`, the
       `u64` top, a value crossing back below 2^53, an overflow past each bound) answers alike on the four
       targets; `run/int_overflow_mul_i64` re-recorded — commonJS now aborts where the others do
+      — the minimum is written `-9223372036854775807l - 1l` (the checker refuses
+      `-9223372036854775808l`: the literal's digits are past `i64`, a `01-checker` row); the `u64` half is
+      `run/int_overflow_add_u64_max`, red on wasm only (prints the top as `-1`, traps on
+      `18446744073709551614ul + 1ul`; a `05-wasm` row)
 - [ ] `docs.md` § Integer overflow's commonJS paragraph rewritten (handed to `07-residuals`, owner of the prose)
 
 ### Step 10 — a string index counts codepoints (decision 320)
@@ -108,13 +123,14 @@ function strLength(s) {
 }
 ```
 
-- [ ] `length`, `at`, `slice`, `indexOf`, `lastIndexOf` (and every std primitive taking or answering a
+- [x] `length`, `at`, `slice`, `indexOf`, `lastIndexOf` (and every std primitive taking or answering a
       string index) through prelude helpers: a string without a surrogate pair uses the native index,
       one with a pair is walked by codepoint; an index past a pair is a codepoint index on input and output
-- [ ] a JS host template receives and answers codepoint indices
+- [x] a JS host template receives and answers codepoint indices
 - [ ] cost measured: the helpers on strings without a pair within 10% of the native calls (recorded in
-      `js/AGENTS.md`)
-- [ ] `run/string_index_of_codepoints` (with `"👍"` and `"e\u{301}"`) one `.out` for the four targets
+      `js/AGENTS.md`) — measured +24 % on a loop of four string reads (+100 % before the length-keyed
+      cache); the 10 % is not met
+- [x] `run/string_index_of_codepoints` (with `"👍"` and `"e\u{301}"`) one `.out` for the four targets
 
 ### Step 11 — the same wasm library from commonJS (decision 333 (B); after `05-wasm` step 9)
 
