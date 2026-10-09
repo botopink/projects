@@ -1,7 +1,7 @@
 # Front 26 — cli-tooling: a program built by the CLI serves on the BEAM, and every driver speaks
 
-**Priority:** high · **State:** partial: steps 1, 2 (box 3 measured, rakun's row), 3, 4, 5, 7 and 8
-done; steps 6, 9 open
+**Priority:** high · **State:** partial: steps 1, 2 (box 3 measured, rakun's row), 3, 4, 5, 6, 7 and 8
+done; step 9 open
 **Depends on:** `../../02-std-and-packaging/98-packaging-tail/` step 4 (decision 344's manifest
 side; the `bpmp` resolver half is step 6) · 23-c's two `botopink test` fixes confirmed (decision 317 — this front's files, kept)
 **Owns:** `modules/compiler-cli/**` (`src/cli/{build,run,test_cmd,libs,sources,config,resolver}.zig`,
@@ -34,18 +34,10 @@ only declared dependencies (decision 242); `build`, `test` and the LSP print che
 - Step 7 — `build.zig`'s `test-docs` comment describes `check-docs.sh`'s `reject` / `project` / `body` directives
 - Step 8, box 1 — the LSP reports `module-import-with-from` and `unresolved import source` as `check` does, one `lsp/` snapshot each
 - Step 8, box 2 — `from "<own package name>"` is `error[module-import-with-from]` (309): an embedded std module's brace import reads as `from "std"` (`comptime.zig`), `resolver.sourceProblem` tests the package's own name, the three std sources migrated (`modules/import_own_package_with_from`, `dependency_imports_itself_with_from`, `cli_contract.sh`)
+- Step 6 — a git dependency's `subdir` (decision 344, the resolver half): `bpmp install` clones a repository once per ref into `<store>/<repo_key>/<rev>/`, links `.botopinkbuild/deps/<name>` to `<checkout>/<subdir>`, and two dependencies on one repository share the checkout (`share_checkout`; a lockfile pinning them at two commits refused); `dep/member.zig` refuses, located, a `subdir` with no `botopink.json`, holding a workspace (naming its members' subdirs) or another package's name, and a `path` / `workspace` dependency of the package's closure leaving the checkout (by spelling or a symbolic link) — before any link is written; the CLI resolves a linked dependency's own dependencies from the link's target (`libs.linkFreeDir`), so rakun-web's `../rakun` is the sibling at the same ref. `tests/cli_contract.sh` over a local bare repository (47 assertions; 40 red against the parent's `bpmp` + `botopink`, 3 against the parent's `botopink` alone), `dep/member.zig` / `dep/resolver.zig` / `install.zig` unit tests, `libs.zig` `linkFreeDir` test
 - Row (309 in the LSP) — the language server makes decision 309's refusal: `resolver.importSourceProblems` takes `own`, `engine.importDiagnostics` passes it, the server reads it from the nearest manifest's `name` (a dependency's own inside its sources); `lsp/diagnostics_import_own_package_with_from` and a server-level test over a scratch package, both red on the parent (`unresolved import source`)
 
 ## Open
-
-### Step 6 — a git dependency's `subdir` (decision 344, the resolver half)
-
-- [ ] `bpmp` clones the repository at `ref` once, builds the package at `subdir`, and resolves that
-      package's `path` dependencies inside the same checkout (rakun-web's `"../rakun"`); two dependencies
-      on one repository at one `ref` share the checkout (98 step 4 owns the manifest model)
-- [ ] refused, located in the manifest: a `subdir` with no `botopink.json` or whose manifest is a
-      workspace; one repository at two `ref`s, naming both dependencies — `tests/cli_contract.sh` cases
-      over a local bare repository
 
 ### Step 9 — a dependency's sidecars and imports answer as its own build does
 
