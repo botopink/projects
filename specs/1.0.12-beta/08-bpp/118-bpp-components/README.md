@@ -215,7 +215,9 @@ core's `node.bp`, `prelude.bp` and `element.bp`'s `View`; green on commonJS and 
   359 (`<Card {...p} featured />` is `CardProps(...p, featured: true)`), step 1, on `01-checker` step 34.
 - Step 4 — slots as 360: `<Slot />`, `<Slot name="x">fallback</Slot>`, a child `#[slot("x")]`,
   `<Fragment #[slot("x")]>`, the transfer `<Slot name="x" #[slot("x")] />` through two layouts,
-  `use hasSlot("x")`, the name a string literal checked at build; a slot name the component does not write and content for an absent default slot
+  `use hasSlot("x")`; `Slot` and `slot` are jhonstart functions with `comptime` parameters in
+  302's shape (`slot(comptime decl: @Decl, comptime name: string)`), `html` reading their metas —
+  on `01-compiler/130` step 9 (a tag's `@Decl`), as step 5; a slot name the component does not write and content for an absent default slot
   refused at the child; lowercase `<slot>` the native element; the hidden slot argument. The props
   as one record (192, `props: type(…)`, 207) still wait on **Template-built code cannot build an
   inline props type** (`01-checker`); slots no longer do.
