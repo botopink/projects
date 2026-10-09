@@ -2,7 +2,7 @@
 
 **Priority:** high — segment grammar hand-walked in seven places outside `routing`, two disagreeing
 on what an app file is; 128 and rakun group A wait on step 3 · **State:** steps 1–2 done (the
-package); step 3 open
+package); step 3 done but jhonstart `routes.bp` (a compiler gap, § Open)
 **Depends on:** decision 323 (49-d confirmed as amended: "onze imports nothing from routing"
 reversed) (step 3)
 **Owns:** `repository/botopink-lang/libs/routing/src/conventions.bp` (new), `libs/routing/src/segment.bp`
@@ -33,8 +33,8 @@ interceptors) owned by `routing` alone; its seven re-derivations gone:
 ## Mechanism
 
 `routing` already parses paths (`parsePath`, `segment.patternOf`). A decorator body may call a bodied
-package function (only *host* functions refused), so `#[page]` calls `segment.paramNamesOf`
-directly. `libs/routing/src/`: 10 modules, 82 tests (66 before steps 1–2).
+package function (only *host* functions refused) — but not one that constructs a record type of
+that package (measured 9 Oct, § Open), so `#[page]` cannot call `segment.paramNamesOf` yet. `libs/routing/src/`: 10 modules, 82 tests (66 before steps 1–2).
 
 Surface (names under decision 163 — `import {x} from "<package>"` is ambiguous when two packages
 export `x`):
@@ -81,27 +81,39 @@ differ as stated above.
 - Both: `botopink test` 82 passed, 0 failed on erlang and on commonJS; `botopink format --check src
   test` clean; `libs/routing/AGENTS.md`, `botopink.json` `files`, `root.bp` updated
 
+- Step 3 — consumers, one patch per member (decision 188), in fronts.md's order:
+  - rakun-app `file_router.bp`: `conventionFiles`, `conventionKind`, `conflictProblems`,
+    `hasConvention`, `rootGroupOf` gone; `conventionsIn` iterates `conventions.fileKinds()` (wrap
+    order, 171); `scanTable` writes `kindLetter(kindOf(f))` (172); `scanAppDir` hands its entries to
+    `conventionConflicts` as `ConventionFile`s (texts now `routing: …`, the asserted words kept);
+    `file_router_scan_test.bp`'s letter test reads `kindLetter(kindOf(…))`. `static_gen.bp`:
+    `segmentName`, `bound`, `expandRow` gone; `expandParams` halts with `fillPattern`'s `Error` and
+    keeps the duplicate-path refusal (the three asserted phrases unchanged). rakun-app 204 passed,
+    0 failed on erlang (204 before)
+  - rakun-hateoas `hal.bp`: `bracketToColon` gone, `segment.toColonPattern`; 14 passed, 0 failed
+    on erlang
+  - onze-cli `scan.bp` / `generate.bp`: `classify` / `ConventionFile`; `patternOfSegment` gone (the
+    pattern `patternOf(parsePath(seg))`, `""` beside the `pathProblem` that already fails the scan).
+    onze-bundler `chunk.bp` / `graph.bp`: `classify`; `patternOfSegment` gone (`patternOf(parsePath(
+    seg))` — a refused segment halts with `routing`'s text; the scan refused it first);
+    `chunk_test.bp`'s pattern test reads `routing`. onze `types.bp`: `AppFile`, `appFileKinds`,
+    `classifyAppFile` gone; `describeAppFiles` over `classify` (its snapshot unchanged);
+    `types_test.bp` asserts `fileKinds()` in wrap order. On commonJS and on erlang (before = after):
+    onze-cli 31, onze-bundler 42, onze 23, onze-test 7 (`describeAppFiles` consumer) — 0 failed
+  - `onze/examples/blog`: the scan table and the staged tree (`scanApp` + `stage`, 484 lines) dumped
+    before and after on commonJS — identical (a scratch test, not kept)
+
 ## Open
 
-### Step 3 — consumers, one commit per member
-
-Each site deletes its copy, imports the package; member tests keep their assertions except where named.
-
-| Member | Deletes | Imports from `routing` | Needs attention |
-|---|---|---|---|
-| rakun-app `file_router.bp` | `conventionFiles`, `conventionKind`, `conflictProblems`, `hasConvention`, `rootGroupOf` | `conventions.fileKinds`, `kindOf`, `kindLetter`, `ConventionFile`, `conventionConflicts` | `scanTable` writes the wire letter via `conventions.kindLetter` (decision 172); `conventionsIn` iterates `fileKinds()` → a segment's records in decision 171's wrap order (no rakun test asserts order); `file_router_scan_test.bp` asserts `conventionKind` itself; refusals lose the `rakun ` prefix and the dash (scan tests assert `both`, `page.bp`, `route.bp`, `/about`, `(marketing)`, `(shop)` — all kept) |
-| rakun-app `static_gen.bp` | `segmentName`, `bound`, `expandRow`'s body (`expandParams` keeps the duplicate-path refusal over `fillPattern`) | `segment.fillPattern` | an `Error` becomes the halt — text carries the three phrases `static_gen_test.bp` asserts (``binds no `slug` ``, ``binds `extra` ``, ``holds a `/` ``); a row not binding an optional catch-all starts to fill |
-| rakun-hateoas `hal.bp` | `bracketToColon` | `segment.toColonPattern` | none |
-| onze `types.bp` | `appFileKinds`, `classifyAppFile`; `AppFile` if `ConventionFile` replaces it | `conventions.fileKinds`, `classify`, `ConventionFile` | `AppFile` imported by onze-cli (`scan.bp`, `generate.bp`), constructed in `scan.bp`; `classifyAppFile` imported by onze-cli and onze-bundler (`chunk.bp`, `graph.bp`); `describeAppFiles` (`types` snapshot, `onze-test`'s `assertAppFiles`) stays in onze over `classify`; `onze/test/types_test.bp` asserts `appFileKinds`' order by name — rewritten to the wrap order (decision 171) |
-| onze-cli `scan.bp`, onze-bundler `chunk.bp` | both `patternOfSegment` | `segment.pathProblem`, `segment.parsePath`, `segment.patternOf` (already in the package) | they disagree on a segment `pathProblem` refuses: onze-cli answers `""`, onze-bundler strips by hand |
-| jhonstart `routes.bp` | `#[page]`'s hand walk | `segment.paramNamesOf`, `segment.parseSegment` / `kindName` for "is it a list" | `[a.b]` and unclosed `[x` change (§ Mechanism) |
-
-- [ ] rakun-app: `conventionFiles` / `conventionKind` / `expandParams`' hand fill gone; `rakun-app`
-      tests green
-- [ ] onze: `appFileKinds` / `classifyAppFile` / `_folder` gone; onze-cli and onze-bundler
-      `patternOfSegment` gone; onze tests green on both rows
-- [ ] rakun-hateoas `bracketToColon` gone; jhonstart `#[page]` calls `segment.paramNamesOf`
-- [ ] `onze/examples/blog`'s app tree classifies identically before and after (diff of the staged tree)
+- [ ] jhonstart `routes.bp`: `#[page]`'s hand walk → `segment.paramNamesOf` (+ `parseSegment` /
+      `kindName` for a list). Blocked by a compiler gap (comptime, `01-compiler`): a decorator body
+      that calls a package function constructing that package's record fails —
+      `the decorator module did not compile: the wat runtime does not take call to undefined function
+      Segment/3 (in …routes__dec__page…:parseSegment/1)` (commonJS; "the BEAM runtime" on erlang) at
+      every `#[page]` of `routes_test.bp` and `client_app_test.bp`, whether or not `segment.Segment`
+      is imported.
+      Wanted: a package record's constructor travels into the decorator module with the functions
+      that build it. `[a.b]` and unclosed `[x` change when it lands (§ Mechanism)
 
 Changed by their owners: `libs/AGENTS.md`'s `routing` packages row does not name the conventions yet
 (`104-http`'s line); `07-onze/modules.md`'s dependency column gains onze → `routing` (323).

@@ -136,8 +136,10 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 138 (decision 326) — `actions`, `http`, `log`, `routing`, `validation` to `repository/<pkg>` (history kept), `cardume` as a submodule, the compiler embeds std alone · the six GitHub repositories (maintainer) · before 102 s3 / 103 s2's consumer commits
 - [x] 102 s1–2 — `conventions.bp` and the segment helpers in `libs/routing` (re-implemented)
 - [x] 103 s1 — `id.bp` (`deriveActionId`, `isActionId`) in `libs/actions` (re-implemented)
-- [ ] 102 s3 (W2) — consumers, one commit per member, rakun's first (`rakun-app`, `rakun-hateoas`), then jhonstart `routes.bp`, onze `types.bp`, `scan.bp`, `chunk.bp` · 102 s1–2 landed · decision 323
-- [ ] 103 s2 (W2) — consumers: rakun-app `actions.bp`, jhonstart-forms `form.bp` · 103 s1 landed · the `deriveActionId` / rakun-app `actionId` wrapper choice to confirm
+- [x] 102 s3 (W2) — consumers as patches, one per member (`.tasks/102s3-103s2/patches/`): rakun-app, rakun-hateoas, onze-cli, onze-bundler, onze; `examples/blog` staged identically · to land after 138 (decision 326)
+- [ ] 102 s3 — jhonstart `routes.bp`'s `#[page]` → `segment.paramNamesOf` · compiler gap: a package record's constructor does not travel into a decorator module (`call to undefined function Segment/3`) — 01-compiler
+- [x] 103 s2 (W2) — consumers as patches: rakun-app `actions.bp` (`actionId` deleted, 324), jhonstart-forms `form.bp` (`isActionId`) · to land after 138 (decision 326)
+- [ ] 103 — the action secret from rakun-app's `#[config("rakun.actions")]` record, not `rkProp` · rakun 04 s7 (299; no `#[config]` record in rakun yet)
 - [ ] 128 (W3) — the nine merges, alone in rakun · the rakun commits of 102 s3 and 103 s2 · ctr-k
 - [ ] 130 ↔ 128 — 128 does not wait on 130; no 130 rakun commit while 128 is open; after it, each is a decision-188 consumer commit · **to confirm** (03r-ao — only the record; the fronts follow (a))
 - [ ] rakun group A (W4–W5) — 04 (s1, the tag epoch, first) · 74 · 08 (s1 after 04 s4) · 15 · 79 · 81 · 93 · 73 · 19 s1 · 128 landed
