@@ -209,7 +209,9 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
       a constant); one reaching a run-time hook registers at render through `use context(StyledContext)` (352, 354:
       the render's sheet and layer, no store in `styled`; waits on the hidden context map,
       `01-compiler/134` step 6); a literal whose every hole is known at build is computed at build
-      (355) once `01-compiler/14` step 8 lands — until then computed at render, the same CSS
+      (355, built: `styled.bp` `atBuild` over `Part.known` / `Part.value`; `repository-stages.sh` reads
+      `tabRed`'s constant) — a hole naming an imported `val` stays computed at render until
+      `01-compiler/14` step 8's last boxes, the same CSS
 - [ ] the theme mechanism (300) in `styled`: `#[theme]` found at comptime, two refused, none a
       compile error at the first literal naming the fix (358); `--theme(--breakpoint-md)` and `@variant md` read it; a cleared breakpoint refused
       at compile time · row 134 (a library's template function cannot read the program's catalogue),
