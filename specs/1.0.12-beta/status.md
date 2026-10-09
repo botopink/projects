@@ -32,14 +32,13 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 
 ## L1 — finish what is already on `feat`
 
-- [ ] 114 s3 — botopink-lang `test.yml` green on GitHub on `feat` (fixes landed) · a run
-- [ ] 114 s5 — `gate.sh` `budget_cold=450` and its comment (decision 265) · none
-- [ ] 114 s6 — vscode-extension workflow installs OTP 28, one green run · none
+- [ ] 114 s3 — botopink-lang `test.yml` green on GitHub on `feat` · red on `49455602` (2026-10-03 run): `zig fmt --check` (`comptime/transform.zig:1172`, 19d59508 — 01-checker), 15 `std/math` templates refused by `beam_templates` (a443f52d — std-math-uniform), `comptime/eval.zig` literal test `3` vs `3.0` (01-checker) — none in `test.yml`
+- [ ] 114 s6 — vscode-extension workflow installs OTP 28 (on branch `front/114-16s8`), one green run · the push
 - [ ] 114 s7 — a cold gate recorded on the current tip, ≤ 450 s, exit-check counts re-derived · a machine with `zig` and `erl`
-- [ ] 114 s8 — 133's emitted modules diffed; rakun `test.yml`'s glibc comment says 2.35 · none
+- [ ] 114 s8 — emilia `test.yml`'s jhonstart checkout removed · 06-emilia/33 s2 (133's emitted modules: byte-identical, measured; rakun's glibc comment: patch on `front/114-16s8`)
 - [ ] 01-checker s6 box 3 — `throw` in a `case` arm under `@Result` · 04 s6
 - [ ] 01-checker s10 — a lambda parameter annotation (T12) · 16 s8
-- [ ] 16 s8 — the lambda annotation's printer arm · none — lands before 01 s10
+- [ ] 16 s8 — the lambda annotation's printer arm · 16-x (the AST field and parse are 01's) — lands before or with 01 s10
 - [ ] 01-checker s13 — JS-4's two checker gaps · 05 lowering a nested constructor in a `val`
 - [ ] 01-checker s18 — numeric literal suffixes (247): built on feat (`49455602`); left: the two `language-gaps.md` literal halves, a cold gate · the `l` literal rule on every target (319)
 - [ ] 01-checker s21 — `comptime` evaluated at compile time everywhere (266; ck4-a (c))
@@ -184,10 +183,12 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.0.10 choices) in its
-last section. Open after the 9 Oct revalidation and the answers since (309–322): 56 questions, 9 contradictions, 90
+last section. Open after the 9 Oct revalidation and the answers since (309–322): 62 questions, 9 contradictions, 90
 implementation choices.
 
-**First — the botopink shape** (raised 2026-10-04; answer `nat-0`, then the rest):
+**First — what blocks tracks 00–03:** the order of `decisoes-pendentes.md` § Prioridade 1; `16-x` (16 s8, 01-checker s10) heads its 01-compiler list.
+
+**Then — the botopink shape** (raised 2026-10-04):
 - [ ] nat-d6…d9 — case by case (283; nat-d1 → 303, nat-d2 → 304, nat-d3 and nat-d4 → 306, nat-d5 → 307): `nav:` strings (26, 53), lifecycle (rakun 04), `use use…` (53), erika's LINQ names (98)
 - [ ] nat-f2…f4 — case by case (284): `onze.json` keys (124), `files`/`workspaces` (98), `ONZE_PUBLIC_` (50, 53)
 

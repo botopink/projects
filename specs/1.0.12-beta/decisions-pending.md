@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**61 questions and 9 contradictions are open, and 90 implementation choices await confirmation.**
+**62 questions and 9 contradictions are open, and 90 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -81,6 +81,12 @@ Each `lg2-*` is a [`language-gaps.md`](./language-gaps.md) row for a missing fea
 keeps it out, making the row's nearest form the design. No front opens on one until answered; the
 owning front lists the row under *Depends on*. Answered: `lg2-k` (216, 253), `lg2-f` and `lg2-i` (280); `lg2-g` has no
 subject under 281. Every decorator parameter in these examples is `comptime` (280 (0)).
+
+#### 16-x · The lambda parameter annotation: who adds the AST field (*proposed*)
+- **Measured.** `16-formatter` step 8 (the printer arm for `{ n: i32 -> f(n) }`) is to land before `01-checker` step 10's parser half. The lambda's AST holds names only (`FunctionExprOf.params`, `TrailingLambdaOf.params`: `[]const []const u8`, `src/ast.zig`), and the parser refuses the form (`botopink format --check` on feat `49455602`: "this token cannot appear here" at `n`). A printer arm needs a type per parameter in the AST, and its round-trip test (`assertFormat`, `assertIdempotent`, `assertLossless`) needs the parser to read the form — both 01's (`ast.zig` node fields, `src/parser/**`); 16 owns `format.zig` and the trivia fields only.
+- **Options.** (a) One commit in `01-checker` step 10: the AST field (a parameter with `name` and an optional `typeRef`), the parser, the printer arm in `format.zig` (16's carve-out for that arm) with its three format tests, then the checker half — no tree where the parser accepts what the printer drops. (b) 16 step 8 takes a carve-out of `ast.zig` (the field, empty by default) and of the lambda-head scan: field, parse, printer and tests land there; 01 step 10 adds only the checker half (`val h: fn(f64) -> f64 = { n: i32 -> n };` refused only then). (c) 01's parser half first (meanwhile `botopink format` prints `{ n -> f(n) }` and `format --check` fails on any tree writing the form), 16 step 8 after.
+- **Recommendation.** (a): the strictest — no commit where the form parses and formatting strips it; parse and print stay one front's pair.
+- **Blocks.** `16-formatter` step 8; `01-checker` step 10.
 
 #### lg2-a · A byte type
 - **Measured.** No primitive, std type or literal holds bytes (`val b: Bytes = "a";` mismatches everywhere); every host cell marshals via `string`.
