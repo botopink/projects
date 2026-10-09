@@ -35,8 +35,6 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 114 s8 box 3 — emilia `test.yml`'s jhonstart checkout removed · 06-emilia/33 s2
 - [ ] 114 — the four other libraries' `test.yml` (emilia, erika, jhonstart, onze) carry a stale glibc 2.38 comment · none
 - [ ] 01-checker s6 box 3 — `throw` in a `case` arm under `@Result` · 04 s6
-- [ ] 01-checker s10 — a lambda parameter annotation (T12) · 16 s8
-- [ ] 16 s8 — the lambda annotation's printer arm · 16-x (the AST field and parse are 01's) — lands before or with 01 s10
 - [ ] 01-checker s13 — JS-4's two checker gaps · 05 lowering a nested constructor in a `val`
 - [ ] 01-checker s18 — numeric literal suffixes (247): built on feat (`49455602`); left: the two `language-gaps.md` literal halves, a cold gate · the `l` literal rule on every target (319)
 - [ ] 01-checker s21 — `comptime` evaluated at compile time everywhere (266; ck4-a (c)); a `comptime { … }` block in a function body fails at codegen on commonJS and wasm
@@ -198,11 +196,10 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.0.10 choices) in its
-last section. Open after the 9 Oct revalidation and the answers since (309–327): 61 questions, 8 contradictions, 88
+last section. Open after the 9 Oct revalidation and the answers since (309–328): 60 questions, 8 contradictions, 88
 implementation choices.
 
 **First — what blocks now** (`decisoes-pendentes.md` § Prioridade 1, "O que trava agora", set by the maintainer 2026-10-09), in order:
-- [ ] 16-x — 16 s8 (and 01-checker s10)
 - [ ] 05w-i · 05w-j — 05-wasm s5 (`unicode`, `json` on wasm)
 - [ ] 97-a · 97-b · 97-c — 97 s11 (`io/http`, `async`, `testing/mocks` on wasm)
 

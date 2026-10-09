@@ -105,7 +105,7 @@ that must edit one names it as a carve-out in its commit, and no two open fronts
   `lib-test-runner/**` (no owner) and `docs.md` § Modules (07's prose); it never edits
   compiler-core (decision 198). It opens after `01-compiler/26`, 26 step 0 and 118, never beside
   26-cli-tooling; its prelude list and `01-checker` step 22 land in sequence.
-- **Inside `01-compiler`**: its README § Ownership; 16 step 8 before 01 step 10; 07 steps 1 and 4
+- **Inside `01-compiler`**: its README § Ownership; 07 steps 1 and 4
   after 02–05 land; 16 step 3 after every tree is migrated.
 - **The dynamic mark** (decision 186): 22 step 4 and 49 step 5 land the run-time bridge; 26 step 8
   replaces it when `01-checker` lands the hooks capability.

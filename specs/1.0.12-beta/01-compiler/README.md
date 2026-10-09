@@ -16,7 +16,7 @@ cut by file ownership so fronts run in parallel.
 
 | Front | Priority | State | What | Depends on |
 |---|---|---|---|---|
-| [`01-checker/`](./01-checker/README.md) | high | partial: steps 1–9, 11, 12, 14–17, 19, 20, 25, 26 done, 18 built with one box open; 6 (box 3), 10, 13, 21–24, 27–30 and rows open | the checker and parser rows; the hooks in `@Decl` (277); numeric suffixes (247), type application and `comptime <expr>` (255, built), `comptime` at compile time (266), the prelude scope (270), the `@block` tail and `$stringify` refusals; the template annotation `#[f "…"]` (311); a decorator wrapping its function, `decl.wrapWith` (316) | 04 step 6 · 16 step 8 · 05 (step 13) · `08-bpp/116` (the prelude list) |
+| [`01-checker/`](./01-checker/README.md) | high | partial: steps 1–9, 11, 12, 14–17, 19, 20, 25, 26 done, 18 built with one box open; 6 (box 3), 13, 21–24, 27–30 and rows open | the checker and parser rows; the hooks in `@Decl` (277); numeric suffixes (247), type application and `comptime <expr>` (255, built), `comptime` at compile time (266), the prelude scope (270), the `@block` tail and `$stringify` refusals; the template annotation `#[f "…"]` (311); a decorator wrapping its function, `decl.wrapWith` (316) | 04 step 6 · 16 step 8 · 05 (step 13) · `08-bpp/116` (the prelude list) |
 | [`02-erlang/`](./02-erlang/README.md) | high | partial: steps 1–3, 5, 6, 8–13 done; 4, 7, 14, 15 open | `run/array_unique`, C-07's `run/` cells, one `math` (263), overflow aborts (264) | 05 · 01 (`@block`) · the std track (263) |
 | [`03-beam/`](./03-beam/README.md) | high | partial: steps 1–9 done; 1 (box 3), 2 (box 1) open | 01 step 13's and 02 step 7's cells on beam; 263, 264 in assembly | 01 · 02 · 05 · the std track |
 | [`04-js/`](./04-js/README.md) | medium | partial: steps 1–5, 7, 8 and C-37 done; 6, 9, 10 open | the `@block` tail IIFE, `$stringify` (239), `throw` in a `case` arm, overflow aborts (264) | 01 |
@@ -45,7 +45,7 @@ Fronts share no source file or snapshot directory except by named, sequenced car
   per-backend fixtures to their backends (`erlang.zig` 02, `beam.zig` 03, `commonjs.zig` 04,
   `wat.zig` 05); 14's `comptime_module.zig` fixtures.
 - `parser.zig`'s `isBracedBlockStmt` and `blockStatementSemicolon` kind: 16 for step 3, after 01's
-  parser rows; 16 step 8 (annotation printer arm) before 01 step 10.
+  parser rows.
 - `docs.md` prose 07 (23, 24, 26 supply section text); its marker/fence lines,
   `scripts/check-docs.sh`, `test.yml`, `gate.sh` budget lines `00-gate/114`; `release.yml` 18; root
   `build.zig` 26 except 18's `render-resident` / `compiler-web` steps.

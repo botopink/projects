@@ -93,16 +93,6 @@ comma; without it width rules (16-a / 16-b) decide. One-step pipeline: no comma,
 
 - [ ] the C-11 boxes ticked with the measurement, or the residual named
 
-### Step 8 — the lambda parameter annotation's printer arm (for `01-checker` step 10)
-
-`{ n: i32 -> f(n) }` prints with its annotation (survives `format --check`). Before 01's parser half.
-
-**Blocked on `16-x`** (`../../decisions-pending.md`): the lambda's AST holds parameter names only
-(`FunctionExprOf.params`, `TrailingLambdaOf.params`) and the parser refuses the form, so a printer arm
-and its round-trip test need an `ast.zig` field and the lambda-head parse — both 01's.
-
-- [ ] `format/tests/expressions.zig`: the annotated form round-trips (`assertFormat`, `assertIdempotent`, `assertLossless`)
-
 ### Step 9 — annotations printed as written (decision 286)
 
 Today the printer splits `#[a, b]` into one `#[…]` per annotation (`src/format/AGENTS.md` § canonical
@@ -146,6 +136,6 @@ under the refusal)
 
 ## Notes
 
-- New parser form needs a printer arm here or `botopink format` drops it: 01 reports each (step 8
-  the open one).
+- New parser form needs a printer arm here or `botopink format` drops it: 01 reports each (the
+  template annotation `#[f "…"]`, 311, is step 9's).
 - `parser.zig`, `print.zig` are 01's; carve-out = the patch's three edits — anything wider reported.

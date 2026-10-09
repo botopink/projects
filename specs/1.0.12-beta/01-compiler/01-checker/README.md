@@ -2,8 +2,8 @@
 
 **Priority:** high · **State:** partial: steps 1–9, 11, 12, 14–17, 19, 20 on feat; step 18 built on
 feat (botopink-lang `49455602` merges `19d59508`, `6185db3c`) with one box open; step 6 box 3, steps
-10, 13, 21–30 and ten rows open
-**Depends on:** `04-js` step 6 (step 6 box 3) · `16-formatter` step 8 (step 10) · `05-wasm` nested
+13, 21–30 and ten rows open
+**Depends on:** `04-js` step 6 (step 6 box 3) · `05-wasm` nested
 constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated rows lg2-a, lg2-q, lg2-e — each a step here only once
 answered.
 **Owns:** `modules/compiler-core/src/comptime/{infer,types,unify,env,transform,eval,error,diagnostics}.zig`
@@ -75,15 +75,6 @@ Checker keeps the fn's fallible channel in an arm's block; erlang, wasm, beam an
 
 - [ ] `run/throw_in_case_arm_result` — `return case v { Num(n) -> g(n); _ -> throw "x"; }` under
       `-> @Result<i32, string>`: `isError()` true on the throw path, four targets
-
-### Step 10 — a lambda parameter annotation (T12)
-
-`{ n: i32 -> f(n) }` parses: lambda-head scan (`parser/exprs.zig`) takes `name: Type` per parameter
-= declared type, unified with the expected one. Blocked on `16-formatter` step 8 (printer arm;
-otherwise `format --check` strips it).
-
-- [ ] `run/lambda_param_annotation` on four targets; `reject/lambda_param_annotation_mismatch` when
-      the expected type disagrees
 
 ### Step 13 — JS-4's two checker gaps
 
