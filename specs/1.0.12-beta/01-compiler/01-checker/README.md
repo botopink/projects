@@ -2,7 +2,7 @@
 
 **Priority:** high · **State:** partial: steps 1–9, 11, 12, 14–17, 19, 20 on feat; step 18 built on
 feat (botopink-lang `49455602` merges `19d59508`, `6185db3c`) with one box open; step 6 box 3, steps
-13, 21–30 and ten rows open
+13, 21–31 and ten rows open
 **Depends on:** `04-js` step 6 (step 6 box 3) · `05-wasm` nested
 constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated rows lg2-a, lg2-q, lg2-e — each a step here only once
 answered.
@@ -310,6 +310,28 @@ pub fn posts() -> string { return loadPosts(); }
 - [ ] `01-checker/examples/decorator-arguments-280.md` example 5 runs (no longer illustrative);
       `language-gaps.md`'s row "A decorator cannot rewrite or wrap the body it annotates" closes once
       its marker (rakun 15's `publish-reliability-example.bp`) is rewritten
+
+### Step 31 — `?T` by TypeScript's operators, no methods; a type in a type is associated (decision 330)
+
+Today `??` and `?.` work; `?.[i]`, `?.(args)` and the postfix `!` do not parse; `?T`'s `map` / `flatMap` /
+`unwrapOr` and the `result` namespace work in prose only (`builtins.d.bp` comments); a `type` in a
+type's body is a parse error.
+
+- [ ] parser: `?.[i]`, `?.(args)` and the postfix `!` (`x!`, `x!.f()`); the prefix `!x` unchanged
+- [ ] checker: an operator over a value whose type is not `?T` is a located error naming the type (`s?.length()`,
+      `s ?? "y"`, `s!` with `s: string`); `?.` over a member answering `?U` is `?U` (flattened); `??` beside
+      `&&` / `||` without parentheses is a located error asking for them
+- [ ] `x!`: `null` aborts with `value is null — <expr> at <file>:<line>:<col>`, one text on the four targets
+      (the lowering is each backend's, 02–05; cells `run/optional_operators`, `run/optional_bang_aborts`)
+- [ ] `?T` has no methods: `.map`, `.flatMap`, `.unwrapOr` on a `?T` are `unknown method` naming `?.` / `??`; on
+      `@Result` they stay; `result.map(…)` and the rest of the namespace are unbound names
+- [ ] a migration script (`scripts/codemod-optional-operators.py`, as 129's) rewrites `.unwrapOr(d)` on a `?T` to
+      `?? d` and `result.<op>(r, …)` to `r.<op>(…)` in every tree — one commit per repository, before the
+      refusals land
+- [ ] a `type` declared in a type's body is that type's associated type (the `decl.addType` node, 216):
+      `pub type Type { pub type Field<T>(…) { … } }` reads `Type.Field<T>` (308); `reject/` cells for a nested
+      type named like a member
+- [ ] `docs.md` § Operators and § Optionals (07's prose) list the five operators and the five rules
 
 ### Rows other fronts found
 

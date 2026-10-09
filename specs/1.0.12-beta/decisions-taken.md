@@ -4,7 +4,7 @@ The rules the fronts implement against. Numbers continue from
 [1.0.10-beta's record](../1.0.10-beta/decisions-taken.md) (which stopped at 143; 91–94, 97 and
 99–101 are used) and are never renumbered or reused. A question is raised in
 [`decisions-pending.md`](./decisions-pending.md) under a lettered id and moves here with the next
-free number. **The next free number is 330.**
+free number. **The next free number is 331.**
 
 Each row: number · the id it answered · the rule in force · the fronts it binds. A row amended by a
 later one states only what is in force and cites the amendment; a row fully replaced is one line.
@@ -29,7 +29,7 @@ behaviour; shared logic in std) — the maintainer may reverse it.
   orchestrator (how it happened: question `95-f`).
 
 **Index.** Gate & CI: 153–162, 219, 225–233, 246, 249, 258, 265, 317 · Language & checker: 146–152,
-164, 167, 168, 170, 205–211, 214, 215, 239, 242, 244, 245, 247, 255, 264, 309, 310, 311, 314, 315, 319, 320, 322, 328, 329 · Comptime, reflection &
+164, 167, 168, 170, 205–211, 214, 215, 239, 242, 244, 245, 247, 255, 264, 309, 310, 311, 314, 315, 319, 320, 322, 328, 329, 330 · Comptime, reflection &
 decorator outputs: 216, 234–237, 248, 251–254, 256, 266–269, 277, 316 · Formatter: 165, 166, 243 · Backends: 169,
 179, 238, 240, 241, 259–263 · std: 174–178, 197, 217, 250 · Bundled libraries: 144, 145, 163,
 171–173, 180–183, 194–196, 257, 324, 325, 326, 327 · rakun: 184, 185, 187, 201, 274, 312, 313, 318, 321 · Track ordering: 188, 189 ·
@@ -108,6 +108,7 @@ jhonstart & templates: 186, 190–193, 200, 202, 204, 220, 223 · onze: 218, 323
 | 322 | 134-d | **`is` is only an operator.** `x is T` is the one spelling of a type test; there is no `@is` builtin. A hand-written `@is(…)` is `error[unknown-builtin]` at the call, naming `x is T`; `builtins.d.bp` declares no `is` — 252's rule: every builtin a program can reach is declared there and typed as declared, and anything else is unknown. The compiler may keep its internal carrier of `x is T` (`ast.is_builtin_name`), unreachable from source | `01-compiler/134` step 2 |
 | 328 | 16-x · T12 | **A lambda declares no types; its types come from where it is used.** A lambda is `{ n -> … }` only: a parameter takes no annotation and the lambda no return type — `{ n: f64 -> n }` stays a parse error. Its parameter and return types are the expected type's: an annotated binding (`val h: fn(f64) -> f64 = { n -> n };`), the parameter that receives it (`xs.map({ n -> … })`) or the enclosing function's return. With no expected type, the binding is annotated or a named function is written. `01-checker` step 10 and `16-formatter` step 8 are deleted; `language-gaps.md`'s T12 row is by design | `01-checker` · `16-formatter` · `language-gaps.md` |
 | 329 | 134-e (3) | **A type with no field list is a namespace type.** `pub type Type { … }` is legal when every function in its body is associated — no `self: Self` first parameter, called through the type (`Type.partial(Recipe)`); such a type has no value: `Type()` is an error naming it a namespace type, and a function with `self: Self` in its body is an error (there is no value to be `self`). No marker is added: a function is static by having no `self`. std's `Type` is written `pub type Type { … }` | `01-compiler/134` step 2 · `01-checker` (the parser and the construction refusal) · std `types.bp` |
+| 330 | 134-e (1, 2) | **`?T` is read with TypeScript's operators and has no methods; `result` goes; a type declared in a type is its associated type.** (1) `??`, `?.`, `?.[i]`, `?.(args)` and the postfix `!` are the whole surface of `?T` (`Option<T>` is never a spelling); `map`, `flatMap`, `unwrapOr` leave `?T` and stay on `@Result`; `??=` is not added. (2) An operator over a value that is never `null` is a compile error (`s?.length()` with `s: string`; the left side of `??` never null). (3) `?.` flattens: a member answering `?U` through `?.` is `?U`, never `??U`. (4) `??` beside `&&` / `||` without parentheses is a compile error, as in TypeScript. (5) `x!` is checked at run time: a `null` aborts, alike on every target, with the location and the expression (`value is null — nome! at main.bp:3:13`) — a program error like `@panic`, never a `@Result`; the postfix `!` does not collide with the prefix `!x`. (6) The builtin `result` namespace goes: `r.map(f)`, `r.flatMap(f)`, `r.unwrapOr(x)`, `r.isOk()`, `r.isError()` on `@Result` are the one spelling; `result.map(r, f)` is an unbound name. (7) A type declared in the body of a type is that type's associated type — the node `decl.addType` already produces (216) —, so std writes `Type.Field<T>` (308) as `pub type Type { pub type Field<T>(…) { … } … }`. A migration script per repository rewrites `.unwrapOr(d)` on a `?T` to `?? d` and `result.*` calls to methods before the methods and the namespace go | `01-checker` step 31 · `01-compiler/134` step 2 · 02–05 (the lowering of `!`, `?.[]`, `?.()`) · every repository (the migration) |
 
 ## Comptime, reflection & decorator outputs
 

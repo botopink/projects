@@ -35,7 +35,9 @@ Undeclared: comptime type functions called without `@` — `mergeRecords`, `part
 differences — `@ExprCustom<T>` declared as `CustomExpr<T>`, mirror's `Annotation(name, args)` is
 `DeclAnnotation`. The check covers calls; types not walked yet.
 
-- [ ] every builtin above declared; the drift test walks the types and their methods too
+- [ ] every builtin above declared; the drift test walks the types and their methods too — under 330: `@Result`'s five
+      methods declared on it; `?T` declares no method (its surface is `01-checker` step 31's operators); the `result`
+      namespace is deleted, not declared; `Type.Field<T>` declared inside `pub type Type { … }` (329, 330)
 - [ ] `@is(…)` written by hand is refused (322; 252: a builtin not declared in `builtins.d.bp` is unknown, and
       `builtins.d.bp` declares no `is`). Where: `comptime/infer.zig`, `inferCallExpr`'s `call.is_builtin` arm for
       `ast.is_builtin_name` — today it types `bool` whether or not `isType` is set; a call with `isType == null`

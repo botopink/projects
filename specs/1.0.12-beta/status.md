@@ -108,7 +108,8 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 26 row — the LSP does not yet make the 309 refusal (the engine's `importSourceProblems` passes no package name) · none
 - [ ] 130 s5 — the remaining decorator sites (38 of 119 done, plus `#[schema]`'s 5) · rakun's DI on 01 s20 · rakun sites under the 130↔128 rule (03r-ao, only the record) · rakun-client's on the behavior-member gap (ctr-q closed: the table built at comptime, 281, 256)
 - [ ] 130 s6 — module-level `@emit` removed · 130 s5 · `#[schema]`'s free functions → members of the type (306; `T.parse(…)`, 327)
-- [ ] 134 s2 — the type functions, the `result` namespace, the `@Result` / `?T` methods, `@is` refused (322)
+- [ ] 134 s2 — the type functions, the `@Result` methods, `@is` refused (322), `result` deleted and `?T` methodless (330)
+- [ ] 01-checker s31 — `?T` by `??`, `?.`, `?.[]`, `?.()`, `x!` (330); the migration script before the refusals
 - [ ] 134 s4–s6 — variadic parameter and the print builtins (267); the `Decorator` type for `with:` (268); `use @getContext(T)` (269)
 - [ ] 07-residuals s8 — the lib-agnostic gate names every library: the test-file comments reworded; the other owners' comments, then the `-w` pattern · 02 and the other owners landed (s3, s5–s7, s12, s13 done)
 - [ ] 07-residuals s1, s2, s4 — the codegen and comptime report waves, three renames · 02–05 landed · 01 landed
@@ -196,7 +197,7 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.0.10 choices) in its
-last section. Open after the 9 Oct revalidation and the answers since (309–329): 60 questions, 8 contradictions, 88
+last section. Open after the 9 Oct revalidation and the answers since (309–330): 59 questions, 8 contradictions, 88
 implementation choices.
 
 **First — what blocks now** (`decisoes-pendentes.md` § Prioridade 1, "O que trava agora", set by the maintainer 2026-10-09), in order:
