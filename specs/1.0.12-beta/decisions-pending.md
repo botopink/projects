@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**54 questions and 6 contradictions are open, and 89 implementation choices await confirmation.**
+**55 questions and 6 contradictions are open, and 89 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -549,6 +549,26 @@ No general rule (283): each case below is its own question, (a) the language's o
   ```
 - **Recommendation.** (a) now — decidable from the literal alone, no compiler change; (b) when `14-comptime-on-beam` closes the two rows.
 - **Blocks.** 119 step 1 box 4 (its first half's reading).
+
+#### 119-e · What a decorator on a `val` sees, and how `#[theme] pub val` is catalogued (*proposed*)
+- **Measured** (the decision-353 compiler, botopink-lang `56d4bc29` + 130 step 10's part). 300 declares the theme `#[theme] pub val appTheme = comptime extendTheme(…);` and has it found with `@TypeInfo.all(with: theme)`; 353 lets `styled`'s template body run that query for the application. But a decorator on a `val` never runs and is never catalogued: `infer.zig` `invokeDecorators` walks `fn`, `type` and `behavior` only, `DeclKind` has no member for a value, and `fn mark(comptime decl: @Decl) { decl.fail("ran"); } #[mark] pub val one = 1;` compiles and prints `1`. So the query finds nothing, whatever the application declares. 353's `value` at build needs the val's build value lifted into the template's comptime module: `comptime extendTheme(baseTheme(), [entry(.Breakpoint, "md", ThemeValue.Rem(52.0))])` now evaluates, and is emitted `'ThemeEntry'/2 undefined` (the unbound-constructor row). No decision names the `@Decl` a value carries nor what its catalogue entry's `value` is.
+- **Options.** (a) A decorator on a `val` runs over a `@Decl` of kind `DeclKind.Val` (`name`, `returnType` the declared type as written, `""` when none; `setMeta` legal, `addMember`/`addType` refused at the annotation), and the `val` is catalogued: an entry point's `value` is the `val`; a template body's `value` is the `val`'s build value, lifted as a literal when its initializer is `comptime`, and refused at the read otherwise (`typeinfo-all-template-value`, today's refusal kept for that case). 300's spelling unchanged:
+  ```bp
+  #[theme] pub val appTheme = comptime extendTheme(baseTheme(), [entry(.Breakpoint, "md", ThemeValue.Rem(52.0))]);
+  // styled's template body
+  val themes = @TypeInfo.all(with: theme);
+  if (themes.length > 1) css.fail("styled: two #[theme] declarations: " + themes.map({ t -> t.module + "." + t.name }).join(", "));
+  val th = if (themes.length == 0) baseTheme() else themes.at(0)?.value as Theme;   // 52rem at build
+  ```
+  (b) A decorator on a `val` is refused at the annotation (today it is silently dropped); the theme is a function, and a template body's `value` of a function entry is callable at build (the template's module carries the program's function and its closure) — amends 300's spelling:
+  ```bp
+  #[theme] pub fn appTheme() -> Theme { return extendTheme(baseTheme(), [entry(.Breakpoint, "md", ThemeValue.Rem(52.0))]); }
+  // styled's template body
+  val f = themes.at(0)?.value;
+  val th = if (f is fn() -> Theme) f() else baseTheme();
+  ```
+- **Recommendation.** (a): 300's spelling stands, a value is data the template module receives as a literal (no closure of the program's functions crosses into it), and a decorator that is silently dropped today runs. Until answered, refuse a decorator on a `val` at the annotation (the most restrictive reading of today's silent drop).
+- **Blocks.** 119 step 1 box 5 (the theme in `styled`) · `01-compiler/130` step 10 box 2 (`value` at build) · `06-emilia/34` step 3 · 119 step 4 (the cleared-breakpoint refusal).
 
 ### 09-cardume
 
