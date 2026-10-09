@@ -119,8 +119,9 @@ with a located message, recorded as the design; or (b) restructured so no host c
 `string:length/1` / `string:slice/3`, which count grapheme clusters: `"e\u{301}".length` is 1 on erlang
 and beam, 2 on wasm.
 
-- [ ] the five templates count codepoints (a UTF-8 walk or `unicode:characters_to_list/1`), on erlang
-      and beam; `02-erlang` step 15's cell green
+- [x] the five templates count codepoints (`unicode:characters_to_list/1`, re-encoded with
+      `unicode:characters_to_binary/1`; the slice helpers normalise bounds as the Node forms do), on
+      erlang and beam; `02-erlang` step 15's cell green there; `libs/std/AGENTS.md` § One unit
 - [ ] std's Node templates for the five take and answer codepoint indices (`04-js` step 10's helpers)
 - [ ] `docs.md` § Strings states the unit — codepoints on every target — handed to `07-residuals` (the prose)
 

@@ -50,6 +50,15 @@ sidecar.
   `return` is the block's: a `return` the fun cannot answer last (in a loop, a discarded statement)
   throws `{'__bp_block', V}` to the block's guard (`guardBlockReturn`), not `'__bp_try'` to the
   function's — `run/block_return_is_block_value` (four targets; `skipTwo` answered `1` on the parent)
+- Step 15 (erlang and beam) — a string index counts codepoints (decision 320): `.length`,
+  `'__bp_len'`, `'__bp_index'`, `'__bp_slice'` on both backends and std's Erlang templates (`02/97`
+  step 14) read the codepoint list, no `string:length/1` / `string:slice/2,3` left in the emitters;
+  `run/string_index_of_codepoints` gains combining-mark and astral rows (`"e\u{301}".length` 2,
+  `"👍".length` 1, `at` / `slice` / `indexOf` / `lastIndexOf` across both) — green on erlang, beam,
+  wasm; erlang and beam answered `1` / `false` / `3` on the parent
+- Row (from `block-backends`) — a statement `@block` reassigning an enclosing `var` answers the
+  variables and the statement rebinds them (`mutatingBlockExpr`): `run/block_reassigns_enclosing_var`
+  prints `6` on four targets (erlc refused the module on the parent)
 
 ## Open
 
@@ -59,7 +68,8 @@ Decision 217 (drop duplicates, keep first, `==`); std body on feat (`primitives.
 default fn); nothing left to lower on erlang. Cell is this front's.
 
 - [ ] `run/array_unique` — `[1, 2, 1, 3, 2].unique()` prints `[1, 2, 3]` on four targets (wasm
-      column with `05-wasm` step 1)
+      column with `05-wasm` step 1). Measured: commonJS, erlang, beam print `[1, 2, 3]`; wasm prints
+      `[1, 2, 1, 3, 2]` — the cell waits on wasm
 
 ### Step 7 — C-07's erlang tails as `run/` cells
 
@@ -84,9 +94,8 @@ value is not wrapped in `{ok, V}` — while a module-level fn is lowered correct
 
 ### Rows found by other fronts
 
-- [ ] an `@block` that reassigns an enclosing `var` (`var acc = 1; @block { acc = acc + 5; };
-      @print(acc)`) reads `Acc@1` outside the fun, unbound — `erlc` refuses the module (measured by
-      `block-backends`; beam, wasm, commonJS print `6`)
+- [ ] the same `@block` reassignment with a `return` in the block, or in value position
+      (`val v = @block { acc = acc + 5; acc }`), still reads `Acc@1` outside the fun — not measured
 
 - [ ] std module's module-level `var` lowers to `std@beam` on erlang, not imported by the module
       (from `05-wasm` step 5; re-measure)
@@ -95,8 +104,8 @@ value is not wrapped in `{ok, V}` — while a module-level fn is lowered correct
 
 ### Step 15 — a combining mark counts as two codepoints (decision 320; with `02/97` step 14)
 
-- [ ] `run/string_index_of_codepoints` gains `"e\u{301}"`: `length` 2, `at(1)` `"\u{301}"`, `indexOf("\u{301}")`
-      1, and `"👍".length` 1 — one `.out` for the four targets (commonJS after `04-js` step 10)
+- [ ] commonJS column of `run/string_index_of_codepoints`: the astral rows (`"👍".length` 1, `"a👍b👍c"`)
+      wait on `04-js` step 10 — erlang, beam and wasm green (§ Done)
 
 **Gate:** standard (fronts.md § Gate) + every re-recorded RUN LOG verified under `erl`, nothing
 bulk-accepted · `zig build test-libs` erlang cells at baseline, rakun's members re-run
