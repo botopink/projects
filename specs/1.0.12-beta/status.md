@@ -1,7 +1,7 @@
 # Status — 1.0.12-beta
 
-**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `20e9fa36` (batch 11: wasm/beam/commonJS rows, std's i64 templates) · rakun `c0e991c` · jhonstart `064da1b` · emilia `a122dce`
-· onze `5f485a0` · erika `8f88482` · vscode-extension `f041865`
+**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `615c086d` (batch 12: contexts — @Component<R>, use provide / use context, rules of hooks; 134 s6, 354, 357) · rakun `236947f` · jhonstart `5a3bacb` · emilia `a122dce`
+· onze `3b36270` · erika `8f88482` · vscode-extension `f041865`
 
 **Fronts:** 71 — **0 done** · **23 partial** · **48 not started**.
 
@@ -154,7 +154,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 01-checker s31 — `?T` by `??`, `?.`, `?.[]`, `?.()`, `x!` (330); the migration script before the refusals
 - [x] 134 s5 — the `Decorator` type for `with:` (268)
 - [x] 134 s4 — the variadic parameter `..name: T[]` and the print builtins declared with it (267)
-- [ ] 134 s6 — contexts (354): `@Component<R>`, `@Renderable`, `use provide` / `use context`, the hidden context map on every target and comptime runtime, the codemod · 02–05, 18 for the lowerings
+- [ ] 134 s6 — contexts (354), rules of hooks (357): built on `front/134-s6-contexts` (patches) — `@Component<R>` / `@Renderable`, std `context`, `use` refused outside a render tree, `use-not-top-level`, the codemod and the libraries migrated; the hidden map runs on erlang, beam, commonJS (wasm refuses at the `use`; comptime runtimes and generic code open: `language-gaps.md`, `134-g`); `Decl.hooks` waits on `01-checker` s23 (277) · 02–05, 18 for the rest of the lowerings
 - [ ] 07-residuals s8 — the lib-agnostic gate names every library: the test-file comments reworded; the other owners' comments, then the `-w` pattern · 02 and the other owners landed (s3, s5–s7, s12, s13 done)
 - [ ] 07-residuals s1, s2, s4 — the codegen and comptime report waves, three renames · 02–05 landed · 01 landed
 - [ ] 07-residuals s9 · s10 · s11 — `->` arms · erika's C-13 migration · the pointers' sweep (last) · C-14 · 16 s1–2 · every library merged

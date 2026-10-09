@@ -75,7 +75,7 @@ pub fn newsletter(input: Signup, ctx: ActionContext) -> @Task<@Result<Subscribed
 
 // `<form method="POST" action={actions.newsletter}>` — works with scripting off.
 // After the post, the page reads the outcome: `Astro.getActionResult(...)`.
-pub fn NewsletterForm() -> @Component<ElementBase, Element> {
+pub fn NewsletterForm() -> @Component<Element> {
     val result = use actionResult(newsletterAction());
     val binding = formAction(newsletterAction());
     return html """

@@ -90,7 +90,7 @@ pub fn onRequest(req: Request, chain: Chain) -> Response {
 // ── src/app/orders/page.bp ──────────────────────────────────────────────────
 
 #[page("orders")]
-pub fn Page(route: PageContext) -> @Component<ElementBase, Element> {
+pub fn Page(route: PageContext) -> @Component<Element> {
     // `Astro.locals.user` — null when no middleware set it.
     val user = local(currentUser());
     return html """

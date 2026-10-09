@@ -38,7 +38,7 @@ import {collections.Dict, json, json.Json} from "std";
 pub val partial = true;
 
 #[page("partials/clicked")]
-pub fn clicked(route: PageContext) -> @Component<ElementBase, Element> {
+pub fn clicked(route: PageContext) -> @Component<Element> {
     return html """<li>I'm a partial!</li>""";
 }
 

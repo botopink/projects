@@ -50,7 +50,7 @@ fn avatarFor(session: string) -> @Task<string> {
 // can render it. Inside, the request is the ISLAND's request: its cookies, its
 // headers — and `Referer` is the page that asked.
 #[deferred]
-pub fn Avatar(props: AvatarProps) -> @Component<ElementBase, Element> {
+pub fn Avatar(props: AvatarProps) -> @Component<Element> {
     val jar = use cookies();
     val session = pairValue(jar, "session");
     val src = await avatarFor(session);
@@ -71,7 +71,7 @@ pub fn GenericAvatar(size: i32) -> Element {
 // so `#[page]` prerenders it at comptime.
 
 #[page("product/[id]")]
-pub fn Page(route: PageContext) -> @Component<ElementBase, Element> {
+pub fn Page(route: PageContext) -> @Component<Element> {
     val id = PageParams(route).id;
     return html """
       <h1>Product {id}</h1>

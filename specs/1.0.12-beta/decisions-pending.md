@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**60 questions and 6 contradictions are open, and 92 implementation choices await confirmation.**
+**62 questions and 6 contradictions are open, and 92 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -60,6 +60,18 @@ Nothing open: 138-a answered (337).
 - **Options.** (a) The two forms, as built, and `counts = counts.bump(k, n)` (340). (b) (a) plus `counts[k]` with 63's meaning (`ets:lookup`, `V`, failure on a missing row). (c) (b) plus `hasKey` (`ets:member`) and `delete` (`ets:delete`), each a new `std/beam` primitive.
 - **Recommendation.** (a).
 - **Blocks.** Nothing — the built surface stands until widened.
+
+#### 134-g · A `@Component` function value handed to generic code (354 (8))
+- **Measured.** The hidden context map (built, `comptime/context_lower.zig`) is the first parameter of every function whose type answers `@Component<R>`, and a call passes it when the checker types the call as `@Component<R>`. Generic code does not know it holds one: `items.map(Card)` (`map<U>(f: fn(T) -> U)`, `U` = `@Component<Element>`) calls `f(x)` with one argument — erlang and beam fail `badarity`, commonJS hands `Card` an `undefined` map and the item in the map's place. Code that names the type (`render: fn(props: P) -> @Component<Element>`, jhonstart's routes and layouts) is lowered right.
+- **Options.** (a) Refused at compile time: a `@Component` function value (named or a lambda) passed where the parameter's declared type is not a written `fn(…) -> @Component<…>` — `items.map(Card)` is `component-value-to-generic` at `Card`; write `for (items) { i -> … Card(i) … }` or a parameter typed `fn(T) -> @Component<Element>`. (b) The value is wrapped where it is passed, closing over the map in scope there: `items.map(Card)` passes `{ x -> Card(<map at this call>, x) }` — the component sees the context of the place it was handed over, not of the place generic code calls it. (c) Nothing: such a call is undefined behaviour.
+- **Recommendation.** (a) — refuse > accept (decision 67); (b) silently changes where a context is read.
+- **Blocks.** 134 step 6 box 4's generic case (the named and typed cases are built).
+
+#### 134-h · `use` as the right operand of `&&` / `||` / `??` (357 (1))
+- **Measured.** 357 (1) names `if` / `else`, a `case` arm, a loop, a lambda, `try` / `catch` and an early return; it does not name the short-circuit operators, whose right operand runs on some calls only (`ready && use state(0)`, `cached ?? use load()`). Built: refused — ``use-not-top-level: `use` inside the right operand of `&&` `` at the `use` of `val n = ready && use flag();`.
+- **Options.** (a) Refused (as built), 357 (2)'s "never under a condition": `val n = ready && use flag();` is `use-not-top-level`; written `val f = use flag(); val n = ready && f;`. (b) Accepted: only the listed constructs refuse — `val n = ready && use flag();` builds, and `flag` runs on the calls where `ready` holds.
+- **Recommendation.** (a).
+- **Blocks.** Nothing — built as (a).
 
 #### 140-a · What a pending `@Task` is on wasm (front 140 step 4)
 - **Measured.** wasm lowers `@Task<T>` as `T`: `await` is identity and `async { … }` runs its block where it is written (`wat.zig`, `asyncBlock`, "the eager `@Task`"); erlang's `race` answers the head of the list (`hd(__Fs)`), its `raceOf` one process per thunk. 334 (4) asks `@Task` on `wasi` to "run to completion when awaited, blocking on its pollable" and `race` to answer "the first pollable ready"; with `@Task<T>` = `T` there is no pollable to wait on, and `delay` would block where it is called. 335 (2) makes results the contract. A body that awaits inside (`async { await delay(30, ()); "a" }`) cannot be suspended on a single-threaded run-to-completion host.

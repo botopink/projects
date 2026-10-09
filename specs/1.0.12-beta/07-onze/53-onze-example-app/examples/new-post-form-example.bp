@@ -8,7 +8,7 @@
 //     62's frame). `cookies` is #[serverOnly], so `#[page]` records the route as
 //     `D` from its hooks (277) and the build report's `why` says "cookies".
 //   - front 31: no session means jhonstart's `redirect("/login")`, thrown from the
-//     LAYOUT. A layout is a component (`fn … -> @Component<ElementBase, Element>`,
+//     LAYOUT. A layout is a component (`fn … -> @Component<Element>`,
 //     decision 117) and renders before the page, so the signal leaves before the
 //     first chunk: jhonstart's render answers 307 with `location: /login` itself
 //     and the page never runs. The check is written once, here; no page under
@@ -60,7 +60,7 @@ fn fieldTokens() -> Token[] {
 // here would raise — the render phase forbids it, and front 62 checks rather
 // than documents.
 #[layout("dashboard")]
-pub fn dashboardLayout(props: LayoutProps) -> @Component<ElementBase, Element> {
+pub fn dashboardLayout(props: LayoutProps) -> @Component<Element> {
     val jar = use cookies();
     val session = pairValue(jar, "session");
     if (session == "") {
@@ -114,7 +114,7 @@ pub fn newPostForm(binding: FormBinding, state: ActionState, pending: bool) -> E
 
 // ── the client component — front 67 + front 68 ──────────────────────────────
 
-fn NewPostForm() -> @Component<ElementBase, Element> {
+fn NewPostForm() -> @Component<Element> {
     // Read positionally; the labels survive the hook (`s.state`, `s.binding`,
     // `s.pending`) as well.
     val s = use useActionState(createPost, actionState(""));
@@ -127,7 +127,7 @@ fn NewPostForm() -> @Component<ElementBase, Element> {
 // ── app/dashboard/posts/new/page.bp — SERVER renders what the CLIENT submits ─
 
 #[page("dashboard/posts/new")]
-pub fn newPostPage(route: PageContext) -> @Component<ElementBase, Element> {
+pub fn newPostPage(route: PageContext) -> @Component<Element> {
     return div([
         h1([text("New post", attrs: [])], attrs: []),
         newPostForm(formAction(createPostId, "/dashboard/posts/new", actionField), actionState(""), false),

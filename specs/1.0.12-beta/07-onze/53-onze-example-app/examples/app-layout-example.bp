@@ -71,7 +71,7 @@ fn siteNav() -> Element {
 // passes through. The decorator argument is the app-relative directory, and
 // front 50's scan fails the build when it disagrees with the file's location.
 //
-// A layout is a component (`fn … -> @Component<ElementBase, Element>`, decision 117) and
+// A layout is a component (`fn … -> @Component<Element>`, decision 117) and
 // could await the font, but it does not need to: front 52 resolves the family
 // at BUILD time and its class name is a pure function of family and build id,
 // so the layout names it as a constant and `documentHead` below produces the
@@ -79,7 +79,7 @@ fn siteNav() -> Element {
 val siteFont = "onze-font-inter";
 
 #[layout("")]
-pub fn rootLayout(props: LayoutProps) -> @Component<ElementBase, Element> {
+pub fn rootLayout(props: LayoutProps) -> @Component<Element> {
     return div([
         header([siteNav()], attrs: []),
         main([props.children], attrs: []),

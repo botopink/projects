@@ -83,7 +83,7 @@ fn createPostForm(binding: FormBinding, state: ActionState, pending: bool) -> El
 
 // The component. `use actionState(...)` is the hook form; `newActionState("")` builds the
 // initial value (the hook owns the noun `actionState`; the helper takes a verb).
-fn CreatePostForm(actionId: string) -> @Component<ElementBase, Element> {
+fn CreatePostForm(actionId: string) -> @Component<Element> {
     // Read positionally; the labels survive the hook (`s.state`, `s.action`,
     // `s.pending`) as well.
     val s = use actionState(actionId, newActionState(""));
