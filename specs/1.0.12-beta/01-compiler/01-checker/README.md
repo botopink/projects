@@ -2,7 +2,8 @@
 
 **Priority:** high · **State:** partial: steps 1–9, 11, 12, 14–17, 19, 20 on feat; step 18 built on
 feat (botopink-lang `49455602` merges `19d59508`, `6185db3c`) with one box open; step 24 built on
-`front/checker-s24` but three boxes; step 6 box 3, steps 13, 21–33 and ten rows open
+`front/checker-s24` but three boxes; step 23 built on `front/checker-s23` but `Decorator.is` (s23-b); step 6
+box 3, steps 13, 21, 22, 24–33 and ten rows open
 **Depends on:** `04-js` step 6 (step 6 box 3) · `05-wasm` nested
 constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated row lg2-q — a step here only once answered (lg2-a is step 32, decision 346;
 lg2-e answered by 347 with nothing to build: a method's `@Decl` has no `owner`).
@@ -207,20 +208,30 @@ back; a `use` over a function value enters with `hook: null`; a host function ge
 shared across the compilation. No backend, no codegen snapshot changes; the compiler names no stage
 or library.
 
-- [ ] `run/decl_hooks_direct` — `use session()` → `[HookNode(f, uses: [session], calls: [])]`
-- [ ] `run/decl_hooks_all_nodes` — a page over `UserMenu` → `Avatar`, `Badge` and `Avatar` again: four
+Built on `front/checker-s23` (botopink-lang patch): `comptime/hooks.zig`, the node recorded as `inferFnDecl`
+infers a top-level function's body and published to the session (`Reflection.hookFns`); `decl.hooks` computed
+for a function one of whose decorators reads it (questions s23-a – s23-f).
+
+- [x] `run/decl_hooks_direct` — `use session()` (a host hook) → one node, `Page(uses: [session], calls: [])`
+      (commonJS, erlang, beam: `session` has no wasm binding)
+- [x] `run/decl_hooks_all_nodes` — a page over `UserMenu` → `Avatar`, `Badge` and `Avatar` again: four
       nodes, `Avatar` once, `calls` in body order
-- [ ] `run/decl_hooks_custom_hook` — `use user()` where `user` uses `session()`: the user's node has
+- [x] `run/decl_hooks_custom_hook` — `use user()` where `user` uses `session()`: the user's node has
       `user`, `user`'s node has `session`
-- [ ] `run/decl_hooks_cycle` — `A → B → A`: two nodes, `B`'s call goes back to `A`
-- [ ] `run/decl_hooks_function_value` — `use f()` with `f` a parameter → `HookUse(hook: null)`
-- [ ] `HookUse` carries the `use`'s explicit type arguments (`typeArgs: TypeInfo[]` — `use params<BlogParams>()`
-      → `[BlogParams]`), so `#[page]` checks them (293); `run/decl_hooks_type_args`
+- [x] `run/decl_hooks_cycle` — `A → B → A`: two nodes, `B`'s call goes back to `A`
+- [x] `run/decl_hooks_function_value` — `use f()` with `f` a parameter → `HookUse(hook: null)`
+- [x] `HookUse` carries the `use`'s explicit type arguments (`typeArgs: TypeInfo<unknown>[]` — `use
+      params<BlogParams>()` → `[BlogParams]`, its fields with their types), so `#[page]` checks them (293);
+      `run/decl_hooks_type_args` (a field's annotations and the methods: s23-f)
+- [x] across modules — `modules/decl_hooks_imported`: another module's nodes as it published them, a hook through
+      an alias with its own annotations
+- [x] `DeclAnnotation` gains `decorator: Decorator` — the declaration's identity, an alias and a namespace resolved
+      (every handle's annotations, a field key's included); `HookNode`'s `fn` is `function` (`fn` is reserved, s23-a)
 - [ ] `run/decorator_is_identity` — `#[srv]` with `import {serverOnly as srv}` → `a.decorator.is(serverOnly)`;
-      a same-named decorator of another package → false
-- [ ] `docs.md` § Decorators documents `decl.hooks`, `HookNode`, `Decorator.is`; `comptime/AGENTS.md`
-      states the computation; `language-gaps.md`'s row "A function's `@Decl` does not say which hooks
-      it activates" closes
+      a same-named decorator of another package → false — `is` is a keyword (s23-b)
+- [x] `docs.md` § Decorators documents `decl.hooks` and `HookNode` (`Decorator.is` with s23-b); `comptime/AGENTS.md`
+      states the computation; `language-gaps.md`'s row "A function's `@Decl` does not say which hooks it activates"
+      closes
 
 ### Step 24 — typed comptime decorator arguments, `@Decl<T>`, `Field<T>` (decision 280)
 

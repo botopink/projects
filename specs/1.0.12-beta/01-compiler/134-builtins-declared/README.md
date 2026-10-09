@@ -128,9 +128,9 @@ fn Button() -> @Component<Element> {
 - [x] std declares `Context<T>`, `provide(ctx: Context<T>, value: T)` and `context(ctx: Context<T>) -> T`
       as hooks (`use` only); `use` inside a decorator body, a template body or a `comptime { … }` refused,
       located (354 (3))
-- [ ] `Decl.hooks` (277) carries each `provide` / `context` with its object, for the frameworks' build check (354 (4)) —
-      waits on `01-checker` step 23 (`Decl.hooks` itself is not built); `Env.contextUses` already records each use
-      with its context's identity
+- [x] `Decl.hooks` (277) carries each `provide` / `context` with its object, for the frameworks' build check (354 (4)) —
+      built with `01-checker` step 23 (`front/checker-s23`): `HookUse.context: ?Declared<unknown>`, the `val` that
+      declares the context (`run/decl_hooks_context`; the field's name is s23-a)
 - [ ] the hidden context map: every `@Component` function takes it; `provide` builds the children's map,
       `context` looks up, `context-unbound` at run time with none — `run/context_provide_read` and
       `run/context_nearest_wins` alike on erlang, beam, commonJS, wasm and both comptime runtimes
