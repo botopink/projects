@@ -1,7 +1,7 @@
 # Front 119 — bpp styling: `css`, `styled`, `jhonstart-styled`, the style section
 
 **Priority:** medium — a page is complete without it (emilia tokens, global stylesheet); a
-self-styled component is not. · **State:** not started · step 1 ready to open
+self-styled component is not. · **State:** step 1: `css` done, `styled` open
 **Depends on:** (written against 278, 301, 302, 326, 338) step 1: the two repositories
 `botopink/css` and `botopink/styled` exist (created; each needs a first commit on `feat` before
 it becomes a submodule — CI check 1) · step 2: `118-bpp-components` (the template arm), 118 step 1's
@@ -192,15 +192,9 @@ last two. The build shortens scope ids to a declaration-order counter in the fin
 lists, compounds, combinators, pseudo-classes/elements (attribute before a pseudo-element),
 `:global(…)`, `:is(…)` and `:where(…)` (scoped inside).
 
-- [ ] `botopink/css`, `botopink/styled` carry a first commit on `feat`; submodules at
-      `repository/css`, `repository/styled`; meta `.gitmodules` and `AGENTS.md` § Layout row in the
-      same commit; each manifest `["erlang", "commonJS"]`, erlang first, imports std (and `css`, for
-      `styled`) only
-- [ ] `examples/scope-css-example.bp` passes on both targets
-- [ ] 40 selector cases in `css`'s `test/scope_test.bp`, each a literal pair, incl. the reference's two (`h1`, `.text`)
-- [ ] unparsable sheet (unclosed brace, unterminated string) → `Error` naming the byte offset, never a truncated sheet
-- [ ] `scope(s, scope(s, css))` refused: an already-`s`-scoped sheet is an `Error`
-- [ ] one digest of the 40 outputs, compared on both targets
+- [ ] `botopink/styled` carries a first commit on `feat`; submodule at `repository/styled`; meta
+      `.gitmodules` and `AGENTS.md` § Layout row in the same commit; manifest `["erlang",
+      "commonJS"]`, erlang first, imports std and `css` only
 - [ ] `examples/styled-example.bp` passes on both targets: `styledProperty "padding: --spacing(4);"`
       renders `.s_<hash>{padding:calc(var(--spacing) * 4)}`; `&:hover`, `@media` and `@variant md`
       nest under the class; `${p}` of a `StyledPropertyView` inlines its declarations; the same rules
@@ -212,7 +206,8 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
 - [ ] the theme mechanism (300) in `styled`: `#[theme]` found at comptime, two refused, none →
       the default; `--theme(--breakpoint-md)` and `@variant md` read it; a cleared breakpoint refused
       at compile time
-- [ ] `grep -rn "bpp\|jhonstart\|emilia" repository/css repository/styled` empty
+- [ ] `grep -rn "bpp\|jhonstart\|emilia" repository/css repository/styled` empty — the shared
+      hook text names emilia (`119-a`)
 
 ### Step 2 — `jhonstart-styled` and the template arm
 
@@ -265,6 +260,20 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
       `jhonstart-styled`'s test); onze registers `jhonstart-styled`'s sink, exported as `styledSink()` (`contracts.md` § 6a)
 - [ ] an application using `#[styled]` without `"bpp".style` renders emilia's sheet (the annotation
       is an ordinary import; the key is only the style section's)
+
+## Done
+
+- Step 1, `css` — `botopink/css` at `repository/css` (`.gitmodules` `branch = feat`, § Layout
+  row, CI check 4's list); manifest `["erlang", "commonJS"]`, std only, no host cell. `sheet.parse`
+  reads a stylesheet into a typed `Sheet` (`Space`, `Comment`, `Declaration`, `AtStatement`,
+  `Rule`, `AtRule`, `Keyframe`), `render(parse(css))` is `css` byte for byte, `sheet.scope(id,
+  css)` scopes as § Mechanism. `examples/scope-css-example.bp` passes on both targets (as a
+  suite case, and unchanged as an application importing `from "css"`); `test/scope_test.bp`
+  holds 40 selector cases as literal pairs (the reference's `h1` and `.text` first) and their
+  digest, one literal on both targets; an unparsable sheet (unclosed brace, unterminated string or
+  comment, stray `}`, unclosed `(`/`[`, a selector with no block) is an `Error` naming the byte
+  offset, never a truncated sheet; `scope(s, scope(s, css))` is refused (any `[data-s…]` in a
+  selector); 24 tests, green on erlang and commonJS.
 
 ## Decisions
 

@@ -39,3 +39,7 @@
 	path = repository/validation
 	url = git@github.com:botopink/validation.git
 	branch = feat
+[submodule "repository/css"]
+	path = repository/css
+	url = git@github.com:botopink/css.git
+	branch = feat
