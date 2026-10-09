@@ -126,12 +126,13 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 07-residuals s8 — the lib-agnostic gate names every library: the test-file comments reworded; the other owners' comments, then the `-w` pattern · 02 and the other owners landed (s3, s5–s7, s12, s13 done)
 - [ ] 07-residuals s1, s2, s4 — the codegen and comptime report waves, three renames · 02–05 landed · 01 landed
 - [ ] 07-residuals s9 · s10 · s11 — `->` arms · erika's C-13 migration · the pointers' sweep (last) · C-14 · 16 s1–2 · every library merged
-- [ ] 97 s1 residue — `bindInt`'s `i32` through std · std has no `i64` → `i32` narrowing
+- [ ] 97 s1 residue — `bindInt`'s `i32` through std (`toI32()` exists since 97 s13)
 - [ ] 97 s2 residue — no `Json` accessor copy left in `libs/` · 125 s2 residue (`schemas.bp`)
 - [ ] 97 s3 · s5 residue — rakun's `parseDuration`, `skewOf` and four retry loops as "consume std" rows · no 04-rakun front carries them yet
 - [ ] 97 s4 residue — the engine under every `-test` member, `test-libs` counts · none
 - [ ] 97 s11 — std on wasm, group 3 (230) · `io/http`, `async` through 140 + s17 (334) · `testing/mocks` in module memory when tests run on wasm (335), 110-a
-- [ ] 97 s13 — `Math.min` / `max` / `abs` and `Integer`'s default fns break past 2^53 on commonJS; std has no `toF64()` / `toI32()` surface (319's conversions) · none
+- [ ] 97 s13 rest — std's Node templates over an `i64` (`io/clock`, `io/fs`) in 319's canonical form · `Json`'s `i64` as its digits (332, s15) · `97-s13-a` (`abs` of the minimum)
+- [x] 97 s13 boxes 3–5 — `parseInt` exact over `i64`; `min` / `max` / `abs` / `clamp` / `isEven` / `isOdd` past 2^53 on commonJS; `toI32()` … `toF64()` on `Integer`, aborting when the value does not fit (wasm halves: 05-wasm rows)
 - [x] 97 s12 — `unicode.fromCodepoint` a `fn:` over `String.fromCodepoint` on all four targets (with `powBody`, `fn:` transcendentals, code-point `contentHash`)
 - [ ] 97 row — an embedded std file's reserved-word error is unlocated · none
 - [ ] 104 s5 — the consumer sweep · 04, 65, 79, 12, 19, 22, `08-bpp/123`, 49, 51 landed (188)
