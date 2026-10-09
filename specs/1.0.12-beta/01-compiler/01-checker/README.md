@@ -341,21 +341,32 @@ Today `??` and `?.` work; `?.[i]`, `?.(args)` and the postfix `!` do not parse; 
 `unwrapOr` and the `result` namespace work in prose only (`builtins.d.bp` comments); a `type` in a
 type's body is a parse error.
 
-- [ ] parser: `?.[i]`, `?.(args)` and the postfix `!` (`x!`, `x!.f()`); the prefix `!x` unchanged
-- [ ] checker: an operator over a value whose type is not `?T` is a located error naming the type (`s?.length()`,
+- [x] parser: `?.[i]`, `?.(args)` and the postfix `!` (`x!`, `x!.f()`); the prefix `!x` unchanged
+- [x] checker: an operator over a value whose type is not `?T` is a located error naming the type (`s?.length()`,
       `s ?? "y"`, `s!` with `s: string`); `?.` over a member answering `?U` is `?U` (flattened); `??` beside
       `&&` / `||` without parentheses is a located error asking for them
-- [ ] `x!`: `null` aborts with `value is null — <expr> at <file>:<line>:<col>`, one text on the four targets
-      (the lowering is each backend's, 02–05; cells `run/optional_operators`, `run/optional_bang_aborts`)
-- [ ] `?T` has no methods: `.map`, `.flatMap`, `.unwrapOr` on a `?T` are `unknown method` naming `?.` / `??`; on
-      `@Result` they stay; `result.map(…)` and the rest of the namespace are unbound names
+- [ ] `x!`: `null` aborts with `value is null — <expr> at <file>:<line>:<col>` — built (`?? @panic(…)`,
+      `run/optional_bang_aborts`); commonJS prints the text, erlang and beam abort with it as an Erlang binary
+      (the `—` makes it non-latin1), wasm aborts without it: one text on the four targets is the backends'
+      panic printing (02, 03, 05)
+- [x] `?T` has no methods: `.map`, `.flatMap`, `.unwrapOr` on a `?T` are `unknown method` naming `?.` / `??`; on
+      `@Result` they stay; `result.map(…)` and the rest of the namespace are unbound names. A method after a
+      `?.` link continues its chain (`e?.key.length()`), as TypeScript's does
 - [ ] a migration script (`scripts/codemod-optional-operators.py`, as 129's) rewrites `.unwrapOr(d)` on a `?T` to
       `?? d` and `result.<op>(r, …)` to `r.<op>(…)` in every tree — one commit per repository, before the
-      refusals land
-- [ ] a `type` declared in a type's body is that type's associated type (the `decl.addType` node, 216):
+      refusals land. Built and run over botopink-lang (std, the five shared libraries, the language suite,
+      `examples/`); the five library repositories' migrations are prepared, one per repository
+- [x] a `type` declared in a type's body is that type's associated type (the `decl.addType` node, 216):
       `pub type Type { pub type Field<T>(…) { … } }` reads `Type.Field<T>` (308); `reject/` cells for a nested
       type named like a member
-- [ ] `docs.md` § Operators and § Optionals (07's prose) list the five operators and the five rules
+- [x] `docs.md` § Operators and § Optionals (07's prose) list the five operators and the five rules
+- [ ] wasm: `?.()` over a function answering a plain value is refused (`run/optional_call_operator`'s
+      `.wasm.expect`) — the answer has to be boxed (05)
+- [ ] erlang, beam, wasm: `recv?.m()` over an absent receiver — `s?.length()` raises `badarg` on erlang and
+      beam and answers `8` on wasm (the backends' `?.` method lowering; a method continuing a `?.member` chain
+      is right on the four)
+- [ ] erlang: `a ?? ns.f()` with a package-module namespace call as the default (std's own
+      `os.tmpdir()`) lowers as a method call on `ns`; std reads it into a `val` first
 
 ### Rows other fronts found
 

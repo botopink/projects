@@ -35,13 +35,17 @@ Left: `?T`'s methods (`map`, `flatMap`, `unwrapOr`) and the builtin `result` nam
 (`result.map/then/unwrap/isOk/isError`), prose in `builtins.d.bp` — under 330 the first leave and the
 second is deleted; `Type`'s namespace-type spelling (329), `Type.Field<T>` and `Type.pick` / `Type.omit`.
 
-- [ ] the rest declared under 330: `?T` declares no method (its surface is `01-checker` step 31's operators) — the
+- [x] the rest declared under 330: `?T` declares no method (its surface is `01-checker` step 31's operators) — the
       `?T` rows (`map`, `flatMap`, `unwrapOr`) leave `infer.zig` `inferResultOptionMethod`; the `result` namespace
       (`inferResultNamespaceCall`) is deleted, not declared; the prose in `builtins.d.bp` goes
-- [ ] std's `types.bp` spells `pub type Type { … }` — a namespace type, no field list and no value (329): `Type()`
-      refused, a `self` function in its body refused (today `pub type Type()`)
-- [ ] `Type` also declares the associated type `Field<T>` inside its body (308, 330), `keys` answering it;
-      `builtins.d.bp`'s `Field` record leaves, `Decl.fields` typed `Type.Field<unknown>[]`; `pick` / `omit`
+- [x] std's `types.bp` spells `pub type Type { … }` — a namespace type, no field list and no value (329): `Type()`
+      refused, a `self` function in its body refused
+- [ ] `Type` also declares the associated type `Field<T>` inside its body (308, 330), `keys` answering it —
+      declared (`pub type Field<T>(name, typeName, annotations)`, `run/std_type_field_associated`);
+      `builtins.d.bp`'s `Field` record leaves, `Decl.fields` typed `Type.Field<unknown>[]` — open: the record
+      `decl.fields` hands out is the compiler's `__Decl__Field` (`comptime.zig` `decl_reflection_src`, aliased
+      `Field` and drift-checked against `builtins.d.bp`'s `Field`), so std's hoisted `Type__Field` has to become
+      that record, and rakun-data's `orm/entity.bp` (`fn marked(f: Field, …)`) moves to `Type.Field<unknown>`; `pick` / `omit`
       declared with the variadic `comptime ..fields: Type.Field<T>[]` (after step 4) —
       `pub fn pick<T>(comptime source: type T, comptime ..fields: Type.Field<T>[]) -> type`, the spelling of a
       `type` answer fixed here with `01-checker` step 28
