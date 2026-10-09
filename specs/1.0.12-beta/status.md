@@ -1,6 +1,6 @@
 # Status — 1.0.12-beta
 
-**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `615c086d` (batch 12: contexts — @Component<R>, use provide / use context, rules of hooks; 134 s6, 354, 357) · rakun `236947f` · jhonstart `5a3bacb` · emilia `a122dce`
+**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `df6bc571` (batch 13: std's bpp roles, a decorator on a val — 361, 356) · rakun `236947f` · jhonstart `8936320` · emilia `a122dce`
 · onze `3b36270` · erika `8f88482` · vscode-extension `f041865`
 
 **Fronts:** 71 — **0 done** · **23 partial** · **48 not started**.
