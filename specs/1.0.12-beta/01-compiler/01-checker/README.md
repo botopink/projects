@@ -390,6 +390,24 @@ every host cell marshals through `string`.
       the argument; an absolute path or one leaving the package (`..`) refused at the argument (`reject/`
       cells); the read itself is `14-comptime-on-beam` step 6's
 
+### Step 34 — a spread copies a record's fields (decision 359)
+
+```bp
+val pessoa = Pessoa(...pessoaOld, nome: "Ana");
+pub val Contato = Type.pick(Pessoa, .email, .telefone);
+val outra = Pessoa(...base, ...contato, nome: n);   // left to right, the later winning
+```
+
+- [ ] the parser reads `...expr` at the start of a record constructor's argument; `a...b` stays the
+      inclusive range; the formatter prints `...src` (with `01-compiler/16`)
+- [ ] the source is the record's type or a 307 type derived from it (`pick`, `omit`, `merge`); any
+      other record refused at the `...` naming both types; a `Type.partial` value refused
+- [ ] arguments apply left to right; a field without a default supplied by neither a spread nor a
+      label is an error at the call; a label written twice stays an error
+- [ ] `run/record_spread` on the four targets (a new record, the source unchanged and evaluated once);
+      `reject/record_spread_other_type`, `reject/record_spread_partial`, `reject/record_spread_missing_field`
+- [ ] a plain function call takes no spread (267): `reject/call_spread`
+
 ### Rows other fronts found
 
 - [ ] comptime body diagnostic names the body's file: `infer.zig` (`decoratorError`) passes the

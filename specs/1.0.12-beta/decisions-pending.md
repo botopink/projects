@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**55 questions and 6 contradictions are open, and 88 implementation choices await confirmation.**
+**54 questions and 6 contradictions are open, and 88 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -511,12 +511,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Options.** (a) A named slot is a props field of type `Node` (223), written as an attribute (`type Props(children: Node, footer: Node)`, `footer={…}`); `slot="…"` refused. (b) `slot="footer"` on a child routes it to props field `footer`. (c) No named slots.
 - **Recommendation.** (a): 192 already covers it, no second routing mechanism — the path 287 took for the fallback.
 - **Blocks.** 118's slot boxes (steps 1 and 4).
-
-#### props-f · A spread on a component (*proposed*)
-- **Measured.** 118 step 1 refuses `{...expr}` on a component (it accepts one on an element) for a reason 192 removes (attributes are now one record's fields).
-- **Options.** (a) Still refused: the attributes are the form. (b) `{...p}` with `p` of the props type, explicit attributes overriding.
-- **Recommendation.** (a).
-- **Blocks.** 118 step 1.
 
 #### 118-a · Who rewrites the native builders into props form, and when (*proposed*)
 - **Measured** (botopink-lang `56d4bc29`, jhonstart `76da71d`). Decision 351 (1) makes each native tag a

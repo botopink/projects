@@ -158,7 +158,7 @@ core's `node.bp`, `prelude.bp` and `element.bp`'s `View`; green on commonJS and 
   when null), bare; `[name]={…}`
   refused naming `name={…}`, its code uses rewritten (`html_test.bp`, `elements_test.bp`,
   `jhonstart-emilia`'s `bridge_test.bp`, `document-shell`'s `shell_dsl.bp`); `{...}` on a component
-  refused (props-f, the recommended reading); the five basic entities decoded, any other refused.
+  refused today — decision 359 accepts it, `p` of the props type or a type derived from it, the later attribute winning; the five basic entities decoded, any other refused.
 - Step 1, decision 351's names (part): a multi-word attribute is camelCase and renders in HTML's
   spelling (`ariaLabel` → `aria-label`, `httpEquiv` → `http-equiv`, `encType` → `enctype`), `data-*`
   the one kebab-case family and a `string` (`data-x={true}` the checker's type mismatch); any other
@@ -206,8 +206,8 @@ core's `node.bp`, `prelude.bp` and `element.bp`'s `View`; green on commonJS and 
   `element.bp` (frozen) and `elements.bp` (`05-jhonstart/26`'s, which opens after 118) — `118-a`.
   `html`'s `lookup` answers `(name, kind)`, so a prelude builder and a local function of the same
   name are one to it (4).
-- Slots and spread on a component — waiting on `props-e` (named slots, step 4) and `props-f`
-  (`{...expr}` on a component, step 1, refused today as its recommendation reads).
+- Slots on a component — waiting on `props-e` (named slots, step 4). Spread on a component — decision
+  359 (`<Card {...p} featured />` is `CardProps(...p, featured: true)`), step 1, on `01-checker` step 34.
 - Step 4 — named slots and the slot transfer through two layouts: `props-e`. The props as one
   record (192, `props: type(…)`, 207): **Template-built code cannot build an inline props type**
   (`01-checker`); until then components take parameters and `<slot />` reads `children`.
@@ -226,7 +226,6 @@ core's `node.bp`, `prelude.bp` and `element.bp`'s `View`; green on commonJS and 
 ## Decisions
 
 - `props-e` — **named slot** onto props (193 names `children` only) — step 4 · waiting
-- `props-f` — `{...expr}` on a component — step 1 · waiting
 - `118-a` — who rewrites the native builders into props form, and when — step 1's props box
 
 **Gate:** standard (fronts.md § Gate), plus:

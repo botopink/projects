@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 55 perguntas, 6 contradições e 88 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **359**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 54 perguntas, 6 contradições e 88 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **360**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -49,32 +49,6 @@ error: html: `slot="…"` is refused — named slots wait on decision props-e
 
 **Recomendação: (a)** — a 192 já cobre, sem um segundo mecanismo de encaminhamento, e é o caminho que a
 287 tomou para o fallback. **Bloqueia:** as caixas de slot da 118 (passos 1 e 4).
-
-### props-f · Spread num componente *(proposta)*
-
-**Trava:** `08-bpp/118` passo 1 · ⏳ pronto para abrir thread ao responder
-
-**Contexto.** O passo 1 da 118 recusa `{...expr}` num componente (aceita num elemento) por um motivo
-que a 192 tira: os atributos agora são os campos de um registro só.
-
-**Hoje** (medido: `botopink build --target commonJS` num projeto de rascunho sobre `jhonstart-html`):
-```text
-html """<div><Card {...extra} /></div>"""
-error: html: a spread `{...expr}` on a component is refused — write its attributes (props-f)
-  --> src/main.bp:10:29
-```
-
-- [ ] **(a)** Continua recusado: os atributos são a forma.
-  ```bp
-  html """<Card title={p.title} count={p.count} />"""
-  ```
-- [ ] **(b)** `{...p}` com `p` do tipo de props, os atributos escritos por cima.
-  ```bp
-  html """<Card {...p} title="Outro" />"""   // `title` escrito vence o de `p`
-  ```
-
-**Recomendação: (a).** Uma grafia só para passar props, cada atributo visível onde a tag é escrita.
-**Bloqueia:** 118 passo 1.
 
 ### 08-f · Onde moram Markdown e YAML
 
