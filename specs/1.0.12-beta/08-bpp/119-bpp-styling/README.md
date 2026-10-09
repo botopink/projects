@@ -210,8 +210,9 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
       `14-comptime-on-beam` rows)
 - [ ] the theme mechanism (300) in `styled`: `#[theme]` found at comptime, two refused, none →
       the default; `--theme(--breakpoint-md)` and `@variant md` read it; a cleared breakpoint refused
-      at compile time · row 134 (a library's template function cannot read the program's catalogue),
-      built by `01-compiler/130` step 10 (353)
+      at compile time · row 134 (a library's template function cannot read the program's catalogue):
+      the template body's catalogue landed (`01-compiler/130` step 10, part); blocked on `119-e` (a
+      decorator on a `val`, how `#[theme] pub val` is catalogued) and on step 10 box 2 (`value` at build)
 - [x] `grep -rn "bpp\|jhonstart\|emilia" repository/css repository/styled` empty — the shared
       hook text names emilia (`119-a`)
 
@@ -306,7 +307,7 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 
 ## Decisions
 
-Open: `119-c` (step 1 box 4) — `decisions-pending.md` Part 2. Answered: `08-d` → 338, `119-b` → 352, `134-f` → 354, `119-d` → 353 (box 5 waits on `01-compiler/130` step 10).
+Open: `119-c` (step 1 box 4), `119-e` (step 1 box 5) — `decisions-pending.md` Part 2. Answered: `08-d` → 338, `119-b` → 352, `134-f` → 354, `119-d` → 353 (box 5: the catalogue half built with `01-compiler/130` step 10; the theme waits on `119-e`).
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `repository/css`, `repository/styled` and `jhonstart-styled`

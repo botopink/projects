@@ -1,7 +1,7 @@
 # Front 130 — decorator outputs: a decorator's four places, then module-level `@emit` removed
 
 **Priority:** high · **State:** partial: steps 1–4 on feat (decisions 216, 235, 248); step 5 at 38
-of 119 sites (plus `#[schema]`'s 5); step 6 not started; step 10 (353) not started
+of 119 sites (plus `#[schema]`'s 5); step 6 not started; step 10 (353): the catalogue answered for the expanding program, the importer's diagnostic, the cells; open: `value` at build (`119-e`)
 **Depends on:** decisions 254, 256 for rakun's DI (answered; 256's registry needs `01-checker` step
 20) · library tracks for their decorator files · `04-rakun/128` for rakun rows (decision 339)
 **Owns:** `repository/botopink-lang/modules/compiler-core/src/comptime/{reflection,assoc_types,typeinfo_all}.zig`
@@ -48,6 +48,7 @@ library decorator uses them; `@emit` is a named error.
 
 - Steps 1–4 — the four places (decision 216), `with:` a list (235), one `@typeInfo` (248), `@TypeInfo.all` (253) — cells `run/decorator_{add_member,set_meta,add_type}`, `modules/decorator_{add_member_import,meta_import,add_type_import}`, `modules/typeinfo_all_{registration,imported,private}`, `run/typeinfo_all_list` and the `reject/decorator_*`, `reject/typeinfo_*` refusals
 - Step 5, migrated — std `#[mocks.mock]`; validation `#[validated]`; jhonstart `#[client]`; rakun-data `#[entity]` (20 of 22), `#[entityRepository]` (3), `#[belongsTo]` (2), `#[query]` (1 of 2; the other is not migrated — 313 deletes `#[query]`, rakun 08 step 7); rakun-cache `#[cached]` (2); rakun-hateoas `#[halResource]` (1); jhonstart `#[page]` / `#[layout]` / `#[template]` / `#[defaultView]` registrations (4: meta `seg`, registered by the entry point with `jhRegisterRoutes(@TypeInfo.all(with: page), …)` — onze's `onze_main.bp`, jhonstart's, onze-server's and the blog example's tests)
+- Step 10, part (353) — a template function's body reads `@TypeInfo.all` for the program that expands it: its module is no reader (`typeinfo_all.collect` skips template bodies); `infer.zig` `noteTemplateQueries` resolves the queries in the template's module, `answerTemplateQueries` answers them at the expansion (every module's entries, the catalogue's rules refused at the call) into a copy of the template; `comptime.zig` `compile` compiles a second time with the first session's catalogue as the oracle when an answer missed a module analysed later, and refuses a read the final catalogue still disagrees with (`typeinfo-all-template-unstable`); an entry's `value` read in a template body is `typeinfo-all-template-value`; `import pkg from "pkg"` naming a reader's default fn is `typeinfo-all-imported` at the handle (was `unbound variable` at the use) — cells `modules/template_reads_program_catalogue`, `modules/template_catalogue_{two_themes,private}`, `modules/typeinfo_all_imported_package_default`, `reject/typeinfo_all_template_value`, red on `56d4bc29`, green on all four targets
 - Rows found during the migration, closed — a reader found in the parse, not the text (`comptime/typeinfo_all.zig` `reads(program)`, cell `modules/typeinfo_all_spelled_in_string`; onze-cli's `start.bp` writes `@TypeInfo.all` in its generated source); a fn-typed local called at its current binding on erlang (`codegen/erlang.zig`, cell `run/fn_local_rebound_call`, `02-erlang`'s half; jhonstart's `jhRegisterRoutes` binds `val v` in each of its four loops)
 
 ## Open
@@ -138,15 +139,20 @@ val themes = @TypeInfo.all(with: theme);   // the application's #[theme] declara
 if (themes.length > 1) css.fail("styled: two #[theme] declarations: …");
 ```
 
-- [ ] `@TypeInfo.all` in a template function's body answers for the calling program, after every
+- [x] `@TypeInfo.all` in a template function's body answers for the calling program, after every
       module's decorators; the reader is exempt from `typeinfo-all-imported` (256's entry-point
       rule unchanged for every other reader)
 - [ ] a `Declared`'s `value` readable at build: a comptime `extendTheme(…)` holding `ThemeValue.Rem(…)`
-      evaluates (row 133)
-- [ ] the importer of a reader module that breaks the rule gets `typeinfo-all-imported` at the
+      evaluates (row 133) — refused in a template body today (`typeinfo-all-template-value`); waits
+      on `119-e` (`#[theme]` annotates a `val`, and a decorator on a `val` neither runs nor is
+      catalogued) and on the comptime record value lifted into the template's module (the
+      unbound-constructor row, re-measured: `comptime extendTheme(…)` now evaluates and is emitted as
+      `'ThemeEntry'/2 undefined`)
+- [x] the importer of a reader module that breaks the rule gets `typeinfo-all-imported` at the
       import, not `unbound variable '<template>'` at the use (row 134's diagnostic half)
-- [ ] `run/template_reads_program_catalogue` — a package's template function counting the importing
-      application's `#[theme]` declarations: none, one, two (refused at the second, naming both)
+- [x] `modules/template_reads_program_catalogue` (a project cell: a package's template) — a package's
+      template function counting the importing application's `#[theme]` declarations: none, one, two
+      (refused at the second, naming both — `modules/template_catalogue_two_themes`)
 
 **Gate:** standard (fronts.md § Gate) + std on commonJS and erlang; each library's hook
 
