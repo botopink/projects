@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**67 questions and 15 contradictions are open, and 97 implementation choices await confirmation.**
+**64 questions and 11 contradictions are open, and 91 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -14,6 +14,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
 Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290 · `ctr-y` → 291 · `ctr-z` → 292 · `nat-c1`, `nat-c3`, `bpp-g` → 293 · `nat-c2` → 294 · `nat-c4` → 295 · (cardume) → 296, 297 · `nat-c5` → 298 · `nat-c6`, `03r-b` (reversed) → 299 · `nat-c7` → 300 (all of `nat-c` answered) · `nat-d1` → 303 · `nat-d2` → 304 · `nat-g` → 305 · `nat-d3` → 306 · `nat-d4` → 306 (moot: the `union2…5` / `tuple2…5` families go with the public value form; unions and tuples are types) · `nat-d5` → 307.
+Closed by the 9 Oct revalidation (every item re-checked against 144–308, the fronts and the code): `08-h` → 285, 224 · `08-j` → 295 · `lg2-g` → 281 · `ctr-q` → 281, 256 · `ctr-m` (duplicate of `lg2-s`) · `ctr-n` (170 no longer carries the `from "m1"` example) · `ctr-r` (wrong premise: 118 lands before 26 step 0) · `111-c` → 228 · `03r-b`, `03r-d` → 299 · `95-e` (the collision left the code) · `03r-o` → 290 · `05emilia-h` → 206 · `68-c` → 280, 281. The rest were rewritten where their text or facts had gone stale.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
 ## Open questions
@@ -28,7 +29,8 @@ the feature. `nat-0`'s four rules are decisions 281–284; what remains applies 
 No general rule (283): each case below is its own question, (a) the language's own, (b) both — the foreign one a thin layer over the native — or (c) as is.
 
 #### nat-d6 · `throw "nav:not-found"` beside `noreturn` (53)
-- **Measured.** `contracts.md:280-281` `isSignal` by prefix; `boundaries-example.bp:89-91`; `server-action-example.bp:79` `val _gone = redirect(…)`.
+- **Measured.** A signal is a host-raised `nav:`-prefixed string (`contracts.md` § 5b); jhonstart's `notFound()` / `redirect()` declare `-> string`, rakun's `-> i32` (`jhonstart/src/error_boundary.bp:180-189`, `rakun-app/src/navigation.bp:47-55`); `isSignal` → `isSignalReason` by prefix; `boundaries-example.bp:89-91` (a `throw` inside `-> @Result`, an `Error` value by 118, not a raise); `server-action-example.bp:79` `val _gone = redirect(…)`.
+- **Rules.** 303: an action answers `@Result<T, ActionError>` and `throw e` there is `Error(e)`; `ActionError` has `NotFound` but no redirect case — the answer must also say how an action redirects.
 - **Options.** (a) `fn notFound() -> noreturn`, boundaries matching the `NavOutcome` type. (b) The string signal kept under a typed wrapper. (c) As is.
 - **Recommendation.** (a). With lg2-l and lg2-h.
 - **Blocks.** `05-jhonstart/26`, `07-onze/53`; lg2-l, lg2-h, 31-a.
@@ -40,20 +42,22 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Blocks.** rakun 04.
 
 #### nat-d8 · A `use…` hook name under `use` (53)
-- **Measured.** `new-post-form-example.bp:118`: `use useActionState(…)`; jhonstart-forms spells it `actionState`.
-- **Options.** (a) `use actionState(…)`; a hook named `use…` refused. (b) Both names. (c) As is.
+- **Measured.** `new-post-form-example.bp:118`: `use useActionState("createPost", actionState(""))` — jhonstart exports no `useActionState`; jhonstart-forms' hook is `actionState(actionId: string, initial)` (`form.bp:182`).
+- **Rules.** 281 already settles the argument: the action is passed as a reference (`createPost`), never a string — in the example and in `actionState`'s signature. Only the hook's name is open.
+- **Options.** (a) `use actionState(createPost, initial)`; a hook named `use…` refused. (b) Both names. (c) As is.
 - **Recommendation.** (a).
 - **Blocks.** `07-onze/53`'s examples.
 
 #### nat-d9 · LINQ's names in erika beside std's (98)
-- **Measured.** `98-packaging-tail/README.md:47-51`; `erika.bp`: `where`, `select`, `selectMany`, `orderByDescending`, `toList`.
-- **Options.** (a) std's names (`filter`, `map`), erika adding only what std lacks (laziness, `groupBy`). (b) LINQ's names — erika's identity is LINQ. (c) As is.
+- **Measured.** `98-packaging-tail/README.md:47-51`; `erika.bp`: `where`, `select`, `selectMany`, `orderByDescending`, `toList`; erika is eager — every operator materializes a new array (`erika.bp:5`); std has `filter`, `map`, `flatMap`, `unique` (217).
+- **Options.** (a) std's names (`filter`, `map`), erika adding only what std lacks (`groupBy`, the aggregates). (b) LINQ's names — erika's identity is LINQ. (c) As is.
 - **Recommendation.** none from this review: erika's purpose decides (b) is a fair reading.
 - **Blocks.** 98 (erika).
 
 #### nat-e · Spring's annotation zoo
-- **Measured.** `#[service]`, `#[repository]`, `#[restController]`, `#[configuration]` + `#[bean]`, `#[managed]`, `#[provides]` stacked for one meaning (rakun 04, 09, 13, 19) · `findByNameAndStateAllIgnoringCase` parsed into SQL (08; R78-1) · `#[amqpListener]` / `#[kafkaListener]` / `#[redisListener]` with string destinations (15, 91) · `#[httpExchange]` wired through `#[configuration]` (13) · `MockMvc`, `@MockBean`, `UserDetailsService` (19, 79).
-- **Options.** (a) One decorator per role that adds behaviour: `#[provides]` on functions, one `#[component]` on types (laziness an argument); queries as comptime expressions over `Columns` (`City.where(.state == s)`); `#[listen(destination)]`, the transport from typed config; rakun's own names. (b) Spring's names kept as aliases of (a). (c) As is.
+- **Measured.** `#[service]`, `#[repository]`, `#[restController]`, `#[configuration]` + `#[bean]`, `#[managed]`, `#[provides]` stacked for one meaning (rakun 04, 09, 13, 19) · `#[derived] findByNameAndStateAllIgnoringCase(…) -> City[]` parsed into SQL (08; R78-1) · `#[amqpListener]` / `#[kafkaListener]` / `#[redisListener]`, three markers for one role, one per transport (15, 91) — the destination is the broker's name and may stay a string (281) · `#[httpExchange]` wired through `#[configuration]` (13) · `MockMvc`, `@MockBean`, `UserDetailsService` (19, 79).
+- **Rules.** 299 settled configuration (typed record per prefix; `#[configurationProperties]`, `#[value]`, `rkProp*` gone); 304 makes repository methods answer `@Result<T, StoreError>`.
+- **Options.** (a) One decorator per role that adds behaviour: `#[provides]` on functions, one `#[component]` on types (laziness an argument); queries as comptime expressions over `Columns` (`#[query] fn byState(s: string) -> @Result<City[], StoreError> = City.where(.state == s)`); one `#[listen(orders)]`, `orders` a `Destination<OrderPlaced>("orders")` declared once (294's `Cookie<T>` pattern), the transport from 299's typed config; rakun's own names. (b) Spring's names kept as aliases of (a). (c) As is.
 - **Recommendation.** (a). Absorbs 130-c.
 - **Blocks.** 130 step 5; rakun 04, 08, 13, 15, 19, 79, 91, 93; 130-b, 130-c.
 
@@ -61,20 +65,20 @@ No general rule (283): each case below is its own question, (a) the language's o
 `botopink.json` as clean as possible, configuration allowed where it makes sense (284); `"bpp": "<package>"` stays. Each case below is its own question.
 
 #### nat-f2 · `onze.json`'s `trailingSlash`, `redirects`, `markdown`, `allowedRedirects` (124, 08-h)
-- **Measured.** The keys restate options onze's code already types (`url_rules`, `MarkdownOptions`, `app(allowedRedirects:)`); a misspelt value is seen when the server boots.
-- **Options.** (a) Kept in `onze.json`, read into the typed record at build, a wrong key or value an error at its line in the file. (b) A typed record in the app's code (`pub val config = OnzeConfig(trailingSlash: .Never, …)`), no JSON. (c) As is.
-- **Recommendation.** (a) — configuration is allowed there (284); the build checks it as code would.
+- **Measured.** `onze.json` is read and validated by `loadConfig` whenever the CLI resolves the project, `onze build` included (`onze-cli/src/resolve.bp:48-50`); an unknown key is refused (49-c) without a line. Only `allowedRedirects` exists (`onze/src/config.bp:192-193`); `trailingSlash`, `redirects`, `markdown` are 124's planned keys (`124-bpp-cli/README.md:67-69`), which 08-h already writes; all four restate options onze's code types (`url_rules`, `MarkdownOptions`, `app(allowedRedirects:)`). Precedent: 299 (typed record bound from a file, errors naming file, line and expected type).
+- **Options.** (a) Kept in `onze.json`, read into the typed record at build as 299 does, a wrong key or value an error at its line in the file. (b) A typed record in the app's code (`pub val config = OnzeConfig(trailingSlash: .Never, …)`), no JSON. (c) As is.
+- **Recommendation.** (a) — configuration is allowed there (284); the build checks it as code would, as 299 does for rakun.
 - **Blocks.** 124; 08-h; `07-onze/49`, `50`.
 
 #### nat-f3 · `files` and `workspaces` in `botopink.json` (98)
-- **Measured.** `files` lists what a package ships (npm's); `workspaces` / `{ "workspace": true }` list members (`98-packaging-tail/README.md:27`, `docs/botopink-json.md:52`).
-- **Options.** (a) Both kept — packaging, not code. (b) `files` derived from `pub` modules (an internal module marked in code, `#![internal]`, lg2-m); `workspaces` kept. (c) Both derived.
-- **Recommendation.** (a): what ships is a packaging fact.
+- **Measured.** `files` lists, relative to `src`, the modules a consumer may import; a library without it ships nothing (`docs/botopink-json.md:52`). `workspaces` lists members; a manifest with it is a workspace and refuses `src`, `files`, `entry`, `dependencies` (`:159-170`) — the two never share a file (`98-packaging-tail/README.md:27`). 270 relies on `files` (the prelude `src/prelude.bp` is listed there).
+- **Options.** (a) Both kept — packaging, not code. (b) `files` derived from `pub` modules (an internal module marked in code, `#![internal]`, lg2-m), 270 reworded; `workspaces` kept. (c) Both derived.
+- **Recommendation.** (a): what ships is a packaging fact, and 270 already relies on it.
 - **Blocks.** 98.
 
 #### nat-f4 · The `ONZE_PUBLIC_` prefix on environment variables (53, `contracts.md`)
-- **Measured.** A variable reaches client code only when its name starts with `ONZE_PUBLIC_` (Next's `NEXT_PUBLIC_`); a stage fact (186) carried by a naming convention.
-- **Options.** (a) Kept. (b) The declaration says it: `#[clientVisible] val apiUrl = env("API_URL")`, reaching it from a `#[client]` component checked at comptime (186). (c) A list of public variables in `onze.json`.
+- **Measured.** A variable reaches client code only when its name starts with `ONZE_PUBLIC_` (Next's `NEXT_PUBLIC_`). A missing prefix is not silent: the bundler refuses at build a client module's `env.read("X")` without it, naming the variable (`env-non-public`, `onze-bundler/src/refusal.bp:13-14`; `contracts.md:439-441`). What remains is a stage fact (186) carried by a naming convention the environment must follow (`client-island-example.bp:41`).
+- **Options.** (a) Kept. (b) The declaration says it — `#[publicEnv] val apiUrl = env.read("API_URL")`, its use from a `#[client]` component checked at comptime (186); a marker of its own, since `#[clientVisible]` is 278's hydration annotation; 299's `#[env("…")]` the precedent in a record. (c) A list of public variables in `onze.json`.
 - **Recommendation.** (b).
 - **Blocks.** `07-onze/50`, `53`; `contracts.md`.
 
@@ -82,7 +86,8 @@ No general rule (283): each case below is its own question, (a) the language's o
 
 Each `lg2-*` is a [`language-gaps.md`](./language-gaps.md) row for a missing feature; option (1)
 keeps it out, making the row's nearest form the design. No front opens on one until answered; the
-owning front lists the row under *Depends on*.
+owning front lists the row under *Depends on*. Answered: `lg2-k` (216, 253), `lg2-f` and `lg2-i` (280); `lg2-g` has no
+subject under 281. Every decorator parameter in these examples is `comptime` (280 (0)).
 
 #### lg2-a · A byte type
 - **Measured.** No primitive, std type or literal holds bytes (`val b: Bytes = "a";` mismatches everywhere); every host cell marshals via `string`.
@@ -97,10 +102,10 @@ owning front lists the row under *Depends on*.
 - **Blocks.** The row; rakun 02, 23, 25, 28, 30, 60.
 
 #### lg2-c · A decorator that rewrites or wraps the body it annotates
-- **Measured.** A decorator reads its declaration as `@Decl` data, answers only decision 216's outputs (members, meta, associated types, catalogue entries); no form returns a replacement body.
-- **Options.** (1) None: a decorator adds beside its target (members, proxies, combinators), never changes what it does. (2) A form receiving the body and returning its replacement. (3) Fixed before / after / around hooks the compiler composes.
+- **Measured.** A decorator reads its declaration as `@Decl` data, answers only decision 216's outputs (members of the annotated type, meta, associated types, catalogue entries); no form returns a replacement body. A free function's decorator has nowhere to put a proxy (`decorator-member-without-type`; module-level `@emit` leaves, 216). rakun's `<Type>Tx` / `<Type>Sec` proxies are injected by type (281). 280's example 5 writes the typed form `decl.wrapWith(cachedCall(cache))`, marked illustrative.
+- **Options.** (1) None: a decorator adds beside its target (a member of the owning type, an associated type, a combinator), never changes what it does. (2) A typed wrapper: `decl.wrapWith(f)`, `f` checked against `@Decl<T>`; never a body as text. (3) Fixed before / after / around hooks the compiler composes.
 - **Recommendation.** (1).
-- **Blocks.** The row; rakun 06, 07, 08, 10, 12, 16, 83.
+- **Blocks.** The row; rakun 06, 07, 08, 10, 12, 16, 83; 280's example 5 stays illustrative.
 
 #### lg2-d · A decorator that reads the body it annotates
 - **Measured.** `decl.body` is `{error,{badkey,body}}` at the annotation; the handle carries kind, name, fields, variants, methods, return type, annotations.
@@ -108,17 +113,11 @@ owning front lists the row under *Depends on*.
 - **Recommendation.** (1); rakun 83's saga stays a value pairing each step with its compensation.
 - **Blocks.** The row; rakun 83.
 
-#### lg2-e · A method-level `@Decl`'s owner and parameters
-- **Measured.** `decl.owner` / `decl.params` on a method-level decorator are `badkey`; only a type-level handle lists its methods' parameters.
-- **Options.** (1) Method-level markers stay placement-only; the type-level decorator reads its methods. (2) `owner` and `params` on a method-level `@Decl`.
+#### lg2-e · A method-level `@Decl`'s owner
+- **Measured.** 280 answered the parameters: `@Decl<T>` binds the function's type (`@Decl<fn(e: E) -> unknown>`), and 280's approved example 1 (`01-checker` step 24) reads `decl.params`, `decl.params[0].module`, `decl.module` on a fn's `@Decl`. Left: `decl.owner` on a method-level decorator is `badkey`; only the type-level handle sees the whole type.
+- **Options.** (1) A method-level marker sees its own method (parameters per 280); the type-level decorator reads the type. (2) `owner` on a method-level `@Decl`.
 - **Recommendation.** (1).
-- **Blocks.** The row (marker in `08-bpp/127`'s `typed-action-example.bp`); rakun 06–10, 29.
-
-#### lg2-g · `@typeName<T>()`
-- **Measured.** `@typeName<User>()` does not parse; explicit type arguments parse at every call (1.0.10's 8 §1.3, 255) — only the intrinsic is missing.
-- **Options.** (1) None: a registry key travels as a string beside `T` (254's `rkResolve<T>(name)`). (2) A comptime `@typeName<T>()` answering the declared name.
-- **Recommendation.** (1).
-- **Blocks.** The row; rakun 06.
+- **Blocks.** The row (marker in `08-bpp/127`'s `typed-action-example.bp`, its parameter half closing with `01-checker` step 24); rakun 06–10, 29.
 
 #### lg2-h · Raising and catching by type
 - **Measured.** `try load(p) catch { e: NotFound -> … }` does not parse; a `@Result<T, E>`'s error is typed by `E`, read with `case` in the `catch` body; a host exception is not an `E`.
@@ -128,13 +127,13 @@ owning front lists the row under *Depends on*.
 
 #### lg2-j · Comptime state across decorator invocations
 - **Measured.** A module-level `var` written by a decorator body is refused at the annotation; each invocation is its own module call.
-- **Options.** (1) Each invocation independent. (2) Comptime mutable state scoped to one compilation.
-- **Recommendation.** (1): a decorator's answer depends on its declaration alone; a catalogue is 256's entry-point registry.
+- **Options.** (1) Each invocation independent; a catalogue is read with `@TypeInfo.all(with: …)` at the entry point (256, without `member: "make"` or a type-name key, both removed by 281; the type key is `130-b`'s). (2) Comptime mutable state scoped to one compilation.
+- **Recommendation.** (1): a decorator's answer depends on its declaration alone.
 - **Blocks.** The row; rakun 05.
 
 #### lg2-l · Whether `noreturn` is a bottom type
-- **Measured.** `fn notFound() -> noreturn { raise("…"); }` ends the path on commonJS and erlang, but `throw notFound();` in a `@Result` body and `val s: string = notFound();` mismatch → jhonstart's `notFound()` / `redirect()` declare `-> string`. `@panic` / `@todo` are `noreturn`; a branch ending in a `noreturn` call already narrows — may be confirmed de facto.
-- **Options.** (1) `noreturn` unifies with nothing: a call to it is a statement ending its path; the signals become `-> noreturn` called as statements. (2) `noreturn` is the bottom type, fits any position.
+- **Measured.** `fn notFound() -> noreturn { raise("…"); }` ends the path on commonJS and erlang, but `throw notFound();` in a `@Result` body and `val s: string = notFound();` mismatch → jhonstart's `notFound()` / `redirect()` declare `-> string` (`error_boundary.bp:180-188`); front 53's example writes `val _gone = redirect(…)` (`server-action-example.bp:79`); onze's blog app calls `notFound();` as a statement. `@panic` / `@todo` are `noreturn`; a branch ending in a `noreturn` call already narrows — may be confirmed de facto.
+- **Options.** (1) `noreturn` unifies with nothing: a call to it is a statement ending its path; the signals become `-> noreturn` called as statements (in a page: `fn() -> View`, `use params<P>()`). (2) `noreturn` is the bottom type, fits any position.
 - **Recommendation.** (1).
 - **Blocks.** The row; jhonstart's signals (63, `31-a`); rakun's navigation tests.
 
@@ -151,7 +150,7 @@ owning front lists the row under *Depends on*.
 - **Blocks.** The row; jhonstart 30.
 
 #### lg2-o · Filesystem access from a comptime body
-- **Measured.** `fs.readText("schema.txt")` in a decorator body refused at the annotation.
+- **Measured.** `fs.readText(path)` in a decorator body (`comptime path: string`, 280 (0)) refused at the annotation.
 - **Options.** (1) None: generated `.bp` is checked in (`rakun ws generate`). (2) A sandboxed read of declared build inputs, keyed into the build cache.
 - **Recommendation.** (1): a build reads only its sources.
 - **Blocks.** The row; rakun 88, 93.
@@ -163,22 +162,22 @@ owning front lists the row under *Depends on*.
 - **Blocks.** The row; rakun 02.
 
 #### lg2-q · `@Decl`'s source location
-- **Measured.** `decl.loc.file` is `badkey` at the annotation.
-- **Options.** (1) None: the app-relative segment is an explicit decorator argument. (2) A `loc` field on `@Decl` (`@src()`'s `SourceLocation`).
-- **Recommendation.** (1): a decorator's output never depends on where its file sits.
-- **Blocks.** The row; rakun 22.
+- **Measured.** `decl.loc.file` is `badkey` at the annotation. 289 and 290 already write option (1): a route file's decorator carries the route (`#[page("blog/[slug]", paths: allPosts)]`), the page reads its segments by hook (293), takes no parameter and returns `View` (275, 276). An anonymous default's `decl.name` is the file name (289), not its path.
+- **Options.** (1) None: the app-relative segment is an explicit decorator argument (`#[page("blog/[slug]")] pub fn BlogPost() -> View`). (2) A `loc` field on `@Decl` (`@src()`'s `SourceLocation`).
+- **Recommendation.** (1): a decorator's output never depends on where its file sits; 289/290 are written so.
+- **Blocks.** The row; rakun 22 (the `#[page("…")]` examples already follow (1)).
 
 #### lg2-r · A body a decorator supplies for a declared method
-- **Measured.** A bodyless `declare fn` method with no `#[@External.<Target>]` is refused at the call on every target (`run/bodyless_method_without_binding`); no decorator can supply the body.
-- **Options.** (1) A bodyless method is a host binding only; a `#[query]`-style decorator adds a member the method's body calls (216). (2) A decorator-supplied body for a declared method.
+- **Measured.** A bodyless `declare fn` method with no `#[@External.<Target>]` is refused at the call on every target (`run/bodyless_method_without_binding`); no decorator can supply the body. A repository method answers `@Result<T, StoreError>` (304).
+- **Options.** (1) A bodyless method is a host binding only; a `#[query]`-style decorator adds a member the method's body calls (216): `fn find(self: Self, id: i32) -> @Result<?User, StoreError> { return self.findQuery(id); }`. (2) A decorator-supplied body for a declared method.
 - **Recommendation.** (1).
 - **Blocks.** The row; rakun 08, 09, 78.
 
 #### lg2-s · Module-graph reflection
-- **Measured.** `decl.imports` is `badkey` at the annotation.
+- **Measured.** `decl.imports` is `badkey` at the annotation; `onze-bundler/src/graph.bp` reads imports with `importsOf`, a textual scan.
 - **Options.** (1) None: `importsOf` stays a textual scan that fails loudly. (2) An `imports` field on a module-level `@Decl`.
-- **Recommendation.** (1); its old argument ("in step with `lg2-k`") fell with 216 — `ctr-m`.
-- **Blocks.** The row; rakun 68.
+- **Recommendation.** (1); its old argument ("in step with `lg2-k`") fell with 216.
+- **Blocks.** The row; onze 68 (client bundle).
 
 #### lg2-t · A negative numeric enum leaf
 - **Measured.** `type Tok { Rotate { 12, -12 } }` refused at the `-`.
@@ -186,11 +185,11 @@ owning front lists the row under *Depends on*.
 - **Recommendation.** (1): a leaf name stays a name.
 - **Blocks.** The row; emilia 35, 36, 45.
 
-#### lg2-u · An expression-position decorator
-- **Measured.** `val x = #[deco] 1;` refused (`loop-annotation-not-generator`).
-- **Options.** (1) None: expression-level work is a call. (2) Expression-position decorators run in the eval script.
+#### lg2-u · An expression-position decorator outside markup
+- **Measured.** `val x = #[deco] 1;` refused (`loop-annotation-not-generator`). Emilia front 48's markup case is answered: a tag annotation is a decorator (278, 302), and emilia reaches markup as `<h1 #[styled(…)]>` (301). Left: a decorator on an ordinary expression.
+- **Options.** (1) None: outside markup, expression-level work is a call (`traced(compute())`). (2) Expression-position decorators run in the eval script (`#[traced] compute()`).
 - **Recommendation.** (1).
-- **Blocks.** The row; rakun 48.
+- **Blocks.** The row (emilia 48's markup case covered by 301).
 
 #### lg2-v · A subdirectory in a git dependency
 - **Measured.** `DepSpec` is `{git, path, ref, workspace}` (`modules/manifest/src/root.zig`); a package inside a repository is reachable by `path` only.
@@ -199,40 +198,40 @@ owning front lists the row under *Depends on*.
 - **Blocks.** The row; rakun 73; `02/98` step 4 (conditional); `07-h`'s argument.
 
 #### lg2-w · A host function called from a decorator body
-- **Measured.** `json.quote(…)` in a decorator refused as a method nothing provides; via `import {json.quote}` it is `call to undefined function quote/1` on both comptime runtimes; a project's own host `declare fn` fails the same — only bodied functions travel into the decorator module.
+- **Measured.** `json.quote(…)` in a decorator (`comptime path: string`, writing typed meta — module-level `@emit` leaves, 216) refused as a method nothing provides; via `import {json.quote}` it is `call to undefined function quote/1` on both comptime runtimes; a project's own host `declare fn` fails the same — only bodied functions travel into the decorator module.
 - **Options.** (1) A comptime body calls bodied functions only; a host call there refused at the call, located, naming the function, on every target. (2) The Erlang cell travels into the decorator module on the BEAM runtime, refused on wat. (3) Decorators reaching a host cell run on the BEAM runtime whatever the target.
 - **Recommendation.** (1): the answer never depends on the runtime the target selected (1.0.10's 84).
-- **Blocks.** The row; rakun 16 (`#[scheduled]`); every decorator that would reuse std.
+- **Blocks.** The row; front 16 (`#[scheduled]`); every decorator that would reuse std.
 
-#### 17-b · The per-row increment of a `keyed = true` `Dict`
-- **Measured.** A row is written `counts = counts.insert(k, v)`; a row computed from the var's own rows is 1.0.10's 40 §5(b) refusal; `counts.at(k)` is a `?V`; `counts.at(k) += 1` / `counts[k] += 1` are not assignment targets.
-- **Options.** (a) None: a keyed row written whole; a per-key counter refused; a counter several processes bump is one `#[@BeamMemory.Ets] var n: i32` each. (b) A std `Dict.bump(key, by) -> Dict<K, V>` (integer `V`, absent key counts from 0), lowered under `keyed = true` to `ets:update_counter(T, K, By, {K, 0})`. (c) An index assignment `counts[k] += 1` in the grammar.
-- **Recommendation.** (a).
+#### 17-b · The per-row increment of a `keyed: true` `Dict`
+- **Measured.** A row is written `counts = counts.insert(k, v)`; `counts.insert(k, (counts.at(k) ?? 0) + 1)` now types but stays refused — a row computed from the var's own rows is 1.0.5's 40 (rule 5(b)) refusal; `counts.at(k)` is a `?V`; `counts.at(k) += 1` / `counts[k] += 1` are not assignment targets. `label: value` per 305.
+- **Options.** (a) None: a keyed row written whole; a per-key counter refused; a counter several processes bump is one `#[@BeamMemory.Ets] var n: i32` each. (b) A std `Dict.bump(key, by) -> Dict<K, V>` (integer `V`, absent key counts from 0), lowered under `keyed: true` to `ets:update_counter(T, K, By, {K, 0})`. (c) An index assignment `counts[k] += 1` in the grammar. (d) Recognise exactly `counts.insert(k, (counts.at(k) ?? 0) + n)` and lower it to `ets:update_counter(T, k, n, {k, 0})`; any other shape stays refused.
+- **Recommendation.** (a): no method or grammar for an annotation; (d) makes a written form change meaning by pattern.
 - **Blocks.** `17-beam-memory` step 1, fourth box.
 
-#### 17-c · What else names a `keyed = true` var
-- **Measured.** Built: only `counts.at(k)` (`ets:lookup`) and `counts = counts.insert(k, v)` (`ets:insert`); everything else (`counts[k]`, `hasKey`, `delete`, `size()`, passing it on) refused at the identifier; a keyed var is never `pub`. 1.0.10's 63 defines `d[k]` as `d.at(k)`, yet the index form is refused.
-- **Options.** (a) The two forms, as built. (b) (a) plus `counts[k]`. (c) (b) plus `hasKey` (`ets:member`) and `delete` (`ets:delete`), each a new `std/beam` primitive.
+#### 17-c · What else names a `keyed: true` var
+- **Measured.** Built: only `counts.at(k)` (`ets:lookup`) and `counts = counts.insert(k, v)` (`ets:insert`); everything else (`counts[k]`, `hasKey`, `delete`, `size()`, passing it on) refused at the identifier; a keyed var is never `pub`. 1.0.5's 63: an index answers `V` and fails on an absent key; `at` answers `?V` (`null`).
+- **Options.** (a) The two forms, as built. (b) (a) plus `counts[k]` with 63's meaning (`ets:lookup`, `V`, failure on a missing row). (c) (b) plus `hasKey` (`ets:member`) and `delete` (`ets:delete`), each a new `std/beam` primitive.
 - **Recommendation.** (a).
 - **Blocks.** Nothing — the built surface stands until widened.
 
 #### 134-d · `@is(…)` written by hand
-- **Measured.** `x is T` parses as builtin call `is` carrying the tested type; the lexer also makes `@is(1)` that call with no tested type — checks as `bool`, lowers to nothing meaningful.
+- **Measured.** `x is T` parses as builtin call `is` carrying the tested type; the lexer also makes `@is(1)` that call with no tested type — checks as `bool`, lowers to nothing meaningful. One of 134 step 2's undeclared builtin calls (beside the `result.*` namespace).
 - **Options.** (a) Refuse `@is(…)` as a call (`unknown-builtin`, naming `x is T`). (b) Declare `is(value: unknown) -> bool`.
 - **Recommendation.** (a).
-- **Blocks.** The last undeclared builtin-call row of 134 step 1.
+- **Blocks.** The `@is(…)` box of 134 step 2.
 
-#### 130-b · Two `#[provides]` of one type in a registry keyed by type name (decisions 254, 256)
-- **Measured.** 256's snippet keys a provider by `b.returnTypeName`. Two qualified providers of one type (`#[provides] #[qualifier("fast")] fn fastDye() -> Dye` beside `#[qualifier("slow")]`), and a `#[primary]` beside a plain one, collide on `"Dye"` → refused as a duplicate, where `__rkMake_Dye` let the unqualified or `#[primary]` one own the injection and kept the others reachable by `ctx.resolveNamed("Dye", "fast")` (`rakun/test/context_test.bp`, `examples/rakun-container`).
-- **Options.** (a) A qualified provider is keyed `Type@qualifier` (the decorator records `setMeta("qualifier", …)`); the plain name is the unqualified or `#[primary]` one; two owners of the plain name are the duplicate (`d = d.insert(rkBeanKey(b), b.value)`). (b) The registry holds only what injection by type reads; qualified providers stay in the context table their load-time registration fills. (c) The snippet as written: any two providers of one type are a duplicate. (d) *Added under 281:* a qualifier is a distinct type (`type FastDye(dye: Dye)`, `#[provides] fn fastDye() -> FastDye`), so the registry is keyed by type alone; `#[qualifier("…")]` and `resolveNamed` go.
-- **Recommendation.** (d) under decision 281 — (a)'s `Type@qualifier` keeps a string beside the type; (a) if a string label is wanted after all.
-- **Blocks.** rakun's `#[provides]` / `#[qualifier]` / `#[primary]` migration (130 step 5: `context.bp`, its test, rakun-container).
+#### 130-b · Two `#[provides]` of one type in the bean registry (decisions 254, 256, 281)
+- **Measured.** 256's snippet keys a provider by `b.returnTypeName` — a type's name as text, which 281 takes out of the registry ("how a qualified bean is told apart stays `130-b`, now with a type-based option"). There, two qualified providers of one type (`#[provides] #[qualifier("fast")] fn fastDye() -> Dye` beside `#[qualifier("slow")]`), and a `#[primary]` beside a plain one, collide on `"Dye"` → a duplicate. Today's code does not use that registry: `#[provides]` emits `rkRegisterBean(…)`, filling the context table at load keyed `Type@qualifier`; the unqualified or `#[primary]` one owns the plain name, the others are reached by `ctx.resolveNamed("Dye", "warm")` (`rakun/src/context.bp:1030-1110`, `rakun/test/context_test.bp:486-510`, `examples/rakun-container`).
+- **Options.** (a) A qualified provider is keyed `Type@qualifier` (the decorator records `decl.setMeta(Qualifier(name: "fast"))`, 298); the plain name is the unqualified or `#[primary]` one; two owners of it are the duplicate (`d = d.insert(rkBeanKey(b), b.value)`). (b) The registry holds only what injection by type reads; qualified providers stay in the context table their load-time registration fills. (c) The snippet as written: any two providers of one type are a duplicate. (d) *Added under 281:* a qualifier is a distinct type (`type FastDye(dye: Dye)`, `#[provides] fn fastDye() -> FastDye`, `use bean(FastDye)`), so the registry is keyed by type alone; `#[qualifier("…")]` and `resolveNamed` go.
+- **Recommendation.** (d) under decision 281 — (a)'s `Type@qualifier` keeps a string beside the type and `resolveNamed` names the type in text; (a) if a string label is wanted after all. `04-rakun/04` step 6 already writes (d)'s shape.
+- **Blocks.** rakun's `#[provides]` / `#[qualifier]` / `#[primary]` migration (130 step 5: `context.bp`, its test, rakun-container). Depends on `nat-e`.
 
 #### 130-c · A `#[configuration]`'s `#[bean]` methods in the registry (decision 234)
-- **Measured.** 234 fills the context from `@TypeInfo.all(with: provides)` / the `#[bean]` methods, but `@TypeInfo.all` answers top-level declarations and a `#[bean]` is a method of a `#[configuration]` type. Today `#[configuration]` emits `__rkMake_<ReturnType>()` per `#[bean]` (rakun `autoconfig.bp`, `conditions.bp`, `config.bp`, rakun-client `settings.bp`, rakun-security `oauth2/provider.bp`, `examples/rakun`).
-- **Options.** (a) `#[bean]` methods become `#[provides]` free functions (the configuration record keeps its `#[value]` fields; a provider reads them through `rkResolve`). (b) The configuration records each bean as meta and adds a member `Config.bean(name) -> unknown`; the entry adds a third loop. (c) `@TypeInfo.all` gains `methods: true`.
+- **Measured.** 234 fills the context from `@TypeInfo.all(with: provides)` / the `#[bean]` methods, but `@TypeInfo.all` answers top-level declarations and a `#[bean]` is a method of a `#[configuration]` type. Today `#[configuration]` gives the type a `make()` member and, per `#[bean]`, emits `val __rkBeanM_<Config>_<method> = rkRegisterBean("<ReturnType>", …)` into the context table at load (`rakun/src/decorators.bp:333-385`). Written `#[bean]`s: `examples/rakun/src/config.bp` and tests (`rakun/test/{autoconfig,conditions,scopes,context}_test.bp`, `rakun-test/test/mocks_pairing_test.bp`). 299 removed `#[value("…")]`: configuration is a typed record per prefix (`#[config("app")]`), injected by type.
+- **Options.** (a) `#[bean]` methods become `#[provides]` free functions; the configuration is 299's record, read by type (`use config(AppConfig)`, never `rkResolve<…>("AppConfig")`). (b) The configuration records each bean as typed meta (298) carrying its factory; the entry adds a third loop over `@TypeInfo.all(with: configuration)`. (c) `@TypeInfo.all` gains `methods: true`.
 - **Recommendation.** (a): one way to provide a bean, already in the registry's loop, no new reflection.
-- **Blocks.** rakun's `#[configuration]` migration and every `__rkMake_` a `#[bean]` defines (130 step 5).
+- **Blocks.** rakun's `#[configuration]` migration and every `rkRegisterBean` a `#[bean]` emits (130 step 5). Depends on `nat-e`, which absorbs it.
 
 #### imp-a · Two aliased imports of two same-named types (*proposed*)
 - **Measured.** Decision 170 makes `import {m1.T as A}; import {m2.T as B};` legal; the checker refuses it for types (`import-name-collision`, `modules/import_two_types_one_name`) because backends do not tell types apart by module (`01-checker/README.md`, rows other fronts found).
@@ -249,7 +248,7 @@ owning front lists the row under *Depends on*.
 - **Blocks.** onze 50 steps 4 and 7; 97 step 6 (conditional).
 
 #### std-e · Test lifecycle hooks
-- **Measured.** rakun-test's `resetSingletons` / `resetContext` called by hand in 40+ test bodies; jhonstart-dom-test installs its document the same way.
+- **Measured.** Library tests reset state by hand at the top of the body: rakun-web's `resetChain()` 77×, `rkAppReset(…)` 20×, `resetTables(…)` 14×, among others; rakun-test's `resetSingletons` / `resetContext` only in its own `context_test.bp`; jhonstart-dom-test's `installDocument(…)` 11×.
 - **Options.** (a) None: a test body calls its reset helper. (b) `#[before]` / `#[after]` on a module-level fn the runner calls around every `test`. (c) `beforeEach { … }` blocks in the grammar.
 - **Recommendation.** (a): nothing implicit runs around a test.
 - **Blocks.** The `language-gaps.md` row "No test lifecycle hooks".
@@ -258,15 +257,15 @@ owning front lists the row under *Depends on*.
 - **Measured.** `repository/onze` is the orchestrator's workspace, built on tag `mocking-lib-final` in the same history and remote — not decision 79's orphan branch; nothing archived or renamed; the name resolves only to the orchestrator's members.
 - **Options.** (1) Confirm the tree: a new decision amends 79 — the old library lives as the tagged history of the same repository. (2) Rewrite the remote to an orphan branch, archive the old history (every checkout re-clones).
 - **Recommendation.** (1).
-- **Blocks.** `02/98`'s record boxes (01-std step 5's four, 95 step 2's first two) close on (1).
+- **Blocks.** `02/98` step 3 ("front 95 closed as a confirmation"), written under (1).
 
 ### 03-bundled-libs
 
-#### 07-b · Does "one library, three or more divergent copies" also justify a package?
-- **Measured.** The cookie and q-value copies already qualify under 115's test (onze consumes them too).
+#### 07-b · Does "one library, several divergent copies" also justify a package?
+- **Measured.** rakun has four divergent `Cookie:` readers inside itself (`request_context.bp`, `csrf.bp`, `rakun-app/i18n.bp`, `session_cookie.bp`; 196, front 104). The cookie and q-value copies already qualify under 115's test (onze consumes them too).
 - **Options.** (a) 115's "two or more libraries" stays the only test. (b) Add the divergence test.
 - **Recommendation.** (a): a single-library duplicate goes to std or the owning library's core.
-- **Blocks.** Nothing; the rule for the next candidate.
+- **Blocks.** Nothing; the rule for the next candidate (front 104's `http` exists; rakun adopts it in its step 5).
 
 #### 07-g · OTP release rendering
 - **Measured.** `rakun-release/release.bp` (into `rakun-cli` under 187) and `onze-release/otp.bp` render the same `.rel` / `vm.args` / `sys.config` / boot script / Dockerfile; onze cannot reuse rakun's (rakun erlang-only, onze-release also commonJS).
@@ -281,18 +280,18 @@ owning front lists the row under *Depends on*.
 - **Blocks.** Nothing waits; the track is cut as (a).
 
 #### 07-j · How much of Zod is front 125
-- **Measured.** `125-validation-zod/surface.md`: 205 reference rows — 27 already the language or library, 151 buildable with existing decorator and reflection surface, 7 needing a compiler row, 18 meaningless here; steps 0–2 merged.
-- **Options.** (a) The markers only (step 3). (b) Steps 0–3. (c) Every step.
-- **Recommendation.** (c), landed in step order — read with 306: every row a declaration can say (a marker or a type); a row only a schema value could say is `n/a (306)`.
+- **Measured.** `125-validation-zod/surface.md` § Count: 211 reference rows — 48 already the language or library (11 native, 37 have), 134 buildable with existing decorator and reflection surface, 7 gaps with a nearest form shipped (`language-gaps.md` rows), 20 meaningless here, 2 outside the reference's core; steps 0–2 on feat, still spelled `#[schema]` (emitting `parseSignup(…)` — `parse<TypeName>` is a name template, `decorators.bp:343`). Decision 306 already draws the result: `#[validated]` is the only schema and emits `parse`, `parseAt`, `decode`, `bind`, `encode`, `jsonSchema` (`ctr-u`'s spelling); codecs, map, preprocess are field markers; unions and tuples are declared types; a row only a value could say is `n/a (306)` — in practice option (c).
+- **Options.** (a) Markers only (step 3), no parse members on `#[validated]`. (b) Markers + `Signup.parse` for flat records (steps 0–3). (c) Every step in 306's shape: declared unions/tuples, coercion/transform/codec markers, `bind` / `encode` / `jsonSchema` members.
+- **Recommendation.** Close as (c) under 306, landed in step order; `surface.md` re-sorted into marker, type or `n/a (306)`.
 - **Blocks.** The size of 125 (steps 3–10).
 
 ### 04-rakun
 
 #### 03r-ab · Front 09's binary-protocol stores
-- **Measured.** MongoDB, Neo4j, Cassandra, Couchbase are byte protocols (`lg2-a`) needing OTP drivers a sidecar cannot load; ETS and Mnesia are in the VM; Redis is RESP over `gen_tcp`; Elasticsearch is HTTP + JSON over 13's client.
-- **Options.** (a) 09 ships `ets:memory`, `mnesia:local` / `mnesia:cluster`, `redis://`, `https://` with the behavior suite against all four in the gate; `mongodb://`, `bolt://`, `cassandra://`, `couchbase://` are recognised schemes whose boot refusal names `lg2-a` and the driver; steps 4 and 7's 12 boxes become the refusal cells plus one `deferred.md` row each. (b) Four protocol clients in Erlang sidecars, a front each. (c) Defer 09.
-- **Recommendation.** (a): never a fallback to ETS under a Mongo URL.
-- **Blocks.** 09 steps 4 and 7.
+- **Measured.** The store is selected by `rakun.nosql.url`. MongoDB, Neo4j, Cassandra, Couchbase are byte protocols (`lg2-a`) needing OTP drivers a sidecar cannot load; ETS and Mnesia are in the VM; Redis is RESP over `gen_tcp`; Elasticsearch is HTTP + JSON. 09's README is already written to (a): the former steps 4 and 7 are step 5's refusal cells plus one `deferred.md` row each — only the record is missing.
+- **Options.** (a) 09 ships `ets:memory`, `mnesia:local` / `mnesia:cluster`, `redis://`, `https://` with the behavior suite against all four in the gate; `mongodb://`, `bolt://`, `cassandra://`, `couchbase://` are recognised schemes whose boot refusal names `lg2-a` and the driver (step 5). (b) Four protocol clients in Erlang sidecars, a front each. (c) Defer 09.
+- **Recommendation.** (a): never a fallback to ETS under a Mongo URL; the Elasticsearch arm without a `rakun-client` edge (`ctr-w`; 09 step 3 still goes through it). The front already follows (a).
+- **Blocks.** 09 step 5 (the refusal cells).
 
 #### 03r-ae · SAML 2.0 ACS
 - **Measured.** Verifying an IdP signature needs Exclusive XML Canonicalisation, which neither OTP's `xmerl` nor std provides; `saml2/saml2.bp` answers 501.
@@ -307,39 +306,39 @@ owning front lists the row under *Depends on*.
 - **Blocks.** 73 step 3.
 
 #### 03r-ak · CycloneDX validation
-- **Measured.** The box asks for validation against a checked-in CycloneDX 1.5 schema, no network; std has no JSON-schema validator; `sbom.bp` asserts required fields by name.
-- **Options.** (a) `release_test.bp` walks the SBOM against the checked-in `bom-1.5.schema.json`'s `required` arrays and `type` keywords (local definitions only, ~120 lines). (b) Amend the box to the field-by-field list. (c) A `json.schema` in std.
+- **Measured.** The box asks for validation against a checked-in CycloneDX 1.5 schema, no network; std has no JSON-schema validator; `release_test.bp:168` asserts fields by name (`rakun-cli/test/release/` after 128).
+- **Options.** (a) `release_test.bp` walks the SBOM against `test/release/fixtures/bom-1.5.schema.json`'s `required`, `type`, `enum` and local `$ref`s (~120 lines), as 81 step 3 already reads. (b) Amend the box to the field-by-field list. (c) A `json.schema` in std.
 - **Recommendation.** (a).
 - **Blocks.** 81 step 3.
 
 #### 03r-al · Kafka producer transactions against the in-process broker
-- **Measured.** `rakun-messaging/src/reliability/transaction.bp` already provides `withProducerTransaction` with `read_committed` hold and drop, tested; 83's path choice held minus the broker; two boxes still read "with a Kafka broker" and "a consumer in `read_committed` mode".
-- **Options.** (a) 83's Kafka path enrols in the existing producer transaction; boxes reworded to the broker double; real-broker run a `deferred.md` row. (b) Delete the two boxes. (c) Leave them open.
+- **Measured.** `rakun-messaging/src/reliability/transaction.bp:39` provides `withProducerTransaction(prefix, body)` (sends held, released on commit, dropped on a raise; `read_committed` reader tested in `transaction_test.bp`). 15 step 5 is already written for (a): four boxes (outbox path through `withProducerTransaction`, no outbox row; nothing visible to `read_committed` after an abort; the path in the log; one `deferred.md` row for a real broker). Only the record is missing.
+- **Options.** (a) 83's outbox path publishes through `withProducerTransaction` on the in-process broker; real-broker run a `deferred.md` row. (b) Delete step 5's broker boxes. (c) Leave step 5 open until a real Kafka is in the gate.
 - **Recommendation.** (a).
-- **Blocks.** 15 step 5.
+- **Blocks.** 15 step 5 (the record only; the front follows (a)).
 
 #### 03r-am · Where the broker and scheduler doubles live
-- **Measured.** `rakun-test` depends on `rakun` only; `rakun-messaging/test/*.bp` imports `rakun-test`; an edge `rakun-test → rakun-messaging` is a package cycle unless the loader honours test scope (not verified landed).
-- **Options.** (a) Measure: add the edge; if `botopink test` refuses the cycle, the doubles live beside the module they double (`rakun-messaging/src/broker_double.bp` + `rakun_messaging_fixture.erl`, `rakun-scheduling/src/task_double.bp`) and `rakun-test` documents them. (b) Take the edge, assuming the rule landed. (c) The doubles in `rakun-test`, reaching the registries only through core hooks (`rkOnReset`, the listener-names term).
+- **Measured.** `rakun-test` depends on `rakun` only; no `rakun-messaging/test/*.bp` imports `rakun-test` today, but 19 step 3 makes `container_test.bp` run through the double — with the double in `rakun-test` that is `rakun-test → rakun-messaging` beside `rakun-messaging (tests) → rakun-test`, a package cycle unless the loader honours test scope (not verified). `rkOnReset(name, reset)` (`rakun/src/runtime.bp:215`).
+- **Options.** (a) Measure: add the edge and `container_test.bp`'s import; if `botopink test` refuses the cycle, the doubles live beside the module they double (`rakun-messaging/src/broker_double.bp` + `rakun_messaging_fixture.erl`, `rakun-scheduling/src/task_double.bp`) and `rakun-test` documents them. (b) Take the edge, assuming the rule landed. (c) The doubles in `rakun-test`, reaching the registries only through core hooks (`rkOnReset("broker-double", …)`, the listener-names term).
 - **Recommendation.** (a), with (c)'s shape either way.
 - **Blocks.** 19 steps 3 and 4.
 
 #### 03r-an · RSocket's WebSocket transport after decision 187 (*proposed*, raised as R92-1)
-- **Measured.** R92-1 mounts the transport via `rakun-websocket`'s `#[wsEndpoint]`; after 187 RSocket lives in `rakun-messaging` → the edge would load `rakun-websocket`'s tree (security, data) for every messaging consumer; today the WebSocket transport is refused at boot (TCP only).
-- **Options.** (a) Take the edge `rakun-messaging → rakun-websocket`. (b) The core defines a transport extension point `rakun-websocket` plugs into (185's rule). (c) Keep the refusal; WebSocket transport a `deferred.md` row.
+- **Measured.** R92-1 mounts the transport via `rakun-websocket`'s `#[wsEndpoint]`; after 187 RSocket lives in `rakun-messaging` → the edge would load `rakun-websocket`'s tree (security, data) for every messaging consumer; today the WebSocket transport is refused at boot (`rakun-rsocket/src/rsocket.bp:69`, TCP only).
+- **Options.** (a) Take the edge `rakun-messaging → rakun-websocket`. (b) The core defines a transport extension point `rakun-websocket` plugs into (185's rule), keyed by the transport enum's variant (`rkRegisterTransport(.WebSocket, …)` — 299 types the config, 281 no string). (c) Retire the WebSocket transport: R92-1's two boxes and R92-7's `ws://` / `wss://` arms deleted, TCP and TLS only, a `deferred.md` row.
 - **Recommendation.** (b).
-- **Blocks.** 92 step 2's first box.
+- **Blocks.** 92 step 2's first and third boxes.
 
 #### 03r-ao · `01-compiler/130`'s rakun sites against 128 (*proposed*, raised by the 04-rakun consolidation)
-- **Measured.** 130 step 5 (decision 216) still plans edits to files 128 moves or the rakun fronts own (core's `decorators.bp`, `autoconfig.bp`, `config.bp`, `context.bp`, `lifecycle.bp`, `conditions.bp`; `rakun-web/src/convention.bp`; `rakun-app`; `rakun-scheduling`; `rakun-messaging`; `rakun-cli`; `rakun-data`; `rakun-security`; `rakun-websocket`; `rakun-client`; `rakun-actuator-api`, which 128 moves into `modules/rakun/src/actuator_api/`); no decision orders them.
-- **Options.** (a) 128 first and alone; 130's rakun sites re-pointed at post-128 paths; after 128 each is a consumer commit under 188 (never in a wave with the owning front); the frozen-files rule excepts 130's rewrite of `src/decorators.bp` ([`04-rakun/README.md`](./04-rakun/README.md) § Order). (b) 130's rakun sites before 128 opens. (c) 128 performs 130's rewrite of the files it moves.
+- **Measured.** 130 step 5 (decision 216) edits files 128 moves or the rakun fronts own (core's `decorators.bp`, `autoconfig.bp`, `config.bp`, `context.bp`, `lifecycle.bp`, `conditions.bp`; `rakun-web/src/convention.bp`; `rakun-app`; `rakun-scheduling`; `rakun-messaging`; `rakun-cli`; `rakun-data`; `rakun-security`; `rakun-websocket`; `rakun-client`; `actuator_api`). The fronts already follow (a) as a provisional rule: 130 step 5 targets post-128 paths (`modules/rakun/src/actuator_api/**`, today `rakun-actuator-api`) and makes no rakun commit while 128 is open; [`04-rakun/README.md`](./04-rakun/README.md) § Order and § Rules make 130 the frozen `decorators.bp`'s one writer ("to confirm"). Landed sites (`#[entity]`, `#[entityRepository]`, `#[belongsTo]`, `#[query]`, `#[cached]`, `#[halResource]`, `front/130-rakun-di`'s `T.make()`) are on `feat` and move with their files. Only the record is missing.
+- **Options.** (a) 128 first and alone; 130's rakun sites re-pointed at post-128 paths; after 128 each is a consumer commit under 188 (never in a wave with the owning front); the frozen-files rule excepts 130's rewrite of `src/decorators.bp`. (b) 130's rakun sites before 128 opens. (c) 128 performs 130's rewrite of the files it moves.
 - **Recommendation.** (a): 128 holds all of rakun, and (b) holds every rakun front on 130.
-- **Blocks.** 128's opening; 130 step 5's rakun rows.
+- **Blocks.** Only the record — 130 and 04-rakun already follow (a); 128's opening and 130 step 5's rakun rows proceed under the provisional rule until confirmed.
 
 ### 05-jhonstart
 
 #### 67-a · Where the DOM-side forms boxes are asserted
-- **Measured.** `fieldError` after `__jhFormState`, in-place re-render on `ok: false`, two forms' `pending`, optimistic commit / roll-back read `document` and `FormData`; `botopink test` has no DOM; `jhonstart-dom-test` (`fake_dom.mjs`, commonJS only) already serves the render's browser half.
+- **Measured.** `fieldError` after `__jhFormState`, in-place re-render on `ok: false`, two forms' `pending`, optimistic commit / roll-back read `document` and `FormData`; `botopink test` has no DOM; `jhonstart-dom-test` (`fake_dom.mjs`, commonJS only) already serves the render's browser half. Front 67's header says "`67-a` answered", but no decision records it — still open.
 - **Options.** (a) Extend `fake_dom.mjs` with `<form>`, `<input>`, `FormData`, `submit`; assert the five boxes (1.0.10's 3a, 3b, 4, 5) in `jhonstart-dom-test/test/forms_dom_test.bp` now, and again in onze 53's browser. (b) Only in onze 53's browser. (c) A real DOM library as a dev dependency.
 - **Recommendation.** (a).
 - **Blocks.** 67 steps 1–3 (written for (a)); onze 53's write path.
@@ -347,10 +346,10 @@ owning front lists the row under *Depends on*.
 ### 06-emilia
 
 #### 05emilia-n · The unplaced Tailwind rows
-- **Measured.** Five rows have no owner: named `:has()` / `:not()` / ARIA / data / `in-[…]` forms (reachable via `arbSel` only); named groups and peers; `@theme inline`; negative translate (`TranslateX/Y.Neg` absent); and a hole — a cleared `--breakpoint-*` emits `@media (width >= )` instead of refusing, as 58 refuses an emptied container size.
-- **Options.** (a) The refusal only (a cleared breakpoint panics naming the entry); the four feature rows out of scope in `docs.md` § Deviations. (b) (a) plus negative translate and named groups / peers. (c) All five, `@theme inline` included (a second render mode).
-- **Recommendation.** (a) — the refusal is decision 67, not optional; (b) is the feature answer if any is wanted.
-- **Blocks.** 34 step 4 (conditional); step 3 (the refusal) is not conditional.
+- **Measured.** Four rows have no owner: named `:has()` / `:not()` / ARIA / data / `in-[…]` forms (reachable via `arbSel` only); named groups and peers; `@theme inline`; negative translate (`TranslateX/Y.Neg` absent, `tokens.bp:2259-2272`). The fifth — a cleared breakpoint emitting `@media (width >= )` — is decision 300's: "a token naming a cleared or absent breakpoint is a compile error where the token list is comptime-known" (34 step 3, unconditional).
+- **Options.** (a) None: the four out of scope in `docs.md` § Deviations, written with `arbSel`. (b) Negative translate and named groups / peers. (c) All four, `@theme inline` included (a second render mode).
+- **Recommendation.** (a); (b) is the feature answer if any is wanted.
+- **Blocks.** 34 step 4 (conditional).
 
 ### 07-onze
 
@@ -358,13 +357,13 @@ owning front lists the row under *Depends on*.
 - **Measured.** `onze build` compiles the server to BEAM (`server/beam/`), `onze start` runs `erl -noshell -pa <outDir>/server/beam -eval …` (50-a); `onze-bundler/src/rebuild.bp` computes invalidated modules; the BEAM can `code:load_file/1`; UI registry and route table fill at module load (decision 140): a reloaded page re-registers, a new route file needs `onze_routes.bp` regenerated and the table rebuilt.
 - **Options.** (a) Restart the node on every change (`build` + `start` looped over a file watcher — same bytes as `start`, 1–3 s per edit). (b) Hot-load changed modules; regenerate and reload `onze_routes` when the app tree changes. (c) (b), falling back to (a) when a convention file changed. Browser island state lost either way (Fast Refresh a non-goal, `07-onze/reference-holes.md` § 29).
 - **Recommendation.** (a): one code path, the same bytes `start` serves; (b) later, if (a) measures too slow on the blog.
-- **Blocks.** 50 step 2; 53 step 5.
+- **Blocks.** 50 step 2; 53 step 6.
 
 ### 08-bpp
 
 #### 08-d · Who scopes CSS
 - **Measured.** emilia compiles `Token[]`, "not a CSS processor"; onze-assets renames `*.module.css` classes (`style_module.bp`); decision 113.
-- **Options.** (a) emilia gains `scopeCss(scope, css)`, reached via `jhonstart-emilia`. (b) onze-assets, beside the module renamer. (c) jhonstart scopes its own `<style>`.
+- **Options.** (a) emilia gains `scopeCss(scope, css)`, reached via `jhonstart-emilia`. (b) onze-assets, beside the module renamer. (c) core `jhonstart`'s `html` scopes its own `<style>` (the `jhonstart-html` member goes, 200).
 - **Recommendation.** (a): (c) puts a CSS parser in the HTML library; (b) leaves scoped styles unavailable without onze.
 - **Blocks.** 119, every step — on the critical chain 118 → 119 → 120 → 126 → 127 → 124.
 
@@ -374,18 +373,6 @@ owning front lists the row under *Depends on*.
 - **Recommendation.** (b): frontmatter is YAML's second consumer; Markdown has one (115). Until std's `yaml` lands, 121 step 3 reads frontmatter with its own copy and deletes it then.
 - **Blocks.** 121 step 3; a row for `02/97`.
 
-#### 08-h · The config file and the commands
-- **Measured.** `onze.json` exists, refuses unknown keys (`49-c`); `onze create | info | build | start` exist, `dev` is a stub; `botopink` has no framework command.
-- **Options.** (a) `onze.json` and `onze <command>`. (b) A second file (`bpp.json`) and `botopink dev` / `preview`.
-- **Recommendation.** (a): the compiler's CLI is not a framework's.
-- **Blocks.** 124.
-
-#### 08-j · How rakun's `local()` carries a jhonstart marker (*proposed*)
-- **Measured.** 123's `local<T>(key)` is a request-time read → a page reading it renders per request (186); `#[serverOnly]` is jhonstart's marker; rakun and jhonstart never import each other (113); 123 step 1's third box is written for the bridge (`ChunkWriter.markDynamic`, `dynamicReason()` says `locals`), which 186 deletes once the checker capability lands.
-- **Options.** (a) Stage markers move to a package both import (bundled `routing`, under 115's two-library test); both libraries mark with the same `#[serverOnly]`. (b) rakun declares its own marker; the capability reads markers by a manifest-declared name. (c) `local` readable only in middleware, handlers, actions, never from a page.
-- **Recommendation.** (a): one marker, and no library names another.
-- **Blocks.** 123 step 1's third box; any rakun request-time read a page reaches.
-
 #### props-d · A native tag's attributes (*proposed*)
 - **Measured.** 192 covers component tags only; a native tag is `fn <tag>(children: Children, attrs: Array<#(string, string)> = [])` in jhonstart (118 § Notes).
 - **Options.** (a) A native tag's attributes = fields of a props type jhonstart declares per element (unknown attribute or wrong type refused, as 192). (b) Any attribute name, a `string` value or a 191 hole. (c) A global attribute set plus per-tag lists, `string` values.
@@ -393,28 +380,28 @@ owning front lists the row under *Depends on*.
 - **Blocks.** 118 steps 1 and 4.
 
 #### props-e · A named slot (*proposed*)
-- **Measured.** 193 names the `children` field, no other; Astro writes `<p slot="footer">` / `<slot name="footer">` (118 § Notes).
-- **Options.** (a) A named slot is a props field of type `Node`, written as an attribute (`footer={…}`); `slot="…"` refused. (b) `slot="footer"` on a child routes it to props field `footer`. (c) No named slots.
-- **Recommendation.** (a): 192 already covers it, no second routing mechanism.
+- **Measured.** 193 names the `children` field, no other; Astro writes `<p slot="footer">` / `<slot name="footer">` (118 § Notes). 287 already dropped islands' `slot="fallback"` (the fallback is an annotation argument) and left named slots in general here.
+- **Options.** (a) A named slot is a props field of type `Node` (223), written as an attribute (`type Props(children: Node, footer: Node)`, `footer={…}`); `slot="…"` refused. (b) `slot="footer"` on a child routes it to props field `footer`. (c) No named slots.
+- **Recommendation.** (a): 192 already covers it, no second routing mechanism — the path 287 took for the fallback.
 - **Blocks.** 118's slot boxes (steps 1 and 4).
 
 #### props-f · A spread on a component (*proposed*)
-- **Measured.** 118 step 1 refuses `{...expr}` on a component for a reason 192 removes (attributes are now one record's fields); 118 § Notes lists the props spread under "What is not added".
+- **Measured.** 118 step 1 refuses `{...expr}` on a component (it accepts one on an element) for a reason 192 removes (attributes are now one record's fields).
 - **Options.** (a) Still refused: the attributes are the form. (b) `{...p}` with `p` of the props type, explicit attributes overriding.
 - **Recommendation.** (a).
 - **Blocks.** 118 step 1.
 
 ### 09-cardume
 
-#### atm-a · Hook names: nouns, or 295's verbs (*proposed*)
-- **Measured.** jhonstart's rule (`hooks.bp` header): a hook is a noun, `use` the activation (`state`, `memo`); cardume's draft follows it (`atomValue`, `atomSetter`); 295 spelled `use setLocal(atom)`, `use setCookie(decl)` — verbs.
-- **Options.** (a) Nouns everywhere: `atomSetter`, `cookieSetter`, `cookieClearer` (295's spellings follow). (b) Verbs for writers (`use setAtom(a)`, `use setCookie(c)`), nouns for readers. (c) Each library its own.
-- **Recommendation.** (a) — one rule, already jhonstart's.
-- **Blocks.** 136 steps 1, 7; 123; 127; `07-onze/53`.
+#### atm-a · Cookie hook names: nouns, or 294/295's verbs (*proposed*)
+- **Measured.** jhonstart's rule (`hooks.bp` header): a hook is a noun, `use` the activation. Request locals are settled by 296 (cardume atoms; "each bridge spells the same hooks (`atomValue`, `atomState`, `atomSetter`, `atomReset` …)" — `use setLocal` becomes `use atomSetter`). Left: `Cookie<T>` stays in `http` (294, 296), written `use setCookie(decl)` / `use clearCookie(decl)` — verbs.
+- **Options.** (a) Nouns: `use cookieSetter(c)`, `use cookieClearer(c)`. (b) Keep 294/295's verbs for cookies. (c) Each library its own.
+- **Recommendation.** (a) — one rule, jhonstart's and cardume's.
+- **Blocks.** 123; 127; 104 step 6; `07-onze/53` (the cookie sites).
 
 #### atm-c · An atom's `T` across the server/browser seam (*proposed*)
-- **Measured.** The server seeds the values an island read into its payload (136 step 6); a value crossing must be encodable (`encode<T>`, 125); some state is browser-only by nature (a DOM handle, a function).
-- **Options.** (a) Every atom's `T` encodable, checked where the atom is declared. (b) Any `T`; an island's read set checked at build — a non-encodable atom an island reads must have a client-only default (`clientAtom(…)`). (c) Any `T`, refused only at run time.
+- **Measured.** The server seeds the values an island read into its payload (136 step 6); a value crossing must be encodable — after 306, a `#[validated]` type's `encode` member (`ctr-u`'s spelling; another library takes `T` only with `@typeInfo(T).meta(Validated)`), or one of the `T`s 294 accepts for a cookie (string, number, `bool`, enum, one-field record); some state is browser-only by nature (a DOM handle, a function).
+- **Options.** (a) Every atom's `T` encodable, checked where the atom is declared. (b) Any `T`; an island's read set checked at build — a non-encodable atom an island reads must be declared client-only (`clientAtom(…)`, or 278's `#[clientOnly]` extended to declarations, 282). (c) Any `T`, refused only at run time.
 - **Recommendation.** (b): restrictive where it matters (what crosses), free elsewhere.
 - **Blocks.** 136 step 6.
 
@@ -427,19 +414,20 @@ owning front lists the row under *Depends on*.
 ### From the maintainer's Portuguese record (`decisoes-pendentes.md`)
 
 #### pkg-b · A package importing itself by name
-- **Measured.** 206 is built (129): `from` names a package only. 12 test files import their own package by name (log 1, routing 1, validation 2, std 8), e.g. `libs/log/test/digest_test.bp`: `import {errorDigest} from "log";`.
-- **Options.** (a) Legal: it is a package and `from` names packages. (b) Refused: inside the package it is `import {digest.errorDigest};`.
-- **Recommendation.** (a): a package test reads the public surface as an outside user does.
-- **Blocks.** Nothing (an item of `01-compiler/26` step 8).
+- **Measured.** 206 is built (129): `from` names a package only. The bundled packages' tests already use the brace form (`libs/log/test/digest_test.bp:8`: `import {digest.errorDigest, …};`); three std sources still import `from "std"`: `std/src/querystring.bp:28`, `std/src/testing/snapshots.bp:49-51`, `std/src/io/fs.bp:20`.
+- **Options.** (a) Legal: it is a package and `from` names packages. (b) Refused: inside the package it is `import {path.relative};`.
+- **Recommendation.** (b): the tests migrated; three std sources remain, and one rule — inside the package, by module — is the most restrictive (67).
+- **Blocks.** Nothing (an item of `01-compiler/26` step 8, whose count — log 1, routing 1, validation 2, std 8 — is outdated).
 
 #### 07-i (revision) · Whether 163's ban on repeated names in bundled packages survives 170's alias
 - **Measured.** 163 bans a bundled package exporting a name std or a framework exports "until the toolchain line closes"; 170 (an import naming its module is never ambiguous; alias when both are needed) closes it.
-- **Options.** (a) Still banned: a new bundled package picks a non-colliding name (`cookie`, `deriveActionId`). (b) Ban lifted: natural names, importers alias.
+- **Options.** (a) Still banned: a new bundled package picks a non-colliding name (`http`'s `cookie` module, `actions`' `id.deriveActionId`). (b) Ban lifted: natural names, importers alias.
 - **Recommendation.** (a).
-- **Blocks.** Nothing; 102 and 103 already chose free names.
+- **Blocks.** Nothing; 102, 103 and 104 already chose free names.
 
 #### 110-a · `testing.asserts` on wasm under the strict rule (146)
-- **Measured.** A wasm program importing `testing.asserts` is refused: 4 of its 27 functions reach host cells with no wasm binding (`deepEquals → canonical`, `matches → regexMatches`, `throws`/`throwsWith → tryCatch`); uses: throwsWith 280, throws 4, deepEquals 2, matches 1; 133 files import the module.
+- **Measured.** A wasm program importing `testing.asserts` is refused: 4 of its 27 functions reach host cells with no wasm binding (`deepEquals → canonical`, `matches → regexMatches`, `throws`/`throwsWith → tryCatch`); uses: throwsWith ~290, throws 4, deepEquals 2, matches 1; 140 files import the module.
+- **Rules.** 230: front 110 closes on "a std module wasm cannot build is a located refusal"; `02/97` step 11 offers (a) out of a wasm build or (b) restructured, a question per module. 146's last clause ("`testing.asserts` is restructured so nothing without a wasm binding is reachable from it on wasm") asks for (2)/(3); answering (1) amends it.
 - **Options.** (1) ★ As is: not importable on wasm. (2) The four move to their own module; the other 23 import on wasm (changes decision 74's API). (3) The three cells gain wasm versions (a regex engine in the wasm prelude; a catchable `@panic`).
 - **Recommendation.** (1) now; (2) if wasm must run asserts.
 - **Blocks.** Nothing in the gate; "std compiles on wasm" (05-wasm step 5, 97 step 11).
@@ -447,16 +435,16 @@ owning front lists the row under *Depends on*.
 ### Ownership
 
 #### own-a · Who owns the test runners (*proposed*)
-- **Measured.** `scripts/{gate.sh,test-libs.sh,lib/pool.sh}` (beyond 114's budget lines), `tests/language/run.sh` (beyond 12's report), `modules/test-shard/**`, `modules/lib-test-runner/**`, the meta `scripts/**` were owned by `25-gate-perf`, 113, 115, 133, all closed (`fronts.md` § Ownership, open item).
-- **Options.** (a) `01-compiler/07-residuals`, which already holds 25's open step (the per-cell dependency compile). (b) `00-gate/114`, the gate's residue. (c) none: each front names a carve-out per commit.
-- **Recommendation.** (a): one owner, the one already holding the open runner work.
-- **Blocks.** Any front step editing a runner (07-residuals step 12, 114 steps 5 and 7).
+- **Measured.** `scripts/{gate.sh,test-libs.sh,lib/pool.sh}` (beyond 114's budget lines), `tests/language/run.sh` (beyond 12's report), `modules/test-shard/**`, `modules/lib-test-runner/**`, the meta `scripts/**` were owned by `25-gate-perf`, 113, 115, 133, all closed (`fronts.md` § Ownership, open item). Provisional rule there (`fronts.md:55-59`) = option (c): an editing front names the carve-out in its commit; no two open fronts edit the same file. No open step edits a runner: 07-residuals step 12 "edits no runner", 114 step 5's budget lines are already 114's, 114 step 7 only runs the gate.
+- **Options.** (a) `01-compiler/07-residuals`, which already holds 25's open step (the per-cell dependency compile). (b) `00-gate/114`, the gate's residue. (c) none: each front names a carve-out per commit (today's provisional rule, kept).
+- **Recommendation.** (a): one owner, the front that inherited 25's open step.
+- **Blocks.** Nothing today; the provisional rule (c) holds until answered.
 
 ### 20-snap — the second test layer
 
 #### snap-a · The snapshot maps — retired; the snapshots that exist or that a contract reads stay (replaces `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b`)
-- **Measured.** The nine maps carried from 1.0.10 (history under `../1.0.11-beta/`; re-evaluated case by case in [`20-snap/README.md`](./20-snap/README.md)) hold 473 cases plus helper tables: 27 obsolete (renamed, deleted or changed by decisions 186, 194, 200, 218, 34 step 2, 50-a, or deferred by `03r-ad`); 418 verified today by a named inline test or an existing `.snap`; 21, in five groups, verified nowhere and worth a plain test. 24 `.snap` already realise onze's §§ 50 · 51 · 52 · 70 · 71 via `snapshots.assertAs`; jhonstart holds 39, std 4. The maps' recorded literals predate the code (slug separator, `_links` order, `normalize`, emilia classes) — not expected values. Contract 7, `snapshots.md` rule 3 and 98 check (2) require at least one `assert<Subject>(loc, …)` in every `<lib>-test`.
-- **Options.** (a) As proposed: (1) maps are closed records — no front records a `.snap` because a map names it; (2) existing `.snap` files stay (std 4, jhonstart 39, onze 50), change only with their test; (3) a new snapshot only where its exact bytes are a contract another package reads — this milestone, onze-release's `text_…` and `dockerfile_…` (on disk) for `107-release`; (4) helpers, no more than a consumer uses: `emilia-test`'s `assertClassName` (under `defaultTheme()`, recording `e_39b87d03`) and `assertCss(loc, tokens, th)`, `rakun-test`'s `assertResponse(loc, res)` over `MockMvc.perform`, jhonstart's and onze's existing helpers (onze's `assertAlias` goes with 218), no other map helper; (5) the 21 unverified values become plain tests — std's `mocks.verify` message with `throwsWith` on both targets, onze-release's tree as a path table, `emilia-card`'s repeat collapse, onze 53's blog E2E boxes as asserts over `request(…)` and the dev/start gate as an equality property (runner = five harness functions, no snapshot writers); (6) 97 step 7, 26 step 7, 33 steps 3–4, 50 step 8 and 51 step 7 close with an `AGENTS.md` line ("the inline literals and the existing `__snapshots__/` are the evidence"). (b) Build the whole layer: every map's helpers and `.snap` (~2 500 files), recorded literals re-derived first. (c) Keep the maps open per library: each answers its own former question and keeps its map until then.
+- **Measured.** The nine maps carried from 1.0.10 (history under `../1.0.11-beta/`; re-evaluated case by case in [`20-snap/README.md`](./20-snap/README.md)) hold 473 cases plus helper tables: 27 obsolete (renamed, deleted or changed by decisions 186, 194, 200, 218, 34 step 2, 50-a, or deferred by `03r-ad`); 418 verified today by a named inline test or an existing `.snap` (e.g. `emilia.bp:10615` `tokenDeclarations(.Border.Rounded.Md) == "border-radius:var(--radius-md)"`); 21, in five groups, verified nowhere and worth a plain test. onze holds 51 `.snap`, 24 of them realising §§ 50 · 51 · 52 · 70 · 71 via `snapshots.assertAs`; jhonstart holds 39, std 4. The maps' recorded literals predate the code (slug separator, `_links` order, `normalize`, emilia classes) — not expected values. Contract 7, `snapshots.md` rule 3 and 98 check (2) require at least one `assert<Subject>(loc, …)` in every `<lib>-test`.
+- **Options.** (a) As proposed: (1) maps are closed records — no front records a `.snap` because a map names it; (2) existing `.snap` files stay (std 4, jhonstart 39, onze 51), change only with their test; (3) a new snapshot only where its exact bytes are a contract another package reads — this milestone, onze-release's `text_…` and `dockerfile_…` (on disk) for `107-release`; (4) helpers, no more than a consumer uses: `emilia-test`'s `assertClassName` (`cardTokens()` under `defaultTheme()`, recording `e_39b87d03`) and `assertCss(loc, tokens, th)`, `rakun-test`'s `assertResponse(loc, res)` over `MockMvc.perform`, jhonstart's and onze's existing helpers (onze's `assertAlias` goes with 218), no other map helper; (5) the 21 unverified values become plain tests — std's `mocks.verify` message with `throwsWith` on both targets (`"mocks.verify: find - expected exactly 1 matching call(s), got 2"`), onze-release's tree as a path table, `emilia-card`'s repeat collapse, onze 53's blog E2E boxes as asserts over `request(…)` and the dev/start gate as an equality property (runner = five harness functions, no snapshot writers); (6) 97 step 7, 26 step 7, 33 steps 3–4, 50 step 8 and 51 step 7 close with an `AGENTS.md` line ("the inline literals and the existing `__snapshots__/` are the evidence"). (b) Build the whole layer: every map's helpers and `.snap` (~2 500 files), recorded literals re-derived first. (c) Keep the maps open per library: each answers its own former question and keeps its map until then.
 - **Recommendation.** (a): one rule for every library, every value verified once, only three new `.snap` (emilia-test 2, rakun-test 1).
 - **Blocks.** Front 135 ([`20-snap`](./20-snap/README.md)) steps 1–5, which own 97 step 7 · 19 step 6 · 26 step 7 · 33 steps 1, 3, 4 · 50 step 8 · 51 step 7 · 53 step 1's runner and steps 2–6's wording · 71 step 6; 98 check (2) stands unchanged.
 
@@ -476,29 +464,21 @@ left as recorded; the maintainer picks the resolution.
 - **Blocks.** 02-erlang step 6's cell; 05-wasm's string lowering.
 
 #### ctr-j · Decision 264 against decision 176 and "the same value on every target"
-- **Rules.** 264: "on commonJS an `i64`'s representable range is ±(2^53−1) … a result outside it aborts too", and "decision 247 already refuses an `l` literal beyond it". 176: "an integer beyond ±(2^53 − 1) is `Error` on every target"; the delegation's principle: same value on every target. Under 264, `i64` arithmetic past 2^53 aborts on commonJS, answers on erlang, beam, wasm. 247 says nothing of a literal's range.
-- **Recommendation.** (a) `i64` is ±(2^53−1) on every target (176's reading), or (b) commonJS lowers `i64` to `BigInt`, full range. Either way 264's citation of 247 is corrected.
+- **Rules.** 264: "on commonJS an `i64`'s range is ±(2^53−1), so a result outside it aborts there too". 176: "an integer beyond ±(2^53 − 1) is `Error` on every target"; the delegation's principle: same value on every target. Under 264, `i64` arithmetic past 2^53 aborts on commonJS, answers on erlang, beam, wasm.
+- **Measured.** The checker refuses an `l` literal on commonJS only (`refuseBeyondJsSafeInteger`, `compiler-core/src/comptime/infer.zig:10549-10567`), citing 247, which says nothing of a literal's range; it accepts up to 2^53 inclusive (`v <= 1 << 53`), one past 264's range — `9007199254740992l` compiles on commonJS.
+- **Options.** (a) `i64` is ±(2^53−1) on every target (176's reading); (b) commonJS lowers `i64` to `BigInt`, full range.
+- **Recommendation.** (a). Either way the literal rule becomes 264's and the checker stops citing 247: under (a) the literal's limit is 2^53−1 (today 2^53); under (b) the commonJS-only refusal goes.
 - **Blocks.** The range checks of 04-js, 02-erlang, 03-beam; the checker's `l` literal rule.
 
 #### ctr-k · Decision 187 against decision 195
 - **Rules.** 187: "the core absorbs `rakun-actuator-api` and `rakun-logging` … the core calls its own logger and no failure-report plugin exists". 195 (later): "rakun-logging keeps its erlang cells and installs itself as the sink".
-- **Recommendation.** Read 195 as "rakun's core logging (after 128) installs its erlang logger as `log`'s sink at boot", and record it.
-- **Blocks.** 04-rakun/17 · 128 · 106.
+- **Recommendation.** Read 195 as "rakun's core logging (after 128) installs its erlang logger as `log`'s sink at boot", and record it. The fronts already follow it (`04-rakun/17` R17-1 and step 2; `03-bundled-libs/106-log`); only 195's row is pending.
+- **Blocks.** Nothing in the fronts; the record.
 
 #### ctr-l · Decision 186's third refusal against decision 202
-- **Rules.** 186 refuses "a `#[serverOnly]` hook in a page that declares itself prerendered (`08-g`)". 202: "No declaration … no `pub val prerender` … no way to force".
-- **Recommendation.** Drop 186's third refusal: under 202 no page declares itself prerendered.
-- **Blocks.** 05-jhonstart/26 step 8's refusal list.
-
-#### ctr-m · Question `lg2-s`'s argument against decision 216
-- **Rules.** `lg2-s`: recommendation (1) "in step with `lg2-k` and `lg2-m`". 216 (4): project reflection at comptime, which "closes … No comptime reflection over the project" — `lg2-k` answered the other way.
-- **Recommendation.** Re-argue `lg2-s` on its own (a module's imports stay a textual scan), or answer it as 216 did with an `imports` field.
-- **Blocks.** `lg2-s`.
-
-#### ctr-n · Decision 170's example against decision 206
-- **Rules.** 170: "`import {x as a} from "m1"; import {x as b} from "m2";` is legal in one module", `m1` a module path. 206: "`from` names a package, never a module of the importing package" — module form is `import {m1.x as a};`. 206 does not amend 170; the type half is `imp-a`.
-- **Recommendation.** Restate 170's example in 206's form; answer `imp-a`.
-- **Blocks.** `imp-a`.
+- **Rules.** 186 refuses "a `#[serverOnly]` hook in a page that declares itself prerendered (`08-g`)". 202: "No declaration … no `pub val prerender` … no way to force". A page is `pub fn blog() -> View` reading `use cookie(sessionCookie)` (293, 294): rendered per request, no error.
+- **Recommendation.** Drop 186's third refusal: under 202 no page declares itself prerendered. `05-jhonstart/26` step 8 already lists the two refusals only (`README.md:58-59,182-183`); only 186's row is pending.
+- **Blocks.** Nothing in the fronts; the record.
 
 #### ctr-o · Decision 146 against confirmation `lem-c`
 - **Rules.** 146: a function whose body reaches a host function with no binding for the target "is refused at its declaration, called or not". `lem-c` (built, to confirm): a host method with no binding "is refused where it is CALLED" — refusing the declaration was the option not taken; `lg2-r` measures the same at the call.
@@ -510,30 +490,21 @@ left as recorded; the maintainer picks the resolution.
 - **Recommendation.** Confirm `std-a`; `03r-e` lapses when rakun reads queries via `querystring` and cookies via `http`.
 - **Blocks.** rakun 04's readers; 104's consumer sweep.
 
-#### ctr-q · Decision 234 ("at boot") against decision 256 ("at comptime")
-- **Rules.** 234: the context is "filled at boot from `@typeinfo.all`". 256: the registry is "built at comptime, at the program's entry point … rakun uses this form", citing 254, not 234.
-- **Recommendation.** Read 234's "at boot" as "from 256's comptime registry", and record it.
-- **Blocks.** 130 step 5.
-
-#### ctr-r · Decision 189 (org-3) against decision 200
-- **Rules.** org-3: "front 118 rewrites the bracket attributes outside `jhonstart-html` itself". 200: "the member `jhonstart-html` is deleted" (26 step 0, before 118).
-- **Recommendation.** Read org-3 against the core's `html.bp` after 26 step 0.
-- **Blocks.** 118's carve-outs.
-
 #### ctr-s · Decision 166 against decision 243
 - **Rules.** 166: "a list written without [a trailing comma] stays on one line". 243: "without it, the width rules (`16-a` / `16-b`) decide", while saying it "extends" 166.
 - **Recommendation.** Record 243 as amending 166's no-comma half; the confirmation of `16-a` / `16-b` then covers it.
 - **Blocks.** 16-formatter step 6.
 
-#### ctr-u · Decision 216 against front 125's `#[schema]`
-- **Rules.** 216: a decorator produces members, comptime meta, associated types, project reflection — "the loose `@emit` goes"; `#[validated]` follows (`validate()`, `constraints()`). `#[schema]`, on feat and in 125's design, still `@emit`s free `parse<T>` / `decode<T>` / `schemaOf<T>` (later `bind<T>`, `encode<T>`, `jsonSchemaOf<T>`); `125-validation-zod/surface.md` still names `constraintsOf<T>` / `validate<T>`.
-- **Recommendation.** `#[schema]`'s outputs become members (`Player.parse(input)`), as `#[validated]`'s did; surface.md's rows follow.
-- **Blocks.** 125 steps 3–10.
+#### ctr-u · The spelling of `#[validated]`'s parse members (decisions 216, 306)
+- **Rules.** 306 settled the rest: `#[schema]` goes into `#[validated]`, and what it emitted becomes members of the type — `parse`, `parseAt`, `decode`, `bind`, `encode`, `jsonSchema`, "their spelling is `ctr-u`'s"; `Schema<T>`, `Codec`, `schemas.*`, `checks.*` go private. On feat `#[schema]` (`libs/validation/src/decorators.bp:482`) still `@emit`s free `parse<T>` / `schemaOf<T>`; `125-validation-zod/surface.md:39,197,335` still names `schemaOfPlayer()`, `jsonSchemaOf<T>`, `constraintsOf<T>`, `validate<T>`.
+- **Options.** (a) 306's names as members, no type name inside: `Player.parse(doc)`, `Player.decode(text)`, `Player.jsonSchema()`; (b) the spelling is 125's (216: "exact spellings … are the implementing front's"), this question closes.
+- **Recommendation.** (a): the names 306 already writes, the shape `validate()` / `constraints()` already use.
+- **Blocks.** 125 step 12 (306) and surface.md's rows.
 
 #### ctr-v · Decision 189 (org-3) against emilia's fronts opening before 118
-- **Rules.** org-3: 118's carve-outs land before the owning front opens. `06-emilia/34` step 1 and `33` step 2 open now and reword emilia's `[class]={…}` comment lines themselves (`attributes.bp`, `emilia.bp`, `emilia-card/src/main.bp:5`), which 118 no longer owns.
-- **Recommendation.** Record that a comments-only carve-out is taken by the owning front; 118 keeps the code lines (its own tests, `jhonstart-emilia`'s bridge test, `document-shell`).
-- **Blocks.** 34 step 1; 33 step 2; 118 § Owns.
+- **Rules.** org-3: 118's carve-outs land before the owning front opens. `06-emilia/34` step 1 and `33` step 2 open now; emilia's `[class]={…}` lines (`attributes.bp:30,32,36`, `emilia.bp:185,202`) and `emilia-card/src/main.bp:5`'s `[emilia]={…}` are comments only, reworded by those fronts.
+- **Recommendation.** Record that a comments-only carve-out is taken by the owning front; 118 keeps the code lines (its own tests, `jhonstart-emilia`'s bridge test, `document-shell`). The fronts already follow it (118 § Does not touch, 34 step 1, `fronts.md:49`); only org-3's row is pending.
+- **Blocks.** Nothing in the fronts; the record.
 
 #### ctr-w · Front 09's Elasticsearch arm against decision 185
 - **Rules.** 185: an optional capability goes through a core extension point, "no member-to-member edge". `04-rakun/09` § Open point: the Elasticsearch arm over `rakun-client` adds a `rakun-data → rakun-client` edge every data consumer loads.
@@ -546,7 +517,7 @@ Each implemented with its recommended option; the maintainer confirms or reverse
 local change in the named place). Full 1.0.10 text under the same id in
 [`../1.0.10-beta/decisions-pending.md`](../1.0.10-beta/decisions-pending.md).
 
-### 01-compiler (22)
+### 01-compiler (23)
 
 | Id | Choice implemented | Where |
 |---|---|---|
@@ -560,20 +531,21 @@ local change in the named place). Full 1.0.10 text under the same id in
 | ck2-a | `@module()` refused at the call (`builtin-not-lowered`) until a rule says what a module value is | `builtins.d.bp` · `reject/builtin_module_not_lowered` |
 | ck2-b | A section member may share a name with a top-level variant of the same enum (path and position type tell them apart); a variant declared twice at one level is `enum-variant-duplicate` | `modules/enum_section_leaf_beside_variant` |
 | ck2-d | A label in a call of a function value is `label-on-function-value` | `reject/label_on_function_value` |
-| ck2-e | A std decorator is reached via its module handle (`#[<handle>.<fn>]`); a leaf import of one is `std-decorator-leaf-import`; `#[<handle>.<not a decorator>]` is `unknown-annotation`; the emit-through-the-handle half lapses with 216's `@emit` removal | checker |
+| ck2-e | A std decorator is reached via its module handle (`#[<handle>.<fn>]`); a leaf import of one is `std-decorator-leaf-import`; `#[<handle>.<not a decorator>]` is `unknown-annotation`; the handle is still needed after 216 (`mocks.mock`'s `addType` / `addMember` text names `mocks.invoke`, `testing/mocks.bp:212-220`), while 282/289 already leaf-import other libraries' decorators | checker |
 | rc3-b | `unknown` is the host vocabulary's spelling where `any` was (tested with `is` before use) | `run/host_unknown_parameter` |
 | rc3-c | Assigning a narrowed `var` checks against its declared type and ends the narrowing | `reject/narrow_ends_at_assignment` |
 | 16-a | C-12's argument list enabled with the constructs around it — binary run, brace-less `if`, argument list, array / tuple / behavior literals — one all-or-nothing `groupMeasured` each, outer deciding first | formatter; the libraries' reformat (16 step 4) |
-| 16-b | An array literal's open form is one element per line | formatter |
+| 16-b | An array literal written without a trailing comma, when open, is one element per line (with one, 166/243 keep it open) | formatter |
 | 0405-b | commonJS's `__bp_show` prints `undefined` as `null` | commonJS prelude |
+| onze F7 | Integer `/` integer truncates toward zero and is an integer on every target (`7.0 / 2.0` stays `3.5`); `docs.md:961-963` already states it | `run/integer_division_truncates` |
 | lem-a | A host method is a real method of its type whose body is the binding, never inlined at the call site | `codegen/hostMethods.zig` |
-| lem-b | `inline = true` on a method's `External.Erlang` / `Beam` accepted, changes nothing (refusing it is 01-checker's to add) | `run/external_method_local` |
+| lem-b | `inline: true` (305's spelling; code still writes `inline = true` until 01-checker step 27) on a type method's `External.Erlang` / `Beam` accepted, changes nothing (refusing it is 01-checker's to add; recommended: refuse) | `run/external_method_local` |
 | lem-c | A host method with no binding for the target refused where called (`MissingExternal` naming `Type.method`); wasm refuses every host method; an untyped receiver fails at run time (`ctr-o`) | `hostMethods.missingAt` |
 | lem-d | One name per operation on every type (`Listener.port/accept/close`, `Socket.recv/send/close/peer`, `TlsListener.port/accept`, `TlsSocket.recv/send/close`, `Regex.matches`); constructors stay module functions | `io.net` · `regex` |
 | lem-e | Private helpers taking a type stay free (`tlsEchoOnce`, `rkvPush`, `putMessageSource`, `messageSourceOr`) | std · `validation` |
 | lem-f | commonJS adopts a host-built record into its class (`__bp_adopt`) directly and through `?T`, arrays and a `@Result`'s ok side, not through `@Task` | `run/external_method_on_host_record` |
 
-### 02-std-and-packaging (11)
+### 02-std-and-packaging (10)
 
 | Id | Choice implemented | Where |
 |---|---|---|
@@ -585,18 +557,15 @@ local change in the named place). Full 1.0.10 text under the same id in
 | std-b | `fs.exists` follows a symbolic link (dangling link is `false`) | `io/fs.bp` |
 | std-c | Decision 110's folder namespace is a rewrite of the parsed program | `comptime/std_namespace.zig` |
 | 95-a | Front 95 relocated `jhonstart-link` and `rakun-app` as moves with no behaviour | jhonstart · rakun |
-| 95-b | `rakun-app` inherits the workspace's `targets` — as amended by rakun 04: `["erlang"]` | `rakun-app` manifest |
+| 95-b | `rakun-app` declares its own `"targets": ["erlang"]`, as all 36 rakun manifests do (option (b); 1.0.10's "inherits the workspace" is not what the code does) | `rakun-app` manifest |
 | 95-c | `erika-test` exists | erika |
-| 95-e | A member importing the core's request context names the module: `from "rakun/request_context"` | `rakun-app/src/ssr.bp` |
 
-### 04-rakun (24)
+### 04-rakun (21)
 
 | Id | Choice implemented | Where |
 |---|---|---|
 | 03r-a | Every rakun manifest is `["erlang"]`; a built erlang program ships and loads its `.erl` sidecars (ledger half moot under 153) | every member |
-| 03r-b | ~~`rkPropInt("12abc")` is `12`~~ — reversed by 299: a malformed number stops the boot | 04 |
-| 03r-c | Front 05's readers stay botopink; no `rakun_config.erl` | 04 |
-| 03r-d | The configuration check runs in `bootSequenceFor`, lazy initialization included | 04 |
+| 03r-c | Front 05's readers stay botopink (`config.bp`); no `rakun_config.erl`; under 299 they feed the `#[config]` records | 04 |
 | 03r-e | A cookie or query component std refuses, or that would decode to a control character, stays as written (`decodeComponent`) (`ctr-p`) | 04 |
 | 03r-f | A cache key is `namespace + ":" + hash.strongCacheKey(parts)` | 12 |
 | 03r-g | A private-scope read with no session runs the loader, stores nothing | 12 |
@@ -604,17 +573,16 @@ local change in the named place). Full 1.0.10 text under the same id in
 | 03r-i | Redis cache provider reuses rakun-session's RESP wire (`rkSessRedis`); `revalidateTag` deletes; unreachable Redis runs the loader uncached (health DOWN) | 12 |
 | 03r-j | Outside a request `revalidateTag` / `revalidatePath` legal, `updateTag` raises; global `rakun.cache.type=none` disables every cache whatever its own type | 12 |
 | 03r-k | Every messaging arm runs on the in-process broker (`transport=memory`); a real address without it refuses the boot naming the driver | 15 |
-| 03r-l | A listener container is named after its destination; Redis defaults to ack-mode `none` (explicit `auto` / `manual` on Redis refuses the boot) | 15 |
+| 03r-l | A listener container is named after its destination (`#[amqpListener("orders")]` → `rakun.messaging.listener.orders.*`, `#[streamListener("audit-stream", "@next")]` → `listener.audit-stream.*`); Redis defaults to ack-mode `none` (explicit `auto` / `manual` on Redis refuses the boot). Key spellings follow 299 (`ackMode` or `#[key("ack-mode")]`) | 15 · `markers.bp:90,103` · `container.bp:125` |
 | 03r-m | Inside a server action `revalidatePath` / `revalidateTag` expire at once; outside, stale-then-fresh | 12 · 22 |
 | 03r-n | A JSON-RPC argument is a form-encoded field list, read in order into one form | 22 |
-| 03r-o | ~~A segment config field equal to `defaultSegmentConfig()`'s is inherited~~ — moot: 290 deletes the segment config | 22 |
 | 03r-p | A slot belongs to the nearest layout at or above its shortest entry; a conflict is two pages of one slot at one URL | 22 |
 | 03r-q | Locale routing lives in `rakun-app/src/i18n.bp`; no `rakun-i18n` member | 22 |
 | 03r-r | Starters name sibling members `{ "workspace": true }` | 73 |
 | 03r-s | OTLP pushed as HTTP/JSON (`json:encode` in `rakun_metrics.erl`) | 17 |
 | 03r-t | Front 76's keys under `rakun.management.*`, in one `management.bp` plus the `rakun_probes` sidecar | 11 |
 | 03r-u | Liveness group admits only `livenessState`, `ping`, `diskSpace`; any other name refuses the boot | 11 |
-| 03r-v | Typed query builder's operator is the enum `Op` (`Eq`, `Ne`, `Lt`, `Gt`, `Le`, `Ge`, `Like`) | 08 |
+| 03r-v | Typed query builder's operator is the enum `Op` (`Eq`, `Ne`, `Lt`, `Gt`, `Le`, `Ge`, `Like`): `queryOf(City.entityMeta()).where(City.columns().state, Op.Eq, "CA")`; the column as `Type.Field<City>` (308) is a separate question | 08 · `orm/query.bp:84-115` |
 | 03r-w | OAuth2's explicit endpoints are `OAuth2Provider` fields (`authorizationUri`, `tokenUri`, `userinfoUri`, `jwksUri`); client credentials are `withClientToken(id, call)`, retrying once on 401 | 79 · 13 |
 | 03r-x | Outbox relay claims by conditional `UPDATE` (a crashed relay's claims return via `reclaimStale`); saga and 2PC coordinators persist every transition and resume at boot (`resumeSagas`, `recover2pc`); job store claims triggers and takes over leases the same way | 15 |
 
@@ -623,17 +591,17 @@ local change in the named place). Full 1.0.10 text under the same id in
 | Id | Choice implemented | Where |
 |---|---|---|
 | 26-a (jhonstart) | Every router cell dual-target (a `router_runtime.mjs` twin). Id shared with 01-compiler's `26-a`, decision 242 | core |
-| 27-a | A browser cell in a two-target member is dual-target, its erlang twin answering the server's truth | `jhonstart-link` · core |
-| 29-a | Island starter table = the registry's `globals.starters`, filled by `registerStarter(name, start)` and `registerRouteStarters(pattern, load)`; a second starter or loader for one name fails | core · 26 step 5 |
+| 27-a | A browser cell in a two-target member is dual-target, its erlang twin answering the server's truth: on the server `use linkStatus()` is `LinkStatus(pending: false, href: "")` | `jhonstart-link` (`link.bp:187,231`) · core |
+| 29-a | What 281 leaves: the island starter table is the registry's `globals.starters`, filled per route by `registerRouteStarters(pattern, load)` (a route pattern is a URL, a string under 281); a second loader for one route fails. The per-name `registerStarter(name, start)` goes — 281 builds the starter table at comptime (`@TypeInfo.all(with: client)`, 120 step 6, 53 step 7) | core · 26 step 5 (its `docs.md` row still names `registerStarter`) |
 | 30-b | `RenderPlugin` is a record of async functions; `payload` answers `Array<#(key, json)>`; `chunk(id)` runs in the boundary's own process | `streaming.bp` |
-| 30-c | `render` / `renderStream` / `App` in `streaming.bp`; `compose` takes the page as a thunk, runs the layouts first | `streaming.bp` · `render.bp` |
-| 30-d | `Suspense` registers its boundary with the render via one host cell | `streaming.bp` |
+| 30-c | `render` / `renderStream` / `App` in `streaming.bp`; `compose` takes the page as a thunk, runs the layouts first — `compose(chain, { -> Page() })`; today's `route: PageContext` parameter goes with 293, the page is `fn() -> View` (276) | `streaming.bp` · `render.bp:341` |
+| 30-d | `Suspense(Boundary(id, fallback, child))` registers its boundary with the render via one host cell; the page returns only the tree (`-> View`) | `suspense.bp:19-34` |
 | 30-e | The segment record is `UiSegment` | core |
-| 30-f | `app(…, lang = "en")`: one checked language per app | core |
+| 30-f | `app(…, lang = "en")`: one checked language per app. The check becomes decision 180's BCP 47 subset once 105 replaces `isLangTag` with `i18n.wellFormedTag`; a per-request `PageInput.lang` from rakun-app's existing `htmlLang()` stays additive | core · `streaming.bp:197-204` · 105 |
 | 30-g | Browser half asserted in the commonJS-only member `jhonstart-dom-test` over `fake_dom.mjs` | `jhonstart-dom-test` |
-| 31-a | `notFound()` / `redirect(url)` raise via one host cell (`__jhRaise`); a boundary captures via `__jhCapture`; `notFoundReason()` / `redirectReason(url)` answer the reason without raising | core |
+| 31-a | `notFound()` / `redirect(url)` raise via one host cell (`__jhRaise`); a boundary captures via `__jhCapture`; `notFoundReason()` / `redirectReason(url)` answer the reason without raising. They declare `-> string` until `noreturn` fits a value position — waits on nat-d6 and lg2-l (if nat-d6 is (a), they become `-> noreturn`) | core · `error_boundary.bp:118-187` |
 
-### 06-emilia (12)
+### 06-emilia (11)
 
 | Id | Choice implemented | Where |
 |---|---|---|
@@ -641,16 +609,15 @@ local change in the named place). Full 1.0.10 text under the same id in
 | 05emilia-b | The backdrop section is `BackdropFilter` | 42 |
 | 05emilia-c | `drop-shadow-none` follows upstream (`--tw-drop-shadow: ` and the reader) | 42 |
 | 05emilia-d | Snap strictness is the fallback `var(--tw-scroll-snap-strictness, proximity)` | 46 |
-| 05emilia-e | `fullTheme()` rides on `fullOptions()` in `emilia.bp`; `defaultOptions()` stays palette-free | 56 |
+| 05emilia-e | `fullTheme()` rides on `fullOptions()` in `emilia.bp` (`flush()` renders with it); `defaultOptions()` / `defaultTheme()` stay palette-free. Open with 300: 300 names `defaultTheme()` as the `#[theme]` base and the no-`#[theme]` fallback, which has no palette — recommended: read it as `fullTheme()` (alternatives: make `defaultTheme()` the full theme, or take 300 literally and leave `var(--color-…)` undefined) | 56 · 34 step 3 |
 | 05emilia-f | `--inset-shadow-*` entries drop upstream's leading `inset` | 41 |
 | 05emilia-g | `space-*` / `divide-*` follow upstream's selector and reverse-aware margins | 35 · 40 |
-| 05emilia-h | Sibling modules never import `from "emilia"`; `named()` and `lookupRule` live in `emilia.bp` | 55 · 57–59 |
-| 05emilia-i | `--tw-*` transform variables are `@property` blocks with upstream's `properties` layer | 45 · 54 · 56 |
+| 05emilia-i | `--tw-*` transform variables are `@property` blocks with upstream's `properties` layer — `translate-*`, `skew-*` and `scale-*` (`--tw-scale-*`) alike | 45 · 54 · 56 |
 | 05emilia-j | A selector-list modifier (`marker:`, `selection:`) is a list of one-`&` variants | 34 · 56 |
 | 05emilia-k | Negative half step is `spacingNegHalf(n)`; `spacingHalf` refuses a negative `n` | 54 |
-| 05emilia-l | Confirming a column moves its whole family to upstream's form, one helper per shape | 35–45; 34 step 2 moves five families under it |
+| 05emilia-l | Confirming a column moves its whole family to upstream's form, one helper per shape; the five families still out of parity are 06-emilia's EM-8 table (transition presets, `backdrop-opacity-*`, `border-spacing-*`, `-webkit-backdrop-filter`, `divide-*`'s border style) | 35–45; 34 step 2 moves the five under it |
 
-### 07-onze (11)
+### 07-onze (10)
 
 | Id | Choice implemented | Where |
 |---|---|---|
@@ -662,18 +629,16 @@ local change in the named place). Full 1.0.10 text under the same id in
 | 52-a | Font-metrics table has five transcribed rows; its generator is owed | 51 step 4 |
 | 53-a | The blog's sources under `src/` (`appDir: "src/app"`) | 53 |
 | 68-a | A client-manifest field escapes `%`, `\|`, LF and CR only | bundler |
-| 68-c | Island starters decode `#[clientProps]` from the component's source | bundler |
-| 68-d | The styleMap is evaluated by a probe compiled into both packages (`emilia-hash-split`, `emilia-unevaluated`) | bundler |
+| 68-d | The styleMap is evaluated by a probe compiled into both packages (`emilia-hash-split`, `emilia-unevaluated`) — moot once 34 step 1 and 119 step 4 land (301: `#[styled]` tokens are comptime, the class and rule computed at build over std's `contentHash`); holds until then | bundler |
 | 69-a | onze-assets keeps `AssetRoot`; onze-server converts it to rakun-web's `StaticRoot` | assets · server |
 
-### Choices made by the 00-gate threads and the consolidation (7) — see `decisoes-pendentes.md` Parte 5
+### Choices made by the 00-gate threads and the consolidation (6) — see `decisoes-pendentes.md` Parte 5
 
 | Id | ★ implemented | Where |
 |---|---|---|
-| 111-b | the beam sidecar loader is emitted only when the build binds a host function (13 snapshots changed) | botopink-lang `codegen/beam_asm.zig` |
-| 111-c | `botopink build --target beam` runs the host-module probe and exits 1 when `erl` fails | `compiler-cli` build |
-| 113-a | a target `botopink test` cannot run is `NOT RUNNABLE` and fails `test-libs` | `scripts/test-libs.sh` |
+| 111-b | the beam sidecar loader is emitted only when the build binds a host function (13 snapshots changed); the erlang backend follows the same rule (`buildBindsErlangHost`) | botopink-lang `codegen/beam_asm.zig` |
+| 113-a | a target `botopink test` cannot run (wasm today — it runs commonJS, erlang and beam) is `NOT RUNNABLE` and fails `test-libs`, as `fronts.md` § Gate item 3 requires | `scripts/test-libs.sh` |
 | 113-b | the restriction audit matches the refusal by its text (alternative, recommended: give the refusal an id — 07-residuals) | `lib-test-runner` |
 | 110-b | the count history left `tests/language/AGENTS.md` | `tests/language/AGENTS.md` |
 | 112-a | `format-check`'s `TREES` holds `examples` as one entry plus `modules/manifest/tests` | `scripts/format-check.sh` |
-| 103-a | the package function is `deriveActionId`; rakun-app's `actionId` wraps it | `03-bundled-libs/103` |
+| 103-a | the package function is `deriveActionId`; rakun-app's `actionId` wraps it, the secret read from the `#[config("rakun.actions")]` record (299), not `rkProp` | `03-bundled-libs/103` |
