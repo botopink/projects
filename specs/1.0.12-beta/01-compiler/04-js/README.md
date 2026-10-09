@@ -42,7 +42,7 @@ every target); no snapshot moved. · 9 (most) `i64`/`isize`/`u64`/`usize` hybrid
 `BigInt`'s digits, `x is i64` reads both forms, `.d.ts` `number | bigint`, `rangeExactDouble` deleted,
 `refuseBeyondJsSafeInteger` deleted (checker patch); `run/i64_full_range`, `run/int_overflow_sub_i64_min`,
 `run/int_overflow_add_u64_max` (`%` / `/` past 2^53), `run/i64_dict_key_across_safe_edge`; the loop
-1425 → 953 ms (`js/AGENTS.md` § 64-bit integers) · 10 (commonJS) string indices count codepoints (320):
+995 → 687 ms (`js/AGENTS.md` § 64-bit integers) · 10 (commonJS) string indices count codepoints (320):
 `__bp_has_surrogate` + `__bp_str_length` / `__bp_string_char_at` / `__bp_str_index_of` /
 `__bp_str_last_index_of`, std's Node `stringSlice0`/`stringSlice1`/`charCodeAt` cells;
 `run/string_index_of_codepoints` (strcp-erl's) green on commonJS, `run/string_codepoint_slice_and_code`.
@@ -128,7 +128,7 @@ function strLength(s) {
       one with a pair is walked by codepoint; an index past a pair is a codepoint index on input and output
 - [x] a JS host template receives and answers codepoint indices
 - [ ] cost measured: the helpers on strings without a pair within 10% of the native calls (recorded in
-      `js/AGENTS.md`) — measured +25 % on a loop of four string reads (+100 % before the length-keyed
+      `js/AGENTS.md`) — measured +24 % on a loop of four string reads (+100 % before the length-keyed
       cache); the 10 % is not met
 - [x] `run/string_index_of_codepoints` (with `"👍"` and `"e\u{301}"`) one `.out` for the four targets
 
