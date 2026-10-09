@@ -141,32 +141,34 @@ The list goes to the chain's first link (`receiverTypeArgs`); the checker binds 
 `reject/comptime_expression_type_mismatch`, format round-trip. What it *means* was question `ck4-a`,
 answered by decision 266 (step 21).
 
-### Step 21 — a `comptime` is evaluated at compile time everywhere (decisions 266, 331) — priority
+### Step 21 — a `comptime` is evaluated at compile time everywhere (decisions 266, 331) — built (front `step21-331`)
 
-Decision 331: this step comes first among the open checker steps. A body's `comptime` runs on the comptime
-runtime (BEAM or WAT, front 18), never on the build target, so its value is the same on the four targets;
-no interim refusal of a loop or a call is written.
+A `comptime <expr>` / `comptime { … }` the Zig folder (`eval.zig`) cannot read runs on the comptime
+runtime (BEAM or WAT by the target, front 18) through `comptime/block_eval.zig`: the block becomes
+`'__bp_ct_value'/0`, its function values go through makers `'__bp_fn_<i>'/0` (a fun from one site with no
+environment is `=:=` on both runtimes, so `'__bp_lift'/2` names it), and the reply is lifted — a literal,
+an array, a tuple, a record as its constructor, a declared function as its name, a closed lambda as written.
 
-`comptime <expr>` and its block form run on the comptime runtime at module level and in a body; a
-call is evaluated there, and the value is lifted into the emitted program — a literal as a literal,
-a record or a collection as the construction each backend emits. A value with no emitted
-construction (a lambda capturing state, a resource) is a located refusal; a reference to a declared
-function is lifted as that reference (331).
-
-- [ ] `validateComptime` admits a call the comptime runtime can run, at module level and in a body
-- [ ] a body's `comptime` is folded at build — `val a = comptime two();` emits `2`, never `two()`
-- [ ] a record and a collection are lifted: `val d: Dict<string, unknown> = comptime Dict.empty();`
-      builds at compile time on commonJS, erlang, beam and wasm (`run/comptime_expression_static_call`
-      loses its `.wasm.expect`)
-- [ ] a reference to a declared top-level function lifted as the reference: a `Dict` of the factories `@TypeInfo.all`
-      answers builds on the four targets — rakun's six `beans()` (`examples/rakun`, `examples/rakun-container`, four
-      `test/` files) green unchanged
-- [ ] `reject/comptime_value_not_liftable` — a lambda capturing the block's state, and a resource, out of a `comptime`,
-      located at it
-- [ ] the module-level `comptime` `val` after an import (step 20's finding) emitted on every target
-- [ ] a `comptime { … }` block in a function body with a call and a loop (`run/comptime_block_with_loop`:
-      `comptime { var d = 0; for ([1, 2, 3]) { b -> d = add(d, b); } break d; }`) answers `6` from one `.out` on the
-      four targets, evaluated on the BEAM runtime and on the WAT runtime alike; no `comptimeBlock` reaches a backend
+- [x] `validateComptime` admits a call the comptime runtime can run, at module level and in a body (it
+      refuses a module-level `val` the block does not declare, `/0`, `-"s"`; a body's twin is
+      `block_eval.runtimeRead`)
+- [x] a body's `comptime` is folded at build — `val a = comptime two();` emits `2`
+      (`run/comptime_block_with_loop`, codegen `comptime runtime ---- a block with a call and a loop …`)
+- [x] a record and a collection are lifted: `run/comptime_expression_static_call` on the four targets (its
+      `.wasm.expect` deleted); `eval pipeline: comptime record lit` is an accept snapshot now
+- [x] a reference to a declared top-level function lifted as the reference (`run/comptime_function_reference`,
+      codegen `… a record holding a function reference is lifted`); rakun's `beans()` (every `return comptime {
+      … @TypeInfo.all … }` of the workspace) green unchanged on erlang
+- [x] `reject/comptime_value_not_liftable` — a lambda capturing the block's state, located at the `comptime`;
+      the resource half is `block_eval.zig`'s unit test (the WAT runtime has no process to answer)
+- [x] the module-level `comptime` `val` after an import emitted on every target
+      (`run/comptime_val_after_import`; `transform.zig` reads `Env.srcRewrites` before the `ct_<i>` entries)
+- [x] `run/comptime_block_with_loop` answers `6` from one `.out` on the four targets, its evaluation in the
+      codegen snapshots of both runtimes (`snap_audit.sh --mode=runtime-parity`); no `comptimeBlock` reaches a
+      backend in a compile (every node is folded, lifted or refused)
+- [x] (row from the coordinator) a decorator body calling a helper of another module that builds that module's
+      record: the record and its called methods travel into the decorator module (`block_eval.typesReached`,
+      `decorator_eval.evaluate`'s `types`; `decorator invocation: a helper of another module builds …`)
 
 ### Step 22 — the prelude scope (decision 270)
 
