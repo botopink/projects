@@ -54,6 +54,12 @@ from the enclosing function (`run/block_return_is_block_value`, four targets;
   `stripLineNumbers`; `modules/import_bundled_package_beside_own_module` green on beam).
 - A variant name declared by two enums with different fields: a positional pattern binds the payload, not
   the whole value — `beam_asm` registers an imported enum's name (`modules/variant_positional_payload_same_name`).
+- An or-pattern tests every alternative (97 s16, compiler-residuals row 10): `lowerCaseArm` lowers
+  `p | q -> body` as one arm per alternative with the arm's guard and body (erlang's clause per
+  alternative), `countCaseArmLocals` counts each; only a number alternative was tested before, so
+  `C | D -> true` answered `false` and `A | B` raised `case_clause` (`run/case_or_pattern_alternatives`,
+  four targets — red on beam on the parent). Alternatives that bind a payload (`Circle(x) | Square(x)`)
+  answer as erlang on beam; commonJS (`x is not defined`) and wasm (`0`) still fail them.
 
 ## Open
 
