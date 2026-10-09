@@ -51,6 +51,10 @@ std's `math` and `hash` answer commonJS's bits on every target.
 - Step 5 — `contentHash` folds code points (260): `contentHashBody` without its surrogate step; `contentHash("🎉")`, `contentHash("a🎉b")` rows of `run/std_hash_on_every_target` — `d71b89f5`
 - Floats, `i64`, overflow: `Float.toString` = V8's shortest digits, float slot keeps its `f64`, `i64` full width, overflow traps (`run/float_shortest_text`, `run/float_slot_keeps_f64`, `run/i64_full_width`; decision 264 for wasm)
 - `val g = greet; g()` typed by the function's declaration (`run/fn_value_bound_by_val`)
+- An `@block`'s `return` is the block's value (decision 2): `lowerBlockWithReturn` stores into
+  `$__blk<n>` and branches out of `$__blkend<n>` instead of `return` from the enclosing function;
+  the block's type and string/bool shape read off its returns (`run/block_return_is_block_value`,
+  four targets; `block_block_builtin` wasm snapshots move)
 
 ## Open
 

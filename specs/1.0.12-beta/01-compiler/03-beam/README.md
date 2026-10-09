@@ -36,6 +36,10 @@ point sets `standard_io` unicode (`emitUnicodeStdio`) · 7 one `math` (263): `fn
 `run/std_math_on_every_target` (`a443f52d`) · 8 an integer out of its type aborts (264):
 `emitIntCheck` (two `is_ge` + inline `erlang:error({integer_overflow, …})`) — 02 step 13's cells with
 `.beam.stderr`; beam snapshots move by the check and its labels only (`48a096ea`).
+Rows from other fronts: an `@block`'s `return` is the block's value (decision 2) —
+`lowerBlockWithReturn` jumps to the block's exit label with the value in `x0` instead of `return.`
+from the enclosing function (`run/block_return_is_block_value`, four targets;
+`block_block_builtin` beam snapshots move by the jump).
 
 ## Open
 
