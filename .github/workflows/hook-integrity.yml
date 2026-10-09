@@ -12,9 +12,11 @@
 #      itself calls git-ignored is the plan file, not a layout path);
 #   3. no `*.snap.new`, `*.snap.md.new` or `todo.md` is tracked, in the meta
 #      repository or in any submodule;
-#   4. the five libraries' pre-commit guards are one text: `pre-commit` and
-#      `lib/runner-standalone.sh` byte-identical across emilia, erika,
-#      jhonstart, onze and rakun (113 step 5's check, made continuous), each
+#   4. the library repositories' pre-commit guards are one text: `pre-commit`
+#      and `lib/runner-standalone.sh` byte-identical across emilia, erika,
+#      jhonstart, onze, rakun, actions, http, log, routing and validation
+#      (113 step 5's check, made continuous; the last five since decision 326,
+#      03-bundled-libs/138's carve-out of 114's file), each
 #      `.gitignore` naming `*.snap.new` and `*.snap.md.new`, no
 #      `scripts/known-broken-examples.txt`, and each AGENTS.md naming
 #      `git config core.hooksPath scripts/git-hooks`;
@@ -112,11 +114,11 @@ jobs:
           done
           [ "$bad" -eq 0 ] || { echo "hook-integrity: a snapshot candidate or a todo.md is tracked"; exit 1; }
 
-      - name: 4. the five libraries' pre-commit guards are one text
+      - name: 4. the library repositories' pre-commit guards are one text
         shell: bash
         run: |
           set -euo pipefail
-          libs="emilia erika jhonstart onze rakun"
+          libs="emilia erika jhonstart onze rakun actions http log routing validation"
           ref=jhonstart
           bad=0
           for f in scripts/git-hooks/pre-commit scripts/git-hooks/lib/runner-standalone.sh; do

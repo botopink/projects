@@ -19,3 +19,23 @@
 [submodule "repository/vscode-extension"]
 	path = repository/vscode-extension
 	url = git@github.com:botopink/vscode-extension.git
+[submodule "repository/actions"]
+	path = repository/actions
+	url = git@github.com:botopink/actions.git
+	branch = feat
+[submodule "repository/http"]
+	path = repository/http
+	url = git@github.com:botopink/http.git
+	branch = feat
+[submodule "repository/log"]
+	path = repository/log
+	url = git@github.com:botopink/log.git
+	branch = feat
+[submodule "repository/routing"]
+	path = repository/routing
+	url = git@github.com:botopink/routing.git
+	branch = feat
+[submodule "repository/validation"]
+	path = repository/validation
+	url = git@github.com:botopink/validation.git
+	branch = feat
