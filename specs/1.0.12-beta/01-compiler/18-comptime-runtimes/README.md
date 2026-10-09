@@ -1,6 +1,7 @@
 # Front 18 — comptime runtimes: BEAM direct, WAT, and the browser build — the evidence and the limits
 
-**Priority:** low · **State:** not started (`test-web` wasm32 fix and gate stage 12 on feat)
+**Priority:** low · **State:** partial: steps 2, 4, 5 done, step 3's open row recorded; 1 and 3 open
+(`test-web` wasm32 fix and gate stage 12 on feat)
 **Depends on:** maintainer (CI runs after a push) · `14-comptime-on-beam` step 2 (bench numbers
 recorded here) · `05-wasm` step 5 (decision 261's opcodes)
 **Owns:** `modules/compiler-core/src/comptime/runtime/**` except `beam/**`, `etf.zig`, `prelude.zig`
@@ -30,6 +31,19 @@ assembled bytes via cmd 4; wat runtime runs the same program on wasm3 in-process
 on every fixture; doubled snapshot tree (`snapshots/codegen/{beam,wat}/<target>/`) audited pair by
 pair; browser build within budget (`botopink.wasm` ReleaseSmall ≤ 8 MB, ≤ 2.5 MB gzip).
 
+## Done
+
+Steps: 2 the four limits in `src/comptime/runtime/AGENTS.md` § Limits, a fixture each in
+`persistent_wat.zig` (`limit 1`: `spawn/1`, `receive`, `ets:new/2` refused by name; `limit 3`: a
+non-ASCII `string:uppercase` raises `{bp_wat_runtime, …}`; `limit 4`: `i64` overflow raises; the
+second has none, its text says why) · 4 `runtime.zig`'s `a reply past the frame cap reaches the
+evaluator as the transport message, not EvalFailed` (a body answering 16 MiB + 1 byte; the next
+request respawns and answers). A missing `erl` is no longer `EvalFailed`: the release probe
+(decision 228) leaves `` `erl` could not be run: … put it on PATH `` as the transport message —
+`AGENTS.md`'s note says so · 5 `memory.size` / `memory.grow` (`0x3F 0x00` / `0x40 0x00`, on feat
+since `d71b89f5`) pinned by `wasm_binary_emitter.zig`'s `memory.size and memory.grow encode with
+their memory-index byte (decision 261)`.
+
 ## Open
 
 ### Step 1 — the CI matrix (the maintainer's, after the push)
@@ -40,18 +54,6 @@ build -Doptimize=ReleaseSafe -Dtarget=${{ matrix.zigtarget }}` on its five rows.
 - [ ] every row green on the CI after the milestone's first push; a red row is a step of this front
       (runner-specific fix in `build.zig` or a workflow), never a skipped row
 
-### Step 2 — the four limits, written
-
-`wat-runtime.md` §7 ([1.0.10](../../../1.0.10-beta/00-compiler-carry-over/18-comptime-runtimes/wat-runtime.md))
-restated in `src/comptime/runtime/AGENTS.md` (no § Limits today), each with what a body meets:
-`safe_call`'s isolation and 10 s timeout (runaway body = runaway wasm3 call; no generated module
-spawns, receives or touches ETS); `~p` line breaking past 80 columns (long term prints on one line);
-Unicode case mapping (`string:uppercase` / `lowercase` of a non-ASCII letter raises `{bp_wat_runtime,
-…}`); integers beyond 64 bits (raise). BEAM runtime is the reference; a parity difference is fixed
-in `rt.zig`.
-
-- [ ] `runtime/AGENTS.md` § Limits carries the four with a fixture each pinning the raise (the second with none — its text says why)
-
 ### Step 3 — the bench table, and the evaluation's cost
 
 `scripts/comptime_bench.sh` re-run (14 step 2), table recorded here at milestone open and close, on
@@ -59,21 +61,21 @@ the runner's machine, load noted. Runtime evaluation = largest remaining per-eva
 fresh wasm3 environment, parse and load of the linked module, `persistent_wat.zig`; BEAM: frame round
 trip — 45 % / 29 % of an N=200 build before decision 237).
 
-- [ ] a table with the open's row; the close's row added by the last front to land
-- [ ] the runtime's evaluation brought within 14's budget (≤ 1 ms per evaluation), or what remains named
+| Row | Date | Machine, load (1 min, before → after) | Target (runtime) | N=0 build | N=10 | N=200 | ms/eval 10→200 |
+|---|---|---|---|---|---|---|---|
+| open | 2026-10-09 | dev box, 16 threads, Debug `zig-out/bin/botopink`, load 56.7 → 77.6 | commonJS (wat) | 582 ms | 574 ms | 1045 ms | 2.5 |
+| open | 2026-10-09 | same run | erlang (BEAM) | 1007 ms | 1509 ms | 1907 ms | 2.1 |
 
-### Step 4 — the transport test
+`scripts/comptime_bench.sh --no-build --target <t> --n 0,10,200 --repeat 3`, min of three builds.
+The load (other worktrees' gates) makes the slope an upper bound; re-measure on an idle runner. The
+script's E-2 half (in-node split) reports `no comptime module was written`: it reads
+`.botopinkbuild/tmp/{template,decorator}`, which nothing writes since modules travel in-frame (front
+14 step 3, decision 83) — the instrument needs `14`'s rewrite before it measures anything.
 
-Beside `evalBeam` (`runtime/runtime.zig`): drive a comptime body past the 16 MiB frame cap, assert
-the diagnostic quotes `lastTransportError()`'s message, not `EvalFailed`; `erl` missing stays
-`EvalFailed` with the `PATH` hint.
-
-- [ ] the test in `runtime/**`'s test file
-
-### Step 5 — `memory.size` / `memory.grow` in the binary emitter (decision 261)
-
-- [ ] `wasm_binary_emitter.zig` encodes both (`0x3F 0x00`, `0x40 0x00`), with a fixture; `05-wasm`
-      step 5 uses them
+- [ ] a table with the open's row (above); the close's row added by the last front to land
+- [ ] the runtime's evaluation brought within 14's budget (≤ 1 ms per evaluation), or what remains
+      named — open: 2.1–2.5 ms/eval under load, both runtimes above the budget; the split between
+      wasm3 setup / module load / frame round trip waits on E-2's rewrite
 
 **Gate:** standard (fronts.md § Gate) + `zig build test` green under both runtimes ·
 `scripts/snap_audit.sh --mode=runtime-parity` green · `zig build compiler-web` and `test-web` green
