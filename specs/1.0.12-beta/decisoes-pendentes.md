@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 49 perguntas, 6 contradições e 85 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **351**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 52 perguntas, 6 contradições e 85 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **351**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -762,6 +762,78 @@ e nós em `test/json_schema_test.bp`).
 hash do arquivo trazido registrados no `AGENTS.md` do `repository/validation`. **Bloqueia:** 125 passo 9,
 caixa 3.
 
+### 119-b · Onde um componente calculado na renderização se registra *(proposta)*
+
+**Trava:** `08-bpp/119` passo 1, caixa 4 (a segunda metade) → `06-emilia/34` passo 5 (caminho crítico,
+decisão 350)
+
+**Contexto.** A 338 diz: componente sem hook de tempo de execução é calculado no build; um que alcança
+um "se registra na renderização". O `styled` não tem onde registrar: `StyledBase()` é fantasma, o
+`@getContext(T)` é checado mas nenhum backend o gera, e o `styled` não tem célula host. O armazém por
+renderização hoje é o da emilia (duas células host, `emilia.bp:63-77`), e a 34 passo 5 diz que ele "é o
+que `css` e `styled` agora guardam".
+
+**Hoje** (medido no `d7c71405`):
+```bp
+pub val tab4 = styledProperty "tab-size: 4;";   // build: propertyConstant("s_e8b00b8b", …) — no módulo emitido
+fn badge(c: string) -> StyledView { return styled "color: ${c};"; }
+val b = await badge("red");                     // styledComputed(…) monta Styled(…) e não registra em lugar nenhum
+```
+
+- [ ] **(a)** O `styled` guarda o armazém da renderização (células host no erlang e no node, as duas da
+  emilia mudadas para cá): `styledComputed` registra classe e regras ao rodar; um `${p}` costurado não
+  registra (não tem classe própria); `rendered()` devolve cada componente uma vez, na ordem do primeiro
+  registro, e esvazia o armazém; constante não registra (é do sheet do build, 124).
+  ```bp
+  val b = await badge(props.color);              // registra .s_<h>{color:…} nesta renderização
+  var sheet = Sheet.of([layer("base")]);
+  for (rendered()) { c -> sheet = sheet.add("base", c); }   // o sink da jhonstart-styled
+  ```
+- [ ] **(b)** Nada se registra no `styled`: componente é valor, e quem renderiza junta o que a
+  renderização alcançou — o sink da `jhonstart-styled` lê os `use` das funções renderizadas (277) e faz
+  `sheet.add(layer, await c)`; a segunda metade da caixa vai para o passo 2, e o `flush()` da emilia
+  (34 passo 5) recebe os componentes como argumento.
+  ```bp
+  use styled "color: ${props.color};";           // o html lê o hook; o sink o põe no Sheet da renderização
+  ```
+- [ ] **(c)** Pela base: `StyledBase(sheet: …)` e `styledComputed` registrando via
+  `@getContext(StyledBase)` — precisa do `@getContext` gerado em tempo de execução (`01-compiler`; nenhum
+  backend gera hoje).
+
+**Recomendação: (a)** — é o armazém que a 34 passo 5 já dá ao `styled`, sem mudar o compilador.
+**Bloqueia:** 119 passo 1 caixa 4; 34 passo 5.
+
+### 119-c · O que é "não alcança hook de tempo de execução" num literal com buracos *(proposta)*
+
+**Trava:** `08-bpp/119` passo 1, caixa 4 (a leitura da primeira metade)
+
+**Contexto.** A 338 lê o critério em `@typeInfo(f).hooks` (277), que lista `use`s e chamadas de
+componente — um buraco `${…}` não é nenhum dos dois. Calcular no build um literal com buracos exige o
+valor dos buracos no template, e hoje todo caminho está fechado (medido no `d7c71405`): `e.lookup(name)`
+não dá valor (linha 135); `comptime styledComputed(…)` no código gerado sai como `'Styled'(…)` sem
+import (erlang: `function 'Styled'/2 undefined`; commonJS: `ReferenceError`) se o módulo que chama não
+importa `Styled`; `comptime padAll(2).rules` derruba o compilador (`reached unreachable code` em
+`codegen/erlang.zig`); o `comptime` recusa `tab4` como "a runtime identifier". Duas linhas novas em
+`language-gaps.md`.
+
+**Hoje:** pelo texto do literal — sem buraco, build; com buraco, renderização.
+
+- [ ] **(a)** Como está: o literal é calculado no build exatamente quando não tem buraco.
+  ```bp
+  pub val tab4 = styledProperty "tab-size: 4;";   // build: propertyConstant("s_e8b00b8b", …)
+  pub val code = styled "${tab4} color: red;";    // renderização: styledComputed("s_", […], [tab4])
+  ```
+- [ ] **(b)** Literal cujos buracos são todos conhecidos no build é calculado no build (o template emite
+  `comptime`); buraco com parâmetro ou valor de execução, na renderização — espera as duas linhas novas e
+  um jeito de o template distinguir os dois tipos de buraco (linha 135).
+  ```bp
+  pub val code = styled "${tab4} color: red;";    // build: styledConstant("s_…", ".s_…{tab-size:4;color:red}")
+  fn badge(c: string) -> StyledView { return styled "color: ${c};"; }   // renderização
+  ```
+
+**Recomendação: (a)** agora — decidível só pelo literal, sem mudar o compilador; (b) quando a
+`14-comptime-on-beam` fechar as duas linhas. **Bloqueia:** 119 passo 1 caixa 4.
+
 ## Parte 2 — Trava, mas o passo ainda espera outra frente
 
 | Id | Assunto | Recomendação | Trava | Espera também |
@@ -786,6 +858,7 @@ caixa 3.
 | `erk-b` | O `#[documentQuery]` depois da 313 | (a) agora — uma forma só de repositório para todo store; (b) quando uma necessidade medida pedir. | `04-rakun/09` passo 4 | 09: 19 s1, 13 (depois do 128) |
 | `ctr-w` | O braço Elasticsearch da 09 × decisão 185 | (a) — é o que a 185 manda e não acrescenta membro. | 09 passo 3. | 09: 19 s1, 13 (depois do 128) |
 | `119-a` | A caixa do grep da 119 passo 1 × o hook byte-idêntico da checagem 4 do CI (`runner-standalone.sh` cita `emilia`) | (a) — o grep mede o texto do próprio pacote (`src`, `test`, `botopink.json`); o hook é um texto só, do gate. | Só marcar a caixa do grep da 119 passo 1. | 119 s1 |
+| `119-d` | Quem constrói o catálogo que um corpo de template lê (linha 134: o `#[theme]` da aplicação, achado no comptime) | (a) — um passo novo da `01-compiler/130`: `@TypeInfo.all` no corpo de uma função de template responde pelo programa em que a chamada compila, isento de `typeinfo-all-imported`, com o `value` legível no build. Medido no `d7c71405`: quem importa o leitor recebe `unbound variable` no uso, não `typeinfo-all-imported` no import. | 119 passo 1 caixa 5; 34 passo 3; a recusa de breakpoint limpo da 119 passo 4 | o passo novo da 130 (compilador) |
 | `03r-ae` | SAML 2.0 ACS | (a) — a 79 está no grupo A do rakun, então está escalada neste milestone; **(b)** só se ela sair dele. Nunca a (c). | 79 passo 3. | 79: grupo A, depois do 128 |
 | `03r-af` | Os sete projetos de exemplo nunca construídos | (a). O contrato de cada membro já é afirmado pelos testes do próprio membro; sete frentes de exemplo não provariam nada novo. | 73 passo 3. | 73: grupo A, depois do 128 |
 | `03r-ak` | Validar o SBOM contra o schema CycloneDX 1.5 | (a). Valida contra o schema de verdade, sem rede, sem afrouxar a caixa e sem pôr no std um validador genérico por causa de um consumidor só. | 81 passo 3. | 81: grupo A, depois do 128 |
