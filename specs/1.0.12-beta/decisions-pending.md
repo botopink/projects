@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**55 questions and 6 contradictions are open, and 89 implementation choices await confirmation.**
+**54 questions and 6 contradictions are open, and 89 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -534,21 +534,6 @@ No general rule (283): each case below is its own question, (a) the language's o
   wait on the same two checker steps, so neither refuses an unknown attribute sooner than (b), and (c)
   leaves two builders under one tag name.
 - **Blocks.** 118 step 1's native-props box (351 (1), (2), (4), the element's props spread).
-
-#### 119-c · What "reaches no run-time hook" means for a literal with holes (*proposed*)
-- **Measured** (botopink-lang `d7c71405`). Built: by the literal's text — no hole, computed at build; any hole, computed when it runs — so `styled "${tab4} color: red;"` with `pub val tab4 = styledProperty "tab-size: 4;"` is computed at render although every value is known at build. 338 reads the criterion off `@typeInfo(f).hooks` (277), which lists `use`s and component calls; a hole is neither. Building a holed literal at build needs its holes' values in the template, and every route is shut today: `e.lookup(name)` answers no value (row **A template function cannot read another expansion's value**); in built code, `comptime styledComputed(…, [propertyConstant(…)])` evaluates but is emitted as `'Styled'(…)` (erlang: `function 'Styled'/2 undefined`) / `Styled(…)` (commonJS: `ReferenceError`) unless the calling module imports `Styled` (row **A record value a `comptime` expression answers is emitted as an unbound constructor**); `comptime padAll(2).rules`, reaching a function whose body is a `styledProperty` expansion, panics the compiler (row **A `comptime` expression reaching a template expansion panics the erlang emitter**); `comptime` refuses `tab4` as "a runtime identifier"; `styledComputed` calls std's host `contentHash` (row T19).
-- **Options.** (a) As built: a literal is computed at build exactly when it has no hole.
-  ```bp
-  pub val tab4 = styledProperty "tab-size: 4;";   // build: propertyConstant("s_e8b00b8b", ".s_e8b00b8b{tab-size:4}", "tab-size:4")
-  pub val code = styled "${tab4} color: red;";    // render: styledComputed("s_", […], [tab4])
-  ```
-  (b) A literal whose every hole is known at build is computed at build (the template emits a `comptime` expression), one with a hole naming a parameter or a run-time value at render — waits on the two new rows and on a way for the template to tell the two kinds of hole apart (row 135):
-  ```bp
-  pub val code = styled "${tab4} color: red;";    // build: styledConstant("s_…", ".s_…{tab-size:4;color:red}")
-  fn badge(c: string) -> StyledView { return styled "color: ${c};"; }   // render
-  ```
-- **Recommendation.** (a) now — decidable from the literal alone, no compiler change; (b) when `14-comptime-on-beam` closes the two rows.
-- **Blocks.** 119 step 1 box 4 (its first half's reading).
 
 #### 119-e · What a decorator on a `val` sees, and how `#[theme] pub val` is catalogued (*proposed*)
 - **Measured** (the decision-353 compiler, botopink-lang `56d4bc29` + 130 step 10's part). 300 declares the theme `#[theme] pub val appTheme = comptime extendTheme(…);` and has it found with `@TypeInfo.all(with: theme)`; 353 lets `styled`'s template body run that query for the application. But a decorator on a `val` never runs and is never catalogued: `infer.zig` `invokeDecorators` walks `fn`, `type` and `behavior` only, `DeclKind` has no member for a value, and `fn mark(comptime decl: @Decl) { decl.fail("ran"); } #[mark] pub val one = 1;` compiles and prints `1`. So the query finds nothing, whatever the application declares. 353's `value` at build needs the val's build value lifted into the template's comptime module: `comptime extendTheme(baseTheme(), [entry(.Breakpoint, "md", ThemeValue.Rem(52.0))])` now evaluates, and is emitted `'ThemeEntry'/2 undefined` (the unbound-constructor row). No decision names the `@Decl` a value carries nor what its catalogue entry's `value` is.

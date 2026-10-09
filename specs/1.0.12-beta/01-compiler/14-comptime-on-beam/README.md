@@ -1,7 +1,7 @@
 # Front 14 — comptime-on-beam: the comptime pipeline's evidence and its cost per evaluation
 
 **Priority:** medium · **State:** partial: steps 1 (fixture half), 3, 4, 7, decision 237 and step
-2's slope on feat; step 2's N=200 wall clock on the BEAM runtime and step 6 open
+2's slope on feat; step 2's N=200 wall clock on the BEAM runtime, step 6 and step 8 (355) open
 **Depends on:** `18-comptime-runtimes` (step 2's runtime-evaluation stage) · `01-checker` (step 2's
 memo key; body file name and T17 are 01's rows) · step 6 (decisions 341, 342, 343).
 **Owns:** `modules/compiler-core/src/comptime/template_eval.zig`, `decorator_eval.zig` ·
@@ -91,6 +91,24 @@ builds above 600 ms is not per evaluation:
 **Gate:** standard (fronts.md § Gate) + `scripts/snap_audit.sh --mode=runtime-parity` green, every
 re-recorded listing classified, `COMPTIME REPLY` byte-identical at every step ·
 `scripts/beam_export_audit.sh` green (comptime listings included)
+
+### Step 8 — a `styled` literal whose holes are known at build, computed at build (decision 355)
+
+```bp
+pub val tab4 = styledProperty "tab-size: 4;";
+pub val code = styled "${tab4} color: red;";   // styledConstant("s_…", ".s_…{tab-size:4;color:red}")
+```
+
+- [ ] a template function reads another expansion's value — `e.lookup(name)` answers the `val`'s build
+      value when its initializer is known at build (row **A template function cannot read another
+      expansion's value**), so the template tells a hole known at build from a run-time one
+- [ ] a record a `comptime` expression answers is lifted as its constructor, imported where emitted
+      (row **A record value a `comptime` expression answers is emitted as an unbound constructor**)
+- [ ] a `comptime` expression reaching a template expansion evaluates (row **A `comptime` expression
+      reaching a template expansion panics the erlang emitter**)
+- [ ] `contentHash` at comptime (T19; with step 6's host cells)
+- [ ] `run/styled_holes_known_at_build` — `code` above emitted as a constant on the four targets; a
+      hole naming a parameter still computed at render
 
 ## Notes
 

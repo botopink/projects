@@ -115,6 +115,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 12 s2 box 1 — `run/throw_in_case_arm_result` (`run/array_unique` landed with 02 s4 and 05 s1) · 01 s6 + 04 s6
 - [x] 14 s2 slope — ≤ 1 ms/eval on both runtimes (wat 0.5, BEAM 0.6–0.7): kept wasm3 instance, argument-only trace listing, O(text) memo key, the bench's stage split
 - [ ] 14 s2 rest — N=200 ≤ 600 ms on the BEAM runtime (712 / 782 ms): the N=0 build and the node's spawn · 02/03/CLI, 18
+- [ ] 14 s8 — a `styled` literal whose holes are known at build computed at build (355): another expansion's value, the lifted record, `comptime` over an expansion, `contentHash` at comptime · s6 (T19) — 119 box 4 does not wait (render meanwhile)
 - [ ] 14 s6 — a decorator's host cells, `@embedFile` / `@embedBytes`, independent invocations · decisions 341–343
 - [x] 14 s7 — a `comptime/tests` fixture for a `\u{…}` decorator body
 - [ ] 17 s1 box 4 — the per-row increment of a keyed `Dict` · `Dict.bump`, decision 340
@@ -178,7 +179,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] rakun track — latent `i32` clocks: `migration_host.cellNowMs`, the test-only monotonic `nowMs` in `rakun-mail`, `rakun-rsocket` and `tls_listener_test`, `Duration.millis` · `04-rakun` RX-15
 - [ ] rakun track — stale `__rkMake_` text in rakun's `AGENTS.md` · `04-rakun` RX-16
 - [x] rakun track — the server test measures `Content-Length` in bytes (320's follow-up) · `04-rakun` RX-17
-- [ ] emilia on `styled` first (decision 350) — 119 s1's two open boxes (a component with no run-time hook computed at build; the theme mechanism, 300) → 34 s5 (emilia over `styled`, output byte-identical) → 34 s2 (the five families in `styled`'s literal) · `119-c` and, through 352 / 354 (registration by `use context(StyledContext)`), 134 s6 (box 4), box 5 on `01-compiler/130` s10 (353, row 134) — measured on `d7c71405`, see L5 (`css` done, `styled` landed)
+- [ ] emilia on `styled` first (decision 350) — 119 s1's two open boxes (a component with no run-time hook computed at build; the theme mechanism, 300) → 34 s5 (emilia over `styled`, output byte-identical) → 34 s2 (the five families in `styled`'s literal) · through 352 / 354 (registration by `use context(StyledContext)`), 134 s6 (box 4), box 5 on `01-compiler/130` s10 (353, row 134) — measured on `d7c71405`, see L5 (`css` done, `styled` landed)
 
 ## L3 — ready to open now
 
@@ -256,7 +257,6 @@ Then:
 - [ ] 03r-am — 19 s3–4
 - [ ] 03r-an — 92 s2 (boxes 1, 3)
 - [ ] 67-a — 67 s1–3 · 53's write path · only the record
-- [ ] 119-c — 119 s1 box 4 (a literal with holes known at build) → 34 s5
 - [ ] 05emilia-n — 34 s4 (reduced: the four features; the refusal is 300)
 - [ ] 50-b — 50 s2 · 53 s6
 - [ ] 08-f — 121 s3

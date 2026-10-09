@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 55 perguntas, 6 contradições e 89 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **355**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 54 perguntas, 6 contradições e 89 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **356**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -729,38 +729,6 @@ e nós em `test/json_schema_test.bp`).
 **Recomendação: (a)** — a leitura mais restritiva da caixa, um validador de verdade, sem rede; versão e
 hash do arquivo trazido registrados no `AGENTS.md` do `repository/validation`. **Bloqueia:** 125 passo 9,
 caixa 3.
-
-### 119-c · O que é "não alcança hook de tempo de execução" num literal com buracos *(proposta)*
-
-**Trava:** `08-bpp/119` passo 1, caixa 4 (a leitura da primeira metade)
-
-**Contexto.** A 338 lê o critério em `@typeInfo(f).hooks` (277), que lista `use`s e chamadas de
-componente — um buraco `${…}` não é nenhum dos dois. Calcular no build um literal com buracos exige o
-valor dos buracos no template, e hoje todo caminho está fechado (medido no `d7c71405`): `e.lookup(name)`
-não dá valor (linha 135); `comptime styledComputed(…)` no código gerado sai como `'Styled'(…)` sem
-import (erlang: `function 'Styled'/2 undefined`; commonJS: `ReferenceError`) se o módulo que chama não
-importa `Styled`; `comptime padAll(2).rules` derruba o compilador (`reached unreachable code` em
-`codegen/erlang.zig`); o `comptime` recusa `tab4` como "a runtime identifier". Duas linhas novas em
-`language-gaps.md`.
-
-**Hoje:** pelo texto do literal — sem buraco, build; com buraco, renderização.
-
-- [ ] **(a)** Como está: o literal é calculado no build exatamente quando não tem buraco.
-  ```bp
-  pub val tab4 = styledProperty "tab-size: 4;";   // build: propertyConstant("s_e8b00b8b", …)
-  pub val code = styled "${tab4} color: red;";    // renderização: styledComputed("s_", […], [tab4])
-  ```
-- [ ] **(b)** Literal cujos buracos são todos conhecidos no build é calculado no build (o template emite
-  `comptime`); buraco com parâmetro ou valor de execução, na renderização — espera as duas linhas novas e
-  um jeito de o template distinguir os dois tipos de buraco (linha 135).
-  ```bp
-  pub val code = styled "${tab4} color: red;";    // build: styledConstant("s_…", ".s_…{tab-size:4;color:red}")
-  fn badge(c: string) -> StyledView { return styled "color: ${c};"; }   // renderização
-  ```
-
-**Recomendação: (a)** agora — decidível só pelo literal, sem mudar o compilador; (b) quando a
-`14-comptime-on-beam` fechar as duas linhas. **Bloqueia:** 119 passo 1 caixa 4.
-
 
 ### 119-e · O que um decorador num `val` vê, e como `#[theme] pub val` entra no catálogo *(proposta)*
 
