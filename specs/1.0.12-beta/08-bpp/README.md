@@ -213,8 +213,10 @@ Closed: `08-h` → 285, 224 (`onze.json`, `onze <command>`); `08-j` → 295, 296
 **Measured.** emilia compiles `Token[]`, "not a runtime CSS engine. No selector parsing"
 (`emilia/AGENTS.md:602`); onze-assets renames `*.module.css` classes (`onze-assets/src/style_module.bp`); decision 113.
 **Options.** (a) emilia `scopeCss(scope, css)` via the `jhonstart-emilia` bridge; (b) onze-assets,
-beside the module renamer; (c) jhonstart's `html` scopes its own `<style>`.
-**Recommendation.** (a). (c) puts a CSS parser in the HTML library; (b) excludes jhonstart apps without onze.
+beside the module renamer; (c) jhonstart's `html` scopes its own `<style>`; (d) *proposed* — `css` and
+`styled` (`styled "…"`, Tailwind v4's CSS syntax), each its own repository (326), emilia over `styled`, `"bpp": {"default", "style"}`, a
+`--- style ---` section ([`119-bpp-styling/proposta-08-d.md`](./119-bpp-styling/proposta-08-d.md)).
+**Recommendation.** (d) with its points p1–p7 as recommended; otherwise (a). (c) puts a CSS parser in the HTML library; (b) excludes jhonstart apps without onze.
 **Blocks.** All of 119.
 
 ### 08-f · Where Markdown and YAML live

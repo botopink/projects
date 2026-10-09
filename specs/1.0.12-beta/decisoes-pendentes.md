@@ -46,9 +46,29 @@ renderNode(html """<div><style>h1 { color: red }</style><h1>x</h1></div>""")
   html """<style>h1 { color: red }</style><h1>x</h1>"""   // o html lê e reescreve o seletor: um parser de CSS no html
   ```
 
-**Recomendação: (a).** A (c) põe um parser de CSS na biblioteca de HTML; a (b) deixa o estilo com
-escopo indisponível sem o onze. **Bloqueia:** a 119, todo passo — na cadeia crítica
-118 → 119 → 120 → 126 → 127 → 124.
+- [ ] **(d)** *(proposta, 09/10)* CSS em três camadas. `css` é a base para construir CSS (parser,
+  `Sheet`, `scope`) e `styled` é a base para construir componentes de CSS (`styled "…"`, com a sintaxe
+  CSS do Tailwind v4 onde ela é CSS: `--spacing()`, `--alpha()`, `@variant`, `@custom-variant`; o
+  `@apply` vira um buraco `${…}` tipado). Cada um é um repositório próprio (326: `repository/css`,
+  `repository/styled`). A emilia vira uma série de componentes feitos em `styled`, aplicados na tag
+  (301). O `"bpp"` vira objeto, e o estilo do `.bpp` vai para uma seção própria, compilada pelo pacote
+  de `style`. Proposta inteira, com o que muda e sete pontos ainda abertos (p1–p7):
+  [`08-bpp/119-bpp-styling/proposta-08-d.md`](./08-bpp/119-bpp-styling/proposta-08-d.md).
+  ```bp
+  // botopink.json: "bpp": {"default": "jhonstart", "style": "jhonstart-styled"}
+  // emilia — Tailwind: @utility p-* { padding: --spacing(--value(integer)); }
+  fn padAll(n: i32) -> Styled { return styled "padding: --spacing(${n});"; }
+  ```
+  ```bpp
+  <h1 class="title">{props.title}</h1>
+  --- style ---
+  .title { font-size: 2rem; }          // → .title[data-s="components-post-12"]{font-size:2rem}
+  ```
+
+**Recomendação: (d)**, se os pontos p1–p7 forem aceitos como recomendados; senão, (a). A (d) dá um
+parser e uma folha só para todo mundo, e a emilia vira cliente do `styled`. A (c) põe um parser de CSS
+na biblioteca de HTML; a (b) deixa o estilo com escopo indisponível sem o onze. **Bloqueia:** a 119,
+todo passo — na cadeia crítica 118 → 119 → 120 → 126 → 127 → 124.
 
 ### props-d · Os atributos de uma tag nativa *(proposta)*
 

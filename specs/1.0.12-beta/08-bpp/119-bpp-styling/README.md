@@ -139,7 +139,7 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 
 ## Decisions
 
-- `08-d` — who scopes CSS: (a) emilia's `scopeCss` via the bridge (recommended), (b) onze-assets, (c) jhonstart's `html`. Every step.
+- `08-d` — who scopes CSS: (a) emilia's `scopeCss` via the bridge, (b) onze-assets, (c) jhonstart's `html`, (d) the proposal in [`proposta-08-d.md`](./proposta-08-d.md) — `css` and `styled` repositories (326), emilia over `styled`, a `--- style ---` section (recommended). Every step; under (d) this front is rewritten (proposal § 8).
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `emilia/modules/emilia` and `jhonstart-emilia`
