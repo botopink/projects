@@ -35,6 +35,7 @@ only declared dependencies (decision 242); `build`, `test` and the LSP print che
 - Step 7 — `build.zig`'s `test-docs` comment describes `check-docs.sh`'s `reject` / `project` / `body` directives
 - Step 8, box 1 — the LSP reports `module-import-with-from` and `unresolved import source` as `check` does, one `lsp/` snapshot each
 - Step 8, box 2 — `from "<own package name>"` is `error[module-import-with-from]` (309): an embedded std module's brace import reads as `from "std"` (`comptime.zig`), `resolver.sourceProblem` tests the package's own name, the three std sources migrated (`modules/import_own_package_with_from`, `dependency_imports_itself_with_from`, `cli_contract.sh`)
+- Row (309 in the LSP) — the language server makes decision 309's refusal: `resolver.importSourceProblems` takes `own`, `engine.importDiagnostics` passes it, the server reads it from the nearest manifest's `name` (a dependency's own inside its sources); `lsp/diagnostics_import_own_package_with_from` and a server-level test over a scratch package, both red on the parent (`unresolved import source`)
 
 ## Open
 
@@ -62,8 +63,6 @@ exercise every sidecar path)
 
 ### Rows other fronts found
 
-- [ ] the language server does not make decision 309's refusal (`from "<own package name>"`): the
-      engine's `importSourceProblems` passes no package name to the resolver
 - [ ] `botopink check` / `build` print a type error's message and box but not its hint: the
       `PersistentTerm` write (`infer.zig`'s hint names `#[@BeamMemory.Ets]`) and
       `std-unsupported-on-target` carry one and the terminal shows none; a parse error's
