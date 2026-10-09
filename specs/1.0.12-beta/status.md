@@ -1,6 +1,6 @@
 # Status — 1.0.12-beta
 
-**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `6582cdf1` (batch 14: Decl.hooks — 01-checker s23, 277, 354 (4)) · rakun `236947f` · jhonstart `8936320` · emilia `a122dce`
+**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `0c544566` (batch 15: a template reads a hole's build value — 14 s8, 355)) · rakun `236947f` · jhonstart `8936320` · emilia `a122dce`
 · onze `3b36270` · erika `8f88482` · vscode-extension `f041865`
 
 **Fronts:** 71 — **0 done** · **23 partial** · **48 not started**.
@@ -130,7 +130,8 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 12 s2 box 1 — `run/throw_in_case_arm_result` (`run/array_unique` landed with 02 s4 and 05 s1) · 01 s6 + 04 s6
 - [x] 14 s2 slope — ≤ 1 ms/eval on both runtimes (wat 0.5, BEAM 0.6–0.7): kept wasm3 instance, argument-only trace listing, O(text) memo key, the bench's stage split
 - [ ] 14 s2 rest — N=200 ≤ 600 ms on the BEAM runtime (712 / 782 ms): the N=0 build and the node's spawn · 02/03/CLI, 18
-- [ ] 14 s8 — a `styled` literal whose holes are known at build computed at build (355): another expansion's value, the lifted record, `comptime` over an expansion, `contentHash` at comptime · s6 (T19) — 119 box 4 does not wait (render meanwhile)
+- [x] 14 s8 boxes 1–3, 5 — a hole's build value (`Part.known` / `Part.value`), the lifted record imported, `comptime` over an expansion; `styled "${tab4} color: red;"` emitted `styledConstant` (`run/styled_holes_known_at_build`, styled's `repository-stages.sh`)
+- [ ] 14 s8 rest — a hole naming an imported `val` (the export carries its expansion), `contentHash` at comptime · s6 (T19) — computed at render meanwhile, the same CSS
 - [ ] 14 s6 — a decorator's host cells, `@embedFile` / `@embedBytes`, independent invocations · decisions 341–343
 - [x] 14 s7 — a `comptime/tests` fixture for a `\u{…}` decorator body
 - [ ] 17 s1 box 4 — the per-row increment of a keyed `Dict` · `Dict.bump`, decision 340
