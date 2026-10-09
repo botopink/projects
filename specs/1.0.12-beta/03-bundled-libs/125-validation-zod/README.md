@@ -6,11 +6,11 @@ steps 4–12 open, blocked (§ Steps 4–12)
 **Depends on:** `01-compiler/01-checker` step 24 (decision 280, step 7) · decision 325 (07-j: every step, 306's shape). Written against decisions 144 (undeclared keys), 145 (emitted names),
 183 (`07-m`: coercion, step 6), 257 (`07-n`: `Schema<T>` lives in `validation` — amended by 306: the
 place stays, the value is private), 306–308
-**Owns:** `libs/validation/src/**` · `libs/validation/test/**` · `libs/validation/AGENTS.md` ·
-`libs/validation/botopink.json` — except `src/messages.bp`'s `interpolate`, moved to `i18n` by
+**Owns:** `repository/validation/src/**` · `repository/validation/test/**` · `repository/validation/AGENTS.md` ·
+`repository/validation/botopink.json` — except `src/messages.bp`'s `interpolate`, moved to `i18n` by
 `105-i18n` between two steps of this front, never during one (decision 189)
 **Does not touch:** the compiler (`modules/**`) — a need is a row in
-[`language-gaps.md`](../../language-gaps.md) and a nearest form · `libs/std/**` (97) · other bundled
+[`language-gaps.md`](../../language-gaps.md) and a nearest form · `libs/std/**` (97) · other shared
 packages · consumer files in rakun, jhonstart, onze (a consumer imports a marker in its own front)
 
 Feature map — all 211 reference rows with their box: [`surface.md`](./surface.md). Target code per
@@ -22,14 +22,14 @@ Zod's core is `parse`: untrusted data in, typed value or located issues out. `#[
 `v.validate()` checks an **already typed** value, so every JSON / form / config boundary builds the
 record by hand (`language-gaps.md`: "No `record ↔ Json` derivation"; 39 functions named `…Json(`
 outside tests, 33 in rakun). Not a regex demand — `regex.matches(` outside `libs/std` and
-`libs/validation`: 0; `#[pattern(…)]` outside the library: 1, in a test; `registerConstraint(`
+`repository/validation`: 0; `#[pattern(…)]` outside the library: 1, in a test; `registerConstraint(`
 outside: 0; private format walks: 3 `isHex` (`jhonstart-emilia/src/root.bp`,
 `rakun-web/src/static.bp`, `rakun-actuator-api/src/span.bp`). The need is `Json` → record; the rest
 follows: the `#[validated]` type derives parse / decode / bind / encode / JSON Schema as members
 (306 — `#[schema]` folds into it; field markers compose, no public `Schema<T>`), checks grow from 13
 markers to 71, reports gain views and locales.
 
-On feat `libs/validation`: 2 134 source lines — `report.bp`, `constraints.bp` (20 `v*` predicates),
+On feat `repository/validation`: 2 134 source lines — `report.bp`, `constraints.bp` (20 `v*` predicates),
 `decorators.bp` (`#[validated]`, 13 markers, `#[schema]`), `messages.bp`, `spi.bp`, `binding.bp`,
 `table.bp`, `path.bp`, `schemas.bp` — 98 tests in eleven files, green on erlang and commonJS.
 Consumers: rakun's `rakun/src/{config,config_check}.bp`; jhonstart and onze import nothing.
@@ -105,7 +105,7 @@ pub type Pet = Cat | Dog | Fish;                                 // was schemas.
   marker where one reads well on a field, else `n/a (306)` with its reason.
 
 **Platform facts fixing the shape** (measured on erlang and commonJS; each a line of
-`libs/validation/AGENTS.md` § Language notes and, where testable, a case of `test/platform_test.bp`;
+`repository/validation/AGENTS.md` § Language notes and, where testable, a case of `test/platform_test.bp`;
 compiler rows in `language-gaps.md`):
 
 - **A result is built by a function.** `Ok(v)` / `Error(e)` are patterns, not constructors; a
@@ -300,7 +300,7 @@ below or `n/a (306)`; the items about types and markers stand.
       327: `T.parse`, `T.parseAt`, `T.decode`, `T.bind`, `T.encode`, `T.jsonSchema`) beside `validate()` / `constraints()`; a type carrying both today migrates to the one;
       rakun's config binder (`validate()` / `constraints()` by name) unchanged
 - [ ] `Schema<T>`, `Codec<A, B>`, `Check<T>`, `schemas`, `checks` not exported from `root.bp`;
-      `grep -rn "schemas\.\|checks\.\|Schema<" ` outside `libs/validation/src` answers nothing in
+      `grep -rn "schemas\.\|checks\.\|Schema<" ` outside `repository/validation/src` answers nothing in
       `repository/` (consumers in 117, 121, 127 move by their fronts)
 - [ ] the field markers `#[each(…markers)]`, `#[codec(decode: f, encode: g)]`, `#[map(f)]`,
       `#[tryMap(f)]`, `#[preprocess(f)]`, `#[check(rule)]` on a field, and `#[validated(transparent)]`
@@ -329,14 +329,14 @@ Every step, in 306's shape; `surface.md` re-sorted into marker, declared type or
 
 ## Notes
 
-- **Embedded source grows:** `libs/validation` is compiled into the binary (`build.zig`'s
-  `bundled_packages`); step 3 reports binary size before and after.
+- **Not in the compiler:** `repository/validation` is a repository of its own (decision 326); a
+  consumer declares it in `dependencies`, and a step's size is the package's, not the binary's.
 - **`#[validated]`'s contract stays:** rakun's config binder calls `validate()` / `constraints()` by
   name (decision 216); every existing marker keeps code, message, table row.
 - **`Violation.field` is a path only for nested data**; flat record → the field's name, as before.
 - **Consumers unchanged here:** the three `isHex` walks, hand-written `…Json(` functions, route
   handlers reading query fields — candidates in each member's owning front.
-- **Snapshots:** none in `libs/validation/test/`, none added — JSON Schema asserted as a literal.
+- **Snapshots:** none in `repository/validation/test/`, none added — JSON Schema asserted as a literal.
 - **Not added:** `z.function`, `z.promise`, `z.symbol`, `z.undefined`, `z.nan`, typed registries,
   `fromJSONSchema`, JIT switches — each `n/a` with reason in `surface.md`. None is "later".
 - **Async:** derived schemas are synchronous. `schemas.refineAsync` (private after 306; step 12
@@ -350,7 +350,7 @@ Every step, in 306's shape; `surface.md` re-sorted into marker, declared type or
   `refusal_test.bp` has one row per marker and fails when the counts differ.
 
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `--target commonJS`
-green and `botopink format --check src test` clean in `libs/validation`
+green and `botopink format --check src test` clean in `repository/validation`
 - [ ] `zig build test-libs`: rakun's two `#[validated]` consumers still green — the name contract
       `validate()` / `constraints()` (decision 216) did not move
 - [ ] every file under `examples/` is a suite case — an example that does not compile is red

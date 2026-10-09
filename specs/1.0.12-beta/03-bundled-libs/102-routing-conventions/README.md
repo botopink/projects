@@ -5,15 +5,15 @@ on what an app file is; 128 and rakun group A wait on step 3 · **State:** steps
 package); step 3 open
 **Depends on:** decision 323 (49-d confirmed as amended: "onze imports nothing from routing"
 reversed) (step 3)
-**Owns:** `repository/botopink-lang/libs/routing/src/conventions.bp` (new), `libs/routing/src/segment.bp`
-(new helpers), `libs/routing/test/**`, `libs/routing/AGENTS.md`, `libs/routing/botopink.json`
-(`files`), `libs/routing/src/root.bp` (the module's line) · consumers, one commit each: `repository/rakun/modules/rakun-app/src/{file_router,static_gen}.bp`,
+**Owns:** `repository/routing/src/conventions.bp` (new), `repository/routing/src/segment.bp`
+(new helpers), `repository/routing/test/**`, `repository/routing/AGENTS.md`, `repository/routing/botopink.json`
+(`files`), `repository/routing/src/root.bp` (the module's line) · consumers, one commit each: `repository/rakun/modules/rakun-app/src/{file_router,static_gen}.bp`,
 `repository/rakun/modules/rakun-hateoas/src/hal.bp`, `repository/onze/modules/onze/src/types.bp`,
 `repository/onze/modules/onze-cli/src/scan.bp`, `repository/onze/modules/onze-bundler/src/chunk.bp`,
 `repository/jhonstart/modules/jhonstart/src/routes.bp`
-**Does not touch:** `build.zig`, `libs/AGENTS.md`, `scripts/format-check.sh` (`routing` registered) ·
+**Does not touch:** the compiler (`repository/botopink-lang/**` — `routing` is a repository of its own since 138 (decision 326)) ·
 other files of those members · `onze-bundler/src/scan.bp` (`stagedSegment`, onze-specific, stays) ·
-rakun-app's disk walk (`walkSegments` over `fs` — no host cell in a bundled package)
+rakun-app's disk walk (`walkSegments` over `fs` — no host cell in `routing`)
 
 ## Goal
 
@@ -34,7 +34,7 @@ interceptors) owned by `routing` alone; its seven re-derivations gone:
 
 `routing` already parses paths (`parsePath`, `segment.patternOf`). A decorator body may call a bodied
 package function (only *host* functions refused), so `#[page]` calls `segment.paramNamesOf`
-directly. `libs/routing/src/`: 10 modules, 82 tests (66 before steps 1–2).
+directly. `repository/routing/src/`: 10 modules, 82 tests (66 before steps 1–2).
 
 Surface (names under decision 163 — `import {x} from "<package>"` is ambiguous when two packages
 export `x`):
@@ -73,13 +73,13 @@ differ as stated above.
 - Step 1 — `conventions.bp`: `ConventionFile`, `fileKinds` (wrap order, 171), `kindOf`, `kindLetter`
   (172), `classify` (one path, 173), `conventionConflicts`; `test/conventions_test.bp` (9 tests) —
   every kind classifies, stray files answer `null`, page-beside-route and the two-root-groups claim
-  are named conflicts, `kindLetter` inverts `table.kindLabel`; `grep -rn "fs\." libs/routing/src`
+  are named conflicts, `kindLetter` inverts `table.kindLabel`; `grep -rn "fs\." repository/routing/src`
   empty
 - Step 2 — `segment.paramNamesOf`, `segment.fillPattern` (refuses a missing `[x]`, accepts a missing
   or empty `[[...x]]`, refuses a twice-bound name), `segment.toColonPattern`
   (`"[id]/[...rest]"` → `":id/:...rest"` asserted); 7 tests in `test/segment_test.bp`
 - Both: `botopink test` 82 passed, 0 failed on erlang and on commonJS; `botopink format --check src
-  test` clean; `libs/routing/AGENTS.md`, `botopink.json` `files`, `root.bp` updated
+  test` clean; `repository/routing/AGENTS.md`, `botopink.json` `files`, `root.bp` updated
 
 ## Open
 
@@ -103,7 +103,6 @@ Each site deletes its copy, imports the package; member tests keep their asserti
 - [ ] rakun-hateoas `bracketToColon` gone; jhonstart `#[page]` calls `segment.paramNamesOf`
 - [ ] `onze/examples/blog`'s app tree classifies identically before and after (diff of the staged tree)
 
-Changed by their owners: `libs/AGENTS.md`'s `routing` packages row does not name the conventions yet
-(`104-http`'s line); `07-onze/modules.md`'s dependency column gains onze → `routing` (323).
+Changed by their owners: `07-onze/modules.md`'s dependency column gains onze → `routing` (323).
 
 **Gate:** standard (fronts.md § Gate) + each touched member's `AGENTS.md` updated in its commit
