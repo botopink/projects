@@ -24,7 +24,7 @@ import {scopedStyle} from "jhonstart-emilia";
 
 type Props(
     title: string,
-    children: Children = [],
+    children: Node = [],
 )
 ---
 <article>

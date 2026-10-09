@@ -11,7 +11,7 @@
 // Target: both.
 
 // [the unfold: the default function of the package the manifest names] -------
-import html, {Element, Children, renderToString} from "jhonstart";
+import html, {Element, Node, renderToString} from "jhonstart";
 
 // [the header's declarations → the module, as written] -----------------------
 import {article, h2, p, timeTag, footer} from "jhonstart";
@@ -20,7 +20,7 @@ import {lib.db.Post};
 type Props(
     post: Post,
     featured: bool = false,
-    children: Children = [],
+    children: Node = [],
 )
 
 // [the unfold: the function] — named after the file; it takes `Props` because

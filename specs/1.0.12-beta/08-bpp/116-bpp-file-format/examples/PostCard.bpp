@@ -26,7 +26,7 @@ import {lib.db.Post};
 type Props(
     post: Post,
     featured: bool = false,
-    children: Children = [],
+    children: Node = [],
 )
 
 val date = props.post.published;

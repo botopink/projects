@@ -26,7 +26,7 @@ type Props(
     caption: string,
     trusted: string = "",
     extra: string = "",
-    children: Children = [],
+    children: Node = [],
 )
 ---
 <div class={classList(["box", classIf(isRed, "red"), extra])}>

@@ -22,8 +22,8 @@
 import {body, head, htmlTag, title} from "jhonstart";
 
 type Props(
-    children: Children = [],
-    headExtra: Children = [],
+    children: Node = [],
+    headExtra: Node = [],
 )
 ---
 <htmlTag lang="en">

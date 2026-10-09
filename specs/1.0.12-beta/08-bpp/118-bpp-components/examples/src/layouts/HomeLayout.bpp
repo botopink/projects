@@ -19,8 +19,8 @@ import {main} from "jhonstart";
 import {layouts.BaseLayout};
 
 type Props(
-    children: Children = [],
-    headExtra: Children = [],
+    children: Node = [],
+    headExtra: Node = [],
 )
 ---
 <BaseLayout>

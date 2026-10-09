@@ -56,8 +56,8 @@ pub fn Menu(items: Array<string>, visible: bool, status: Status) -> Element {
 // ── what a hole may hold ────────────────────────────────────────────────────
 
 pub fn Counter(count: i32, label: ?string, extra: Element) -> Element {
-    // A child is a `Children`: a string, an `Element`, or a list of them.
-    // A number is not — it is written out. An optional renders when present.
+    // A hole holds a `Node`: a string, a number or a bool (their text), an
+    // `Element`, or a list of them. An optional renders through `if (x) { v -> … }`.
     return html """
       <p>
         {count.toString()} items
@@ -126,8 +126,8 @@ test "several roots and a fragment need no wrapper element" {
 
 // What does not compile, and where the error lands:
 //
-//   html """<p>{count}</p>"""            count: i32
-//     error: type mismatch: expected Children, got i32          at the template call
+//   html """<p>{subtitle}</p>"""         subtitle: ?string
+//     error: type mismatch: expected string | i32 | i64 | f32 | f64 | bool | Element | Element[], got ?string
 //
 //   html """<p>{1 + <b>x</b>}</p>"""
 //     error: markup may begin a lambda body, an `if` / `else` block or a `case`

@@ -144,110 +144,64 @@ This front: `isRaw`, `classList` (no `Tag` type — 302); 119 `isGlobal`, `isInl
 header import, only named builders imported. This front writes
 `jhonstart/modules/jhonstart/src/prelude.bp` and the node type (undeclared today).
 
+## Done
+
+Landed in `jhonstart-html` (tests in `test/`, refusals in the workspace's `refusals/html_*`), the
+core's `node.bp`, `prelude.bp` and `element.bp`'s `View`; green on commonJS and erlang.
+
+- Step 0: `test/platform_test.bp` — a call out of the body (private, `pub` or imported) and recursion
+  refused (rows **A template body cannot call a function**), `xs.at(i)`, a `?T`, a nested `i32`, a
+  `//` comment work; `src/AGENTS.md` § Comptime constraints from those results plus three met while
+  writing (statement closures, label reads, the bounded frame); `test/defects_test.bp` pins the
+  four § Goal defects, red on the old body, green now.
+- Step 1: `name="text"`, `'text'`, `name={expr}` (`string`, `bool` bare / absent, `?string` absent
+  when null), bare, kebab-case, `{...pairs}` on an element after the written attributes; `[name]={…}`
+  refused naming `name={…}`, its code uses rewritten (`html_test.bp`, `elements_test.bp`,
+  `jhonstart-emilia`'s `bridge_test.bp`, `document-shell`'s `shell_dsl.bp`); `{...}` on a component
+  refused (props-f, the recommended reading); the five basic entities decoded, any other refused.
+- Step 2: a hole lowers through core `Node` — text for a string, a number or a `bool`, an `Element`,
+  a list; a `?T`, a record, a function are the checker's type mismatch at the literal's line
+  (`refusals/html_hole_*`); void and self-closing tags in place, `<>` / `<Fragment>`, comments and
+  `<!doctype>` rendered, raw-text bodies unparsed; the spec example landed as
+  `test/template_expressions_example_test.bp`.
+- Step 3: markup after `->` (lambda body, `case` arm) and at the start of an `if` / `else` block; an
+  `if` without `else` gets `else { htmlFragment([]) }`; markup anywhere else fails at the `<`
+  (`refusals/html_markup_operand`); three nesting levels in `template_test.bp`.
+- Step 4 (part): a component tag is a call — attributes as labelled arguments, content as
+  `children` (one bare, several a list), `<slot />` / `<slot>fallback</slot>` read the `children`
+  parameter; an unbound upper-case tag fails at the tag; content to a component without `children`
+  and a narrower `children` are refused (`refusals/html_component_without_children`,
+  `html_narrower_children`); `slot="…"` refused on any child (`refusals/html_slot_attribute`); the
+  spec example landed without its named slots as `test/components_and_slots_example_test.bp`.
+- Step 5 (part): `{raw(s)}`, `classList` / `classIf` (in `html.bp`, the core's at 26 step 0),
+  `hasContent`; `#[isRaw]` makes the body text, a second one refused; an unbound annotation fails at
+  its name; `class:list`, `set:html`, `set:text` and any `prefix:name` refused naming their form;
+  the spec example landed without `#[mustBeBox]` as `test/directives_example_test.bp`.
+- Step 6 (part): the overlay carries a component's and an annotation's `Binding`, attribute names as
+  `property`; a mismatched close fails at the tag (`refusals/html_mismatched_close`); core `node.bp`
+  declares `Node` as a union — a `children: Node` field takes a list, an `Element`, a string without
+  learning anything from the checker; `prelude.bp` (core imports only, `timeTag as time`) compiles
+  with the member; `element.bp` declares `View`, `test/view_test.bp` returns each spelling from the
+  other; the track's examples write `Node`. `jhonstart-markup` build (7 templates, three runs):
+  commonJS 1.8 s → 3.6 s, erlang 3.2 s → 3.7 s.
+
 ## Open
 
-### Step 0 — Measure the body's language, and pin the defects as red tests
-
-- [ ] `test/platform_test.bp`, from a template body: call a bodied private function of the module;
-      recurse; read `xs.at(i)`; bind a `?T`; reassign an `i32` in a nested lambda; write a `//`
-      comment — one test each, passing or naming the refusal
-- [ ] `src/AGENTS.md` § Comptime constraints rewritten from the six results; `html.bp:56-75` keeps only what holds
-- [ ] four red tests, one per § Goal defect row: dropped static attribute, attribute value with a
-      space, nested self-closing tag, element-valued hole
-
-No recursion → parse with the function's explicit stack, plus a `language-gaps.md` row.
-
-### Step 1 — Attributes render
-
-`name="text"` (to the closing quote), `name={expr}`, bare `name`, kebab-case. `bool`: bare
-attribute when true, nothing when false; `?string`: nothing when null. `{...expr}` on an
-**element** appends an `Array<#(string, string)>` (what `formAttrs(binding)` answers; emilia is
-`#[styled(…)]`, a tag annotation — 301); on a component refused (`props-f`). `[name]={expr}` refused with a message naming
-`name={expr}`; its code uses rewritten in the same landing — `jhonstart-html`'s `html_test.bp`,
-`elements_test.bp`, and the § Owns carve-outs `jhonstart-emilia`'s `bridge_test.bp`,
-`document-shell`'s `shell_dsl.bp`, each before the owning front opens (189). Component attributes
-per 192 (§ Mechanism). Native-tag attributes (`fn <tag>(children: Children, attrs: Array<#(string,
-string)> = [])`): `props-d`.
-
-- [ ] `<a href="/a b" title={t} hidden={off} data-x="1">` renders all four as written, escaped by `escape.attribute`
-- [ ] `<form {...formAttrs(binding)}>` renders the pairs in order, after the written attributes
-- [ ] step 0's attribute red tests green
-- [ ] `grep -rn '\]={' repository/*/` over `.bp` files finds no bracket attribute
-
-### Step 2 — Holes of any renderable type, and the tag-shaped corners
-
-`{expr}` under 190, 191, 204 (raw text via `build` until typed embedded expressions); void and
-self-closing tags in place; `<>…</>`, `<Fragment>`; `<!-- … -->` (rendered); doctype; raw-text
-elements (`script`, `style`, `textarea`, `title`) unparsed; `#[isRaw]` on any element (278).
-
-- [ ] `examples/template-expressions-example.bp` passes on both targets
-- [ ] `{n}` for an `i32` renders its `toString()` text, same on both targets (191 — the box once asked for a refusal)
-- [ ] record, optional, function, other-base component in a hole each refused at the expression
-- [ ] `<br/>` inside `<p>` renders inside `<p>`
-
-### Step 3 — Markup inside `if`, `case` and lambdas
-
-- [ ] § Mechanism's four forms render; `if` without `else` renders nothing when false
-- [ ] markup elsewhere (`{1 + <p/>}`, a non-lambda-body argument) fails at the `<`, naming the three allowed positions
-- [ ] three nesting levels — list of lists of conditionals — in one template
-
-### Step 4 — Components and slots
-
-Tag → call with props from attributes (192); tag content = `children` (193, 223). Slot boxes wait on `props-e`.
-
-- [ ] `examples/components-and-slots-example.bp` passes on both targets
-- [ ] upper-case tag resolving to nothing in the caller's scope fails at the tag, as an unbound name
-- [ ] content to a component without `children` fails at the tag; a narrower `children` type refuses what it does not name
-- [ ] `slot="x"` on a child of an **element** (not a component) is a compile error
-- [ ] slot transfer (`<slot name="head" slot="head" />`) through two layouts
-
-### Step 5 — Tag annotations, `raw`, `classList` (278)
-
-The § Mechanism arm: resolve, call with the tag's `@Decl`, act on the meta it records (302).
-Astro's `set:html={s}` is `{raw(s)}` (the core's `raw`, unescaped); `set:text` has no form — `{s}`
-already escapes. `classList(xs: Array<string>) -> string` drops empty strings and joins with one
-space: `class={classList(["box", classIf(isRed, "red"), extra])}`; `classIf(cond, name)` answers the
-name or `""`. `#[isRaw]` records `RawBody` (302): the tag's body is text.
-
-- [ ] `examples/directives-example.bp` passes on both targets
-- [ ] `<div #[fooBar]>` fails at `fooBar` as an unbound name; `<div class:list={…}>` fails at
-      `class:list`, naming `class={classList(…)}`; `set:html` likewise, naming `{raw(…)}`
-- [ ] an annotation whose first parameter is `@Decl` written on an element fails at the annotation
-- [ ] (302) `html` builds each tag's `@Decl` (`kind` `Element` / `Component`, `component`, the static
-      attributes), calls every annotation with it, reads back its meta by type (298): an unknown meta type
-      is ignored by `html` (another reader's); `addMember` / `addType` on a tag refused at the call; two
-      `RawBody` metas on one tag refused at the second; an annotation that records nothing changes nothing
-- [ ] `<Carousel #[clientVisible("200px"), transitionPersist] />` = two annotations in order;
-      `<Carousel #[clientVisible("200px")] #[transitionPersist] />` the same two annotations (286)
-- [ ] an annotation's argument of the wrong type fails at the argument (raw text via `build` until
-      typed embedded expressions, as holes)
-
-### Step 6 — The overlay, and the prelude
-
-Every new token reaches the `CustomNode` tree: component tag carries its `Binding`
-(go-to-definition → the function), component attribute name = `property`, an annotation's name
-carries its `Binding` as a component tag does (go-to-definition → the annotation function),
-expression region left to the host language. jhonstart's `prelude.bp` (270) written, compiled,
-tested with the core.
-
-- [ ] language server's `@ExprCustom` snapshot for a template with a component, a slot, an
-      annotation (`language-server/snapshots/lsp/` — recorded here, owned by `01-compiler/26`; a
-      hand-off if closed to a library front)
-- [ ] mismatched close tag underlines the tag, not the template
-- [ ] core declares `Node` (223) — 191's set — importable `import {Node} from "jhonstart";`; a
-      `children: Node` field coerces as `Children` does (coercion keyed on the name `Children`: if
-      it must learn `Node`, hand-off to `01-compiler/01-checker`, named here before closing)
-- [ ] `jhonstart/src/prelude.bp` holds `import` items of the core's own modules only (`Element`,
-      `ElementBase`, `View`, builders, `Node`), compiles with the member
-- [ ] `element.bp` declares `pub type View = @Component<ElementBase, Element>;` (decision 276) and the
-      prelude imports `View`; a cell shows `-> View` and `-> @Component<ElementBase, Element>` accepted
-      for one another
-- [ ] `html` declares `-> @ExprCustom<View>` (decisions 275, 276): a `.bpp` and a `.bp` that
-      `return html """…"""` both return `View`; the 12 files that use `html """` and the track's
-      examples written `-> Element` follow
-- [ ] `#[client]` (`client.bp`, today a text comparison with `"@Component<ElementBase, Element>"`)
-      accepts a component declared `-> View`: it compares the resolved type (decision 276)
-- [ ] examples' `Children` → `Node`: `grep -rnw Children 08-bpp/*/examples` (33 lines in 16 files today) is empty
+- Step 1 — native-tag attribute names and types: `props-d`.
+- Step 4 — named slots and the slot transfer through two layouts: `props-e`. The props as one
+  record (192, `props: type(…)`, 207): **Template-built code cannot build an inline props type**
+  (`01-checker`); until then components take parameters and `<slot />` reads `children`.
+- Step 5 — the 302 arm (build a tag's `@Decl`, call every annotation, read its meta by type; two
+  annotations in order on `<Carousel>`; an argument of the wrong type at the argument): **A tag
+  annotation cannot be called by the template function** (`01-compiler/130` step 9). The box "an
+  annotation whose first parameter is `@Decl` written on an element fails" is 278's, replaced by 302
+  (every annotation takes `@Decl`; on a tag its `kind` says element or component).
+- Step 6 — the language server's `@ExprCustom` snapshot: hand-off to `01-compiler/26`. `html`
+  declared `-> @ExprCustom<View>`: **A template function declared `-> @ExprCustom<View>` refuses
+  built code of type `Element`**, and **A type alias of `@Component<…>` is not the effect in a
+  return** (`01-checker`). `#[client]` comparing the resolved type: hand-off to `05-jhonstart/26`
+  (decision 276 names it).
+- Gate: `zig build test-libs` over jhonstart, emilia, erika, onze is the coordinator's cold gate.
 
 ## Decisions
 
@@ -273,7 +227,9 @@ tested with the core.
 
 - **Hand-offs.** Renaming every
   `Children` signature (`element.bp`, `elements.bp`) and moving children into props in every track
-  member component are hand-offs to `05-jhonstart`
+  member component, and the builders the core lacks (`em`, `strong`, `small`, `pre`, `code`, `ol`,
+  `figure`, … — a template's tag resolves to a builder in scope, so today a page declares them with
+  `el`), are hand-offs to `05-jhonstart`
   ([`../../05-jhonstart/README.md`](../../05-jhonstart/README.md) § Handed to this track by
   `08-bpp/118`), not steps here.
 - **Not added.** Dynamic tags (`<Element>` from a variable): `{el(tag, children, attrs)}` in a hole. `.html`/`.svg` components:

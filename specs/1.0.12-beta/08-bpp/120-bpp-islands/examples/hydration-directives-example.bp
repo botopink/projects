@@ -25,7 +25,7 @@
 // Target: both — the page is erlang, the components are both: their first
 // render is on the server, and that is what is asserted here.
 
-import html, {View, ElementBase, Children, renderToString} from "jhonstart";
+import html, {View, ElementBase, Node, renderToString} from "jhonstart";
 import {button, div, h1, nav, p, section, span} from "jhonstart";
 import {client, clientProps, mountIslandWhen, Hydrate, islandRows} from "jhonstart";
 import {clientLoad, clientIdle, clientVisible, clientMedia, clientOnly} from "jhonstart";
