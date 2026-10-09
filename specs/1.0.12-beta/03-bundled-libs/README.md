@@ -25,7 +25,7 @@ no name std or a framework already exports).
 | [`105-i18n/`](./105-i18n/README.md) | medium | not started | bundled `i18n`: one BCP 47 subset grammar (decision 180), `negotiate`, path helpers, `alternatesFor`, `interpolate` | 104 step 5 · `04-rakun/22` · `05-jhonstart/26` · 03r-q confirmed |
 | [`106-log/`](./106-log/README.md) | high | partial: step 1 (the package) on feat; step 2 open | bundled `log` (decision 195): levels, `LogRecord`, four renderers, a sink-injected `Logger`, the one `errorDigest` (decision 194) | step 2: `04-rakun/17`, `05-jhonstart/26` step 4, `04-rakun/65` |
 | [`107-release/`](./107-release/README.md) | low | not started (conditional on `07-g`) | bundled `release`: pure OTP release renderers rakun-cli and onze-release both write | `07-g` · `04-rakun/81` · `07-onze/71` |
-| [`125-validation-zod/`](./125-validation-zod/README.md) | high for the step 0–2 residue, medium after | partial: steps 0–3 done; steps 4–12 open, blocked | Zod's feature set in `validation`: the `#[validated]` type is the only schema (306 — `#[schema]` folds into it) with parse members `parse`, `parseAt`, `decode`, `bind`, `encode`, `jsonSchema` (spelling `ctr-u`); field markers where Zod composes values (`Schema<T>`, `schemas.*`, `checks.*` private); 71 checks; report views; locales. Map: [`surface.md`](./125-validation-zod/surface.md). Extracts nothing — here as owner of `libs/validation/**` | `07-j` (reduced: ≈ option (c) under 306) |
+| [`125-validation-zod/`](./125-validation-zod/README.md) | high for the step 0–2 residue, medium after | partial: steps 0–3 done; steps 4–12 open (scope: 325) | Zod's feature set in `validation`: the `#[validated]` type is the only schema (306 — `#[schema]` folds into it) with parse members `parse`, `parseAt`, `decode`, `bind`, `encode`, `jsonSchema` (spelling `ctr-u`); field markers where Zod composes values (`Schema<T>`, `schemas.*`, `checks.*` private); 71 checks; report views; locales. Map: [`surface.md`](./125-validation-zod/surface.md). Extracts nothing — here as owner of `libs/validation/**` | `07-j` (reduced: ≈ option (c) under 306) |
 
 ## Order
 
@@ -124,7 +124,7 @@ onze-release also commonJS).
 package cannot be imported" toolchain row stay open; byte-exact wires belong with the compiler.
 **Blocks.** the whole track's shape.
 
-### 07-j · How much of Zod is `125-validation-zod` (reduced: ≈ option (c) under 306)
+### 07-j → decision 325
 
-In full in [`125-validation-zod/README.md`](./125-validation-zod/README.md) § Decisions. 306 already
-draws the shape; recommendation: every step, in order. Blocks: the front's size.
+Every step of 125, in order, in 306's shape.
+

@@ -133,7 +133,7 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 | **105** | 104 s5 · 22 · 26 · 03r-q confirmed | — |
 | **106** s2 | 17 · 26 s4 · 65 · ctr-k | — |
 | **107** | 07-g (a) · 71 · 81 | — |
-| **125** s3–10 | 07-j (reduced: ≈ (c) under 306) · s6: decision 183 | 127 (s6) |
+| **125** s4–10 | 325 (every step) · s6: decision 183 | 127 (s6) |
 | **128** | the rakun commits of 102 s3 and 103 s2 · the 130 rule (03r-ao) · ctr-k | every rakun front |
 | **04** | 128 | 13 · 12 (s1) · 22 (s5) · 08 s1 · 19 s2–5 · 88 (s4) · 123 · 104 s5 · 71 s3 |
 | **74** | 128 | 92 |

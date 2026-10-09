@@ -3,7 +3,7 @@
 **Priority:** high for the step 0–2 residue (`08-bpp/121` content collections and `08-bpp/127`
 actions take the `#[validated]` type — decision 306); medium for the rest · **State:** partial: steps 0–3 done;
 steps 4–12 open, blocked (§ Steps 4–12)
-**Depends on:** `01-compiler/01-checker` step 24 (decision 280, step 7) · `07-j` (reduced: ≈ option (c) under 306). Written against decisions 144 (undeclared keys), 145 (emitted names),
+**Depends on:** `01-compiler/01-checker` step 24 (decision 280, step 7) · decision 325 (07-j: every step, 306's shape). Written against decisions 144 (undeclared keys), 145 (emitted names),
 183 (`07-m`: coercion, step 6), 257 (`07-n`: `Schema<T>` lives in `validation` — amended by 306: the
 place stays, the value is private), 306–308
 **Owns:** `libs/validation/src/**` · `libs/validation/test/**` · `libs/validation/AGENTS.md` ·
@@ -173,19 +173,19 @@ compiler rows in `language-gaps.md`):
 
 ## Open
 
-### Steps 4–12 — blocked (measured 2026-10-09)
+### Steps 4–12 — what each still waits on
 
-Each step's scope depends on an open answer; nothing in steps 4–12 is started.
+Decision 325 (07-j) fixed the scope: every step, in order. Nothing in steps 4–12 is started.
 
 | Step | Blocked by |
 |---|---|
-| 4 enums, unions, tuples, maps, sets | `07-j` (only option (c) has steps 4–10); the decorator that reads an enum is `#[validated]`'s after 306 and its members' spelling is `ctr-u`'s; `#[tag]` waits on the **`Decl.variants`** gap row |
-| 5 object policy, derived types | `07-j`; 307's `Type` (std `types.bp`) and `01-checker` step 28 (`#[validated] pub val RecipePatch = Type.partial(Recipe)`) |
-| 6 coercion, transforms, form binder | `07-j`; the `bind` member's spelling (`ctr-u`) |
-| 7 refinements and messages | `07-j`; `01-checker` step 24 (280: `#[check(rule, at: .field, code: .Custom)]` takes typed arguments) |
-| 8 combinators and codecs | `07-j`; 306's field markers (`#[codec]`, `#[map]`, `#[preprocess]`, `#[check]`) take function values (280, step 24); `encode`'s spelling (`ctr-u`) |
-| 9 reflection, error views, JSON Schema | `07-j`; `jsonSchema`'s spelling (`ctr-u`); reflection reads `@typeInfo(T)` meta (298, 306) |
-| 10 locales | `07-j` |
+| 4 enums, unions, tuples, maps, sets | the decorator that reads an enum is `#[validated]`'s after 306 and its members' spelling is `ctr-u`'s; `#[tag]` waits on the **`Decl.variants`** gap row |
+| 5 object policy, derived types | 307's `Type` (std `types.bp`) and `01-checker` step 28 (`#[validated] pub val RecipePatch = Type.partial(Recipe)`) |
+| 6 coercion, transforms, form binder | the `bind` member's spelling (`ctr-u`) |
+| 7 refinements and messages | `01-checker` step 24 (280: `#[check(rule, at: .field, code: .Custom)]` takes typed arguments) |
+| 8 combinators and codecs | 306's field markers (`#[codec]`, `#[map]`, `#[preprocess]`, `#[check]`) take function values (280, step 24); `encode`'s spelling (`ctr-u`) |
+| 9 reflection, error views, JSON Schema | `jsonSchema`'s spelling (`ctr-u`); reflection reads `@typeInfo(T)` meta (298, 306) |
+| 10 locales | nothing (325) |
 | 11 references, not strings | `01-checker` step 24 (281: `#[orElse(.Tuna)]`, `#[wireName]`) |
 | 12 `#[schema]` becomes `#[validated]` | `ctr-u` (the members' spelling) |
 
@@ -318,19 +318,9 @@ below or `n/a (306)`; the items about types and markers stand.
 
 ## Decisions
 
-### 07-j · How much of Zod is the front (reduced: ≈ option (c) under 306)
+### 07-j → decision 325
 
-306 already draws the shape — markers, declared unions and tuples, `#[validated]`'s parse members, a
-row only a value could say `n/a (306)`; what stays open is the size, recommended (c) in step order
-([`decisions-pending.md`](../../decisions-pending.md) `07-j`).
-
-**Measured.** `surface.md`: 211 reference rows; 11 native, 37 have, 134 add, 7 need a compiler row,
-20 have no meaning here, 2 out of the reference's core.
-**Options.** (a) markers only — §§ 4.3, 4.4, 4.6 (step 3 alone); (b) steps 0–2 and 3: `parse<T>` for
-flat records + markers; (c) every step.
-**Recommendation.** (c), in step order. (a) lacks the function Zod is named for; (b) leaves unions,
-coercion, codecs hand-written by consumers — the cost `language-gaps.md` records.
-**Blocks.** the front's size.
+Every step, in 306's shape; `surface.md` re-sorted into marker, declared type or `n/a (306)`.
 
 `ctr-u` — reduced by 306 to the spelling of `#[validated]`'s parse members (recommended: 306's
 names as members, `Player.parse(doc)`) ([`../../decisions-pending.md`](../../decisions-pending.md)).

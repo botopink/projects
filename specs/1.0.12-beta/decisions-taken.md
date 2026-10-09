@@ -4,7 +4,7 @@ The rules the fronts implement against. Numbers continue from
 [1.0.10-beta's record](../1.0.10-beta/decisions-taken.md) (which stopped at 143; 91–94, 97 and
 99–101 are used) and are never renumbered or reused. A question is raised in
 [`decisions-pending.md`](./decisions-pending.md) under a lettered id and moves here with the next
-free number. **The next free number is 325.**
+free number. **The next free number is 326.**
 
 Each row: number · the id it answered · the rule in force · the fronts it binds. A row amended by a
 later one states only what is in force and cites the amendment; a row fully replaced is one line.
@@ -32,7 +32,7 @@ behaviour; shared logic in std) — the maintainer may reverse it.
 164, 167, 168, 170, 205–211, 214, 215, 239, 242, 244, 245, 247, 255, 264, 309, 310, 311, 314, 315, 319, 320, 322 · Comptime, reflection &
 decorator outputs: 216, 234–237, 248, 251–254, 256, 266–269, 277, 316 · Formatter: 165, 166, 243 · Backends: 169,
 179, 238, 240, 241, 259–263 · std: 174–178, 197, 217, 250 · Bundled libraries: 144, 145, 163,
-171–173, 180–183, 194–196, 257, 324 · rakun: 184, 185, 187, 201, 274, 312, 313, 318, 321 · Track ordering: 188, 189 ·
+171–173, 180–183, 194–196, 257, 324, 325 · rakun: 184, 185, 187, 201, 274, 312, 313, 318, 321 · Track ordering: 188, 189 ·
 jhonstart & templates: 186, 190–193, 200, 202, 204, 220, 223 · onze: 218, 323 · bpp: 198, 199, 203,
 212, 213, 221, 222, 224, 270, 271, 272, 273, 275, 276. No decision of this milestone is emilia's alone.
 
@@ -202,6 +202,7 @@ jhonstart & templates: 186, 190–193, 200, 202, 204, 220, 223 · onze: 218, 323
 | 196 | 07-a | A bundled `http` — `import {cookie, accept} from "http";` — one cookie reader, one q-value parser, one home for the header codecs, target-agnostic, consumed by rakun and onze-server; rakun's four `Cookie:` readers (`request_context.bp`, `csrf.bp`, `i18n.bp`, `session_cookie.bp`), onze-server's and the three q-value parsers are deleted for it; rules 181 and 182 | 104 |
 | 257 | 07-n | `Schema<T>`, `#[schema]` and the schema combinators live in the bundled `validation`, beside the constraint markers and `#[validated]` (`import {schemas} from "validation";`); every failure — a constraint or a decode — is a `ValidationReport` with each violation at its path; std keeps `json` and knows nothing of validation *(Amended by 306: `Schema<T>` and the combinators are private; the `#[schema]` type is the public schema.)* | 125 step 2 |
 | 324 | 103-a | **One function derives an action id: `actions.id.deriveActionId(secret, module, name, buildId)`; rakun-app keeps no wrapper.** The package names it `deriveActionId` (163: a bundled package takes no name a framework exports) and answers `isActionId(id)` for the grammar. rakun-app's `actionId(module, name, buildId)` is deleted, not kept as a wrapper: its callers (`resolveAction`, the action registration in `actions.bp`, `actions_test.bp`) call `deriveActionId` with the secret read from the `#[config("rakun.actions")]` record (299), never `rkProp`. jhonstart-forms checks with `isActionId` | `03-bundled-libs/103` step 2 · `04-rakun/22` · `05-jhonstart/67` |
+| 325 | 07-j | **Front 125 is all of Zod in 306's shape — every step, in order.** Steps 4–10 stand: enums, unions, tuples, maps and sets as declared types (4); object policy and 307's derived types (5); coercion, transforms and the form binder `bind` (6); refinements as `#[check(rule, at: .field, …)]` with function values and messages (7); codecs, `#[map]`, `#[preprocess]`, `#[each]` as field markers and `encode` (8); reflection, error views (`flatten`, `tree`, `pretty`), metadata and `jsonSchema` (9); locales `en`, `ptBR`, `es` (10). `#[validated]`'s members are `parse`, `parseAt`, `decode`, `bind`, `encode`, `jsonSchema` (their spelling is `ctr-u`'s); every `surface.md` row is re-sorted into a marker, a declared type or `n/a (306)` with its reason | `03-bundled-libs/125` steps 4–12 |
 
 ## rakun
 
