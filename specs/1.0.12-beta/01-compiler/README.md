@@ -63,7 +63,7 @@ choices to confirm (16-a/b, 23-b/c, std-c, 24-a/b/c/g, 01c-a/b, 0405-b) in
 [1.0.10's](../../1.0.10-beta/decisions-pending.md); front in parentheses:
 **17-b, 17-c** ([`17-beam-memory`](./17-beam-memory/README.md) § Decisions) · **134-d**
 (134) · **C-14** (07 step 9) · **16-a, 16-b** (16) · **23-b, 23-c, std-c** (23) · **24-a, 24-b,
-24-c, 24-g** (24) · **01c-a, 01c-b** (01) · **0405-b** (04) · **imp-a** (01) · **lg2-a … lg2-w**
+24-c, 24-g** (24) · **01c-a, 01c-b** (01) · **0405-b** (04) · **lg2-a … lg2-w**
 (`lg2-k` answered by 216, `lg2-f`/`lg2-i` by 280, `lg2-g` by 281): none opens a front until
 answered, each then a step — 01 lg2-a/e (only `owner`)/q +
 parser rows lg2-m/r/t, 14 lg2-j/o/w, 26 lg2-v; `lg2-l` maybe de facto (`@panic` / `@todo`

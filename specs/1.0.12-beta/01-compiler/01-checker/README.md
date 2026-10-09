@@ -285,8 +285,9 @@ step 2) and the resolver keys on that declaration.
       reads `m.params` of a `@Decl`); today `unknown field 'name' on type 'Param'`
 - [ ] package module namespace in type and value position (`import {report} from "validation"`, then
       `report.X`) as for std modules — exports known only to `comptime.zig`'s `resolveImports`
-- [ ] two aliased imports of two same-named **types** stay refused (decision 170 makes them legal)
-      until backends tell types apart by module — maintainer's question (imp-a)
+- [ ] two aliased imports of two same-named **types** are legal (310): every backend qualifies a type by
+      its module; `modules/import_two_types_one_name` becomes an accept cell on every target (until
+      then the refusal is a `language-gaps.md` row)
 - [ ] `@External.Wasm` binding read on every target: checker walk over `external_variants` with
       `codegen/wat/host_binding.zig`'s `parse`, so a misspelt `op:` no wasm build reaches is refused
       (from `05-wasm` step 5)
