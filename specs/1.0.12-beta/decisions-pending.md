@@ -462,6 +462,49 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Recommendation.** (a).
 - **Blocks.** 118 step 1.
 
+#### 118-a · Who rewrites the native builders into props form, and when (*proposed*)
+- **Measured** (botopink-lang `56d4bc29`, jhonstart `76da71d`). Decision 351 (1) makes each native tag a
+  builder whose first parameter is the element's props record. The builders are `element.bp`'s eight
+  (frozen — `fronts.md` § Ownership, `05-jhonstart`) and `elements.bp`'s (`05-jhonstart/26`'s; 351
+  binds 26 for it), and 26 opens only after 118 lands (26's README § Depends on): the one box of 118
+  step 1 still open needs a file of a front that starts after it. The `(children, attrs:)` shape is
+  called by hand in 78 `.bp` files (jhonstart 51, onze 27). Two compiler needs come before any
+  rewrite: `pub val AnchorProps = Type.merge(GlobalAttrs, AnchorAttrs);` as a parameter type is
+  `'AnchorProps' is a value, not a type` (`01-checker` s28); a named props record is filled by no
+  labelled call — `<anchor href="/x">` against `fn anchor(props: AnchorProps)` is
+  `'anchor' expects 1 argument(s), got 2`, and so is `anchor(href: "/x")` by hand (the
+  `language-gaps.md` row **Template-built code cannot build an inline props type**). And 351 (4)
+  has no reading in a `.bp` file today: `html`'s `lookup` answers `Binding(name, kind)`, so a
+  prelude builder and a local `fn em(…)` are one to it. What 118 enforces meanwhile, in `html.bp`:
+  351's names (camelCase rendered in HTML's spelling, `data-*` a `string`, any other kebab-case and
+  `onClick` refused at the name) and no pair spread on an element.
+- **Options.**
+  (a) 118 takes carve-outs of `element.bp` and `elements.bp` once s28 and 207's spelling land, and
+  rewrites the 78 hand-written callers in jhonstart and onze in the same landing:
+  ```bp
+  pub val AnchorProps = Type.merge(Type.merge(GlobalAttrs, AriaAttrs), AnchorAttrs);
+  pub fn a(props: AnchorProps) -> Element { return el("a", props.children, attrsOf(props)); }
+  // a caller written by hand: a(href: "/x", class: "nav", children: "Home")
+  ```
+  (b) The box moves to `05-jhonstart/26`, after its step 0 (`html` in the core, decision 200) and the
+  two checker needs; 118 lands with the html-side rules above and its box reads "handed to 26":
+  ```bp
+  // 118 lands:  <a hreff="/x">  renders  <a hreff="/x">   (unknown attribute not refused yet)
+  // 26 then:    <a hreff="/x">  is  error: `a` has no field `hreff`  at the attribute
+  ```
+  (c) 118 adds a core module `intrinsics.bp` (a new carve-out) holding the props records and
+  props-taking builders the prelude imports under the tag names; the `(children, attrs:)` builders
+  stay for hand-written code until 26 retires them:
+  ```bp
+  // prelude.bp
+  import {intrinsics.anchor as a, intrinsics.division as div};
+  // hand-written code keeps: import {a} from "jhonstart"; a(["Home"], attrs: [#("href", "/")])
+  ```
+- **Recommendation.** (b): one writer per file (`fronts.md` rule 5), one builder per tag; (a) and (c)
+  wait on the same two checker steps, so neither refuses an unknown attribute sooner than (b), and (c)
+  leaves two builders under one tag name.
+- **Blocks.** 118 step 1's native-props box (351 (1), (2), (4), the element's props spread).
+
 #### 119-b · Where a component computed at render registers (*proposed*)
 - **Measured** (botopink-lang `d7c71405`, styled `aff2eb0`). A literal with no hole emits `styledConstant("s_…", ".s_…{…}")` / `propertyConstant(…)` with literals (`scripts/git-hooks/repository-stages.sh` reads the emitted module on erlang and commonJS); a literal with holes emits `styledComputed` / `propertyComputed`, which build `Styled(className, rules)` when they run and register it nowhere — nothing in `styled` collects the components a render ran. `StyledBase()` is a phantom; `@getContext(T)` is checked (`comptime/infer.zig`) but no backend lowers it, so a component cannot reach a render's sheet through its base. `styled` has no host cell; emilia's per-render store is two host cells (`emilia.bp:63-77`, the process dictionary / `globalThis.__emilia_sheet`), and `06-emilia/34` step 5 says that store "is what `css` and `styled` now hold".
 - **Options.** (a) `styled` holds the per-render store — host cells on erlang (process dictionary) and node (a `globalThis` map), emilia's two moved: `styledComputed` registers its class and rules when it runs, a `${p}` splice registers nothing (no class of its own, 338), `rendered()` answers the registered components once each in first-registration order and empties the store, a constant registers nothing (the build's sheet, 124):
