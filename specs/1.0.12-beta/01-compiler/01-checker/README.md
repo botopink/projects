@@ -153,6 +153,7 @@ construction (a function, a resource) is a located refusal.
       loses its `.wasm.expect`)
 - [ ] `reject/comptime_value_not_liftable` — a function value out of a `comptime`, located at it
 - [ ] the module-level `comptime` `val` after an import (step 20's finding) emitted on every target
+- [ ] a `comptime { … }` block in a function body builds on commonJS and wasm (it fails at codegen there)
 
 ### Step 22 — the prelude scope (decision 270)
 
@@ -340,6 +341,10 @@ pub fn posts() -> string { return loadPosts(); }
       annotation is `#[@External.<Target>(…)]`, the target `commonJS`), and the `PersistentTerm`
       write's hint for a `Dict` names `#[@BeamMemory.Ets(keyed = true)]` where the argument is
       written `keyed: true`
+- [ ] a partially returning `@block` (a `return` on some paths, no value on the fall-through)
+      type-checks; commonJS prints `null` on the fall-through (from `04-js` step 1)
+- [ ] a type error in a decorator body (`decl.nope`) escapes the checker and surfaces at run time as
+      `{badkey,nope}`
 
 **Gate:** standard (fronts.md § Gate) + every re-recorded `snapshots/comptime/**` file read for
 expected/found orientation; a refusal moving a backend fixture is reported to that backend's front,

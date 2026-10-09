@@ -164,6 +164,7 @@ rakun's copies, by primitive:
 | 6 | consumer outside the checkout cannot import `io/random` on commonJS: `module 'std/io/random' requires "./sidecars/random.mjs", but its library 'std' resolves to no package directory` | `import {io.random} from "std"` in a package under `/tmp` | **unowned**; proposed `01-compiler/26-cli-tooling` (bundled-package resolution) |
 | 7 | `nextDelay(policy, 1).unwrapOr(0)` is `type mismatch: expected i32, got i64` — a literal widens to `i64` as argument and field, not as `unwrapOr`'s default | that expression | `01-compiler/01-checker` |
 | 8 | erlang `[[1, 2], [3]].join("+")` prints bytes `\x01\x02+\x03` (element taken as iolist); beam prints `[1,2]+[3]` | that expression | `01-compiler/02-erlang` (`primJoin`'s template) |
+| 9 | an embedded std file's reserved-word error is unlocated | a reserved word used as a name in a `libs/std/src` file | `01-compiler/01-checker` |
 
 Residual 4 breaks nothing today (no rakun module naming `RetryPolicy` imports `std/async`); a rakun
 step meets it if it imports both before deleting its copy.

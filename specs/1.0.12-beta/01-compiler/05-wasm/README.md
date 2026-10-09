@@ -69,8 +69,7 @@ std's `math` and `hash` answer commonJS's bits on every target.
 - Step 8 — the narrow and unsigned integer types check their own range on wasm (264): `emitRangeCheck`
   after the carrier's checked `+`, `-`, `*`, unary `-`, `+=` (`$__i32_range_chk` for `i8`/`u8`/`i16`/
   `u16`, `$__i64_range_chk` for `u32`/`u64`; a `u64` ends at `2^63 − 1` in its `i64` carrier)
-  (`run/int_overflow_add_i8`, `run/int_overflow_sub_u32` green on wasm) — patch
-  `fix-cells-red/02-wat-narrow-int-range`
+  (`run/int_overflow_add_i8`, `run/int_overflow_sub_u32` green on wasm)
 
 ## Open
 
@@ -134,6 +133,9 @@ Each re-measured at the step that takes it; a holding row traps or is refused by
       at the PRELUDE's line under the caller's file name (`std/json.bp:341:13` for
       `primitives.bp:341`'s `stringSlice0`) — `ensurePrimDefault`'s copy carries no origin; and the
       refusal itself: `stringSlice0` / `stringToFloat` have no wasm cell — found by step 5
+- [ ] `_` in a variant payload pattern binds `0` on wasm
+- [ ] a nested variant pattern answers wrong on wasm
+- [ ] unsigned compare and divide use the signed opcodes on wasm
 
 **Gate:** standard (fronts.md § Gate) + every re-recorded RUN LOG verified under wasmtime and
 compared with commonJS's · no new RUN LOG answers at exit 0 a value another backend answers

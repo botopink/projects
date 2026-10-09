@@ -1,8 +1,8 @@
 # Front 125 — validation zod: Zod's feature set in botopink
 
 **Priority:** high for the step 0–2 residue (`08-bpp/121` content collections and `08-bpp/127`
-actions take the `#[validated]` type — decision 306); medium for the rest · **State:** partial: steps 0–3 done
-(botopink-lang held as patches until the coordinator lands them); steps 4–12 open, blocked (§ Steps 4–12)
+actions take the `#[validated]` type — decision 306); medium for the rest · **State:** partial: steps 0–3 done;
+steps 4–12 open, blocked (§ Steps 4–12)
 **Depends on:** `01-compiler/01-checker` step 24 (decision 280, step 7) · `07-j` (reduced: ≈ option (c) under 306). Written against decisions 144 (undeclared keys), 145 (emitted names),
 183 (`07-m`: coercion, step 6), 257 (`07-n`: `Schema<T>` lives in `validation` — amended by 306: the
 place stays, the value is private), 306–308

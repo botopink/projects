@@ -269,6 +269,9 @@ member edge (decision 185). (c) retire the WebSocket transport: R92-1's two boxe
 | RX-11 | "consume std": the four retry loops → `async.RetryPolicy` / `retry` — `rakun-messaging/src/reliability/policy.bp` (own `RetryPolicy` / `nextDelay`, decision 170; mind 97's residual 4), the outbox (`rakun-tx/src/outbox.bp`, `rakun-data/src/tx/` after 128), `rakun-scheduling/src/jobstore/scheduler.bp`, the `rakun-mail` sidecar | 15 (the first three) · `rakun-mail`: **unowned** (no open front) |
 | RX-12 | "consume std": constant-time equality (`rakun/src/request_context.bp`) → `hash.equalsConstantTime`; `sha256` (`rakun-ws/src/ws.bp`, `rakun-client/src/ws/` after 128) → `hash.sha256`; `xmlEscape` (`config.bp`) → `escape.attribute`; `cron.rkFormatUtc`, the logger's `rkLogIso` → `clock.formatIso8601` | 04 · 93 · 15 · 17 |
 | RX-13 | onze wire names `__bp_action` / `X-Bp-Action` as literals in rakun's tests (`rakun-app/test/actions_test.bp`, `rakun-app/test/fixtures/actions-cache/test/actions_cache_test.bp.fixture`) — decision 114: neither library spells onze's defaults; `07-onze/49` step 2's last box closes when gone | 22 |
+| RX-14 | workarounds the integrated compiler made deletable: rakun-data `rows.bp`'s `longOf` (C2 fixed); `runtime.bp`'s named fn returning the lambda (`language-gaps.md` row 28 fixed — 89's consumer); rakun fronts 77/78's `src/orm_host.bp` (measured deletable by `01-compiler/26` step 2: moved to `src/orm/host.bp`, rakun-data 128 passed) | 08 · 89 |
+| RX-15 | latent `i32` clocks: `migration_host.cellNowMs`, the test-only monotonic `nowMs` in `rakun-mail`, `rakun-rsocket` and `tls_listener_test`, `Duration.millis` typed `i32` | 08 · 92 · 04 · `rakun-mail`: **unowned** |
+| RX-16 | stale `__rkMake_` text in rakun's `AGENTS.md` (factories are `T.make()`, 234) | 04 |
 
 Done: RX-3 (decisions 113–117's rakun halves), RX-8 (`record ↔ Json` row, 13 step 4), RX-9 (READMEs state current state).
 

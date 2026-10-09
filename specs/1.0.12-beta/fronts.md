@@ -125,9 +125,9 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 
 | Front | Needs | Unblocks |
 |---|---|---|
-| **102** s1–2 | the unpushed branch pushed, gated, landed | 102 s3 · 117 · 122 |
+| **102** s1–2 | done (re-implemented in `libs/routing`) | 102 s3 · 117 · 122 |
 | **102** s3 | s1–2 · 49-d confirmed as amended | 128 · 22 · 26 · 49 · 50 · 117 · 124 |
-| **103** s1 | the unpushed branch pushed, gated, landed | 103 s2 · 127 |
+| **103** s1 | done (re-implemented in `libs/actions`) | 103 s2 · 127 |
 | **103** s2 | s1 | 128 · 22 · 67 · 127 |
 | **104** s5 | 04 · 65 · 79 · 12 · 19 · 22 · 123 · 49 · 51 | 105 |
 | **105** | 104 s5 · 22 · 26 · 03r-q confirmed | — |

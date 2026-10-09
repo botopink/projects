@@ -46,8 +46,7 @@ from the enclosing function (`run/block_return_is_block_value`, four targets;
 - An in-frame loop's head survives OTP's `beam_jump`: `writeLoopTop` puts a `{line, …}` anchor before
   `{label, Top}`, so tail sharing cannot turn the entry into a jump to an identical back edge and leave
   `Top` with backward references only (`erlc` stopped on `{undefined_label, Top}` in log's
-  `stripLineNumbers`; `modules/import_bundled_package_beside_own_module` green on beam) — patch
-  `fix-cells-red/01-beam-loop-top-anchor`.
+  `stripLineNumbers`; `modules/import_bundled_package_beside_own_module` green on beam).
 
 ## Open
 
@@ -65,6 +64,11 @@ n) = p` as `3 4`, nested one-variant enums as `7 x 9`, `val [..rest] = [1, 2, 3]
 ten lines on commonJS, erlang, beam.
 
 - [ ] `run/is_truth_table`, `run/unknown_stores_nothing` (`02-erlang` step 7's cells) green on beam
+
+### Rows found by other fronts
+
+- [ ] a variant name declared by two enums with different fields: a positional pattern binds the
+      whole value instead of the payload (`modules/variant_positional_payload_same_name`, held)
 
 **Gate:** standard (fronts.md § Gate) + `scripts/beam_export_audit.sh` assembles every module before
 and after each step · every re-recorded RUN LOG verified by running (`erlc +from_asm` + `erl`)

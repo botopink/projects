@@ -1,7 +1,7 @@
 # Front 114 — gate-docs-and-ci: no `skip` fence, no soft CI row, every workflow green and pinned
 
-**Priority:** high · **State:** partial: steps 1, 2, 4, 5 and step 3 box 1 on feat; step 6 box 1 and step 8 boxes 1–2 on
-`front/114-16s8`; steps 3 (box 2), 6 (box 2), 7, 8 (box 3), 9 open
+**Priority:** high · **State:** partial: steps 1, 2, 4, 5, step 3 box 1, step 6 box 1 and step 8
+boxes 1–2 done; steps 3 (box 2), 6 (box 2), 7, 8 (box 3), 9 open
 **Depends on:** nothing open (botopink-lang CI fixes on feat; only a green run remains)
 **Owns:** `scripts/check-docs.sh` · `docs.md` marker lines and the fence lines after them (no prose) ·
 botopink-lang `.github/workflows/test.yml` · meta `.github/workflows/**` and meta `AGENTS.md` § CI ·
@@ -92,6 +92,8 @@ last full cold: 9m31s, loaded).
       since decision 167 — `#[@BeamMemory…]` checks under an erlang manifest and is refused under the
       harness's `commonJS` one, so `docs.md` § `@BeamMemory` is a `project` fence with an erlang
       `botopink.json` (from `07` step 6); the comment says the manifest's target is read
+- [ ] the four other libraries' `test.yml` (emilia, erika, jhonstart, onze) carry the stale glibc 2.38
+      comment rakun's had
 
 ## Handed out
 

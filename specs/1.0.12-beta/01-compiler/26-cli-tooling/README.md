@@ -1,9 +1,8 @@
 # Front 26 — cli-tooling: a program built by the CLI serves on the BEAM, and every driver speaks
 
-**Priority:** high · **State:** partial: steps 1, 2 (boxes 1–2), 3 (box 2), 4 (box 1) and 5 on feat;
-steps 2 (box 3), 3, 4, 6, 7, 8, 9 open (8 box 2 in patches, unblocked)
-**Depends on:** `compiler-core`'s `ModuleOutput` carrying warnings (step 4 — `codegen.zig` carve-out
-named in the commit) · decision-gated lg2-v (git subdirectory — manifest side is
+**Priority:** high · **State:** partial: steps 1, 2 (box 3 measured, rakun's row), 3, 4, 5, 7 and 8
+done; steps 6, 9 open
+**Depends on:** decision-gated lg2-v (git subdirectory — manifest side is
 `../../02-std-and-packaging/98-packaging-tail/` step 4; `bpmp` resolver half opens here when
 answered) · 23-c's two `botopink test` fixes confirmed (decision 317 — this front's files, kept)
 **Owns:** `modules/compiler-cli/**` (`src/cli/{build,run,test_cmd,libs,sources,config,resolver}.zig`,
@@ -30,70 +29,19 @@ only declared dependencies (decision 242); `build`, `test` and the LSP print che
 - Step 3, box 2 — jhonstart-forms shape re-measured: a package declaring only `jhonstart-forms` builds and runs (decision 143)
 - Step 4, box 1 — LSP renders a checker warning (`diagnostics_checker_warning`, severity Warning)
 - Step 5 — `botopink clean` removes `.botopinkbuild/` whole, in `docs.md` § Backends and `clean --help`
+- Step 2, box 3 — measured: rakun fronts 77/78's `src/orm_host.bp` workaround is deletable (moved to `src/orm/host.bp`, rakun-data 128 passed); the deletion is a rakun-track row
+- Step 3 — only a direct dependency is importable: decision 242's located refusal (`unresolved import source "<x>" — declare it in botopink.json "dependencies"`), cell `modules/transitive_package_import` on four targets
+- Step 4 — `build` and `test` print checker warnings as `check` does (the `var out = [];` warning, a `test-cli` contract case; C-18's box 3 closed)
+- Step 7 — `build.zig`'s `test-docs` comment describes `check-docs.sh`'s `reject` / `project` / `body` directives
+- Step 8, box 1 — the LSP reports `module-import-with-from` and `unresolved import source` as `check` does, one `lsp/` snapshot each
+- Step 8, box 2 — `from "<own package name>"` is `error[module-import-with-from]` (309): an embedded std module's brace import reads as `from "std"` (`comptime.zig`), `resolver.sourceProblem` tests the package's own name, the three std sources migrated (`modules/import_own_package_with_from`, `dependency_imports_itself_with_from`, `cli_contract.sh`)
 
 ## Open
-
-### Step 2 — rakun's workaround (box 3)
-
-- [ ] rakun fronts 77/78's `src/orm_host.bp` workaround deletable — rakun track's row, noted here
-
-### Step 3 — only a direct dependency is importable (T4, decision 242)
-
-`import {Request} from "rakun";` with only `rakun-starter-web` declared = `error: unresolved import
-source "rakun" — declare it in botopink.json "dependencies"` (`cli/sources.zig`,
-`proj.dependencyNames`); rakun starters declare what they import. Same refusal for `import
-{linkPrefetch} from "jhonstart-link"` from a package declaring only `jhonstart-forms`.
-
-- [ ] `modules/transitive_package_import` — `.expect` with the named diagnostic, on four targets
-
-### Step 4 — `Env.warnings` reach `build` and `test`
-
-`codegen.generateWith` drops the comptime session (`OkData.warnings`) before returning;
-`ModuleOutput` has no warnings field. CLI half then = a renderer call (`diagnostics.renderOutcome`'s
-`.ok` arm).
-
-- [ ] a `test-cli` contract case: `build` and `test` print the `var out = [];` warning; C-18's box 3 closed
 
 ### Step 6 — lg2-v's resolver half (decision-gated)
 
 If lg2-v is answered with a `subdir` field, `bpmp`'s resolver checks the dependency out at the
 subdirectory (98 step 4 owns the manifest model); nothing before.
-
-### Step 7 — the `build.zig` `test-docs` comment (handed by `00-gate/114`)
-
-`build.zig`'s `test-docs` comment (near `:574`) still describes `<!-- docs-check: skip <reason> -->`
-(deleted by decision 157).
-
-- [ ] the comment describes `check-docs.sh`'s `reject` / `project` / `body` directives
-
-### Step 8 — decision 206's residuals (from `129-import-without-from`)
-
-- LSP runs no import-source check (F4 or `module-import-with-from`): editor shows `from "<own
-  module>"` resolving until `botopink check` refuses it.
-- `from "<own package name>"` inside the package still reads its own modules; decision 309 refuses it
-  (`module-import-with-from`, as 206). Measured 9 Oct: no test imports its own package by name; 3 std
-  sources do (`std/src/querystring.bp:28`, `std/src/testing/snapshots.bp:49-51`, `std/src/io/fs.bp:20`).
-
-- [ ] the LSP reports `module-import-with-from` and `unresolved import source` as `check` does — one
-      `lsp/` snapshot each
-- [ ] `from "<own package name>"` is `error[module-import-with-from]` (309), pinned by a `resolver.zig`
-      unit test; the three std sources migrated to the brace form in the same commit (a named
-      `libs/std/src` carve-out). Was blocked on `compiler-core` (measured 9 Oct: any one of the three
-      sources in the brace form failed `libs/std`'s own `botopink check` and every consumer of the
-      module with an unlocated `TypeError` — `comptime.zig` followed an embedded `std/<mod>`'s
-      imports only through `from "std"`). Unblocked by the `comptime.zig` carve-out named for it: a
-      brace import inside an embedded std module reads as `from "std"` (`importsStd` /
-      `embeddedStdProgram` in `expandStdImports`, `stdImportsOf`, `registerStdlib`,
-      `analyzeSource`), so `import {path.relative};` names `std/path` as std's own build names
-      `path` — two `comptime.zig` unit tests, red on the parent. The refusal: `resolver.sourceProblem`
-      tests the package's own name (`own`: the manifest `name` from `sources.zig` for `src/` and
-      `test/`, from `libs.zig` for a dependency's sources) before the bundled names, message
-      `"<x>" is this package — write <fix>` · `tests/language/modules/import_own_package_with_from`,
-      `dependency_imports_itself_with_from` (four targets each, red on the parent: `unresolved import
-      source`), `cli_contract.sh` (a `test/` module, `check` and `test`). Patches
-      `fix-std-309/patches/01-embedded-std-brace-import.patch`, `02-own-package-from-refusal-309.patch`
-      — box closes when they land. The language server does not make this refusal yet
-      (`importSourceProblems` passes no package name — box 1's path)
 
 ### Step 9 — a dependency's sidecars and imports answer as its own build does
 
@@ -114,6 +62,8 @@ exercise every sidecar path)
 
 ### Rows other fronts found
 
+- [ ] the language server does not make decision 309's refusal (`from "<own package name>"`): the
+      engine's `importSourceProblems` passes no package name to the resolver
 - [ ] `botopink check` / `build` print a type error's message and box but not its hint: the
       `PersistentTerm` write (`infer.zig`'s hint names `#[@BeamMemory.Ets]`) and
       `std-unsupported-on-target` carry one and the terminal shows none; a parse error's

@@ -1,7 +1,7 @@
 # Front 07 — residuals: the snapshot review, the documents and comments, the ecosystem's tail
 
-**Priority:** low · **State:** not started as a front (08's items 1–2 done by their owners, 09's
-item 1 and 25's steps 2–3 done elsewhere)
+**Priority:** low · **State:** partial: steps 3, 5, 6, 7, 12, 13 done (08's items 1–2 done by their
+owners, 09's item 1 and 25's steps 2–3 done elsewhere); steps 1, 2, 4, 8–11 open
 **Depends on:** `02-erlang`, `03-beam`, `04-js`, `05-wasm` landed (steps 1, 4 re-derive/rename in
 their snapshot dirs) · `01-checker` landed (step 2) · `16-formatter` steps 1–2 (step 10) · maintainer
 on C-14 (step 9) · every library track merged into its own `feat` (step 11, last) ·
