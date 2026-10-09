@@ -2,7 +2,7 @@
 
 **Priority:** high — every library's "consume std X" step is written against this surface ·
 **State:** partial: steps 0–5, 8–10, 12 on feat; residue of steps 1, 2, 4, step 6 (conditional), 11
-open (its questions: `97-a`, `97-b` → 334, 335; `97-c` → 335; `110-a` open), 13–17 open; step 7 → 20-snap
+open (its questions: `97-a`, `97-b` → 334, 335; `97-c` → 335; `110-a` open), 13 (boxes 1–2) and 14–17 open; step 7 → 20-snap
 **Depends on:** `std-d` (step 6) · `24-g` confirmed (step 5) · decision 230 (step 11) · decision
 262 (step 12)
 **Owns:** `repository/botopink-lang/libs/std/src/**`, `libs/std/AGENTS.md`, `libs/std/test/**` ·
@@ -50,6 +50,10 @@ function in the concept's module. Each library copy deleted by its file's front.
   `i64` overflow aborts on every target)
 - Step 11 box 1 — a question per module: `97-a` (`io/http`) and `97-b` (`async`) → 334, 335, `97-c` → 335
   (`testing/mocks`), `110-a` (`testing/asserts`)
+- Step 13 boxes 3–5 — `parseInt` exact over the `i64` range; `min` / `max` / `abs` / `clamp` /
+  `isEven` / `isOdd` past 2^53 on commonJS (`BigInt.prototype` patched beside `Number.prototype`); the
+  conversions `toI32()`, `toI64()`, `toU32()`, `toU64()`, `toF64()` on `Integer`, aborting when the value
+  does not fit (decision 319); wasm's halves are `05-wasm` rows; `97-s13-a` (`abs` of the minimum) open
 
 Facts the open rows rely on:
 - `parseInt` answers `i64`, refuses beyond ±(2^53 − 1); on wasm a template-only `String` method traps.
@@ -111,13 +115,18 @@ with a located message, recorded as the design; or (b) restructured so no host c
       by grep) passes and answers `number | bigint` in 319's canonical form
 - [ ] `Json`: an `i64` written as its digits (the read half is step 15's `Int` node, 332)
       (`9223372036854775807l` round-trips on commonJS through `Int`)
-- [ ] `string.parseInt()` answers `Error` only past the `i64` range (176 as amended by 319); its cells on
-      the four targets
-- [ ] `Math.min` / `max` / `abs` and `Integer`'s `default fn`s (`isEven`, `clamp`) answer past 2^53 on
-      commonJS — today they throw a `TypeError` on a `BigInt` (from `04-js` step 9); one cell each across
-      the 2^53 edge
-- [ ] the explicit conversions 319 names (`toF64()`, `toI32()`, …) declared in std — none is declared
-      anywhere; `04-js` step 9's conversions box waits on this surface
+- [x] `string.parseInt()` answers `Error` only past the `i64` range (176 as amended by 319):
+      `run/string_parse_int_i64_range` on commonJS, erlang and beam; wasm's half is `05-wasm`'s
+      (`stringSlice0/2` unresolved, pinned by `.wasm.expect`)
+- [x] `min` / `max` / `abs` / `clamp` and `Integer`'s `isEven` / `isOdd` answer past 2^53 on commonJS
+      (the numeric tower is patched on `BigInt.prototype` too — a carve-out in `04-js`'s
+      `commonJS.zig` `prototypeAssign`; std's Node forms take either kind):
+      `run/i64_number_methods_past_js_safe`; wasm refuses an `i64` receiver (`05-wasm` row);
+      `abs` of the minimum is question `97-s13-a`
+- [x] the explicit conversions `toI32()`, `toI64()`, `toU32()`, `toU64()`, `toF64()` declared on
+      `Integer`, aborting when the value does not fit, never rounding: `run/integer_conversions_exact`,
+      `run/integer_conversion_to_i32_aborts`, `run/integer_conversion_to_f64_inexact_aborts` on
+      commonJS, erlang and beam; wasm has no row for them (`05-wasm`, pinned by `.wasm.expect`)
 
 ### Step 14 — erlang counts codepoints, not grapheme clusters (decision 320)
 

@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**46 questions and 6 contradictions are open, and 86 implementation choices await confirmation.**
+**47 questions and 6 contradictions are open, and 86 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -53,6 +53,12 @@ Nothing open: 138-a answered (337).
 - **Options.** (1) ★ As is: not importable on wasm. (2) The four move to their own module; the other 23 import on wasm (changes decision 74's API). (3) The three cells gain wasm versions (a regex engine in the wasm prelude; a catchable `@panic`).
 - **Recommendation.** (1) now; (2) if wasm must run asserts.
 - **Blocks.** Nothing in the gate; "std compiles on wasm" (05-wasm step 5, 97 step 11).
+
+#### 97-s13-a · `abs()` of an integer type's minimum (264, 319)
+- **Measured.** `fn lo64() -> i64 { return -9223372036854775807l - 1l; }` then `@print(lo64().abs())` prints `9223372036854775808` on commonJS, erlang and beam — a value outside `i64`; `lo32().abs()` (`-2147483647 - 1`) prints `2147483648`, outside `i32`; wasm refuses the `i64` call (its integer methods are `i32`'s). `abs` is a host call (`erlang:abs`, `Math.abs` / a `BigInt` negation), not one of 264's operators, so no range check runs. `Signed` declares one `abs` for `I32` and `I64` together, so a template does not know the width.
+- **Options.** (a) ★ `abs` aborts past its type as unary `-` does (`integer overflow: abs on i64`): `abs` moves from `Signed` to `I32` and `I64`, each with its own bound in its forms (`lo64().abs()` aborts on every target). (b) As is: `abs` answers the mathematical value even outside the type (`lo64().abs()` is `9223372036854775808` typed `i64`). (c) `abs` answers the unsigned type (`i64.abs() -> u64`; `lo64().abs()` is `9223372036854775808ul`).
+- **Recommendation.** (a): a value outside its declared type never exists (264), and the cost is two declarations.
+- **Blocks.** Nothing in the gate; the `abs` half of `02/97` step 13 (the cell `run/i64_number_methods_past_js_safe` stays off the minimum).
 
 #### std-d · `io.process` signals and a TTY reader
 - **Measured.** `io/process.bp` neither registers nor forwards a signal; std has no TTY line reader; `onze start` waits on `process.run` → `SIGTERM` leaves the node running; `onze create` without `--yes` has no prompt to fall back to.
