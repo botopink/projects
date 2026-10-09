@@ -72,7 +72,7 @@ passes through `raw(…)` (author's own, like a template).
 **Frontmatter.** YAML subset: block and flow maps/lists, plain, single- and double-quoted scalars,
 `|` and `>` blocks, comments, `null` / `true` / `false`, integers, floats. Anchors, aliases, tags,
 multi-document streams, other implicit typing: `Error` naming the line. Result is `Json`, decoded
-by the collection's `#[validated]` type (its parse member, spelling `ctr-u`; 306) with pathed violations.
+by the collection's `#[validated]` type (its parse member `T.parse`, 306, 327) with pathed violations.
 
 **Collections.** A value declared in the app:
 

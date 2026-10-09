@@ -246,7 +246,7 @@ fallback, an annotation argument; `68-c` → 280, 281: starters and props by typ
   this front's — a library annotation can only combine the five.
 - **`#[clientProps]` narrower than Astro** (`string`, `i32`, `f64`, `bool` vs objects, arrays,
   `Map`, `Set`, `Date`, …). Step 1 widens it to arrays of those and nested `#[clientProps]`
-  records via `validation`'s encode (a `#[validated]` type's member since 306, spelling `ctr-u`); `Dict`, `Set`, dates-as-`i64` follow.
+  records via `validation`'s encode (a `#[validated]` type's member since 306: `T.encode(v)`, 327); `Dict`, `Set`, dates-as-`i64` follow.
 - **Event handlers.** Markup names handlers (`data-jh-on-click="LikeButton:like"`), runtime binds
   none (`island_runtime.mjs:98` the only listener) — `05-jhonstart/26`'s; tests here start islands, never click.
 - **Suspense not replaced**: streams within a response; a server island is a second one; both may coexist.

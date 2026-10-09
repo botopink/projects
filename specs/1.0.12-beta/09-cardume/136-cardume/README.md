@@ -5,7 +5,7 @@
 **State:** not started · `repository/cardume` scaffolded (0.0.1: the model's types, no store); `botopink/cardume` and its submodule are `03-bundled-libs/138`'s step 1–5 (326)
 **Depends on:** `26-jhonstart-router` (the core and its client runtime — `state` / `effect` rebinding
 in `client_runtime.mjs`) · `08-bpp/120` (the island payload: one page store shared by every island) ·
-`03-bundled-libs/125` (a `#[validated]` type's `encode` member, 306 — spelling `ctr-u`'s — for the
+`03-bundled-libs/125` (a `#[validated]` type's `encode` member, 306 — `T.encode(v)`, 327 — for the
 values the server seeds) · decisions 128 (hooks), 297 (value-or-type parameters; `01-checker` step 26), 278
 (`#[client]`), 281 (no string keys), 295 (request state as atoms), 296 (cardume) · open: `atm-a`, `atm-c`, `atm-d`
 **Owns:** `repository/cardume/**` (the core: `modules/cardume/src/cardume.bp`, its tests) · new

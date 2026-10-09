@@ -109,7 +109,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 26 s9 — a dependency's sidecars and imports answer as its own build does · none
 - [ ] 26 row — the LSP does not yet make the 309 refusal (the engine's `importSourceProblems` passes no package name) · none
 - [ ] 130 s5 — the remaining decorator sites (38 of 119 done, plus `#[schema]`'s 5) · rakun's DI on 01 s20 · rakun sites under the 130↔128 rule (03r-ao, only the record) · rakun-client's on the behavior-member gap (ctr-q closed: the table built at comptime, 281, 256)
-- [ ] 130 s6 — module-level `@emit` removed · 130 s5 · `#[schema]`'s free functions → members of the type (306; spelling: ctr-u)
+- [ ] 130 s6 — module-level `@emit` removed · 130 s5 · `#[schema]`'s free functions → members of the type (306; `T.parse(…)`, 327)
 - [ ] 134 s2 — the type functions, the `result` namespace, the `@Result` / `?T` methods, `@is` refused (322)
 - [ ] 134 s4–s6 — variadic parameter and the print builtins (267); the `Decorator` type for `with:` (268); `use @getContext(T)` (269)
 - [ ] 07-residuals s8 — the lib-agnostic gate names every library: the test-file comments reworded; the other owners' comments, then the `-w` pattern · 02 and the other owners landed (s3, s5–s7, s12, s13 done)
@@ -198,11 +198,10 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.0.10 choices) in its
-last section. Open after the 9 Oct revalidation and the answers since (309–325): 61 questions, 9 contradictions, 88
+last section. Open after the 9 Oct revalidation and the answers since (309–327): 61 questions, 8 contradictions, 88
 implementation choices.
 
 **First — what blocks now** (`decisoes-pendentes.md` § Prioridade 1, "O que trava agora", set by the maintainer 2026-10-09), in order:
-- [ ] ctr-u — 125 s6, s8, s9, s12 (the members' spelling; 49-d → 323, 103-a → 324, 07-j → 325)
 - [ ] 16-x — 16 s8 (and 01-checker s10)
 - [ ] 05w-i · 05w-j — 05-wasm s5 (`unicode`, `json` on wasm)
 - [ ] 97-a · 97-b · 97-c — 97 s11 (`io/http`, `async`, `testing/mocks` on wasm)
@@ -235,7 +234,7 @@ Then:
 - [ ] C-14 — 07-residuals s9 (a 1.0.10 id)
 - [ ] confirmations a step waits on — 49-e (49 s2) · 05emilia-l (34 s2) · 52-a (51 s4) · 29-a (26 s5; reduced: `registerRouteStarters` + `globals.starters`) · 27-a (27) · 03r-q (105) · 16-a/b (16 s4) · 23-a/b, std-c (23; 23-c → 317) · 24-a/b/c/g (24; 24-g also 97 s5's surface)
 - [ ] ctr-k — 17 · 128 · 106 s2 (only the record)
-- [ ] ctr-l — 26 s8's refusal list (only the record) · ctr-s — 16 s6 · ctr-u — 125 s12 (only the spelling of `#[validated]`'s members) · ctr-v — 34 / 33 opening before 118 (only the record) · ctr-w — 09 s3
+- [ ] ctr-l — 26 s8's refusal list (only the record) · ctr-s — 16 s6 · ctr-v — 34 / 33 opening before 118 (only the record) · ctr-w — 09 s3
 - [ ] ctr-o — lem-c · ctr-p — 04's readers · 104 s5 (ctr-h blocks nothing)
 - [ ] 03r-ao — the 130 ↔ 128 rule (128, 130 s5) · only the record
 - [ ] lg2-s — module-graph reflection

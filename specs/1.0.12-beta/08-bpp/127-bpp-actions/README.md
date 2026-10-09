@@ -96,7 +96,7 @@ registers the function):
 
 Input type named in the argument because a function `@Decl` has no parameter list; dropped in step
 5, where the wrapper reads input and output from the signature (280 (2)). The wrapper's `bind…` /
-`parse…` / `encode…` become the `#[validated]` types' own members (306; spelling `ctr-u`).
+`parse…` / `encode…` become the `#[validated]` types' own members (306; `T.parse` / `T.encode`, 327).
 
 **One outcome type, both sides: the language's `@Result` (decision 303).** No `ActionOutcome` — the
 server function returns `@Result<T, ActionError>` and the caller receives the same `@Result<T, ActionError>`.

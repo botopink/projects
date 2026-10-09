@@ -53,8 +53,8 @@ Zod's one object model (type via `z.infer`, and parser) is split in two here.
 reflects it (`decl.fields`, each field's `typeName` and `annotations` — `decorators.bp`'s
 `validated`), and the decorator `@emit`s free functions named after the type. Decision 216 retires
 loose `@emit` (`#[validated]` adds members `validate()` / `constraints()`); 306 makes the parse half
-members of the `#[validated]` type too (`#[schema]` goes, step 12) — only their spelling is open
-(`ctr-u`, recommended `Player.parse(input)`). The table is what `#[schema]` emits today; under 306
+members of the `#[validated]` type too (`#[schema]` goes, step 12) — their spelling is decision 327
+(`Player.parse(input)`). The table is what `#[schema]` emits today; under 306
 `schemaOf<T>` (the schema value) is private, the rest become members:
 
 | Emitted today | Zod's |
@@ -76,7 +76,7 @@ members of the `#[validated]` type too (`#[schema]` goes, step 12) — only thei
   (today a marker on a `#[schema]` type not `#[validated]` is a compile error, decision 67).
 
 **Decision 306: the type is the only schema, and `#[schema]` becomes `#[validated]`.** One decorator
-checks (`validate()`, `constraints()`) and parses (the table above, as members — spelling `ctr-u`'s);
+checks (`validate()`, `constraints()`) and parses (the table above, as members — `Player.parse(doc)`, 327);
 `#[schema]` goes. `Schema<T>`, `Codec<A, B>`, `schemas.*` and `checks.*` are no longer public:
 `schemas.bp` is the private machinery the emitted decoders call. What only a value could say is a
 field marker:
@@ -179,15 +179,15 @@ Decision 325 (07-j) fixed the scope: every step, in order. Nothing in steps 4–
 
 | Step | Blocked by |
 |---|---|
-| 4 enums, unions, tuples, maps, sets | the decorator that reads an enum is `#[validated]`'s after 306 and its members' spelling is `ctr-u`'s; `#[tag]` waits on the **`Decl.variants`** gap row |
+| 4 enums, unions, tuples, maps, sets | the decorator that reads an enum is `#[validated]`'s after 306 and its members are 327's; `#[tag]` waits on the **`Decl.variants`** gap row |
 | 5 object policy, derived types | 307's `Type` (std `types.bp`) and `01-checker` step 28 (`#[validated] pub val RecipePatch = Type.partial(Recipe)`) |
-| 6 coercion, transforms, form binder | the `bind` member's spelling (`ctr-u`) |
+| 6 coercion, transforms, form binder | nothing (`T.bind`, 327) |
 | 7 refinements and messages | `01-checker` step 24 (280: `#[check(rule, at: .field, code: .Custom)]` takes typed arguments) |
-| 8 combinators and codecs | 306's field markers (`#[codec]`, `#[map]`, `#[preprocess]`, `#[check]`) take function values (280, step 24); `encode`'s spelling (`ctr-u`) |
-| 9 reflection, error views, JSON Schema | `jsonSchema`'s spelling (`ctr-u`); reflection reads `@typeInfo(T)` meta (298, 306) |
+| 8 combinators and codecs | 306's field markers (`#[codec]`, `#[map]`, `#[preprocess]`, `#[check]`) take function values (280, step 24) |
+| 9 reflection, error views, JSON Schema | reflection reads `@typeInfo(T)` meta (298, 306) |
 | 10 locales | nothing (325) |
 | 11 references, not strings | `01-checker` step 24 (281: `#[orElse(.Tuna)]`, `#[wireName]`) |
-| 12 `#[schema]` becomes `#[validated]` | `ctr-u` (the members' spelling) |
+| 12 `#[schema]` becomes `#[validated]` | nothing (327) |
 
 Step 3 touches step 24 in one place: `#[gt]`, `#[lt]` and `#[multipleOf]` declare their bound
 `comptime value: f64` and `#[validated]` gives it the field's type from the lexeme (`5` → `5.0` on an
@@ -297,7 +297,7 @@ Narrows steps 4, 7, 8 and 9: their `schemas.*` / `Schema.*` / `checks.*` items b
 below or `n/a (306)`; the items about types and markers stand.
 
 - [ ] `#[schema]` deleted from `decorators.bp`; `#[validated]` emits what it emitted (members per
-      `ctr-u`) beside `validate()` / `constraints()`; a type carrying both today migrates to the one;
+      327: `T.parse`, `T.parseAt`, `T.decode`, `T.bind`, `T.encode`, `T.jsonSchema`) beside `validate()` / `constraints()`; a type carrying both today migrates to the one;
       rakun's config binder (`validate()` / `constraints()` by name) unchanged
 - [ ] `Schema<T>`, `Codec<A, B>`, `Check<T>`, `schemas`, `checks` not exported from `root.bp`;
       `grep -rn "schemas\.\|checks\.\|Schema<" ` outside `libs/validation/src` answers nothing in
@@ -322,9 +322,10 @@ below or `n/a (306)`; the items about types and markers stand.
 
 Every step, in 306's shape; `surface.md` re-sorted into marker, declared type or `n/a (306)`.
 
-`ctr-u` — reduced by 306 to the spelling of `#[validated]`'s parse members (recommended: 306's
-names as members, `Player.parse(doc)`) ([`../../decisions-pending.md`](../../decisions-pending.md)).
-Blocks step 12 and `surface.md`'s rows.
+### ctr-u → decision 327
+
+`#[validated]`'s members without the type's name: `Player.parse(doc)`, `parseAt`, `decode`, `bind`,
+`encode`, `jsonSchema`; step 12 and `surface.md`'s rows use them.
 
 ## Notes
 

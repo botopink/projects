@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**61 questions and 9 contradictions are open, and 88 implementation choices await confirmation.**
+**61 questions and 8 contradictions are open, and 88 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290 · `ctr-y` → 291 · `ctr-z` → 292 · `nat-c1`, `nat-c3`, `bpp-g` → 293 · `nat-c2` → 294 · `nat-c4` → 295 · (cardume) → 296, 297 · `nat-c5` → 298 · `nat-c6`, `03r-b` (reversed) → 299 · `nat-c7` → 300 (all of `nat-c` answered) · `nat-d1` → 303 · `nat-d2` → 304 · `nat-g` → 305 · `nat-d3` → 306 · `nat-d4` → 306 (moot: the `union2…5` / `tuple2…5` families go with the public value form; unions and tuples are types) · `nat-d5` → 307 · `pkg-b` → 309 · `imp-a` → 310 · `lg2-r` → 311, 312, 313 · `lg2-t` → 314 · `lg2-m` → 315 · `lg2-c` → 316 · `23-c` confirmed → 317 · `nat-e`, `130-c`, `erk-c` → 318 · `ctr-j` → 319 (option (b)) · `ctr-i` → 320 (option (a), commonJS included: codepoints on every target) · `130-b` → 321 (a label checked at build) · `134-d` → 322 · `49-d` confirmed as amended → 323 · `103-a` → 324 (no rakun-app wrapper) · `07-j` → 325 (option (c)).
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290 · `ctr-y` → 291 · `ctr-z` → 292 · `nat-c1`, `nat-c3`, `bpp-g` → 293 · `nat-c2` → 294 · `nat-c4` → 295 · (cardume) → 296, 297 · `nat-c5` → 298 · `nat-c6`, `03r-b` (reversed) → 299 · `nat-c7` → 300 (all of `nat-c` answered) · `nat-d1` → 303 · `nat-d2` → 304 · `nat-g` → 305 · `nat-d3` → 306 · `nat-d4` → 306 (moot: the `union2…5` / `tuple2…5` families go with the public value form; unions and tuples are types) · `nat-d5` → 307 · `pkg-b` → 309 · `imp-a` → 310 · `lg2-r` → 311, 312, 313 · `lg2-t` → 314 · `lg2-m` → 315 · `lg2-c` → 316 · `23-c` confirmed → 317 · `nat-e`, `130-c`, `erk-c` → 318 · `ctr-j` → 319 (option (b)) · `ctr-i` → 320 (option (a), commonJS included: codepoints on every target) · `130-b` → 321 (a label checked at build) · `134-d` → 322 · `49-d` confirmed as amended → 323 · `103-a` → 324 (no rakun-app wrapper) · `07-j` → 325 (option (c)) · `ctr-u` → 327 (`Player.parse(doc)`).
 Closed by the 9 Oct revalidation (every item re-checked against 144–308, the fronts and the code): `08-h` → 285, 224 · `08-j` → 295 · `lg2-g` → 281 · `ctr-q` → 281, 256 · `ctr-m` (duplicate of `lg2-s`) · `ctr-n` (170 no longer carries the `from "m1"` example) · `ctr-r` (wrong premise: 118 lands before 26 step 0) · `111-c` → 228 · `03r-b`, `03r-d` → 299 · `95-e` (the collision left the code) · `03r-o` → 290 · `05emilia-h` → 206 · `68-c` → 280, 281. The rest were rewritten where their text or facts had gone stale.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
@@ -401,7 +401,7 @@ subject under 281. Every decorator parameter in these examples is `comptime` (28
 - **Blocks.** 123; 127; 104 step 6; `07-onze/53` (the cookie sites).
 
 #### atm-c · An atom's `T` across the server/browser seam (*proposed*)
-- **Measured.** The server seeds the values an island read into its payload (136 step 6); a value crossing must be encodable — after 306, a `#[validated]` type's `encode` member (`ctr-u`'s spelling; another library takes `T` only with `@typeInfo(T).meta(Validated)`), or one of the `T`s 294 accepts for a cookie (string, number, `bool`, enum, one-field record); some state is browser-only by nature (a DOM handle, a function).
+- **Measured.** The server seeds the values an island read into its payload (136 step 6); a value crossing must be encodable — after 306, a `#[validated]` type's `encode` member (`T.encode(v)`, 327; another library takes `T` only with `@typeInfo(T).meta(Validated)`), or one of the `T`s 294 accepts for a cookie (string, number, `bool`, enum, one-field record); some state is browser-only by nature (a DOM handle, a function).
 - **Options.** (a) Every atom's `T` encodable, checked where the atom is declared. (b) Any `T`; an island's read set checked at build — a non-encodable atom an island reads must be declared client-only (`clientAtom(…)`, or 278's `#[clientOnly]` extended to declarations, 282). (c) Any `T`, refused only at run time.
 - **Recommendation.** (b): restrictive where it matters (what crosses), free elsewhere.
 - **Blocks.** 136 step 6.
@@ -477,12 +477,6 @@ left as recorded; the maintainer picks the resolution.
 - **Rules.** 166: "a list written without [a trailing comma] stays on one line". 243: "without it, the width rules (`16-a` / `16-b`) decide", while saying it "extends" 166.
 - **Recommendation.** Record 243 as amending 166's no-comma half; the confirmation of `16-a` / `16-b` then covers it.
 - **Blocks.** 16-formatter step 6.
-
-#### ctr-u · The spelling of `#[validated]`'s parse members (decisions 216, 306)
-- **Rules.** 306 settled the rest: `#[schema]` goes into `#[validated]`, and what it emitted becomes members of the type — `parse`, `parseAt`, `decode`, `bind`, `encode`, `jsonSchema`, "their spelling is `ctr-u`'s"; `Schema<T>`, `Codec`, `schemas.*`, `checks.*` go private. On feat `#[schema]` (`libs/validation/src/decorators.bp:482`) still `@emit`s free `parse<T>` / `schemaOf<T>`; `125-validation-zod/surface.md:39,197,335` still names `schemaOfPlayer()`, `jsonSchemaOf<T>`, `constraintsOf<T>`, `validate<T>`.
-- **Options.** (a) 306's names as members, no type name inside: `Player.parse(doc)`, `Player.decode(text)`, `Player.jsonSchema()`; (b) the spelling is 125's (216: "exact spellings … are the implementing front's"), this question closes.
-- **Recommendation.** (a): the names 306 already writes, the shape `validate()` / `constraints()` already use.
-- **Blocks.** 125 step 12 (306) and surface.md's rows.
 
 #### ctr-v · Decision 189 (org-3) against emilia's fronts opening before 118
 - **Rules.** org-3: 118's carve-outs land before the owning front opens. `06-emilia/34` step 1 and `33` step 2 open now; emilia's `[class]={…}` lines (`attributes.bp:30,32,36`, `emilia.bp:185,202`) and `emilia-card/src/main.bp:5`'s `[emilia]={…}` are comments only, reworded by those fronts.
