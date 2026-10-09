@@ -3,8 +3,8 @@
 **Repo:** `repository/rakun` · **Workspace:** `botopink.json` → `"workspaces": ["modules/*", "starters/*", "examples/*"]`, `"targets": ["erlang"]`
 
 § Members and § The graph: the cut [`128-rakun-consolidation`](./128-rakun-consolidation/README.md)
-leaves (decision 187: 25 → 16); every front is written against them. § On disk until 128 lands:
-the 25-member facts 128 step 0 measures from; 128 step 10 deletes it.
+leaves (decision 187: 25 → 16), re-measured against the manifests of its patches (step 10); every
+front is written against them. The 25-member baseline it started from is in 128's README, step 0.
 
 Every member `"target": "erlang"`, `"targets": ["erlang"]` (decisions 113, 117). `std` and bundled
 `routing`, `actions`, `validation` implicit, never listed. *Depends on* = manifest `dependencies`,
@@ -59,41 +59,6 @@ stay separate, meet through the core's tag epoch (decision 185). Owed or in ques
 `rakun-test`'s test-only edges (03r-am, 19), `rakun-cli → rakun-client` for `rakun ws generate`
 (88, after 93), `rakun-messaging → rakun-websocket` for RSocket's WebSocket transport (03r-an, 92).
 
-## On disk until 128 lands (25 members)
-
-128 step 0's baseline (manifests on `feat`); `→` = merged by 128.
-
-| Member | Depends on (`rakun` omitted) | Sidecars | `*_test.bp` |
-|---|---|---|---|
-| `rakun` | — | `runtime`, `context`, `request_context`, `autoconfig`, `ssl` | 20 + `fixtures/` |
-| `rakun-actuator-api` → core | — | `actuator_api` | 2 |
-| `rakun-logging` → core | api | `logging` | 7 |
-| `rakun-web` | — | `chain`, `static` | 14 + `fixtures/` |
-| `rakun-hateoas` → web | web | — | 1 |
-| `rakun-test` | — | — | 5 |
-| `rakun-client` | api | `client` | 8 |
-| `rakun-ws` → client | client | `ws` | 2 |
-| `rakun-actuator` | api, web | `actuator`, `probes` | 13 (incl. `audit/`, `exchanges/`) |
-| `rakun-data` | api, actuator | `sql`, `orm`, `migration` | 9 |
-| `rakun-tx` → data | data | — | 2 |
-| `rakun-devtools` → data | data | `devtools` | 2 |
-| `rakun-metrics` | web, api, client, actuator | `metrics`, `telemetry` | 6 |
-| `rakun-release` → cli | web, api, actuator | `release` | 1 |
-| `rakun-cli` | actuator, release | — | 4 |
-| `rakun-scheduling` | web, api, actuator, data | `scheduling` | 10 (incl. `jobstore/`) |
-| `rakun-mail` | api, data, tx | `mail`, `mail_fixture` | 3 |
-| `rakun-messaging` | api, metrics, client | `messaging`, `jms`, `jms_fixture`, `pulsar` | 15 (incl. `jms/`, `pulsar/`, `reliability/`) |
-| `rakun-rsocket` → messaging | messaging | `rsocket` | 2 |
-| `rakun-stream` → messaging | api, actuator, data, messaging | `stream` | 3 |
-| `rakun-session` | api, web, actuator, data, scheduling | `session` | 6 |
-| `rakun-security` | api, web, data, client, session | `security`, `oauth2`, `ldap` | 13 |
-| `rakun-cache` | api, web, actuator, session | `cache` | 7 + `fixtures/` |
-| `rakun-websocket` | api, web, data, security | `websocket` | 6 |
-| `rakun-app` | web, cache | `file_router`, `ssr`, `actions`, `navigation`, `static_gen`, `metadata_routes` | 13 + `fixtures/` |
-
-`rakun-actuator-api`: dependency of 14 members (each naming `api`). The core already merged the
-old `rakun-validation` (`config_check.bp`, decision 116).
-
 ## Starters (8) — `repository/rakun/starters/`
 
 Manifest + re-exporting `src/root.bp`; `{ "workspace": true }` to every sibling (03r-r). Asserted
@@ -101,7 +66,7 @@ by `modules/rakun/test/starter_manifest_test.bp`, `version_set_test.bp`.
 
 | Starter | Brings |
 |---|---|
-| `rakun-starter` | `rakun` (on disk also `rakun-logging`; 128 step 2 drops it) |
+| `rakun-starter` | `rakun` (128 step 2 dropped `rakun-logging`, now the core's `logging/`) |
 | `rakun-starter-web` | `rakun-starter`, `rakun-web` |
 | `rakun-starter-data-sql` | `rakun-starter`, `rakun-data` |
 | `rakun-starter-security` | `rakun-starter`, `rakun-security`, `rakun-session` |
