@@ -5,12 +5,12 @@
 green `gate.sh --cold`) · rakun `ed54e36` · jhonstart `324edac` · emilia `42d51ec`
 · onze `2c03bcb` · erika `0a463f5` · vscode-extension `f041865`
 
-**Fronts:** 71 — **1 done** (129) · **22 partial** · **48 not started**.
+**Fronts:** 71 — **0 done** · **23 partial** · **48 not started**.
 
 | Track | Done | Partial | Not started |
 |---|---|---|---|
 | `00-gate` | — | 114 | — |
-| `01-compiler` | 129 | 01 · 02 · 03 · 04 · 05 · 07 · 12 · 14 · 17 · 18 · 26 · 130 · 134 | 16 · 23 · 24 · 139 |
+| `01-compiler` | — | 01 · 02 · 03 · 04 · 05 · 07 · 12 · 14 · 17 · 18 · 26 · 129 · 130 · 134 | 16 · 23 · 24 · 139 |
 | `02-std-and-packaging` | — | 97 | 98 |
 | `03-bundled-libs` | — | 102 · 103 · 104 · 106 · 125 | 105 · 107 |
 | `04-rakun` | — | 13 · 92 | the other 18 |
@@ -161,6 +161,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 
 ## L3 — ready to open now
 
+- [ ] 129 s1–4 (337) — `mod m;` binds the namespace `m`; the shorthand `import {x};` refused (`shorthand-import`, fix written); about 75 items migrated in botopink-lang, rakun, jhonstart · before 138 s3 deletes `libs/<pkg>` or after, either — a consumer commit per library (188)
 - [ ] 118 — the template language, tag annotations (278), `prelude.bp`, the node type · none (props-d/e/f hold their boxes; ctr-r closed: 118 goes first, org-3 holds)
 - [ ] 121 s1–2 — Markdown to `Element` in the new member `onze-content` · none
 - [ ] 34 s1–3 — `hashHex` → std and the cross-library comments; the five families; the breakpoint refusal · s2: 05emilia-l confirmed · opens before 118's carve-out (ctr-v / 189, only the record)
@@ -212,7 +213,7 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.0.10 choices) in its
-last section. Open after the 9 Oct revalidation and the answers since (309–336): 55 questions, 8 contradictions, 88
+last section. Open after the 9 Oct revalidation and the answers since (309–337): 55 questions, 8 contradictions, 88
 implementation choices.
 
 **First — what blocks now** (`decisoes-pendentes.md` Parte 1, "O que trava agora", set by the maintainer 2026-10-09), in order:

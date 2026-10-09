@@ -59,7 +59,7 @@ package's own item named `catalog`, not `catalog:`; the catalogue's alias keeps 
 second import re-registers — `infer.zig` `constructs`; `modules/typeinfo_all_type_also_imported`).
 Rows from other
 fronts: decision 170's type half, std type's constructor through its namespace, `unwrapOr`'s width,
-behavior `default fn` body checked, shorthand import never reaching a bundled package, occurs-check
+behavior `default fn` body checked, shorthand import never reaching a bundled package (goes with the shorthand: 337, 129 s2), occurs-check
 message, primitive behavior extending std's, type parameter widening to its optional, std module's
 `pub type`/`pub fn` through its namespace, `import-name-collision` for a `fn`/`val` named like an
 import. This front's own rows (status L1): a partially returning value-position `@block`

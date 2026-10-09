@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 56 perguntas, 8 contradições e 88 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **337**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 55 perguntas, 8 contradições e 88 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **338**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava `00-gate`, `01-compiler`, `02-std-and-packaging` e `03-bundled-libs`: as perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**; no fim, as confirmações ★ dessas trilhas.
 - **Parte 2** — o resto (trilhas 04–09 e 20), uma linha por pergunta: o detalhe vem quando você pedir.
@@ -16,43 +16,7 @@
 
 O que o mantenedor pediu para responder primeiro e ainda está aberto; ao responder, a thread do passo pode abrir.
 
-### 138-a · O import abreviado alcança os módulos de uma dependência? *(proposta)* ⏳
-
-**Trava:** `03-bundled-libs/138` (o patch do botopink-lang e a célula `modules/shorthand_import_beside_bundled_package`) · ⏳ pronto para integrar ao responder
-
-**Contexto.** A regra da 170, no compilador (`comptime.zig` `outsideShorthandReach`), deixa o import
-abreviado (`import {x};`, sem `from`) fora só dos módulos de um pacote **embutido**. Depois da 326 a
-std é o único pacote embutido, e os módulos dela já são alcançados de qualquer jeito (com outra
-recusa), então essa exclusão não cobre mais nada. A célula
-`modules/shorthand_import_beside_bundled_package`, reescrita para declarar um `routing` de fixture por
-`path`, passa a responder `ambiguous-import-use` nos quatro targets. Com o `routing` embutido ela
-imprimia `own` / `2`.
-
-**Hoje** (`src/config.bp` declara `pub fn splitPath(p: string) -> string[] { return ["own", p]; }`):
-```bp
-pub mod config;
-import {splitPath};
-import {splitPath as routeSplit} from "routing";
-// error: ambiguous-import-use: `splitPath` is imported from two declarations —
-// declared `pub` by `config` and by `routing/match` — and this use does not say which
-```
-
-- [ ] **(a)** O abreviado resolve só entre os módulos do próprio pacote — nunca os de uma
-  dependência, nunca os da std: o programa imprime `own` e `2`, como enquanto o `routing` era embutido
-  (326: "os nomes, exports e fontes de import não mudam"); a exclusão passa a valer para "um módulo de
-  outro pacote do build", e não mais "um pacote embutido".
-- [ ] **(b)** O abreviado alcança todo módulo carregado, do pacote ou não: `import {splitPath};` é
-  `ambiguous-import-use`, e o programa escreve `import {config.splitPath};` (170: "um nome nu que
-  alcança duas declarações é recusado"); a célula vira uma recusa e o `outsideShorthandReach` é apagado.
-  ```bp
-  import {config.splitPath};   // a única forma aceita
-  ```
-
-**Recomendação: (b)** — a mais restritiva (decisão 67: recusar > aceitar), sem código guardado para um
-tipo de pacote que não existe mais; quem cair no caso escreve o caminho do módulo uma vez.
-**Bloqueia:** a célula acima (vermelha até a resposta) e, com ela, o patch do botopink-lang da 138; em
-(b), também qualquer membro consumidor cujo abreviado alcançasse um nome de pacote movido (nenhum medido
-no `zig build test-libs`).
+Nada aberto: a 138-a foi respondida (337).
 
 ### O resto, por trilha
 

@@ -67,6 +67,9 @@ alone.
       bundled-order walk (`routing` before `actions`) goes — the dependency closure orders packages;
       `from "routing"` with no dependency is 242's `unresolved import source "routing" — declare it in
       botopink.json "dependencies"`
+- [ ] the cell `modules/shorthand_import_beside_bundled_package` deleted (337: its subject left with
+      326, and the shorthand goes in `01-compiler/129` s2); `import_bundled_package_beside_own_module`
+      declares `log` as a fixture dependency by `path` (the bundled `log` leaves)
 - [ ] `scripts/format-check.sh` `TREES`, `scripts/tsc-check.sh`, `scripts/check-docs.sh`'s roots read
       `libs/std` alone; `.github/workflows/test.yml`'s job `libs` checks out the five and `cardume`
       beside emilia, erika, jhonstart, onze, rakun

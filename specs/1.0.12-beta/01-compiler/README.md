@@ -30,7 +30,7 @@ cut by file ownership so fronts run in parallel.
 | [`23-std-purity/`](./23-std-purity/README.md) | low | not started | the import cells and LSP snapshots, three confirmations | 23-b/c, std-c |
 | [`24-effects-by-return/`](./24-effects-by-return/README.md) | medium | not started | the guide as one program, four confirmations, the per-item cost | rakun's `serverAction` · 24-a/b/c/g |
 | [`26-cli-tooling/`](./26-cli-tooling/README.md) | high | partial: steps 1–5, 7, 8 done (2 box 3 measured, rakun's row); 6, 9 open | only a direct dependency importable (242), warnings in `build`/`test`, the LSP's import check | lg2-v · 23 |
-| [`129-import-without-from/`](./129-import-without-from/README.md) | high | done | `from` names a package (206) | — |
+| [`129-import-without-from/`](./129-import-without-from/README.md) | high | partial | `from` names a package (206, done); the shorthand goes, `mod` binds its namespace (337) | — |
 | [`130-decorator-outputs/`](./130-decorator-outputs/README.md) | high | partial: steps 1–4 done; 5 (38 of 119 sites), 6 open | the library sites, `@emit` removed | 01 step 20 (256's registry) · the library tracks |
 | [`134-builtins-declared/`](./134-builtins-declared/README.md) | high | partial: steps 1, 3 on feat; 2 partial | the type functions, the `result` namespace, the `@Result`/`?T` methods, `@is` | 134-a…d |
 | [`139-bigint/`](./139-bigint/README.md) | medium | not started | `bigint`, an integer of any size with the integer operators and the `n` suffix, one value on the four targets (332) | 04-js step 9 · 05-wasm step 8 |

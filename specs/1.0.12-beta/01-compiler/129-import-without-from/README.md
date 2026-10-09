@@ -1,6 +1,11 @@
 # Front 129 — import-without-from: `from` names a package, never a module of the importing package
 
-**Priority:** high · **State:** done (on feat in botopink-lang and the four libraries)
+**Priority:** high · **State:** partial — 206 done; reopened for decision 337 (steps 1–4)
+**Owns (337):** the shorthand arms of `comptime.zig` `resolveImports` and `outsideShorthandReach` · the
+`mod` declaration's namespace binding (`comptime.zig`, `comptime/infer.zig`, a carve-out of
+`01-checker` named in the commit) · `compiler-cli/src/cli/resolver.zig`'s import checks · the cells
+under `tests/language/modules/` it names · `docs.md` § Modules and § Imports · the migration commit in
+each repository (a consumer commit under 188, never beside the owning front's open commit)
 
 ## Goal
 
@@ -8,6 +13,54 @@ Decision 206: `import {…} from "<name>"` resolves only to a package (std, bund
 dependency); an own module is imported by path in braces (`import {log.levelName as ownLevel};`);
 `from "<a module of this package>"` = `error[module-import-with-from]` at the source string, brace
 form as fix. A later bundled package never changes an import's meaning.
+
+Decision 337: an import always names where its names come from, and `mod` binds the module it
+declares. The shorthand (`import {splitPath};`, no module path, no `from`) goes:
+
+```bp
+// src/main.bp
+pub mod config;                // declares the module and binds the namespace `config`
+import {config.splitPath};     // brings the name — the same in any module of the package
+// or, with no import:
+config.splitPath(x)
+```
+
+## Open (decision 337)
+
+### Step 1 — `mod m;` binds `m`
+
+- [ ] `mod config;` and `pub mod config;` bind `config` as a namespace in the declaring module, as
+      `import {config};` does elsewhere: `config.splitPath(x)`, `config.Type`, a nested `config.sub.f(x)`
+- [ ] in the declaring module `import {config};` is `redundant-module-import` at the item (fix: delete it);
+      a top-level declaration named like a declared module is `import-name-collision`
+- [ ] cells `modules/mod_binds_namespace` (four targets) and `reject/redundant_module_import`,
+      `reject/declaration_named_like_module`
+
+### Step 2 — the shorthand is refused
+
+- [ ] an item with no `from` whose first segment names no module of the package is
+      `error[shorthand-import]` at the item: one module declaring the name `pub` → `write import
+      {config.splitPath};`; several → the candidates listed; none → `unresolved import`
+- [ ] the shorthand arms of `resolveImports` and `outsideShorthandReach` deleted; 170's
+      `ambiguous-import-use` stays for `from "<pkg>"` alone
+- [ ] cells `reject/shorthand_import` (one candidate, several, none); every accept cell that wrote a
+      shorthand rewritten to the module path
+
+### Step 3 — the migration, in the refusal's commit
+
+- [ ] `scripts/codemod-import-without-from.py` (or a sibling) rewrites each shorthand to the path the
+      refusal names: about 75 items in 32 files — botopink-lang (std, the libraries until 138 moves
+      them, tests), rakun, jhonstart; each library's commit a consumer commit (188), its `botopink test`
+      green
+
+### Step 4 — docs and tools
+
+- [ ] `docs.md` § Modules (`mod` binds the namespace) and § Imports (the shorthand paragraph and the
+      `perimeter` example go; the `ambiguous-import-use` sentence keeps the `from` case)
+- [ ] the language server's completion and go-to-definition follow `mod`'s namespace (26 s8's carve-out
+      named in the commit)
+
+**Gate:** standard (fronts.md § Gate) — `zig build test`, `zig build test-language`, `zig build test-libs`.
 
 ## Done
 

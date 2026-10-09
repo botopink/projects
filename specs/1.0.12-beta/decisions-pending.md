@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**56 questions and 8 contradictions are open, and 88 implementation choices await confirmation.**
+**55 questions and 8 contradictions are open, and 88 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -22,11 +22,7 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 
 ### What blocks now (answer first)
 
-#### 138-a · Does the shorthand import reach a dependency's modules? (*proposed*)
-- **Measured.** 170's rule in the compiler (`comptime.zig` `outsideShorthandReach`) keeps the shorthand import (`import {x};`, no `from`) away from a **bundled** package's modules only. After 326 std is the one bundled package and its modules are reached anyway (under another refusal), so the exclusion covers nothing. The cell `modules/shorthand_import_beside_bundled_package`, rewritten to declare a fixture `routing` by `path`, now answers `ambiguous-import-use` on the four targets (`import {splitPath};` beside `import {splitPath as routeSplit} from "routing";` with `config.bp` declaring `pub fn splitPath`); with `routing` bundled it printed `own` / `2`.
-- **Options.** (a) The shorthand resolves among the package's own modules only — never a dependency's, never std's: the program prints `own` and `2` as while `routing` was bundled (326: "names, exports and import sources do not change"); the exclusion reads "a module of another package of the build". (b) The shorthand reaches every loaded module, the package's or not: `import {splitPath};` is `ambiguous-import-use` and the program writes `import {config.splitPath};` (170: "a bare name reaching two declarations is refused"); the cell becomes a refusal and `outsideShorthandReach` is deleted.
-- **Recommendation.** (b) — the most restrictive (67: refuse over accept), no code kept for a package kind that no longer exists; whoever meets the case writes the module path once.
-- **Blocks.** The cell above (red until answered) and with it 138's botopink-lang patch; under (b), any consumer member whose shorthand reached a moved package's name (none measured in `zig build test-libs`).
+Nothing open: 138-a answered (337).
 
 ### 01-compiler
 
