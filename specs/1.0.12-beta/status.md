@@ -215,7 +215,7 @@ Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.
 last section. Open after the 9 Oct revalidation and the answers since (309–336): 55 questions, 8 contradictions, 88
 implementation choices.
 
-**First — what blocks now** (`decisoes-pendentes.md` § Prioridade 1, "O que trava agora", set by the maintainer 2026-10-09), in order:
+**First — what blocks now** (`decisoes-pendentes.md` Parte 1, "O que trava agora", set by the maintainer 2026-10-09), in order:
 - [ ] 05w-i → 333 (A): 97 s16 · 05w-j → 336: 97 s15
 
 **Then — the botopink shape** (raised 2026-10-04):
