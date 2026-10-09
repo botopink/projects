@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**53 questions and 6 contradictions are open, and 85 implementation choices await confirmation.**
+**54 questions and 6 contradictions are open, and 85 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -462,6 +462,49 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Options.** (a) Still refused: the attributes are the form. (b) `{...p}` with `p` of the props type, explicit attributes overriding.
 - **Recommendation.** (a).
 - **Blocks.** 118 step 1.
+
+#### 118-a · Who rewrites the native builders into props form, and when (*proposed*)
+- **Measured** (botopink-lang `56d4bc29`, jhonstart `76da71d`). Decision 351 (1) makes each native tag a
+  builder whose first parameter is the element's props record. The builders are `element.bp`'s eight
+  (frozen — `fronts.md` § Ownership, `05-jhonstart`) and `elements.bp`'s (`05-jhonstart/26`'s; 351
+  binds 26 for it), and 26 opens only after 118 lands (26's README § Depends on): the one box of 118
+  step 1 still open needs a file of a front that starts after it. The `(children, attrs:)` shape is
+  called by hand in 78 `.bp` files (jhonstart 51, onze 27). Two compiler needs come before any
+  rewrite: `pub val AnchorProps = Type.merge(GlobalAttrs, AnchorAttrs);` as a parameter type is
+  `'AnchorProps' is a value, not a type` (`01-checker` s28); a named props record is filled by no
+  labelled call — `<anchor href="/x">` against `fn anchor(props: AnchorProps)` is
+  `'anchor' expects 1 argument(s), got 2`, and so is `anchor(href: "/x")` by hand (the
+  `language-gaps.md` row **Template-built code cannot build an inline props type**). And 351 (4)
+  has no reading in a `.bp` file today: `html`'s `lookup` answers `Binding(name, kind)`, so a
+  prelude builder and a local `fn em(…)` are one to it. What 118 enforces meanwhile, in `html.bp`:
+  351's names (camelCase rendered in HTML's spelling, `data-*` a `string`, any other kebab-case and
+  `onClick` refused at the name) and no pair spread on an element.
+- **Options.**
+  (a) 118 takes carve-outs of `element.bp` and `elements.bp` once s28 and 207's spelling land, and
+  rewrites the 78 hand-written callers in jhonstart and onze in the same landing:
+  ```bp
+  pub val AnchorProps = Type.merge(Type.merge(GlobalAttrs, AriaAttrs), AnchorAttrs);
+  pub fn a(props: AnchorProps) -> Element { return el("a", props.children, attrsOf(props)); }
+  // a caller written by hand: a(href: "/x", class: "nav", children: "Home")
+  ```
+  (b) The box moves to `05-jhonstart/26`, after its step 0 (`html` in the core, decision 200) and the
+  two checker needs; 118 lands with the html-side rules above and its box reads "handed to 26":
+  ```bp
+  // 118 lands:  <a hreff="/x">  renders  <a hreff="/x">   (unknown attribute not refused yet)
+  // 26 then:    <a hreff="/x">  is  error: `a` has no field `hreff`  at the attribute
+  ```
+  (c) 118 adds a core module `intrinsics.bp` (a new carve-out) holding the props records and
+  props-taking builders the prelude imports under the tag names; the `(children, attrs:)` builders
+  stay for hand-written code until 26 retires them:
+  ```bp
+  // prelude.bp
+  import {intrinsics.anchor as a, intrinsics.division as div};
+  // hand-written code keeps: import {a} from "jhonstart"; a(["Home"], attrs: [#("href", "/")])
+  ```
+- **Recommendation.** (b): one writer per file (`fronts.md` rule 5), one builder per tag; (a) and (c)
+  wait on the same two checker steps, so neither refuses an unknown attribute sooner than (b), and (c)
+  leaves two builders under one tag name.
+- **Blocks.** 118 step 1's native-props box (351 (1), (2), (4), the element's props spread).
 
 #### 119-c · What "reaches no run-time hook" means for a literal with holes (*proposed*)
 - **Measured** (botopink-lang `d7c71405`). Built: by the literal's text — no hole, computed at build; any hole, computed when it runs — so `styled "${tab4} color: red;"` with `pub val tab4 = styledProperty "tab-size: 4;"` is computed at render although every value is known at build. 338 reads the criterion off `@typeInfo(f).hooks` (277), which lists `use`s and component calls; a hole is neither. Building a holed literal at build needs its holes' values in the template, and every route is shut today: `e.lookup(name)` answers no value (row **A template function cannot read another expansion's value**); in built code, `comptime styledComputed(…, [propertyConstant(…)])` evaluates but is emitted as `'Styled'(…)` (erlang: `function 'Styled'/2 undefined`) / `Styled(…)` (commonJS: `ReferenceError`) unless the calling module imports `Styled` (row **A record value a `comptime` expression answers is emitted as an unbound constructor**); `comptime padAll(2).rules`, reaching a function whose body is a `styledProperty` expansion, panics the compiler (row **A `comptime` expression reaching a template expansion panics the erlang emitter**); `comptime` refuses `tab4` as "a runtime identifier"; `styledComputed` calls std's host `contentHash` (row T19).

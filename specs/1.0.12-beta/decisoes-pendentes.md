@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 53 perguntas, 6 contradições e 85 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **354**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 54 perguntas, 6 contradições e 85 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **354**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -841,6 +841,7 @@ val t = async.delay(30, "a");   // bloqueia 30 ms aqui; `await t` é identidade
 
 | Id | Assunto | Recomendação | Trava | Espera também |
 |---|---|---|---|---|
+| `118-a` | Quem reescreve os construtores nativos na forma de props (351), e quando | (b) — a caixa passa para a `05-jhonstart/26`, depois do passo 0 dela; um escritor por arquivo (`fronts.md` regra 5). (a) a 118 recorta `element.bp`/`elements.bp` e reescreve os 78 chamadores; (c) um módulo `intrinsics.bp` novo — as duas esperam os mesmos passos do checker e não recusam atributo desconhecido mais cedo. Exemplo: com (b), `<a hreff="/x">` ainda renderiza até a 26; depois, `error: 'a' has no field 'hreff'` no atributo | a caixa de props nativas da 118 passo 1 (351 (1), (2), (4)) | `01-checker` s28 (`Type.merge` como tipo de parâmetro); um registro de props preenchido por chamada rotulada (linha de `language-gaps.md`) |
 | `134-f` | O que `use @getContext(T)` é em tempo de execução | (c) — desde a 352 (`119-b`) a (a) não serve mais: o componente do `styled` calculado na renderização lê a folha com `use @getContext(StyledBase)`; a base é o valor com que o componente foi chamado (a ponte da `jhonstart-styled`, o `flush()` do emilia), sem forma `provide` nova; `context-unbound` em runtime quando não há nenhuma. | 134 passo 6 (a célula `run/`); pela 352, 119 passo 1 caixa 4 e 34 passo 5 | com (b)/(c), as frentes de backend 02–05 |
 | `67-a` | Onde as caixas de forms do lado do DOM são afirmadas | (a). As caixas rodam no gate da biblioteca dona, onde quebram primeiro, sem dependência nova; o navegador do onze 53 confere de novo. | a forma dos passos 1–3 da 67 (escritos para a (a)); o caminho de | 26; 103 s2 |
 | `03r-ab` | Front 09: stores de protocolo binário | (a) — nunca cair para ETS debaixo de uma URL do Mongo; o braço Elasticsearch sem aresta para o `rakun-client` (ver `ctr-w`; o passo 3 da 09 ainda passa por ele). A frente já segue a (a); falta só o registro. | 09 passo 5 (as células de recusa). | 09: 19 s1, 13 (grupo B, depois do 128) |

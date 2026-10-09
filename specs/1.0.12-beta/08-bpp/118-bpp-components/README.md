@@ -155,10 +155,17 @@ core's `node.bp`, `prelude.bp` and `element.bp`'s `View`; green on commonJS and 
   writing (statement closures, label reads, the bounded frame); `test/defects_test.bp` pins the
   four § Goal defects, red on the old body, green now.
 - Step 1: `name="text"`, `'text'`, `name={expr}` (`string`, `bool` bare / absent, `?string` absent
-  when null), bare, kebab-case, `{...pairs}` on an element after the written attributes; `[name]={…}`
+  when null), bare; `[name]={…}`
   refused naming `name={…}`, its code uses rewritten (`html_test.bp`, `elements_test.bp`,
   `jhonstart-emilia`'s `bridge_test.bp`, `document-shell`'s `shell_dsl.bp`); `{...}` on a component
   refused (props-f, the recommended reading); the five basic entities decoded, any other refused.
+- Step 1, decision 351's names (part): a multi-word attribute is camelCase and renders in HTML's
+  spelling (`ariaLabel` → `aria-label`, `httpEquiv` → `http-equiv`, `encType` → `enctype`), `data-*`
+  the one kebab-case family and a `string` (`data-x={true}` the checker's type mismatch); any other
+  kebab-case name refused naming its camelCase form, an event attribute (`onClick`) refused at its
+  name, the pair spread `{...pairs}` on an element refused (`refusals/html_kebab_attribute`,
+  `html_event_attribute`, `html_element_spread`, `html_data_attribute_type`; the spread test of
+  `template_test.bp` replaced by the two naming tests).
 - Step 2: a hole lowers through core `Node` — text for a string, a number or a `bool`, an `Element`,
   a list; a `?T`, a record, a function are the checker's type mismatch at the literal's line
   (`refusals/html_hole_*`); void and self-closing tags in place, `<>` / `<Fragment>`, comments and
@@ -187,10 +194,20 @@ core's `node.bp`, `prelude.bp` and `element.bp`'s `View`; green on commonJS and 
 
 ## Open
 
-- Step 1 — native-tag attributes (decision 351): each builder takes its element's props record
-  (`GlobalAttrs`, `AriaAttrs` and the element's own, layered with `Type.merge`), lowered as a
-  component tag; multi-word names camelCase, `data-*` open; a tag the prelude does not name refused
-  at the tag; the element spread takes the element's props type, the pair spread goes.
+- Step 1 — native-tag props (decision 351 (1), (2), (4), (5)): each builder takes its element's
+  props record (`GlobalAttrs`, `AriaAttrs` and the element's own, layered with `Type.merge`), lowered
+  as a component tag, so an unknown attribute, a value of the wrong type and content in a void
+  element are refused; a tag the prelude does not name refused at the tag; the element spread takes
+  the element's props type. Blocked three ways, measured on botopink-lang `56d4bc29`:
+  `pub val AnchorProps = Type.merge(GlobalAttrs, AnchorAttrs);` used as a parameter type is
+  `'AnchorProps' is a value, not a type` (`01-checker` s28); a named props record is filled by no
+  labelled call (`<anchor href="/x">` → `'anchor' expects 1 argument(s), got 2`, by hand too —
+  **Template-built code cannot build an inline props type**, `01-checker`); the builders are
+  `element.bp` (frozen) and `elements.bp` (`05-jhonstart/26`'s, which opens after 118) — `118-a`.
+  `html`'s `lookup` answers `(name, kind)`, so a prelude builder and a local function of the same
+  name are one to it (4).
+- Slots and spread on a component — waiting on `props-e` (named slots, step 4) and `props-f`
+  (`{...expr}` on a component, step 1, refused today as its recommendation reads).
 - Step 4 — named slots and the slot transfer through two layouts: `props-e`. The props as one
   record (192, `props: type(…)`, 207): **Template-built code cannot build an inline props type**
   (`01-checker`); until then components take parameters and `<slot />` reads `children`.
@@ -208,8 +225,9 @@ core's `node.bp`, `prelude.bp` and `element.bp`'s `View`; green on commonJS and 
 
 ## Decisions
 
-- `props-e` — **named slot** onto props (193 names `children` only) — step 4
-- `props-f` — `{...expr}` on a component — step 1
+- `props-e` — **named slot** onto props (193 names `children` only) — step 4 · waiting
+- `props-f` — `{...expr}` on a component — step 1 · waiting
+- `118-a` — who rewrites the native builders into props form, and when — step 1's props box
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test --target commonJS` and `--target erlang` green in `modules/jhonstart-html`
