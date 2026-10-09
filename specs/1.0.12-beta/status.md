@@ -1,6 +1,6 @@
 # Status — 1.0.12-beta
 
-**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `106c84b3` (batch 10: typed comptime decorator arguments — 01-checker s24, 280) · rakun `c0e991c` · jhonstart `678689c` · emilia `1568c0b`
+**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `106c84b3` (batch 10: typed comptime decorator arguments — 01-checker s24, 280) · rakun `c0e991c` · jhonstart `b25e959` · emilia `1568c0b`
 · onze `29e8ff3` · erika `8f88482` · vscode-extension `f041865`
 
 **Fronts:** 71 — **0 done** · **23 partial** · **48 not started**.
@@ -202,7 +202,8 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [x] 49 s1 · s6 — `config.bp` / `types.bp` on std's `Json` methods (`isString` stays — `49-g`); the six `onze-test` group stubs (onze-wave patch 02)
 - [x] 50 s1 — `onze-cli` / `onze-bundler` read std's `Json` methods; no local `membersOf` / `itemsOf` / `textOf` (onze-wave patch 03)
 - [x] 51 s1 — `onze-og` reads integers with std's `parseInt`; no `intOf` (malformed text still `0` — `51-a`) (onze-wave patch 04)
-- [ ] 27 s1 box 1 · s2 · s3 — the reconcile driver, `use linkStatus()` only in a `#[client]` component (363), `data-jh-pending`, the example · none
+- [x] 27 s1 box 1 · s2 boxes 1, 3 · s3 — the reconcile driver (`applyTransition` over `DomOps`, question 27-b ★), `use linkStatus()` in a `#[client]` component (363), `data-jh-pending`, the example (jhonstart `b25e959`)
+- [ ] 27 s2 box 2 — `use linkStatus()` outside `#[client]` refused · 26 s8 (`#[clientOnly]`, `src/stage.bp`) on 01-checker s23 (`Decl.hooks`)
 
 ## L4 — later, in waves
 

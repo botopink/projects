@@ -8,42 +8,108 @@
 // The anchor itself is pure and renders during the SERVER pass (front 30), so
 // this file's assertions run on either target. The prefetching, the click
 // interception and the transition are the BROWSER half: they happen after
-// front 68's generated entry calls `linkMount()`.
+// front 68's generated entry calls `linkMount()`, and the transition is
+// `reconcile.bp`'s `applyTransition` over the entry's `DomOps`.
+//
+// Pending state (decision 363). The checkout link is a server-rendered `Link`
+// and reads no hook: while its navigation is in flight the client router sets
+// `data-jh-pending` on it and clears it when the transition ends, and the page
+// styles that attribute. The progress bar is the one `#[client]` island that
+// reads `use linkStatus()`; the server writes its placeholder only.
 //
 // Upstream:
 //   https://nextjs.org/docs/app/api-reference/components/link
 //   https://nextjs.org/docs/app/getting-started/linking-and-navigating
 
-import { Element, div, h1, ul, li, span, nav, text, renderToString } from "jhonstart";
-import { Link, linkProps, withPrefetch, withClass, prefetchMode } from "jhonstart-link";
+import {Element, ElementBase, Island, client, clientMount, div, h1, ul, li, span, nav, style, text, renderToString} from "jhonstart";
+import {Link, linkProps, withPrefetch, withClass, prefetchMode, linkStatus} from "jhonstart-link";
 
 pub type Post(slug: string, title: string)
 
-// The header: two links, prefetch left on. These are the links a reader almost
-// always follows, so warming them is the right trade.
+// The header: two links, prefetch left on, and the checkout link. These are
+// the links a reader almost always follows, so warming them is the right trade.
 fn header() -> Element {
-    return nav([
-        Link(withClass(linkProps("/"), "brand"), [text("botopink", attrs: [])]),
-        Link(linkProps("/blog"), [text("Blog", attrs: [])]),
-    ], attrs: [#("class", "site-header")]);
+    return nav(
+        [
+            Link(
+                withClass(linkProps("/"), "brand"),
+                [text("botopink", attrs: [])],
+            ),
+            Link(linkProps("/blog"), [text("Blog", attrs: [])]),
+            checkoutLink(),
+        ],
+        attrs: [#("class", "site-header")],
+    );
+}
+
+// The checkout link: a plain anchor on the server. Its pending state is the
+// `[data-jh-pending]` rule below, not a hook and not an island per link.
+fn checkoutLink() -> Element {
+    return Link(
+        withClass(linkProps("/checkout"), "checkout"),
+        [text("Checkout", attrs: [])],
+    );
+}
+
+fn pendingStyle() -> Element {
+    return style(
+        [
+            text(
+                "a[data-jh-pending] { opacity: 0.6; cursor: progress; }",
+                attrs: [],
+            ),
+        ],
+        attrs: [],
+    );
+}
+
+// The progress bar: a `#[client]` island, the only place `use linkStatus()` is
+// read. It renders in the browser only; the server writes its placeholder.
+// (`@Component<ElementBase, Element>` until front 134 step 6 drops the base.)
+#[client]
+pub fn NavProgress() -> @Component<ElementBase, Element> {
+    val s = use linkStatus();
+    val state = if (s.pending) "busy" else "idle";
+    return div([], attrs: [#("class", "nav-progress"), #("data-state", state)]);
+}
+
+fn progressIsland() -> Element {
+    return clientMount(
+        Island(id: "i0", component: "NavProgress", props: []),
+        [],
+    );
 }
 
 // One archive row: prefetch off. Two hundred of these in a viewport would queue
 // two hundred prefetches, which is the case the upstream doc names.
 fn archiveRow(post: Post) -> Element {
     val props = withPrefetch(linkProps("/blog/" + post.slug), false);
-    return li([
-        Link(props, [text(post.title, attrs: [])]),
-    ], attrs: [#("class", "archive-row")]);
+    return li(
+        [
+            Link(props, [text(post.title, attrs: [])]),
+        ],
+        attrs: [#("class", "archive-row")],
+    );
 }
 
 pub fn BlogIndex(posts: Array<Post>) -> Element {
-    return div([
-        header(),
-        h1([text("Archive", attrs: [])], attrs: []),
-        span([text(posts.length.toString() + " posts", attrs: [])], attrs: [#("class", "count")]),
-        ul(posts.map({ p -> archiveRow(p) }), attrs: [#("class", "archive")]),
-    ], attrs: [#("class", "page")]);
+    return div(
+        [
+            pendingStyle(),
+            progressIsland(),
+            header(),
+            h1([text("Archive", attrs: [])], attrs: []),
+            span(
+                [text(posts.length.toString() + " posts", attrs: [])],
+                attrs: [#("class", "count")],
+            ),
+            ul(
+                posts.map({ p -> archiveRow(p) }),
+                attrs: [#("class", "archive")],
+            ),
+        ],
+        attrs: [#("class", "page")],
+    );
 }
 
 test "a header link renders the plain two-attribute anchor" {
@@ -74,4 +140,18 @@ test "the index renders every row" {
     assert markup.contains("2 posts");
     assert markup.contains("/blog/one");
     assert markup.contains("/blog/two");
+}
+
+test "the checkout link renders no pending state on the server" {
+    val markup = renderToString(checkoutLink());
+    assert markup
+        == "<a href=\"/checkout\" data-jh-l=\"1\" class=\"checkout\">Checkout</a>";
+    assert markup.contains("data-jh-pending") == false;
+}
+
+test "the page styles the pending attribute and writes only the island's placeholder" {
+    val markup = renderToString(BlogIndex([]));
+    assert markup.contains("a[data-jh-pending]");
+    assert markup.contains("<div data-jh-i=\"i0\"></div>");
+    assert markup.contains("nav-progress") == false;
 }

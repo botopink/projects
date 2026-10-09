@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**58 questions and 6 contradictions are open, and 92 implementation choices await confirmation.**
+**59 questions and 6 contradictions are open, and 92 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -508,6 +508,50 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Blocks.** 92 step 2's first and third boxes.
 
 ### 05-jhonstart
+
+#### 27-b · The driver's inputs: where the markup comes from, and who sets `data-jh-pending` (*proposed* ★)
+- **Measured** (front 27 step 1 box 1 and step 2 box 3, `front/jhonstart-27`). The README fixes
+  `applyTransition(current, target, dom: DomOps) -> Navigation` and `DomOps` as four functions
+  (`replaceSubtree(depth, html)`, `startIslands(depth)`, `mountCount(name)`, `scrollTo`). Two of its
+  own boxes do not fit that shape: `replaceSubtree` takes the target's `html`, and neither
+  `RouterState` nor the four functions supply one (the driver is pure, it cannot fetch); and step 2
+  asks that "the client router sets `data-jh-pending` on the active link and clears it when the
+  transition ends", asserted "over a recording `DomOps`" — no function of the four can set it.
+  `scrollTo` has no stated argument. Two readings of the depth were possible too: `sharedDepth`
+  answers 2 for `/blog` → `/blog/[slug]` (the keys `/`, `/blog` agree), while the README's box
+  expects `replaceSubtree(1, …)`.
+- **Options.**
+  (a) ★ Six functions, the driver asynchronous; the depth is the deepest shared segment, whose
+  CHILDREN are replaced (built, `jhonstart-link` 46 / 0 on both rows):
+  ```bp
+  pub type DomOps(
+      markup: fn(href: string) -> @Task<@Result<string, string>>,   // route cache or fetch
+      replaceSubtree: fn(depth: i32, html: string) -> void,
+      startIslands: fn(depth: i32) -> void,
+      mountCount: fn(name: string) -> i32,
+      scrollTo: fn(depth: i32) -> void,
+      markPending: fn(href: string, pending: bool) -> void,          // data-jh-pending
+  )
+  pub fn applyTransition(current: RouterState, target: RouterState, dom: DomOps)
+      -> @Task<@Result<Navigation, string>>
+  // /blog → /blog/x: pending /blog/x on | markup /blog/x | replace 1 … | start 1 | scroll 1 | pending /blog/x off
+  // replaceDepth(nav) = nav.shared - 1 — never below 0, so the root layout is never replaced
+  ```
+  (b) The README's four functions, the markup a parameter, the pending mark the runtime's
+  (`link_runtime.mjs` sets it on click, clears it on `popstate`) — step 2's box is then asserted only
+  in onze 53's browser, not over a recording `DomOps`:
+  ```bp
+  pub fn applyTransition(current: RouterState, target: RouterState, html: string, dom: DomOps) -> Navigation
+  ```
+  (c) The README's four functions with `replaceSubtree(depth, href)` — the entry looks the markup up
+  itself — and the pending mark inside the entry's `replaceSubtree`; the driver stays synchronous:
+  ```bp
+  dom.replaceSubtree(1, "/blog/x");   // the entry: fetch, mark, replace, clear
+  ```
+- **Recommendation.** (a): every box of the README is asserted without a DOM, a failed markup is a
+  located error that clears the mark and replaces nothing, and the entry (`07-onze/50` step 6)
+  supplies plain functions.
+- **Blocks.** Nothing — (a) is built; `07-onze/50` step 6 supplies the six functions.
 
 #### 67-a · Where the DOM-side forms boxes are asserted
 - **Measured.** `fieldError` after `__jhFormState`, in-place re-render on `ok: false`, two forms' `pending`, optimistic commit / roll-back read `document` and `FormData`; `botopink test` has no DOM; `jhonstart-dom-test` (`fake_dom.mjs`, commonJS only) already serves the render's browser half. Front 67's header says "`67-a` answered", but no decision records it — still open.

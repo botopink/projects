@@ -11,6 +11,14 @@
 // either target; the prefetching, the click interception and the transition
 // are the browser half, after the generated entry calls `linkMount()`.
 //
+// The checkout link's pending state is the style section's
+// `a[data-jh-pending]` rule: the client router sets the attribute on the
+// active link while its navigation is in flight (decision 363) — no hook, no
+// island per link. The progress bar is the one `#[client]` island that reads
+// `use linkStatus()`; it is a `.bp` function (`NavProgress` of
+// `post-list-links-example.bp`, as `components/nav_progress.bp` here) placed
+// with `#[clientOnly]`, so the server writes nothing for it.
+//
 // Upstream:
 //   https://nextjs.org/docs/app/api-reference/components/link
 //   https://nextjs.org/docs/app/getting-started/linking-and-navigating
@@ -18,14 +26,19 @@
 import {div, h1, nav, span, ul} from "jhonstart";
 import {Link, linkProps, withClass} from "jhonstart-link";
 import {components.archive_row as ArchiveRow};   // a `.bpp`'s default, named by the importer (288)
+import {components.nav_progress.NavProgress};
 import {lib.blog.listPosts};
 
 val posts = await listPosts();
+--- style ---
+a[data-jh-pending] { opacity: 0.6; cursor: progress; }
 ---
 <div class="page">
+  <NavProgress #[clientOnly] />
   <nav class="site-header">
     {Link(withClass(linkProps("/"), "brand"), ["botopink"])}
     {Link(linkProps("/blog"), ["Blog"])}
+    {Link(withClass(linkProps("/checkout"), "checkout"), ["Checkout"])}
   </nav>
   <h1>Archive</h1>
   <span class="count">{posts.length.toString()} posts</span>
