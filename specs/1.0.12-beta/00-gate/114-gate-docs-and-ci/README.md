@@ -1,7 +1,7 @@
 # Front 114 — gate-docs-and-ci: no `skip` fence, no soft CI row, every workflow green and pinned
 
-**Priority:** high · **State:** partial: steps 1, 2, 4, 5 and step 3 box 1 on feat; step 6 box 1 and step 8 box 2 on
-`front/114-16s8`; steps 3 (box 2), 6 (box 2), 7, 8 (boxes 1, 3), 9 open
+**Priority:** high · **State:** partial: steps 1, 2, 4, 5 and step 3 box 1 on feat; step 6 box 1 and step 8 boxes 1–2 on
+`front/114-16s8`; steps 3 (box 2), 6 (box 2), 7, 8 (box 3), 9 open
 **Depends on:** nothing open (botopink-lang CI fixes on feat; only a green run remains)
 **Owns:** `scripts/check-docs.sh` · `docs.md` marker lines and the fence lines after them (no prose) ·
 botopink-lang `.github/workflows/test.yml` · meta `.github/workflows/**` and meta `AGENTS.md` § CI ·
@@ -37,6 +37,19 @@ table has `reject`, no `skip` · 3 box 1 no `allow_fail`, no windows row (decisi
 and § budget comments name 7m30s cold (decision 265), over budget yellow · 6 box 1 vscode-extension
 `compiler` job reads `OTP_RELEASE` from the compiler source, installs it with `erlef/setup-beam`, asserts
 it · 8 box 2 rakun `test.yml` and `AGENTS.md` name the 2.35 pin.
+8 box 1 133's emitted modules diffed byte for byte, each of 133's two merges against its first
+parent (step 2: `838f565a^1` vs `838f565a`; step 3: `b22aaa1d^1` vs `b22aaa1d`), four ReleaseSafe
+compilers, one input set (botopink-lang `b22aaa1d`'s `tests/language` and `libs/`; emilia `42d51ec8`,
+erika `0a463f5c`, jhonstart `bd397de6`, onze `b1a31105`, rakun `fac248b4` — the meta pins of
+`f00c4992`, the first carrying 133): every `run/` cell `botopink build`, every `test/` cell and every
+test-kind `modules/` cell `botopink test`, every other `modules/` cell `botopink build`, each on
+commonJS, erlang, wasm and beam (1 492 jobs); every library member `botopink build` and `botopink
+test` on each manifest target (298 jobs). Every file the compiler wrote but the `erlc`-built `.beam`s
+compared (`botopink test`'s run directory kept by a one-line patch applied alike to all four):
+step 2 — 3 281 + 246 396 files, step 3 — 3 307 + 246 416, byte-identical, exit status equal on every
+job but one (`rakun-devtools` `botopink test --target erlang`, red before step 2 and green after with
+identical emitted bytes — a test outcome, not an emission). stderr not compared: it carries the
+compile time (`Compiled in 53.24ms`) and differs between two runs of one compiler.
 
 ## Open
 
@@ -72,9 +85,6 @@ last full cold: 9m31s, loaded).
 
 ### Step 8 — the gate's other residue
 
-- [ ] 133 step 2 completed: every emitted module of every `test-libs` and `test-language` cell
-      diffed byte-for-byte, `feat` vs the tree before 133's first merge (only printed results were
-      diffed); record it here — or withdraw "every cell byte-identical" from `../../status.md`
 - [ ] after `06-emilia/33` step 2 (emilia-card emilia-only): emilia `.github/workflows/test.yml` step
       "Checkout jhonstart (dependency — examples/emilia-card depends on jhonstart)" (`:94-99`) and
       its comment (`:21`) removed

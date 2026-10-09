@@ -35,7 +35,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 114 s3 — botopink-lang `test.yml` green on GitHub on `feat` · red on `49455602` (2026-10-03 run): `zig fmt --check` (`comptime/transform.zig:1172`, 19d59508 — 01-checker), 15 `std/math` templates refused by `beam_templates` (a443f52d — std-math-uniform), `comptime/eval.zig` literal test `3` vs `3.0` (01-checker) — none in `test.yml`
 - [ ] 114 s6 — vscode-extension workflow installs OTP 28 (on branch `front/114-16s8`), one green run · the push
 - [ ] 114 s7 — a cold gate recorded on the current tip, ≤ 450 s, exit-check counts re-derived · a machine with `zig` and `erl`
-- [ ] 114 s8 — 133's emitted modules diffed; rakun `test.yml`'s glibc comment says 2.35 (patch on `front/114-16s8`) · none
+- [ ] 114 s8 — emilia `test.yml`'s jhonstart checkout removed · 06-emilia/33 s2 (133's emitted modules: byte-identical, measured; rakun's glibc comment: patch on `front/114-16s8`)
 - [ ] 01-checker s6 box 3 — `throw` in a `case` arm under `@Result` · 04 s6
 - [ ] 01-checker s10 — a lambda parameter annotation (T12) · 16 s8
 - [ ] 16 s8 — the lambda annotation's printer arm · 16-x (the AST field and parse are 01's) — lands before or with 01 s10
