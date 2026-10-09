@@ -130,21 +130,32 @@ The list goes to the chain's first link (`receiverTypeArgs`); the checker binds 
 `reject/comptime_expression_type_mismatch`, format round-trip. What it *means* was question `ck4-a`,
 answered by decision 266 (step 21).
 
-### Step 21 — a `comptime` is evaluated at compile time everywhere (decision 266)
+### Step 21 — a `comptime` is evaluated at compile time everywhere (decisions 266, 331) — priority
+
+Decision 331: this step comes first among the open checker steps. A body's `comptime` runs on the comptime
+runtime (BEAM or WAT, front 18), never on the build target, so its value is the same on the four targets;
+no interim refusal of a loop or a call is written.
 
 `comptime <expr>` and its block form run on the comptime runtime at module level and in a body; a
 call is evaluated there, and the value is lifted into the emitted program — a literal as a literal,
 a record or a collection as the construction each backend emits. A value with no emitted
-construction (a function, a resource) is a located refusal.
+construction (a lambda capturing state, a resource) is a located refusal; a reference to a declared
+function is lifted as that reference (331).
 
 - [ ] `validateComptime` admits a call the comptime runtime can run, at module level and in a body
 - [ ] a body's `comptime` is folded at build — `val a = comptime two();` emits `2`, never `two()`
 - [ ] a record and a collection are lifted: `val d: Dict<string, unknown> = comptime Dict.empty();`
       builds at compile time on commonJS, erlang, beam and wasm (`run/comptime_expression_static_call`
       loses its `.wasm.expect`)
-- [ ] `reject/comptime_value_not_liftable` — a function value out of a `comptime`, located at it
+- [ ] a reference to a declared top-level function lifted as the reference: a `Dict` of the factories `@TypeInfo.all`
+      answers builds on the four targets — rakun's six `beans()` (`examples/rakun`, `examples/rakun-container`, four
+      `test/` files) green unchanged
+- [ ] `reject/comptime_value_not_liftable` — a lambda capturing the block's state, and a resource, out of a `comptime`,
+      located at it
 - [ ] the module-level `comptime` `val` after an import (step 20's finding) emitted on every target
-- [ ] a `comptime { … }` block in a function body builds on commonJS and wasm (it fails at codegen there)
+- [ ] a `comptime { … }` block in a function body with a call and a loop (`run/comptime_block_with_loop`:
+      `comptime { var d = 0; for ([1, 2, 3]) { b -> d = add(d, b); } break d; }`) answers `6` from one `.out` on the
+      four targets, evaluated on the BEAM runtime and on the WAT runtime alike; no `comptimeBlock` reaches a backend
 
 ### Step 22 — the prelude scope (decision 270)
 
