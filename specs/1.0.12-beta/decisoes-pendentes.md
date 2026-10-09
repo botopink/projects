@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta (só o que está em aberto, por ordem de importância)
 
-Atualizado em 2026-10-09 (decisões 278–326; revalidação item a item). **Em aberto: 61 perguntas, 9 contradições e 88 escolhas ★ para confirmar.** Só o que ainda espera resposta sua: o que já foi respondido está em
+Atualizado em 2026-10-09 (decisões 278–326; revalidação item a item). **Em aberto: 63 perguntas, 9 contradições e 88 escolhas ★ para confirmar.** Só o que ainda espera resposta sua: o que já foi respondido está em
 `specs/1.0.12-beta/decisions-taken.md` (decisões 144–326; próximo número livre: **327**) e saiu daqui.
 Respondidas desde 02/10: 225–233 (caches, OTP, CI, `test-web`, std no wasm), 234–236 (injeção do rakun,
 `@TypeInfo.all` com lista, decorador de função), 237 (captura do template pelo texto), 238–243
@@ -173,6 +173,105 @@ val g = { n: i32 -> f(n) };
 **Recomendação: (a)** — a mais restritiva: nenhum commit em que a forma parseia e o formatter a apaga, e
 o par parse/impressão fica numa frente só (a nota da 16: "forma nova de parser precisa de um braço de
 printer aqui"). **Bloqueia:** o passo 8 da `16-formatter` e o passo 10 do `01-checker`.
+
+### 134-e · Três superfícies que nenhuma forma de declaração escreve hoje: os métodos de `?T` e o `result`, `Type.Field<T>`, um tipo só de funções estáticas *(proposta)* ⏳
+
+**Trava:** `01-compiler/134` passo 2 (o resto) · `01-checker` passos 24 e 28 · ⏳ pronto para abrir thread ao responder
+
+**Contexto.** O passo 2 da 134 declara no `builtins.d.bp` tudo que o compilador conhece, e um teste
+de deriva confere que o que o compilador espelha bate com a declaração. Três coisas não têm forma de
+declaração. (1) Os métodos de `?T` (`map`, `flatMap`, `unwrapOr`) e o namespace builtin `result`
+(`result.map/then/unwrap/isOk/isError`): `?T` não é um tipo com nome (`Option<T>` / `Optional<T>` são
+recusados) e `result` é um namespace minúsculo, não um tipo — hoje são só prosa; só os cinco métodos
+de `Result` estão declarados (no corpo do enum). (2) `Type.Field<T>` (308) é um tipo associado de
+`Type`, e um tipo declarado dentro do corpo de outro tipo é erro de parse. (3) O `Type` da std está
+escrito `pub type Type() { pub declare fn … }`, então `Type()` constrói um valor vazio que não
+significa nada; `pub type Type { … }` sem lista de campos é `type-without-field-list`.
+
+**Hoje:**
+```bp
+pub type Type() {
+    pub type Field<T>(name: string)   // error: unexpected `type`
+}
+val t = Type();                       // aceito: um valor vazio sem sentido
+val m = result.map(r, f);             // aceito, mas sem declaração em lugar nenhum
+```
+
+- [ ] **(1a)** A prosa fica; o teste de deriva cobre só `Result`.
+- [ ] **(1b)** Declarar os dois: `?T` por um `extend` e o namespace como um tipo de funções estáticas.
+  ```bp
+  extend ?T {
+      declare fn map<T2>(self: ?T, transform: fn(value: T) -> T2) -> ?T2;
+      declare fn unwrapOr(self: ?T, fallback: T) -> T;
+  }
+  pub type result() { declare fn map<R, E, R2>(r: Result<R, E>, transform: fn(value: R) -> R2) -> Result<R2, E>; }
+  ```
+- [ ] **(1c)** `extend ?T { … }` como em (1b), e o namespace `result` sai — `r.map(f)` é a única
+  grafia (`result.map(r, f)` vira nome não ligado).
+- [ ] **(2a)** Um tipo declarado no corpo de um tipo é o tipo associado dele, o mesmo nó que o
+  `decl.addType` já produz:
+  ```bp
+  pub type Type() {
+      pub type Field<T>(name: string, typeName: string, annotations: DeclAnnotation[]) {
+          pub declare fn of(text: string) -> ?Type.Field<T>;
+      }
+      pub declare fn keys<T>(comptime source: type T) -> type;
+  }
+  ```
+- [ ] **(2b)** `Field<T>` no topo do `types.bp`, importado `import {types.Field} from "std";` —
+  emenda a 308 de `Type.Field<T>` para `Field<T>`.
+- [ ] **(3a)** Fica `pub type Type() { … }` (nenhuma forma nova; `Type()` é um valor inútil).
+- [ ] **(3b)** Um `type` cujo corpo tem só funções estáticas e nenhuma lista de campos é um tipo
+  namespace — não se constrói, não é valor:
+  ```bp
+  pub type Type { pub declare fn partial<T>(comptime source: type T) -> type; }
+  val t = Type();   // error: Type is a namespace type, it has no value
+  ```
+
+**Recomendação: (1c), (2a), (3b)** — uma grafia para uma operação, o nome da 308 mantido, e nada
+construível que não signifique nada (decisão 67). **Bloqueia:** o resto do passo 2 da 134 (as
+declarações de `?T` / `result`; `Type.Field<T>` e a resposta de `keys`); `01-checker` passo 24
+(`Type.Field<T>`) e passo 28 (`Type.keys`, `pick`, `omit`).
+
+### ck-rows-a · Um `comptime` de corpo que o build ainda não consegue dobrar *(proposta)* ⏳
+
+**Trava:** `01-checker` passo 21, última caixa · o `beans()` do rakun · ⏳ pronto para abrir thread ao responder
+
+**Contexto.** Pela 266, um `comptime` no corpo de uma função é avaliado em compilação e não é mais
+emitido como expressão de tempo de execução. O `01-checker` já dobra todo bloco que o `eval.zig` lê
+(literais, operadores, locais do bloco, `if`, `break` — `run/comptime_block_in_body`). Um bloco com
+chamada ou laço não é dobrado — quem o rodaria é o runtime de comptime do passo 21, caixa 1 — e ainda
+chega aos backends: imprime `6` no erlang e no beam, morre no commonJS (`ReferenceError: d is not
+defined` — só o `break` é emitido) e é recusado no wasm (`no lowering for the comptime construct
+comptimeBlock`). O rakun escreve essa forma seis vezes (`beans()`: `examples/rakun`,
+`examples/rakun-container` e quatro arquivos de `test/`), sobre `@TypeInfo.all(…)` e um `Dict` de
+funções.
+
+**Hoje:**
+```bp
+fn total() -> i32 {
+    return comptime { var d = 0; for ([1, 2, 3]) { b -> d = add(d, b); } break d; };
+}
+// erlang, beam: 6 · commonJS: ReferenceError: d is not defined · wasm: no lowering for comptimeBlock
+```
+
+- [ ] **(a)** Recusar, localizado no `comptime`, todo `comptime` de corpo que o dobrador não lê, até
+  o passo 21 caixa 1 rodá-lo no runtime de comptime; os seis `beans()` do rakun ficam vermelhos até lá.
+  ```bp
+  return comptime { var d = 0; for (…) { … } break d; };
+  // error: comptime-not-folded: this block holds a loop the build cannot evaluate yet
+  ```
+- [ ] **(b)** Recusar só onde um backend o roda errado (commonJS, wasm) e manter a emissão de tempo
+  de execução do erlang/beam até a caixa 1.
+  ```bp
+  // botopink build --target commonJS → recusado · --target erlang → imprime 6
+  ```
+- [ ] **(c)** Deixar como está: o commonJS lança em tempo de execução e o wasm recusa no codegen.
+
+**Recomendação: (a)** — a mais restritiva: nenhum `comptime` chega a um backend sem ser avaliado;
+pela 266, o `Dict` de funções do rakun já é uma recusa localizada de qualquer jeito (uma função não tem
+construção emitida), então o `beans()` muda de forma em qualquer opção. **Bloqueia:** a última caixa do
+passo 21 do `01-checker`; o `beans()` do rakun.
 
 **3 · `05-wasm`**
 
