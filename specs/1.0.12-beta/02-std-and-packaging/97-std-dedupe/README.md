@@ -138,6 +138,14 @@ and beam, 2 on wasm.
 - [ ] the 13 files with a `case` over `Json` (std 6, rakun 3, jhonstart 2, onze 2) gain the arms, one commit per
       repository; `run/json_numbers_exact` one `.out` for the four targets
 
+### Step 16 — `unicode.normalize` through utf8proc (decision 333; after `05-wasm` step 9)
+
+- [ ] `libs/std/wasm/utf8proc.wasm` built from utf8proc at the release whose Unicode is OTP 28's (16.0), its
+      version and SHA-256 in the wasm manifest; the build recipe recorded in `libs/std/AGENTS.md`
+- [ ] the four `normalize*` cells bind `@External.Wasm(module: .Utf8proc, fn: "utf8proc_NFC")` (and NFD, NFKC,
+      NFKD) beside their Erlang templates; their Node templates go (commonJS calls the library, `04-js` step 11)
+- [ ] `unicode` compiles on wasm; a bump of OTP's Unicode bumps the library in the same commit
+
 ## Consumers — "consume std X" rows handed to the library fronts
 
 Each row is a step of the named front; deletion measured by the grep.

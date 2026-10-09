@@ -1,6 +1,6 @@
 # Front 04 — js: commonJS keeps no dead lowering and no marker std alone may write
 
-**Priority:** medium · **State:** partial: steps 1–5, 7, 8 and C-37 done; steps 6, 9, 10 open
+**Priority:** medium · **State:** partial: steps 1–5, 7, 8 and C-37 done; steps 6, 9, 10, 11 open
 **Depends on:** step 6's typed AST (step 6)
 **Owns:** `modules/compiler-core/src/codegen/commonJS.zig` · `src/codegen/typescript.zig` ·
 `src/codegen/js/**` · `src/comptime/primOpTemplate.zig`'s `$stringify` arm (step 2, decision 239) ·
@@ -115,6 +115,14 @@ function strLength(s) {
 - [ ] cost measured: the helpers on strings without a pair within 10% of the native calls (recorded in
       `js/AGENTS.md`)
 - [ ] `run/string_index_of_codepoints` (with `"👍"` and `"e\u{301}"`) one `.out` for the four targets
+
+### Step 11 — the same wasm library from commonJS (decision 333)
+
+- [ ] a binding with `@External.Wasm(module: …)` and no `@External.Node` lowers on commonJS to the same
+      library: the module instantiates the package's `.wasm` once (synchronously, from its bytes beside the
+      emitted `.js`) and calls it through the same glue; `unicode.normalize*` answer as on wasm
+- [ ] the emitted package ships the `.wasm` next to its `.js`; `tsc-check.sh` green; `run/std_unicode_on_every_target`
+      one answer on commonJS and wasm
 
 **Gate:** standard (fronts.md § Gate) + every re-recorded RUN LOG verified under `node` against
 decision 8 §7 · `zig build test-libs` commonJS cells at baseline (jhonstart, emilia, onze, erika)

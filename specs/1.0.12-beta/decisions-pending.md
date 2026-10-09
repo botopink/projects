@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**60 questions and 8 contradictions are open, and 88 implementation choices await confirmation.**
+**59 questions and 8 contradictions are open, and 88 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -13,7 +13,7 @@ Answered since 1.0.11 (removed): `02e-a` → 240 · `05w-c` → 259 · `05w-d` �
 `08-b` → 203 · `08-e` → 224 · `07-n` → 257 · `rc3-a` → 159 · `26-b` → 186 · `69-b` → 201 ·
 `31-b` → 194. Moot (removed): `23-a`, `01std-d` (their option (b) landed), `95-d` (replaced by `95-f`).
 Answered by the maintainer's local record: `ck4-a` → 266 · `134-a` → 267 · `134-b` → 268 · `134-c` → 269.
-Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290 · `ctr-y` → 291 · `ctr-z` → 292 · `nat-c1`, `nat-c3`, `bpp-g` → 293 · `nat-c2` → 294 · `nat-c4` → 295 · (cardume) → 296, 297 · `nat-c5` → 298 · `nat-c6`, `03r-b` (reversed) → 299 · `nat-c7` → 300 (all of `nat-c` answered) · `nat-d1` → 303 · `nat-d2` → 304 · `nat-g` → 305 · `nat-d3` → 306 · `nat-d4` → 306 (moot: the `union2…5` / `tuple2…5` families go with the public value form; unions and tuples are types) · `nat-d5` → 307 · `pkg-b` → 309 · `imp-a` → 310 · `lg2-r` → 311, 312, 313 · `lg2-t` → 314 · `lg2-m` → 315 · `lg2-c` → 316 · `23-c` confirmed → 317 · `nat-e`, `130-c`, `erk-c` → 318 · `ctr-j` → 319 (option (b)) · `ctr-i` → 320 (option (a), commonJS included: codepoints on every target) · `130-b` → 321 (a label checked at build) · `134-d` → 322 · `49-d` confirmed as amended → 323 · `103-a` → 324 (no rakun-app wrapper) · `07-j` → 325 (option (c)) · `ctr-u` → 327 (`Player.parse(doc)`) · `16-x` → 328 (no lambda annotation at all).
+Answered since the consolidation: `ctr-a` → 271 · `08-e2`, `ctr-b` → 272 · `ctr-c` → 273 · `03r-ad`, `ctr-d` → 274 · `bpp-f`, `ctr-e` → 275 · `hooks-a` → 277 · `dir-1`…`dir-5` → 278 · `lg2-i`, `lg2-f` → 280 · `nat-a`, `nat-0` rule 1 → 281 · `nat-b`, `nat-0` rule 2 → 282 · `nat-0` rule 3 → 283 (case by case: `nat-d1`…`nat-d9`) · `nat-0` rule 4 → 284 (case by case: `nat-f1`…`nat-f4`) · `nat-f1` → 285 · `ctr-aa` → 287 · `ctr-f` → 288 · `ctr-g`, `ctr-t` → 289 · `ctr-x` → 290 · `ctr-y` → 291 · `ctr-z` → 292 · `nat-c1`, `nat-c3`, `bpp-g` → 293 · `nat-c2` → 294 · `nat-c4` → 295 · (cardume) → 296, 297 · `nat-c5` → 298 · `nat-c6`, `03r-b` (reversed) → 299 · `nat-c7` → 300 (all of `nat-c` answered) · `nat-d1` → 303 · `nat-d2` → 304 · `nat-g` → 305 · `nat-d3` → 306 · `nat-d4` → 306 (moot: the `union2…5` / `tuple2…5` families go with the public value form; unions and tuples are types) · `nat-d5` → 307 · `pkg-b` → 309 · `imp-a` → 310 · `lg2-r` → 311, 312, 313 · `lg2-t` → 314 · `lg2-m` → 315 · `lg2-c` → 316 · `23-c` confirmed → 317 · `nat-e`, `130-c`, `erk-c` → 318 · `ctr-j` → 319 (option (b)) · `ctr-i` → 320 (option (a), commonJS included: codepoints on every target) · `130-b` → 321 (a label checked at build) · `05w-i` → 333 (a merged wasm library, utf8proc) · `134-d` → 322 · `49-d` confirmed as amended → 323 · `103-a` → 324 (no rakun-app wrapper) · `07-j` → 325 (option (c)) · `ctr-u` → 327 (`Player.parse(doc)`) · `16-x` → 328 (no lambda annotation at all).
 Closed by the 9 Oct revalidation (every item re-checked against 144–308, the fronts and the code): `08-h` → 285, 224 · `08-j` → 295 · `lg2-g` → 281 · `ctr-q` → 281, 256 · `ctr-m` (duplicate of `lg2-s`) · `ctr-n` (170 no longer carries the `from "m1"` example) · `ctr-r` (wrong premise: 118 lands before 26 step 0) · `111-c` → 228 · `03r-b`, `03r-d` → 299 · `95-e` (the collision left the code) · `03r-o` → 290 · `05emilia-h` → 206 · `68-c` → 280, 281. The rest were rewritten where their text or facts had gone stale.
 Merged: `01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b` → `snap-a`.
 
@@ -183,22 +183,6 @@ subject under 281. Every decorator parameter in these examples is `comptime` (28
 - **Options.** (a) The two forms, as built. (b) (a) plus `counts[k]` with 63's meaning (`ets:lookup`, `V`, failure on a missing row). (c) (b) plus `hasKey` (`ets:member`) and `delete` (`ets:delete`), each a new `std/beam` primitive.
 - **Recommendation.** (a).
 - **Blocks.** Nothing — the built surface stands until widened.
-
-#### 05w-i · `unicode.normalize` on wasm (*raised by `05-wasm` step 5*)
-- **Measured.** `unicode`'s four `normalize*` cells are host calls — Node `String.prototype.normalize` (ICU 78.2, Unicode 17.0), erlang `unicode:characters_to_nf*_binary` (Unicode 16.0) — and wasm has no host to ask. Under 146 the module is refused on wasm, called or not, so `unicode.codepoints` (now a `fn:` body there) is unreachable too: `run/std_unicode_on_every_target`'s `.wasm.expect` names `normalizeNfc`, reached from `normalize`. A botopink normalizer needs UnicodeData's tables (Python's `unicodedata` 16.0: 17 085 decomposition mappings, 934 code points with a non-zero combining class, plus the composition exclusions; Hangul is algorithmic). The two hosts already disagree on code points Unicode 17.0 assigned.
-- **Options.**
-  (a) A botopink port on wasm only — std carries generated tables of one pinned Unicode version as private bodies; Node and erlang keep their hosts:
-  ```
-  #[@External.Wasm("fn:normalizeNfcBody")]
-  declare fn normalizeNfc(s: string) -> string;   // wasm: compose(decompose(s, canonical))
-  ```
-  (b) The port on every target (decision 263's shape): one table, one answer per code point everywhere — `normalize("ǅ", NFKD)` is `68 122 780` on all four, whatever the host's Unicode version.
-  (c) No normalizer on wasm: `normalize` moves to its own module (`unicode/normalize`), refused on wasm by STD-001; `unicode` builds there.
-  ```
-  import {unicode.normalize} from "std";   // wasm: std-unsupported-on-target
-  ```
-- **Recommendation.** (c) — the strictest: wasm answers nothing it has no data for, and nothing is invented (241's rule); (b) if one answer everywhere is wanted.
-- **Blocks.** `05-wasm` step 5 box 1 (`unicode` on wasm) and box 2's `unicode` cell; under (c) a std restructure (`02-std-and-packaging`).
 
 #### 05w-j · `json.parse` / `json.stringify` on wasm (*raised by `05-wasm` step 5*)
 - **Measured.** Both are `JSON.stringify(JSON.parse(s))` on Node and `json:encode(json:decode(s))` on erlang; wasm has no host JSON, so STD-001 refuses every import of `json` on wasm (`run/std_json_on_every_target.wasm.expect`: `std-unsupported-on-target` naming `std/json.parse`), though every other cell of `json` is bound. The two hosts already answer differently (measured, `json.parse(…)`, commonJS / erlang): `{"b":1,"a":2,"1":3}` → `{"1":3,"b":1,"a":2}` / `{"1":3,"a":2,"b":1}`; `{"a":1,"a":2}` → `{"a":2}` / `{"a":1}`; `1e400` → `null` / Error; `"\ud800"` → `"\ud800"` / Error; `1.0` → `1` / `1.0`; `12345678901234567890` → `12345678901234567000` / `12345678901234567890`. std's own `decode` (decision 117 rule 7) is strict: a duplicate member, an overflow and an unpaired surrogate are Errors, members in document order.

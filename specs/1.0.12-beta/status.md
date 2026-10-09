@@ -36,6 +36,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 114 — the four other libraries' `test.yml` (emilia, erika, jhonstart, onze) carry a stale glibc 2.38 comment · none
 - [ ] 01-checker s6 box 3 — `throw` in a `case` arm under `@Result` · 04 s6
 - [ ] **01-checker s21 (priority, 331)** — every `comptime` runs on the comptime runtime (BEAM or WAT), never on the target; the same value on the four targets; a declared function's reference lifted · rakun `beans()` green unchanged
+- [ ] 05-wasm s9 · 04-js s11 · 97 s16 (333) — a merged wasm library (utf8proc) for `unicode.normalize` on wasm and commonJS
 - [ ] 139 (332) — `bigint` on the four targets · then 97 s15 (`Decimal`, `Json`'s `Int` / `BigInt` / `Dec`) · 125's bind rule
 - [ ] 01-checker s13 — JS-4's two checker gaps · 05 lowering a nested constructor in a `val`
 - [ ] 01-checker s18 — numeric literal suffixes (247): built on feat (`49455602`); left: the two `language-gaps.md` literal halves, a cold gate · the `l` literal rule on every target (319)
@@ -199,11 +200,11 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.0.10 choices) in its
-last section. Open after the 9 Oct revalidation and the answers since (309–332): 57 questions, 8 contradictions, 88
+last section. Open after the 9 Oct revalidation and the answers since (309–333): 56 questions, 8 contradictions, 88
 implementation choices.
 
 **First — what blocks now** (`decisoes-pendentes.md` § Prioridade 1, "O que trava agora", set by the maintainer 2026-10-09), in order:
-- [ ] 05w-i · 05w-j — 05-wasm s5 (`unicode`, `json` on wasm)
+- [ ] 05w-j — 05-wasm s5 (`json` on wasm) · 05w-i → 333
 - [ ] 97-a · 97-b · 97-c — 97 s11 (`io/http`, `async`, `testing/mocks` on wasm)
 
 **Then — the botopink shape** (raised 2026-10-04):
