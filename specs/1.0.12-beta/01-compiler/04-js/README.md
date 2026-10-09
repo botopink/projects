@@ -1,8 +1,7 @@
 # Front 04 — js: commonJS keeps no dead lowering and no marker std alone may write
 
-**Priority:** medium · **State:** partial: steps 3, 4, 5, 7, 8 and C-37 on feat; steps 1, 2, 6, 9 open
-**Depends on:** `01-checker`'s `@block` tail-form refusal (step 1), `$stringify` parser refusal (step
-2), step 6's typed AST (step 6)
+**Priority:** medium · **State:** partial: steps 3, 4, 5, 7, 8 and C-37 on feat, 1 and 2 built; steps 6, 9 open
+**Depends on:** step 6's typed AST (step 6)
 **Owns:** `modules/compiler-core/src/codegen/commonJS.zig` · `src/codegen/typescript.zig` ·
 `src/codegen/js/**` · `src/comptime/primOpTemplate.zig`'s `$stringify` arm (step 2, decision 239) ·
 `snapshots/codegen/<runtime>/commonJS/**`, `snapshots/codegen/<runtime>/errors/commonJS/**` (each
@@ -30,26 +29,16 @@ Step 3 `scripts/tsc-check.sh` (gate stage 11, `tsc` 7.0.2 via `npx`, every emitt
 (264): `__bp_int` (`intChecked`, `js_prelude` `int_check`), `i64` range ±(2^53−1)
 (`ArithKind.rangeExactDouble`), `/`·`%` by zero `integer division by zero` — 02 step 13's cells with
 `.commonJS.stderr`, `run/int_overflow_mul_i64` past both bounds, `run/int_division_by_zero`
-(`48a096ea`).
+(`48a096ea`) · 1 the `@block` tail form never reaches commonJS: `01-checker`'s `block-tail-value`
+refuses it (`reject/block_tail_value`, every target; it printed `null` here), the one IIFE lowering
+serves the two shapes left (`@block { return 3; }`, statement `@block { … };`), no commonJS
+snapshot moved (`js/AGENTS.md` § The IIFE build sites) · 2 `$stringify` is no marker (164, 239):
+`primOpTemplate.render`'s arm and erlang's / beam's `emitStringifyOpen` / `emitStringifyClose`
+deleted (carve-out into `erlang.zig`, `beam_asm.zig`), `render: $stringify is no marker — its bytes
+pass through` red on the parent; the refusal is `reject/template_stringify_marker` (01-checker's,
+every target); no snapshot moved.
 
 ## Open
-
-### Step 1 — the `@block` tail-form IIFE
-
-`val a = @block { 1 + 2 };` prints `null`. IIFE stays for `@block { return 3; }` and `@block { … };`;
-once the checker refuses the tail form nothing moves here.
-
-- [ ] `@block { 1 + 2 }` refused by the checker (`01-checker`'s row); commonJS snapshots byte-identical
-
-### Step 2 — `$stringify` in a template (decisions 164, 239)
-
-After the parser refusal (`01-checker` row) and std's `Array.join` dropping it: delete
-`primOpTemplate.render`'s `$stringify` arm and `emitStringifyOpen` / `emitStringifyClose`
-(`erlang.zig`, `beam_asm.zig` — 02's/03's files, carve-out named in the commit).
-
-- [ ] `reject/external_template_stringify_marker` — refused at the template, naming the marker, on
-      every target
-- [ ] `render`'s `$stringify` arm and every `emitStringify*` deleted; no snapshot moves
 
 ### Step 6 — `throw` in a `case` arm (after `01-checker` step 6)
 
@@ -64,6 +53,14 @@ codegen); the arm emits `return {Error: e}`.
       commonJS build with a bare `TypeError` when any of its functions calls `Float.floor` (from
       `05-wasm` step 5, comptime path; re-measure, name the owner)
 - [ ] `Point(x: 0, ..)` in a `case` answers `null` on commonJS (from `02-erlang`; re-measure)
+- [ ] an `@block` whose `return` is valued on some paths and that falls through to a tail on
+      another checks: `val a = @block { if (c) return 3; 4 };` answers `null` on commonJS on the
+      fall-through path and `4` (the tail) on erlang, beam and wasm — decision 2 gives that path no
+      value, so the checker refuses it (owner `01-checker`; found by step 1)
+- [ ] `return` inside an `@block` in value position leaves the enclosing function on beam and wasm:
+      `pub fn main() { val b = @block { return 5; }; @print(b); @print(7); }` prints nothing there,
+      `5` and `7` on commonJS and erlang (C1: the block owns its `return`s; owners `03-beam`,
+      `05-wasm`; found by step 1)
 
 ### Step 9 — `i64`, `u64`, `isize`, `usize`: a number, a `BigInt` past 2^53 (decision 319)
 
