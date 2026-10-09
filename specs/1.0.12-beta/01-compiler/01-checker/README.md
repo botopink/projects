@@ -428,7 +428,7 @@ val outra = Pessoa(...base, ...contato, nome: n);   // left to right, the later 
       `reject/record_spread_other_type`, `reject/record_spread_partial`, `reject/record_spread_missing_field`
 - [ ] a plain function call takes no spread (267): `reject/call_spread`
 
-### Step 35 — every decorator argument is an `@Expr<T>` (decision 364)
+### Step 35 — every `comptime` parameter is an `@Expr<T>` (decision 364)
 
 ```bp
 fn check<T>(comptime decl: @Decl<T>, comptime message: @Expr<string>, comptime rule: @Expr<fn(v: T) -> bool>) {
@@ -439,8 +439,9 @@ fn page(comptime decl: @Decl, comptime pattern: @Expr<string>) {
 }
 ```
 
-- [ ] a decorator or tag-annotation parameter other than `@Decl` is `comptime x: @Expr<T>`; `comptime x: T`
-      refused at the declaration naming `@Expr<T>` (`reject/decorator_param_not_expr`)
+- [ ] every `comptime` parameter other than `@Decl` — a decorator's, a tag annotation's, a template
+      function's, any function's, a builtin's in `builtins.d.bp` — is `comptime x: @Expr<T>`; `comptime x: T`
+      refused at the declaration naming `@Expr<T>` (`reject/comptime_param_not_expr`)
 - [ ] the argument checked against `T` at the argument, as s24; `x.value` answers it when known at build
       and `T` is data; `.value` of an argument not known at build refused at the argument
       (`reject/decorator_value_not_comptime`); an `@Expr` of a function or a type has no `.value`
@@ -449,8 +450,9 @@ fn page(comptime decl: @Decl, comptime pattern: @Expr<string>) {
       time — `run/decorator_expr_rule_called` (the rule runs at validation, on the four targets),
       `run/decorator_expr_message_runtime` (a message from a function call)
 - [ ] `x.fail("…")` located at the argument
-- [ ] the codemod: every declared decorator in jhonstart, rakun, validation and std takes `@Expr<T>` and
-      reads `.value`; `botopink check` of every library member clean
+- [ ] the codemod: every `comptime` parameter in std, `builtins.d.bp`, jhonstart, rakun, validation,
+      cardume and styled takes `@Expr<T>` and its body reads `.value`; `botopink check` of every
+      library member clean
 
 ### Rows other fronts found
 
