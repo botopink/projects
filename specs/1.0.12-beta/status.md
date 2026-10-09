@@ -82,6 +82,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 04-js s9 rest — `Json`'s exact `i64` (332: 139, then 97 s15) · the explicit conversions (97 s13's std surface)
 - [x] 04-js s10 (320) — a string index counts codepoints on commonJS: the five reads through prelude helpers, host templates in codepoints, `run/string_index_of_codepoints` one `.out` for the four targets
 - [ ] 04-js s10 row — string reads cost +24 % against the 10 % target (`js/AGENTS.md`) · none
+- [ ] 04-js row — `??` lowering defeats the self-tail-call loop on commonJS: the IIFE reads the parameters, `NameScan` refuses the `while (true)` rewrite; std `path.bp` `resolveAll` recurses per segment since 330's migration · none
 - [x] 05-wasm s1 box 1 · s3 box 2 — `Array.unique` keeps the first occurrence (`run/array_unique`); C-07's cells on wasm as `run/is_truth_table` (`run/unknown_stores_nothing` struck — §11 is a cost, no program prints a difference)
 - [ ] 05-wasm s5 — the rest of std on wasm: heap growth, `pow`, astral `contentHash`, `encoding` / `querystring` family cells, the `wat/AGENTS.md` limits row done; left: `unicode` and `json` on wasm and their cells · `02/97` s16 (333), 97 s15 (336)
 - [x] 05-wasm s8 — overflow for `u32`/`u64` and the narrow integer types on wasm (264)

@@ -71,6 +71,14 @@ codegen); the arm emits `return {Error: e}`.
       `pub fn main() { val b = @block { return 5; }; @print(b); @print(7); }` prints nothing there,
       `5` and `7` on commonJS and erlang (C1: the block owns its `return`s; owners `03-beam`,
       `05-wasm`; found by step 1)
+- [ ] `??` lowering defeats the self-tail-call loop: `a ?? b` lowers to an IIFE
+      (`(() => { const __bp_nullish = a; if (__bp_nullish != null) … })()`) whose body reads the
+      function's parameters, so `NameScan` (`commonJS.zig`, closure_only) counts a closure capture and
+      the `while (true)` rewrite is refused. std `path.bp` `resolveAll(segments, i, state)`
+      (`val seg = segments.at(i) ?? "";` then `return resolveAll(segments, i + 1, next);`) recursed in a
+      loop before 330's migration (`.unwrapOr("")` lowered to `((_o) => …)(arg)`, its argument outside
+      the arrow) and now recurses one JS frame per segment — stack depth on deep inputs (found by
+      checker-330's integration; snapshot `std_package_a_root_module_importing_from_io_is_refused_at_the_item`)
 
 ### Step 9 — `i64`, `u64`, `isize`, `usize`: a number, a `BigInt` past 2^53 (decision 319)
 
