@@ -19,8 +19,8 @@ no name std or a framework already exports).
 
 | Front | Priority | State | What | Depends on |
 |---|---|---|---|---|
-| [`102-routing-conventions/`](./102-routing-conventions/README.md) | high | not on feat — steps 1–2 reported done on the unpushed branch `front/102-routing-conventions` | `routing.conventions` (eight app-file kinds in wrap order — decision 171; `kindOf`, `kindLetter` — 172; `classify` over one path — 173; `conventionConflicts`), segment helpers (`paramNamesOf`, `fillPattern`, `toColonPattern`); six consumer members switch | the branch pushed · 49-d confirmed as amended (step 3) |
-| [`103-actions-id/`](./103-actions-id/README.md) | high | not on feat — step 1 reported done on the unpushed branch `front/103-actions-id` | `actions.id`: one `deriveActionId(secret, module, name, buildId)` and `isActionId` grammar (rakun-app derives, jhonstart-forms re-checks) | the branch pushed |
+| [`102-routing-conventions/`](./102-routing-conventions/README.md) | high | partial: steps 1–2 (the package) on `front/102-103`; step 3 open | `routing.conventions` (eight app-file kinds in wrap order — decision 171; `kindOf`, `kindLetter` — 172; `classify` over one path — 173; `conventionConflicts`), segment helpers (`paramNamesOf`, `fillPattern`, `toColonPattern`); six consumer members switch | step 3: 49-d confirmed as amended |
+| [`103-actions-id/`](./103-actions-id/README.md) | high | partial: step 1 (the package) on `front/102-103`; step 2 open | `actions.id`: one `deriveActionId(secret, module, name, buildId)` and `isActionId` grammar (rakun-app derives, jhonstart-forms re-checks) | — |
 | [`104-http/`](./104-http/README.md) | high | partial: steps 1–4 (the package) on feat; step 5 open | bundled `http`: `cookie`, `accept`, `mime`, `status`, `date`, `byteRange`, `cacheControl` (decisions 181, 182, 196); the consumer sweep | step 5: `04-rakun` 04, 65, 79, 12, 19, 22, `08-bpp/123`, `07-onze` 49, 51 (decision 188) |
 | [`105-i18n/`](./105-i18n/README.md) | medium | not started | bundled `i18n`: one BCP 47 subset grammar (decision 180), `negotiate`, path helpers, `alternatesFor`, `interpolate` | 104 step 5 · `04-rakun/22` · `05-jhonstart/26` · 03r-q confirmed |
 | [`106-log/`](./106-log/README.md) | high | partial: step 1 (the package) on feat; step 2 open | bundled `log` (decision 195): levels, `LogRecord`, four renderers, a sink-injected `Logger`, the one `errorDigest` (decision 194) | step 2: `04-rakun/17`, `05-jhonstart/26` step 4, `04-rakun/65` |
@@ -30,7 +30,7 @@ no name std or a framework already exports).
 ## Order
 
 ```
-packages   102 steps 1–2 · 103 step 1  ─► land the pushed branches (libs/routing, libs/actions)
+packages   102 steps 1–2 · 103 step 1  ─► land front/102-103 (libs/routing, libs/actions)
            125 steps 3–10               (alone in libs/validation, beside the library fronts)
            105 package · 107 package    (each appends to the three registration lines in turn)
                                                            │

@@ -1,11 +1,11 @@
 # Front 103 — actions id: `actions` gains `id`
 
 **Priority:** high — the action id is a security boundary derived in one place, re-checked in
-another; one grammar only · **State:** not on feat; step 1 reported done on unpushed branch
-`front/103-actions-id` — push it
-**Depends on:** the branch pushed and landed (step 1)
+another; one grammar only · **State:** step 1 done (the package); step 2 open
+**Depends on:** nothing (step 2 edits two library members — `fronts.md` § Order)
 **Owns:** `repository/botopink-lang/libs/actions/src/id.bp` (new), `libs/actions/test/id_test.bp`,
-`libs/actions/AGENTS.md`, `libs/actions/botopink.json` (`files`) · consumers:
+`libs/actions/AGENTS.md`, `libs/actions/botopink.json` (`files`), `libs/actions/src/root.bp` (the
+module's line) · consumers:
 `repository/rakun/modules/rakun-app/src/actions.bp` (`actionId` and its callers `actionIdOf`,
 `resolveAction` only), `repository/jhonstart/modules/jhonstart-forms/src/form.bp` (`formAction`'s
 `wellFormed` check only)
@@ -27,20 +27,25 @@ with the secret from the `#[config("rakun.actions")]` record (299), not `rkProp`
 string)` — a lookup by the action's name in text — is today's code and goes with 281 (an action is
 referred to by its function; `08-bpp/127` step 5); this front only repoints the derivation under it.
 
+## Done
+
+- Step 1 — `libs/actions/src/id.bp`: `deriveActionId(secret, module, name, buildId)` (std
+  `hash.hmacSha256`, the secret a parameter) and `isActionId(id)` (`a_` + exactly 24 lowercase hex);
+  `test/id_test.bp` (5 tests) — six known-answer ids (HMAC-SHA256 computed outside botopink;
+  `(…, "app@posts", "createPost", "build-1")` of `rakun-app/test/actions_test.bp` among them, empty
+  texts included), every derived id an `isActionId`, refusals of 23 and 25 digits, uppercase, `a_`,
+  `""`, another prefix, a non-hex digit, `a_9f2c1b7e`, `a_1`, `a_<script>`. `botopink test` 24
+  passed, 0 failed on erlang and on commonJS (19 before); `format --check` clean;
+  `libs/actions/AGENTS.md` names `id`; `botopink.json` `files`, `root.bp` updated
+
 ## Open
 
-### Step 1 — `id.bp`
-
-`deriveActionId(secret, module, name, buildId) -> string` (above, over std `hash.hmacSha256`);
-`isActionId(id) -> bool` (`a_` + exactly 24 lowercase hex). Secret is a parameter; the package never
-reads `rakun.actions.secret`. `hmacSha256` answers lowercase hex on both targets (Node
-`digest('hex')`, Erlang `~2.16.0b`); the test pins it.
-
-- [ ] known-answer: one fixed `(secret, module, name, buildId)` → one fixed id, both rows; lowercase,
-      so `isActionId(deriveActionId(…))` holds
-- [ ] `isActionId` refuses 23 and 25 digits, uppercase, and the empty suffix
-
 ### Step 2 — consumers
+
+| Member | Changes | Imports from `actions` | Needs attention |
+|---|---|---|---|
+| rakun-app `actions.bp` | the body of `actionId(module, name, buildId)` becomes `deriveActionId(<secret>, module, name, buildId)` — the three-argument function stays (its tests, `actionIdOf` and `resolveAction` call it) | `id.deriveActionId` | none — the same expression |
+| jhonstart-forms `form.bp` | `formAction`'s `wellFormed` expression becomes `isActionId(actionId)` | `id.isActionId` | `test/form_test.bp` binds forms to `a_9f2c1b7e`, `a_0000aaaa` and `a_1` (the last in `formStatusOf`, which does not check), and `docs.md` shows `a_9f2c1b7e`: 8 hex digits, refused by the grammar — those fixtures become 24-digit ids; the refusal text of `formAction` ("hold no `/`, space or quote") states the old rule; the two refusals `form_test.bp` asserts (``is not an action id``) keep. `examples/forms` already uses a 24-digit id |
 
 - [ ] rakun-app's `actionId` calls `actions.id.deriveActionId` (derivation and `slice` gone from
       rakun-app), the secret from the `#[config("rakun.actions")]` record once 299 lands in rakun-app

@@ -1,13 +1,13 @@
 # Front 102 — routing conventions: `routing` gains `conventions` and the segment helpers
 
 **Priority:** high — segment grammar hand-walked in seven places outside `routing`, two disagreeing
-on what an app file is; 128 and rakun group A wait on step 3 · **State:** not on feat; steps 1–2
-reported done on unpushed branch `front/102-routing-conventions` — push it
-**Depends on:** the branch pushed and landed (steps 1–2) · 49-d confirmed as amended ("onze imports
-nothing from routing" — reversed here) (step 3)
+on what an app file is; 128 and rakun group A wait on step 3 · **State:** steps 1–2 done (the
+package); step 3 open
+**Depends on:** 49-d confirmed as amended ("onze imports nothing from routing" — reversed here)
+(step 3)
 **Owns:** `repository/botopink-lang/libs/routing/src/conventions.bp` (new), `libs/routing/src/segment.bp`
 (new helpers), `libs/routing/test/**`, `libs/routing/AGENTS.md`, `libs/routing/botopink.json`
-(`files`) · consumers, one commit each: `repository/rakun/modules/rakun-app/src/{file_router,static_gen}.bp`,
+(`files`), `libs/routing/src/root.bp` (the module's line) · consumers, one commit each: `repository/rakun/modules/rakun-app/src/{file_router,static_gen}.bp`,
 `repository/rakun/modules/rakun-hateoas/src/hal.bp`, `repository/onze/modules/onze/src/types.bp`,
 `repository/onze/modules/onze-cli/src/scan.bp`, `repository/onze/modules/onze-bundler/src/chunk.bp`,
 `repository/jhonstart/modules/jhonstart/src/routes.bp`
@@ -34,7 +34,7 @@ interceptors) owned by `routing` alone; its seven re-derivations gone:
 
 `routing` already parses paths (`parsePath`, `segment.patternOf`). A decorator body may call a bodied
 package function (only *host* functions refused), so `#[page]` calls `segment.paramNamesOf`
-directly. On feat `libs/routing/src/`: 9 modules (no `conventions.bp`), 66 tests.
+directly. `libs/routing/src/`: 10 modules, 82 tests (66 before steps 1–2).
 
 Surface (names under decision 163 — `import {x} from "<package>"` is ambiguous when two packages
 export `x`):
@@ -60,31 +60,28 @@ Deliberate differences from the copies:
   "/")`, independent of `String.slice`'s unit.
 - `conventionConflicts`' refusals read `routing: …` in ASCII (` - ` where rakun wrote a dash).
 
-Branch reports each function identical to its copy on erlang and commonJS (53 paths × 5 app
-directories for `classify`; 7 trees for `conventionConflicts`; 12 filling + 5 refused rows for
-`fillPattern`; 20 patterns for `toColonPattern`; 9 segments for `paramNamesOf`) — re-checked on feat
-at landing.
+Measured identical to the copies on erlang and commonJS, the copies run beside the package (a
+scratch test, not kept): `classify` = onze `classifyAppFile` over 396 paths × 5 app directories
+(segment and kind); `kindLetter(kindOf(f))` = rakun-app `conventionKind` over 12 names;
+`toColonPattern` = rakun-hateoas `bracketToColon` over 20 patterns; `paramNamesOf` = jhonstart's
+hand walk over 9 segments (none with a dot or an unclosed bracket); `fillPattern` = `expandRow` over
+6 filling rows. `conventionConflicts` is `conflictProblems`' logic over classified files; its texts
+differ as stated above.
+
+## Done
+
+- Step 1 — `conventions.bp`: `ConventionFile`, `fileKinds` (wrap order, 171), `kindOf`, `kindLetter`
+  (172), `classify` (one path, 173), `conventionConflicts`; `test/conventions_test.bp` (9 tests) —
+  every kind classifies, stray files answer `null`, page-beside-route and the two-root-groups claim
+  are named conflicts, `kindLetter` inverts `table.kindLabel`; `grep -rn "fs\." libs/routing/src`
+  empty
+- Step 2 — `segment.paramNamesOf`, `segment.fillPattern` (refuses a missing `[x]`, accepts a missing
+  or empty `[[...x]]`, refuses a twice-bound name), `segment.toColonPattern`
+  (`"[id]/[...rest]"` → `":id/:...rest"` asserted); 7 tests in `test/segment_test.bp`
+- Both: `botopink test` 82 passed, 0 failed on erlang and on commonJS; `botopink format --check src
+  test` clean; `libs/routing/AGENTS.md`, `botopink.json` `files`, `root.bp` updated
 
 ## Open
-
-### Step 1 — `conventions.bp`
-
-`fileKinds`, `kindOf`, `kindLetter`, `classify` (takes the path, never reads disk),
-`conventionConflicts` (rakun-app's `conflictProblems` in substance, over the classified files handed in).
-
-- [ ] `libs/routing/test/conventions_test.bp`: every kind classifies, a stray file answers `null`,
-      page-beside-route in one segment is a named conflict, `kindLetter` inverts `table.kindLabel`
-      for the eight kinds; green on erlang and commonJS
-- [ ] `classify` takes the path it is handed; `grep -rn "fs\." libs/routing/src` is empty
-
-### Step 2 — segment helpers
-
-`segment.paramNamesOf`, `segment.fillPattern` (missing required binding → `Error`; empty optional
-catch-all is not), `segment.toColonPattern`.
-
-- [ ] `fillPattern` refuses a missing `[x]` and accepts a missing `[[...x]]`; tests on both rows
-- [ ] `toColonPattern("[id]/[...rest]")` is `":id/:...rest"` — byte-identical to `hal.bp`'s
-      `bracketToColon` today (only the outer bracket pair replaced), asserted
 
 ### Step 3 — consumers, one commit per member
 
