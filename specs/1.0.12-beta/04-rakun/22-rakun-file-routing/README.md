@@ -135,4 +135,6 @@ onze-server compile unchanged.
 - Ticked by another track: R64-2 (jhonstart 32 consumes `Alternate[]`), 66's "front 32 emits
   `<link rel="manifest" …>`" and "front 32 consumes `imagesFor` and `iconsFor`".
 - Kept for open markers: `examples/route-handler-example.bp` (lg2-a, lg2-b),
-  `verb-exports-carried-example.bp` (no export reflection).
+  `verb-exports-carried-example.bp` (no export reflection — under 282 that is the design, not a gap:
+  a verb is a decorator, `pub fn GET` never a role by its name; its `language-gaps.md` row is to be
+  re-read by the row's owner).
