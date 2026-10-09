@@ -101,5 +101,5 @@ cold target and idle-machine measurements deferred to next milestone (decision 2
 
 | Item | To |
 |---|---|
-| `rakun-websocket` `test/limits_test.bp:48` load-dependent (queue 51 vs cap 50 under load; 27 / 0 idle) | `../04-rakun/` (cap enforcement or the test's bound); unowned in `04-rakun/README.md` § Gate stance |
+| `rakun-websocket` `test/limits_test.bp:48` load-dependent (close code 0: the session read before it registered) | fixed in the test (chores patch, rakun after 128); the sidecar's 101-before-register order a status row; `04-rakun/README.md` § Gate stance |
 | `docs.md:5`, `build.zig` `test-docs` comment still describe `docs-check: skip` | `../01-compiler/07-residuals` (step 7) · `../01-compiler/26-cli-tooling` (114 § Handed out) |

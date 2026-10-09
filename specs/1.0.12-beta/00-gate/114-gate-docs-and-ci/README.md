@@ -118,5 +118,9 @@ last full cold: 9m31s, loaded).
 ### Step 9 — a red the gate can meet
 - [ ] `repository/rakun/modules/rakun-websocket/test/limits_test.bp:48` (load-dependent cap): bound
       holds under load, or cap made deterministic; ten cold runs of rakun's cells green on a loaded machine
+      — cause found and fixed in the test (chores patch): the test read the session ids before the
+      connection registered its session and slept 3 s for the close; it now waits on both events.
+      Measured: rakun-websocket 7 runs green under load 20–37; the ten runs of rakun's cells remain
+- [ ] rakun-messaging: one erlang test red once under load 26, unnamed and not reproduced in 39 runs (status L2)
 
 **Gate:** standard (fronts.md § Gate) + `zig build test-docs` green with `0 skipped`.
